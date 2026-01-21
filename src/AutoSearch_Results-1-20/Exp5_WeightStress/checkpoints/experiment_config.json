@@ -9,12 +9,12 @@
     "training": {
         "batch_size": 64,
         "gen_batch_size": 64,
-        "learning_rate": 0.0001,
-        "transfer_loss_weight": 5.0,
+        "learning_rate": 5e-05,
+        "transfer_loss_weight": 50.0,
         "use_amp": true,
         "num_workers": 0,
         "stage1_epochs": 100,
-        "stage2_epochs": 100,
+        "stage2_epochs": 0,
         "reflow_data_dir": "data_reflow_cache_256_SpectralLoss",
         "resume_checkpoint": ""
     },
@@ -24,11 +24,11 @@
         "num_classes": 2
     },
     "checkpoint": {
-        "save_dir": "AutoSearch_Results/Exp1_Baseline_LR1e4_W5/checkpoints"
+        "save_dir": "AutoSearch_Results/Exp5_WeightStress/checkpoints"
     },
     "inference": {
         "image_path": "/mnt/f/monet2photo/test",
         "num_inference_steps": 4,
-        "save_dir": "AutoSearch_Results/Exp1_Baseline_LR1e4_W5/visualizations"
+        "save_dir": "AutoSearch_Results/Exp5_WeightStress/visualizations"
     }
 }
