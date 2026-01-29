@@ -10,6 +10,11 @@ from typing import Dict, Optional
 
 import numpy as np
 import torch
+import torch._inductor.config as inductor_config
+
+# 开启持久化 FX 图缓存，消除训练启动时的重复编译
+inductor_config.fx_graph_cache = True
+
 import torch.nn.functional as F
 from PIL import Image
 from torch.utils.data import DataLoader
@@ -20,10 +25,9 @@ from dataset import LatentDataset
 from inference import decode_latent, encode_image, load_vae
 from losses import (
     GeometricFreeEnergyLoss,
-    StructureAnchoredLoss,
+    PyramidStructuralLoss,
     VelocityRegularizationLoss,
     VelocitySmoothnessLoss,
-    TrajectoryMSELoss,
 )
 from model import LGTUNet, count_parameters
 from physics import generate_latent, get_dynamic_epsilon, integrate_ode, invert_latent
@@ -79,32 +83,19 @@ class LGTTrainer:
         self.energy_loss = GeometricFreeEnergyLoss(
             num_styles=config['model']['num_styles'],
             w_style=config['loss']['w_style'],
-            swd_scales=config['loss'].get('swd_scales', [1, 3, 5, 7, 15]),
-            swd_scale_weights=config['loss'].get('swd_scale_weights', [1.0, 5.0, 5.0, 5.0, 3.0]),
+            swd_scales=config['loss'].get('swd_scales', [1, 3, 5]),  # 🔥 Remove large scales (7, 15)
+            swd_scale_weights=config['loss'].get('swd_scale_weights', [1.0, 1.0, 0.5]),
             num_projections=config['loss'].get('num_projections', 64),
             max_samples=config['loss'].get('max_samples', 4096),
         ).to(device)
 
-        # 找到这一段（约 53 行）并替换：
-        # ✅ 修复：优先读取 'w_mse'，并将默认值降为 1.0
-        self.structure_weight = config['loss'].get('w_mse') or config['loss'].get('structure_weight', 1.0)
+        # 🔥 Pyramid Structural Loss (Frequency-Separated Structure Lock)
+        pyramid_weights = config['loss'].get('pyramid_weights', {'low': 5.0, 'mid': 1.0, 'high': 0.1})
+        self.pyramid_loss = PyramidStructuralLoss(weights=pyramid_weights).to(device)
+        self.w_pyramid = config['loss'].get('w_pyramid', 1.0)
+        logger.info(f"✓ Pyramid Structural Loss enabled (w={self.w_pyramid}, weights={pyramid_weights})")
 
-        # ✅ 修复：将 edge_boost 默认值从 9.0 降为 1.5
-        edge_boost = config['loss'].get('edge_boost', 1.5)
-
-        self.struc_loss = StructureAnchoredLoss(
-            weight=1.0,  # 🔥 Note: Weight is now applied in trainer, this is a dummy value
-            edge_boost=edge_boost,
-        ).to(device)
-
-        logger.info(
-            f"✓ Laplacian Structure Lock enabled (weight={self.structure_weight}, edge_boost={edge_boost})"
-        )
-
-        self.layout_weight = config['loss'].get('w_layout', 2.0)
-        self.layout_loss = TrajectoryMSELoss(weight=1.0).to(device)  # 🔥 Note: Weight is now applied in trainer
-        logger.info(f"✓ Layout Preservation enabled (weight={self.layout_weight})")
-
+        # Optional Smoothness
         vel_smooth_weight = config['loss'].get('vel_smooth_weight', 0.2)
         self.vel_smooth_loss = VelocitySmoothnessLoss(weight=vel_smooth_weight).to(device)
         logger.info(f"✓ Velocity Smoothness Loss enabled (weight={vel_smooth_weight})")
@@ -389,23 +380,12 @@ class LGTTrainer:
             v_pred = self.model(x_t, t, style_id_tgt, use_avg_style=drop_label)
 
         with torch.no_grad():
-            # 🔥 修复：Flow Matching 的真实目标是位移矢量，而非噪声本身
-            # v_target = (x_target_noisy - x0) 是从初始噪声到目标艺术风格的向量场
-            # 这与 Diffusion（预测噪声）的范式本质不同，解决"色块"的根本原因
-            v_target = x_target_noisy - x0  # [B, C, H, W] 位移矢量
-
-        # 从config读取structure_warmup_epochs，默认150个epoch缓慢施加结构锁，之后保持全强度
-        structure_warmup = self.config['training'].get('structure_warmup_epochs') or self.config['loss'].get('structure_warmup_epochs', 150)
-        loss_mse_unweighted = self.struc_loss(v_pred, v_target, latent, current_epoch=epoch, total_warmup_epochs=structure_warmup)
+            # 🔥 Flow Matching target: displacement vector from noise to art
+            v_target = x_target_noisy - x0  # [B, C, H, W]
         
-        # Adaptive Normalization for MSE
-        norm_factor_mse = self.norm_mse.update(loss_mse_unweighted) if self.use_adaptive_norm else 1.0
-        loss_mse = (self.structure_weight * m_mse / norm_factor_mse) * loss_mse_unweighted
-
-        # Layout Loss (Low-frequency structure)
-        loss_layout_unweighted = self.layout_loss(v_pred, v_target)
-        loss_layout = self.layout_weight * m_layout * loss_layout_unweighted
-        loss_mse_raw = F.mse_loss(v_pred, v_target).detach()
+        # 1. Structure Consistency (Pyramid MSE - frequency separated)
+        # Low-freq locked hard, high-freq soft → allows artistic deformation
+        loss_struc = self.pyramid_loss(v_pred, v_target)
 
         # 🔥 Optimization: Reuse v_pred if steps=1 (Compute Reuse)
         # If we are conditional (not dropping label), v_pred IS the velocity we want.
@@ -428,28 +408,27 @@ class LGTTrainer:
             )
             
         loss_dict = self.energy_loss(x_1, style_latents, style_ids=style_id_tgt)
+        loss_style = loss_dict['style_swd']
 
         style_weight_batch = self.style_weights[style_id_tgt].mean()
         loss_smooth = self.vel_smooth_loss(v_pred)
 
         # Adaptive Normalization for Style
-        norm_factor_style = self.norm_style.update(loss_dict['style_swd']) if self.use_adaptive_norm else 1.0
+        norm_factor_style = self.norm_style.update(loss_style) if self.use_adaptive_norm else 1.0
         
-        loss_style_weighted = style_weight_batch * (self.energy_loss.w_style * m_style / norm_factor_style) * loss_dict['style_swd']
-        loss_dict['style_swd_weighted'] = loss_style_weighted
-        loss_dict['mse_weighted'] = loss_mse
-        loss_dict['layout'] = loss_layout
-        loss_dict['mse_raw'] = loss_mse_raw
-
-        total = loss_style_weighted + loss_mse + loss_smooth + loss_layout
-
+        # 🔥 Clean Loss Assembly: Pyramid (structure) + SWD (texture) + Smoothness
+        # No redundant MSE/layout terms - pyramid handles all structural supervision
+        total = (self.w_pyramid * m_mse * loss_struc) + \
+                (style_weight_batch * self.energy_loss.w_style * m_style / norm_factor_style * loss_style) + \
+                loss_smooth
+        
         if self.use_velocity_reg and self.vel_reg_loss is not None:
             loss_reg = self.vel_reg_loss(v_pred)
             loss_dict['velocity_reg'] = loss_reg
             total = total + loss_reg
 
         loss_dict['smooth'] = loss_smooth
-        loss_dict['mse'] = loss_mse
+        loss_dict['mse'] = loss_struc # Log pyramid loss as 'mse' for compatibility
         loss_dict['total'] = total
         loss_dict['style_id_tgt'] = style_id_tgt
 
@@ -527,11 +506,7 @@ class LGTTrainer:
 
             total_loss += loss.item() * self.accumulation_steps
             total_style_swd += loss_dict['style_swd'].item()
-            total_style_swd_weighted += loss_dict['style_swd_weighted'].item()
             total_mse += loss_dict['mse'].item()
-            total_mse_weighted += loss_dict['mse_weighted'].item()
-            total_layout += loss_dict['layout'].item()
-            total_mse_raw += loss_dict['mse_raw'].item()
             if 'smooth' in loss_dict:
                 total_smooth += loss_dict['smooth'].item()
             if 'velocity_reg' in loss_dict:
@@ -542,32 +517,21 @@ class LGTTrainer:
                 postfix_dict = {
                     'loss': f"{loss.item():.4f}",
                     'swd': f"{loss_dict['style_swd'].item():.4f}",
-                    'swd*w': f"{loss_dict['style_swd_weighted'].item():.4f}",
                     'mse': f"{loss_dict['mse'].item():.4f}",
-                    'mse*w': f"{loss_dict['mse_weighted'].item():.4f}",
-                    'mse_raw': f"{loss_dict['mse_raw'].item():.4f}",
                     'α': f"{self._get_current_alpha():.3f}",
                 }
                 pbar.set_postfix(postfix_dict)
 
         avg_loss = total_loss / max(num_batches, 1)
         avg_style_swd = total_style_swd / max(num_batches, 1)
-        avg_style_swd_weighted = total_style_swd_weighted / max(num_batches, 1)
         avg_mse = total_mse / max(num_batches, 1)
-        avg_mse_weighted = total_mse_weighted / max(num_batches, 1)
-        avg_layout = total_layout / max(num_batches, 1)
-        avg_mse_raw = total_mse_raw / max(num_batches, 1)
         avg_smooth = total_smooth / max(num_batches, 1)
         avg_vel_reg = total_vel_reg / max(num_batches, 1) if self.use_velocity_reg else 0.0
 
         metrics = {
             'loss': avg_loss,
             'style_swd': avg_style_swd,
-            'style_swd_weighted': avg_style_swd_weighted,
             'mse': avg_mse,
-            'mse_weighted': avg_mse_weighted,
-            'layout': avg_layout,
-            'mse_raw': avg_mse_raw,
             'smooth': avg_smooth,
             'num_batches': num_batches,
         }
@@ -656,22 +620,35 @@ class LGTTrainer:
                         logger.error(f"    ✗ Failed to save original: {exc}")
                     continue
 
-                for tgt_style_id in range(num_styles):
-                    tgt_style_name = self.config['data'].get('style_subdirs', [])[tgt_style_id]
-                    logger.info(f"  → {src_style_name} to {tgt_style_name}")
-                    try:
-                        latent_x0 = invert_latent(self.model, latent_src, src_style_id)
-                        latent_tgt = generate_latent(self.model, latent_x0, tgt_style_id)
-                        image_out = decode_latent(self.vae, latent_tgt, self.device)
+                # 🔥 优化：批处理推理。同一个原图一次性跑完所有目标风格
+                try:
+                    eval_steps = self.config.get('inference', {}).get('num_steps', 20)
+                    
+                    # 1. 核心优化：反演只做一次 (Inversion is style-specific but source-constant)
+                    latent_x0 = invert_latent(self.model, latent_src, src_style_id, num_steps=eval_steps)
+                    
+                    # 2. 向量化生成：构造 Batch
+                    tgt_style_ids = torch.arange(num_styles, device=self.device)
+                    # 将潜空间噪声扩展到 Batch Size = num_styles
+                    latent_x0_batch = latent_x0.repeat(num_styles, 1, 1, 1)
+                    
+                    # 一次性通过 UNet 完成所有风格的步进
+                    latent_tgt_batch = generate_latent(self.model, latent_x0_batch, tgt_style_ids, num_steps=eval_steps)
+                    
+                    # 3. 批量解码 (VAE Decoder 同样支持 Batch)
+                    images_out = decode_latent(self.vae, latent_tgt_batch, self.device)
+                    
+                    # 4. 循环保存结果
+                    from torchvision.utils import save_image
+                    for tgt_id in range(num_styles):
+                        tgt_style_name = self.config['data'].get('style_subdirs', [])[tgt_id]
                         output_filename = f"{src_style_name}_to_{tgt_style_name}.jpg"
                         output_path = epoch_inference_dir / output_filename
-                        from torchvision.utils import save_image
-
-                        save_image(image_out, output_path)
+                        save_image(images_out[tgt_id], output_path)
                         logger.info(f"    ✓ Saved: {output_filename}")
-                    except Exception as exc:  # pragma: no cover - IO heavy
-                        logger.error(f"    ✗ Failed: {exc}")
-                        continue
+                except Exception as exc:
+                    logger.error(f"    ✗ Batch inference failed for {src_style_name}: {exc}")
+                    continue
         finally:
             if temp_ckpt.exists():
                 temp_ckpt.unlink()
@@ -780,8 +757,7 @@ class LGTTrainer:
         current_lr = self.optimizer.param_groups[0]['lr']
         with open(self.log_file, 'a') as f:
             f.write(
-                f"{epoch},{metrics['loss']:.6f},{metrics['style_swd']:.6f},{metrics['style_swd_weighted']:.6f},"
-                f"{metrics['mse']:.6f},{metrics['mse_weighted']:.6f},{metrics['layout']:.6f},{metrics['mse_raw']:.6f},"
+                f"{epoch},{metrics['loss']:.6f},{metrics['style_swd']:.6f},{metrics['mse']:.6f},"
                 f"{current_lr:.2e},{metrics.get('epoch_time', 0.0):.2f}\n"
             )
 
@@ -791,11 +767,7 @@ class LGTTrainer:
             'timestamp': datetime.now().isoformat(),
             'loss': float(metrics['loss']),
             'style_swd': float(metrics['style_swd']),
-            'style_swd_weighted': float(metrics['style_swd_weighted']),
             'mse': float(metrics['mse']),
-            'mse_weighted': float(metrics['mse_weighted']),
-            'layout': float(metrics['layout']),
-            'mse_raw': float(metrics['mse_raw']),
             'learning_rate': current_lr,
             'epoch_time': metrics.get('epoch_time', 0.0),
             'num_batches': metrics.get('num_batches'),

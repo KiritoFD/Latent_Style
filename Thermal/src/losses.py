@@ -196,25 +196,22 @@ class VelocityRegularizationLoss(nn.Module):
         return self.weight * torch.mean(v_pred ** 2)
 
 
+
+
 class PatchSlicedWassersteinLoss(nn.Module):
     """
-    Patch-Sliced Wasserstein Distance for style distribution matching.
+    [Optimized] Patch-Sliced Wasserstein Distance
     
-    Update: Added 'normalize_patch' to decouple texture from brightness.
-    When normalize_patch='mean', we compute SWD on contrast (patches - patch_mean),
-    removing brightness information and preserving only texture details.
-    This solves the "brightness explosion" problem by letting MSE control luminance
-    while SWD controls high-frequency texture details.
+    Optimization:
+    1. Replaces memory-heavy F.unfold with F.conv2d (Math equivalent).
+       [Image of convolution operation vs sliding window extraction matrix multiplication]
+    2. Uses persistent buffers for projections to avoid random generation overhead.
+    3. Implements "Post-Projection Normalization" to handle brightness decoupling mathematically.
     
-    Pipeline:
-    1. Unfold: Extract K×K patches → [B, N_patches, C*K*K]
-    2. Normalize: Optionally subtract patch mean (brightness invariance)
-    3. Sample: Random sample max_samples patches for memory efficiency
-    4. Project: Radon transform with num_projections random projections
-    5. Sort: Quantile alignment
-    6. Metric: MSE between sorted distributions
-    
-    Critical: All ops in FP32 for stability.
+    Math Equivalence:
+    Projection of (Patch - Mean) * Vector 
+    = (Patch * Vector) - (Mean * Sum(Vector))
+    = Conv2d(x, Vector) - Avg(Patch) * Sum(Vector)
     """
     
     def __init__(
@@ -223,7 +220,7 @@ class PatchSlicedWassersteinLoss(nn.Module):
         num_projections=64,
         max_samples=4096,
         use_fp32=True,
-        normalize_patch='mean'  # 🔥 New: 'mean' to remove brightness, 'none' to keep
+        normalize_patch='mean'
     ):
         super().__init__()
         self.patch_size = patch_size
@@ -231,96 +228,116 @@ class PatchSlicedWassersteinLoss(nn.Module):
         self.max_samples = max_samples
         self.use_fp32 = use_fp32
         self.normalize_patch = normalize_patch
-    
-    def forward(self, x_pred, x_style):
-        """
-        Args:
-            x_pred: [B, 4, H, W] predicted latent
-            x_style: [B, 4, H, W] style reference latent
         
-        Returns:
-            loss: scalar SWD loss
-        """
-        original_dtype = x_pred.dtype
+        # Latent channels expected (Standard SD Latent is 4)
+        self.in_channels = 4 
         
-        # Convert to FP32 for numerical stability
-        # Use autocast context instead of manual .float() for portability
-        with torch.amp.autocast('cuda', enabled=False):
-            x_pred = x_pred.float()
-            x_style = x_style.float()
-            
-            B, C, H, W = x_pred.shape
-            
-            # Step 1: Unfold to extract K×K patches
-            # Output: [B, C*K*K, N_patches] where N_patches = H*W for k=3, pad=1
-            x_pred_patches = F.unfold(x_pred, kernel_size=self.patch_size, padding=self.patch_size//2)
-            x_style_patches = F.unfold(x_style, kernel_size=self.patch_size, padding=self.patch_size//2)
-            
-            # Reshape to [B, N_patches, C*K*K]
-            # Memory optimization: unfold output may have non-contiguous stride layout
-            # transpose changes only strides (no copy), but reshape after requires contiguous memory
-            x_pred_patches = x_pred_patches.transpose(1, 2).contiguous()  # [B, N_patches, C*K*K]
-            x_style_patches = x_style_patches.transpose(1, 2).contiguous()  # [B, N_patches, C*K*K]
-            
-            # ==========================================
-            # 🔥 Patch Brightness Normalization
-            # ==========================================
-            # Remove DC component (patch mean) to decouple texture from brightness.
-            # Physics: "I care about texture contrast, not absolute luminance."
-            # This lets MSE control brightness while SWD controls high-frequency details.
-            if self.normalize_patch == 'mean':
-                # Compute mean across feature dimension (all channels and spatial positions in patch)
-                patch_mean = x_pred_patches.mean(dim=2, keepdim=True)  # [B, N_patches, 1]
-                x_pred_patches = x_pred_patches - patch_mean
-                
-                patch_mean = x_style_patches.mean(dim=2, keepdim=True)  # [B, N_patches, 1]
-                x_style_patches = x_style_patches - patch_mean
-            
-            N_patches = x_pred_patches.shape[1]
-            feature_dim = x_pred_patches.shape[2]  # C*K*K (e.g., 36 for 4ch×3×3)
-            
-            # Step 2: Sample patches for memory efficiency
-            # Flatten batch and patches: [B*N_patches, C*K*K]
-            x_pred_flat = x_pred_patches.reshape(-1, feature_dim)
-            x_style_flat = x_style_patches.reshape(-1, feature_dim)
-            
-            total_samples = x_pred_flat.shape[0]
-            
-            if total_samples > self.max_samples:
-                # Random sampling without replacement
-                indices = torch.randperm(total_samples, device=x_pred.device)[:self.max_samples]
-                x_pred_sampled = x_pred_flat[indices]
-                x_style_sampled = x_style_flat[indices]
-            else:
-                x_pred_sampled = x_pred_flat
-                x_style_sampled = x_style_flat
-            
-            # Step 3: Random projections (Radon transform)
-            # Generate random projection matrix: [feature_dim, num_projections]
-            theta = torch.randn(
-                feature_dim,
-                self.num_projections,
-                device=x_pred.device,
-                dtype=x_pred.dtype
+        # 1. 预先注册随机投影向量 (作为卷积核)
+        # Shape: [Out(Projections), In, K, K]
+        # 这样避免了每次 forward 重新生成随机数，也方便模型保存/加载
+        self.register_buffer('projections', None)
+        self.register_buffer('proj_sums', None) # 用于快速计算归一化项
+        
+        # 2. 预先注册求和核 (用于计算 Patch Mean)
+        # 这是一个固定权重的卷积核，所有权重为 1.0
+        ones_kernel = torch.ones(1, self.in_channels, patch_size, patch_size)
+        self.register_buffer('ones_kernel', ones_kernel)
+
+    def _init_projections(self, device, dtype):
+        """Lazy initialization ensuring correct device/dtype"""
+        if self.projections is None:
+            # Generate random projections
+            # Shape: [num_projections, C, K, K]
+            projections = torch.randn(
+                self.num_projections, self.in_channels, self.patch_size, self.patch_size,
+                device=device, dtype=dtype
             )
-            theta = theta / theta.norm(dim=0, keepdim=True)  # Normalize columns
             
-            # Project: [N_sampled, feature_dim] @ [feature_dim, num_projections] → [N_sampled, num_projections]
-            # Contiguous memory layout ensures optimal gemm performance
-            proj_pred = x_pred_sampled @ theta
-            proj_style = x_style_sampled @ theta
+            # Normalize: standard SWD requires unit vectors
+            # Flatten to [N, C*K*K] for norm calculation
+            flat_proj = projections.view(self.num_projections, -1)
+            norms = flat_proj.norm(dim=1, keepdim=True) + 1e-8
+            projections = projections / norms.view(-1, 1, 1, 1)
             
-            # Step 4: Sort for quantile alignment
-            proj_pred_sorted, _ = torch.sort(proj_pred, dim=0)
-            proj_style_sorted, _ = torch.sort(proj_style, dim=0)
+            self.projections = projections
             
-            # Step 5: Compute SWD as MSE between sorted distributions
-            loss = F.mse_loss(proj_pred_sorted, proj_style_sorted)
+            # Pre-compute sum of each projection vector for mathematical normalization
+            # This is \sum \theta term
+            self.proj_sums = projections.sum(dim=(1, 2, 3)).view(1, -1, 1, 1)
+
+    def forward(self, x_pred, x_style):
+        # x_pred: [B, 4, H, W]
         
-        return loss
+        # FP32 Stability
+        with torch.amp.autocast('cuda', enabled=False):
+            if self.use_fp32:
+                x_pred = x_pred.float()
+                x_style = x_style.float()
+            
+            # Lazy Init
+            if self.projections is None:
+                self._init_projections(x_pred.device, x_pred.dtype)
+                
+            # ==========================================
+            # 🚀 Optimization 1: Conv2d Projection
+            # ==========================================
+            # Project ALL patches at once using Convolution. 
+            # This is mathematically equivalent to Unfold + MatMul but highly optimized by Tensor Cores.
+            # Output: [B, num_projections, H, W]
+            padding = self.patch_size // 2
+            
+            pred_proj = F.conv2d(x_pred, self.projections, padding=padding)
+            style_proj = F.conv2d(x_style, self.projections, padding=padding)
+            
+            # ==========================================
+            # 🔥 Optimization 2: Math-Equivalent Normalization
+            # ==========================================
+            if self.normalize_patch == 'mean':
+                # Calculate Patch Mean efficiently using the constant 'ones_kernel'
+                # patch_sum: [B, 1, H, W]
+                num_elements = self.in_channels * self.patch_size * self.patch_size
+                
+                pred_patch_sum = F.conv2d(x_pred, self.ones_kernel, padding=padding)
+                pred_patch_mean = pred_patch_sum / num_elements
+                
+                style_patch_sum = F.conv2d(x_style, self.ones_kernel, padding=padding)
+                style_patch_mean = style_patch_sum / num_elements
+                
+                # Apply normalization correction: 
+                # (Patch - Mean) * Theta = (Patch * Theta) - (Mean * Sum(Theta))
+                # Broadcasting: [B, 1, H, W] * [1, N_proj, 1, 1] -> [B, N_proj, H, W]
+                pred_proj = pred_proj - (pred_patch_mean * self.proj_sums)
+                style_proj = style_proj - (style_patch_mean * self.proj_sums)
 
-
-
+            # ==========================================
+            # 3. Sampling & Sorting
+            # ==========================================
+            # Flatten spatial dimensions: [B, N_proj, H, W] -> [B * H * W, N_proj]
+            # We treat all patches from the batch as a single distribution
+            B, N, H, W = pred_proj.shape
+            pred_flat = pred_proj.permute(0, 2, 3, 1).reshape(-1, N)
+            style_flat = style_proj.permute(0, 2, 3, 1).reshape(-1, N)
+            
+            # Random Sampling (only if total pixels > max_samples)
+            total_samples = pred_flat.shape[0]
+            if total_samples > self.max_samples:
+                # Generate random indices once
+                indices = torch.randperm(total_samples, device=x_pred.device)[:self.max_samples]
+                pred_sampled = pred_flat[indices]
+                style_sampled = style_flat[indices]
+            else:
+                pred_sampled = pred_flat
+                style_sampled = style_flat
+            
+            # Sort columns (Quantile alignment)
+            # [max_samples, num_projections]
+            pred_sorted, _ = torch.sort(pred_sampled, dim=0)
+            style_sorted, _ = torch.sort(style_sampled, dim=0)
+            
+            # MSE
+            loss = F.mse_loss(pred_sorted, style_sorted)
+            
+            return loss
 
 class MultiScaleSWDLoss(nn.Module):
     """
@@ -692,6 +709,60 @@ class VelocitySmoothnessLoss(nn.Module):
         return self.weight * loss
 
 
+class PyramidStructuralLoss(nn.Module):
+    """
+    Pyramid Structural Lock for Flow Matching.
+    
+    🔥 Key Innovation: Frequency-Domain Separation
+    - Low-freq (8x8): Locks macro layout/composition → fast convergence
+    - Mid-freq (16x16): Preserves object contours
+    - High-freq (32x32): Soft constraint allowing artistic deformation
+    
+    Physics: By downsampling with 'area' mode (anti-aliased box filter),
+    we surgically remove high-frequency texture from structure supervision.
+    This eliminates gradient interference between MSE (structure) and SWD (style).
+    
+    Trade-off:
+    - w_low too high → rigid, no artistic freedom
+    - w_high too high → texture bleeds into structure loss
+    Recommended: {'low': 5.0, 'mid': 1.0, 'high': 0.2}
+    """
+    
+    def __init__(self, weights: Optional[Dict[str, float]] = None):
+        super().__init__()
+        # Default weights optimized for latent space (32x32 base resolution)
+        self.w = weights or {'low': 5.0, 'mid': 1.0, 'high': 0.2}
+    
+    def forward(self, v_pred: torch.Tensor, v_target: torch.Tensor) -> torch.Tensor:
+        """
+        Compute multi-scale structural MSE loss.
+        
+        Args:
+            v_pred: [B, C, H, W] Predicted velocity field
+            v_target: [B, C, H, W] Target velocity field
+        
+        Returns:
+            loss: Weighted sum of pyramid MSE losses
+        """
+        # L2: 8x8 Macro Layout (Low-frequency anchor)
+        # At this scale, only composition/color palette survives
+        v_p_low = F.interpolate(v_pred, size=(8, 8), mode='area')
+        v_t_low = F.interpolate(v_target, size=(8, 8), mode='area')
+        loss_low = F.mse_loss(v_p_low, v_t_low)
+        
+        # L1: 16x16 Contours (Mid-frequency)
+        # Objects and major edges are preserved
+        v_p_mid = F.interpolate(v_pred, size=(16, 16), mode='area')
+        v_t_mid = F.interpolate(v_target, size=(16, 16), mode='area')
+        loss_mid = F.mse_loss(v_p_mid, v_t_mid)
+        
+        # L0: 32x32 Details (High-frequency, soft protection)
+        # Full resolution - texture can still be modified by SWD
+        loss_high = F.mse_loss(v_pred, v_target)
+        
+        return self.w['low'] * loss_low + self.w['mid'] * loss_mid + self.w['high'] * loss_high
+
+
 if __name__ == "__main__":
     # Test loss functions (clean version)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -728,5 +799,11 @@ if __name__ == "__main__":
     v_target = x_style - x_0
     struct_value = struct_loss(v_pred, v_target, x_0)
     print(f"  Structure Anchored Loss: {struct_value.item():.6f}")
+    
+    print("\nTesting Pyramid Structural Loss...")
+    pyramid_loss = PyramidStructuralLoss().to(device)
+    v_target = x_style - x_0
+    pyramid_value = pyramid_loss(v_pred, v_target)
+    print(f"  Pyramid Structural Loss: {pyramid_value.item():.6f}")
     
     print("\n✓ All loss functions tested successfully!")

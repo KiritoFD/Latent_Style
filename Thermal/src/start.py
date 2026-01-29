@@ -5,6 +5,16 @@ import os
 from pathlib import Path
 
 import torch
+import torch._inductor.config as inductor_config
+
+# 1. 开启 FX 图缓存 (持久化 torch.compile，要求 PyTorch >= 2.2)
+inductor_config.fx_graph_cache = True
+# 2. 设置缓存存放路径 (项目根目录下的 .compile_cache)
+os.environ["TORCHINDUCTOR_CACHE_DIR"] = str(Path(__file__).parent.parent / ".compile_cache")
+# 3. 针对 4070 特性微调：强制唯一内核名称并减少冗余搜索
+inductor_config.triton.unique_kernel_names = True
+inductor_config.fallback_random = True
+
 from torch.utils.data import DataLoader
 
 from dataset import LatentDataset
@@ -70,8 +80,9 @@ def main() -> None:
         logger.info(
             f"Epoch {epoch}/{trainer.num_epochs} | "
             f"Loss: {metrics['loss']:.4f} | "
-            f"SWD: {metrics['style_swd']:.4f} (w={metrics['style_swd_weighted']:.4f}) | "
-            f"MSE: {metrics['mse']:.4f} (w={metrics['mse_weighted']:.4f}) | "
+            f"SWD: {metrics['style_swd']:.4f} | "
+            f"MSE: {metrics['mse']:.4f} | "
+            f"Smooth: {metrics.get('smooth', 0.0):.4f} | "
             f"LR: {current_lr:.2e}"
         )
 

@@ -283,7 +283,8 @@ class LangevinSampler:
                 t = torch.full((B,), t_current, device=device)
             
             # Langevin step with optional ternary guidance
-            x = self.step(model, x, t, style_id, dt, step_idx, num_steps, source_style_id)
+            # 🚀 Fix for CUDAGraphs: Clone the output to break the buffer reuse chain
+            x = self.step(model, x, t, style_id, dt, step_idx, num_steps, source_style_id).clone()
             
             if return_trajectory:
                 trajectory.append(x.cpu())
@@ -366,6 +367,9 @@ class LGTInference:
             use_source_repulsion=use_source_repulsion,
             repulsion_strength=repulsion_strength
         )
+
+
+
     
     @torch.no_grad()
     def inversion(self, x1, source_style_id, num_steps=None):
@@ -404,7 +408,8 @@ class LGTInference:
             v = self.model(x, t, source_style_id, use_avg_style=False)
             
             # Reverse step: dx = -v * dt
-            x = x - v * dt
+            # 🚀 Fix for CUDAGraphs: Clone the updated latent
+            x = (x - v * dt).clone()
         
         return x
     
