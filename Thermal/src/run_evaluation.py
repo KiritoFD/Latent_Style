@@ -1,40 +1,39 @@
 """
-LGT Evaluation Pro: Double Persistence, Zero-Overhead Resume & Structured Analytics
-
-Optimizations:
-1. Result Persistence: Checks metrics.csv. Skips processed pairs instantly.
-2. Feature Persistence: Caches extracted VGG/CLIP features to 'ref_features.pt'.
-3. Structured Reporting: Generates a hierarchical JSON (Matrix, Transfer vs Identity).
-
-Target Hardware: RTX 4070 Laptop (8GB VRAM)
+LGT Evaluation Pro: Optimized with Persistent Feature Caching & Double Sampling
+Target Hardware: RTX 4070 Laptop (8GB VRAM) | CPU: 7940HX
 """
 
 import argparse
 import json
+import os
 from pathlib import Path
 import torch
+
+# 🔥 Enable Tensor Cores for float32 matrix multiplication (Fixes UserWarning)
+torch.set_float32_matmul_precision('high')
+
 import numpy as np
 import csv
-import os
 import random
-from tqdm import tqdm
 import time
+import hashlib
+from tqdm import tqdm
 from collections import defaultdict
+from PIL import Image
 
-# LPIPS
+# Metrics
 try:
     import lpips
-except Exception:
+except ImportError:
     lpips = None
 
 import torchvision.transforms as T
 import torchvision.models as models
 import torch.nn.functional as F
-from PIL import Image
-
-# Import your modules
-from inference import LGTInference, load_vae, encode_image, decode_latent
 from torchvision.transforms import ToPILImage
+
+# Project imports
+from inference import LGTInference, load_vae, encode_image, decode_latent
 
 # ==========================================
 # Optimized Feature Extractors
@@ -43,43 +42,33 @@ from torchvision.transforms import ToPILImage
 class VGGFeatureExtractor(torch.nn.Module):
     def __init__(self, device='cuda'):
         super().__init__()
+        # Load VGG only once, freeze immediately
         vgg = models.vgg16(pretrained=True).features.eval().to(device)
-        for p in vgg.parameters():
-            p.requires_grad = False
-        self.device = device
+        for p in vgg.parameters(): p.requires_grad = False
         self.vgg = vgg
         self.layer_ids = [8, 15] 
         self.register_buffer('mean', torch.tensor([0.485, 0.456, 0.406], device=device).view(1,3,1,1))
         self.register_buffer('std', torch.tensor([0.229, 0.224, 0.225], device=device).view(1,3,1,1))
 
     def get_features(self, x):
-        if x.device != self.mean.device:
-            x = x.to(self.mean.device)
-        x = (x - self.mean) / self.std
+        # Normalize and extract
+        x = (x.to(self.mean.device) - self.mean) / self.std
         feats = []
         h = x
         for i, layer in enumerate(self.vgg):
             h = layer(h)
             if i in self.layer_ids:
-                feats.append(h.detach().cpu())
+                feats.append(h.detach().cpu()) # Store on CPU to save VRAM
         return feats
 
 def compute_distance_cpu_gpu_hybrid(feats_gen_gpu, feats_ref_cpu, device):
+    """Compute MSE between GPU features and CPU cached features efficiently."""
     dists = []
     for f_gen, f_ref in zip(feats_gen_gpu, feats_ref_cpu):
         f_ref_gpu = f_ref.to(device)
         d = F.mse_loss(f_gen, f_ref_gpu, reduction='mean')
         dists.append(d.item())
     return np.mean(dists)
-
-def load_image_to_tensor(path, size=256, device='cuda'):
-    try:
-        img = Image.open(path).convert('RGB')
-        img = img.resize((size, size))
-        t = T.ToTensor()(img).unsqueeze(0).to(device)
-        return t
-    except Exception:
-        return None
 
 def to_lpips_input(img_tensor):
     return img_tensor * 2.0 - 1.0
@@ -91,303 +80,327 @@ def to_lpips_input(img_tensor):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--checkpoint', type=str, required=True)
-    parser.add_argument('--config', type=str, required=False, default=None)
-    parser.add_argument('--test_dir', type=str, default=None)
     parser.add_argument('--output', type=str, required=True)
-    parser.add_argument('--device', type=str, default='cuda')
+    parser.add_argument('--test_dir', type=str, default=None)
+    parser.add_argument('--cache_dir', type=str, default="./eval_cache", help="Directory to store shared feature caches")
     parser.add_argument('--num_steps', type=int, default=15)
-    parser.add_argument('--force_regen', action='store_true', help='Force regeneration')
-    parser.add_argument('--max_eval_samples', type=int, default=50)
+    parser.add_argument('--max_src_samples', type=int, default=30, help="Max source images to generate (user specified)")
+    parser.add_argument('--max_ref_compare', type=int, default=50, help="Randomly sample X refs for metric calculation (speedup)")
+    parser.add_argument('--batch_size', type=int, default=24, help="Batch size for inference to fit in 8GB VRAM")
+    parser.add_argument('--force_regen', action='store_true')
     args = parser.parse_args()
 
-    device = args.device if torch.cuda.is_available() else 'cpu'
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
-    # Setup Output
+    # 1. Setup Paths & Config
     out_dir = Path(args.output)
     out_dir.mkdir(parents=True, exist_ok=True)
-    csv_path = out_dir / 'metrics.csv'
-    cache_path = out_dir / 'ref_features_cache.pt'
+    cache_dir = Path(args.cache_dir)
+    cache_dir.mkdir(parents=True, exist_ok=True)
     
-    processed_pairs = set()
-    if csv_path.exists() and not args.force_regen:
-        print("Found metrics.csv, scanning processed pairs...")
-        with open(csv_path, 'r') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                key = (Path(row['src_image']).name, row['tgt_style'])
-                processed_pairs.add(key)
-        print(f"✓ Resuming: {len(processed_pairs)} pairs already done.")
-
-    # Config & Data
     checkpoint_path = Path(args.checkpoint)
-    if not checkpoint_path.exists(): raise FileNotFoundError(checkpoint_path)
+    if not checkpoint_path.exists(): raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
+    
+    ckpt = torch.load(checkpoint_path, map_location='cpu')
+    cfg = ckpt.get('config', {})
+    
+    # Resolve Test Data Path
+    test_dir_raw = args.test_dir if args.test_dir else cfg.get('training', {}).get('test_image_dir', '')
+    test_dir = Path(test_dir_raw)
+    if not test_dir.exists():
+        raise ValueError(f"Test directory not found: {test_dir}")
 
-    if args.config:
-        with open(args.config, 'r') as f: cfg = json.load(f)
-    else:
-        ckpt = torch.load(checkpoint_path, map_location='cpu')
-        cfg = ckpt.get('config', None)
-
-    test_dir = Path(args.test_dir) if args.test_dir else Path(cfg['training'].get('test_image_dir', ''))
-    style_subdirs = cfg['data'].get('style_subdirs', [])
+    style_subdirs = cfg.get('data', {}).get('style_subdirs', [])
+    if not style_subdirs:
+        # Fallback: auto-detect subdirs
+        style_subdirs = [d.name for d in test_dir.iterdir() if d.is_dir()]
     
     test_images = {}
     for style_id, style_name in enumerate(style_subdirs):
-        style_dir = test_dir / style_name
-        if not style_dir.exists(): continue
-        images = sorted([p for p in style_dir.iterdir() if p.suffix.lower() in ['.jpg', '.png', '.jpeg']])
+        s_dir = test_dir / style_name
+        if not s_dir.exists(): continue
+        # Only take valid images
+        images = sorted([p for p in s_dir.iterdir() if p.suffix.lower() in ['.jpg', '.png', '.jpeg', '.webp']])
         test_images[style_id] = (style_name, images)
 
-    # Load Models
-    print("Loading Models...")
+    # 2. Load Models
+    print(f"⚡ Loading Models (Device: {device})...")
     lgt = LGTInference(str(checkpoint_path), device=device, num_steps=args.num_steps)
     vae = load_vae(device)
     vgg_extractor = VGGFeatureExtractor(device=device)
     loss_fn = lpips.LPIPS(net='vgg', verbose=False).to(device) if lpips else None
+    to_pil = ToPILImage()
 
+    has_clip = False
     try:
         from transformers import CLIPModel, CLIPProcessor
         clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(device)
         clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
         clip_model.eval()
         has_clip = True
-        to_pil = ToPILImage()
+        print("✓ CLIP Loaded")
     except:
-        has_clip = False
-        print("Warning: CLIP not found.")
+        print("⚠️ CLIP not found, skipping text/style metrics")
 
-    # Feature Cache
-    ref_features = {} 
-    cache_loaded = False
-    if cache_path.exists() and not args.force_regen:
-        try:
-            ref_features = torch.load(cache_path, map_location='cpu')
-            cache_loaded = True
-            print(f"✓ Feature cache loaded.")
-        except: pass
+    # ==========================================
+    # 3. Persistent Feature Caching
+    # ==========================================
+    # Generate unique hash based on test_dir path to identify the dataset
+    dataset_hash = hashlib.md5(str(test_dir.resolve()).encode()).hexdigest()[:8]
+    cache_file = cache_dir / f"ref_feats_{dataset_hash}.pt"
+
+    ref_features = {}
     
-    if not cache_loaded:
-        print("\nPre-computing Reference Features...")
+    if cache_file.exists() and not args.force_regen:
+        print(f"📦 Found feature cache: {cache_file}")
+        try:
+            ref_features = torch.load(cache_file, map_location='cpu')
+            print("✓ Cache loaded successfully")
+        except Exception as e:
+            print(f"⚠️ Cache load failed ({e}), re-computing...")
+    
+    if not ref_features:
+        print("\n🏗️  Computing Reference Features (One-time setup)...")
         for style_id, (style_name, img_list) in test_images.items():
-            eval_list = img_list
-            if args.max_eval_samples > 0 and len(eval_list) > args.max_eval_samples:
-                 random.seed(42)
-                 eval_list = random.sample(img_list, args.max_eval_samples)
-            
+            # Cache ALL images (or a large enough subset) to be safe
+            # We sample from this pool later
             ref_features[style_id] = []
-            for img_path in tqdm(eval_list, desc=f"Caching {style_name}"):
-                img_t = load_image_to_tensor(img_path, size=256, device=device)
-                if img_t is None: continue
-                with torch.no_grad():
-                    v_feats = vgg_extractor.get_features(img_t)
-                    c_emb = None
-                    if has_clip:
-                        pil_img = to_pil(img_t.squeeze(0).cpu())
-                        inputs = clip_processor(images=pil_img, return_tensors='pt').to(device)
-                        c_emb = clip_model.get_image_features(**inputs)
-                        c_emb = (c_emb / c_emb.norm(p=2, dim=-1, keepdim=True)).cpu()
-                ref_features[style_id].append({'path': str(img_path), 'vgg': v_feats, 'clip': c_emb})
-        torch.save(ref_features, cache_path)
-
-    # Eval Loop
-    file_mode = 'a' if (csv_path.exists() and not args.force_regen) else 'w'
-    csv_file = open(csv_path, file_mode, newline='')
-    keys = ['src_style','tgt_style','src_image','gen_image','content_vgg','style_vgg','clip_content','clip_style','content_lpips','style_lpips']
-    writer = csv.DictWriter(csv_file, fieldnames=keys)
-    if file_mode == 'w': writer.writeheader()
-
-    print("\nStarting Transfer & Evaluation...")
-    for src_id, (src_name, src_list) in test_images.items():
-        for src_path in src_list:
-            needed_targets = []
-            for tgt_id, (tgt_name, _) in test_images.items():
-                # 注意：这里允许 Self-Transfer (Monet->Monet) 以便作为基准对比
-                if (src_path.name, tgt_name) not in processed_pairs:
-                    needed_targets.append(tgt_id)
             
-            if not needed_targets and not args.force_regen: continue 
+            pbar = tqdm(img_list, desc=f"Featurizing {style_name}")
+            for img_path in pbar:
+                try:
+                    img_pil = Image.open(img_path).convert('RGB').resize((256,256))
+                    img_t = T.ToTensor()(img_pil).unsqueeze(0).to(device)
+                    
+                    with torch.no_grad():
+                        # VGG
+                        v_feats = vgg_extractor.get_features(img_t)
+                        # CLIP
+                        c_emb = None
+                        if has_clip:
+                            inputs = clip_processor(images=to_pil(img_t.squeeze(0).cpu()), return_tensors='pt').to(device)
+                            c_emb = clip_model.get_image_features(**inputs)
+                            c_emb = (c_emb / c_emb.norm(p=2, dim=-1, keepdim=True)).cpu()
+                            
+                    ref_features[style_id].append({
+                        'path': str(img_path),
+                        'vgg': v_feats, 
+                        'clip': c_emb
+                    })
+                except Exception as e:
+                    print(f"Skipping {img_path}: {e}")
+        
+        torch.save(ref_features, cache_file)
+        print(f"✓ Cache saved to {cache_file}")
 
-            img_src = load_image_to_tensor(src_path, size=256, device=device)
-            if img_src is None: continue
+    # ==========================================
+    # 4. Evaluation Loop
+    # ==========================================
+    csv_path = out_dir / 'metrics.csv'
+    # Resume check
+    processed_keys = set()
+    if csv_path.exists() and not args.force_regen:
+        with open(csv_path, 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                processed_keys.add((row['src_image'], row['tgt_style']))
+    
+    csv_mode = 'a' if csv_path.exists() else 'w'
+    csv_file = open(csv_path, csv_mode, newline='')
+    columns = ['src_style', 'tgt_style', 'src_image', 'gen_image', 'content_lpips', 'style_lpips', 'clip_style', 'clip_content']
+    writer = csv.DictWriter(csv_file, fieldnames=columns)
+    if csv_mode == 'w': writer.writeheader()
 
-            with torch.no_grad():
-                src_vgg = vgg_extractor.get_features(img_src)
-                src_clip = None
-                if has_clip:
-                    pil_src = to_pil(img_src.squeeze(0).cpu())
+    print(f"\n🚀 Starting Evaluation")
+    print(f"   Mode: {args.max_src_samples} sources x {args.max_ref_compare} refs/metric")
+
+    # 1. 收集所有待处理的源图信息
+    all_src_info = []
+    for s_id, (s_name, s_list) in test_images.items():
+        rng = random.Random(42)
+        sampled = s_list[:]
+        rng.shuffle(sampled)
+        for p in sampled[:args.max_src_samples]:
+            all_src_info.append({'path': p, 'style_id': s_id, 'style_name': s_name})
+
+    # 2. 分批次处理 (Chunked Processing for 8GB VRAM)
+    num_src_total = len(all_src_info)
+    num_styles = len(style_subdirs)
+    batch_size = args.batch_size
+
+    for b_start in range(0, num_src_total, batch_size):
+        b_end = min(b_start + batch_size, num_src_total)
+        batch_info = all_src_info[b_start:b_end]
+        print(f"\n📦 Processing Source Batch {b_start//batch_size + 1}/{(num_src_total-1)//batch_size + 1} (Size: {len(batch_info)})")
+
+        # Load batch images
+        src_tensors = []
+        for item in batch_info:
+            img = Image.open(item['path']).convert('RGB').resize((256, 256))
+            src_tensors.append(T.ToTensor()(img))
+        
+        src_batch = torch.stack(src_tensors).to(device)
+        src_style_ids = torch.tensor([item['style_id'] for item in batch_info], device=device)
+        
+        with torch.no_grad():
+            # Batch Inversion
+            latents_src = encode_image(vae, src_batch, device).to(torch.float32)
+            latents_x0 = lgt.inversion(latents_src, src_style_ids)
+            
+            # Batch CLIP for sources
+            src_clips = []
+            if has_clip:
+                for i in range(len(batch_info)):
+                    pil_src = to_pil(src_batch[i].cpu())
                     inputs = clip_processor(images=pil_src, return_tensors='pt').to(device)
-                    src_clip = clip_model.get_image_features(**inputs)
-                    src_clip = (src_clip / src_clip.norm(p=2, dim=-1, keepdim=True))
+                    c_emb = clip_model.get_image_features(**inputs)
+                    src_clips.append(c_emb / c_emb.norm(p=2, dim=-1, keepdim=True))
+                src_clips = torch.cat(src_clips)
 
-            latent_src = encode_image(vae, img_src, device).to(torch.float32)
-            latent_x0 = lgt.inversion(latent_src, src_id, num_steps=args.num_steps)
+            # Generate for each target style
+            for tgt_id in range(num_styles):
+                tgt_name = style_subdirs[tgt_id]
+                print(f"  → Generating target style: {tgt_name}")
+                
+                # Batch Generation
+                tgt_ids = torch.full((len(batch_info),), tgt_id, device=device, dtype=torch.long)
+                latents_gen = lgt.generation(latents_x0, tgt_ids)
+                imgs_gen = decode_latent(vae, latents_gen, device)
+                
+                # Batch CLIP for generated images
+                gen_clips = None
+                if has_clip:
+                    pil_gens = [to_pil(imgs_gen[i].cpu()) for i in range(len(batch_info))]
+                    inputs = clip_processor(images=pil_gens, return_tensors='pt').to(device)
+                    gen_clips = clip_model.get_image_features(**inputs)
+                    gen_clips = gen_clips / gen_clips.norm(p=2, dim=-1, keepdim=True)
 
-            for tgt_id in needed_targets:
-                tgt_name = test_images[tgt_id][0]
-                out_img_name = f"{src_name}_{src_path.stem}_to_{tgt_name}.jpg"
-                out_img_path = out_dir / out_img_name
-                
-                img_gen = None
-                if out_img_path.exists() and not args.force_regen:
-                    img_gen = load_image_to_tensor(out_img_path, size=256, device=device)
-                
-                if img_gen is None:
-                    latent_tgt = lgt.generation(latent_x0, tgt_id, num_steps=args.num_steps)
-                    img_gen = decode_latent(vae, latent_tgt, device)
+                # 3. 指标计算与保存
+                for i in range(len(batch_info)):
+                    src_item = batch_info[i]
+                    out_name = f"{src_item['style_name']}_{src_item['path'].stem}_to_{tgt_name}.jpg"
+                    out_path = out_dir / out_name
+                    
+                    # 保存图像
                     from torchvision.utils import save_image
-                    save_image(img_gen, out_img_path)
+                    save_image(imgs_gen[i], out_path)
 
-                with torch.no_grad():
-                    gen_vgg_raw = vgg_extractor.vgg((img_gen - vgg_extractor.mean)/vgg_extractor.std)
-                    gen_vgg = []
-                    h = (img_gen - vgg_extractor.mean)/vgg_extractor.std
-                    for i, layer in enumerate(vgg_extractor.vgg):
-                        h = layer(h)
-                        if i in vgg_extractor.layer_ids: gen_vgg.append(h)
+                    # 内容指标 (LPIPS & CLIP)
+                    c_lpips = 0.0
+                    if loss_fn:
+                        c_lpips = float(loss_fn(to_lpips_input(imgs_gen[i:i+1]), to_lpips_input(src_batch[i:i+1])).item())
                     
-                    gen_clip = None
+                    c_clip_score = 0.0
                     if has_clip:
-                        pil_gen = to_pil(img_gen.squeeze(0).cpu())
-                        inputs = clip_processor(images=pil_gen, return_tensors='pt').to(device)
-                        gen_clip = clip_model.get_image_features(**inputs)
-                        gen_clip = gen_clip / gen_clip.norm(p=2, dim=-1, keepdim=True)
+                        c_clip_score = float(F.cosine_similarity(gen_clips[i:i+1], src_clips[i:i+1]).item())
 
-                    content_vgg = compute_distance_cpu_gpu_hybrid(gen_vgg, src_vgg, device)
-                    clip_content = float(F.cosine_similarity(gen_clip, src_clip).item()) if has_clip else 0.0
-                    content_lpips = 0.0
-                    if loss_fn: content_lpips = float(loss_fn(to_lpips_input(img_gen), to_lpips_input(img_src)).item())
-
-                    style_vgg_dists, clip_style_sims, style_lpips_dists = [], [], []
-                    target_refs = ref_features[tgt_id]
+                    # 风格指标 (从缓存中采样参考图)
+                    tgt_refs = ref_features[tgt_id]
+                    current_refs = random.sample(tgt_refs, min(len(tgt_refs), args.max_ref_compare))
                     
-                    for ref in target_refs:
-                        style_vgg_dists.append(compute_distance_cpu_gpu_hybrid(gen_vgg, ref['vgg'], device))
-                        if has_clip and ref['clip'] is not None:
-                            ref_clip_gpu = ref['clip'].to(device)
-                            clip_style_sims.append(float(F.cosine_similarity(gen_clip, ref_clip_gpu).item()))
+                    s_lpips_vals = []
+                    s_clip_vals = []
+                    
+                    for ref in current_refs:
                         if loss_fn:
-                            ref_img = load_image_to_tensor(ref['path'], size=256, device=device)
-                            if ref_img is not None:
-                                style_lpips_dists.append(loss_fn(to_lpips_input(img_gen), to_lpips_input(ref_img)).item())
+                            ref_img = T.ToTensor()(Image.open(ref['path']).convert('RGB').resize((256,256))).unsqueeze(0).to(device)
+                            val = loss_fn(to_lpips_input(imgs_gen[i:i+1]), to_lpips_input(ref_img)).item()
+                            s_lpips_vals.append(val)
+                        
+                        if has_clip and ref['clip'] is not None:
+                            val = F.cosine_similarity(gen_clips[i:i+1], ref['clip'].to(device)).item()
+                            s_clip_vals.append(val)
 
-                    style_vgg = np.mean(style_vgg_dists) if style_vgg_dists else 0.0
-                    clip_style = np.mean(clip_style_sims) if clip_style_sims else 0.0
-                    style_lpips = np.mean(style_lpips_dists) if style_lpips_dists else 0.0
+                    s_lpips = np.mean(s_lpips_vals) if s_lpips_vals else 0.0
+                    s_clip = np.mean(s_clip_vals) if s_clip_vals else 0.0
 
-                row = {
-                    'src_style': src_name, 'tgt_style': tgt_name, 'src_image': str(src_path), 'gen_image': str(out_img_path),
-                    'content_vgg': content_vgg, 'style_vgg': style_vgg, 'clip_content': clip_content, 'clip_style': clip_style,
-                    'content_lpips': content_lpips, 'style_lpips': style_lpips
-                }
-                writer.writerow(row)
-                csv_file.flush()
+                    # 写入 CSV
+                    writer.writerow({
+                        'src_style': src_item['style_name'],
+                        'tgt_style': tgt_name,
+                        'src_image': src_item['path'].name,
+                        'gen_image': out_name,
+                        'content_lpips': c_lpips,
+                        'style_lpips': s_lpips,
+                        'clip_style': s_clip,
+                        'clip_content': c_clip_score
+                    })
+            
+            csv_file.flush()
+            torch.cuda.empty_cache() # 每个 Batch 处理完后清理显存
 
     csv_file.close()
-
-    # ==========================================
-    # 6. Structured Summary Generation (Revised)
-    # ==========================================
-    print("\nGenerating Structured Summary...")
     
+    # ==========================================
+    # 5. Generate Summary JSON
+    # ==========================================
+    generate_summary_json(csv_path, out_dir, checkpoint_path)
+
+def generate_summary_json(csv_path, out_dir, ckpt_path):
+    print("\n📊 Generating Summary...")
     rows = []
     if csv_path.exists():
         with open(csv_path, 'r') as f:
             reader = csv.DictReader(f)
             for r in reader: rows.append(r)
+            
+    if not rows: return
 
-    if not rows:
-        print("No data.")
-        return
+    def to_f(x): return float(x) if x else 0.0
 
-    def to_float(x):
-        try: return float(x)
-        except: return 0.0
-
-    # 1. 矩阵数据 (The Matrix)
-    # 结构: summary['matrix'][src_style][tgt_style] = { metrics... }
+    # Matrix Aggregation
     matrix = defaultdict(lambda: defaultdict(list))
     for r in rows:
         matrix[r['src_style']][r['tgt_style']].append(r)
 
     matrix_json = {}
-    
-    # 2. 核心指标聚合
-    transfer_metrics = defaultdict(list) # Off-diagonal (True Transfer)
-    identity_metrics = defaultdict(list) # Diagonal (Reconstruction)
-    target_performance = defaultdict(list) # How well each style is generated
+    transfer_pool = []
+    identity_pool = []
+    photo_transfer_pool = []
 
     for src, targets in matrix.items():
         matrix_json[src] = {}
         for tgt, items in targets.items():
-            # 计算该组合的平均值
-            pair_summary = {
+            stats = {
                 'count': len(items),
-                'clip_style': np.mean([to_float(x['clip_style']) for x in items]),
-                'clip_content': np.mean([to_float(x['clip_content']) for x in items]),
-                'style_lpips': np.mean([to_float(x['style_lpips']) for x in items]),
-                'content_lpips': np.mean([to_float(x['content_lpips']) for x in items]),
+                'clip_style': np.mean([to_f(x['clip_style']) for x in items]),
+                'style_lpips': np.mean([to_f(x['style_lpips']) for x in items]),
+                'content_lpips': np.mean([to_f(x['content_lpips']) for x in items]),
+                'clip_content': np.mean([to_f(x.get('clip_content', 0)) for x in items])
             }
-            matrix_json[src][tgt] = pair_summary
+            matrix_json[src][tgt] = stats
             
-            # 存入聚合池
             if src == tgt:
-                identity_metrics['all'].append(pair_summary)
+                identity_pool.append(stats)
             else:
-                transfer_metrics['all'].append(pair_summary)
-                # 专门记录: "Photo -> Any Painting" 这种有意义的指标
+                transfer_pool.append(stats)
                 if src == 'photo':
-                    transfer_metrics['photo_to_art'].append(pair_summary)
-            
-            target_performance[tgt].append(pair_summary)
+                    photo_transfer_pool.append(stats)
 
-    def avg_pool(pool, key):
-        vals = [x[key] for x in pool]
-        return float(np.mean(vals)) if vals else 0.0
+    def pool_avg(pool, key):
+        if not pool: return 0.0
+        return float(np.mean([x[key] for x in pool]))
 
     summary = {
-        'checkpoint': str(checkpoint_path),
+        'checkpoint': str(ckpt_path),
         'timestamp': time.strftime("%Y-%m-%d %H:%M:%S"),
-        
-        # [最有意义部分] 全局矩阵
         'matrix_breakdown': matrix_json,
-
-        # [高级统计] 
         'analysis': {
-            # 真正的风格迁移能力 (排除对角线)
             'style_transfer_ability': {
-                'clip_style': avg_pool(transfer_metrics['all'], 'clip_style'),
-                'clip_content': avg_pool(transfer_metrics['all'], 'clip_content'),
-                'note': "Metrics for Off-Diagonal pairs (Source != Target)"
+                'clip_style': pool_avg(transfer_pool, 'clip_style'),
+                'content_lpips': pool_avg(transfer_pool, 'content_lpips')
             },
-            # 图像重建能力 (对角线)
-            'identity_reconstruction': {
-                'clip_content': avg_pool(identity_metrics['all'], 'clip_content'),
-                'note': "Metrics for Diagonal pairs (Source == Target)"
-            },
-            # [特别关注] 照片转艺术能力
             'photo_to_art_performance': {
-                'clip_style': avg_pool(transfer_metrics['photo_to_art'], 'clip_style'),
-                'valid': len(transfer_metrics['photo_to_art']) > 0
+                'clip_style': pool_avg(photo_transfer_pool, 'clip_style'),
+                'valid': len(photo_transfer_pool) > 0
             }
-        },
-
-        # [目标风格难度排行] 哪个风格最难学?
-        'target_style_ranking': {}
+        }
     }
-
-    # 生成难度排行
-    for tgt, pool in target_performance.items():
-        summary['target_style_ranking'][tgt] = avg_pool(pool, 'clip_style')
-
-    summary_path = out_dir / 'summary.json'
-    with open(summary_path, 'w') as f:
+    
+    sum_path = out_dir / 'summary.json'
+    with open(sum_path, 'w') as f:
         json.dump(summary, f, indent=2)
-        
-    print(f"✓ Structured summary saved to {summary_path}")
-    print("\n[Quick Diagnosis]")
-    print(f"Transfer Capability (CLIP Style): {summary['analysis']['style_transfer_ability']['clip_style']:.4f}")
-    if summary['analysis']['photo_to_art_performance']['valid']:
-        print(f"Photo->Art Capability (CLIP Style): {summary['analysis']['photo_to_art_performance']['clip_style']:.4f}")
+    print(f"✓ Summary saved: {sum_path}")
 
 if __name__ == '__main__':
     main()

@@ -1,0 +1,136 @@
+{
+  "checkpoint": "../pyramid.1-1-29/epoch_0030.pt",
+  "timestamp": "2026-01-29 23:57:22",
+  "matrix_breakdown": {
+    "monet": {
+      "monet": {
+        "count": 114,
+        "clip_style": 0.727254016695664,
+        "style_lpips": 0.6978384663835604,
+        "content_lpips": 0.44685072281904387,
+        "clip_content": 0.8451274999401026
+      },
+      "photo": {
+        "count": 97,
+        "clip_style": 0.5665079425884685,
+        "style_lpips": 0.7668000602763132,
+        "content_lpips": 0.5466055956083474,
+        "clip_content": 0.7593681277688017
+      },
+      "vangogh": {
+        "count": 71,
+        "clip_style": 0.688441148682939,
+        "style_lpips": 0.7615554040810313,
+        "content_lpips": 0.4516035792693286,
+        "clip_content": 0.853019675738375
+      },
+      "cezanne": {
+        "count": 71,
+        "clip_style": 0.6788270126961766,
+        "style_lpips": 0.7261233004773726,
+        "content_lpips": 0.4449433600398856,
+        "clip_content": 0.8545767698489445
+      }
+    },
+    "photo": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.5598707601428031,
+        "style_lpips": 0.7274091127713521,
+        "content_lpips": 0.4546748032172521,
+        "clip_content": 0.7501028060913086
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5988630500038464,
+        "style_lpips": 0.7454666530489921,
+        "content_lpips": 0.4292452305555344,
+        "clip_content": 0.745921007792155
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.5638431760271392,
+        "style_lpips": 0.7799405107895533,
+        "content_lpips": 0.43447138567765553,
+        "clip_content": 0.7654205203056336
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.5383874468008677,
+        "style_lpips": 0.7344913522402445,
+        "content_lpips": 0.44905128876368205,
+        "clip_content": 0.7596184591452281
+      }
+    },
+    "vangogh": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.6768609299659728,
+        "style_lpips": 0.7249652141332628,
+        "content_lpips": 0.44817502101262413,
+        "clip_content": 0.8271595537662506
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5657882874409358,
+        "style_lpips": 0.8100515021483105,
+        "content_lpips": 0.5908665716648102,
+        "clip_content": 0.7120035052299499
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.6979485039710998,
+        "style_lpips": 0.7256775251229606,
+        "content_lpips": 0.42676132917404175,
+        "clip_content": 0.8504792849222819
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.6892960407336554,
+        "style_lpips": 0.7209568632046381,
+        "content_lpips": 0.4320198009411494,
+        "clip_content": 0.8494131227334341
+      }
+    },
+    "cezanne": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.6739285846948623,
+        "style_lpips": 0.7172901847362517,
+        "content_lpips": 0.43639786044756573,
+        "clip_content": 0.8303585052490234
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5510732619365056,
+        "style_lpips": 0.7813074897130331,
+        "content_lpips": 0.5758374770482381,
+        "clip_content": 0.697941146294276
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.6683271405299503,
+        "style_lpips": 0.7515335936943691,
+        "content_lpips": 0.43334551751613615,
+        "clip_content": 0.839510973294576
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.6935776316324869,
+        "style_lpips": 0.7055947181979815,
+        "content_lpips": 0.4237306108077367,
+        "clip_content": 0.8453218936920166
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "clip_style": 0.6184293110200231,
+      "content_lpips": 0.4748326884338896
+    },
+    "photo_to_art_performance": {
+      "clip_style": 0.5540337943236033,
+      "valid": true
+    }
+  }
+}

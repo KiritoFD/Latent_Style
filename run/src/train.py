@@ -160,7 +160,7 @@ class InMemoryLatentDataset(Dataset):
         
         # 4. Set virtual length (make epoch long enough to cover the largest class)
         max_count = max([len(idxs) for idxs in self.style_indices.values()])
-        self.virtual_length = max_count * num_styles * num_styles
+        self.virtual_length = max_count * num_styles * num_styles * 2
         
     def __len__(self):
         return self.virtual_length

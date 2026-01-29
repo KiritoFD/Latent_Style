@@ -1,0 +1,83 @@
+; ModuleID = 'LLVMDialectModule'
+source_filename = "LLVMDialectModule"
+target datalayout = "e-p3:32:32-p4:32:32-p5:32:32-p6:32:32-p7:32:32-i64:64-i128:128-v16:16-v32:32-n16:32:64"
+
+; Function Attrs: nounwind
+define ptx_kernel void @triton_poi_fused_cat_transpose_view_66(ptr addrspace(1) %0, ptr addrspace(1) %1, ptr addrspace(1) %2, i32 %3, ptr addrspace(1) readnone captures(none) %4, ptr addrspace(1) readnone captures(none) %5) local_unnamed_addr #0 !dbg !4 {
+  %7 = tail call i32 @llvm.nvvm.read.ptx.sreg.ctaid.x(), !dbg !7
+  %8 = shl i32 %7, 9, !dbg !8
+  %9 = tail call i32 @llvm.nvvm.read.ptx.sreg.tid.x(), !dbg !9
+  %10 = shl nuw nsw i32 %9, 1, !dbg !9
+  %11 = and i32 %10, 510, !dbg !9
+  %12 = or disjoint i32 %11, %8, !dbg !10
+  %13 = sdiv i32 %12, 1024, !dbg !11
+  %14 = mul i32 %13, 1024, !dbg !12
+  %.decomposed = sub i32 %12, %14, !dbg !12
+  %15 = icmp slt i32 %.decomposed, 512, !dbg !13
+  %16 = shl nsw i32 %13, 9, !dbg !14
+  %17 = add nsw i32 %16, %.decomposed, !dbg !15
+  %18 = sext i32 %17 to i64, !dbg !16
+  %19 = getelementptr bfloat, ptr addrspace(1) %0, i64 %18, !dbg !16
+  %20 = tail call i64 asm sideeffect "mov.u64 $0, 0x0;\0A\09createpolicy.fractional.L2::evict_last.b64 $0, 1.0;", "=l"() #2, !dbg !17
+  %21 = tail call i32 asm sideeffect "mov.u32 $0, $1;\0A\09@$4 ld.global.L1::evict_last.L2::cache_hint.b32 { $0 }, [ $2 + 0 ], $3;", "=r,r,l,l,b"(i32 0, ptr addrspace(1) %19, i64 %20, i1 %15) #2, !dbg !17
+  %22 = bitcast i32 %21 to <2 x bfloat>, !dbg !17
+  %23 = extractelement <2 x bfloat> %22, i64 0, !dbg !17
+  %24 = extractelement <2 x bfloat> %22, i64 1, !dbg !17
+  %25 = icmp sgt i32 %.decomposed, 511, !dbg !18
+  %26 = sext i32 %17 to i64, !dbg !19
+  %27 = getelementptr bfloat, ptr addrspace(1) %1, i64 %26, !dbg !19
+  %28 = getelementptr i8, ptr addrspace(1) %27, i64 -1024, !dbg !19
+  %29 = tail call i64 asm sideeffect "mov.u64 $0, 0x0;\0A\09createpolicy.fractional.L2::evict_last.b64 $0, 1.0;", "=l"() #2, !dbg !20
+  %30 = tail call i32 asm sideeffect "mov.u32 $0, $1;\0A\09@$4 ld.global.L1::evict_last.L2::cache_hint.b32 { $0 }, [ $2 + 0 ], $3;", "=r,r,l,l,b"(i32 0, ptr addrspace(1) %28, i64 %29, i1 %25) #2, !dbg !20
+  %31 = bitcast i32 %30 to <2 x bfloat>, !dbg !20
+  %32 = extractelement <2 x bfloat> %31, i64 0, !dbg !20
+  %33 = extractelement <2 x bfloat> %31, i64 1, !dbg !20
+  %.v = select i1 %15, bfloat %23, bfloat %32, !dbg !21
+  %.v1 = select i1 %15, bfloat %24, bfloat %33, !dbg !21
+  %34 = sext i32 %12 to i64, !dbg !22
+  %35 = getelementptr bfloat, ptr addrspace(1) %2, i64 %34, !dbg !22
+  %36 = insertelement <2 x bfloat> poison, bfloat %.v, i64 0, !dbg !23
+  %37 = insertelement <2 x bfloat> %36, bfloat %.v1, i64 1, !dbg !23
+  %38 = bitcast <2 x bfloat> %37 to i32, !dbg !23
+  tail call void asm sideeffect "st.global.b32 [ $1 + 0 ], { $0 };", "r,l"(i32 %38, ptr addrspace(1) %35) #2, !dbg !23
+  ret void, !dbg !24
+}
+
+; Function Attrs: mustprogress nocallback nofree nosync nounwind speculatable willreturn memory(none)
+declare noundef range(i32 0, 2147483647) i32 @llvm.nvvm.read.ptx.sreg.ctaid.x() #1
+
+; Function Attrs: mustprogress nocallback nofree nosync nounwind speculatable willreturn memory(none)
+declare noundef range(i32 0, 1024) i32 @llvm.nvvm.read.ptx.sreg.tid.x() #1
+
+attributes #0 = { nounwind "nvvm.reqntid"="256" }
+attributes #1 = { mustprogress nocallback nofree nosync nounwind speculatable willreturn memory(none) }
+attributes #2 = { nounwind }
+
+!llvm.dbg.cu = !{!0}
+!llvm.module.flags = !{!2, !3}
+
+!0 = distinct !DICompileUnit(language: DW_LANG_C, file: !1, producer: "triton", isOptimized: true, runtimeVersion: 0, emissionKind: LineTablesOnly)
+!1 = !DIFile(filename: "cd77msxgpqj3omx2dktjweh5uwbhvsznvshvajbbj3o3h5znhgiz.py", directory: "/mnt/g/GitHub/VAE_ca_proj/Thermal/.compile_cache/d7")
+!2 = !{i32 2, !"Debug Info Version", i32 3}
+!3 = !{i32 4, !"nvvm-reflect-ftz", i32 1}
+!4 = distinct !DISubprogram(name: "triton_poi_fused_cat_transpose_view_66", linkageName: "triton_poi_fused_cat_transpose_view_66", scope: !1, file: !1, line: 18, type: !5, scopeLine: 18, spFlags: DISPFlagDefinition | DISPFlagOptimized, unit: !0)
+!5 = !DISubroutineType(cc: DW_CC_normal, types: !6)
+!6 = !{}
+!7 = !DILocation(line: 20, column: 28, scope: !4)
+!8 = !DILocation(line: 20, column: 33, scope: !4)
+!9 = !DILocation(line: 21, column: 36, scope: !4)
+!10 = !DILocation(line: 21, column: 23, scope: !4)
+!11 = !DILocation(line: 24, column: 19, scope: !4)
+!12 = !DILocation(line: 23, column: 19, scope: !4)
+!13 = !DILocation(line: 30, column: 18, scope: !4)
+!14 = !DILocation(line: 31, column: 34, scope: !4)
+!15 = !DILocation(line: 31, column: 40, scope: !4)
+!16 = !DILocation(line: 31, column: 30, scope: !4)
+!17 = !DILocation(line: 31, column: 46, scope: !4)
+!18 = !DILocation(line: 32, column: 19, scope: !4)
+!19 = !DILocation(line: 35, column: 30, scope: !4)
+!20 = !DILocation(line: 35, column: 55, scope: !4)
+!21 = !DILocation(line: 36, column: 33, scope: !4)
+!22 = !DILocation(line: 37, column: 25, scope: !4)
+!23 = !DILocation(line: 37, column: 37, scope: !4)
+!24 = !DILocation(line: 37, column: 4, scope: !4)
