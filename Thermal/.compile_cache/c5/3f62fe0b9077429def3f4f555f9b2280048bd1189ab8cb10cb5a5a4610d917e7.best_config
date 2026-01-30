@@ -1,1 +1,1 @@
-{"XBLOCK": 64, "YBLOCK": 64, "num_warps": 8, "num_stages": 1, "configs_hash": "ff4b82440b724819e8a4318b5f299844c2a6c859f49591d86c0988a072eac40e", "found_by_coordesc": false, "time_taken_ms": 180, "triton_cache_hash": "U2CEOEUIWMAHAHMQDZ5OPJYEHSWRGOTJF6WNICX3OJLEVP5VTSVA"}
+{"XBLOCK": 64, "YBLOCK": 64, "num_warps": 8, "num_stages": 1, "configs_hash": "ff4b82440b724819e8a4318b5f299844c2a6c859f49591d86c0988a072eac40e", "found_by_coordesc": false, "time_taken_ms": 167, "triton_cache_hash": "U2CEOEUIWMAHAHMQDZ5OPJYEHSWRGOTJF6WNICX3OJLEVP5VTSVA"}

@@ -1,1 +1,1 @@
-{"XBLOCK": 64, "R0_BLOCK": 64, "num_warps": 16, "num_stages": 1, "configs_hash": "8c03dc2e05d158372838fe4d32248dfba74b467c7576f6e1d3eb472c41b37c80", "found_by_coordesc": false, "time_taken_ms": 220, "triton_cache_hash": "6F5YOY6PWYP7W66KMJIC2QXMFKCCGPIZ6VOWMXIGAO5KGOMTFUTQ"}
+{"XBLOCK": 8, "R0_BLOCK": 512, "num_warps": 16, "num_stages": 1, "configs_hash": "8c03dc2e05d158372838fe4d32248dfba74b467c7576f6e1d3eb472c41b37c80", "found_by_coordesc": false, "time_taken_ms": 212, "triton_cache_hash": "MHGZCQBQITFZT4HJDHPKJXVS3FCD5FW54JHDW5PEHQMB5DRYKQTA"}

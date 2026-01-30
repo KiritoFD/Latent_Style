@@ -1,0 +1,136 @@
+{
+  "checkpoint": "../pyramid.1-1-29/epoch_0450.pt",
+  "timestamp": "2026-01-30 10:07:47",
+  "matrix_breakdown": {
+    "monet": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.7198043730854987,
+        "style_lpips": 0.6961605481108027,
+        "content_lpips": 0.4419625928004583,
+        "clip_content": 0.8343530893325806
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5892464870810509,
+        "style_lpips": 0.7649883019526801,
+        "content_lpips": 0.5077143539985021,
+        "clip_content": 0.7602447946866353
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.6696485328276952,
+        "style_lpips": 0.7523698482513429,
+        "content_lpips": 0.4506126870711645,
+        "clip_content": 0.8209711492061615
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.6503078765670459,
+        "style_lpips": 0.7304538569053015,
+        "content_lpips": 0.4757986644903819,
+        "clip_content": 0.7921179751555125
+      }
+    },
+    "photo": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.578733171582222,
+        "style_lpips": 0.731575773358345,
+        "content_lpips": 0.41106212536493936,
+        "clip_content": 0.7779205938180288
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.6010928495327631,
+        "style_lpips": 0.736163409392039,
+        "content_lpips": 0.4402818441390991,
+        "clip_content": 0.7580088357130687
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.5673368392785392,
+        "style_lpips": 0.7946596729755401,
+        "content_lpips": 0.4107347071170807,
+        "clip_content": 0.7809943338235219
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.558789546072483,
+        "style_lpips": 0.7532481577396394,
+        "content_lpips": 0.4433411628007889,
+        "clip_content": 0.7559708237648011
+      }
+    },
+    "vangogh": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.6848577191432318,
+        "style_lpips": 0.7207036114136379,
+        "content_lpips": 0.4584124555190404,
+        "clip_content": 0.8207487046718598
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.582703965485096,
+        "style_lpips": 0.7909921712478003,
+        "content_lpips": 0.5063461711009344,
+        "clip_content": 0.753793603181839
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.6760158300002417,
+        "style_lpips": 0.7322367684841156,
+        "content_lpips": 0.4616935789585114,
+        "clip_content": 0.8039122660954793
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.6587243635257086,
+        "style_lpips": 0.7388645656506222,
+        "content_lpips": 0.49084591468175254,
+        "clip_content": 0.7882241070270538
+      }
+    },
+    "cezanne": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.6723822139700253,
+        "style_lpips": 0.712427821715673,
+        "content_lpips": 0.44219723840554553,
+        "clip_content": 0.8253204266230265
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5484181070129076,
+        "style_lpips": 0.7709507501522701,
+        "content_lpips": 0.49656779567400616,
+        "clip_content": 0.751212743918101
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.6678275446097055,
+        "style_lpips": 0.7474199493726094,
+        "content_lpips": 0.4355189243952433,
+        "clip_content": 0.8205115516980489
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.6712336411476135,
+        "style_lpips": 0.7171944399078687,
+        "content_lpips": 0.4677647997935613,
+        "clip_content": 0.7829482356707255
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "clip_style": 0.6190813639296425,
+      "content_lpips": 0.4607626833849483
+    },
+    "photo_to_art_performance": {
+      "clip_style": 0.5682865189777481,
+      "valid": true
+    }
+  }
+}

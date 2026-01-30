@@ -672,43 +672,6 @@ class GeometricFreeEnergyLoss(nn.Module):
         return result
 
 
-class VelocitySmoothnessLoss(nn.Module):
-    """
-    Velocity Field Smoothness (TV Loss).
-    
-    Physics: Penalizes high-frequency noise in the vector field.
-    Effect: Eliminates 'flying color blocks' and flickering artifacts.
-    
-    Implementation: Total Variation regularization on velocity field.
-    By forcing gradients (dv/dx, dv/dy) to be small, the velocity flow becomes smooth.
-    This removes tile boundary artifacts that occur when adjacent tiles have vastly
-    different velocity vectors.
-    
-    Trade-off: Too large weight → smooth but blurry motion vectors → featureless output
-    Recommended: weight ∈ [0.05, 0.3] for typical training
-    """
-    def __init__(self, weight=0.1):
-        super().__init__()
-        self.weight = weight
-
-    def forward(self, v_pred):
-        """
-        Args:
-            v_pred: [B, C, H, W] Predicted velocity field
-        
-        Returns:
-            loss: scalar TV loss
-        """
-        # Calculate spatial gradients (dv/dx, dv/dy)
-        # These represent how rapidly the velocity changes across space
-        diff_x = torch.abs(v_pred[:, :, :, 1:] - v_pred[:, :, :, :-1])
-        diff_y = torch.abs(v_pred[:, :, 1:, :] - v_pred[:, :, :-1, :])
-        
-        # Sum gradient magnitudes for all channels and average over batch
-        loss = torch.mean(diff_x) + torch.mean(diff_y)
-        return self.weight * loss
-
-
 class PyramidStructuralLoss(nn.Module):
     """
     Pyramid Structural Lock for Flow Matching.
@@ -759,8 +722,14 @@ class PyramidStructuralLoss(nn.Module):
         # L0: 32x32 Details (High-frequency, soft protection)
         # Full resolution - texture can still be modified by SWD
         loss_high = F.mse_loss(v_pred, v_target)
-        
-        return self.w['low'] * loss_low + self.w['mid'] * loss_mid + self.w['high'] * loss_high
+
+        total = self.w['low'] * loss_low + self.w['mid'] * loss_mid + self.w['high'] * loss_high
+
+        return total, {
+            "l_8x8": loss_low.detach(),
+            "l_16x16": loss_mid.detach(),
+            "l_32x32": loss_high.detach()
+        }
 
 
 if __name__ == "__main__":
