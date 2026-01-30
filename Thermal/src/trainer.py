@@ -18,7 +18,7 @@ inductor_config.fx_graph_cache = True
 import torch.nn.functional as F
 from PIL import Image
 from torch.utils.data import DataLoader
-from torch.optim.lr_scheduler import LinearLR, MultiStepLR, SequentialLR, ReduceLROnPlateau
+from torch.optim.lr_scheduler import LinearLR, MultiStepLR, SequentialLR, ReduceLROnPlateau, CosineAnnealingLR
 
 from checkpoint import find_latest_checkpoint, load_checkpoint, save_checkpoint
 from dataset import LatentDataset
@@ -27,7 +27,6 @@ from losses import (
     GeometricFreeEnergyLoss,
     PyramidStructuralLoss,
     VelocityRegularizationLoss,
-    VelocitySmoothnessLoss,
 )
 from model import LGTUNet, count_parameters
 from physics import generate_latent, get_dynamic_epsilon, integrate_ode, invert_latent
@@ -47,6 +46,55 @@ class RunningMean:
         self.mean = self.momentum * self.mean + (1 - self.momentum) * val_detached
         return max(self.mean.item(), 1e-4)  # 🔥 提高 epsilon，防止 Loss 在极小时因分母过小而爆炸
 
+class GradNormBalancer:
+    """GradNorm: Ensures structural and style gradients are on the same scale."""
+    def __init__(self, num_tasks=2, alpha=1.5, device='cuda'):
+        self.weights = torch.ones(num_tasks, device=device, requires_grad=True)
+        self.alpha = alpha
+        self.initial_losses = None
+
+    def get_weights(self, losses):
+        if self.initial_losses is None:
+            self.initial_losses = [l.detach() for l in losses]
+        
+        # Calculate relative inverse training rate
+        loss_ratios = torch.stack([l.detach() / (self.initial_losses[i] + 1e-6) for i, l in enumerate(losses)])
+        inverse_train_rate = loss_ratios / (loss_ratios.mean() + 1e-6)
+        
+        # Return normalized dynamic weights
+        dynamic_weights = (self.weights.detach() * (inverse_train_rate ** self.alpha))
+        return dynamic_weights / (dynamic_weights.sum() + 1e-6) * len(losses)
+
+def apply_cagrad(grads, c=0.4):
+    """
+    Conflict-Averaged Gradient (CAGrad) for 2 tasks.
+    Finds a consensus direction when gradients conflict (angle > 90 deg).
+    """
+    if len(grads) != 2:
+        return torch.stack(grads).mean(dim=0)
+
+    g1, g2 = grads[0], grads[1]
+    g1_flat = torch.cat([g.flatten() for g in g1])
+    g2_flat = torch.cat([g.flatten() for g in g2])
+
+    g11 = torch.dot(g1_flat, g1_flat)
+    g22 = torch.dot(g2_flat, g2_flat)
+    g12 = torch.dot(g1_flat, g2_flat)
+
+    # If no conflict (angle <= 90 deg), use average
+    if g12 >= 0:
+        return [(p1 + p2) / 2 for p1, p2 in zip(g1, g2)]
+
+    # Solve for optimal mixing coefficient
+    coeff = (g22 - g12) / (g11 + g22 - 2 * g12 + 1e-8)
+    coeff = torch.clamp(coeff, 0, 1)
+    
+    # Consensus gradient
+    g_min = [coeff * p1 + (1 - coeff) * p2 for p1, p2 in zip(g1, g2)]
+    g_avg = [(p1 + p2) / 2 for p1, p2 in zip(g1, g2)]
+    
+    # Apply radius constraint (c)
+    return [p_avg + c * p_min for p_avg, p_min in zip(g_avg, g_min)]
 
 class LGTTrainer:
     """Trainer orchestrating optimization, losses, and evaluation."""
@@ -95,11 +143,6 @@ class LGTTrainer:
         self.w_pyramid = config['loss'].get('w_pyramid', 1.0)
         logger.info(f"✓ Pyramid Structural Loss enabled (w={self.w_pyramid}, weights={pyramid_weights})")
 
-        # Optional Smoothness
-        vel_smooth_weight = config['loss'].get('vel_smooth_weight', 0.2)
-        self.vel_smooth_loss = VelocitySmoothnessLoss(weight=vel_smooth_weight).to(device)
-        logger.info(f"✓ Velocity Smoothness Loss enabled (weight={vel_smooth_weight})")
-
         self.use_velocity_reg = config['loss'].get('use_velocity_reg', False)
         self.vel_reg_loss = None
         if self.use_velocity_reg:
@@ -119,10 +162,8 @@ class LGTTrainer:
             fused=False,  # 🔥 Fix: Fused AdamW conflicts with GradScaler.unscale_
         )
 
-        # Scheduler will be initialized in on_training_start once we know dataloader length
-        self.scheduler = None
-        self.warmup_scheduler = None  # For adaptive mode manual warmup
-        self.total_training_steps = 0
+        # Initialize scheduler immediately so it can be loaded from checkpoint
+        self._setup_scheduler()
 
         self.use_amp = config['training'].get('use_amp', True)
         self.scaler = torch.amp.GradScaler(enabled=self.use_amp)
@@ -133,6 +174,11 @@ class LGTTrainer:
             self.norm_mse = RunningMean(device=device)
             self.norm_style = RunningMean(device=device)
             logger.info("✓ Adaptive Loss Normalization enabled (Running Mean Scaling)")
+            
+        self.use_cagrad = config['training'].get('use_cagrad', False)
+        if self.use_cagrad:
+            self.grad_balancer = GradNormBalancer(num_tasks=2, device=device)
+            logger.info("✓ CAGrad Conflict Resolution enabled")
 
         self.label_drop_prob = config['training'].get('label_drop_prob', 0.1)
         self.use_avg_for_uncond = config['training'].get('use_avg_style_for_uncond', True)
@@ -385,7 +431,7 @@ class LGTTrainer:
         
         # 1. Structure Consistency (Pyramid MSE - frequency separated)
         # Low-freq locked hard, high-freq soft → allows artistic deformation
-        loss_struc = self.pyramid_loss(v_pred, v_target)
+        loss_struc, struc_metrics = self.pyramid_loss(v_pred, v_target)
 
         # 🔥 Optimization: Reuse v_pred if steps=1 (Compute Reuse)
         # If we are conditional (not dropping label), v_pred IS the velocity we want.
@@ -411,7 +457,6 @@ class LGTTrainer:
         loss_style = loss_dict['style_swd']
 
         style_weight_batch = self.style_weights[style_id_tgt].mean()
-        loss_smooth = self.vel_smooth_loss(v_pred)
 
         # Adaptive Normalization for Style
         norm_factor_style = self.norm_style.update(loss_style) if self.use_adaptive_norm else 1.0
@@ -419,40 +464,24 @@ class LGTTrainer:
         # 🔥 Clean Loss Assembly: Pyramid (structure) + SWD (texture) + Smoothness
         # No redundant MSE/layout terms - pyramid handles all structural supervision
         total = (self.w_pyramid * m_mse * loss_struc) + \
-                (style_weight_batch * self.energy_loss.w_style * m_style / norm_factor_style * loss_style) + \
-                loss_smooth
+                (style_weight_batch * self.energy_loss.w_style * m_style / norm_factor_style * loss_style)
         
         if self.use_velocity_reg and self.vel_reg_loss is not None:
             loss_reg = self.vel_reg_loss(v_pred)
             loss_dict['velocity_reg'] = loss_reg
             total = total + loss_reg
 
-        loss_dict['smooth'] = loss_smooth
         loss_dict['mse'] = loss_struc # Log pyramid loss as 'mse' for compatibility
+        loss_dict.update(struc_metrics)
         loss_dict['total'] = total
         loss_dict['style_id_tgt'] = style_id_tgt
 
         return loss_dict
 
     def step_scheduler(self, metric=None, end_of_epoch=False):
-        """Unified scheduler stepper handling both Fixed (Step-based) and Adaptive (Epoch-based) modes."""
-        p_cfg = self.config['training'].get('phased_training', {})
-        use_adaptive = p_cfg.get('use_adaptive_phases', False)
-
-        if use_adaptive:
-            # Adaptive Mode: Manual Warmup -> ReduceLROnPlateau
-            if self.global_step < self.warmup_steps:
-                # Warmup is step-based
-                if not end_of_epoch and self.warmup_scheduler:
-                    self.warmup_scheduler.step()
-            else:
-                # Plateau check is epoch-based
-                if end_of_epoch and metric is not None:
-                    self.scheduler.step(metric)
-        else:
-            # Fixed Mode: SequentialLR (Step-based)
-            if not end_of_epoch and self.scheduler:
-                self.scheduler.step()
+        """Step the epoch-based scheduler."""
+        if self.scheduler is not None:
+            self.scheduler.step()
 
     def train_epoch(self, dataloader: DataLoader, epoch: int) -> Dict[str, float]:
         self.model.train()
@@ -467,7 +496,6 @@ class LGTTrainer:
         total_mse_weighted = 0.0
         total_layout = 0.0
         total_mse_raw = 0.0
-        total_smooth = 0.0
         total_vel_reg = 0.0
         num_batches = 0
         accum_counter = 0
@@ -487,10 +515,35 @@ class LGTTrainer:
             multipliers = self._get_thermodynamic_schedule(epoch)
 
             with torch.amp.autocast('cuda', enabled=self.use_amp, dtype=torch.bfloat16):
-                loss_dict = self.compute_energy_loss(batch, epoch, multipliers=multipliers)
-                loss = loss_dict['total'] / self.accumulation_steps
+                ld = self.compute_energy_loss(batch, epoch, multipliers=multipliers)
+                
+            if self.use_cagrad:
+                # 1. Separate losses for conflict resolution
+                m_mse, _, m_style = multipliers
+                loss_struct = (self.w_pyramid * m_mse * ld['mse']) / self.accumulation_steps
+                loss_style = (ld['style_swd'] * self.energy_loss.w_style * m_style) / self.accumulation_steps
+                
+                # 2. Compute gradients separately
+                self.optimizer.zero_grad(set_to_none=True)
+                # Use autograd.grad to avoid multiple backward passes through shared layers if possible
+                # or retain_graph for the first pass
+                self.scaler.scale(loss_struct).backward(retain_graph=True)
+                grads_struct = [p.grad.clone() if p.grad is not None else None for p in self.model.parameters()]
+                
+                self.optimizer.zero_grad(set_to_none=True)
+                self.scaler.scale(loss_style).backward()
+                grads_style = [p.grad.clone() if p.grad is not None else None for p in self.model.parameters()]
+                
+                # 3. Apply CAGrad to resolve conflicts
+                combined_grads = apply_cagrad([grads_struct, grads_style])
+                for p, g in zip(self.model.parameters(), combined_grads):
+                    p.grad = g
+                
+                loss = ld['total'] / self.accumulation_steps # For logging
+            else:
+                loss = ld['total'] / self.accumulation_steps
+                self.scaler.scale(loss).backward()
 
-            self.scaler.scale(loss).backward()
             accum_counter += 1
 
             if accum_counter >= self.accumulation_steps:
@@ -500,24 +553,21 @@ class LGTTrainer:
                 self.scaler.update()
                 self.optimizer.zero_grad(set_to_none=True)
                 accum_counter = 0
-                self.step_scheduler(end_of_epoch=False)  # 🔥 Unified Step Update
                 self._update_lora_alpha(self.global_step)
                 self.global_step += 1
 
-            total_loss += loss.item() * self.accumulation_steps
-            total_style_swd += loss_dict['style_swd'].item()
-            total_mse += loss_dict['mse'].item()
-            if 'smooth' in loss_dict:
-                total_smooth += loss_dict['smooth'].item()
-            if 'velocity_reg' in loss_dict:
-                total_vel_reg += loss_dict['velocity_reg'].item()
+            total_loss += ld['total'].item()
+            total_style_swd += ld['style_swd'].item()
+            total_mse += ld['mse'].item()
+            if 'velocity_reg' in ld:
+                total_vel_reg += ld['velocity_reg'].item()
             num_batches += 1
 
             if use_tqdm:
                 postfix_dict = {
-                    'loss': f"{loss.item():.4f}",
-                    'swd': f"{loss_dict['style_swd'].item():.4f}",
-                    'mse': f"{loss_dict['mse'].item():.4f}",
+                    'loss': f"{ld['total'].item():.4f}",
+                    '8x8': f"{ld.get('l_8x8', 0):.4f}",
+                    '32x32': f"{ld.get('l_32x32', 0):.4f}",
                     'α': f"{self._get_current_alpha():.3f}",
                 }
                 pbar.set_postfix(postfix_dict)
@@ -525,14 +575,12 @@ class LGTTrainer:
         avg_loss = total_loss / max(num_batches, 1)
         avg_style_swd = total_style_swd / max(num_batches, 1)
         avg_mse = total_mse / max(num_batches, 1)
-        avg_smooth = total_smooth / max(num_batches, 1)
         avg_vel_reg = total_vel_reg / max(num_batches, 1) if self.use_velocity_reg else 0.0
 
         metrics = {
             'loss': avg_loss,
             'style_swd': avg_style_swd,
             'mse': avg_mse,
-            'smooth': avg_smooth,
             'num_batches': num_batches,
         }
         if self.use_velocity_reg:
@@ -688,8 +736,7 @@ class LGTTrainer:
 
         run_script = Path(__file__).resolve().parent / 'run_evaluation.py'
         cmd = [sys.executable, str(run_script), '--checkpoint', str(ckpt_to_use), '--output', str(eval_out_dir)]
-        if self.config_path is not None:
-            cmd += ['--config', str(self.config_path)]
+        
         num_steps = self.config.get('inference', {}).get('num_steps', None)
         if num_steps is not None:
             cmd += ['--num_steps', str(num_steps)]
@@ -778,53 +825,40 @@ class LGTTrainer:
     # ------------------------------------------------------------------
     # Convenience helpers for main loop
     # ------------------------------------------------------------------
+    def _setup_scheduler(self) -> None:
+        """Initialize the epoch-based scheduler."""
+        # [Infra Optimized] Structure-Aware Cosine Scheduler (Epoch-based)
+        base_lr = float(self.config['training']['learning_rate'])
+        min_lr = float(self.config['training'].get('min_learning_rate', 1e-6))
+        warmup_epochs = self.config['training'].get('warmup_epochs', 10)
+
+        logger.info(f"✓ Scheduler: Linear Warmup ({warmup_epochs}) -> Cosine Annealing (to {min_lr})")
+
+        # 1. Warmup Phase
+        warmup_scheduler = LinearLR(
+            self.optimizer, 
+            start_factor=0.01, 
+            end_factor=1.0, 
+            total_iters=warmup_epochs
+        )
+
+        # 2. Cosine Cooling Phase
+        main_scheduler = CosineAnnealingLR(
+            self.optimizer,
+            T_max=self.num_epochs - warmup_epochs,
+            eta_min=min_lr
+        )
+
+        # 3. Combine
+        self.scheduler = SequentialLR(
+            self.optimizer,
+            schedulers=[warmup_scheduler, main_scheduler],
+            milestones=[warmup_epochs]
+        )
+
     def on_training_start(self, dataloader: DataLoader) -> None:
         if self.style_indices_cache is None:
             self.build_style_indices_cache(dataloader.dataset)
-            
-        # 🔥 Initialize Step-based Scheduler
-        steps_per_epoch = len(dataloader)
-        self.total_training_steps = self.num_epochs * steps_per_epoch
-        
-        # Calculate warmup steps from epochs if not explicit
-        if 'warmup_steps' in self.config['training']:
-            self.warmup_steps = self.config['training']['warmup_steps']
-        else:
-            self.warmup_steps = self.config['training'].get('warmup_epochs', 10) * steps_per_epoch
-
-        p_cfg = self.config['training'].get('phased_training', {})
-        use_adaptive = p_cfg.get('use_adaptive_phases', False)
-
-        if use_adaptive:
-            logger.info(f"🔥 Initializing ADAPTIVE Scheduler (ReduceLROnPlateau)")
-            # Manual Warmup Scheduler
-            self.warmup_scheduler = LinearLR(
-                self.optimizer, start_factor=0.1, end_factor=1.0, total_iters=self.warmup_steps
-            )
-            # Main Scheduler
-            self.scheduler = ReduceLROnPlateau(
-                self.optimizer, 
-                mode='min', 
-                factor=p_cfg.get('adaptive_factor', 0.5), 
-                patience=p_cfg.get('adaptive_patience', 10)
-            )
-        else:
-            step_size = p_cfg.get('phase_step_size', 100)
-            logger.info(f"Initializing Fixed Staircase Scheduler: step_size={step_size} epochs")
-            
-            scheduler_warmup = LinearLR(
-                self.optimizer, start_factor=0.1, end_factor=1.0, total_iters=self.warmup_steps
-            )
-            milestones = [i * step_size * steps_per_epoch for i in range(1, 10)]
-            rel_milestones = [max(1, m - self.warmup_steps) for m in milestones]
-            
-            scheduler_step = MultiStepLR(self.optimizer, milestones=rel_milestones, gamma=0.5)
-            self.scheduler = SequentialLR(
-                self.optimizer, schedulers=[scheduler_warmup, scheduler_step], milestones=[self.warmup_steps]
-            )
-
-        # If we resumed, the scheduler state was already loaded into a dummy or needs to be re-applied
-        # (In this implementation, we assume fresh start or handle state loading in _maybe_resume)
         
         # 🔥 Initialize Style LUT Cache for Multi-Style SWD Loss
         logger.info("🔥 Initializing Style LUT Cache for Multi-Style SWD...")

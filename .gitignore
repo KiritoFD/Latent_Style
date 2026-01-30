@@ -9,3 +9,4 @@
 !/src/checkpoints-lsfm/**
 data/*
 *.zip
+Thermal/.compile_cache/*

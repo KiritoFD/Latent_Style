@@ -32,8 +32,9 @@
     "learning_rate": 2e-4,
     "min_learning_rate": 1e-6,
     "weight_decay":5e-5,
-    "num_epochs": 1000,
-    "warmup_epochs": 12,
+    "num_epochs": 400,
+    "warmup_epochs": 10,
+    "grad_clip_norm": 1.0,
     "use_adaptive_loss_norm": true,
     
     "phased_training": {
@@ -83,10 +84,10 @@
     ]
   },
   "checkpoint": {
-    "save_dir": "../pyramid.1-1-29"
+    "save_dir": "../cos_lr_ca_grad_1-30"
   },
   "inference": {
-    "num_steps": 15,
+    "num_steps": 5,
     "temperature_lambda": 0.3,
     "temperature_threshold": 0.5,
     "use_cfg": true,
