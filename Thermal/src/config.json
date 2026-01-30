@@ -29,7 +29,7 @@
   "training": {
     "batch_size": 128,
     "accumulation_steps": 1,
-    "learning_rate": 2e-4,
+    "learning_rate": 1.5e-4,
     "min_learning_rate": 1e-6,
     "weight_decay":5e-5,
     "num_epochs": 400,
@@ -38,16 +38,13 @@
     "use_adaptive_loss_norm": true,
     
     "phased_training": {
-      "phase_step_size": 50,
-      "use_adaptive_phases": true,
-      "adaptive_patience": 15,
-      "adaptive_factor": 0.5,
+      "phase_step_size": 0,
       
-      "m_mse_start": 2.0,
+      "m_mse_start": 1.5,
       "m_mse_end": 0.5,
       
-      "m_style_start": 0.1,
-      "m_style_end": 5.0,
+      "m_style_start": 0.5,
+      "m_style_end": 3.0,
       
       "layout_ratio": 0.8
     },
@@ -84,7 +81,7 @@
     ]
   },
   "checkpoint": {
-    "save_dir": "../cos_lr_ca_grad_1-30"
+    "save_dir": "../400-cos_lr_ca_grad_1-30"
   },
   "inference": {
     "num_steps": 5,

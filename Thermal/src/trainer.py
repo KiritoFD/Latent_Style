@@ -18,7 +18,7 @@ inductor_config.fx_graph_cache = True
 import torch.nn.functional as F
 from PIL import Image
 from torch.utils.data import DataLoader
-from torch.optim.lr_scheduler import LinearLR, MultiStepLR, SequentialLR, ReduceLROnPlateau, CosineAnnealingLR
+from torch.optim.lr_scheduler import LinearLR, SequentialLR, CosineAnnealingLR
 
 from checkpoint import find_latest_checkpoint, load_checkpoint, save_checkpoint
 from dataset import LatentDataset
@@ -45,25 +45,6 @@ class RunningMean:
         val_detached = val.detach()
         self.mean = self.momentum * self.mean + (1 - self.momentum) * val_detached
         return max(self.mean.item(), 1e-4)  # 🔥 提高 epsilon，防止 Loss 在极小时因分母过小而爆炸
-
-class GradNormBalancer:
-    """GradNorm: Ensures structural and style gradients are on the same scale."""
-    def __init__(self, num_tasks=2, alpha=1.5, device='cuda'):
-        self.weights = torch.ones(num_tasks, device=device, requires_grad=True)
-        self.alpha = alpha
-        self.initial_losses = None
-
-    def get_weights(self, losses):
-        if self.initial_losses is None:
-            self.initial_losses = [l.detach() for l in losses]
-        
-        # Calculate relative inverse training rate
-        loss_ratios = torch.stack([l.detach() / (self.initial_losses[i] + 1e-6) for i, l in enumerate(losses)])
-        inverse_train_rate = loss_ratios / (loss_ratios.mean() + 1e-6)
-        
-        # Return normalized dynamic weights
-        dynamic_weights = (self.weights.detach() * (inverse_train_rate ** self.alpha))
-        return dynamic_weights / (dynamic_weights.sum() + 1e-6) * len(losses)
 
 def apply_cagrad(grads, c=0.4):
     """
@@ -177,7 +158,6 @@ class LGTTrainer:
             
         self.use_cagrad = config['training'].get('use_cagrad', False)
         if self.use_cagrad:
-            self.grad_balancer = GradNormBalancer(num_tasks=2, device=device)
             logger.info("✓ CAGrad Conflict Resolution enabled")
 
         self.label_drop_prob = config['training'].get('label_drop_prob', 0.1)
@@ -333,28 +313,21 @@ class LGTTrainer:
         if not p_cfg:
             return 1.0, 1.0, 1.0
         
-        # 🔥 Adaptive vs Fixed Schedule
-        if p_cfg.get('use_adaptive_phases', False):
-            # Adaptive: Progress 't' is derived from Learning Rate decay
-            # As LR drops from base_lr -> min_lr, t goes from 0.0 -> 1.0
-            current_lr = self.optimizer.param_groups[0]['lr']
-            base_lr = self.config['training']['learning_rate']
-            min_lr = self.config['training']['min_learning_rate']
-            
-            if current_lr >= base_lr:
-                t = 0.0
-            elif current_lr <= min_lr:
-                t = 1.0
-            else:
-                # Logarithmic progress (since LR decays exponentially)
-                # t = (log(base) - log(curr)) / (log(base) - log(min))
-                progress = (math.log(base_lr) - math.log(current_lr)) / (math.log(base_lr) - math.log(min_lr))
-                t = max(0.0, min(1.0, progress))
+        # 🔥 Phase-Aligned Schedule (Synchronized with LR Cosine Decay)
+        # Ensure 't' represents the progress through the MAIN training phase, excluding warmup.
+        warmup_epochs = self.config['training'].get('warmup_epochs', 10)
+        
+        if epoch <= warmup_epochs:
+            t = 0.0  # Force Structure Mode during Warmup
         else:
-            # Fixed Staircase: Quantize progress to 'phase_step_size' blocks
-            step_size = p_cfg.get('phase_step_size', 100)
-            quantized_epoch = ((epoch - 1) // step_size) * step_size
-            t = min(quantized_epoch / self.num_epochs, 1.0)
+            # t goes from 0.0 -> 1.0 as we progress from warmup_end -> num_epochs
+            t = min((epoch - warmup_epochs) / max(self.num_epochs - warmup_epochs, 1), 1.0)
+
+        step_size = p_cfg.get('phase_step_size', 0) # 0 = Smooth continuous
+        if step_size > 0:
+            # Staircase (Discrete jumps)
+            # Quantize t to blocks
+            t = math.floor(t * self.num_epochs / step_size) * step_size / self.num_epochs
         
         # 1. Structure Schedule: Cosine Decay
         # Starts strong to lock content, decays to allow artistic deformation
@@ -458,13 +431,21 @@ class LGTTrainer:
 
         style_weight_batch = self.style_weights[style_id_tgt].mean()
 
-        # Adaptive Normalization for Style
-        norm_factor_style = self.norm_style.update(loss_style) if self.use_adaptive_norm else 1.0
+        # Adaptive Normalization for Style & Structure
+        if self.use_adaptive_norm:
+            norm_factor_mse = self.norm_mse.update(loss_struc)
+            norm_factor_style = self.norm_style.update(loss_style)
+        else:
+            norm_factor_mse = 1.0
+            norm_factor_style = 1.0
         
-        # 🔥 Clean Loss Assembly: Pyramid (structure) + SWD (texture) + Smoothness
-        # No redundant MSE/layout terms - pyramid handles all structural supervision
-        total = (self.w_pyramid * m_mse * loss_struc) + \
-                (style_weight_batch * self.energy_loss.w_style * m_style / norm_factor_style * loss_style)
+        # 🔥 Clean Loss Assembly: Pyramid (structure) + SWD (texture)
+        # Normalize by average multiplier to prevent loss explosion during phase shifts
+        term_struc = (self.w_pyramid * m_mse * loss_struc / norm_factor_mse)
+        term_style = (style_weight_batch * self.energy_loss.w_style * m_style * loss_style / norm_factor_style)
+        
+        norm_scale = (m_mse + m_style) / 2.0
+        total = (term_struc + term_style) / (norm_scale + 1e-6)
         
         if self.use_velocity_reg and self.vel_reg_loss is not None:
             loss_reg = self.vel_reg_loss(v_pred)
@@ -478,7 +459,7 @@ class LGTTrainer:
 
         return loss_dict
 
-    def step_scheduler(self, metric=None, end_of_epoch=False):
+    def step_scheduler(self):
         """Step the epoch-based scheduler."""
         if self.scheduler is not None:
             self.scheduler.step()
@@ -488,6 +469,10 @@ class LGTTrainer:
 
         if self.style_indices_cache is None:
             self.build_style_indices_cache(dataloader.dataset)
+
+        # Pre-calculate multipliers for the epoch (constant per epoch)
+        multipliers = self._get_thermodynamic_schedule(epoch)
+        m_mse, _, m_style = multipliers
 
         total_loss = 0.0
         total_style_swd = 0.0
@@ -511,15 +496,11 @@ class LGTTrainer:
         for step_idx, batch in enumerate(pbar, start=1):
             torch.compiler.cudagraph_mark_step_begin()
             
-            # 🔥 Staircase multipliers (constant for 100 epochs)
-            multipliers = self._get_thermodynamic_schedule(epoch)
-
             with torch.amp.autocast('cuda', enabled=self.use_amp, dtype=torch.bfloat16):
                 ld = self.compute_energy_loss(batch, epoch, multipliers=multipliers)
                 
             if self.use_cagrad:
                 # 1. Separate losses for conflict resolution
-                m_mse, _, m_style = multipliers
                 loss_struct = (self.w_pyramid * m_mse * ld['mse']) / self.accumulation_steps
                 loss_style = (ld['style_swd'] * self.energy_loss.w_style * m_style) / self.accumulation_steps
                 
@@ -568,6 +549,8 @@ class LGTTrainer:
                     'loss': f"{ld['total'].item():.4f}",
                     '8x8': f"{ld.get('l_8x8', 0):.4f}",
                     '32x32': f"{ld.get('l_32x32', 0):.4f}",
+                    'w_str': f"{m_mse:.2f}",
+                    'w_sty': f"{m_style:.2f}",
                     'α': f"{self._get_current_alpha():.3f}",
                 }
                 pbar.set_postfix(postfix_dict)
@@ -582,6 +565,8 @@ class LGTTrainer:
             'style_swd': avg_style_swd,
             'mse': avg_mse,
             'num_batches': num_batches,
+            'm_mse': m_mse,
+            'm_style': m_style,
         }
         if self.use_velocity_reg:
             metrics['velocity_reg'] = avg_vel_reg
@@ -815,6 +800,8 @@ class LGTTrainer:
             'loss': float(metrics['loss']),
             'style_swd': float(metrics['style_swd']),
             'mse': float(metrics['mse']),
+            'm_mse': float(metrics.get('m_mse', 0.0)),
+            'm_style': float(metrics.get('m_style', 0.0)),
             'learning_rate': current_lr,
             'epoch_time': metrics.get('epoch_time', 0.0),
             'num_batches': metrics.get('num_batches'),
