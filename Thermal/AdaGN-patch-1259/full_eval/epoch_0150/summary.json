@@ -1,0 +1,136 @@
+{
+  "checkpoint": "../AdaGN-patch-1259/epoch_0150.pt",
+  "timestamp": "2026-01-31 21:24:44",
+  "matrix_breakdown": {
+    "monet": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.7153805413047473,
+        "style_lpips": 0.6993953001101813,
+        "content_lpips": 0.4702458461125692,
+        "clip_content": 0.81502432624499
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5728015405933063,
+        "style_lpips": 0.7707288525899252,
+        "content_lpips": 0.4997251868247986,
+        "clip_content": 0.7908500532309214
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.6774496866861981,
+        "style_lpips": 0.7513787591060003,
+        "content_lpips": 0.47122476001580554,
+        "clip_content": 0.8138701478640239
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.6441073923905691,
+        "style_lpips": 0.7253517402013144,
+        "content_lpips": 0.49551301697889966,
+        "clip_content": 0.7715786496798197
+      }
+    },
+    "photo": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.5954903537034987,
+        "style_lpips": 0.7238498281637827,
+        "content_lpips": 0.5003027230501175,
+        "clip_content": 0.7302389283974965
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5922742516597113,
+        "style_lpips": 0.7397113637924195,
+        "content_lpips": 0.38164534568786623,
+        "clip_content": 0.7910154898961385
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.5746173913677534,
+        "style_lpips": 0.7770600996812185,
+        "content_lpips": 0.4916216880083084,
+        "clip_content": 0.7319959342479706
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.5419971331357957,
+        "style_lpips": 0.7410965973138809,
+        "content_lpips": 0.47625892162322997,
+        "clip_content": 0.7415607790152232
+      }
+    },
+    "vangogh": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.6763899914622308,
+        "style_lpips": 0.7158305952946346,
+        "content_lpips": 0.4869617780049642,
+        "clip_content": 0.81761514544487
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5586138068834943,
+        "style_lpips": 0.8110505492687226,
+        "content_lpips": 0.5077930529912312,
+        "clip_content": 0.7752204497655233
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.6929946287274362,
+        "style_lpips": 0.7301167746583623,
+        "content_lpips": 0.4613122433423996,
+        "clip_content": 0.8335562129815419
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.6607891423106194,
+        "style_lpips": 0.7278892545700072,
+        "content_lpips": 0.4953251242637634,
+        "clip_content": 0.7955157657464346
+      }
+    },
+    "cezanne": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.6689977923432984,
+        "style_lpips": 0.7101190971930822,
+        "content_lpips": 0.48944646418094634,
+        "clip_content": 0.7740384856859843
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5360113802552223,
+        "style_lpips": 0.7793465447425842,
+        "content_lpips": 0.4922478993733724,
+        "clip_content": 0.7790127873420716
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.6575528094967207,
+        "style_lpips": 0.7480778133074444,
+        "content_lpips": 0.4655005306005478,
+        "clip_content": 0.7918673833211263
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.6596853270332019,
+        "style_lpips": 0.714064655760924,
+        "content_lpips": 0.4761713375647863,
+        "clip_content": 0.7689046283562978
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "clip_style": 0.6137348683857256,
+      "content_lpips": 0.48932676215966536
+    },
+    "photo_to_art_performance": {
+      "clip_style": 0.5707016260690159,
+      "valid": true
+    }
+  }
+}
