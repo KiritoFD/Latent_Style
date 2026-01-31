@@ -1,0 +1,136 @@
+{
+  "checkpoint": "../FP32-ode/epoch_0150.pt",
+  "timestamp": "2026-01-31 17:14:44",
+  "matrix_breakdown": {
+    "monet": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.6604885035554567,
+        "style_lpips": 0.7255946545203524,
+        "content_lpips": 0.5987048387527466,
+        "clip_content": 0.7032020330429077
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5687165001829464,
+        "style_lpips": 0.7582901556094489,
+        "content_lpips": 0.5772438257932663,
+        "clip_content": 0.7271062930425009
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.6604800091187158,
+        "style_lpips": 0.759204022606214,
+        "content_lpips": 0.6143055399258931,
+        "clip_content": 0.6932270268599192
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.6216342077255248,
+        "style_lpips": 0.7350334581534067,
+        "content_lpips": 0.6153826793034871,
+        "clip_content": 0.6846287409464519
+      }
+    },
+    "photo": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.6054213928778966,
+        "style_lpips": 0.7399655310710272,
+        "content_lpips": 0.6405719518661499,
+        "clip_content": 0.6364826261997223
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5887988754312198,
+        "style_lpips": 0.7394860718051594,
+        "content_lpips": 0.39261314968268074,
+        "clip_content": 0.7725110312302907
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.6165510370135309,
+        "style_lpips": 0.7650581149260204,
+        "content_lpips": 0.6540294031302134,
+        "clip_content": 0.6309585750102997
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.5806645452578861,
+        "style_lpips": 0.7384094240665438,
+        "content_lpips": 0.6357203503449758,
+        "clip_content": 0.6282378335793813
+      }
+    },
+    "vangogh": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.6204756863911948,
+        "style_lpips": 0.7392953014373781,
+        "content_lpips": 0.6016524573167165,
+        "clip_content": 0.7113420446713765
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.560010108590126,
+        "style_lpips": 0.7776122427781422,
+        "content_lpips": 0.6081904232501983,
+        "clip_content": 0.715009746948878
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.6465805956323941,
+        "style_lpips": 0.7503943605621654,
+        "content_lpips": 0.5994652996460597,
+        "clip_content": 0.7062417149543763
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.6247732968529065,
+        "style_lpips": 0.7400934195518493,
+        "content_lpips": 0.6150953114032746,
+        "clip_content": 0.7132579545180003
+      }
+    },
+    "cezanne": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.6113359166185062,
+        "style_lpips": 0.7330312889417013,
+        "content_lpips": 0.5915324966112773,
+        "clip_content": 0.6666264216105143
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5476675392985343,
+        "style_lpips": 0.7633949762185414,
+        "content_lpips": 0.5822465270757675,
+        "clip_content": 0.7057186166445414
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.6272886587182681,
+        "style_lpips": 0.7564391513268153,
+        "content_lpips": 0.5961805383364359,
+        "clip_content": 0.654208258787791
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.6240676182905832,
+        "style_lpips": 0.7300591069062551,
+        "content_lpips": 0.5833067218462626,
+        "clip_content": 0.679353803396225
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "clip_style": 0.6037515748871697,
+      "content_lpips": 0.611012625363138
+    },
+    "photo_to_art_performance": {
+      "clip_style": 0.6008789917164378,
+      "valid": true
+    }
+  }
+}
