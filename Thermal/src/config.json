@@ -74,13 +74,13 @@
     "save_dir": "../AdaGN-patch-1259"
   },
   "inference": {
-    "num_steps": 15,
-    "temperature_lambda": 0.3,
-    "temperature_threshold": 0.5,
+    "num_steps": 20,
+    "temperature_lambda": 0.1,
+    "temperature_threshold": 0.4,
     "use_cfg": true,
-    "cfg_scale": 4.0,
+    "cfg_scale": 2.0,
     "cfg_decay": true,
     "use_source_repulsion": true,
-    "repulsion_strength": 1.0
+    "repulsion_strength": 1.5
   }
 }
