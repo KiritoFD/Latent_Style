@@ -44,7 +44,8 @@ class RunningMean:
         # Detach to prevent gradient tracking on the normalizer itself
         val_detached = val.detach()
         self.mean = self.momentum * self.mean + (1 - self.momentum) * val_detached
-        return max(self.mean.item(), 1e-4)  # 🔥 提高 epsilon，防止 Loss 在极小时因分母过小而爆炸
+        # Return tensor to avoid CPU sync
+        return torch.maximum(self.mean, torch.tensor(1e-4, device=self.mean.device))
 
     def state_dict(self):
         return {'mean': self.mean}
@@ -52,37 +53,6 @@ class RunningMean:
     def load_state_dict(self, state_dict):
         if 'mean' in state_dict:
             self.mean = state_dict['mean'].to(self.mean.device)
-
-def apply_cagrad(grads, c=0.4):
-    """
-    Conflict-Averaged Gradient (CAGrad) for 2 tasks.
-    Finds a consensus direction when gradients conflict (angle > 90 deg).
-    """
-    if len(grads) != 2:
-        return torch.stack(grads).mean(dim=0)
-
-    g1, g2 = grads[0], grads[1]
-    g1_flat = torch.cat([g.flatten() for g in g1])
-    g2_flat = torch.cat([g.flatten() for g in g2])
-
-    g11 = torch.dot(g1_flat, g1_flat)
-    g22 = torch.dot(g2_flat, g2_flat)
-    g12 = torch.dot(g1_flat, g2_flat)
-
-    # If no conflict (angle <= 90 deg), use average
-    if g12 >= 0:
-        return [(p1 + p2) / 2 for p1, p2 in zip(g1, g2)]
-
-    # Solve for optimal mixing coefficient
-    coeff = (g22 - g12) / (g11 + g22 - 2 * g12 + 1e-8)
-    coeff = torch.clamp(coeff, 0, 1)
-    
-    # Consensus gradient
-    g_min = [coeff * p1 + (1 - coeff) * p2 for p1, p2 in zip(g1, g2)]
-    g_avg = [(p1 + p2) / 2 for p1, p2 in zip(g1, g2)]
-    
-    # Apply radius constraint (c)
-    return [p_avg + c * p_min for p_avg, p_min in zip(g_avg, g_min)]
 
 class LGTTrainer:
     """Trainer orchestrating optimization, losses, and evaluation."""
@@ -163,10 +133,6 @@ class LGTTrainer:
             self.norm_style = RunningMean(device=device)
             logger.info("✓ Adaptive Loss Normalization enabled (Running Mean Scaling)")
             
-        self.use_cagrad = config['training'].get('use_cagrad', False)
-        if self.use_cagrad:
-            logger.info("✓ CAGrad Conflict Resolution enabled")
-
         self.label_drop_prob = config['training'].get('label_drop_prob', 0.1)
         self.use_avg_for_uncond = config['training'].get('use_avg_style_for_uncond', True)
         self.accumulation_steps = config['training'].get('accumulation_steps', 1)
@@ -553,31 +519,8 @@ class LGTTrainer:
             with torch.amp.autocast('cuda', enabled=self.use_amp, dtype=torch.bfloat16):
                 ld = self.compute_energy_loss(batch, epoch, multipliers=multipliers)
                 
-            if self.use_cagrad:
-                # 1. Separate losses for conflict resolution
-                loss_struct = (m_mse * ld['mse']) / self.accumulation_steps
-                loss_style = (ld['style_swd'] * m_style) / self.accumulation_steps
-                
-                # 2. Compute gradients separately
-                self.optimizer.zero_grad(set_to_none=True)
-                # Use autograd.grad to avoid multiple backward passes through shared layers if possible
-                # or retain_graph for the first pass
-                self.scaler.scale(loss_struct).backward(retain_graph=True)
-                grads_struct = [p.grad.clone() if p.grad is not None else None for p in self.model.parameters()]
-                
-                self.optimizer.zero_grad(set_to_none=True)
-                self.scaler.scale(loss_style).backward()
-                grads_style = [p.grad.clone() if p.grad is not None else None for p in self.model.parameters()]
-                
-                # 3. Apply CAGrad to resolve conflicts
-                combined_grads = apply_cagrad([grads_struct, grads_style])
-                for p, g in zip(self.model.parameters(), combined_grads):
-                    p.grad = g
-                
-                loss = ld['total'] / self.accumulation_steps # For logging
-            else:
-                loss = ld['total'] / self.accumulation_steps
-                self.scaler.scale(loss).backward()
+            loss = ld['total'] / self.accumulation_steps
+            self.scaler.scale(loss).backward()
 
             accum_counter += 1
 
