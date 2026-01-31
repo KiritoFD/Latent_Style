@@ -125,8 +125,11 @@ def generate_latent(
         # Cross-Attention检索出的强艺术特征可能导致速度场爆炸
         x = torch.clamp(x, -clip_range, clip_range)
         
-        if t_current > langevin_threshold:
+        # 🔥 Fix: Apply noise in early phase (exploration) instead of late phase (blurring)
+        if t_current < langevin_threshold:
+            # Linear decay: noise fades out as we approach the threshold
+            current_sigma = langevin_sigma * (1.0 - t_current / langevin_threshold)
             noise = torch.randn_like(x)
-            x = x + langevin_sigma * (dt ** 0.5) * noise
+            x = x + current_sigma * (dt ** 0.5) * noise
 
     return x

@@ -307,28 +307,13 @@ class LGTTrainer:
         # Map w_mse to w_pyramid if w_mse is not explicitly set
         w_mse_base = self.config['loss'].get('w_mse', self.config['loss'].get('w_pyramid', 1.0))
         
-        if epoch < stage_1_end:
-            # Phase 1: 保持原样，让风格飞
-            current_w_style = w_style_base
-            current_w_mse = w_mse_base * 0.5  # 稍微放松结构，方便探索
-        elif epoch < stage_2_end:
-            # Phase 2: 风格降权，结构加倍 (强力刹车)
-            current_w_style = w_style_base * 0.5
-            current_w_mse = w_mse_base * 5.0  # 🔥 暴力拉回结构
+        if epoch < _w_style = w_style_base * 0.1
+            current_w_mse = w_mse_base
         else:
-            # Phase 3: 彻底锁死
-            current_w_style = w_style_base * 0.2
-            current_w_mse = w_mse_base * 10.0
-            
-        return current_w_style, current_w_mse
-
-    def compute_energy_loss(self, batch: Dict, epoch: int, multipliers: tuple = (1.0, 1.0, 1.0)) -> Dict[str, torch.Tensor]:
-        device = self.device
-        m_mse, m_layout, m_style = multipliers
-
-        # 🔥 Infra Optimization: Channels Last for faster Convolutions
-        latent = batch['latent'].to(device, non_blocking=True, memory_format=torch.channels_last)
-        style_id = batch['style_id'].to(device, non_blocking=True)
+            # 🔥 Fix: Maintain high style weight throughout to prevent identity collapse
+            current_w_style = w_style_base
+            current_w_mse = w_mse_basene: Dict, epoch: int, multipliers: tuple = (1.0, 1.0, 1.0)) -> Dict[str, torch.Tensor]:
+        device = self.device y mule, non_blocking=True)
         latent_deformed = batch.get('latent_deformed')
         if latent_deformed is not None:
             latent_deformed = latent_deformed.to(device, non_blocking=True, memory_format=torch.channels_last)
@@ -865,12 +850,19 @@ class LGTTrainer:
         logger.info("🔥 Initializing Style LUT Cache for Multi-Style SWD...")
         style_prototypes = {}
         
+        # Sample size for distribution estimation (more samples = better style representation)
+        SAMPLES_FOR_DISTRIBUTION = 128
+        
         # Collect representative latent for each style
         for style_id in range(self.config['model']['num_styles']):
             if hasattr(dataloader.dataset, 'style_indices') and style_id in self.style_indices_cache:
-                # Take first sample of this style
-                idx = self.style_indices_cache[style_id][0]
-                latent_sample = dataloader.dataset.latents_tensor[idx].unsqueeze(0)  # [1, 4, 32, 32]
+                indices = self.style_indices_cache[style_id]
+                # Randomly sample indices to cover diversity
+                count = min(len(indices), SAMPLES_FOR_DISTRIBUTION)
+                selected_indices = np.random.choice(indices, count, replace=False)
+                
+                # Get batch of latents: [N, 4, 32, 32]
+                latent_sample = dataloader.dataset.latents_tensor[selected_indices]
             else:
                 # Fallback: random initialization
                 logger.warning(f"⚠️  No style {style_id} samples found, using random init")
