@@ -10,7 +10,7 @@
   },
   "loss": {
     "w_style": 20.0,
-    "w_mse": 1.0,
+    "w_mse": 2.0,
     "w_pyramid": 1.0,
     "pyramid_weights": {"low": 4.0, "mid": 2.0, "high": 1.0},
     "vel_smooth_weight": 0.05,
@@ -27,19 +27,19 @@
     "vel_reg_weight": 0.01
   },
   "training": {
-    "batch_size": 192,
+    "batch_size": 160,
     "accumulation_steps": 1,
-    "learning_rate": 1e-4,
+    "learning_rate": 2e-4,
     "min_learning_rate": 1e-6,
     "weight_decay": 1e-4,
-    "num_epochs": 400,
-    "warmup_epochs": 20,
+    
+    "num_epochs": 500,
+    "warmup_epochs": 10,
+    
     "scheduler": "cosine",
     "grad_clip_norm": 1.0,
     "use_adaptive_loss_norm": true,
-    
     "label_drop_prob": 0.1,
-    
     "use_avg_style_for_uncond": true,
     "epsilon": 0.01,
     "epsilon_warmup_epochs": 10,
@@ -50,10 +50,11 @@
     "use_cagrad": false,
     "use_compile": true,
     "use_gradient_checkpointing": false,
-    "use_elastic_deform": true,
+    
+    "use_elastic_deform": false,
     "elastic_alpha": 3.0,
     
-    "save_interval": 5,
+    "save_interval": 10,
     "eval_interval": 25,
     "full_eval_interval": 50,
     
@@ -71,7 +72,7 @@
     ]
   },
   "checkpoint": {
-    "save_dir": "../AdaGN-patch-1259"
+    "save_dir": "../AdaGN-patch-500ep"
   },
   "inference": {
     "num_steps": 20,

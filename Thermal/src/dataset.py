@@ -103,9 +103,17 @@ class LatentDataset(Dataset):
             logger.info("Auto-scaling VAE latents by 1/0.18215")
             self.latents_tensor = self.latents_tensor / 0.18215
             
-        # 🚀 内存优化：Pin Memory 加速向 4070 传输
-        self.latents_tensor = self.latents_tensor.pin_memory()
+        # 🚀 Infra Optimization: GPU Cache Strategy
+        # 4070 Laptop (8GB) can easily hold 100k latents (~1.6GB)
+        self.preload_gpu = train_cfg.get('preload_data_to_gpu', False)
         
+        if self.preload_gpu and torch.cuda.is_available():
+            logger.info("🚀 Pre-loading ALL latents to GPU VRAM (Zero-Copy DataLoader)")
+            self.latents_tensor = self.latents_tensor.to('cuda')
+        else:
+            logger.info("💾 Keeping latents in CPU RAM (Pinned)")
+            self.latents_tensor = self.latents_tensor.pin_memory()
+
         # 虚拟长度：保证每个风格都充分覆盖
         max_len = max(len(x) for x in self.style_indices.values())
         self.virtual_len = max_len * num_styles * num_styles * 2

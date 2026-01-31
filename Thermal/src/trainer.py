@@ -296,24 +296,51 @@ class LGTTrainer:
     def update_loss_weights(self, epoch, total_epochs):
         """
         [Strategy Upgrade] 动态权重调度
-        随着训练进行，逐渐从 '学习风格' 转向 '保护结构'。
+        Strategy: Coarse-to-Fine Annealing (先艺术，后像真)
+        
+        Phase 1 (0% - 20%): Exploration
+            - Style Priority. w_mse starts very low (5%).
+            - Goal: Force model to learn texture distributions without rigid structural constraints.
+        Phase 2 (20% - 80%): Alignment
+            - Structure Ramp-up. w_mse linearly increases to target.
+            - Goal: Align the learned textures to content edges.
+        Phase 3 (80% - 100%): Refinement
+            - Stable weights for fine-tuning.
         """
-        # 阶段划分
-        stage_1_end = int(total_epochs * 0.2)  # 前 20%：风格爆发期
-        stage_2_end = int(total_epochs * 0.6)  # 中 40%：结构修复期
-        
         # 基础权重
-        w_style_base = self.config['loss'].get('w_style', 1.0)
+        w_style_target = self.config['loss'].get('w_style', 20.0)
         # Map w_mse to w_pyramid if w_mse is not explicitly set
-        w_mse_base = self.config['loss'].get('w_mse', self.config['loss'].get('w_pyramid', 1.0))
+        w_mse_target = self.config['loss'].get('w_mse', self.config['loss'].get('w_pyramid', 2.0))
         
-        if epoch < _w_style = w_style_base * 0.1
-            current_w_mse = w_mse_base
+        progress = epoch / max(total_epochs, 1)
+        mse_start_ratio = 0.05  # Start with 5% of structural constraint
+        
+        # 1. Style Weight: Constant & Strong (Driver)
+        current_w_style = w_style_target
+        
+        # 2. Structure Weight: Dynamic Ramp-up (Constraint)
+        if progress < 0.2:
+            # Phase 1: Exploration
+            current_w_mse = w_mse_target * mse_start_ratio
+        elif progress < 0.8:
+            # Phase 2: Alignment (Linear Ramp)
+            # Normalize progress to [0, 1] range for this phase
+            p = (progress - 0.2) / 0.6
+            ratio = mse_start_ratio + (1.0 - mse_start_ratio) * p
+            current_w_mse = w_mse_target * ratio
         else:
-            # 🔥 Fix: Maintain high style weight throughout to prevent identity collapse
-            current_w_style = w_style_base
-            current_w_mse = w_mse_basene: Dict, epoch: int, multipliers: tuple = (1.0, 1.0, 1.0)) -> Dict[str, torch.Tensor]:
-        device = self.device y mule, non_blocking=True)
+            # Phase 3: Refinement
+            current_w_mse = w_mse_target
+            
+        return current_w_style, current_w_mse
+
+    def compute_energy_loss(self, batch: Dict, epoch: int, multipliers: tuple = (1.0, 1.0, 1.0)) -> Dict[str, torch.Tensor]:
+        device = self.device
+        m_mse, m_layout, m_style = multipliers
+
+        # 🔥 Infra Optimization: Channels Last for faster Convolutions
+        latent = batch['latent'].to(device, non_blocking=True, memory_format=torch.channels_last)
+        style_id = batch['style_id'].to(device, non_blocking=True)
         latent_deformed = batch.get('latent_deformed')
         if latent_deformed is not None:
             latent_deformed = latent_deformed.to(device, non_blocking=True, memory_format=torch.channels_last)
@@ -850,27 +877,34 @@ class LGTTrainer:
         logger.info("🔥 Initializing Style LUT Cache for Multi-Style SWD...")
         style_prototypes = {}
         
-        # Sample size for distribution estimation (more samples = better style representation)
+        # 设定采样数量：为了构建稳健的风格分布，建议采样 128 张图
+        # 如果某个风格图片少于 128 张，代码会自动处理
         SAMPLES_FOR_DISTRIBUTION = 128
         
         # Collect representative latent for each style
         for style_id in range(self.config['model']['num_styles']):
             if hasattr(dataloader.dataset, 'style_indices') and style_id in self.style_indices_cache:
                 indices = self.style_indices_cache[style_id]
-                # Randomly sample indices to cover diversity
+                
+                # 随机采样一批索引 (无需 replacement，除非图片极少)
                 count = min(len(indices), SAMPLES_FOR_DISTRIBUTION)
                 selected_indices = np.random.choice(indices, count, replace=False)
                 
-                # Get batch of latents: [N, 4, 32, 32]
-                latent_sample = dataloader.dataset.latents_tensor[selected_indices]
+                # 直接从 Dataset 的内存张量中获取 Batch [N, 4, 32, 32]
+                # dataset.py 中 latents_tensor 已经在 CPU 内存中，读取极快
+                latents_batch = dataloader.dataset.latents_tensor[selected_indices]
+                
+                # 将这个 Batch 存入字典，GeometricFreeEnergyLoss 会自动将其展平处理
+                style_prototypes[style_id] = latents_batch
+                
+                logger.info(f"  Style {style_id}: Sampled {count} images for distribution statistics.")
             else:
                 # Fallback: random initialization
                 logger.warning(f"⚠️  No style {style_id} samples found, using random init")
-                latent_sample = torch.randn(1, 4, 32, 32)
-            
-            style_prototypes[style_id] = latent_sample
+                style_prototypes[style_id] = torch.randn(1, 4, 32, 32)
         
-        # Initialize LUT cache (this pre-computes all sorted projections)
+        # Initialize LUT cache
+        # 此时传入的是 [128, 4, 32, 32] 的数据，能算出真正的“风格分布”
         self.energy_loss.initialize_cache(style_prototypes, self.device)
         
         # Save originals

@@ -9,8 +9,9 @@ import torch._inductor.config as inductor_config
 
 # 1. 开启 FX 图缓存 (持久化 torch.compile，要求 PyTorch >= 2.2)
 inductor_config.fx_graph_cache = True
-# 2. 设置缓存存放路径 (项目根目录下的 .compile_cache)
-os.environ["TORCHINDUCTOR_CACHE_DIR"] = str(Path(__file__).parent.parent / "../compile_cache")
+# 2. 🚀 Infra Optimization: Force Cache to Linux Native FS (Avoid /mnt/c latency)
+# 使用用户主目录下的 .cache，确保是 ext4 文件系统
+os.environ["TORCHINDUCTOR_CACHE_DIR"] = os.path.expanduser("~/.cache/torch_compile")
 # 3. 针对 4070 特性微调：强制唯一内核名称并减少冗余搜索
 inductor_config.triton.unique_kernel_names = True
 inductor_config.fallback_random = True
@@ -28,6 +29,10 @@ logger = logging.getLogger(__name__)
 
 
 def _resolve_num_workers(config) -> int:
+    # 🚀 Optimization: If data is on GPU, workers must be 0 to avoid multiprocessing overhead
+    if config['training'].get('preload_data_to_gpu', False):
+        return 0
+        
     cfg_workers = config['training'].get('num_workers')
     if cfg_workers is not None:
         return int(cfg_workers)
