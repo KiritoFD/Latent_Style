@@ -382,10 +382,9 @@ class MultiScaleSWDLoss(nn.Module):
                 num_projections=num_projections,
                 max_samples=max_samples,
                 use_fp32=use_fp32,
-                # 🔥 Key: Only normalize for scale > 1
-                # Scale 1 (1×1 patch) normalization would yield all zeros
-                # Scale 3, 7 get brightness normalization for texture focus
-                normalize_patch='mean' if scale > 1 else 'none'
+                # 🔥 Fix: Only normalize for very large scales to preserve brightness/color
+                # Scale 1-5: 'none' preserves palette and local contrast
+                normalize_patch='mean' if scale > 5 else 'none'
             )
             for scale in scales
         ])
@@ -651,6 +650,17 @@ class GeometricFreeEnergyLoss(nn.Module):
                 
                 total_loss = total_loss + self.scale_weights[scale_idx] * scale_loss
                 loss_dict[f'swd_scale_{scale}'] = scale_loss.detach()
+        
+        # 🔥 Fix: Global Moment Matching (Color/Brightness Lock)
+        # SWD handles local texture, this handles global atmosphere
+        mu_pred = x_pred.float().mean(dim=(2, 3))
+        mu_style = x_style.float().mean(dim=(2, 3))
+        std_pred = x_pred.float().std(dim=(2, 3))
+        std_style = x_style.float().std(dim=(2, 3))
+        
+        loss_moments = F.mse_loss(mu_pred, mu_style) + F.mse_loss(std_pred, std_style)
+        total_loss = total_loss + 10.0 * loss_moments
+        loss_dict['moments'] = loss_moments.detach()
         
         loss_dict['style_swd'] = total_loss
         

@@ -73,7 +73,8 @@ class LatentDataset(Dataset):
         
         # 配置读取
         train_cfg = config['training'] if config else {}
-        self.apply_elastic = train_cfg.get('use_elastic_deform', True)
+        # 🔥 Fix: Force disable elastic deformation to preserve geometric integrity of style targets
+        self.apply_elastic = False # train_cfg.get('use_elastic_deform', True)
         self.base_alpha = train_cfg.get('elastic_alpha', 15.0)
         self.current_alpha = self.base_alpha
         self.current_epoch = 0
