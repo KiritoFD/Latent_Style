@@ -25,7 +25,8 @@ def save_checkpoint(
     scaler: torch.amp.GradScaler,
     config: Dict[str, Any],
     metrics: Dict[str, float],
-    global_step: int
+    global_step: int,
+    adaptive_norm_state: Optional[Dict[str, Any]] = None
 ) -> Path:
     """
     Save complete training state to checkpoint.
@@ -40,6 +41,7 @@ def save_checkpoint(
         config: Training configuration (for validation on resume)
         metrics: Current training metrics
         global_step: Global step counter (critical for alpha warmup)
+        adaptive_norm_state: State dicts for adaptive loss normalizers
     
     Returns:
         Path to saved checkpoint
@@ -53,6 +55,7 @@ def save_checkpoint(
         'scaler_state_dict': scaler.state_dict(),
         'config': config,
         'metrics': metrics,
+        'adaptive_norm_state': adaptive_norm_state,
         # 🔥 Critical: Save config hash for validation
         'config_hash': _compute_config_hash(config)
     }
@@ -98,7 +101,7 @@ def load_checkpoint(
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
     
     logger.info(f"Loading checkpoint: {checkpoint_path}")
-    checkpoint = torch.load(checkpoint_path, map_location=device)
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
     
     # 1. Validate config consistency
     _validate_config(checkpoint.get('config', {}), current_config)
@@ -157,7 +160,8 @@ def load_checkpoint(
     return {
         'start_epoch': start_epoch,
         'global_step': global_step,
-        'metrics': checkpoint.get('metrics', {})
+        'metrics': checkpoint.get('metrics', {}),
+        'adaptive_norm_state': checkpoint.get('adaptive_norm_state', None)
     }
 
 
@@ -256,7 +260,7 @@ def compare_configs(checkpoint_path: Path, config_path: Path) -> Dict[str, Any]:
     Returns:
         Dict with 'matches', 'mismatches', 'missing' keys
     """
-    checkpoint = torch.load(checkpoint_path, map_location='cpu')
+    checkpoint = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
     saved_config = checkpoint.get('config', {})
     
     with open(config_path, 'r') as f:
