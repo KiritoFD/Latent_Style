@@ -1,0 +1,136 @@
+{
+  "checkpoint": "../stage_weight/epoch_0350.pt",
+  "timestamp": "2026-01-31 07:52:54",
+  "matrix_breakdown": {
+    "monet": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.6792000618577002,
+        "style_lpips": 0.709436708966891,
+        "content_lpips": 0.5693263093630473,
+        "clip_content": 0.7262722055117289
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5730373916427296,
+        "style_lpips": 0.7625456051031748,
+        "content_lpips": 0.597747250398,
+        "clip_content": 0.7238596936066946
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.6613596514662106,
+        "style_lpips": 0.7570669514735541,
+        "content_lpips": 0.5839183032512665,
+        "clip_content": 0.7099226395289103
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.6366596646308899,
+        "style_lpips": 0.7285363911390305,
+        "content_lpips": 0.5795043965180715,
+        "clip_content": 0.7097881396611532
+      }
+    },
+    "photo": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.6164774472316107,
+        "style_lpips": 0.7245939524968464,
+        "content_lpips": 0.5975428462028504,
+        "clip_content": 0.6561683535575866
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5999389683604239,
+        "style_lpips": 0.7531673998037973,
+        "content_lpips": 0.5343266725540161,
+        "clip_content": 0.683745406071345
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.628623661140601,
+        "style_lpips": 0.7668470751047134,
+        "content_lpips": 0.6065485219160716,
+        "clip_content": 0.6537323792775472
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.5911671669284503,
+        "style_lpips": 0.7358033473094304,
+        "content_lpips": 0.5985253135363261,
+        "clip_content": 0.6551773170630137
+      }
+    },
+    "vangogh": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.6558112659653028,
+        "style_lpips": 0.7254799815813698,
+        "content_lpips": 0.5718621502319972,
+        "clip_content": 0.7280609468619029
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5694999345541001,
+        "style_lpips": 0.791363658507665,
+        "content_lpips": 0.6303102811177571,
+        "clip_content": 0.701524806022644
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.66948721631368,
+        "style_lpips": 0.7388445229927699,
+        "content_lpips": 0.5789402465025584,
+        "clip_content": 0.7242199023564656
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.6505700816909473,
+        "style_lpips": 0.733226364771525,
+        "content_lpips": 0.580142010251681,
+        "clip_content": 0.7382228394349416
+      }
+    },
+    "cezanne": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.6470008176962537,
+        "style_lpips": 0.7262835961977641,
+        "content_lpips": 0.5685279846191407,
+        "clip_content": 0.6890705724557241
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5552777070601781,
+        "style_lpips": 0.7686853678226472,
+        "content_lpips": 0.6188197950522105,
+        "clip_content": 0.6969985981782277
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.6512388805945715,
+        "style_lpips": 0.7583335880041122,
+        "content_lpips": 0.5782170772552491,
+        "clip_content": 0.678006664911906
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.6452488938172658,
+        "style_lpips": 0.7225642948746681,
+        "content_lpips": 0.5689110865195592,
+        "clip_content": 0.692952032883962
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "clip_style": 0.6197269725501539,
+      "content_lpips": 0.5926388275292184
+    },
+    "photo_to_art_performance": {
+      "clip_style": 0.6120894251002206,
+      "valid": true
+    }
+  }
+}

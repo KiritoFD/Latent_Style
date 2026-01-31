@@ -333,7 +333,7 @@ class LGTInference:
         self.num_steps = num_steps
         
         # Load model
-        checkpoint = torch.load(model_path, map_location=device)
+        checkpoint = torch.load(model_path, map_location=device, weights_only=False)
         config = checkpoint['config']
         
         self.model = LGTUNet(

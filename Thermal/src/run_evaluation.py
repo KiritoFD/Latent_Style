@@ -82,7 +82,7 @@ def main():
     parser.add_argument('--checkpoint', type=str, required=True)
     parser.add_argument('--output', type=str, required=True)
     parser.add_argument('--test_dir', type=str, default=None)
-    parser.add_argument('--cache_dir', type=str, default="./eval_cache", help="Directory to store shared feature caches")
+    parser.add_argument('--cache_dir', type=str, default="../eval_cache", help="Directory to store shared feature caches")
     parser.add_argument('--num_steps', type=int, default=15)
     parser.add_argument('--max_src_samples', type=int, default=30, help="Max source images to generate (user specified)")
     parser.add_argument('--max_ref_compare', type=int, default=50, help="Randomly sample X refs for metric calculation (speedup)")
@@ -101,7 +101,7 @@ def main():
     checkpoint_path = Path(args.checkpoint)
     if not checkpoint_path.exists(): raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
     
-    ckpt = torch.load(checkpoint_path, map_location='cpu')
+    ckpt = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
     cfg = ckpt.get('config', {})
     
     # Resolve Test Data Path
@@ -154,7 +154,7 @@ def main():
     if cache_file.exists() and not args.force_regen:
         print(f"📦 Found feature cache: {cache_file}")
         try:
-            ref_features = torch.load(cache_file, map_location='cpu')
+            ref_features = torch.load(cache_file, map_location='cpu', weights_only=False)
             print("✓ Cache loaded successfully")
         except Exception as e:
             print(f"⚠️ Cache load failed ({e}), re-computing...")

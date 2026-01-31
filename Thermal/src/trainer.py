@@ -46,6 +46,13 @@ class RunningMean:
         self.mean = self.momentum * self.mean + (1 - self.momentum) * val_detached
         return max(self.mean.item(), 1e-4)  # 🔥 提高 epsilon，防止 Loss 在极小时因分母过小而爆炸
 
+    def state_dict(self):
+        return {'mean': self.mean}
+
+    def load_state_dict(self, state_dict):
+        if 'mean' in state_dict:
+            self.mean = state_dict['mean'].to(self.mean.device)
+
 def apply_cagrad(grads, c=0.4):
     """
     Conflict-Averaged Gradient (CAGrad) for 2 tasks.
@@ -246,6 +253,18 @@ class LGTTrainer:
             )
             self.start_epoch = resume_info.get('start_epoch', 1)
             self.global_step = resume_info.get('global_step', 0)
+            
+            # Restore Adaptive Normalization State
+            if self.use_adaptive_norm and 'adaptive_norm_state' in resume_info:
+                norm_state = resume_info['adaptive_norm_state']
+                if norm_state:
+                    if 'mse' in norm_state: self.norm_mse.load_state_dict(norm_state['mse'])
+                    if 'style' in norm_state: self.norm_style.load_state_dict(norm_state['style'])
+                    logger.info("✓ Adaptive loss normalization state restored")
+            
+            # Restore LoRA Alpha immediately
+            self._update_lora_alpha(self.global_step)
+            
         except Exception as exc:  # pragma: no cover - best effort
             logger.error(f"Failed to resume from {latest_ckpt}: {exc}")
 
@@ -303,48 +322,39 @@ class LGTTrainer:
 
     def _get_thermodynamic_schedule(self, epoch: int):
         """
-        🔥 Staircase Thermodynamic Schedule (Moves every 100 epochs)
-        
-        Calculates multipliers that stay constant for 100-epoch blocks.
-        - Structure (Solid Phase): Cosine Decay (High -> Low)
-        - Style (Liquid Phase): Cosine Warmup (Low -> High)
+        [Strategy Upgrade] 禁用旧的连续调度器，完全由 update_loss_weights 控制
+        返回固定倍率 1.0，确保不干扰 update_loss_weights 的离散逻辑。
         """
-        p_cfg = self.config['training'].get('phased_training', {})
-        if not p_cfg:
-            return 1.0, 1.0, 1.0
+        return 1.0, 1.0, 1.0
+
+    def update_loss_weights(self, epoch, total_epochs):
+        """
+        [Strategy Upgrade] 动态权重调度
+        随着训练进行，逐渐从 '学习风格' 转向 '保护结构'。
+        """
+        # 阶段划分
+        stage_1_end = int(total_epochs * 0.2)  # 前 20%：风格爆发期
+        stage_2_end = int(total_epochs * 0.6)  # 中 40%：结构修复期
         
-        # 🔥 Phase-Aligned Schedule (Synchronized with LR Cosine Decay)
-        # Ensure 't' represents the progress through the MAIN training phase, excluding warmup.
-        warmup_epochs = self.config['training'].get('warmup_epochs', 10)
+        # 基础权重
+        w_style_base = self.config['loss'].get('w_style', 1.0)
+        # Map w_mse to w_pyramid if w_mse is not explicitly set
+        w_mse_base = self.config['loss'].get('w_mse', self.config['loss'].get('w_pyramid', 1.0))
         
-        if epoch <= warmup_epochs:
-            t = 0.0  # Force Structure Mode during Warmup
+        if epoch < stage_1_end:
+            # Phase 1: 保持原样，让风格飞
+            current_w_style = w_style_base
+            current_w_mse = w_mse_base * 0.5  # 稍微放松结构，方便探索
+        elif epoch < stage_2_end:
+            # Phase 2: 风格降权，结构加倍 (强力刹车)
+            current_w_style = w_style_base * 0.5
+            current_w_mse = w_mse_base * 5.0  # 🔥 暴力拉回结构
         else:
-            # t goes from 0.0 -> 1.0 as we progress from warmup_end -> num_epochs
-            t = min((epoch - warmup_epochs) / max(self.num_epochs - warmup_epochs, 1), 1.0)
-
-        step_size = p_cfg.get('phase_step_size', 0) # 0 = Smooth continuous
-        if step_size > 0:
-            # Staircase (Discrete jumps)
-            # Quantize t to blocks
-            t = math.floor(t * self.num_epochs / step_size) * step_size / self.num_epochs
-        
-        # 1. Structure Schedule: Cosine Decay
-        # Starts strong to lock content, decays to allow artistic deformation
-        mse_start = p_cfg.get('m_mse_start', 2.0)
-        mse_end = p_cfg.get('m_mse_end', 0.5)
-        m_mse = mse_end + 0.5 * (mse_start - mse_end) * (1 + np.cos(t * np.pi))
-        
-        # Layout follows MSE but usually stays a bit higher to keep composition
-        m_layout = m_mse * p_cfg.get('layout_ratio', 0.8)
-
-        # 2. Style Schedule: Cosine Warmup
-        # Starts weak to prevent noise overfitting, rises to dominate late training
-        style_start = p_cfg.get('m_style_start', 0.1)
-        style_end = p_cfg.get('m_style_end', 2.0)
-        m_style = style_start + 0.5 * (style_end - style_start) * (1 - np.cos(t * np.pi))
-
-        return m_mse, m_layout, m_style
+            # Phase 3: 彻底锁死
+            current_w_style = w_style_base * 0.2
+            current_w_mse = w_mse_base * 10.0
+            
+        return current_w_style, current_w_mse
 
     def compute_energy_loss(self, batch: Dict, epoch: int, multipliers: tuple = (1.0, 1.0, 1.0)) -> Dict[str, torch.Tensor]:
         device = self.device
@@ -398,36 +408,75 @@ class LGTTrainer:
         with torch.amp.autocast('cuda', enabled=self.use_amp, dtype=torch.bfloat16):
             v_pred = self.model(x_t, t, style_id_tgt, use_avg_style=drop_label)
 
-        with torch.no_grad():
-            # 🔥 Flow Matching target: displacement vector from noise to art
-            v_target = x_target_noisy - x0  # [B, C, H, W]
-        
-        # 1. Structure Consistency (Pyramid MSE - frequency separated)
-        # Low-freq locked hard, high-freq soft → allows artistic deformation
-        loss_struc, struc_metrics = self.pyramid_loss(v_pred, v_target)
+        # [Dynamic Anchoring] Update weights based on epoch
+        cur_w_style, cur_w_mse = self.update_loss_weights(epoch, self.num_epochs)
 
-        # 🔥 Optimization: Reuse v_pred if steps=1 (Compute Reuse)
-        # If we are conditional (not dropping label), v_pred IS the velocity we want.
-        # Saves 1 full forward pass -> ~2x speedup for this step.
-        if self.ode_steps == 1 and not drop_label:
-            # Euler integration: x1 = xt + v * (1-t)
-            dt = (1.0 - t).view(-1, 1, 1, 1)
-            x_1 = x_t + v_pred * dt
-        else:
-            x_1 = integrate_ode(
-                model=self.model,
-                x_t=x_t,
-                t_start=t,
-                style_id=style_id_tgt,
-                steps=self.ode_steps,
-                use_checkpoint=self.config['training'].get('use_gradient_checkpointing', True),
-                use_amp=self.use_amp,
-                amp_dtype=torch.bfloat16,
-                training=self.model.training,
-            )
+        # [Photo Identity Protection]
+        # Identify photo samples (Hard Constraint)
+        style_subdirs = self.config['data'].get('style_subdirs', [])
+        is_photo = torch.zeros_like(style_id_tgt, dtype=torch.bool)
+        if 'photo' in style_subdirs:
+            photo_idx = style_subdirs.index('photo')
+            is_photo = (style_id_tgt == photo_idx)
+        
+        # Create per-sample weight tensors
+        w_style_batch = torch.full((b,), cur_w_style, device=device)
+        w_mse_batch = torch.full((b,), cur_w_mse, device=device)
+        
+        if is_photo.any():
+            w_style_batch = torch.where(is_photo, torch.tensor(0.0, device=device), w_style_batch)
+            w_mse_batch = torch.where(is_photo, w_mse_batch * 10.0, w_mse_batch)
+        
+        # 1. 强制退出 Autocast，进入 FP32 高精度领域
+        # 我们已经拿到了 v_pred (BF16)，现在要进行精细的积分和 Loss 计算
+        with torch.amp.autocast('cuda', enabled=False):
+            # 将关键张量转为 FP32
+            v_pred_f32 = v_pred.float()
+            x_t_f32 = x_t.float()
+            t_f32 = t.view(-1, 1, 1, 1).float()
             
-        loss_dict = self.energy_loss(x_1, style_latents, style_ids=style_id_tgt)
-        loss_style = loss_dict['style_swd']
+            # --- ODE 积分评估 (精度修正) ---
+            # 即使 config 里是 1 步，我们也在这里显式写出欧拉积分，保证是在 FP32 下做的加法
+            if self.ode_steps == 1 and not drop_label:
+                dt = (1.0 - t_f32)
+                # 关键：大数(Latent) + 小数(Update) 在 FP32 下进行，防止下溢
+                x_1_pred = x_t_f32 + v_pred_f32 * dt
+            else:
+                # 如果是多步，integrate_ode 内部也需要确保使用 FP32
+                x_1_pred = integrate_ode(
+                    model=self.model,
+                    x_t=x_t_f32,
+                    t_start=t_f32.view(-1),
+                    style_id=style_id_tgt,
+                    steps=self.ode_steps,
+                    use_checkpoint=self.config['training'].get('use_gradient_checkpointing', True),
+                    use_amp=self.use_amp,
+                    amp_dtype=torch.bfloat16,
+                    training=self.model.training,
+                )
+
+            # --- 目标构建 ---
+            # Flow Matching 的目标速度 v_target 也要是 FP32
+            # 注意：这里的 x_src_target 是纯净的图，x0 是噪声
+            v_target_f32 = (x_src_target.float() - x0.float())
+
+            # --- Loss 计算 (FP32) ---
+            # 1. 结构损失 (MSE): 在 FP32 下计算，捕获 1e-4 级别的差异
+            loss_struc, struc_metrics = self.pyramid_loss(
+                v_pred_f32, 
+                v_target_f32, 
+                sample_weights=w_mse_batch
+            )
+
+            # 2. 风格损失 (SWD): 
+            # SWD 内部涉及排序，FP32 排序比 BF16 更稳定且更有意义
+            loss_dict = self.energy_loss(
+                x_1_pred, # FP32
+                style_latents.float(), 
+                style_ids=style_id_tgt, 
+                sample_weights=w_style_batch
+            )
+            loss_style = loss_dict['style_swd']
 
         style_weight_batch = self.style_weights[style_id_tgt].mean()
 
@@ -440,11 +489,16 @@ class LGTTrainer:
             norm_factor_style = 1.0
         
         # 🔥 Clean Loss Assembly: Pyramid (structure) + SWD (texture)
-        # Normalize by average multiplier to prevent loss explosion during phase shifts
-        term_struc = (self.w_pyramid * m_mse * loss_struc / norm_factor_mse)
-        term_style = (style_weight_batch * self.energy_loss.w_style * m_style * loss_style / norm_factor_style)
+        # Note: Weights are already applied inside the loss functions via sample_weights
+        term_struc = (m_mse * loss_struc / norm_factor_mse)
+        term_style = (style_weight_batch * m_style * loss_style / norm_factor_style)
         
-        norm_scale = (m_mse + m_style) / 2.0
+        # 🔥 Weighted Normalization: Accounts for base weight disparity (w_style=5 vs w_pyramid=1)
+        # This ensures Total Loss remains stable even when schedule shifts focus to heavier terms
+        base_weight_sum = cur_w_mse + cur_w_style
+        current_weight_sum = (cur_w_mse * m_mse) + (cur_w_style * m_style)
+        norm_scale = current_weight_sum / (base_weight_sum + 1e-6)
+        
         total = (term_struc + term_style) / (norm_scale + 1e-6)
         
         if self.use_velocity_reg and self.vel_reg_loss is not None:
@@ -501,8 +555,8 @@ class LGTTrainer:
                 
             if self.use_cagrad:
                 # 1. Separate losses for conflict resolution
-                loss_struct = (self.w_pyramid * m_mse * ld['mse']) / self.accumulation_steps
-                loss_style = (ld['style_swd'] * self.energy_loss.w_style * m_style) / self.accumulation_steps
+                loss_struct = (m_mse * ld['mse']) / self.accumulation_steps
+                loss_style = (ld['style_swd'] * m_style) / self.accumulation_steps
                 
                 # 2. Compute gradients separately
                 self.optimizer.zero_grad(set_to_none=True)
@@ -773,6 +827,11 @@ class LGTTrainer:
     # Checkpointing/logging
     # ------------------------------------------------------------------
     def save_checkpoint(self, epoch: int, metrics: Dict[str, float]) -> None:
+        adaptive_norm_state = {}
+        if self.use_adaptive_norm:
+            adaptive_norm_state['mse'] = self.norm_mse.state_dict()
+            adaptive_norm_state['style'] = self.norm_style.state_dict()
+
         save_checkpoint(
             checkpoint_dir=self.checkpoint_dir,
             epoch=epoch,
@@ -783,6 +842,7 @@ class LGTTrainer:
             config=self.config,
             metrics=metrics,
             global_step=self.global_step,
+            adaptive_norm_state=adaptive_norm_state if adaptive_norm_state else None
         )
 
     def log_epoch(self, epoch: int, metrics: Dict[str, float]) -> None:
@@ -819,8 +879,6 @@ class LGTTrainer:
         min_lr = float(self.config['training'].get('min_learning_rate', 1e-6))
         warmup_epochs = self.config['training'].get('warmup_epochs', 10)
 
-        logger.info(f"✓ Scheduler: Linear Warmup ({warmup_epochs}) -> Cosine Annealing (to {min_lr})")
-
         # 1. Warmup Phase
         warmup_scheduler = LinearLR(
             self.optimizer, 
@@ -829,12 +887,25 @@ class LGTTrainer:
             total_iters=warmup_epochs
         )
 
-        # 2. Cosine Cooling Phase
-        main_scheduler = CosineAnnealingLR(
-            self.optimizer,
-            T_max=self.num_epochs - warmup_epochs,
-            eta_min=min_lr
-        )
+        # 2. Main Phase (Step or Cosine)
+        scheduler_type = self.config['training'].get('scheduler', 'cosine')
+        
+        if scheduler_type == 'step' or scheduler_type == 'multistep':
+            milestones = self.config['training'].get('scheduler_milestones', [50, 100])
+            gamma = self.config['training'].get('gamma', 0.1)
+            logger.info(f"✓ Scheduler: Linear Warmup ({warmup_epochs}) -> MultiStepLR (milestones={milestones}, gamma={gamma})")
+            main_scheduler = torch.optim.lr_scheduler.MultiStepLR(
+                self.optimizer,
+                milestones=[m - warmup_epochs for m in milestones if m > warmup_epochs],
+                gamma=gamma
+            )
+        else:
+            logger.info(f"✓ Scheduler: Linear Warmup ({warmup_epochs}) -> Cosine Annealing (to {min_lr})")
+            main_scheduler = CosineAnnealingLR(
+                self.optimizer,
+                T_max=self.num_epochs - warmup_epochs,
+                eta_min=min_lr
+            )
 
         # 3. Combine
         self.scheduler = SequentialLR(

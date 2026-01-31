@@ -563,7 +563,7 @@ class GeometricFreeEnergyLoss(nn.Module):
         self._is_initialized.fill_(True)
         logger.info("✅ SWD Cache Initialization Complete")
     
-    def forward(self, x_pred: torch.Tensor, x_style: torch.Tensor, style_ids: Optional[torch.Tensor] = None) -> Dict[str, torch.Tensor]:
+    def forward(self, x_pred: torch.Tensor, x_style: torch.Tensor, style_ids: Optional[torch.Tensor] = None, sample_weights: Optional[torch.Tensor] = None) -> Dict[str, torch.Tensor]:
         """
         计算多尺度 SWD 损失（使用预计算的 Style LUT）
         
@@ -571,6 +571,7 @@ class GeometricFreeEnergyLoss(nn.Module):
             x_pred: [B, 4, H, W] 模型预测的终端状态
             x_style: [B, 4, H, W] 风格参考（用于旧式直接计算，仅在未初始化缓存时使用）
             style_ids: [B] 每个样本的目标风格 ID（与 LUT 索引对应）
+            sample_weights: [B] Optional per-sample weights for loss masking
         
         Returns:
             loss_dict: {
@@ -641,7 +642,12 @@ class GeometricFreeEnergyLoss(nn.Module):
                 proj_target_sorted = lut.index_select(0, style_ids)
                 
                 # 6. 计算 SWD 损失（L2 距离）
-                scale_loss = F.mse_loss(proj_input_sorted.float(), proj_target_sorted.float())
+                if sample_weights is not None:
+                    # [B, max_samples, num_projections] -> [B]
+                    raw_loss = F.mse_loss(proj_input_sorted.float(), proj_target_sorted.float(), reduction='none').mean(dim=(1, 2))
+                    scale_loss = (raw_loss * sample_weights).mean()
+                else:
+                    scale_loss = F.mse_loss(proj_input_sorted.float(), proj_target_sorted.float())
                 
                 total_loss = total_loss + self.scale_weights[scale_idx] * scale_loss
                 loss_dict[f'swd_scale_{scale}'] = scale_loss.detach()
@@ -696,13 +702,14 @@ class PyramidStructuralLoss(nn.Module):
         # Default weights optimized for latent space (32x32 base resolution)
         self.w = weights or {'low': 5.0, 'mid': 1.0, 'high': 0.2}
     
-    def forward(self, v_pred: torch.Tensor, v_target: torch.Tensor) -> torch.Tensor:
+    def forward(self, v_pred: torch.Tensor, v_target: torch.Tensor, sample_weights: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
         Compute multi-scale structural MSE loss.
         
         Args:
             v_pred: [B, C, H, W] Predicted velocity field
             v_target: [B, C, H, W] Target velocity field
+            sample_weights: [B] Optional per-sample weights
         
         Returns:
             loss: Weighted sum of pyramid MSE losses
@@ -711,17 +718,28 @@ class PyramidStructuralLoss(nn.Module):
         # At this scale, only composition/color palette survives
         v_p_low = F.interpolate(v_pred, size=(8, 8), mode='area')
         v_t_low = F.interpolate(v_target, size=(8, 8), mode='area')
-        loss_low = F.mse_loss(v_p_low, v_t_low)
         
         # L1: 16x16 Contours (Mid-frequency)
         # Objects and major edges are preserved
         v_p_mid = F.interpolate(v_pred, size=(16, 16), mode='area')
         v_t_mid = F.interpolate(v_target, size=(16, 16), mode='area')
-        loss_mid = F.mse_loss(v_p_mid, v_t_mid)
         
         # L0: 32x32 Details (High-frequency, soft protection)
         # Full resolution - texture can still be modified by SWD
-        loss_high = F.mse_loss(v_pred, v_target)
+        
+        if sample_weights is not None:
+            # Helper to compute weighted mean
+            def weighted_mse(pred, tgt, w):
+                raw = F.mse_loss(pred, tgt, reduction='none').mean(dim=(1, 2, 3)) # [B]
+                return (raw * w).mean()
+            
+            loss_low = weighted_mse(v_p_low, v_t_low, sample_weights)
+            loss_mid = weighted_mse(v_p_mid, v_t_mid, sample_weights)
+            loss_high = weighted_mse(v_pred, v_target, sample_weights)
+        else:
+            loss_low = F.mse_loss(v_p_low, v_t_low)
+            loss_mid = F.mse_loss(v_p_mid, v_t_mid)
+            loss_high = F.mse_loss(v_pred, v_target)
 
         total = self.w['low'] * loss_low + self.w['mid'] * loss_mid + self.w['high'] * loss_high
 
