@@ -1,0 +1,8 @@
+STDOUT
+
+
+STDERR
+usage: run_evaluation.py [-h] --checkpoint CHECKPOINT --output OUTPUT
+                         [--test_dir TEST_DIR] [--cache_dir CACHE_DIR]
+                         [--gen_bs GEN_BS] [--eval_bs EVAL_BS] [--force_regen]
+run_evaluation.py: error: unrecognized arguments: --num_steps 20

@@ -1,0 +1,83 @@
+STDOUT
+
+🚀 Phase 1: Generation (Batch Size 20)
+  Generating Batch 1/6
+  Generating Batch 2/6
+  Generating Batch 3/6
+  Generating Batch 4/6
+  Generating Batch 5/6
+  Generating Batch 6/6
+  ✓ Generation Models Unloaded
+
+🚀 Phase 2: Evaluation
+  ✓ LPIPS Loaded
+  ✓ CLIP Loaded
+
+🏗️  Computing Reference Features (One-time setup)...
+✓ Cache saved to ../eval_cache/ref_feats_67ca2845.pt
+  Processing 480 generated images...
+
+📊 Generating Summary...
+✓ Summary saved: ../256-3decoder-20style-1mse/full_eval/epoch_0050/summary.json
+
+
+STDERR
+/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+
+Featurizing monet:   0%|          | 0/50 [00:00<?, ?it/s]
+Featurizing monet:   2%|▏         | 1/50 [00:00<00:09,  5.02it/s]
+Featurizing monet:   4%|▍         | 2/50 [00:00<00:07,  6.53it/s]
+Featurizing monet:   6%|▌         | 3/50 [00:00<00:06,  7.56it/s]
+Featurizing monet:  14%|█▍        | 7/50 [00:00<00:02, 17.34it/s]
+Featurizing monet:  24%|██▍       | 12/50 [00:00<00:01, 26.42it/s]
+Featurizing monet:  34%|███▍      | 17/50 [00:00<00:01, 32.05it/s]
+Featurizing monet:  44%|████▍     | 22/50 [00:00<00:00, 36.27it/s]
+Featurizing monet:  54%|█████▍    | 27/50 [00:00<00:00, 39.34it/s]
+Featurizing monet:  64%|██████▍   | 32/50 [00:01<00:00, 40.41it/s]
+Featurizing monet:  74%|███████▍  | 37/50 [00:01<00:00, 41.01it/s]
+Featurizing monet:  84%|████████▍ | 42/50 [00:01<00:00, 41.40it/s]
+Featurizing monet:  94%|█████████▍| 47/50 [00:01<00:00, 42.34it/s]
+Featurizing monet: 100%|██████████| 50/50 [00:01<00:00, 32.85it/s]
+
+Featurizing photo:   0%|          | 0/50 [00:00<?, ?it/s]
+Featurizing photo:  10%|█         | 5/50 [00:00<00:01, 44.30it/s]
+Featurizing photo:  20%|██        | 10/50 [00:00<00:00, 44.10it/s]
+Featurizing photo:  30%|███       | 15/50 [00:00<00:00, 43.57it/s]
+Featurizing photo:  40%|████      | 20/50 [00:00<00:00, 43.85it/s]
+Featurizing photo:  50%|█████     | 25/50 [00:00<00:00, 44.02it/s]
+Featurizing photo:  60%|██████    | 30/50 [00:00<00:00, 43.13it/s]
+Featurizing photo:  70%|███████   | 35/50 [00:00<00:00, 42.66it/s]
+Featurizing photo:  80%|████████  | 40/50 [00:00<00:00, 42.75it/s]
+Featurizing photo:  90%|█████████ | 45/50 [00:01<00:00, 42.63it/s]
+Featurizing photo: 100%|██████████| 50/50 [00:01<00:00, 42.98it/s]
+Featurizing photo: 100%|██████████| 50/50 [00:01<00:00, 43.19it/s]
+
+Featurizing vangogh:   0%|          | 0/50 [00:00<?, ?it/s]
+Featurizing vangogh:  10%|█         | 5/50 [00:00<00:01, 44.08it/s]
+Featurizing vangogh:  20%|██        | 10/50 [00:00<00:00, 43.55it/s]
+Featurizing vangogh:  30%|███       | 15/50 [00:00<00:00, 43.16it/s]
+Featurizing vangogh:  40%|████      | 20/50 [00:00<00:00, 43.41it/s]
+Featurizing vangogh:  50%|█████     | 25/50 [00:00<00:00, 43.85it/s]
+Featurizing vangogh:  60%|██████    | 30/50 [00:00<00:00, 43.48it/s]
+Featurizing vangogh:  70%|███████   | 35/50 [00:00<00:00, 42.37it/s]
+Featurizing vangogh:  80%|████████  | 40/50 [00:00<00:00, 42.75it/s]
+Featurizing vangogh:  90%|█████████ | 45/50 [00:01<00:00, 42.27it/s]
+Featurizing vangogh: 100%|██████████| 50/50 [00:01<00:00, 41.88it/s]
+Featurizing vangogh: 100%|██████████| 50/50 [00:01<00:00, 42.68it/s]
+
+Featurizing cezanne:   0%|          | 0/50 [00:00<?, ?it/s]
+Featurizing cezanne:  10%|█         | 5/50 [00:00<00:01, 44.20it/s]
+Featurizing cezanne:  20%|██        | 10/50 [00:00<00:00, 43.66it/s]
+Featurizing cezanne:  30%|███       | 15/50 [00:00<00:00, 43.27it/s]
+Featurizing cezanne:  40%|████      | 20/50 [00:00<00:00, 43.69it/s]
+Featurizing cezanne:  50%|█████     | 25/50 [00:00<00:00, 44.01it/s]
+Featurizing cezanne:  60%|██████    | 30/50 [00:00<00:00, 43.55it/s]
+Featurizing cezanne:  70%|███████   | 35/50 [00:00<00:00, 42.86it/s]
+Featurizing cezanne:  80%|████████  | 40/50 [00:00<00:00, 42.76it/s]
+Featurizing cezanne:  90%|█████████ | 45/50 [00:01<00:00, 42.74it/s]
+Featurizing cezanne: 100%|██████████| 50/50 [00:01<00:00, 43.04it/s]
+Featurizing cezanne: 100%|██████████| 50/50 [00:01<00:00, 43.22it/s]

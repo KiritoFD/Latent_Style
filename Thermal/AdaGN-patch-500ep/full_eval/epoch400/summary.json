@@ -1,0 +1,136 @@
+{
+  "checkpoint": "../AdaGN-patch-500ep/epoch_0400.pt",
+  "timestamp": "2026-02-01 14:08:13",
+  "matrix_breakdown": {
+    "monet": {
+      "monet": {
+        "count": 270,
+        "clip_style": 0.39889910574312565,
+        "style_lpips": 0.07759875059127808,
+        "content_lpips": 0.04881132044444445,
+        "clip_content": 0.7439654247037036
+      },
+      "photo": {
+        "count": 270,
+        "clip_style": 0.30730768596684493,
+        "style_lpips": 0.08300208846728006,
+        "content_lpips": 0.047385536777777786,
+        "clip_content": 0.7682518031481481
+      },
+      "vangogh": {
+        "count": 270,
+        "clip_style": 0.3747735745377011,
+        "style_lpips": 0.08332978200029444,
+        "content_lpips": 0.04972269555555554,
+        "clip_content": 0.7357792023703703
+      },
+      "cezanne": {
+        "count": 270,
+        "clip_style": 0.36309369338883296,
+        "style_lpips": 0.08052276924804405,
+        "content_lpips": 0.05168243966666668,
+        "clip_content": 0.7197732354444445
+      }
+    },
+    "photo": {
+      "monet": {
+        "count": 270,
+        "clip_style": 0.30516960885789657,
+        "style_lpips": 0.0819240583313836,
+        "content_lpips": 0.04375299659259259,
+        "clip_content": 0.7167080320740741
+      },
+      "photo": {
+        "count": 270,
+        "clip_style": 0.32821768709906823,
+        "style_lpips": 0.08115498379424767,
+        "content_lpips": 0.040967556592592595,
+        "clip_content": 0.7148294352962963
+      },
+      "vangogh": {
+        "count": 270,
+        "clip_style": 0.3076386344653589,
+        "style_lpips": 0.0874894228246477,
+        "content_lpips": 0.04532314981481482,
+        "clip_content": 0.7076778817777777
+      },
+      "cezanne": {
+        "count": 270,
+        "clip_style": 0.291799662400175,
+        "style_lpips": 0.08336931356677303,
+        "content_lpips": 0.046115483666666665,
+        "clip_content": 0.6965541332962962
+      }
+    },
+    "vangogh": {
+      "monet": {
+        "count": 270,
+        "clip_style": 0.377433345052931,
+        "style_lpips": 0.08004990197994091,
+        "content_lpips": 0.04992526885185185,
+        "clip_content": 0.7418256243703704
+      },
+      "photo": {
+        "count": 270,
+        "clip_style": 0.2939804002090737,
+        "style_lpips": 0.08658787696449845,
+        "content_lpips": 0.04664230925925925,
+        "clip_content": 0.7604572422592593
+      },
+      "vangogh": {
+        "count": 270,
+        "clip_style": 0.38381099215260256,
+        "style_lpips": 0.08097957173983256,
+        "content_lpips": 0.04896155788888889,
+        "clip_content": 0.7432188738148149
+      },
+      "cezanne": {
+        "count": 270,
+        "clip_style": 0.36946195275695237,
+        "style_lpips": 0.08078874261290939,
+        "content_lpips": 0.0522092722962963,
+        "clip_content": 0.7195228950000001
+      }
+    },
+    "cezanne": {
+      "monet": {
+        "count": 270,
+        "clip_style": 0.37028053093839575,
+        "style_lpips": 0.07936004687238622,
+        "content_lpips": 0.0472968437037037,
+        "clip_content": 0.7323053857777777
+      },
+      "photo": {
+        "count": 270,
+        "clip_style": 0.28267305592695874,
+        "style_lpips": 0.08331829375690884,
+        "content_lpips": 0.04662657470370371,
+        "clip_content": 0.7535951054074074
+      },
+      "vangogh": {
+        "count": 270,
+        "clip_style": 0.36690284896779946,
+        "style_lpips": 0.08277377265470999,
+        "content_lpips": 0.04701628203703705,
+        "clip_content": 0.7283450232222223
+      },
+      "cezanne": {
+        "count": 270,
+        "clip_style": 0.3707991533809238,
+        "style_lpips": 0.07895291337260493,
+        "content_lpips": 0.04924486922222222,
+        "clip_content": 0.7121330135185185
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "clip_style": 0.3342095827890767,
+      "content_lpips": 0.04780823774382716
+    },
+    "photo_to_art_performance": {
+      "clip_style": 0.3015359685744768,
+      "valid": true
+    }
+  }
+}

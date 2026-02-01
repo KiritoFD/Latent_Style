@@ -10,7 +10,7 @@
   },
   "loss": {
     "w_style": 20.0,
-    "w_mse": 2.0,
+    "w_mse": 1.0,
     "w_pyramid": 1.0,
     "pyramid_weights": {"low": 4.0, "mid": 2.0, "high": 1.0},
     "vel_smooth_weight": 0.05,
@@ -27,8 +27,8 @@
     "vel_reg_weight": 0.01
   },
   "training": {
-    "batch_size": 160,
-    "accumulation_steps": 1,
+    "batch_size": 96,
+    "accumulation_steps": 3,
     "learning_rate": 2e-4,
     "min_learning_rate": 1e-6,
     "weight_decay": 1e-4,
@@ -72,7 +72,7 @@
     ]
   },
   "checkpoint": {
-    "save_dir": "../AdaGN-patch-500ep"
+    "save_dir": "../256-3decoder-20style-1mse"
   },
   "inference": {
     "num_steps": 20,

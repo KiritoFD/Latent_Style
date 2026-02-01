@@ -657,6 +657,36 @@ def download_vae_with_fallback(model_id, device='cuda', cache_dir=None):
 
     os.makedirs(cache_dir, exist_ok=True)
 
+    # 1. Try loading from local HF cache first (no network)
+    try:
+        vae = AutoencoderKL.from_pretrained(
+            model_id,
+            torch_dtype=torch.float16,
+            cache_dir=cache_dir,
+            local_files_only=True
+        ).to(device)
+        vae.eval()
+        logger.info(f"✓ Loaded VAE from local HF cache: {model_id}")
+        return vae
+    except Exception:
+        pass
+
+    # 2. Try loading from local ModelScope cache structure
+    ms_dest = os.path.join(cache_dir, 'modelscope', model_id.replace('/', '_'))
+    if os.path.exists(ms_dest):
+        # Reuse finding logic
+        found = _find_hf_repo_root(ms_dest)
+        download_root = found if found else os.path.join(ms_dest, *model_id.split('/'))
+        
+        if os.path.exists(download_root):
+            try:
+                vae = AutoencoderKL.from_pretrained(download_root, torch_dtype=torch.float16, local_files_only=True).to(device)
+                vae.eval()
+                logger.info(f"✓ Loaded VAE from local ModelScope cache: {download_root}")
+                return vae
+            except Exception:
+                pass
+
     logger.info(f"Attempting to load VAE (ModelScope-first): {model_id}")
     logger.info(f"Cache directory: {cache_dir}")
 
