@@ -1,12 +1,12 @@
 {
   "model": {
     "latent_channels": 4,
-    "base_channels": 128,
+    "base_channels": 256,
     "style_dim": 256,
     "time_dim": 256,
     "num_styles": 4,
     "num_encoder_blocks": 2,
-    "num_decoder_blocks": 5
+    "num_decoder_blocks": 3
   },
   "loss": {
     "w_style": 20.0,
@@ -58,7 +58,7 @@
     "eval_interval": 25,
     "full_eval_interval": 50,
     
-    "test_image_dir": "/mnt/c/Users/xy/style_data/test",
+    "test_image_dir": "../../style_data/test",
     "resume_checkpoint": ""
   },
   "data": {

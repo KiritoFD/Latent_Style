@@ -8,6 +8,49 @@ from torch.utils.data import Dataset
 
 logger = logging.getLogger(__name__)
 
+# Optional ModelScope support (robust import)
+try:
+    from modelscope.hub import snapshot_download as ms_snapshot_download  # type: ignore
+    MODELSCOPE_AVAILABLE = True
+except Exception:
+    try:
+        import modelscope.hub as ms_hub  # type: ignore
+        ms_snapshot_download = getattr(ms_hub, 'snapshot_download', ms_hub)
+        MODELSCOPE_AVAILABLE = True
+    except Exception:
+        ms_snapshot_download = None
+        MODELSCOPE_AVAILABLE = False
+
+
+def _call_modelscope_snapshot(repo_id: str, dest: str):
+    """
+    Small helper to normalize ModelScope snapshot download calls.
+    """
+    if not MODELSCOPE_AVAILABLE or ms_snapshot_download is None:
+        raise RuntimeError("ModelScope snapshot downloader not available")
+
+    logger.debug(f"ModelScope object type={type(ms_snapshot_download)}")
+
+    if callable(ms_snapshot_download):
+        last_exc = None
+        for attempt in (
+            lambda: ms_snapshot_download(repo_id, cache_dir=dest),
+            lambda: ms_snapshot_download(repo_id, dest),
+            lambda: ms_snapshot_download(repo_id=repo_id, cache_dir=dest),
+        ):
+            try:
+                return attempt()
+            except TypeError as e:
+                last_exc = e
+                continue
+        raise last_exc or RuntimeError("Callable ms_snapshot_download failed")
+    else:
+        func = getattr(ms_snapshot_download, 'snapshot_download', None) or getattr(ms_snapshot_download, 'download', None)
+        if callable(func):
+            return func(repo_id, cache_dir=dest)
+        raise RuntimeError("No callable snapshot_download available in ModelScope")
+
+
 def elastic_deform(x: torch.Tensor, alpha: float = 15.0, sigma: int = 3, seed: Optional[int] = None) -> torch.Tensor:
     """
     [7940HX Optimized] 弹性形变算子

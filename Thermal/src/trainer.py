@@ -295,41 +295,29 @@ class LGTTrainer:
 
     def update_loss_weights(self, epoch, total_epochs):
         """
-        [Strategy Upgrade] 动态权重调度
-        Strategy: Coarse-to-Fine Annealing (先艺术，后像真)
-        
-        Phase 1 (0% - 20%): Exploration
-            - Style Priority. w_mse starts very low (5%).
-            - Goal: Force model to learn texture distributions without rigid structural constraints.
-        Phase 2 (20% - 80%): Alignment
-            - Structure Ramp-up. w_mse linearly increases to target.
-            - Goal: Align the learned textures to content edges.
-        Phase 3 (80% - 100%): Refinement
-            - Stable weights for fine-tuning.
+        [Strategy: Aggressive Stylization]
+        更加激进的风格化策略：
+        1. 延长 Phase 1 (0-40%)：让模型有更多时间彻底遗忘原图的纹理细节。
+        2. 降低 Phase 3 上限：最终 w_mse 也不要太高，允许永久性的几何变形。
         """
-        # 基础权重
-        w_style_target = self.config['loss'].get('w_style', 20.0)
-        # Map w_mse to w_pyramid if w_mse is not explicitly set
-        w_mse_target = self.config['loss'].get('w_mse', self.config['loss'].get('w_pyramid', 2.0))
+        w_style_target = self.config['loss'].get('w_style', 40.0) # 读取新配置
+        w_mse_target = self.config['loss'].get('w_mse', 0.5)      # 读取新配置
         
         progress = epoch / max(total_epochs, 1)
-        mse_start_ratio = 0.05  # Start with 5% of structural constraint
+        mse_start_ratio = 0.01  # 初始几乎没有结构约束 (1%)
         
-        # 1. Style Weight: Constant & Strong (Driver)
         current_w_style = w_style_target
         
-        # 2. Structure Weight: Dynamic Ramp-up (Constraint)
-        if progress < 0.2:
-            # Phase 1: Exploration
+        if progress < 0.4:  
+            # 🔥 延长探索期到 40% (原 20%)
+            # 在前 200 epoch，模型可以随心所欲地涂抹
             current_w_mse = w_mse_target * mse_start_ratio
-        elif progress < 0.8:
-            # Phase 2: Alignment (Linear Ramp)
-            # Normalize progress to [0, 1] range for this phase
-            p = (progress - 0.2) / 0.6
+        elif progress < 0.9: 
+            # 缩短对齐期，且爬坡更缓
+            p = (progress - 0.4) / 0.5
             ratio = mse_start_ratio + (1.0 - mse_start_ratio) * p
             current_w_mse = w_mse_target * ratio
         else:
-            # Phase 3: Refinement
             current_w_mse = w_mse_target
             
         return current_w_style, current_w_mse

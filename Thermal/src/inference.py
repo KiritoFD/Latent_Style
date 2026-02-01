@@ -20,8 +20,96 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 from tqdm import tqdm
+import logging
+import os
+from typing import Optional
 
 from model import LGTUNet
+
+# Optional ModelScope support
+try:
+    from modelscope.hub import snapshot_download as ms_snapshot_download  # type: ignore
+    MODELSCOPE_AVAILABLE = True
+except Exception:
+    try:
+        import modelscope.hub as ms_hub  # type: ignore
+        ms_snapshot_download = getattr(ms_hub, 'snapshot_download', ms_hub)
+        MODELSCOPE_AVAILABLE = True
+    except Exception:
+        ms_snapshot_download = None
+        MODELSCOPE_AVAILABLE = False
+
+
+def _call_modelscope_snapshot(repo_id: str, dest: str):
+    """
+    Normalize calling ModelScope snapshot_download across different versions/shapes.
+    """
+    if not MODELSCOPE_AVAILABLE or ms_snapshot_download is None:
+        raise RuntimeError("ModelScope snapshot downloader not available")
+
+    logger.debug(f"ModelScope object type={type(ms_snapshot_download)}")
+
+    # If the imported object is directly callable, try a few signatures
+    if callable(ms_snapshot_download):
+        last_exc = None
+        for attempt in (
+            lambda: ms_snapshot_download(repo_id, cache_dir=dest),
+            lambda: ms_snapshot_download(repo_id, dest),
+            lambda: ms_snapshot_download(repo_id=repo_id, cache_dir=dest),
+            lambda: ms_snapshot_download(repo_id=repo_id, cache_dir=dest, progress=False),
+        ):
+            try:
+                return attempt()
+            except TypeError as e:
+                last_exc = e
+                continue
+        raise last_exc or RuntimeError("Callable ms_snapshot_download failed")
+
+    # If it's a module-like object, try nested functions
+    func = getattr(ms_snapshot_download, 'snapshot_download', None) or getattr(ms_snapshot_download, 'download', None)
+    if callable(func):
+        last_exc = None
+        for attempt in (
+            lambda: func(repo_id, cache_dir=dest),
+            lambda: func(repo_id, dest),
+            lambda: func(repo_id=repo_id, cache_dir=dest),
+        ):
+            try:
+                return attempt()
+            except TypeError as e:
+                last_exc = e
+                continue
+        raise last_exc or RuntimeError("Nested snapshot_download found but failed to call")
+
+    # Last-resort try import
+    try:
+        import modelscope.hub as ms_hub  # type: ignore
+        func = getattr(ms_hub, 'snapshot_download', None)
+        if callable(func):
+            return func(repo_id, cache_dir=dest)
+    except Exception:
+        pass
+
+    raise RuntimeError("No callable snapshot_download available in ModelScope")
+
+
+def _find_hf_repo_root(dest: str) -> Optional[str]:
+    """
+    Search `dest` recursively for a directory that looks like a Hugging Face repo root,
+    i.e. contains 'config.json', 'model_index.json' or 'pytorch_model.bin'.
+    Returns the first matching directory or None.
+    """
+    if not os.path.exists(dest):
+        return None
+
+    for root, dirs, files in os.walk(dest):
+        if 'config.json' in files or 'model_index.json' in files or 'pytorch_model.bin' in files:
+            logger.debug(f"Found HF-style repo root: {root}")
+            return root
+    return None
+
+
+logger = logging.getLogger(__name__)
 
 
 class LangevinSampler:
@@ -534,14 +622,122 @@ class LGTInference:
 
 # Utility functions for VAE encoding/decoding
 
-def load_vae(device='cuda'):
-    """Load Stable Diffusion VAE."""
+def download_vae_with_fallback(model_id, device='cuda', cache_dir=None):
+    """
+    Download VAE model with fallback strategy (HuggingFace -> ModelScope).
+    
+    Args:
+        model_id: Hugging Face model ID or preset name ('sd15', 'sdxl', 'mse')
+        device: target device
+        cache_dir: custom cache directory
+    
+    Returns:
+        Loaded VAE model
+    
+    Raises:
+        RuntimeError: If all download attempts fail
+    """
     from diffusers import AutoencoderKL
-    vae = AutoencoderKL.from_pretrained(
-        "stabilityai/sd-vae-ft-mse",
-        torch_dtype=torch.float16
-    ).to(device)
-    vae.eval()
+
+    # Preset VAE models
+    vae_presets = {
+        'sd15': 'stabilityai/sd-vae-ft-mse',
+        'sdxl': 'stabilityai/sdxl-vae',
+        'mse': 'stabilityai/sd-vae-ft-mse',
+        'ema': 'stabilityai/sd-vae-ft-ema',
+    }
+
+    # Resolve model ID
+    if model_id in vae_presets:
+        model_id = vae_presets[model_id]
+
+    # Setup cache directory
+    if cache_dir is None:
+        cache_dir = os.path.expanduser('~/.cache/huggingface/hub')
+
+    os.makedirs(cache_dir, exist_ok=True)
+
+    logger.info(f"Attempting to load VAE (ModelScope-first): {model_id}")
+    logger.info(f"Cache directory: {cache_dir}")
+
+    # Try ModelScope first if available
+    if MODELSCOPE_AVAILABLE:
+        try:
+            dest = os.path.join(cache_dir, 'modelscope', model_id.replace('/', '_'))
+            os.makedirs(dest, exist_ok=True)
+            logger.info(f"Attempting ModelScope snapshot download for: {model_id}")
+
+            ret = _call_modelscope_snapshot(model_id, dest)
+
+            # Determine actual download root: prefer returned path if valid, otherwise search dest
+            download_root = None
+            if isinstance(ret, str) and os.path.exists(ret):
+                download_root = ret
+                logger.debug(f"ModelScope returned path: {ret}")
+            else:
+                found = _find_hf_repo_root(dest)
+                if found:
+                    download_root = found
+                    logger.debug(f"ModelScope placed files under nested path: {found}")
+                else:
+                    # Best-effort guess: some versions create dest/<owner>/<repo>
+                    nested_guess = os.path.join(dest, *model_id.split('/'))
+                    if os.path.exists(nested_guess):
+                        download_root = nested_guess
+                        logger.debug(f"Using nested guess path: {nested_guess}")
+
+            if download_root is None:
+                raise RuntimeError(f"No HF-style model files found under {dest} after ModelScope download")
+
+            vae = AutoencoderKL.from_pretrained(download_root, torch_dtype=torch.float16).to(device)
+            vae.eval()
+            logger.info(f"✓ Successfully loaded VAE from ModelScope: {download_root}")
+            return vae
+        except Exception as e:
+            logger.warning(f"ModelScope load failed for {model_id}: {e}")
+
+    # Fallback to HuggingFace
+    try:
+        vae = AutoencoderKL.from_pretrained(
+            model_id,
+            torch_dtype=torch.float16,
+            cache_dir=cache_dir,
+        ).to(device)
+        vae.eval()
+        logger.info(f"✓ Successfully loaded VAE from HuggingFace: {model_id}")
+        return vae
+    except Exception as e:
+        logger.warning(f"HuggingFace load failed for {model_id}: {e}")
+
+    raise RuntimeError(f"Failed to download VAE model {model_id}. Check network or model ID.")
+
+
+def load_vae(device='cuda', model_id='sd15', cache_dir=None):
+    """
+    Load Stable Diffusion VAE with enhanced error handling.
+    
+    Args:
+        device: torch device ('cuda' or 'cpu')
+        model_id: VAE model to load, options: 'sd15', 'sdxl', 'mse', 'ema', or custom HF ID
+        cache_dir: custom cache directory for models
+    
+    Returns:
+        Loaded and evaluated VAE model
+    
+    Examples:
+        >>> vae = load_vae(device='cuda', model_id='sd15')
+        >>> vae = load_vae(device='cuda', model_id='stabilityai/sd-vae-ft-mse')
+    """
+    from diffusers import AutoencoderKL
+    
+    # Check device availability
+    if device == 'cuda' and not torch.cuda.is_available():
+        logger.warning("CUDA not available, falling back to CPU")
+        device = 'cpu'
+    
+    logger.info(f"Loading VAE on device: {device}")
+    
+    vae = download_vae_with_fallback(model_id, device, cache_dir)
     return vae
 
 
