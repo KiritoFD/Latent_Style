@@ -457,7 +457,6 @@ class LGTInference:
         )
 
 
-
     
     @torch.no_grad()
     def inversion(self, x1, source_style_id, num_steps=None):
