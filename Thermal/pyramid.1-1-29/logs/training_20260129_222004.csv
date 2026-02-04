@@ -1,4 +1,0 @@
-epoch,loss_total,loss_style_swd,loss_style_swd_weighted,loss_mse,loss_mse_weighted,loss_layout,loss_mse_raw,learning_rate,epoch_time
-1,10.731486,0.993540,1.695523,3.51e-05,0.00
-2,7.573263,0.993091,1.283970,5.01e-05,0.00
-3,5.865697,0.995007,1.171052,6.52e-05,0.00

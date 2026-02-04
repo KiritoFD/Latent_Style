@@ -1,0 +1,45 @@
+{
+    "overall_report": {
+        "vangogh": {
+            "precision": 0.5254237288135594,
+            "recall": 0.5166666666666667,
+            "f1-score": 0.5210084033613446,
+            "support": 60.0
+        },
+        "photo": {
+            "precision": 0.5245901639344263,
+            "recall": 0.5333333333333333,
+            "f1-score": 0.5289256198347108,
+            "support": 60.0
+        },
+        "accuracy": 0.525,
+        "macro avg": {
+            "precision": 0.5250069463739928,
+            "recall": 0.525,
+            "f1-score": 0.5249670115980276,
+            "support": 120.0
+        },
+        "weighted avg": {
+            "precision": 0.5250069463739928,
+            "recall": 0.525,
+            "f1-score": 0.5249670115980277,
+            "support": 120.0
+        }
+    },
+    "transfer_performance": {
+        "photo_to_photo": 1.0,
+        "photo_to_vangogh": 0.03333333333333333,
+        "vangogh_to_photo": 0.06666666666666667,
+        "vangogh_to_vangogh": 1.0
+    },
+    "confusion_matrix": [
+        [
+            31,
+            29
+        ],
+        [
+            28,
+            32
+        ]
+    ]
+}

@@ -1,0 +1,48 @@
+{
+  "checkpoint": "../photo-vangogh/epoch_0450.pt",
+  "timestamp": "2026-02-04 07:58:59",
+  "matrix_breakdown": {
+    "photo": {
+      "photo": {
+        "count": 30,
+        "clip_style": 0.6019825518131257,
+        "style_lpips": 0.7337494711081187,
+        "content_lpips": 0.35694150966666666,
+        "clip_content": 0.8146904396666664
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.586793581644694,
+        "style_lpips": 0.7340616802374522,
+        "content_lpips": 0.4663568156666667,
+        "clip_content": 0.7732542136666667
+      }
+    },
+    "vangogh": {
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5287505666414897,
+        "style_lpips": 0.7705003798007966,
+        "content_lpips": 0.41717396599999995,
+        "clip_content": 0.8528014183333334
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.6765561620394389,
+        "style_lpips": 0.7421171426773071,
+        "content_lpips": 0.4587498773333333,
+        "clip_content": 0.8127020573333333
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "clip_style": 0.5577720741430918,
+      "content_lpips": 0.4417653908333333
+    },
+    "photo_to_art_performance": {
+      "clip_style": 0.586793581644694,
+      "valid": true
+    }
+  }
+}

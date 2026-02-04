@@ -1,0 +1,1139 @@
+src_style,tgt_style,src_image,gen_image,content_lpips,style_lpips,clip_style,clip_content,pred_style,class_correct
+photo,photo,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,vangogh,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,photo,2016-07-22 09_41_37.jpg,photo_2016-07-22 09_41_37_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-07-29 18_36_07.jpg,photo_2015-07-29 18_36_07_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-02-20 01_09_08.jpg,photo_2016-02-20 01_09_08_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-08-29 16_18_55.jpg,photo_2016-08-29 16_18_55_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-06-27 18_28_11.jpg,photo_2016-06-27 18_28_11_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-01-15 05_40_07.jpg,photo_2016-01-15 05_40_07_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-12-12 06_47_23.jpg,photo_2015-12-12 06_47_23_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-09-28 19_23_35.jpg,photo_2015-09-28 19_23_35_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-10-12 23_43_58.jpg,photo_2015-10-12 23_43_58_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-07-17 17_24_04.jpg,photo_2016-07-17 17_24_04_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00295.jpg,vangogh_00295_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00289.jpg,vangogh_00289_to_photo.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,photo,00243.jpg,vangogh_00243_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00169.jpg,vangogh_00169_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00098.jpg,vangogh_00098_to_photo.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,photo,00668.jpg,vangogh_00668_to_photo.jpg,0.0,0.0,0.0,0.0,vangogh,0
+vangogh,photo,00321.jpg,vangogh_00321_to_photo.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,photo,00163.jpg,vangogh_00163_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00412.jpg,vangogh_00412_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00202.jpg,vangogh_00202_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+photo,vangogh,2016-07-22 09_41_37.jpg,photo_2016-07-22 09_41_37_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-07-29 18_36_07.jpg,photo_2015-07-29 18_36_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-02-20 01_09_08.jpg,photo_2016-02-20 01_09_08_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-08-29 16_18_55.jpg,photo_2016-08-29 16_18_55_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-06-27 18_28_11.jpg,photo_2016-06-27 18_28_11_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-01-15 05_40_07.jpg,photo_2016-01-15 05_40_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-12-12 06_47_23.jpg,photo_2015-12-12 06_47_23_to_vangogh.jpg,0.0,0.0,0.0,0.0,monet,0
+photo,vangogh,2015-09-28 19_23_35.jpg,photo_2015-09-28 19_23_35_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-10-12 23_43_58.jpg,photo_2015-10-12 23_43_58_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-07-17 17_24_04.jpg,photo_2016-07-17 17_24_04_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00295.jpg,vangogh_00295_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00289.jpg,vangogh_00289_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00243.jpg,vangogh_00243_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00169.jpg,vangogh_00169_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00098.jpg,vangogh_00098_to_vangogh.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,vangogh,00668.jpg,vangogh_00668_to_vangogh.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,vangogh,00321.jpg,vangogh_00321_to_vangogh.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,vangogh,00163.jpg,vangogh_00163_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00412.jpg,vangogh_00412_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00202.jpg,vangogh_00202_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00427.jpg,vangogh_00427_to_photo.jpg,0.0,0.0,0.0,0.0,vangogh,0
+vangogh,photo,00272.jpg,vangogh_00272_to_photo.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,photo,00177.jpg,vangogh_00177_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00090.jpg,vangogh_00090_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00528.jpg,vangogh_00528_to_photo.jpg,0.0,0.0,0.0,0.0,vangogh,0
+vangogh,photo,00519.jpg,vangogh_00519_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00167.jpg,vangogh_00167_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00292.jpg,vangogh_00292_to_photo.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,photo,00455.jpg,vangogh_00455_to_photo.jpg,0.0,0.0,0.0,0.0,vangogh,0
+vangogh,photo,00005.jpg,vangogh_00005_to_photo.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,photo,00573.jpg,vangogh_00573_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00220.jpg,vangogh_00220_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00436.jpg,vangogh_00436_to_photo.jpg,0.0,0.0,0.0,0.0,vangogh,0
+vangogh,photo,00681.jpg,vangogh_00681_to_photo.jpg,0.0,0.0,0.0,0.0,vangogh,0
+vangogh,photo,00557.jpg,vangogh_00557_to_photo.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,photo,00418.jpg,vangogh_00418_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00352.jpg,vangogh_00352_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00264.jpg,vangogh_00264_to_photo.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,photo,00277.jpg,vangogh_00277_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00561.jpg,vangogh_00561_to_photo.jpg,0.0,0.0,0.0,0.0,vangogh,0
+vangogh,vangogh,00427.jpg,vangogh_00427_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00272.jpg,vangogh_00272_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00177.jpg,vangogh_00177_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00090.jpg,vangogh_00090_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00528.jpg,vangogh_00528_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00519.jpg,vangogh_00519_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+vangogh,vangogh,00167.jpg,vangogh_00167_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00292.jpg,vangogh_00292_to_vangogh.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,vangogh,00455.jpg,vangogh_00455_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+vangogh,vangogh,00005.jpg,vangogh_00005_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00573.jpg,vangogh_00573_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+vangogh,vangogh,00220.jpg,vangogh_00220_to_vangogh.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,vangogh,00436.jpg,vangogh_00436_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+vangogh,vangogh,00681.jpg,vangogh_00681_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00557.jpg,vangogh_00557_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+vangogh,vangogh,00418.jpg,vangogh_00418_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00352.jpg,vangogh_00352_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+vangogh,vangogh,00264.jpg,vangogh_00264_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+vangogh,vangogh,00277.jpg,vangogh_00277_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00561.jpg,vangogh_00561_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+photo,photo,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,vangogh,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,photo,2016-07-22 09_41_37.jpg,photo_2016-07-22 09_41_37_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-07-29 18_36_07.jpg,photo_2015-07-29 18_36_07_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-02-20 01_09_08.jpg,photo_2016-02-20 01_09_08_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-08-29 16_18_55.jpg,photo_2016-08-29 16_18_55_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-06-27 18_28_11.jpg,photo_2016-06-27 18_28_11_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-01-15 05_40_07.jpg,photo_2016-01-15 05_40_07_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-12-12 06_47_23.jpg,photo_2015-12-12 06_47_23_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-09-28 19_23_35.jpg,photo_2015-09-28 19_23_35_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-10-12 23_43_58.jpg,photo_2015-10-12 23_43_58_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-07-17 17_24_04.jpg,photo_2016-07-17 17_24_04_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00295.jpg,vangogh_00295_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00289.jpg,vangogh_00289_to_photo.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,photo,00243.jpg,vangogh_00243_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00169.jpg,vangogh_00169_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00098.jpg,vangogh_00098_to_photo.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,photo,00668.jpg,vangogh_00668_to_photo.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,photo,00321.jpg,vangogh_00321_to_photo.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,photo,00163.jpg,vangogh_00163_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00412.jpg,vangogh_00412_to_photo.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,photo,00202.jpg,vangogh_00202_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+photo,vangogh,2016-07-22 09_41_37.jpg,photo_2016-07-22 09_41_37_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-07-29 18_36_07.jpg,photo_2015-07-29 18_36_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-02-20 01_09_08.jpg,photo_2016-02-20 01_09_08_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-08-29 16_18_55.jpg,photo_2016-08-29 16_18_55_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-06-27 18_28_11.jpg,photo_2016-06-27 18_28_11_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-01-15 05_40_07.jpg,photo_2016-01-15 05_40_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-12-12 06_47_23.jpg,photo_2015-12-12 06_47_23_to_vangogh.jpg,0.0,0.0,0.0,0.0,monet,0
+photo,vangogh,2015-09-28 19_23_35.jpg,photo_2015-09-28 19_23_35_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-10-12 23_43_58.jpg,photo_2015-10-12 23_43_58_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-07-17 17_24_04.jpg,photo_2016-07-17 17_24_04_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00295.jpg,vangogh_00295_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00289.jpg,vangogh_00289_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00243.jpg,vangogh_00243_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+vangogh,vangogh,00169.jpg,vangogh_00169_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00098.jpg,vangogh_00098_to_vangogh.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,vangogh,00668.jpg,vangogh_00668_to_vangogh.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,vangogh,00321.jpg,vangogh_00321_to_vangogh.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,vangogh,00163.jpg,vangogh_00163_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00412.jpg,vangogh_00412_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+vangogh,vangogh,00202.jpg,vangogh_00202_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00427.jpg,vangogh_00427_to_photo.jpg,0.0,0.0,0.0,0.0,vangogh,0
+vangogh,photo,00272.jpg,vangogh_00272_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00177.jpg,vangogh_00177_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00090.jpg,vangogh_00090_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00528.jpg,vangogh_00528_to_photo.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,photo,00519.jpg,vangogh_00519_to_photo.jpg,0.0,0.0,0.0,0.0,vangogh,0
+vangogh,photo,00167.jpg,vangogh_00167_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00292.jpg,vangogh_00292_to_photo.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,photo,00455.jpg,vangogh_00455_to_photo.jpg,0.0,0.0,0.0,0.0,vangogh,0
+vangogh,photo,00005.jpg,vangogh_00005_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00573.jpg,vangogh_00573_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00220.jpg,vangogh_00220_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00436.jpg,vangogh_00436_to_photo.jpg,0.0,0.0,0.0,0.0,vangogh,0
+vangogh,photo,00681.jpg,vangogh_00681_to_photo.jpg,0.0,0.0,0.0,0.0,vangogh,0
+vangogh,photo,00557.jpg,vangogh_00557_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00418.jpg,vangogh_00418_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00352.jpg,vangogh_00352_to_photo.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,photo,00264.jpg,vangogh_00264_to_photo.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,photo,00277.jpg,vangogh_00277_to_photo.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,photo,00561.jpg,vangogh_00561_to_photo.jpg,0.0,0.0,0.0,0.0,vangogh,0
+vangogh,vangogh,00427.jpg,vangogh_00427_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+vangogh,vangogh,00272.jpg,vangogh_00272_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00177.jpg,vangogh_00177_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00090.jpg,vangogh_00090_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00528.jpg,vangogh_00528_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+vangogh,vangogh,00519.jpg,vangogh_00519_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00167.jpg,vangogh_00167_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00292.jpg,vangogh_00292_to_vangogh.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,vangogh,00455.jpg,vangogh_00455_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+vangogh,vangogh,00005.jpg,vangogh_00005_to_vangogh.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,vangogh,00573.jpg,vangogh_00573_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+vangogh,vangogh,00220.jpg,vangogh_00220_to_vangogh.jpg,0.0,0.0,0.0,0.0,monet,0
+vangogh,vangogh,00436.jpg,vangogh_00436_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+vangogh,vangogh,00681.jpg,vangogh_00681_to_vangogh.jpg,0.0,0.0,0.0,0.0,cezanne,0
+vangogh,vangogh,00557.jpg,vangogh_00557_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+vangogh,vangogh,00418.jpg,vangogh_00418_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+vangogh,vangogh,00352.jpg,vangogh_00352_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+vangogh,vangogh,00264.jpg,vangogh_00264_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+vangogh,vangogh,00277.jpg,vangogh_00277_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00561.jpg,vangogh_00561_to_vangogh.jpg,0.0,0.0,0.0,0.0,vangogh,1
+photo,photo,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-07-22 09_41_37.jpg,photo_2016-07-22 09_41_37_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-07-29 18_36_07.jpg,photo_2015-07-29 18_36_07_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-02-20 01_09_08.jpg,photo_2016-02-20 01_09_08_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-08-29 16_18_55.jpg,photo_2016-08-29 16_18_55_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-06-27 18_28_11.jpg,photo_2016-06-27 18_28_11_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-01-15 05_40_07.jpg,photo_2016-01-15 05_40_07_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-12-12 06_47_23.jpg,photo_2015-12-12 06_47_23_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-09-28 19_23_35.jpg,photo_2015-09-28 19_23_35_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-10-12 23_43_58.jpg,photo_2015-10-12 23_43_58_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-07-17 17_24_04.jpg,photo_2016-07-17 17_24_04_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00295.jpg,vangogh_00295_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00289.jpg,vangogh_00289_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00243.jpg,vangogh_00243_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00169.jpg,vangogh_00169_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00098.jpg,vangogh_00098_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00668.jpg,vangogh_00668_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00321.jpg,vangogh_00321_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00163.jpg,vangogh_00163_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00412.jpg,vangogh_00412_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00202.jpg,vangogh_00202_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-07-22 09_41_37.jpg,photo_2016-07-22 09_41_37_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-07-29 18_36_07.jpg,photo_2015-07-29 18_36_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-02-20 01_09_08.jpg,photo_2016-02-20 01_09_08_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-08-29 16_18_55.jpg,photo_2016-08-29 16_18_55_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-06-27 18_28_11.jpg,photo_2016-06-27 18_28_11_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-01-15 05_40_07.jpg,photo_2016-01-15 05_40_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-12-12 06_47_23.jpg,photo_2015-12-12 06_47_23_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-09-28 19_23_35.jpg,photo_2015-09-28 19_23_35_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-10-12 23_43_58.jpg,photo_2015-10-12 23_43_58_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-07-17 17_24_04.jpg,photo_2016-07-17 17_24_04_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00295.jpg,vangogh_00295_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00289.jpg,vangogh_00289_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00243.jpg,vangogh_00243_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00169.jpg,vangogh_00169_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00098.jpg,vangogh_00098_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00668.jpg,vangogh_00668_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00321.jpg,vangogh_00321_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00163.jpg,vangogh_00163_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00412.jpg,vangogh_00412_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00202.jpg,vangogh_00202_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00427.jpg,vangogh_00427_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00272.jpg,vangogh_00272_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00177.jpg,vangogh_00177_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00090.jpg,vangogh_00090_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00528.jpg,vangogh_00528_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00519.jpg,vangogh_00519_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00167.jpg,vangogh_00167_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00292.jpg,vangogh_00292_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00455.jpg,vangogh_00455_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00005.jpg,vangogh_00005_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00573.jpg,vangogh_00573_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00220.jpg,vangogh_00220_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00436.jpg,vangogh_00436_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00681.jpg,vangogh_00681_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00557.jpg,vangogh_00557_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00418.jpg,vangogh_00418_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00352.jpg,vangogh_00352_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00264.jpg,vangogh_00264_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00277.jpg,vangogh_00277_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00561.jpg,vangogh_00561_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00427.jpg,vangogh_00427_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00272.jpg,vangogh_00272_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00177.jpg,vangogh_00177_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00090.jpg,vangogh_00090_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00528.jpg,vangogh_00528_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00519.jpg,vangogh_00519_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00167.jpg,vangogh_00167_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00292.jpg,vangogh_00292_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00455.jpg,vangogh_00455_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00005.jpg,vangogh_00005_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00573.jpg,vangogh_00573_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00220.jpg,vangogh_00220_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00436.jpg,vangogh_00436_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00681.jpg,vangogh_00681_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00557.jpg,vangogh_00557_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00418.jpg,vangogh_00418_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00352.jpg,vangogh_00352_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00264.jpg,vangogh_00264_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00277.jpg,vangogh_00277_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00561.jpg,vangogh_00561_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-07-22 09_41_37.jpg,photo_2016-07-22 09_41_37_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-07-29 18_36_07.jpg,photo_2015-07-29 18_36_07_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-02-20 01_09_08.jpg,photo_2016-02-20 01_09_08_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-08-29 16_18_55.jpg,photo_2016-08-29 16_18_55_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-06-27 18_28_11.jpg,photo_2016-06-27 18_28_11_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-01-15 05_40_07.jpg,photo_2016-01-15 05_40_07_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-12-12 06_47_23.jpg,photo_2015-12-12 06_47_23_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-09-28 19_23_35.jpg,photo_2015-09-28 19_23_35_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-10-12 23_43_58.jpg,photo_2015-10-12 23_43_58_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-07-17 17_24_04.jpg,photo_2016-07-17 17_24_04_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00295.jpg,vangogh_00295_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00289.jpg,vangogh_00289_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00243.jpg,vangogh_00243_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00169.jpg,vangogh_00169_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00098.jpg,vangogh_00098_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00668.jpg,vangogh_00668_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00321.jpg,vangogh_00321_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00163.jpg,vangogh_00163_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00412.jpg,vangogh_00412_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00202.jpg,vangogh_00202_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-07-22 09_41_37.jpg,photo_2016-07-22 09_41_37_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-07-29 18_36_07.jpg,photo_2015-07-29 18_36_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-02-20 01_09_08.jpg,photo_2016-02-20 01_09_08_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-08-29 16_18_55.jpg,photo_2016-08-29 16_18_55_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-06-27 18_28_11.jpg,photo_2016-06-27 18_28_11_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-01-15 05_40_07.jpg,photo_2016-01-15 05_40_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-12-12 06_47_23.jpg,photo_2015-12-12 06_47_23_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-09-28 19_23_35.jpg,photo_2015-09-28 19_23_35_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-10-12 23_43_58.jpg,photo_2015-10-12 23_43_58_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-07-17 17_24_04.jpg,photo_2016-07-17 17_24_04_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00295.jpg,vangogh_00295_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00289.jpg,vangogh_00289_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00243.jpg,vangogh_00243_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00169.jpg,vangogh_00169_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00098.jpg,vangogh_00098_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00668.jpg,vangogh_00668_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00321.jpg,vangogh_00321_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00163.jpg,vangogh_00163_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00412.jpg,vangogh_00412_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00202.jpg,vangogh_00202_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00427.jpg,vangogh_00427_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00272.jpg,vangogh_00272_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00177.jpg,vangogh_00177_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00090.jpg,vangogh_00090_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00528.jpg,vangogh_00528_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00519.jpg,vangogh_00519_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00167.jpg,vangogh_00167_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00292.jpg,vangogh_00292_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00455.jpg,vangogh_00455_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00005.jpg,vangogh_00005_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00573.jpg,vangogh_00573_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00220.jpg,vangogh_00220_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00436.jpg,vangogh_00436_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00681.jpg,vangogh_00681_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00557.jpg,vangogh_00557_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00418.jpg,vangogh_00418_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00352.jpg,vangogh_00352_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00264.jpg,vangogh_00264_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00277.jpg,vangogh_00277_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00561.jpg,vangogh_00561_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00427.jpg,vangogh_00427_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00272.jpg,vangogh_00272_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00177.jpg,vangogh_00177_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00090.jpg,vangogh_00090_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00528.jpg,vangogh_00528_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00519.jpg,vangogh_00519_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00167.jpg,vangogh_00167_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00292.jpg,vangogh_00292_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00455.jpg,vangogh_00455_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00005.jpg,vangogh_00005_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00573.jpg,vangogh_00573_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00220.jpg,vangogh_00220_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00436.jpg,vangogh_00436_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00681.jpg,vangogh_00681_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00557.jpg,vangogh_00557_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00418.jpg,vangogh_00418_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00352.jpg,vangogh_00352_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00264.jpg,vangogh_00264_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00277.jpg,vangogh_00277_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00561.jpg,vangogh_00561_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-07-22 09_41_37.jpg,photo_2016-07-22 09_41_37_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-07-29 18_36_07.jpg,photo_2015-07-29 18_36_07_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-02-20 01_09_08.jpg,photo_2016-02-20 01_09_08_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-08-29 16_18_55.jpg,photo_2016-08-29 16_18_55_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-06-27 18_28_11.jpg,photo_2016-06-27 18_28_11_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-01-15 05_40_07.jpg,photo_2016-01-15 05_40_07_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-12-12 06_47_23.jpg,photo_2015-12-12 06_47_23_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-09-28 19_23_35.jpg,photo_2015-09-28 19_23_35_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-10-12 23_43_58.jpg,photo_2015-10-12 23_43_58_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2016-07-17 17_24_04.jpg,photo_2016-07-17 17_24_04_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00295.jpg,vangogh_00295_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00289.jpg,vangogh_00289_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00243.jpg,vangogh_00243_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00169.jpg,vangogh_00169_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00098.jpg,vangogh_00098_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00668.jpg,vangogh_00668_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00321.jpg,vangogh_00321_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00163.jpg,vangogh_00163_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00412.jpg,vangogh_00412_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00202.jpg,vangogh_00202_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-07-22 09_41_37.jpg,photo_2016-07-22 09_41_37_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-07-29 18_36_07.jpg,photo_2015-07-29 18_36_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-02-20 01_09_08.jpg,photo_2016-02-20 01_09_08_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-08-29 16_18_55.jpg,photo_2016-08-29 16_18_55_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-06-27 18_28_11.jpg,photo_2016-06-27 18_28_11_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-01-15 05_40_07.jpg,photo_2016-01-15 05_40_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-12-12 06_47_23.jpg,photo_2015-12-12 06_47_23_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-09-28 19_23_35.jpg,photo_2015-09-28 19_23_35_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2015-10-12 23_43_58.jpg,photo_2015-10-12 23_43_58_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,vangogh,2016-07-17 17_24_04.jpg,photo_2016-07-17 17_24_04_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00295.jpg,vangogh_00295_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00289.jpg,vangogh_00289_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00243.jpg,vangogh_00243_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00169.jpg,vangogh_00169_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00098.jpg,vangogh_00098_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00668.jpg,vangogh_00668_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00321.jpg,vangogh_00321_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00163.jpg,vangogh_00163_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00412.jpg,vangogh_00412_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00202.jpg,vangogh_00202_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00427.jpg,vangogh_00427_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00272.jpg,vangogh_00272_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00177.jpg,vangogh_00177_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00090.jpg,vangogh_00090_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00528.jpg,vangogh_00528_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00519.jpg,vangogh_00519_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00167.jpg,vangogh_00167_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00292.jpg,vangogh_00292_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00455.jpg,vangogh_00455_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00005.jpg,vangogh_00005_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00573.jpg,vangogh_00573_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00220.jpg,vangogh_00220_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00436.jpg,vangogh_00436_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00681.jpg,vangogh_00681_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00557.jpg,vangogh_00557_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00418.jpg,vangogh_00418_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00352.jpg,vangogh_00352_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00264.jpg,vangogh_00264_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00277.jpg,vangogh_00277_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,photo,00561.jpg,vangogh_00561_to_photo.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00427.jpg,vangogh_00427_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00272.jpg,vangogh_00272_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00177.jpg,vangogh_00177_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00090.jpg,vangogh_00090_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00528.jpg,vangogh_00528_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00519.jpg,vangogh_00519_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00167.jpg,vangogh_00167_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00292.jpg,vangogh_00292_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00455.jpg,vangogh_00455_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00005.jpg,vangogh_00005_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00573.jpg,vangogh_00573_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00220.jpg,vangogh_00220_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00436.jpg,vangogh_00436_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00681.jpg,vangogh_00681_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00557.jpg,vangogh_00557_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00418.jpg,vangogh_00418_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00352.jpg,vangogh_00352_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00264.jpg,vangogh_00264_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00277.jpg,vangogh_00277_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+vangogh,vangogh,00561.jpg,vangogh_00561_to_vangogh.jpg,0.0,0.0,0.0,0.0,N/A,N/A
+photo,photo,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,vangogh,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,photo,2016-07-22 09_41_37.jpg,photo_2016-07-22 09_41_37_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-07-29 18_36_07.jpg,photo_2015-07-29 18_36_07_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-02-20 01_09_08.jpg,photo_2016-02-20 01_09_08_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-08-29 16_18_55.jpg,photo_2016-08-29 16_18_55_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-06-27 18_28_11.jpg,photo_2016-06-27 18_28_11_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-01-15 05_40_07.jpg,photo_2016-01-15 05_40_07_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-12-12 06_47_23.jpg,photo_2015-12-12 06_47_23_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-09-28 19_23_35.jpg,photo_2015-09-28 19_23_35_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-10-12 23_43_58.jpg,photo_2015-10-12 23_43_58_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-07-17 17_24_04.jpg,photo_2016-07-17 17_24_04_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00295.jpg,vangogh_00295_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00289.jpg,vangogh_00289_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00243.jpg,vangogh_00243_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00169.jpg,vangogh_00169_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00098.jpg,vangogh_00098_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00668.jpg,vangogh_00668_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00321.jpg,vangogh_00321_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00163.jpg,vangogh_00163_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00412.jpg,vangogh_00412_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00202.jpg,vangogh_00202_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,vangogh,2016-07-22 09_41_37.jpg,photo_2016-07-22 09_41_37_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-07-29 18_36_07.jpg,photo_2015-07-29 18_36_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-02-20 01_09_08.jpg,photo_2016-02-20 01_09_08_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-08-29 16_18_55.jpg,photo_2016-08-29 16_18_55_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-06-27 18_28_11.jpg,photo_2016-06-27 18_28_11_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-01-15 05_40_07.jpg,photo_2016-01-15 05_40_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-12-12 06_47_23.jpg,photo_2015-12-12 06_47_23_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-09-28 19_23_35.jpg,photo_2015-09-28 19_23_35_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-10-12 23_43_58.jpg,photo_2015-10-12 23_43_58_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-07-17 17_24_04.jpg,photo_2016-07-17 17_24_04_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00295.jpg,vangogh_00295_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00289.jpg,vangogh_00289_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00243.jpg,vangogh_00243_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00169.jpg,vangogh_00169_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00098.jpg,vangogh_00098_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00668.jpg,vangogh_00668_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00321.jpg,vangogh_00321_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00163.jpg,vangogh_00163_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00412.jpg,vangogh_00412_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00202.jpg,vangogh_00202_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,photo,00427.jpg,vangogh_00427_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00272.jpg,vangogh_00272_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00177.jpg,vangogh_00177_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00090.jpg,vangogh_00090_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00528.jpg,vangogh_00528_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00519.jpg,vangogh_00519_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00167.jpg,vangogh_00167_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00292.jpg,vangogh_00292_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00455.jpg,vangogh_00455_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00005.jpg,vangogh_00005_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00573.jpg,vangogh_00573_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00220.jpg,vangogh_00220_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00436.jpg,vangogh_00436_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00681.jpg,vangogh_00681_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00557.jpg,vangogh_00557_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00418.jpg,vangogh_00418_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00352.jpg,vangogh_00352_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00264.jpg,vangogh_00264_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00277.jpg,vangogh_00277_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00561.jpg,vangogh_00561_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,vangogh,00427.jpg,vangogh_00427_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00272.jpg,vangogh_00272_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00177.jpg,vangogh_00177_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00090.jpg,vangogh_00090_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00528.jpg,vangogh_00528_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00519.jpg,vangogh_00519_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00167.jpg,vangogh_00167_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00292.jpg,vangogh_00292_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00455.jpg,vangogh_00455_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00005.jpg,vangogh_00005_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00573.jpg,vangogh_00573_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00220.jpg,vangogh_00220_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00436.jpg,vangogh_00436_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00681.jpg,vangogh_00681_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00557.jpg,vangogh_00557_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00418.jpg,vangogh_00418_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00352.jpg,vangogh_00352_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00264.jpg,vangogh_00264_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00277.jpg,vangogh_00277_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00561.jpg,vangogh_00561_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,photo,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,vangogh,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,photo,2016-07-22 09_41_37.jpg,photo_2016-07-22 09_41_37_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-07-29 18_36_07.jpg,photo_2015-07-29 18_36_07_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-02-20 01_09_08.jpg,photo_2016-02-20 01_09_08_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-08-29 16_18_55.jpg,photo_2016-08-29 16_18_55_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-06-27 18_28_11.jpg,photo_2016-06-27 18_28_11_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-01-15 05_40_07.jpg,photo_2016-01-15 05_40_07_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-12-12 06_47_23.jpg,photo_2015-12-12 06_47_23_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-09-28 19_23_35.jpg,photo_2015-09-28 19_23_35_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-10-12 23_43_58.jpg,photo_2015-10-12 23_43_58_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-07-17 17_24_04.jpg,photo_2016-07-17 17_24_04_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00295.jpg,vangogh_00295_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00289.jpg,vangogh_00289_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00243.jpg,vangogh_00243_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00169.jpg,vangogh_00169_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00098.jpg,vangogh_00098_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00668.jpg,vangogh_00668_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00321.jpg,vangogh_00321_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00163.jpg,vangogh_00163_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00412.jpg,vangogh_00412_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00202.jpg,vangogh_00202_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,vangogh,2016-07-22 09_41_37.jpg,photo_2016-07-22 09_41_37_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-07-29 18_36_07.jpg,photo_2015-07-29 18_36_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-02-20 01_09_08.jpg,photo_2016-02-20 01_09_08_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-08-29 16_18_55.jpg,photo_2016-08-29 16_18_55_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-06-27 18_28_11.jpg,photo_2016-06-27 18_28_11_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-01-15 05_40_07.jpg,photo_2016-01-15 05_40_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-12-12 06_47_23.jpg,photo_2015-12-12 06_47_23_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-09-28 19_23_35.jpg,photo_2015-09-28 19_23_35_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-10-12 23_43_58.jpg,photo_2015-10-12 23_43_58_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-07-17 17_24_04.jpg,photo_2016-07-17 17_24_04_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00295.jpg,vangogh_00295_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00289.jpg,vangogh_00289_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00243.jpg,vangogh_00243_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00169.jpg,vangogh_00169_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00098.jpg,vangogh_00098_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00668.jpg,vangogh_00668_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00321.jpg,vangogh_00321_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00163.jpg,vangogh_00163_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00412.jpg,vangogh_00412_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00202.jpg,vangogh_00202_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,photo,00427.jpg,vangogh_00427_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00272.jpg,vangogh_00272_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00177.jpg,vangogh_00177_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00090.jpg,vangogh_00090_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00528.jpg,vangogh_00528_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00519.jpg,vangogh_00519_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00167.jpg,vangogh_00167_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00292.jpg,vangogh_00292_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00455.jpg,vangogh_00455_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00005.jpg,vangogh_00005_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00573.jpg,vangogh_00573_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00220.jpg,vangogh_00220_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00436.jpg,vangogh_00436_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00681.jpg,vangogh_00681_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00557.jpg,vangogh_00557_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00418.jpg,vangogh_00418_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00352.jpg,vangogh_00352_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00264.jpg,vangogh_00264_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00277.jpg,vangogh_00277_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00561.jpg,vangogh_00561_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,vangogh,00427.jpg,vangogh_00427_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00272.jpg,vangogh_00272_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00177.jpg,vangogh_00177_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00090.jpg,vangogh_00090_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00528.jpg,vangogh_00528_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00519.jpg,vangogh_00519_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00167.jpg,vangogh_00167_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00292.jpg,vangogh_00292_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00455.jpg,vangogh_00455_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00005.jpg,vangogh_00005_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00573.jpg,vangogh_00573_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00220.jpg,vangogh_00220_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00436.jpg,vangogh_00436_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00681.jpg,vangogh_00681_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00557.jpg,vangogh_00557_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00418.jpg,vangogh_00418_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00352.jpg,vangogh_00352_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00264.jpg,vangogh_00264_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00277.jpg,vangogh_00277_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00561.jpg,vangogh_00561_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,photo,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,vangogh,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,photo,2016-07-22 09_41_37.jpg,photo_2016-07-22 09_41_37_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-07-29 18_36_07.jpg,photo_2015-07-29 18_36_07_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-02-20 01_09_08.jpg,photo_2016-02-20 01_09_08_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-08-29 16_18_55.jpg,photo_2016-08-29 16_18_55_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-06-27 18_28_11.jpg,photo_2016-06-27 18_28_11_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-01-15 05_40_07.jpg,photo_2016-01-15 05_40_07_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-12-12 06_47_23.jpg,photo_2015-12-12 06_47_23_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-09-28 19_23_35.jpg,photo_2015-09-28 19_23_35_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-10-12 23_43_58.jpg,photo_2015-10-12 23_43_58_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-07-17 17_24_04.jpg,photo_2016-07-17 17_24_04_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00295.jpg,vangogh_00295_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00289.jpg,vangogh_00289_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00243.jpg,vangogh_00243_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00169.jpg,vangogh_00169_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00098.jpg,vangogh_00098_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00668.jpg,vangogh_00668_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00321.jpg,vangogh_00321_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00163.jpg,vangogh_00163_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00412.jpg,vangogh_00412_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00202.jpg,vangogh_00202_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,vangogh,2016-07-22 09_41_37.jpg,photo_2016-07-22 09_41_37_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-07-29 18_36_07.jpg,photo_2015-07-29 18_36_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-02-20 01_09_08.jpg,photo_2016-02-20 01_09_08_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-08-29 16_18_55.jpg,photo_2016-08-29 16_18_55_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-06-27 18_28_11.jpg,photo_2016-06-27 18_28_11_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-01-15 05_40_07.jpg,photo_2016-01-15 05_40_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-12-12 06_47_23.jpg,photo_2015-12-12 06_47_23_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-09-28 19_23_35.jpg,photo_2015-09-28 19_23_35_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-10-12 23_43_58.jpg,photo_2015-10-12 23_43_58_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-07-17 17_24_04.jpg,photo_2016-07-17 17_24_04_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00295.jpg,vangogh_00295_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00289.jpg,vangogh_00289_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00243.jpg,vangogh_00243_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00169.jpg,vangogh_00169_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00098.jpg,vangogh_00098_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00668.jpg,vangogh_00668_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00321.jpg,vangogh_00321_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00163.jpg,vangogh_00163_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00412.jpg,vangogh_00412_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00202.jpg,vangogh_00202_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,photo,00427.jpg,vangogh_00427_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00272.jpg,vangogh_00272_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00177.jpg,vangogh_00177_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00090.jpg,vangogh_00090_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00528.jpg,vangogh_00528_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00519.jpg,vangogh_00519_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00167.jpg,vangogh_00167_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00292.jpg,vangogh_00292_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00455.jpg,vangogh_00455_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00005.jpg,vangogh_00005_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00573.jpg,vangogh_00573_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00220.jpg,vangogh_00220_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00436.jpg,vangogh_00436_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00681.jpg,vangogh_00681_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00557.jpg,vangogh_00557_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00418.jpg,vangogh_00418_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00352.jpg,vangogh_00352_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00264.jpg,vangogh_00264_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00277.jpg,vangogh_00277_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00561.jpg,vangogh_00561_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,vangogh,00427.jpg,vangogh_00427_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00272.jpg,vangogh_00272_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00177.jpg,vangogh_00177_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00090.jpg,vangogh_00090_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00528.jpg,vangogh_00528_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00519.jpg,vangogh_00519_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00167.jpg,vangogh_00167_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00292.jpg,vangogh_00292_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00455.jpg,vangogh_00455_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00005.jpg,vangogh_00005_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00573.jpg,vangogh_00573_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00220.jpg,vangogh_00220_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00436.jpg,vangogh_00436_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00681.jpg,vangogh_00681_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00557.jpg,vangogh_00557_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00418.jpg,vangogh_00418_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00352.jpg,vangogh_00352_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00264.jpg,vangogh_00264_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00277.jpg,vangogh_00277_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00561.jpg,vangogh_00561_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,photo,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,vangogh,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,photo,2016-07-22 09_41_37.jpg,photo_2016-07-22 09_41_37_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-07-29 18_36_07.jpg,photo_2015-07-29 18_36_07_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-02-20 01_09_08.jpg,photo_2016-02-20 01_09_08_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-08-29 16_18_55.jpg,photo_2016-08-29 16_18_55_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-06-27 18_28_11.jpg,photo_2016-06-27 18_28_11_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-01-15 05_40_07.jpg,photo_2016-01-15 05_40_07_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-12-12 06_47_23.jpg,photo_2015-12-12 06_47_23_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-09-28 19_23_35.jpg,photo_2015-09-28 19_23_35_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2015-10-12 23_43_58.jpg,photo_2015-10-12 23_43_58_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,photo,2016-07-17 17_24_04.jpg,photo_2016-07-17 17_24_04_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00295.jpg,vangogh_00295_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00289.jpg,vangogh_00289_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00243.jpg,vangogh_00243_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00169.jpg,vangogh_00169_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00098.jpg,vangogh_00098_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00668.jpg,vangogh_00668_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00321.jpg,vangogh_00321_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00163.jpg,vangogh_00163_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00412.jpg,vangogh_00412_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00202.jpg,vangogh_00202_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+photo,vangogh,2016-07-22 09_41_37.jpg,photo_2016-07-22 09_41_37_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-07-29 18_36_07.jpg,photo_2015-07-29 18_36_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-02-20 01_09_08.jpg,photo_2016-02-20 01_09_08_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-08-29 16_18_55.jpg,photo_2016-08-29 16_18_55_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-06-27 18_28_11.jpg,photo_2016-06-27 18_28_11_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-01-15 05_40_07.jpg,photo_2016-01-15 05_40_07_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-12-12 06_47_23.jpg,photo_2015-12-12 06_47_23_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-09-28 19_23_35.jpg,photo_2015-09-28 19_23_35_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2015-10-12 23_43_58.jpg,photo_2015-10-12 23_43_58_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,vangogh,2016-07-17 17_24_04.jpg,photo_2016-07-17 17_24_04_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00295.jpg,vangogh_00295_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00289.jpg,vangogh_00289_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00243.jpg,vangogh_00243_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00169.jpg,vangogh_00169_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00098.jpg,vangogh_00098_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00668.jpg,vangogh_00668_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00321.jpg,vangogh_00321_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00163.jpg,vangogh_00163_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00412.jpg,vangogh_00412_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00202.jpg,vangogh_00202_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,photo,00427.jpg,vangogh_00427_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00272.jpg,vangogh_00272_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00177.jpg,vangogh_00177_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00090.jpg,vangogh_00090_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00528.jpg,vangogh_00528_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00519.jpg,vangogh_00519_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00167.jpg,vangogh_00167_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00292.jpg,vangogh_00292_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00455.jpg,vangogh_00455_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00005.jpg,vangogh_00005_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00573.jpg,vangogh_00573_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00220.jpg,vangogh_00220_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00436.jpg,vangogh_00436_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00681.jpg,vangogh_00681_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00557.jpg,vangogh_00557_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00418.jpg,vangogh_00418_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00352.jpg,vangogh_00352_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00264.jpg,vangogh_00264_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00277.jpg,vangogh_00277_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,photo,00561.jpg,vangogh_00561_to_photo.jpg,0.0,0.0,0.0,0.0,photo,1
+vangogh,vangogh,00427.jpg,vangogh_00427_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00272.jpg,vangogh_00272_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00177.jpg,vangogh_00177_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00090.jpg,vangogh_00090_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00528.jpg,vangogh_00528_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00519.jpg,vangogh_00519_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00167.jpg,vangogh_00167_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00292.jpg,vangogh_00292_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00455.jpg,vangogh_00455_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00005.jpg,vangogh_00005_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00573.jpg,vangogh_00573_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00220.jpg,vangogh_00220_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00436.jpg,vangogh_00436_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00681.jpg,vangogh_00681_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00557.jpg,vangogh_00557_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00418.jpg,vangogh_00418_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00352.jpg,vangogh_00352_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00264.jpg,vangogh_00264_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00277.jpg,vangogh_00277_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+vangogh,vangogh,00561.jpg,vangogh_00561_to_vangogh.jpg,0.0,0.0,0.0,0.0,photo,0
+photo,photo,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_photo.jpg,0.38867697,0.7087801694869995,0.6061669588088989,0.782804,N/A,N/A
+photo,photo,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_photo.jpg,0.36912036,0.7111587524414062,0.62468022108078,0.7564889,N/A,N/A
+photo,photo,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_photo.jpg,0.2985358,0.7194259762763977,0.5183494687080383,0.81836843,N/A,N/A
+photo,photo,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_photo.jpg,0.3206924,0.7496377229690552,0.6412127614021301,0.8625323,N/A,N/A
+photo,photo,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_photo.jpg,0.38018233,0.7277617454528809,0.5672329664230347,0.6643398,N/A,N/A
+photo,photo,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_photo.jpg,0.31178612,0.7696468830108643,0.5759576559066772,0.8216969,N/A,N/A
+photo,photo,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_photo.jpg,0.34431094,0.718201220035553,0.6662142872810364,0.8310238,N/A,N/A
+photo,photo,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_photo.jpg,0.43731028,0.7205914258956909,0.6179842352867126,0.8115671,N/A,N/A
+photo,photo,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_photo.jpg,0.4215077,0.759044349193573,0.5993154048919678,0.7287098,N/A,N/A
+photo,photo,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_photo.jpg,0.32776192,0.7175968885421753,0.5904043316841125,0.6853493,N/A,N/A
+photo,photo,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_photo.jpg,0.27291033,0.7360290288925171,0.5765826106071472,0.8504677,N/A,N/A
+photo,photo,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_photo.jpg,0.51806664,0.8072736859321594,0.6182256937026978,0.84039724,N/A,N/A
+photo,photo,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_photo.jpg,0.3047395,0.6989997029304504,0.5622478127479553,0.84903693,N/A,N/A
+photo,photo,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_photo.jpg,0.3904429,0.6924989223480225,0.6691316962242126,0.8452822,N/A,N/A
+photo,photo,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_photo.jpg,0.33607608,0.7332499623298645,0.6277341842651367,0.80820537,N/A,N/A
+photo,photo,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_photo.jpg,0.53952205,0.7608071565628052,0.5691091418266296,0.7830023,N/A,N/A
+photo,photo,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_photo.jpg,0.3042931,0.7142735123634338,0.6391719579696655,0.8185936,N/A,N/A
+photo,photo,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_photo.jpg,0.36808065,0.7736320495605469,0.6113629937171936,0.8416455,N/A,N/A
+photo,photo,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_photo.jpg,0.2650618,0.7060918807983398,0.6020439267158508,0.833967,N/A,N/A
+photo,photo,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_photo.jpg,0.4276629,0.7464646697044373,0.6601508259773254,0.9109133,N/A,N/A
+photo,vangogh,2015-11-20 12_03_52.jpg,photo_2015-11-20 12_03_52_to_vangogh.jpg,0.48138633,0.7061830759048462,0.586391270160675,0.7488638,N/A,N/A
+photo,vangogh,2015-11-16 09_02_06.jpg,photo_2015-11-16 09_02_06_to_vangogh.jpg,0.44522834,0.6966046094894409,0.5889092683792114,0.7458962,N/A,N/A
+photo,vangogh,2015-08-23 16_15_36.jpg,photo_2015-08-23 16_15_36_to_vangogh.jpg,0.43416014,0.719378650188446,0.4884486794471741,0.78131706,N/A,N/A
+photo,vangogh,2015-03-01 07_26_03.jpg,photo_2015-03-01 07_26_03_to_vangogh.jpg,0.39737487,0.7479515671730042,0.6380032300949097,0.8560591,N/A,N/A
+photo,vangogh,2014-05-19 12_26_07.jpg,photo_2014-05-19 12_26_07_to_vangogh.jpg,0.5114204,0.7326952219009399,0.6246194243431091,0.63186294,N/A,N/A
+photo,vangogh,2016-07-28 18_33_05.jpg,photo_2016-07-28 18_33_05_to_vangogh.jpg,0.57416576,0.8030151724815369,0.5581532716751099,0.8086717,N/A,N/A
+photo,vangogh,2015-11-24 12_12_37.jpg,photo_2015-11-24 12_12_37_to_vangogh.jpg,0.42565522,0.7262765169143677,0.6116045117378235,0.7676598,N/A,N/A
+photo,vangogh,2015-01-07 13_51_57.jpg,photo_2015-01-07 13_51_57_to_vangogh.jpg,0.4726837,0.6817747354507446,0.559906542301178,0.8617053,N/A,N/A
+photo,vangogh,2016-01-02 01_14_14.jpg,photo_2016-01-02 01_14_14_to_vangogh.jpg,0.5078362,0.7514814734458923,0.6629009246826172,0.6947948,N/A,N/A
+photo,vangogh,2015-07-15 21_07_13.jpg,photo_2015-07-15 21_07_13_to_vangogh.jpg,0.422655,0.7413709759712219,0.5718933939933777,0.7206019,N/A,N/A
+photo,vangogh,2016-01-17 13_00_04.jpg,photo_2016-01-17 13_00_04_to_vangogh.jpg,0.42937124,0.7336791753768921,0.611889123916626,0.75492567,N/A,N/A
+photo,vangogh,2015-10-07 21_28_09.jpg,photo_2015-10-07 21_28_09_to_vangogh.jpg,0.5733831,0.7947303652763367,0.531379222869873,0.8644978,N/A,N/A
+photo,vangogh,2015-03-07 14_38_57.jpg,photo_2015-03-07 14_38_57_to_vangogh.jpg,0.4899889,0.7139620780944824,0.6124324202537537,0.7565125,N/A,N/A
+photo,vangogh,2014-04-12 05_09_16.jpg,photo_2014-04-12 05_09_16_to_vangogh.jpg,0.4698781,0.6928458213806152,0.5389580130577087,0.70271134,N/A,N/A
+photo,vangogh,2016-05-13 13_51_03.jpg,photo_2016-05-13 13_51_03_to_vangogh.jpg,0.4299574,0.7465004324913025,0.704894483089447,0.7699035,N/A,N/A
+photo,vangogh,2016-04-14 15_20_23.jpg,photo_2016-04-14 15_20_23_to_vangogh.jpg,0.54601836,0.7247068881988525,0.5579268336296082,0.78740525,N/A,N/A
+photo,vangogh,2015-02-22 15_25_59.jpg,photo_2015-02-22 15_25_59_to_vangogh.jpg,0.45084965,0.7219743728637695,0.5525895357131958,0.7721892,N/A,N/A
+photo,vangogh,2015-11-16 11_26_24.jpg,photo_2015-11-16 11_26_24_to_vangogh.jpg,0.448263,0.7969722747802734,0.6577130556106567,0.69638145,N/A,N/A
+photo,vangogh,2016-03-19 09_19_26.jpg,photo_2016-03-19 09_19_26_to_vangogh.jpg,0.40603307,0.7188915014266968,0.5508775115013123,0.74453753,N/A,N/A
+photo,vangogh,2013-12-09 01_12_14.jpg,photo_2013-12-09 01_12_14_to_vangogh.jpg,0.4225719,0.7147928476333618,0.6730728149414062,0.82588476,N/A,N/A
+photo,photo,2016-07-22 09_41_37.jpg,photo_2016-07-22 09_41_37_to_photo.jpg,0.32737544,0.7538537979125977,0.5684914588928223,0.8217948,N/A,N/A
+photo,photo,2015-07-29 18_36_07.jpg,photo_2015-07-29 18_36_07_to_photo.jpg,0.3958,0.7085838317871094,0.6140846014022827,0.8508252,N/A,N/A
+photo,photo,2016-02-20 01_09_08.jpg,photo_2016-02-20 01_09_08_to_photo.jpg,0.23258647,0.7398722171783447,0.5595096945762634,0.8404674,N/A,N/A
+photo,photo,2016-08-29 16_18_55.jpg,photo_2016-08-29 16_18_55_to_photo.jpg,0.3556516,0.739184558391571,0.5998581051826477,0.7194385,N/A,N/A
+photo,photo,2016-06-27 18_28_11.jpg,photo_2016-06-27 18_28_11_to_photo.jpg,0.4275961,0.7442821860313416,0.658086895942688,0.8515409,N/A,N/A
+photo,photo,2016-01-15 05_40_07.jpg,photo_2016-01-15 05_40_07_to_photo.jpg,0.30689102,0.7264454364776611,0.6465134024620056,0.8792709,N/A,N/A
+photo,photo,2015-12-12 06_47_23.jpg,photo_2015-12-12 06_47_23_to_photo.jpg,0.38564083,0.725549578666687,0.5506058931350708,0.89860606,N/A,N/A
+photo,photo,2015-09-28 19_23_35.jpg,photo_2015-09-28 19_23_35_to_photo.jpg,0.418635,0.7716177105903625,0.48077133297920227,0.71774244,N/A,N/A
+photo,photo,2015-10-12 23_43_58.jpg,photo_2015-10-12 23_43_58_to_photo.jpg,0.30216494,0.7275846600532532,0.6014434695243835,0.81072414,N/A,N/A
+photo,photo,2016-07-17 17_24_04.jpg,photo_2016-07-17 17_24_04_to_photo.jpg,0.33643666,0.7043240070343018,0.5898036956787109,0.7340233,N/A,N/A
+vangogh,photo,00295.jpg,vangogh_00295_to_photo.jpg,0.4028125,0.7588661909103394,0.48494306206703186,0.87752545,N/A,N/A
+vangogh,photo,00289.jpg,vangogh_00289_to_photo.jpg,0.48162714,0.7378264665603638,0.5903632044792175,0.7366052,N/A,N/A
+vangogh,photo,00243.jpg,vangogh_00243_to_photo.jpg,0.3463144,0.8005346655845642,0.43538108468055725,0.8728583,N/A,N/A
+vangogh,photo,00169.jpg,vangogh_00169_to_photo.jpg,0.48407596,0.8076310753822327,0.5224595069885254,0.88458,N/A,N/A
+vangogh,photo,00098.jpg,vangogh_00098_to_photo.jpg,0.40295017,0.7469314336776733,0.5243479013442993,0.89352655,N/A,N/A
+vangogh,photo,00668.jpg,vangogh_00668_to_photo.jpg,0.43973276,0.7730075120925903,0.566580593585968,0.9107829,N/A,N/A
+vangogh,photo,00321.jpg,vangogh_00321_to_photo.jpg,0.4396059,0.7538684606552124,0.5773394107818604,0.78102434,N/A,N/A
+vangogh,photo,00163.jpg,vangogh_00163_to_photo.jpg,0.30728877,0.85926753282547,0.47294601798057556,0.8232675,N/A,N/A

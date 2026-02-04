@@ -396,7 +396,7 @@ class LGTTrainer:
         # 1. 强制退出 Autocast，进入 FP32 高精度领域
         # 我们已经拿到了 v_pred (BF16)，现在要进行精细的积分和 Loss 计算
         with torch.amp.autocast('cuda', enabled=False):
-            # 将关键张量转为 FP32
+ # 将关键张量转为 FP32
             v_pred_f32 = v_pred.float()
             x_t_f32 = x_t.float()
             t_f32 = t.view(-1, 1, 1, 1).float()

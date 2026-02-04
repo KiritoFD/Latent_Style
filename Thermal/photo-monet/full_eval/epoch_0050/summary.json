@@ -1,0 +1,48 @@
+{
+  "checkpoint": "../photo-monet/epoch_0050.pt",
+  "timestamp": "2026-02-03 11:44:55",
+  "matrix_breakdown": {
+    "monet": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.5811703463395437,
+        "style_lpips": 0.7516314446926117,
+        "content_lpips": 0.5772437570000001,
+        "clip_content": 0.6716478656666666
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.6769770423571269,
+        "style_lpips": 0.7244201223055522,
+        "content_lpips": 0.547456807,
+        "clip_content": 0.7397745586666667
+      }
+    },
+    "photo": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.580809485912323,
+        "style_lpips": 0.7520502189795176,
+        "content_lpips": 0.661224105,
+        "clip_content": 0.6156389876666667
+      },
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5353768001000087,
+        "style_lpips": 0.7385192394256592,
+        "content_lpips": 0.3865477220000001,
+        "clip_content": 0.8044272093333336
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "clip_style": 0.6288932641347249,
+      "content_lpips": 0.604340456
+    },
+    "photo_to_art_performance": {
+      "clip_style": 0.580809485912323,
+      "valid": true
+    }
+  }
+}
