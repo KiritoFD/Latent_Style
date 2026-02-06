@@ -14,15 +14,20 @@ Physical interpretation:
 - Diffusion term: Thermal fluctuations for exploring high-frequency details
 """
 
+import sys
+from pathlib import Path
 import torch
 import torch.nn.functional as F
-from pathlib import Path
 import numpy as np
 from PIL import Image
 from tqdm import tqdm
 import logging
 import os
 from typing import Optional
+
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 from model import LGTUNet
 
@@ -835,7 +840,7 @@ if __name__ == "__main__":
     
     # Check arguments
     if len(sys.argv) < 4:
-        print("Usage: python inference.py <checkpoint> <source_img> <output_path> [target_style_id]")
+        print("Usage: python utils/inference.py <checkpoint> <source_img> <output_path> [target_style_id]")
         sys.exit(1)
     
     checkpoint_path = sys.argv[1]

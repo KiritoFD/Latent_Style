@@ -10,11 +10,10 @@ from .model import LGTUNet, TimestepEmbedding, StyleEmbedding, count_parameters
 from .losses import (
     PatchSlicedWassersteinLoss,
     MultiScaleSWDLoss,
-    TrajectoryMSELoss,
     GeometricFreeEnergyLoss,
     VelocityRegularizationLoss
 )
-from .inference import (
+from .utils.inference import (
     LangevinSampler,
     LGTInference,
     load_vae,
@@ -33,7 +32,6 @@ __all__ = [
     # Losses
     "PatchSlicedWassersteinLoss",
     "MultiScaleSWDLoss",
-    "TrajectoryMSELoss",
     "GeometricFreeEnergyLoss",
     "VelocityRegularizationLoss",
     
