@@ -6,6 +6,7 @@ Target Hardware: RTX 4070 Laptop (8GB VRAM) | CPU: 7940HX
 import argparse
 import json
 import os
+import sys
 from pathlib import Path
 import torch
 import torch.optim as optim
@@ -43,7 +44,11 @@ import torch.nn.functional as F
 from torchvision.transforms import ToPILImage
 from torchvision.utils import save_image
 # Project imports
-from inference import LGTInference, load_vae, encode_image, decode_latent
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from utils.inference import LGTInference, load_vae, encode_image, decode_latent
 
 # ==========================================
 # Optimized Feature Extractors

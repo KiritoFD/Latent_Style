@@ -20,9 +20,9 @@ from PIL import Image
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import LinearLR, SequentialLR, CosineAnnealingLR
 
-from checkpoint import find_latest_checkpoint, load_checkpoint, save_checkpoint
-from dataset import LatentDataset
-from inference import decode_latent, encode_image, load_vae
+from utils.checkpoint import find_latest_checkpoint, load_checkpoint, save_checkpoint
+from utils.dataset import LatentDataset
+from utils.inference import decode_latent, encode_image, load_vae
 from losses import (
     GeometricFreeEnergyLoss,
     PyramidStructuralLoss,
@@ -172,6 +172,7 @@ class LGTTrainer:
         self.vae = load_vae(device)
 
         self.style_indices_cache = None
+        self.style_indices_tensor_cache = None
         self.dataset_ref: Optional[LatentDataset] = None
 
         self.log_dir = self.checkpoint_dir / 'logs'
@@ -242,6 +243,10 @@ class LGTTrainer:
     def build_style_indices_cache(self, dataset: LatentDataset) -> None:
         logger.info("Building style indices cache...")
         self.style_indices_cache = dataset.style_indices
+        self.style_indices_tensor_cache = {
+            style_id: torch.tensor(indices, dtype=torch.long)
+            for style_id, indices in self.style_indices_cache.items()
+        }
         for style_id, indices in self.style_indices_cache.items():
             logger.info(f"  Style {style_id}: {len(indices)} samples")
         self.dataset_ref = dataset
@@ -259,14 +264,12 @@ class LGTTrainer:
         for style_id in range(self.config['model']['num_styles']):
             if style_id not in self.style_indices_cache:
                 continue
-            indices = self.style_indices_cache[style_id]
+            indices_tensor = self.style_indices_tensor_cache[style_id]
             mask = target_cpu == style_id
             count = int(mask.sum().item())
             if count == 0:
                 continue
-            # Convert list to tensor for random indexing
-            indices_tensor = torch.tensor(indices, dtype=torch.long)
-            rand_indices = indices_tensor[torch.randint(len(indices), (count,))]
+            rand_indices = indices_tensor[torch.randint(indices_tensor.numel(), (count,))]
             selected = self.dataset_ref.latents_tensor[rand_indices]
             style_latents[mask.to(device)] = selected.to(device, non_blocking=True)
 
@@ -350,9 +353,12 @@ class LGTTrainer:
 
         x0 = torch.randn_like(latent)
 
-        sigma_noise = 0.1
-        noise_injection = torch.randn_like(x_src_target) * sigma_noise
-        x_target_noisy = x_src_target + noise_injection
+        sigma_noise = float(self.config['training'].get('noise_injection_sigma', 0.1))
+        if sigma_noise > 0.0:
+            noise_injection = torch.randn_like(x_src_target) * sigma_noise
+            x_target_noisy = x_src_target + noise_injection
+        else:
+            x_target_noisy = x_src_target
 
         epsilon_dynamic = get_dynamic_epsilon(
             epoch=epoch,
@@ -385,13 +391,11 @@ class LGTTrainer:
             photo_idx = style_subdirs.index('photo')
             is_photo = (style_id_tgt == photo_idx)
         
-        # Create per-sample weight tensors
-        w_style_batch = torch.full((b,), cur_w_style, device=device)
-        w_mse_batch = torch.full((b,), cur_w_mse, device=device)
-        
+        # Create per-sample weight tensors (mask only)
+        w_style_batch = torch.ones((b,), device=device)
+        w_mse_batch = torch.ones((b,), device=device)
         if is_photo.any():
             w_style_batch = torch.where(is_photo, torch.tensor(0.0, device=device), w_style_batch)
-            w_mse_batch = torch.where(is_photo, w_mse_batch * 10.0, w_mse_batch)
         
         # 1. 强制退出 Autocast，进入 FP32 高精度领域
         # 我们已经拿到了 v_pred (BF16)，现在要进行精细的积分和 Loss 计算
@@ -403,28 +407,22 @@ class LGTTrainer:
             
             # --- ODE 积分评估 (精度修正) ---
             # 即使 config 里是 1 步，我们也在这里显式写出欧拉积分，保证是在 FP32 下做的加法
-            if self.ode_steps == 1 and not drop_label:
-                dt = (1.0 - t_f32)
-                # 关键：大数(Latent) + 小数(Update) 在 FP32 下进行，防止下溢
-                x_1_pred = x_t_f32 + v_pred_f32 * dt
-            else:
-                # 如果是多步，integrate_ode 内部也需要确保使用 FP32
-                x_1_pred = integrate_ode(
-                    model=self.model,
-                    x_t=x_t_f32,
-                    t_start=t_f32.view(-1),
-                    style_id=style_id_tgt,
-                    steps=self.ode_steps,
-                    use_checkpoint=self.config['training'].get('use_gradient_checkpointing', True),
-                    use_amp=self.use_amp,
-                    amp_dtype=torch.bfloat16,
-                    training=self.model.training,
-                )
+            x_1_pred = integrate_ode(
+                model=self.model,
+                x_t=x_t_f32,
+                t_start=t_f32.view(-1),
+                style_id=style_id_tgt,
+                steps=self.ode_steps,
+                use_checkpoint=self.config['training'].get('use_gradient_checkpointing', True),
+                use_amp=self.use_amp,
+                amp_dtype=torch.bfloat16,
+                training=self.model.training,
+            )
 
             # --- 目标构建 ---
             # Flow Matching 的目标速度 v_target 也要是 FP32
             # 注意：这里的 x_src_target 是纯净的图，x0 是噪声
-            v_target_f32 = (x_src_target.float() - x0.float())
+            v_target_f32 = (x_target_noisy.float() - x0.float())
 
             # --- Loss 计算 (FP32) ---
             # 1. 结构损失 (MSE): 在 FP32 下计算，捕获 1e-4 级别的差异
@@ -436,11 +434,24 @@ class LGTTrainer:
 
             # 2. 风格损失 (SWD): 
             # SWD 内部涉及排序，FP32 排序比 BF16 更稳定且更有意义
+            # Frequency separation: SWD on high-frequency residuals only
+            def _lowpass(x: torch.Tensor, size: int = 8) -> torch.Tensor:
+                x_lp = F.interpolate(x, size=(size, size), mode="area")
+                x_lp = F.interpolate(x_lp, size=x.shape[-2:], mode="bilinear", align_corners=False)
+                return x_lp
+
+            x_lp = _lowpass(x_1_pred)
+            style_lp = _lowpass(style_latents.float())
+            x_hp = x_1_pred - x_lp
+            style_hp = style_latents.float() - style_lp
+
             loss_dict = self.energy_loss(
-                x_1_pred, # FP32
-                style_latents.float(), 
-                style_ids=style_id_tgt, 
-                sample_weights=w_style_batch
+                x_hp,  # FP32
+                style_hp,
+                style_ids=style_id_tgt,
+                sample_weights=w_style_batch,
+                moments_pred=(x_lp.mean(dim=(2, 3)), x_lp.std(dim=(2, 3))),
+                moments_style=(style_lp.mean(dim=(2, 3)), style_lp.std(dim=(2, 3))),
             )
             loss_style = loss_dict['style_swd']
 
@@ -455,17 +466,10 @@ class LGTTrainer:
             norm_factor_style = 1.0
         
         # 🔥 Clean Loss Assembly: Pyramid (structure) + SWD (texture)
-        # Note: Weights are already applied inside the loss functions via sample_weights
-        term_struc = (m_mse * loss_struc / norm_factor_mse)
-        term_style = (style_weight_batch * m_style * loss_style / norm_factor_style)
-        
-        # 🔥 Weighted Normalization: Accounts for base weight disparity (w_style=5 vs w_pyramid=1)
-        # This ensures Total Loss remains stable even when schedule shifts focus to heavier terms
-        base_weight_sum = cur_w_mse + cur_w_style
-        current_weight_sum = (cur_w_mse * m_mse) + (cur_w_style * m_style)
-        norm_scale = current_weight_sum / (base_weight_sum + 1e-6)
-        
-        total = (term_struc + term_style) / (norm_scale + 1e-6)
+        # Note: sample_weights are masks only; all scalars are applied here
+        term_struc = (cur_w_mse * m_mse * loss_struc / norm_factor_mse)
+        term_style = (style_weight_batch * cur_w_style * m_style * loss_style / norm_factor_style)
+        total = term_struc + term_style
         
         if self.use_velocity_reg and self.vel_reg_loss is not None:
             loss_reg = self.vel_reg_loss(v_pred)
@@ -716,7 +720,7 @@ class LGTTrainer:
         eval_out_dir = self.checkpoint_dir / 'full_eval' / f'epoch_{epoch:04d}'
         eval_out_dir.mkdir(parents=True, exist_ok=True)
 
-        run_script = Path(__file__).resolve().parent / 'run_evaluation.py'
+        run_script = Path(__file__).resolve().parent / 'utils' / 'run_evaluation.py'
         cmd = [sys.executable, str(run_script), '--checkpoint', str(ckpt_to_use), '--output', str(eval_out_dir)]
         
         num_steps = self.config.get('inference', {}).get('num_steps', None)

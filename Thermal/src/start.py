@@ -18,7 +18,7 @@ inductor_config.fallback_random = True
 
 from torch.utils.data import DataLoader
 
-from dataset import LatentDataset
+from utils.dataset import LatentDataset
 from trainer import LGTTrainer
 
 logging.basicConfig(

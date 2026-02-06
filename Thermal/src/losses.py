@@ -7,8 +7,7 @@ Removed: CosineSSMLoss, NeighborhoodMatchingLoss (deprecated Content Losses)
 Loss functions:
 1. PatchSlicedWassersteinLoss: Texture matching (with brightness normalization)
 2. MultiScaleSWDLoss: Multi-scale texture matching
-3. TrajectoryMSELoss: Structure + brightness supervision
-4. GeometricFreeEnergyLoss: Unified wrapper for SWD only
+3. GeometricFreeEnergyLoss: Unified wrapper for SWD only
 
 All losses operate in FP32 for numerical stability.
 """
@@ -16,140 +15,10 @@ All losses operate in FP32 for numerical stability.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import os
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-class StructureAnchoredLoss(nn.Module):
-    """
-    Laplacian Structural Lock with Adaptive Gating - WITH DIAGNOSTIC MONITORING.
-    
-    🔥 CRITICAL IMPROVEMENTS for training from scratch:
-    1. Dynamic Gating: Gradually increase constraint over epochs
-    2. Huber Loss: Robust to outliers (prevents gradient explosion at MSE=10)
-    3. Smooth L1 transition: Behaves like MSE for small errors, L1 for large
-    4. Built-in diagnostics: Monitor edge detection hardness
-    """
-    def __init__(self, weight=2.0, edge_boost=3.0):
-        super().__init__()
-        self.weight = weight
-        self.edge_boost = edge_boost
-        
-        # Static Laplacian Kernel (Discrete Second Derivative)
-        # Shape: [4, 1, 3, 3] for group conv (one kernel per channel)
-        k = torch.tensor([[0, 1, 0], [1, -4, 1], [0, 1, 0]], dtype=torch.float32)
-        self.register_buffer('kernel', k.view(1, 1, 3, 3).repeat(4, 1, 1, 1))
-        
-        # 🔥 Debug flag
-        self.debug_trigger = False
-
-    def forward(self, v_pred, v_target, clean_latents, current_epoch=0, total_warmup_epochs=20):
-        """
-        Args:
-            v_pred: [B, C, H, W] Model predicted velocity
-            v_target: [B, C, H, W] Ground truth target from scheduler
-            clean_latents: [B, C, H, W] Original clean latents (for structure extraction)
-            current_epoch: Current training epoch (for adaptive gating)
-            total_warmup_epochs: Number of epochs to warm up gate (default 20)
-        
-        Returns:
-            loss: scalar weighted Smooth L1 loss with gradient safety bounds
-        """
-        # 1. Physical Edge Extraction (on clean latents, no gradients)
-        with torch.no_grad():
-            # Depthwise conv: O(1) memory overhead per channel
-            edges = F.conv2d(clean_latents, self.kernel, groups=4, padding=1)
-            
-            # Max aggregation across channels to find dominant structure
-            mask = torch.max(torch.abs(edges), dim=1, keepdim=True)[0]  # [B, 1, H, W]
-            
-            # Robust Z-Score Normalization (prevents division by zero and extreme values)
-            mu = mask.mean(dim=[2, 3], keepdim=True)  # Spatial mean
-            std = mask.std(dim=[2, 3], keepdim=True)   # Spatial standard deviation
-            
-            # Z-Score: (x - μ) / σ → bounded to (-∞, +∞)
-            mask_zscore = (mask - mu) / (std + 1e-6)
-            
-            # Sigmoid: Maps (-∞, +∞) → (0, 1), matching CNN Proxy output range
-            mask_norm = torch.sigmoid(mask_zscore)  # [B, 1, H, W] in [0, 1]
-            
-            # 🔥 FIX 1: Dynamic Gating (Adaptive Warmup)
-            # ================================================================
-            # Gradually increase constraint from 0 to 1 over warmup_epochs.
-            # Early epochs: gate ≈ 0 → light supervision, model learns basic patterns
-            # Late epochs: gate → 1 → full structure lock, model refines edges
-            gate = min(current_epoch / max(total_warmup_epochs, 1), 1.0)
-            
-            # weight_map now interpolates between:
-            # Early (gate=0): weight_map = 1.0 (uniform MSE)
-            # Late (gate=1):  weight_map = 1.0 + mask_norm * edge_boost (structure lock)
-            weight_map = 1.0 + (mask_norm * self.edge_boost * gate)  # [B, 1, H, W]
-            
-            # 🔥 DEBUG: Monitor edge detection hardness
-            # ================================================================
-            # Healthy range for weight_map:
-            # - Min should be ≈ 1.0 (flat regions, no constraint)
-            # - Max should be ≈ (1.0 + edge_boost) (edge regions, full constraint)
-            # - Gate interpolates from 0→1 as epochs progress
-            #
-            # If weight_map.max() is already 4.0 but gate is still 0.1,
-            # the constraint is too aggressive for early training.
-            if self.debug_trigger:
-                w_min, w_max = weight_map.min().item(), weight_map.max().item()
-                w_mean = weight_map.mean().item()
-                print(
-                    f"[Loss Debug] Epoch {current_epoch}/{total_warmup_epochs} | "
-                    f"Weight: min={w_min:.3f} max={w_max:.3f} mean={w_mean:.3f} | "
-                    f"Gate={gate:.3f} | "
-                    f"Mask Range=[{mask.min().item():.4f}, {mask.max().item():.4f}]"
-                )
-
-        # 2. Weighted Loss Computation
-        # ================================================================
-        # 🔥 FIX 2: Use Smooth L1 (Huber) Loss instead of MSE
-        # 
-        # Problem: At MSE=10, gradient is huge (2*10=20 per pixel).
-        # When multiplied by weight_map (up to 4.0), gradient norm becomes 80.
-        # Even with clipping, the loss surface is sharp and optimization is unstable.
-        #
-        # Solution: Smooth L1 Loss (Huber Loss)
-        # - For |error| < β: acts like MSE (smooth, adaptive step size)
-        # - For |error| > β: acts like L1 (constant gradient, robustness to outliers)
-        # - Smooth transition at boundary ensures gradient continuity
-        #
-        # β=0.1 means:
-        # - Errors < 0.1: Use quadratic (steep early learning)
-        # - Errors > 0.1: Use linear (steady descent from plateau)
-        weighted_diff = weight_map * (v_pred - v_target)
-        
-        # Smooth L1 Loss: more robust to outliers than MSE
-        loss = F.smooth_l1_loss(weighted_diff, torch.zeros_like(weighted_diff), beta=0.1, reduction='mean')
-        
-        return loss
-
-
-class TrajectoryMSELoss(nn.Module):
-    """
-    Trajectory Matching Loss (Flow Matching Objective).
-    Low-Pass MSE for structure-only supervision.
-    Only supervise LOW frequencies (structure/outline).
-    """
-    def __init__(self, weight=2.0, low_pass_kernel_size=5):
-        super().__init__()
-        self.weight = weight
-        self.kernel_size = low_pass_kernel_size
-    
-    def forward(self, v_pred, v_target):
-        # Low-Pass Filtering: extract low-frequency components
-        k = self.kernel_size
-        # Padding ensures output size matches input
-        v_pred_blur = F.avg_pool2d(v_pred, k, stride=1, padding=k//2)
-        v_target_blur = F.avg_pool2d(v_target, k, stride=1, padding=k//2)
-        
-        return F.mse_loss(v_pred_blur, v_target_blur)
 
 
 class VelocityRegularizationLoss(nn.Module):
@@ -334,8 +203,8 @@ class PatchSlicedWassersteinLoss(nn.Module):
             pred_sorted, _ = torch.sort(pred_sampled, dim=0)
             style_sorted, _ = torch.sort(style_sampled, dim=0)
             
-            # MSE
-            loss = F.mse_loss(pred_sorted, style_sorted)
+            # L1 (W1-style) for stabler texture matching
+            loss = F.l1_loss(pred_sorted, style_sorted)
             
             return loss
 
@@ -440,6 +309,7 @@ class GeometricFreeEnergyLoss(nn.Module):
         swd_scale_weights=[1.0, 5.0, 5.0, 5.0, 3.0],
         num_projections=64,
         max_samples=4096,
+        moment_lowpass_size: int = 8,
         **kwargs  # Accept but ignore deprecated parameters for backward compatibility
     ):
         super().__init__()
@@ -450,9 +320,14 @@ class GeometricFreeEnergyLoss(nn.Module):
         self.scale_weights = swd_scale_weights
         self.num_projections = num_projections
         self.max_samples = max_samples
+        self.moment_lowpass_size = moment_lowpass_size
         
         # Register initialization flag
         self.register_buffer('_is_initialized', torch.tensor(False, dtype=torch.bool))
+        self.register_buffer('_moment_cache_ready', torch.tensor(False, dtype=torch.bool))
+        # Default channel size is 4 for SD latents; replaced on initialize_cache
+        self.register_buffer('_style_mu', torch.zeros(self.num_styles, 4))
+        self.register_buffer('_style_std', torch.ones(self.num_styles, 4))
         
         logger.info(
             f"🎯 GeometricFreeEnergyLoss initialized (Multi-Style Mode)\n"
@@ -503,6 +378,27 @@ class GeometricFreeEnergyLoss(nn.Module):
         logger.info("🔥 Pre-computing SWD Style Cache (this may take a minute)...")
         
         with torch.no_grad():
+            # Pre-compute per-style global moments for stability
+            mu_list = []
+            std_list = []
+            for style_id in range(self.num_styles):
+                assert style_id in style_latents_dict, f"Style {style_id} not found in input dict"
+                style_latent = style_latents_dict[style_id].to(device, non_blocking=True).float()
+                if self.moment_lowpass_size > 0:
+                    lp = F.interpolate(style_latent, size=(self.moment_lowpass_size, self.moment_lowpass_size), mode='area')
+                    lp = F.interpolate(lp, size=style_latent.shape[-2:], mode='bilinear', align_corners=False)
+                    moment_source = lp
+                else:
+                    moment_source = style_latent
+                mu = moment_source.mean(dim=(0, 2, 3))  # [C]
+                std = moment_source.std(dim=(0, 2, 3))  # [C]
+                mu_list.append(mu)
+                std_list.append(std)
+
+            self._style_mu = torch.stack(mu_list, dim=0)
+            self._style_std = torch.stack(std_list, dim=0)
+            self._moment_cache_ready.fill_(True)
+
             for scale_idx, scale in enumerate(self.scales):
                 logger.info(f"  Processing scale {scale}×{scale} ({scale_idx + 1}/{len(self.scales)})...")
                 
@@ -562,7 +458,15 @@ class GeometricFreeEnergyLoss(nn.Module):
         self._is_initialized.fill_(True)
         logger.info("✅ SWD Cache Initialization Complete")
     
-    def forward(self, x_pred: torch.Tensor, x_style: torch.Tensor, style_ids: Optional[torch.Tensor] = None, sample_weights: Optional[torch.Tensor] = None) -> Dict[str, torch.Tensor]:
+    def forward(
+        self,
+        x_pred: torch.Tensor,
+        x_style: torch.Tensor,
+        style_ids: Optional[torch.Tensor] = None,
+        sample_weights: Optional[torch.Tensor] = None,
+        moments_pred: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
+        moments_style: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
+    ) -> Dict[str, torch.Tensor]:
         """
         计算多尺度 SWD 损失（使用预计算的 Style LUT）
         
@@ -618,14 +522,15 @@ class GeometricFreeEnergyLoss(nn.Module):
                 x_flat = x_scaled.view(b, c, -1).permute(0, 2, 1)  # [B, H*W, C]
                 
                 n_pixels = x_flat.shape[1]
-                if n_pixels > self.max_samples:
-                    # 随机采样（保持随机性以增强数据多样性）
-                    idx = torch.randperm(n_pixels, device=device)[:self.max_samples]
+                if n_pixels >= self.max_samples:
+                    # 随机采样（更快的 randint）
+                    idx = torch.randint(0, n_pixels, (self.max_samples,), device=device)
                     x_sampled = x_flat[:, idx, :]  # [B, max_samples, C]
                 else:
-                    # 如果像素不足，填充到 max_samples
-                    pad_size = self.max_samples - n_pixels
-                    x_sampled = F.pad(x_flat, (0, 0, 0, pad_size), mode='constant', value=0)
+                    # 不足时循环填充，避免 0 padding 造成分布偏移
+                    repeat_times = (self.max_samples // n_pixels) + 1
+                    x_repeat = x_flat.repeat(1, repeat_times, 1)
+                    x_sampled = x_repeat[:, :self.max_samples, :]
                 
                 # 投影：[B, max_samples, C] @ [C, num_projections] → [B, max_samples, num_projections]
                 proj_input = torch.matmul(x_sampled, projections.t())  # [B, max_samples, num_projections]
@@ -643,20 +548,31 @@ class GeometricFreeEnergyLoss(nn.Module):
                 # 6. 计算 SWD 损失（L2 距离）
                 if sample_weights is not None:
                     # [B, max_samples, num_projections] -> [B]
-                    raw_loss = F.mse_loss(proj_input_sorted.float(), proj_target_sorted.float(), reduction='none').mean(dim=(1, 2))
+                    raw_loss = (proj_input_sorted.float() - proj_target_sorted.float()).abs().mean(dim=(1, 2))
                     scale_loss = (raw_loss * sample_weights).mean()
                 else:
-                    scale_loss = F.mse_loss(proj_input_sorted.float(), proj_target_sorted.float())
+                    scale_loss = (proj_input_sorted.float() - proj_target_sorted.float()).abs().mean()
                 
                 total_loss = total_loss + self.scale_weights[scale_idx] * scale_loss
                 loss_dict[f'swd_scale_{scale}'] = scale_loss.detach()
         
         # 🔥 Fix: Global Moment Matching (Color/Brightness Lock)
         # SWD handles local texture, this handles global atmosphere
-        mu_pred = x_pred.float().mean(dim=(2, 3))
-        mu_style = x_style.float().mean(dim=(2, 3))
-        std_pred = x_pred.float().std(dim=(2, 3))
-        std_style = x_style.float().std(dim=(2, 3))
+        if moments_pred is None:
+            mu_pred = x_pred.float().mean(dim=(2, 3))
+            std_pred = x_pred.float().std(dim=(2, 3))
+        else:
+            mu_pred, std_pred = moments_pred
+
+        if moments_style is None:
+            if self._moment_cache_ready and style_ids is not None:
+                mu_style = self._style_mu.index_select(0, style_ids)
+                std_style = self._style_std.index_select(0, style_ids)
+            else:
+                mu_style = x_style.float().mean(dim=(2, 3))
+                std_style = x_style.float().std(dim=(2, 3))
+        else:
+            mu_style, std_style = moments_style
         
         loss_moments = F.mse_loss(mu_pred, mu_style) + F.mse_loss(std_pred, std_style)
         total_loss = total_loss + 10.0 * loss_moments
@@ -763,20 +679,18 @@ class PyramidStructuralLoss(nn.Module):
 if __name__ == "__main__":
     # Test loss functions (clean version)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
+
     # Create dummy data
     B, C, H, W = 4, 4, 32, 32
     x_pred = torch.randn(B, C, H, W, device=device)
     x_style = torch.randn(B, C, H, W, device=device)
-    x_0 = torch.randn(B, C, H, W, device=device)
-    x_1 = torch.randn(B, C, H, W, device=device)
     v_pred = torch.randn(B, C, H, W, device=device)
-    
+
     print("Testing Patch-SWD Loss (mean-normalized)...")
     swd_loss = PatchSlicedWassersteinLoss(normalize_patch='mean').to(device)
     swd_value = swd_loss(x_pred, x_style)
     print(f"  SWD Loss: {swd_value.item():.6f}")
-    
+
     print("\nTesting Multi-Scale SWD Loss...")
     multi_swd = MultiScaleSWDLoss(scales=[2, 4, 8], scale_weights=[2.0, 5.0, 5.0]).to(device)
     multi_loss, scale_dict = multi_swd(x_pred, x_style)
@@ -784,23 +698,17 @@ if __name__ == "__main__":
     for scale, loss_val in scale_dict.items():
         if isinstance(loss_val, torch.Tensor):
             print(f"    {scale}: {loss_val.item():.6f}")
-    
+
     print("\nTesting Geometric Free Energy Loss (SWD only)...")
     energy_loss = GeometricFreeEnergyLoss(w_style=60.0).to(device)
     loss_dict = energy_loss(x_pred, x_style)
     print(f"  Total Energy: {loss_dict['style_swd']:.6f}")
     print(f"  Style SWD: {loss_dict['style_swd']:.6f}")
-    
-    print("\nTesting Structure Anchored Loss (Laplacian)...")
-    struct_loss = StructureAnchoredLoss(weight=5.0, edge_boost=3.0).to(device)  # 🔥 Fixed: 9.0 -> 3.0
-    v_target = x_style - x_0
-    struct_value = struct_loss(v_pred, v_target, x_0)
-    print(f"  Structure Anchored Loss: {struct_value.item():.6f}")
-    
+
     print("\nTesting Pyramid Structural Loss...")
     pyramid_loss = PyramidStructuralLoss().to(device)
-    v_target = x_style - x_0
+    v_target = x_style - torch.randn_like(x_style)
     pyramid_value = pyramid_loss(v_pred, v_target)
     print(f"  Pyramid Structural Loss: {pyramid_value.item():.6f}")
-    
+
     print("\n✓ All loss functions tested successfully!")
