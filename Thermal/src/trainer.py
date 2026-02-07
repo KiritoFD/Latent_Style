@@ -27,11 +27,23 @@ from losses import (
     GeometricFreeEnergyLoss,
     PyramidStructuralLoss,
     VelocityRegularizationLoss,
+    StyleClassificationLoss,
 )
+from utils.style_classifier import StyleClassifier
 from model import LGTUNet, count_parameters
 from physics import generate_latent, get_dynamic_epsilon, integrate_ode, invert_latent
 
 logger = logging.getLogger(__name__)
+
+def _log_vram(tag: str, reset_peak: bool = False):
+    if not torch.cuda.is_available():
+        return
+    if reset_peak:
+        torch.cuda.reset_peak_memory_stats()
+    alloc = torch.cuda.memory_allocated() / (1024 ** 2)
+    reserved = torch.cuda.memory_reserved() / (1024 ** 2)
+    max_alloc = torch.cuda.max_memory_allocated() / (1024 ** 2)
+    logger.info(f"[VRAM] {tag} | alloc={alloc:.1f}MB reserved={reserved:.1f}MB max_alloc={max_alloc:.1f}MB")
 
 
 class RunningMean:
@@ -61,6 +73,12 @@ class LGTTrainer:
         self.config = config
         self.device = device
         self.config_path = Path(config_path) if config_path is not None else None
+        self.vram_debug = bool(config.get('training', {}).get('vram_debug', True))
+        self.vram_debug_interval = int(config.get('training', {}).get('vram_debug_interval', 50))
+        self.vram_debug_reset_peak = bool(config.get('training', {}).get('vram_debug_reset_peak', False))
+        self._vram_log_this_step = False
+        if self.vram_debug:
+            _log_vram("init/start", reset_peak=self.vram_debug_reset_peak)
 
         # 🔥 Infra Optimization: Enable Tensor Cores (Ampere+)
         torch.set_float32_matmul_precision('high')
@@ -74,10 +92,17 @@ class LGTTrainer:
             num_styles=config['model']['num_styles'],
             num_encoder_blocks=config['model']['num_encoder_blocks'],
             num_decoder_blocks=config['model']['num_decoder_blocks'],
+            use_checkpointing=config['training'].get('use_gradient_checkpointing', False),
         ).to(device, memory_format=torch.channels_last)  # 🔥 Infra Optimization: Channels Last
         self.model.compute_avg_style_embedding()
+        if self.vram_debug:
+            _log_vram("after model init", reset_peak=self.vram_debug_reset_peak)
 
-        if config['training'].get('use_compile', False):
+        use_compile = config['training'].get('use_compile', False)
+        if self.vram_debug and use_compile:
+            logger.warning("VRAM debug enabled: disabling torch.compile to avoid Dynamo errors")
+            use_compile = False
+        if use_compile:
             try:
                 self.model = torch.compile(self.model, mode='default', fullgraph=False)
                 logger.info("✓ Model compiled with torch.compile")
@@ -93,13 +118,68 @@ class LGTTrainer:
             swd_scale_weights=config['loss'].get('swd_scale_weights', [1.0, 1.0, 0.5]),
             num_projections=config['loss'].get('num_projections', 64),
             max_samples=config['loss'].get('max_samples', 4096),
+            moment_lowpass_size=config['loss'].get('moment_lowpass_size', 8),
+            fixed_sample_indices=config['loss'].get('fixed_swd_sample_indices', True),
+            swd_sample_seed=config['loss'].get('swd_sample_seed', 1234),
         ).to(device)
+        if self.vram_debug:
+            _log_vram("after energy_loss init", reset_peak=self.vram_debug_reset_peak)
+
+        # Style classifier guidance (to stabilize style direction)
+        self.use_style_classifier = config['loss'].get('use_style_classifier', True)
+        self.style_cls_weight = float(config['loss'].get('w_style_classifier', 0.1))
+        self.style_classifier = None
+        self.style_cls_loss = None
+        self.style_classifier_ckpt = config['loss'].get('style_classifier_ckpt', None)
+        self.style_classifier_strict = bool(config['loss'].get('style_classifier_strict', False))
+        self.style_classifier_trainable = bool(config['loss'].get('style_classifier_trainable', False))
+        if self.use_style_classifier and self.style_cls_weight > 0.0:
+            input_size_train = int(config['loss'].get('style_classifier_input_size_train', 8))
+            input_size_infer = int(config['loss'].get('style_classifier_input_size_infer', input_size_train))
+            self.style_classifier = StyleClassifier(
+                in_channels=config['model']['latent_channels'],
+                num_classes=config['model']['num_styles'],
+                use_stats=bool(config['loss'].get('style_classifier_use_stats', True)),
+                use_gram=bool(config['loss'].get('style_classifier_use_gram', True)),
+                use_lowpass_stats=bool(config['loss'].get('style_classifier_use_lowpass_stats', True)),
+                spatial_shuffle=bool(config['loss'].get('style_classifier_spatial_shuffle', True)),
+                input_size_train=input_size_train,
+                input_size_infer=input_size_infer,
+                lowpass_size=int(config['loss'].get('style_classifier_lowpass_size', 8)),
+            ).to(device)
+            self.style_cls_loss = StyleClassificationLoss(self.style_classifier, weight=self.style_cls_weight).to(device)
+            if self.style_classifier_ckpt:
+                ckpt_path = Path(self.style_classifier_ckpt)
+                if not ckpt_path.is_absolute():
+                    ckpt_path = (Path(__file__).resolve().parent / ckpt_path).resolve()
+                if ckpt_path.exists():
+                    state = torch.load(ckpt_path, map_location=device)
+                    state_dict = state.get('model_state_dict', state)
+                    self.style_classifier.load_state_dict(state_dict, strict=self.style_classifier_strict)
+                    logger.info(f"Loaded style classifier weights from {ckpt_path}")
+                # If a checkpoint is provided, default to inference-only unless explicitly set
+                if self.style_classifier_trainable is False:
+                    for p in self.style_classifier.parameters():
+                        p.requires_grad = False
+                    self.style_classifier.eval()
+            else:
+                msg = f"Style classifier checkpoint not found: {ckpt_path}"
+                if self.style_classifier_strict:
+                    raise FileNotFoundError(msg)
+                logger.warning(msg + " (training from scratch)")
+            logger.info(f"Style classifier guidance enabled (weight={self.style_cls_weight})")
+        else:
+            logger.info("Style classifier guidance disabled")
+        if self.vram_debug:
+            _log_vram("after style_classifier init", reset_peak=self.vram_debug_reset_peak)
 
         # 🔥 Pyramid Structural Loss (Frequency-Separated Structure Lock)
         pyramid_weights = config['loss'].get('pyramid_weights', {'low': 5.0, 'mid': 1.0, 'high': 0.1})
         self.pyramid_loss = PyramidStructuralLoss(weights=pyramid_weights).to(device)
         self.w_pyramid = config['loss'].get('w_pyramid', 1.0)
         logger.info(f"✓ Pyramid Structural Loss enabled (w={self.w_pyramid}, weights={pyramid_weights})")
+        if self.vram_debug:
+            _log_vram("after pyramid_loss init", reset_peak=self.vram_debug_reset_peak)
 
         self.use_velocity_reg = config['loss'].get('use_velocity_reg', False)
         self.vel_reg_loss = None
@@ -109,22 +189,32 @@ class LGTTrainer:
             logger.info(f"✓ Velocity Regularization enabled (weight={vel_reg_weight})")
         else:
             logger.info("Velocity Regularization disabled")
+        if self.vram_debug:
+            _log_vram("after vel_reg init", reset_peak=self.vram_debug_reset_peak)
 
         self.num_epochs = config['training']['num_epochs']
 
+        optim_params = list(self.model.parameters())
+        if self.style_classifier is not None and self.style_classifier_trainable:
+            optim_params += list(self.style_classifier.parameters())
+
         self.optimizer = torch.optim.AdamW(
-            self.model.parameters(),
+            optim_params,
             lr=config['training']['learning_rate'],
             weight_decay=config['training'].get('weight_decay', 1e-5),
             betas=(0.9, 0.999),
             fused=False,  # 🔥 Fix: Fused AdamW conflicts with GradScaler.unscale_
         )
+        if self.vram_debug:
+            _log_vram("after optimizer init", reset_peak=self.vram_debug_reset_peak)
 
         # Initialize scheduler immediately so it can be loaded from checkpoint
         self._setup_scheduler()
 
         self.use_amp = config['training'].get('use_amp', True)
         self.scaler = torch.amp.GradScaler(enabled=self.use_amp)
+        if self.vram_debug:
+            _log_vram("after scaler init", reset_peak=self.vram_debug_reset_peak)
 
         # 🔥 Adaptive Loss Normalization (Self-Learning Scales)
         self.use_adaptive_norm = config['training'].get('use_adaptive_loss_norm', False)
@@ -170,10 +260,15 @@ class LGTTrainer:
         self.inference_dir.mkdir(exist_ok=True)
 
         self.vae = load_vae(device)
+        if self.vram_debug:
+            _log_vram("after VAE load", reset_peak=self.vram_debug_reset_peak)
 
         self.style_indices_cache = None
         self.style_indices_tensor_cache = None
+        self.style_reference_pool = None
         self.dataset_ref: Optional[LatentDataset] = None
+        self.use_fixed_style_reference = self.config['training'].get('use_fixed_style_reference', True)
+        self.fixed_style_reference_size = int(self.config['training'].get('fixed_style_reference_size', 128))
 
         self.log_dir = self.checkpoint_dir / 'logs'
         self.log_dir.mkdir(exist_ok=True)
@@ -265,12 +360,19 @@ class LGTTrainer:
             if style_id not in self.style_indices_cache:
                 continue
             indices_tensor = self.style_indices_tensor_cache[style_id]
+            if self.use_fixed_style_reference and self.style_reference_pool is not None:
+                pool = self.style_reference_pool[style_id]
+                pool_size = pool.shape[0]
             mask = target_cpu == style_id
             count = int(mask.sum().item())
             if count == 0:
                 continue
-            rand_indices = indices_tensor[torch.randint(indices_tensor.numel(), (count,))]
-            selected = self.dataset_ref.latents_tensor[rand_indices]
+            if self.use_fixed_style_reference and self.style_reference_pool is not None:
+                rand_idx = torch.randint(pool_size, (count,))
+                selected = pool[rand_idx]
+            else:
+                rand_indices = indices_tensor[torch.randint(indices_tensor.numel(), (count,))]
+                selected = self.dataset_ref.latents_tensor[rand_indices]
             style_latents[mask.to(device)] = selected.to(device, non_blocking=True)
 
         return style_latents
@@ -335,11 +437,15 @@ class LGTTrainer:
         latent_deformed = batch.get('latent_deformed')
         if latent_deformed is not None:
             latent_deformed = latent_deformed.to(device, non_blocking=True, memory_format=torch.channels_last)
+        if self._vram_log_this_step and self.vram_debug:
+            _log_vram("compute_energy_loss/after_batch_to_device", reset_peak=self.vram_debug_reset_peak)
 
         b = latent.shape[0]
         indices = torch.randperm(b, device=device)
         style_id_tgt = style_id[indices]
         style_latents = self.sample_style_batch(style_id_tgt)
+        if self._vram_log_this_step and self.vram_debug:
+            _log_vram("compute_energy_loss/after_style_latents", reset_peak=self.vram_debug_reset_peak)
 
         use_elastic = self.config['training'].get('use_elastic_deform', False)
         elastic_styles = self.config['training'].get('elastic_styles', [1])
@@ -372,13 +478,22 @@ class LGTTrainer:
         t_expand = t.view(-1, 1, 1, 1)
 
         x_t = (1 - t_expand) * x0 + t_expand * x_target_noisy
+        if self._vram_log_this_step and self.vram_debug:
+            _log_vram("compute_energy_loss/after_x_t", reset_peak=self.vram_debug_reset_peak)
 
         drop_label = False
         if self.model.training and torch.rand(1).item() < self.label_drop_prob:
             drop_label = True
 
+        if self._vram_log_this_step and self.vram_debug:
+            self.model._vram_debug = True
+            self.model._vram_debug_fn = lambda tag: _log_vram(f"model/{tag}", reset_peak=self.vram_debug_reset_peak)
         with torch.amp.autocast('cuda', enabled=self.use_amp, dtype=torch.bfloat16):
             v_pred = self.model(x_t, t, style_id_tgt, use_avg_style=drop_label)
+        if self._vram_log_this_step and self.vram_debug:
+            self.model._vram_debug = False
+        if self._vram_log_this_step and self.vram_debug:
+            _log_vram("compute_energy_loss/after_v_pred", reset_peak=self.vram_debug_reset_peak)
 
         # [Dynamic Anchoring] Update weights based on epoch
         cur_w_style, cur_w_mse = self.update_loss_weights(epoch, self.num_epochs)
@@ -404,20 +519,49 @@ class LGTTrainer:
             v_pred_f32 = v_pred.float()
             x_t_f32 = x_t.float()
             t_f32 = t.view(-1, 1, 1, 1).float()
+            if self._vram_log_this_step and self.vram_debug:
+                _log_vram("compute_energy_loss/after_cast_f32", reset_peak=self.vram_debug_reset_peak)
             
             # --- ODE 积分评估 (精度修正) ---
             # 即使 config 里是 1 步，我们也在这里显式写出欧拉积分，保证是在 FP32 下做的加法
-            x_1_pred = integrate_ode(
-                model=self.model,
-                x_t=x_t_f32,
-                t_start=t_f32.view(-1),
-                style_id=style_id_tgt,
-                steps=self.ode_steps,
-                use_checkpoint=self.config['training'].get('use_gradient_checkpointing', True),
-                use_amp=self.use_amp,
-                amp_dtype=torch.bfloat16,
-                training=self.model.training,
-            )
+            if self.ode_steps == 1:
+                # Use already-computed v_pred to avoid a second forward pass (saves VRAM)
+                if self._vram_log_this_step and self.vram_debug:
+                    _log_vram("compute_energy_loss/ode1/pre", reset_peak=self.vram_debug_reset_peak)
+                dt = (1.0 - t_f32)
+                if self._vram_log_this_step and self.vram_debug:
+                    _log_vram("compute_energy_loss/ode1/after_dt", reset_peak=self.vram_debug_reset_peak)
+                x_1_pred = x_t_f32 + v_pred_f32 * dt
+                if self._vram_log_this_step and self.vram_debug:
+                    _log_vram("compute_energy_loss/ode1/after_update", reset_peak=self.vram_debug_reset_peak)
+            else:
+                if self._vram_log_this_step and self.vram_debug:
+                    _log_vram("compute_energy_loss/ode/pre", reset_peak=self.vram_debug_reset_peak)
+
+                x = x_t_f32.clone()
+                t_cur = t_f32.view(-1).clone()
+                num_steps = max(self.ode_steps, 1)
+                use_ckpt = self.config['training'].get('use_gradient_checkpointing', True)
+
+                def step_fn(x_in, t_in, style_in):
+                    with torch.amp.autocast('cuda', enabled=self.use_amp, dtype=torch.bfloat16):
+                        return self.model(x_in, t_in, style_in, use_avg_style=False)
+
+                for i in range(num_steps):
+                    t_remaining = 1.0 - t_cur
+                    dt = t_remaining / num_steps
+                    if use_ckpt and self.model.training:
+                        v = torch.utils.checkpoint.checkpoint(step_fn, x, t_cur, style_id_tgt, use_reentrant=False)
+                    else:
+                        v = step_fn(x, t_cur, style_id_tgt)
+                    x = x + v * dt.view(-1, 1, 1, 1)
+                    t_cur = t_cur + dt
+                    if self._vram_log_this_step and self.vram_debug:
+                        _log_vram(f"compute_energy_loss/ode/step{i+1}", reset_peak=self.vram_debug_reset_peak)
+
+                x_1_pred = x
+            if self._vram_log_this_step and self.vram_debug:
+                _log_vram("compute_energy_loss/after_ode", reset_peak=self.vram_debug_reset_peak)
 
             # --- 目标构建 ---
             # Flow Matching 的目标速度 v_target 也要是 FP32
@@ -435,7 +579,8 @@ class LGTTrainer:
             # 2. 风格损失 (SWD): 
             # SWD 内部涉及排序，FP32 排序比 BF16 更稳定且更有意义
             # Frequency separation: SWD on high-frequency residuals only
-            def _lowpass(x: torch.Tensor, size: int = 8) -> torch.Tensor:
+            lowpass_size = int(self.config['loss'].get('moment_lowpass_size', 8))
+            def _lowpass(x: torch.Tensor, size: int = lowpass_size) -> torch.Tensor:
                 x_lp = F.interpolate(x, size=(size, size), mode="area")
                 x_lp = F.interpolate(x_lp, size=x.shape[-2:], mode="bilinear", align_corners=False)
                 return x_lp
@@ -451,9 +596,18 @@ class LGTTrainer:
                 style_ids=style_id_tgt,
                 sample_weights=w_style_batch,
                 moments_pred=(x_lp.mean(dim=(2, 3)), x_lp.std(dim=(2, 3))),
-                moments_style=(style_lp.mean(dim=(2, 3)), style_lp.std(dim=(2, 3))),
             )
             loss_style = loss_dict['style_swd']
+            if self._vram_log_this_step and self.vram_debug:
+                _log_vram("compute_energy_loss/after_swd", reset_peak=self.vram_debug_reset_peak)
+
+            # Style classifier guidance on high-frequency residuals
+            loss_cls = None
+            if self.style_cls_loss is not None:
+                loss_cls = self.style_cls_loss(x_1_pred.detach() if not self.model.training else x_1_pred, style_id_tgt)
+                loss_dict['style_cls'] = loss_cls.detach()
+                if self._vram_log_this_step and self.vram_debug:
+                    _log_vram("compute_energy_loss/after_style_cls", reset_peak=self.vram_debug_reset_peak)
 
         style_weight_batch = self.style_weights[style_id_tgt].mean()
 
@@ -470,6 +624,8 @@ class LGTTrainer:
         term_struc = (cur_w_mse * m_mse * loss_struc / norm_factor_mse)
         term_style = (style_weight_batch * cur_w_style * m_style * loss_style / norm_factor_style)
         total = term_struc + term_style
+        if 'style_cls' in loss_dict and loss_cls is not None:
+            total = total + loss_cls
         
         if self.use_velocity_reg and self.vel_reg_loss is not None:
             loss_reg = self.vel_reg_loss(v_pred)
@@ -493,6 +649,11 @@ class LGTTrainer:
 
         if self.style_indices_cache is None:
             self.build_style_indices_cache(dataloader.dataset)
+            if self.vram_debug:
+                _log_vram(f"epoch {epoch} after style_indices_cache", reset_peak=self.vram_debug_reset_peak)
+
+        if self.vram_debug:
+            _log_vram(f"epoch {epoch} start", reset_peak=self.vram_debug_reset_peak)
 
         # Pre-calculate multipliers for the epoch (constant per epoch)
         multipliers = self._get_thermodynamic_schedule(epoch)
@@ -519,12 +680,23 @@ class LGTTrainer:
 
         for step_idx, batch in enumerate(pbar, start=1):
             torch.compiler.cudagraph_mark_step_begin()
+
+            self._vram_log_this_step = self.vram_debug and (
+                step_idx == 1 or step_idx % max(self.vram_debug_interval, 1) == 0
+            )
+            if self._vram_log_this_step:
+                _log_vram(f"epoch {epoch} step {step_idx} start", reset_peak=self.vram_debug_reset_peak)
             
             with torch.amp.autocast('cuda', enabled=self.use_amp, dtype=torch.bfloat16):
                 ld = self.compute_energy_loss(batch, epoch, multipliers=multipliers)
+
+            if self._vram_log_this_step:
+                _log_vram(f"epoch {epoch} step {step_idx} after loss", reset_peak=self.vram_debug_reset_peak)
                 
             loss = ld['total'] / self.accumulation_steps
             self.scaler.scale(loss).backward()
+            if self._vram_log_this_step:
+                _log_vram(f"epoch {epoch} step {step_idx} after backward", reset_peak=self.vram_debug_reset_peak)
 
             accum_counter += 1
 
@@ -537,6 +709,8 @@ class LGTTrainer:
                 accum_counter = 0
                 self._update_lora_alpha(self.global_step)
                 self.global_step += 1
+                if self._vram_log_this_step:
+                    _log_vram(f"epoch {epoch} step {step_idx} after opt", reset_peak=self.vram_debug_reset_peak)
 
             total_loss += ld['total'].item()
             total_style_swd += ld['style_swd'].item()
@@ -871,7 +1045,7 @@ class LGTTrainer:
         
         # 设定采样数量：为了构建稳健的风格分布，建议采样 128 张图
         # 如果某个风格图片少于 128 张，代码会自动处理
-        SAMPLES_FOR_DISTRIBUTION = 128
+        SAMPLES_FOR_DISTRIBUTION = self.fixed_style_reference_size
         
         # Collect representative latent for each style
         for style_id in range(self.config['model']['num_styles']):
@@ -888,12 +1062,18 @@ class LGTTrainer:
                 
                 # 将这个 Batch 存入字典，GeometricFreeEnergyLoss 会自动将其展平处理
                 style_prototypes[style_id] = latents_batch
-                
+                if self.use_fixed_style_reference:
+                    self.style_reference_pool = self.style_reference_pool or {}
+                    self.style_reference_pool[style_id] = latents_batch
+
                 logger.info(f"  Style {style_id}: Sampled {count} images for distribution statistics.")
             else:
                 # Fallback: random initialization
                 logger.warning(f"⚠️  No style {style_id} samples found, using random init")
                 style_prototypes[style_id] = torch.randn(1, 4, 32, 32)
+                if self.use_fixed_style_reference:
+                    self.style_reference_pool = self.style_reference_pool or {}
+                    self.style_reference_pool[style_id] = style_prototypes[style_id]
         
         # Initialize LUT cache
         # 此时传入的是 [128, 4, 32, 32] 的数据，能算出真正的“风格分布”

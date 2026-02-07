@@ -9,6 +9,7 @@ Core Design:
 """
 
 import torch
+import torch.utils.checkpoint as ckpt
 import torch.nn as nn
 import torch.nn.functional as F
 import math
@@ -136,9 +137,11 @@ class LGTUNet(nn.Module):
         num_styles=4,
         num_encoder_blocks=2,
         num_decoder_blocks=3,
+        use_checkpointing: bool = False,
         **kwargs # Ignore unused args like ccm_rank
     ):
         super().__init__()
+        self.use_checkpointing = use_checkpointing
         self.time_embed = TimestepEmbedding(time_dim)
         self.style_embed = StyleEmbedding(num_styles, style_dim)
         
@@ -178,37 +181,65 @@ class LGTUNet(nn.Module):
         nn.init.zeros_(self.out_conv.bias)
 
     def forward(self, x, t, style_id, use_avg_style=False):
+        def _vram(tag: str):
+            if getattr(self, "_vram_debug", False):
+                fn = getattr(self, "_vram_debug_fn", None)
+                if fn is not None:
+                    fn(tag)
+        def _ckpt(fn, *args):
+            if self.use_checkpointing and self.training:
+                return ckpt.checkpoint(fn, *args, use_reentrant=False)
+            return fn(*args)
+
         t_emb = self.time_embed(t)
         s_emb = self.style_embed(style_id, use_avg=use_avg_style)
         cond = self.cond_fusion(torch.cat([t_emb, s_emb], dim=-1))
         
         h = self.in_conv(x)
+        _vram("in_conv")
         skips = []
         
         # Encoder
-        for blk in self.enc1: h = blk(h, cond)
+        for blk in self.enc1:
+            h = _ckpt(lambda _h, _c: blk(_h, _c), h, cond)
+        _vram("enc1")
         skips.append(h)
         h = self.down1(h)
+        _vram("down1")
         
-        for blk in self.enc2: h = blk(h, cond)
+        for blk in self.enc2:
+            h = _ckpt(lambda _h, _c: blk(_h, _c), h, cond)
+        _vram("enc2")
         skips.append(h)
         h = self.down2(h)
+        _vram("down2")
         
         # Bottleneck
-        h = self.mid_block1(h, cond)
-        h = self.attn(h)
-        h = self.mid_block2(h, cond)
+        h = _ckpt(lambda _h, _c: self.mid_block1(_h, _c), h, cond)
+        _vram("mid_block1")
+        h = _ckpt(lambda _h: self.attn(_h), h)
+        _vram("attn")
+        h = _ckpt(lambda _h, _c: self.mid_block2(_h, _c), h, cond)
+        _vram("mid_block2")
         
         # Decoder (Simple Additive Skip)
         h = self.up1(h)
+        _vram("up1")
         h = h + skips.pop() # Residual add
-        for blk in self.dec1: h = blk(h, cond)
+        for blk in self.dec1:
+            h = _ckpt(lambda _h, _c: blk(_h, _c), h, cond)
+        _vram("dec1")
         
         h = self.up2(h)
+        _vram("up2")
         h = h + skips.pop()
-        for blk in self.dec2: h = blk(h, cond)
+        for blk in self.dec2:
+            h = _ckpt(lambda _h, _c: blk(_h, _c), h, cond)
+        _vram("dec2")
         
-        return self.out_conv(F.silu(self.out_norm(h)))
+        out = self.out_conv(F.silu(self.out_norm(h)))
+        _vram("out")
+        return out
 
     def compute_avg_style_embedding(self):
         self.style_embed.compute_avg_embedding()
