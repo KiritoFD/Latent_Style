@@ -1,0 +1,70 @@
+2026-02-07 19:08:22,697 - INFO - Using device: cuda
+2026-02-07 19:08:22,698 - INFO - Using global seed: 42
+2026-02-07 19:08:22,698 - INFO - Loading 4 styles from ../../latents...
+2026-02-07 19:09:02,458 - INFO - 💾 Keeping latents in CPU RAM (Pinned)
+2026-02-07 19:09:04,203 - INFO - Model architecture: unet_lite
+2026-02-07 19:09:04,957 - INFO - Model compiled with torch.compile
+2026-02-07 19:09:05,067 - INFO - Model parameters: 65,220,292
+2026-02-07 19:09:05,068 - INFO - 🎯 GeometricFreeEnergyLoss initialized (Multi-Style Mode)
+   Scales: [2, 5, 9]
+   Styles: 4 | Max Samples: 16384
+   Projections: 64 | Memory: ~48.0MB
+2026-02-07 19:09:05,077 - INFO - SWD setup | enabled=False warmup_ratio=0.200 band=highpass levels=['latent'] high_w=1.000 low_w=1.000 moment_w=10.000
+2026-02-07 19:09:05,077 - INFO - Style classifier guidance disabled
+2026-02-07 19:09:05,078 - INFO - Identity consistency enabled (pair_ratio=0.25, w_identity=1.0)
+2026-02-07 19:09:05,078 - INFO - Pyramid Structural Loss enabled (w=1.0, weights={'low': 4.0, 'mid': 2.0, 'high': 1.0})
+2026-02-07 19:09:05,078 - INFO - Velocity Regularization enabled (weight=0.1)
+2026-02-07 19:09:05,079 - INFO - Scheduler: Linear Warmup (10) -> Cosine Annealing (to 1e-06)
+2026-02-07 19:09:05,079 - INFO - Adaptive Loss Normalization enabled (Running Mean Scaling)
+2026-02-07 19:09:05,079 - INFO - Gradient accumulation: 2 steps | Effective batch size: 384
+2026-02-07 19:09:05,079 - INFO - Alpha warmup schedule: 0 -> 1.0 over 1000 steps
+2026-02-07 19:09:05,079 - INFO - Per-style loss weights: [1.0, 1.0, 1.0, 1.0]
+2026-02-07 19:09:05,085 - INFO - Full external evaluation interval: 1000000000
+2026-02-07 19:09:06,846 - INFO - Loading VAE on device: cuda
+2026-02-07 19:09:06,964 - INFO -  Loaded VAE from local HF cache: stabilityai/sd-vae-ft-mse
+2026-02-07 19:09:06,970 - INFO - Overriding resume checkpoint: /mnt/g/GitHub/Latent_Style/Thermal/unet_lite/epoch_0100.pt
+2026-02-07 19:09:06,971 - INFO - Loading checkpoint: /mnt/g/GitHub/Latent_Style/Thermal/unet_lite/epoch_0100.pt
+2026-02-07 19:09:11,008 - INFO - ✓ Model state loaded
+2026-02-07 19:09:11,009 - INFO - ✓ Optimizer state restored (momentum preserved)
+2026-02-07 19:09:11,009 - INFO - ✓ Scheduler state restored (no re-warmup)
+2026-02-07 19:09:11,009 - INFO - ✓ GradScaler state restored
+2026-02-07 19:09:11,009 - INFO - ✓ Fully resumed from epoch 100
+2026-02-07 19:09:11,009 - INFO -   Next epoch: 101
+2026-02-07 19:09:11,010 - INFO -   Global step: 6400
+2026-02-07 19:09:11,010 - INFO - Adaptive loss normalization state restored
+2026-02-07 19:09:11,010 - INFO - Resumed training state. Current LR will be determined by scheduler.
+2026-02-07 19:09:11,011 - INFO - Building style indices cache...
+2026-02-07 19:09:11,012 - INFO -   Style 0: 6187 samples
+2026-02-07 19:09:11,012 - INFO -   Style 1: 972 samples
+2026-02-07 19:09:11,012 - INFO -   Style 2: 600 samples
+2026-02-07 19:09:11,012 - INFO -   Style 3: 850 samples
+2026-02-07 19:09:11,012 - INFO - Style indices cache built
+2026-02-07 19:09:11,013 - INFO - Estimated train steps=258, SWD warmup steps=51 (ratio=0.200)
+2026-02-07 19:09:11,013 - INFO - Skipping latent SWD LUT initialization (latent SWD disabled for this run).
+2026-02-07 19:09:11,015 - INFO - Saving original test images to inference/epoch_-1
+2026-02-07 19:09:11,015 - INFO - 
+================================================================================
+2026-02-07 19:09:11,015 - INFO - Running Inference Evaluation (Epoch -1)
+2026-02-07 19:09:11,015 - INFO - ================================================================================
+2026-02-07 19:09:11,058 - INFO -   Test image for photo: 2013-12-09 01_12_14.jpg
+2026-02-07 19:09:11,089 - INFO -   Test image for monet: 00018.jpg
+2026-02-07 19:09:11,120 - INFO -   Test image for vangogh: 00005.jpg
+2026-02-07 19:09:11,151 - INFO -   Test image for cezanne: 00057.jpg
+2026-02-07 19:09:12,711 - INFO - 
+Processing source: photo
+2026-02-07 19:09:13,982 - INFO -     Saved original: photo_original.jpg
+2026-02-07 19:09:13,982 - INFO - 
+Processing source: monet
+2026-02-07 19:09:14,029 - INFO -     Saved original: monet_original.jpg
+2026-02-07 19:09:14,029 - INFO - 
+Processing source: vangogh
+2026-02-07 19:09:14,086 - INFO -     Saved original: vangogh_original.jpg
+2026-02-07 19:09:14,086 - INFO - 
+Processing source: cezanne
+2026-02-07 19:09:14,131 - INFO -     Saved original: cezanne_original.jpg
+2026-02-07 19:09:14,151 - INFO - 
+================================================================================
+2026-02-07 19:09:14,151 - INFO - Inference completed. Results saved to: /mnt/g/GitHub/Latent_Style/Thermal/swd_matrix_smoke_wsl_progress/experiments/E0_no_swd/checkpoints/inference/epoch_-1
+2026-02-07 19:09:14,151 - INFO - ================================================================================
+
+2026-02-07 19:09:14,152 - INFO - ✓ Training completed!

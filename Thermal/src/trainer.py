@@ -24,11 +24,12 @@ from utils.dataset import LatentDataset
 from utils.inference import decode_latent, encode_image, load_vae
 from losses import (
     GeometricFreeEnergyLoss,
+    MultiScaleSWDLoss,
     PyramidStructuralLoss,
     VelocityRegularizationLoss,
 )
 from utils.style_classifier import StyleClassifier
-from model import LGTResNet, count_parameters
+from model import LGTUNetLite, count_parameters
 from physics import generate_latent, get_dynamic_epsilon, invert_latent
 
 logger = logging.getLogger(__name__)
@@ -126,24 +127,21 @@ class LGTTrainer:
             torch.backends.cudnn.allow_tf32 = True
 
         use_checkpointing = config['training'].get('use_gradient_checkpointing', False)
-        self.model = LGTResNet(
-            latent_channels=config['model']['latent_channels'],
-            base_channels=config['model']['base_channels'],
-            style_dim=config['model']['style_dim'],
-            time_dim=config['model']['time_dim'],
-            num_styles=config['model']['num_styles'],
-            num_blocks=config['model'].get('num_blocks', 10),
-            num_blocks_pre=config['model'].get('num_blocks_pre'),
-            num_blocks_low=config['model'].get('num_blocks_low'),
-            num_blocks_post=config['model'].get('num_blocks_post'),
-            dropout=config['model'].get('dropout', 0.0),
-            use_attn=config['model'].get('use_attn', False),
-            attn_heads=config['model'].get('attn_heads', 4),
-            v_max=config['model'].get('v_max', 2.0),
+        model_cfg = config['model']
+        self.model = LGTUNetLite(
+            latent_channels=model_cfg['latent_channels'],
+            base_channels=model_cfg.get('base_channels', 64),
+            style_dim=model_cfg['style_dim'],
+            time_dim=model_cfg.get('time_dim', 64),
+            num_styles=model_cfg['num_styles'],
+            num_encoder_blocks=model_cfg.get('num_encoder_blocks', 1),
+            num_decoder_blocks=model_cfg.get('num_decoder_blocks', 1),
+            dropout=model_cfg.get('dropout', 0.0),
+            v_max=model_cfg.get('v_max', 2.0),
             use_checkpointing=use_checkpointing,
         )
         self.model = self.model.to(device, memory_format=torch.channels_last)  # Channels Last
-        logger.info("Model architecture: LGTResNet")
+        logger.info("Model architecture: unet_lite")
         self.model.compute_avg_style_embedding()
         if self.vram_debug:
             _log_vram("after model init", reset_peak=self.vram_debug_reset_peak)
@@ -169,6 +167,7 @@ class LGTTrainer:
             num_projections=config['loss'].get('num_projections', 64),
             max_samples=config['loss'].get('max_samples', 4096),
             moment_lowpass_size=config['loss'].get('moment_lowpass_size', 8),
+            moment_weight=float(config['loss'].get('swd_moment_weight', 10.0)),
             fixed_sample_indices=config['loss'].get('fixed_swd_sample_indices', True),
             swd_sample_seed=config['loss'].get('swd_sample_seed', 1234),
         ).to(device)
@@ -184,13 +183,54 @@ class LGTTrainer:
         self.style_cls_identity_weight = float(
             config['loss'].get('w_style_classifier_identity', self.style_cls_weight)
         )
+        self.style_cls_target_only = bool(config['loss'].get('style_cls_target_only', True))
+        self.style_cls_use_gating = bool(config['loss'].get('style_cls_use_gating', True))
+        self.style_cls_conf_threshold = float(config['loss'].get('style_cls_conf_threshold', 0.75))
+        self.style_cls_agree_threshold = float(config['loss'].get('style_cls_agree_threshold', 0.70))
+        self.style_cls_warmup_steps = int(config['loss'].get('style_cls_warmup_steps', 2000))
+        self.style_cls_temperature = float(config['loss'].get('style_cls_temperature', 1.0))
         self.style_classifier = None
         self.style_classifier_ckpt = config['loss'].get('style_classifier_ckpt', None)
         self.style_classifier_strict = bool(config['loss'].get('style_classifier_strict', False))
         self.style_classifier_trainable = bool(config['loss'].get('style_classifier_trainable', False))
+        self.use_style_swd = bool(config['loss'].get('use_style_swd', True))
+        self.swd_warmup_ratio = float(config['loss'].get('swd_warmup_ratio', 0.2))
+        self.swd_warmup_ratio = min(max(self.swd_warmup_ratio, 0.0), 1.0)
         self.style_swd_interval = max(1, int(config['loss'].get('style_swd_interval', 1)))
         self.style_cls_interval = max(1, int(config['loss'].get('style_cls_interval', 1)))
         self.swd_input_size = int(config['loss'].get('swd_input_size', 0))
+        self.swd_band_mode = str(config['loss'].get('swd_band_mode', 'highpass')).lower()
+        if self.swd_band_mode not in {'highpass', 'lowpass', 'both'}:
+            logger.warning(f"Invalid swd_band_mode={self.swd_band_mode}, fallback to highpass")
+            self.swd_band_mode = 'highpass'
+        self.swd_high_band_weight = float(config['loss'].get('swd_high_band_weight', 1.0))
+        self.swd_low_band_weight = float(config['loss'].get('swd_low_band_weight', 1.0))
+        raw_feature_levels = config['loss'].get('swd_feature_levels', ['latent'])
+        if isinstance(raw_feature_levels, str):
+            raw_feature_levels = [raw_feature_levels]
+        raw_feature_levels = list(raw_feature_levels)
+        valid_levels = {'latent', 'early', 'mid', 'late'}
+        self.swd_feature_levels = [lvl for lvl in raw_feature_levels if lvl in valid_levels]
+        if not self.swd_feature_levels:
+            self.swd_feature_levels = ['latent']
+        self.swd_feature_reduce_channels = int(config['loss'].get('swd_feature_reduce_channels', 16))
+        self.swd_feature_reduce_channels = max(1, self.swd_feature_reduce_channels)
+        self.swd_feature_t = float(config['loss'].get('swd_feature_t', 1.0))
+        self.swd_feature_t = min(max(self.swd_feature_t, 0.0), 1.0)
+        self._feature_swd_losses: Dict[int, MultiScaleSWDLoss] = {}
+        self.swd_warmup_steps = 0
+        self.total_train_steps_estimate = 0
+        logger.info(
+            "SWD setup | enabled=%s warmup_ratio=%.3f band=%s levels=%s "
+            "high_w=%.3f low_w=%.3f moment_w=%.3f",
+            self.use_style_swd,
+            self.swd_warmup_ratio,
+            self.swd_band_mode,
+            self.swd_feature_levels,
+            self.swd_high_band_weight,
+            self.swd_low_band_weight,
+            float(config['loss'].get('swd_moment_weight', 10.0)),
+        )
         self.identity_pair_ratio = float(config['loss'].get('identity_pair_ratio', 0.25))
         self.identity_pair_ratio = max(0.0, min(1.0, self.identity_pair_ratio))
         self.use_identity_consistency = bool(config['loss'].get('use_identity_consistency', True))
@@ -233,6 +273,10 @@ class LGTTrainer:
                     if any(k.startswith('_orig_mod.') for k in state_dict.keys()):
                         state_dict = {k.replace('_orig_mod.', ''): v for k, v in state_dict.items()}
                     self.style_classifier.load_state_dict(state_dict, strict=self.style_classifier_strict)
+                    # Prefer calibrated temperature from classifier checkpoint when available.
+                    meta = state.get('meta', {}) if isinstance(state, dict) else {}
+                    if isinstance(meta, dict) and 'temperature' in meta:
+                        self.style_cls_temperature = float(meta['temperature'])
                     logger.info(f"Loaded style classifier weights from {ckpt_path}")
                 else:
                     msg = f"Style classifier checkpoint not found: {ckpt_path}"
@@ -249,7 +293,8 @@ class LGTTrainer:
                 self.style_classifier.eval()
             logger.info(
                 f"Style classifier guidance enabled "
-                f"(w_transfer={self.style_cls_transfer_weight}, w_identity={self.style_cls_identity_weight})"
+                f"(w_transfer={self.style_cls_transfer_weight}, w_identity={self.style_cls_identity_weight}, "
+                f"T={self.style_cls_temperature:.3f}, gating={self.style_cls_use_gating})"
             )
         else:
             logger.info("Style classifier guidance disabled")
@@ -350,7 +395,11 @@ class LGTTrainer:
         self.inference_dir = self.checkpoint_dir / 'inference'
         self.inference_dir.mkdir(exist_ok=True)
 
-        self.vae = load_vae(device)
+        self.vae = None
+        try:
+            self.vae = load_vae(device)
+        except Exception as exc:
+            logger.warning(f"VAE load failed; inference evaluation will be skipped. reason={exc}")
         if self.vram_debug:
             _log_vram("after VAE load", reset_peak=self.vram_debug_reset_peak)
 
@@ -367,20 +416,33 @@ class LGTTrainer:
         with open(self.log_file, 'w') as f:
             f.write(
                 "epoch,loss_total,loss_style_swd,loss_mse,loss_identity,loss_style_cls,"
-                "style_cls_transfer_acc,style_cls_identity_acc,loss_velocity_reg,learning_rate,epoch_time\n"
+                "style_cls_transfer_acc,style_cls_identity_acc,style_cls_transfer_pass_rate,"
+                "style_cls_identity_pass_rate,style_cls_conf_mean,style_cls_agree_mean,style_cls_weight_mean,"
+                "loss_velocity_reg,learning_rate,epoch_time\n"
             )
 
         self.start_epoch = 1
         self._maybe_resume(config['training'].get('resume_checkpoint'))
 
-        from diffusers import DDPMScheduler
+        try:
+            from diffusers import DDPMScheduler
 
-        self.noise_scheduler = DDPMScheduler(
-            num_train_timesteps=1000,
-            beta_start=0.0001,
-            beta_end=0.02,
-            beta_schedule="linear",
-        )
+            self.noise_scheduler = DDPMScheduler(
+                num_train_timesteps=1000,
+                beta_start=0.0001,
+                beta_end=0.02,
+                beta_schedule="linear",
+            )
+        except Exception as exc:
+            logger.warning(f"diffusers not available, using simple noise scheduler fallback. reason={exc}")
+
+            class _FallbackNoiseScheduler:
+                class _Cfg:
+                    num_train_timesteps = 1000
+
+                config = _Cfg()
+
+            self.noise_scheduler = _FallbackNoiseScheduler()
         self.iter_step = 0
 
     # ------------------------------------------------------------------
@@ -547,6 +609,51 @@ class LGTTrainer:
             
         return current_w_style, current_w_mse
 
+    def _get_swd_warmup_scale(self) -> float:
+        if not self.use_style_swd:
+            return 0.0
+        if self.swd_warmup_steps <= 0:
+            return 1.0
+        return min(float(self.global_step) / float(max(self.swd_warmup_steps, 1)), 1.0)
+
+    @staticmethod
+    def _lowpass_tensor(x: torch.Tensor, size: int) -> torch.Tensor:
+        h, w = x.shape[-2:]
+        target_size = max(1, min(size, h, w))
+        x_lp = F.interpolate(x, size=(target_size, target_size), mode="area")
+        x_lp = F.interpolate(x_lp, size=(h, w), mode="bilinear", align_corners=False)
+        return x_lp
+
+    @staticmethod
+    def _reduce_feature_channels(x: torch.Tensor, target_channels: int) -> torch.Tensor:
+        c = x.shape[1]
+        if c == target_channels:
+            return x
+        if target_channels > c:
+            repeat = (target_channels + c - 1) // c
+            return x.repeat(1, repeat, 1, 1)[:, :target_channels]
+        chunks = torch.tensor_split(x, target_channels, dim=1)
+        return torch.cat([chunk.mean(dim=1, keepdim=True) for chunk in chunks], dim=1)
+
+    def _get_feature_swd_loss(self, in_channels: int) -> MultiScaleSWDLoss:
+        module = self._feature_swd_losses.get(in_channels)
+        if module is None:
+            module = MultiScaleSWDLoss(
+                scales=self.config['loss'].get('swd_scales', [1, 3, 5]),
+                scale_weights=self.config['loss'].get('swd_scale_weights', [1.0, 1.0, 0.5]),
+                num_projections=self.config['loss'].get('num_projections', 64),
+                max_samples=self.config['loss'].get('max_samples', 4096),
+                use_fp32=True,
+                in_channels=in_channels,
+            ).to(self.device)
+            self._feature_swd_losses[in_channels] = module
+        return module
+
+    def _compute_direct_swd(self, x_pred: torch.Tensor, x_style: torch.Tensor) -> torch.Tensor:
+        module = self._get_feature_swd_loss(int(x_pred.shape[1]))
+        loss_val, _ = module(x_pred, x_style)
+        return loss_val
+
     def compute_energy_loss(self, batch: Dict, epoch: int, multipliers: tuple = (1.0, 1.0, 1.0)) -> Dict[str, torch.Tensor]:
         device = self.device
         m_mse, m_layout, m_style = multipliers
@@ -634,7 +741,9 @@ class LGTTrainer:
         w_style_batch = self.style_swd_target_weights[style_id_tgt]
         w_mse_batch = torch.ones((b,), device=device)
 
-        do_style_swd = (self.style_swd_interval <= 1) or (self.iter_step % self.style_swd_interval == 0)
+        do_style_swd = self.use_style_swd and (
+            (self.style_swd_interval <= 1) or (self.iter_step % self.style_swd_interval == 0)
+        )
         do_style_cls = (self.style_cls_interval <= 1) or (self.iter_step % self.style_cls_interval == 0)
 
         # Switch to FP32 for numerically sensitive ODE and loss computations.
@@ -705,43 +814,148 @@ class LGTTrainer:
                 sample_weights=w_mse_batch
             )
 
-            # 2) Style loss (SWD on high-frequency residuals)
-            # Frequency separation: SWD on high-frequency residuals only
+            # 2) Style loss (SWD) with configurable band/feature routing.
             lowpass_size = int(self.config['loss'].get('moment_lowpass_size', 8))
-            def _lowpass(x: torch.Tensor, size: int = lowpass_size) -> torch.Tensor:
-                x_lp = F.interpolate(x, size=(size, size), mode="area")
-                x_lp = F.interpolate(x_lp, size=x.shape[-2:], mode="bilinear", align_corners=False)
-                return x_lp
-
-            x_lp = _lowpass(x_1_pred)
-            style_lp = _lowpass(style_latents.float())
+            style_fp32 = style_latents.float()
+            x_lp = self._lowpass_tensor(x_1_pred, lowpass_size)
+            style_lp = self._lowpass_tensor(style_fp32, lowpass_size)
             x_hp = x_1_pred - x_lp
-            style_hp = style_latents.float() - style_lp
+            style_hp = style_fp32 - style_lp
 
             loss_style = torch.tensor(0.0, device=device)
-            if do_style_swd:
-                x_hp_swd = x_hp
-                style_hp_swd = style_hp
-                if self.swd_input_size and (
-                    x_hp.shape[-1] != self.swd_input_size or x_hp.shape[-2] != self.swd_input_size
-                ):
-                    x_hp_swd = F.interpolate(x_hp, size=(self.swd_input_size, self.swd_input_size), mode="area")
-                    style_hp_swd = F.interpolate(style_hp, size=(self.swd_input_size, self.swd_input_size), mode="area")
+            loss_dict = {'style_swd': loss_style}
+            swd_warmup_scale = self._get_swd_warmup_scale()
 
-                loss_dict = self.energy_loss(
-                    x_hp_swd,  # FP32
-                    style_hp_swd,
-                    style_ids=style_id_tgt,
-                    sample_weights=w_style_batch,
-                    moments_pred=(x_lp.mean(dim=(2, 3)), x_lp.std(dim=(2, 3))),
-                )
-                loss_style = loss_dict['style_swd']
+            if do_style_swd and swd_warmup_scale > 0.0:
+                style_terms = []
+                feature_levels = [lvl for lvl in self.swd_feature_levels if lvl != 'latent']
+                use_latent = 'latent' in self.swd_feature_levels
+
+                if use_latent:
+                    latent_term = torch.tensor(0.0, device=device)
+
+                    if self.swd_band_mode in {'highpass', 'both'} and self.swd_high_band_weight > 0.0:
+                        x_hp_swd = x_hp
+                        style_hp_swd = style_hp
+                        if self.swd_input_size and (
+                            x_hp.shape[-1] != self.swd_input_size or x_hp.shape[-2] != self.swd_input_size
+                        ):
+                            x_hp_swd = F.interpolate(x_hp, size=(self.swd_input_size, self.swd_input_size), mode="area")
+                            style_hp_swd = F.interpolate(
+                                style_hp, size=(self.swd_input_size, self.swd_input_size), mode="area"
+                            )
+
+                        hp_dict = self.energy_loss(
+                            x_hp_swd,
+                            style_hp_swd,
+                            style_ids=style_id_tgt,
+                            sample_weights=w_style_batch,
+                            moments_pred=(x_lp.mean(dim=(2, 3)), x_lp.std(dim=(2, 3))),
+                        )
+                        latent_term = latent_term + self.swd_high_band_weight * hp_dict['style_swd']
+                        loss_dict['latent_highpass_swd'] = hp_dict['style_swd'].detach()
+                        if 'moments' in hp_dict:
+                            loss_dict['moments'] = hp_dict['moments'].detach()
+
+                    if self.swd_band_mode in {'lowpass', 'both'} and self.swd_low_band_weight > 0.0:
+                        x_lp_swd = x_lp
+                        style_lp_swd = style_lp
+                        if self.swd_input_size and (
+                            x_lp.shape[-1] != self.swd_input_size or x_lp.shape[-2] != self.swd_input_size
+                        ):
+                            x_lp_swd = F.interpolate(x_lp, size=(self.swd_input_size, self.swd_input_size), mode="area")
+                            style_lp_swd = F.interpolate(
+                                style_lp, size=(self.swd_input_size, self.swd_input_size), mode="area"
+                            )
+                        lp_term = self._compute_direct_swd(x_lp_swd, style_lp_swd)
+                        if self.swd_band_mode == 'lowpass' and self.energy_loss.moment_weight > 0.0:
+                            lp_moments = (
+                                F.mse_loss(x_lp.mean(dim=(2, 3)), style_lp.mean(dim=(2, 3)))
+                                + F.mse_loss(x_lp.std(dim=(2, 3)), style_lp.std(dim=(2, 3)))
+                            )
+                            lp_term = lp_term + self.energy_loss.moment_weight * lp_moments
+                            loss_dict['moments'] = lp_moments.detach()
+                        latent_term = latent_term + self.swd_low_band_weight * lp_term
+                        loss_dict['latent_lowpass_swd'] = lp_term.detach()
+
+                    style_terms.append(latent_term)
+
+                if feature_levels:
+                    t_feat = torch.full((b,), self.swd_feature_t, device=device, dtype=x_1_pred.dtype)
+                    pred_feat_input = x_1_pred
+                    style_feat_input = style_fp32
+                    if target_model_size and (
+                        pred_feat_input.shape[-1] != target_model_size
+                        or pred_feat_input.shape[-2] != target_model_size
+                    ):
+                        pred_feat_input = F.interpolate(
+                            pred_feat_input, size=(target_model_size, target_model_size), mode="area"
+                        )
+                        style_feat_input = F.interpolate(
+                            style_feat_input, size=(target_model_size, target_model_size), mode="area"
+                        )
+                    _, pred_feats = self.model(
+                        pred_feat_input,
+                        t_feat,
+                        style_id_tgt,
+                        use_avg_style=False,
+                        return_features=True,
+                        feature_levels=tuple(feature_levels),
+                    )
+                    with torch.no_grad():
+                        _, style_feats = self.model(
+                            style_feat_input,
+                            t_feat,
+                            style_id_tgt,
+                            use_avg_style=False,
+                            return_features=True,
+                            feature_levels=tuple(feature_levels),
+                        )
+
+                    for level in feature_levels:
+                        if level not in pred_feats or level not in style_feats:
+                            continue
+                        pred_level = self._reduce_feature_channels(
+                            pred_feats[level], self.swd_feature_reduce_channels
+                        )
+                        style_level = self._reduce_feature_channels(
+                            style_feats[level], self.swd_feature_reduce_channels
+                        )
+                        if self.swd_input_size and (
+                            pred_level.shape[-1] != self.swd_input_size or pred_level.shape[-2] != self.swd_input_size
+                        ):
+                            pred_level = F.interpolate(
+                                pred_level, size=(self.swd_input_size, self.swd_input_size), mode="area"
+                            )
+                            style_level = F.interpolate(
+                                style_level, size=(self.swd_input_size, self.swd_input_size), mode="area"
+                            )
+
+                        pred_level_lp = self._lowpass_tensor(pred_level, lowpass_size)
+                        style_level_lp = self._lowpass_tensor(style_level, lowpass_size)
+                        pred_level_hp = pred_level - pred_level_lp
+                        style_level_hp = style_level - style_level_lp
+
+                        level_term = torch.tensor(0.0, device=device)
+                        if self.swd_band_mode in {'highpass', 'both'} and self.swd_high_band_weight > 0.0:
+                            level_term = level_term + self.swd_high_band_weight * self._compute_direct_swd(
+                                pred_level_hp, style_level_hp
+                            )
+                        if self.swd_band_mode in {'lowpass', 'both'} and self.swd_low_band_weight > 0.0:
+                            level_term = level_term + self.swd_low_band_weight * self._compute_direct_swd(
+                                pred_level_lp, style_level_lp
+                            )
+                        style_terms.append(level_term)
+                        loss_dict[f'feature_{level}_swd'] = level_term.detach()
+
+                if style_terms:
+                    loss_style = torch.stack(style_terms).mean() * swd_warmup_scale
+                    loss_dict['style_swd'] = loss_style
                 if self._vram_log_this_step and self.vram_debug:
                     _log_vram("compute_energy_loss/after_swd", reset_peak=self.vram_debug_reset_peak)
                     if self.vram_debug_detail:
                         _log_vram_detail("compute_energy_loss/after_swd")
-            else:
-                loss_dict = {'style_swd': loss_style}
+            loss_dict['swd_warmup_scale'] = torch.tensor(swd_warmup_scale, device=device)
 
             # Identity consistency to prevent domain collapse.
             loss_identity = torch.tensor(0.0, device=device)
@@ -760,25 +974,74 @@ class LGTTrainer:
                     cls_inputs = F.interpolate(cls_inputs, size=(cls_input_size, cls_input_size), mode='area')
 
                 logits = self.style_classifier(cls_inputs)
+                logits = logits / max(self.style_cls_temperature, 1e-4)
+                probs = F.softmax(logits, dim=1)
+                conf = probs.max(dim=1).values
+
+                # Agreement score from a cheap view-augmentation pass.
+                with torch.no_grad():
+                    cls_aug = torch.roll(cls_inputs.detach(), shifts=(1, -1), dims=(2, 3))
+                    logits_aug = self.style_classifier(cls_aug) / max(self.style_cls_temperature, 1e-4)
+                    probs_aug = F.softmax(logits_aug, dim=1)
+                    agree_score = (probs * probs_aug).sum(dim=1)
+
+                if self.style_cls_use_gating:
+                    conf_w = torch.clamp(
+                        (conf - self.style_cls_conf_threshold) / max(1.0 - self.style_cls_conf_threshold, 1e-6),
+                        min=0.0,
+                        max=1.0,
+                    )
+                    agree_w = torch.clamp(
+                        (agree_score - self.style_cls_agree_threshold) / max(1.0 - self.style_cls_agree_threshold, 1e-6),
+                        min=0.0,
+                        max=1.0,
+                    )
+                    sample_w = (conf_w * agree_w).detach()
+                else:
+                    sample_w = torch.ones_like(conf)
+
+                warmup_scale = min(float(self.global_step) / max(self.style_cls_warmup_steps, 1), 1.0)
                 cls_terms = []
 
                 if transfer_mask.any() and self.style_cls_transfer_weight > 0.0:
-                    loss_cls_transfer = F.cross_entropy(logits[transfer_mask], style_id_tgt[transfer_mask])
-                    cls_terms.append(self.style_cls_transfer_weight * loss_cls_transfer)
+                    idx = transfer_mask
+                    if self.style_cls_target_only:
+                        p_target = probs[idx].gather(1, style_id_tgt[idx].unsqueeze(1)).squeeze(1)
+                        per_sample = -torch.log(p_target.clamp_min(1e-8))
+                    else:
+                        per_sample = F.cross_entropy(logits[idx], style_id_tgt[idx], reduction='none')
+                    w = sample_w[idx]
+                    denom = w.sum().clamp_min(1e-6)
+                    loss_cls_transfer = (per_sample * w).sum() / denom
+                    cls_terms.append(warmup_scale * self.style_cls_transfer_weight * loss_cls_transfer)
                     loss_dict['style_cls_transfer'] = loss_cls_transfer.detach()
                     pred_transfer = logits[transfer_mask].argmax(dim=1)
                     loss_dict['style_cls_transfer_acc'] = (pred_transfer == style_id_tgt[transfer_mask]).float().mean().detach()
+                    loss_dict['style_cls_transfer_pass_rate'] = (w > 0).float().mean().detach()
 
                 if identity_mask.any() and self.style_cls_identity_weight > 0.0:
-                    loss_cls_identity = F.cross_entropy(logits[identity_mask], style_id[identity_mask])
-                    cls_terms.append(self.style_cls_identity_weight * loss_cls_identity)
+                    idx = identity_mask
+                    if self.style_cls_target_only:
+                        p_target = probs[idx].gather(1, style_id[idx].unsqueeze(1)).squeeze(1)
+                        per_sample = -torch.log(p_target.clamp_min(1e-8))
+                    else:
+                        per_sample = F.cross_entropy(logits[idx], style_id[idx], reduction='none')
+                    w = sample_w[idx]
+                    denom = w.sum().clamp_min(1e-6)
+                    loss_cls_identity = (per_sample * w).sum() / denom
+                    cls_terms.append(warmup_scale * self.style_cls_identity_weight * loss_cls_identity)
                     loss_dict['style_cls_identity'] = loss_cls_identity.detach()
                     pred_identity = logits[identity_mask].argmax(dim=1)
                     loss_dict['style_cls_identity_acc'] = (pred_identity == style_id[identity_mask]).float().mean().detach()
+                    loss_dict['style_cls_identity_pass_rate'] = (w > 0).float().mean().detach()
 
                 if cls_terms:
                     loss_cls = torch.stack(cls_terms).sum()
                     loss_dict['style_cls'] = loss_cls.detach()
+                loss_dict['style_cls_conf_mean'] = conf.mean().detach()
+                loss_dict['style_cls_agree_mean'] = agree_score.mean().detach()
+                loss_dict['style_cls_weight_mean'] = sample_w.mean().detach()
+                loss_dict['style_cls_warmup_scale'] = torch.tensor(warmup_scale, device=device)
                 if self._vram_log_this_step and self.vram_debug:
                     _log_vram("compute_energy_loss/after_style_cls", reset_peak=self.vram_debug_reset_peak)
                     if self.vram_debug_detail:
@@ -848,8 +1111,14 @@ class LGTTrainer:
         total_style_cls = 0.0
         total_style_cls_transfer_acc = 0.0
         total_style_cls_identity_acc = 0.0
+        total_style_cls_transfer_pass = 0.0
+        total_style_cls_identity_pass = 0.0
+        total_style_cls_conf = 0.0
+        total_style_cls_agree = 0.0
+        total_style_cls_weight = 0.0
         num_style_cls_transfer = 0
         num_style_cls_identity = 0
+        num_style_cls_stats = 0
         num_batches = 0
         accum_counter = 0
 
@@ -917,9 +1186,18 @@ class LGTTrainer:
             if 'style_cls_transfer_acc' in ld:
                 total_style_cls_transfer_acc += ld['style_cls_transfer_acc'].item()
                 num_style_cls_transfer += 1
+            if 'style_cls_transfer_pass_rate' in ld:
+                total_style_cls_transfer_pass += ld['style_cls_transfer_pass_rate'].item()
             if 'style_cls_identity_acc' in ld:
                 total_style_cls_identity_acc += ld['style_cls_identity_acc'].item()
                 num_style_cls_identity += 1
+            if 'style_cls_identity_pass_rate' in ld:
+                total_style_cls_identity_pass += ld['style_cls_identity_pass_rate'].item()
+            if 'style_cls_conf_mean' in ld:
+                total_style_cls_conf += ld['style_cls_conf_mean'].item()
+                total_style_cls_agree += ld.get('style_cls_agree_mean', torch.tensor(0.0)).item()
+                total_style_cls_weight += ld.get('style_cls_weight_mean', torch.tensor(0.0)).item()
+                num_style_cls_stats += 1
             num_batches += 1
 
             if use_tqdm:
@@ -941,6 +1219,11 @@ class LGTTrainer:
         avg_style_cls = total_style_cls / max(num_batches, 1)
         avg_style_cls_transfer_acc = total_style_cls_transfer_acc / max(num_style_cls_transfer, 1)
         avg_style_cls_identity_acc = total_style_cls_identity_acc / max(num_style_cls_identity, 1)
+        avg_style_cls_transfer_pass = total_style_cls_transfer_pass / max(num_style_cls_transfer, 1)
+        avg_style_cls_identity_pass = total_style_cls_identity_pass / max(num_style_cls_identity, 1)
+        avg_style_cls_conf = total_style_cls_conf / max(num_style_cls_stats, 1)
+        avg_style_cls_agree = total_style_cls_agree / max(num_style_cls_stats, 1)
+        avg_style_cls_weight = total_style_cls_weight / max(num_style_cls_stats, 1)
 
         metrics = {
             'loss': avg_loss,
@@ -950,6 +1233,11 @@ class LGTTrainer:
             'style_cls': avg_style_cls,
             'style_cls_transfer_acc': avg_style_cls_transfer_acc,
             'style_cls_identity_acc': avg_style_cls_identity_acc,
+            'style_cls_transfer_pass_rate': avg_style_cls_transfer_pass,
+            'style_cls_identity_pass_rate': avg_style_cls_identity_pass,
+            'style_cls_conf_mean': avg_style_cls_conf,
+            'style_cls_agree_mean': avg_style_cls_agree,
+            'style_cls_weight_mean': avg_style_cls_weight,
             'num_batches': num_batches,
             'm_mse': m_mse,
             'm_style': m_style,
@@ -995,6 +1283,10 @@ class LGTTrainer:
         logger.info(f"\n{'='*80}")
         logger.info(f"Running Inference Evaluation (Epoch {epoch})")
         logger.info(f"{'='*80}")
+
+        if self.vae is None:
+            logger.warning("VAE is unavailable. Skipping inference evaluation.")
+            return
 
         epoch_inference_dir = self.inference_dir / ('epoch_-1' if epoch == -1 else f"epoch_{epoch:04d}")
         epoch_inference_dir.mkdir(parents=True, exist_ok=True)
@@ -1185,6 +1477,11 @@ class LGTTrainer:
                 f"{metrics.get('identity', 0.0):.6f},{metrics.get('style_cls', 0.0):.6f},"
                 f"{metrics.get('style_cls_transfer_acc', 0.0):.6f},"
                 f"{metrics.get('style_cls_identity_acc', 0.0):.6f},"
+                f"{metrics.get('style_cls_transfer_pass_rate', 0.0):.6f},"
+                f"{metrics.get('style_cls_identity_pass_rate', 0.0):.6f},"
+                f"{metrics.get('style_cls_conf_mean', 0.0):.6f},"
+                f"{metrics.get('style_cls_agree_mean', 0.0):.6f},"
+                f"{metrics.get('style_cls_weight_mean', 0.0):.6f},"
                 f"{metrics.get('velocity_reg', 0.0):.6f},{current_lr:.2e},"
                 f"{metrics.get('epoch_time', 0.0):.2f}\n"
             )
@@ -1200,6 +1497,11 @@ class LGTTrainer:
             'style_cls': float(metrics.get('style_cls', 0.0)),
             'style_cls_transfer_acc': float(metrics.get('style_cls_transfer_acc', 0.0)),
             'style_cls_identity_acc': float(metrics.get('style_cls_identity_acc', 0.0)),
+            'style_cls_transfer_pass_rate': float(metrics.get('style_cls_transfer_pass_rate', 0.0)),
+            'style_cls_identity_pass_rate': float(metrics.get('style_cls_identity_pass_rate', 0.0)),
+            'style_cls_conf_mean': float(metrics.get('style_cls_conf_mean', 0.0)),
+            'style_cls_agree_mean': float(metrics.get('style_cls_agree_mean', 0.0)),
+            'style_cls_weight_mean': float(metrics.get('style_cls_weight_mean', 0.0)),
             'velocity_reg': float(metrics.get('velocity_reg', 0.0)),
             'm_mse': float(metrics.get('m_mse', 0.0)),
             'm_style': float(metrics.get('m_style', 0.0)),
@@ -1258,51 +1560,67 @@ class LGTTrainer:
     def on_training_start(self, dataloader: DataLoader) -> None:
         if self.style_indices_cache is None:
             self.build_style_indices_cache(dataloader.dataset)
-        
-        # Initialize Style LUT cache for multi-style SWD loss.
-        logger.info("Initializing Style LUT cache for multi-style SWD...")
-        style_prototypes = {}
-        
-        # Samples per style used to estimate target style distributions.
-        SAMPLES_FOR_DISTRIBUTION = self.fixed_style_reference_size
-        
-        # Collect representative latent for each style
-        for style_id in range(self.config['model']['num_styles']):
-            if hasattr(dataloader.dataset, 'style_indices') and style_id in self.style_indices_cache:
-                indices = self.style_indices_cache[style_id]
-                
-                # Sample without replacement where possible.
-                count = min(len(indices), SAMPLES_FOR_DISTRIBUTION)
-                selected_indices = np.random.choice(indices, count, replace=False)
-                
-                # Pull cached latents directly from dataset tensor.
-                latents_batch = dataloader.dataset.latents_tensor[selected_indices]
-                
-                # Store style prototype batch for LUT initialization.
-                style_prototypes[style_id] = latents_batch
-                if self.use_fixed_style_reference:
-                    self.style_reference_pool = self.style_reference_pool or {}
-                    self.style_reference_pool[style_id] = latents_batch
 
-                logger.info(f"  Style {style_id}: Sampled {count} images for distribution statistics.")
-            else:
-                # Fallback: random initialization
-                logger.warning(f"  No style {style_id} samples found, using random init")
-                style_prototypes[style_id] = torch.randn(1, 4, 32, 32)
-                if self.use_fixed_style_reference:
-                    self.style_reference_pool = self.style_reference_pool or {}
-                    self.style_reference_pool[style_id] = style_prototypes[style_id]
+        steps_per_epoch = max((len(dataloader) + self.accumulation_steps - 1) // self.accumulation_steps, 1)
+        self.total_train_steps_estimate = int(self.num_epochs * steps_per_epoch)
+        self.swd_warmup_steps = int(self.total_train_steps_estimate * self.swd_warmup_ratio)
+        logger.info(
+            "Estimated train steps=%s, SWD warmup steps=%s (ratio=%.3f)",
+            self.total_train_steps_estimate,
+            self.swd_warmup_steps,
+            self.swd_warmup_ratio,
+        )
         
-        # Initialize LUT cache.
-        self.energy_loss.initialize_cache(style_prototypes, self.device)
-        
-        # Save originals
-        orig_dir = self.inference_dir / 'epoch_-1'
-        if not orig_dir.exists() or not any(orig_dir.iterdir()):
-            logger.info("Saving original test images to inference/epoch_-1")
-            self.evaluate_and_infer(-1)
+        if self.use_style_swd and 'latent' in self.swd_feature_levels:
+            # Initialize Style LUT cache for latent-level SWD.
+            logger.info("Initializing Style LUT cache for multi-style SWD...")
+            style_prototypes = {}
+
+            # Samples per style used to estimate target style distributions.
+            samples_for_distribution = self.fixed_style_reference_size
+
+            # Collect representative latent for each style
+            for style_id in range(self.config['model']['num_styles']):
+                if hasattr(dataloader.dataset, 'style_indices') and style_id in self.style_indices_cache:
+                    indices = self.style_indices_cache[style_id]
+
+                    # Sample without replacement where possible.
+                    count = min(len(indices), samples_for_distribution)
+                    selected_indices = np.random.choice(indices, count, replace=False)
+
+                    # Pull cached latents directly from dataset tensor.
+                    latents_batch = dataloader.dataset.latents_tensor[selected_indices]
+
+                    # Store style prototype batch for LUT initialization.
+                    style_prototypes[style_id] = latents_batch
+                    if self.use_fixed_style_reference:
+                        self.style_reference_pool = self.style_reference_pool or {}
+                        self.style_reference_pool[style_id] = latents_batch
+
+                    logger.info(f"  Style {style_id}: Sampled {count} images for distribution statistics.")
+                else:
+                    # Fallback: random initialization
+                    logger.warning(f"  No style {style_id} samples found, using random init")
+                    style_prototypes[style_id] = torch.randn(1, 4, 32, 32)
+                    if self.use_fixed_style_reference:
+                        self.style_reference_pool = self.style_reference_pool or {}
+                        self.style_reference_pool[style_id] = style_prototypes[style_id]
+
+            # Initialize LUT cache.
+            self.energy_loss.initialize_cache(style_prototypes, self.device)
         else:
-            logger.info("Original test images already saved in inference/epoch_-1; skipping.")
+            logger.info("Skipping latent SWD LUT initialization (latent SWD disabled for this run).")
+        
+        save_initial_inference = bool(self.config.get('training', {}).get('save_initial_inference', True))
+        if save_initial_inference:
+            orig_dir = self.inference_dir / 'epoch_-1'
+            if not orig_dir.exists() or not any(orig_dir.iterdir()):
+                logger.info("Saving original test images to inference/epoch_-1")
+                self.evaluate_and_infer(-1)
+            else:
+                logger.info("Original test images already saved in inference/epoch_-1; skipping.")
+        else:
+            logger.info("Skipping initial inference snapshot (training.save_initial_inference=false)")
 
     def set_train(self) -> None:
         self.model.train()

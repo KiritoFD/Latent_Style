@@ -1,0 +1,10 @@
+{
+  "has_baseline": true,
+  "delta_margin_mean": 0.005299887582659701,
+  "identity_degradation_ratio": 0.9720951828525146,
+  "delta_hf_ratio_pct": -0.48831261180724095,
+  "delta_diversity_lpips": 0.10764767342557513,
+  "is_effective": false,
+  "noise_shortcut": false,
+  "structure_break": true
+}

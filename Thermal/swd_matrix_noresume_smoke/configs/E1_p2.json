@@ -1,0 +1,156 @@
+{
+  "model": {
+    "latent_channels": 4,
+    "base_channels": 256,
+    "style_dim": 256,
+    "time_dim": 64,
+    "num_styles": 4,
+    "num_encoder_blocks": 1,
+    "num_decoder_blocks": 1,
+    "dropout": 0.0,
+    "v_max": 2.0
+  },
+  "loss": {
+    "w_style": 1.0,
+    "w_mse": 2.0,
+    "w_pyramid": 1.0,
+    "pyramid_weights": {
+      "low": 4.0,
+      "mid": 2.0,
+      "high": 1.0
+    },
+    "vel_smooth_weight": 0.05,
+    "w_layout": 0.0,
+    "patch_size": 5,
+    "num_projections": 64,
+    "max_samples": 16384,
+    "use_multiscale_swd": true,
+    "swd_scales": [
+      2
+    ],
+    "swd_scale_weights": [
+      1.0
+    ],
+    "use_style_swd": true,
+    "swd_warmup_ratio": 0.2,
+    "swd_band_mode": "highpass",
+    "swd_high_band_weight": 1.0,
+    "swd_low_band_weight": 1.0,
+    "swd_moment_weight": 10.0,
+    "swd_feature_levels": [
+      "latent"
+    ],
+    "swd_feature_reduce_channels": 16,
+    "swd_feature_t": 1.0,
+    "edge_boost": 0.0,
+    "style_weights": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "style_swd_target_weights": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "identity_pair_ratio": 0.25,
+    "use_identity_consistency": true,
+    "w_identity": 1.0,
+    "use_velocity_reg": true,
+    "vel_reg_weight": 0.1,
+    "use_style_classifier": false,
+    "w_style_classifier": 0.0,
+    "w_style_classifier_transfer": 0.0,
+    "w_style_classifier_identity": 0.0,
+    "style_cls_target_only": true,
+    "style_cls_use_gating": true,
+    "style_cls_conf_threshold": 0.75,
+    "style_cls_agree_threshold": 0.7,
+    "style_cls_warmup_steps": 2000,
+    "style_cls_temperature": 3.0,
+    "style_swd_interval": 2,
+    "style_cls_interval": 1000000000,
+    "swd_input_size": 16,
+    "style_classifier_use_stats": true,
+    "style_classifier_use_gram": true,
+    "style_classifier_use_lowpass_stats": true,
+    "style_classifier_spatial_shuffle": false,
+    "style_classifier_input_size_train": 8,
+    "style_classifier_input_size_infer": 4,
+    "style_classifier_lowpass_size": 8,
+    "style_classifier_photo_boost": 3.0,
+    "style_classifier_ckpt": "../style_classifier.pt",
+    "style_classifier_strict": false,
+    "style_classifier_trainable": false
+  },
+  "training": {
+    "seed": 42,
+    "batch_size": 192,
+    "accumulation_steps": 2,
+    "learning_rate": 0.0001,
+    "min_learning_rate": 1e-06,
+    "weight_decay": 0.0001,
+    "num_epochs": 1,
+    "warmup_epochs": 10,
+    "scheduler": "cosine",
+    "grad_clip_norm": 1.0,
+    "use_adaptive_loss_norm": true,
+    "label_drop_prob": 0.1,
+    "use_avg_style_for_uncond": true,
+    "epsilon": 0.01,
+    "epsilon_warmup_epochs": 10,
+    "structure_warmup_epochs": 10,
+    "ode_integration_steps": 1,
+    "use_amp": true,
+    "use_cagrad": false,
+    "use_compile": true,
+    "use_gradient_checkpointing": true,
+    "allow_tf32": true,
+    "model_input_size_train": 16,
+    "model_input_size_infer": 16,
+    "vram_debug": false,
+    "vram_debug_interval": 10,
+    "vram_debug_reset_peak": false,
+    "vram_debug_detail": true,
+    "vram_debug_skip_steps": 2,
+    "use_elastic_deform": false,
+    "elastic_alpha": 3.0,
+    "save_interval": 5,
+    "eval_interval": 1000000000,
+    "full_eval_interval": 1000000000,
+    "test_image_dir": "../../style_data/test",
+    "resume_checkpoint": "/mnt/g/GitHub/Latent_Style/Thermal/unet_lite/epoch_0100.pt",
+    "eval_on_last_epoch": false,
+    "full_eval_on_last_epoch": false
+  },
+  "data": {
+    "data_root": "../../latents",
+    "style_subdirs": [
+      "photo",
+      "monet",
+      "vangogh",
+      "cezanne"
+    ],
+    "style_prompts": [
+      "a photo",
+      "a Monet-style painting",
+      "a Van Gogh-style painting",
+      "a Cezanne-style painting"
+    ]
+  },
+  "checkpoint": {
+    "save_dir": "/mnt/g/GitHub/Latent_Style/Thermal/swd_matrix_noresume_smoke/experiments/E1_p2/checkpoints"
+  },
+  "inference": {
+    "num_steps": 20,
+    "temperature_lambda": 0.1,
+    "temperature_threshold": 0.4,
+    "use_cfg": true,
+    "cfg_scale": 2.5,
+    "cfg_decay": true,
+    "use_source_repulsion": true,
+    "repulsion_strength": 5
+  }
+}

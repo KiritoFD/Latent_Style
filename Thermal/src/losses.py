@@ -104,7 +104,8 @@ class PatchSlicedWassersteinLoss(nn.Module):
         num_projections=64,
         max_samples=4096,
         use_fp32=True,
-        normalize_patch='mean'
+        normalize_patch='mean',
+        in_channels: int = 4,
     ):
         super().__init__()
         self.patch_size = patch_size
@@ -113,8 +114,8 @@ class PatchSlicedWassersteinLoss(nn.Module):
         self.use_fp32 = use_fp32
         self.normalize_patch = normalize_patch
         
-        # Latent channels expected (Standard SD Latent is 4)
-        self.in_channels = 4 
+        # Default latent channels is 4, but feature-level SWD may use other channel sizes.
+        self.in_channels = int(in_channels)
         
         # 1. 预先注册随机投影向量 (作为卷积核)
         # Shape: [Out(Projections), In, K, K]
@@ -157,6 +158,12 @@ class PatchSlicedWassersteinLoss(nn.Module):
             if self.use_fp32:
                 x_pred = x_pred.float()
                 x_style = x_style.float()
+
+            if x_pred.shape[1] != self.in_channels or x_style.shape[1] != self.in_channels:
+                raise ValueError(
+                    f"PatchSWD channel mismatch: expected {self.in_channels}, "
+                    f"got pred={x_pred.shape[1]}, style={x_style.shape[1]}"
+                )
             
             # Lazy Init
             if self.projections is None:
@@ -250,7 +257,8 @@ class MultiScaleSWDLoss(nn.Module):
         scale_weights=[1.0, 1.0, 1.0],
         num_projections=64,
         max_samples=4096,
-        use_fp32=True
+        use_fp32=True,
+        in_channels: int = 4,
     ):
         super().__init__()
         
@@ -266,6 +274,7 @@ class MultiScaleSWDLoss(nn.Module):
                 num_projections=num_projections,
                 max_samples=max_samples,
                 use_fp32=use_fp32,
+                in_channels=in_channels,
                 # 🔥 Fix: Only normalize for very large scales to preserve brightness/color
                 # Scale 1-5: 'none' preserves palette and local contrast
                 normalize_patch='mean' if scale > 5 else 'none'
@@ -325,6 +334,7 @@ class GeometricFreeEnergyLoss(nn.Module):
         num_projections=64,
         max_samples=4096,
         moment_lowpass_size: int = 8,
+        moment_weight: float = 10.0,
         fixed_sample_indices: bool = True,
         swd_sample_seed: int = 1234,
         **kwargs  # Accept but ignore deprecated parameters for backward compatibility
@@ -338,6 +348,7 @@ class GeometricFreeEnergyLoss(nn.Module):
         self.num_projections = num_projections
         self.max_samples = max_samples
         self.moment_lowpass_size = moment_lowpass_size
+        self.moment_weight = float(moment_weight)
         self.fixed_sample_indices = fixed_sample_indices
         self.swd_sample_seed = swd_sample_seed
         self._fixed_sample_cache = {}
@@ -604,7 +615,8 @@ class GeometricFreeEnergyLoss(nn.Module):
             mu_style, std_style = moments_style
         
         loss_moments = F.mse_loss(mu_pred, mu_style) + F.mse_loss(std_pred, std_style)
-        total_loss = total_loss + 10.0 * loss_moments
+        if self.moment_weight > 0.0:
+            total_loss = total_loss + self.moment_weight * loss_moments
         loss_dict['moments'] = loss_moments.detach()
         
         loss_dict['style_swd'] = total_loss
@@ -620,7 +632,8 @@ class GeometricFreeEnergyLoss(nn.Module):
                 scale_weights=self.scale_weights,
                 num_projections=self.num_projections,
                 max_samples=self.max_samples,
-                use_fp32=True
+                use_fp32=True,
+                in_channels=x_pred.shape[1],
             ).to(x_pred.device)
         
         style_potential, swd_dict = self._fallback_loss(x_pred, x_style)

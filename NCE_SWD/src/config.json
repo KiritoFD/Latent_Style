@@ -1,0 +1,80 @@
+{
+  "model": {
+    "latent_channels": 4,
+    "base_dim": 128,
+    "style_dim": 256,
+    "projector_dim": 256,
+    "num_styles": 4,
+    "num_res_blocks": 4,
+    "num_groups": 8
+  },
+  "loss": {
+    "w_swd": 100.0,
+    "w_moment": 10.0,
+    "w_nce": 10.0,
+    "w_idt": 5.0,
+    "num_projections": 128,
+    "max_swd_samples": 32768,
+    "nce_temperature": 0.1,
+    "nce_spatial_size": 8,
+    "nce_max_tokens": 1024,
+    "style_classifier_ckpt": "../../Thermal/src/style_classifier.pt",
+    "style_classifier_use_stats": true,
+    "style_classifier_use_gram": true,
+    "style_classifier_use_lowpass_stats": true,
+    "style_classifier_spatial_shuffle": false,
+    "style_classifier_input_size_train": 8,
+    "style_classifier_input_size_infer": 8,
+    "style_classifier_lowpass_size": 8
+  },
+  "training": {
+    "seed": 42,
+    "batch_size": 256,
+    "accumulation_steps": 1,
+    "num_workers": 4,
+    "persistent_workers": true,
+    "prefetch_factor": 2,
+    "pin_memory": true,
+    "learning_rate": 0.00025,
+    "min_learning_rate": 1e-05,
+    "weight_decay": 0.0001,
+    "scheduler": "cosine",
+    "grad_clip_norm": 1.0,
+    "num_epochs": 500,
+    "save_interval": 10,
+    "log_interval": 50,
+    "use_tqdm": true,
+    "use_amp": true,
+    "amp_dtype": "bf16",
+    "allow_tf32": true,
+    "channels_last": true,
+    "use_gradient_checkpointing": true,
+    "use_compile": false,
+    "compile_mode": "reduce-overhead",
+    "fused_adamw": true,
+    "skip_oom_batches": true,
+    "empty_cache_interval": 0,
+    "log_vram_interval": 0,
+    "resume_checkpoint": ""
+  },
+  "data": {
+    "data_root": "../../latents",
+    "style_subdirs": ["photo", "monet", "vangogh", "cezanne"],
+    "content_style": "photo",
+    "allow_hflip": true,
+    "preload_to_gpu": false,
+    "virtual_length_multiplier": 4
+  },
+  "checkpoint": {
+    "save_dir": "../adacut"
+  },
+  "inference": {
+    "num_steps": 1,
+    "temperature_lambda": 0.0,
+    "temperature_threshold": 1.0,
+    "use_cfg": false,
+    "cfg_scale": 1.0,
+    "use_source_repulsion": false,
+    "repulsion_strength": 0.0
+  }
+}

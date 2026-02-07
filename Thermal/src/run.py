@@ -2,8 +2,10 @@ import argparse
 import json
 import logging
 import os
+import random
 from pathlib import Path
 
+import numpy as np
 import torch
 import torch._inductor.config as inductor_config
 
@@ -40,6 +42,20 @@ def _resolve_num_workers(config) -> int:
     return max(2, cpu_count // 2)
 
 
+def _set_global_seed(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+
+def _seed_worker(worker_id: int) -> None:
+    seed = torch.initial_seed() % 2**32
+    np.random.seed(seed)
+    random.seed(seed)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description='LGT Training with modular pipeline')
     parser.add_argument('--config', type=str, default='config.json', help='Config file path')
@@ -54,8 +70,12 @@ def main() -> None:
         config['training']['resume_checkpoint'] = args.resume
         logger.info(f"Overriding resume checkpoint: {args.resume}")
 
+    seed = int(config.get('training', {}).get('seed', 42))
+    _set_global_seed(seed)
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logger.info(f"Using device: {device}")
+    logger.info(f"Using global seed: {seed}")
 
     dataset = LatentDataset(
         data_root=config['data']['data_root'],
@@ -65,18 +85,35 @@ def main() -> None:
     )
 
     num_workers = _resolve_num_workers(config)
-    dataloader = DataLoader(
-        dataset,
+    preload_to_gpu = bool(config['training'].get('preload_data_to_gpu', False))
+    default_pin_memory = bool(torch.cuda.is_available() and (not preload_to_gpu))
+    pin_memory = bool(config['training'].get('pin_memory', default_pin_memory))
+    prefetch_factor = int(config['training'].get('prefetch_factor', 2))
+    prefetch_factor = max(1, prefetch_factor)
+
+    dl_generator = torch.Generator()
+    dl_generator.manual_seed(seed)
+    dataloader_kwargs = dict(
+        dataset=dataset,
         batch_size=config['training']['batch_size'],
         shuffle=True,
         num_workers=num_workers,
-        pin_memory=True,
+        pin_memory=pin_memory,
         drop_last=True,
-        persistent_workers=num_workers > 0,
+        worker_init_fn=_seed_worker,
+        generator=dl_generator,
     )
+    if num_workers > 0:
+        dataloader_kwargs["persistent_workers"] = bool(config['training'].get('persistent_workers', True))
+        dataloader_kwargs["prefetch_factor"] = prefetch_factor
+    dataloader = DataLoader(**dataloader_kwargs)
 
     trainer = LGTTrainer(config, device=device, config_path=str(config_path))
     trainer.on_training_start(dataloader)
+    eval_on_last_epoch = bool(config.get('training', {}).get('eval_on_last_epoch', True))
+    full_eval_on_last_epoch = bool(
+        config.get('training', {}).get('full_eval_on_last_epoch', eval_on_last_epoch)
+    )
 
     for epoch in range(trainer.start_epoch, trainer.num_epochs + 1):
         metrics = trainer.train_epoch(dataloader, epoch)
@@ -97,11 +134,24 @@ def main() -> None:
         if epoch % trainer.save_interval == 0 or epoch == trainer.num_epochs:
             trainer.save_checkpoint(epoch, metrics)
 
-        if epoch % trainer.eval_interval == 0 or epoch == trainer.num_epochs:
+        do_eval = False
+        if trainer.eval_interval is not None and trainer.eval_interval > 0 and epoch % trainer.eval_interval == 0:
+            do_eval = True
+        if eval_on_last_epoch and epoch == trainer.num_epochs:
+            do_eval = True
+
+        if do_eval:
             trainer.evaluate_and_infer(epoch)
-            if trainer.full_eval_interval is not None and (
-                epoch % trainer.full_eval_interval == 0 or epoch == trainer.num_epochs
+            do_full_eval = False
+            if (
+                trainer.full_eval_interval is not None
+                and trainer.full_eval_interval > 0
+                and epoch % trainer.full_eval_interval == 0
             ):
+                do_full_eval = True
+            if full_eval_on_last_epoch and epoch == trainer.num_epochs:
+                do_full_eval = True
+            if do_full_eval:
                 try:
                     trainer.run_full_evaluation(epoch)
                 except Exception as exc:

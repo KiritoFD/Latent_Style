@@ -1,0 +1,11 @@
+Wrote SWD eval manifest: /mnt/g/GitHub/Latent_Style/Thermal/swd_matrix_smoke_wsl_progress/evalset/manifest.json
+{
+  "style_pool": {
+    "photo": 100,
+    "monet": 100,
+    "vangogh": 100,
+    "cezanne": 100
+  },
+  "control_subset": 100,
+  "identity_subset": 50
+}
