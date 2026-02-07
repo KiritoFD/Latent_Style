@@ -7,4 +7,5 @@ __all__ = [
     "checkpoint",
     "inference",
     "run_evaluation",
+    "style_classifier",
 ]

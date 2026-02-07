@@ -21,6 +21,21 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class StyleClassificationLoss(nn.Module):
+    """
+    Style classifier guidance loss.
+    """
+    def __init__(self, classifier: nn.Module, weight: float = 0.1):
+        super().__init__()
+        self.classifier = classifier
+        self.weight = weight
+
+    def forward(self, x_style_feat: torch.Tensor, style_ids: torch.Tensor) -> torch.Tensor:
+        logits = self.classifier(x_style_feat)
+        loss = F.cross_entropy(logits, style_ids)
+        return self.weight * loss
+
+
 class VelocityRegularizationLoss(nn.Module):
     """
     Velocity Magnitude Regularization for Flow Matching.
@@ -310,6 +325,8 @@ class GeometricFreeEnergyLoss(nn.Module):
         num_projections=64,
         max_samples=4096,
         moment_lowpass_size: int = 8,
+        fixed_sample_indices: bool = True,
+        swd_sample_seed: int = 1234,
         **kwargs  # Accept but ignore deprecated parameters for backward compatibility
     ):
         super().__init__()
@@ -321,6 +338,9 @@ class GeometricFreeEnergyLoss(nn.Module):
         self.num_projections = num_projections
         self.max_samples = max_samples
         self.moment_lowpass_size = moment_lowpass_size
+        self.fixed_sample_indices = fixed_sample_indices
+        self.swd_sample_seed = swd_sample_seed
+        self._fixed_sample_cache = {}
         
         # Register initialization flag
         self.register_buffer('_is_initialized', torch.tensor(False, dtype=torch.bool))
@@ -523,8 +543,17 @@ class GeometricFreeEnergyLoss(nn.Module):
                 
                 n_pixels = x_flat.shape[1]
                 if n_pixels >= self.max_samples:
-                    # 随机采样（更快的 randint）
-                    idx = torch.randint(0, n_pixels, (self.max_samples,), device=device)
+                    # 固定采样索引（减少分位数噪声）
+                    if self.fixed_sample_indices:
+                        cache_key = (device, scale, n_pixels)
+                        idx = self._fixed_sample_cache.get(cache_key)
+                        if idx is None or idx.device != device:
+                            gen = torch.Generator(device=device)
+                            gen.manual_seed(self.swd_sample_seed + int(scale))
+                            idx = torch.randint(0, n_pixels, (self.max_samples,), device=device, generator=gen)
+                            self._fixed_sample_cache[cache_key] = idx
+                    else:
+                        idx = torch.randint(0, n_pixels, (self.max_samples,), device=device)
                     x_sampled = x_flat[:, idx, :]  # [B, max_samples, C]
                 else:
                     # 不足时循环填充，避免 0 padding 造成分布偏移
