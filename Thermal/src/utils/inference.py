@@ -3,11 +3,11 @@ LGT Thermodynamic Inference with Langevin Dynamics
 
 Key innovation: Langevin-modified ODE integration
 - Deterministic drift: v(x, t, style)
-- Stochastic diffusion: σ(t) * sqrt(dt) * ε
+- Stochastic diffusion: sigma(t) * sqrt(dt) * eps
 
 Temperature schedule:
-- Early phase (t < 0.5): σ = 0 (deterministic, recover structure)
-- Late phase (t > 0.5): σ = λ (stochastic, generate texture)
+- Early phase (t < 0.5): sigma = 0 (deterministic, recover structure)
+- Late phase (t > 0.5): sigma = lambda (stochastic, generate texture)
 
 Physical interpretation:
 - Drift term: Follows energy gradient (geometric potential)
@@ -29,7 +29,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from model import LGTUNet
+from model import LGTResNet
 
 # Optional ModelScope support
 try:
@@ -126,9 +126,9 @@ class LangevinSampler:
     - Repels away from source style artifacts (brush strokes, noise)
     
     Update rule:
-        z_{t+1} = z_t + v(z_t, t, style) * dt + σ(t) * sqrt(dt) * ε
-    
-    where ε ~ N(0, I)
+        z_{t+1} = z_t + v(z_t, t, style) * dt + sigma(t) * sqrt(dt) * eps
+
+    where eps ~ N(0, I)
     
     Ternary Guidance:
         v = v_uncond + w_target*(v_target - v_uncond) - w_repel*(v_source - v_uncond)
@@ -164,16 +164,16 @@ class LangevinSampler:
     
     def get_temperature(self, t):
         """
-        Temperature schedule σ(t).
+        Temperature schedule sigma(t).
         
         Args:
             t: scalar or tensor, time in [0, 1]
         
         Returns:
-            σ: temperature coefficient
+            sigma: temperature coefficient
         """
-        # Early phase: deterministic (σ = 0)
-        # Late phase: stochastic (σ = λ)
+        # Early phase: deterministic (sigma = 0)
+        # Late phase: stochastic (sigma = lambda)
         if isinstance(t, torch.Tensor):
             sigma = torch.where(
                 t < self.temperature_threshold,
@@ -219,7 +219,7 @@ class LangevinSampler:
         
         Physics:
         - Attractive force toward target distribution
-        - Repulsive force away from source artifacts (critical for painting→photo)
+        - Repulsive force away from source artifacts (critical for paintingphoto)
         - Rescale prevents guidance-induced color/brightness drift
         
         Args:
@@ -251,7 +251,7 @@ class LangevinSampler:
         v_pred = v_uncond + w * (v_target - v_uncond)
         
         # ==========================================
-        # 🔥 Rescale CFG: Prevent oversaturation
+        #  Rescale CFG: Prevent oversaturation
         # ==========================================
         # Compute correction factor to prevent magnitude drift
         
@@ -376,7 +376,7 @@ class LangevinSampler:
                 t = torch.full((B,), t_current, device=device)
             
             # Langevin step with optional ternary guidance
-            # 🚀 Fix for CUDAGraphs: Clone the output to break the buffer reuse chain
+            #  Fix for CUDAGraphs: Clone the output to break the buffer reuse chain
             x = self.step(model, x, t, style_id, dt, step_idx, num_steps, source_style_id).clone()
             
             if return_trajectory:
@@ -429,14 +429,21 @@ class LGTInference:
         checkpoint = torch.load(model_path, map_location=device, weights_only=False)
         config = checkpoint['config']
         
-        self.model = LGTUNet(
+        self.model = LGTResNet(
             latent_channels=config['model']['latent_channels'],
             base_channels=config['model']['base_channels'],
             style_dim=config['model']['style_dim'],
             time_dim=config['model']['time_dim'],
             num_styles=config['model']['num_styles'],
-            num_encoder_blocks=config['model']['num_encoder_blocks'],
-            num_decoder_blocks=config['model']['num_decoder_blocks']
+            num_blocks=config['model'].get('num_blocks', 10),
+            num_blocks_pre=config['model'].get('num_blocks_pre'),
+            num_blocks_low=config['model'].get('num_blocks_low'),
+            num_blocks_post=config['model'].get('num_blocks_post'),
+            dropout=config['model'].get('dropout', 0.0),
+            use_attn=config['model'].get('use_attn', False),
+            attn_heads=config['model'].get('attn_heads', 4),
+            v_max=config['model'].get('v_max', 2.0),
+            use_checkpointing=False,
         ).to(device)
         
         # Handle state_dict from compiled models (_orig_mod. prefix)
@@ -468,7 +475,7 @@ class LGTInference:
         """
         Invert latent to noise (reverse ODE).
         
-        Solve: dx/dt = -v(x, 1-t, c_source), t: 0 → 1
+        Solve: dx/dt = -v(x, 1-t, c_source), t: 0 -> 1
         
         Args:
             x1: [B, 4, H, W] observed latent
@@ -500,7 +507,7 @@ class LGTInference:
             v = self.model(x, t, source_style_id, use_avg_style=False)
             
             # Reverse step: dx = -v * dt
-            # 🚀 Fix for CUDAGraphs: Clone the updated latent
+            #  Fix for CUDAGraphs: Clone the updated latent
             x = (x - v * dt).clone()
         
         return x
@@ -546,12 +553,12 @@ class LGTInference:
         Structure-preserving style transfer with optional ternary guidance.
         
         Pipeline:
-        1. Inversion: x_source → x0 (via source style)
-        2. Generation: x0 → x_target (via target style, with optional repulsion from source)
+        1. Inversion: x_source  x0 (via source style)
+        2. Generation: x0  x_target (via target style, with optional repulsion from source)
         
         LGT++ Ternary Guidance:
         When enabled, generation actively repels from source style artifacts.
-        Critical for painting→photo transfers to eliminate brush strokes.
+        Critical for paintingphoto transfers to eliminate brush strokes.
         
         Args:
             x_source: [B, 4, H, W] source latent
@@ -670,7 +677,7 @@ def download_vae_with_fallback(model_id, device='cuda', cache_dir=None):
             local_files_only=True
         ).to(device)
         vae.eval()
-        logger.info(f"✓ Loaded VAE from local HF cache: {model_id}")
+        logger.info(f" Loaded VAE from local HF cache: {model_id}")
         return vae
     except Exception:
         pass
@@ -686,7 +693,7 @@ def download_vae_with_fallback(model_id, device='cuda', cache_dir=None):
             try:
                 vae = AutoencoderKL.from_pretrained(download_root, torch_dtype=torch.float16, local_files_only=True).to(device)
                 vae.eval()
-                logger.info(f"✓ Loaded VAE from local ModelScope cache: {download_root}")
+                logger.info(f" Loaded VAE from local ModelScope cache: {download_root}")
                 return vae
             except Exception:
                 pass
@@ -725,7 +732,7 @@ def download_vae_with_fallback(model_id, device='cuda', cache_dir=None):
 
             vae = AutoencoderKL.from_pretrained(download_root, torch_dtype=torch.float16).to(device)
             vae.eval()
-            logger.info(f"✓ Successfully loaded VAE from ModelScope: {download_root}")
+            logger.info(f" Successfully loaded VAE from ModelScope: {download_root}")
             return vae
         except Exception as e:
             logger.warning(f"ModelScope load failed for {model_id}: {e}")
@@ -738,7 +745,7 @@ def download_vae_with_fallback(model_id, device='cuda', cache_dir=None):
             cache_dir=cache_dir,
         ).to(device)
         vae.eval()
-        logger.info(f"✓ Successfully loaded VAE from HuggingFace: {model_id}")
+        logger.info(f" Successfully loaded VAE from HuggingFace: {model_id}")
         return vae
     except Exception as e:
         logger.warning(f"HuggingFace load failed for {model_id}: {e}")
@@ -810,7 +817,7 @@ def decode_latent(vae, latent, device='cuda'):
     latent = latent.to(device, dtype=torch.float16)
     latent = latent / vae.config.scaling_factor
     image = vae.decode(latent).sample
-    image = (image + 1.0) / 2.0  # [-1, 1] → [0, 1]
+    image = (image + 1.0) / 2.0  # [-1, 1]  [0, 1]
     image = torch.clamp(image, 0.0, 1.0)
     return image
 
@@ -867,7 +874,7 @@ if __name__ == "__main__":
     image = image.resize((256, 256))
     image_tensor = torch.from_numpy(np.array(image)).float() / 255.0
     image_tensor = image_tensor.permute(2, 0, 1).unsqueeze(0)
-    image_tensor = image_tensor * 2.0 - 1.0  # [0,1] → [-1,1]
+    image_tensor = image_tensor * 2.0 - 1.0  # [0,1]  [-1,1]
     
     print("Encoding to latent...")
     latent_source = encode_image(vae, image_tensor, device)
@@ -887,4 +894,4 @@ if __name__ == "__main__":
     output_pil = tensor_to_pil(image_output)
     output_pil.save(output_path)
     
-    print("✓ Done!")
+    print(" Done!")

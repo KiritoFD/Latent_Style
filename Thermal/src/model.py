@@ -124,61 +124,90 @@ class SelfAttention(nn.Module):
         h = self.proj(h).permute(0, 2, 1).reshape(B, C, H, W)
         return x_in + h
 
-class LGTUNet(nn.Module):
+class LGTResNet(nn.Module):
     """
-    Clean, robust U-Net architecture.
+    Lightweight conditional ResNet with a tiny multi-scale branch in latent space.
+    Outputs velocity field v(x,t,style), same shape as x.
     """
+
     def __init__(
         self,
         latent_channels=4,
-        base_channels=128,
+        base_channels=64,
         style_dim=256,
         time_dim=256,
         num_styles=4,
-        num_encoder_blocks=2,
-        num_decoder_blocks=3,
+        num_blocks=10,
+        num_blocks_pre=None,
+        num_blocks_low=None,
+        num_blocks_post=None,
+        dropout=0.0,
+        use_attn=False,
+        attn_heads=4,
+        v_max=2.0,
         use_checkpointing: bool = False,
-        **kwargs # Ignore unused args like ccm_rank
+        **kwargs,
     ):
         super().__init__()
         self.use_checkpointing = use_checkpointing
+        self.v_max = float(v_max)
         self.time_embed = TimestepEmbedding(time_dim)
         self.style_embed = StyleEmbedding(num_styles, style_dim)
-        
-        # Fuse time and style
+
         self.cond_fusion = nn.Sequential(
             nn.Linear(time_dim + style_dim, style_dim),
             nn.SiLU(),
-            nn.Linear(style_dim, style_dim)
+            nn.Linear(style_dim, style_dim),
         )
-        
-        # Encoder
+
+        # Split total blocks across pre/low/post stages if not explicitly provided.
+        if num_blocks_pre is None or num_blocks_low is None or num_blocks_post is None:
+            default_pre = max(2, int(num_blocks * 0.4))
+            default_low = max(1, int(num_blocks * 0.2))
+            default_post = max(2, num_blocks - default_pre - default_low)
+            num_blocks_pre = default_pre if num_blocks_pre is None else num_blocks_pre
+            num_blocks_low = default_low if num_blocks_low is None else num_blocks_low
+            num_blocks_post = default_post if num_blocks_post is None else num_blocks_post
+
         self.in_conv = nn.Conv2d(latent_channels, base_channels, 3, padding=1)
-        
-        self.enc1 = nn.ModuleList([LGTXBlock(base_channels, style_dim) for _ in range(num_encoder_blocks)])
-        self.down1 = nn.Conv2d(base_channels, base_channels*2, 3, stride=2, padding=1) # 32->16
-        
-        self.enc2 = nn.ModuleList([LGTXBlock(base_channels*2, style_dim) for _ in range(num_encoder_blocks)])
-        self.down2 = nn.Conv2d(base_channels*2, base_channels*4, 3, stride=2, padding=1) # 16->8
-        
-        # Bottleneck
-        self.mid_block1 = LGTXBlock(base_channels*4, style_dim)
-        self.attn = SelfAttention(base_channels*4)
-        self.mid_block2 = LGTXBlock(base_channels*4, style_dim)
-        
-        # Decoder
-        self.up1 = nn.ConvTranspose2d(base_channels*4, base_channels*2, 4, stride=2, padding=1) # 8->16
-        self.dec1 = nn.ModuleList([LGTXBlock(base_channels*2, style_dim) for _ in range(num_decoder_blocks)])
-        
-        self.up2 = nn.ConvTranspose2d(base_channels*2, base_channels, 4, stride=2, padding=1) # 16->32
-        self.dec2 = nn.ModuleList([LGTXBlock(base_channels, style_dim) for _ in range(num_decoder_blocks)])
-        
-        self.out_norm = nn.GroupNorm(32, base_channels)
+        self.blocks_pre = nn.ModuleList(
+            [LGTXBlock(base_channels, style_dim, dropout=dropout) for _ in range(num_blocks_pre)]
+        )
+
+        # Tiny-U branch: one downsample stage + a few low-res blocks + upsample back.
+        self.downsample = nn.Conv2d(base_channels, base_channels, 3, stride=2, padding=1)
+        self.blocks_low = nn.ModuleList(
+            [LGTXBlock(base_channels, style_dim, dropout=dropout) for _ in range(num_blocks_low)]
+        )
+        self.upsample = nn.Sequential(
+            nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False),
+            nn.Conv2d(base_channels, base_channels, 3, padding=1),
+        )
+
+        self.blocks_post = nn.ModuleList(
+            [LGTXBlock(base_channels, style_dim, dropout=dropout) for _ in range(num_blocks_post)]
+        )
+
+        self.use_attn = bool(use_attn)
+        self.attn = SelfAttention(base_channels, num_heads=attn_heads) if self.use_attn else None
+
+        out_groups = 32
+        while out_groups > 1 and (base_channels % out_groups != 0):
+            out_groups //= 2
+        self.out_norm = nn.GroupNorm(out_groups, base_channels)
         self.out_conv = nn.Conv2d(base_channels, latent_channels, 3, padding=1)
-        
-        # Init output to zero
+        self.out_affine = nn.Sequential(
+            nn.SiLU(),
+            nn.Linear(style_dim, latent_channels * 2),
+        )
+
+        # Init output to zero so initial velocity is near zero (stable ODE start)
         nn.init.zeros_(self.out_conv.weight)
         nn.init.zeros_(self.out_conv.bias)
+        nn.init.zeros_(self.out_affine[1].weight)
+        nn.init.zeros_(self.out_affine[1].bias)
+        with torch.no_grad():
+            self.out_affine[1].bias[:latent_channels] = 1.0
 
     def forward(self, x, t, style_id, use_avg_style=False):
         def _vram(tag: str):
@@ -186,6 +215,7 @@ class LGTUNet(nn.Module):
                 fn = getattr(self, "_vram_debug_fn", None)
                 if fn is not None:
                     fn(tag)
+
         def _ckpt(fn, *args):
             if self.use_checkpointing and self.training:
                 return ckpt.checkpoint(fn, *args, use_reentrant=False)
@@ -194,50 +224,43 @@ class LGTUNet(nn.Module):
         t_emb = self.time_embed(t)
         s_emb = self.style_embed(style_id, use_avg=use_avg_style)
         cond = self.cond_fusion(torch.cat([t_emb, s_emb], dim=-1))
-        
+
         h = self.in_conv(x)
         _vram("in_conv")
-        skips = []
-        
-        # Encoder
-        for blk in self.enc1:
-            h = _ckpt(lambda _h, _c: blk(_h, _c), h, cond)
-        _vram("enc1")
-        skips.append(h)
-        h = self.down1(h)
-        _vram("down1")
-        
-        for blk in self.enc2:
-            h = _ckpt(lambda _h, _c: blk(_h, _c), h, cond)
-        _vram("enc2")
-        skips.append(h)
-        h = self.down2(h)
-        _vram("down2")
-        
-        # Bottleneck
-        h = _ckpt(lambda _h, _c: self.mid_block1(_h, _c), h, cond)
-        _vram("mid_block1")
-        h = _ckpt(lambda _h: self.attn(_h), h)
-        _vram("attn")
-        h = _ckpt(lambda _h, _c: self.mid_block2(_h, _c), h, cond)
-        _vram("mid_block2")
-        
-        # Decoder (Simple Additive Skip)
-        h = self.up1(h)
-        _vram("up1")
-        h = h + skips.pop() # Residual add
-        for blk in self.dec1:
-            h = _ckpt(lambda _h, _c: blk(_h, _c), h, cond)
-        _vram("dec1")
-        
-        h = self.up2(h)
-        _vram("up2")
-        h = h + skips.pop()
-        for blk in self.dec2:
-            h = _ckpt(lambda _h, _c: blk(_h, _c), h, cond)
-        _vram("dec2")
-        
-        out = self.out_conv(F.silu(self.out_norm(h)))
+
+        for blk in self.blocks_pre:
+            h = _ckpt(lambda _h, _c, _blk=blk: _blk(_h, _c), h, cond)
+        _vram("blocks_pre")
+
+        h_main = h
+        h_low = self.downsample(h_main)
+        _vram("downsample")
+        for blk in self.blocks_low:
+            h_low = _ckpt(lambda _h, _c, _blk=blk: _blk(_h, _c), h_low, cond)
+        _vram("blocks_low")
+        h_low = self.upsample(h_low)
+        if h_low.shape[-2:] != h_main.shape[-2:]:
+            h_low = F.interpolate(h_low, size=h_main.shape[-2:], mode="bilinear", align_corners=False)
+        h = h_main + h_low
+        _vram("upsample_fuse")
+
+        if self.use_attn:
+            h = _ckpt(lambda _h, _blk=self.attn: _blk(_h), h)
+            _vram("attn")
+
+        for blk in self.blocks_post:
+            h = _ckpt(lambda _h, _c, _blk=blk: _blk(_h, _c), h, cond)
+        _vram("blocks_post")
+
+        raw = self.out_conv(F.silu(self.out_norm(h)))
+        style_affine = self.out_affine(cond).unsqueeze(-1).unsqueeze(-1)
+        out_scale, out_shift = style_affine.chunk(2, dim=1)
+        raw = raw * out_scale + out_shift
+
+        if self.v_max > 0:
+            out = self.v_max * torch.tanh(raw / self.v_max)
+        else:
+            out = raw
         _vram("out")
         return out
 
