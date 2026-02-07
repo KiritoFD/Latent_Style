@@ -1,0 +1,95 @@
+{
+  "checkpoint": "../resnet/epoch_0300.pt",
+  "timestamp": "2026-02-07 14:55:37",
+  "matrix_breakdown": {
+    "photo": {
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5985165039698283,
+        "style_lpips": 0.7368640085061391,
+        "content_lpips": 0.593438195,
+        "clip_content": 0.6288374736666665,
+        "classifier_acc": 0.9
+      },
+      "monet": {
+        "count": 30,
+        "clip_style": 0.5753647526105244,
+        "style_lpips": 0.7359247326850891,
+        "content_lpips": 0.6384404783333334,
+        "clip_content": 0.6139202683333332,
+        "classifier_acc": 0.36666666666666664
+      }
+    },
+    "monet": {
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5699047784010569,
+        "style_lpips": 0.7551481823126475,
+        "content_lpips": 0.6547321796666667,
+        "clip_content": 0.593453577,
+        "classifier_acc": 1.0
+      },
+      "monet": {
+        "count": 30,
+        "clip_style": 0.6324697772661845,
+        "style_lpips": 0.6988844871520996,
+        "content_lpips": 0.5635000683333332,
+        "clip_content": 0.6641282250000001,
+        "classifier_acc": 0.03333333333333333
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "clip_style": 0.5726347655057906,
+      "content_lpips": 0.646586329,
+      "classifier_acc": 0.6833333333333333
+    },
+    "photo_to_art_performance": {
+      "clip_style": 0.5753647526105244,
+      "valid": true,
+      "classifier_acc": 0.36666666666666664
+    }
+  },
+  "classification_report": {
+    "monet": {
+      "precision": 0.8,
+      "recall": 0.2,
+      "f1-score": 0.32,
+      "support": 60.0
+    },
+    "photo": {
+      "precision": 0.5428571428571428,
+      "recall": 0.95,
+      "f1-score": 0.6909090909090909,
+      "support": 60.0
+    },
+    "accuracy": 0.575,
+    "macro avg": {
+      "precision": 0.6714285714285715,
+      "recall": 0.575,
+      "f1-score": 0.5054545454545455,
+      "support": 120.0
+    },
+    "weighted avg": {
+      "precision": 0.6714285714285714,
+      "recall": 0.575,
+      "f1-score": 0.5054545454545455,
+      "support": 120.0
+    }
+  },
+  "detailed_style_metrics": {
+    "monet": {
+      "precision": 0.8,
+      "recall": 0.2,
+      "f1_score": 0.32,
+      "support": 60
+    },
+    "photo": {
+      "precision": 0.5428571428571428,
+      "recall": 0.95,
+      "f1_score": 0.6909090909090909,
+      "support": 60
+    }
+  }
+}

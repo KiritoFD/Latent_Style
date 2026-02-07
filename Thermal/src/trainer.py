@@ -3,7 +3,6 @@ import logging
 import shutil
 import subprocess
 import sys
-import math
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
@@ -12,7 +11,7 @@ import numpy as np
 import torch
 import torch._inductor.config as inductor_config
 
-# 开启持久化 FX 图缓存，消除训练启动时的重复编译
+# Enable persistent FX graph cache to reduce repeated compile overhead.
 inductor_config.fx_graph_cache = True
 
 import torch.nn.functional as F
@@ -27,11 +26,10 @@ from losses import (
     GeometricFreeEnergyLoss,
     PyramidStructuralLoss,
     VelocityRegularizationLoss,
-    StyleClassificationLoss,
 )
 from utils.style_classifier import StyleClassifier
-from model import LGTUNet, count_parameters
-from physics import generate_latent, get_dynamic_epsilon, integrate_ode, invert_latent
+from model import LGTResNet, count_parameters
+from physics import generate_latent, get_dynamic_epsilon, invert_latent
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +42,41 @@ def _log_vram(tag: str, reset_peak: bool = False):
     reserved = torch.cuda.memory_reserved() / (1024 ** 2)
     max_alloc = torch.cuda.max_memory_allocated() / (1024 ** 2)
     logger.info(f"[VRAM] {tag} | alloc={alloc:.1f}MB reserved={reserved:.1f}MB max_alloc={max_alloc:.1f}MB")
+
+
+def _log_vram_detail(tag: str):
+    if not torch.cuda.is_available():
+        return
+    stats = torch.cuda.memory_stats()
+    def _mb(x): return x / (1024 ** 2)
+    detail = {
+        "alloc_mb": _mb(stats.get("allocated_bytes.all.current", 0)),
+        "reserved_mb": _mb(stats.get("reserved_bytes.all.current", 0)),
+        "active_mb": _mb(stats.get("active_bytes.all.current", 0)),
+        "inactive_split_mb": _mb(stats.get("inactive_split_bytes.all.current", 0)),
+        "alloc_peak_mb": _mb(stats.get("allocated_bytes.all.peak", 0)),
+        "reserved_peak_mb": _mb(stats.get("reserved_bytes.all.peak", 0)),
+        "num_alloc_retries": stats.get("num_alloc_retries", 0),
+        "num_ooms": stats.get("num_ooms", 0),
+        "num_segments": stats.get("segment.all.current", 0),
+        "num_active_allocs": stats.get("active.all.current", 0),
+    }
+    logger.info(
+        "[VRAM-DETAIL] %s | alloc=%.1fMB reserved=%.1fMB active=%.1fMB "
+        "inactive_split=%.1fMB alloc_peak=%.1fMB reserved_peak=%.1fMB "
+        "segments=%s active_allocs=%s retries=%s ooms=%s",
+        tag,
+        detail["alloc_mb"],
+        detail["reserved_mb"],
+        detail["active_mb"],
+        detail["inactive_split_mb"],
+        detail["alloc_peak_mb"],
+        detail["reserved_peak_mb"],
+        detail["num_segments"],
+        detail["num_active_allocs"],
+        detail["num_alloc_retries"],
+        detail["num_ooms"],
+    )
 
 
 class RunningMean:
@@ -76,24 +109,41 @@ class LGTTrainer:
         self.vram_debug = bool(config.get('training', {}).get('vram_debug', True))
         self.vram_debug_interval = int(config.get('training', {}).get('vram_debug_interval', 50))
         self.vram_debug_reset_peak = bool(config.get('training', {}).get('vram_debug_reset_peak', False))
+        self.vram_debug_detail = bool(config.get('training', {}).get('vram_debug_detail', True))
+        self.vram_debug_skip_steps = int(config.get('training', {}).get('vram_debug_skip_steps', 2))
         self._vram_log_this_step = False
         if self.vram_debug:
             _log_vram("init/start", reset_peak=self.vram_debug_reset_peak)
+            if self.vram_debug_detail:
+                _log_vram_detail("init/start")
 
-        # 🔥 Infra Optimization: Enable Tensor Cores (Ampere+)
+        # Infra optimization: enable Tensor Cores (Ampere+).
         torch.set_float32_matmul_precision('high')
         torch.backends.cudnn.benchmark = True
+        self.allow_tf32 = bool(config.get('training', {}).get('allow_tf32', True))
+        if self.allow_tf32 and torch.cuda.is_available():
+            torch.backends.cuda.matmul.allow_tf32 = True
+            torch.backends.cudnn.allow_tf32 = True
 
-        self.model = LGTUNet(
+        use_checkpointing = config['training'].get('use_gradient_checkpointing', False)
+        self.model = LGTResNet(
             latent_channels=config['model']['latent_channels'],
             base_channels=config['model']['base_channels'],
             style_dim=config['model']['style_dim'],
             time_dim=config['model']['time_dim'],
             num_styles=config['model']['num_styles'],
-            num_encoder_blocks=config['model']['num_encoder_blocks'],
-            num_decoder_blocks=config['model']['num_decoder_blocks'],
-            use_checkpointing=config['training'].get('use_gradient_checkpointing', False),
-        ).to(device, memory_format=torch.channels_last)  # 🔥 Infra Optimization: Channels Last
+            num_blocks=config['model'].get('num_blocks', 10),
+            num_blocks_pre=config['model'].get('num_blocks_pre'),
+            num_blocks_low=config['model'].get('num_blocks_low'),
+            num_blocks_post=config['model'].get('num_blocks_post'),
+            dropout=config['model'].get('dropout', 0.0),
+            use_attn=config['model'].get('use_attn', False),
+            attn_heads=config['model'].get('attn_heads', 4),
+            v_max=config['model'].get('v_max', 2.0),
+            use_checkpointing=use_checkpointing,
+        )
+        self.model = self.model.to(device, memory_format=torch.channels_last)  # Channels Last
+        logger.info("Model architecture: LGTResNet")
         self.model.compute_avg_style_embedding()
         if self.vram_debug:
             _log_vram("after model init", reset_peak=self.vram_debug_reset_peak)
@@ -105,7 +155,7 @@ class LGTTrainer:
         if use_compile:
             try:
                 self.model = torch.compile(self.model, mode='default', fullgraph=False)
-                logger.info("✓ Model compiled with torch.compile")
+                logger.info("Model compiled with torch.compile")
             except Exception as exc:  # pragma: no cover - best effort
                 logger.warning(f"torch.compile failed: {exc}")
 
@@ -114,7 +164,7 @@ class LGTTrainer:
         self.energy_loss = GeometricFreeEnergyLoss(
             num_styles=config['model']['num_styles'],
             w_style=config['loss']['w_style'],
-            swd_scales=config['loss'].get('swd_scales', [1, 3, 5]),  # 🔥 Remove large scales (7, 15)
+            swd_scales=config['loss'].get('swd_scales', [1, 3, 5]),  # Avoid large costly scales by default.
             swd_scale_weights=config['loss'].get('swd_scale_weights', [1.0, 1.0, 0.5]),
             num_projections=config['loss'].get('num_projections', 64),
             max_samples=config['loss'].get('max_samples', 4096),
@@ -128,12 +178,37 @@ class LGTTrainer:
         # Style classifier guidance (to stabilize style direction)
         self.use_style_classifier = config['loss'].get('use_style_classifier', True)
         self.style_cls_weight = float(config['loss'].get('w_style_classifier', 0.1))
+        self.style_cls_transfer_weight = float(
+            config['loss'].get('w_style_classifier_transfer', self.style_cls_weight)
+        )
+        self.style_cls_identity_weight = float(
+            config['loss'].get('w_style_classifier_identity', self.style_cls_weight)
+        )
         self.style_classifier = None
-        self.style_cls_loss = None
         self.style_classifier_ckpt = config['loss'].get('style_classifier_ckpt', None)
         self.style_classifier_strict = bool(config['loss'].get('style_classifier_strict', False))
         self.style_classifier_trainable = bool(config['loss'].get('style_classifier_trainable', False))
-        if self.use_style_classifier and self.style_cls_weight > 0.0:
+        self.style_swd_interval = max(1, int(config['loss'].get('style_swd_interval', 1)))
+        self.style_cls_interval = max(1, int(config['loss'].get('style_cls_interval', 1)))
+        self.swd_input_size = int(config['loss'].get('swd_input_size', 0))
+        self.identity_pair_ratio = float(config['loss'].get('identity_pair_ratio', 0.25))
+        self.identity_pair_ratio = max(0.0, min(1.0, self.identity_pair_ratio))
+        self.use_identity_consistency = bool(config['loss'].get('use_identity_consistency', True))
+        self.identity_weight = float(config['loss'].get('w_identity', 1.0))
+
+        # Optional per-target-style SWD mask/weight (default: symmetric 1.0 for all styles)
+        swd_target_weights = config['loss'].get('style_swd_target_weights', None)
+        if swd_target_weights is None:
+            swd_target_weights = [1.0] * config['model']['num_styles']
+        if len(swd_target_weights) < config['model']['num_styles']:
+            swd_target_weights = list(swd_target_weights) + [1.0] * (config['model']['num_styles'] - len(swd_target_weights))
+        self.style_swd_target_weights = torch.tensor(
+            swd_target_weights[:config['model']['num_styles']],
+            device=device,
+            dtype=torch.float32,
+        )
+
+        if self.use_style_classifier and max(self.style_cls_transfer_weight, self.style_cls_identity_weight) > 0.0:
             input_size_train = int(config['loss'].get('style_classifier_input_size_train', 8))
             input_size_infer = int(config['loss'].get('style_classifier_input_size_infer', input_size_train))
             self.style_classifier = StyleClassifier(
@@ -147,7 +222,7 @@ class LGTTrainer:
                 input_size_infer=input_size_infer,
                 lowpass_size=int(config['loss'].get('style_classifier_lowpass_size', 8)),
             ).to(device)
-            self.style_cls_loss = StyleClassificationLoss(self.style_classifier, weight=self.style_cls_weight).to(device)
+            ckpt_path = None
             if self.style_classifier_ckpt:
                 ckpt_path = Path(self.style_classifier_ckpt)
                 if not ckpt_path.is_absolute():
@@ -155,29 +230,43 @@ class LGTTrainer:
                 if ckpt_path.exists():
                     state = torch.load(ckpt_path, map_location=device)
                     state_dict = state.get('model_state_dict', state)
+                    if any(k.startswith('_orig_mod.') for k in state_dict.keys()):
+                        state_dict = {k.replace('_orig_mod.', ''): v for k, v in state_dict.items()}
                     self.style_classifier.load_state_dict(state_dict, strict=self.style_classifier_strict)
                     logger.info(f"Loaded style classifier weights from {ckpt_path}")
-                # If a checkpoint is provided, default to inference-only unless explicitly set
-                if self.style_classifier_trainable is False:
-                    for p in self.style_classifier.parameters():
-                        p.requires_grad = False
-                    self.style_classifier.eval()
-            else:
-                msg = f"Style classifier checkpoint not found: {ckpt_path}"
-                if self.style_classifier_strict:
-                    raise FileNotFoundError(msg)
-                logger.warning(msg + " (training from scratch)")
-            logger.info(f"Style classifier guidance enabled (weight={self.style_cls_weight})")
+                else:
+                    msg = f"Style classifier checkpoint not found: {ckpt_path}"
+                    if self.style_classifier_strict:
+                        raise FileNotFoundError(msg)
+                    logger.warning(msg + " (training from scratch)")
+            elif self.style_classifier_strict:
+                msg = "style_classifier_ckpt is required when style_classifier_strict=true"
+                raise FileNotFoundError(msg)
+            # Freeze classifier params but keep grad flow to main model
+            if self.style_classifier_trainable is False:
+                for p in self.style_classifier.parameters():
+                    p.requires_grad = False
+                self.style_classifier.eval()
+            logger.info(
+                f"Style classifier guidance enabled "
+                f"(w_transfer={self.style_cls_transfer_weight}, w_identity={self.style_cls_identity_weight})"
+            )
         else:
             logger.info("Style classifier guidance disabled")
+        if self.use_identity_consistency:
+            logger.info(
+                f"Identity consistency enabled (pair_ratio={self.identity_pair_ratio}, w_identity={self.identity_weight})"
+            )
+        else:
+            logger.info("Identity consistency disabled")
         if self.vram_debug:
             _log_vram("after style_classifier init", reset_peak=self.vram_debug_reset_peak)
 
-        # 🔥 Pyramid Structural Loss (Frequency-Separated Structure Lock)
+        # Pyramid Structural Loss (frequency-separated structure lock).
         pyramid_weights = config['loss'].get('pyramid_weights', {'low': 5.0, 'mid': 1.0, 'high': 0.1})
         self.pyramid_loss = PyramidStructuralLoss(weights=pyramid_weights).to(device)
         self.w_pyramid = config['loss'].get('w_pyramid', 1.0)
-        logger.info(f"✓ Pyramid Structural Loss enabled (w={self.w_pyramid}, weights={pyramid_weights})")
+        logger.info(f"Pyramid Structural Loss enabled (w={self.w_pyramid}, weights={pyramid_weights})")
         if self.vram_debug:
             _log_vram("after pyramid_loss init", reset_peak=self.vram_debug_reset_peak)
 
@@ -186,7 +275,7 @@ class LGTTrainer:
         if self.use_velocity_reg:
             vel_reg_weight = config['loss'].get('vel_reg_weight', 0.1)
             self.vel_reg_loss = VelocityRegularizationLoss(weight=vel_reg_weight).to(device)
-            logger.info(f"✓ Velocity Regularization enabled (weight={vel_reg_weight})")
+            logger.info(f"Velocity Regularization enabled (weight={vel_reg_weight})")
         else:
             logger.info("Velocity Regularization disabled")
         if self.vram_debug:
@@ -203,7 +292,7 @@ class LGTTrainer:
             lr=config['training']['learning_rate'],
             weight_decay=config['training'].get('weight_decay', 1e-5),
             betas=(0.9, 0.999),
-            fused=False,  # 🔥 Fix: Fused AdamW conflicts with GradScaler.unscale_
+            fused=False,  # Fused AdamW conflicts with GradScaler.unscale_ in this setup.
         )
         if self.vram_debug:
             _log_vram("after optimizer init", reset_peak=self.vram_debug_reset_peak)
@@ -216,12 +305,12 @@ class LGTTrainer:
         if self.vram_debug:
             _log_vram("after scaler init", reset_peak=self.vram_debug_reset_peak)
 
-        # 🔥 Adaptive Loss Normalization (Self-Learning Scales)
+        # Adaptive loss normalization (running means).
         self.use_adaptive_norm = config['training'].get('use_adaptive_loss_norm', False)
         if self.use_adaptive_norm:
             self.norm_mse = RunningMean(device=device)
             self.norm_style = RunningMean(device=device)
-            logger.info("✓ Adaptive Loss Normalization enabled (Running Mean Scaling)")
+            logger.info("Adaptive Loss Normalization enabled (Running Mean Scaling)")
             
         self.label_drop_prob = config['training'].get('label_drop_prob', 0.1)
         self.use_avg_for_uncond = config['training'].get('use_avg_style_for_uncond', True)
@@ -236,10 +325,12 @@ class LGTTrainer:
 
         self.global_step = 0
         self.alpha_warmup_steps = config['training'].get('alpha_warmup_steps', 1000)
-        logger.info(f"Alpha warmup schedule: 0 → 1.0 over {self.alpha_warmup_steps} steps")
+        logger.info(f"Alpha warmup schedule: 0 -> 1.0 over {self.alpha_warmup_steps} steps")
 
         self.epsilon = config['training'].get('epsilon', 0.01)
         self.ode_steps = config['training'].get('ode_integration_steps', 5)
+        self.model_input_size_train = int(config['training'].get('model_input_size_train', 0))
+        self.model_input_size_infer = int(config['training'].get('model_input_size_infer', self.model_input_size_train))
 
         self.style_weights = torch.tensor(
             config['loss'].get('style_weights', [1.0] * config['model']['num_styles']),
@@ -274,7 +365,10 @@ class LGTTrainer:
         self.log_dir.mkdir(exist_ok=True)
         self.log_file = self.log_dir / f"training_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         with open(self.log_file, 'w') as f:
-            f.write('epoch,loss_total,loss_style_swd,loss_style_swd_weighted,loss_mse,loss_mse_weighted,loss_layout,loss_mse_raw,learning_rate,epoch_time\n')
+            f.write(
+                "epoch,loss_total,loss_style_swd,loss_mse,loss_identity,loss_style_cls,"
+                "style_cls_transfer_acc,style_cls_identity_acc,loss_velocity_reg,learning_rate,epoch_time\n"
+            )
 
         self.start_epoch = 1
         self._maybe_resume(config['training'].get('resume_checkpoint'))
@@ -287,6 +381,7 @@ class LGTTrainer:
             beta_end=0.02,
             beta_schedule="linear",
         )
+        self.iter_step = 0
 
     # ------------------------------------------------------------------
     # Initialization utilities
@@ -322,7 +417,7 @@ class LGTTrainer:
                 if norm_state:
                     if 'mse' in norm_state: self.norm_mse.load_state_dict(norm_state['mse'])
                     if 'style' in norm_state: self.norm_style.load_state_dict(norm_state['style'])
-                    logger.info("✓ Adaptive loss normalization state restored")
+                    logger.info("Adaptive loss normalization state restored")
             
             # Restore LoRA Alpha immediately
             self._update_lora_alpha(self.global_step)
@@ -333,7 +428,7 @@ class LGTTrainer:
         # Note: We rely on the loaded scheduler state to determine the correct LR.
         # Forcing LR to config['learning_rate'] here would reset it to max_lr,
         # which is incorrect if resuming in the middle of training.
-        logger.info(f"✓ Resumed training state. Current LR will be determined by scheduler.")
+        logger.info(f"Resumed training state. Current LR will be determined by scheduler.")
 
     def build_style_indices_cache(self, dataset: LatentDataset) -> None:
         logger.info("Building style indices cache...")
@@ -345,7 +440,7 @@ class LGTTrainer:
         for style_id, indices in self.style_indices_cache.items():
             logger.info(f"  Style {style_id}: {len(indices)} samples")
         self.dataset_ref = dataset
-        logger.info("✓ Style indices cache built")
+        logger.info("Style indices cache built")
 
     def sample_style_batch(self, target_style_ids: torch.Tensor) -> torch.Tensor:
         if self.dataset_ref is None:
@@ -377,6 +472,38 @@ class LGTTrainer:
 
         return style_latents
 
+    def sample_target_styles(self, source_style_ids: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """
+        Build target style IDs with a controlled identity ratio.
+
+        Returns:
+            target_style_ids: [B]
+            identity_mask: [B] bool, where target_style == source_style
+        """
+        b = source_style_ids.shape[0]
+        if b <= 1:
+            target_style_ids = source_style_ids.clone()
+            identity_mask = torch.ones_like(source_style_ids, dtype=torch.bool)
+            return target_style_ids, identity_mask
+
+        shuffled = source_style_ids[torch.randperm(b, device=source_style_ids.device)]
+        if self.identity_pair_ratio <= 0.0:
+            target_style_ids = shuffled
+            return target_style_ids, target_style_ids == source_style_ids
+        if self.identity_pair_ratio >= 1.0:
+            target_style_ids = source_style_ids.clone()
+            return target_style_ids, torch.ones_like(source_style_ids, dtype=torch.bool)
+
+        identity_selector = torch.rand(b, device=source_style_ids.device) < self.identity_pair_ratio
+        if not identity_selector.any():
+            identity_selector[torch.randint(0, b, (1,), device=source_style_ids.device)] = True
+        if identity_selector.all():
+            identity_selector[torch.randint(0, b, (1,), device=source_style_ids.device)] = False
+
+        target_style_ids = torch.where(identity_selector, source_style_ids, shuffled)
+        identity_mask = target_style_ids == source_style_ids
+        return target_style_ids, identity_mask
+
     # ------------------------------------------------------------------
     # Training utilities
     # ------------------------------------------------------------------
@@ -393,33 +520,26 @@ class LGTTrainer:
 
     def _get_thermodynamic_schedule(self, epoch: int):
         """
-        [Strategy Upgrade] 禁用旧的连续调度器，完全由 update_loss_weights 控制
-        返回固定倍率 1.0，确保不干扰 update_loss_weights 的离散逻辑。
+        Placeholder hook for future thermodynamic schedule extensions.
         """
         return 1.0, 1.0, 1.0
 
     def update_loss_weights(self, epoch, total_epochs):
         """
-        [Strategy: Aggressive Stylization]
-        更加激进的风格化策略：
-        1. 延长 Phase 1 (0-40%)：让模型有更多时间彻底遗忘原图的纹理细节。
-        2. 降低 Phase 3 上限：最终 w_mse 也不要太高，允许永久性的几何变形。
+        Piecewise schedule for structure/style loss balance.
         """
-        w_style_target = self.config['loss'].get('w_style', 40.0) # 读取新配置
-        w_mse_target = self.config['loss'].get('w_mse', 0.5)      # 读取新配置
+        w_style_target = self.config['loss'].get('w_style', 40.0)
+        w_mse_target = self.config['loss'].get('w_mse', 0.5)
         
         progress = epoch / max(total_epochs, 1)
-        mse_start_ratio = 0.01  # 初始几乎没有结构约束 (1%)
+        mse_start_ratio = 0.2
         
         current_w_style = w_style_target
         
-        if progress < 0.4:  
-            # 🔥 延长探索期到 40% (原 20%)
-            # 在前 200 epoch，模型可以随心所欲地涂抹
+        if progress < 0.15:
             current_w_mse = w_mse_target * mse_start_ratio
-        elif progress < 0.9: 
-            # 缩短对齐期，且爬坡更缓
-            p = (progress - 0.4) / 0.5
+        elif progress < 0.9:
+            p = (progress - 0.15) / 0.75
             ratio = mse_start_ratio + (1.0 - mse_start_ratio) * p
             current_w_mse = w_mse_target * ratio
         else:
@@ -431,7 +551,7 @@ class LGTTrainer:
         device = self.device
         m_mse, m_layout, m_style = multipliers
 
-        # 🔥 Infra Optimization: Channels Last for faster Convolutions
+        #  Infra Optimization: Channels Last for faster Convolutions
         latent = batch['latent'].to(device, non_blocking=True, memory_format=torch.channels_last)
         style_id = batch['style_id'].to(device, non_blocking=True)
         latent_deformed = batch.get('latent_deformed')
@@ -441,8 +561,8 @@ class LGTTrainer:
             _log_vram("compute_energy_loss/after_batch_to_device", reset_peak=self.vram_debug_reset_peak)
 
         b = latent.shape[0]
-        indices = torch.randperm(b, device=device)
-        style_id_tgt = style_id[indices]
+        style_id_tgt, identity_mask = self.sample_target_styles(style_id)
+        transfer_mask = ~identity_mask
         style_latents = self.sample_style_batch(style_id_tgt)
         if self._vram_log_this_step and self.vram_debug:
             _log_vram("compute_energy_loss/after_style_latents", reset_peak=self.vram_debug_reset_peak)
@@ -485,45 +605,49 @@ class LGTTrainer:
         if self.model.training and torch.rand(1).item() < self.label_drop_prob:
             drop_label = True
 
+        target_model_size = self.model_input_size_train if self.model.training else self.model_input_size_infer
+        def _model_forward(x_in: torch.Tensor, t_in: torch.Tensor, style_in: torch.Tensor, use_avg: bool) -> torch.Tensor:
+            x_model = x_in
+            if target_model_size and (x_in.shape[-1] != target_model_size or x_in.shape[-2] != target_model_size):
+                x_model = F.interpolate(x_in, size=(target_model_size, target_model_size), mode="area")
+            v_out = self.model(x_model, t_in, style_in, use_avg_style=use_avg)
+            if x_model.shape[-1] != x_in.shape[-1] or x_model.shape[-2] != x_in.shape[-2]:
+                v_out = F.interpolate(v_out, size=x_in.shape[-2:], mode="bilinear", align_corners=False)
+            return v_out
+
         if self._vram_log_this_step and self.vram_debug:
             self.model._vram_debug = True
             self.model._vram_debug_fn = lambda tag: _log_vram(f"model/{tag}", reset_peak=self.vram_debug_reset_peak)
         with torch.amp.autocast('cuda', enabled=self.use_amp, dtype=torch.bfloat16):
-            v_pred = self.model(x_t, t, style_id_tgt, use_avg_style=drop_label)
+            v_pred = _model_forward(x_t, t, style_id_tgt, use_avg=drop_label)
         if self._vram_log_this_step and self.vram_debug:
             self.model._vram_debug = False
         if self._vram_log_this_step and self.vram_debug:
             _log_vram("compute_energy_loss/after_v_pred", reset_peak=self.vram_debug_reset_peak)
+            if self.vram_debug_detail:
+                _log_vram_detail("compute_energy_loss/after_v_pred")
 
         # [Dynamic Anchoring] Update weights based on epoch
         cur_w_style, cur_w_mse = self.update_loss_weights(epoch, self.num_epochs)
 
-        # [Photo Identity Protection]
-        # Identify photo samples (Hard Constraint)
-        style_subdirs = self.config['data'].get('style_subdirs', [])
-        is_photo = torch.zeros_like(style_id_tgt, dtype=torch.bool)
-        if 'photo' in style_subdirs:
-            photo_idx = style_subdirs.index('photo')
-            is_photo = (style_id_tgt == photo_idx)
-        
-        # Create per-sample weight tensors (mask only)
-        w_style_batch = torch.ones((b,), device=device)
+        # Symmetric style supervision by default; can be tuned via style_swd_target_weights
+        w_style_batch = self.style_swd_target_weights[style_id_tgt]
         w_mse_batch = torch.ones((b,), device=device)
-        if is_photo.any():
-            w_style_batch = torch.where(is_photo, torch.tensor(0.0, device=device), w_style_batch)
-        
-        # 1. 强制退出 Autocast，进入 FP32 高精度领域
-        # 我们已经拿到了 v_pred (BF16)，现在要进行精细的积分和 Loss 计算
+
+        do_style_swd = (self.style_swd_interval <= 1) or (self.iter_step % self.style_swd_interval == 0)
+        do_style_cls = (self.style_cls_interval <= 1) or (self.iter_step % self.style_cls_interval == 0)
+
+        # Switch to FP32 for numerically sensitive ODE and loss computations.
         with torch.amp.autocast('cuda', enabled=False):
- # 将关键张量转为 FP32
             v_pred_f32 = v_pred.float()
             x_t_f32 = x_t.float()
             t_f32 = t.view(-1, 1, 1, 1).float()
             if self._vram_log_this_step and self.vram_debug:
                 _log_vram("compute_energy_loss/after_cast_f32", reset_peak=self.vram_debug_reset_peak)
+                if self.vram_debug_detail:
+                    _log_vram_detail("compute_energy_loss/after_cast_f32")
             
-            # --- ODE 积分评估 (精度修正) ---
-            # 即使 config 里是 1 步，我们也在这里显式写出欧拉积分，保证是在 FP32 下做的加法
+            # --- ODE integration in FP32 ---
             if self.ode_steps == 1:
                 # Use already-computed v_pred to avoid a second forward pass (saves VRAM)
                 if self._vram_log_this_step and self.vram_debug:
@@ -545,7 +669,7 @@ class LGTTrainer:
 
                 def step_fn(x_in, t_in, style_in):
                     with torch.amp.autocast('cuda', enabled=self.use_amp, dtype=torch.bfloat16):
-                        return self.model(x_in, t_in, style_in, use_avg_style=False)
+                        return _model_forward(x_in, t_in, style_in, use_avg=False)
 
                 for i in range(num_steps):
                     t_remaining = 1.0 - t_cur
@@ -562,22 +686,26 @@ class LGTTrainer:
                 x_1_pred = x
             if self._vram_log_this_step and self.vram_debug:
                 _log_vram("compute_energy_loss/after_ode", reset_peak=self.vram_debug_reset_peak)
+                if self.vram_debug_detail:
+                    _log_vram_detail("compute_energy_loss/after_ode")
 
-            # --- 目标构建 ---
-            # Flow Matching 的目标速度 v_target 也要是 FP32
-            # 注意：这里的 x_src_target 是纯净的图，x0 是噪声
+            # --- Target velocity (Flow Matching) ---
             v_target_f32 = (x_target_noisy.float() - x0.float())
+            if self._vram_log_this_step or self.iter_step <= 5:
+                logger.info(
+                    f"v_pred_norm={v_pred_f32.square().mean().sqrt().item():.3f} "
+                    f"v_tgt_norm={v_target_f32.square().mean().sqrt().item():.3f}"
+                )
 
-            # --- Loss 计算 (FP32) ---
-            # 1. 结构损失 (MSE): 在 FP32 下计算，捕获 1e-4 级别的差异
+            # --- Losses in FP32 ---
+            # 1) Structural loss (MSE pyramid)
             loss_struc, struc_metrics = self.pyramid_loss(
                 v_pred_f32, 
                 v_target_f32, 
                 sample_weights=w_mse_batch
             )
 
-            # 2. 风格损失 (SWD): 
-            # SWD 内部涉及排序，FP32 排序比 BF16 更稳定且更有意义
+            # 2) Style loss (SWD on high-frequency residuals)
             # Frequency separation: SWD on high-frequency residuals only
             lowpass_size = int(self.config['loss'].get('moment_lowpass_size', 8))
             def _lowpass(x: torch.Tensor, size: int = lowpass_size) -> torch.Tensor:
@@ -590,24 +718,71 @@ class LGTTrainer:
             x_hp = x_1_pred - x_lp
             style_hp = style_latents.float() - style_lp
 
-            loss_dict = self.energy_loss(
-                x_hp,  # FP32
-                style_hp,
-                style_ids=style_id_tgt,
-                sample_weights=w_style_batch,
-                moments_pred=(x_lp.mean(dim=(2, 3)), x_lp.std(dim=(2, 3))),
-            )
-            loss_style = loss_dict['style_swd']
-            if self._vram_log_this_step and self.vram_debug:
-                _log_vram("compute_energy_loss/after_swd", reset_peak=self.vram_debug_reset_peak)
+            loss_style = torch.tensor(0.0, device=device)
+            if do_style_swd:
+                x_hp_swd = x_hp
+                style_hp_swd = style_hp
+                if self.swd_input_size and (
+                    x_hp.shape[-1] != self.swd_input_size or x_hp.shape[-2] != self.swd_input_size
+                ):
+                    x_hp_swd = F.interpolate(x_hp, size=(self.swd_input_size, self.swd_input_size), mode="area")
+                    style_hp_swd = F.interpolate(style_hp, size=(self.swd_input_size, self.swd_input_size), mode="area")
 
-            # Style classifier guidance on high-frequency residuals
+                loss_dict = self.energy_loss(
+                    x_hp_swd,  # FP32
+                    style_hp_swd,
+                    style_ids=style_id_tgt,
+                    sample_weights=w_style_batch,
+                    moments_pred=(x_lp.mean(dim=(2, 3)), x_lp.std(dim=(2, 3))),
+                )
+                loss_style = loss_dict['style_swd']
+                if self._vram_log_this_step and self.vram_debug:
+                    _log_vram("compute_energy_loss/after_swd", reset_peak=self.vram_debug_reset_peak)
+                    if self.vram_debug_detail:
+                        _log_vram_detail("compute_energy_loss/after_swd")
+            else:
+                loss_dict = {'style_swd': loss_style}
+
+            # Identity consistency to prevent domain collapse.
+            loss_identity = torch.tensor(0.0, device=device)
+            if self.use_identity_consistency and identity_mask.any():
+                loss_identity = F.mse_loss(x_1_pred[identity_mask], latent.float()[identity_mask])
+                loss_dict['identity'] = loss_identity.detach()
+
+            # Style classifier guidance with explicit transfer/identity split.
             loss_cls = None
-            if self.style_cls_loss is not None:
-                loss_cls = self.style_cls_loss(x_1_pred.detach() if not self.model.training else x_1_pred, style_id_tgt)
-                loss_dict['style_cls'] = loss_cls.detach()
+            if self.style_classifier is not None and do_style_cls:
+                cls_inputs = x_1_pred
+                cls_input_size = int(self.config['loss'].get('style_classifier_input_size_infer', 0))
+                if cls_input_size and (
+                    cls_inputs.shape[-1] != cls_input_size or cls_inputs.shape[-2] != cls_input_size
+                ):
+                    cls_inputs = F.interpolate(cls_inputs, size=(cls_input_size, cls_input_size), mode='area')
+
+                logits = self.style_classifier(cls_inputs)
+                cls_terms = []
+
+                if transfer_mask.any() and self.style_cls_transfer_weight > 0.0:
+                    loss_cls_transfer = F.cross_entropy(logits[transfer_mask], style_id_tgt[transfer_mask])
+                    cls_terms.append(self.style_cls_transfer_weight * loss_cls_transfer)
+                    loss_dict['style_cls_transfer'] = loss_cls_transfer.detach()
+                    pred_transfer = logits[transfer_mask].argmax(dim=1)
+                    loss_dict['style_cls_transfer_acc'] = (pred_transfer == style_id_tgt[transfer_mask]).float().mean().detach()
+
+                if identity_mask.any() and self.style_cls_identity_weight > 0.0:
+                    loss_cls_identity = F.cross_entropy(logits[identity_mask], style_id[identity_mask])
+                    cls_terms.append(self.style_cls_identity_weight * loss_cls_identity)
+                    loss_dict['style_cls_identity'] = loss_cls_identity.detach()
+                    pred_identity = logits[identity_mask].argmax(dim=1)
+                    loss_dict['style_cls_identity_acc'] = (pred_identity == style_id[identity_mask]).float().mean().detach()
+
+                if cls_terms:
+                    loss_cls = torch.stack(cls_terms).sum()
+                    loss_dict['style_cls'] = loss_cls.detach()
                 if self._vram_log_this_step and self.vram_debug:
                     _log_vram("compute_energy_loss/after_style_cls", reset_peak=self.vram_debug_reset_peak)
+                    if self.vram_debug_detail:
+                        _log_vram_detail("compute_energy_loss/after_style_cls")
 
         style_weight_batch = self.style_weights[style_id_tgt].mean()
 
@@ -619,11 +794,13 @@ class LGTTrainer:
             norm_factor_mse = 1.0
             norm_factor_style = 1.0
         
-        # 🔥 Clean Loss Assembly: Pyramid (structure) + SWD (texture)
+        #  Clean Loss Assembly: Pyramid (structure) + SWD (texture)
         # Note: sample_weights are masks only; all scalars are applied here
         term_struc = (cur_w_mse * m_mse * loss_struc / norm_factor_mse)
         term_style = (style_weight_batch * cur_w_style * m_style * loss_style / norm_factor_style)
         total = term_struc + term_style
+        if 'identity' in loss_dict:
+            total = total + self.identity_weight * loss_identity
         if 'style_cls' in loss_dict and loss_cls is not None:
             total = total + loss_cls
         
@@ -667,6 +844,12 @@ class LGTTrainer:
         total_layout = 0.0
         total_mse_raw = 0.0
         total_vel_reg = 0.0
+        total_identity = 0.0
+        total_style_cls = 0.0
+        total_style_cls_transfer_acc = 0.0
+        total_style_cls_identity_acc = 0.0
+        num_style_cls_transfer = 0
+        num_style_cls_identity = 0
         num_batches = 0
         accum_counter = 0
 
@@ -680,23 +863,31 @@ class LGTTrainer:
 
         for step_idx, batch in enumerate(pbar, start=1):
             torch.compiler.cudagraph_mark_step_begin()
+            self.iter_step += 1
 
             self._vram_log_this_step = self.vram_debug and (
-                step_idx == 1 or step_idx % max(self.vram_debug_interval, 1) == 0
+                step_idx > self.vram_debug_skip_steps and
+                (step_idx % max(self.vram_debug_interval, 1) == 0)
             )
             if self._vram_log_this_step:
                 _log_vram(f"epoch {epoch} step {step_idx} start", reset_peak=self.vram_debug_reset_peak)
+                if self.vram_debug_detail:
+                    _log_vram_detail(f"epoch {epoch} step {step_idx} start")
             
             with torch.amp.autocast('cuda', enabled=self.use_amp, dtype=torch.bfloat16):
                 ld = self.compute_energy_loss(batch, epoch, multipliers=multipliers)
 
             if self._vram_log_this_step:
                 _log_vram(f"epoch {epoch} step {step_idx} after loss", reset_peak=self.vram_debug_reset_peak)
+                if self.vram_debug_detail:
+                    _log_vram_detail(f"epoch {epoch} step {step_idx} after loss")
                 
             loss = ld['total'] / self.accumulation_steps
             self.scaler.scale(loss).backward()
             if self._vram_log_this_step:
                 _log_vram(f"epoch {epoch} step {step_idx} after backward", reset_peak=self.vram_debug_reset_peak)
+                if self.vram_debug_detail:
+                    _log_vram_detail(f"epoch {epoch} step {step_idx} after backward")
 
             accum_counter += 1
 
@@ -711,12 +902,24 @@ class LGTTrainer:
                 self.global_step += 1
                 if self._vram_log_this_step:
                     _log_vram(f"epoch {epoch} step {step_idx} after opt", reset_peak=self.vram_debug_reset_peak)
+                    if self.vram_debug_detail:
+                        _log_vram_detail(f"epoch {epoch} step {step_idx} after opt")
 
             total_loss += ld['total'].item()
             total_style_swd += ld['style_swd'].item()
             total_mse += ld['mse'].item()
             if 'velocity_reg' in ld:
                 total_vel_reg += ld['velocity_reg'].item()
+            if 'identity' in ld:
+                total_identity += ld['identity'].item()
+            if 'style_cls' in ld:
+                total_style_cls += ld['style_cls'].item()
+            if 'style_cls_transfer_acc' in ld:
+                total_style_cls_transfer_acc += ld['style_cls_transfer_acc'].item()
+                num_style_cls_transfer += 1
+            if 'style_cls_identity_acc' in ld:
+                total_style_cls_identity_acc += ld['style_cls_identity_acc'].item()
+                num_style_cls_identity += 1
             num_batches += 1
 
             if use_tqdm:
@@ -726,7 +929,7 @@ class LGTTrainer:
                     '32x32': f"{ld.get('l_32x32', 0):.4f}",
                     'w_str': f"{m_mse:.2f}",
                     'w_sty': f"{m_style:.2f}",
-                    'α': f"{self._get_current_alpha():.3f}",
+                    'alpha': f"{self._get_current_alpha():.3f}",
                 }
                 pbar.set_postfix(postfix_dict)
 
@@ -734,11 +937,19 @@ class LGTTrainer:
         avg_style_swd = total_style_swd / max(num_batches, 1)
         avg_mse = total_mse / max(num_batches, 1)
         avg_vel_reg = total_vel_reg / max(num_batches, 1) if self.use_velocity_reg else 0.0
+        avg_identity = total_identity / max(num_batches, 1)
+        avg_style_cls = total_style_cls / max(num_batches, 1)
+        avg_style_cls_transfer_acc = total_style_cls_transfer_acc / max(num_style_cls_transfer, 1)
+        avg_style_cls_identity_acc = total_style_cls_identity_acc / max(num_style_cls_identity, 1)
 
         metrics = {
             'loss': avg_loss,
             'style_swd': avg_style_swd,
             'mse': avg_mse,
+            'identity': avg_identity,
+            'style_cls': avg_style_cls,
+            'style_cls_transfer_acc': avg_style_cls_transfer_acc,
+            'style_cls_identity_acc': avg_style_cls_identity_acc,
             'num_batches': num_batches,
             'm_mse': m_mse,
             'm_style': m_style,
@@ -823,46 +1034,46 @@ class LGTTrainer:
                         from torchvision.utils import save_image
 
                         save_image(image_orig, output_path)
-                        logger.info(f"    ✓ Saved original: {output_filename}")
+                        logger.info(f"    Saved original: {output_filename}")
                     except Exception as exc:  # pragma: no cover - IO heavy
-                        logger.error(f"    ✗ Failed to save original: {exc}")
+                        logger.error(f"    Failed to save original: {exc}")
                     continue
 
-                # 🔥 优化：批处理推理。同一个原图一次性跑完所有目标风格
+                # Batched inference for all target styles from one inversion.
                 try:
                     eval_steps = self.config.get('inference', {}).get('num_steps', 20)
                     
-                    # 1. 核心优化：反演只做一次 (Inversion is style-specific but source-constant)
+                    # 1) Invert once from source latent.
                     latent_x0 = invert_latent(self.model, latent_src, src_style_id, num_steps=eval_steps)
                     
-                    # 2. 向量化生成：构造 Batch
+                    # 2) Build batched target style IDs.
                     tgt_style_ids = torch.arange(num_styles, device=self.device)
-                    # 将潜空间噪声扩展到 Batch Size = num_styles
+                    # Expand source noise to batch size = number of styles.
                     latent_x0_batch = latent_x0.repeat(num_styles, 1, 1, 1)
                     
-                    # 一次性通过 UNet 完成所有风格的步进
+                    # Single batched pass through the style velocity model
                     latent_tgt_batch = generate_latent(self.model, latent_x0_batch, tgt_style_ids, num_steps=eval_steps)
                     
-                    # 3. 批量解码 (VAE Decoder 同样支持 Batch)
+                    # 3) Decode in batch with VAE.
                     images_out = decode_latent(self.vae, latent_tgt_batch, self.device)
                     
-                    # 4. 循环保存结果
+                    # 4) Save per-style outputs.
                     from torchvision.utils import save_image
                     for tgt_id in range(num_styles):
                         tgt_style_name = self.config['data'].get('style_subdirs', [])[tgt_id]
                         output_filename = f"{src_style_name}_to_{tgt_style_name}.jpg"
                         output_path = epoch_inference_dir / output_filename
                         save_image(images_out[tgt_id], output_path)
-                        logger.info(f"    ✓ Saved: {output_filename}")
+                        logger.info(f"    Saved: {output_filename}")
                 except Exception as exc:
-                    logger.error(f"    ✗ Batch inference failed for {src_style_name}: {exc}")
+                    logger.error(f"    Batch inference failed for {src_style_name}: {exc}")
                     continue
         finally:
             if temp_ckpt.exists():
                 temp_ckpt.unlink()
 
         logger.info(f"\n{'='*80}")
-        logger.info(f"✓ Inference completed. Results saved to: {epoch_inference_dir}")
+        logger.info(f"Inference completed. Results saved to: {epoch_inference_dir}")
         logger.info(f"{'='*80}\n")
 
     def run_full_evaluation(self, epoch: int, timeout: int = 3600) -> None:
@@ -971,7 +1182,11 @@ class LGTTrainer:
         with open(self.log_file, 'a') as f:
             f.write(
                 f"{epoch},{metrics['loss']:.6f},{metrics['style_swd']:.6f},{metrics['mse']:.6f},"
-                f"{current_lr:.2e},{metrics.get('epoch_time', 0.0):.2f}\n"
+                f"{metrics.get('identity', 0.0):.6f},{metrics.get('style_cls', 0.0):.6f},"
+                f"{metrics.get('style_cls_transfer_acc', 0.0):.6f},"
+                f"{metrics.get('style_cls_identity_acc', 0.0):.6f},"
+                f"{metrics.get('velocity_reg', 0.0):.6f},{current_lr:.2e},"
+                f"{metrics.get('epoch_time', 0.0):.2f}\n"
             )
 
         epoch_log_path = self.log_dir / 'epoch_logs.jsonl'
@@ -981,6 +1196,11 @@ class LGTTrainer:
             'loss': float(metrics['loss']),
             'style_swd': float(metrics['style_swd']),
             'mse': float(metrics['mse']),
+            'identity': float(metrics.get('identity', 0.0)),
+            'style_cls': float(metrics.get('style_cls', 0.0)),
+            'style_cls_transfer_acc': float(metrics.get('style_cls_transfer_acc', 0.0)),
+            'style_cls_identity_acc': float(metrics.get('style_cls_identity_acc', 0.0)),
+            'velocity_reg': float(metrics.get('velocity_reg', 0.0)),
             'm_mse': float(metrics.get('m_mse', 0.0)),
             'm_style': float(metrics.get('m_style', 0.0)),
             'learning_rate': current_lr,
@@ -1014,14 +1234,14 @@ class LGTTrainer:
         if scheduler_type == 'step' or scheduler_type == 'multistep':
             milestones = self.config['training'].get('scheduler_milestones', [50, 100])
             gamma = self.config['training'].get('gamma', 0.1)
-            logger.info(f"✓ Scheduler: Linear Warmup ({warmup_epochs}) -> MultiStepLR (milestones={milestones}, gamma={gamma})")
+            logger.info(f"Scheduler: Linear Warmup ({warmup_epochs}) -> MultiStepLR (milestones={milestones}, gamma={gamma})")
             main_scheduler = torch.optim.lr_scheduler.MultiStepLR(
                 self.optimizer,
                 milestones=[m - warmup_epochs for m in milestones if m > warmup_epochs],
                 gamma=gamma
             )
         else:
-            logger.info(f"✓ Scheduler: Linear Warmup ({warmup_epochs}) -> Cosine Annealing (to {min_lr})")
+            logger.info(f"Scheduler: Linear Warmup ({warmup_epochs}) -> Cosine Annealing (to {min_lr})")
             main_scheduler = CosineAnnealingLR(
                 self.optimizer,
                 T_max=self.num_epochs - warmup_epochs,
@@ -1039,12 +1259,11 @@ class LGTTrainer:
         if self.style_indices_cache is None:
             self.build_style_indices_cache(dataloader.dataset)
         
-        # 🔥 Initialize Style LUT Cache for Multi-Style SWD Loss
-        logger.info("🔥 Initializing Style LUT Cache for Multi-Style SWD...")
+        # Initialize Style LUT cache for multi-style SWD loss.
+        logger.info("Initializing Style LUT cache for multi-style SWD...")
         style_prototypes = {}
         
-        # 设定采样数量：为了构建稳健的风格分布，建议采样 128 张图
-        # 如果某个风格图片少于 128 张，代码会自动处理
+        # Samples per style used to estimate target style distributions.
         SAMPLES_FOR_DISTRIBUTION = self.fixed_style_reference_size
         
         # Collect representative latent for each style
@@ -1052,15 +1271,14 @@ class LGTTrainer:
             if hasattr(dataloader.dataset, 'style_indices') and style_id in self.style_indices_cache:
                 indices = self.style_indices_cache[style_id]
                 
-                # 随机采样一批索引 (无需 replacement，除非图片极少)
+                # Sample without replacement where possible.
                 count = min(len(indices), SAMPLES_FOR_DISTRIBUTION)
                 selected_indices = np.random.choice(indices, count, replace=False)
                 
-                # 直接从 Dataset 的内存张量中获取 Batch [N, 4, 32, 32]
-                # dataset.py 中 latents_tensor 已经在 CPU 内存中，读取极快
+                # Pull cached latents directly from dataset tensor.
                 latents_batch = dataloader.dataset.latents_tensor[selected_indices]
                 
-                # 将这个 Batch 存入字典，GeometricFreeEnergyLoss 会自动将其展平处理
+                # Store style prototype batch for LUT initialization.
                 style_prototypes[style_id] = latents_batch
                 if self.use_fixed_style_reference:
                     self.style_reference_pool = self.style_reference_pool or {}
@@ -1069,14 +1287,13 @@ class LGTTrainer:
                 logger.info(f"  Style {style_id}: Sampled {count} images for distribution statistics.")
             else:
                 # Fallback: random initialization
-                logger.warning(f"⚠️  No style {style_id} samples found, using random init")
+                logger.warning(f"  No style {style_id} samples found, using random init")
                 style_prototypes[style_id] = torch.randn(1, 4, 32, 32)
                 if self.use_fixed_style_reference:
                     self.style_reference_pool = self.style_reference_pool or {}
                     self.style_reference_pool[style_id] = style_prototypes[style_id]
         
-        # Initialize LUT cache
-        # 此时传入的是 [128, 4, 32, 32] 的数据，能算出真正的“风格分布”
+        # Initialize LUT cache.
         self.energy_loss.initialize_cache(style_prototypes, self.device)
         
         # Save originals

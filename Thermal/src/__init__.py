@@ -6,7 +6,7 @@ Geometric free energy optimization for style transfer in VAE latent space.
 
 __version__ = "1.0.0"
 
-from .model import LGTUNet, TimestepEmbedding, StyleEmbedding, count_parameters
+from .model import LGTResNet, TimestepEmbedding, StyleEmbedding, count_parameters
 from .losses import (
     PatchSlicedWassersteinLoss,
     MultiScaleSWDLoss,
@@ -24,7 +24,7 @@ from .utils.inference import (
 
 __all__ = [
     # Model
-    "LGTUNet",
+    "LGTResNet",
     "TimestepEmbedding",
     "StyleEmbedding",
     "count_parameters",
