@@ -29,7 +29,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from model import LGTResNet
+from model import LGTUNetLite
 
 # Optional ModelScope support
 try:
@@ -428,29 +428,24 @@ class LGTInference:
         # Load model
         checkpoint = torch.load(model_path, map_location=device, weights_only=False)
         config = checkpoint['config']
-        
-        self.model = LGTResNet(
-            latent_channels=config['model']['latent_channels'],
-            base_channels=config['model']['base_channels'],
-            style_dim=config['model']['style_dim'],
-            time_dim=config['model']['time_dim'],
-            num_styles=config['model']['num_styles'],
-            num_blocks=config['model'].get('num_blocks', 10),
-            num_blocks_pre=config['model'].get('num_blocks_pre'),
-            num_blocks_low=config['model'].get('num_blocks_low'),
-            num_blocks_post=config['model'].get('num_blocks_post'),
-            dropout=config['model'].get('dropout', 0.0),
-            use_attn=config['model'].get('use_attn', False),
-            attn_heads=config['model'].get('attn_heads', 4),
-            v_max=config['model'].get('v_max', 2.0),
-            use_checkpointing=False,
-        ).to(device)
-        
-        # Handle state_dict from compiled models (_orig_mod. prefix)
+        model_cfg = config.get('model', {})
         state_dict = checkpoint['model_state_dict']
         if any(k.startswith('_orig_mod.') for k in state_dict.keys()):
             # Strip _orig_mod. prefix from compiled model checkpoint
             state_dict = {k.replace('_orig_mod.', ''): v for k, v in state_dict.items()}
+
+        self.model = LGTUNetLite(
+            latent_channels=model_cfg['latent_channels'],
+            base_channels=model_cfg.get('base_channels', 64),
+            style_dim=model_cfg['style_dim'],
+            time_dim=model_cfg.get('time_dim', 64),
+            num_styles=model_cfg['num_styles'],
+            num_encoder_blocks=model_cfg.get('num_encoder_blocks', 1),
+            num_decoder_blocks=model_cfg.get('num_decoder_blocks', 1),
+            dropout=model_cfg.get('dropout', 0.0),
+            v_max=model_cfg.get('v_max', 2.0),
+            use_checkpointing=False,
+        ).to(device)
         
         self.model.load_state_dict(state_dict)
         self.model.eval()

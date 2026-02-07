@@ -1,0 +1,19 @@
+{
+  "checkpoint": "G:\\GitHub\\Latent_Style\\Thermal\\unet_lite\\epoch_0100.pt",
+  "manifest": "G:\\GitHub\\Latent_Style\\Thermal\\swd_evalset\\manifest.json",
+  "timestamp": "2026-02-07 18:52:15",
+  "counts": {
+    "control_subset": 4,
+    "identity_subset": 4,
+    "rows": 20
+  },
+  "margin_mean": -0.2784284446388483,
+  "margin_pos_rate": 0.3125,
+  "diversity_lpips_across_styles_mean": 0.003802436343297207,
+  "identity_mse_latent_mean": 0.6033165454864502,
+  "content_lpips_mean": 0.02534357176045887,
+  "identity_content_lpips_mean": 0.020724072703160346,
+  "edge_sobel_l1_mean": 0.15265068039298058,
+  "hf_ratio_mean": 0.0014541007054504006,
+  "patch_consistency_var_mean": 5.369262609633552e-06
+}

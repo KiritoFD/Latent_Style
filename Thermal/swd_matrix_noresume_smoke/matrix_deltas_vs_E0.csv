@@ -1,0 +1,2 @@
+experiment,epoch,delta_margin_mean,identity_degradation_ratio,delta_hf_ratio_pct,delta_diversity_lpips,is_effective,noise_shortcut,structure_break
+E1_p2,1,0.0,0.0,0.0,0.0,False,False,False

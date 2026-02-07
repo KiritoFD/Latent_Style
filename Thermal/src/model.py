@@ -8,25 +8,30 @@ Core Design:
 - Optimized for RTX 4070 (Channels Last, Memory Efficient)
 """
 
+import math
+
 import torch
-import torch.utils.checkpoint as ckpt
 import torch.nn as nn
 import torch.nn.functional as F
-import math
+import torch.utils.checkpoint as ckpt
 
 class TimestepEmbedding(nn.Module):
     """Sinusoidal timestep embedding with MLP projection."""
-    def __init__(self, dim=256, max_period=10000):
+    def __init__(self, dim=64, max_period=10000):
         super().__init__()
+        if dim < 2 or dim % 2 != 0:
+            raise ValueError(f"TimestepEmbedding dim must be an even integer >= 2, got {dim}")
         self.dim = dim
         self.max_period = max_period
+        hidden_dim = dim * 2
         self.mlp = nn.Sequential(
-            nn.Linear(dim, dim * 4),
+            nn.Linear(dim, hidden_dim),
             nn.SiLU(),
-            nn.Linear(dim * 4, dim)
+            nn.Linear(hidden_dim, dim)
         )
     
     def forward(self, t):
+        t = t.float().clamp(0.0, 1.0)
         half_dim = self.dim // 2
         freqs = torch.exp(-math.log(self.max_period) * torch.arange(half_dim, device=t.device) / half_dim)
         args = t[:, None] * freqs[None, :]
@@ -99,35 +104,13 @@ class LGTXBlock(nn.Module):
         h = self.conv2(h)
         return x + h
 
-class SelfAttention(nn.Module):
-    """Global context mixing (Standard Attention)."""
-    def __init__(self, channels, num_heads=8):
-        super().__init__()
-        self.num_heads = num_heads
-        self.head_dim = channels // num_heads
-        self.scale = self.head_dim ** -0.5
-        self.norm = nn.GroupNorm(32, channels)
-        self.qkv = nn.Linear(channels, channels * 3)
-        self.proj = nn.Linear(channels, channels)
-
-    def forward(self, x):
-        B, C, H, W = x.shape
-        x_in = x
-        x = self.norm(x).view(B, C, -1).permute(0, 2, 1) # [B, N, C]
-        qkv = self.qkv(x).reshape(B, H*W, 3, self.num_heads, self.head_dim).permute(2, 0, 3, 1, 4)
-        q, k, v = qkv[0], qkv[1], qkv[2]
-        
-        attn = (q @ k.transpose(-2, -1)) * self.scale
-        attn = attn.softmax(dim=-1)
-        
-        h = (attn @ v).transpose(1, 2).reshape(B, H*W, C)
-        h = self.proj(h).permute(0, 2, 1).reshape(B, C, H, W)
-        return x_in + h
-
-class LGTResNet(nn.Module):
+class LGTUNetLite(nn.Module):
     """
-    Lightweight conditional ResNet with a tiny multi-scale branch in latent space.
-    Outputs velocity field v(x,t,style), same shape as x.
+    Lightweight U-Net in latent space.
+    - AdaGN conditioning on every block
+    - No attention
+    - Upsampling via interpolate + conv for cleaner artifacts
+    - Outputs velocity field v(x, t, style)
     """
 
     def __init__(
@@ -135,15 +118,11 @@ class LGTResNet(nn.Module):
         latent_channels=4,
         base_channels=64,
         style_dim=256,
-        time_dim=256,
+        time_dim=64,
         num_styles=4,
-        num_blocks=10,
-        num_blocks_pre=None,
-        num_blocks_low=None,
-        num_blocks_post=None,
+        num_encoder_blocks=1,
+        num_decoder_blocks=1,
         dropout=0.0,
-        use_attn=False,
-        attn_heads=4,
         v_max=2.0,
         use_checkpointing: bool = False,
         **kwargs,
@@ -151,65 +130,55 @@ class LGTResNet(nn.Module):
         super().__init__()
         self.use_checkpointing = use_checkpointing
         self.v_max = float(v_max)
+
         self.time_embed = TimestepEmbedding(time_dim)
         self.style_embed = StyleEmbedding(num_styles, style_dim)
-
         self.cond_fusion = nn.Sequential(
             nn.Linear(time_dim + style_dim, style_dim),
             nn.SiLU(),
             nn.Linear(style_dim, style_dim),
         )
 
-        # Split total blocks across pre/low/post stages if not explicitly provided.
-        if num_blocks_pre is None or num_blocks_low is None or num_blocks_post is None:
-            default_pre = max(2, int(num_blocks * 0.4))
-            default_low = max(1, int(num_blocks * 0.2))
-            default_post = max(2, num_blocks - default_pre - default_low)
-            num_blocks_pre = default_pre if num_blocks_pre is None else num_blocks_pre
-            num_blocks_low = default_low if num_blocks_low is None else num_blocks_low
-            num_blocks_post = default_post if num_blocks_post is None else num_blocks_post
+        ch1 = base_channels
+        ch2 = base_channels * 2
+        ch3 = base_channels * 4
 
-        self.in_conv = nn.Conv2d(latent_channels, base_channels, 3, padding=1)
-        self.blocks_pre = nn.ModuleList(
-            [LGTXBlock(base_channels, style_dim, dropout=dropout) for _ in range(num_blocks_pre)]
-        )
+        self.in_conv = nn.Conv2d(latent_channels, ch1, 3, padding=1)
 
-        # Tiny-U branch: one downsample stage + a few low-res blocks + upsample back.
-        self.downsample = nn.Conv2d(base_channels, base_channels, 3, stride=2, padding=1)
-        self.blocks_low = nn.ModuleList(
-            [LGTXBlock(base_channels, style_dim, dropout=dropout) for _ in range(num_blocks_low)]
-        )
-        self.upsample = nn.Sequential(
-            nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False),
-            nn.Conv2d(base_channels, base_channels, 3, padding=1),
-        )
+        self.enc1 = nn.ModuleList([LGTXBlock(ch1, style_dim, dropout=dropout) for _ in range(num_encoder_blocks)])
+        self.down1 = nn.Conv2d(ch1, ch2, 3, stride=2, padding=1)
 
-        self.blocks_post = nn.ModuleList(
-            [LGTXBlock(base_channels, style_dim, dropout=dropout) for _ in range(num_blocks_post)]
-        )
+        self.enc2 = nn.ModuleList([LGTXBlock(ch2, style_dim, dropout=dropout) for _ in range(num_encoder_blocks)])
+        self.down2 = nn.Conv2d(ch2, ch3, 3, stride=2, padding=1)
 
-        self.use_attn = bool(use_attn)
-        self.attn = SelfAttention(base_channels, num_heads=attn_heads) if self.use_attn else None
+        self.mid1 = LGTXBlock(ch3, style_dim, dropout=dropout)
+        self.mid2 = LGTXBlock(ch3, style_dim, dropout=dropout)
+
+        self.up1_conv = nn.Conv2d(ch3, ch2, 3, padding=1)
+        self.dec1 = nn.ModuleList([LGTXBlock(ch2, style_dim, dropout=dropout) for _ in range(num_decoder_blocks)])
+
+        self.up2_conv = nn.Conv2d(ch2, ch1, 3, padding=1)
+        self.dec2 = nn.ModuleList([LGTXBlock(ch1, style_dim, dropout=dropout) for _ in range(num_decoder_blocks)])
 
         out_groups = 32
-        while out_groups > 1 and (base_channels % out_groups != 0):
+        while out_groups > 1 and (ch1 % out_groups != 0):
             out_groups //= 2
-        self.out_norm = nn.GroupNorm(out_groups, base_channels)
-        self.out_conv = nn.Conv2d(base_channels, latent_channels, 3, padding=1)
-        self.out_affine = nn.Sequential(
-            nn.SiLU(),
-            nn.Linear(style_dim, latent_channels * 2),
-        )
+        self.out_norm = nn.GroupNorm(out_groups, ch1, eps=1e-6)
+        self.out_conv = nn.Conv2d(ch1, latent_channels, 3, padding=1)
 
-        # Init output to zero so initial velocity is near zero (stable ODE start)
+        # Start near zero-velocity for ODE stability.
         nn.init.zeros_(self.out_conv.weight)
         nn.init.zeros_(self.out_conv.bias)
-        nn.init.zeros_(self.out_affine[1].weight)
-        nn.init.zeros_(self.out_affine[1].bias)
-        with torch.no_grad():
-            self.out_affine[1].bias[:latent_channels] = 1.0
 
-    def forward(self, x, t, style_id, use_avg_style=False):
+    def forward(
+        self,
+        x,
+        t,
+        style_id,
+        use_avg_style=False,
+        return_features: bool = False,
+        feature_levels=("early", "mid", "late"),
+    ):
         def _vram(tag: str):
             if getattr(self, "_vram_debug", False):
                 fn = getattr(self, "_vram_debug_fn", None)
@@ -224,44 +193,63 @@ class LGTResNet(nn.Module):
         t_emb = self.time_embed(t)
         s_emb = self.style_embed(style_id, use_avg=use_avg_style)
         cond = self.cond_fusion(torch.cat([t_emb, s_emb], dim=-1))
+        requested_levels = set(feature_levels) if return_features else set()
+        features = {} if return_features else None
 
         h = self.in_conv(x)
         _vram("in_conv")
+        skips = []
 
-        for blk in self.blocks_pre:
+        for blk in self.enc1:
             h = _ckpt(lambda _h, _c, _blk=blk: _blk(_h, _c), h, cond)
-        _vram("blocks_pre")
+        if "early" in requested_levels:
+            features["early"] = h
+        skips.append(h)
+        h = self.down1(h)
+        _vram("down1")
 
-        h_main = h
-        h_low = self.downsample(h_main)
-        _vram("downsample")
-        for blk in self.blocks_low:
-            h_low = _ckpt(lambda _h, _c, _blk=blk: _blk(_h, _c), h_low, cond)
-        _vram("blocks_low")
-        h_low = self.upsample(h_low)
-        if h_low.shape[-2:] != h_main.shape[-2:]:
-            h_low = F.interpolate(h_low, size=h_main.shape[-2:], mode="bilinear", align_corners=False)
-        h = h_main + h_low
-        _vram("upsample_fuse")
-
-        if self.use_attn:
-            h = _ckpt(lambda _h, _blk=self.attn: _blk(_h), h)
-            _vram("attn")
-
-        for blk in self.blocks_post:
+        for blk in self.enc2:
             h = _ckpt(lambda _h, _c, _blk=blk: _blk(_h, _c), h, cond)
-        _vram("blocks_post")
+        skips.append(h)
+        h = self.down2(h)
+        _vram("down2")
+
+        h = _ckpt(lambda _h, _c: self.mid1(_h, _c), h, cond)
+        h = _ckpt(lambda _h, _c: self.mid2(_h, _c), h, cond)
+        if "mid" in requested_levels:
+            features["mid"] = h
+        _vram("mid")
+
+        h = F.interpolate(h, scale_factor=2, mode="nearest")
+        h = self.up1_conv(h)
+        skip = skips.pop()
+        if h.shape[-2:] != skip.shape[-2:]:
+            h = F.interpolate(h, size=skip.shape[-2:], mode="nearest")
+        h = h + skip
+        for blk in self.dec1:
+            h = _ckpt(lambda _h, _c, _blk=blk: _blk(_h, _c), h, cond)
+        _vram("up1")
+
+        h = F.interpolate(h, scale_factor=2, mode="nearest")
+        h = self.up2_conv(h)
+        skip = skips.pop()
+        if h.shape[-2:] != skip.shape[-2:]:
+            h = F.interpolate(h, size=skip.shape[-2:], mode="nearest")
+        h = h + skip
+        for blk in self.dec2:
+            h = _ckpt(lambda _h, _c, _blk=blk: _blk(_h, _c), h, cond)
+        if "late" in requested_levels:
+            features["late"] = h
+        _vram("up2")
 
         raw = self.out_conv(F.silu(self.out_norm(h)))
-        style_affine = self.out_affine(cond).unsqueeze(-1).unsqueeze(-1)
-        out_scale, out_shift = style_affine.chunk(2, dim=1)
-        raw = raw * out_scale + out_shift
-
         if self.v_max > 0:
             out = self.v_max * torch.tanh(raw / self.v_max)
         else:
             out = raw
         _vram("out")
+        if return_features:
+            return out, features
         return out
 
     def compute_avg_style_embedding(self):

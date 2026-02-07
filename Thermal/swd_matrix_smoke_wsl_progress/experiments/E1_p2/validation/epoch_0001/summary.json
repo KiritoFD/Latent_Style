@@ -1,0 +1,19 @@
+{
+  "checkpoint": "/mnt/g/GitHub/Latent_Style/Thermal/unet_lite/epoch_0100.pt",
+  "manifest": "/mnt/g/GitHub/Latent_Style/Thermal/swd_matrix_smoke_wsl_progress/evalset/manifest.json",
+  "timestamp": "2026-02-07 19:10:49",
+  "counts": {
+    "control_subset": 1,
+    "identity_subset": 1,
+    "rows": 5
+  },
+  "margin_mean": -0.12583987414836884,
+  "margin_pos_rate": 0.25,
+  "diversity_lpips_across_styles_mean": 0.418628270427386,
+  "identity_mse_latent_mean": 0.36891624331474304,
+  "content_lpips_mean": 0.6900162398815155,
+  "identity_content_lpips_mean": 0.45751824975013733,
+  "edge_sobel_l1_mean": 0.251153889298439,
+  "hf_ratio_mean": 0.0005565110797761009,
+  "patch_consistency_var_mean": 1.2810126918338938e-05
+}

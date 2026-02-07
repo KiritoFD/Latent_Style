@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "created_at": "2026-02-07 21:55:33",
+  "experiments": {
+    "E0_no_swd": {
+      "status": "complete_skipped",
+      "started_at": "2026-02-07 21:55:33",
+      "train": {
+        "skipped": true,
+        "reason": "already_complete"
+      },
+      "eval": {
+        "target_epochs": [
+          5,
+          10,
+          15,
+          20,
+          25,
+          30,
+          35,
+          40,
+          45,
+          50
+        ],
+        "completed_epochs": [
+          5,
+          10,
+          15,
+          20,
+          25,
+          30,
+          35,
+          40,
+          45,
+          50
+        ],
+        "missing_epochs": []
+      },
+      "finished_at": "2026-02-07 21:55:33"
+    },
+    "E1_p2": {
+      "status": "done",
+      "started_at": "2026-02-07 21:55:33",
+      "train": {
+        "target_epoch": 50,
+        "latest_checkpoint": "/mnt/g/GitHub/Latent_Style/Thermal/swd_matrix/experiments/E1_p2/checkpoints/epoch_0050.pt",
+        "latest_checkpoint_epoch": 50,
+        "final_checkpoint_exists": true,
+        "skipped": false,
+        "skip_reason": "",
+        "resume_checkpoint_used": "/mnt/g/GitHub/Latent_Style/Thermal/swd_matrix/experiments/E1_p2/checkpoints/epoch_0030.pt"
+      },
+      "eval": {
+        "target_epochs": [
+          5,
+          10,
+          15,
+          20,
+          25,
+          30,
+          35,
+          40,
+          45,
+          50
+        ],
+        "completed_epochs": [
+          5,
+          10,
+          15,
+          20,
+          25,
+          30,
+          35,
+          40,
+          45,
+          50
+        ],
+        "missing_epochs": []
+      },
+      "finished_at": "2026-02-07 23:59:47"
+    },
+    "E1_p4": {
+      "status": "failed",
+      "started_at": "2026-02-07 23:59:47",
+      "error": "Command failed (-9): /home/xy/miniconda3/envs/cu128/bin/python /mnt/g/GitHub/Latent_Style/Thermal/src/run.py --config /mnt/g/GitHub/Latent_Style/Thermal/swd_matrix/configs/E1_p4.json. See /mnt/g/GitHub/Latent_Style/Thermal/swd_matrix/logs/E1_p4.train.log",
+      "failed_at": "2026-02-08 00:10:48"
+    }
+  },
+  "paths": {
+    "base_config": "/mnt/g/GitHub/Latent_Style/Thermal/src/config.json",
+    "output_root": "/mnt/g/GitHub/Latent_Style/Thermal/swd_matrix"
+  },
+  "params": {
+    "epochs": 50,
+    "eval_every": 5,
+    "seed": 42,
+    "subset_debug": false,
+    "max_control": 0,
+    "max_identity": 0,
+    "resume_enabled": true,
+    "batch_size": 256,
+    "accumulation_steps": 1,
+    "num_workers": 0,
+    "preload_data_to_gpu": true,
+    "pin_memory": false,
+    "prefetch_factor": 2,
+    "save_initial_inference": false
+  },
+  "updated_at": "2026-02-08 00:10:48",
+  "manifest": "/mnt/g/GitHub/Latent_Style/Thermal/swd_matrix/evalset/manifest.json"
+}

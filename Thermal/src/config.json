@@ -1,21 +1,18 @@
 {
   "model": {
     "latent_channels": 4,
-    "base_channels": 64,
+    "base_channels": 256,
     "style_dim": 256,
-    "time_dim": 256,
-    "num_styles": 2,
-    "num_blocks": 10,
-    "num_blocks_pre": 4,
-    "num_blocks_low": 2,
-    "num_blocks_post": 4,
-    "use_attn": false,
-    "attn_heads": 4,
+    "time_dim": 64,
+    "num_styles": 4,
+    "num_encoder_blocks": 1,
+    "num_decoder_blocks": 1,
+    "dropout": 0.0,
     "v_max": 2.0
   },
   "loss": {
     "w_style": 1.0,
-    "w_mse": 1.0,
+    "w_mse": 2.0,
     "w_pyramid": 1.0,
     "pyramid_weights": {"low": 4.0, "mid": 2.0, "high": 1.0},
     "vel_smooth_weight": 0.05,
@@ -26,18 +23,33 @@
     "use_multiscale_swd": true,
     "swd_scales": [2,5,9],
     "swd_scale_weights": [1.5, 5.0, 10.0],
+    "use_style_swd": true,
+    "swd_warmup_ratio": 0.2,
+    "swd_band_mode": "highpass",
+    "swd_high_band_weight": 1.0,
+    "swd_low_band_weight": 1.0,
+    "swd_moment_weight": 10.0,
+    "swd_feature_levels": ["latent"],
+    "swd_feature_reduce_channels": 16,
+    "swd_feature_t": 1.0,
     "edge_boost": 0.0,
-    "style_weights": [1.0, 1.0],
-    "style_swd_target_weights": [1.0, 1.0],
+    "style_weights": [1.0, 1.0, 1.0, 1.0],
+    "style_swd_target_weights": [1.0, 1.0, 1.0, 1.0],
     "identity_pair_ratio": 0.25,
     "use_identity_consistency": true,
     "w_identity": 1.0,
     "use_velocity_reg": true,
     "vel_reg_weight": 0.1,
     "use_style_classifier": true,
-    "w_style_classifier": 0.1,
-    "w_style_classifier_transfer": 0.1,
-    "w_style_classifier_identity": 0.1,
+    "w_style_classifier": 0.02,
+    "w_style_classifier_transfer": 0.02,
+    "w_style_classifier_identity": 0.02,
+    "style_cls_target_only": true,
+    "style_cls_use_gating": true,
+    "style_cls_conf_threshold": 0.75,
+    "style_cls_agree_threshold": 0.7,
+    "style_cls_warmup_steps": 2000,
+    "style_cls_temperature": 3.0,
     "style_swd_interval": 2,
     "style_cls_interval": 2,
     "swd_input_size": 16,
@@ -54,7 +66,8 @@
     "style_classifier_trainable": false
   },
   "training": {
-    "batch_size": 64,
+    "seed": 42,
+    "batch_size": 192,
     "accumulation_steps": 2,
     "learning_rate": 1e-4,
     "min_learning_rate": 1e-6,
@@ -98,14 +111,16 @@
   },
   "data": {
     "data_root": "../../latents",
-    "style_subdirs": ["photo","monet"],
+    "style_subdirs": ["photo","monet","vangogh","cezanne"],
     "style_prompts": [
       "a photo",
-      "a Monet-style painting"
+      "a Monet-style painting",
+      "a Van Gogh-style painting",
+      "a Cezanne-style painting"
     ]
   },
   "checkpoint": {
-    "save_dir": "../resnet"
+    "save_dir": "../unet_lite"
   },
   "inference": {
     "num_steps": 20,

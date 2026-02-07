@@ -1,0 +1,60 @@
+2026-02-07 18:56:42,458 - INFO - Using device: cpu
+2026-02-07 18:56:42,458 - INFO - Using global seed: 42
+2026-02-07 18:56:42,458 - INFO - Loading 4 styles from ..\..\latents...
+2026-02-07 18:56:45,320 - INFO - \U0001f4be Keeping latents in CPU RAM (Pinned)
+2026-02-07 18:56:45,657 - INFO - Model architecture: unet_lite
+2026-02-07 18:56:46,314 - INFO - Model compiled with torch.compile
+2026-02-07 18:56:46,314 - INFO - Model parameters: 65,220,292
+2026-02-07 18:56:46,314 - INFO - \U0001f3af GeometricFreeEnergyLoss initialized (Multi-Style Mode)
+   Scales: [2]
+   Styles: 4 | Max Samples: 16384
+   Projections: 64 | Memory: ~16.0MB
+2026-02-07 18:56:46,318 - INFO - SWD setup | enabled=True warmup_ratio=0.200 band=highpass levels=['latent'] high_w=1.000 low_w=1.000 moment_w=10.000
+2026-02-07 18:56:46,318 - INFO - Style classifier guidance disabled
+2026-02-07 18:56:46,318 - INFO - Identity consistency enabled (pair_ratio=0.25, w_identity=1.0)
+2026-02-07 18:56:46,318 - INFO - Pyramid Structural Loss enabled (w=1.0, weights={'low': 4.0, 'mid': 2.0, 'high': 1.0})
+2026-02-07 18:56:46,318 - INFO - Velocity Regularization enabled (weight=0.1)
+2026-02-07 18:56:46,318 - INFO - Scheduler: Linear Warmup (10) -> Cosine Annealing (to 1e-06)
+G:\GitHub\Latent_Style\Thermal\src\trainer.py:349: UserWarning: torch.cuda.amp.GradScaler is enabled, but CUDA is not available.  Disabling.
+  self.scaler = torch.amp.GradScaler(enabled=self.use_amp)
+2026-02-07 18:56:46,319 - INFO - Adaptive Loss Normalization enabled (Running Mean Scaling)
+2026-02-07 18:56:46,319 - INFO - Gradient accumulation: 2 steps | Effective batch size: 384
+2026-02-07 18:56:46,319 - INFO - Alpha warmup schedule: 0 -> 1.0 over 1000 steps
+2026-02-07 18:56:46,319 - INFO - Per-style loss weights: [1.0, 1.0, 1.0, 1.0]
+2026-02-07 18:56:46,320 - INFO - Full external evaluation interval: 1000000000
+2026-02-07 18:56:46,321 - WARNING - VAE load failed; inference evaluation will be skipped. reason=No module named 'diffusers'
+2026-02-07 18:56:46,321 - INFO - Overriding resume checkpoint: G:\GitHub\Latent_Style\Thermal\unet_lite\epoch_0100.pt
+2026-02-07 18:56:46,321 - INFO - Loading checkpoint: G:\GitHub\Latent_Style\Thermal\unet_lite\epoch_0100.pt
+2026-02-07 18:56:46,532 - INFO - \u2713 Model state loaded
+2026-02-07 18:56:46,532 - INFO - \u2713 Optimizer state restored (momentum preserved)
+2026-02-07 18:56:46,532 - INFO - \u2713 Scheduler state restored (no re-warmup)
+2026-02-07 18:56:46,533 - INFO - \u2713 GradScaler state restored
+2026-02-07 18:56:46,533 - INFO - \u2713 Fully resumed from epoch 100
+2026-02-07 18:56:46,533 - INFO -   Next epoch: 101
+2026-02-07 18:56:46,533 - INFO -   Global step: 6400
+2026-02-07 18:56:46,533 - INFO - Adaptive loss normalization state restored
+2026-02-07 18:56:46,533 - INFO - Resumed training state. Current LR will be determined by scheduler.
+2026-02-07 18:56:46,533 - WARNING - diffusers not available, using simple noise scheduler fallback. reason=No module named 'diffusers'
+2026-02-07 18:56:46,534 - INFO - Building style indices cache...
+2026-02-07 18:56:46,534 - INFO -   Style 0: 6187 samples
+2026-02-07 18:56:46,534 - INFO -   Style 1: 972 samples
+2026-02-07 18:56:46,534 - INFO -   Style 2: 600 samples
+2026-02-07 18:56:46,534 - INFO -   Style 3: 850 samples
+2026-02-07 18:56:46,534 - INFO - Style indices cache built
+2026-02-07 18:56:46,534 - INFO - Estimated train steps=258, SWD warmup steps=51 (ratio=0.200)
+2026-02-07 18:56:46,534 - INFO - Initializing Style LUT cache for multi-style SWD...
+2026-02-07 18:56:46,536 - INFO -   Style 0: Sampled 128 images for distribution statistics.
+2026-02-07 18:56:46,537 - INFO -   Style 1: Sampled 128 images for distribution statistics.
+2026-02-07 18:56:46,538 - INFO -   Style 2: Sampled 128 images for distribution statistics.
+2026-02-07 18:56:46,540 - INFO -   Style 3: Sampled 128 images for distribution statistics.
+2026-02-07 18:56:46,540 - INFO - \U0001f525 Pre-computing SWD Style Cache (this may take a minute)...
+2026-02-07 18:56:46,583 - INFO -   Processing scale 2¡Á2 (1/1)...
+2026-02-07 18:56:46,622 - INFO -     \u2713 Scale 2: LUT shape torch.Size([4, 16384, 4])
+2026-02-07 18:56:46,622 - INFO - \u2705 SWD Cache Initialization Complete
+2026-02-07 18:56:46,622 - INFO - Saving original test images to inference/epoch_-1
+2026-02-07 18:56:46,622 - INFO - 
+================================================================================
+2026-02-07 18:56:46,622 - INFO - Running Inference Evaluation (Epoch -1)
+2026-02-07 18:56:46,622 - INFO - ================================================================================
+2026-02-07 18:56:46,622 - WARNING - VAE is unavailable. Skipping inference evaluation.
+2026-02-07 18:56:46,622 - INFO - \u2713 Training completed!
