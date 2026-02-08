@@ -173,6 +173,7 @@ class AdaCUTTrainer:
                     "style_ce",
                     "prob",
                     "prob_margin",
+                    "prob_weight_mean",
                     "cls_target_prob",
                     "cls_hard_ratio",
                     "dir",
@@ -263,12 +264,19 @@ class AdaCUTTrainer:
     def _build_style_classifier(self) -> Optional[nn.Module]:
         cfg_loss = self.config.get("loss", {})
         w_cls = float(cfg_loss.get("w_cls", cfg_loss.get("w_style_ce", 0.0)))
-        if w_cls <= 0.0:
+        w_prob = float(cfg_loss.get("w_prob", 0.0))
+        w_prob_margin = float(cfg_loss.get("w_prob_margin", 0.0))
+        w_dir = float(cfg_loss.get("w_dir", 0.0))
+        need_classifier = any(w > 0.0 for w in (w_cls, w_prob, w_prob_margin, w_dir))
+        if not need_classifier:
             return None
 
         ckpt_raw = str(cfg_loss.get("style_classifier_ckpt", "")).strip()
         if not ckpt_raw:
-            raise ValueError("loss.w_cls > 0 requires loss.style_classifier_ckpt")
+            raise ValueError(
+                "Classifier-guided losses enabled (w_cls/w_prob/w_prob_margin/w_dir) "
+                "require loss.style_classifier_ckpt"
+            )
 
         ckpt_path = self._resolve_config_relative_path(ckpt_raw)
         if not ckpt_path.exists():
@@ -342,6 +350,7 @@ class AdaCUTTrainer:
         sum_style_ce = 0.0
         sum_prob = 0.0
         sum_prob_margin = 0.0
+        sum_prob_weight_mean = 0.0
         sum_cls_target_prob = 0.0
         sum_cls_hard_ratio = 0.0
         sum_dir = 0.0
@@ -425,6 +434,7 @@ class AdaCUTTrainer:
                 sum_style_ce += float(loss_dict.get("style_ce", torch.tensor(0.0, device=content.device)).item())
                 sum_prob += float(loss_dict.get("prob", torch.tensor(0.0, device=content.device)).item())
                 sum_prob_margin += float(loss_dict.get("prob_margin", torch.tensor(0.0, device=content.device)).item())
+                sum_prob_weight_mean += float(loss_dict.get("prob_weight_mean", torch.tensor(0.0, device=content.device)).item())
                 sum_cls_target_prob += float(loss_dict.get("cls_target_prob", torch.tensor(0.0, device=content.device)).item())
                 sum_cls_hard_ratio += float(loss_dict.get("cls_hard_ratio", torch.tensor(0.0, device=content.device)).item())
                 sum_dir += float(loss_dict.get("dir", torch.tensor(0.0, device=content.device)).item())
@@ -457,7 +467,7 @@ class AdaCUTTrainer:
                         cls=f"{(sum_style_ce / num_batches):.3f}",
                         p=f"{(sum_prob / num_batches):.3f}",
                         pm=f"{(sum_prob_margin / num_batches):.3f}",
-                        acc=f"{(sum_style_acc / num_batches):.2f}",
+                        pw=f"{(sum_prob_weight_mean / num_batches):.2f}",
                         p_t=f"{(sum_cls_target_prob / num_batches):.2f}",
                         hard=f"{(sum_cls_hard_ratio / num_batches):.2f}",
                         mrg=f"{(sum_xfer_margin / num_batches):.3f}",
@@ -467,7 +477,7 @@ class AdaCUTTrainer:
                     )
                     if not self.use_tqdm:
                         logger.info(
-                            "epoch %d step %d/%d | loss=%.4f cls=%.4f p=%.4f pm=%.4f acc=%.3f p_t=%.3f hard=%.3f margin=%.4f proto_cos=%.4f | %.2f it/s eta %.1fs",
+                            "epoch %d step %d/%d | loss=%.4f cls=%.4f p=%.4f pm=%.4f pw=%.3f p_t=%.3f hard=%.3f margin=%.4f proto_cos=%.4f | %.2f it/s eta %.1fs",
                             epoch,
                             step_idx,
                             total_steps,
@@ -475,7 +485,7 @@ class AdaCUTTrainer:
                             sum_style_ce / num_batches,
                             sum_prob / num_batches,
                             sum_prob_margin / num_batches,
-                            sum_style_acc / num_batches,
+                            sum_prob_weight_mean / num_batches,
                             sum_cls_target_prob / num_batches,
                             sum_cls_hard_ratio / num_batches,
                             sum_xfer_margin / num_batches,
@@ -524,6 +534,7 @@ class AdaCUTTrainer:
             "style_ce": sum_style_ce / max(num_batches, 1),
             "prob": sum_prob / max(num_batches, 1),
             "prob_margin": sum_prob_margin / max(num_batches, 1),
+            "prob_weight_mean": sum_prob_weight_mean / max(num_batches, 1),
             "cls_target_prob": sum_cls_target_prob / max(num_batches, 1),
             "cls_hard_ratio": sum_cls_hard_ratio / max(num_batches, 1),
             "dir": sum_dir / max(num_batches, 1),
@@ -551,8 +562,7 @@ class AdaCUTTrainer:
             tqdm.write(
                 f"[Epoch {epoch}/{self.num_epochs}] "
                 f"loss={metrics['loss']:.4f} "
-                f"cls={metrics['style_ce']:.4f} p={metrics['prob']:.4f} pm={metrics['prob_margin']:.4f} "
-                f"acc={metrics['style_pred_acc']:.3f} "
+                f"cls={metrics['style_ce']:.4f} p={metrics['prob']:.4f} pm={metrics['prob_margin']:.4f} pw={metrics['prob_weight_mean']:.3f} "
                 f"p_t={metrics['cls_target_prob']:.3f} hard={metrics['cls_hard_ratio']:.3f} "
                 f"margin={metrics['xfer_margin']:.4f} proto_cos={metrics['proto_cos_max']:.4f} "
                 f"cycle={metrics['cycle']:.4f} idt={metrics['idt']:.4f} | time={epoch_time:.1f}s"
@@ -574,6 +584,7 @@ class AdaCUTTrainer:
                     float(metrics.get("style_ce", 0.0)),
                     float(metrics.get("prob", 0.0)),
                     float(metrics.get("prob_margin", 0.0)),
+                    float(metrics.get("prob_weight_mean", 0.0)),
                     float(metrics.get("cls_target_prob", 0.0)),
                     float(metrics.get("cls_hard_ratio", 0.0)),
                     float(metrics.get("dir", 0.0)),

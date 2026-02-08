@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import random
+import math
 from pathlib import Path
 
 import numpy as np
@@ -39,15 +40,90 @@ def _seed_worker(worker_id: int) -> None:
     np.random.seed(seed)
 
 
+def _resolve_worker_cpu_pool(train_cfg: dict) -> list[int]:
+    """
+    Build a CPU-id pool for DataLoader workers.
+    On Linux/WSL, this respects current process affinity.
+    """
+    if hasattr(os, "sched_getaffinity"):
+        cpu_ids = sorted(int(x) for x in os.sched_getaffinity(0))
+    else:
+        cpu_count = os.cpu_count() or 1
+        cpu_ids = list(range(cpu_count))
+
+    budget = int(train_cfg.get("dataloader_cpu_budget", 0))
+    if budget <= 0 or budget >= len(cpu_ids):
+        return cpu_ids
+
+    # Evenly sample cores from allowed set to spread thermal load.
+    out: list[int] = []
+    used = set()
+    n = len(cpu_ids)
+    for i in range(budget):
+        idx = int(math.floor(i * n / budget))
+        idx = max(0, min(n - 1, idx))
+        cid = cpu_ids[idx]
+        if cid not in used:
+            out.append(cid)
+            used.add(cid)
+    for cid in cpu_ids:
+        if len(out) >= budget:
+            break
+        if cid not in used:
+            out.append(cid)
+            used.add(cid)
+    return out
+
+
+def _make_worker_init_fn(seed: int, train_cfg: dict, num_workers: int, cpu_pool: list[int]):
+    affinity_mode = str(train_cfg.get("dataloader_affinity_mode", "none")).lower()
+    single_thread = bool(train_cfg.get("dataloader_worker_single_thread", True))
+    threads_per_worker = max(1, int(train_cfg.get("dataloader_threads_per_worker", 1)))
+
+    def _worker_init(worker_id: int) -> None:
+        base = (int(seed) + int(worker_id)) % (2**32)
+        random.seed(base)
+        np.random.seed(base)
+
+        if single_thread:
+            os.environ["OMP_NUM_THREADS"] = str(threads_per_worker)
+            os.environ["MKL_NUM_THREADS"] = str(threads_per_worker)
+            torch.set_num_threads(threads_per_worker)
+            try:
+                torch.set_num_interop_threads(1)
+            except RuntimeError:
+                pass
+
+        if affinity_mode != "none" and cpu_pool and hasattr(os, "sched_setaffinity"):
+            try:
+                if affinity_mode == "compact":
+                    cpu_id = cpu_pool[worker_id % len(cpu_pool)]
+                else:
+                    # spread: stride through pool to reduce hotspot concentration
+                    stride = max(1, len(cpu_pool) // max(1, num_workers))
+                    cpu_id = cpu_pool[(worker_id * stride) % len(cpu_pool)]
+                os.sched_setaffinity(0, {int(cpu_id)})
+            except Exception:
+                pass
+
+    return _worker_init
+
+
 def _resolve_num_workers(config: dict) -> int:
     train_cfg = config.get("training", {})
     preload = bool(config.get("data", {}).get("preload_to_gpu", False))
     if preload:
         return 0
     if train_cfg.get("num_workers") is not None:
-        return int(train_cfg["num_workers"])
-    cpu_count = os.cpu_count() or 1
-    return max(2, cpu_count // 2)
+        num_workers = int(train_cfg["num_workers"])
+    else:
+        cpu_count = os.cpu_count() or 1
+        num_workers = max(2, cpu_count // 2)
+    budget = int(train_cfg.get("dataloader_cpu_budget", 0))
+    if budget > 0:
+        num_workers = min(num_workers, budget)
+    num_workers = max(0, num_workers)
+    return num_workers
 
 
 def main() -> None:
@@ -94,6 +170,8 @@ def main() -> None:
         config["model"]["num_styles"] = style_count
 
     num_workers = _resolve_num_workers(config)
+    train_cfg = config.get("training", {})
+    cpu_pool = _resolve_worker_cpu_pool(train_cfg)
     preload_to_gpu = bool(data_cfg.get("preload_to_gpu", False))
     pin_memory_default = bool(torch.cuda.is_available() and (not preload_to_gpu))
     pin_memory = bool(config.get("training", {}).get("pin_memory", pin_memory_default))
@@ -110,7 +188,7 @@ def main() -> None:
         drop_last=True,
         num_workers=num_workers,
         pin_memory=pin_memory and (not preload_to_gpu),
-        worker_init_fn=_seed_worker,
+        worker_init_fn=_make_worker_init_fn(seed=seed, train_cfg=train_cfg, num_workers=num_workers, cpu_pool=cpu_pool),
         generator=dl_generator,
     )
     if num_workers > 0:
@@ -118,12 +196,15 @@ def main() -> None:
         dataloader_kwargs["prefetch_factor"] = max(1, int(config.get("training", {}).get("prefetch_factor", 2)))
     dataloader = DataLoader(**dataloader_kwargs)
     logger.info(
-        "DataLoader | batch=%d workers=%d pin_memory=%s persistent_workers=%s preload_to_gpu=%s",
+        "DataLoader | batch=%d workers=%d pin_memory=%s persistent_workers=%s preload_to_gpu=%s affinity=%s cpu_pool=%d worker_threads=%d",
         batch_size,
         num_workers,
         pin_memory and (not preload_to_gpu),
         persistent_workers if num_workers > 0 else False,
         preload_to_gpu,
+        str(train_cfg.get("dataloader_affinity_mode", "none")).lower(),
+        len(cpu_pool),
+        max(1, int(train_cfg.get("dataloader_threads_per_worker", 1))),
     )
 
     trainer = AdaCUTTrainer(config=config, device=device, config_path=str(config_path))
@@ -135,14 +216,14 @@ def main() -> None:
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f cls=%.4f p=%.4f pm=%.4f acc=%.3f p_t=%.3f hard=%.3f margin=%.4f proto_cos=%.4f cycle=%.4f idt=%.4f lr=%.2e",
+            "Epoch %d/%d | loss=%.4f cls=%.4f p=%.4f pm=%.4f pw=%.3f p_t=%.3f hard=%.3f margin=%.4f proto_cos=%.4f cycle=%.4f idt=%.4f lr=%.2e",
             epoch,
             trainer.num_epochs,
             metrics["loss"],
             metrics.get("style_ce", 0.0),
             metrics.get("prob", 0.0),
             metrics.get("prob_margin", 0.0),
-            metrics.get("style_pred_acc", 0.0),
+            metrics.get("prob_weight_mean", 0.0),
             metrics.get("cls_target_prob", 0.0),
             metrics.get("cls_hard_ratio", 0.0),
             metrics.get("xfer_margin", 0.0),

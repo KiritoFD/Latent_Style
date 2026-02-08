@@ -279,6 +279,27 @@ class LatentAdaCUT(nn.Module):
                 out[k] = alpha * m_ref + (1.0 - alpha) * m_id
         return out
 
+    @staticmethod
+    def _match_style_map(style_map: torch.Tensor | None, target: torch.Tensor) -> torch.Tensor | None:
+        """
+        Resize/cast style map to match target feature map.
+        This keeps style priors compatible with both 32x32 and 64x64 latent grids.
+        """
+        if style_map is None:
+            return None
+        if style_map.shape[-2:] != target.shape[-2:]:
+            style_map = F.interpolate(
+                style_map,
+                size=target.shape[-2:],
+                mode="bilinear",
+                align_corners=False,
+            )
+        if style_map.dtype != target.dtype:
+            style_map = style_map.to(dtype=target.dtype)
+        if style_map.device != target.device:
+            style_map = style_map.to(device=target.device)
+        return style_map
+
     def forward(
         self,
         x: torch.Tensor,
@@ -300,6 +321,7 @@ class LatentAdaCUT(nn.Module):
         # Normalize to VAE latent native scale before style transform.
         feat = x / max(self.latent_scale_factor, 1e-8)
         h = self.enc_in_act(self.enc_in(feat))
+        style_spatial_32 = self._match_style_map(style_spatial_32, h)
         if style_spatial_32 is not None:
             h = h + self.style_spatial_pre_gain_32 * style_spatial_32
         for block in self.hires_body:
@@ -316,6 +338,7 @@ class LatentAdaCUT(nn.Module):
                 h = h + self.style_spatial_block_gain_32 * style_spatial_32
 
         h = self.down(h)
+        style_spatial_16 = self._match_style_map(style_spatial_16, h)
         if style_spatial_16 is not None:
             h = h + self.style_spatial_pre_gain_16 * style_spatial_16
         for block in self.body:

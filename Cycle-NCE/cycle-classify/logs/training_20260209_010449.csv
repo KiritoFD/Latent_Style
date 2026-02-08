@@ -1,0 +1,1 @@
+epoch,loss,distill,code,code_ref,code_proto,proto,style_ce,prob,prob_margin,prob_weight_mean,cls_target_prob,cls_hard_ratio,dir,proto_sep,style_pred_acc,xfer_margin,proto_cos_max,proto_cos_mean,same_id,cycle,gram,moment,push,nce,idt,w_cycle_eff,w_nce_eff,w_idt_eff,style_ref_alpha,transfer_ratio,lr,epoch_time_sec

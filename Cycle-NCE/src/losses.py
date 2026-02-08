@@ -159,6 +159,12 @@ class AdaCUTObjective:
         self.w_cls = float(loss_cfg.get("w_cls", loss_cfg.get("w_style_ce", 0.0)))
         self.w_prob = float(loss_cfg.get("w_prob", 0.0))
         self.w_prob_margin = float(loss_cfg.get("w_prob_margin", 0.0))
+        self.prob_focal_gamma = float(loss_cfg.get("prob_focal_gamma", 0.0))
+        raw_prob_target_weights = loss_cfg.get("prob_target_weights", [])
+        if isinstance(raw_prob_target_weights, (list, tuple)):
+            self.prob_target_weights = [float(v) for v in raw_prob_target_weights]
+        else:
+            self.prob_target_weights = []
         self.w_dir = float(loss_cfg.get("w_dir", 0.0))
         self.w_proto_sep = float(loss_cfg.get("w_proto_sep", 0.0))
         self.cls_temp = float(loss_cfg.get("cls_temperature", loss_cfg.get("style_ce_temp", 1.0)))
@@ -302,6 +308,20 @@ class AdaCUTObjective:
             prob_src = probs.gather(1, source_ids.unsqueeze(1)).squeeze(1)
             cls_target_prob = (prob_tgt * transfer_mask).sum() / transfer_denom if has_transfer else prob_tgt.mean()
 
+            sample_prob_weight = torch.ones_like(prob_tgt)
+            if self.prob_target_weights:
+                w_vec = torch.tensor(
+                    self.prob_target_weights,
+                    device=prob_tgt.device,
+                    dtype=prob_tgt.dtype,
+                )
+                if int(target_ids.max().item()) < int(w_vec.numel()):
+                    sample_prob_weight = w_vec[target_ids]
+                else:
+                    max_idx = int(w_vec.numel() - 1)
+                    safe_ids = target_ids.clamp(min=0, max=max_idx)
+                    sample_prob_weight = w_vec[safe_ids]
+
             stop_conf = float(min(max(self.cls_stop_conf, 0.0), 1.0))
             min_weight = float(min(max(self.cls_hard_min_weight, 0.0), 1.0))
             if stop_conf < 1.0:
@@ -316,23 +336,26 @@ class AdaCUTObjective:
                 hard_weight = torch.ones_like(prob_tgt)
                 cls_hard_ratio = torch.tensor(1.0, device=content.device, dtype=content.dtype)
 
-            ce_per = torch.zeros_like(transfer_mask)
-            label_smoothing = float(min(max(self.cls_label_smoothing, 0.0), 1.0))
-            for logits in logits_views:
-                ce_per = ce_per + F.cross_entropy(
-                    logits,
-                    target_ids,
-                    reduction="none",
-                    label_smoothing=label_smoothing,
-                )
-            ce_per = ce_per / float(len(logits_views))
+            if self.w_cls > 0.0:
+                ce_per = torch.zeros_like(transfer_mask)
+                label_smoothing = float(min(max(self.cls_label_smoothing, 0.0), 1.0))
+                for logits in logits_views:
+                    ce_per = ce_per + F.cross_entropy(
+                        logits,
+                        target_ids,
+                        reduction="none",
+                        label_smoothing=label_smoothing,
+                    )
+                ce_per = ce_per / float(len(logits_views))
 
-            if has_transfer:
-                ce_weight = hard_weight * transfer_mask
-                loss_style_ce = (ce_per * ce_weight).sum() / ce_weight.sum().clamp_min(1.0)
+                if has_transfer:
+                    ce_weight = hard_weight * transfer_mask
+                    loss_style_ce = (ce_per * ce_weight).sum() / ce_weight.sum().clamp_min(1.0)
+                else:
+                    ce_weight = hard_weight
+                    loss_style_ce = (ce_per * ce_weight).sum() / ce_weight.sum().clamp_min(1.0)
             else:
-                ce_weight = hard_weight
-                loss_style_ce = (ce_per * ce_weight).sum() / ce_weight.sum().clamp_min(1.0)
+                loss_style_ce = _zero()
 
             if has_transfer:
                 style_pred_acc = ((pred_ids == target_ids).float() * transfer_mask).sum() / transfer_denom
@@ -343,17 +366,31 @@ class AdaCUTObjective:
 
             # Probability-level guidance (continuous signal before argmax).
             # pull: directly maximize target-domain probability.
+            prob_pull = 1.0 - prob_tgt
+            if self.prob_focal_gamma > 0.0:
+                prob_pull = prob_pull * torch.pow(prob_pull.clamp_min(0.0), self.prob_focal_gamma)
             if has_transfer:
-                loss_prob = ((1.0 - prob_tgt) * transfer_mask).sum() / transfer_denom
+                prob_weight = sample_prob_weight * transfer_mask
+                prob_weight_sum = prob_weight.sum().clamp_min(1.0)
+                loss_prob = (prob_pull * prob_weight).sum() / prob_weight_sum
             else:
-                loss_prob = (1.0 - prob_tgt).mean()
+                prob_weight = sample_prob_weight
+                prob_weight_sum = prob_weight.sum().clamp_min(1.0)
+                loss_prob = (prob_pull * prob_weight).sum() / prob_weight_sum
 
             # margin: enforce p(target) - p(source) > margin.
             margin = float(max(self.prob_margin, 0.0))
             if has_transfer:
-                loss_prob_margin = (F.relu(margin - (prob_tgt - prob_src)) * transfer_mask).sum() / transfer_denom
+                pm_term = F.relu(margin - (prob_tgt - prob_src))
+                prob_weight = sample_prob_weight * transfer_mask
+                prob_weight_sum = prob_weight.sum().clamp_min(1.0)
+                loss_prob_margin = (pm_term * prob_weight).sum() / prob_weight_sum
             else:
-                loss_prob_margin = F.relu(margin - (prob_tgt - prob_src)).mean()
+                pm_term = F.relu(margin - (prob_tgt - prob_src))
+                prob_weight = sample_prob_weight
+                prob_weight_sum = prob_weight.sum().clamp_min(1.0)
+                loss_prob_margin = (pm_term * prob_weight).sum() / prob_weight_sum
+            prob_weight_mean = prob_weight.mean()
         else:
             loss_style_ce = _zero()
             loss_prob = _zero()
@@ -362,6 +399,7 @@ class AdaCUTObjective:
             xfer_margin = _zero()
             cls_target_prob = _zero()
             cls_hard_ratio = _zero()
+            prob_weight_mean = _zero()
             prob_tgt = None
             prob_src = None
 
@@ -529,6 +567,7 @@ class AdaCUTObjective:
             "style_ce": loss_style_ce.detach(),
             "prob": loss_prob.detach(),
             "prob_margin": loss_prob_margin.detach(),
+            "prob_weight_mean": prob_weight_mean.detach(),
             "cls_target_prob": cls_target_prob.detach(),
             "cls_hard_ratio": cls_hard_ratio.detach(),
             "dir": loss_dir.detach(),

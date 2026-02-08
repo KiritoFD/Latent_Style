@@ -1,52 +1,52 @@
 {
   "basic": {
-    "acc": 0.9546027779579163,
-    "macro_recall": 0.9625806212425232,
-    "macro_f1": 0.9365487098693848,
+    "acc": 0.9760403633117676,
+    "macro_recall": 0.9698858261108398,
+    "macro_f1": 0.9649549722671509,
     "recall_per_class": [
-      0.9485530257225037,
-      0.9766082167625427
+      0.9807074069976807,
+      0.9590643048286438
     ],
     "precision_per_class": [
-      0.9932659864425659,
-      0.839195966720581
+      0.9886547923088074,
+      0.9318181872367859
     ],
     "f1_per_class": [
-      0.9703947305679321,
-      0.9027026295661926
+      0.984665036201477,
+      0.9452449083328247
     ],
-    "min_recall": 0.9485530257225037,
-    "recall_std": 0.014027595520019531,
+    "min_recall": 0.9590643048286438,
+    "recall_std": 0.010821551084518433,
     "confusion_matrix": [
       [
-        590,
-        32
+        610,
+        12
       ],
       [
-        4,
-        167
+        7,
+        164
       ]
     ]
   },
   "calibration": {
-    "ece": 0.014238350093364716,
-    "mean_confidence": 0.9573351144790649
+    "ece": 0.015176822431385517,
+    "mean_confidence": 0.9829056859016418
   },
   "invariance": {
-    "top1_agreement": 0.990625,
-    "mean_kl": 0.008534006588160992
+    "top1_agreement": 0.99609375,
+    "mean_kl": 0.011863772571086884
   },
   "teacher_usable": true,
   "fail_reasons": [],
   "temperature_scaling": {
     "enabled": true,
-    "temperature": 1.168862223625183,
-    "nll_raw": 0.16275018453598022,
-    "nll_calibrated": 0.15965266525745392,
-    "ece_raw": 0.014238350093364716,
-    "ece_calibrated": 0.01509254053235054,
-    "mean_confidence_raw": 0.9573351144790649,
-    "mean_confidence_calibrated": 0.9452935457229614
+    "temperature": 1.4766372442245483,
+    "nll_raw": 0.11099263280630112,
+    "nll_calibrated": 0.09797962754964828,
+    "ece_raw": 0.015176822431385517,
+    "ece_calibrated": 0.008442537859082222,
+    "mean_confidence_raw": 0.9829056859016418,
+    "mean_confidence_calibrated": 0.9679920077323914
   },
   "teacher_usable_calibrated": true,
   "fail_reasons_calibrated": []
