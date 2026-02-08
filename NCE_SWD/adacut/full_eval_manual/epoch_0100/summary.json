@@ -1,0 +1,219 @@
+{
+  "checkpoint": "/mnt/g/GitHub/Latent_Style/NCE_SWD/adacut/epoch_0100.pt",
+  "timestamp": "2026-02-08 09:55:46",
+  "matrix_breakdown": {
+    "photo": {
+      "photo": {
+        "count": 50,
+        "clip_style": 0.620889070034027,
+        "style_lpips": 0.7299673092365265,
+        "content_lpips": 0.314477286,
+        "clip_content": 0.8723530628,
+        "classifier_acc": 0.92
+      },
+      "monet": {
+        "count": 50,
+        "clip_style": 0.5258189958333969,
+        "style_lpips": 0.7870072114467621,
+        "content_lpips": 0.6806804820000001,
+        "clip_content": 0.5383894864,
+        "classifier_acc": 0.06
+      },
+      "vangogh": {
+        "count": 50,
+        "clip_style": 0.5329888916015625,
+        "style_lpips": 0.8399920570850372,
+        "content_lpips": 0.6837098962,
+        "clip_content": 0.5343459372,
+        "classifier_acc": 0.02
+      },
+      "cezanne": {
+        "count": 50,
+        "clip_style": 0.5023513334989548,
+        "style_lpips": 0.7978784680366516,
+        "content_lpips": 0.6834740796,
+        "clip_content": 0.5354288542000001,
+        "classifier_acc": 0.04
+      }
+    },
+    "monet": {
+      "photo": {
+        "count": 50,
+        "clip_style": 0.548468393087387,
+        "style_lpips": 0.7452803301811218,
+        "content_lpips": 0.4001827158,
+        "clip_content": 0.8781945963999999,
+        "classifier_acc": 0.58
+      },
+      "monet": {
+        "count": 50,
+        "clip_style": 0.5423956990242005,
+        "style_lpips": 0.7820266246795654,
+        "content_lpips": 0.6969711946,
+        "clip_content": 0.5530018712,
+        "classifier_acc": 0.42
+      },
+      "vangogh": {
+        "count": 50,
+        "clip_style": 0.5483893769979477,
+        "style_lpips": 0.8205942416191101,
+        "content_lpips": 0.6975002241999999,
+        "clip_content": 0.5532115912,
+        "classifier_acc": 0.12
+      },
+      "cezanne": {
+        "count": 50,
+        "clip_style": 0.5180519598722458,
+        "style_lpips": 0.7904541170597077,
+        "content_lpips": 0.7002235954,
+        "clip_content": 0.5511769233999999,
+        "classifier_acc": 0.0
+      }
+    },
+    "vangogh": {
+      "photo": {
+        "count": 50,
+        "clip_style": 0.5160637533664704,
+        "style_lpips": 0.7816662657260894,
+        "content_lpips": 0.4048668652,
+        "clip_content": 0.8727369804,
+        "classifier_acc": 0.4
+      },
+      "monet": {
+        "count": 50,
+        "clip_style": 0.5307803249359131,
+        "style_lpips": 0.8121970796585083,
+        "content_lpips": 0.7182346152000001,
+        "clip_content": 0.5534937968,
+        "classifier_acc": 0.18
+      },
+      "vangogh": {
+        "count": 50,
+        "clip_style": 0.5417596721649169,
+        "style_lpips": 0.8161945116519927,
+        "content_lpips": 0.718438571,
+        "clip_content": 0.552753251,
+        "classifier_acc": 0.56
+      },
+      "cezanne": {
+        "count": 50,
+        "clip_style": 0.5080081367492676,
+        "style_lpips": 0.8051803815364837,
+        "content_lpips": 0.7211609628000001,
+        "clip_content": 0.5512696398000001,
+        "classifier_acc": 0.02
+      }
+    },
+    "cezanne": {
+      "photo": {
+        "count": 50,
+        "clip_style": 0.5052369219064713,
+        "style_lpips": 0.7531038808822632,
+        "content_lpips": 0.3957586194,
+        "clip_content": 0.8701975579999999,
+        "classifier_acc": 0.18
+      },
+      "monet": {
+        "count": 50,
+        "clip_style": 0.5266592174768447,
+        "style_lpips": 0.7920400607585907,
+        "content_lpips": 0.7089705612,
+        "clip_content": 0.5186984675999999,
+        "classifier_acc": 0.4
+      },
+      "vangogh": {
+        "count": 50,
+        "clip_style": 0.5363336825370788,
+        "style_lpips": 0.8271982955932617,
+        "content_lpips": 0.7107236778000001,
+        "clip_content": 0.5154814096,
+        "classifier_acc": 0.22
+      },
+      "cezanne": {
+        "count": 50,
+        "clip_style": 0.5090014970302582,
+        "style_lpips": 0.7909919083118438,
+        "content_lpips": 0.7112313184,
+        "clip_content": 0.5179791294,
+        "classifier_acc": 0.2
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "clip_style": 0.5249292489886282,
+      "content_lpips": 0.6254571912333334,
+      "classifier_acc": 0.18500000000000003
+    },
+    "photo_to_art_performance": {
+      "clip_style": 0.5203864069779714,
+      "valid": true,
+      "classifier_acc": 0.04
+    }
+  },
+  "classification_report": {
+    "cezanne": {
+      "precision": 0.24528301886792453,
+      "recall": 0.065,
+      "f1-score": 0.10276679841897234,
+      "support": 200.0
+    },
+    "monet": {
+      "precision": 0.2676767676767677,
+      "recall": 0.265,
+      "f1-score": 0.2663316582914573,
+      "support": 200.0
+    },
+    "photo": {
+      "precision": 0.2803234501347709,
+      "recall": 0.52,
+      "f1-score": 0.36427320490367776,
+      "support": 200.0
+    },
+    "vangogh": {
+      "precision": 0.25842696629213485,
+      "recall": 0.23,
+      "f1-score": 0.24338624338624337,
+      "support": 200.0
+    },
+    "accuracy": 0.27,
+    "macro avg": {
+      "precision": 0.2629275507428995,
+      "recall": 0.27,
+      "f1-score": 0.2441894762500877,
+      "support": 800.0
+    },
+    "weighted avg": {
+      "precision": 0.2629275507428995,
+      "recall": 0.27,
+      "f1-score": 0.2441894762500877,
+      "support": 800.0
+    }
+  },
+  "detailed_style_metrics": {
+    "cezanne": {
+      "precision": 0.24528301886792453,
+      "recall": 0.065,
+      "f1_score": 0.10276679841897234,
+      "support": 200
+    },
+    "monet": {
+      "precision": 0.2676767676767677,
+      "recall": 0.265,
+      "f1_score": 0.2663316582914573,
+      "support": 200
+    },
+    "photo": {
+      "precision": 0.2803234501347709,
+      "recall": 0.52,
+      "f1_score": 0.36427320490367776,
+      "support": 200
+    },
+    "vangogh": {
+      "precision": 0.25842696629213485,
+      "recall": 0.23,
+      "f1_score": 0.24338624338624337,
+      "support": 200
+    }
+  }
+}

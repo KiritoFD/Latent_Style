@@ -1,0 +1,219 @@
+{
+  "checkpoint": "/mnt/g/GitHub/Latent_Style/NCE_SWD/adacut/epoch_0150.pt",
+  "timestamp": "2026-02-08 10:03:41",
+  "matrix_breakdown": {
+    "photo": {
+      "photo": {
+        "count": 50,
+        "clip_style": 0.6156116926670074,
+        "style_lpips": 0.7327530479431152,
+        "content_lpips": 0.29602499779999997,
+        "clip_content": 0.8837613462,
+        "classifier_acc": 0.9
+      },
+      "monet": {
+        "count": 50,
+        "clip_style": 0.52319837808609,
+        "style_lpips": 0.7838148045539856,
+        "content_lpips": 0.6873901759999999,
+        "clip_content": 0.5380374026,
+        "classifier_acc": 0.06
+      },
+      "vangogh": {
+        "count": 50,
+        "clip_style": 0.5265041011571884,
+        "style_lpips": 0.8355515813827514,
+        "content_lpips": 0.6922220923999999,
+        "clip_content": 0.5278713024,
+        "classifier_acc": 0.02
+      },
+      "cezanne": {
+        "count": 50,
+        "clip_style": 0.4985037529468536,
+        "style_lpips": 0.7929454660415649,
+        "content_lpips": 0.6863198611999998,
+        "clip_content": 0.530138179,
+        "classifier_acc": 0.02
+      }
+    },
+    "monet": {
+      "photo": {
+        "count": 50,
+        "clip_style": 0.541466554403305,
+        "style_lpips": 0.7498434221744538,
+        "content_lpips": 0.3829466746,
+        "clip_content": 0.886775596,
+        "classifier_acc": 0.46
+      },
+      "monet": {
+        "count": 50,
+        "clip_style": 0.5365918165445328,
+        "style_lpips": 0.7791776859760284,
+        "content_lpips": 0.6976457429999999,
+        "clip_content": 0.5454725264,
+        "classifier_acc": 0.4
+      },
+      "vangogh": {
+        "count": 50,
+        "clip_style": 0.5379121589660645,
+        "style_lpips": 0.8176322376728058,
+        "content_lpips": 0.7024180458000001,
+        "clip_content": 0.5376136262,
+        "classifier_acc": 0.12
+      },
+      "cezanne": {
+        "count": 50,
+        "clip_style": 0.5151480048894882,
+        "style_lpips": 0.7851431119441986,
+        "content_lpips": 0.6987001467999998,
+        "clip_content": 0.5440157311999999,
+        "classifier_acc": 0.0
+      }
+    },
+    "vangogh": {
+      "photo": {
+        "count": 50,
+        "clip_style": 0.5117423170804978,
+        "style_lpips": 0.7916445660591126,
+        "content_lpips": 0.37700443440000003,
+        "clip_content": 0.8815884934,
+        "classifier_acc": 0.28
+      },
+      "monet": {
+        "count": 50,
+        "clip_style": 0.5288248366117477,
+        "style_lpips": 0.8109409618377685,
+        "content_lpips": 0.7189287968000001,
+        "clip_content": 0.5529305814,
+        "classifier_acc": 0.2
+      },
+      "vangogh": {
+        "count": 50,
+        "clip_style": 0.5332226419448852,
+        "style_lpips": 0.8164694273471832,
+        "content_lpips": 0.7233698239999999,
+        "clip_content": 0.5427320348,
+        "classifier_acc": 0.44
+      },
+      "cezanne": {
+        "count": 50,
+        "clip_style": 0.5086983877420426,
+        "style_lpips": 0.8007551527023316,
+        "content_lpips": 0.7182577440000002,
+        "clip_content": 0.5504800733999999,
+        "classifier_acc": 0.0
+      }
+    },
+    "cezanne": {
+      "photo": {
+        "count": 50,
+        "clip_style": 0.49559785664081574,
+        "style_lpips": 0.7604248309135437,
+        "content_lpips": 0.3753995458,
+        "clip_content": 0.8796432489999999,
+        "classifier_acc": 0.16
+      },
+      "monet": {
+        "count": 50,
+        "clip_style": 0.5225547957420349,
+        "style_lpips": 0.7916164779663086,
+        "content_lpips": 0.7084765966000001,
+        "clip_content": 0.5157636360000001,
+        "classifier_acc": 0.4
+      },
+      "vangogh": {
+        "count": 50,
+        "clip_style": 0.5266209584474564,
+        "style_lpips": 0.8257335901260376,
+        "content_lpips": 0.7139547080000002,
+        "clip_content": 0.5072489884,
+        "classifier_acc": 0.24
+      },
+      "cezanne": {
+        "count": 50,
+        "clip_style": 0.5032096642255783,
+        "style_lpips": 0.7867382085323333,
+        "content_lpips": 0.7078341808,
+        "clip_content": 0.5118071314,
+        "classifier_acc": 0.16
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "clip_style": 0.5197310085594654,
+      "content_lpips": 0.6218349018666667,
+      "classifier_acc": 0.16333333333333336
+    },
+    "photo_to_art_performance": {
+      "clip_style": 0.5160687440633773,
+      "valid": true,
+      "classifier_acc": 0.03333333333333333
+    }
+  },
+  "classification_report": {
+    "cezanne": {
+      "precision": 0.1875,
+      "recall": 0.045,
+      "f1-score": 0.07258064516129033,
+      "support": 200.0
+    },
+    "monet": {
+      "precision": 0.2548076923076923,
+      "recall": 0.265,
+      "f1-score": 0.25980392156862747,
+      "support": 200.0
+    },
+    "photo": {
+      "precision": 0.23872679045092837,
+      "recall": 0.45,
+      "f1-score": 0.3119584055459272,
+      "support": 200.0
+    },
+    "vangogh": {
+      "precision": 0.24550898203592814,
+      "recall": 0.205,
+      "f1-score": 0.22343324250681199,
+      "support": 200.0
+    },
+    "accuracy": 0.24125,
+    "macro avg": {
+      "precision": 0.23163586619863719,
+      "recall": 0.24125,
+      "f1-score": 0.21694405369566422,
+      "support": 800.0
+    },
+    "weighted avg": {
+      "precision": 0.23163586619863719,
+      "recall": 0.24125,
+      "f1-score": 0.21694405369566425,
+      "support": 800.0
+    }
+  },
+  "detailed_style_metrics": {
+    "cezanne": {
+      "precision": 0.1875,
+      "recall": 0.045,
+      "f1_score": 0.07258064516129033,
+      "support": 200
+    },
+    "monet": {
+      "precision": 0.2548076923076923,
+      "recall": 0.265,
+      "f1_score": 0.25980392156862747,
+      "support": 200
+    },
+    "photo": {
+      "precision": 0.23872679045092837,
+      "recall": 0.45,
+      "f1_score": 0.3119584055459272,
+      "support": 200
+    },
+    "vangogh": {
+      "precision": 0.24550898203592814,
+      "recall": 0.205,
+      "f1_score": 0.22343324250681199,
+      "support": 200
+    }
+  }
+}
