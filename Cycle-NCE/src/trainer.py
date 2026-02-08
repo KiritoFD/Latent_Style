@@ -10,15 +10,18 @@ from pathlib import Path
 from typing import Dict, Optional
 
 import torch
+import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
 try:
     from .losses import AdaCUTObjective
     from .model import LatentAdaCUT, count_parameters
+    from .utils.style_classifier import StyleClassifier as LatentStyleClassifier
 except ImportError:  # pragma: no cover
     from losses import AdaCUTObjective
     from model import LatentAdaCUT, count_parameters
+    from utils.style_classifier import StyleClassifier as LatentStyleClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +139,8 @@ class AdaCUTTrainer:
                 eta_min=float(train_cfg.get("min_learning_rate", 1e-5)),
             )
 
-        self.loss_fn = AdaCUTObjective(config)
+        self.style_classifier = self._build_style_classifier()
+        self.loss_fn = AdaCUTObjective(config, style_classifier=self.style_classifier)
 
         self.grad_clip_norm = float(train_cfg.get("grad_clip_norm", 1.0))
         self.accumulation_steps = max(1, int(train_cfg.get("accumulation_steps", 1)))
@@ -165,6 +169,19 @@ class AdaCUTTrainer:
                     "code",
                     "code_ref",
                     "code_proto",
+                    "proto",
+                    "style_ce",
+                    "prob",
+                    "prob_margin",
+                    "cls_target_prob",
+                    "cls_hard_ratio",
+                    "dir",
+                    "proto_sep",
+                    "style_pred_acc",
+                    "xfer_margin",
+                    "proto_cos_max",
+                    "proto_cos_mean",
+                    "same_id",
                     "cycle",
                     "gram",
                     "moment",
@@ -235,6 +252,61 @@ class AdaCUTTrainer:
         msg = str(exc).lower()
         return "out of memory" in msg or "cuda oom" in msg
 
+    def _resolve_config_relative_path(self, raw_path: str) -> Path:
+        p = Path(raw_path).expanduser()
+        if p.is_absolute():
+            return p
+        if self.config_path:
+            return (Path(self.config_path).resolve().parent / p).resolve()
+        return (Path.cwd() / p).resolve()
+
+    def _build_style_classifier(self) -> Optional[nn.Module]:
+        cfg_loss = self.config.get("loss", {})
+        w_cls = float(cfg_loss.get("w_cls", cfg_loss.get("w_style_ce", 0.0)))
+        if w_cls <= 0.0:
+            return None
+
+        ckpt_raw = str(cfg_loss.get("style_classifier_ckpt", "")).strip()
+        if not ckpt_raw:
+            raise ValueError("loss.w_cls > 0 requires loss.style_classifier_ckpt")
+
+        ckpt_path = self._resolve_config_relative_path(ckpt_raw)
+        if not ckpt_path.exists():
+            raise FileNotFoundError(f"Style classifier checkpoint not found: {ckpt_path}")
+
+        model_cfg = self.config.get("model", {})
+        in_channels = int(model_cfg.get("latent_channels", 4))
+        num_classes = int(model_cfg.get("num_styles", 2))
+
+        classifier = LatentStyleClassifier(
+            in_channels=in_channels,
+            num_classes=num_classes,
+            use_stats=bool(cfg_loss.get("style_classifier_use_stats", True)),
+            use_gram=bool(cfg_loss.get("style_classifier_use_gram", True)),
+            use_lowpass_stats=bool(cfg_loss.get("style_classifier_use_lowpass_stats", True)),
+            spatial_shuffle=False,
+            input_size_train=int(cfg_loss.get("style_classifier_input_size_train", 8)),
+            input_size_infer=int(cfg_loss.get("style_classifier_input_size_infer", 8)),
+            lowpass_size=int(cfg_loss.get("style_classifier_lowpass_size", 8)),
+        ).to(self.device)
+
+        state = torch.load(ckpt_path, map_location=self.device, weights_only=False)
+        state_dict = state.get("model_state_dict", state) if isinstance(state, dict) else state
+        if any(k.startswith("_orig_mod.") for k in state_dict.keys()):
+            state_dict = {k.replace("_orig_mod.", ""): v for k, v in state_dict.items()}
+        classifier.load_state_dict(state_dict, strict=True)
+        classifier.eval()
+        for p in classifier.parameters():
+            p.requires_grad_(False)
+
+        logger.info(
+            "Loaded frozen style classifier: %s | in_channels=%d num_classes=%d",
+            ckpt_path,
+            in_channels,
+            num_classes,
+        )
+        return classifier
+
     def _maybe_log_vram(self, epoch: int, step_idx: int) -> None:
         if self.device.type != "cuda" or self.log_vram_interval <= 0:
             return
@@ -266,6 +338,19 @@ class AdaCUTTrainer:
         sum_code = 0.0
         sum_code_ref = 0.0
         sum_code_proto = 0.0
+        sum_proto = 0.0
+        sum_style_ce = 0.0
+        sum_prob = 0.0
+        sum_prob_margin = 0.0
+        sum_cls_target_prob = 0.0
+        sum_cls_hard_ratio = 0.0
+        sum_dir = 0.0
+        sum_proto_sep = 0.0
+        sum_style_acc = 0.0
+        sum_xfer_margin = 0.0
+        sum_proto_cos_max = 0.0
+        sum_proto_cos_mean = 0.0
+        sum_same_id = 0.0
         sum_cycle = 0.0
         sum_gram = 0.0
         sum_moment = 0.0
@@ -336,6 +421,19 @@ class AdaCUTTrainer:
                 sum_code += float(loss_dict.get("code", torch.tensor(0.0, device=content.device)).item())
                 sum_code_ref += float(loss_dict.get("code_ref", torch.tensor(0.0, device=content.device)).item())
                 sum_code_proto += float(loss_dict.get("code_proto", torch.tensor(0.0, device=content.device)).item())
+                sum_proto += float(loss_dict.get("proto", torch.tensor(0.0, device=content.device)).item())
+                sum_style_ce += float(loss_dict.get("style_ce", torch.tensor(0.0, device=content.device)).item())
+                sum_prob += float(loss_dict.get("prob", torch.tensor(0.0, device=content.device)).item())
+                sum_prob_margin += float(loss_dict.get("prob_margin", torch.tensor(0.0, device=content.device)).item())
+                sum_cls_target_prob += float(loss_dict.get("cls_target_prob", torch.tensor(0.0, device=content.device)).item())
+                sum_cls_hard_ratio += float(loss_dict.get("cls_hard_ratio", torch.tensor(0.0, device=content.device)).item())
+                sum_dir += float(loss_dict.get("dir", torch.tensor(0.0, device=content.device)).item())
+                sum_proto_sep += float(loss_dict.get("proto_sep", torch.tensor(0.0, device=content.device)).item())
+                sum_style_acc += float(loss_dict.get("style_pred_acc", torch.tensor(0.0, device=content.device)).item())
+                sum_xfer_margin += float(loss_dict.get("xfer_margin", torch.tensor(0.0, device=content.device)).item())
+                sum_proto_cos_max += float(loss_dict.get("proto_cos_max", torch.tensor(0.0, device=content.device)).item())
+                sum_proto_cos_mean += float(loss_dict.get("proto_cos_mean", torch.tensor(0.0, device=content.device)).item())
+                sum_same_id += float(loss_dict.get("same_id", torch.tensor(0.0, device=content.device)).item())
                 sum_cycle += float(loss_dict.get("cycle", torch.tensor(0.0, device=content.device)).item())
                 sum_gram += float(loss_dict["gram"].item())
                 sum_moment += float(loss_dict["moment"].item())
@@ -354,32 +452,34 @@ class AdaCUTTrainer:
                     step_per_sec = step_idx / max(elapsed, 1e-6)
                     eta = (total_steps - step_idx) / max(step_per_sec, 1e-6)
                     avg_loss = sum_loss / num_batches
-                    avg_gram = sum_gram / num_batches
                     progress.set_postfix(
                         loss=f"{avg_loss:.4f}",
-                        dist=f"{(sum_distill / num_batches):.4f}",
-                        gram=f"{avg_gram:.4f}",
-                        cyc=f"{(sum_cycle / num_batches):.4f}",
-                        sref=f"{(sum_style_ref_alpha / num_batches):.2f}",
-                        wnce=f"{(sum_w_nce_eff / num_batches):.2f}",
-                        xfer=f"{(sum_transfer_ratio / num_batches):.2f}",
+                        cls=f"{(sum_style_ce / num_batches):.3f}",
+                        p=f"{(sum_prob / num_batches):.3f}",
+                        pm=f"{(sum_prob_margin / num_batches):.3f}",
+                        acc=f"{(sum_style_acc / num_batches):.2f}",
+                        p_t=f"{(sum_cls_target_prob / num_batches):.2f}",
+                        hard=f"{(sum_cls_hard_ratio / num_batches):.2f}",
+                        mrg=f"{(sum_xfer_margin / num_batches):.3f}",
+                        pcos=f"{(sum_proto_cos_max / num_batches):.3f}",
                         it_s=f"{step_per_sec:.2f}",
                         eta=f"{eta:.1f}s",
                     )
                     if not self.use_tqdm:
                         logger.info(
-                            "epoch %d step %d/%d | loss=%.4f distill=%.4f gram=%.4f moment=%.4f code=%.4f cycle=%.4f nce=%.4f idt=%.4f | %.2f it/s eta %.1fs",
+                            "epoch %d step %d/%d | loss=%.4f cls=%.4f p=%.4f pm=%.4f acc=%.3f p_t=%.3f hard=%.3f margin=%.4f proto_cos=%.4f | %.2f it/s eta %.1fs",
                             epoch,
                             step_idx,
                             total_steps,
                             avg_loss,
-                            sum_distill / num_batches,
-                            avg_gram,
-                            sum_moment / num_batches,
-                            sum_code / num_batches,
-                            sum_cycle / num_batches,
-                            sum_nce / num_batches,
-                            sum_idt / num_batches,
+                            sum_style_ce / num_batches,
+                            sum_prob / num_batches,
+                            sum_prob_margin / num_batches,
+                            sum_style_acc / num_batches,
+                            sum_cls_target_prob / num_batches,
+                            sum_cls_hard_ratio / num_batches,
+                            sum_xfer_margin / num_batches,
+                            sum_proto_cos_max / num_batches,
                             step_per_sec,
                             eta,
                         )
@@ -420,6 +520,19 @@ class AdaCUTTrainer:
             "code": sum_code / max(num_batches, 1),
             "code_ref": sum_code_ref / max(num_batches, 1),
             "code_proto": sum_code_proto / max(num_batches, 1),
+            "proto": sum_proto / max(num_batches, 1),
+            "style_ce": sum_style_ce / max(num_batches, 1),
+            "prob": sum_prob / max(num_batches, 1),
+            "prob_margin": sum_prob_margin / max(num_batches, 1),
+            "cls_target_prob": sum_cls_target_prob / max(num_batches, 1),
+            "cls_hard_ratio": sum_cls_hard_ratio / max(num_batches, 1),
+            "dir": sum_dir / max(num_batches, 1),
+            "proto_sep": sum_proto_sep / max(num_batches, 1),
+            "style_pred_acc": sum_style_acc / max(num_batches, 1),
+            "xfer_margin": sum_xfer_margin / max(num_batches, 1),
+            "proto_cos_max": sum_proto_cos_max / max(num_batches, 1),
+            "proto_cos_mean": sum_proto_cos_mean / max(num_batches, 1),
+            "same_id": sum_same_id / max(num_batches, 1),
             "cycle": sum_cycle / max(num_batches, 1),
             "gram": sum_gram / max(num_batches, 1),
             "moment": sum_moment / max(num_batches, 1),
@@ -437,14 +550,12 @@ class AdaCUTTrainer:
         if self.use_tqdm:
             tqdm.write(
                 f"[Epoch {epoch}/{self.num_epochs}] "
-                f"loss={metrics['loss']:.4f} distill={metrics['distill']:.4f} "
-                f"code={metrics['code']:.4f} cref={metrics['code_ref']:.4f} cproto={metrics['code_proto']:.4f} "
-                f"cycle={metrics['cycle']:.4f} "
-                f"gram={metrics['gram']:.4f} moment={metrics['moment']:.4f} push={metrics['push']:.4f} "
-                f"nce={metrics['nce']:.4f} "
-                f"idt={metrics['idt']:.4f} "
-                f"wcyc={metrics['w_cycle_eff']:.2f} wnce={metrics['w_nce_eff']:.2f} widt={metrics['w_idt_eff']:.2f} sref={metrics['style_ref_alpha']:.2f} "
-                f"xfer={metrics['transfer_ratio']:.2f} | time={epoch_time:.1f}s"
+                f"loss={metrics['loss']:.4f} "
+                f"cls={metrics['style_ce']:.4f} p={metrics['prob']:.4f} pm={metrics['prob_margin']:.4f} "
+                f"acc={metrics['style_pred_acc']:.3f} "
+                f"p_t={metrics['cls_target_prob']:.3f} hard={metrics['cls_hard_ratio']:.3f} "
+                f"margin={metrics['xfer_margin']:.4f} proto_cos={metrics['proto_cos_max']:.4f} "
+                f"cycle={metrics['cycle']:.4f} idt={metrics['idt']:.4f} | time={epoch_time:.1f}s"
             )
         return metrics
 
@@ -459,6 +570,19 @@ class AdaCUTTrainer:
                     float(metrics.get("code", 0.0)),
                     float(metrics.get("code_ref", 0.0)),
                     float(metrics.get("code_proto", 0.0)),
+                    float(metrics.get("proto", 0.0)),
+                    float(metrics.get("style_ce", 0.0)),
+                    float(metrics.get("prob", 0.0)),
+                    float(metrics.get("prob_margin", 0.0)),
+                    float(metrics.get("cls_target_prob", 0.0)),
+                    float(metrics.get("cls_hard_ratio", 0.0)),
+                    float(metrics.get("dir", 0.0)),
+                    float(metrics.get("proto_sep", 0.0)),
+                    float(metrics.get("style_pred_acc", 0.0)),
+                    float(metrics.get("xfer_margin", 0.0)),
+                    float(metrics.get("proto_cos_max", 0.0)),
+                    float(metrics.get("proto_cos_mean", 0.0)),
+                    float(metrics.get("same_id", 0.0)),
                     float(metrics.get("cycle", 0.0)),
                     float(metrics.get("gram", 0.0)),
                     float(metrics.get("moment", 0.0)),
@@ -546,13 +670,23 @@ class AdaCUTTrainer:
         cache_dir = cfg_train.get("full_eval_cache_dir", "")
         if cache_dir:
             cmd += ["--cache_dir", str(cache_dir)]
-        classifier_path = cfg_loss.get("style_classifier_ckpt", "")
+        classifier_path = cfg_train.get("full_eval_classifier_path", "")
+        if not classifier_path:
+            classifier_path = cfg_loss.get("style_classifier_ckpt", "")
         if classifier_path:
-            cmd += ["--classifier_path", str(classifier_path)]
+            resolved_classifier = self._resolve_config_relative_path(str(classifier_path))
+            cmd += ["--classifier_path", str(resolved_classifier)]
         if bool(cfg_train.get("full_eval_classifier_only", False)):
             cmd += ["--eval_classifier_only"]
         if bool(cfg_train.get("full_eval_disable_lpips", False)):
             cmd += ["--eval_disable_lpips"]
+        if "full_eval_save_images" in cfg_train and (not bool(cfg_train.get("full_eval_save_images", True))):
+            cmd += ["--no_save_images"]
+        if "full_eval_disable_xformers" in cfg_train:
+            if bool(cfg_train.get("full_eval_disable_xformers", False)):
+                cmd += ["--disable_xformers"]
+            else:
+                cmd += ["--enable_xformers"]
 
         log_path = self.log_dir / f"full_eval_epoch_{epoch:04d}.log"
         logger.info("Running full eval for epoch %d -> %s", epoch, out_dir)

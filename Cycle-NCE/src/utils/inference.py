@@ -11,8 +11,10 @@ from __future__ import annotations
 import logging
 import os
 import sys
+import importlib.util
 from pathlib import Path
 from typing import Optional
+from contextlib import contextmanager
 
 import numpy as np
 import torch
@@ -74,6 +76,59 @@ def _find_hf_repo_root(dest: str) -> Optional[str]:
         if "config.json" in files or "model_index.json" in files or "pytorch_model.bin" in files:
             return root
     return None
+
+
+def _should_disable_xformers(disable_xformers: Optional[bool] = None) -> bool:
+    """
+    Decide whether to hide xformers from diffusers import.
+    Priority:
+    1) Explicit function argument
+    2) LGT_DISABLE_XFORMERS env
+    3) Default on Windows (True)
+    """
+    if disable_xformers is not None:
+        return bool(disable_xformers)
+
+    env = os.getenv("LGT_DISABLE_XFORMERS")
+    if env is not None:
+        return env.strip().lower() not in {"0", "false", "off", "no"}
+
+    return (os.name == "nt")
+
+
+@contextmanager
+def _mask_xformers_for_import(disable_xformers: bool):
+    """
+    Mask xformers during diffusers import.
+    This avoids hard crashes when xformers wheel is ABI-incompatible.
+    """
+    if not disable_xformers:
+        yield
+        return
+
+    original_find_spec = importlib.util.find_spec
+
+    def _patched_find_spec(name, package=None):
+        if name == "xformers" or name.startswith("xformers."):
+            return None
+        return original_find_spec(name, package)
+
+    # Remove partially imported/broken xformers modules.
+    stale = [k for k in list(sys.modules.keys()) if k == "xformers" or k.startswith("xformers.")]
+    for k in stale:
+        sys.modules.pop(k, None)
+
+    importlib.util.find_spec = _patched_find_spec
+    try:
+        yield
+    finally:
+        importlib.util.find_spec = original_find_spec
+
+
+def _import_autoencoder_kl(disable_xformers: bool):
+    with _mask_xformers_for_import(disable_xformers):
+        from diffusers import AutoencoderKL
+    return AutoencoderKL
 
 
 class _DirectSampler:
@@ -199,8 +254,11 @@ class LGTInference:
         return [self.generation(x0, sid, num_steps) for sid in style_ids]
 
 
-def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
-    from diffusers import AutoencoderKL
+def download_vae_with_fallback(model_id, device="cuda", cache_dir=None, disable_xformers: Optional[bool] = None):
+    disable_xformers = _should_disable_xformers(disable_xformers)
+    if disable_xformers:
+        logger.info("xformers disabled for VAE import (LGT_DISABLE_XFORMERS active).")
+    AutoencoderKL = _import_autoencoder_kl(disable_xformers)
 
     vae_presets = {
         "sd15": "stabilityai/sd-vae-ft-mse",
@@ -261,11 +319,16 @@ def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
     return vae
 
 
-def load_vae(device="cuda", model_id="sd15", cache_dir=None):
+def load_vae(device="cuda", model_id="sd15", cache_dir=None, disable_xformers: Optional[bool] = None):
     if device == "cuda" and not torch.cuda.is_available():
         logger.warning("CUDA not available, fallback to CPU for VAE.")
         device = "cpu"
-    return download_vae_with_fallback(model_id, device=device, cache_dir=cache_dir)
+    return download_vae_with_fallback(
+        model_id,
+        device=device,
+        cache_dir=cache_dir,
+        disable_xformers=disable_xformers,
+    )
 
 
 @torch.no_grad()

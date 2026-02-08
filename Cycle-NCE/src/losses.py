@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import Dict
+from typing import Dict, Optional
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
 try:
@@ -42,6 +43,44 @@ def calc_gram_loss(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 
 def _lowpass(x: torch.Tensor) -> torch.Tensor:
     return F.avg_pool2d(x, kernel_size=2, stride=2)
+
+
+def _augment_for_classifier(
+    x: torch.Tensor,
+    prob: float,
+    brightness: float,
+    contrast: float,
+    noise_std: float,
+    blur_prob: float,
+) -> torch.Tensor:
+    """
+    Lightweight stochastic augmentation to reduce classifier cheating by pure
+    brightness/contrast shifts.
+    """
+    if prob <= 0.0:
+        return x
+    if float(torch.rand((), device=x.device).item()) > prob:
+        return x
+
+    y = x
+    bsz = y.shape[0]
+
+    if brightness > 0.0:
+        shift = (torch.rand((bsz, 1, 1, 1), device=y.device, dtype=y.dtype) * 2.0 - 1.0) * float(brightness)
+        y = y + shift
+
+    if contrast > 0.0:
+        scale = 1.0 + (torch.rand((bsz, 1, 1, 1), device=y.device, dtype=y.dtype) * 2.0 - 1.0) * float(contrast)
+        mean = y.mean(dim=(2, 3), keepdim=True)
+        y = (y - mean) * scale + mean
+
+    if noise_std > 0.0:
+        y = y + torch.randn_like(y) * float(noise_std)
+
+    if blur_prob > 0.0 and float(torch.rand((), device=y.device).item()) < blur_prob:
+        y = F.avg_pool2d(y, kernel_size=3, stride=1, padding=1)
+
+    return y
 
 
 def _multiscale_latent_feats(x: torch.Tensor) -> list[torch.Tensor]:
@@ -107,17 +146,38 @@ class AdaCUTObjective:
     Weighted objective wrapper.
     """
 
-    def __init__(self, config: Dict) -> None:
+    def __init__(self, config: Dict, style_classifier: Optional[nn.Module] = None) -> None:
         loss_cfg = config.get("loss", {})
+        self.style_classifier = style_classifier
         # Core loss set for "train with reference, infer with style_id only".
         # Keep backward-compatible fallback names for old configs.
         self.w_distill = float(loss_cfg.get("w_distill", loss_cfg.get("w_token", 20.0)))
         self.w_code = float(loss_cfg.get("w_code", 10.0))
         self.w_cycle = float(loss_cfg.get("w_cycle", 10.0))
+        self.w_proto = float(loss_cfg.get("w_proto", 5.0))
+        self.w_same_id = float(loss_cfg.get("w_same_id", 1.0))
+        self.w_cls = float(loss_cfg.get("w_cls", loss_cfg.get("w_style_ce", 0.0)))
+        self.w_prob = float(loss_cfg.get("w_prob", 0.0))
+        self.w_prob_margin = float(loss_cfg.get("w_prob_margin", 0.0))
+        self.w_dir = float(loss_cfg.get("w_dir", 0.0))
+        self.w_proto_sep = float(loss_cfg.get("w_proto_sep", 0.0))
+        self.cls_temp = float(loss_cfg.get("cls_temperature", loss_cfg.get("style_ce_temp", 1.0)))
+        self.cls_aug_views = max(1, int(loss_cfg.get("cls_aug_views", 1)))
+        self.cls_aug_prob = float(loss_cfg.get("cls_aug_prob", 0.0))
+        self.cls_aug_brightness = float(loss_cfg.get("cls_aug_brightness", 0.08))
+        self.cls_aug_contrast = float(loss_cfg.get("cls_aug_contrast", 0.08))
+        self.cls_aug_noise_std = float(loss_cfg.get("cls_aug_noise_std", 0.01))
+        self.cls_aug_blur_prob = float(loss_cfg.get("cls_aug_blur_prob", 0.25))
+        self.cls_label_smoothing = float(loss_cfg.get("cls_label_smoothing", 0.0))
+        self.cls_stop_conf = float(loss_cfg.get("cls_stop_conf", 1.0))
+        self.cls_hard_min_weight = float(loss_cfg.get("cls_hard_min_weight", 0.0))
+        self.dir_margin = float(loss_cfg.get("dir_margin", 0.10))
+        self.prob_margin = float(loss_cfg.get("prob_margin", self.dir_margin))
+        self.proto_cos_max = float(loss_cfg.get("proto_cos_max", 0.10))
 
-        # Optional auxiliary losses (default-off in the new scheme)
-        self.w_gram = float(loss_cfg.get("w_gram", 0.0))
-        self.w_moment = float(loss_cfg.get("w_moment", 0.0))
+        # Teacher style anchors: keep teacher stylized, then distill to student.
+        self.w_gram = float(loss_cfg.get("w_gram", 80.0))
+        self.w_moment = float(loss_cfg.get("w_moment", 5.0))
         self.w_nce = float(loss_cfg.get("w_nce", 0.0))
         self.w_idt = float(loss_cfg.get("w_idt", 0.0))
         self.w_push = float(loss_cfg.get("w_push", 0.0))
@@ -159,49 +219,174 @@ class AdaCUTObjective:
         target_style_id: torch.Tensor,
         content_style_id: torch.Tensor,
     ) -> Dict[str, torch.Tensor]:
-        # Teacher path (with reference style); this is not used at inference.
-        pred_teacher = model(
-            content,
-            style_id=target_style_id,
-            style_ref=target_style,
-            style_mix_alpha=1.0,
-        )
-        # Student path (deployment path, style_id only).
+        def _zero() -> torch.Tensor:
+            return torch.tensor(0.0, device=content.device, dtype=content.dtype)
+
+        target_ids = target_style_id.long().view(-1)
+        source_ids = content_style_id.long().view(-1)
+        transfer_mask = (target_ids != source_ids).float()
+        transfer_denom = transfer_mask.sum().clamp_min(1.0)
+        has_transfer = float(transfer_mask.sum().item()) > 0.0
+
+        # Deployment path: style_id only.
         pred_student = model(
             content,
             style_id=target_style_id,
             style_ref=None,
             style_mix_alpha=0.0,
         )
-        transfer_mask = (target_style_id.long() != content_style_id.long()).float()
 
-        if self.w_distill > 0.0:
-            loss_distill = F.l1_loss(pred_student.float(), pred_teacher.detach().float())
+        # Optional teacher path (training-only, with reference style).
+        need_teacher = any(
+            w > 0.0
+            for w in (
+                self.w_distill,
+                self.w_code,
+                self.w_proto,
+            )
+        )
+        pred_teacher = None
+        if need_teacher:
+            pred_teacher = model(
+                content,
+                style_id=target_style_id,
+                style_ref=target_style,
+                style_mix_alpha=1.0,
+            )
+
+        teacher_for_code = pred_teacher if pred_teacher is not None else pred_student
+
+        # Monitor prototype collapse directly from style_id embeddings.
+        proto_bank = F.normalize(model.style_emb.weight.float(), dim=1)
+        if proto_bank.shape[0] > 1:
+            sim_mat = proto_bank @ proto_bank.t()
+            offdiag = sim_mat[~torch.eye(sim_mat.shape[0], device=sim_mat.device, dtype=torch.bool)]
+            proto_cos_max_metric = offdiag.max()
+            proto_cos_mean_metric = offdiag.mean()
         else:
-            loss_distill = torch.tensor(0.0, device=content.device, dtype=content.dtype)
+            offdiag = torch.tensor([], device=content.device, dtype=torch.float32)
+            proto_cos_max_metric = _zero()
+            proto_cos_mean_metric = _zero()
 
-        # Code closure:
-        # - teacher output should map back to reference style code.
-        # - student output should map back to target style prototype.
-        s_ref = model.encode_style(target_style.float()).detach()
-        p_tgt = model.encode_style_id(target_style_id)
-        code_teacher = model.encode_style(pred_teacher.float())
-        code_student = model.encode_style(pred_student.float())
-        loss_code_ref = F.l1_loss(code_teacher, s_ref)
-        loss_code_proto = F.l1_loss(code_student, p_tgt)
-        loss_code = loss_code_ref + loss_code_proto
+        # 1) Frozen classifier guidance (hard cross-domain signal).
+        need_classifier_guidance = any(
+            w > 0.0 for w in (self.w_cls, self.w_prob, self.w_prob_margin, self.w_dir)
+        )
+        if need_classifier_guidance:
+            if self.style_classifier is None:
+                raise RuntimeError(
+                    "Classifier-guided losses are enabled but no frozen style classifier was provided."
+                )
 
+            logits_views = []
+            num_views = max(1, self.cls_aug_views)
+            for view_idx in range(num_views):
+                cls_in = pred_student.float()
+                if (view_idx > 0) or (num_views == 1):
+                    cls_in = _augment_for_classifier(
+                        cls_in,
+                        prob=self.cls_aug_prob,
+                        brightness=self.cls_aug_brightness,
+                        contrast=self.cls_aug_contrast,
+                        noise_std=self.cls_aug_noise_std,
+                        blur_prob=self.cls_aug_blur_prob,
+                    )
+                logits = self.style_classifier(cls_in)
+                logits = logits / max(float(self.cls_temp), 1e-6)
+                logits_views.append(logits)
+
+            logits_main = logits_views[0]
+            pred_ids = logits_main.argmax(dim=1)
+            probs = torch.softmax(logits_main, dim=1)
+            prob_tgt = probs.gather(1, target_ids.unsqueeze(1)).squeeze(1)
+            prob_src = probs.gather(1, source_ids.unsqueeze(1)).squeeze(1)
+            cls_target_prob = (prob_tgt * transfer_mask).sum() / transfer_denom if has_transfer else prob_tgt.mean()
+
+            stop_conf = float(min(max(self.cls_stop_conf, 0.0), 1.0))
+            min_weight = float(min(max(self.cls_hard_min_weight, 0.0), 1.0))
+            if stop_conf < 1.0:
+                hard_weight = ((stop_conf - prob_tgt).clamp_min(0.0) / max(stop_conf, 1e-6)).detach()
+                if min_weight > 0.0:
+                    hard_weight = min_weight + (1.0 - min_weight) * hard_weight
+                if has_transfer:
+                    cls_hard_ratio = ((prob_tgt < stop_conf).float() * transfer_mask).sum() / transfer_denom
+                else:
+                    cls_hard_ratio = (prob_tgt < stop_conf).float().mean()
+            else:
+                hard_weight = torch.ones_like(prob_tgt)
+                cls_hard_ratio = torch.tensor(1.0, device=content.device, dtype=content.dtype)
+
+            ce_per = torch.zeros_like(transfer_mask)
+            label_smoothing = float(min(max(self.cls_label_smoothing, 0.0), 1.0))
+            for logits in logits_views:
+                ce_per = ce_per + F.cross_entropy(
+                    logits,
+                    target_ids,
+                    reduction="none",
+                    label_smoothing=label_smoothing,
+                )
+            ce_per = ce_per / float(len(logits_views))
+
+            if has_transfer:
+                ce_weight = hard_weight * transfer_mask
+                loss_style_ce = (ce_per * ce_weight).sum() / ce_weight.sum().clamp_min(1.0)
+            else:
+                ce_weight = hard_weight
+                loss_style_ce = (ce_per * ce_weight).sum() / ce_weight.sum().clamp_min(1.0)
+
+            if has_transfer:
+                style_pred_acc = ((pred_ids == target_ids).float() * transfer_mask).sum() / transfer_denom
+                xfer_margin = ((prob_tgt - prob_src) * transfer_mask).sum() / transfer_denom
+            else:
+                style_pred_acc = (pred_ids == target_ids).float().mean()
+                xfer_margin = (prob_tgt - prob_src).mean()
+
+            # Probability-level guidance (continuous signal before argmax).
+            # pull: directly maximize target-domain probability.
+            if has_transfer:
+                loss_prob = ((1.0 - prob_tgt) * transfer_mask).sum() / transfer_denom
+            else:
+                loss_prob = (1.0 - prob_tgt).mean()
+
+            # margin: enforce p(target) - p(source) > margin.
+            margin = float(max(self.prob_margin, 0.0))
+            if has_transfer:
+                loss_prob_margin = (F.relu(margin - (prob_tgt - prob_src)) * transfer_mask).sum() / transfer_denom
+            else:
+                loss_prob_margin = F.relu(margin - (prob_tgt - prob_src)).mean()
+        else:
+            loss_style_ce = _zero()
+            loss_prob = _zero()
+            loss_prob_margin = _zero()
+            style_pred_acc = _zero()
+            xfer_margin = _zero()
+            cls_target_prob = _zero()
+            cls_hard_ratio = _zero()
+            prob_tgt = None
+            prob_src = None
+
+        # Optional margin push from classifier confidence difference.
+        if self.w_dir > 0.0 and has_transfer and (prob_tgt is not None) and (prob_src is not None):
+            dir_term = F.relu(prob_src - prob_tgt + self.dir_margin) * transfer_mask
+            loss_dir = dir_term.sum() / transfer_denom
+        else:
+            loss_dir = _zero()
+
+        if self.w_proto_sep > 0.0 and proto_bank.shape[0] > 1:
+            loss_proto_sep = F.relu(offdiag - self.proto_cos_max).mean()
+        else:
+            loss_proto_sep = _zero()
+
+        # 2) Low-frequency cycle (cross-domain only).
         w_cycle_eff = self._ramp_weight(
             self.w_cycle,
             epoch=self.current_epoch,
             warmup=self.cycle_warmup_epochs,
             ramp=self.cycle_ramp_epochs,
         )
-        if w_cycle_eff > 0.0 and float(transfer_mask.sum().item()) > 0.0:
-            # Low-pass cycle only for cross-domain samples:
-            # x -> teacher(target) -> student(source prototype).
+        if w_cycle_eff > 0.0 and has_transfer:
             rec = model(
-                pred_teacher,
+                pred_student,
                 style_id=content_style_id,
                 style_ref=None,
                 style_mix_alpha=0.0,
@@ -209,22 +394,93 @@ class AdaCUTObjective:
             rec_lp = _lowpass(rec.float())
             content_lp = _lowpass(content.float())
             per_sample_cycle = (rec_lp - content_lp).abs().mean(dim=(1, 2, 3))
-            loss_cycle = (per_sample_cycle * transfer_mask).sum() / transfer_mask.sum().clamp_min(1.0)
+            loss_cycle = (per_sample_cycle * transfer_mask).sum() / transfer_denom
         else:
-            loss_cycle = torch.tensor(0.0, device=content.device, dtype=content.dtype)
+            loss_cycle = _zero()
 
-        # Optional extras (off by default): style statistics on teacher output.
-        loss_gram = torch.tensor(0.0, device=content.device, dtype=torch.float32)
-        loss_moment = torch.tensor(0.0, device=content.device, dtype=torch.float32)
-        if self.w_gram > 0.0 or self.w_moment > 0.0:
-            pred_feats = _multiscale_latent_feats(pred_teacher.float())
-            tgt_feats = _multiscale_latent_feats(target_style.float())
+        # 3) Light identity (optional).
+        w_idt_eff = self._ramp_weight(
+            self.w_idt,
+            epoch=self.current_epoch,
+            warmup=self.idt_warmup_epochs,
+            ramp=self.idt_ramp_epochs,
+        )
+        if w_idt_eff > 0.0:
+            idt_pred = model(
+                content,
+                style_id=content_style_id,
+                style_ref=None,
+                style_mix_alpha=0.0,
+            )
+            loss_idt = F.l1_loss(idt_pred.float(), content.float())
+        else:
+            loss_idt = _zero()
+
+        if self.w_same_id > 0.0:
+            same_mask = 1.0 - transfer_mask
+            if float(same_mask.sum().item()) > 0.0:
+                per_sample_same = (pred_student.float() - content.float()).abs().mean(dim=(1, 2, 3))
+                loss_same_id = (per_sample_same * same_mask).sum() / same_mask.sum().clamp_min(1.0)
+            else:
+                loss_same_id = _zero()
+        else:
+            loss_same_id = _zero()
+
+        # Optional reference-to-student distillation/code losses.
+        if self.w_distill > 0.0 and pred_teacher is not None:
+            loss_distill = F.l1_loss(pred_student.float(), pred_teacher.detach().float())
+        else:
+            loss_distill = _zero()
+
+        need_code = (self.w_code > 0.0) or (self.w_proto > 0.0) or (self.w_push > 0.0)
+        code_teacher = None
+        code_student = None
+        p_tgt = None
+        s_ref = None
+        if need_code:
+            code_student = model.encode_style(pred_student.float())
+            p_tgt = model.encode_style_id(target_style_id)
+            s_ref = model.encode_style(target_style.float()).detach()
+            code_teacher = model.encode_style(teacher_for_code.float())
+
+        if self.w_code > 0.0 and (code_teacher is not None) and (code_student is not None) and (p_tgt is not None) and (s_ref is not None):
+            loss_code_ref = F.l1_loss(code_teacher, s_ref)
+            loss_code_proto = F.l1_loss(code_student, p_tgt)
+            loss_code = loss_code_ref + loss_code_proto
+        else:
+            loss_code_ref = _zero()
+            loss_code_proto = _zero()
+            loss_code = _zero()
+
+        if self.w_proto > 0.0 and (p_tgt is not None) and (s_ref is not None):
+            loss_proto = F.l1_loss(p_tgt, s_ref)
+        else:
+            loss_proto = _zero()
+
+        if self.w_push > 0.0 and (code_student is not None):
+            p_src = model.encode_style_id(content_style_id)
+            dist_to_src = (code_student - p_src).abs().mean(dim=1)
+            push_term = F.relu(self.push_margin - dist_to_src) * transfer_mask
+            loss_push = push_term.sum() / transfer_denom
+        else:
+            loss_push = _zero()
+
+        # Optional style anchors on student outputs.
+        loss_gram = _zero()
+        loss_moment = _zero()
+        if (self.w_gram > 0.0 or self.w_moment > 0.0) and has_transfer:
+            xfer_idx = transfer_mask > 0.5
+            pred_feats = _multiscale_latent_feats(pred_student.float()[xfer_idx])
+            tgt_feats = _multiscale_latent_feats(target_style.float()[xfer_idx])
             for a, b in zip(pred_feats, tgt_feats):
-                loss_gram = loss_gram + calc_gram_loss(a, b)
-                loss_moment = loss_moment + calc_moment_loss(a, b)
+                if self.w_gram > 0.0:
+                    loss_gram = loss_gram + calc_gram_loss(a, b)
+                if self.w_moment > 0.0:
+                    loss_moment = loss_moment + calc_moment_loss(a, b)
             scale = 1.0 / float(len(pred_feats))
             loss_gram = loss_gram * scale
             loss_moment = loss_moment * scale
+
         w_nce_eff = self._ramp_weight(
             self.w_nce,
             epoch=self.current_epoch,
@@ -241,42 +497,23 @@ class AdaCUTObjective:
                 max_tokens=self.nce_max_tokens,
             )
         else:
-            loss_nce = torch.tensor(0.0, device=content.device, dtype=content.dtype)
-
-        w_idt_eff = self._ramp_weight(
-            self.w_idt,
-            epoch=self.current_epoch,
-            warmup=self.idt_warmup_epochs,
-            ramp=self.idt_ramp_epochs,
-        )
-        if w_idt_eff > 0.0:
-            idt_pred = model(
-                content,
-                style_id=content_style_id,
-                style_ref=None,
-                style_mix_alpha=0.0,
-            )
-            loss_idt = F.l1_loss(idt_pred.float(), content.float())
-        else:
-            loss_idt = torch.tensor(0.0, device=content.device, dtype=content.dtype)
-
-        if self.w_push > 0.0:
-            p_src = model.encode_style_id(content_style_id)
-            dist_to_src = (code_student - p_src).abs().mean(dim=1)
-            push_term = F.relu(self.push_margin - dist_to_src) * transfer_mask
-            denom = transfer_mask.sum().clamp_min(1.0)
-            loss_push = push_term.sum() / denom
-        else:
-            loss_push = torch.tensor(0.0, device=content.device, dtype=content.dtype)
+            loss_nce = _zero()
 
         total = (
-            self.w_distill * loss_distill
-            + self.w_code * loss_code
+            self.w_cls * loss_style_ce
+            + self.w_prob * loss_prob
+            + self.w_prob_margin * loss_prob_margin
             + w_cycle_eff * loss_cycle
+            + w_idt_eff * loss_idt
+            + self.w_distill * loss_distill
+            + self.w_code * loss_code
+            + self.w_proto * loss_proto
+            + self.w_same_id * loss_same_id
+            + self.w_dir * loss_dir
+            + self.w_proto_sep * loss_proto_sep
             + self.w_gram * loss_gram
             + self.w_moment * loss_moment
             + w_nce_eff * loss_nce
-            + w_idt_eff * loss_idt
             + self.w_push * loss_push
         )
 
@@ -288,6 +525,19 @@ class AdaCUTObjective:
             "code": loss_code.detach(),
             "code_ref": loss_code_ref.detach(),
             "code_proto": loss_code_proto.detach(),
+            "proto": loss_proto.detach(),
+            "style_ce": loss_style_ce.detach(),
+            "prob": loss_prob.detach(),
+            "prob_margin": loss_prob_margin.detach(),
+            "cls_target_prob": cls_target_prob.detach(),
+            "cls_hard_ratio": cls_hard_ratio.detach(),
+            "dir": loss_dir.detach(),
+            "proto_sep": loss_proto_sep.detach(),
+            "style_pred_acc": style_pred_acc.detach(),
+            "xfer_margin": xfer_margin.detach(),
+            "proto_cos_max": proto_cos_max_metric.detach(),
+            "proto_cos_mean": proto_cos_mean_metric.detach(),
+            "same_id": loss_same_id.detach(),
             "push": loss_push.detach(),
             "nce": loss_nce.detach(),
             "idt": loss_idt.detach(),
@@ -295,7 +545,7 @@ class AdaCUTObjective:
             "w_cycle_eff": torch.tensor(w_cycle_eff, device=content.device),
             "w_nce_eff": torch.tensor(w_nce_eff, device=content.device),
             "w_idt_eff": torch.tensor(w_idt_eff, device=content.device),
-            "style_ref_alpha": torch.tensor(1.0, device=content.device),
+            "style_ref_alpha": torch.tensor(0.0, device=content.device),
             "transfer_ratio": transfer_mask.mean().detach(),
             # Backward-compatible aliases for old logs.
             "token": loss_distill.detach(),

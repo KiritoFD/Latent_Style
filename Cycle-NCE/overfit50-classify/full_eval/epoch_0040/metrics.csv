@@ -1,0 +1,201 @@
+src_style,tgt_style,src_image,gen_image,content_lpips,style_lpips,clip_style,clip_content,pred_style,class_correct
+photo,photo,2013-11-17 23_58_45.jpg,photo_2013-11-17 23_58_45_to_photo.jpg,0.0,0.0,0.6279240250587463,0.8742475,N/A,N/A
+photo,photo,2013-11-17 17_36_09.jpg,photo_2013-11-17 17_36_09_to_photo.jpg,0.0,0.0,0.6220790147781372,0.7793634,N/A,N/A
+photo,photo,2013-11-16 04_17_00.jpg,photo_2013-11-16 04_17_00_to_photo.jpg,0.0,0.0,0.5129098892211914,0.7773913,N/A,N/A
+photo,photo,2013-11-12 10_29_19.jpg,photo_2013-11-12 10_29_19_to_photo.jpg,0.0,0.0,0.5561563968658447,0.87942535,N/A,N/A
+photo,photo,2013-11-10 19_30_53.jpg,photo_2013-11-10 19_30_53_to_photo.jpg,0.0,0.0,0.6985228657722473,0.90405244,N/A,N/A
+photo,photo,2013-11-23 13_03_15.jpg,photo_2013-11-23 13_03_15_to_photo.jpg,0.0,0.0,0.6382748484611511,0.9430479,N/A,N/A
+photo,photo,2013-11-18 02_42_31.jpg,photo_2013-11-18 02_42_31_to_photo.jpg,0.0,0.0,0.6636160612106323,0.94214135,N/A,N/A
+photo,photo,2013-11-11 22_03_00.jpg,photo_2013-11-11 22_03_00_to_photo.jpg,0.0,0.0,0.6116417646408081,0.8697812,N/A,N/A
+photo,photo,2013-11-18 08_52_05.jpg,photo_2013-11-18 08_52_05_to_photo.jpg,0.0,0.0,0.603507399559021,0.90773565,N/A,N/A
+photo,photo,2013-11-14 07_04_51.jpg,photo_2013-11-14 07_04_51_to_photo.jpg,0.0,0.0,0.6303671002388,0.7543441,N/A,N/A
+photo,Hayao,2013-11-17 23_58_45.jpg,photo_2013-11-17 23_58_45_to_Hayao.jpg,0.0,0.0,0.49152663350105286,0.7119881,N/A,N/A
+photo,Hayao,2013-11-17 17_36_09.jpg,photo_2013-11-17 17_36_09_to_Hayao.jpg,0.0,0.0,0.5342451930046082,0.6855091,N/A,N/A
+photo,Hayao,2013-11-16 04_17_00.jpg,photo_2013-11-16 04_17_00_to_Hayao.jpg,0.0,0.0,0.4387565553188324,0.83202875,N/A,N/A
+photo,Hayao,2013-11-12 10_29_19.jpg,photo_2013-11-12 10_29_19_to_Hayao.jpg,0.0,0.0,0.49712929129600525,0.71422935,N/A,N/A
+photo,Hayao,2013-11-10 19_30_53.jpg,photo_2013-11-10 19_30_53_to_Hayao.jpg,0.0,0.0,0.4822879433631897,0.8266472,N/A,N/A
+photo,Hayao,2013-11-23 13_03_15.jpg,photo_2013-11-23 13_03_15_to_Hayao.jpg,0.0,0.0,0.504859209060669,0.76138234,N/A,N/A
+photo,Hayao,2013-11-18 02_42_31.jpg,photo_2013-11-18 02_42_31_to_Hayao.jpg,0.0,0.0,0.5120551586151123,0.8772604,N/A,N/A
+photo,Hayao,2013-11-11 22_03_00.jpg,photo_2013-11-11 22_03_00_to_Hayao.jpg,0.0,0.0,0.5302743911743164,0.7276692,N/A,N/A
+photo,Hayao,2013-11-18 08_52_05.jpg,photo_2013-11-18 08_52_05_to_Hayao.jpg,0.0,0.0,0.46327680349349976,0.79006445,N/A,N/A
+photo,Hayao,2013-11-14 07_04_51.jpg,photo_2013-11-14 07_04_51_to_Hayao.jpg,0.0,0.0,0.48888689279556274,0.84392244,N/A,N/A
+photo,photo,2013-11-19 00_58_04.jpg,photo_2013-11-19 00_58_04_to_photo.jpg,0.0,0.0,0.6386858820915222,0.8564172,N/A,N/A
+photo,photo,2013-11-17 14_54_20.jpg,photo_2013-11-17 14_54_20_to_photo.jpg,0.0,0.0,0.592680811882019,0.90295124,N/A,N/A
+photo,photo,2013-11-12 16_58_40.jpg,photo_2013-11-12 16_58_40_to_photo.jpg,0.0,0.0,0.6373772025108337,0.93300843,N/A,N/A
+photo,photo,2013-11-10 12_45_41.jpg,photo_2013-11-10 12_45_41_to_photo.jpg,0.0,0.0,0.6052389144897461,0.94309413,N/A,N/A
+photo,photo,2013-11-21 05_56_32.jpg,photo_2013-11-21 05_56_32_to_photo.jpg,0.0,0.0,0.6893703937530518,0.94295967,N/A,N/A
+photo,photo,2013-11-21 01_47_41.jpg,photo_2013-11-21 01_47_41_to_photo.jpg,0.0,0.0,0.6785203218460083,0.89331704,N/A,N/A
+photo,photo,2013-11-12 01_54_20.jpg,photo_2013-11-12 01_54_20_to_photo.jpg,0.0,0.0,0.5563415288925171,0.9020595,N/A,N/A
+photo,photo,2013-11-17 18_08_26.jpg,photo_2013-11-17 18_08_26_to_photo.jpg,0.0,0.0,0.685953676700592,0.9197223,N/A,N/A
+photo,photo,2013-11-20 11_21_32.jpg,photo_2013-11-20 11_21_32_to_photo.jpg,0.0,0.0,0.5721369385719299,0.90881616,N/A,N/A
+photo,photo,2013-11-08 16_45_24.jpg,photo_2013-11-08 16_45_24_to_photo.jpg,0.0,0.0,0.6110392808914185,0.8348516,N/A,N/A
+photo,Hayao,2013-11-19 00_58_04.jpg,photo_2013-11-19 00_58_04_to_Hayao.jpg,0.0,0.0,0.5086073279380798,0.888191,N/A,N/A
+photo,Hayao,2013-11-17 14_54_20.jpg,photo_2013-11-17 14_54_20_to_Hayao.jpg,0.0,0.0,0.47974154353141785,0.7903627,N/A,N/A
+photo,Hayao,2013-11-12 16_58_40.jpg,photo_2013-11-12 16_58_40_to_Hayao.jpg,0.0,0.0,0.5137344002723694,0.7572706,N/A,N/A
+photo,Hayao,2013-11-10 12_45_41.jpg,photo_2013-11-10 12_45_41_to_Hayao.jpg,0.0,0.0,0.4684404134750366,0.85110444,N/A,N/A
+photo,Hayao,2013-11-21 05_56_32.jpg,photo_2013-11-21 05_56_32_to_Hayao.jpg,0.0,0.0,0.4899243712425232,0.85160476,N/A,N/A
+photo,Hayao,2013-11-21 01_47_41.jpg,photo_2013-11-21 01_47_41_to_Hayao.jpg,0.0,0.0,0.4997902810573578,0.8121649,N/A,N/A
+photo,Hayao,2013-11-12 01_54_20.jpg,photo_2013-11-12 01_54_20_to_Hayao.jpg,0.0,0.0,0.5102131366729736,0.70627904,N/A,N/A
+photo,Hayao,2013-11-17 18_08_26.jpg,photo_2013-11-17 18_08_26_to_Hayao.jpg,0.0,0.0,0.4930509030818939,0.7400312,N/A,N/A
+photo,Hayao,2013-11-20 11_21_32.jpg,photo_2013-11-20 11_21_32_to_Hayao.jpg,0.0,0.0,0.4957958459854126,0.68799424,N/A,N/A
+photo,Hayao,2013-11-08 16_45_24.jpg,photo_2013-11-08 16_45_24_to_Hayao.jpg,0.0,0.0,0.5148886442184448,0.8166228,N/A,N/A
+photo,photo,2013-11-22 14_15_50.jpg,photo_2013-11-22 14_15_50_to_photo.jpg,0.0,0.0,0.6245081424713135,0.8834257,N/A,N/A
+photo,photo,2013-11-14 14_11_02.jpg,photo_2013-11-14 14_11_02_to_photo.jpg,0.0,0.0,0.6777591705322266,0.83998334,N/A,N/A
+photo,photo,2013-11-19 05_01_31.jpg,photo_2013-11-19 05_01_31_to_photo.jpg,0.0,0.0,0.6727316379547119,0.95721364,N/A,N/A
+photo,photo,2013-11-25 10_46_18.jpg,photo_2013-11-25 10_46_18_to_photo.jpg,0.0,0.0,0.6809200048446655,0.93139976,N/A,N/A
+photo,photo,2013-11-21 17_44_44.jpg,photo_2013-11-21 17_44_44_to_photo.jpg,0.0,0.0,0.7026815414428711,0.9007682,N/A,N/A
+photo,photo,2013-11-18 11_46_45.jpg,photo_2013-11-18 11_46_45_to_photo.jpg,0.0,0.0,0.6788905262947083,0.91353506,N/A,N/A
+photo,photo,2013-11-18 06_58_36.jpg,photo_2013-11-18 06_58_36_to_photo.jpg,0.0,0.0,0.6318529844284058,0.93322873,N/A,N/A
+photo,photo,2013-11-17 09_05_09.jpg,photo_2013-11-17 09_05_09_to_photo.jpg,0.0,0.0,0.6622260808944702,0.9435768,N/A,N/A
+photo,photo,2013-11-17 16_40_10.jpg,photo_2013-11-17 16_40_10_to_photo.jpg,0.0,0.0,0.6201700568199158,0.9184184,N/A,N/A
+photo,photo,2013-11-22 14_12_35.jpg,photo_2013-11-22 14_12_35_to_photo.jpg,0.0,0.0,0.6982277631759644,0.9250546,N/A,N/A
+photo,Hayao,2013-11-22 14_15_50.jpg,photo_2013-11-22 14_15_50_to_Hayao.jpg,0.0,0.0,0.49359309673309326,0.81112766,N/A,N/A
+photo,Hayao,2013-11-14 14_11_02.jpg,photo_2013-11-14 14_11_02_to_Hayao.jpg,0.0,0.0,0.5322010517120361,0.81941926,N/A,N/A
+photo,Hayao,2013-11-19 05_01_31.jpg,photo_2013-11-19 05_01_31_to_Hayao.jpg,0.0,0.0,0.5065346360206604,0.9397546,N/A,N/A
+photo,Hayao,2013-11-25 10_46_18.jpg,photo_2013-11-25 10_46_18_to_Hayao.jpg,0.0,0.0,0.5501589179039001,0.8262768,N/A,N/A
+photo,Hayao,2013-11-21 17_44_44.jpg,photo_2013-11-21 17_44_44_to_Hayao.jpg,0.0,0.0,0.5186002850532532,0.83267766,N/A,N/A
+photo,Hayao,2013-11-18 11_46_45.jpg,photo_2013-11-18 11_46_45_to_Hayao.jpg,0.0,0.0,0.5090054273605347,0.907457,N/A,N/A
+photo,Hayao,2013-11-18 06_58_36.jpg,photo_2013-11-18 06_58_36_to_Hayao.jpg,0.0,0.0,0.5254659056663513,0.882622,N/A,N/A
+photo,Hayao,2013-11-17 09_05_09.jpg,photo_2013-11-17 09_05_09_to_Hayao.jpg,0.0,0.0,0.5350421071052551,0.68626434,N/A,N/A
+photo,Hayao,2013-11-17 16_40_10.jpg,photo_2013-11-17 16_40_10_to_Hayao.jpg,0.0,0.0,0.5061492919921875,0.81275547,N/A,N/A
+photo,Hayao,2013-11-22 14_12_35.jpg,photo_2013-11-22 14_12_35_to_Hayao.jpg,0.0,0.0,0.5450806021690369,0.7312851,N/A,N/A
+photo,photo,2013-11-25 01_42_17.jpg,photo_2013-11-25 01_42_17_to_photo.jpg,0.0,0.0,0.6712251305580139,0.90667135,N/A,N/A
+photo,photo,2013-11-20 21_53_23.jpg,photo_2013-11-20 21_53_23_to_photo.jpg,0.0,0.0,0.6381813883781433,0.90280616,N/A,N/A
+photo,photo,2013-11-19 02_11_17.jpg,photo_2013-11-19 02_11_17_to_photo.jpg,0.0,0.0,0.5510743856430054,0.9351327,N/A,N/A
+photo,photo,2013-11-23 02_19_20.jpg,photo_2013-11-23 02_19_20_to_photo.jpg,0.0,0.0,0.6431435942649841,0.90931004,N/A,N/A
+photo,photo,2013-11-13 08_43_01.jpg,photo_2013-11-13 08_43_01_to_photo.jpg,0.0,0.0,0.6827493906021118,0.9009949,N/A,N/A
+photo,photo,2013-11-25 20_28_30.jpg,photo_2013-11-25 20_28_30_to_photo.jpg,0.0,0.0,0.5188015103340149,0.75097704,N/A,N/A
+photo,photo,2013-11-25 09_06_36.jpg,photo_2013-11-25 09_06_36_to_photo.jpg,0.0,0.0,0.6812089681625366,0.8982437,N/A,N/A
+photo,photo,2013-11-10 07_43_23.jpg,photo_2013-11-10 07_43_23_to_photo.jpg,0.0,0.0,0.6094321012496948,0.92708075,N/A,N/A
+photo,photo,2013-11-18 06_23_04.jpg,photo_2013-11-18 06_23_04_to_photo.jpg,0.0,0.0,0.617874801158905,0.94205606,N/A,N/A
+photo,photo,2013-11-20 23_23_37.jpg,photo_2013-11-20 23_23_37_to_photo.jpg,0.0,0.0,0.6231926679611206,0.84407794,N/A,N/A
+photo,Hayao,2013-11-25 01_42_17.jpg,photo_2013-11-25 01_42_17_to_Hayao.jpg,0.0,0.0,0.5230764746665955,0.80407363,N/A,N/A
+photo,Hayao,2013-11-20 21_53_23.jpg,photo_2013-11-20 21_53_23_to_Hayao.jpg,0.0,0.0,0.4788852334022522,0.83405364,N/A,N/A
+photo,Hayao,2013-11-19 02_11_17.jpg,photo_2013-11-19 02_11_17_to_Hayao.jpg,0.0,0.0,0.48113763332366943,0.83790684,N/A,N/A
+photo,Hayao,2013-11-23 02_19_20.jpg,photo_2013-11-23 02_19_20_to_Hayao.jpg,0.0,0.0,0.48159825801849365,0.7822913,N/A,N/A
+photo,Hayao,2013-11-13 08_43_01.jpg,photo_2013-11-13 08_43_01_to_Hayao.jpg,0.0,0.0,0.4562351405620575,0.90460926,N/A,N/A
+photo,Hayao,2013-11-25 20_28_30.jpg,photo_2013-11-25 20_28_30_to_Hayao.jpg,0.0,0.0,0.515143632888794,0.8801545,N/A,N/A
+photo,Hayao,2013-11-25 09_06_36.jpg,photo_2013-11-25 09_06_36_to_Hayao.jpg,0.0,0.0,0.499291330575943,0.77575696,N/A,N/A
+photo,Hayao,2013-11-10 07_43_23.jpg,photo_2013-11-10 07_43_23_to_Hayao.jpg,0.0,0.0,0.5502306818962097,0.7315167,N/A,N/A
+photo,Hayao,2013-11-18 06_23_04.jpg,photo_2013-11-18 06_23_04_to_Hayao.jpg,0.0,0.0,0.44726836681365967,0.8861369,N/A,N/A
+photo,Hayao,2013-11-20 23_23_37.jpg,photo_2013-11-20 23_23_37_to_Hayao.jpg,0.0,0.0,0.5440158843994141,0.9064355,N/A,N/A
+photo,photo,2013-11-10 20_27_52.jpg,photo_2013-11-10 20_27_52_to_photo.jpg,0.0,0.0,0.5323368310928345,0.8597586,N/A,N/A
+photo,photo,2013-11-19 22_47_07.jpg,photo_2013-11-19 22_47_07_to_photo.jpg,0.0,0.0,0.629969596862793,0.7980048,N/A,N/A
+photo,photo,2013-11-11 06_35_27.jpg,photo_2013-11-11 06_35_27_to_photo.jpg,0.0,0.0,0.5575103759765625,0.8545387,N/A,N/A
+photo,photo,2013-11-11 12_10_46.jpg,photo_2013-11-11 12_10_46_to_photo.jpg,0.0,0.0,0.7135563492774963,0.9114949,N/A,N/A
+photo,photo,2013-11-14 01_44_20.jpg,photo_2013-11-14 01_44_20_to_photo.jpg,0.0,0.0,0.668574869632721,0.9377922,N/A,N/A
+photo,photo,2013-11-14 07_02_49.jpg,photo_2013-11-14 07_02_49_to_photo.jpg,0.0,0.0,0.657699704170227,0.9706123,N/A,N/A
+photo,photo,2013-11-14 12_47_50.jpg,photo_2013-11-14 12_47_50_to_photo.jpg,0.0,0.0,0.6233460307121277,0.84520745,N/A,N/A
+photo,photo,2013-11-10 06_42_01.jpg,photo_2013-11-10 06_42_01_to_photo.jpg,0.0,0.0,0.6763092875480652,0.9020196,N/A,N/A
+photo,photo,2013-11-11 08_50_18.jpg,photo_2013-11-11 08_50_18_to_photo.jpg,0.0,0.0,0.5628561973571777,0.86597115,N/A,N/A
+photo,photo,2013-11-21 16_49_08.jpg,photo_2013-11-21 16_49_08_to_photo.jpg,0.0,0.0,0.6737186312675476,0.9331907,N/A,N/A
+photo,Hayao,2013-11-10 20_27_52.jpg,photo_2013-11-10 20_27_52_to_Hayao.jpg,0.0,0.0,0.5463144183158875,0.69167304,N/A,N/A
+photo,Hayao,2013-11-19 22_47_07.jpg,photo_2013-11-19 22_47_07_to_Hayao.jpg,0.0,0.0,0.45805853605270386,0.8494487,N/A,N/A
+photo,Hayao,2013-11-11 06_35_27.jpg,photo_2013-11-11 06_35_27_to_Hayao.jpg,0.0,0.0,0.5220609903335571,0.8880249,N/A,N/A
+photo,Hayao,2013-11-11 12_10_46.jpg,photo_2013-11-11 12_10_46_to_Hayao.jpg,0.0,0.0,0.5162510275840759,0.7668786,N/A,N/A
+photo,Hayao,2013-11-14 01_44_20.jpg,photo_2013-11-14 01_44_20_to_Hayao.jpg,0.0,0.0,0.523668646812439,0.8340443,N/A,N/A
+photo,Hayao,2013-11-14 07_02_49.jpg,photo_2013-11-14 07_02_49_to_Hayao.jpg,0.0,0.0,0.496454656124115,0.92096883,N/A,N/A
+photo,Hayao,2013-11-14 12_47_50.jpg,photo_2013-11-14 12_47_50_to_Hayao.jpg,0.0,0.0,0.4911839962005615,0.7789012,N/A,N/A
+photo,Hayao,2013-11-10 06_42_01.jpg,photo_2013-11-10 06_42_01_to_Hayao.jpg,0.0,0.0,0.39801183342933655,0.9073012,N/A,N/A
+photo,Hayao,2013-11-11 08_50_18.jpg,photo_2013-11-11 08_50_18_to_Hayao.jpg,0.0,0.0,0.45351845026016235,0.85265076,N/A,N/A
+photo,Hayao,2013-11-21 16_49_08.jpg,photo_2013-11-21 16_49_08_to_Hayao.jpg,0.0,0.0,0.5608381032943726,0.802241,N/A,N/A
+Hayao,photo,1020.jpg,Hayao_1020_to_photo.jpg,0.0,0.0,0.5827544331550598,0.8189957,N/A,N/A
+Hayao,photo,1019.jpg,Hayao_1019_to_photo.jpg,0.0,0.0,0.5865968465805054,0.76796114,N/A,N/A
+Hayao,photo,1015.jpg,Hayao_1015_to_photo.jpg,0.0,0.0,0.46482282876968384,0.681547,N/A,N/A
+Hayao,photo,1008.jpg,Hayao_1008_to_photo.jpg,0.0,0.0,0.40745893120765686,0.7804365,N/A,N/A
+Hayao,photo,1001.jpg,Hayao_1001_to_photo.jpg,0.0,0.0,0.4311184585094452,0.84051335,N/A,N/A
+Hayao,photo,1044.jpg,Hayao_1044_to_photo.jpg,0.0,0.0,0.5394311547279358,0.8033891,N/A,N/A
+Hayao,photo,1021.jpg,Hayao_1021_to_photo.jpg,0.0,0.0,0.5744081139564514,0.7345121,N/A,N/A
+Hayao,photo,1006.jpg,Hayao_1006_to_photo.jpg,0.0,0.0,0.419187992811203,0.8382876,N/A,N/A
+Hayao,photo,1024.jpg,Hayao_1024_to_photo.jpg,0.0,0.0,0.4705605208873749,0.7286619,N/A,N/A
+Hayao,photo,1012.jpg,Hayao_1012_to_photo.jpg,0.0,0.0,0.4077655076980591,0.7850129,N/A,N/A
+Hayao,Hayao,1020.jpg,Hayao_1020_to_Hayao.jpg,0.0,0.0,0.6414912939071655,0.9046973,N/A,N/A
+Hayao,Hayao,1019.jpg,Hayao_1019_to_Hayao.jpg,0.0,0.0,0.7017173767089844,0.8666357,N/A,N/A
+Hayao,Hayao,1015.jpg,Hayao_1015_to_Hayao.jpg,0.0,0.0,0.7099526524543762,0.92060775,N/A,N/A
+Hayao,Hayao,1008.jpg,Hayao_1008_to_Hayao.jpg,0.0,0.0,0.7392570376396179,0.9612807,N/A,N/A
+Hayao,Hayao,1001.jpg,Hayao_1001_to_Hayao.jpg,0.0,0.0,0.7532133460044861,0.9547293,N/A,N/A
+Hayao,Hayao,1044.jpg,Hayao_1044_to_Hayao.jpg,0.0,0.0,0.7087157964706421,0.9584888,N/A,N/A
+Hayao,Hayao,1021.jpg,Hayao_1021_to_Hayao.jpg,0.0,0.0,0.5740500688552856,0.86899555,N/A,N/A
+Hayao,Hayao,1006.jpg,Hayao_1006_to_Hayao.jpg,0.0,0.0,0.7179709672927856,0.96540016,N/A,N/A
+Hayao,Hayao,1024.jpg,Hayao_1024_to_Hayao.jpg,0.0,0.0,0.7573245167732239,0.9556739,N/A,N/A
+Hayao,Hayao,1012.jpg,Hayao_1012_to_Hayao.jpg,0.0,0.0,0.7378524541854858,0.95529103,N/A,N/A
+Hayao,photo,1026.jpg,Hayao_1026_to_photo.jpg,0.0,0.0,0.42733848094940186,0.8838097,N/A,N/A
+Hayao,photo,1017.jpg,Hayao_1017_to_photo.jpg,0.0,0.0,0.38069137930870056,0.8512234,N/A,N/A
+Hayao,photo,1009.jpg,Hayao_1009_to_photo.jpg,0.0,0.0,0.44559141993522644,0.7796988,N/A,N/A
+Hayao,photo,1000.jpg,Hayao_1000_to_photo.jpg,0.0,0.0,0.4644225835800171,0.81266916,N/A,N/A
+Hayao,photo,1039.jpg,Hayao_1039_to_photo.jpg,0.0,0.0,0.45275846123695374,0.74242973,N/A,N/A
+Hayao,photo,1033.jpg,Hayao_1033_to_photo.jpg,0.0,0.0,0.4764140844345093,0.6312817,N/A,N/A
+Hayao,photo,1007.jpg,Hayao_1007_to_photo.jpg,0.0,0.0,0.488657146692276,0.76001203,N/A,N/A
+Hayao,photo,102.jpg,Hayao_102_to_photo.jpg,0.0,0.0,0.5519961714744568,0.80414253,N/A,N/A
+Hayao,photo,103.jpg,Hayao_103_to_photo.jpg,0.0,0.0,0.38624611496925354,0.8259851,N/A,N/A
+Hayao,photo,0.jpg,Hayao_0_to_photo.jpg,0.0,0.0,0.49716949462890625,0.75795335,N/A,N/A
+Hayao,Hayao,1026.jpg,Hayao_1026_to_Hayao.jpg,0.0,0.0,0.7355241775512695,0.924463,N/A,N/A
+Hayao,Hayao,1017.jpg,Hayao_1017_to_Hayao.jpg,0.0,0.0,0.7506687045097351,0.9698527,N/A,N/A
+Hayao,Hayao,1009.jpg,Hayao_1009_to_Hayao.jpg,0.0,0.0,0.7272058129310608,0.9539493,N/A,N/A
+Hayao,Hayao,1000.jpg,Hayao_1000_to_Hayao.jpg,0.0,0.0,0.7295751571655273,0.95024383,N/A,N/A
+Hayao,Hayao,1039.jpg,Hayao_1039_to_Hayao.jpg,0.0,0.0,0.7425550818443298,0.93911904,N/A,N/A
+Hayao,Hayao,1033.jpg,Hayao_1033_to_Hayao.jpg,0.0,0.0,0.6919580698013306,0.9386009,N/A,N/A
+Hayao,Hayao,1007.jpg,Hayao_1007_to_Hayao.jpg,0.0,0.0,0.7238378524780273,0.9659538,N/A,N/A
+Hayao,Hayao,102.jpg,Hayao_102_to_Hayao.jpg,0.0,0.0,0.6677733659744263,0.93942744,N/A,N/A
+Hayao,Hayao,103.jpg,Hayao_103_to_Hayao.jpg,0.0,0.0,0.7403573393821716,0.96946484,N/A,N/A
+Hayao,Hayao,0.jpg,Hayao_0_to_Hayao.jpg,0.0,0.0,0.7395003437995911,0.9563488,N/A,N/A
+Hayao,photo,1042.jpg,Hayao_1042_to_photo.jpg,0.0,0.0,0.45257002115249634,0.81314284,N/A,N/A
+Hayao,photo,1014.jpg,Hayao_1014_to_photo.jpg,0.0,0.0,0.4708350896835327,0.7614465,N/A,N/A
+Hayao,photo,1028.jpg,Hayao_1028_to_photo.jpg,0.0,0.0,0.4479943811893463,0.81702995,N/A,N/A
+Hayao,photo,1049.jpg,Hayao_1049_to_photo.jpg,0.0,0.0,0.48190203309059143,0.78867334,N/A,N/A
+Hayao,photo,1040.jpg,Hayao_1040_to_photo.jpg,0.0,0.0,0.4438764750957489,0.81042016,N/A,N/A
+Hayao,photo,1025.jpg,Hayao_1025_to_photo.jpg,0.0,0.0,0.4069567918777466,0.80240303,N/A,N/A
+Hayao,photo,1023.jpg,Hayao_1023_to_photo.jpg,0.0,0.0,0.40828290581703186,0.8835101,N/A,N/A
+Hayao,photo,1016.jpg,Hayao_1016_to_photo.jpg,0.0,0.0,0.407753050327301,0.86957735,N/A,N/A
+Hayao,photo,1018.jpg,Hayao_1018_to_photo.jpg,0.0,0.0,0.5163095593452454,0.8297558,N/A,N/A
+Hayao,photo,1041.jpg,Hayao_1041_to_photo.jpg,0.0,0.0,0.3894332945346832,0.9171431,N/A,N/A
+Hayao,Hayao,1042.jpg,Hayao_1042_to_Hayao.jpg,0.0,0.0,0.7415635585784912,0.92869246,N/A,N/A
+Hayao,Hayao,1014.jpg,Hayao_1014_to_Hayao.jpg,0.0,0.0,0.762618362903595,0.9360347,N/A,N/A
+Hayao,Hayao,1028.jpg,Hayao_1028_to_Hayao.jpg,0.0,0.0,0.747670590877533,0.9427163,N/A,N/A
+Hayao,Hayao,1049.jpg,Hayao_1049_to_Hayao.jpg,0.0,0.0,0.7205728888511658,0.9254551,N/A,N/A
+Hayao,Hayao,1040.jpg,Hayao_1040_to_Hayao.jpg,0.0,0.0,0.7721174359321594,0.9315026,N/A,N/A
+Hayao,Hayao,1025.jpg,Hayao_1025_to_Hayao.jpg,0.0,0.0,0.6887409687042236,0.9435748,N/A,N/A
+Hayao,Hayao,1023.jpg,Hayao_1023_to_Hayao.jpg,0.0,0.0,0.7431729435920715,0.9427973,N/A,N/A
+Hayao,Hayao,1016.jpg,Hayao_1016_to_Hayao.jpg,0.0,0.0,0.7551202178001404,0.9628577,N/A,N/A
+Hayao,Hayao,1018.jpg,Hayao_1018_to_Hayao.jpg,0.0,0.0,0.5931307673454285,0.9726038,N/A,N/A
+Hayao,Hayao,1041.jpg,Hayao_1041_to_Hayao.jpg,0.0,0.0,0.7581203579902649,0.969362,N/A,N/A
+Hayao,photo,1047.jpg,Hayao_1047_to_photo.jpg,0.0,0.0,0.5286576151847839,0.7739979,N/A,N/A
+Hayao,photo,1030.jpg,Hayao_1030_to_photo.jpg,0.0,0.0,0.6155645847320557,0.83680737,N/A,N/A
+Hayao,photo,1027.jpg,Hayao_1027_to_photo.jpg,0.0,0.0,0.3946756422519684,0.85335094,N/A,N/A
+Hayao,photo,1043.jpg,Hayao_1043_to_photo.jpg,0.0,0.0,0.4478394091129303,0.76253045,N/A,N/A
+Hayao,photo,101.jpg,Hayao_101_to_photo.jpg,0.0,0.0,0.5046507120132446,0.7578745,N/A,N/A
+Hayao,photo,105.jpg,Hayao_105_to_photo.jpg,0.0,0.0,0.38160189986228943,0.8408757,N/A,N/A
+Hayao,photo,1048.jpg,Hayao_1048_to_photo.jpg,0.0,0.0,0.5195693969726562,0.7486959,N/A,N/A
+Hayao,photo,100.jpg,Hayao_100_to_photo.jpg,0.0,0.0,0.3858889043331146,0.8584205,N/A,N/A
+Hayao,photo,1022.jpg,Hayao_1022_to_photo.jpg,0.0,0.0,0.5678150057792664,0.69210166,N/A,N/A
+Hayao,photo,1032.jpg,Hayao_1032_to_photo.jpg,0.0,0.0,0.44019755721092224,0.75865364,N/A,N/A
+Hayao,Hayao,1047.jpg,Hayao_1047_to_Hayao.jpg,0.0,0.0,0.704157829284668,0.9354372,N/A,N/A
+Hayao,Hayao,1030.jpg,Hayao_1030_to_Hayao.jpg,0.0,0.0,0.6188584566116333,0.9089229,N/A,N/A
+Hayao,Hayao,1027.jpg,Hayao_1027_to_Hayao.jpg,0.0,0.0,0.7507874369621277,0.9684454,N/A,N/A
+Hayao,Hayao,1043.jpg,Hayao_1043_to_Hayao.jpg,0.0,0.0,0.7556848526000977,0.94232273,N/A,N/A
+Hayao,Hayao,101.jpg,Hayao_101_to_Hayao.jpg,0.0,0.0,0.717488706111908,0.9126412,N/A,N/A
+Hayao,Hayao,105.jpg,Hayao_105_to_Hayao.jpg,0.0,0.0,0.7537289261817932,0.9467812,N/A,N/A
+Hayao,Hayao,1048.jpg,Hayao_1048_to_Hayao.jpg,0.0,0.0,0.7339022755622864,0.945825,N/A,N/A
+Hayao,Hayao,100.jpg,Hayao_100_to_Hayao.jpg,0.0,0.0,0.7565783262252808,0.97014666,N/A,N/A
+Hayao,Hayao,1022.jpg,Hayao_1022_to_Hayao.jpg,0.0,0.0,0.7290449142456055,0.92891824,N/A,N/A
+Hayao,Hayao,1032.jpg,Hayao_1032_to_Hayao.jpg,0.0,0.0,0.7048304677009583,0.9370707,N/A,N/A
+Hayao,photo,1002.jpg,Hayao_1002_to_photo.jpg,0.0,0.0,0.4062333106994629,0.91358143,N/A,N/A
+Hayao,photo,1029.jpg,Hayao_1029_to_photo.jpg,0.0,0.0,0.4694346487522125,0.7354562,N/A,N/A
+Hayao,photo,1003.jpg,Hayao_1003_to_photo.jpg,0.0,0.0,0.3917939364910126,0.80700135,N/A,N/A
+Hayao,photo,1005.jpg,Hayao_1005_to_photo.jpg,0.0,0.0,0.4096788763999939,0.79907966,N/A,N/A
+Hayao,photo,1010.jpg,Hayao_1010_to_photo.jpg,0.0,0.0,0.46810057759284973,0.76919013,N/A,N/A
+Hayao,photo,1011.jpg,Hayao_1011_to_photo.jpg,0.0,0.0,0.48169535398483276,0.7320541,N/A,N/A
+Hayao,photo,1013.jpg,Hayao_1013_to_photo.jpg,0.0,0.0,0.47441649436950684,0.8587101,N/A,N/A
+Hayao,photo,10.jpg,Hayao_10_to_photo.jpg,0.0,0.0,0.4792182743549347,0.89234227,N/A,N/A
+Hayao,photo,1004.jpg,Hayao_1004_to_photo.jpg,0.0,0.0,0.43958771228790283,0.7948548,N/A,N/A
+Hayao,photo,104.jpg,Hayao_104_to_photo.jpg,0.0,0.0,0.5451809763908386,0.8255315,N/A,N/A
+Hayao,Hayao,1002.jpg,Hayao_1002_to_Hayao.jpg,0.0,0.0,0.7668558955192566,0.9567349,N/A,N/A
+Hayao,Hayao,1029.jpg,Hayao_1029_to_Hayao.jpg,0.0,0.0,0.6658740639686584,0.92278326,N/A,N/A
+Hayao,Hayao,1003.jpg,Hayao_1003_to_Hayao.jpg,0.0,0.0,0.7694496512413025,0.97305834,N/A,N/A
+Hayao,Hayao,1005.jpg,Hayao_1005_to_Hayao.jpg,0.0,0.0,0.728431224822998,0.95418596,N/A,N/A
+Hayao,Hayao,1010.jpg,Hayao_1010_to_Hayao.jpg,0.0,0.0,0.7344241738319397,0.95190704,N/A,N/A
+Hayao,Hayao,1011.jpg,Hayao_1011_to_Hayao.jpg,0.0,0.0,0.693122923374176,0.9524133,N/A,N/A
+Hayao,Hayao,1013.jpg,Hayao_1013_to_Hayao.jpg,0.0,0.0,0.6299667954444885,0.9593374,N/A,N/A
+Hayao,Hayao,10.jpg,Hayao_10_to_Hayao.jpg,0.0,0.0,0.7199254631996155,0.95571434,N/A,N/A
+Hayao,Hayao,1004.jpg,Hayao_1004_to_Hayao.jpg,0.0,0.0,0.737478494644165,0.95184964,N/A,N/A
+Hayao,Hayao,104.jpg,Hayao_104_to_Hayao.jpg,0.0,0.0,0.7329973578453064,0.9399291,N/A,N/A
