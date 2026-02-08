@@ -146,8 +146,19 @@ def main() -> None:
             metrics["lr"],
         )
 
+        ckpt_path = None
         if epoch % trainer.save_interval == 0 or epoch == trainer.num_epochs:
-            trainer.save_checkpoint(epoch, metrics)
+            ckpt_path = trainer.save_checkpoint(epoch, metrics)
+
+        do_full_eval = False
+        if trainer.full_eval_interval > 0 and (epoch % trainer.full_eval_interval == 0):
+            do_full_eval = True
+        if trainer.run_full_eval_on_last_epoch and (epoch == trainer.num_epochs):
+            do_full_eval = True
+        if do_full_eval:
+            if ckpt_path is None:
+                ckpt_path = trainer.save_checkpoint(epoch, metrics)
+            trainer.run_full_evaluation(epoch, checkpoint_path=ckpt_path)
 
     logger.info("Training completed.")
 

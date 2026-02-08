@@ -1,0 +1,219 @@
+{
+  "checkpoint": "/mnt/g/GitHub/Latent_Style/NCE_SWD/adacut/epoch_0050.pt",
+  "timestamp": "2026-02-08 09:47:49",
+  "matrix_breakdown": {
+    "photo": {
+      "photo": {
+        "count": 50,
+        "clip_style": 0.610760024189949,
+        "style_lpips": 0.7350177526473999,
+        "content_lpips": 0.36498791799999997,
+        "clip_content": 0.828000339,
+        "classifier_acc": 0.9
+      },
+      "monet": {
+        "count": 50,
+        "clip_style": 0.5196649408340455,
+        "style_lpips": 0.7990684390068055,
+        "content_lpips": 0.6842385075999999,
+        "clip_content": 0.532636641,
+        "classifier_acc": 0.06
+      },
+      "vangogh": {
+        "count": 50,
+        "clip_style": 0.5277903008460999,
+        "style_lpips": 0.8479687440395355,
+        "content_lpips": 0.6918779475999999,
+        "clip_content": 0.5283630422000001,
+        "classifier_acc": 0.02
+      },
+      "cezanne": {
+        "count": 50,
+        "clip_style": 0.49597561061382295,
+        "style_lpips": 0.8082171821594238,
+        "content_lpips": 0.6866268409999999,
+        "clip_content": 0.5303612708,
+        "classifier_acc": 0.04
+      }
+    },
+    "monet": {
+      "photo": {
+        "count": 50,
+        "clip_style": 0.5581596612930297,
+        "style_lpips": 0.7516963505744934,
+        "content_lpips": 0.45833019640000006,
+        "clip_content": 0.8325175666,
+        "classifier_acc": 0.3
+      },
+      "monet": {
+        "count": 50,
+        "clip_style": 0.5463491195440292,
+        "style_lpips": 0.7975472629070282,
+        "content_lpips": 0.7061126866,
+        "clip_content": 0.5573683211999999,
+        "classifier_acc": 0.52
+      },
+      "vangogh": {
+        "count": 50,
+        "clip_style": 0.550964143872261,
+        "style_lpips": 0.83267871260643,
+        "content_lpips": 0.7098337581999999,
+        "clip_content": 0.5538126645999999,
+        "classifier_acc": 0.1
+      },
+      "cezanne": {
+        "count": 50,
+        "clip_style": 0.5171916675567627,
+        "style_lpips": 0.8034298825263977,
+        "content_lpips": 0.7081529598,
+        "clip_content": 0.5514663016000001,
+        "classifier_acc": 0.02
+      }
+    },
+    "vangogh": {
+      "photo": {
+        "count": 50,
+        "clip_style": 0.528389864563942,
+        "style_lpips": 0.7916584360599518,
+        "content_lpips": 0.476997568,
+        "clip_content": 0.8180598445999999,
+        "classifier_acc": 0.2
+      },
+      "monet": {
+        "count": 50,
+        "clip_style": 0.5345936000347138,
+        "style_lpips": 0.8290331172943115,
+        "content_lpips": 0.7213676344000001,
+        "clip_content": 0.5617391644,
+        "classifier_acc": 0.22
+      },
+      "vangogh": {
+        "count": 50,
+        "clip_style": 0.5418564605712891,
+        "style_lpips": 0.8305360865592957,
+        "content_lpips": 0.7255557282000001,
+        "clip_content": 0.5533460078,
+        "classifier_acc": 0.56
+      },
+      "cezanne": {
+        "count": 50,
+        "clip_style": 0.5102361899614334,
+        "style_lpips": 0.820994565486908,
+        "content_lpips": 0.7234791897999999,
+        "clip_content": 0.5577152613999999,
+        "classifier_acc": 0.06
+      }
+    },
+    "cezanne": {
+      "photo": {
+        "count": 50,
+        "clip_style": 0.5207626783847809,
+        "style_lpips": 0.759560341835022,
+        "content_lpips": 0.45279132520000004,
+        "clip_content": 0.8323839674,
+        "classifier_acc": 0.16
+      },
+      "monet": {
+        "count": 50,
+        "clip_style": 0.5206765991449356,
+        "style_lpips": 0.8065152311325073,
+        "content_lpips": 0.713779568,
+        "clip_content": 0.5135563098,
+        "classifier_acc": 0.4
+      },
+      "vangogh": {
+        "count": 50,
+        "clip_style": 0.530031156539917,
+        "style_lpips": 0.8371631646156311,
+        "content_lpips": 0.7174590397999999,
+        "clip_content": 0.5092004798,
+        "classifier_acc": 0.2
+      },
+      "cezanne": {
+        "count": 50,
+        "clip_style": 0.4999368196725845,
+        "style_lpips": 0.8032823896408081,
+        "content_lpips": 0.7152792352,
+        "clip_content": 0.509989215,
+        "classifier_acc": 0.24
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "clip_style": 0.5262030344704787,
+      "content_lpips": 0.6454112113166665,
+      "classifier_acc": 0.14833333333333334
+    },
+    "photo_to_art_performance": {
+      "clip_style": 0.5144769507646562,
+      "valid": true,
+      "classifier_acc": 0.04
+    }
+  },
+  "classification_report": {
+    "cezanne": {
+      "precision": 0.24,
+      "recall": 0.09,
+      "f1-score": 0.13090909090909092,
+      "support": 200.0
+    },
+    "monet": {
+      "precision": 0.2553191489361702,
+      "recall": 0.3,
+      "f1-score": 0.27586206896551724,
+      "support": 200.0
+    },
+    "photo": {
+      "precision": 0.2524271844660194,
+      "recall": 0.39,
+      "f1-score": 0.30648330058939094,
+      "support": 200.0
+    },
+    "vangogh": {
+      "precision": 0.2430939226519337,
+      "recall": 0.22,
+      "f1-score": 0.23097112860892388,
+      "support": 200.0
+    },
+    "accuracy": 0.25,
+    "macro avg": {
+      "precision": 0.24771006401353085,
+      "recall": 0.25,
+      "f1-score": 0.23605639726823074,
+      "support": 800.0
+    },
+    "weighted avg": {
+      "precision": 0.24771006401353085,
+      "recall": 0.25,
+      "f1-score": 0.23605639726823077,
+      "support": 800.0
+    }
+  },
+  "detailed_style_metrics": {
+    "cezanne": {
+      "precision": 0.24,
+      "recall": 0.09,
+      "f1_score": 0.13090909090909092,
+      "support": 200
+    },
+    "monet": {
+      "precision": 0.2553191489361702,
+      "recall": 0.3,
+      "f1_score": 0.27586206896551724,
+      "support": 200
+    },
+    "photo": {
+      "precision": 0.2524271844660194,
+      "recall": 0.39,
+      "f1_score": 0.30648330058939094,
+      "support": 200
+    },
+    "vangogh": {
+      "precision": 0.2430939226519337,
+      "recall": 0.22,
+      "f1_score": 0.23097112860892388,
+      "support": 200
+    }
+  }
+}

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import csv
 import logging
+import subprocess
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
@@ -133,12 +135,16 @@ class AdaCUTTrainer:
         self.use_tqdm = bool(train_cfg.get("use_tqdm", True))
         self.num_epochs = int(train_cfg.get("num_epochs", 100))
         self.save_interval = max(1, int(train_cfg.get("save_interval", 10)))
+        self.full_eval_interval = max(0, int(train_cfg.get("full_eval_interval", 50)))
+        self.run_full_eval_on_last_epoch = bool(train_cfg.get("full_eval_on_last_epoch", True))
 
         ckpt_cfg = config.get("checkpoint", {})
         self.checkpoint_dir = Path(ckpt_cfg.get("save_dir", "../adacut_ckpt"))
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         self.log_dir = self.checkpoint_dir / "logs"
         self.log_dir.mkdir(parents=True, exist_ok=True)
+        self.full_eval_root = self.checkpoint_dir / "full_eval"
+        self.full_eval_root.mkdir(parents=True, exist_ok=True)
         self.log_file = self.log_dir / f"training_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         with open(self.log_file, "w", encoding="utf-8", newline="") as f:
             writer = csv.writer(f)
@@ -395,3 +401,62 @@ class AdaCUTTrainer:
         torch.save(payload, path)
         logger.info("Saved checkpoint: %s", path)
         return path
+
+    def run_full_evaluation(self, epoch: int, checkpoint_path: Optional[Path] = None) -> bool:
+        """
+        Launch external full evaluation script.
+        """
+        if checkpoint_path is None:
+            checkpoint_path = self.checkpoint_dir / f"epoch_{epoch:04d}.pt"
+        if not checkpoint_path.exists():
+            logger.warning("Skip full eval: checkpoint missing: %s", checkpoint_path)
+            return False
+
+        utils_script = Path(__file__).resolve().parent / "utils" / "run_evaluation.py"
+        if not utils_script.exists():
+            logger.warning("Skip full eval: script not found: %s", utils_script)
+            return False
+
+        out_dir = self.full_eval_root / f"epoch_{epoch:04d}"
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        cfg_train = self.config.get("training", {})
+        cfg_infer = self.config.get("inference", {})
+        cfg_loss = self.config.get("loss", {})
+
+        cmd = [
+            sys.executable,
+            str(utils_script),
+            "--checkpoint",
+            str(checkpoint_path),
+            "--output",
+            str(out_dir),
+            "--num_steps",
+            str(int(cfg_infer.get("num_steps", 1))),
+            "--batch_size",
+            str(int(cfg_train.get("full_eval_batch_size", 8))),
+            "--max_src_samples",
+            str(int(cfg_train.get("full_eval_max_src_samples", 30))),
+            "--max_ref_compare",
+            str(int(cfg_train.get("full_eval_max_ref_compare", 50))),
+        ]
+
+        test_dir = cfg_train.get("test_image_dir", "")
+        if test_dir:
+            cmd += ["--test_dir", str(test_dir)]
+        cache_dir = cfg_train.get("full_eval_cache_dir", "")
+        if cache_dir:
+            cmd += ["--cache_dir", str(cache_dir)]
+        classifier_path = cfg_loss.get("style_classifier_ckpt", "")
+        if classifier_path:
+            cmd += ["--classifier_path", str(classifier_path)]
+
+        log_path = self.log_dir / f"full_eval_epoch_{epoch:04d}.log"
+        logger.info("Running full eval for epoch %d -> %s", epoch, out_dir)
+        with open(log_path, "w", encoding="utf-8") as logf:
+            proc = subprocess.run(cmd, cwd=str(Path(__file__).resolve().parent), stdout=logf, stderr=subprocess.STDOUT)
+        if proc.returncode != 0:
+            logger.error("Full eval failed for epoch %d (code=%d). See %s", epoch, proc.returncode, log_path)
+            return False
+        logger.info("Full eval completed for epoch %d. Log: %s", epoch, log_path)
+        return True
