@@ -166,11 +166,12 @@ class LGTInference:
 
     @torch.no_grad()
     def generation(self, x0, target_style_id, num_steps=None, source_style_id=None, style_ref=None):
-        del num_steps, source_style_id
+        del num_steps, source_style_id, style_ref
         b = x0.shape[0]
         if isinstance(target_style_id, int):
             target_style_id = torch.full((b,), target_style_id, dtype=torch.long, device=x0.device)
-        return self.model(x0, target_style_id, style_ref=style_ref)
+        # Deployment path: style transfer by style_id only (no reference image required).
+        return self.model(x0, target_style_id, style_ref=None, style_mix_alpha=0.0)
 
     @torch.no_grad()
     def transfer_style(
