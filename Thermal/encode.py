@@ -10,8 +10,8 @@ vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse").to("cuda")
 vae.eval()
 
 # 目录路径
-root_dir = "/mnt/g/GitHub/Latent_Style/style_data/train/"
-latent_dir = "../latents"
+root_dir = "/mnt/g/GitHub/Latent_Style/style_data/overfit50"
+latent_dir = "../latents_overfit50"
 
 # 支持的图片格式
 EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tif", ".tiff"}
@@ -22,7 +22,7 @@ Path(latent_dir).mkdir(parents=True, exist_ok=True)
 def save_latent_image(image_path, latent_path):
     """保存图片为 latent.pt"""
     image = Image.open(image_path).convert("RGB")
-    image = image.resize((512, 512))  # 调整为 512x512（SD VAE 需要的尺寸）
+    image = image.resize((256, 256))  # 调整为 512x512（SD VAE 需要的尺寸）
     image_tensor = torch.from_numpy(np.array(image)).unsqueeze(0).float().div(255.0).to("cuda")
     image_tensor = image_tensor.permute(0, 3, 1, 2) * 2.0 - 1.0
 

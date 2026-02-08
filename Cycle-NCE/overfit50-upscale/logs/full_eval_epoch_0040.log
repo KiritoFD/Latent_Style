@@ -1,0 +1,35 @@
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+
+棣冩畬 Phase 1: Generation (Batch Size 10)
+  Generating Batch 1/10
+  Generating Batch 2/10
+  Generating Batch 3/10
+  Generating Batch 4/10
+  Generating Batch 5/10
+  Generating Batch 6/10
+  Generating Batch 7/10
+  Generating Batch 8/10
+  Generating Batch 9/10
+  Generating Batch 10/10
+  閴?Generation Models Unloaded
+
+棣冩畬 Phase 2: Evaluation
+  Loaded latent style classifier: /mnt/g/GitHub/Latent_Style/Cycle-NCE/src/style_classifier.pt (classes=2)
+  閴?CLIP Loaded
+棣冩憹 Found feature cache: ../../eval_cache/ref_feats_f50196de_m100.pt
+  閴?Cache loaded successfully
+  Processing 200 generated images...
+
+棣冩惓 Generating Summary...
+
+閴?Classification Report:
+              precision    recall  f1-score   support
+
+       Hayao       0.90      0.88      0.89       100
+       photo       0.88      0.90      0.89       100
+
+    accuracy                           0.89       200
+   macro avg       0.89      0.89      0.89       200
+weighted avg       0.89      0.89      0.89       200
+
+閴?Summary saved: ../overfit50-upscale/full_eval/epoch_0040/summary.json
