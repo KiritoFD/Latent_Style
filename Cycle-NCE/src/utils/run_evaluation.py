@@ -122,6 +122,35 @@ def _extract_clip_embeddings(output):
         msg += f", Keys: {list(output.keys())}"
     raise RuntimeError(msg)
 
+
+def _load_eval_image_tensor(path: Path, size: int = 256) -> torch.Tensor:
+    img = Image.open(path).convert("RGB").resize((size, size))
+    return T.ToTensor()(img)
+
+
+def _build_style_ref_prototypes(
+    test_images: dict,
+    vae,
+    device: str,
+    ref_count: int = 8,
+) -> dict:
+    """
+    Build deterministic style reference latents per style by averaging
+    the first `ref_count` images (sorted order) in each target style.
+    """
+    style_ref_prototypes = {}
+    for style_id, (_, img_list) in test_images.items():
+        if not img_list:
+            continue
+        count = max(1, min(len(img_list), int(ref_count)))
+        selected = img_list[:count]
+        batch = torch.stack([_load_eval_image_tensor(p) for p in selected], dim=0).to(device)
+        amp_ctx = torch.autocast("cuda", dtype=torch.bfloat16) if device == "cuda" else nullcontext()
+        with torch.no_grad(), amp_ctx:
+            latents = encode_image(vae, batch, device)
+        style_ref_prototypes[style_id] = latents.mean(dim=0, keepdim=True).detach()
+    return style_ref_prototypes
+
 # ==========================================
 # Main Logic
 # ==========================================
@@ -143,6 +172,15 @@ def main():
     parser.add_argument('--classifier_classes', type=str, default="", help="Optional comma-separated class names for report display")
     parser.add_argument('--eval_classifier_only', action='store_true', help="Run only classifier evaluation (skip LPIPS/CLIP)")
     parser.add_argument('--eval_disable_lpips', action='store_true', help="Skip LPIPS metrics (keep CLIP)")
+    parser.add_argument(
+        '--style_ref_mode',
+        type=str,
+        default='none',
+        choices=['none', 'prototype', 'random', 'self'],
+        help="Reference strategy. Deployment path uses style_id only; non-none modes are ignored."
+    )
+    parser.add_argument('--style_ref_count', type=int, default=8, help="Number of images to build per-style prototype")
+    parser.add_argument('--style_ref_seed', type=int, default=2026, help="Random seed when style_ref_mode=random")
     args = parser.parse_args()
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -172,6 +210,14 @@ def main():
     if not style_subdirs:
         # Fallback: auto-detect subdirs
         style_subdirs = [d.name for d in test_dir.iterdir() if d.is_dir()]
+
+    cfg_train = cfg.get('training', {})
+    style_ref_mode = str(cfg_train.get('full_eval_style_ref_mode', args.style_ref_mode)).lower()
+    style_ref_count = int(cfg_train.get('full_eval_style_ref_count', args.style_ref_count))
+    style_ref_seed = int(cfg_train.get('full_eval_style_ref_seed', args.style_ref_seed))
+    print(f"Style reference mode: {style_ref_mode} (count={style_ref_count}, seed={style_ref_seed})")
+    if style_ref_mode != "none":
+        print("WARNING: inference is style_id-only; style_ref_mode is ignored.")
     
     test_images = {}
     for style_id, style_name in enumerate(style_subdirs):
@@ -216,8 +262,7 @@ def main():
         # Load Source Images
         src_tensors = []
         for item in batch_info:
-            img = Image.open(item['path']).convert('RGB').resize((256, 256))
-            src_tensors.append(T.ToTensor()(img))
+            src_tensors.append(_load_eval_image_tensor(item['path']))
         
         src_batch = torch.stack(src_tensors).to(device)
         src_style_ids = torch.tensor([item['style_id'] for item in batch_info], device=device)
@@ -232,19 +277,7 @@ def main():
                 for tgt_id in range(num_styles):
                     tgt_name = style_subdirs[tgt_id]
                     tgt_ids = torch.full((len(batch_info),), tgt_id, device=device, dtype=torch.long)
-                    _, tgt_img_list = test_images.get(tgt_id, (tgt_name, []))
-                    if not tgt_img_list:
-                        continue
-                    ref_rng = random.Random(2026 + b_start * 131 + tgt_id)
-                    ref_paths = [tgt_img_list[ref_rng.randrange(len(tgt_img_list))] for _ in range(len(batch_info))]
-                    ref_tensors = []
-                    for ref_path in ref_paths:
-                        ref_img = Image.open(ref_path).convert('RGB').resize((256, 256))
-                        ref_tensors.append(T.ToTensor()(ref_img))
-                    ref_batch = torch.stack(ref_tensors).to(device)
-                    ref_latents = encode_image(vae, ref_batch, device)
-
-                    latents_gen = lgt.generation(latents_x0, tgt_ids, style_ref=ref_latents)
+                    latents_gen = lgt.generation(latents_x0, tgt_ids)
                     imgs_gen = decode_latent(vae, latents_gen, device) # [B, 3, H, W]
                     
                     # Offload to CPU & Save Async
@@ -396,9 +429,7 @@ def main():
         for style_id, (style_name, img_list) in test_images.items():
             ref_features[style_id] = []
 
-            rng = random.Random(42 + int(style_id))
             sampled_refs = img_list[:]
-            rng.shuffle(sampled_refs)
             if max_ref_cache > 0:
                 sampled_refs = sampled_refs[:min(len(sampled_refs), max_ref_cache)]
             ref_bs = max(1, int(args.ref_feature_batch_size))
@@ -570,7 +601,7 @@ def main():
                     tgt_refs = ref_features[tgt_id]
                     max_ref_compare = int(args.max_ref_compare)
                     if max_ref_compare > 0:
-                        refs_sample = random.sample(tgt_refs, min(len(tgt_refs), max_ref_compare))
+                        refs_sample = tgt_refs[:min(len(tgt_refs), max_ref_compare)]
                     else:
                         refs_sample = tgt_refs
                     

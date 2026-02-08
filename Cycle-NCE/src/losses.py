@@ -109,23 +109,30 @@ class AdaCUTObjective:
 
     def __init__(self, config: Dict) -> None:
         loss_cfg = config.get("loss", {})
-        self.w_gram = float(loss_cfg.get("w_gram", 100.0))
-        self.w_moment = float(loss_cfg.get("w_moment", 50.0))
+        # Core loss set for "train with reference, infer with style_id only".
+        # Keep backward-compatible fallback names for old configs.
+        self.w_distill = float(loss_cfg.get("w_distill", loss_cfg.get("w_token", 20.0)))
         self.w_code = float(loss_cfg.get("w_code", 10.0))
-        self.w_nce = float(loss_cfg.get("w_nce", 20.0))
-        self.w_idt = 0.0
-        self.w_cycle = float(loss_cfg.get("w_cycle", 0.0))
+        self.w_cycle = float(loss_cfg.get("w_cycle", 10.0))
+
+        # Optional auxiliary losses (default-off in the new scheme)
+        self.w_gram = float(loss_cfg.get("w_gram", 0.0))
+        self.w_moment = float(loss_cfg.get("w_moment", 0.0))
+        self.w_nce = float(loss_cfg.get("w_nce", 0.0))
+        self.w_idt = float(loss_cfg.get("w_idt", 0.0))
         self.w_push = float(loss_cfg.get("w_push", 0.0))
         self.push_margin = float(loss_cfg.get("push_margin", 0.2))
 
         self.cycle_warmup_epochs = int(loss_cfg.get("cycle_warmup_epochs", 0))
         self.cycle_ramp_epochs = int(loss_cfg.get("cycle_ramp_epochs", 1))
-        self.idt_warmup_epochs = 0
-        self.idt_ramp_epochs = 0
+        self.idt_warmup_epochs = int(loss_cfg.get("idt_warmup_epochs", 0))
+        self.idt_ramp_epochs = int(loss_cfg.get("idt_ramp_epochs", 1))
 
         self.nce_temperature = float(loss_cfg.get("nce_temperature", 0.1))
         self.nce_spatial_size = int(loss_cfg.get("nce_spatial_size", 16))
         self.nce_max_tokens = int(loss_cfg.get("nce_max_tokens", 2048))
+        self.nce_warmup_epochs = int(loss_cfg.get("nce_warmup_epochs", 0))
+        self.nce_ramp_epochs = int(loss_cfg.get("nce_ramp_epochs", 1))
         self.current_epoch = 1
         self.total_epochs = 1
 
@@ -152,7 +159,37 @@ class AdaCUTObjective:
         target_style_id: torch.Tensor,
         content_style_id: torch.Tensor,
     ) -> Dict[str, torch.Tensor]:
-        pred = model(content, style_id=target_style_id, style_ref=target_style)
+        # Teacher path (with reference style); this is not used at inference.
+        pred_teacher = model(
+            content,
+            style_id=target_style_id,
+            style_ref=target_style,
+            style_mix_alpha=1.0,
+        )
+        # Student path (deployment path, style_id only).
+        pred_student = model(
+            content,
+            style_id=target_style_id,
+            style_ref=None,
+            style_mix_alpha=0.0,
+        )
+        transfer_mask = (target_style_id.long() != content_style_id.long()).float()
+
+        if self.w_distill > 0.0:
+            loss_distill = F.l1_loss(pred_student.float(), pred_teacher.detach().float())
+        else:
+            loss_distill = torch.tensor(0.0, device=content.device, dtype=content.dtype)
+
+        # Code closure:
+        # - teacher output should map back to reference style code.
+        # - student output should map back to target style prototype.
+        s_ref = model.encode_style(target_style.float()).detach()
+        p_tgt = model.encode_style_id(target_style_id)
+        code_teacher = model.encode_style(pred_teacher.float())
+        code_student = model.encode_style(pred_student.float())
+        loss_code_ref = F.l1_loss(code_teacher, s_ref)
+        loss_code_proto = F.l1_loss(code_student, p_tgt)
+        loss_code = loss_code_ref + loss_code_proto
 
         w_cycle_eff = self._ramp_weight(
             self.w_cycle,
@@ -160,38 +197,45 @@ class AdaCUTObjective:
             warmup=self.cycle_warmup_epochs,
             ramp=self.cycle_ramp_epochs,
         )
-        if w_cycle_eff > 0.0:
-            rec = model(pred, style_id=content_style_id, style_ref=content)
-            loss_cycle = F.l1_loss(_lowpass(rec.float()), _lowpass(content.float()))
+        if w_cycle_eff > 0.0 and float(transfer_mask.sum().item()) > 0.0:
+            # Low-pass cycle only for cross-domain samples:
+            # x -> teacher(target) -> student(source prototype).
+            rec = model(
+                pred_teacher,
+                style_id=content_style_id,
+                style_ref=None,
+                style_mix_alpha=0.0,
+            )
+            rec_lp = _lowpass(rec.float())
+            content_lp = _lowpass(content.float())
+            per_sample_cycle = (rec_lp - content_lp).abs().mean(dim=(1, 2, 3))
+            loss_cycle = (per_sample_cycle * transfer_mask).sum() / transfer_mask.sum().clamp_min(1.0)
         else:
             loss_cycle = torch.tensor(0.0, device=content.device, dtype=content.dtype)
 
-        pred_feats = _multiscale_latent_feats(pred.float())
-        tgt_feats = _multiscale_latent_feats(target_style.float())
+        # Optional extras (off by default): style statistics on teacher output.
         loss_gram = torch.tensor(0.0, device=content.device, dtype=torch.float32)
         loss_moment = torch.tensor(0.0, device=content.device, dtype=torch.float32)
-        for a, b in zip(pred_feats, tgt_feats):
-            loss_gram = loss_gram + calc_gram_loss(a, b)
-            loss_moment = loss_moment + calc_moment_loss(a, b)
-        scale = 1.0 / float(len(pred_feats))
-        loss_gram = loss_gram * scale
-        loss_moment = loss_moment * scale
-
-        need_code = (self.w_code > 0.0) or (self.w_push > 0.0)
-        if need_code:
-            code_tgt = model.encode_style(target_style.float())
-            code_pred = model.encode_style(pred.float())
-            if self.w_code > 0.0:
-                loss_code = F.l1_loss(code_pred, code_tgt)
-            else:
-                loss_code = torch.tensor(0.0, device=content.device, dtype=content.dtype)
-        else:
-            loss_code = torch.tensor(0.0, device=content.device, dtype=content.dtype)
-        if self.w_nce > 0.0:
+        if self.w_gram > 0.0 or self.w_moment > 0.0:
+            pred_feats = _multiscale_latent_feats(pred_teacher.float())
+            tgt_feats = _multiscale_latent_feats(target_style.float())
+            for a, b in zip(pred_feats, tgt_feats):
+                loss_gram = loss_gram + calc_gram_loss(a, b)
+                loss_moment = loss_moment + calc_moment_loss(a, b)
+            scale = 1.0 / float(len(pred_feats))
+            loss_gram = loss_gram * scale
+            loss_moment = loss_moment * scale
+        w_nce_eff = self._ramp_weight(
+            self.w_nce,
+            epoch=self.current_epoch,
+            warmup=self.nce_warmup_epochs,
+            ramp=self.nce_ramp_epochs,
+        )
+        if w_nce_eff > 0.0:
             loss_nce = calc_nce_loss(
                 model,
                 x_in=content.float(),
-                x_out=pred.float(),
+                x_out=pred_student.float(),
                 temperature=self.nce_temperature,
                 spatial_size=self.nce_spatial_size,
                 max_tokens=self.nce_max_tokens,
@@ -199,14 +243,26 @@ class AdaCUTObjective:
         else:
             loss_nce = torch.tensor(0.0, device=content.device, dtype=content.dtype)
 
-        # Identity loss removed by design; cycle already provides structure consistency.
-        w_idt_eff = 0.0
-        loss_idt = torch.tensor(0.0, device=content.device, dtype=content.dtype)
+        w_idt_eff = self._ramp_weight(
+            self.w_idt,
+            epoch=self.current_epoch,
+            warmup=self.idt_warmup_epochs,
+            ramp=self.idt_ramp_epochs,
+        )
+        if w_idt_eff > 0.0:
+            idt_pred = model(
+                content,
+                style_id=content_style_id,
+                style_ref=None,
+                style_mix_alpha=0.0,
+            )
+            loss_idt = F.l1_loss(idt_pred.float(), content.float())
+        else:
+            loss_idt = torch.tensor(0.0, device=content.device, dtype=content.dtype)
 
         if self.w_push > 0.0:
-            code_src = model.encode_style(content.float())
-            dist_to_src = (code_pred - code_src).abs().mean(dim=1)
-            transfer_mask = (target_style_id.long() != content_style_id.long()).float()
+            p_src = model.encode_style_id(content_style_id)
+            dist_to_src = (code_student - p_src).abs().mean(dim=1)
             push_term = F.relu(self.push_margin - dist_to_src) * transfer_mask
             denom = transfer_mask.sum().clamp_min(1.0)
             loss_push = push_term.sum() / denom
@@ -214,23 +270,34 @@ class AdaCUTObjective:
             loss_push = torch.tensor(0.0, device=content.device, dtype=content.dtype)
 
         total = (
-            self.w_gram * loss_gram
-            + self.w_moment * loss_moment
+            self.w_distill * loss_distill
             + self.w_code * loss_code
             + w_cycle_eff * loss_cycle
-            + self.w_nce * loss_nce
+            + self.w_gram * loss_gram
+            + self.w_moment * loss_moment
+            + w_nce_eff * loss_nce
+            + w_idt_eff * loss_idt
             + self.w_push * loss_push
         )
 
         return {
             "loss": total,
+            "distill": loss_distill.detach(),
             "gram": loss_gram.detach(),
             "moment": loss_moment.detach(),
             "code": loss_code.detach(),
+            "code_ref": loss_code_ref.detach(),
+            "code_proto": loss_code_proto.detach(),
             "push": loss_push.detach(),
             "nce": loss_nce.detach(),
             "idt": loss_idt.detach(),
             "cycle": loss_cycle.detach(),
             "w_cycle_eff": torch.tensor(w_cycle_eff, device=content.device),
+            "w_nce_eff": torch.tensor(w_nce_eff, device=content.device),
             "w_idt_eff": torch.tensor(w_idt_eff, device=content.device),
+            "style_ref_alpha": torch.tensor(1.0, device=content.device),
+            "transfer_ratio": transfer_mask.mean().detach(),
+            # Backward-compatible aliases for old logs.
+            "token": loss_distill.detach(),
+            "token_spatial": torch.tensor(0.0, device=content.device),
         }

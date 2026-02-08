@@ -135,19 +135,25 @@ def main() -> None:
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f gram=%.4f moment=%.4f code=%.4f push=%.4f cycle=%.4f nce=%.4f idt=%.4f wcyc=%.2f widt=%.2f lr=%.2e",
+            "Epoch %d/%d | loss=%.4f distill=%.4f code=%.4f cref=%.4f cproto=%.4f cycle=%.4f gram=%.4f moment=%.4f push=%.4f nce=%.4f idt=%.4f wcyc=%.2f wnce=%.2f widt=%.2f sref=%.2f xfer=%.2f lr=%.2e",
             epoch,
             trainer.num_epochs,
             metrics["loss"],
-            metrics.get("gram", 0.0),
-            metrics["moment"],
+            metrics.get("distill", 0.0),
             metrics.get("code", 0.0),
-            metrics.get("push", 0.0),
+            metrics.get("code_ref", 0.0),
+            metrics.get("code_proto", 0.0),
             metrics.get("cycle", 0.0),
-            metrics["nce"],
-            metrics["idt"],
+            metrics.get("gram", 0.0),
+            metrics.get("moment", 0.0),
+            metrics.get("push", 0.0),
+            metrics.get("nce", 0.0),
+            metrics.get("idt", 0.0),
             metrics.get("w_cycle_eff", 0.0),
+            metrics.get("w_nce_eff", 0.0),
             metrics.get("w_idt_eff", 0.0),
+            metrics.get("style_ref_alpha", 0.0),
+            metrics.get("transfer_ratio", 0.0),
             metrics["lr"],
         )
 

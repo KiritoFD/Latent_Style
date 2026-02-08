@@ -84,6 +84,7 @@ class LatentAdaCUT(nn.Module):
         self.residual_gain = float(residual_gain)
         self.style_ref_gain = float(style_ref_gain)
         self.lift_channels = int(lift_channels) if lift_channels is not None else int(base_dim)
+        self.body_channels = int(base_dim * 2)
         self.style_spatial_pre_gain_32 = float(style_spatial_pre_gain_32)
         self.style_spatial_block_gain_32 = float(style_spatial_block_gain_32)
         self.style_spatial_pre_gain_16 = float(style_spatial_pre_gain_16)
@@ -99,6 +100,14 @@ class LatentAdaCUT(nn.Module):
             nn.AdaptiveAvgPool2d(1),
         )
         self.style_proj = nn.Linear(base_dim * 4, style_dim)
+        self.style_emb = nn.Embedding(self.num_styles, style_dim)
+        nn.init.normal_(self.style_emb.weight, mean=0.0, std=0.02)
+
+        # Learnable style-id spatial priors for inference without reference image.
+        self.style_spatial_id_32 = nn.Parameter(torch.zeros(self.num_styles, self.lift_channels, 32, 32))
+        self.style_spatial_id_16 = nn.Parameter(torch.zeros(self.num_styles, self.body_channels, 16, 16))
+        nn.init.normal_(self.style_spatial_id_32, mean=0.0, std=0.02)
+        nn.init.normal_(self.style_spatial_id_16, mean=0.0, std=0.02)
 
         # 32x32 lift stage before downsampling.
         self.enc_in = nn.Conv2d(latent_channels, self.lift_channels, kernel_size=3, stride=1, padding=1)
@@ -106,10 +115,10 @@ class LatentAdaCUT(nn.Module):
         self.hires_body = nn.ModuleList(
             [ResBlock(self.lift_channels, style_dim, num_groups=num_groups) for _ in range(max(0, int(num_hires_blocks)))]
         )
-        self.down = nn.Conv2d(self.lift_channels, base_dim * 2, kernel_size=4, stride=2, padding=1)
+        self.down = nn.Conv2d(self.lift_channels, self.body_channels, kernel_size=4, stride=2, padding=1)
 
         self.body = nn.ModuleList(
-            [ResBlock(base_dim * 2, style_dim, num_groups=num_groups) for _ in range(num_res_blocks)]
+            [ResBlock(self.body_channels, style_dim, num_groups=num_groups) for _ in range(num_res_blocks)]
         )
 
         out_groups = max(1, min(num_groups, self.lift_channels))
@@ -119,7 +128,7 @@ class LatentAdaCUT(nn.Module):
         # Decoder: 16 -> 32
         self.dec = nn.Sequential(
             nn.Upsample(scale_factor=2, mode="nearest"),
-            nn.Conv2d(base_dim * 2, self.lift_channels, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(self.body_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
             nn.GroupNorm(out_groups, self.lift_channels, eps=1e-6),
             nn.SiLU(),
             nn.Conv2d(self.lift_channels, latent_channels, kernel_size=3, stride=1, padding=1),
@@ -136,11 +145,20 @@ class LatentAdaCUT(nn.Module):
         self,
         style_id: torch.Tensor | None = None,
         style_ref: torch.Tensor | None = None,
+        style_mix_alpha: float | torch.Tensor | None = None,
     ) -> torch.Tensor:
-        del style_id
-        if style_ref is None:
-            raise ValueError("style_ref is required for style code in reference-conditioned mode.")
-        return self.encode_style(style_ref) * self.style_ref_gain
+        code_id = self.encode_style_id(style_id) if style_id is not None else None
+        code_ref = (self.encode_style(style_ref) * self.style_ref_gain) if style_ref is not None else None
+
+        if code_id is None and code_ref is None:
+            raise ValueError("Either style_id or style_ref must be provided.")
+        if code_id is None:
+            return code_ref
+        if code_ref is None:
+            return code_id
+
+        alpha = self._resolve_alpha(style_mix_alpha, batch=code_id.shape[0], device=code_id.device, dtype=code_id.dtype)
+        return alpha * code_ref + (1.0 - alpha) * code_id
 
     def encode_style(self, z: torch.Tensor) -> torch.Tensor:
         """
@@ -149,6 +167,14 @@ class LatentAdaCUT(nn.Module):
         z = z / max(self.latent_scale_factor, 1e-8)
         h = self.style_enc(z).flatten(1)
         return self.style_proj(h)
+
+    def encode_style_id(self, style_id: torch.Tensor | int | None) -> torch.Tensor:
+        if style_id is None:
+            raise ValueError("style_id is required.")
+        if isinstance(style_id, int):
+            style_id = torch.tensor([style_id], device=self.style_emb.weight.device, dtype=torch.long)
+        style_id = style_id.long().view(-1).to(self.style_emb.weight.device)
+        return self.style_emb(style_id)
 
     def encode_style_feats(self, z: torch.Tensor) -> list[torch.Tensor]:
         """
@@ -189,16 +215,85 @@ class LatentAdaCUT(nn.Module):
             maps[16] = cls._style_highpass_map(style_feats[1])
         return maps
 
+    def encode_style_spatial_ref(self, style_ref: torch.Tensor | None) -> dict[int, torch.Tensor]:
+        if style_ref is None:
+            return {}
+        return self._extract_style_spatial_maps(self.encode_style_feats(style_ref))
+
+    def encode_style_spatial_id(self, style_id: torch.Tensor | int | None) -> dict[int, torch.Tensor]:
+        if style_id is None:
+            return {}
+        if isinstance(style_id, int):
+            style_id = torch.tensor([style_id], device=self.style_spatial_id_32.device, dtype=torch.long)
+        style_id = style_id.long().view(-1).to(self.style_spatial_id_32.device)
+        maps = {
+            32: self.style_spatial_id_32.index_select(0, style_id),
+            16: self.style_spatial_id_16.index_select(0, style_id),
+        }
+        maps[32] = self._style_highpass_map(maps[32])
+        maps[16] = self._style_highpass_map(maps[16])
+        return maps
+
+    @staticmethod
+    def _resolve_alpha(
+        style_mix_alpha: float | torch.Tensor | None,
+        batch: int,
+        device: torch.device,
+        dtype: torch.dtype,
+    ) -> torch.Tensor:
+        if style_mix_alpha is None:
+            alpha = torch.ones(batch, 1, device=device, dtype=dtype)
+        elif torch.is_tensor(style_mix_alpha):
+            alpha = style_mix_alpha.to(device=device, dtype=dtype)
+            if alpha.ndim == 0:
+                alpha = alpha.expand(batch).reshape(batch, 1)
+            elif alpha.ndim == 1:
+                alpha = alpha.reshape(batch, 1)
+            else:
+                alpha = alpha.reshape(batch, 1)
+        else:
+            alpha = torch.full((batch, 1), float(style_mix_alpha), device=device, dtype=dtype)
+        return alpha.clamp_(0.0, 1.0)
+
+    def _blend_style_maps(
+        self,
+        maps_id: dict[int, torch.Tensor],
+        maps_ref: dict[int, torch.Tensor],
+        style_mix_alpha: float | torch.Tensor | None,
+        batch: int,
+        device: torch.device,
+    ) -> dict[int, torch.Tensor]:
+        out: dict[int, torch.Tensor] = {}
+        keys = set(maps_id.keys()) | set(maps_ref.keys())
+        if not keys:
+            return out
+        alpha = self._resolve_alpha(style_mix_alpha, batch=batch, device=device, dtype=torch.float32).view(batch, 1, 1, 1)
+        for k in keys:
+            m_id = maps_id.get(k)
+            m_ref = maps_ref.get(k)
+            if m_id is None:
+                out[k] = m_ref
+            elif m_ref is None:
+                out[k] = m_id
+            else:
+                out[k] = alpha * m_ref + (1.0 - alpha) * m_id
+        return out
+
     def forward(
         self,
         x: torch.Tensor,
         style_id: torch.Tensor | None = None,
         style_ref: torch.Tensor | None = None,
+        style_mix_alpha: float | torch.Tensor | None = None,
     ) -> torch.Tensor:
-        style_code = self._style_code(style_id=style_id, style_ref=style_ref)
-        style_maps: dict[int, torch.Tensor] = {}
-        if style_ref is not None:
-            style_maps = self._extract_style_spatial_maps(self.encode_style_feats(style_ref))
+        style_code = self._style_code(style_id=style_id, style_ref=style_ref, style_mix_alpha=style_mix_alpha)
+        style_maps = self._blend_style_maps(
+            maps_id=self.encode_style_spatial_id(style_id),
+            maps_ref=self.encode_style_spatial_ref(style_ref),
+            style_mix_alpha=style_mix_alpha,
+            batch=x.shape[0],
+            device=x.device,
+        )
         style_spatial_32 = style_maps.get(32)
         style_spatial_16 = style_maps.get(16)
 
