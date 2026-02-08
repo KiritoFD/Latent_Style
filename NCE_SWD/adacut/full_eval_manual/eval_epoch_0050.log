@@ -1,47 +1,0 @@
-/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
-  warnings.warn(
-/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
-  warnings.warn(msg)
-Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
-
-🚀 Phase 1: Generation (Batch Size 20)
-  Generating Batch 1/10
-  Generating Batch 2/10
-  Generating Batch 3/10
-  Generating Batch 4/10
-  Generating Batch 5/10
-  Generating Batch 6/10
-  Generating Batch 7/10
-  Generating Batch 8/10
-  Generating Batch 9/10
-  Generating Batch 10/10
-  ✓ Generation Models Unloaded
-
-🚀 Phase 2: Evaluation
-  Loaded latent style classifier: /mnt/g/GitHub/Latent_Style/Thermal/src/style_classifier.pt (classes=4)
-  ✓ LPIPS Loaded
-  ✓ CLIP Loaded
-
-🏗️  Computing Reference Features (One-time setup)...
-Featurizing photo:   0%|          | 0/50 [00:00<?, ?it/s]Featurizing photo:   2%|▏         | 1/50 [00:00<00:10,  4.73it/s]Featurizing photo:   4%|▍         | 2/50 [00:00<00:07,  6.43it/s]Featurizing photo:   6%|▌         | 3/50 [00:00<00:06,  7.35it/s]Featurizing photo:  14%|█▍        | 7/50 [00:00<00:02, 17.42it/s]Featurizing photo:  22%|██▏       | 11/50 [00:00<00:01, 24.41it/s]Featurizing photo:  30%|███       | 15/50 [00:00<00:01, 28.89it/s]Featurizing photo:  38%|███▊      | 19/50 [00:00<00:00, 31.21it/s]Featurizing photo:  46%|████▌     | 23/50 [00:00<00:00, 33.36it/s]Featurizing photo:  54%|█████▍    | 27/50 [00:01<00:00, 34.28it/s]Featurizing photo:  62%|██████▏   | 31/50 [00:01<00:00, 34.85it/s]Featurizing photo:  70%|███████   | 35/50 [00:01<00:00, 35.10it/s]Featurizing photo:  78%|███████▊  | 39/50 [00:01<00:00, 34.97it/s]Featurizing photo:  86%|████████▌ | 43/50 [00:01<00:00, 35.21it/s]Featurizing photo:  94%|█████████▍| 47/50 [00:01<00:00, 35.57it/s]Featurizing photo: 100%|██████████| 50/50 [00:01<00:00, 29.02it/s]
-Featurizing monet:   0%|          | 0/50 [00:00<?, ?it/s]Featurizing monet:   8%|▊         | 4/50 [00:00<00:01, 34.62it/s]Featurizing monet:  16%|█▌        | 8/50 [00:00<00:01, 35.85it/s]Featurizing monet:  24%|██▍       | 12/50 [00:00<00:01, 36.10it/s]Featurizing monet:  32%|███▏      | 16/50 [00:00<00:00, 35.38it/s]Featurizing monet:  40%|████      | 20/50 [00:00<00:00, 36.51it/s]Featurizing monet:  48%|████▊     | 24/50 [00:00<00:00, 37.25it/s]Featurizing monet:  56%|█████▌    | 28/50 [00:00<00:00, 37.96it/s]Featurizing monet:  64%|██████▍   | 32/50 [00:00<00:00, 38.21it/s]Featurizing monet:  72%|███████▏  | 36/50 [00:00<00:00, 37.73it/s]Featurizing monet:  80%|████████  | 40/50 [00:01<00:00, 37.06it/s]Featurizing monet:  88%|████████▊ | 44/50 [00:01<00:00, 36.27it/s]Featurizing monet:  96%|█████████▌| 48/50 [00:01<00:00, 36.41it/s]Featurizing monet: 100%|██████████| 50/50 [00:01<00:00, 36.79it/s]
-Featurizing vangogh:   0%|          | 0/50 [00:00<?, ?it/s]Featurizing vangogh:   8%|▊         | 4/50 [00:00<00:01, 40.00it/s]Featurizing vangogh:  16%|█▌        | 8/50 [00:00<00:01, 39.50it/s]Featurizing vangogh:  24%|██▍       | 12/50 [00:00<00:00, 39.35it/s]Featurizing vangogh:  32%|███▏      | 16/50 [00:00<00:00, 39.54it/s]Featurizing vangogh:  40%|████      | 20/50 [00:00<00:00, 38.95it/s]Featurizing vangogh:  48%|████▊     | 24/50 [00:00<00:00, 38.94it/s]Featurizing vangogh:  56%|█████▌    | 28/50 [00:00<00:00, 37.96it/s]Featurizing vangogh:  64%|██████▍   | 32/50 [00:00<00:00, 37.19it/s]Featurizing vangogh:  72%|███████▏  | 36/50 [00:00<00:00, 37.20it/s]Featurizing vangogh:  80%|████████  | 40/50 [00:01<00:00, 37.63it/s]Featurizing vangogh:  88%|████████▊ | 44/50 [00:01<00:00, 37.99it/s]Featurizing vangogh:  96%|█████████▌| 48/50 [00:01<00:00, 38.06it/s]Featurizing vangogh: 100%|██████████| 50/50 [00:01<00:00, 38.31it/s]
-Featurizing cezanne:   0%|          | 0/50 [00:00<?, ?it/s]Featurizing cezanne:   8%|▊         | 4/50 [00:00<00:01, 39.57it/s]Featurizing cezanne:  16%|█▌        | 8/50 [00:00<00:01, 39.21it/s]Featurizing cezanne:  24%|██▍       | 12/50 [00:00<00:00, 38.95it/s]Featurizing cezanne:  32%|███▏      | 16/50 [00:00<00:00, 37.68it/s]Featurizing cezanne:  40%|████      | 20/50 [00:00<00:00, 37.30it/s]Featurizing cezanne:  48%|████▊     | 24/50 [00:00<00:00, 37.01it/s]Featurizing cezanne:  56%|█████▌    | 28/50 [00:00<00:00, 36.18it/s]Featurizing cezanne:  64%|██████▍   | 32/50 [00:00<00:00, 35.92it/s]Featurizing cezanne:  72%|███████▏  | 36/50 [00:00<00:00, 36.17it/s]Featurizing cezanne:  80%|████████  | 40/50 [00:01<00:00, 35.99it/s]Featurizing cezanne:  88%|████████▊ | 44/50 [00:01<00:00, 35.92it/s]Featurizing cezanne:  96%|█████████▌| 48/50 [00:01<00:00, 36.98it/s]Featurizing cezanne: 100%|██████████| 50/50 [00:01<00:00, 36.93it/s]
-✓ Cache saved to /mnt/g/GitHub/Latent_Style/eval_cache/ref_feats_6541cd52.pt
-  Processing 800 generated images...
-
-📊 Generating Summary...
-
-✅ Classification Report:
-              precision    recall  f1-score   support
-
-     cezanne       0.24      0.09      0.13       200
-       monet       0.26      0.30      0.28       200
-       photo       0.25      0.39      0.31       200
-     vangogh       0.24      0.22      0.23       200
-
-    accuracy                           0.25       800
-   macro avg       0.25      0.25      0.24       800
-weighted avg       0.25      0.25      0.24       800
-
-✓ Summary saved: /mnt/g/GitHub/Latent_Style/NCE_SWD/adacut/full_eval_manual/epoch_0050/summary.json
