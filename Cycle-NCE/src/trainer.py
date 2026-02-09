@@ -63,10 +63,6 @@ class AdaCUTTrainer:
             latent_scale_factor=float(model_cfg.get("latent_scale_factor", 0.18215)),
             residual_gain=float(model_cfg.get("residual_gain", 0.1)),
             style_ref_gain=float(model_cfg.get("style_ref_gain", 1.0)),
-            style_spatial_pre_gain_32=float(model_cfg.get("style_spatial_pre_gain_32", 0.25)),
-            style_spatial_block_gain_32=float(model_cfg.get("style_spatial_block_gain_32", 0.10)),
-            style_spatial_pre_gain_16=float(model_cfg.get("style_spatial_pre_gain_16", 0.35)),
-            style_spatial_block_gain_16=float(model_cfg.get("style_spatial_block_gain_16", 0.15)),
         )
         if self.channels_last:
             self.model = self.model.to(device, memory_format=torch.channels_last)
@@ -161,10 +157,7 @@ class AdaCUTTrainer:
                 [
                     "epoch",
                     "loss",
-                    "distill",
                     "code",
-                    "code_ref",
-                    "code_proto",
                     "cycle",
                     "gram",
                     "moment",
@@ -174,7 +167,6 @@ class AdaCUTTrainer:
                     "w_cycle_eff",
                     "w_nce_eff",
                     "w_idt_eff",
-                    "style_ref_alpha",
                     "transfer_ratio",
                     "lr",
                     "epoch_time_sec",
@@ -262,10 +254,7 @@ class AdaCUTTrainer:
         self.loss_fn.set_progress(epoch=epoch, total_epochs=self.num_epochs)
 
         sum_loss = 0.0
-        sum_distill = 0.0
         sum_code = 0.0
-        sum_code_ref = 0.0
-        sum_code_proto = 0.0
         sum_cycle = 0.0
         sum_gram = 0.0
         sum_moment = 0.0
@@ -275,7 +264,6 @@ class AdaCUTTrainer:
         sum_w_cycle_eff = 0.0
         sum_w_nce_eff = 0.0
         sum_w_idt_eff = 0.0
-        sum_style_ref_alpha = 0.0
         sum_transfer_ratio = 0.0
         num_batches = 0
 
@@ -332,10 +320,7 @@ class AdaCUTTrainer:
                             torch.cuda.empty_cache()
 
                 sum_loss += float(loss.detach().item())
-                sum_distill += float(loss_dict.get("distill", torch.tensor(0.0, device=content.device)).item())
                 sum_code += float(loss_dict.get("code", torch.tensor(0.0, device=content.device)).item())
-                sum_code_ref += float(loss_dict.get("code_ref", torch.tensor(0.0, device=content.device)).item())
-                sum_code_proto += float(loss_dict.get("code_proto", torch.tensor(0.0, device=content.device)).item())
                 sum_cycle += float(loss_dict.get("cycle", torch.tensor(0.0, device=content.device)).item())
                 sum_gram += float(loss_dict["gram"].item())
                 sum_moment += float(loss_dict["moment"].item())
@@ -344,8 +329,7 @@ class AdaCUTTrainer:
                 sum_idt += float(loss_dict["idt"].item())
                 sum_w_cycle_eff += float(loss_dict["w_cycle_eff"].item())
                 sum_w_nce_eff += float(loss_dict.get("w_nce_eff", torch.tensor(0.0, device=content.device)).item())
-                sum_w_idt_eff += float(loss_dict["w_idt_eff"].item())
-                sum_style_ref_alpha += float(loss_dict.get("style_ref_alpha", torch.tensor(0.0, device=content.device)).item())
+                sum_w_idt_eff += float(loss_dict.get("w_idt_eff", torch.tensor(0.0, device=content.device)).item())
                 sum_transfer_ratio += float(loss_dict.get("transfer_ratio", torch.tensor(1.0, device=content.device)).item())
                 num_batches += 1
 
@@ -357,10 +341,8 @@ class AdaCUTTrainer:
                     avg_gram = sum_gram / num_batches
                     progress.set_postfix(
                         loss=f"{avg_loss:.4f}",
-                        dist=f"{(sum_distill / num_batches):.4f}",
                         gram=f"{avg_gram:.4f}",
                         cyc=f"{(sum_cycle / num_batches):.4f}",
-                        sref=f"{(sum_style_ref_alpha / num_batches):.2f}",
                         wnce=f"{(sum_w_nce_eff / num_batches):.2f}",
                         xfer=f"{(sum_transfer_ratio / num_batches):.2f}",
                         it_s=f"{step_per_sec:.2f}",
@@ -368,12 +350,11 @@ class AdaCUTTrainer:
                     )
                     if not self.use_tqdm:
                         logger.info(
-                            "epoch %d step %d/%d | loss=%.4f distill=%.4f gram=%.4f moment=%.4f code=%.4f cycle=%.4f nce=%.4f idt=%.4f | %.2f it/s eta %.1fs",
+                            "epoch %d step %d/%d | loss=%.4f gram=%.4f moment=%.4f code=%.4f cycle=%.4f nce=%.4f idt=%.4f | %.2f it/s eta %.1fs",
                             epoch,
                             step_idx,
                             total_steps,
                             avg_loss,
-                            sum_distill / num_batches,
                             avg_gram,
                             sum_moment / num_batches,
                             sum_code / num_batches,
@@ -416,10 +397,7 @@ class AdaCUTTrainer:
         lr = float(self.optimizer.param_groups[0]["lr"])
         metrics = {
             "loss": sum_loss / max(num_batches, 1),
-            "distill": sum_distill / max(num_batches, 1),
             "code": sum_code / max(num_batches, 1),
-            "code_ref": sum_code_ref / max(num_batches, 1),
-            "code_proto": sum_code_proto / max(num_batches, 1),
             "cycle": sum_cycle / max(num_batches, 1),
             "gram": sum_gram / max(num_batches, 1),
             "moment": sum_moment / max(num_batches, 1),
@@ -429,7 +407,6 @@ class AdaCUTTrainer:
             "w_cycle_eff": sum_w_cycle_eff / max(num_batches, 1),
             "w_nce_eff": sum_w_nce_eff / max(num_batches, 1),
             "w_idt_eff": sum_w_idt_eff / max(num_batches, 1),
-            "style_ref_alpha": sum_style_ref_alpha / max(num_batches, 1),
             "transfer_ratio": sum_transfer_ratio / max(num_batches, 1),
             "lr": lr,
             "epoch_time_sec": epoch_time,
@@ -437,13 +414,13 @@ class AdaCUTTrainer:
         if self.use_tqdm:
             tqdm.write(
                 f"[Epoch {epoch}/{self.num_epochs}] "
-                f"loss={metrics['loss']:.4f} distill={metrics['distill']:.4f} "
-                f"code={metrics['code']:.4f} cref={metrics['code_ref']:.4f} cproto={metrics['code_proto']:.4f} "
+                f"loss={metrics['loss']:.4f} "
+                f"code={metrics['code']:.4f} "
                 f"cycle={metrics['cycle']:.4f} "
                 f"gram={metrics['gram']:.4f} moment={metrics['moment']:.4f} push={metrics['push']:.4f} "
                 f"nce={metrics['nce']:.4f} "
                 f"idt={metrics['idt']:.4f} "
-                f"wcyc={metrics['w_cycle_eff']:.2f} wnce={metrics['w_nce_eff']:.2f} widt={metrics['w_idt_eff']:.2f} sref={metrics['style_ref_alpha']:.2f} "
+                f"wcyc={metrics['w_cycle_eff']:.2f} wnce={metrics['w_nce_eff']:.2f} widt={metrics['w_idt_eff']:.2f} "
                 f"xfer={metrics['transfer_ratio']:.2f} | time={epoch_time:.1f}s"
             )
         return metrics
@@ -455,10 +432,7 @@ class AdaCUTTrainer:
                 [
                     int(epoch),
                     float(metrics.get("loss", 0.0)),
-                    float(metrics.get("distill", 0.0)),
                     float(metrics.get("code", 0.0)),
-                    float(metrics.get("code_ref", 0.0)),
-                    float(metrics.get("code_proto", 0.0)),
                     float(metrics.get("cycle", 0.0)),
                     float(metrics.get("gram", 0.0)),
                     float(metrics.get("moment", 0.0)),
@@ -468,7 +442,6 @@ class AdaCUTTrainer:
                     float(metrics.get("w_cycle_eff", 0.0)),
                     float(metrics.get("w_nce_eff", 0.0)),
                     float(metrics.get("w_idt_eff", 0.0)),
-                    float(metrics.get("style_ref_alpha", 0.0)),
                     float(metrics.get("transfer_ratio", 0.0)),
                     float(metrics.get("lr", 0.0)),
                     float(metrics.get("epoch_time_sec", 0.0)),
@@ -521,7 +494,7 @@ class AdaCUTTrainer:
             "--output",
             str(out_dir),
             "--num_steps",
-            str(int(cfg_infer.get("num_steps", 1))),
+            str(int(cfg_train.get("full_eval_num_steps", cfg_infer.get("num_steps", 1)))),
             "--batch_size",
             str(int(cfg_train.get("full_eval_batch_size", 8))),
             "--max_src_samples",

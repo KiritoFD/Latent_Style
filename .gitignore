@@ -11,3 +11,4 @@ data/*
 *.zip
 Thermal/.compile_cache/*
 compile_cache/*
+torch_compile_cache/*
