@@ -741,9 +741,25 @@ def generate_summary_json(csv_path, out_dir, ckpt_path):
             return None
         return float(np.mean(vals))
 
+    valid_styles = None
+    try:
+        ckpt_state = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+        cfg = ckpt_state.get("config", {}) if isinstance(ckpt_state, dict) else {}
+        styles = cfg.get("data", {}).get("style_subdirs", [])
+        if isinstance(styles, (list, tuple)) and styles:
+            valid_styles = {str(s).strip() for s in styles if str(s).strip()}
+    except Exception:
+        valid_styles = None
+
     matrix = defaultdict(lambda: defaultdict(list))
     for r in rows:
-        matrix[r['src_style']][r['tgt_style']].append(r)
+        src = str(r.get("src_style", "")).strip()
+        tgt = str(r.get("tgt_style", "")).strip()
+        if (not src) or (not tgt):
+            continue
+        if valid_styles is not None and (src not in valid_styles or tgt not in valid_styles):
+            continue
+        matrix[src][tgt].append(r)
 
     matrix_json = {}
     transfer_pool = []
@@ -765,17 +781,25 @@ def generate_summary_json(csv_path, out_dir, ckpt_path):
                 'clip_content': mean_valid([to_f(x.get('clip_content', 0)) for x in items]),
             }
             
-            # Classification Accuracy for this pair
-            cls_results = [x['class_correct'] for x in items if x['class_correct'] != 'N/A']
+            # Classification Accuracy for this pair (robust to None/"N/A"/nan)
+            cls_results = []
+            for x in items:
+                v = to_f(x.get('class_correct'))
+                if v is None:
+                    continue
+                cls_results.append(v)
             if cls_results:
-                acc = np.mean([int(c) for c in cls_results])
+                acc = float(np.mean(cls_results))
                 stats['classifier_acc'] = acc
-                
+
                 # Collect for global report
                 for x in items:
-                    if x['class_correct'] != 'N/A':
-                        y_true.append(tgt)
-                        y_pred.append(x['pred_style'])
+                    v = to_f(x.get('class_correct'))
+                    pred_style = x.get('pred_style')
+                    if v is None or pred_style in (None, "", "N/A"):
+                        continue
+                    y_true.append(tgt)
+                    y_pred.append(pred_style)
             else:
                 stats['classifier_acc'] = None
 
@@ -795,6 +819,83 @@ def generate_summary_json(csv_path, out_dir, ckpt_path):
         if not vals:
             return None
         return float(np.mean(vals))
+
+    # Condition sensitivity: same source image, different target styles.
+    def _load_img_tensor_cached(img_path: Path, cache: dict[Path, torch.Tensor]) -> torch.Tensor | None:
+        if img_path in cache:
+            return cache[img_path]
+        if not img_path.exists():
+            return None
+        try:
+            arr = np.array(Image.open(img_path).convert("RGB"), dtype=np.float32) / 255.0
+            ten = torch.from_numpy(arr).permute(2, 0, 1).unsqueeze(0)
+            cache[img_path] = ten
+            return ten
+        except Exception:
+            return None
+
+    def _compute_condition_sensitivity(
+        all_rows: list[dict],
+        eval_dir: Path,
+        style_set: set[str] | None,
+    ) -> dict:
+        grouped = defaultdict(dict)
+        for r in all_rows:
+            src = str(r.get("src_style", "")).strip()
+            tgt = str(r.get("tgt_style", "")).strip()
+            src_img = str(r.get("src_image", "")).strip()
+            gen_img = str(r.get("gen_image", "")).strip()
+            if (not src) or (not tgt) or (not src_img) or (not gen_img):
+                continue
+            if style_set is not None and (src not in style_set or tgt not in style_set):
+                continue
+            key = (src, src_img)
+            grouped[key][tgt] = gen_img
+
+        img_cache: dict[Path, torch.Tensor] = {}
+        delta_abs_vals = []
+        high_ratio_vals = []
+        pair_count = 0
+        for _, tgt_map in grouped.items():
+            tgts = sorted(tgt_map.keys())
+            if len(tgts) < 2:
+                continue
+            # Compute pairwise across all available target styles for this source.
+            for i in range(len(tgts)):
+                for j in range(i + 1, len(tgts)):
+                    pa = eval_dir / tgt_map[tgts[i]]
+                    pb = eval_dir / tgt_map[tgts[j]]
+                    ta = _load_img_tensor_cached(pa, img_cache)
+                    tb = _load_img_tensor_cached(pb, img_cache)
+                    if ta is None or tb is None:
+                        continue
+                    delta = tb - ta
+                    low = F.interpolate(
+                        F.avg_pool2d(delta, kernel_size=2, stride=2),
+                        size=delta.shape[-2:],
+                        mode="bilinear",
+                        align_corners=False,
+                    )
+                    high = delta - low
+                    e_low = torch.mean(torch.abs(low)).item()
+                    e_high = torch.mean(torch.abs(high)).item()
+                    delta_abs_vals.append(float(torch.mean(torch.abs(delta)).item()))
+                    high_ratio_vals.append(float(e_high / max(e_low + e_high, 1e-8)))
+                    pair_count += 1
+
+        if pair_count == 0:
+            return {
+                "pair_count": 0,
+                "delta_abs": None,
+                "delta_high_ratio": None,
+            }
+        return {
+            "pair_count": int(pair_count),
+            "delta_abs": float(np.mean(delta_abs_vals)),
+            "delta_high_ratio": float(np.mean(high_ratio_vals)),
+        }
+
+    condition_sensitivity = _compute_condition_sensitivity(rows, out_dir, valid_styles)
 
     # Generate Classification Report
     cls_report = None
@@ -848,7 +949,8 @@ def generate_summary_json(csv_path, out_dir, ckpt_path):
                 'clip_style': pool_avg(photo_transfer_pool, 'clip_style'),
                 'valid': len(photo_transfer_pool) > 0,
                 'classifier_acc': pool_avg([t for t in photo_transfer_pool if t['classifier_acc'] is not None], 'classifier_acc')
-            }
+            },
+            'conditional_sensitivity': condition_sensitivity,
         },
         'classification_report': cls_report,
         'detailed_style_metrics': detailed_metrics

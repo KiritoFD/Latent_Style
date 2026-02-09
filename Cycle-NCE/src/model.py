@@ -75,6 +75,15 @@ class LatentAdaCUT(nn.Module):
         style_spatial_block_gain_32: float = 0.10,
         style_spatial_pre_gain_16: float = 0.35,
         style_spatial_block_gain_16: float = 0.15,
+        use_decoder_spatial_inject: bool = True,
+        style_spatial_dec_gain_32: float = 0.18,
+        style_spatial_dec_gain_out: float = 0.08,
+        use_style_texture_head: bool = True,
+        style_texture_gain: float = 0.12,
+        use_style_delta_gate: bool = True,
+        use_decoder_adagn: bool = True,
+        use_delta_highpass_bias: bool = True,
+        style_delta_lowfreq_gain: float = 0.35,
     ) -> None:
         super().__init__()
         self.latent_channels = int(latent_channels)
@@ -89,6 +98,15 @@ class LatentAdaCUT(nn.Module):
         self.style_spatial_block_gain_32 = float(style_spatial_block_gain_32)
         self.style_spatial_pre_gain_16 = float(style_spatial_pre_gain_16)
         self.style_spatial_block_gain_16 = float(style_spatial_block_gain_16)
+        self.use_decoder_spatial_inject = bool(use_decoder_spatial_inject)
+        self.style_spatial_dec_gain_32 = float(style_spatial_dec_gain_32)
+        self.style_spatial_dec_gain_out = float(style_spatial_dec_gain_out)
+        self.use_style_texture_head = bool(use_style_texture_head)
+        self.style_texture_gain = float(style_texture_gain)
+        self.use_style_delta_gate = bool(use_style_delta_gate)
+        self.use_decoder_adagn = bool(use_decoder_adagn)
+        self.use_delta_highpass_bias = bool(use_delta_highpass_bias)
+        self.style_delta_lowfreq_gain = float(style_delta_lowfreq_gain)
 
         self.style_enc = nn.Sequential(
             nn.Conv2d(latent_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
@@ -126,13 +144,21 @@ class LatentAdaCUT(nn.Module):
             out_groups -= 1
 
         # Decoder: 16 -> 32
-        self.dec = nn.Sequential(
-            nn.Upsample(scale_factor=2, mode="nearest"),
-            nn.Conv2d(self.body_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
-            nn.GroupNorm(out_groups, self.lift_channels, eps=1e-6),
+        self.dec_up = nn.Upsample(scale_factor=2, mode="nearest")
+        self.dec_conv = nn.Conv2d(self.body_channels, self.lift_channels, kernel_size=3, stride=1, padding=1)
+        if self.use_decoder_adagn:
+            self.dec_norm = AdaGN(self.lift_channels, style_dim, num_groups=out_groups)
+        else:
+            self.dec_norm = nn.GroupNorm(out_groups, self.lift_channels, eps=1e-6)
+        self.dec_act = nn.SiLU()
+        self.dec_out = nn.Conv2d(self.lift_channels, latent_channels, kernel_size=3, stride=1, padding=1)
+        self.style_texture_head = nn.Sequential(
+            nn.Conv2d(self.lift_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
             nn.SiLU(),
-            nn.Conv2d(self.lift_channels, latent_channels, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(self.lift_channels, latent_channels, kernel_size=1, stride=1, padding=0),
         )
+        nn.init.zeros_(self.style_texture_head[-1].weight)
+        nn.init.zeros_(self.style_texture_head[-1].bias)
 
         # NCE projector.
         self.projector = nn.Sequential(
@@ -140,6 +166,10 @@ class LatentAdaCUT(nn.Module):
             nn.ReLU(inplace=True),
             nn.Linear(projector_dim, projector_dim),
         )
+        if self.use_style_delta_gate:
+            self.style_delta_gate = nn.Linear(style_dim, 1)
+            nn.init.zeros_(self.style_delta_gate.weight)
+            nn.init.constant_(self.style_delta_gate.bias, 0.0)
 
     def _style_code(
         self,
@@ -202,6 +232,21 @@ class LatentAdaCUT(nn.Module):
             align_corners=False,
         )
         return torch.tanh(feat - low)
+
+    @staticmethod
+    def _bias_to_highfreq(feat: torch.Tensor, lowfreq_gain: float) -> torch.Tensor:
+        """
+        Keep high-frequency style detail while damping global low-frequency shifts.
+        This reduces the "brightness-only" shortcut.
+        """
+        low = F.interpolate(
+            F.avg_pool2d(feat, kernel_size=2, stride=2),
+            size=feat.shape[-2:],
+            mode="bilinear",
+            align_corners=False,
+        )
+        high = feat - low
+        return high + low * float(lowfreq_gain)
 
     @classmethod
     def _extract_style_spatial_maps(cls, style_feats: list[torch.Tensor]) -> dict[int, torch.Tensor]:
@@ -353,7 +398,30 @@ class LatentAdaCUT(nn.Module):
                 h = block(h, style_code)
             if style_spatial_16 is not None:
                 h = h + self.style_spatial_block_gain_16 * style_spatial_16
-        delta = self.dec(h) * self.latent_scale_factor * self.residual_gain
+        h = self.dec_up(h)
+        h = self.dec_conv(h)
+        style_spatial_dec = self._match_style_map(style_spatial_32, h)
+        if self.use_decoder_spatial_inject and style_spatial_dec is not None:
+            h = h + self.style_spatial_dec_gain_32 * style_spatial_dec
+        if self.use_decoder_adagn:
+            h = self.dec_norm(h, style_code)
+        else:
+            h = self.dec_norm(h)
+        h = self.dec_act(h)
+        if self.use_decoder_spatial_inject and style_spatial_dec is not None:
+            h = h + self.style_spatial_dec_gain_out * style_spatial_dec
+        delta = self.dec_out(h) * self.latent_scale_factor * self.residual_gain
+        if self.use_style_delta_gate:
+            # Per-sample style-conditioned residual strength in [0.5, 1.5].
+            gate = 0.5 + torch.sigmoid(self.style_delta_gate(style_code)).view(-1, 1, 1, 1)
+            delta = delta * gate
+        if self.use_style_texture_head and style_spatial_dec is not None:
+            style_tex = self.style_texture_head(style_spatial_dec)
+            if self.use_delta_highpass_bias:
+                style_tex = self._bias_to_highfreq(style_tex, self.style_delta_lowfreq_gain)
+            delta = delta + (style_tex * self.style_texture_gain * self.latent_scale_factor * self.residual_gain)
+        if self.use_delta_highpass_bias:
+            delta = self._bias_to_highfreq(delta, self.style_delta_lowfreq_gain)
         # Residual learning: preserve structure, only learn style shift.
         return x + delta
 
