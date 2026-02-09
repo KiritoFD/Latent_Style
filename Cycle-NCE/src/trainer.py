@@ -265,6 +265,9 @@ class AdaCUTTrainer:
                     "code_ref",
                     "code_proto",
                     "proto",
+                    "ref_sep",
+                    "ref_dist",
+                    "ref_cos",
                     "style_ce",
                     "prob",
                     "prob_margin",
@@ -285,6 +288,7 @@ class AdaCUTTrainer:
                     "moment_hf",
                     "featmatch",
                     "featmatch_hf",
+                    "spatial_proto",
                     "push",
                     "nce",
                     "idt",
@@ -499,6 +503,9 @@ class AdaCUTTrainer:
             "code_ref": "code_ref",
             "code_proto": "code_proto",
             "proto": "proto",
+            "ref_sep": "ref_sep",
+            "ref_dist": "ref_dist",
+            "ref_cos": "ref_cos",
             "style_ce": "style_ce",
             "prob": "prob",
             "prob_margin": "prob_margin",
@@ -519,6 +526,7 @@ class AdaCUTTrainer:
             "moment_hf": "moment_hf",
             "featmatch": "featmatch",
             "featmatch_hf": "featmatch_hf",
+            "spatial_proto": "spatial_proto",
             "push": "push",
             "nce": "nce",
             "idt": "idt",
@@ -627,6 +635,7 @@ class AdaCUTTrainer:
                         pcos=f"{float((metric_sums['proto_cos_max'] * inv_batches).item()):.3f}",
                         fm=f"{float((metric_sums['featmatch'] * inv_batches).item()):.3f}",
                         fmh=f"{float((metric_sums['featmatch_hf'] * inv_batches).item()):.3f}",
+                        sp=f"{float((metric_sums['spatial_proto'] * inv_batches).item()):.3f}",
                         dw=f"{avg_data_wait*1000:.1f}ms",
                         sw=f"{avg_step_wall*1000:.1f}ms",
                         it_s=f"{step_per_sec:.2f}",
@@ -634,7 +643,7 @@ class AdaCUTTrainer:
                     )
                     if not self.use_tqdm:
                         logger.info(
-                            "epoch %d step %d/%d | loss=%.4f cls=%.4f p=%.4f pm=%.4f pw=%.3f p_t=%.3f hard=%.3f margin=%.4f proto_cos=%.4f feat=%.4f feat_hf=%.4f data_wait=%.1fms step_wall=%.1fms | %.2f it/s eta %.1fs",
+                            "epoch %d step %d/%d | loss=%.4f cls=%.4f p=%.4f pm=%.4f pw=%.3f p_t=%.3f hard=%.3f margin=%.4f proto_cos=%.4f feat=%.4f feat_hf=%.4f spatial=%.4f data_wait=%.1fms step_wall=%.1fms | %.2f it/s eta %.1fs",
                             epoch,
                             step_idx,
                             total_steps,
@@ -649,6 +658,7 @@ class AdaCUTTrainer:
                             float((metric_sums["proto_cos_max"] * inv_batches).item()),
                             float((metric_sums["featmatch"] * inv_batches).item()),
                             float((metric_sums["featmatch_hf"] * inv_batches).item()),
+                            float((metric_sums["spatial_proto"] * inv_batches).item()),
                             avg_data_wait * 1000.0,
                             avg_step_wall * 1000.0,
                             step_per_sec,
@@ -701,7 +711,8 @@ class AdaCUTTrainer:
                 f"cls={metrics['style_ce']:.4f} p={metrics['prob']:.4f} pm={metrics['prob_margin']:.4f} pw={metrics['prob_weight_mean']:.3f} "
                 f"p_t={metrics['cls_target_prob']:.3f} hard={metrics['cls_hard_ratio']:.3f} "
                 f"margin={metrics['xfer_margin']:.4f} proto_cos={metrics['proto_cos_max']:.4f} "
-                f"feat={metrics.get('featmatch', 0.0):.4f} feat_hf={metrics.get('featmatch_hf', 0.0):.4f} "
+                f"ref_dist={metrics.get('ref_dist', 0.0):.4f} ref_cos={metrics.get('ref_cos', 0.0):.4f} "
+                f"feat={metrics.get('featmatch', 0.0):.4f} feat_hf={metrics.get('featmatch_hf', 0.0):.4f} spatial={metrics.get('spatial_proto', 0.0):.4f} "
                 f"cycle={metrics['cycle']:.4f} idt={metrics['idt']:.4f} "
                 f"data_wait={metrics['data_wait_sec']*1000.0:.1f}ms step_wall={metrics['step_wall_sec']*1000.0:.1f}ms | time={epoch_time:.1f}s"
             )
@@ -719,6 +730,9 @@ class AdaCUTTrainer:
                     float(metrics.get("code_ref", 0.0)),
                     float(metrics.get("code_proto", 0.0)),
                     float(metrics.get("proto", 0.0)),
+                    float(metrics.get("ref_sep", 0.0)),
+                    float(metrics.get("ref_dist", 0.0)),
+                    float(metrics.get("ref_cos", 0.0)),
                     float(metrics.get("style_ce", 0.0)),
                     float(metrics.get("prob", 0.0)),
                     float(metrics.get("prob_margin", 0.0)),
@@ -739,6 +753,7 @@ class AdaCUTTrainer:
                     float(metrics.get("moment_hf", 0.0)),
                     float(metrics.get("featmatch", 0.0)),
                     float(metrics.get("featmatch_hf", 0.0)),
+                    float(metrics.get("spatial_proto", 0.0)),
                     float(metrics.get("push", 0.0)),
                     float(metrics.get("nce", 0.0)),
                     float(metrics.get("idt", 0.0)),

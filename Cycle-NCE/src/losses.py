@@ -158,6 +158,7 @@ class AdaCUTObjective:
             self.prob_target_weights = []
         self.w_dir = float(loss_cfg.get("w_dir", 0.0))
         self.w_proto_sep = float(loss_cfg.get("w_proto_sep", 0.0))
+        self.w_ref_sep = float(loss_cfg.get("w_ref_sep", 0.0))
         self.cls_temp = float(loss_cfg.get("cls_temperature", loss_cfg.get("style_ce_temp", 1.0)))
         self.cls_aug_views = max(1, int(loss_cfg.get("cls_aug_views", 1)))
         self.cls_aug_prob = float(loss_cfg.get("cls_aug_prob", 0.0))
@@ -171,6 +172,7 @@ class AdaCUTObjective:
         self.dir_margin = float(loss_cfg.get("dir_margin", 0.10))
         self.prob_margin = float(loss_cfg.get("prob_margin", self.dir_margin))
         self.proto_cos_max = float(loss_cfg.get("proto_cos_max", 0.10))
+        self.ref_sep_margin = float(loss_cfg.get("ref_sep_margin", 0.25))
 
         # Teacher style anchors: keep teacher stylized, then distill to student.
         self.w_gram = float(loss_cfg.get("w_gram", 80.0))
@@ -178,6 +180,7 @@ class AdaCUTObjective:
         self.w_featmatch = float(loss_cfg.get("w_featmatch", 0.0))
         self.w_featmatch_teacher = float(loss_cfg.get("w_featmatch_teacher", 0.0))
         self.w_featmatch_hf = float(loss_cfg.get("w_featmatch_hf", 0.0))
+        self.w_spatial_proto = float(loss_cfg.get("w_spatial_proto", 0.0))
         self.w_gram_hf = float(loss_cfg.get("w_gram_hf", 0.0))
         self.w_moment_hf = float(loss_cfg.get("w_moment_hf", 0.0))
         self.style_feat_min_level = int(loss_cfg.get("style_feat_min_level", 1))
@@ -511,6 +514,22 @@ class AdaCUTObjective:
         else:
             loss_proto = _zero()
 
+        # Keep reference style codes separable across domains.
+        # If this collapses, style_id-only inference degenerates to near-identical outputs.
+        if self.w_ref_sep > 0.0 and has_transfer:
+            code_ref_tgt = model.encode_style(target_style.float())
+            code_ref_src = model.encode_style(content.float())
+            ref_dist = (code_ref_tgt - code_ref_src).abs().mean(dim=1)
+            ref_sep_term = F.relu(self.ref_sep_margin - ref_dist) * transfer_mask
+            loss_ref_sep = ref_sep_term.sum() / transfer_denom
+            ref_dist_transfer = (ref_dist * transfer_mask).sum() / transfer_denom
+            ref_cos = F.cosine_similarity(code_ref_tgt.float(), code_ref_src.float(), dim=1).clamp(-1.0, 1.0)
+            ref_cos_transfer = (ref_cos * transfer_mask).sum() / transfer_denom
+        else:
+            loss_ref_sep = _zero()
+            ref_dist_transfer = _zero()
+            ref_cos_transfer = _zero()
+
         if self.w_push > 0.0 and (code_student is not None):
             p_src = model.encode_style_id(content_style_id)
             dist_to_src = (code_student - p_src).abs().mean(dim=1)
@@ -597,6 +616,23 @@ class AdaCUTObjective:
                     fm_t = fm_t + F.l1_loss(_norm_spatial_feat(p_f), _norm_spatial_feat(t_f.detach()))
                 loss_featmatch_teacher = fm_t / float(len(pred_teacher_feats))
 
+        # Directly align style_id spatial priors with reference style spatial maps.
+        # This prevents "style_id path learns nothing" under style_id-only inference.
+        loss_spatial_proto = _zero()
+        if self.w_spatial_proto > 0.0 and has_transfer:
+            xfer_idx = transfer_mask > 0.5
+            maps_id = model.encode_style_spatial_id(target_style_id)
+            with torch.no_grad():
+                maps_ref = model.encode_style_spatial_ref(target_style.float())
+            levels = sorted(set(maps_id.keys()) & set(maps_ref.keys()))
+            if levels:
+                sp = _zero()
+                for lv in levels:
+                    m_id = _norm_spatial_feat(maps_id[lv][xfer_idx])
+                    m_ref = _norm_spatial_feat(maps_ref[lv][xfer_idx].detach())
+                    sp = sp + F.l1_loss(m_id, m_ref)
+                loss_spatial_proto = sp / float(len(levels))
+
         w_nce_eff = self._ramp_weight(
             self.w_nce,
             epoch=self.current_epoch,
@@ -624,6 +660,7 @@ class AdaCUTObjective:
             + self.w_distill * loss_distill
             + self.w_code * loss_code
             + self.w_proto * loss_proto
+            + self.w_ref_sep * loss_ref_sep
             + self.w_same_id * loss_same_id
             + self.w_dir * loss_dir
             + self.w_proto_sep * loss_proto_sep
@@ -634,6 +671,7 @@ class AdaCUTObjective:
             + self.w_featmatch * loss_featmatch
             + self.w_featmatch_hf * loss_featmatch_hf
             + self.w_featmatch_teacher * loss_featmatch_teacher
+            + self.w_spatial_proto * loss_spatial_proto
             + w_nce_eff * loss_nce
             + self.w_push * loss_push
         )
@@ -648,10 +686,14 @@ class AdaCUTObjective:
             "featmatch": loss_featmatch.detach(),
             "featmatch_hf": loss_featmatch_hf.detach(),
             "featmatch_teacher": loss_featmatch_teacher.detach(),
+            "spatial_proto": loss_spatial_proto.detach(),
             "code": loss_code.detach(),
             "code_ref": loss_code_ref.detach(),
             "code_proto": loss_code_proto.detach(),
             "proto": loss_proto.detach(),
+            "ref_sep": loss_ref_sep.detach(),
+            "ref_dist": ref_dist_transfer.detach(),
+            "ref_cos": ref_cos_transfer.detach(),
             "style_ce": loss_style_ce.detach(),
             "prob": loss_prob.detach(),
             "prob_margin": loss_prob_margin.detach(),
