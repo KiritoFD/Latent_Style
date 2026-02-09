@@ -6,6 +6,8 @@ import logging
 import os
 import random
 import math
+import atexit
+import signal
 from pathlib import Path
 
 import numpy as np
@@ -24,6 +26,52 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+class _SingleRunLock:
+    def __init__(self, lock_path: Path) -> None:
+        self.lock_path = Path(lock_path)
+        self._fd: int | None = None
+
+    def acquire(self) -> None:
+        self.lock_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            self._fd = os.open(str(self.lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.write(self._fd, str(os.getpid()).encode("utf-8"))
+            os.fsync(self._fd)
+        except FileExistsError as exc:
+            pid_text = ""
+            try:
+                pid_text = self.lock_path.read_text(encoding="utf-8").strip()
+            except Exception:
+                pid_text = "unknown"
+            raise RuntimeError(
+                f"Another training process is running (lock: {self.lock_path}, pid: {pid_text}). "
+                "Clean stale lock only if that process is gone."
+            ) from exc
+
+        def _cleanup(*_args):
+            self.release()
+
+        atexit.register(_cleanup)
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            try:
+                signal.signal(sig, _cleanup)
+            except Exception:
+                pass
+
+    def release(self) -> None:
+        if self._fd is not None:
+            try:
+                os.close(self._fd)
+            except Exception:
+                pass
+            self._fd = None
+        try:
+            if self.lock_path.exists():
+                self.lock_path.unlink()
+        except Exception:
+            pass
 
 
 def _set_seed(seed: int) -> None:
@@ -126,6 +174,28 @@ def _resolve_num_workers(config: dict) -> int:
     return num_workers
 
 
+def _maybe_auto_preload_latents(dataset: AdaCUTLatentDataset, config: dict, device: torch.device) -> bool:
+    train_cfg = config.get("training", {})
+    data_cfg = config.get("data", {})
+    if bool(data_cfg.get("preload_to_gpu", False)):
+        return bool(dataset.preload_to_gpu)
+    if device.type != "cuda":
+        return bool(dataset.preload_to_gpu)
+    if not bool(train_cfg.get("auto_preload_latents_to_gpu", False)):
+        return bool(dataset.preload_to_gpu)
+    budget_mb = float(train_cfg.get("auto_preload_gpu_budget_mb", 2048))
+    need_mb = float(getattr(dataset, "total_bytes", 0)) / (1024.0 * 1024.0)
+    if need_mb <= max(0.0, budget_mb):
+        dataset.preload_to_device(str(device))
+        return True
+    logger.info(
+        "Auto preload skipped: need %.1fMB > budget %.1fMB",
+        need_mb,
+        budget_mb,
+    )
+    return bool(dataset.preload_to_gpu)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train Latent AdaCUT")
     parser.add_argument("--config", type=str, default="config.json", help="Path to config json")
@@ -139,6 +209,10 @@ def main() -> None:
     if args.resume:
         config.setdefault("training", {})
         config["training"]["resume_checkpoint"] = args.resume
+
+    lock_path = config.get("training", {}).get("run_lock_path", "../run.lock")
+    lock = _SingleRunLock((config_path.parent / str(lock_path)).resolve())
+    lock.acquire()
 
     seed = int(config.get("training", {}).get("seed", 42))
     _set_seed(seed)
@@ -157,6 +231,7 @@ def main() -> None:
         virtual_length_multiplier=int(data_cfg.get("virtual_length_multiplier", 4)),
         device=str(device),
     )
+    auto_preloaded = _maybe_auto_preload_latents(dataset, config, device)
     style_count = len(dataset.style_subdirs)
     model_style_count = int(config.get("model", {}).get("num_styles", style_count))
     if model_style_count != style_count:
@@ -169,6 +244,9 @@ def main() -> None:
         config.setdefault("model", {})
         config["model"]["num_styles"] = style_count
 
+    if auto_preloaded:
+        config.setdefault("data", {})
+        config["data"]["preload_to_gpu"] = True
     num_workers = _resolve_num_workers(config)
     train_cfg = config.get("training", {})
     cpu_pool = _resolve_worker_cpu_pool(train_cfg)
@@ -216,7 +294,7 @@ def main() -> None:
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f cls=%.4f p=%.4f pm=%.4f pw=%.3f p_t=%.3f hard=%.3f margin=%.4f proto_cos=%.4f cycle=%.4f idt=%.4f lr=%.2e",
+            "Epoch %d/%d | loss=%.4f cls=%.4f p=%.4f pm=%.4f pw=%.3f p_t=%.3f hard=%.3f margin=%.4f proto_cos=%.4f feat=%.4f cycle=%.4f idt=%.4f data_wait=%.1fms step_wall=%.1fms lr=%.2e",
             epoch,
             trainer.num_epochs,
             metrics["loss"],
@@ -228,8 +306,11 @@ def main() -> None:
             metrics.get("cls_hard_ratio", 0.0),
             metrics.get("xfer_margin", 0.0),
             metrics.get("proto_cos_max", 0.0),
+            metrics.get("featmatch", 0.0),
             metrics.get("cycle", 0.0),
             metrics.get("idt", 0.0),
+            metrics.get("data_wait_sec", 0.0) * 1000.0,
+            metrics.get("step_wall_sec", 0.0) * 1000.0,
             metrics["lr"],
         )
 

@@ -144,7 +144,10 @@ class AdaCUTObjective:
         self.w_cycle = float(loss_cfg.get("w_cycle", 10.0))
         self.w_proto = float(loss_cfg.get("w_proto", 5.0))
         self.w_same_id = float(loss_cfg.get("w_same_id", 1.0))
-        self.w_cls = float(loss_cfg.get("w_cls", loss_cfg.get("w_style_ce", 0.0)))
+        # Classifier CE is disabled by default. We keep probability-based guidance
+        # (w_prob / w_prob_margin / w_dir) and treat CE as optional legacy behavior.
+        self.disable_cls_ce = bool(loss_cfg.get("disable_cls_ce", True))
+        self.w_cls = 0.0 if self.disable_cls_ce else float(loss_cfg.get("w_cls", loss_cfg.get("w_style_ce", 0.0)))
         self.w_prob = float(loss_cfg.get("w_prob", 0.0))
         self.w_prob_margin = float(loss_cfg.get("w_prob_margin", 0.0))
         self.prob_focal_gamma = float(loss_cfg.get("prob_focal_gamma", 0.0))

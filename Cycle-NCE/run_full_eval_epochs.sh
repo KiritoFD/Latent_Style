@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
+LOCK_FILE="/tmp/latent_style_full_eval.lock"
+exec 9>"${LOCK_FILE}"
+if ! flock -n 9; then
+  echo "Another full-eval batch is running (lock: ${LOCK_FILE})."
+  exit 1
+fi
 
 # Batch full evaluation for specific checkpoints.
 # Default epochs: 50 100 150 200

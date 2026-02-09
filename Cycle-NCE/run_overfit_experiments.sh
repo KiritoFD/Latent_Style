@@ -2,6 +2,13 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LOCK_FILE="/tmp/latent_style_overfit_experiments.lock"
+exec 9>"${LOCK_FILE}"
+if ! flock -n 9; then
+  echo "Another overfit experiment script is running (lock: ${LOCK_FILE})."
+  exit 1
+fi
+
 EXPERIMENT_MATRIX=(
   "overfit50_e1_baseline_d2_ref experiments/overfit50_e1_baseline_d2_ref.json"
   "overfit50_e2_highpass_default experiments/overfit50_e2_highpass_default.json"
