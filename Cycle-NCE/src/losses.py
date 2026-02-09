@@ -523,7 +523,9 @@ class AdaCUTObjective:
             ref_sep_term = F.relu(self.ref_sep_margin - ref_dist) * transfer_mask
             loss_ref_sep = ref_sep_term.sum() / transfer_denom
             ref_dist_transfer = (ref_dist * transfer_mask).sum() / transfer_denom
-            ref_cos = F.cosine_similarity(code_ref_tgt.float(), code_ref_src.float(), dim=1).clamp(-1.0, 1.0)
+            ref_t_n = F.normalize(code_ref_tgt.float(), dim=1)
+            ref_s_n = F.normalize(code_ref_src.float(), dim=1)
+            ref_cos = (ref_t_n * ref_s_n).sum(dim=1).clamp(-1.0, 1.0)
             ref_cos_transfer = (ref_cos * transfer_mask).sum() / transfer_denom
         else:
             loss_ref_sep = _zero()
