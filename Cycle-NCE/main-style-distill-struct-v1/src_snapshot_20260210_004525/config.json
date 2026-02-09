@@ -78,7 +78,7 @@
     "full_eval_style_ref_mode": "none",
     "full_eval_style_ref_count": 8,
     "full_eval_style_ref_seed": 2026,
-    "test_image_dir": "../../style_data/test",
+    "test_image_dir": "../../style_data/train",
     "full_eval_cache_dir": "../../full-train-eval_cache",
     "full_eval_classifier_only": false,
     "full_eval_disable_lpips": true,
@@ -102,7 +102,7 @@
     "content_style": "any",
     "allow_hflip": false,
     "preload_to_gpu": true,
-    "virtual_length_multiplier": 3
+    "virtual_length_multiplier": 1
   },
   "checkpoint": {
     "save_dir": "../main-style-distill-struct-v1"
