@@ -129,9 +129,11 @@ class AdaCUTTrainer:
             use_delta_highpass_bias=bool(model_cfg.get("use_delta_highpass_bias", True)),
             style_delta_lowfreq_gain=float(model_cfg.get("style_delta_lowfreq_gain", 0.35)),
             use_style_spatial_highpass=bool(model_cfg.get("use_style_spatial_highpass", False)),
+            normalize_style_spatial_maps=bool(model_cfg.get("normalize_style_spatial_maps", True)),
             use_content_skip_fusion=bool(model_cfg.get("use_content_skip_fusion", True)),
             content_skip_gain=float(model_cfg.get("content_skip_gain", 0.6)),
             use_style_skip_gate=bool(model_cfg.get("use_style_skip_gate", True)),
+            use_output_style_affine=bool(model_cfg.get("use_output_style_affine", True)),
         )
         if self.channels_last:
             self.model = self.model.to(device, memory_format=torch.channels_last)
@@ -271,6 +273,8 @@ class AdaCUTTrainer:
                     "ref_sep",
                     "ref_dist",
                     "ref_cos",
+                    "flow_delta_abs",
+                    "flow_delta_high_ratio",
                     "style_ce",
                     "prob",
                     "prob_margin",
@@ -380,14 +384,40 @@ class AdaCUTTrainer:
             model_state = _add_compile_prefix(model_state)
         elif (not model_expects_compile_prefix) and ckpt_has_compile_prefix:
             model_state = _strip_compile_prefix(model_state)
-        self.model.load_state_dict(model_state, strict=True)
+        try:
+            self.model.load_state_dict(model_state, strict=True)
+        except RuntimeError as exc:
+            # Allow warm-start when model structure evolved (new/removed keys).
+            # This keeps experiments resumable across controlled architecture updates.
+            incompatible = self.model.load_state_dict(model_state, strict=False)
+            missing = list(getattr(incompatible, "missing_keys", []))
+            unexpected = list(getattr(incompatible, "unexpected_keys", []))
+            logger.warning(
+                "Checkpoint loaded with non-strict mode due to key mismatch: %s | missing=%d unexpected=%d",
+                exc,
+                len(missing),
+                len(unexpected),
+            )
+            if missing:
+                logger.warning("Missing keys (first 12): %s", missing[:12])
+            if unexpected:
+                logger.warning("Unexpected keys (first 12): %s", unexpected[:12])
 
         if "optimizer_state_dict" in state:
-            self.optimizer.load_state_dict(state["optimizer_state_dict"])
+            try:
+                self.optimizer.load_state_dict(state["optimizer_state_dict"])
+            except ValueError as exc:
+                logger.warning("Skip optimizer state restore due to mismatch: %s", exc)
         if self.scheduler is not None and "scheduler_state_dict" in state and state["scheduler_state_dict"] is not None:
-            self.scheduler.load_state_dict(state["scheduler_state_dict"])
+            try:
+                self.scheduler.load_state_dict(state["scheduler_state_dict"])
+            except ValueError as exc:
+                logger.warning("Skip scheduler state restore due to mismatch: %s", exc)
         if "scaler_state_dict" in state:
-            self.scaler.load_state_dict(state["scaler_state_dict"])
+            try:
+                self.scaler.load_state_dict(state["scaler_state_dict"])
+            except ValueError as exc:
+                logger.warning("Skip scaler state restore due to mismatch: %s", exc)
 
         self.global_step = int(state.get("global_step", 0))
         self.start_epoch = int(state.get("epoch", 0)) + 1
@@ -509,6 +539,8 @@ class AdaCUTTrainer:
             "ref_sep": "ref_sep",
             "ref_dist": "ref_dist",
             "ref_cos": "ref_cos",
+            "flow_delta_abs": "flow_delta_abs",
+            "flow_delta_high_ratio": "flow_delta_high_ratio",
             "style_ce": "style_ce",
             "prob": "prob",
             "prob_margin": "prob_margin",
@@ -635,6 +667,7 @@ class AdaCUTTrainer:
                         p_t=f"{float((metric_sums['cls_target_prob'] * inv_batches).item()):.2f}",
                         hard=f"{float((metric_sums['cls_hard_ratio'] * inv_batches).item()):.2f}",
                         mrg=f"{float((metric_sums['xfer_margin'] * inv_batches).item()):.3f}",
+                        fdel=f"{float((metric_sums['flow_delta_abs'] * inv_batches).item()):.4f}",
                         pcos=f"{float((metric_sums['proto_cos_max'] * inv_batches).item()):.3f}",
                         fm=f"{float((metric_sums['featmatch'] * inv_batches).item()):.3f}",
                         fmh=f"{float((metric_sums['featmatch_hf'] * inv_batches).item()):.3f}",
@@ -715,6 +748,7 @@ class AdaCUTTrainer:
                 f"p_t={metrics['cls_target_prob']:.3f} hard={metrics['cls_hard_ratio']:.3f} "
                 f"margin={metrics['xfer_margin']:.4f} proto_cos={metrics['proto_cos_max']:.4f} "
                 f"ref_dist={metrics.get('ref_dist', 0.0):.4f} ref_cos={metrics.get('ref_cos', 0.0):.4f} "
+                f"flow={metrics.get('flow_delta_abs', 0.0):.4f}/{metrics.get('flow_delta_high_ratio', 0.0):.3f} "
                 f"feat={metrics.get('featmatch', 0.0):.4f} feat_hf={metrics.get('featmatch_hf', 0.0):.4f} spatial={metrics.get('spatial_proto', 0.0):.4f} "
                 f"cycle={metrics['cycle']:.4f} idt={metrics['idt']:.4f} "
                 f"data_wait={metrics['data_wait_sec']*1000.0:.1f}ms step_wall={metrics['step_wall_sec']*1000.0:.1f}ms | time={epoch_time:.1f}s"
@@ -736,6 +770,8 @@ class AdaCUTTrainer:
                     float(metrics.get("ref_sep", 0.0)),
                     float(metrics.get("ref_dist", 0.0)),
                     float(metrics.get("ref_cos", 0.0)),
+                    float(metrics.get("flow_delta_abs", 0.0)),
+                    float(metrics.get("flow_delta_high_ratio", 0.0)),
                     float(metrics.get("style_ce", 0.0)),
                     float(metrics.get("prob", 0.0)),
                     float(metrics.get("prob_margin", 0.0)),

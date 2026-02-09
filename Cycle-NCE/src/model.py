@@ -85,9 +85,11 @@ class LatentAdaCUT(nn.Module):
         use_delta_highpass_bias: bool = True,
         style_delta_lowfreq_gain: float = 0.35,
         use_style_spatial_highpass: bool = False,
+        normalize_style_spatial_maps: bool = True,
         use_content_skip_fusion: bool = True,
         content_skip_gain: float = 0.6,
         use_style_skip_gate: bool = True,
+        use_output_style_affine: bool = True,
     ) -> None:
         super().__init__()
         self.latent_channels = int(latent_channels)
@@ -112,9 +114,11 @@ class LatentAdaCUT(nn.Module):
         self.use_delta_highpass_bias = bool(use_delta_highpass_bias)
         self.style_delta_lowfreq_gain = float(style_delta_lowfreq_gain)
         self.use_style_spatial_highpass = bool(use_style_spatial_highpass)
+        self.normalize_style_spatial_maps = bool(normalize_style_spatial_maps)
         self.use_content_skip_fusion = bool(use_content_skip_fusion)
         self.content_skip_gain = float(content_skip_gain)
         self.use_style_skip_gate = bool(use_style_skip_gate)
+        self.use_output_style_affine = bool(use_output_style_affine)
 
         self.style_enc = nn.Sequential(
             nn.Conv2d(latent_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
@@ -166,7 +170,7 @@ class LatentAdaCUT(nn.Module):
             nn.SiLU(),
             nn.Conv2d(self.lift_channels, latent_channels, kernel_size=1, stride=1, padding=0),
         )
-        nn.init.zeros_(self.style_texture_head[-1].weight)
+        nn.init.normal_(self.style_texture_head[-1].weight, mean=0.0, std=0.02)
         nn.init.zeros_(self.style_texture_head[-1].bias)
 
         # NCE projector.
@@ -183,6 +187,12 @@ class LatentAdaCUT(nn.Module):
             self.style_skip_gate = nn.Linear(style_dim, self.lift_channels)
             nn.init.zeros_(self.style_skip_gate.weight)
             nn.init.zeros_(self.style_skip_gate.bias)
+        if self.use_output_style_affine:
+            self.output_style_affine = nn.Linear(style_dim, latent_channels * 2)
+            nn.init.normal_(self.output_style_affine.weight, mean=0.0, std=0.02)
+            nn.init.zeros_(self.output_style_affine.bias)
+            with torch.no_grad():
+                self.output_style_affine.bias[:latent_channels] = 1.0
 
     def _style_code(
         self,
@@ -245,6 +255,11 @@ class LatentAdaCUT(nn.Module):
             align_corners=False,
         )
         return torch.tanh(feat - low)
+
+    @staticmethod
+    def _normalize_style_map(feat: torch.Tensor) -> torch.Tensor:
+        feat = feat - feat.mean(dim=(2, 3), keepdim=True)
+        return feat / (feat.std(dim=(2, 3), keepdim=True, unbiased=False) + 1e-6)
 
     @staticmethod
     def _bias_to_highfreq(feat: torch.Tensor, lowfreq_gain: float) -> torch.Tensor:
@@ -339,6 +354,8 @@ class LatentAdaCUT(nn.Module):
                 out[k] = m_id
             else:
                 out[k] = alpha * m_ref + (1.0 - alpha) * m_id
+            if self.normalize_style_spatial_maps and out[k] is not None:
+                out[k] = self._normalize_style_map(out[k])
         return out
 
     @staticmethod
@@ -437,6 +454,10 @@ class LatentAdaCUT(nn.Module):
         if self.use_decoder_spatial_inject and style_spatial_dec is not None:
             h = h + self.style_spatial_dec_gain_out * style_spatial_dec
         delta = self.dec_out(h) * self.latent_scale_factor * self.residual_gain
+        if self.use_output_style_affine:
+            aff = self.output_style_affine(style_code).view(style_code.shape[0], 2 * self.latent_channels, 1, 1)
+            d_scale, d_shift = aff.chunk(2, dim=1)
+            delta = (delta * d_scale) + (d_shift * self.latent_scale_factor * self.residual_gain)
         if self.use_style_delta_gate:
             # Per-sample style-conditioned residual strength in [0.5, 1.5].
             gate = 0.5 + torch.sigmoid(self.style_delta_gate(style_code)).view(-1, 1, 1, 1)

@@ -441,3 +441,82 @@
 - cond delta_abs: `0.002646484284196049`
 - cond delta_high_ratio: `0.5616336666118632`
 
+## smoke_e12_skipfusion_v2 (2026-02-09 15:09:12)
+- config: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/experiments/smoke_e12_skipfusion_v2.json`
+- summary: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-smoke_e12_skipfusion_v2-overfit50_e12_hires6_hifeat_v1-bd128-dsp1-hp0p22-whf3p0-wprob1p0-wproto0p2-wcyc8p0-20260209_150800/full_eval/epoch_0001/summary.json`
+- collage: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-smoke_e12_skipfusion_v2-overfit50_e12_hires6_hifeat_v1-bd128-dsp1-hp0p22-whf3p0-wprob1p0-wproto0p2-wcyc8p0-20260209_150800/full_eval/epoch_0001/collage.jpg`
+- transfer clip_style: `0.4653446637094021`
+- transfer content_lpips: `0.2872971575`
+- transfer classifier_acc: `0.25`
+- photo_to_art clip_style: `0.466623991727829`
+- photo_to_art classifier_acc: `0.25`
+- cond pair_count: `8`
+- cond delta_abs: `0.0030477460677502677`
+- cond delta_high_ratio: `0.5739614435260285`
+
+## overfit50_e12_hires6_hifeat_v1 (2026-02-09 15:14:46)
+- config: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/experiments/overfit50_e12_hires6_hifeat_v1.json`
+- summary: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e12_hires6_hifeat_v1-overfit50_e12_hires6_hifeat_v1-bd128-dsp1-hp0p22-whf3p0-wprob1p0-wproto0p2-wcyc8p0-20260209_150950/full_eval/epoch_0008/summary.json`
+- collage: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e12_hires6_hifeat_v1-overfit50_e12_hires6_hifeat_v1-bd128-dsp1-hp0p22-whf3p0-wprob1p0-wproto0p2-wcyc8p0-20260209_150950/full_eval/epoch_0008/collage.jpg`
+- transfer clip_style: `0.44098235458135604`
+- transfer content_lpips: `0.24397468355`
+- transfer classifier_acc: `0.08`
+- photo_to_art clip_style: `0.4729080259799957`
+- photo_to_art classifier_acc: `0.06`
+- cond pair_count: `100`
+- cond delta_abs: `0.0022537106671370565`
+- cond delta_high_ratio: `0.555170521613777`
+
+## overfit50_e13_hires6_spatialproto_v1 (2026-02-09 15:19:45)
+- config: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/experiments/overfit50_e13_hires6_spatialproto_v1.json`
+- summary: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e13_hires6_spatialproto_v1-overfit50_e13_hires6_spatialproto_v1-bd128-dsp1-hp0p2-whf3p0-wprob0p8-wproto0p2-wcyc8p0-20260209_151448/full_eval/epoch_0008/summary.json`
+- collage: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e13_hires6_spatialproto_v1-overfit50_e13_hires6_spatialproto_v1-bd128-dsp1-hp0p2-whf3p0-wprob0p8-wproto0p2-wcyc8p0-20260209_151448/full_eval/epoch_0008/collage.jpg`
+- transfer clip_style: `0.4414106440544129`
+- transfer content_lpips: `0.24394504290000002`
+- transfer classifier_acc: `0.08`
+- photo_to_art clip_style: `0.47361779391765596`
+- photo_to_art classifier_acc: `0.06`
+- cond pair_count: `100`
+- cond delta_abs: `0.0022521598829189316`
+- cond delta_high_ratio: `0.5516721603276517`
+
+## overfit50_e14_hires6_weakcls_v1 (2026-02-09 15:24:43)
+- config: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/experiments/overfit50_e14_hires6_weakcls_v1.json`
+- summary: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e14_hires6_weakcls_v1-overfit50_e14_hires6_weakcls_v1-bd128-dsp1-hp0p18-whf3p4-wprob0p35-wproto0p2-wcyc8p0-20260209_151947/full_eval/epoch_0008/summary.json`
+- collage: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e14_hires6_weakcls_v1-overfit50_e14_hires6_weakcls_v1-bd128-dsp1-hp0p18-whf3p4-wprob0p35-wproto0p2-wcyc8p0-20260209_151947/full_eval/epoch_0008/collage.jpg`
+- transfer clip_style: `0.4412601000070572`
+- transfer content_lpips: `0.24396485290000003`
+- transfer classifier_acc: `0.08`
+- photo_to_art clip_style: `0.4734989380836487`
+- photo_to_art classifier_acc: `0.06`
+- cond pair_count: `100`
+- cond delta_abs: `0.00225319666438736`
+- cond delta_high_ratio: `0.5501419947887368`
+
+## overfit50_e15_style_only_from_smoke (2026-02-09 15:40:33)
+- config: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/experiments/overfit50_e15_style_only_from_smoke.json`
+- summary: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e15_style_only_from_smoke/full_eval/epoch_0006/summary.json`
+- collage: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e15_style_only_from_smoke/full_eval/epoch_0006/collage.jpg`
+- transfer clip_style: `0.4414669013023377`
+- transfer content_lpips: `0.24372562039999995`
+- transfer classifier_acc: `0.08`
+- photo_to_art clip_style: `0.474231134057045`
+- photo_to_art classifier_acc: `0.06`
+- cond pair_count: `100`
+- cond delta_abs: `0.0026227317831944673`
+- cond delta_high_ratio: `0.5472841787467647`
+- 结论: 去掉结构约束后仍接近恒等，说明瓶颈在风格条件通路本身而非 cycle/idt 拉扯。
+
+## overfit50_e16_style_only_flowboost (2026-02-09 15:51:02)
+- config: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/experiments/overfit50_e16_style_only_flowboost.json`
+- summary: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e16_style_only_flowboost/full_eval/epoch_0006/summary.json`
+- collage: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e16_style_only_flowboost/full_eval/epoch_0006/collage.jpg`
+- transfer clip_style: `0.4412778922915459`
+- transfer content_lpips: `0.24643289969999999`
+- transfer classifier_acc: `0.08`
+- photo_to_art clip_style: `0.47469953119754793`
+- photo_to_art classifier_acc: `0.06`
+- cond pair_count: `100`
+- cond delta_abs: `0.0044197685259860005`
+- cond delta_high_ratio: `0.5589592292738693`
+- 结论: 信息流增量抬升（`delta_abs` 相对 e15 提升约 68%），但跨域判别仍低，注入幅值仍不足以驱动稳定风格迁移。
