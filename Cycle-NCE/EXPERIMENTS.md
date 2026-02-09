@@ -1,4 +1,11 @@
-﻿# Overfit50 实验记录与结论
+# Overfit50 实验记录与结论
+
+## 0. 研发约束（强制）
+- 风格注入能力是首要目标与绝对优先级，任何“结构更稳但风格消失”的改动都按失败处理。
+- 每次代码改动前先做 Git 备份提交（允许空提交），再实施改动。
+- 每轮实验必须同时记录：定量指标、`collage.jpg` 定性结果、失败原因与下一步单变量改动。
+- 禁止一次同时引入多个主改动，避免结论不可归因。
+
 
 ## 1. 目标与判定标准
 - 目标：在 `overfit50` 上先验证“模型确实学到双向风格迁移”，再上大规模数据。
@@ -234,3 +241,29 @@
 - cond pair_count: `100`
 - cond delta_abs: `0.0026404118712525814`
 - cond delta_high_ratio: `0.5413608090681745`
+## overfit50_e7_proto_sep_mid (2026-02-09 13:30:04)
+- config: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/experiments/overfit50_e7_proto_sep_mid.json`
+- summary: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e7_proto_sep_mid/full_eval/epoch_0008/summary.json`
+- collage: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e7_proto_sep_mid/full_eval/epoch_0008/collage.jpg`
+- transfer clip_style: `0.4415360137820244`
+- transfer content_lpips: `0.24378026265000002`
+- transfer classifier_acc: `0.08`
+- photo_to_art clip_style: `0.47371913731098175`
+- photo_to_art classifier_acc: `0.06`
+- cond pair_count: `100`
+- cond delta_abs: `0.0036207712488248943`
+- cond delta_high_ratio: `0.4947585201314335`
+
+## overfit50_e8_proto_sep_strong (2026-02-09 13:33:53)
+- config: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/experiments/overfit50_e8_proto_sep_strong.json`
+- summary: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e8_proto_sep_strong/full_eval/epoch_0008/summary.json`
+- collage: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e8_proto_sep_strong/full_eval/epoch_0008/collage.jpg`
+- transfer clip_style: `0.4412860089540481`
+- transfer content_lpips: `0.24370155675000005`
+- transfer classifier_acc: `0.08`
+- photo_to_art clip_style: `0.4736902046203613`
+- photo_to_art classifier_acc: `0.06`
+- cond pair_count: `100`
+- cond delta_abs: `0.0028640731738414616`
+- cond delta_high_ratio: `0.5344088328196556`
+
