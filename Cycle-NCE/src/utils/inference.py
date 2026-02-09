@@ -148,10 +148,6 @@ class LGTInference:
             latent_scale_factor=float(model_cfg.get("latent_scale_factor", 0.18215)),
             residual_gain=float(model_cfg.get("residual_gain", 0.1)),
             style_ref_gain=float(model_cfg.get("style_ref_gain", 1.0)),
-            style_spatial_pre_gain_32=float(model_cfg.get("style_spatial_pre_gain_32", 0.25)),
-            style_spatial_block_gain_32=float(model_cfg.get("style_spatial_block_gain_32", 0.10)),
-            style_spatial_pre_gain_16=float(model_cfg.get("style_spatial_pre_gain_16", 0.35)),
-            style_spatial_block_gain_16=float(model_cfg.get("style_spatial_block_gain_16", 0.15)),
         ).to(device)
         self.model.load_state_dict(state_dict, strict=True)
         self.model.eval()
