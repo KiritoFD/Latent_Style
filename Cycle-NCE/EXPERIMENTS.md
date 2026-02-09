@@ -272,3 +272,55 @@
 - cond pair_count: `100`
 - cond delta_abs: `0.0028640731738414616`
 - cond delta_high_ratio: `0.5344088328196556`
+## overfit50_e5_stepb_feat_student (2026-02-09 13:47:58)
+- config: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/experiments/overfit50_e5_stepb_feat_student.json`
+- summary: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e5_stepb_feat_student/full_eval/epoch_0008/summary.json`
+- collage: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e5_stepb_feat_student/full_eval/epoch_0008/collage.jpg`
+- transfer clip_style: `0.4409090027213097`
+- transfer content_lpips: `0.24388766420000002`
+- transfer classifier_acc: `0.08`
+- photo_to_art clip_style: `0.473043612241745`
+- photo_to_art classifier_acc: `0.06`
+- cond pair_count: `100`
+- cond delta_abs: `0.002533837304217741`
+- cond delta_high_ratio: `0.552445408677266`
+
+## overfit50_e6_stepb_feat_teacher (2026-02-09 13:48:04)
+- config: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/experiments/overfit50_e6_stepb_feat_teacher.json`
+- summary: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e6_stepb_feat_teacher/full_eval/epoch_0008/summary.json`
+- collage: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e6_stepb_feat_teacher/full_eval/epoch_0008/collage.jpg`
+- transfer clip_style: `0.44111956417560577`
+- transfer content_lpips: `0.2439911685`
+- transfer classifier_acc: `0.09`
+- photo_to_art clip_style: `0.4734433740377426`
+- photo_to_art classifier_acc: `0.06`
+- cond pair_count: `100`
+- cond delta_abs: `0.002636616702657193`
+- cond delta_high_ratio: `0.5486421574325153`
+
+## overfit50_e9_hifeat_probgate_v1 (2026-02-09 13:58:45)
+- config: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/experiments/overfit50_e9_hifeat_probgate_v1.json`
+- summary: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e9_hifeat_probgate_v1/full_eval/epoch_0008/summary.json`
+- collage: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e9_hifeat_probgate_v1/full_eval/epoch_0008/collage.jpg`
+- transfer clip_style: `0.44147684186697006`
+- transfer content_lpips: `0.2439030505`
+- transfer classifier_acc: `0.08`
+- photo_to_art clip_style: `0.4739224833250046`
+- photo_to_art classifier_acc: `0.06`
+- cond pair_count: `100`
+- cond delta_abs: `0.00225838822661899`
+- cond delta_high_ratio: `0.551413328370558`
+
+## overfit50_e10_hifeat_probgate_v2 (2026-02-09 14:05:33)
+- config: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/experiments/overfit50_e10_hifeat_probgate_v2.json`
+- summary: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e10_hifeat_probgate_v2/full_eval/epoch_0008/summary.json`
+- collage: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e10_hifeat_probgate_v2/full_eval/epoch_0008/collage.jpg`
+- transfer clip_style: `0.5327516198158264`
+- transfer content_lpips: `None`
+- transfer classifier_acc: `0.5`
+- photo_to_art clip_style: `0.5327394008636475`
+- photo_to_art classifier_acc: `0.0`
+- cond pair_count: `100`
+- cond delta_abs: `0.0`
+- cond delta_high_ratio: `0.0`
+- note: 训练从第 1 个 epoch 开始出现 `NaN`，该组结果无效，仅作为稳定性反例保留。

@@ -45,6 +45,16 @@ def _lowpass(x: torch.Tensor) -> torch.Tensor:
     return F.avg_pool2d(x, kernel_size=2, stride=2)
 
 
+def _highpass_same_size(x: torch.Tensor) -> torch.Tensor:
+    low = F.interpolate(
+        _lowpass(x),
+        size=x.shape[-2:],
+        mode="bilinear",
+        align_corners=False,
+    )
+    return x - low
+
+
 def _augment_for_classifier(
     x: torch.Tensor,
     prob: float,
@@ -164,6 +174,15 @@ class AdaCUTObjective:
         self.w_moment = float(loss_cfg.get("w_moment", 5.0))
         self.w_featmatch = float(loss_cfg.get("w_featmatch", 0.0))
         self.w_featmatch_teacher = float(loss_cfg.get("w_featmatch_teacher", 0.0))
+        self.w_featmatch_hf = float(loss_cfg.get("w_featmatch_hf", 0.0))
+        self.w_gram_hf = float(loss_cfg.get("w_gram_hf", 0.0))
+        self.w_moment_hf = float(loss_cfg.get("w_moment_hf", 0.0))
+        self.style_feat_min_level = int(loss_cfg.get("style_feat_min_level", 1))
+        self.style_feat_use_highpass = bool(loss_cfg.get("style_feat_use_highpass", True))
+        self.prob_gate_enabled = bool(loss_cfg.get("prob_gate_enabled", True))
+        self.prob_gate_min = float(loss_cfg.get("prob_gate_min", 0.15))
+        self.prob_gate_power = float(loss_cfg.get("prob_gate_power", 1.0))
+        self.prob_gate_detach = bool(loss_cfg.get("prob_gate_detach", True))
         self.w_nce = float(loss_cfg.get("w_nce", 0.0))
         self.w_idt = float(loss_cfg.get("w_idt", 0.0))
         self.w_push = float(loss_cfg.get("w_push", 0.0))
@@ -211,7 +230,8 @@ class AdaCUTObjective:
         target_ids = target_style_id.long().view(-1)
         source_ids = content_style_id.long().view(-1)
         transfer_mask = (target_ids != source_ids).float()
-        transfer_denom = transfer_mask.sum().clamp_min(1.0)
+        transfer_weight = transfer_mask
+        transfer_denom = transfer_weight.sum().clamp_min(1.0)
         has_transfer = float(transfer_mask.sum().item()) > 0.0
 
         # Deployment path: style_id only.
@@ -344,6 +364,17 @@ class AdaCUTObjective:
                 style_pred_acc = (pred_ids == target_ids).float().mean()
                 xfer_margin = (prob_tgt - prob_src).mean()
 
+            if self.prob_gate_enabled:
+                gate = prob_tgt
+                if self.prob_gate_power != 1.0:
+                    gate = torch.pow(gate.clamp_min(1e-6), self.prob_gate_power)
+                if self.prob_gate_min > 0.0:
+                    gate = self.prob_gate_min + (1.0 - self.prob_gate_min) * gate
+                if self.prob_gate_detach:
+                    gate = gate.detach()
+                transfer_weight = transfer_mask * gate
+                transfer_denom = transfer_weight.sum().clamp_min(1.0)
+
             # Probability-level guidance (continuous signal before argmax).
             # pull: directly maximize target-domain probability.
             prob_pull = 1.0 - prob_tgt
@@ -382,10 +413,12 @@ class AdaCUTObjective:
             prob_weight_mean = _zero()
             prob_tgt = None
             prob_src = None
+            transfer_weight = transfer_mask
+            transfer_denom = transfer_weight.sum().clamp_min(1.0)
 
         # Optional margin push from classifier confidence difference.
         if self.w_dir > 0.0 and has_transfer and (prob_tgt is not None) and (prob_src is not None):
-            dir_term = F.relu(prob_src - prob_tgt + self.dir_margin) * transfer_mask
+            dir_term = F.relu(prob_src - prob_tgt + self.dir_margin) * transfer_weight
             loss_dir = dir_term.sum() / transfer_denom
         else:
             loss_dir = _zero()
@@ -412,7 +445,7 @@ class AdaCUTObjective:
             rec_lp = _lowpass(rec.float())
             content_lp = _lowpass(content.float())
             per_sample_cycle = (rec_lp - content_lp).abs().mean(dim=(1, 2, 3))
-            loss_cycle = (per_sample_cycle * transfer_mask).sum() / transfer_denom
+            loss_cycle = (per_sample_cycle * transfer_weight).sum() / transfer_denom
         else:
             loss_cycle = _zero()
 
@@ -478,7 +511,7 @@ class AdaCUTObjective:
         if self.w_push > 0.0 and (code_student is not None):
             p_src = model.encode_style_id(content_style_id)
             dist_to_src = (code_student - p_src).abs().mean(dim=1)
-            push_term = F.relu(self.push_margin - dist_to_src) * transfer_mask
+            push_term = F.relu(self.push_margin - dist_to_src) * transfer_weight
             loss_push = push_term.sum() / transfer_denom
         else:
             loss_push = _zero()
@@ -488,35 +521,66 @@ class AdaCUTObjective:
         # (higher-dimensional, spatially aware) instead of low-dim latent stats.
         loss_gram = _zero()
         loss_moment = _zero()
+        loss_gram_hf = _zero()
+        loss_moment_hf = _zero()
         loss_featmatch = _zero()
-        if (self.w_gram > 0.0 or self.w_moment > 0.0) and has_transfer:
+        loss_featmatch_hf = _zero()
+        if (
+            self.w_gram > 0.0
+            or self.w_moment > 0.0
+            or self.w_gram_hf > 0.0
+            or self.w_moment_hf > 0.0
+        ) and has_transfer:
             xfer_idx = transfer_mask > 0.5
             pred_feats = model.encode_style_feats(pred_student.float()[xfer_idx])
             with torch.no_grad():
                 tgt_feats = model.encode_style_feats(target_style.float()[xfer_idx])
-            for a, b in zip(pred_feats, tgt_feats):
+            start_level = max(0, min(self.style_feat_min_level, len(pred_feats)))
+            pred_feats_sel = pred_feats[start_level:] if len(pred_feats) > start_level else pred_feats
+            tgt_feats_sel = tgt_feats[start_level:] if len(tgt_feats) > start_level else tgt_feats
+            for a, b in zip(pred_feats_sel, tgt_feats_sel):
                 a_n = _norm_spatial_feat(a)
                 b_n = _norm_spatial_feat(b)
                 if self.w_gram > 0.0:
                     loss_gram = loss_gram + calc_gram_loss(a_n, b_n)
                 if self.w_moment > 0.0:
                     loss_moment = loss_moment + calc_moment_loss(a_n, b_n)
-            scale = 1.0 / float(len(pred_feats))
+                if self.style_feat_use_highpass and (self.w_gram_hf > 0.0 or self.w_moment_hf > 0.0):
+                    a_hf = _norm_spatial_feat(_highpass_same_size(a_n))
+                    b_hf = _norm_spatial_feat(_highpass_same_size(b_n))
+                    if self.w_gram_hf > 0.0:
+                        loss_gram_hf = loss_gram_hf + calc_gram_loss(a_hf, b_hf)
+                    if self.w_moment_hf > 0.0:
+                        loss_moment_hf = loss_moment_hf + calc_moment_loss(a_hf, b_hf)
+            scale = 1.0 / float(max(len(pred_feats_sel), 1))
             loss_gram = loss_gram * scale
             loss_moment = loss_moment * scale
+            loss_gram_hf = loss_gram_hf * scale
+            loss_moment_hf = loss_moment_hf * scale
 
         # Direct multi-scale feature matching against target-style reference.
         # This improves texture/style strength without relying on classifier shortcuts.
-        if self.w_featmatch > 0.0 and has_transfer:
+        if (self.w_featmatch > 0.0 or self.w_featmatch_hf > 0.0) and has_transfer:
             xfer_idx = transfer_mask > 0.5
             pred_style_feats = model.encode_style_feats(pred_student.float()[xfer_idx])
             with torch.no_grad():
                 tgt_style_feats = model.encode_style_feats(target_style.float()[xfer_idx])
-            if len(pred_style_feats) > 0:
+            start_level = max(0, min(self.style_feat_min_level, len(pred_style_feats)))
+            pred_feats_sel = pred_style_feats[start_level:] if len(pred_style_feats) > start_level else pred_style_feats
+            tgt_feats_sel = tgt_style_feats[start_level:] if len(tgt_style_feats) > start_level else tgt_style_feats
+            if len(pred_feats_sel) > 0:
                 fm = _zero()
-                for p_f, t_f in zip(pred_style_feats, tgt_style_feats):
-                    fm = fm + F.l1_loss(_norm_spatial_feat(p_f), _norm_spatial_feat(t_f.detach()))
-                loss_featmatch = fm / float(len(pred_style_feats))
+                for p_f, t_f in zip(pred_feats_sel, tgt_feats_sel):
+                    p_n = _norm_spatial_feat(p_f)
+                    t_n = _norm_spatial_feat(t_f.detach())
+                    if self.w_featmatch > 0.0:
+                        fm = fm + F.l1_loss(p_n, t_n)
+                    if self.w_featmatch_hf > 0.0 and self.style_feat_use_highpass:
+                        p_hf = _norm_spatial_feat(_highpass_same_size(p_n))
+                        t_hf = _norm_spatial_feat(_highpass_same_size(t_n))
+                        loss_featmatch_hf = loss_featmatch_hf + F.l1_loss(p_hf, t_hf)
+                loss_featmatch = fm / float(len(pred_feats_sel))
+                loss_featmatch_hf = loss_featmatch_hf / float(len(pred_feats_sel))
 
         loss_featmatch_teacher = _zero()
         if self.w_featmatch_teacher > 0.0 and has_transfer and pred_teacher is not None:
@@ -561,8 +625,11 @@ class AdaCUTObjective:
             + self.w_dir * loss_dir
             + self.w_proto_sep * loss_proto_sep
             + self.w_gram * loss_gram
+            + self.w_gram_hf * loss_gram_hf
             + self.w_moment * loss_moment
+            + self.w_moment_hf * loss_moment_hf
             + self.w_featmatch * loss_featmatch
+            + self.w_featmatch_hf * loss_featmatch_hf
             + self.w_featmatch_teacher * loss_featmatch_teacher
             + w_nce_eff * loss_nce
             + self.w_push * loss_push
@@ -572,8 +639,11 @@ class AdaCUTObjective:
             "loss": total,
             "distill": loss_distill.detach(),
             "gram": loss_gram.detach(),
+            "gram_hf": loss_gram_hf.detach(),
             "moment": loss_moment.detach(),
+            "moment_hf": loss_moment_hf.detach(),
             "featmatch": loss_featmatch.detach(),
+            "featmatch_hf": loss_featmatch_hf.detach(),
             "featmatch_teacher": loss_featmatch_teacher.detach(),
             "code": loss_code.detach(),
             "code_ref": loss_code_ref.detach(),
@@ -601,6 +671,7 @@ class AdaCUTObjective:
             "w_idt_eff": torch.tensor(w_idt_eff, device=content.device),
             "style_ref_alpha": torch.tensor(0.0, device=content.device),
             "transfer_ratio": transfer_mask.mean().detach(),
+            "transfer_weight_mean": transfer_weight.mean().detach(),
             # Backward-compatible aliases for old logs.
             "token": loss_distill.detach(),
             "token_spatial": torch.tensor(0.0, device=content.device),

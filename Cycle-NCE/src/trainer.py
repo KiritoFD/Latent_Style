@@ -280,8 +280,11 @@ class AdaCUTTrainer:
                     "same_id",
                     "cycle",
                     "gram",
+                    "gram_hf",
                     "moment",
+                    "moment_hf",
                     "featmatch",
+                    "featmatch_hf",
                     "push",
                     "nce",
                     "idt",
@@ -290,6 +293,7 @@ class AdaCUTTrainer:
                     "w_idt_eff",
                     "style_ref_alpha",
                     "transfer_ratio",
+                    "transfer_weight_mean",
                     "data_wait_sec",
                     "step_wall_sec",
                     "lr",
@@ -510,8 +514,11 @@ class AdaCUTTrainer:
             "same_id": "same_id",
             "cycle": "cycle",
             "gram": "gram",
+            "gram_hf": "gram_hf",
             "moment": "moment",
+            "moment_hf": "moment_hf",
             "featmatch": "featmatch",
+            "featmatch_hf": "featmatch_hf",
             "push": "push",
             "nce": "nce",
             "idt": "idt",
@@ -520,6 +527,7 @@ class AdaCUTTrainer:
             "w_idt_eff": "w_idt_eff",
             "style_ref_alpha": "style_ref_alpha",
             "transfer_ratio": "transfer_ratio",
+            "transfer_weight_mean": "transfer_weight_mean",
         }
         metric_sums = {
             k: torch.zeros((), device=device, dtype=torch.float32) for k in metric_alias.keys()
@@ -618,6 +626,7 @@ class AdaCUTTrainer:
                         mrg=f"{float((metric_sums['xfer_margin'] * inv_batches).item()):.3f}",
                         pcos=f"{float((metric_sums['proto_cos_max'] * inv_batches).item()):.3f}",
                         fm=f"{float((metric_sums['featmatch'] * inv_batches).item()):.3f}",
+                        fmh=f"{float((metric_sums['featmatch_hf'] * inv_batches).item()):.3f}",
                         dw=f"{avg_data_wait*1000:.1f}ms",
                         sw=f"{avg_step_wall*1000:.1f}ms",
                         it_s=f"{step_per_sec:.2f}",
@@ -625,7 +634,7 @@ class AdaCUTTrainer:
                     )
                     if not self.use_tqdm:
                         logger.info(
-                            "epoch %d step %d/%d | loss=%.4f cls=%.4f p=%.4f pm=%.4f pw=%.3f p_t=%.3f hard=%.3f margin=%.4f proto_cos=%.4f feat=%.4f data_wait=%.1fms step_wall=%.1fms | %.2f it/s eta %.1fs",
+                            "epoch %d step %d/%d | loss=%.4f cls=%.4f p=%.4f pm=%.4f pw=%.3f p_t=%.3f hard=%.3f margin=%.4f proto_cos=%.4f feat=%.4f feat_hf=%.4f data_wait=%.1fms step_wall=%.1fms | %.2f it/s eta %.1fs",
                             epoch,
                             step_idx,
                             total_steps,
@@ -639,6 +648,7 @@ class AdaCUTTrainer:
                             float((metric_sums["xfer_margin"] * inv_batches).item()),
                             float((metric_sums["proto_cos_max"] * inv_batches).item()),
                             float((metric_sums["featmatch"] * inv_batches).item()),
+                            float((metric_sums["featmatch_hf"] * inv_batches).item()),
                             avg_data_wait * 1000.0,
                             avg_step_wall * 1000.0,
                             step_per_sec,
@@ -691,7 +701,7 @@ class AdaCUTTrainer:
                 f"cls={metrics['style_ce']:.4f} p={metrics['prob']:.4f} pm={metrics['prob_margin']:.4f} pw={metrics['prob_weight_mean']:.3f} "
                 f"p_t={metrics['cls_target_prob']:.3f} hard={metrics['cls_hard_ratio']:.3f} "
                 f"margin={metrics['xfer_margin']:.4f} proto_cos={metrics['proto_cos_max']:.4f} "
-                f"feat={metrics.get('featmatch', 0.0):.4f} "
+                f"feat={metrics.get('featmatch', 0.0):.4f} feat_hf={metrics.get('featmatch_hf', 0.0):.4f} "
                 f"cycle={metrics['cycle']:.4f} idt={metrics['idt']:.4f} "
                 f"data_wait={metrics['data_wait_sec']*1000.0:.1f}ms step_wall={metrics['step_wall_sec']*1000.0:.1f}ms | time={epoch_time:.1f}s"
             )
@@ -724,8 +734,11 @@ class AdaCUTTrainer:
                     float(metrics.get("same_id", 0.0)),
                     float(metrics.get("cycle", 0.0)),
                     float(metrics.get("gram", 0.0)),
+                    float(metrics.get("gram_hf", 0.0)),
                     float(metrics.get("moment", 0.0)),
+                    float(metrics.get("moment_hf", 0.0)),
                     float(metrics.get("featmatch", 0.0)),
+                    float(metrics.get("featmatch_hf", 0.0)),
                     float(metrics.get("push", 0.0)),
                     float(metrics.get("nce", 0.0)),
                     float(metrics.get("idt", 0.0)),
@@ -734,6 +747,7 @@ class AdaCUTTrainer:
                     float(metrics.get("w_idt_eff", 0.0)),
                     float(metrics.get("style_ref_alpha", 0.0)),
                     float(metrics.get("transfer_ratio", 0.0)),
+                    float(metrics.get("transfer_weight_mean", 0.0)),
                     float(metrics.get("data_wait_sec", 0.0)),
                     float(metrics.get("step_wall_sec", 0.0)),
                     float(metrics.get("lr", 0.0)),
