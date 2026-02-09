@@ -207,6 +207,16 @@ class LGTInference:
             style_spatial_block_gain_32=float(model_cfg.get("style_spatial_block_gain_32", 0.10)),
             style_spatial_pre_gain_16=float(model_cfg.get("style_spatial_pre_gain_16", 0.35)),
             style_spatial_block_gain_16=float(model_cfg.get("style_spatial_block_gain_16", 0.15)),
+            use_decoder_spatial_inject=bool(model_cfg.get("use_decoder_spatial_inject", True)),
+            style_spatial_dec_gain_32=float(model_cfg.get("style_spatial_dec_gain_32", 0.18)),
+            style_spatial_dec_gain_out=float(model_cfg.get("style_spatial_dec_gain_out", 0.08)),
+            use_style_texture_head=bool(model_cfg.get("use_style_texture_head", True)),
+            style_texture_gain=float(model_cfg.get("style_texture_gain", 0.12)),
+            use_style_delta_gate=bool(model_cfg.get("use_style_delta_gate", True)),
+            use_decoder_adagn=bool(model_cfg.get("use_decoder_adagn", True)),
+            use_delta_highpass_bias=bool(model_cfg.get("use_delta_highpass_bias", True)),
+            style_delta_lowfreq_gain=float(model_cfg.get("style_delta_lowfreq_gain", 0.35)),
+            use_style_spatial_highpass=bool(model_cfg.get("use_style_spatial_highpass", False)),
         ).to(device)
         self.model.load_state_dict(state_dict, strict=True)
         self.model.eval()

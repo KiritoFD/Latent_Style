@@ -93,6 +93,31 @@
 - `photo_to_art clip_style >= 0.53`
 - 拼图中能看到稳定纹理风格变化（不只是全局色调变化）。
 
+## 7. 回归排查（d2/d3 有效，d4/d5 后风格失效）
+- 结论：存在明确的配置生效回归，不是单纯超参数问题。
+- 问题点 1：`trainer` 初始化模型时，未把 `use_delta_highpass_bias/style_delta_lowfreq_gain` 传入构造函数，导致配置文件里“关闭高频偏置”不生效，实际一直按默认值运行。
+- 问题点 2：`inference` 初始化模型时同样遗漏这批参数，导致训练/评估模型结构与开关不一致。
+- 问题点 3：`style_spatial_ref/id` 在模型内被强制高通化（归一化 + tanh），会压缩空间风格信号；现已改为可配置开关，默认关闭。
+
+### 7.1 已修复代码位置
+- `src/trainer.py`：补齐模型构造参数透传（`use_delta_highpass_bias`、`style_delta_lowfreq_gain`、`use_style_spatial_highpass`）。
+- `src/utils/inference.py`：补齐与训练一致的模型构造参数透传，保证评估路径和训练路径一致。
+- `src/model.py`：新增 `use_style_spatial_highpass` 开关；`encode_style_spatial_ref/id` 不再默认强制高通。
+
+### 7.2 修复后快速回归（overfit50_e1_baseline_d2_ref_fixfull）
+- 配置：`src/experiments/overfit50_e1_baseline_d2_ref.json`（8 epoch 回归）
+- 训练现象：
+- `style_pred_acc` 约 `0.36 -> 0.39`（未恢复到历史 d2 高值）
+- `proto_cos_max` 约 `0.09 -> 0.56`（原型分离度恶化，存在风格原型塌缩风险）
+- 评估结果：
+- `style_transfer_ability.classifier_acc = 0.08`
+- `photo_to_art.classifier_acc = 0.06`
+- `conditional_sensitivity.delta_abs = 0.00264`（仍偏小）
+
+### 7.3 解释
+- 这次排查确认：d4/d5 之后确实存在“代码层回归（配置未生效 + 训练/评估开关不一致）”。
+- 但修复回归后，当前模型仍未恢复历史最好 d2 性能，说明还叠加了另一个问题：风格原型/风格编码路径在当前损失组合下出现塌缩，导致跨域条件信号不足。
+
 ## overfit50_e1_baseline_d2_ref (2026-02-09 12:20:12)
 - config: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/experiments/overfit50_e1_baseline_d2_ref.json`
 - summary: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e1_baseline_d2_ref/full_eval/epoch_0008/summary.json`
@@ -184,3 +209,28 @@
 - cond pair_count: `100`
 - cond delta_abs: `0.002636616702657193`
 - cond delta_high_ratio: `0.5486421574325153`
+## overfit50_e1_baseline_d2_ref_fixcheck (2026-02-09 13:03:29)
+- config: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/experiments/overfit50_e1_baseline_d2_ref_fixcheck.json`
+- summary: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e1_baseline_d2_ref_fixcheck/full_eval/epoch_0004/summary.json`
+- collage: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e1_baseline_d2_ref_fixcheck/full_eval/epoch_0004/collage.jpg`
+- transfer clip_style: `0.44092536717653275`
+- transfer content_lpips: `0.24408357843999998`
+- transfer classifier_acc: `0.08`
+- photo_to_art clip_style: `0.47288052797317504`
+- photo_to_art classifier_acc: `0.06`
+- cond pair_count: `100`
+- cond delta_abs: `0.0030763717915397136`
+- cond delta_high_ratio: `0.5307256610506061`
+
+## overfit50_e1_baseline_d2_ref_fixfull (2026-02-09 13:07:59)
+- config: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/experiments/overfit50_e1_baseline_d2_ref_fixfull.json`
+- summary: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e1_baseline_d2_ref_fixfull/full_eval/epoch_0008/summary.json`
+- collage: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e1_baseline_d2_ref_fixfull/full_eval/epoch_0008/collage.jpg`
+- transfer clip_style: `0.44142946928739546`
+- transfer content_lpips: `0.24386850406`
+- transfer classifier_acc: `0.08`
+- photo_to_art clip_style: `0.47367475509643553`
+- photo_to_art classifier_acc: `0.06`
+- cond pair_count: `100`
+- cond delta_abs: `0.0026404118712525814`
+- cond delta_high_ratio: `0.5413608090681745`

@@ -84,6 +84,7 @@ class LatentAdaCUT(nn.Module):
         use_decoder_adagn: bool = True,
         use_delta_highpass_bias: bool = True,
         style_delta_lowfreq_gain: float = 0.35,
+        use_style_spatial_highpass: bool = False,
     ) -> None:
         super().__init__()
         self.latent_channels = int(latent_channels)
@@ -107,6 +108,7 @@ class LatentAdaCUT(nn.Module):
         self.use_decoder_adagn = bool(use_decoder_adagn)
         self.use_delta_highpass_bias = bool(use_delta_highpass_bias)
         self.style_delta_lowfreq_gain = float(style_delta_lowfreq_gain)
+        self.use_style_spatial_highpass = bool(use_style_spatial_highpass)
 
         self.style_enc = nn.Sequential(
             nn.Conv2d(latent_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
@@ -251,19 +253,22 @@ class LatentAdaCUT(nn.Module):
     @classmethod
     def _extract_style_spatial_maps(cls, style_feats: list[torch.Tensor]) -> dict[int, torch.Tensor]:
         """
-        Build high-frequency style maps for both 32x32 and 16x16 paths.
+        Build style maps for both 32x32 and 16x16 paths.
         """
         maps: dict[int, torch.Tensor] = {}
         if len(style_feats) >= 1:
-            maps[32] = cls._style_highpass_map(style_feats[0])
+            maps[32] = style_feats[0]
         if len(style_feats) >= 2:
-            maps[16] = cls._style_highpass_map(style_feats[1])
+            maps[16] = style_feats[1]
         return maps
 
     def encode_style_spatial_ref(self, style_ref: torch.Tensor | None) -> dict[int, torch.Tensor]:
         if style_ref is None:
             return {}
-        return self._extract_style_spatial_maps(self.encode_style_feats(style_ref))
+        maps = self._extract_style_spatial_maps(self.encode_style_feats(style_ref))
+        if self.use_style_spatial_highpass:
+            maps = {k: self._style_highpass_map(v) for k, v in maps.items()}
+        return maps
 
     def encode_style_spatial_id(self, style_id: torch.Tensor | int | None) -> dict[int, torch.Tensor]:
         if style_id is None:
@@ -275,8 +280,9 @@ class LatentAdaCUT(nn.Module):
             32: self.style_spatial_id_32.index_select(0, style_id),
             16: self.style_spatial_id_16.index_select(0, style_id),
         }
-        maps[32] = self._style_highpass_map(maps[32])
-        maps[16] = self._style_highpass_map(maps[16])
+        if self.use_style_spatial_highpass:
+            maps[32] = self._style_highpass_map(maps[32])
+            maps[16] = self._style_highpass_map(maps[16])
         return maps
 
     @staticmethod

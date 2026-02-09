@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import logging
+import os
 import subprocess
 import sys
 import time
@@ -32,6 +33,53 @@ def _strip_compile_prefix(state_dict: Dict[str, torch.Tensor]) -> Dict[str, torc
     return state_dict
 
 
+def _add_compile_prefix(state_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+    if any(k.startswith("_orig_mod.") for k in state_dict.keys()):
+        return state_dict
+    return {f"_orig_mod.{k}": v for k, v in state_dict.items()}
+
+
+class _CudaPrefetchLoader:
+    """
+    Asynchronous host->device prefetcher to reduce GPU idle bubbles.
+    """
+
+    def __init__(self, dataloader: DataLoader, move_fn, enabled: bool) -> None:
+        self.dataloader = dataloader
+        self.move_fn = move_fn
+        self.enabled = bool(enabled and torch.cuda.is_available())
+        self.stream = torch.cuda.Stream() if self.enabled else None
+
+    def __len__(self):
+        return len(self.dataloader)
+
+    def __iter__(self):
+        if not self.enabled:
+            for batch in self.dataloader:
+                yield self.move_fn(batch)
+            return
+
+        loader_iter = iter(self.dataloader)
+        next_batch = None
+
+        def _prefetch():
+            nonlocal next_batch
+            try:
+                raw = next(loader_iter)
+            except StopIteration:
+                next_batch = None
+                return
+            with torch.cuda.stream(self.stream):
+                next_batch = self.move_fn(raw)
+
+        _prefetch()
+        while next_batch is not None:
+            torch.cuda.current_stream().wait_stream(self.stream)
+            batch = next_batch
+            _prefetch()
+            yield batch
+
+
 class AdaCUTTrainer:
     def __init__(self, config: Dict, device: torch.device, config_path: Optional[str] = None) -> None:
         self.config = config
@@ -50,6 +98,7 @@ class AdaCUTTrainer:
         self.skip_oom_batches = bool(train_cfg.get("skip_oom_batches", True))
         self.empty_cache_interval = max(0, int(train_cfg.get("empty_cache_interval", 0)))
         self.log_vram_interval = max(0, int(train_cfg.get("log_vram_interval", 0)))
+        self.cuda_prefetch = bool(train_cfg.get("cuda_prefetch", True))
 
         model_cfg = config.get("model", {})
         self.model = LatentAdaCUT(
@@ -70,28 +119,73 @@ class AdaCUTTrainer:
             style_spatial_block_gain_32=float(model_cfg.get("style_spatial_block_gain_32", 0.10)),
             style_spatial_pre_gain_16=float(model_cfg.get("style_spatial_pre_gain_16", 0.35)),
             style_spatial_block_gain_16=float(model_cfg.get("style_spatial_block_gain_16", 0.15)),
+            use_decoder_spatial_inject=bool(model_cfg.get("use_decoder_spatial_inject", True)),
+            style_spatial_dec_gain_32=float(model_cfg.get("style_spatial_dec_gain_32", 0.18)),
+            style_spatial_dec_gain_out=float(model_cfg.get("style_spatial_dec_gain_out", 0.08)),
+            use_style_texture_head=bool(model_cfg.get("use_style_texture_head", True)),
+            style_texture_gain=float(model_cfg.get("style_texture_gain", 0.12)),
+            use_style_delta_gate=bool(model_cfg.get("use_style_delta_gate", True)),
+            use_decoder_adagn=bool(model_cfg.get("use_decoder_adagn", True)),
+            use_delta_highpass_bias=bool(model_cfg.get("use_delta_highpass_bias", True)),
+            style_delta_lowfreq_gain=float(model_cfg.get("style_delta_lowfreq_gain", 0.35)),
+            use_style_spatial_highpass=bool(model_cfg.get("use_style_spatial_highpass", False)),
         )
         if self.channels_last:
             self.model = self.model.to(device, memory_format=torch.channels_last)
         else:
             self.model = self.model.to(device)
 
+        self.compile_cache_info = self._configure_compile_cache(train_cfg)
         self.use_compile = bool(train_cfg.get("use_compile", False))
+        self.compile_mode = str(train_cfg.get("compile_mode", "reduce-overhead"))
+        self.compile_backend = str(train_cfg.get("compile_backend", "inductor")).strip() or "inductor"
+        self.compile_dynamic = bool(train_cfg.get("compile_dynamic", False))
         if self.use_compile:
             try:
-                compile_mode = str(train_cfg.get("compile_mode", "reduce-overhead"))
-                self.model = torch.compile(self.model, mode=compile_mode, fullgraph=False)
-                logger.info("torch.compile enabled (mode=%s)", compile_mode)
+                try:
+                    self.model = torch.compile(
+                        self.model,
+                        backend=self.compile_backend,
+                        mode=self.compile_mode,
+                        fullgraph=False,
+                        dynamic=self.compile_dynamic,
+                    )
+                except TypeError:
+                    # Older torch versions may not support `dynamic`.
+                    self.model = torch.compile(
+                        self.model,
+                        backend=self.compile_backend,
+                        mode=self.compile_mode,
+                        fullgraph=False,
+                    )
+                logger.info(
+                    "torch.compile enabled (backend=%s mode=%s dynamic=%s)",
+                    self.compile_backend,
+                    self.compile_mode,
+                    self.compile_dynamic,
+                )
             except Exception as exc:  # pragma: no cover
                 logger.warning("torch.compile failed, fallback to eager. reason=%s", exc)
+                self.use_compile = False
+
+        logger.info(
+            "Compile cache | enabled=%s dir=%s fx_graph_cache=%s dynamo_cache_limit=%s",
+            bool(self.compile_cache_info.get("enabled", False)),
+            str(self.compile_cache_info.get("dir", "")),
+            str(self.compile_cache_info.get("fx_graph_cache", "")),
+            str(self.compile_cache_info.get("dynamo_cache_limit", "")),
+        )
 
         logger.info("Model params: %s", f"{count_parameters(self.model):,}")
         logger.info(
-            "Infra | channels_last=%s tf32=%s grad_ckpt=%s compile=%s",
+            "Infra | channels_last=%s tf32=%s grad_ckpt=%s compile=%s backend=%s mode=%s prefetch=%s",
             self.channels_last,
             self.allow_tf32,
             bool(train_cfg.get("use_gradient_checkpointing", False)),
             self.use_compile,
+            self.compile_backend if self.use_compile else "eager",
+            self.compile_mode if self.use_compile else "",
+            self.cuda_prefetch and (self.device.type == "cuda"),
         )
 
         self.use_amp = bool(train_cfg.get("use_amp", True) and device.type == "cuda")
@@ -146,6 +240,7 @@ class AdaCUTTrainer:
         self.accumulation_steps = max(1, int(train_cfg.get("accumulation_steps", 1)))
         self.log_interval = max(1, int(train_cfg.get("log_interval", 20)))
         self.use_tqdm = bool(train_cfg.get("use_tqdm", True))
+        self.tqdm_mininterval = float(train_cfg.get("tqdm_mininterval", 0.5))
         self.num_epochs = int(train_cfg.get("num_epochs", 100))
         self.save_interval = max(1, int(train_cfg.get("save_interval", 10)))
         self.full_eval_interval = max(0, int(train_cfg.get("full_eval_interval", 50)))
@@ -186,6 +281,7 @@ class AdaCUTTrainer:
                     "cycle",
                     "gram",
                     "moment",
+                    "featmatch",
                     "push",
                     "nce",
                     "idt",
@@ -194,6 +290,8 @@ class AdaCUTTrainer:
                     "w_idt_eff",
                     "style_ref_alpha",
                     "transfer_ratio",
+                    "data_wait_sec",
+                    "step_wall_sec",
                     "lr",
                     "epoch_time_sec",
                 ]
@@ -202,6 +300,48 @@ class AdaCUTTrainer:
         self.global_step = 0
         self.start_epoch = 1
         self._maybe_resume(str(train_cfg.get("resume_checkpoint", "")))
+
+    def _configure_compile_cache(self, train_cfg: Dict) -> Dict[str, object]:
+        info: Dict[str, object] = {
+            "enabled": bool(train_cfg.get("compile_cache_enabled", True)),
+            "dir": "",
+            "fx_graph_cache": "",
+            "dynamo_cache_limit": "",
+        }
+        if not bool(info["enabled"]):
+            return info
+
+        cache_dir_raw = str(train_cfg.get("compile_cache_dir", "")).strip()
+        cache_dir: Optional[Path] = None
+        if cache_dir_raw:
+            cache_dir = self._resolve_config_relative_path(cache_dir_raw)
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            os.environ["TORCHINDUCTOR_CACHE_DIR"] = str(cache_dir)
+        elif os.environ.get("TORCHINDUCTOR_CACHE_DIR"):
+            cache_dir = Path(os.environ["TORCHINDUCTOR_CACHE_DIR"]).expanduser()
+        if cache_dir is not None:
+            info["dir"] = str(cache_dir)
+
+        fx_graph_cache = bool(train_cfg.get("compile_fx_graph_cache", True))
+        info["fx_graph_cache"] = fx_graph_cache
+        try:
+            import torch._inductor.config as inductor_config
+
+            if hasattr(inductor_config, "fx_graph_cache"):
+                inductor_config.fx_graph_cache = fx_graph_cache
+        except Exception as exc:  # pragma: no cover
+            logger.warning("Could not set torch._inductor.config.fx_graph_cache: %s", exc)
+
+        dynamo_cache_limit = int(train_cfg.get("compile_dynamo_cache_limit", 256))
+        info["dynamo_cache_limit"] = dynamo_cache_limit
+        try:
+            import torch._dynamo.config as dynamo_config
+
+            if dynamo_cache_limit > 0:
+                dynamo_config.cache_size_limit = dynamo_cache_limit
+        except Exception as exc:  # pragma: no cover
+            logger.warning("Could not set torch._dynamo.config.cache_size_limit: %s", exc)
+        return info
 
     def _find_latest_checkpoint(self) -> Optional[Path]:
         ckpts = sorted(self.checkpoint_dir.glob("epoch_*.pt"))
@@ -222,7 +362,13 @@ class AdaCUTTrainer:
             return
 
         state = torch.load(ckpt_path, map_location=self.device, weights_only=False)
-        model_state = _strip_compile_prefix(state["model_state_dict"])
+        model_state = state["model_state_dict"]
+        model_expects_compile_prefix = any(k.startswith("_orig_mod.") for k in self.model.state_dict().keys())
+        ckpt_has_compile_prefix = any(k.startswith("_orig_mod.") for k in model_state.keys())
+        if model_expects_compile_prefix and not ckpt_has_compile_prefix:
+            model_state = _add_compile_prefix(model_state)
+        elif (not model_expects_compile_prefix) and ckpt_has_compile_prefix:
+            model_state = _strip_compile_prefix(model_state)
         self.model.load_state_dict(model_state, strict=True)
 
         if "optimizer_state_dict" in state:
@@ -341,52 +487,70 @@ class AdaCUTTrainer:
         epoch_start = time.time()
         self.loss_fn.set_progress(epoch=epoch, total_epochs=self.num_epochs)
 
-        sum_loss = 0.0
-        sum_distill = 0.0
-        sum_code = 0.0
-        sum_code_ref = 0.0
-        sum_code_proto = 0.0
-        sum_proto = 0.0
-        sum_style_ce = 0.0
-        sum_prob = 0.0
-        sum_prob_margin = 0.0
-        sum_prob_weight_mean = 0.0
-        sum_cls_target_prob = 0.0
-        sum_cls_hard_ratio = 0.0
-        sum_dir = 0.0
-        sum_proto_sep = 0.0
-        sum_style_acc = 0.0
-        sum_xfer_margin = 0.0
-        sum_proto_cos_max = 0.0
-        sum_proto_cos_mean = 0.0
-        sum_same_id = 0.0
-        sum_cycle = 0.0
-        sum_gram = 0.0
-        sum_moment = 0.0
-        sum_push = 0.0
-        sum_nce = 0.0
-        sum_idt = 0.0
-        sum_w_cycle_eff = 0.0
-        sum_w_nce_eff = 0.0
-        sum_w_idt_eff = 0.0
-        sum_style_ref_alpha = 0.0
-        sum_transfer_ratio = 0.0
+        device = self.device
+        metric_alias = {
+            "loss": "loss",
+            "distill": "distill",
+            "code": "code",
+            "code_ref": "code_ref",
+            "code_proto": "code_proto",
+            "proto": "proto",
+            "style_ce": "style_ce",
+            "prob": "prob",
+            "prob_margin": "prob_margin",
+            "prob_weight_mean": "prob_weight_mean",
+            "cls_target_prob": "cls_target_prob",
+            "cls_hard_ratio": "cls_hard_ratio",
+            "dir": "dir",
+            "proto_sep": "proto_sep",
+            "style_pred_acc": "style_pred_acc",
+            "xfer_margin": "xfer_margin",
+            "proto_cos_max": "proto_cos_max",
+            "proto_cos_mean": "proto_cos_mean",
+            "same_id": "same_id",
+            "cycle": "cycle",
+            "gram": "gram",
+            "moment": "moment",
+            "featmatch": "featmatch",
+            "push": "push",
+            "nce": "nce",
+            "idt": "idt",
+            "w_cycle_eff": "w_cycle_eff",
+            "w_nce_eff": "w_nce_eff",
+            "w_idt_eff": "w_idt_eff",
+            "style_ref_alpha": "style_ref_alpha",
+            "transfer_ratio": "transfer_ratio",
+        }
+        metric_sums = {
+            k: torch.zeros((), device=device, dtype=torch.float32) for k in metric_alias.keys()
+        }
+        sum_data_wait_sec = 0.0
+        sum_step_wall_sec = 0.0
         num_batches = 0
 
-        total_steps = len(dataloader)
+        iter_loader = _CudaPrefetchLoader(
+            dataloader=dataloader,
+            move_fn=self._move_batch,
+            enabled=self.cuda_prefetch and (self.device.type == "cuda"),
+        )
+        total_steps = len(iter_loader)
         progress = tqdm(
-            dataloader,
+            iter_loader,
             total=total_steps,
             desc=f"Epoch {epoch}/{self.num_epochs}",
             leave=True,
             dynamic_ncols=True,
+            mininterval=self.tqdm_mininterval,
             disable=not self.use_tqdm,
         )
 
         self.optimizer.zero_grad(set_to_none=True)
+        prev_step_end = epoch_start
         for step_idx, raw_batch in enumerate(progress, start=1):
+            step_start = time.time()
+            sum_data_wait_sec += max(0.0, step_start - prev_step_end)
             try:
-                batch = self._move_batch(raw_batch)
+                batch = raw_batch
                 content = batch["content"]
                 target_style = batch["target_style"]
                 target_style_id = batch["target_style_id"]
@@ -425,71 +589,58 @@ class AdaCUTTrainer:
                         if self.global_step % self.empty_cache_interval == 0:
                             torch.cuda.empty_cache()
 
-                sum_loss += float(loss.detach().item())
-                sum_distill += float(loss_dict.get("distill", torch.tensor(0.0, device=content.device)).item())
-                sum_code += float(loss_dict.get("code", torch.tensor(0.0, device=content.device)).item())
-                sum_code_ref += float(loss_dict.get("code_ref", torch.tensor(0.0, device=content.device)).item())
-                sum_code_proto += float(loss_dict.get("code_proto", torch.tensor(0.0, device=content.device)).item())
-                sum_proto += float(loss_dict.get("proto", torch.tensor(0.0, device=content.device)).item())
-                sum_style_ce += float(loss_dict.get("style_ce", torch.tensor(0.0, device=content.device)).item())
-                sum_prob += float(loss_dict.get("prob", torch.tensor(0.0, device=content.device)).item())
-                sum_prob_margin += float(loss_dict.get("prob_margin", torch.tensor(0.0, device=content.device)).item())
-                sum_prob_weight_mean += float(loss_dict.get("prob_weight_mean", torch.tensor(0.0, device=content.device)).item())
-                sum_cls_target_prob += float(loss_dict.get("cls_target_prob", torch.tensor(0.0, device=content.device)).item())
-                sum_cls_hard_ratio += float(loss_dict.get("cls_hard_ratio", torch.tensor(0.0, device=content.device)).item())
-                sum_dir += float(loss_dict.get("dir", torch.tensor(0.0, device=content.device)).item())
-                sum_proto_sep += float(loss_dict.get("proto_sep", torch.tensor(0.0, device=content.device)).item())
-                sum_style_acc += float(loss_dict.get("style_pred_acc", torch.tensor(0.0, device=content.device)).item())
-                sum_xfer_margin += float(loss_dict.get("xfer_margin", torch.tensor(0.0, device=content.device)).item())
-                sum_proto_cos_max += float(loss_dict.get("proto_cos_max", torch.tensor(0.0, device=content.device)).item())
-                sum_proto_cos_mean += float(loss_dict.get("proto_cos_mean", torch.tensor(0.0, device=content.device)).item())
-                sum_same_id += float(loss_dict.get("same_id", torch.tensor(0.0, device=content.device)).item())
-                sum_cycle += float(loss_dict.get("cycle", torch.tensor(0.0, device=content.device)).item())
-                sum_gram += float(loss_dict["gram"].item())
-                sum_moment += float(loss_dict["moment"].item())
-                sum_push += float(loss_dict["push"].item())
-                sum_nce += float(loss_dict["nce"].item())
-                sum_idt += float(loss_dict["idt"].item())
-                sum_w_cycle_eff += float(loss_dict["w_cycle_eff"].item())
-                sum_w_nce_eff += float(loss_dict.get("w_nce_eff", torch.tensor(0.0, device=content.device)).item())
-                sum_w_idt_eff += float(loss_dict["w_idt_eff"].item())
-                sum_style_ref_alpha += float(loss_dict.get("style_ref_alpha", torch.tensor(0.0, device=content.device)).item())
-                sum_transfer_ratio += float(loss_dict.get("transfer_ratio", torch.tensor(1.0, device=content.device)).item())
+                for out_key, loss_key in metric_alias.items():
+                    if loss_key == "loss":
+                        val = loss.detach()
+                    else:
+                        val = loss_dict.get(loss_key)
+                    if val is None:
+                        continue
+                    metric_sums[out_key] += val.detach().float()
                 num_batches += 1
 
                 if step_idx % self.log_interval == 0:
                     elapsed = time.time() - epoch_start
                     step_per_sec = step_idx / max(elapsed, 1e-6)
                     eta = (total_steps - step_idx) / max(step_per_sec, 1e-6)
-                    avg_loss = sum_loss / num_batches
+                    inv_batches = 1.0 / max(num_batches, 1)
+                    avg_data_wait = sum_data_wait_sec * inv_batches
+                    avg_step_wall = sum_step_wall_sec * inv_batches
+                    avg_loss = float((metric_sums["loss"] * inv_batches).item())
                     progress.set_postfix(
                         loss=f"{avg_loss:.4f}",
-                        cls=f"{(sum_style_ce / num_batches):.3f}",
-                        p=f"{(sum_prob / num_batches):.3f}",
-                        pm=f"{(sum_prob_margin / num_batches):.3f}",
-                        pw=f"{(sum_prob_weight_mean / num_batches):.2f}",
-                        p_t=f"{(sum_cls_target_prob / num_batches):.2f}",
-                        hard=f"{(sum_cls_hard_ratio / num_batches):.2f}",
-                        mrg=f"{(sum_xfer_margin / num_batches):.3f}",
-                        pcos=f"{(sum_proto_cos_max / num_batches):.3f}",
+                        cls=f"{float((metric_sums['style_ce'] * inv_batches).item()):.3f}",
+                        p=f"{float((metric_sums['prob'] * inv_batches).item()):.3f}",
+                        pm=f"{float((metric_sums['prob_margin'] * inv_batches).item()):.3f}",
+                        pw=f"{float((metric_sums['prob_weight_mean'] * inv_batches).item()):.2f}",
+                        p_t=f"{float((metric_sums['cls_target_prob'] * inv_batches).item()):.2f}",
+                        hard=f"{float((metric_sums['cls_hard_ratio'] * inv_batches).item()):.2f}",
+                        mrg=f"{float((metric_sums['xfer_margin'] * inv_batches).item()):.3f}",
+                        pcos=f"{float((metric_sums['proto_cos_max'] * inv_batches).item()):.3f}",
+                        fm=f"{float((metric_sums['featmatch'] * inv_batches).item()):.3f}",
+                        dw=f"{avg_data_wait*1000:.1f}ms",
+                        sw=f"{avg_step_wall*1000:.1f}ms",
                         it_s=f"{step_per_sec:.2f}",
                         eta=f"{eta:.1f}s",
                     )
                     if not self.use_tqdm:
                         logger.info(
-                            "epoch %d step %d/%d | loss=%.4f cls=%.4f p=%.4f pm=%.4f pw=%.3f p_t=%.3f hard=%.3f margin=%.4f proto_cos=%.4f | %.2f it/s eta %.1fs",
+                            "epoch %d step %d/%d | loss=%.4f cls=%.4f p=%.4f pm=%.4f pw=%.3f p_t=%.3f hard=%.3f margin=%.4f proto_cos=%.4f feat=%.4f data_wait=%.1fms step_wall=%.1fms | %.2f it/s eta %.1fs",
                             epoch,
                             step_idx,
                             total_steps,
                             avg_loss,
-                            sum_style_ce / num_batches,
-                            sum_prob / num_batches,
-                            sum_prob_margin / num_batches,
-                            sum_prob_weight_mean / num_batches,
-                            sum_cls_target_prob / num_batches,
-                            sum_cls_hard_ratio / num_batches,
-                            sum_xfer_margin / num_batches,
-                            sum_proto_cos_max / num_batches,
+                            float((metric_sums["style_ce"] * inv_batches).item()),
+                            float((metric_sums["prob"] * inv_batches).item()),
+                            float((metric_sums["prob_margin"] * inv_batches).item()),
+                            float((metric_sums["prob_weight_mean"] * inv_batches).item()),
+                            float((metric_sums["cls_target_prob"] * inv_batches).item()),
+                            float((metric_sums["cls_hard_ratio"] * inv_batches).item()),
+                            float((metric_sums["xfer_margin"] * inv_batches).item()),
+                            float((metric_sums["proto_cos_max"] * inv_batches).item()),
+                            float((metric_sums["featmatch"] * inv_batches).item()),
+                            avg_data_wait * 1000.0,
+                            avg_step_wall * 1000.0,
                             step_per_sec,
                             eta,
                         )
@@ -505,6 +656,9 @@ class AdaCUTTrainer:
                     torch.cuda.empty_cache()
                     continue
                 raise
+            finally:
+                prev_step_end = time.time()
+                sum_step_wall_sec += max(0.0, prev_step_end - step_start)
 
         progress.close()
 
@@ -524,40 +678,12 @@ class AdaCUTTrainer:
 
         epoch_time = time.time() - epoch_start
         lr = float(self.optimizer.param_groups[0]["lr"])
-        metrics = {
-            "loss": sum_loss / max(num_batches, 1),
-            "distill": sum_distill / max(num_batches, 1),
-            "code": sum_code / max(num_batches, 1),
-            "code_ref": sum_code_ref / max(num_batches, 1),
-            "code_proto": sum_code_proto / max(num_batches, 1),
-            "proto": sum_proto / max(num_batches, 1),
-            "style_ce": sum_style_ce / max(num_batches, 1),
-            "prob": sum_prob / max(num_batches, 1),
-            "prob_margin": sum_prob_margin / max(num_batches, 1),
-            "prob_weight_mean": sum_prob_weight_mean / max(num_batches, 1),
-            "cls_target_prob": sum_cls_target_prob / max(num_batches, 1),
-            "cls_hard_ratio": sum_cls_hard_ratio / max(num_batches, 1),
-            "dir": sum_dir / max(num_batches, 1),
-            "proto_sep": sum_proto_sep / max(num_batches, 1),
-            "style_pred_acc": sum_style_acc / max(num_batches, 1),
-            "xfer_margin": sum_xfer_margin / max(num_batches, 1),
-            "proto_cos_max": sum_proto_cos_max / max(num_batches, 1),
-            "proto_cos_mean": sum_proto_cos_mean / max(num_batches, 1),
-            "same_id": sum_same_id / max(num_batches, 1),
-            "cycle": sum_cycle / max(num_batches, 1),
-            "gram": sum_gram / max(num_batches, 1),
-            "moment": sum_moment / max(num_batches, 1),
-            "push": sum_push / max(num_batches, 1),
-            "nce": sum_nce / max(num_batches, 1),
-            "idt": sum_idt / max(num_batches, 1),
-            "w_cycle_eff": sum_w_cycle_eff / max(num_batches, 1),
-            "w_nce_eff": sum_w_nce_eff / max(num_batches, 1),
-            "w_idt_eff": sum_w_idt_eff / max(num_batches, 1),
-            "style_ref_alpha": sum_style_ref_alpha / max(num_batches, 1),
-            "transfer_ratio": sum_transfer_ratio / max(num_batches, 1),
-            "lr": lr,
-            "epoch_time_sec": epoch_time,
-        }
+        inv_batches = 1.0 / max(num_batches, 1)
+        metrics = {k: float((v * inv_batches).item()) for k, v in metric_sums.items()}
+        metrics["data_wait_sec"] = sum_data_wait_sec * inv_batches
+        metrics["step_wall_sec"] = sum_step_wall_sec * inv_batches
+        metrics["lr"] = lr
+        metrics["epoch_time_sec"] = epoch_time
         if self.use_tqdm:
             tqdm.write(
                 f"[Epoch {epoch}/{self.num_epochs}] "
@@ -565,7 +691,9 @@ class AdaCUTTrainer:
                 f"cls={metrics['style_ce']:.4f} p={metrics['prob']:.4f} pm={metrics['prob_margin']:.4f} pw={metrics['prob_weight_mean']:.3f} "
                 f"p_t={metrics['cls_target_prob']:.3f} hard={metrics['cls_hard_ratio']:.3f} "
                 f"margin={metrics['xfer_margin']:.4f} proto_cos={metrics['proto_cos_max']:.4f} "
-                f"cycle={metrics['cycle']:.4f} idt={metrics['idt']:.4f} | time={epoch_time:.1f}s"
+                f"feat={metrics.get('featmatch', 0.0):.4f} "
+                f"cycle={metrics['cycle']:.4f} idt={metrics['idt']:.4f} "
+                f"data_wait={metrics['data_wait_sec']*1000.0:.1f}ms step_wall={metrics['step_wall_sec']*1000.0:.1f}ms | time={epoch_time:.1f}s"
             )
         return metrics
 
@@ -597,6 +725,7 @@ class AdaCUTTrainer:
                     float(metrics.get("cycle", 0.0)),
                     float(metrics.get("gram", 0.0)),
                     float(metrics.get("moment", 0.0)),
+                    float(metrics.get("featmatch", 0.0)),
                     float(metrics.get("push", 0.0)),
                     float(metrics.get("nce", 0.0)),
                     float(metrics.get("idt", 0.0)),
@@ -605,6 +734,8 @@ class AdaCUTTrainer:
                     float(metrics.get("w_idt_eff", 0.0)),
                     float(metrics.get("style_ref_alpha", 0.0)),
                     float(metrics.get("transfer_ratio", 0.0)),
+                    float(metrics.get("data_wait_sec", 0.0)),
+                    float(metrics.get("step_wall_sec", 0.0)),
                     float(metrics.get("lr", 0.0)),
                     float(metrics.get("epoch_time_sec", 0.0)),
                 ]
