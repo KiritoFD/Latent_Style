@@ -179,12 +179,10 @@ class AdaCUTTrainer:
                 [
                     "epoch",
                     "loss",
-                    "distill",
                     "code",
                     "code_pred_norm",
                     "code_ref_norm",
                     "cycle",
-                    "struct",
                     "gram",
                     "gram_w",
                     "moment",
@@ -192,7 +190,6 @@ class AdaCUTTrainer:
                     "nce",
                     "idt",
                     "w_cycle_eff",
-                    "w_struct_eff",
                     "w_nce_eff",
                     "w_idt_eff",
                     "transfer_ratio",
@@ -325,12 +322,10 @@ class AdaCUTTrainer:
         self.loss_fn.set_progress(epoch=epoch, total_epochs=self.num_epochs)
 
         sum_loss = 0.0
-        sum_distill = 0.0
         sum_code = 0.0
         sum_code_pred_norm = 0.0
         sum_code_ref_norm = 0.0
         sum_cycle = 0.0
-        sum_struct = 0.0
         sum_gram = 0.0
         sum_gram_w = 0.0
         sum_moment = 0.0
@@ -338,7 +333,6 @@ class AdaCUTTrainer:
         sum_nce = 0.0
         sum_idt = 0.0
         sum_w_cycle_eff = 0.0
-        sum_w_struct_eff = 0.0
         sum_w_nce_eff = 0.0
         sum_w_idt_eff = 0.0
         sum_transfer_ratio = 0.0
@@ -397,12 +391,10 @@ class AdaCUTTrainer:
                             torch.cuda.empty_cache()
 
                 sum_loss += float(loss.detach().item())
-                sum_distill += float(loss_dict.get("distill", torch.tensor(0.0, device=content.device)).item())
                 sum_code += float(loss_dict.get("code", torch.tensor(0.0, device=content.device)).item())
                 sum_code_pred_norm += float(loss_dict.get("code_pred_norm", torch.tensor(0.0, device=content.device)).item())
                 sum_code_ref_norm += float(loss_dict.get("code_ref_norm", torch.tensor(0.0, device=content.device)).item())
                 sum_cycle += float(loss_dict.get("cycle", torch.tensor(0.0, device=content.device)).item())
-                sum_struct += float(loss_dict.get("struct", torch.tensor(0.0, device=content.device)).item())
                 sum_gram += float(loss_dict["gram"].item())
                 sum_gram_w += float(loss_dict.get("gram_w", torch.tensor(0.0, device=content.device)).item())
                 sum_moment += float(loss_dict["moment"].item())
@@ -410,7 +402,6 @@ class AdaCUTTrainer:
                 sum_nce += float(loss_dict["nce"].item())
                 sum_idt += float(loss_dict["idt"].item())
                 sum_w_cycle_eff += float(loss_dict["w_cycle_eff"].item())
-                sum_w_struct_eff += float(loss_dict.get("w_struct_eff", torch.tensor(0.0, device=content.device)).item())
                 sum_w_nce_eff += float(loss_dict.get("w_nce_eff", torch.tensor(0.0, device=content.device)).item())
                 sum_w_idt_eff += float(loss_dict.get("w_idt_eff", torch.tensor(0.0, device=content.device)).item())
                 sum_transfer_ratio += float(loss_dict.get("transfer_ratio", torch.tensor(1.0, device=content.device)).item())
@@ -484,12 +475,10 @@ class AdaCUTTrainer:
         lr = float(self.optimizer.param_groups[0]["lr"])
         metrics = {
             "loss": sum_loss / max(num_batches, 1),
-            "distill": sum_distill / max(num_batches, 1),
             "code": sum_code / max(num_batches, 1),
             "code_pred_norm": sum_code_pred_norm / max(num_batches, 1),
             "code_ref_norm": sum_code_ref_norm / max(num_batches, 1),
             "cycle": sum_cycle / max(num_batches, 1),
-            "struct": sum_struct / max(num_batches, 1),
             "gram": sum_gram / max(num_batches, 1),
             "gram_w": sum_gram_w / max(num_batches, 1),
             "moment": sum_moment / max(num_batches, 1),
@@ -497,7 +486,6 @@ class AdaCUTTrainer:
             "nce": sum_nce / max(num_batches, 1),
             "idt": sum_idt / max(num_batches, 1),
             "w_cycle_eff": sum_w_cycle_eff / max(num_batches, 1),
-            "w_struct_eff": sum_w_struct_eff / max(num_batches, 1),
             "w_nce_eff": sum_w_nce_eff / max(num_batches, 1),
             "w_idt_eff": sum_w_idt_eff / max(num_batches, 1),
             "transfer_ratio": sum_transfer_ratio / max(num_batches, 1),
@@ -508,7 +496,6 @@ class AdaCUTTrainer:
             tqdm.write(
                 f"[Epoch {epoch}/{self.num_epochs}] "
                 f"loss={metrics['loss']:.4f} "
-                f"distill={metrics['distill']:.4f} "
                 f"code={metrics['code']:.4f} "
                 f"cpn={metrics['code_pred_norm']:.3f} crn={metrics['code_ref_norm']:.3f} "
                 f"cycle={metrics['cycle']:.4f} "
@@ -527,12 +514,10 @@ class AdaCUTTrainer:
                 [
                     int(epoch),
                     float(metrics.get("loss", 0.0)),
-                    float(metrics.get("distill", 0.0)),
                     float(metrics.get("code", 0.0)),
                     float(metrics.get("code_pred_norm", 0.0)),
                     float(metrics.get("code_ref_norm", 0.0)),
                     float(metrics.get("cycle", 0.0)),
-                    float(metrics.get("struct", 0.0)),
                     float(metrics.get("gram", 0.0)),
                     float(metrics.get("gram_w", 0.0)),
                     float(metrics.get("moment", 0.0)),
@@ -540,7 +525,6 @@ class AdaCUTTrainer:
                     float(metrics.get("nce", 0.0)),
                     float(metrics.get("idt", 0.0)),
                     float(metrics.get("w_cycle_eff", 0.0)),
-                    float(metrics.get("w_struct_eff", 0.0)),
                     float(metrics.get("w_nce_eff", 0.0)),
                     float(metrics.get("w_idt_eff", 0.0)),
                     float(metrics.get("transfer_ratio", 0.0)),

@@ -249,12 +249,6 @@ def main():
     
     lgt = LGTInference(str(checkpoint_path), device=device, num_steps=args.num_steps)
     vae = load_vae(device)
-    model_scale = float(getattr(lgt.model, "latent_scale_factor", 0.18215))
-    vae_scale = float(getattr(getattr(vae, "config", None), "scaling_factor", model_scale))
-    scale_in = model_scale / max(vae_scale, 1e-8)
-    scale_out = vae_scale / max(model_scale, 1e-8)
-    if abs(scale_in - 1.0) > 1e-4:
-        print(f"WARNING: latent scale mismatch (model={model_scale:.6f}, vae={vae_scale:.6f}). Applying rescale.")
     
     num_src_total = len(all_src_info)
     num_styles = len(style_subdirs)
@@ -277,8 +271,6 @@ def main():
             with torch.no_grad():
                 # Inversion
                 latents_src = encode_image(vae, src_batch, device)
-                if abs(scale_in - 1.0) > 1e-4:
-                    latents_src = latents_src * scale_in
                 latents_x0 = lgt.inversion(latents_src, src_style_ids)
                 
                 # Generation for each target style
@@ -286,8 +278,6 @@ def main():
                     tgt_name = style_subdirs[tgt_id]
                     tgt_ids = torch.full((len(batch_info),), tgt_id, device=device, dtype=torch.long)
                     latents_gen = lgt.generation(latents_x0, tgt_ids)
-                    if abs(scale_out - 1.0) > 1e-4:
-                        latents_gen = latents_gen * scale_out
                     imgs_gen = decode_latent(vae, latents_gen, device) # [B, 3, H, W]
                     
                     # Offload to CPU & Save Async

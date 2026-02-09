@@ -109,9 +109,7 @@ class AdaCUTObjective:
 
     def __init__(self, config: Dict) -> None:
         loss_cfg = config.get("loss", {})
-        self.w_distill = float(loss_cfg.get("w_distill", 10.0))
         self.w_code = float(loss_cfg.get("w_code", 10.0))
-        self.w_struct = float(loss_cfg.get("w_struct", 0.0))
         self.w_cycle = float(loss_cfg.get("w_cycle", 0.0))
 
         # Optional auxiliary losses (default-off in the new scheme)
@@ -125,8 +123,6 @@ class AdaCUTObjective:
 
         self.cycle_warmup_epochs = int(loss_cfg.get("cycle_warmup_epochs", 0))
         self.cycle_ramp_epochs = int(loss_cfg.get("cycle_ramp_epochs", 1))
-        self.struct_warmup_epochs = int(loss_cfg.get("struct_warmup_epochs", 0))
-        self.struct_ramp_epochs = int(loss_cfg.get("struct_ramp_epochs", 1))
         self.idt_warmup_epochs = 0
         self.idt_ramp_epochs = 0
         self.nce_temperature = float(loss_cfg.get("nce_temperature", 0.1))
@@ -160,32 +156,20 @@ class AdaCUTObjective:
         target_style_id: torch.Tensor,
         content_style_id: torch.Tensor,
     ) -> Dict[str, torch.Tensor]:
-        # Teacher path uses reference style for stronger supervision.
-        pred_teacher = model(
+        # Training path uses reference style for stronger style supervision.
+        pred = model(
             content,
             style_id=target_style_id,
             style_ref=target_style,
             style_mix_alpha=1.0,
         )
-        # Student path matches deployment: style_id only (no reference).
-        pred_student = model(
-            content,
-            style_id=target_style_id,
-            style_ref=None,
-            style_mix_alpha=0.0,
-        )
         transfer_mask = (target_style_id.long() != content_style_id.long()).float()
 
-        # Distill: student should mimic teacher output (stop grad on teacher).
-        loss_distill = F.l1_loss(pred_student, pred_teacher.detach())
-
-        # Code closure: teacher should match reference, student should match style_id.
+        # Code closure: output should map back to reference style code.
         s_ref = model.encode_style(target_style.float()).detach()
-        code_teacher = model.encode_style(pred_teacher.float())
-        code_student = model.encode_style(pred_student.float())
-        s_id = model.encode_style_id(target_style_id)
-        loss_code = F.l1_loss(code_teacher, s_ref) + F.l1_loss(code_student, s_id)
-        code_pred_norm = code_student.norm(dim=1).mean()
+        code_pred = model.encode_style(pred.float())
+        loss_code = F.l1_loss(code_pred, s_ref)
+        code_pred_norm = code_pred.norm(dim=1).mean()
         code_ref_norm = s_ref.norm(dim=1).mean()
 
         w_cycle_eff = self._ramp_weight(
@@ -198,7 +182,7 @@ class AdaCUTObjective:
             # Low-pass cycle only for cross-domain samples:
             # x -> pred(target) -> rec(source prototype).
             rec = model(
-                pred_student,
+                pred,
                 style_id=content_style_id,
                 style_ref=None,
                 style_mix_alpha=0.0,
@@ -210,24 +194,11 @@ class AdaCUTObjective:
         else:
             loss_cycle = torch.tensor(0.0, device=content.device, dtype=content.dtype)
 
-        w_struct_eff = self._ramp_weight(
-            self.w_struct,
-            epoch=self.current_epoch,
-            warmup=self.struct_warmup_epochs,
-            ramp=self.struct_ramp_epochs,
-        )
-        if w_struct_eff > 0.0:
-            pred_lp = _lowpass(pred_student.float())
-            content_lp = _lowpass(content.float())
-            loss_struct = F.l1_loss(pred_lp, content_lp)
-        else:
-            loss_struct = torch.tensor(0.0, device=content.device, dtype=content.dtype)
-
         # Optional extras: style statistics on output.
         loss_gram = torch.tensor(0.0, device=content.device, dtype=torch.float32)
         loss_moment = torch.tensor(0.0, device=content.device, dtype=torch.float32)
         if self.w_gram > 0.0 or self.w_moment > 0.0:
-            pred_feats = _multiscale_latent_feats(pred_teacher.float())
+            pred_feats = _multiscale_latent_feats(pred.float())
             tgt_feats = _multiscale_latent_feats(target_style.float())
             for a, b in zip(pred_feats, tgt_feats):
                 loss_gram = loss_gram + calc_gram_loss(a, b)
@@ -245,7 +216,7 @@ class AdaCUTObjective:
             loss_nce = calc_nce_loss(
                 model,
                 x_in=content.float(),
-                x_out=pred_student.float(),
+                x_out=pred.float(),
                 temperature=self.nce_temperature,
                 spatial_size=self.nce_spatial_size,
                 max_tokens=self.nce_max_tokens,
@@ -258,7 +229,7 @@ class AdaCUTObjective:
 
         if self.w_push > 0.0:
             p_src = model.encode_style_id(content_style_id)
-            dist_to_src = (code_student - p_src).abs().mean(dim=1)
+            dist_to_src = (code_pred - p_src).abs().mean(dim=1)
             push_term = F.relu(self.push_margin - dist_to_src) * transfer_mask
             denom = transfer_mask.sum().clamp_min(1.0)
             loss_push = push_term.sum() / denom
@@ -266,9 +237,7 @@ class AdaCUTObjective:
             loss_push = torch.tensor(0.0, device=content.device, dtype=content.dtype)
 
         total = (
-            self.w_distill * loss_distill
-            + self.w_code * loss_code
-            + w_struct_eff * loss_struct
+            self.w_code * loss_code
             + w_cycle_eff * loss_cycle
             + self.w_gram * loss_gram
             + self.w_moment * loss_moment
@@ -278,7 +247,6 @@ class AdaCUTObjective:
 
         return {
             "loss": total,
-            "distill": loss_distill.detach(),
             "gram": loss_gram.detach(),
             "gram_w": (loss_gram.detach() * float(self.w_gram)),
             "moment": loss_moment.detach(),
@@ -289,9 +257,7 @@ class AdaCUTObjective:
             "nce": loss_nce.detach(),
             "idt": loss_idt.detach(),
             "cycle": loss_cycle.detach(),
-            "struct": loss_struct.detach(),
             "w_cycle_eff": torch.tensor(w_cycle_eff, device=content.device),
-            "w_struct_eff": torch.tensor(w_struct_eff, device=content.device),
             "w_nce_eff": torch.tensor(w_nce_eff, device=content.device),
             "w_idt_eff": torch.tensor(w_idt_eff, device=content.device),
             "style_ref_alpha": torch.tensor(0.0, device=content.device),

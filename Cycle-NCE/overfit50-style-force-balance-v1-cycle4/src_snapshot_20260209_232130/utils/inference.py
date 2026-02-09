@@ -303,12 +303,6 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     vae = load_vae(device=str(device))
     inf = LGTInference(checkpoint_path, device=str(device), num_steps=1)
-    model_scale = float(getattr(inf.model, "latent_scale_factor", 0.18215))
-    vae_scale = float(getattr(getattr(vae, "config", None), "scaling_factor", model_scale))
-    scale_in = model_scale / max(vae_scale, 1e-8)
-    scale_out = vae_scale / max(model_scale, 1e-8)
-    if abs(scale_in - 1.0) > 1e-4:
-        print(f"WARNING: latent scale mismatch (model={model_scale:.6f}, vae={vae_scale:.6f}). Applying rescale.")
 
     image = Image.open(source_image_path).convert("RGB").resize((256, 256))
     image_tensor = torch.from_numpy(np.array(image)).float() / 255.0
@@ -316,11 +310,7 @@ if __name__ == "__main__":
     image_tensor = image_tensor * 2.0 - 1.0
 
     z = encode_image(vae, image_tensor, device=str(device))
-    if abs(scale_in - 1.0) > 1e-4:
-        z = z * scale_in
     z_out = inf.transfer_style(z, source_style_id=0, target_style_id=target_style_id, num_steps=1)
-    if abs(scale_out - 1.0) > 1e-4:
-        z_out = z_out * scale_out
     out = decode_latent(vae, z_out, device=str(device))
     tensor_to_pil(out).save(output_path)
     print(f"Saved: {output_path}")
