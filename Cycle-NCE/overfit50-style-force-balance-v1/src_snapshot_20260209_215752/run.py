@@ -33,22 +33,6 @@ def _set_seed(seed: int) -> None:
         torch.cuda.manual_seed_all(seed)
 
 
-def _set_cpu_threads(config: dict) -> None:
-    train_cfg = config.get("training", {})
-    cpu_threads = train_cfg.get("cpu_threads")
-    cpu_interop_threads = train_cfg.get("cpu_interop_threads")
-    if cpu_threads is not None:
-        try:
-            torch.set_num_threads(int(cpu_threads))
-        except Exception:  # pragma: no cover
-            pass
-    if cpu_interop_threads is not None:
-        try:
-            torch.set_num_interop_threads(int(cpu_interop_threads))
-        except Exception:  # pragma: no cover
-            pass
-
-
 def _seed_worker(worker_id: int) -> None:
     seed = torch.initial_seed() % (2**32)
     random.seed(seed)
@@ -82,7 +66,6 @@ def main() -> None:
 
     seed = int(config.get("training", {}).get("seed", 42))
     _set_seed(seed)
-    _set_cpu_threads(config)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info("Device: %s", device)
