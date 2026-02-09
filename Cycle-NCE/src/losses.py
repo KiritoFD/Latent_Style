@@ -83,32 +83,10 @@ def _augment_for_classifier(
     return y
 
 
-def _multiscale_latent_feats(x: torch.Tensor) -> list[torch.Tensor]:
-    def patch_expand(f: torch.Tensor, patch: int = 3) -> torch.Tensor:
-        if patch <= 1:
-            return f
-        b, c, h, w = f.shape
-        u = F.unfold(f, kernel_size=patch, padding=patch // 2, stride=1)
-        return u.view(b, c * patch * patch, h, w)
-
-    def enrich(f: torch.Tensor) -> torch.Tensor:
-        f = patch_expand(f, patch=3)
-        low = F.interpolate(
-            F.avg_pool2d(f, kernel_size=2, stride=2),
-            size=f.shape[-2:],
-            mode="bilinear",
-            align_corners=False,
-        )
-        high = f - low
-        dx = F.pad(f[:, :, :, 1:] - f[:, :, :, :-1], (0, 1, 0, 0))
-        dy = F.pad(f[:, :, 1:, :] - f[:, :, :-1, :], (0, 0, 0, 1))
-        return torch.cat([f, high, dx, dy], dim=1)
-
-    return [
-        enrich(x),
-        enrich(F.avg_pool2d(x, kernel_size=2, stride=2)),
-        enrich(F.avg_pool2d(x, kernel_size=4, stride=4)),
-    ]
+def _norm_spatial_feat(x: torch.Tensor) -> torch.Tensor:
+    x = x - x.mean(dim=(2, 3), keepdim=True)
+    x = x / (x.std(dim=(2, 3), keepdim=True, unbiased=False) + 1e-6)
+    return x
 
 
 def calc_nce_loss(
@@ -184,6 +162,8 @@ class AdaCUTObjective:
         # Teacher style anchors: keep teacher stylized, then distill to student.
         self.w_gram = float(loss_cfg.get("w_gram", 80.0))
         self.w_moment = float(loss_cfg.get("w_moment", 5.0))
+        self.w_featmatch = float(loss_cfg.get("w_featmatch", 0.0))
+        self.w_featmatch_teacher = float(loss_cfg.get("w_featmatch_teacher", 0.0))
         self.w_nce = float(loss_cfg.get("w_nce", 0.0))
         self.w_idt = float(loss_cfg.get("w_idt", 0.0))
         self.w_push = float(loss_cfg.get("w_push", 0.0))
@@ -504,20 +484,51 @@ class AdaCUTObjective:
             loss_push = _zero()
 
         # Optional style anchors on student outputs.
+        # Step-B change: supervise style in encoder multi-scale feature space
+        # (higher-dimensional, spatially aware) instead of low-dim latent stats.
         loss_gram = _zero()
         loss_moment = _zero()
+        loss_featmatch = _zero()
         if (self.w_gram > 0.0 or self.w_moment > 0.0) and has_transfer:
             xfer_idx = transfer_mask > 0.5
-            pred_feats = _multiscale_latent_feats(pred_student.float()[xfer_idx])
-            tgt_feats = _multiscale_latent_feats(target_style.float()[xfer_idx])
+            pred_feats = model.encode_style_feats(pred_student.float()[xfer_idx])
+            with torch.no_grad():
+                tgt_feats = model.encode_style_feats(target_style.float()[xfer_idx])
             for a, b in zip(pred_feats, tgt_feats):
+                a_n = _norm_spatial_feat(a)
+                b_n = _norm_spatial_feat(b)
                 if self.w_gram > 0.0:
-                    loss_gram = loss_gram + calc_gram_loss(a, b)
+                    loss_gram = loss_gram + calc_gram_loss(a_n, b_n)
                 if self.w_moment > 0.0:
-                    loss_moment = loss_moment + calc_moment_loss(a, b)
+                    loss_moment = loss_moment + calc_moment_loss(a_n, b_n)
             scale = 1.0 / float(len(pred_feats))
             loss_gram = loss_gram * scale
             loss_moment = loss_moment * scale
+
+        # Direct multi-scale feature matching against target-style reference.
+        # This improves texture/style strength without relying on classifier shortcuts.
+        if self.w_featmatch > 0.0 and has_transfer:
+            xfer_idx = transfer_mask > 0.5
+            pred_style_feats = model.encode_style_feats(pred_student.float()[xfer_idx])
+            with torch.no_grad():
+                tgt_style_feats = model.encode_style_feats(target_style.float()[xfer_idx])
+            if len(pred_style_feats) > 0:
+                fm = _zero()
+                for p_f, t_f in zip(pred_style_feats, tgt_style_feats):
+                    fm = fm + F.l1_loss(_norm_spatial_feat(p_f), _norm_spatial_feat(t_f.detach()))
+                loss_featmatch = fm / float(len(pred_style_feats))
+
+        loss_featmatch_teacher = _zero()
+        if self.w_featmatch_teacher > 0.0 and has_transfer and pred_teacher is not None:
+            xfer_idx = transfer_mask > 0.5
+            pred_teacher_feats = model.encode_style_feats(pred_teacher.float()[xfer_idx])
+            with torch.no_grad():
+                tgt_style_feats = model.encode_style_feats(target_style.float()[xfer_idx])
+            if len(pred_teacher_feats) > 0:
+                fm_t = _zero()
+                for p_f, t_f in zip(pred_teacher_feats, tgt_style_feats):
+                    fm_t = fm_t + F.l1_loss(_norm_spatial_feat(p_f), _norm_spatial_feat(t_f.detach()))
+                loss_featmatch_teacher = fm_t / float(len(pred_teacher_feats))
 
         w_nce_eff = self._ramp_weight(
             self.w_nce,
@@ -551,6 +562,8 @@ class AdaCUTObjective:
             + self.w_proto_sep * loss_proto_sep
             + self.w_gram * loss_gram
             + self.w_moment * loss_moment
+            + self.w_featmatch * loss_featmatch
+            + self.w_featmatch_teacher * loss_featmatch_teacher
             + w_nce_eff * loss_nce
             + self.w_push * loss_push
         )
@@ -560,6 +573,8 @@ class AdaCUTObjective:
             "distill": loss_distill.detach(),
             "gram": loss_gram.detach(),
             "moment": loss_moment.detach(),
+            "featmatch": loss_featmatch.detach(),
+            "featmatch_teacher": loss_featmatch_teacher.detach(),
             "code": loss_code.detach(),
             "code_ref": loss_code_ref.detach(),
             "code_proto": loss_code_proto.detach(),

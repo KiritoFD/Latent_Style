@@ -144,3 +144,43 @@
 - 决策：
 - 下一步回到 `d2/d3` 可用区间，优先恢复能跨域的驱动力（提高有效风格监督/跨域约束），再做频段精修。
 - 暂不上大规模训练，继续在 overfit50 完成可控双向迁移后再放大。
+
+## 8. Step B（风格监督上移）验证结果
+- 实验：
+- `overfit50_e5_stepb_feat_student`
+- `overfit50_e6_stepb_feat_teacher`
+- 目标：将风格监督主信号迁移到 `encode_style_feats` 多尺度高维特征，避免低维统计捷径。
+- 结果：
+- E5 `transfer classifier_acc = 0.08`，`photo_to_art classifier_acc = 0.06`。
+- E6 `transfer classifier_acc = 0.09`，`photo_to_art classifier_acc = 0.06`。
+- 条件敏感性：
+- E5 `delta_abs = 0.0025338`，`delta_high_ratio = 0.5524`。
+- E6 `delta_abs = 0.0026366`，`delta_high_ratio = 0.5486`。
+- 结论：
+- Step B 在当前损失组合下未打破近恒等解，跨域能力仍失效。
+- 仅“上移风格监督”不足以恢复可用迁移，必须先恢复有效跨域驱动力（门槛型分类器约束或方向性约束），再叠加纹理监督。
+## overfit50_e5_stepb_feat_student (2026-02-09 12:42:53)
+- config: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/experiments/overfit50_e5_stepb_feat_student.json`
+- summary: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e5_stepb_feat_student/full_eval/epoch_0008/summary.json`
+- collage: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e5_stepb_feat_student/full_eval/epoch_0008/collage.jpg`
+- transfer clip_style: `0.4409090027213097`
+- transfer content_lpips: `0.24388766420000002`
+- transfer classifier_acc: `0.08`
+- photo_to_art clip_style: `0.473043612241745`
+- photo_to_art classifier_acc: `0.06`
+- cond pair_count: `100`
+- cond delta_abs: `0.002533837304217741`
+- cond delta_high_ratio: `0.552445408677266`
+
+## overfit50_e6_stepb_feat_teacher (2026-02-09 12:50:02)
+- config: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/experiments/overfit50_e6_stepb_feat_teacher.json`
+- summary: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e6_stepb_feat_teacher/full_eval/epoch_0008/summary.json`
+- collage: `/mnt/g/GitHub/Latent_Style/Cycle-NCE/small-exp-overfit50_e6_stepb_feat_teacher/full_eval/epoch_0008/collage.jpg`
+- transfer clip_style: `0.44111956417560577`
+- transfer content_lpips: `0.2439911685`
+- transfer classifier_acc: `0.09`
+- photo_to_art clip_style: `0.4734433740377426`
+- photo_to_art classifier_acc: `0.06`
+- cond pair_count: `100`
+- cond delta_abs: `0.002636616702657193`
+- cond delta_high_ratio: `0.5486421574325153`
