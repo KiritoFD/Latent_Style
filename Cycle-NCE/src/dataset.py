@@ -70,6 +70,7 @@ class AdaCUTLatentDataset(Dataset):
                 raise ValueError("At least one non-content style is required")
 
         self.style_tensors: Dict[int, torch.Tensor] = {}
+        self.total_bytes = 0
         logger.info("Loading latent dataset from %s", self.data_root)
         for style_id, subdir in enumerate(self.style_subdirs):
             style_dir = self.data_root / subdir
@@ -79,6 +80,7 @@ class AdaCUTLatentDataset(Dataset):
             latents = [_load_latent_file(p) for p in files]
             stack = torch.stack(latents, dim=0)
             self.style_tensors[style_id] = stack
+            self.total_bytes += int(stack.numel() * stack.element_size())
             logger.info("  style=%s id=%d count=%d", subdir, style_id, stack.shape[0])
 
         if self.bidirectional_content:
@@ -92,12 +94,24 @@ class AdaCUTLatentDataset(Dataset):
             if not torch.cuda.is_available():
                 logger.warning("preload_to_gpu=True but CUDA unavailable, fallback to CPU")
             else:
-                for style_id in self.style_tensors:
-                    self.style_tensors[style_id] = self.style_tensors[style_id].to(device)
-                logger.info("Preloaded all latents to GPU: %s", device)
+                self.preload_to_device(device)
 
     def set_epoch(self, epoch: int) -> None:
         self.epoch = int(epoch)
+
+    def preload_to_device(self, device: str) -> None:
+        if not torch.cuda.is_available() and str(device).startswith("cuda"):
+            logger.warning("preload_to_device requested cuda but CUDA unavailable")
+            return
+        for style_id in self.style_tensors:
+            self.style_tensors[style_id] = self.style_tensors[style_id].to(device, non_blocking=True)
+        self.preload_to_gpu = str(device).startswith("cuda")
+        self.device = str(device)
+        logger.info(
+            "Preloaded all latents to %s (%.1f MB)",
+            device,
+            float(self.total_bytes) / (1024.0 * 1024.0),
+        )
 
     def __len__(self) -> int:
         return self.length

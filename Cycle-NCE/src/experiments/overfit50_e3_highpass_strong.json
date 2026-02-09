@@ -141,7 +141,7 @@
     "virtual_length_multiplier": 20
   },
   "checkpoint": {
-    "save_dir": "../small-exp-overfit50_e3_highpass_strong-bd128-dsp1-hp0p25-wprob3p0-wproto0p8-wcyc7p0"
+    "save_dir": "../small-exp-overfit50_e3_highpass_strong-overfit50_e3_highpass_strong-bd128-dsp1-hp0p25-whf0-wprob3p0-wproto0p8-wcyc7p0-20260209_142234"
   },
   "inference": {
     "num_steps": 1,

@@ -150,7 +150,7 @@
     "virtual_length_multiplier": 20
   },
   "checkpoint": {
-    "save_dir": "../small-exp-overfit50_e9_hifeat_probgate_v1"
+    "save_dir": "../small-exp-overfit50_e9_hifeat_probgate_v1-overfit50_e9_hifeat_probgate_v1-bd128-dsp1-hp0p25-whf2p5-wprob1p8-wproto0p5-wcyc8p0-20260209_142611"
   },
   "inference": {
     "num_steps": 1,
