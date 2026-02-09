@@ -135,13 +135,16 @@ def main() -> None:
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f code=%.4f cycle=%.4f gram=%.4f moment=%.4f push=%.4f nce=%.4f idt=%.4f wcyc=%.2f wnce=%.2f widt=%.2f xfer=%.2f lr=%.2e",
+            "Epoch %d/%d | loss=%.4f code=%.4f cpn=%.3f crn=%.3f cycle=%.4f gram=%.4f gramw=%.4f moment=%.4f push=%.4f nce=%.4f idt=%.4f wcyc=%.2f wnce=%.2f widt=%.2f xfer=%.2f lr=%.2e",
             epoch,
             trainer.num_epochs,
             metrics["loss"],
             metrics.get("code", 0.0),
+            metrics.get("code_pred_norm", 0.0),
+            metrics.get("code_ref_norm", 0.0),
             metrics.get("cycle", 0.0),
             metrics.get("gram", 0.0),
+            metrics.get("gram_w", 0.0),
             metrics.get("moment", 0.0),
             metrics.get("push", 0.0),
             metrics.get("nce", 0.0),

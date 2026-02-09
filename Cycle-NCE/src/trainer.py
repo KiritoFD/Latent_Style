@@ -63,6 +63,26 @@ class AdaCUTTrainer:
             latent_scale_factor=float(model_cfg.get("latent_scale_factor", 0.18215)),
             residual_gain=float(model_cfg.get("residual_gain", 0.1)),
             style_ref_gain=float(model_cfg.get("style_ref_gain", 1.0)),
+            style_spatial_pre_gain_32=float(model_cfg.get("style_spatial_pre_gain_32", 0.25)),
+            style_spatial_block_gain_32=float(model_cfg.get("style_spatial_block_gain_32", 0.10)),
+            style_spatial_pre_gain_16=float(model_cfg.get("style_spatial_pre_gain_16", 0.35)),
+            style_spatial_block_gain_16=float(model_cfg.get("style_spatial_block_gain_16", 0.15)),
+            use_decoder_spatial_inject=bool(model_cfg.get("use_decoder_spatial_inject", True)),
+            style_spatial_dec_gain_32=float(model_cfg.get("style_spatial_dec_gain_32", 0.18)),
+            style_spatial_dec_gain_out=float(model_cfg.get("style_spatial_dec_gain_out", 0.08)),
+            use_style_texture_head=bool(model_cfg.get("use_style_texture_head", True)),
+            style_texture_gain=float(model_cfg.get("style_texture_gain", 0.12)),
+            use_style_delta_gate=bool(model_cfg.get("use_style_delta_gate", True)),
+            use_decoder_adagn=bool(model_cfg.get("use_decoder_adagn", True)),
+            use_delta_highpass_bias=bool(model_cfg.get("use_delta_highpass_bias", True)),
+            style_delta_lowfreq_gain=float(model_cfg.get("style_delta_lowfreq_gain", 0.35)),
+            use_style_spatial_highpass=bool(model_cfg.get("use_style_spatial_highpass", False)),
+            normalize_style_spatial_maps=bool(model_cfg.get("normalize_style_spatial_maps", True)),
+            use_output_style_affine=bool(model_cfg.get("use_output_style_affine", True)),
+            use_style_force_path=bool(model_cfg.get("use_style_force_path", True)),
+            style_force_gain=float(model_cfg.get("style_force_gain", 1.0)),
+            style_gate_floor=float(model_cfg.get("style_gate_floor", 0.85)),
+            style_texture_ignore_residual_gain=bool(model_cfg.get("style_texture_ignore_residual_gain", True)),
         )
         if self.channels_last:
             self.model = self.model.to(device, memory_format=torch.channels_last)
@@ -158,8 +178,11 @@ class AdaCUTTrainer:
                     "epoch",
                     "loss",
                     "code",
+                    "code_pred_norm",
+                    "code_ref_norm",
                     "cycle",
                     "gram",
+                    "gram_w",
                     "moment",
                     "push",
                     "nce",
@@ -197,14 +220,38 @@ class AdaCUTTrainer:
 
         state = torch.load(ckpt_path, map_location=self.device, weights_only=False)
         model_state = _strip_compile_prefix(state["model_state_dict"])
-        self.model.load_state_dict(model_state, strict=True)
+        try:
+            self.model.load_state_dict(model_state, strict=True)
+        except RuntimeError as exc:
+            incompatible = self.model.load_state_dict(model_state, strict=False)
+            missing = list(getattr(incompatible, "missing_keys", []))
+            unexpected = list(getattr(incompatible, "unexpected_keys", []))
+            logger.warning(
+                "Checkpoint loaded with non-strict mode due to key mismatch: %s | missing=%d unexpected=%d",
+                exc,
+                len(missing),
+                len(unexpected),
+            )
+            if missing:
+                logger.warning("Missing keys (first 12): %s", missing[:12])
+            if unexpected:
+                logger.warning("Unexpected keys (first 12): %s", unexpected[:12])
 
         if "optimizer_state_dict" in state:
-            self.optimizer.load_state_dict(state["optimizer_state_dict"])
+            try:
+                self.optimizer.load_state_dict(state["optimizer_state_dict"])
+            except ValueError as exc:
+                logger.warning("Skip optimizer state restore due to mismatch: %s", exc)
         if self.scheduler is not None and "scheduler_state_dict" in state and state["scheduler_state_dict"] is not None:
-            self.scheduler.load_state_dict(state["scheduler_state_dict"])
+            try:
+                self.scheduler.load_state_dict(state["scheduler_state_dict"])
+            except ValueError as exc:
+                logger.warning("Skip scheduler state restore due to mismatch: %s", exc)
         if "scaler_state_dict" in state:
-            self.scaler.load_state_dict(state["scaler_state_dict"])
+            try:
+                self.scaler.load_state_dict(state["scaler_state_dict"])
+            except ValueError as exc:
+                logger.warning("Skip scaler state restore due to mismatch: %s", exc)
 
         self.global_step = int(state.get("global_step", 0))
         self.start_epoch = int(state.get("epoch", 0)) + 1
@@ -255,8 +302,11 @@ class AdaCUTTrainer:
 
         sum_loss = 0.0
         sum_code = 0.0
+        sum_code_pred_norm = 0.0
+        sum_code_ref_norm = 0.0
         sum_cycle = 0.0
         sum_gram = 0.0
+        sum_gram_w = 0.0
         sum_moment = 0.0
         sum_push = 0.0
         sum_nce = 0.0
@@ -321,8 +371,11 @@ class AdaCUTTrainer:
 
                 sum_loss += float(loss.detach().item())
                 sum_code += float(loss_dict.get("code", torch.tensor(0.0, device=content.device)).item())
+                sum_code_pred_norm += float(loss_dict.get("code_pred_norm", torch.tensor(0.0, device=content.device)).item())
+                sum_code_ref_norm += float(loss_dict.get("code_ref_norm", torch.tensor(0.0, device=content.device)).item())
                 sum_cycle += float(loss_dict.get("cycle", torch.tensor(0.0, device=content.device)).item())
                 sum_gram += float(loss_dict["gram"].item())
+                sum_gram_w += float(loss_dict.get("gram_w", torch.tensor(0.0, device=content.device)).item())
                 sum_moment += float(loss_dict["moment"].item())
                 sum_push += float(loss_dict["push"].item())
                 sum_nce += float(loss_dict["nce"].item())
@@ -342,6 +395,7 @@ class AdaCUTTrainer:
                     progress.set_postfix(
                         loss=f"{avg_loss:.4f}",
                         gram=f"{avg_gram:.4f}",
+                        gramw=f"{(sum_gram_w / num_batches):.4f}",
                         cyc=f"{(sum_cycle / num_batches):.4f}",
                         wnce=f"{(sum_w_nce_eff / num_batches):.2f}",
                         xfer=f"{(sum_transfer_ratio / num_batches):.2f}",
@@ -350,14 +404,17 @@ class AdaCUTTrainer:
                     )
                     if not self.use_tqdm:
                         logger.info(
-                            "epoch %d step %d/%d | loss=%.4f gram=%.4f moment=%.4f code=%.4f cycle=%.4f nce=%.4f idt=%.4f | %.2f it/s eta %.1fs",
+                            "epoch %d step %d/%d | loss=%.4f gram=%.4f gramw=%.4f moment=%.4f code=%.4f cpn=%.3f crn=%.3f cycle=%.4f nce=%.4f idt=%.4f | %.2f it/s eta %.1fs",
                             epoch,
                             step_idx,
                             total_steps,
                             avg_loss,
                             avg_gram,
+                            sum_gram_w / num_batches,
                             sum_moment / num_batches,
                             sum_code / num_batches,
+                            sum_code_pred_norm / num_batches,
+                            sum_code_ref_norm / num_batches,
                             sum_cycle / num_batches,
                             sum_nce / num_batches,
                             sum_idt / num_batches,
@@ -398,8 +455,11 @@ class AdaCUTTrainer:
         metrics = {
             "loss": sum_loss / max(num_batches, 1),
             "code": sum_code / max(num_batches, 1),
+            "code_pred_norm": sum_code_pred_norm / max(num_batches, 1),
+            "code_ref_norm": sum_code_ref_norm / max(num_batches, 1),
             "cycle": sum_cycle / max(num_batches, 1),
             "gram": sum_gram / max(num_batches, 1),
+            "gram_w": sum_gram_w / max(num_batches, 1),
             "moment": sum_moment / max(num_batches, 1),
             "push": sum_push / max(num_batches, 1),
             "nce": sum_nce / max(num_batches, 1),
@@ -416,8 +476,9 @@ class AdaCUTTrainer:
                 f"[Epoch {epoch}/{self.num_epochs}] "
                 f"loss={metrics['loss']:.4f} "
                 f"code={metrics['code']:.4f} "
+                f"cpn={metrics['code_pred_norm']:.3f} crn={metrics['code_ref_norm']:.3f} "
                 f"cycle={metrics['cycle']:.4f} "
-                f"gram={metrics['gram']:.4f} moment={metrics['moment']:.4f} push={metrics['push']:.4f} "
+                f"gram={metrics['gram']:.4f} gramw={metrics['gram_w']:.4f} moment={metrics['moment']:.4f} push={metrics['push']:.4f} "
                 f"nce={metrics['nce']:.4f} "
                 f"idt={metrics['idt']:.4f} "
                 f"wcyc={metrics['w_cycle_eff']:.2f} wnce={metrics['w_nce_eff']:.2f} widt={metrics['w_idt_eff']:.2f} "
@@ -433,8 +494,11 @@ class AdaCUTTrainer:
                     int(epoch),
                     float(metrics.get("loss", 0.0)),
                     float(metrics.get("code", 0.0)),
+                    float(metrics.get("code_pred_norm", 0.0)),
+                    float(metrics.get("code_ref_norm", 0.0)),
                     float(metrics.get("cycle", 0.0)),
                     float(metrics.get("gram", 0.0)),
+                    float(metrics.get("gram_w", 0.0)),
                     float(metrics.get("moment", 0.0)),
                     float(metrics.get("push", 0.0)),
                     float(metrics.get("nce", 0.0)),

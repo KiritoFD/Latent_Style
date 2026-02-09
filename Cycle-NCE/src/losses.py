@@ -116,14 +116,15 @@ class AdaCUTObjective:
         self.w_gram = float(loss_cfg.get("w_gram", 0.0))
         self.w_moment = float(loss_cfg.get("w_moment", 0.0))
         self.w_nce = float(loss_cfg.get("w_nce", 0.0))
-        self.w_idt = float(loss_cfg.get("w_idt", 0.0))
+        # Hard-disable idt for overfit experiments (avoid identity lock-in).
+        self.w_idt = 0.0
         self.w_push = float(loss_cfg.get("w_push", 0.0))
         self.push_margin = float(loss_cfg.get("push_margin", 0.2))
 
         self.cycle_warmup_epochs = int(loss_cfg.get("cycle_warmup_epochs", 0))
         self.cycle_ramp_epochs = int(loss_cfg.get("cycle_ramp_epochs", 1))
-        self.idt_warmup_epochs = int(loss_cfg.get("idt_warmup_epochs", 0))
-        self.idt_ramp_epochs = int(loss_cfg.get("idt_ramp_epochs", 1))
+        self.idt_warmup_epochs = 0
+        self.idt_ramp_epochs = 0
         self.nce_temperature = float(loss_cfg.get("nce_temperature", 0.1))
         self.nce_spatial_size = int(loss_cfg.get("nce_spatial_size", 16))
         self.nce_max_tokens = int(loss_cfg.get("nce_max_tokens", 2048))
@@ -155,12 +156,12 @@ class AdaCUTObjective:
         target_style_id: torch.Tensor,
         content_style_id: torch.Tensor,
     ) -> Dict[str, torch.Tensor]:
-        # Single deployment path (style_id only).
+        # Training path uses reference style for stronger style supervision.
         pred = model(
             content,
             style_id=target_style_id,
-            style_ref=None,
-            style_mix_alpha=0.0,
+            style_ref=target_style,
+            style_mix_alpha=1.0,
         )
         transfer_mask = (target_style_id.long() != content_style_id.long()).float()
 
@@ -168,6 +169,8 @@ class AdaCUTObjective:
         s_ref = model.encode_style(target_style.float()).detach()
         code_pred = model.encode_style(pred.float())
         loss_code = F.l1_loss(code_pred, s_ref)
+        code_pred_norm = code_pred.norm(dim=1).mean()
+        code_ref_norm = s_ref.norm(dim=1).mean()
 
         w_cycle_eff = self._ramp_weight(
             self.w_cycle,
@@ -221,26 +224,12 @@ class AdaCUTObjective:
         else:
             loss_nce = torch.tensor(0.0, device=content.device, dtype=content.dtype)
 
-        w_idt_eff = self._ramp_weight(
-            self.w_idt,
-            epoch=self.current_epoch,
-            warmup=self.idt_warmup_epochs,
-            ramp=self.idt_ramp_epochs,
-        )
-        if w_idt_eff > 0.0:
-            idt_pred = model(
-                content,
-                style_id=content_style_id,
-                style_ref=None,
-                style_mix_alpha=0.0,
-            )
-            loss_idt = F.l1_loss(idt_pred.float(), content.float())
-        else:
-            loss_idt = torch.tensor(0.0, device=content.device, dtype=content.dtype)
+        w_idt_eff = 0.0
+        loss_idt = torch.tensor(0.0, device=content.device, dtype=content.dtype)
 
         if self.w_push > 0.0:
-            s_src = model.encode_style(content.float()).detach()
-            dist_to_src = (code_pred - s_src).abs().mean(dim=1)
+            p_src = model.encode_style_id(content_style_id)
+            dist_to_src = (code_pred - p_src).abs().mean(dim=1)
             push_term = F.relu(self.push_margin - dist_to_src) * transfer_mask
             denom = transfer_mask.sum().clamp_min(1.0)
             loss_push = push_term.sum() / denom
@@ -253,15 +242,17 @@ class AdaCUTObjective:
             + self.w_gram * loss_gram
             + self.w_moment * loss_moment
             + w_nce_eff * loss_nce
-            + w_idt_eff * loss_idt
             + self.w_push * loss_push
         )
 
         return {
             "loss": total,
             "gram": loss_gram.detach(),
+            "gram_w": (loss_gram.detach() * float(self.w_gram)),
             "moment": loss_moment.detach(),
             "code": loss_code.detach(),
+            "code_pred_norm": code_pred_norm.detach(),
+            "code_ref_norm": code_ref_norm.detach(),
             "push": loss_push.detach(),
             "nce": loss_nce.detach(),
             "idt": loss_idt.detach(),
