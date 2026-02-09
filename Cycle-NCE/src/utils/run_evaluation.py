@@ -181,6 +181,7 @@ def main():
     parser.add_argument('--ref_feature_batch_size', type=int, default=64, help="Batch size for reference feature extraction")
     parser.add_argument('--batch_size', type=int, default=20, help="Batch size increased due to offloading")
     parser.add_argument('--force_regen', action='store_true', help="Force regenerate evaluation cache")
+    parser.add_argument('--append_metrics', action='store_true', help="Append to existing metrics.csv instead of overwriting")
     parser.add_argument('--classifier_path', type=str, default="../style_classifier.pt", help="Path to latent style classifier checkpoint")
     parser.add_argument('--classifier_classes', type=str, default="", help="Optional comma-separated class names for report display")
     parser.add_argument('--eval_classifier_only', action='store_true', help="Run only classifier evaluation (skip LPIPS/CLIP)")
@@ -553,11 +554,13 @@ def main():
                 print(f"  WARNING: failed to preload LPIPS refs for style {sid}: {e}")
 
     csv_path = out_dir / 'metrics.csv'
-    csv_mode = 'w' if args.force_regen or not csv_path.exists() else 'a'
+    # Default to overwrite per run to avoid mixing historical rows from the same output dir.
+    csv_mode = 'a' if (args.append_metrics and csv_path.exists() and not args.force_regen) else 'w'
     csv_file = open(csv_path, csv_mode, newline='')
     columns = ['src_style', 'tgt_style', 'src_image', 'gen_image', 'content_lpips', 'style_lpips', 'clip_style', 'clip_content', 'pred_style', 'class_correct']
     writer = csv.DictWriter(csv_file, fieldnames=columns)
     if csv_mode == 'w': writer.writeheader()
+    print(f"Metrics CSV mode: {csv_mode} ({csv_path})")
 
     # Process Generated Buffer
     total_gen = len(generated_buffer)
