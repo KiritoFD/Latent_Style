@@ -85,6 +85,9 @@ class LatentAdaCUT(nn.Module):
         use_delta_highpass_bias: bool = True,
         style_delta_lowfreq_gain: float = 0.35,
         use_style_spatial_highpass: bool = False,
+        use_content_skip_fusion: bool = True,
+        content_skip_gain: float = 0.6,
+        use_style_skip_gate: bool = True,
     ) -> None:
         super().__init__()
         self.latent_channels = int(latent_channels)
@@ -109,6 +112,9 @@ class LatentAdaCUT(nn.Module):
         self.use_delta_highpass_bias = bool(use_delta_highpass_bias)
         self.style_delta_lowfreq_gain = float(style_delta_lowfreq_gain)
         self.use_style_spatial_highpass = bool(use_style_spatial_highpass)
+        self.use_content_skip_fusion = bool(use_content_skip_fusion)
+        self.content_skip_gain = float(content_skip_gain)
+        self.use_style_skip_gate = bool(use_style_skip_gate)
 
         self.style_enc = nn.Sequential(
             nn.Conv2d(latent_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
@@ -148,6 +154,7 @@ class LatentAdaCUT(nn.Module):
         # Decoder: 16 -> 32
         self.dec_up = nn.Upsample(scale_factor=2, mode="nearest")
         self.dec_conv = nn.Conv2d(self.body_channels, self.lift_channels, kernel_size=3, stride=1, padding=1)
+        self.content_skip_proj = nn.Conv2d(self.lift_channels, self.lift_channels, kernel_size=1, stride=1, padding=0)
         if self.use_decoder_adagn:
             self.dec_norm = AdaGN(self.lift_channels, style_dim, num_groups=out_groups)
         else:
@@ -172,6 +179,10 @@ class LatentAdaCUT(nn.Module):
             self.style_delta_gate = nn.Linear(style_dim, 1)
             nn.init.zeros_(self.style_delta_gate.weight)
             nn.init.constant_(self.style_delta_gate.bias, 0.0)
+        if self.use_style_skip_gate:
+            self.style_skip_gate = nn.Linear(style_dim, self.lift_channels)
+            nn.init.zeros_(self.style_skip_gate.weight)
+            nn.init.zeros_(self.style_skip_gate.bias)
 
     def _style_code(
         self,
@@ -388,6 +399,7 @@ class LatentAdaCUT(nn.Module):
             if style_spatial_32 is not None:
                 h = h + self.style_spatial_block_gain_32 * style_spatial_32
 
+        content_skip = h
         h = self.down(h)
         style_spatial_16 = self._match_style_map(style_spatial_16, h)
         if style_spatial_16 is not None:
@@ -406,6 +418,14 @@ class LatentAdaCUT(nn.Module):
                 h = h + self.style_spatial_block_gain_16 * style_spatial_16
         h = self.dec_up(h)
         h = self.dec_conv(h)
+        if self.use_content_skip_fusion:
+            skip = self.content_skip_proj(content_skip)
+            if skip.shape[-2:] != h.shape[-2:]:
+                skip = F.interpolate(skip, size=h.shape[-2:], mode="bilinear", align_corners=False)
+            if self.use_style_skip_gate:
+                skip_gate = torch.sigmoid(self.style_skip_gate(style_code)).view(style_code.shape[0], -1, 1, 1)
+                skip = skip * skip_gate
+            h = h + self.content_skip_gain * skip
         style_spatial_dec = self._match_style_map(style_spatial_32, h)
         if self.use_decoder_spatial_inject and style_spatial_dec is not None:
             h = h + self.style_spatial_dec_gain_32 * style_spatial_dec

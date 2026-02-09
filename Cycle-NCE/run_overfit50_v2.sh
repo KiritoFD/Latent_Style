@@ -50,7 +50,7 @@ run_experiment() {
       --name ${name} \
       --epochs 8 \
       --max_src_samples 50 \
-      --batch_size 100 \
+      --batch_size 50 \
       --per_pair 3
   " >"${log_file}" 2>&1
 }

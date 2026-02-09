@@ -129,6 +129,9 @@ class AdaCUTTrainer:
             use_delta_highpass_bias=bool(model_cfg.get("use_delta_highpass_bias", True)),
             style_delta_lowfreq_gain=float(model_cfg.get("style_delta_lowfreq_gain", 0.35)),
             use_style_spatial_highpass=bool(model_cfg.get("use_style_spatial_highpass", False)),
+            use_content_skip_fusion=bool(model_cfg.get("use_content_skip_fusion", True)),
+            content_skip_gain=float(model_cfg.get("content_skip_gain", 0.6)),
+            use_style_skip_gate=bool(model_cfg.get("use_style_skip_gate", True)),
         )
         if self.channels_last:
             self.model = self.model.to(device, memory_format=torch.channels_last)

@@ -179,6 +179,7 @@ def main() -> None:
     t["use_compile"] = False
     t["auto_preload_latents_to_gpu"] = True
     t["auto_preload_gpu_budget_mb"] = 2048
+    t["run_lock_path"] = f"../run_{_slug(args.name)}.lock"
 
     cfg.setdefault("loss", {})
     cls_ckpt_raw = str(cfg["loss"].get("style_classifier_ckpt", "")).strip()

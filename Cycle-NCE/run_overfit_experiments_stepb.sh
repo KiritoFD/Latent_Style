@@ -27,7 +27,7 @@ run_experiment() {
   export MKL_NUM_THREADS=1
   export TORCH_JIT=0
   echo "=== Running ${name} ==="
-  /bin/bash -lc "source ~/miniconda3/etc/profile.d/conda.sh && conda activate cu128 && cd ${REPO_ROOT}/src && python utils/run_small_experiment.py --config ${cfg} --name ${name} --epochs 8 --max_src_samples 50 --batch_size 100 --per_pair 3"
+  /bin/bash -lc "source ~/miniconda3/etc/profile.d/conda.sh && conda activate cu128 && cd ${REPO_ROOT}/src && python utils/run_small_experiment.py --config ${cfg} --name ${name} --epochs 8 --max_src_samples 50 --batch_size 50 --per_pair 3"
 }
 
 main() {

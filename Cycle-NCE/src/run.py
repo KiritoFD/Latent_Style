@@ -35,6 +35,7 @@ class _SingleRunLock:
 
     def acquire(self) -> None:
         self.lock_path.parent.mkdir(parents=True, exist_ok=True)
+        self._remove_stale_lock_if_needed()
         try:
             self._fd = os.open(str(self.lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             os.write(self._fd, str(os.getpid()).encode("utf-8"))
@@ -72,6 +73,36 @@ class _SingleRunLock:
                 self.lock_path.unlink()
         except Exception:
             pass
+
+    @staticmethod
+    def _pid_alive(pid: int) -> bool:
+        if pid <= 0:
+            return False
+        try:
+            os.kill(pid, 0)
+            return True
+        except ProcessLookupError:
+            return False
+        except PermissionError:
+            # Process exists but we don't own it.
+            return True
+        except Exception:
+            return False
+
+    def _remove_stale_lock_if_needed(self) -> None:
+        if not self.lock_path.exists():
+            return
+        try:
+            pid_text = self.lock_path.read_text(encoding="utf-8").strip()
+            pid = int(pid_text)
+        except Exception:
+            pid = -1
+        if not self._pid_alive(pid):
+            try:
+                self.lock_path.unlink()
+                logger.warning("Removed stale run lock: %s (pid=%s)", self.lock_path, pid if pid > 0 else "unknown")
+            except Exception:
+                pass
 
 
 def _set_seed(seed: int) -> None:
