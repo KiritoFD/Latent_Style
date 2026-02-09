@@ -141,7 +141,7 @@
     "virtual_length_multiplier": 20
   },
   "checkpoint": {
-    "save_dir": "../small-exp-overfit50_e1_baseline_d2_ref"
+    "save_dir": "../small-exp-overfit50_e1_baseline_d2_ref-bd128-dsp1-hp1p0-wprob3p0-wproto0p8-wcyc7p0"
   },
   "inference": {
     "num_steps": 1,

@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import re
 import subprocess
 import sys
 import time
@@ -21,6 +22,29 @@ def _save_json(path: Path, obj: Dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(obj, f, indent=2)
+
+
+def _slug(s: str) -> str:
+    s = re.sub(r"[^A-Za-z0-9_.-]+", "-", s.strip())
+    s = re.sub(r"-{2,}", "-", s).strip("-")
+    return s or "x"
+
+
+def _method_signature(cfg: Dict, cfg_path: Path) -> str:
+    model = cfg.get("model", {})
+    loss = cfg.get("loss", {})
+    parts = [
+        _slug(cfg_path.stem),
+        f"bd{int(model.get('base_dim', 0) or 0)}",
+        f"dsp{1 if bool(model.get('use_decoder_spatial_inject', False)) else 0}",
+        f"hp{str(model.get('style_delta_lowfreq_gain', 'na')).replace('.', 'p')}",
+        f"whf{str(loss.get('w_featmatch_hf', 0)).replace('.', 'p')}",
+        f"wprob{str(loss.get('w_prob', 0)).replace('.', 'p')}",
+        f"wproto{str(loss.get('w_proto', 0)).replace('.', 'p')}",
+        f"wcyc{str(loss.get('w_cycle', 0)).replace('.', 'p')}",
+    ]
+    raw = "-".join(parts)
+    return raw[:120]
 
 
 def _build_collage(
@@ -136,7 +160,9 @@ def main() -> None:
     cfg = _load_json(base_cfg_path)
     base_cfg_root = base_cfg_path.parent
 
-    save_dir = f"../small-exp-{args.name}"
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    method_sig = _method_signature(cfg, base_cfg_path)
+    save_dir = f"../small-exp-{_slug(args.name)}-{method_sig}-{ts}"
     cfg.setdefault("checkpoint", {})
     cfg["checkpoint"]["save_dir"] = save_dir
 
