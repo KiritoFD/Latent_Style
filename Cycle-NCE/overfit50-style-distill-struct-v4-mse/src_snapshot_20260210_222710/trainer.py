@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import csv
-import json
 import shutil
 import gc
 import logging
@@ -631,73 +630,5 @@ class AdaCUTTrainer:
         if proc.returncode != 0:
             logger.error("Full eval failed for epoch %d (code=%d). See %s", epoch, proc.returncode, log_path)
             return False
-        self._write_full_eval_history()
         logger.info("Full eval completed for epoch %d. Log: %s", epoch, log_path)
         return True
-
-    def _write_full_eval_history(self) -> None:
-        """
-        Aggregate multi-round full_eval summaries into one history report.
-        """
-        rounds = []
-        for epoch_dir in sorted(self.full_eval_root.glob("epoch_*")):
-            summary_path = epoch_dir / "summary.json"
-            if not summary_path.exists():
-                continue
-            try:
-                with open(summary_path, "r", encoding="utf-8") as f:
-                    summary = json.load(f)
-            except Exception:
-                continue
-            name = epoch_dir.name
-            try:
-                epoch = int(name.split("_")[-1])
-            except Exception:
-                continue
-
-            analysis = summary.get("analysis", {})
-            transfer = analysis.get("style_transfer_ability", {})
-            p2a = analysis.get("photo_to_art_performance", {})
-            rounds.append(
-                {
-                    "epoch": epoch,
-                    "summary_path": str(summary_path),
-                    "transfer_clip_style": float(transfer.get("clip_style", 0.0)),
-                    "transfer_content_lpips": float(transfer.get("content_lpips", 0.0)),
-                    "transfer_classifier_acc": float(transfer.get("classifier_acc", 0.0)),
-                    "photo_to_art_clip_style": float(p2a.get("clip_style", 0.0)),
-                    "photo_to_art_classifier_acc": float(p2a.get("classifier_acc", 0.0)),
-                }
-            )
-
-        if not rounds:
-            return
-
-        rounds.sort(key=lambda x: x["epoch"])
-        latest = rounds[-1]
-        mean = {
-            "transfer_clip_style": sum(x["transfer_clip_style"] for x in rounds) / len(rounds),
-            "transfer_content_lpips": sum(x["transfer_content_lpips"] for x in rounds) / len(rounds),
-            "transfer_classifier_acc": sum(x["transfer_classifier_acc"] for x in rounds) / len(rounds),
-            "photo_to_art_clip_style": sum(x["photo_to_art_clip_style"] for x in rounds) / len(rounds),
-            "photo_to_art_classifier_acc": sum(x["photo_to_art_classifier_acc"] for x in rounds) / len(rounds),
-        }
-        best = {
-            "best_transfer_classifier_acc": max(rounds, key=lambda x: x["transfer_classifier_acc"]),
-            "best_transfer_clip_style": max(rounds, key=lambda x: x["transfer_clip_style"]),
-            "best_photo_to_art_classifier_acc": max(rounds, key=lambda x: x["photo_to_art_classifier_acc"]),
-            "best_photo_to_art_clip_style": max(rounds, key=lambda x: x["photo_to_art_clip_style"]),
-            "best_transfer_content_lpips": min(rounds, key=lambda x: x["transfer_content_lpips"]),
-        }
-
-        payload = {
-            "num_rounds": len(rounds),
-            "latest": latest,
-            "mean": mean,
-            "best": best,
-            "rounds": rounds,
-            "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        }
-        history_path = self.full_eval_root / "summary_history.json"
-        with open(history_path, "w", encoding="utf-8") as f:
-            json.dump(payload, f, indent=2, ensure_ascii=False)
