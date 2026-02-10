@@ -80,7 +80,7 @@
     "pin_memory": false,
     "cpu_threads": 4,
     "cpu_interop_threads": 2,
-    "learning_rate": 0.00015,
+    "learning_rate": 0.0002,
     "min_learning_rate": 5e-06,
     "weight_decay": 0.0,
     "scheduler": "cosine",
