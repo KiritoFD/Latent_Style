@@ -168,7 +168,7 @@ def main():
     parser.add_argument('--ref_feature_batch_size', type=int, default=64, help="Batch size for reference feature extraction")
     parser.add_argument('--batch_size', type=int, default=20, help="Batch size increased due to offloading")
     parser.add_argument('--force_regen', action='store_true', help="Force regenerate evaluation cache")
-    parser.add_argument('--classifier_path', type=str, default="../style_classifier.pt", help="Path to latent style classifier checkpoint")
+    parser.add_argument('--classifier_path', type=str, default="../../style_classifier.pt", help="Path to latent style classifier checkpoint")
     parser.add_argument('--classifier_classes', type=str, default="", help="Optional comma-separated class names for report display")
     parser.add_argument('--eval_classifier_only', action='store_true', help="Run only classifier evaluation (skip LPIPS/CLIP)")
     parser.add_argument('--eval_disable_lpips', action='store_true', help="Skip LPIPS metrics (keep CLIP)")
