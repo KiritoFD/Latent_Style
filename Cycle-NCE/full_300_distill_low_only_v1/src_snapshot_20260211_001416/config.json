@@ -72,7 +72,7 @@
   },
   "training": {
     "seed": 42,
-    "batch_size": 128,
+    "batch_size": 192,
     "accumulation_steps": 1,
     "num_workers": 0,
     "persistent_workers": false,
@@ -80,7 +80,7 @@
     "pin_memory": false,
     "cpu_threads": 4,
     "cpu_interop_threads": 2,
-    "learning_rate": 0.00015,
+    "learning_rate": 0.0002,
     "min_learning_rate": 5e-06,
     "weight_decay": 0.0,
     "scheduler": "cosine",
@@ -121,7 +121,7 @@
     "content_style": "any",
     "allow_hflip": false,
     "preload_to_gpu": false,
-    "virtual_length_multiplier": 3
+    "virtual_length_multiplier": 100
   },
   "checkpoint": {
     "save_dir": "../full_300_distill_low_only_v1"
