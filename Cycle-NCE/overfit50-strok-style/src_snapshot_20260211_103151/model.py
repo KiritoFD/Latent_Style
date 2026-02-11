@@ -102,7 +102,6 @@ class LatentAdaCUT(nn.Module):
         use_style_spatial_blur: bool = False,
         use_downsample_blur: bool = False,
         upsample_mode: str = "nearest",
-        style_id_spatial_jitter_px: int = 0,
     ) -> None:
         super().__init__()
         self.latent_channels = int(latent_channels)
@@ -136,7 +135,6 @@ class LatentAdaCUT(nn.Module):
         self.use_style_spatial_blur = bool(use_style_spatial_blur)
         self.use_downsample_blur = bool(use_downsample_blur)
         self.upsample_mode = str(upsample_mode)
-        self.style_id_spatial_jitter_px = max(0, int(style_id_spatial_jitter_px))
 
         self.style_enc = nn.Sequential(
             nn.Conv2d(latent_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
@@ -422,37 +420,6 @@ class LatentAdaCUT(nn.Module):
             32: self.style_spatial_id_32.index_select(0, style_id),
             16: self.style_spatial_id_16.index_select(0, style_id),
         }
-        if self.training and self.style_id_spatial_jitter_px > 0:
-            max_jit = self.style_id_spatial_jitter_px
-            shifts_y = torch.randint(
-                low=-max_jit,
-                high=max_jit + 1,
-                size=(style_id.shape[0],),
-                device=style_id.device,
-            )
-            shifts_x = torch.randint(
-                low=-max_jit,
-                high=max_jit + 1,
-                size=(style_id.shape[0],),
-                device=style_id.device,
-            )
-
-            def _jitter_batch(feat: torch.Tensor) -> torch.Tensor:
-                if max_jit <= 0:
-                    return feat
-                padded = F.pad(feat, (max_jit, max_jit, max_jit, max_jit), mode="reflect")
-                out = []
-                h, w = feat.shape[-2], feat.shape[-1]
-                for i in range(feat.shape[0]):
-                    start_y = max_jit + int(shifts_y[i].item())
-                    start_x = max_jit + int(shifts_x[i].item())
-                    out.append(
-                        padded[i, :, start_y : start_y + h, start_x : start_x + w]
-                    )
-                return torch.stack(out, dim=0)
-
-            maps[32] = _jitter_batch(maps[32])
-            maps[16] = _jitter_batch(maps[16])
         if self.use_style_spatial_highpass:
             maps[32] = self._style_highpass_map(maps[32])
             maps[16] = self._style_highpass_map(maps[16])
