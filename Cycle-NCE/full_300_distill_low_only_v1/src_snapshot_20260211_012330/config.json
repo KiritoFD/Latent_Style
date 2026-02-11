@@ -86,7 +86,7 @@
     "scheduler": "cosine",
     "grad_clip_norm": 1.0,
     "num_epochs": 300,
-    "save_interval": 25,
+    "save_interval": 50,
     "full_eval_interval": 50,
     "full_eval_on_last_epoch": true,
     "full_eval_batch_size": 10,
