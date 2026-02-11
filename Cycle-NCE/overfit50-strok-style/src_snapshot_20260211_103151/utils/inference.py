@@ -174,7 +174,6 @@ class LGTInference:
             use_style_spatial_blur=bool(model_cfg.get("use_style_spatial_blur", False)),
             use_downsample_blur=bool(model_cfg.get("use_downsample_blur", False)),
             upsample_mode=str(model_cfg.get("upsample_mode", "nearest")),
-            style_id_spatial_jitter_px=int(model_cfg.get("style_id_spatial_jitter_px", 0)),
         ).to(device)
         self.model.load_state_dict(state_dict, strict=True)
         self.model.eval()

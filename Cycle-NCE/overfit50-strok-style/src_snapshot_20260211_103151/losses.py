@@ -146,22 +146,13 @@ def calc_nce_loss(
     temperature: float = 0.1,
     spatial_size: int = 8,
     max_tokens: int = 2048,
-    resize_mode: str = "bilinear",
 ) -> torch.Tensor:
     """
     Token-level InfoNCE to preserve content structure.
     """
     if spatial_size > 0 and (x_in.shape[-1] != spatial_size or x_in.shape[-2] != spatial_size):
-        mode = str(resize_mode).lower()
-        if mode == "area":
-            x_in = F.interpolate(x_in, size=(spatial_size, spatial_size), mode="area")
-            x_out = F.interpolate(x_out, size=(spatial_size, spatial_size), mode="area")
-        elif mode in {"nearest", "nearest-exact"}:
-            x_in = F.interpolate(x_in, size=(spatial_size, spatial_size), mode=mode)
-            x_out = F.interpolate(x_out, size=(spatial_size, spatial_size), mode=mode)
-        else:
-            x_in = F.interpolate(x_in, size=(spatial_size, spatial_size), mode=mode, align_corners=False)
-            x_out = F.interpolate(x_out, size=(spatial_size, spatial_size), mode=mode, align_corners=False)
+        x_in = F.interpolate(x_in, size=(spatial_size, spatial_size), mode="area")
+        x_out = F.interpolate(x_out, size=(spatial_size, spatial_size), mode="area")
 
     q = F.normalize(model.project_tokens(x_out), dim=1)
     k = F.normalize(model.project_tokens(x_in), dim=1)
@@ -247,12 +238,8 @@ class AdaCUTObjective:
         self.nce_temperature = float(loss_cfg.get("nce_temperature", 0.1))
         self.nce_spatial_size = int(loss_cfg.get("nce_spatial_size", 16))
         self.nce_max_tokens = int(loss_cfg.get("nce_max_tokens", 2048))
-        self.nce_resize_mode = str(loss_cfg.get("nce_resize_mode", "bilinear")).lower()
         self.nce_warmup_epochs = int(loss_cfg.get("nce_warmup_epochs", 0))
         self.nce_ramp_epochs = int(loss_cfg.get("nce_ramp_epochs", 1))
-        self.style_loss_source = str(loss_cfg.get("style_loss_source", "student")).lower()
-        if self.style_loss_source not in {"student", "teacher"}:
-            self.style_loss_source = "student"
         self.current_epoch = 1
         self.total_epochs = 1
 
@@ -408,7 +395,6 @@ class AdaCUTObjective:
             loss_edge = torch.tensor(0.0, device=content.device, dtype=content.dtype)
 
         # Optional extras: style statistics on output.
-        style_pred = pred_student if self.style_loss_source == "student" else pred_teacher
         loss_gram = torch.tensor(0.0, device=content.device, dtype=torch.float32)
         loss_moment = torch.tensor(0.0, device=content.device, dtype=torch.float32)
         loss_stroke_gram = torch.tensor(0.0, device=content.device, dtype=torch.float32)
@@ -421,7 +407,7 @@ class AdaCUTObjective:
                 stroke_patch_sizes = [int(stroke_patch_sizes[idx])]
                 randomize_patch = False
             pred_stroke, pred_low = _multiscale_latent_feats(
-                style_pred.float(),
+                pred_teacher.float(),
                 stroke_patch_sizes=stroke_patch_sizes,
                 low_patch=self.color_patch_size,
                 randomize_patch=randomize_patch,
@@ -444,7 +430,7 @@ class AdaCUTObjective:
             loss_stroke_gram = loss_stroke_gram * scale
             loss_color_moment = loss_color_moment * scale
         elif self.w_gram > 0.0 or self.w_moment > 0.0:
-            pred_feats, _ = _multiscale_latent_feats(style_pred.float(), randomize_patch=False)
+            pred_feats, _ = _multiscale_latent_feats(pred_teacher.float(), randomize_patch=False)
             tgt_feats, _ = _multiscale_latent_feats(target_style.float(), randomize_patch=False)
             for a, b in zip(pred_feats, tgt_feats):
                 loss_gram = loss_gram + calc_gram_loss(a, b)
@@ -466,7 +452,6 @@ class AdaCUTObjective:
                 temperature=self.nce_temperature,
                 spatial_size=self.nce_spatial_size,
                 max_tokens=self.nce_max_tokens,
-                resize_mode=self.nce_resize_mode,
             )
         else:
             loss_nce = torch.tensor(0.0, device=content.device, dtype=content.dtype)
