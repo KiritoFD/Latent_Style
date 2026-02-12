@@ -25,6 +25,10 @@ except ImportError:  # pragma: no cover
 
 logger = logging.getLogger(__name__)
 
+_COMPILE_BACKEND = "inductor"
+_COMPILE_MODE = "default"
+_COMPILE_FULLGRAPH = False
+
 
 def _strip_compile_prefix(state_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
     if any(k.startswith("_orig_mod.") for k in state_dict.keys()):
@@ -61,42 +65,40 @@ class AdaCUTTrainer:
         else:
             self.model = self.model.to(device)
 
+        ckpt_cfg = config.get("checkpoint", {})
+        self.checkpoint_dir = Path(ckpt_cfg.get("save_dir", "../adacut_ckpt"))
+        self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        self.log_dir = self.checkpoint_dir / "logs"
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+        self.full_eval_root = self.checkpoint_dir / "full_eval"
+        self.full_eval_root.mkdir(parents=True, exist_ok=True)
+
         self.use_compile = bool(train_cfg.get("use_compile", False))
-        self.compile_mode = str(train_cfg.get("compile_mode", "default"))
-        self.compile_backend = str(train_cfg.get("compile_backend", "inductor"))
-        self.compile_fullgraph = bool(train_cfg.get("compile_fullgraph", False))
-        self.compile_disable_cudagraphs = bool(train_cfg.get("compile_disable_cudagraphs", False))
-        self.compile_capture_scalar_outputs = bool(train_cfg.get("compile_capture_scalar_outputs", False))
-        self.compile_suppress_errors = bool(train_cfg.get("compile_suppress_errors", False))
-        self.compile_cache_enabled = bool(train_cfg.get("compile_cache_enabled", True))
-        self.compile_cache_dir = Path(str(train_cfg.get("compile_cache_dir", "./.torch_compile_cache"))).resolve()
-        self.compile_cache_clear_on_start = bool(train_cfg.get("compile_cache_clear_on_start", False))
+        self.compile_backend = _COMPILE_BACKEND
+        self.compile_mode = _COMPILE_MODE
+        self.compile_fullgraph = _COMPILE_FULLGRAPH
+        self.compile_cache_dir = (self.checkpoint_dir / "torch_compile_cache").resolve()
         if self.use_compile:
             try:
-                if self.compile_cache_enabled:
-                    if self.compile_cache_clear_on_start and self.compile_cache_dir.exists():
-                        shutil.rmtree(self.compile_cache_dir, ignore_errors=True)
-                    (self.compile_cache_dir / "inductor").mkdir(parents=True, exist_ok=True)
-                    (self.compile_cache_dir / "triton").mkdir(parents=True, exist_ok=True)
-                    os.environ["TORCHINDUCTOR_CACHE_DIR"] = str((self.compile_cache_dir / "inductor"))
-                    os.environ["TRITON_CACHE_DIR"] = str((self.compile_cache_dir / "triton"))
-                    try:
-                        import torch._inductor.config as _inductor_config  # type: ignore[attr-defined]
-                        if hasattr(_inductor_config, "fx_graph_cache"):
-                            _inductor_config.fx_graph_cache = True
-                    except Exception:  # pragma: no cover
-                        pass
-                if self.compile_disable_cudagraphs:
-                    os.environ.setdefault("TORCHINDUCTOR_CUDAGRAPHS", "0")
-                if self.compile_capture_scalar_outputs or self.compile_suppress_errors:
-                    try:
-                        import torch._dynamo as _dynamo  # type: ignore[attr-defined]
-                        if self.compile_capture_scalar_outputs:
-                            _dynamo.config.capture_scalar_outputs = True
-                        if self.compile_suppress_errors:
-                            _dynamo.config.suppress_errors = True
-                    except Exception:  # pragma: no cover
-                        pass
+                (self.compile_cache_dir / "inductor").mkdir(parents=True, exist_ok=True)
+                (self.compile_cache_dir / "triton").mkdir(parents=True, exist_ok=True)
+                os.environ["TORCHINDUCTOR_CACHE_DIR"] = str((self.compile_cache_dir / "inductor"))
+                os.environ["TRITON_CACHE_DIR"] = str((self.compile_cache_dir / "triton"))
+                os.environ.setdefault("TORCHINDUCTOR_CUDAGRAPHS", "0")
+                try:
+                    import torch._dynamo as _dynamo  # type: ignore[attr-defined]
+
+                    _dynamo.config.capture_scalar_outputs = True
+                    _dynamo.config.suppress_errors = True
+                except Exception:  # pragma: no cover
+                    pass
+                try:
+                    import torch._inductor.config as _inductor_config  # type: ignore[attr-defined]
+
+                    if hasattr(_inductor_config, "fx_graph_cache"):
+                        _inductor_config.fx_graph_cache = True
+                except Exception:  # pragma: no cover
+                    pass
                 self.model = torch.compile(
                     self.model,
                     backend=self.compile_backend,
@@ -104,11 +106,11 @@ class AdaCUTTrainer:
                     fullgraph=self.compile_fullgraph,
                 )
                 logger.info(
-                    "torch.compile enabled (backend=%s mode=%s fullgraph=%s cache=%s)",
+                    "torch.compile enabled (backend=%s mode=%s fullgraph=%s cudagraphs=off cache=%s)",
                     self.compile_backend,
                     self.compile_mode,
                     self.compile_fullgraph,
-                    str(self.compile_cache_dir) if self.compile_cache_enabled else "off",
+                    str(self.compile_cache_dir),
                 )
             except Exception as exc:  # pragma: no cover
                 self.use_compile = False
@@ -181,13 +183,6 @@ class AdaCUTTrainer:
         self.run_full_eval_on_last_epoch = bool(train_cfg.get("full_eval_on_last_epoch", True))
         self.snapshot_source = bool(train_cfg.get("snapshot_source", False))
 
-        ckpt_cfg = config.get("checkpoint", {})
-        self.checkpoint_dir = Path(ckpt_cfg.get("save_dir", "../adacut_ckpt"))
-        self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
-        self.log_dir = self.checkpoint_dir / "logs"
-        self.log_dir.mkdir(parents=True, exist_ok=True)
-        self.full_eval_root = self.checkpoint_dir / "full_eval"
-        self.full_eval_root.mkdir(parents=True, exist_ok=True)
         if self.snapshot_source:
             self._snapshot_source()
         self.log_file = self.log_dir / f"training_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"

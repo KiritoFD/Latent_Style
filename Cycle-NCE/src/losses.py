@@ -227,37 +227,14 @@ class AdaCUTObjective:
         self.semigroup_lowpass_strength = float(loss_cfg.get("semigroup_lowpass_strength", 0.25))
         self.semigroup_lowpass_strength = max(0.0, min(1.0, self.semigroup_lowpass_strength))
         self.semigroup_cross_domain_only = bool(loss_cfg.get("semigroup_cross_domain_only", True))
-        self.semigroup_warmup_epochs = int(loss_cfg.get("semigroup_warmup_epochs", 0))
-        self.semigroup_ramp_epochs = int(loss_cfg.get("semigroup_ramp_epochs", 1))
         self.semigroup_detach_midpoint = bool(loss_cfg.get("semigroup_detach_midpoint", False))
-        self.semigroup_interval_steps = max(1, int(loss_cfg.get("semigroup_interval_steps", 1)))
-        self.semigroup_interval_offset = int(loss_cfg.get("semigroup_interval_offset", 0))
-        self.semigroup_batch_fraction = float(loss_cfg.get("semigroup_batch_fraction", 1.0))
-        self.semigroup_batch_fraction = max(0.0, min(1.0, self.semigroup_batch_fraction))
-        self.semigroup_max_samples = int(loss_cfg.get("semigroup_max_samples", 0))
-        self.semigroup_prefer_transfer_samples = bool(loss_cfg.get("semigroup_prefer_transfer_samples", True))
-        self.semigroup_skip_on_cycle_steps = bool(loss_cfg.get("semigroup_skip_on_cycle_steps", False))
         self.w_push = float(loss_cfg.get("w_push", 0.0))
         self.push_margin = float(loss_cfg.get("push_margin", 0.2))
 
-        self.cycle_warmup_epochs = int(loss_cfg.get("cycle_warmup_epochs", 0))
-        self.cycle_ramp_epochs = int(loss_cfg.get("cycle_ramp_epochs", 1))
-        self.struct_warmup_epochs = int(loss_cfg.get("struct_warmup_epochs", 0))
-        self.struct_ramp_epochs = int(loss_cfg.get("struct_ramp_epochs", 1))
-        self.edge_warmup_epochs = int(loss_cfg.get("edge_warmup_epochs", 0))
-        self.edge_ramp_epochs = int(loss_cfg.get("edge_ramp_epochs", 1))
         self.nce_temperature = float(loss_cfg.get("nce_temperature", 0.1))
         self.nce_spatial_size = int(loss_cfg.get("nce_spatial_size", 16))
         self.nce_max_tokens = int(loss_cfg.get("nce_max_tokens", 2048))
         self.nce_resize_mode = str(loss_cfg.get("nce_resize_mode", "bilinear")).lower()
-        self.nce_warmup_epochs = int(loss_cfg.get("nce_warmup_epochs", 0))
-        self.nce_ramp_epochs = int(loss_cfg.get("nce_ramp_epochs", 1))
-        self.stroke_interval_steps = max(1, int(loss_cfg.get("stroke_interval_steps", 1)))
-        self.stroke_interval_offset = int(loss_cfg.get("stroke_interval_offset", 0))
-        self.nce_interval_steps = max(1, int(loss_cfg.get("nce_interval_steps", 1)))
-        self.nce_interval_offset = int(loss_cfg.get("nce_interval_offset", 0))
-        self.cycle_interval_steps = max(1, int(loss_cfg.get("cycle_interval_steps", 1)))
-        self.cycle_interval_offset = int(loss_cfg.get("cycle_interval_offset", 0))
         self.train_num_steps_min = max(1, int(loss_cfg.get("train_num_steps_min", 1)))
         self.train_num_steps_max = max(1, int(loss_cfg.get("train_num_steps_max", self.train_num_steps_min)))
         if self.train_num_steps_max < self.train_num_steps_min:
@@ -286,49 +263,9 @@ class AdaCUTObjective:
                 self.train_step_schedule = None
         else:
             self.train_step_schedule = None
-        self.heavy_loss_rotation = str(loss_cfg.get("heavy_loss_rotation", "none")).lower()
-        if self.heavy_loss_rotation not in {"none", "round_robin"}:
-            self.heavy_loss_rotation = "none"
-        self.heavy_loss_rotation_mode = str(loss_cfg.get("heavy_loss_rotation_mode", "interval_primary")).lower()
-        if self.heavy_loss_rotation_mode not in {"strict", "interval_primary"}:
-            self.heavy_loss_rotation_mode = "interval_primary"
-        self.enable_loss_sparsify = bool(loss_cfg.get("enable_loss_sparsify", True))
-        self.force_dense_loss_paths = bool(loss_cfg.get("force_dense_loss_paths", False))
-        self.force_dense_semigroup_full_batch = bool(loss_cfg.get("force_dense_semigroup_full_batch", False))
-        if not self.enable_loss_sparsify:
-            # Global override: disable interval/rotation/sub-batch sparsification for max compute throughput.
-            self.force_dense_loss_paths = True
-            self.force_dense_semigroup_full_batch = True
-            self.heavy_loss_rotation = "none"
-        seq_cfg = loss_cfg.get("heavy_loss_rotation_sequence", ["stroke", "nce", "semigroup"])
-        if not isinstance(seq_cfg, (list, tuple)):
-            seq_cfg = [seq_cfg]
-        valid_tags = {"stroke", "nce", "semigroup", "cycle", "all"}
-        seq: list[str] = []
-        for item in seq_cfg:
-            tag = str(item).strip().lower()
-            if tag in valid_tags:
-                seq.append(tag)
-        self.heavy_loss_rotation_sequence = seq if seq else ["all"]
-        self._heavy_loss_rotation_tags = set(self.heavy_loss_rotation_sequence)
-        self.current_epoch = 1
-        self.total_epochs = 1
-        self.compute_step = 0
-
     def set_progress(self, epoch: int, total_epochs: int) -> None:
-        self.current_epoch = max(1, int(epoch))
-        self.total_epochs = max(1, int(total_epochs))
-
-    @staticmethod
-    def _ramp_weight(base: float, epoch: int, warmup: int, ramp: int) -> float:
-        if base <= 0.0:
-            return 0.0
-        if epoch <= warmup:
-            return 0.0
-        if ramp <= 0:
-            return base
-        ratio = min(1.0, max(0.0, (epoch - warmup) / float(ramp)))
-        return float(base * ratio)
+        # Kept for trainer API compatibility; loss scheduling has been removed.
+        return
 
     @staticmethod
     def _sample_range(low: float, high: float) -> float:
@@ -343,45 +280,6 @@ class AdaCUTObjective:
         if high_i <= low_i:
             return low_i
         return int(random.randint(low_i, high_i))
-
-    def _is_interval_active(self, interval: int, offset: int = 0) -> bool:
-        step = max(1, int(self.compute_step))
-        interval = max(1, int(interval))
-        return ((step - 1 - int(offset)) % interval) == 0
-
-    def _active_heavy_loss_slot(self) -> str:
-        if self.heavy_loss_rotation != "round_robin":
-            return "all"
-        seq = self.heavy_loss_rotation_sequence
-        idx = (max(1, int(self.compute_step)) - 1) % max(1, len(seq))
-        return seq[idx]
-
-    def _is_heavy_loss_active(self, tag: str) -> bool:
-        if self.heavy_loss_rotation != "round_robin":
-            return True
-        tag = str(tag).lower()
-        if tag not in self._heavy_loss_rotation_tags:
-            return True
-        slot = self._active_heavy_loss_slot()
-        return slot == "all" or slot == tag
-
-    def _is_heavy_loss_enabled(
-        self,
-        tag: str,
-        *,
-        interval_steps: int,
-        interval_active: bool,
-    ) -> bool:
-        if self.force_dense_loss_paths:
-            return True
-        if not interval_active:
-            return False
-        if self.heavy_loss_rotation != "round_robin":
-            return True
-        if self.heavy_loss_rotation_mode == "interval_primary" and int(interval_steps) > 1:
-            # Keep interval as the main sparsifier; avoid LCM-like starvation.
-            return True
-        return self._is_heavy_loss_active(tag)
 
     @staticmethod
     def _apply_model(
@@ -416,42 +314,6 @@ class AdaCUTObjective:
             step_size=step_size,
             style_strength=style_strength,
         )
-
-    def _select_semigroup_indices(self, transfer_mask: torch.Tensor) -> torch.Tensor | None:
-        batch = int(transfer_mask.shape[0])
-        if batch <= 1:
-            return None
-        target = batch
-        if 0.0 < self.semigroup_batch_fraction < 1.0:
-            target = min(target, max(1, int(round(batch * self.semigroup_batch_fraction))))
-        if self.semigroup_max_samples > 0:
-            target = min(target, self.semigroup_max_samples)
-        if target >= batch:
-            return None
-
-        all_idx = torch.arange(batch, device=transfer_mask.device, dtype=torch.long)
-        if not self.semigroup_prefer_transfer_samples:
-            perm = torch.randperm(batch, device=transfer_mask.device)[:target]
-            return all_idx.index_select(0, perm)
-
-        transfer_idx = torch.nonzero(transfer_mask > 0.0, as_tuple=False).view(-1)
-        if transfer_idx.numel() >= target:
-            perm = torch.randperm(transfer_idx.numel(), device=transfer_mask.device)[:target]
-            return transfer_idx.index_select(0, perm)
-
-        if transfer_idx.numel() > 0:
-            picked = transfer_idx
-            remaining_mask = torch.ones(batch, device=transfer_mask.device, dtype=torch.bool)
-            remaining_mask[picked] = False
-            remaining = all_idx[remaining_mask]
-            need = target - picked.numel()
-            if need > 0 and remaining.numel() > 0:
-                perm = torch.randperm(remaining.numel(), device=transfer_mask.device)[:need]
-                picked = torch.cat([picked, remaining.index_select(0, perm)], dim=0)
-            return picked
-
-        perm = torch.randperm(batch, device=transfer_mask.device)[:target]
-        return all_idx.index_select(0, perm)
 
     @staticmethod
     def _per_sample_alignment(
@@ -488,15 +350,7 @@ class AdaCUTObjective:
         target_style_id: torch.Tensor,
         content_style_id: torch.Tensor,
     ) -> Dict[str, torch.Tensor]:
-        self.compute_step += 1
-        heavy_slot = self._active_heavy_loss_slot()
-        heavy_slot_id = {
-            "all": 0,
-            "stroke": 1,
-            "nce": 2,
-            "semigroup": 3,
-            "cycle": 4,
-        }.get(heavy_slot, 0)
+        heavy_slot_id = 0
         train_num_steps = self._sample_int_range(self.train_num_steps_min, self.train_num_steps_max)
         train_step_size = self._sample_range(self.train_step_size_min, self.train_step_size_max)
         train_style_strength = self._sample_range(self.train_style_strength_min, self.train_style_strength_max)
@@ -567,19 +421,7 @@ class AdaCUTObjective:
             code_pred_norm = torch.tensor(0.0, device=content.device, dtype=content.dtype)
             code_ref_norm = torch.tensor(0.0, device=content.device, dtype=content.dtype)
 
-        w_cycle_eff = self._ramp_weight(
-            self.w_cycle,
-            epoch=self.current_epoch,
-            warmup=self.cycle_warmup_epochs,
-            ramp=self.cycle_ramp_epochs,
-        )
-        cycle_interval_active = True if self.force_dense_loss_paths else self._is_interval_active(self.cycle_interval_steps, self.cycle_interval_offset)
-        if not self._is_heavy_loss_enabled(
-            "cycle",
-            interval_steps=self.cycle_interval_steps,
-            interval_active=cycle_interval_active,
-        ):
-            w_cycle_eff = 0.0
+        w_cycle_eff = self.w_cycle
         cycle_active_flag = 0.0
         if w_cycle_eff > 0.0 and float(transfer_mask.sum().item()) > 0.0:
             cycle_active_flag = 1.0
@@ -613,12 +455,7 @@ class AdaCUTObjective:
         else:
             loss_cycle = torch.tensor(0.0, device=content.device, dtype=content.dtype)
 
-        w_struct_eff = self._ramp_weight(
-            self.w_struct,
-            epoch=self.current_epoch,
-            warmup=self.struct_warmup_epochs,
-            ramp=self.struct_ramp_epochs,
-        )
+        w_struct_eff = self.w_struct
         if w_struct_eff > 0.0:
             per_sample_struct = self._per_sample_alignment(
                 pred_student,
@@ -630,12 +467,7 @@ class AdaCUTObjective:
         else:
             loss_struct = torch.tensor(0.0, device=content.device, dtype=content.dtype)
 
-        w_edge_eff = self._ramp_weight(
-            self.w_edge,
-            epoch=self.current_epoch,
-            warmup=self.edge_warmup_epochs,
-            ramp=self.edge_ramp_epochs,
-        )
+        w_edge_eff = self.w_edge
         if w_edge_eff > 0.0:
             edge_pred = _sobel_magnitude(pred_student.float())
             edge_content = _sobel_magnitude(content.float())
@@ -647,12 +479,7 @@ class AdaCUTObjective:
         style_pred = pred_student
         loss_stroke_gram = torch.tensor(0.0, device=content.device, dtype=torch.float32)
         loss_color_moment = torch.tensor(0.0, device=content.device, dtype=torch.float32)
-        stroke_interval_active = True if self.force_dense_loss_paths else self._is_interval_active(self.stroke_interval_steps, self.stroke_interval_offset)
-        style_stats_active = self._is_heavy_loss_enabled(
-            "stroke",
-            interval_steps=self.stroke_interval_steps,
-            interval_active=stroke_interval_active,
-        )
+        style_stats_active = (self.w_stroke_gram > 0.0 or self.w_color_moment > 0.0)
         stroke_active_flag = 1.0 if style_stats_active else 0.0
         if style_stats_active and (self.w_stroke_gram > 0.0 or self.w_color_moment > 0.0):
             stroke_patch_sizes = self.stroke_patch_sizes
@@ -684,19 +511,7 @@ class AdaCUTObjective:
             scale = 1.0 / float(len(pred_stroke))
             loss_stroke_gram = loss_stroke_gram * scale
             loss_color_moment = loss_color_moment * scale
-        w_nce_eff = self._ramp_weight(
-            self.w_nce,
-            epoch=self.current_epoch,
-            warmup=self.nce_warmup_epochs,
-            ramp=self.nce_ramp_epochs,
-        )
-        nce_interval_active = True if self.force_dense_loss_paths else self._is_interval_active(self.nce_interval_steps, self.nce_interval_offset)
-        if not self._is_heavy_loss_enabled(
-            "nce",
-            interval_steps=self.nce_interval_steps,
-            interval_active=nce_interval_active,
-        ):
-            w_nce_eff = 0.0
+        w_nce_eff = self.w_nce
         nce_active_flag = 1.0 if w_nce_eff > 0.0 else 0.0
         if w_nce_eff > 0.0:
             loss_nce = calc_nce_loss(
@@ -711,33 +526,13 @@ class AdaCUTObjective:
         else:
             loss_nce = torch.tensor(0.0, device=content.device, dtype=content.dtype)
 
-        w_semigroup_eff = self._ramp_weight(
-            self.w_semigroup,
-            epoch=self.current_epoch,
-            warmup=self.semigroup_warmup_epochs,
-            ramp=self.semigroup_ramp_epochs,
-        )
-        semigroup_interval_active = True if self.force_dense_loss_paths else self._is_interval_active(self.semigroup_interval_steps, self.semigroup_interval_offset)
-        if not self._is_heavy_loss_enabled(
-            "semigroup",
-            interval_steps=self.semigroup_interval_steps,
-            interval_active=semigroup_interval_active,
-        ):
-            w_semigroup_eff = 0.0
-        if self.semigroup_skip_on_cycle_steps and (not self.force_dense_loss_paths) and w_cycle_eff > 0.0:
-            w_semigroup_eff = 0.0
+        w_semigroup_eff = self.w_semigroup
         semigroup_active_flag = 1.0 if w_semigroup_eff > 0.0 else 0.0
         semigroup_samples = 0
         if w_semigroup_eff > 0.0:
-            semigroup_indices = None if self.force_dense_semigroup_full_batch else self._select_semigroup_indices(transfer_mask)
-            if semigroup_indices is None:
-                sg_content = content
-                sg_style_id = target_style_id
-                sg_transfer_mask = transfer_mask
-            else:
-                sg_content = content.index_select(0, semigroup_indices)
-                sg_style_id = target_style_id.index_select(0, semigroup_indices)
-                sg_transfer_mask = transfer_mask.index_select(0, semigroup_indices)
+            sg_content = content
+            sg_style_id = target_style_id
+            sg_transfer_mask = transfer_mask
             semigroup_samples = int(sg_content.shape[0])
             h1 = random.uniform(self.semigroup_h_min, self.semigroup_h_max)
             h2 = random.uniform(self.semigroup_h_min, self.semigroup_h_max)

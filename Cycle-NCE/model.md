@@ -1,225 +1,189 @@
-# 模型说明（当前实现，中文详细版）
+﻿# 当前模型说明（与代码一致）
 
-## 1. 目标与当前版本定位
-
-当前 `Cycle-NCE` 的模型实现，目标是同时满足：
-
-- 8GB 显存可训练（结合分时损失与 checkpoint）
-- 推理多步可控（`num_steps / step_size / step_schedule / style_strength`）
-- 风格强度统一控制（避免“旋钮分散”）
-- 降低网格纹理风险（特别是解码器近输出注入）
-
-核心代码文件：
-
+对应代码：
 - `src/model.py`
 - `src/losses.py`
-
-默认配置入口：
-
 - `src/config.json`
 
-## 2. 当前默认配置（关键项）
+## 1. 模型总览
 
-以 `src/config.json` 为准，当前默认关键模型设置：
+`LatentAdaCUT` 是一个在 latent 空间工作的轻量 U-Net（无 skip）。
 
-- 通道与规模：
-  - `latent_channels=4`
-  - `base_dim=128`
-  - `lift_channels=128`
-  - `style_dim=256`
-  - `num_hires_blocks=4`
-  - `num_res_blocks=2`
-- 风格注入相关：
-  - `style_spatial_pre_gain_32=0.38`
-  - `style_spatial_block_gain_32=0.18`
-  - `style_spatial_pre_gain_16=0.32`
-  - `style_spatial_block_gain_16=0.16`
-  - `use_decoder_spatial_inject=true`
-  - `style_spatial_dec_gain_32=0.08`
-  - `style_spatial_dec_gain_out=0.03`
-- 风格残差路径：
-  - `use_style_texture_head=true`
-  - `use_style_force_path=true`
-  - `share_style_head_trunk=true`
-  - `style_texture_gain=0.28`
-  - `style_force_gain=0.35`
-- 高频与抗混叠：
-  - `use_delta_highpass_bias=true`
-  - `style_delta_lowfreq_gain=0.1`
-  - `use_style_spatial_blur=true`
-  - `use_downsample_blur=true`
-  - `upsample_mode="bilinear"`
-  - `decoder_spatial_mode="film"`
-- 统一强度控制：
-  - `style_strength_default=1.0`
-  - `style_strength_step_curve="smoothstep"`
-  - `step_schedule_default="flat"`
-  - `style_gate_floor=0.0`
-  - `style_gate_floor_low_strength=0.85`
+- 输入：`x ∈ R^{B×4×32×32}`
+- 输出：`y ∈ R^{B×4×32×32}`
+- 本质：预测残差 `delta`，再做 `x + delta * step`
 
-## 3. 网络结构与信息流
+风格条件来源：
+1. `style_id`（离散风格）
+2. `style_ref`（参考风格 latent）
 
-### 3.1 主干结构（无 skip 的微型 U-Net）
+两者可由 `style_mix_alpha` 混合。
 
-输入输出均为 latent：
+## 2. 主干结构（逐层）
 
-- 输入：`[B, 4, 32, 32]`
-- 输出：`[B, 4, 32, 32]`
+### 2.1 风格编码分支
 
-主流程：
+1. `style_enc`
+- `Conv2d(4 -> lift_channels, 3x3)`
+- `SiLU`
+- `Conv2d(lift_channels -> base_dim*2, 4x4, stride=2)` 32->16
+- `SiLU`
+- `Conv2d(base_dim*2 -> base_dim*4, 4x4, stride=2)` 16->8
+- `SiLU`
+- `AdaptiveAvgPool2d(1)`
 
-1. 编码抬升：`enc_in`（4 -> 128，32x32）
-2. 高分辨率残差体：`hires_body`（4 个 ResBlock，128 通道）
-3. 下采样：`down`（128 -> 256，32 -> 16）
-4. 主体残差体：`body`（2 个 ResBlock，256 通道）
-5. 解码：上采样 -> `dec_conv` -> `dec_norm` -> `dec_out`
-6. 残差更新：`x + delta * step_size_scale`
+2. `style_proj`
+- `Linear(base_dim*4 -> style_dim)`
 
-### 3.2 风格编码与风格图来源
+3. `style_emb`
+- `Embedding(num_styles, style_dim)`
 
-风格条件来自两条路径：
+4. 可学习空间先验
+- `style_spatial_id_32`: `[num_styles, lift_channels, 32, 32]`
+- `style_spatial_id_16`: `[num_styles, body_channels, 16, 16]`
 
-- `style_id` 路径：
-  - `style_emb`
-  - `style_spatial_id_32 / style_spatial_id_16`
-- `style_ref` 路径：
-  - `style_enc + style_proj`
-  - 从中间特征提取空间图（32 与 16）
+### 2.2 生成主干
 
-推理部署可只走 `style_id` 路径，不依赖参考图。
+1. 输入抬升
+- `enc_in: Conv2d(4 -> lift_channels, 3x3)`
+- `enc_in_act: SiLU`
 
-### 3.3 风格空间注入位置
+2. 32x32 高分辨率主体
+- `hires_body`: `num_hires_blocks` 个 `ResBlock(lift_channels)`
 
-当前实现注入点：
+3. 下采样
+- `down: Conv2d(lift_channels -> body_channels, 4x4, stride=2)`
 
-- 32 尺度预注入：`style_spatial_pre_gain_32`
-- 32 尺度 block 后注入：`style_spatial_block_gain_32`
-- 16 尺度预注入：`style_spatial_pre_gain_16`
-- 16 尺度 block 后注入：`style_spatial_block_gain_16`
-- 解码器注入两次（pre-norm 与 post-act）：
-  - `style_spatial_dec_gain_32`
-  - `style_spatial_dec_gain_out`
+4. 16x16 主体
+- `body`: `num_res_blocks` 个 `ResBlock(body_channels)`
 
-且所有注入增益统一乘以 `style_strength`。
+5. 解码
+- `dec_up: Upsample(scale=2, mode=upsample_mode)`
+- `dec_conv: Conv2d(body_channels -> lift_channels, 3x3)`
+- `dec_norm: AdaGN 或 GroupNorm`
+- `dec_act: SiLU`
+- `dec_out: Conv2d(lift_channels -> 4, 3x3)`
 
-## 4. 风格残差聚合（delta 形成）
+6. Texture 头（唯一风格细节头，Content-Aware）
+- 输入默认为 `concat(h, style_spatial_dec)`（通道 `2*lift_channels`）
+- `Conv2d(2*lift_channels -> lift_channels, 3x3)`
+- `SiLU`
+- `Conv2d(lift_channels -> 4, 1x1)`
 
-`_compute_delta` 当前包含：
+7. NCE 投影头
+- `Linear(4 -> projector_dim) -> ReLU -> Linear(projector_dim -> projector_dim)`
 
+## 3. 风格注入机制（当前清理版）
+
+当前保留三条核心路径：
+
+### 3.1 AdaGN 向量调制
+
+在 `ResBlock`（和可选 decoder norm）中通过 `style_code` 预测 `(scale, shift)`，调制归一化特征：
+- `out = GN(x) * scale + shift`
+
+### 3.2 空间注入（精简后）
+
+当前仅保留两个注入点：
+1. **16×16 pre 注入**：`h += style_spatial_pre_gain_16 * map16`
+2. **decoder 单点注入**：`dec_conv` 后注入一次
+
+职责划分：
+- `map16`：中频结构引导（边缘、块面、形体组织）
+- `map32`：解码端细节调制（纹理/笔触门控）
+
+decoder 注入固定为 film 形式：
+- `h <- h * (1 + gain * tanh(map))`
+
+已移除：
+- 32×32 注入
+- block 后重复注入
+- decoder 第二次 post-act 注入
+- force 分支
+
+### 3.3 delta 聚合
+
+`_compute_delta` 现在是：
 1. 基础残差：`dec_out(h) * latent_scale_factor * residual_gain`
-2. `style_delta_gate` 门控（含 floor）
-3. texture 分支
-4. force 分支
-5. 高频偏置（可对分支和最终 delta 生效）
+2. 可选输出仿射：`use_output_style_affine`
+3. 可选门控：`use_style_delta_gate`
+4. texture 残差（默认 Content-Aware）：`style_texture_head(concat(h, style_spatial_dec))`，按 `style_texture_gain * style_strength` 叠加
+5. 可选高通偏置（见第 4 节）
 
-### 4.1 共享风格头（Round 2）
+## 4. “最后一步轻微高通”机制
 
-开启 `share_style_head_trunk=true` 后：
+这是当前版本新增的重点策略：
 
-- 共享 `style_head_trunk`：`conv3x3 + SiLU`
-- 分别 `style_texture_out`、`style_force_out` 做 1x1 输出
+相关参数（`model` 配置）：
+- `use_delta_highpass_bias`
+- `style_delta_lowfreq_gain`
+- `highpass_last_step_only`
+- `highpass_last_step_scale`
 
-与旧版双独立 3x3 相比，减少一个热点 3x3 卷积。
+行为：
+- 在 `integrate()` 多步时，前几步不加高通（稳结构）
+- 仅最后一步按 `highpass_last_step_scale` 混合高通后的 `delta`（补细节）
 
-### 4.2 解码注入模式
+高通公式（实现上是低高频重组）：
+- `low = avgpool+upsample(delta)`
+- `high = delta - low`
+- `hp = high + low * style_delta_lowfreq_gain`
+- `delta_final = (1-a)*delta + a*hp`，其中 `a = highpass_last_step_scale`
 
-`decoder_spatial_mode` 支持：
+这与“先稳中频、再补中高频”目标一致。
 
-- `add`：直接加法注入
-- `film`：乘性调制（`h * (1 + gain * tanh(map))`）
+## 5. 前向与多步
 
-默认 `film`，用于降低近输出端直接叠加产生的周期纹理风险。
+### 5.1 单步 `forward`
+- 计算 `delta`
+- 输出：`x + delta * step_size * step_scale`
 
-## 5. 统一强度与多步可控机制
+### 5.2 多步 `integrate`
+每步都重算 `delta`，并按 `step_schedule` 权重累积：
+- 支持 `num_steps / step_size / style_strength / step_schedule`
+- 权重归一化后求和
+- 高通策略按第 4 节执行
 
-### 5.1 `style_strength` 统一入口
+## 6. 当前损失函数（`src/losses.py`）
 
-`style_strength` 同时影响：
+当前版本已去掉稀疏调度，所有 loss 都是每步按权重直接计算。
 
-- 空间图注入增益
-- `step_size` 的有效缩放（经 `style_strength_step_curve`）
-- gate floor 插值（`style_gate_floor` 到 `style_gate_floor_low_strength`）
-- texture/force 分支强度
-- 高频偏置的低频保留比例
+- `distill`：student 对齐 teacher
+- `code`：teacher 对齐 ref 编码，student 对齐 id 编码
+- `cycle`：跨域回环一致
+- `struct`：结构一致
+- `edge`：Sobel 边缘一致
+- `stroke_gram`：笔触统计（Gram）
+- `color_moment`：颜色矩匹配
+- `nce`：token 级 InfoNCE
+- `semigroup`：一步/两步等价约束
+- `push`：远离源域风格
+- `delta_tv`：残差平滑
+- `style_spatial_tv`：风格先验图平滑
 
-### 5.2 `forward` 与 `integrate`
+## 7. 当前风格关键配置（建议重点关注）
 
-- `forward`：单步
-- `integrate`：多步 Euler 迭代
+`src/config.json -> model`：
+- `style_spatial_pre_gain_16`
+- `style_spatial_dec_gain_32`
+- `style_texture_gain`
+- `style_texture_mode`（`content_aware` 或 `style_only`）
+- `use_style_delta_gate`
+- `use_output_style_affine`
+- `use_delta_highpass_bias`
+- `highpass_last_step_only`
+- `highpass_last_step_scale`
+- `style_delta_lowfreq_gain`
 
-二者都支持：
-
+`src/config.json -> inference`：
+- `num_steps`
+- `step_size`
 - `style_strength`
 - `step_schedule`
 
-`step_schedule` 支持：
+这就是当前“瘦身后 + 末步轻高通”的完整模型形态。
 
-- 命名策略：`flat / late / early / cosine`
-- 显式权重列表：`[w1, w2, ...]`
+## 8. 配置健壮性（防幽灵参数）
 
-内部会归一化，保证不同 schedule 的总量可比较。
-
-## 6. 与损失侧的训练-推理对齐
-
-`src/losses.py` 当前做了三层对齐：
-
-1. 训练随机采样：
-  - `train_num_steps_min/max`
-  - `train_step_size_min/max`
-  - `train_style_strength_min/max`
-  - `train_step_schedule`
-2. Semigroup 约束：
-  - `F(h1+h2)` 对齐 `F_h2(F_h1(x))`
-3. 重损失分时：
-  - interval 控制
-  - 可选 round-robin
-
-这样可以把“推理 5 步改 3 步”的漂移风险显著压低。
-
-## 7. 当前实测规模（基于当前代码与默认配置）
-
-以下统计为当前实现的单样本、单步、`style_id` 路径实测：
-
-- 可训练参数总量：`8,856,333`
-- Conv/Linear 总 MAC（B=1）：约 `2,410,742,016`
-
-主要参数模块（按聚合模块）：
-
-- `body`: `2,886,656`
-- `style_enc`: `2,626,944`
-- `hires_body`: `1,707,008`
-- `down`: `524,544`
-- `dec_conv`: `295,040`
-- `style_spatial_id_32`: `262,144`
-- `style_head_trunk`: `147,584`
-
-主要 MAC 热点（Top）：
-
-- `dec_conv`: `301,989,888`
-- `hires_body.*.conv*`: 每层约 `150,994,944`
-- `body.*.conv*`: 每层约 `150,994,944`
-- `style_head_trunk.0`: `150,994,944`
-- `down`: `134,217,728`
-
-说明：
-
-- 历史 `model_layer_macs_b1.csv` / `model_layer_params.csv` 仍可用于趋势参考。
-- 但 Round 2 开启共享头后，热点名应关注 `style_head_trunk.0`，而非旧的 `style_texture_head.0` 与 `style_force_head.0` 双 3x3。
-
-## 8. 质量与风险控制建议（对应当前代码）
-
-为降低网格/周期纹理风险，建议保持以下组合：
-
-- `upsample_mode="bilinear"`
-- `use_downsample_blur=true`
-- `use_style_spatial_blur=true`
-- `decoder_spatial_mode="film"`
-- `w_style_spatial_tv > 0`
-
-若需要更强风格：
-
-- 优先加 `style_strength`
-- 再调 `step_schedule`（如 `late`）
-- 最后再提高 texture/force gain
-
-避免一次性同时拉高所有注入与高频项。
+`build_model_from_config()` 会对未知 `model` 字段发出 `UserWarning`。  
+目的：避免“配置里写了参数但模型实际未读取”的训练/推理漂移问题。

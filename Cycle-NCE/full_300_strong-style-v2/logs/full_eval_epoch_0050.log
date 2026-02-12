@@ -1,0 +1,18 @@
+Style reference mode: prototype (count=8, seed=2026)
+WARNING: inference is style_id-only; style_ref_mode is ignored.
+
+棣冩畬 Phase 1: Generation (Batch Size 20)
+Traceback (most recent call last):
+  File "/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/utils/run_evaluation.py", line 784, in <module>
+    main() 
+    ^^^^^^
+  File "/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/utils/run_evaluation.py", line 253, in main
+    lgt = LGTInference(
+          ^^^^^^^^^^^^^
+  File "/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/utils/inference.py", line 183, in __init__
+    self.model.load_state_dict(state_dict, strict=True)
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/nn/modules/module.py", line 2629, in load_state_dict
+    raise RuntimeError(
+RuntimeError: Error(s) in loading state_dict for LatentAdaCUT:
+	Missing key(s) in state_dict: "style_texture_head.0.weight", "style_texture_head.0.bias", "style_texture_head.2.weight", "style_texture_head.2.bias". 
+	Unexpected key(s) in state_dict: "style_head_trunk.0.weight", "style_head_trunk.0.bias", "style_texture_out.weight", "style_texture_out.bias", "style_force_out.weight", "style_force_out.bias". 
