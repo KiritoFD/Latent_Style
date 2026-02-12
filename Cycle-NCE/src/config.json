@@ -145,7 +145,7 @@
     "virtual_length_multiplier": 3
   },
   "checkpoint": {
-    "save_dir": "../full_300_strong-style-v2"
+    "save_dir": "../full-300-3060-313"
   },
   "inference": {
     "num_steps": 4,

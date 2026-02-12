@@ -150,10 +150,24 @@ class AdaCUTTrainer:
                 try:
                     self.model = torch.compile(self.model, **compile_kwargs)
                 except Exception as exc:
-                    if "options" not in compile_kwargs:
+                    err_text = str(exc)
+                    retried = False
+                    if "Either mode or options can be specified" in err_text:
+                        # Different torch versions enforce this strictly.
+                        if "mode" in compile_kwargs:
+                            logger.warning("torch.compile mode/options conflict; retrying without mode.")
+                            compile_kwargs.pop("mode", None)
+                            retried = True
+                        elif "options" in compile_kwargs:
+                            logger.warning("torch.compile mode/options conflict; retrying without options.")
+                            compile_kwargs.pop("options", None)
+                            retried = True
+                    elif "options" in compile_kwargs:
+                        logger.warning("torch.compile options unsupported (%s); retrying without options.", exc)
+                        compile_kwargs.pop("options", None)
+                        retried = True
+                    if not retried:
                         raise
-                    logger.warning("torch.compile options unsupported (%s); retrying without options.", exc)
-                    compile_kwargs.pop("options", None)
                     self.model = torch.compile(self.model, **compile_kwargs)
                 logger.info(
                     "torch.compile enabled (backend=%s mode=%s fullgraph=%s cudagraphs=%s cache=%s)",

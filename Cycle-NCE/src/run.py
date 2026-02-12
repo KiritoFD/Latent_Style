@@ -75,6 +75,15 @@ def _set_cpu_env_threads(config: dict) -> None:
 
 def _set_cuda_allocator_env(config: dict) -> None:
     train_cfg = config.get("training", {})
+    legacy_conf = os.environ.get("PYTORCH_CUDA_ALLOC_CONF", "").strip()
+    if legacy_conf:
+        # Support legacy env while avoiding deprecation warnings on newer PyTorch.
+        os.environ.setdefault("PYTORCH_ALLOC_CONF", legacy_conf)
+        try:
+            del os.environ["PYTORCH_CUDA_ALLOC_CONF"]
+        except Exception:  # pragma: no cover
+            pass
+
     conf = train_cfg.get("cuda_alloc_conf")
     if isinstance(conf, str) and conf.strip():
         os.environ.setdefault("PYTORCH_ALLOC_CONF", conf.strip())
