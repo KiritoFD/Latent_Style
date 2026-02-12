@@ -6,6 +6,7 @@ Target Hardware: RTX 4070 Laptop (8GB VRAM) | CPU: 7940HX
 import argparse
 import json
 import sys
+import subprocess
 from pathlib import Path
 from contextlib import nullcontext
 import torch
@@ -155,10 +156,122 @@ def _build_style_ref_prototypes(
 # Main Logic
 # ==========================================
 
+def _parse_epoch_from_ckpt_name(path: Path):
+    stem = path.stem
+    if not stem.startswith("epoch_"):
+        return None
+    try:
+        return int(stem.split("_", 1)[1])
+    except Exception:
+        return None
+
+
+def _auto_run_missing_full_eval(args) -> None:
+    cfg_path = Path(args.config).resolve()
+    if not cfg_path.exists():
+        raise FileNotFoundError(f"Config not found: {cfg_path}")
+    with open(cfg_path, "r", encoding="utf-8") as f:
+        cfg = json.load(f)
+
+    train_cfg = cfg.get("training", {})
+    ckpt_cfg = cfg.get("checkpoint", {})
+    interval = int(train_cfg.get("full_eval_interval", 0))
+    run_last = bool(train_cfg.get("full_eval_on_last_epoch", False))
+    num_epochs = int(train_cfg.get("num_epochs", 0))
+
+    save_dir_raw = str(ckpt_cfg.get("save_dir", "")).strip()
+    if not save_dir_raw:
+        raise ValueError("checkpoint.save_dir is empty in config")
+    save_dir = (cfg_path.parent / save_dir_raw).resolve() if not Path(save_dir_raw).is_absolute() else Path(save_dir_raw)
+    if not save_dir.exists():
+        raise FileNotFoundError(f"Checkpoint save_dir not found: {save_dir}")
+
+    full_eval_root = save_dir / "full_eval"
+    full_eval_root.mkdir(parents=True, exist_ok=True)
+
+    ckpts = sorted(save_dir.glob("epoch_*.pt"))
+    epoch_to_ckpt = {}
+    for ckpt in ckpts:
+        ep = _parse_epoch_from_ckpt_name(ckpt)
+        if ep is not None:
+            epoch_to_ckpt[ep] = ckpt
+    if not epoch_to_ckpt:
+        raise FileNotFoundError(f"No epoch_*.pt found in {save_dir}")
+
+    candidate_epochs = sorted(epoch_to_ckpt.keys())
+    target_epochs = set()
+    if interval > 0:
+        for ep in candidate_epochs:
+            if ep % interval == 0:
+                target_epochs.add(ep)
+    if run_last and num_epochs > 0 and num_epochs in epoch_to_ckpt:
+        target_epochs.add(num_epochs)
+    if not target_epochs:
+        # Fallback: at least evaluate latest checkpoint
+        target_epochs.add(max(candidate_epochs))
+
+    to_run = []
+    skipped = []
+    for ep in sorted(target_epochs):
+        out_dir = full_eval_root / f"epoch_{ep:04d}"
+        summary_path = out_dir / "summary.json"
+        if summary_path.exists():
+            skipped.append(ep)
+            continue
+        to_run.append((ep, epoch_to_ckpt[ep], out_dir))
+
+    print(f"Auto full-eval | save_dir={save_dir}")
+    print(f"Auto full-eval | interval={interval} run_last={run_last} num_epochs={num_epochs}")
+    if skipped:
+        print(f"Auto full-eval | already done: {skipped}")
+    if not to_run:
+        print("Auto full-eval | nothing to run.")
+        return
+
+    print(f"Auto full-eval | pending: {[ep for ep, _, _ in to_run]}")
+    this_file = Path(__file__).resolve()
+    for ep, ckpt_path, out_dir in to_run:
+        cmd = [
+            sys.executable,
+            str(this_file),
+            "--checkpoint", str(ckpt_path),
+            "--output", str(out_dir),
+            "--cache_dir", str(args.cache_dir),
+            "--num_steps", str(args.num_steps),
+            "--step_size", str(args.step_size),
+            "--max_src_samples", str(args.max_src_samples),
+            "--max_ref_compare", str(args.max_ref_compare),
+            "--max_ref_cache", str(args.max_ref_cache),
+            "--ref_feature_batch_size", str(args.ref_feature_batch_size),
+            "--batch_size", str(args.batch_size),
+            "--classifier_path", str(args.classifier_path),
+            "--classifier_classes", str(args.classifier_classes),
+            "--style_ref_mode", str(args.style_ref_mode),
+            "--style_ref_count", str(args.style_ref_count),
+            "--style_ref_seed", str(args.style_ref_seed),
+        ]
+        if args.test_dir:
+            cmd += ["--test_dir", str(args.test_dir)]
+        if args.style_strength is not None:
+            cmd += ["--style_strength", str(args.style_strength)]
+        if args.step_schedule is not None:
+            cmd += ["--step_schedule", str(args.step_schedule)]
+        if args.force_regen:
+            cmd += ["--force_regen"]
+        if args.eval_classifier_only:
+            cmd += ["--eval_classifier_only"]
+        if args.eval_disable_lpips:
+            cmd += ["--eval_disable_lpips"]
+
+        print(f"\n[Auto] Running epoch {ep}: {ckpt_path.name}")
+        subprocess.run(cmd, check=True)
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--checkpoint', type=str, required=True)
-    parser.add_argument('--output', type=str, required=True)
+    parser.add_argument('--checkpoint', type=str, default=None, help="Single-checkpoint mode: path to checkpoint")
+    parser.add_argument('--output', type=str, default=None, help="Single-checkpoint mode: output directory")
+    parser.add_argument('--config', type=str, default="../config.json", help="Auto mode config path")
     parser.add_argument('--test_dir', type=str, default=None)
     parser.add_argument('--cache_dir', type=str, default="../eval_cache", help="Directory to store shared feature caches")
     parser.add_argument('--num_steps', type=int, default=15)
@@ -185,6 +298,12 @@ def main():
     parser.add_argument('--style_ref_count', type=int, default=8, help="Number of images to build per-style prototype")
     parser.add_argument('--style_ref_seed', type=int, default=2026, help="Random seed when style_ref_mode=random")
     args = parser.parse_args()
+
+    if (args.checkpoint is None) ^ (args.output is None):
+        raise ValueError("Both --checkpoint and --output must be provided together.")
+    if args.checkpoint is None and args.output is None:
+        _auto_run_missing_full_eval(args)
+        return
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
