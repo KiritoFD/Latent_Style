@@ -26,7 +26,7 @@ except ImportError:  # pragma: no cover
 logger = logging.getLogger(__name__)
 
 _COMPILE_BACKEND = "inductor"
-_COMPILE_MODE = "default"
+_COMPILE_MODE = "reduce-overhead"
 _COMPILE_FULLGRAPH = False
 
 
@@ -74,9 +74,12 @@ class AdaCUTTrainer:
         self.full_eval_root.mkdir(parents=True, exist_ok=True)
 
         self.use_compile = bool(train_cfg.get("use_compile", False))
-        self.compile_backend = _COMPILE_BACKEND
-        self.compile_mode = _COMPILE_MODE
-        self.compile_fullgraph = _COMPILE_FULLGRAPH
+        self.compile_backend = str(train_cfg.get("compile_backend", _COMPILE_BACKEND))
+        self.compile_mode = str(train_cfg.get("compile_mode", _COMPILE_MODE))
+        if not self.compile_mode:
+            self.compile_mode = _COMPILE_MODE
+        self.compile_fullgraph = bool(train_cfg.get("compile_fullgraph", _COMPILE_FULLGRAPH))
+        self.compile_disable_cudagraphs = bool(train_cfg.get("compile_disable_cudagraphs", True))
         self.compile_cache_dir = (self.checkpoint_dir / "torch_compile_cache").resolve()
         if self.use_compile:
             try:
@@ -84,7 +87,8 @@ class AdaCUTTrainer:
                 (self.compile_cache_dir / "triton").mkdir(parents=True, exist_ok=True)
                 os.environ["TORCHINDUCTOR_CACHE_DIR"] = str((self.compile_cache_dir / "inductor"))
                 os.environ["TRITON_CACHE_DIR"] = str((self.compile_cache_dir / "triton"))
-                os.environ.setdefault("TORCHINDUCTOR_CUDAGRAPHS", "0")
+                if self.compile_disable_cudagraphs:
+                    os.environ.setdefault("TORCHINDUCTOR_CUDAGRAPHS", "0")
                 try:
                     import torch._dynamo as _dynamo  # type: ignore[attr-defined]
 
@@ -99,17 +103,27 @@ class AdaCUTTrainer:
                         _inductor_config.fx_graph_cache = True
                 except Exception:  # pragma: no cover
                     pass
-                self.model = torch.compile(
-                    self.model,
+                compile_kwargs = dict(
                     backend=self.compile_backend,
                     mode=self.compile_mode,
                     fullgraph=self.compile_fullgraph,
                 )
+                if self.compile_disable_cudagraphs:
+                    compile_kwargs["options"] = {"triton.cudagraphs": False}
+                try:
+                    self.model = torch.compile(self.model, **compile_kwargs)
+                except TypeError as exc:
+                    if "options" not in compile_kwargs:
+                        raise
+                    logger.warning("torch.compile options unsupported (%s); retrying without options.", exc)
+                    compile_kwargs.pop("options", None)
+                    self.model = torch.compile(self.model, **compile_kwargs)
                 logger.info(
-                    "torch.compile enabled (backend=%s mode=%s fullgraph=%s cudagraphs=off cache=%s)",
+                    "torch.compile enabled (backend=%s mode=%s fullgraph=%s cudagraphs=%s cache=%s)",
                     self.compile_backend,
                     self.compile_mode,
                     self.compile_fullgraph,
+                    "off" if self.compile_disable_cudagraphs else "on",
                     str(self.compile_cache_dir),
                 )
             except Exception as exc:  # pragma: no cover
@@ -118,11 +132,12 @@ class AdaCUTTrainer:
 
         logger.info("Model params: %s", f"{count_parameters(self.model):,}")
         logger.info(
-            "Infra | channels_last=%s tf32=%s grad_ckpt=%s compile=%s mode=%s",
+            "Infra | channels_last=%s tf32=%s grad_ckpt=%s compile=%s backend=%s mode=%s",
             self.channels_last,
             self.allow_tf32,
             bool(train_cfg.get("use_gradient_checkpointing", False)),
             self.use_compile,
+            self.compile_backend if self.use_compile else "off",
             self.compile_mode if self.use_compile else "off",
         )
 

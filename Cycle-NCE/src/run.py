@@ -73,6 +73,28 @@ def _set_cpu_env_threads(config: dict) -> None:
         os.environ.setdefault(key, threads)
 
 
+def _set_cuda_allocator_env(config: dict) -> None:
+    train_cfg = config.get("training", {})
+    conf = train_cfg.get("cuda_alloc_conf")
+    if isinstance(conf, str) and conf.strip():
+        os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", conf.strip())
+        return
+
+    alloc_parts: List[str] = []
+    if bool(train_cfg.get("cuda_allocator_expandable_segments", True)):
+        alloc_parts.append("expandable_segments:True")
+
+    try:
+        max_split_size_mb = int(train_cfg.get("cuda_allocator_max_split_size_mb", 128))
+    except Exception:  # pragma: no cover
+        max_split_size_mb = 0
+    if max_split_size_mb > 0:
+        alloc_parts.append(f"max_split_size_mb:{max_split_size_mb}")
+
+    if alloc_parts:
+        os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", ",".join(alloc_parts))
+
+
 def _parse_cpu_affinity(value) -> List[int]:
     if value is None:
         return []
@@ -146,6 +168,7 @@ def main() -> None:
         config.setdefault("training", {})
         config["training"]["resume_checkpoint"] = args.resume
 
+    _set_cuda_allocator_env(config)
     seed = int(config.get("training", {}).get("seed", 42))
     _set_seed(seed)
     _set_cpu_env_threads(config)
@@ -155,6 +178,9 @@ def main() -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info("Device: %s", device)
     logger.info("Seed: %d", seed)
+    cuda_alloc_conf = os.environ.get("PYTORCH_CUDA_ALLOC_CONF", "")
+    if cuda_alloc_conf:
+        logger.info("PYTORCH_CUDA_ALLOC_CONF=%s", cuda_alloc_conf)
 
     data_cfg = config.get("data", {})
     dataset = AdaCUTLatentDataset(

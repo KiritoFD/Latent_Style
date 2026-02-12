@@ -85,6 +85,8 @@ class LatentAdaCUT(nn.Module):
         use_decoder_spatial_inject: bool = True,
         style_spatial_dec_gain_32: float = 0.18,
         style_texture_gain: float = 0.12,
+        style_texture_low_gain: float | None = None,
+        style_texture_stroke_gain: float | None = None,
         style_texture_mode: str = "content_aware",
         use_delta_highpass_bias: bool = True,
         style_delta_lowfreq_gain: float = 0.25,
@@ -118,6 +120,12 @@ class LatentAdaCUT(nn.Module):
         self.use_decoder_spatial_inject = bool(use_decoder_spatial_inject)
         self.style_spatial_dec_gain_32 = float(style_spatial_dec_gain_32)
         self.style_texture_gain = float(style_texture_gain)
+        if style_texture_low_gain is None:
+            style_texture_low_gain = self.style_texture_gain
+        if style_texture_stroke_gain is None:
+            style_texture_stroke_gain = self.style_texture_gain
+        self.style_texture_low_gain = float(style_texture_low_gain)
+        self.style_texture_stroke_gain = float(style_texture_stroke_gain)
         mode = str(style_texture_mode).lower().strip()
         if mode not in {"content_aware", "style_only"}:
             mode = "content_aware"
@@ -192,13 +200,20 @@ class LatentAdaCUT(nn.Module):
         self.dec_act = nn.SiLU()
         self.dec_out = nn.Conv2d(self.lift_channels, latent_channels, kernel_size=3, stride=1, padding=1)
         texture_in_ch = self.lift_channels * 2 if self.style_texture_mode == "content_aware" else self.lift_channels
-        self.style_texture_head = nn.Sequential(
+        self.style_texture_low_head = nn.Sequential(
             nn.Conv2d(texture_in_ch, self.lift_channels, kernel_size=3, stride=1, padding=1),
             nn.SiLU(),
             nn.Conv2d(self.lift_channels, latent_channels, kernel_size=1, stride=1, padding=0),
         )
-        nn.init.normal_(self.style_texture_head[-1].weight, mean=0.0, std=0.02)
-        nn.init.zeros_(self.style_texture_head[-1].bias)
+        self.style_texture_stroke_head = nn.Sequential(
+            nn.Conv2d(texture_in_ch, self.lift_channels, kernel_size=3, stride=1, padding=1),
+            nn.SiLU(),
+            nn.Conv2d(self.lift_channels, latent_channels, kernel_size=1, stride=1, padding=0),
+        )
+        nn.init.normal_(self.style_texture_low_head[-1].weight, mean=0.0, std=0.02)
+        nn.init.zeros_(self.style_texture_low_head[-1].bias)
+        nn.init.normal_(self.style_texture_stroke_head[-1].weight, mean=0.0, std=0.02)
+        nn.init.zeros_(self.style_texture_stroke_head[-1].bias)
 
         # NCE projector.
         self.projector = nn.Sequential(
@@ -424,14 +439,16 @@ class LatentAdaCUT(nn.Module):
                 tex_in = torch.cat([h, style_spatial_dec], dim=1)
             else:
                 tex_in = style_spatial_dec
-            style_tex = self.style_texture_head(tex_in)
-            style_tex_scale = self.latent_scale_factor * self.style_texture_gain * strength
-            delta = delta + (style_tex * style_tex_scale)
-        if apply_highpass and self.use_delta_highpass_bias:
-            lowfreq_gain = 1.0 - strength * (1.0 - float(self.style_delta_lowfreq_gain))
-            hp = self._bias_to_highfreq(delta, lowfreq_gain)
-            alpha = max(0.0, min(1.0, float(highpass_scale)))
-            delta = (1.0 - alpha) * delta + alpha * hp
+            style_tex_low = self.style_texture_low_head(tex_in)
+            style_tex_stroke = self.style_texture_stroke_head(tex_in)
+            if apply_highpass and self.use_delta_highpass_bias:
+                lowfreq_gain = 1.0 - strength * (1.0 - float(self.style_delta_lowfreq_gain))
+                hp = self._bias_to_highfreq(style_tex_stroke, lowfreq_gain)
+                alpha = max(0.0, min(1.0, float(highpass_scale)))
+                style_tex_stroke = (1.0 - alpha) * style_tex_stroke + alpha * hp
+            style_tex_low_scale = self.latent_scale_factor * self.style_texture_low_gain * strength
+            style_tex_stroke_scale = self.latent_scale_factor * self.style_texture_stroke_gain * strength
+            delta = delta + (style_tex_low * style_tex_low_scale) + (style_tex_stroke * style_tex_stroke_scale)
         return delta
 
     @staticmethod
@@ -792,6 +809,8 @@ def build_model_from_config(
         "use_decoder_spatial_inject",
         "style_spatial_dec_gain_32",
         "style_texture_gain",
+        "style_texture_low_gain",
+        "style_texture_stroke_gain",
         "style_texture_mode",
         "use_delta_highpass_bias",
         "style_delta_lowfreq_gain",
@@ -838,6 +857,16 @@ def build_model_from_config(
         use_decoder_spatial_inject=bool(model_cfg.get("use_decoder_spatial_inject", True)),
         style_spatial_dec_gain_32=float(model_cfg.get("style_spatial_dec_gain_32", 0.18)),
         style_texture_gain=float(model_cfg.get("style_texture_gain", 0.12)),
+        style_texture_low_gain=(
+            None
+            if model_cfg.get("style_texture_low_gain", None) is None
+            else float(model_cfg.get("style_texture_low_gain"))
+        ),
+        style_texture_stroke_gain=(
+            None
+            if model_cfg.get("style_texture_stroke_gain", None) is None
+            else float(model_cfg.get("style_texture_stroke_gain"))
+        ),
         style_texture_mode=str(model_cfg.get("style_texture_mode", "content_aware")),
         use_delta_highpass_bias=bool(model_cfg.get("use_delta_highpass_bias", True)),
         style_delta_lowfreq_gain=float(model_cfg.get("style_delta_lowfreq_gain", 0.25)),

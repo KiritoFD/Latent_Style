@@ -263,6 +263,16 @@ class AdaCUTObjective:
                 self.train_step_schedule = None
         else:
             self.train_step_schedule = None
+        self.semigroup_num_steps_min = max(1, int(loss_cfg.get("semigroup_num_steps_min", self.train_num_steps_min)))
+        self.semigroup_num_steps_max = max(
+            1,
+            int(loss_cfg.get("semigroup_num_steps_max", max(self.semigroup_num_steps_min, self.train_num_steps_max))),
+        )
+        if self.semigroup_num_steps_max < self.semigroup_num_steps_min:
+            self.semigroup_num_steps_min, self.semigroup_num_steps_max = (
+                self.semigroup_num_steps_max,
+                self.semigroup_num_steps_min,
+            )
     def set_progress(self, epoch: int, total_epochs: int) -> None:
         # Kept for trainer API compatibility; loss scheduling has been removed.
         return
@@ -529,11 +539,13 @@ class AdaCUTObjective:
         w_semigroup_eff = self.w_semigroup
         semigroup_active_flag = 1.0 if w_semigroup_eff > 0.0 else 0.0
         semigroup_samples = 0
+        semigroup_num_steps = 0
         if w_semigroup_eff > 0.0:
             sg_content = content
             sg_style_id = target_style_id
             sg_transfer_mask = transfer_mask
             semigroup_samples = int(sg_content.shape[0])
+            semigroup_num_steps = self._sample_int_range(self.semigroup_num_steps_min, self.semigroup_num_steps_max)
             h1 = random.uniform(self.semigroup_h_min, self.semigroup_h_max)
             h2 = random.uniform(self.semigroup_h_min, self.semigroup_h_max)
             lhs = self._apply_model(
@@ -544,8 +556,8 @@ class AdaCUTObjective:
                 style_mix_alpha=0.0,
                 step_size=(h1 + h2),
                 style_strength=train_style_strength,
-                num_steps=1,
-                step_schedule=None,
+                num_steps=semigroup_num_steps,
+                step_schedule=self.train_step_schedule,
             )
             rhs_mid = self._apply_model(
                 model,
@@ -555,8 +567,8 @@ class AdaCUTObjective:
                 style_mix_alpha=0.0,
                 step_size=h1,
                 style_strength=train_style_strength,
-                num_steps=1,
-                step_schedule=None,
+                num_steps=semigroup_num_steps,
+                step_schedule=self.train_step_schedule,
             )
             if self.semigroup_detach_midpoint:
                 rhs_mid = rhs_mid.detach()
@@ -568,8 +580,8 @@ class AdaCUTObjective:
                 style_mix_alpha=0.0,
                 step_size=h2,
                 style_strength=train_style_strength,
-                num_steps=1,
-                step_schedule=None,
+                num_steps=semigroup_num_steps,
+                step_schedule=self.train_step_schedule,
             )
             per_sample_semigroup = self._per_sample_alignment(
                 lhs,
@@ -650,6 +662,7 @@ class AdaCUTObjective:
             "style_ref_alpha": torch.tensor(0.0, device=content.device),
             "transfer_ratio": transfer_mask.mean().detach(),
             "semigroup_samples": torch.tensor(float(semigroup_samples), device=content.device),
+            "semigroup_num_steps": torch.tensor(float(semigroup_num_steps), device=content.device),
             "train_num_steps": torch.tensor(float(train_num_steps), device=content.device),
             "train_step_size": torch.tensor(float(train_step_size), device=content.device),
             "train_style_strength": torch.tensor(float(train_style_strength), device=content.device),
