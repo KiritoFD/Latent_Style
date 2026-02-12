@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 
 import torch
 import torch.nn as nn
@@ -98,10 +99,16 @@ class LatentAdaCUT(nn.Module):
         use_style_force_path: bool = True,
         style_force_gain: float = 1.0,
         style_gate_floor: float = 0.85,
+        style_gate_floor_low_strength: float | None = None,
+        style_strength_default: float = 1.0,
+        style_strength_step_curve: str = "linear",
+        step_schedule_default: str = "flat",
         style_texture_ignore_residual_gain: bool = True,
+        share_style_head_trunk: bool = False,
         use_style_spatial_blur: bool = False,
         use_downsample_blur: bool = False,
         upsample_mode: str = "nearest",
+        decoder_spatial_mode: str = "add",
         style_id_spatial_jitter_px: int = 0,
     ) -> None:
         super().__init__()
@@ -132,10 +139,21 @@ class LatentAdaCUT(nn.Module):
         self.use_style_force_path = bool(use_style_force_path)
         self.style_force_gain = float(style_force_gain)
         self.style_gate_floor = float(style_gate_floor)
+        floor_low_strength = self.style_gate_floor if style_gate_floor_low_strength is None else float(style_gate_floor_low_strength)
+        self.style_gate_floor_low_strength = float(floor_low_strength)
+        self.style_strength_default = max(0.0, min(1.0, float(style_strength_default)))
+        self.style_strength_step_curve = str(style_strength_step_curve).lower()
+        if self.style_strength_step_curve not in {"linear", "smoothstep", "sqrt"}:
+            self.style_strength_step_curve = "linear"
+        self.step_schedule_default = str(step_schedule_default).lower()
         self.style_texture_ignore_residual_gain = bool(style_texture_ignore_residual_gain)
+        self.share_style_head_trunk = bool(share_style_head_trunk and (self.use_style_texture_head or self.use_style_force_path))
         self.use_style_spatial_blur = bool(use_style_spatial_blur)
         self.use_downsample_blur = bool(use_downsample_blur)
         self.upsample_mode = str(upsample_mode)
+        self.decoder_spatial_mode = str(decoder_spatial_mode).lower()
+        if self.decoder_spatial_mode not in {"add", "film"}:
+            self.decoder_spatial_mode = "add"
         self.style_id_spatial_jitter_px = max(0, int(style_id_spatial_jitter_px))
 
         self.style_enc = nn.Sequential(
@@ -185,21 +203,41 @@ class LatentAdaCUT(nn.Module):
             self.dec_norm = nn.GroupNorm(out_groups, self.lift_channels, eps=1e-6)
         self.dec_act = nn.SiLU()
         self.dec_out = nn.Conv2d(self.lift_channels, latent_channels, kernel_size=3, stride=1, padding=1)
-        self.style_texture_head = nn.Sequential(
-            nn.Conv2d(self.lift_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
-            nn.SiLU(),
-            nn.Conv2d(self.lift_channels, latent_channels, kernel_size=1, stride=1, padding=0),
-        )
-        nn.init.normal_(self.style_texture_head[-1].weight, mean=0.0, std=0.02)
-        nn.init.zeros_(self.style_texture_head[-1].bias)
-        if self.use_style_force_path:
-            self.style_force_head = nn.Sequential(
+        self.style_texture_head: nn.Module | None = None
+        self.style_force_head: nn.Module | None = None
+        self.style_head_trunk: nn.Module | None = None
+        self.style_texture_out: nn.Conv2d | None = None
+        self.style_force_out: nn.Conv2d | None = None
+        if self.share_style_head_trunk:
+            self.style_head_trunk = nn.Sequential(
                 nn.Conv2d(self.lift_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
                 nn.SiLU(),
-                nn.Conv2d(self.lift_channels, latent_channels, kernel_size=1, stride=1, padding=0),
             )
-            nn.init.normal_(self.style_force_head[-1].weight, mean=0.0, std=0.05)
-            nn.init.zeros_(self.style_force_head[-1].bias)
+            if self.use_style_texture_head:
+                self.style_texture_out = nn.Conv2d(self.lift_channels, latent_channels, kernel_size=1, stride=1, padding=0)
+                nn.init.normal_(self.style_texture_out.weight, mean=0.0, std=0.02)
+                nn.init.zeros_(self.style_texture_out.bias)
+            if self.use_style_force_path:
+                self.style_force_out = nn.Conv2d(self.lift_channels, latent_channels, kernel_size=1, stride=1, padding=0)
+                nn.init.normal_(self.style_force_out.weight, mean=0.0, std=0.05)
+                nn.init.zeros_(self.style_force_out.bias)
+        else:
+            if self.use_style_texture_head:
+                self.style_texture_head = nn.Sequential(
+                    nn.Conv2d(self.lift_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
+                    nn.SiLU(),
+                    nn.Conv2d(self.lift_channels, latent_channels, kernel_size=1, stride=1, padding=0),
+                )
+                nn.init.normal_(self.style_texture_head[-1].weight, mean=0.0, std=0.02)
+                nn.init.zeros_(self.style_texture_head[-1].bias)
+            if self.use_style_force_path:
+                self.style_force_head = nn.Sequential(
+                    nn.Conv2d(self.lift_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
+                    nn.SiLU(),
+                    nn.Conv2d(self.lift_channels, latent_channels, kernel_size=1, stride=1, padding=0),
+                )
+                nn.init.normal_(self.style_force_head[-1].weight, mean=0.0, std=0.05)
+                nn.init.zeros_(self.style_force_head[-1].bias)
 
         # NCE projector.
         self.projector = nn.Sequential(
@@ -255,13 +293,134 @@ class LatentAdaCUT(nn.Module):
         style_code: torch.Tensor,
         style_map: torch.Tensor | None,
         style_gain: float,
+        style_strength: float,
     ) -> torch.Tensor:
         out = h
+        gain = float(style_gain) * float(style_strength)
         for block in blocks:
             out = self._run_block(block, out, style_code)
-            if style_map is not None:
-                out = out + (style_gain * style_map)
+            if style_map is not None and gain != 0.0:
+                out = out + (gain * style_map)
         return out
+
+    def _resolve_style_strength(self, style_strength: float | None) -> float:
+        if style_strength is None:
+            return self.style_strength_default
+        return max(0.0, min(1.0, float(style_strength)))
+
+    def _style_strength_step_scale(self, style_strength: float) -> float:
+        s = max(0.0, min(1.0, float(style_strength)))
+        if self.style_strength_step_curve == "sqrt":
+            return math.sqrt(s)
+        if self.style_strength_step_curve == "smoothstep":
+            return s * s * (3.0 - 2.0 * s)
+        return s
+
+    @staticmethod
+    def _normalize_step_weights(weights: list[float]) -> list[float]:
+        if not weights:
+            return [1.0]
+        weights = [max(0.0, float(w)) for w in weights]
+        total = sum(weights)
+        count = len(weights)
+        if total <= 1e-8:
+            return [1.0 / float(max(1, count)) for _ in weights]
+        scale = 1.0 / total
+        return [w * scale for w in weights]
+
+    def _resolve_step_weights(
+        self,
+        num_steps: int,
+        step_schedule: str | list[float] | tuple[float, ...] | None,
+    ) -> list[float]:
+        steps = max(1, int(num_steps))
+        schedule = self.step_schedule_default if step_schedule is None else step_schedule
+        if isinstance(schedule, (list, tuple)):
+            raw = [float(v) for v in schedule]
+            if len(raw) == steps:
+                return self._normalize_step_weights(raw)
+            if len(raw) == 1:
+                return self._normalize_step_weights(raw * steps)
+            if not raw:
+                return [1.0 for _ in range(steps)]
+            if steps == 1:
+                return [max(0.0, raw[-1])]
+            out: list[float] = []
+            src_last = len(raw) - 1
+            for i in range(steps):
+                t = i / float(steps - 1)
+                src_pos = t * src_last
+                j0 = int(math.floor(src_pos))
+                j1 = min(src_last, j0 + 1)
+                r = src_pos - float(j0)
+                out.append((1.0 - r) * raw[j0] + r * raw[j1])
+            return self._normalize_step_weights(out)
+
+        name = str(schedule).lower()
+        if name in {"flat", "uniform", "none"}:
+            return self._normalize_step_weights([1.0 for _ in range(steps)])
+        if name in {"late", "ramp", "linear"}:
+            raw = [float(i + 1) for i in range(steps)]
+            return self._normalize_step_weights(raw)
+        if name in {"early", "reverse"}:
+            raw = [float(steps - i) for i in range(steps)]
+            return self._normalize_step_weights(raw)
+        if name in {"cosine", "smooth"}:
+            raw = [0.5 - 0.5 * math.cos(math.pi * float(i + 1) / float(steps)) for i in range(steps)]
+            return self._normalize_step_weights(raw)
+        return self._normalize_step_weights([1.0 for _ in range(steps)])
+
+    def _apply_spatial_inject(self, h: torch.Tensor, style_map: torch.Tensor | None, gain: float) -> torch.Tensor:
+        if style_map is None or gain == 0.0:
+            return h
+        if self.decoder_spatial_mode == "film":
+            return h * (1.0 + gain * torch.tanh(style_map))
+        return h + gain * style_map
+
+    def _decode_core(
+        self,
+        h: torch.Tensor,
+        style_code: torch.Tensor,
+        style_spatial_dec: torch.Tensor | None,
+        pre_gain: float,
+        post_gain: float,
+    ) -> torch.Tensor:
+        h = self.dec_conv(h)
+        if self.use_decoder_spatial_inject:
+            h = self._apply_spatial_inject(h, style_spatial_dec, pre_gain)
+        if self.use_decoder_adagn:
+            h = self.dec_norm(h, style_code)
+        else:
+            h = self.dec_norm(h)
+        h = self.dec_act(h)
+        if self.use_decoder_spatial_inject:
+            h = self._apply_spatial_inject(h, style_spatial_dec, post_gain)
+        return h
+
+    def _run_decoder(
+        self,
+        h: torch.Tensor,
+        style_code: torch.Tensor,
+        style_spatial_dec: torch.Tensor | None,
+        pre_gain: float,
+        post_gain: float,
+    ) -> torch.Tensor:
+        if self.use_checkpointing and self.training:
+            if style_spatial_dec is None:
+                return ckpt.checkpoint(
+                    lambda _h, _s: self._decode_core(_h, _s, None, pre_gain, post_gain),
+                    h,
+                    style_code,
+                    use_reentrant=False,
+                )
+            return ckpt.checkpoint(
+                lambda _h, _s, _m: self._decode_core(_h, _s, _m, pre_gain, post_gain),
+                h,
+                style_code,
+                style_spatial_dec,
+                use_reentrant=False,
+            )
+        return self._decode_core(h, style_code, style_spatial_dec, pre_gain, post_gain)
 
     def _prepare_style_maps(
         self,
@@ -294,7 +453,9 @@ class LatentAdaCUT(nn.Module):
         h: torch.Tensor,
         style_code: torch.Tensor,
         style_spatial_dec: torch.Tensor | None,
+        style_strength: float,
     ) -> torch.Tensor:
+        strength = self._resolve_style_strength(style_strength)
         delta = self.dec_out(h) * self.latent_scale_factor * self.residual_gain
         if self.use_output_style_affine:
             aff = self.output_style_affine(style_code).view(style_code.shape[0], 2 * self.latent_channels, 1, 1)
@@ -302,25 +463,45 @@ class LatentAdaCUT(nn.Module):
             delta = (delta * d_scale) + (d_shift * self.latent_scale_factor * self.residual_gain)
         if self.use_style_delta_gate:
             gate = 0.5 + torch.sigmoid(self.style_delta_gate(style_code)).view(-1, 1, 1, 1)
-            if self.style_gate_floor > 0.0:
-                floor = min(max(self.style_gate_floor, 0.0), 1.5)
+            floor = self.style_gate_floor + (1.0 - strength) * (self.style_gate_floor_low_strength - self.style_gate_floor)
+            if floor > 0.0:
+                floor = min(max(floor, 0.0), 1.5)
                 gate = torch.clamp_min(gate, floor)
             delta = delta * gate
+        lowfreq_gain = 1.0 - strength * (1.0 - float(self.style_delta_lowfreq_gain))
+        style_head_feat = None
+        if (
+            style_spatial_dec is not None
+            and self.share_style_head_trunk
+            and self.style_head_trunk is not None
+            and (self.use_style_texture_head or self.use_style_force_path)
+        ):
+            style_head_feat = self.style_head_trunk(style_spatial_dec)
         if self.use_style_texture_head and style_spatial_dec is not None:
-            style_tex = self.style_texture_head(style_spatial_dec)
+            if self.share_style_head_trunk and self.style_texture_out is not None and style_head_feat is not None:
+                style_tex = self.style_texture_out(style_head_feat)
+            elif self.style_texture_head is not None:
+                style_tex = self.style_texture_head(style_spatial_dec)
+            else:
+                style_tex = torch.zeros_like(delta)
             if self.use_delta_highpass_bias:
-                style_tex = self._bias_to_highfreq(style_tex, self.style_delta_lowfreq_gain)
-            style_tex_scale = self.latent_scale_factor * self.style_texture_gain
+                style_tex = self._bias_to_highfreq(style_tex, lowfreq_gain)
+            style_tex_scale = self.latent_scale_factor * self.style_texture_gain * strength
             if not self.style_texture_ignore_residual_gain:
                 style_tex_scale = style_tex_scale * self.residual_gain
             delta = delta + (style_tex * style_tex_scale)
         if self.use_style_force_path and style_spatial_dec is not None:
-            style_force = self.style_force_head(style_spatial_dec)
+            if self.share_style_head_trunk and self.style_force_out is not None and style_head_feat is not None:
+                style_force = self.style_force_out(style_head_feat)
+            elif self.style_force_head is not None:
+                style_force = self.style_force_head(style_spatial_dec)
+            else:
+                style_force = torch.zeros_like(delta)
             if self.use_delta_highpass_bias:
-                style_force = self._bias_to_highfreq(style_force, self.style_delta_lowfreq_gain)
-            delta = delta + (style_force * self.latent_scale_factor * self.style_force_gain)
+                style_force = self._bias_to_highfreq(style_force, lowfreq_gain)
+            delta = delta + (style_force * self.latent_scale_factor * self.style_force_gain * strength)
         if self.use_delta_highpass_bias:
-            delta = self._bias_to_highfreq(delta, self.style_delta_lowfreq_gain)
+            delta = self._bias_to_highfreq(delta, lowfreq_gain)
         return delta
 
     def encode_style(self, z: torch.Tensor) -> torch.Tensor:
@@ -334,9 +515,12 @@ class LatentAdaCUT(nn.Module):
     def encode_style_id(self, style_id: torch.Tensor | int | None) -> torch.Tensor:
         if style_id is None:
             raise ValueError("style_id is required.")
+        emb_device = self.style_emb.weight.device
         if isinstance(style_id, int):
-            style_id = torch.tensor([style_id], device=self.style_emb.weight.device, dtype=torch.long)
-        style_id = style_id.long().view(-1).to(self.style_emb.weight.device)
+            style_id = torch.tensor([style_id], device=emb_device, dtype=torch.long)
+        style_id = style_id.long().view(-1)
+        if style_id.device != emb_device:
+            style_id = style_id.to(emb_device)
         style_id = style_id.clamp_min(0).clamp_max(max(1, self.num_styles) - 1)
         return self.style_emb(style_id)
 
@@ -415,9 +599,12 @@ class LatentAdaCUT(nn.Module):
     def encode_style_spatial_id(self, style_id: torch.Tensor | int | None) -> dict[int, torch.Tensor]:
         if style_id is None:
             return {}
+        spatial_device = self.style_spatial_id_32.device
         if isinstance(style_id, int):
-            style_id = torch.tensor([style_id], device=self.style_spatial_id_32.device, dtype=torch.long)
-        style_id = style_id.long().view(-1).to(self.style_spatial_id_32.device)
+            style_id = torch.tensor([style_id], device=spatial_device, dtype=torch.long)
+        style_id = style_id.long().view(-1)
+        if style_id.device != spatial_device:
+            style_id = style_id.to(spatial_device)
         maps = {
             32: self.style_spatial_id_32.index_select(0, style_id),
             16: self.style_spatial_id_16.index_select(0, style_id),
@@ -441,15 +628,21 @@ class LatentAdaCUT(nn.Module):
                 if max_jit <= 0:
                     return feat
                 padded = F.pad(feat, (max_jit, max_jit, max_jit, max_jit), mode="reflect")
-                out = []
+                b, c, _, wp = padded.shape
                 h, w = feat.shape[-2], feat.shape[-1]
-                for i in range(feat.shape[0]):
-                    start_y = max_jit + int(shifts_y[i].item())
-                    start_x = max_jit + int(shifts_x[i].item())
-                    out.append(
-                        padded[i, :, start_y : start_y + h, start_x : start_x + w]
-                    )
-                return torch.stack(out, dim=0)
+                # Fully tensorized crop with per-sample offsets to keep torch.compile graph intact.
+                y_idx = (
+                    torch.arange(h, device=feat.device, dtype=torch.long).view(1, h, 1)
+                    + (max_jit + shifts_y).view(-1, 1, 1)
+                )
+                x_idx = (
+                    torch.arange(w, device=feat.device, dtype=torch.long).view(1, 1, w)
+                    + (max_jit + shifts_x).view(-1, 1, 1)
+                )
+                y_gather = y_idx.unsqueeze(1).expand(b, c, h, wp)
+                cropped_h = padded.gather(dim=2, index=y_gather)
+                x_gather = x_idx.unsqueeze(1).expand(b, c, h, w)
+                return cropped_h.gather(dim=3, index=x_gather)
 
             maps[32] = _jitter_batch(maps[32])
             maps[16] = _jitter_batch(maps[16])
@@ -528,7 +721,9 @@ class LatentAdaCUT(nn.Module):
         style_id: torch.Tensor | None = None,
         style_ref: torch.Tensor | None = None,
         style_mix_alpha: float | torch.Tensor | None = None,
+        style_strength: float | None = None,
     ) -> torch.Tensor:
+        strength = self._resolve_style_strength(style_strength)
         style_code = self._style_code(style_id=style_id, style_ref=style_ref, style_mix_alpha=style_mix_alpha)
         style_maps = self._prepare_style_maps(
             style_id=style_id,
@@ -542,13 +737,14 @@ class LatentAdaCUT(nn.Module):
         h = self.enc_in_act(self.enc_in(feat))
         style_spatial_32 = self._prepare_spatial_map(style_maps.map_32, h)
         if style_spatial_32 is not None:
-            h = h + self.style_spatial_pre_gain_32 * style_spatial_32
+            h = h + (self.style_spatial_pre_gain_32 * strength) * style_spatial_32
         h = self._run_style_blocks(
             h,
             blocks=self.hires_body,
             style_code=style_code,
             style_map=style_spatial_32,
             style_gain=self.style_spatial_block_gain_32,
+            style_strength=strength,
         )
 
         if self.use_downsample_blur:
@@ -556,29 +752,27 @@ class LatentAdaCUT(nn.Module):
         h = self.down(h)
         style_spatial_16 = self._prepare_spatial_map(style_maps.map_16, h)
         if style_spatial_16 is not None:
-            h = h + self.style_spatial_pre_gain_16 * style_spatial_16
+            h = h + (self.style_spatial_pre_gain_16 * strength) * style_spatial_16
         h = self._run_style_blocks(
             h,
             blocks=self.body,
             style_code=style_code,
             style_map=style_spatial_16,
             style_gain=self.style_spatial_block_gain_16,
+            style_strength=strength,
         )
 
         h = self.dec_up(h)
-        h = self.dec_conv(h)
         style_spatial_dec = self._prepare_spatial_map(style_spatial_32, h)
-        if self.use_decoder_spatial_inject and style_spatial_dec is not None:
-            h = h + self.style_spatial_dec_gain_32 * style_spatial_dec
-        if self.use_decoder_adagn:
-            h = self.dec_norm(h, style_code)
-        else:
-            h = self.dec_norm(h)
-        h = self.dec_act(h)
-        if self.use_decoder_spatial_inject and style_spatial_dec is not None:
-            h = h + self.style_spatial_dec_gain_out * style_spatial_dec
+        h = self._run_decoder(
+            h,
+            style_code=style_code,
+            style_spatial_dec=style_spatial_dec,
+            pre_gain=self.style_spatial_dec_gain_32 * strength,
+            post_gain=self.style_spatial_dec_gain_out * strength,
+        )
 
-        return self._compute_delta(h, style_code=style_code, style_spatial_dec=style_spatial_dec)
+        return self._compute_delta(h, style_code=style_code, style_spatial_dec=style_spatial_dec, style_strength=strength)
 
     def integrate(
         self,
@@ -588,17 +782,23 @@ class LatentAdaCUT(nn.Module):
         style_mix_alpha: float | torch.Tensor | None = None,
         num_steps: int = 1,
         step_size: float = 1.0,
+        style_strength: float | None = None,
+        step_schedule: str | list[float] | tuple[float, ...] | None = None,
     ) -> torch.Tensor:
         steps = max(1, int(num_steps))
+        strength = self._resolve_style_strength(style_strength)
+        step_scale = self._style_strength_step_scale(strength)
+        weights = self._resolve_step_weights(steps, step_schedule)
         h = x
-        for _ in range(steps):
+        for i in range(steps):
             delta = self._predict_delta(
                 h,
                 style_id=style_id,
                 style_ref=style_ref,
                 style_mix_alpha=style_mix_alpha,
+                style_strength=strength,
             )
-            h = h + delta * float(step_size)
+            h = h + delta * float(step_size) * step_scale * float(weights[i])
         return h
 
     def forward(
@@ -608,14 +808,18 @@ class LatentAdaCUT(nn.Module):
         style_ref: torch.Tensor | None = None,
         style_mix_alpha: float | torch.Tensor | None = None,
         step_size: float = 1.0,
+        style_strength: float | None = None,
     ) -> torch.Tensor:
+        strength = self._resolve_style_strength(style_strength)
+        step_scale = self._style_strength_step_scale(strength)
         delta = self._predict_delta(
             x,
             style_id=style_id,
             style_ref=style_ref,
             style_mix_alpha=style_mix_alpha,
+            style_strength=strength,
         )
-        return x + delta * float(step_size)
+        return x + delta * float(step_size) * step_scale
 
     def project_tokens(self, x: torch.Tensor) -> torch.Tensor:
         tokens = x.permute(0, 2, 3, 1).reshape(-1, x.shape[1])
@@ -624,3 +828,59 @@ class LatentAdaCUT(nn.Module):
 
 def count_parameters(model: nn.Module) -> int:
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
+def build_model_from_config(
+    model_cfg: dict,
+    *,
+    use_checkpointing: bool = False,
+) -> LatentAdaCUT:
+    """
+    Single model-construction entrypoint used by both training and inference.
+    Keeps config parsing consistent and prevents train/eval drift bugs.
+    """
+    return LatentAdaCUT(
+        latent_channels=int(model_cfg.get("latent_channels", 4)),
+        num_styles=int(model_cfg.get("num_styles", 3)),
+        style_dim=int(model_cfg.get("style_dim", 256)),
+        base_dim=int(model_cfg.get("base_dim", 64)),
+        lift_channels=int(model_cfg.get("lift_channels", model_cfg.get("base_dim", 64))),
+        num_hires_blocks=int(model_cfg.get("num_hires_blocks", 2)),
+        num_res_blocks=int(model_cfg.get("num_res_blocks", 4)),
+        num_groups=int(model_cfg.get("num_groups", 8)),
+        projector_dim=int(model_cfg.get("projector_dim", 256)),
+        use_checkpointing=bool(use_checkpointing),
+        latent_scale_factor=float(model_cfg.get("latent_scale_factor", 0.18215)),
+        residual_gain=float(model_cfg.get("residual_gain", 0.1)),
+        style_ref_gain=float(model_cfg.get("style_ref_gain", 1.0)),
+        style_spatial_pre_gain_32=float(model_cfg.get("style_spatial_pre_gain_32", 0.25)),
+        style_spatial_block_gain_32=float(model_cfg.get("style_spatial_block_gain_32", 0.10)),
+        style_spatial_pre_gain_16=float(model_cfg.get("style_spatial_pre_gain_16", 0.35)),
+        style_spatial_block_gain_16=float(model_cfg.get("style_spatial_block_gain_16", 0.15)),
+        use_decoder_spatial_inject=bool(model_cfg.get("use_decoder_spatial_inject", True)),
+        style_spatial_dec_gain_32=float(model_cfg.get("style_spatial_dec_gain_32", 0.18)),
+        style_spatial_dec_gain_out=float(model_cfg.get("style_spatial_dec_gain_out", 0.08)),
+        use_style_texture_head=bool(model_cfg.get("use_style_texture_head", True)),
+        style_texture_gain=float(model_cfg.get("style_texture_gain", 0.12)),
+        use_style_delta_gate=bool(model_cfg.get("use_style_delta_gate", True)),
+        use_decoder_adagn=bool(model_cfg.get("use_decoder_adagn", True)),
+        use_delta_highpass_bias=bool(model_cfg.get("use_delta_highpass_bias", True)),
+        style_delta_lowfreq_gain=float(model_cfg.get("style_delta_lowfreq_gain", 0.35)),
+        use_style_spatial_highpass=bool(model_cfg.get("use_style_spatial_highpass", False)),
+        normalize_style_spatial_maps=bool(model_cfg.get("normalize_style_spatial_maps", True)),
+        use_output_style_affine=bool(model_cfg.get("use_output_style_affine", True)),
+        use_style_force_path=bool(model_cfg.get("use_style_force_path", True)),
+        style_force_gain=float(model_cfg.get("style_force_gain", 1.0)),
+        style_gate_floor=float(model_cfg.get("style_gate_floor", 0.85)),
+        style_gate_floor_low_strength=model_cfg.get("style_gate_floor_low_strength", model_cfg.get("style_gate_floor", 0.85)),
+        style_strength_default=float(model_cfg.get("style_strength_default", 1.0)),
+        style_strength_step_curve=str(model_cfg.get("style_strength_step_curve", "linear")),
+        step_schedule_default=str(model_cfg.get("step_schedule_default", "flat")),
+        style_texture_ignore_residual_gain=bool(model_cfg.get("style_texture_ignore_residual_gain", True)),
+        share_style_head_trunk=bool(model_cfg.get("share_style_head_trunk", False)),
+        use_style_spatial_blur=bool(model_cfg.get("use_style_spatial_blur", False)),
+        use_downsample_blur=bool(model_cfg.get("use_downsample_blur", False)),
+        upsample_mode=str(model_cfg.get("upsample_mode", "nearest")),
+        decoder_spatial_mode=str(model_cfg.get("decoder_spatial_mode", "add")),
+        style_id_spatial_jitter_px=int(model_cfg.get("style_id_spatial_jitter_px", 0)),
+    )

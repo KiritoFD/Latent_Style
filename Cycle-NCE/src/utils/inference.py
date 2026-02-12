@@ -22,7 +22,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from model import LatentAdaCUT
+from model import LatentAdaCUT, build_model_from_config
 
 logger = logging.getLogger(__name__)
 
@@ -76,14 +76,46 @@ def _find_hf_repo_root(dest: str) -> Optional[str]:
     return None
 
 
+def _parse_step_schedule(spec):
+    if spec is None:
+        return None
+    if isinstance(spec, (list, tuple)):
+        try:
+            return [float(v) for v in spec]
+        except Exception:
+            return None
+    if isinstance(spec, str):
+        s = spec.strip()
+        if s.lower() in {"", "none"}:
+            return None
+        if "," in s:
+            try:
+                return [float(v.strip()) for v in s.split(",") if v.strip()]
+            except Exception:
+                return s
+        return s
+    try:
+        return [float(spec)]
+    except Exception:
+        return None
+
+
 class _DirectSampler:
     """
     Direct one-step latent mapping wrapper with the legacy sampler interface.
     """
 
-    def __init__(self, use_source_repulsion: bool = False, step_size: float = 1.0) -> None:
+    def __init__(
+        self,
+        use_source_repulsion: bool = False,
+        step_size: float = 1.0,
+        style_strength: float | None = None,
+        step_schedule: str | list[float] | tuple[float, ...] | None = None,
+    ) -> None:
         self.use_source_repulsion = bool(use_source_repulsion)
         self.step_size = float(step_size)
+        self.style_strength = None if style_strength is None else float(style_strength)
+        self.step_schedule = _parse_step_schedule(step_schedule)
 
     @torch.no_grad()
     def sample(
@@ -102,7 +134,14 @@ class _DirectSampler:
         device = x_init.device
         if isinstance(style_id, int):
             style_id = torch.full((b,), style_id, dtype=torch.long, device=device)
-        out = model.integrate(x_init, style_id=style_id, num_steps=max(1, int(num_steps)), step_size=self.step_size)
+        out = model.integrate(
+            x_init,
+            style_id=style_id,
+            num_steps=max(1, int(num_steps)),
+            step_size=self.step_size,
+            style_strength=self.style_strength,
+            step_schedule=self.step_schedule,
+        )
         if return_trajectory:
             return out, [x_init.detach().cpu(), out.detach().cpu()]
         return out
@@ -123,6 +162,8 @@ class LGTInference:
         cfg_scale=1.0,
         num_steps=1,
         step_size=None,
+        style_strength=None,
+        step_schedule=None,
         use_source_repulsion=False,
         repulsion_strength=0.0,
     ):
@@ -138,50 +179,26 @@ class LGTInference:
         if any(k.startswith("_orig_mod.") for k in state_dict.keys()):
             state_dict = {k.replace("_orig_mod.", ""): v for k, v in state_dict.items()}
 
-        self.model = LatentAdaCUT(
-            latent_channels=int(model_cfg.get("latent_channels", 4)),
-            num_styles=int(model_cfg.get("num_styles", 3)),
-            style_dim=int(model_cfg.get("style_dim", 256)),
-            base_dim=int(model_cfg.get("base_dim", 64)),
-            lift_channels=int(model_cfg.get("lift_channels", model_cfg.get("base_dim", 64))),
-            num_hires_blocks=int(model_cfg.get("num_hires_blocks", 2)),
-            num_res_blocks=int(model_cfg.get("num_res_blocks", 4)),
-            num_groups=int(model_cfg.get("num_groups", 8)),
-            projector_dim=int(model_cfg.get("projector_dim", 256)),
-            latent_scale_factor=float(model_cfg.get("latent_scale_factor", 0.18215)),
-            residual_gain=float(model_cfg.get("residual_gain", 0.1)),
-            style_ref_gain=float(model_cfg.get("style_ref_gain", 1.0)),
-            style_spatial_pre_gain_32=float(model_cfg.get("style_spatial_pre_gain_32", 0.25)),
-            style_spatial_block_gain_32=float(model_cfg.get("style_spatial_block_gain_32", 0.10)),
-            style_spatial_pre_gain_16=float(model_cfg.get("style_spatial_pre_gain_16", 0.35)),
-            style_spatial_block_gain_16=float(model_cfg.get("style_spatial_block_gain_16", 0.15)),
-            use_decoder_spatial_inject=bool(model_cfg.get("use_decoder_spatial_inject", True)),
-            style_spatial_dec_gain_32=float(model_cfg.get("style_spatial_dec_gain_32", 0.18)),
-            style_spatial_dec_gain_out=float(model_cfg.get("style_spatial_dec_gain_out", 0.08)),
-            use_style_texture_head=bool(model_cfg.get("use_style_texture_head", True)),
-            style_texture_gain=float(model_cfg.get("style_texture_gain", 0.12)),
-            use_style_delta_gate=bool(model_cfg.get("use_style_delta_gate", True)),
-            use_decoder_adagn=bool(model_cfg.get("use_decoder_adagn", True)),
-            use_delta_highpass_bias=bool(model_cfg.get("use_delta_highpass_bias", True)),
-            style_delta_lowfreq_gain=float(model_cfg.get("style_delta_lowfreq_gain", 0.35)),
-            use_style_spatial_highpass=bool(model_cfg.get("use_style_spatial_highpass", False)),
-            normalize_style_spatial_maps=bool(model_cfg.get("normalize_style_spatial_maps", True)),
-            use_output_style_affine=bool(model_cfg.get("use_output_style_affine", True)),
-            use_style_force_path=bool(model_cfg.get("use_style_force_path", True)),
-            style_force_gain=float(model_cfg.get("style_force_gain", 1.0)),
-            style_gate_floor=float(model_cfg.get("style_gate_floor", 0.85)),
-            style_texture_ignore_residual_gain=bool(model_cfg.get("style_texture_ignore_residual_gain", True)),
-            use_style_spatial_blur=bool(model_cfg.get("use_style_spatial_blur", False)),
-            use_downsample_blur=bool(model_cfg.get("use_downsample_blur", False)),
-            upsample_mode=str(model_cfg.get("upsample_mode", "nearest")),
-            style_id_spatial_jitter_px=int(model_cfg.get("style_id_spatial_jitter_px", 0)),
-        ).to(device)
+        self.model = build_model_from_config(model_cfg, use_checkpointing=False).to(device)
         self.model.load_state_dict(state_dict, strict=True)
         self.model.eval()
 
         cfg_step = float(infer_cfg.get("step_size", 1.0))
         self.step_size = float(step_size if step_size is not None else cfg_step)
-        self.sampler = _DirectSampler(use_source_repulsion=use_source_repulsion, step_size=self.step_size)
+        cfg_strength = infer_cfg.get("style_strength")
+        if style_strength is None and cfg_strength is None:
+            self.style_strength = None
+        else:
+            self.style_strength = float(style_strength if style_strength is not None else cfg_strength)
+        cfg_schedule = infer_cfg.get("step_schedule", infer_cfg.get("step_schedule_weights"))
+        schedule = step_schedule if step_schedule is not None else cfg_schedule
+        self.step_schedule = _parse_step_schedule(schedule)
+        self.sampler = _DirectSampler(
+            use_source_repulsion=use_source_repulsion,
+            step_size=self.step_size,
+            style_strength=self.style_strength,
+            step_schedule=self.step_schedule,
+        )
 
     @torch.no_grad()
     def inversion(self, x1, source_style_id, num_steps=None):
@@ -205,6 +222,8 @@ class LGTInference:
             style_mix_alpha=0.0,
             num_steps=max(1, int(num_steps)),
             step_size=self.step_size,
+            style_strength=self.style_strength,
+            step_schedule=self.step_schedule,
         )
 
     @torch.no_grad()

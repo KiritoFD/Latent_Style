@@ -1,0 +1,95 @@
+{
+  "checkpoint": "../full_300_gridfix_v2/epoch_0050.pt",
+  "timestamp": "2026-02-11 19:41:08",
+  "matrix_breakdown": {
+    "photo": {
+      "photo": {
+        "count": 50,
+        "clip_style": 0.6354682117700576,
+        "style_lpips": 0.7478158640861511,
+        "content_lpips": 0.33079664500000006,
+        "clip_content": 0.8850848297999999,
+        "classifier_acc": 1.0
+      },
+      "Hayao": {
+        "count": 50,
+        "clip_style": 0.5066857218742371,
+        "style_lpips": 0.7749127876758576,
+        "content_lpips": 0.3459870175999999,
+        "clip_content": 0.8561852026,
+        "classifier_acc": 0.08
+      }
+    },
+    "Hayao": {
+      "photo": {
+        "count": 50,
+        "clip_style": 0.41903344094753264,
+        "style_lpips": 0.7862890589237214,
+        "content_lpips": 0.2867622754,
+        "clip_content": 0.919890949,
+        "classifier_acc": 0.66
+      },
+      "Hayao": {
+        "count": 50,
+        "clip_style": 0.7154944372177124,
+        "style_lpips": 0.7324358904361725,
+        "content_lpips": 0.22234558719999994,
+        "clip_content": 0.9302062321999999,
+        "classifier_acc": 0.86
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "clip_style": 0.4628595814108849,
+      "content_lpips": 0.3163746464999999,
+      "classifier_acc": 0.37
+    },
+    "photo_to_art_performance": {
+      "clip_style": 0.5066857218742371,
+      "valid": true,
+      "classifier_acc": 0.08
+    }
+  },
+  "classification_report": {
+    "Hayao": {
+      "precision": 0.734375,
+      "recall": 0.47,
+      "f1-score": 0.573170731707317,
+      "support": 100.0
+    },
+    "photo": {
+      "precision": 0.6102941176470589,
+      "recall": 0.83,
+      "f1-score": 0.7033898305084746,
+      "support": 100.0
+    },
+    "accuracy": 0.65,
+    "macro avg": {
+      "precision": 0.6723345588235294,
+      "recall": 0.6499999999999999,
+      "f1-score": 0.6382802811078958,
+      "support": 200.0
+    },
+    "weighted avg": {
+      "precision": 0.6723345588235294,
+      "recall": 0.65,
+      "f1-score": 0.6382802811078958,
+      "support": 200.0
+    }
+  },
+  "detailed_style_metrics": {
+    "Hayao": {
+      "precision": 0.734375,
+      "recall": 0.47,
+      "f1_score": 0.573170731707317,
+      "support": 100
+    },
+    "photo": {
+      "precision": 0.6102941176470589,
+      "recall": 0.83,
+      "f1_score": 0.7033898305084746,
+      "support": 100
+    }
+  }
+}
