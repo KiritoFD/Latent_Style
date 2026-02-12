@@ -14,15 +14,10 @@
     "style_ref_gain": 1.0,
     "style_spatial_pre_gain_16": 0.54,
     "use_decoder_spatial_inject": true,
-<<<<<<< Updated upstream
-    "style_spatial_dec_gain_32": 0.24,
-    "style_texture_gain": 0.62,
-=======
     "style_spatial_dec_gain_32": 0.18,
     "style_texture_gain": 0.48,
     "style_texture_low_gain": 0.2,
     "style_texture_stroke_gain": 0.58,
->>>>>>> Stashed changes
     "style_texture_mode": "content_aware",
     "use_delta_highpass_bias": true,
     "style_delta_lowfreq_gain": 0.25,
@@ -77,15 +72,10 @@
     "semigroup_lowpass_strength": 0.2,
     "semigroup_cross_domain_only": true,
     "semigroup_detach_midpoint": true,
-<<<<<<< Updated upstream
-    "train_num_steps_min": 1,
-    "train_num_steps_max": 1,
-=======
     "semigroup_num_steps_min": 2,
     "semigroup_num_steps_max": 3,
     "train_num_steps_min": 2,
     "train_num_steps_max": 3,
->>>>>>> Stashed changes
     "train_step_schedule": "late",
     "train_step_size_min": 1.0,
     "train_step_size_max": 1.3,
@@ -115,6 +105,7 @@
     "full_eval_max_ref_compare": 50,
     "full_eval_max_ref_cache": 100,
     "full_eval_ref_feature_batch_size": 32,
+    "full_eval_lpips_chunk_size": 16,
     "full_eval_num_steps": 2,
     "full_eval_step_size": 0.8,
     "test_image_dir": "../../style_data/overfit50",
@@ -133,6 +124,7 @@
     "compile_mode": "reduce-overhead",
     "compile_fullgraph": false,
     "compile_disable_cudagraphs": true,
+    "compile_cache_dir": "comile_cache",
     "fused_adamw": true,
     "cuda_allocator_expandable_segments": true,
     "cuda_allocator_max_split_size_mb": 128,

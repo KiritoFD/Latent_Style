@@ -72,6 +72,7 @@ class AdaCUTTrainer:
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.full_eval_root = self.checkpoint_dir / "full_eval"
         self.full_eval_root.mkdir(parents=True, exist_ok=True)
+        self.project_root = Path(__file__).resolve().parents[1]
 
         self.use_compile = bool(train_cfg.get("use_compile", False))
         self.compile_backend = str(train_cfg.get("compile_backend", _COMPILE_BACKEND))
@@ -80,7 +81,14 @@ class AdaCUTTrainer:
             self.compile_mode = _COMPILE_MODE
         self.compile_fullgraph = bool(train_cfg.get("compile_fullgraph", _COMPILE_FULLGRAPH))
         self.compile_disable_cudagraphs = bool(train_cfg.get("compile_disable_cudagraphs", True))
-        self.compile_cache_dir = (self.checkpoint_dir / "torch_compile_cache").resolve()
+        compile_cache_cfg = str(train_cfg.get("compile_cache_dir", "")).strip()
+        if compile_cache_cfg:
+            compile_cache_dir = Path(compile_cache_cfg)
+            if not compile_cache_dir.is_absolute():
+                compile_cache_dir = (self.project_root / compile_cache_dir).resolve()
+        else:
+            compile_cache_dir = (self.project_root / "comile_cache").resolve()
+        self.compile_cache_dir = compile_cache_dir
         if self.use_compile:
             try:
                 (self.compile_cache_dir / "inductor").mkdir(parents=True, exist_ok=True)
