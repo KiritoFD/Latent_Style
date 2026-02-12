@@ -36,6 +36,32 @@ def _strip_compile_prefix(state_dict: Dict[str, torch.Tensor]) -> Dict[str, torc
     return state_dict
 
 
+def _migrate_legacy_texture_head_keys(state_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+    """
+    Backward compatibility:
+    map legacy `style_texture_head.*` weights to new dual heads
+    (`style_texture_low_head.*` + `style_texture_stroke_head.*`).
+    """
+    legacy_prefix = "style_texture_head."
+    has_legacy = any(k.startswith(legacy_prefix) for k in state_dict.keys())
+    if not has_legacy:
+        return state_dict
+
+    migrated = dict(state_dict)
+    remap_suffixes = ("0.weight", "0.bias", "2.weight", "2.bias")
+    for suffix in remap_suffixes:
+        legacy_key = legacy_prefix + suffix
+        if legacy_key not in migrated:
+            continue
+        value = migrated[legacy_key]
+        low_key = "style_texture_low_head." + suffix
+        stroke_key = "style_texture_stroke_head." + suffix
+        migrated.setdefault(low_key, value.clone())
+        migrated.setdefault(stroke_key, value.clone())
+        migrated.pop(legacy_key, None)
+    return migrated
+
+
 class AdaCUTTrainer:
     def __init__(self, config: Dict, device: torch.device, config_path: Optional[str] = None) -> None:
         self.config = config
@@ -113,14 +139,17 @@ class AdaCUTTrainer:
                     pass
                 compile_kwargs = dict(
                     backend=self.compile_backend,
-                    mode=self.compile_mode,
                     fullgraph=self.compile_fullgraph,
                 )
-                if self.compile_disable_cudagraphs:
+                mode_name = str(self.compile_mode).strip()
+                if mode_name and mode_name.lower() not in {"none", "off"}:
+                    compile_kwargs["mode"] = mode_name
+                # Some torch versions reject passing both `mode` and `options`.
+                if self.compile_disable_cudagraphs and "mode" not in compile_kwargs:
                     compile_kwargs["options"] = {"triton.cudagraphs": False}
                 try:
                     self.model = torch.compile(self.model, **compile_kwargs)
-                except TypeError as exc:
+                except Exception as exc:
                     if "options" not in compile_kwargs:
                         raise
                     logger.warning("torch.compile options unsupported (%s); retrying without options.", exc)
@@ -254,7 +283,11 @@ class AdaCUTTrainer:
 
         self.global_step = 0
         self.start_epoch = 1
-        self._maybe_resume(str(train_cfg.get("resume_checkpoint", "")))
+        self.auto_resume_latest = bool(train_cfg.get("auto_resume_latest", True))
+        self._maybe_resume(
+            str(train_cfg.get("resume_checkpoint", "")),
+            auto_resume_latest=self.auto_resume_latest,
+        )
 
     def _snapshot_source(self) -> None:
         """
@@ -281,13 +314,16 @@ class AdaCUTTrainer:
             return None
         return ckpts[-1]
 
-    def _maybe_resume(self, resume_checkpoint: str) -> None:
+    def _maybe_resume(self, resume_checkpoint: str, *, auto_resume_latest: bool = True) -> None:
         if resume_checkpoint:
             ckpt_path = Path(resume_checkpoint)
             if not ckpt_path.is_absolute():
                 ckpt_path = (Path.cwd() / ckpt_path).resolve()
-        else:
+        elif auto_resume_latest:
             ckpt_path = self._find_latest_checkpoint()
+        else:
+            logger.info("Auto resume disabled, start from scratch.")
+            return
 
         if ckpt_path is None or not ckpt_path.exists():
             logger.info("No checkpoint found, start from scratch.")
@@ -295,6 +331,7 @@ class AdaCUTTrainer:
 
         state = torch.load(ckpt_path, map_location=self.device, weights_only=False)
         model_state = _strip_compile_prefix(state["model_state_dict"])
+        model_state = _migrate_legacy_texture_head_keys(model_state)
         try:
             self.model.load_state_dict(model_state, strict=True)
         except RuntimeError as exc:
@@ -324,8 +361,11 @@ class AdaCUTTrainer:
                 logger.warning("Skip scheduler state restore due to mismatch: %s", exc)
         if "scaler_state_dict" in state:
             try:
-                self.scaler.load_state_dict(state["scaler_state_dict"])
-            except ValueError as exc:
+                scaler_state = state["scaler_state_dict"]
+                if isinstance(scaler_state, dict) and len(scaler_state) == 0:
+                    raise RuntimeError("empty scaler state dict")
+                self.scaler.load_state_dict(scaler_state)
+            except (ValueError, RuntimeError) as exc:
                 logger.warning("Skip scaler state restore due to mismatch: %s", exc)
 
         self.global_step = int(state.get("global_step", 0))

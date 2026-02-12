@@ -133,6 +133,7 @@
     "empty_cache_interval": 0,
     "log_vram_interval": 0,
     "snapshot_source": false,
+    "auto_resume_latest": false,
     "resume_checkpoint": ""
   },
   "data": {
