@@ -44,11 +44,8 @@ def _set_cpu_threads(config: dict) -> None:
         except Exception:  # pragma: no cover
             pass
     else:
-        # Default: Limit main process threads to avoid CPU saturation/overheating
-        # especially in WSL or high-core environments.
-        default_threads = 1
-        torch.set_num_threads(default_threads)
-        logger.info("Auto-set main process CPU threads to %d", default_threads)
+        # Keep PyTorch default thread policy unless explicitly configured.
+        pass
 
     if cpu_interop_threads is not None:
         try:
@@ -131,9 +128,8 @@ def _resolve_num_workers(config: dict) -> int:
         return 0
     if train_cfg.get("num_workers") is not None:
         return int(train_cfg["num_workers"])
-    # Optimization: For lightweight in-memory latent datasets, multiprocessing overhead (IPC)
-    # often exceeds the cost of data fetching. Default to 0 to minimize CPU load/heat.
-    return 0
+    cpu_count = os.cpu_count() or 4
+    return max(2, min(8, cpu_count // 2))
 
 
 def main() -> None:
@@ -184,15 +180,11 @@ def main() -> None:
 
     num_workers = _resolve_num_workers(config)
     preload_to_gpu = bool(data_cfg.get("preload_to_gpu", False))
-    pin_memory_default = False
+    pin_memory_default = (device.type == "cuda") and (not preload_to_gpu)
     pin_memory = bool(config.get("training", {}).get("pin_memory", pin_memory_default))
     persistent_workers = bool(config.get("training", {}).get("persistent_workers", True))
     batch_size = int(config.get("training", {}).get("batch_size", 64))
     
-    # Optimization: If running in main process, pin_memory adds unnecessary CPU overhead
-    if num_workers == 0:
-        pin_memory = False
-
     dl_generator = torch.Generator()
     dl_generator.manual_seed(seed)
 
@@ -228,7 +220,7 @@ def main() -> None:
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f code=%.4f cpn=%.3f crn=%.3f cycle=%.4f gram=%.4f sgram=%.4f gramw=%.4f moment=%.4f cmoment=%.4f push=%.4f dtv=%.4f stv=%.4f nce=%.4f semi=%.4f idt=%.4f wcyc=%.2f wnce=%.2f wsemi=%.2f widt=%.2f xfer=%.2f lr=%.2e",
+            "Epoch %d/%d | loss=%.4f code=%.4f cpn=%.3f crn=%.3f cycle=%.4f sgram=%.4f cmoment=%.4f push=%.4f dtv=%.4f stv=%.4f nce=%.4f semi=%.4f semib=%.1f steps=%.1f h=%.2f s=%.2f slot=%.0f pth=%.2f pcy=%.2f pst=%.2f pnce=%.2f psemi=%.2f wcyc=%.2f wnce=%.2f wsemi=%.2f xfer=%.2f lr=%.2e data=%.1fs comp=%.1fs",
             epoch,
             trainer.num_epochs,
             metrics["loss"],
@@ -236,23 +228,30 @@ def main() -> None:
             metrics.get("code_pred_norm", 0.0),
             metrics.get("code_ref_norm", 0.0),
             metrics.get("cycle", 0.0),
-            metrics.get("gram", 0.0),
             metrics.get("stroke_gram", 0.0),
-            metrics.get("gram_w", 0.0),
-            metrics.get("moment", 0.0),
             metrics.get("color_moment", 0.0),
             metrics.get("push", 0.0),
             metrics.get("delta_tv", 0.0),
             metrics.get("style_spatial_tv", 0.0),
             metrics.get("nce", 0.0),
             metrics.get("semigroup", 0.0),
-            metrics.get("idt", 0.0),
+            metrics.get("semigroup_samples", 0.0),
+            metrics.get("train_num_steps", 0.0),
+            metrics.get("train_step_size", 0.0),
+            metrics.get("train_style_strength", 0.0),
+            metrics.get("heavy_loss_slot_id", 0.0),
+            metrics.get("path_teacher_active", 0.0),
+            metrics.get("path_cycle_active", 0.0),
+            metrics.get("path_stroke_active", 0.0),
+            metrics.get("path_nce_active", 0.0),
+            metrics.get("path_semigroup_active", 0.0),
             metrics.get("w_cycle_eff", 0.0),
             metrics.get("w_nce_eff", 0.0),
             metrics.get("w_semigroup_eff", 0.0),
-            metrics.get("w_idt_eff", 0.0),
             metrics.get("transfer_ratio", 0.0),
             metrics["lr"],
+            metrics.get("data_time_sec", 0.0),
+            metrics.get("compute_time_sec", 0.0),
         )
 
         ckpt_path = None

@@ -163,6 +163,8 @@ def main():
     parser.add_argument('--cache_dir', type=str, default="../eval_cache", help="Directory to store shared feature caches")
     parser.add_argument('--num_steps', type=int, default=15)
     parser.add_argument('--step_size', type=float, default=1.0)
+    parser.add_argument('--style_strength', type=float, default=None, help="Global style strength in [0,1]; default uses checkpoint config")
+    parser.add_argument('--step_schedule', type=str, default=None, help="Per-step schedule name or comma weights, e.g. late or 0.5,1.0,1.5")
     parser.add_argument('--max_src_samples', type=int, default=30, help="Max source images per style; <=0 means all")
     parser.add_argument('--max_ref_compare', type=int, default=50, help="Max refs for LPIPS style compare; <=0 means all cached refs")
     parser.add_argument('--max_ref_cache', type=int, default=256, help="Max reference images per style used for cache/features; <=0 means all")
@@ -248,7 +250,14 @@ def main():
     # ==========================================
     print(f"\n棣冩畬 Phase 1: Generation (Batch Size {args.batch_size})")
     
-    lgt = LGTInference(str(checkpoint_path), device=device, num_steps=args.num_steps, step_size=args.step_size)
+    lgt = LGTInference(
+        str(checkpoint_path),
+        device=device,
+        num_steps=args.num_steps,
+        step_size=args.step_size,
+        style_strength=args.style_strength,
+        step_schedule=args.step_schedule,
+    )
     vae = load_vae(device)
     model_scale = float(getattr(lgt.model, "latent_scale_factor", 0.18215))
     vae_scale = float(getattr(getattr(vae, "config", None), "scaling_factor", model_scale))

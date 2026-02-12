@@ -3,8 +3,8 @@ from __future__ import annotations
 import csv
 import json
 import shutil
-import gc
 import logging
+import os
 import subprocess
 import sys
 import time
@@ -18,10 +18,10 @@ from tqdm.auto import tqdm
 
 try:
     from .losses import AdaCUTObjective
-    from .model import LatentAdaCUT, count_parameters
+    from .model import build_model_from_config, count_parameters
 except ImportError:  # pragma: no cover
     from losses import AdaCUTObjective
-    from model import LatentAdaCUT, count_parameters
+    from model import build_model_from_config, count_parameters
 
 logger = logging.getLogger(__name__)
 
@@ -52,44 +52,9 @@ class AdaCUTTrainer:
         self.log_vram_interval = max(0, int(train_cfg.get("log_vram_interval", 0)))
 
         model_cfg = config.get("model", {})
-        self.model = LatentAdaCUT(
-            latent_channels=int(model_cfg.get("latent_channels", 4)),
-            num_styles=int(model_cfg.get("num_styles", 3)),
-            style_dim=int(model_cfg.get("style_dim", 256)),
-            base_dim=int(model_cfg.get("base_dim", 64)),
-            lift_channels=int(model_cfg.get("lift_channels", model_cfg.get("base_dim", 64))),
-            num_hires_blocks=int(model_cfg.get("num_hires_blocks", 2)),
-            num_res_blocks=int(model_cfg.get("num_res_blocks", 4)),
-            num_groups=int(model_cfg.get("num_groups", 8)),
-            projector_dim=int(model_cfg.get("projector_dim", 256)),
+        self.model = build_model_from_config(
+            model_cfg,
             use_checkpointing=bool(train_cfg.get("use_gradient_checkpointing", False)),
-            latent_scale_factor=float(model_cfg.get("latent_scale_factor", 0.18215)),
-            residual_gain=float(model_cfg.get("residual_gain", 0.1)),
-            style_ref_gain=float(model_cfg.get("style_ref_gain", 1.0)),
-            style_spatial_pre_gain_32=float(model_cfg.get("style_spatial_pre_gain_32", 0.25)),
-            style_spatial_block_gain_32=float(model_cfg.get("style_spatial_block_gain_32", 0.10)),
-            style_spatial_pre_gain_16=float(model_cfg.get("style_spatial_pre_gain_16", 0.35)),
-            style_spatial_block_gain_16=float(model_cfg.get("style_spatial_block_gain_16", 0.15)),
-            use_decoder_spatial_inject=bool(model_cfg.get("use_decoder_spatial_inject", True)),
-            style_spatial_dec_gain_32=float(model_cfg.get("style_spatial_dec_gain_32", 0.18)),
-            style_spatial_dec_gain_out=float(model_cfg.get("style_spatial_dec_gain_out", 0.08)),
-            use_style_texture_head=bool(model_cfg.get("use_style_texture_head", True)),
-            style_texture_gain=float(model_cfg.get("style_texture_gain", 0.12)),
-            use_style_delta_gate=bool(model_cfg.get("use_style_delta_gate", True)),
-            use_decoder_adagn=bool(model_cfg.get("use_decoder_adagn", True)),
-            use_delta_highpass_bias=bool(model_cfg.get("use_delta_highpass_bias", True)),
-            style_delta_lowfreq_gain=float(model_cfg.get("style_delta_lowfreq_gain", 0.35)),
-            use_style_spatial_highpass=bool(model_cfg.get("use_style_spatial_highpass", False)),
-            normalize_style_spatial_maps=bool(model_cfg.get("normalize_style_spatial_maps", True)),
-            use_output_style_affine=bool(model_cfg.get("use_output_style_affine", True)),
-            use_style_force_path=bool(model_cfg.get("use_style_force_path", True)),
-            style_force_gain=float(model_cfg.get("style_force_gain", 1.0)),
-            style_gate_floor=float(model_cfg.get("style_gate_floor", 0.85)),
-            style_texture_ignore_residual_gain=bool(model_cfg.get("style_texture_ignore_residual_gain", True)),
-            use_style_spatial_blur=bool(model_cfg.get("use_style_spatial_blur", False)),
-            use_downsample_blur=bool(model_cfg.get("use_downsample_blur", False)),
-            upsample_mode=str(model_cfg.get("upsample_mode", "nearest")),
-            style_id_spatial_jitter_px=int(model_cfg.get("style_id_spatial_jitter_px", 0)),
         )
         if self.channels_last:
             self.model = self.model.to(device, memory_format=torch.channels_last)
@@ -97,21 +62,66 @@ class AdaCUTTrainer:
             self.model = self.model.to(device)
 
         self.use_compile = bool(train_cfg.get("use_compile", False))
+        self.compile_mode = str(train_cfg.get("compile_mode", "default"))
+        self.compile_backend = str(train_cfg.get("compile_backend", "inductor"))
+        self.compile_fullgraph = bool(train_cfg.get("compile_fullgraph", False))
+        self.compile_disable_cudagraphs = bool(train_cfg.get("compile_disable_cudagraphs", False))
+        self.compile_capture_scalar_outputs = bool(train_cfg.get("compile_capture_scalar_outputs", False))
+        self.compile_suppress_errors = bool(train_cfg.get("compile_suppress_errors", False))
+        self.compile_cache_enabled = bool(train_cfg.get("compile_cache_enabled", True))
+        self.compile_cache_dir = Path(str(train_cfg.get("compile_cache_dir", "./.torch_compile_cache"))).resolve()
+        self.compile_cache_clear_on_start = bool(train_cfg.get("compile_cache_clear_on_start", False))
         if self.use_compile:
             try:
-                compile_mode = str(train_cfg.get("compile_mode", "reduce-overhead"))
-                self.model = torch.compile(self.model, mode=compile_mode, fullgraph=False)
-                logger.info("torch.compile enabled (mode=%s)", compile_mode)
+                if self.compile_cache_enabled:
+                    if self.compile_cache_clear_on_start and self.compile_cache_dir.exists():
+                        shutil.rmtree(self.compile_cache_dir, ignore_errors=True)
+                    (self.compile_cache_dir / "inductor").mkdir(parents=True, exist_ok=True)
+                    (self.compile_cache_dir / "triton").mkdir(parents=True, exist_ok=True)
+                    os.environ["TORCHINDUCTOR_CACHE_DIR"] = str((self.compile_cache_dir / "inductor"))
+                    os.environ["TRITON_CACHE_DIR"] = str((self.compile_cache_dir / "triton"))
+                    try:
+                        import torch._inductor.config as _inductor_config  # type: ignore[attr-defined]
+                        if hasattr(_inductor_config, "fx_graph_cache"):
+                            _inductor_config.fx_graph_cache = True
+                    except Exception:  # pragma: no cover
+                        pass
+                if self.compile_disable_cudagraphs:
+                    os.environ.setdefault("TORCHINDUCTOR_CUDAGRAPHS", "0")
+                if self.compile_capture_scalar_outputs or self.compile_suppress_errors:
+                    try:
+                        import torch._dynamo as _dynamo  # type: ignore[attr-defined]
+                        if self.compile_capture_scalar_outputs:
+                            _dynamo.config.capture_scalar_outputs = True
+                        if self.compile_suppress_errors:
+                            _dynamo.config.suppress_errors = True
+                    except Exception:  # pragma: no cover
+                        pass
+                self.model = torch.compile(
+                    self.model,
+                    backend=self.compile_backend,
+                    mode=self.compile_mode,
+                    fullgraph=self.compile_fullgraph,
+                )
+                logger.info(
+                    "torch.compile enabled (backend=%s mode=%s fullgraph=%s cache=%s)",
+                    self.compile_backend,
+                    self.compile_mode,
+                    self.compile_fullgraph,
+                    str(self.compile_cache_dir) if self.compile_cache_enabled else "off",
+                )
             except Exception as exc:  # pragma: no cover
+                self.use_compile = False
                 logger.warning("torch.compile failed, fallback to eager. reason=%s", exc)
 
         logger.info("Model params: %s", f"{count_parameters(self.model):,}")
         logger.info(
-            "Infra | channels_last=%s tf32=%s grad_ckpt=%s compile=%s",
+            "Infra | channels_last=%s tf32=%s grad_ckpt=%s compile=%s mode=%s",
             self.channels_last,
             self.allow_tf32,
             bool(train_cfg.get("use_gradient_checkpointing", False)),
             self.use_compile,
+            self.compile_mode if self.use_compile else "off",
         )
 
         self.use_amp = bool(train_cfg.get("use_amp", True) and device.type == "cuda")
@@ -163,12 +173,13 @@ class AdaCUTTrainer:
 
         self.grad_clip_norm = float(train_cfg.get("grad_clip_norm", 1.0))
         self.accumulation_steps = max(1, int(train_cfg.get("accumulation_steps", 1)))
-        self.log_interval = max(1, int(train_cfg.get("log_interval", 20)))
+        self.log_interval = max(0, int(train_cfg.get("log_interval", 20)))
         self.use_tqdm = bool(train_cfg.get("use_tqdm", True))
         self.num_epochs = int(train_cfg.get("num_epochs", 100))
         self.save_interval = max(1, int(train_cfg.get("save_interval", 10)))
         self.full_eval_interval = max(0, int(train_cfg.get("full_eval_interval", 50)))
         self.run_full_eval_on_last_epoch = bool(train_cfg.get("full_eval_on_last_epoch", True))
+        self.snapshot_source = bool(train_cfg.get("snapshot_source", False))
 
         ckpt_cfg = config.get("checkpoint", {})
         self.checkpoint_dir = Path(ckpt_cfg.get("save_dir", "../adacut_ckpt"))
@@ -177,7 +188,8 @@ class AdaCUTTrainer:
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.full_eval_root = self.checkpoint_dir / "full_eval"
         self.full_eval_root.mkdir(parents=True, exist_ok=True)
-        self._snapshot_source()
+        if self.snapshot_source:
+            self._snapshot_source()
         self.log_file = self.log_dir / f"training_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         with open(self.log_file, "w", encoding="utf-8", newline="") as f:
             writer = csv.writer(f)
@@ -192,9 +204,6 @@ class AdaCUTTrainer:
                     "cycle",
                     "struct",
                     "edge",
-                    "gram",
-                    "gram_w",
-                    "moment",
                     "stroke_gram",
                     "color_moment",
                     "push",
@@ -202,15 +211,25 @@ class AdaCUTTrainer:
                     "style_spatial_tv",
                     "nce",
                     "semigroup",
-                    "idt",
+                    "semigroup_samples",
+                    "train_num_steps",
+                    "train_step_size",
+                    "train_style_strength",
+                    "heavy_loss_slot_id",
+                    "path_teacher_active",
+                    "path_cycle_active",
+                    "path_stroke_active",
+                    "path_nce_active",
+                    "path_semigroup_active",
                     "w_cycle_eff",
                     "w_struct_eff",
                     "w_edge_eff",
                     "w_nce_eff",
                     "w_semigroup_eff",
-                    "w_idt_eff",
                     "transfer_ratio",
                     "lr",
+                    "data_time_sec",
+                    "compute_time_sec",
                     "epoch_time_sec",
                 ]
             )
@@ -337,10 +356,14 @@ class AdaCUTTrainer:
         self.model.train()
         epoch_start = time.time()
         self.loss_fn.set_progress(epoch=epoch, total_epochs=self.num_epochs)
+        if self.device.type == "cuda":
+            torch.cuda.reset_peak_memory_stats()
 
-        # Optimization: Accumulate metrics as tensors on device to avoid CPU-GPU sync per batch.
+        # Keep running sums as detached tensors to avoid per-step .item() sync stalls.
         metric_accum: Dict[str, torch.Tensor] = {}
         num_batches = 0
+        data_time_total = 0.0
+        compute_time_total = 0.0
 
         total_steps = len(dataloader)
         progress = tqdm(
@@ -354,8 +377,12 @@ class AdaCUTTrainer:
         )
 
         self.optimizer.zero_grad(set_to_none=True)
-        gc.disable()  # Disable automatic GC to prevent CPU spikes during tight loops
+        data_wait_start = time.perf_counter()
         for step_idx, raw_batch in enumerate(progress, start=1):
+            step_enter = time.perf_counter()
+            data_time_total += max(0.0, step_enter - data_wait_start)
+            compute_start = time.perf_counter()
+            loss_dict = None
             try:
                 batch = self._move_batch(raw_batch)
                 content = batch["content"]
@@ -396,48 +423,54 @@ class AdaCUTTrainer:
                         if self.global_step % self.empty_cache_interval == 0:
                             torch.cuda.empty_cache()
                 
-                # Accumulate metrics on GPU (no .item() calls here)
+                # Accumulate detached metrics without per-step host sync.
                 for k, v in loss_dict.items():
                     if v is None:
                         continue
-                    if k not in metric_accum:
-                        metric_accum[k] = v.detach().clone()
+                    vd = v.detach()
+                    if k in metric_accum:
+                        metric_accum[k] = metric_accum[k] + vd
                     else:
-                        metric_accum[k] += v.detach()
+                        metric_accum[k] = vd
                 num_batches += 1
 
-                if step_idx % self.log_interval == 0:
+                if self.log_interval > 0 and (step_idx % self.log_interval == 0):
                     elapsed = time.time() - epoch_start
                     step_per_sec = step_idx / max(elapsed, 1e-6)
                     eta = (total_steps - step_idx) / max(step_per_sec, 1e-6)
                     
-                    # Helper to safely get current average (involves sync)
                     def _get_avg(key: str) -> float:
-                        return metric_accum[key].item() / num_batches if key in metric_accum else 0.0
+                        if key not in metric_accum:
+                            return 0.0
+                        return float((metric_accum[key] / num_batches).item())
 
                     progress.set_postfix(
                         loss=f"{_get_avg('loss'):.4f}",
-                        gram=f"{_get_avg('gram'):.4f}",
                         sgram=f"{_get_avg('stroke_gram'):.4f}",
-                        gramw=f"{_get_avg('gram_w'):.4f}",
                         cyc=f"{_get_avg('cycle'):.4f}",
                         semi=f"{_get_avg('semigroup'):.4f}",
+                        semib=f"{_get_avg('semigroup_samples'):.1f}",
+                        steps=f"{_get_avg('train_num_steps'):.1f}",
+                        h=f"{_get_avg('train_step_size'):.2f}",
+                        s=f"{_get_avg('train_style_strength'):.2f}",
+                        pcy=f"{_get_avg('path_cycle_active'):.2f}",
+                        pnce=f"{_get_avg('path_nce_active'):.2f}",
+                        psemi=f"{_get_avg('path_semigroup_active'):.2f}",
                         wnce=f"{_get_avg('w_nce_eff'):.2f}",
                         xfer=f"{_get_avg('transfer_ratio'):.2f}",
+                        data_ms=f"{(1000.0 * data_time_total / max(step_idx, 1)):.1f}",
+                        comp_ms=f"{(1000.0 * compute_time_total / max(step_idx, 1)):.1f}",
                         it_s=f"{step_per_sec:.2f}",
                         eta=f"{eta:.1f}s",
                     )
                     if not self.use_tqdm:
                         logger.info(
-                            "epoch %d step %d/%d | loss=%.4f gram=%.4f sgram=%.4f gramw=%.4f moment=%.4f cmoment=%.4f code=%.4f cpn=%.3f crn=%.3f cycle=%.4f semi=%.4f nce=%.4f idt=%.4f | %.2f it/s eta %.1fs",
+                            "epoch %d step %d/%d | loss=%.4f sgram=%.4f cmoment=%.4f code=%.4f cpn=%.3f crn=%.3f cycle=%.4f semi=%.4f nce=%.4f steps=%.1f h=%.2f s=%.2f slot=%.0f pcy=%.2f pnce=%.2f psemi=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
                             epoch,
                             step_idx,
                             total_steps,
                             _get_avg('loss'),
-                            _get_avg('gram'),
                             _get_avg('stroke_gram'),
-                            _get_avg('gram_w'),
-                            _get_avg('moment'),
                             _get_avg('color_moment'),
                             _get_avg('code'),
                             _get_avg('code_pred_norm'),
@@ -445,7 +478,15 @@ class AdaCUTTrainer:
                             _get_avg('cycle'),
                             _get_avg('semigroup'),
                             _get_avg('nce'),
-                            _get_avg('idt'),
+                            _get_avg('train_num_steps'),
+                            _get_avg('train_step_size'),
+                            _get_avg('train_style_strength'),
+                            _get_avg('heavy_loss_slot_id'),
+                            _get_avg('path_cycle_active'),
+                            _get_avg('path_nce_active'),
+                            _get_avg('path_semigroup_active'),
+                            (1000.0 * data_time_total / max(step_idx, 1)),
+                            (1000.0 * compute_time_total / max(step_idx, 1)),
                             step_per_sec,
                             eta,
                         )
@@ -461,10 +502,12 @@ class AdaCUTTrainer:
                     torch.cuda.empty_cache()
                     continue
                 raise
+            finally:
+                compute_time_total += max(0.0, time.perf_counter() - compute_start)
+                data_wait_start = time.perf_counter()
+                del loss_dict
 
         progress.close()
-        gc.enable()
-        gc.collect()  # Manual collect at end of epoch
 
         # Flush leftover gradients when last batch is not divisible by accumulation_steps.
         if num_batches > 0 and (num_batches % self.accumulation_steps != 0):
@@ -484,26 +527,34 @@ class AdaCUTTrainer:
         lr = float(self.optimizer.param_groups[0]["lr"])
         
         # Finalize metrics
-        metrics = {}
+        metrics: Dict[str, float] = {}
         denom = max(num_batches, 1)
         for k, v in metric_accum.items():
-            metrics[k] = v.item() / denom
+            metrics[k] = float((v / denom).item())
             
         # Ensure standard keys exist for CSV logging
         metrics["lr"] = lr
+        metrics["data_time_sec"] = data_time_total
+        metrics["compute_time_sec"] = compute_time_total
         metrics["epoch_time_sec"] = epoch_time
         
         # Fill missing keys with 0.0 for safety
         expected_keys = [
             "loss", "distill", "code", "code_pred_norm", "code_ref_norm",
-            "cycle", "struct", "edge", "gram", "gram_w", "moment", "stroke_gram", "color_moment",
-            "push", "delta_tv", "style_spatial_tv", "nce", "semigroup", "idt", "w_cycle_eff", "w_struct_eff",
-            "w_edge_eff", "w_nce_eff", "w_semigroup_eff", "w_idt_eff", "transfer_ratio"
+            "cycle", "struct", "edge", "stroke_gram", "color_moment",
+            "push", "delta_tv", "style_spatial_tv", "nce", "semigroup", "semigroup_samples",
+            "train_num_steps", "train_step_size", "train_style_strength", "heavy_loss_slot_id",
+            "path_teacher_active", "path_cycle_active", "path_stroke_active", "path_nce_active", "path_semigroup_active",
+            "w_cycle_eff", "w_struct_eff",
+            "w_edge_eff", "w_nce_eff", "w_semigroup_eff", "transfer_ratio",
+            "data_time_sec", "compute_time_sec",
         ]
         for k in expected_keys:
             metrics.setdefault(k, 0.0)
 
         metrics.update({
+            "data_time_sec": data_time_total,
+            "compute_time_sec": compute_time_total,
             "epoch_time_sec": epoch_time,
         })
 
@@ -515,12 +566,13 @@ class AdaCUTTrainer:
                 f"code={metrics['code']:.4f} "
                 f"cpn={metrics['code_pred_norm']:.3f} crn={metrics['code_ref_norm']:.3f} "
                 f"cycle={metrics['cycle']:.4f} "
-                f"gram={metrics['gram']:.4f} sgram={metrics['stroke_gram']:.4f} gramw={metrics['gram_w']:.4f} moment={metrics['moment']:.4f} cmoment={metrics['color_moment']:.4f} "
+                f"sgram={metrics['stroke_gram']:.4f} cmoment={metrics['color_moment']:.4f} "
                 f"push={metrics['push']:.4f} dtv={metrics['delta_tv']:.4f} stv={metrics['style_spatial_tv']:.4f} "
-                f"nce={metrics['nce']:.4f} semi={metrics['semigroup']:.4f} "
-                f"idt={metrics['idt']:.4f} "
-                f"wcyc={metrics['w_cycle_eff']:.2f} wnce={metrics['w_nce_eff']:.2f} wsemi={metrics['w_semigroup_eff']:.2f} widt={metrics['w_idt_eff']:.2f} "
-                f"xfer={metrics['transfer_ratio']:.2f} | time={epoch_time:.1f}s"
+                f"nce={metrics['nce']:.4f} semi={metrics['semigroup']:.4f} semib={metrics['semigroup_samples']:.1f} "
+                f"steps={metrics['train_num_steps']:.1f} h={metrics['train_step_size']:.2f} s={metrics['train_style_strength']:.2f} slot={metrics['heavy_loss_slot_id']:.0f} "
+                f"pth={metrics['path_teacher_active']:.2f} pcy={metrics['path_cycle_active']:.2f} pst={metrics['path_stroke_active']:.2f} pnce={metrics['path_nce_active']:.2f} psemi={metrics['path_semigroup_active']:.2f} "
+                f"wcyc={metrics['w_cycle_eff']:.2f} wnce={metrics['w_nce_eff']:.2f} wsemi={metrics['w_semigroup_eff']:.2f} "
+                f"xfer={metrics['transfer_ratio']:.2f} | data={data_time_total:.1f}s compute={compute_time_total:.1f}s total={epoch_time:.1f}s"
             )
         return metrics
 
@@ -538,9 +590,6 @@ class AdaCUTTrainer:
                     float(metrics.get("cycle", 0.0)),
                     float(metrics.get("struct", 0.0)),
                     float(metrics.get("edge", 0.0)),
-                    float(metrics.get("gram", 0.0)),
-                    float(metrics.get("gram_w", 0.0)),
-                    float(metrics.get("moment", 0.0)),
                     float(metrics.get("stroke_gram", 0.0)),
                     float(metrics.get("color_moment", 0.0)),
                     float(metrics.get("push", 0.0)),
@@ -548,15 +597,25 @@ class AdaCUTTrainer:
                     float(metrics.get("style_spatial_tv", 0.0)),
                     float(metrics.get("nce", 0.0)),
                     float(metrics.get("semigroup", 0.0)),
-                    float(metrics.get("idt", 0.0)),
+                    float(metrics.get("semigroup_samples", 0.0)),
+                    float(metrics.get("train_num_steps", 0.0)),
+                    float(metrics.get("train_step_size", 0.0)),
+                    float(metrics.get("train_style_strength", 0.0)),
+                    float(metrics.get("heavy_loss_slot_id", 0.0)),
+                    float(metrics.get("path_teacher_active", 0.0)),
+                    float(metrics.get("path_cycle_active", 0.0)),
+                    float(metrics.get("path_stroke_active", 0.0)),
+                    float(metrics.get("path_nce_active", 0.0)),
+                    float(metrics.get("path_semigroup_active", 0.0)),
                     float(metrics.get("w_cycle_eff", 0.0)),
                     float(metrics.get("w_struct_eff", 0.0)),
                     float(metrics.get("w_edge_eff", 0.0)),
                     float(metrics.get("w_nce_eff", 0.0)),
                     float(metrics.get("w_semigroup_eff", 0.0)),
-                    float(metrics.get("w_idt_eff", 0.0)),
                     float(metrics.get("transfer_ratio", 0.0)),
                     float(metrics.get("lr", 0.0)),
+                    float(metrics.get("data_time_sec", 0.0)),
+                    float(metrics.get("compute_time_sec", 0.0)),
                     float(metrics.get("epoch_time_sec", 0.0)),
                 ]
             )
@@ -627,6 +686,16 @@ class AdaCUTTrainer:
             "--style_ref_seed",
             str(int(cfg_train.get("full_eval_style_ref_seed", 2026))),
         ]
+        full_eval_style_strength = cfg_train.get("full_eval_style_strength", cfg_infer.get("style_strength"))
+        if full_eval_style_strength is not None:
+            cmd += ["--style_strength", str(float(full_eval_style_strength))]
+        full_eval_step_schedule = cfg_train.get("full_eval_step_schedule", cfg_infer.get("step_schedule"))
+        if isinstance(full_eval_step_schedule, (list, tuple)):
+            schedule_arg = ",".join(str(float(v)) for v in full_eval_step_schedule)
+            if schedule_arg:
+                cmd += ["--step_schedule", schedule_arg]
+        elif full_eval_step_schedule is not None and str(full_eval_step_schedule).lower() not in {"", "none"}:
+            cmd += ["--step_schedule", str(full_eval_step_schedule)]
 
         test_dir = cfg_train.get("test_image_dir", "")
         if test_dir:
