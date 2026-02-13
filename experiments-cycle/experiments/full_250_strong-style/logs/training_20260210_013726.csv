@@ -1,1 +1,0 @@
-epoch,loss,distill,code,code_pred_norm,code_ref_norm,cycle,struct,gram,gram_w,moment,push,nce,idt,w_cycle_eff,w_struct_eff,w_nce_eff,w_idt_eff,transfer_ratio,lr,epoch_time_sec
