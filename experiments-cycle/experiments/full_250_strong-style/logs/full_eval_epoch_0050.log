@@ -1,33 +1,0 @@
-Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
-Style reference mode: none (count=8, seed=2026)
-
-棣冩畬 Phase 1: Generation (Batch Size 10)
-  Generating Batch 1/5
-  Generating Batch 2/5
-  Generating Batch 3/5
-  Generating Batch 4/5
-  Generating Batch 5/5
-  閴?Generation Models Unloaded
-
-棣冩畬 Phase 2: Evaluation
-  Loaded latent style classifier: /mnt/g/GitHub/Latent_Style/Cycle-NCE/src/style_classifier.pt (classes=2)
-  閴?CLIP Loaded
-
-Computing Reference Features (One-time setup)...
-Featurizing photo:   0%|          | 0/2 [00:00<?, ?it/s]Featurizing photo:  50%|█████     | 1/2 [00:00<00:00,  1.14it/s]Featurizing photo: 100%|██████████| 2/2 [00:01<00:00,  1.95it/s]Featurizing photo: 100%|██████████| 2/2 [00:01<00:00,  1.76it/s]
-Cache saved to ../../full-train-eval_cache/ref_feats_6541cd52_m100.pt
-  Processing 100 generated images...
-
-棣冩惓 Generating Summary...
-
-閴?Classification Report:
-              precision    recall  f1-score   support
-
-       Hayao       1.00      0.34      0.51        50
-       photo       0.60      1.00      0.75        50
-
-    accuracy                           0.67       100
-   macro avg       0.80      0.67      0.63       100
-weighted avg       0.80      0.67      0.63       100
-
-閴?Summary saved: ../full_250_strong-style/full_eval/epoch_0050/summary.json
