@@ -131,3 +131,14 @@ Summary includes both:
 - best historical metrics (`full_eval/summary_history.json`, when available)
 
 This enables repeatable and auditable style-focused iteration.
+
+## 7. Reporting Pipeline
+
+1. Refresh run index:
+   - `python scripts/analyze_experiments_cycle.py --root experiments-cycle --out-dir docs/experiments_cycle/data`
+2. Generate separate + integrated reports:
+   - `python scripts/generate_eval_reports.py --experiments-root experiments-cycle --runs-csv docs/experiments_cycle/data/runs_metrics.csv --history-csv docs/experiments_cycle/data/history_rounds.csv --out-dir docs/reports`
+3. Read outputs:
+   - separate historical report: `docs/reports/REPORT_EXPERIMENTS.md`
+   - separate ablation report: `docs/reports/REPORT_ABLATION50.md`
+   - integrated decision report: `docs/reports/REPORT_INTEGRATED.md`

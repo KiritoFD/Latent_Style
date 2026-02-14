@@ -42,9 +42,23 @@ Each run should write under its own `checkpoint.save_dir`:
 - `run_full_eval_epochs.sh`: evaluate selected checkpoints
 - `scripts/style_ablation.py`: style-focused ablation automation (core)
 - `scripts/style_ablation.sh`: thin wrapper for bash users
+- `scripts/analyze_experiments_cycle.py`: index all historical runs under `experiments-cycle`
+- `scripts/generate_eval_reports.py`: generate separate + integrated evaluation reports
 
 ## Hygiene Rules
 
 - Do not commit generated run artifacts.
 - Keep docs synchronized when adding new loss/model switches.
 - When adding config keys, wire them through docs + script templates together.
+
+## Report Outputs
+
+- Historical run reports:
+  - `docs/experiments_cycle/01_inventory.md`
+  - `docs/experiments_cycle/02_metrics_analysis.md`
+  - `docs/experiments_cycle/03_snapshot_evolution.md`
+  - `docs/experiments_cycle/SUMMARY.md`
+- Separate + integrated reports:
+  - `docs/reports/REPORT_EXPERIMENTS.md`
+  - `docs/reports/REPORT_ABLATION50.md`
+  - `docs/reports/REPORT_INTEGRATED.md`

@@ -61,8 +61,14 @@ def build_latent_dataset(
     config: dict,
     cache_path: Optional[Path] = None,
     rebuild_cache: bool = False,
+    config_dir: Optional[Path] = None,
 ) -> LatentStyleDataset:
-    data_root = Path(config["data"]["data_root"]).expanduser().resolve()
+    data_root_raw = Path(config["data"]["data_root"]).expanduser()
+    if data_root_raw.is_absolute():
+        data_root = data_root_raw.resolve()
+    else:
+        base_dir = config_dir.resolve() if config_dir is not None else Path.cwd().resolve()
+        data_root = (base_dir / data_root_raw).resolve()
     num_styles = int(config["model"]["num_styles"])
     style_subdirs = config["data"].get("style_subdirs")
     if not style_subdirs:
@@ -761,7 +767,12 @@ def train(
         config = json.load(f)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    dataset = build_latent_dataset(config, cache_path=cache_path, rebuild_cache=rebuild_cache)
+    dataset = build_latent_dataset(
+        config,
+        cache_path=cache_path,
+        rebuild_cache=rebuild_cache,
+        config_dir=config_path.parent,
+    )
 
     num_classes = int(config["model"]["num_styles"])
     in_channels = int(config["model"]["latent_channels"])
