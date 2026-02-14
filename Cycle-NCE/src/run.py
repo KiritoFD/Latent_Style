@@ -6,7 +6,7 @@ import logging
 import os
 import random
 from pathlib import Path
-from typing import Iterable, List
+from typing import List
 
 import numpy as np
 import torch
@@ -24,6 +24,34 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+_ALLOWED_LOSS_KEYS = {
+    "w_struct",
+    "struct_lowpass_strength",
+    "struct_loss_type",
+    "w_cycle",
+    "cycle_loss_type",
+    "cycle_lowpass_strength",
+    "cycle_num_steps",
+    "cycle_step_size",
+    "cycle_style_strength",
+    "cycle_detach_student",
+    "w_delta_tv",
+    "w_delta_l2",
+    "w_stroke_gram",
+    "w_color_moment",
+    "stroke_patch_sizes",
+    "stroke_patch_randomize",
+    "color_patch_size",
+    "train_num_steps_min",
+    "train_num_steps_max",
+    "train_step_size_min",
+    "train_step_size_max",
+    "train_style_strength_min",
+    "train_style_strength_max",
+}
+_FORBIDDEN_LOSS_KEYS = {"w_distill", "distill_low_only", "distill_cross_domain_only", "w_code", "style_loss_source"}
+_LOSS_WEIGHT_KEYS = ("w_struct", "w_cycle", "w_stroke_gram", "w_color_moment", "w_delta_tv", "w_delta_l2")
 
 
 def _set_seed(seed: int) -> None:
@@ -131,6 +159,22 @@ def _resolve_num_workers(config: dict) -> int:
     cpu_count = os.cpu_count() or 4
     return max(2, min(8, cpu_count // 2))
 
+def _validate_loss_config(config: dict) -> None:
+    loss_cfg = config.get("loss", {})
+    if not isinstance(loss_cfg, dict):
+        raise ValueError("config.loss must be a JSON object")
+    forbidden = sorted(k for k in loss_cfg.keys() if k in _FORBIDDEN_LOSS_KEYS)
+    if forbidden:
+        raise ValueError(f"Removed loss key(s) found in config.loss: {forbidden}")
+    unknown = sorted(k for k in loss_cfg.keys() if k not in _ALLOWED_LOSS_KEYS)
+    if unknown:
+        raise ValueError(f"Unknown loss key(s) in config.loss: {unknown}")
+
+def _log_active_losses(config: dict) -> None:
+    loss_cfg = config.get("loss", {})
+    active = [k for k in _LOSS_WEIGHT_KEYS if float(loss_cfg.get(k, 0.0)) > 0.0]
+    logger.info("Active losses: %s", ", ".join(active) if active else "(none)")
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train Latent AdaCUT")
@@ -141,6 +185,8 @@ def main() -> None:
     config_path = Path(args.config).resolve()
     with open(config_path, "r", encoding="utf-8") as f:
         config = json.load(f)
+    _validate_loss_config(config)
+    _log_active_losses(config)
 
     if args.resume:
         config.setdefault("training", {})
@@ -160,7 +206,6 @@ def main() -> None:
     dataset = AdaCUTLatentDataset(
         data_root=data_cfg.get("data_root", "../../latents"),
         style_subdirs=data_cfg.get("style_subdirs", ["photo", "monet", "vangogh", "cezanne"]),
-        content_style=data_cfg.get("content_style", "photo"),
         allow_hflip=bool(data_cfg.get("allow_hflip", True)),
         preload_to_gpu=bool(data_cfg.get("preload_to_gpu", False)),
         virtual_length_multiplier=int(data_cfg.get("virtual_length_multiplier", 4)),
@@ -220,35 +265,19 @@ def main() -> None:
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f code=%.4f cpn=%.3f crn=%.3f cycle=%.4f sgram=%.4f cmoment=%.4f push=%.4f dtv=%.4f stv=%.4f nce=%.4f semi=%.4f semib=%.1f steps=%.1f h=%.2f s=%.2f slot=%.0f pth=%.2f pcy=%.2f pst=%.2f pnce=%.2f psemi=%.2f wcyc=%.2f wnce=%.2f wsemi=%.2f xfer=%.2f lr=%.2e data=%.1fs comp=%.1fs",
+            "Epoch %d/%d | loss=%.4f struct=%.4f cycle=%.4f sgram=%.4f cmoment=%.4f dtv=%.4f dl2=%.4f steps=%.1f h=%.2f s=%.2f lr=%.2e data=%.1fs comp=%.1fs",
             epoch,
             trainer.num_epochs,
             metrics["loss"],
-            metrics.get("code", 0.0),
-            metrics.get("code_pred_norm", 0.0),
-            metrics.get("code_ref_norm", 0.0),
+            metrics.get("struct", 0.0),
             metrics.get("cycle", 0.0),
             metrics.get("stroke_gram", 0.0),
             metrics.get("color_moment", 0.0),
-            metrics.get("push", 0.0),
             metrics.get("delta_tv", 0.0),
-            metrics.get("style_spatial_tv", 0.0),
-            metrics.get("nce", 0.0),
-            metrics.get("semigroup", 0.0),
-            metrics.get("semigroup_samples", 0.0),
+            metrics.get("delta_l2", 0.0),
             metrics.get("train_num_steps", 0.0),
             metrics.get("train_step_size", 0.0),
             metrics.get("train_style_strength", 0.0),
-            metrics.get("heavy_loss_slot_id", 0.0),
-            metrics.get("path_teacher_active", 0.0),
-            metrics.get("path_cycle_active", 0.0),
-            metrics.get("path_stroke_active", 0.0),
-            metrics.get("path_nce_active", 0.0),
-            metrics.get("path_semigroup_active", 0.0),
-            metrics.get("w_cycle_eff", 0.0),
-            metrics.get("w_nce_eff", 0.0),
-            metrics.get("w_semigroup_eff", 0.0),
-            metrics.get("transfer_ratio", 0.0),
             metrics["lr"],
             metrics.get("data_time_sec", 0.0),
             metrics.get("compute_time_sec", 0.0),

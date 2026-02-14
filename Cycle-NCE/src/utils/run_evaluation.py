@@ -306,8 +306,6 @@ def _auto_run_missing_full_eval(args) -> None:
             cmd += ["--test_dir", str(args.test_dir)]
         if args.style_strength is not None:
             cmd += ["--style_strength", str(args.style_strength)]
-        if args.step_schedule is not None:
-            cmd += ["--step_schedule", str(args.step_schedule)]
         if args.force_regen:
             cmd += ["--force_regen"]
         if args.eval_classifier_only:
@@ -331,7 +329,6 @@ def main():
     parser.add_argument('--num_steps', type=int, default=15)
     parser.add_argument('--step_size', type=float, default=1.0)
     parser.add_argument('--style_strength', type=float, default=None, help="Global style strength in [0,1]; default uses checkpoint config")
-    parser.add_argument('--step_schedule', type=str, default=None, help="Per-step schedule name or comma weights, e.g. late or 0.5,1.0,1.5")
     parser.add_argument('--max_src_samples', type=int, default=30, help="Max source images per style; <=0 means all")
     parser.add_argument('--max_ref_compare', type=int, default=50, help="Max refs for LPIPS style compare; <=0 means all cached refs")
     parser.add_argument('--max_ref_cache', type=int, default=256, help="Max reference images per style used for cache/features; <=0 means all")
@@ -465,7 +462,6 @@ def main():
             num_steps=args.num_steps,
             step_size=args.step_size,
             style_strength=args.style_strength,
-            step_schedule=args.step_schedule,
         )
         vae = load_vae(device)
         model_scale = float(getattr(lgt.model, "latent_scale_factor", 0.18215))
@@ -487,7 +483,6 @@ def main():
                 src_tensors.append(_load_eval_image_tensor(item['path']))
 
             src_batch = torch.stack(src_tensors).to(device)
-            src_style_ids = torch.tensor([item['style_id'] for item in batch_info], device=device)
 
             with torch.autocast('cuda', dtype=torch.bfloat16):
                 with torch.no_grad():
@@ -495,7 +490,7 @@ def main():
                     latents_src = encode_image(vae, src_batch, device)
                     if abs(scale_in - 1.0) > 1e-4:
                         latents_src = latents_src * scale_in
-                    latents_x0 = lgt.inversion(latents_src, src_style_ids)
+                    latents_x0 = lgt.inversion(latents_src)
 
                     # Generation for each target style
                     for tgt_id in range(num_styles):

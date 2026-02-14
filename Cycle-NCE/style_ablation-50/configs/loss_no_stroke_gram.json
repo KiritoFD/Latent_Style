@@ -95,7 +95,7 @@
     "scheduler": "cosine",
     "grad_clip_norm": 1.0,
     "num_epochs": 50,
-    "save_interval": 10,
+    "save_interval": 25,
     "full_eval_interval": 0,
     "full_eval_on_last_epoch": false,
     "full_eval_batch_size": 20,
@@ -103,12 +103,14 @@
     "full_eval_max_ref_compare": 50,
     "full_eval_max_ref_cache": 100,
     "full_eval_ref_feature_batch_size": 32,
-    "full_eval_num_steps": 3,
-    "full_eval_step_size": 1.1,
+    "full_eval_num_steps": 6,
+    "full_eval_step_size": 0.8,
+    "full_eval_step_schedule": "flat",
     "test_image_dir": "../../style_data/overfit50",
     "full_eval_cache_dir": "../../eval_cache",
     "full_eval_classifier_only": false,
     "full_eval_disable_lpips": false,
+    "full_eval_style_strength": 0.75,
     "log_interval": 10,
     "use_tqdm": true,
     "use_amp": true,
@@ -124,8 +126,7 @@
     "log_vram_interval": 0,
     "snapshot_source": false,
     "resume_checkpoint": "",
-    "min_learning_rate": 1e-05,
-    "full_eval_style_strength": 1.0
+    "min_learning_rate": 1e-05
   },
   "data": {
     "data_root": "../../latent-256",
@@ -136,16 +137,16 @@
     "content_style": "any",
     "allow_hflip": false,
     "preload_to_gpu": true,
-    "virtual_length_multiplier": 1
+    "virtual_length_multiplier": 3
   },
   "checkpoint": {
     "save_dir": "/mnt/i/Github/Latent_Style/Cycle-NCE/style_ablation-50/loss_no_stroke_gram"
   },
   "inference": {
-    "num_steps": 3,
-    "step_size": 1.15,
-    "style_strength": 1.0,
-    "step_schedule": "late",
+    "num_steps": 6,
+    "step_size": 0.8,
+    "style_strength": 0.75,
+    "step_schedule": "flat",
     "temperature_lambda": 0.0,
     "temperature_threshold": 1.0,
     "use_cfg": false,

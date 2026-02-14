@@ -2,37 +2,29 @@ CWD: /mnt/i/Github/Latent_Style/Cycle-NCE/src
 Command:
 /home/xy/miniconda3/envs/cu128/bin/python /mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py --config /mnt/i/Github/Latent_Style/Cycle-NCE/style_ablation-50/configs/dyn_num_steps_1_to_3.json
 
-Start: 2026-02-14T09:40:09.954724
+Start: 2026-02-14T12:26:28.961269
 
-2026-02-14 09:40:13,060 - INFO - Device: cuda
-2026-02-14 09:40:13,061 - INFO - Seed: 42
-2026-02-14 09:40:13,061 - INFO - Loading latent dataset from ../../latent-256
-2026-02-14 09:40:41,483 - INFO -   style=photo id=0 count=6187
-2026-02-14 09:40:49,832 - INFO -   style=Hayao id=1 count=1752
-2026-02-14 09:40:50,187 - INFO - Preloaded all latents to GPU: cuda
-2026-02-14 09:40:50,198 - INFO - DataLoader | batch=160 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
-2026-02-14 09:40:50,333 - INFO - Model params: 9,003,273
-2026-02-14 09:40:50,333 - INFO - Infra | channels_last=True tf32=True grad_ckpt=False compile=False mode=off
-2026-02-14 09:40:51,387 - INFO - Precision | amp=True amp_dtype=bf16 grad_scaler=False fused_adamw=True
-2026-02-14 09:40:51,394 - INFO - No checkpoint found, start from scratch.
+2026-02-14 12:26:32,099 - INFO - Device: cuda
+2026-02-14 12:26:32,099 - INFO - Seed: 42
+2026-02-14 12:26:32,099 - INFO - Loading latent dataset from ../../latent-256
+2026-02-14 12:26:56,958 - INFO -   style=photo id=0 count=6187
+2026-02-14 12:27:04,098 - INFO -   style=Hayao id=1 count=1752
+2026-02-14 12:27:04,476 - INFO - Preloaded all latents to GPU: cuda
+2026-02-14 12:27:04,490 - INFO - DataLoader | batch=160 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-14 12:27:04,595 - INFO - Model params: 9,003,273
+2026-02-14 12:27:04,595 - INFO - Infra | channels_last=True tf32=True grad_ckpt=False compile=False mode=off
+2026-02-14 12:27:05,824 - INFO - Precision | amp=True amp_dtype=bf16 grad_scaler=False fused_adamw=True
+2026-02-14 12:27:05,829 - INFO - No checkpoint found, start from scratch.
 
-Epoch 1/50:   0%|          | 0/49 [00:00<?, ?it/s]2026-02-14 09:40:57,090 - ERROR - CUDA accelerator failure at epoch=1 step=1: CUDA error: unknown error
-Search for `cudaErrorUnknown' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
-CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
-For debugging consider passing CUDA_LAUNCH_BLOCKING=1
-Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
-
-2026-02-14 09:40:57,090 - ERROR - Debug tips: set CUDA_LAUNCH_BLOCKING=1 and disable one or more of {training.use_compile, training.use_amp, data.preload_to_gpu}.
-2026-02-14 09:40:57,090 - ERROR - Current config has data.preload_to_gpu=True; lowering training.batch_size can also improve stability.
-
-Epoch 1/50:   0%|          | 0/49 [00:05<?, ?it/s]
+Epoch 1/50:   0%|          | 0/148 [00:00<?, ?it/s]
+Epoch 1/50:   0%|          | 0/148 [00:05<?, ?it/s]
 Traceback (most recent call last):
   File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py", line 275, in <module>
     main()
   File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py", line 218, in main
     metrics = trainer.train_epoch(dataloader, epoch)
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/trainer.py", line 406, in train_epoch
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/trainer.py", line 389, in train_epoch
     loss_dict = self.loss_fn.compute(
                 ^^^^^^^^^^^^^^^^^^^^^
   File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/losses.py", line 364, in compute
@@ -82,6 +74,6 @@ Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
 
 
 
-End: 2026-02-14T09:40:58.029087
+End: 2026-02-14T12:27:12.982157
 Exit code: 1
-Duration: 0:00:48.074363
+Duration: 0:00:44.020888

@@ -74,9 +74,10 @@ class AdaCUTTrainer:
         self.full_eval_root.mkdir(parents=True, exist_ok=True)
 
         self.use_compile = bool(train_cfg.get("use_compile", False))
-        self.compile_backend = _COMPILE_BACKEND
-        self.compile_mode = _COMPILE_MODE
-        self.compile_fullgraph = _COMPILE_FULLGRAPH
+        self.compile_backend = str(train_cfg.get("compile_backend", _COMPILE_BACKEND))
+        self.compile_mode = str(train_cfg.get("compile_mode", _COMPILE_MODE))
+        self.compile_fullgraph = bool(train_cfg.get("compile_fullgraph", _COMPILE_FULLGRAPH))
+        self.compile_disable_cudagraphs = bool(train_cfg.get("compile_disable_cudagraphs", True))
         self.compile_cache_dir = (self.checkpoint_dir / "torch_compile_cache").resolve()
         if self.use_compile:
             try:
@@ -84,7 +85,8 @@ class AdaCUTTrainer:
                 (self.compile_cache_dir / "triton").mkdir(parents=True, exist_ok=True)
                 os.environ["TORCHINDUCTOR_CACHE_DIR"] = str((self.compile_cache_dir / "inductor"))
                 os.environ["TRITON_CACHE_DIR"] = str((self.compile_cache_dir / "triton"))
-                os.environ.setdefault("TORCHINDUCTOR_CUDAGRAPHS", "0")
+                if self.compile_disable_cudagraphs:
+                    os.environ["TORCHINDUCTOR_CUDAGRAPHS"] = "0"
                 try:
                     import torch._dynamo as _dynamo  # type: ignore[attr-defined]
 
@@ -106,10 +108,11 @@ class AdaCUTTrainer:
                     fullgraph=self.compile_fullgraph,
                 )
                 logger.info(
-                    "torch.compile enabled (backend=%s mode=%s fullgraph=%s cudagraphs=off cache=%s)",
+                    "torch.compile enabled (backend=%s mode=%s fullgraph=%s cudagraphs=%s cache=%s)",
                     self.compile_backend,
                     self.compile_mode,
                     self.compile_fullgraph,
+                    "off" if self.compile_disable_cudagraphs else "on",
                     str(self.compile_cache_dir),
                 )
             except Exception as exc:  # pragma: no cover
@@ -118,12 +121,15 @@ class AdaCUTTrainer:
 
         logger.info("Model params: %s", f"{count_parameters(self.model):,}")
         logger.info(
-            "Infra | channels_last=%s tf32=%s grad_ckpt=%s compile=%s mode=%s",
+            "Infra | channels_last=%s tf32=%s grad_ckpt=%s compile=%s backend=%s mode=%s fullgraph=%s cudagraphs=%s",
             self.channels_last,
             self.allow_tf32,
             bool(train_cfg.get("use_gradient_checkpointing", False)),
             self.use_compile,
+            self.compile_backend if self.use_compile else "off",
             self.compile_mode if self.use_compile else "off",
+            self.compile_fullgraph if self.use_compile else False,
+            ("off" if getattr(self, "compile_disable_cudagraphs", True) else "on") if self.use_compile else "off",
         )
 
         self.use_amp = bool(train_cfg.get("use_amp", True) and device.type == "cuda")
@@ -192,36 +198,15 @@ class AdaCUTTrainer:
                 [
                     "epoch",
                     "loss",
-                    "distill",
-                    "code",
-                    "code_pred_norm",
-                    "code_ref_norm",
-                    "cycle",
                     "struct",
-                    "edge",
+                    "cycle",
                     "stroke_gram",
                     "color_moment",
-                    "push",
                     "delta_tv",
-                    "style_spatial_tv",
-                    "nce",
-                    "semigroup",
-                    "semigroup_samples",
+                    "delta_l2",
                     "train_num_steps",
                     "train_step_size",
                     "train_style_strength",
-                    "heavy_loss_slot_id",
-                    "path_teacher_active",
-                    "path_cycle_active",
-                    "path_stroke_active",
-                    "path_nce_active",
-                    "path_semigroup_active",
-                    "w_cycle_eff",
-                    "w_struct_eff",
-                    "w_edge_eff",
-                    "w_nce_eff",
-                    "w_semigroup_eff",
-                    "transfer_ratio",
                     "lr",
                     "data_time_sec",
                     "compute_time_sec",
@@ -350,7 +335,6 @@ class AdaCUTTrainer:
     def train_epoch(self, dataloader: DataLoader, epoch: int) -> Dict[str, float]:
         self.model.train()
         epoch_start = time.time()
-        self.loss_fn.set_progress(epoch=epoch, total_epochs=self.num_epochs)
         if self.device.type == "cuda":
             torch.cuda.reset_peak_memory_stats()
 
@@ -383,7 +367,7 @@ class AdaCUTTrainer:
                 content = batch["content"]
                 target_style = batch["target_style"]
                 target_style_id = batch["target_style_id"]
-                content_style_id = batch["content_style_id"]
+                source_style_id = batch["source_style_id"]
 
                 with torch.amp.autocast("cuda", enabled=self.use_amp, dtype=self.amp_dtype):
                     loss_dict = self.loss_fn.compute(
@@ -391,7 +375,7 @@ class AdaCUTTrainer:
                         content=content,
                         target_style=target_style,
                         target_style_id=target_style_id,
-                        content_style_id=content_style_id,
+                        source_style_id=source_style_id,
                     )
                     loss = loss_dict["loss"]
 
@@ -441,18 +425,12 @@ class AdaCUTTrainer:
 
                     progress.set_postfix(
                         loss=f"{_get_avg('loss'):.4f}",
+                        struct=f"{_get_avg('struct'):.4f}",
+                        cycle=f"{_get_avg('cycle'):.4f}",
                         sgram=f"{_get_avg('stroke_gram'):.4f}",
-                        cyc=f"{_get_avg('cycle'):.4f}",
-                        semi=f"{_get_avg('semigroup'):.4f}",
-                        semib=f"{_get_avg('semigroup_samples'):.1f}",
                         steps=f"{_get_avg('train_num_steps'):.1f}",
                         h=f"{_get_avg('train_step_size'):.2f}",
                         s=f"{_get_avg('train_style_strength'):.2f}",
-                        pcy=f"{_get_avg('path_cycle_active'):.2f}",
-                        pnce=f"{_get_avg('path_nce_active'):.2f}",
-                        psemi=f"{_get_avg('path_semigroup_active'):.2f}",
-                        wnce=f"{_get_avg('w_nce_eff'):.2f}",
-                        xfer=f"{_get_avg('transfer_ratio'):.2f}",
                         data_ms=f"{(1000.0 * data_time_total / max(step_idx, 1)):.1f}",
                         comp_ms=f"{(1000.0 * compute_time_total / max(step_idx, 1)):.1f}",
                         it_s=f"{step_per_sec:.2f}",
@@ -460,26 +438,20 @@ class AdaCUTTrainer:
                     )
                     if not self.use_tqdm:
                         logger.info(
-                            "epoch %d step %d/%d | loss=%.4f sgram=%.4f cmoment=%.4f code=%.4f cpn=%.3f crn=%.3f cycle=%.4f semi=%.4f nce=%.4f steps=%.1f h=%.2f s=%.2f slot=%.0f pcy=%.2f pnce=%.2f psemi=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
+                            "epoch %d step %d/%d | loss=%.4f struct=%.4f cycle=%.4f sgram=%.4f cmoment=%.4f dtv=%.4f dl2=%.4f steps=%.1f h=%.2f s=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
                             epoch,
                             step_idx,
                             total_steps,
                             _get_avg('loss'),
+                            _get_avg('struct'),
+                            _get_avg('cycle'),
                             _get_avg('stroke_gram'),
                             _get_avg('color_moment'),
-                            _get_avg('code'),
-                            _get_avg('code_pred_norm'),
-                            _get_avg('code_ref_norm'),
-                            _get_avg('cycle'),
-                            _get_avg('semigroup'),
-                            _get_avg('nce'),
+                            _get_avg('delta_tv'),
+                            _get_avg('delta_l2'),
                             _get_avg('train_num_steps'),
                             _get_avg('train_step_size'),
                             _get_avg('train_style_strength'),
-                            _get_avg('heavy_loss_slot_id'),
-                            _get_avg('path_cycle_active'),
-                            _get_avg('path_nce_active'),
-                            _get_avg('path_semigroup_active'),
                             (1000.0 * data_time_total / max(step_idx, 1)),
                             (1000.0 * compute_time_total / max(step_idx, 1)),
                             step_per_sec,
@@ -535,13 +507,8 @@ class AdaCUTTrainer:
         
         # Fill missing keys with 0.0 for safety
         expected_keys = [
-            "loss", "distill", "code", "code_pred_norm", "code_ref_norm",
-            "cycle", "struct", "edge", "stroke_gram", "color_moment",
-            "push", "delta_tv", "style_spatial_tv", "nce", "semigroup", "semigroup_samples",
-            "train_num_steps", "train_step_size", "train_style_strength", "heavy_loss_slot_id",
-            "path_teacher_active", "path_cycle_active", "path_stroke_active", "path_nce_active", "path_semigroup_active",
-            "w_cycle_eff", "w_struct_eff",
-            "w_edge_eff", "w_nce_eff", "w_semigroup_eff", "transfer_ratio",
+            "loss", "struct", "cycle", "stroke_gram", "color_moment",
+            "delta_tv", "delta_l2", "train_num_steps", "train_step_size", "train_style_strength",
             "data_time_sec", "compute_time_sec",
         ]
         for k in expected_keys:
@@ -557,17 +524,11 @@ class AdaCUTTrainer:
             tqdm.write(
                 f"[Epoch {epoch}/{self.num_epochs}] "
                 f"loss={metrics['loss']:.4f} "
-                f"distill={metrics['distill']:.4f} "
-                f"code={metrics['code']:.4f} "
-                f"cpn={metrics['code_pred_norm']:.3f} crn={metrics['code_ref_norm']:.3f} "
-                f"cycle={metrics['cycle']:.4f} "
+                f"struct={metrics['struct']:.4f} cycle={metrics['cycle']:.4f} "
                 f"sgram={metrics['stroke_gram']:.4f} cmoment={metrics['color_moment']:.4f} "
-                f"push={metrics['push']:.4f} dtv={metrics['delta_tv']:.4f} stv={metrics['style_spatial_tv']:.4f} "
-                f"nce={metrics['nce']:.4f} semi={metrics['semigroup']:.4f} semib={metrics['semigroup_samples']:.1f} "
-                f"steps={metrics['train_num_steps']:.1f} h={metrics['train_step_size']:.2f} s={metrics['train_style_strength']:.2f} slot={metrics['heavy_loss_slot_id']:.0f} "
-                f"pth={metrics['path_teacher_active']:.2f} pcy={metrics['path_cycle_active']:.2f} pst={metrics['path_stroke_active']:.2f} pnce={metrics['path_nce_active']:.2f} psemi={metrics['path_semigroup_active']:.2f} "
-                f"wcyc={metrics['w_cycle_eff']:.2f} wnce={metrics['w_nce_eff']:.2f} wsemi={metrics['w_semigroup_eff']:.2f} "
-                f"xfer={metrics['transfer_ratio']:.2f} | data={data_time_total:.1f}s compute={compute_time_total:.1f}s total={epoch_time:.1f}s"
+                f"dtv={metrics['delta_tv']:.4f} dl2={metrics['delta_l2']:.4f} "
+                f"steps={metrics['train_num_steps']:.1f} h={metrics['train_step_size']:.2f} s={metrics['train_style_strength']:.2f} "
+                f"| data={data_time_total:.1f}s compute={compute_time_total:.1f}s total={epoch_time:.1f}s"
             )
         return metrics
 
@@ -578,36 +539,15 @@ class AdaCUTTrainer:
                 [
                     int(epoch),
                     float(metrics.get("loss", 0.0)),
-                    float(metrics.get("distill", 0.0)),
-                    float(metrics.get("code", 0.0)),
-                    float(metrics.get("code_pred_norm", 0.0)),
-                    float(metrics.get("code_ref_norm", 0.0)),
-                    float(metrics.get("cycle", 0.0)),
                     float(metrics.get("struct", 0.0)),
-                    float(metrics.get("edge", 0.0)),
+                    float(metrics.get("cycle", 0.0)),
                     float(metrics.get("stroke_gram", 0.0)),
                     float(metrics.get("color_moment", 0.0)),
-                    float(metrics.get("push", 0.0)),
                     float(metrics.get("delta_tv", 0.0)),
-                    float(metrics.get("style_spatial_tv", 0.0)),
-                    float(metrics.get("nce", 0.0)),
-                    float(metrics.get("semigroup", 0.0)),
-                    float(metrics.get("semigroup_samples", 0.0)),
+                    float(metrics.get("delta_l2", 0.0)),
                     float(metrics.get("train_num_steps", 0.0)),
                     float(metrics.get("train_step_size", 0.0)),
                     float(metrics.get("train_style_strength", 0.0)),
-                    float(metrics.get("heavy_loss_slot_id", 0.0)),
-                    float(metrics.get("path_teacher_active", 0.0)),
-                    float(metrics.get("path_cycle_active", 0.0)),
-                    float(metrics.get("path_stroke_active", 0.0)),
-                    float(metrics.get("path_nce_active", 0.0)),
-                    float(metrics.get("path_semigroup_active", 0.0)),
-                    float(metrics.get("w_cycle_eff", 0.0)),
-                    float(metrics.get("w_struct_eff", 0.0)),
-                    float(metrics.get("w_edge_eff", 0.0)),
-                    float(metrics.get("w_nce_eff", 0.0)),
-                    float(metrics.get("w_semigroup_eff", 0.0)),
-                    float(metrics.get("transfer_ratio", 0.0)),
                     float(metrics.get("lr", 0.0)),
                     float(metrics.get("data_time_sec", 0.0)),
                     float(metrics.get("compute_time_sec", 0.0)),
@@ -684,14 +624,6 @@ class AdaCUTTrainer:
         full_eval_style_strength = cfg_train.get("full_eval_style_strength", cfg_infer.get("style_strength"))
         if full_eval_style_strength is not None:
             cmd += ["--style_strength", str(float(full_eval_style_strength))]
-        full_eval_step_schedule = cfg_train.get("full_eval_step_schedule", cfg_infer.get("step_schedule"))
-        if isinstance(full_eval_step_schedule, (list, tuple)):
-            schedule_arg = ",".join(str(float(v)) for v in full_eval_step_schedule)
-            if schedule_arg:
-                cmd += ["--step_schedule", schedule_arg]
-        elif full_eval_step_schedule is not None and str(full_eval_step_schedule).lower() not in {"", "none"}:
-            cmd += ["--step_schedule", str(full_eval_step_schedule)]
-
         test_dir = cfg_train.get("test_image_dir", "")
         if test_dir:
             cmd += ["--test_dir", str(test_dir)]

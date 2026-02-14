@@ -32,16 +32,15 @@ def _load_latent_file(path: Path) -> torch.Tensor:
 
 class AdaCUTLatentDataset(Dataset):
     """
-    Unpaired latent dataset:
-    - content from `content_style`
-    - style target sampled randomly from non-content styles
+    Unpaired latent dataset with strict cross-domain sampling:
+    - content style sampled from all styles
+    - target style sampled from a different style (content != target)
     """
 
     def __init__(
         self,
         data_root: str,
         style_subdirs: Sequence[str],
-        content_style: str = "photo",
         allow_hflip: bool = True,
         preload_to_gpu: bool = False,
         virtual_length_multiplier: int = 1,
@@ -64,18 +63,8 @@ class AdaCUTLatentDataset(Dataset):
 
         if not self.style_subdirs:
             raise ValueError("style_subdirs cannot be empty")
-        self.bidirectional_content = str(content_style).lower() in {"any", "all", "*"}
-        if (not self.bidirectional_content) and (content_style not in self.style_subdirs):
-            raise ValueError(f"content_style={content_style} not in style_subdirs={self.style_subdirs}")
-
-        if self.bidirectional_content:
-            self.content_style_id = -1
-            self.transfer_style_ids = list(range(len(self.style_subdirs)))
-        else:
-            self.content_style_id = self.style_subdirs.index(content_style)
-            self.transfer_style_ids = [i for i in range(len(self.style_subdirs)) if i != self.content_style_id]
-            if not self.transfer_style_ids:
-                raise ValueError("At least one non-content style is required")
+        if len(self.style_subdirs) < 2:
+            raise ValueError("At least two style domains are required for cross-domain sampling")
 
         self.style_tensors: Dict[int, torch.Tensor] = {}
         logger.info("Loading latent dataset from %s", self.data_root)
@@ -89,11 +78,8 @@ class AdaCUTLatentDataset(Dataset):
             self.style_tensors[style_id] = stack
             logger.info("  style=%s id=%d count=%d", subdir, style_id, stack.shape[0])
 
-        if self.bidirectional_content:
-            total_count = sum(int(t.shape[0]) for t in self.style_tensors.values())
-            self.content_count = max(1, total_count)
-        else:
-            self.content_count = int(self.style_tensors[self.content_style_id].shape[0])
+        total_count = sum(int(t.shape[0]) for t in self.style_tensors.values())
+        self.content_count = max(1, total_count)
         self.length = max(1, self.content_count * max(1, int(virtual_length_multiplier)))
 
         if self.preload_to_gpu:
@@ -118,22 +104,10 @@ class AdaCUTLatentDataset(Dataset):
         
         n_styles = len(self.style_subdirs)
         
-        if self.bidirectional_content:
-            self._cache_content_style_ids = torch.randint(0, n_styles, (N,), generator=g)
-            # Target must be different from content. (id + offset) % n where offset in [1, n-1]
-            if n_styles <= 1:
-                self._cache_target_style_ids = self._cache_content_style_ids.clone()
-            else:
-                offset = torch.randint(1, n_styles, (N,), generator=g)
-                self._cache_target_style_ids = (self._cache_content_style_ids + offset) % n_styles
-        else:
-            # Content style is fixed, but we still need random target
-            self._cache_content_style_ids = None # Not used
-            
-            n_transfers = len(self.transfer_style_ids)
-            t_idx = torch.randint(0, n_transfers, (N,), generator=g)
-            transfer_tensor = torch.as_tensor(self.transfer_style_ids, dtype=torch.long)
-            self._cache_target_style_ids = transfer_tensor[t_idx]
+        self._cache_content_style_ids = torch.randint(0, n_styles, (N,), generator=g)
+        # Target must be different from content. (id + offset) % n where offset in [1, n-1]
+        offset = torch.randint(1, n_styles, (N,), generator=g)
+        self._cache_target_style_ids = (self._cache_content_style_ids + offset) % n_styles
 
         # Random floats for selecting index within the chosen style
         self._cache_content_rands = torch.rand(N, generator=g)
@@ -156,17 +130,13 @@ class AdaCUTLatentDataset(Dataset):
 
     def __getitem__(self, index: int) -> Dict[str, torch.Tensor]:
         # Ultra-lightweight getitem using pre-computed indices
-        if self.bidirectional_content:
-            content_style_id = int(self._cache_content_style_ids[index])
-            target_style_id = int(self._cache_target_style_ids[index])
-        else:
-            content_style_id = self.content_style_id
-            target_style_id = int(self._cache_target_style_ids[index])
+        content_style_id = int(self._cache_content_style_ids[index])
+        target_style_id = int(self._cache_target_style_ids[index])
 
         c_pool = self.style_tensors[content_style_id]
         t_pool = self.style_tensors[target_style_id]
 
-        c_idx = int(self._cache_content_rands[index] * c_pool.shape[0]) if self.bidirectional_content else (index % self.content_count)
+        c_idx = int(self._cache_content_rands[index] * c_pool.shape[0])
         t_idx = int(self._cache_target_rands[index] * t_pool.shape[0])
 
         content = self._maybe_flip(c_pool[c_idx], self._cache_flip_content, index)
@@ -176,5 +146,5 @@ class AdaCUTLatentDataset(Dataset):
             "content": content,
             "target_style": target_style,
             "target_style_id": torch.tensor(target_style_id, dtype=torch.long),
-            "content_style_id": torch.tensor(content_style_id, dtype=torch.long),
+            "source_style_id": torch.tensor(content_style_id, dtype=torch.long),
         }

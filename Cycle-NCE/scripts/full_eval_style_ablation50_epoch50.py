@@ -171,7 +171,12 @@ def main() -> None:
     parser.add_argument("--num_steps", type=int, default=6)
     parser.add_argument("--step_size", type=float, default=0.8)
     parser.add_argument("--style_strength", type=float, default=0.75)
-    parser.add_argument("--step_schedule", type=str, default="flat")
+    parser.add_argument(
+        "--step_schedule",
+        type=str,
+        default="flat",
+        help="Deprecated compatibility arg. run_evaluation.py no longer accepts this and it is ignored here.",
+    )
     parser.add_argument("--batch_size", type=int, default=20)
     parser.add_argument("--max_src_samples", type=int, default=50)
     parser.add_argument("--max_ref_compare", type=int, default=50)
@@ -224,8 +229,6 @@ def main() -> None:
             str(args.step_size),
             "--style_strength",
             str(args.style_strength),
-            "--step_schedule",
-            str(args.step_schedule),
             "--batch_size",
             str(args.batch_size),
             "--max_src_samples",
