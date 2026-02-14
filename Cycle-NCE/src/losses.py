@@ -46,6 +46,42 @@ def _tv_per_sample(x: torch.Tensor) -> torch.Tensor:
     return tv_x + tv_y
 
 
+def _self_similarity_loss_per_sample(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    b, c, h, w = x.shape
+    n = h * w
+    if n <= 0:
+        return x.new_zeros((b,), dtype=torch.float32)
+    x_tok = x.view(b, c, n).transpose(1, 2).float()
+    y_tok = y.view(b, c, n).transpose(1, 2).float()
+    x_tok = F.normalize(x_tok, p=2, dim=-1, eps=1e-6)
+    y_tok = F.normalize(y_tok, p=2, dim=-1, eps=1e-6)
+    sx = x_tok @ x_tok.transpose(1, 2)
+    sy = y_tok @ y_tok.transpose(1, 2)
+    return (sx - sy).pow(2).mean(dim=(1, 2))
+
+
+def _compute_whitening_from_ref(ref: torch.Tensor, eps: float = 1e-4) -> tuple[torch.Tensor, torch.Tensor]:
+    c = ref.shape[1]
+    ref_flat = ref.detach().float().permute(1, 0, 2, 3).reshape(c, -1)
+    mu = ref_flat.mean(dim=1, keepdim=True)
+    xc = ref_flat - mu
+    denom = max(int(xc.shape[1]) - 1, 1)
+    cov = (xc @ xc.t()) / float(denom)
+    cov = cov + eps * torch.eye(c, device=cov.device, dtype=cov.dtype)
+    evals, evecs = torch.linalg.eigh(cov)
+    inv_sqrt = (evals.clamp_min(eps).rsqrt()).diag()
+    w = evecs @ inv_sqrt @ evecs.t()
+    return w, mu
+
+
+def _apply_channel_whitening(x: torch.Tensor, w: torch.Tensor, mu: torch.Tensor) -> torch.Tensor:
+    b, c, h, ww = x.shape
+    flat = x.float().permute(1, 0, 2, 3).reshape(c, -1)
+    xc = flat - mu
+    xw = w @ xc
+    return xw.reshape(c, b, h, ww).permute(1, 0, 2, 3).to(dtype=x.dtype)
+
+
 def _multiscale_latent_feats(
     x: torch.Tensor,
     *,
@@ -209,19 +245,16 @@ class AdaCUTObjective:
             num_steps=train_num_steps,
         )
 
-        # Struct (global stability)
+        # Struct via spatial self-similarity matrix (structure-preserving in latent space)
         if self.w_struct > 0.0:
-            if self.struct_loss_type == "mse":
-                raw = (pred_student.float() - content.float()).pow(2).mean(dim=(1, 2, 3))
-            else:
-                raw = (pred_student.float() - content.float()).abs().mean(dim=(1, 2, 3))
+            # Keep token count bounded for large batches: compute at 8x8.
+            pred_struct = F.adaptive_avg_pool2d(pred_student.float(), output_size=(8, 8))
+            cont_struct = F.adaptive_avg_pool2d(content.float(), output_size=(8, 8))
+            raw = _self_similarity_loss_per_sample(pred_struct, cont_struct)
             if self.struct_lowpass_strength > 0.0:
-                ps_lp = _lowpass(pred_student.float())
-                ct_lp = _lowpass(content.float())
-                if self.struct_loss_type == "mse":
-                    low = (ps_lp - ct_lp).pow(2).mean(dim=(1, 2, 3))
-                else:
-                    low = (ps_lp - ct_lp).abs().mean(dim=(1, 2, 3))
+                ps_lp = F.adaptive_avg_pool2d(_lowpass(pred_student.float()), output_size=(4, 4))
+                ct_lp = F.adaptive_avg_pool2d(_lowpass(content.float()), output_size=(4, 4))
+                low = _self_similarity_loss_per_sample(ps_lp, ct_lp)
                 raw = (1.0 - self.struct_lowpass_strength) * raw + self.struct_lowpass_strength * low
             loss_struct = raw.mean()
         else:
@@ -257,7 +290,10 @@ class AdaCUTObjective:
             for a, b in zip(pred_stroke_feats, tgt_stroke_feats):
                 a_stroke, _ = _split_style_feats(a)
                 b_stroke, _ = _split_style_feats(b)
-                stroke_ps = stroke_ps + calc_gram_loss_per_sample(a_stroke, b_stroke)
+                w_ref, mu_ref = _compute_whitening_from_ref(b_stroke)
+                a_stroke_w = _apply_channel_whitening(a_stroke, w_ref, mu_ref)
+                b_stroke_w = _apply_channel_whitening(b_stroke, w_ref, mu_ref)
+                stroke_ps = stroke_ps + calc_gram_loss_per_sample(a_stroke_w, b_stroke_w)
 
             for a, b in zip(pred_low_feats, tgt_low_feats):
                 _, a_low = _split_style_feats(a)

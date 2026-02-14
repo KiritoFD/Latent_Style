@@ -56,9 +56,12 @@ class AdaCUTTrainer:
         self.log_vram_interval = max(0, int(train_cfg.get("log_vram_interval", 0)))
 
         model_cfg = config.get("model", {})
+        grad_ckpt_cfg = bool(train_cfg.get("use_gradient_checkpointing", False))
+        if grad_ckpt_cfg:
+            logger.warning("use_gradient_checkpointing=True requested, but forced OFF for this lightweight model.")
         self.model = build_model_from_config(
             model_cfg,
-            use_checkpointing=bool(train_cfg.get("use_gradient_checkpointing", False)),
+            use_checkpointing=False,
         )
         if self.channels_last:
             self.model = self.model.to(device, memory_format=torch.channels_last)
@@ -124,7 +127,7 @@ class AdaCUTTrainer:
             "Infra | channels_last=%s tf32=%s grad_ckpt=%s compile=%s backend=%s mode=%s fullgraph=%s cudagraphs=%s",
             self.channels_last,
             self.allow_tf32,
-            bool(train_cfg.get("use_gradient_checkpointing", False)),
+            False,
             self.use_compile,
             self.compile_backend if self.use_compile else "off",
             self.compile_mode if self.use_compile else "off",
@@ -298,7 +301,15 @@ class AdaCUTTrainer:
         out = {}
         for k, v in batch.items():
             if torch.is_tensor(v):
-                if self.channels_last and v.is_floating_point() and v.ndim == 4:
+                if v.device == self.device:
+                    if self.channels_last and v.is_floating_point() and v.ndim == 4:
+                        if v.is_contiguous(memory_format=torch.channels_last):
+                            out[k] = v
+                        else:
+                            out[k] = v.contiguous(memory_format=torch.channels_last)
+                    else:
+                        out[k] = v
+                elif self.channels_last and v.is_floating_point() and v.ndim == 4:
                     out[k] = v.to(self.device, non_blocking=True, memory_format=torch.channels_last)
                 else:
                     out[k] = v.to(self.device, non_blocking=True)
