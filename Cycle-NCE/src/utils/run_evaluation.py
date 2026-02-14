@@ -1,17 +1,18 @@
-"""
+﻿"""
 LGT Evaluation Pro: Optimized with Pipeline Offloading, Async I/O & Vectorization
 Target Hardware: RTX 4070 Laptop (8GB VRAM) | CPU: 7940HX
 """
 
 import argparse
 import json
+import os
 import sys
 import subprocess
 from pathlib import Path
 from contextlib import nullcontext
 import torch
 
-# 棣冩暉 Enable Tensor Cores for float32 matrix multiplication (Fixes UserWarning)
+# 妫ｅ啯鏆?Enable Tensor Cores for float32 matrix multiplication (Fixes UserWarning)
 torch.set_float32_matmul_precision('high')
 
 import numpy as np
@@ -49,6 +50,7 @@ if str(_ROOT) not in sys.path:
 
 from utils.inference import LGTInference, load_vae, encode_image, decode_latent
 from utils.style_classifier import StyleClassifier as LatentStyleClassifier
+from utils.eval_image_classifier import load_eval_image_classifier
 
 # ==========================================
 # Optimized Feature Extractors
@@ -101,7 +103,7 @@ def _extract_clip_embeddings(output):
         return output.image_embeds
     if hasattr(output, 'text_embeds') and output.text_embeds is not None:
         return output.text_embeds
-    # 棣冩暉 Fix: Support pooler_output (BaseModelOutputWithPooling)
+    # 妫ｅ啯鏆?Fix: Support pooler_output (BaseModelOutputWithPooling)
     if hasattr(output, 'pooler_output') and output.pooler_output is not None:
         return output.pooler_output
         
@@ -127,6 +129,55 @@ def _extract_clip_embeddings(output):
 def _load_eval_image_tensor(path: Path, size: int = 256) -> torch.Tensor:
     img = Image.open(path).convert("RGB").resize((size, size))
     return T.ToTensor()(img)
+
+
+def _parse_generated_name(filename: str, style_names: list[str]) -> tuple[str, str, str] | None:
+    """
+    Parse generated image name:
+    {src_style}_{src_stem}_to_{tgt_style}.jpg
+    """
+    stem = Path(filename).stem
+    if "_to_" not in stem:
+        return None
+    left, tgt_style = stem.rsplit("_to_", 1)
+    # prefer longest style name first to avoid prefix ambiguity
+    for src_style in sorted(style_names, key=lambda x: len(x), reverse=True):
+        prefix = f"{src_style}_"
+        if left.startswith(prefix):
+            src_stem = left[len(prefix):]
+            if src_stem:
+                return src_style, src_stem, tgt_style
+    return None
+
+
+def _is_ref_cache_valid(ref_features: dict, need_clip: bool) -> bool:
+    if not isinstance(ref_features, dict) or not ref_features:
+        return False
+    if not need_clip:
+        return True
+    for feats in ref_features.values():
+        if not isinstance(feats, list):
+            return False
+        if not feats:
+            continue
+        sample = feats[0]
+        clip = sample.get("clip") if isinstance(sample, dict) else None
+        if clip is None or not isinstance(clip, torch.Tensor):
+            return False
+    return True
+
+
+def _acquire_lock(lock_path: Path, timeout_sec: int = 600, poll_sec: float = 1.0) -> bool:
+    deadline = time.time() + max(1, int(timeout_sec))
+    while time.time() < deadline:
+        try:
+            fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                f.write(f"{os.getpid()}\n")
+            return True
+        except FileExistsError:
+            time.sleep(max(0.1, float(poll_sec)))
+    return False
 
 
 def _build_style_ref_prototypes(
@@ -245,6 +296,7 @@ def _auto_run_missing_full_eval(args) -> None:
             "--ref_feature_batch_size", str(args.ref_feature_batch_size),
             "--batch_size", str(args.batch_size),
             "--classifier_path", str(args.classifier_path),
+            "--image_classifier_path", str(args.image_classifier_path),
             "--classifier_classes", str(args.classifier_classes),
             "--style_ref_mode", str(args.style_ref_mode),
             "--style_ref_count", str(args.style_ref_count),
@@ -262,6 +314,8 @@ def _auto_run_missing_full_eval(args) -> None:
             cmd += ["--eval_classifier_only"]
         if args.eval_disable_lpips:
             cmd += ["--eval_disable_lpips"]
+        if args.reuse_generated:
+            cmd += ["--reuse_generated"]
 
         print(f"\n[Auto] Running epoch {ep}: {ckpt_path.name}")
         subprocess.run(cmd, check=True)
@@ -283,11 +337,15 @@ def main():
     parser.add_argument('--max_ref_cache', type=int, default=256, help="Max reference images per style used for cache/features; <=0 means all")
     parser.add_argument('--ref_feature_batch_size', type=int, default=64, help="Batch size for reference feature extraction")
     parser.add_argument('--batch_size', type=int, default=20, help="Batch size increased due to offloading")
-    parser.add_argument('--force_regen', action='store_true', help="Force regenerate evaluation cache")
+    parser.add_argument('--force_regen', action='store_true', help="Force regenerate evaluation outputs/metrics (does not rebuild global ref cache)")
+    parser.add_argument('--force_regen_ref_cache', action='store_true', help="Force rebuild global reference-feature cache only")
+    parser.add_argument('--ref_cache_lock_timeout', type=int, default=900, help="Seconds to wait for another process building reference cache")
     parser.add_argument('--classifier_path', type=str, default="../../style_classifier.pt", help="Path to latent style classifier checkpoint")
+    parser.add_argument('--image_classifier_path', type=str, default="../../artifacts/eval_classifier/eval_style_image_classifier.pt", help="Path to robust image classifier checkpoint for evaluation")
     parser.add_argument('--classifier_classes', type=str, default="", help="Optional comma-separated class names for report display")
     parser.add_argument('--eval_classifier_only', action='store_true', help="Run only classifier evaluation (skip LPIPS/CLIP)")
     parser.add_argument('--eval_disable_lpips', action='store_true', help="Skip LPIPS metrics (keep CLIP)")
+    parser.add_argument('--reuse_generated', action='store_true', help="Reuse existing generated *_to_*.jpg in output dir and skip generation")
     parser.add_argument(
         '--style_ref_mode',
         type=str,
@@ -363,98 +421,130 @@ def main():
 
     # Buffer to pass data from Phase 1 to Phase 2
     generated_buffer = []
-
-    # ==========================================
-    # PHASE 1: GENERATION (LGT + VAE)
-    # ==========================================
-    print(f"\n棣冩畬 Phase 1: Generation (Batch Size {args.batch_size})")
-    
-    lgt = LGTInference(
-        str(checkpoint_path),
-        device=device,
-        num_steps=args.num_steps,
-        step_size=args.step_size,
-        style_strength=args.style_strength,
-        step_schedule=args.step_schedule,
-    )
-    vae = load_vae(device)
-    model_scale = float(getattr(lgt.model, "latent_scale_factor", 0.18215))
-    vae_scale = float(getattr(getattr(vae, "config", None), "scaling_factor", model_scale))
-    scale_in = model_scale / max(vae_scale, 1e-8)
-    scale_out = vae_scale / max(model_scale, 1e-8)
-    if abs(scale_in - 1.0) > 1e-4:
-        print(f"WARNING: latent scale mismatch (model={model_scale:.6f}, vae={vae_scale:.6f}). Applying rescale.")
-    
+    style_name_to_id = {name: idx for idx, name in enumerate(style_subdirs)}
+    src_lookup = {(x["style_name"], x["path"].stem): x["path"] for x in all_src_info}
     num_src_total = len(all_src_info)
     num_styles = len(style_subdirs)
-    
-    # Process in batches
-    for b_start in range(0, num_src_total, args.batch_size):
-        b_end = min(b_start + args.batch_size, num_src_total)
-        batch_info = all_src_info[b_start:b_end]
-        print(f"  Generating Batch {b_start//args.batch_size + 1}/{(num_src_total-1)//args.batch_size + 1}")
 
-        # Load Source Images
-        src_tensors = []
-        for item in batch_info:
-            src_tensors.append(_load_eval_image_tensor(item['path']))
-        
-        src_batch = torch.stack(src_tensors).to(device)
-        src_style_ids = torch.tensor([item['style_id'] for item in batch_info], device=device)
-        
-        with torch.autocast('cuda', dtype=torch.bfloat16):
-            with torch.no_grad():
-                # Inversion
-                latents_src = encode_image(vae, src_batch, device)
-                if abs(scale_in - 1.0) > 1e-4:
-                    latents_src = latents_src * scale_in
-                latents_x0 = lgt.inversion(latents_src, src_style_ids)
-                
-                # Generation for each target style
-                for tgt_id in range(num_styles):
-                    tgt_name = style_subdirs[tgt_id]
-                    tgt_ids = torch.full((len(batch_info),), tgt_id, device=device, dtype=torch.long)
-                    latents_gen = lgt.generation(latents_x0, tgt_ids)
-                    if abs(scale_out - 1.0) > 1e-4:
-                        latents_gen = latents_gen * scale_out
-                    imgs_gen = decode_latent(vae, latents_gen, device) # [B, 3, H, W]
-                    
-                    # Offload to CPU & Save Async
-                    latents_gen_cpu = latents_gen.detach().float().cpu()
-                    imgs_gen_cpu = imgs_gen.cpu()
-                    
-                    for i in range(len(batch_info)):
-                        src_item = batch_info[i]
-                        out_name = f"{src_item['style_name']}_{src_item['path'].stem}_to_{tgt_name}.jpg"
-                        out_path = out_dir / out_name
-                        
-                        # Async Save
-                        io_pool.submit(save_image_task, imgs_gen_cpu[i], out_path)
-                        
-                        # Store for Phase 2
-                        generated_buffer.append({
-                            'src_path': src_item['path'],
-                            'src_style': src_item['style_name'],
-                            'tgt_style_name': tgt_name,
-                            'tgt_style_id': tgt_id,
-                            'gen_latent': latents_gen_cpu[i], # Keep latent for classifier evaluation
-                            'gen_img': imgs_gen_cpu[i], # Keep in RAM
-                            'gen_name': out_name
-                        })
+    if args.reuse_generated:
+        print(f"\nPhase 1: Reuse generated images from {out_dir}")
+        reuse_files = sorted(out_dir.glob("*_to_*.jpg"))
+        for p in reuse_files:
+            parsed = _parse_generated_name(p.name, style_subdirs)
+            if parsed is None:
+                continue
+            src_style, src_stem, tgt_style = parsed
+            src_path = src_lookup.get((src_style, src_stem))
+            tgt_id = style_name_to_id.get(tgt_style)
+            if src_path is None or tgt_id is None:
+                continue
+            try:
+                gen_img = _load_eval_image_tensor(p)
+            except Exception as e:
+                print(f"  WARNING: failed loading generated image {p}: {e}")
+                continue
+            generated_buffer.append(
+                {
+                    "src_path": src_path,
+                    "src_style": src_style,
+                    "tgt_style_name": tgt_style,
+                    "tgt_style_id": int(tgt_id),
+                    "gen_latent": None,
+                    "gen_img": gen_img,
+                    "gen_name": p.name,
+                }
+            )
+        print(f"  Reused {len(generated_buffer)} generated images")
 
-    # Unload Generation Models
-    del lgt, vae
-    torch.cuda.empty_cache()
-    gc.collect()
-    print("  閴?Generation Models Unloaded")
+    if not generated_buffer:
+        print(f"\nPhase 1: Generation (Batch Size {args.batch_size})")
+
+        lgt = LGTInference(
+            str(checkpoint_path),
+            device=device,
+            num_steps=args.num_steps,
+            step_size=args.step_size,
+            style_strength=args.style_strength,
+            step_schedule=args.step_schedule,
+        )
+        vae = load_vae(device)
+        model_scale = float(getattr(lgt.model, "latent_scale_factor", 0.18215))
+        vae_scale = float(getattr(getattr(vae, "config", None), "scaling_factor", model_scale))
+        scale_in = model_scale / max(vae_scale, 1e-8)
+        scale_out = vae_scale / max(model_scale, 1e-8)
+        if abs(scale_in - 1.0) > 1e-4:
+            print(f"WARNING: latent scale mismatch (model={model_scale:.6f}, vae={vae_scale:.6f}). Applying rescale.")
+
+        # Process in batches
+        for b_start in range(0, num_src_total, args.batch_size):
+            b_end = min(b_start + args.batch_size, num_src_total)
+            batch_info = all_src_info[b_start:b_end]
+            print(f"  Generating Batch {b_start//args.batch_size + 1}/{(num_src_total-1)//args.batch_size + 1}")
+
+            # Load Source Images
+            src_tensors = []
+            for item in batch_info:
+                src_tensors.append(_load_eval_image_tensor(item['path']))
+
+            src_batch = torch.stack(src_tensors).to(device)
+            src_style_ids = torch.tensor([item['style_id'] for item in batch_info], device=device)
+
+            with torch.autocast('cuda', dtype=torch.bfloat16):
+                with torch.no_grad():
+                    # Inversion
+                    latents_src = encode_image(vae, src_batch, device)
+                    if abs(scale_in - 1.0) > 1e-4:
+                        latents_src = latents_src * scale_in
+                    latents_x0 = lgt.inversion(latents_src, src_style_ids)
+
+                    # Generation for each target style
+                    for tgt_id in range(num_styles):
+                        tgt_name = style_subdirs[tgt_id]
+                        tgt_ids = torch.full((len(batch_info),), tgt_id, device=device, dtype=torch.long)
+                        latents_gen = lgt.generation(latents_x0, tgt_ids)
+                        if abs(scale_out - 1.0) > 1e-4:
+                            latents_gen = latents_gen * scale_out
+                        imgs_gen = decode_latent(vae, latents_gen, device) # [B, 3, H, W]
+
+                        # Offload to CPU & Save Async
+                        latents_gen_cpu = latents_gen.detach().float().cpu()
+                        imgs_gen_cpu = imgs_gen.cpu()
+
+                        for i in range(len(batch_info)):
+                            src_item = batch_info[i]
+                            out_name = f"{src_item['style_name']}_{src_item['path'].stem}_to_{tgt_name}.jpg"
+                            out_path = out_dir / out_name
+
+                            # Async Save
+                            io_pool.submit(save_image_task, imgs_gen_cpu[i], out_path)
+
+                            # Store for Phase 2
+                            generated_buffer.append({
+                                'src_path': src_item['path'],
+                                'src_style': src_item['style_name'],
+                                'tgt_style_name': tgt_name,
+                                'tgt_style_id': tgt_id,
+                                'gen_latent': latents_gen_cpu[i], # Keep latent for classifier evaluation
+                                'gen_img': imgs_gen_cpu[i], # Keep in RAM
+                                'gen_name': out_name
+                            })
+
+        # Unload Generation Models
+        del lgt, vae
+        torch.cuda.empty_cache()
+        gc.collect()
+        print("  Generation models unloaded")
+    if not generated_buffer:
+        raise RuntimeError(f"No generated samples to evaluate in {out_dir}")
 
     # ==========================================
     # PHASE 2: EVALUATION (VGG + CLIP)
     # ==========================================
-    print(f"\n棣冩畬 Phase 2: Evaluation")
+    print(f"\n妫ｅ啯鐣?Phase 2: Evaluation")
     
     # Load Classifier if requested
     classifier = None
+    image_classifier = None
     classifier_label_names = list(style_subdirs)
     if args.classifier_classes:
         parsed_names = [c.strip() for c in args.classifier_classes.split(',') if c.strip()]
@@ -495,6 +585,21 @@ def main():
             print(f"  WARNING: failed to load latent style classifier: {e}")
             classifier = None
 
+    if args.image_classifier_path:
+        try:
+            image_ckpt = Path(args.image_classifier_path)
+            if not image_ckpt.is_absolute():
+                image_ckpt = (Path(__file__).resolve().parent / image_ckpt).resolve()
+            if not image_ckpt.exists():
+                print(f"  WARNING: image style classifier checkpoint not found: {image_ckpt}")
+            else:
+                image_classifier = load_eval_image_classifier(image_ckpt, device=device)
+                classifier_label_names = list(image_classifier.classes)
+                print(f"  Loaded image style classifier: {image_ckpt} (classes={len(classifier_label_names)})")
+        except Exception as e:
+            print(f"  WARNING: failed to load image style classifier: {e}")
+            image_classifier = None
+
     # Skip other metrics if classifier-only mode
     run_full_metrics = not args.eval_classifier_only
 
@@ -516,14 +621,14 @@ def main():
         else:
             try:
                 loss_fn = lpips.LPIPS(net='vgg', verbose=False).to(device)
-                print("  ✓ LPIPS Loaded")
+                print("  鉁?LPIPS Loaded")
             except Exception as e:
                 print(f"  WARNING: Failed to load LPIPS: {e}")
             try:
                 loss_fn = lpips.LPIPS(net='vgg', verbose=False).to(device)
-                print("  閴?LPIPS Loaded")
+                print("  闁?LPIPS Loaded")
             except Exception as e:
-                print(f"  閳跨媴绗?Failed to load LPIPS: {e}")
+                print(f"  闁宠法濯寸粭?Failed to load LPIPS: {e}")
 
         try:
             from transformers import CLIPModel, CLIPProcessor
@@ -531,76 +636,97 @@ def main():
             clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
             clip_model.eval()
             has_clip = True
-            print("  閴?CLIP Loaded")
+            print("  闁?CLIP Loaded")
         except Exception as e:
-            print(f"  閳跨媴绗?CLIP not found: {e}")
+            print(f"  闁宠法濯寸粭?CLIP not found: {e}")
 
     # Prepare Reference Features (Cache)
-    dataset_hash = hashlib.md5(str(test_dir.resolve()).encode()).hexdigest()[:8]
+    style_sig = ",".join(style_subdirs)
+    dataset_sig = f"{str(test_dir.resolve())}|{style_sig}|clip-vit-base-patch32|v2"
+    dataset_hash = hashlib.md5(dataset_sig.encode()).hexdigest()[:10]
     max_ref_cache = int(args.max_ref_cache)
     max_ref_cache_tag = "all" if max_ref_cache <= 0 else str(max_ref_cache)
     cache_file = cache_dir / f"ref_feats_{dataset_hash}_m{max_ref_cache_tag}.pt"
+    lock_file = cache_file.with_suffix(cache_file.suffix + ".lock")
 
     ref_features = {}
-    
-    # 棣冩暉 Fix: Force regen is CRITICAL if previous logic was flawed
-    if run_full_metrics and cache_file.exists() and not args.force_regen:
-        print(f"棣冩憹 Found feature cache: {cache_file}")
+    # Keep reference cache independent from output regeneration.
+    must_rebuild_ref_cache = bool(args.force_regen_ref_cache)
+
+    if run_full_metrics and cache_file.exists() and not must_rebuild_ref_cache:
+        print(f"Found global reference cache: {cache_file}")
         try:
             ref_features = torch.load(cache_file, map_location='cpu')
-            print("  閴?Cache loaded successfully")
-            
-            # Validate cache: check if data is valid
-            if has_clip and ref_features:
-                first_style = next(iter(ref_features.values()))
-                if first_style:
-                    sample_feat = first_style[0].get('clip')
-                    # Just check if it's None or not a tensor
-                    if sample_feat is None or not isinstance(sample_feat, torch.Tensor):
-                        print(f"  閳跨媴绗?Cache invalid (CLIP data issue), regenerating...")
-                        ref_features = {}
+            if _is_ref_cache_valid(ref_features, need_clip=has_clip):
+                print("  Reference cache loaded successfully")
+            else:
+                print("  Reference cache invalid for current metrics, rebuilding...")
+                ref_features = {}
         except Exception as e:
-            print(f"  閳跨媴绗?Cache load failed ({e}), re-computing...")
+            print(f"  Reference cache load failed ({e}), rebuilding...")
             ref_features = {}
-    
+
     if run_full_metrics and not ref_features:
-        print("\nComputing Reference Features (One-time setup)...")
-        for style_id, (style_name, img_list) in test_images.items():
-            ref_features[style_id] = []
-
-            sampled_refs = img_list[:]
-            if max_ref_cache > 0:
-                sampled_refs = sampled_refs[:min(len(sampled_refs), max_ref_cache)]
-            ref_bs = max(1, int(args.ref_feature_batch_size))
-
-            pbar = tqdm(range(0, len(sampled_refs), ref_bs), desc=f"Featurizing {style_name}")
-            for b_start in pbar:
-                batch_paths = sampled_refs[b_start:b_start + ref_bs]
+        got_lock = _acquire_lock(lock_file, timeout_sec=int(args.ref_cache_lock_timeout), poll_sec=1.0)
+        if not got_lock:
+            raise TimeoutError(f"Timed out waiting for reference-cache lock: {lock_file}")
+        try:
+            # Double-check after lock: another process may have completed cache.
+            if cache_file.exists() and not must_rebuild_ref_cache:
                 try:
-                    batch_pils = [Image.open(img_path).convert('RGB').resize((256, 256)) for img_path in batch_paths]
-                    batch_t = torch.stack([T.ToTensor()(img_pil) for img_pil in batch_pils], dim=0).to(device)
+                    ref_features = torch.load(cache_file, map_location='cpu')
+                    if _is_ref_cache_valid(ref_features, need_clip=has_clip):
+                        print(f"Loaded global reference cache after waiting: {cache_file}")
+                    else:
+                        ref_features = {}
+                except Exception:
+                    ref_features = {}
 
-                    amp_ctx = torch.autocast('cuda', dtype=torch.bfloat16) if device == 'cuda' else nullcontext()
-                    with torch.no_grad(), amp_ctx:
-                        v_feats = vgg_extractor.get_features(batch_t)
-                        c_emb = None
-                        if has_clip and clip_model is not None:
-                            inputs = clip_processor(images=batch_pils, return_tensors='pt').to(device)
-                            out = clip_model.get_image_features(**inputs)
-                            c_emb = _extract_clip_embeddings(out)
-                            c_emb = (c_emb / (c_emb.norm(p=2, dim=-1, keepdim=True) + 1e-8)).cpu()
+            if not ref_features:
+                print(f"\nComputing Reference Features (global cache miss): {cache_file}")
+                for style_id, (style_name, img_list) in test_images.items():
+                    ref_features[style_id] = []
 
-                    for i, img_path in enumerate(batch_paths):
-                        ref_features[style_id].append({
-                            'path': str(img_path),
-                            'vgg': [vf[i:i+1] for vf in v_feats],
-                            'clip': c_emb[i:i+1] if c_emb is not None else None
-                        })
-                except Exception as e:
-                    print(f"Skipping batch {b_start}-{b_start + len(batch_paths)} in {style_name}: {e}")
+                    sampled_refs = img_list[:]
+                    if max_ref_cache > 0:
+                        sampled_refs = sampled_refs[:min(len(sampled_refs), max_ref_cache)]
+                    ref_bs = max(1, int(args.ref_feature_batch_size))
 
-        torch.save(ref_features, cache_file)
-        print(f"Cache saved to {cache_file}")
+                    pbar = tqdm(range(0, len(sampled_refs), ref_bs), desc=f"Featurizing {style_name}")
+                    for b_start in pbar:
+                        batch_paths = sampled_refs[b_start:b_start + ref_bs]
+                        try:
+                            batch_pils = [Image.open(img_path).convert('RGB').resize((256, 256)) for img_path in batch_paths]
+                            batch_t = torch.stack([T.ToTensor()(img_pil) for img_pil in batch_pils], dim=0).to(device)
+
+                            amp_ctx = torch.autocast('cuda', dtype=torch.bfloat16) if device == 'cuda' else nullcontext()
+                            with torch.no_grad(), amp_ctx:
+                                v_feats = vgg_extractor.get_features(batch_t)
+                                c_emb = None
+                                if has_clip and clip_model is not None:
+                                    inputs = clip_processor(images=batch_pils, return_tensors='pt').to(device)
+                                    out = clip_model.get_image_features(**inputs)
+                                    c_emb = _extract_clip_embeddings(out)
+                                    c_emb = (c_emb / (c_emb.norm(p=2, dim=-1, keepdim=True) + 1e-8)).cpu()
+
+                            for i, img_path in enumerate(batch_paths):
+                                ref_features[style_id].append({
+                                    'path': str(img_path),
+                                    'vgg': [vf[i:i+1] for vf in v_feats],
+                                    'clip': c_emb[i:i+1] if c_emb is not None else None
+                                })
+                        except Exception as e:
+                            print(f"Skipping batch {b_start}-{b_start + len(batch_paths)} in {style_name}: {e}")
+
+                tmp_cache = cache_file.with_suffix(cache_file.suffix + f".tmp.{os.getpid()}")
+                torch.save(ref_features, tmp_cache)
+                os.replace(tmp_cache, cache_file)
+                print(f"Global reference cache saved: {cache_file}")
+        finally:
+            try:
+                lock_file.unlink(missing_ok=True)
+            except Exception:
+                pass
 
     # Optimize Reference CLIP Features for Vectorization
     ref_clip_matrices = {} # style_id -> Tensor[N_ref, D] (GPU)
@@ -625,10 +751,11 @@ def main():
                         stacked = stacked / (stacked.norm(p=2, dim=-1, keepdim=True) + 1e-8)
                         ref_clip_matrices[sid] = stacked.to(device, dtype=torch.float32)
                 except Exception as e:
-                    print(f"  閳跨媴绗?Failed to prepare CLIP matrix for style {sid}: {e}")
+                    print(f"  闁宠法濯寸粭?Failed to prepare CLIP matrix for style {sid}: {e}")
 
     csv_path = out_dir / 'metrics.csv'
-    csv_mode = 'w' if args.force_regen or not csv_path.exists() else 'a'
+    # Re-evaluation on reused images should overwrite metrics to avoid mixing old/new classifier outputs.
+    csv_mode = 'w' if args.force_regen or args.reuse_generated or not csv_path.exists() else 'a'
     csv_file = open(csv_path, csv_mode, newline='')
     columns = ['src_style', 'tgt_style', 'src_image', 'gen_image', 'content_lpips', 'style_lpips', 'clip_style', 'clip_content', 'pred_style', 'class_correct']
     writer = csv.DictWriter(csv_file, fieldnames=columns)
@@ -642,8 +769,11 @@ def main():
         b_end = min(b_start + args.batch_size, total_gen)
         batch_items = generated_buffer[b_start:b_end]
         
-        gen_latents_cpu = torch.stack([item['gen_latent'] for item in batch_items])
-        gen_latents = gen_latents_cpu.to(device)
+        has_latents = all(item.get('gen_latent') is not None for item in batch_items)
+        gen_latents = None
+        if has_latents:
+            gen_latents_cpu = torch.stack([item['gen_latent'] for item in batch_items])
+            gen_latents = gen_latents_cpu.to(device)
         gen_imgs_cpu = torch.stack([item['gen_img'] for item in batch_items])
         gen_imgs = gen_imgs_cpu.to(device)
         
@@ -692,7 +822,10 @@ def main():
 
             # 3. Classifier Predictions
             pred_indices = [-1] * len(batch_items)
-            if classifier:
+            if image_classifier is not None:
+                preds = image_classifier.predict_indices(gen_imgs).cpu().numpy().tolist()
+                pred_indices = preds
+            elif classifier and gen_latents is not None:
                 cls_inputs = gen_latents
                 cls_input_size = int(cfg.get('loss', {}).get('style_classifier_input_size_infer', 0))
                 if cls_input_size and (
@@ -713,10 +846,13 @@ def main():
                 pred_style_name = "N/A"
                 class_correct = "N/A"
                 
-                if classifier and pred_idx != -1:
+                if (image_classifier is not None or classifier is not None) and pred_idx != -1:
                     if pred_idx < len(classifier_label_names):
                         pred_style_name = classifier_label_names[pred_idx]
-                        is_correct = (pred_idx == int(tgt_id))
+                        if image_classifier is not None:
+                            is_correct = (str(pred_style_name).lower() == str(tgt_name).lower())
+                        else:
+                            is_correct = (pred_idx == int(tgt_id))
                         class_correct = 1 if is_correct else 0
                     else:
                         pred_style_name = f"Unknown({pred_idx})"
@@ -786,7 +922,7 @@ def main():
     generate_summary_json(csv_path, out_dir, checkpoint_path)
 
 def generate_summary_json(csv_path, out_dir, ckpt_path):
-    print("\n棣冩惓 Generating Summary...")
+    print("\n妫ｅ啯鎯?Generating Summary...")
     rows = []
     if csv_path.exists():
         with open(csv_path, 'r') as f:
@@ -855,7 +991,7 @@ def generate_summary_json(csv_path, out_dir, ckpt_path):
         try:
             cls_report = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
             
-            # 閹绘劕褰囬弴瀵告纯鐟欏倻娈戠拠锔剧矎娣団剝浼?
+            # 闁圭粯鍔曡ぐ鍥即鐎靛憡绾悷娆忓€诲▓鎴犳嫚閿斿墽鐭庡ǎ鍥ｅ墲娴?
             precision, recall, f1, support = precision_recall_fscore_support(y_true, y_pred, average=None, labels=list(cls_report.keys())[:-3], zero_division=0)
             unique_labels = list(cls_report.keys())[:-3]
             for i, label in enumerate(unique_labels):
@@ -865,10 +1001,10 @@ def generate_summary_json(csv_path, out_dir, ckpt_path):
                     "f1_score": float(f1[i]),
                     "support": int(support[i])
                 }
-            print("\n閴?Classification Report:")
+            print("\n闁?Classification Report:")
             print(classification_report(y_true, y_pred, zero_division=0))
         except Exception as e:
-            print(f"閳跨媴绗?Failed to generate classification report: {e}")
+            print(f"闁宠法濯寸粭?Failed to generate classification report: {e}")
     elif y_true:
         # Manual simple accuracy if sklearn missing
         correct = sum(1 for t, p in zip(y_true, y_pred) if t.lower() == p.lower())
@@ -897,8 +1033,9 @@ def generate_summary_json(csv_path, out_dir, ckpt_path):
     sum_path = out_dir / 'summary.json'
     with open(sum_path, 'w') as f:
         json.dump(summary, f, indent=2)
-    print(f"閴?Summary saved: {sum_path}")
+    print(f"闁?Summary saved: {sum_path}")
 
 if __name__ == '__main__':
     main() 
    
+
