@@ -98,7 +98,7 @@
     "virtual_length_multiplier": 100
   },
   "checkpoint": {
-    "save_dir": "../overfit50-5styles"
+    "save_dir": "../overfit50-5styles-num5"
   },
   "inference": {
     "num_steps": 1,
