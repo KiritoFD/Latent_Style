@@ -1,10 +1,10 @@
 {
   "model": {
     "latent_channels": 4,
-    "base_dim": 128,
+    "base_dim": 256,
     "lift_channels": 128,
     "style_dim": 256,
-    "num_styles": 2,
+    "num_styles": 5,
     "num_hires_blocks": 4,
     "num_res_blocks": 2,
     "num_groups": 4,
@@ -28,6 +28,7 @@
     "w_output_tv": 0.005,
     "w_stroke_gram": 80.0,
     "w_color_moment": 6.0,
+    "w_identity": 10.0,
     "stroke_patch_sizes": [3],
     "stroke_patch_randomize": false,
     "color_patch_size": 1,
@@ -89,7 +90,7 @@
   },
   "data": {
     "data_root": "../../latent-256",
-    "style_subdirs": ["photo", "Hayao"],
+    "style_subdirs": ["photo", "Hayao","monet","cezanne","vangogh"],
     "allow_hflip": false,
     "preload_to_gpu": true,
     "preload_max_vram_gb": 6.0,

@@ -64,6 +64,7 @@ class AdaCUTObjective:
         self.w_output_tv = float(loss_cfg.get("w_output_tv", 0.0))
         self.w_stroke_gram = float(loss_cfg.get("w_stroke_gram", 0.0))
         self.w_color_moment = float(loss_cfg.get("w_color_moment", 0.0))
+        self.w_identity = float(loss_cfg.get("w_identity", 0.0))
         self.w_semigroup = float(loss_cfg.get("w_semigroup", 0.0))
 
         self.struct_lowpass_strength = float(loss_cfg.get("struct_lowpass_strength", 1.0))
@@ -161,6 +162,7 @@ class AdaCUTObjective:
         content: torch.Tensor,
         target_style: torch.Tensor,
         target_style_id: torch.Tensor,
+        source_style_id: torch.Tensor | None = None,
         debug_timing: bool = False,
     ) -> Dict[str, torch.Tensor]:
         stage = "init"
@@ -210,6 +212,20 @@ class AdaCUTObjective:
             stage = "prepare_inputs"
             content_f32 = content.float()
             target_style_f32 = target_style.float()
+            if source_style_id is None:
+                id_mask = torch.zeros_like(target_style_id, dtype=torch.bool)
+            else:
+                id_mask = source_style_id.long() == target_style_id.long()
+            xid_mask = ~id_mask
+            id_ratio = id_mask.float().mean()
+            xid_mask_f = xid_mask.float()
+
+            def _masked_mean(per_sample: torch.Tensor, mask_f: torch.Tensor) -> torch.Tensor:
+                if per_sample.ndim != 1:
+                    per_sample = per_sample.reshape(per_sample.shape[0], -1).mean(dim=1)
+                denom = mask_f.sum().clamp_min(1.0)
+                return (per_sample * mask_f).sum() / denom
+
             need_struct_feat = bool(self.w_struct > 0.0)
             need_style_feat = bool(self.w_stroke_gram > 0.0 or self.w_color_moment > 0.0)
             need_projected_feat = bool(need_struct_feat or need_style_feat)
@@ -251,7 +267,7 @@ class AdaCUTObjective:
                         ct_lp = F.adaptive_avg_pool2d(_lowpass(content_feat), output_size=(4, 4))
                         low = _self_similarity_loss_per_sample(ps_lp, ct_lp)
                         raw = (1.0 - self.struct_lowpass_strength) * raw + self.struct_lowpass_strength * low
-                    loss_struct = raw.mean()
+                    loss_struct = _masked_mean(raw, xid_mask_f)
                 else:
                     loss_struct = torch.tensor(0.0, device=content.device, dtype=content.dtype)
             _mem_mark("struct")
@@ -265,15 +281,26 @@ class AdaCUTObjective:
                     pred_f = pred_feat
                     tgt_f = target_style_feat
                     if self.w_stroke_gram > 0.0:
-                        loss_stroke_gram = calc_gram_loss_per_sample(pred_f, tgt_f).mean()
+                        loss_stroke_gram = _masked_mean(calc_gram_loss_per_sample(pred_f, tgt_f), xid_mask_f)
                     if self.w_color_moment > 0.0:
                         pred_mu = pred_f.mean(dim=(2, 3))
                         tgt_mu = tgt_f.mean(dim=(2, 3))
                         pred_std = pred_f.std(dim=(2, 3), unbiased=False)
                         tgt_std = tgt_f.std(dim=(2, 3), unbiased=False)
-                        loss_color_moment = (pred_mu - tgt_mu).abs().mean() + (pred_std - tgt_std).abs().mean()
+                        moment_per_sample = (pred_mu - tgt_mu).abs().mean(dim=1) + (pred_std - tgt_std).abs().mean(dim=1)
+                        loss_color_moment = _masked_mean(moment_per_sample, xid_mask_f)
             _mem_mark("style")
             _time_mark("style")
+
+            stage = "identity"
+            with self._nvtx_range("loss/identity", nvtx_enabled):
+                if self.w_identity > 0.0 and bool(id_mask.any().item()):
+                    id_per_sample = (pred_student_f32 - content_f32).abs().mean(dim=(1, 2, 3))
+                    loss_identity = _masked_mean(id_per_sample, id_mask.float())
+                else:
+                    loss_identity = torch.tensor(0.0, device=content.device, dtype=content.dtype)
+            _mem_mark("identity")
+            _time_mark("identity")
 
             stage = "delta"
             with self._nvtx_range("loss/delta", nvtx_enabled):
@@ -320,6 +347,7 @@ class AdaCUTObjective:
                             self.w_struct * loss_struct
                             + self.w_stroke_gram * loss_stroke_gram
                             + self.w_color_moment * loss_color_moment
+                            + self.w_identity * loss_identity
                             + self.w_delta_tv * loss_delta_tv
                             + self.w_delta_l2 * loss_delta_l2
                             + self.w_output_tv * loss_output_tv
@@ -332,6 +360,8 @@ class AdaCUTObjective:
                             "struct": loss_struct.detach(),
                             "stroke_gram": loss_stroke_gram.detach(),
                             "color_moment": loss_color_moment.detach(),
+                            "identity": loss_identity.detach(),
+                            "identity_ratio": id_ratio.detach(),
                             "delta_tv": loss_delta_tv.detach(),
                             "delta_l2": loss_delta_l2.detach(),
                             "output_tv": loss_output_tv.detach(),
@@ -439,6 +469,7 @@ class AdaCUTObjective:
                     self.w_struct * loss_struct
                     + self.w_stroke_gram * loss_stroke_gram
                     + self.w_color_moment * loss_color_moment
+                    + self.w_identity * loss_identity
                     + self.w_delta_tv * loss_delta_tv
                     + self.w_delta_l2 * loss_delta_l2
                     + self.w_output_tv * loss_output_tv
@@ -452,6 +483,8 @@ class AdaCUTObjective:
                 "struct": loss_struct.detach(),
                 "stroke_gram": loss_stroke_gram.detach(),
                 "color_moment": loss_color_moment.detach(),
+                "identity": loss_identity.detach(),
+                "identity_ratio": id_ratio.detach(),
                 "delta_tv": loss_delta_tv.detach(),
                 "delta_l2": loss_delta_l2.detach(),
                 "output_tv": loss_output_tv.detach(),
