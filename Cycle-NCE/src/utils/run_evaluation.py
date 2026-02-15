@@ -217,6 +217,33 @@ def _parse_epoch_from_ckpt_name(path: Path):
         return None
 
 
+def _resolve_existing_path(raw_path: str | None, base_dirs: list[Path]) -> Path | None:
+    if raw_path is None:
+        return None
+    text = str(raw_path).strip()
+    if not text:
+        return None
+
+    p = Path(text).expanduser()
+    candidates = []
+    if p.is_absolute():
+        candidates.append(p)
+    else:
+        for base in base_dirs:
+            candidates.append((base / p).resolve())
+        candidates.append(p.resolve())
+
+    seen = set()
+    for cand in candidates:
+        key = str(cand)
+        if key in seen:
+            continue
+        seen.add(key)
+        if cand.exists():
+            return cand
+    return None
+
+
 def _auto_run_missing_full_eval(args) -> None:
     cfg_path = Path(args.config).resolve()
     if not cfg_path.exists():
@@ -281,6 +308,12 @@ def _auto_run_missing_full_eval(args) -> None:
 
     print(f"Auto full-eval | pending: {[ep for ep, _, _ in to_run]}")
     this_file = Path(__file__).resolve()
+    cfg_base = cfg_path.parent.resolve()
+    test_dir_cfg = str(train_cfg.get("test_image_dir", "")).strip()
+    resolved_test_dir = _resolve_existing_path(
+        test_dir_cfg if test_dir_cfg else args.test_dir,
+        [cfg_base, this_file.parent, this_file.parent.parent, this_file.parent.parent.parent],
+    )
     for ep, ckpt_path, out_dir in to_run:
         cmd = [
             sys.executable,
@@ -298,16 +331,21 @@ def _auto_run_missing_full_eval(args) -> None:
             "--classifier_path", str(args.classifier_path),
             "--image_classifier_path", str(args.image_classifier_path),
             "--classifier_classes", str(args.classifier_classes),
+            "--clip_model_name", str(args.clip_model_name),
+            "--clip_modelscope_id", str(args.clip_modelscope_id),
+            "--clip_modelscope_cache_dir", str(args.clip_modelscope_cache_dir),
             "--style_ref_mode", str(args.style_ref_mode),
             "--style_ref_count", str(args.style_ref_count),
             "--style_ref_seed", str(args.style_ref_seed),
         ]
-        if args.test_dir:
+        if args.clip_allow_network:
+            cmd += ["--clip_allow_network"]
+        if resolved_test_dir is not None:
+            cmd += ["--test_dir", str(resolved_test_dir)]
+        elif args.test_dir:
             cmd += ["--test_dir", str(args.test_dir)]
         if args.style_strength is not None:
             cmd += ["--style_strength", str(args.style_strength)]
-        if args.step_schedule is not None:
-            cmd += ["--step_schedule", str(args.step_schedule)]
         if args.force_regen:
             cmd += ["--force_regen"]
         if args.eval_classifier_only:
@@ -331,7 +369,6 @@ def main():
     parser.add_argument('--num_steps', type=int, default=15)
     parser.add_argument('--step_size', type=float, default=1.0)
     parser.add_argument('--style_strength', type=float, default=None, help="Global style strength in [0,1]; default uses checkpoint config")
-    parser.add_argument('--step_schedule', type=str, default=None, help="Per-step schedule name or comma weights, e.g. late or 0.5,1.0,1.5")
     parser.add_argument('--max_src_samples', type=int, default=30, help="Max source images per style; <=0 means all")
     parser.add_argument('--max_ref_compare', type=int, default=50, help="Max refs for LPIPS style compare; <=0 means all cached refs")
     parser.add_argument('--max_ref_cache', type=int, default=256, help="Max reference images per style used for cache/features; <=0 means all")
@@ -343,6 +380,10 @@ def main():
     parser.add_argument('--classifier_path', type=str, default="../../style_classifier.pt", help="Path to latent style classifier checkpoint")
     parser.add_argument('--image_classifier_path', type=str, default="../../artifacts/eval_classifier/eval_style_image_classifier.pt", help="Path to robust image classifier checkpoint for evaluation")
     parser.add_argument('--classifier_classes', type=str, default="", help="Optional comma-separated class names for report display")
+    parser.add_argument('--clip_model_name', type=str, default="openai/clip-vit-base-patch32", help="HF/local CLIP model name or local directory")
+    parser.add_argument('--clip_modelscope_id', type=str, default="", help="Optional ModelScope model id for CLIP fallback")
+    parser.add_argument('--clip_modelscope_cache_dir', type=str, default="", help="Optional ModelScope cache directory")
+    parser.add_argument('--clip_allow_network', action='store_true', help="Allow online model fetch if local cache is missing (default off)")
     parser.add_argument('--eval_classifier_only', action='store_true', help="Run only classifier evaluation (skip LPIPS/CLIP)")
     parser.add_argument('--eval_disable_lpips', action='store_true', help="Skip LPIPS metrics (keep CLIP)")
     parser.add_argument('--reuse_generated', action='store_true', help="Reuse existing generated *_to_*.jpg in output dir and skip generation")
@@ -382,9 +423,19 @@ def main():
     
     # Resolve Test Data Path
     test_dir_raw = args.test_dir if args.test_dir else cfg.get('training', {}).get('test_image_dir', '')
-    test_dir = Path(test_dir_raw)
-    if not test_dir.exists():
-        raise ValueError(f"Test directory not found: {test_dir}")
+    resolved_test_dir = _resolve_existing_path(
+        test_dir_raw,
+        [
+            Path.cwd(),
+            checkpoint_path.parent.resolve(),
+            Path(__file__).resolve().parent,
+            Path(__file__).resolve().parents[1],
+            Path(__file__).resolve().parents[2],
+        ],
+    )
+    if resolved_test_dir is None:
+        raise ValueError(f"Test directory not found: {test_dir_raw}")
+    test_dir = resolved_test_dir
 
     style_subdirs = cfg.get('data', {}).get('style_subdirs', [])
     if not style_subdirs:
@@ -465,7 +516,6 @@ def main():
             num_steps=args.num_steps,
             step_size=args.step_size,
             style_strength=args.style_strength,
-            step_schedule=args.step_schedule,
         )
         vae = load_vae(device)
         model_scale = float(getattr(lgt.model, "latent_scale_factor", 0.18215))
@@ -487,7 +537,6 @@ def main():
                 src_tensors.append(_load_eval_image_tensor(item['path']))
 
             src_batch = torch.stack(src_tensors).to(device)
-            src_style_ids = torch.tensor([item['style_id'] for item in batch_info], device=device)
 
             with torch.autocast('cuda', dtype=torch.bfloat16):
                 with torch.no_grad():
@@ -495,7 +544,7 @@ def main():
                     latents_src = encode_image(vae, src_batch, device)
                     if abs(scale_in - 1.0) > 1e-4:
                         latents_src = latents_src * scale_in
-                    latents_x0 = lgt.inversion(latents_src, src_style_ids)
+                    latents_x0 = lgt.inversion(latents_src)
 
                     # Generation for each target style
                     for tgt_id in range(num_styles):
@@ -609,6 +658,7 @@ def main():
     clip_model = None
     clip_processor = None
     has_clip = False
+    clip_model_tag = str(args.clip_model_name).strip() or "openai/clip-vit-base-patch32"
     to_pil = ToPILImage()
 
     if run_full_metrics:
@@ -632,17 +682,68 @@ def main():
 
         try:
             from transformers import CLIPModel, CLIPProcessor
-            clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(device)
-            clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-            clip_model.eval()
-            has_clip = True
-            print("  闁?CLIP Loaded")
+
+            if not bool(args.clip_allow_network):
+                os.environ.setdefault("HF_HUB_OFFLINE", "1")
+                os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+
+            clip_sources = []
+            if str(args.clip_model_name).strip():
+                clip_sources.append(str(args.clip_model_name).strip())
+
+            ms_id = str(args.clip_modelscope_id).strip()
+            if ms_id:
+                try:
+                    from modelscope.hub.snapshot_download import snapshot_download
+
+                    ms_kwargs = {}
+                    ms_cache_dir = str(args.clip_modelscope_cache_dir).strip()
+                    if ms_cache_dir:
+                        ms_kwargs["cache_dir"] = ms_cache_dir
+                    try:
+                        ms_local = snapshot_download(ms_id, local_files_only=(not bool(args.clip_allow_network)), **ms_kwargs)
+                    except TypeError:
+                        if bool(args.clip_allow_network):
+                            ms_local = snapshot_download(ms_id, **ms_kwargs)
+                        else:
+                            raise
+                    clip_sources.append(ms_local)
+                    print(f"  ModelScope CLIP cache: {ms_local}")
+                except Exception as ms_exc:
+                    print(f"  WARNING: ModelScope CLIP fallback unavailable: {ms_exc}")
+
+            last_err = None
+            for src in clip_sources:
+                try:
+                    clip_model = CLIPModel.from_pretrained(src, local_files_only=(not bool(args.clip_allow_network))).to(device)
+                    clip_processor = CLIPProcessor.from_pretrained(src, local_files_only=(not bool(args.clip_allow_network)))
+                    clip_model.eval()
+                    has_clip = True
+                    clip_model_tag = str(src)
+                    print(f"  CLIP Loaded from: {src}")
+                    break
+                except TypeError:
+                    # Older transformers may not support local_files_only in some wrappers.
+                    if not bool(args.clip_allow_network):
+                        raise
+                    clip_model = CLIPModel.from_pretrained(src).to(device)
+                    clip_processor = CLIPProcessor.from_pretrained(src)
+                    clip_model.eval()
+                    has_clip = True
+                    clip_model_tag = str(src)
+                    print(f"  CLIP Loaded from: {src}")
+                    break
+                except Exception as load_exc:
+                    last_err = load_exc
+                    continue
+            if not has_clip and last_err is not None:
+                raise last_err
         except Exception as e:
-            print(f"  闁宠法濯寸粭?CLIP not found: {e}")
+            print(f"  CLIP unavailable (offline/local-only mode): {e}")
 
     # Prepare Reference Features (Cache)
     style_sig = ",".join(style_subdirs)
-    dataset_sig = f"{str(test_dir.resolve())}|{style_sig}|clip-vit-base-patch32|v2"
+    dataset_sig = f"{str(test_dir.resolve())}|{style_sig}|{clip_model_tag}|v2"
     dataset_hash = hashlib.md5(dataset_sig.encode()).hexdigest()[:10]
     max_ref_cache = int(args.max_ref_cache)
     max_ref_cache_tag = "all" if max_ref_cache <= 0 else str(max_ref_cache)
@@ -1038,4 +1139,3 @@ def generate_summary_json(csv_path, out_dir, ckpt_path):
 if __name__ == '__main__':
     main() 
    
-

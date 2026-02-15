@@ -3,9 +3,9 @@ Latent AdaCUT (Statistical Version)
 
 Core recipe:
 - AdaGN injection
-- Reference-conditioned style injection
-    - Gram + Moment style alignment
-- InfoNCE structure lock
+- 16x16 spatial pre-inject
+- Stroke-Gram + Color-Moment style alignment
+- Struct/Edge + Delta-TV stability losses
 """
 
 from .model import LatentAdaCUT, count_parameters
