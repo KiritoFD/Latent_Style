@@ -68,7 +68,12 @@ def _compute_whitening_from_ref(ref: torch.Tensor, eps: float = 1e-4) -> tuple[t
     denom = max(int(xc.shape[1]) - 1, 1)
     cov = (xc @ xc.t()) / float(denom)
     cov = cov + eps * torch.eye(c, device=cov.device, dtype=cov.dtype)
-    evals, evecs = torch.linalg.eigh(cov)
+    # CUDA `eigh` does not support bfloat16 in some PyTorch builds.
+    if cov.is_cuda:
+        with torch.cuda.amp.autocast(enabled=False):
+            evals, evecs = torch.linalg.eigh(cov.float())
+    else:
+        evals, evecs = torch.linalg.eigh(cov.float())
     inv_sqrt = (evals.clamp_min(eps).rsqrt()).diag()
     w = evecs @ inv_sqrt @ evecs.t()
     return w, mu

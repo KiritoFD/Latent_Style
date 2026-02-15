@@ -1,0 +1,22 @@
+[INFO] watchdog started at 2026-02-15 00:40:49
+[INFO] cwd=/mnt/i/Github/Latent_Style/Cycle-NCE/src
+[INFO] log=/mnt/i/Github/Latent_Style/Cycle-NCE/src/../train_logs/train_watchdog_20260215_004048.log
+[INFO] launch train at 2026-02-15 00:40:49
+2026-02-15 00:40:52,554 - INFO - Active losses: w_struct, w_cycle, w_stroke_gram, w_color_moment, w_delta_tv, w_delta_l2
+2026-02-15 00:40:52,846 - INFO - Device: cuda
+2026-02-15 00:40:52,847 - INFO - Seed: 42
+2026-02-15 00:40:52,847 - INFO - Loading latent dataset from ../../latent-256
+2026-02-15 00:41:17,415 - INFO -   style=photo id=0 count=6187
+2026-02-15 00:41:24,799 - INFO -   style=Hayao id=1 count=1752
+2026-02-15 00:41:25,133 - INFO - Preloaded all latents to GPU: cuda
+2026-02-15 00:41:25,147 - INFO - DataLoader | batch=160 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-15 00:41:28,035 - INFO - torch.compile enabled (backend=inductor mode=default fullgraph=False cudagraphs=off cache=/mnt/i/Github/Latent_Style/Cycle-NCE/full_300-adagn+map16-statloss/torch_compile_cache)
+2026-02-15 00:41:28,035 - INFO - Model params: 8,378,244
+2026-02-15 00:41:28,036 - INFO - Infra | channels_last=True tf32=True grad_ckpt=False compile=True backend=inductor mode=default fullgraph=False cudagraphs=off
+2026-02-15 00:41:28,036 - INFO - Precision | amp=True amp_dtype=bf16 grad_scaler=False fused_adamw=True
+2026-02-15 00:41:28,040 - INFO - No checkpoint found, start from scratch.
+Epoch 1/300:   0%|          | 0/148 [00:00<?, ?it/s]/mnt/i/Github/Latent_Style/Cycle-NCE/src/losses.py:73: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=False):
+Epoch 1/300:   1%|          | 1/148 [00:13<33:03, 13.50s/it]/mnt/i/Github/Latent_Style/Cycle-NCE/src/losses.py:73: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=False):
+Epoch 1/300:   3%|▎         | 5/148 [00:16<06:03,  2.54s/it]Epoch 1/300:   6%|▌         | 9/148 [00:18<03:33,  1.53s/it]Epoch 1/300:   8%|▊         | 12/148 [00:20<02:46,  1.23s/it]Epoch 1/300:  10%|█         | 15/148 [00:23<02:19,  1.05s/it]Epoch 1/300:  12%|█▏        | 18/148 [00:25<02:02,  1.06it/s]Epoch 1/300:  14%|█▍        | 21/148 [00:27<01:50,  1.15it/s]Epoch 1/300:  16%|█▌        | 24/148 [00:29<01:41,  1.23it/s]Epoch 1/300:  18%|█▊        | 27/148 [00:31<01:35,  1.27it/s]Epoch 1/300:  20%|██        | 30/148 [00:33<01:30,  1.30it/s]Epoch 1/300:  22%|██▏       | 33/148 [00:36<01:27,  1.31it/s]Epoch 1/300:  24%|██▍       | 36/148 [00:38<01:22,  1.36it/s]Epoch 1/300:  26%|██▋       | 39/148 [00:40<01:18,  1.38it/s]Epoch 1/300:  28%|██▊       | 42/148 [00:42<01:15,  1.41it/s]Epoch 1/300:  30%|███       | 45/148 [00:44<01:14,  1.39it/s]Epoch 1/300:  32%|███▏      | 48/148 [00:46<01:11,  1.40it/s]Epoch 1/300:  34%|███▍      | 51/148 [00:48<01:10,  1.37it/s]Epoch 1/300:  36%|███▋      | 54/148 [00:51<01:08,  1.38it/s]Epoch 1/300:  39%|███▊      | 57/148 [00:53<01:05,  1.38it/s]Epoch 1/300:  41%|████      | 60/148 [00:55<01:03,  1.38it/s]Epoch 1/300:  43%|████▎     | 63/148 [00:57<01:00,  1.39it/s]Epoch 1/300:  45%|████▍     | 66/148 [00:59<00:59,  1.37it/s]

@@ -1,0 +1,10 @@
+[INFO] watchdog started at 2026-02-15 00:31:32
+[INFO] cwd=/mnt/i/Github/Latent_Style/Cycle-NCE/src
+[INFO] log=/mnt/i/Github/Latent_Style/Cycle-NCE/src/../train_logs/train_watchdog_20260215_003132.log
+[INFO] launch train at 2026-02-15 00:31:32
+2026-02-15 00:31:34,053 - INFO - Active losses: w_struct, w_cycle, w_stroke_gram, w_color_moment, w_delta_tv, w_delta_l2
+2026-02-15 00:31:34,341 - INFO - Set PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+2026-02-15 00:31:34,341 - INFO - Device: cuda
+2026-02-15 00:31:34,341 - INFO - Seed: 42
+2026-02-15 00:31:34,405 - INFO - CUDA GPU: NVIDIA Graphics Device | cc=8.6 | vram=12.0 GB
+2026-02-15 00:31:34,405 - INFO - Loading latent dataset from ../../latent-256

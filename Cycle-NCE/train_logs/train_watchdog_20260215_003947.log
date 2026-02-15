@@ -1,0 +1,19 @@
+[INFO] watchdog started at 2026-02-15 00:39:47
+[INFO] cwd=/mnt/i/Github/Latent_Style/Cycle-NCE/src
+[INFO] log=/mnt/i/Github/Latent_Style/Cycle-NCE/src/../train_logs/train_watchdog_20260215_003947.log
+[INFO] launch train at 2026-02-15 00:39:47
+2026-02-15 00:39:49,260 - INFO - Active losses: w_struct, w_cycle, w_stroke_gram, w_color_moment, w_delta_tv, w_delta_l2
+2026-02-15 00:39:49,531 - INFO - Device: cuda
+2026-02-15 00:39:49,532 - INFO - Seed: 42
+2026-02-15 00:39:49,532 - INFO - Loading latent dataset from ../../latent-256
+2026-02-15 00:40:18,144 - INFO -   style=photo id=0 count=6187
+2026-02-15 00:40:25,573 - INFO -   style=Hayao id=1 count=1752
+2026-02-15 00:40:25,902 - INFO - Preloaded all latents to GPU: cuda
+2026-02-15 00:40:25,907 - INFO - DataLoader | batch=160 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-15 00:40:28,268 - INFO - torch.compile enabled (backend=inductor mode=default fullgraph=False cudagraphs=off cache=/mnt/i/Github/Latent_Style/Cycle-NCE/full_300-adagn+map16-statloss/torch_compile_cache)
+2026-02-15 00:40:28,268 - INFO - Model params: 8,378,244
+2026-02-15 00:40:28,268 - INFO - Infra | channels_last=True tf32=True grad_ckpt=False compile=True backend=inductor mode=default fullgraph=False cudagraphs=off
+2026-02-15 00:40:28,269 - INFO - Precision | amp=True amp_dtype=bf16 grad_scaler=False fused_adamw=True
+2026-02-15 00:40:28,274 - INFO - No checkpoint found, start from scratch.
+Epoch 1/300:   0%|          | 0/148 [00:00<?, ?it/s]/mnt/i/Github/Latent_Style/Cycle-NCE/src/losses.py:73: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=False):

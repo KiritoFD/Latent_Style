@@ -631,7 +631,15 @@ class AdaCUTTrainer:
             str(int(cfg_train.get("full_eval_style_ref_count", 8))),
             "--style_ref_seed",
             str(int(cfg_train.get("full_eval_style_ref_seed", 2026))),
+            "--clip_model_name",
+            str(cfg_train.get("full_eval_clip_model_name", "openai/clip-vit-base-patch32")),
+            "--clip_modelscope_id",
+            str(cfg_train.get("full_eval_clip_modelscope_id", "")),
+            "--clip_modelscope_cache_dir",
+            str(cfg_train.get("full_eval_clip_modelscope_cache_dir", "")),
         ]
+        if bool(cfg_train.get("full_eval_clip_allow_network", False)):
+            cmd += ["--clip_allow_network"]
         full_eval_style_strength = cfg_train.get("full_eval_style_strength", cfg_infer.get("style_strength"))
         if full_eval_style_strength is not None:
             cmd += ["--style_strength", str(float(full_eval_style_strength))]

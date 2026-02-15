@@ -1,0 +1,66 @@
+Style reference mode: none (count=8, seed=2026)
+
+Phase 1: Generation (Batch Size 20)
+  Generating Batch 1/5
+Traceback (most recent call last):
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/utils/run_evaluation.py", line 1039, in <module>
+    main() 
+    ^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/utils/run_evaluation.py", line 495, in main
+    latents_src = encode_image(vae, src_batch, device)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/utils/inference.py", line 327, in encode_image
+    latent = vae.encode(image_tensor).latent_dist.sample()
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/diffusers/utils/accelerate_utils.py", line 46, in wrapper
+    return method(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/diffusers/models/autoencoders/autoencoder_kl.py", line 192, in encode
+    h = self._encode(x)
+        ^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/diffusers/models/autoencoders/autoencoder_kl.py", line 166, in _encode
+    enc = self.encoder(x)
+          ^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/diffusers/models/autoencoders/vae.py", line 168, in forward
+    sample = down_block(sample)
+             ^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/diffusers/models/unets/unet_2d_blocks.py", line 1442, in forward
+    hidden_states = resnet(hidden_states, temb=None)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/diffusers/models/resnet.py", line 327, in forward
+    hidden_states = self.norm1(hidden_states)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/nn/modules/normalization.py", line 325, in forward
+    return F.group_norm(input, self.num_groups, self.weight, self.bias, self.eps)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/nn/functional.py", line 2956, in group_norm
+    return torch.group_norm(
+           ^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 640.00 MiB. GPU 0 has a total capacity of 12.00 GiB of which 8.33 GiB is free. Process 1139 has 17179869184.00 GiB memory in use. Including non-PyTorch memory, this process has 17179869184.00 GiB memory in use. Of the allocated memory 1.15 GiB is allocated by PyTorch, and 20.58 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)

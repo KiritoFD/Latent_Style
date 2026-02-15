@@ -13,3 +13,6 @@ Thermal/.compile_cache/*
 compile_cache/*
 torch_compile_cache/*
 Cycle-NCE/torch_compile_cache/*
+*.bin
+*.safetensors
+eval_cache/*

@@ -1,0 +1,95 @@
+{
+  "checkpoint": "/mnt/g/GitHub/Latent_Style/Cycle-NCE/style_ablation-50/loss_no_nce/epoch_0050.pt",
+  "timestamp": "2026-02-14 17:46:10",
+  "matrix_breakdown": {
+    "photo": {
+      "photo": {
+        "count": 50,
+        "clip_style": 0.6356658893823623,
+        "style_lpips": 0.736044557094574,
+        "content_lpips": 0.42414189480000003,
+        "clip_content": 0.8145446063999999,
+        "classifier_acc": 0.92
+      },
+      "Hayao": {
+        "count": 50,
+        "clip_style": 0.5436602038145065,
+        "style_lpips": 0.7358637845516205,
+        "content_lpips": 0.4785112248000001,
+        "clip_content": 0.7575934539999999,
+        "classifier_acc": 0.16
+      }
+    },
+    "Hayao": {
+      "photo": {
+        "count": 50,
+        "clip_style": 0.4551234197616577,
+        "style_lpips": 0.7650867426395416,
+        "content_lpips": 0.36981076339999996,
+        "clip_content": 0.8515905226,
+        "classifier_acc": 0.08
+      },
+      "Hayao": {
+        "count": 50,
+        "clip_style": 0.7040089809894562,
+        "style_lpips": 0.7113795375823975,
+        "content_lpips": 0.31137990779999997,
+        "clip_content": 0.8719444212,
+        "classifier_acc": 0.92
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "clip_style": 0.4993918117880821,
+      "content_lpips": 0.4241609941,
+      "classifier_acc": 0.12
+    },
+    "photo_to_art_performance": {
+      "clip_style": 0.5436602038145065,
+      "valid": true,
+      "classifier_acc": 0.16
+    }
+  },
+  "classification_report": {
+    "Hayao": {
+      "precision": 0.5192307692307693,
+      "recall": 0.54,
+      "f1-score": 0.5294117647058824,
+      "support": 100.0
+    },
+    "photo": {
+      "precision": 0.5208333333333334,
+      "recall": 0.5,
+      "f1-score": 0.5102040816326531,
+      "support": 100.0
+    },
+    "accuracy": 0.52,
+    "macro avg": {
+      "precision": 0.5200320512820513,
+      "recall": 0.52,
+      "f1-score": 0.5198079231692677,
+      "support": 200.0
+    },
+    "weighted avg": {
+      "precision": 0.5200320512820513,
+      "recall": 0.52,
+      "f1-score": 0.5198079231692677,
+      "support": 200.0
+    }
+  },
+  "detailed_style_metrics": {
+    "Hayao": {
+      "precision": 0.5192307692307693,
+      "recall": 0.54,
+      "f1_score": 0.5294117647058824,
+      "support": 100
+    },
+    "photo": {
+      "precision": 0.5208333333333334,
+      "recall": 0.5,
+      "f1_score": 0.5102040816326531,
+      "support": 100
+    }
+  }
+}

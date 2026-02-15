@@ -1,6 +1,10 @@
 # Style Ablation Summary
 
+<<<<<<< Updated upstream
 - Generated: 2026-02-14 12:26:12
+=======
+- Generated: 2026-02-14 16:29:47
+>>>>>>> Stashed changes
 - Mode: `all`
 - Target epochs per run: `50`
 
@@ -27,13 +31,22 @@
 | loss_no_semigroup | loss_single | skipped_existing | - | - | - | - | 3.1849 | Disable semigroup consistency. |
 | loss_no_push | loss_single | skipped_existing | - | - | - | - | 3.1849 | Disable style push-away term. |
 | dyn_style_strength_jitter | dynamics | skipped_existing | - | - | - | - | 3.2006 | Widen train-time style strength range. |
+<<<<<<< Updated upstream
 | dyn_num_steps_1_to_3 | dynamics | failed | - | - | - | - | - | Use variable training steps in [1,3]. |
+=======
+>>>>>>> Stashed changes
 | dyn_single_step_only | dynamics | skipped_existing | - | - | - | - | 3.2238 | Force single-step training and inference. |
 | dyn_flat_step_schedule | dynamics | skipped_existing | - | - | - | - | 3.1750 | Use flat step schedule for train/infer. |
 | bundle_style_up | bundle | skipped_existing | - | - | - | - | 3.8772 | Increase style injection + style losses for 50-epoch run. |
 | bundle_style_down | bundle | skipped_existing | - | - | - | - | 2.3643 | Reduce style injection + style losses. |
 | bundle_content_guard_strict | bundle | skipped_existing | - | - | - | - | 3.3164 | Increase structure-preservation losses. |
 | bundle_content_guard_relaxed | bundle | skipped_existing | - | - | - | - | 3.0342 | Reduce structure-preservation losses for style-first bias. |
+<<<<<<< Updated upstream
 | bundle_style_losses_off | bundle | failed | - | - | - | - | 0.0004 | Turn off all style-specific loss terms. |
 | bundle_all_style_paths_off | bundle | failed | - | - | - | - | - | Ablate main style-injection paths + style losses. |
 | bundle_style_injection_heavy | bundle | failed | - | - | - | - | - | Strong style injection with extra smoothing regularization. |
+=======
+| bundle_style_losses_off | bundle | ok | - | - | - | - | 0.0000 | Turn off all style-specific loss terms. |
+| bundle_all_style_paths_off | bundle | ok | - | - | - | - | 0.0000 | Ablate main style-injection paths + style losses. |
+| bundle_style_injection_heavy | bundle | ok | - | - | - | - | 3.0193 | Strong style injection with extra smoothing regularization. |
+>>>>>>> Stashed changes

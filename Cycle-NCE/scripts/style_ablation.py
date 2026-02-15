@@ -175,14 +175,27 @@ def _short_run_base(base_cfg: dict[str, Any], args: argparse.Namespace) -> tuple
 
     train_cfg = cfg["training"]
     infer_cfg = cfg["inference"]
+<<<<<<< Updated upstream
+=======
+    data_cfg = cfg.get("data", {})
+>>>>>>> Stashed changes
 
     epochs = max(1, int(args.epochs))
     train_cfg["num_epochs"] = epochs
     train_cfg["resume_checkpoint"] = ""
+<<<<<<< Updated upstream
     train_cfg["full_eval_on_last_epoch"] = True
     train_cfg["snapshot_source"] = bool(args.snapshot_source)
 
     if args.disable_compile:
+=======
+    # Disable inline full-eval during training; we'll run deferred full-eval
+    # after all training runs complete to avoid crashes during training.
+    train_cfg["full_eval_on_last_epoch"] = False
+    train_cfg["snapshot_source"] = bool(args.snapshot_source)
+
+    if args.disable_compile or bool(data_cfg.get("preload_to_gpu", False)):
+>>>>>>> Stashed changes
         train_cfg["use_compile"] = False
 
     if args.save_interval > 0:
@@ -191,11 +204,17 @@ def _short_run_base(base_cfg: dict[str, Any], args: argparse.Namespace) -> tuple
         save_interval = max(1, epochs // 2)
     train_cfg["save_interval"] = min(save_interval, epochs)
 
+<<<<<<< Updated upstream
     if args.eval_interval > 0:
         eval_interval = args.eval_interval
     else:
         eval_interval = max(1, epochs // 5)
     train_cfg["full_eval_interval"] = min(eval_interval, epochs)
+=======
+    # Disable automatic full-eval during training; evaluations will be
+    # performed later in a dedicated pass after all trainings finish.
+    train_cfg["full_eval_interval"] = 0
+>>>>>>> Stashed changes
 
     if _as_int(train_cfg.get("log_interval", 0), 0) <= 0:
         train_cfg["log_interval"] = max(1, int(args.default_log_interval))
@@ -364,6 +383,7 @@ def _build_variants(short_base: dict[str, Any], mode: str) -> list[VariantDef]:
             },
         ),
         VariantDef(
+<<<<<<< Updated upstream
             name="dyn_num_steps_1_to_3",
             category="dynamics",
             note="Use variable training steps in [1,3].",
@@ -374,6 +394,8 @@ def _build_variants(short_base: dict[str, Any], mode: str) -> list[VariantDef]:
             },
         ),
         VariantDef(
+=======
+>>>>>>> Stashed changes
             name="dyn_single_step_only",
             category="dynamics",
             note="Force single-step training and inference.",
@@ -805,6 +827,61 @@ def _write_summary_md(path: Path, rows: list[dict[str, Any]], *, mode: str, epoc
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+<<<<<<< Updated upstream
+=======
+def _log_has_cuda_unknown(log_path: Path) -> bool:
+    if not log_path.exists():
+        return False
+    try:
+        text = log_path.read_text(encoding="utf-8", errors="ignore").lower()
+    except Exception:
+        return False
+    probes = (
+        "cuda error: unknown error",
+        "cudaerrorunknown",
+        "torch.acceleratorerror",
+    )
+    return any(p in text for p in probes)
+
+
+def _apply_cuda_safe_overrides(config_path: Path) -> list[str]:
+    cfg = _load_json(config_path)
+    train_cfg = cfg.setdefault("training", {})
+    data_cfg = cfg.setdefault("data", {})
+    changes: list[str] = []
+
+    if bool(train_cfg.get("use_compile", False)):
+        train_cfg["use_compile"] = False
+        changes.append("training.use_compile=False")
+
+    if bool(train_cfg.get("use_amp", True)):
+        train_cfg["use_amp"] = False
+        changes.append("training.use_amp=False")
+
+    if bool(data_cfg.get("preload_to_gpu", False)):
+        data_cfg["preload_to_gpu"] = False
+        changes.append("data.preload_to_gpu=False")
+
+    if bool(train_cfg.get("channels_last", False)):
+        train_cfg["channels_last"] = False
+        changes.append("training.channels_last=False")
+
+    if bool(train_cfg.get("fused_adamw", False)):
+        train_cfg["fused_adamw"] = False
+        changes.append("training.fused_adamw=False")
+
+    batch_size = _as_int(train_cfg.get("batch_size", 64), 64)
+    safe_batch = max(8, min(batch_size, 64))
+    if safe_batch < batch_size:
+        train_cfg["batch_size"] = safe_batch
+        changes.append(f"training.batch_size={safe_batch}")
+
+    if changes:
+        _write_json(config_path, cfg)
+    return changes
+
+
+>>>>>>> Stashed changes
 def _run_variant(
     result: VariantRunResult,
     *,
@@ -814,6 +891,10 @@ def _run_variant(
     run_args: list[str],
     skip_existing: bool,
     keep_going: bool,
+<<<<<<< Updated upstream
+=======
+    auto_retry_cuda_safe: bool,
+>>>>>>> Stashed changes
     log_dir: Path,
     target_epoch: int,
 ) -> VariantRunResult:
@@ -822,6 +903,7 @@ def _run_variant(
         return result
 
     log_dir.mkdir(parents=True, exist_ok=True)
+<<<<<<< Updated upstream
     log_path = log_dir / f"{result.variant.name}.log"
     cmd = [python_exe, str(train_entry), "--config", str(result.config_path)] + run_args
     result.status = "running"
@@ -840,12 +922,74 @@ def _run_variant(
     result.error = f"run failed, see {log_path}"
     if not keep_going:
         raise RuntimeError(result.error)
+=======
+    cmd = [python_exe, str(train_entry), "--config", str(result.config_path)] + run_args
+    result.status = "running"
+
+    def _run_once(log_path: Path) -> tuple[int, Any]:
+        start_time = datetime.now()
+        with log_path.open("w", encoding="utf-8") as logf:
+            logf.write(f"CWD: {train_cwd}\n")
+            logf.write("Command:\n")
+            logf.write(" ".join(shlex.quote(part) for part in cmd) + "\n\n")
+            logf.write(f"Start: {start_time.isoformat()}\n\n")
+            logf.flush()
+
+            proc = subprocess.Popen(cmd, cwd=str(train_cwd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            try:
+                if proc.stdout is not None:
+                    for raw_line in proc.stdout:
+                        logf.write(raw_line)
+                        logf.flush()
+                        line = raw_line.rstrip("\n")
+                        if line:
+                            print(f"[{result.variant.name}] {line}")
+            except Exception:
+                proc.kill()
+                proc.wait()
+                raise
+            finally:
+                retcode = proc.wait()
+
+            end_time = datetime.now()
+            duration = end_time - start_time
+            logf.write(f"\n\nEnd: {end_time.isoformat()}\n")
+            logf.write(f"Exit code: {retcode}\n")
+            logf.write(f"Duration: {duration}\n")
+        return int(retcode), duration
+
+    log_path = log_dir / f"{result.variant.name}.log"
+    retcode, duration = _run_once(log_path)
+    result.return_code = int(retcode)
+    result.status = "ok" if retcode == 0 else "failed"
+    print(f"[{result.variant.name}] status={result.status} exit={result.return_code} duration={duration} log={log_path} config={result.config_path} run_dir={result.run_dir}")
+
+    if result.return_code != 0 and auto_retry_cuda_safe and _log_has_cuda_unknown(log_path):
+        changes = _apply_cuda_safe_overrides(result.config_path)
+        if changes:
+            print(f"[{result.variant.name}] detected CUDA unknown error, retry once with safe overrides: {', '.join(changes)}")
+            retry_log = log_dir / f"{result.variant.name}.retry_cuda_safe.log"
+            retcode, duration = _run_once(retry_log)
+            result.return_code = int(retcode)
+            result.status = "ok" if retcode == 0 else "failed"
+            print(f"[{result.variant.name}] retry status={result.status} exit={result.return_code} duration={duration} log={retry_log}")
+
+    if result.return_code != 0:
+        result.error = f"run failed, see {log_path}"
+        if auto_retry_cuda_safe:
+            retry_log = log_dir / f"{result.variant.name}.retry_cuda_safe.log"
+            if retry_log.exists():
+                result.error = f"run failed, see {retry_log}"
+        if not keep_going:
+            raise RuntimeError(result.error)
+>>>>>>> Stashed changes
     return result
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate and run 50-epoch style/loss ablations.")
     parser.add_argument("--base-config", type=str, default="src/config.json", help="Base config path.")
+<<<<<<< Updated upstream
     parser.add_argument("--output-root", type=str, default="", help="Output directory root. Default: experiments-cycle/ablation50_<timestamp>.")
     parser.add_argument("--mode", type=str, choices=["quick", "all"], default="all", help="Variant set size.")
     parser.add_argument("--epochs", type=int, default=50, help="Target epochs per ablation run.")
@@ -857,6 +1001,73 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run", action="store_true", help="Actually run training after generating configs.")
     parser.add_argument("--skip-existing", action="store_true", help="Skip runs that already have target epoch checkpoint.")
     parser.add_argument("--keep-going", action="store_true", help="Continue even if one variant fails.")
+=======
+    parser.add_argument(
+        "--output-root",
+        type=str,
+        default="style_ablation-50",
+        help="Output directory root. Default: experiments-cycle/ablation50 (fixed, resume-friendly).",
+    )
+    parser.add_argument("--mode", type=str, choices=["quick", "all"], default="all", help="Variant set size.")
+    parser.add_argument("--epochs", type=int, default=50, help="Target epochs per ablation run.")
+    parser.add_argument("--save-interval", type=int, default=10, help="Checkpoint interval. <=0 uses auto.")
+    parser.add_argument("--eval-interval", type=int, default=50, help="Full-eval interval. <=0 uses auto.")
+    parser.add_argument("--default-log-interval", type=int, default=10, help="Fallback log interval if base config has <=0.")
+    parser.add_argument("--snapshot-source", action="store_true", help="Enable training.snapshot_source for each run.")
+    parser.add_argument("--disable-compile", action="store_true", help="Force training.use_compile=false for all variants.")
+    parser.add_argument(
+        "--run",
+        dest="run",
+        action="store_true",
+        default=True,
+        help="Actually run training after generating configs (default: True).",
+    )
+    parser.add_argument(
+        "--no-run",
+        dest="run",
+        action="store_false",
+        help="Generate configs only; do not run training.",
+    )
+    parser.add_argument(
+        "--skip-existing",
+        dest="skip_existing",
+        action="store_true",
+        default=True,
+        help="Skip runs that already have target epoch checkpoint (default: True).",
+    )
+    parser.add_argument(
+        "--no-skip-existing",
+        dest="skip_existing",
+        action="store_false",
+        help="Do not skip existing completed runs; force rerun.",
+    )
+    parser.add_argument(
+        "--keep-going",
+        dest="keep_going",
+        action="store_true",
+        default=True,
+        help="Continue even if one variant fails (default: True).",
+    )
+    parser.add_argument(
+        "--no-keep-going",
+        dest="keep_going",
+        action="store_false",
+        help="Stop immediately when one variant fails.",
+    )
+    parser.add_argument(
+        "--auto-retry-cuda-safe",
+        dest="auto_retry_cuda_safe",
+        action="store_true",
+        default=True,
+        help="On CUDA unknown errors, retry once with safer config (default: True).",
+    )
+    parser.add_argument(
+        "--no-auto-retry-cuda-safe",
+        dest="auto_retry_cuda_safe",
+        action="store_false",
+        help="Disable automatic CUDA-safe retry.",
+    )
+>>>>>>> Stashed changes
     parser.add_argument("--max-runs", type=int, default=0, help="Run only first N variants (>0).")
     parser.add_argument("--python-exe", type=str, default=sys.executable, help="Python executable for launching training.")
     parser.add_argument("--train-entry", type=str, default="src/run.py", help="Training entry script path.")
@@ -904,8 +1115,12 @@ def main() -> None:
         if not output_root.is_absolute():
             output_root = (repo_root / output_root).resolve()
     else:
+<<<<<<< Updated upstream
         stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_root = (repo_root / "experiments-cycle" / f"ablation50_{stamp}").resolve()
+=======
+        output_root = (repo_root / "experiments-cycle" / "ablation50").resolve()
+>>>>>>> Stashed changes
     output_root.mkdir(parents=True, exist_ok=True)
 
     base_cfg = _load_json(base_config_path)
@@ -949,6 +1164,10 @@ def main() -> None:
                 run_args=forwarded_args,
                 skip_existing=bool(args.skip_existing),
                 keep_going=bool(args.keep_going),
+<<<<<<< Updated upstream
+=======
+                auto_retry_cuda_safe=bool(args.auto_retry_cuda_safe),
+>>>>>>> Stashed changes
                 log_dir=logs_dir,
                 target_epoch=int(args.epochs),
             )
@@ -956,6 +1175,39 @@ def main() -> None:
             result.return_code = updated.return_code
             result.error = updated.error
 
+<<<<<<< Updated upstream
+=======
+        # After completing all training runs, perform deferred full-evaluation
+        # for each run (auto-mode of src/utils/run_evaluation.py will pick
+        # latest checkpoint when config requests no interval/run-on-last).
+        eval_script = Path(__file__).resolve().parents[1] / "src" / "utils" / "run_evaluation.py"
+        if eval_script.exists():
+            print("\nStarting deferred full-eval pass for all variants...")
+            for result in run_results:
+                cfg_path = result.config_path
+                # Skip eval if there are no checkpoints yet
+                save_dir = Path(result.run_dir)
+                ckpts = sorted(save_dir.glob("epoch_*.pt"))
+                if not ckpts:
+                    print(f"[Eval] skipping {result.variant.name}: no checkpoints")
+                    continue
+                eval_log = logs_dir / f"full_eval_auto_{result.variant.name}.log"
+                cmd = [sys.executable, str(eval_script), "--config", str(cfg_path)]
+                print(f"[Eval] {result.variant.name}: running evaluation -> {eval_log}")
+                with eval_log.open("w", encoding="utf-8") as lf:
+                    lf.write(f"Command: {' '.join(shlex.quote(p) for p in cmd)}\n\n")
+                    proc = subprocess.run(cmd, stdout=lf, stderr=subprocess.STDOUT)
+                if proc.returncode == 0:
+                    print(f"[Eval] {result.variant.name}: ok")
+                else:
+                    print(f"[Eval] {result.variant.name}: failed (see {eval_log})")
+                    result.error = (result.error or "") + f"; eval failed see {eval_log}"
+                    if not args.keep_going:
+                        raise RuntimeError(f"Evaluation failed for {result.variant.name}, see {eval_log}")
+        else:
+            print("Deferred eval script not found; skipping full-eval pass.")
+
+>>>>>>> Stashed changes
     variants_tsv_path = output_root / "variants.tsv"
     _write_variants_tsv(variants_tsv_path, run_results)
 

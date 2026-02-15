@@ -1,0 +1,139 @@
+[INFO] watchdog started at 2026-02-15 00:36:41
+[INFO] cwd=/mnt/i/Github/Latent_Style/Cycle-NCE/src
+[INFO] log=/mnt/i/Github/Latent_Style/Cycle-NCE/src/../train_logs/train_watchdog_20260215_003641.log
+[INFO] launch train at 2026-02-15 00:36:41
+2026-02-15 00:36:44,546 - INFO - Active losses: w_struct, w_cycle, w_stroke_gram, w_color_moment, w_delta_tv, w_delta_l2
+2026-02-15 00:36:44,819 - INFO - Device: cuda
+2026-02-15 00:36:44,819 - INFO - Seed: 42
+2026-02-15 00:36:44,819 - INFO - Loading latent dataset from ../../latent-256
+2026-02-15 00:37:10,085 - INFO -   style=photo id=0 count=6187
+2026-02-15 00:37:17,121 - INFO -   style=Hayao id=1 count=1752
+2026-02-15 00:37:17,462 - INFO - Preloaded all latents to GPU: cuda
+2026-02-15 00:37:17,475 - INFO - DataLoader | batch=160 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-15 00:37:20,189 - INFO - torch.compile enabled (backend=inductor mode=default fullgraph=False cudagraphs=off cache=/mnt/i/Github/Latent_Style/Cycle-NCE/full_300-adagn+map16-statloss/torch_compile_cache)
+2026-02-15 00:37:20,190 - INFO - Model params: 8,378,244
+2026-02-15 00:37:20,190 - INFO - Infra | channels_last=True tf32=True grad_ckpt=False compile=True backend=inductor mode=default fullgraph=False cudagraphs=off
+2026-02-15 00:37:20,190 - INFO - Precision | amp=True amp_dtype=bf16 grad_scaler=False fused_adamw=True
+2026-02-15 00:37:20,195 - INFO - No checkpoint found, start from scratch.
+Epoch 1/300:   0%|          | 0/148 [00:00<?, ?it/s]Epoch 1/300:   0%|          | 0/148 [00:03<?, ?it/s]
+Traceback (most recent call last):
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py", line 304, in <module>
+    main()
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py", line 263, in main
+    metrics = trainer.train_epoch(dataloader, epoch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/trainer.py", line 384, in train_epoch
+    loss_dict = self.loss_fn.compute(
+                ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/losses.py", line 293, in compute
+    w_ref, mu_ref = _compute_whitening_from_ref(b_stroke)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/losses.py", line 71, in _compute_whitening_from_ref
+    evals, evecs = torch.linalg.eigh(cov)
+                   ^^^^^^^^^^^^^^^^^^^^^^
+NotImplementedError: "linalg_eigh_cuda" not implemented for 'BFloat16'
+[WARN] train crashed with exit=1; restart in 10s
+[INFO] launch train at 2026-02-15 00:37:35
+2026-02-15 00:37:37,264 - INFO - Active losses: w_struct, w_cycle, w_stroke_gram, w_color_moment, w_delta_tv, w_delta_l2
+2026-02-15 00:37:37,599 - INFO - Device: cuda
+2026-02-15 00:37:37,599 - INFO - Seed: 42
+2026-02-15 00:37:37,599 - INFO - Loading latent dataset from ../../latent-256
+2026-02-15 00:38:03,266 - INFO -   style=photo id=0 count=6187
+2026-02-15 00:38:10,404 - INFO -   style=Hayao id=1 count=1752
+2026-02-15 00:38:10,746 - INFO - Preloaded all latents to GPU: cuda
+2026-02-15 00:38:10,751 - INFO - DataLoader | batch=160 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-15 00:38:12,769 - INFO - torch.compile enabled (backend=inductor mode=default fullgraph=False cudagraphs=off cache=/mnt/i/Github/Latent_Style/Cycle-NCE/full_300-adagn+map16-statloss/torch_compile_cache)
+2026-02-15 00:38:12,769 - INFO - Model params: 8,378,244
+2026-02-15 00:38:12,769 - INFO - Infra | channels_last=True tf32=True grad_ckpt=False compile=True backend=inductor mode=default fullgraph=False cudagraphs=off
+2026-02-15 00:38:12,770 - INFO - Precision | amp=True amp_dtype=bf16 grad_scaler=False fused_adamw=True
+2026-02-15 00:38:12,774 - INFO - No checkpoint found, start from scratch.
+Epoch 1/300:   0%|          | 0/148 [00:00<?, ?it/s]Epoch 1/300:   0%|          | 0/148 [00:03<?, ?it/s]
+Traceback (most recent call last):
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py", line 304, in <module>
+    main()
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py", line 263, in main
+    metrics = trainer.train_epoch(dataloader, epoch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/trainer.py", line 384, in train_epoch
+    loss_dict = self.loss_fn.compute(
+                ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/losses.py", line 293, in compute
+    w_ref, mu_ref = _compute_whitening_from_ref(b_stroke)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/losses.py", line 71, in _compute_whitening_from_ref
+    evals, evecs = torch.linalg.eigh(cov)
+                   ^^^^^^^^^^^^^^^^^^^^^^
+NotImplementedError: "linalg_eigh_cuda" not implemented for 'BFloat16'
+[WARN] train crashed with exit=1; restart in 10s
+[INFO] launch train at 2026-02-15 00:38:26
+2026-02-15 00:38:28,502 - INFO - Active losses: w_struct, w_cycle, w_stroke_gram, w_color_moment, w_delta_tv, w_delta_l2
+2026-02-15 00:38:28,765 - INFO - Device: cuda
+2026-02-15 00:38:28,766 - INFO - Seed: 42
+2026-02-15 00:38:28,766 - INFO - Loading latent dataset from ../../latent-256
+2026-02-15 00:38:53,099 - INFO -   style=photo id=0 count=6187
+2026-02-15 00:39:00,149 - INFO -   style=Hayao id=1 count=1752
+2026-02-15 00:39:00,463 - INFO - Preloaded all latents to GPU: cuda
+2026-02-15 00:39:00,470 - INFO - DataLoader | batch=160 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-15 00:39:02,608 - INFO - torch.compile enabled (backend=inductor mode=default fullgraph=False cudagraphs=off cache=/mnt/i/Github/Latent_Style/Cycle-NCE/full_300-adagn+map16-statloss/torch_compile_cache)
+2026-02-15 00:39:02,608 - INFO - Model params: 8,378,244
+2026-02-15 00:39:02,608 - INFO - Infra | channels_last=True tf32=True grad_ckpt=False compile=True backend=inductor mode=default fullgraph=False cudagraphs=off
+2026-02-15 00:39:02,609 - INFO - Precision | amp=True amp_dtype=bf16 grad_scaler=False fused_adamw=True
+2026-02-15 00:39:02,613 - INFO - No checkpoint found, start from scratch.
+Epoch 1/300:   0%|          | 0/148 [00:00<?, ?it/s]Epoch 1/300:   0%|          | 0/148 [00:03<?, ?it/s]
+Traceback (most recent call last):
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py", line 304, in <module>
+    main()
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py", line 263, in main
+    metrics = trainer.train_epoch(dataloader, epoch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/trainer.py", line 384, in train_epoch
+    loss_dict = self.loss_fn.compute(
+                ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/losses.py", line 293, in compute
+    w_ref, mu_ref = _compute_whitening_from_ref(b_stroke)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/losses.py", line 71, in _compute_whitening_from_ref
+    evals, evecs = torch.linalg.eigh(cov)
+                   ^^^^^^^^^^^^^^^^^^^^^^
+NotImplementedError: "linalg_eigh_cuda" not implemented for 'BFloat16'
+[WARN] train crashed with exit=1; restart in 10s
+[INFO] launch train at 2026-02-15 00:39:16
+2026-02-15 00:39:18,121 - INFO - Active losses: w_struct, w_cycle, w_stroke_gram, w_color_moment, w_delta_tv, w_delta_l2
+2026-02-15 00:39:18,387 - INFO - Device: cuda
+2026-02-15 00:39:18,387 - INFO - Seed: 42
+2026-02-15 00:39:18,388 - INFO - Loading latent dataset from ../../latent-256
+[WARN] train crashed with exit=143; restart in 10s
+[INFO] launch train at 2026-02-15 00:39:51
+2026-02-15 00:39:52,610 - INFO - Active losses: w_struct, w_cycle, w_stroke_gram, w_color_moment, w_delta_tv, w_delta_l2
+2026-02-15 00:39:52,650 - INFO - Device: cuda
+2026-02-15 00:39:52,650 - INFO - Seed: 42
+2026-02-15 00:39:52,650 - INFO - Loading latent dataset from ../../latent-256
+2026-02-15 00:40:21,361 - INFO -   style=photo id=0 count=6187
+2026-02-15 00:40:28,777 - INFO -   style=Hayao id=1 count=1752
+2026-02-15 00:40:28,994 - INFO - Preloaded all latents to GPU: cuda
+2026-02-15 00:40:29,000 - INFO - DataLoader | batch=160 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-15 00:40:31,216 - INFO - torch.compile enabled (backend=inductor mode=default fullgraph=False cudagraphs=off cache=/mnt/i/Github/Latent_Style/Cycle-NCE/full_300-adagn+map16-statloss/torch_compile_cache)
+2026-02-15 00:40:31,216 - INFO - Model params: 8,378,244
+2026-02-15 00:40:31,216 - INFO - Infra | channels_last=True tf32=True grad_ckpt=False compile=True backend=inductor mode=default fullgraph=False cudagraphs=off
+2026-02-15 00:40:31,217 - INFO - Precision | amp=True amp_dtype=bf16 grad_scaler=False fused_adamw=True
+2026-02-15 00:40:31,222 - INFO - No checkpoint found, start from scratch.
+Epoch 1/300:   0%|          | 0/148 [00:00<?, ?it/s]2026-02-15 00:40:32,728 - WARNING - CUDA OOM at epoch=1 step=1, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:40:32,787 - WARNING - CUDA OOM at epoch=1 step=2, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:40:32,845 - WARNING - CUDA OOM at epoch=1 step=3, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:40:32,904 - WARNING - CUDA OOM at epoch=1 step=4, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:40:32,964 - WARNING - CUDA OOM at epoch=1 step=5, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:40:33,025 - WARNING - CUDA OOM at epoch=1 step=6, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:40:33,083 - WARNING - CUDA OOM at epoch=1 step=7, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:40:33,149 - WARNING - CUDA OOM at epoch=1 step=8, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:40:33,207 - WARNING - CUDA OOM at epoch=1 step=9, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:40:33,266 - WARNING - CUDA OOM at epoch=1 step=10, skipping batch (reduce batch_size if frequent).
+Epoch 1/300:   7%|▋         | 10/148 [00:02<00:28,  4.90it/s]2026-02-15 00:40:33,323 - WARNING - CUDA OOM at epoch=1 step=11, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:40:33,388 - WARNING - CUDA OOM at epoch=1 step=12, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:40:33,452 - WARNING - CUDA OOM at epoch=1 step=13, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:40:33,474 - WARNING - CUDA OOM at epoch=1 step=14, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:40:33,490 - WARNING - CUDA OOM at epoch=1 step=15, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:40:33,510 - WARNING - CUDA OOM at epoch=1 step=16, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:40:33,529 - WARNING - CUDA OOM at epoch=1 step=17, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:40:33,545 - WARNING - CUDA OOM at epoch=1 step=18, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:40:33,561 - WARNING - CUDA OOM at epoch=1 step=19, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:40:33,578 - WARNING - CUDA OOM at epoch=1 step=20, skipping batch (reduce batch_size if frequent).

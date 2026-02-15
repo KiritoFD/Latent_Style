@@ -74,6 +74,10 @@
                      "full_eval_classifier_only":  false,
                      "full_eval_disable_lpips":  false,
                      "full_eval_style_strength":  0.75,
+                     "full_eval_clip_model_name":  "openai/clip-vit-base-patch32",
+                     "full_eval_clip_modelscope_id":  "",
+                     "full_eval_clip_modelscope_cache_dir":  "",
+                     "full_eval_clip_allow_network":  false,
                      "log_interval":  0,
                      "use_tqdm":  true,
                      "use_amp":  true,
@@ -104,7 +108,7 @@
                  "virtual_length_multiplier":  3
              },
     "checkpoint":  {
-                       "save_dir":  "../full_300-adagn+map16-statloss"
+                       "save_dir":  "../no-edge"
                    },
     "inference":  {
                       "num_steps":  2,

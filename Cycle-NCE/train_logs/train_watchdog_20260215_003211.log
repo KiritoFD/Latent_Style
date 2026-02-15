@@ -1,0 +1,40 @@
+[INFO] watchdog started at 2026-02-15 00:32:11
+[INFO] cwd=/mnt/i/Github/Latent_Style/Cycle-NCE/src
+[INFO] log=/mnt/i/Github/Latent_Style/Cycle-NCE/src/../train_logs/train_watchdog_20260215_003211.log
+[INFO] launch train at 2026-02-15 00:32:11
+2026-02-15 00:32:13,076 - INFO - Active losses: w_struct, w_cycle, w_stroke_gram, w_color_moment, w_delta_tv, w_delta_l2
+2026-02-15 00:32:13,334 - INFO - Set PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+2026-02-15 00:32:13,334 - INFO - Device: cuda
+2026-02-15 00:32:13,334 - INFO - Seed: 42
+2026-02-15 00:32:13,395 - INFO - CUDA GPU: NVIDIA Graphics Device | cc=8.6 | vram=12.0 GB
+2026-02-15 00:32:13,395 - INFO - Loading latent dataset from ../../latent-256
+2026-02-15 00:32:40,522 - INFO -   style=photo id=0 count=6187
+2026-02-15 00:32:47,697 - INFO -   style=Hayao id=1 count=1752
+2026-02-15 00:32:47,959 - INFO - Preloaded all latents to GPU: cuda
+2026-02-15 00:32:47,965 - INFO - DataLoader | batch=160 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-15 00:32:50,019 - INFO - torch.compile enabled (backend=inductor mode=reduce-overhead fullgraph=False cudagraphs=on cache=/mnt/i/Github/Latent_Style/Cycle-NCE/full_300-adagn+map16-statloss/torch_compile_cache)
+2026-02-15 00:32:50,019 - INFO - Model params: 8,378,244
+2026-02-15 00:32:50,019 - INFO - Infra | gpu=NVIDIA Graphics Device channels_last=True tf32=True cudnn_benchmark=True grad_ckpt=False compile=True backend=inductor mode=reduce-overhead fullgraph=False cudagraphs=on
+Traceback (most recent call last):
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py", line 337, in <module>
+    main()
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py", line 292, in main
+    trainer = AdaCUTTrainer(config=config, device=device, config_path=str(config_path))
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/trainer.py", line 201, in __init__
+    self.optimizer = torch.optim.AdamW(self.model.parameters(), fused=use_fused_adamw, foreach=use_foreach_adamw, **opt_kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/optim/adamw.py", line 37, in __init__
+    super().__init__(
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/optim/adam.py", line 112, in __init__
+    raise RuntimeError("`fused` and `foreach` cannot be `True` together.")
+RuntimeError: `fused` and `foreach` cannot be `True` together.
+[W215 00:32:50.242004000 AllocatorConfig.cpp:28] Warning: PYTORCH_CUDA_ALLOC_CONF is deprecated, use PYTORCH_ALLOC_CONF instead (function operator())
+[WARN] train crashed with exit=1; restart in 10s
+[INFO] launch train at 2026-02-15 00:33:00
+2026-02-15 00:33:02,205 - INFO - Active losses: w_struct, w_cycle, w_stroke_gram, w_color_moment, w_delta_tv, w_delta_l2
+2026-02-15 00:33:02,466 - INFO - Set PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+2026-02-15 00:33:02,466 - INFO - Device: cuda
+2026-02-15 00:33:02,466 - INFO - Seed: 42
+2026-02-15 00:33:02,532 - INFO - CUDA GPU: NVIDIA Graphics Device | cc=8.6 | vram=12.0 GB
+2026-02-15 00:33:02,532 - INFO - Loading latent dataset from ../../latent-256

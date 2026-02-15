@@ -1,0 +1,38 @@
+/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Style reference mode: none (count=8, seed=2026)
+
+Phase 1: Generation (Batch Size 20)
+  Generating Batch 1/5
+  Generating Batch 2/5
+  Generating Batch 3/5
+  Generating Batch 4/5
+  Generating Batch 5/5
+  Generation models unloaded
+
+妫ｅ啯鐣?Phase 2: Evaluation
+  Loaded latent style classifier: /mnt/g/GitHub/Latent_Style/Cycle-NCE/style_classifier.pt (classes=2)
+  Loaded image style classifier: /mnt/g/GitHub/Latent_Style/Cycle-NCE/artifacts/eval_classifier/eval_style_image_classifier.pt (classes=2)
+  鉁?LPIPS Loaded
+  闁?LPIPS Loaded
+  闁?CLIP Loaded
+Found global reference cache: /mnt/g/GitHub/Latent_Style/Cycle-NCE/eval_cache/ref_feats_ec530a212e_m100.pt
+  Reference cache loaded successfully
+  Processing 200 generated images...
+
+妫ｅ啯鎯?Generating Summary...
+
+闁?Classification Report:
+              precision    recall  f1-score   support
+
+       Hayao       0.52      0.51      0.51       100
+       photo       0.51      0.52      0.52       100
+
+    accuracy                           0.52       200
+   macro avg       0.52      0.52      0.51       200
+weighted avg       0.52      0.52      0.51       200
+
+闁?Summary saved: /mnt/g/GitHub/Latent_Style/Cycle-NCE/style_ablation-50/dyn_single_step_only/full_eval/epoch_0050/summary.json

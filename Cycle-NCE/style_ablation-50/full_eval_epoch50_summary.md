@@ -2,6 +2,7 @@
 
 | exp_name | status | transfer_clip | transfer_cls | transfer_lpips | p2a_clip | p2a_cls |
 |---|---:|---:|---:|---:|---:|---:|
+<<<<<<< Updated upstream
 | baseline_50e | ok | 0.4995 | 0.1200 | 0.4242 | 0.5443 | 0.1600 |
 | bundle_all_style_paths_off | ok | 0.4414 | 0.0600 | 0.2439 | 0.4737 | 0.0400 |
 | bundle_content_guard_relaxed | ok | 0.5057 | 0.1600 | 0.4460 | 0.5426 | 0.2200 |
@@ -31,3 +32,32 @@
 | loss_no_stroke_gram | ok | 0.4501 | 0.0500 | 0.2938 | 0.4877 | 0.0400 |
 | loss_no_struct_edge | ok | 0.5207 | 0.2000 | 0.5049 | 0.5471 | 0.3000 |
 | loss_no_style_spatial_tv | ok | 0.4994 | 0.1200 | 0.4241 | 0.5438 | 0.1600 |
+=======
+| baseline_50e | failed |  |  |  |  |  |
+| bundle_content_guard_relaxed | failed |  |  |  |  |  |
+| bundle_content_guard_strict | failed |  |  |  |  |  |
+| bundle_style_down | failed |  |  |  |  |  |
+| bundle_style_up | failed |  |  |  |  |  |
+| dyn_flat_step_schedule | failed |  |  |  |  |  |
+| dyn_single_step_only | failed |  |  |  |  |  |
+| dyn_style_strength_jitter | failed |  |  |  |  |  |
+| inj_no_decoder_adagn | failed |  |  |  |  |  |
+| inj_no_decoder_spatial | failed |  |  |  |  |  |
+| inj_no_delta_gate | failed |  |  |  |  |  |
+| inj_no_delta_highpass | failed |  |  |  |  |  |
+| inj_no_output_affine | failed |  |  |  |  |  |
+| inj_no_texture_gain | failed |  |  |  |  |  |
+| inj_spatial_blur_off | failed |  |  |  |  |  |
+| inj_spatial_highpass_on | failed |  |  |  |  |  |
+| inj_spatial_map_norm_off | failed |  |  |  |  |  |
+| loss_no_code | failed |  |  |  |  |  |
+| loss_no_color_moment | failed |  |  |  |  |  |
+| loss_no_cycle | failed |  |  |  |  |  |
+| loss_no_distill | failed |  |  |  |  |  |
+| loss_no_nce | failed |  |  |  |  |  |
+| loss_no_push | failed |  |  |  |  |  |
+| loss_no_semigroup | failed |  |  |  |  |  |
+| loss_no_stroke_gram | failed |  |  |  |  |  |
+| loss_no_struct_edge | failed |  |  |  |  |  |
+| loss_no_style_spatial_tv | failed |  |  |  |  |  |
+>>>>>>> Stashed changes
