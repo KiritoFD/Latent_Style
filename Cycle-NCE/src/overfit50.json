@@ -28,6 +28,7 @@
     "w_output_tv": 0.001,
     "w_stroke_gram": 80.0,
     "w_color_moment": 6.0,
+    "w_identity": 10.0,
     "stroke_patch_sizes": [3],
     "stroke_patch_randomize": false,
     "color_patch_size": 1,
@@ -54,8 +55,8 @@
     "scheduler": "cosine",
     "grad_clip_norm": 1.0,
     "num_epochs": 60,
-    "save_interval": 20,
-    "full_eval_interval": 20,
+    "save_interval": 10,
+    "full_eval_interval": 10,
     "full_eval_on_last_epoch": true,
     "full_eval_batch_size": 4,
     "full_eval_max_src_samples": 50,
@@ -89,7 +90,7 @@
   },
   "data": {
     "data_root": "../../latents_overfit50",
-    "style_subdirs": ["photo", "Hayao"],
+    "style_subdirs": ["photo", "Hayao","monet","cezanne","vangogh"],
     "allow_hflip": false,
     "preload_to_gpu": true,
     "preload_max_vram_gb": 6.0,
@@ -97,7 +98,7 @@
     "virtual_length_multiplier": 100
   },
   "checkpoint": {
-    "save_dir": "../overfit50-adagn-map16-statloss"
+    "save_dir": "../overfit50-5styles"
   },
   "inference": {
     "num_steps": 1,
