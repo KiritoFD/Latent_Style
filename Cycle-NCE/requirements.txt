@@ -1,0 +1,28 @@
+# Core deep learning
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
+
+# Diffusion / transformers
+diffusers>=0.21.0
+transformers>=4.30.0
+accelerate>=0.20.0
+safetensors>=0.3.1
+huggingface_hub>=0.20.0
+modelscope>=1.9.5
+
+# Numeric / image
+numpy>=1.24.0
+scipy>=1.10.0
+Pillow>=9.0.0
+tqdm>=4.65.0
+
+# Metrics
+lpips>=0.1.4
+
+# Optional memory/perf
+xformers>=0.0.20
+
+# Optional dev tools
+# tensorboard>=2.13.0
+# wandb>=0.15.0
