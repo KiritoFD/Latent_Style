@@ -357,10 +357,6 @@ class StyleClassifier(nn.Module):
         return self.head(cnn_feat)
 
 
-# Backward-compat alias for older scripts.
-StyleTeacher = StyleClassifier
-
-
 # -------------------------
 # Metrics
 # -------------------------
@@ -567,7 +563,7 @@ def run_eval_suite(
         if inv["mean_kl"] > 0.25:
             usable = False; reasons.append(f"invariance_kl>{0.25} ({inv['mean_kl']:.3f})")
 
-    report["teacher_usable"] = usable
+    report["classifier_usable"] = usable
     report["fail_reasons"] = reasons
     return report
 
@@ -981,10 +977,10 @@ def train(
             f"val_min_recall={report['basic']['min_recall']:.4f} | ece={report['calibration']['ece']:.4f} | "
             f"inv_agree={report.get('invariance', {}).get('top1_agreement', -1):.4f} | "
             f"sampling={sampling_mode} | bsce={use_balanced_softmax} | "
-            f"teacher_usable={report['teacher_usable']} "
+            f"classifier_usable={report['classifier_usable']} "
         )
 
-        # save best by macro_recall (or you can use "teacher_usable" gating)
+        # save best by macro_recall (or gate by classifier_usable)
         if report["basic"]["macro_recall"] > best_val:
             best_val = report["basic"]["macro_recall"]
             best_report = report
@@ -1029,7 +1025,7 @@ def train(
                         if float(inv.get("mean_kl", 0.0)) > 0.25:
                             calibrated_usable = False
                             calibrated_reasons.append(f"invariance_kl>0.25 ({inv.get('mean_kl', 0.0):.3f})")
-                    report["teacher_usable_calibrated"] = calibrated_usable
+                    report["classifier_usable_calibrated"] = calibrated_usable
                     report["fail_reasons_calibrated"] = calibrated_reasons
                     logger.info(
                         f"Temperature scaling | T={temperature:.4f} | "
@@ -1057,7 +1053,7 @@ def train(
                     "in_channels": in_channels,
                     "num_classes": num_classes,
                     "best_val_macro_recall": best_val,
-                    "teacher_usable": report["teacher_usable"],
+                    "classifier_usable": report["classifier_usable"],
                     "fail_reasons": report["fail_reasons"],
                     "temperature": best_temperature,
                     "sampling_mode": sampling_mode,
@@ -1078,7 +1074,7 @@ def train(
 
 
 def main():
-    parser = argparse.ArgumentParser("Train robust latent style teacher + auto evaluation report")
+    parser = argparse.ArgumentParser("Train robust latent style classifier + auto evaluation report")
     parser.add_argument("--config", type=str, default=str(_ROOT / "config.json"))
     parser.add_argument("--output", type=str, default=str(_ROOT / "style_classifier.pt"))
     parser.add_argument("--epochs", type=int, default=200)

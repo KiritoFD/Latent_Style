@@ -6,7 +6,7 @@ import logging
 import os
 import random
 from pathlib import Path
-from typing import Iterable, List
+from typing import List
 
 import numpy as np
 import torch
@@ -25,6 +25,37 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+_ALLOWED_LOSS_KEYS = {
+    "w_struct",
+    "struct_lowpass_strength",
+    "struct_loss_type",
+    "w_semigroup",
+    "semigroup_loss_type",
+    "semigroup_lowpass_strength",
+    "semigroup_split_min",
+    "semigroup_split_max",
+    "semigroup_teacher_no_grad",
+    "semigroup_target_detach",
+    "semigroup_subset_ratio",
+    "semigroup_pool_size",
+    "semigroup_num_steps",
+    "w_delta_tv",
+    "w_delta_l2",
+    "w_stroke_gram",
+    "w_color_moment",
+    "stroke_patch_sizes",
+    "stroke_patch_randomize",
+    "color_patch_size",
+    "train_num_steps_min",
+    "train_num_steps_max",
+    "train_step_size_min",
+    "train_step_size_max",
+    "train_style_strength_min",
+    "train_style_strength_max",
+}
+_FORBIDDEN_LOSS_KEYS = {"w_distill", "distill_low_only", "distill_cross_domain_only", "w_code", "style_loss_source"}
+_LOSS_WEIGHT_KEYS = ("w_struct", "w_semigroup", "w_stroke_gram", "w_color_moment", "w_delta_tv", "w_delta_l2")
+
 
 def _set_seed(seed: int) -> None:
     random.seed(seed)
@@ -32,6 +63,22 @@ def _set_seed(seed: int) -> None:
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
+
+
+def _configure_cuda_allocator(config: dict) -> None:
+    if not torch.cuda.is_available():
+        return
+    train_cfg = config.get("training", {})
+    alloc_conf = str(train_cfg.get("cuda_alloc_conf", "")).strip()
+    if not alloc_conf:
+        # Keep allocator policy conservative to reduce fragmentation under long runs.
+        alloc_conf = "expandable_segments:True"
+    current = os.environ.get("PYTORCH_CUDA_ALLOC_CONF", "").strip()
+    if current:
+        logger.info("Use existing PYTORCH_CUDA_ALLOC_CONF=%s", current)
+        return
+    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = alloc_conf
+    logger.info("Set PYTORCH_CUDA_ALLOC_CONF=%s", alloc_conf)
 
 
 def _set_cpu_threads(config: dict) -> None:
@@ -121,15 +168,30 @@ def _seed_worker(worker_id: int) -> None:
     torch.set_num_threads(1)
 
 
-def _resolve_num_workers(config: dict) -> int:
+def _resolve_num_workers(config: dict, *, preload_to_gpu: bool = False) -> int:
     train_cfg = config.get("training", {})
-    preload = bool(config.get("data", {}).get("preload_to_gpu", False))
-    if preload:
+    if preload_to_gpu:
         return 0
     if train_cfg.get("num_workers") is not None:
         return int(train_cfg["num_workers"])
     cpu_count = os.cpu_count() or 4
     return max(2, min(8, cpu_count // 2))
+
+def _validate_loss_config(config: dict) -> None:
+    loss_cfg = config.get("loss", {})
+    if not isinstance(loss_cfg, dict):
+        raise ValueError("config.loss must be a JSON object")
+    forbidden = sorted(k for k in loss_cfg.keys() if k in _FORBIDDEN_LOSS_KEYS)
+    if forbidden:
+        raise ValueError(f"Removed loss key(s) found in config.loss: {forbidden}")
+    unknown = sorted(k for k in loss_cfg.keys() if k not in _ALLOWED_LOSS_KEYS)
+    if unknown:
+        raise ValueError(f"Unknown loss key(s) in config.loss: {unknown}")
+
+def _log_active_losses(config: dict) -> None:
+    loss_cfg = config.get("loss", {})
+    active = [k for k in _LOSS_WEIGHT_KEYS if float(loss_cfg.get(k, 0.0)) > 0.0]
+    logger.info("Active losses: %s", ", ".join(active) if active else "(none)")
 
 
 def main() -> None:
@@ -141,11 +203,14 @@ def main() -> None:
     config_path = Path(args.config).resolve()
     with open(config_path, "r", encoding="utf-8") as f:
         config = json.load(f)
+    _validate_loss_config(config)
+    _log_active_losses(config)
 
     if args.resume:
         config.setdefault("training", {})
         config["training"]["resume_checkpoint"] = args.resume
 
+    _configure_cuda_allocator(config)
     seed = int(config.get("training", {}).get("seed", 42))
     _set_seed(seed)
     _set_cpu_env_threads(config)
@@ -160,7 +225,6 @@ def main() -> None:
     dataset = AdaCUTLatentDataset(
         data_root=data_cfg.get("data_root", "../../latents"),
         style_subdirs=data_cfg.get("style_subdirs", ["photo", "monet", "vangogh", "cezanne"]),
-        content_style=data_cfg.get("content_style", "photo"),
         allow_hflip=bool(data_cfg.get("allow_hflip", True)),
         preload_to_gpu=bool(data_cfg.get("preload_to_gpu", False)),
         virtual_length_multiplier=int(data_cfg.get("virtual_length_multiplier", 4)),
@@ -178,8 +242,8 @@ def main() -> None:
         config.setdefault("model", {})
         config["model"]["num_styles"] = style_count
 
-    num_workers = _resolve_num_workers(config)
-    preload_to_gpu = bool(data_cfg.get("preload_to_gpu", False))
+    preload_to_gpu = bool(getattr(dataset, "preload_to_gpu", False))
+    num_workers = _resolve_num_workers(config, preload_to_gpu=preload_to_gpu)
     pin_memory_default = (device.type == "cuda") and (not preload_to_gpu)
     pin_memory = bool(config.get("training", {}).get("pin_memory", pin_memory_default))
     persistent_workers = bool(config.get("training", {}).get("persistent_workers", True))
@@ -220,35 +284,18 @@ def main() -> None:
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f code=%.4f cpn=%.3f crn=%.3f cycle=%.4f sgram=%.4f cmoment=%.4f push=%.4f dtv=%.4f stv=%.4f nce=%.4f semi=%.4f semib=%.1f steps=%.1f h=%.2f s=%.2f slot=%.0f pth=%.2f pcy=%.2f pst=%.2f pnce=%.2f psemi=%.2f wcyc=%.2f wnce=%.2f wsemi=%.2f xfer=%.2f lr=%.2e data=%.1fs comp=%.1fs",
+            "Epoch %d/%d | loss=%.4f struct=%.4f sgram=%.4f cmoment=%.4f dtv=%.4f dl2=%.4f steps=%.1f h=%.2f s=%.2f lr=%.2e data=%.1fs comp=%.1fs",
             epoch,
             trainer.num_epochs,
             metrics["loss"],
-            metrics.get("code", 0.0),
-            metrics.get("code_pred_norm", 0.0),
-            metrics.get("code_ref_norm", 0.0),
-            metrics.get("cycle", 0.0),
+            metrics.get("struct", 0.0),
             metrics.get("stroke_gram", 0.0),
             metrics.get("color_moment", 0.0),
-            metrics.get("push", 0.0),
             metrics.get("delta_tv", 0.0),
-            metrics.get("style_spatial_tv", 0.0),
-            metrics.get("nce", 0.0),
-            metrics.get("semigroup", 0.0),
-            metrics.get("semigroup_samples", 0.0),
+            metrics.get("delta_l2", 0.0),
             metrics.get("train_num_steps", 0.0),
             metrics.get("train_step_size", 0.0),
             metrics.get("train_style_strength", 0.0),
-            metrics.get("heavy_loss_slot_id", 0.0),
-            metrics.get("path_teacher_active", 0.0),
-            metrics.get("path_cycle_active", 0.0),
-            metrics.get("path_stroke_active", 0.0),
-            metrics.get("path_nce_active", 0.0),
-            metrics.get("path_semigroup_active", 0.0),
-            metrics.get("w_cycle_eff", 0.0),
-            metrics.get("w_nce_eff", 0.0),
-            metrics.get("w_semigroup_eff", 0.0),
-            metrics.get("transfer_ratio", 0.0),
             metrics["lr"],
             metrics.get("data_time_sec", 0.0),
             metrics.get("compute_time_sec", 0.0),
