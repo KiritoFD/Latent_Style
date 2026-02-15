@@ -2,6 +2,7 @@ param(
     [string]$WslDistro = "",
     [string]$ProjectDirWsl = "/mnt/i/Github/Latent_Style/Cycle-NCE/src",
     [string]$InnerScript = "watchdog.sh",
+    [string]$ConfigPathWsl = "/mnt/i/Github/Latent_Style/Cycle-NCE/src/config.json",
     [int]$RestartDelaySec = 15,
     [int]$MaxRestarts = 0
 )
@@ -22,7 +23,7 @@ function Write-Log {
 }
 
 function Invoke-WslTrain {
-    $cmd = "cd '$ProjectDirWsl' && chmod +x '$InnerScript' && bash './$InnerScript'"
+    $cmd = "cd '$ProjectDirWsl' && chmod +x '$InnerScript' && CONFIG_PATH='$ConfigPathWsl' bash './$InnerScript'"
     if ([string]::IsNullOrWhiteSpace($WslDistro)) {
         $output = & wsl.exe bash -lc $cmd 2>&1
     } else {
@@ -40,7 +41,7 @@ $distroLabel = "(default)"
 if (-not [string]::IsNullOrWhiteSpace($WslDistro)) {
     $distroLabel = $WslDistro
 }
-Write-Log "WSL distro=$distroLabel project=$ProjectDirWsl inner=$InnerScript"
+Write-Log "WSL distro=$distroLabel project=$ProjectDirWsl inner=$InnerScript config=$ConfigPathWsl"
 
 $restarts = 0
 while ($true) {
