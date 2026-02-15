@@ -12,6 +12,9 @@
                   "residual_gain":  0.4,
                   "style_spatial_pre_gain_16":  0.62,
                   "use_decoder_adagn":  true,
+                  "inject_gate_hires":  0.0,
+                  "inject_gate_body":  1.0,
+                  "inject_gate_decoder":  1.0,
                   "style_strength_default":  1.0,
                   "style_strength_step_curve":  "smoothstep",
                   "upsample_mode":  "bilinear",
@@ -28,6 +31,11 @@
                  "cycle_step_size":  1.0,
                  "cycle_style_strength":  1.0,
                  "cycle_detach_student":  false,
+                 "w_semigroup":  0.2,
+                 "semigroup_loss_type":  "l1",
+                 "semigroup_lowpass_strength":  0.5,
+                 "semigroup_split_min":  0.3,
+                 "semigroup_split_max":  0.7,
                  "w_delta_tv":  0.01,
                  "w_stroke_gram":  90.0,
                  "w_color_moment":  8.0,
@@ -40,13 +48,13 @@
                  "train_num_steps_max":  2,
                  "train_step_size_min":  1.0,
                  "train_step_size_max":  1.3,
-                 "train_style_strength_min":  1.0,
+                 "train_style_strength_min":  0.6,
                  "train_style_strength_max":  1.0,
                  "w_delta_l2":  0.001
              },
     "training":  {
                      "seed":  42,
-                     "batch_size":  160,
+                     "batch_size":  64,
                      "accumulation_steps":  1,
                      "num_workers":  0,
                      "persistent_workers":  false,
@@ -108,7 +116,7 @@
                  "virtual_length_multiplier":  3
              },
     "checkpoint":  {
-                       "save_dir":  "../no-edge"
+                       "save_dir":  "../semigroup_decoder-inject"
                    },
     "inference":  {
                       "num_steps":  2,

@@ -70,7 +70,7 @@ def _compute_whitening_from_ref(ref: torch.Tensor, eps: float = 1e-4) -> tuple[t
     cov = cov + eps * torch.eye(c, device=cov.device, dtype=cov.dtype)
     # CUDA `eigh` does not support bfloat16 in some PyTorch builds.
     if cov.is_cuda:
-        with torch.cuda.amp.autocast(enabled=False):
+        with torch.amp.autocast("cuda", enabled=False):
             evals, evecs = torch.linalg.eigh(cov.float())
     else:
         evals, evecs = torch.linalg.eigh(cov.float())
@@ -140,6 +140,34 @@ def _multiscale_latent_feats(
     return stroke_feats, low_feats
 
 
+def _enrich_style_feats_single_scale(
+    x: torch.Tensor,
+    *,
+    stroke_patch: int,
+    low_patch: int,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    def _patch_expand(f: torch.Tensor, patch: int) -> torch.Tensor:
+        if patch <= 1:
+            return f
+        b, c, h, w = f.shape
+        u = F.unfold(f, kernel_size=patch, padding=patch // 2, stride=1)
+        return u.view(b, c * patch * patch, h, w)
+
+    def _enrich(f: torch.Tensor, patch: int) -> torch.Tensor:
+        f = _patch_expand(f, patch=patch)
+        low = F.interpolate(F.avg_pool2d(f, kernel_size=2, stride=2), size=f.shape[-2:], mode="bilinear", align_corners=False)
+        high = f - low
+        dx = F.pad(f[:, :, :, 1:] - f[:, :, :, :-1], (0, 1, 0, 0))
+        dy = F.pad(f[:, :, 1:, :] - f[:, :, :-1, :], (0, 0, 0, 1))
+        return torch.cat([f, high, dx, dy], dim=1)
+
+    stroke_enriched = _enrich(x, patch=stroke_patch)
+    low_enriched = _enrich(x, patch=low_patch)
+    stroke, _ = _split_style_feats(stroke_enriched)
+    _, low = _split_style_feats(low_enriched)
+    return stroke, low
+
+
 def _split_style_feats(feat: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     if feat.shape[1] % 4 != 0:
         raise ValueError("Expected enriched feature channels to be divisible by 4.")
@@ -153,6 +181,7 @@ def _split_style_feats(feat: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
 class AdaCUTObjective:
     def __init__(self, config: Dict) -> None:
         loss_cfg = config.get("loss", {})
+        train_cfg = config.get("training", {})
 
         self.w_struct = float(loss_cfg.get("w_struct", 0.0))
         self.w_delta_tv = float(loss_cfg.get("w_delta_tv", 0.0))
@@ -160,6 +189,7 @@ class AdaCUTObjective:
         self.w_stroke_gram = float(loss_cfg.get("w_stroke_gram", 0.0))
         self.w_color_moment = float(loss_cfg.get("w_color_moment", 0.0))
         self.w_cycle = float(loss_cfg.get("w_cycle", 0.0))
+        self.w_semigroup = float(loss_cfg.get("w_semigroup", 0.0))
 
         self.struct_lowpass_strength = float(loss_cfg.get("struct_lowpass_strength", 1.0))
         self.struct_lowpass_strength = max(0.0, min(1.0, self.struct_lowpass_strength))
@@ -175,6 +205,17 @@ class AdaCUTObjective:
         self.cycle_step_size = float(loss_cfg.get("cycle_step_size", 1.0))
         self.cycle_style_strength = max(0.0, min(1.0, float(loss_cfg.get("cycle_style_strength", 1.0))))
         self.cycle_detach_student = bool(loss_cfg.get("cycle_detach_student", False))
+        self.semigroup_loss_type = str(loss_cfg.get("semigroup_loss_type", "l1")).lower()
+        if self.semigroup_loss_type not in {"l1", "mse"}:
+            self.semigroup_loss_type = "l1"
+        self.semigroup_lowpass_strength = float(loss_cfg.get("semigroup_lowpass_strength", 0.5))
+        self.semigroup_lowpass_strength = max(0.0, min(1.0, self.semigroup_lowpass_strength))
+        self.semigroup_split_min = float(loss_cfg.get("semigroup_split_min", 0.3))
+        self.semigroup_split_max = float(loss_cfg.get("semigroup_split_max", 0.7))
+        self.semigroup_split_min = max(0.0, min(1.0, self.semigroup_split_min))
+        self.semigroup_split_max = max(0.0, min(1.0, self.semigroup_split_max))
+        if self.semigroup_split_max < self.semigroup_split_min:
+            self.semigroup_split_min, self.semigroup_split_max = self.semigroup_split_max, self.semigroup_split_min
 
         stroke_patch_sizes = loss_cfg.get("stroke_patch_sizes", [3])
         if isinstance(stroke_patch_sizes, (int, float)):
@@ -199,6 +240,7 @@ class AdaCUTObjective:
         self.train_style_strength_max = max(0.0, min(1.0, self.train_style_strength_max))
         if self.train_style_strength_max < self.train_style_strength_min:
             self.train_style_strength_min, self.train_style_strength_max = self.train_style_strength_max, self.train_style_strength_min
+        self.profile_loss_vram = bool(train_cfg.get("profile_loss_vram", True))
 
     @staticmethod
     def _sample_range(low: float, high: float) -> float:
@@ -237,9 +279,31 @@ class AdaCUTObjective:
         target_style_id: torch.Tensor,
         source_style_id: torch.Tensor,
     ) -> Dict[str, torch.Tensor]:
+        mem_metrics: Dict[str, float] = {}
+        mem_enabled = bool(self.profile_loss_vram and content.is_cuda)
+        mem_prev_alloc = 0.0
+        mem_base_peak = 0.0
+        if mem_enabled:
+            mem_prev_alloc = float(torch.cuda.memory_allocated(content.device) / (1024**2))
+            mem_base_peak = float(torch.cuda.max_memory_allocated(content.device) / (1024**2))
+
+        def _mem_mark(stage: str) -> None:
+            nonlocal mem_prev_alloc
+            if not mem_enabled:
+                return
+            cur_alloc = float(torch.cuda.memory_allocated(content.device) / (1024**2))
+            cur_peak = float(torch.cuda.max_memory_allocated(content.device) / (1024**2))
+            mem_metrics[f"loss_vram_{stage}_alloc_mb"] = cur_alloc
+            mem_metrics[f"loss_vram_{stage}_delta_mb"] = cur_alloc - mem_prev_alloc
+            mem_metrics[f"loss_vram_{stage}_peak_from_start_mb"] = cur_peak - mem_base_peak
+            mem_prev_alloc = cur_alloc
+
         train_num_steps = self._sample_int_range(self.train_num_steps_min, self.train_num_steps_max)
         train_step_size = self._sample_range(self.train_step_size_min, self.train_step_size_max)
         train_style_strength = self._sample_range(self.train_style_strength_min, self.train_style_strength_max)
+
+        content_f32 = content.float()
+        target_style_f32 = target_style.float()
 
         pred_student = self._apply_model(
             model,
@@ -249,79 +313,81 @@ class AdaCUTObjective:
             style_strength=train_style_strength,
             num_steps=train_num_steps,
         )
+        pred_student_f32 = pred_student.float()
+        _mem_mark("pred")
 
         # Struct via spatial self-similarity matrix (structure-preserving in latent space)
         if self.w_struct > 0.0:
             # Keep token count bounded for large batches: compute at 8x8.
-            pred_struct = F.adaptive_avg_pool2d(pred_student.float(), output_size=(8, 8))
-            cont_struct = F.adaptive_avg_pool2d(content.float(), output_size=(8, 8))
+            pred_struct = F.adaptive_avg_pool2d(pred_student_f32, output_size=(8, 8))
+            cont_struct = F.adaptive_avg_pool2d(content_f32, output_size=(8, 8))
             raw = _self_similarity_loss_per_sample(pred_struct, cont_struct)
             if self.struct_lowpass_strength > 0.0:
-                ps_lp = F.adaptive_avg_pool2d(_lowpass(pred_student.float()), output_size=(4, 4))
-                ct_lp = F.adaptive_avg_pool2d(_lowpass(content.float()), output_size=(4, 4))
+                ps_lp = F.adaptive_avg_pool2d(_lowpass(pred_student_f32), output_size=(4, 4))
+                ct_lp = F.adaptive_avg_pool2d(_lowpass(content_f32), output_size=(4, 4))
                 low = _self_similarity_loss_per_sample(ps_lp, ct_lp)
                 raw = (1.0 - self.struct_lowpass_strength) * raw + self.struct_lowpass_strength * low
             loss_struct = raw.mean()
         else:
             loss_struct = torch.tensor(0.0, device=content.device, dtype=content.dtype)
+        _mem_mark("struct")
 
         # Style statistics
         loss_stroke_gram = torch.tensor(0.0, device=content.device, dtype=torch.float32)
         loss_color_moment = torch.tensor(0.0, device=content.device, dtype=torch.float32)
         if self.w_stroke_gram > 0.0 or self.w_color_moment > 0.0:
-            stroke_patch_sizes = self.stroke_patch_sizes
-            randomize_patch = bool(model.training and self.stroke_patch_randomize)
-            if randomize_patch and len(stroke_patch_sizes) > 1:
-                idx = int(torch.randint(len(stroke_patch_sizes), (1,), device=content.device).item())
-                stroke_patch_sizes = [int(stroke_patch_sizes[idx])]
-                randomize_patch = False
-
-            pred_stroke_feats, pred_low_feats = _multiscale_latent_feats(
-                pred_student.float(),
-                stroke_patch_sizes=stroke_patch_sizes,
-                low_patch=self.color_patch_size,
-                randomize_patch=randomize_patch,
-            )
-            tgt_stroke_feats, tgt_low_feats = _multiscale_latent_feats(
-                target_style.float(),
-                stroke_patch_sizes=stroke_patch_sizes,
-                low_patch=self.color_patch_size,
-                randomize_patch=randomize_patch,
-            )
+            stroke_patch = int(self.stroke_patch_sizes[0]) if self.stroke_patch_sizes else 3
+            if model.training and self.stroke_patch_randomize and len(self.stroke_patch_sizes) > 1:
+                idx = int(torch.randint(len(self.stroke_patch_sizes), (1,), device=content.device).item())
+                stroke_patch = int(self.stroke_patch_sizes[idx])
 
             stroke_ps = pred_student.new_zeros((pred_student.shape[0],), dtype=torch.float32)
             color_ps = pred_student.new_zeros((pred_student.shape[0],), dtype=torch.float32)
 
-            for a, b in zip(pred_stroke_feats, tgt_stroke_feats):
-                a_stroke, _ = _split_style_feats(a)
-                b_stroke, _ = _split_style_feats(b)
+            for scale in (1, 2, 4):
+                if scale == 1:
+                    pred_scale = pred_student_f32
+                    tgt_scale = target_style_f32
+                else:
+                    pred_scale = F.avg_pool2d(pred_student_f32, kernel_size=scale, stride=scale)
+                    tgt_scale = F.avg_pool2d(target_style_f32, kernel_size=scale, stride=scale)
+
+                a_stroke, a_low = _enrich_style_feats_single_scale(
+                    pred_scale,
+                    stroke_patch=stroke_patch,
+                    low_patch=self.color_patch_size,
+                )
+                b_stroke, b_low = _enrich_style_feats_single_scale(
+                    tgt_scale,
+                    stroke_patch=stroke_patch,
+                    low_patch=self.color_patch_size,
+                )
                 w_ref, mu_ref = _compute_whitening_from_ref(b_stroke)
                 a_stroke_w = _apply_channel_whitening(a_stroke, w_ref, mu_ref)
                 b_stroke_w = _apply_channel_whitening(b_stroke, w_ref, mu_ref)
                 stroke_ps = stroke_ps + calc_gram_loss_per_sample(a_stroke_w, b_stroke_w)
-
-            for a, b in zip(pred_low_feats, tgt_low_feats):
-                _, a_low = _split_style_feats(a)
-                _, b_low = _split_style_feats(b)
                 color_ps = color_ps + calc_moment_loss_per_sample(a_low, b_low)
 
-            scale = 1.0 / float(len(pred_stroke_feats))
+            scale = 1.0 / 3.0
             stroke_ps = stroke_ps * scale
             color_ps = color_ps * scale
 
             loss_stroke_gram = stroke_ps.mean()
             loss_color_moment = color_ps.mean()
+        _mem_mark("style")
 
+        delta = None
+        if self.w_delta_tv > 0.0 or self.w_delta_l2 > 0.0:
+            delta = pred_student_f32 - content_f32
         if self.w_delta_tv > 0.0:
-            delta = pred_student.float() - content.float()
             loss_delta_tv = _tv_per_sample(delta).mean()
         else:
             loss_delta_tv = torch.tensor(0.0, device=content.device, dtype=content.dtype)
         if self.w_delta_l2 > 0.0:
-            delta = pred_student.float() - content.float()
             loss_delta_l2 = delta.pow(2).mean()
         else:
             loss_delta_l2 = torch.tensor(0.0, device=content.device, dtype=content.dtype)
+        _mem_mark("delta")
 
         loss_cycle = torch.tensor(0.0, device=content.device, dtype=torch.float32)
         if self.w_cycle > 0.0:
@@ -335,18 +401,56 @@ class AdaCUTObjective:
                 num_steps=self.cycle_num_steps,
             )
             if self.cycle_loss_type == "mse":
-                cyc_raw = (pred_cycle.float() - content.float()).pow(2).mean(dim=(1, 2, 3))
+                cyc_raw = (pred_cycle.float() - content_f32).pow(2).mean(dim=(1, 2, 3))
             else:
-                cyc_raw = (pred_cycle.float() - content.float()).abs().mean(dim=(1, 2, 3))
+                cyc_raw = (pred_cycle.float() - content_f32).abs().mean(dim=(1, 2, 3))
             if self.cycle_lowpass_strength > 0.0:
                 cyc_lp = _lowpass(pred_cycle.float())
-                ct_lp = _lowpass(content.float())
+                ct_lp = _lowpass(content_f32)
                 if self.cycle_loss_type == "mse":
                     cyc_low = (cyc_lp - ct_lp).pow(2).mean(dim=(1, 2, 3))
                 else:
                     cyc_low = (cyc_lp - ct_lp).abs().mean(dim=(1, 2, 3))
                 cyc_raw = (1.0 - self.cycle_lowpass_strength) * cyc_raw + self.cycle_lowpass_strength * cyc_low
             loss_cycle = cyc_raw.mean()
+        _mem_mark("cycle")
+
+        loss_semigroup = torch.tensor(0.0, device=content.device, dtype=torch.float32)
+        if self.w_semigroup > 0.0 and train_style_strength > 1e-6:
+            split_u = self._sample_range(self.semigroup_split_min, self.semigroup_split_max)
+            a_strength = train_style_strength * split_u
+            b_strength = train_style_strength - a_strength
+            z_ab = pred_student
+            z_a = self._apply_model(
+                model,
+                content,
+                style_id=target_style_id,
+                step_size=train_step_size,
+                style_strength=a_strength,
+                num_steps=train_num_steps,
+            )
+            z_a_b = self._apply_model(
+                model,
+                z_a,
+                style_id=target_style_id,
+                step_size=train_step_size,
+                style_strength=b_strength,
+                num_steps=train_num_steps,
+            )
+            if self.semigroup_loss_type == "mse":
+                sem_raw = (z_a_b.float() - z_ab.float()).pow(2).mean(dim=(1, 2, 3))
+            else:
+                sem_raw = (z_a_b.float() - z_ab.float()).abs().mean(dim=(1, 2, 3))
+            if self.semigroup_lowpass_strength > 0.0:
+                sem_lp_a = _lowpass(z_a_b.float())
+                sem_lp_b = _lowpass(z_ab.float())
+                if self.semigroup_loss_type == "mse":
+                    sem_low = (sem_lp_a - sem_lp_b).pow(2).mean(dim=(1, 2, 3))
+                else:
+                    sem_low = (sem_lp_a - sem_lp_b).abs().mean(dim=(1, 2, 3))
+                sem_raw = (1.0 - self.semigroup_lowpass_strength) * sem_raw + self.semigroup_lowpass_strength * sem_low
+            loss_semigroup = sem_raw.mean()
+        _mem_mark("semigroup")
 
         total = (
             self.w_struct * loss_struct
@@ -355,9 +459,11 @@ class AdaCUTObjective:
             + self.w_delta_tv * loss_delta_tv
             + self.w_delta_l2 * loss_delta_l2
             + self.w_cycle * loss_cycle
+            + self.w_semigroup * loss_semigroup
         )
+        _mem_mark("total")
 
-        return {
+        out = {
             "loss": total,
             "struct": loss_struct.detach(),
             "cycle": loss_cycle.detach(),
@@ -365,7 +471,12 @@ class AdaCUTObjective:
             "color_moment": loss_color_moment.detach(),
             "delta_tv": loss_delta_tv.detach(),
             "delta_l2": loss_delta_l2.detach(),
+            "semigroup": loss_semigroup.detach(),
             "train_num_steps": torch.tensor(float(train_num_steps), device=content.device),
             "train_step_size": torch.tensor(float(train_step_size), device=content.device),
             "train_style_strength": torch.tensor(float(train_style_strength), device=content.device),
         }
+        if mem_enabled:
+            for k, v in mem_metrics.items():
+                out[k] = torch.tensor(v, device=content.device)
+        return out

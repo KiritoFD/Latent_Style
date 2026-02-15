@@ -49,7 +49,8 @@ class AdaCUTLatentDataset(Dataset):
         self.data_root = Path(data_root)
         self.style_subdirs = list(style_subdirs)
         self.allow_hflip = bool(allow_hflip)
-        self.preload_to_gpu = bool(preload_to_gpu)
+        requested_preload_to_gpu = bool(preload_to_gpu)
+        self.preload_to_gpu = False
         self.device = device
         self.epoch = 0
         
@@ -82,13 +83,10 @@ class AdaCUTLatentDataset(Dataset):
         self.content_count = max(1, total_count)
         self.length = max(1, self.content_count * max(1, int(virtual_length_multiplier)))
 
-        if self.preload_to_gpu:
-            if not torch.cuda.is_available():
-                logger.warning("preload_to_gpu=True but CUDA unavailable, fallback to CPU")
-            else:
-                for style_id in self.style_tensors:
-                    self.style_tensors[style_id] = self.style_tensors[style_id].to(device)
-                logger.info("Preloaded all latents to GPU: %s", device)
+        if requested_preload_to_gpu:
+            logger.warning(
+                "preload_to_gpu=True requested but disabled in codepath to avoid allocator fragmentation/OOM; using CPU dataset tensors."
+            )
 
         # Initialize deterministic caches so __getitem__ is always safe.
         self.set_epoch(0)

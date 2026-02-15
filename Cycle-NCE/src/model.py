@@ -30,11 +30,20 @@ class AdaGN(nn.Module):
         with torch.no_grad():
             self.proj.bias[:dim] = 1.0
 
-    def forward(self, x: torch.Tensor, style_code: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, style_code: torch.Tensor, gate: float | torch.Tensor = 1.0) -> torch.Tensor:
         h = self.norm(x)
         params = self.proj(style_code).unsqueeze(-1).unsqueeze(-1)
         scale, shift = params.chunk(2, dim=1)
-        return h * scale + shift
+        adagn = h * scale + shift
+        if torch.is_tensor(gate):
+            g = gate.to(device=h.device, dtype=h.dtype)
+            if g.ndim == 0:
+                g = g.reshape(1, 1, 1, 1)
+            elif g.ndim == 1:
+                g = g.view(-1, 1, 1, 1)
+        else:
+            g = torch.tensor(float(gate), device=h.device, dtype=h.dtype).view(1, 1, 1, 1)
+        return h + g * (adagn - h)
 
 
 class ResBlock(nn.Module):
@@ -46,10 +55,10 @@ class ResBlock(nn.Module):
         self.conv2 = nn.Conv2d(dim, dim, kernel_size=3, stride=1, padding=1)
         self.act = nn.SiLU()
 
-    def forward(self, x: torch.Tensor, style_code: torch.Tensor) -> torch.Tensor:
-        h = self.act(self.norm1(x, style_code))
+    def forward(self, x: torch.Tensor, style_code: torch.Tensor, gate: float | torch.Tensor = 1.0) -> torch.Tensor:
+        h = self.act(self.norm1(x, style_code, gate=gate))
         h = self.conv1(h)
-        h = self.act(self.norm2(h, style_code))
+        h = self.act(self.norm2(h, style_code, gate=gate))
         h = self.conv2(h)
         return x + h
 
@@ -80,6 +89,9 @@ class LatentAdaCUT(nn.Module):
         residual_gain: float = 0.1,
         style_spatial_pre_gain_16: float = 0.35,
         use_decoder_adagn: bool = True,
+        inject_gate_hires: float = 0.0,
+        inject_gate_body: float = 1.0,
+        inject_gate_decoder: float = 1.0,
         style_strength_default: float = 1.0,
         style_strength_step_curve: str = "linear",
         upsample_mode: str = "nearest",
@@ -96,6 +108,9 @@ class LatentAdaCUT(nn.Module):
         self.style_spatial_pre_gain_16 = float(style_spatial_pre_gain_16)
         # Pruned paths: keep only pre-inject + main AdaGN style route.
         self.use_decoder_adagn = bool(use_decoder_adagn)
+        self.inject_gate_hires = max(0.0, min(1.0, float(inject_gate_hires)))
+        self.inject_gate_body = max(0.0, min(1.0, float(inject_gate_body)))
+        self.inject_gate_decoder = max(0.0, min(1.0, float(inject_gate_decoder)))
         self.style_strength_default = max(0.0, min(1.0, float(style_strength_default)))
         self.style_strength_step_curve = str(style_strength_step_curve).lower()
         if self.style_strength_step_curve not in {"linear", "smoothstep", "sqrt"}:
@@ -168,25 +183,33 @@ class LatentAdaCUT(nn.Module):
         alpha = self._resolve_alpha(style_mix_alpha, batch=code_id.shape[0], device=code_id.device, dtype=code_id.dtype)
         return alpha * code_ref + (1.0 - alpha) * code_id
 
-    def _run_block(self, block: ResBlock, h: torch.Tensor, style_code: torch.Tensor) -> torch.Tensor:
+    def _run_block(
+        self,
+        block: ResBlock,
+        h: torch.Tensor,
+        style_code: torch.Tensor,
+        gate: float | torch.Tensor = 1.0,
+    ) -> torch.Tensor:
         if self.use_checkpointing and self.training:
             return ckpt.checkpoint(
-                lambda _h, _s, _blk=block: _blk(_h, _s),
+                lambda _h, _s, _g, _blk=block: _blk(_h, _s, _g),
                 h,
                 style_code,
+                torch.tensor(float(gate), device=h.device, dtype=h.dtype),
                 use_reentrant=False,
             )
-        return block(h, style_code)
+        return block(h, style_code, gate=gate)
 
     def _run_style_blocks(
         self,
         h: torch.Tensor,
         blocks: nn.ModuleList,
         style_code: torch.Tensor,
+        gate: float | torch.Tensor = 1.0,
     ) -> torch.Tensor:
         out = h
         for block in blocks:
-            out = self._run_block(block, out, style_code)
+            out = self._run_block(block, out, style_code, gate=gate)
         return out
 
     def _resolve_style_strength(self, style_strength: float | None) -> float:
@@ -206,10 +229,11 @@ class LatentAdaCUT(nn.Module):
         self,
         h: torch.Tensor,
         style_code: torch.Tensor,
+        gate: float | torch.Tensor = 1.0,
     ) -> torch.Tensor:
         h = self.dec_conv(h)
         if self.use_decoder_adagn:
-            h = self.dec_norm(h, style_code)
+            h = self.dec_norm(h, style_code, gate=gate)
         else:
             h = self.dec_norm(h)
         h = self.dec_act(h)
@@ -219,15 +243,17 @@ class LatentAdaCUT(nn.Module):
         self,
         h: torch.Tensor,
         style_code: torch.Tensor,
+        gate: float | torch.Tensor = 1.0,
     ) -> torch.Tensor:
         if self.use_checkpointing and self.training:
             return ckpt.checkpoint(
-                lambda _h, _s: self._decode_core(_h, _s),
+                lambda _h, _s, _g: self._decode_core(_h, _s, _g),
                 h,
                 style_code,
+                torch.tensor(float(gate), device=h.device, dtype=h.dtype),
                 use_reentrant=False,
             )
-        return self._decode_core(h, style_code)
+        return self._decode_core(h, style_code, gate=gate)
 
     def _prepare_style_maps(
         self,
@@ -435,6 +461,9 @@ class LatentAdaCUT(nn.Module):
         style_strength: float | None = None,
     ) -> torch.Tensor:
         strength = self._resolve_style_strength(style_strength)
+        gate_hires = self.inject_gate_hires * strength
+        gate_body = self.inject_gate_body * strength
+        gate_decoder = self.inject_gate_decoder * strength
         style_code = self._style_code(style_id=style_id, style_ref=style_ref, style_mix_alpha=style_mix_alpha)
         style_maps = self._prepare_style_maps(
             style_id=style_id,
@@ -450,6 +479,7 @@ class LatentAdaCUT(nn.Module):
             h,
             blocks=self.hires_body,
             style_code=style_code,
+            gate=gate_hires,
         )
 
         h = self.down(h)
@@ -460,12 +490,14 @@ class LatentAdaCUT(nn.Module):
             h,
             blocks=self.body,
             style_code=style_code,
+            gate=gate_body,
         )
 
         h = self.dec_up(h)
         h = self._run_decoder(
             h,
             style_code=style_code,
+            gate=gate_decoder,
         )
         return self._compute_delta(h)
 
@@ -541,6 +573,9 @@ def build_model_from_config(
         "residual_gain",
         "style_spatial_pre_gain_16",
         "use_decoder_adagn",
+        "inject_gate_hires",
+        "inject_gate_body",
+        "inject_gate_decoder",
         "style_strength_default",
         "style_strength_step_curve",
         "upsample_mode",
@@ -568,6 +603,9 @@ def build_model_from_config(
         residual_gain=float(model_cfg.get("residual_gain", 0.1)),
         style_spatial_pre_gain_16=float(model_cfg.get("style_spatial_pre_gain_16", 0.35)),
         use_decoder_adagn=bool(model_cfg.get("use_decoder_adagn", True)),
+        inject_gate_hires=float(model_cfg.get("inject_gate_hires", 0.0)),
+        inject_gate_body=float(model_cfg.get("inject_gate_body", 1.0)),
+        inject_gate_decoder=float(model_cfg.get("inject_gate_decoder", 1.0)),
         style_strength_default=float(model_cfg.get("style_strength_default", 1.0)),
         style_strength_step_curve=str(model_cfg.get("style_strength_step_curve", "linear")),
         upsample_mode=str(model_cfg.get("upsample_mode", "nearest")),

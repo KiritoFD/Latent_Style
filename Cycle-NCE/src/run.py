@@ -36,6 +36,11 @@ _ALLOWED_LOSS_KEYS = {
     "cycle_step_size",
     "cycle_style_strength",
     "cycle_detach_student",
+    "w_semigroup",
+    "semigroup_loss_type",
+    "semigroup_lowpass_strength",
+    "semigroup_split_min",
+    "semigroup_split_max",
     "w_delta_tv",
     "w_delta_l2",
     "w_stroke_gram",
@@ -51,7 +56,7 @@ _ALLOWED_LOSS_KEYS = {
     "train_style_strength_max",
 }
 _FORBIDDEN_LOSS_KEYS = {"w_distill", "distill_low_only", "distill_cross_domain_only", "w_code", "style_loss_source"}
-_LOSS_WEIGHT_KEYS = ("w_struct", "w_cycle", "w_stroke_gram", "w_color_moment", "w_delta_tv", "w_delta_l2")
+_LOSS_WEIGHT_KEYS = ("w_struct", "w_cycle", "w_semigroup", "w_stroke_gram", "w_color_moment", "w_delta_tv", "w_delta_l2")
 
 
 def _set_seed(seed: int) -> None:
@@ -60,6 +65,22 @@ def _set_seed(seed: int) -> None:
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
+
+
+def _configure_cuda_allocator(config: dict) -> None:
+    if not torch.cuda.is_available():
+        return
+    train_cfg = config.get("training", {})
+    alloc_conf = str(train_cfg.get("cuda_alloc_conf", "")).strip()
+    if not alloc_conf:
+        # Keep allocator policy conservative to reduce fragmentation under long runs.
+        alloc_conf = "expandable_segments:True"
+    current = os.environ.get("PYTORCH_CUDA_ALLOC_CONF", "").strip()
+    if current:
+        logger.info("Use existing PYTORCH_CUDA_ALLOC_CONF=%s", current)
+        return
+    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = alloc_conf
+    logger.info("Set PYTORCH_CUDA_ALLOC_CONF=%s", alloc_conf)
 
 
 def _set_cpu_threads(config: dict) -> None:
@@ -149,10 +170,9 @@ def _seed_worker(worker_id: int) -> None:
     torch.set_num_threads(1)
 
 
-def _resolve_num_workers(config: dict) -> int:
+def _resolve_num_workers(config: dict, *, preload_to_gpu: bool = False) -> int:
     train_cfg = config.get("training", {})
-    preload = bool(config.get("data", {}).get("preload_to_gpu", False))
-    if preload:
+    if preload_to_gpu:
         return 0
     if train_cfg.get("num_workers") is not None:
         return int(train_cfg["num_workers"])
@@ -192,6 +212,7 @@ def main() -> None:
         config.setdefault("training", {})
         config["training"]["resume_checkpoint"] = args.resume
 
+    _configure_cuda_allocator(config)
     seed = int(config.get("training", {}).get("seed", 42))
     _set_seed(seed)
     _set_cpu_env_threads(config)
@@ -223,8 +244,8 @@ def main() -> None:
         config.setdefault("model", {})
         config["model"]["num_styles"] = style_count
 
-    num_workers = _resolve_num_workers(config)
-    preload_to_gpu = bool(data_cfg.get("preload_to_gpu", False))
+    preload_to_gpu = bool(getattr(dataset, "preload_to_gpu", False))
+    num_workers = _resolve_num_workers(config, preload_to_gpu=preload_to_gpu)
     pin_memory_default = (device.type == "cuda") and (not preload_to_gpu)
     pin_memory = bool(config.get("training", {}).get("pin_memory", pin_memory_default))
     persistent_workers = bool(config.get("training", {}).get("persistent_workers", True))
