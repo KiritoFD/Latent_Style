@@ -6,6 +6,7 @@ import json
 import shutil
 import logging
 import os
+import re
 import subprocess
 import sys
 import time
@@ -33,6 +34,13 @@ _COMPILE_MODE = "default"
 _COMPILE_FULLGRAPH = False
 
 
+def _is_rtx_30_series(name: str) -> bool:
+    n = str(name).lower()
+    if "rtx 30" in n:
+        return True
+    return bool(re.search(r"\b30\d{2}\b", n))
+
+
 def _strip_compile_prefix(state_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
     if any(k.startswith("_orig_mod.") for k in state_dict.keys()):
         return {k.replace("_orig_mod.", ""): v for k, v in state_dict.items()}
@@ -46,6 +54,22 @@ class AdaCUTTrainer:
         self.config_path = config_path
 
         train_cfg = config.get("training", {})
+        self.skip_oom_batches = bool(train_cfg.get("skip_oom_batches", True))
+        self.gpu_name = ""
+        self.gpu_capability = ""
+        self.gpu_total_vram_gb = 0.0
+        self.is_rtx_30_series = False
+        if device.type == "cuda" and torch.cuda.is_available():
+            try:
+                dev_idx = torch.cuda.current_device()
+                props = torch.cuda.get_device_properties(dev_idx)
+                self.gpu_name = str(getattr(props, "name", ""))
+                self.gpu_capability = f"{int(getattr(props, 'major', 0))}.{int(getattr(props, 'minor', 0))}"
+                self.gpu_total_vram_gb = float(getattr(props, "total_memory", 0)) / float(1024**3)
+                self.is_rtx_30_series = _is_rtx_30_series(self.gpu_name)
+            except Exception:  # pragma: no cover
+                pass
+
         torch.set_float32_matmul_precision("high")
         self.allow_tf32 = bool(train_cfg.get("allow_tf32", True))
         if torch.cuda.is_available():
@@ -53,15 +77,24 @@ class AdaCUTTrainer:
             torch.backends.cudnn.allow_tf32 = self.allow_tf32
             torch.backends.cudnn.benchmark = True
 
-        requested_channels_last = bool(train_cfg.get("channels_last", True) and device.type == "cuda")
-        self.channels_last = bool(device.type == "cuda")
-        if self.channels_last:
-            logger.warning("channels_last is forced ON in codepath (CUDA). config.channels_last=%s", requested_channels_last)
+        requested_channels_last = bool(train_cfg.get("channels_last", False) and device.type == "cuda")
+        self.channels_last = bool(requested_channels_last)
         self.empty_cache_interval = max(0, int(train_cfg.get("empty_cache_interval", 0)))
         self.log_vram_interval = max(0, int(train_cfg.get("log_vram_interval", 0)))
         self.gc_collect_interval = max(0, int(train_cfg.get("gc_collect_interval", 0)))
         self.trace_vram_steps = max(0, int(train_cfg.get("trace_vram_steps", 1)))
-        self.loss_timing_interval = max(0, int(train_cfg.get("loss_timing_interval", 0)))
+        requested_loss_timing_interval = max(0, int(train_cfg.get("loss_timing_interval", 0)))
+        # Force-disable CUDA event timing in training path to avoid synchronize overhead.
+        self.loss_timing_interval = 0
+        self.strict_batch_sanity = bool(train_cfg.get("strict_batch_sanity", True))
+        self.strict_batch_sanity_interval = max(1, int(train_cfg.get("strict_batch_sanity_interval", 1)))
+        requested_cuda_sync_debug = bool(train_cfg.get("cuda_sync_debug", False))
+        # Force-disable explicit synchronize path for throughput.
+        self.cuda_sync_debug = False
+        if requested_cuda_sync_debug:
+            logger.warning("cuda_sync_debug requested but forcibly disabled for throughput stability.")
+        if requested_loss_timing_interval > 0:
+            logger.warning("loss_timing_interval=%d requested but forcibly disabled for throughput.", requested_loss_timing_interval)
         self.enable_profiler = bool(train_cfg.get("enable_profiler", False))
         self.nsight_cuda_profile = bool(train_cfg.get("nsight_cuda_profile", False))
         self.nsight_capture_start_step = max(0, int(train_cfg.get("nsight_capture_start_step", 10)))
@@ -84,10 +117,10 @@ class AdaCUTTrainer:
         model_cfg = config.get("model", {})
         grad_ckpt_cfg = bool(train_cfg.get("use_gradient_checkpointing", False))
         if grad_ckpt_cfg:
-            logger.warning("use_gradient_checkpointing=True requested, but forced OFF for this lightweight model.")
+            logger.info("Gradient checkpointing enabled (trades compute for lower VRAM).")
         self.model = build_model_from_config(
             model_cfg,
-            use_checkpointing=False,
+            use_checkpointing=grad_ckpt_cfg,
         )
         if self.channels_last:
             self.model = self.model.to(device, memory_format=torch.channels_last)
@@ -106,14 +139,24 @@ class AdaCUTTrainer:
         self.full_eval_root.mkdir(parents=True, exist_ok=True)
 
         requested_use_compile = bool(train_cfg.get("use_compile", False))
-        self.use_compile = False
+        disable_compile_on_rtx30 = bool(train_cfg.get("disable_compile_on_rtx30", True))
+        if requested_use_compile and self.is_rtx_30_series and disable_compile_on_rtx30:
+            logger.warning(
+                "use_compile=True requested but disabled for RTX 30 series (%s) to prioritize long-run stability.",
+                self.gpu_name or "unknown",
+            )
+        self.use_compile = bool(
+            requested_use_compile
+            and device.type == "cuda"
+            and not (self.is_rtx_30_series and disable_compile_on_rtx30)
+        )
         self.compile_backend = str(train_cfg.get("compile_backend", _COMPILE_BACKEND))
         self.compile_mode = str(train_cfg.get("compile_mode", _COMPILE_MODE))
         self.compile_fullgraph = bool(train_cfg.get("compile_fullgraph", _COMPILE_FULLGRAPH))
         self.compile_disable_cudagraphs = bool(train_cfg.get("compile_disable_cudagraphs", True))
         self.compile_cache_dir = (self.checkpoint_dir / "torch_compile_cache").resolve()
-        if requested_use_compile:
-            logger.warning("use_compile=True requested but disabled in codepath for VRAM stability.")
+        if requested_use_compile and device.type != "cuda":
+            logger.warning("use_compile=True requested but CUDA is unavailable; fallback to eager.")
         if self.use_compile:
             try:
                 (self.compile_cache_dir / "inductor").mkdir(parents=True, exist_ok=True)
@@ -156,10 +199,10 @@ class AdaCUTTrainer:
 
         logger.info("Model params: %s", f"{count_parameters(self.model):,}")
         logger.info(
-            "Infra | channels_last=%s tf32=%s grad_ckpt=%s compile=%s backend=%s mode=%s fullgraph=%s cudagraphs=%s gc_collect_interval=%d loss_timing_interval=%d profiler=%s alloc_conf=%s",
+            "Infra | channels_last=%s tf32=%s grad_ckpt=%s compile=%s backend=%s mode=%s fullgraph=%s cudagraphs=%s gc_collect_interval=%d loss_timing_interval=%d strict_batch_sanity=%s strict_batch_sanity_interval=%d cuda_sync_debug=%s profiler=%s alloc_conf=%s",
             self.channels_last,
             self.allow_tf32,
-            False,
+            grad_ckpt_cfg,
             self.use_compile,
             self.compile_backend if self.use_compile else "off",
             self.compile_mode if self.use_compile else "off",
@@ -167,8 +210,11 @@ class AdaCUTTrainer:
             ("off" if getattr(self, "compile_disable_cudagraphs", True) else "on") if self.use_compile else "off",
             self.gc_collect_interval,
             self.loss_timing_interval,
+            self.strict_batch_sanity,
+            self.strict_batch_sanity_interval,
+            self.cuda_sync_debug,
             self.enable_profiler,
-            os.environ.get("PYTORCH_CUDA_ALLOC_CONF", ""),
+            os.environ.get("PYTORCH_ALLOC_CONF", os.environ.get("PYTORCH_CUDA_ALLOC_CONF", "")),
         )
         logger.info(
             "Nsight | nvtx=%s cuda_profile=%s capture_start_step=%d capture_steps=%d",
@@ -178,21 +224,35 @@ class AdaCUTTrainer:
             self.nsight_capture_steps,
         )
 
-        self.use_amp = bool(train_cfg.get("use_amp", True) and device.type == "cuda")
-        amp_dtype_cfg = str(train_cfg.get("amp_dtype", "bf16")).lower()
+        self.use_amp = bool(train_cfg.get("use_amp", False) and device.type == "cuda")
+        amp_dtype_cfg = str(train_cfg.get("amp_dtype", "fp16")).lower()
+        prefer_fp16_on_rtx30 = bool(train_cfg.get("prefer_fp16_on_rtx30", True))
+        if (
+            self.use_amp
+            and self.is_rtx_30_series
+            and prefer_fp16_on_rtx30
+            and amp_dtype_cfg in {"bf16", "bfloat16"}
+        ):
+            logger.warning(
+                "amp_dtype=%s requested on RTX 30 series (%s), forcing fp16 for better stability/perf balance.",
+                amp_dtype_cfg,
+                self.gpu_name or "unknown",
+            )
+            amp_dtype_cfg = "fp16"
         if amp_dtype_cfg in {"fp16", "float16", "half"}:
             self.amp_dtype = torch.float16
         else:
             self.amp_dtype = torch.bfloat16
         if device.type != "cuda":
             self.use_amp = False
-        self.use_grad_scaler = bool(self.use_amp and self.amp_dtype == torch.float16)
+        default_use_grad_scaler = bool(self.use_amp and self.amp_dtype == torch.float16)
+        self.use_grad_scaler = bool(train_cfg.get("use_grad_scaler", default_use_grad_scaler))
         self.scaler = torch.amp.GradScaler("cuda", enabled=self.use_grad_scaler)
 
         requested_fused_adamw = bool(train_cfg.get("fused_adamw", device.type == "cuda"))
-        use_fused_adamw = False
-        if requested_fused_adamw:
-            logger.warning("fused_adamw=True requested but disabled in codepath for VRAM stability.")
+        use_fused_adamw = bool(requested_fused_adamw and device.type == "cuda")
+        if requested_fused_adamw and device.type != "cuda":
+            logger.warning("fused_adamw=True requested but CUDA is unavailable; using regular AdamW.")
         try:
             self.optimizer = torch.optim.AdamW(
                 self.model.parameters(),
@@ -209,12 +269,22 @@ class AdaCUTTrainer:
                 betas=(0.9, 0.999),
             )
             use_fused_adamw = False
+            if requested_fused_adamw:
+                logger.warning("Fused AdamW is not supported in this torch build; fallback to regular AdamW.")
         logger.info(
-            "Precision | amp=%s amp_dtype=%s grad_scaler=%s fused_adamw=%s",
+            "Precision | amp=%s amp_dtype=%s grad_scaler=%s fused_adamw=%s prefer_fp16_on_rtx30=%s",
             self.use_amp,
             "fp16" if self.amp_dtype == torch.float16 else "bf16",
             self.use_grad_scaler,
             use_fused_adamw,
+            prefer_fp16_on_rtx30,
+        )
+        logger.info(
+            "GPU | name=%s capability=%s vram_gb=%.2f rtx30=%s",
+            self.gpu_name or "unknown",
+            self.gpu_capability or "unknown",
+            self.gpu_total_vram_gb,
+            self.is_rtx_30_series,
         )
 
         self.scheduler = None
@@ -253,13 +323,22 @@ class AdaCUTTrainer:
                     "color_moment",
                     "delta_tv",
                     "delta_l2",
+                    "output_tv",
                     "train_num_steps",
                     "train_step_size",
                     "train_style_strength",
                     "lr",
                     "data_time_sec",
+                    "transfer_time_sec",
+                    "fwd_loss_time_sec",
+                    "backward_time_sec",
+                    "optimizer_time_sec",
+                    "step_overhead_time_sec",
                     "compute_time_sec",
                     "epoch_time_sec",
+                    "samples_seen",
+                    "samples_per_sec",
+                    "compute_samples_per_sec",
                 ]
             )
 
@@ -348,13 +427,7 @@ class AdaCUTTrainer:
         for k, v in batch.items():
             if torch.is_tensor(v):
                 if v.device == self.device:
-                    if self.channels_last and v.is_floating_point() and v.ndim == 4:
-                        if v.is_contiguous(memory_format=torch.channels_last):
-                            out[k] = v
-                        else:
-                            out[k] = v.contiguous(memory_format=torch.channels_last)
-                    else:
-                        out[k] = v
+                    out[k] = v
                 elif self.channels_last and v.is_floating_point() and v.ndim == 4:
                     out[k] = v.to(self.device, non_blocking=True, memory_format=torch.channels_last)
                 else:
@@ -362,6 +435,24 @@ class AdaCUTTrainer:
             else:
                 out[k] = v
         return out
+
+    def _validate_batch_sanity_cpu(self, batch: Dict[str, torch.Tensor]) -> None:
+        content = batch.get("content")
+        target_style = batch.get("target_style")
+        target_style_id = batch.get("target_style_id")
+        if not torch.is_tensor(content) or not torch.is_tensor(target_style) or not torch.is_tensor(target_style_id):
+            raise RuntimeError("Missing required batch keys: content/target_style/target_style_id")
+        # Keep this check on CPU tensors to avoid device sync stalls.
+        if not torch.isfinite(content).all() or not torch.isfinite(target_style).all():
+            raise RuntimeError("Non-finite values in batch tensors (content/target_style).")
+        n_styles = int(getattr(self.model, "num_styles", 0))
+        if n_styles > 0:
+            sid_min = int(target_style_id.min().item())
+            sid_max = int(target_style_id.max().item())
+            if sid_min < 0 or sid_max >= n_styles:
+                raise RuntimeError(
+                    f"target_style_id out of range: min={sid_min} max={sid_max} valid=[0,{n_styles-1}]"
+                )
 
     @staticmethod
     def _is_oom_error(exc: RuntimeError) -> bool:
@@ -431,7 +522,7 @@ class AdaCUTTrainer:
             "epoch": int(epoch),
             "step": int(step_idx),
             "error": str(exc),
-            "alloc_conf": os.environ.get("PYTORCH_CUDA_ALLOC_CONF", ""),
+            "alloc_conf": os.environ.get("PYTORCH_ALLOC_CONF", os.environ.get("PYTORCH_CUDA_ALLOC_CONF", "")),
             "snapshot": snapshot,
         }
         try:
@@ -509,6 +600,11 @@ class AdaCUTTrainer:
         metric_accum: Dict[str, torch.Tensor] = {}
         num_batches = 0
         data_time_total = 0.0
+        transfer_time_total = 0.0
+        fwd_loss_time_total = 0.0
+        backward_time_total = 0.0
+        optimizer_time_total = 0.0
+        step_overhead_time_total = 0.0
         compute_time_total = 0.0
 
         total_steps = len(dataloader)
@@ -550,7 +646,11 @@ class AdaCUTTrainer:
                 self._maybe_toggle_cuda_profiler()
                 step_enter = time.perf_counter()
                 data_time_total += max(0.0, step_enter - data_wait_start)
-                compute_start = time.perf_counter()
+                step_compute_start = time.perf_counter()
+                transfer_step = 0.0
+                fwd_loss_step = 0.0
+                backward_step = 0.0
+                optimizer_step = 0.0
                 batch = None
                 content = None
                 target_style = None
@@ -558,14 +658,20 @@ class AdaCUTTrainer:
                 loss_dict = None
                 loss = None
                 try:
+                    if self.strict_batch_sanity and (step_idx % self.strict_batch_sanity_interval == 0):
+                        with self._nvtx_range("batch_sanity_cpu"):
+                            self._validate_batch_sanity_cpu(raw_batch)
+                    t0 = time.perf_counter()
                     with self._nvtx_range("move_batch"):
                         batch = self._move_batch(raw_batch)
+                    transfer_step += max(0.0, time.perf_counter() - t0)
                     self._trace_vram(epoch=epoch, step_idx=step_idx, phase="after_move_batch")
                     content = batch["content"]
                     target_style = batch["target_style"]
                     target_style_id = batch["target_style_id"]
                     enable_loss_timing = bool(self.loss_timing_interval > 0 and (step_idx % self.loss_timing_interval == 0))
 
+                    t0 = time.perf_counter()
                     with self._nvtx_range("loss_compute"):
                         with torch.amp.autocast("cuda", enabled=self.use_amp, dtype=self.amp_dtype):
                             loss_dict = self.loss_fn.compute(
@@ -576,6 +682,7 @@ class AdaCUTTrainer:
                                 debug_timing=enable_loss_timing,
                             )
                             loss = loss_dict["loss"]
+                    fwd_loss_step += max(0.0, time.perf_counter() - t0)
                     if step_idx <= self.trace_vram_steps and "loss_vram_total_alloc_mb" in loss_dict:
                         def _vram_metric(name: str) -> float:
                             v = loss_dict.get(name)
@@ -615,15 +722,18 @@ class AdaCUTTrainer:
                     self._trace_vram(epoch=epoch, step_idx=step_idx, phase="after_loss_compute")
 
                     loss_to_backward = loss / self.accumulation_steps
+                    t0 = time.perf_counter()
                     with self._nvtx_range("backward"):
                         if self.use_grad_scaler:
                             self.scaler.scale(loss_to_backward).backward()
                         else:
                             loss_to_backward.backward()
+                    backward_step += max(0.0, time.perf_counter() - t0)
                     self._trace_vram(epoch=epoch, step_idx=step_idx, phase="after_backward")
 
                     should_step = (step_idx % self.accumulation_steps == 0)
                     if should_step:
+                        t0 = time.perf_counter()
                         with self._nvtx_range("optimizer_step"):
                             if self.grad_clip_norm > 0:
                                 if self.use_grad_scaler:
@@ -635,6 +745,7 @@ class AdaCUTTrainer:
                             else:
                                 self.optimizer.step()
                             self.optimizer.zero_grad(set_to_none=True)
+                        optimizer_step += max(0.0, time.perf_counter() - t0)
                         self._trace_vram(epoch=epoch, step_idx=step_idx, phase="after_optimizer_step")
                         self.global_step += 1
                         if self.gc_collect_interval > 0 and (self.global_step % self.gc_collect_interval == 0):
@@ -656,6 +767,17 @@ class AdaCUTTrainer:
                 except RuntimeError as exc:
                     if self._is_oom_error(exc):
                         self._dump_oom_report(epoch=epoch, step_idx=step_idx, exc=exc)
+                        if self.skip_oom_batches and self.device.type == "cuda":
+                            logger.warning(
+                                "OOM at epoch=%d step=%d. skip_oom_batches=True, dropping batch and continuing.",
+                                epoch,
+                                step_idx,
+                            )
+                            self.optimizer.zero_grad(set_to_none=True)
+                            gc.collect()
+                            torch.cuda.empty_cache()
+                            data_wait_start = time.perf_counter()
+                            continue
                     raise
 
                 if self.log_interval > 0 and (step_idx % self.log_interval == 0):
@@ -683,7 +805,7 @@ class AdaCUTTrainer:
                     )
                     if not self.use_tqdm:
                         logger.info(
-                            "epoch %d step %d/%d | loss=%.4f struct=%.4f semigroup=%.4f sgram=%.4f cmoment=%.4f dtv=%.4f dl2=%.4f steps=%.1f h=%.2f s=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
+                            "epoch %d step %d/%d | loss=%.4f struct=%.4f semigroup=%.4f sgram=%.4f cmoment=%.4f dtv=%.4f dl2=%.4f otv=%.4f steps=%.1f h=%.2f s=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
                             epoch,
                             step_idx,
                             total_steps,
@@ -694,6 +816,7 @@ class AdaCUTTrainer:
                             _get_avg('color_moment'),
                             _get_avg('delta_tv'),
                             _get_avg('delta_l2'),
+                            _get_avg('output_tv'),
                             _get_avg('train_num_steps'),
                             _get_avg('train_step_size'),
                             _get_avg('train_style_strength'),
@@ -703,7 +826,15 @@ class AdaCUTTrainer:
                             eta,
                         )
                 self._maybe_log_vram(epoch, step_idx)
-                compute_time_total += max(0.0, time.perf_counter() - compute_start)
+                step_elapsed = max(0.0, time.perf_counter() - step_compute_start)
+                step_compute = transfer_step + fwd_loss_step + backward_step + optimizer_step
+                step_overhead = max(0.0, step_elapsed - step_compute)
+                transfer_time_total += transfer_step
+                fwd_loss_time_total += fwd_loss_step
+                backward_time_total += backward_step
+                optimizer_time_total += optimizer_step
+                step_overhead_time_total += step_overhead
+                compute_time_total += step_compute
                 data_wait_start = time.perf_counter()
                 if profiler_enabled and prof is not None:
                     prof.step()
@@ -733,6 +864,10 @@ class AdaCUTTrainer:
 
         epoch_time = time.time() - epoch_start
         lr = float(self.optimizer.param_groups[0]["lr"])
+        batch_size = int(getattr(dataloader, "batch_size", 0) or 0)
+        samples_seen = int(num_batches * batch_size) if batch_size > 0 else 0
+        samples_per_sec = float(samples_seen / max(epoch_time, 1e-6)) if samples_seen > 0 else 0.0
+        compute_samples_per_sec = float(samples_seen / max(compute_time_total, 1e-6)) if samples_seen > 0 else 0.0
         
         # Finalize metrics
         metrics: Dict[str, float] = {}
@@ -743,22 +878,40 @@ class AdaCUTTrainer:
         # Ensure standard keys exist for CSV logging
         metrics["lr"] = lr
         metrics["data_time_sec"] = data_time_total
+        metrics["transfer_time_sec"] = transfer_time_total
+        metrics["fwd_loss_time_sec"] = fwd_loss_time_total
+        metrics["backward_time_sec"] = backward_time_total
+        metrics["optimizer_time_sec"] = optimizer_time_total
+        metrics["step_overhead_time_sec"] = step_overhead_time_total
         metrics["compute_time_sec"] = compute_time_total
         metrics["epoch_time_sec"] = epoch_time
+        metrics["samples_seen"] = float(samples_seen)
+        metrics["samples_per_sec"] = samples_per_sec
+        metrics["compute_samples_per_sec"] = compute_samples_per_sec
         
         # Fill missing keys with 0.0 for safety
         expected_keys = [
             "loss", "struct", "semigroup", "stroke_gram", "color_moment",
-            "delta_tv", "delta_l2", "train_num_steps", "train_step_size", "train_style_strength",
-            "data_time_sec", "compute_time_sec",
+            "delta_tv", "delta_l2", "output_tv", "train_num_steps", "train_step_size", "train_style_strength",
+            "data_time_sec", "transfer_time_sec", "fwd_loss_time_sec", "backward_time_sec",
+            "optimizer_time_sec", "step_overhead_time_sec", "compute_time_sec",
+            "samples_seen", "samples_per_sec", "compute_samples_per_sec",
         ]
         for k in expected_keys:
             metrics.setdefault(k, 0.0)
 
         metrics.update({
             "data_time_sec": data_time_total,
+            "transfer_time_sec": transfer_time_total,
+            "fwd_loss_time_sec": fwd_loss_time_total,
+            "backward_time_sec": backward_time_total,
+            "optimizer_time_sec": optimizer_time_total,
+            "step_overhead_time_sec": step_overhead_time_total,
             "compute_time_sec": compute_time_total,
             "epoch_time_sec": epoch_time,
+            "samples_seen": float(samples_seen),
+            "samples_per_sec": samples_per_sec,
+            "compute_samples_per_sec": compute_samples_per_sec,
         })
 
         if self.use_tqdm:
@@ -767,9 +920,12 @@ class AdaCUTTrainer:
                 f"loss={metrics['loss']:.4f} "
                 f"struct={metrics['struct']:.4f} semigroup={metrics['semigroup']:.4f} "
                 f"sgram={metrics['stroke_gram']:.4f} cmoment={metrics['color_moment']:.4f} "
-                f"dtv={metrics['delta_tv']:.4f} dl2={metrics['delta_l2']:.4f} "
+                f"dtv={metrics['delta_tv']:.4f} dl2={metrics['delta_l2']:.4f} otv={metrics['output_tv']:.4f} "
                 f"steps={metrics['train_num_steps']:.1f} h={metrics['train_step_size']:.2f} s={metrics['train_style_strength']:.2f} "
-                f"| data={data_time_total:.1f}s compute={compute_time_total:.1f}s total={epoch_time:.1f}s"
+                f"| data={data_time_total:.1f}s transfer={transfer_time_total:.1f}s fwd={fwd_loss_time_total:.1f}s "
+                f"bwd={backward_time_total:.1f}s opt={optimizer_time_total:.1f}s overhead={step_overhead_time_total:.1f}s "
+                f"compute={compute_time_total:.1f}s total={epoch_time:.1f}s "
+                f"| samples={samples_seen} sps={samples_per_sec:.1f} compute_sps={compute_samples_per_sec:.1f}"
             )
         return metrics
 
@@ -786,13 +942,22 @@ class AdaCUTTrainer:
                     float(metrics.get("color_moment", 0.0)),
                     float(metrics.get("delta_tv", 0.0)),
                     float(metrics.get("delta_l2", 0.0)),
+                    float(metrics.get("output_tv", 0.0)),
                     float(metrics.get("train_num_steps", 0.0)),
                     float(metrics.get("train_step_size", 0.0)),
                     float(metrics.get("train_style_strength", 0.0)),
                     float(metrics.get("lr", 0.0)),
                     float(metrics.get("data_time_sec", 0.0)),
+                    float(metrics.get("transfer_time_sec", 0.0)),
+                    float(metrics.get("fwd_loss_time_sec", 0.0)),
+                    float(metrics.get("backward_time_sec", 0.0)),
+                    float(metrics.get("optimizer_time_sec", 0.0)),
+                    float(metrics.get("step_overhead_time_sec", 0.0)),
                     float(metrics.get("compute_time_sec", 0.0)),
                     float(metrics.get("epoch_time_sec", 0.0)),
+                    int(float(metrics.get("samples_seen", 0.0))),
+                    float(metrics.get("samples_per_sec", 0.0)),
+                    float(metrics.get("compute_samples_per_sec", 0.0)),
                 ]
             )
 
@@ -886,6 +1051,10 @@ class AdaCUTTrainer:
             cmd += ["--eval_classifier_only"]
         if bool(cfg_train.get("full_eval_disable_lpips", False)):
             cmd += ["--eval_disable_lpips"]
+        if bool(cfg_train.get("full_eval_reuse_generated", True)):
+            cmd += ["--reuse_generated"]
+        if bool(cfg_train.get("full_eval_generation_only", False)):
+            cmd += ["--generation_only"]
 
         log_path = self.log_dir / f"full_eval_epoch_{epoch:04d}.log"
         logger.info("Running full eval for epoch %d -> %s", epoch, out_dir)

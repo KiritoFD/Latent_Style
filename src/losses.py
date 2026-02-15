@@ -16,17 +16,18 @@ def calc_gram_matrix(x: torch.Tensor) -> torch.Tensor:
     Channel-correlation style descriptor.
     """
     b, c, h, w = x.shape
-    feat = x.view(b, c, h * w)
-    feat = feat - feat.mean(dim=2, keepdim=True)
-    feat = feat / (feat.std(dim=2, keepdim=True, unbiased=False) + 1e-6)
-    feat_t = feat.transpose(1, 2)
-    return feat.bmm(feat_t) / max(h * w, 1)
+    feat = x.reshape(b, c, h * w)
+    return feat.bmm(feat.transpose(1, 2)) / max(h * w, 1)
+
+
+def calc_gram_loss_per_sample(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    gram_x = calc_gram_matrix(x)
+    gram_y = calc_gram_matrix(y)
+    return (gram_x - gram_y).pow(2).mean(dim=(1, 2))
 
 
 def calc_gram_loss(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    gram_x = calc_gram_matrix(x)
-    gram_y = calc_gram_matrix(y)
-    return F.mse_loss(gram_x, gram_y)
+    return calc_gram_loss_per_sample(x, y).mean()
 
 
 def calc_moment_loss(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
@@ -414,6 +415,8 @@ class AdaCUTObjective:
         loss_stroke_gram = torch.tensor(0.0, device=content.device, dtype=torch.float32)
         loss_color_moment = torch.tensor(0.0, device=content.device, dtype=torch.float32)
         if self.w_stroke_gram > 0.0 or self.w_color_moment > 0.0:
+            style_pred_for_loss = model.project_for_style_loss(style_pred.float())
+            target_style_for_loss = model.project_for_style_loss(target_style.float())
             stroke_patch_sizes = self.stroke_patch_sizes
             randomize_patch = bool(model.training and self.stroke_patch_randomize)
             if randomize_patch and len(stroke_patch_sizes) > 1:
@@ -421,13 +424,13 @@ class AdaCUTObjective:
                 stroke_patch_sizes = [int(stroke_patch_sizes[idx])]
                 randomize_patch = False
             pred_stroke, pred_low = _multiscale_latent_feats(
-                style_pred.float(),
+                style_pred_for_loss,
                 stroke_patch_sizes=stroke_patch_sizes,
                 low_patch=self.color_patch_size,
                 randomize_patch=randomize_patch,
             )
             tgt_stroke, tgt_low = _multiscale_latent_feats(
-                target_style.float(),
+                target_style_for_loss,
                 stroke_patch_sizes=stroke_patch_sizes,
                 low_patch=self.color_patch_size,
                 randomize_patch=randomize_patch,

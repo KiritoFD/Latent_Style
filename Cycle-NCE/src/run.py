@@ -37,10 +37,13 @@ _ALLOWED_LOSS_KEYS = {
     "semigroup_teacher_no_grad",
     "semigroup_target_detach",
     "semigroup_subset_ratio",
+    "semigroup_max_samples",
+    "semigroup_every_n_steps",
     "semigroup_pool_size",
     "semigroup_num_steps",
     "w_delta_tv",
     "w_delta_l2",
+    "w_output_tv",
     "w_stroke_gram",
     "w_color_moment",
     "stroke_patch_sizes",
@@ -54,7 +57,7 @@ _ALLOWED_LOSS_KEYS = {
     "train_style_strength_max",
 }
 _FORBIDDEN_LOSS_KEYS = {"w_distill", "distill_low_only", "distill_cross_domain_only", "w_code", "style_loss_source"}
-_LOSS_WEIGHT_KEYS = ("w_struct", "w_semigroup", "w_stroke_gram", "w_color_moment", "w_delta_tv", "w_delta_l2")
+_LOSS_WEIGHT_KEYS = ("w_struct", "w_semigroup", "w_stroke_gram", "w_color_moment", "w_delta_tv", "w_delta_l2", "w_output_tv")
 
 
 def _set_seed(seed: int) -> None:
@@ -73,12 +76,17 @@ def _configure_cuda_allocator(config: dict) -> None:
     if not alloc_conf:
         # Keep allocator policy conservative to reduce fragmentation under long runs.
         alloc_conf = "expandable_segments:True"
-    current = os.environ.get("PYTORCH_CUDA_ALLOC_CONF", "").strip()
+    current = os.environ.get("PYTORCH_ALLOC_CONF", "").strip()
     if current:
-        logger.info("Use existing PYTORCH_CUDA_ALLOC_CONF=%s", current)
+        logger.info("Use existing PYTORCH_ALLOC_CONF=%s", current)
         return
-    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = alloc_conf
-    logger.info("Set PYTORCH_CUDA_ALLOC_CONF=%s", alloc_conf)
+    legacy = os.environ.get("PYTORCH_CUDA_ALLOC_CONF", "").strip()
+    if legacy:
+        os.environ["PYTORCH_ALLOC_CONF"] = legacy
+        logger.info("Migrated PYTORCH_CUDA_ALLOC_CONF -> PYTORCH_ALLOC_CONF=%s", legacy)
+        return
+    os.environ["PYTORCH_ALLOC_CONF"] = alloc_conf
+    logger.info("Set PYTORCH_ALLOC_CONF=%s", alloc_conf)
 
 
 def _set_cpu_threads(config: dict) -> None:
@@ -172,9 +180,15 @@ def _resolve_num_workers(config: dict, *, preload_to_gpu: bool = False) -> int:
     train_cfg = config.get("training", {})
     if preload_to_gpu:
         return 0
-    if train_cfg.get("num_workers") is not None:
-        return int(train_cfg["num_workers"])
+    requested = train_cfg.get("num_workers")
+    if requested is not None:
+        requested = int(requested)
+        if requested >= 0:
+            return requested
     cpu_count = os.cpu_count() or 4
+    # -1/None means auto. Keep Windows worker count conservative for stability.
+    if os.name == "nt":
+        return max(4, min(8, cpu_count // 2))
     return max(2, min(8, cpu_count // 2))
 
 def _validate_loss_config(config: dict) -> None:
@@ -212,6 +226,8 @@ def main() -> None:
 
     _configure_cuda_allocator(config)
     seed = int(config.get("training", {}).get("seed", 42))
+    if bool(config.get("training", {}).get("cuda_sync_debug", False)):
+        logger.warning("training.cuda_sync_debug=True will heavily reduce throughput and can hide batch-size scaling effects.")
     _set_seed(seed)
     _set_cpu_env_threads(config)
     _apply_cpu_affinity(config)
@@ -227,6 +243,8 @@ def main() -> None:
         style_subdirs=data_cfg.get("style_subdirs", ["photo", "monet", "vangogh", "cezanne"]),
         allow_hflip=bool(data_cfg.get("allow_hflip", True)),
         preload_to_gpu=bool(data_cfg.get("preload_to_gpu", False)),
+        preload_max_vram_gb=float(data_cfg.get("preload_max_vram_gb", 0.0)),
+        preload_reserve_ratio=float(data_cfg.get("preload_reserve_ratio", 0.35)),
         virtual_length_multiplier=int(data_cfg.get("virtual_length_multiplier", 4)),
         device=str(device),
     )

@@ -103,6 +103,8 @@ class LatentAdaCUT(nn.Module):
         use_downsample_blur: bool = False,
         upsample_mode: str = "nearest",
         style_id_spatial_jitter_px: int = 0,
+        loss_projector_use: bool = False,
+        loss_projector_channels: int = 64,
     ) -> None:
         super().__init__()
         self.latent_channels = int(latent_channels)
@@ -137,6 +139,8 @@ class LatentAdaCUT(nn.Module):
         self.use_downsample_blur = bool(use_downsample_blur)
         self.upsample_mode = str(upsample_mode)
         self.style_id_spatial_jitter_px = max(0, int(style_id_spatial_jitter_px))
+        self.loss_projector_use = bool(loss_projector_use)
+        self.loss_projector_channels = max(8, int(loss_projector_channels))
 
         self.style_enc = nn.Sequential(
             nn.Conv2d(latent_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
@@ -218,6 +222,19 @@ class LatentAdaCUT(nn.Module):
             nn.init.zeros_(self.output_style_affine.bias)
             with torch.no_grad():
                 self.output_style_affine.bias[:latent_channels] = 1.0
+
+        if self.loss_projector_use:
+            self.loss_projector = nn.Conv2d(
+                self.latent_channels,
+                self.loss_projector_channels,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                bias=False,
+            )
+            nn.init.normal_(self.loss_projector.weight, mean=0.0, std=0.2)
+            for p in self.loss_projector.parameters():
+                p.requires_grad = False
 
     def _style_code(
         self,
@@ -620,6 +637,13 @@ class LatentAdaCUT(nn.Module):
     def project_tokens(self, x: torch.Tensor) -> torch.Tensor:
         tokens = x.permute(0, 2, 3, 1).reshape(-1, x.shape[1])
         return self.projector(tokens)
+
+    def project_for_style_loss(self, x: torch.Tensor) -> torch.Tensor:
+        if not self.loss_projector_use:
+            return x
+        if x.shape[1] != self.latent_channels:
+            return x
+        return self.loss_projector(x)
 
 
 def count_parameters(model: nn.Module) -> int:

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import logging
-import random
 from pathlib import Path
-from typing import Dict, List, Sequence
+from typing import Dict, Sequence
 
 import numpy as np
 import torch
@@ -43,6 +42,8 @@ class AdaCUTLatentDataset(Dataset):
         style_subdirs: Sequence[str],
         allow_hflip: bool = True,
         preload_to_gpu: bool = False,
+        preload_max_vram_gb: float = 0.0,
+        preload_reserve_ratio: float = 0.35,
         virtual_length_multiplier: int = 1,
         device: str = "cpu",
     ) -> None:
@@ -50,6 +51,8 @@ class AdaCUTLatentDataset(Dataset):
         self.style_subdirs = list(style_subdirs)
         self.allow_hflip = bool(allow_hflip)
         requested_preload_to_gpu = bool(preload_to_gpu)
+        self.preload_max_vram_gb = max(0.0, float(preload_max_vram_gb))
+        self.preload_reserve_ratio = max(0.0, min(0.95, float(preload_reserve_ratio)))
         self.preload_to_gpu = False
         self.device = device
         self.epoch = 0
@@ -84,12 +87,68 @@ class AdaCUTLatentDataset(Dataset):
         self.length = max(1, self.content_count * max(1, int(virtual_length_multiplier)))
 
         if requested_preload_to_gpu:
-            logger.warning(
-                "preload_to_gpu=True requested but disabled in codepath to avoid allocator fragmentation/OOM; using CPU dataset tensors."
-            )
+            self._try_preload_to_gpu()
 
         # Initialize deterministic caches so __getitem__ is always safe.
         self.set_epoch(0)
+
+    def _estimate_dataset_bytes(self) -> int:
+        total = 0
+        for t in self.style_tensors.values():
+            total += int(t.numel()) * int(t.element_size())
+        return int(total)
+
+    def _try_preload_to_gpu(self) -> None:
+        if not torch.cuda.is_available():
+            logger.warning("preload_to_gpu=True requested but CUDA is unavailable; using CPU dataset tensors.")
+            return
+        if not str(self.device).startswith("cuda"):
+            logger.warning("preload_to_gpu=True requested but current device=%s is not CUDA; using CPU tensors.", self.device)
+            return
+
+        target_device = torch.device(self.device)
+        needed_bytes = self._estimate_dataset_bytes()
+        try:
+            free_bytes, total_bytes = torch.cuda.mem_get_info()
+        except Exception:
+            free_bytes, total_bytes = 0, 0
+
+        reserve_bytes = int(float(total_bytes) * self.preload_reserve_ratio) if total_bytes > 0 else 0
+        allowed_bytes = max(0, int(free_bytes) - reserve_bytes) if free_bytes > 0 else 0
+        if self.preload_max_vram_gb > 0.0:
+            allowed_bytes = min(allowed_bytes, int(self.preload_max_vram_gb * (1024**3))) if allowed_bytes > 0 else int(self.preload_max_vram_gb * (1024**3))
+
+        if allowed_bytes > 0 and needed_bytes > allowed_bytes:
+            logger.warning(
+                "Skip preload_to_gpu: need %.2fGB > allowed %.2fGB (free %.2fGB, reserve_ratio=%.2f).",
+                needed_bytes / (1024**3),
+                allowed_bytes / (1024**3),
+                free_bytes / (1024**3),
+                self.preload_reserve_ratio,
+            )
+            return
+
+        gpu_tensors: Dict[int, torch.Tensor] = {}
+        try:
+            for style_id, stack in self.style_tensors.items():
+                gpu_tensors[style_id] = stack.to(device=target_device, non_blocking=False)
+        except RuntimeError as exc:
+            logger.warning("preload_to_gpu failed (%s); fallback to CPU tensors.", exc)
+            gpu_tensors.clear()
+            try:
+                torch.cuda.empty_cache()
+            except Exception:
+                pass
+            return
+
+        self.style_tensors = gpu_tensors
+        self.preload_to_gpu = True
+        logger.info(
+            "Dataset preloaded to %s: %.2fGB across %d style pools.",
+            target_device,
+            needed_bytes / (1024**3),
+            len(self.style_tensors),
+        )
 
     def set_epoch(self, epoch: int) -> None:
         self.epoch = int(epoch)
@@ -126,7 +185,7 @@ class AdaCUTLatentDataset(Dataset):
             return torch.flip(x, dims=[-1])
         return x
 
-    def __getitem__(self, index: int) -> Dict[str, torch.Tensor]:
+    def __getitem__(self, index: int) -> Dict[str, torch.Tensor | int]:
         # Ultra-lightweight getitem using pre-computed indices
         content_style_id = int(self._cache_content_style_ids[index])
         target_style_id = int(self._cache_target_style_ids[index])
@@ -143,6 +202,6 @@ class AdaCUTLatentDataset(Dataset):
         return {
             "content": content,
             "target_style": target_style,
-            "target_style_id": torch.tensor(target_style_id, dtype=torch.long),
-            "source_style_id": torch.tensor(content_style_id, dtype=torch.long),
+            "target_style_id": target_style_id,
+            "source_style_id": content_style_id,
         }

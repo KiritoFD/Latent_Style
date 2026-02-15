@@ -82,6 +82,82 @@ class VGGFeatureExtractor(torch.nn.Module):
 def to_lpips_input(img_tensor):
     return img_tensor * 2.0 - 1.0
 
+
+def _is_cuda_oom(exc: RuntimeError) -> bool:
+    msg = str(exc).lower()
+    return ("out of memory" in msg) or ("cuda oom" in msg)
+
+
+def _lpips_forward_safe(
+    loss_fn,
+    x: torch.Tensor,
+    y: torch.Tensor,
+    *,
+    device: str,
+    chunk_size: int,
+    cpu_fallback: bool,
+    tag: str = "lpips",
+) -> torch.Tensor:
+    """
+    Robust LPIPS forward:
+    - Runs in chunks to reduce peak memory.
+    - On CUDA OOM, halves chunk size and retries.
+    - If chunk size reaches 1 and still OOM, optionally falls back to CPU.
+    Returns a CPU tensor shaped [N].
+    """
+    n = int(x.shape[0])
+    if n <= 0:
+        return torch.empty((0,), dtype=torch.float32)
+
+    cur_chunk = max(1, min(int(chunk_size), n))
+
+    while True:
+        try:
+            outs = []
+            with torch.no_grad():
+                for s in range(0, n, cur_chunk):
+                    e = min(s + cur_chunk, n)
+                    d = loss_fn(to_lpips_input(x[s:e]), to_lpips_input(y[s:e]))
+                    outs.append(d.detach().cpu().view(-1))
+            return torch.cat(outs, dim=0)
+        except RuntimeError as exc:
+            if not (str(device).startswith("cuda") and _is_cuda_oom(exc)):
+                raise
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            if cur_chunk > 1:
+                nxt = max(1, cur_chunk // 2)
+                if nxt == cur_chunk:
+                    nxt = cur_chunk - 1
+                print(f"  WARNING: CUDA OOM in {tag}, reduce LPIPS chunk {cur_chunk} -> {nxt}")
+                cur_chunk = nxt
+                continue
+            if not cpu_fallback:
+                raise
+
+            print(f"  WARNING: CUDA OOM in {tag} at chunk=1, fallback to CPU LPIPS")
+            prev_dev = torch.device(device)
+            try:
+                loss_fn = loss_fn.to("cpu")
+                x_cpu = x.detach().cpu()
+                y_cpu = y.detach().cpu()
+                outs = []
+                with torch.no_grad():
+                    for s in range(0, n, cur_chunk):
+                        e = min(s + cur_chunk, n)
+                        d = loss_fn(to_lpips_input(x_cpu[s:e]), to_lpips_input(y_cpu[s:e]))
+                        outs.append(d.detach().cpu().view(-1))
+                return torch.cat(outs, dim=0)
+            finally:
+                try:
+                    loss_fn.to(prev_dev)
+                except Exception:
+                    pass
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+
 def save_image_task(tensor_cpu, path):
     """Async save task to avoid blocking GPU loop"""
     try:
@@ -244,6 +320,29 @@ def _resolve_existing_path(raw_path: str | None, base_dirs: list[Path]) -> Path 
     return None
 
 
+def _resolve_dir_path(raw_path: str | None, base_dirs: list[Path]) -> Path:
+    """
+    Resolve directory path predictably across different launch cwd.
+    Preference:
+    1) absolute path
+    2) first existing candidate from base_dirs + raw_path
+    3) first base_dir + raw_path
+    """
+    text = str(raw_path or "").strip()
+    if not text:
+        raise ValueError("Directory path is empty.")
+
+    p = Path(text).expanduser()
+    if p.is_absolute():
+        return p.resolve()
+
+    for base in base_dirs:
+        cand = (base / p).resolve()
+        if cand.exists():
+            return cand
+    return (base_dirs[0] / p).resolve()
+
+
 def _auto_run_missing_full_eval(args) -> None:
     cfg_path = Path(args.config).resolve()
     if not cfg_path.exists():
@@ -354,6 +453,8 @@ def _auto_run_missing_full_eval(args) -> None:
             cmd += ["--eval_disable_lpips"]
         if args.reuse_generated:
             cmd += ["--reuse_generated"]
+        if args.generation_only:
+            cmd += ["--generation_only"]
 
         print(f"\n[Auto] Running epoch {ep}: {ckpt_path.name}")
         subprocess.run(cmd, check=True)
@@ -386,7 +487,10 @@ def main():
     parser.add_argument('--clip_allow_network', action='store_true', help="Allow online model fetch if local cache is missing (default off)")
     parser.add_argument('--eval_classifier_only', action='store_true', help="Run only classifier evaluation (skip LPIPS/CLIP)")
     parser.add_argument('--eval_disable_lpips', action='store_true', help="Skip LPIPS metrics (keep CLIP)")
+    parser.add_argument('--eval_lpips_chunk_size', type=int, default=2, help="LPIPS chunk size for conservative VRAM usage")
+    parser.add_argument('--eval_lpips_no_cpu_fallback', action='store_true', help="Disable CPU fallback when LPIPS CUDA OOM occurs")
     parser.add_argument('--reuse_generated', action='store_true', help="Reuse existing generated *_to_*.jpg in output dir and skip generation")
+    parser.add_argument('--generation_only', action='store_true', help="Only generate translated images, skip all evaluation metrics")
     parser.add_argument(
         '--style_ref_mode',
         type=str,
@@ -407,9 +511,16 @@ def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
     # 1. Setup Paths & Config
-    out_dir = Path(args.output)
+    path_bases = [
+        Path.cwd(),
+        Path(__file__).resolve().parent,      # src/utils
+        Path(__file__).resolve().parents[1],  # src
+        Path(__file__).resolve().parents[2],  # Cycle-NCE
+    ]
+
+    out_dir = _resolve_dir_path(args.output, path_bases)
     out_dir.mkdir(parents=True, exist_ok=True)
-    cache_dir = Path(args.cache_dir)
+    cache_dir = _resolve_dir_path(args.cache_dir, path_bases)
     cache_dir.mkdir(parents=True, exist_ok=True)
     
     # Thread Pool for Async I/O
@@ -585,6 +696,26 @@ def main():
         print("  Generation models unloaded")
     if not generated_buffer:
         raise RuntimeError(f"No generated samples to evaluate in {out_dir}")
+
+    if args.generation_only:
+        print("\nGeneration-only mode enabled: skip Phase 2 metrics/classifier/LPIPS/CLIP.")
+        io_pool.shutdown(wait=True)
+        if device == "cuda":
+            torch.cuda.empty_cache()
+        gc.collect()
+        summary = {
+            "checkpoint": str(checkpoint_path),
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "mode": "generation_only",
+            "generated_count": int(len(generated_buffer)),
+            "output_dir": str(out_dir),
+            "note": "Metrics are intentionally skipped. Run evaluation later with --reuse_generated.",
+        }
+        sum_path = out_dir / "summary.json"
+        with open(sum_path, "w", encoding="utf-8") as f:
+            json.dump(summary, f, indent=2, ensure_ascii=False)
+        print(f"Summary saved: {sum_path}")
+        return
 
     # ==========================================
     # PHASE 2: EVALUATION (VGG + CLIP)
@@ -890,8 +1021,18 @@ def main():
             if loss_fn:
                 gen_f32 = gen_imgs.float()
                 src_f32 = src_imgs.float()
-                dists = loss_fn(to_lpips_input(gen_f32), to_lpips_input(src_f32))
-                c_lpips_vals = dists.view(-1).cpu().float().numpy()
+                lpips_chunk = max(1, int(args.eval_lpips_chunk_size))
+                lpips_cpu_fallback = not bool(args.eval_lpips_no_cpu_fallback)
+                dists = _lpips_forward_safe(
+                    loss_fn,
+                    gen_f32,
+                    src_f32,
+                    device=device,
+                    chunk_size=lpips_chunk,
+                    cpu_fallback=lpips_cpu_fallback,
+                    tag="content_lpips",
+                )
+                c_lpips_vals = dists.numpy()
             else:
                 c_lpips_vals = [0.0] * len(batch_items)
 
@@ -982,7 +1123,8 @@ def main():
                         refs_sample = tgt_refs
                     
                     if refs_sample:
-                        lpips_chunk_size = 5
+                        lpips_chunk_size = max(1, int(args.eval_lpips_chunk_size))
+                        lpips_cpu_fallback = not bool(args.eval_lpips_no_cpu_fallback)
                         all_dists = []
                         for cs in range(0, len(refs_sample), lpips_chunk_size):
                             ce = min(cs + lpips_chunk_size, len(refs_sample))
@@ -994,13 +1136,21 @@ def main():
                             
                             ref_batch = torch.stack(ref_imgs).to(device).float()
                             gen_expanded = gen_imgs[i:i+1].float().expand(len(ref_batch), -1, -1, -1)
-                            
-                            chunk_dists = loss_fn(to_lpips_input(gen_expanded), to_lpips_input(ref_batch))
-                            all_dists.append(chunk_dists.detach())
+
+                            chunk_dists = _lpips_forward_safe(
+                                loss_fn,
+                                gen_expanded,
+                                ref_batch,
+                                device=device,
+                                chunk_size=lpips_chunk_size,
+                                cpu_fallback=lpips_cpu_fallback,
+                                tag="style_lpips",
+                            )
+                            all_dists.append(chunk_dists)
                             del ref_batch, gen_expanded
                         
                         if all_dists:
-                            s_lpips_score = torch.cat(all_dists).mean().item()
+                            s_lpips_score = torch.cat(all_dists, dim=0).float().mean().item()
 
                 writer.writerow({
                     'src_style': item['src_style'],

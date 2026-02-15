@@ -91,6 +91,8 @@ class AdaCUTTrainer:
             use_downsample_blur=bool(model_cfg.get("use_downsample_blur", False)),
             upsample_mode=str(model_cfg.get("upsample_mode", "nearest")),
             style_id_spatial_jitter_px=int(model_cfg.get("style_id_spatial_jitter_px", 0)),
+            loss_projector_use=bool(model_cfg.get("loss_projector_use", False)),
+            loss_projector_channels=int(model_cfg.get("loss_projector_channels", 64)),
         )
         if self.channels_last:
             self.model = self.model.to(device, memory_format=torch.channels_last)
@@ -129,7 +131,7 @@ class AdaCUTTrainer:
         use_fused_adamw = bool(train_cfg.get("fused_adamw", device.type == "cuda"))
         try:
             self.optimizer = torch.optim.AdamW(
-                self.model.parameters(),
+                [p for p in self.model.parameters() if p.requires_grad],
                 lr=float(train_cfg.get("learning_rate", 1e-3)),
                 weight_decay=float(train_cfg.get("weight_decay", 1e-4)),
                 betas=(0.9, 0.999),
@@ -137,7 +139,7 @@ class AdaCUTTrainer:
             )
         except TypeError:
             self.optimizer = torch.optim.AdamW(
-                self.model.parameters(),
+                [p for p in self.model.parameters() if p.requires_grad],
                 lr=float(train_cfg.get("learning_rate", 1e-3)),
                 weight_decay=float(train_cfg.get("weight_decay", 1e-4)),
                 betas=(0.9, 0.999),
