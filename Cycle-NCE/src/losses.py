@@ -212,6 +212,12 @@ class AdaCUTObjective:
         self.semigroup_lowpass_strength = max(0.0, min(1.0, self.semigroup_lowpass_strength))
         self.semigroup_split_min = float(loss_cfg.get("semigroup_split_min", 0.3))
         self.semigroup_split_max = float(loss_cfg.get("semigroup_split_max", 0.7))
+        self.semigroup_teacher_no_grad = bool(loss_cfg.get("semigroup_teacher_no_grad", True))
+        self.semigroup_target_detach = bool(loss_cfg.get("semigroup_target_detach", True))
+        self.semigroup_subset_ratio = float(loss_cfg.get("semigroup_subset_ratio", 0.25))
+        self.semigroup_subset_ratio = max(0.0, min(1.0, self.semigroup_subset_ratio))
+        self.semigroup_pool_size = max(0, int(loss_cfg.get("semigroup_pool_size", 8)))
+        self.semigroup_num_steps = max(1, int(loss_cfg.get("semigroup_num_steps", 1)))
         self.semigroup_split_min = max(0.0, min(1.0, self.semigroup_split_min))
         self.semigroup_split_max = max(0.0, min(1.0, self.semigroup_split_max))
         if self.semigroup_split_max < self.semigroup_split_min:
@@ -417,33 +423,115 @@ class AdaCUTObjective:
 
         loss_semigroup = torch.tensor(0.0, device=content.device, dtype=torch.float32)
         if self.w_semigroup > 0.0 and train_style_strength > 1e-6:
+            bs = int(content.shape[0])
+            sub_bs = max(1, int(round(bs * self.semigroup_subset_ratio))) if self.semigroup_subset_ratio > 0.0 else 0
+            if sub_bs >= bs:
+                sem_idx = None
+            elif sub_bs <= 0:
+                sem_idx = torch.empty((0,), device=content.device, dtype=torch.long)
+            else:
+                sem_idx = torch.randperm(bs, device=content.device)[:sub_bs]
+
+            if sem_idx is not None and sem_idx.numel() == 0:
+                _mem_mark("semigroup")
+                total = (
+                    self.w_struct * loss_struct
+                    + self.w_stroke_gram * loss_stroke_gram
+                    + self.w_color_moment * loss_color_moment
+                    + self.w_delta_tv * loss_delta_tv
+                    + self.w_delta_l2 * loss_delta_l2
+                    + self.w_cycle * loss_cycle
+                    + self.w_semigroup * loss_semigroup
+                )
+                _mem_mark("total")
+                out = {
+                    "loss": total,
+                    "struct": loss_struct.detach(),
+                    "cycle": loss_cycle.detach(),
+                    "stroke_gram": loss_stroke_gram.detach(),
+                    "color_moment": loss_color_moment.detach(),
+                    "delta_tv": loss_delta_tv.detach(),
+                    "delta_l2": loss_delta_l2.detach(),
+                    "semigroup": loss_semigroup.detach(),
+                    "train_num_steps": torch.tensor(float(train_num_steps), device=content.device),
+                    "train_step_size": torch.tensor(float(train_step_size), device=content.device),
+                    "train_style_strength": torch.tensor(float(train_style_strength), device=content.device),
+                }
+                if mem_enabled:
+                    for k, v in mem_metrics.items():
+                        out[k] = torch.tensor(v, device=content.device)
+                return out
+
+            if sem_idx is None:
+                sem_content = content
+                sem_target_style_id = target_style_id
+            else:
+                sem_content = content.index_select(0, sem_idx)
+                sem_target_style_id = target_style_id.index_select(0, sem_idx)
+
             split_u = self._sample_range(self.semigroup_split_min, self.semigroup_split_max)
             a_strength = train_style_strength * split_u
             b_strength = train_style_strength - a_strength
-            z_ab = pred_student
-            z_a = self._apply_model(
-                model,
-                content,
-                style_id=target_style_id,
-                step_size=train_step_size,
-                style_strength=a_strength,
-                num_steps=train_num_steps,
-            )
+            # One-step semigroup: T_{a+b}(z) vs T_b(T_a(z))
+            if self.semigroup_target_detach:
+                with torch.no_grad():
+                    z_ab = self._apply_model(
+                        model,
+                        sem_content,
+                        style_id=sem_target_style_id,
+                        step_size=train_step_size,
+                        style_strength=train_style_strength,
+                        num_steps=self.semigroup_num_steps,
+                    )
+            else:
+                z_ab = self._apply_model(
+                    model,
+                    sem_content,
+                    style_id=sem_target_style_id,
+                    step_size=train_step_size,
+                    style_strength=train_style_strength,
+                    num_steps=self.semigroup_num_steps,
+                )
+            if self.semigroup_teacher_no_grad:
+                with torch.no_grad():
+                    z_a = self._apply_model(
+                        model,
+                        sem_content,
+                        style_id=sem_target_style_id,
+                        step_size=train_step_size,
+                        style_strength=a_strength,
+                        num_steps=self.semigroup_num_steps,
+                    )
+            else:
+                z_a = self._apply_model(
+                    model,
+                    sem_content,
+                    style_id=sem_target_style_id,
+                    step_size=train_step_size,
+                    style_strength=a_strength,
+                    num_steps=self.semigroup_num_steps,
+                )
             z_a_b = self._apply_model(
                 model,
                 z_a,
-                style_id=target_style_id,
+                style_id=sem_target_style_id,
                 step_size=train_step_size,
                 style_strength=b_strength,
-                num_steps=train_num_steps,
+                num_steps=self.semigroup_num_steps,
             )
-            if self.semigroup_loss_type == "mse":
-                sem_raw = (z_a_b.float() - z_ab.float()).pow(2).mean(dim=(1, 2, 3))
+            if self.semigroup_pool_size > 0:
+                z_ab_eval = F.adaptive_avg_pool2d(z_ab.float(), output_size=(self.semigroup_pool_size, self.semigroup_pool_size))
+                z_a_b_eval = F.adaptive_avg_pool2d(z_a_b.float(), output_size=(self.semigroup_pool_size, self.semigroup_pool_size))
             else:
-                sem_raw = (z_a_b.float() - z_ab.float()).abs().mean(dim=(1, 2, 3))
+                z_ab_eval = z_ab.float()
+                z_a_b_eval = z_a_b.float()
+            if self.semigroup_loss_type == "mse":
+                sem_raw = (z_a_b_eval - z_ab_eval).pow(2).mean(dim=(1, 2, 3))
+            else:
+                sem_raw = (z_a_b_eval - z_ab_eval).abs().mean(dim=(1, 2, 3))
             if self.semigroup_lowpass_strength > 0.0:
-                sem_lp_a = _lowpass(z_a_b.float())
-                sem_lp_b = _lowpass(z_ab.float())
+                sem_lp_a = _lowpass(z_a_b_eval)
+                sem_lp_b = _lowpass(z_ab_eval)
                 if self.semigroup_loss_type == "mse":
                     sem_low = (sem_lp_a - sem_lp_b).pow(2).mean(dim=(1, 2, 3))
                 else:
