@@ -4,7 +4,7 @@
     "base_dim": 128,
     "lift_channels": 128,
     "style_dim": 256,
-    "num_styles": 2,
+    "num_styles": 5,
     "num_hires_blocks": 4,
     "num_res_blocks": 2,
     "num_groups": 4,
