@@ -1,34 +1,70 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import random
 from contextlib import contextmanager
-from typing import Dict
+from typing import Dict, List
 
 import torch
 import torch.nn.functional as F
 
 try:
     from .model import LatentAdaCUT
-except ImportError:  # pragma: no cover
+except ImportError:
     from model import LatentAdaCUT
 
 
-def calc_gram_matrix(x: torch.Tensor) -> torch.Tensor:
-    b, c, h, w = x.shape
-    feat = x.reshape(b, c, h * w)
-    feat = feat - feat.mean(dim=2, keepdim=True)
-    feat = feat / (feat.std(dim=2, keepdim=True, unbiased=False) + 1e-6)
-    return feat.bmm(feat.transpose(1, 2)) / max(h * w, 1)
+def calc_moment_loss(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    # Force FP32 stats to avoid mixed-precision overflow/underflow.
+    x = x.float()
+    y = y.float()
+    mu_x = x.mean(dim=(2, 3))
+    mu_y = y.mean(dim=(2, 3))
+    std_x = x.std(dim=(2, 3), unbiased=False)
+    std_y = y.std(dim=(2, 3), unbiased=False)
+    return (mu_x - mu_y).abs().mean() + (std_x - std_y).abs().mean()
 
 
-def calc_gram_loss_per_sample(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    gx = calc_gram_matrix(x)
-    gy = calc_gram_matrix(y)
-    return (gx - gy).pow(2).mean(dim=(1, 2))
+def calc_swd_loss(
+    x: torch.Tensor,
+    y: torch.Tensor,
+    patch_sizes: List[int],
+    num_projections: int = 128,
+) -> torch.Tensor:
+    # SWD path is FP32 to keep sort/projection numerically stable.
+    x = x.float()
+    y = y.float()
 
+    device = x.device
+    total_loss = torch.tensor(0.0, device=device)
+    valid_patches = [int(p) for p in patch_sizes if int(p) > 1]
+    if not valid_patches:
+        return total_loss
 
-def _lowpass(x: torch.Tensor) -> torch.Tensor:
-    return F.avg_pool2d(x, kernel_size=2, stride=2)
+    for p in valid_patches:
+        x_unfold = F.unfold(x, kernel_size=p, stride=1, padding=p // 2)
+        y_unfold = F.unfold(y, kernel_size=p, stride=1, padding=p // 2)
+
+        n_patches = x_unfold.shape[-1]
+        if n_patches > 2048:
+            idx = torch.randperm(n_patches, device=device)[:2048]
+            x_pts = x_unfold[..., idx].transpose(1, 2)  # [B, S, D]
+            y_pts = y_unfold[..., idx].transpose(1, 2)
+        else:
+            x_pts = x_unfold.transpose(1, 2)
+            y_pts = y_unfold.transpose(1, 2)
+
+        dim = x_pts.shape[-1]
+        projections = torch.randn(dim, int(num_projections), device=device, dtype=torch.float32)
+        projections = F.normalize(projections, p=2, dim=0)
+
+        x_proj = torch.matmul(x_pts, projections)
+        y_proj = torch.matmul(y_pts, projections)
+
+        x_sorted, _ = torch.sort(x_proj, dim=1)
+        y_sorted, _ = torch.sort(y_proj, dim=1)
+        total_loss += (x_sorted - y_sorted).abs().mean()
+
+    return total_loss / float(len(valid_patches))
 
 
 def _tv_per_sample(x: torch.Tensor) -> torch.Tensor:
@@ -42,88 +78,46 @@ def _tv_per_sample(x: torch.Tensor) -> torch.Tensor:
 class AdaCUTObjective:
     def __init__(self, config: Dict) -> None:
         loss_cfg = config.get("loss", {})
-        train_cfg = config.get("training", {})
 
+        self.w_color_moment = float(loss_cfg.get("w_color_moment", 2.0))
+        self.w_swd = float(loss_cfg.get("w_swd", 20.0))
+        self.swd_patch_sizes = [3, 5]
+        self.swd_num_projections = int(loss_cfg.get("swd_num_projections", 64))
+
+        self.w_identity = float(loss_cfg.get("w_identity", 10.0))
         self.w_delta_tv = float(loss_cfg.get("w_delta_tv", 0.0))
         self.w_delta_l2 = float(loss_cfg.get("w_delta_l2", 0.0))
         self.w_output_tv = float(loss_cfg.get("w_output_tv", 0.0))
-        self.w_stroke_gram = float(loss_cfg.get("w_stroke_gram", 0.0))
-        self.w_color_moment = float(loss_cfg.get("w_color_moment", 0.0))
-        self.w_identity = float(loss_cfg.get("w_identity", 0.0))
-        self.w_semigroup = float(loss_cfg.get("w_semigroup", 0.0))
 
-        self.semigroup_loss_type = str(loss_cfg.get("semigroup_loss_type", "l1")).lower()
-        if self.semigroup_loss_type not in {"l1", "mse"}:
-            self.semigroup_loss_type = "l1"
-        self.semigroup_lowpass_strength = float(loss_cfg.get("semigroup_lowpass_strength", 0.5))
-        self.semigroup_lowpass_strength = max(0.0, min(1.0, self.semigroup_lowpass_strength))
-        self.semigroup_split_min = float(loss_cfg.get("semigroup_split_min", 0.3))
-        self.semigroup_split_max = float(loss_cfg.get("semigroup_split_max", 0.7))
-        self.semigroup_teacher_no_grad = bool(loss_cfg.get("semigroup_teacher_no_grad", True))
-        self.semigroup_target_detach = bool(loss_cfg.get("semigroup_target_detach", True))
-        self.semigroup_subset_ratio = float(loss_cfg.get("semigroup_subset_ratio", 0.25))
-        self.semigroup_subset_ratio = max(0.0, min(1.0, self.semigroup_subset_ratio))
-        self.semigroup_max_samples = max(0, int(loss_cfg.get("semigroup_max_samples", 0)))
+        self.w_semigroup = float(loss_cfg.get("w_semigroup", 0.0))
         self.semigroup_every_n_steps = max(1, int(loss_cfg.get("semigroup_every_n_steps", 1)))
-        self.semigroup_pool_size = max(0, int(loss_cfg.get("semigroup_pool_size", 8)))
-        self.semigroup_num_steps = max(1, int(loss_cfg.get("semigroup_num_steps", 1)))
-        self.semigroup_split_min = max(0.0, min(1.0, self.semigroup_split_min))
-        self.semigroup_split_max = max(0.0, min(1.0, self.semigroup_split_max))
-        if self.semigroup_split_max < self.semigroup_split_min:
-            self.semigroup_split_min, self.semigroup_split_max = self.semigroup_split_max, self.semigroup_split_min
         self._compute_calls = 0
 
         self.train_num_steps_min = max(1, int(loss_cfg.get("train_num_steps_min", 1)))
         self.train_num_steps_max = max(1, int(loss_cfg.get("train_num_steps_max", self.train_num_steps_min)))
-        if self.train_num_steps_max < self.train_num_steps_min:
-            self.train_num_steps_min, self.train_num_steps_max = self.train_num_steps_max, self.train_num_steps_min
-
         self.train_step_size_min = float(loss_cfg.get("train_step_size_min", 1.0))
         self.train_step_size_max = float(loss_cfg.get("train_step_size_max", self.train_step_size_min))
-        if self.train_step_size_max < self.train_step_size_min:
-            self.train_step_size_min, self.train_step_size_max = self.train_step_size_max, self.train_step_size_min
-
         self.train_style_strength_min = float(loss_cfg.get("train_style_strength_min", 1.0))
         self.train_style_strength_max = float(loss_cfg.get("train_style_strength_max", self.train_style_strength_min))
-        self.train_style_strength_min = max(0.0, min(1.0, self.train_style_strength_min))
-        self.train_style_strength_max = max(0.0, min(1.0, self.train_style_strength_max))
-        if self.train_style_strength_max < self.train_style_strength_min:
-            self.train_style_strength_min, self.train_style_strength_max = self.train_style_strength_max, self.train_style_strength_min
-        self.profile_loss_vram = bool(train_cfg.get("profile_loss_vram", False))
-        self.nsight_nvtx = bool(train_cfg.get("nsight_nvtx", False))
+        self.nsight_nvtx = bool(config.get("training", {}).get("nsight_nvtx", False))
 
     @staticmethod
     def _sample_range(low: float, high: float) -> float:
-        if high <= low + 1e-12:
-            return float(low)
-        return float(random.uniform(low, high))
+        return float(random.uniform(low, high)) if high > low else float(low)
 
     @staticmethod
     def _sample_int_range(low: int, high: int) -> int:
-        low_i = int(low)
-        high_i = int(high)
-        if high_i <= low_i:
-            return low_i
-        return int(random.randint(low_i, high_i))
+        return int(random.randint(low, high)) if high > low else int(low)
 
     @staticmethod
-    def _apply_model(
-        model: LatentAdaCUT,
-        x: torch.Tensor,
-        *,
-        style_id: torch.Tensor,
-        step_size: float,
-        style_strength: float,
-        num_steps: int,
-    ) -> torch.Tensor:
+    def _apply_model(model, x, style_id, step_size, style_strength, num_steps):
         steps = max(1, int(num_steps))
         if steps > 1:
             return model.integrate(x, style_id=style_id, num_steps=steps, step_size=step_size, style_strength=style_strength)
         return model(x, style_id=style_id, step_size=step_size, style_strength=style_strength)
 
-    @staticmethod
     @contextmanager
-    def _nvtx_range(name: str, enabled: bool):
+    def _nvtx_range(self, name: str, enabled: bool):
         if not enabled:
             yield
             return
@@ -133,7 +127,7 @@ class AdaCUTObjective:
         finally:
             try:
                 torch.cuda.nvtx.range_pop()
-            except Exception:  # pragma: no cover
+            except Exception:
                 pass
 
     def compute(
@@ -145,314 +139,127 @@ class AdaCUTObjective:
         source_style_id: torch.Tensor | None = None,
         debug_timing: bool = False,
     ) -> Dict[str, torch.Tensor]:
-        stage = "init"
-        try:
-            nvtx_enabled = bool(self.nsight_nvtx and content.is_cuda)
-            mem_metrics: Dict[str, float] = {}
-            mem_enabled = bool(self.profile_loss_vram and content.is_cuda)
-            mem_prev_alloc = 0.0
-            mem_base_peak = 0.0
-            if mem_enabled:
-                mem_prev_alloc = float(torch.cuda.memory_allocated(content.device) / (1024**2))
-                mem_base_peak = float(torch.cuda.max_memory_allocated(content.device) / (1024**2))
-            timing_metrics: Dict[str, float] = {}
-            timing_enabled = bool(debug_timing and content.is_cuda)
-            timing_prev_event = None
-            if timing_enabled:
-                timing_prev_event = torch.cuda.Event(enable_timing=True)
-                timing_prev_event.record()
+        nvtx_enabled = bool(self.nsight_nvtx and content.is_cuda)
+        self._compute_calls += 1
 
-            def _mem_mark(s: str) -> None:
-                nonlocal mem_prev_alloc
-                if not mem_enabled:
-                    return
-                cur_alloc = float(torch.cuda.memory_allocated(content.device) / (1024**2))
-                cur_peak = float(torch.cuda.max_memory_allocated(content.device) / (1024**2))
-                mem_metrics[f"loss_vram_{s}_alloc_mb"] = cur_alloc
-                mem_metrics[f"loss_vram_{s}_delta_mb"] = cur_alloc - mem_prev_alloc
-                mem_metrics[f"loss_vram_{s}_peak_from_start_mb"] = cur_peak - mem_base_peak
-                mem_prev_alloc = cur_alloc
+        train_num_steps = self._sample_int_range(self.train_num_steps_min, self.train_num_steps_max)
+        train_step_size = self._sample_range(self.train_step_size_min, self.train_step_size_max)
+        train_style_strength = self._sample_range(self.train_style_strength_min, self.train_style_strength_max)
 
-            def _time_mark(s: str) -> None:
-                nonlocal timing_prev_event
-                if not timing_enabled or timing_prev_event is None:
-                    return
-                cur_event = torch.cuda.Event(enable_timing=True)
-                cur_event.record()
-                cur_event.synchronize()
-                timing_metrics[f"loss_time_{s}_ms"] = float(timing_prev_event.elapsed_time(cur_event))
-                timing_prev_event = cur_event
+        if source_style_id is None:
+            id_mask = torch.zeros_like(target_style_id, dtype=torch.bool)
+        else:
+            id_mask = source_style_id.long() == target_style_id.long()
+        xid_mask = ~id_mask
+        id_ratio = id_mask.float().mean()
 
-            stage = "sample_hparams"
-            train_num_steps = self._sample_int_range(self.train_num_steps_min, self.train_num_steps_max)
-            train_step_size = self._sample_range(self.train_step_size_min, self.train_step_size_max)
-            train_style_strength = self._sample_range(self.train_style_strength_min, self.train_style_strength_max)
-            self._compute_calls += 1
+        def _masked_mean(per_sample: torch.Tensor, mask_f: torch.Tensor) -> torch.Tensor:
+            if per_sample.ndim != 1:
+                per_sample = per_sample.reshape(per_sample.shape[0], -1).mean(dim=1)
+            denom = mask_f.sum().clamp_min(1.0)
+            return (per_sample * mask_f).sum() / denom
 
-            stage = "prepare_inputs"
-            content_f32 = content.float()
-            target_style_f32 = target_style.float()
-            if source_style_id is None:
-                id_mask = torch.zeros_like(target_style_id, dtype=torch.bool)
-            else:
-                id_mask = source_style_id.long() == target_style_id.long()
-            xid_mask = ~id_mask
-            id_ratio = id_mask.float().mean()
-            xid_mask_f = xid_mask.float()
+        with self._nvtx_range("loss/pred", nvtx_enabled):
+            pred_student = self._apply_model(
+                model,
+                content,
+                style_id=target_style_id,
+                step_size=train_step_size,
+                style_strength=train_style_strength,
+                num_steps=train_num_steps,
+            )
 
-            def _masked_mean(per_sample: torch.Tensor, mask_f: torch.Tensor) -> torch.Tensor:
-                if per_sample.ndim != 1:
-                    per_sample = per_sample.reshape(per_sample.shape[0], -1).mean(dim=1)
-                denom = mask_f.sum().clamp_min(1.0)
-                return (per_sample * mask_f).sum() / denom
+        # Always use raw latent in FP32 for loss computation.
+        pred_f32 = pred_student.float()
+        target_f32 = target_style.float()
+        content_f32 = content.float()
 
-            need_style_feat = bool(self.w_stroke_gram > 0.0 or self.w_color_moment > 0.0)
-            use_projector = bool(getattr(model, "loss_projector_use", False))
-            if use_projector and need_style_feat and hasattr(model, "project_loss_features"):
+        loss_moment = torch.tensor(0.0, device=content.device)
+        loss_swd = torch.tensor(0.0, device=content.device)
+        with self._nvtx_range("loss/style", nvtx_enabled):
+            if xid_mask.any():
+                valid_idx = torch.nonzero(xid_mask).squeeze(1)
+                p_valid = pred_f32.index_select(0, valid_idx)
+                t_valid = target_f32.index_select(0, valid_idx)
+
+                if self.w_color_moment > 0.0:
+                    loss_moment = calc_moment_loss(p_valid, t_valid)
+                if self.w_swd > 0.0:
+                    loss_swd = calc_swd_loss(
+                        p_valid,
+                        t_valid,
+                        patch_sizes=self.swd_patch_sizes,
+                        num_projections=self.swd_num_projections,
+                    )
+
+        loss_identity = torch.tensor(0.0, device=content.device)
+        with self._nvtx_range("loss/identity", nvtx_enabled):
+            if self.w_identity > 0.0 and bool(id_mask.any().item()):
+                id_per_sample = (pred_f32 - content_f32).abs().mean(dim=(1, 2, 3))
+                loss_identity = _masked_mean(id_per_sample, id_mask.float())
+
+        loss_delta_tv = torch.tensor(0.0, device=content.device)
+        loss_delta_l2 = torch.tensor(0.0, device=content.device)
+        loss_output_tv = torch.tensor(0.0, device=content.device)
+        with self._nvtx_range("loss/reg", nvtx_enabled):
+            delta = pred_f32 - content_f32
+            if self.w_delta_tv > 0.0:
+                loss_delta_tv = _tv_per_sample(delta).mean()
+            if self.w_delta_l2 > 0.0:
+                loss_delta_l2 = delta.pow(2).mean()
+            if self.w_output_tv > 0.0:
+                loss_output_tv = _tv_per_sample(pred_f32).mean()
+
+        loss_semigroup = torch.tensor(0.0, device=content.device)
+        semigroup_applied = False
+        with self._nvtx_range("loss/semigroup", nvtx_enabled):
+            if self.w_semigroup > 0.0 and train_style_strength > 0.1 and (self._compute_calls % self.semigroup_every_n_steps == 0):
+                semigroup_applied = True
+                z_ab = pred_student
+                split_ratio = 0.5
+                str_a = train_style_strength * split_ratio
+                str_b = train_style_strength - str_a
                 with torch.no_grad():
-                    target_style_feat = model.project_loss_features(target_style_f32).float()
-            else:
-                target_style_feat = target_style_f32
-
-            stage = "pred"
-            with self._nvtx_range("loss/pred", nvtx_enabled):
-                pred_student = self._apply_model(
+                    z_a = self._apply_model(
+                        model,
+                        content,
+                        style_id=target_style_id,
+                        step_size=train_step_size,
+                        style_strength=str_a,
+                        num_steps=train_num_steps,
+                    )
+                z_a_b = self._apply_model(
                     model,
-                    content,
+                    z_a,
                     style_id=target_style_id,
                     step_size=train_step_size,
-                    style_strength=train_style_strength,
+                    style_strength=str_b,
                     num_steps=train_num_steps,
                 )
-            pred_student_f32 = pred_student.float()
-            if use_projector and need_style_feat and hasattr(model, "project_loss_features"):
-                pred_feat = model.project_loss_features(pred_student_f32).float()
-            else:
-                pred_feat = pred_student_f32
-            _mem_mark("pred")
-            _time_mark("pred")
+                loss_semigroup = (z_a_b - z_ab).abs().mean()
 
-            stage = "style"
-            loss_stroke_gram = torch.tensor(0.0, device=content.device, dtype=torch.float32)
-            loss_color_moment = torch.tensor(0.0, device=content.device, dtype=torch.float32)
-            with self._nvtx_range("loss/style", nvtx_enabled):
-                if self.w_stroke_gram > 0.0 or self.w_color_moment > 0.0:
-                    if self.w_stroke_gram > 0.0:
-                        loss_stroke_gram = _masked_mean(calc_gram_loss_per_sample(pred_feat, target_style_feat), xid_mask_f)
-                    if self.w_color_moment > 0.0:
-                        pred_mu = pred_feat.mean(dim=(2, 3))
-                        tgt_mu = target_style_feat.mean(dim=(2, 3))
-                        pred_std = pred_feat.std(dim=(2, 3), unbiased=False)
-                        tgt_std = target_style_feat.std(dim=(2, 3), unbiased=False)
-                        moment_per_sample = (pred_mu - tgt_mu).abs().mean(dim=1) + (pred_std - tgt_std).abs().mean(dim=1)
-                        loss_color_moment = _masked_mean(moment_per_sample, xid_mask_f)
-            _mem_mark("style")
-            _time_mark("style")
+        total = (
+            self.w_color_moment * loss_moment
+            + self.w_swd * loss_swd
+            + self.w_identity * loss_identity
+            + self.w_delta_tv * loss_delta_tv
+            + self.w_delta_l2 * loss_delta_l2
+            + self.w_output_tv * loss_output_tv
+            + self.w_semigroup * loss_semigroup
+        )
 
-            stage = "identity"
-            with self._nvtx_range("loss/identity", nvtx_enabled):
-                if self.w_identity > 0.0 and bool(id_mask.any().item()):
-                    id_per_sample = (pred_student_f32 - content_f32).abs().mean(dim=(1, 2, 3))
-                    loss_identity = _masked_mean(id_per_sample, id_mask.float())
-                else:
-                    loss_identity = torch.tensor(0.0, device=content.device, dtype=content.dtype)
-            _mem_mark("identity")
-            _time_mark("identity")
-
-            stage = "delta"
-            with self._nvtx_range("loss/delta", nvtx_enabled):
-                delta = None
-                if self.w_delta_tv > 0.0 or self.w_delta_l2 > 0.0:
-                    delta = pred_student_f32 - content_f32
-                if self.w_delta_tv > 0.0:
-                    loss_delta_tv = _tv_per_sample(delta).mean()
-                else:
-                    loss_delta_tv = torch.tensor(0.0, device=content.device, dtype=content.dtype)
-                if self.w_delta_l2 > 0.0:
-                    loss_delta_l2 = delta.pow(2).mean()
-                else:
-                    loss_delta_l2 = torch.tensor(0.0, device=content.device, dtype=content.dtype)
-                if self.w_output_tv > 0.0:
-                    loss_output_tv = _tv_per_sample(pred_student_f32).mean()
-                else:
-                    loss_output_tv = torch.tensor(0.0, device=content.device, dtype=content.dtype)
-            _mem_mark("delta")
-            _time_mark("delta")
-
-            stage = "semigroup"
-            loss_semigroup = torch.tensor(0.0, device=content.device, dtype=torch.float32)
-            semigroup_applied = False
-            with self._nvtx_range("loss/semigroup", nvtx_enabled):
-                semigroup_enabled_this_step = (self._compute_calls % self.semigroup_every_n_steps == 0)
-                if self.w_semigroup > 0.0 and train_style_strength > 1e-6 and semigroup_enabled_this_step:
-                    semigroup_applied = True
-                    bs = int(content.shape[0])
-                    sub_bs = max(1, int(round(bs * self.semigroup_subset_ratio))) if self.semigroup_subset_ratio > 0.0 else 0
-                    if self.semigroup_max_samples > 0:
-                        sub_bs = min(sub_bs, self.semigroup_max_samples)
-                    if sub_bs >= bs:
-                        sem_idx = None
-                    elif sub_bs <= 0:
-                        sem_idx = torch.empty((0,), device=content.device, dtype=torch.long)
-                    else:
-                        sem_idx = torch.randperm(bs, device=content.device)[:sub_bs]
-
-                    if sem_idx is not None and sem_idx.numel() == 0:
-                        _mem_mark("semigroup")
-                        _time_mark("semigroup")
-                        total = (
-                            self.w_stroke_gram * loss_stroke_gram
-                            + self.w_color_moment * loss_color_moment
-                            + self.w_identity * loss_identity
-                            + self.w_delta_tv * loss_delta_tv
-                            + self.w_delta_l2 * loss_delta_l2
-                            + self.w_output_tv * loss_output_tv
-                            + self.w_semigroup * loss_semigroup
-                        )
-                        _mem_mark("total")
-                        _time_mark("total")
-                        out = {
-                            "loss": total,
-                            "stroke_gram": loss_stroke_gram.detach(),
-                            "color_moment": loss_color_moment.detach(),
-                            "identity": loss_identity.detach(),
-                            "identity_ratio": id_ratio.detach(),
-                            "delta_tv": loss_delta_tv.detach(),
-                            "delta_l2": loss_delta_l2.detach(),
-                            "output_tv": loss_output_tv.detach(),
-                            "semigroup": loss_semigroup.detach(),
-                            "semigroup_applied": torch.tensor(0.0, device=content.device),
-                            "train_num_steps": torch.tensor(float(train_num_steps), device=content.device),
-                            "train_step_size": torch.tensor(float(train_step_size), device=content.device),
-                            "train_style_strength": torch.tensor(float(train_style_strength), device=content.device),
-                        }
-                        if mem_enabled:
-                            for k, v in mem_metrics.items():
-                                out[k] = torch.tensor(v, device=content.device)
-                        if timing_enabled:
-                            for k, v in timing_metrics.items():
-                                out[k] = torch.tensor(v, device=content.device)
-                        return out
-
-                    if sem_idx is None:
-                        sem_content = content
-                        sem_target_style_id = target_style_id
-                    else:
-                        sem_content = content.index_select(0, sem_idx)
-                        sem_target_style_id = target_style_id.index_select(0, sem_idx)
-
-                    split_u = self._sample_range(self.semigroup_split_min, self.semigroup_split_max)
-                    a_strength = train_style_strength * split_u
-                    b_strength = train_style_strength - a_strength
-                    if self.semigroup_target_detach:
-                        with torch.no_grad():
-                            z_ab = self._apply_model(
-                                model,
-                                sem_content,
-                                style_id=sem_target_style_id,
-                                step_size=train_step_size,
-                                style_strength=train_style_strength,
-                                num_steps=self.semigroup_num_steps,
-                            )
-                    else:
-                        z_ab = self._apply_model(
-                            model,
-                            sem_content,
-                            style_id=sem_target_style_id,
-                            step_size=train_step_size,
-                            style_strength=train_style_strength,
-                            num_steps=self.semigroup_num_steps,
-                        )
-                    if self.semigroup_teacher_no_grad:
-                        with torch.no_grad():
-                            z_a = self._apply_model(
-                                model,
-                                sem_content,
-                                style_id=sem_target_style_id,
-                                step_size=train_step_size,
-                                style_strength=a_strength,
-                                num_steps=self.semigroup_num_steps,
-                            )
-                    else:
-                        z_a = self._apply_model(
-                            model,
-                            sem_content,
-                            style_id=sem_target_style_id,
-                            step_size=train_step_size,
-                            style_strength=a_strength,
-                            num_steps=self.semigroup_num_steps,
-                        )
-                    z_a_b = self._apply_model(
-                        model,
-                        z_a,
-                        style_id=sem_target_style_id,
-                        step_size=train_step_size,
-                        style_strength=b_strength,
-                        num_steps=self.semigroup_num_steps,
-                    )
-                    if self.semigroup_pool_size > 0:
-                        z_ab_eval = F.adaptive_avg_pool2d(
-                            z_ab.float(),
-                            output_size=(self.semigroup_pool_size, self.semigroup_pool_size),
-                        )
-                        z_a_b_eval = F.adaptive_avg_pool2d(
-                            z_a_b.float(),
-                            output_size=(self.semigroup_pool_size, self.semigroup_pool_size),
-                        )
-                    else:
-                        z_ab_eval = z_ab.float()
-                        z_a_b_eval = z_a_b.float()
-                    if self.semigroup_loss_type == "mse":
-                        sem_raw = (z_a_b_eval - z_ab_eval).pow(2).mean(dim=(1, 2, 3))
-                    else:
-                        sem_raw = (z_a_b_eval - z_ab_eval).abs().mean(dim=(1, 2, 3))
-                    if self.semigroup_lowpass_strength > 0.0:
-                        sem_lp_a = _lowpass(z_a_b_eval)
-                        sem_lp_b = _lowpass(z_ab_eval)
-                        if self.semigroup_loss_type == "mse":
-                            sem_low = (sem_lp_a - sem_lp_b).pow(2).mean(dim=(1, 2, 3))
-                        else:
-                            sem_low = (sem_lp_a - sem_lp_b).abs().mean(dim=(1, 2, 3))
-                        sem_raw = (1.0 - self.semigroup_lowpass_strength) * sem_raw + self.semigroup_lowpass_strength * sem_low
-                    loss_semigroup = sem_raw.mean()
-            _mem_mark("semigroup")
-            _time_mark("semigroup")
-
-            stage = "total"
-            with self._nvtx_range("loss/total", nvtx_enabled):
-                total = (
-                    self.w_stroke_gram * loss_stroke_gram
-                    + self.w_color_moment * loss_color_moment
-                    + self.w_identity * loss_identity
-                    + self.w_delta_tv * loss_delta_tv
-                    + self.w_delta_l2 * loss_delta_l2
-                    + self.w_output_tv * loss_output_tv
-                    + self.w_semigroup * loss_semigroup
-                )
-            _mem_mark("total")
-            _time_mark("total")
-
-            out = {
-                "loss": total,
-                "stroke_gram": loss_stroke_gram.detach(),
-                "color_moment": loss_color_moment.detach(),
-                "identity": loss_identity.detach(),
-                "identity_ratio": id_ratio.detach(),
-                "delta_tv": loss_delta_tv.detach(),
-                "delta_l2": loss_delta_l2.detach(),
-                "output_tv": loss_output_tv.detach(),
-                "semigroup": loss_semigroup.detach(),
-                "semigroup_applied": torch.tensor(1.0 if semigroup_applied else 0.0, device=content.device),
-                "train_num_steps": torch.tensor(float(train_num_steps), device=content.device),
-                "train_step_size": torch.tensor(float(train_step_size), device=content.device),
-                "train_style_strength": torch.tensor(float(train_style_strength), device=content.device),
-            }
-            if mem_enabled:
-                for k, v in mem_metrics.items():
-                    out[k] = torch.tensor(v, device=content.device)
-            if timing_enabled:
-                for k, v in timing_metrics.items():
-                    out[k] = torch.tensor(v, device=content.device)
-            return out
-        except RuntimeError as exc:
-            raise RuntimeError(f"AdaCUTObjective.compute failed at stage='{stage}': {exc}") from exc
+        return {
+            "loss": total,
+            "moment": loss_moment.detach(),
+            "swd": loss_swd.detach(),
+            "identity": loss_identity.detach(),
+            "identity_ratio": id_ratio.detach(),
+            "delta_tv": loss_delta_tv.detach(),
+            "delta_l2": loss_delta_l2.detach(),
+            "output_tv": loss_output_tv.detach(),
+            "semigroup": loss_semigroup.detach(),
+            "semigroup_applied": torch.tensor(1.0 if semigroup_applied else 0.0, device=content.device),
+            "train_num_steps": torch.tensor(float(train_num_steps), device=content.device),
+            "train_step_size": torch.tensor(float(train_step_size), device=content.device),
+            "train_style_strength": torch.tensor(float(train_style_strength), device=content.device),
+        }

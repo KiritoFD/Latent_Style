@@ -1,0 +1,51 @@
+{
+  "model": {
+    "latent_channels": 4,
+    "base_dim": 128,
+    "loss_projector_use": false
+  },
+  "loss": {
+    "w_color_moment": 2.0,
+    "w_swd": 20.0,
+    "swd_patch_sizes": [
+      3,
+      5
+    ],
+    "swd_num_projections": 128,
+    "w_identity": 0.0,
+    "w_semigroup": 0.0,
+    "semigroup_every_n_steps": 1,
+    "w_delta_tv": 0.01,
+    "w_delta_l2": 0.02,
+    "w_output_tv": 0.01,
+    "train_num_steps_min": 1,
+    "train_num_steps_max": 1,
+    "train_style_strength_min": 0.7,
+    "train_style_strength_max": 0.9
+  },
+  "training": {
+    "seed": 42,
+    "batch_size": 32,
+    "num_epochs": 30,
+    "save_interval": 10,
+    "full_eval_interval": 10,
+    "log_interval": 1,
+    "amp_dtype": "fp16",
+    "grad_clip_norm": 1.0,
+    "use_amp": true,
+    "use_grad_scaler": true,
+    "use_compile": false,
+    "allow_tf32": true
+  },
+  "data": {
+    "data_root": "../../latents_overfit50",
+    "style_subdirs": [
+      "photo",
+      "Hayao"
+    ],
+    "preload_to_gpu": true
+  },
+  "checkpoint": {
+    "save_dir": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\sweep_swd_reborn\\C02_Unconstrained\\checkpoints"
+  }
+}
