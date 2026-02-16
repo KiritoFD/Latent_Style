@@ -17,19 +17,19 @@
     "upsample_mode": "bilinear",
     "style_id_spatial_jitter_px": 2,
     "upsample_blur": true,
-    "upsample_blur_kernel": "gaussian3"
+    "upsample_blur_kernel": "gaussian3",
+    "loss_projector_use": true,
+    "loss_projector_channels": 64
   },
   "loss": {
-    "w_struct": 0.6,
-    "struct_lowpass_strength": 0.8,
-    "struct_loss_type": "l1",
     "w_delta_tv": 0.012,
     "w_delta_l2": 0.002,
     "w_output_tv": 0.005,
     "w_stroke_gram": 80.0,
-    "w_color_moment": 6.0,
     "w_identity": 10.0,
-    "stroke_patch_sizes": [3],
+    "stroke_patch_sizes": [
+      3
+    ],
     "stroke_patch_randomize": false,
     "color_patch_size": 1,
     "train_num_steps_min": 1,
@@ -37,7 +37,8 @@
     "train_step_size_min": 1.0,
     "train_step_size_max": 1.0,
     "train_style_strength_min": 0.65,
-    "train_style_strength_max": 0.9
+    "train_style_strength_max": 0.9,
+    "w_color_moment": 6.0
   },
   "training": {
     "seed": 42,
@@ -50,7 +51,7 @@
     "cpu_threads": 4,
     "cpu_interop_threads": 2,
     "learning_rate": 0.0002,
-    "min_learning_rate": 1e-5,
+    "min_learning_rate": 1e-05,
     "weight_decay": 0.0,
     "scheduler": "cosine",
     "grad_clip_norm": 1.0,
@@ -90,7 +91,13 @@
   },
   "data": {
     "data_root": "../../latent-256",
-    "style_subdirs": ["photo", "Hayao","monet","cezanne","vangogh"],
+    "style_subdirs": [
+      "photo",
+      "Hayao",
+      "monet",
+      "cezanne",
+      "vangogh"
+    ],
     "allow_hflip": false,
     "preload_to_gpu": true,
     "preload_max_vram_gb": 6.0,

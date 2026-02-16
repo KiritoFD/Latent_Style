@@ -5,7 +5,7 @@ Core recipe:
 - AdaGN injection
 - 16x16 spatial pre-inject
 - Stroke-Gram + Color-Moment style alignment
-- Struct/Edge + Delta-TV stability losses
+- Semigroup + Delta regularization
 """
 
 from .model import LatentAdaCUT, count_parameters

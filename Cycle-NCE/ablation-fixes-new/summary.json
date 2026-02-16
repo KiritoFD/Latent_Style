@@ -1,0 +1,99 @@
+{
+  "base_config": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\src\\config.json",
+  "run_py": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\src\\run.py",
+  "epochs": 60,
+  "seed": 42,
+  "groups": [
+    "A"
+  ],
+  "filter": "",
+  "infra_profile": "rtx3060_stable",
+  "batch_size": -1,
+  "results": [
+    {
+      "name": "A00_full",
+      "code": 0,
+      "log": "dry_run"
+    },
+    {
+      "name": "A01_proj_off",
+      "code": 0,
+      "log": "dry_run"
+    },
+    {
+      "name": "A02_proj_32",
+      "code": 0,
+      "log": "dry_run"
+    },
+    {
+      "name": "A03_proj_128",
+      "code": 0,
+      "log": "dry_run"
+    },
+    {
+      "name": "A10_no_gram",
+      "code": 0,
+      "log": "dry_run"
+    },
+    {
+      "name": "A11_no_moment",
+      "code": 0,
+      "log": "dry_run"
+    },
+    {
+      "name": "A12_no_delta_tv",
+      "code": 0,
+      "log": "dry_run"
+    },
+    {
+      "name": "A13_no_delta_l2",
+      "code": 0,
+      "log": "dry_run"
+    },
+    {
+      "name": "A14_no_output_tv",
+      "code": 0,
+      "log": "dry_run"
+    },
+    {
+      "name": "A15_no_semigroup",
+      "code": 0,
+      "log": "dry_run"
+    },
+    {
+      "name": "A20_style_gram_only",
+      "code": 0,
+      "log": "dry_run"
+    },
+    {
+      "name": "A21_style_moment_only",
+      "code": 0,
+      "log": "dry_run"
+    },
+    {
+      "name": "A30_reg_delta_only",
+      "code": 0,
+      "log": "dry_run"
+    },
+    {
+      "name": "A31_reg_output_only",
+      "code": 0,
+      "log": "dry_run"
+    },
+    {
+      "name": "A32_reg_tv_only",
+      "code": 0,
+      "log": "dry_run"
+    },
+    {
+      "name": "A40_semigroup_light",
+      "code": 0,
+      "log": "dry_run"
+    },
+    {
+      "name": "A41_semigroup_strong",
+      "code": 0,
+      "log": "dry_run"
+    }
+  ]
+}

@@ -317,7 +317,6 @@ class AdaCUTTrainer:
                 [
                     "epoch",
                     "loss",
-                    "struct",
                     "semigroup",
                     "stroke_gram",
                     "color_moment",
@@ -705,11 +704,10 @@ class AdaCUTTrainer:
                                 return 0.0
                             return float(v.detach().item())
                         logger.info(
-                            "LOSS_VRAM epoch=%d step=%d | pred=%.1fMB struct=%+.1fMB style=%+.1fMB delta=%+.1fMB semigroup=%+.1fMB total=%+.1fMB alloc_now=%.1fMB peak_from_start=%.1fMB",
+                            "LOSS_VRAM epoch=%d step=%d | pred=%.1fMB style=%+.1fMB delta=%+.1fMB semigroup=%+.1fMB total=%+.1fMB alloc_now=%.1fMB peak_from_start=%.1fMB",
                             epoch,
                             step_idx,
                             _vram_metric("loss_vram_pred_alloc_mb"),
-                            _vram_metric("loss_vram_struct_delta_mb"),
                             _vram_metric("loss_vram_style_delta_mb"),
                             _vram_metric("loss_vram_delta_delta_mb"),
                             _vram_metric("loss_vram_semigroup_delta_mb"),
@@ -724,11 +722,10 @@ class AdaCUTTrainer:
                                 return 0.0
                             return float(v.detach().item())
                         logger.info(
-                            "LOSS_TIME epoch=%d step=%d | pred=%.2fms struct=%.2fms style=%.2fms delta=%.2fms semigroup=%.2fms total=%.2fms",
+                            "LOSS_TIME epoch=%d step=%d | pred=%.2fms style=%.2fms delta=%.2fms semigroup=%.2fms total=%.2fms",
                             epoch,
                             step_idx,
                             _time_metric("loss_time_pred_ms"),
-                            _time_metric("loss_time_struct_ms"),
                             _time_metric("loss_time_style_ms"),
                             _time_metric("loss_time_delta_ms"),
                             _time_metric("loss_time_semigroup_ms"),
@@ -807,9 +804,9 @@ class AdaCUTTrainer:
 
                     progress.set_postfix(
                         loss=f"{_get_avg('loss'):.4f}",
-                        struct=f"{_get_avg('struct'):.4f}",
                         semigroup=f"{_get_avg('semigroup'):.4f}",
                         sgram=f"{_get_avg('stroke_gram'):.4f}",
+                        cmoment=f"{_get_avg('color_moment'):.4f}",
                         idt=f"{_get_avg('identity'):.4f}",
                         idr=f"{_get_avg('identity_ratio'):.2f}",
                         steps=f"{_get_avg('train_num_steps'):.1f}",
@@ -822,12 +819,11 @@ class AdaCUTTrainer:
                     )
                     if not self.use_tqdm:
                         logger.info(
-                            "epoch %d step %d/%d | loss=%.4f struct=%.4f semigroup=%.4f sgram=%.4f cmoment=%.4f idt=%.4f idr=%.2f dtv=%.4f dl2=%.4f otv=%.4f steps=%.1f h=%.2f s=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
+                            "epoch %d step %d/%d | loss=%.4f semigroup=%.4f sgram=%.4f cmoment=%.4f idt=%.4f idr=%.2f dtv=%.4f dl2=%.4f otv=%.4f steps=%.1f h=%.2f s=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
                             epoch,
                             step_idx,
                             total_steps,
                             _get_avg('loss'),
-                            _get_avg('struct'),
                             _get_avg('semigroup'),
                             _get_avg('stroke_gram'),
                             _get_avg('color_moment'),
@@ -911,7 +907,7 @@ class AdaCUTTrainer:
         
         # Fill missing keys with 0.0 for safety
         expected_keys = [
-            "loss", "struct", "semigroup", "stroke_gram", "color_moment", "identity", "identity_ratio",
+            "loss", "semigroup", "stroke_gram", "color_moment", "identity", "identity_ratio",
             "delta_tv", "delta_l2", "output_tv", "train_num_steps", "train_step_size", "train_style_strength",
             "data_time_sec", "transfer_time_sec", "fwd_loss_time_sec", "backward_time_sec",
             "optimizer_time_sec", "step_overhead_time_sec", "compute_time_sec",
@@ -938,7 +934,7 @@ class AdaCUTTrainer:
             tqdm.write(
                 f"[Epoch {epoch}/{self.num_epochs}] "
                 f"loss={metrics['loss']:.4f} "
-                f"struct={metrics['struct']:.4f} semigroup={metrics['semigroup']:.4f} "
+                f"semigroup={metrics['semigroup']:.4f} "
                 f"sgram={metrics['stroke_gram']:.4f} cmoment={metrics['color_moment']:.4f} "
                 f"idt={metrics['identity']:.4f} idr={metrics['identity_ratio']:.2f} "
                 f"dtv={metrics['delta_tv']:.4f} dl2={metrics['delta_l2']:.4f} otv={metrics['output_tv']:.4f} "
@@ -957,7 +953,6 @@ class AdaCUTTrainer:
                 [
                     int(epoch),
                     float(metrics.get("loss", 0.0)),
-                    float(metrics.get("struct", 0.0)),
                     float(metrics.get("semigroup", 0.0)),
                     float(metrics.get("stroke_gram", 0.0)),
                     float(metrics.get("color_moment", 0.0)),
