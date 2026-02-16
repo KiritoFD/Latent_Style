@@ -1,76 +1,80 @@
-from __future__ import annotations
-
-import json
-from pathlib import Path
-from typing import Any
-
+﻿import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 import torch
-import torch.nn as nn
-import torchvision.models as models
-import torchvision.transforms as T
+from pathlib import Path
+from sklearn.decomposition import PCA
+from sklearn.metrics import classification_report, confusion_matrix
+
+from classify import RobustStyleProbe
 
 
-def build_model(arch: str, num_classes: int, pretrained: bool = True) -> nn.Module:
-    arch = str(arch).lower()
-    if arch == "resnet50":
-        weights = models.ResNet50_Weights.DEFAULT if pretrained else None
-        model = models.resnet50(weights=weights)
-        in_features = int(model.fc.in_features)
-        model.fc = nn.Linear(in_features, num_classes)
-        return model
-    raise ValueError(f"Unsupported arch: {arch}")
+def _load_latent_4d(path: Path, device: torch.device) -> torch.Tensor:
+    x = torch.load(path, map_location=device)
+    if isinstance(x, dict) and "latent" in x:
+        x = x["latent"]
+    if x.ndim == 3:
+        x = x.unsqueeze(0)
+    elif x.ndim == 4:
+        pass
+    else:
+        raise ValueError(f"Unexpected latent shape {tuple(x.shape)} in {path}")
+    return x.float()
 
 
-class EvalImageClassifier:
-    def __init__(
-        self,
-        model: nn.Module,
-        classes: list[str],
-        mean: list[float] | tuple[float, ...],
-        std: list[float] | tuple[float, ...],
-        image_size: int,
-        device: str,
-    ):
-        self.model = model.to(device).eval()
-        self.classes = list(classes)
-        self.device = str(device)
-        self.image_size = int(image_size)
-        self.preprocess = T.Compose(
-            [
-                T.Resize((self.image_size, self.image_size)),
-                T.Normalize(mean=list(mean), std=list(std)),
-            ]
-        )
+def visualize() -> None:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    script_dir = Path(__file__).resolve().parent
+    data_root = (script_dir / "../../../sdxl-256").resolve()
+    ckpt_path = (script_dir / "robust_style_probe_final.pth").resolve()
+    styles = ["photo", "Hayao", "monet", "cezanne", "vangogh"]
 
-    @torch.no_grad()
-    def predict_indices(self, batch_01: torch.Tensor) -> torch.Tensor:
-        # Keep classifier inference in fp32 to avoid bf16/fp32 mismatch from outer autocast scopes.
-        x = self.preprocess(batch_01.to(self.device, dtype=torch.float32))
-        logits = self.model(x)
-        return logits.argmax(dim=1)
+    model = RobustStyleProbe(num_classes=len(styles)).to(device)
+    state = torch.load(ckpt_path, map_location=device, weights_only=False)
+    model.load_state_dict(state)
+    model.eval()
+
+    all_feats = []
+    all_logits = []
+    all_labels = []
+
+    print(f"Extracting features on {device}...")
+    with torch.no_grad():
+        for i, style_name in enumerate(styles):
+            files = sorted((data_root / style_name).glob("*.pt"))
+            for j in range(0, len(files), 64):
+                batch_files = files[j : j + 64]
+                batch = torch.cat([_load_latent_4d(f, device=device) for f in batch_files], dim=0)
+                feat, logits = model(batch)
+                all_feats.append(feat.cpu().numpy())
+                all_logits.append(logits.cpu().numpy())
+                all_labels.extend([i] * len(batch_files))
+
+    feats = np.concatenate(all_feats, axis=0)
+    logits = np.concatenate(all_logits, axis=0)
+    labels = np.array(all_labels)
+    preds = np.argmax(logits, axis=1)
+
+    fig, axes = plt.subplots(1, 2, figsize=(20, 8))
+
+    pca = PCA(n_components=2)
+    feats_2d = pca.fit_transform(feats)
+    for i, style_name in enumerate(styles):
+        mask = labels == i
+        axes[0].scatter(feats_2d[mask, 0], feats_2d[mask, 1], label=style_name, alpha=0.6, s=15)
+    axes[0].set_title("Style Manifold (PCA)")
+    axes[0].legend()
+
+    cm = confusion_matrix(labels, preds)
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=styles, yticklabels=styles, ax=axes[1])
+    axes[1].set_title("Confusion Matrix")
+
+    print(classification_report(labels, preds, target_names=styles, digits=4, zero_division=0))
+
+    plt.tight_layout()
+    plt.savefig("probe_analysis.png", dpi=300)
+    print("Results saved to probe_analysis.png")
 
 
-def load_eval_image_classifier(ckpt_path: Path, device: str) -> EvalImageClassifier:
-    payload = torch.load(ckpt_path, map_location=device, weights_only=False)
-    if not isinstance(payload, dict):
-        raise ValueError("Invalid image classifier checkpoint format.")
-    meta = payload.get("meta", {})
-    classes = meta.get("classes", [])
-    if not classes:
-        raise ValueError("Checkpoint missing meta.classes")
-    arch = str(meta.get("arch", "resnet50"))
-    image_size = int(meta.get("image_size", 224))
-    mean = meta.get("mean", [0.485, 0.456, 0.406])
-    std = meta.get("std", [0.229, 0.224, 0.225])
-
-    model = build_model(arch=arch, num_classes=len(classes), pretrained=False)
-    state = payload.get("model_state_dict", None)
-    if state is None:
-        raise ValueError("Checkpoint missing model_state_dict")
-    model.load_state_dict(state, strict=True)
-    return EvalImageClassifier(model=model, classes=list(classes), mean=mean, std=std, image_size=image_size, device=device)
-
-
-def write_report_json(report_path: Path, payload: dict[str, Any]) -> None:
-    report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+if __name__ == "__main__":
+    visualize()
