@@ -1,0 +1,23 @@
+CMD: I:\Github\Latent_Style\Cycle-NCE\.venv\Scripts\python.exe I:\Github\Latent_Style\Cycle-NCE\src\run.py --config I:\Github\Latent_Style\Cycle-NCE\sdxl-ablation-swd-semigroup-100\A01_Balanced_Fix\config.json
+
+2026-02-17 00:33:24,352 - INFO - Active losses: w_semigroup, w_swd, w_color_moment, w_identity, w_delta_tv, w_delta_l2, w_output_tv
+2026-02-17 00:33:24,378 - INFO - Set PYTORCH_ALLOC_CONF=expandable_segments:True
+2026-02-17 00:33:24,397 - INFO - Device: cuda
+2026-02-17 00:33:24,397 - INFO - Seed: 42
+2026-02-17 00:33:24,397 - INFO - Loading latent dataset from ..\..\sdxl-256
+2026-02-17 00:33:29,772 - INFO -   style=photo id=0 count=6187
+2026-02-17 00:33:31,492 - INFO -   style=Hayao id=1 count=1752
+2026-02-17 00:33:32,361 - INFO -   style=monet id=2 count=972
+2026-02-17 00:33:33,152 - INFO -   style=cezanne id=3 count=850
+2026-02-17 00:33:33,554 - INFO -   style=vangogh id=4 count=600
+I:\Github\Latent_Style\Cycle-NCE\src\dataset.py:135: UserWarning: expandable_segments not supported on this platform (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\c10/cuda/CUDAAllocatorConfig.h:39.)
+  gpu_tensors[style_id] = stack.to(device=target_device, non_blocking=False)
+2026-02-17 00:33:33,786 - INFO - Dataset preloaded to cuda: 0.16GB across 5 style pools.
+2026-02-17 00:33:33,791 - INFO - DataLoader | batch=192 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-17 00:33:33,920 - INFO - Model params: 8,575,620
+2026-02-17 00:33:33,920 - INFO - Infra | channels_last=True tf32=True grad_ckpt=False compile=False backend=off mode=off fullgraph=False cudagraphs=off gc_collect_interval=0 loss_timing_interval=0 strict_batch_sanity=True strict_batch_sanity_interval=1 cuda_sync_debug=False profiler=False alloc_conf=expandable_segments:True
+2026-02-17 00:33:33,920 - INFO - Nsight | nvtx=False cuda_profile=False capture_start_step=10 capture_steps=50
+2026-02-17 00:33:35,330 - INFO - Precision | amp=True amp_dtype=fp16 grad_scaler=True fused_adamw=True prefer_fp16_on_rtx30=True
+2026-02-17 00:33:35,330 - INFO - GPU | name=NVIDIA Graphics Device capability=8.6 vram_gb=12.00 rtx30=False
+2026-02-17 00:33:35,504 - INFO - Resumed from I:\Github\Latent_Style\Cycle-NCE\sdxl-ablation-swd-semigroup-100\A01_Balanced_Fix\checkpoints\epoch_0100.pt at epoch=101 global_step=21500
+2026-02-17 00:33:35,504 - INFO - Training completed.

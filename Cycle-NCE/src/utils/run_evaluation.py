@@ -241,19 +241,6 @@ def _is_ref_cache_valid(ref_features: dict, need_clip: bool) -> bool:
     return True
 
 
-def _acquire_lock(lock_path: Path, timeout_sec: int = 600, poll_sec: float = 1.0) -> bool:
-    deadline = time.time() + max(1, int(timeout_sec))
-    while time.time() < deadline:
-        try:
-            fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-            with os.fdopen(fd, "w", encoding="utf-8") as f:
-                f.write(f"{os.getpid()}\n")
-            return True
-        except FileExistsError:
-            time.sleep(max(0.1, float(poll_sec)))
-    return False
-
-
 def _build_style_ref_prototypes(
     test_images: dict,
     vae,
@@ -380,6 +367,11 @@ def _infer_full_eval_out_dir_for_ckpt(ckpt_path: Path) -> Path:
     return run_dir / "full_eval" / f"epoch_{ep:04d}"
 
 
+def _default_image_classifier_path() -> Path:
+    # Keep legacy save/load location stable across runs.
+    return Path(__file__).resolve().parents[2] / "artifacts" / "eval_classifier" / "eval_style_image_classifier.pt"
+
+
 def _auto_run_missing_full_eval(args) -> None:
     src_dir = Path(__file__).resolve().parents[1]
     scan_root = src_dir.parent
@@ -417,24 +409,10 @@ def _auto_run_missing_full_eval(args) -> None:
             str(this_file),
             "--checkpoint", str(ckpt_path),
             "--output", str(out_dir),
-            "--cache_dir", str(args.cache_dir),
-            "--num_steps", str(args.num_steps),
-            "--step_size", str(args.step_size),
-            "--max_src_samples", str(args.max_src_samples),
-            "--max_ref_compare", str(args.max_ref_compare),
-            "--max_ref_cache", str(args.max_ref_cache),
-            "--ref_feature_batch_size", str(args.ref_feature_batch_size),
-            "--batch_size", str(args.batch_size),
-            "--classifier_path", str(args.classifier_path),
-            "--image_classifier_path", str(args.image_classifier_path),
-            "--classifier_classes", str(args.classifier_classes),
-            "--clip_model_name", str(args.clip_model_name),
-            "--clip_modelscope_id", str(args.clip_modelscope_id),
-            "--clip_modelscope_cache_dir", str(args.clip_modelscope_cache_dir),
-            "--style_ref_mode", str(args.style_ref_mode),
-            "--style_ref_count", str(args.style_ref_count),
-            "--style_ref_seed", str(args.style_ref_seed),
+            "--mode", str(args.mode),
         ]
+        if args.cache_dir:
+            cmd += ["--cache_dir", str(args.cache_dir)]
         if args.clip_allow_network:
             cmd += ["--clip_allow_network"]
         if args.test_dir:
@@ -459,25 +437,23 @@ def _auto_run_missing_full_eval(args) -> None:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--checkpoint', type=str, default=None, help="Single-checkpoint mode: path to checkpoint")
-    parser.add_argument('--output', type=str, default=None, help="Single-checkpoint mode: output directory")
+    parser.add_argument('--output', '--out', dest='output', type=str, default=None, help="Single-checkpoint mode: output directory")
+    parser.add_argument('--mode', type=str, default='full', choices=['full', 'gen', 'ana'], help="Run mode: full/gen/ana")
     parser.add_argument('--config', type=str, default="../config.json", help="Auto mode config path")
     parser.add_argument('--test_dir', type=str, default=None)
-    parser.add_argument('--cache_dir', type=str, default="../eval_cache", help="Directory to store shared feature caches")
-    parser.add_argument('--num_steps', type=int, default=15)
-    parser.add_argument('--step_size', type=float, default=1.0)
+    parser.add_argument('--cache_dir', type=str, default=None, help="Directory to store shared feature caches")
+    parser.add_argument('--num_steps', type=int, default=None)
+    parser.add_argument('--step_size', type=float, default=None)
     parser.add_argument('--style_strength', type=float, default=None, help="Global style strength in [0,1]; default uses checkpoint config")
-    parser.add_argument('--max_src_samples', type=int, default=30, help="Max source images per style; <=0 means all")
-    parser.add_argument('--max_ref_compare', type=int, default=50, help="Max refs for LPIPS style compare; <=0 means all cached refs")
-    parser.add_argument('--max_ref_cache', type=int, default=256, help="Max reference images per style used for cache/features; <=0 means all")
-    parser.add_argument('--ref_feature_batch_size', type=int, default=64, help="Batch size for reference feature extraction")
-    parser.add_argument('--batch_size', type=int, default=20, help="Batch size increased due to offloading")
+    parser.add_argument('--max_src_samples', type=int, default=None, help="Max source images per style; <=0 means all")
+    parser.add_argument('--max_ref_compare', type=int, default=None, help="Max refs for LPIPS style compare; <=0 means all cached refs")
+    parser.add_argument('--max_ref_cache', type=int, default=None, help="Max reference images per style used for cache/features; <=0 means all")
+    parser.add_argument('--ref_feature_batch_size', type=int, default=None, help="Batch size for reference feature extraction")
+    parser.add_argument('--batch_size', type=int, default=None, help="Batch size increased due to offloading")
     parser.add_argument('--force_regen', action='store_true', help="Force regenerate evaluation outputs/metrics (does not rebuild global ref cache)")
     parser.add_argument('--force_regen_ref_cache', action='store_true', help="Force rebuild global reference-feature cache only")
-    parser.add_argument('--ref_cache_lock_timeout', type=int, default=900, help="Seconds to wait for another process building reference cache")
-    parser.add_argument('--classifier_path', type=str, default="", help="Path to latent style classifier checkpoint (optional)")
     parser.add_argument('--image_classifier_path', type=str, default="", help="Path to robust image classifier checkpoint for evaluation (optional)")
-    parser.add_argument('--classifier_classes', type=str, default="", help="Optional comma-separated class names for report display")
-    parser.add_argument('--clip_model_name', type=str, default="openai/clip-vit-base-patch32", help="HF/local CLIP model name or local directory")
+    parser.add_argument('--clip_model_name', type=str, default="", help="HF/local CLIP model name or local directory")
     parser.add_argument('--clip_modelscope_id', type=str, default="", help="Optional ModelScope model id for CLIP fallback")
     parser.add_argument('--clip_modelscope_cache_dir', type=str, default="", help="Optional ModelScope cache directory")
     parser.add_argument('--clip_allow_network', action='store_true', help="Allow online model fetch if local cache is missing (default off)")
@@ -498,6 +474,15 @@ def main():
     parser.add_argument('--style_ref_seed', type=int, default=2026, help="Random seed when style_ref_mode=random")
     args = parser.parse_args()
 
+    # Mode dispatch (explicit and backward-compatible with old flags).
+    if args.mode == "gen":
+        args.generation_only = True
+        args.reuse_generated = False
+    elif args.mode == "ana":
+        args.generation_only = False
+        args.reuse_generated = True
+        args.force_regen = False
+
     if (args.checkpoint is None) ^ (args.output is None):
         raise ValueError("Both --checkpoint and --output must be provided together.")
     if args.checkpoint is None and args.output is None:
@@ -516,8 +501,6 @@ def main():
 
     out_dir = _resolve_dir_path(args.output, path_bases)
     out_dir.mkdir(parents=True, exist_ok=True)
-    cache_dir = _resolve_dir_path(args.cache_dir, path_bases)
-    cache_dir.mkdir(parents=True, exist_ok=True)
     
     # Thread Pool for Async I/O
     io_pool = ThreadPoolExecutor(max_workers=4)
@@ -527,6 +510,49 @@ def main():
     
     ckpt = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
     cfg = ckpt.get('config', {})
+    cfg_train = cfg.get('training', {})
+    cfg_infer = cfg.get('inference', {})
+
+    # Fill missing CLI args from checkpoint config for simpler trainer-side invocation.
+    if args.cache_dir is None:
+        args.cache_dir = cfg_train.get("full_eval_cache_dir", "../eval_cache")
+    if args.num_steps is None:
+        args.num_steps = int(cfg_train.get("full_eval_num_steps", cfg_infer.get("num_steps", 1)))
+    if args.step_size is None:
+        args.step_size = float(cfg_train.get("full_eval_step_size", cfg_infer.get("step_size", 1.0)))
+    if args.style_strength is None:
+        cfg_style = cfg_train.get("full_eval_style_strength", cfg_infer.get("style_strength", None))
+        args.style_strength = None if cfg_style is None else float(cfg_style)
+    if args.max_src_samples is None:
+        args.max_src_samples = int(cfg_train.get("full_eval_max_src_samples", 30))
+    if args.max_ref_compare is None:
+        args.max_ref_compare = int(cfg_train.get("full_eval_max_ref_compare", 50))
+    if args.max_ref_cache is None:
+        args.max_ref_cache = int(cfg_train.get("full_eval_max_ref_cache", 256))
+    if args.ref_feature_batch_size is None:
+        args.ref_feature_batch_size = int(cfg_train.get("full_eval_ref_feature_batch_size", 64))
+    if args.batch_size is None:
+        args.batch_size = int(cfg_train.get("full_eval_batch_size", 20))
+    if not args.clip_model_name:
+        args.clip_model_name = str(cfg_train.get("full_eval_clip_model_name", "openai/clip-vit-base-patch32"))
+    if not args.clip_modelscope_id:
+        args.clip_modelscope_id = str(cfg_train.get("full_eval_clip_modelscope_id", ""))
+    if not args.clip_modelscope_cache_dir:
+        args.clip_modelscope_cache_dir = str(cfg_train.get("full_eval_clip_modelscope_cache_dir", ""))
+    if (not args.image_classifier_path) and str(cfg_train.get("full_eval_image_classifier_path", "")).strip():
+        args.image_classifier_path = str(cfg_train.get("full_eval_image_classifier_path"))
+    if not args.image_classifier_path:
+        args.image_classifier_path = str(_default_image_classifier_path())
+    if (not args.eval_classifier_only) and bool(cfg_train.get("full_eval_classifier_only", False)):
+        args.eval_classifier_only = True
+    if (not args.eval_disable_lpips) and bool(cfg_train.get("full_eval_disable_lpips", False)):
+        args.eval_disable_lpips = True
+    if (not args.reuse_generated) and bool(cfg_train.get("full_eval_reuse_generated", False)):
+        args.reuse_generated = True
+    if (not args.generation_only) and bool(cfg_train.get("full_eval_generation_only", False)):
+        args.generation_only = True
+    cache_dir = _resolve_dir_path(args.cache_dir, path_bases)
+    cache_dir.mkdir(parents=True, exist_ok=True)
     
     # Resolve Test Data Path
     test_dir_raw = args.test_dir if args.test_dir else cfg.get('training', {}).get('test_image_dir', '')
@@ -549,7 +575,6 @@ def main():
         # Fallback: auto-detect subdirs
         style_subdirs = [d.name for d in test_dir.iterdir() if d.is_dir()]
 
-    cfg_train = cfg.get('training', {})
     style_ref_mode = str(cfg_train.get('full_eval_style_ref_mode', args.style_ref_mode)).lower()
     style_ref_count = int(cfg_train.get('full_eval_style_ref_count', args.style_ref_count))
     style_ref_seed = int(cfg_train.get('full_eval_style_ref_seed', args.style_ref_seed))
@@ -613,6 +638,12 @@ def main():
                 }
             )
         print(f"  Reused {len(generated_buffer)} generated images")
+
+    if not generated_buffer and args.mode == "ana":
+        raise RuntimeError(
+            f"Mode 'ana' requires existing generated images in {out_dir}. "
+            f"Run '--mode gen' first, then '--mode ana'."
+        )
 
     if not generated_buffer:
         print(f"\nPhase 1: Generation (Batch Size {args.batch_size})")
@@ -702,10 +733,10 @@ def main():
         summary = {
             "checkpoint": str(checkpoint_path),
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "mode": "generation_only",
+            "mode": "gen",
             "generated_count": int(len(generated_buffer)),
             "output_dir": str(out_dir),
-            "note": "Metrics are intentionally skipped. Run evaluation later with --reuse_generated.",
+            "note": "Metrics are intentionally skipped. Run evaluation later with --mode ana.",
         }
         sum_path = out_dir / "summary.json"
         with open(sum_path, "w", encoding="utf-8") as f:
@@ -719,48 +750,8 @@ def main():
     print(f"\n妫ｅ啯鐣?Phase 2: Evaluation")
     
     # Load Classifier if requested
-    classifier = None
     image_classifier = None
     classifier_label_names = list(style_subdirs)
-    if args.classifier_classes:
-        parsed_names = [c.strip() for c in args.classifier_classes.split(',') if c.strip()]
-        if parsed_names:
-            classifier_label_names = parsed_names
-
-    if args.classifier_path:
-        try:
-            from utils.style_classifier import StyleClassifier as LatentStyleClassifier
-            ckpt_path = Path(args.classifier_path)
-            if not ckpt_path.is_absolute():
-                ckpt_path = (Path(__file__).resolve().parent / ckpt_path).resolve()
-
-            if not ckpt_path.exists():
-                print(f"  WARNING: latent style classifier checkpoint not found: {ckpt_path}")
-            else:
-                num_classes = int(cfg.get('model', {}).get('num_styles', len(style_subdirs)))
-                in_channels = int(cfg.get('model', {}).get('latent_channels', 4))
-                classifier = LatentStyleClassifier(
-                    in_channels=in_channels,
-                    num_classes=num_classes,
-                    use_stats=bool(cfg.get('loss', {}).get('style_classifier_use_stats', True)),
-                    use_gram=bool(cfg.get('loss', {}).get('style_classifier_use_gram', True)),
-                    use_lowpass_stats=bool(cfg.get('loss', {}).get('style_classifier_use_lowpass_stats', True)),
-                    spatial_shuffle=bool(cfg.get('loss', {}).get('style_classifier_spatial_shuffle', True)),
-                    input_size_train=int(cfg.get('loss', {}).get('style_classifier_input_size_train', 8)),
-                    input_size_infer=int(cfg.get('loss', {}).get('style_classifier_input_size_infer', 8)),
-                    lowpass_size=int(cfg.get('loss', {}).get('style_classifier_lowpass_size', 8)),
-                ).to(device)
-
-                state = torch.load(ckpt_path, map_location=device, weights_only=False)
-                state_dict = state.get('model_state_dict', state) if isinstance(state, dict) else state
-                if any(k.startswith('_orig_mod.') for k in state_dict.keys()):
-                    state_dict = {k.replace('_orig_mod.', ''): v for k, v in state_dict.items()}
-                classifier.load_state_dict(state_dict, strict=True)
-                classifier.eval()
-                print(f"  Loaded latent style classifier: {ckpt_path} (classes={num_classes})")
-        except Exception as e:
-            print(f"  WARNING: failed to load latent style classifier: {e}")
-            classifier = None
 
     if args.image_classifier_path:
         try:
@@ -868,7 +859,7 @@ def main():
             if not has_clip and last_err is not None:
                 raise last_err
         except Exception as e:
-            print(f"  CLIP unavailable (offline/local-only mode): {e}")
+            print(f"  CLIP disabled: {e}")
 
     # Prepare Reference Features (Cache)
     style_sig = ",".join(style_subdirs)
@@ -877,8 +868,6 @@ def main():
     max_ref_cache = int(args.max_ref_cache)
     max_ref_cache_tag = "all" if max_ref_cache <= 0 else str(max_ref_cache)
     cache_file = cache_dir / f"ref_feats_{dataset_hash}_m{max_ref_cache_tag}.pt"
-    lock_file = cache_file.with_suffix(cache_file.suffix + ".lock")
-
     ref_features = {}
     # Keep reference cache independent from output regeneration.
     must_rebuild_ref_cache = bool(args.force_regen_ref_cache)
@@ -897,66 +886,56 @@ def main():
             ref_features = {}
 
     if run_full_metrics and not ref_features:
-        got_lock = _acquire_lock(lock_file, timeout_sec=int(args.ref_cache_lock_timeout), poll_sec=1.0)
-        if not got_lock:
-            raise TimeoutError(f"Timed out waiting for reference-cache lock: {lock_file}")
-        try:
-            # Double-check after lock: another process may have completed cache.
-            if cache_file.exists() and not must_rebuild_ref_cache:
+        print(f"\nComputing Reference Features (global cache miss): {cache_file}")
+        for style_id, (style_name, img_list) in test_images.items():
+            ref_features[style_id] = []
+
+            sampled_refs = img_list[:]
+            if max_ref_cache > 0:
+                sampled_refs = sampled_refs[:min(len(sampled_refs), max_ref_cache)]
+            ref_bs = max(1, int(args.ref_feature_batch_size))
+
+            pbar = tqdm(range(0, len(sampled_refs), ref_bs), desc=f"Featurizing {style_name}")
+            for b_start in pbar:
+                batch_paths = sampled_refs[b_start:b_start + ref_bs]
                 try:
-                    ref_features = torch.load(cache_file, map_location='cpu')
-                    if _is_ref_cache_valid(ref_features, need_clip=has_clip):
-                        print(f"Loaded global reference cache after waiting: {cache_file}")
-                    else:
-                        ref_features = {}
-                except Exception:
-                    ref_features = {}
+                    batch_pils = [Image.open(img_path).convert('RGB').resize((256, 256)) for img_path in batch_paths]
+                    batch_t = torch.stack([T.ToTensor()(img_pil) for img_pil in batch_pils], dim=0).to(device)
 
-            if not ref_features:
-                print(f"\nComputing Reference Features (global cache miss): {cache_file}")
-                for style_id, (style_name, img_list) in test_images.items():
-                    ref_features[style_id] = []
-
-                    sampled_refs = img_list[:]
-                    if max_ref_cache > 0:
-                        sampled_refs = sampled_refs[:min(len(sampled_refs), max_ref_cache)]
-                    ref_bs = max(1, int(args.ref_feature_batch_size))
-
-                    pbar = tqdm(range(0, len(sampled_refs), ref_bs), desc=f"Featurizing {style_name}")
-                    for b_start in pbar:
-                        batch_paths = sampled_refs[b_start:b_start + ref_bs]
-                        try:
-                            batch_pils = [Image.open(img_path).convert('RGB').resize((256, 256)) for img_path in batch_paths]
-                            batch_t = torch.stack([T.ToTensor()(img_pil) for img_pil in batch_pils], dim=0).to(device)
-
-                            amp_ctx = torch.autocast('cuda', dtype=torch.bfloat16) if device == 'cuda' else nullcontext()
-                            with torch.no_grad(), amp_ctx:
-                                v_feats = vgg_extractor.get_features(batch_t)
+                    amp_ctx = torch.autocast('cuda', dtype=torch.bfloat16) if device == 'cuda' else nullcontext()
+                    with torch.no_grad(), amp_ctx:
+                        v_feats = vgg_extractor.get_features(batch_t)
+                        c_emb = None
+                        if has_clip and clip_model is not None:
+                            try:
+                                inputs = clip_processor(images=batch_pils, return_tensors='pt').to(device)
+                                out = clip_model.get_image_features(**inputs)
+                                c_emb = _extract_clip_embeddings(out)
+                                c_emb = (c_emb / (c_emb.norm(p=2, dim=-1, keepdim=True) + 1e-8)).cpu()
+                            except Exception as clip_exc:
+                                print(f"  WARNING: CLIP ref-feature failed, disable CLIP for this run: {clip_exc}")
+                                has_clip = False
+                                clip_model = None
+                                clip_processor = None
                                 c_emb = None
-                                if has_clip and clip_model is not None:
-                                    inputs = clip_processor(images=batch_pils, return_tensors='pt').to(device)
-                                    out = clip_model.get_image_features(**inputs)
-                                    c_emb = _extract_clip_embeddings(out)
-                                    c_emb = (c_emb / (c_emb.norm(p=2, dim=-1, keepdim=True) + 1e-8)).cpu()
 
-                            for i, img_path in enumerate(batch_paths):
-                                ref_features[style_id].append({
-                                    'path': str(img_path),
-                                    'vgg': [vf[i:i+1] for vf in v_feats],
-                                    'clip': c_emb[i:i+1] if c_emb is not None else None
-                                })
-                        except Exception as e:
-                            print(f"Skipping batch {b_start}-{b_start + len(batch_paths)} in {style_name}: {e}")
+                    for i, img_path in enumerate(batch_paths):
+                        ref_features[style_id].append({
+                            'path': str(img_path),
+                            'vgg': [vf[i:i+1] for vf in v_feats],
+                            'clip': c_emb[i:i+1] if c_emb is not None else None
+                        })
+                except Exception as e:
+                    print(f"Skipping batch {b_start}-{b_start + len(batch_paths)} in {style_name}: {e}")
 
-                tmp_cache = cache_file.with_suffix(cache_file.suffix + f".tmp.{os.getpid()}")
-                torch.save(ref_features, tmp_cache)
-                os.replace(tmp_cache, cache_file)
-                print(f"Global reference cache saved: {cache_file}")
-        finally:
-            try:
-                lock_file.unlink(missing_ok=True)
-            except Exception:
-                pass
+        # No lock by design: best-effort write only.
+        try:
+            tmp_cache = cache_file.with_suffix(cache_file.suffix + f".tmp.{os.getpid()}")
+            torch.save(ref_features, tmp_cache)
+            os.replace(tmp_cache, cache_file)
+            print(f"Global reference cache saved: {cache_file}")
+        except Exception as save_exc:
+            print(f"  WARNING: failed to write shared reference cache (ignored): {save_exc}")
 
     # Optimize Reference CLIP Features for Vectorization
     ref_clip_matrices = {} # style_id -> Tensor[N_ref, D] (GPU)
@@ -999,11 +978,6 @@ def main():
         b_end = min(b_start + args.batch_size, total_gen)
         batch_items = generated_buffer[b_start:b_end]
         
-        has_latents = all(item.get('gen_latent') is not None for item in batch_items)
-        gen_latents = None
-        if has_latents:
-            gen_latents_cpu = torch.stack([item['gen_latent'] for item in batch_items])
-            gen_latents = gen_latents_cpu.to(device)
         gen_imgs_cpu = torch.stack([item['gen_img'] for item in batch_items])
         gen_imgs = gen_imgs_cpu.to(device)
         
@@ -1040,40 +1014,37 @@ def main():
             c_clip_scores = [0.0] * len(batch_items)
             
             if has_clip and clip_model is not None:
-                # Gen CLIP
-                pil_gens = [to_pil(img.float()) for img in gen_imgs_cpu]
-                inputs_gen = clip_processor(images=pil_gens, return_tensors='pt').to(device)
-                out_gen = clip_model.get_image_features(**inputs_gen)
-                gen_clips = _extract_clip_embeddings(out_gen).to(device, dtype=torch.float32)
-                # Ensure shape
-                if gen_clips.ndim == 1: gen_clips = gen_clips.unsqueeze(0)
-                gen_clips = gen_clips / (gen_clips.norm(p=2, dim=-1, keepdim=True) + 1e-8)
-                
-                # Src CLIP
-                pil_srcs = [to_pil(img.cpu().float()) for img in src_imgs]
-                inputs_src = clip_processor(images=pil_srcs, return_tensors='pt').to(device)
-                out_src = clip_model.get_image_features(**inputs_src)
-                src_clips = _extract_clip_embeddings(out_src).to(device, dtype=torch.float32)
-                # Ensure shape
-                if src_clips.ndim == 1: src_clips = src_clips.unsqueeze(0)
-                src_clips = src_clips / (src_clips.norm(p=2, dim=-1, keepdim=True) + 1e-8)
-                
-                c_clip_scores = F.cosine_similarity(gen_clips, src_clips).cpu().float().numpy()
+                try:
+                    # Gen CLIP
+                    pil_gens = [to_pil(img.float()) for img in gen_imgs_cpu]
+                    inputs_gen = clip_processor(images=pil_gens, return_tensors='pt').to(device)
+                    out_gen = clip_model.get_image_features(**inputs_gen)
+                    gen_clips = _extract_clip_embeddings(out_gen).to(device, dtype=torch.float32)
+                    if gen_clips.ndim == 1:
+                        gen_clips = gen_clips.unsqueeze(0)
+                    gen_clips = gen_clips / (gen_clips.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+
+                    # Src CLIP
+                    pil_srcs = [to_pil(img.cpu().float()) for img in src_imgs]
+                    inputs_src = clip_processor(images=pil_srcs, return_tensors='pt').to(device)
+                    out_src = clip_model.get_image_features(**inputs_src)
+                    src_clips = _extract_clip_embeddings(out_src).to(device, dtype=torch.float32)
+                    if src_clips.ndim == 1:
+                        src_clips = src_clips.unsqueeze(0)
+                    src_clips = src_clips / (src_clips.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+
+                    c_clip_scores = F.cosine_similarity(gen_clips, src_clips).cpu().float().numpy()
+                except Exception as clip_exc:
+                    print(f"  WARNING: CLIP batch failed, disable CLIP for remaining evaluation: {clip_exc}")
+                    has_clip = False
+                    clip_model = None
+                    clip_processor = None
 
             # 3. Classifier Predictions
             pred_indices = [-1] * len(batch_items)
             if image_classifier is not None:
                 preds = image_classifier.predict_indices(gen_imgs).cpu().numpy().tolist()
                 pred_indices = preds
-            elif classifier and gen_latents is not None:
-                cls_inputs = gen_latents
-                cls_input_size = int(cfg.get('loss', {}).get('style_classifier_input_size_infer', 0))
-                if cls_input_size and (
-                    cls_inputs.shape[-1] != cls_input_size or cls_inputs.shape[-2] != cls_input_size
-                ):
-                    cls_inputs = F.interpolate(cls_inputs, size=(cls_input_size, cls_input_size), mode='area')
-                preds = classifier(cls_inputs).argmax(dim=1)
-                pred_indices = preds.cpu().numpy().tolist()
 
             # 4. Style Metrics & Row Writing
             for i, item in enumerate(batch_items):
@@ -1086,13 +1057,10 @@ def main():
                 pred_style_name = "N/A"
                 class_correct = "N/A"
                 
-                if (image_classifier is not None or classifier is not None) and pred_idx != -1:
+                if image_classifier is not None and pred_idx != -1:
                     if pred_idx < len(classifier_label_names):
                         pred_style_name = classifier_label_names[pred_idx]
-                        if image_classifier is not None:
-                            is_correct = (str(pred_style_name).lower() == str(tgt_name).lower())
-                        else:
-                            is_correct = (pred_idx == int(tgt_id))
+                        is_correct = (str(pred_style_name).lower() == str(tgt_name).lower())
                         class_correct = 1 if is_correct else 0
                     else:
                         pred_style_name = f"Unknown({pred_idx})"

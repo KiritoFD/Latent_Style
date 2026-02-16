@@ -1014,47 +1014,22 @@ class AdaCUTTrainer:
         out_dir.mkdir(parents=True, exist_ok=True)
 
         cfg_train = self.config.get("training", {})
-        cfg_infer = self.config.get("inference", {})
+        full_eval_mode = str(cfg_train.get("full_eval_mode", "full")).strip().lower()
+        if full_eval_mode not in {"full", "gen", "ana"}:
+            full_eval_mode = "full"
 
         cmd = [
             sys.executable,
             str(utils_script),
             "--checkpoint",
             str(checkpoint_path),
-            "--output",
+            "--out",
             str(out_dir),
-            "--num_steps",
-            str(int(cfg_train.get("full_eval_num_steps", cfg_infer.get("num_steps", 1)))),
-            "--step_size",
-            str(float(cfg_train.get("full_eval_step_size", cfg_infer.get("step_size", 1.0)))),
-            "--batch_size",
-            str(int(cfg_train.get("full_eval_batch_size", 8))),
-            "--max_src_samples",
-            str(int(cfg_train.get("full_eval_max_src_samples", 30))),
-            "--max_ref_compare",
-            str(int(cfg_train.get("full_eval_max_ref_compare", 50))),
-            "--max_ref_cache",
-            str(int(cfg_train.get("full_eval_max_ref_cache", 256))),
-            "--ref_feature_batch_size",
-            str(int(cfg_train.get("full_eval_ref_feature_batch_size", 64))),
-            "--style_ref_mode",
-            str(cfg_train.get("full_eval_style_ref_mode", "prototype")),
-            "--style_ref_count",
-            str(int(cfg_train.get("full_eval_style_ref_count", 8))),
-            "--style_ref_seed",
-            str(int(cfg_train.get("full_eval_style_ref_seed", 2026))),
-            "--clip_model_name",
-            str(cfg_train.get("full_eval_clip_model_name", "openai/clip-vit-base-patch32")),
-            "--clip_modelscope_id",
-            str(cfg_train.get("full_eval_clip_modelscope_id", "")),
-            "--clip_modelscope_cache_dir",
-            str(cfg_train.get("full_eval_clip_modelscope_cache_dir", "")),
+            "--mode",
+            full_eval_mode,
         ]
         if bool(cfg_train.get("full_eval_clip_allow_network", False)):
             cmd += ["--clip_allow_network"]
-        full_eval_style_strength = cfg_train.get("full_eval_style_strength", cfg_infer.get("style_strength"))
-        if full_eval_style_strength is not None:
-            cmd += ["--style_strength", str(float(full_eval_style_strength))]
         test_dir = cfg_train.get("test_image_dir", "")
         if test_dir:
             cmd += ["--test_dir", str(test_dir)]

@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 from typing import Tuple, Dict, Any, Optional
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -49,8 +50,22 @@ def _safe_load_latent(path: Path) -> torch.Tensor:
     return latent.float().contiguous()
 
 
-def _default_cache_path(data_root: Path, style_subdirs: list[str], num_styles: int) -> Path:
-    key = f"{str(data_root.resolve())}|{','.join(style_subdirs)}|{num_styles}|v2"
+def _read_latent_scale_factor(config: dict) -> float:
+    model_cfg = config.get("model", {})
+    try:
+        scale = float(model_cfg.get("latent_scale_factor", 0.18215))
+    except Exception:
+        scale = 0.18215
+    if not np.isfinite(scale) or scale <= 1e-12:
+        scale = 0.18215
+    return scale
+
+
+def _default_cache_path(data_root: Path, style_subdirs: list[str], num_styles: int, latent_scale_factor: float) -> Path:
+    key = (
+        f"{str(data_root.resolve())}|{','.join(style_subdirs)}|{num_styles}|"
+        f"scale={latent_scale_factor:.8f}|v3"
+    )
     digest = hashlib.md5(key.encode("utf-8")).hexdigest()[:10]
     cache_dir = _ROOT / ".cache"
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -70,13 +85,14 @@ def build_latent_dataset(
         base_dir = config_dir.resolve() if config_dir is not None else Path.cwd().resolve()
         data_root = (base_dir / data_root_raw).resolve()
     num_styles = int(config["model"]["num_styles"])
+    latent_scale_factor = _read_latent_scale_factor(config)
     style_subdirs = config["data"].get("style_subdirs")
     if not style_subdirs:
         style_subdirs = [f"style{i}" for i in range(num_styles)]
     else:
         style_subdirs = list(style_subdirs)
 
-    cache_path = cache_path or _default_cache_path(data_root, style_subdirs, num_styles)
+    cache_path = cache_path or _default_cache_path(data_root, style_subdirs, num_styles, latent_scale_factor)
     if cache_path.exists() and not rebuild_cache:
         cached = torch.load(cache_path, map_location="cpu", weights_only=False)
         latents = cached["latents"].cpu()
@@ -104,13 +120,27 @@ def build_latent_dataset(
     latents = torch.stack(latents_list, dim=0).cpu()
     style_ids = torch.tensor(style_ids_list, dtype=torch.long).cpu()
 
-    # Keep same scaling convention as main dataset loader.
+    # Keep same scaling convention as main dataset loader (config-driven).
     if float(latents.std().item()) < 0.5:
-        logger.info("Auto-scaling VAE latents by 1/0.18215 for classifier dataset")
-        latents = latents / 0.18215
+        logger.info(
+            "Auto-scaling VAE latents by 1/latent_scale_factor=%.6f for classifier dataset",
+            latent_scale_factor,
+        )
+        latents = latents / latent_scale_factor
 
     cache_path.parent.mkdir(parents=True, exist_ok=True)
-    torch.save({"latents": latents, "style_ids": style_ids}, cache_path)
+    torch.save(
+        {
+            "latents": latents,
+            "style_ids": style_ids,
+            "meta": {
+                "latent_scale_factor": float(latent_scale_factor),
+                "data_root": str(data_root),
+                "style_subdirs": list(style_subdirs),
+            },
+        },
+        cache_path,
+    )
     logger.info(f"Built latent cache: {cache_path} (files={total_files}, N={latents.shape[0]})")
 
     return LatentStyleDataset(latents, style_ids)
