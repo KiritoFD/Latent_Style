@@ -39,26 +39,11 @@ def _tv_per_sample(x: torch.Tensor) -> torch.Tensor:
     return tv_x + tv_y
 
 
-def _self_similarity_loss_per_sample(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    b, c, h, w = x.shape
-    n = h * w
-    if n <= 0:
-        return x.new_zeros((b,), dtype=torch.float32)
-    x_tok = x.reshape(b, c, n).transpose(1, 2).float()
-    y_tok = y.reshape(b, c, n).transpose(1, 2).float()
-    x_tok = F.normalize(x_tok, p=2, dim=-1, eps=1e-6)
-    y_tok = F.normalize(y_tok, p=2, dim=-1, eps=1e-6)
-    sx = x_tok @ x_tok.transpose(1, 2)
-    sy = y_tok @ y_tok.transpose(1, 2)
-    return (sx - sy).pow(2).mean(dim=(1, 2))
-
-
 class AdaCUTObjective:
     def __init__(self, config: Dict) -> None:
         loss_cfg = config.get("loss", {})
         train_cfg = config.get("training", {})
 
-        self.w_struct = float(loss_cfg.get("w_struct", 0.0))
         self.w_delta_tv = float(loss_cfg.get("w_delta_tv", 0.0))
         self.w_delta_l2 = float(loss_cfg.get("w_delta_l2", 0.0))
         self.w_output_tv = float(loss_cfg.get("w_output_tv", 0.0))
@@ -67,11 +52,6 @@ class AdaCUTObjective:
         self.w_identity = float(loss_cfg.get("w_identity", 0.0))
         self.w_semigroup = float(loss_cfg.get("w_semigroup", 0.0))
 
-        self.struct_lowpass_strength = float(loss_cfg.get("struct_lowpass_strength", 1.0))
-        self.struct_lowpass_strength = max(0.0, min(1.0, self.struct_lowpass_strength))
-        self.struct_loss_type = str(loss_cfg.get("struct_loss_type", "l1")).lower()
-        if self.struct_loss_type not in {"l1", "mse"}:
-            self.struct_loss_type = "l1"
         self.semigroup_loss_type = str(loss_cfg.get("semigroup_loss_type", "l1")).lower()
         if self.semigroup_loss_type not in {"l1", "mse"}:
             self.semigroup_loss_type = "l1"
@@ -226,16 +206,12 @@ class AdaCUTObjective:
                 denom = mask_f.sum().clamp_min(1.0)
                 return (per_sample * mask_f).sum() / denom
 
-            need_struct_feat = bool(self.w_struct > 0.0)
             need_style_feat = bool(self.w_stroke_gram > 0.0 or self.w_color_moment > 0.0)
-            need_projected_feat = bool(need_struct_feat or need_style_feat)
             use_projector = bool(getattr(model, "loss_projector_use", False))
-            if use_projector and need_projected_feat and hasattr(model, "project_loss_features"):
+            if use_projector and need_style_feat and hasattr(model, "project_loss_features"):
                 with torch.no_grad():
-                    content_feat = model.project_loss_features(content_f32).float() if need_struct_feat else content_f32
-                    target_style_feat = model.project_loss_features(target_style_f32).float() if need_style_feat else target_style_f32
+                    target_style_feat = model.project_loss_features(target_style_f32).float()
             else:
-                content_feat = content_f32
                 target_style_feat = target_style_f32
 
             stage = "pred"
@@ -249,44 +225,25 @@ class AdaCUTObjective:
                     num_steps=train_num_steps,
                 )
             pred_student_f32 = pred_student.float()
-            if use_projector and need_projected_feat and hasattr(model, "project_loss_features"):
+            if use_projector and need_style_feat and hasattr(model, "project_loss_features"):
                 pred_feat = model.project_loss_features(pred_student_f32).float()
             else:
                 pred_feat = pred_student_f32
             _mem_mark("pred")
             _time_mark("pred")
 
-            stage = "struct"
-            with self._nvtx_range("loss/struct", nvtx_enabled):
-                if self.w_struct > 0.0:
-                    pred_struct = F.adaptive_avg_pool2d(pred_feat, output_size=(8, 8))
-                    cont_struct = F.adaptive_avg_pool2d(content_feat, output_size=(8, 8))
-                    raw = _self_similarity_loss_per_sample(pred_struct, cont_struct)
-                    if self.struct_lowpass_strength > 0.0:
-                        ps_lp = F.adaptive_avg_pool2d(_lowpass(pred_feat), output_size=(4, 4))
-                        ct_lp = F.adaptive_avg_pool2d(_lowpass(content_feat), output_size=(4, 4))
-                        low = _self_similarity_loss_per_sample(ps_lp, ct_lp)
-                        raw = (1.0 - self.struct_lowpass_strength) * raw + self.struct_lowpass_strength * low
-                    loss_struct = _masked_mean(raw, xid_mask_f)
-                else:
-                    loss_struct = torch.tensor(0.0, device=content.device, dtype=content.dtype)
-            _mem_mark("struct")
-            _time_mark("struct")
-
             stage = "style"
             loss_stroke_gram = torch.tensor(0.0, device=content.device, dtype=torch.float32)
             loss_color_moment = torch.tensor(0.0, device=content.device, dtype=torch.float32)
             with self._nvtx_range("loss/style", nvtx_enabled):
                 if self.w_stroke_gram > 0.0 or self.w_color_moment > 0.0:
-                    pred_f = pred_feat
-                    tgt_f = target_style_feat
                     if self.w_stroke_gram > 0.0:
-                        loss_stroke_gram = _masked_mean(calc_gram_loss_per_sample(pred_f, tgt_f), xid_mask_f)
+                        loss_stroke_gram = _masked_mean(calc_gram_loss_per_sample(pred_feat, target_style_feat), xid_mask_f)
                     if self.w_color_moment > 0.0:
-                        pred_mu = pred_f.mean(dim=(2, 3))
-                        tgt_mu = tgt_f.mean(dim=(2, 3))
-                        pred_std = pred_f.std(dim=(2, 3), unbiased=False)
-                        tgt_std = tgt_f.std(dim=(2, 3), unbiased=False)
+                        pred_mu = pred_feat.mean(dim=(2, 3))
+                        tgt_mu = target_style_feat.mean(dim=(2, 3))
+                        pred_std = pred_feat.std(dim=(2, 3), unbiased=False)
+                        tgt_std = target_style_feat.std(dim=(2, 3), unbiased=False)
                         moment_per_sample = (pred_mu - tgt_mu).abs().mean(dim=1) + (pred_std - tgt_std).abs().mean(dim=1)
                         loss_color_moment = _masked_mean(moment_per_sample, xid_mask_f)
             _mem_mark("style")
@@ -344,8 +301,7 @@ class AdaCUTObjective:
                         _mem_mark("semigroup")
                         _time_mark("semigroup")
                         total = (
-                            self.w_struct * loss_struct
-                            + self.w_stroke_gram * loss_stroke_gram
+                            self.w_stroke_gram * loss_stroke_gram
                             + self.w_color_moment * loss_color_moment
                             + self.w_identity * loss_identity
                             + self.w_delta_tv * loss_delta_tv
@@ -357,7 +313,6 @@ class AdaCUTObjective:
                         _time_mark("total")
                         out = {
                             "loss": total,
-                            "struct": loss_struct.detach(),
                             "stroke_gram": loss_stroke_gram.detach(),
                             "color_moment": loss_color_moment.detach(),
                             "identity": loss_identity.detach(),
@@ -466,8 +421,7 @@ class AdaCUTObjective:
             stage = "total"
             with self._nvtx_range("loss/total", nvtx_enabled):
                 total = (
-                    self.w_struct * loss_struct
-                    + self.w_stroke_gram * loss_stroke_gram
+                    self.w_stroke_gram * loss_stroke_gram
                     + self.w_color_moment * loss_color_moment
                     + self.w_identity * loss_identity
                     + self.w_delta_tv * loss_delta_tv
@@ -480,7 +434,6 @@ class AdaCUTObjective:
 
             out = {
                 "loss": total,
-                "struct": loss_struct.detach(),
                 "stroke_gram": loss_stroke_gram.detach(),
                 "color_moment": loss_color_moment.detach(),
                 "identity": loss_identity.detach(),

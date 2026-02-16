@@ -19,15 +19,12 @@
     "style_strength_step_curve": "smoothstep",
     "upsample_mode": "bilinear",
     "style_id_spatial_jitter_px": 0,
-    "loss_projector_use": false,
-    "loss_projector_channels": 64,
     "upsample_blur": false,
-    "upsample_blur_kernel": "gaussian3"
+    "upsample_blur_kernel": "gaussian3",
+    "loss_projector_use": true,
+    "loss_projector_channels": 64
   },
   "loss": {
-    "w_struct": 0.2,
-    "struct_lowpass_strength": 0.8,
-    "struct_loss_type": "l1",
     "w_semigroup": 0.05,
     "semigroup_loss_type": "l1",
     "semigroup_lowpass_strength": 0.5,
@@ -43,7 +40,6 @@
     "w_delta_tv": 0.01,
     "w_output_tv": 0.0,
     "w_stroke_gram": 120.0,
-    "w_color_moment": 4.0,
     "stroke_patch_sizes": [
       3
     ],
@@ -55,7 +51,8 @@
     "train_step_size_max": 1.2,
     "train_style_strength_min": 0.7,
     "train_style_strength_max": 1.0,
-    "w_delta_l2": 0.001
+    "w_delta_l2": 0.001,
+    "w_color_moment": 6.0
   },
   "training": {
     "seed": 42,
