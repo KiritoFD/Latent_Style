@@ -1,4 +1,4 @@
-﻿import argparse
+import argparse
 import copy
 import json
 import os
@@ -25,6 +25,7 @@ class Exp:
     name: str
     group: str
     overrides: List[Tuple[str, Any]]
+    epochs: Optional[int] = None
 
 
 def load_json(path: Path) -> Dict[str, Any]:
@@ -58,75 +59,29 @@ def safe_name(name: str) -> str:
 
 
 def make_experiments(base_cfg: Dict[str, Any]) -> List[Exp]:
-    loss = base_cfg.get("loss", {})
-    model = base_cfg.get("model", {})
+    # Baseline Config (Default in overfit50.json):
+    # SWD=20, Moment=2, Proj=128, Patch=[3,5], Id=50, Semi=1.0, L2=0.02
 
-    w_stroke_gram = float(loss.get("w_stroke_gram", 80.0))
-    w_color_moment = float(loss.get("w_color_moment", 6.0))
-    w_delta_tv = float(loss.get("w_delta_tv", 0.01))
-    w_delta_l2 = float(loss.get("w_delta_l2", 0.001))
-    w_output_tv = float(loss.get("w_output_tv", 0.0))
-    w_semigroup_base = float(loss.get("w_semigroup", 0.2))
-    if w_semigroup_base <= 0.0:
-        w_semigroup_base = 0.2
-    proj_channels_base = int(model.get("loss_projector_channels", 64))
+    exps: List[Exp] = []
 
-    exps: List[Exp] = [
-        # Baseline
-        Exp(
-            "A00_full",
-            "A",
-            [
-                ("loss.w_stroke_gram", w_stroke_gram),
-                ("loss.w_color_moment", w_color_moment),
-                ("loss.w_delta_tv", w_delta_tv),
-                ("loss.w_delta_l2", w_delta_l2),
-                ("loss.w_output_tv", w_output_tv),
-                ("loss.w_semigroup", w_semigroup_base),
-                ("model.loss_projector_use", True),
-                ("model.loss_projector_channels", proj_channels_base),
-            ],
-        ),
-        # Part 1: projector
-        Exp("A01_proj_off", "A", [("model.loss_projector_use", False)]),
-        Exp("A02_proj_32", "A", [("model.loss_projector_use", True), ("model.loss_projector_channels", 32)]),
-        Exp("A03_proj_128", "A", [("model.loss_projector_use", True), ("model.loss_projector_channels", 128)]),
-        # Part 2: leave-one-out
-        Exp("A10_no_gram", "A", [("loss.w_stroke_gram", 0.0)]),
-        Exp("A11_no_moment", "A", [("loss.w_color_moment", 0.0)]),
-        Exp("A12_no_delta_tv", "A", [("loss.w_delta_tv", 0.0)]),
-        Exp("A13_no_delta_l2", "A", [("loss.w_delta_l2", 0.0)]),
-        Exp("A14_no_output_tv", "A", [("loss.w_output_tv", 0.0)]),
-        Exp("A15_no_semigroup", "A", [("loss.w_semigroup", 0.0)]),
-        # Part 3: style decomposition
-        Exp("A20_style_gram_only", "A", [("loss.w_stroke_gram", w_stroke_gram), ("loss.w_color_moment", 0.0)]),
-        Exp("A21_style_moment_only", "A", [("loss.w_stroke_gram", 0.0), ("loss.w_color_moment", w_color_moment)]),
-        # Part 4: regularizer composition
-        Exp("A30_reg_delta_only", "A", [("loss.w_delta_tv", w_delta_tv), ("loss.w_delta_l2", w_delta_l2), ("loss.w_output_tv", 0.0)]),
-        Exp("A31_reg_output_only", "A", [("loss.w_delta_tv", 0.0), ("loss.w_delta_l2", 0.0), ("loss.w_output_tv", max(w_output_tv, 0.005))]),
-        Exp("A32_reg_tv_only", "A", [("loss.w_delta_tv", w_delta_tv), ("loss.w_delta_l2", 0.0), ("loss.w_output_tv", 0.0)]),
-        # Part 5: semigroup schedule
-        Exp(
-            "A40_semigroup_light",
-            "A",
-            [
-                ("loss.w_semigroup", w_semigroup_base),
-                ("loss.semigroup_every_n_steps", 4),
-                ("loss.semigroup_subset_ratio", 0.25),
-                ("loss.semigroup_num_steps", 1),
-            ],
-        ),
-        Exp(
-            "A41_semigroup_strong",
-            "A",
-            [
-                ("loss.w_semigroup", w_semigroup_base),
-                ("loss.semigroup_every_n_steps", 1),
-                ("loss.semigroup_subset_ratio", 0.5),
-                ("loss.semigroup_num_steps", 1),
-            ],
-        ),
-    ]
+    # Group P: projection precision
+    exps.append(Exp("P01_Proj_32", "P", [("loss.swd_num_projections", 32)], epochs=40))
+    exps.append(Exp("P02_Proj_128", "P", [("loss.swd_num_projections", 128)], epochs=40))
+    exps.append(Exp("P03_Proj_256", "P", [("loss.swd_num_projections", 256)], epochs=50))
+
+    # Group S: spatial scales
+    exps.append(Exp("S01_Patch_3", "S", [("loss.swd_patch_sizes", [3])], epochs=30))
+    exps.append(Exp("S02_Patch_3_5_9", "S", [("loss.swd_patch_sizes", [3, 5, 9])], epochs=30))
+
+    # Group W: weight balance
+    exps.append(Exp("W01_Strong_Moment", "W", [("loss.w_color_moment", 10.0)], epochs=40))
+    exps.append(Exp("W02_No_Moment", "W", [("loss.w_color_moment", 0.0)], epochs=40))
+    exps.append(Exp("W03_High_SWD", "W", [("loss.w_swd", 50.0)], epochs=40))
+
+    # Group C: consistency/stability
+    exps.append(Exp("C01_Semi_5", "C", [("loss.w_semigroup", 5.0)], epochs=50))
+    exps.append(Exp("C02_Unconstrained", "C", [("loss.w_identity", 0.0), ("loss.w_semigroup", 0.0)], epochs=30))
+
     return exps
 
 
@@ -140,17 +95,14 @@ def apply_overrides(base_cfg: Dict[str, Any], overrides: List[Tuple[str, Any]]) 
 def apply_infra_profile(cfg: Dict[str, Any], profile: str) -> Dict[str, Any]:
     out = copy.deepcopy(cfg)
     p = str(profile).strip().lower()
-    if p in {"", "none"}:
-        return out
 
     if "rtx30" in p:
         deep_set(out, "training.use_amp", True)
         deep_set(out, "training.amp_dtype", "fp16")
         deep_set(out, "training.use_grad_scaler", True)
-        deep_set(out, "training.allow_tf32", True)
         deep_set(out, "training.use_compile", False)
-        deep_set(out, "training.prefetch_factor", 2)
-        deep_set(out, "training.persistent_workers", True)
+        deep_set(out, "training.batch_size", 32)
+        deep_set(out, "training.allow_tf32", True)
         return out
 
     return out
@@ -158,126 +110,72 @@ def apply_infra_profile(cfg: Dict[str, Any], profile: str) -> Dict[str, Any]:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--base_config", type=str, default="config.json", help="Path to base config.json")
-    ap.add_argument("--run_py", type=str, default="run.py", help="Path to training entry script")
-    ap.add_argument(
-        "--out_dir",
-        type=str,
-        default="../ablation-fixes",
-        help="Directory for generated configs/logs/checkpoints",
-    )
-    ap.add_argument("--epochs", type=int, default=60, help="Override training.num_epochs")
-    ap.add_argument("--batch_size", type=int, default=-1, help="Override training.batch_size (-1 keeps base config)")
-    ap.add_argument("--seed", type=int, default=42, help="Fixed seed")
-    ap.add_argument("--groups", type=str, default="A", help="Groups to run")
-    ap.add_argument("--filter", type=str, default="", help="Run only experiment names containing this text")
-    ap.add_argument("--infra_profile", type=str, default="rtx3060_stable")
-    ap.add_argument("--dry_run", action="store_true", help="Only write configs")
-    ap.add_argument("--stop_on_error", action="store_true", help="Stop sweep when a run fails")
+    ap.add_argument("--base_config", type=str, default="overfit50.json")
+    ap.add_argument("--run_py", type=str, default="run.py")
+    ap.add_argument("--out_dir", type=str, default="../sweep_swd_reborn")
+    ap.add_argument("--epochs", type=int, default=40)
+    ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--groups", type=str, default="P,S,W,C")
+    ap.add_argument("--infra_profile", type=str, default="rtx3060")
+    ap.add_argument("--dry_run", action="store_true")
+    ap.add_argument("--stop_on_error", action="store_true")
     args = ap.parse_args()
 
     script_dir = Path(__file__).resolve().parent
-    base_path = Path(args.base_config)
-    if not base_path.is_absolute():
-        base_path = (script_dir / base_path).resolve()
+    base_path = (script_dir / args.base_config).resolve()
+    run_py = (script_dir / args.run_py).resolve()
+    out_root = (script_dir / args.out_dir).resolve()
 
     if not base_path.exists():
         print(f"Error: Base config not found: {base_path}")
-        print("Please make sure config.json exists in src/ or specify --base_config")
         return
 
-    run_py = Path(args.run_py)
-    if not run_py.is_absolute():
-        run_py = (script_dir / run_py).resolve()
-
-    out_root = Path(args.out_dir)
-    if not out_root.is_absolute():
-        out_root = (script_dir / out_root).resolve()
-
     base_cfg = load_json(base_path)
-    exps = make_experiments(base_cfg)
+    deep_set(base_cfg, "model.loss_projector_use", False)
 
+    exps = make_experiments(base_cfg)
     group_set = {g.strip().upper() for g in args.groups.split(",") if g.strip()}
     exps = [e for e in exps if e.group.upper() in group_set]
-    if args.filter:
-        exps = [e for e in exps if args.filter in e.name]
-
     if not exps:
         print("No experiments matched.")
         return
 
     python_bin = sys.executable
-    summary: List[Tuple[str, int, str]] = []
+    summary = []
 
     for i, exp in enumerate(exps, 1):
         run_name = safe_name(exp.name)
         run_dir = out_root / run_name
-
         cfg = apply_overrides(base_cfg, exp.overrides)
         cfg = apply_infra_profile(cfg, args.infra_profile)
+
         deep_set(cfg, "training.seed", args.seed)
-        deep_set(cfg, "training.num_epochs", int(args.epochs))
-        deep_set(cfg, "training.resume_checkpoint", "")
-        # Lock all runs to single-step to avoid multi-step artifact amplification.
-        deep_set(cfg, "loss.train_num_steps_min", 1)
-        deep_set(cfg, "loss.train_num_steps_max", 1)
-        deep_set(cfg, "loss.train_step_size_min", 1.0)
-        deep_set(cfg, "loss.train_step_size_max", 1.0)
-        deep_set(cfg, "training.full_eval_num_steps", 1)
-        deep_set(cfg, "training.full_eval_step_size", 1.0)
-        deep_set(cfg, "inference.num_steps", 1)
-        deep_set(cfg, "inference.step_size", 1.0)
-
-        if int(args.batch_size) > 0:
-            deep_set(cfg, "training.batch_size", int(args.batch_size))
-
-        deep_set(cfg, "training.test_image_dir", "../../style_data/overfit50")
-
-        ckpt_save = run_dir / "checkpoints"
-        deep_set(cfg, "checkpoint.save_dir", str(ckpt_save))
+        final_epochs = exp.epochs if exp.epochs is not None else int(args.epochs)
+        deep_set(cfg, "training.num_epochs", final_epochs)
+        deep_set(cfg, "checkpoint.save_dir", str(run_dir / "checkpoints"))
 
         cfg_path = run_dir / "config.json"
         save_json(cfg_path, cfg)
 
-        eff_bs = int(cfg.get("training", {}).get("batch_size", -1))
-        print(f"[{i}/{len(exps)}] {exp.name}")
-        print(f"  config: {cfg_path}")
-        print(f"  batch_size: {eff_bs}")
+        print(f"[{i}/{len(exps)}] {exp.name} (Group {exp.group}) | Epochs: {final_epochs}")
 
         if args.dry_run:
-            summary.append((exp.name, 0, "dry_run"))
+            summary.append((exp.name, 0))
             continue
 
-        cmd = [python_bin, str(run_py), "--config", str(cfg_path)]
         log_path = run_dir / "train.log"
-        print(f"  Logging to: {log_path}")
+        cmd = [python_bin, str(run_py), "--config", str(cfg_path)]
         code = run_cmd(cmd, log_path=log_path, cwd=script_dir)
 
         if code != 0:
             print(f"  FAILED code={code}")
-            summary.append((exp.name, code, str(log_path)))
             if args.stop_on_error:
                 break
-            continue
 
-        print("  OK")
-        summary.append((exp.name, 0, str(log_path)))
+        summary.append((exp.name, code))
 
-    summary_path = out_root / "summary.json"
-    payload = {
-        "base_config": str(base_path),
-        "run_py": str(run_py),
-        "epochs": int(args.epochs),
-        "seed": int(args.seed),
-        "groups": sorted(group_set),
-        "filter": args.filter,
-        "infra_profile": args.infra_profile,
-        "batch_size": int(args.batch_size),
-        "results": [{"name": n, "code": c, "log": l} for n, c, l in summary],
-    }
-    save_json(summary_path, payload)
+    save_json(out_root / "summary.json", {"experiments": summary})
     print("Done.")
-    print(f"Summary: {summary_path}")
 
 
 if __name__ == "__main__":

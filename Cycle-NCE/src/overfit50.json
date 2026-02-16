@@ -1,10 +1,10 @@
 {
   "model": {
     "latent_channels": 4,
-    "base_dim": 128,
+    "base_dim": 256,
     "lift_channels": 128,
     "style_dim": 256,
-    "num_styles": 5,
+    "num_styles": 2,
     "num_hires_blocks": 4,
     "num_res_blocks": 2,
     "num_groups": 4,
@@ -23,22 +23,24 @@
   },
   "loss": {
     "w_delta_tv": 0.012,
-    "w_delta_l2": 0.002,
-    "w_output_tv": 0.001,
-    "w_stroke_gram": 80.0,
-    "w_identity": 10.0,
-    "stroke_patch_sizes": [
-      3
-    ],
-    "stroke_patch_randomize": false,
-    "color_patch_size": 1,
+    "w_delta_l2": 0.02,
+    "w_output_tv": 0.01,
+    "w_identity": 50.0,
     "train_num_steps_min": 1,
     "train_num_steps_max": 1,
     "train_step_size_min": 1.0,
     "train_step_size_max": 1.0,
-    "train_style_strength_min": 0.65,
+    "train_style_strength_min": 0.7,
     "train_style_strength_max": 0.9,
-    "w_color_moment": 6.0
+    "w_color_moment": 2.0,
+    "w_swd": 200.0,
+    "swd_patch_sizes": [
+      3,
+      5
+    ],
+    "swd_num_projections": 128,
+    "w_semigroup": 1.0,
+    "semigroup_every_n_steps": 1
   },
   "training": {
     "seed": 42,
@@ -74,7 +76,7 @@
     "log_interval": 5,
     "use_tqdm": true,
     "use_amp": true,
-    "amp_dtype": "bf16",
+    "amp_dtype": "fp16",
     "allow_tf32": true,
     "channels_last": true,
     "use_gradient_checkpointing": false,
@@ -93,19 +95,16 @@
     "data_root": "../../latents_overfit50",
     "style_subdirs": [
       "photo",
-      "Hayao",
-      "monet",
-      "cezanne",
-      "vangogh"
+      "Hayao"
     ],
     "allow_hflip": false,
     "preload_to_gpu": true,
     "preload_max_vram_gb": 6.0,
     "preload_reserve_ratio": 0.4,
-    "virtual_length_multiplier": 100
+    "virtual_length_multiplier": 20
   },
   "checkpoint": {
-    "save_dir": "../overfit50-5styles-num5"
+    "save_dir": "../50-fp32"
   },
   "inference": {
     "num_steps": 1,
