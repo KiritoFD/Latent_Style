@@ -24,8 +24,8 @@
     "struct_lowpass_strength": 0.8,
     "struct_loss_type": "l1",
     "w_delta_tv": 0.5,
-    "w_delta_l2": 0.01,
-    "w_output_tv": 0.005,
+    "w_delta_l2": 0.002,
+    "w_output_tv": 0.5,
     "w_stroke_gram": 80.0,
     "w_color_moment": 6.0,
     "stroke_patch_sizes": [
@@ -103,7 +103,7 @@
     "virtual_length_multiplier": 3
   },
   "checkpoint": {
-    "save_dir": "/mnt/i/Github/Latent_Style/Cycle-NCE/ablation-fixes/A1_tv0.5_l2_0.01/checkpoints"
+    "save_dir": "/mnt/i/Github/Latent_Style/Cycle-NCE/ablation-fixes/A4_tv0.5_outTV0.5/checkpoints"
   },
   "inference": {
     "num_steps": 1,

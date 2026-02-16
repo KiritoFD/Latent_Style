@@ -395,8 +395,8 @@ def _auto_run_missing_full_eval(args) -> None:
         if ckpt_path is None:
             continue
         out_dir = _infer_full_eval_out_dir_for_ckpt(ckpt_path)
-        summary_path = out_dir / "summary.json"
-        if summary_path.exists() and not args.force_regen:
+        done_marker = out_dir / ("metrics.csv" if args.mode == "ana" else "summary.json")
+        if done_marker.exists() and not args.force_regen:
             skipped.append((d.name, ckpt_path))
             continue
         to_run.append((d.name, ckpt_path, out_dir))
@@ -419,6 +419,7 @@ def _auto_run_missing_full_eval(args) -> None:
             str(this_file),
             "--checkpoint", str(ckpt_path),
             "--output", str(out_dir),
+            "--mode", str(args.mode),
             "--cache_dir", str(args.cache_dir),
             "--num_steps", str(args.num_steps),
             "--step_size", str(args.step_size),
@@ -463,6 +464,7 @@ def main():
     parser.add_argument('--checkpoint', type=str, default=None, help="Single-checkpoint mode: path to checkpoint")
     parser.add_argument('--output', type=str, default=None, help="Single-checkpoint mode: output directory")
     parser.add_argument('--config', type=str, default="../config.json", help="Auto mode config path")
+    parser.add_argument('--mode', type=str, default='all', choices=['all', 'gen', 'ana'], help="Run mode: gen=generate only, ana=analyze only, all=generate+analyze")
     parser.add_argument('--test_dir', type=str, default=None)
     parser.add_argument('--cache_dir', type=str, default="../eval_cache", help="Directory to store shared feature caches")
     parser.add_argument('--num_steps', type=int, default=15)
@@ -475,7 +477,7 @@ def main():
     parser.add_argument('--batch_size', type=int, default=20, help="Batch size increased due to offloading")
     parser.add_argument('--force_regen', action='store_true', help="Force regenerate evaluation outputs/metrics (does not rebuild global ref cache)")
     parser.add_argument('--force_regen_ref_cache', action='store_true', help="Force rebuild global reference-feature cache only")
-    parser.add_argument('--ref_cache_lock_timeout', type=int, default=900, help="Seconds to wait for another process building reference cache")
+    parser.add_argument('--ref_cache_lock_timeout', type=int, default=5, help="Seconds to wait for another process building reference cache")
     parser.add_argument('--classifier_path', type=str, default="../../style_classifier.pt", help="Path to latent style classifier checkpoint")
     parser.add_argument('--image_classifier_path', type=str, default="../../artifacts/eval_classifier/eval_style_image_classifier.pt", help="Path to robust image classifier checkpoint for evaluation")
     parser.add_argument('--classifier_classes', type=str, default="", help="Optional comma-separated class names for report display")
@@ -505,6 +507,12 @@ def main():
     if args.checkpoint is None and args.output is None:
         _auto_run_missing_full_eval(args)
         return
+
+    # Mode compatibility mapping
+    if args.mode == "gen":
+        args.generation_only = True
+    elif args.mode == "ana":
+        args.reuse_generated = True
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
@@ -616,7 +624,7 @@ def main():
             )
         print(f"  Reused {len(generated_buffer)} generated images")
 
-    if not generated_buffer:
+    if (not generated_buffer) and args.mode != "ana":
         print(f"\nPhase 1: Generation (Batch Size {args.batch_size})")
 
         lgt = LGTInference(
@@ -693,6 +701,11 @@ def main():
         gc.collect()
         print("  Generation models unloaded")
     if not generated_buffer:
+        if args.mode == "ana":
+            raise RuntimeError(
+                f"Analyze-only mode found no generated samples in {out_dir}. "
+                "Run with --mode gen first, or remove --mode ana."
+            )
         raise RuntimeError(f"No generated samples to evaluate in {out_dir}")
 
     if args.generation_only:
@@ -800,14 +813,9 @@ def main():
         else:
             try:
                 loss_fn = lpips.LPIPS(net='vgg', verbose=False).to(device)
-                print("  鉁?LPIPS Loaded")
+                print("  LPIPS Loaded")
             except Exception as e:
                 print(f"  WARNING: Failed to load LPIPS: {e}")
-            try:
-                loss_fn = lpips.LPIPS(net='vgg', verbose=False).to(device)
-                print("  闁?LPIPS Loaded")
-            except Exception as e:
-                print(f"  闁宠法濯寸粭?Failed to load LPIPS: {e}")
 
         try:
             from transformers import CLIPModel, CLIPProcessor
@@ -897,9 +905,11 @@ def main():
             ref_features = {}
 
     if run_full_metrics and not ref_features:
+        print(f"Waiting for reference-cache lock: {lock_file} (timeout={int(args.ref_cache_lock_timeout)}s)")
         got_lock = _acquire_lock(lock_file, timeout_sec=int(args.ref_cache_lock_timeout), poll_sec=1.0)
         if not got_lock:
             raise TimeoutError(f"Timed out waiting for reference-cache lock: {lock_file}")
+        print(f"Acquired reference-cache lock: {lock_file}")
         try:
             # Double-check after lock: another process may have completed cache.
             if cache_file.exists() and not must_rebuild_ref_cache:

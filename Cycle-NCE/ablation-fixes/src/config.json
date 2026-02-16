@@ -23,14 +23,12 @@
     "w_struct": 0.6,
     "struct_lowpass_strength": 0.8,
     "struct_loss_type": "l1",
-    "w_delta_tv": 0.5,
-    "w_delta_l2": 0.01,
+    "w_delta_tv": 0.012,
+    "w_delta_l2": 0.002,
     "w_output_tv": 0.005,
     "w_stroke_gram": 80.0,
     "w_color_moment": 6.0,
-    "stroke_patch_sizes": [
-      3
-    ],
+    "stroke_patch_sizes": [3],
     "stroke_patch_randomize": false,
     "color_patch_size": 1,
     "train_num_steps_min": 1,
@@ -51,7 +49,7 @@
     "cpu_threads": 12,
     "cpu_interop_threads": 12,
     "learning_rate": 0.0002,
-    "min_learning_rate": 1e-05,
+    "min_learning_rate": 1e-5,
     "weight_decay": 0.0,
     "scheduler": "cosine",
     "grad_clip_norm": 1.0,
@@ -78,7 +76,7 @@
     "allow_tf32": true,
     "channels_last": true,
     "use_gradient_checkpointing": false,
-    "use_compile": false,
+    "use_compile": true,
     "fused_adamw": true,
     "skip_oom_batches": true,
     "empty_cache_interval": 0,
@@ -87,15 +85,11 @@
     "profile_loss_vram": false,
     "loss_timing_interval": 0,
     "enable_profiler": false,
-    "resume_checkpoint": "",
-    "use_grad_scaler": true
+    "resume_checkpoint": ""
   },
   "data": {
     "data_root": "../../latent-256",
-    "style_subdirs": [
-      "photo",
-      "Hayao"
-    ],
+    "style_subdirs": ["photo", "Hayao"],
     "allow_hflip": false,
     "preload_to_gpu": true,
     "preload_max_vram_gb": 6.0,
@@ -103,7 +97,7 @@
     "virtual_length_multiplier": 3
   },
   "checkpoint": {
-    "save_dir": "/mnt/i/Github/Latent_Style/Cycle-NCE/ablation-fixes/A1_tv0.5_l2_0.01/checkpoints"
+    "save_dir": "../full-adagn-map16-statloss"
   },
   "inference": {
     "num_steps": 1,
