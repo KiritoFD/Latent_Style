@@ -1015,7 +1015,6 @@ class AdaCUTTrainer:
 
         cfg_train = self.config.get("training", {})
         cfg_infer = self.config.get("inference", {})
-        cfg_loss = self.config.get("loss", {})
 
         cmd = [
             sys.executable,
@@ -1062,11 +1061,6 @@ class AdaCUTTrainer:
         cache_dir = cfg_train.get("full_eval_cache_dir", "")
         if cache_dir:
             cmd += ["--cache_dir", str(cache_dir)]
-        classifier_path = cfg_loss.get("style_classifier_ckpt", "")
-        if classifier_path:
-            cmd += ["--classifier_path", str(classifier_path)]
-        if bool(cfg_train.get("full_eval_classifier_only", False)):
-            cmd += ["--eval_classifier_only"]
         if bool(cfg_train.get("full_eval_disable_lpips", False)):
             cmd += ["--eval_disable_lpips"]
         if bool(cfg_train.get("full_eval_reuse_generated", True)):
@@ -1114,9 +1108,7 @@ class AdaCUTTrainer:
                     "summary_path": str(summary_path),
                     "transfer_clip_style": float(transfer.get("clip_style", 0.0)),
                     "transfer_content_lpips": float(transfer.get("content_lpips", 0.0)),
-                    "transfer_classifier_acc": float(transfer.get("classifier_acc", 0.0)),
                     "photo_to_art_clip_style": float(p2a.get("clip_style", 0.0)),
-                    "photo_to_art_classifier_acc": float(p2a.get("classifier_acc", 0.0)),
                 }
             )
 
@@ -1128,14 +1120,10 @@ class AdaCUTTrainer:
         mean = {
             "transfer_clip_style": sum(x["transfer_clip_style"] for x in rounds) / len(rounds),
             "transfer_content_lpips": sum(x["transfer_content_lpips"] for x in rounds) / len(rounds),
-            "transfer_classifier_acc": sum(x["transfer_classifier_acc"] for x in rounds) / len(rounds),
             "photo_to_art_clip_style": sum(x["photo_to_art_clip_style"] for x in rounds) / len(rounds),
-            "photo_to_art_classifier_acc": sum(x["photo_to_art_classifier_acc"] for x in rounds) / len(rounds),
         }
         best = {
-            "best_transfer_classifier_acc": max(rounds, key=lambda x: x["transfer_classifier_acc"]),
             "best_transfer_clip_style": max(rounds, key=lambda x: x["transfer_clip_style"]),
-            "best_photo_to_art_classifier_acc": max(rounds, key=lambda x: x["photo_to_art_classifier_acc"]),
             "best_photo_to_art_clip_style": max(rounds, key=lambda x: x["photo_to_art_clip_style"]),
             "best_transfer_content_lpips": min(rounds, key=lambda x: x["transfer_content_lpips"]),
         }

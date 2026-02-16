@@ -387,7 +387,10 @@ class LatentAdaCUT(nn.Module):
         self,
         h: torch.Tensor,
     ) -> torch.Tensor:
-        delta = self.dec_out(h) * self.latent_scale_factor * self.residual_gain
+        raw_out = self.dec_out(h)
+        # Soft-clamp decoder output to keep latent residual in a safe numeric band.
+        clamped_out = torch.tanh(raw_out / 4.0) * 4.0
+        delta = clamped_out * self.latent_scale_factor * self.residual_gain
         return delta
 
 

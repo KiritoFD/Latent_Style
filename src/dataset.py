@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import logging
-import random
 from pathlib import Path
-from typing import Dict, List, Sequence
+from typing import Dict, Sequence
 
 import numpy as np
 import torch
@@ -32,25 +31,30 @@ def _load_latent_file(path: Path) -> torch.Tensor:
 
 class AdaCUTLatentDataset(Dataset):
     """
-    Unpaired latent dataset:
-    - content from `content_style`
-    - style target sampled randomly from non-content styles
+    Unpaired latent dataset with uniform target-style sampling:
+    - content style sampled from all styles
+    - target style sampled uniformly from all styles (including self)
+      so identity probability is naturally 1 / num_styles.
     """
 
     def __init__(
         self,
         data_root: str,
         style_subdirs: Sequence[str],
-        content_style: str = "photo",
         allow_hflip: bool = True,
         preload_to_gpu: bool = False,
+        preload_max_vram_gb: float = 0.0,
+        preload_reserve_ratio: float = 0.35,
         virtual_length_multiplier: int = 1,
         device: str = "cpu",
     ) -> None:
         self.data_root = Path(data_root)
         self.style_subdirs = list(style_subdirs)
         self.allow_hflip = bool(allow_hflip)
-        self.preload_to_gpu = bool(preload_to_gpu)
+        requested_preload_to_gpu = bool(preload_to_gpu)
+        self.preload_max_vram_gb = max(0.0, float(preload_max_vram_gb))
+        self.preload_reserve_ratio = max(0.0, min(0.95, float(preload_reserve_ratio)))
+        self.preload_to_gpu = False
         self.device = device
         self.epoch = 0
         
@@ -64,18 +68,8 @@ class AdaCUTLatentDataset(Dataset):
 
         if not self.style_subdirs:
             raise ValueError("style_subdirs cannot be empty")
-        self.bidirectional_content = str(content_style).lower() in {"any", "all", "*"}
-        if (not self.bidirectional_content) and (content_style not in self.style_subdirs):
-            raise ValueError(f"content_style={content_style} not in style_subdirs={self.style_subdirs}")
-
-        if self.bidirectional_content:
-            self.content_style_id = -1
-            self.transfer_style_ids = list(range(len(self.style_subdirs)))
-        else:
-            self.content_style_id = self.style_subdirs.index(content_style)
-            self.transfer_style_ids = [i for i in range(len(self.style_subdirs)) if i != self.content_style_id]
-            if not self.transfer_style_ids:
-                raise ValueError("At least one non-content style is required")
+        if len(self.style_subdirs) < 2:
+            raise ValueError("At least two style domains are required for cross-domain sampling")
 
         self.style_tensors: Dict[int, torch.Tensor] = {}
         logger.info("Loading latent dataset from %s", self.data_root)
@@ -89,20 +83,73 @@ class AdaCUTLatentDataset(Dataset):
             self.style_tensors[style_id] = stack
             logger.info("  style=%s id=%d count=%d", subdir, style_id, stack.shape[0])
 
-        if self.bidirectional_content:
-            total_count = sum(int(t.shape[0]) for t in self.style_tensors.values())
-            self.content_count = max(1, total_count)
-        else:
-            self.content_count = int(self.style_tensors[self.content_style_id].shape[0])
+        total_count = sum(int(t.shape[0]) for t in self.style_tensors.values())
+        self.content_count = max(1, total_count)
         self.length = max(1, self.content_count * max(1, int(virtual_length_multiplier)))
 
-        if self.preload_to_gpu:
-            if not torch.cuda.is_available():
-                logger.warning("preload_to_gpu=True but CUDA unavailable, fallback to CPU")
-            else:
-                for style_id in self.style_tensors:
-                    self.style_tensors[style_id] = self.style_tensors[style_id].to(device)
-                logger.info("Preloaded all latents to GPU: %s", device)
+        if requested_preload_to_gpu:
+            self._try_preload_to_gpu()
+
+        # Initialize deterministic caches so __getitem__ is always safe.
+        self.set_epoch(0)
+
+    def _estimate_dataset_bytes(self) -> int:
+        total = 0
+        for t in self.style_tensors.values():
+            total += int(t.numel()) * int(t.element_size())
+        return int(total)
+
+    def _try_preload_to_gpu(self) -> None:
+        if not torch.cuda.is_available():
+            logger.warning("preload_to_gpu=True requested but CUDA is unavailable; using CPU dataset tensors.")
+            return
+        if not str(self.device).startswith("cuda"):
+            logger.warning("preload_to_gpu=True requested but current device=%s is not CUDA; using CPU tensors.", self.device)
+            return
+
+        target_device = torch.device(self.device)
+        needed_bytes = self._estimate_dataset_bytes()
+        try:
+            free_bytes, total_bytes = torch.cuda.mem_get_info()
+        except Exception:
+            free_bytes, total_bytes = 0, 0
+
+        reserve_bytes = int(float(total_bytes) * self.preload_reserve_ratio) if total_bytes > 0 else 0
+        allowed_bytes = max(0, int(free_bytes) - reserve_bytes) if free_bytes > 0 else 0
+        if self.preload_max_vram_gb > 0.0:
+            allowed_bytes = min(allowed_bytes, int(self.preload_max_vram_gb * (1024**3))) if allowed_bytes > 0 else int(self.preload_max_vram_gb * (1024**3))
+
+        if allowed_bytes > 0 and needed_bytes > allowed_bytes:
+            logger.warning(
+                "Skip preload_to_gpu: need %.2fGB > allowed %.2fGB (free %.2fGB, reserve_ratio=%.2f).",
+                needed_bytes / (1024**3),
+                allowed_bytes / (1024**3),
+                free_bytes / (1024**3),
+                self.preload_reserve_ratio,
+            )
+            return
+
+        gpu_tensors: Dict[int, torch.Tensor] = {}
+        try:
+            for style_id, stack in self.style_tensors.items():
+                gpu_tensors[style_id] = stack.to(device=target_device, non_blocking=False)
+        except RuntimeError as exc:
+            logger.warning("preload_to_gpu failed (%s); fallback to CPU tensors.", exc)
+            gpu_tensors.clear()
+            try:
+                torch.cuda.empty_cache()
+            except Exception:
+                pass
+            return
+
+        self.style_tensors = gpu_tensors
+        self.preload_to_gpu = True
+        logger.info(
+            "Dataset preloaded to %s: %.2fGB across %d style pools.",
+            target_device,
+            needed_bytes / (1024**3),
+            len(self.style_tensors),
+        )
 
     def set_epoch(self, epoch: int) -> None:
         self.epoch = int(epoch)
@@ -115,19 +162,9 @@ class AdaCUTLatentDataset(Dataset):
         
         n_styles = len(self.style_subdirs)
         
-        if self.bidirectional_content:
-            self._cache_content_style_ids = torch.randint(0, n_styles, (N,), generator=g)
-            # Target must be different from content. (id + offset) % n where offset in [1, n-1]
-            offset = torch.randint(1, n_styles, (N,), generator=g)
-            self._cache_target_style_ids = (self._cache_content_style_ids + offset) % n_styles
-        else:
-            # Content style is fixed, but we still need random target
-            self._cache_content_style_ids = None # Not used
-            
-            n_transfers = len(self.transfer_style_ids)
-            t_idx = torch.randint(0, n_transfers, (N,), generator=g)
-            transfer_tensor = torch.tensor(self.transfer_style_ids, dtype=torch.long)
-            self._cache_target_style_ids = transfer_tensor[t_idx]
+        self._cache_content_style_ids = torch.randint(0, n_styles, (N,), generator=g)
+        # Uniform target sampling across all styles (including source style).
+        self._cache_target_style_ids = torch.randint(0, n_styles, (N,), generator=g)
 
         # Random floats for selecting index within the chosen style
         self._cache_content_rands = torch.rand(N, generator=g)
@@ -148,19 +185,15 @@ class AdaCUTLatentDataset(Dataset):
             return torch.flip(x, dims=[-1])
         return x
 
-    def __getitem__(self, index: int) -> Dict[str, torch.Tensor]:
+    def __getitem__(self, index: int) -> Dict[str, torch.Tensor | int]:
         # Ultra-lightweight getitem using pre-computed indices
-        if self.bidirectional_content:
-            content_style_id = int(self._cache_content_style_ids[index])
-            target_style_id = int(self._cache_target_style_ids[index])
-        else:
-            content_style_id = self.content_style_id
-            target_style_id = int(self._cache_target_style_ids[index])
+        content_style_id = int(self._cache_content_style_ids[index])
+        target_style_id = int(self._cache_target_style_ids[index])
 
         c_pool = self.style_tensors[content_style_id]
         t_pool = self.style_tensors[target_style_id]
 
-        c_idx = int(self._cache_content_rands[index] * c_pool.shape[0]) if self.bidirectional_content else (index % self.content_count)
+        c_idx = int(self._cache_content_rands[index] * c_pool.shape[0])
         t_idx = int(self._cache_target_rands[index] * t_pool.shape[0])
 
         content = self._maybe_flip(c_pool[c_idx], self._cache_flip_content, index)
@@ -169,6 +202,6 @@ class AdaCUTLatentDataset(Dataset):
         return {
             "content": content,
             "target_style": target_style,
-            "target_style_id": torch.tensor(target_style_id, dtype=torch.long),
-            "content_style_id": torch.tensor(content_style_id, dtype=torch.long),
+            "target_style_id": target_style_id,
+            "source_style_id": content_style_id,
         }

@@ -49,8 +49,6 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from utils.inference import LGTInference, load_vae, encode_image, decode_latent
-from utils.style_classifier import StyleClassifier as LatentStyleClassifier
-from utils.eval_image_classifier import load_eval_image_classifier
 
 # ==========================================
 # Optimized Feature Extractors
@@ -476,8 +474,8 @@ def main():
     parser.add_argument('--force_regen', action='store_true', help="Force regenerate evaluation outputs/metrics (does not rebuild global ref cache)")
     parser.add_argument('--force_regen_ref_cache', action='store_true', help="Force rebuild global reference-feature cache only")
     parser.add_argument('--ref_cache_lock_timeout', type=int, default=900, help="Seconds to wait for another process building reference cache")
-    parser.add_argument('--classifier_path', type=str, default="../../style_classifier.pt", help="Path to latent style classifier checkpoint")
-    parser.add_argument('--image_classifier_path', type=str, default="../../artifacts/eval_classifier/eval_style_image_classifier.pt", help="Path to robust image classifier checkpoint for evaluation")
+    parser.add_argument('--classifier_path', type=str, default="", help="Path to latent style classifier checkpoint (optional)")
+    parser.add_argument('--image_classifier_path', type=str, default="", help="Path to robust image classifier checkpoint for evaluation (optional)")
     parser.add_argument('--classifier_classes', type=str, default="", help="Optional comma-separated class names for report display")
     parser.add_argument('--clip_model_name', type=str, default="openai/clip-vit-base-patch32", help="HF/local CLIP model name or local directory")
     parser.add_argument('--clip_modelscope_id', type=str, default="", help="Optional ModelScope model id for CLIP fallback")
@@ -731,6 +729,7 @@ def main():
 
     if args.classifier_path:
         try:
+            from utils.style_classifier import StyleClassifier as LatentStyleClassifier
             ckpt_path = Path(args.classifier_path)
             if not ckpt_path.is_absolute():
                 ckpt_path = (Path(__file__).resolve().parent / ckpt_path).resolve()
@@ -765,6 +764,7 @@ def main():
 
     if args.image_classifier_path:
         try:
+            from utils.eval_image_classifier import load_eval_image_classifier
             image_ckpt = Path(args.image_classifier_path)
             if not image_ckpt.is_absolute():
                 image_ckpt = (Path(__file__).resolve().parent / image_ckpt).resolve()

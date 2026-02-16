@@ -165,7 +165,7 @@ def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
 
     vae_presets = {
         "sd15": "stabilityai/sd-vae-ft-mse",
-        "sdxl": "stabilityai/sdxl-vae",
+        "sdxl": "madebyollin/sdxl-vae-fp16-fix",
         "mse": "stabilityai/sd-vae-ft-mse",
         "ema": "stabilityai/sd-vae-ft-ema",
     }

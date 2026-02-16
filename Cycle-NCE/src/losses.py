@@ -30,7 +30,7 @@ def calc_swd_loss(
     patch_sizes: List[int],
     num_projections: int = 128,
 ) -> torch.Tensor:
-    # SWD path is FP32 to keep sort/projection numerically stable.
+    # Use BF16 projections on CUDA (Tensor Cores), keep sort/distance in FP32.
     x = x.float()
     y = y.float()
 
@@ -39,6 +39,11 @@ def calc_swd_loss(
     valid_patches = [int(p) for p in patch_sizes if int(p) > 1]
     if not valid_patches:
         return total_loss
+    dtype_proj = (
+        torch.bfloat16
+        if x.is_cuda and torch.cuda.is_bf16_supported()
+        else torch.float32
+    )
 
     for p in valid_patches:
         x_unfold = F.unfold(x, kernel_size=p, stride=1, padding=p // 2)
@@ -46,22 +51,33 @@ def calc_swd_loss(
 
         n_patches = x_unfold.shape[-1]
         if n_patches > 2048:
-            idx = torch.randperm(n_patches, device=device)[:2048]
+            idx = torch.randint(0, n_patches, (2048,), device=device)
             x_pts = x_unfold[..., idx].transpose(1, 2)  # [B, S, D]
             y_pts = y_unfold[..., idx].transpose(1, 2)
         else:
             x_pts = x_unfold.transpose(1, 2)
             y_pts = y_unfold.transpose(1, 2)
 
+        x_pts = x_pts.to(dtype=dtype_proj)
+        y_pts = y_pts.to(dtype=dtype_proj)
+
+        # Mean-centering per patch to make SWD focus on texture structure
+        # instead of absolute brightness shifts.
+        x_pts = x_pts - x_pts.mean(dim=-1, keepdim=True)
+        y_pts = y_pts - y_pts.mean(dim=-1, keepdim=True)
+
         dim = x_pts.shape[-1]
-        projections = torch.randn(dim, int(num_projections), device=device, dtype=torch.float32)
+        projections = torch.randn(dim, int(num_projections), device=device, dtype=dtype_proj)
         projections = F.normalize(projections, p=2, dim=0)
 
         x_proj = torch.matmul(x_pts, projections)
         y_proj = torch.matmul(y_pts, projections)
 
-        x_sorted, _ = torch.sort(x_proj, dim=1)
-        y_sorted, _ = torch.sort(y_proj, dim=1)
+        # [B, S, N] -> [B, N, S], then sort on last dimension for better memory access.
+        x_proj = x_proj.transpose(1, 2).float()
+        y_proj = y_proj.transpose(1, 2).float()
+        x_sorted, _ = torch.sort(x_proj, dim=-1)
+        y_sorted, _ = torch.sort(y_proj, dim=-1)
         total_loss += (x_sorted - y_sorted).abs().mean()
 
     return total_loss / float(len(valid_patches))
@@ -81,7 +97,13 @@ class AdaCUTObjective:
 
         self.w_color_moment = float(loss_cfg.get("w_color_moment", 2.0))
         self.w_swd = float(loss_cfg.get("w_swd", 20.0))
-        self.swd_patch_sizes = [3, 5]
+        patch_sizes_cfg = loss_cfg.get("swd_patch_sizes", [3, 5])
+        if isinstance(patch_sizes_cfg, (list, tuple)):
+            self.swd_patch_sizes = [int(p) for p in patch_sizes_cfg if int(p) > 1]
+        else:
+            self.swd_patch_sizes = [3, 5]
+        if not self.swd_patch_sizes:
+            self.swd_patch_sizes = [3, 5]
         self.swd_num_projections = int(loss_cfg.get("swd_num_projections", 64))
 
         self.w_identity = float(loss_cfg.get("w_identity", 10.0))
@@ -91,6 +113,10 @@ class AdaCUTObjective:
 
         self.w_semigroup = float(loss_cfg.get("w_semigroup", 0.0))
         self.semigroup_every_n_steps = max(1, int(loss_cfg.get("semigroup_every_n_steps", 1)))
+        self.semigroup_teacher_no_grad = bool(loss_cfg.get("semigroup_teacher_no_grad", True))
+        self.semigroup_target_detach = bool(loss_cfg.get("semigroup_target_detach", True))
+        self.semigroup_pool_size = max(0, int(loss_cfg.get("semigroup_pool_size", 8)))
+        self.semigroup_num_steps = max(1, int(loss_cfg.get("semigroup_num_steps", 1)))
         self._compute_calls = 0
 
         self.train_num_steps_min = max(1, int(loss_cfg.get("train_num_steps_min", 1)))
@@ -215,28 +241,52 @@ class AdaCUTObjective:
         with self._nvtx_range("loss/semigroup", nvtx_enabled):
             if self.w_semigroup > 0.0 and train_style_strength > 0.1 and (self._compute_calls % self.semigroup_every_n_steps == 0):
                 semigroup_applied = True
-                z_ab = pred_student
                 split_ratio = 0.5
                 str_a = train_style_strength * split_ratio
                 str_b = train_style_strength - str_a
-                with torch.no_grad():
-                    z_a = self._apply_model(
+                sem_steps = self.semigroup_num_steps
+                with torch.amp.autocast("cuda", enabled=content.is_cuda, dtype=torch.float16):
+                    z_ab = pred_student.detach() if self.semigroup_target_detach else pred_student
+                    if self.semigroup_teacher_no_grad:
+                        with torch.no_grad():
+                            z_a = self._apply_model(
+                                model,
+                                content,
+                                style_id=target_style_id,
+                                step_size=train_step_size,
+                                style_strength=str_a,
+                                num_steps=sem_steps,
+                            )
+                    else:
+                        z_a = self._apply_model(
+                            model,
+                            content,
+                            style_id=target_style_id,
+                            step_size=train_step_size,
+                            style_strength=str_a,
+                            num_steps=sem_steps,
+                        )
+                    z_a_b = self._apply_model(
                         model,
-                        content,
+                        z_a,
                         style_id=target_style_id,
                         step_size=train_step_size,
-                        style_strength=str_a,
-                        num_steps=train_num_steps,
+                        style_strength=str_b,
+                        num_steps=sem_steps,
                     )
-                z_a_b = self._apply_model(
-                    model,
-                    z_a,
-                    style_id=target_style_id,
-                    step_size=train_step_size,
-                    style_strength=str_b,
-                    num_steps=train_num_steps,
-                )
-                loss_semigroup = (z_a_b - z_ab).abs().mean()
+                    if self.semigroup_pool_size > 0:
+                        z_ab_eval = F.adaptive_avg_pool2d(
+                            z_ab.float(),
+                            output_size=(self.semigroup_pool_size, self.semigroup_pool_size),
+                        )
+                        z_a_b_eval = F.adaptive_avg_pool2d(
+                            z_a_b.float(),
+                            output_size=(self.semigroup_pool_size, self.semigroup_pool_size),
+                        )
+                        semigroup_diff = (z_a_b_eval - z_ab_eval).abs()
+                    else:
+                        semigroup_diff = (z_a_b - z_ab).abs()
+                loss_semigroup = semigroup_diff.float().mean()
 
         total = (
             self.w_color_moment * loss_moment

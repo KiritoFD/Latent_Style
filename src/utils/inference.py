@@ -22,7 +22,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from model import LatentAdaCUT
+from model import build_model_from_config
 
 logger = logging.getLogger(__name__)
 
@@ -76,38 +76,6 @@ def _find_hf_repo_root(dest: str) -> Optional[str]:
     return None
 
 
-class _DirectSampler:
-    """
-    Direct one-step latent mapping wrapper with the legacy sampler interface.
-    """
-
-    def __init__(self, use_source_repulsion: bool = False, step_size: float = 1.0) -> None:
-        self.use_source_repulsion = bool(use_source_repulsion)
-        self.step_size = float(step_size)
-
-    @torch.no_grad()
-    def sample(
-        self,
-        model: LatentAdaCUT,
-        x_init: torch.Tensor,
-        style_id,
-        num_steps: int = 1,
-        t_start: float = 0.0,
-        t_end: float = 1.0,
-        return_trajectory: bool = False,
-        source_style_id=None,
-    ):
-        del t_start, t_end, source_style_id
-        b = x_init.shape[0]
-        device = x_init.device
-        if isinstance(style_id, int):
-            style_id = torch.full((b,), style_id, dtype=torch.long, device=device)
-        out = model.integrate(x_init, style_id=style_id, num_steps=max(1, int(num_steps)), step_size=self.step_size)
-        if return_trajectory:
-            return out, [x_init.detach().cpu(), out.detach().cpu()]
-        return out
-
-
 class LGTInference:
     """
     Backward-compatible inference class for evaluation scripts.
@@ -117,16 +85,10 @@ class LGTInference:
         self,
         model_path,
         device="cuda",
-        temperature_lambda=0.0,
-        temperature_threshold=1.0,
-        use_cfg=False,
-        cfg_scale=1.0,
         num_steps=1,
         step_size=None,
-        use_source_repulsion=False,
-        repulsion_strength=0.0,
+        style_strength=None,
     ):
-        del temperature_lambda, temperature_threshold, use_cfg, cfg_scale, repulsion_strength
         self.device = device
         self.num_steps = int(num_steps)
 
@@ -138,60 +100,28 @@ class LGTInference:
         if any(k.startswith("_orig_mod.") for k in state_dict.keys()):
             state_dict = {k.replace("_orig_mod.", ""): v for k, v in state_dict.items()}
 
-        self.model = LatentAdaCUT(
-            latent_channels=int(model_cfg.get("latent_channels", 4)),
-            num_styles=int(model_cfg.get("num_styles", 3)),
-            style_dim=int(model_cfg.get("style_dim", 256)),
-            base_dim=int(model_cfg.get("base_dim", 64)),
-            lift_channels=int(model_cfg.get("lift_channels", model_cfg.get("base_dim", 64))),
-            num_hires_blocks=int(model_cfg.get("num_hires_blocks", 2)),
-            num_res_blocks=int(model_cfg.get("num_res_blocks", 4)),
-            num_groups=int(model_cfg.get("num_groups", 8)),
-            projector_dim=int(model_cfg.get("projector_dim", 256)),
-            latent_scale_factor=float(model_cfg.get("latent_scale_factor", 0.18215)),
-            residual_gain=float(model_cfg.get("residual_gain", 0.1)),
-            style_ref_gain=float(model_cfg.get("style_ref_gain", 1.0)),
-            style_spatial_pre_gain_32=float(model_cfg.get("style_spatial_pre_gain_32", 0.25)),
-            style_spatial_block_gain_32=float(model_cfg.get("style_spatial_block_gain_32", 0.10)),
-            style_spatial_pre_gain_16=float(model_cfg.get("style_spatial_pre_gain_16", 0.35)),
-            style_spatial_block_gain_16=float(model_cfg.get("style_spatial_block_gain_16", 0.15)),
-            use_decoder_spatial_inject=bool(model_cfg.get("use_decoder_spatial_inject", True)),
-            style_spatial_dec_gain_32=float(model_cfg.get("style_spatial_dec_gain_32", 0.18)),
-            style_spatial_dec_gain_out=float(model_cfg.get("style_spatial_dec_gain_out", 0.08)),
-            use_style_texture_head=bool(model_cfg.get("use_style_texture_head", True)),
-            style_texture_gain=float(model_cfg.get("style_texture_gain", 0.12)),
-            use_style_delta_gate=bool(model_cfg.get("use_style_delta_gate", True)),
-            use_decoder_adagn=bool(model_cfg.get("use_decoder_adagn", True)),
-            use_delta_highpass_bias=bool(model_cfg.get("use_delta_highpass_bias", True)),
-            style_delta_lowfreq_gain=float(model_cfg.get("style_delta_lowfreq_gain", 0.35)),
-            use_style_spatial_highpass=bool(model_cfg.get("use_style_spatial_highpass", False)),
-            normalize_style_spatial_maps=bool(model_cfg.get("normalize_style_spatial_maps", True)),
-            use_output_style_affine=bool(model_cfg.get("use_output_style_affine", True)),
-            use_style_force_path=bool(model_cfg.get("use_style_force_path", True)),
-            style_force_gain=float(model_cfg.get("style_force_gain", 1.0)),
-            style_gate_floor=float(model_cfg.get("style_gate_floor", 0.85)),
-            style_texture_ignore_residual_gain=bool(model_cfg.get("style_texture_ignore_residual_gain", True)),
-            use_style_spatial_blur=bool(model_cfg.get("use_style_spatial_blur", False)),
-            use_downsample_blur=bool(model_cfg.get("use_downsample_blur", False)),
-            upsample_mode=str(model_cfg.get("upsample_mode", "nearest")),
-            style_id_spatial_jitter_px=int(model_cfg.get("style_id_spatial_jitter_px", 0)),
-        ).to(device)
-        self.model.load_state_dict(state_dict, strict=True)
+        self.model = build_model_from_config(model_cfg, use_checkpointing=False).to(device)
+        try:
+            self.model.load_state_dict(state_dict, strict=True)
+        except RuntimeError as exc:
+            logger.warning("Checkpoint/model key mismatch, falling back to non-strict load: %s", exc)
+            self.model.load_state_dict(state_dict, strict=False)
         self.model.eval()
 
         cfg_step = float(infer_cfg.get("step_size", 1.0))
         self.step_size = float(step_size if step_size is not None else cfg_step)
-        self.sampler = _DirectSampler(use_source_repulsion=use_source_repulsion, step_size=self.step_size)
-
+        cfg_strength = infer_cfg.get("style_strength")
+        if style_strength is None and cfg_strength is None:
+            self.style_strength = None
+        else:
+            self.style_strength = float(style_strength if style_strength is not None else cfg_strength)
     @torch.no_grad()
-    def inversion(self, x1, source_style_id, num_steps=None):
-        del source_style_id, num_steps
+    def inversion(self, x1):
         # AdaCUT is direct mapping; inversion is identity for compatibility.
         return x1.clone()
 
     @torch.no_grad()
-    def generation(self, x0, target_style_id, num_steps=None, source_style_id=None, style_ref=None):
-        del source_style_id, style_ref
+    def generation(self, x0, target_style_id, num_steps=None):
         if num_steps is None:
             num_steps = self.num_steps
         b = x0.shape[0]
@@ -205,31 +135,28 @@ class LGTInference:
             style_mix_alpha=0.0,
             num_steps=max(1, int(num_steps)),
             step_size=self.step_size,
+            style_strength=self.style_strength,
         )
 
     @torch.no_grad()
     def transfer_style(
         self,
         x_source,
-        source_style_id,
         target_style_id,
         num_steps=None,
         return_intermediate=False,
-        use_ternary_guidance=None,
     ):
-        del use_ternary_guidance
-        x0 = self.inversion(x_source, source_style_id, num_steps)
+        x0 = self.inversion(x_source)
         x_target = self.generation(x0, target_style_id, num_steps)
         if return_intermediate:
             return x_target, x0
         return x_target
 
     @torch.no_grad()
-    def interpolate_styles(self, x_source, source_style_id, style_ids, num_steps=None):
-        del source_style_id
+    def interpolate_styles(self, x_source, style_ids, num_steps=None):
         if num_steps is None:
             num_steps = self.num_steps
-        x0 = self.inversion(x_source, 0, num_steps)
+        x0 = self.inversion(x_source)
         return [self.generation(x0, sid, num_steps) for sid in style_ids]
 
 
@@ -238,7 +165,7 @@ def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
 
     vae_presets = {
         "sd15": "stabilityai/sd-vae-ft-mse",
-        "sdxl": "stabilityai/sdxl-vae",
+        "sdxl": "madebyollin/sdxl-vae-fp16-fix",
         "mse": "stabilityai/sd-vae-ft-mse",
         "ema": "stabilityai/sd-vae-ft-ema",
     }
@@ -356,7 +283,7 @@ if __name__ == "__main__":
     z = encode_image(vae, image_tensor, device=str(device))
     if abs(scale_in - 1.0) > 1e-4:
         z = z * scale_in
-    z_out = inf.transfer_style(z, source_style_id=0, target_style_id=target_style_id, num_steps=1)
+    z_out = inf.transfer_style(z, target_style_id=target_style_id, num_steps=1)
     if abs(scale_out - 1.0) > 1e-4:
         z_out = z_out * scale_out
     out = decode_latent(vae, z_out, device=str(device))
