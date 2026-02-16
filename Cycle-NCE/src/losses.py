@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import random
 from contextlib import contextmanager
-from typing import Dict, List
+from pathlib import Path
+from typing import Dict
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
 try:
@@ -13,74 +15,35 @@ except ImportError:
     from model import LatentAdaCUT
 
 
-def calc_moment_loss(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    # Force FP32 stats to avoid mixed-precision overflow/underflow.
-    x = x.float()
-    y = y.float()
-    mu_x = x.mean(dim=(2, 3))
-    mu_y = y.mean(dim=(2, 3))
-    std_x = x.std(dim=(2, 3), unbiased=False)
-    std_y = y.std(dim=(2, 3), unbiased=False)
-    return (mu_x - mu_y).abs().mean() + (std_x - std_y).abs().mean()
+class _RobustStyleProbe(nn.Module):
+    """Inference-only copy of src/utils/classify.py::RobustStyleProbe."""
 
+    def __init__(self, in_channels: int, num_classes: int):
+        super().__init__()
 
-def calc_swd_loss(
-    x: torch.Tensor,
-    y: torch.Tensor,
-    patch_sizes: List[int],
-    num_projections: int = 128,
-) -> torch.Tensor:
-    # Use BF16 projections on CUDA (Tensor Cores), keep sort/distance in FP32.
-    x = x.float()
-    y = y.float()
+        def res_block(cin: int, cout: int, stride: int = 1) -> nn.Sequential:
+            return nn.Sequential(
+                nn.utils.spectral_norm(nn.Conv2d(cin, cout, 3, stride=stride, padding=1, bias=False)),
+                nn.InstanceNorm2d(cout, affine=True),
+                nn.Mish(inplace=True),
+                nn.Dropout2d(0.1),
+            )
 
-    device = x.device
-    total_loss = torch.tensor(0.0, device=device)
-    valid_patches = [int(p) for p in patch_sizes if int(p) > 1]
-    if not valid_patches:
-        return total_loss
-    dtype_proj = (
-        torch.bfloat16
-        if x.is_cuda and torch.cuda.is_bf16_supported()
-        else torch.float32
-    )
+        self.layer1 = res_block(in_channels, 32)
+        self.layer2 = res_block(32, 64, stride=2)
+        self.layer3 = res_block(64, 128)
+        self.layer4 = res_block(128, 128, stride=2)
+        self.gap = nn.AdaptiveAvgPool2d(1)
+        self.classifier = nn.utils.spectral_norm(nn.Linear(128, num_classes))
 
-    for p in valid_patches:
-        x_unfold = F.unfold(x, kernel_size=p, stride=1, padding=p // 2)
-        y_unfold = F.unfold(y, kernel_size=p, stride=1, padding=p // 2)
-
-        n_patches = x_unfold.shape[-1]
-        if n_patches > 2048:
-            idx = torch.randint(0, n_patches, (2048,), device=device)
-            x_pts = x_unfold[..., idx].transpose(1, 2)  # [B, S, D]
-            y_pts = y_unfold[..., idx].transpose(1, 2)
-        else:
-            x_pts = x_unfold.transpose(1, 2)
-            y_pts = y_unfold.transpose(1, 2)
-
-        x_pts = x_pts.to(dtype=dtype_proj)
-        y_pts = y_pts.to(dtype=dtype_proj)
-
-        # Mean-centering per patch to make SWD focus on texture structure
-        # instead of absolute brightness shifts.
-        x_pts = x_pts - x_pts.mean(dim=-1, keepdim=True)
-        y_pts = y_pts - y_pts.mean(dim=-1, keepdim=True)
-
-        dim = x_pts.shape[-1]
-        projections = torch.randn(dim, int(num_projections), device=device, dtype=dtype_proj)
-        projections = F.normalize(projections, p=2, dim=0)
-
-        x_proj = torch.matmul(x_pts, projections)
-        y_proj = torch.matmul(y_pts, projections)
-
-        # [B, S, N] -> [B, N, S], then sort on last dimension for better memory access.
-        x_proj = x_proj.transpose(1, 2).float()
-        y_proj = y_proj.transpose(1, 2).float()
-        x_sorted, _ = torch.sort(x_proj, dim=-1)
-        y_sorted, _ = torch.sort(y_proj, dim=-1)
-        total_loss += (x_sorted - y_sorted).abs().mean()
-
-    return total_loss / float(len(valid_patches))
+    def forward(self, x: torch.Tensor):
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        feat = self.gap(x).flatten(1)
+        logits = self.classifier(feat)
+        return feat, logits
 
 
 def _tv_per_sample(x: torch.Tensor) -> torch.Tensor:
@@ -95,16 +58,15 @@ class AdaCUTObjective:
     def __init__(self, config: Dict) -> None:
         loss_cfg = config.get("loss", {})
 
-        self.w_color_moment = float(loss_cfg.get("w_color_moment", 2.0))
-        self.w_swd = float(loss_cfg.get("w_swd", 20.0))
-        patch_sizes_cfg = loss_cfg.get("swd_patch_sizes", [3, 5])
-        if isinstance(patch_sizes_cfg, (list, tuple)):
-            self.swd_patch_sizes = [int(p) for p in patch_sizes_cfg if int(p) > 1]
-        else:
-            self.swd_patch_sizes = [3, 5]
-        if not self.swd_patch_sizes:
-            self.swd_patch_sizes = [3, 5]
-        self.swd_num_projections = int(loss_cfg.get("swd_num_projections", 64))
+        self.w_style_cls = float(loss_cfg.get("w_style_classifier", loss_cfg.get("w_style_cls", 1.0)))
+        self.style_cls_on_xid_only = bool(loss_cfg.get("style_classifier_xid_only", True))
+        self.style_cls_label_smoothing = float(loss_cfg.get("style_classifier_label_smoothing", 0.0))
+        self.style_classifier_path = str(loss_cfg.get("style_classifier_path", "")).strip()
+        if not self.style_classifier_path:
+            self.style_classifier_path = str(Path(__file__).resolve().parent / "utils" / "robust_style_probe_final.pth")
+        self._style_classifier: _RobustStyleProbe | None = None
+        self._style_classifier_device: str | None = None
+        self._style_classifier_missing = False
 
         self.w_identity = float(loss_cfg.get("w_identity", 10.0))
         self.w_delta_tv = float(loss_cfg.get("w_delta_tv", 0.0))
@@ -126,6 +88,34 @@ class AdaCUTObjective:
         self.train_style_strength_min = float(loss_cfg.get("train_style_strength_min", 1.0))
         self.train_style_strength_max = float(loss_cfg.get("train_style_strength_max", self.train_style_strength_min))
         self.nsight_nvtx = bool(config.get("training", {}).get("nsight_nvtx", False))
+
+    def _ensure_style_classifier(self, model: LatentAdaCUT, device: torch.device) -> None:
+        if self.w_style_cls <= 0.0:
+            return
+        device_str = str(device)
+        if self._style_classifier is not None and self._style_classifier_device == device_str:
+            return
+
+        ckpt_path = Path(self.style_classifier_path)
+        if not ckpt_path.is_absolute():
+            ckpt_path = (Path(__file__).resolve().parent / ckpt_path).resolve()
+        if not ckpt_path.exists():
+            self._style_classifier_missing = True
+            raise FileNotFoundError(f"Style classifier checkpoint not found: {ckpt_path}")
+
+        num_classes = int(getattr(model, "num_styles", 0))
+        in_channels = int(getattr(model, "latent_channels", 4))
+        clf = _RobustStyleProbe(in_channels=in_channels, num_classes=num_classes).to(device)
+        state = torch.load(ckpt_path, map_location=device, weights_only=False)
+        state_dict = state.get("model_state_dict", state) if isinstance(state, dict) else state
+        if any(k.startswith("_orig_mod.") for k in state_dict.keys()):
+            state_dict = {k.replace("_orig_mod.", ""): v for k, v in state_dict.items()}
+        clf.load_state_dict(state_dict, strict=True)
+        for p in clf.parameters():
+            p.requires_grad_(False)
+        clf.eval()
+        self._style_classifier = clf
+        self._style_classifier_device = device_str
 
     @staticmethod
     def _sample_range(low: float, high: float) -> float:
@@ -197,26 +187,29 @@ class AdaCUTObjective:
 
         # Always use raw latent in FP32 for loss computation.
         pred_f32 = pred_student.float()
-        target_f32 = target_style.float()
         content_f32 = content.float()
 
-        loss_moment = torch.tensor(0.0, device=content.device)
-        loss_swd = torch.tensor(0.0, device=content.device)
-        with self._nvtx_range("loss/style", nvtx_enabled):
-            if xid_mask.any():
-                valid_idx = torch.nonzero(xid_mask).squeeze(1)
-                p_valid = pred_f32.index_select(0, valid_idx)
-                t_valid = target_f32.index_select(0, valid_idx)
-
-                if self.w_color_moment > 0.0:
-                    loss_moment = calc_moment_loss(p_valid, t_valid)
-                if self.w_swd > 0.0:
-                    loss_swd = calc_swd_loss(
-                        p_valid,
-                        t_valid,
-                        patch_sizes=self.swd_patch_sizes,
-                        num_projections=self.swd_num_projections,
+        loss_style_cls = torch.tensor(0.0, device=content.device)
+        style_cls_acc = torch.tensor(0.0, device=content.device)
+        with self._nvtx_range("loss/style_classifier", nvtx_enabled):
+            if self.w_style_cls > 0.0:
+                self._ensure_style_classifier(model=model, device=content.device)
+                assert self._style_classifier is not None
+                if self.style_cls_on_xid_only and xid_mask.any():
+                    valid_idx = torch.nonzero(xid_mask).squeeze(1)
+                else:
+                    valid_idx = torch.arange(pred_f32.shape[0], device=pred_f32.device, dtype=torch.long)
+                if valid_idx.numel() > 0:
+                    cls_in = pred_f32.index_select(0, valid_idx)
+                    cls_target = target_style_id.index_select(0, valid_idx).long()
+                    _, cls_logits = self._style_classifier(cls_in)
+                    loss_style_cls = F.cross_entropy(
+                        cls_logits,
+                        cls_target,
+                        label_smoothing=self.style_cls_label_smoothing,
                     )
+                    pred_ids = cls_logits.argmax(dim=1)
+                    style_cls_acc = (pred_ids == cls_target).float().mean()
 
         loss_identity = torch.tensor(0.0, device=content.device)
         with self._nvtx_range("loss/identity", nvtx_enabled):
@@ -289,8 +282,7 @@ class AdaCUTObjective:
                 loss_semigroup = semigroup_diff.float().mean()
 
         total = (
-            self.w_color_moment * loss_moment
-            + self.w_swd * loss_swd
+            self.w_style_cls * loss_style_cls
             + self.w_identity * loss_identity
             + self.w_delta_tv * loss_delta_tv
             + self.w_delta_l2 * loss_delta_l2
@@ -300,8 +292,11 @@ class AdaCUTObjective:
 
         return {
             "loss": total,
-            "moment": loss_moment.detach(),
-            "swd": loss_swd.detach(),
+            # Keep legacy keys for trainer logging compatibility.
+            "moment": torch.tensor(0.0, device=content.device),
+            "swd": loss_style_cls.detach(),
+            "style_cls": loss_style_cls.detach(),
+            "style_cls_acc": style_cls_acc.detach(),
             "identity": loss_identity.detach(),
             "identity_ratio": id_ratio.detach(),
             "delta_tv": loss_delta_tv.detach(),

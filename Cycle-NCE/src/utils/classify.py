@@ -22,7 +22,7 @@ warnings.filterwarnings('ignore')
 # 1. 严苛配置 (Hard Thresholds)
 # ==========================================
 CONFIG = {
-    "data_root": Path("sdxl-256"),
+    "data_root": (Path(__file__).resolve().parent / "../../../sdxl-256").resolve(),
     "styles": ["photo", "Hayao", "monet", "cezanne", "vangogh"],
     "batch_size": 128,
     "epochs": 100,          # 给足时间收敛
@@ -32,8 +32,8 @@ CONFIG = {
     "device": torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     
     # --- 强制门槛 (达不到不许停) ---
-    "target_min_recall": 0.60,  # 每一类 (包括凡高) 的 Recall 必须 > 60%
-    "target_accuracy": 0.80     # 整体准确率必须 > 80%
+    "target_min_recall": 0.85,  # 每一类 (包括凡高) 的 Recall 必须 > 60%
+    "target_accuracy": 0.85     # 整体准确率必须 > 80%
 }
 
 def set_seed(seed):
@@ -50,28 +50,28 @@ set_seed(CONFIG["seed"])
 class RobustStyleProbe(nn.Module):
     def __init__(self, num_classes=5):
         super().__init__()
-        
-        def robust_block(in_c, out_c, stride=1):
+
+        def res_block(in_c, out_c, stride=1):
             return nn.Sequential(
                 spectral_norm(nn.Conv2d(in_c, out_c, 3, stride=stride, padding=1, bias=False)),
-                # 改回 affine=True: 允许模型学习不同风格特有的均值/方差缩放
-                # 纯 affine=False 对某些风格太苛刻了
-                nn.InstanceNorm2d(out_c, affine=True), 
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.Dropout2d(0.2) # 必须加Dropout，因为凡高样本只有130，会被重复采样很多次
+                nn.InstanceNorm2d(out_c, affine=True),
+                nn.Mish(inplace=True),
+                nn.Dropout2d(0.1),
             )
 
-        self.features = nn.Sequential(
-            robust_block(4, 32),
-            robust_block(32, 64, stride=2),
-            robust_block(64, 128),
-            robust_block(128, 128, stride=2),
-        )
+        self.layer1 = res_block(4, 32)
+        self.layer2 = res_block(32, 64, stride=2)
+        self.layer3 = res_block(64, 128)
+        self.layer4 = res_block(128, 128, stride=2)
         self.gap = nn.AdaptiveAvgPool2d(1)
         self.classifier = spectral_norm(nn.Linear(128, num_classes))
 
     def forward(self, x):
-        feat_vec = self.gap(self.features(x)).flatten(1)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        feat_vec = self.gap(x).flatten(1)
         return feat_vec, self.classifier(feat_vec)
 
 # ==========================================
@@ -204,7 +204,7 @@ def run_strict_training():
         if min_class_recall > best_min_recall:
             best_min_recall = min_class_recall
             # 暂存为最佳模型 (不管是否达标，至少存个最好的)
-            torch.save(model.state_dict(), "robust_style_probe_best.pth")
+            torch.save(model.state_dict(), str((Path(__file__).resolve().parent / "robust_style_probe_best.pth")))
         
         if min_class_recall >= CONFIG['target_min_recall'] and overall_acc >= CONFIG['target_accuracy']:
             print("\n" + "="*60)
@@ -212,7 +212,7 @@ def run_strict_training():
             print(f"   Accuracy: {overall_acc:.2%} (Target: {CONFIG['target_accuracy']})")
             print(f"   Min Recall: {min_class_recall:.2%} (Target: {CONFIG['target_min_recall']})")
             print("="*60)
-            torch.save(model.state_dict(), "robust_style_probe_final.pth")
+            torch.save(model.state_dict(), str((Path(__file__).resolve().parent / "robust_style_probe_final.pth")))
             break # 达到目标，提前结束
 
     print(f"\n✅ Training Ended. Best Min Recall achieved: {best_min_recall:.2%}")
@@ -226,7 +226,7 @@ def run_strict_training():
     # ==========================================
     print("\n🔬 Final Audit...")
     # 加载最好的那个
-    load_path = "robust_style_probe_final.pth" if Path("robust_style_probe_final.pth").exists() else "robust_style_probe_best.pth"
+    load_path = (Path(__file__).resolve().parent / "robust_style_probe_final.pth") if (Path(__file__).resolve().parent / "robust_style_probe_final.pth").exists() else (Path(__file__).resolve().parent / "robust_style_probe_best.pth")
     model.load_state_dict(torch.load(load_path))
     model.eval()
     

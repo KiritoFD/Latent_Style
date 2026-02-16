@@ -318,8 +318,8 @@ class AdaCUTTrainer:
                     "epoch",
                     "loss",
                     "semigroup",
-                    "swd",
-                    "moment",
+                    "style_cls",
+                    "style_cls_acc",
                     "identity",
                     "identity_ratio",
                     "delta_tv",
@@ -801,12 +801,14 @@ class AdaCUTTrainer:
                         if key not in metric_accum:
                             return 0.0
                         return float((metric_accum[key] / num_batches).item())
+                    style_cls_avg = _get_avg("style_cls") if ("style_cls" in metric_accum) else _get_avg("swd")
+                    style_cls_acc_avg = _get_avg("style_cls_acc")
 
                     progress.set_postfix(
                         loss=f"{_get_avg('loss'):.4f}",
                         semigroup=f"{_get_avg('semigroup'):.4f}",
-                        swd=f"{_get_avg('swd'):.4f}",
-                        moment=f"{_get_avg('moment'):.4f}",
+                        style_cls=f"{style_cls_avg:.4f}",
+                        style_acc=f"{style_cls_acc_avg:.2f}",
                         idt=f"{_get_avg('identity'):.4f}",
                         idr=f"{_get_avg('identity_ratio'):.2f}",
                         steps=f"{_get_avg('train_num_steps'):.1f}",
@@ -819,14 +821,14 @@ class AdaCUTTrainer:
                     )
                     if not self.use_tqdm:
                         logger.info(
-                            "epoch %d step %d/%d | loss=%.4f semigroup=%.4f swd=%.4f moment=%.4f idt=%.4f idr=%.2f dtv=%.4f dl2=%.4f otv=%.4f steps=%.1f h=%.2f s=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
+                            "epoch %d step %d/%d | loss=%.4f semigroup=%.4f style_cls=%.4f style_acc=%.2f idt=%.4f idr=%.2f dtv=%.4f dl2=%.4f otv=%.4f steps=%.1f h=%.2f s=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
                             epoch,
                             step_idx,
                             total_steps,
                             _get_avg('loss'),
                             _get_avg('semigroup'),
-                            _get_avg('swd'),
-                            _get_avg('moment'),
+                            style_cls_avg,
+                            style_cls_acc_avg,
                             _get_avg('identity'),
                             _get_avg('identity_ratio'),
                             _get_avg('delta_tv'),
@@ -907,7 +909,7 @@ class AdaCUTTrainer:
         
         # Fill missing keys with 0.0 for safety
         expected_keys = [
-            "loss", "semigroup", "swd", "moment", "identity", "identity_ratio",
+            "loss", "semigroup", "style_cls", "style_cls_acc", "identity", "identity_ratio",
             "delta_tv", "delta_l2", "output_tv", "train_num_steps", "train_step_size", "train_style_strength",
             "data_time_sec", "transfer_time_sec", "fwd_loss_time_sec", "backward_time_sec",
             "optimizer_time_sec", "step_overhead_time_sec", "compute_time_sec",
@@ -931,11 +933,12 @@ class AdaCUTTrainer:
         })
 
         if self.use_tqdm:
+            style_cls_value = metrics["style_cls"] if "style_cls" in metrics else metrics["swd"]
             tqdm.write(
                 f"[Epoch {epoch}/{self.num_epochs}] "
                 f"loss={metrics['loss']:.4f} "
                 f"semigroup={metrics['semigroup']:.4f} "
-                f"swd={metrics['swd']:.4f} moment={metrics['moment']:.4f} "
+                f"style_cls={style_cls_value:.4f} style_acc={metrics['style_cls_acc']:.2f} "
                 f"idt={metrics['identity']:.4f} idr={metrics['identity_ratio']:.2f} "
                 f"dtv={metrics['delta_tv']:.4f} dl2={metrics['delta_l2']:.4f} otv={metrics['output_tv']:.4f} "
                 f"steps={metrics['train_num_steps']:.1f} h={metrics['train_step_size']:.2f} s={metrics['train_style_strength']:.2f} "
@@ -954,8 +957,8 @@ class AdaCUTTrainer:
                     int(epoch),
                     float(metrics.get("loss", 0.0)),
                     float(metrics.get("semigroup", 0.0)),
-                    float(metrics.get("swd", 0.0)),
-                    float(metrics.get("moment", 0.0)),
+                    float(metrics.get("style_cls", metrics.get("swd", 0.0))),
+                    float(metrics.get("style_cls_acc", 0.0)),
                     float(metrics.get("identity", 0.0)),
                     float(metrics.get("identity_ratio", 0.0)),
                     float(metrics.get("delta_tv", 0.0)),

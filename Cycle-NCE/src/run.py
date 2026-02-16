@@ -43,6 +43,11 @@ _ALLOWED_LOSS_KEYS = {
     "w_output_tv",
     "w_swd",
     "w_color_moment",
+    "w_style_classifier",
+    "w_style_cls",
+    "style_classifier_path",
+    "style_classifier_xid_only",
+    "style_classifier_label_smoothing",
     "w_identity",
     "swd_patch_sizes",
     "swd_num_projections",
@@ -54,7 +59,17 @@ _ALLOWED_LOSS_KEYS = {
     "train_style_strength_max",
 }
 _FORBIDDEN_LOSS_KEYS = {"w_distill", "distill_low_only", "distill_cross_domain_only", "w_code", "style_loss_source"}
-_LOSS_WEIGHT_KEYS = ("w_semigroup", "w_swd", "w_color_moment", "w_identity", "w_delta_tv", "w_delta_l2", "w_output_tv")
+_LOSS_WEIGHT_KEYS = (
+    "w_semigroup",
+    "w_style_classifier",
+    "w_style_cls",
+    "w_swd",
+    "w_color_moment",
+    "w_identity",
+    "w_delta_tv",
+    "w_delta_l2",
+    "w_output_tv",
+)
 
 
 def _set_seed(seed: int) -> None:
@@ -198,6 +213,13 @@ def _validate_loss_config(config: dict) -> None:
     unknown = sorted(k for k in loss_cfg.keys() if k not in _ALLOWED_LOSS_KEYS)
     if unknown:
         raise ValueError(f"Unknown loss key(s) in config.loss: {unknown}")
+    w_style_cls = float(loss_cfg.get("w_style_classifier", loss_cfg.get("w_style_cls", 0.0)))
+    if w_style_cls > 20.0:
+        logger.warning(
+            "w_style_classifier=%.4f looks high for cross-entropy style loss. "
+            "Recommended start range is [1, 10].",
+            w_style_cls,
+        )
 
 def _log_active_losses(config: dict) -> None:
     loss_cfg = config.get("loss", {})
