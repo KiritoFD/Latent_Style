@@ -1,0 +1,24 @@
+{
+  "base_config": "I:\\Github\\Latent_Style\\Cycle-NCE\\src\\config.json",
+  "run_py": "I:\\Github\\Latent_Style\\Cycle-NCE\\src\\run.py",
+  "epochs": 60,
+  "seed": 42,
+  "groups": [
+    "A"
+  ],
+  "filter": "A1",
+  "infra_profile": "rtx3060_stable",
+  "batch_size": -1,
+  "skip_completed": true,
+  "auto_resume": true,
+  "results": [
+    {
+      "name": "A1_tv0.5_l2_0.01",
+      "code": 0,
+      "status": "skipped_completed",
+      "log": "I:\\Github\\Latent_Style\\Cycle-NCE\\ablation-fixes-test-sweep\\A1_tv0.5_l2_0.01\\train.log",
+      "latest_epoch": 60,
+      "target_epochs": 60
+    }
+  ]
+}

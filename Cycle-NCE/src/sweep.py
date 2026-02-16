@@ -57,52 +57,76 @@ def safe_name(name: str) -> str:
     return re.sub(r"[^a-zA-Z0-9._-]+", "_", name).strip("_")
 
 
-def make_experiments() -> List[Exp]:
-    exps: List[Exp] = []
+def make_experiments(base_cfg: Dict[str, Any]) -> List[Exp]:
+    loss = base_cfg.get("loss", {})
+    model = base_cfg.get("model", {})
 
-    # =================================================================
-    # Group A: regularization balance
-    # =================================================================
-    exps += [
-        Exp("A1_tv0.5_l2_0.01", "A", [("loss.w_delta_tv", 0.5), ("loss.w_delta_l2", 0.01)]),
-        Exp("A2_tv0.1_l2_0.1", "A", [("loss.w_delta_tv", 0.1), ("loss.w_delta_l2", 0.1)]),
-        Exp("A3_noTV_l2_0.05", "A", [("loss.w_delta_tv", 0.0), ("loss.w_delta_l2", 0.05)]),
-        Exp("A4_tv0.5_outTV0.5", "A", [("loss.w_delta_tv", 0.5), ("loss.w_output_tv", 0.5)]),
-    ]
+    w_stroke_gram = float(loss.get("w_stroke_gram", 80.0))
+    w_color_moment = float(loss.get("w_color_moment", 6.0))
+    w_delta_tv = float(loss.get("w_delta_tv", 0.01))
+    w_delta_l2 = float(loss.get("w_delta_l2", 0.001))
+    w_output_tv = float(loss.get("w_output_tv", 0.0))
+    w_semigroup_base = float(loss.get("w_semigroup", 0.2))
+    if w_semigroup_base <= 0.0:
+        w_semigroup_base = 0.2
+    proj_channels_base = int(model.get("loss_projector_channels", 64))
 
-    # =================================================================
-    # Group B: style strength + projector
-    # =================================================================
-    exps += [
-        Exp("B1_gram2.0_moment1.0", "B", [("loss.w_stroke_gram", 2.0), ("loss.w_color_moment", 1.0)]),
-        Exp("B2_proj32ch", "B", [("model.loss_projector_channels", 32)]),
+    exps: List[Exp] = [
+        # Baseline
         Exp(
-            "B3_soft_style",
-            "B",
+            "A00_full",
+            "A",
             [
-                ("loss.w_stroke_gram", 2.0),
-                ("loss.w_color_moment", 1.0),
-                ("model.loss_projector_channels", 32),
+                ("loss.w_stroke_gram", w_stroke_gram),
+                ("loss.w_color_moment", w_color_moment),
+                ("loss.w_delta_tv", w_delta_tv),
+                ("loss.w_delta_l2", w_delta_l2),
+                ("loss.w_output_tv", w_output_tv),
+                ("loss.w_semigroup", w_semigroup_base),
+                ("model.loss_projector_use", True),
+                ("model.loss_projector_channels", proj_channels_base),
+            ],
+        ),
+        # Part 1: projector
+        Exp("A01_proj_off", "A", [("model.loss_projector_use", False)]),
+        Exp("A02_proj_32", "A", [("model.loss_projector_use", True), ("model.loss_projector_channels", 32)]),
+        Exp("A03_proj_128", "A", [("model.loss_projector_use", True), ("model.loss_projector_channels", 128)]),
+        # Part 2: leave-one-out
+        Exp("A10_no_gram", "A", [("loss.w_stroke_gram", 0.0)]),
+        Exp("A11_no_moment", "A", [("loss.w_color_moment", 0.0)]),
+        Exp("A12_no_delta_tv", "A", [("loss.w_delta_tv", 0.0)]),
+        Exp("A13_no_delta_l2", "A", [("loss.w_delta_l2", 0.0)]),
+        Exp("A14_no_output_tv", "A", [("loss.w_output_tv", 0.0)]),
+        Exp("A15_no_semigroup", "A", [("loss.w_semigroup", 0.0)]),
+        # Part 3: style decomposition
+        Exp("A20_style_gram_only", "A", [("loss.w_stroke_gram", w_stroke_gram), ("loss.w_color_moment", 0.0)]),
+        Exp("A21_style_moment_only", "A", [("loss.w_stroke_gram", 0.0), ("loss.w_color_moment", w_color_moment)]),
+        # Part 4: regularizer composition
+        Exp("A30_reg_delta_only", "A", [("loss.w_delta_tv", w_delta_tv), ("loss.w_delta_l2", w_delta_l2), ("loss.w_output_tv", 0.0)]),
+        Exp("A31_reg_output_only", "A", [("loss.w_delta_tv", 0.0), ("loss.w_delta_l2", 0.0), ("loss.w_output_tv", max(w_output_tv, 0.005))]),
+        Exp("A32_reg_tv_only", "A", [("loss.w_delta_tv", w_delta_tv), ("loss.w_delta_l2", 0.0), ("loss.w_output_tv", 0.0)]),
+        # Part 5: semigroup schedule
+        Exp(
+            "A40_semigroup_light",
+            "A",
+            [
+                ("loss.w_semigroup", w_semigroup_base),
+                ("loss.semigroup_every_n_steps", 4),
+                ("loss.semigroup_subset_ratio", 0.25),
+                ("loss.semigroup_num_steps", 1),
+            ],
+        ),
+        Exp(
+            "A41_semigroup_strong",
+            "A",
+            [
+                ("loss.w_semigroup", w_semigroup_base),
+                ("loss.semigroup_every_n_steps", 1),
+                ("loss.semigroup_subset_ratio", 0.5),
+                ("loss.semigroup_num_steps", 1),
             ],
         ),
     ]
-
-    # =================================================================
-    # Group C: structure keeping
-    # =================================================================
-    exps += [
-        Exp("C1_struct1.0", "C", [("loss.w_struct", 1.0)]),
-        Exp("C2_no_struct", "C", [("loss.w_struct", 0.0)]),
-    ]
-
-    # =================================================================
-    # Group D: semigroup stabilizer
-    # =================================================================
-    exps += [
-        Exp("D1_semigroup0.2", "D", [("loss.w_semigroup", 0.2)]),
-        Exp("D2_semigroup0.5", "D", [("loss.w_semigroup", 0.5)]),
-    ]
-
     return exps
 
 
@@ -139,13 +163,13 @@ def main() -> None:
     ap.add_argument(
         "--out_dir",
         type=str,
-        default="../ablation-fixes",
+        default="../ablation-5styles",
         help="Directory for generated configs/logs/checkpoints",
     )
-    ap.add_argument("--epochs", type=int, default=60, help="Override training.num_epochs")
-    ap.add_argument("--batch_size", type=int, default=-1, help="Override training.batch_size (-1 keeps base config)")
+    ap.add_argument("--epochs", type=int, default=100, help="Override training.num_epochs")
+    ap.add_argument("--batch_size", type=int, default=192, help="Override training.batch_size (-1 keeps base config)")
     ap.add_argument("--seed", type=int, default=42, help="Fixed seed")
-    ap.add_argument("--groups", type=str, default="A,B,C,D", help="Groups to run")
+    ap.add_argument("--groups", type=str, default="A", help="Groups to run")
     ap.add_argument("--filter", type=str, default="", help="Run only experiment names containing this text")
     ap.add_argument("--infra_profile", type=str, default="rtx3060_stable")
     ap.add_argument("--dry_run", action="store_true", help="Only write configs")
@@ -171,7 +195,7 @@ def main() -> None:
         out_root = (script_dir / out_root).resolve()
 
     base_cfg = load_json(base_path)
-    exps = make_experiments()
+    exps = make_experiments(base_cfg)
 
     group_set = {g.strip().upper() for g in args.groups.split(",") if g.strip()}
     exps = [e for e in exps if e.group.upper() in group_set]

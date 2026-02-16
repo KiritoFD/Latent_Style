@@ -1,7 +1,7 @@
 {
   "model": {
     "latent_channels": 4,
-    "base_dim": 128,
+    "base_dim": 256,
     "lift_channels": 128,
     "style_dim": 256,
     "num_styles": 5,
@@ -24,7 +24,7 @@
   "loss": {
     "w_delta_tv": 0.012,
     "w_delta_l2": 0.002,
-    "w_output_tv": 0.001,
+    "w_output_tv": 0.005,
     "w_stroke_gram": 80.0,
     "w_identity": 10.0,
     "stroke_patch_sizes": [
@@ -38,11 +38,12 @@
     "train_step_size_max": 1.0,
     "train_style_strength_min": 0.65,
     "train_style_strength_max": 0.9,
-    "w_color_moment": 6.0
+    "w_color_moment": 6.0,
+    "w_semigroup": 0.2
   },
   "training": {
     "seed": 42,
-    "batch_size": 96,
+    "batch_size": 192,
     "accumulation_steps": 1,
     "num_workers": -1,
     "persistent_workers": true,
@@ -57,7 +58,7 @@
     "grad_clip_norm": 1.0,
     "num_epochs": 60,
     "save_interval": 10,
-    "full_eval_interval": 10,
+    "full_eval_interval": 30,
     "full_eval_on_last_epoch": true,
     "full_eval_batch_size": 4,
     "full_eval_max_src_samples": 50,
@@ -71,10 +72,10 @@
     "full_eval_cache_dir": "../../eval_cache",
     "full_eval_classifier_only": false,
     "full_eval_disable_lpips": false,
-    "log_interval": 5,
-    "use_tqdm": true,
+    "log_interval": 100,
+    "use_tqdm": false,
     "use_amp": true,
-    "amp_dtype": "bf16",
+    "amp_dtype": "fp16",
     "allow_tf32": true,
     "channels_last": true,
     "use_gradient_checkpointing": false,
@@ -87,10 +88,11 @@
     "profile_loss_vram": false,
     "loss_timing_interval": 0,
     "enable_profiler": false,
-    "resume_checkpoint": ""
+    "resume_checkpoint": "",
+    "use_grad_scaler": true
   },
   "data": {
-    "data_root": "../../latents_overfit50",
+    "data_root": "../../latent-256",
     "style_subdirs": [
       "photo",
       "Hayao",
@@ -102,10 +104,10 @@
     "preload_to_gpu": true,
     "preload_max_vram_gb": 6.0,
     "preload_reserve_ratio": 0.4,
-    "virtual_length_multiplier": 100
+    "virtual_length_multiplier": 3
   },
   "checkpoint": {
-    "save_dir": "../overfit50-5styles-num5"
+    "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\ablation-fixes\\A00_full\\checkpoints"
   },
   "inference": {
     "num_steps": 1,

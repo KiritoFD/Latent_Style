@@ -317,10 +317,11 @@ class AdaCUTTrainer:
                 [
                     "epoch",
                     "loss",
-                    "struct",
                     "semigroup",
                     "stroke_gram",
                     "color_moment",
+                    "identity",
+                    "identity_ratio",
                     "delta_tv",
                     "delta_l2",
                     "output_tv",
@@ -440,8 +441,11 @@ class AdaCUTTrainer:
         content = batch.get("content")
         target_style = batch.get("target_style")
         target_style_id = batch.get("target_style_id")
+        source_style_id = batch.get("source_style_id")
         if not torch.is_tensor(content) or not torch.is_tensor(target_style) or not torch.is_tensor(target_style_id):
             raise RuntimeError("Missing required batch keys: content/target_style/target_style_id")
+        if source_style_id is not None and not torch.is_tensor(source_style_id):
+            raise RuntimeError("source_style_id must be a tensor when provided.")
         # Keep this check on CPU tensors to avoid device sync stalls.
         if not torch.isfinite(content).all() or not torch.isfinite(target_style).all():
             raise RuntimeError("Non-finite values in batch tensors (content/target_style).")
@@ -453,6 +457,13 @@ class AdaCUTTrainer:
                 raise RuntimeError(
                     f"target_style_id out of range: min={sid_min} max={sid_max} valid=[0,{n_styles-1}]"
                 )
+            if source_style_id is not None:
+                src_min = int(source_style_id.min().item())
+                src_max = int(source_style_id.max().item())
+                if src_min < 0 or src_max >= n_styles:
+                    raise RuntimeError(
+                        f"source_style_id out of range: min={src_min} max={src_max} valid=[0,{n_styles-1}]"
+                    )
 
     @staticmethod
     def _is_oom_error(exc: RuntimeError) -> bool:
@@ -655,6 +666,7 @@ class AdaCUTTrainer:
                 content = None
                 target_style = None
                 target_style_id = None
+                source_style_id = None
                 loss_dict = None
                 loss = None
                 try:
@@ -669,6 +681,7 @@ class AdaCUTTrainer:
                     content = batch["content"]
                     target_style = batch["target_style"]
                     target_style_id = batch["target_style_id"]
+                    source_style_id = batch.get("source_style_id")
                     enable_loss_timing = bool(self.loss_timing_interval > 0 and (step_idx % self.loss_timing_interval == 0))
 
                     t0 = time.perf_counter()
@@ -679,6 +692,7 @@ class AdaCUTTrainer:
                                 content=content,
                                 target_style=target_style,
                                 target_style_id=target_style_id,
+                                source_style_id=source_style_id,
                                 debug_timing=enable_loss_timing,
                             )
                             loss = loss_dict["loss"]
@@ -690,11 +704,10 @@ class AdaCUTTrainer:
                                 return 0.0
                             return float(v.detach().item())
                         logger.info(
-                            "LOSS_VRAM epoch=%d step=%d | pred=%.1fMB struct=%+.1fMB style=%+.1fMB delta=%+.1fMB semigroup=%+.1fMB total=%+.1fMB alloc_now=%.1fMB peak_from_start=%.1fMB",
+                            "LOSS_VRAM epoch=%d step=%d | pred=%.1fMB style=%+.1fMB delta=%+.1fMB semigroup=%+.1fMB total=%+.1fMB alloc_now=%.1fMB peak_from_start=%.1fMB",
                             epoch,
                             step_idx,
                             _vram_metric("loss_vram_pred_alloc_mb"),
-                            _vram_metric("loss_vram_struct_delta_mb"),
                             _vram_metric("loss_vram_style_delta_mb"),
                             _vram_metric("loss_vram_delta_delta_mb"),
                             _vram_metric("loss_vram_semigroup_delta_mb"),
@@ -709,11 +722,10 @@ class AdaCUTTrainer:
                                 return 0.0
                             return float(v.detach().item())
                         logger.info(
-                            "LOSS_TIME epoch=%d step=%d | pred=%.2fms struct=%.2fms style=%.2fms delta=%.2fms semigroup=%.2fms total=%.2fms",
+                            "LOSS_TIME epoch=%d step=%d | pred=%.2fms style=%.2fms delta=%.2fms semigroup=%.2fms total=%.2fms",
                             epoch,
                             step_idx,
                             _time_metric("loss_time_pred_ms"),
-                            _time_metric("loss_time_struct_ms"),
                             _time_metric("loss_time_style_ms"),
                             _time_metric("loss_time_delta_ms"),
                             _time_metric("loss_time_semigroup_ms"),
@@ -792,9 +804,11 @@ class AdaCUTTrainer:
 
                     progress.set_postfix(
                         loss=f"{_get_avg('loss'):.4f}",
-                        struct=f"{_get_avg('struct'):.4f}",
                         semigroup=f"{_get_avg('semigroup'):.4f}",
                         sgram=f"{_get_avg('stroke_gram'):.4f}",
+                        cmoment=f"{_get_avg('color_moment'):.4f}",
+                        idt=f"{_get_avg('identity'):.4f}",
+                        idr=f"{_get_avg('identity_ratio'):.2f}",
                         steps=f"{_get_avg('train_num_steps'):.1f}",
                         h=f"{_get_avg('train_step_size'):.2f}",
                         s=f"{_get_avg('train_style_strength'):.2f}",
@@ -805,15 +819,16 @@ class AdaCUTTrainer:
                     )
                     if not self.use_tqdm:
                         logger.info(
-                            "epoch %d step %d/%d | loss=%.4f struct=%.4f semigroup=%.4f sgram=%.4f cmoment=%.4f dtv=%.4f dl2=%.4f otv=%.4f steps=%.1f h=%.2f s=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
+                            "epoch %d step %d/%d | loss=%.4f semigroup=%.4f sgram=%.4f cmoment=%.4f idt=%.4f idr=%.2f dtv=%.4f dl2=%.4f otv=%.4f steps=%.1f h=%.2f s=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
                             epoch,
                             step_idx,
                             total_steps,
                             _get_avg('loss'),
-                            _get_avg('struct'),
                             _get_avg('semigroup'),
                             _get_avg('stroke_gram'),
                             _get_avg('color_moment'),
+                            _get_avg('identity'),
+                            _get_avg('identity_ratio'),
                             _get_avg('delta_tv'),
                             _get_avg('delta_l2'),
                             _get_avg('output_tv'),
@@ -841,6 +856,7 @@ class AdaCUTTrainer:
                 del loss
                 del loss_dict
                 del target_style_id
+                del source_style_id
                 del target_style
                 del content
                 del batch
@@ -891,7 +907,7 @@ class AdaCUTTrainer:
         
         # Fill missing keys with 0.0 for safety
         expected_keys = [
-            "loss", "struct", "semigroup", "stroke_gram", "color_moment",
+            "loss", "semigroup", "stroke_gram", "color_moment", "identity", "identity_ratio",
             "delta_tv", "delta_l2", "output_tv", "train_num_steps", "train_step_size", "train_style_strength",
             "data_time_sec", "transfer_time_sec", "fwd_loss_time_sec", "backward_time_sec",
             "optimizer_time_sec", "step_overhead_time_sec", "compute_time_sec",
@@ -918,8 +934,9 @@ class AdaCUTTrainer:
             tqdm.write(
                 f"[Epoch {epoch}/{self.num_epochs}] "
                 f"loss={metrics['loss']:.4f} "
-                f"struct={metrics['struct']:.4f} semigroup={metrics['semigroup']:.4f} "
+                f"semigroup={metrics['semigroup']:.4f} "
                 f"sgram={metrics['stroke_gram']:.4f} cmoment={metrics['color_moment']:.4f} "
+                f"idt={metrics['identity']:.4f} idr={metrics['identity_ratio']:.2f} "
                 f"dtv={metrics['delta_tv']:.4f} dl2={metrics['delta_l2']:.4f} otv={metrics['output_tv']:.4f} "
                 f"steps={metrics['train_num_steps']:.1f} h={metrics['train_step_size']:.2f} s={metrics['train_style_strength']:.2f} "
                 f"| data={data_time_total:.1f}s transfer={transfer_time_total:.1f}s fwd={fwd_loss_time_total:.1f}s "
@@ -936,10 +953,11 @@ class AdaCUTTrainer:
                 [
                     int(epoch),
                     float(metrics.get("loss", 0.0)),
-                    float(metrics.get("struct", 0.0)),
                     float(metrics.get("semigroup", 0.0)),
                     float(metrics.get("stroke_gram", 0.0)),
                     float(metrics.get("color_moment", 0.0)),
+                    float(metrics.get("identity", 0.0)),
+                    float(metrics.get("identity_ratio", 0.0)),
                     float(metrics.get("delta_tv", 0.0)),
                     float(metrics.get("delta_l2", 0.0)),
                     float(metrics.get("output_tv", 0.0)),

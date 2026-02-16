@@ -72,7 +72,7 @@
     "full_eval_classifier_only": false,
     "full_eval_disable_lpips": false,
     "log_interval": 5000,
-    "use_tqdm": true,
+    "use_tqdm": false,
     "use_amp": true,
     "amp_dtype": "fp16",
     "allow_tf32": true,

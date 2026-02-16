@@ -343,77 +343,77 @@ def _resolve_dir_path(raw_path: str | None, base_dirs: list[Path]) -> Path:
     return (base_dirs[0] / p).resolve()
 
 
+def _find_latest_ckpt_under_dir(scan_dir: Path) -> Path | None:
+    candidates: list[Path] = []
+    # Common layouts: run/epoch_*.pt or run/checkpoints/epoch_*.pt
+    candidates.extend(sorted(scan_dir.glob("epoch_*.pt")))
+    candidates.extend(sorted((scan_dir / "checkpoints").glob("epoch_*.pt")))
+    # Fallback: recursive search for unusual layouts.
+    if not candidates:
+        for p in scan_dir.rglob("epoch_*.pt"):
+            parts_lower = {x.lower() for x in p.parts}
+            if "full_eval" in parts_lower:
+                continue
+            candidates.append(p)
+    if not candidates:
+        return None
+
+    def _score(path: Path):
+        ep = _parse_epoch_from_ckpt_name(path)
+        if ep is None:
+            ep = -1
+        try:
+            mtime = path.stat().st_mtime
+        except Exception:
+            mtime = 0.0
+        return (ep, mtime, str(path))
+
+    return max(candidates, key=_score)
+
+
+def _infer_full_eval_out_dir_for_ckpt(ckpt_path: Path) -> Path:
+    ep = _parse_epoch_from_ckpt_name(ckpt_path)
+    if ckpt_path.parent.name.lower() == "checkpoints":
+        run_dir = ckpt_path.parent.parent
+    else:
+        run_dir = ckpt_path.parent
+    if ep is None:
+        return run_dir / "full_eval" / ckpt_path.stem
+    return run_dir / "full_eval" / f"epoch_{ep:04d}"
+
+
 def _auto_run_missing_full_eval(args) -> None:
-    cfg_path = Path(args.config).resolve()
-    if not cfg_path.exists():
-        raise FileNotFoundError(f"Config not found: {cfg_path}")
-    with open(cfg_path, "r", encoding="utf-8") as f:
-        cfg = json.load(f)
+    src_dir = Path(__file__).resolve().parents[1]
+    scan_root = src_dir.parent
+    sibling_dirs = sorted([d for d in scan_root.iterdir() if d.is_dir()], key=lambda x: x.name.lower())
 
-    train_cfg = cfg.get("training", {})
-    ckpt_cfg = cfg.get("checkpoint", {})
-    interval = int(train_cfg.get("full_eval_interval", 0))
-    run_last = bool(train_cfg.get("full_eval_on_last_epoch", False))
-    num_epochs = int(train_cfg.get("num_epochs", 0))
-
-    save_dir_raw = str(ckpt_cfg.get("save_dir", "")).strip()
-    if not save_dir_raw:
-        raise ValueError("checkpoint.save_dir is empty in config")
-    save_dir = (cfg_path.parent / save_dir_raw).resolve() if not Path(save_dir_raw).is_absolute() else Path(save_dir_raw)
-    if not save_dir.exists():
-        raise FileNotFoundError(f"Checkpoint save_dir not found: {save_dir}")
-
-    full_eval_root = save_dir / "full_eval"
-    full_eval_root.mkdir(parents=True, exist_ok=True)
-
-    ckpts = sorted(save_dir.glob("epoch_*.pt"))
-    epoch_to_ckpt = {}
-    for ckpt in ckpts:
-        ep = _parse_epoch_from_ckpt_name(ckpt)
-        if ep is not None:
-            epoch_to_ckpt[ep] = ckpt
-    if not epoch_to_ckpt:
-        raise FileNotFoundError(f"No epoch_*.pt found in {save_dir}")
-
-    candidate_epochs = sorted(epoch_to_ckpt.keys())
-    target_epochs = set()
-    if interval > 0:
-        for ep in candidate_epochs:
-            if ep % interval == 0:
-                target_epochs.add(ep)
-    if run_last and num_epochs > 0 and num_epochs in epoch_to_ckpt:
-        target_epochs.add(num_epochs)
-    if not target_epochs:
-        # Fallback: at least evaluate latest checkpoint
-        target_epochs.add(max(candidate_epochs))
-
+    print(f"Auto full-eval | scan root: {scan_root}")
     to_run = []
     skipped = []
-    for ep in sorted(target_epochs):
-        out_dir = full_eval_root / f"epoch_{ep:04d}"
-        summary_path = out_dir / "summary.json"
-        if summary_path.exists():
-            skipped.append(ep)
+    for d in sibling_dirs:
+        ckpt_path = _find_latest_ckpt_under_dir(d)
+        if ckpt_path is None:
             continue
-        to_run.append((ep, epoch_to_ckpt[ep], out_dir))
+        out_dir = _infer_full_eval_out_dir_for_ckpt(ckpt_path)
+        summary_path = out_dir / "summary.json"
+        if summary_path.exists() and not args.force_regen:
+            skipped.append((d.name, ckpt_path))
+            continue
+        to_run.append((d.name, ckpt_path, out_dir))
 
-    print(f"Auto full-eval | save_dir={save_dir}")
-    print(f"Auto full-eval | interval={interval} run_last={run_last} num_epochs={num_epochs}")
     if skipped:
-        print(f"Auto full-eval | already done: {skipped}")
+        print("Auto full-eval | already done:")
+        for name, ckpt in skipped:
+            print(f"  - {name}: {ckpt}")
     if not to_run:
         print("Auto full-eval | nothing to run.")
         return
 
-    print(f"Auto full-eval | pending: {[ep for ep, _, _ in to_run]}")
+    print("Auto full-eval | pending:")
+    for name, ckpt, out_dir in to_run:
+        print(f"  - {name}: {ckpt} -> {out_dir}")
     this_file = Path(__file__).resolve()
-    cfg_base = cfg_path.parent.resolve()
-    test_dir_cfg = str(train_cfg.get("test_image_dir", "")).strip()
-    resolved_test_dir = _resolve_existing_path(
-        test_dir_cfg if test_dir_cfg else args.test_dir,
-        [cfg_base, this_file.parent, this_file.parent.parent, this_file.parent.parent.parent],
-    )
-    for ep, ckpt_path, out_dir in to_run:
+    for _, ckpt_path, out_dir in to_run:
         cmd = [
             sys.executable,
             str(this_file),
@@ -439,9 +439,7 @@ def _auto_run_missing_full_eval(args) -> None:
         ]
         if args.clip_allow_network:
             cmd += ["--clip_allow_network"]
-        if resolved_test_dir is not None:
-            cmd += ["--test_dir", str(resolved_test_dir)]
-        elif args.test_dir:
+        if args.test_dir:
             cmd += ["--test_dir", str(args.test_dir)]
         if args.style_strength is not None:
             cmd += ["--style_strength", str(args.style_strength)]
@@ -456,7 +454,7 @@ def _auto_run_missing_full_eval(args) -> None:
         if args.generation_only:
             cmd += ["--generation_only"]
 
-        print(f"\n[Auto] Running epoch {ep}: {ckpt_path.name}")
+        print(f"\n[Auto] Running: {ckpt_path}")
         subprocess.run(cmd, check=True)
 
 

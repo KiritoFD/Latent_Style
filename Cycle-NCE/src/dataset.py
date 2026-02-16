@@ -31,9 +31,10 @@ def _load_latent_file(path: Path) -> torch.Tensor:
 
 class AdaCUTLatentDataset(Dataset):
     """
-    Unpaired latent dataset with strict cross-domain sampling:
+    Unpaired latent dataset with uniform target-style sampling:
     - content style sampled from all styles
-    - target style sampled from a different style (content != target)
+    - target style sampled uniformly from all styles (including self)
+      so identity probability is naturally 1 / num_styles.
     """
 
     def __init__(
@@ -162,9 +163,8 @@ class AdaCUTLatentDataset(Dataset):
         n_styles = len(self.style_subdirs)
         
         self._cache_content_style_ids = torch.randint(0, n_styles, (N,), generator=g)
-        # Target must be different from content. (id + offset) % n where offset in [1, n-1]
-        offset = torch.randint(1, n_styles, (N,), generator=g)
-        self._cache_target_style_ids = (self._cache_content_style_ids + offset) % n_styles
+        # Uniform target sampling across all styles (including source style).
+        self._cache_target_style_ids = torch.randint(0, n_styles, (N,), generator=g)
 
         # Random floats for selecting index within the chosen style
         self._cache_content_rands = torch.rand(N, generator=g)

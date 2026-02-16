@@ -26,9 +26,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 _ALLOWED_LOSS_KEYS = {
-    "w_struct",
-    "struct_lowpass_strength",
-    "struct_loss_type",
     "w_semigroup",
     "semigroup_loss_type",
     "semigroup_lowpass_strength",
@@ -46,6 +43,7 @@ _ALLOWED_LOSS_KEYS = {
     "w_output_tv",
     "w_stroke_gram",
     "w_color_moment",
+    "w_identity",
     "stroke_patch_sizes",
     "stroke_patch_randomize",
     "color_patch_size",
@@ -57,7 +55,7 @@ _ALLOWED_LOSS_KEYS = {
     "train_style_strength_max",
 }
 _FORBIDDEN_LOSS_KEYS = {"w_distill", "distill_low_only", "distill_cross_domain_only", "w_code", "style_loss_source"}
-_LOSS_WEIGHT_KEYS = ("w_struct", "w_semigroup", "w_stroke_gram", "w_color_moment", "w_delta_tv", "w_delta_l2", "w_output_tv")
+_LOSS_WEIGHT_KEYS = ("w_semigroup", "w_stroke_gram", "w_color_moment", "w_identity", "w_delta_tv", "w_delta_l2", "w_output_tv")
 
 
 def _set_seed(seed: int) -> None:
@@ -302,11 +300,10 @@ def main() -> None:
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f struct=%.4f sgram=%.4f cmoment=%.4f dtv=%.4f dl2=%.4f steps=%.1f h=%.2f s=%.2f lr=%.2e data=%.1fs comp=%.1fs",
+            "Epoch %d/%d | loss=%.4f sgram=%.4f cmoment=%.4f dtv=%.4f dl2=%.4f steps=%.1f h=%.2f s=%.2f lr=%.2e data=%.1fs comp=%.1fs",
             epoch,
             trainer.num_epochs,
             metrics["loss"],
-            metrics.get("struct", 0.0),
             metrics.get("stroke_gram", 0.0),
             metrics.get("color_moment", 0.0),
             metrics.get("delta_tv", 0.0),
