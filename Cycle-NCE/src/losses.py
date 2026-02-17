@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 import random
 from contextlib import contextmanager
 from typing import Dict
@@ -15,336 +14,98 @@ except ImportError:
     from model import LatentAdaCUT
 
 
-class PatchSlicedWassersteinLoss(nn.Module):
-    """Patch-based sliced Wasserstein distance with optional patch mean removal."""
-
-    def __init__(
-        self,
-        patch_size: int = 3,
-        num_projections: int = 64,
-        max_samples: int = 4096,
-        normalize_patch: str = "mean",
-    ) -> None:
-        super().__init__()
-        self.patch_size = int(patch_size)
-        self.num_projections = int(num_projections)
-        self.max_samples = int(max_samples)
-        self.normalize_patch = str(normalize_patch)
-
-    def _extract_patches(self, x: torch.Tensor) -> torch.Tensor:
-        kw = self.patch_size
-        pad = kw // 2
-        patches = F.unfold(x, kernel_size=kw, padding=pad)
-        return patches.transpose(1, 2).contiguous()  # [B, N, C*K*K]
-
-    def _normalize(self, patches: torch.Tensor) -> torch.Tensor:
-        if self.normalize_patch == "mean":
-            return patches - patches.mean(dim=2, keepdim=True)
-        if self.normalize_patch == "none":
-            return patches
-        raise ValueError(f"Unsupported normalize_patch mode: {self.normalize_patch}")
-
-    def forward(self, x_pred: torch.Tensor, x_style: torch.Tensor) -> torch.Tensor:
-        with torch.amp.autocast("cuda", enabled=False):
-            x_pred = x_pred.float()
-            x_style = x_style.float()
-
-            pred_patches = self._normalize(self._extract_patches(x_pred))
-            style_patches = self._normalize(self._extract_patches(x_style))
-
-            feature_dim = pred_patches.shape[2]
-            pred_flat = pred_patches.view(-1, feature_dim)
-            style_flat = style_patches.view(-1, feature_dim)
-
-            total_samples = pred_flat.shape[0]
-            if total_samples > self.max_samples:
-                idx = torch.randperm(total_samples, device=pred_flat.device)[: self.max_samples]
-                pred_flat = pred_flat[idx]
-                style_flat = style_flat[idx]
-
-            proj = torch.randn(
-                feature_dim,
-                self.num_projections,
-                device=pred_flat.device,
-                dtype=pred_flat.dtype,
-            )
-            proj = F.normalize(proj, p=2, dim=0)
-
-            pred_proj = pred_flat @ proj
-            style_proj = style_flat @ proj
-
-            pred_sorted, _ = torch.sort(pred_proj, dim=0)
-            style_sorted, _ = torch.sort(style_proj, dim=0)
-            return F.mse_loss(pred_sorted, style_sorted)
-
-
-class SobelOperator(nn.Module):
-    """Fixed Sobel operator for latent gradient magnitude extraction."""
-
-    def __init__(self, in_channels: int = 4) -> None:
-        super().__init__()
-        sobel_x = torch.tensor(
-            [[-1.0, 0.0, 1.0], [-2.0, 0.0, 2.0], [-1.0, 0.0, 1.0]],
-            dtype=torch.float32,
-        )
-        sobel_y = torch.tensor(
-            [[-1.0, -2.0, -1.0], [0.0, 0.0, 0.0], [1.0, 2.0, 1.0]],
-            dtype=torch.float32,
-        )
-        self.in_channels = int(in_channels)
-        self.register_buffer(
-            "kx", sobel_x.view(1, 1, 3, 3).repeat(self.in_channels, 1, 1, 1)
-        )
-        self.register_buffer(
-            "ky", sobel_y.view(1, 1, 3, 3).repeat(self.in_channels, 1, 1, 1)
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        grad_x = F.conv2d(x, self.kx, padding=1, groups=self.in_channels)
-        grad_y = F.conv2d(x, self.ky, padding=1, groups=self.in_channels)
-        return torch.sqrt(grad_x.pow(2) + grad_y.pow(2) + 1e-6)
-
-
-class RandomFourierLifter(nn.Module):
-    """Random Fourier Features lifter: cos(Wx + b)."""
-
-    def __init__(self, in_channels: int = 4, out_channels: int = 512, sigma: float = 2.0) -> None:
-        super().__init__()
-        self.out_channels = int(out_channels)
-        w = torch.randn(self.out_channels, in_channels, 1, 1) * float(sigma)
-        b = torch.rand(self.out_channels, 1, 1) * (2.0 * torch.pi)
-        self.register_buffer("W", w)
-        self.register_buffer("b", b)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        proj = F.conv2d(x, self.W) + self.b
-        return torch.cos(proj)
-
-
-class RandomVGGEncoder(nn.Module):
+class DifferentialGramLoss(nn.Module):
     """
-    Untrained deep random encoder without normalization:
-    - stacked 3x3 convs for local texture context
-    - ReLU sparsity for Gram statistics
-    - no normalization to preserve feature-energy differences
+    Whitened Differential Gram Loss (WDG-Loss) - STABILIZED.
+
+    Fixes for "Black Image" / Overflow:
+    1. Force Float32: Gram matrix computation moves to FP32 to avoid NaN.
+    2. Moment Matching: Added Mean/Std loss to anchor brightness/contrast.
+    3. SmoothL1: Replaced MSE to prevent gradient explosion from outliers.
     """
 
-    def __init__(self, in_channels: int = 4, hidden_dim: int = 64, out_dim: int = 256) -> None:
+    def __init__(self, in_channels: int = 4, hidden_dim: int = 80, scale_factor: float = 0.13025) -> None:
         super().__init__()
-        self.net = nn.Sequential(
-            nn.Conv2d(in_channels, hidden_dim, kernel_size=3, padding=1, bias=False),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(hidden_dim, hidden_dim * 2, kernel_size=3, padding=1, bias=False),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(hidden_dim * 2, out_dim, kernel_size=3, padding=1, bias=False),
-            nn.ReLU(inplace=True),
-        )
+        self.scale_factor = float(scale_factor)
 
-        for m in self.net.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
-                m.weight.data.mul_(0.5)
-
-        self.net.eval()
-        for p in self.net.parameters():
+        # 1. Orthogonal Lifting Layer
+        self.projector = nn.Conv2d(in_channels, hidden_dim, kernel_size=1, bias=False)
+        nn.init.orthogonal_(self.projector.weight)
+        self.projector.eval()
+        for p in self.projector.parameters():
             p.requires_grad_(False)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.net(x)
+        self.scales = [1, 2, 3]
 
+    def forward(self, x_pred: torch.Tensor, x_target: torch.Tensor) -> Dict[str, torch.Tensor]:
+        # Scale Input
+        x_pred = x_pred * self.scale_factor
+        x_target = x_target * self.scale_factor
 
-class GaborFilterBank(nn.Module):
-    """
-    Fixed multi-scale, multi-orientation Gabor filter bank.
-    Applies the same bank to each latent channel via grouped convolution.
-    """
+        # 1. Lift & Act
+        h_pred = F.silu(self.projector(x_pred))
 
-    def __init__(
-        self,
-        in_channels: int = 4,
-        n_scales: int = 2,
-        n_orientations: int = 4,
-        kernel_size: int = 7,
-    ) -> None:
-        super().__init__()
-        if kernel_size % 2 == 0:
-            raise ValueError("kernel_size must be odd.")
+        with torch.no_grad():
+            h_target = F.silu(self.projector(x_target))
 
-        self.in_channels = int(in_channels)
-        self.n_scales = int(n_scales)
-        self.n_orientations = int(n_orientations)
-        self.kernel_size = int(kernel_size)
-        self.padding = self.kernel_size // 2
-        self.groups = self.in_channels
-        self.out_channels = self.in_channels * self.n_scales * self.n_orientations
+        # --- Stability Fix 1: Moment Loss (Anchor) ---
+        # 防止亮度/颜色漂移到无穷大
+        # 这一步计算简单的均值和标准差匹配，锁住 "底色"
+        mu_pred, std_pred = self._calc_moments(h_pred)
+        mu_tgt, std_tgt = self._calc_moments(h_target)
+        loss_moment = F.l1_loss(mu_pred, mu_tgt) + F.l1_loss(std_pred, std_tgt)
 
-        filters = []
-        for scale in range(self.n_scales):
-            for orient in range(self.n_orientations):
-                sigma = 1.0 + scale * 0.5
-                lambd = 3.0 + scale * 2.0
-                gamma = 0.5
-                theta = (orient / self.n_orientations) * math.pi
-                filters.append(
-                    self._create_gabor_kernel(
-                        self.kernel_size, sigma, theta, lambd, gamma
-                    )
-                )
+        # 2. Whiten (Instance Norm)
+        # 继续做我们的风格特征提取
+        h_pred_norm = F.instance_norm(h_pred)
+        h_target_norm = F.instance_norm(h_target)
 
-        weight = torch.stack(filters).unsqueeze(1)  # [M, 1, K, K]
-        self.register_buffer("weight", weight.repeat(self.in_channels, 1, 1, 1))
+        # 3. Differential Grams
+        # --- Stability Fix 2: Force FP32 for Gram ---
+        with torch.amp.autocast("cuda", enabled=False):
+            f_pred = self._extract_diff_features(h_pred_norm.float())
+            f_target = self._extract_diff_features(h_target_norm.float())
 
-    @staticmethod
-    def _create_gabor_kernel(
-        ksize: int,
-        sigma: float,
-        theta: float,
-        lambd: float,
-        gamma: float,
-        psi: float = 0.0,
-    ) -> torch.Tensor:
-        d = ksize // 2
-        coords = torch.arange(-d, d + 1, dtype=torch.float32)
-        y, x = torch.meshgrid(coords, coords, indexing="ij")
-        x_theta = x * math.cos(theta) + y * math.sin(theta)
-        y_theta = -x * math.sin(theta) + y * math.cos(theta)
-        gb = torch.exp(-0.5 * (x_theta**2 + (gamma**2) * y_theta**2) / (sigma**2)) * torch.cos(
-            2 * math.pi * x_theta / lambd + psi
-        )
-        return gb
+            # --- Stability Fix 3: Smooth L1 Loss ---
+            # MSE(x^2) 梯度太猛了，改用 Huber Loss (SmoothL1)
+            loss_gram = F.smooth_l1_loss(f_pred, f_target)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return F.conv2d(x, self.weight, padding=self.padding, groups=self.groups)
+        return loss_gram, loss_moment
 
+    def _calc_moments(self, x):
+        # [B, C, H, W] -> [B, C]
+        # Calculate mean and std per channel
+        mu = x.mean(dim=[2, 3])
+        std = x.std(dim=[2, 3])
+        return mu, std
 
-class HierarchicalRiemannianLoss(nn.Module):
-    """
-    Hierarchical Dilated Log-Euclidean Covariance Metric (HD-LECM).
-    """
+    def _extract_diff_features(self, h: torch.Tensor) -> torch.Tensor:
+        grams = []
+        for s in self.scales:
+            if s >= h.shape[-1]:
+                continue
 
-    def __init__(self, in_channels: int = 4, scale_factor: float = 0.13025, **kwargs) -> None:
-        super().__init__()
-        del kwargs
-        self.scale_factor = float(scale_factor)
-        self.in_channels = int(in_channels)
-        self.dilations = [1, 2, 4]
-        self.shifts = [
-            (0, 0),
-            (0, 1),
-            (0, -1),
-            (1, 0),
-            (-1, 0),
-            (1, 1),
-            (1, -1),
-            (-1, 1),
-            (-1, -1),
-        ]
+            # Gradients
+            dx = h[..., :, s:] - h[..., :, :-s]
+            dy = h[..., s:, :] - h[..., :-s, :]
 
-    def dilated_stack(self, x: torch.Tensor, dilations: list[int] | None = None) -> torch.Tensor:
-        active_dilations = self.dilations if dilations is None else dilations
-        feats = [x]
-        for dilation in active_dilations:
-            for dy, dx in self.shifts:
-                if dy == 0 and dx == 0:
-                    continue
-                sy = dy * dilation
-                sx = dx * dilation
-                feats.append(torch.roll(x, shifts=(sy, sx), dims=(2, 3)))
-        return torch.cat(feats, dim=1)
+            grams.append(self._gram(dx))
+            grams.append(self._gram(dy))
 
-    def compute_log_covariance(self, x: torch.Tensor) -> torch.Tensor:
+        return torch.cat(grams, dim=1)
+
+    def _gram(self, x):
         b, c, h, w = x.shape
-        n_pixels = h * w
-        features = x.view(b, c, -1)
-        features = features - features.mean(dim=2, keepdim=True)
+        f = x.reshape(b, c, -1)
+        # Normalized Gram: Divide by HW is safer than dividing by C*HW
+        # FP32 matmul here is critical
+        g = torch.bmm(f, f.transpose(1, 2)) / (h * w)
 
-        cov = torch.bmm(features, features.transpose(1, 2)) / float(max(n_pixels - 1, 1))
-        eye = torch.eye(c, device=x.device, dtype=x.dtype).unsqueeze(0).expand(b, -1, -1)
-        cov_safe = cov + 1e-4 * eye
-
-        try:
-            eigvals, eigvecs = torch.linalg.eigh(cov_safe)
-            eigvals_log = torch.log(eigvals.clamp_min(1e-6))
-            log_cov = torch.bmm(eigvecs, torch.diag_embed(eigvals_log)) @ eigvecs.transpose(1, 2)
-            return log_cov
-        except RuntimeError:
-            return cov_safe
-
-    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        x_in = x * self.scale_factor
-        y_in = y * self.scale_factor
-
-        # Scale 0: original resolution
-        x_stack = self.dilated_stack(x_in, dilations=self.dilations)
-        with torch.no_grad():
-            y_stack = self.dilated_stack(y_in, dilations=self.dilations)
-        loss = F.mse_loss(self.compute_log_covariance(x_stack), self.compute_log_covariance(y_stack))
-
-        # Scale 1: downsampled resolution with reduced dilations
-        x_down = F.avg_pool2d(x_in, kernel_size=2, stride=2)
-        y_down = F.avg_pool2d(y_in, kernel_size=2, stride=2)
-        x_stack_down = self.dilated_stack(x_down, dilations=[1, 2])
-        with torch.no_grad():
-            y_stack_down = self.dilated_stack(y_down, dilations=[1, 2])
-        loss = loss + F.mse_loss(
-            self.compute_log_covariance(x_stack_down),
-            self.compute_log_covariance(y_stack_down),
-        )
-        return loss
+        idx = torch.triu_indices(c, c, device=x.device)
+        return g[:, idx[0], idx[1]]
 
 
-class RiemannianGaborLoss(nn.Module):
-    """
-    Rectified Riemannian Gabor Loss:
-    MSE( log( cov( ReLU( Gabor(x) ) ) ) )
-    """
-
-    def __init__(self, in_channels: int = 4, scale_factor: float = 0.13025, **kwargs) -> None:
-        super().__init__()
-        del kwargs
-        self.scale_factor = float(scale_factor)
-        self.extractor = GaborFilterBank(
-            in_channels=in_channels,
-            n_scales=2,
-            n_orientations=4,
-            kernel_size=7,
-        )
-
-    @staticmethod
-    def compute_log_covariance(x: torch.Tensor) -> torch.Tensor:
-        b, c, h, w = x.shape
-        n_pixels = h * w
-
-        x = F.relu(x)
-        features = x.view(b, c, -1)
-        features = features - features.mean(dim=2, keepdim=True)
-
-        cov = torch.bmm(features, features.transpose(1, 2)) / float(max(n_pixels - 1, 1))
-        eye = torch.eye(c, device=x.device, dtype=x.dtype).unsqueeze(0).expand(b, -1, -1)
-        cov_safe = cov + 1e-4 * eye
-
-        try:
-            eigvals, eigvecs = torch.linalg.eigh(cov_safe)
-            eigvals_log = torch.log(eigvals.clamp_min(1e-6))
-            log_cov = torch.bmm(eigvecs, torch.diag_embed(eigvals_log)) @ eigvecs.transpose(1, 2)
-            return log_cov
-        except RuntimeError:
-            return cov_safe
-
-    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        x_in = x * self.scale_factor
-        y_in = y * self.scale_factor
-
-        feat_x = self.extractor(x_in)
-        with torch.no_grad():
-            feat_y = self.extractor(y_in)
-
-        log_cov_x = self.compute_log_covariance(feat_x)
-        log_cov_y = self.compute_log_covariance(feat_y)
-        return F.mse_loss(log_cov_x, log_cov_y)
-
-
-class LatentStyleLoss(RiemannianGaborLoss):
+class LatentStyleLoss(DifferentialGramLoss):
     pass
 
 
@@ -354,6 +115,8 @@ class AdaCUTObjective:
         model_cfg = config.get("model", {})
 
         self.w_style = float(loss_cfg.get("w_style", 10.0))
+        # 新增一个 moment 权重，默认给一点点约束即可
+        self.w_moment = float(loss_cfg.get("w_moment", 1.0))
         self.w_identity = float(loss_cfg.get("w_identity", 10.0))
         self.latent_scale_factor = float(model_cfg.get("latent_scale_factor", 0.13025))
 
@@ -443,9 +206,14 @@ class AdaCUTObjective:
             )
 
         loss_style = torch.tensor(0.0, device=content.device)
-        with self._nvtx_range("loss/style_swd", nvtx_enabled):
+        loss_moment = torch.tensor(0.0, device=content.device)
+
+        with self._nvtx_range("loss/style_wdg", nvtx_enabled):
             if self.w_style > 0.0:
-                loss_style = self._style_loss_module(pred_student, target_style)
+                # 返回两个 loss
+                l_gram, l_mom = self._style_loss_module(pred_student, target_style)
+                loss_style = l_gram
+                loss_moment = l_mom
 
         loss_identity = torch.tensor(0.0, device=content.device)
         with self._nvtx_range("loss/identity", nvtx_enabled):
@@ -454,11 +222,14 @@ class AdaCUTObjective:
                 denom = id_mask.float().sum().clamp_min(1.0)
                 loss_identity = (per_sample * id_mask.float()).sum() / denom
 
-        total = self.w_style * loss_style + self.w_identity * loss_identity
+        # 总 Loss 加入 Moment 约束
+        # Moment 权重给 1.0 或 5.0 都可以，它主要是为了防止数值漂移
+        total = self.w_style * loss_style + self.w_moment * loss_moment + self.w_identity * loss_identity
 
         return {
             "loss": total,
             "style_swd": loss_style.detach(),
+            "style_moment": loss_moment.detach(),  # 记录一下
             "identity": loss_identity.detach(),
             "train_num_steps": torch.tensor(float(train_num_steps), device=content.device),
             "train_step_size": torch.tensor(float(train_step_size), device=content.device),
