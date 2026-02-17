@@ -162,7 +162,7 @@ class GaborFilterBank(nn.Module):
     def __init__(
         self,
         in_channels: int = 4,
-        n_scales: int = 3,
+        n_scales: int = 2,
         n_orientations: int = 4,
         kernel_size: int = 7,
     ) -> None:
@@ -217,9 +217,9 @@ class GaborFilterBank(nn.Module):
         return F.conv2d(x, self.weight, padding=self.padding, groups=self.groups)
 
 
-class RiemannianStyleLoss(nn.Module):
+class HierarchicalRiemannianLoss(nn.Module):
     """
-    Log-Euclidean Covariance Metric (LECM) style loss.
+    Hierarchical Dilated Log-Euclidean Covariance Metric (HD-LECM).
     """
 
     def __init__(self, in_channels: int = 4, scale_factor: float = 0.13025, **kwargs) -> None:
@@ -227,6 +227,7 @@ class RiemannianStyleLoss(nn.Module):
         del kwargs
         self.scale_factor = float(scale_factor)
         self.in_channels = int(in_channels)
+        self.dilations = [1, 2, 4]
         self.shifts = [
             (0, 0),
             (0, 1),
@@ -238,22 +239,28 @@ class RiemannianStyleLoss(nn.Module):
             (-1, 1),
             (-1, -1),
         ]
-        self.out_channels = self.in_channels * len(self.shifts)
 
-    def spatial_shift_stack(self, x: torch.Tensor) -> torch.Tensor:
-        shifted = [torch.roll(x, shifts=(dy, dx), dims=(2, 3)) for dy, dx in self.shifts]
-        return torch.cat(shifted, dim=1)
+    def dilated_stack(self, x: torch.Tensor, dilations: list[int] | None = None) -> torch.Tensor:
+        active_dilations = self.dilations if dilations is None else dilations
+        feats = [x]
+        for dilation in active_dilations:
+            for dy, dx in self.shifts:
+                if dy == 0 and dx == 0:
+                    continue
+                sy = dy * dilation
+                sx = dx * dilation
+                feats.append(torch.roll(x, shifts=(sy, sx), dims=(2, 3)))
+        return torch.cat(feats, dim=1)
 
     def compute_log_covariance(self, x: torch.Tensor) -> torch.Tensor:
         b, c, h, w = x.shape
         n_pixels = h * w
-
         features = x.view(b, c, -1)
         features = features - features.mean(dim=2, keepdim=True)
 
         cov = torch.bmm(features, features.transpose(1, 2)) / float(max(n_pixels - 1, 1))
         eye = torch.eye(c, device=x.device, dtype=x.dtype).unsqueeze(0).expand(b, -1, -1)
-        cov_safe = cov + 1e-5 * eye
+        cov_safe = cov + 1e-4 * eye
 
         try:
             eigvals, eigvecs = torch.linalg.eigh(cov_safe)
@@ -267,16 +274,77 @@ class RiemannianStyleLoss(nn.Module):
         x_in = x * self.scale_factor
         y_in = y * self.scale_factor
 
-        x_lifted = self.spatial_shift_stack(x_in)
+        # Scale 0: original resolution
+        x_stack = self.dilated_stack(x_in, dilations=self.dilations)
         with torch.no_grad():
-            y_lifted = self.spatial_shift_stack(y_in)
+            y_stack = self.dilated_stack(y_in, dilations=self.dilations)
+        loss = F.mse_loss(self.compute_log_covariance(x_stack), self.compute_log_covariance(y_stack))
 
-        log_cov_x = self.compute_log_covariance(x_lifted)
-        log_cov_y = self.compute_log_covariance(y_lifted)
+        # Scale 1: downsampled resolution with reduced dilations
+        x_down = F.avg_pool2d(x_in, kernel_size=2, stride=2)
+        y_down = F.avg_pool2d(y_in, kernel_size=2, stride=2)
+        x_stack_down = self.dilated_stack(x_down, dilations=[1, 2])
+        with torch.no_grad():
+            y_stack_down = self.dilated_stack(y_down, dilations=[1, 2])
+        loss = loss + F.mse_loss(
+            self.compute_log_covariance(x_stack_down),
+            self.compute_log_covariance(y_stack_down),
+        )
+        return loss
+
+
+class RiemannianGaborLoss(nn.Module):
+    """
+    Rectified Riemannian Gabor Loss:
+    MSE( log( cov( ReLU( Gabor(x) ) ) ) )
+    """
+
+    def __init__(self, in_channels: int = 4, scale_factor: float = 0.13025, **kwargs) -> None:
+        super().__init__()
+        del kwargs
+        self.scale_factor = float(scale_factor)
+        self.extractor = GaborFilterBank(
+            in_channels=in_channels,
+            n_scales=2,
+            n_orientations=4,
+            kernel_size=7,
+        )
+
+    @staticmethod
+    def compute_log_covariance(x: torch.Tensor) -> torch.Tensor:
+        b, c, h, w = x.shape
+        n_pixels = h * w
+
+        x = F.relu(x)
+        features = x.view(b, c, -1)
+        features = features - features.mean(dim=2, keepdim=True)
+
+        cov = torch.bmm(features, features.transpose(1, 2)) / float(max(n_pixels - 1, 1))
+        eye = torch.eye(c, device=x.device, dtype=x.dtype).unsqueeze(0).expand(b, -1, -1)
+        cov_safe = cov + 1e-4 * eye
+
+        try:
+            eigvals, eigvecs = torch.linalg.eigh(cov_safe)
+            eigvals_log = torch.log(eigvals.clamp_min(1e-6))
+            log_cov = torch.bmm(eigvecs, torch.diag_embed(eigvals_log)) @ eigvecs.transpose(1, 2)
+            return log_cov
+        except RuntimeError:
+            return cov_safe
+
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        x_in = x * self.scale_factor
+        y_in = y * self.scale_factor
+
+        feat_x = self.extractor(x_in)
+        with torch.no_grad():
+            feat_y = self.extractor(y_in)
+
+        log_cov_x = self.compute_log_covariance(feat_x)
+        log_cov_y = self.compute_log_covariance(feat_y)
         return F.mse_loss(log_cov_x, log_cov_y)
 
 
-class LatentStyleLoss(RiemannianStyleLoss):
+class LatentStyleLoss(RiemannianGaborLoss):
     pass
 
 
