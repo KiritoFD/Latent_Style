@@ -22,8 +22,8 @@
     "loss_projector_channels": 64
   },
   "loss": {
-    "w_style": 10.0,
-    "w_identity": 10.0,
+    "w_style": 100.0,
+    "w_identity": 1.0,
     "train_num_steps_min": 1,
     "train_num_steps_max": 1,
     "train_step_size_min": 1.0,
@@ -46,7 +46,7 @@
     "weight_decay": 0.0,
     "scheduler": "cosine",
     "grad_clip_norm": 1.0,
-    "num_epochs": 100,
+    "num_epochs": 200,
     "save_interval": 10,
     "full_eval_interval": 50,
     "full_eval_on_last_epoch": true,
@@ -57,13 +57,13 @@
     "full_eval_ref_feature_batch_size": 8,
     "full_eval_num_steps": 1,
     "full_eval_step_size": 1.0,
-    "full_eval_style_strength": 0.75,
+    "full_eval_style_strength": 1.0,
     "test_image_dir": "../../style_data/overfit50",
     "full_eval_cache_dir": "../../eval_cache",
     "full_eval_classifier_only": false,
     "full_eval_disable_lpips": false,
     "log_interval": 100,
-    "use_tqdm": false,
+    "use_tqdm": true,
     "use_amp": true,
     "amp_dtype": "fp16",
     "allow_tf32": true,
@@ -96,11 +96,11 @@
     "virtual_length_multiplier": 4
   },
   "checkpoint": {
-    "save_dir": "../full-adagn-map16-statloss"
+    "save_dir": "../swd-256"
   },
   "inference": {
     "num_steps": 1,
     "step_size": 1.0,
-    "style_strength": 0.75
+    "style_strength": 1
   }
 }

@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
@@ -131,7 +131,7 @@
   <div class="wrap">
     <div class="card">
       <h1>Training Log Visualizer</h1>
-      <p class="hint">粘贴 `training_*.csv` 或终端日志（`Epoch ... | loss=...` / `[Epoch ...] ...`），会自动解析并画图。</p>
+      <p class="hint">粘贴 `training_*.csv` 或终端日志（`Epoch ... | loss=...` / `[Epoch ...] ...`）后自动解析并绘图。</p>
     </div>
 
     <div class="card">
@@ -164,23 +164,34 @@
 
   <script>
     const METRICS = [
-      "loss", "struct", "semigroup", "stroke_gram", "color_moment",
-      "delta_tv", "delta_l2", "train_num_steps", "train_step_size",
-      "train_style_strength", "lr", "data_time_sec", "compute_time_sec", "epoch_time_sec"
+      "loss",
+      "style_swd",
+      "identity",
+      "train_num_steps",
+      "train_step_size",
+      "train_style_strength",
+      "lr",
+      "data_time_sec",
+      "compute_time_sec",
+      "epoch_time_sec",
+      "samples_seen",
+      "samples_per_sec"
     ];
-    const DEFAULT_ON = new Set(["loss", "struct", "semigroup", "stroke_gram", "color_moment", "lr"]);
+    const DEFAULT_ON = new Set(["loss", "style_swd", "identity", "lr", "samples_per_sec"]);
     const COLORS = [
       "#38bdf8", "#f59e0b", "#22c55e", "#ef4444", "#a78bfa", "#14b8a6",
       "#eab308", "#f97316", "#60a5fa", "#10b981", "#f472b6", "#84cc16"
     ];
     const ALIAS = {
-      sgram: "stroke_gram",
-      cmoment: "color_moment",
-      dtv: "delta_tv",
-      dl2: "delta_l2",
+      style: "style_swd",
+      style_swd: "style_swd",
+      idt: "identity",
+      identity: "identity",
       steps: "train_num_steps",
       h: "train_step_size",
       s: "train_style_strength",
+      sps: "samples_per_sec",
+      samples: "samples_seen",
       data: "data_time_sec",
       compute: "compute_time_sec",
       comp: "compute_time_sec",
@@ -392,3 +403,4 @@
   </script>
 </body>
 </html>
+

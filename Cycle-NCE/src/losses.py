@@ -70,9 +70,11 @@ class LatentStyleLoss(nn.Module):
 class AdaCUTObjective:
     def __init__(self, config: Dict) -> None:
         loss_cfg = config.get("loss", {})
+        model_cfg = config.get("model", {})
 
         self.w_style = float(loss_cfg.get("w_style", 10.0))
         self.w_identity = float(loss_cfg.get("w_identity", 10.0))
+        self.latent_scale_factor = float(model_cfg.get("latent_scale_factor", 0.13025))
 
         self.train_num_steps_min = max(1, int(loss_cfg.get("train_num_steps_min", 1)))
         self.train_num_steps_max = max(1, int(loss_cfg.get("train_num_steps_max", self.train_num_steps_min)))
@@ -86,7 +88,9 @@ class AdaCUTObjective:
 
     def _ensure_style_module(self, device: torch.device) -> None:
         if self._style_loss_module is None:
-            self._style_loss_module = LatentStyleLoss().to(device)
+            self._style_loss_module = LatentStyleLoss(
+                scale_factor=self.latent_scale_factor
+            ).to(device)
         elif next(self._style_loss_module.parameters()).device != device:
             self._style_loss_module = self._style_loss_module.to(device)
 
