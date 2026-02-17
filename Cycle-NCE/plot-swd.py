@@ -267,18 +267,18 @@ def plot_best_pca_torch(
 
 def build_search_space() -> dict:
     return {
-        # Mini-search: focused low-rank sweep.
-        "dim": [16, 24, 32,48,64],
+        # Final-lap elite sweep.
+        "dim": [40, 48, 56, 64],
         "kernel": [1],
-        "act": ["relu"],
-        "norm": ["instance", "layer", "group"],
+        "act": ["relu", "leaky"],
+        "norm": ["group"],
         "feature_mode": ["diff"],
-        "scales": [[1, 2],[1],[1,3]],
+        "scales": [[1], [1, 2]],
         "gram_center": [False, True],
-        "gram_norm": ["hw"],
+        "gram_norm": ["chw"],
         "init": ["orthogonal"],
         "scale_factor": [0.13025],
-        "group_norm_groups": [2,4,8],
+        "group_norm_groups": [1, 2, 4, 8],
     }
 
 
@@ -340,6 +340,8 @@ def run_full_grid_search(args: argparse.Namespace) -> None:
     with ThreadPoolExecutor(max_workers=max_pending) as pool:
         for combo in tqdm(combinations, desc="Grid Search"):
             cfg = dict(zip(keys, combo))
+            if cfg["norm"] == "group" and (int(cfg["dim"]) % int(cfg["group_norm_groups"]) != 0):
+                continue
             extractor = ParametricExtractor(in_channels=4, config=cfg).to(device)
 
             X_feats = None
