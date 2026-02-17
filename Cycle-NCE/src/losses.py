@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import math
 import random
 from contextlib import contextmanager
-from typing import Dict, Sequence
+from typing import Dict
 
 import torch
 import torch.nn as nn
@@ -120,47 +121,163 @@ class RandomFourierLifter(nn.Module):
         return torch.cos(proj)
 
 
-class LatentStyleLoss(nn.Module):
-    """Kernel-SWD on random Fourier features."""
+class RandomVGGEncoder(nn.Module):
+    """
+    Untrained deep random encoder without normalization:
+    - stacked 3x3 convs for local texture context
+    - ReLU sparsity for Gram statistics
+    - no normalization to preserve feature-energy differences
+    """
+
+    def __init__(self, in_channels: int = 4, hidden_dim: int = 64, out_dim: int = 256) -> None:
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Conv2d(in_channels, hidden_dim, kernel_size=3, padding=1, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(hidden_dim, hidden_dim * 2, kernel_size=3, padding=1, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(hidden_dim * 2, out_dim, kernel_size=3, padding=1, bias=False),
+            nn.ReLU(inplace=True),
+        )
+
+        for m in self.net.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+                m.weight.data.mul_(0.5)
+
+        self.net.eval()
+        for p in self.net.parameters():
+            p.requires_grad_(False)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+
+class GaborFilterBank(nn.Module):
+    """
+    Fixed multi-scale, multi-orientation Gabor filter bank.
+    Applies the same bank to each latent channel via grouped convolution.
+    """
 
     def __init__(
         self,
         in_channels: int = 4,
-        scale_factor: float = 0.13025,
-        lift_dim: int = 512,
-        rff_sigma: float = 2.0,
-        num_projections: int = 64,
-        **kwargs,
+        n_scales: int = 3,
+        n_orientations: int = 4,
+        kernel_size: int = 7,
     ) -> None:
+        super().__init__()
+        if kernel_size % 2 == 0:
+            raise ValueError("kernel_size must be odd.")
+
+        self.in_channels = int(in_channels)
+        self.n_scales = int(n_scales)
+        self.n_orientations = int(n_orientations)
+        self.kernel_size = int(kernel_size)
+        self.padding = self.kernel_size // 2
+        self.groups = self.in_channels
+        self.out_channels = self.in_channels * self.n_scales * self.n_orientations
+
+        filters = []
+        for scale in range(self.n_scales):
+            for orient in range(self.n_orientations):
+                sigma = 1.0 + scale * 0.5
+                lambd = 3.0 + scale * 2.0
+                gamma = 0.5
+                theta = (orient / self.n_orientations) * math.pi
+                filters.append(
+                    self._create_gabor_kernel(
+                        self.kernel_size, sigma, theta, lambd, gamma
+                    )
+                )
+
+        weight = torch.stack(filters).unsqueeze(1)  # [M, 1, K, K]
+        self.register_buffer("weight", weight.repeat(self.in_channels, 1, 1, 1))
+
+    @staticmethod
+    def _create_gabor_kernel(
+        ksize: int,
+        sigma: float,
+        theta: float,
+        lambd: float,
+        gamma: float,
+        psi: float = 0.0,
+    ) -> torch.Tensor:
+        d = ksize // 2
+        coords = torch.arange(-d, d + 1, dtype=torch.float32)
+        y, x = torch.meshgrid(coords, coords, indexing="ij")
+        x_theta = x * math.cos(theta) + y * math.sin(theta)
+        y_theta = -x * math.sin(theta) + y * math.cos(theta)
+        gb = torch.exp(-0.5 * (x_theta**2 + (gamma**2) * y_theta**2) / (sigma**2)) * torch.cos(
+            2 * math.pi * x_theta / lambd + psi
+        )
+        return gb
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return F.conv2d(x, self.weight, padding=self.padding, groups=self.groups)
+
+
+class RiemannianStyleLoss(nn.Module):
+    """
+    Log-Euclidean Covariance Metric (LECM) style loss.
+    """
+
+    def __init__(self, in_channels: int = 4, scale_factor: float = 0.13025, **kwargs) -> None:
         super().__init__()
         del kwargs
         self.scale_factor = float(scale_factor)
-        self.lifter = RandomFourierLifter(
-            in_channels=in_channels,
-            out_channels=lift_dim,
-            sigma=rff_sigma,
-        )
-        rand_proj = torch.randn(lift_dim, num_projections)
-        self.register_buffer("projections", F.normalize(rand_proj, p=2, dim=0))
+        self.in_channels = int(in_channels)
+        self.shifts = [
+            (0, 0),
+            (0, 1),
+            (0, -1),
+            (1, 0),
+            (-1, 0),
+            (1, 1),
+            (1, -1),
+            (-1, 1),
+            (-1, -1),
+        ]
+        self.out_channels = self.in_channels * len(self.shifts)
+
+    def spatial_shift_stack(self, x: torch.Tensor) -> torch.Tensor:
+        shifted = [torch.roll(x, shifts=(dy, dx), dims=(2, 3)) for dy, dx in self.shifts]
+        return torch.cat(shifted, dim=1)
+
+    def compute_log_covariance(self, x: torch.Tensor) -> torch.Tensor:
+        b, c, h, w = x.shape
+        n_pixels = h * w
+
+        features = x.view(b, c, -1)
+        features = features - features.mean(dim=2, keepdim=True)
+
+        cov = torch.bmm(features, features.transpose(1, 2)) / float(max(n_pixels - 1, 1))
+        eye = torch.eye(c, device=x.device, dtype=x.dtype).unsqueeze(0).expand(b, -1, -1)
+        cov_safe = cov + 1e-5 * eye
+
+        try:
+            eigvals, eigvecs = torch.linalg.eigh(cov_safe)
+            eigvals_log = torch.log(eigvals.clamp_min(1e-6))
+            log_cov = torch.bmm(eigvecs, torch.diag_embed(eigvals_log)) @ eigvecs.transpose(1, 2)
+            return log_cov
+        except RuntimeError:
+            return cov_safe
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        x_scaled = x * self.scale_factor
-        y_scaled = y * self.scale_factor
+        x_in = x * self.scale_factor
+        y_in = y * self.scale_factor
 
-        feat_x = self.lifter(x_scaled)
+        x_lifted = self.spatial_shift_stack(x_in)
         with torch.no_grad():
-            feat_y = self.lifter(y_scaled)
+            y_lifted = self.spatial_shift_stack(y_in)
 
-        b, c, h, w = feat_x.shape
-        x_flat = feat_x.view(b, c, -1).permute(0, 2, 1)
-        y_flat = feat_y.view(b, c, -1).permute(0, 2, 1)
+        log_cov_x = self.compute_log_covariance(x_lifted)
+        log_cov_y = self.compute_log_covariance(y_lifted)
+        return F.mse_loss(log_cov_x, log_cov_y)
 
-        x_proj = x_flat @ self.projections
-        y_proj = y_flat @ self.projections
 
-        x_sorted, _ = torch.sort(x_proj, dim=1)
-        y_sorted, _ = torch.sort(y_proj, dim=1)
-        return F.mse_loss(x_sorted, y_sorted)
+class LatentStyleLoss(RiemannianStyleLoss):
+    pass
 
 
 class AdaCUTObjective:
