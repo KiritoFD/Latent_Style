@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/utils/run_evaluation.py", line 1256, in <module>
+    main() 
+    ^^^^^^
+  File "/mnt/g/GitHub/Latent_Style/Cycle-NCE/src/utils/run_evaluation.py", line 570, in main
+    raise ValueError(f"Test directory not found: {test_dir_raw}")
+ValueError: Test directory not found: 

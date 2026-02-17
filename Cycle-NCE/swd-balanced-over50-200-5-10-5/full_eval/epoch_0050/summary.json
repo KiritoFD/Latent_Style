@@ -1,0 +1,56 @@
+{
+  "checkpoint": "../swd-balanced-over50-200-5-10-5/epoch_0050.pt",
+  "timestamp": "2026-02-17 21:19:50",
+  "matrix_breakdown": {
+    "photo": {
+      "photo": {
+        "count": 10,
+        "clip_style": 0.5999532908201217,
+        "style_lpips": 0.7595708012580872,
+        "content_lpips": 0.441844294,
+        "clip_content": 0.743319975,
+        "classifier_acc": null
+      },
+      "Hayao": {
+        "count": 10,
+        "clip_style": 0.4603065401315689,
+        "style_lpips": 0.8106222867965698,
+        "content_lpips": 0.333133806,
+        "clip_content": 0.8850977200000001,
+        "classifier_acc": null
+      }
+    },
+    "Hayao": {
+      "photo": {
+        "count": 10,
+        "clip_style": 0.4688300728797913,
+        "style_lpips": 0.7893924593925477,
+        "content_lpips": 0.31726779099999997,
+        "clip_content": 0.8655631639999999,
+        "classifier_acc": null
+      },
+      "Hayao": {
+        "count": 10,
+        "clip_style": 0.7068222045898438,
+        "style_lpips": 0.7395114302635193,
+        "content_lpips": 0.230657333,
+        "clip_content": 0.92707579,
+        "classifier_acc": null
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "clip_style": 0.4645683065056801,
+      "content_lpips": 0.32520079849999994,
+      "classifier_acc": 0.0
+    },
+    "photo_to_art_performance": {
+      "clip_style": 0.4603065401315689,
+      "valid": true,
+      "classifier_acc": 0.0
+    }
+  },
+  "classification_report": null,
+  "detailed_style_metrics": {}
+}

@@ -1,0 +1,27 @@
+{
+  "num_rounds": 2,
+  "latest": {
+    "epoch": 100,
+    "summary_path": "../swd-balanced-over50-200-5-10-5/full_eval/epoch_0100/summary.json",
+    "transfer_clip_style": 0.49023824334144595,
+    "transfer_content_lpips": 0.43236853599999997,
+    "photo_to_art_clip_style": 0.552118855714798
+  },
+  "rounds": [
+    {
+      "epoch": 50,
+      "summary_path": "../swd-balanced-over50-200-5-10-5/full_eval/epoch_0050/summary.json",
+      "transfer_clip_style": 0.4645683065056801,
+      "transfer_content_lpips": 0.32520079849999994,
+      "photo_to_art_clip_style": 0.4603065401315689
+    },
+    {
+      "epoch": 100,
+      "summary_path": "../swd-balanced-over50-200-5-10-5/full_eval/epoch_0100/summary.json",
+      "transfer_clip_style": 0.49023824334144595,
+      "transfer_content_lpips": 0.43236853599999997,
+      "photo_to_art_clip_style": 0.552118855714798
+    }
+  ],
+  "updated_at": "2026-02-17 21:29:07"
+}

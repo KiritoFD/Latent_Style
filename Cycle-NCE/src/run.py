@@ -27,7 +27,10 @@ logger = logging.getLogger(__name__)
 
 _ALLOWED_LOSS_KEYS = {
     "w_style",
+    "w_moment",
     "w_identity",
+    "w_structure",
+    "w_tv",
     "train_num_steps_min",
     "train_num_steps_max",
     "train_step_size_min",
@@ -38,7 +41,10 @@ _ALLOWED_LOSS_KEYS = {
 _FORBIDDEN_LOSS_KEYS = {"w_distill", "distill_low_only", "distill_cross_domain_only", "w_code", "style_loss_source"}
 _LOSS_WEIGHT_KEYS = (
     "w_style",
+    "w_moment",
     "w_identity",
+    "w_structure",
+    "w_tv",
 )
 
 
@@ -291,11 +297,14 @@ def main() -> None:
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f style_swd=%.4f idt=%.4f steps=%.1f h=%.2f s=%.2f lr=%.2e data=%.1fs comp=%.1fs",
+            "Epoch %d/%d | loss=%.4f style_swd=%.4f mom=%.4f struct=%.4f tv=%.4f idt=%.4f steps=%.1f h=%.2f s=%.2f lr=%.2e data=%.1fs comp=%.1fs",
             epoch,
             trainer.num_epochs,
             metrics["loss"],
             metrics.get("style_swd", 0.0),
+            metrics.get("style_moment", 0.0),
+            metrics.get("structure", 0.0),
+            metrics.get("tv", 0.0),
             metrics.get("identity", 0.0),
             metrics.get("train_num_steps", 0.0),
             metrics.get("train_step_size", 0.0),

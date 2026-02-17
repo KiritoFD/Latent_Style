@@ -1,0 +1,271 @@
+rank,score,dim,kernel,act,norm,feature_mode,scales,gram_center,gram_norm,init,scale_factor
+1,0.07467572391033173,48,1,relu,layer,diff,[1],False,hw,orthogonal,0.13025
+2,0.07386200875043869,64,1,relu,layer,diff,"[1, 2]",False,hw,orthogonal,0.13025
+3,0.07318148761987686,48,1,relu,layer,diff,[1],False,hw,orthogonal,0.13025
+4,0.07269319891929626,16,1,relu,layer,diff,[1],True,hw,orthogonal,0.13025
+5,0.07134433090686798,64,1,relu,layer,diff,[1],True,hw,orthogonal,0.13025
+6,0.07123077660799026,64,1,relu,layer,diff,[1],True,hw,orthogonal,0.13025
+7,0.070930115878582,64,1,relu,group,diff,[1],False,hw,orthogonal,0.13025
+8,0.07088267803192139,24,1,relu,group,diff,"[1, 3]",False,hw,orthogonal,0.13025
+9,0.07059779018163681,64,1,relu,layer,diff,"[1, 2]",True,hw,orthogonal,0.13025
+10,0.0693255215883255,16,1,relu,group,diff,[1],True,hw,orthogonal,0.13025
+11,0.06862881034612656,48,1,relu,group,diff,"[1, 3]",True,hw,orthogonal,0.13025
+12,0.06837257742881775,48,1,relu,group,diff,[1],False,hw,orthogonal,0.13025
+13,0.06806366890668869,32,1,relu,layer,diff,[1],True,hw,orthogonal,0.13025
+14,0.06774590164422989,48,1,relu,group,diff,"[1, 2]",False,hw,orthogonal,0.13025
+15,0.06641645729541779,48,1,relu,layer,diff,"[1, 2]",False,hw,orthogonal,0.13025
+16,0.06615748256444931,32,1,relu,layer,diff,[1],False,hw,orthogonal,0.13025
+17,0.06603378802537918,48,1,relu,layer,diff,"[1, 3]",True,hw,orthogonal,0.13025
+18,0.06454157829284668,64,1,relu,layer,diff,"[1, 2]",True,hw,orthogonal,0.13025
+19,0.06437551230192184,32,1,relu,layer,diff,"[1, 3]",True,hw,orthogonal,0.13025
+20,0.06414725631475449,64,1,relu,layer,diff,"[1, 2]",False,hw,orthogonal,0.13025
+21,0.06377355009317398,64,1,relu,group,diff,"[1, 2]",True,hw,orthogonal,0.13025
+22,0.06269169598817825,48,1,relu,group,diff,"[1, 2]",True,hw,orthogonal,0.13025
+23,0.06269001215696335,64,1,relu,layer,diff,"[1, 3]",False,hw,orthogonal,0.13025
+24,0.06220117211341858,48,1,relu,group,diff,[1],True,hw,orthogonal,0.13025
+25,0.061691492795944214,32,1,relu,group,diff,"[1, 3]",True,hw,orthogonal,0.13025
+26,0.06147317960858345,24,1,relu,group,diff,"[1, 3]",True,hw,orthogonal,0.13025
+27,0.060899268835783005,64,1,relu,layer,diff,[1],False,hw,orthogonal,0.13025
+28,0.060518763959407806,64,1,relu,group,diff,[1],True,hw,orthogonal,0.13025
+29,0.060454241931438446,24,1,relu,group,diff,[1],False,hw,orthogonal,0.13025
+30,0.060365136712789536,48,1,relu,group,diff,[1],False,hw,orthogonal,0.13025
+31,0.06012983247637749,48,1,relu,layer,diff,"[1, 3]",False,hw,orthogonal,0.13025
+32,0.05997845530509949,48,1,relu,group,diff,"[1, 2]",False,hw,orthogonal,0.13025
+33,0.05978488177061081,48,1,relu,layer,diff,[1],True,hw,orthogonal,0.13025
+34,0.059655725955963135,64,1,relu,group,diff,"[1, 2]",False,hw,orthogonal,0.13025
+35,0.05961193889379501,24,1,relu,layer,diff,[1],True,hw,orthogonal,0.13025
+36,0.059286121279001236,64,1,relu,group,diff,"[1, 2]",True,hw,orthogonal,0.13025
+37,0.059183526784181595,64,1,relu,group,diff,"[1, 2]",False,hw,orthogonal,0.13025
+38,0.05904702842235565,48,1,relu,layer,diff,[1],True,hw,orthogonal,0.13025
+39,0.05900336429476738,64,1,relu,group,diff,"[1, 2]",True,hw,orthogonal,0.13025
+40,0.0589745007455349,64,1,relu,layer,diff,[1],False,hw,orthogonal,0.13025
+41,0.058721527457237244,24,1,relu,layer,diff,[1],True,hw,orthogonal,0.13025
+42,0.05824713781476021,24,1,relu,layer,diff,[1],False,hw,orthogonal,0.13025
+43,0.058235399425029755,24,1,relu,layer,diff,"[1, 3]",True,hw,orthogonal,0.13025
+44,0.05799482390284538,16,1,relu,layer,diff,[1],False,hw,orthogonal,0.13025
+45,0.05724988877773285,24,1,relu,layer,diff,"[1, 2]",True,hw,orthogonal,0.13025
+46,0.05721548944711685,24,1,relu,layer,diff,"[1, 2]",True,hw,orthogonal,0.13025
+47,0.05714474990963936,32,1,relu,layer,diff,"[1, 2]",True,hw,orthogonal,0.13025
+48,0.05706919729709625,24,1,relu,layer,diff,"[1, 3]",False,hw,orthogonal,0.13025
+49,0.05698733031749725,16,1,relu,layer,diff,[1],True,hw,orthogonal,0.13025
+50,0.05691075325012207,16,1,relu,layer,diff,[1],True,hw,orthogonal,0.13025
+51,0.056801099330186844,24,1,relu,group,diff,"[1, 2]",False,hw,orthogonal,0.13025
+52,0.0565488263964653,64,1,relu,group,diff,"[1, 2]",False,hw,orthogonal,0.13025
+53,0.05631381273269653,48,1,relu,layer,diff,"[1, 2]",True,hw,orthogonal,0.13025
+54,0.056284330785274506,16,1,relu,group,diff,"[1, 2]",False,hw,orthogonal,0.13025
+55,0.056265417486429214,24,1,relu,group,diff,"[1, 3]",False,hw,orthogonal,0.13025
+56,0.05619243159890175,24,1,relu,layer,diff,[1],False,hw,orthogonal,0.13025
+57,0.05614520236849785,48,1,relu,layer,diff,"[1, 2]",False,hw,orthogonal,0.13025
+58,0.05612573400139809,64,1,relu,group,diff,[1],False,hw,orthogonal,0.13025
+59,0.05605783686041832,32,1,relu,layer,diff,"[1, 3]",False,hw,orthogonal,0.13025
+60,0.05571191385388374,32,1,relu,layer,diff,[1],True,hw,orthogonal,0.13025
+61,0.05555645003914833,16,1,relu,group,diff,"[1, 3]",True,hw,orthogonal,0.13025
+62,0.05541415512561798,48,1,relu,layer,diff,[1],False,hw,orthogonal,0.13025
+63,0.054938916116952896,24,1,relu,group,diff,"[1, 2]",True,hw,orthogonal,0.13025
+64,0.054847437888383865,48,1,relu,layer,diff,"[1, 2]",True,hw,orthogonal,0.13025
+65,0.05471058189868927,16,1,relu,layer,diff,"[1, 2]",True,hw,orthogonal,0.13025
+66,0.05444028228521347,48,1,relu,group,diff,"[1, 3]",True,hw,orthogonal,0.13025
+67,0.05424865707755089,64,1,relu,layer,diff,"[1, 2]",True,hw,orthogonal,0.13025
+68,0.05423031002283096,64,1,relu,layer,diff,[1],True,hw,orthogonal,0.13025
+69,0.05421354994177818,48,1,relu,instance,diff,[1],False,hw,orthogonal,0.13025
+70,0.05411679670214653,32,1,relu,layer,diff,"[1, 2]",False,hw,orthogonal,0.13025
+71,0.053780462592840195,24,1,relu,layer,diff,"[1, 2]",False,hw,orthogonal,0.13025
+72,0.05357618257403374,32,1,relu,group,diff,"[1, 2]",False,hw,orthogonal,0.13025
+73,0.05356990918517113,32,1,relu,group,diff,[1],True,hw,orthogonal,0.13025
+74,0.053200483322143555,32,1,relu,layer,diff,"[1, 2]",False,hw,orthogonal,0.13025
+75,0.053130779415369034,16,1,relu,group,diff,"[1, 3]",True,hw,orthogonal,0.13025
+76,0.05310269817709923,24,1,relu,group,diff,[1],False,hw,orthogonal,0.13025
+77,0.053047552704811096,32,1,relu,layer,diff,[1],True,hw,orthogonal,0.13025
+78,0.05295611545443535,32,1,relu,layer,diff,"[1, 2]",True,hw,orthogonal,0.13025
+79,0.0527656115591526,48,1,relu,layer,diff,"[1, 3]",True,hw,orthogonal,0.13025
+80,0.05263848230242729,24,1,relu,group,diff,"[1, 3]",False,hw,orthogonal,0.13025
+81,0.05255257710814476,64,1,relu,layer,diff,"[1, 3]",False,hw,orthogonal,0.13025
+82,0.051951196044683456,24,1,relu,layer,diff,"[1, 2]",False,hw,orthogonal,0.13025
+83,0.051902178674936295,16,1,relu,group,diff,[1],False,hw,orthogonal,0.13025
+84,0.05187005549669266,32,1,relu,group,diff,[1],False,hw,orthogonal,0.13025
+85,0.051765162497758865,16,1,relu,group,diff,"[1, 2]",True,hw,orthogonal,0.13025
+86,0.051312316209077835,64,1,relu,layer,diff,[1],False,hw,orthogonal,0.13025
+87,0.05128779262304306,64,1,relu,group,diff,"[1, 3]",True,hw,orthogonal,0.13025
+88,0.051240772008895874,32,1,relu,group,diff,"[1, 2]",False,hw,orthogonal,0.13025
+89,0.051097322255373,64,1,relu,group,diff,"[1, 3]",False,hw,orthogonal,0.13025
+90,0.05105821415781975,32,1,relu,layer,diff,"[1, 3]",False,hw,orthogonal,0.13025
+91,0.05092806741595268,64,1,relu,group,diff,"[1, 3]",True,hw,orthogonal,0.13025
+92,0.05091678351163864,24,1,relu,group,diff,[1],True,hw,orthogonal,0.13025
+93,0.05085889622569084,48,1,relu,group,diff,"[1, 2]",False,hw,orthogonal,0.13025
+94,0.050560321658849716,24,1,relu,group,diff,[1],False,hw,orthogonal,0.13025
+95,0.05049514025449753,32,1,relu,group,diff,"[1, 2]",True,hw,orthogonal,0.13025
+96,0.05009489506483078,24,1,relu,group,diff,"[1, 3]",True,hw,orthogonal,0.13025
+97,0.049908626824617386,32,1,relu,group,diff,"[1, 2]",True,hw,orthogonal,0.13025
+98,0.04888417199254036,24,1,relu,layer,diff,"[1, 3]",True,hw,orthogonal,0.13025
+99,0.048652149736881256,64,1,relu,layer,diff,"[1, 2]",False,hw,orthogonal,0.13025
+100,0.04863300174474716,24,1,relu,group,diff,"[1, 2]",True,hw,orthogonal,0.13025
+101,0.04856782406568527,64,1,relu,group,diff,"[1, 3]",False,hw,orthogonal,0.13025
+102,0.04853089153766632,64,1,relu,group,diff,[1],True,hw,orthogonal,0.13025
+103,0.04835989326238632,32,1,relu,layer,diff,"[1, 3]",False,hw,orthogonal,0.13025
+104,0.047547947615385056,16,1,relu,layer,diff,[1],False,hw,orthogonal,0.13025
+105,0.0475272610783577,64,1,relu,group,diff,[1],True,hw,orthogonal,0.13025
+106,0.04724869504570961,24,1,relu,group,diff,"[1, 2]",False,hw,orthogonal,0.13025
+107,0.04686681553721428,64,1,relu,instance,diff,[1],False,hw,orthogonal,0.13025
+108,0.04661998525261879,24,1,relu,group,diff,"[1, 2]",True,hw,orthogonal,0.13025
+109,0.04660269245505333,48,1,relu,layer,diff,[1],True,hw,orthogonal,0.13025
+110,0.046450238674879074,64,1,relu,layer,diff,"[1, 3]",False,hw,orthogonal,0.13025
+111,0.046099476516246796,48,1,relu,layer,diff,"[1, 2]",True,hw,orthogonal,0.13025
+112,0.04603944718837738,32,1,relu,group,diff,"[1, 3]",True,hw,orthogonal,0.13025
+113,0.04603169113397598,32,1,relu,group,diff,[1],False,hw,orthogonal,0.13025
+114,0.0460209883749485,48,1,relu,layer,diff,"[1, 3]",False,hw,orthogonal,0.13025
+115,0.045871492475271225,64,1,relu,layer,diff,"[1, 3]",True,hw,orthogonal,0.13025
+116,0.04541326314210892,48,1,relu,group,diff,[1],False,hw,orthogonal,0.13025
+117,0.04521520063281059,48,1,relu,layer,diff,"[1, 3]",False,hw,orthogonal,0.13025
+118,0.04520602896809578,16,1,relu,group,diff,"[1, 2]",False,hw,orthogonal,0.13025
+119,0.04497179016470909,24,1,relu,layer,diff,"[1, 3]",False,hw,orthogonal,0.13025
+120,0.04478978365659714,32,1,relu,group,diff,"[1, 2]",True,hw,orthogonal,0.13025
+121,0.043714698404073715,64,1,relu,group,diff,"[1, 3]",True,hw,orthogonal,0.13025
+122,0.043287236243486404,16,1,relu,layer,diff,"[1, 3]",False,hw,orthogonal,0.13025
+123,0.04328203573822975,32,1,relu,group,diff,"[1, 3]",False,hw,orthogonal,0.13025
+124,0.0430489145219326,16,1,relu,layer,diff,"[1, 2]",False,hw,orthogonal,0.13025
+125,0.04281015694141388,48,1,relu,instance,diff,[1],False,hw,orthogonal,0.13025
+126,0.042748793959617615,24,1,relu,instance,diff,[1],True,hw,orthogonal,0.13025
+127,0.04260137304663658,24,1,relu,layer,diff,[1],True,hw,orthogonal,0.13025
+128,0.04241729900240898,48,1,relu,group,diff,"[1, 2]",True,hw,orthogonal,0.13025
+129,0.04240889847278595,16,1,relu,instance,diff,[1],False,hw,orthogonal,0.13025
+130,0.04226020723581314,64,1,relu,group,diff,[1],False,hw,orthogonal,0.13025
+131,0.04219093918800354,64,1,relu,group,diff,"[1, 3]",False,hw,orthogonal,0.13025
+132,0.042151324450969696,24,1,relu,layer,diff,"[1, 2]",True,hw,orthogonal,0.13025
+133,0.041877713054418564,48,1,relu,instance,diff,"[1, 2]",True,hw,orthogonal,0.13025
+134,0.04149617999792099,32,1,relu,instance,diff,[1],False,hw,orthogonal,0.13025
+135,0.04148681461811066,48,1,relu,group,diff,"[1, 3]",False,hw,orthogonal,0.13025
+136,0.041273947805166245,24,1,relu,instance,diff,[1],False,hw,orthogonal,0.13025
+137,0.041139550507068634,64,1,relu,instance,diff,[1],True,hw,orthogonal,0.13025
+138,0.041122760623693466,48,1,relu,instance,diff,"[1, 2]",False,hw,orthogonal,0.13025
+139,0.0411154180765152,16,1,relu,instance,diff,"[1, 3]",True,hw,orthogonal,0.13025
+140,0.040926288813352585,24,1,relu,instance,diff,"[1, 2]",True,hw,orthogonal,0.13025
+141,0.040776073932647705,32,1,relu,instance,diff,[1],True,hw,orthogonal,0.13025
+142,0.04048328101634979,32,1,relu,group,diff,[1],False,hw,orthogonal,0.13025
+143,0.04041332006454468,32,1,relu,group,diff,"[1, 3]",False,hw,orthogonal,0.13025
+144,0.04038112238049507,24,1,relu,instance,diff,[1],False,hw,orthogonal,0.13025
+145,0.04035479575395584,24,1,relu,instance,diff,[1],False,hw,orthogonal,0.13025
+146,0.04020317271351814,16,1,relu,group,diff,"[1, 3]",False,hw,orthogonal,0.13025
+147,0.04017837345600128,32,1,relu,instance,diff,"[1, 2]",True,hw,orthogonal,0.13025
+148,0.040075115859508514,16,1,relu,layer,diff,"[1, 2]",True,hw,orthogonal,0.13025
+149,0.03990675508975983,48,1,relu,instance,diff,[1],True,hw,orthogonal,0.13025
+150,0.03981554135680199,32,1,relu,layer,diff,"[1, 3]",True,hw,orthogonal,0.13025
+151,0.03966410458087921,32,1,relu,layer,diff,"[1, 2]",True,hw,orthogonal,0.13025
+152,0.03934641182422638,32,1,relu,layer,diff,[1],False,hw,orthogonal,0.13025
+153,0.039306845515966415,64,1,relu,layer,diff,"[1, 3]",True,hw,orthogonal,0.13025
+154,0.039304859936237335,48,1,relu,instance,diff,"[1, 3]",True,hw,orthogonal,0.13025
+155,0.03925323858857155,24,1,relu,layer,diff,[1],False,hw,orthogonal,0.13025
+156,0.03917164355516434,48,1,relu,instance,diff,[1],True,hw,orthogonal,0.13025
+157,0.03890553116798401,16,1,relu,group,diff,"[1, 3]",True,hw,orthogonal,0.13025
+158,0.038522250950336456,32,1,relu,layer,diff,"[1, 3]",True,hw,orthogonal,0.13025
+159,0.038357213139534,64,1,relu,instance,diff,"[1, 3]",False,hw,orthogonal,0.13025
+160,0.038342155516147614,64,1,relu,instance,diff,"[1, 2]",True,hw,orthogonal,0.13025
+161,0.038246478885412216,24,1,relu,instance,diff,"[1, 3]",True,hw,orthogonal,0.13025
+162,0.03784428909420967,24,1,relu,layer,diff,"[1, 3]",False,hw,orthogonal,0.13025
+163,0.03778500482439995,64,1,relu,layer,diff,"[1, 3]",True,hw,orthogonal,0.13025
+164,0.03769217059016228,32,1,relu,layer,diff,"[1, 2]",False,hw,orthogonal,0.13025
+165,0.037525687366724014,48,1,relu,group,diff,[1],True,hw,orthogonal,0.13025
+166,0.037487007677555084,64,1,relu,instance,diff,"[1, 2]",True,hw,orthogonal,0.13025
+167,0.037107471376657486,24,1,relu,instance,diff,"[1, 3]",False,hw,orthogonal,0.13025
+168,0.037084318697452545,48,1,relu,instance,diff,"[1, 3]",True,hw,orthogonal,0.13025
+169,0.036856573075056076,64,1,relu,instance,diff,[1],False,hw,orthogonal,0.13025
+170,0.036462001502513885,48,1,relu,group,diff,[1],True,hw,orthogonal,0.13025
+171,0.03638548403978348,64,1,relu,instance,diff,"[1, 3]",False,hw,orthogonal,0.13025
+172,0.036306992173194885,32,1,relu,instance,diff,"[1, 2]",True,hw,orthogonal,0.13025
+173,0.03612694516777992,64,1,relu,instance,diff,"[1, 2]",False,hw,orthogonal,0.13025
+174,0.03610944375395775,24,1,relu,instance,diff,"[1, 2]",False,hw,orthogonal,0.13025
+175,0.03608395904302597,64,1,relu,instance,diff,"[1, 3]",True,hw,orthogonal,0.13025
+176,0.03606417402625084,24,1,relu,instance,diff,"[1, 3]",True,hw,orthogonal,0.13025
+177,0.03601648658514023,48,1,relu,instance,diff,"[1, 2]",False,hw,orthogonal,0.13025
+178,0.03578777238726616,24,1,relu,group,diff,[1],True,hw,orthogonal,0.13025
+179,0.03560616448521614,64,1,relu,instance,diff,[1],True,hw,orthogonal,0.13025
+180,0.03503570705652237,48,1,relu,layer,diff,"[1, 2]",False,hw,orthogonal,0.13025
+181,0.03473933786153793,32,1,relu,instance,diff,"[1, 3]",False,hw,orthogonal,0.13025
+182,0.03457619622349739,32,1,relu,instance,diff,"[1, 2]",False,hw,orthogonal,0.13025
+183,0.034517474472522736,64,1,relu,instance,diff,[1],False,hw,orthogonal,0.13025
+184,0.034417856484651566,32,1,relu,group,diff,"[1, 2]",False,hw,orthogonal,0.13025
+185,0.03434773162007332,48,1,relu,instance,diff,[1],True,hw,orthogonal,0.13025
+186,0.03395456075668335,16,1,relu,instance,diff,"[1, 2]",True,hw,orthogonal,0.13025
+187,0.033824797719717026,16,1,relu,group,diff,[1],False,hw,orthogonal,0.13025
+188,0.03369830176234245,16,1,relu,instance,diff,[1],False,hw,orthogonal,0.13025
+189,0.03361160680651665,32,1,relu,layer,diff,[1],False,hw,orthogonal,0.13025
+190,0.0334574431180954,32,1,relu,instance,diff,[1],True,hw,orthogonal,0.13025
+191,0.0330347865819931,16,1,relu,instance,diff,"[1, 2]",True,hw,orthogonal,0.13025
+192,0.03273991122841835,32,1,relu,instance,diff,[1],False,hw,orthogonal,0.13025
+193,0.032332710921764374,16,1,relu,instance,diff,"[1, 2]",False,hw,orthogonal,0.13025
+194,0.03228072077035904,16,1,relu,group,diff,"[1, 2]",True,hw,orthogonal,0.13025
+195,0.0321788489818573,32,1,relu,instance,diff,"[1, 3]",True,hw,orthogonal,0.13025
+196,0.0320575088262558,32,1,relu,instance,diff,"[1, 3]",True,hw,orthogonal,0.13025
+197,0.03201385959982872,16,1,relu,instance,diff,"[1, 2]",True,hw,orthogonal,0.13025
+198,0.031925469636917114,48,1,relu,group,diff,"[1, 2]",True,hw,orthogonal,0.13025
+199,0.0317530632019043,64,1,relu,instance,diff,"[1, 2]",False,hw,orthogonal,0.13025
+200,0.03164275363087654,32,1,relu,instance,diff,"[1, 2]",True,hw,orthogonal,0.13025
+201,0.031593892723321915,48,1,relu,group,diff,"[1, 3]",False,hw,orthogonal,0.13025
+202,0.031558290123939514,32,1,relu,group,diff,"[1, 3]",True,hw,orthogonal,0.13025
+203,0.03146916255354881,16,1,relu,layer,diff,"[1, 3]",True,hw,orthogonal,0.13025
+204,0.03146873041987419,48,1,relu,instance,diff,[1],False,hw,orthogonal,0.13025
+205,0.031402699649333954,16,1,relu,layer,diff,"[1, 3]",False,hw,orthogonal,0.13025
+206,0.03135628625750542,24,1,relu,instance,diff,"[1, 2]",False,hw,orthogonal,0.13025
+207,0.031122537329792976,24,1,relu,instance,diff,"[1, 3]",True,hw,orthogonal,0.13025
+208,0.031063202768564224,48,1,relu,instance,diff,"[1, 3]",False,hw,orthogonal,0.13025
+209,0.031007135286927223,24,1,relu,group,diff,"[1, 3]",True,hw,orthogonal,0.13025
+210,0.030652334913611412,64,1,relu,instance,diff,"[1, 3]",True,hw,orthogonal,0.13025
+211,0.03023800626397133,24,1,relu,instance,diff,"[1, 3]",False,hw,orthogonal,0.13025
+212,0.03020399995148182,32,1,relu,group,diff,[1],True,hw,orthogonal,0.13025
+213,0.03015536442399025,32,1,relu,instance,diff,"[1, 3]",False,hw,orthogonal,0.13025
+214,0.03000992350280285,24,1,relu,instance,diff,[1],True,hw,orthogonal,0.13025
+215,0.030007746070623398,16,1,relu,group,diff,"[1, 3]",False,hw,orthogonal,0.13025
+216,0.02978425845503807,24,1,relu,instance,diff,"[1, 2]",True,hw,orthogonal,0.13025
+217,0.029755419120192528,24,1,relu,layer,diff,"[1, 2]",False,hw,orthogonal,0.13025
+218,0.029370959848165512,48,1,relu,instance,diff,"[1, 2]",True,hw,orthogonal,0.13025
+219,0.02934781275689602,64,1,relu,instance,diff,"[1, 2]",True,hw,orthogonal,0.13025
+220,0.02910178154706955,16,1,relu,layer,diff,"[1, 2]",False,hw,orthogonal,0.13025
+221,0.02901807241141796,16,1,relu,group,diff,"[1, 2]",False,hw,orthogonal,0.13025
+222,0.0290150698274374,16,1,relu,instance,diff,[1],True,hw,orthogonal,0.13025
+223,0.028757812455296516,64,1,relu,instance,diff,"[1, 2]",False,hw,orthogonal,0.13025
+224,0.02849690616130829,32,1,relu,instance,diff,[1],False,hw,orthogonal,0.13025
+225,0.028475509956479073,32,1,relu,group,diff,[1],True,hw,orthogonal,0.13025
+226,0.028323205187916756,16,1,relu,instance,diff,"[1, 2]",False,hw,orthogonal,0.13025
+227,0.027365118265151978,48,1,relu,instance,diff,"[1, 3]",False,hw,orthogonal,0.13025
+228,0.02647036500275135,16,1,relu,instance,diff,[1],False,hw,orthogonal,0.13025
+229,0.026460101827979088,48,1,relu,instance,diff,"[1, 2]",False,hw,orthogonal,0.13025
+230,0.025877514854073524,48,1,relu,group,diff,"[1, 3]",False,hw,orthogonal,0.13025
+231,0.025593306869268417,16,1,relu,group,diff,[1],False,hw,orthogonal,0.13025
+232,0.025552425533533096,48,1,relu,layer,diff,"[1, 3]",True,hw,orthogonal,0.13025
+233,0.025552328675985336,32,1,relu,instance,diff,"[1, 2]",False,hw,orthogonal,0.13025
+234,0.025517279282212257,16,1,relu,instance,diff,[1],True,hw,orthogonal,0.13025
+235,0.025432199239730835,24,1,relu,instance,diff,"[1, 2]",False,hw,orthogonal,0.13025
+236,0.025149038061499596,16,1,relu,instance,diff,"[1, 3]",False,hw,orthogonal,0.13025
+237,0.024954602122306824,16,1,relu,layer,diff,"[1, 2]",False,hw,orthogonal,0.13025
+238,0.024831576272845268,32,1,relu,instance,diff,[1],True,hw,orthogonal,0.13025
+239,0.024806609377264977,48,1,relu,instance,diff,"[1, 3]",True,hw,orthogonal,0.13025
+240,0.02454449236392975,24,1,relu,instance,diff,[1],True,hw,orthogonal,0.13025
+241,0.02366274781525135,32,1,relu,instance,diff,"[1, 2]",False,hw,orthogonal,0.13025
+242,0.0236042533069849,24,1,relu,instance,diff,"[1, 3]",False,hw,orthogonal,0.13025
+243,0.02317478321492672,64,1,relu,instance,diff,[1],True,hw,orthogonal,0.13025
+244,0.02315559610724449,64,1,relu,instance,diff,"[1, 3]",True,hw,orthogonal,0.13025
+245,0.0230714101344347,16,1,relu,instance,diff,"[1, 3]",True,hw,orthogonal,0.13025
+246,0.022999629378318787,48,1,relu,instance,diff,"[1, 2]",True,hw,orthogonal,0.13025
+247,0.022421225905418396,64,1,relu,instance,diff,"[1, 3]",False,hw,orthogonal,0.13025
+248,0.022404715418815613,16,1,relu,instance,diff,"[1, 3]",True,hw,orthogonal,0.13025
+249,0.0220286063849926,16,1,relu,layer,diff,"[1, 2]",True,hw,orthogonal,0.13025
+250,0.021976733580231667,16,1,relu,group,diff,[1],True,hw,orthogonal,0.13025
+251,0.021941019222140312,16,1,relu,instance,diff,"[1, 2]",False,hw,orthogonal,0.13025
+252,0.02181369997560978,48,1,relu,instance,diff,"[1, 3]",False,hw,orthogonal,0.13025
+253,0.021502221003174782,16,1,relu,instance,diff,"[1, 3]",False,hw,orthogonal,0.13025
+254,0.020064115524291992,32,1,relu,instance,diff,"[1, 3]",True,hw,orthogonal,0.13025
+255,0.01999060995876789,16,1,relu,group,diff,"[1, 3]",False,hw,orthogonal,0.13025
+256,0.018854040652513504,16,1,relu,instance,diff,[1],True,hw,orthogonal,0.13025
+257,0.0182686485350132,48,1,relu,group,diff,"[1, 3]",True,hw,orthogonal,0.13025
+258,0.016193369403481483,24,1,relu,group,diff,[1],True,hw,orthogonal,0.13025
+259,0.0155262416228652,16,1,relu,layer,diff,[1],False,hw,orthogonal,0.13025
+260,0.015392501838505268,16,1,relu,layer,diff,"[1, 3]",True,hw,orthogonal,0.13025
+261,0.015048065222799778,24,1,relu,group,diff,"[1, 2]",False,hw,orthogonal,0.13025
+262,0.014482293277978897,24,1,relu,layer,diff,"[1, 3]",True,hw,orthogonal,0.13025
+263,0.014445871114730835,24,1,relu,instance,diff,"[1, 2]",True,hw,orthogonal,0.13025
+264,0.014088552445173264,16,1,relu,instance,diff,"[1, 3]",False,hw,orthogonal,0.13025
+265,0.013902217149734497,16,1,relu,group,diff,[1],True,hw,orthogonal,0.13025
+266,0.013861849904060364,16,1,relu,layer,diff,"[1, 3]",False,hw,orthogonal,0.13025
+267,0.008789262734353542,32,1,relu,instance,diff,"[1, 3]",False,hw,orthogonal,0.13025
+268,0.008679418824613094,32,1,relu,group,diff,"[1, 3]",False,hw,orthogonal,0.13025
+269,0.0030576754361391068,16,1,relu,group,diff,"[1, 2]",True,hw,orthogonal,0.13025
+270,0.0023220961447805166,16,1,relu,layer,diff,"[1, 3]",True,hw,orthogonal,0.13025

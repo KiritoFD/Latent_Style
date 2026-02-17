@@ -96,6 +96,9 @@ class AdaCUTTrainer:
                     "epoch",
                     "loss",
                     "style_swd",
+                    "style_moment",
+                    "structure",
+                    "tv",
                     "identity",
                     "train_num_steps",
                     "train_step_size",
@@ -209,12 +212,18 @@ class AdaCUTTrainer:
                 denom = max(1, num_batches)
                 avg_loss = metric_sums.get("loss", 0.0) / denom
                 avg_style = metric_sums.get("style_swd", 0.0) / denom
+                avg_moment = metric_sums.get("style_moment", 0.0) / denom
+                avg_struct = metric_sums.get("structure", 0.0) / denom
+                avg_tv = metric_sums.get("tv", 0.0) / denom
                 avg_id = metric_sums.get("identity", 0.0) / denom
                 step_per_sec = step_idx / max(time.time() - epoch_start, 1e-6)
                 eta = (total_steps - step_idx) / max(step_per_sec, 1e-6)
                 progress.set_postfix(
                     loss=f"{avg_loss:.4f}",
                     style_swd=f"{avg_style:.4f}",
+                    moment=f"{avg_moment:.4f}",
+                    struct=f"{avg_struct:.4f}",
+                    tv=f"{avg_tv:.4f}",
                     idt=f"{avg_id:.4f}",
                     it_s=f"{step_per_sec:.2f}",
                     eta=f"{eta:.1f}s",
@@ -249,6 +258,9 @@ class AdaCUTTrainer:
 
         metrics.setdefault("loss", 0.0)
         metrics.setdefault("style_swd", 0.0)
+        metrics.setdefault("style_moment", 0.0)
+        metrics.setdefault("structure", 0.0)
+        metrics.setdefault("tv", 0.0)
         metrics.setdefault("identity", 0.0)
         metrics.setdefault("train_num_steps", 0.0)
         metrics.setdefault("train_step_size", 0.0)
@@ -264,7 +276,9 @@ class AdaCUTTrainer:
         if self.use_tqdm:
             tqdm.write(
                 f"[Epoch {epoch}/{self.num_epochs}] "
-                f"loss={metrics['loss']:.4f} style_swd={metrics['style_swd']:.4f} idt={metrics['identity']:.4f} "
+                f"loss={metrics['loss']:.4f} style_swd={metrics['style_swd']:.4f} "
+                f"mom={metrics['style_moment']:.4f} struct={metrics['structure']:.4f} tv={metrics['tv']:.4f} "
+                f"idt={metrics['identity']:.4f} "
                 f"steps={metrics['train_num_steps']:.1f} h={metrics['train_step_size']:.2f} s={metrics['train_style_strength']:.2f} "
                 f"| data={metrics['data_time_sec']:.1f}s compute={metrics['compute_time_sec']:.1f}s "
                 f"total={metrics['epoch_time_sec']:.1f}s sps={metrics['samples_per_sec']:.1f}"
@@ -279,6 +293,9 @@ class AdaCUTTrainer:
                     int(epoch),
                     float(metrics.get("loss", 0.0)),
                     float(metrics.get("style_swd", 0.0)),
+                    float(metrics.get("style_moment", 0.0)),
+                    float(metrics.get("structure", 0.0)),
+                    float(metrics.get("tv", 0.0)),
                     float(metrics.get("identity", 0.0)),
                     float(metrics.get("train_num_steps", 0.0)),
                     float(metrics.get("train_step_size", 0.0)),

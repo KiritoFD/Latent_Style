@@ -279,21 +279,7 @@ def _parse_epoch_from_ckpt_name(path: Path):
 
 
 def _resolve_existing_path(raw_path: str | None, base_dirs: list[Path]) -> Path | None:
-    if raw_path is None:
-        return None
-    text = str(raw_path).strip()
-    if not text:
-        return None
-
-    p = Path(text).expanduser()
-    candidates = []
-    if p.is_absolute():
-        candidates.append(p)
-    else:
-        for base in base_dirs:
-            candidates.append((base / p).resolve())
-        candidates.append(p.resolve())
-
+    candidates = _build_path_candidates(raw_path, base_dirs)
     seen = set()
     for cand in candidates:
         key = str(cand)
@@ -303,6 +289,24 @@ def _resolve_existing_path(raw_path: str | None, base_dirs: list[Path]) -> Path 
         if cand.exists():
             return cand
     return None
+
+
+def _build_path_candidates(raw_path: str | None, base_dirs: list[Path]) -> list[Path]:
+    if raw_path is None:
+        return []
+    text = str(raw_path).strip()
+    if not text:
+        return []
+
+    p = Path(text).expanduser()
+    candidates = []
+    if p.is_absolute():
+        candidates.append(p)
+    else:
+        for base in base_dirs:
+            candidates.append((base / p).resolve())
+        candidates.append(p.resolve())
+    return candidates
 
 
 def _resolve_dir_path(raw_path: str | None, base_dirs: list[Path]) -> Path:
@@ -326,6 +330,21 @@ def _resolve_dir_path(raw_path: str | None, base_dirs: list[Path]) -> Path:
         if cand.exists():
             return cand
     return (base_dirs[0] / p).resolve()
+
+
+def _load_json_config(raw_path: str | None, base_dirs: list[Path]) -> dict:
+    resolved = _resolve_existing_path(raw_path, base_dirs)
+    if resolved is None:
+        return {}
+    try:
+        with open(resolved, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, dict):
+            print(f"Loaded fallback config: {resolved}")
+            return data
+    except Exception as exc:
+        print(f"WARNING: failed to read fallback config {resolved}: {exc}")
+    return {}
 
 
 def _find_latest_ckpt_under_dir(scan_dir: Path) -> Path | None:
@@ -509,9 +528,26 @@ def main():
     if not checkpoint_path.exists(): raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
     
     ckpt = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
-    cfg = ckpt.get('config', {})
-    cfg_train = cfg.get('training', {})
-    cfg_infer = cfg.get('inference', {})
+    cfg_ckpt = ckpt.get('config', {})
+    cfg_file = _load_json_config(
+        args.config,
+        [
+            Path.cwd(),
+            Path(__file__).resolve().parent,      # src/utils
+            Path(__file__).resolve().parents[1],  # src
+            Path(__file__).resolve().parents[2],  # Cycle-NCE
+        ],
+    )
+
+    # Merge with checkpoint config taking precedence.
+    cfg = dict(cfg_file)
+    cfg.update(cfg_ckpt if isinstance(cfg_ckpt, dict) else {})
+    cfg_train = dict(cfg_file.get('training', {}))
+    cfg_train.update(cfg_ckpt.get('training', {}) if isinstance(cfg_ckpt, dict) else {})
+    cfg_infer = dict(cfg_file.get('inference', {}))
+    cfg_infer.update(cfg_ckpt.get('inference', {}) if isinstance(cfg_ckpt, dict) else {})
+    cfg_data = dict(cfg_file.get('data', {}))
+    cfg_data.update(cfg_ckpt.get('data', {}) if isinstance(cfg_ckpt, dict) else {})
 
     # Fill missing CLI args from checkpoint config for simpler trainer-side invocation.
     if args.cache_dir is None:
@@ -555,22 +591,28 @@ def main():
     cache_dir.mkdir(parents=True, exist_ok=True)
     
     # Resolve Test Data Path
-    test_dir_raw = args.test_dir if args.test_dir else cfg.get('training', {}).get('test_image_dir', '')
+    test_dir_raw = args.test_dir if args.test_dir else cfg_train.get('test_image_dir', '')
+    test_dir_bases = [
+        Path.cwd(),
+        checkpoint_path.parent.resolve(),
+        Path(__file__).resolve().parent,
+        Path(__file__).resolve().parents[1],
+        Path(__file__).resolve().parents[2],
+    ]
+    print(f"Test dir raw input: {repr(test_dir_raw)}")
+    print("Test dir candidate paths:")
+    for cand in _build_path_candidates(test_dir_raw, test_dir_bases):
+        print(f"  - {cand}")
     resolved_test_dir = _resolve_existing_path(
         test_dir_raw,
-        [
-            Path.cwd(),
-            checkpoint_path.parent.resolve(),
-            Path(__file__).resolve().parent,
-            Path(__file__).resolve().parents[1],
-            Path(__file__).resolve().parents[2],
-        ],
+        test_dir_bases,
     )
     if resolved_test_dir is None:
         raise ValueError(f"Test directory not found: {test_dir_raw}")
     test_dir = resolved_test_dir
+    print(f"Resolved test dir: {test_dir}")
 
-    style_subdirs = cfg.get('data', {}).get('style_subdirs', [])
+    style_subdirs = cfg_data.get('style_subdirs', [])
     if not style_subdirs:
         # Fallback: auto-detect subdirs
         style_subdirs = [d.name for d in test_dir.iterdir() if d.is_dir()]

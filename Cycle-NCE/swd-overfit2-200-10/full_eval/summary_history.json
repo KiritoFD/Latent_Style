@@ -1,0 +1,27 @@
+{
+  "num_rounds": 2,
+  "latest": {
+    "epoch": 200,
+    "summary_path": "../swd-overfit2-200-10/full_eval/epoch_0200/summary.json",
+    "transfer_clip_style": 0.508335104584694,
+    "transfer_content_lpips": 0.5491860239999999,
+    "photo_to_art_clip_style": 0.5502532303333283
+  },
+  "rounds": [
+    {
+      "epoch": 100,
+      "summary_path": "../swd-overfit2-200-10/full_eval/epoch_0100/summary.json",
+      "transfer_clip_style": 0.5124515607953072,
+      "transfer_content_lpips": 0.5095545335,
+      "photo_to_art_clip_style": 0.5493669092655182
+    },
+    {
+      "epoch": 200,
+      "summary_path": "../swd-overfit2-200-10/full_eval/epoch_0200/summary.json",
+      "transfer_clip_style": 0.508335104584694,
+      "transfer_content_lpips": 0.5491860239999999,
+      "photo_to_art_clip_style": 0.5502532303333283
+    }
+  ],
+  "updated_at": "2026-02-17 20:51:23"
+}
