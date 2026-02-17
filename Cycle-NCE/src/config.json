@@ -22,14 +22,17 @@
     "loss_projector_channels": 64
   },
   "loss": {
-    "w_style": 100.0,
-    "w_identity": 1.0,
+    "w_style": 150.0,
+    "w_moment": 2.0,
+    "w_identity": 20.0,
+    "w_structure": 10.0,
+    "w_tv": 0.0,
     "train_num_steps_min": 1,
     "train_num_steps_max": 1,
     "train_step_size_min": 1.0,
     "train_step_size_max": 1.0,
-    "train_style_strength_min": 0.7,
-    "train_style_strength_max": 0.9
+    "train_style_strength_min": 0.8,
+    "train_style_strength_max": 1.0
   },
   "training": {
     "seed": 42,

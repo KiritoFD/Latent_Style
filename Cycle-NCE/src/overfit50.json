@@ -22,11 +22,11 @@
     "loss_projector_channels": 64
   },
   "loss": {
-    "w_style": 200.0,
-    "w_moment": 5.0,
-    "w_identity": 10.0,
-    "w_structure": 5.0,
-    "w_tv": 0.1,
+    "w_style": 150.0,
+    "w_moment": 2.0,
+    "w_identity": 20.0,
+    "w_structure": 10.0,
+    "w_tv": 0.0,
     "train_num_steps_min": 1,
     "train_num_steps_max": 1,
     "train_step_size_min": 1.0,

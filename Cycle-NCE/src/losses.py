@@ -1,8 +1,8 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import random
 from contextlib import contextmanager
-from typing import Dict
+from typing import Dict, Tuple
 
 import torch
 import torch.nn as nn
@@ -14,12 +14,17 @@ except ImportError:
     from model import LatentAdaCUT
 
 
-class DifferentialGramLoss(nn.Module):
+class LeakyProjectedStyleLoss(nn.Module):
     """
-    Whitened Differential Gram Loss (WDG-Loss) - V2.
+    Leaky Projected Style Loss for 32x32 latents.
+    Config:
+    - hidden_dim=64
+    - 1x1 orthogonal projector
+    - LeakyReLU(0.1) + GroupNorm(groups=1)
+    - differential scales [1, 2]
     """
 
-    def __init__(self, in_channels: int = 4, hidden_dim: int = 80, scale_factor: float = 0.13025) -> None:
+    def __init__(self, in_channels: int = 4, hidden_dim: int = 64, scale_factor: float = 0.13025) -> None:
         super().__init__()
         self.scale_factor = float(scale_factor)
 
@@ -29,81 +34,89 @@ class DifferentialGramLoss(nn.Module):
         for p in self.projector.parameters():
             p.requires_grad_(False)
 
-        self.scales = [1, 2, 3]
+        self.norm = nn.GroupNorm(num_groups=1, num_channels=hidden_dim, eps=1e-6)
+        self.act = nn.LeakyReLU(negative_slope=0.1, inplace=False)
+        self.scales = [1, 2]
 
-    def forward(self, x_pred: torch.Tensor, x_target: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x_pred: torch.Tensor, x_target: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         x_pred_scaled = x_pred * self.scale_factor
         x_target_scaled = x_target * self.scale_factor
 
-        # 1. Moment Loss (Color/Contrast Stability) on RAW latents
-        mu_pred, std_pred = self._calc_moments(x_pred_scaled)
-        mu_tgt, std_tgt = self._calc_moments(x_target_scaled)
+        # Keep moment in fp32 for stability under AMP.
+        mu_pred, std_pred = self._calc_moments(x_pred_scaled.float())
+        mu_tgt, std_tgt = self._calc_moments(x_target_scaled.float())
         loss_moment = F.l1_loss(mu_pred, mu_tgt) + F.l1_loss(std_pred, std_tgt)
 
-        # 2. Lift & Texture Extraction
-        h_pred = F.silu(self.projector(x_pred_scaled))
-        with torch.no_grad():
-            h_target = F.silu(self.projector(x_target_scaled))
-
-        h_pred_norm = F.instance_norm(h_pred)
-        h_target_norm = F.instance_norm(h_target)
-
-        # 3. Differential Gram (Texture Matching)
+        # Critical AMP fix: compute style branch in fp32 to avoid fp16 underflow.
         with torch.amp.autocast("cuda", enabled=False):
-            f_pred = self._extract_diff_features(h_pred_norm.float())
-            f_target = self._extract_diff_features(h_target_norm.float())
-            loss_gram = F.smooth_l1_loss(f_pred, f_target)
+            x_pred_32 = x_pred_scaled.float()
+            x_target_32 = x_target_scaled.float()
+            with torch.no_grad():
+                grams_target = self._extract_features(x_target_32)
+            grams_pred = self._extract_features(x_pred_32)
+            loss_style = F.smooth_l1_loss(grams_pred, grams_target, beta=0.1)
 
-        return loss_gram, loss_moment
+        return loss_style, loss_moment
 
-    @staticmethod
-    def _calc_moments(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        mu = x.mean(dim=[2, 3])
-        std = x.std(dim=[2, 3])
-        return mu, std
+    def _extract_features(self, x: torch.Tensor) -> torch.Tensor:
+        feats = self.norm(self.act(self.projector(x)))
 
-    def _extract_diff_features(self, h: torch.Tensor) -> torch.Tensor:
         grams = []
         for s in self.scales:
-            if s >= h.shape[-1] or s >= h.shape[-2]:
+            if s >= feats.shape[-1] or s >= feats.shape[-2]:
                 continue
-            dx = h[:, :, :, s:] - h[:, :, :, :-s]
-            dy = h[:, :, s:, :] - h[:, :, :-s, :]
+            dx = feats[:, :, :, s:] - feats[:, :, :, :-s]
+            dy = feats[:, :, s:, :] - feats[:, :, :-s, :]
             grams.append(self._gram(dx))
             grams.append(self._gram(dy))
 
+        if not grams:
+            return feats.new_zeros((feats.shape[0], 1))
         return torch.cat(grams, dim=1)
 
     @staticmethod
     def _gram(x: torch.Tensor) -> torch.Tensor:
         b, c, h, w = x.shape
         f = x.reshape(b, c, -1)
-        g = torch.bmm(f, f.transpose(1, 2)) / float(h * w)
+        with torch.amp.autocast("cuda", enabled=False):
+            f_32 = f.float()
+            g = torch.bmm(f_32, f_32.transpose(1, 2)) / float(h * w * c)
         idx = torch.triu_indices(c, c, device=x.device)
         return g[:, idx[0], idx[1]]
 
+    @staticmethod
+    def _calc_moments(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        mu = x.mean(dim=[2, 3])
+        std = x.std(dim=[2, 3])
+        return mu, std
 
-class LatentStyleLoss(DifferentialGramLoss):
+
+class LatentStyleLoss(LeakyProjectedStyleLoss):
     pass
 
 
 class ContentStructureLoss(nn.Module):
-    def __init__(self, scale_factor: float = 0.13025, downsample: int = 4) -> None:
+    """
+    Dual-scale structure anchor for 32x32 latents.
+    """
+
+    def __init__(self, scale_factor: float = 0.13025) -> None:
         super().__init__()
         self.scale = float(scale_factor)
-        self.downsample = int(downsample)
+        self.pool_low = nn.AdaptiveAvgPool2d((16, 16))
 
     def forward(self, x_pred: torch.Tensor, x_content: torch.Tensor) -> torch.Tensor:
-        x_p = F.avg_pool2d(x_pred, kernel_size=self.downsample, stride=self.downsample)
-        x_c = F.avg_pool2d(x_content, kernel_size=self.downsample, stride=self.downsample)
-        return F.mse_loss(x_p, x_c)
+        low_pred = self.pool_low(x_pred)
+        low_content = self.pool_low(x_content)
+        loss_low = F.mse_loss(low_pred, low_content)
+        loss_full = F.l1_loss(x_pred, x_content)
+        return 0.7 * loss_low + 0.3 * loss_full
 
 
 class TotalVariationLoss(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         h_diff = x[:, :, :, 1:] - x[:, :, :, :-1]
         v_diff = x[:, :, 1:, :] - x[:, :, :-1, :]
-        # Use mean-normalized TV to avoid exploding magnitude with resolution/batch size.
         return torch.abs(h_diff).mean() + torch.abs(v_diff).mean()
 
 
@@ -112,9 +125,9 @@ class AdaCUTObjective:
         loss_cfg = config.get("loss", {})
         model_cfg = config.get("model", {})
 
-        self.w_style = float(loss_cfg.get("w_style", 10.0))
-        self.w_moment = float(loss_cfg.get("w_moment", 1.0))
-        self.w_identity = float(loss_cfg.get("w_identity", 10.0))
+        self.w_style = float(loss_cfg.get("w_style", 150.0))
+        self.w_moment = float(loss_cfg.get("w_moment", 2.0))
+        self.w_identity = float(loss_cfg.get("w_identity", 20.0))
         self.w_structure = float(loss_cfg.get("w_structure", 10.0))
         self.w_tv = float(loss_cfg.get("w_tv", 0.0))
 
@@ -136,7 +149,7 @@ class AdaCUTObjective:
     def _ensure_modules(self, device: torch.device) -> None:
         if self._style_loss_module is None or self._device != device:
             self._style_loss_module = LatentStyleLoss(scale_factor=self.latent_scale_factor).to(device)
-            self._content_loss_module = ContentStructureLoss(scale_factor=self.latent_scale_factor, downsample=4).to(device)
+            self._content_loss_module = ContentStructureLoss(scale_factor=self.latent_scale_factor).to(device)
             self._tv_loss_module = TotalVariationLoss().to(device)
             self._device = device
 
@@ -204,29 +217,28 @@ class AdaCUTObjective:
                 num_steps=train_num_steps,
             )
 
-        # 1. Style loss (texture)
         loss_style = torch.tensor(0.0, device=content.device)
         loss_moment = torch.tensor(0.0, device=content.device)
-        if self.w_style > 0.0 or self.w_moment > 0.0:
-            loss_style, loss_moment = self._style_loss_module(pred, target_style)
+        with self._nvtx_range("loss/style", nvtx_enabled):
+            if self.w_style > 0.0 or self.w_moment > 0.0:
+                loss_style, loss_moment = self._style_loss_module(pred, target_style)
 
-        # 2. Identity loss (same-domain only)
         loss_idt = torch.tensor(0.0, device=content.device)
-        if self.w_identity > 0.0 and bool(id_mask.any().item()):
-            per_sample = (pred.float() - content.float()).abs().mean(dim=(1, 2, 3))
-            denom = id_mask.float().sum().clamp_min(1.0)
-            loss_idt = (per_sample * id_mask.float()).sum() / denom
+        with self._nvtx_range("loss/identity", nvtx_enabled):
+            if self.w_identity > 0.0 and bool(id_mask.any().item()):
+                diff = F.smooth_l1_loss(pred, content, reduction="none").mean(dim=(1, 2, 3))
+                denom = id_mask.float().sum().clamp_min(1.0)
+                loss_idt = (diff * id_mask.float()).sum() / denom
 
-        # 3. Structure loss (all domains)
         loss_struct = torch.tensor(0.0, device=content.device)
-        if self.w_structure > 0.0:
-            loss_struct = self._content_loss_module(pred, content)
+        with self._nvtx_range("loss/structure", nvtx_enabled):
+            if self.w_structure > 0.0:
+                loss_struct = self._content_loss_module(pred, content)
 
-        # 4. TV loss
         loss_tv = torch.tensor(0.0, device=content.device)
-        if self.w_tv > 0.0:
-            # Keep TV on the same latent scale as style/moment terms.
-            loss_tv = self._tv_loss_module(pred * self.latent_scale_factor)
+        with self._nvtx_range("loss/tv", nvtx_enabled):
+            if self.w_tv > 0.0:
+                loss_tv = self._tv_loss_module(pred)
 
         total = (
             self.w_style * loss_style
