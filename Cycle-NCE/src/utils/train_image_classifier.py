@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision.io import read_image
 from torchvision.transforms import v2 as T
 
-from eval_image_classifier import build_model
+from image_classify import build_model
 
 
 _IMG_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
@@ -210,4 +210,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

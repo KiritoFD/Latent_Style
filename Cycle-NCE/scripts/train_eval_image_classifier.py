@@ -20,7 +20,7 @@ import sys
 if str(_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(_ROOT / "src"))
 
-from utils.eval_image_classifier import build_model, write_report_json
+from utils.image_classify import build_model, write_report_json
 
 
 @dataclass

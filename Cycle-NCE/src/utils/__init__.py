@@ -1,11 +1,11 @@
 """
-Utility modules for dataset, checkpointing, inference, and evaluation.
+Utility modules for checkpointing, inference, and evaluation.
 """
 
 __all__ = [
-    "dataset",
     "checkpoint",
     "inference",
     "run_evaluation",
+    "image_classify",
     "style_classifier",
 ]

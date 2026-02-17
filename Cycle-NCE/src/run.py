@@ -26,26 +26,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 _ALLOWED_LOSS_KEYS = {
-    "w_semigroup",
-    "semigroup_loss_type",
-    "semigroup_lowpass_strength",
-    "semigroup_split_min",
-    "semigroup_split_max",
-    "semigroup_teacher_no_grad",
-    "semigroup_target_detach",
-    "semigroup_subset_ratio",
-    "semigroup_max_samples",
-    "semigroup_every_n_steps",
-    "semigroup_pool_size",
-    "semigroup_num_steps",
-    "w_delta_tv",
-    "w_delta_l2",
-    "w_output_tv",
-    "w_swd",
-    "w_color_moment",
+    "w_style",
     "w_identity",
-    "swd_patch_sizes",
-    "swd_num_projections",
     "train_num_steps_min",
     "train_num_steps_max",
     "train_step_size_min",
@@ -54,7 +36,10 @@ _ALLOWED_LOSS_KEYS = {
     "train_style_strength_max",
 }
 _FORBIDDEN_LOSS_KEYS = {"w_distill", "distill_low_only", "distill_cross_domain_only", "w_code", "style_loss_source"}
-_LOSS_WEIGHT_KEYS = ("w_semigroup", "w_swd", "w_color_moment", "w_identity", "w_delta_tv", "w_delta_l2", "w_output_tv")
+_LOSS_WEIGHT_KEYS = (
+    "w_style",
+    "w_identity",
+)
 
 
 def _set_seed(seed: int) -> None:
@@ -198,6 +183,13 @@ def _validate_loss_config(config: dict) -> None:
     unknown = sorted(k for k in loss_cfg.keys() if k not in _ALLOWED_LOSS_KEYS)
     if unknown:
         raise ValueError(f"Unknown loss key(s) in config.loss: {unknown}")
+    w_style = float(loss_cfg.get("w_style", 0.0))
+    if w_style > 50.0:
+        logger.warning(
+            "w_style=%.4f looks high for Projected SWD loss. "
+            "Recommended start range is [5, 20].",
+            w_style,
+        )
 
 def _log_active_losses(config: dict) -> None:
     loss_cfg = config.get("loss", {})
@@ -299,14 +291,12 @@ def main() -> None:
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f swd=%.4f moment=%.4f dtv=%.4f dl2=%.4f steps=%.1f h=%.2f s=%.2f lr=%.2e data=%.1fs comp=%.1fs",
+            "Epoch %d/%d | loss=%.4f style_swd=%.4f idt=%.4f steps=%.1f h=%.2f s=%.2f lr=%.2e data=%.1fs comp=%.1fs",
             epoch,
             trainer.num_epochs,
             metrics["loss"],
-            metrics.get("swd", 0.0),
-            metrics.get("moment", 0.0),
-            metrics.get("delta_tv", 0.0),
-            metrics.get("delta_l2", 0.0),
+            metrics.get("style_swd", 0.0),
+            metrics.get("identity", 0.0),
             metrics.get("train_num_steps", 0.0),
             metrics.get("train_step_size", 0.0),
             metrics.get("train_style_strength", 0.0),

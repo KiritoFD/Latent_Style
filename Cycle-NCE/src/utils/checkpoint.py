@@ -1,19 +1,18 @@
-"""
-Checkpoint Management for LGT Training
+﻿from __future__ import annotations
 
-Handles:
-- Complete state saving (model, optimizer, scheduler, scaler, global_step)
-- Safe loading with config validation
-- Resume verification to prevent "Resume Kick" phenomenon
-"""
 import logging
 from pathlib import Path
-from typing import Optional, Dict, Any
-import json
+from typing import Any, Dict, Optional
 
 import torch
 
 logger = logging.getLogger(__name__)
+
+
+def _strip_compile_prefix(state_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+    if any(k.startswith("_orig_mod.") for k in state_dict.keys()):
+        return {k.replace("_orig_mod.", ""): v for k, v in state_dict.items()}
+    return state_dict
 
 
 def save_checkpoint(
@@ -21,277 +20,77 @@ def save_checkpoint(
     epoch: int,
     model: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
-    scheduler: torch.optim.lr_scheduler._LRScheduler,
-    scaler: torch.amp.GradScaler,
+    scheduler: Optional[torch.optim.lr_scheduler._LRScheduler],
+    scaler: Optional[torch.amp.GradScaler],
     config: Dict[str, Any],
     metrics: Dict[str, float],
     global_step: int,
-    adaptive_norm_state: Optional[Dict[str, Any]] = None
 ) -> Path:
-    """
-    Save complete training state to checkpoint.
-    
-    Args:
-        checkpoint_dir: Directory to save checkpoint
-        epoch: Current epoch number
-        model: Model to save
-        optimizer: Optimizer with momentum state
-        scheduler: LR scheduler with step state
-        scaler: AMP GradScaler
-        config: Training configuration (for validation on resume)
-        metrics: Current training metrics
-        global_step: Global step counter (critical for alpha warmup)
-        adaptive_norm_state: State dicts for adaptive loss normalizers
-    
-    Returns:
-        Path to saved checkpoint
-    """
-    checkpoint = {
-        'epoch': epoch,
-        'global_step': global_step,
-        'model_state_dict': model.state_dict(),
-        'optimizer_state_dict': optimizer.state_dict(),
-        'scheduler_state_dict': scheduler.state_dict(),
-        'scaler_state_dict': scaler.state_dict(),
-        'config': config,
-        'metrics': metrics,
-        'adaptive_norm_state': adaptive_norm_state,
-        # 🔥 Critical: Save config hash for validation
-        'config_hash': _compute_config_hash(config)
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "epoch": int(epoch),
+        "global_step": int(global_step),
+        "model_state_dict": model.state_dict(),
+        "optimizer_state_dict": optimizer.state_dict(),
+        "scheduler_state_dict": scheduler.state_dict() if scheduler is not None else None,
+        "scaler_state_dict": scaler.state_dict() if scaler is not None else None,
+        "config": config,
+        "metrics": metrics,
     }
-    
-    checkpoint_path = checkpoint_dir / f"epoch_{epoch:04d}.pt"
-    torch.save(checkpoint, checkpoint_path)
-    logger.info(f"✓ Saved checkpoint: {checkpoint_path} (step={global_step})")
-    
-    return checkpoint_path
+    path = checkpoint_dir / f"epoch_{int(epoch):04d}.pt"
+    torch.save(payload, path)
+    logger.info("Saved checkpoint: %s (step=%d)", path, int(global_step))
+    return path
 
 
 def load_checkpoint(
     checkpoint_path: Path,
     model: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
-    scheduler: torch.optim.lr_scheduler._LRScheduler,
-    scaler: torch.amp.GradScaler,
-    current_config: Dict[str, Any],
-    device: str = 'cuda'
+    scheduler: Optional[torch.optim.lr_scheduler._LRScheduler],
+    scaler: Optional[torch.amp.GradScaler],
+    device: str = "cuda",
 ) -> Dict[str, Any]:
-    """
-    Load complete training state from checkpoint with validation.
-    
-    🔥 CRITICAL: This function prevents "Resume Kick" by:
-    1. Restoring optimizer momentum state
-    2. Restoring scheduler step position
-    3. Validating config consistency
-    
-    Args:
-        checkpoint_path: Path to checkpoint file
-        model: Model to load weights into
-        optimizer: Optimizer to restore state
-        scheduler: Scheduler to restore state
-        scaler: GradScaler to restore state
-        current_config: Current config for validation
-        device: Device to load to
-    
-    Returns:
-        Dict with 'start_epoch' and 'global_step'
-    """
     checkpoint_path = Path(checkpoint_path)
     if not checkpoint_path.exists():
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
-    
-    logger.info(f"Loading checkpoint: {checkpoint_path}")
-    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
-    
-    # 1. Validate config consistency
-    _validate_config(checkpoint.get('config', {}), current_config)
-    
-    # 2. Load model state (handle compiled model prefix)
-    model_state_dict = checkpoint['model_state_dict']
-    model_state_dict = _fix_state_dict_keys(model_state_dict, model)
-    
-    missing, unexpected = model.load_state_dict(model_state_dict, strict=False)
+
+    logger.info("Loading checkpoint: %s", checkpoint_path)
+    state = torch.load(checkpoint_path, map_location=device, weights_only=False)
+
+    model_state = _strip_compile_prefix(state["model_state_dict"])
+    missing, unexpected = model.load_state_dict(model_state, strict=False)
     if missing:
-        logger.warning(f"Missing keys: {missing[:5]}{'...' if len(missing) > 5 else ''}")
+        logger.warning("Missing keys on load (first 12): %s", list(missing)[:12])
     if unexpected:
-        logger.warning(f"Unexpected keys: {unexpected[:5]}{'...' if len(unexpected) > 5 else ''}")
-    logger.info("✓ Model state loaded")
-    
-    # 3. 🔥 CRITICAL: Restore optimizer state (prevents momentum reset)
-    if 'optimizer_state_dict' in checkpoint:
+        logger.warning("Unexpected keys on load (first 12): %s", list(unexpected)[:12])
+
+    try:
+        optimizer.load_state_dict(state["optimizer_state_dict"])
+    except Exception as exc:
+        logger.warning("Skip optimizer state restore: %s", exc)
+
+    sched_state = state.get("scheduler_state_dict")
+    if scheduler is not None and sched_state is not None:
         try:
-            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            logger.info("✓ Optimizer state restored (momentum preserved)")
-        except Exception as e:
-            logger.error(f"⚠️ Failed to restore optimizer state: {e}")
-            logger.error("  This may cause Resume Kick - consider restarting training")
-    else:
-        logger.warning("⚠️ No optimizer state in checkpoint - momentum will reset!")
-    
-    # 4. 🔥 CRITICAL: Restore scheduler state (prevents re-warmup)
-    if 'scheduler_state_dict' in checkpoint:
+            scheduler.load_state_dict(sched_state)
+        except Exception as exc:
+            logger.warning("Skip scheduler state restore: %s", exc)
+
+    scaler_state = state.get("scaler_state_dict")
+    if scaler is not None and scaler_state is not None:
         try:
-            scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-            logger.info("✓ Scheduler state restored (no re-warmup)")
-        except Exception as e:
-            logger.error(f"⚠️ Failed to restore scheduler state: {e}")
-            # Fallback: manually step scheduler
-            _manual_scheduler_advance(scheduler, checkpoint)
-    else:
-        logger.warning("⚠️ No scheduler state - attempting manual advance")
-        _manual_scheduler_advance(scheduler, checkpoint)
-    
-    # 5. Restore scaler state
-    if 'scaler_state_dict' in checkpoint:
-        try:
-            scaler.load_state_dict(checkpoint['scaler_state_dict'])
-            logger.info("✓ GradScaler state restored")
-        except Exception as e:
-            logger.warning(f"Failed to restore scaler state: {e}")
-    
-    # 6. Extract resume info
-    start_epoch = checkpoint['epoch'] + 1
-    global_step = checkpoint.get('global_step', 0)
-    
-    logger.info(f"✓ Fully resumed from epoch {checkpoint['epoch']}")
-    logger.info(f"  Next epoch: {start_epoch}")
-    logger.info(f"  Global step: {global_step}")
-    
+            scaler.load_state_dict(scaler_state)
+        except Exception as exc:
+            logger.warning("Skip scaler state restore: %s", exc)
+
     return {
-        'start_epoch': start_epoch,
-        'global_step': global_step,
-        'metrics': checkpoint.get('metrics', {}),
-        'adaptive_norm_state': checkpoint.get('adaptive_norm_state', None)
+        "start_epoch": int(state.get("epoch", 0)) + 1,
+        "global_step": int(state.get("global_step", 0)),
+        "metrics": state.get("metrics", {}),
     }
 
 
 def find_latest_checkpoint(checkpoint_dir: Path) -> Optional[Path]:
-    """Find the latest epoch checkpoint in directory."""
-    epoch_checkpoints = sorted(checkpoint_dir.glob('epoch_*.pt'))
-    if epoch_checkpoints:
-        return epoch_checkpoints[-1]
-    return None
-
-
-def _compute_config_hash(config: Dict) -> str:
-    """Compute hash of critical config values for validation."""
-    critical_keys = [
-        ('loss', 'w_style'),
-        ('loss', 'structure_weight'),
-        ('loss', 'edge_boost'),
-        ('model', 'num_styles'),
-        ('model', 'base_channels'),
-    ]
-    
-    values = []
-    for keys in critical_keys:
-        val = config
-        for k in keys:
-            val = val.get(k, 'MISSING') if isinstance(val, dict) else 'MISSING'
-        values.append(f"{'.'.join(keys)}={val}")
-    
-    return '|'.join(values)
-
-
-def _validate_config(saved_config: Dict, current_config: Dict):
-    """
-    Validate critical config values match between saved and current.
-    
-    🔥 This prevents silent Loss scale changes that cause apparent spikes.
-    """
-    critical_checks = [
-        ('loss.w_style', 
-         saved_config.get('loss', {}).get('w_style'),
-         current_config.get('loss', {}).get('w_style')),
-        ('loss.structure_weight',
-         saved_config.get('loss', {}).get('structure_weight'),
-         current_config.get('loss', {}).get('structure_weight')),
-        ('loss.edge_boost',
-         saved_config.get('loss', {}).get('edge_boost'),
-         current_config.get('loss', {}).get('edge_boost')),
-    ]
-    
-    mismatches = []
-    for name, saved, current in critical_checks:
-        if saved is not None and current is not None and saved != current:
-            mismatches.append(f"  {name}: saved={saved} vs current={current}")
-    
-    if mismatches:
-        logger.warning("⚠️ CONFIG MISMATCH DETECTED - may cause Loss jump!")
-        for m in mismatches:
-            logger.warning(m)
-        logger.warning("Consider using the saved config values.")
-
-
-def _fix_state_dict_keys(state_dict: Dict, model: torch.nn.Module) -> Dict:
-    """Fix state_dict keys for compiled/non-compiled model mismatch."""
-    has_orig_mod_prefix = any(k.startswith('_orig_mod.') for k in state_dict.keys())
-    model_is_compiled = hasattr(model, '_orig_mod')
-    
-    if has_orig_mod_prefix and not model_is_compiled:
-        logger.info("Converting compiled checkpoint to non-compiled format")
-        return {k.replace('_orig_mod.', ''): v for k, v in state_dict.items()}
-    elif not has_orig_mod_prefix and model_is_compiled:
-        logger.info("Converting non-compiled checkpoint to compiled format")
-        return {f'_orig_mod.{k}': v for k, v in state_dict.items()}
-    
-    return state_dict
-
-
-def _manual_scheduler_advance(scheduler, checkpoint: Dict):
-    """Manually advance scheduler if state_dict is missing."""
-    global_step = checkpoint.get('global_step', 0)
-    if global_step > 0:
-        logger.info(f"Manually advancing scheduler by {global_step} steps...")
-        for _ in range(global_step):
-            try:
-                scheduler.step()
-            except Exception:
-                break
-        logger.info(f"✓ Scheduler advanced to step ~{global_step}")
-
-
-def compare_configs(checkpoint_path: Path, config_path: Path) -> Dict[str, Any]:
-    """
-    Compare checkpoint config with local config file.
-    
-    Useful for debugging Resume Kick issues.
-    
-    Returns:
-        Dict with 'matches', 'mismatches', 'missing' keys
-    """
-    checkpoint = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
-    saved_config = checkpoint.get('config', {})
-    
-    with open(config_path, 'r') as f:
-        local_config = json.load(f)
-    
-    def flatten_dict(d, prefix=''):
-        items = []
-        for k, v in d.items():
-            key = f"{prefix}.{k}" if prefix else k
-            if isinstance(v, dict):
-                items.extend(flatten_dict(v, key))
-            else:
-                items.append((key, v))
-        return items
-    
-    saved_flat = dict(flatten_dict(saved_config))
-    local_flat = dict(flatten_dict(local_config))
-    
-    all_keys = set(saved_flat.keys()) | set(local_flat.keys())
-    
-    result = {'matches': [], 'mismatches': [], 'missing': []}
-    
-    for key in sorted(all_keys):
-        saved_val = saved_flat.get(key, '<MISSING>')
-        local_val = local_flat.get(key, '<MISSING>')
-        
-        if saved_val == '<MISSING>' or local_val == '<MISSING>':
-            result['missing'].append(f"{key}: saved={saved_val}, local={local_val}")
-        elif saved_val != local_val:
-            result['mismatches'].append(f"{key}: saved={saved_val}, local={local_val}")
-        else:
-            result['matches'].append(key)
-    
-    return result
+    ckpts = sorted(Path(checkpoint_dir).glob("epoch_*.pt"))
+    return ckpts[-1] if ckpts else None

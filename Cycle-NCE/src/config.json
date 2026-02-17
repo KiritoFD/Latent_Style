@@ -22,25 +22,14 @@
     "loss_projector_channels": 64
   },
   "loss": {
-    "w_delta_tv": 0.012,
-    "w_delta_l2": 0.02,
-    "w_output_tv": 0.01,
-    "w_identity": 50.0,
+    "w_style": 10.0,
+    "w_identity": 10.0,
     "train_num_steps_min": 1,
     "train_num_steps_max": 1,
     "train_step_size_min": 1.0,
     "train_step_size_max": 1.0,
     "train_style_strength_min": 0.7,
-    "train_style_strength_max": 0.9,
-    "w_color_moment": 2.0,
-    "w_swd": 20.0,
-    "swd_patch_sizes": [
-      3,
-      5
-    ],
-    "swd_num_projections": 128,
-    "w_semigroup": 1.0,
-    "semigroup_every_n_steps": 1
+    "train_style_strength_max": 0.9
   },
   "training": {
     "seed": 42,
@@ -62,7 +51,7 @@
     "full_eval_interval": 50,
     "full_eval_on_last_epoch": true,
     "full_eval_batch_size": 4,
-    "full_eval_max_src_samples": 20,
+    "full_eval_max_src_samples": 10,
     "full_eval_max_ref_compare": 20,
     "full_eval_max_ref_cache": 100,
     "full_eval_ref_feature_batch_size": 8,

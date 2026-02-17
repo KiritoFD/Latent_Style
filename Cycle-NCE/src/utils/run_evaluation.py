@@ -755,7 +755,7 @@ def main():
 
     if args.image_classifier_path:
         try:
-            from utils.eval_image_classifier import load_eval_image_classifier
+            from utils.image_classify import load_eval_image_classifier
             image_ckpt = Path(args.image_classifier_path)
             if not image_ckpt.is_absolute():
                 image_ckpt = (Path(__file__).resolve().parent / image_ckpt).resolve()
