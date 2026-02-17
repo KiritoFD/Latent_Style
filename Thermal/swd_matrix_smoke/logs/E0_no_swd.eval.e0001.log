@@ -1,5 +1,0 @@
-WARNING: failed to load VAE decoder, fallback to latent-proxy metrics. reason=No module named 'diffusers'
-WARNING: LPIPS unavailable (or decode disabled). Falling back to L2 for diversity/content metrics.
-Wrote per-sample metrics: G:\GitHub\Latent_Style\Thermal\swd_matrix_smoke\experiments\E0_no_swd\validation\epoch_0001\metrics_per_sample.csv
-Wrote summary: G:\GitHub\Latent_Style\Thermal\swd_matrix_smoke\experiments\E0_no_swd\validation\epoch_0001\summary.json
-Wrote decision flags: G:\GitHub\Latent_Style\Thermal\swd_matrix_smoke\experiments\E0_no_swd\validation\epoch_0001\decision_flags.json

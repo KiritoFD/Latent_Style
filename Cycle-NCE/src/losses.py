@@ -1,10 +1,11 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import random
 from contextlib import contextmanager
-from typing import Dict
-import torch.nn as nn
+from typing import Dict, Sequence
+
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
 try:
@@ -13,58 +14,153 @@ except ImportError:
     from model import LatentAdaCUT
 
 
+class PatchSlicedWassersteinLoss(nn.Module):
+    """Patch-based sliced Wasserstein distance with optional patch mean removal."""
+
+    def __init__(
+        self,
+        patch_size: int = 3,
+        num_projections: int = 64,
+        max_samples: int = 4096,
+        normalize_patch: str = "mean",
+    ) -> None:
+        super().__init__()
+        self.patch_size = int(patch_size)
+        self.num_projections = int(num_projections)
+        self.max_samples = int(max_samples)
+        self.normalize_patch = str(normalize_patch)
+
+    def _extract_patches(self, x: torch.Tensor) -> torch.Tensor:
+        kw = self.patch_size
+        pad = kw // 2
+        patches = F.unfold(x, kernel_size=kw, padding=pad)
+        return patches.transpose(1, 2).contiguous()  # [B, N, C*K*K]
+
+    def _normalize(self, patches: torch.Tensor) -> torch.Tensor:
+        if self.normalize_patch == "mean":
+            return patches - patches.mean(dim=2, keepdim=True)
+        if self.normalize_patch == "none":
+            return patches
+        raise ValueError(f"Unsupported normalize_patch mode: {self.normalize_patch}")
+
+    def forward(self, x_pred: torch.Tensor, x_style: torch.Tensor) -> torch.Tensor:
+        with torch.amp.autocast("cuda", enabled=False):
+            x_pred = x_pred.float()
+            x_style = x_style.float()
+
+            pred_patches = self._normalize(self._extract_patches(x_pred))
+            style_patches = self._normalize(self._extract_patches(x_style))
+
+            feature_dim = pred_patches.shape[2]
+            pred_flat = pred_patches.view(-1, feature_dim)
+            style_flat = style_patches.view(-1, feature_dim)
+
+            total_samples = pred_flat.shape[0]
+            if total_samples > self.max_samples:
+                idx = torch.randperm(total_samples, device=pred_flat.device)[: self.max_samples]
+                pred_flat = pred_flat[idx]
+                style_flat = style_flat[idx]
+
+            proj = torch.randn(
+                feature_dim,
+                self.num_projections,
+                device=pred_flat.device,
+                dtype=pred_flat.dtype,
+            )
+            proj = F.normalize(proj, p=2, dim=0)
+
+            pred_proj = pred_flat @ proj
+            style_proj = style_flat @ proj
+
+            pred_sorted, _ = torch.sort(pred_proj, dim=0)
+            style_sorted, _ = torch.sort(style_proj, dim=0)
+            return F.mse_loss(pred_sorted, style_sorted)
+
+
+class SobelOperator(nn.Module):
+    """Fixed Sobel operator for latent gradient magnitude extraction."""
+
+    def __init__(self, in_channels: int = 4) -> None:
+        super().__init__()
+        sobel_x = torch.tensor(
+            [[-1.0, 0.0, 1.0], [-2.0, 0.0, 2.0], [-1.0, 0.0, 1.0]],
+            dtype=torch.float32,
+        )
+        sobel_y = torch.tensor(
+            [[-1.0, -2.0, -1.0], [0.0, 0.0, 0.0], [1.0, 2.0, 1.0]],
+            dtype=torch.float32,
+        )
+        self.in_channels = int(in_channels)
+        self.register_buffer(
+            "kx", sobel_x.view(1, 1, 3, 3).repeat(self.in_channels, 1, 1, 1)
+        )
+        self.register_buffer(
+            "ky", sobel_y.view(1, 1, 3, 3).repeat(self.in_channels, 1, 1, 1)
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        grad_x = F.conv2d(x, self.kx, padding=1, groups=self.in_channels)
+        grad_y = F.conv2d(x, self.ky, padding=1, groups=self.in_channels)
+        return torch.sqrt(grad_x.pow(2) + grad_y.pow(2) + 1e-6)
+
+
+class RandomFourierLifter(nn.Module):
+    """Random Fourier Features lifter: cos(Wx + b)."""
+
+    def __init__(self, in_channels: int = 4, out_channels: int = 512, sigma: float = 2.0) -> None:
+        super().__init__()
+        self.out_channels = int(out_channels)
+        w = torch.randn(self.out_channels, in_channels, 1, 1) * float(sigma)
+        b = torch.rand(self.out_channels, 1, 1) * (2.0 * torch.pi)
+        self.register_buffer("W", w)
+        self.register_buffer("b", b)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        proj = F.conv2d(x, self.W) + self.b
+        return torch.cos(proj)
+
+
 class LatentStyleLoss(nn.Module):
-    """Projected SWD in latent space with frozen random channel lifting."""
+    """Kernel-SWD on random Fourier features."""
 
     def __init__(
         self,
         in_channels: int = 4,
-        hidden_dim: int = 64,
-        lift_dim: int = 256,
-        num_projections: int = 64,
         scale_factor: float = 0.13025,
+        lift_dim: int = 512,
+        rff_sigma: float = 2.0,
+        num_projections: int = 64,
+        **kwargs,
     ) -> None:
         super().__init__()
+        del kwargs
         self.scale_factor = float(scale_factor)
-
-        self.lifter = nn.Sequential(
-            nn.Conv2d(in_channels, hidden_dim, kernel_size=1),
-            nn.GroupNorm(4, hidden_dim),
-            nn.SiLU(inplace=True),
-            nn.Conv2d(hidden_dim, lift_dim, kernel_size=1),
+        self.lifter = RandomFourierLifter(
+            in_channels=in_channels,
+            out_channels=lift_dim,
+            sigma=rff_sigma,
         )
-
-        for m in self.lifter.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.orthogonal_(m.weight)
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
-
-        self.lifter.eval()
-        for p in self.lifter.parameters():
-            p.requires_grad_(False)
-
         rand_proj = torch.randn(lift_dim, num_projections)
-        proj = F.normalize(rand_proj, p=2, dim=0)
-        self.register_buffer("projections", proj)
+        self.register_buffer("projections", F.normalize(rand_proj, p=2, dim=0))
 
-    def compute_swd(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        b, c, h, w = x.shape
-        x_flat = x.view(b, c, -1).permute(0, 2, 1)
-        y_flat = y.view(b, c, -1).permute(0, 2, 1)
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        x_scaled = x * self.scale_factor
+        y_scaled = y * self.scale_factor
 
-        x_proj = torch.matmul(x_flat, self.projections)
-        y_proj = torch.matmul(y_flat, self.projections)
+        feat_x = self.lifter(x_scaled)
+        with torch.no_grad():
+            feat_y = self.lifter(y_scaled)
+
+        b, c, h, w = feat_x.shape
+        x_flat = feat_x.view(b, c, -1).permute(0, 2, 1)
+        y_flat = feat_y.view(b, c, -1).permute(0, 2, 1)
+
+        x_proj = x_flat @ self.projections
+        y_proj = y_flat @ self.projections
 
         x_sorted, _ = torch.sort(x_proj, dim=1)
         y_sorted, _ = torch.sort(y_proj, dim=1)
         return F.mse_loss(x_sorted, y_sorted)
-
-    def forward(self, z_fake: torch.Tensor, z_target_style: torch.Tensor) -> torch.Tensor:
-        feat_fake = self.lifter(z_fake * self.scale_factor)
-        with torch.no_grad():
-            feat_style = self.lifter(z_target_style * self.scale_factor)
-        return self.compute_swd(feat_fake, feat_style)
 
 
 class AdaCUTObjective:
@@ -85,14 +181,19 @@ class AdaCUTObjective:
 
         self.nsight_nvtx = bool(config.get("training", {}).get("nsight_nvtx", False))
         self._style_loss_module: LatentStyleLoss | None = None
+        self._style_loss_device: torch.device | None = None
 
     def _ensure_style_module(self, device: torch.device) -> None:
         if self._style_loss_module is None:
             self._style_loss_module = LatentStyleLoss(
                 scale_factor=self.latent_scale_factor
             ).to(device)
-        elif next(self._style_loss_module.parameters()).device != device:
+            self._style_loss_device = device
+            return
+
+        if self._style_loss_device != device:
             self._style_loss_module = self._style_loss_module.to(device)
+            self._style_loss_device = device
 
     @staticmethod
     def _sample_range(low: float, high: float) -> float:
