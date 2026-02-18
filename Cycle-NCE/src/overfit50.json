@@ -24,8 +24,8 @@
   "loss": {
     "w_style": 150.0,
     "w_moment": 2.0,
-    "w_identity": 20.0,
-    "w_structure": 10.0,
+    "w_identity": 50.0,
+    "w_structure": 20.0,
     "w_tv": 0.0,
     "train_num_steps_min": 1,
     "train_num_steps_max": 1,

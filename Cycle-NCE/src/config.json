@@ -1,7 +1,7 @@
 {
   "model": {
     "latent_channels": 4,
-    "base_dim": 128,
+    "base_dim": 160,
     "lift_channels": 128,
     "style_dim": 256,
     "num_styles": 5,
@@ -19,14 +19,19 @@
     "upsample_blur": true,
     "upsample_blur_kernel": "gaussian3",
     "loss_projector_use": false,
-    "loss_projector_channels": 64
+    "loss_projector_channels": 64,
+
+    "__comment_gates__": "【关键修复】必须显式打开，否则Encoder梯度为0",
+    "inject_gate_hires": 1.0,
+    "inject_gate_body": 1.0,
+    "inject_gate_decoder": 1.0
   },
   "loss": {
     "w_style": 150.0,
-    "w_moment": 2.0,
-    "w_identity": 20.0,
-    "w_structure": 10.0,
-    "w_tv": 0.0,
+    "w_structure": 600.0,
+    "w_identity": 1000.0,
+    "w_moment": 10.0,
+    "w_tv": 0,
     "train_num_steps_min": 1,
     "train_num_steps_max": 1,
     "train_step_size_min": 1.0,
@@ -36,20 +41,21 @@
   },
   "training": {
     "seed": 42,
-    "batch_size":320,
+    "batch_size": 256,
     "accumulation_steps": 1,
-    "num_workers": -1,
+    "num_workers": 8,
     "persistent_workers": true,
     "prefetch_factor": 2,
     "pin_memory": true,
     "cpu_threads": 12,
     "cpu_interop_threads": 2,
-    "learning_rate": 0.0002,
-    "min_learning_rate": 1e-05,
+    "learning_rate": 5e-05,
+    "min_learning_rate": 1e-06,
+    "warmup_epochs": 20,
     "weight_decay": 0.0,
     "scheduler": "cosine",
     "grad_clip_norm": 1.0,
-    "num_epochs": 200,
+    "num_epochs": 300,
     "save_interval": 10,
     "full_eval_interval": 50,
     "full_eval_on_last_epoch": true,
@@ -66,7 +72,7 @@
     "full_eval_classifier_only": false,
     "full_eval_disable_lpips": false,
     "log_interval": 100,
-    "use_tqdm": true,
+    "use_tqdm": false,
     "use_amp": true,
     "amp_dtype": "fp16",
     "allow_tf32": true,
@@ -81,6 +87,9 @@
     "profile_loss_vram": false,
     "loss_timing_interval": 0,
     "enable_profiler": false,
+    "debug_grad_enabled": true,
+    "debug_grad_interval": 100,
+    "debug_grad_loss_threshold": 1000000000000.0,
     "resume_checkpoint": ""
   },
   "data": {
@@ -96,10 +105,10 @@
     "preload_to_gpu": true,
     "preload_max_vram_gb": 6.0,
     "preload_reserve_ratio": 0.4,
-    "virtual_length_multiplier": 4
+    "virtual_length_multiplier": 6
   },
   "checkpoint": {
-    "save_dir": "../swd-256"
+    "save_dir": "../nce-idt-150-600-1k"
   },
   "inference": {
     "num_steps": 1,

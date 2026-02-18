@@ -12,12 +12,9 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-try:
-    from .dataset import AdaCUTLatentDataset
-    from .trainer import AdaCUTTrainer
-except ImportError:  # pragma: no cover
-    from dataset import AdaCUTLatentDataset
-    from trainer import AdaCUTTrainer
+from dataset import AdaCUTLatentDataset
+from trainer import AdaCUTTrainer
+
 
 logging.basicConfig(
     level=logging.INFO,

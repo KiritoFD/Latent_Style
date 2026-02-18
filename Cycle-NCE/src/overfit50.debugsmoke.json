@@ -1,0 +1,80 @@
+{
+    "model":  {
+                  "latent_channels":  4,
+                  "base_dim":  128,
+                  "lift_channels":  128,
+                  "style_dim":  256,
+                  "num_styles":  2,
+                  "num_hires_blocks":  4,
+                  "num_res_blocks":  2,
+                  "num_groups":  4,
+                  "latent_scale_factor":  0.154353,
+                  "residual_gain":  0.4,
+                  "style_spatial_pre_gain_16":  0.5,
+                  "use_decoder_adagn":  true,
+                  "style_strength_default":  1.0,
+                  "style_strength_step_curve":  "smoothstep",
+                  "upsample_mode":  "bilinear",
+                  "style_id_spatial_jitter_px":  2,
+                  "upsample_blur":  true,
+                  "upsample_blur_kernel":  "gaussian3",
+                  "loss_projector_use":  false,
+                  "loss_projector_channels":  64
+              },
+    "loss":  {
+                 "w_style":  100.0,
+                 "w_moment":  2.0,
+                 "w_identity":  50.0,
+                 "w_structure":  1500.0,
+                 "w_tv":  0.0,
+                 "train_num_steps_min":  1,
+                 "train_num_steps_max":  1,
+                 "train_step_size_min":  1.0,
+                 "train_step_size_max":  1.0,
+                 "train_style_strength_min":  0.8,
+                 "train_style_strength_max":  1.0
+             },
+    "training":  {
+                     "seed":  42,
+                     "batch_size":  50,
+                     "accumulation_steps":  1,
+                     "num_workers":  4,
+                     "persistent_workers":  true,
+                     "prefetch_factor":  2,
+                     "pin_memory":  true,
+                     "learning_rate":  0.0001,
+                     "min_learning_rate":  1E-05,
+                     "weight_decay":  0.0,
+                     "scheduler":  "cosine",
+                     "grad_clip_norm":  1.0,
+                     "num_epochs":  1,
+                     "save_interval":  50,
+                     "log_interval":  10,
+                     "full_eval_interval":  50,
+                     "full_eval_on_last_epoch":  false,
+                     "use_tqdm":  true,
+                     "use_amp":  true,
+                     "amp_dtype":  "fp16",
+                     "allow_tf32":  true,
+                     "channels_last":  true,
+                     "use_gradient_checkpointing":  false,
+                     "fused_adamw":  true,
+                     "skip_oom_batches":  true,
+                     "test_image_dir":  "../../style_data/overfit50"
+                 },
+    "data":  {
+                 "data_root":  "../../latents_overfit50",
+                 "style_subdirs":  [
+                                       "photo",
+                                       "Hayao"
+                                   ],
+                 "allow_hflip":  false,
+                 "preload_to_gpu":  true,
+                 "preload_max_vram_gb":  6.0,
+                 "preload_reserve_ratio":  0.4,
+                 "virtual_length_multiplier":  1
+             },
+    "checkpoint":  {
+                       "save_dir":  "../tmp-debug-smoke"
+                   }
+}

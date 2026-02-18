@@ -33,6 +33,26 @@ except ImportError:  # pragma: no cover
 
 logger = logging.getLogger(__name__)
 
+
+TRAIN_LOG_COLUMNS = (
+    "epoch",
+    "loss",
+    "style_swd",
+    "style_moment",
+    "structure",
+    "tv",
+    "identity",
+    "train_num_steps",
+    "train_step_size",
+    "train_style_strength",
+    "lr",
+    "data_time_sec",
+    "compute_time_sec",
+    "epoch_time_sec",
+    "samples_seen",
+    "samples_per_sec",
+)
+
 class AdaCUTTrainer:
     def __init__(self, config: Dict, device: torch.device, config_path: Optional[str] = None) -> None:
         self.config = config
@@ -55,8 +75,27 @@ class AdaCUTTrainer:
         self.use_grad_scaler = bool(self.use_amp and self.amp_dtype == torch.float16)
         self.scaler = torch.amp.GradScaler("cuda", enabled=self.use_grad_scaler)
 
+        # 1. 先初始化 Loss Function (这样才能拿到里面的 MLP)
+        self.loss_fn = AdaCUTObjective(config)
+        # 确保模块被移动到了 GPU (因为 init 里只是定义了结构，compute 时才 to_device，
+        # 但我们需要参数列表，所以这里先强制初始化一下)
+        self.loss_fn._ensure_modules(self.device)
+
+        # 2. 收集所有需要训练的参数
+        # 包括：ResNet 主干 + NCE Loss 里的 MLP
+        params_to_optimize = list(self.model.parameters())
+
+        # 检查并添加 NCE MLP 参数
+        if hasattr(self.loss_fn, "_content_loss_module"):
+            nce_module = self.loss_fn._content_loss_module
+            if isinstance(nce_module, torch.nn.Module):
+                mlp_params = list(nce_module.parameters())
+                logger.info("Adding NCE Projector params to optimizer: %d tensors", len(mlp_params))
+                params_to_optimize.extend(mlp_params)
+
+        # 3. 初始化 Optimizer
         self.optimizer = torch.optim.AdamW(
-            self.model.parameters(),
+            params_to_optimize,  # 使用合并后的参数列表
             lr=float(train_cfg.get("learning_rate", 1e-3)),
             weight_decay=float(train_cfg.get("weight_decay", 1e-4)),
             betas=(0.9, 0.999),
@@ -64,13 +103,32 @@ class AdaCUTTrainer:
 
         self.scheduler = None
         if str(train_cfg.get("scheduler", "cosine")).lower() == "cosine":
-            self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                self.optimizer,
-                T_max=max(1, int(train_cfg.get("num_epochs", 100))),
-                eta_min=float(train_cfg.get("min_learning_rate", 1e-5)),
-            )
-
-        self.loss_fn = AdaCUTObjective(config)
+            num_epochs = max(1, int(train_cfg.get("num_epochs", 100)))
+            warmup_epochs = int(train_cfg.get("warmup_epochs", 0))
+            min_lr = float(train_cfg.get("min_learning_rate", 1e-5))
+            if warmup_epochs > 0:
+                warmup = torch.optim.lr_scheduler.LinearLR(
+                    self.optimizer,
+                    start_factor=0.01,
+                    end_factor=1.0,
+                    total_iters=warmup_epochs,
+                )
+                cosine = torch.optim.lr_scheduler.CosineAnnealingLR(
+                    self.optimizer,
+                    T_max=max(1, num_epochs - warmup_epochs),
+                    eta_min=min_lr,
+                )
+                self.scheduler = torch.optim.lr_scheduler.SequentialLR(
+                    self.optimizer,
+                    schedulers=[warmup, cosine],
+                    milestones=[warmup_epochs],
+                )
+            else:
+                self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                    self.optimizer,
+                    T_max=num_epochs,
+                    eta_min=min_lr,
+                )
 
         self.grad_clip_norm = float(train_cfg.get("grad_clip_norm", 1.0))
         self.accumulation_steps = max(1, int(train_cfg.get("accumulation_steps", 1)))
@@ -80,6 +138,9 @@ class AdaCUTTrainer:
         self.save_interval = max(1, int(train_cfg.get("save_interval", 10)))
         self.full_eval_interval = max(0, int(train_cfg.get("full_eval_interval", 50)))
         self.run_full_eval_on_last_epoch = bool(train_cfg.get("full_eval_on_last_epoch", True))
+        self.debug_grad_enabled = bool(train_cfg.get("debug_grad_enabled", False))
+        self.debug_grad_interval = max(1, int(train_cfg.get("debug_grad_interval", 100)))
+        self.debug_grad_loss_threshold = float(train_cfg.get("debug_grad_loss_threshold", 100.0))
 
         self.checkpoint_dir = Path(ckpt_cfg.get("save_dir", "../adacut_ckpt"))
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
@@ -88,33 +149,54 @@ class AdaCUTTrainer:
         self.full_eval_root = self.checkpoint_dir / "full_eval"
         self.full_eval_root.mkdir(parents=True, exist_ok=True)
 
-        self.log_file = self.log_dir / f"training_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-        with open(self.log_file, "w", encoding="utf-8", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(
-                [
-                    "epoch",
-                    "loss",
-                    "style_swd",
-                    "style_moment",
-                    "structure",
-                    "tv",
-                    "identity",
-                    "train_num_steps",
-                    "train_step_size",
-                    "train_style_strength",
-                    "lr",
-                    "data_time_sec",
-                    "compute_time_sec",
-                    "epoch_time_sec",
-                    "samples_seen",
-                    "samples_per_sec",
-                ]
-            )
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.log_file = self.log_dir / f"training_{timestamp}.csv"
+        self.grad_log_file = self.log_dir / f"gradient_{timestamp}.log"
+        self.grad_logger = self._setup_gradient_logger()
+        self._init_train_log_csv()
+        logger.info("Gradient debug log file: %s", self.grad_log_file)
 
         self.global_step = 0
         self.start_epoch = 1
         self._maybe_resume(str(train_cfg.get("resume_checkpoint", "")))
+
+    def _setup_gradient_logger(self) -> logging.Logger:
+        grad_logger = logging.getLogger(f"{__name__}.grad.{id(self)}")
+        grad_logger.setLevel(logging.INFO)
+        grad_logger.propagate = False
+
+        file_handler = logging.FileHandler(self.grad_log_file, encoding="utf-8")
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(logging.Formatter("%(asctime)s | %(message)s"))
+
+        grad_logger.handlers.clear()
+        grad_logger.addHandler(file_handler)
+        return grad_logger
+
+    def _init_train_log_csv(self) -> None:
+        with open(self.log_file, "w", encoding="utf-8", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(TRAIN_LOG_COLUMNS)
+
+    def _build_train_log_row(self, epoch: int, metrics: Dict[str, float]):
+        return [
+            int(epoch),
+            float(metrics.get("loss", 0.0)),
+            float(metrics.get("style_swd", 0.0)),
+            float(metrics.get("style_moment", 0.0)),
+            float(metrics.get("structure", 0.0)),
+            float(metrics.get("tv", 0.0)),
+            float(metrics.get("identity", 0.0)),
+            float(metrics.get("train_num_steps", 0.0)),
+            float(metrics.get("train_step_size", 0.0)),
+            float(metrics.get("train_style_strength", 0.0)),
+            float(metrics.get("lr", 0.0)),
+            float(metrics.get("data_time_sec", 0.0)),
+            float(metrics.get("compute_time_sec", 0.0)),
+            float(metrics.get("epoch_time_sec", 0.0)),
+            int(float(metrics.get("samples_seen", 0.0))),
+            float(metrics.get("samples_per_sec", 0.0)),
+        ]
 
     def _find_latest_checkpoint(self) -> Optional[Path]:
         return find_latest_checkpoint(self.checkpoint_dir)
@@ -146,6 +228,47 @@ class AdaCUTTrainer:
     def step_scheduler(self) -> None:
         if self.scheduler is not None:
             self.scheduler.step()
+
+    # =========================================================================
+    # DEBUG TOOLS: gradient microscope
+    # =========================================================================
+    def _log_gradient_norms(self, epoch: int, step: int) -> None:
+        """
+        Gradient magnitude monitor for vanishing/exploding gradient checks.
+        """
+        header = f"\n[Epoch {epoch} Step {step}] --- Gradient Magnitude Radar ---"
+        cols = f"{ 'Layer':<30} | {'Grad':<10} | {'Weight':<10} | {'Ratio(1e-3)':<10}"
+        divider = "-" * 70
+        self.grad_logger.info(header)
+        self.grad_logger.info(cols)
+        self.grad_logger.info(divider)
+
+        watch_list = [
+            "style_emb",
+            "enc_in",
+            "hires_body.0",
+            "dec_out",
+        ]
+
+        lr = float(self.optimizer.param_groups[0]["lr"])
+        has_data = False
+
+        for name, p in self.model.named_parameters():
+            if p.grad is None:
+                continue
+            is_watched = any(k in name for k in watch_list)
+            g_norm = float(p.grad.detach().norm().item())
+            w_norm = float(p.detach().norm().item())
+            ratio = (g_norm * lr) / (w_norm + 1e-9) * 1e3
+
+            if is_watched or g_norm > 5.0 or (g_norm == 0.0 and w_norm > 0.0):
+                line = f"{name:<30} | {g_norm:.2e}   | {w_norm:.2e}   | {ratio:.2f}"
+                self.grad_logger.info(line)
+                has_data = True
+
+        if not has_data:
+            self.grad_logger.info("No significant gradients found.")
+        self.grad_logger.info(divider + "\n")
 
     def train_epoch(self, dataloader: DataLoader, epoch: int) -> Dict[str, float]:
         self.model.train()
@@ -190,9 +313,19 @@ class AdaCUTTrainer:
 
             should_step = (step_idx % self.accumulation_steps == 0)
             if should_step:
+                if self.use_grad_scaler:
+                    self.scaler.unscale_(self.optimizer)
+
+                should_debug = False
+                if self.debug_grad_enabled:
+                    should_debug = (
+                        (step_idx % self.debug_grad_interval == 0)
+                        or (float(loss.detach().item()) > self.debug_grad_loss_threshold)
+                    )
+                if should_debug:
+                    self._log_gradient_norms(epoch, step_idx)
+
                 if self.grad_clip_norm > 0.0:
-                    if self.use_grad_scaler:
-                        self.scaler.unscale_(self.optimizer)
                     torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip_norm)
                 if self.use_grad_scaler:
                     self.scaler.step(self.optimizer)
@@ -288,26 +421,7 @@ class AdaCUTTrainer:
     def log_epoch(self, epoch: int, metrics: Dict[str, float]) -> None:
         with open(self.log_file, "a", encoding="utf-8", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(
-                [
-                    int(epoch),
-                    float(metrics.get("loss", 0.0)),
-                    float(metrics.get("style_swd", 0.0)),
-                    float(metrics.get("style_moment", 0.0)),
-                    float(metrics.get("structure", 0.0)),
-                    float(metrics.get("tv", 0.0)),
-                    float(metrics.get("identity", 0.0)),
-                    float(metrics.get("train_num_steps", 0.0)),
-                    float(metrics.get("train_step_size", 0.0)),
-                    float(metrics.get("train_style_strength", 0.0)),
-                    float(metrics.get("lr", 0.0)),
-                    float(metrics.get("data_time_sec", 0.0)),
-                    float(metrics.get("compute_time_sec", 0.0)),
-                    float(metrics.get("epoch_time_sec", 0.0)),
-                    int(float(metrics.get("samples_seen", 0.0))),
-                    float(metrics.get("samples_per_sec", 0.0)),
-                ]
-            )
+            writer.writerow(self._build_train_log_row(epoch, metrics))
 
     def save_checkpoint(self, epoch: int, metrics: Dict[str, float]) -> Path:
         return save_training_checkpoint(

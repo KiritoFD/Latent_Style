@@ -131,7 +131,7 @@
   <div class="wrap">
     <div class="card">
       <h1>Training Log Visualizer</h1>
-      <p class="hint">粘贴 `training_*.csv` 或终端日志（`Epoch ... | loss=...` / `[Epoch ...] ...`）后自动解析并绘图。</p>
+      <p class="hint">粘贴 `training_*.csv`、训练终端日志（`Epoch ... | loss=...`）或梯度日志（`[Epoch ... Step ...] --- Gradient Magnitude Radar ---`）后自动解析并可视化。</p>
     </div>
 
     <div class="card">
@@ -160,12 +160,31 @@
         <tbody id="snapshotBody"></tbody>
       </table>
     </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between; margin-bottom:6px;">
+        <div class="muted">Latest Gradient Radar</div>
+        <div id="gradStatus" class="muted"></div>
+      </div>
+      <table>
+        <thead><tr><th>Layer</th><th>Grad</th><th>Weight</th><th>Ratio(1e-3)</th></tr></thead>
+        <tbody id="gradBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="muted" style="margin-bottom:6px;">Gradient Trends</div>
+      <div id="gradCharts" class="chart-grid"></div>
+    </div>
   </div>
 
   <script>
     const METRICS = [
       "loss",
       "style_swd",
+      "style_moment",
+      "structure",
+      "tv",
       "identity",
       "train_num_steps",
       "train_step_size",
@@ -177,14 +196,25 @@
       "samples_seen",
       "samples_per_sec"
     ];
-    const DEFAULT_ON = new Set(["loss", "style_swd", "identity", "lr", "samples_per_sec"]);
+    const DEFAULT_ON = new Set(["loss", "style_swd", "style_moment", "structure", "identity", "lr", "samples_per_sec"]);
     const COLORS = [
       "#38bdf8", "#f59e0b", "#22c55e", "#ef4444", "#a78bfa", "#14b8a6",
       "#eab308", "#f97316", "#60a5fa", "#10b981", "#f472b6", "#84cc16"
     ];
+    const GRAD_TRACK_LAYERS = [
+      "style_emb.weight",
+      "enc_in.weight",
+      "hires_body.0.conv1.weight",
+      "dec_out.weight",
+      "dec_out.bias"
+    ];
     const ALIAS = {
       style: "style_swd",
       style_swd: "style_swd",
+      mom: "style_moment",
+      moment: "style_moment",
+      struct: "structure",
+      structure: "structure",
       idt: "identity",
       identity: "identity",
       steps: "train_num_steps",
@@ -205,8 +235,12 @@
     const chartsEl = document.getElementById("charts");
     const pickerEl = document.getElementById("metricPicker");
     const snapshotBody = document.getElementById("snapshotBody");
+    const gradStatusEl = document.getElementById("gradStatus");
+    const gradBody = document.getElementById("gradBody");
+    const gradChartsEl = document.getElementById("gradCharts");
 
     let parsedRows = [];
+    let parsedGrads = [];
     let selected = new Set([...DEFAULT_ON]);
 
     function setupPicker() {
@@ -236,6 +270,12 @@
       return Number.isFinite(n) ? n : null;
     }
 
+    function normalizeWrappedLines(text) {
+      return String(text || "")
+        .replace(/=\s*\r?\n\s*([+-]?\d)/g, "=$1")
+        .replace(/\|\s*\r?\n\s*/g, "| ");
+    }
+
     function parseCsv(text) {
       const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
       if (lines.length < 2) return [];
@@ -262,7 +302,7 @@
       const lines = text.split(/\r?\n/);
       const rows = [];
       for (const line of lines) {
-        const match = line.match(/(?:^|\s)(?:\[?Epoch)\s+(\d+)\/(\d+)\]?[^|]*\|\s*(.+)$/i);
+        const match = line.match(/Epoch\s+(\d+)\/(\d+)[^|]*\|\s*(.+)$/i);
         if (!match) continue;
         const epoch = Number(match[1]);
         const tail = match[3] || "";
@@ -279,17 +319,52 @@
       return rows;
     }
 
+    function parseGradient(text) {
+      const lines = text.split(/\r?\n/);
+      const snapshots = [];
+      let current = null;
+
+      for (const line of lines) {
+        const h = line.match(/\[Epoch\s+(\d+)\s+Step\s+(\d+)\]\s*---\s*Gradient Magnitude Radar/i);
+        if (h) {
+          if (current && current.entries.length) snapshots.push(current);
+          current = { epoch: Number(h[1]), step: Number(h[2]), entries: [] };
+          continue;
+        }
+        if (!current) continue;
+
+        const payload = line.replace(/^.*?\bINFO\s*-\s*/, "").trim();
+        const m = payload.match(/([^|]+?)\s*\|\s*([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\s*\|\s*([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\s*\|\s*([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)/i);
+        if (!m) continue;
+        const layer = m[1].trim();
+        if (!layer || /^layer$/i.test(layer)) continue;
+        const grad = Number(m[2]);
+        const weight = Number(m[3]);
+        const ratio = Number(m[4]);
+        if (!Number.isFinite(grad) || !Number.isFinite(weight) || !Number.isFinite(ratio)) continue;
+        current.entries.push({ layer, grad, weight, ratio });
+      }
+      if (current && current.entries.length) snapshots.push(current);
+      return snapshots;
+    }
+
     function parseText(text) {
-      let rows = parseCsv(text);
+      const normalized = normalizeWrappedLines(text);
+      let rows = parseCsv(normalized);
+      if (rows.length === 0) rows = parseConsole(normalized);
+      const grads = parseGradient(normalized);
       if (rows.length === 0) rows = parseConsole(text);
-      if (rows.length === 0) return [];
+      if (rows.length === 0 && grads.length === 0) return { rows: [], grads: [] };
 
       const byEpoch = new Map();
       for (const row of rows) {
         const prev = byEpoch.get(row.epoch) || { epoch: row.epoch };
         byEpoch.set(row.epoch, { ...prev, ...row });
       }
-      return [...byEpoch.values()].sort((a, b) => a.epoch - b.epoch);
+      return {
+        rows: [...byEpoch.values()].sort((a, b) => a.epoch - b.epoch),
+        grads,
+      };
     }
 
     function drawLine(canvas, rows, metric, color) {
@@ -358,6 +433,151 @@
       }
     }
 
+    function renderGradient(grads) {
+      gradBody.innerHTML = "";
+      if (!grads.length) {
+        gradStatusEl.textContent = "No gradient radar parsed";
+        return;
+      }
+      const last = grads[grads.length - 1];
+      gradStatusEl.textContent = `Snapshots: ${grads.length}, latest: E${last.epoch} S${last.step}, layers: ${last.entries.length}`;
+
+      const top = [...last.entries]
+        .sort((a, b) => (b.ratio - a.ratio) || (b.grad - a.grad))
+        .slice(0, 30);
+      for (const e of top) {
+        const tr = document.createElement("tr");
+        const tdLayer = document.createElement("td");
+        const tdGrad = document.createElement("td");
+        const tdWeight = document.createElement("td");
+        const tdRatio = document.createElement("td");
+        tdLayer.textContent = e.layer;
+        tdGrad.textContent = e.grad.toExponential(2);
+        tdWeight.textContent = e.weight.toExponential(2);
+        tdRatio.textContent = e.ratio.toFixed(4);
+        tr.appendChild(tdLayer);
+        tr.appendChild(tdGrad);
+        tr.appendChild(tdWeight);
+        tr.appendChild(tdRatio);
+        gradBody.appendChild(tr);
+      }
+    }
+
+    function drawPoints(canvas, points, color) {
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width = canvas.clientWidth * devicePixelRatio;
+      const h = canvas.height = canvas.clientHeight * devicePixelRatio;
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+      const cw = canvas.clientWidth;
+      const ch = canvas.clientHeight;
+      const pad = { l: 44, r: 8, t: 10, b: 24 };
+
+      const ys = points.map(p => p.y).filter(v => Number.isFinite(v));
+      const xs = points.map(p => p.x).filter(v => Number.isFinite(v));
+      if (!xs.length || !ys.length) {
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "12px sans-serif";
+        ctx.fillText("No data", 12, 20);
+        return;
+      }
+
+      const xMin = Math.min(...xs), xMax = Math.max(...xs);
+      let yMin = Math.min(...ys), yMax = Math.max(...ys);
+      if (yMin === yMax) { yMin -= 1; yMax += 1; }
+      const toX = x => pad.l + (x - xMin) / Math.max(1e-9, (xMax - xMin)) * (cw - pad.l - pad.r);
+      const toY = y => ch - pad.b - (y - yMin) / Math.max(1e-9, (yMax - yMin)) * (ch - pad.t - pad.b);
+
+      ctx.strokeStyle = "#1f2937";
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 4; i++) {
+        const gy = pad.t + i * (ch - pad.t - pad.b) / 3;
+        ctx.beginPath(); ctx.moveTo(pad.l, gy); ctx.lineTo(cw - pad.r, gy); ctx.stroke();
+      }
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      let started = false;
+      for (const p of points) {
+        if (!Number.isFinite(p.y)) continue;
+        const x = toX(p.x), py = toY(p.y);
+        if (!started) { ctx.moveTo(x, py); started = true; } else { ctx.lineTo(x, py); }
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = "#cbd5e1";
+      ctx.font = "11px sans-serif";
+      ctx.fillText(String(xMin), pad.l, ch - 8);
+      ctx.fillText(String(xMax), cw - pad.r - ctx.measureText(String(xMax)).width, ch - 8);
+      ctx.fillText(yMax.toFixed(4), 6, pad.t + 4);
+      ctx.fillText(yMin.toFixed(4), 6, ch - pad.b);
+    }
+
+    function buildGradientTrendSeries(grads) {
+      const series = [];
+      if (!grads.length) return series;
+
+      const agg = {
+        max_grad: [],
+        mean_grad: [],
+        max_ratio: [],
+        mean_ratio: [],
+      };
+      const layerSeries = new Map();
+      for (const layer of GRAD_TRACK_LAYERS) layerSeries.set(layer, []);
+
+      grads.forEach((snap, idx) => {
+        const x = idx + 1;
+        const entries = snap.entries || [];
+        if (!entries.length) return;
+        const gradsOnly = entries.map(e => e.grad).filter(Number.isFinite);
+        const ratiosOnly = entries.map(e => e.ratio).filter(Number.isFinite);
+        if (gradsOnly.length) {
+          agg.max_grad.push({ x, y: Math.max(...gradsOnly) });
+          agg.mean_grad.push({ x, y: gradsOnly.reduce((a, b) => a + b, 0) / gradsOnly.length });
+        }
+        if (ratiosOnly.length) {
+          agg.max_ratio.push({ x, y: Math.max(...ratiosOnly) });
+          agg.mean_ratio.push({ x, y: ratiosOnly.reduce((a, b) => a + b, 0) / ratiosOnly.length });
+        }
+
+        const byLayer = new Map(entries.map(e => [e.layer, e]));
+        for (const layer of GRAD_TRACK_LAYERS) {
+          const item = byLayer.get(layer);
+          if (item && Number.isFinite(item.ratio)) {
+            layerSeries.get(layer).push({ x, y: item.ratio });
+          }
+        }
+      });
+
+      for (const [k, points] of Object.entries(agg)) {
+        if (points.length) series.push({ name: k, points });
+      }
+      for (const [layer, points] of layerSeries.entries()) {
+        if (points.length) series.push({ name: `ratio:${layer}`, points });
+      }
+      return series;
+    }
+
+    function renderGradientCharts(grads) {
+      gradChartsEl.innerHTML = "";
+      const series = buildGradientTrendSeries(grads);
+      if (!series.length) return;
+
+      series.forEach((s, i) => {
+        const card = document.createElement("div");
+        card.className = "chart-card";
+        const title = document.createElement("p");
+        title.className = "chart-title";
+        title.textContent = `${s.name} (x = snapshot idx)`;
+        const canvas = document.createElement("canvas");
+        card.appendChild(title);
+        card.appendChild(canvas);
+        gradChartsEl.appendChild(card);
+        drawPoints(canvas, s.points, COLORS[i % COLORS.length]);
+      });
+    }
+
     function renderCharts(rows) {
       chartsEl.innerHTML = "";
       const active = METRICS.filter(m => selected.has(m));
@@ -379,21 +599,32 @@
     function renderAll() {
       renderCharts(parsedRows);
       renderSnapshot(parsedRows);
+      renderGradient(parsedGrads);
+      renderGradientCharts(parsedGrads);
     }
 
     function runParse() {
       const text = input.value || "";
-      parsedRows = parseText(text);
+      const parsed = parseText(text);
+      parsedRows = parsed.rows;
+      parsedGrads = parsed.grads;
       renderAll();
-      statusEl.textContent = parsedRows.length
-        ? `Parsed ${parsedRows.length} epoch rows`
-        : "No valid rows parsed";
+      if (parsedRows.length && parsedGrads.length) {
+        statusEl.textContent = `Parsed ${parsedRows.length} epoch rows + ${parsedGrads.length} gradient snapshots`;
+      } else if (parsedRows.length) {
+        statusEl.textContent = `Parsed ${parsedRows.length} epoch rows`;
+      } else if (parsedGrads.length) {
+        statusEl.textContent = `Parsed ${parsedGrads.length} gradient snapshots`;
+      } else {
+        statusEl.textContent = "No valid rows parsed";
+      }
     }
 
     parseBtn.addEventListener("click", runParse);
     clearBtn.addEventListener("click", () => {
       input.value = "";
       parsedRows = [];
+      parsedGrads = [];
       renderAll();
       statusEl.textContent = "";
     });
