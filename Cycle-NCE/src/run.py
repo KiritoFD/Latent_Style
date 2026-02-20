@@ -58,9 +58,6 @@ def _configure_cuda_allocator(config: dict) -> None:
         return
     train_cfg = config.get("training", {})
     alloc_conf = str(train_cfg.get("cuda_alloc_conf", "")).strip()
-    if not alloc_conf:
-        # Keep allocator policy conservative to reduce fragmentation under long runs.
-        alloc_conf = "expandable_segments:True"
     current = os.environ.get("PYTORCH_ALLOC_CONF", "").strip()
     if current:
         logger.info("Use existing PYTORCH_ALLOC_CONF=%s", current)
@@ -69,6 +66,8 @@ def _configure_cuda_allocator(config: dict) -> None:
     if legacy:
         os.environ["PYTORCH_ALLOC_CONF"] = legacy
         logger.info("Migrated PYTORCH_CUDA_ALLOC_CONF -> PYTORCH_ALLOC_CONF=%s", legacy)
+        return
+    if not alloc_conf:
         return
     os.environ["PYTORCH_ALLOC_CONF"] = alloc_conf
     logger.info("Set PYTORCH_ALLOC_CONF=%s", alloc_conf)

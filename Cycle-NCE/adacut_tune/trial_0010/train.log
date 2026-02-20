@@ -1,0 +1,174 @@
+2026-02-19 18:11:31,153 - WARNING - w_style=51.6221 looks high for Projected SWD loss. Recommended start range is [5, 20].
+2026-02-19 18:11:31,153 - INFO - Active losses: w_style, w_moment, w_identity, w_structure
+2026-02-19 18:11:31,170 - INFO - Set PYTORCH_ALLOC_CONF=expandable_segments:True
+2026-02-19 18:11:31,186 - INFO - Device: cuda
+2026-02-19 18:11:31,186 - INFO - Seed: 42
+2026-02-19 18:11:31,186 - INFO - Loading latent dataset from ..\..\sdxl-256-overfit50
+2026-02-19 18:11:31,201 - INFO -   style=photo id=0 count=10
+2026-02-19 18:11:31,212 - INFO -   style=Hayao id=1 count=10
+2026-02-19 18:11:31,220 - INFO -   style=monet id=2 count=10
+2026-02-19 18:11:31,227 - INFO -   style=cezanne id=3 count=10
+2026-02-19 18:11:31,234 - INFO -   style=vangogh id=4 count=10
+I:\Github\Latent_Style\Cycle-NCE\src\dataset.py:135: UserWarning: expandable_segments not supported on this platform (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\c10/cuda/CUDAAllocatorConfig.h:39.)
+  gpu_tensors[style_id] = stack.to(device=target_device, non_blocking=False)
+2026-02-19 18:11:31,316 - INFO - Dataset preloaded to cuda: 0.00GB across 5 style pools.
+2026-02-19 18:11:31,316 - INFO - DataLoader | batch=160 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-19 18:11:31,397 - INFO - Model params: 7,153,476
+2026-02-19 18:11:31,400 - INFO - Adding NCE Projector params to optimizer: 4 tensors
+2026-02-19 18:11:32,876 - INFO - No checkpoint found, start from scratch.
+I:\Github\Latent_Style\Cycle-NCE\src\trainer.py:189: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  self.scheduler.step()
+2026-02-19 18:11:34,779 - INFO - Epoch 1/150 | loss=1893.0238 style_swd=33.9859 mom=0.6020 struct=3.9051 tv=0.0000 idt=0.0173 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=1.9s
+2026-02-19 18:11:35,208 - INFO - Epoch 2/150 | loss=2061.3521 style_swd=37.2030 mom=0.6216 struct=3.9416 tv=0.0000 idt=0.0176 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:35,631 - INFO - Epoch 3/150 | loss=1772.6199 style_swd=31.6710 mom=0.5780 struct=3.9337 tv=0.0000 idt=0.0181 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:36,094 - INFO - Epoch 4/150 | loss=2019.1804 style_swd=36.3925 mom=0.6160 struct=3.9434 tv=0.0000 idt=0.0177 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.5s
+2026-02-19 18:11:36,519 - INFO - Epoch 5/150 | loss=1810.1541 style_swd=32.3428 mom=0.6123 struct=3.9313 tv=0.0000 idt=0.0398 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:36,944 - INFO - Epoch 6/150 | loss=1997.7213 style_swd=35.9318 mom=0.6497 struct=3.9072 tv=0.0000 idt=0.0528 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:37,373 - INFO - Epoch 7/150 | loss=1918.3430 style_swd=34.4153 mom=0.6129 struct=3.9548 tv=0.0000 idt=0.0617 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:37,798 - INFO - Epoch 8/150 | loss=1900.3287 style_swd=34.0935 mom=0.5874 struct=3.9674 tv=0.0000 idt=0.0626 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:38,226 - INFO - Epoch 9/150 | loss=1820.7015 style_swd=32.5003 mom=0.6185 struct=3.9832 tv=0.0000 idt=0.0664 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:38,651 - INFO - Epoch 10/150 | loss=1906.4924 style_swd=34.1927 mom=0.6019 struct=3.9625 tv=0.0000 idt=0.0691 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:39,081 - INFO - Epoch 11/150 | loss=1966.1819 style_swd=35.3462 mom=0.6111 struct=3.9398 tv=0.0000 idt=0.0720 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:39,507 - INFO - Epoch 12/150 | loss=1868.3212 style_swd=33.4698 mom=0.6019 struct=3.9239 tv=0.0000 idt=0.0732 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:39,936 - INFO - Epoch 13/150 | loss=1773.2747 style_swd=31.6719 mom=0.5762 struct=3.9021 tv=0.0000 idt=0.0753 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:40,365 - INFO - Epoch 14/150 | loss=1763.6693 style_swd=31.4358 mom=0.5867 struct=3.9755 tv=0.0000 idt=0.0770 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:40,787 - INFO - Epoch 15/150 | loss=1808.0785 style_swd=32.2963 mom=0.6021 struct=3.9302 tv=0.0000 idt=0.0793 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:41,217 - INFO - Epoch 16/150 | loss=1830.9733 style_swd=32.7842 mom=0.5724 struct=3.9186 tv=0.0000 idt=0.0803 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:41,644 - INFO - Epoch 17/150 | loss=1811.8148 style_swd=32.3390 mom=0.6137 struct=3.9548 tv=0.0000 idt=0.0841 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:42,076 - INFO - Epoch 18/150 | loss=2008.9664 style_swd=36.0885 mom=0.6303 struct=4.0523 tv=0.0000 idt=0.0856 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:42,502 - INFO - Epoch 19/150 | loss=1823.3589 style_swd=32.5738 mom=0.5970 struct=3.9727 tv=0.0000 idt=0.0885 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:42,927 - INFO - Epoch 20/150 | loss=1822.6505 style_swd=32.5566 mom=0.6107 struct=3.9425 tv=0.0000 idt=0.0885 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:43,356 - INFO - Epoch 21/150 | loss=1698.6084 style_swd=30.2400 mom=0.5549 struct=3.9129 tv=0.0000 idt=0.0916 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:43,785 - INFO - Epoch 22/150 | loss=1890.0128 style_swd=33.8204 mom=0.6337 struct=3.9606 tv=0.0000 idt=0.0926 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:44,219 - INFO - Epoch 23/150 | loss=1754.1508 style_swd=31.2381 mom=0.5958 struct=3.9567 tv=0.0000 idt=0.0969 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:44,645 - INFO - Epoch 24/150 | loss=1818.3552 style_swd=32.4904 mom=0.6001 struct=3.9231 tv=0.0000 idt=0.1008 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:45,072 - INFO - Epoch 25/150 | loss=1751.1187 style_swd=31.2091 mom=0.5742 struct=3.9492 tv=0.0000 idt=0.1017 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:45,498 - INFO - Epoch 26/150 | loss=1962.8094 style_swd=35.2284 mom=0.6318 struct=3.9595 tv=0.0000 idt=0.1027 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:45,927 - INFO - Epoch 27/150 | loss=1767.3905 style_swd=31.5629 mom=0.5511 struct=3.9332 tv=0.0000 idt=0.1008 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:46,357 - INFO - Epoch 28/150 | loss=1925.3013 style_swd=34.5007 mom=0.6273 struct=3.9709 tv=0.0000 idt=0.1057 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:46,783 - INFO - Epoch 29/150 | loss=1912.5903 style_swd=34.2399 mom=0.6183 struct=4.0233 tv=0.0000 idt=0.1081 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:47,211 - INFO - Epoch 30/150 | loss=1761.0039 style_swd=31.3799 mom=0.5903 struct=3.9426 tv=0.0000 idt=0.1069 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:47,637 - INFO - Epoch 31/150 | loss=1897.0172 style_swd=34.0083 mom=0.5849 struct=3.9702 tv=0.0000 idt=0.1072 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:48,069 - INFO - Epoch 32/150 | loss=1817.6227 style_swd=32.4610 mom=0.6087 struct=3.9239 tv=0.0000 idt=0.1077 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:48,493 - INFO - Epoch 33/150 | loss=1931.5820 style_swd=34.7215 mom=0.5845 struct=3.8788 tv=0.0000 idt=0.1091 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:48,917 - INFO - Epoch 34/150 | loss=1807.6774 style_swd=32.2568 mom=0.5918 struct=3.9898 tv=0.0000 idt=0.1118 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:49,345 - INFO - Epoch 35/150 | loss=1725.8198 style_swd=30.7444 mom=0.5626 struct=3.9123 tv=0.0000 idt=0.1167 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:49,772 - INFO - Epoch 36/150 | loss=1877.0714 style_swd=33.6143 mom=0.5954 struct=3.9455 tv=0.0000 idt=0.1183 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:50,202 - INFO - Epoch 37/150 | loss=1812.4071 style_swd=32.3590 mom=0.5927 struct=3.9545 tv=0.0000 idt=0.1218 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:50,628 - INFO - Epoch 38/150 | loss=1762.4753 style_swd=31.3847 mom=0.5951 struct=3.9650 tv=0.0000 idt=0.1198 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:51,056 - INFO - Epoch 39/150 | loss=1768.5792 style_swd=31.5114 mom=0.5945 struct=3.9451 tv=0.0000 idt=0.1233 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:51,484 - INFO - Epoch 40/150 | loss=1855.6321 style_swd=33.1491 mom=0.6068 struct=4.0119 tv=0.0000 idt=0.1237 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:51,910 - INFO - Epoch 41/150 | loss=1808.6469 style_swd=32.2620 mom=0.6055 struct=3.9723 tv=0.0000 idt=0.1194 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:52,339 - INFO - Epoch 42/150 | loss=1813.2933 style_swd=32.4175 mom=0.5754 struct=3.9203 tv=0.0000 idt=0.1180 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:52,766 - INFO - Epoch 43/150 | loss=1886.4047 style_swd=33.7927 mom=0.6034 struct=3.9303 tv=0.0000 idt=0.1167 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:53,193 - INFO - Epoch 44/150 | loss=1782.5643 style_swd=31.8032 mom=0.5853 struct=3.9242 tv=0.0000 idt=0.1260 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:53,621 - INFO - Epoch 45/150 | loss=1784.1495 style_swd=31.7994 mom=0.5938 struct=3.9727 tv=0.0000 idt=0.1259 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:54,049 - INFO - Epoch 46/150 | loss=1844.6799 style_swd=32.9555 mom=0.6045 struct=3.9738 tv=0.0000 idt=0.1292 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:54,476 - INFO - Epoch 47/150 | loss=1763.2395 style_swd=31.4094 mom=0.5818 struct=3.9687 tv=0.0000 idt=0.1312 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:54,899 - INFO - Epoch 48/150 | loss=2030.7035 style_swd=36.5469 mom=0.6068 struct=3.9862 tv=0.0000 idt=0.1354 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:55,327 - INFO - Epoch 49/150 | loss=2019.8053 style_swd=36.3141 mom=0.6142 struct=4.0075 tv=0.0000 idt=0.1387 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:55,757 - INFO - Epoch 50/150 | loss=1838.0088 style_swd=32.8596 mom=0.5803 struct=3.9599 tv=0.0000 idt=0.1397 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:56,186 - INFO - Epoch 51/150 | loss=1750.7042 style_swd=31.1699 mom=0.6031 struct=3.8947 tv=0.0000 idt=0.1394 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:56,611 - INFO - Epoch 52/150 | loss=1905.6775 style_swd=34.1246 mom=0.6199 struct=3.9467 tv=0.0000 idt=0.1395 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:57,037 - INFO - Epoch 53/150 | loss=1767.3254 style_swd=31.4568 mom=0.5977 struct=3.9811 tv=0.0000 idt=0.1402 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:57,464 - INFO - Epoch 54/150 | loss=1855.8314 style_swd=33.2070 mom=0.5857 struct=3.9440 tv=0.0000 idt=0.1365 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:57,893 - INFO - Epoch 55/150 | loss=1653.5979 style_swd=29.2979 mom=0.5811 struct=3.9308 tv=0.0000 idt=0.1441 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:58,321 - INFO - Epoch 56/150 | loss=1789.0021 style_swd=31.8603 mom=0.6198 struct=3.9470 tv=0.0000 idt=0.1475 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:58,749 - INFO - Epoch 57/150 | loss=1762.8171 style_swd=31.4347 mom=0.5726 struct=3.9089 tv=0.0000 idt=0.1458 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:59,177 - INFO - Epoch 58/150 | loss=1949.8773 style_swd=34.9569 mom=0.6261 struct=3.9675 tv=0.0000 idt=0.1504 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:11:59,603 - INFO - Epoch 59/150 | loss=1945.6061 style_swd=34.9417 mom=0.6048 struct=3.8887 tv=0.0000 idt=0.1477 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:00,031 - INFO - Epoch 60/150 | loss=1627.0762 style_swd=28.7923 mom=0.5690 struct=3.9409 tv=0.0000 idt=0.1501 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:00,458 - INFO - Epoch 61/150 | loss=1838.2869 style_swd=32.8282 mom=0.6040 struct=3.9560 tv=0.0000 idt=0.1542 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:00,886 - INFO - Epoch 62/150 | loss=1901.4814 style_swd=34.0309 mom=0.6411 struct=3.8925 tv=0.0000 idt=0.1600 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:01,313 - INFO - Epoch 63/150 | loss=1807.8230 style_swd=32.2847 mom=0.5809 struct=3.9140 tv=0.0000 idt=0.1619 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:01,742 - INFO - Epoch 64/150 | loss=1681.7339 style_swd=29.8491 mom=0.5791 struct=3.9091 tv=0.0000 idt=0.1579 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:02,173 - INFO - Epoch 65/150 | loss=1797.0518 style_swd=32.0314 mom=0.6081 struct=3.9355 tv=0.0000 idt=0.1590 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:02,600 - INFO - Epoch 66/150 | loss=1981.0750 style_swd=35.5747 mom=0.6105 struct=3.9727 tv=0.0000 idt=0.1595 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:03,025 - INFO - Epoch 67/150 | loss=1651.2559 style_swd=29.2220 mom=0.6029 struct=3.9171 tv=0.0000 idt=0.1606 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:03,454 - INFO - Epoch 68/150 | loss=1652.9305 style_swd=29.2564 mom=0.5949 struct=3.9343 tv=0.0000 idt=0.1610 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:03,886 - INFO - Epoch 69/150 | loss=1704.2532 style_swd=30.2777 mom=0.5701 struct=3.9378 tv=0.0000 idt=0.1689 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:04,315 - INFO - Epoch 70/150 | loss=1801.9055 style_swd=32.1976 mom=0.5709 struct=3.8752 tv=0.0000 idt=0.1703 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:04,742 - INFO - Epoch 71/150 | loss=1772.0051 style_swd=31.5565 mom=0.5798 struct=3.9720 tv=0.0000 idt=0.1773 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:05,168 - INFO - Epoch 72/150 | loss=1743.3253 style_swd=31.0132 mom=0.5959 struct=3.9026 tv=0.0000 idt=0.1771 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:05,594 - INFO - Epoch 73/150 | loss=1923.9583 style_swd=34.4722 mom=0.6175 struct=3.9230 tv=0.0000 idt=0.1806 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:06,023 - INFO - Epoch 74/150 | loss=1689.2109 style_swd=29.9886 mom=0.5642 struct=3.9420 tv=0.0000 idt=0.1757 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:06,451 - INFO - Epoch 75/150 | loss=1814.9324 style_swd=32.4003 mom=0.5877 struct=3.9241 tv=0.0000 idt=0.1780 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:06,874 - INFO - Epoch 76/150 | loss=1720.8143 style_swd=30.6061 mom=0.5549 struct=3.9447 tv=0.0000 idt=0.1866 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:07,302 - INFO - Epoch 77/150 | loss=1824.7729 style_swd=32.5973 mom=0.5957 struct=3.8854 tv=0.0000 idt=0.1816 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:07,730 - INFO - Epoch 78/150 | loss=1754.4187 style_swd=31.2407 mom=0.5678 struct=3.9483 tv=0.0000 idt=0.1819 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:08,160 - INFO - Epoch 79/150 | loss=1814.9929 style_swd=32.3364 mom=0.6078 struct=3.9987 tv=0.0000 idt=0.1832 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:08,585 - INFO - Epoch 80/150 | loss=1706.2312 style_swd=30.2891 mom=0.5822 struct=3.9393 tv=0.0000 idt=0.1886 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:09,009 - INFO - Epoch 81/150 | loss=1843.1401 style_swd=32.8936 mom=0.6095 struct=3.9515 tv=0.0000 idt=0.1998 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:09,440 - INFO - Epoch 82/150 | loss=1727.8297 style_swd=30.6928 mom=0.5901 struct=3.9456 tv=0.0000 idt=0.1910 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:09,874 - INFO - Epoch 83/150 | loss=1696.6315 style_swd=30.0986 mom=0.5746 struct=3.9620 tv=0.0000 idt=0.1958 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:10,304 - INFO - Epoch 84/150 | loss=1712.8344 style_swd=30.4189 mom=0.5821 struct=3.9277 tv=0.0000 idt=0.1960 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:10,731 - INFO - Epoch 85/150 | loss=1902.4680 style_swd=34.0628 mom=0.6081 struct=3.9224 tv=0.0000 idt=0.1918 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:11,159 - INFO - Epoch 86/150 | loss=1787.0612 style_swd=31.8384 mom=0.5983 struct=3.9243 tv=0.0000 idt=0.1934 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:11,586 - INFO - Epoch 87/150 | loss=1761.6315 style_swd=31.3831 mom=0.5765 struct=3.9054 tv=0.0000 idt=0.1947 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:12,013 - INFO - Epoch 88/150 | loss=1978.7729 style_swd=35.5015 mom=0.6200 struct=3.9617 tv=0.0000 idt=0.2013 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:12,440 - INFO - Epoch 89/150 | loss=1473.1230 style_swd=25.8704 mom=0.5288 struct=3.8658 tv=0.0000 idt=0.2062 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:12,867 - INFO - Epoch 90/150 | loss=1708.0471 style_swd=30.3334 mom=0.5865 struct=3.8947 tv=0.0000 idt=0.2018 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:13,293 - INFO - Epoch 91/150 | loss=1773.1095 style_swd=31.5579 mom=0.5985 struct=3.9352 tv=0.0000 idt=0.2027 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:13,722 - INFO - Epoch 92/150 | loss=1803.8768 style_swd=32.1624 mom=0.5849 struct=3.9595 tv=0.0000 idt=0.1982 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:14,152 - INFO - Epoch 93/150 | loss=1601.9064 style_swd=28.2986 mom=0.5606 struct=3.9156 tv=0.0000 idt=0.2072 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:14,579 - INFO - Epoch 94/150 | loss=1759.6500 style_swd=31.2851 mom=0.5966 struct=3.9458 tv=0.0000 idt=0.2211 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:15,001 - INFO - Epoch 95/150 | loss=1690.0656 style_swd=29.9744 mom=0.5856 struct=3.8957 tv=0.0000 idt=0.2239 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:15,430 - INFO - Epoch 96/150 | loss=1615.8795 style_swd=28.6223 mom=0.5262 struct=3.9012 tv=0.0000 idt=0.2059 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:15,861 - INFO - Epoch 97/150 | loss=1646.0931 style_swd=29.1800 mom=0.5503 struct=3.8890 tv=0.0000 idt=0.2090 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:16,288 - INFO - Epoch 98/150 | loss=1641.2625 style_swd=28.9957 mom=0.5986 struct=3.9351 tv=0.0000 idt=0.2184 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:16,714 - INFO - Epoch 99/150 | loss=1703.0085 style_swd=30.2135 mom=0.5752 struct=3.9369 tv=0.0000 idt=0.2345 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:17,143 - INFO - Epoch 100/150 | loss=1758.0071 style_swd=31.2670 mom=0.5950 struct=3.9069 tv=0.0000 idt=0.2350 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:17,569 - INFO - Epoch 101/150 | loss=1658.6378 style_swd=29.3855 mom=0.5732 struct=3.8892 tv=0.0000 idt=0.2232 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:17,998 - INFO - Epoch 102/150 | loss=1673.6967 style_swd=29.6335 mom=0.5869 struct=3.9559 tv=0.0000 idt=0.2104 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:18,423 - INFO - Epoch 103/150 | loss=1776.4224 style_swd=31.6125 mom=0.5906 struct=3.9564 tv=0.0000 idt=0.2218 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:18,851 - INFO - Epoch 104/150 | loss=1915.3407 style_swd=34.3063 mom=0.5762 struct=3.9860 tv=0.0000 idt=0.2257 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:19,278 - INFO - Epoch 105/150 | loss=1765.0018 style_swd=31.3529 mom=0.5912 struct=4.0062 tv=0.0000 idt=0.2482 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:19,706 - INFO - Epoch 106/150 | loss=1886.4319 style_swd=33.6674 mom=0.6224 struct=4.0065 tv=0.0000 idt=0.2412 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:20,136 - INFO - Epoch 107/150 | loss=1876.9161 style_swd=33.5196 mom=0.6038 struct=3.9869 tv=0.0000 idt=0.2365 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:20,560 - INFO - Epoch 108/150 | loss=1732.2527 style_swd=30.7869 mom=0.5910 struct=3.8947 tv=0.0000 idt=0.2200 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:20,984 - INFO - Epoch 109/150 | loss=1900.7241 style_swd=33.9676 mom=0.6288 struct=3.9465 tv=0.0000 idt=0.2358 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:21,414 - INFO - Epoch 110/150 | loss=1730.1962 style_swd=30.7141 mom=0.5882 struct=3.9566 tv=0.0000 idt=0.2334 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:21,844 - INFO - Epoch 111/150 | loss=1859.1536 style_swd=33.1800 mom=0.6053 struct=3.9761 tv=0.0000 idt=0.2340 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:22,273 - INFO - Epoch 112/150 | loss=1725.2148 style_swd=30.5275 mom=0.6314 struct=4.0053 tv=0.0000 idt=0.2521 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:22,698 - INFO - Epoch 113/150 | loss=1676.8381 style_swd=29.7264 mom=0.5604 struct=3.9265 tv=0.0000 idt=0.2439 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:23,128 - INFO - Epoch 114/150 | loss=1700.7107 style_swd=30.1303 mom=0.5932 struct=3.9600 tv=0.0000 idt=0.2418 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:23,556 - INFO - Epoch 115/150 | loss=1678.6713 style_swd=29.7138 mom=0.5986 struct=3.9286 tv=0.0000 idt=0.2372 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:23,985 - INFO - Epoch 116/150 | loss=1643.8142 style_swd=29.0865 mom=0.5589 struct=3.9378 tv=0.0000 idt=0.2375 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:24,415 - INFO - Epoch 117/150 | loss=1803.5500 style_swd=32.1057 mom=0.6030 struct=3.9648 tv=0.0000 idt=0.2448 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:24,841 - INFO - Epoch 118/150 | loss=1669.8945 style_swd=29.5716 mom=0.5736 struct=3.9370 tv=0.0000 idt=0.2394 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:25,268 - INFO - Epoch 119/150 | loss=1773.9304 style_swd=31.5404 mom=0.5924 struct=3.9596 tv=0.0000 idt=0.2607 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:25,694 - INFO - Epoch 120/150 | loss=1687.6128 style_swd=29.9158 mom=0.5703 struct=3.9283 tv=0.0000 idt=0.2544 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:26,124 - INFO - Epoch 121/150 | loss=1778.0482 style_swd=31.5961 mom=0.5942 struct=4.0041 tv=0.0000 idt=0.2610 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:26,549 - INFO - Epoch 122/150 | loss=1685.6040 style_swd=29.8786 mom=0.5711 struct=3.9201 tv=0.0000 idt=0.2566 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:26,974 - INFO - Epoch 123/150 | loss=1714.9983 style_swd=30.4152 mom=0.5905 struct=3.9454 tv=0.0000 idt=0.2468 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:27,405 - INFO - Epoch 124/150 | loss=1770.6111 style_swd=31.4701 mom=0.5915 struct=3.9735 tv=0.0000 idt=0.2614 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:27,834 - INFO - Epoch 125/150 | loss=1727.7683 style_swd=30.6169 mom=0.6007 struct=4.0045 tv=0.0000 idt=0.2541 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:28,263 - INFO - Epoch 126/150 | loss=1711.3237 style_swd=30.3555 mom=0.5798 struct=3.9190 tv=0.0000 idt=0.2768 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:28,688 - INFO - Epoch 127/150 | loss=1691.7677 style_swd=29.9883 mom=0.5700 struct=3.9490 tv=0.0000 idt=0.2511 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:29,117 - INFO - Epoch 128/150 | loss=1638.5062 style_swd=28.9471 mom=0.5842 struct=3.9281 tv=0.0000 idt=0.2527 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:29,541 - INFO - Epoch 129/150 | loss=1862.3802 style_swd=33.2310 mom=0.6008 struct=3.9785 tv=0.0000 idt=0.2657 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:29,972 - INFO - Epoch 130/150 | loss=1740.7443 style_swd=30.8832 mom=0.5851 struct=3.9910 tv=0.0000 idt=0.2780 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:30,399 - INFO - Epoch 131/150 | loss=1698.5498 style_swd=30.1001 mom=0.5815 struct=3.9355 tv=0.0000 idt=0.2724 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:30,825 - INFO - Epoch 132/150 | loss=1710.3105 style_swd=30.3103 mom=0.5976 struct=3.9225 tv=0.0000 idt=0.2773 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:31,253 - INFO - Epoch 133/150 | loss=1923.5594 style_swd=34.4041 mom=0.6168 struct=3.9274 tv=0.0000 idt=0.2958 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:31,680 - INFO - Epoch 134/150 | loss=1655.9396 style_swd=29.2589 mom=0.5761 struct=3.9597 tv=0.0000 idt=0.2943 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:32,112 - INFO - Epoch 135/150 | loss=1716.7389 style_swd=30.4587 mom=0.5803 struct=3.9230 tv=0.0000 idt=0.2751 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:32,537 - INFO - Epoch 136/150 | loss=1868.8561 style_swd=33.3112 mom=0.6355 struct=3.9723 tv=0.0000 idt=0.2702 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:32,962 - INFO - Epoch 137/150 | loss=1654.6665 style_swd=29.2126 mom=0.5950 struct=3.9582 tv=0.0000 idt=0.2892 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:33,389 - INFO - Epoch 138/150 | loss=1763.6156 style_swd=31.3441 mom=0.5799 struct=3.9540 tv=0.0000 idt=0.2910 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:33,819 - INFO - Epoch 139/150 | loss=1691.8594 style_swd=29.9219 mom=0.5872 struct=3.9886 tv=0.0000 idt=0.3025 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:34,249 - INFO - Epoch 140/150 | loss=1802.8922 style_swd=32.0656 mom=0.5941 struct=3.9925 tv=0.0000 idt=0.2951 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:34,675 - INFO - Epoch 141/150 | loss=1647.0454 style_swd=29.0980 mom=0.5810 struct=3.9147 tv=0.0000 idt=0.3017 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:35,106 - INFO - Epoch 142/150 | loss=1701.5648 style_swd=30.1879 mom=0.5623 struct=3.9208 tv=0.0000 idt=0.2782 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:35,531 - INFO - Epoch 143/150 | loss=1858.2815 style_swd=33.1571 mom=0.6051 struct=3.9297 tv=0.0000 idt=0.2897 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:35,961 - INFO - Epoch 144/150 | loss=1721.3491 style_swd=30.5397 mom=0.5934 struct=3.8852 tv=0.0000 idt=0.2929 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:36,388 - INFO - Epoch 145/150 | loss=1612.0762 style_swd=28.4328 mom=0.5465 struct=3.9667 tv=0.0000 idt=0.3178 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:36,815 - INFO - Epoch 146/150 | loss=1638.9602 style_swd=28.9319 mom=0.5605 struct=3.9792 tv=0.0000 idt=0.3124 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:37,242 - INFO - Epoch 147/150 | loss=1527.3778 style_swd=26.8300 mom=0.5340 struct=3.9225 tv=0.0000 idt=0.3178 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:37,669 - INFO - Epoch 148/150 | loss=1835.8253 style_swd=32.6768 mom=0.6247 struct=3.9438 tv=0.0000 idt=0.3141 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:38,099 - INFO - Epoch 149/150 | loss=1718.5804 style_swd=30.3826 mom=0.6132 struct=3.9912 tv=0.0000 idt=0.3442 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:38,525 - INFO - Epoch 150/150 | loss=1699.4042 style_swd=30.0905 mom=0.5876 struct=3.9173 tv=0.0000 idt=0.3248 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=0.4s
+2026-02-19 18:12:38,641 - INFO - Saved checkpoint: I:\Github\Latent_Style\Cycle-NCE\adacut_tune\trial_0010\epoch_0150.pt (step=150)
+2026-02-19 18:12:38,643 - INFO - Running full eval for epoch 150 -> I:\Github\Latent_Style\Cycle-NCE\adacut_tune\trial_0010\full_eval\epoch_0150
+2026-02-19 18:14:27,510 - INFO - Full eval completed for epoch 150. Log: I:\Github\Latent_Style\Cycle-NCE\adacut_tune\trial_0010\logs\full_eval_epoch_0150.log
+2026-02-19 18:14:27,511 - INFO - Training completed.

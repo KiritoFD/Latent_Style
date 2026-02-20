@@ -41,7 +41,6 @@ except ImportError:
 import torchvision.transforms as T
 import torchvision.models as models
 import torch.nn.functional as F
-from torchvision.transforms import ToPILImage
 from torchvision.utils import save_image
 # Project imports
 _ROOT = Path(__file__).resolve().parents[1]
@@ -79,6 +78,72 @@ class VGGFeatureExtractor(torch.nn.Module):
 
 def to_lpips_input(img_tensor):
     return img_tensor * 2.0 - 1.0
+
+
+def compute_swd(feat_x: torch.Tensor, feat_y: torch.Tensor, num_projections: int = 256) -> torch.Tensor:
+    """
+    Compute per-sample SWD between two feature maps.
+    feat_x, feat_y: [B, C, H, W], same shape.
+    Returns: [B] SWD values.
+    """
+    if feat_x.shape != feat_y.shape:
+        raise ValueError(f"SWD shape mismatch: {feat_x.shape} vs {feat_y.shape}")
+    if feat_x.ndim != 4:
+        raise ValueError(f"SWD expects 4D tensors [B,C,H,W], got {feat_x.ndim}D")
+
+    b, c, h, w = feat_x.shape
+    x = feat_x.permute(0, 2, 3, 1).reshape(b, h * w, c).to(torch.float32)
+    y = feat_y.permute(0, 2, 3, 1).reshape(b, h * w, c).to(torch.float32)
+
+    proj = torch.randn(c, int(num_projections), device=x.device, dtype=x.dtype)
+    proj = proj / (proj.norm(dim=0, keepdim=True) + 1e-8)
+
+    proj_x = torch.matmul(x, proj)
+    proj_y = torch.matmul(y, proj)
+
+    proj_x, _ = torch.sort(proj_x, dim=1)
+    proj_y, _ = torch.sort(proj_y, dim=1)
+    return ((proj_x - proj_y) ** 2).mean(dim=(1, 2))
+
+
+def compute_ssim_batch(
+    img_x: torch.Tensor,
+    img_y: torch.Tensor,
+    window_size: int = 11,
+    sigma: float = 1.5,
+) -> torch.Tensor:
+    """
+    Compute grayscale SSIM per sample for batches in [0,1].
+    img_x, img_y: [B, 3, H, W]
+    returns: [B]
+    """
+    if img_x.shape != img_y.shape:
+        raise ValueError(f"SSIM shape mismatch: {img_x.shape} vs {img_y.shape}")
+
+    device, dtype = img_x.device, img_x.dtype
+    weights = torch.tensor([0.299, 0.587, 0.114], device=device, dtype=dtype).view(1, 3, 1, 1)
+    x = (img_x * weights).sum(dim=1, keepdim=True)
+    y = (img_y * weights).sum(dim=1, keepdim=True)
+
+    coord = torch.arange(window_size, device=device, dtype=dtype) - window_size // 2
+    g = torch.exp(-(coord**2) / (2 * sigma**2))
+    g = g / (g.sum() + 1e-12)
+    window = (g.unsqueeze(1) @ g.unsqueeze(0)).unsqueeze(0).unsqueeze(0)
+
+    pad = window_size // 2
+    mu_x = F.conv2d(x, window, padding=pad)
+    mu_y = F.conv2d(y, window, padding=pad)
+
+    mu_x_sq, mu_y_sq, mu_xy = mu_x * mu_x, mu_y * mu_y, mu_x * mu_y
+    sig_x_sq = F.conv2d(x * x, window, padding=pad) - mu_x_sq
+    sig_y_sq = F.conv2d(y * y, window, padding=pad) - mu_y_sq
+    sig_xy = F.conv2d(x * y, window, padding=pad) - mu_xy
+
+    c1, c2 = 0.01**2, 0.03**2
+    ssim_map = ((2 * mu_xy + c1) * (2 * sig_xy + c2)) / (
+        (mu_x_sq + mu_y_sq + c1) * (sig_x_sq + sig_y_sq + c2) + 1e-12
+    )
+    return ssim_map.mean(dim=(1, 2, 3)).to(torch.float32)
 
 
 def _is_cuda_oom(exc: RuntimeError) -> bool:
@@ -465,7 +530,7 @@ def main():
     parser.add_argument('--step_size', type=float, default=None)
     parser.add_argument('--style_strength', type=float, default=None, help="Global style strength in [0,1]; default uses checkpoint config")
     parser.add_argument('--max_src_samples', type=int, default=None, help="Max source images per style; <=0 means all")
-    parser.add_argument('--max_ref_compare', type=int, default=None, help="Max refs for LPIPS style compare; <=0 means all cached refs")
+    parser.add_argument('--max_ref_compare', type=int, default=None, help="Max refs for SWD style compare; <=0 means all cached refs")
     parser.add_argument('--max_ref_cache', type=int, default=None, help="Max reference images per style used for cache/features; <=0 means all")
     parser.add_argument('--ref_feature_batch_size', type=int, default=None, help="Batch size for reference feature extraction")
     parser.add_argument('--batch_size', type=int, default=None, help="Batch size increased due to offloading")
@@ -476,10 +541,11 @@ def main():
     parser.add_argument('--clip_modelscope_id', type=str, default="", help="Optional ModelScope model id for CLIP fallback")
     parser.add_argument('--clip_modelscope_cache_dir', type=str, default="", help="Optional ModelScope cache directory")
     parser.add_argument('--clip_allow_network', action='store_true', help="Allow online model fetch if local cache is missing (default off)")
-    parser.add_argument('--eval_classifier_only', action='store_true', help="Run only classifier evaluation (skip LPIPS/CLIP)")
-    parser.add_argument('--eval_disable_lpips', action='store_true', help="Skip LPIPS metrics (keep CLIP)")
-    parser.add_argument('--eval_lpips_chunk_size', type=int, default=2, help="LPIPS chunk size for conservative VRAM usage")
-    parser.add_argument('--eval_lpips_no_cpu_fallback', action='store_true', help="Disable CPU fallback when LPIPS CUDA OOM occurs")
+    parser.add_argument('--eval_classifier_only', action='store_true', help="Run only classifier evaluation (skip SSIM/SWD)")
+    parser.add_argument('--eval_disable_lpips', action='store_true', help="Deprecated. Kept for compatibility; ignored.")
+    parser.add_argument('--eval_swd_projections', type=int, default=128, help="Number of random projections used by style SWD")
+    parser.add_argument('--eval_ssim_window_size', type=int, default=11, help="SSIM Gaussian window size")
+    parser.add_argument('--eval_ssim_sigma', type=float, default=1.5, help="SSIM Gaussian sigma")
     parser.add_argument('--reuse_generated', action='store_true', help="Reuse existing generated *_to_*.jpg in output dir and skip generation")
     parser.add_argument('--generation_only', action='store_true', help="Only generate translated images, skip all evaluation metrics")
     parser.add_argument(
@@ -581,8 +647,15 @@ def main():
         args.image_classifier_path = str(_default_image_classifier_path())
     if (not args.eval_classifier_only) and bool(cfg_train.get("full_eval_classifier_only", False)):
         args.eval_classifier_only = True
+    # Deprecated flag kept for backward compatibility.
     if (not args.eval_disable_lpips) and bool(cfg_train.get("full_eval_disable_lpips", False)):
         args.eval_disable_lpips = True
+    if args.eval_swd_projections is None:
+        args.eval_swd_projections = int(cfg_train.get("full_eval_swd_projections", 128))
+    if args.eval_ssim_window_size is None:
+        args.eval_ssim_window_size = int(cfg_train.get("full_eval_ssim_window_size", 11))
+    if args.eval_ssim_sigma is None:
+        args.eval_ssim_sigma = float(cfg_train.get("full_eval_ssim_sigma", 1.5))
     if (not args.reuse_generated) and bool(cfg_train.get("full_eval_reuse_generated", False)):
         args.reuse_generated = True
     if (not args.generation_only) and bool(cfg_train.get("full_eval_generation_only", False)):
@@ -767,7 +840,7 @@ def main():
         raise RuntimeError(f"No generated samples to evaluate in {out_dir}")
 
     if args.generation_only:
-        print("\nGeneration-only mode enabled: skip Phase 2 metrics/classifier/LPIPS/CLIP.")
+        print("\nGeneration-only mode enabled: skip Phase 2 metrics/classifier/SSIM/SWD.")
         io_pool.shutdown(wait=True)
         if device == "cuda":
             torch.cuda.empty_cache()
@@ -787,7 +860,7 @@ def main():
         return
 
     # ==========================================
-    # PHASE 2: EVALUATION (VGG + CLIP)
+    # PHASE 2: EVALUATION (VGG + SWD)
     # ==========================================
     print(f"\n妫ｅ啯鐣?Phase 2: Evaluation")
     
@@ -816,92 +889,11 @@ def main():
 
     # Load Evaluators
     vgg_extractor = None
-    loss_fn = None
-    clip_model = None
-    clip_processor = None
     has_clip = False
-    clip_model_tag = str(args.clip_model_name).strip() or "openai/clip-vit-base-patch32"
-    to_pil = ToPILImage()
-
+    clip_model_tag = "disabled"
     if run_full_metrics:
         vgg_extractor = VGGFeatureExtractor(device=device)
-        # Initialize LPIPS
-        if args.eval_disable_lpips:
-            loss_fn = None
-        elif lpips is None:
-            print("  WARNING: lpips module not available. Install with: pip install lpips")
-        else:
-            try:
-                loss_fn = lpips.LPIPS(net='vgg', verbose=False).to(device)
-                print("  鉁?LPIPS Loaded")
-            except Exception as e:
-                print(f"  WARNING: Failed to load LPIPS: {e}")
-            try:
-                loss_fn = lpips.LPIPS(net='vgg', verbose=False).to(device)
-                print("  闁?LPIPS Loaded")
-            except Exception as e:
-                print(f"  闁宠法濯寸粭?Failed to load LPIPS: {e}")
-
-        try:
-            from transformers import CLIPModel, CLIPProcessor
-
-            if not bool(args.clip_allow_network):
-                os.environ.setdefault("HF_HUB_OFFLINE", "1")
-                os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
-
-            clip_sources = []
-            if str(args.clip_model_name).strip():
-                clip_sources.append(str(args.clip_model_name).strip())
-
-            ms_id = str(args.clip_modelscope_id).strip()
-            if ms_id:
-                try:
-                    from modelscope.hub.snapshot_download import snapshot_download
-
-                    ms_kwargs = {}
-                    ms_cache_dir = str(args.clip_modelscope_cache_dir).strip()
-                    if ms_cache_dir:
-                        ms_kwargs["cache_dir"] = ms_cache_dir
-                    try:
-                        ms_local = snapshot_download(ms_id, local_files_only=(not bool(args.clip_allow_network)), **ms_kwargs)
-                    except TypeError:
-                        if bool(args.clip_allow_network):
-                            ms_local = snapshot_download(ms_id, **ms_kwargs)
-                        else:
-                            raise
-                    clip_sources.append(ms_local)
-                    print(f"  ModelScope CLIP cache: {ms_local}")
-                except Exception as ms_exc:
-                    print(f"  WARNING: ModelScope CLIP fallback unavailable: {ms_exc}")
-
-            last_err = None
-            for src in clip_sources:
-                try:
-                    clip_model = CLIPModel.from_pretrained(src, local_files_only=(not bool(args.clip_allow_network))).to(device)
-                    clip_processor = CLIPProcessor.from_pretrained(src, local_files_only=(not bool(args.clip_allow_network)))
-                    clip_model.eval()
-                    has_clip = True
-                    clip_model_tag = str(src)
-                    print(f"  CLIP Loaded from: {src}")
-                    break
-                except TypeError:
-                    # Older transformers may not support local_files_only in some wrappers.
-                    if not bool(args.clip_allow_network):
-                        raise
-                    clip_model = CLIPModel.from_pretrained(src).to(device)
-                    clip_processor = CLIPProcessor.from_pretrained(src)
-                    clip_model.eval()
-                    has_clip = True
-                    clip_model_tag = str(src)
-                    print(f"  CLIP Loaded from: {src}")
-                    break
-                except Exception as load_exc:
-                    last_err = load_exc
-                    continue
-            if not has_clip and last_err is not None:
-                raise last_err
-        except Exception as e:
-            print(f"  CLIP disabled: {e}")
+        print("  CLIP disabled: using style SWD as style metric")
 
     # Prepare Reference Features (Cache)
     style_sig = ",".join(style_subdirs)
@@ -941,31 +933,19 @@ def main():
             for b_start in pbar:
                 batch_paths = sampled_refs[b_start:b_start + ref_bs]
                 try:
-                    batch_pils = [Image.open(img_path).convert('RGB').resize((256, 256)) for img_path in batch_paths]
-                    batch_t = torch.stack([T.ToTensor()(img_pil) for img_pil in batch_pils], dim=0).to(device)
+                    batch_t = torch.stack(
+                        [T.ToTensor()(Image.open(img_path).convert('RGB').resize((256, 256))) for img_path in batch_paths],
+                        dim=0,
+                    ).to(device)
 
                     amp_ctx = torch.autocast('cuda', dtype=torch.bfloat16) if device == 'cuda' else nullcontext()
                     with torch.no_grad(), amp_ctx:
                         v_feats = vgg_extractor.get_features(batch_t)
-                        c_emb = None
-                        if has_clip and clip_model is not None:
-                            try:
-                                inputs = clip_processor(images=batch_pils, return_tensors='pt').to(device)
-                                out = clip_model.get_image_features(**inputs)
-                                c_emb = _extract_clip_embeddings(out)
-                                c_emb = (c_emb / (c_emb.norm(p=2, dim=-1, keepdim=True) + 1e-8)).cpu()
-                            except Exception as clip_exc:
-                                print(f"  WARNING: CLIP ref-feature failed, disable CLIP for this run: {clip_exc}")
-                                has_clip = False
-                                clip_model = None
-                                clip_processor = None
-                                c_emb = None
 
                     for i, img_path in enumerate(batch_paths):
                         ref_features[style_id].append({
                             'path': str(img_path),
                             'vgg': [vf[i:i+1] for vf in v_feats],
-                            'clip': c_emb[i:i+1] if c_emb is not None else None
                         })
                 except Exception as e:
                     print(f"Skipping batch {b_start}-{b_start + len(batch_paths)} in {style_name}: {e}")
@@ -979,36 +959,30 @@ def main():
         except Exception as save_exc:
             print(f"  WARNING: failed to write shared reference cache (ignored): {save_exc}")
 
-    # Optimize Reference CLIP Features for Vectorization
-    ref_clip_matrices = {} # style_id -> Tensor[N_ref, D] (GPU)
-    
-    if run_full_metrics and has_clip and clip_model is not None:
+    # Prepare reference VGG tensors for faster SWD computation.
+    ref_vgg_matrices = {}  # style_id -> list[layer][N_ref, C, H, W] on GPU
+    if run_full_metrics and vgg_extractor is not None:
         for sid, feats in ref_features.items():
-            clips = [f['clip'] for f in feats if f['clip'] is not None]
-            if clips:
+            vgg_lists = [f.get('vgg') for f in feats if isinstance(f, dict) and isinstance(f.get('vgg'), list)]
+            if vgg_lists:
                 try:
-                    # Detect dimension dynamically from the first clip
-                    current_dim = clips[0].shape[-1]
-                    
-                    valid_clips = []
-                    for c in clips:
-                        if c.ndim == 1: c = c.unsqueeze(0)
-                        if c.shape[-1] == current_dim: valid_clips.append(c)
-                    
-                    if valid_clips:
-                        # Stack: [N, D]
-                        stacked = torch.cat(valid_clips, dim=0)
-                        # Double check norm
-                        stacked = stacked / (stacked.norm(p=2, dim=-1, keepdim=True) + 1e-8)
-                        ref_clip_matrices[sid] = stacked.to(device, dtype=torch.float32)
+                    num_layers = len(vgg_lists[0])
+                    packed = []
+                    for li in range(num_layers):
+                        layer_feats = [v[li] for v in vgg_lists if li < len(v) and isinstance(v[li], torch.Tensor)]
+                        if not layer_feats:
+                            continue
+                        packed.append(torch.cat(layer_feats, dim=0).to(device, dtype=torch.float32))
+                    if packed:
+                        ref_vgg_matrices[sid] = packed
                 except Exception as e:
-                    print(f"  闁宠法濯寸粭?Failed to prepare CLIP matrix for style {sid}: {e}")
+                    print(f"  WARNING: failed to prepare VGG tensors for style {sid}: {e}")
 
     csv_path = out_dir / 'metrics.csv'
     # Re-evaluation on reused images should overwrite metrics to avoid mixing old/new classifier outputs.
     csv_mode = 'w' if args.force_regen or args.reuse_generated or not csv_path.exists() else 'a'
     csv_file = open(csv_path, csv_mode, newline='')
-    columns = ['src_style', 'tgt_style', 'src_image', 'gen_image', 'content_lpips', 'style_lpips', 'clip_style', 'clip_content', 'pred_style', 'class_correct']
+    columns = ['src_style', 'tgt_style', 'src_image', 'gen_image', 'content_ssim', 'style_swd', 'pred_style', 'class_correct']
     writer = csv.DictWriter(csv_file, fieldnames=columns)
     if csv_mode == 'w': writer.writeheader()
 
@@ -1030,57 +1004,23 @@ def main():
         src_imgs = torch.stack(src_tensors).to(device)
         
         with torch.no_grad():
-            # 1. Content LPIPS (Skip if classifier only)
-            c_lpips_vals = []
-            if loss_fn:
-                gen_f32 = gen_imgs.float()
-                src_f32 = src_imgs.float()
-                lpips_chunk = max(1, int(args.eval_lpips_chunk_size))
-                lpips_cpu_fallback = not bool(args.eval_lpips_no_cpu_fallback)
-                dists = _lpips_forward_safe(
-                    loss_fn,
-                    gen_f32,
-                    src_f32,
-                    device=device,
-                    chunk_size=lpips_chunk,
-                    cpu_fallback=lpips_cpu_fallback,
-                    tag="content_lpips",
+            # 1. Content SSIM (higher is better)
+            c_ssim_vals = [0.0] * len(batch_items)
+            if run_full_metrics:
+                ssim_vals = compute_ssim_batch(
+                    gen_imgs.float(),
+                    src_imgs.float(),
+                    window_size=int(args.eval_ssim_window_size),
+                    sigma=float(args.eval_ssim_sigma),
                 )
-                c_lpips_vals = dists.numpy()
-            else:
-                c_lpips_vals = [0.0] * len(batch_items)
+                c_ssim_vals = ssim_vals.cpu().numpy()
 
-            # 2. CLIP Features (Skip if classifier only)
-            gen_clips = None
-            src_clips = None
-            c_clip_scores = [0.0] * len(batch_items)
-            
-            if has_clip and clip_model is not None:
-                try:
-                    # Gen CLIP
-                    pil_gens = [to_pil(img.float()) for img in gen_imgs_cpu]
-                    inputs_gen = clip_processor(images=pil_gens, return_tensors='pt').to(device)
-                    out_gen = clip_model.get_image_features(**inputs_gen)
-                    gen_clips = _extract_clip_embeddings(out_gen).to(device, dtype=torch.float32)
-                    if gen_clips.ndim == 1:
-                        gen_clips = gen_clips.unsqueeze(0)
-                    gen_clips = gen_clips / (gen_clips.norm(p=2, dim=-1, keepdim=True) + 1e-8)
-
-                    # Src CLIP
-                    pil_srcs = [to_pil(img.cpu().float()) for img in src_imgs]
-                    inputs_src = clip_processor(images=pil_srcs, return_tensors='pt').to(device)
-                    out_src = clip_model.get_image_features(**inputs_src)
-                    src_clips = _extract_clip_embeddings(out_src).to(device, dtype=torch.float32)
-                    if src_clips.ndim == 1:
-                        src_clips = src_clips.unsqueeze(0)
-                    src_clips = src_clips / (src_clips.norm(p=2, dim=-1, keepdim=True) + 1e-8)
-
-                    c_clip_scores = F.cosine_similarity(gen_clips, src_clips).cpu().float().numpy()
-                except Exception as clip_exc:
-                    print(f"  WARNING: CLIP batch failed, disable CLIP for remaining evaluation: {clip_exc}")
-                    has_clip = False
-                    clip_model = None
-                    clip_processor = None
+            # 2. VGG feature extraction for style SWD
+            gen_vgg_feats = None
+            if run_full_metrics and vgg_extractor is not None:
+                amp_ctx = torch.autocast('cuda', dtype=torch.bfloat16) if device == 'cuda' else nullcontext()
+                with torch.no_grad(), amp_ctx:
+                    gen_vgg_feats = [vf.to(device, dtype=torch.float32) for vf in vgg_extractor.get_features(gen_imgs)]
 
             # 3. Classifier Predictions
             pred_indices = [-1] * len(batch_items)
@@ -1108,67 +1048,33 @@ def main():
                         pred_style_name = f"Unknown({pred_idx})"
                         class_correct = 0
 
-                # --- CLIP Style Score ---
-                # Vectorized CLIP Style Score
-                s_clip_score = 0.0
-                if has_clip and gen_clips is not None and tgt_id in ref_clip_matrices:
-                    ref_matrix = ref_clip_matrices[tgt_id]
-                    gen_emb = gen_clips[i:i+1] # [1, D]
-                    
-                    # Ensure dim match (in case cache had 768 and gen has 512, though unlikely with same model)
-                    if gen_emb.shape[-1] == ref_matrix.shape[-1]:
-                        sims = torch.matmul(gen_emb, ref_matrix.t()) # [1, N_ref]
-                        s_clip_score = sims.mean().item()
-                
-                # --- LPIPS Style Score ---
-                s_lpips_score = 0.0
-                if loss_fn:
-                    tgt_refs = ref_features[tgt_id]
+                # --- Style SWD ---
+                s_swd_score = 0.0
+                if gen_vgg_feats is not None and tgt_id in ref_vgg_matrices:
+                    ref_layers = ref_vgg_matrices[tgt_id]
+                    layer_scores = []
                     max_ref_compare = int(args.max_ref_compare)
-                    if max_ref_compare > 0:
-                        refs_sample = tgt_refs[:min(len(tgt_refs), max_ref_compare)]
-                    else:
-                        refs_sample = tgt_refs
-                    
-                    if refs_sample:
-                        lpips_chunk_size = max(1, int(args.eval_lpips_chunk_size))
-                        lpips_cpu_fallback = not bool(args.eval_lpips_no_cpu_fallback)
-                        all_dists = []
-                        for cs in range(0, len(refs_sample), lpips_chunk_size):
-                            ce = min(cs + lpips_chunk_size, len(refs_sample))
-                            chunk_refs = refs_sample[cs:ce]
-                            
-                            ref_imgs = []
-                            for r in chunk_refs:
-                                ref_imgs.append(T.ToTensor()(Image.open(r['path']).convert('RGB').resize((256,256))))
-                            
-                            ref_batch = torch.stack(ref_imgs).to(device).float()
-                            gen_expanded = gen_imgs[i:i+1].float().expand(len(ref_batch), -1, -1, -1)
-
-                            chunk_dists = _lpips_forward_safe(
-                                loss_fn,
-                                gen_expanded,
-                                ref_batch,
-                                device=device,
-                                chunk_size=lpips_chunk_size,
-                                cpu_fallback=lpips_cpu_fallback,
-                                tag="style_lpips",
-                            )
-                            all_dists.append(chunk_dists)
-                            del ref_batch, gen_expanded
-                        
-                        if all_dists:
-                            s_lpips_score = torch.cat(all_dists, dim=0).float().mean().item()
-
+                    for li, gen_layer in enumerate(gen_vgg_feats):
+                        if li >= len(ref_layers):
+                            continue
+                        refs_layer = ref_layers[li]
+                        if refs_layer.ndim != 4 or refs_layer.shape[0] <= 0:
+                            continue
+                        use_n = refs_layer.shape[0] if max_ref_compare <= 0 else min(refs_layer.shape[0], max_ref_compare)
+                        refs = refs_layer[:use_n]
+                        gen_rep = gen_layer[i:i+1].expand(use_n, -1, -1, -1)
+                        swd_vals = compute_swd(gen_rep, refs, num_projections=int(args.eval_swd_projections))
+                        layer_scores.append(float(swd_vals.mean().item()))
+                    if layer_scores:
+                        s_swd_score = float(np.mean(layer_scores))
+                
                 writer.writerow({
                     'src_style': item['src_style'],
                     'tgt_style': item['tgt_style_name'],
                     'src_image': item['src_path'].name,
                     'gen_image': item['gen_name'],
-                    'content_lpips': c_lpips_vals[i],
-                    'style_lpips': s_lpips_score,
-                    'clip_style': s_clip_score,
-                    'clip_content': c_clip_scores[i],
+                    'content_ssim': c_ssim_vals[i],
+                    'style_swd': s_swd_score,
                     'pred_style': pred_style_name,
                     'class_correct': class_correct
                 })
@@ -1210,10 +1116,8 @@ def generate_summary_json(csv_path, out_dir, ckpt_path):
         for tgt, items in targets.items():
             stats = {
                 'count': len(items),
-                'clip_style': np.mean([to_f(x['clip_style']) for x in items]),
-                'style_lpips': np.mean([to_f(x['style_lpips']) for x in items]),
-                'content_lpips': np.mean([to_f(x['content_lpips']) for x in items]),
-                'clip_content': np.mean([to_f(x.get('clip_content', 0)) for x in items]),
+                'style_swd': np.mean([to_f(x.get('style_swd', 0.0)) for x in items]),
+                'content_ssim': np.mean([to_f(x.get('content_ssim', 0.0)) for x in items]),
             }
             
             # Classification Accuracy for this pair
@@ -1275,12 +1179,12 @@ def generate_summary_json(csv_path, out_dir, ckpt_path):
         'matrix_breakdown': matrix_json,
         'analysis': {
             'style_transfer_ability': {
-                'clip_style': pool_avg(transfer_pool, 'clip_style'),
-                'content_lpips': pool_avg(transfer_pool, 'content_lpips'),
+                'style_swd': pool_avg(transfer_pool, 'style_swd'),
+                'content_ssim': pool_avg(transfer_pool, 'content_ssim'),
                 'classifier_acc': pool_avg([t for t in transfer_pool if t['classifier_acc'] is not None], 'classifier_acc')
             },
             'photo_to_art_performance': {
-                'clip_style': pool_avg(photo_transfer_pool, 'clip_style'),
+                'style_swd': pool_avg(photo_transfer_pool, 'style_swd'),
                 'valid': len(photo_transfer_pool) > 0,
                 'classifier_acc': pool_avg([t for t in photo_transfer_pool if t['classifier_acc'] is not None], 'classifier_acc')
             }

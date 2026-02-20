@@ -33,26 +33,6 @@ except ImportError:  # pragma: no cover
 
 logger = logging.getLogger(__name__)
 
-
-TRAIN_LOG_COLUMNS = (
-    "epoch",
-    "loss",
-    "style_swd",
-    "style_moment",
-    "structure",
-    "tv",
-    "identity",
-    "train_num_steps",
-    "train_step_size",
-    "train_style_strength",
-    "lr",
-    "data_time_sec",
-    "compute_time_sec",
-    "epoch_time_sec",
-    "samples_seen",
-    "samples_per_sec",
-)
-
 class AdaCUTTrainer:
     def __init__(self, config: Dict, device: torch.device, config_path: Optional[str] = None) -> None:
         self.config = config
@@ -149,54 +129,33 @@ class AdaCUTTrainer:
         self.full_eval_root = self.checkpoint_dir / "full_eval"
         self.full_eval_root.mkdir(parents=True, exist_ok=True)
 
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.log_file = self.log_dir / f"training_{timestamp}.csv"
-        self.grad_log_file = self.log_dir / f"gradient_{timestamp}.log"
-        self.grad_logger = self._setup_gradient_logger()
-        self._init_train_log_csv()
-        logger.info("Gradient debug log file: %s", self.grad_log_file)
+        self.log_file = self.log_dir / f"training_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        with open(self.log_file, "w", encoding="utf-8", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(
+                [
+                    "epoch",
+                    "loss",
+                    "style_swd",
+                    "style_moment",
+                    "structure",
+                    "tv",
+                    "identity",
+                    "train_num_steps",
+                    "train_step_size",
+                    "train_style_strength",
+                    "lr",
+                    "data_time_sec",
+                    "compute_time_sec",
+                    "epoch_time_sec",
+                    "samples_seen",
+                    "samples_per_sec",
+                ]
+            )
 
         self.global_step = 0
         self.start_epoch = 1
         self._maybe_resume(str(train_cfg.get("resume_checkpoint", "")))
-
-    def _setup_gradient_logger(self) -> logging.Logger:
-        grad_logger = logging.getLogger(f"{__name__}.grad.{id(self)}")
-        grad_logger.setLevel(logging.INFO)
-        grad_logger.propagate = False
-
-        file_handler = logging.FileHandler(self.grad_log_file, encoding="utf-8")
-        file_handler.setLevel(logging.INFO)
-        file_handler.setFormatter(logging.Formatter("%(asctime)s | %(message)s"))
-
-        grad_logger.handlers.clear()
-        grad_logger.addHandler(file_handler)
-        return grad_logger
-
-    def _init_train_log_csv(self) -> None:
-        with open(self.log_file, "w", encoding="utf-8", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(TRAIN_LOG_COLUMNS)
-
-    def _build_train_log_row(self, epoch: int, metrics: Dict[str, float]):
-        return [
-            int(epoch),
-            float(metrics.get("loss", 0.0)),
-            float(metrics.get("style_swd", 0.0)),
-            float(metrics.get("style_moment", 0.0)),
-            float(metrics.get("structure", 0.0)),
-            float(metrics.get("tv", 0.0)),
-            float(metrics.get("identity", 0.0)),
-            float(metrics.get("train_num_steps", 0.0)),
-            float(metrics.get("train_step_size", 0.0)),
-            float(metrics.get("train_style_strength", 0.0)),
-            float(metrics.get("lr", 0.0)),
-            float(metrics.get("data_time_sec", 0.0)),
-            float(metrics.get("compute_time_sec", 0.0)),
-            float(metrics.get("epoch_time_sec", 0.0)),
-            int(float(metrics.get("samples_seen", 0.0))),
-            float(metrics.get("samples_per_sec", 0.0)),
-        ]
 
     def _find_latest_checkpoint(self) -> Optional[Path]:
         return find_latest_checkpoint(self.checkpoint_dir)
@@ -239,9 +198,22 @@ class AdaCUTTrainer:
         header = f"\n[Epoch {epoch} Step {step}] --- Gradient Magnitude Radar ---"
         cols = f"{ 'Layer':<30} | {'Grad':<10} | {'Weight':<10} | {'Ratio(1e-3)':<10}"
         divider = "-" * 70
-        self.grad_logger.info(header)
-        self.grad_logger.info(cols)
-        self.grad_logger.info(divider)
+        try:
+            tqdm.write(header)
+        except Exception:
+            pass
+        logger.info(header)
+        print(header)
+        try:
+            tqdm.write(cols)
+        except Exception:
+            pass
+        print(cols)
+        try:
+            tqdm.write(divider)
+        except Exception:
+            pass
+        print(divider)
 
         watch_list = [
             "style_emb",
@@ -263,12 +235,26 @@ class AdaCUTTrainer:
 
             if is_watched or g_norm > 5.0 or (g_norm == 0.0 and w_norm > 0.0):
                 line = f"{name:<30} | {g_norm:.2e}   | {w_norm:.2e}   | {ratio:.2f}"
-                self.grad_logger.info(line)
+                try:
+                    tqdm.write(line)
+                except Exception:
+                    pass
+                logger.info(line)
+                print(line)
                 has_data = True
 
         if not has_data:
-            self.grad_logger.info("No significant gradients found.")
-        self.grad_logger.info(divider + "\n")
+            try:
+                tqdm.write("No significant gradients found.")
+            except Exception:
+                pass
+            logger.info("No significant gradients found.")
+            print("No significant gradients found.")
+        try:
+            tqdm.write(divider + "\n")
+        except Exception:
+            pass
+        print(divider + "\n")
 
     def train_epoch(self, dataloader: DataLoader, epoch: int) -> Dict[str, float]:
         self.model.train()
@@ -294,16 +280,28 @@ class AdaCUTTrainer:
             target_style_id = batch["target_style_id"].to(self.device, non_blocking=True).long()
             source_style_id = batch["source_style_id"].to(self.device, non_blocking=True).long()
 
-            with torch.amp.autocast("cuda", enabled=self.use_amp, dtype=self.amp_dtype):
-                loss_dict = self.loss_fn.compute(
-                    model=self.model,
-                    content=content,
-                    target_style=target_style,
-                    target_style_id=target_style_id,
-                    source_style_id=source_style_id,
-                    debug_timing=False,
-                )
-                loss = loss_dict["loss"]
+            try:
+                with torch.amp.autocast("cuda", enabled=self.use_amp, dtype=self.amp_dtype):
+                    loss_dict = self.loss_fn.compute(
+                        model=self.model,
+                        content=content,
+                        target_style=target_style,
+                        target_style_id=target_style_id,
+                        source_style_id=source_style_id,
+                        debug_timing=False,
+                    )
+                    loss = loss_dict["loss"]
+            except RuntimeError as exc:
+                msg = str(exc)
+                if "illegal memory access" in msg.lower():
+                    logger.error(
+                        "CUDA illegal memory access at epoch=%d step=%d. "
+                        "Likely from async kernel failure in previous op. "
+                        "Try CUDA_LAUNCH_BLOCKING=1 for exact op, and lower batch size if near VRAM limit.",
+                        epoch,
+                        step_idx,
+                    )
+                raise
 
             loss_to_backward = loss / self.accumulation_steps
             if self.use_grad_scaler:
@@ -351,16 +349,32 @@ class AdaCUTTrainer:
                 avg_id = metric_sums.get("identity", 0.0) / denom
                 step_per_sec = step_idx / max(time.time() - epoch_start, 1e-6)
                 eta = (total_steps - step_idx) / max(step_per_sec, 1e-6)
-                progress.set_postfix(
-                    loss=f"{avg_loss:.4f}",
-                    style_swd=f"{avg_style:.4f}",
-                    moment=f"{avg_moment:.4f}",
-                    struct=f"{avg_struct:.4f}",
-                    tv=f"{avg_tv:.4f}",
-                    idt=f"{avg_id:.4f}",
-                    it_s=f"{step_per_sec:.2f}",
-                    eta=f"{eta:.1f}s",
-                )
+                if self.use_tqdm:
+                    progress.set_postfix(
+                        loss=f"{avg_loss:.4f}",
+                        style_swd=f"{avg_style:.4f}",
+                        moment=f"{avg_moment:.4f}",
+                        struct=f"{avg_struct:.4f}",
+                        tv=f"{avg_tv:.4f}",
+                        idt=f"{avg_id:.4f}",
+                        it_s=f"{step_per_sec:.2f}",
+                        eta=f"{eta:.1f}s",
+                    )
+                else:
+                    logger.info(
+                        "[Epoch %d Step %d/%d] loss=%.4f style=%.4f mom=%.4f struct=%.4f tv=%.4f idt=%.4f it/s=%.2f eta=%.1fs",
+                        epoch,
+                        step_idx,
+                        total_steps,
+                        avg_loss,
+                        avg_style,
+                        avg_moment,
+                        avg_struct,
+                        avg_tv,
+                        avg_id,
+                        step_per_sec,
+                        eta,
+                    )
 
             data_wait_start = time.perf_counter()
 
@@ -421,7 +435,26 @@ class AdaCUTTrainer:
     def log_epoch(self, epoch: int, metrics: Dict[str, float]) -> None:
         with open(self.log_file, "a", encoding="utf-8", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(self._build_train_log_row(epoch, metrics))
+            writer.writerow(
+                [
+                    int(epoch),
+                    float(metrics.get("loss", 0.0)),
+                    float(metrics.get("style_swd", 0.0)),
+                    float(metrics.get("style_moment", 0.0)),
+                    float(metrics.get("structure", 0.0)),
+                    float(metrics.get("tv", 0.0)),
+                    float(metrics.get("identity", 0.0)),
+                    float(metrics.get("train_num_steps", 0.0)),
+                    float(metrics.get("train_step_size", 0.0)),
+                    float(metrics.get("train_style_strength", 0.0)),
+                    float(metrics.get("lr", 0.0)),
+                    float(metrics.get("data_time_sec", 0.0)),
+                    float(metrics.get("compute_time_sec", 0.0)),
+                    float(metrics.get("epoch_time_sec", 0.0)),
+                    int(float(metrics.get("samples_seen", 0.0))),
+                    float(metrics.get("samples_per_sec", 0.0)),
+                ]
+            )
 
     def save_checkpoint(self, epoch: int, metrics: Dict[str, float]) -> Path:
         return save_training_checkpoint(
@@ -517,9 +550,9 @@ class AdaCUTTrainer:
                 {
                     "epoch": epoch,
                     "summary_path": str(summary_path),
-                    "transfer_clip_style": float(transfer.get("clip_style", 0.0)),
-                    "transfer_content_lpips": float(transfer.get("content_lpips", 0.0)),
-                    "photo_to_art_clip_style": float(p2a.get("clip_style", 0.0)),
+                    "transfer_style_swd": float(transfer.get("style_swd", 0.0)),
+                    "transfer_content_ssim": float(transfer.get("content_ssim", 0.0)),
+                    "photo_to_art_style_swd": float(p2a.get("style_swd", 0.0)),
                 }
             )
 

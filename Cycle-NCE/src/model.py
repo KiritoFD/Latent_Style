@@ -306,7 +306,11 @@ def build_model_from_config(model_cfg: dict, *, use_checkpointing: bool = False)
         "upsample_blur",
         "upsample_blur_kernel",
     }
-    unknown_keys = sorted(k for k in model_cfg.keys() if k not in known_keys)
+    unknown_keys = sorted(
+        k
+        for k in model_cfg.keys()
+        if (k not in known_keys) and (not str(k).startswith("__comment"))
+    )
     if unknown_keys:
         warnings.warn("Unknown model config key(s): " + ", ".join(unknown_keys), category=UserWarning, stacklevel=2)
 

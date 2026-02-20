@@ -1,0 +1,85 @@
+[I 2026-02-19 22:04:46,144] Using an existing study with name 'latent_style_hpo' instead of creating a new one.
+[W 2026-02-19 22:11:35,675] Trial 39 failed with parameters: {'w_style': 210.09524238844963, 'w_structure': 68.72980853745803, 'w_moment': 135.83841057272275, 'w_identity': 905.5124878060751} because of the following error: KeyboardInterrupt().
+Traceback (most recent call last):
+  File "I:\Github\Latent_Style\.venv\lib\site-packages\optuna\study\_optimize.py", line 206, in _run_trial
+    value_or_values = func(trial)
+  File "I:\Github\Latent_Style\Cycle-NCE\src\auto_tune.py", line 186, in objective
+    _run_and_stream(
+  File "I:\Github\Latent_Style\Cycle-NCE\src\auto_tune.py", line 109, in _run_and_stream
+    log_f.write(line)
+KeyboardInterrupt
+[W 2026-02-19 22:11:35,677] Trial 39 failed with value None.
+
+[Trial 39] START | w_style=210.095, w_structure=68.730, w_moment=135.838, w_identity=905.512 | batch=50 epochs=1
+[T0039] 2026-02-19 22:04:49,175 - WARNING - w_style=210.0952 looks high for Projected SWD loss. Recommended start range is [5, 20].
+[T0039] 2026-02-19 22:04:49,175 - INFO - Active losses: w_style, w_moment, w_identity, w_structure
+[T0039] 2026-02-19 22:04:49,208 - INFO - Set PYTORCH_ALLOC_CONF=expandable_segments:True
+[T0039] 2026-02-19 22:04:49,236 - INFO - Device: cuda
+[T0039] 2026-02-19 22:04:49,236 - INFO - Seed: 42
+[T0039] 2026-02-19 22:04:49,236 - INFO - Loading latent dataset from ..\..\sdxl-256-overfit50
+[T0039] 2026-02-19 22:04:49,249 - INFO -   style=photo id=0 count=10
+[T0039] 2026-02-19 22:04:49,257 - INFO -   style=Hayao id=1 count=10
+[T0039] 2026-02-19 22:04:49,265 - INFO -   style=monet id=2 count=10
+[T0039] 2026-02-19 22:04:49,274 - INFO -   style=cezanne id=3 count=10
+[T0039] 2026-02-19 22:04:49,280 - INFO -   style=vangogh id=4 count=10
+[T0039] I:\Github\Latent_Style\Cycle-NCE\src\dataset.py:135: UserWarning: expandable_segments not supported on this platform (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\c10/cuda/CUDAAllocatorConfig.h:39.)
+[T0039]   gpu_tensors[style_id] = stack.to(device=target_device, non_blocking=False)
+[T0039] 2026-02-19 22:04:49,411 - INFO - Dataset preloaded to cuda: 0.00GB across 5 style pools.
+[T0039] 2026-02-19 22:04:49,425 - INFO - DataLoader | batch=50 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+[T0039] 2026-02-19 22:04:49,509 - INFO - Model params: 7,153,476
+[T0039] 2026-02-19 22:04:49,512 - INFO - Adding NCE Projector params to optimizer: 4 tensors
+[T0039] 2026-02-19 22:04:51,302 - INFO - No checkpoint found, start from scratch.
+[T0039] 2026-02-19 22:05:20,643 - INFO - [Epoch 1 Step 100/5000] loss=7378.5447 style=33.1388 mom=0.5964 struct=3.9354 tv=0.0000 idt=0.0715 it/s=3.41 eta=1437.3s
+[T0039] 2026-02-19 22:05:47,852 - INFO - [Epoch 1 Step 200/5000] loss=7265.9512 style=32.4532 mom=0.5946 struct=3.9331 tv=0.0000 idt=0.1067 it/s=3.54 eta=1357.0s
+[T0039] 2026-02-19 22:06:15,110 - INFO - [Epoch 1 Step 300/5000] loss=7082.1870 style=31.4753 mom=0.5918 struct=3.9389 tv=0.0000 idt=0.1306 it/s=3.58 eta=1312.9s
+[T0039] 2026-02-19 22:06:42,392 - INFO - [Epoch 1 Step 400/5000] loss=6927.6772 style=30.6680 mom=0.5891 struct=3.9490 tv=0.0000 idt=0.1469 it/s=3.60 eta=1277.4s
+[T0039] 2026-02-19 22:07:09,681 - INFO - [Epoch 1 Step 500/5000] loss=6798.8000 style=29.9905 mom=0.5877 struct=3.9603 tv=0.0000 idt=0.1611 it/s=3.61 eta=1245.3s
+[T0039] 2026-02-19 22:07:36,957 - INFO - [Epoch 1 Step 600/5000] loss=6637.0520 style=29.1842 mom=0.5857 struct=3.9738 tv=0.0000 idt=0.1689 it/s=3.62 eta=1214.7s
+[T0039] 2026-02-19 22:08:04,222 - INFO - [Epoch 1 Step 700/5000] loss=6488.9159 style=28.4290 mom=0.5826 struct=3.9882 tv=0.0000 idt=0.1799 it/s=3.63 eta=1185.0s
+[T0039] 2026-02-19 22:08:31,490 - INFO - [Epoch 1 Step 800/5000] loss=6352.5087 style=27.7484 mom=0.5795 struct=4.0033 tv=0.0000 idt=0.1865 it/s=3.63 eta=1155.9s
+[T0039] 2026-02-19 22:08:58,783 - INFO - [Epoch 1 Step 900/5000] loss=6239.7749 style=27.1841 mom=0.5767 struct=4.0197 tv=0.0000 idt=0.1921 it/s=3.64 eta=1127.4s
+[T0039] 2026-02-19 22:09:26,045 - INFO - [Epoch 1 Step 1000/5000] loss=6136.7111 style=26.6726 mom=0.5739 struct=4.0363 tv=0.0000 idt=0.1961 it/s=3.64 eta=1098.9s
+[T0039] 2026-02-19 22:09:53,307 - INFO - [Epoch 1 Step 1100/5000] loss=6042.5574 style=26.2118 mom=0.5713 struct=4.0524 tv=0.0000 idt=0.1982 it/s=3.64 eta=1070.7s
+[T0039] 2026-02-19 22:10:20,607 - INFO - [Epoch 1 Step 1200/5000] loss=5950.2980 style=25.7642 mom=0.5684 struct=4.0698 tv=0.0000 idt=0.1993 it/s=3.64 eta=1042.8s
+[T0039] 2026-02-19 22:10:47,868 - INFO - [Epoch 1 Step 1300/5000] loss=5861.7299 style=25.3363 mom=0.5652 struct=4.0866 tv=0.0000 idt=0.1999 it/s=3.65 eta=1014.8s
+[T0039] 2026-02-19 22:11:15,126 - INFO - [Epoch 1 Step 1400/5000] loss=5785.1026 style=24.9691 mom=0.5627 struct=4.1047 tv=0.0000 idt=0.1995 it/s=3.65 eta=987.0s
+Traceback (most recent call last):
+  File "I:\Github\Latent_Style\Cycle-NCE\src\auto_tune.py", line 309, in main
+    study.optimize(
+  File "I:\Github\Latent_Style\.venv\lib\site-packages\optuna\study\study.py", line 490, in optimize
+    _optimize(
+  File "I:\Github\Latent_Style\.venv\lib\site-packages\optuna\study\_optimize.py", line 68, in _optimize
+    _optimize_sequential(
+  File "I:\Github\Latent_Style\.venv\lib\site-packages\optuna\study\_optimize.py", line 165, in _optimize_sequential
+    frozen_trial_id = _run_trial(study, func, catch)
+  File "I:\Github\Latent_Style\.venv\lib\site-packages\optuna\study\_optimize.py", line 263, in _run_trial
+    raise func_err
+  File "I:\Github\Latent_Style\.venv\lib\site-packages\optuna\study\_optimize.py", line 206, in _run_trial
+    value_or_values = func(trial)
+  File "I:\Github\Latent_Style\Cycle-NCE\src\auto_tune.py", line 186, in objective
+    _run_and_stream(
+  File "I:\Github\Latent_Style\Cycle-NCE\src\auto_tune.py", line 109, in _run_and_stream
+    log_f.write(line)
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.10.19-windows-x86_64-none\lib\shutil.py", line 816, in move
+    os.rename(src, real_dst)
+FileNotFoundError: [WinError 2] 系统找不到指定的文件。: 'I:\\Github\\Latent_Style\\Cycle-NCE\\src\\config.json.backup' -> 'I:\\Github\\Latent_Style\\Cycle-NCE\\src\\config.json'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "I:\Github\Latent_Style\Cycle-NCE\src\auto_tune.py", line 335, in <module>
+    main()
+  File "I:\Github\Latent_Style\Cycle-NCE\src\auto_tune.py", line 317, in main
+    shutil.move(str(backup_file), str(config_file))
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.10.19-windows-x86_64-none\lib\shutil.py", line 836, in move
+    copy_function(src, real_dst)
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.10.19-windows-x86_64-none\lib\shutil.py", line 434, in copy2
+    copyfile(src, dst, follow_symlinks=follow_symlinks)
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.10.19-windows-x86_64-none\lib\shutil.py", line 254, in copyfile
+    with open(src, 'rb') as fsrc:
+FileNotFoundError: [Errno 2] No such file or directory: 'I:\\Github\\Latent_Style\\Cycle-NCE\\src\\config.json.backup'

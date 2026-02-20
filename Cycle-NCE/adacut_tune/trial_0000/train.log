@@ -1,0 +1,25 @@
+2026-02-19 17:49:26,872 - INFO - Active losses: w_style, w_moment, w_identity, w_structure
+2026-02-19 17:49:26,890 - INFO - Set PYTORCH_ALLOC_CONF=expandable_segments:True
+2026-02-19 17:49:26,946 - INFO - Device: cuda
+2026-02-19 17:49:26,946 - INFO - Seed: 42
+2026-02-19 17:49:26,946 - INFO - Loading latent dataset from ..\..\sdxl-256-overfit50
+2026-02-19 17:49:26,958 - INFO -   style=photo id=0 count=10
+2026-02-19 17:49:26,966 - INFO -   style=Hayao id=1 count=10
+2026-02-19 17:49:26,973 - INFO -   style=monet id=2 count=10
+2026-02-19 17:49:26,981 - INFO -   style=cezanne id=3 count=10
+2026-02-19 17:49:26,987 - INFO -   style=vangogh id=4 count=10
+I:\Github\Latent_Style\Cycle-NCE\src\dataset.py:135: UserWarning: expandable_segments not supported on this platform (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\c10/cuda/CUDAAllocatorConfig.h:39.)
+  gpu_tensors[style_id] = stack.to(device=target_device, non_blocking=False)
+2026-02-19 17:49:27,130 - INFO - Dataset preloaded to cuda: 0.00GB across 5 style pools.
+2026-02-19 17:49:27,131 - INFO - DataLoader | batch=160 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-19 17:49:27,249 - INFO - Model params: 7,153,476
+2026-02-19 17:49:27,253 - INFO - Adding NCE Projector params to optimizer: 4 tensors
+2026-02-19 17:49:28,804 - INFO - No checkpoint found, start from scratch.
+2026-02-19 17:49:31,138 - INFO - [Epoch 1 Step 1/1] loss=1350.5219 style=33.9859 mom=0.6020 struct=3.9051 tv=0.0000 idt=0.0173 it/s=0.43 eta=0.0s
+I:\Github\Latent_Style\Cycle-NCE\src\trainer.py:189: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  self.scheduler.step()
+2026-02-19 17:49:31,140 - INFO - Epoch 1/1 | loss=1350.5219 style_swd=33.9859 mom=0.6020 struct=3.9051 tv=0.0000 idt=0.0173 steps=1.0 h=1.00 s=1.00 lr=1.00e-04 data=0.0s comp=2.3s
+2026-02-19 17:49:31,181 - INFO - Saved checkpoint: I:\Github\Latent_Style\Cycle-NCE\adacut_tune\trial_0000\epoch_0001.pt (step=1)
+2026-02-19 17:49:31,183 - INFO - Running full eval for epoch 1 -> I:\Github\Latent_Style\Cycle-NCE\adacut_tune\trial_0000\full_eval\epoch_0001
+2026-02-19 17:52:25,614 - INFO - Full eval completed for epoch 1. Log: I:\Github\Latent_Style\Cycle-NCE\adacut_tune\trial_0000\logs\full_eval_epoch_0001.log
+2026-02-19 17:52:25,614 - INFO - Training completed.

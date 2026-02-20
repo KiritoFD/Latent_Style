@@ -72,9 +72,17 @@ class LeakyProjectedStyleLoss(nn.Module):
 class PatchNCELoss(nn.Module):
     """Latent PatchNCE with trainable projection head."""
 
-    def __init__(self, in_channels: int = 4, hidden_dim: int = 256, out_dim: int = 128, temperature: float = 0.07):
+    def __init__(
+        self,
+        in_channels: int = 4,
+        hidden_dim: int = 256,
+        out_dim: int = 128,
+        temperature: float = 0.07,
+        batch_chunk_size: int = 16,
+    ):
         super().__init__()
         self.temperature = float(temperature)
+        self.batch_chunk_size = max(1, int(batch_chunk_size))
         self.mlp = nn.Sequential(
             nn.Conv2d(in_channels, hidden_dim, kernel_size=1, bias=True),
             nn.ReLU(inplace=True),
@@ -98,14 +106,21 @@ class PatchNCELoss(nn.Module):
         batch_size, dim, h, w = feat_q.shape
         feat_q = feat_q.permute(0, 2, 3, 1).reshape(batch_size, -1, dim)
         feat_k = feat_k.permute(0, 2, 3, 1).reshape(batch_size, -1, dim)
-
-        logits = torch.bmm(feat_q, feat_k.transpose(1, 2)) / self.temperature
-
         num_patches = h * w
-        labels = torch.arange(num_patches, device=feat_q.device).unsqueeze(0).expand(batch_size, -1).reshape(-1)
+        labels = torch.arange(num_patches, device=feat_q.device, dtype=torch.long)
 
-        logits = logits.reshape(-1, num_patches)
-        return self.cross_entropy(logits, labels)
+        # Compute NCE in FP32 and in mini-batch chunks to reduce peak CUDA memory
+        # and avoid occasional illegal-address failures in large FP16 batched GEMMs.
+        total = feat_q.new_zeros(())
+        for start in range(0, batch_size, self.batch_chunk_size):
+            end = min(start + self.batch_chunk_size, batch_size)
+            q_chunk = feat_q[start:end].float()
+            k_chunk = feat_k[start:end].float()
+            logits = torch.bmm(q_chunk, k_chunk.transpose(1, 2)) / self.temperature
+            chunk_labels = labels.unsqueeze(0).expand(end - start, -1).reshape(-1)
+            total = total + self.cross_entropy(logits.reshape(-1, num_patches), chunk_labels) * float(end - start)
+
+        return total / float(batch_size)
 
 
 class AdaCUTObjective:

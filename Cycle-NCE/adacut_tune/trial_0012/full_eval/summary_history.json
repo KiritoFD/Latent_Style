@@ -1,0 +1,20 @@
+{
+  "num_rounds": 1,
+  "latest": {
+    "epoch": 150,
+    "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\adacut_tune\\trial_0012\\full_eval\\epoch_0150\\summary.json",
+    "transfer_clip_style": 0.5373733133077623,
+    "transfer_content_lpips": 0.4980012304,
+    "photo_to_art_clip_style": 0.5066355764865875
+  },
+  "rounds": [
+    {
+      "epoch": 150,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\adacut_tune\\trial_0012\\full_eval\\epoch_0150\\summary.json",
+      "transfer_clip_style": 0.5373733133077623,
+      "transfer_content_lpips": 0.4980012304,
+      "photo_to_art_clip_style": 0.5066355764865875
+    }
+  ],
+  "updated_at": "2026-02-19 18:20:27"
+}

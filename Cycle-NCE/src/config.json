@@ -27,10 +27,10 @@
     "inject_gate_decoder": 1.0
   },
   "loss": {
-    "w_style": 150.0,
-    "w_structure": 600.0,
-    "w_identity": 1000.0,
-    "w_moment": 10.0,
+    "w_style": 230.07,
+    "w_structure": 49.12,
+    "w_moment": 141.29,
+    "w_identity": 664.14,
     "w_tv": 0,
     "train_num_steps_min": 1,
     "train_num_steps_max": 1,
@@ -108,7 +108,7 @@
     "virtual_length_multiplier": 6
   },
   "checkpoint": {
-    "save_dir": "../nce-idt-150-600-1k"
+    "save_dir": "../nce-idt-opt-230-49-141-664-0"
   },
   "inference": {
     "num_steps": 1,
