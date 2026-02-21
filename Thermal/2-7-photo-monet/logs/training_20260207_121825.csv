@@ -1,1 +1,0 @@
-epoch,loss_total,loss_style_swd,loss_style_swd_weighted,loss_mse,loss_mse_weighted,loss_layout,loss_mse_raw,learning_rate,epoch_time
