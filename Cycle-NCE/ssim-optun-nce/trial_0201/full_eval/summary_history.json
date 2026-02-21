@@ -1,0 +1,20 @@
+{
+  "num_rounds": 1,
+  "latest": {
+    "epoch": 1,
+    "summary_path": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\ssim-optun-nce\\trial_0201\\full_eval\\epoch_0001\\summary.json",
+    "transfer_style_swd": 1.7032415774464607,
+    "transfer_content_ssim": 0.38939194592,
+    "photo_to_art_style_swd": 1.6968423128128054
+  },
+  "rounds": [
+    {
+      "epoch": 1,
+      "summary_path": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\ssim-optun-nce\\trial_0201\\full_eval\\epoch_0001\\summary.json",
+      "transfer_style_swd": 1.7032415774464607,
+      "transfer_content_ssim": 0.38939194592,
+      "photo_to_art_style_swd": 1.6968423128128054
+    }
+  ],
+  "updated_at": "2026-02-20 11:35:33"
+}

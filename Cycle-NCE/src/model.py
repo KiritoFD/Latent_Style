@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as ckpt
+from torch.nn.utils import spectral_norm
 
 
 class AdaGN(nn.Module):
@@ -132,7 +133,9 @@ class LatentAdaCUT(nn.Module):
         self.hires_body = nn.ModuleList(
             [ResBlock(self.lift_channels, style_dim, num_groups=num_groups) for _ in range(max(0, int(num_hires_blocks)))]
         )
-        self.down = nn.Conv2d(self.lift_channels, self.body_channels, kernel_size=4, stride=2, padding=1)
+        self.down = spectral_norm(
+            nn.Conv2d(self.lift_channels, self.body_channels, kernel_size=4, stride=2, padding=1)
+        )
 
         self.body = nn.ModuleList(
             [ResBlock(self.body_channels, style_dim, num_groups=num_groups) for _ in range(max(1, int(num_res_blocks)))]
@@ -146,12 +149,16 @@ class LatentAdaCUT(nn.Module):
         if self.upsample_mode in {"bilinear", "bicubic"}:
             upsample_kwargs["align_corners"] = False
         self.dec_up = nn.Upsample(**upsample_kwargs)
-        self.dec_conv = nn.Conv2d(self.body_channels, self.lift_channels, kernel_size=3, stride=1, padding=1)
+        self.dec_conv = spectral_norm(
+            nn.Conv2d(self.body_channels, self.lift_channels, kernel_size=3, stride=1, padding=1)
+        )
         self.dec_norm = AdaGN(self.lift_channels, style_dim, num_groups=out_groups) if use_decoder_adagn else nn.GroupNorm(
             out_groups, self.lift_channels, eps=1e-6
         )
         self.dec_act = nn.SiLU()
         self.dec_out = nn.Conv2d(self.lift_channels, latent_channels, kernel_size=3, stride=1, padding=1)
+        nn.init.zeros_(self.dec_out.weight)
+        nn.init.zeros_(self.dec_out.bias)
 
         if self.upsample_blur:
             if self.upsample_blur_kernel == "gaussian3":

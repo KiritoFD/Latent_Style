@@ -1,0 +1,22 @@
+{
+  "num_rounds": 1,
+  "latest": {
+    "epoch": 50,
+    "summary_path": "..\\150-fp32\\full_eval\\epoch_0050\\summary.json",
+    "transfer_style_swd": 1.8306941723823549,
+    "transfer_content_lf_ssim": 0.9699228749,
+    "transfer_content_ssim": 0.9699228749,
+    "photo_to_art_style_swd": 1.8515020892024041
+  },
+  "rounds": [
+    {
+      "epoch": 50,
+      "summary_path": "..\\150-fp32\\full_eval\\epoch_0050\\summary.json",
+      "transfer_style_swd": 1.8306941723823549,
+      "transfer_content_lf_ssim": 0.9699228749,
+      "transfer_content_ssim": 0.9699228749,
+      "photo_to_art_style_swd": 1.8515020892024041
+    }
+  ],
+  "updated_at": "2026-02-21 14:54:09"
+}

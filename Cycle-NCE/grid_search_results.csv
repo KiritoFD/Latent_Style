@@ -1,129 +1,49 @@
 rank,score,dim,kernel,act,norm,feature_mode,scales,gram_center,gram_norm,init,scale_factor
-1,0.07962607592344284,64,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-2,0.07340803742408752,40,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-3,0.07300026714801788,40,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-4,0.07206885516643524,48,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
-5,0.07123377174139023,48,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-6,0.07064389437437057,56,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
-7,0.07062429934740067,40,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
-8,0.06987962871789932,64,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-9,0.06985186785459518,48,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-10,0.06898058950901031,64,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
-11,0.0689210444688797,64,1,relu,group,diff,[1],True,chw,orthogonal,0.13025
-12,0.06884512305259705,64,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
-13,0.06866816431283951,64,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
-14,0.06822783499956131,56,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
-15,0.06813005357980728,40,1,relu,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-16,0.06800203770399094,48,1,relu,group,diff,[1],False,chw,orthogonal,0.13025
-17,0.06672152131795883,64,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-18,0.06662162393331528,48,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-19,0.06661476194858551,48,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-20,0.06645897775888443,40,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
-21,0.0662626400589943,40,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
-22,0.0660879984498024,56,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-23,0.06456737220287323,64,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
-24,0.06429000198841095,64,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-25,0.06382189691066742,40,1,relu,group,diff,[1],True,chw,orthogonal,0.13025
-26,0.06379219889640808,48,1,relu,group,diff,[1],True,chw,orthogonal,0.13025
-27,0.06363701820373535,56,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-28,0.06349306553602219,56,1,relu,group,diff,[1],False,chw,orthogonal,0.13025
-29,0.0634300485253334,48,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-30,0.06289676576852798,64,1,relu,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-31,0.06270916759967804,56,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
-32,0.06257496029138565,48,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
-33,0.06195248290896416,64,1,relu,group,diff,[1],False,chw,orthogonal,0.13025
-34,0.061679936945438385,64,1,relu,group,diff,[1],True,chw,orthogonal,0.13025
-35,0.06165153905749321,56,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
-36,0.06136995181441307,40,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
-37,0.06134548783302307,56,1,relu,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-38,0.061055976897478104,64,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-39,0.061016835272312164,64,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
-40,0.06090318784117699,40,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
-41,0.06066225469112396,56,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-42,0.06014937907457352,40,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-43,0.06006956100463867,40,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-44,0.059794116765260696,48,1,relu,group,diff,[1],True,chw,orthogonal,0.13025
-45,0.059737175703048706,64,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
-46,0.05961976200342178,40,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-47,0.05903445929288864,64,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-48,0.05877327919006348,48,1,relu,group,diff,[1],True,chw,orthogonal,0.13025
-49,0.05835839733481407,64,1,relu,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-50,0.05814068764448166,48,1,relu,group,diff,[1],False,chw,orthogonal,0.13025
-51,0.0578194335103035,56,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-52,0.0575222410261631,56,1,relu,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-53,0.05742618441581726,40,1,relu,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-54,0.05733688920736313,56,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
-55,0.057302068918943405,40,1,relu,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-56,0.05705051124095917,56,1,relu,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-57,0.05670071393251419,56,1,relu,group,diff,[1],True,chw,orthogonal,0.13025
-58,0.05653044581413269,48,1,relu,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-59,0.056326720863580704,40,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-60,0.056103967130184174,56,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-61,0.05598892644047737,48,1,relu,group,diff,[1],True,chw,orthogonal,0.13025
-62,0.0559639148414135,40,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
-63,0.055790405720472336,48,1,relu,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-64,0.055529505014419556,64,1,relu,group,diff,[1],True,chw,orthogonal,0.13025
-65,0.055118169635534286,64,1,relu,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-66,0.05486244335770607,48,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-67,0.054640088230371475,40,1,relu,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-68,0.05461292713880539,48,1,relu,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-69,0.05453603342175484,40,1,relu,group,diff,[1],False,chw,orthogonal,0.13025
-70,0.05427883192896843,64,1,relu,group,diff,[1],False,chw,orthogonal,0.13025
-71,0.0536356195807457,64,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-72,0.05362490192055702,48,1,relu,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-73,0.053567659109830856,40,1,relu,group,diff,[1],False,chw,orthogonal,0.13025
-74,0.05333033949136734,56,1,relu,group,diff,[1],True,chw,orthogonal,0.13025
-75,0.05284089967608452,48,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-76,0.05277767777442932,40,1,relu,group,diff,[1],False,chw,orthogonal,0.13025
-77,0.05276613309979439,48,1,relu,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-78,0.05258208513259888,48,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
-79,0.05249205231666565,48,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
-80,0.05244586616754532,56,1,relu,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-81,0.052177172154188156,56,1,relu,group,diff,[1],False,chw,orthogonal,0.13025
-82,0.05185089632868767,56,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-83,0.051832165569067,56,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
-84,0.05177365615963936,56,1,relu,group,diff,[1],False,chw,orthogonal,0.13025
-85,0.051518604159355164,48,1,relu,group,diff,[1],False,chw,orthogonal,0.13025
-86,0.05129249393939972,56,1,relu,group,diff,[1],False,chw,orthogonal,0.13025
-87,0.05116640776395798,56,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
-88,0.05108695849776268,40,1,relu,group,diff,[1],True,chw,orthogonal,0.13025
-89,0.050906430929899216,56,1,relu,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-90,0.050756026059389114,64,1,relu,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-91,0.05062864348292351,40,1,relu,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-92,0.050441350787878036,56,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
-93,0.050098199397325516,64,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
-94,0.049978528171777725,48,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
-95,0.04960405454039574,40,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
-96,0.04928525537252426,40,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
-97,0.04918545484542847,48,1,relu,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-98,0.048767659813165665,64,1,relu,group,diff,[1],False,chw,orthogonal,0.13025
-99,0.04842934012413025,64,1,relu,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-100,0.04796707630157471,56,1,relu,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-101,0.047513432800769806,64,1,relu,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-102,0.04722064733505249,40,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-103,0.04694105684757233,56,1,relu,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-104,0.046895887702703476,40,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-105,0.046750422567129135,56,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-106,0.04593773931264877,64,1,relu,group,diff,[1],True,chw,orthogonal,0.13025
-107,0.04566120728850365,48,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
-108,0.04539183899760246,64,1,relu,group,diff,[1],False,chw,orthogonal,0.13025
-109,0.044955454766750336,64,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-110,0.044299930334091187,48,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
-111,0.04389204829931259,64,1,relu,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-112,0.04316423088312149,48,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
-113,0.04270084574818611,48,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-114,0.04148925095796585,40,1,relu,group,diff,[1],True,chw,orthogonal,0.13025
-115,0.04140579700469971,48,1,relu,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-116,0.041133057326078415,56,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
-117,0.04110537841916084,40,1,relu,group,diff,[1],False,chw,orthogonal,0.13025
-118,0.04075785353779793,64,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
-119,0.040490567684173584,56,1,relu,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-120,0.03924333676695824,64,1,relu,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-121,0.03874512389302254,48,1,relu,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-122,0.0381770096719265,40,1,relu,group,diff,[1],True,chw,orthogonal,0.13025
-123,0.036817073822021484,40,1,relu,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-124,0.03671516105532646,48,1,relu,group,diff,[1],False,chw,orthogonal,0.13025
-125,0.03449027240276337,56,1,relu,group,diff,[1],True,chw,orthogonal,0.13025
-126,0.03224881738424301,40,1,relu,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
-127,0.031324706971645355,56,1,relu,group,diff,[1],True,chw,orthogonal,0.13025
-128,0.021390294656157494,40,1,relu,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
+1,0.07694465667009354,40,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
+2,0.07497617602348328,40,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
+3,0.074387326836586,64,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
+4,0.06919427216053009,40,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
+5,0.06876528263092041,56,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
+6,0.06847132742404938,56,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
+7,0.06794848293066025,64,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
+8,0.06700673699378967,48,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
+9,0.06700411438941956,56,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
+10,0.06689760088920593,48,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
+11,0.06671637296676636,48,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
+12,0.06555796414613724,56,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
+13,0.06429997086524963,48,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
+14,0.06403438746929169,40,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
+15,0.06354790180921555,40,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
+16,0.06315001100301743,56,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
+17,0.0622217170894146,56,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
+18,0.061969175934791565,48,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
+19,0.06129145622253418,40,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
+20,0.06072894111275673,64,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
+21,0.06044348329305649,40,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
+22,0.0586429201066494,64,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
+23,0.05784254148602486,64,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
+24,0.057566698640584946,56,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
+25,0.05706598982214928,64,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
+26,0.056991711258888245,64,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
+27,0.056958094239234924,40,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
+28,0.056249964982271194,56,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
+29,0.055772095918655396,48,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
+30,0.05499638244509697,56,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
+31,0.05494779720902443,48,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
+32,0.05428053066134453,64,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
+33,0.054191142320632935,40,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
+34,0.05340181291103363,40,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
+35,0.052015796303749084,48,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
+36,0.0518665574491024,64,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
+37,0.05139613151550293,64,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
+38,0.051260076463222504,64,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
+39,0.05124523490667343,56,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
+40,0.051014259457588196,40,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
+41,0.05013520270586014,48,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025
+42,0.05011614412069321,56,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
+43,0.04946226626634598,40,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
+44,0.04840291291475296,64,1,leaky,group,diff,[1],False,chw,orthogonal,0.13025
+45,0.047057926654815674,48,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
+46,0.04315223917365074,48,1,leaky,group,diff,"[1, 2]",True,chw,orthogonal,0.13025
+47,0.04130703955888748,56,1,leaky,group,diff,[1],True,chw,orthogonal,0.13025
+48,0.03327108174562454,48,1,leaky,group,diff,"[1, 2]",False,chw,orthogonal,0.13025

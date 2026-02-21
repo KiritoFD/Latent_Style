@@ -3,6 +3,8 @@ from __future__ import annotations
 import csv
 import json
 import logging
+import os
+import shlex
 import subprocess
 import sys
 import time
@@ -515,8 +517,14 @@ class AdaCUTTrainer:
             cmd += ["--generation_only"]
 
         log_path = self.log_dir / f"full_eval_epoch_{epoch:04d}.log"
+        if os.name == "nt":
+            cmd_text = subprocess.list2cmdline(cmd)
+        else:
+            cmd_text = shlex.join(cmd)
         logger.info("Running full eval for epoch %d -> %s", epoch, out_dir)
+        logger.info("Full eval command: %s", cmd_text)
         with open(log_path, "w", encoding="utf-8") as logf:
+            logf.write(f"# Full eval command:\n{cmd_text}\n\n")
             proc = subprocess.run(cmd, cwd=str(Path(__file__).resolve().parent), stdout=logf, stderr=subprocess.STDOUT)
 
         if proc.returncode != 0:
@@ -550,9 +558,14 @@ class AdaCUTTrainer:
                 {
                     "epoch": epoch,
                     "summary_path": str(summary_path),
+                    "transfer_style": float(transfer.get("style", transfer.get("clip_style_sim", transfer.get("style_swd", 0.0)))),
                     "transfer_style_swd": float(transfer.get("style_swd", 0.0)),
-                    "transfer_content_ssim": float(transfer.get("content_ssim", 0.0)),
+                    "transfer_clip_style_sim": float(transfer.get("clip_style_sim", 0.0)),
+                    "transfer_content_lf_ssim": float(transfer.get("content_lf_ssim", transfer.get("content_ssim", 0.0))),
+                    "transfer_content_ssim": float(transfer.get("content_lf_ssim", transfer.get("content_ssim", 0.0))),
+                    "photo_to_art_style": float(p2a.get("style", p2a.get("clip_style_sim", p2a.get("style_swd", 0.0)))),
                     "photo_to_art_style_swd": float(p2a.get("style_swd", 0.0)),
+                    "photo_to_art_clip_style_sim": float(p2a.get("clip_style_sim", 0.0)),
                 }
             )
 

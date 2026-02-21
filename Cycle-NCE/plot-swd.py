@@ -1,6 +1,7 @@
-﻿import argparse
+import argparse
 import csv
 import itertools
+import re
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -8,6 +9,12 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, calinski_harabasz_score, davies_bouldin_score, f1_score, roc_auc_score, silhouette_score
+from sklearn.model_selection import GroupKFold, StratifiedKFold
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
 
@@ -108,10 +115,15 @@ def load_latents(
     device: torch.device,
     max_per_style: int,
     latent_dtype: torch.dtype,
-) -> tuple[torch.Tensor, np.ndarray, torch.Tensor, list[str]]:
+    content_id_mode: str,
+    content_id_sep: str,
+    content_id_regex: str,
+) -> tuple[torch.Tensor, np.ndarray, torch.Tensor, np.ndarray, list[str]]:
     all_latents = []
     all_labels = []
+    all_content_ids = []
     used_styles = []
+    compiled_regex = re.compile(content_id_regex) if content_id_mode == "regex" and content_id_regex else None
 
     print(f"Loading latents from: {data_root}")
     for style in styles:
@@ -130,18 +142,43 @@ def load_latents(
             lats = torch.stack([torch.load(f, map_location=device, weights_only=True) for f in chunk]).to(dtype=latent_dtype)
             all_latents.append(lats)
             all_labels.extend([style] * len(chunk))
+            for f in chunk:
+                stem = f.stem
+                if content_id_mode == "none":
+                    content_id = f"{style}::{stem}"
+                elif content_id_mode == "stem":
+                    content_id = stem
+                elif content_id_mode == "prefix":
+                    content_id = stem.split(content_id_sep)[0] if content_id_sep else stem
+                elif content_id_mode == "regex":
+                    if compiled_regex is None:
+                        content_id = stem
+                    else:
+                        m = compiled_regex.search(stem)
+                        if m is None:
+                            content_id = stem
+                        elif m.groups():
+                            content_id = m.group(1)
+                        else:
+                            content_id = m.group(0)
+                else:
+                    content_id = stem
+                all_content_ids.append(content_id)
 
     if not all_latents:
         raise RuntimeError("No latent data loaded; check --data-root and style folders.")
 
     X_raw = torch.cat(all_latents, dim=0)
     labels_np = np.array(all_labels)
+    content_ids_np = np.array(all_content_ids)
 
     style_to_id = {s: i for i, s in enumerate(used_styles)}
     labels_int = torch.tensor([style_to_id[s] for s in all_labels], device=device, dtype=torch.long)
 
     print(f"Loaded tensor: {tuple(X_raw.shape)} dtype={X_raw.dtype}")
-    return X_raw, labels_np, labels_int, used_styles
+    if content_id_mode != "none":
+        print(f"Detected content groups: {len(np.unique(content_ids_np))}")
+    return X_raw, labels_np, labels_int, content_ids_np, used_styles
 
 
 def extract_features_gpu(extractor: nn.Module, X_raw: torch.Tensor, batch_size: int, out_dtype: torch.dtype) -> torch.Tensor:
@@ -216,11 +253,12 @@ def maybe_subsample(
     X: torch.Tensor,
     labels_np: np.ndarray,
     labels_int: torch.Tensor,
+    groups_np: np.ndarray,
     max_samples: int,
     seed: int,
-) -> tuple[torch.Tensor, np.ndarray, torch.Tensor]:
+) -> tuple[torch.Tensor, np.ndarray, torch.Tensor, np.ndarray]:
     if max_samples <= 0 or X.shape[0] <= max_samples:
-        return X, labels_np, labels_int
+        return X, labels_np, labels_int, groups_np
 
     g = torch.Generator(device=X.device)
     g.manual_seed(seed)
@@ -228,8 +266,224 @@ def maybe_subsample(
 
     X_sub = X.index_select(0, idx)
     labels_int_sub = labels_int.index_select(0, idx)
-    labels_np_sub = labels_np[idx.cpu().numpy()]
-    return X_sub, labels_np_sub, labels_int_sub
+    idx_np = idx.cpu().numpy()
+    labels_np_sub = labels_np[idx_np]
+    groups_np_sub = groups_np[idx_np]
+    return X_sub, labels_np_sub, labels_int_sub, groups_np_sub
+
+
+def parse_int_list(raw: str) -> list[int]:
+    vals = []
+    for token in raw.split(","):
+        token = token.strip()
+        if not token:
+            continue
+        vals.append(int(token))
+    if not vals:
+        raise ValueError(f"Invalid int list: {raw}")
+    return vals
+
+
+def fisher_ratio(X: np.ndarray, y: np.ndarray, ridge: float = 1e-4) -> tuple[float, float]:
+    classes = np.unique(y)
+    if len(classes) < 2:
+        return -1.0, -1.0
+
+    mu = X.mean(axis=0)
+    sw = np.zeros((X.shape[1], X.shape[1]), dtype=np.float64)
+    sb = np.zeros_like(sw)
+    trace_sw = 0.0
+    trace_sb = 0.0
+
+    for cls in classes:
+        Xk = X[y == cls]
+        if Xk.shape[0] == 0:
+            continue
+        muk = Xk.mean(axis=0)
+        centered = Xk - muk
+        sw += centered.T @ centered
+        trace_sw += float(np.trace(centered.T @ centered))
+        diff = (muk - mu).reshape(-1, 1)
+        sb += Xk.shape[0] * (diff @ diff.T)
+        trace_sb += float(Xk.shape[0] * np.dot((muk - mu), (muk - mu)))
+
+    if trace_sw <= 1e-12:
+        j = -1.0
+    else:
+        j = trace_sb / trace_sw
+
+    sw_reg = sw + ridge * np.eye(sw.shape[0], dtype=sw.dtype)
+    try:
+        j_star = float(np.trace(np.linalg.solve(sw_reg, sb)))
+    except np.linalg.LinAlgError:
+        j_star = -1.0
+    return float(j), float(j_star)
+
+
+def evaluate_cv_classifier(
+    X: np.ndarray,
+    y: np.ndarray,
+    n_splits: int,
+    seed: int,
+    groups: np.ndarray | None,
+    classifier: str,
+    knn_k: int = 5,
+) -> dict:
+    acc_scores: list[float] = []
+    f1_scores: list[float] = []
+    classes = np.unique(y)
+
+    if groups is None:
+        splitter = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=seed)
+        split_iter = splitter.split(X, y)
+    else:
+        n_group = len(np.unique(groups))
+        split_n = min(n_splits, n_group)
+        if split_n < 2:
+            return {"acc": -1.0, "macro_f1": -1.0}
+
+        try:
+            from sklearn.model_selection import StratifiedGroupKFold
+
+            splitter = StratifiedGroupKFold(n_splits=split_n, shuffle=True, random_state=seed)
+            split_iter = splitter.split(X, y, groups=groups)
+        except Exception:
+            splitter = GroupKFold(n_splits=split_n)
+            split_iter = splitter.split(X, y, groups=groups)
+
+    for tr, te in split_iter:
+        y_tr = y[tr]
+        y_te = y[te]
+
+        if len(np.unique(y_tr)) < 2:
+            continue
+
+        if classifier == "logreg":
+            clf = make_pipeline(
+                StandardScaler(),
+                LogisticRegression(
+                    max_iter=2000,
+                    solver="lbfgs",
+                    class_weight="balanced",
+                    random_state=seed,
+                ),
+            )
+        elif classifier == "knn":
+            clf = make_pipeline(
+                StandardScaler(),
+                KNeighborsClassifier(n_neighbors=knn_k),
+            )
+        else:
+            raise ValueError(f"Unsupported classifier={classifier}")
+
+        clf.fit(X[tr], y_tr)
+        pred = clf.predict(X[te])
+        acc_scores.append(accuracy_score(y_te, pred))
+        f1_scores.append(f1_score(y_te, pred, labels=classes, average="macro", zero_division=0))
+
+    if not acc_scores:
+        return {"acc": -1.0, "macro_f1": -1.0}
+    return {"acc": float(np.mean(acc_scores)), "macro_f1": float(np.mean(f1_scores))}
+
+
+def evaluate_distance_stats(X: np.ndarray, y: np.ndarray, max_pairs: int, seed: int) -> dict:
+    n = X.shape[0]
+    if n < 2:
+        return {"dist_auc_same_vs_diff": -1.0, "inter_minus_intra": -1.0}
+
+    rng = np.random.default_rng(seed)
+    i_idx = rng.integers(0, n, size=max_pairs)
+    j_idx = rng.integers(0, n, size=max_pairs)
+    neq = i_idx != j_idx
+    i_idx = i_idx[neq]
+    j_idx = j_idx[neq]
+    if i_idx.size == 0:
+        return {"dist_auc_same_vs_diff": -1.0, "inter_minus_intra": -1.0}
+
+    diff = X[i_idx] - X[j_idx]
+    d = np.sqrt((diff * diff).sum(axis=1))
+    same = (y[i_idx] == y[j_idx]).astype(np.int32)
+    if same.min() == same.max():
+        auc = -1.0
+    else:
+        auc = float(roc_auc_score(same, -d))
+
+    intra = d[same == 1]
+    inter = d[same == 0]
+    if intra.size == 0 or inter.size == 0:
+        margin = -1.0
+    else:
+        margin = float(inter.mean() - intra.mean())
+    return {"dist_auc_same_vs_diff": auc, "inter_minus_intra": margin}
+
+
+def evaluate_cluster_metrics(X: np.ndarray, y: np.ndarray) -> dict:
+    uniq = np.unique(y)
+    if len(uniq) < 2 or X.shape[0] < len(uniq):
+        return {"silhouette": -1.0, "davies_bouldin": -1.0, "calinski_harabasz": -1.0}
+    try:
+        sil = float(silhouette_score(X, y))
+    except Exception:
+        sil = -1.0
+    try:
+        db = float(davies_bouldin_score(X, y))
+    except Exception:
+        db = -1.0
+    try:
+        ch = float(calinski_harabasz_score(X, y))
+    except Exception:
+        ch = -1.0
+    return {"silhouette": sil, "davies_bouldin": db, "calinski_harabasz": ch}
+
+
+def evaluate_separability_metrics(
+    X: np.ndarray,
+    labels_np: np.ndarray,
+    groups_np: np.ndarray,
+    args: argparse.Namespace,
+) -> dict:
+    out = {}
+    out["probe_random"] = evaluate_cv_classifier(X, labels_np, args.cv_folds, args.seed, groups=None, classifier="logreg")
+
+    if args.enable_group_eval and args.content_id_mode != "none":
+        out["probe_group"] = evaluate_cv_classifier(
+            X,
+            labels_np,
+            args.cv_folds,
+            args.seed,
+            groups=groups_np,
+            classifier="logreg",
+        )
+    else:
+        out["probe_group"] = {"acc": -1.0, "macro_f1": -1.0}
+
+    out["knn"] = {}
+    for k in parse_int_list(args.knn_k_list):
+        out["knn"][k] = {
+            "random": evaluate_cv_classifier(X, labels_np, args.cv_folds, args.seed, groups=None, classifier="knn", knn_k=k),
+            "group": evaluate_cv_classifier(X, labels_np, args.cv_folds, args.seed, groups=groups_np if args.enable_group_eval and args.content_id_mode != "none" else None, classifier="knn", knn_k=k),
+        }
+
+    j, j_star = fisher_ratio(X, labels_np, ridge=args.fisher_ridge)
+    out["fisher_j"] = j
+    out["fisher_j_star"] = j_star
+    out.update(evaluate_cluster_metrics(X, labels_np))
+    out.update(evaluate_distance_stats(X, labels_np, max_pairs=args.max_dist_pairs, seed=args.seed))
+    return out
+
+
+def pick_primary_score(metrics: dict, priority: str) -> float:
+    if priority == "probe_group_macro_f1":
+        return float(metrics["probe_group"]["macro_f1"])
+    if priority == "probe_random_macro_f1":
+        return float(metrics["probe_random"]["macro_f1"])
+    if priority == "fisher_j":
+        return float(metrics["fisher_j"])
+    if priority == "distance_auc":
+        return float(metrics["dist_auc_same_vs_diff"])
+    if priority == "silhouette":
+        return float(metrics["silhouette"])
+    raise ValueError(f"Unsupported score-priority={priority}")
 
 
 def plot_best_pca_torch(
@@ -237,6 +491,7 @@ def plot_best_pca_torch(
     labels_np: np.ndarray,
     styles: list[str],
     score: float,
+    score_name: str,
     cfg: dict,
     out_path: Path,
 ) -> None:
@@ -257,7 +512,7 @@ def plot_best_pca_torch(
         f"dim={cfg['dim']} k={cfg['kernel']} act={cfg['act']} norm={cfg['norm']} "
         f"mode={cfg['feature_mode']} scales={cfg['scales']} center={cfg['gram_center']} normg={cfg['gram_norm']}"
     )
-    plt.title(f"Best Config PCA | silhouette={score:.5f}\\n{title_cfg}")
+    plt.title(f"Best Config PCA | {score_name}={score:.5f}\\n{title_cfg}")
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
@@ -267,10 +522,10 @@ def plot_best_pca_torch(
 
 def build_search_space() -> dict:
     return {
-        # Final-lap elite sweep.
+        # Focused sweep around top-ranked region from previous run.
         "dim": [40, 48, 56, 64],
         "kernel": [1],
-        "act": ["relu", "leaky"],
+        "act": ["leaky"],
         "norm": ["group"],
         "feature_mode": ["diff"],
         "scales": [[1], [1, 2]],
@@ -278,116 +533,107 @@ def build_search_space() -> dict:
         "gram_norm": ["chw"],
         "init": ["orthogonal"],
         "scale_factor": [0.13025],
-        "group_norm_groups": [1, 2, 4, 8],
+        "group_norm_groups": [1, 2, 4],
     }
 
 
 def run_full_grid_search(args: argparse.Namespace) -> None:
-    from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
-    from sklearn.metrics import silhouette_score
-
-    def _silhouette_worker(x_norm_np: np.ndarray, labels_np_sub: np.ndarray) -> float:
-        try:
-            return float(silhouette_score(x_norm_np, labels_np_sub))
-        except Exception:
-            return -1.0
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     styles = parse_styles(args.styles)
 
     latent_dtype = torch.float16 if args.latents_fp16 and device.type == "cuda" else torch.float32
-    X_raw, labels_np, labels_int, used_styles = load_latents(args.data_root, styles, device, args.max_per_style, latent_dtype)
+    X_raw, labels_np, labels_int, groups_np, used_styles = load_latents(
+        args.data_root,
+        styles,
+        device,
+        args.max_per_style,
+        latent_dtype,
+        content_id_mode=args.content_id_mode,
+        content_id_sep=args.content_id_sep,
+        content_id_regex=args.content_id_regex,
+    )
+    if not args.enable_group_eval:
+        print("Warning: --enable-group-eval is OFF, so probe_group_* will be -1.")
+    elif args.content_id_mode == "none":
+        print("Warning: --content-id-mode is 'none', so probe_group_* will be -1. Set stem/prefix/regex.")
+    elif len(np.unique(groups_np)) < 2:
+        print("Warning: fewer than 2 unique content groups detected; group probe is invalid.")
 
     search_space = build_search_space()
     keys = list(search_space.keys())
     combinations = list(itertools.product(*[search_space[k] for k in keys]))
 
+    score_priority = args.score_priority
+    if score_priority == "auto":
+        if args.enable_group_eval and args.content_id_mode != "none":
+            score_priority = "probe_group_macro_f1"
+        else:
+            score_priority = "probe_random_macro_f1"
+
     print(f"\\nSearching {len(combinations)} configs on {device} ...")
-    print("=" * 120)
-    print(f"{'score':<10} | {'dim':<4} | {'k':<1} | {'act':<6} | {'norm':<8} | {'mode':<8} | {'scales':<10} | {'center':<6} | {'gnorm':<4}")
-    print("-" * 120)
+    print(f"Ranking metric: {score_priority}")
+    print("=" * 150)
+    print(f"{'score':<10} | {'probe_r_f1':<10} | {'probe_g_f1':<10} | {'fisher_j':<10} | {'dist_auc':<9} | {'dim':<4} | {'act':<6} | {'norm':<8} | {'scales':<10}")
+    print("-" * 150)
 
     results = []
     best = None
-    pending: dict = {}
-    max_pending = max(1, int(args.num_workers))
 
-    def _flush(block: bool) -> None:
-        nonlocal best
-        if not pending:
-            return
-        futures = list(pending.keys())
-        if block:
-            done, _ = wait(futures, return_when=FIRST_COMPLETED)
-        else:
-            done, _ = wait(futures, timeout=0.0, return_when=FIRST_COMPLETED)
-        for fut in done:
-            cfg = pending.pop(fut)
-            try:
-                score = float(fut.result())
-            except Exception:
-                score = -1.0
+    for combo in tqdm(combinations, desc="Grid Search"):
+        cfg = dict(zip(keys, combo))
+        if cfg["norm"] == "group" and (int(cfg["dim"]) % int(cfg["group_norm_groups"]) != 0):
+            continue
+        extractor = ParametricExtractor(in_channels=4, config=cfg).to(device)
 
-            results.append({"score": score, "cfg": cfg})
-            if best is None or score > best["score"]:
-                best = {"score": score, "cfg": cfg}
-
-            tqdm.write(
-                f"{score: .5f} | {cfg['dim']:<4} | {cfg['kernel']} | {cfg['act']:<6} | {cfg['norm']:<8} | "
-                f"{cfg['feature_mode']:<8} | {str(cfg['scales']):<10} | {str(cfg['gram_center']):<6} | {cfg['gram_norm']:<4}"
+        X_feats = None
+        X_eval = None
+        try:
+            X_feats = extract_features_gpu(extractor, X_raw, args.batch_size, out_dtype=torch.float32)
+            X_eval, labels_np_sub, _, groups_np_sub = maybe_subsample(
+                X_feats,
+                labels_np,
+                labels_int,
+                groups_np,
+                max_samples=args.eval_samples,
+                seed=args.seed,
             )
+            X_eval_np = standardize_gpu(X_eval).detach().cpu().numpy()
+            metrics = evaluate_separability_metrics(X_eval_np, labels_np_sub, groups_np_sub, args)
+            score = pick_primary_score(metrics, score_priority)
+        except Exception as e:
+            metrics = {
+                "probe_random": {"acc": -1.0, "macro_f1": -1.0},
+                "probe_group": {"acc": -1.0, "macro_f1": -1.0},
+                "fisher_j": -1.0,
+                "fisher_j_star": -1.0,
+                "silhouette": -1.0,
+                "davies_bouldin": -1.0,
+                "calinski_harabasz": -1.0,
+                "dist_auc_same_vs_diff": -1.0,
+                "inter_minus_intra": -1.0,
+                "knn": {},
+                "error": str(e),
+            }
+            score = -1.0
 
-    with ThreadPoolExecutor(max_workers=max_pending) as pool:
-        for combo in tqdm(combinations, desc="Grid Search"):
-            cfg = dict(zip(keys, combo))
-            if cfg["norm"] == "group" and (int(cfg["dim"]) % int(cfg["group_norm_groups"]) != 0):
-                continue
-            extractor = ParametricExtractor(in_channels=4, config=cfg).to(device)
+        result = {"score": score, "cfg": cfg, "metrics": metrics}
+        results.append(result)
+        if best is None or score > best["score"]:
+            best = result
 
-            X_feats = None
-            X_norm = None
-            X_norm_np = None
-            try:
-                # GPU heavy path.
-                X_feats = extract_features_gpu(extractor, X_raw, args.batch_size, out_dtype=torch.float32)
-                X_feats, labels_np_sub, _ = maybe_subsample(
-                    X_feats,
-                    labels_np,
-                    labels_int,
-                    max_samples=args.silhouette_samples,
-                    seed=args.seed,
-                )
-                X_norm = standardize_gpu(X_feats)
-                # CPU-parallel scoring path.
-                X_norm_np = X_norm.detach().cpu().numpy()
-                fut = pool.submit(_silhouette_worker, X_norm_np, labels_np_sub)
-                pending[fut] = cfg
-            except Exception:
-                results.append({"score": -1.0, "cfg": cfg})
-                if best is None or -1.0 > best["score"]:
-                    best = {"score": -1.0, "cfg": cfg}
-                tqdm.write(
-                    f"{-1.0: .5f} | {cfg['dim']:<4} | {cfg['kernel']} | {cfg['act']:<6} | {cfg['norm']:<8} | "
-                    f"{cfg['feature_mode']:<8} | {str(cfg['scales']):<10} | {str(cfg['gram_center']):<6} | {cfg['gram_norm']:<4}"
-                )
-            finally:
-                del extractor
-                if X_feats is not None:
-                    del X_feats
-                if X_norm is not None:
-                    del X_norm
-                if X_norm_np is not None:
-                    del X_norm_np
-                if device.type == "cuda":
-                    torch.cuda.empty_cache()
+        tqdm.write(
+            f"{score: .5f} | {metrics['probe_random']['macro_f1']: .5f} | {metrics['probe_group']['macro_f1']: .5f} | "
+            f"{metrics['fisher_j']: .5f} | {metrics['dist_auc_same_vs_diff']: .5f} | "
+            f"{cfg['dim']:<4} | {cfg['act']:<6} | {cfg['norm']:<8} | {str(cfg['scales']):<10}"
+        )
 
-            if len(pending) >= max_pending:
-                _flush(block=True)
-            else:
-                _flush(block=False)
-
-        while pending:
-            _flush(block=True)
+        del extractor
+        if X_feats is not None:
+            del X_feats
+        if X_eval is not None:
+            del X_eval
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
 
     results.sort(key=lambda x: x["score"], reverse=True)
 
@@ -402,6 +648,17 @@ def run_full_grid_search(args: argparse.Namespace) -> None:
         writer.writerow([
             "rank",
             "score",
+            "probe_random_acc",
+            "probe_random_macro_f1",
+            "probe_group_acc",
+            "probe_group_macro_f1",
+            "fisher_j",
+            "fisher_j_star",
+            "distance_auc_same_vs_diff",
+            "distance_inter_minus_intra",
+            "silhouette",
+            "davies_bouldin",
+            "calinski_harabasz",
             "dim",
             "kernel",
             "act",
@@ -415,9 +672,21 @@ def run_full_grid_search(args: argparse.Namespace) -> None:
         ])
         for i, r in enumerate(results, start=1):
             c = r["cfg"]
+            m = r["metrics"]
             writer.writerow([
                 i,
                 r["score"],
+                m["probe_random"]["acc"],
+                m["probe_random"]["macro_f1"],
+                m["probe_group"]["acc"],
+                m["probe_group"]["macro_f1"],
+                m["fisher_j"],
+                m["fisher_j_star"],
+                m["dist_auc_same_vs_diff"],
+                m["inter_minus_intra"],
+                m["silhouette"],
+                m["davies_bouldin"],
+                m["calinski_harabasz"],
                 c["dim"],
                 c["kernel"],
                 c["act"],
@@ -434,36 +703,45 @@ def run_full_grid_search(args: argparse.Namespace) -> None:
     if best is not None:
         best_extractor = ParametricExtractor(in_channels=4, config=best["cfg"]).to(device)
         X_feats = extract_features_gpu(best_extractor, X_raw, args.batch_size, out_dtype=torch.float32)
-        X_feats, labels_np_sub, _ = maybe_subsample(
+        X_feats, labels_np_sub, _, _ = maybe_subsample(
             X_feats,
             labels_np,
             labels_int,
+            groups_np,
             max_samples=args.pca_samples,
             seed=args.seed,
         )
-        plot_best_pca_torch(X_feats, labels_np_sub, used_styles, best["score"], best["cfg"], args.out_pca)
+        plot_best_pca_torch(X_feats, labels_np_sub, used_styles, best["score"], score_priority, best["cfg"], args.out_pca)
         print(f"Saved best-config PCA: {args.out_pca}")
         print(f"Best score={best['score']:.5f}, cfg={best['cfg']}")
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="Style separability grid search with best-config PCA (GPU-heavy mode).")
-    p.add_argument("--data-root", type=Path, default=Path("../sdxl-256"))
+    p = argparse.ArgumentParser(description="Style separability grid search with linear probe/group-split centric metrics.")
+    p.add_argument("--data-root", type=Path, default=Path("../sdxl-fp32"))
     p.add_argument("--styles", type=str, default="photo,Hayao,vangogh,monet,cezanne")
     p.add_argument("--max-per-style", type=int, default=0, help="0 means all")
     p.add_argument("--batch-size", type=int, default=256)
-    p.add_argument("--num-workers", type=int, default=4, help="parallel silhouette workers (recommended 4)")
-    p.add_argument("--silhouette-samples", type=int, default=2500, help="subsample size for silhouette to control O(N^2)")
-    p.add_argument("--silhouette-chunk", type=int, default=256, help="cdist chunk size")
+    p.add_argument("--eval-samples", type=int, default=2500, help="subsample size for evaluation metrics")
     p.add_argument("--pca-samples", type=int, default=5000, help="subsample size for PCA plot")
+    p.add_argument("--cv-folds", type=int, default=5, help="folds for random/group cross-validation")
+    p.add_argument("--enable-group-eval", action="store_true", help="enable GroupKFold evaluation")
+    p.add_argument("--content-id-mode", type=str, default="none", choices=["none", "stem", "prefix", "regex"])
+    p.add_argument("--content-id-sep", type=str, default="_", help="separator for content-id-mode=prefix")
+    p.add_argument("--content-id-regex", type=str, default="", help="regex for content-id-mode=regex; first capture group used if present")
+    p.add_argument("--score-priority", type=str, default="auto", choices=["auto", "probe_group_macro_f1", "probe_random_macro_f1", "fisher_j", "distance_auc", "silhouette"])
+    p.add_argument("--knn-k-list", type=str, default="1,5,10")
+    p.add_argument("--fisher-ridge", type=float, default=1e-4)
+    p.add_argument("--max-dist-pairs", type=int, default=20000)
     p.add_argument("--latents-fp16", action="store_true", help="store loaded latents in fp16 to reduce VRAM")
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--top-k", type=int, default=20)
     p.add_argument("--out-csv", type=Path, default=Path("grid_search_results.csv"))
-    p.add_argument("--out-pca", type=Path, default=Path("best_config_pca.png"))
+    p.add_argument("--out-pca", type=Path, default=Path("best_config_pca-fp32.png"))
     return p
 
 
 if __name__ == "__main__":
     args = build_parser().parse_args()
     run_full_grid_search(args)
+

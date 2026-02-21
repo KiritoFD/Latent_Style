@@ -1,0 +1,180 @@
+{
+  "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\ssim-optun-nce\\trial_0197\\epoch_0001.pt",
+  "timestamp": "2026-02-20 11:20:51",
+  "matrix_breakdown": {
+    "photo": {
+      "photo": {
+        "count": 10,
+        "style_swd": 1.8373867750167847,
+        "content_ssim": 0.325331452,
+        "classifier_acc": null
+      },
+      "Hayao": {
+        "count": 10,
+        "style_swd": 2.259831094741821,
+        "content_ssim": 0.34416334600000004,
+        "classifier_acc": null
+      },
+      "monet": {
+        "count": 10,
+        "style_swd": 1.1261852622032165,
+        "content_ssim": 0.339769397,
+        "classifier_acc": null
+      },
+      "cezanne": {
+        "count": 10,
+        "style_swd": 1.1691462308168412,
+        "content_ssim": 0.331772815,
+        "classifier_acc": null
+      },
+      "vangogh": {
+        "count": 10,
+        "style_swd": 2.2320283472537996,
+        "content_ssim": 0.31900499499999996,
+        "classifier_acc": null
+      }
+    },
+    "Hayao": {
+      "photo": {
+        "count": 10,
+        "style_swd": 1.8646612226963044,
+        "content_ssim": 0.47136162200000004,
+        "classifier_acc": null
+      },
+      "Hayao": {
+        "count": 10,
+        "style_swd": 1.8865276038646699,
+        "content_ssim": 0.497777417,
+        "classifier_acc": null
+      },
+      "monet": {
+        "count": 10,
+        "style_swd": 1.2174526005983353,
+        "content_ssim": 0.5791396999999999,
+        "classifier_acc": null
+      },
+      "cezanne": {
+        "count": 10,
+        "style_swd": 1.1901845425367354,
+        "content_ssim": 0.576164122,
+        "classifier_acc": null
+      },
+      "vangogh": {
+        "count": 10,
+        "style_swd": 2.1979876101016997,
+        "content_ssim": 0.542034527,
+        "classifier_acc": null
+      }
+    },
+    "monet": {
+      "photo": {
+        "count": 10,
+        "style_swd": 1.9052867352962495,
+        "content_ssim": 0.326944805,
+        "classifier_acc": null
+      },
+      "Hayao": {
+        "count": 10,
+        "style_swd": 2.2657830238342287,
+        "content_ssim": 0.407817174,
+        "classifier_acc": null
+      },
+      "monet": {
+        "count": 10,
+        "style_swd": 1.124930539727211,
+        "content_ssim": 0.38641158099999995,
+        "classifier_acc": null
+      },
+      "cezanne": {
+        "count": 10,
+        "style_swd": 0.9991160750389099,
+        "content_ssim": 0.32691969,
+        "classifier_acc": null
+      },
+      "vangogh": {
+        "count": 10,
+        "style_swd": 2.2749641478061675,
+        "content_ssim": 0.34247739599999993,
+        "classifier_acc": null
+      }
+    },
+    "cezanne": {
+      "photo": {
+        "count": 10,
+        "style_swd": 1.8192221999168396,
+        "content_ssim": 0.385805375,
+        "classifier_acc": null
+      },
+      "Hayao": {
+        "count": 10,
+        "style_swd": 1.9882222175598145,
+        "content_ssim": 0.48291719000000005,
+        "classifier_acc": null
+      },
+      "monet": {
+        "count": 10,
+        "style_swd": 1.1069452196359635,
+        "content_ssim": 0.466304972,
+        "classifier_acc": null
+      },
+      "cezanne": {
+        "count": 10,
+        "style_swd": 1.012060171365738,
+        "content_ssim": 0.423708007,
+        "classifier_acc": null
+      },
+      "vangogh": {
+        "count": 10,
+        "style_swd": 2.0707202672958376,
+        "content_ssim": 0.428040366,
+        "classifier_acc": null
+      }
+    },
+    "vangogh": {
+      "photo": {
+        "count": 10,
+        "style_swd": 1.9252825736999513,
+        "content_ssim": 0.27082453200000006,
+        "classifier_acc": null
+      },
+      "Hayao": {
+        "count": 10,
+        "style_swd": 1.7932543724775314,
+        "content_ssim": 0.38674578299999995,
+        "classifier_acc": null
+      },
+      "monet": {
+        "count": 10,
+        "style_swd": 1.137351131439209,
+        "content_ssim": 0.349501928,
+        "classifier_acc": null
+      },
+      "cezanne": {
+        "count": 10,
+        "style_swd": 0.9793521404266358,
+        "content_ssim": 0.319953631,
+        "classifier_acc": null
+      },
+      "vangogh": {
+        "count": 10,
+        "style_swd": 2.0185173392295837,
+        "content_ssim": 0.315858855,
+        "classifier_acc": null
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "style_swd": 1.6761488507688047,
+      "content_ssim": 0.39988316830000004,
+      "classifier_acc": 0.0
+    },
+    "photo_to_art_performance": {
+      "style_swd": 1.6967977337539197,
+      "valid": true,
+      "classifier_acc": 0.0
+    }
+  },
+  "classification_report": null,
+  "detailed_style_metrics": {}
+}

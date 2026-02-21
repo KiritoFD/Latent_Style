@@ -46,9 +46,9 @@ def create_mini_dataset(
 
 def build_argparser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Create a small sampled latent dataset for HPO overfit runs.")
-    p.add_argument("--src-root", type=str, default="../../sdxl-256")
-    p.add_argument("--dst-root", type=str, default="../../sdxl-256-overfit50")
-    p.add_argument("--samples", type=int, default=10, help="Samples per style directory.")
+    p.add_argument("--src-root", type=str, default="../../sdxl-fp32")
+    p.add_argument("--dst-root", type=str, default="../../sdxl-fp32-overfit150")
+    p.add_argument("--samples", type=int, default=30, help="Samples per style directory.")
     p.add_argument("--seed", type=int, default=42)
     return p
 

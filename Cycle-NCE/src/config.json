@@ -27,10 +27,17 @@
     "inject_gate_decoder": 1.0
   },
   "loss": {
-    "w_style": 230.07,
-    "w_structure": 49.12,
-    "w_moment": 141.29,
-    "w_identity": 664.14,
+    "w_style": 20,
+    "w_structure": 1,
+    "w_moment": 0.0,
+    "w_identity": 0.0,
+    "style_dim": 48,
+    "style_scales": [1, 2],
+    "style_negative_slope": 0.1,
+    "nce_hidden_dim": 256,
+    "nce_out_dim": 128,
+    "nce_temp": 0.07,
+    "nce_chunk": 16,
     "w_tv": 0,
     "train_num_steps_min": 1,
     "train_num_steps_max": 1,
@@ -93,7 +100,7 @@
     "resume_checkpoint": ""
   },
   "data": {
-    "data_root": "../../sdxl-256",
+    "data_root": "../../sdxl-fp32-overfit150",
     "style_subdirs": [
       "photo",
       "Hayao",
@@ -108,7 +115,7 @@
     "virtual_length_multiplier": 6
   },
   "checkpoint": {
-    "save_dir": "../nce-idt-opt-230-49-141-664-0"
+    "save_dir": "../150-fp32-20"
   },
   "inference": {
     "num_steps": 1,

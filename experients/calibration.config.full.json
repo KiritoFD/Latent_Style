@@ -1,0 +1,24 @@
+{
+  "config": "I:\\Github\\Latent_Style\\Cycle-NCE\\src\\config.json",
+  "device": "cuda",
+  "layer": "model.dec_out.weight",
+  "forward": {
+    "num_steps": 1,
+    "step_size": 1.0,
+    "style_strength": 0.9
+  },
+  "grad_norms": {
+    "w_style": 1.3165160293444262,
+    "w_moment": 0.012824703094125714,
+    "w_identity": 0.006928716321741554,
+    "w_structure": 0.07402954275473224,
+    "w_tv": 0.00860253970227312
+  },
+  "suggested_weights": {
+    "w_style": 150.0,
+    "w_moment": 15398.204773420242,
+    "w_identity": 5700.25947756012,
+    "w_structure": 1333.7743085617024,
+    "w_tv": 22955.709736449444
+  }
+}

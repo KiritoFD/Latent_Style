@@ -1,0 +1,260 @@
+{
+  "checkpoint": "..\\150-fp32-2000\\epoch_0050.pt",
+  "timestamp": "2026-02-21 16:08:48",
+  "matrix_breakdown": {
+    "photo": {
+      "photo": {
+        "count": 10,
+        "style": 0.6217381954193115,
+        "style_swd": 1.7528721004724503,
+        "clip_style_sim": 0.6217381954193115,
+        "content_lf_ssim": 0.949680248,
+        "content_ssim": 0.949680248,
+        "classifier_acc": null
+      },
+      "Hayao": {
+        "count": 10,
+        "style": 0.43594003319740293,
+        "style_swd": 1.986426755785942,
+        "clip_style_sim": 0.43594003319740293,
+        "content_lf_ssim": 0.9484202469999999,
+        "content_ssim": 0.9484202469999999,
+        "classifier_acc": null
+      },
+      "monet": {
+        "count": 10,
+        "style": 0.5249070405960083,
+        "style_swd": 0.9371622145175934,
+        "clip_style_sim": 0.5249070405960083,
+        "content_lf_ssim": 0.944862297,
+        "content_ssim": 0.944862297,
+        "classifier_acc": null
+      },
+      "cezanne": {
+        "count": 10,
+        "style": 0.5173585146665574,
+        "style_swd": 1.0626505136489868,
+        "clip_style_sim": 0.5173585146665574,
+        "content_lf_ssim": 0.9456353380000001,
+        "content_ssim": 0.9456353380000001,
+        "classifier_acc": null
+      },
+      "vangogh": {
+        "count": 10,
+        "style": 0.5247900456190109,
+        "style_swd": 1.8644059419631958,
+        "clip_style_sim": 0.5247900456190109,
+        "content_lf_ssim": 0.945926158,
+        "content_ssim": 0.945926158,
+        "classifier_acc": null
+      }
+    },
+    "Hayao": {
+      "photo": {
+        "count": 10,
+        "style": 0.4604586213827133,
+        "style_swd": 2.0105883121490478,
+        "clip_style_sim": 0.4604586213827133,
+        "content_lf_ssim": 0.967850053,
+        "content_ssim": 0.967850053,
+        "classifier_acc": null
+      },
+      "Hayao": {
+        "count": 10,
+        "style": 0.7135604321956635,
+        "style_swd": 1.690618896484375,
+        "clip_style_sim": 0.7135604321956635,
+        "content_lf_ssim": 0.9688245560000001,
+        "content_ssim": 0.9688245560000001,
+        "classifier_acc": null
+      },
+      "monet": {
+        "count": 10,
+        "style": 0.40368416607379914,
+        "style_swd": 1.3749771863222122,
+        "clip_style_sim": 0.40368416607379914,
+        "content_lf_ssim": 0.966269305,
+        "content_ssim": 0.966269305,
+        "classifier_acc": null
+      },
+      "cezanne": {
+        "count": 10,
+        "style": 0.45622627139091493,
+        "style_swd": 1.195333380997181,
+        "clip_style_sim": 0.45622627139091493,
+        "content_lf_ssim": 0.9665737269999999,
+        "content_ssim": 0.9665737269999999,
+        "classifier_acc": null
+      },
+      "vangogh": {
+        "count": 10,
+        "style": 0.48367339968681333,
+        "style_swd": 1.9510145246982575,
+        "clip_style_sim": 0.48367339968681333,
+        "content_lf_ssim": 0.9666337140000001,
+        "content_ssim": 0.9666337140000001,
+        "classifier_acc": null
+      }
+    },
+    "monet": {
+      "photo": {
+        "count": 10,
+        "style": 0.5721802651882172,
+        "style_swd": 1.7413163006305694,
+        "clip_style_sim": 0.5721802651882172,
+        "content_lf_ssim": 0.980400968,
+        "content_ssim": 0.980400968,
+        "classifier_acc": null
+      },
+      "Hayao": {
+        "count": 10,
+        "style": 0.4671936959028244,
+        "style_swd": 2.2416306376457213,
+        "clip_style_sim": 0.4671936959028244,
+        "content_lf_ssim": 0.9829564789999999,
+        "content_ssim": 0.9829564789999999,
+        "classifier_acc": null
+      },
+      "monet": {
+        "count": 10,
+        "style": 0.6712861061096191,
+        "style_swd": 0.8890626192092895,
+        "clip_style_sim": 0.6712861061096191,
+        "content_lf_ssim": 0.980801642,
+        "content_ssim": 0.980801642,
+        "classifier_acc": null
+      },
+      "cezanne": {
+        "count": 10,
+        "style": 0.6451590240001679,
+        "style_swd": 1.0151025116443635,
+        "clip_style_sim": 0.6451590240001679,
+        "content_lf_ssim": 0.9829467519999999,
+        "content_ssim": 0.9829467519999999,
+        "classifier_acc": null
+      },
+      "vangogh": {
+        "count": 10,
+        "style": 0.6348073422908783,
+        "style_swd": 1.8920677453279495,
+        "clip_style_sim": 0.6348073422908783,
+        "content_lf_ssim": 0.982885862,
+        "content_ssim": 0.982885862,
+        "classifier_acc": null
+      }
+    },
+    "cezanne": {
+      "photo": {
+        "count": 10,
+        "style": 0.5301024585962295,
+        "style_swd": 1.7621741354465486,
+        "clip_style_sim": 0.5301024585962295,
+        "content_lf_ssim": 0.969641897,
+        "content_ssim": 0.969641897,
+        "classifier_acc": null
+      },
+      "Hayao": {
+        "count": 10,
+        "style": 0.47587630450725554,
+        "style_swd": 1.9632380783557892,
+        "clip_style_sim": 0.47587630450725554,
+        "content_lf_ssim": 0.9708548130000001,
+        "content_ssim": 0.9708548130000001,
+        "classifier_acc": null
+      },
+      "monet": {
+        "count": 10,
+        "style": 0.6146631270647049,
+        "style_swd": 0.9628585129976273,
+        "clip_style_sim": 0.6146631270647049,
+        "content_lf_ssim": 0.9678669089999999,
+        "content_ssim": 0.9678669089999999,
+        "classifier_acc": null
+      },
+      "cezanne": {
+        "count": 10,
+        "style": 0.6581120133399964,
+        "style_swd": 0.9630565151572228,
+        "clip_style_sim": 0.6581120133399964,
+        "content_lf_ssim": 0.9699603130000002,
+        "content_ssim": 0.9699603130000002,
+        "classifier_acc": null
+      },
+      "vangogh": {
+        "count": 10,
+        "style": 0.6229885876178741,
+        "style_swd": 1.8615160018205643,
+        "clip_style_sim": 0.6229885876178741,
+        "content_lf_ssim": 0.9699324989999999,
+        "content_ssim": 0.9699324989999999,
+        "classifier_acc": null
+      }
+    },
+    "vangogh": {
+      "photo": {
+        "count": 10,
+        "style": 0.5374436616897583,
+        "style_swd": 1.5049705535173417,
+        "clip_style_sim": 0.5374436616897583,
+        "content_lf_ssim": 0.9767785760000001,
+        "content_ssim": 0.9767785760000001,
+        "classifier_acc": null
+      },
+      "Hayao": {
+        "count": 10,
+        "style": 0.4983312785625458,
+        "style_swd": 1.5263637363910676,
+        "clip_style_sim": 0.4983312785625458,
+        "content_lf_ssim": 0.981326682,
+        "content_ssim": 0.981326682,
+        "classifier_acc": null
+      },
+      "monet": {
+        "count": 10,
+        "style": 0.6142475783824921,
+        "style_swd": 0.8080456033349037,
+        "clip_style_sim": 0.6142475783824921,
+        "content_lf_ssim": 0.980189438,
+        "content_ssim": 0.980189438,
+        "classifier_acc": null
+      },
+      "cezanne": {
+        "count": 10,
+        "style": 0.6478025913238525,
+        "style_swd": 0.7183289811015129,
+        "clip_style_sim": 0.6478025913238525,
+        "content_lf_ssim": 0.9833495640000001,
+        "content_ssim": 0.9833495640000001,
+        "classifier_acc": null
+      },
+      "vangogh": {
+        "count": 10,
+        "style": 0.6490330696105957,
+        "style_swd": 1.2090358883142471,
+        "clip_style_sim": 0.6490330696105957,
+        "content_lf_ssim": 0.983592565,
+        "content_ssim": 0.983592565,
+        "classifier_acc": null
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "style": 0.5333917003870011,
+      "style_swd": 1.5190085814148189,
+      "clip_style_sim": 0.5333917003870011,
+      "content_lf_ssim": 0.9690650638999999,
+      "content_ssim": 0.9690650638999999,
+      "classifier_acc": 0.0
+    },
+    "photo_to_art_performance": {
+      "style": 0.500748908519745,
+      "style_swd": 1.4626613564789295,
+      "clip_style_sim": 0.500748908519745,
+      "valid": true,
+      "classifier_acc": 0.0
+    }
+  },
+  "classification_report": null,
+  "detailed_style_metrics": {}
+}

@@ -1,0 +1,165 @@
+src_style,tgt_style,src_image,gen_image,content_ssim,style_swd,pred_style,class_correct
+photo,photo,2013-11-17 23_58_45.jpg,photo_2013-11-17 23_58_45_to_photo.jpg,nan,nan,N/A,N/A
+photo,photo,2013-11-17 17_36_09.jpg,photo_2013-11-17 17_36_09_to_photo.jpg,nan,nan,N/A,N/A
+photo,photo,2013-11-16 04_17_00.jpg,photo_2013-11-16 04_17_00_to_photo.jpg,nan,nan,N/A,N/A
+photo,photo,2013-11-12 10_29_19.jpg,photo_2013-11-12 10_29_19_to_photo.jpg,nan,nan,N/A,N/A
+photo,Hayao,2013-11-17 23_58_45.jpg,photo_2013-11-17 23_58_45_to_Hayao.jpg,nan,nan,N/A,N/A
+photo,Hayao,2013-11-17 17_36_09.jpg,photo_2013-11-17 17_36_09_to_Hayao.jpg,nan,nan,N/A,N/A
+photo,Hayao,2013-11-16 04_17_00.jpg,photo_2013-11-16 04_17_00_to_Hayao.jpg,nan,nan,N/A,N/A
+photo,Hayao,2013-11-12 10_29_19.jpg,photo_2013-11-12 10_29_19_to_Hayao.jpg,nan,nan,N/A,N/A
+photo,monet,2013-11-17 23_58_45.jpg,photo_2013-11-17 23_58_45_to_monet.jpg,nan,nan,N/A,N/A
+photo,monet,2013-11-17 17_36_09.jpg,photo_2013-11-17 17_36_09_to_monet.jpg,nan,nan,N/A,N/A
+photo,monet,2013-11-16 04_17_00.jpg,photo_2013-11-16 04_17_00_to_monet.jpg,nan,nan,N/A,N/A
+photo,monet,2013-11-12 10_29_19.jpg,photo_2013-11-12 10_29_19_to_monet.jpg,nan,nan,N/A,N/A
+photo,cezanne,2013-11-17 23_58_45.jpg,photo_2013-11-17 23_58_45_to_cezanne.jpg,nan,nan,N/A,N/A
+photo,cezanne,2013-11-17 17_36_09.jpg,photo_2013-11-17 17_36_09_to_cezanne.jpg,nan,nan,N/A,N/A
+photo,cezanne,2013-11-16 04_17_00.jpg,photo_2013-11-16 04_17_00_to_cezanne.jpg,nan,nan,N/A,N/A
+photo,cezanne,2013-11-12 10_29_19.jpg,photo_2013-11-12 10_29_19_to_cezanne.jpg,nan,nan,N/A,N/A
+photo,vangogh,2013-11-17 23_58_45.jpg,photo_2013-11-17 23_58_45_to_vangogh.jpg,nan,nan,N/A,N/A
+photo,vangogh,2013-11-17 17_36_09.jpg,photo_2013-11-17 17_36_09_to_vangogh.jpg,nan,nan,N/A,N/A
+photo,vangogh,2013-11-16 04_17_00.jpg,photo_2013-11-16 04_17_00_to_vangogh.jpg,nan,nan,N/A,N/A
+photo,vangogh,2013-11-12 10_29_19.jpg,photo_2013-11-12 10_29_19_to_vangogh.jpg,nan,nan,N/A,N/A
+photo,photo,2013-11-10 19_30_53.jpg,photo_2013-11-10 19_30_53_to_photo.jpg,nan,nan,N/A,N/A
+photo,photo,2013-11-23 13_03_15.jpg,photo_2013-11-23 13_03_15_to_photo.jpg,nan,nan,N/A,N/A
+photo,photo,2013-11-18 02_42_31.jpg,photo_2013-11-18 02_42_31_to_photo.jpg,nan,nan,N/A,N/A
+photo,photo,2013-11-11 22_03_00.jpg,photo_2013-11-11 22_03_00_to_photo.jpg,nan,nan,N/A,N/A
+photo,Hayao,2013-11-10 19_30_53.jpg,photo_2013-11-10 19_30_53_to_Hayao.jpg,nan,nan,N/A,N/A
+photo,Hayao,2013-11-23 13_03_15.jpg,photo_2013-11-23 13_03_15_to_Hayao.jpg,nan,nan,N/A,N/A
+photo,Hayao,2013-11-18 02_42_31.jpg,photo_2013-11-18 02_42_31_to_Hayao.jpg,nan,nan,N/A,N/A
+photo,Hayao,2013-11-11 22_03_00.jpg,photo_2013-11-11 22_03_00_to_Hayao.jpg,nan,nan,N/A,N/A
+photo,monet,2013-11-10 19_30_53.jpg,photo_2013-11-10 19_30_53_to_monet.jpg,nan,nan,N/A,N/A
+photo,monet,2013-11-23 13_03_15.jpg,photo_2013-11-23 13_03_15_to_monet.jpg,nan,nan,N/A,N/A
+photo,monet,2013-11-18 02_42_31.jpg,photo_2013-11-18 02_42_31_to_monet.jpg,nan,nan,N/A,N/A
+photo,monet,2013-11-11 22_03_00.jpg,photo_2013-11-11 22_03_00_to_monet.jpg,nan,nan,N/A,N/A
+photo,cezanne,2013-11-10 19_30_53.jpg,photo_2013-11-10 19_30_53_to_cezanne.jpg,nan,nan,N/A,N/A
+photo,cezanne,2013-11-23 13_03_15.jpg,photo_2013-11-23 13_03_15_to_cezanne.jpg,nan,nan,N/A,N/A
+photo,cezanne,2013-11-18 02_42_31.jpg,photo_2013-11-18 02_42_31_to_cezanne.jpg,nan,nan,N/A,N/A
+photo,cezanne,2013-11-11 22_03_00.jpg,photo_2013-11-11 22_03_00_to_cezanne.jpg,nan,nan,N/A,N/A
+photo,vangogh,2013-11-10 19_30_53.jpg,photo_2013-11-10 19_30_53_to_vangogh.jpg,nan,nan,N/A,N/A
+photo,vangogh,2013-11-23 13_03_15.jpg,photo_2013-11-23 13_03_15_to_vangogh.jpg,nan,nan,N/A,N/A
+photo,vangogh,2013-11-18 02_42_31.jpg,photo_2013-11-18 02_42_31_to_vangogh.jpg,nan,nan,N/A,N/A
+photo,vangogh,2013-11-11 22_03_00.jpg,photo_2013-11-11 22_03_00_to_vangogh.jpg,nan,nan,N/A,N/A
+photo,photo,2013-11-18 08_52_05.jpg,photo_2013-11-18 08_52_05_to_photo.jpg,nan,nan,N/A,N/A
+photo,photo,2013-11-14 07_04_51.jpg,photo_2013-11-14 07_04_51_to_photo.jpg,nan,nan,N/A,N/A
+Hayao,photo,1020.jpg,Hayao_1020_to_photo.jpg,nan,nan,N/A,N/A
+Hayao,photo,1019.jpg,Hayao_1019_to_photo.jpg,nan,nan,N/A,N/A
+photo,Hayao,2013-11-18 08_52_05.jpg,photo_2013-11-18 08_52_05_to_Hayao.jpg,nan,nan,N/A,N/A
+photo,Hayao,2013-11-14 07_04_51.jpg,photo_2013-11-14 07_04_51_to_Hayao.jpg,nan,nan,N/A,N/A
+Hayao,Hayao,1020.jpg,Hayao_1020_to_Hayao.jpg,nan,nan,N/A,N/A
+Hayao,Hayao,1019.jpg,Hayao_1019_to_Hayao.jpg,nan,nan,N/A,N/A
+photo,monet,2013-11-18 08_52_05.jpg,photo_2013-11-18 08_52_05_to_monet.jpg,nan,nan,N/A,N/A
+photo,monet,2013-11-14 07_04_51.jpg,photo_2013-11-14 07_04_51_to_monet.jpg,nan,nan,N/A,N/A
+Hayao,monet,1020.jpg,Hayao_1020_to_monet.jpg,nan,nan,N/A,N/A
+Hayao,monet,1019.jpg,Hayao_1019_to_monet.jpg,nan,nan,N/A,N/A
+photo,cezanne,2013-11-18 08_52_05.jpg,photo_2013-11-18 08_52_05_to_cezanne.jpg,nan,nan,N/A,N/A
+photo,cezanne,2013-11-14 07_04_51.jpg,photo_2013-11-14 07_04_51_to_cezanne.jpg,nan,nan,N/A,N/A
+Hayao,cezanne,1020.jpg,Hayao_1020_to_cezanne.jpg,nan,nan,N/A,N/A
+Hayao,cezanne,1019.jpg,Hayao_1019_to_cezanne.jpg,nan,nan,N/A,N/A
+photo,vangogh,2013-11-18 08_52_05.jpg,photo_2013-11-18 08_52_05_to_vangogh.jpg,nan,nan,N/A,N/A
+photo,vangogh,2013-11-14 07_04_51.jpg,photo_2013-11-14 07_04_51_to_vangogh.jpg,nan,nan,N/A,N/A
+Hayao,vangogh,1020.jpg,Hayao_1020_to_vangogh.jpg,nan,nan,N/A,N/A
+Hayao,vangogh,1019.jpg,Hayao_1019_to_vangogh.jpg,nan,nan,N/A,N/A
+Hayao,photo,1015.jpg,Hayao_1015_to_photo.jpg,nan,nan,N/A,N/A
+Hayao,photo,1008.jpg,Hayao_1008_to_photo.jpg,nan,nan,N/A,N/A
+Hayao,photo,1001.jpg,Hayao_1001_to_photo.jpg,nan,nan,N/A,N/A
+Hayao,photo,1044.jpg,Hayao_1044_to_photo.jpg,nan,nan,N/A,N/A
+Hayao,Hayao,1015.jpg,Hayao_1015_to_Hayao.jpg,nan,nan,N/A,N/A
+Hayao,Hayao,1008.jpg,Hayao_1008_to_Hayao.jpg,nan,nan,N/A,N/A
+Hayao,Hayao,1001.jpg,Hayao_1001_to_Hayao.jpg,nan,nan,N/A,N/A
+Hayao,Hayao,1044.jpg,Hayao_1044_to_Hayao.jpg,nan,nan,N/A,N/A
+Hayao,monet,1015.jpg,Hayao_1015_to_monet.jpg,nan,nan,N/A,N/A
+Hayao,monet,1008.jpg,Hayao_1008_to_monet.jpg,nan,nan,N/A,N/A
+Hayao,monet,1001.jpg,Hayao_1001_to_monet.jpg,nan,nan,N/A,N/A
+Hayao,monet,1044.jpg,Hayao_1044_to_monet.jpg,nan,nan,N/A,N/A
+Hayao,cezanne,1015.jpg,Hayao_1015_to_cezanne.jpg,nan,nan,N/A,N/A
+Hayao,cezanne,1008.jpg,Hayao_1008_to_cezanne.jpg,nan,nan,N/A,N/A
+Hayao,cezanne,1001.jpg,Hayao_1001_to_cezanne.jpg,nan,nan,N/A,N/A
+Hayao,cezanne,1044.jpg,Hayao_1044_to_cezanne.jpg,nan,nan,N/A,N/A
+Hayao,vangogh,1015.jpg,Hayao_1015_to_vangogh.jpg,nan,nan,N/A,N/A
+Hayao,vangogh,1008.jpg,Hayao_1008_to_vangogh.jpg,nan,nan,N/A,N/A
+Hayao,vangogh,1001.jpg,Hayao_1001_to_vangogh.jpg,nan,nan,N/A,N/A
+Hayao,vangogh,1044.jpg,Hayao_1044_to_vangogh.jpg,nan,nan,N/A,N/A
+Hayao,photo,1021.jpg,Hayao_1021_to_photo.jpg,nan,nan,N/A,N/A
+Hayao,photo,1006.jpg,Hayao_1006_to_photo.jpg,nan,nan,N/A,N/A
+Hayao,photo,1024.jpg,Hayao_1024_to_photo.jpg,nan,nan,N/A,N/A
+Hayao,photo,1012.jpg,Hayao_1012_to_photo.jpg,nan,nan,N/A,N/A
+Hayao,Hayao,1021.jpg,Hayao_1021_to_Hayao.jpg,nan,nan,N/A,N/A
+Hayao,Hayao,1006.jpg,Hayao_1006_to_Hayao.jpg,nan,nan,N/A,N/A
+Hayao,Hayao,1024.jpg,Hayao_1024_to_Hayao.jpg,nan,nan,N/A,N/A
+Hayao,Hayao,1012.jpg,Hayao_1012_to_Hayao.jpg,nan,nan,N/A,N/A
+Hayao,monet,1021.jpg,Hayao_1021_to_monet.jpg,nan,nan,N/A,N/A
+Hayao,monet,1006.jpg,Hayao_1006_to_monet.jpg,nan,nan,N/A,N/A
+Hayao,monet,1024.jpg,Hayao_1024_to_monet.jpg,nan,nan,N/A,N/A
+Hayao,monet,1012.jpg,Hayao_1012_to_monet.jpg,nan,nan,N/A,N/A
+Hayao,cezanne,1021.jpg,Hayao_1021_to_cezanne.jpg,nan,nan,N/A,N/A
+Hayao,cezanne,1006.jpg,Hayao_1006_to_cezanne.jpg,nan,nan,N/A,N/A
+Hayao,cezanne,1024.jpg,Hayao_1024_to_cezanne.jpg,nan,nan,N/A,N/A
+Hayao,cezanne,1012.jpg,Hayao_1012_to_cezanne.jpg,nan,nan,N/A,N/A
+Hayao,vangogh,1021.jpg,Hayao_1021_to_vangogh.jpg,nan,nan,N/A,N/A
+Hayao,vangogh,1006.jpg,Hayao_1006_to_vangogh.jpg,nan,nan,N/A,N/A
+Hayao,vangogh,1024.jpg,Hayao_1024_to_vangogh.jpg,nan,nan,N/A,N/A
+Hayao,vangogh,1012.jpg,Hayao_1012_to_vangogh.jpg,nan,nan,N/A,N/A
+monet,photo,00695.jpg,monet_00695_to_photo.jpg,nan,nan,N/A,N/A
+monet,photo,00607.jpg,monet_00607_to_photo.jpg,nan,nan,N/A,N/A
+monet,photo,00444.jpg,monet_00444_to_photo.jpg,nan,nan,N/A,N/A
+monet,photo,00286.jpg,monet_00286_to_photo.jpg,nan,nan,N/A,N/A
+monet,Hayao,00695.jpg,monet_00695_to_Hayao.jpg,nan,nan,N/A,N/A
+monet,Hayao,00607.jpg,monet_00607_to_Hayao.jpg,nan,nan,N/A,N/A
+monet,Hayao,00444.jpg,monet_00444_to_Hayao.jpg,nan,nan,N/A,N/A
+monet,Hayao,00286.jpg,monet_00286_to_Hayao.jpg,nan,nan,N/A,N/A
+monet,monet,00695.jpg,monet_00695_to_monet.jpg,nan,nan,N/A,N/A
+monet,monet,00607.jpg,monet_00607_to_monet.jpg,nan,nan,N/A,N/A
+monet,monet,00444.jpg,monet_00444_to_monet.jpg,nan,nan,N/A,N/A
+monet,monet,00286.jpg,monet_00286_to_monet.jpg,nan,nan,N/A,N/A
+monet,cezanne,00695.jpg,monet_00695_to_cezanne.jpg,nan,nan,N/A,N/A
+monet,cezanne,00607.jpg,monet_00607_to_cezanne.jpg,nan,nan,N/A,N/A
+monet,cezanne,00444.jpg,monet_00444_to_cezanne.jpg,nan,nan,N/A,N/A
+monet,cezanne,00286.jpg,monet_00286_to_cezanne.jpg,nan,nan,N/A,N/A
+monet,vangogh,00695.jpg,monet_00695_to_vangogh.jpg,nan,nan,N/A,N/A
+monet,vangogh,00607.jpg,monet_00607_to_vangogh.jpg,nan,nan,N/A,N/A
+monet,vangogh,00444.jpg,monet_00444_to_vangogh.jpg,nan,nan,N/A,N/A
+monet,vangogh,00286.jpg,monet_00286_to_vangogh.jpg,nan,nan,N/A,N/A
+monet,photo,00092.jpg,monet_00092_to_photo.jpg,nan,nan,N/A,N/A
+monet,photo,01208.jpg,monet_01208_to_photo.jpg,nan,nan,N/A,N/A
+monet,photo,00756.jpg,monet_00756_to_photo.jpg,nan,nan,N/A,N/A
+monet,photo,00278.jpg,monet_00278_to_photo.jpg,nan,nan,N/A,N/A
+monet,Hayao,00092.jpg,monet_00092_to_Hayao.jpg,nan,nan,N/A,N/A
+monet,Hayao,01208.jpg,monet_01208_to_Hayao.jpg,nan,nan,N/A,N/A
+monet,Hayao,00756.jpg,monet_00756_to_Hayao.jpg,nan,nan,N/A,N/A
+monet,Hayao,00278.jpg,monet_00278_to_Hayao.jpg,nan,nan,N/A,N/A
+monet,monet,00092.jpg,monet_00092_to_monet.jpg,nan,nan,N/A,N/A
+monet,monet,01208.jpg,monet_01208_to_monet.jpg,nan,nan,N/A,N/A
+monet,monet,00756.jpg,monet_00756_to_monet.jpg,nan,nan,N/A,N/A
+monet,monet,00278.jpg,monet_00278_to_monet.jpg,nan,nan,N/A,N/A
+monet,cezanne,00092.jpg,monet_00092_to_cezanne.jpg,nan,nan,N/A,N/A
+monet,cezanne,01208.jpg,monet_01208_to_cezanne.jpg,nan,nan,N/A,N/A
+monet,cezanne,00756.jpg,monet_00756_to_cezanne.jpg,nan,nan,N/A,N/A
+monet,cezanne,00278.jpg,monet_00278_to_cezanne.jpg,nan,nan,N/A,N/A
+monet,vangogh,00092.jpg,monet_00092_to_vangogh.jpg,nan,nan,N/A,N/A
+monet,vangogh,01208.jpg,monet_01208_to_vangogh.jpg,nan,nan,N/A,N/A
+monet,vangogh,00756.jpg,monet_00756_to_vangogh.jpg,nan,nan,N/A,N/A
+monet,vangogh,00278.jpg,monet_00278_to_vangogh.jpg,nan,nan,N/A,N/A
+monet,photo,00786.jpg,monet_00786_to_photo.jpg,nan,nan,N/A,N/A
+monet,photo,00389.jpg,monet_00389_to_photo.jpg,nan,nan,N/A,N/A
+cezanne,photo,00342.jpg,cezanne_00342_to_photo.jpg,nan,nan,N/A,N/A
+cezanne,photo,00332.jpg,cezanne_00332_to_photo.jpg,nan,nan,N/A,N/A
+monet,Hayao,00786.jpg,monet_00786_to_Hayao.jpg,nan,nan,N/A,N/A
+monet,Hayao,00389.jpg,monet_00389_to_Hayao.jpg,nan,nan,N/A,N/A
+cezanne,Hayao,00342.jpg,cezanne_00342_to_Hayao.jpg,nan,nan,N/A,N/A
+cezanne,Hayao,00332.jpg,cezanne_00332_to_Hayao.jpg,nan,nan,N/A,N/A
+monet,monet,00786.jpg,monet_00786_to_monet.jpg,nan,nan,N/A,N/A
+monet,monet,00389.jpg,monet_00389_to_monet.jpg,nan,nan,N/A,N/A
+cezanne,monet,00342.jpg,cezanne_00342_to_monet.jpg,nan,nan,N/A,N/A
+cezanne,monet,00332.jpg,cezanne_00332_to_monet.jpg,nan,nan,N/A,N/A
+monet,cezanne,00786.jpg,monet_00786_to_cezanne.jpg,nan,nan,N/A,N/A
+monet,cezanne,00389.jpg,monet_00389_to_cezanne.jpg,nan,nan,N/A,N/A
+cezanne,cezanne,00342.jpg,cezanne_00342_to_cezanne.jpg,nan,nan,N/A,N/A
+cezanne,cezanne,00332.jpg,cezanne_00332_to_cezanne.jpg,nan,nan,N/A,N/A
+monet,vangogh,00786.jpg,monet_00786_to_vangogh.jpg,nan,nan,N/A,N/A
+monet,vangogh,00389.jpg,monet_00389_to_vangogh.jpg,nan,nan,N/A,N/A
+cezanne,vangogh,00342.jpg,cezanne_00342_to_vangogh.jpg,nan,nan,N/A,N/A
+cezanne,vangogh,00332.jpg,cezanne_00332_to_vangogh.jpg,nan,nan,N/A,N/A
+cezanne,photo,00275.jpg,cezanne_00275_to_photo.jpg,nan,nan,N/A,N/A
+cezanne,photo,00219.jpg,cezanne_00219_to_photo.jpg,nan,nan,N/A,N/A
+cezanne,photo,00123.jpg,cezanne_00123_to_photo.jpg,nan,nan,N/A,N/A
+cezanne,photo,00582.jpg,cezanne_00582_to_photo.jpg,nan,nan,N/A,N/A

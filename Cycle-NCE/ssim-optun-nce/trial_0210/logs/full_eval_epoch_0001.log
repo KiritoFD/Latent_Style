@@ -1,0 +1,48 @@
+A matching Triton is not available, some optimizations will not be enabled
+Traceback (most recent call last):
+  File "G:\GitHub\Latent_Style\.venv\lib\site-packages\xformers\__init__.py", line 57, in _is_triton_available
+    import triton  # noqa
+ModuleNotFoundError: No module named 'triton'
+G:\GitHub\Latent_Style\.venv\lib\site-packages\huggingface_hub\utils\_validators.py:202: UserWarning: The `local_dir_use_symlinks` argument is deprecated and ignored in `hf_hub_download`. Downloading to a local directory does not use symlinks anymore.
+  warnings.warn(
+Loaded fallback config: G:\GitHub\Latent_Style\Cycle-NCE\src\config.json
+Test dir raw input: '../../style_data/overfit50'
+Test dir candidate paths:
+  - G:\GitHub\Latent_Style\style_data\overfit50
+  - G:\GitHub\Latent_Style\Cycle-NCE\style_data\overfit50
+  - G:\GitHub\Latent_Style\Cycle-NCE\style_data\overfit50
+  - G:\GitHub\Latent_Style\style_data\overfit50
+  - G:\GitHub\style_data\overfit50
+  - G:\GitHub\Latent_Style\style_data\overfit50
+Resolved test dir: G:\GitHub\Latent_Style\style_data\overfit50
+Style reference mode: none (count=8, seed=2026)
+
+Phase 1: Reuse generated images from G:\GitHub\Latent_Style\Cycle-NCE\ssim-optun-nce\trial_0210\full_eval\epoch_0001
+  Reused 0 generated images
+
+Phase 1: Generation (Batch Size 4)
+WARNING: latent scale mismatch (model=0.154353, vae=0.182150). Applying rescale.
+  Generating Batch 1/13
+  Generating Batch 2/13
+  Generating Batch 3/13
+  Generating Batch 4/13
+  Generating Batch 5/13
+  Generating Batch 6/13
+  Generating Batch 7/13
+  Generating Batch 8/13
+  Generating Batch 9/13
+  Generating Batch 10/13
+  Generating Batch 11/13
+  Generating Batch 12/13
+  Generating Batch 13/13
+  Generation models unloaded
+
+æ££å†©ç•?Phase 2: Evaluation
+  WARNING: image style classifier checkpoint not found: G:\GitHub\Latent_Style\Cycle-NCE\artifacts\eval_classifier\eval_style_image_classifier.pt
+  CLIP disabled: using style SWD as style metric
+Found global reference cache: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\ref_feats_3464f65af5_m100.pt
+  Reference cache loaded successfully
+  Processing 250 generated images...
+
+æ££å†©æƒ?Generating Summary...
+é–?Summary saved: G:\GitHub\Latent_Style\Cycle-NCE\ssim-optun-nce\trial_0210\full_eval\epoch_0001\summary.json

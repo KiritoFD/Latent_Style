@@ -1,0 +1,251 @@
+src_style,tgt_style,src_image,gen_image,content_ssim,style_swd,pred_style,class_correct
+photo,photo,2013-11-17 23_58_45.jpg,photo_2013-11-17 23_58_45_to_photo.jpg,0.16191512,1.800792157649994,N/A,N/A
+photo,photo,2013-11-17 17_36_09.jpg,photo_2013-11-17 17_36_09_to_photo.jpg,0.21806055,1.8943018317222595,N/A,N/A
+photo,photo,2013-11-16 04_17_00.jpg,photo_2013-11-16 04_17_00_to_photo.jpg,0.13194436,2.1761585474014282,N/A,N/A
+photo,photo,2013-11-12 10_29_19.jpg,photo_2013-11-12 10_29_19_to_photo.jpg,0.26837984,1.722154974937439,N/A,N/A
+photo,Hayao,2013-11-17 23_58_45.jpg,photo_2013-11-17 23_58_45_to_Hayao.jpg,0.15958577,2.2929532527923584,N/A,N/A
+photo,Hayao,2013-11-17 17_36_09.jpg,photo_2013-11-17 17_36_09_to_Hayao.jpg,0.18018782,2.3921857476234436,N/A,N/A
+photo,Hayao,2013-11-16 04_17_00.jpg,photo_2013-11-16 04_17_00_to_Hayao.jpg,0.10512474,2.786110043525696,N/A,N/A
+photo,Hayao,2013-11-12 10_29_19.jpg,photo_2013-11-12 10_29_19_to_Hayao.jpg,0.20776781,2.1419066190719604,N/A,N/A
+photo,monet,2013-11-17 23_58_45.jpg,photo_2013-11-17 23_58_45_to_monet.jpg,0.238825,1.4796114563941956,N/A,N/A
+photo,monet,2013-11-17 17_36_09.jpg,photo_2013-11-17 17_36_09_to_monet.jpg,0.19170198,1.320066213607788,N/A,N/A
+photo,monet,2013-11-16 04_17_00.jpg,photo_2013-11-16 04_17_00_to_monet.jpg,0.17304108,1.720690667629242,N/A,N/A
+photo,monet,2013-11-12 10_29_19.jpg,photo_2013-11-12 10_29_19_to_monet.jpg,0.28465766,1.0848859548568726,N/A,N/A
+photo,cezanne,2013-11-17 23_58_45.jpg,photo_2013-11-17 23_58_45_to_cezanne.jpg,0.10942988,1.4770835638046265,N/A,N/A
+photo,cezanne,2013-11-17 17_36_09.jpg,photo_2013-11-17 17_36_09_to_cezanne.jpg,0.18125932,1.2268180847167969,N/A,N/A
+photo,cezanne,2013-11-16 04_17_00.jpg,photo_2013-11-16 04_17_00_to_cezanne.jpg,0.117899746,1.8566307425498962,N/A,N/A
+photo,cezanne,2013-11-12 10_29_19.jpg,photo_2013-11-12 10_29_19_to_cezanne.jpg,0.15228395,1.1105853915214539,N/A,N/A
+photo,vangogh,2013-11-17 23_58_45.jpg,photo_2013-11-17 23_58_45_to_vangogh.jpg,0.20470351,2.9638512134552,N/A,N/A
+photo,vangogh,2013-11-17 17_36_09.jpg,photo_2013-11-17 17_36_09_to_vangogh.jpg,0.19433552,3.037772297859192,N/A,N/A
+photo,vangogh,2013-11-16 04_17_00.jpg,photo_2013-11-16 04_17_00_to_vangogh.jpg,0.16164461,3.6161580085754395,N/A,N/A
+photo,vangogh,2013-11-12 10_29_19.jpg,photo_2013-11-12 10_29_19_to_vangogh.jpg,0.22804248,2.4205883741378784,N/A,N/A
+photo,photo,2013-11-10 19_30_53.jpg,photo_2013-11-10 19_30_53_to_photo.jpg,0.42656133,1.7944687604904175,N/A,N/A
+photo,photo,2013-11-23 13_03_15.jpg,photo_2013-11-23 13_03_15_to_photo.jpg,0.29901206,2.0196977257728577,N/A,N/A
+photo,photo,2013-11-18 02_42_31.jpg,photo_2013-11-18 02_42_31_to_photo.jpg,0.18580323,2.1346229314804077,N/A,N/A
+photo,photo,2013-11-11 22_03_00.jpg,photo_2013-11-11 22_03_00_to_photo.jpg,0.49501157,1.7264906167984009,N/A,N/A
+photo,Hayao,2013-11-10 19_30_53.jpg,photo_2013-11-10 19_30_53_to_Hayao.jpg,0.38993356,2.4248549342155457,N/A,N/A
+photo,Hayao,2013-11-23 13_03_15.jpg,photo_2013-11-23 13_03_15_to_Hayao.jpg,0.2823874,2.7605159878730774,N/A,N/A
+photo,Hayao,2013-11-18 02_42_31.jpg,photo_2013-11-18 02_42_31_to_Hayao.jpg,0.18483102,2.26981383562088,N/A,N/A
+photo,Hayao,2013-11-11 22_03_00.jpg,photo_2013-11-11 22_03_00_to_Hayao.jpg,0.44477025,2.3775089979171753,N/A,N/A
+photo,monet,2013-11-10 19_30_53.jpg,photo_2013-11-10 19_30_53_to_monet.jpg,0.43752098,1.421296775341034,N/A,N/A
+photo,monet,2013-11-23 13_03_15.jpg,photo_2013-11-23 13_03_15_to_monet.jpg,0.3327266,1.4662469029426575,N/A,N/A
+photo,monet,2013-11-18 02_42_31.jpg,photo_2013-11-18 02_42_31_to_monet.jpg,0.20283465,1.2446170449256897,N/A,N/A
+photo,monet,2013-11-11 22_03_00.jpg,photo_2013-11-11 22_03_00_to_monet.jpg,0.5518627,1.1844980418682098,N/A,N/A
+photo,cezanne,2013-11-10 19_30_53.jpg,photo_2013-11-10 19_30_53_to_cezanne.jpg,0.30445537,1.62633216381073,N/A,N/A
+photo,cezanne,2013-11-23 13_03_15.jpg,photo_2013-11-23 13_03_15_to_cezanne.jpg,0.29315323,1.5628485679626465,N/A,N/A
+photo,cezanne,2013-11-18 02_42_31.jpg,photo_2013-11-18 02_42_31_to_cezanne.jpg,0.14097208,1.3054091930389404,N/A,N/A
+photo,cezanne,2013-11-11 22_03_00.jpg,photo_2013-11-11 22_03_00_to_cezanne.jpg,0.36572033,1.1737885475158691,N/A,N/A
+photo,vangogh,2013-11-10 19_30_53.jpg,photo_2013-11-10 19_30_53_to_vangogh.jpg,0.4029489,3.228971004486084,N/A,N/A
+photo,vangogh,2013-11-23 13_03_15.jpg,photo_2013-11-23 13_03_15_to_vangogh.jpg,0.3290183,3.4576386213302612,N/A,N/A
+photo,vangogh,2013-11-18 02_42_31.jpg,photo_2013-11-18 02_42_31_to_vangogh.jpg,0.18077657,2.869872570037842,N/A,N/A
+photo,vangogh,2013-11-11 22_03_00.jpg,photo_2013-11-11 22_03_00_to_vangogh.jpg,0.5101893,2.6640396118164062,N/A,N/A
+photo,photo,2013-11-18 08_52_05.jpg,photo_2013-11-18 08_52_05_to_photo.jpg,0.3406193,1.7659305930137634,N/A,N/A
+photo,photo,2013-11-14 07_04_51.jpg,photo_2013-11-14 07_04_51_to_photo.jpg,0.24431528,2.0145166516304016,N/A,N/A
+Hayao,photo,1020.jpg,Hayao_1020_to_photo.jpg,0.49461272,1.7744663953781128,N/A,N/A
+Hayao,photo,1019.jpg,Hayao_1019_to_photo.jpg,0.42697874,1.7312162518501282,N/A,N/A
+photo,Hayao,2013-11-18 08_52_05.jpg,photo_2013-11-18 08_52_05_to_Hayao.jpg,0.25409603,2.280529797077179,N/A,N/A
+photo,Hayao,2013-11-14 07_04_51.jpg,photo_2013-11-14 07_04_51_to_Hayao.jpg,0.17262268,2.487781822681427,N/A,N/A
+Hayao,Hayao,1020.jpg,Hayao_1020_to_Hayao.jpg,0.51489884,1.9678205847740173,N/A,N/A
+Hayao,Hayao,1019.jpg,Hayao_1019_to_Hayao.jpg,0.5275403,2.148309350013733,N/A,N/A
+photo,monet,2013-11-18 08_52_05.jpg,photo_2013-11-18 08_52_05_to_monet.jpg,0.36091763,1.363861083984375,N/A,N/A
+photo,monet,2013-11-14 07_04_51.jpg,photo_2013-11-14 07_04_51_to_monet.jpg,0.24873051,1.5095030069351196,N/A,N/A
+Hayao,monet,1020.jpg,Hayao_1020_to_monet.jpg,0.60755193,1.3500691652297974,N/A,N/A
+Hayao,monet,1019.jpg,Hayao_1019_to_monet.jpg,0.64520043,1.5113004446029663,N/A,N/A
+photo,cezanne,2013-11-18 08_52_05.jpg,photo_2013-11-18 08_52_05_to_cezanne.jpg,0.20244828,1.5294572114944458,N/A,N/A
+photo,cezanne,2013-11-14 07_04_51.jpg,photo_2013-11-14 07_04_51_to_cezanne.jpg,0.25635198,1.2939356565475464,N/A,N/A
+Hayao,cezanne,1020.jpg,Hayao_1020_to_cezanne.jpg,0.45254922,1.6503708362579346,N/A,N/A
+Hayao,cezanne,1019.jpg,Hayao_1019_to_cezanne.jpg,0.46713132,1.413413166999817,N/A,N/A
+photo,vangogh,2013-11-18 08_52_05.jpg,photo_2013-11-18 08_52_05_to_vangogh.jpg,0.25004053,2.8080896139144897,N/A,N/A
+photo,vangogh,2013-11-14 07_04_51.jpg,photo_2013-11-14 07_04_51_to_vangogh.jpg,0.25193956,3.226754903793335,N/A,N/A
+Hayao,vangogh,1020.jpg,Hayao_1020_to_vangogh.jpg,0.54476815,2.7083332538604736,N/A,N/A
+Hayao,vangogh,1019.jpg,Hayao_1019_to_vangogh.jpg,0.58340156,2.741683006286621,N/A,N/A
+Hayao,photo,1015.jpg,Hayao_1015_to_photo.jpg,0.35968825,1.608830213546753,N/A,N/A
+Hayao,photo,1008.jpg,Hayao_1008_to_photo.jpg,0.32221058,1.6091228127479553,N/A,N/A
+Hayao,photo,1001.jpg,Hayao_1001_to_photo.jpg,0.39085957,1.6530339121818542,N/A,N/A
+Hayao,photo,1044.jpg,Hayao_1044_to_photo.jpg,0.40888643,1.6775023937225342,N/A,N/A
+Hayao,Hayao,1015.jpg,Hayao_1015_to_Hayao.jpg,0.33708477,1.6819955706596375,N/A,N/A
+Hayao,Hayao,1008.jpg,Hayao_1008_to_Hayao.jpg,0.32686847,1.9823136925697327,N/A,N/A
+Hayao,Hayao,1001.jpg,Hayao_1001_to_Hayao.jpg,0.3981269,1.7393362522125244,N/A,N/A
+Hayao,Hayao,1044.jpg,Hayao_1044_to_Hayao.jpg,0.4271469,2.019668757915497,N/A,N/A
+Hayao,monet,1015.jpg,Hayao_1015_to_monet.jpg,0.3973963,1.1860892176628113,N/A,N/A
+Hayao,monet,1008.jpg,Hayao_1008_to_monet.jpg,0.37358367,1.0490276217460632,N/A,N/A
+Hayao,monet,1001.jpg,Hayao_1001_to_monet.jpg,0.4379324,1.5743800401687622,N/A,N/A
+Hayao,monet,1044.jpg,Hayao_1044_to_monet.jpg,0.48520395,1.2555420994758606,N/A,N/A
+Hayao,cezanne,1015.jpg,Hayao_1015_to_cezanne.jpg,0.24199465,0.8227478861808777,N/A,N/A
+Hayao,cezanne,1008.jpg,Hayao_1008_to_cezanne.jpg,0.2570547,0.8529994785785675,N/A,N/A
+Hayao,cezanne,1001.jpg,Hayao_1001_to_cezanne.jpg,0.3750322,1.186401903629303,N/A,N/A
+Hayao,cezanne,1044.jpg,Hayao_1044_to_cezanne.jpg,0.33739,1.1138456463813782,N/A,N/A
+Hayao,vangogh,1015.jpg,Hayao_1015_to_vangogh.jpg,0.34082597,2.1208136677742004,N/A,N/A
+Hayao,vangogh,1008.jpg,Hayao_1008_to_vangogh.jpg,0.345123,2.104018807411194,N/A,N/A
+Hayao,vangogh,1001.jpg,Hayao_1001_to_vangogh.jpg,0.4286012,2.8870400190353394,N/A,N/A
+Hayao,vangogh,1044.jpg,Hayao_1044_to_vangogh.jpg,0.41978914,2.187180280685425,N/A,N/A
+Hayao,photo,1021.jpg,Hayao_1021_to_photo.jpg,0.36416018,1.74310702085495,N/A,N/A
+Hayao,photo,1006.jpg,Hayao_1006_to_photo.jpg,0.45760423,1.7354654669761658,N/A,N/A
+Hayao,photo,1024.jpg,Hayao_1024_to_photo.jpg,0.6239879,2.1213532090187073,N/A,N/A
+Hayao,photo,1012.jpg,Hayao_1012_to_photo.jpg,0.3167555,1.4803978204727173,N/A,N/A
+Hayao,Hayao,1021.jpg,Hayao_1021_to_Hayao.jpg,0.3750343,1.9791601300239563,N/A,N/A
+Hayao,Hayao,1006.jpg,Hayao_1006_to_Hayao.jpg,0.4468512,1.7806846499443054,N/A,N/A
+Hayao,Hayao,1024.jpg,Hayao_1024_to_Hayao.jpg,0.63400054,2.662852466106415,N/A,N/A
+Hayao,Hayao,1012.jpg,Hayao_1012_to_Hayao.jpg,0.33095276,1.6831761002540588,N/A,N/A
+Hayao,monet,1021.jpg,Hayao_1021_to_monet.jpg,0.45819247,1.157933384180069,N/A,N/A
+Hayao,monet,1006.jpg,Hayao_1006_to_monet.jpg,0.48972744,1.1853326261043549,N/A,N/A
+Hayao,monet,1024.jpg,Hayao_1024_to_monet.jpg,0.6548004,1.7634600400924683,N/A,N/A
+Hayao,monet,1012.jpg,Hayao_1012_to_monet.jpg,0.43651676,1.110289990901947,N/A,N/A
+Hayao,cezanne,1021.jpg,Hayao_1021_to_cezanne.jpg,0.29910615,1.1789031624794006,N/A,N/A
+Hayao,cezanne,1006.jpg,Hayao_1006_to_cezanne.jpg,0.4394982,1.1281487941741943,N/A,N/A
+Hayao,cezanne,1024.jpg,Hayao_1024_to_cezanne.jpg,0.39057916,1.5118465423583984,N/A,N/A
+Hayao,cezanne,1012.jpg,Hayao_1012_to_cezanne.jpg,0.35485047,1.193292498588562,N/A,N/A
+Hayao,vangogh,1021.jpg,Hayao_1021_to_vangogh.jpg,0.4134164,2.643931269645691,N/A,N/A
+Hayao,vangogh,1006.jpg,Hayao_1006_to_vangogh.jpg,0.46745193,2.2198363542556763,N/A,N/A
+Hayao,vangogh,1024.jpg,Hayao_1024_to_vangogh.jpg,0.61524343,3.4640579223632812,N/A,N/A
+Hayao,vangogh,1012.jpg,Hayao_1012_to_vangogh.jpg,0.4380186,2.5161120891571045,N/A,N/A
+monet,photo,00695.jpg,monet_00695_to_photo.jpg,0.22668159,1.792600393295288,N/A,N/A
+monet,photo,00607.jpg,monet_00607_to_photo.jpg,0.36058855,1.772946536540985,N/A,N/A
+monet,photo,00444.jpg,monet_00444_to_photo.jpg,0.30967647,1.5386314988136292,N/A,N/A
+monet,photo,00286.jpg,monet_00286_to_photo.jpg,0.26428938,1.7261791825294495,N/A,N/A
+monet,Hayao,00695.jpg,monet_00695_to_Hayao.jpg,0.23131481,1.973156988620758,N/A,N/A
+monet,Hayao,00607.jpg,monet_00607_to_Hayao.jpg,0.37554243,2.908482551574707,N/A,N/A
+monet,Hayao,00444.jpg,monet_00444_to_Hayao.jpg,0.2879778,2.226617455482483,N/A,N/A
+monet,Hayao,00286.jpg,monet_00286_to_Hayao.jpg,0.30023608,1.953079342842102,N/A,N/A
+monet,monet,00695.jpg,monet_00695_to_monet.jpg,0.25117725,1.1196790635585785,N/A,N/A
+monet,monet,00607.jpg,monet_00607_to_monet.jpg,0.39376903,1.3506324291229248,N/A,N/A
+monet,monet,00444.jpg,monet_00444_to_monet.jpg,0.32604745,1.331578552722931,N/A,N/A
+monet,monet,00286.jpg,monet_00286_to_monet.jpg,0.26677,1.1150221824645996,N/A,N/A
+monet,cezanne,00695.jpg,monet_00695_to_cezanne.jpg,0.20306288,1.23855459690094,N/A,N/A
+monet,cezanne,00607.jpg,monet_00607_to_cezanne.jpg,0.2640144,1.3537393808364868,N/A,N/A
+monet,cezanne,00444.jpg,monet_00444_to_cezanne.jpg,0.25141156,1.5777435302734375,N/A,N/A
+monet,cezanne,00286.jpg,monet_00286_to_cezanne.jpg,0.21784306,1.3286072611808777,N/A,N/A
+monet,vangogh,00695.jpg,monet_00695_to_vangogh.jpg,0.24072337,2.3271880745887756,N/A,N/A
+monet,vangogh,00607.jpg,monet_00607_to_vangogh.jpg,0.34738937,2.975147247314453,N/A,N/A
+monet,vangogh,00444.jpg,monet_00444_to_vangogh.jpg,0.29164714,2.8295950889587402,N/A,N/A
+monet,vangogh,00286.jpg,monet_00286_to_vangogh.jpg,0.26233345,2.244270443916321,N/A,N/A
+monet,photo,00092.jpg,monet_00092_to_photo.jpg,0.2703051,1.6655266284942627,N/A,N/A
+monet,photo,01208.jpg,monet_01208_to_photo.jpg,0.32012174,1.627043604850769,N/A,N/A
+monet,photo,00756.jpg,monet_00756_to_photo.jpg,0.31057447,1.6886443495750427,N/A,N/A
+monet,photo,00278.jpg,monet_00278_to_photo.jpg,0.17833292,1.8447304964065552,N/A,N/A
+monet,Hayao,00092.jpg,monet_00092_to_Hayao.jpg,0.28004253,2.10493266582489,N/A,N/A
+monet,Hayao,01208.jpg,monet_01208_to_Hayao.jpg,0.27006984,1.8171101212501526,N/A,N/A
+monet,Hayao,00756.jpg,monet_00756_to_Hayao.jpg,0.3285698,2.3762055039405823,N/A,N/A
+monet,Hayao,00278.jpg,monet_00278_to_Hayao.jpg,0.16459666,2.7282463908195496,N/A,N/A
+monet,monet,00092.jpg,monet_00092_to_monet.jpg,0.4228985,1.3251813054084778,N/A,N/A
+monet,monet,01208.jpg,monet_01208_to_monet.jpg,0.30379573,1.099333107471466,N/A,N/A
+monet,monet,00756.jpg,monet_00756_to_monet.jpg,0.4076262,1.2952565550804138,N/A,N/A
+monet,monet,00278.jpg,monet_00278_to_monet.jpg,0.1525666,1.4212819933891296,N/A,N/A
+monet,cezanne,00092.jpg,monet_00092_to_cezanne.jpg,0.18982488,1.1904121041297913,N/A,N/A
+monet,cezanne,01208.jpg,monet_01208_to_cezanne.jpg,0.1463778,1.1737585663795471,N/A,N/A
+monet,cezanne,00756.jpg,monet_00756_to_cezanne.jpg,0.27117246,1.6419653296470642,N/A,N/A
+monet,cezanne,00278.jpg,monet_00278_to_cezanne.jpg,0.11231085,1.6199822425842285,N/A,N/A
+monet,vangogh,00092.jpg,monet_00092_to_vangogh.jpg,0.29784444,2.4371567964553833,N/A,N/A
+monet,vangogh,01208.jpg,monet_01208_to_vangogh.jpg,0.23200548,1.872561275959015,N/A,N/A
+monet,vangogh,00756.jpg,monet_00756_to_vangogh.jpg,0.33262524,2.718340039253235,N/A,N/A
+monet,vangogh,00278.jpg,monet_00278_to_vangogh.jpg,0.14077277,2.96226704120636,N/A,N/A
+monet,photo,00786.jpg,monet_00786_to_photo.jpg,0.22915801,1.7871792316436768,N/A,N/A
+monet,photo,00389.jpg,monet_00389_to_photo.jpg,0.5670928,2.014151096343994,N/A,N/A
+cezanne,photo,00342.jpg,cezanne_00342_to_photo.jpg,0.34633878,2.038033664226532,N/A,N/A
+cezanne,photo,00332.jpg,cezanne_00332_to_photo.jpg,0.4152513,1.6649094223976135,N/A,N/A
+monet,Hayao,00786.jpg,monet_00786_to_Hayao.jpg,0.20543234,2.0862454175949097,N/A,N/A
+monet,Hayao,00389.jpg,monet_00389_to_Hayao.jpg,0.6025079,2.6940430998802185,N/A,N/A
+cezanne,Hayao,00342.jpg,cezanne_00342_to_Hayao.jpg,0.31177908,2.2045035362243652,N/A,N/A
+cezanne,Hayao,00332.jpg,cezanne_00332_to_Hayao.jpg,0.47441334,2.034113049507141,N/A,N/A
+monet,monet,00786.jpg,monet_00786_to_monet.jpg,0.22661754,1.178724765777588,N/A,N/A
+monet,monet,00389.jpg,monet_00389_to_monet.jpg,0.6513497,1.3913774490356445,N/A,N/A
+cezanne,monet,00342.jpg,cezanne_00342_to_monet.jpg,0.32381397,1.5658794045448303,N/A,N/A
+cezanne,monet,00332.jpg,cezanne_00332_to_monet.jpg,0.4693489,0.9284224510192871,N/A,N/A
+monet,cezanne,00786.jpg,monet_00786_to_cezanne.jpg,0.15812823,1.1250171065330505,N/A,N/A
+monet,cezanne,00389.jpg,monet_00389_to_cezanne.jpg,0.4163822,1.3501376509666443,N/A,N/A
+cezanne,cezanne,00342.jpg,cezanne_00342_to_cezanne.jpg,0.21800455,1.2276576161384583,N/A,N/A
+cezanne,cezanne,00332.jpg,cezanne_00332_to_cezanne.jpg,0.39056796,1.3342648148536682,N/A,N/A
+monet,vangogh,00786.jpg,monet_00786_to_vangogh.jpg,0.20997876,2.575867176055908,N/A,N/A
+monet,vangogh,00389.jpg,monet_00389_to_vangogh.jpg,0.59805703,2.7202095985412598,N/A,N/A
+cezanne,vangogh,00342.jpg,cezanne_00342_to_vangogh.jpg,0.30091047,3.0605498552322388,N/A,N/A
+cezanne,vangogh,00332.jpg,cezanne_00332_to_vangogh.jpg,0.43123817,1.7216222882270813,N/A,N/A
+cezanne,photo,00275.jpg,cezanne_00275_to_photo.jpg,0.33278537,1.6837114691734314,N/A,N/A
+cezanne,photo,00219.jpg,cezanne_00219_to_photo.jpg,0.30006084,1.9598074555397034,N/A,N/A
+cezanne,photo,00123.jpg,cezanne_00123_to_photo.jpg,0.27188247,1.549668312072754,N/A,N/A
+cezanne,photo,00582.jpg,cezanne_00582_to_photo.jpg,0.30222875,1.8985558152198792,N/A,N/A
+cezanne,Hayao,00275.jpg,cezanne_00275_to_Hayao.jpg,0.35454232,1.8114800453186035,N/A,N/A
+cezanne,Hayao,00219.jpg,cezanne_00219_to_Hayao.jpg,0.31156808,2.289368212223053,N/A,N/A
+cezanne,Hayao,00123.jpg,cezanne_00123_to_Hayao.jpg,0.30107546,1.843756079673767,N/A,N/A
+cezanne,Hayao,00582.jpg,cezanne_00582_to_Hayao.jpg,0.28819638,2.097912609577179,N/A,N/A
+cezanne,monet,00275.jpg,cezanne_00275_to_monet.jpg,0.41982853,1.1091152727603912,N/A,N/A
+cezanne,monet,00219.jpg,cezanne_00219_to_monet.jpg,0.35891914,1.4410861134529114,N/A,N/A
+cezanne,monet,00123.jpg,cezanne_00123_to_monet.jpg,0.31805438,1.1185573041439056,N/A,N/A
+cezanne,monet,00582.jpg,cezanne_00582_to_monet.jpg,0.26973802,1.1894045770168304,N/A,N/A
+cezanne,cezanne,00275.jpg,cezanne_00275_to_cezanne.jpg,0.356472,1.1627326011657715,N/A,N/A
+cezanne,cezanne,00219.jpg,cezanne_00219_to_cezanne.jpg,0.26093534,1.558592438697815,N/A,N/A
+cezanne,cezanne,00123.jpg,cezanne_00123_to_cezanne.jpg,0.22660215,1.245547890663147,N/A,N/A
+cezanne,cezanne,00582.jpg,cezanne_00582_to_cezanne.jpg,0.18291299,1.4494113326072693,N/A,N/A
+cezanne,vangogh,00275.jpg,cezanne_00275_to_vangogh.jpg,0.37772438,2.0818482041358948,N/A,N/A
+cezanne,vangogh,00219.jpg,cezanne_00219_to_vangogh.jpg,0.34490514,3.113088011741638,N/A,N/A
+cezanne,vangogh,00123.jpg,cezanne_00123_to_vangogh.jpg,0.2815784,2.227288246154785,N/A,N/A
+cezanne,vangogh,00582.jpg,cezanne_00582_to_vangogh.jpg,0.235818,2.7475188970565796,N/A,N/A
+cezanne,photo,00348.jpg,cezanne_00348_to_photo.jpg,0.43780127,2.0052545070648193,N/A,N/A
+cezanne,photo,00204.jpg,cezanne_00204_to_photo.jpg,0.29636246,1.8218679428100586,N/A,N/A
+cezanne,photo,00379.jpg,cezanne_00379_to_photo.jpg,0.39553264,1.4281213283538818,N/A,N/A
+cezanne,photo,00263.jpg,cezanne_00263_to_photo.jpg,0.4848079,1.9488751292228699,N/A,N/A
+cezanne,Hayao,00348.jpg,cezanne_00348_to_Hayao.jpg,0.38946623,2.2460532188415527,N/A,N/A
+cezanne,Hayao,00204.jpg,cezanne_00204_to_Hayao.jpg,0.28175706,1.8339442610740662,N/A,N/A
+cezanne,Hayao,00379.jpg,cezanne_00379_to_Hayao.jpg,0.33640748,1.7365292310714722,N/A,N/A
+cezanne,Hayao,00263.jpg,cezanne_00263_to_Hayao.jpg,0.53136474,2.487021803855896,N/A,N/A
+cezanne,monet,00348.jpg,cezanne_00348_to_monet.jpg,0.4305984,1.399012804031372,N/A,N/A
+cezanne,monet,00204.jpg,cezanne_00204_to_monet.jpg,0.30621928,1.0729797184467316,N/A,N/A
+cezanne,monet,00379.jpg,cezanne_00379_to_monet.jpg,0.50041425,0.9745890200138092,N/A,N/A
+cezanne,monet,00263.jpg,cezanne_00263_to_monet.jpg,0.5711026,1.5773621797561646,N/A,N/A
+cezanne,cezanne,00348.jpg,cezanne_00348_to_cezanne.jpg,0.29880708,1.1713369190692902,N/A,N/A
+cezanne,cezanne,00204.jpg,cezanne_00204_to_cezanne.jpg,0.23816389,1.0227953493595123,N/A,N/A
+cezanne,cezanne,00379.jpg,cezanne_00379_to_cezanne.jpg,0.34716415,1.1454517245292664,N/A,N/A
+cezanne,cezanne,00263.jpg,cezanne_00263_to_cezanne.jpg,0.32165158,1.3616318106651306,N/A,N/A
+cezanne,vangogh,00348.jpg,cezanne_00348_to_vangogh.jpg,0.40053195,3.067666530609131,N/A,N/A
+cezanne,vangogh,00204.jpg,cezanne_00204_to_vangogh.jpg,0.273387,1.9873746633529663,N/A,N/A
+cezanne,vangogh,00379.jpg,cezanne_00379_to_vangogh.jpg,0.43801028,1.9357186555862427,N/A,N/A
+cezanne,vangogh,00263.jpg,cezanne_00263_to_vangogh.jpg,0.43721327,2.7331058979034424,N/A,N/A
+vangogh,photo,00295.jpg,vangogh_00295_to_photo.jpg,0.29530615,1.5817869901657104,N/A,N/A
+vangogh,photo,00289.jpg,vangogh_00289_to_photo.jpg,0.17337254,1.8218530416488647,N/A,N/A
+vangogh,photo,00243.jpg,vangogh_00243_to_photo.jpg,0.38869333,1.9393827319145203,N/A,N/A
+vangogh,photo,00169.jpg,vangogh_00169_to_photo.jpg,0.2575889,1.5982094407081604,N/A,N/A
+vangogh,Hayao,00295.jpg,vangogh_00295_to_Hayao.jpg,0.3397541,2.1507437229156494,N/A,N/A
+vangogh,Hayao,00289.jpg,vangogh_00289_to_Hayao.jpg,0.16744392,1.9222012162208557,N/A,N/A
+vangogh,Hayao,00243.jpg,vangogh_00243_to_Hayao.jpg,0.40518188,2.795171022415161,N/A,N/A
+vangogh,Hayao,00169.jpg,vangogh_00169_to_Hayao.jpg,0.25141644,2.1365403532981873,N/A,N/A
+vangogh,monet,00295.jpg,vangogh_00295_to_monet.jpg,0.32144392,1.0577712655067444,N/A,N/A
+vangogh,monet,00289.jpg,vangogh_00289_to_monet.jpg,0.15414883,0.9464945495128632,N/A,N/A
+vangogh,monet,00243.jpg,vangogh_00243_to_monet.jpg,0.40244114,1.3674136996269226,N/A,N/A
+vangogh,monet,00169.jpg,vangogh_00169_to_monet.jpg,0.27988154,1.1941121220588684,N/A,N/A
+vangogh,cezanne,00295.jpg,vangogh_00295_to_cezanne.jpg,0.20805992,1.150205671787262,N/A,N/A
+vangogh,cezanne,00289.jpg,vangogh_00289_to_cezanne.jpg,0.12617654,1.0612991750240326,N/A,N/A
+vangogh,cezanne,00243.jpg,vangogh_00243_to_cezanne.jpg,0.28913516,1.345904290676117,N/A,N/A
+vangogh,cezanne,00169.jpg,vangogh_00169_to_cezanne.jpg,0.20491675,1.1041221618652344,N/A,N/A
+vangogh,vangogh,00295.jpg,vangogh_00295_to_vangogh.jpg,0.29944825,1.8154003024101257,N/A,N/A
+vangogh,vangogh,00289.jpg,vangogh_00289_to_vangogh.jpg,0.1497934,1.9444741010665894,N/A,N/A
+vangogh,vangogh,00243.jpg,vangogh_00243_to_vangogh.jpg,0.37960148,2.9318941831588745,N/A,N/A
+vangogh,vangogh,00169.jpg,vangogh_00169_to_vangogh.jpg,0.28858685,2.4027209281921387,N/A,N/A
+vangogh,photo,00098.jpg,vangogh_00098_to_photo.jpg,0.22977625,1.667831003665924,N/A,N/A
+vangogh,photo,00668.jpg,vangogh_00668_to_photo.jpg,0.14102459,1.8482668995857239,N/A,N/A
+vangogh,photo,00321.jpg,vangogh_00321_to_photo.jpg,0.24560471,1.7279213070869446,N/A,N/A
+vangogh,photo,00163.jpg,vangogh_00163_to_photo.jpg,0.5325989,2.13189297914505,N/A,N/A
+vangogh,Hayao,00098.jpg,vangogh_00098_to_Hayao.jpg,0.17777225,2.118855655193329,N/A,N/A
+vangogh,Hayao,00668.jpg,vangogh_00668_to_Hayao.jpg,0.1309197,2.3484501242637634,N/A,N/A
+vangogh,Hayao,00321.jpg,vangogh_00321_to_Hayao.jpg,0.21690546,2.1665082573890686,N/A,N/A
+vangogh,Hayao,00163.jpg,vangogh_00163_to_Hayao.jpg,0.4759428,2.642623245716095,N/A,N/A
+vangogh,monet,00098.jpg,vangogh_00098_to_monet.jpg,0.2667094,1.3688691854476929,N/A,N/A
+vangogh,monet,00668.jpg,vangogh_00668_to_monet.jpg,0.13205561,1.0745237469673157,N/A,N/A
+vangogh,monet,00321.jpg,vangogh_00321_to_monet.jpg,0.22586396,1.094627320766449,N/A,N/A
+vangogh,monet,00163.jpg,vangogh_00163_to_monet.jpg,0.5916139,1.6781838536262512,N/A,N/A
+vangogh,cezanne,00098.jpg,vangogh_00098_to_cezanne.jpg,0.118303224,1.2552230954170227,N/A,N/A
+vangogh,cezanne,00668.jpg,vangogh_00668_to_cezanne.jpg,0.0789211,1.2476053833961487,N/A,N/A
+vangogh,cezanne,00321.jpg,vangogh_00321_to_cezanne.jpg,0.15270102,1.2732914090156555,N/A,N/A
+vangogh,cezanne,00163.jpg,vangogh_00163_to_cezanne.jpg,0.34966904,1.4628457427024841,N/A,N/A
+vangogh,vangogh,00098.jpg,vangogh_00098_to_vangogh.jpg,0.22255419,3.068907856941223,N/A,N/A
+vangogh,vangogh,00668.jpg,vangogh_00668_to_vangogh.jpg,0.11215227,2.4468736052513123,N/A,N/A
+vangogh,vangogh,00321.jpg,vangogh_00321_to_vangogh.jpg,0.20136881,2.3640149235725403,N/A,N/A
+vangogh,vangogh,00163.jpg,vangogh_00163_to_vangogh.jpg,0.5507964,3.4690897464752197,N/A,N/A
+vangogh,photo,00412.jpg,vangogh_00412_to_photo.jpg,0.3667779,1.8495696783065796,N/A,N/A
+vangogh,photo,00202.jpg,vangogh_00202_to_photo.jpg,0.26759157,1.6621772050857544,N/A,N/A
+vangogh,Hayao,00412.jpg,vangogh_00412_to_Hayao.jpg,0.32217264,2.264770269393921,N/A,N/A
+vangogh,Hayao,00202.jpg,vangogh_00202_to_Hayao.jpg,0.2672857,1.74239581823349,N/A,N/A
+vangogh,monet,00412.jpg,vangogh_00412_to_monet.jpg,0.37988102,1.3428579568862915,N/A,N/A
+vangogh,monet,00202.jpg,vangogh_00202_to_monet.jpg,0.2756708,1.091707706451416,N/A,N/A
+vangogh,cezanne,00412.jpg,vangogh_00412_to_cezanne.jpg,0.27274945,1.2623339891433716,N/A,N/A
+vangogh,cezanne,00202.jpg,vangogh_00202_to_cezanne.jpg,0.19893186,0.8051024973392487,N/A,N/A
+vangogh,vangogh,00412.jpg,vangogh_00412_to_vangogh.jpg,0.35443506,2.879094362258911,N/A,N/A
+vangogh,vangogh,00202.jpg,vangogh_00202_to_vangogh.jpg,0.25435078,1.9080719947814941,N/A,N/A

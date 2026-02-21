@@ -1,10 +1,108 @@
 {
+  "checkpoint": {
+    "save_dir": "../150-fp32-2000"
+  },
+  "data": {
+    "data_root": "../../sdxl-fp32-overfit150",
+    "style_subdirs": [
+      "photo",
+      "Hayao",
+      "monet",
+      "cezanne",
+      "vangogh"
+    ],
+    "allow_hflip": false,
+    "preload_to_gpu": true,
+    "preload_max_vram_gb": 6.0,
+    "preload_reserve_ratio": 0.4,
+    "virtual_length_multiplier": 6
+  },
+  "loss": {
+    "w_style": 2000,
+    "w_structure": 0.0,
+    "w_moment": 0.00,
+    "w_identity": 0.0,
+    "w_tv": 0,
+
+    "style_dim": 48,
+    "style_scales": [1, 2],
+    "style_negative_slope": 0.1,
+
+    "nce_hidden_dim": 256,
+    "nce_out_dim": 128,
+    "nce_temp": 0.07,
+    "nce_chunk": 16,
+
+    "train_num_steps_min": 1,
+    "train_num_steps_max": 1,
+    "train_step_size_min": 1.0,
+    "train_step_size_max": 1.0,
+    "train_style_strength_min": 0.8,
+    "train_style_strength_max": 1.0
+  },
+  "training": {
+    "resume_checkpoint": "",
+    "test_image_dir": "../../style_data/overfit50",
+    "full_eval_cache_dir": "../../eval_cache",
+
+    "batch_size": 150,
+    "num_epochs": 50,
+    "learning_rate": 1e-04,
+    "min_learning_rate": 1e-06,
+    "weight_decay": 0.0,
+    "warmup_epochs": 20,
+    "scheduler": "cosine",
+    "grad_clip_norm": 1.0,
+
+    "save_interval": 10,
+    "full_eval_interval": 50,
+    "full_eval_on_last_epoch": true,
+    "full_eval_batch_size": 4,
+    "full_eval_max_src_samples": 10,
+    "full_eval_max_ref_compare": 20,
+    "full_eval_max_ref_cache": 100,
+    "full_eval_ref_feature_batch_size": 8,
+    "full_eval_num_steps": 1,
+    "full_eval_step_size": 1.0,
+    "full_eval_style_strength": 1.0,
+    "full_eval_classifier_only": false,
+    "full_eval_disable_lpips": false,
+
+    "seed": 42,
+    "accumulation_steps": 1,
+    "num_workers": 8,
+    "persistent_workers": true,
+    "prefetch_factor": 2,
+    "pin_memory": true,
+    "cpu_threads": 12,
+    "cpu_interop_threads": 2,
+
+    "log_interval": 100,
+    "use_tqdm": false,
+    "use_amp": true,
+    "amp_dtype": "fp16",
+    "allow_tf32": true,
+    "channels_last": true,
+    "use_gradient_checkpointing": false,
+    "use_compile": false,
+    "fused_adamw": true,
+    "skip_oom_batches": true,
+    "empty_cache_interval": 0,
+    "log_vram_interval": 0,
+    "trace_vram_steps": 0,
+    "profile_loss_vram": false,
+    "loss_timing_interval": 0,
+    "enable_profiler": false,
+    "debug_grad_enabled": true,
+    "debug_grad_interval": 100,
+    "debug_grad_loss_threshold": 1000000000000.0
+  },
   "model": {
     "latent_channels": 4,
-    "base_dim": 128,
+    "base_dim": 160,
     "lift_channels": 128,
     "style_dim": 256,
-    "num_styles": 2,
+    "num_styles": 5,
     "num_hires_blocks": 4,
     "num_res_blocks": 2,
     "num_groups": 4,
@@ -19,62 +117,14 @@
     "upsample_blur": true,
     "upsample_blur_kernel": "gaussian3",
     "loss_projector_use": false,
-    "loss_projector_channels": 64
+    "loss_projector_channels": 64,
+    "inject_gate_hires": 1.0,
+    "inject_gate_body": 1.0,
+    "inject_gate_decoder": 1.0
   },
-  "loss": {
-    "w_style": 150.0,
-    "w_moment": 2.0,
-    "w_identity": 50.0,
-    "w_structure": 20.0,
-    "w_tv": 0.0,
-    "train_num_steps_min": 1,
-    "train_num_steps_max": 1,
-    "train_step_size_min": 1.0,
-    "train_step_size_max": 1.0,
-    "train_style_strength_min": 0.8,
-    "train_style_strength_max": 1.0
-  },
-  "training": {
-    "seed": 42,
-    "batch_size": 50,
-    "accumulation_steps": 1,
-    "num_workers": 4,
-    "persistent_workers": true,
-    "prefetch_factor": 2,
-    "pin_memory": true,
-    "learning_rate": 0.0001,
-    "min_learning_rate": 1e-05,
-    "weight_decay": 0.0,
-    "scheduler": "cosine",
-    "grad_clip_norm": 1.0,
-    "num_epochs": 200,
-    "save_interval": 50,
-    "log_interval": 10,
-    "full_eval_interval": 50,
-    "full_eval_on_last_epoch": false,
-    "use_tqdm": true,
-    "use_amp": true,
-    "amp_dtype": "fp16",
-    "allow_tf32": true,
-    "channels_last": true,
-    "use_gradient_checkpointing": false,
-    "fused_adamw": true,
-    "skip_oom_batches": true,
-    "test_image_dir": "../../style_data/overfit50"
-  },
-  "data": {
-    "data_root": "../../sdxl-overfit50",
-    "style_subdirs": [
-      "photo",
-      "Hayao"
-    ],
-    "allow_hflip": false,
-    "preload_to_gpu": true,
-    "preload_max_vram_gb": 6.0,
-    "preload_reserve_ratio": 0.4,
-    "virtual_length_multiplier": 50
-  },
-  "checkpoint": {
-    "save_dir": "../swd-balanced-over50-200-5-10-5"
+  "inference": {
+    "num_steps": 1,
+    "step_size": 1.0,
+    "style_strength": 1
   }
 }

@@ -1,0 +1,30 @@
+{
+  "num_rounds": 1,
+  "latest": {
+    "epoch": 50,
+    "summary_path": "..\\150-fp32-200-0.01\\full_eval\\epoch_0050\\summary.json",
+    "transfer_style": 0.5331920830905438,
+    "transfer_style_swd": 1.492838111668825,
+    "transfer_clip_style_sim": 0.5331920830905438,
+    "transfer_content_lf_ssim": 0.9655652380000002,
+    "transfer_content_ssim": 0.9655652380000002,
+    "photo_to_art_style": 0.49716024026274686,
+    "photo_to_art_style_swd": 1.455987636372447,
+    "photo_to_art_clip_style_sim": 0.49716024026274686
+  },
+  "rounds": [
+    {
+      "epoch": 50,
+      "summary_path": "..\\150-fp32-200-0.01\\full_eval\\epoch_0050\\summary.json",
+      "transfer_style": 0.5331920830905438,
+      "transfer_style_swd": 1.492838111668825,
+      "transfer_clip_style_sim": 0.5331920830905438,
+      "transfer_content_lf_ssim": 0.9655652380000002,
+      "transfer_content_ssim": 0.9655652380000002,
+      "photo_to_art_style": 0.49716024026274686,
+      "photo_to_art_style_swd": 1.455987636372447,
+      "photo_to_art_clip_style_sim": 0.49716024026274686
+    }
+  ],
+  "updated_at": "2026-02-21 15:38:53"
+}

@@ -106,44 +106,43 @@ def compute_swd(feat_x: torch.Tensor, feat_y: torch.Tensor, num_projections: int
     return ((proj_x - proj_y) ** 2).mean(dim=(1, 2))
 
 
-def compute_ssim_batch(
+def compute_lf_structure_similarity_batch(
     img_x: torch.Tensor,
     img_y: torch.Tensor,
-    window_size: int = 11,
-    sigma: float = 1.5,
+    blur_kernel: int = 21,
+    sigma: float = 5.0,
 ) -> torch.Tensor:
     """
-    Compute grayscale SSIM per sample for batches in [0,1].
+    Compute low-frequency structure similarity per sample for batches in [0,1].
+    This suppresses high-frequency style strokes and compares only coarse layout.
     img_x, img_y: [B, 3, H, W]
     returns: [B]
     """
     if img_x.shape != img_y.shape:
-        raise ValueError(f"SSIM shape mismatch: {img_x.shape} vs {img_y.shape}")
+        raise ValueError(f"LF-SSIM shape mismatch: {img_x.shape} vs {img_y.shape}")
 
     device, dtype = img_x.device, img_x.dtype
     weights = torch.tensor([0.299, 0.587, 0.114], device=device, dtype=dtype).view(1, 3, 1, 1)
-    x = (img_x * weights).sum(dim=1, keepdim=True)
-    y = (img_y * weights).sum(dim=1, keepdim=True)
+    x = (img_x * weights).sum(dim=1, keepdim=True).to(torch.float32)
+    y = (img_y * weights).sum(dim=1, keepdim=True).to(torch.float32)
 
-    coord = torch.arange(window_size, device=device, dtype=dtype) - window_size // 2
+    k = int(blur_kernel)
+    if k <= 0:
+        raise ValueError(f"blur_kernel must be > 0, got {k}")
+    if (k % 2) == 0:
+        raise ValueError(f"blur_kernel must be odd, got {k}")
+
+    coord = torch.arange(k, device=device, dtype=torch.float32) - (k // 2)
     g = torch.exp(-(coord**2) / (2 * sigma**2))
-    g = g / (g.sum() + 1e-12)
+    g = g / g.sum()
     window = (g.unsqueeze(1) @ g.unsqueeze(0)).unsqueeze(0).unsqueeze(0)
 
-    pad = window_size // 2
-    mu_x = F.conv2d(x, window, padding=pad)
-    mu_y = F.conv2d(y, window, padding=pad)
-
-    mu_x_sq, mu_y_sq, mu_xy = mu_x * mu_x, mu_y * mu_y, mu_x * mu_y
-    sig_x_sq = F.conv2d(x * x, window, padding=pad) - mu_x_sq
-    sig_y_sq = F.conv2d(y * y, window, padding=pad) - mu_y_sq
-    sig_xy = F.conv2d(x * y, window, padding=pad) - mu_xy
-
-    c1, c2 = 0.01**2, 0.03**2
-    ssim_map = ((2 * mu_xy + c1) * (2 * sig_xy + c2)) / (
-        (mu_x_sq + mu_y_sq + c1) * (sig_x_sq + sig_y_sq + c2) + 1e-12
-    )
-    return ssim_map.mean(dim=(1, 2, 3)).to(torch.float32)
+    pad = k // 2
+    lf_x = F.conv2d(x, window, padding=pad)
+    lf_y = F.conv2d(y, window, padding=pad)
+    lf_x_flat = lf_x.view(lf_x.shape[0], -1)
+    lf_y_flat = lf_y.view(lf_y.shape[0], -1)
+    return F.cosine_similarity(lf_x_flat, lf_y_flat, dim=1).to(torch.float32)
 
 
 def _is_cuda_oom(exc: RuntimeError) -> bool:
@@ -265,6 +264,43 @@ def _extract_clip_embeddings(output):
     raise RuntimeError(msg)
 
 
+def _try_load_clip_backbone(model_name: str, device: str, allow_network: bool):
+    model_name = str(model_name or "").strip()
+    if not model_name:
+        return None, None, "disabled"
+    try:
+        from transformers import AutoProcessor, CLIPModel
+
+        kwargs = {"local_files_only": (not bool(allow_network))}
+        processor = AutoProcessor.from_pretrained(model_name, **kwargs)
+        model = CLIPModel.from_pretrained(model_name, **kwargs).to(device).eval()
+        if not hasattr(model, "get_image_features"):
+            raise RuntimeError(f"Model '{model_name}' does not support get_image_features for image-only eval.")
+        for p in model.parameters():
+            p.requires_grad_(False)
+        return model, processor, model_name
+    except Exception as e:
+        print(f"  ERROR: failed to load CLIP model '{model_name}': {e}")
+        return None, None, "disabled"
+
+
+def _encode_clip_images(clip_model, clip_processor, batch_01: torch.Tensor, device: str) -> torch.Tensor:
+    to_pil = T.ToPILImage()
+    pil_images = [to_pil(img.detach().cpu()) for img in batch_01]
+    inputs = clip_processor(images=pil_images, return_tensors="pt")
+    inputs = {k: v.to(device) for k, v in inputs.items()}
+    pixel_values = inputs.get("pixel_values")
+    if pixel_values is None:
+        raise RuntimeError("CLIP processor output missing pixel_values.")
+    with torch.no_grad():
+        emb = clip_model.get_image_features(pixel_values=pixel_values)
+        if not isinstance(emb, torch.Tensor):
+            emb = _extract_clip_embeddings(emb)
+        if not isinstance(emb, torch.Tensor):
+            raise RuntimeError(f"Unexpected CLIP embedding output type: {type(emb)}")
+    return F.normalize(emb.float(), dim=1).detach().cpu()
+
+
 def _load_eval_image_tensor(path: Path, size: int = 256) -> torch.Tensor:
     img = Image.open(path).convert("RGB").resize((size, size))
     return T.ToTensor()(img)
@@ -292,18 +328,33 @@ def _parse_generated_name(filename: str, style_names: list[str]) -> tuple[str, s
 def _is_ref_cache_valid(ref_features: dict, need_clip: bool) -> bool:
     if not isinstance(ref_features, dict) or not ref_features:
         return False
-    if not need_clip:
-        return True
+
+    valid_style_count = 0
     for feats in ref_features.values():
-        if not isinstance(feats, list):
-            return False
-        if not feats:
+        if not isinstance(feats, list) or not feats:
             continue
-        sample = feats[0]
-        clip = sample.get("clip") if isinstance(sample, dict) else None
-        if clip is None or not isinstance(clip, torch.Tensor):
-            return False
-    return True
+
+        has_vgg = False
+        has_clip = False
+        for sample in feats:
+            if not isinstance(sample, dict):
+                continue
+            vgg = sample.get("vgg")
+            clip = sample.get("clip")
+            if isinstance(vgg, list) and len(vgg) > 0 and all(isinstance(t, torch.Tensor) for t in vgg):
+                has_vgg = True
+            if isinstance(clip, torch.Tensor):
+                has_clip = True
+            if has_vgg and (has_clip or not need_clip):
+                break
+
+        if not has_vgg:
+            continue
+        if need_clip and not has_clip:
+            continue
+        valid_style_count += 1
+
+    return valid_style_count > 0
 
 
 def _build_style_ref_prototypes(
@@ -541,11 +592,15 @@ def main():
     parser.add_argument('--clip_modelscope_id', type=str, default="", help="Optional ModelScope model id for CLIP fallback")
     parser.add_argument('--clip_modelscope_cache_dir', type=str, default="", help="Optional ModelScope cache directory")
     parser.add_argument('--clip_allow_network', action='store_true', help="Allow online model fetch if local cache is missing (default off)")
-    parser.add_argument('--eval_classifier_only', action='store_true', help="Run only classifier evaluation (skip SSIM/SWD)")
+    parser.add_argument('--vae_model_id', type=str, default="", help="VAE model id/preset (default: sdxl official)")
+    parser.add_argument('--vae_dtype', type=str, default="", help="VAE dtype: fp32/fp16/bf16 (default: fp32)")
+    parser.add_argument('--eval_classifier_only', action='store_true', help="Run only classifier evaluation (skip LF-SSIM/SWD)")
     parser.add_argument('--eval_disable_lpips', action='store_true', help="Deprecated. Kept for compatibility; ignored.")
     parser.add_argument('--eval_swd_projections', type=int, default=128, help="Number of random projections used by style SWD")
-    parser.add_argument('--eval_ssim_window_size', type=int, default=11, help="SSIM Gaussian window size")
-    parser.add_argument('--eval_ssim_sigma', type=float, default=1.5, help="SSIM Gaussian sigma")
+    parser.add_argument('--eval_lf_blur_kernel', type=int, default=None, help="LF-SSIM Gaussian blur kernel size (odd)")
+    parser.add_argument('--eval_lf_sigma', type=float, default=None, help="LF-SSIM Gaussian sigma")
+    parser.add_argument('--eval_ssim_window_size', type=int, default=None, help="Deprecated alias of --eval_lf_blur_kernel")
+    parser.add_argument('--eval_ssim_sigma', type=float, default=None, help="Deprecated alias of --eval_lf_sigma")
     parser.add_argument('--reuse_generated', action='store_true', help="Reuse existing generated *_to_*.jpg in output dir and skip generation")
     parser.add_argument('--generation_only', action='store_true', help="Only generate translated images, skip all evaluation metrics")
     parser.add_argument(
@@ -641,6 +696,10 @@ def main():
         args.clip_modelscope_id = str(cfg_train.get("full_eval_clip_modelscope_id", ""))
     if not args.clip_modelscope_cache_dir:
         args.clip_modelscope_cache_dir = str(cfg_train.get("full_eval_clip_modelscope_cache_dir", ""))
+    if not args.vae_model_id:
+        args.vae_model_id = str(cfg_train.get("full_eval_vae_model_id", cfg_infer.get("vae_model_id", "sdxl")))
+    if not args.vae_dtype:
+        args.vae_dtype = str(cfg_train.get("full_eval_vae_dtype", cfg_infer.get("vae_dtype", "fp32")))
     if (not args.image_classifier_path) and str(cfg_train.get("full_eval_image_classifier_path", "")).strip():
         args.image_classifier_path = str(cfg_train.get("full_eval_image_classifier_path"))
     if not args.image_classifier_path:
@@ -652,10 +711,18 @@ def main():
         args.eval_disable_lpips = True
     if args.eval_swd_projections is None:
         args.eval_swd_projections = int(cfg_train.get("full_eval_swd_projections", 128))
-    if args.eval_ssim_window_size is None:
-        args.eval_ssim_window_size = int(cfg_train.get("full_eval_ssim_window_size", 11))
-    if args.eval_ssim_sigma is None:
-        args.eval_ssim_sigma = float(cfg_train.get("full_eval_ssim_sigma", 1.5))
+    if args.eval_lf_blur_kernel is None:
+        if args.eval_ssim_window_size is not None:
+            args.eval_lf_blur_kernel = int(args.eval_ssim_window_size)
+        else:
+            args.eval_lf_blur_kernel = int(
+                cfg_train.get("full_eval_lf_blur_kernel", cfg_train.get("full_eval_ssim_window_size", 21))
+            )
+    if args.eval_lf_sigma is None:
+        if args.eval_ssim_sigma is not None:
+            args.eval_lf_sigma = float(args.eval_ssim_sigma)
+        else:
+            args.eval_lf_sigma = float(cfg_train.get("full_eval_lf_sigma", cfg_train.get("full_eval_ssim_sigma", 5.0)))
     if (not args.reuse_generated) and bool(cfg_train.get("full_eval_reuse_generated", False)):
         args.reuse_generated = True
     if (not args.generation_only) and bool(cfg_train.get("full_eval_generation_only", False)):
@@ -770,7 +837,7 @@ def main():
             step_size=args.step_size,
             style_strength=args.style_strength,
         )
-        vae = load_vae(device)
+        vae = load_vae(device=device, model_id=args.vae_model_id, torch_dtype=args.vae_dtype)
         model_scale = float(getattr(lgt.model, "latent_scale_factor", 0.18215))
         vae_scale = float(getattr(getattr(vae, "config", None), "scaling_factor", model_scale))
         scale_in = model_scale / max(vae_scale, 1e-8)
@@ -889,11 +956,24 @@ def main():
 
     # Load Evaluators
     vgg_extractor = None
+    clip_model = None
+    clip_processor = None
     has_clip = False
     clip_model_tag = "disabled"
     if run_full_metrics:
         vgg_extractor = VGGFeatureExtractor(device=device)
-        print("  CLIP disabled: using style SWD as style metric")
+        clip_model, clip_processor, clip_model_tag = _try_load_clip_backbone(
+            args.clip_model_name,
+            device=device,
+            allow_network=bool(args.clip_allow_network),
+        )
+        has_clip = clip_model is not None and clip_processor is not None
+        if not has_clip:
+            raise RuntimeError(
+                f"CLIP model unavailable for full_eval (model={args.clip_model_name}). "
+                "Please ensure local weights exist or run with --clip_allow_network."
+            )
+        print(f"  CLIP enabled: model={clip_model_tag}")
 
     # Prepare Reference Features (Cache)
     style_sig = ",".join(style_subdirs)
@@ -913,7 +993,7 @@ def main():
             if _is_ref_cache_valid(ref_features, need_clip=has_clip):
                 print("  Reference cache loaded successfully")
             else:
-                print("  Reference cache invalid for current metrics, rebuilding...")
+                print("  Reference cache invalid/incomplete for current metrics, rebuilding...")
                 ref_features = {}
         except Exception as e:
             print(f"  Reference cache load failed ({e}), rebuilding...")
@@ -941,12 +1021,18 @@ def main():
                     amp_ctx = torch.autocast('cuda', dtype=torch.bfloat16) if device == 'cuda' else nullcontext()
                     with torch.no_grad(), amp_ctx:
                         v_feats = vgg_extractor.get_features(batch_t)
+                    clip_feats = None
+                    if has_clip:
+                        clip_feats = _encode_clip_images(clip_model, clip_processor, batch_t, device)
 
                     for i, img_path in enumerate(batch_paths):
-                        ref_features[style_id].append({
+                        row = {
                             'path': str(img_path),
                             'vgg': [vf[i:i+1] for vf in v_feats],
-                        })
+                        }
+                        if clip_feats is not None:
+                            row['clip'] = clip_feats[i:i+1]
+                        ref_features[style_id].append(row)
                 except Exception as e:
                     print(f"Skipping batch {b_start}-{b_start + len(batch_paths)} in {style_name}: {e}")
 
@@ -961,6 +1047,7 @@ def main():
 
     # Prepare reference VGG tensors for faster SWD computation.
     ref_vgg_matrices = {}  # style_id -> list[layer][N_ref, C, H, W] on GPU
+    ref_clip_matrices = {}  # style_id -> [N_ref, D] on GPU
     if run_full_metrics and vgg_extractor is not None:
         for sid, feats in ref_features.items():
             vgg_lists = [f.get('vgg') for f in feats if isinstance(f, dict) and isinstance(f.get('vgg'), list)]
@@ -977,12 +1064,35 @@ def main():
                         ref_vgg_matrices[sid] = packed
                 except Exception as e:
                     print(f"  WARNING: failed to prepare VGG tensors for style {sid}: {e}")
+            if has_clip:
+                try:
+                    clip_rows = [f.get('clip') for f in feats if isinstance(f, dict) and isinstance(f.get('clip'), torch.Tensor)]
+                    if clip_rows:
+                        ref_clip_matrices[sid] = torch.cat(clip_rows, dim=0).to(device, dtype=torch.float32)
+                except Exception as e:
+                    print(f"  WARNING: failed to prepare CLIP tensors for style {sid}: {e}")
+    if run_full_metrics:
+        if len(ref_vgg_matrices) == 0:
+            raise RuntimeError("Reference feature cache has no valid VGG features; cannot compute style metrics.")
+        if has_clip and len(ref_clip_matrices) == 0:
+            raise RuntimeError("Reference feature cache has no valid CLIP features; cannot compute clip_style_sim.")
 
     csv_path = out_dir / 'metrics.csv'
     # Re-evaluation on reused images should overwrite metrics to avoid mixing old/new classifier outputs.
     csv_mode = 'w' if args.force_regen or args.reuse_generated or not csv_path.exists() else 'a'
     csv_file = open(csv_path, csv_mode, newline='')
-    columns = ['src_style', 'tgt_style', 'src_image', 'gen_image', 'content_ssim', 'style_swd', 'pred_style', 'class_correct']
+    columns = [
+        'src_style',
+        'tgt_style',
+        'src_image',
+        'gen_image',
+        'content_lf_ssim',
+        'style',
+        'style_swd',
+        'clip_style_sim',
+        'pred_style',
+        'class_correct',
+    ]
     writer = csv.DictWriter(csv_file, fieldnames=columns)
     if csv_mode == 'w': writer.writeheader()
 
@@ -1004,23 +1114,26 @@ def main():
         src_imgs = torch.stack(src_tensors).to(device)
         
         with torch.no_grad():
-            # 1. Content SSIM (higher is better)
-            c_ssim_vals = [0.0] * len(batch_items)
+            # 1. Low-frequency content structure similarity (higher is better)
+            c_lf_vals = [0.0] * len(batch_items)
             if run_full_metrics:
-                ssim_vals = compute_ssim_batch(
+                lf_vals = compute_lf_structure_similarity_batch(
                     gen_imgs.float(),
                     src_imgs.float(),
-                    window_size=int(args.eval_ssim_window_size),
-                    sigma=float(args.eval_ssim_sigma),
+                    blur_kernel=int(args.eval_lf_blur_kernel),
+                    sigma=float(args.eval_lf_sigma),
                 )
-                c_ssim_vals = ssim_vals.cpu().numpy()
+                c_lf_vals = lf_vals.cpu().numpy()
 
             # 2. VGG feature extraction for style SWD
             gen_vgg_feats = None
+            gen_clip_feats = None
             if run_full_metrics and vgg_extractor is not None:
                 amp_ctx = torch.autocast('cuda', dtype=torch.bfloat16) if device == 'cuda' else nullcontext()
                 with torch.no_grad(), amp_ctx:
                     gen_vgg_feats = [vf.to(device, dtype=torch.float32) for vf in vgg_extractor.get_features(gen_imgs)]
+                if has_clip:
+                    gen_clip_feats = _encode_clip_images(clip_model, clip_processor, gen_imgs, device).to(device, dtype=torch.float32)
 
             # 3. Classifier Predictions
             pred_indices = [-1] * len(batch_items)
@@ -1067,14 +1180,26 @@ def main():
                         layer_scores.append(float(swd_vals.mean().item()))
                     if layer_scores:
                         s_swd_score = float(np.mean(layer_scores))
+                clip_style_sim = 0.0
+                if gen_clip_feats is not None and tgt_id in ref_clip_matrices:
+                    refs = ref_clip_matrices[tgt_id]
+                    if refs.ndim == 2 and refs.shape[0] > 0:
+                        max_ref_compare = int(args.max_ref_compare)
+                        use_n = refs.shape[0] if max_ref_compare <= 0 else min(refs.shape[0], max_ref_compare)
+                        ref_clip = refs[:use_n]
+                        gen_clip = gen_clip_feats[i:i+1].expand(use_n, -1)
+                        clip_style_sim = float(F.cosine_similarity(gen_clip, ref_clip, dim=1).mean().item())
+                style_score = clip_style_sim if has_clip else s_swd_score
                 
                 writer.writerow({
                     'src_style': item['src_style'],
                     'tgt_style': item['tgt_style_name'],
                     'src_image': item['src_path'].name,
                     'gen_image': item['gen_name'],
-                    'content_ssim': c_ssim_vals[i],
+                    'content_lf_ssim': c_lf_vals[i],
+                    'style': style_score,
                     'style_swd': s_swd_score,
+                    'clip_style_sim': clip_style_sim,
                     'pred_style': pred_style_name,
                     'class_correct': class_correct
                 })
@@ -1116,9 +1241,12 @@ def generate_summary_json(csv_path, out_dir, ckpt_path):
         for tgt, items in targets.items():
             stats = {
                 'count': len(items),
+                'style': np.mean([to_f(x.get('style', x.get('clip_style_sim', x.get('style_swd', 0.0)))) for x in items]),
                 'style_swd': np.mean([to_f(x.get('style_swd', 0.0)) for x in items]),
-                'content_ssim': np.mean([to_f(x.get('content_ssim', 0.0)) for x in items]),
+                'clip_style_sim': np.mean([to_f(x.get('clip_style_sim', 0.0)) for x in items]),
+                'content_lf_ssim': np.mean([to_f(x.get('content_lf_ssim', x.get('content_ssim', 0.0))) for x in items]),
             }
+            stats['content_ssim'] = stats['content_lf_ssim']  # backward-compatible alias
             
             # Classification Accuracy for this pair
             cls_results = [x['class_correct'] for x in items if x['class_correct'] != 'N/A']
@@ -1179,12 +1307,17 @@ def generate_summary_json(csv_path, out_dir, ckpt_path):
         'matrix_breakdown': matrix_json,
         'analysis': {
             'style_transfer_ability': {
+                'style': pool_avg(transfer_pool, 'style'),
                 'style_swd': pool_avg(transfer_pool, 'style_swd'),
-                'content_ssim': pool_avg(transfer_pool, 'content_ssim'),
+                'clip_style_sim': pool_avg(transfer_pool, 'clip_style_sim'),
+                'content_lf_ssim': pool_avg(transfer_pool, 'content_lf_ssim'),
+                'content_ssim': pool_avg(transfer_pool, 'content_lf_ssim'),  # backward-compatible alias
                 'classifier_acc': pool_avg([t for t in transfer_pool if t['classifier_acc'] is not None], 'classifier_acc')
             },
             'photo_to_art_performance': {
+                'style': pool_avg(photo_transfer_pool, 'style'),
                 'style_swd': pool_avg(photo_transfer_pool, 'style_swd'),
+                'clip_style_sim': pool_avg(photo_transfer_pool, 'clip_style_sim'),
                 'valid': len(photo_transfer_pool) > 0,
                 'classifier_acc': pool_avg([t for t in photo_transfer_pool if t['classifier_acc'] is not None], 'classifier_acc')
             }

@@ -15,7 +15,14 @@ except ImportError:
 class LeakyProjectedStyleLoss(nn.Module):
     """Style loss based on projected latent features and Gram statistics."""
 
-    def __init__(self, in_channels: int = 4, hidden_dim: int = 64, scale_factor: float = 0.13025) -> None:
+    def __init__(
+        self,
+        in_channels: int = 4,
+        hidden_dim: int = 48,
+        scale_factor: float = 0.13025,
+        scales: Tuple[int, ...] = (1, 2),
+        negative_slope: float = 0.1,
+    ) -> None:
         super().__init__()
         self.scale_factor = float(scale_factor)
 
@@ -26,8 +33,8 @@ class LeakyProjectedStyleLoss(nn.Module):
             p.requires_grad_(False)
 
         self.norm = nn.GroupNorm(num_groups=1, num_channels=hidden_dim, eps=1e-6)
-        self.act = nn.LeakyReLU(negative_slope=0.1, inplace=True)
-        self.scales = [1, 2]
+        self.act = nn.LeakyReLU(negative_slope=float(negative_slope), inplace=True)
+        self.scales = [int(s) for s in scales]
 
     def forward(self, x_pred: torch.Tensor, x_target: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         x_pred_scaled = x_pred * self.scale_factor
@@ -60,13 +67,13 @@ class LeakyProjectedStyleLoss(nn.Module):
     def _gram(x: torch.Tensor) -> torch.Tensor:
         b, c, h, w = x.shape
         f = x.reshape(b, c, -1)
-        g = torch.bmm(f, f.transpose(1, 2)) / float(c)
+        g = torch.bmm(f, f.transpose(1, 2)) / float(max(h * w, 1))
         idx = torch.triu_indices(c, c, device=x.device)
         return g[:, idx[0], idx[1]]
 
     @staticmethod
     def _calc_moments(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        return x.mean(dim=[2, 3]), x.std(dim=[2, 3])
+        return x.mean(dim=[2, 3]), x.std(dim=[2, 3], unbiased=False)
 
 
 class PatchNCELoss(nn.Module):
@@ -129,11 +136,18 @@ class AdaCUTObjective:
         model_cfg = config.get("model", {})
 
         self.w_style = float(loss_cfg.get("w_style", 100.0))
-        self.w_moment = float(loss_cfg.get("w_moment", 2.0))
-        self.w_identity = float(loss_cfg.get("w_identity", 10.0))
+        self.w_moment = float(loss_cfg.get("w_moment", 0.0))
+        self.w_identity = float(loss_cfg.get("w_identity", 0.0))
         self.w_structure = float(loss_cfg.get("w_structure", 20.0))
 
         self.latent_scale_factor = float(model_cfg.get("latent_scale_factor", 0.13025))
+        self.style_dim = int(loss_cfg.get("style_dim", 48))
+        self.style_scales = tuple(int(s) for s in loss_cfg.get("style_scales", [1, 2]))
+        self.style_negative_slope = float(loss_cfg.get("style_negative_slope", 0.1))
+        self.nce_hidden_dim = int(loss_cfg.get("nce_hidden_dim", 256))
+        self.nce_out_dim = int(loss_cfg.get("nce_out_dim", 128))
+        self.nce_temp = float(loss_cfg.get("nce_temp", 0.07))
+        self.nce_chunk = int(loss_cfg.get("nce_chunk", 16))
 
         self._style_loss_module: LeakyProjectedStyleLoss | None = None
         self._content_loss_module: PatchNCELoss | None = None
@@ -145,8 +159,19 @@ class AdaCUTObjective:
 
     def _ensure_modules(self, device: torch.device) -> None:
         if self._style_loss_module is None or self._device != device:
-            self._style_loss_module = LeakyProjectedStyleLoss(scale_factor=self.latent_scale_factor).to(device)
-            self._content_loss_module = PatchNCELoss(in_channels=4, hidden_dim=256, out_dim=128).to(device)
+            self._style_loss_module = LeakyProjectedStyleLoss(
+                scale_factor=self.latent_scale_factor,
+                hidden_dim=self.style_dim,
+                scales=self.style_scales,
+                negative_slope=self.style_negative_slope,
+            ).to(device)
+            self._content_loss_module = PatchNCELoss(
+                in_channels=4,
+                hidden_dim=self.nce_hidden_dim,
+                out_dim=self.nce_out_dim,
+                temperature=self.nce_temp,
+                batch_chunk_size=self.nce_chunk,
+            ).to(device)
             self._device = device
 
     def compute(
@@ -191,6 +216,7 @@ class AdaCUTObjective:
 
         return {
             "loss": total,
+            "style_gram_mse": loss_style.detach(),
             "style_swd": loss_style.detach(),
             "style_moment": loss_moment.detach(),
             "identity": loss_idt.detach(),

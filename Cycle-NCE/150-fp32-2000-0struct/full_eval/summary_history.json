@@ -1,0 +1,30 @@
+{
+  "num_rounds": 1,
+  "latest": {
+    "epoch": 50,
+    "summary_path": "..\\150-fp32-2000-0struct\\full_eval\\epoch_0050\\summary.json",
+    "transfer_style": 0.53373816460371,
+    "transfer_style_swd": 1.492011851221323,
+    "transfer_clip_style_sim": 0.53373816460371,
+    "transfer_content_lf_ssim": 0.96632396825,
+    "transfer_content_ssim": 0.96632396825,
+    "photo_to_art_style": 0.4993901476264,
+    "photo_to_art_style_swd": 1.4600826226174832,
+    "photo_to_art_clip_style_sim": 0.4993901476264
+  },
+  "rounds": [
+    {
+      "epoch": 50,
+      "summary_path": "..\\150-fp32-2000-0struct\\full_eval\\epoch_0050\\summary.json",
+      "transfer_style": 0.53373816460371,
+      "transfer_style_swd": 1.492011851221323,
+      "transfer_clip_style_sim": 0.53373816460371,
+      "transfer_content_lf_ssim": 0.96632396825,
+      "transfer_content_ssim": 0.96632396825,
+      "photo_to_art_style": 0.4993901476264,
+      "photo_to_art_style_swd": 1.4600826226174832,
+      "photo_to_art_clip_style_sim": 0.4993901476264
+    }
+  ],
+  "updated_at": "2026-02-21 16:01:13"
+}

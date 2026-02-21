@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Optional
 
@@ -160,12 +161,33 @@ class LGTInference:
         return [self.generation(x0, sid, num_steps) for sid in style_ids]
 
 
-def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
+def _resolve_torch_dtype(dtype: str | torch.dtype | None) -> torch.dtype:
+    if isinstance(dtype, torch.dtype):
+        return dtype
+    key = str(dtype or "fp32").strip().lower()
+    mapping = {
+        "fp32": torch.float32,
+        "float32": torch.float32,
+        "fp16": torch.float16,
+        "float16": torch.float16,
+        "half": torch.float16,
+        "bf16": torch.bfloat16,
+        "bfloat16": torch.bfloat16,
+    }
+    if key not in mapping:
+        raise ValueError(f"Unsupported VAE dtype: {dtype}")
+    return mapping[key]
+
+
+def download_vae_with_fallback(model_id, device="cuda", cache_dir=None, torch_dtype: str | torch.dtype | None = "fp32"):
     from diffusers import AutoencoderKL
 
+    resolved_dtype = _resolve_torch_dtype(torch_dtype)
     vae_presets = {
         "sd15": "stabilityai/sd-vae-ft-mse",
-        "sdxl": "madebyollin/sdxl-vae-fp16-fix",
+        "sdxl": "stabilityai/sdxl-vae",
+        "sdxl_official": "stabilityai/sdxl-vae",
+        "sdxl_fp16_fix": "madebyollin/sdxl-vae-fp16-fix",
         "mse": "stabilityai/sd-vae-ft-mse",
         "ema": "stabilityai/sd-vae-ft-ema",
     }
@@ -179,7 +201,7 @@ def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
     try:
         vae = AutoencoderKL.from_pretrained(
             model_id,
-            torch_dtype=torch.float16,
+            torch_dtype=resolved_dtype,
             cache_dir=cache_dir,
             local_files_only=True,
         ).to(device)
@@ -193,7 +215,7 @@ def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
         found = _find_hf_repo_root(ms_dest)
         if found:
             try:
-                vae = AutoencoderKL.from_pretrained(found, torch_dtype=torch.float16, local_files_only=True).to(
+                vae = AutoencoderKL.from_pretrained(found, torch_dtype=resolved_dtype, local_files_only=True).to(
                     device
                 )
                 vae.eval()
@@ -211,39 +233,45 @@ def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
             else:
                 root = _find_hf_repo_root(dest)
             if root:
-                vae = AutoencoderKL.from_pretrained(root, torch_dtype=torch.float16).to(device)
+                vae = AutoencoderKL.from_pretrained(root, torch_dtype=resolved_dtype).to(device)
                 vae.eval()
                 return vae
         except Exception as exc:
             logger.warning("ModelScope VAE load failed: %s", exc)
 
-    vae = AutoencoderKL.from_pretrained(model_id, torch_dtype=torch.float16, cache_dir=cache_dir).to(device)
+    vae = AutoencoderKL.from_pretrained(model_id, torch_dtype=resolved_dtype, cache_dir=cache_dir).to(device)
     vae.eval()
     return vae
 
 
-def load_vae(device="cuda", model_id="sd15", cache_dir=None):
+def load_vae(device="cuda", model_id="sdxl", cache_dir=None, torch_dtype: str | torch.dtype | None = "fp32"):
     if device == "cuda" and not torch.cuda.is_available():
         logger.warning("CUDA not available, fallback to CPU for VAE.")
         device = "cpu"
-    return download_vae_with_fallback(model_id, device=device, cache_dir=cache_dir)
+    return download_vae_with_fallback(model_id, device=device, cache_dir=cache_dir, torch_dtype=torch_dtype)
 
 
 @torch.no_grad()
 def encode_image(vae, image_tensor, device="cuda"):
-    image_tensor = image_tensor.to(device, dtype=torch.float16)
-    latent = vae.encode(image_tensor).latent_dist.sample()
+    vae_dtype = next(vae.parameters()).dtype
+    image_tensor = image_tensor.to(device, dtype=vae_dtype)
+    amp_ctx = torch.autocast("cuda", enabled=False) if str(device).startswith("cuda") else nullcontext()
+    with amp_ctx:
+        latent = vae.encode(image_tensor).latent_dist.sample()
     latent = latent * vae.config.scaling_factor
-    return latent
+    return latent.float()
 
 
 @torch.no_grad()
 def decode_latent(vae, latent, device="cuda"):
-    latent = latent.to(device, dtype=torch.float16)
+    vae_dtype = next(vae.parameters()).dtype
+    latent = latent.to(device, dtype=vae_dtype)
     latent = latent / vae.config.scaling_factor
-    image = vae.decode(latent).sample
+    amp_ctx = torch.autocast("cuda", enabled=False) if str(device).startswith("cuda") else nullcontext()
+    with amp_ctx:
+        image = vae.decode(latent).sample
     image = (image + 1.0) / 2.0
-    return torch.clamp(image, 0.0, 1.0)
+    return torch.clamp(image.float(), 0.0, 1.0)
 
 
 def tensor_to_pil(tensor):

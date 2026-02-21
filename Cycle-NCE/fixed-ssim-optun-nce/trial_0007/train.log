@@ -1,0 +1,36 @@
+2026-02-20 10:53:15,757 - INFO - Active losses: w_style, w_moment, w_identity, w_structure
+2026-02-20 10:53:15,837 - INFO - Device: cuda
+2026-02-20 10:53:15,837 - INFO - Seed: 42
+2026-02-20 10:53:15,837 - INFO - Loading latent dataset from ..\..\sdxl-256-overfit50
+2026-02-20 10:53:15,889 - INFO -   style=photo id=0 count=10
+2026-02-20 10:53:15,913 - INFO -   style=Hayao id=1 count=10
+2026-02-20 10:53:15,934 - INFO -   style=monet id=2 count=10
+2026-02-20 10:53:15,950 - INFO -   style=cezanne id=3 count=10
+2026-02-20 10:53:15,967 - INFO -   style=vangogh id=4 count=10
+2026-02-20 10:53:16,537 - INFO - Dataset preloaded to cuda: 0.00GB across 5 style pools.
+2026-02-20 10:53:16,546 - INFO - DataLoader | batch=50 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-20 10:53:16,611 - INFO - Model params: 7,153,476
+2026-02-20 10:53:16,643 - INFO - Adding NCE Projector params to optimizer: 4 tensors
+2026-02-20 10:53:17,670 - INFO - No checkpoint found, start from scratch.
+2026-02-20 10:53:21,730 - INFO - [Epoch 1 Step 10/500] loss=52.7430 style_raw=3.506500e-05 style_x=0.3506 mom=0.6110 struct=3.9410 tv=0.0000 idt=0.0049 it/s=2.46 eta=198.9s
+2026-02-20 10:53:22,929 - INFO - [Epoch 1 Step 20/500] loss=52.2763 style_raw=3.448752e-05 style_x=0.3449 mom=0.5949 struct=3.9380 tv=0.0000 idt=0.0035 it/s=3.80 eta=126.2s
+2026-02-20 10:53:24,118 - INFO - [Epoch 1 Step 30/500] loss=52.1835 style_raw=3.472004e-05 style_x=0.3472 mom=0.5956 struct=3.9321 tv=0.0000 idt=0.0027 it/s=4.65 eta=101.0s
+2026-02-20 10:53:25,303 - INFO - [Epoch 1 Step 40/500] loss=52.1251 style_raw=3.474954e-05 style_x=0.3475 mom=0.5952 struct=3.9298 tv=0.0000 idt=0.0024 it/s=5.24 eta=87.8s
+2026-02-20 10:53:26,492 - INFO - [Epoch 1 Step 50/500] loss=52.1873 style_raw=3.524462e-05 style_x=0.3524 mom=0.5967 struct=3.9332 tv=0.0000 idt=0.0021 it/s=5.67 eta=79.4s
+2026-02-20 10:53:27,702 - INFO - [Epoch 1 Step 60/500] loss=52.1845 style_raw=3.536920e-05 style_x=0.3537 mom=0.5993 struct=3.9294 tv=0.0000 idt=0.0019 it/s=5.98 eta=73.6s
+2026-02-20 10:53:28,896 - INFO - [Epoch 1 Step 70/500] loss=52.2030 style_raw=3.543681e-05 style_x=0.3544 mom=0.6001 struct=3.9309 tv=0.0000 idt=0.0017 it/s=6.24 eta=69.0s
+2026-02-20 10:53:30,079 - INFO - [Epoch 1 Step 80/500] loss=52.1539 style_raw=3.538092e-05 style_x=0.3538 mom=0.5994 struct=3.9287 tv=0.0000 idt=0.0015 it/s=6.45 eta=65.1s
+2026-02-20 10:53:31,291 - INFO - [Epoch 1 Step 90/500] loss=52.1716 style_raw=3.529587e-05 style_x=0.3530 mom=0.5994 struct=3.9319 tv=0.0000 idt=0.0014 it/s=6.61 eta=62.0s
+2026-02-20 10:53:32,485 - INFO - [Epoch 1 Step 100/500] loss=52.1591 style_raw=3.546835e-05 style_x=0.3547 mom=0.6001 struct=3.9296 tv=0.0000 idt=0.0012 it/s=6.75 eta=59.3s
+2026-02-20 10:53:33,725 - INFO - [Epoch 1 Step 110/500] loss=52.1795 style_raw=3.563875e-05 style_x=0.3564 mom=0.6015 struct=3.9293 tv=0.0000 idt=0.0011 it/s=6.85 eta=56.9s
+2026-02-20 10:53:34,955 - INFO - [Epoch 1 Step 120/500] loss=52.1891 style_raw=3.557757e-05 style_x=0.3558 mom=0.6016 struct=3.9310 tv=0.0000 idt=0.0010 it/s=6.94 eta=54.7s
+2026-02-20 10:53:36,174 - INFO - [Epoch 1 Step 130/500] loss=nan style_raw=nan style_x=nan mom=nan struct=nan tv=0.0000 idt=nan it/s=7.03 eta=52.7s
+2026-02-20 10:53:37,373 - INFO - [Epoch 1 Step 140/500] loss=nan style_raw=nan style_x=nan mom=nan struct=nan tv=0.0000 idt=nan it/s=7.11 eta=50.7s
+2026-02-20 10:53:39,686 - INFO - [Epoch 1 Step 150/500] loss=nan style_raw=nan style_x=nan mom=nan struct=nan tv=0.0000 idt=nan it/s=6.81 eta=51.4s
+2026-02-20 10:53:41,021 - INFO - [Epoch 1 Step 160/500] loss=nan style_raw=nan style_x=nan mom=nan struct=nan tv=0.0000 idt=nan it/s=6.85 eta=49.6s
+2026-02-20 10:53:42,265 - INFO - [Epoch 1 Step 170/500] loss=nan style_raw=nan style_x=nan mom=nan struct=nan tv=0.0000 idt=nan it/s=6.91 eta=47.7s
+2026-02-20 10:53:43,490 - INFO - [Epoch 1 Step 180/500] loss=nan style_raw=nan style_x=nan mom=nan struct=nan tv=0.0000 idt=nan it/s=6.97 eta=45.9s
+2026-02-20 10:53:44,682 - INFO - [Epoch 1 Step 190/500] loss=nan style_raw=nan style_x=nan mom=nan struct=nan tv=0.0000 idt=nan it/s=7.03 eta=44.1s
+2026-02-20 10:53:45,872 - INFO - [Epoch 1 Step 200/500] loss=nan style_raw=nan style_x=nan mom=nan struct=nan tv=0.0000 idt=nan it/s=7.09 eta=42.3s
+2026-02-20 10:53:47,076 - INFO - [Epoch 1 Step 210/500] loss=nan style_raw=nan style_x=nan mom=nan struct=nan tv=0.0000 idt=nan it/s=7.14 eta=40.6s
+Traceback (most recent call last):

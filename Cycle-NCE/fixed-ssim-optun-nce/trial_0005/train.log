@@ -1,0 +1,31 @@
+2026-02-20 10:48:40,504 - WARNING - w_style=1878.9552 looks high for Projected SWD loss. Recommended start range is [5, 20].
+2026-02-20 10:48:40,504 - INFO - Active losses: w_style, w_moment, w_identity, w_structure
+2026-02-20 10:48:40,530 - INFO - Device: cuda
+2026-02-20 10:48:40,530 - INFO - Seed: 42
+2026-02-20 10:48:40,530 - INFO - Loading latent dataset from ..\..\sdxl-256-overfit50
+2026-02-20 10:48:40,536 - INFO -   style=photo id=0 count=10
+2026-02-20 10:48:40,540 - INFO -   style=Hayao id=1 count=10
+2026-02-20 10:48:40,543 - INFO -   style=monet id=2 count=10
+2026-02-20 10:48:40,544 - INFO -   style=cezanne id=3 count=10
+2026-02-20 10:48:40,550 - INFO -   style=vangogh id=4 count=10
+2026-02-20 10:48:40,613 - INFO - Dataset preloaded to cuda: 0.00GB across 5 style pools.
+2026-02-20 10:48:40,613 - INFO - DataLoader | batch=50 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-20 10:48:40,659 - INFO - Model params: 7,153,476
+2026-02-20 10:48:40,661 - INFO - Adding NCE Projector params to optimizer: 4 tensors
+2026-02-20 10:48:41,320 - INFO - No checkpoint found, start from scratch.
+2026-02-20 10:48:43,717 - INFO - [Epoch 1 Step 10/500] loss=709.8092 style_raw=3.501105e-05 style_x=0.3501 mom=0.6112 struct=3.9422 tv=0.0000 idt=0.0118 it/s=4.17 eta=117.4s
+2026-02-20 10:48:44,921 - INFO - [Epoch 1 Step 20/500] loss=697.7915 style_raw=3.434081e-05 style_x=0.3434 mom=0.5953 struct=3.9411 tv=0.0000 idt=0.0235 it/s=5.56 eta=86.4s
+2026-02-20 10:48:46,117 - INFO - [Epoch 1 Step 30/500] loss=700.4465 style_raw=3.443164e-05 style_x=0.3443 mom=0.5963 struct=3.9376 tv=0.0000 idt=0.0362 it/s=6.25 eta=75.1s
+2026-02-20 10:48:47,313 - INFO - [Epoch 1 Step 40/500] loss=699.2633 style_raw=3.431491e-05 style_x=0.3431 mom=0.5967 struct=3.9384 tv=0.0000 idt=0.0493 it/s=6.67 eta=68.9s
+2026-02-20 10:48:48,511 - INFO - [Epoch 1 Step 50/500] loss=706.0896 style_raw=3.461531e-05 style_x=0.3462 mom=0.5987 struct=3.9456 tv=0.0000 idt=0.0635 it/s=6.95 eta=64.7s
+2026-02-20 10:48:49,703 - INFO - [Epoch 1 Step 60/500] loss=704.9906 style_raw=3.448921e-05 style_x=0.3449 mom=0.6015 struct=3.9462 tv=0.0000 idt=0.0794 it/s=7.16 eta=61.5s
+2026-02-20 10:48:50,901 - INFO - [Epoch 1 Step 70/500] loss=702.2827 style_raw=3.426279e-05 style_x=0.3426 mom=0.6024 struct=3.9523 tv=0.0000 idt=0.0987 it/s=7.31 eta=58.8s
+2026-02-20 10:48:52,094 - INFO - [Epoch 1 Step 80/500] loss=695.9611 style_raw=3.383370e-05 style_x=0.3383 mom=0.6014 struct=3.9566 tv=0.0000 idt=0.1214 it/s=7.43 eta=56.6s
+2026-02-20 10:48:53,285 - INFO - [Epoch 1 Step 90/500] loss=688.7568 style_raw=3.336668e-05 style_x=0.3337 mom=0.6008 struct=3.9636 tv=0.0000 idt=0.1413 it/s=7.52 eta=54.5s
+2026-02-20 10:48:54,482 - INFO - [Epoch 1 Step 100/500] loss=685.5715 style_raw=3.312552e-05 style_x=0.3313 mom=0.6004 struct=3.9655 tv=0.0000 idt=0.1589 it/s=7.60 eta=52.6s
+2026-02-20 10:48:55,676 - INFO - [Epoch 1 Step 110/500] loss=681.3657 style_raw=3.282691e-05 style_x=0.3283 mom=0.6014 struct=3.9706 tv=0.0000 idt=0.1765 it/s=7.66 eta=50.9s
+2026-02-20 10:48:56,870 - INFO - [Epoch 1 Step 120/500] loss=673.9819 style_raw=3.238090e-05 style_x=0.3238 mom=0.6006 struct=3.9778 tv=0.0000 idt=0.1889 it/s=7.72 eta=49.2s
+2026-02-20 10:48:58,062 - INFO - [Epoch 1 Step 130/500] loss=666.1401 style_raw=3.191564e-05 style_x=0.3192 mom=0.6004 struct=3.9860 tv=0.0000 idt=0.1997 it/s=7.77 eta=47.6s
+2026-02-20 10:48:59,260 - INFO - [Epoch 1 Step 140/500] loss=659.5980 style_raw=3.150596e-05 style_x=0.3151 mom=0.5998 struct=3.9948 tv=0.0000 idt=0.2139 it/s=7.80 eta=46.1s
+2026-02-20 10:49:00,458 - INFO - [Epoch 1 Step 150/500] loss=653.2580 style_raw=3.114108e-05 style_x=0.3114 mom=0.5991 struct=4.0015 tv=0.0000 idt=0.2200 it/s=7.84 eta=44.7s
+Traceback (most recent call last):

@@ -1,0 +1,23 @@
+2026-02-20 10:44:05,218 - INFO - Active losses: w_style, w_moment, w_identity, w_structure
+2026-02-20 10:44:05,246 - INFO - Device: cuda
+2026-02-20 10:44:05,246 - INFO - Seed: 42
+2026-02-20 10:44:05,246 - INFO - Loading latent dataset from ..\..\sdxl-256-overfit50
+2026-02-20 10:44:05,252 - INFO -   style=photo id=0 count=10
+2026-02-20 10:44:05,255 - INFO -   style=Hayao id=1 count=10
+2026-02-20 10:44:05,258 - INFO -   style=monet id=2 count=10
+2026-02-20 10:44:05,262 - INFO -   style=cezanne id=3 count=10
+2026-02-20 10:44:05,265 - INFO -   style=vangogh id=4 count=10
+2026-02-20 10:44:05,330 - INFO - Dataset preloaded to cuda: 0.00GB across 5 style pools.
+2026-02-20 10:44:05,331 - INFO - DataLoader | batch=50 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-20 10:44:05,376 - INFO - Model params: 7,153,476
+2026-02-20 10:44:05,378 - INFO - Adding NCE Projector params to optimizer: 4 tensors
+2026-02-20 10:44:06,042 - INFO - No checkpoint found, start from scratch.
+2026-02-20 10:44:08,407 - INFO - [Epoch 1 Step 10/500] loss=58.2419 style=0.0000 mom=0.6110 struct=3.9410 tv=0.0000 idt=0.0053 it/s=4.23 eta=115.9s
+2026-02-20 10:44:09,604 - INFO - [Epoch 1 Step 20/500] loss=57.6778 style=0.0000 mom=0.5949 struct=3.9380 tv=0.0000 idt=0.0037 it/s=5.62 eta=85.5s
+2026-02-20 10:44:10,803 - INFO - [Epoch 1 Step 30/500] loss=57.6244 style=0.0000 mom=0.5956 struct=3.9321 tv=0.0000 idt=0.0030 it/s=6.30 eta=74.6s
+2026-02-20 10:44:12,006 - INFO - [Epoch 1 Step 40/500] loss=57.5606 style=0.0000 mom=0.5952 struct=3.9298 tv=0.0000 idt=0.0025 it/s=6.71 eta=68.6s
+2026-02-20 10:44:13,204 - INFO - [Epoch 1 Step 50/500] loss=57.6952 style=0.0000 mom=0.5967 struct=3.9332 tv=0.0000 idt=0.0022 it/s=6.98 eta=64.5s
+2026-02-20 10:44:14,396 - INFO - [Epoch 1 Step 60/500] loss=57.7102 style=0.0000 mom=0.5993 struct=3.9294 tv=0.0000 idt=0.0019 it/s=7.18 eta=61.3s
+2026-02-20 10:44:15,594 - INFO - [Epoch 1 Step 70/500] loss=57.7360 style=0.0000 mom=0.6001 struct=3.9309 tv=0.0000 idt=0.0017 it/s=7.33 eta=58.7s
+2026-02-20 10:44:16,789 - INFO - [Epoch 1 Step 80/500] loss=57.6774 style=0.0000 mom=0.5994 struct=3.9287 tv=0.0000 idt=0.0015 it/s=7.44 eta=56.4s
+Traceback (most recent call last):

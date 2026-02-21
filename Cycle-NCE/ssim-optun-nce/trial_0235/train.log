@@ -1,0 +1,120 @@
+2026-02-20 13:36:55,405 - WARNING - w_style=212.4842 looks high for Projected SWD loss. Recommended start range is [5, 20].
+2026-02-20 13:36:55,406 - INFO - Active losses: w_style, w_moment, w_identity, w_structure
+2026-02-20 13:36:55,427 - INFO - Device: cuda
+2026-02-20 13:36:55,427 - INFO - Seed: 42
+2026-02-20 13:36:55,427 - INFO - Loading latent dataset from ..\..\sdxl-256-overfit50
+2026-02-20 13:36:55,432 - INFO -   style=photo id=0 count=10
+2026-02-20 13:36:55,436 - INFO -   style=Hayao id=1 count=10
+2026-02-20 13:36:55,439 - INFO -   style=monet id=2 count=10
+2026-02-20 13:36:55,443 - INFO -   style=cezanne id=3 count=10
+2026-02-20 13:36:55,446 - INFO -   style=vangogh id=4 count=10
+2026-02-20 13:36:55,499 - INFO - Dataset preloaded to cuda: 0.00GB across 5 style pools.
+2026-02-20 13:36:55,500 - INFO - DataLoader | batch=50 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-20 13:36:55,541 - INFO - Model params: 7,153,476
+2026-02-20 13:36:55,543 - INFO - Adding NCE Projector params to optimizer: 4 tensors
+2026-02-20 13:36:56,178 - INFO - No checkpoint found, start from scratch.
+2026-02-20 13:36:58,868 - INFO - [Epoch 1 Step 10/1000] loss=7349.4344 style=33.2240 mom=0.5977 struct=3.9509 tv=0.0000 idt=0.0489 it/s=3.72 eta=266.2s
+2026-02-20 13:37:00,504 - INFO - [Epoch 1 Step 20/1000] loss=7492.1380 style=33.8394 mom=0.6029 struct=3.9657 tv=0.0000 idt=0.0675 it/s=4.63 eta=211.9s
+2026-02-20 13:37:02,141 - INFO - [Epoch 1 Step 30/1000] loss=7449.8079 style=33.5944 mom=0.6031 struct=3.9696 tv=0.0000 idt=0.0847 it/s=5.03 eta=192.7s
+2026-02-20 13:37:03,772 - INFO - [Epoch 1 Step 40/1000] loss=7396.7757 style=33.3052 mom=0.6020 struct=3.9636 tv=0.0000 idt=0.1006 it/s=5.27 eta=182.2s
+2026-02-20 13:37:05,407 - INFO - [Epoch 1 Step 50/1000] loss=7399.2453 style=33.2672 mom=0.6039 struct=3.9625 tv=0.0000 idt=0.1189 it/s=5.42 eta=175.3s
+2026-02-20 13:37:07,038 - INFO - [Epoch 1 Step 60/1000] loss=7317.8981 style=32.8287 mom=0.6037 struct=3.9699 tv=0.0000 idt=0.1397 it/s=5.53 eta=170.1s
+2026-02-20 13:37:08,672 - INFO - [Epoch 1 Step 70/1000] loss=7219.9197 style=32.3111 mom=0.6015 struct=3.9740 tv=0.0000 idt=0.1618 it/s=5.60 eta=166.0s
+2026-02-20 13:37:10,303 - INFO - [Epoch 1 Step 80/1000] loss=7189.2870 style=32.0856 mom=0.6024 struct=3.9808 tv=0.0000 idt=0.1921 it/s=5.66 eta=162.4s
+2026-02-20 13:37:11,935 - INFO - [Epoch 1 Step 90/1000] loss=7103.8977 style=31.5993 mom=0.6020 struct=3.9863 tv=0.0000 idt=0.2241 it/s=5.71 eta=159.3s
+2026-02-20 13:37:13,566 - INFO - [Epoch 1 Step 100/1000] loss=7024.7517 style=31.1427 mom=0.6023 struct=3.9941 tv=0.0000 idt=0.2555 it/s=5.75 eta=156.5s
+2026-02-20 13:37:15,195 - INFO - [Epoch 1 Step 110/1000] loss=6949.1389 style=30.7441 mom=0.6008 struct=4.0018 tv=0.0000 idt=0.2719 it/s=5.78 eta=153.9s
+2026-02-20 13:37:16,830 - INFO - [Epoch 1 Step 120/1000] loss=6865.0738 style=30.2952 mom=0.6001 struct=4.0082 tv=0.0000 idt=0.2921 it/s=5.81 eta=151.4s
+2026-02-20 13:37:18,459 - INFO - [Epoch 1 Step 130/1000] loss=6796.6227 style=29.9219 mom=0.5980 struct=4.0163 tv=0.0000 idt=0.3118 it/s=5.84 eta=149.1s
+2026-02-20 13:37:20,115 - INFO - [Epoch 1 Step 140/1000] loss=6711.2032 style=29.4794 mom=0.5967 struct=4.0221 tv=0.0000 idt=0.3273 it/s=5.85 eta=147.0s
+2026-02-20 13:37:21,746 - INFO - [Epoch 1 Step 150/1000] loss=6654.6570 style=29.1552 mom=0.5961 struct=4.0295 tv=0.0000 idt=0.3493 it/s=5.87 eta=144.9s
+2026-02-20 13:37:23,382 - INFO - [Epoch 1 Step 160/1000] loss=6588.3970 style=28.8000 mom=0.5941 struct=4.0378 tv=0.0000 idt=0.3659 it/s=5.88 eta=142.8s
+2026-02-20 13:37:25,021 - INFO - [Epoch 1 Step 170/1000] loss=6520.8519 style=28.4171 mom=0.5919 struct=4.0478 tv=0.0000 idt=0.3909 it/s=5.89 eta=140.8s
+2026-02-20 13:37:26,666 - INFO - [Epoch 1 Step 180/1000] loss=6449.6942 style=28.0427 mom=0.5903 struct=4.0569 tv=0.0000 idt=0.4059 it/s=5.90 eta=138.9s
+2026-02-20 13:37:28,335 - INFO - [Epoch 1 Step 190/1000] loss=6393.1506 style=27.7260 mom=0.5877 struct=4.0683 tv=0.0000 idt=0.4254 it/s=5.91 eta=137.1s
+2026-02-20 13:37:29,967 - INFO - [Epoch 1 Step 200/1000] loss=6335.0841 style=27.4153 mom=0.5853 struct=4.0791 tv=0.0000 idt=0.4399 it/s=5.92 eta=135.2s
+2026-02-20 13:37:31,599 - INFO - [Epoch 1 Step 210/1000] loss=6269.7131 style=27.0679 mom=0.5830 struct=4.0872 tv=0.0000 idt=0.4553 it/s=5.93 eta=133.2s
+2026-02-20 13:37:33,234 - INFO - [Epoch 1 Step 220/1000] loss=6204.8101 style=26.7374 mom=0.5798 struct=4.0959 tv=0.0000 idt=0.4655 it/s=5.94 eta=131.4s
+2026-02-20 13:37:34,863 - INFO - [Epoch 1 Step 230/1000] loss=6153.8457 style=26.4586 mom=0.5771 struct=4.1071 tv=0.0000 idt=0.4805 it/s=5.95 eta=129.5s
+2026-02-20 13:37:36,502 - INFO - [Epoch 1 Step 240/1000] loss=6107.2058 style=26.1999 mom=0.5746 struct=4.1188 tv=0.0000 idt=0.4956 it/s=5.95 eta=127.7s
+2026-02-20 13:37:38,131 - INFO - [Epoch 1 Step 250/1000] loss=6065.9107 style=25.9595 mom=0.5725 struct=4.1284 tv=0.0000 idt=0.5134 it/s=5.96 eta=125.9s
+2026-02-20 13:37:39,768 - INFO - [Epoch 1 Step 260/1000] loss=6029.9152 style=25.7651 mom=0.5705 struct=4.1380 tv=0.0000 idt=0.5230 it/s=5.96 eta=124.1s
+2026-02-20 13:37:41,400 - INFO - [Epoch 1 Step 270/1000] loss=5989.2848 style=25.5409 mom=0.5685 struct=4.1467 tv=0.0000 idt=0.5357 it/s=5.97 eta=122.3s
+2026-02-20 13:37:43,031 - INFO - [Epoch 1 Step 280/1000] loss=5950.6266 style=25.3312 mom=0.5667 struct=4.1575 tv=0.0000 idt=0.5462 it/s=5.98 eta=120.5s
+2026-02-20 13:37:44,661 - INFO - [Epoch 1 Step 290/1000] loss=5913.4974 style=25.1299 mom=0.5655 struct=4.1663 tv=0.0000 idt=0.5562 it/s=5.98 eta=118.7s
+2026-02-20 13:37:46,292 - INFO - [Epoch 1 Step 300/1000] loss=5878.7388 style=24.9404 mom=0.5638 struct=4.1729 tv=0.0000 idt=0.5663 it/s=5.99 eta=116.9s
+2026-02-20 13:37:47,927 - INFO - [Epoch 1 Step 310/1000] loss=5854.6060 style=24.8025 mom=0.5627 struct=4.1810 tv=0.0000 idt=0.5754 it/s=5.99 eta=115.2s
+2026-02-20 13:37:49,558 - INFO - [Epoch 1 Step 320/1000] loss=5819.7858 style=24.6111 mom=0.5610 struct=4.1916 tv=0.0000 idt=0.5858 it/s=6.00 eta=113.4s
+2026-02-20 13:37:51,196 - INFO - [Epoch 1 Step 330/1000] loss=5786.6483 style=24.4423 mom=0.5594 struct=4.1988 tv=0.0000 idt=0.5909 it/s=6.00 eta=111.7s
+2026-02-20 13:37:52,835 - INFO - [Epoch 1 Step 340/1000] loss=5758.8031 style=24.2932 mom=0.5585 struct=4.2065 tv=0.0000 idt=0.5976 it/s=6.00 eta=110.0s
+2026-02-20 13:37:54,468 - INFO - [Epoch 1 Step 350/1000] loss=5732.6670 style=24.1502 mom=0.5577 struct=4.2148 tv=0.0000 idt=0.6050 it/s=6.00 eta=108.3s
+2026-02-20 13:37:56,111 - INFO - [Epoch 1 Step 360/1000] loss=5700.8416 style=23.9845 mom=0.5565 struct=4.2227 tv=0.0000 idt=0.6109 it/s=6.01 eta=106.5s
+2026-02-20 13:37:57,740 - INFO - [Epoch 1 Step 370/1000] loss=5673.4950 style=23.8453 mom=0.5551 struct=4.2300 tv=0.0000 idt=0.6150 it/s=6.01 eta=104.8s
+2026-02-20 13:37:59,376 - INFO - [Epoch 1 Step 380/1000] loss=5645.1884 style=23.7043 mom=0.5537 struct=4.2378 tv=0.0000 idt=0.6179 it/s=6.01 eta=103.1s
+2026-02-20 13:38:01,005 - INFO - [Epoch 1 Step 390/1000] loss=5621.3729 style=23.5734 mom=0.5527 struct=4.2453 tv=0.0000 idt=0.6250 it/s=6.02 eta=101.4s
+2026-02-20 13:38:02,639 - INFO - [Epoch 1 Step 400/1000] loss=5600.0324 style=23.4641 mom=0.5516 struct=4.2509 tv=0.0000 idt=0.6284 it/s=6.02 eta=99.7s
+2026-02-20 13:38:04,268 - INFO - [Epoch 1 Step 410/1000] loss=5578.4421 style=23.3540 mom=0.5505 struct=4.2581 tv=0.0000 idt=0.6316 it/s=6.02 eta=98.0s
+2026-02-20 13:38:05,924 - INFO - [Epoch 1 Step 420/1000] loss=5560.8645 style=23.2532 mom=0.5495 struct=4.2656 tv=0.0000 idt=0.6383 it/s=6.02 eta=96.3s
+2026-02-20 13:38:07,554 - INFO - [Epoch 1 Step 430/1000] loss=5546.8279 style=23.1853 mom=0.5486 struct=4.2702 tv=0.0000 idt=0.6391 it/s=6.02 eta=94.6s
+2026-02-20 13:38:09,185 - INFO - [Epoch 1 Step 440/1000] loss=5533.8857 style=23.1052 mom=0.5478 struct=4.2771 tv=0.0000 idt=0.6462 it/s=6.03 eta=92.9s
+2026-02-20 13:38:10,841 - INFO - [Epoch 1 Step 450/1000] loss=5514.8792 style=23.0020 mom=0.5468 struct=4.2828 tv=0.0000 idt=0.6515 it/s=6.03 eta=91.3s
+2026-02-20 13:38:12,504 - INFO - [Epoch 1 Step 460/1000] loss=5493.4690 style=22.9044 mom=0.5461 struct=4.2872 tv=0.0000 idt=0.6502 it/s=6.03 eta=89.6s
+2026-02-20 13:38:14,131 - INFO - [Epoch 1 Step 470/1000] loss=5475.6284 style=22.8152 mom=0.5450 struct=4.2929 tv=0.0000 idt=0.6522 it/s=6.03 eta=87.9s
+2026-02-20 13:38:15,763 - INFO - [Epoch 1 Step 480/1000] loss=5456.6247 style=22.7174 mom=0.5442 struct=4.2984 tv=0.0000 idt=0.6553 it/s=6.03 eta=86.2s
+2026-02-20 13:38:17,394 - INFO - [Epoch 1 Step 490/1000] loss=5438.0887 style=22.6191 mom=0.5433 struct=4.3045 tv=0.0000 idt=0.6595 it/s=6.03 eta=84.5s
+2026-02-20 13:38:19,032 - INFO - [Epoch 1 Step 500/1000] loss=5418.7578 style=22.5229 mom=0.5421 struct=4.3104 tv=0.0000 idt=0.6615 it/s=6.03 eta=82.9s
+2026-02-20 13:38:20,667 - INFO - [Epoch 1 Step 510/1000] loss=5398.5192 style=22.4234 mom=0.5409 struct=4.3148 tv=0.0000 idt=0.6633 it/s=6.04 eta=81.2s
+2026-02-20 13:38:22,299 - INFO - [Epoch 1 Step 520/1000] loss=5387.4391 style=22.3679 mom=0.5405 struct=4.3189 tv=0.0000 idt=0.6644 it/s=6.04 eta=79.5s
+2026-02-20 13:38:23,949 - INFO - [Epoch 1 Step 530/1000] loss=5374.3254 style=22.3022 mom=0.5400 struct=4.3231 tv=0.0000 idt=0.6659 it/s=6.04 eta=77.8s
+2026-02-20 13:38:25,581 - INFO - [Epoch 1 Step 540/1000] loss=5357.4861 style=22.2214 mom=0.5394 struct=4.3288 tv=0.0000 idt=0.6663 it/s=6.04 eta=76.2s
+2026-02-20 13:38:27,213 - INFO - [Epoch 1 Step 550/1000] loss=5341.2514 style=22.1440 mom=0.5388 struct=4.3346 tv=0.0000 idt=0.6665 it/s=6.04 eta=74.5s
+2026-02-20 13:38:28,848 - INFO - [Epoch 1 Step 560/1000] loss=5324.8358 style=22.0682 mom=0.5381 struct=4.3414 tv=0.0000 idt=0.6658 it/s=6.04 eta=72.8s
+2026-02-20 13:38:30,479 - INFO - [Epoch 1 Step 570/1000] loss=5308.1330 style=21.9898 mom=0.5374 struct=4.3454 tv=0.0000 idt=0.6657 it/s=6.04 eta=71.1s
+2026-02-20 13:38:32,111 - INFO - [Epoch 1 Step 580/1000] loss=5292.4506 style=21.9144 mom=0.5365 struct=4.3499 tv=0.0000 idt=0.6663 it/s=6.05 eta=69.5s
+2026-02-20 13:38:33,742 - INFO - [Epoch 1 Step 590/1000] loss=5276.4089 style=21.8440 mom=0.5359 struct=4.3531 tv=0.0000 idt=0.6644 it/s=6.05 eta=67.8s
+2026-02-20 13:38:35,373 - INFO - [Epoch 1 Step 600/1000] loss=5262.7028 style=21.7767 mom=0.5351 struct=4.3577 tv=0.0000 idt=0.6654 it/s=6.05 eta=66.1s
+2026-02-20 13:38:37,003 - INFO - [Epoch 1 Step 610/1000] loss=5248.0718 style=21.7110 mom=0.5346 struct=4.3625 tv=0.0000 idt=0.6641 it/s=6.05 eta=64.5s
+2026-02-20 13:38:38,637 - INFO - [Epoch 1 Step 620/1000] loss=5233.6787 style=21.6451 mom=0.5337 struct=4.3681 tv=0.0000 idt=0.6633 it/s=6.05 eta=62.8s
+2026-02-20 13:38:40,273 - INFO - [Epoch 1 Step 630/1000] loss=5221.3377 style=21.5929 mom=0.5334 struct=4.3722 tv=0.0000 idt=0.6610 it/s=6.05 eta=61.1s
+2026-02-20 13:38:41,905 - INFO - [Epoch 1 Step 640/1000] loss=5205.5607 style=21.5202 mom=0.5326 struct=4.3763 tv=0.0000 idt=0.6604 it/s=6.05 eta=59.5s
+2026-02-20 13:38:43,539 - INFO - [Epoch 1 Step 650/1000] loss=5191.1357 style=21.4573 mom=0.5319 struct=4.3795 tv=0.0000 idt=0.6585 it/s=6.05 eta=57.8s
+2026-02-20 13:38:45,176 - INFO - [Epoch 1 Step 660/1000] loss=5175.6842 style=21.3880 mom=0.5311 struct=4.3833 tv=0.0000 idt=0.6573 it/s=6.06 eta=56.1s
+2026-02-20 13:38:46,808 - INFO - [Epoch 1 Step 670/1000] loss=5164.2844 style=21.3330 mom=0.5306 struct=4.3882 tv=0.0000 idt=0.6576 it/s=6.06 eta=54.5s
+2026-02-20 13:38:48,438 - INFO - [Epoch 1 Step 680/1000] loss=5154.1111 style=21.2870 mom=0.5303 struct=4.3910 tv=0.0000 idt=0.6569 it/s=6.06 eta=52.8s
+2026-02-20 13:38:50,093 - INFO - [Epoch 1 Step 690/1000] loss=5140.6897 style=21.2258 mom=0.5296 struct=4.3939 tv=0.0000 idt=0.6562 it/s=6.06 eta=51.2s
+2026-02-20 13:38:51,721 - INFO - [Epoch 1 Step 700/1000] loss=5127.0148 style=21.1652 mom=0.5288 struct=4.3962 tv=0.0000 idt=0.6549 it/s=6.06 eta=49.5s
+2026-02-20 13:38:53,352 - INFO - [Epoch 1 Step 710/1000] loss=5117.6086 style=21.1213 mom=0.5285 struct=4.4010 tv=0.0000 idt=0.6545 it/s=6.06 eta=47.9s
+2026-02-20 13:38:54,983 - INFO - [Epoch 1 Step 720/1000] loss=5101.5132 style=21.0510 mom=0.5280 struct=4.4041 tv=0.0000 idt=0.6524 it/s=6.06 eta=46.2s
+2026-02-20 13:38:56,610 - INFO - [Epoch 1 Step 730/1000] loss=5090.0055 style=21.0026 mom=0.5274 struct=4.4061 tv=0.0000 idt=0.6503 it/s=6.06 eta=44.5s
+2026-02-20 13:38:58,242 - INFO - [Epoch 1 Step 740/1000] loss=5080.6485 style=20.9602 mom=0.5269 struct=4.4095 tv=0.0000 idt=0.6496 it/s=6.06 eta=42.9s
+2026-02-20 13:38:59,873 - INFO - [Epoch 1 Step 750/1000] loss=5068.2526 style=20.9087 mom=0.5262 struct=4.4132 tv=0.0000 idt=0.6470 it/s=6.06 eta=41.2s
+2026-02-20 13:39:01,505 - INFO - [Epoch 1 Step 760/1000] loss=5059.4709 style=20.8700 mom=0.5258 struct=4.4170 tv=0.0000 idt=0.6459 it/s=6.06 eta=39.6s
+2026-02-20 13:39:03,138 - INFO - [Epoch 1 Step 770/1000] loss=5047.9683 style=20.8208 mom=0.5252 struct=4.4197 tv=0.0000 idt=0.6441 it/s=6.06 eta=37.9s
+2026-02-20 13:39:04,769 - INFO - [Epoch 1 Step 780/1000] loss=5036.5963 style=20.7728 mom=0.5246 struct=4.4228 tv=0.0000 idt=0.6420 it/s=6.07 eta=36.3s
+2026-02-20 13:39:06,400 - INFO - [Epoch 1 Step 790/1000] loss=5025.4579 style=20.7276 mom=0.5239 struct=4.4265 tv=0.0000 idt=0.6392 it/s=6.07 eta=34.6s
+2026-02-20 13:39:08,031 - INFO - [Epoch 1 Step 800/1000] loss=5014.9005 style=20.6799 mom=0.5235 struct=4.4297 tv=0.0000 idt=0.6384 it/s=6.07 eta=33.0s
+2026-02-20 13:39:09,663 - INFO - [Epoch 1 Step 810/1000] loss=5004.6213 style=20.6351 mom=0.5229 struct=4.4329 tv=0.0000 idt=0.6371 it/s=6.07 eta=31.3s
+2026-02-20 13:39:11,295 - INFO - [Epoch 1 Step 820/1000] loss=4995.4525 style=20.5944 mom=0.5225 struct=4.4357 tv=0.0000 idt=0.6361 it/s=6.07 eta=29.7s
+2026-02-20 13:39:12,929 - INFO - [Epoch 1 Step 830/1000] loss=4985.7026 style=20.5535 mom=0.5220 struct=4.4387 tv=0.0000 idt=0.6342 it/s=6.07 eta=28.0s
+2026-02-20 13:39:14,556 - INFO - [Epoch 1 Step 840/1000] loss=4975.2872 style=20.5108 mom=0.5215 struct=4.4413 tv=0.0000 idt=0.6318 it/s=6.07 eta=26.4s
+2026-02-20 13:39:16,186 - INFO - [Epoch 1 Step 850/1000] loss=4965.2637 style=20.4706 mom=0.5211 struct=4.4449 tv=0.0000 idt=0.6290 it/s=6.07 eta=24.7s
+2026-02-20 13:39:17,819 - INFO - [Epoch 1 Step 860/1000] loss=4955.0301 style=20.4300 mom=0.5208 struct=4.4482 tv=0.0000 idt=0.6260 it/s=6.07 eta=23.1s
+2026-02-20 13:39:19,445 - INFO - [Epoch 1 Step 870/1000] loss=4947.0948 style=20.3987 mom=0.5206 struct=4.4512 tv=0.0000 idt=0.6236 it/s=6.07 eta=21.4s
+2026-02-20 13:39:21,077 - INFO - [Epoch 1 Step 880/1000] loss=4938.3975 style=20.3639 mom=0.5202 struct=4.4547 tv=0.0000 idt=0.6211 it/s=6.07 eta=19.8s
+2026-02-20 13:39:22,723 - INFO - [Epoch 1 Step 890/1000] loss=4927.1361 style=20.3150 mom=0.5197 struct=4.4568 tv=0.0000 idt=0.6197 it/s=6.07 eta=18.1s
+2026-02-20 13:39:24,354 - INFO - [Epoch 1 Step 900/1000] loss=4918.2541 style=20.2759 mom=0.5192 struct=4.4599 tv=0.0000 idt=0.6186 it/s=6.07 eta=16.5s
+2026-02-20 13:39:25,985 - INFO - [Epoch 1 Step 910/1000] loss=4909.3621 style=20.2385 mom=0.5187 struct=4.4619 tv=0.0000 idt=0.6169 it/s=6.07 eta=14.8s
+2026-02-20 13:39:27,621 - INFO - [Epoch 1 Step 920/1000] loss=4902.2556 style=20.2112 mom=0.5184 struct=4.4645 tv=0.0000 idt=0.6145 it/s=6.07 eta=13.2s
+2026-02-20 13:39:29,252 - INFO - [Epoch 1 Step 930/1000] loss=4893.2154 style=20.1767 mom=0.5181 struct=4.4668 tv=0.0000 idt=0.6114 it/s=6.08 eta=11.5s
+2026-02-20 13:39:30,885 - INFO - [Epoch 1 Step 940/1000] loss=4885.2070 style=20.1435 mom=0.5178 struct=4.4699 tv=0.0000 idt=0.6096 it/s=6.08 eta=9.9s
+2026-02-20 13:39:32,517 - INFO - [Epoch 1 Step 950/1000] loss=4877.0888 style=20.1122 mom=0.5174 struct=4.4721 tv=0.0000 idt=0.6070 it/s=6.08 eta=8.2s
+2026-02-20 13:39:34,149 - INFO - [Epoch 1 Step 960/1000] loss=4868.8279 style=20.0816 mom=0.5171 struct=4.4742 tv=0.0000 idt=0.6038 it/s=6.08 eta=6.6s
+2026-02-20 13:39:35,778 - INFO - [Epoch 1 Step 970/1000] loss=4862.2408 style=20.0540 mom=0.5168 struct=4.4770 tv=0.0000 idt=0.6024 it/s=6.08 eta=4.9s
+2026-02-20 13:39:37,411 - INFO - [Epoch 1 Step 980/1000] loss=4856.7312 style=20.0321 mom=0.5165 struct=4.4798 tv=0.0000 idt=0.6008 it/s=6.08 eta=3.3s
+2026-02-20 13:39:39,043 - INFO - [Epoch 1 Step 990/1000] loss=4850.7982 style=20.0105 mom=0.5163 struct=4.4830 tv=0.0000 idt=0.5983 it/s=6.08 eta=1.6s
+2026-02-20 13:39:40,672 - INFO - [Epoch 1 Step 1000/1000] loss=4841.4804 style=19.9712 mom=0.5159 struct=4.4860 tv=0.0000 idt=0.5965 it/s=6.08 eta=0.0s
+2026-02-20 13:39:40,674 - INFO - Epoch 1/1 | loss=4841.4804 style_swd=19.9712 mom=0.5159 struct=4.4860 tv=0.0000 idt=0.5965 steps=1.0 h=1.00 s=1.00 lr=5.00e-04 data=1.2s comp=163.3s
+2026-02-20 13:39:40,754 - INFO - Saved checkpoint: G:\GitHub\Latent_Style\Cycle-NCE\ssim-optun-nce\trial_0235\epoch_0001.pt (step=1000)
+2026-02-20 13:39:40,754 - INFO - Running full eval for epoch 1 -> G:\GitHub\Latent_Style\Cycle-NCE\ssim-optun-nce\trial_0235\full_eval\epoch_0001
+2026-02-20 13:40:34,422 - INFO - Full eval completed for epoch 1. Log: G:\GitHub\Latent_Style\Cycle-NCE\ssim-optun-nce\trial_0235\logs\full_eval_epoch_0001.log
+2026-02-20 13:40:34,422 - INFO - Training completed.

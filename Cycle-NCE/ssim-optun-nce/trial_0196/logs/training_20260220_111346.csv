@@ -1,0 +1,2 @@
+epoch,loss,style_swd,style_moment,structure,tv,identity,train_num_steps,train_step_size,train_style_strength,lr,data_time_sec,compute_time_sec,epoch_time_sec,samples_seen,samples_per_sec
+1,4913.19283178711,19.95891428565979,0.5159867833852768,4.47649915599823,0.0,0.6068906864766032,1.0,1.0,1.0,0.0005,1.2041864000002533,151.88329440000098,153.10493636131287,50000,326.57340245388843

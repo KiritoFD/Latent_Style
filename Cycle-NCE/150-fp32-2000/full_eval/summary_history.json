@@ -1,0 +1,30 @@
+{
+  "num_rounds": 1,
+  "latest": {
+    "epoch": 50,
+    "summary_path": "..\\150-fp32-2000\\full_eval\\epoch_0050\\summary.json",
+    "transfer_style": 0.5333917003870011,
+    "transfer_style_swd": 1.5190085814148189,
+    "transfer_clip_style_sim": 0.5333917003870011,
+    "transfer_content_lf_ssim": 0.9690650638999999,
+    "transfer_content_ssim": 0.9690650638999999,
+    "photo_to_art_style": 0.500748908519745,
+    "photo_to_art_style_swd": 1.4626613564789295,
+    "photo_to_art_clip_style_sim": 0.500748908519745
+  },
+  "rounds": [
+    {
+      "epoch": 50,
+      "summary_path": "..\\150-fp32-2000\\full_eval\\epoch_0050\\summary.json",
+      "transfer_style": 0.5333917003870011,
+      "transfer_style_swd": 1.5190085814148189,
+      "transfer_clip_style_sim": 0.5333917003870011,
+      "transfer_content_lf_ssim": 0.9690650638999999,
+      "transfer_content_ssim": 0.9690650638999999,
+      "photo_to_art_style": 0.500748908519745,
+      "photo_to_art_style_swd": 1.4626613564789295,
+      "photo_to_art_clip_style_sim": 0.500748908519745
+    }
+  ],
+  "updated_at": "2026-02-21 16:08:49"
+}
