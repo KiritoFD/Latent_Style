@@ -92,11 +92,13 @@ def calc_swd_loss(
             # Deterministic projections for stable optimization and reproducibility.
             g = torch.Generator(device="cpu")
             g.manual_seed(int(projection_seed) + int(dim) * 131 + int(p) * 9973)
-            projections = torch.randn(dim, int(num_projections), generator=g, dtype=torch.float32, device=device)
+            # Use CPU generator for deterministic projections, then move to target device.
+            projections = torch.randn(dim, int(num_projections), generator=g, dtype=torch.float32, device="cpu")
             if projection_orthogonal and int(num_projections) <= int(dim):
                 q, _ = torch.linalg.qr(projections, mode="reduced")
                 projections = q[:, : int(num_projections)]
             projections = F.normalize(projections, p=2, dim=0)
+            projections = projections.to(device=device, dtype=torch.float32)
             if projection_cache is not None:
                 projection_cache[cache_key] = projections
                 while len(projection_cache) > int(projection_cache_max_entries):
@@ -137,6 +139,8 @@ class AdaCUTObjective:
         self.swd_projection_cache_max_entries = int(loss_cfg.get("swd_projection_cache_max_entries", 64))
         self.swd_projection_seed = int(loss_cfg.get("swd_projection_seed", 12345))
         self.swd_projection_orthogonal = bool(loss_cfg.get("swd_projection_orthogonal", True))
+        self.swd_target_no_grad = bool(loss_cfg.get("swd_target_no_grad", True))
+        self.swd_sample_cap = int(loss_cfg.get("swd_sample_cap", 0))
         self._swd_proj_cache: OrderedDict[Tuple, torch.Tensor] = OrderedDict()
 
         self.w_identity = float(loss_cfg.get("w_identity", 10.0))
@@ -250,6 +254,9 @@ class AdaCUTObjective:
         with self._nvtx_range("loss/style", nvtx_enabled):
             if xid_mask.any():
                 valid_idx = torch.nonzero(xid_mask).squeeze(1)
+                if self.swd_sample_cap > 0 and valid_idx.numel() > self.swd_sample_cap:
+                    perm = torch.randperm(valid_idx.numel(), device=valid_idx.device)[: self.swd_sample_cap]
+                    valid_idx = valid_idx.index_select(0, perm)
                 p_valid = pred_f32.index_select(0, valid_idx)
                 t_valid = target_f32.index_select(0, valid_idx)
                 sid_valid = target_style_id.index_select(0, valid_idx)
@@ -258,7 +265,12 @@ class AdaCUTObjective:
                     loss_moment = calc_moment_loss(p_valid, t_valid)
                 if self.w_swd > 0.0:
                     p_feat = self._swd_features(model, p_valid, sid_valid, train_style_strength)
-                    t_feat = self._swd_features(model, t_valid, sid_valid, train_style_strength)
+                    if self.swd_target_no_grad:
+                        with torch.no_grad():
+                            t_feat = self._swd_features(model, t_valid, sid_valid, train_style_strength)
+                        t_feat = t_feat.detach()
+                    else:
+                        t_feat = self._swd_features(model, t_valid, sid_valid, train_style_strength)
                     loss_swd = calc_swd_loss(
                         p_feat,
                         t_feat,
