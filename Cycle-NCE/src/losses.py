@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import random
+from collections import OrderedDict
 from contextlib import contextmanager
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -29,6 +30,12 @@ def calc_swd_loss(
     y: torch.Tensor,
     patch_sizes: List[int],
     num_projections: int = 128,
+    padding_mode: str = "same",
+    max_patches: int = 2048,
+    projection_cache: Optional[OrderedDict] = None,
+    projection_cache_max_entries: int = 64,
+    projection_seed: int = 12345,
+    projection_orthogonal: bool = True,
 ) -> torch.Tensor:
     # SWD path is FP32 to keep sort/projection numerically stable.
     x = x.float()
@@ -36,17 +43,30 @@ def calc_swd_loss(
 
     device = x.device
     total_loss = torch.tensor(0.0, device=device)
-    valid_patches = [int(p) for p in patch_sizes if int(p) > 1]
+    valid_patches = [int(p) for p in patch_sizes if int(p) >= 1]
     if not valid_patches:
         return total_loss
 
     for p in valid_patches:
-        x_unfold = F.unfold(x, kernel_size=p, stride=1, padding=p // 2)
-        y_unfold = F.unfold(y, kernel_size=p, stride=1, padding=p // 2)
+        if padding_mode == "same":
+            pad = p // 2
+        elif padding_mode == "valid":
+            pad = 0
+            if p > x.shape[-2] or p > x.shape[-1]:
+                continue
+        else:
+            raise ValueError(f"Unsupported SWD padding_mode={padding_mode}")
 
-        n_patches = x_unfold.shape[-1]
-        if n_patches > 2048:
-            idx = torch.randperm(n_patches, device=device)[:2048]
+        # Fuse unfold path: run one unfold for concatenated tensors instead of x/y separately.
+        xy = torch.cat([x, y], dim=0)
+        xy_unfold = F.unfold(xy, kernel_size=p, stride=1, padding=pad)
+        b = x.shape[0]
+        x_unfold = xy_unfold[:b]
+        y_unfold = xy_unfold[b:]
+
+        n_patches = xy_unfold.shape[-1]
+        if max_patches is not None and n_patches > int(max_patches):
+            idx = torch.randperm(n_patches, device=device)[: int(max_patches)]
             x_pts = x_unfold[..., idx].transpose(1, 2)  # [B, S, D]
             y_pts = y_unfold[..., idx].transpose(1, 2)
         else:
@@ -54,11 +74,38 @@ def calc_swd_loss(
             y_pts = y_unfold.transpose(1, 2)
 
         dim = x_pts.shape[-1]
-        projections = torch.randn(dim, int(num_projections), device=device, dtype=torch.float32)
-        projections = F.normalize(projections, p=2, dim=0)
-
-        x_proj = torch.matmul(x_pts, projections)
-        y_proj = torch.matmul(y_pts, projections)
+        cache_key = (
+            int(dim),
+            int(num_projections),
+            int(p),
+            str(device),
+            str(torch.float32),
+            int(projection_seed),
+            bool(projection_orthogonal),
+        )
+        projections = None
+        if projection_cache is not None:
+            projections = projection_cache.get(cache_key, None)
+            if projections is not None:
+                projection_cache.move_to_end(cache_key)
+        if projections is None:
+            # Deterministic projections for stable optimization and reproducibility.
+            g = torch.Generator(device="cpu")
+            g.manual_seed(int(projection_seed) + int(dim) * 131 + int(p) * 9973)
+            projections = torch.randn(dim, int(num_projections), generator=g, dtype=torch.float32, device=device)
+            if projection_orthogonal and int(num_projections) <= int(dim):
+                q, _ = torch.linalg.qr(projections, mode="reduced")
+                projections = q[:, : int(num_projections)]
+            projections = F.normalize(projections, p=2, dim=0)
+            if projection_cache is not None:
+                projection_cache[cache_key] = projections
+                while len(projection_cache) > int(projection_cache_max_entries):
+                    projection_cache.popitem(last=False)
+        # Fuse projection matmul: one matmul for [2B,S,D], then split.
+        xy_pts = torch.cat([x_pts, y_pts], dim=0)
+        xy_proj = torch.matmul(xy_pts, projections)
+        x_proj = xy_proj[:b]
+        y_proj = xy_proj[b:]
 
         x_sorted, _ = torch.sort(x_proj, dim=1)
         y_sorted, _ = torch.sort(y_proj, dim=1)
@@ -81,8 +128,16 @@ class AdaCUTObjective:
 
         self.w_color_moment = float(loss_cfg.get("w_color_moment", 2.0))
         self.w_swd = float(loss_cfg.get("w_swd", 20.0))
-        self.swd_patch_sizes = [3, 5]
+        self.swd_patch_sizes = [int(p) for p in loss_cfg.get("swd_patch_sizes", [3, 5])]
         self.swd_num_projections = int(loss_cfg.get("swd_num_projections", 64))
+        self.swd_padding_mode = str(loss_cfg.get("swd_padding_mode", "valid")).lower()
+        self.swd_max_patches = int(loss_cfg.get("swd_max_patches", 2048))
+        self.swd_feature_space = str(loss_cfg.get("swd_feature_space", "bottleneck8")).lower()
+        self.swd_projection_cache = bool(loss_cfg.get("swd_projection_cache", True))
+        self.swd_projection_cache_max_entries = int(loss_cfg.get("swd_projection_cache_max_entries", 64))
+        self.swd_projection_seed = int(loss_cfg.get("swd_projection_seed", 12345))
+        self.swd_projection_orthogonal = bool(loss_cfg.get("swd_projection_orthogonal", True))
+        self._swd_proj_cache: OrderedDict[Tuple, torch.Tensor] = OrderedDict()
 
         self.w_identity = float(loss_cfg.get("w_identity", 10.0))
         self.w_delta_tv = float(loss_cfg.get("w_delta_tv", 0.0))
@@ -115,6 +170,22 @@ class AdaCUTObjective:
         if steps > 1:
             return model.integrate(x, style_id=style_id, num_steps=steps, step_size=step_size, style_strength=style_strength)
         return model(x, style_id=style_id, step_size=step_size, style_strength=style_strength)
+
+    def _swd_features(
+        self,
+        model: LatentAdaCUT,
+        z: torch.Tensor,
+        style_id: torch.Tensor,
+        style_strength: float,
+    ) -> torch.Tensor:
+        mode = self.swd_feature_space
+        if mode == "latent":
+            return z.float()
+        if mode == "loss_projector":
+            return model.project_loss_features(z).float()
+        if mode == "bottleneck8":
+            return model.extract_bottleneck_feature(z, style_id=style_id, style_strength=style_strength).float()
+        raise ValueError(f"Unsupported swd_feature_space={mode}")
 
     @contextmanager
     def _nvtx_range(self, name: str, enabled: bool):
@@ -181,15 +252,24 @@ class AdaCUTObjective:
                 valid_idx = torch.nonzero(xid_mask).squeeze(1)
                 p_valid = pred_f32.index_select(0, valid_idx)
                 t_valid = target_f32.index_select(0, valid_idx)
+                sid_valid = target_style_id.index_select(0, valid_idx)
 
                 if self.w_color_moment > 0.0:
                     loss_moment = calc_moment_loss(p_valid, t_valid)
                 if self.w_swd > 0.0:
+                    p_feat = self._swd_features(model, p_valid, sid_valid, train_style_strength)
+                    t_feat = self._swd_features(model, t_valid, sid_valid, train_style_strength)
                     loss_swd = calc_swd_loss(
-                        p_valid,
-                        t_valid,
+                        p_feat,
+                        t_feat,
                         patch_sizes=self.swd_patch_sizes,
                         num_projections=self.swd_num_projections,
+                        padding_mode=self.swd_padding_mode,
+                        max_patches=self.swd_max_patches,
+                        projection_cache=self._swd_proj_cache if self.swd_projection_cache else None,
+                        projection_cache_max_entries=self.swd_projection_cache_max_entries,
+                        projection_seed=self.swd_projection_seed,
+                        projection_orthogonal=self.swd_projection_orthogonal,
                     )
 
         loss_identity = torch.tensor(0.0, device=content.device)

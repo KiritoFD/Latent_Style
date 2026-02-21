@@ -297,6 +297,14 @@ class AdaCUTTrainer:
             )
 
         self.loss_fn = AdaCUTObjective(config)
+        logger.info(
+            "SWD objective | feature_space=%s patch_sizes=%s projections=%d padding=%s max_patches=%d",
+            getattr(self.loss_fn, "swd_feature_space", "unknown"),
+            getattr(self.loss_fn, "swd_patch_sizes", []),
+            int(getattr(self.loss_fn, "swd_num_projections", 0)),
+            getattr(self.loss_fn, "swd_padding_mode", "same"),
+            int(getattr(self.loss_fn, "swd_max_patches", 0)),
+        )
 
         self.grad_clip_norm = float(train_cfg.get("grad_clip_norm", 1.0))
         self.accumulation_steps = max(1, int(train_cfg.get("accumulation_steps", 1)))

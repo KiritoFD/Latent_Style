@@ -1,0 +1,52 @@
+{
+  "data_root": "../latent-256",
+  "num_samples": 6174,
+  "shape": [
+    4,
+    32,
+    32
+  ],
+  "styles": [
+    "Hayao",
+    "cezanne",
+    "monet",
+    "photo",
+    "vangogh"
+  ],
+  "best": {
+    "patch": 9,
+    "k": 4,
+    "auc": 0.6267940866666667,
+    "cv": 0.38543442352528173,
+    "ip": 4,
+    "ik": 3
+  },
+  "patch_sizes": [
+    1,
+    3,
+    5,
+    7,
+    9
+  ],
+  "enable_patch_combos": false,
+  "max_combo_size": 0,
+  "num_patch_combos": 26,
+  "k_list": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "padding_mode": "valid",
+  "subspace": "pca",
+  "subspace_dim": 16,
+  "subspace_fit_patches": 50000,
+  "notes": {
+    "Interpretation": [
+      "Higher AUC means SWD better separates same-style vs different-style pairs.",
+      "Higher d-prime indicates stronger separation between intra/inter distance distributions.",
+      "Lower CV means distance estimates are more stable.",
+      "Brighter fisher_map regions indicate spatial positions with stronger style discriminability."
+    ]
+  }
+}
