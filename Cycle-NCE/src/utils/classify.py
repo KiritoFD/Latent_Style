@@ -241,12 +241,27 @@ def evaluate_generated_dir(
     per_class = {}
     for idx, name in enumerate(clf.classes):
         idxs = [i for i, t in enumerate(y_true) if t == idx]
-        if not idxs:
-            continue
-        c = sum(int(y_pred[i] == idx) for i in idxs)
+        c = sum(int(y_pred[i] == idx) for i in idxs) if idxs else 0
         per_class[name] = {
             "n": len(idxs),
-            "acc": float(c / len(idxs)),
+            "acc": float(c / len(idxs)) if idxs else 0.0,
+        }
+
+    # Art-only metrics: exclude "photo" to expose 4-style transfer quality directly.
+    art_class_names = [c for c in clf.classes if c.lower() != "photo"]
+    art_idxs = [class_to_idx[c] for c in art_class_names]
+    art_mask = [i for i, t in enumerate(y_true) if t in art_idxs]
+    art_total = len(art_mask)
+    art_correct = sum(int(y_pred[i] == y_true[i]) for i in art_mask)
+    art_acc = float(art_correct / max(1, art_total))
+    per_class_art = {}
+    for name in art_class_names:
+        idx = class_to_idx[name]
+        idxs = [i for i, t in enumerate(y_true) if t == idx]
+        c = sum(int(y_pred[i] == idx) for i in idxs) if idxs else 0
+        per_class_art[name] = {
+            "n": len(idxs),
+            "acc": float(c / len(idxs)) if idxs else 0.0,
         }
 
     report = {
@@ -257,6 +272,9 @@ def evaluate_generated_dir(
         "skipped_unparsable": skipped,
         "accuracy": acc,
         "per_class": per_class,
+        "art_only_accuracy": art_acc,
+        "art_only_total": art_total,
+        "per_class_art_only": per_class_art,
     }
 
     print(
@@ -266,6 +284,14 @@ def evaluate_generated_dir(
     for k in sorted(per_class.keys()):
         v = per_class[k]
         print(f"[classify][generated-test] class={k:>10s} n={v['n']:4d} acc={v['acc']:.4f}")
+    if art_class_names:
+        print(
+            f"[classify][generated-test][art-only] total={art_total} "
+            f"acc={art_acc:.4f} ({art_correct}/{art_total})"
+        )
+        for k in sorted(per_class_art.keys()):
+            v = per_class_art[k]
+            print(f"[classify][generated-test][art-only] class={k:>10s} n={v['n']:4d} acc={v['acc']:.4f}")
     return report
 
 
