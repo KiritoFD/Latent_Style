@@ -274,6 +274,41 @@ def write_report_json(report_path: Path, payload: dict[str, Any]) -> None:
     report_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+def _load_existing_best(ckpt_path: Path) -> dict[str, Any] | None:
+    if not ckpt_path.exists():
+        return None
+    try:
+        payload = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+    except Exception:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    best = payload.get("best")
+    if not isinstance(best, dict):
+        return None
+    return {
+        "epoch": int(best.get("epoch", 0)),
+        "val_loss": float(best.get("val_loss", 1e9)),
+        "val_acc": float(best.get("val_acc", 0.0)),
+        "val_macro_recall": float(best.get("val_macro_recall", 0.0)),
+        "val_mean_confidence": float(best.get("val_mean_confidence", 0.0)),
+        "val_per_class_recall": [float(x) for x in best.get("val_per_class_recall", [])],
+    }
+
+
+def _is_better_best(candidate: dict[str, Any], baseline: dict[str, Any], tol: float = 1e-5) -> bool:
+    # Priority: macro_recall -> acc -> lower loss.
+    if float(candidate["val_macro_recall"]) > float(baseline["val_macro_recall"]) + tol:
+        return True
+    if float(candidate["val_macro_recall"]) < float(baseline["val_macro_recall"]) - tol:
+        return False
+    if float(candidate["val_acc"]) > float(baseline["val_acc"]) + tol:
+        return True
+    if float(candidate["val_acc"]) < float(baseline["val_acc"]) - tol:
+        return False
+    return float(candidate["val_loss"]) < float(baseline["val_loss"]) - tol
+
+
 class _ImageClsDataset(Dataset):
     def __init__(self, items: list[tuple[Path, int]], tfm):
         self.items = items
@@ -457,7 +492,16 @@ def train_from_config(
     ce = nn.CrossEntropyLoss(weight=class_weights, label_smoothing=float(label_smoothing))
 
     best = {"epoch": 0, "val_loss": 1e9, "val_acc": 0.0, "val_macro_recall": 0.0, "val_mean_confidence": 0.0}
+    existing_best = _load_existing_best(out_ckpt)
+    if existing_best is not None:
+        best = existing_best
+        print(
+            "[classify] loaded historical best from ckpt: "
+            f"epoch={best['epoch']} recall={best['val_macro_recall']:.4f} "
+            f"acc={best['val_acc']:.4f} loss={best['val_loss']:.4f}"
+        )
     history = []
+    ckpt_updated = False
 
     for ep in range(1, max(1, epochs) + 1):
         model.train()
@@ -494,15 +538,16 @@ def train_from_config(
             f"val_acc={v['acc']:.4f} val_recall={v['macro_recall']:.4f} val_conf={v['mean_confidence']:.4f}"
         )
 
-        if v["macro_recall"] > best["val_macro_recall"] + 1e-5:
-            best = {
-                "epoch": ep,
-                "val_loss": float(v["loss"]),
-                "val_acc": float(v["acc"]),
-                "val_macro_recall": float(v["macro_recall"]),
-                "val_mean_confidence": float(v["mean_confidence"]),
-                "val_per_class_recall": [float(x) for x in v["per_class_recall"]],
-            }
+        candidate_best = {
+            "epoch": ep,
+            "val_loss": float(v["loss"]),
+            "val_acc": float(v["acc"]),
+            "val_macro_recall": float(v["macro_recall"]),
+            "val_mean_confidence": float(v["mean_confidence"]),
+            "val_per_class_recall": [float(x) for x in v["per_class_recall"]],
+        }
+        if _is_better_best(candidate_best, best):
+            best = candidate_best
             out_ckpt.parent.mkdir(parents=True, exist_ok=True)
             torch.save(
                 {
@@ -518,6 +563,7 @@ def train_from_config(
                 },
                 out_ckpt,
             )
+            ckpt_updated = True
 
         if ep >= max(1, int(min_epochs)):
             reached = (
@@ -542,6 +588,7 @@ def train_from_config(
         "train_samples": len(train_items),
         "val_samples": len(val_items),
         "best": best,
+        "ckpt_updated": ckpt_updated,
         "history": history,
         "infra": {
             "device": str(device),
@@ -622,7 +669,10 @@ def main() -> None:
         label_smoothing=float(args.label_smoothing),
         use_balanced_sampler=bool(args.use_balanced_sampler),
     )
-    print(f"Saved checkpoint: {report['trained_ckpt']}")
+    if bool(report.get("ckpt_updated", False)):
+        print(f"Saved checkpoint (updated): {report['trained_ckpt']}")
+    else:
+        print(f"Checkpoint kept (no improvement): {report['trained_ckpt']}")
     print(f"Saved report: {args.out_report}")
     if str(args.test_generated_dir).strip():
         ckpt = Path(args.test_ckpt) if str(args.test_ckpt).strip() else Path(report["trained_ckpt"])
