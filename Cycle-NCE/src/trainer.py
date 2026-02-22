@@ -338,6 +338,7 @@ class AdaCUTTrainer:
                     "shortcut_std_delta",
                     "shortcut_texture_gain",
                     "shortcut_lsi",
+                    "swd_weight",
                     "train_num_steps",
                     "train_step_size",
                     "train_style_strength",
@@ -709,6 +710,15 @@ class AdaCUTTrainer:
                                 debug_timing=enable_loss_timing,
                             )
                             loss = loss_dict["loss"]
+                    if loss is None or (not torch.isfinite(loss).all()):
+                        logger.warning(
+                            "Non-finite loss detected at epoch=%d step=%d; skipping batch for stability.",
+                            epoch,
+                            step_idx,
+                        )
+                        self.optimizer.zero_grad(set_to_none=True)
+                        data_wait_start = time.perf_counter()
+                        continue
                     fwd_loss_step += max(0.0, time.perf_counter() - t0)
                     if step_idx <= self.trace_vram_steps and "loss_vram_total_alloc_mb" in loss_dict:
                         def _vram_metric(name: str) -> float:
@@ -760,10 +770,20 @@ class AdaCUTTrainer:
                     if should_step:
                         t0 = time.perf_counter()
                         with self._nvtx_range("optimizer_step"):
+                            grad_norm = None
                             if self.grad_clip_norm > 0:
                                 if self.use_grad_scaler:
                                     self.scaler.unscale_(self.optimizer)
-                                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip_norm)
+                                grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip_norm)
+                            if grad_norm is not None and (not torch.isfinite(grad_norm)):
+                                logger.warning(
+                                    "Non-finite grad norm at epoch=%d step=%d; skip optimizer step and clear grads.",
+                                    epoch,
+                                    step_idx,
+                                )
+                                self.optimizer.zero_grad(set_to_none=True)
+                                data_wait_start = time.perf_counter()
+                                continue
                             if self.use_grad_scaler:
                                 self.scaler.step(self.optimizer)
                                 self.scaler.update()
@@ -823,6 +843,7 @@ class AdaCUTTrainer:
                         idt=f"{_get_avg('identity'):.4f}",
                         idr=f"{_get_avg('identity_ratio'):.2f}",
                         lsi=f"{_get_avg('shortcut_lsi'):.3f}",
+                        w_swd=f"{_get_avg('swd_weight'):.2f}",
                         sN=f"{_get_avg('swd_valid_samples'):.1f}",
                         steps=f"{_get_avg('train_num_steps'):.1f}",
                         h=f"{_get_avg('train_step_size'):.2f}",
@@ -885,15 +906,19 @@ class AdaCUTTrainer:
 
         # Flush leftover gradients when last batch is not divisible by accumulation_steps.
         if num_batches > 0 and (num_batches % self.accumulation_steps != 0):
+            grad_norm = None
             if self.grad_clip_norm > 0:
                 if self.use_grad_scaler:
                     self.scaler.unscale_(self.optimizer)
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip_norm)
-            if self.use_grad_scaler:
-                self.scaler.step(self.optimizer)
-                self.scaler.update()
+                grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip_norm)
+            if grad_norm is None or torch.isfinite(grad_norm):
+                if self.use_grad_scaler:
+                    self.scaler.step(self.optimizer)
+                    self.scaler.update()
+                else:
+                    self.optimizer.step()
             else:
-                self.optimizer.step()
+                logger.warning("Non-finite grad norm at epoch tail; skipped optimizer step.")
             self.optimizer.zero_grad(set_to_none=True)
             self.global_step += 1
         self._maybe_toggle_cuda_profiler()

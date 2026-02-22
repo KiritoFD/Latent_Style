@@ -51,7 +51,8 @@ def calc_swd_loss(
     if not valid_patches:
         return total_loss
 
-    with torch.amp.autocast("cuda", enabled=False):
+    amp_device = "cuda" if device.type == "cuda" else "cpu"
+    with torch.amp.autocast(amp_device, enabled=False):
         for p in valid_patches:
             if padding_mode == "same":
                 pad = p // 2
@@ -301,29 +302,31 @@ class AdaCUTObjective:
                 if self.w_color_moment > 0.0:
                     loss_moment = calc_moment_loss(p_valid, t_valid)
                 if self.w_swd > 0.0:
-                    p_feat = self._swd_features(model, p_valid, sid_valid, train_style_strength)
-                    if self.swd_target_no_grad:
-                        with torch.no_grad():
+                    amp_device = "cuda" if content.device.type == "cuda" else "cpu"
+                    with torch.amp.autocast(amp_device, enabled=False):
+                        p_feat = self._swd_features(model, p_valid, sid_valid, train_style_strength)
+                        if self.swd_target_no_grad:
+                            with torch.no_grad():
+                                t_feat = self._swd_features(model, t_valid, sid_valid, train_style_strength)
+                            t_feat = t_feat.detach()
+                        else:
                             t_feat = self._swd_features(model, t_valid, sid_valid, train_style_strength)
-                        t_feat = t_feat.detach()
-                    else:
-                        t_feat = self._swd_features(model, t_valid, sid_valid, train_style_strength)
-                    loss_swd = calc_swd_loss(
-                        p_feat,
-                        t_feat,
-                        patch_sizes=self.swd_patch_sizes,
-                        num_projections=self.swd_num_projections,
-                        padding_mode=self.swd_padding_mode,
-                        max_patches=self.swd_max_patches,
-                        projection_cache=self._swd_proj_cache if self.swd_projection_cache else None,
-                        projection_cache_max_entries=self.swd_projection_cache_max_entries,
-                        projection_seed=self.swd_projection_seed,
-                        projection_orthogonal=self.swd_projection_orthogonal,
-                        patch_standardize_eps=self.swd_patch_standardize_eps,
-                        patch_value_clamp=self.swd_patch_value_clamp,
-                        charbonnier_eps=self.swd_charbonnier_eps,
-                        loss_cap=self.swd_loss_cap,
-                    )
+                        loss_swd = calc_swd_loss(
+                            p_feat,
+                            t_feat,
+                            patch_sizes=self.swd_patch_sizes,
+                            num_projections=self.swd_num_projections,
+                            padding_mode=self.swd_padding_mode,
+                            max_patches=self.swd_max_patches,
+                            projection_cache=self._swd_proj_cache if self.swd_projection_cache else None,
+                            projection_cache_max_entries=self.swd_projection_cache_max_entries,
+                            projection_seed=self.swd_projection_seed,
+                            projection_orthogonal=self.swd_projection_orthogonal,
+                            patch_standardize_eps=self.swd_patch_standardize_eps,
+                            patch_value_clamp=self.swd_patch_value_clamp,
+                            charbonnier_eps=self.swd_charbonnier_eps,
+                            loss_cap=self.swd_loss_cap,
+                        )
                     if not torch.isfinite(loss_swd):
                         loss_swd = torch.zeros_like(loss_swd)
             else:
