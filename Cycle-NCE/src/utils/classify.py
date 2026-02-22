@@ -171,20 +171,28 @@ def load_eval_image_classifier(ckpt_path: Path, device: str) -> EvalImageClassif
     return EvalImageClassifier(model=model, classes=classes, mean=mean, std=std, image_size=image_size, device=device)
 
 
-def _parse_target_style_from_name(stem: str, classes: list[str]) -> str | None:
+def _parse_src_tgt_styles_from_name(stem: str, classes: list[str]) -> tuple[str, str] | None:
     # Preferred form from run_evaluation: "{src}_{name}_to_{target}"
     classes_norm = {c.lower(): c for c in classes}
     m = re.search(r"_to_([^_]+)$", stem)
     if m:
-        cand = m.group(1).strip().lower()
-        if cand in classes_norm:
-            return classes_norm[cand]
-    # Fallback: match suffix by known style names
+        cand_tgt = m.group(1).strip().lower()
+        if cand_tgt in classes_norm:
+            tgt = classes_norm[cand_tgt]
+            left = stem[: m.start()]
+            # Parse source style from prefix before first "_" in left part.
+            src_raw = left.split("_", 1)[0].strip().lower()
+            if src_raw in classes_norm:
+                return classes_norm[src_raw], tgt
+    # Fallback: match suffix by known style names, then infer source by prefix.
     stem_l = stem.lower()
     for c in sorted(classes, key=len, reverse=True):
         key = f"_to_{c.lower()}"
         if stem_l.endswith(key):
-            return c
+            left = stem_l[: -len(key)]
+            src_raw = left.split("_", 1)[0].strip().lower()
+            if src_raw in classes_norm:
+                return classes_norm[src_raw], c
     return None
 
 
@@ -203,13 +211,16 @@ def evaluate_generated_dir(
 
     class_to_idx = {c: i for i, c in enumerate(clf.classes)}
     y_true: list[int] = []
+    src_true: list[int] = []
     kept_files: list[Path] = []
     skipped = 0
     for p in files:
-        tgt = _parse_target_style_from_name(p.stem, clf.classes)
-        if tgt is None:
+        parsed = _parse_src_tgt_styles_from_name(p.stem, clf.classes)
+        if parsed is None:
             skipped += 1
             continue
+        src, tgt = parsed
+        src_true.append(class_to_idx[src])
         y_true.append(class_to_idx[tgt])
         kept_files.append(p)
 
@@ -277,6 +288,20 @@ def evaluate_generated_dir(
         "per_class_art_only": per_class_art,
     }
 
+    # 5x5 source->target breakdown (or NxN for generic class count).
+    pair_stats = {}
+    for src_name in clf.classes:
+        for tgt_name in clf.classes:
+            s_idx = class_to_idx[src_name]
+            t_idx = class_to_idx[tgt_name]
+            idxs = [i for i in range(total) if src_true[i] == s_idx and y_true[i] == t_idx]
+            c = sum(int(y_pred[i] == t_idx) for i in idxs) if idxs else 0
+            pair_stats[f"{src_name}->{tgt_name}"] = {
+                "n": len(idxs),
+                "acc": float(c / len(idxs)) if idxs else 0.0,
+            }
+    report["pair_accuracy"] = pair_stats
+
     print(
         f"[classify][generated-test] total={len(files)} parsed={total} skipped={skipped} "
         f"acc={acc:.4f} ({correct}/{total})"
@@ -292,6 +317,12 @@ def evaluate_generated_dir(
         for k in sorted(per_class_art.keys()):
             v = per_class_art[k]
             print(f"[classify][generated-test][art-only] class={k:>10s} n={v['n']:4d} acc={v['acc']:.4f}")
+    print("[classify][generated-test][pair-acc] source->target (25 combos):")
+    for src_name in clf.classes:
+        for tgt_name in clf.classes:
+            k = f"{src_name}->{tgt_name}"
+            v = pair_stats[k]
+            print(f"[classify][generated-test][pair-acc] {k:>20s} n={v['n']:4d} acc={v['acc']:.4f}")
     return report
 
 
