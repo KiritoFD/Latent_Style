@@ -11,12 +11,14 @@ from __future__ import annotations
 import logging
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import torch
 from PIL import Image
+from torch.utils.data import DataLoader, Dataset
 
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
@@ -88,6 +90,7 @@ class LGTInference:
         num_steps=1,
         step_size=None,
         style_strength=None,
+        model_dtype: str = "fp32",
     ):
         self.device = device
         self.num_steps = int(num_steps)
@@ -106,7 +109,19 @@ class LGTInference:
         except RuntimeError as exc:
             logger.warning("Checkpoint/model key mismatch, falling back to non-strict load: %s", exc)
             self.model.load_state_dict(state_dict, strict=False)
+        md = str(model_dtype).lower().strip()
+        if str(device).startswith("cuda"):
+            if md in ("auto", "fp16", "half"):
+                self.model = self.model.to(dtype=torch.float16)
+            elif md in ("bf16", "bfloat16"):
+                self.model = self.model.to(dtype=torch.bfloat16)
+            else:
+                self.model = self.model.to(dtype=torch.float32)
+            self.model = self.model.to(memory_format=torch.channels_last)
+            torch.backends.cudnn.benchmark = True
         self.model.eval()
+        self.model_dtype = next(self.model.parameters()).dtype
+        self.model_memfmt = torch.channels_last if (str(device).startswith("cuda") and self.model_dtype in (torch.float16, torch.bfloat16, torch.float32)) else torch.contiguous_format
 
         cfg_step = float(infer_cfg.get("step_size", 1.0))
         self.step_size = float(step_size if step_size is not None else cfg_step)
@@ -124,9 +139,20 @@ class LGTInference:
     def generation(self, x0, target_style_id, num_steps=None):
         if num_steps is None:
             num_steps = self.num_steps
+        if not torch.is_tensor(x0):
+            raise TypeError("x0 must be a torch.Tensor")
+        x0 = x0.to(device=self.device, dtype=self.model_dtype, memory_format=self.model_memfmt)
         b = x0.shape[0]
         if isinstance(target_style_id, int):
             target_style_id = torch.full((b,), target_style_id, dtype=torch.long, device=x0.device)
+        elif torch.is_tensor(target_style_id):
+            target_style_id = target_style_id.to(device=x0.device, dtype=torch.long)
+        else:
+            target_style_id = torch.tensor(target_style_id, device=x0.device, dtype=torch.long)
+        if target_style_id.ndim == 0:
+            target_style_id = target_style_id.expand(b)
+        if target_style_id.shape[0] != b:
+            raise ValueError(f"target_style_id batch mismatch: got {tuple(target_style_id.shape)} for batch={b}")
         # Deployment path: style transfer by style_id only (no reference image required).
         return self.model.integrate(
             x0,
@@ -255,37 +281,209 @@ def tensor_to_pil(tensor):
     return Image.fromarray(array)
 
 
-if __name__ == "__main__":
-    if len(sys.argv) < 4:
-        print("Usage: python utils/inference.py <checkpoint> <source_img> <output_path> [target_style_id]")
-        raise SystemExit(1)
+class _ImagePathDataset(Dataset):
+    def __init__(self, image_paths, image_size=256):
+        self.paths = list(image_paths)
+        self.image_size = int(image_size)
 
-    checkpoint_path = sys.argv[1]
-    source_image_path = sys.argv[2]
-    output_path = sys.argv[3]
-    target_style_id = int(sys.argv[4]) if len(sys.argv) > 4 else 1
+    def __len__(self):
+        return len(self.paths)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    vae = load_vae(device=str(device))
-    inf = LGTInference(checkpoint_path, device=str(device), num_steps=1)
+    def __getitem__(self, idx):
+        p = self.paths[idx]
+        img = Image.open(p).convert("RGB").resize((self.image_size, self.image_size))
+        x = torch.from_numpy(np.asarray(img, dtype=np.float32) / 255.0)
+        x = x.permute(2, 0, 1).contiguous()
+        x = x * 2.0 - 1.0
+        return x, str(p)
+
+
+class _CudaBatchPrefetcher:
+    def __init__(self, loader, device: str):
+        self.loader = iter(loader)
+        self.device = torch.device(device)
+        self.use_cuda = self.device.type == "cuda"
+        self.stream = torch.cuda.Stream(device=self.device) if self.use_cuda else None
+        self.next_batch = None
+        self._preload()
+
+    def _preload(self):
+        try:
+            x, src_paths = next(self.loader)
+        except StopIteration:
+            self.next_batch = None
+            return
+        if self.use_cuda:
+            with torch.cuda.stream(self.stream):
+                x = x.to(self.device, non_blocking=True, memory_format=torch.channels_last)
+        self.next_batch = (x, src_paths)
+
+    def pop(self):
+        if self.next_batch is None:
+            return None
+        if self.use_cuda:
+            torch.cuda.current_stream(self.device).wait_stream(self.stream)
+        batch = self.next_batch
+        self._preload()
+        return batch
+
+
+def _collect_image_paths(path_or_dir):
+    p = Path(path_or_dir)
+    if p.is_file():
+        return [p]
+    exts = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+    return sorted([x for x in p.rglob("*") if x.is_file() and x.suffix.lower() in exts])
+
+
+@torch.no_grad()
+def infer_images_batched(
+    checkpoint_path,
+    input_path,
+    output_dir,
+    target_style_id,
+    *,
+    device="cuda",
+    batch_size=8,
+    num_workers=4,
+    image_size=256,
+    num_steps=1,
+    step_size=None,
+    style_strength=None,
+    model_dtype="fp32",
+    decode_batch_size=0,
+    save_workers=4,
+):
+    paths = _collect_image_paths(input_path)
+    if not paths:
+        raise FileNotFoundError(f"No images found under: {input_path}")
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    vae = load_vae(device=device)
+    inf = LGTInference(
+        checkpoint_path,
+        device=device,
+        num_steps=int(num_steps),
+        step_size=step_size,
+        style_strength=style_strength,
+        model_dtype=str(model_dtype),
+    )
+
     model_scale = float(getattr(inf.model, "latent_scale_factor", 0.18215))
     vae_scale = float(getattr(getattr(vae, "config", None), "scaling_factor", model_scale))
     scale_in = model_scale / max(vae_scale, 1e-8)
     scale_out = vae_scale / max(model_scale, 1e-8)
-    if abs(scale_in - 1.0) > 1e-4:
-        print(f"WARNING: latent scale mismatch (model={model_scale:.6f}, vae={vae_scale:.6f}). Applying rescale.")
 
-    image = Image.open(source_image_path).convert("RGB").resize((256, 256))
-    image_tensor = torch.from_numpy(np.array(image)).float() / 255.0
-    image_tensor = image_tensor.permute(2, 0, 1).unsqueeze(0)
-    image_tensor = image_tensor * 2.0 - 1.0
+    loader = DataLoader(
+        _ImagePathDataset(paths, image_size=image_size),
+        batch_size=max(1, int(batch_size)),
+        shuffle=False,
+        num_workers=max(0, int(num_workers)),
+        pin_memory=str(device).startswith("cuda"),
+        persistent_workers=(int(num_workers) > 0),
+    )
+    prefetcher = _CudaBatchPrefetcher(loader, device=device)
+    decode_bs = int(decode_batch_size) if int(decode_batch_size) > 0 else max(1, int(batch_size))
 
-    z = encode_image(vae, image_tensor, device=str(device))
-    if abs(scale_in - 1.0) > 1e-4:
-        z = z * scale_in
-    z_out = inf.transfer_style(z, target_style_id=target_style_id, num_steps=1)
-    if abs(scale_out - 1.0) > 1e-4:
-        z_out = z_out * scale_out
-    out = decode_latent(vae, z_out, device=str(device))
-    tensor_to_pil(out).save(output_path)
-    print(f"Saved: {output_path}")
+    def _save_one(img_tensor, in_path):
+        name = Path(in_path).stem
+        ext = Path(in_path).suffix.lower() or ".png"
+        out_path = output_dir / f"{name}_to_{target_style_id}{ext}"
+        tensor_to_pil(img_tensor).save(out_path)
+        return out_path
+
+    total = 0
+    with ThreadPoolExecutor(max_workers=max(1, int(save_workers))) as pool, torch.inference_mode():
+        futures = []
+        target_cache = {}
+        while True:
+            item = prefetcher.pop()
+            if item is None:
+                break
+            x, src_paths = item
+            z = encode_image(vae, x, device=device)
+            if abs(scale_in - 1.0) > 1e-4:
+                z = z * scale_in
+            z_out = inf.transfer_style(z, target_style_id=target_style_id, num_steps=num_steps)
+            if abs(scale_out - 1.0) > 1e-4:
+                z_out = z_out * scale_out
+
+            b = int(z_out.shape[0])
+            if b not in target_cache:
+                target_cache[b] = torch.full((b,), int(target_style_id), dtype=torch.long, device=z_out.device)
+
+            for s in range(0, b, decode_bs):
+                e = min(s + decode_bs, b)
+                out_part = decode_latent(vae, z_out[s:e], device=device).cpu()
+                for i in range(out_part.shape[0]):
+                    futures.append(pool.submit(_save_one, out_part[i], src_paths[s + i]))
+                total += int(out_part.shape[0])
+        for f in futures:
+            _ = f.result()
+    return total
+
+
+if __name__ == "__main__":
+    import argparse
+    import time
+
+    parser = argparse.ArgumentParser("Latent AdaCUT inference")
+    parser.add_argument("--checkpoint", type=str, required=True)
+    parser.add_argument("--input", type=str, required=True, help="Input image path or directory")
+    parser.add_argument("--output", type=str, required=True, help="Output file (single input) or directory")
+    parser.add_argument("--target_style_id", type=int, default=1)
+    parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
+    parser.add_argument("--batch_size", type=int, default=8)
+    parser.add_argument("--num_workers", type=int, default=4)
+    parser.add_argument("--save_workers", type=int, default=4)
+    parser.add_argument("--image_size", type=int, default=256)
+    parser.add_argument("--num_steps", type=int, default=1)
+    parser.add_argument("--step_size", type=float, default=None)
+    parser.add_argument("--style_strength", type=float, default=None)
+    parser.add_argument("--model_dtype", type=str, default="fp32", choices=["fp32", "fp16", "bf16", "auto"])
+    parser.add_argument("--decode_batch_size", type=int, default=0, help="0 means same as batch_size")
+    args = parser.parse_args()
+
+    inp = Path(args.input)
+    t0 = time.perf_counter()
+    if inp.is_file():
+        total = infer_images_batched(
+            args.checkpoint,
+            args.input,
+            Path(args.output).parent,
+            args.target_style_id,
+            device=args.device,
+            batch_size=1,
+            num_workers=0,
+            image_size=args.image_size,
+            num_steps=args.num_steps,
+            step_size=args.step_size,
+            style_strength=args.style_strength,
+            model_dtype=args.model_dtype,
+            decode_batch_size=args.decode_batch_size,
+            save_workers=1,
+        )
+        # move/rename to exact output file path for single-image mode
+        gen_files = sorted(Path(Path(args.output).parent).glob(f"{inp.stem}_to_{args.target_style_id}*"))
+        if gen_files:
+            gen_files[0].replace(Path(args.output))
+    else:
+        total = infer_images_batched(
+            args.checkpoint,
+            args.input,
+            args.output,
+            args.target_style_id,
+            device=args.device,
+            batch_size=args.batch_size,
+            num_workers=args.num_workers,
+            image_size=args.image_size,
+            num_steps=args.num_steps,
+            step_size=args.step_size,
+            style_strength=args.style_strength,
+            model_dtype=args.model_dtype,
+            decode_batch_size=args.decode_batch_size,
+            save_workers=args.save_workers,
+        )
+    dt = time.perf_counter() - t0
+    print(f"Done. generated={total} elapsed={dt:.2f}s avg={1000.0*dt/max(1,total):.2f}ms/image")
