@@ -297,6 +297,14 @@ class AdaCUTTrainer:
             )
 
         self.loss_fn = AdaCUTObjective(config)
+        logger.info(
+            "SWD objective | feature_space=%s patch_sizes=%s projections=%d padding=%s max_patches=%d",
+            getattr(self.loss_fn, "swd_feature_space", "unknown"),
+            getattr(self.loss_fn, "swd_patch_sizes", []),
+            int(getattr(self.loss_fn, "swd_num_projections", 0)),
+            getattr(self.loss_fn, "swd_padding_mode", "same"),
+            int(getattr(self.loss_fn, "swd_max_patches", 0)),
+        )
 
         self.grad_clip_norm = float(train_cfg.get("grad_clip_norm", 1.0))
         self.accumulation_steps = max(1, int(train_cfg.get("accumulation_steps", 1)))
@@ -1065,18 +1073,10 @@ class AdaCUTTrainer:
         classifier_path = cfg_loss.get("style_classifier_ckpt", "")
         if classifier_path:
             cmd += ["--classifier_path", str(classifier_path)]
-        image_classifier_path = cfg_train.get("full_eval_image_classifier_path", "")
-        if image_classifier_path:
-            cmd += ["--image_classifier_path", str(image_classifier_path)]
         if bool(cfg_train.get("full_eval_classifier_only", False)):
             cmd += ["--eval_classifier_only"]
         if bool(cfg_train.get("full_eval_disable_lpips", False)):
             cmd += ["--eval_disable_lpips"]
-        if bool(cfg_train.get("full_eval_enable_art_fid", False)):
-            cmd += ["--eval_enable_art_fid"]
-            cmd += ["--eval_art_fid_max_gen", str(int(cfg_train.get("full_eval_art_fid_max_gen", 200)))]
-            cmd += ["--eval_art_fid_max_ref", str(int(cfg_train.get("full_eval_art_fid_max_ref", 200)))]
-            cmd += ["--eval_art_fid_batch_size", str(int(cfg_train.get("full_eval_art_fid_batch_size", 16)))]
         if bool(cfg_train.get("full_eval_reuse_generated", True)):
             cmd += ["--reuse_generated"]
         if bool(cfg_train.get("full_eval_generation_only", False)):
@@ -1120,14 +1120,10 @@ class AdaCUTTrainer:
                 {
                     "epoch": epoch,
                     "summary_path": str(summary_path),
-                    "transfer_clip_dir": float(transfer.get("clip_dir", transfer.get("clip_style", 0.0))),
                     "transfer_clip_style": float(transfer.get("clip_style", 0.0)),
                     "transfer_content_lpips": float(transfer.get("content_lpips", 0.0)),
-                    "transfer_art_fid": float(transfer.get("art_fid", 0.0)),
                     "transfer_classifier_acc": float(transfer.get("classifier_acc", 0.0)),
-                    "photo_to_art_clip_dir": float(p2a.get("clip_dir", p2a.get("clip_style", 0.0))),
                     "photo_to_art_clip_style": float(p2a.get("clip_style", 0.0)),
-                    "photo_to_art_art_fid": float(p2a.get("art_fid", 0.0)),
                     "photo_to_art_classifier_acc": float(p2a.get("classifier_acc", 0.0)),
                 }
             )
@@ -1138,25 +1134,17 @@ class AdaCUTTrainer:
         rounds.sort(key=lambda x: x["epoch"])
         latest = rounds[-1]
         mean = {
-            "transfer_clip_dir": sum(x["transfer_clip_dir"] for x in rounds) / len(rounds),
             "transfer_clip_style": sum(x["transfer_clip_style"] for x in rounds) / len(rounds),
             "transfer_content_lpips": sum(x["transfer_content_lpips"] for x in rounds) / len(rounds),
-            "transfer_art_fid": sum(x["transfer_art_fid"] for x in rounds) / len(rounds),
             "transfer_classifier_acc": sum(x["transfer_classifier_acc"] for x in rounds) / len(rounds),
-            "photo_to_art_clip_dir": sum(x["photo_to_art_clip_dir"] for x in rounds) / len(rounds),
             "photo_to_art_clip_style": sum(x["photo_to_art_clip_style"] for x in rounds) / len(rounds),
-            "photo_to_art_art_fid": sum(x["photo_to_art_art_fid"] for x in rounds) / len(rounds),
             "photo_to_art_classifier_acc": sum(x["photo_to_art_classifier_acc"] for x in rounds) / len(rounds),
         }
         best = {
             "best_transfer_classifier_acc": max(rounds, key=lambda x: x["transfer_classifier_acc"]),
-            "best_transfer_clip_dir": max(rounds, key=lambda x: x["transfer_clip_dir"]),
             "best_transfer_clip_style": max(rounds, key=lambda x: x["transfer_clip_style"]),
-            "best_transfer_art_fid": min(rounds, key=lambda x: x["transfer_art_fid"]),
             "best_photo_to_art_classifier_acc": max(rounds, key=lambda x: x["photo_to_art_classifier_acc"]),
-            "best_photo_to_art_clip_dir": max(rounds, key=lambda x: x["photo_to_art_clip_dir"]),
             "best_photo_to_art_clip_style": max(rounds, key=lambda x: x["photo_to_art_clip_style"]),
-            "best_photo_to_art_art_fid": min(rounds, key=lambda x: x["photo_to_art_art_fid"]),
             "best_transfer_content_lpips": min(rounds, key=lambda x: x["transfer_content_lpips"]),
         }
 

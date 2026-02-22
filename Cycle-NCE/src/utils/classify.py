@@ -308,6 +308,8 @@ def evaluate_generated_dir(
     )
     for k in sorted(per_class.keys()):
         v = per_class[k]
+        if int(v["n"]) <= 0:
+            continue
         print(f"[classify][generated-test] class={k:>10s} n={v['n']:4d} acc={v['acc']:.4f}")
     if art_class_names:
         print(
@@ -316,12 +318,16 @@ def evaluate_generated_dir(
         )
         for k in sorted(per_class_art.keys()):
             v = per_class_art[k]
+            if int(v["n"]) <= 0:
+                continue
             print(f"[classify][generated-test][art-only] class={k:>10s} n={v['n']:4d} acc={v['acc']:.4f}")
     print("[classify][generated-test][pair-acc] source->target (25 combos):")
     for src_name in clf.classes:
         for tgt_name in clf.classes:
             k = f"{src_name}->{tgt_name}"
             v = pair_stats[k]
+            if int(v["n"]) <= 0:
+                continue
             print(f"[classify][generated-test][pair-acc] {k:>20s} n={v['n']:4d} acc={v['acc']:.4f}")
     return report
 
