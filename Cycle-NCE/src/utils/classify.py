@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import random
+import re
 from pathlib import Path
 from typing import Any
 
@@ -168,6 +169,104 @@ def load_eval_image_classifier(ckpt_path: Path, device: str) -> EvalImageClassif
         raise ValueError("Checkpoint missing model_state_dict")
     model.load_state_dict(state, strict=True)
     return EvalImageClassifier(model=model, classes=classes, mean=mean, std=std, image_size=image_size, device=device)
+
+
+def _parse_target_style_from_name(stem: str, classes: list[str]) -> str | None:
+    # Preferred form from run_evaluation: "{src}_{name}_to_{target}"
+    classes_norm = {c.lower(): c for c in classes}
+    m = re.search(r"_to_([^_]+)$", stem)
+    if m:
+        cand = m.group(1).strip().lower()
+        if cand in classes_norm:
+            return classes_norm[cand]
+    # Fallback: match suffix by known style names
+    stem_l = stem.lower()
+    for c in sorted(classes, key=len, reverse=True):
+        key = f"_to_{c.lower()}"
+        if stem_l.endswith(key):
+            return c
+    return None
+
+
+@torch.no_grad()
+def evaluate_generated_dir(
+    generated_dir: Path,
+    ckpt_path: Path,
+    *,
+    device: str = "cuda" if torch.cuda.is_available() else "cpu",
+    batch_size: int = 128,
+) -> dict[str, Any]:
+    clf = load_eval_image_classifier(ckpt_path=ckpt_path, device=device)
+    files = sorted([p for p in generated_dir.rglob("*") if p.is_file() and p.suffix.lower() in IMG_EXTS])
+    if not files:
+        raise FileNotFoundError(f"No images found in {generated_dir}")
+
+    class_to_idx = {c: i for i, c in enumerate(clf.classes)}
+    y_true: list[int] = []
+    kept_files: list[Path] = []
+    skipped = 0
+    for p in files:
+        tgt = _parse_target_style_from_name(p.stem, clf.classes)
+        if tgt is None:
+            skipped += 1
+            continue
+        y_true.append(class_to_idx[tgt])
+        kept_files.append(p)
+
+    if not kept_files:
+        raise RuntimeError(f"No parsable files with '_to_*' target style found in {generated_dir}")
+
+    tfm = T.Compose(
+        [
+            T.Resize((clf.image_size, clf.image_size)),
+            T.ToTensor(),
+        ]
+    )
+
+    y_pred: list[int] = []
+    for s in range(0, len(kept_files), max(1, int(batch_size))):
+        e = min(s + max(1, int(batch_size)), len(kept_files))
+        xs = []
+        for p in kept_files[s:e]:
+            img = Image.open(p).convert("RGB")
+            xs.append(tfm(img))
+        xb = torch.stack(xs, dim=0)
+        preds = clf.predict_indices(xb).detach().cpu().tolist()
+        y_pred.extend([int(v) for v in preds])
+
+    total = len(y_true)
+    correct = sum(int(a == b) for a, b in zip(y_true, y_pred))
+    acc = float(correct / max(1, total))
+
+    per_class = {}
+    for idx, name in enumerate(clf.classes):
+        idxs = [i for i, t in enumerate(y_true) if t == idx]
+        if not idxs:
+            continue
+        c = sum(int(y_pred[i] == idx) for i in idxs)
+        per_class[name] = {
+            "n": len(idxs),
+            "acc": float(c / len(idxs)),
+        }
+
+    report = {
+        "generated_dir": str(generated_dir),
+        "ckpt_path": str(ckpt_path),
+        "total_images": len(files),
+        "parsed_images": total,
+        "skipped_unparsable": skipped,
+        "accuracy": acc,
+        "per_class": per_class,
+    }
+
+    print(
+        f"[classify][generated-test] total={len(files)} parsed={total} skipped={skipped} "
+        f"acc={acc:.4f} ({correct}/{total})"
+    )
+    for k in sorted(per_class.keys()):
+        v = per_class[k]
+        print(f"[classify][generated-test] class={k:>10s} n={v['n']:4d} acc={v['acc']:.4f}")
+    return report
 
 
 def write_report_json(report_path: Path, payload: dict[str, Any]) -> None:
@@ -477,10 +576,25 @@ def main() -> None:
     ap.add_argument("--no_balanced_sampler", action="store_false", dest="use_balanced_sampler")
     ap.add_argument("--out_ckpt", type=str, default=str(DEFAULT_EVAL_IMAGE_CLASSIFIER_CKPT))
     ap.add_argument("--out_report", type=str, default=str(DEFAULT_REPORT_PATH))
+    ap.add_argument("--test_generated_dir", type=str, default="", help="Directory containing run_evaluation generated images")
+    ap.add_argument("--test_ckpt", type=str, default="", help="Classifier checkpoint for --test_generated_dir; default uses --out_ckpt")
+    ap.add_argument("--test_only", action="store_true", help="Only run generated-dir classification test")
     args = ap.parse_args()
 
     print(f"Model architecture: {MODEL_ARCH}")
     print(f"Default checkpoint path: {DEFAULT_EVAL_IMAGE_CLASSIFIER_CKPT}")
+    if args.test_only:
+        if not str(args.test_generated_dir).strip():
+            raise ValueError("--test_only requires --test_generated_dir")
+        ckpt = Path(args.test_ckpt) if str(args.test_ckpt).strip() else Path(args.out_ckpt)
+        rep = evaluate_generated_dir(
+            generated_dir=Path(args.test_generated_dir),
+            ckpt_path=ckpt,
+            batch_size=max(1, int(args.batch_size)),
+        )
+        print(f"[classify][generated-test] accuracy={rep['accuracy']:.4f}")
+        return
+
     report = train_from_config(
         config_path=Path(args.config),
         out_ckpt=Path(args.out_ckpt),
@@ -503,6 +617,14 @@ def main() -> None:
     )
     print(f"Saved checkpoint: {report['trained_ckpt']}")
     print(f"Saved report: {args.out_report}")
+    if str(args.test_generated_dir).strip():
+        ckpt = Path(args.test_ckpt) if str(args.test_ckpt).strip() else Path(report["trained_ckpt"])
+        rep = evaluate_generated_dir(
+            generated_dir=Path(args.test_generated_dir),
+            ckpt_path=ckpt,
+            batch_size=max(1, int(args.batch_size)),
+        )
+        print(f"[classify][generated-test] accuracy={rep['accuracy']:.4f}")
 
 
 if __name__ == "__main__":
