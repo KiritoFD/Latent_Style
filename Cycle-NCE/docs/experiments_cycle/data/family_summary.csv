@@ -1,0 +1,10 @@
+family,run_count,with_full_eval,with_best_metric,mean_best_transfer_clip_style,max_best_transfer_clip_style,max_best_transfer_run
+adacut,5,4,2,0.4559570199251175,0.47072795569896697,adacut_overfit50-lightonly
+experiments_misc,1,1,0,,,
+full-300,1,1,0,,,
+full_250,2,2,2,0.0,0.0,full_250_strong-style
+full_300,5,5,4,0.495998139505585,0.5515330990155538,full_300_distill_low_only_v1
+full_other,1,1,1,0.475695763528347,0.475695763528347,full_strong_style
+other,2,2,1,0.44147848069667817,0.44147848069667817,50-no-distill
+overfit50,28,28,25,0.501125702214241,0.5932552614808082,overfit50-upscale
+small-exp,8,8,0,,,

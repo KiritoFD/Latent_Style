@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cycle-NCE Train Log Visualizer</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --line: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #38bdf8;
+      --ok: #22c55e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+      background: radial-gradient(1200px 700px at 10% -10%, #1e293b, var(--bg));
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      display: grid;
+      gap: 14px;
+    }
+    .card {
+      background: color-mix(in srgb, var(--panel) 92%, #000);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+    .hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 210px;
+      resize: vertical;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      padding: 10px;
+      background: #0b1220;
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    button {
+      border: 1px solid #334155;
+      background: #0b1220;
+      color: var(--text);
+      padding: 7px 11px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    button:hover { border-color: #475569; }
+    .ok { color: var(--ok); font-size: 13px; }
+    .metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 10px;
+    }
+    .metrics label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 12px;
+      color: #d1d5db;
+    }
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 12px;
+    }
+    .chart-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 8px 4px;
+      background: #0b1220;
+    }
+    .chart-title {
+      font-size: 12px;
+      color: #cbd5e1;
+      margin: 0 0 6px;
+    }
+    canvas {
+      width: 100%;
+      height: 200px;
+      display: block;
+      border-radius: 8px;
+      background: linear-gradient(180deg, #0b1220, #0a1020);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 6px 4px;
+      text-align: right;
+    }
+    th:first-child, td:first-child { text-align: left; }
+    .muted { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Training Log Visualizer</h1>
+      <p class="hint">粘贴 `training_*.csv` 或终端日志（`Epoch ... | loss=...` / `[Epoch ...] ...`），会自动解析并画图。</p>
+    </div>
+
+    <div class="card">
+      <textarea id="logInput" placeholder="Paste logs here..."></textarea>
+      <div class="row" style="margin-top:8px;">
+        <button id="parseBtn">Parse + Plot</button>
+        <button id="clearBtn">Clear</button>
+        <span id="status" class="ok"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between;">
+        <div class="metrics" id="metricPicker"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div id="charts" class="chart-grid"></div>
+    </div>
+
+    <div class="card">
+      <div class="muted" style="margin-bottom:6px;">Last Epoch Snapshot</div>
+      <table>
+        <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+        <tbody id="snapshotBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const METRICS = [
+      "loss", "struct", "semigroup", "stroke_gram", "color_moment",
+      "delta_tv", "delta_l2", "train_num_steps", "train_step_size",
+      "train_style_strength", "lr", "data_time_sec", "compute_time_sec", "epoch_time_sec"
+    ];
+    const DEFAULT_ON = new Set(["loss", "struct", "semigroup", "stroke_gram", "color_moment", "lr"]);
+    const COLORS = [
+      "#38bdf8", "#f59e0b", "#22c55e", "#ef4444", "#a78bfa", "#14b8a6",
+      "#eab308", "#f97316", "#60a5fa", "#10b981", "#f472b6", "#84cc16"
+    ];
+    const ALIAS = {
+      sgram: "stroke_gram",
+      cmoment: "color_moment",
+      dtv: "delta_tv",
+      dl2: "delta_l2",
+      steps: "train_num_steps",
+      h: "train_step_size",
+      s: "train_style_strength",
+      data: "data_time_sec",
+      compute: "compute_time_sec",
+      comp: "compute_time_sec",
+      total: "epoch_time_sec"
+    };
+
+    const input = document.getElementById("logInput");
+    const parseBtn = document.getElementById("parseBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const statusEl = document.getElementById("status");
+    const chartsEl = document.getElementById("charts");
+    const pickerEl = document.getElementById("metricPicker");
+    const snapshotBody = document.getElementById("snapshotBody");
+
+    let parsedRows = [];
+    let selected = new Set([...DEFAULT_ON]);
+
+    function setupPicker() {
+      pickerEl.innerHTML = "";
+      for (const m of METRICS) {
+        const id = `m_${m}`;
+        const wrap = document.createElement("label");
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.id = id;
+        cb.checked = selected.has(m);
+        cb.addEventListener("change", () => {
+          if (cb.checked) selected.add(m); else selected.delete(m);
+          renderAll();
+        });
+        const text = document.createElement("span");
+        text.textContent = m;
+        wrap.appendChild(cb);
+        wrap.appendChild(text);
+        pickerEl.appendChild(wrap);
+      }
+    }
+
+    function toNumber(v) {
+      if (v == null) return null;
+      const n = Number(String(v).replace(/s$/i, ""));
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function parseCsv(text) {
+      const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      if (lines.length < 2) return [];
+      const head = lines[0].split(",").map(s => s.trim());
+      if (!head.includes("epoch")) return [];
+      const rows = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(",").map(s => s.trim());
+        if (cols.length < head.length) continue;
+        const obj = {};
+        head.forEach((k, idx) => obj[k] = cols[idx]);
+        const epoch = toNumber(obj.epoch);
+        if (epoch == null) continue;
+        const row = { epoch };
+        for (const m of METRICS) {
+          if (obj[m] != null) row[m] = toNumber(obj[m]);
+        }
+        rows.push(row);
+      }
+      return rows;
+    }
+
+    function parseConsole(text) {
+      const lines = text.split(/\r?\n/);
+      const rows = [];
+      for (const line of lines) {
+        const match = line.match(/(?:^|\s)(?:\[?Epoch)\s+(\d+)\/(\d+)\]?[^|]*\|\s*(.+)$/i);
+        if (!match) continue;
+        const epoch = Number(match[1]);
+        const tail = match[3] || "";
+        const row = { epoch };
+        const kv = [...tail.matchAll(/([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?s?)/g)];
+        for (const [, rawKey, rawVal] of kv) {
+          const key = ALIAS[rawKey] || rawKey;
+          const val = toNumber(rawVal);
+          if (val == null) continue;
+          row[key] = val;
+        }
+        rows.push(row);
+      }
+      return rows;
+    }
+
+    function parseText(text) {
+      let rows = parseCsv(text);
+      if (rows.length === 0) rows = parseConsole(text);
+      if (rows.length === 0) return [];
+
+      const byEpoch = new Map();
+      for (const row of rows) {
+        const prev = byEpoch.get(row.epoch) || { epoch: row.epoch };
+        byEpoch.set(row.epoch, { ...prev, ...row });
+      }
+      return [...byEpoch.values()].sort((a, b) => a.epoch - b.epoch);
+    }
+
+    function drawLine(canvas, rows, metric, color) {
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width = canvas.clientWidth * devicePixelRatio;
+      const h = canvas.height = canvas.clientHeight * devicePixelRatio;
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+      const cw = canvas.clientWidth;
+      const ch = canvas.clientHeight;
+      const pad = { l: 44, r: 8, t: 10, b: 24 };
+      const xs = rows.map(r => r.epoch);
+      const ys = rows.map(r => r[metric]).filter(v => Number.isFinite(v));
+      if (!ys.length) {
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "12px sans-serif";
+        ctx.fillText("No data", 12, 20);
+        return;
+      }
+      const xMin = Math.min(...xs), xMax = Math.max(...xs);
+      let yMin = Math.min(...ys), yMax = Math.max(...ys);
+      if (yMin === yMax) { yMin -= 1; yMax += 1; }
+      const toX = x => pad.l + (x - xMin) / Math.max(1e-9, (xMax - xMin)) * (cw - pad.l - pad.r);
+      const toY = y => ch - pad.b - (y - yMin) / Math.max(1e-9, (yMax - yMin)) * (ch - pad.t - pad.b);
+
+      ctx.strokeStyle = "#1f2937";
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 4; i++) {
+        const gy = pad.t + i * (ch - pad.t - pad.b) / 3;
+        ctx.beginPath(); ctx.moveTo(pad.l, gy); ctx.lineTo(cw - pad.r, gy); ctx.stroke();
+      }
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      let started = false;
+      for (const r of rows) {
+        const y = r[metric];
+        if (!Number.isFinite(y)) continue;
+        const x = toX(r.epoch), py = toY(y);
+        if (!started) { ctx.moveTo(x, py); started = true; } else { ctx.lineTo(x, py); }
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = "#cbd5e1";
+      ctx.font = "11px sans-serif";
+      ctx.fillText(String(xMin), pad.l, ch - 8);
+      ctx.fillText(String(xMax), cw - pad.r - ctx.measureText(String(xMax)).width, ch - 8);
+      ctx.fillText(yMax.toFixed(4), 6, pad.t + 4);
+      ctx.fillText(yMin.toFixed(4), 6, ch - pad.b);
+    }
+
+    function renderSnapshot(rows) {
+      snapshotBody.innerHTML = "";
+      if (!rows.length) return;
+      const last = rows[rows.length - 1];
+      const keys = ["epoch", ...METRICS.filter(k => Number.isFinite(last[k]))];
+      for (const k of keys) {
+        const tr = document.createElement("tr");
+        const tdK = document.createElement("td");
+        const tdV = document.createElement("td");
+        tdK.textContent = k;
+        tdV.textContent = Number.isFinite(last[k]) ? Number(last[k]).toFixed(6) : String(last[k] ?? "");
+        tr.appendChild(tdK);
+        tr.appendChild(tdV);
+        snapshotBody.appendChild(tr);
+      }
+    }
+
+    function renderCharts(rows) {
+      chartsEl.innerHTML = "";
+      const active = METRICS.filter(m => selected.has(m));
+      if (!rows.length || !active.length) return;
+      active.forEach((m, i) => {
+        const card = document.createElement("div");
+        card.className = "chart-card";
+        const title = document.createElement("p");
+        title.className = "chart-title";
+        title.textContent = m;
+        const canvas = document.createElement("canvas");
+        card.appendChild(title);
+        card.appendChild(canvas);
+        chartsEl.appendChild(card);
+        drawLine(canvas, rows, m, COLORS[i % COLORS.length]);
+      });
+    }
+
+    function renderAll() {
+      renderCharts(parsedRows);
+      renderSnapshot(parsedRows);
+    }
+
+    function runParse() {
+      const text = input.value || "";
+      parsedRows = parseText(text);
+      renderAll();
+      statusEl.textContent = parsedRows.length
+        ? `Parsed ${parsedRows.length} epoch rows`
+        : "No valid rows parsed";
+    }
+
+    parseBtn.addEventListener("click", runParse);
+    clearBtn.addEventListener("click", () => {
+      input.value = "";
+      parsedRows = [];
+      renderAll();
+      statusEl.textContent = "";
+    });
+    input.addEventListener("paste", () => setTimeout(runParse, 20));
+
+    setupPicker();
+  </script>
+</body>
+</html>
