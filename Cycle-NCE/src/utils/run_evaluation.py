@@ -43,6 +43,7 @@ import torchvision.models as models
 import torch.nn.functional as F
 from torchvision.transforms import ToPILImage
 from torchvision.utils import save_image
+from scipy import linalg
 # Project imports
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
@@ -50,7 +51,7 @@ if str(_ROOT) not in sys.path:
 
 from utils.inference import LGTInference, load_vae, encode_image, decode_latent
 from utils.style_classifier import StyleClassifier as LatentStyleClassifier
-from utils.eval_image_classifier import load_eval_image_classifier
+from utils.classify import DEFAULT_EVAL_IMAGE_CLASSIFIER_CKPT, load_eval_image_classifier
 
 # ==========================================
 # Optimized Feature Extractors
@@ -200,6 +201,76 @@ def _extract_clip_embeddings(output):
     if isinstance(output, dict) or hasattr(output, 'keys'):
         msg += f", Keys: {list(output.keys())}"
     raise RuntimeError(msg)
+
+
+@torch.no_grad()
+def _extract_inception_feats(paths, device: str, batch_size: int = 16, max_images: int = 200):
+    if not paths:
+        return np.empty((0, 2048), dtype=np.float64)
+    sel = list(paths)[: max(1, int(max_images))]
+    model = models.inception_v3(weights=models.Inception_V3_Weights.DEFAULT, transform_input=False)
+    model.fc = torch.nn.Identity()
+    model.eval().to(device)
+    tfm = T.Compose([
+        T.Resize((299, 299)),
+        T.ToTensor(),
+        T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+    feats = []
+    for s in range(0, len(sel), max(1, int(batch_size))):
+        e = min(s + max(1, int(batch_size)), len(sel))
+        imgs = []
+        for p in sel[s:e]:
+            try:
+                imgs.append(tfm(Image.open(p).convert("RGB")))
+            except Exception:
+                continue
+        if not imgs:
+            continue
+        x = torch.stack(imgs, dim=0).to(device)
+        y = model(x)
+        if y.ndim > 2:
+            y = torch.flatten(y, 1)
+        feats.append(y.detach().cpu().double().numpy())
+    del model
+    if torch.cuda.is_available() and str(device).startswith("cuda"):
+        torch.cuda.empty_cache()
+    if not feats:
+        return np.empty((0, 2048), dtype=np.float64)
+    return np.concatenate(feats, axis=0)
+
+
+def _frechet_distance(mu1, sigma1, mu2, sigma2):
+    diff = mu1 - mu2
+    covmean, _ = linalg.sqrtm(sigma1.dot(sigma2), disp=False)
+    if not np.isfinite(covmean).all():
+        eps = 1e-6
+        offset = np.eye(sigma1.shape[0]) * eps
+        covmean, _ = linalg.sqrtm((sigma1 + offset).dot(sigma2 + offset), disp=False)
+    if np.iscomplexobj(covmean):
+        covmean = covmean.real
+    return float(diff.dot(diff) + np.trace(sigma1 + sigma2 - 2.0 * covmean))
+
+
+def _compute_art_fid_for_pair(
+    gen_paths,
+    ref_paths,
+    mean_content_lpips: float,
+    *,
+    device: str,
+    batch_size: int,
+    max_gen: int,
+    max_ref: int,
+):
+    g_feats = _extract_inception_feats(gen_paths, device=device, batch_size=batch_size, max_images=max_gen)
+    r_feats = _extract_inception_feats(ref_paths, device=device, batch_size=batch_size, max_images=max_ref)
+    if g_feats.shape[0] < 2 or r_feats.shape[0] < 2:
+        return None, None
+    mu_g, cov_g = g_feats.mean(axis=0), np.cov(g_feats, rowvar=False)
+    mu_r, cov_r = r_feats.mean(axis=0), np.cov(r_feats, rowvar=False)
+    fid_style = _frechet_distance(mu_g, cov_g, mu_r, cov_r)
+    art_fid = (1.0 + float(fid_style)) * (1.0 + float(mean_content_lpips))
+    return float(fid_style), float(art_fid)
 
 
 def _load_eval_image_tensor(path: Path, size: int = 256) -> torch.Tensor:
@@ -449,6 +520,11 @@ def _auto_run_missing_full_eval(args) -> None:
             cmd += ["--eval_classifier_only"]
         if args.eval_disable_lpips:
             cmd += ["--eval_disable_lpips"]
+        if args.eval_enable_art_fid:
+            cmd += ["--eval_enable_art_fid"]
+            cmd += ["--eval_art_fid_max_gen", str(args.eval_art_fid_max_gen)]
+            cmd += ["--eval_art_fid_max_ref", str(args.eval_art_fid_max_ref)]
+            cmd += ["--eval_art_fid_batch_size", str(args.eval_art_fid_batch_size)]
         if args.reuse_generated:
             cmd += ["--reuse_generated"]
         if args.generation_only:
@@ -477,7 +553,7 @@ def main():
     parser.add_argument('--force_regen_ref_cache', action='store_true', help="Force rebuild global reference-feature cache only")
     parser.add_argument('--ref_cache_lock_timeout', type=int, default=900, help="Seconds to wait for another process building reference cache")
     parser.add_argument('--classifier_path', type=str, default="../../style_classifier.pt", help="Path to latent style classifier checkpoint")
-    parser.add_argument('--image_classifier_path', type=str, default="../../artifacts/eval_classifier/eval_style_image_classifier.pt", help="Path to robust image classifier checkpoint for evaluation")
+    parser.add_argument('--image_classifier_path', type=str, default=str(DEFAULT_EVAL_IMAGE_CLASSIFIER_CKPT), help="Path to robust image classifier checkpoint for evaluation")
     parser.add_argument('--classifier_classes', type=str, default="", help="Optional comma-separated class names for report display")
     parser.add_argument('--clip_model_name', type=str, default="openai/clip-vit-base-patch32", help="HF/local CLIP model name or local directory")
     parser.add_argument('--clip_modelscope_id', type=str, default="", help="Optional ModelScope model id for CLIP fallback")
@@ -485,6 +561,10 @@ def main():
     parser.add_argument('--clip_allow_network', action='store_true', help="Allow online model fetch if local cache is missing (default off)")
     parser.add_argument('--eval_classifier_only', action='store_true', help="Run only classifier evaluation (skip LPIPS/CLIP)")
     parser.add_argument('--eval_disable_lpips', action='store_true', help="Skip LPIPS metrics (keep CLIP)")
+    parser.add_argument('--eval_enable_art_fid', action='store_true', help="Enable ArtFID metric: (1+FID_style)*(1+LPIPS_content)")
+    parser.add_argument('--eval_art_fid_max_gen', type=int, default=200, help="Max generated images per pair for FID_style")
+    parser.add_argument('--eval_art_fid_max_ref', type=int, default=200, help="Max target-style reference images per pair for FID_style")
+    parser.add_argument('--eval_art_fid_batch_size', type=int, default=16, help="Batch size for inception feature extraction in ArtFID")
     parser.add_argument('--eval_lpips_chunk_size', type=int, default=2, help="LPIPS chunk size for conservative VRAM usage")
     parser.add_argument('--eval_lpips_no_cpu_fallback', action='store_true', help="Disable CPU fallback when LPIPS CUDA OOM occurs")
     parser.add_argument('--reuse_generated', action='store_true', help="Reuse existing generated *_to_*.jpg in output dir and skip generation")
@@ -987,7 +1067,19 @@ def main():
     # Re-evaluation on reused images should overwrite metrics to avoid mixing old/new classifier outputs.
     csv_mode = 'w' if args.force_regen or args.reuse_generated or not csv_path.exists() else 'a'
     csv_file = open(csv_path, csv_mode, newline='')
-    columns = ['src_style', 'tgt_style', 'src_image', 'gen_image', 'content_lpips', 'style_lpips', 'clip_style', 'clip_content', 'pred_style', 'class_correct']
+    columns = [
+        'src_style',
+        'tgt_style',
+        'src_image',
+        'gen_image',
+        'content_lpips',
+        'style_lpips',
+        'clip_dir',
+        'clip_style',
+        'clip_content',
+        'pred_style',
+        'class_correct',
+    ]
     writer = csv.DictWriter(csv_file, fieldnames=columns)
     if csv_mode == 'w': writer.writeheader()
 
@@ -1098,17 +1190,21 @@ def main():
                         pred_style_name = f"Unknown({pred_idx})"
                         class_correct = 0
 
-                # --- CLIP Style Score ---
-                # Vectorized CLIP Style Score
-                s_clip_score = 0.0
-                if has_clip and gen_clips is not None and tgt_id in ref_clip_matrices:
-                    ref_matrix = ref_clip_matrices[tgt_id]
-                    gen_emb = gen_clips[i:i+1] # [1, D]
-                    
-                    # Ensure dim match (in case cache had 768 and gen has 512, though unlikely with same model)
-                    if gen_emb.shape[-1] == ref_matrix.shape[-1]:
-                        sims = torch.matmul(gen_emb, ref_matrix.t()) # [1, N_ref]
-                        s_clip_score = sims.mean().item()
+                # --- CLIP Directional Similarity (CLIP-Dir) ---
+                # Compare direction (gen - src) against (target-style-prototype - src).
+                s_clip_dir = 0.0
+                if has_clip and gen_clips is not None and src_clips is not None and tgt_id in ref_clip_matrices:
+                    ref_matrix = ref_clip_matrices[tgt_id]  # [N_ref, D]
+                    gen_emb = gen_clips[i:i+1]              # [1, D]
+                    src_emb = src_clips[i:i+1]              # [1, D]
+                    if gen_emb.shape[-1] == ref_matrix.shape[-1] == src_emb.shape[-1]:
+                        tgt_proto = ref_matrix.mean(dim=0, keepdim=True)
+                        tgt_proto = tgt_proto / (tgt_proto.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+                        dir_gen = gen_emb - src_emb
+                        dir_tgt = tgt_proto - src_emb
+                        dir_gen = dir_gen / (dir_gen.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+                        dir_tgt = dir_tgt / (dir_tgt.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+                        s_clip_dir = F.cosine_similarity(dir_gen, dir_tgt).item()
                 
                 # --- LPIPS Style Score ---
                 s_lpips_score = 0.0
@@ -1157,7 +1253,8 @@ def main():
                     'gen_image': item['gen_name'],
                     'content_lpips': c_lpips_vals[i],
                     'style_lpips': s_lpips_score,
-                    'clip_style': s_clip_score,
+                    'clip_dir': s_clip_dir,
+                    'clip_style': s_clip_dir,  # backward-compatible alias
                     'clip_content': c_clip_scores[i],
                     'pred_style': pred_style_name,
                     'class_correct': class_correct
@@ -1168,9 +1265,33 @@ def main():
     csv_file.close()
     io_pool.shutdown(wait=True)
     
-    generate_summary_json(csv_path, out_dir, checkpoint_path)
+    style_real_paths = {}
+    for _, (style_name, img_list) in test_images.items():
+        style_real_paths[style_name] = [str(p) for p in img_list]
+    generate_summary_json(
+        csv_path,
+        out_dir,
+        checkpoint_path,
+        style_real_paths=style_real_paths,
+        device=device,
+        enable_art_fid=bool(args.eval_enable_art_fid),
+        art_fid_max_gen=int(args.eval_art_fid_max_gen),
+        art_fid_max_ref=int(args.eval_art_fid_max_ref),
+        art_fid_batch_size=int(args.eval_art_fid_batch_size),
+    )
 
-def generate_summary_json(csv_path, out_dir, ckpt_path):
+def generate_summary_json(
+    csv_path,
+    out_dir,
+    ckpt_path,
+    *,
+    style_real_paths=None,
+    device: str = "cpu",
+    enable_art_fid: bool = False,
+    art_fid_max_gen: int = 200,
+    art_fid_max_ref: int = 200,
+    art_fid_batch_size: int = 16,
+):
     print("\n妫ｅ啯鎯?Generating Summary...")
     rows = []
     if csv_path.exists():
@@ -1198,13 +1319,37 @@ def generate_summary_json(csv_path, out_dir, ckpt_path):
     for src, targets in matrix.items():
         matrix_json[src] = {}
         for tgt, items in targets.items():
+            mean_content_lpips = np.mean([to_f(x['content_lpips']) for x in items])
             stats = {
                 'count': len(items),
-                'clip_style': np.mean([to_f(x['clip_style']) for x in items]),
+                'clip_dir': np.mean([to_f(x.get('clip_dir', x.get('clip_style', 0.0))) for x in items]),
+                'clip_style': np.mean([to_f(x.get('clip_style', x.get('clip_dir', 0.0))) for x in items]),
                 'style_lpips': np.mean([to_f(x['style_lpips']) for x in items]),
-                'content_lpips': np.mean([to_f(x['content_lpips']) for x in items]),
+                'content_lpips': mean_content_lpips,
                 'clip_content': np.mean([to_f(x.get('clip_content', 0)) for x in items]),
             }
+            if enable_art_fid and style_real_paths is not None:
+                try:
+                    gen_paths = [str((out_dir / x['gen_image']).resolve()) for x in items]
+                    ref_paths = list(style_real_paths.get(tgt, []))
+                    fid_style, art_fid = _compute_art_fid_for_pair(
+                        gen_paths,
+                        ref_paths,
+                        float(mean_content_lpips),
+                        device=device,
+                        batch_size=max(1, int(art_fid_batch_size)),
+                        max_gen=max(1, int(art_fid_max_gen)),
+                        max_ref=max(1, int(art_fid_max_ref)),
+                    )
+                    stats['fid_style'] = fid_style
+                    stats['art_fid'] = art_fid
+                except Exception as e:
+                    print(f"WARNING: ArtFID failed for {src}->{tgt}: {e}")
+                    stats['fid_style'] = None
+                    stats['art_fid'] = None
+            else:
+                stats['fid_style'] = None
+                stats['art_fid'] = None
             
             # Classification Accuracy for this pair
             cls_results = [x['class_correct'] for x in items if x['class_correct'] != 'N/A']
@@ -1262,15 +1407,24 @@ def generate_summary_json(csv_path, out_dir, ckpt_path):
     summary = {
         'checkpoint': str(ckpt_path),
         'timestamp': time.strftime("%Y-%m-%d %H:%M:%S"),
+        'metrics_note': {
+            'clip_style': "backward-compatible alias of clip_dir (CLIP directional similarity)",
+            'clip_dir': "cos( CLIP(gen)-CLIP(src), CLIP(target_style_proto)-CLIP(src) )",
+            'art_fid': "computed as (1 + fid_style) * (1 + content_lpips)",
+        },
         'matrix_breakdown': matrix_json,
         'analysis': {
             'style_transfer_ability': {
+                'clip_dir': pool_avg(transfer_pool, 'clip_dir'),
                 'clip_style': pool_avg(transfer_pool, 'clip_style'),
                 'content_lpips': pool_avg(transfer_pool, 'content_lpips'),
+                'art_fid': pool_avg([t for t in transfer_pool if t.get('art_fid') is not None], 'art_fid'),
                 'classifier_acc': pool_avg([t for t in transfer_pool if t['classifier_acc'] is not None], 'classifier_acc')
             },
             'photo_to_art_performance': {
+                'clip_dir': pool_avg(photo_transfer_pool, 'clip_dir'),
                 'clip_style': pool_avg(photo_transfer_pool, 'clip_style'),
+                'art_fid': pool_avg([t for t in photo_transfer_pool if t.get('art_fid') is not None], 'art_fid'),
                 'valid': len(photo_transfer_pool) > 0,
                 'classifier_acc': pool_avg([t for t in photo_transfer_pool if t['classifier_acc'] is not None], 'classifier_acc')
             }

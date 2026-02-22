@@ -6,6 +6,7 @@ __all__ = [
     "dataset",
     "checkpoint",
     "inference",
+    "classify",
     "run_evaluation",
     "style_classifier",
 ]
