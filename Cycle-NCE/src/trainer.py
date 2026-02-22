@@ -333,6 +333,11 @@ class AdaCUTTrainer:
                     "delta_tv",
                     "delta_l2",
                     "output_tv",
+                    "swd_valid_samples",
+                    "shortcut_mu_delta",
+                    "shortcut_std_delta",
+                    "shortcut_texture_gain",
+                    "shortcut_lsi",
                     "train_num_steps",
                     "train_step_size",
                     "train_style_strength",
@@ -817,6 +822,8 @@ class AdaCUTTrainer:
                         moment=f"{_get_avg('moment'):.4f}",
                         idt=f"{_get_avg('identity'):.4f}",
                         idr=f"{_get_avg('identity_ratio'):.2f}",
+                        lsi=f"{_get_avg('shortcut_lsi'):.3f}",
+                        sN=f"{_get_avg('swd_valid_samples'):.1f}",
                         steps=f"{_get_avg('train_num_steps'):.1f}",
                         h=f"{_get_avg('train_step_size'):.2f}",
                         s=f"{_get_avg('train_style_strength'):.2f}",
@@ -827,7 +834,7 @@ class AdaCUTTrainer:
                     )
                     if not self.use_tqdm:
                         logger.info(
-                            "epoch %d step %d/%d | loss=%.4f semigroup=%.4f swd=%.4f moment=%.4f idt=%.4f idr=%.2f dtv=%.4f dl2=%.4f otv=%.4f steps=%.1f h=%.2f s=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
+                            "epoch %d step %d/%d | loss=%.4f semigroup=%.4f swd=%.4f moment=%.4f idt=%.4f idr=%.2f dtv=%.4f dl2=%.4f otv=%.4f lsi=%.3f mu=%.4f std=%.4f tex=%.4f swdN=%.1f steps=%.1f h=%.2f s=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
                             epoch,
                             step_idx,
                             total_steps,
@@ -840,6 +847,11 @@ class AdaCUTTrainer:
                             _get_avg('delta_tv'),
                             _get_avg('delta_l2'),
                             _get_avg('output_tv'),
+                            _get_avg('shortcut_lsi'),
+                            _get_avg('shortcut_mu_delta'),
+                            _get_avg('shortcut_std_delta'),
+                            _get_avg('shortcut_texture_gain'),
+                            _get_avg('swd_valid_samples'),
                             _get_avg('train_num_steps'),
                             _get_avg('train_step_size'),
                             _get_avg('train_style_strength'),
@@ -916,7 +928,9 @@ class AdaCUTTrainer:
         # Fill missing keys with 0.0 for safety
         expected_keys = [
             "loss", "semigroup", "swd", "moment", "identity", "identity_ratio",
-            "delta_tv", "delta_l2", "output_tv", "train_num_steps", "train_step_size", "train_style_strength",
+            "delta_tv", "delta_l2", "output_tv",
+            "swd_valid_samples", "shortcut_mu_delta", "shortcut_std_delta", "shortcut_texture_gain", "shortcut_lsi",
+            "train_num_steps", "train_step_size", "train_style_strength",
             "data_time_sec", "transfer_time_sec", "fwd_loss_time_sec", "backward_time_sec",
             "optimizer_time_sec", "step_overhead_time_sec", "compute_time_sec",
             "samples_seen", "samples_per_sec", "compute_samples_per_sec",
@@ -946,6 +960,7 @@ class AdaCUTTrainer:
                 f"swd={metrics['swd']:.4f} moment={metrics['moment']:.4f} "
                 f"idt={metrics['identity']:.4f} idr={metrics['identity_ratio']:.2f} "
                 f"dtv={metrics['delta_tv']:.4f} dl2={metrics['delta_l2']:.4f} otv={metrics['output_tv']:.4f} "
+                f"lsi={metrics['shortcut_lsi']:.3f} mu={metrics['shortcut_mu_delta']:.4f} std={metrics['shortcut_std_delta']:.4f} tex={metrics['shortcut_texture_gain']:.4f} swdN={metrics['swd_valid_samples']:.1f} "
                 f"steps={metrics['train_num_steps']:.1f} h={metrics['train_step_size']:.2f} s={metrics['train_style_strength']:.2f} "
                 f"| data={data_time_total:.1f}s transfer={transfer_time_total:.1f}s fwd={fwd_loss_time_total:.1f}s "
                 f"bwd={backward_time_total:.1f}s opt={optimizer_time_total:.1f}s overhead={step_overhead_time_total:.1f}s "
@@ -969,6 +984,11 @@ class AdaCUTTrainer:
                     float(metrics.get("delta_tv", 0.0)),
                     float(metrics.get("delta_l2", 0.0)),
                     float(metrics.get("output_tv", 0.0)),
+                    float(metrics.get("swd_valid_samples", 0.0)),
+                    float(metrics.get("shortcut_mu_delta", 0.0)),
+                    float(metrics.get("shortcut_std_delta", 0.0)),
+                    float(metrics.get("shortcut_texture_gain", 0.0)),
+                    float(metrics.get("shortcut_lsi", 0.0)),
                     float(metrics.get("train_num_steps", 0.0)),
                     float(metrics.get("train_step_size", 0.0)),
                     float(metrics.get("train_style_strength", 0.0)),

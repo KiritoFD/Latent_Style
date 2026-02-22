@@ -55,6 +55,8 @@ _ALLOWED_LOSS_KEYS = {
     "swd_projection_orthogonal",
     "swd_target_no_grad",
     "swd_sample_cap",
+    "debug_shortcut_metrics",
+    "shortcut_eps",
     "train_num_steps_min",
     "train_num_steps_max",
     "train_step_size_min",

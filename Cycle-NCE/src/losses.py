@@ -36,6 +36,10 @@ def calc_swd_loss(
     projection_cache_max_entries: int = 64,
     projection_seed: int = 12345,
     projection_orthogonal: bool = True,
+    patch_standardize_eps: float = 1e-4,
+    patch_value_clamp: float = 10.0,
+    charbonnier_eps: float = 1e-4,
+    loss_cap: float = 10.0,
 ) -> torch.Tensor:
     # SWD path is FP32 to keep sort/projection numerically stable.
     x = x.float()
@@ -47,73 +51,91 @@ def calc_swd_loss(
     if not valid_patches:
         return total_loss
 
-    for p in valid_patches:
-        if padding_mode == "same":
-            pad = p // 2
-        elif padding_mode == "valid":
-            pad = 0
-            if p > x.shape[-2] or p > x.shape[-1]:
-                continue
-        else:
-            raise ValueError(f"Unsupported SWD padding_mode={padding_mode}")
+    with torch.amp.autocast("cuda", enabled=False):
+        for p in valid_patches:
+            if padding_mode == "same":
+                pad = p // 2
+            elif padding_mode == "valid":
+                pad = 0
+                if p > x.shape[-2] or p > x.shape[-1]:
+                    continue
+            else:
+                raise ValueError(f"Unsupported SWD padding_mode={padding_mode}")
 
-        # Fuse unfold path: run one unfold for concatenated tensors instead of x/y separately.
-        xy = torch.cat([x, y], dim=0)
-        xy_unfold = F.unfold(xy, kernel_size=p, stride=1, padding=pad)
-        b = x.shape[0]
-        x_unfold = xy_unfold[:b]
-        y_unfold = xy_unfold[b:]
+            xy = torch.cat([x, y], dim=0)
+            xy_unfold = F.unfold(xy, kernel_size=p, stride=1, padding=pad)
+            b = x.shape[0]
+            x_unfold = xy_unfold[:b]
+            y_unfold = xy_unfold[b:]
 
-        n_patches = xy_unfold.shape[-1]
-        if max_patches is not None and n_patches > int(max_patches):
-            idx = torch.randperm(n_patches, device=device)[: int(max_patches)]
-            x_pts = x_unfold[..., idx].transpose(1, 2)  # [B, S, D]
-            y_pts = y_unfold[..., idx].transpose(1, 2)
-        else:
-            x_pts = x_unfold.transpose(1, 2)
-            y_pts = y_unfold.transpose(1, 2)
+            n_patches = xy_unfold.shape[-1]
+            if max_patches is not None and n_patches > int(max_patches):
+                idx = torch.randperm(n_patches, device=device)[: int(max_patches)]
+                x_pts = x_unfold[..., idx].transpose(1, 2)  # [B, S, D]
+                y_pts = y_unfold[..., idx].transpose(1, 2)
+            else:
+                x_pts = x_unfold.transpose(1, 2)
+                y_pts = y_unfold.transpose(1, 2)
 
-        dim = x_pts.shape[-1]
-        cache_key = (
-            int(dim),
-            int(num_projections),
-            int(p),
-            str(device),
-            str(torch.float32),
-            int(projection_seed),
-            bool(projection_orthogonal),
-        )
-        projections = None
-        if projection_cache is not None:
-            projections = projection_cache.get(cache_key, None)
-            if projections is not None:
-                projection_cache.move_to_end(cache_key)
-        if projections is None:
-            # Deterministic projections for stable optimization and reproducibility.
-            g = torch.Generator(device="cpu")
-            g.manual_seed(int(projection_seed) + int(dim) * 131 + int(p) * 9973)
-            # Use CPU generator for deterministic projections, then move to target device.
-            projections = torch.randn(dim, int(num_projections), generator=g, dtype=torch.float32, device="cpu")
-            if projection_orthogonal and int(num_projections) <= int(dim):
-                q, _ = torch.linalg.qr(projections, mode="reduced")
-                projections = q[:, : int(num_projections)]
-            projections = F.normalize(projections, p=2, dim=0)
-            projections = projections.to(device=device, dtype=torch.float32)
+            # Per-patch standardization makes SWD focus on texture distribution rather than raw magnitude.
+            xm = x_pts.mean(dim=-1, keepdim=True)
+            xv = x_pts.var(dim=-1, unbiased=False, keepdim=True)
+            ym = y_pts.mean(dim=-1, keepdim=True)
+            yv = y_pts.var(dim=-1, unbiased=False, keepdim=True)
+            x_pts = (x_pts - xm) / (xv.sqrt() + float(patch_standardize_eps))
+            y_pts = (y_pts - ym) / (yv.sqrt() + float(patch_standardize_eps))
+            if patch_value_clamp > 0:
+                x_pts = x_pts.clamp(-float(patch_value_clamp), float(patch_value_clamp))
+                y_pts = y_pts.clamp(-float(patch_value_clamp), float(patch_value_clamp))
+
+            dim = x_pts.shape[-1]
+            cache_key = (
+                int(dim),
+                int(num_projections),
+                int(p),
+                str(device),
+                str(torch.float32),
+                int(projection_seed),
+                bool(projection_orthogonal),
+            )
+            projections = None
             if projection_cache is not None:
-                projection_cache[cache_key] = projections
-                while len(projection_cache) > int(projection_cache_max_entries):
-                    projection_cache.popitem(last=False)
-        # Fuse projection matmul: one matmul for [2B,S,D], then split.
-        xy_pts = torch.cat([x_pts, y_pts], dim=0)
-        xy_proj = torch.matmul(xy_pts, projections)
-        x_proj = xy_proj[:b]
-        y_proj = xy_proj[b:]
+                projections = projection_cache.get(cache_key, None)
+                if projections is not None:
+                    projection_cache.move_to_end(cache_key)
+            if projections is None:
+                g = torch.Generator(device="cpu")
+                g.manual_seed(int(projection_seed) + int(dim) * 131 + int(p) * 9973)
+                projections = torch.randn(dim, int(num_projections), generator=g, dtype=torch.float32, device="cpu")
+                if projection_orthogonal and int(num_projections) <= int(dim):
+                    q, _ = torch.linalg.qr(projections, mode="reduced")
+                    projections = q[:, : int(num_projections)]
+                projections = F.normalize(projections, p=2, dim=0)
+                projections = projections.to(device=device, dtype=torch.float32)
+                if projection_cache is not None:
+                    projection_cache[cache_key] = projections
+                    while len(projection_cache) > int(projection_cache_max_entries):
+                        projection_cache.popitem(last=False)
 
-        x_sorted, _ = torch.sort(x_proj, dim=1)
-        y_sorted, _ = torch.sort(y_proj, dim=1)
-        total_loss += (x_sorted - y_sorted).abs().mean()
+            xy_pts = torch.cat([x_pts, y_pts], dim=0)
+            xy_proj = torch.matmul(xy_pts, projections)
+            x_proj = xy_proj[:b]
+            y_proj = xy_proj[b:]
 
-    return total_loss / float(len(valid_patches))
+            x_sorted, _ = torch.sort(x_proj, dim=1)
+            y_sorted, _ = torch.sort(y_proj, dim=1)
+            diff = x_sorted - y_sorted
+            patch_loss = torch.sqrt(diff * diff + float(charbonnier_eps)).mean()
+            if loss_cap > 0:
+                patch_loss = patch_loss.clamp(max=float(loss_cap))
+            if not torch.isfinite(patch_loss):
+                patch_loss = torch.zeros_like(patch_loss)
+            total_loss += patch_loss
+
+    out = total_loss / float(len(valid_patches))
+    if not torch.isfinite(out):
+        return torch.zeros_like(out)
+    return out
 
 
 def _tv_per_sample(x: torch.Tensor) -> torch.Tensor:
@@ -122,6 +144,14 @@ def _tv_per_sample(x: torch.Tensor) -> torch.Tensor:
     tv_x = (x[:, :, :, 1:] - x[:, :, :, :-1]).abs().mean(dim=(1, 2, 3))
     tv_y = (x[:, :, 1:, :] - x[:, :, :-1, :]).abs().mean(dim=(1, 2, 3))
     return tv_x + tv_y
+
+
+def _grad_energy_per_sample(x: torch.Tensor) -> torch.Tensor:
+    if x.numel() == 0:
+        return x.new_zeros((x.shape[0],))
+    dx = x[:, :, :, 1:] - x[:, :, :, :-1]
+    dy = x[:, :, 1:, :] - x[:, :, :-1, :]
+    return dx.pow(2).mean(dim=(1, 2, 3)) + dy.pow(2).mean(dim=(1, 2, 3))
 
 
 class AdaCUTObjective:
@@ -139,9 +169,16 @@ class AdaCUTObjective:
         self.swd_projection_cache_max_entries = int(loss_cfg.get("swd_projection_cache_max_entries", 64))
         self.swd_projection_seed = int(loss_cfg.get("swd_projection_seed", 12345))
         self.swd_projection_orthogonal = bool(loss_cfg.get("swd_projection_orthogonal", True))
+        self.swd_patch_standardize_eps = float(loss_cfg.get("swd_patch_standardize_eps", 1e-4))
+        self.swd_patch_value_clamp = float(loss_cfg.get("swd_patch_value_clamp", 10.0))
+        self.swd_charbonnier_eps = float(loss_cfg.get("swd_charbonnier_eps", 1e-4))
+        self.swd_loss_cap = float(loss_cfg.get("swd_loss_cap", 10.0))
         self.swd_target_no_grad = bool(loss_cfg.get("swd_target_no_grad", True))
         self.swd_sample_cap = int(loss_cfg.get("swd_sample_cap", 0))
+        self.swd_warmup_steps = max(0, int(loss_cfg.get("swd_warmup_steps", 2000)))
         self._swd_proj_cache: OrderedDict[Tuple, torch.Tensor] = OrderedDict()
+        self.debug_shortcut_metrics = bool(loss_cfg.get("debug_shortcut_metrics", True))
+        self.shortcut_eps = float(loss_cfg.get("shortcut_eps", 1e-6))
 
         self.w_identity = float(loss_cfg.get("w_identity", 10.0))
         self.w_delta_tv = float(loss_cfg.get("w_delta_tv", 0.0))
@@ -282,7 +319,15 @@ class AdaCUTObjective:
                         projection_cache_max_entries=self.swd_projection_cache_max_entries,
                         projection_seed=self.swd_projection_seed,
                         projection_orthogonal=self.swd_projection_orthogonal,
+                        patch_standardize_eps=self.swd_patch_standardize_eps,
+                        patch_value_clamp=self.swd_patch_value_clamp,
+                        charbonnier_eps=self.swd_charbonnier_eps,
+                        loss_cap=self.swd_loss_cap,
                     )
+                    if not torch.isfinite(loss_swd):
+                        loss_swd = torch.zeros_like(loss_swd)
+            else:
+                valid_idx = torch.arange(content.shape[0], device=content.device, dtype=torch.long)
 
         loss_identity = torch.tensor(0.0, device=content.device)
         with self._nvtx_range("loss/identity", nvtx_enabled):
@@ -330,9 +375,37 @@ class AdaCUTObjective:
                 )
                 loss_semigroup = (z_a_b - z_ab).abs().mean()
 
+        shortcut_mu_delta = torch.tensor(0.0, device=content.device)
+        shortcut_std_delta = torch.tensor(0.0, device=content.device)
+        shortcut_texture_gain = torch.tensor(0.0, device=content.device)
+        shortcut_lsi = torch.tensor(0.0, device=content.device)
+        if self.debug_shortcut_metrics:
+            with self._nvtx_range("loss/shortcut_debug", nvtx_enabled):
+                dbg_idx = valid_idx if (xid_mask.any()) else torch.arange(content.shape[0], device=content.device)
+                p_dbg = pred_f32.index_select(0, dbg_idx)
+                c_dbg = content_f32.index_select(0, dbg_idx)
+                mu_p = p_dbg.mean(dim=(1, 2, 3))
+                mu_c = c_dbg.mean(dim=(1, 2, 3))
+                std_p = p_dbg.std(dim=(1, 2, 3), unbiased=False)
+                std_c = c_dbg.std(dim=(1, 2, 3), unbiased=False)
+                per_mu = (mu_p - mu_c).abs()
+                per_std = (std_p - std_c).abs()
+                tex_p = _grad_energy_per_sample(p_dbg)
+                tex_c = _grad_energy_per_sample(c_dbg)
+                per_tex = (tex_p - tex_c).abs()
+                per_lsi = (per_mu + per_std) / (per_tex + self.shortcut_eps)
+                shortcut_mu_delta = per_mu.mean()
+                shortcut_std_delta = per_std.mean()
+                shortcut_texture_gain = per_tex.mean()
+                shortcut_lsi = per_lsi.mean()
+
+        swd_weight = self.w_swd
+        if self.swd_warmup_steps > 0:
+            swd_weight = self.w_swd * min(1.0, float(self._compute_calls) / float(self.swd_warmup_steps))
+
         total = (
             self.w_color_moment * loss_moment
-            + self.w_swd * loss_swd
+            + float(swd_weight) * loss_swd
             + self.w_identity * loss_identity
             + self.w_delta_tv * loss_delta_tv
             + self.w_delta_l2 * loss_delta_l2
@@ -354,4 +427,10 @@ class AdaCUTObjective:
             "train_num_steps": torch.tensor(float(train_num_steps), device=content.device),
             "train_step_size": torch.tensor(float(train_step_size), device=content.device),
             "train_style_strength": torch.tensor(float(train_style_strength), device=content.device),
+            "swd_valid_samples": torch.tensor(float(valid_idx.numel()), device=content.device),
+            "shortcut_mu_delta": shortcut_mu_delta.detach(),
+            "shortcut_std_delta": shortcut_std_delta.detach(),
+            "shortcut_texture_gain": shortcut_texture_gain.detach(),
+            "shortcut_lsi": shortcut_lsi.detach(),
+            "swd_weight": torch.tensor(float(swd_weight), device=content.device),
         }

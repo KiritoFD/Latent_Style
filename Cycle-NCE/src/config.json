@@ -23,6 +23,8 @@
     "swd_projection_orthogonal": true,
     "swd_target_no_grad": true,
     "swd_sample_cap": 24,
+    "debug_shortcut_metrics": true,
+    "shortcut_eps": 1e-06,
     "semigroup_every_n_steps": 1,
     "train_num_steps_min": 1,
     "train_num_steps_max": 1,
