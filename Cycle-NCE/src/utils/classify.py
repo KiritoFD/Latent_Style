@@ -12,7 +12,7 @@ import torch
 import torch.nn as nn
 import torchvision.transforms as T
 from PIL import Image
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 
 MODEL_ARCH = "styleeval_smallcnn_v1"
 DEFAULT_EVAL_IMAGE_CLASSIFIER_CKPT = Path("../../artifacts/eval_classifier/eval_style_image_classifier.pt")
@@ -257,7 +257,7 @@ def train_from_config(
     epochs: int = 120,
     batch_size: int = 128,
     lr: float = 2e-4,
-    weight_decay: float = 5e-2,
+    weight_decay: float = 1e-3,
     val_ratio: float = 0.2,
     seed: int = 42,
     num_workers: int = -1,
@@ -266,6 +266,9 @@ def train_from_config(
     target_recall: float = 0.95,
     target_confidence_min: float = 0.70,
     target_confidence_max: float = 0.98,
+    class_weight_power: float = 1.0,
+    label_smoothing: float = 0.0,
+    use_balanced_sampler: bool = False,
 ) -> dict[str, Any]:
     cfg_path = Path(config_path).resolve()
     cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
@@ -313,10 +316,24 @@ def train_from_config(
     if num_workers_eff > 0:
         loader_kwargs["prefetch_factor"] = 4
 
+    train_ds = _ImageClsDataset(train_items, train_tfm)
+    train_sampler = None
+    if use_balanced_sampler:
+        class_counts_for_sampler = np.zeros((len(classes),), dtype=np.float64)
+        for _, y in train_items:
+            class_counts_for_sampler[int(y)] += 1.0
+        sample_weights = [1.0 / max(1.0, class_counts_for_sampler[int(y)]) for _, y in train_items]
+        train_sampler = WeightedRandomSampler(
+            weights=torch.tensor(sample_weights, dtype=torch.double),
+            num_samples=len(train_items),
+            replacement=True,
+        )
+
     dl_train = DataLoader(
-        _ImageClsDataset(train_items, train_tfm),
+        train_ds,
         batch_size=max(1, batch_size),
-        shuffle=True,
+        shuffle=(train_sampler is None),
+        sampler=train_sampler,
         **loader_kwargs,
     )
     dl_val = DataLoader(
@@ -333,11 +350,12 @@ def train_from_config(
     class_counts = np.zeros((len(classes),), dtype=np.float64)
     for _, y in train_items:
         class_counts[int(y)] += 1.0
-    inv = 1.0 / np.sqrt(np.maximum(class_counts, 1.0))
+    power = float(class_weight_power)
+    inv = 1.0 / np.power(np.maximum(class_counts, 1.0), power)
     inv = inv / max(1e-12, inv.mean())
     class_weights = torch.tensor(inv, dtype=torch.float32, device=device)
-    print(f"[classify] class_weights={class_weights.detach().cpu().tolist()}")
-    ce = nn.CrossEntropyLoss(weight=class_weights, label_smoothing=0.05)
+    print(f"[classify] class_weight_power={power:.2f} class_weights={class_weights.detach().cpu().tolist()}")
+    ce = nn.CrossEntropyLoss(weight=class_weights, label_smoothing=float(label_smoothing))
 
     best = {"epoch": 0, "val_loss": 1e9, "val_acc": 0.0, "val_macro_recall": 0.0, "val_mean_confidence": 0.0}
     history = []
@@ -444,7 +462,7 @@ def main() -> None:
     ap.add_argument("--epochs", type=int, default=120)
     ap.add_argument("--batch_size", type=int, default=128)
     ap.add_argument("--lr", type=float, default=2e-4)
-    ap.add_argument("--weight_decay", type=float, default=5e-2)
+    ap.add_argument("--weight_decay", type=float, default=1e-3)
     ap.add_argument("--val_ratio", type=float, default=0.2)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--num_workers", type=int, default=-1, help="-1 means auto")
@@ -453,6 +471,10 @@ def main() -> None:
     ap.add_argument("--target_recall", type=float, default=0.95)
     ap.add_argument("--target_confidence_min", type=float, default=0.70)
     ap.add_argument("--target_confidence_max", type=float, default=0.98)
+    ap.add_argument("--class_weight_power", type=float, default=1.0, help="Use 1/(count^power) for class weighting")
+    ap.add_argument("--label_smoothing", type=float, default=0.0)
+    ap.add_argument("--use_balanced_sampler", action="store_true", default=False)
+    ap.add_argument("--no_balanced_sampler", action="store_false", dest="use_balanced_sampler")
     ap.add_argument("--out_ckpt", type=str, default=str(DEFAULT_EVAL_IMAGE_CLASSIFIER_CKPT))
     ap.add_argument("--out_report", type=str, default=str(DEFAULT_REPORT_PATH))
     args = ap.parse_args()
@@ -475,6 +497,9 @@ def main() -> None:
         target_recall=float(args.target_recall),
         target_confidence_min=float(args.target_confidence_min),
         target_confidence_max=float(args.target_confidence_max),
+        class_weight_power=float(args.class_weight_power),
+        label_smoothing=float(args.label_smoothing),
+        use_balanced_sampler=bool(args.use_balanced_sampler),
     )
     print(f"Saved checkpoint: {report['trained_ckpt']}")
     print(f"Saved report: {args.out_report}")
@@ -482,4 +507,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
