@@ -579,13 +579,20 @@ def main() -> None:
     ap.add_argument("--test_generated_dir", type=str, default="", help="Directory containing run_evaluation generated images")
     ap.add_argument("--test_ckpt", type=str, default="", help="Classifier checkpoint for --test_generated_dir; default uses --out_ckpt")
     ap.add_argument("--test_only", action="store_true", help="Only run generated-dir classification test")
+    ap.add_argument(
+        "--train_then_test",
+        action="store_true",
+        help="When --test_generated_dir is set, train first then test (default is test-only).",
+    )
     args = ap.parse_args()
 
     print(f"Model architecture: {MODEL_ARCH}")
     print(f"Default checkpoint path: {DEFAULT_EVAL_IMAGE_CLASSIFIER_CKPT}")
-    if args.test_only:
-        if not str(args.test_generated_dir).strip():
-            raise ValueError("--test_only requires --test_generated_dir")
+    has_test_dir = bool(str(args.test_generated_dir).strip())
+    should_test_only = bool(args.test_only or (has_test_dir and not args.train_then_test))
+    if should_test_only:
+        if not has_test_dir:
+            raise ValueError("Test-only mode requires --test_generated_dir")
         ckpt = Path(args.test_ckpt) if str(args.test_ckpt).strip() else Path(args.out_ckpt)
         rep = evaluate_generated_dir(
             generated_dir=Path(args.test_generated_dir),
