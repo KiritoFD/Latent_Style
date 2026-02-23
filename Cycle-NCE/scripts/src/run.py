@@ -41,8 +41,6 @@ _ALLOWED_LOSS_KEYS = {
     "w_delta_tv",
     "w_delta_l2",
     "w_output_tv",
-    "w_feature_style",
-    "w_feature_content",
     "w_swd",
     "w_color_moment",
     "w_identity",
@@ -56,15 +54,7 @@ _ALLOWED_LOSS_KEYS = {
     "train_style_strength_max",
 }
 _FORBIDDEN_LOSS_KEYS = {"w_distill", "distill_low_only", "distill_cross_domain_only", "w_code", "style_loss_source"}
-_LOSS_WEIGHT_KEYS = (
-    "w_feature_style",
-    "w_feature_content",
-    "w_identity",
-    "w_delta_tv",
-    "w_delta_l2",
-    "w_output_tv",
-    "w_semigroup",
-)
+_LOSS_WEIGHT_KEYS = ("w_semigroup", "w_swd", "w_color_moment", "w_identity", "w_delta_tv", "w_delta_l2", "w_output_tv")
 
 
 def _set_seed(seed: int) -> None:
