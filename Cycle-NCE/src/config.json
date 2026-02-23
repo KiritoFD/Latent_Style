@@ -59,7 +59,7 @@
     "grad_clip_norm": 1.0,
     "num_epochs": 60,
     "save_interval": 10,
-    "full_eval_interval": 30,
+    "full_eval_interval": 20,
     "full_eval_on_last_epoch": true,
     "full_eval_batch_size": 4,
     "full_eval_max_src_samples": 50,
