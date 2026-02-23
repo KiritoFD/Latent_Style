@@ -75,7 +75,11 @@ class StyleMaps:
 
 class LatentAdaCUT(nn.Module):
     """
+<<<<<<< Updated upstream
+    Micro U-Net without skip-connections.
+=======
     Micro U-Net with flexible high-resolution skip fusion.
+>>>>>>> Stashed changes
     Input/Output latent shape: [B, 4, 32, 32]
     """
 
@@ -171,11 +175,15 @@ class LatentAdaCUT(nn.Module):
         if self.upsample_mode in {"bilinear", "bicubic"}:
             upsample_kwargs["align_corners"] = False
         self.dec_up = nn.Upsample(**upsample_kwargs)
+<<<<<<< Updated upstream
+        self.dec_conv = nn.Conv2d(self.body_channels, self.lift_channels, kernel_size=3, stride=1, padding=1)
+=======
         self.skip_fusion = nn.Sequential(
             nn.Conv2d(self.body_channels + self.lift_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
             nn.SiLU(),
         )
         self.dec_conv = nn.Conv2d(self.lift_channels, self.lift_channels, kernel_size=3, stride=1, padding=1)
+>>>>>>> Stashed changes
         if self.use_decoder_adagn:
             self.dec_norm = AdaGN(self.lift_channels, style_dim, num_groups=out_groups)
         else:
@@ -573,8 +581,11 @@ class LatentAdaCUT(nn.Module):
             style_code=style_code,
             gate=gate_hires,
         )
+<<<<<<< Updated upstream
+=======
         # Preserve shallow structure features for flexible decoder-side fusion.
         skip_32 = h
+>>>>>>> Stashed changes
 
         h = self.down(h)
         style_spatial_16 = self._prepare_spatial_map(style_maps.map_16, h)
@@ -589,7 +600,10 @@ class LatentAdaCUT(nn.Module):
 
         h = self.dec_up(h)
         h = self._apply_upsample_blur(h)
+<<<<<<< Updated upstream
+=======
         h = self.skip_fusion(torch.cat([h, skip_32], dim=1))
+>>>>>>> Stashed changes
         h = self._run_decoder(
             h,
             style_code=style_code,

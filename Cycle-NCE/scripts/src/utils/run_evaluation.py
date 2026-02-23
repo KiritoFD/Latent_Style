@@ -504,6 +504,12 @@ def _auto_run_missing_full_eval(args) -> None:
             "--clip_model_name", str(args.clip_model_name),
             "--clip_modelscope_id", str(args.clip_modelscope_id),
             "--clip_modelscope_cache_dir", str(args.clip_modelscope_cache_dir),
+<<<<<<< Updated upstream
+            "--style_ref_mode", str(args.style_ref_mode),
+            "--style_ref_count", str(args.style_ref_count),
+            "--style_ref_seed", str(args.style_ref_seed),
+=======
+>>>>>>> Stashed changes
         ]
         if args.clip_allow_network:
             cmd += ["--clip_allow_network"]
@@ -618,6 +624,17 @@ def main():
     if not style_subdirs:
         # Fallback: auto-detect subdirs
         style_subdirs = [d.name for d in test_dir.iterdir() if d.is_dir()]
+<<<<<<< Updated upstream
+
+    cfg_train = cfg.get('training', {})
+    style_ref_mode = str(cfg_train.get('full_eval_style_ref_mode', args.style_ref_mode)).lower()
+    style_ref_count = int(cfg_train.get('full_eval_style_ref_count', args.style_ref_count))
+    style_ref_seed = int(cfg_train.get('full_eval_style_ref_seed', args.style_ref_seed))
+    print(f"Style reference mode: {style_ref_mode} (count={style_ref_count}, seed={style_ref_seed})")
+    if style_ref_mode != "none":
+        print("WARNING: inference is style_id-only; style_ref_mode is ignored.")
+=======
+>>>>>>> Stashed changes
     
     test_images = {}
     for style_id, style_name in enumerate(style_subdirs):
