@@ -633,11 +633,6 @@ def export_onnx(
             do_constant_folding=True,
             input_names=["latents", "style_id"],
             output_names=["styled_latents"],
-            dynamic_axes={
-                "latents": {0: "batch"},
-                "style_id": {0: "batch"},
-                "styled_latents": {0: "batch"},
-            },
         )
         return output_file
 
@@ -660,11 +655,6 @@ def export_onnx(
         do_constant_folding=True,
         input_names=["input_image", "style_id"],
         output_names=["output_image"],
-        dynamic_axes={
-            "input_image": {0: "batch"},
-            "style_id": {0: "batch"},
-            "output_image": {0: "batch"},
-        },
     )
     return output_file
 
