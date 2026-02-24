@@ -177,8 +177,7 @@ class LatentAdaCUT(nn.Module):
                 ) / 16.0
             else:
                 k = torch.ones((3, 3), dtype=torch.float32) / 9.0
-            k = k.view(1, 1, 3, 3).repeat(self.body_channels, 1, 1, 1).contiguous()
-            self.register_buffer("_upsample_blur_kernel", k, persistent=False)
+            self.register_buffer("_upsample_blur_kernel", k.view(1, 1, 3, 3), persistent=False)
         else:
             self.register_buffer("_upsample_blur_kernel", torch.empty(0), persistent=False)
 
@@ -304,13 +303,16 @@ class LatentAdaCUT(nn.Module):
     def _apply_upsample_blur(self, h: torch.Tensor) -> torch.Tensor:
         if not self.upsample_blur or self._upsample_blur_kernel.numel() == 0:
             return h
-        kernel = self._upsample_blur_kernel.to(device=h.device, dtype=torch.float32)
+        b, c, _, _ = h.shape
+        if c <= 0 or b <= 0:
+            return h
+        kernel = self._upsample_blur_kernel.to(device=h.device, dtype=torch.float32).repeat(c, 1, 1, 1).contiguous()
         h_dtype = h.dtype
         if h.device.type == "cuda":
             with torch.amp.autocast("cuda", enabled=False):
-                out = F.conv2d(h.float(), kernel, stride=1, padding=1, groups=self.body_channels)
+                out = F.conv2d(h.float(), kernel, stride=1, padding=1, groups=c)
         else:
-            out = F.conv2d(h.float(), kernel, stride=1, padding=1, groups=self.body_channels)
+            out = F.conv2d(h.float(), kernel, stride=1, padding=1, groups=c)
         return out.to(dtype=h_dtype)
 
     def _compute_delta(
@@ -330,7 +332,8 @@ class LatentAdaCUT(nn.Module):
 
     @staticmethod
     def _normalize_style_map(feat: torch.Tensor) -> torch.Tensor:
-        return F.instance_norm(feat, eps=1e-6)
+        feat = feat - feat.mean(dim=(2, 3), keepdim=True)
+        return feat / (feat.std(dim=(2, 3), keepdim=True, unbiased=False) + 1e-6)
 
     def encode_style_spatial_id(self, style_id: torch.Tensor | int) -> dict[int, torch.Tensor]:
         spatial_device = self.style_spatial_id_16.device

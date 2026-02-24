@@ -52,6 +52,7 @@ class AdaCUTTrainer:
         self.config = config
         self.device = device
         self.config_path = config_path
+        self._config_digest = self._compute_config_digest(config)
 
         train_cfg = config.get("training", {})
         self.skip_oom_batches = bool(train_cfg.get("skip_oom_batches", True))
@@ -345,6 +346,195 @@ class AdaCUTTrainer:
         self.global_step = 0
         self.start_epoch = 1
         self._maybe_resume(str(train_cfg.get("resume_checkpoint", "")))
+
+    @staticmethod
+    def _compute_config_digest(config: Dict) -> str:
+        try:
+            return json.dumps(config, sort_keys=True, ensure_ascii=False)
+        except Exception:
+            return ""
+
+    def _apply_loss_hot_config(self, config: Dict) -> Dict[str, tuple[float | int | str | list[int], float | int | str | list[int]]]:
+        changed: Dict[str, tuple[float | int | str | list[int], float | int | str | list[int]]] = {}
+        loss_cfg = config.get("loss", {})
+        training_cfg = config.get("training", {})
+        lf = self.loss_fn
+
+        def _set_attr(name: str, value):
+            old = getattr(lf, name)
+            if old != value:
+                setattr(lf, name, value)
+                changed[f"loss.{name}"] = (old, value)
+
+        patch_sizes = loss_cfg.get("swd_patch_sizes", [1])
+        if isinstance(patch_sizes, list):
+            parsed_patch_sizes = [int(p) for p in patch_sizes if int(p) > 0]
+        else:
+            parsed_patch_sizes = [1]
+        if not parsed_patch_sizes:
+            parsed_patch_sizes = [1]
+
+        _set_attr("w_swd", float(loss_cfg.get("w_swd", lf.w_swd)))
+        _set_attr("swd_patch_sizes", parsed_patch_sizes)
+        _set_attr("swd_num_projections", max(1, int(loss_cfg.get("swd_num_projections", lf.swd_num_projections))))
+        _set_attr("w_identity", float(loss_cfg.get("w_identity", lf.w_identity)))
+        _set_attr("w_delta_tv", float(loss_cfg.get("w_delta_tv", lf.w_delta_tv)))
+        _set_attr("w_delta_l1", float(loss_cfg.get("w_delta_l1", lf.w_delta_l1)))
+        _set_attr("w_output_tv", float(loss_cfg.get("w_output_tv", lf.w_output_tv)))
+        _set_attr("w_semigroup", float(loss_cfg.get("w_semigroup", lf.w_semigroup)))
+        _set_attr(
+            "semigroup_every_n_steps",
+            max(1, int(loss_cfg.get("semigroup_every_n_steps", lf.semigroup_every_n_steps))),
+        )
+        _set_attr("train_num_steps_min", max(1, int(loss_cfg.get("train_num_steps_min", lf.train_num_steps_min))))
+        _set_attr(
+            "train_num_steps_max",
+            max(1, int(loss_cfg.get("train_num_steps_max", max(1, int(loss_cfg.get("train_num_steps_min", lf.train_num_steps_min)))))),
+        )
+        _set_attr("train_step_size_min", float(loss_cfg.get("train_step_size_min", lf.train_step_size_min)))
+        _set_attr("train_step_size_max", float(loss_cfg.get("train_step_size_max", lf.train_step_size_max)))
+        _set_attr(
+            "train_style_strength_min",
+            float(loss_cfg.get("train_style_strength_min", lf.train_style_strength_min)),
+        )
+        _set_attr(
+            "train_style_strength_max",
+            float(loss_cfg.get("train_style_strength_max", lf.train_style_strength_max)),
+        )
+        _set_attr("nsight_nvtx", bool(training_cfg.get("nsight_nvtx", lf.nsight_nvtx)))
+
+        if lf.train_num_steps_max < lf.train_num_steps_min:
+            old = lf.train_num_steps_max
+            lf.train_num_steps_max = lf.train_num_steps_min
+            changed["loss.train_num_steps_max"] = (old, lf.train_num_steps_max)
+        if lf.train_step_size_max < lf.train_step_size_min:
+            old = lf.train_step_size_max
+            lf.train_step_size_max = lf.train_step_size_min
+            changed["loss.train_step_size_max"] = (old, lf.train_step_size_max)
+        if lf.train_style_strength_max < lf.train_style_strength_min:
+            old = lf.train_style_strength_max
+            lf.train_style_strength_max = lf.train_style_strength_min
+            changed["loss.train_style_strength_max"] = (old, lf.train_style_strength_max)
+
+        return changed
+
+    def reload_config_from_disk(self, epoch: int) -> bool:
+        cfg_path_raw = self.config_path
+        if not cfg_path_raw:
+            return False
+        cfg_path = Path(cfg_path_raw)
+        if not cfg_path.is_absolute():
+            cfg_path = (Path.cwd() / cfg_path).resolve()
+        if not cfg_path.exists():
+            logger.warning("Config hot-reload skipped at epoch %d: file not found: %s", epoch, cfg_path)
+            return False
+
+        try:
+            with open(cfg_path, "r", encoding="utf-8") as f:
+                new_config = json.load(f)
+        except Exception as exc:
+            logger.warning("Config hot-reload failed at epoch %d: %s", epoch, exc)
+            return False
+
+        new_digest = self._compute_config_digest(new_config)
+        if new_digest == self._config_digest:
+            return False
+
+        changed: Dict[str, tuple[object, object]] = {}
+        train_cfg = new_config.get("training", {})
+
+        old_num_epochs = self.num_epochs
+        self.num_epochs = int(train_cfg.get("num_epochs", self.num_epochs))
+        if self.num_epochs != old_num_epochs:
+            changed["training.num_epochs"] = (old_num_epochs, self.num_epochs)
+
+        old_save_interval = self.save_interval
+        self.save_interval = max(1, int(train_cfg.get("save_interval", self.save_interval)))
+        if self.save_interval != old_save_interval:
+            changed["training.save_interval"] = (old_save_interval, self.save_interval)
+
+        old_full_eval_interval = self.full_eval_interval
+        self.full_eval_interval = max(0, int(train_cfg.get("full_eval_interval", self.full_eval_interval)))
+        if self.full_eval_interval != old_full_eval_interval:
+            changed["training.full_eval_interval"] = (old_full_eval_interval, self.full_eval_interval)
+
+        old_last_eval = self.run_full_eval_on_last_epoch
+        self.run_full_eval_on_last_epoch = bool(train_cfg.get("full_eval_on_last_epoch", self.run_full_eval_on_last_epoch))
+        if self.run_full_eval_on_last_epoch != old_last_eval:
+            changed["training.full_eval_on_last_epoch"] = (old_last_eval, self.run_full_eval_on_last_epoch)
+
+        old_skip_oom = self.skip_oom_batches
+        self.skip_oom_batches = bool(train_cfg.get("skip_oom_batches", self.skip_oom_batches))
+        if self.skip_oom_batches != old_skip_oom:
+            changed["training.skip_oom_batches"] = (old_skip_oom, self.skip_oom_batches)
+
+        old_grad_clip = self.grad_clip_norm
+        self.grad_clip_norm = float(train_cfg.get("grad_clip_norm", self.grad_clip_norm))
+        if self.grad_clip_norm != old_grad_clip:
+            changed["training.grad_clip_norm"] = (old_grad_clip, self.grad_clip_norm)
+
+        old_acc_steps = self.accumulation_steps
+        self.accumulation_steps = max(1, int(train_cfg.get("accumulation_steps", self.accumulation_steps)))
+        if self.accumulation_steps != old_acc_steps:
+            changed["training.accumulation_steps"] = (old_acc_steps, self.accumulation_steps)
+
+        old_log_interval = self.log_interval
+        self.log_interval = max(0, int(train_cfg.get("log_interval", self.log_interval)))
+        if self.log_interval != old_log_interval:
+            changed["training.log_interval"] = (old_log_interval, self.log_interval)
+
+        old_use_tqdm = self.use_tqdm
+        self.use_tqdm = bool(train_cfg.get("use_tqdm", self.use_tqdm))
+        if self.use_tqdm != old_use_tqdm:
+            changed["training.use_tqdm"] = (old_use_tqdm, self.use_tqdm)
+
+        old_empty_cache_interval = self.empty_cache_interval
+        self.empty_cache_interval = max(0, int(train_cfg.get("empty_cache_interval", self.empty_cache_interval)))
+        if self.empty_cache_interval != old_empty_cache_interval:
+            changed["training.empty_cache_interval"] = (old_empty_cache_interval, self.empty_cache_interval)
+
+        old_log_vram_interval = self.log_vram_interval
+        self.log_vram_interval = max(0, int(train_cfg.get("log_vram_interval", self.log_vram_interval)))
+        if self.log_vram_interval != old_log_vram_interval:
+            changed["training.log_vram_interval"] = (old_log_vram_interval, self.log_vram_interval)
+
+        old_gc_collect_interval = self.gc_collect_interval
+        self.gc_collect_interval = max(0, int(train_cfg.get("gc_collect_interval", self.gc_collect_interval)))
+        if self.gc_collect_interval != old_gc_collect_interval:
+            changed["training.gc_collect_interval"] = (old_gc_collect_interval, self.gc_collect_interval)
+
+        old_trace_vram_steps = self.trace_vram_steps
+        self.trace_vram_steps = max(0, int(train_cfg.get("trace_vram_steps", self.trace_vram_steps)))
+        if self.trace_vram_steps != old_trace_vram_steps:
+            changed["training.trace_vram_steps"] = (old_trace_vram_steps, self.trace_vram_steps)
+
+        for group in self.optimizer.param_groups:
+            old_lr = float(group.get("lr", 0.0))
+            new_lr = float(train_cfg.get("learning_rate", old_lr))
+            if old_lr != new_lr:
+                group["lr"] = new_lr
+                changed["training.learning_rate"] = (old_lr, new_lr)
+                break
+        for group in self.optimizer.param_groups:
+            old_wd = float(group.get("weight_decay", 0.0))
+            new_wd = float(train_cfg.get("weight_decay", old_wd))
+            if old_wd != new_wd:
+                group["weight_decay"] = new_wd
+                changed["training.weight_decay"] = (old_wd, new_wd)
+                break
+
+        loss_changed = self._apply_loss_hot_config(new_config)
+        changed.update(loss_changed)
+
+        self.config = new_config
+        self._config_digest = new_digest
+
+        if changed:
+            details = ", ".join(f"{k}: {v[0]} -> {v[1]}" for k, v in sorted(changed.items()))
+            logger.info("Config hot-reloaded at epoch %d. Applied changes: %s", epoch, details)
+        else:
+            logger.info("Config file changed at epoch %d but no hot-reloadable fields differed.", epoch)
+        return True
 
     def _snapshot_source(self) -> None:
         """
@@ -1027,7 +1217,7 @@ class AdaCUTTrainer:
             "--step_size",
             str(float(cfg_train.get("full_eval_step_size", cfg_infer.get("step_size", 1.0)))),
             "--batch_size",
-            str(int(cfg_train.get("full_eval_batch_size", 8))),
+            str(int(cfg_train.get("full_eval_batch_size", 20))),
             "--max_src_samples",
             str(int(cfg_train.get("full_eval_max_src_samples", 30))),
             "--max_ref_compare",
@@ -1035,7 +1225,9 @@ class AdaCUTTrainer:
             "--max_ref_cache",
             str(int(cfg_train.get("full_eval_max_ref_cache", 256))),
             "--ref_feature_batch_size",
-            str(int(cfg_train.get("full_eval_ref_feature_batch_size", 64))),
+            str(int(cfg_train.get("full_eval_ref_feature_batch_size", 128))),
+            "--eval_lpips_chunk_size",
+            str(int(cfg_train.get("full_eval_lpips_chunk_size", 8))),
             "--clip_model_name",
             str(cfg_train.get("full_eval_clip_model_name", "openai/clip-vit-base-patch32")),
             "--clip_modelscope_id",
@@ -1061,6 +1253,13 @@ class AdaCUTTrainer:
             cmd += ["--eval_classifier_only"]
         if bool(cfg_train.get("full_eval_disable_lpips", False)):
             cmd += ["--eval_disable_lpips"]
+        if bool(cfg_train.get("full_eval_enable_art_fid", False)):
+            cmd += ["--eval_enable_art_fid"]
+            cmd += ["--eval_art_fid_max_gen", str(int(cfg_train.get("full_eval_art_fid_max_gen", 200)))]
+            cmd += ["--eval_art_fid_max_ref", str(int(cfg_train.get("full_eval_art_fid_max_ref", 200)))]
+            cmd += ["--eval_art_fid_batch_size", str(int(cfg_train.get("full_eval_art_fid_batch_size", 16)))]
+            if bool(cfg_train.get("full_eval_art_fid_photo_only", False)):
+                cmd += ["--eval_art_fid_photo_only"]
         if bool(cfg_train.get("full_eval_reuse_generated", True)):
             cmd += ["--reuse_generated"]
         if bool(cfg_train.get("full_eval_generation_only", False)):
@@ -1100,6 +1299,21 @@ class AdaCUTTrainer:
         """
         Aggregate multi-round full_eval summaries into one history report.
         """
+        def _to_opt_float(v):
+            if v is None:
+                return None
+            try:
+                return float(v)
+            except Exception:
+                return None
+
+        def _avg_opt(items, key: str):
+            vals = [x.get(key) for x in items]
+            vals = [v for v in vals if v is not None]
+            if not vals:
+                return None
+            return float(sum(vals) / len(vals))
+
         rounds = []
         for epoch_dir in sorted(self.full_eval_root.glob("epoch_*")):
             summary_path = epoch_dir / "summary.json"
@@ -1123,11 +1337,15 @@ class AdaCUTTrainer:
                 {
                     "epoch": epoch,
                     "summary_path": str(summary_path),
-                    "transfer_clip_style": float(transfer.get("clip_style", 0.0)),
-                    "transfer_content_lpips": float(transfer.get("content_lpips", 0.0)),
-                    "transfer_classifier_acc": float(transfer.get("classifier_acc", 0.0)),
-                    "photo_to_art_clip_style": float(p2a.get("clip_style", 0.0)),
-                    "photo_to_art_classifier_acc": float(p2a.get("classifier_acc", 0.0)),
+                    "transfer_clip_style": _to_opt_float(transfer.get("clip_style")),
+                    "transfer_content_lpips": _to_opt_float(transfer.get("content_lpips")),
+                    "transfer_fid": _to_opt_float(transfer.get("fid")),
+                    "transfer_art_fid": _to_opt_float(transfer.get("art_fid")),
+                    "transfer_classifier_acc": _to_opt_float(transfer.get("classifier_acc")),
+                    "photo_to_art_clip_style": _to_opt_float(p2a.get("clip_style")),
+                    "photo_to_art_fid": _to_opt_float(p2a.get("fid")),
+                    "photo_to_art_art_fid": _to_opt_float(p2a.get("art_fid")),
+                    "photo_to_art_classifier_acc": _to_opt_float(p2a.get("classifier_acc")),
                 }
             )
 
@@ -1137,18 +1355,34 @@ class AdaCUTTrainer:
         rounds.sort(key=lambda x: x["epoch"])
         latest = rounds[-1]
         mean = {
-            "transfer_clip_style": sum(x["transfer_clip_style"] for x in rounds) / len(rounds),
-            "transfer_content_lpips": sum(x["transfer_content_lpips"] for x in rounds) / len(rounds),
-            "transfer_classifier_acc": sum(x["transfer_classifier_acc"] for x in rounds) / len(rounds),
-            "photo_to_art_clip_style": sum(x["photo_to_art_clip_style"] for x in rounds) / len(rounds),
-            "photo_to_art_classifier_acc": sum(x["photo_to_art_classifier_acc"] for x in rounds) / len(rounds),
+            "transfer_clip_style": _avg_opt(rounds, "transfer_clip_style"),
+            "transfer_content_lpips": _avg_opt(rounds, "transfer_content_lpips"),
+            "transfer_fid": _avg_opt(rounds, "transfer_fid"),
+            "transfer_art_fid": _avg_opt(rounds, "transfer_art_fid"),
+            "transfer_classifier_acc": _avg_opt(rounds, "transfer_classifier_acc"),
+            "photo_to_art_clip_style": _avg_opt(rounds, "photo_to_art_clip_style"),
+            "photo_to_art_fid": _avg_opt(rounds, "photo_to_art_fid"),
+            "photo_to_art_art_fid": _avg_opt(rounds, "photo_to_art_art_fid"),
+            "photo_to_art_classifier_acc": _avg_opt(rounds, "photo_to_art_classifier_acc"),
         }
+
+        rounds_with_transfer_fid = [x for x in rounds if x.get("transfer_fid") is not None]
+        rounds_with_transfer_art_fid = [x for x in rounds if x.get("transfer_art_fid") is not None]
+        rounds_with_photo_fid = [x for x in rounds if x.get("photo_to_art_fid") is not None]
+        rounds_with_photo_art_fid = [x for x in rounds if x.get("photo_to_art_art_fid") is not None]
+        rounds_with_transfer_cls = [x for x in rounds if x.get("transfer_classifier_acc") is not None]
+        rounds_with_photo_cls = [x for x in rounds if x.get("photo_to_art_classifier_acc") is not None]
+
         best = {
-            "best_transfer_classifier_acc": max(rounds, key=lambda x: x["transfer_classifier_acc"]),
-            "best_transfer_clip_style": max(rounds, key=lambda x: x["transfer_clip_style"]),
-            "best_photo_to_art_classifier_acc": max(rounds, key=lambda x: x["photo_to_art_classifier_acc"]),
-            "best_photo_to_art_clip_style": max(rounds, key=lambda x: x["photo_to_art_clip_style"]),
-            "best_transfer_content_lpips": min(rounds, key=lambda x: x["transfer_content_lpips"]),
+            "best_transfer_classifier_acc": max(rounds_with_transfer_cls, key=lambda x: x["transfer_classifier_acc"]) if rounds_with_transfer_cls else None,
+            "best_transfer_clip_style": max(rounds, key=lambda x: x["transfer_clip_style"] if x.get("transfer_clip_style") is not None else float("-inf")),
+            "best_transfer_fid": min(rounds_with_transfer_fid, key=lambda x: x["transfer_fid"]) if rounds_with_transfer_fid else None,
+            "best_transfer_art_fid": min(rounds_with_transfer_art_fid, key=lambda x: x["transfer_art_fid"]) if rounds_with_transfer_art_fid else None,
+            "best_photo_to_art_classifier_acc": max(rounds_with_photo_cls, key=lambda x: x["photo_to_art_classifier_acc"]) if rounds_with_photo_cls else None,
+            "best_photo_to_art_clip_style": max(rounds, key=lambda x: x["photo_to_art_clip_style"] if x.get("photo_to_art_clip_style") is not None else float("-inf")),
+            "best_photo_to_art_fid": min(rounds_with_photo_fid, key=lambda x: x["photo_to_art_fid"]) if rounds_with_photo_fid else None,
+            "best_photo_to_art_art_fid": min(rounds_with_photo_art_fid, key=lambda x: x["photo_to_art_art_fid"]) if rounds_with_photo_art_fid else None,
+            "best_transfer_content_lpips": min(rounds, key=lambda x: x["transfer_content_lpips"] if x.get("transfer_content_lpips") is not None else float("inf")),
         }
 
         payload = {
