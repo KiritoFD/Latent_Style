@@ -101,8 +101,6 @@ class LatentAdaCUT(nn.Module):
         style_strength_step_curve: str = "linear",
         upsample_mode: str = "nearest",
         style_id_spatial_jitter_px: int = 0,
-        loss_projector_use: bool = True,
-        loss_projector_channels: int = 64,
         upsample_blur: bool = True,
         upsample_blur_kernel: str = "box3",
     ) -> None:
@@ -126,23 +124,11 @@ class LatentAdaCUT(nn.Module):
             self.style_strength_step_curve = "linear"
         self.upsample_mode = str(upsample_mode)
         self.style_id_spatial_jitter_px = max(0, int(style_id_spatial_jitter_px))
-        self.loss_projector_use = bool(loss_projector_use)
-        self.loss_projector_channels = max(8, int(loss_projector_channels))
         self.upsample_blur = bool(upsample_blur)
         self.upsample_blur_kernel = str(upsample_blur_kernel).lower()
         if self.upsample_blur_kernel not in {"box3", "gaussian3"}:
             self.upsample_blur_kernel = "box3"
 
-        self.style_enc = nn.Sequential(
-            nn.Conv2d(latent_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
-            nn.SiLU(),
-            nn.Conv2d(self.lift_channels, base_dim * 2, kernel_size=4, stride=2, padding=1),  # 32 -> 16
-            nn.SiLU(),
-            nn.Conv2d(base_dim * 2, base_dim * 4, kernel_size=4, stride=2, padding=1),  # 16 -> 8
-            nn.SiLU(),
-            nn.AdaptiveAvgPool2d(1),
-        )
-        self.style_proj = nn.Linear(base_dim * 4, style_dim)
         self.style_emb = nn.Embedding(self.num_styles, style_dim)
         nn.init.normal_(self.style_emb.weight, mean=0.0, std=0.02)
 
@@ -183,18 +169,6 @@ class LatentAdaCUT(nn.Module):
         self.dec_act = nn.SiLU()
         self.dec_out = nn.Conv2d(self.lift_channels, latent_channels, kernel_size=3, stride=1, padding=1)
 
-        if self.loss_projector_use:
-            c = self.loss_projector_channels
-            self.loss_projector = nn.Sequential(
-                nn.Conv2d(self.latent_channels, c, kernel_size=3, stride=1, padding=1),
-                nn.SiLU(),
-                nn.Conv2d(c, c, kernel_size=3, stride=1, padding=1),
-                nn.SiLU(),
-                nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0),
-            )
-        else:
-            self.loss_projector = nn.Identity()
-
         if self.upsample_blur:
             if self.upsample_blur_kernel == "gaussian3":
                 k = torch.tensor(
@@ -219,25 +193,6 @@ class LatentAdaCUT(nn.Module):
         if style_id.device != device:
             style_id = style_id.to(device)
         return style_id.clamp_min(0).clamp_max(max(1, self.num_styles) - 1)
-
-    def _style_code(
-        self,
-        style_id: torch.Tensor | None = None,
-        style_ref: torch.Tensor | None = None,
-        style_mix_alpha: float | torch.Tensor | None = None,
-    ) -> torch.Tensor:
-        code_id = self.encode_style_id(style_id) if style_id is not None else None
-        code_ref = self.encode_style(style_ref) if style_ref is not None else None
-
-        if code_id is None and code_ref is None:
-            raise ValueError("Either style_id or style_ref must be provided.")
-        if code_id is None:
-            return code_ref
-        if code_ref is None:
-            return code_id
-
-        alpha = self._resolve_alpha(style_mix_alpha, batch=code_id.shape[0], device=code_id.device, dtype=code_id.dtype)
-        return alpha * code_ref + (1.0 - alpha) * code_id
 
     def _run_block(
         self,
@@ -327,21 +282,10 @@ class LatentAdaCUT(nn.Module):
 
     def _prepare_style_maps(
         self,
-        style_id: torch.Tensor | None,
-        style_ref: torch.Tensor | None,
-        style_mix_alpha: float | torch.Tensor | None,
-        batch: int,
-        device: torch.device,
+        style_id: torch.Tensor | int,
     ) -> StyleMaps:
-        mixed = self._blend_style_maps(
-            maps_id=self.encode_style_spatial_id(style_id),
-            maps_ref=self.encode_style_spatial_ref(style_ref),
-            style_mix_alpha=style_mix_alpha,
-            batch=batch,
-            device=device,
-        )
         return StyleMaps(
-            map_16=mixed.get(16),
+            map_16=self.encode_style_spatial_id(style_id).get(16),
         )
 
     def _prepare_spatial_map(self, style_map: torch.Tensor | None, target: torch.Tensor) -> torch.Tensor | None:
@@ -350,27 +294,11 @@ class LatentAdaCUT(nn.Module):
     def _prepare_style_context(
         self,
         *,
-        style_id: torch.Tensor | None,
-        style_ref: torch.Tensor | None,
-        style_mix_alpha: float | torch.Tensor | None,
-        batch: int,
-        device: torch.device,
+        style_id: torch.Tensor | int,
     ) -> tuple[torch.Tensor, StyleMaps]:
-        style_code = self._style_code(style_id=style_id, style_ref=style_ref, style_mix_alpha=style_mix_alpha)
-        style_maps = self._prepare_style_maps(
-            style_id=style_id,
-            style_ref=style_ref,
-            style_mix_alpha=style_mix_alpha,
-            batch=batch,
-            device=device,
-        )
+        style_code = self.encode_style_id(style_id)
+        style_maps = self._prepare_style_maps(style_id=style_id)
         return style_code, style_maps
-
-    def project_loss_features(self, z: torch.Tensor) -> torch.Tensor:
-        if not self.loss_projector_use:
-            return z / max(self.latent_scale_factor, 1e-8)
-        x = z / max(self.latent_scale_factor, 1e-8)
-        return self.loss_projector(x)
 
     def _apply_upsample_blur(self, h: torch.Tensor) -> torch.Tensor:
         if not self.upsample_blur or self._upsample_blur_kernel.numel() == 0:
@@ -395,14 +323,6 @@ class LatentAdaCUT(nn.Module):
         return delta
 
 
-    def encode_style(self, z: torch.Tensor) -> torch.Tensor:
-        """
-        Encode style reference latent into style code space.
-        """
-        z = z / max(self.latent_scale_factor, 1e-8)
-        h = self.style_enc(z).flatten(1)
-        return self.style_proj(h)
-
     def encode_style_id(self, style_id: torch.Tensor | int | None) -> torch.Tensor:
         if style_id is None:
             raise ValueError("style_id is required.")
@@ -410,45 +330,12 @@ class LatentAdaCUT(nn.Module):
         style_id = self._normalize_style_id_input(style_id, device=emb_device)
         return self.style_emb(style_id)
 
-    def encode_style_feats(self, z: torch.Tensor) -> list[torch.Tensor]:
-        """
-        Return multi-scale spatial style features before global pooling.
-        Features are taken after each SiLU in style_enc backbone.
-        """
-        z = z / max(self.latent_scale_factor, 1e-8)
-        feats: list[torch.Tensor] = []
-        h = z
-        backbone = self.style_enc[:-1]
-        for layer in backbone:
-            h = layer(h)
-            if isinstance(layer, nn.SiLU):
-                feats.append(h)
-        return feats
-
     @staticmethod
     def _normalize_style_map(feat: torch.Tensor) -> torch.Tensor:
         feat = feat - feat.mean(dim=(2, 3), keepdim=True)
         return feat / (feat.std(dim=(2, 3), keepdim=True, unbiased=False) + 1e-6)
 
-    @classmethod
-    def _extract_style_spatial_maps(cls, style_feats: list[torch.Tensor]) -> dict[int, torch.Tensor]:
-        maps: dict[int, torch.Tensor] = {}
-        if len(style_feats) >= 2:
-            maps[16] = style_feats[1]
-        elif len(style_feats) >= 1:
-            maps[16] = F.interpolate(style_feats[0], size=(16, 16), mode="bilinear", align_corners=False)
-        return maps
-
-    def encode_style_spatial_ref(self, style_ref: torch.Tensor | None) -> dict[int, torch.Tensor]:
-        if style_ref is None:
-            return {}
-        maps = self._extract_style_spatial_maps(self.encode_style_feats(style_ref))
-        maps = {k: self._normalize_style_map(v) for k, v in maps.items()}
-        return maps
-
-    def encode_style_spatial_id(self, style_id: torch.Tensor | int | None) -> dict[int, torch.Tensor]:
-        if style_id is None:
-            return {}
+    def encode_style_spatial_id(self, style_id: torch.Tensor | int) -> dict[int, torch.Tensor]:
         spatial_device = self.style_spatial_id_16.device
         style_id = self._normalize_style_id_input(style_id, device=spatial_device)
         maps = {16: self.style_spatial_id_16.index_select(0, style_id)}
@@ -490,51 +377,6 @@ class LatentAdaCUT(nn.Module):
             maps[16] = _jitter_batch(maps[16])
         maps[16] = self._normalize_style_map(maps[16])
         return maps
-
-    @staticmethod
-    def _resolve_alpha(
-        style_mix_alpha: float | torch.Tensor | None,
-        batch: int,
-        device: torch.device,
-        dtype: torch.dtype,
-    ) -> torch.Tensor:
-        if style_mix_alpha is None:
-            alpha = torch.ones(batch, 1, device=device, dtype=dtype)
-        elif torch.is_tensor(style_mix_alpha):
-            alpha = style_mix_alpha.to(device=device, dtype=dtype)
-            if alpha.ndim == 0:
-                alpha = alpha.expand(batch).reshape(batch, 1)
-            elif alpha.ndim == 1:
-                alpha = alpha.reshape(batch, 1)
-            else:
-                alpha = alpha.reshape(batch, 1)
-        else:
-            alpha = torch.full((batch, 1), float(style_mix_alpha), device=device, dtype=dtype)
-        return alpha.clamp_(0.0, 1.0)
-
-    def _blend_style_maps(
-        self,
-        maps_id: dict[int, torch.Tensor],
-        maps_ref: dict[int, torch.Tensor],
-        style_mix_alpha: float | torch.Tensor | None,
-        batch: int,
-        device: torch.device,
-    ) -> dict[int, torch.Tensor]:
-        out: dict[int, torch.Tensor] = {}
-        keys = set(maps_id.keys()) | set(maps_ref.keys())
-        if not keys:
-            return out
-        alpha = self._resolve_alpha(style_mix_alpha, batch=batch, device=device, dtype=torch.float32).view(batch, 1, 1, 1)
-        for k in keys:
-            m_id = maps_id.get(k)
-            m_ref = maps_ref.get(k)
-            if m_id is None:
-                out[k] = m_ref
-            elif m_ref is None:
-                out[k] = m_id
-            else:
-                out[k] = alpha * m_ref + (1.0 - alpha) * m_id
-        return out
 
     @staticmethod
     def _match_style_map(style_map: torch.Tensor | None, target: torch.Tensor) -> torch.Tensor | None:
@@ -600,18 +442,12 @@ class LatentAdaCUT(nn.Module):
     def _predict_delta(
         self,
         x: torch.Tensor,
-        style_id: torch.Tensor | None = None,
-        style_ref: torch.Tensor | None = None,
-        style_mix_alpha: float | torch.Tensor | None = None,
+        style_id: torch.Tensor | int,
         style_strength: float | None = None,
     ) -> torch.Tensor:
         strength = self._resolve_style_strength(style_strength)
         style_code, style_maps = self._prepare_style_context(
             style_id=style_id,
-            style_ref=style_ref,
-            style_mix_alpha=style_mix_alpha,
-            batch=x.shape[0],
-            device=x.device,
         )
         return self._predict_delta_from_context(
             x,
@@ -623,9 +459,7 @@ class LatentAdaCUT(nn.Module):
     def integrate(
         self,
         x: torch.Tensor,
-        style_id: torch.Tensor | None = None,
-        style_ref: torch.Tensor | None = None,
-        style_mix_alpha: float | torch.Tensor | None = None,
+        style_id: torch.Tensor | int,
         num_steps: int = 1,
         step_size: float = 1.0,
         style_strength: float | None = None,
@@ -636,10 +470,6 @@ class LatentAdaCUT(nn.Module):
         per_step = 1.0 / float(steps)
         style_code, style_maps = self._prepare_style_context(
             style_id=style_id,
-            style_ref=style_ref,
-            style_mix_alpha=style_mix_alpha,
-            batch=x.shape[0],
-            device=x.device,
         )
         h = x
         for _ in range(steps):
@@ -655,9 +485,7 @@ class LatentAdaCUT(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        style_id: torch.Tensor | None = None,
-        style_ref: torch.Tensor | None = None,
-        style_mix_alpha: float | torch.Tensor | None = None,
+        style_id: torch.Tensor | int,
         step_size: float = 1.0,
         style_strength: float | None = None,
     ) -> torch.Tensor:
@@ -665,10 +493,6 @@ class LatentAdaCUT(nn.Module):
         step_scale = self._style_strength_step_scale(strength)
         style_code, style_maps = self._prepare_style_context(
             style_id=style_id,
-            style_ref=style_ref,
-            style_mix_alpha=style_mix_alpha,
-            batch=x.shape[0],
-            device=x.device,
         )
         delta = self._predict_delta_from_context(
             x,
@@ -711,8 +535,6 @@ def build_model_from_config(
         "style_strength_step_curve",
         "upsample_mode",
         "style_id_spatial_jitter_px",
-        "loss_projector_use",
-        "loss_projector_channels",
         "upsample_blur",
         "upsample_blur_kernel",
     }
@@ -745,8 +567,6 @@ def build_model_from_config(
         style_strength_step_curve=str(model_cfg.get("style_strength_step_curve", "linear")),
         upsample_mode=str(model_cfg.get("upsample_mode", "nearest")),
         style_id_spatial_jitter_px=int(model_cfg.get("style_id_spatial_jitter_px", 0)),
-        loss_projector_use=bool(model_cfg.get("loss_projector_use", True)),
-        loss_projector_channels=int(model_cfg.get("loss_projector_channels", 64)),
         upsample_blur=bool(model_cfg.get("upsample_blur", True)),
         upsample_blur_kernel=str(model_cfg.get("upsample_blur_kernel", "box3")),
     )

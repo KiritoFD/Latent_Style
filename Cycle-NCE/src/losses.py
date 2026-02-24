@@ -13,63 +13,64 @@ except ImportError:
     from model import LatentAdaCUT
 
 
-def calc_feature_style_loss(
-    pred_feats: List[torch.Tensor],
-    target_feats: List[torch.Tensor],
+def calc_swd_loss(
+    x: torch.Tensor,
+    y: torch.Tensor,
     style_ids: torch.Tensor,
+    patch_sizes: List[int],
+    num_projections: int = 512,
 ) -> torch.Tensor:
-    """
-    Match multi-level feature moments with domain averaging per target style.
-    """
-    if not pred_feats or not target_feats:
-        raise ValueError("pred_feats and target_feats must be non-empty.")
-    if len(pred_feats) != len(target_feats):
-        raise ValueError("pred_feats and target_feats must have identical lengths.")
+    x = x.float()
+    y = y.float()
+    style_ids = style_ids.long().view(-1).to(device=x.device)
+    device = x.device
+    total_loss = torch.tensor(0.0, device=device)
 
-    device = pred_feats[0].device
-    style_ids = style_ids.long().view(-1).to(device=device)
-    loss = torch.tensor(0.0, device=device)
     unique_styles = torch.unique(style_ids)
-    if unique_styles.numel() == 0:
-        return loss
+    valid_patches = [int(p) for p in patch_sizes if int(p) > 0]
+    if not valid_patches or unique_styles.numel() == 0:
+        return total_loss
 
-    for p_feat, t_feat in zip(pred_feats, target_feats):
-        p_feat = p_feat.float()
-        t_feat = t_feat.float()
-        p_mu = p_feat.mean(dim=(2, 3))
-        p_std = p_feat.std(dim=(2, 3), unbiased=False)
-        t_mu = t_feat.mean(dim=(2, 3))
-        t_std = t_feat.std(dim=(2, 3), unbiased=False)
+    proj_dim = int(num_projections)
+    for p in valid_patches:
+        if p == 1:
+            x_pts = x.flatten(2)
+            y_pts = y.flatten(2)
+        else:
+            x_pts = F.unfold(x, kernel_size=p, stride=1, padding=p // 2)
+            y_pts = F.unfold(y, kernel_size=p, stride=1, padding=p // 2)
 
-        layer_loss = torch.tensor(0.0, device=device)
+        x_pts = x_pts.transpose(1, 2)  # [B, HW, D]
+        y_pts = y_pts.transpose(1, 2)
+        dim = x_pts.shape[-1]
+
+        projections = F.normalize(
+            torch.randn(dim, proj_dim, device=device, dtype=torch.float32),
+            p=2,
+            dim=0,
+        )
+        x_proj = torch.matmul(x_pts, projections)
+        y_proj = torch.matmul(y_pts, projections)
+
         for sid in unique_styles:
             mask = style_ids == sid
             if not bool(mask.any().item()):
                 continue
-            domain_mu_t = t_mu[mask].mean(dim=0, keepdim=True)
-            domain_std_t = t_std[mask].mean(dim=0, keepdim=True)
-            layer_loss += (p_std[mask] - domain_std_t).abs().mean() + 0.2 * (p_mu[mask] - domain_mu_t).abs().mean()
-        loss += layer_loss / float(unique_styles.numel())
 
-    return loss / float(len(pred_feats))
+            x_s = x_proj[mask].reshape(-1, proj_dim)
+            y_s = y_proj[mask].reshape(-1, proj_dim)
 
+            max_samples = 4096
+            if x_s.shape[0] > max_samples:
+                x_s = x_s[torch.randperm(x_s.shape[0], device=device)[:max_samples]]
+            if y_s.shape[0] > max_samples:
+                y_s = y_s[torch.randperm(y_s.shape[0], device=device)[:max_samples]]
 
-def calc_feature_content_loss(pred_feats: List[torch.Tensor], content_feats: List[torch.Tensor]) -> torch.Tensor:
-    """
-    Match normalized shallow feature vectors to preserve geometric topology.
-    """
-    if not pred_feats or not content_feats:
-        raise ValueError("pred_feats and content_feats must be non-empty.")
-    if len(pred_feats) != len(content_feats):
-        raise ValueError("pred_feats and content_feats must have identical lengths.")
+            x_sorted, _ = torch.sort(x_s, dim=0)
+            y_sorted, _ = torch.sort(y_s, dim=0)
+            total_loss += (x_sorted - y_sorted).abs().mean()
 
-    device = pred_feats[0].device
-    loss = torch.tensor(0.0, device=device)
-    for p_feat, c_feat in zip(pred_feats, content_feats):
-        p_norm = F.normalize(p_feat.float(), p=2, dim=1)
-        c_norm = F.normalize(c_feat.float(), p=2, dim=1)
-        loss += (p_norm - c_norm).pow(2).mean()
-    return loss / float(len(pred_feats))
+    return total_loss / (float(len(valid_patches)) * float(unique_styles.numel()))
 
 
 def _tv_per_sample(x: torch.Tensor) -> torch.Tensor:
@@ -84,12 +85,19 @@ class AdaCUTObjective:
     def __init__(self, config: Dict) -> None:
         loss_cfg = config.get("loss", {})
 
-        self.w_feature_style = float(loss_cfg.get("w_feature_style", 0.0))
-        self.w_feature_content = float(loss_cfg.get("w_feature_content", 0.0))
+        self.w_swd = float(loss_cfg.get("w_swd", 20.0))
+        patch_sizes = loss_cfg.get("swd_patch_sizes", [1])
+        if isinstance(patch_sizes, list):
+            self.swd_patch_sizes = [int(p) for p in patch_sizes if int(p) > 0]
+        else:
+            self.swd_patch_sizes = [1]
+        if not self.swd_patch_sizes:
+            self.swd_patch_sizes = [1]
+        self.swd_num_projections = max(1, int(loss_cfg.get("swd_num_projections", 512)))
 
         self.w_identity = float(loss_cfg.get("w_identity", 10.0))
         self.w_delta_tv = float(loss_cfg.get("w_delta_tv", 0.0))
-        self.w_delta_l2 = float(loss_cfg.get("w_delta_l2", 0.0))
+        self.w_delta_l1 = float(loss_cfg.get("w_delta_l1", 0.0))
         self.w_output_tv = float(loss_cfg.get("w_output_tv", 0.0))
 
         self.w_semigroup = float(loss_cfg.get("w_semigroup", 0.0))
@@ -172,44 +180,24 @@ class AdaCUTObjective:
                 num_steps=train_num_steps,
             )
 
-        # Always use raw latent in FP32 for loss computation.
         pred_f32 = pred_student.float()
         target_f32 = target_style.float()
         content_f32 = content.float()
 
-        loss_feature_style = torch.tensor(0.0, device=content.device)
-        loss_feature_content = torch.tensor(0.0, device=content.device)
-        pred_feats: List[torch.Tensor] = []
-        content_feats: List[torch.Tensor] = []
-        p_valid_feats: List[torch.Tensor] = []
-        t_valid_feats: List[torch.Tensor] = []
-        s_valid: torch.Tensor | None = None
-        with self._nvtx_range("loss/features", nvtx_enabled):
-            prev_states = [param.requires_grad for param in model.style_enc.parameters()]
-            try:
-                for param in model.style_enc.parameters():
-                    param.requires_grad_(False)
-                pred_feats = model.encode_style_feats(pred_f32)
-                with torch.no_grad():
-                    content_feats = model.encode_style_feats(content_f32)
-                    target_feats = model.encode_style_feats(target_f32)
-
-                if xid_mask.any():
-                    valid_idx = torch.nonzero(xid_mask).squeeze(1)
-                    p_valid_feats = [feat.index_select(0, valid_idx) for feat in pred_feats]
-                    t_valid_feats = [feat.index_select(0, valid_idx) for feat in target_feats]
-                    s_valid = target_style_id.index_select(0, valid_idx)
-            finally:
-                for param, state in zip(model.style_enc.parameters(), prev_states):
-                    param.requires_grad_(state)
-
-        with self._nvtx_range("loss/feature_style", nvtx_enabled):
-            if self.w_feature_style > 0.0 and p_valid_feats and t_valid_feats and s_valid is not None:
-                loss_feature_style = calc_feature_style_loss(p_valid_feats, t_valid_feats, s_valid)
-
-        with self._nvtx_range("loss/feature_content", nvtx_enabled):
-            if self.w_feature_content > 0.0 and len(pred_feats) >= 2 and len(content_feats) >= 2:
-                loss_feature_content = calc_feature_content_loss(pred_feats[:2], content_feats[:2])
+        loss_swd = torch.tensor(0.0, device=content.device)
+        with self._nvtx_range("loss/style", nvtx_enabled):
+            if xid_mask.any() and self.w_swd > 0.0:
+                valid_idx = torch.nonzero(xid_mask).squeeze(1)
+                p_valid = pred_f32.index_select(0, valid_idx)
+                t_valid = target_f32.index_select(0, valid_idx)
+                s_valid = target_style_id.index_select(0, valid_idx)
+                loss_swd = calc_swd_loss(
+                    p_valid,
+                    t_valid,
+                    style_ids=s_valid,
+                    patch_sizes=self.swd_patch_sizes,
+                    num_projections=self.swd_num_projections,
+                )
 
         loss_identity = torch.tensor(0.0, device=content.device)
         with self._nvtx_range("loss/identity", nvtx_enabled):
@@ -218,14 +206,14 @@ class AdaCUTObjective:
                 loss_identity = _masked_mean(id_per_sample, id_mask.float())
 
         loss_delta_tv = torch.tensor(0.0, device=content.device)
-        loss_delta_l2 = torch.tensor(0.0, device=content.device)
+        loss_delta_l1 = torch.tensor(0.0, device=content.device)
         loss_output_tv = torch.tensor(0.0, device=content.device)
         with self._nvtx_range("loss/reg", nvtx_enabled):
             delta = pred_f32 - content_f32
             if self.w_delta_tv > 0.0:
                 loss_delta_tv = _tv_per_sample(delta).mean()
-            if self.w_delta_l2 > 0.0:
-                loss_delta_l2 = delta.pow(2).mean()
+            if self.w_delta_l1 > 0.0:
+                loss_delta_l1 = delta.abs().mean()
             if self.w_output_tv > 0.0:
                 loss_output_tv = _tv_per_sample(pred_f32).mean()
 
@@ -258,26 +246,21 @@ class AdaCUTObjective:
                 loss_semigroup = (z_a_b - z_ab).abs().mean()
 
         total = (
-            self.w_feature_style * loss_feature_style
-            + self.w_feature_content * loss_feature_content
+            self.w_swd * loss_swd
             + self.w_identity * loss_identity
             + self.w_delta_tv * loss_delta_tv
-            + self.w_delta_l2 * loss_delta_l2
+            + self.w_delta_l1 * loss_delta_l1
             + self.w_output_tv * loss_output_tv
             + self.w_semigroup * loss_semigroup
         )
 
         return {
             "loss": total,
-            "feature_style": loss_feature_style.detach(),
-            "feature_content": loss_feature_content.detach(),
-            # Legacy fields retained for logger/backward compatibility.
-            "moment": torch.tensor(0.0, device=content.device),
-            "swd": torch.tensor(0.0, device=content.device),
+            "swd": loss_swd.detach(),
             "identity": loss_identity.detach(),
             "identity_ratio": id_ratio.detach(),
             "delta_tv": loss_delta_tv.detach(),
-            "delta_l2": loss_delta_l2.detach(),
+            "delta_l1": loss_delta_l1.detach(),
             "output_tv": loss_output_tv.detach(),
             "semigroup": loss_semigroup.detach(),
             "semigroup_applied": torch.tensor(1.0 if semigroup_applied else 0.0, device=content.device),

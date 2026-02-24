@@ -39,12 +39,9 @@ _ALLOWED_LOSS_KEYS = {
     "semigroup_pool_size",
     "semigroup_num_steps",
     "w_delta_tv",
-    "w_delta_l2",
+    "w_delta_l1",
     "w_output_tv",
-    "w_feature_style",
-    "w_feature_content",
     "w_swd",
-    "w_color_moment",
     "w_identity",
     "swd_patch_sizes",
     "swd_num_projections",
@@ -57,11 +54,10 @@ _ALLOWED_LOSS_KEYS = {
 }
 _FORBIDDEN_LOSS_KEYS = {"w_distill", "distill_low_only", "distill_cross_domain_only", "w_code", "style_loss_source"}
 _LOSS_WEIGHT_KEYS = (
-    "w_feature_style",
-    "w_feature_content",
+    "w_swd",
     "w_identity",
     "w_delta_tv",
-    "w_delta_l2",
+    "w_delta_l1",
     "w_output_tv",
     "w_semigroup",
 )
@@ -309,14 +305,13 @@ def main() -> None:
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f swd=%.4f moment=%.4f dtv=%.4f dl2=%.4f steps=%.1f h=%.2f s=%.2f lr=%.2e data=%.1fs comp=%.1fs",
+            "Epoch %d/%d | loss=%.4f swd=%.4f dtv=%.4f dl1=%.4f steps=%.1f h=%.2f s=%.2f lr=%.2e data=%.1fs comp=%.1fs",
             epoch,
             trainer.num_epochs,
             metrics["loss"],
             metrics.get("swd", 0.0),
-            metrics.get("moment", 0.0),
             metrics.get("delta_tv", 0.0),
-            metrics.get("delta_l2", 0.0),
+            metrics.get("delta_l1", 0.0),
             metrics.get("train_num_steps", 0.0),
             metrics.get("train_step_size", 0.0),
             metrics.get("train_style_strength", 0.0),

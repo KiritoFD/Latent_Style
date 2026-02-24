@@ -317,15 +317,12 @@ class AdaCUTTrainer:
                 [
                     "epoch",
                     "loss",
-                    "feature_style",
-                    "feature_content",
                     "semigroup",
                     "swd",
-                    "moment",
                     "identity",
                     "identity_ratio",
                     "delta_tv",
-                    "delta_l2",
+                    "delta_l1",
                     "output_tv",
                     "train_num_steps",
                     "train_step_size",
@@ -806,13 +803,12 @@ class AdaCUTTrainer:
 
                     progress.set_postfix(
                         loss=f"{_get_avg('loss'):.4f}",
-                        fst=f"{_get_avg('feature_style'):.4f}",
-                        fct=f"{_get_avg('feature_content'):.4f}",
                         semigroup=f"{_get_avg('semigroup'):.4f}",
                         swd=f"{_get_avg('swd'):.4f}",
-                        moment=f"{_get_avg('moment'):.4f}",
                         idt=f"{_get_avg('identity'):.4f}",
                         idr=f"{_get_avg('identity_ratio'):.2f}",
+                        dtv=f"{_get_avg('delta_tv'):.4f}",
+                        dl1=f"{_get_avg('delta_l1'):.4f}",
                         steps=f"{_get_avg('train_num_steps'):.1f}",
                         h=f"{_get_avg('train_step_size'):.2f}",
                         s=f"{_get_avg('train_style_strength'):.2f}",
@@ -823,20 +819,17 @@ class AdaCUTTrainer:
                     )
                     if not self.use_tqdm:
                         logger.info(
-                            "epoch %d step %d/%d | loss=%.4f fst=%.4f fct=%.4f semigroup=%.4f swd=%.4f moment=%.4f idt=%.4f idr=%.2f dtv=%.4f dl2=%.4f otv=%.4f steps=%.1f h=%.2f s=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
+                            "epoch %d step %d/%d | loss=%.4f semigroup=%.4f swd=%.4f idt=%.4f idr=%.2f dtv=%.4f dl1=%.4f otv=%.4f steps=%.1f h=%.2f s=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
                             epoch,
                             step_idx,
                             total_steps,
                             _get_avg('loss'),
-                            _get_avg('feature_style'),
-                            _get_avg('feature_content'),
                             _get_avg('semigroup'),
                             _get_avg('swd'),
-                            _get_avg('moment'),
                             _get_avg('identity'),
                             _get_avg('identity_ratio'),
                             _get_avg('delta_tv'),
-                            _get_avg('delta_l2'),
+                            _get_avg('delta_l1'),
                             _get_avg('output_tv'),
                             _get_avg('train_num_steps'),
                             _get_avg('train_step_size'),
@@ -913,8 +906,8 @@ class AdaCUTTrainer:
         
         # Fill missing keys with 0.0 for safety
         expected_keys = [
-            "loss", "feature_style", "feature_content", "semigroup", "swd", "moment", "identity", "identity_ratio",
-            "delta_tv", "delta_l2", "output_tv", "train_num_steps", "train_step_size", "train_style_strength",
+            "loss", "semigroup", "swd", "identity", "identity_ratio",
+            "delta_tv", "delta_l1", "output_tv", "train_num_steps", "train_step_size", "train_style_strength",
             "data_time_sec", "transfer_time_sec", "fwd_loss_time_sec", "backward_time_sec",
             "optimizer_time_sec", "step_overhead_time_sec", "compute_time_sec",
             "samples_seen", "samples_per_sec", "compute_samples_per_sec",
@@ -940,11 +933,10 @@ class AdaCUTTrainer:
             tqdm.write(
                 f"[Epoch {epoch}/{self.num_epochs}] "
                 f"loss={metrics['loss']:.4f} "
-                f"fst={metrics['feature_style']:.4f} fct={metrics['feature_content']:.4f} "
                 f"semigroup={metrics['semigroup']:.4f} "
-                f"swd={metrics['swd']:.4f} moment={metrics['moment']:.4f} "
+                f"swd={metrics['swd']:.4f} "
                 f"idt={metrics['identity']:.4f} idr={metrics['identity_ratio']:.2f} "
-                f"dtv={metrics['delta_tv']:.4f} dl2={metrics['delta_l2']:.4f} otv={metrics['output_tv']:.4f} "
+                f"dtv={metrics['delta_tv']:.4f} dl1={metrics['delta_l1']:.4f} otv={metrics['output_tv']:.4f} "
                 f"steps={metrics['train_num_steps']:.1f} h={metrics['train_step_size']:.2f} s={metrics['train_style_strength']:.2f} "
                 f"| data={data_time_total:.1f}s transfer={transfer_time_total:.1f}s fwd={fwd_loss_time_total:.1f}s "
                 f"bwd={backward_time_total:.1f}s opt={optimizer_time_total:.1f}s overhead={step_overhead_time_total:.1f}s "
@@ -960,15 +952,12 @@ class AdaCUTTrainer:
                 [
                     int(epoch),
                     float(metrics.get("loss", 0.0)),
-                    float(metrics.get("feature_style", 0.0)),
-                    float(metrics.get("feature_content", 0.0)),
                     float(metrics.get("semigroup", 0.0)),
                     float(metrics.get("swd", 0.0)),
-                    float(metrics.get("moment", 0.0)),
                     float(metrics.get("identity", 0.0)),
                     float(metrics.get("identity_ratio", 0.0)),
                     float(metrics.get("delta_tv", 0.0)),
-                    float(metrics.get("delta_l2", 0.0)),
+                    float(metrics.get("delta_l1", 0.0)),
                     float(metrics.get("output_tv", 0.0)),
                     float(metrics.get("train_num_steps", 0.0)),
                     float(metrics.get("train_step_size", 0.0)),

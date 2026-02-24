@@ -17,17 +17,18 @@
     "upsample_mode": "bilinear",
     "style_id_spatial_jitter_px": 2,
     "upsample_blur": true,
-    "upsample_blur_kernel": "gaussian3",
-    "loss_projector_use": true,
-    "loss_projector_channels": 64
+    "upsample_blur_kernel": "gaussian3"
   },
   "loss": {
     "w_delta_tv": 0.0,
-    "w_delta_l2": 0.0,
+    "w_delta_l1": 0.02,
     "w_output_tv": 0.0,
-    "w_identity": 5.0,
-    "w_feature_style": 20.0,
-    "w_feature_content": 10.0,
+    "w_identity": 10.0,
+    "w_swd": 20.0,
+    "swd_patch_sizes": [
+      1
+    ],
+    "swd_num_projections": 512,
     "train_num_steps_min": 1,
     "train_num_steps_max": 1
   },

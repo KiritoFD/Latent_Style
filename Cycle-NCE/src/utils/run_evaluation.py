@@ -49,7 +49,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from utils.inference import LGTInference, load_vae, encode_image, decode_latent
+from utils.inference import FlashInference
 from utils.style_classifier import StyleClassifier as LatentStyleClassifier
 from utils.classify import DEFAULT_EVAL_IMAGE_CLASSIFIER_CKPT, load_eval_image_classifier
 
@@ -327,28 +327,10 @@ def _acquire_lock(lock_path: Path, timeout_sec: int = 600, poll_sec: float = 1.0
     return False
 
 
-def _build_style_ref_prototypes(
-    test_images: dict,
-    vae,
-    device: str,
-    ref_count: int = 8,
-) -> dict:
-    """
-    Build deterministic style reference latents per style by averaging
-    the first `ref_count` images (sorted order) in each target style.
-    """
-    style_ref_prototypes = {}
-    for style_id, (_, img_list) in test_images.items():
-        if not img_list:
-            continue
-        count = max(1, min(len(img_list), int(ref_count)))
-        selected = img_list[:count]
-        batch = torch.stack([_load_eval_image_tensor(p) for p in selected], dim=0).to(device)
-        amp_ctx = torch.autocast("cuda", dtype=torch.bfloat16) if device == "cuda" else nullcontext()
-        with torch.no_grad(), amp_ctx:
-            latents = encode_image(vae, batch, device)
-        style_ref_prototypes[style_id] = latents.mean(dim=0, keepdim=True).detach()
-    return style_ref_prototypes
+def _cuda_sync_if_needed(device: str) -> None:
+    if str(device).startswith("cuda") and torch.cuda.is_available():
+        torch.cuda.synchronize()
+
 
 # ==========================================
 # Main Logic
@@ -645,6 +627,26 @@ def main():
     src_lookup = {(x["style_name"], x["path"].stem): x["path"] for x in all_src_info}
     num_src_total = len(all_src_info)
     num_styles = len(style_subdirs)
+    expected_generated = int(num_src_total * num_styles)
+    generation_timing = {
+        "backend": "flash",
+        "used_reuse_generated": bool(args.reuse_generated),
+        "num_sources": int(num_src_total),
+        "num_styles": int(num_styles),
+        "expected_generated": int(expected_generated),
+        "generated_count": 0,
+        "num_source_batches": 0,
+        "num_style_batches": 0,
+        "encode_ms_total": 0.0,
+        "model_ms_total": 0.0,
+        "decode_ms_total": 0.0,
+        "generation_wall_sec": 0.0,
+        "encode_ms_per_source_batch": 0.0,
+        "model_ms_per_style_batch": 0.0,
+        "decode_ms_per_style_batch": 0.0,
+        "e2e_ms_per_generated_image": 0.0,
+        "throughput_img_per_sec": 0.0,
+    }
 
     if args.reuse_generated:
         print(f"\nPhase 1: Reuse generated images from {out_dir}")
@@ -679,20 +681,14 @@ def main():
     if not generated_buffer:
         print(f"\nPhase 1: Generation (Batch Size {args.batch_size})")
 
-        lgt = LGTInference(
+        lgt = FlashInference(
             str(checkpoint_path),
             device=device,
             num_steps=args.num_steps,
             step_size=args.step_size,
             style_strength=args.style_strength,
         )
-        vae = load_vae(device)
-        model_scale = float(getattr(lgt.model, "latent_scale_factor", 0.18215))
-        vae_scale = float(getattr(getattr(vae, "config", None), "scaling_factor", model_scale))
-        scale_in = model_scale / max(vae_scale, 1e-8)
-        scale_out = vae_scale / max(model_scale, 1e-8)
-        if abs(scale_in - 1.0) > 1e-4:
-            print(f"WARNING: latent scale mismatch (model={model_scale:.6f}, vae={vae_scale:.6f}). Applying rescale.")
+        generation_start = time.perf_counter()
 
         # Process in batches
         for b_start in range(0, num_src_total, args.batch_size):
@@ -706,49 +702,68 @@ def main():
                 src_tensors.append(_load_eval_image_tensor(item['path']))
 
             src_batch = torch.stack(src_tensors).to(device)
+            src_batch_m1 = (src_batch * 2.0 - 1.0).to(dtype=lgt.dtype)
 
-            with torch.autocast('cuda', dtype=torch.bfloat16):
-                with torch.no_grad():
-                    # Inversion
-                    latents_src = encode_image(vae, src_batch, device)
-                    if abs(scale_in - 1.0) > 1e-4:
-                        latents_src = latents_src * scale_in
-                    latents_x0 = lgt.inversion(latents_src)
+            _cuda_sync_if_needed(device)
+            t_enc_0 = time.perf_counter()
+            latents_x0 = lgt.encode_pixels(src_batch_m1)
+            _cuda_sync_if_needed(device)
+            t_enc_1 = time.perf_counter()
+            generation_timing["encode_ms_total"] += float((t_enc_1 - t_enc_0) * 1000.0)
+            generation_timing["num_source_batches"] += 1
 
-                    # Generation for each target style
-                    for tgt_id in range(num_styles):
-                        tgt_name = style_subdirs[tgt_id]
-                        tgt_ids = torch.full((len(batch_info),), tgt_id, device=device, dtype=torch.long)
-                        latents_gen = lgt.generation(latents_x0, tgt_ids)
-                        if abs(scale_out - 1.0) > 1e-4:
-                            latents_gen = latents_gen * scale_out
-                        imgs_gen = decode_latent(vae, latents_gen, device) # [B, 3, H, W]
+            # Generation for each target style
+            for tgt_id in range(num_styles):
+                tgt_name = style_subdirs[tgt_id]
+                tgt_ids = torch.full((len(batch_info),), tgt_id, device=device, dtype=torch.long)
 
-                        # Offload to CPU & Save Async
-                        latents_gen_cpu = latents_gen.detach().float().cpu()
-                        imgs_gen_cpu = imgs_gen.cpu()
+                _cuda_sync_if_needed(device)
+                t_model_0 = time.perf_counter()
+                latents_gen = lgt.stylize_latents(
+                    latents_x0,
+                    target_style_id=tgt_ids,
+                    num_steps=args.num_steps,
+                    step_size=args.step_size,
+                    style_strength=args.style_strength,
+                )
+                _cuda_sync_if_needed(device)
+                t_model_1 = time.perf_counter()
+                generation_timing["model_ms_total"] += float((t_model_1 - t_model_0) * 1000.0)
 
-                        for i in range(len(batch_info)):
-                            src_item = batch_info[i]
-                            out_name = f"{src_item['style_name']}_{src_item['path'].stem}_to_{tgt_name}.jpg"
-                            out_path = out_dir / out_name
+                _cuda_sync_if_needed(device)
+                t_dec_0 = time.perf_counter()
+                imgs_gen = lgt.decode_latents(latents_gen)  # [B, 3, H, W], in [0, 1]
+                _cuda_sync_if_needed(device)
+                t_dec_1 = time.perf_counter()
+                generation_timing["decode_ms_total"] += float((t_dec_1 - t_dec_0) * 1000.0)
+                generation_timing["num_style_batches"] += 1
 
-                            # Async Save
-                            io_pool.submit(save_image_task, imgs_gen_cpu[i], out_path)
+                # Offload to CPU & Save Async
+                latents_gen_cpu = latents_gen.detach().float().cpu()
+                imgs_gen_cpu = imgs_gen.detach().cpu()
 
-                            # Store for Phase 2
-                            generated_buffer.append({
-                                'src_path': src_item['path'],
-                                'src_style': src_item['style_name'],
-                                'tgt_style_name': tgt_name,
-                                'tgt_style_id': tgt_id,
-                                'gen_latent': latents_gen_cpu[i], # Keep latent for classifier evaluation
-                                'gen_img': imgs_gen_cpu[i], # Keep in RAM
-                                'gen_name': out_name
-                            })
+                for i in range(len(batch_info)):
+                    src_item = batch_info[i]
+                    out_name = f"{src_item['style_name']}_{src_item['path'].stem}_to_{tgt_name}.jpg"
+                    out_path = out_dir / out_name
+
+                    # Async Save
+                    io_pool.submit(save_image_task, imgs_gen_cpu[i], out_path)
+
+                    # Store for Phase 2
+                    generated_buffer.append({
+                        'src_path': src_item['path'],
+                        'src_style': src_item['style_name'],
+                        'tgt_style_name': tgt_name,
+                        'tgt_style_id': tgt_id,
+                        'gen_latent': latents_gen_cpu[i], # Keep latent for classifier evaluation
+                        'gen_img': imgs_gen_cpu[i], # Keep in RAM
+                        'gen_name': out_name
+                    })
 
         # Unload Generation Models
-        del lgt, vae
+        generation_timing["generation_wall_sec"] = float(time.perf_counter() - generation_start)
+        del lgt
         torch.cuda.empty_cache()
         gc.collect()
         print("  Generation models unloaded")
@@ -761,12 +776,32 @@ def main():
         if device == "cuda":
             torch.cuda.empty_cache()
         gc.collect()
+        generation_timing["generated_count"] = int(len(generated_buffer))
+        if generation_timing["num_source_batches"] > 0:
+            generation_timing["encode_ms_per_source_batch"] = (
+                generation_timing["encode_ms_total"] / float(generation_timing["num_source_batches"])
+            )
+        if generation_timing["num_style_batches"] > 0:
+            generation_timing["model_ms_per_style_batch"] = (
+                generation_timing["model_ms_total"] / float(generation_timing["num_style_batches"])
+            )
+            generation_timing["decode_ms_per_style_batch"] = (
+                generation_timing["decode_ms_total"] / float(generation_timing["num_style_batches"])
+            )
+        if generation_timing["generated_count"] > 0 and generation_timing["generation_wall_sec"] > 0.0:
+            generation_timing["e2e_ms_per_generated_image"] = (
+                1000.0 * generation_timing["generation_wall_sec"] / float(generation_timing["generated_count"])
+            )
+            generation_timing["throughput_img_per_sec"] = (
+                float(generation_timing["generated_count"]) / generation_timing["generation_wall_sec"]
+            )
         summary = {
             "checkpoint": str(checkpoint_path),
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "mode": "generation_only",
             "generated_count": int(len(generated_buffer)),
             "output_dir": str(out_dir),
+            "generation_timing": generation_timing,
             "note": "Metrics are intentionally skipped. Run evaluation later with --reuse_generated.",
         }
         sum_path = out_dir / "summary.json"
@@ -1244,6 +1279,26 @@ def main():
 
     csv_file.close()
     io_pool.shutdown(wait=True)
+
+    generation_timing["generated_count"] = int(len(generated_buffer))
+    if generation_timing["num_source_batches"] > 0:
+        generation_timing["encode_ms_per_source_batch"] = (
+            generation_timing["encode_ms_total"] / float(generation_timing["num_source_batches"])
+        )
+    if generation_timing["num_style_batches"] > 0:
+        generation_timing["model_ms_per_style_batch"] = (
+            generation_timing["model_ms_total"] / float(generation_timing["num_style_batches"])
+        )
+        generation_timing["decode_ms_per_style_batch"] = (
+            generation_timing["decode_ms_total"] / float(generation_timing["num_style_batches"])
+        )
+    if generation_timing["generated_count"] > 0 and generation_timing["generation_wall_sec"] > 0.0:
+        generation_timing["e2e_ms_per_generated_image"] = (
+            1000.0 * generation_timing["generation_wall_sec"] / float(generation_timing["generated_count"])
+        )
+        generation_timing["throughput_img_per_sec"] = (
+            float(generation_timing["generated_count"]) / generation_timing["generation_wall_sec"]
+        )
     
     style_real_paths = {}
     for _, (style_name, img_list) in test_images.items():
@@ -1258,6 +1313,7 @@ def main():
         art_fid_max_gen=int(args.eval_art_fid_max_gen),
         art_fid_max_ref=int(args.eval_art_fid_max_ref),
         art_fid_batch_size=int(args.eval_art_fid_batch_size),
+        generation_timing=generation_timing,
     )
 
 def generate_summary_json(
@@ -1271,6 +1327,7 @@ def generate_summary_json(
     art_fid_max_gen: int = 200,
     art_fid_max_ref: int = 200,
     art_fid_batch_size: int = 16,
+    generation_timing: dict | None = None,
 ):
     print("\n妫ｅ啯鎯?Generating Summary...")
     rows = []
@@ -1387,6 +1444,7 @@ def generate_summary_json(
     summary = {
         'checkpoint': str(ckpt_path),
         'timestamp': time.strftime("%Y-%m-%d %H:%M:%S"),
+        'generation_timing': generation_timing or {},
         'metrics_note': {
             'clip_style': "backward-compatible alias of clip_dir (CLIP directional similarity)",
             'clip_dir': "cos( CLIP(gen)-CLIP(src), CLIP(target_style_proto)-CLIP(src) )",
