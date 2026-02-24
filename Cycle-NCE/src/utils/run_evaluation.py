@@ -49,7 +49,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from utils.inference import FlashInference
+from utils.inference import LGTInference, load_vae, encode_image, decode_latent
 from utils.style_classifier import StyleClassifier as LatentStyleClassifier
 from utils.classify import DEFAULT_EVAL_IMAGE_CLASSIFIER_CKPT, load_eval_image_classifier
 
@@ -204,40 +204,52 @@ def _extract_clip_embeddings(output):
 
 
 @torch.no_grad()
-def _extract_inception_feats(paths, device: str, batch_size: int = 16, max_images: int = 200):
-    if not paths:
-        return np.empty((0, 2048), dtype=np.float64)
-    sel = list(paths)[: max(1, int(max_images))]
-    model = models.inception_v3(weights=models.Inception_V3_Weights.DEFAULT, transform_input=False)
-    model.fc = torch.nn.Identity()
-    model.eval().to(device)
-    tfm = T.Compose([
-        T.Resize((299, 299)),
-        T.ToTensor(),
-        T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
-    feats = []
-    for s in range(0, len(sel), max(1, int(batch_size))):
-        e = min(s + max(1, int(batch_size)), len(sel))
-        imgs = []
-        for p in sel[s:e]:
-            try:
-                imgs.append(tfm(Image.open(p).convert("RGB")))
-            except Exception:
+def _extract_inception_feats(paths, runner, max_images: int = 200):
+    return runner.extract(paths, max_images=max_images)
+
+
+class _InceptionFeatRunner:
+    def __init__(self, device: str, batch_size: int = 16):
+        self.device = str(device)
+        self.batch_size = max(1, int(batch_size))
+        self.model = models.inception_v3(weights=models.Inception_V3_Weights.DEFAULT, transform_input=False)
+        self.model.fc = torch.nn.Identity()
+        self.model.eval().to(self.device)
+        self.tfm = T.Compose([
+            T.Resize((299, 299)),
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+
+    @torch.no_grad()
+    def extract(self, paths, max_images: int = 200):
+        if not paths:
+            return np.empty((0, 2048), dtype=np.float64)
+        sel = list(paths)[: max(1, int(max_images))]
+        feats = []
+        for s in range(0, len(sel), self.batch_size):
+            e = min(s + self.batch_size, len(sel))
+            imgs = []
+            for p in sel[s:e]:
+                try:
+                    imgs.append(self.tfm(Image.open(p).convert("RGB")))
+                except Exception:
+                    continue
+            if not imgs:
                 continue
-        if not imgs:
-            continue
-        x = torch.stack(imgs, dim=0).to(device)
-        y = model(x)
-        if y.ndim > 2:
-            y = torch.flatten(y, 1)
-        feats.append(y.detach().cpu().double().numpy())
-    del model
-    if torch.cuda.is_available() and str(device).startswith("cuda"):
-        torch.cuda.empty_cache()
-    if not feats:
-        return np.empty((0, 2048), dtype=np.float64)
-    return np.concatenate(feats, axis=0)
+            x = torch.stack(imgs, dim=0).to(self.device)
+            y = self.model(x)
+            if y.ndim > 2:
+                y = torch.flatten(y, 1)
+            feats.append(y.detach().cpu().double().numpy())
+        if not feats:
+            return np.empty((0, 2048), dtype=np.float64)
+        return np.concatenate(feats, axis=0)
+
+    def close(self):
+        del self.model
+        if torch.cuda.is_available() and str(self.device).startswith("cuda"):
+            torch.cuda.empty_cache()
 
 
 def _frechet_distance(mu1, sigma1, mu2, sigma2):
@@ -257,13 +269,19 @@ def _compute_art_fid_for_pair(
     ref_paths,
     mean_content_lpips: float,
     *,
-    device: str,
-    batch_size: int,
+    runner,
     max_gen: int,
     max_ref: int,
+    ref_cache: dict | None = None,
+    ref_cache_key: str | None = None,
 ):
-    g_feats = _extract_inception_feats(gen_paths, device=device, batch_size=batch_size, max_images=max_gen)
-    r_feats = _extract_inception_feats(ref_paths, device=device, batch_size=batch_size, max_images=max_ref)
+    g_feats = _extract_inception_feats(gen_paths, runner=runner, max_images=max_gen)
+    if ref_cache is not None and ref_cache_key is not None and ref_cache_key in ref_cache:
+        r_feats = ref_cache[ref_cache_key]
+    else:
+        r_feats = _extract_inception_feats(ref_paths, runner=runner, max_images=max_ref)
+        if ref_cache is not None and ref_cache_key is not None:
+            ref_cache[ref_cache_key] = r_feats
     if g_feats.shape[0] < 2 or r_feats.shape[0] < 2:
         return None, None
     mu_g, cov_g = g_feats.mean(axis=0), np.cov(g_feats, rowvar=False)
@@ -325,11 +343,6 @@ def _acquire_lock(lock_path: Path, timeout_sec: int = 600, poll_sec: float = 1.0
         except FileExistsError:
             time.sleep(max(0.1, float(poll_sec)))
     return False
-
-
-def _cuda_sync_if_needed(device: str) -> None:
-    if str(device).startswith("cuda") and torch.cuda.is_available():
-        torch.cuda.synchronize()
 
 
 # ==========================================
@@ -504,6 +517,8 @@ def _auto_run_missing_full_eval(args) -> None:
             cmd += ["--eval_art_fid_max_gen", str(args.eval_art_fid_max_gen)]
             cmd += ["--eval_art_fid_max_ref", str(args.eval_art_fid_max_ref)]
             cmd += ["--eval_art_fid_batch_size", str(args.eval_art_fid_batch_size)]
+            if args.eval_art_fid_photo_only:
+                cmd += ["--eval_art_fid_photo_only"]
         if args.reuse_generated:
             cmd += ["--reuse_generated"]
         if args.generation_only:
@@ -544,6 +559,7 @@ def main():
     parser.add_argument('--eval_art_fid_max_gen', type=int, default=200, help="Max generated images per pair for FID_style")
     parser.add_argument('--eval_art_fid_max_ref', type=int, default=200, help="Max target-style reference images per pair for FID_style")
     parser.add_argument('--eval_art_fid_batch_size', type=int, default=16, help="Batch size for inception feature extraction in ArtFID")
+    parser.add_argument('--eval_art_fid_photo_only', action='store_true', help="Compute ArtFID/FID only for photo->art directions")
     parser.add_argument('--eval_lpips_chunk_size', type=int, default=2, help="LPIPS chunk size for conservative VRAM usage")
     parser.add_argument('--eval_lpips_no_cpu_fallback', action='store_true', help="Disable CPU fallback when LPIPS CUDA OOM occurs")
     parser.add_argument('--reuse_generated', action='store_true', help="Reuse existing generated *_to_*.jpg in output dir and skip generation")
@@ -627,26 +643,6 @@ def main():
     src_lookup = {(x["style_name"], x["path"].stem): x["path"] for x in all_src_info}
     num_src_total = len(all_src_info)
     num_styles = len(style_subdirs)
-    expected_generated = int(num_src_total * num_styles)
-    generation_timing = {
-        "backend": "flash",
-        "used_reuse_generated": bool(args.reuse_generated),
-        "num_sources": int(num_src_total),
-        "num_styles": int(num_styles),
-        "expected_generated": int(expected_generated),
-        "generated_count": 0,
-        "num_source_batches": 0,
-        "num_style_batches": 0,
-        "encode_ms_total": 0.0,
-        "model_ms_total": 0.0,
-        "decode_ms_total": 0.0,
-        "generation_wall_sec": 0.0,
-        "encode_ms_per_source_batch": 0.0,
-        "model_ms_per_style_batch": 0.0,
-        "decode_ms_per_style_batch": 0.0,
-        "e2e_ms_per_generated_image": 0.0,
-        "throughput_img_per_sec": 0.0,
-    }
 
     if args.reuse_generated:
         print(f"\nPhase 1: Reuse generated images from {out_dir}")
@@ -681,14 +677,20 @@ def main():
     if not generated_buffer:
         print(f"\nPhase 1: Generation (Batch Size {args.batch_size})")
 
-        lgt = FlashInference(
+        lgt = LGTInference(
             str(checkpoint_path),
             device=device,
             num_steps=args.num_steps,
             step_size=args.step_size,
             style_strength=args.style_strength,
         )
-        generation_start = time.perf_counter()
+        vae = load_vae(device)
+        model_scale = float(getattr(lgt.model, "latent_scale_factor", 0.18215))
+        vae_scale = float(getattr(getattr(vae, "config", None), "scaling_factor", model_scale))
+        scale_in = model_scale / max(vae_scale, 1e-8)
+        scale_out = vae_scale / max(model_scale, 1e-8)
+        if abs(scale_in - 1.0) > 1e-4:
+            print(f"WARNING: latent scale mismatch (model={model_scale:.6f}, vae={vae_scale:.6f}). Applying rescale.")
 
         # Process in batches
         for b_start in range(0, num_src_total, args.batch_size):
@@ -702,68 +704,49 @@ def main():
                 src_tensors.append(_load_eval_image_tensor(item['path']))
 
             src_batch = torch.stack(src_tensors).to(device)
-            src_batch_m1 = (src_batch * 2.0 - 1.0).to(dtype=lgt.dtype)
 
-            _cuda_sync_if_needed(device)
-            t_enc_0 = time.perf_counter()
-            latents_x0 = lgt.encode_pixels(src_batch_m1)
-            _cuda_sync_if_needed(device)
-            t_enc_1 = time.perf_counter()
-            generation_timing["encode_ms_total"] += float((t_enc_1 - t_enc_0) * 1000.0)
-            generation_timing["num_source_batches"] += 1
+            with torch.autocast('cuda', dtype=torch.bfloat16):
+                with torch.no_grad():
+                    # Inversion
+                    latents_src = encode_image(vae, src_batch, device)
+                    if abs(scale_in - 1.0) > 1e-4:
+                        latents_src = latents_src * scale_in
+                    latents_x0 = lgt.inversion(latents_src)
 
-            # Generation for each target style
-            for tgt_id in range(num_styles):
-                tgt_name = style_subdirs[tgt_id]
-                tgt_ids = torch.full((len(batch_info),), tgt_id, device=device, dtype=torch.long)
+                    # Generation for each target style
+                    for tgt_id in range(num_styles):
+                        tgt_name = style_subdirs[tgt_id]
+                        tgt_ids = torch.full((len(batch_info),), tgt_id, device=device, dtype=torch.long)
+                        latents_gen = lgt.generation(latents_x0, tgt_ids)
+                        if abs(scale_out - 1.0) > 1e-4:
+                            latents_gen = latents_gen * scale_out
+                        imgs_gen = decode_latent(vae, latents_gen, device) # [B, 3, H, W]
 
-                _cuda_sync_if_needed(device)
-                t_model_0 = time.perf_counter()
-                latents_gen = lgt.stylize_latents(
-                    latents_x0,
-                    target_style_id=tgt_ids,
-                    num_steps=args.num_steps,
-                    step_size=args.step_size,
-                    style_strength=args.style_strength,
-                )
-                _cuda_sync_if_needed(device)
-                t_model_1 = time.perf_counter()
-                generation_timing["model_ms_total"] += float((t_model_1 - t_model_0) * 1000.0)
+                        # Offload to CPU & Save Async
+                        latents_gen_cpu = latents_gen.detach().float().cpu()
+                        imgs_gen_cpu = imgs_gen.cpu()
 
-                _cuda_sync_if_needed(device)
-                t_dec_0 = time.perf_counter()
-                imgs_gen = lgt.decode_latents(latents_gen)  # [B, 3, H, W], in [0, 1]
-                _cuda_sync_if_needed(device)
-                t_dec_1 = time.perf_counter()
-                generation_timing["decode_ms_total"] += float((t_dec_1 - t_dec_0) * 1000.0)
-                generation_timing["num_style_batches"] += 1
+                        for i in range(len(batch_info)):
+                            src_item = batch_info[i]
+                            out_name = f"{src_item['style_name']}_{src_item['path'].stem}_to_{tgt_name}.jpg"
+                            out_path = out_dir / out_name
 
-                # Offload to CPU & Save Async
-                latents_gen_cpu = latents_gen.detach().float().cpu()
-                imgs_gen_cpu = imgs_gen.detach().cpu()
+                            # Async Save
+                            io_pool.submit(save_image_task, imgs_gen_cpu[i], out_path)
 
-                for i in range(len(batch_info)):
-                    src_item = batch_info[i]
-                    out_name = f"{src_item['style_name']}_{src_item['path'].stem}_to_{tgt_name}.jpg"
-                    out_path = out_dir / out_name
-
-                    # Async Save
-                    io_pool.submit(save_image_task, imgs_gen_cpu[i], out_path)
-
-                    # Store for Phase 2
-                    generated_buffer.append({
-                        'src_path': src_item['path'],
-                        'src_style': src_item['style_name'],
-                        'tgt_style_name': tgt_name,
-                        'tgt_style_id': tgt_id,
-                        'gen_latent': latents_gen_cpu[i], # Keep latent for classifier evaluation
-                        'gen_img': imgs_gen_cpu[i], # Keep in RAM
-                        'gen_name': out_name
-                    })
+                            # Store for Phase 2
+                            generated_buffer.append({
+                                'src_path': src_item['path'],
+                                'src_style': src_item['style_name'],
+                                'tgt_style_name': tgt_name,
+                                'tgt_style_id': tgt_id,
+                                'gen_latent': latents_gen_cpu[i], # Keep latent for classifier evaluation
+                                'gen_img': imgs_gen_cpu[i], # Keep in RAM
+                                'gen_name': out_name
+                            })
 
         # Unload Generation Models
-        generation_timing["generation_wall_sec"] = float(time.perf_counter() - generation_start)
-        del lgt
+        del lgt, vae
         torch.cuda.empty_cache()
         gc.collect()
         print("  Generation models unloaded")
@@ -776,32 +759,12 @@ def main():
         if device == "cuda":
             torch.cuda.empty_cache()
         gc.collect()
-        generation_timing["generated_count"] = int(len(generated_buffer))
-        if generation_timing["num_source_batches"] > 0:
-            generation_timing["encode_ms_per_source_batch"] = (
-                generation_timing["encode_ms_total"] / float(generation_timing["num_source_batches"])
-            )
-        if generation_timing["num_style_batches"] > 0:
-            generation_timing["model_ms_per_style_batch"] = (
-                generation_timing["model_ms_total"] / float(generation_timing["num_style_batches"])
-            )
-            generation_timing["decode_ms_per_style_batch"] = (
-                generation_timing["decode_ms_total"] / float(generation_timing["num_style_batches"])
-            )
-        if generation_timing["generated_count"] > 0 and generation_timing["generation_wall_sec"] > 0.0:
-            generation_timing["e2e_ms_per_generated_image"] = (
-                1000.0 * generation_timing["generation_wall_sec"] / float(generation_timing["generated_count"])
-            )
-            generation_timing["throughput_img_per_sec"] = (
-                float(generation_timing["generated_count"]) / generation_timing["generation_wall_sec"]
-            )
         summary = {
             "checkpoint": str(checkpoint_path),
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "mode": "generation_only",
             "generated_count": int(len(generated_buffer)),
             "output_dir": str(out_dir),
-            "generation_timing": generation_timing,
             "note": "Metrics are intentionally skipped. Run evaluation later with --reuse_generated.",
         }
         sum_path = out_dir / "summary.json"
@@ -1055,6 +1018,7 @@ def main():
 
     # Optimize Reference CLIP Features for Vectorization
     ref_clip_matrices = {} # style_id -> Tensor[N_ref, D] (GPU)
+    ref_clip_prototypes = {}  # style_id -> Tensor[1, D] (GPU)
     
     if run_full_metrics and has_clip and clip_model is not None:
         for sid, feats in ref_features.items():
@@ -1075,8 +1039,32 @@ def main():
                         # Double check norm
                         stacked = stacked / (stacked.norm(p=2, dim=-1, keepdim=True) + 1e-8)
                         ref_clip_matrices[sid] = stacked.to(device, dtype=torch.float32)
+                        proto = stacked.mean(dim=0, keepdim=True)
+                        proto = proto / (proto.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+                        ref_clip_prototypes[sid] = proto.to(device, dtype=torch.float32)
                 except Exception as e:
                     print(f"  闁宠法濯寸粭?Failed to prepare CLIP matrix for style {sid}: {e}")
+
+    # Cache reference tensors for style LPIPS to avoid repeated disk I/O in inner loops.
+    ref_lpips_tensors = {}  # style_id -> Tensor[N_ref, 3, 256, 256] on CPU
+    if run_full_metrics and loss_fn:
+        max_ref_compare = int(args.max_ref_compare)
+        for sid, feats in ref_features.items():
+            refs = feats[:]
+            if max_ref_compare > 0:
+                refs = refs[:min(len(refs), max_ref_compare)]
+            tensors = []
+            for r in refs:
+                try:
+                    tensors.append(_load_eval_image_tensor(Path(r["path"])))
+                except Exception:
+                    continue
+            if tensors:
+                ref_lpips_tensors[sid] = torch.stack(tensors, dim=0).contiguous()
+
+    # Cache source images/CLIP embeddings to avoid repeated work across many target styles.
+    src_img_cache = {}   # abs src path -> Tensor[3,256,256] on CPU
+    src_clip_cache = {}  # abs src path -> Tensor[D] on CPU
 
     csv_path = out_dir / 'metrics.csv'
     # Re-evaluation on reused images should overwrite metrics to avoid mixing old/new classifier outputs.
@@ -1111,14 +1099,21 @@ def main():
         if has_latents:
             gen_latents_cpu = torch.stack([item['gen_latent'] for item in batch_items])
             gen_latents = gen_latents_cpu.to(device)
-        gen_imgs_cpu = torch.stack([item['gen_img'] for item in batch_items])
-        gen_imgs = gen_imgs_cpu.to(device)
-        
+        gen_imgs_cpu = torch.stack([item['gen_img'] for item in batch_items]).contiguous()
+        gen_imgs = gen_imgs_cpu.to(device, non_blocking=True)
+
         src_tensors = []
+        src_keys = []
         for item in batch_items:
-            img = Image.open(item['src_path']).convert('RGB').resize((256, 256))
-            src_tensors.append(T.ToTensor()(img))
-        src_imgs = torch.stack(src_tensors).to(device)
+            src_key = str(Path(item['src_path']).resolve())
+            src_keys.append(src_key)
+            cached = src_img_cache.get(src_key)
+            if cached is None:
+                cached = _load_eval_image_tensor(Path(item['src_path']))
+                src_img_cache[src_key] = cached
+            src_tensors.append(cached)
+        src_imgs_cpu = torch.stack(src_tensors, dim=0).contiguous()
+        src_imgs = src_imgs_cpu.to(device, non_blocking=True)
         
         with torch.no_grad():
             # 1. Content LPIPS (Skip if classifier only)
@@ -1156,14 +1151,20 @@ def main():
                 if gen_clips.ndim == 1: gen_clips = gen_clips.unsqueeze(0)
                 gen_clips = gen_clips / (gen_clips.norm(p=2, dim=-1, keepdim=True) + 1e-8)
                 
-                # Src CLIP
-                pil_srcs = [to_pil(img.cpu().float()) for img in src_imgs]
-                inputs_src = clip_processor(images=pil_srcs, return_tensors='pt').to(device)
-                out_src = clip_model.get_image_features(**inputs_src)
-                src_clips = _extract_clip_embeddings(out_src).to(device, dtype=torch.float32)
-                # Ensure shape
-                if src_clips.ndim == 1: src_clips = src_clips.unsqueeze(0)
-                src_clips = src_clips / (src_clips.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+                # Src CLIP (cache by source path; source repeats across many target styles)
+                miss_indices = [i for i, k in enumerate(src_keys) if k not in src_clip_cache]
+                if miss_indices:
+                    pil_srcs_miss = [to_pil(src_imgs_cpu[i].float()) for i in miss_indices]
+                    inputs_src = clip_processor(images=pil_srcs_miss, return_tensors='pt').to(device)
+                    out_src = clip_model.get_image_features(**inputs_src)
+                    src_miss = _extract_clip_embeddings(out_src).to(device, dtype=torch.float32)
+                    if src_miss.ndim == 1:
+                        src_miss = src_miss.unsqueeze(0)
+                    src_miss = src_miss / (src_miss.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+                    src_miss_cpu = src_miss.detach().cpu()
+                    for j, idx in enumerate(miss_indices):
+                        src_clip_cache[src_keys[idx]] = src_miss_cpu[j].clone()
+                src_clips = torch.stack([src_clip_cache[k] for k in src_keys], dim=0).to(device, dtype=torch.float32)
                 
                 c_clip_scores = F.cosine_similarity(gen_clips, src_clips).cpu().float().numpy()
 
@@ -1183,6 +1184,47 @@ def main():
                 pred_indices = preds.cpu().numpy().tolist()
 
             # 4. Style Metrics & Row Writing
+            # 4a. Style LPIPS in grouped batches by target style to reduce overhead.
+            s_lpips_scores = [0.0] * len(batch_items)
+            if loss_fn and ref_lpips_tensors:
+                lpips_chunk_size = max(1, int(args.eval_lpips_chunk_size))
+                lpips_cpu_fallback = not bool(args.eval_lpips_no_cpu_fallback)
+                groups = defaultdict(list)
+                for i, item in enumerate(batch_items):
+                    groups[int(item['tgt_style_id'])].append(i)
+
+                for tgt_id, idxs in groups.items():
+                    refs_cpu = ref_lpips_tensors.get(int(tgt_id))
+                    if refs_cpu is None or refs_cpu.numel() == 0:
+                        continue
+                    idx_t = torch.tensor(idxs, dtype=torch.long, device=gen_imgs.device)
+                    gen_group = gen_imgs.index_select(0, idx_t).float()
+                    bg = int(gen_group.shape[0])
+                    n_ref = int(refs_cpu.shape[0])
+                    sum_d = torch.zeros((bg,), dtype=torch.float32)
+
+                    for rs in range(0, n_ref, lpips_chunk_size):
+                        re = min(rs + lpips_chunk_size, n_ref)
+                        ref_chunk = refs_cpu[rs:re].to(device, non_blocking=True).float()
+                        rc = int(ref_chunk.shape[0])
+                        pair_gen = gen_group.repeat_interleave(rc, dim=0)
+                        pair_ref = ref_chunk.repeat(bg, 1, 1, 1)
+                        d = _lpips_forward_safe(
+                            loss_fn,
+                            pair_gen,
+                            pair_ref,
+                            device=device,
+                            chunk_size=max(lpips_chunk_size, 1),
+                            cpu_fallback=lpips_cpu_fallback,
+                            tag="style_lpips",
+                        )
+                        d = d.view(bg, rc)
+                        sum_d += d.sum(dim=1)
+                        del ref_chunk, pair_gen, pair_ref
+                    mean_d = (sum_d / max(n_ref, 1)).tolist()
+                    for j, idx in enumerate(idxs):
+                        s_lpips_scores[idx] = float(mean_d[j])
+
             for i, item in enumerate(batch_items):
                 tgt_id = item['tgt_style_id']
                 tgt_name = item['tgt_style_name']
@@ -1205,61 +1247,22 @@ def main():
                         pred_style_name = f"Unknown({pred_idx})"
                         class_correct = 0
 
-                # --- CLIP Directional Similarity (CLIP-Dir) ---
-                # Compare direction (gen - src) against (target-style-prototype - src).
+                # --- CLIP metrics ---
+                # clip_dir: directional similarity in edit space.
+                # clip_style: absolute similarity to target style prototype.
                 s_clip_dir = 0.0
-                if has_clip and gen_clips is not None and src_clips is not None and tgt_id in ref_clip_matrices:
-                    ref_matrix = ref_clip_matrices[tgt_id]  # [N_ref, D]
+                s_clip_style = 0.0
+                if has_clip and gen_clips is not None and src_clips is not None and tgt_id in ref_clip_prototypes:
+                    tgt_proto = ref_clip_prototypes[tgt_id]  # [1, D]
                     gen_emb = gen_clips[i:i+1]              # [1, D]
                     src_emb = src_clips[i:i+1]              # [1, D]
-                    if gen_emb.shape[-1] == ref_matrix.shape[-1] == src_emb.shape[-1]:
-                        tgt_proto = ref_matrix.mean(dim=0, keepdim=True)
-                        tgt_proto = tgt_proto / (tgt_proto.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+                    if gen_emb.shape[-1] == tgt_proto.shape[-1] == src_emb.shape[-1]:
                         dir_gen = gen_emb - src_emb
                         dir_tgt = tgt_proto - src_emb
                         dir_gen = dir_gen / (dir_gen.norm(p=2, dim=-1, keepdim=True) + 1e-8)
                         dir_tgt = dir_tgt / (dir_tgt.norm(p=2, dim=-1, keepdim=True) + 1e-8)
                         s_clip_dir = F.cosine_similarity(dir_gen, dir_tgt).item()
-                
-                # --- LPIPS Style Score ---
-                s_lpips_score = 0.0
-                if loss_fn:
-                    tgt_refs = ref_features[tgt_id]
-                    max_ref_compare = int(args.max_ref_compare)
-                    if max_ref_compare > 0:
-                        refs_sample = tgt_refs[:min(len(tgt_refs), max_ref_compare)]
-                    else:
-                        refs_sample = tgt_refs
-                    
-                    if refs_sample:
-                        lpips_chunk_size = max(1, int(args.eval_lpips_chunk_size))
-                        lpips_cpu_fallback = not bool(args.eval_lpips_no_cpu_fallback)
-                        all_dists = []
-                        for cs in range(0, len(refs_sample), lpips_chunk_size):
-                            ce = min(cs + lpips_chunk_size, len(refs_sample))
-                            chunk_refs = refs_sample[cs:ce]
-                            
-                            ref_imgs = []
-                            for r in chunk_refs:
-                                ref_imgs.append(T.ToTensor()(Image.open(r['path']).convert('RGB').resize((256,256))))
-                            
-                            ref_batch = torch.stack(ref_imgs).to(device).float()
-                            gen_expanded = gen_imgs[i:i+1].float().expand(len(ref_batch), -1, -1, -1)
-
-                            chunk_dists = _lpips_forward_safe(
-                                loss_fn,
-                                gen_expanded,
-                                ref_batch,
-                                device=device,
-                                chunk_size=lpips_chunk_size,
-                                cpu_fallback=lpips_cpu_fallback,
-                                tag="style_lpips",
-                            )
-                            all_dists.append(chunk_dists)
-                            del ref_batch, gen_expanded
-                        
-                        if all_dists:
-                            s_lpips_score = torch.cat(all_dists, dim=0).float().mean().item()
+                        s_clip_style = F.cosine_similarity(gen_emb, tgt_proto).item()
 
                 writer.writerow({
                     'src_style': item['src_style'],
@@ -1267,9 +1270,9 @@ def main():
                     'src_image': item['src_path'].name,
                     'gen_image': item['gen_name'],
                     'content_lpips': c_lpips_vals[i],
-                    'style_lpips': s_lpips_score,
+                    'style_lpips': s_lpips_scores[i],
                     'clip_dir': s_clip_dir,
-                    'clip_style': s_clip_dir,  # backward-compatible alias
+                    'clip_style': s_clip_style,
                     'clip_content': c_clip_scores[i],
                     'pred_style': pred_style_name,
                     'class_correct': class_correct
@@ -1279,26 +1282,6 @@ def main():
 
     csv_file.close()
     io_pool.shutdown(wait=True)
-
-    generation_timing["generated_count"] = int(len(generated_buffer))
-    if generation_timing["num_source_batches"] > 0:
-        generation_timing["encode_ms_per_source_batch"] = (
-            generation_timing["encode_ms_total"] / float(generation_timing["num_source_batches"])
-        )
-    if generation_timing["num_style_batches"] > 0:
-        generation_timing["model_ms_per_style_batch"] = (
-            generation_timing["model_ms_total"] / float(generation_timing["num_style_batches"])
-        )
-        generation_timing["decode_ms_per_style_batch"] = (
-            generation_timing["decode_ms_total"] / float(generation_timing["num_style_batches"])
-        )
-    if generation_timing["generated_count"] > 0 and generation_timing["generation_wall_sec"] > 0.0:
-        generation_timing["e2e_ms_per_generated_image"] = (
-            1000.0 * generation_timing["generation_wall_sec"] / float(generation_timing["generated_count"])
-        )
-        generation_timing["throughput_img_per_sec"] = (
-            float(generation_timing["generated_count"]) / generation_timing["generation_wall_sec"]
-        )
     
     style_real_paths = {}
     for _, (style_name, img_list) in test_images.items():
@@ -1313,7 +1296,7 @@ def main():
         art_fid_max_gen=int(args.eval_art_fid_max_gen),
         art_fid_max_ref=int(args.eval_art_fid_max_ref),
         art_fid_batch_size=int(args.eval_art_fid_batch_size),
-        generation_timing=generation_timing,
+        art_fid_photo_only=bool(args.eval_art_fid_photo_only),
     )
 
 def generate_summary_json(
@@ -1327,7 +1310,7 @@ def generate_summary_json(
     art_fid_max_gen: int = 200,
     art_fid_max_ref: int = 200,
     art_fid_batch_size: int = 16,
-    generation_timing: dict | None = None,
+    art_fid_photo_only: bool = False,
 ):
     print("\n妫ｅ啯鎯?Generating Summary...")
     rows = []
@@ -1339,6 +1322,14 @@ def generate_summary_json(
     if not rows: return
 
     def to_f(x): return float(x) if x else 0.0
+
+    fid_runner = None
+    ref_fid_cache = {}
+    if enable_art_fid and style_real_paths is not None:
+        fid_runner = _InceptionFeatRunner(
+            device=device,
+            batch_size=max(1, int(art_fid_batch_size)),
+        )
 
     matrix = defaultdict(lambda: defaultdict(list))
     for r in rows:
@@ -1365,7 +1356,10 @@ def generate_summary_json(
                 'content_lpips': mean_content_lpips,
                 'clip_content': np.mean([to_f(x.get('clip_content', 0)) for x in items]),
             }
-            if enable_art_fid and style_real_paths is not None:
+            should_compute_art_fid = bool(enable_art_fid and style_real_paths is not None)
+            if should_compute_art_fid and art_fid_photo_only:
+                should_compute_art_fid = (src.lower() == "photo" and src.lower() != tgt.lower())
+            if should_compute_art_fid:
                 try:
                     gen_paths = [str((out_dir / x['gen_image']).resolve()) for x in items]
                     ref_paths = list(style_real_paths.get(tgt, []))
@@ -1373,10 +1367,11 @@ def generate_summary_json(
                         gen_paths,
                         ref_paths,
                         float(mean_content_lpips),
-                        device=device,
-                        batch_size=max(1, int(art_fid_batch_size)),
+                        runner=fid_runner,
                         max_gen=max(1, int(art_fid_max_gen)),
                         max_ref=max(1, int(art_fid_max_ref)),
+                        ref_cache=ref_fid_cache,
+                        ref_cache_key=str(tgt),
                     )
                     stats['fid_style'] = fid_style
                     stats['art_fid'] = art_fid
@@ -1411,8 +1406,9 @@ def generate_summary_json(
                 if src == 'photo':
                     photo_transfer_pool.append(stats)
 
-    def pool_avg(pool, key):
-        if not pool: return 0.0
+    def pool_avg(pool, key, default=0.0):
+        if not pool:
+            return default
         return float(np.mean([x[key] for x in pool]))
 
     # Generate Classification Report
@@ -1444,10 +1440,10 @@ def generate_summary_json(
     summary = {
         'checkpoint': str(ckpt_path),
         'timestamp': time.strftime("%Y-%m-%d %H:%M:%S"),
-        'generation_timing': generation_timing or {},
         'metrics_note': {
-            'clip_style': "backward-compatible alias of clip_dir (CLIP directional similarity)",
-            'clip_dir': "cos( CLIP(gen)-CLIP(src), CLIP(target_style_proto)-CLIP(src) )",
+            'clip_dir': "cos( CLIP(gen)-CLIP(src), CLIP(target_style_proto)-CLIP(src) ) - Measures edit direction.",
+            'clip_style': "cos( CLIP(gen), CLIP(target_style_proto) ) - Measures absolute style similarity.",
+            'fid': "FID between generated images and target-style real references (Inception features).",
             'art_fid': "computed as (1 + fid_style) * (1 + content_lpips)",
         },
         'matrix_breakdown': matrix_json,
@@ -1456,13 +1452,15 @@ def generate_summary_json(
                 'clip_dir': pool_avg(transfer_pool, 'clip_dir'),
                 'clip_style': pool_avg(transfer_pool, 'clip_style'),
                 'content_lpips': pool_avg(transfer_pool, 'content_lpips'),
-                'art_fid': pool_avg([t for t in transfer_pool if t.get('art_fid') is not None], 'art_fid'),
+                'fid': pool_avg([t for t in transfer_pool if t.get('fid_style') is not None], 'fid_style', default=None),
+                'art_fid': pool_avg([t for t in transfer_pool if t.get('art_fid') is not None], 'art_fid', default=None),
                 'classifier_acc': pool_avg([t for t in transfer_pool if t['classifier_acc'] is not None], 'classifier_acc')
             },
             'photo_to_art_performance': {
                 'clip_dir': pool_avg(photo_transfer_pool, 'clip_dir'),
                 'clip_style': pool_avg(photo_transfer_pool, 'clip_style'),
-                'art_fid': pool_avg([t for t in photo_transfer_pool if t.get('art_fid') is not None], 'art_fid'),
+                'fid': pool_avg([t for t in photo_transfer_pool if t.get('fid_style') is not None], 'fid_style', default=None),
+                'art_fid': pool_avg([t for t in photo_transfer_pool if t.get('art_fid') is not None], 'art_fid', default=None),
                 'valid': len(photo_transfer_pool) > 0,
                 'classifier_acc': pool_avg([t for t in photo_transfer_pool if t['classifier_acc'] is not None], 'classifier_acc')
             }
@@ -1475,6 +1473,8 @@ def generate_summary_json(
     with open(sum_path, 'w') as f:
         json.dump(summary, f, indent=2)
     print(f"闁?Summary saved: {sum_path}")
+    if fid_runner is not None:
+        fid_runner.close()
 
 if __name__ == '__main__':
     main() 

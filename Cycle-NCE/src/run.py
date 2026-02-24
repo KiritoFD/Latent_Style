@@ -298,7 +298,12 @@ def main() -> None:
 
     trainer = AdaCUTTrainer(config=config, device=device, config_path=str(config_path))
 
-    for epoch in range(trainer.start_epoch, trainer.num_epochs + 1):
+    epoch = int(trainer.start_epoch)
+    while epoch <= int(trainer.num_epochs):
+        trainer.reload_config_from_disk(epoch)
+        if epoch > int(trainer.num_epochs):
+            break
+
         dataset.set_epoch(epoch)
         metrics = trainer.train_epoch(dataloader, epoch)
         trainer.step_scheduler()
@@ -333,6 +338,7 @@ def main() -> None:
             if ckpt_path is None:
                 ckpt_path = trainer.save_checkpoint(epoch, metrics)
             trainer.run_full_evaluation(epoch, checkpoint_path=ckpt_path)
+        epoch += 1
 
     logger.info("Training completed.")
 

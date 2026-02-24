@@ -32,7 +32,17 @@ def calc_swd_loss(
         return total_loss
 
     proj_dim = int(num_projections)
-    for p in valid_patches:
+    base_patch_weights = {1: 0.2, 3: 0.5, 5: 0.3}
+    raw_patch_weights = [float(base_patch_weights.get(p, 1.0)) for p in valid_patches]
+    weight_sum = sum(raw_patch_weights)
+    if weight_sum <= 0.0:
+        norm_patch_weights = [1.0 / float(len(valid_patches))] * len(valid_patches)
+    else:
+        norm_patch_weights = [w / weight_sum for w in raw_patch_weights]
+
+    used_style_count = 0
+    style_seen = set()
+    for p, patch_weight in zip(valid_patches, norm_patch_weights):
         if p == 1:
             x_pts = x.flatten(2)
             y_pts = y.flatten(2)
@@ -43,9 +53,10 @@ def calc_swd_loss(
         x_pts = x_pts.transpose(1, 2)  # [B, HW, D]
         y_pts = y_pts.transpose(1, 2)
         dim = x_pts.shape[-1]
+        cur_proj_dim = proj_dim if p < 5 else max(1, proj_dim // 2)
 
         projections = F.normalize(
-            torch.randn(dim, proj_dim, device=device, dtype=torch.float32),
+            torch.randn(dim, cur_proj_dim, device=device, dtype=torch.float32),
             p=2,
             dim=0,
         )
@@ -57,8 +68,13 @@ def calc_swd_loss(
             if not bool(mask.any().item()):
                 continue
 
-            x_s = x_proj[mask].reshape(-1, proj_dim)
-            y_s = y_proj[mask].reshape(-1, proj_dim)
+            sid_int = int(sid.item())
+            if sid_int not in style_seen:
+                style_seen.add(sid_int)
+                used_style_count += 1
+
+            x_s = x_proj[mask].reshape(-1, cur_proj_dim)
+            y_s = y_proj[mask].reshape(-1, cur_proj_dim)
 
             max_samples = 4096
             if x_s.shape[0] > max_samples:
@@ -68,9 +84,9 @@ def calc_swd_loss(
 
             x_sorted, _ = torch.sort(x_s, dim=0)
             y_sorted, _ = torch.sort(y_s, dim=0)
-            total_loss += (x_sorted - y_sorted).abs().mean()
+            total_loss += patch_weight * (x_sorted - y_sorted).abs().mean()
 
-    return total_loss / (float(len(valid_patches)) * float(unique_styles.numel()))
+    return total_loss / float(max(1, used_style_count))
 
 
 def _tv_per_sample(x: torch.Tensor) -> torch.Tensor:

@@ -1,0 +1,27 @@
+{
+  "checkpoint": "..\\epoch_0200.pt",
+  "timestamp": "2026-02-24 15:48:08",
+  "mode": "generation_only",
+  "generated_count": 25,
+  "output_dir": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\full_eval_uv\\epoch_0200_revert_smoke",
+  "generation_timing": {
+    "backend": "flash",
+    "used_reuse_generated": false,
+    "num_sources": 5,
+    "num_styles": 5,
+    "expected_generated": 25,
+    "generated_count": 25,
+    "num_source_batches": 5,
+    "num_style_batches": 25,
+    "encode_ms_total": 386.621900001046,
+    "model_ms_total": 259.6866000076261,
+    "decode_ms_total": 765.8365000024787,
+    "generation_wall_sec": 1.444449500000701,
+    "encode_ms_per_source_batch": 77.3243800002092,
+    "model_ms_per_style_batch": 10.387464000305044,
+    "decode_ms_per_style_batch": 30.63346000009915,
+    "e2e_ms_per_generated_image": 57.77798000002804,
+    "throughput_img_per_sec": 17.30763173097285
+  },
+  "note": "Metrics are intentionally skipped. Run evaluation later with --reuse_generated."
+}
