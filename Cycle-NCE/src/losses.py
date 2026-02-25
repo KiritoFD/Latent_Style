@@ -20,73 +20,38 @@ def calc_swd_loss(
     patch_sizes: List[int],
     num_projections: int = 512,
 ) -> torch.Tensor:
-    x = x.float()
-    y = y.float()
-    style_ids = style_ids.long().view(-1).to(device=x.device)
+    x, y = x.float(), y.float()
     device = x.device
+    patch_weights = {1: 0.1, 3: 0.3, 5: 0.6}
     total_loss = torch.tensor(0.0, device=device)
-
     unique_styles = torch.unique(style_ids)
-    valid_patches = [int(p) for p in patch_sizes if int(p) > 0]
-    if not valid_patches or unique_styles.numel() == 0:
-        return total_loss
 
-    proj_dim = int(num_projections)
-    base_patch_weights = {1: 0.2, 3: 0.5, 5: 0.3}
-    raw_patch_weights = [float(base_patch_weights.get(p, 1.0)) for p in valid_patches]
-    weight_sum = sum(raw_patch_weights)
-    if weight_sum <= 0.0:
-        norm_patch_weights = [1.0 / float(len(valid_patches))] * len(valid_patches)
-    else:
-        norm_patch_weights = [w / weight_sum for w in raw_patch_weights]
-
-    used_style_count = 0
-    style_seen = set()
-    for p, patch_weight in zip(valid_patches, norm_patch_weights):
+    for p in patch_sizes:
+        weight = patch_weights.get(p, 1.0 / len(patch_sizes))
         if p == 1:
-            x_pts = x.flatten(2)
-            y_pts = y.flatten(2)
+            x_pts = x.flatten(2).transpose(1, 2)
+            y_pts = y.flatten(2).transpose(1, 2)
         else:
-            x_pts = F.unfold(x, kernel_size=p, stride=1, padding=p // 2)
-            y_pts = F.unfold(y, kernel_size=p, stride=1, padding=p // 2)
+            x_unfold = F.unfold(x, kernel_size=p, padding=p // 2)
+            y_unfold = F.unfold(y, kernel_size=p, padding=p // 2)
+            idx = torch.randperm(x_unfold.size(-1), device=device)[:1024]
+            x_pts = x_unfold[:, :, idx].transpose(1, 2)
+            y_pts = y_unfold[:, :, idx].transpose(1, 2)
 
-        x_pts = x_pts.transpose(1, 2)  # [B, HW, D]
-        y_pts = y_pts.transpose(1, 2)
         dim = x_pts.shape[-1]
-        cur_proj_dim = proj_dim if p < 5 else max(1, proj_dim // 2)
-
-        projections = F.normalize(
-            torch.randn(dim, cur_proj_dim, device=device, dtype=torch.float32),
-            p=2,
-            dim=0,
-        )
+        projections = F.normalize(torch.randn(dim, num_projections, device=device), p=2, dim=0)
         x_proj = torch.matmul(x_pts, projections)
         y_proj = torch.matmul(y_pts, projections)
 
         for sid in unique_styles:
             mask = style_ids == sid
-            if not bool(mask.any().item()):
-                continue
+            x_s = x_proj[mask].reshape(-1, num_projections)
+            y_s = y_proj[mask].reshape(-1, num_projections)
+            x_s, _ = torch.sort(x_s, dim=0)
+            y_s, _ = torch.sort(y_s, dim=0)
+            total_loss += F.l1_loss(x_s, y_s) * weight
 
-            sid_int = int(sid.item())
-            if sid_int not in style_seen:
-                style_seen.add(sid_int)
-                used_style_count += 1
-
-            x_s = x_proj[mask].reshape(-1, cur_proj_dim)
-            y_s = y_proj[mask].reshape(-1, cur_proj_dim)
-
-            max_samples = 4096
-            if x_s.shape[0] > max_samples:
-                x_s = x_s[torch.randperm(x_s.shape[0], device=device)[:max_samples]]
-            if y_s.shape[0] > max_samples:
-                y_s = y_s[torch.randperm(y_s.shape[0], device=device)[:max_samples]]
-
-            x_sorted, _ = torch.sort(x_s, dim=0)
-            y_sorted, _ = torch.sort(y_s, dim=0)
-            total_loss += patch_weight * (x_sorted - y_sorted).abs().mean()
-
-    return total_loss / float(max(1, used_style_count))
+    return total_loss
 
 
 def _tv_per_sample(x: torch.Tensor) -> torch.Tensor:

@@ -10,53 +10,55 @@ import torch.nn.functional as F
 import torch.utils.checkpoint as ckpt
 
 
-class AdaGN(nn.Module):
-    """
-    Adaptive GroupNorm with style-conditioned scale/shift.
-    """
-
-    def __init__(self, dim: int, style_dim: int, num_groups: int = 8) -> None:
+class SpatiallyAdaptiveAdaMixGN(nn.Module):
+    def __init__(self, dim: int, style_dim: int, num_groups: int = 4, rank: int = 16) -> None:
         super().__init__()
-        groups = max(1, min(num_groups, dim))
-        while dim % groups != 0 and groups > 1:
-            groups -= 1
-
-        self.norm = nn.GroupNorm(groups, dim, affine=False, eps=1e-6)
-        self.proj = nn.Linear(style_dim, dim * 2)
-
-        # Identity init: scale=1, shift=0.
-        nn.init.zeros_(self.proj.weight)
-        nn.init.zeros_(self.proj.bias)
-        with torch.no_grad():
-            self.proj.bias[:dim] = 1.0
+        self.norm = nn.GroupNorm(num_groups, dim, affine=False)
+        self.style_shift = nn.Linear(style_dim, dim)
+        nn.init.zeros_(self.style_shift.weight)
+        nn.init.zeros_(self.style_shift.bias)
+        self.rank = int(rank)
+        self.style_U = nn.Linear(style_dim, dim * self.rank)
+        self.style_V = nn.Linear(style_dim, self.rank * dim)
+        nn.init.normal_(self.style_U.weight, std=0.01)
+        nn.init.zeros_(self.style_U.bias)
+        # Safety lock: keep W = U @ V exactly zero at initialization.
+        nn.init.zeros_(self.style_V.weight)
+        nn.init.zeros_(self.style_V.bias)
+        hidden_dim = max(32, dim // 2)
+        self.spatial_gate = nn.Sequential(
+            nn.Conv2d(dim, hidden_dim, kernel_size=3, padding=1, bias=False),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(hidden_dim, 1, kernel_size=3, padding=1, bias=True),
+            nn.Sigmoid(),
+        )
+        nn.init.constant_(self.spatial_gate[-2].bias, 0.0)
 
     def forward(self, x: torch.Tensor, style_code: torch.Tensor, gate: float | torch.Tensor = 1.0) -> torch.Tensor:
-        h = self.norm(x)
-        params = self.proj(style_code).unsqueeze(-1).unsqueeze(-1)
-        scale, shift = params.chunk(2, dim=1)
-        adagn = h * scale + shift
-        if torch.is_tensor(gate):
-            g = gate.to(device=h.device, dtype=h.dtype)
-            if g.ndim == 0:
-                g = g.reshape(1, 1, 1, 1)
-            elif g.ndim == 1:
-                g = g.view(-1, 1, 1, 1)
-            g = torch.nan_to_num(g, nan=0.0, posinf=1.0, neginf=0.0).clamp_(0.0, 1.0)
-            return h + g * (adagn - h)
-        else:
-            g = float(gate)
-            if not math.isfinite(g):
-                g = 0.0
-            g = max(0.0, min(1.0, g))
-            return h + (adagn - h) * g
+        b, c, h_dim, w_dim = x.shape
+        normalized = self.norm(x)
+        shift = self.style_shift(style_code).view(b, c, 1, 1)
+        u = self.style_U(style_code).view(b, c, self.rank)
+        v = self.style_V(style_code).view(b, self.rank, c)
+        w = torch.bmm(u, v)
+        norm_flat = normalized.view(b, c, h_dim * w_dim)
+        mixed_flat = torch.bmm(w, norm_flat)
+        mixed = mixed_flat.view(b, c, h_dim, w_dim)
+        mask = self.spatial_gate(x)
+        adagn = normalized + mixed + shift
+        final_gate = mask * gate if isinstance(gate, float) else mask * gate.to(dtype=normalized.dtype)
+        return normalized + final_gate * (adagn - normalized)
+
+# Backward compatibility for older checkpoints/code paths.
+SpatiallyAdaptiveAdaGN = SpatiallyAdaptiveAdaMixGN
 
 
 class ResBlock(nn.Module):
-    def __init__(self, dim: int, style_dim: int, num_groups: int = 8) -> None:
+    def __init__(self, dim: int, style_dim: int, num_groups: int = 8, ada_mix_rank: int = 16) -> None:
         super().__init__()
-        self.norm1 = AdaGN(dim, style_dim, num_groups=num_groups)
+        self.norm1 = SpatiallyAdaptiveAdaMixGN(dim, style_dim, num_groups=num_groups, rank=ada_mix_rank)
         self.conv1 = nn.Conv2d(dim, dim, kernel_size=3, stride=1, padding=1)
-        self.norm2 = AdaGN(dim, style_dim, num_groups=num_groups)
+        self.norm2 = SpatiallyAdaptiveAdaMixGN(dim, style_dim, num_groups=num_groups, rank=ada_mix_rank)
         self.conv2 = nn.Conv2d(dim, dim, kernel_size=3, stride=1, padding=1)
         self.act = nn.SiLU()
 
@@ -103,6 +105,7 @@ class LatentAdaCUT(nn.Module):
         style_id_spatial_jitter_px: int = 0,
         upsample_blur: bool = True,
         upsample_blur_kernel: str = "box3",
+        ada_mix_rank: int = 16,
     ) -> None:
         super().__init__()
         self.latent_channels = int(latent_channels)
@@ -126,6 +129,7 @@ class LatentAdaCUT(nn.Module):
         self.style_id_spatial_jitter_px = max(0, int(style_id_spatial_jitter_px))
         self.upsample_blur = bool(upsample_blur)
         self.upsample_blur_kernel = str(upsample_blur_kernel).lower()
+        self.ada_mix_rank = max(1, int(ada_mix_rank))
         if self.upsample_blur_kernel not in {"box3", "gaussian3"}:
             self.upsample_blur_kernel = "box3"
 
@@ -140,12 +144,18 @@ class LatentAdaCUT(nn.Module):
         self.enc_in = nn.Conv2d(latent_channels, self.lift_channels, kernel_size=3, stride=1, padding=1)
         self.enc_in_act = nn.SiLU()
         self.hires_body = nn.ModuleList(
-            [ResBlock(self.lift_channels, style_dim, num_groups=num_groups) for _ in range(max(0, int(num_hires_blocks)))]
+            [
+                ResBlock(self.lift_channels, style_dim, num_groups=num_groups, ada_mix_rank=self.ada_mix_rank)
+                for _ in range(max(0, int(num_hires_blocks)))
+            ]
         )
         self.down = nn.Conv2d(self.lift_channels, self.body_channels, kernel_size=4, stride=2, padding=1)
 
         self.body = nn.ModuleList(
-            [ResBlock(self.body_channels, style_dim, num_groups=num_groups) for _ in range(num_res_blocks)]
+            [
+                ResBlock(self.body_channels, style_dim, num_groups=num_groups, ada_mix_rank=self.ada_mix_rank)
+                for _ in range(num_res_blocks)
+            ]
         )
 
         out_groups = max(1, min(num_groups, self.lift_channels))
@@ -163,7 +173,12 @@ class LatentAdaCUT(nn.Module):
         )
         self.dec_conv = nn.Conv2d(self.lift_channels, self.lift_channels, kernel_size=3, stride=1, padding=1)
         if self.use_decoder_adagn:
-            self.dec_norm = AdaGN(self.lift_channels, style_dim, num_groups=out_groups)
+            self.dec_norm = SpatiallyAdaptiveAdaMixGN(
+                self.lift_channels,
+                style_dim,
+                num_groups=out_groups,
+                rank=self.ada_mix_rank,
+            )
         else:
             self.dec_norm = nn.GroupNorm(out_groups, self.lift_channels, eps=1e-6)
         self.dec_act = nn.SiLU()
@@ -202,13 +217,7 @@ class LatentAdaCUT(nn.Module):
         gate: float | torch.Tensor = 1.0,
     ) -> torch.Tensor:
         if self.use_checkpointing and self.training:
-            if torch.is_tensor(gate):
-                gate_in = gate.to(device=h.device, dtype=h.dtype)
-            else:
-                gate_val = float(gate)
-                if not math.isfinite(gate_val):
-                    gate_val = 0.0
-                gate_in = h.new_tensor(max(0.0, min(1.0, gate_val)))
+            gate_in = gate.to(device=h.device, dtype=h.dtype) if torch.is_tensor(gate) else h.new_tensor(float(gate))
             return ckpt.checkpoint(
                 lambda _h, _s, _g, _blk=block: _blk(_h, _s, _g),
                 h,
@@ -264,13 +273,7 @@ class LatentAdaCUT(nn.Module):
         gate: float | torch.Tensor = 1.0,
     ) -> torch.Tensor:
         if self.use_checkpointing and self.training:
-            if torch.is_tensor(gate):
-                gate_in = gate.to(device=h.device, dtype=h.dtype)
-            else:
-                gate_val = float(gate)
-                if not math.isfinite(gate_val):
-                    gate_val = 0.0
-                gate_in = h.new_tensor(max(0.0, min(1.0, gate_val)))
+            gate_in = gate.to(device=h.device, dtype=h.dtype) if torch.is_tensor(gate) else h.new_tensor(float(gate))
             return ckpt.checkpoint(
                 lambda _h, _s, _g: self._decode_core(_h, _s, _g),
                 h,
@@ -537,6 +540,7 @@ def build_model_from_config(
         "style_id_spatial_jitter_px",
         "upsample_blur",
         "upsample_blur_kernel",
+        "ada_mix_rank",
     }
     unknown_keys = sorted(k for k in model_cfg.keys() if k not in known_keys)
     if unknown_keys:
@@ -569,4 +573,5 @@ def build_model_from_config(
         style_id_spatial_jitter_px=int(model_cfg.get("style_id_spatial_jitter_px", 0)),
         upsample_blur=bool(model_cfg.get("upsample_blur", True)),
         upsample_blur_kernel=str(model_cfg.get("upsample_blur_kernel", "box3")),
+        ada_mix_rank=int(model_cfg.get("ada_mix_rank", 16)),
     )
