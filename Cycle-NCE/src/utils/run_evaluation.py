@@ -23,7 +23,7 @@ import time
 import hashlib
 from tqdm import tqdm
 from collections import defaultdict
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from concurrent.futures import ThreadPoolExecutor
 
 # Metrics
@@ -166,6 +166,133 @@ def save_image_task(tensor_cpu, path):
     except Exception as e:
         print(f"Error saving {path}: {e}")
 
+
+def _list_reuse_generated_files(out_dir: Path) -> list[Path]:
+    # Prefer new layout: out_dir/images/*.jpg, keep backward compatibility.
+    candidates = []
+    candidates.extend(sorted((out_dir / "images").glob("*_to_*.jpg")))
+    candidates.extend(sorted(out_dir.glob("*_to_*.jpg")))
+    candidates.extend(sorted((out_dir / "images").glob("*_to_*.png")))
+    candidates.extend(sorted(out_dir.glob("*_to_*.png")))
+    dedup = {}
+    for p in candidates:
+        dedup[str(p.resolve())] = p
+    return sorted(dedup.values(), key=lambda x: str(x))
+
+
+def _resolve_gen_image_path(out_dir: Path, gen_image_value: str) -> Path | None:
+    raw = str(gen_image_value or "").strip()
+    if not raw:
+        return None
+    p = Path(raw)
+    candidates = []
+    if p.is_absolute():
+        candidates.append(p)
+    else:
+        candidates.append((out_dir / p).resolve())
+        candidates.append((out_dir / "images" / p.name).resolve())
+        candidates.append((out_dir / p.name).resolve())
+    for cand in candidates:
+        if cand.exists():
+            return cand
+    return None
+
+
+def _save_summary_grid_png(rows, out_dir: Path, style_order: list[str] | None = None) -> Path | None:
+    if not rows:
+        return None
+    if not style_order:
+        style_order = sorted({str(r.get("src_style", "")) for r in rows if str(r.get("src_style", ""))})
+    if not style_order:
+        return None
+
+    # src_style -> src_image -> tgt_style -> path
+    by_src = defaultdict(lambda: defaultdict(dict))
+    for r in rows:
+        src_style = str(r.get("src_style", ""))
+        src_image = str(r.get("src_image", ""))
+        tgt_style = str(r.get("tgt_style", ""))
+        p = _resolve_gen_image_path(out_dir, str(r.get("gen_image", "")))
+        if (not src_style) or (not src_image) or (not tgt_style) or (p is None):
+            continue
+        by_src[src_style][src_image][tgt_style] = p
+
+    # Pick one representative source image per row style (best coverage, then name).
+    chosen = {}
+    for src_style in style_order:
+        candidates = by_src.get(src_style, {})
+        if not candidates:
+            chosen[src_style] = {}
+            continue
+        ranked = sorted(candidates.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+        chosen[src_style] = ranked[0][1]
+
+    existing_paths = []
+    for src_style in style_order:
+        tgt_map = chosen.get(src_style, {})
+        for tgt_style in style_order:
+            p = tgt_map.get(tgt_style)
+            if p is not None and p.exists():
+                existing_paths.append(p)
+    if not existing_paths:
+        return None
+
+    # Keep original resolution; no downscaling.
+    sizes = []
+    for p in existing_paths:
+        try:
+            with Image.open(p) as im:
+                sizes.append(im.size)
+        except Exception:
+            pass
+    if not sizes:
+        return None
+    cell_w = max(w for w, _ in sizes)
+    cell_h = max(h for _, h in sizes)
+    n = len(style_order)
+
+    try:
+        font = ImageFont.truetype("arial.ttf", size=28)
+    except Exception:
+        font = ImageFont.load_default()
+
+    bg = (0, 0, 0)
+    fg = (255, 255, 255)
+    pad = 18
+    header_h = 56
+    left_w = 140
+    canvas_w = left_w + n * cell_w + (n + 1) * pad
+    canvas_h = header_h + n * cell_h + (n + 1) * pad
+    canvas = Image.new("RGB", (canvas_w, canvas_h), color=bg)
+    draw = ImageDraw.Draw(canvas)
+
+    for ci, tgt_style in enumerate(style_order):
+        x = left_w + pad + ci * (cell_w + pad)
+        y = 8
+        draw.text((x, y), tgt_style, fill=fg, font=font)
+
+    for ri, src_style in enumerate(style_order):
+        x = 6
+        y = header_h + pad + ri * (cell_h + pad) + max(0, (cell_h - 28) // 2)
+        draw.text((x, y), src_style, fill=fg, font=font)
+        tgt_map = chosen.get(src_style, {})
+        for ci, tgt_style in enumerate(style_order):
+            px = left_w + pad + ci * (cell_w + pad)
+            py = header_h + pad + ri * (cell_h + pad)
+            p = tgt_map.get(tgt_style)
+            if p is None or not p.exists():
+                continue
+            try:
+                with Image.open(p).convert("RGB") as im:
+                    canvas.paste(im, (px, py))
+            except Exception:
+                continue
+
+    out_path = out_dir / "summary_grid.png"
+    canvas.save(out_path, format="PNG")
+    print(f"Summary grid saved: {out_path}")
+    return out_path
+
 def _extract_clip_embeddings(output):
     """
     Robust extraction logic for CLIP. 
@@ -275,20 +402,43 @@ def _compute_art_fid_for_pair(
     ref_cache: dict | None = None,
     ref_cache_key: str | None = None,
 ):
-    g_feats = _extract_inception_feats(gen_paths, runner=runner, max_images=max_gen)
+    fid_style = _compute_fid_for_pair(
+        gen_paths,
+        ref_paths,
+        runner=runner,
+        max_gen=max_gen,
+        max_ref=max_ref,
+        ref_cache=ref_cache,
+        ref_cache_key=ref_cache_key,
+    )
+    if fid_style is None:
+        return None, None
+    art_fid = (1.0 + float(fid_style)) * (1.0 + float(mean_content_lpips))
+    return float(fid_style), float(art_fid)
+
+
+def _compute_fid_for_pair(
+    src_paths,
+    ref_paths,
+    *,
+    runner,
+    max_gen: int,
+    max_ref: int,
+    ref_cache: dict | None = None,
+    ref_cache_key: str | None = None,
+):
+    s_feats = _extract_inception_feats(src_paths, runner=runner, max_images=max_gen)
     if ref_cache is not None and ref_cache_key is not None and ref_cache_key in ref_cache:
         r_feats = ref_cache[ref_cache_key]
     else:
         r_feats = _extract_inception_feats(ref_paths, runner=runner, max_images=max_ref)
         if ref_cache is not None and ref_cache_key is not None:
             ref_cache[ref_cache_key] = r_feats
-    if g_feats.shape[0] < 2 or r_feats.shape[0] < 2:
-        return None, None
-    mu_g, cov_g = g_feats.mean(axis=0), np.cov(g_feats, rowvar=False)
+    if s_feats.shape[0] < 2 or r_feats.shape[0] < 2:
+        return None
+    mu_s, cov_s = s_feats.mean(axis=0), np.cov(s_feats, rowvar=False)
     mu_r, cov_r = r_feats.mean(axis=0), np.cov(r_feats, rowvar=False)
-    fid_style = _frechet_distance(mu_g, cov_g, mu_r, cov_r)
-    art_fid = (1.0 + float(fid_style)) * (1.0 + float(mean_content_lpips))
-    return float(fid_style), float(art_fid)
+    return float(_frechet_distance(mu_s, cov_s, mu_r, cov_r))
 
 
 def _load_eval_image_tensor(path: Path, size: int = 256) -> torch.Tensor:
@@ -562,7 +712,7 @@ def main():
     parser.add_argument('--eval_art_fid_photo_only', action='store_true', help="Compute ArtFID/FID only for photo->art directions")
     parser.add_argument('--eval_lpips_chunk_size', type=int, default=2, help="LPIPS chunk size for conservative VRAM usage")
     parser.add_argument('--eval_lpips_no_cpu_fallback', action='store_true', help="Disable CPU fallback when LPIPS CUDA OOM occurs")
-    parser.add_argument('--reuse_generated', action='store_true', help="Reuse existing generated *_to_*.jpg in output dir and skip generation")
+    parser.add_argument('--reuse_generated', action='store_true', help="Reuse existing generated images in output dir/images (or legacy output dir) and skip generation")
     parser.add_argument('--generation_only', action='store_true', help="Only generate translated images, skip all evaluation metrics")
     args = parser.parse_args()
 
@@ -584,6 +734,8 @@ def main():
 
     out_dir = _resolve_dir_path(args.output, path_bases)
     out_dir.mkdir(parents=True, exist_ok=True)
+    images_dir = out_dir / "images"
+    images_dir.mkdir(parents=True, exist_ok=True)
     cache_dir = _resolve_dir_path(args.cache_dir, path_bases)
     cache_dir.mkdir(parents=True, exist_ok=True)
     
@@ -645,8 +797,8 @@ def main():
     num_styles = len(style_subdirs)
 
     if args.reuse_generated:
-        print(f"\nPhase 1: Reuse generated images from {out_dir}")
-        reuse_files = sorted(out_dir.glob("*_to_*.jpg"))
+        print(f"\nPhase 1: Reuse generated images from {images_dir}")
+        reuse_files = _list_reuse_generated_files(out_dir)
         for p in reuse_files:
             parsed = _parse_generated_name(p.name, style_subdirs)
             if parsed is None:
@@ -729,7 +881,8 @@ def main():
                         for i in range(len(batch_info)):
                             src_item = batch_info[i]
                             out_name = f"{src_item['style_name']}_{src_item['path'].stem}_to_{tgt_name}.jpg"
-                            out_path = out_dir / out_name
+                            out_path = images_dir / out_name
+                            out_rel = Path("images") / out_name
 
                             # Async Save
                             io_pool.submit(save_image_task, imgs_gen_cpu[i], out_path)
@@ -742,7 +895,7 @@ def main():
                                 'tgt_style_id': tgt_id,
                                 'gen_latent': latents_gen_cpu[i], # Keep latent for classifier evaluation
                                 'gen_img': imgs_gen_cpu[i], # Keep in RAM
-                                'gen_name': out_name
+                                'gen_name': out_rel.as_posix()
                             })
 
         # Unload Generation Models
@@ -756,6 +909,17 @@ def main():
     if args.generation_only:
         print("\nGeneration-only mode enabled: skip Phase 2 metrics/classifier/LPIPS/CLIP.")
         io_pool.shutdown(wait=True)
+        grid_rows = []
+        for it in generated_buffer:
+            grid_rows.append(
+                {
+                    "src_style": it["src_style"],
+                    "tgt_style": it["tgt_style_name"],
+                    "src_image": Path(it["src_path"]).name,
+                    "gen_image": it["gen_name"],
+                }
+            )
+        _save_summary_grid_png(grid_rows, out_dir, style_order=list(style_subdirs))
         if device == "cuda":
             torch.cuda.empty_cache()
         gc.collect()
@@ -1290,7 +1454,9 @@ def main():
         csv_path,
         out_dir,
         checkpoint_path,
+        style_order=list(style_subdirs),
         style_real_paths=style_real_paths,
+        source_style_paths=style_real_paths,
         device=device,
         enable_art_fid=bool(args.eval_enable_art_fid),
         art_fid_max_gen=int(args.eval_art_fid_max_gen),
@@ -1304,7 +1470,9 @@ def generate_summary_json(
     out_dir,
     ckpt_path,
     *,
+    style_order=None,
     style_real_paths=None,
+    source_style_paths=None,
     device: str = "cpu",
     enable_art_fid: bool = False,
     art_fid_max_gen: int = 200,
@@ -1335,6 +1503,18 @@ def generate_summary_json(
     for r in rows:
         matrix[r['src_style']][r['tgt_style']].append(r)
 
+    src_name_to_path = {}
+    if isinstance(source_style_paths, dict):
+        for s_name, paths in source_style_paths.items():
+            d = {}
+            for p in (paths or []):
+                try:
+                    pp = Path(str(p))
+                    d[pp.name] = str(pp)
+                except Exception:
+                    continue
+            src_name_to_path[str(s_name)] = d
+
     matrix_json = {}
     transfer_pool = []
     identity_pool = []
@@ -1361,7 +1541,11 @@ def generate_summary_json(
                 should_compute_art_fid = (src.lower() == "photo" and src.lower() != tgt.lower())
             if should_compute_art_fid:
                 try:
-                    gen_paths = [str((out_dir / x['gen_image']).resolve()) for x in items]
+                    gen_paths = []
+                    for x in items:
+                        gp = _resolve_gen_image_path(out_dir, x.get('gen_image', ''))
+                        if gp is not None:
+                            gen_paths.append(str(gp.resolve()))
                     ref_paths = list(style_real_paths.get(tgt, []))
                     fid_style, art_fid = _compute_art_fid_for_pair(
                         gen_paths,
@@ -1375,13 +1559,42 @@ def generate_summary_json(
                     )
                     stats['fid_style'] = fid_style
                     stats['art_fid'] = art_fid
+                    src_paths = []
+                    src_map = src_name_to_path.get(str(src), {})
+                    for x in items:
+                        sp = src_map.get(str(x.get('src_image', '')))
+                        if sp:
+                            src_paths.append(sp)
+                    fid_baseline = _compute_fid_for_pair(
+                        src_paths,
+                        ref_paths,
+                        runner=fid_runner,
+                        max_gen=max(1, int(art_fid_max_gen)),
+                        max_ref=max(1, int(art_fid_max_ref)),
+                        ref_cache=ref_fid_cache,
+                        ref_cache_key=str(tgt),
+                    )
+                    stats['fid_baseline'] = fid_baseline
+                    if fid_style is not None and fid_baseline is not None:
+                        delta_fid = float(fid_baseline) - float(fid_style)
+                        stats['delta_fid'] = delta_fid
+                        stats['delta_fid_ratio'] = float(delta_fid / max(float(fid_baseline), 1e-8))
+                    else:
+                        stats['delta_fid'] = None
+                        stats['delta_fid_ratio'] = None
                 except Exception as e:
                     print(f"WARNING: ArtFID failed for {src}->{tgt}: {e}")
                     stats['fid_style'] = None
                     stats['art_fid'] = None
+                    stats['fid_baseline'] = None
+                    stats['delta_fid'] = None
+                    stats['delta_fid_ratio'] = None
             else:
                 stats['fid_style'] = None
                 stats['art_fid'] = None
+                stats['fid_baseline'] = None
+                stats['delta_fid'] = None
+                stats['delta_fid_ratio'] = None
             
             # Classification Accuracy for this pair
             cls_results = [x['class_correct'] for x in items if x['class_correct'] != 'N/A']
@@ -1443,7 +1656,10 @@ def generate_summary_json(
         'metrics_note': {
             'clip_dir': "cos( CLIP(gen)-CLIP(src), CLIP(target_style_proto)-CLIP(src) ) - Measures edit direction.",
             'clip_style': "cos( CLIP(gen), CLIP(target_style_proto) ) - Measures absolute style similarity.",
+            'fid_baseline': "FID between source-domain images and target-style references.",
             'fid': "FID between generated images and target-style real references (Inception features).",
+            'delta_fid': "fid_baseline - fid (higher is better).",
+            'delta_fid_ratio': "delta_fid / fid_baseline (relative improvement ratio).",
             'art_fid': "computed as (1 + fid_style) * (1 + content_lpips)",
         },
         'matrix_breakdown': matrix_json,
@@ -1452,14 +1668,20 @@ def generate_summary_json(
                 'clip_dir': pool_avg(transfer_pool, 'clip_dir'),
                 'clip_style': pool_avg(transfer_pool, 'clip_style'),
                 'content_lpips': pool_avg(transfer_pool, 'content_lpips'),
+                'fid_baseline': pool_avg([t for t in transfer_pool if t.get('fid_baseline') is not None], 'fid_baseline', default=None),
                 'fid': pool_avg([t for t in transfer_pool if t.get('fid_style') is not None], 'fid_style', default=None),
+                'delta_fid': pool_avg([t for t in transfer_pool if t.get('delta_fid') is not None], 'delta_fid', default=None),
+                'delta_fid_ratio': pool_avg([t for t in transfer_pool if t.get('delta_fid_ratio') is not None], 'delta_fid_ratio', default=None),
                 'art_fid': pool_avg([t for t in transfer_pool if t.get('art_fid') is not None], 'art_fid', default=None),
                 'classifier_acc': pool_avg([t for t in transfer_pool if t['classifier_acc'] is not None], 'classifier_acc')
             },
             'photo_to_art_performance': {
                 'clip_dir': pool_avg(photo_transfer_pool, 'clip_dir'),
                 'clip_style': pool_avg(photo_transfer_pool, 'clip_style'),
+                'fid_baseline': pool_avg([t for t in photo_transfer_pool if t.get('fid_baseline') is not None], 'fid_baseline', default=None),
                 'fid': pool_avg([t for t in photo_transfer_pool if t.get('fid_style') is not None], 'fid_style', default=None),
+                'delta_fid': pool_avg([t for t in photo_transfer_pool if t.get('delta_fid') is not None], 'delta_fid', default=None),
+                'delta_fid_ratio': pool_avg([t for t in photo_transfer_pool if t.get('delta_fid_ratio') is not None], 'delta_fid_ratio', default=None),
                 'art_fid': pool_avg([t for t in photo_transfer_pool if t.get('art_fid') is not None], 'art_fid', default=None),
                 'valid': len(photo_transfer_pool) > 0,
                 'classifier_acc': pool_avg([t for t in photo_transfer_pool if t['classifier_acc'] is not None], 'classifier_acc')
@@ -1473,6 +1695,7 @@ def generate_summary_json(
     with open(sum_path, 'w') as f:
         json.dump(summary, f, indent=2)
     print(f"闁?Summary saved: {sum_path}")
+    _save_summary_grid_png(rows, out_dir, style_order=style_order)
     if fid_runner is not None:
         fid_runner.close()
 
