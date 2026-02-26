@@ -1,4 +1,3 @@
-
 {
   "model": {
     "latent_channels": 4,
@@ -22,13 +21,12 @@
     "ada_mix_rank": 32
   },
   "loss": {
-    "w_delta_tv": 0.05,
+    "w_delta_tv": 0.0,
     "w_delta_l1": 0.0,
     "w_output_tv": 0.0,
-    "w_identity": 0.5,
-    "w_swd": 25.0,
+    "w_identity": 1.5,
+    "w_swd": 40.0,
     "swd_patch_sizes": [
-      3,
       5,
       7
     ],
@@ -48,12 +46,12 @@
     "cpu_interop_threads": 2,
     "learning_rate": 0.0002,
     "min_learning_rate": 2e-05,
-    "weight_decay": 1e-4,
+    "weight_decay": 0.0001,
     "scheduler": "cosine",
     "grad_clip_norm": 1.0,
-    "num_epochs": 50,
-    "save_interval": 10,
-    "full_eval_interval": 100,
+    "num_epochs": 60,
+    "save_interval": 20,
+    "full_eval_interval": 60,
     "full_eval_on_last_epoch": true,
     "full_eval_batch_size": 4,
     "full_eval_max_src_samples": 30,
@@ -106,7 +104,7 @@
     "virtual_length_multiplier": 1
   },
   "checkpoint": {
-    "save_dir": "../dict-50-0.05"
+    "save_dir": "../exp_C_macro_texture"
   },
   "inference": {
     "num_steps": 1,

@@ -10,55 +10,95 @@ import torch.nn.functional as F
 import torch.utils.checkpoint as ckpt
 
 
-class SpatiallyAdaptiveAdaMixGN(nn.Module):
+class TextureDictAdaGN(nn.Module):
+    """
+    Spatially modulated texture dictionary with low-rank cross-channel mixing.
+    """
+
     def __init__(self, dim: int, style_dim: int, num_groups: int = 4, rank: int = 16) -> None:
         super().__init__()
-        self.norm = nn.GroupNorm(num_groups, dim, affine=False)
-        self.style_shift = nn.Linear(style_dim, dim)
-        nn.init.zeros_(self.style_shift.weight)
-        nn.init.zeros_(self.style_shift.bias)
-        self.rank = int(rank)
-        self.style_U = nn.Linear(style_dim, dim * self.rank)
+        groups = max(1, min(int(num_groups), int(dim)))
+        while dim % groups != 0 and groups > 1:
+            groups -= 1
+        self.norm = nn.GroupNorm(groups, dim, affine=False)
+        self.rank = max(1, int(rank))
+
+        # Base global color/contrast mapping.
+        self.global_proj = nn.Linear(style_dim, dim * 2)
+        nn.init.normal_(self.global_proj.weight, std=0.02)
+        nn.init.constant_(self.global_proj.bias, 0.0)
+        with torch.no_grad():
+            self.global_proj.bias[:dim] = 1.0
+
+        # Low-rank texture dictionary read/write heads.
         self.style_V = nn.Linear(style_dim, self.rank * dim)
-        nn.init.normal_(self.style_U.weight, std=0.01)
-        nn.init.zeros_(self.style_U.bias)
-        # Safety lock: keep W = U @ V exactly zero at initialization.
+        self.style_U = nn.Linear(style_dim, dim * self.rank)
         nn.init.zeros_(self.style_V.weight)
         nn.init.zeros_(self.style_V.bias)
+        nn.init.normal_(self.style_U.weight, std=0.01)
+        nn.init.zeros_(self.style_U.bias)
+
         hidden_dim = max(32, dim // 2)
-        self.spatial_gate = nn.Sequential(
-            nn.Conv2d(dim, hidden_dim, kernel_size=3, padding=1, bias=False),
+        self.spatial_attn = nn.Sequential(
+            nn.Conv2d(dim + 2, hidden_dim, kernel_size=3, padding=1, bias=False),
             nn.SiLU(inplace=True),
-            nn.Conv2d(hidden_dim, 1, kernel_size=3, padding=1, bias=True),
+            nn.Conv2d(hidden_dim, self.rank, kernel_size=3, padding=1, bias=True),
             nn.Sigmoid(),
         )
-        nn.init.constant_(self.spatial_gate[-2].bias, 0.0)
+        nn.init.constant_(self.spatial_attn[-2].bias, 0.0)
 
     def forward(self, x: torch.Tensor, style_code: torch.Tensor, gate: float | torch.Tensor = 1.0) -> torch.Tensor:
         b, c, h_dim, w_dim = x.shape
         normalized = self.norm(x)
-        shift = self.style_shift(style_code).view(b, c, 1, 1)
-        u = self.style_U(style_code).view(b, c, self.rank)
-        v = self.style_V(style_code).view(b, self.rank, c)
-        w = torch.bmm(u, v)
+        scale, shift = self.global_proj(style_code).unsqueeze(-1).unsqueeze(-1).chunk(2, dim=1)
+
+        grid_y, grid_x = torch.meshgrid(
+            torch.linspace(-1.0, 1.0, h_dim, device=x.device, dtype=x.dtype),
+            torch.linspace(-1.0, 1.0, w_dim, device=x.device, dtype=x.dtype),
+            indexing="ij",
+        )
+        coords = torch.stack([grid_x, grid_y], dim=0).unsqueeze(0).expand(b, -1, -1, -1)
+
+        x_coords = torch.cat([normalized, coords], dim=1)
+        s_map = self.spatial_attn(x_coords)
+        s_flat = s_map.view(b, self.rank, h_dim * w_dim)
+
+        v_read = self.style_V(style_code).view(b, self.rank, c)
+        u_write = self.style_U(style_code).view(b, c, self.rank)
+        u_demod = u_write * torch.rsqrt(u_write.pow(2).sum(dim=1, keepdim=True) + 1e-8)
+
         norm_flat = normalized.view(b, c, h_dim * w_dim)
-        mixed_flat = torch.bmm(w, norm_flat)
+        z = torch.bmm(v_read, norm_flat)
+        z_modulated = z * s_flat
+        mixed_flat = torch.bmm(u_demod, z_modulated)
         mixed = mixed_flat.view(b, c, h_dim, w_dim)
-        mask = self.spatial_gate(x)
-        adagn = normalized + mixed + shift
-        final_gate = mask * gate if isinstance(gate, float) else mask * gate.to(dtype=normalized.dtype)
+
+        adagn = normalized * scale + mixed + shift
+        final_gate = gate if isinstance(gate, float) else gate.to(device=x.device, dtype=x.dtype)
         return normalized + final_gate * (adagn - normalized)
 
+
+class GlobalDemodulatedAdaMixGN(TextureDictAdaGN):
+    """
+    Backward-compatible alias kept for old config/checkpoint code paths.
+    The `rank` argument is preserved and forwarded.
+    """
+
+    def __init__(self, dim: int, style_dim: int, num_groups: int = 4, rank: int = 32) -> None:
+        super().__init__(dim=dim, style_dim=style_dim, num_groups=num_groups, rank=rank)
+
 # Backward compatibility for older checkpoints/code paths.
-SpatiallyAdaptiveAdaGN = SpatiallyAdaptiveAdaMixGN
+SpatiallyAdaptiveAdaMixGN = GlobalDemodulatedAdaMixGN
+SpatiallyAdaptiveAdaGN = GlobalDemodulatedAdaMixGN
+CoordSPADE = TextureDictAdaGN
 
 
 class ResBlock(nn.Module):
     def __init__(self, dim: int, style_dim: int, num_groups: int = 8, ada_mix_rank: int = 16) -> None:
         super().__init__()
-        self.norm1 = SpatiallyAdaptiveAdaMixGN(dim, style_dim, num_groups=num_groups, rank=ada_mix_rank)
+        self.norm1 = TextureDictAdaGN(dim, style_dim, num_groups=num_groups, rank=ada_mix_rank)
         self.conv1 = nn.Conv2d(dim, dim, kernel_size=3, stride=1, padding=1)
-        self.norm2 = SpatiallyAdaptiveAdaMixGN(dim, style_dim, num_groups=num_groups, rank=ada_mix_rank)
+        self.norm2 = TextureDictAdaGN(dim, style_dim, num_groups=num_groups, rank=ada_mix_rank)
         self.conv2 = nn.Conv2d(dim, dim, kernel_size=3, stride=1, padding=1)
         self.act = nn.SiLU()
 
@@ -173,7 +213,7 @@ class LatentAdaCUT(nn.Module):
         )
         self.dec_conv = nn.Conv2d(self.lift_channels, self.lift_channels, kernel_size=3, stride=1, padding=1)
         if self.use_decoder_adagn:
-            self.dec_norm = SpatiallyAdaptiveAdaMixGN(
+            self.dec_norm = TextureDictAdaGN(
                 self.lift_channels,
                 style_dim,
                 num_groups=out_groups,
