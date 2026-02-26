@@ -26,40 +26,31 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 _ALLOWED_LOSS_KEYS = {
-    "w_semigroup",
-    "semigroup_loss_type",
-    "semigroup_lowpass_strength",
-    "semigroup_split_min",
-    "semigroup_split_max",
-    "semigroup_teacher_no_grad",
-    "semigroup_target_detach",
-    "semigroup_subset_ratio",
-    "semigroup_max_samples",
-    "semigroup_every_n_steps",
-    "semigroup_pool_size",
-    "semigroup_num_steps",
     "w_delta_tv",
+<<<<<<< Updated upstream
     "w_delta_l1",
     "w_output_tv",
+=======
+    "w_color",
+>>>>>>> Stashed changes
     "w_swd",
     "w_identity",
     "swd_patch_sizes",
-    "swd_num_projections",
-    "train_num_steps_min",
-    "train_num_steps_max",
-    "train_step_size_min",
-    "train_step_size_max",
-    "train_style_strength_min",
-    "train_style_strength_max",
 }
 _FORBIDDEN_LOSS_KEYS = {"w_distill", "distill_low_only", "distill_cross_domain_only", "w_code", "style_loss_source"}
 _LOSS_WEIGHT_KEYS = (
     "w_swd",
+<<<<<<< Updated upstream
     "w_identity",
     "w_delta_tv",
     "w_delta_l1",
     "w_output_tv",
     "w_semigroup",
+=======
+    "w_color",
+    "w_identity",
+    "w_delta_tv",
+>>>>>>> Stashed changes
 )
 
 
