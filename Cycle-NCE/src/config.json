@@ -22,19 +22,29 @@
     "ada_mix_rank": 32
   },
   "loss": {
+<<<<<<< Updated upstream
     "w_delta_tv": 0.05,
     "w_delta_l1": 0.0,
     "w_output_tv": 0.0,
     "w_identity": 0.5,
     "w_swd": 25.0,
+=======
+    "w_swd": 30.0,
+>>>>>>> Stashed changes
     "swd_patch_sizes": [
       3,
       5,
       7
     ],
+<<<<<<< Updated upstream
     "swd_num_projections": 512,
     "train_num_steps_min": 1,
     "train_num_steps_max": 1
+=======
+    "w_color": 15.0,
+    "w_identity": 2.0,
+    "w_delta_tv": 0.1
+>>>>>>> Stashed changes
   },
   "training": {
     "seed": 42,
@@ -51,9 +61,15 @@
     "weight_decay": 1e-4,
     "scheduler": "cosine",
     "grad_clip_norm": 1.0,
+<<<<<<< Updated upstream
     "num_epochs": 50,
     "save_interval": 10,
     "full_eval_interval": 100,
+=======
+    "num_epochs": 60,
+    "save_interval": 20,
+    "full_eval_interval": 60,
+>>>>>>> Stashed changes
     "full_eval_on_last_epoch": true,
     "full_eval_batch_size": 4,
     "full_eval_max_src_samples": 30,
@@ -106,7 +122,11 @@
     "virtual_length_multiplier": 1
   },
   "checkpoint": {
+<<<<<<< Updated upstream
     "save_dir": "../dict-50-0.05"
+=======
+    "save_dir": "../exp_D_impasto_tv"
+>>>>>>> Stashed changes
   },
   "inference": {
     "num_steps": 1,
