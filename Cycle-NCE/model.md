@@ -1,132 +1,144 @@
-# 当前模型说明（聚焦风格注入与损失）
+# 当前模型设计总结（基于 `src/` 实现）
 
-对应代码：
-- `src/model.py`
-- `src/losses.py`
-- `src/config.json`
+更新时间：2026-02-25  
+覆盖范围：`src/model.py`、`src/losses.py`、`src/config.json`、`src/run.py`
 
-## 1. 核心范式
+## 1. 模型目标与 I/O
 
-`LatentAdaCUT` 在 latent 空间做残差迁移：
+当前主模型是 `LatentAdaCUT`，工作在 VAE latent 空间做风格迁移残差预测。
 
-- 输入：`x ∈ R^{B×4×32×32}`
+- 输入：`x ∈ R[B, 4, 32, 32]`
+- 条件：`style_id`（离散风格 ID）
 - 输出：`y = x + delta`
-- `delta` 由风格条件控制，风格条件可来自 `style_id`、`style_ref`，并可用 `style_mix_alpha` 混合。
 
-训练时主路径是 **student(style_id-only)**；teacher 路径只在启用 `w_distill` 或 `w_code` 时参与。
+当前实现是纯 `style_id` 条件路径，不依赖参考风格图像（`style_ref`）。
 
-## 2. 风格注入路径（当前实现）
+---
 
-### 2.1 向量注入：AdaGN
+## 2. 网络结构
 
-`ResBlock` 内部使用 AdaGN：
-- `style_code -> Linear -> (scale, shift)`
-- `h = GN(x) * scale + shift`
+### 2.1 总体拓扑
 
-注入位置：
-- 32x32 的 `hires_body` 块
-- 16x16 的 `body` 块
-- decoder（`use_decoder_adagn=true` 时）
+`LatentAdaCUT` 可以看成「32x32 提升 + 16x16 主干 + 32x32 解码」的轻量 U-Net：
 
-### 2.2 空间注入：style_spatial map
+1. `enc_in`: `4 -> lift_channels`（默认 128）  
+2. `hires_body`: 若干 `ResBlock` 在 `32x32` 上运行  
+3. `down`: stride=2，降到 `16x16` 且通道到 `body_channels = 2*base_dim`（默认 256）  
+4. `body`: 若干 `ResBlock` 在 `16x16` 上运行  
+5. `dec_up`: 上采样回 `32x32`  
+6. `skip_fusion`: 融合 decoder 特征与 32x32 skip  
+7. `dec_conv + dec_norm + dec_act + dec_out` 输出 `delta`
 
-空间风格图来自两类源：
-- `style_ref` 编码得到的 spatial feat（32/16）
-- `style_id` 对应的可学习先验图：`style_spatial_id_32/16`
+### 2.2 风格注入机制
 
-混合后可选：
-- `use_style_spatial_highpass`
-- `normalize_style_spatial_maps`
-- `use_style_spatial_blur`
+核心注入单元是 `CoordSPADE`：
 
-实际注入点：
-- 16x16 pre 注入：`h += style_spatial_pre_gain_16 * style_strength * map16`
-- decoder 注入（可开关）：`h = h * (1 + gain * tanh(map32))`，其中 `gain=style_spatial_dec_gain_32 * style_strength`
+- 先做 `GroupNorm(affine=False)`
+- 拼接三类输入：`normalized feature`、`(x,y) 坐标网格`、`style_code` 广播图
+- 通过卷积预测 `gamma/beta`，形成 `normalized * (1 + gamma) + beta`
+- 由 `gate` 控制注入强度（残差式混合）
 
-### 2.3 Delta 聚合路径
+`ResBlock` 中两次归一化都用 `CoordSPADE`，因此在高分辨和主干 block 内都可注入风格。
 
-`_compute_delta()` 按如下顺序组合：
-1. 基础残差：`dec_out(h) * latent_scale_factor * residual_gain`
-2. 可选输出仿射：`use_output_style_affine`
-3. 可选门控：`use_style_delta_gate` + `style_gate_floor`
-4. 纹理头：`style_texture_head`，增益 `style_texture_gain * style_strength`
-5. 可选高频偏置：`use_delta_highpass_bias`
+### 2.3 风格表示
 
-高频偏置参数：
-- `style_delta_lowfreq_gain`
-- `highpass_last_step_only`
-- `highpass_last_step_scale`
+模型内部有两种 style 表示：
 
-在 `integrate()` 多步下，默认只在最后一步施加高频偏置（稳结构后补细节）。
+- 全局风格向量：`style_emb(style_id)`（`num_styles x style_dim`）
+- 空间风格先验：`style_spatial_id_16`（`num_styles x body_channels x 16 x 16`）
 
-### 2.4 style_strength 与 step schedule
+训练时可对空间先验施加随机平移抖动（`style_id_spatial_jitter_px`），并做标准化。
 
-- `style_strength` 会同时影响注入增益和步进缩放。
-- `style_strength_step_curve` 支持：`linear` / `smoothstep` / `sqrt`。
-- 多步积分 `integrate()` 支持 `step_schedule`：`flat` / `late` / `early` / `cosine` 或显式权重列表。
+### 2.4 注入位置与强度
 
-## 3. 损失函数（当前实现）
+注入强度由 `style_strength`（0~1）与三类 gate 共同决定：
 
-`AdaCUTObjective.compute()` 每个 batch 会随机采样训练动态：
-- `train_num_steps` from `[train_num_steps_min, train_num_steps_max]`
-- `train_step_size` from `[train_step_size_min, train_step_size_max]`
-- `train_style_strength` from `[train_style_strength_min, train_style_strength_max]`
+- `inject_gate_hires`：32x32 `hires_body`
+- `inject_gate_body`：16x16 `body`
+- `inject_gate_decoder`：decoder 归一化层
 
-### 3.1 风格相关项
+此外，16x16 处有显式空间先验预注入：
 
-- `w_distill`：student 对齐 teacher（可 `distill_low_only`、`distill_cross_domain_only`）
-- `w_code`：style code 闭环（teacher->ref, student->style_id）
-- `w_stroke_gram`：笔触统计（Gram）
-- `w_color_moment`：颜色矩匹配
-- `w_push`：输出风格码与源域原型拉开 margin
-- `w_style_spatial_tv`：约束 style_id 空间先验图的 TV
+- `h += style_spatial_pre_gain_16 * style_strength * tanh(style_map_16)`
 
-### 3.2 内容/结构项
+### 2.5 输出与积分
 
-- `w_struct`：输出与内容结构对齐（`struct_loss_type`, `struct_lowpass_strength`）
-- `w_edge`：Sobel 边缘对齐
-- `w_cycle`：跨域 cycle 对齐（`cycle_loss_type`, `cycle_lowpass_strength`, `cycle_edge_strength`）
-- `w_nce`：token InfoNCE 内容一致性
-- `w_semigroup`：一步与两步的半群一致性
-- `w_delta_tv`：输出残差 TV，抑制块状/棋盘伪影
+- 单步 `forward`:  
+  `x + delta * step_size * step_scale(style_strength)`
+- 多步 `integrate`:  
+  重复 `num_steps` 次，每次加 `delta * step_size * step_scale / num_steps`
 
-### 3.3 关键现状：无 warmup/ramp 调度
+`step_scale` 由 `style_strength_step_curve` 控制：
 
-当前 `src/losses.py` 中 `set_progress()` 是空实现，loss 不再按 epoch 做 warmup/ramp。
+- `linear`
+- `sqrt`
+- `smoothstep`
 
-这意味着旧配置字段（例如 `*_warmup_epochs`, `*_ramp_epochs`）对当前训练不生效。
-建议：
-- 清理这些 legacy 字段，避免误判“已启用调度”。
-- 通过权重本身与 train-time 随机范围（steps/strength/step_size）来控制短程训练节奏。
+---
 
-## 4. 消融重点参数
+## 3. 损失设计（`AdaCUTObjective`）
 
-### 4.1 注入侧（model）
+`compute()` 每个 batch 会随机采样训练动态参数：
 
-- `use_decoder_spatial_inject`
-- `style_spatial_pre_gain_16`
-- `style_spatial_dec_gain_32`
-- `style_texture_gain`
-- `use_style_delta_gate`
-- `use_output_style_affine`
-- `use_delta_highpass_bias`
-- `style_delta_lowfreq_gain`
-- `highpass_last_step_scale`
-- `use_style_spatial_highpass`
-- `normalize_style_spatial_maps`
-- `use_style_spatial_blur`
+- `train_num_steps`（整数区间）
+- `train_step_size`（连续区间）
+- `train_style_strength`（连续区间）
 
-### 4.2 损失侧（loss）
+然后组合以下损失：
 
-- 风格：`w_distill`, `w_code`, `w_stroke_gram`, `w_color_moment`, `w_push`, `w_style_spatial_tv`
-- 内容：`w_struct`, `w_edge`, `w_cycle`, `w_nce`, `w_semigroup`, `w_delta_tv`
-- 训练动态：`train_num_steps_*`, `train_step_size_*`, `train_style_strength_*`, `train_step_schedule`
+1. `loss_swd`：跨域样本（`source_style_id != target_style_id`）上的 SWD  
+2. `loss_identity`：同域样本上的恒等约束  
+3. `loss_delta_tv`：`pred-content` 的 TV  
+4. `loss_delta_l1`：`pred-content` 的 L1  
+5. `loss_output_tv`：`pred` 的 TV  
+6. `loss_semigroup`：半群一致性（按 `semigroup_every_n_steps` 间隔触发）
 
-## 5. 50-epoch 训练建议（与当前实现匹配）
+总损失：
 
-如果做短程（约 50 epoch）全面消融：
-- 不要沿用 300 epoch 的 warmup/ramp 叙事；当前代码不会执行这些调度。
-- 直接设置较密的评测节奏（例如每 10 epoch full eval + 最后一轮评测）。
-- 通过“单项关断 + bundle 组合 + 动态范围扫描”定位敏感项。
+`total = w_swd*swd + w_identity*identity + w_delta_tv*delta_tv + w_delta_l1*delta_l1 + w_output_tv*output_tv + w_semigroup*semigroup`
 
-仓库中的 `scripts/style_ablation.py` 已按上述口径实现。
+---
+
+## 4. 关键配置映射（当前 `src/config.json`）
+
+### 4.1 模型侧
+
+- `latent_channels=4`
+- `base_dim=128`
+- `lift_channels=128`
+- `style_dim=256`
+- `num_styles=5`（运行时会与数据目录数自动对齐）
+- `num_hires_blocks=4`
+- `num_res_blocks=6`
+- `num_groups=4`
+- `latent_scale_factor=0.18215`
+- `residual_gain=1.0`
+- `style_spatial_pre_gain_16=1.0`
+- `use_decoder_adagn=true`
+- `style_strength_default=1.0`
+- `style_strength_step_curve=smoothstep`
+- `upsample_mode=bilinear`
+- `upsample_blur=true` / `upsample_blur_kernel=gaussian3`
+
+### 4.2 损失侧（当前有效）
+
+- `w_swd=20.0`
+- `w_identity=4.0`
+- `w_delta_tv=0.01`
+- `w_delta_l1=0.0`
+- `w_output_tv=0.0`
+- `w_semigroup`（配置里默认未给出，按 0 处理）
+- `swd_patch_sizes=[1,3,5]`
+- `swd_num_projections=512`
+- `train_num_steps_min/max=1/1`
+
+---
+
+## 5. 运行时边界与注意点
+
+1. `run.py` 会严格校验 `config.loss` 键。老字段如 `w_distill`、`w_code` 会直接报错。  
+2. `run.py` 的白名单里有部分 semigroup 扩展键，但 `src/losses.py` 当前并未使用这些扩展项。  
+3. 模型输出是 latent 残差，不直接约束像素范围；视觉行为依赖下游 VAE decode。  
+4. `integrate` 会复用同一 `style_code/style_map`，属于固定条件下的迭代积分。  
+5. 当前模型设计目标是稳定、可部署的 `style_id -> latent edit` 路径，而非 teacher/student 蒸馏框架。
+
