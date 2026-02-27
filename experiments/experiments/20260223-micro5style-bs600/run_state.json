@@ -1,0 +1,117 @@
+{
+  "pack_root": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600",
+  "created_at": "2026-02-23 23:29:45",
+  "updated_at": "2026-02-23 23:39:24",
+  "experiments": [
+    {
+      "name": "exp00-phase1_60e-baseline_bs600_lr2e4_bd64_sd256",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp00-phase1_60e-baseline_bs600_lr2e4_bd64_sd256\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp00-phase1_60e-baseline_bs600_lr2e4_bd64_sd256\\artifacts",
+      "status": "running",
+      "attempts": 2,
+      "last_exit_code": null,
+      "last_log": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\logs\\exp00-phase1_60e-baseline_bs600_lr2e4_bd64_sd256.try2.20260223_233114.log",
+      "last_start": "2026-02-23 23:31:14",
+      "last_end": ""
+    },
+    {
+      "name": "exp01-phase1_60e-capacity_floor_bd32_lc32_sd128",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp01-phase1_60e-capacity_floor_bd32_lc32_sd128\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp01-phase1_60e-capacity_floor_bd32_lc32_sd128\\artifacts",
+      "status": "running",
+      "attempts": 2,
+      "last_exit_code": null,
+      "last_log": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\logs\\exp01-phase1_60e-capacity_floor_bd32_lc32_sd128.try2.20260223_233924.log",
+      "last_start": "2026-02-23 23:39:24",
+      "last_end": ""
+    },
+    {
+      "name": "exp02-phase1_60e-capacity_ceiling_bd128_lc128_sd256",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp02-phase1_60e-capacity_ceiling_bd128_lc128_sd256\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp02-phase1_60e-capacity_ceiling_bd128_lc128_sd256\\artifacts",
+      "status": "pending",
+      "attempts": 0,
+      "last_exit_code": null,
+      "last_log": "",
+      "last_start": "",
+      "last_end": ""
+    },
+    {
+      "name": "exp03-phase1_60e-style_ctrl_sd512",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp03-phase1_60e-style_ctrl_sd512\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp03-phase1_60e-style_ctrl_sd512\\artifacts",
+      "status": "pending",
+      "attempts": 0,
+      "last_exit_code": null,
+      "last_log": "",
+      "last_start": "",
+      "last_end": ""
+    },
+    {
+      "name": "exp04-phase1_60e-lr4e4_speedup",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp04-phase1_60e-lr4e4_speedup\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp04-phase1_60e-lr4e4_speedup\\artifacts",
+      "status": "pending",
+      "attempts": 0,
+      "last_exit_code": null,
+      "last_log": "",
+      "last_start": "",
+      "last_end": ""
+    },
+    {
+      "name": "exp05-phase1_60e-lr8e4_stress",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp05-phase1_60e-lr8e4_stress\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp05-phase1_60e-lr8e4_stress\\artifacts",
+      "status": "pending",
+      "attempts": 0,
+      "last_exit_code": null,
+      "last_log": "",
+      "last_start": "",
+      "last_end": ""
+    },
+    {
+      "name": "exp06-phase1_60e-l1_relax_wdl1_0p01",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp06-phase1_60e-l1_relax_wdl1_0p01\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp06-phase1_60e-l1_relax_wdl1_0p01\\artifacts",
+      "status": "pending",
+      "attempts": 0,
+      "last_exit_code": null,
+      "last_log": "",
+      "last_start": "",
+      "last_end": ""
+    },
+    {
+      "name": "exp07-phase1_60e-swd_patch_1_3",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp07-phase1_60e-swd_patch_1_3\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp07-phase1_60e-swd_patch_1_3\\artifacts",
+      "status": "pending",
+      "attempts": 0,
+      "last_exit_code": null,
+      "last_log": "",
+      "last_start": "",
+      "last_end": ""
+    },
+    {
+      "name": "exp08-phase2_150e-deep_cosine_lr5e4_min1e6",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp08-phase2_150e-deep_cosine_lr5e4_min1e6\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp08-phase2_150e-deep_cosine_lr5e4_min1e6\\artifacts",
+      "status": "pending",
+      "attempts": 0,
+      "last_exit_code": null,
+      "last_log": "",
+      "last_start": "",
+      "last_end": ""
+    },
+    {
+      "name": "exp09-phase2_150e-flat_lr3e4",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp09-phase2_150e-flat_lr3e4\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs600\\runs\\exp09-phase2_150e-flat_lr3e4\\artifacts",
+      "status": "pending",
+      "attempts": 0,
+      "last_exit_code": null,
+      "last_log": "",
+      "last_start": "",
+      "last_end": ""
+    }
+  ]
+}
