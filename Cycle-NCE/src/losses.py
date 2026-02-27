@@ -21,33 +21,17 @@ def calc_swd_loss(
 ) -> torch.Tensor:
     x, y = x.float(), y.float()
     device = x.device
-<<<<<<< Updated upstream
-    patch_weights = {1: 0.1, 3: 0.3, 5: 0.6}
-=======
     patch_weights = {3: 0.4, 5: 0.6}
->>>>>>> Stashed changes
     total_loss = torch.tensor(0.0, device=device)
     unique_styles = torch.unique(style_ids)
 
     for p in patch_sizes:
         weight = patch_weights.get(p, 1.0 / len(patch_sizes))
-<<<<<<< Updated upstream
-        if p == 1:
-            x_pts = x.flatten(2).transpose(1, 2)
-            y_pts = y.flatten(2).transpose(1, 2)
-        else:
-            x_unfold = F.unfold(x, kernel_size=p, padding=p // 2)
-            y_unfold = F.unfold(y, kernel_size=p, padding=p // 2)
-            idx = torch.randperm(x_unfold.size(-1), device=device)[:1024]
-            x_pts = x_unfold[:, :, idx].transpose(1, 2)
-            y_pts = y_unfold[:, :, idx].transpose(1, 2)
-=======
         x_unfold = F.unfold(x, kernel_size=p, padding=p // 2)
         y_unfold = F.unfold(y, kernel_size=p, padding=p // 2)
         idx = torch.randperm(x_unfold.size(-1), device=device)[:1024]
         x_pts = x_unfold[:, :, idx].transpose(1, 2)
         y_pts = y_unfold[:, :, idx].transpose(1, 2)
->>>>>>> Stashed changes
 
         dim = x_pts.shape[-1]
         projections = F.normalize(torch.randn(dim, num_projections, device=device), p=2, dim=0)
@@ -61,10 +45,6 @@ def calc_swd_loss(
             x_s, _ = torch.sort(x_s, dim=0)
             y_s, _ = torch.sort(y_s, dim=0)
             total_loss += F.l1_loss(x_s, y_s) * weight
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
     return total_loss
 
 
@@ -77,41 +57,12 @@ def _tv_per_sample(x: torch.Tensor) -> torch.Tensor:
 class AdaCUTObjective:
     def __init__(self, config: Dict) -> None:
         loss_cfg = config.get("loss", {})
-<<<<<<< Updated upstream
-
-        self.w_swd = float(loss_cfg.get("w_swd", 20.0))
-        patch_sizes = loss_cfg.get("swd_patch_sizes", [1])
-        if isinstance(patch_sizes, list):
-            self.swd_patch_sizes = [int(p) for p in patch_sizes if int(p) > 0]
-        else:
-            self.swd_patch_sizes = [1]
-        if not self.swd_patch_sizes:
-            self.swd_patch_sizes = [1]
-        self.swd_num_projections = max(1, int(loss_cfg.get("swd_num_projections", 512)))
-
-        self.w_identity = float(loss_cfg.get("w_identity", 10.0))
-        self.w_delta_tv = float(loss_cfg.get("w_delta_tv", 0.0))
-        self.w_delta_l1 = float(loss_cfg.get("w_delta_l1", 0.0))
-        self.w_output_tv = float(loss_cfg.get("w_output_tv", 0.0))
-
-        self.w_semigroup = float(loss_cfg.get("w_semigroup", 0.0))
-        self.semigroup_every_n_steps = max(1, int(loss_cfg.get("semigroup_every_n_steps", 1)))
-        self._compute_calls = 0
-
-        self.train_num_steps_min = max(1, int(loss_cfg.get("train_num_steps_min", 1)))
-        self.train_num_steps_max = max(1, int(loss_cfg.get("train_num_steps_max", self.train_num_steps_min)))
-        self.train_step_size_min = float(loss_cfg.get("train_step_size_min", 1.0))
-        self.train_step_size_max = float(loss_cfg.get("train_step_size_max", self.train_step_size_min))
-        self.train_style_strength_min = float(loss_cfg.get("train_style_strength_min", 1.0))
-        self.train_style_strength_max = float(loss_cfg.get("train_style_strength_max", self.train_style_strength_min))
-=======
         self.w_swd = float(loss_cfg.get("w_swd", 30.0))
         self.swd_patch_sizes = [int(p) for p in loss_cfg.get("swd_patch_sizes", [3, 5])]
         self.swd_num_projections = 512
         self.w_identity = float(loss_cfg.get("w_identity", 2.0))
         self.w_delta_tv = float(loss_cfg.get("w_delta_tv", 0.1))
         self.w_color = float(loss_cfg.get("w_color", 15.0))
->>>>>>> Stashed changes
         self.nsight_nvtx = bool(config.get("training", {}).get("nsight_nvtx", False))
 
     @contextmanager
@@ -161,30 +112,6 @@ class AdaCUTObjective:
             total_loss += self.w_swd * loss_swd
             metrics["swd"] = loss_swd.detach()
 
-<<<<<<< Updated upstream
-        pred_f32 = pred_student.float()
-        target_f32 = target_style.float()
-        content_f32 = content.float()
-
-        loss_swd = torch.tensor(0.0, device=content.device)
-        with self._nvtx_range("loss/style", nvtx_enabled):
-            if xid_mask.any() and self.w_swd > 0.0:
-                valid_idx = torch.nonzero(xid_mask).squeeze(1)
-                p_valid = pred_f32.index_select(0, valid_idx)
-                t_valid = target_f32.index_select(0, valid_idx)
-                s_valid = target_style_id.index_select(0, valid_idx)
-                loss_swd = calc_swd_loss(
-                    p_valid,
-                    t_valid,
-                    style_ids=s_valid,
-                    patch_sizes=self.swd_patch_sizes,
-                    num_projections=self.swd_num_projections,
-                )
-
-        loss_identity = torch.tensor(0.0, device=content.device)
-        with self._nvtx_range("loss/identity", nvtx_enabled):
-            if self.w_identity > 0.0 and bool(id_mask.any().item()):
-=======
         if xid_mask.any() and self.w_color > 0.0:
             valid_idx = torch.nonzero(xid_mask).squeeze(1)
             p_pool = F.adaptive_avg_pool2d(pred_f32.index_select(0, valid_idx), (4, 4))
@@ -195,77 +122,11 @@ class AdaCUTObjective:
 
         if self.w_identity > 0.0 and id_mask.any():
             with self._nvtx_range("loss/identity", nvtx_enabled):
->>>>>>> Stashed changes
                 id_per_sample = (pred_f32 - content_f32).abs().mean(dim=(1, 2, 3))
             loss_identity = (id_per_sample * id_mask.float()).sum() / id_mask.float().sum().clamp_min(1.0)
             total_loss += self.w_identity * loss_identity
             metrics["identity"] = loss_identity.detach()
 
-<<<<<<< Updated upstream
-        loss_delta_tv = torch.tensor(0.0, device=content.device)
-        loss_delta_l1 = torch.tensor(0.0, device=content.device)
-        loss_output_tv = torch.tensor(0.0, device=content.device)
-        with self._nvtx_range("loss/reg", nvtx_enabled):
-            delta = pred_f32 - content_f32
-            if self.w_delta_tv > 0.0:
-                loss_delta_tv = _tv_per_sample(delta).mean()
-            if self.w_delta_l1 > 0.0:
-                loss_delta_l1 = delta.abs().mean()
-            if self.w_output_tv > 0.0:
-                loss_output_tv = _tv_per_sample(pred_f32).mean()
-
-        loss_semigroup = torch.tensor(0.0, device=content.device)
-        semigroup_applied = False
-        with self._nvtx_range("loss/semigroup", nvtx_enabled):
-            if self.w_semigroup > 0.0 and train_style_strength > 0.1 and (self._compute_calls % self.semigroup_every_n_steps == 0):
-                semigroup_applied = True
-                z_ab = pred_student
-                split_ratio = 0.5
-                str_a = train_style_strength * split_ratio
-                str_b = train_style_strength - str_a
-                with torch.no_grad():
-                    z_a = self._apply_model(
-                        model,
-                        content,
-                        style_id=target_style_id,
-                        step_size=train_step_size,
-                        style_strength=str_a,
-                        num_steps=train_num_steps,
-                    )
-                z_a_b = self._apply_model(
-                    model,
-                    z_a,
-                    style_id=target_style_id,
-                    step_size=train_step_size,
-                    style_strength=str_b,
-                    num_steps=train_num_steps,
-                )
-                loss_semigroup = (z_a_b - z_ab).abs().mean()
-
-        total = (
-            self.w_swd * loss_swd
-            + self.w_identity * loss_identity
-            + self.w_delta_tv * loss_delta_tv
-            + self.w_delta_l1 * loss_delta_l1
-            + self.w_output_tv * loss_output_tv
-            + self.w_semigroup * loss_semigroup
-        )
-
-        return {
-            "loss": total,
-            "swd": loss_swd.detach(),
-            "identity": loss_identity.detach(),
-            "identity_ratio": id_ratio.detach(),
-            "delta_tv": loss_delta_tv.detach(),
-            "delta_l1": loss_delta_l1.detach(),
-            "output_tv": loss_output_tv.detach(),
-            "semigroup": loss_semigroup.detach(),
-            "semigroup_applied": torch.tensor(1.0 if semigroup_applied else 0.0, device=content.device),
-            "train_num_steps": torch.tensor(float(train_num_steps), device=content.device),
-            "train_step_size": torch.tensor(float(train_step_size), device=content.device),
-            "train_style_strength": torch.tensor(float(train_style_strength), device=content.device),
-        }
-=======
         if self.w_delta_tv > 0.0:
             loss_delta_tv = _tv_per_sample(pred_f32 - content_f32).mean()
             total_loss += self.w_delta_tv * loss_delta_tv
@@ -273,4 +134,3 @@ class AdaCUTObjective:
 
         metrics["loss"] = total_loss
         return metrics
->>>>>>> Stashed changes
