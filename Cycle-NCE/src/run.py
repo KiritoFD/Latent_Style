@@ -27,12 +27,7 @@ logger = logging.getLogger(__name__)
 
 _ALLOWED_LOSS_KEYS = {
     "w_delta_tv",
-<<<<<<< Updated upstream
-    "w_delta_l1",
-    "w_output_tv",
-=======
     "w_color",
->>>>>>> Stashed changes
     "w_swd",
     "w_identity",
     "swd_patch_sizes",
@@ -40,17 +35,9 @@ _ALLOWED_LOSS_KEYS = {
 _FORBIDDEN_LOSS_KEYS = {"w_distill", "distill_low_only", "distill_cross_domain_only", "w_code", "style_loss_source"}
 _LOSS_WEIGHT_KEYS = (
     "w_swd",
-<<<<<<< Updated upstream
-    "w_identity",
-    "w_delta_tv",
-    "w_delta_l1",
-    "w_output_tv",
-    "w_semigroup",
-=======
     "w_color",
     "w_identity",
     "w_delta_tv",
->>>>>>> Stashed changes
 )
 
 

@@ -1,8 +1,8 @@
 {
   "model": {
     "latent_channels": 4,
-    "base_dim": 128,
-    "lift_channels": 128,
+    "base_dim": 64,
+    "lift_channels": 64,
     "style_dim": 256,
     "num_styles": 5,
     "num_hires_blocks": 4,
@@ -18,7 +18,7 @@
     "style_id_spatial_jitter_px": 4,
     "upsample_blur": true,
     "upsample_blur_kernel": "gaussian3",
-    "ada_mix_rank": 32
+    "ada_mix_rank": 16
   },
   "loss": {
     "w_swd": 30.0,
@@ -26,13 +26,13 @@
       3,
       5
     ],
-    "w_color": 1.0,
+    "w_color": 15.0,
     "w_identity": 2.0,
     "w_delta_tv": 0.1
   },
   "training": {
     "seed": 42,
-    "batch_size": 128,
+    "batch_size": 256,
     "accumulation_steps": 1,
     "num_workers": -1,
     "persistent_workers": true,
@@ -40,14 +40,14 @@
     "pin_memory": true,
     "cpu_threads": 4,
     "cpu_interop_threads": 2,
-    "learning_rate": 0.0002,
+    "learning_rate": 0.0005,
     "min_learning_rate": 2e-05,
-    "weight_decay": 1e-4,
+    "weight_decay": 0.0001,
     "scheduler": "cosine",
     "grad_clip_norm": 1.0,
-    "num_epochs": 60,
-    "save_interval": 20,
-    "full_eval_interval": 60,
+    "num_epochs": 100,
+    "save_interval": 50,
+    "full_eval_interval": 100,
     "full_eval_on_last_epoch": true,
     "full_eval_batch_size": 4,
     "full_eval_max_src_samples": 30,
@@ -100,7 +100,7 @@
     "virtual_length_multiplier": 1
   },
   "checkpoint": {
-    "save_dir": "../exp_D_color-1"
+    "save_dir": "../master_sweep_10_narrow_fast_micro"
   },
   "inference": {
     "num_steps": 1,

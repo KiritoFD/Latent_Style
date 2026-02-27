@@ -366,55 +366,21 @@ class AdaCUTTrainer:
                 setattr(lf, name, value)
                 changed[f"loss.{name}"] = (old, value)
 
-        patch_sizes = loss_cfg.get("swd_patch_sizes", [1])
+        patch_sizes = loss_cfg.get("swd_patch_sizes", [3, 5])
         if isinstance(patch_sizes, list):
             parsed_patch_sizes = [int(p) for p in patch_sizes if int(p) > 0]
         else:
-            parsed_patch_sizes = [1]
+            parsed_patch_sizes = [3, 5]
         if not parsed_patch_sizes:
-            parsed_patch_sizes = [1]
+            parsed_patch_sizes = [3, 5]
 
         _set_attr("w_swd", float(loss_cfg.get("w_swd", lf.w_swd)))
         _set_attr("swd_patch_sizes", parsed_patch_sizes)
-        _set_attr("swd_num_projections", max(1, int(loss_cfg.get("swd_num_projections", lf.swd_num_projections))))
+        _set_attr("swd_num_projections", 512)
+        _set_attr("w_color", float(loss_cfg.get("w_color", lf.w_color)))
         _set_attr("w_identity", float(loss_cfg.get("w_identity", lf.w_identity)))
         _set_attr("w_delta_tv", float(loss_cfg.get("w_delta_tv", lf.w_delta_tv)))
-        _set_attr("w_delta_l1", float(loss_cfg.get("w_delta_l1", lf.w_delta_l1)))
-        _set_attr("w_output_tv", float(loss_cfg.get("w_output_tv", lf.w_output_tv)))
-        _set_attr("w_semigroup", float(loss_cfg.get("w_semigroup", lf.w_semigroup)))
-        _set_attr(
-            "semigroup_every_n_steps",
-            max(1, int(loss_cfg.get("semigroup_every_n_steps", lf.semigroup_every_n_steps))),
-        )
-        _set_attr("train_num_steps_min", max(1, int(loss_cfg.get("train_num_steps_min", lf.train_num_steps_min))))
-        _set_attr(
-            "train_num_steps_max",
-            max(1, int(loss_cfg.get("train_num_steps_max", max(1, int(loss_cfg.get("train_num_steps_min", lf.train_num_steps_min)))))),
-        )
-        _set_attr("train_step_size_min", float(loss_cfg.get("train_step_size_min", lf.train_step_size_min)))
-        _set_attr("train_step_size_max", float(loss_cfg.get("train_step_size_max", lf.train_step_size_max)))
-        _set_attr(
-            "train_style_strength_min",
-            float(loss_cfg.get("train_style_strength_min", lf.train_style_strength_min)),
-        )
-        _set_attr(
-            "train_style_strength_max",
-            float(loss_cfg.get("train_style_strength_max", lf.train_style_strength_max)),
-        )
         _set_attr("nsight_nvtx", bool(training_cfg.get("nsight_nvtx", lf.nsight_nvtx)))
-
-        if lf.train_num_steps_max < lf.train_num_steps_min:
-            old = lf.train_num_steps_max
-            lf.train_num_steps_max = lf.train_num_steps_min
-            changed["loss.train_num_steps_max"] = (old, lf.train_num_steps_max)
-        if lf.train_step_size_max < lf.train_step_size_min:
-            old = lf.train_step_size_max
-            lf.train_step_size_max = lf.train_step_size_min
-            changed["loss.train_step_size_max"] = (old, lf.train_step_size_max)
-        if lf.train_style_strength_max < lf.train_style_strength_min:
-            old = lf.train_style_strength_max
-            lf.train_style_strength_max = lf.train_style_strength_min
-            changed["loss.train_style_strength_max"] = (old, lf.train_style_strength_max)
 
         return changed
 
