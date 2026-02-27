@@ -366,7 +366,6 @@ class AdaCUTTrainer:
                 setattr(lf, name, value)
                 changed[f"loss.{name}"] = (old, value)
 
-<<<<<<< Updated upstream
         patch_sizes = loss_cfg.get("swd_patch_sizes", [1])
         if isinstance(patch_sizes, list):
             parsed_patch_sizes = [int(p) for p in patch_sizes if int(p) > 0]
@@ -417,24 +416,6 @@ class AdaCUTTrainer:
             lf.train_style_strength_max = lf.train_style_strength_min
             changed["loss.train_style_strength_max"] = (old, lf.train_style_strength_max)
 
-=======
-        patch_sizes = loss_cfg.get("swd_patch_sizes", [3, 5])
-        if isinstance(patch_sizes, list):
-            parsed_patch_sizes = [int(p) for p in patch_sizes if int(p) > 0]
-        else:
-            parsed_patch_sizes = [3, 5]
-        if not parsed_patch_sizes:
-            parsed_patch_sizes = [3, 5]
-
-        _set_attr("w_swd", float(loss_cfg.get("w_swd", lf.w_swd)))
-        _set_attr("swd_patch_sizes", parsed_patch_sizes)
-        _set_attr("swd_num_projections", 512)
-        _set_attr("w_color", float(loss_cfg.get("w_color", lf.w_color)))
-        _set_attr("w_identity", float(loss_cfg.get("w_identity", lf.w_identity)))
-        _set_attr("w_delta_tv", float(loss_cfg.get("w_delta_tv", lf.w_delta_tv)))
-        _set_attr("nsight_nvtx", bool(training_cfg.get("nsight_nvtx", lf.nsight_nvtx)))
-
->>>>>>> Stashed changes
         return changed
 
     def reload_config_from_disk(self, epoch: int) -> bool:
