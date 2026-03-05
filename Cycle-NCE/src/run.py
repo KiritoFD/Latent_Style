@@ -26,11 +26,22 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 _ALLOWED_LOSS_KEYS = {
-    "w_delta_tv",
     "w_color",
     "w_swd",
     "w_identity",
+    "w_delta_tv",
     "swd_patch_sizes",
+    "swd_num_projections",
+    "swd_projection_chunk_size",
+    "swd_distance_mode",
+    "swd_cdf_num_bins",
+    "swd_cdf_tau",
+    "swd_cdf_sample_size",
+    "swd_cdf_bin_chunk_size",
+    "swd_cdf_sample_chunk_size",
+    "swd_batch_size",
+    "swd_use_high_freq",
+    "swd_hf_weight_ratio",
 }
 _FORBIDDEN_LOSS_KEYS = {"w_distill", "distill_low_only", "distill_cross_domain_only", "w_code", "style_loss_source"}
 _LOSS_WEIGHT_KEYS = (
@@ -55,8 +66,8 @@ def _configure_cuda_allocator(config: dict) -> None:
     train_cfg = config.get("training", {})
     alloc_conf = str(train_cfg.get("cuda_alloc_conf", "")).strip()
     if not alloc_conf:
-        # Keep allocator policy conservative to reduce fragmentation under long runs.
-        alloc_conf = "expandable_segments:True"
+        # Stable fallback for platforms where expandable_segments is unsupported.
+        alloc_conf = "max_split_size_mb:128,garbage_collection_threshold:0.8"
     current = os.environ.get("PYTORCH_ALLOC_CONF", "").strip()
     if current:
         logger.info("Use existing PYTORCH_ALLOC_CONF=%s", current)
@@ -165,11 +176,23 @@ def _resolve_num_workers(config: dict, *, preload_to_gpu: bool = False) -> int:
     if requested is not None:
         requested = int(requested)
         if requested >= 0:
+            # Windows multi-process DataLoader can fail with shared mapping error 1455
+            # under memory pressure. Default to single-process unless explicitly overridden.
+            if os.name == "nt" and requested > 0:
+                allow_mp = bool(train_cfg.get("windows_allow_multiprocess_dataloader", False))
+                if not allow_mp:
+                    logger.warning(
+                        "num_workers=%d requested on Windows, forcing num_workers=0 for stability "
+                        "(set training.windows_allow_multiprocess_dataloader=true to override).",
+                        requested,
+                    )
+                    return 0
             return requested
     cpu_count = os.cpu_count() or 4
-    # -1/None means auto. Keep Windows worker count conservative for stability.
+    # -1/None means auto.
     if os.name == "nt":
-        return max(4, min(8, cpu_count // 2))
+        # Prefer single-process DataLoader on Windows to avoid file mapping failures.
+        return 0
     return max(2, min(8, cpu_count // 2))
 
 def _validate_loss_config(config: dict) -> None:
@@ -288,16 +311,15 @@ def main() -> None:
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f swd=%.4f dtv=%.4f dl1=%.4f steps=%.1f h=%.2f s=%.2f lr=%.2e data=%.1fs comp=%.1fs",
+            "Epoch %d/%d | loss=%.4f swd=%.4f color=%.4f idt=%.4f dtv=%.4f idr=%.2f lr=%.2e data=%.1fs comp=%.1fs",
             epoch,
             trainer.num_epochs,
             metrics["loss"],
             metrics.get("swd", 0.0),
+            metrics.get("color", 0.0),
+            metrics.get("identity", 0.0),
             metrics.get("delta_tv", 0.0),
-            metrics.get("delta_l1", 0.0),
-            metrics.get("train_num_steps", 0.0),
-            metrics.get("train_step_size", 0.0),
-            metrics.get("train_style_strength", 0.0),
+            metrics.get("identity_ratio", 0.0),
             metrics["lr"],
             metrics.get("data_time_sec", 0.0),
             metrics.get("compute_time_sec", 0.0),

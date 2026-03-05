@@ -40,28 +40,37 @@ class TextureDictAdaGN(nn.Module):
 
         hidden_dim = max(32, dim // 2)
         self.spatial_attn = nn.Sequential(
-            nn.Conv2d(dim + 2, hidden_dim, kernel_size=3, padding=1, bias=False),
+            nn.Conv2d(dim + 2, hidden_dim, kernel_size=7, padding=3, bias=False),
             nn.SiLU(inplace=True),
-            nn.Conv2d(hidden_dim, self.rank, kernel_size=3, padding=1, bias=True),
-            nn.Sigmoid(),
+            nn.Conv2d(hidden_dim, self.rank, kernel_size=1, bias=True),
         )
-        nn.init.constant_(self.spatial_attn[-2].bias, 0.0)
+        nn.init.constant_(self.spatial_attn[-1].bias, 0.0)
+        self._coord_cache: dict[tuple[int, int, str, str], torch.Tensor] = {}
+
+    def _get_coord_grid(self, h_dim: int, w_dim: int, *, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
+        key = (int(h_dim), int(w_dim), str(device), str(dtype))
+        cached = self._coord_cache.get(key)
+        if cached is not None:
+            return cached
+        grid_y, grid_x = torch.meshgrid(
+            torch.linspace(-1.0, 1.0, h_dim, device=device, dtype=dtype),
+            torch.linspace(-1.0, 1.0, w_dim, device=device, dtype=dtype),
+            indexing="ij",
+        )
+        coords = torch.stack([grid_x, grid_y], dim=0).unsqueeze(0).contiguous()
+        self._coord_cache[key] = coords
+        return coords
 
     def forward(self, x: torch.Tensor, style_code: torch.Tensor, gate: float | torch.Tensor = 1.0) -> torch.Tensor:
         b, c, h_dim, w_dim = x.shape
         normalized = self.norm(x)
         scale, shift = self.global_proj(style_code).unsqueeze(-1).unsqueeze(-1).chunk(2, dim=1)
 
-        grid_y, grid_x = torch.meshgrid(
-            torch.linspace(-1.0, 1.0, h_dim, device=x.device, dtype=x.dtype),
-            torch.linspace(-1.0, 1.0, w_dim, device=x.device, dtype=x.dtype),
-            indexing="ij",
-        )
-        coords = torch.stack([grid_x, grid_y], dim=0).unsqueeze(0).expand(b, -1, -1, -1)
+        coords = self._get_coord_grid(h_dim, w_dim, device=x.device, dtype=x.dtype).expand(b, -1, -1, -1)
 
         x_coords = torch.cat([normalized, coords], dim=1)
         s_map = self.spatial_attn(x_coords)
-        s_flat = s_map.view(b, self.rank, h_dim * w_dim)
+        s_flat = F.softmax(s_map.view(b, self.rank, h_dim * w_dim) / 0.5, dim=1)
 
         v_read = self.style_V(style_code).view(b, self.rank, c)
         u_write = self.style_U(style_code).view(b, c, self.rank)
@@ -110,6 +119,64 @@ class ResBlock(nn.Module):
         return x + h
 
 
+class NormFreeModulation(nn.Module):
+    """
+    Decoder-side style modulation without spatial normalization.
+    Preserves local contrast while injecting high-frequency style controls.
+    """
+
+    def __init__(self, channels: int, style_dim: int) -> None:
+        super().__init__()
+        self.mapper = nn.Linear(style_dim, channels * 2)
+        # Identity initialization: starts as a no-op at training step 0.
+        nn.init.zeros_(self.mapper.weight)
+        nn.init.zeros_(self.mapper.bias)
+
+    def forward(self, x: torch.Tensor, style_code: torch.Tensor, gate: float | torch.Tensor = 1.0) -> torch.Tensor:
+        params = self.mapper(style_code).view(x.shape[0], -1, 1, 1)
+        gamma, beta = params.chunk(2, dim=1)
+        if isinstance(gate, torch.Tensor):
+            gate_t = gate.to(device=x.device, dtype=x.dtype)
+        else:
+            gate_t = x.new_tensor(float(gate))
+        gamma = gamma * gate_t
+        beta = beta * gate_t
+        return x * (1.0 + gamma) + beta
+
+
+class StyleAdaptiveSkip(nn.Module):
+    """
+    Style-driven skip filtering that can suppress source high-frequency leakage.
+    """
+
+    def __init__(self, channels: int, style_dim: int) -> None:
+        super().__init__()
+        self.gate_mapper = nn.Sequential(
+            nn.Linear(style_dim, channels),
+            nn.Sigmoid(),
+        )
+        self.rewrite_mapper = nn.Linear(style_dim, channels)
+        # Stable init: start from near identity skip passthrough.
+        nn.init.zeros_(self.rewrite_mapper.weight)
+        nn.init.zeros_(self.rewrite_mapper.bias)
+
+    def forward(
+        self,
+        skip_feat: torch.Tensor,
+        style_code: torch.Tensor,
+        gate: float | torch.Tensor = 1.0,
+    ) -> torch.Tensor:
+        b, c, _, _ = skip_feat.shape
+        erase_gate = self.gate_mapper(style_code).view(b, c, 1, 1)
+        rewrite_bias = self.rewrite_mapper(style_code).view(b, c, 1, 1)
+        if isinstance(gate, torch.Tensor):
+            gate_t = gate.to(device=skip_feat.device, dtype=skip_feat.dtype)
+        else:
+            gate_t = skip_feat.new_tensor(float(gate))
+        effective_gate = 1.0 - (1.0 - erase_gate) * gate_t
+        return skip_feat * effective_gate + rewrite_bias * (1.0 - effective_gate)
+
+
 @dataclass
 class StyleMaps:
     map_16: torch.Tensor | None = None
@@ -130,6 +197,7 @@ class LatentAdaCUT(nn.Module):
         lift_channels: int | None = None,
         num_hires_blocks: int = 2,
         num_res_blocks: int = 4,
+        num_decoder_blocks: int = 1,
         num_groups: int = 8,
         use_checkpointing: bool = False,
         latent_scale_factor: float = 0.18215,
@@ -198,10 +266,6 @@ class LatentAdaCUT(nn.Module):
             ]
         )
 
-        out_groups = max(1, min(num_groups, self.lift_channels))
-        while self.lift_channels % out_groups != 0 and out_groups > 1:
-            out_groups -= 1
-
         # Decoder: 16 -> 32
         upsample_kwargs = {"scale_factor": 2, "mode": self.upsample_mode}
         if self.upsample_mode in {"bilinear", "bicubic"}:
@@ -211,16 +275,9 @@ class LatentAdaCUT(nn.Module):
             nn.Conv2d(self.body_channels + self.lift_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
             nn.SiLU(),
         )
+        self.skip_filter = StyleAdaptiveSkip(self.lift_channels, style_dim)
         self.dec_conv = nn.Conv2d(self.lift_channels, self.lift_channels, kernel_size=3, stride=1, padding=1)
-        if self.use_decoder_adagn:
-            self.dec_norm = TextureDictAdaGN(
-                self.lift_channels,
-                style_dim,
-                num_groups=out_groups,
-                rank=self.ada_mix_rank,
-            )
-        else:
-            self.dec_norm = nn.GroupNorm(out_groups, self.lift_channels, eps=1e-6)
+        self.dec_mod = NormFreeModulation(self.lift_channels, style_dim)
         self.dec_act = nn.SiLU()
         self.dec_out = nn.Conv2d(self.lift_channels, latent_channels, kernel_size=3, stride=1, padding=1)
 
@@ -235,6 +292,7 @@ class LatentAdaCUT(nn.Module):
             self.register_buffer("_upsample_blur_kernel", k.view(1, 1, 3, 3), persistent=False)
         else:
             self.register_buffer("_upsample_blur_kernel", torch.empty(0), persistent=False)
+        self._upsample_blur_kernel_cache: dict[tuple[int, str], torch.Tensor] = {}
 
     def _normalize_style_id_input(
         self,
@@ -292,20 +350,6 @@ class LatentAdaCUT(nn.Module):
             return s * s * (3.0 - 2.0 * s)
         return s
 
-    def _decode_core(
-        self,
-        h: torch.Tensor,
-        style_code: torch.Tensor,
-        gate: float | torch.Tensor = 1.0,
-    ) -> torch.Tensor:
-        h = self.dec_conv(h)
-        if self.use_decoder_adagn:
-            h = self.dec_norm(h, style_code, gate=gate)
-        else:
-            h = self.dec_norm(h)
-        h = self.dec_act(h)
-        return h
-
     def _run_decoder(
         self,
         h: torch.Tensor,
@@ -315,13 +359,16 @@ class LatentAdaCUT(nn.Module):
         if self.use_checkpointing and self.training:
             gate_in = gate.to(device=h.device, dtype=h.dtype) if torch.is_tensor(gate) else h.new_tensor(float(gate))
             return ckpt.checkpoint(
-                lambda _h, _s, _g: self._decode_core(_h, _s, _g),
+                lambda _h, _s, _g: self.dec_act(self.dec_mod(self.dec_conv(_h), _s, gate=_g)),
                 h,
                 style_code,
                 gate_in,
                 use_reentrant=False,
             )
-        return self._decode_core(h, style_code, gate=gate)
+        h = self.dec_conv(h)
+        h = self.dec_mod(h, style_code, gate=gate)
+        h = self.dec_act(h)
+        return h
 
     def _prepare_style_maps(
         self,
@@ -349,7 +396,15 @@ class LatentAdaCUT(nn.Module):
         b, c, _, _ = h.shape
         if c <= 0 or b <= 0:
             return h
-        kernel = self._upsample_blur_kernel.to(device=h.device, dtype=torch.float32).repeat(c, 1, 1, 1).contiguous()
+        key = (int(c), str(h.device))
+        kernel = self._upsample_blur_kernel_cache.get(key)
+        if kernel is None:
+            kernel = (
+                self._upsample_blur_kernel.to(device=h.device, dtype=torch.float32)
+                .repeat(c, 1, 1, 1)
+                .contiguous()
+            )
+            self._upsample_blur_kernel_cache[key] = kernel
         h_dtype = h.dtype
         if h.device.type == "cuda":
             with torch.amp.autocast("cuda", enabled=False):
@@ -474,7 +529,8 @@ class LatentAdaCUT(nn.Module):
 
         h = self.dec_up(h)
         h = self._apply_upsample_blur(h)
-        h = self.skip_fusion(torch.cat([h, skip_32], dim=1))
+        filtered_skip = self.skip_filter(skip_32, style_code, gate=gate_decoder)
+        h = self.skip_fusion(torch.cat([h, filtered_skip], dim=1))
         h = self._run_decoder(
             h,
             style_code=style_code,
@@ -566,6 +622,7 @@ def build_model_from_config(
         "lift_channels",
         "num_hires_blocks",
         "num_res_blocks",
+        "num_decoder_blocks",
         "num_groups",
         "latent_scale_factor",
         "residual_gain",
@@ -598,6 +655,7 @@ def build_model_from_config(
         lift_channels=int(model_cfg.get("lift_channels", model_cfg.get("base_dim", 64))),
         num_hires_blocks=int(model_cfg.get("num_hires_blocks", 2)),
         num_res_blocks=int(model_cfg.get("num_res_blocks", 4)),
+        num_decoder_blocks=int(model_cfg.get("num_decoder_blocks", 1)),
         num_groups=int(model_cfg.get("num_groups", 8)),
         use_checkpointing=bool(use_checkpointing),
         latent_scale_factor=float(model_cfg.get("latent_scale_factor", 0.18215)),

@@ -8,5 +8,4 @@ __all__ = [
     "inference",
     "classify",
     "run_evaluation",
-    "style_classifier",
 ]
