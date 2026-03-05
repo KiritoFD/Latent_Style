@@ -48,6 +48,16 @@ def _strip_compile_prefix(state_dict: Dict[str, torch.Tensor]) -> Dict[str, torc
 
 
 class AdaCUTTrainer:
+    @staticmethod
+    def _apply_channels_last_(module: torch.nn.Module) -> None:
+        # Only 4D tensors support channels_last memory format.
+        for p in module.parameters():
+            if p.ndim == 4:
+                p.data = p.data.contiguous(memory_format=torch.channels_last)
+        for b in module.buffers():
+            if b.ndim == 4:
+                b.data = b.data.contiguous(memory_format=torch.channels_last)
+
     def __init__(self, config: Dict, device: torch.device, config_path: Optional[str] = None) -> None:
         self.config = config
         self.device = device
@@ -55,7 +65,6 @@ class AdaCUTTrainer:
         self._config_digest = self._compute_config_digest(config)
 
         train_cfg = config.get("training", {})
-        self.skip_oom_batches = bool(train_cfg.get("skip_oom_batches", True))
         self.gpu_name = ""
         self.gpu_capability = ""
         self.gpu_total_vram_gb = 0.0
@@ -73,14 +82,21 @@ class AdaCUTTrainer:
 
         torch.set_float32_matmul_precision("high")
         self.allow_tf32 = bool(train_cfg.get("allow_tf32", True))
+        self.cudnn_benchmark = bool(train_cfg.get("cudnn_benchmark", False))
         if torch.cuda.is_available():
             torch.backends.cuda.matmul.allow_tf32 = self.allow_tf32
             torch.backends.cudnn.allow_tf32 = self.allow_tf32
-            torch.backends.cudnn.benchmark = True
+            torch.backends.cudnn.benchmark = self.cudnn_benchmark
 
         requested_channels_last = bool(train_cfg.get("channels_last", False) and device.type == "cuda")
         self.channels_last = bool(requested_channels_last)
-        self.empty_cache_interval = max(0, int(train_cfg.get("empty_cache_interval", 0)))
+        requested_empty_cache_interval = max(0, int(train_cfg.get("empty_cache_interval", 0)))
+        self.empty_cache_interval = 0
+        if requested_empty_cache_interval > 0:
+            logger.warning(
+                "empty_cache_interval=%d requested but forcibly disabled for allocator stability.",
+                requested_empty_cache_interval,
+            )
         self.log_vram_interval = max(0, int(train_cfg.get("log_vram_interval", 0)))
         self.gc_collect_interval = max(0, int(train_cfg.get("gc_collect_interval", 0)))
         self.trace_vram_steps = max(0, int(train_cfg.get("trace_vram_steps", 1)))
@@ -123,10 +139,9 @@ class AdaCUTTrainer:
             model_cfg,
             use_checkpointing=grad_ckpt_cfg,
         )
+        self.model = self.model.to(device)
         if self.channels_last:
-            self.model = self.model.to(device, memory_format=torch.channels_last)
-        else:
-            self.model = self.model.to(device)
+            self._apply_channels_last_(self.model)
 
         ckpt_cfg = config.get("checkpoint", {})
         self.checkpoint_dir = Path(ckpt_cfg.get("save_dir", "../adacut_ckpt"))
@@ -134,8 +149,6 @@ class AdaCUTTrainer:
         self.log_dir = self.checkpoint_dir / "logs"
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.profiler_dir = str(train_cfg.get("profiler_dir", str((self.log_dir / "profiler").resolve())))
-        self.oom_dump_dir = self.log_dir / "oom_reports"
-        self.oom_dump_dir.mkdir(parents=True, exist_ok=True)
         self.full_eval_root = self.checkpoint_dir / "full_eval"
         self.full_eval_root.mkdir(parents=True, exist_ok=True)
 
@@ -200,9 +213,10 @@ class AdaCUTTrainer:
 
         logger.info("Model params: %s", f"{count_parameters(self.model):,}")
         logger.info(
-            "Infra | channels_last=%s tf32=%s grad_ckpt=%s compile=%s backend=%s mode=%s fullgraph=%s cudagraphs=%s gc_collect_interval=%d loss_timing_interval=%d strict_batch_sanity=%s strict_batch_sanity_interval=%d cuda_sync_debug=%s profiler=%s alloc_conf=%s",
+            "Infra | channels_last=%s tf32=%s cudnn_benchmark=%s grad_ckpt=%s compile=%s backend=%s mode=%s fullgraph=%s cudagraphs=%s gc_collect_interval=%d loss_timing_interval=%d strict_batch_sanity=%s strict_batch_sanity_interval=%d cuda_sync_debug=%s profiler=%s alloc_conf=%s",
             self.channels_last,
             self.allow_tf32,
+            self.cudnn_benchmark,
             grad_ckpt_cfg,
             self.use_compile,
             self.compile_backend if self.use_compile else "off",
@@ -226,29 +240,13 @@ class AdaCUTTrainer:
         )
 
         self.use_amp = bool(train_cfg.get("use_amp", False) and device.type == "cuda")
-        amp_dtype_cfg = str(train_cfg.get("amp_dtype", "fp16")).lower()
-        prefer_fp16_on_rtx30 = bool(train_cfg.get("prefer_fp16_on_rtx30", True))
-        if (
-            self.use_amp
-            and self.is_rtx_30_series
-            and prefer_fp16_on_rtx30
-            and amp_dtype_cfg in {"bf16", "bfloat16"}
-        ):
-            logger.warning(
-                "amp_dtype=%s requested on RTX 30 series (%s), forcing fp16 for better stability/perf balance.",
-                amp_dtype_cfg,
-                self.gpu_name or "unknown",
-            )
-            amp_dtype_cfg = "fp16"
+        amp_dtype_cfg = str(train_cfg.get("amp_dtype", "bf16")).lower()
         if amp_dtype_cfg in {"fp16", "float16", "half"}:
             self.amp_dtype = torch.float16
         else:
             self.amp_dtype = torch.bfloat16
         if device.type != "cuda":
             self.use_amp = False
-        default_use_grad_scaler = bool(self.use_amp and self.amp_dtype == torch.float16)
-        self.use_grad_scaler = bool(train_cfg.get("use_grad_scaler", default_use_grad_scaler))
-        self.scaler = torch.amp.GradScaler("cuda", enabled=self.use_grad_scaler)
 
         requested_fused_adamw = bool(train_cfg.get("fused_adamw", device.type == "cuda"))
         use_fused_adamw = bool(requested_fused_adamw and device.type == "cuda")
@@ -273,12 +271,10 @@ class AdaCUTTrainer:
             if requested_fused_adamw:
                 logger.warning("Fused AdamW is not supported in this torch build; fallback to regular AdamW.")
         logger.info(
-            "Precision | amp=%s amp_dtype=%s grad_scaler=%s fused_adamw=%s prefer_fp16_on_rtx30=%s",
+            "Precision | amp=%s amp_dtype=%s fused_adamw=%s",
             self.use_amp,
             "fp16" if self.amp_dtype == torch.float16 else "bf16",
-            self.use_grad_scaler,
             use_fused_adamw,
-            prefer_fp16_on_rtx30,
         )
         logger.info(
             "GPU | name=%s capability=%s vram_gb=%.2f rtx30=%s",
@@ -318,16 +314,11 @@ class AdaCUTTrainer:
                 [
                     "epoch",
                     "loss",
-                    "semigroup",
                     "swd",
+                    "color",
                     "identity",
-                    "identity_ratio",
                     "delta_tv",
-                    "delta_l1",
-                    "output_tv",
-                    "train_num_steps",
-                    "train_step_size",
-                    "train_style_strength",
+                    "identity_ratio",
                     "lr",
                     "data_time_sec",
                     "transfer_time_sec",
@@ -376,11 +367,64 @@ class AdaCUTTrainer:
 
         _set_attr("w_swd", float(loss_cfg.get("w_swd", lf.w_swd)))
         _set_attr("swd_patch_sizes", parsed_patch_sizes)
-        _set_attr("swd_num_projections", 512)
+        _set_attr("swd_num_projections", int(loss_cfg.get("swd_num_projections", lf.swd_num_projections)))
+        _set_attr(
+            "swd_projection_chunk_size",
+            int(loss_cfg.get("swd_projection_chunk_size", getattr(lf, "swd_projection_chunk_size", 64))),
+        )
+        _set_attr(
+            "swd_distance_mode",
+            str(loss_cfg.get("swd_distance_mode", getattr(lf, "swd_distance_mode", "cdf"))).lower(),
+        )
+        _set_attr(
+            "swd_cdf_num_bins",
+            int(loss_cfg.get("swd_cdf_num_bins", getattr(lf, "swd_cdf_num_bins", 64))),
+        )
+        _set_attr(
+            "swd_cdf_tau",
+            float(loss_cfg.get("swd_cdf_tau", getattr(lf, "swd_cdf_tau", 0.01))),
+        )
+        _set_attr(
+            "swd_cdf_sample_size",
+            int(loss_cfg.get("swd_cdf_sample_size", getattr(lf, "swd_cdf_sample_size", 256))),
+        )
+        _set_attr(
+            "swd_cdf_bin_chunk_size",
+            int(loss_cfg.get("swd_cdf_bin_chunk_size", getattr(lf, "swd_cdf_bin_chunk_size", 16))),
+        )
+        _set_attr(
+            "swd_cdf_sample_chunk_size",
+            int(loss_cfg.get("swd_cdf_sample_chunk_size", getattr(lf, "swd_cdf_sample_chunk_size", 128))),
+        )
+        _set_attr("swd_batch_size", int(loss_cfg.get("swd_batch_size", lf.swd_batch_size)))
+        _set_attr("swd_use_high_freq", bool(loss_cfg.get("swd_use_high_freq", lf.swd_use_high_freq)))
+        _set_attr(
+            "swd_hf_weight_ratio",
+            float(loss_cfg.get("swd_hf_weight_ratio", getattr(lf, "swd_hf_weight_ratio", 2.0))),
+        )
         _set_attr("w_color", float(loss_cfg.get("w_color", lf.w_color)))
         _set_attr("w_identity", float(loss_cfg.get("w_identity", lf.w_identity)))
         _set_attr("w_delta_tv", float(loss_cfg.get("w_delta_tv", lf.w_delta_tv)))
         _set_attr("nsight_nvtx", bool(training_cfg.get("nsight_nvtx", lf.nsight_nvtx)))
+        if any(
+            k in changed
+            for k in (
+                "loss.swd_patch_sizes",
+                "loss.swd_num_projections",
+                "loss.swd_distance_mode",
+                "loss.swd_cdf_num_bins",
+                "loss.swd_cdf_tau",
+                "loss.swd_cdf_sample_size",
+                "loss.swd_cdf_bin_chunk_size",
+                "loss.swd_cdf_sample_chunk_size",
+            )
+        ):
+            try:
+                proj_cache = getattr(lf, "_projection_cache", None)
+                if isinstance(proj_cache, dict):
+                    proj_cache.clear()
+            except Exception:
+                pass
 
         return changed
 
@@ -429,11 +473,6 @@ class AdaCUTTrainer:
         if self.run_full_eval_on_last_epoch != old_last_eval:
             changed["training.full_eval_on_last_epoch"] = (old_last_eval, self.run_full_eval_on_last_epoch)
 
-        old_skip_oom = self.skip_oom_batches
-        self.skip_oom_batches = bool(train_cfg.get("skip_oom_batches", self.skip_oom_batches))
-        if self.skip_oom_batches != old_skip_oom:
-            changed["training.skip_oom_batches"] = (old_skip_oom, self.skip_oom_batches)
-
         old_grad_clip = self.grad_clip_norm
         self.grad_clip_norm = float(train_cfg.get("grad_clip_norm", self.grad_clip_norm))
         if self.grad_clip_norm != old_grad_clip:
@@ -454,10 +493,12 @@ class AdaCUTTrainer:
         if self.use_tqdm != old_use_tqdm:
             changed["training.use_tqdm"] = (old_use_tqdm, self.use_tqdm)
 
-        old_empty_cache_interval = self.empty_cache_interval
-        self.empty_cache_interval = max(0, int(train_cfg.get("empty_cache_interval", self.empty_cache_interval)))
-        if self.empty_cache_interval != old_empty_cache_interval:
-            changed["training.empty_cache_interval"] = (old_empty_cache_interval, self.empty_cache_interval)
+        requested_empty_cache_interval = max(0, int(train_cfg.get("empty_cache_interval", self.empty_cache_interval)))
+        if requested_empty_cache_interval > 0:
+            logger.warning(
+                "Config hot-reload requested empty_cache_interval=%d but it remains disabled for allocator stability.",
+                requested_empty_cache_interval,
+            )
 
         old_log_vram_interval = self.log_vram_interval
         self.log_vram_interval = max(0, int(train_cfg.get("log_vram_interval", self.log_vram_interval)))
@@ -568,12 +609,6 @@ class AdaCUTTrainer:
                 self.scheduler.load_state_dict(state["scheduler_state_dict"])
             except ValueError as exc:
                 logger.warning("Skip scheduler state restore due to mismatch: %s", exc)
-        if "scaler_state_dict" in state:
-            try:
-                self.scaler.load_state_dict(state["scaler_state_dict"])
-            except ValueError as exc:
-                logger.warning("Skip scaler state restore due to mismatch: %s", exc)
-
         self.global_step = int(state.get("global_step", 0))
         self.start_epoch = int(state.get("epoch", 0)) + 1
         logger.info("Resumed from %s at epoch=%d global_step=%d", ckpt_path, self.start_epoch, self.global_step)
@@ -619,11 +654,6 @@ class AdaCUTTrainer:
                     raise RuntimeError(
                         f"source_style_id out of range: min={src_min} max={src_max} valid=[0,{n_styles-1}]"
                     )
-
-    @staticmethod
-    def _is_oom_error(exc: RuntimeError) -> bool:
-        msg = str(exc).lower()
-        return "out of memory" in msg or "cuda oom" in msg
 
     def _maybe_log_vram(self, epoch: int, step_idx: int) -> None:
         if self.device.type != "cuda" or self.log_vram_interval <= 0:
@@ -676,29 +706,6 @@ class AdaCUTTrainer:
             snap.get("inactive_split_mb", 0.0),
             snap.get("cuda_free_mb", 0.0),
         )
-
-    def _dump_oom_report(self, *, epoch: int, step_idx: int, exc: RuntimeError) -> None:
-        if self.device.type != "cuda":
-            return
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        base = self.oom_dump_dir / f"oom_e{epoch:04d}_s{step_idx:06d}_{ts}"
-        snapshot = self._cuda_memory_snapshot()
-        payload = {
-            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "epoch": int(epoch),
-            "step": int(step_idx),
-            "error": str(exc),
-            "alloc_conf": os.environ.get("PYTORCH_ALLOC_CONF", os.environ.get("PYTORCH_CUDA_ALLOC_CONF", "")),
-            "snapshot": snapshot,
-        }
-        try:
-            with open(f"{base}.json", "w", encoding="utf-8") as f:
-                json.dump(payload, f, indent=2, ensure_ascii=False)
-            with open(f"{base}.txt", "w", encoding="utf-8") as f:
-                f.write(torch.cuda.memory_summary(device=self.device, abbreviated=False))
-            logger.error("OOM diagnostics saved: %s.[json|txt]", str(base))
-        except Exception as dump_exc:  # pragma: no cover
-            logger.error("Failed to save OOM diagnostics: %s", dump_exc)
 
     @contextmanager
     def _nvtx_range(self, name: str):
@@ -824,128 +831,100 @@ class AdaCUTTrainer:
                 source_style_id = None
                 loss_dict = None
                 loss = None
-                try:
-                    if self.strict_batch_sanity and (step_idx % self.strict_batch_sanity_interval == 0):
-                        with self._nvtx_range("batch_sanity_cpu"):
-                            self._validate_batch_sanity_cpu(raw_batch)
-                    t0 = time.perf_counter()
-                    with self._nvtx_range("move_batch"):
-                        batch = self._move_batch(raw_batch)
-                    transfer_step += max(0.0, time.perf_counter() - t0)
-                    self._trace_vram(epoch=epoch, step_idx=step_idx, phase="after_move_batch")
-                    content = batch["content"]
-                    target_style = batch["target_style"]
-                    target_style_id = batch["target_style_id"]
-                    source_style_id = batch.get("source_style_id")
-                    enable_loss_timing = bool(self.loss_timing_interval > 0 and (step_idx % self.loss_timing_interval == 0))
+                if self.strict_batch_sanity and (step_idx % self.strict_batch_sanity_interval == 0):
+                    with self._nvtx_range("batch_sanity_cpu"):
+                        self._validate_batch_sanity_cpu(raw_batch)
+                t0 = time.perf_counter()
+                with self._nvtx_range("move_batch"):
+                    batch = self._move_batch(raw_batch)
+                transfer_step += max(0.0, time.perf_counter() - t0)
+                self._trace_vram(epoch=epoch, step_idx=step_idx, phase="after_move_batch")
+                content = batch["content"]
+                target_style = batch["target_style"]
+                target_style_id = batch["target_style_id"]
+                source_style_id = batch.get("source_style_id")
+                enable_loss_timing = bool(self.loss_timing_interval > 0 and (step_idx % self.loss_timing_interval == 0))
 
-                    t0 = time.perf_counter()
-                    with self._nvtx_range("loss_compute"):
-                        with torch.amp.autocast("cuda", enabled=self.use_amp, dtype=self.amp_dtype):
-                            loss_dict = self.loss_fn.compute(
-                                self.model,
-                                content=content,
-                                target_style=target_style,
-                                target_style_id=target_style_id,
-                                source_style_id=source_style_id,
-                                debug_timing=enable_loss_timing,
-                            )
-                            loss = loss_dict["loss"]
-                    fwd_loss_step += max(0.0, time.perf_counter() - t0)
-                    if step_idx <= self.trace_vram_steps and "loss_vram_total_alloc_mb" in loss_dict:
-                        def _vram_metric(name: str) -> float:
-                            v = loss_dict.get(name)
-                            if v is None:
-                                return 0.0
-                            return float(v.detach().item())
-                        logger.info(
-                            "LOSS_VRAM epoch=%d step=%d | pred=%.1fMB style=%+.1fMB delta=%+.1fMB semigroup=%+.1fMB total=%+.1fMB alloc_now=%.1fMB peak_from_start=%.1fMB",
-                            epoch,
-                            step_idx,
-                            _vram_metric("loss_vram_pred_alloc_mb"),
-                            _vram_metric("loss_vram_style_delta_mb"),
-                            _vram_metric("loss_vram_delta_delta_mb"),
-                            _vram_metric("loss_vram_semigroup_delta_mb"),
-                            _vram_metric("loss_vram_total_delta_mb"),
-                            _vram_metric("loss_vram_total_alloc_mb"),
-                            _vram_metric("loss_vram_total_peak_from_start_mb"),
+                t0 = time.perf_counter()
+                with self._nvtx_range("loss_compute"):
+                    with torch.amp.autocast("cuda", enabled=self.use_amp, dtype=self.amp_dtype):
+                        loss_dict = self.loss_fn.compute(
+                            self.model,
+                            content=content,
+                            target_style=target_style,
+                            target_style_id=target_style_id,
+                            source_style_id=source_style_id,
+                            debug_timing=enable_loss_timing,
                         )
-                    if "loss_time_total_ms" in (loss_dict or {}):
-                        def _time_metric(name: str) -> float:
-                            v = loss_dict.get(name)
-                            if v is None:
-                                return 0.0
-                            return float(v.detach().item())
-                        logger.info(
-                            "LOSS_TIME epoch=%d step=%d | pred=%.2fms style=%.2fms delta=%.2fms semigroup=%.2fms total=%.2fms",
-                            epoch,
-                            step_idx,
-                            _time_metric("loss_time_pred_ms"),
-                            _time_metric("loss_time_style_ms"),
-                            _time_metric("loss_time_delta_ms"),
-                            _time_metric("loss_time_semigroup_ms"),
-                            _time_metric("loss_time_total_ms"),
-                        )
-                    self._trace_vram(epoch=epoch, step_idx=step_idx, phase="after_loss_compute")
-
-                    loss_to_backward = loss / self.accumulation_steps
-                    t0 = time.perf_counter()
-                    with self._nvtx_range("backward"):
-                        if self.use_grad_scaler:
-                            self.scaler.scale(loss_to_backward).backward()
-                        else:
-                            loss_to_backward.backward()
-                    backward_step += max(0.0, time.perf_counter() - t0)
-                    self._trace_vram(epoch=epoch, step_idx=step_idx, phase="after_backward")
-
-                    should_step = (step_idx % self.accumulation_steps == 0)
-                    if should_step:
-                        t0 = time.perf_counter()
-                        with self._nvtx_range("optimizer_step"):
-                            if self.grad_clip_norm > 0:
-                                if self.use_grad_scaler:
-                                    self.scaler.unscale_(self.optimizer)
-                                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip_norm)
-                            if self.use_grad_scaler:
-                                self.scaler.step(self.optimizer)
-                                self.scaler.update()
-                            else:
-                                self.optimizer.step()
-                            self.optimizer.zero_grad(set_to_none=True)
-                        optimizer_step += max(0.0, time.perf_counter() - t0)
-                        self._trace_vram(epoch=epoch, step_idx=step_idx, phase="after_optimizer_step")
-                        self.global_step += 1
-                        if self.gc_collect_interval > 0 and (self.global_step % self.gc_collect_interval == 0):
-                            gc.collect()
-                        if self.empty_cache_interval > 0 and self.device.type == "cuda":
-                            if self.global_step % self.empty_cache_interval == 0:
-                                torch.cuda.empty_cache()
-
-                    # Accumulate detached metrics without per-step host sync.
-                    for k, v in loss_dict.items():
+                        loss = loss_dict["loss"]
+                fwd_loss_step += max(0.0, time.perf_counter() - t0)
+                if step_idx <= self.trace_vram_steps and "loss_vram_total_alloc_mb" in loss_dict:
+                    def _vram_metric(name: str) -> float:
+                        v = loss_dict.get(name)
                         if v is None:
-                            continue
-                        vd = v.detach()
-                        if k in metric_accum:
-                            metric_accum[k] = metric_accum[k] + vd
-                        else:
-                            metric_accum[k] = vd
-                    num_batches += 1
-                except RuntimeError as exc:
-                    if self._is_oom_error(exc):
-                        self._dump_oom_report(epoch=epoch, step_idx=step_idx, exc=exc)
-                        if self.skip_oom_batches and self.device.type == "cuda":
-                            logger.warning(
-                                "OOM at epoch=%d step=%d. skip_oom_batches=True, dropping batch and continuing.",
-                                epoch,
-                                step_idx,
-                            )
-                            self.optimizer.zero_grad(set_to_none=True)
-                            gc.collect()
-                            torch.cuda.empty_cache()
-                            data_wait_start = time.perf_counter()
-                            continue
-                    raise
+                            return 0.0
+                        return float(v.detach().item())
+                    logger.info(
+                        "LOSS_VRAM epoch=%d step=%d | pred=%.1fMB style=%+.1fMB delta=%+.1fMB semigroup=%+.1fMB total=%+.1fMB alloc_now=%.1fMB peak_from_start=%.1fMB",
+                        epoch,
+                        step_idx,
+                        _vram_metric("loss_vram_pred_alloc_mb"),
+                        _vram_metric("loss_vram_style_delta_mb"),
+                        _vram_metric("loss_vram_delta_delta_mb"),
+                        _vram_metric("loss_vram_semigroup_delta_mb"),
+                        _vram_metric("loss_vram_total_delta_mb"),
+                        _vram_metric("loss_vram_total_alloc_mb"),
+                        _vram_metric("loss_vram_total_peak_from_start_mb"),
+                    )
+                if "loss_time_total_ms" in (loss_dict or {}):
+                    def _time_metric(name: str) -> float:
+                        v = loss_dict.get(name)
+                        if v is None:
+                            return 0.0
+                        return float(v.detach().item())
+                    logger.info(
+                        "LOSS_TIME epoch=%d step=%d | pred=%.2fms style=%.2fms delta=%.2fms semigroup=%.2fms total=%.2fms",
+                        epoch,
+                        step_idx,
+                        _time_metric("loss_time_pred_ms"),
+                        _time_metric("loss_time_style_ms"),
+                        _time_metric("loss_time_delta_ms"),
+                        _time_metric("loss_time_semigroup_ms"),
+                        _time_metric("loss_time_total_ms"),
+                    )
+                self._trace_vram(epoch=epoch, step_idx=step_idx, phase="after_loss_compute")
+
+                loss_to_backward = loss / self.accumulation_steps
+                t0 = time.perf_counter()
+                with self._nvtx_range("backward"):
+                    loss_to_backward.backward()
+                backward_step += max(0.0, time.perf_counter() - t0)
+                self._trace_vram(epoch=epoch, step_idx=step_idx, phase="after_backward")
+
+                should_step = (step_idx % self.accumulation_steps == 0)
+                if should_step:
+                    t0 = time.perf_counter()
+                    with self._nvtx_range("optimizer_step"):
+                        if self.grad_clip_norm > 0:
+                            torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip_norm)
+                        self.optimizer.step()
+                        self.optimizer.zero_grad(set_to_none=True)
+                    optimizer_step += max(0.0, time.perf_counter() - t0)
+                    self._trace_vram(epoch=epoch, step_idx=step_idx, phase="after_optimizer_step")
+                    self.global_step += 1
+                    if self.gc_collect_interval > 0 and (self.global_step % self.gc_collect_interval == 0):
+                        gc.collect()
+
+                # Accumulate detached metrics without per-step host sync.
+                for k, v in loss_dict.items():
+                    if v is None:
+                        continue
+                    vd = v.detach()
+                    if k in metric_accum:
+                        metric_accum[k] = metric_accum[k] + vd
+                    else:
+                        metric_accum[k] = vd
+                num_batches += 1
 
                 if self.log_interval > 0 and (step_idx % self.log_interval == 0):
                     elapsed = time.time() - epoch_start
@@ -956,18 +935,13 @@ class AdaCUTTrainer:
                         if key not in metric_accum:
                             return 0.0
                         return float((metric_accum[key] / num_batches).item())
-
                     progress.set_postfix(
                         loss=f"{_get_avg('loss'):.4f}",
-                        semigroup=f"{_get_avg('semigroup'):.4f}",
                         swd=f"{_get_avg('swd'):.4f}",
+                        color=f"{_get_avg('color'):.4f}",
                         idt=f"{_get_avg('identity'):.4f}",
-                        idr=f"{_get_avg('identity_ratio'):.2f}",
                         dtv=f"{_get_avg('delta_tv'):.4f}",
-                        dl1=f"{_get_avg('delta_l1'):.4f}",
-                        steps=f"{_get_avg('train_num_steps'):.1f}",
-                        h=f"{_get_avg('train_step_size'):.2f}",
-                        s=f"{_get_avg('train_style_strength'):.2f}",
+                        idr=f"{_get_avg('identity_ratio'):.2f}",
                         data_ms=f"{(1000.0 * data_time_total / max(step_idx, 1)):.1f}",
                         comp_ms=f"{(1000.0 * compute_time_total / max(step_idx, 1)):.1f}",
                         it_s=f"{step_per_sec:.2f}",
@@ -975,21 +949,16 @@ class AdaCUTTrainer:
                     )
                     if not self.use_tqdm:
                         logger.info(
-                            "epoch %d step %d/%d | loss=%.4f semigroup=%.4f swd=%.4f idt=%.4f idr=%.2f dtv=%.4f dl1=%.4f otv=%.4f steps=%.1f h=%.2f s=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
+                            "epoch %d step %d/%d | loss=%.4f swd=%.4f color=%.4f idt=%.4f dtv=%.4f idr=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
                             epoch,
                             step_idx,
                             total_steps,
                             _get_avg('loss'),
-                            _get_avg('semigroup'),
                             _get_avg('swd'),
+                            _get_avg('color'),
                             _get_avg('identity'),
-                            _get_avg('identity_ratio'),
                             _get_avg('delta_tv'),
-                            _get_avg('delta_l1'),
-                            _get_avg('output_tv'),
-                            _get_avg('train_num_steps'),
-                            _get_avg('train_step_size'),
-                            _get_avg('train_style_strength'),
+                            _get_avg('identity_ratio'),
                             (1000.0 * data_time_total / max(step_idx, 1)),
                             (1000.0 * compute_time_total / max(step_idx, 1)),
                             step_per_sec,
@@ -1021,14 +990,8 @@ class AdaCUTTrainer:
         # Flush leftover gradients when last batch is not divisible by accumulation_steps.
         if num_batches > 0 and (num_batches % self.accumulation_steps != 0):
             if self.grad_clip_norm > 0:
-                if self.use_grad_scaler:
-                    self.scaler.unscale_(self.optimizer)
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip_norm)
-            if self.use_grad_scaler:
-                self.scaler.step(self.optimizer)
-                self.scaler.update()
-            else:
-                self.optimizer.step()
+            self.optimizer.step()
             self.optimizer.zero_grad(set_to_none=True)
             self.global_step += 1
         self._maybe_toggle_cuda_profiler()
@@ -1062,8 +1025,7 @@ class AdaCUTTrainer:
         
         # Fill missing keys with 0.0 for safety
         expected_keys = [
-            "loss", "semigroup", "swd", "identity", "identity_ratio",
-            "delta_tv", "delta_l1", "output_tv", "train_num_steps", "train_step_size", "train_style_strength",
+            "loss", "swd", "color", "identity", "delta_tv", "identity_ratio",
             "data_time_sec", "transfer_time_sec", "fwd_loss_time_sec", "backward_time_sec",
             "optimizer_time_sec", "step_overhead_time_sec", "compute_time_sec",
             "samples_seen", "samples_per_sec", "compute_samples_per_sec",
@@ -1089,11 +1051,9 @@ class AdaCUTTrainer:
             tqdm.write(
                 f"[Epoch {epoch}/{self.num_epochs}] "
                 f"loss={metrics['loss']:.4f} "
-                f"semigroup={metrics['semigroup']:.4f} "
                 f"swd={metrics['swd']:.4f} "
-                f"idt={metrics['identity']:.4f} idr={metrics['identity_ratio']:.2f} "
-                f"dtv={metrics['delta_tv']:.4f} dl1={metrics['delta_l1']:.4f} otv={metrics['output_tv']:.4f} "
-                f"steps={metrics['train_num_steps']:.1f} h={metrics['train_step_size']:.2f} s={metrics['train_style_strength']:.2f} "
+                f"color={metrics['color']:.4f} "
+                f"idt={metrics['identity']:.4f} dtv={metrics['delta_tv']:.4f} idr={metrics['identity_ratio']:.2f} "
                 f"| data={data_time_total:.1f}s transfer={transfer_time_total:.1f}s fwd={fwd_loss_time_total:.1f}s "
                 f"bwd={backward_time_total:.1f}s opt={optimizer_time_total:.1f}s overhead={step_overhead_time_total:.1f}s "
                 f"compute={compute_time_total:.1f}s total={epoch_time:.1f}s "
@@ -1108,16 +1068,11 @@ class AdaCUTTrainer:
                 [
                     int(epoch),
                     float(metrics.get("loss", 0.0)),
-                    float(metrics.get("semigroup", 0.0)),
                     float(metrics.get("swd", 0.0)),
+                    float(metrics.get("color", 0.0)),
                     float(metrics.get("identity", 0.0)),
-                    float(metrics.get("identity_ratio", 0.0)),
                     float(metrics.get("delta_tv", 0.0)),
-                    float(metrics.get("delta_l1", 0.0)),
-                    float(metrics.get("output_tv", 0.0)),
-                    float(metrics.get("train_num_steps", 0.0)),
-                    float(metrics.get("train_step_size", 0.0)),
-                    float(metrics.get("train_style_strength", 0.0)),
+                    float(metrics.get("identity_ratio", 0.0)),
                     float(metrics.get("lr", 0.0)),
                     float(metrics.get("data_time_sec", 0.0)),
                     float(metrics.get("transfer_time_sec", 0.0)),
@@ -1141,7 +1096,6 @@ class AdaCUTTrainer:
             "model_state_dict": self.model.state_dict(),
             "optimizer_state_dict": self.optimizer.state_dict(),
             "scheduler_state_dict": self.scheduler.state_dict() if self.scheduler is not None else None,
-            "scaler_state_dict": self.scaler.state_dict(),
             "config": self.config,
             "metrics": metrics,
         }
@@ -1169,7 +1123,6 @@ class AdaCUTTrainer:
 
         cfg_train = self.config.get("training", {})
         cfg_infer = self.config.get("inference", {})
-        cfg_loss = self.config.get("loss", {})
 
         cmd = [
             sys.executable,
@@ -1200,6 +1153,10 @@ class AdaCUTTrainer:
             str(cfg_train.get("full_eval_clip_modelscope_id", "")),
             "--clip_modelscope_cache_dir",
             str(cfg_train.get("full_eval_clip_modelscope_cache_dir", "")),
+            "--clip_hf_cache_dir",
+            str(cfg_train.get("full_eval_clip_hf_cache_dir", "../eval_cache/hf")),
+            "--image_classifier_path",
+            str(cfg_train.get("full_eval_image_classifier_path", "../eval_cache/eval_style_image_classifier.pt")),
         ]
         if bool(cfg_train.get("full_eval_clip_allow_network", False)):
             cmd += ["--clip_allow_network"]
@@ -1212,9 +1169,6 @@ class AdaCUTTrainer:
         cache_dir = cfg_train.get("full_eval_cache_dir", "")
         if cache_dir:
             cmd += ["--cache_dir", str(cache_dir)]
-        classifier_path = cfg_loss.get("style_classifier_ckpt", "")
-        if classifier_path:
-            cmd += ["--classifier_path", str(classifier_path)]
         if bool(cfg_train.get("full_eval_classifier_only", False)):
             cmd += ["--eval_classifier_only"]
         if bool(cfg_train.get("full_eval_disable_lpips", False)):
@@ -1239,7 +1193,6 @@ class AdaCUTTrainer:
                 logger.info("Moving model to CPU to avoid VRAM swap during evaluation...")
                 self.model = self.model.to("cpu")
                 moved_to_cpu = True
-                torch.cuda.empty_cache()
             except Exception as exc:  # pragma: no cover
                 logger.warning("Failed to move model to CPU before full eval, continue on current device: %s", exc)
 
@@ -1249,11 +1202,9 @@ class AdaCUTTrainer:
         finally:
             if moved_to_cpu:
                 logger.info("Evaluation subprocess complete, moving model back to %s...", self.device)
+                self.model = self.model.to(self.device)
                 if self.channels_last:
-                    self.model = self.model.to(self.device, memory_format=torch.channels_last)
-                else:
-                    self.model = self.model.to(self.device)
-                torch.cuda.empty_cache()
+                    self._apply_channels_last_(self.model)
         if proc.returncode != 0:
             logger.error("Full eval failed for epoch %d (code=%d). See %s", epoch, proc.returncode, log_path)
             return False

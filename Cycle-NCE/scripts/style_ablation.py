@@ -232,6 +232,76 @@ def _shift(cfg: dict[str, Any], dotted: str, delta: float, default: float, *, lo
     return _clip(base + delta, lo, hi)
 
 def _build_variants(short_base: dict[str, Any], mode: str) -> list[VariantDef]:
+    variants_hf6: list[VariantDef] = [
+        VariantDef(
+            name="A_anchor_no_hf",
+            category="hf6",
+            note="Group A baseline re-check: no HF SWD, strong identity, mild TV.",
+            overrides={
+                "loss.swd_use_high_freq": False,
+                "loss.w_identity": 1.2,
+                "loss.w_delta_tv": 0.005,
+            },
+        ),
+        VariantDef(
+            name="B_hf_strict_id",
+            category="hf6",
+            note="Group B force texture under strict identity.",
+            overrides={
+                "loss.swd_use_high_freq": True,
+                "loss.swd_hf_weight_ratio": 2.0,
+                "loss.w_identity": 1.2,
+                "loss.w_delta_tv": 0.005,
+            },
+        ),
+        VariantDef(
+            name="C_relaxed_id_no_hf",
+            category="hf6",
+            note="Group C relaxed identity without HF SWD.",
+            overrides={
+                "loss.swd_use_high_freq": False,
+                "loss.w_identity": 0.25,
+                "loss.w_delta_tv": 0.005,
+            },
+        ),
+        VariantDef(
+            name="D_sweet_spot",
+            category="hf6",
+            note="Group D sweet spot hypothesis.",
+            overrides={
+                "loss.swd_use_high_freq": True,
+                "loss.swd_hf_weight_ratio": 2.0,
+                "loss.w_identity": 0.3,
+                "loss.w_delta_tv": 0.005,
+            },
+        ),
+        VariantDef(
+            name="E_extreme_brush",
+            category="hf6",
+            note="Group E extreme texture pressure.",
+            overrides={
+                "loss.swd_use_high_freq": True,
+                "loss.swd_hf_weight_ratio": 5.0,
+                "loss.w_identity": 0.05,
+                "loss.w_delta_tv": 0.005,
+            },
+        ),
+        VariantDef(
+            name="F_tv_off",
+            category="hf6",
+            note="Group F TV-off ablation.",
+            overrides={
+                "loss.swd_use_high_freq": True,
+                "loss.swd_hf_weight_ratio": 2.0,
+                "loss.w_identity": 0.3,
+                "loss.w_delta_tv": 0.0,
+            },
+        ),
+    ]
+
+    if mode == "hf6":
+        return variants_hf6
+
     variants_all: list[VariantDef] = [
         VariantDef(
             name="baseline_50e",
@@ -847,7 +917,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate and run 50-epoch style/loss ablations.")
     parser.add_argument("--base-config", type=str, default="src/config.json", help="Base config path.")
     parser.add_argument("--output-root", type=str, default="", help="Output directory root. Default: experiments-cycle/ablation50_<timestamp>.")
-    parser.add_argument("--mode", type=str, choices=["quick", "all"], default="all", help="Variant set size.")
+    parser.add_argument("--mode", type=str, choices=["quick", "all", "hf6"], default="all", help="Variant set size.")
     parser.add_argument("--epochs", type=int, default=50, help="Target epochs per ablation run.")
     parser.add_argument("--save-interval", type=int, default=25, help="Checkpoint interval. <=0 uses auto.")
     parser.add_argument("--eval-interval", type=int, default=10, help="Full-eval interval. <=0 uses auto.")
@@ -872,7 +942,74 @@ def parse_args() -> argparse.Namespace:
         default="",
         help="Extra args forwarded to training command, e.g. \"--resume xxx\".",
     )
+    parser.add_argument(
+        "--emit-bat",
+        action="store_true",
+        help="Emit a Windows .bat under output root that runs all variants and aggregates results.",
+    )
+    parser.add_argument(
+        "--aggregate-epoch-dir",
+        type=str,
+        default="epoch_0060",
+        help="Epoch directory used by aggregate step in generated .bat.",
+    )
     return parser.parse_args()
+
+
+def _bat_escape(path: Path | str) -> str:
+    return str(path).replace("/", "\\")
+
+
+def _write_windows_runner_bat(
+    *,
+    output_root: Path,
+    repo_root: Path,
+    train_entry: Path,
+    variants: list[VariantRunResult],
+    aggregate_epoch_dir: str,
+) -> Path:
+    bat_path = output_root / "run_all_and_collect.bat"
+    rel_scripts_collect = Path("..") / "scripts" / "collect_ablation_results.py"
+    src_root = (repo_root / "src").resolve()
+    try:
+        rel_train_entry_from_src = Path(".") / train_entry.resolve().relative_to(src_root)
+    except Exception:
+        rel_train_entry_from_src = Path(train_entry.resolve())
+    ablation_root_abs = output_root.resolve()
+    collect_out_abs = (output_root / "ablation-result").resolve()
+    lines: list[str] = [
+        "@echo off",
+        "setlocal",
+        f"set \"REPO_ROOT={_bat_escape(repo_root.resolve())}\"",
+        f"set \"ABLATION_ROOT={_bat_escape(ablation_root_abs)}\"",
+        f"set \"COLLECT_OUT={_bat_escape(collect_out_abs)}\"",
+        "cd /d \"%REPO_ROOT%\\src\"",
+        "if errorlevel 1 goto :err",
+        "",
+    ]
+    for row in variants:
+        cfg_abs = row.config_path.resolve()
+        lines.append(f"echo [RUN] {row.variant.name}")
+        lines.append(f"uv run python {_bat_escape(rel_train_entry_from_src)} --config \"{_bat_escape(cfg_abs)}\"")
+        lines.append("if errorlevel 1 goto :err")
+        lines.append("")
+    lines.append("echo [COLLECT] aggregate full_eval (without images)")
+    lines.append(
+        "uv run python "
+        f"{_bat_escape(rel_scripts_collect)} "
+        f"--root \"{_bat_escape(ablation_root_abs)}\" "
+        f"--output-dir \"{_bat_escape(collect_out_abs)}\" "
+        f"--epoch-dir \"{aggregate_epoch_dir}\" "
+        "--copy-full-eval"
+    )
+    lines.append("if errorlevel 1 goto :err")
+    lines.append("echo DONE")
+    lines.append("exit /b 0")
+    lines.append(":err")
+    lines.append("echo FAILED with errorlevel %errorlevel%")
+    lines.append("exit /b %errorlevel%")
+    bat_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return bat_path
 
 
 def main() -> None:
@@ -971,11 +1108,26 @@ def main() -> None:
         removed_legacy=removed_legacy,
     )
 
+    bat_path: Path | None = None
+    if args.emit_bat:
+        # Keep generated runner simple: run from src with uv, then aggregate.
+        if train_entry.parent != (repo_root / "src"):
+            print(f"WARNING: generated .bat assumes train entry under src, got: {train_entry}")
+        bat_path = _write_windows_runner_bat(
+            output_root=output_root,
+            repo_root=repo_root,
+            train_entry=train_entry,
+            variants=run_results,
+            aggregate_epoch_dir=str(args.aggregate_epoch_dir),
+        )
+
     print(f"Output root: {output_root}")
     print(f"Variants: {len(run_results)}")
     print(f"TSV: {variants_tsv_path}")
     print(f"Summary CSV: {summary_csv_path}")
     print(f"Summary MD: {summary_md_path}")
+    if bat_path is not None:
+        print(f"Runner BAT: {bat_path}")
 
 
 if __name__ == "__main__":

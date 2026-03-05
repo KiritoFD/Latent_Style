@@ -50,7 +50,6 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from utils.inference import LGTInference, load_vae, encode_image, decode_latent
-from utils.style_classifier import StyleClassifier as LatentStyleClassifier
 from utils.classify import DEFAULT_EVAL_IMAGE_CLASSIFIER_CKPT, load_eval_image_classifier
 
 # ==========================================
@@ -79,6 +78,145 @@ class VGGFeatureExtractor(torch.nn.Module):
             if i in self.layer_ids:
                 feats.append(h.detach().cpu()) # Store on CPU to save VRAM
         return feats
+
+
+def _safe_to_eval_device(batch, device: str):
+    """
+    Move processor outputs to device when possible (BatchEncoding supports .to()).
+    """
+    if hasattr(batch, "to"):
+        return batch.to(device)
+    if isinstance(batch, dict):
+        return {k: (v.to(device) if hasattr(v, "to") else v) for k, v in batch.items()}
+    return batch
+
+
+def _load_clip_from_source(CLIPModel, CLIPProcessor, src: str, device: str, *, local_only: bool, cache_dir: str):
+    model_kwargs = {}
+    proc_kwargs = {}
+    if cache_dir:
+        model_kwargs["cache_dir"] = cache_dir
+        proc_kwargs["cache_dir"] = cache_dir
+    if local_only:
+        model_kwargs["local_files_only"] = True
+        proc_kwargs["local_files_only"] = True
+    try:
+        model = CLIPModel.from_pretrained(src, **model_kwargs).to(device)
+        processor = CLIPProcessor.from_pretrained(src, **proc_kwargs)
+        return model, processor
+    except TypeError:
+        # Compatibility with older transformers signatures.
+        model_kwargs.pop("local_files_only", None)
+        proc_kwargs.pop("local_files_only", None)
+        model = CLIPModel.from_pretrained(src, **model_kwargs).to(device)
+        processor = CLIPProcessor.from_pretrained(src, **proc_kwargs)
+        return model, processor
+
+
+def _find_local_hf_snapshot(cache_root: Path, repo_id: str) -> str | None:
+    """
+    Resolve a local HF snapshot path for offline loading.
+    Supports both cache layouts:
+    - <cache>/models--org--repo/snapshots/<rev>
+    - <cache>/hub/models--org--repo/snapshots/<rev>
+    """
+    repo_key = str(repo_id).strip().replace("/", "--")
+    if not repo_key:
+        return None
+    model_dir_name = f"models--{repo_key}"
+    roots = [cache_root, cache_root / "hub"]
+    snapshots: list[Path] = []
+    for root in roots:
+        model_dir = root / model_dir_name
+        snap_dir = model_dir / "snapshots"
+        if snap_dir.exists():
+            snapshots.extend([p for p in snap_dir.iterdir() if p.is_dir()])
+    if not snapshots:
+        return None
+    snapshots = sorted(snapshots, key=lambda p: p.name, reverse=True)
+
+    def _path_usable(p: Path) -> bool:
+        if not p.exists():
+            return False
+        if p.is_symlink():
+            try:
+                return p.resolve(strict=False).exists()
+            except Exception:
+                return False
+        return True
+
+    def _clip_snapshot_missing_files(p: Path) -> list[str]:
+        missing = []
+        if not _path_usable(p / "config.json"):
+            missing.append("config.json")
+        if not (_path_usable(p / "pytorch_model.bin") or _path_usable(p / "model.safetensors")):
+            missing.append("pytorch_model.bin|model.safetensors")
+        if not (_path_usable(p / "preprocessor_config.json") or _path_usable(p / "processor_config.json")):
+            missing.append("preprocessor_config.json|processor_config.json")
+        if not (_path_usable(p / "tokenizer.json") or (_path_usable(p / "vocab.json") and _path_usable(p / "merges.txt"))):
+            missing.append("tokenizer.json|(vocab.json+merges.txt)")
+        if not _path_usable(p / "tokenizer_config.json"):
+            missing.append("tokenizer_config.json")
+        return missing
+
+    def _is_complete_clip_snapshot(p: Path) -> bool:
+        return len(_clip_snapshot_missing_files(p)) == 0
+
+    for s in snapshots:
+        if _is_complete_clip_snapshot(s):
+            return str(s.resolve())
+    # Fallback to the latest snapshot if none is complete.
+    return str(snapshots[0].resolve())
+
+
+def _debug_clip_cache_state(cache_root: Path, repo_id: str) -> str:
+    repo_key = str(repo_id).strip().replace("/", "--")
+    if not repo_key:
+        return "empty clip_model_name"
+    model_dir_name = f"models--{repo_key}"
+    roots = [cache_root, cache_root / "hub"]
+    snapshots: list[Path] = []
+    for root in roots:
+        snap_dir = root / model_dir_name / "snapshots"
+        if snap_dir.exists():
+            snapshots.extend([p for p in snap_dir.iterdir() if p.is_dir()])
+    if not snapshots:
+        return f"no snapshots under {cache_root}"
+
+    snapshots = sorted(snapshots, key=lambda p: p.name, reverse=True)
+
+    def _path_usable(p: Path) -> bool:
+        if not p.exists():
+            return False
+        if p.is_symlink():
+            try:
+                return p.resolve(strict=False).exists()
+            except Exception:
+                return False
+        return True
+
+    def _missing_list(p: Path) -> list[str]:
+        missing = []
+        if not _path_usable(p / "config.json"):
+            missing.append("config.json")
+        if not (_path_usable(p / "pytorch_model.bin") or _path_usable(p / "model.safetensors")):
+            missing.append("pytorch_model.bin|model.safetensors")
+        if not (_path_usable(p / "preprocessor_config.json") or _path_usable(p / "processor_config.json")):
+            missing.append("preprocessor_config.json|processor_config.json")
+        if not (_path_usable(p / "tokenizer.json") or (_path_usable(p / "vocab.json") and _path_usable(p / "merges.txt"))):
+            missing.append("tokenizer.json|(vocab.json+merges.txt)")
+        if not _path_usable(p / "tokenizer_config.json"):
+            missing.append("tokenizer_config.json")
+        return missing
+
+    lines = []
+    for s in snapshots[:3]:
+        miss = _missing_list(s)
+        if miss:
+            lines.append(f"{s.name}: missing/broken -> {', '.join(miss)}")
+        else:
+            lines.append(f"{s.name}: OK")
+    return "; ".join(lines)
 
 def to_lpips_input(img_tensor):
     return img_tensor * 2.0 - 1.0
@@ -643,12 +781,11 @@ def _auto_run_missing_full_eval(args) -> None:
             "--max_ref_cache", str(args.max_ref_cache),
             "--ref_feature_batch_size", str(args.ref_feature_batch_size),
             "--batch_size", str(args.batch_size),
-            "--classifier_path", str(args.classifier_path),
             "--image_classifier_path", str(args.image_classifier_path),
-            "--classifier_classes", str(args.classifier_classes),
             "--clip_model_name", str(args.clip_model_name),
             "--clip_modelscope_id", str(args.clip_modelscope_id),
             "--clip_modelscope_cache_dir", str(args.clip_modelscope_cache_dir),
+            "--clip_hf_cache_dir", str(args.clip_hf_cache_dir),
         ]
         if args.clip_allow_network:
             cmd += ["--clip_allow_network"]
@@ -696,12 +833,11 @@ def main():
     parser.add_argument('--force_regen', action='store_true', help="Force regenerate evaluation outputs/metrics (does not rebuild global ref cache)")
     parser.add_argument('--force_regen_ref_cache', action='store_true', help="Force rebuild global reference-feature cache only")
     parser.add_argument('--ref_cache_lock_timeout', type=int, default=900, help="Seconds to wait for another process building reference cache")
-    parser.add_argument('--classifier_path', type=str, default="../../style_classifier.pt", help="Path to latent style classifier checkpoint")
     parser.add_argument('--image_classifier_path', type=str, default=str(DEFAULT_EVAL_IMAGE_CLASSIFIER_CKPT), help="Path to robust image classifier checkpoint for evaluation")
-    parser.add_argument('--classifier_classes', type=str, default="", help="Optional comma-separated class names for report display")
     parser.add_argument('--clip_model_name', type=str, default="openai/clip-vit-base-patch32", help="HF/local CLIP model name or local directory")
     parser.add_argument('--clip_modelscope_id', type=str, default="", help="Optional ModelScope model id for CLIP fallback")
     parser.add_argument('--clip_modelscope_cache_dir', type=str, default="", help="Optional ModelScope cache directory")
+    parser.add_argument('--clip_hf_cache_dir', type=str, default="", help="HuggingFace cache dir for CLIP; default uses <cache_dir>/hf")
     parser.add_argument('--clip_allow_network', action='store_true', help="Allow online model fetch if local cache is missing (default off)")
     parser.add_argument('--eval_classifier_only', action='store_true', help="Run only classifier evaluation (skip LPIPS/CLIP)")
     parser.add_argument('--eval_disable_lpips', action='store_true', help="Skip LPIPS metrics (keep CLIP)")
@@ -738,6 +874,27 @@ def main():
     images_dir.mkdir(parents=True, exist_ok=True)
     cache_dir = _resolve_dir_path(args.cache_dir, path_bases)
     cache_dir.mkdir(parents=True, exist_ok=True)
+    hf_cache_dir = (
+        _resolve_dir_path(args.clip_hf_cache_dir, path_bases)
+        if str(args.clip_hf_cache_dir).strip()
+        else (cache_dir / "hf").resolve()
+    )
+    hf_cache_dir.mkdir(parents=True, exist_ok=True)
+    # Handle both HF cache layouts:
+    # - modern: <hf_cache>/hub/models--*
+    # - legacy/manual: <hf_cache>/models--*
+    hub_cache_dir = (hf_cache_dir / "hub").resolve()
+    if not hub_cache_dir.exists() and any(hf_cache_dir.glob("models--*")):
+        hub_cache_dir = hf_cache_dir
+    # Pin all HuggingFace caches to one stable directory for offline reuse.
+    os.environ.setdefault("HF_HOME", str(hf_cache_dir))
+    os.environ.setdefault("HF_HUB_CACHE", str(hub_cache_dir))
+    os.environ.setdefault("TRANSFORMERS_CACHE", str((hf_cache_dir / "transformers").resolve()))
+    if not bool(args.clip_allow_network):
+        os.environ.setdefault("HF_HUB_OFFLINE", "1")
+        os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+    print(f"HF cache dir: {hf_cache_dir}")
+    print(f"HF hub cache dir: {hub_cache_dir}")
     
     # Thread Pool for Async I/O
     io_pool = ThreadPoolExecutor(max_workers=4)
@@ -819,7 +976,6 @@ def main():
                     "src_style": src_style,
                     "tgt_style_name": tgt_style,
                     "tgt_style_id": int(tgt_id),
-                    "gen_latent": None,
                     "gen_img": gen_img,
                     "gen_name": p.name,
                 }
@@ -875,7 +1031,6 @@ def main():
                         imgs_gen = decode_latent(vae, latents_gen, device) # [B, 3, H, W]
 
                         # Offload to CPU & Save Async
-                        latents_gen_cpu = latents_gen.detach().float().cpu()
                         imgs_gen_cpu = imgs_gen.cpu()
 
                         for i in range(len(batch_info)):
@@ -893,7 +1048,6 @@ def main():
                                 'src_style': src_item['style_name'],
                                 'tgt_style_name': tgt_name,
                                 'tgt_style_id': tgt_id,
-                                'gen_latent': latents_gen_cpu[i], # Keep latent for classifier evaluation
                                 'gen_img': imgs_gen_cpu[i], # Keep in RAM
                                 'gen_name': out_rel.as_posix()
                             })
@@ -942,48 +1096,9 @@ def main():
     # ==========================================
     print(f"\n妫ｅ啯鐣?Phase 2: Evaluation")
     
-    # Load Classifier if requested
-    classifier = None
+    # Load image classifier (single evaluation path)
     image_classifier = None
     classifier_label_names = list(style_subdirs)
-    if args.classifier_classes:
-        parsed_names = [c.strip() for c in args.classifier_classes.split(',') if c.strip()]
-        if parsed_names:
-            classifier_label_names = parsed_names
-
-    if args.classifier_path:
-        try:
-            ckpt_path = Path(args.classifier_path)
-            if not ckpt_path.is_absolute():
-                ckpt_path = (Path(__file__).resolve().parent / ckpt_path).resolve()
-
-            if not ckpt_path.exists():
-                print(f"  WARNING: latent style classifier checkpoint not found: {ckpt_path}")
-            else:
-                num_classes = int(cfg.get('model', {}).get('num_styles', len(style_subdirs)))
-                in_channels = int(cfg.get('model', {}).get('latent_channels', 4))
-                classifier = LatentStyleClassifier(
-                    in_channels=in_channels,
-                    num_classes=num_classes,
-                    use_stats=bool(cfg.get('loss', {}).get('style_classifier_use_stats', True)),
-                    use_gram=bool(cfg.get('loss', {}).get('style_classifier_use_gram', True)),
-                    use_lowpass_stats=bool(cfg.get('loss', {}).get('style_classifier_use_lowpass_stats', True)),
-                    spatial_shuffle=bool(cfg.get('loss', {}).get('style_classifier_spatial_shuffle', True)),
-                    input_size_train=int(cfg.get('loss', {}).get('style_classifier_input_size_train', 8)),
-                    input_size_infer=int(cfg.get('loss', {}).get('style_classifier_input_size_infer', 8)),
-                    lowpass_size=int(cfg.get('loss', {}).get('style_classifier_lowpass_size', 8)),
-                ).to(device)
-
-                state = torch.load(ckpt_path, map_location=device, weights_only=False)
-                state_dict = state.get('model_state_dict', state) if isinstance(state, dict) else state
-                if any(k.startswith('_orig_mod.') for k in state_dict.keys()):
-                    state_dict = {k.replace('_orig_mod.', ''): v for k, v in state_dict.items()}
-                classifier.load_state_dict(state_dict, strict=True)
-                classifier.eval()
-                print(f"  Loaded latent style classifier: {ckpt_path} (classes={num_classes})")
-        except Exception as e:
-            print(f"  WARNING: failed to load latent style classifier: {e}")
-            classifier = None
 
     if args.image_classifier_path:
         try:
@@ -1013,7 +1128,11 @@ def main():
     to_pil = ToPILImage()
 
     if run_full_metrics:
-        vgg_extractor = VGGFeatureExtractor(device=device)
+        try:
+            vgg_extractor = VGGFeatureExtractor(device=device)
+        except Exception as e:
+            vgg_extractor = None
+            print(f"  WARNING: VGG feature extractor unavailable in offline/local-only mode: {e}")
         # Initialize LPIPS
         if args.eval_disable_lpips:
             loss_fn = None
@@ -1022,25 +1141,20 @@ def main():
         else:
             try:
                 loss_fn = lpips.LPIPS(net='vgg', verbose=False).to(device)
-                print("  鉁?LPIPS Loaded")
+                print("  LPIPS Loaded")
             except Exception as e:
                 print(f"  WARNING: Failed to load LPIPS: {e}")
-            try:
-                loss_fn = lpips.LPIPS(net='vgg', verbose=False).to(device)
-                print("  闁?LPIPS Loaded")
-            except Exception as e:
-                print(f"  闁宠法濯寸粭?Failed to load LPIPS: {e}")
 
         try:
             from transformers import CLIPModel, CLIPProcessor
 
-            if not bool(args.clip_allow_network):
-                os.environ.setdefault("HF_HUB_OFFLINE", "1")
-                os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
-
             clip_sources = []
+            clip_model_name = str(args.clip_model_name).strip() or "openai/clip-vit-base-patch32"
             if str(args.clip_model_name).strip():
-                clip_sources.append(str(args.clip_model_name).strip())
+                local_snapshot = _find_local_hf_snapshot(hf_cache_dir, clip_model_name)
+                if local_snapshot:
+                    clip_sources.append(local_snapshot)
+                clip_sources.append(clip_model_name)
 
             ms_id = str(args.clip_modelscope_id).strip()
             if ms_id:
@@ -1049,8 +1163,9 @@ def main():
 
                     ms_kwargs = {}
                     ms_cache_dir = str(args.clip_modelscope_cache_dir).strip()
-                    if ms_cache_dir:
-                        ms_kwargs["cache_dir"] = ms_cache_dir
+                    if not ms_cache_dir:
+                        ms_cache_dir = str((hf_cache_dir / "modelscope").resolve())
+                    ms_kwargs["cache_dir"] = ms_cache_dir
                     try:
                         ms_local = snapshot_download(ms_id, local_files_only=(not bool(args.clip_allow_network)), **ms_kwargs)
                     except TypeError:
@@ -1066,19 +1181,14 @@ def main():
             last_err = None
             for src in clip_sources:
                 try:
-                    clip_model = CLIPModel.from_pretrained(src, local_files_only=(not bool(args.clip_allow_network))).to(device)
-                    clip_processor = CLIPProcessor.from_pretrained(src, local_files_only=(not bool(args.clip_allow_network)))
-                    clip_model.eval()
-                    has_clip = True
-                    clip_model_tag = str(src)
-                    print(f"  CLIP Loaded from: {src}")
-                    break
-                except TypeError:
-                    # Older transformers may not support local_files_only in some wrappers.
-                    if not bool(args.clip_allow_network):
-                        raise
-                    clip_model = CLIPModel.from_pretrained(src).to(device)
-                    clip_processor = CLIPProcessor.from_pretrained(src)
+                    clip_model, clip_processor = _load_clip_from_source(
+                        CLIPModel,
+                        CLIPProcessor,
+                        src,
+                        device,
+                        local_only=(not bool(args.clip_allow_network)),
+                        cache_dir=str(hf_cache_dir),
+                    )
                     clip_model.eval()
                     has_clip = True
                     clip_model_tag = str(src)
@@ -1090,7 +1200,12 @@ def main():
             if not has_clip and last_err is not None:
                 raise last_err
         except Exception as e:
-            print(f"  CLIP unavailable (offline/local-only mode): {e}")
+            print(f"  CLIP unavailable (offline/local-only mode), continue without CLIP metrics: {e}")
+            try:
+                dbg = _debug_clip_cache_state(hf_cache_dir, clip_model_name)
+                print(f"  CLIP cache diagnosis: {dbg}")
+            except Exception:
+                pass
 
     # Prepare Reference Features (Cache)
     style_sig = ",".join(style_subdirs)
@@ -1153,10 +1268,13 @@ def main():
 
                             amp_ctx = torch.autocast('cuda', dtype=torch.bfloat16) if device == 'cuda' else nullcontext()
                             with torch.no_grad(), amp_ctx:
-                                v_feats = vgg_extractor.get_features(batch_t)
+                                v_feats = vgg_extractor.get_features(batch_t) if vgg_extractor is not None else []
                                 c_emb = None
                                 if has_clip and clip_model is not None:
-                                    inputs = clip_processor(images=batch_pils, return_tensors='pt').to(device)
+                                    inputs = _safe_to_eval_device(
+                                        clip_processor(images=batch_pils, return_tensors='pt'),
+                                        device,
+                                    )
                                     out = clip_model.get_image_features(**inputs)
                                     c_emb = _extract_clip_embeddings(out)
                                     c_emb = (c_emb / (c_emb.norm(p=2, dim=-1, keepdim=True) + 1e-8)).cpu()
@@ -1164,7 +1282,7 @@ def main():
                             for i, img_path in enumerate(batch_paths):
                                 ref_features[style_id].append({
                                     'path': str(img_path),
-                                    'vgg': [vf[i:i+1] for vf in v_feats],
+                                    'vgg': [vf[i:i+1] for vf in v_feats] if v_feats else [],
                                     'clip': c_emb[i:i+1] if c_emb is not None else None
                                 })
                         except Exception as e:
@@ -1258,11 +1376,6 @@ def main():
         b_end = min(b_start + args.batch_size, total_gen)
         batch_items = generated_buffer[b_start:b_end]
         
-        has_latents = all(item.get('gen_latent') is not None for item in batch_items)
-        gen_latents = None
-        if has_latents:
-            gen_latents_cpu = torch.stack([item['gen_latent'] for item in batch_items])
-            gen_latents = gen_latents_cpu.to(device)
         gen_imgs_cpu = torch.stack([item['gen_img'] for item in batch_items]).contiguous()
         gen_imgs = gen_imgs_cpu.to(device, non_blocking=True)
 
@@ -1308,7 +1421,10 @@ def main():
             if has_clip and clip_model is not None:
                 # Gen CLIP
                 pil_gens = [to_pil(img.float()) for img in gen_imgs_cpu]
-                inputs_gen = clip_processor(images=pil_gens, return_tensors='pt').to(device)
+                inputs_gen = _safe_to_eval_device(
+                    clip_processor(images=pil_gens, return_tensors='pt'),
+                    device,
+                )
                 out_gen = clip_model.get_image_features(**inputs_gen)
                 gen_clips = _extract_clip_embeddings(out_gen).to(device, dtype=torch.float32)
                 # Ensure shape
@@ -1319,7 +1435,10 @@ def main():
                 miss_indices = [i for i, k in enumerate(src_keys) if k not in src_clip_cache]
                 if miss_indices:
                     pil_srcs_miss = [to_pil(src_imgs_cpu[i].float()) for i in miss_indices]
-                    inputs_src = clip_processor(images=pil_srcs_miss, return_tensors='pt').to(device)
+                    inputs_src = _safe_to_eval_device(
+                        clip_processor(images=pil_srcs_miss, return_tensors='pt'),
+                        device,
+                    )
                     out_src = clip_model.get_image_features(**inputs_src)
                     src_miss = _extract_clip_embeddings(out_src).to(device, dtype=torch.float32)
                     if src_miss.ndim == 1:
@@ -1337,15 +1456,6 @@ def main():
             if image_classifier is not None:
                 preds = image_classifier.predict_indices(gen_imgs).cpu().numpy().tolist()
                 pred_indices = preds
-            elif classifier and gen_latents is not None:
-                cls_inputs = gen_latents
-                cls_input_size = int(cfg.get('loss', {}).get('style_classifier_input_size_infer', 0))
-                if cls_input_size and (
-                    cls_inputs.shape[-1] != cls_input_size or cls_inputs.shape[-2] != cls_input_size
-                ):
-                    cls_inputs = F.interpolate(cls_inputs, size=(cls_input_size, cls_input_size), mode='area')
-                preds = classifier(cls_inputs).argmax(dim=1)
-                pred_indices = preds.cpu().numpy().tolist()
 
             # 4. Style Metrics & Row Writing
             # 4a. Style LPIPS in grouped batches by target style to reduce overhead.
@@ -1399,13 +1509,10 @@ def main():
                 pred_style_name = "N/A"
                 class_correct = "N/A"
                 
-                if (image_classifier is not None or classifier is not None) and pred_idx != -1:
+                if image_classifier is not None and pred_idx != -1:
                     if pred_idx < len(classifier_label_names):
                         pred_style_name = classifier_label_names[pred_idx]
-                        if image_classifier is not None:
-                            is_correct = (str(pred_style_name).lower() == str(tgt_name).lower())
-                        else:
-                            is_correct = (pred_idx == int(tgt_id))
+                        is_correct = (str(pred_style_name).lower() == str(tgt_name).lower())
                         class_correct = 1 if is_correct else 0
                     else:
                         pred_style_name = f"Unknown({pred_idx})"
@@ -1494,10 +1601,14 @@ def generate_summary_json(
     fid_runner = None
     ref_fid_cache = {}
     if enable_art_fid and style_real_paths is not None:
-        fid_runner = _InceptionFeatRunner(
-            device=device,
-            batch_size=max(1, int(art_fid_batch_size)),
-        )
+        try:
+            fid_runner = _InceptionFeatRunner(
+                device=device,
+                batch_size=max(1, int(art_fid_batch_size)),
+            )
+        except Exception as e:
+            fid_runner = None
+            print(f"  WARNING: ArtFID/Inception unavailable in offline/local-only mode: {e}")
 
     matrix = defaultdict(lambda: defaultdict(list))
     for r in rows:
