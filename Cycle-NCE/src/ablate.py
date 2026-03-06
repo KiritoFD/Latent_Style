@@ -13,47 +13,57 @@ def create_sweep() -> None:
     base = load_base_config()
     out_dir = Path(__file__).resolve().parent
 
-    # Decoder-focused orthogonal sweep:
-    # format: (name, swd_use_high_freq, swd_hf_weight_ratio, w_identity, w_delta_tv)
+    # Final 4-way shootout:
+    # focus on HF ratio, patch receptive field, and TV damping under hard numerical defenses.
+    # Format: (name, hf_ratio, w_delta_tv, patch_sizes)
     experiments = [
-        ("decoder-A-anchor-nohf", False, 2.0, 1.2, 0.005),
-        ("decoder-B-hf-strict-id", True, 2.0, 1.2, 0.005),
-        ("decoder-C-relaxed-id-nohf", False, 2.0, 0.25, 0.005),
-        ("decoder-D-sweetspot", True, 2.0, 0.3, 0.005),
-        ("decoder-E-extreme-brush", True, 5.0, 0.05, 0.005),
-        ("decoder-F-tv-off", True, 2.0, 0.3, 0.0),
+        ("M1-Aggressive-Fine", 5.0, 0.05, [5, 7, 11, 15, 23]),
+        ("M2-Smooth-Impasto", 5.0, 0.15, [5, 7, 11, 15, 23]),
+        ("M3-Macro-Flowing", 5.0, 0.05, [11, 15, 23]),
+        ("M4-Gentle-Balanced", 3.0, 0.05, [5, 7, 11, 15, 23]),
     ]
 
-    run_bat = out_dir / "run_decoder_ablate_6.bat"
+    run_bat = out_dir / "run_final_shootout_4.bat"
     with open(run_bat, "w", encoding="utf-8") as f_bat:
         f_bat.write("@echo off\n")
         f_bat.write("setlocal\n")
         f_bat.write("cd /d %~dp0\n")
         f_bat.write("if %errorlevel% neq 0 exit /b %errorlevel%\n")
-        f_bat.write('set "AGG_ROOT=..\\decoder-ablation-aggregate"\n')
+        f_bat.write('set "AGG_ROOT=..\\final-shootout-aggregate"\n')
         f_bat.write("if not exist \"%AGG_ROOT%\" mkdir \"%AGG_ROOT%\"\n")
         f_bat.write("echo ==========================================\n")
-        f_bat.write("echo Starting 6 Decoder Ablations\n")
+        f_bat.write("echo Starting 4-Way Final Shootout (120 Epochs)\n")
         f_bat.write("echo ==========================================\n\n")
 
-        for name, use_hf, hf_ratio, w_identity, w_delta_tv in experiments:
+        for name, hf_ratio, w_tv, patches in experiments:
             cfg = copy.deepcopy(base)
 
-            cfg.setdefault("loss", {})
-            cfg["loss"]["swd_patch_sizes"] = [5, 7, 11, 15, 23]
-            cfg["loss"]["swd_use_high_freq"] = bool(use_hf)
-            cfg["loss"]["swd_hf_weight_ratio"] = float(hf_ratio)
-            cfg["loss"]["w_identity"] = float(w_identity)
-            cfg["loss"]["w_delta_tv"] = float(w_delta_tv)
+            # 1) Force-enable hard numerical defenses + full residual power.
+            cfg.setdefault("model", {})
+            cfg["model"]["residual_gain"] = 1.0
+            cfg["model"]["output_clamp_enabled"] = True
+            cfg["model"]["decoder_mod_clamp_enabled"] = True
+            cfg["model"]["decoder_mag_stabilizer_enabled"] = True
 
+            # 2) Loss axes under test (identity is fixed for clean decoupling).
+            cfg.setdefault("loss", {})
+            cfg["loss"]["swd_use_high_freq"] = True
+            cfg["loss"]["w_identity"] = 0.6
+            cfg["loss"]["w_delta_tv"] = float(w_tv)
+            cfg["loss"]["swd_hf_weight_ratio"] = float(hf_ratio)
+            cfg["loss"]["swd_patch_sizes"] = patches
+
+            # 3) Training schedule (120 Epochs, eval every 40).
             cfg.setdefault("training", {})
-            cfg["training"]["num_epochs"] = 80
+            cfg["training"]["num_epochs"] = 120
             cfg["training"]["full_eval_interval"] = 40
             cfg["training"]["full_eval_on_last_epoch"] = True
             cfg["training"]["save_interval"] = 20
 
+            # 4) Output path (prefix keeps downstream collectors compatible).
             cfg.setdefault("checkpoint", {})
-            cfg["checkpoint"]["save_dir"] = f"../{name}"
+            exp_dir = f"ablate_{name}"
+            cfg["checkpoint"]["save_dir"] = f"../{exp_dir}"
 
             cfg_filename = f"config_{name}.json"
             cfg_path = out_dir / cfg_filename
@@ -61,36 +71,40 @@ def create_sweep() -> None:
                 json.dump(cfg, f_cfg, indent=4, ensure_ascii=False)
 
             print(
-                f"generated: {cfg_filename:42s} | "
-                f"hf={int(use_hf)} hf_ratio={hf_ratio:.2f} id={w_identity:.2f} tv={w_delta_tv:.3f}"
+                f"Generated: {cfg_filename:30s} | "
+                f"HF={hf_ratio:.1f} TV={w_tv:.2f} Patches={len(patches)} | save_dir={exp_dir}"
             )
 
+            # 写入 Bat 脚本
             f_bat.write("echo.\n")
             f_bat.write("echo ------------------------------------------\n")
             f_bat.write(f"echo Running Experiment: {name}\n")
             f_bat.write("echo ------------------------------------------\n")
             f_bat.write(f"uv run run.py --config {cfg_filename}\n")
             f_bat.write("if %errorlevel% neq 0 exit /b %errorlevel%\n")
+            
+            # 同步拷贝评估结果用于聚合
             f_bat.write(
                 "robocopy "
-                f"\"..\\{name}\\full_eval\" "
-                f"\"%AGG_ROOT%\\{name}\\full_eval\" "
+                f"\"..\\{exp_dir}\\full_eval\" "
+                f"\"%AGG_ROOT%\\{exp_dir}\\full_eval\" "
                 "/E /R:1 /W:1 /XD images\n"
             )
             f_bat.write("if %errorlevel% geq 8 exit /b %errorlevel%\n")
 
+        # 最终收集 120 Epoch 的聚合数据
         f_bat.write("\n")
         f_bat.write("echo.\n")
-        f_bat.write("echo Aggregating summary_history metrics ...\n")
+        f_bat.write("echo Aggregating summary_history metrics for Epoch 120 ...\n")
         f_bat.write(
             "uv run python ..\\scripts\\collect_ablation_results.py "
             "--root \"%AGG_ROOT%\" "
             "--output-dir \"%AGG_ROOT%\" "
-            "--epoch-dir epoch_0080\n"
+            "--epoch-dir epoch_0120\n"
         )
         f_bat.write("if %errorlevel% neq 0 exit /b %errorlevel%\n")
 
-    print("\nrun_decoder_ablate_6.bat has been generated.")
+    print("\nrun_final_shootout_4.bat has been generated.")
 
 
 if __name__ == "__main__":

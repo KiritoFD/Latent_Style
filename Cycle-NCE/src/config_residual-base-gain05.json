@@ -9,7 +9,7 @@
         "num_res_blocks": 6,
         "num_groups": 4,
         "latent_scale_factor": 0.18215,
-        "residual_gain": 1.0,
+        "residual_gain": 0.5,
         "style_spatial_pre_gain_16": 1.0,
         "use_decoder_adagn": true,
         "style_strength_default": 1.0,
@@ -46,7 +46,7 @@
     },
     "training": {
         "seed": 42,
-        "batch_size": 160,
+        "batch_size": 320,
         "accumulation_steps": 1,
         "num_workers": -1,
         "persistent_workers": true,
@@ -59,7 +59,7 @@
         "weight_decay": 0.0001,
         "scheduler": "cosine",
         "grad_clip_norm": 0.5,
-        "num_epochs": 80,
+        "num_epochs": 120,
         "save_interval": 20,
         "full_eval_interval": 40,
         "full_eval_on_last_epoch": true,
@@ -117,7 +117,7 @@
         "virtual_length_multiplier": 1
     },
     "checkpoint": {
-        "save_dir": "../decoder-E-extreme-brush"
+        "save_dir": "../residual-base-gain05"
     },
     "inference": {
         "num_steps": 1,
