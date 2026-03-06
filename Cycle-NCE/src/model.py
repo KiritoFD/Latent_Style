@@ -125,16 +125,34 @@ class NormFreeModulation(nn.Module):
     Preserves local contrast while injecting high-frequency style controls.
     """
 
-    def __init__(self, channels: int, style_dim: int) -> None:
+    def __init__(
+        self,
+        channels: int,
+        style_dim: int,
+        *,
+        clamp_enabled: bool = True,
+        gamma_min: float = -0.9,
+        gamma_max: float = 3.0,
+        beta_min: float = -2.0,
+        beta_max: float = 2.0,
+    ) -> None:
         super().__init__()
         self.mapper = nn.Linear(style_dim, channels * 2)
         # Identity initialization: starts as a no-op at training step 0.
         nn.init.zeros_(self.mapper.weight)
         nn.init.zeros_(self.mapper.bias)
+        self.clamp_enabled = bool(clamp_enabled)
+        self.gamma_min = float(gamma_min)
+        self.gamma_max = float(gamma_max)
+        self.beta_min = float(beta_min)
+        self.beta_max = float(beta_max)
 
     def forward(self, x: torch.Tensor, style_code: torch.Tensor, gate: float | torch.Tensor = 1.0) -> torch.Tensor:
         params = self.mapper(style_code).view(x.shape[0], -1, 1, 1)
         gamma, beta = params.chunk(2, dim=1)
+        if self.clamp_enabled:
+            gamma = torch.clamp(gamma, min=self.gamma_min, max=self.gamma_max)
+            beta = torch.clamp(beta, min=self.beta_min, max=self.beta_max)
         if isinstance(gate, torch.Tensor):
             gate_t = gate.to(device=x.device, dtype=x.dtype)
         else:
@@ -202,6 +220,17 @@ class LatentAdaCUT(nn.Module):
         use_checkpointing: bool = False,
         latent_scale_factor: float = 0.18215,
         residual_gain: float = 0.1,
+        output_clamp_enabled: bool = True,
+        output_clamp_min: float = -2.5,
+        output_clamp_max: float = 2.5,
+        decoder_mod_clamp_enabled: bool = True,
+        decoder_mod_gamma_min: float = -0.9,
+        decoder_mod_gamma_max: float = 3.0,
+        decoder_mod_beta_min: float = -2.0,
+        decoder_mod_beta_max: float = 2.0,
+        decoder_mag_stabilizer_enabled: bool = True,
+        decoder_mag_target_scale: float = 0.5,
+        decoder_mag_eps: float = 1e-6,
         style_spatial_pre_gain_16: float = 0.35,
         use_decoder_adagn: bool = True,
         inject_gate_hires: float = 0.0,
@@ -221,6 +250,12 @@ class LatentAdaCUT(nn.Module):
         self.use_checkpointing = bool(use_checkpointing)
         self.latent_scale_factor = float(latent_scale_factor)
         self.residual_gain = float(residual_gain)
+        self.output_clamp_enabled = bool(output_clamp_enabled)
+        self.output_clamp_min = float(output_clamp_min)
+        self.output_clamp_max = float(output_clamp_max)
+        self.decoder_mag_stabilizer_enabled = bool(decoder_mag_stabilizer_enabled)
+        self.decoder_mag_target_scale = float(decoder_mag_target_scale)
+        self.decoder_mag_eps = float(decoder_mag_eps)
         self.lift_channels = int(lift_channels) if lift_channels is not None else int(base_dim)
         self.body_channels = int(base_dim * 2)
         self.style_spatial_pre_gain_16 = float(style_spatial_pre_gain_16)
@@ -277,7 +312,15 @@ class LatentAdaCUT(nn.Module):
         )
         self.skip_filter = StyleAdaptiveSkip(self.lift_channels, style_dim)
         self.dec_conv = nn.Conv2d(self.lift_channels, self.lift_channels, kernel_size=3, stride=1, padding=1)
-        self.dec_mod = NormFreeModulation(self.lift_channels, style_dim)
+        self.dec_mod = NormFreeModulation(
+            self.lift_channels,
+            style_dim,
+            clamp_enabled=decoder_mod_clamp_enabled,
+            gamma_min=decoder_mod_gamma_min,
+            gamma_max=decoder_mod_gamma_max,
+            beta_min=decoder_mod_beta_min,
+            beta_max=decoder_mod_beta_max,
+        )
         self.dec_act = nn.SiLU()
         self.dec_out = nn.Conv2d(self.lift_channels, latent_channels, kernel_size=3, stride=1, padding=1)
 
@@ -356,10 +399,18 @@ class LatentAdaCUT(nn.Module):
         style_code: torch.Tensor,
         gate: float | torch.Tensor = 1.0,
     ) -> torch.Tensor:
+        def _stabilize_mag(_h: torch.Tensor) -> torch.Tensor:
+            if not self.decoder_mag_stabilizer_enabled:
+                return _h
+            magnitude = torch.sqrt(_h.pow(2).mean(dim=1, keepdim=True) + self.decoder_mag_eps)
+            target_mag = math.sqrt(max(float(_h.shape[1]) * self.decoder_mag_target_scale, 0.0))
+            scale = torch.clamp((target_mag / magnitude), max=1.0)
+            return _h * scale
+
         if self.use_checkpointing and self.training:
             gate_in = gate.to(device=h.device, dtype=h.dtype) if torch.is_tensor(gate) else h.new_tensor(float(gate))
             return ckpt.checkpoint(
-                lambda _h, _s, _g: self.dec_act(self.dec_mod(self.dec_conv(_h), _s, gate=_g)),
+                lambda _h, _s, _g: _stabilize_mag(self.dec_act(self.dec_mod(self.dec_conv(_h), _s, gate=_g))),
                 h,
                 style_code,
                 gate_in,
@@ -368,7 +419,7 @@ class LatentAdaCUT(nn.Module):
         h = self.dec_conv(h)
         h = self.dec_mod(h, style_code, gate=gate)
         h = self.dec_act(h)
-        return h
+        return _stabilize_mag(h)
 
     def _prepare_style_maps(
         self,
@@ -418,6 +469,8 @@ class LatentAdaCUT(nn.Module):
         h: torch.Tensor,
     ) -> torch.Tensor:
         delta = self.dec_out(h) * self.latent_scale_factor * self.residual_gain
+        if self.output_clamp_enabled:
+            delta = torch.clamp(delta, min=self.output_clamp_min, max=self.output_clamp_max)
         return delta
 
 
@@ -626,6 +679,17 @@ def build_model_from_config(
         "num_groups",
         "latent_scale_factor",
         "residual_gain",
+        "output_clamp_enabled",
+        "output_clamp_min",
+        "output_clamp_max",
+        "decoder_mod_clamp_enabled",
+        "decoder_mod_gamma_min",
+        "decoder_mod_gamma_max",
+        "decoder_mod_beta_min",
+        "decoder_mod_beta_max",
+        "decoder_mag_stabilizer_enabled",
+        "decoder_mag_target_scale",
+        "decoder_mag_eps",
         "style_spatial_pre_gain_16",
         "use_decoder_adagn",
         "inject_gate_hires",
@@ -660,6 +724,17 @@ def build_model_from_config(
         use_checkpointing=bool(use_checkpointing),
         latent_scale_factor=float(model_cfg.get("latent_scale_factor", 0.18215)),
         residual_gain=float(model_cfg.get("residual_gain", 0.1)),
+        output_clamp_enabled=bool(model_cfg.get("output_clamp_enabled", True)),
+        output_clamp_min=float(model_cfg.get("output_clamp_min", -2.5)),
+        output_clamp_max=float(model_cfg.get("output_clamp_max", 2.5)),
+        decoder_mod_clamp_enabled=bool(model_cfg.get("decoder_mod_clamp_enabled", True)),
+        decoder_mod_gamma_min=float(model_cfg.get("decoder_mod_gamma_min", -0.9)),
+        decoder_mod_gamma_max=float(model_cfg.get("decoder_mod_gamma_max", 3.0)),
+        decoder_mod_beta_min=float(model_cfg.get("decoder_mod_beta_min", -2.0)),
+        decoder_mod_beta_max=float(model_cfg.get("decoder_mod_beta_max", 2.0)),
+        decoder_mag_stabilizer_enabled=bool(model_cfg.get("decoder_mag_stabilizer_enabled", True)),
+        decoder_mag_target_scale=float(model_cfg.get("decoder_mag_target_scale", 0.5)),
+        decoder_mag_eps=float(model_cfg.get("decoder_mag_eps", 1e-6)),
         style_spatial_pre_gain_16=float(model_cfg.get("style_spatial_pre_gain_16", 0.35)),
         use_decoder_adagn=bool(model_cfg.get("use_decoder_adagn", True)),
         inject_gate_hires=float(model_cfg.get("inject_gate_hires", 0.0)),
