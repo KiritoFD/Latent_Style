@@ -9,7 +9,6 @@ import os
 import sys
 import subprocess
 from pathlib import Path
-from contextlib import nullcontext
 import torch
 
 # 妫ｅ啯鏆?Enable Tensor Cores for float32 matrix multiplication (Fixes UserWarning)
@@ -57,34 +56,6 @@ try:
     from torchmetrics.image.kid import KernelInceptionDistance
 except Exception:
     KernelInceptionDistance = None
-
-# ==========================================
-# Optimized Feature Extractors
-# ==========================================
-
-class VGGFeatureExtractor(torch.nn.Module):
-    def __init__(self, device='cuda'):
-        super().__init__()
-        # Load VGG only once, freeze immediately
-        # Use weights parameter instead of deprecated pretrained=True
-        vgg = models.vgg16(weights=models.VGG16_Weights.DEFAULT).features.eval().to(device)
-        for p in vgg.parameters(): p.requires_grad = False
-        self.vgg = vgg
-        self.layer_ids = [8, 15] 
-        self.register_buffer('mean', torch.tensor([0.485, 0.456, 0.406], device=device).view(1,3,1,1))
-        self.register_buffer('std', torch.tensor([0.229, 0.224, 0.225], device=device).view(1,3,1,1))
-
-    def get_features(self, x):
-        # Normalize and extract
-        x = (x.to(self.mean.device) - self.mean) / self.std
-        feats = []
-        h = x
-        for i, layer in enumerate(self.vgg):
-            h = layer(h)
-            if i in self.layer_ids:
-                feats.append(h.detach().cpu()) # Store on CPU to save VRAM
-        return feats
-
 
 def _safe_to_eval_device(batch, device: str):
     """
@@ -1181,7 +1152,6 @@ def main():
     run_full_metrics = not args.eval_classifier_only
 
     # Load Evaluators
-    vgg_extractor = None
     loss_fn = None
     clip_model = None
     clip_processor = None
@@ -1190,11 +1160,6 @@ def main():
     to_pil = ToPILImage()
 
     if run_full_metrics:
-        try:
-            vgg_extractor = VGGFeatureExtractor(device=device)
-        except Exception as e:
-            vgg_extractor = None
-            print(f"  WARNING: VGG feature extractor unavailable in offline/local-only mode: {e}")
         # Initialize LPIPS
         if args.eval_disable_lpips:
             loss_fn = None
@@ -1325,12 +1290,9 @@ def main():
                     for b_start in pbar:
                         batch_paths = sampled_refs[b_start:b_start + ref_bs]
                         try:
-                            batch_pils = [Image.open(img_path).convert('RGB').resize((256, 256)) for img_path in batch_paths]
-                            batch_t = torch.stack([T.ToTensor()(img_pil) for img_pil in batch_pils], dim=0).to(device)
-
-                            amp_ctx = torch.autocast('cuda', dtype=torch.bfloat16) if device == 'cuda' else nullcontext()
-                            with torch.no_grad(), amp_ctx:
-                                v_feats = vgg_extractor.get_features(batch_t) if vgg_extractor is not None else []
+                            # Keep raw PILs for CLIP so CLIPProcessor applies its own canonical resize/crop.
+                            batch_pils = [Image.open(img_path).convert('RGB') for img_path in batch_paths]
+                            with torch.no_grad():
                                 c_emb = None
                                 if has_clip and clip_model is not None:
                                     inputs = _safe_to_eval_device(
@@ -1344,7 +1306,6 @@ def main():
                             for i, img_path in enumerate(batch_paths):
                                 ref_features[style_id].append({
                                     'path': str(img_path),
-                                    'vgg': [vf[i:i+1] for vf in v_feats] if v_feats else [],
                                     'clip': c_emb[i:i+1] if c_emb is not None else None
                                 })
                         except Exception as e:
@@ -1407,7 +1368,8 @@ def main():
                 ref_lpips_tensors[sid] = torch.stack(tensors, dim=0).contiguous()
 
     # Cache source images/CLIP embeddings to avoid repeated work across many target styles.
-    src_img_cache = {}   # abs src path -> Tensor[3,256,256] on CPU
+    src_img_cache = {}   # abs src path -> Tensor[3,256,256] on CPU (LPIPS path)
+    src_pil_cache = {}   # abs src path -> PIL.Image (CLIP path)
     src_clip_cache = {}  # abs src path -> Tensor[D] on CPU
 
     csv_path = out_dir / 'metrics.csv'
@@ -1496,7 +1458,14 @@ def main():
                 # Src CLIP (cache by source path; source repeats across many target styles)
                 miss_indices = [i for i, k in enumerate(src_keys) if k not in src_clip_cache]
                 if miss_indices:
-                    pil_srcs_miss = [to_pil(src_imgs_cpu[i].float()) for i in miss_indices]
+                    pil_srcs_miss = []
+                    for i in miss_indices:
+                        src_path = str(Path(batch_items[i]['src_path']).resolve())
+                        pil_img = src_pil_cache.get(src_path)
+                        if pil_img is None:
+                            pil_img = Image.open(batch_items[i]['src_path']).convert('RGB')
+                            src_pil_cache[src_path] = pil_img
+                        pil_srcs_miss.append(pil_img)
                     inputs_src = _safe_to_eval_device(
                         clip_processor(images=pil_srcs_miss, return_tensors='pt'),
                         device,
