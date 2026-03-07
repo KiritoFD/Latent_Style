@@ -1,0 +1,351 @@
+========================================================== 
+START 2026/03/07 ÷‹¡˘  2:58:15.27 
+CLEAN=1 
+========================================================== 
+ 
+[STEP1] SD-Turbo 2026/03/07 ÷‹¡˘  2:58:15.27 
+CMD: "G:\GitHub\Latent_Style\Related_Works\..\Related_Works\envs\sdturbo\Scripts\python.exe" "G:\GitHub\Latent_Style\Related_Works\..\Related_Works\sdturbo_generate_5x5.py" --test_dir "G:\GitHub\Latent_Style\style_data\overfit50" --out_dir "G:\GitHub\Latent_Style\Related_Works\..\Related_Works\runs\sdturbo_5x5" --size 256 --offload model --attention_slicing max --vae_slicing --num_steps 1 --strength 1.0 --guidance 0.0 --seed 42 
+G:\GitHub\Latent_Style\Related_Works\envs\sdturbo\lib\site-packages\huggingface_hub\utils\_validators.py:202: UserWarning: The `local_dir_use_symlinks` argument is deprecated and ignored in `hf_hub_download`. Downloading to a local directory does not use symlinks anymore.
+  warnings.warn(
+[sdturbo] Loading stabilityai/sdxl-turbo dtype=torch.float16 device=cuda
+Loading pipeline components...:   0%|          | 0/7 [00:00<?, ?it/s]
+Loading weights:   0%|          | 0/196 [00:00<?, ?it/s][ALoading weights: 100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 196/196 [00:00<00:00, 10037.65it/s]
+Loading pipeline components...:  43%|®Ä®Ä®Ä®Ä®Ü     | 3/7 [00:00<00:00, 26.48it/s]
+Loading weights:   0%|          | 0/517 [00:00<?, ?it/s][ALoading weights: 100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 517/517 [00:00<00:00, 10549.12it/s]
+Loading pipeline components...:  86%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ | 6/7 [00:00<00:00, 14.32it/s]Loading pipeline components...: 100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 7/7 [00:00<00:00, 15.93it/s]
+G:\GitHub\Latent_Style\Related_Works\envs\sdturbo\lib\site-packages\diffusers\pipelines\pipeline_utils.py:2263: FutureWarning: `enable_vae_slicing` is deprecated and will be removed in version 0.40.0. Calling `enable_vae_slicing()` on a `StableDiffusionXLImg2ImgPipeline` is deprecated and this method will be removed in a future version. Please use `pipe.vae.enable_slicing()`.
+  deprecate(
+G:\GitHub\Latent_Style\Related_Works\envs\sdturbo\lib\site-packages\diffusers\pipelines\stable_diffusion_xl\pipeline_stable_diffusion_xl_img2img.py:896: FutureWarning: `upcast_vae` is deprecated and will be removed in version 1.0.0. `upcast_vae` is deprecated. Please use `pipe.vae.to(torch.float32)`. For more details, please refer to: https://github.com/huggingface/diffusers/pull/12619#issue-3606633695.
+  deprecate(
+[sdturbo] 10/1250 (0.6 min)
+[sdturbo] 20/1250 (1.1 min)
+[sdturbo] 30/1250 (1.5 min)
+[sdturbo] 40/1250 (2.0 min)
+[sdturbo] 50/1250 (2.5 min)
+[sdturbo] 60/1250 (3.0 min)
+[sdturbo] 70/1250 (3.5 min)
+[sdturbo] 80/1250 (4.0 min)
+[sdturbo] 90/1250 (4.5 min)
+[sdturbo] 100/1250 (5.0 min)
+[sdturbo] 110/1250 (5.5 min)
+[sdturbo] 120/1250 (5.9 min)
+[sdturbo] 130/1250 (6.4 min)
+[sdturbo] 140/1250 (6.9 min)
+[sdturbo] 150/1250 (7.4 min)
+[sdturbo] 160/1250 (7.9 min)
+[sdturbo] 170/1250 (8.4 min)
+[sdturbo] 180/1250 (8.9 min)
+[sdturbo] 190/1250 (9.3 min)
+[sdturbo] 200/1250 (9.8 min)
+[sdturbo] 210/1250 (10.3 min)
+[sdturbo] 220/1250 (10.8 min)
+[sdturbo] 230/1250 (11.2 min)
+[sdturbo] 240/1250 (11.7 min)
+[sdturbo] 250/1250 (12.2 min)
+[sdturbo] 260/1250 (12.6 min)
+[sdturbo] 270/1250 (13.1 min)
+[sdturbo] 280/1250 (13.6 min)
+[sdturbo] 290/1250 (14.0 min)
+[sdturbo] 300/1250 (14.5 min)
+[sdturbo] 310/1250 (15.0 min)
+[sdturbo] 320/1250 (15.5 min)
+[sdturbo] 330/1250 (16.0 min)
+[sdturbo] 340/1250 (16.5 min)
+[sdturbo] 350/1250 (17.0 min)
+[sdturbo] 360/1250 (17.4 min)
+[sdturbo] 370/1250 (17.9 min)
+[sdturbo] 380/1250 (18.4 min)
+[sdturbo] 390/1250 (18.9 min)
+[sdturbo] 400/1250 (19.4 min)
+[sdturbo] 410/1250 (19.8 min)
+[sdturbo] 420/1250 (20.3 min)
+[sdturbo] 430/1250 (20.8 min)
+[sdturbo] 440/1250 (21.3 min)
+[sdturbo] 450/1250 (21.8 min)
+[sdturbo] 460/1250 (22.3 min)
+[sdturbo] 470/1250 (22.7 min)
+[sdturbo] 480/1250 (23.2 min)
+[sdturbo] 490/1250 (23.7 min)
+[sdturbo] 500/1250 (24.2 min)
+[sdturbo] 510/1250 (24.7 min)
+[sdturbo] 520/1250 (25.2 min)
+[sdturbo] 530/1250 (25.7 min)
+[sdturbo] 540/1250 (26.1 min)
+[sdturbo] 550/1250 (26.6 min)
+[sdturbo] 560/1250 (27.1 min)
+[sdturbo] 570/1250 (27.6 min)
+[sdturbo] 580/1250 (28.1 min)
+[sdturbo] 590/1250 (28.6 min)
+[sdturbo] 600/1250 (29.1 min)
+[sdturbo] 610/1250 (29.5 min)
+[sdturbo] 620/1250 (30.0 min)
+[sdturbo] 630/1250 (30.5 min)
+[sdturbo] 640/1250 (31.0 min)
+[sdturbo] 650/1250 (31.5 min)
+[sdturbo] 660/1250 (31.9 min)
+[sdturbo] 670/1250 (32.4 min)
+[sdturbo] 680/1250 (32.9 min)
+[sdturbo] 690/1250 (33.4 min)
+[sdturbo] 700/1250 (33.9 min)
+[sdturbo] 710/1250 (34.4 min)
+[sdturbo] 720/1250 (34.9 min)
+[sdturbo] 730/1250 (35.3 min)
+[sdturbo] 740/1250 (35.8 min)
+[sdturbo] 750/1250 (36.3 min)
+[sdturbo] 760/1250 (36.8 min)
+[sdturbo] 770/1250 (37.3 min)
+[sdturbo] 780/1250 (37.7 min)
+[sdturbo] 790/1250 (38.2 min)
+[sdturbo] 800/1250 (38.7 min)
+[sdturbo] 810/1250 (39.2 min)
+[sdturbo] 820/1250 (39.7 min)
+[sdturbo] 830/1250 (40.1 min)
+[sdturbo] 840/1250 (40.6 min)
+[sdturbo] 850/1250 (41.1 min)
+[sdturbo] 860/1250 (41.6 min)
+[sdturbo] 870/1250 (42.1 min)
+[sdturbo] 880/1250 (42.5 min)
+[sdturbo] 890/1250 (43.0 min)
+[sdturbo] 900/1250 (43.5 min)
+[sdturbo] 910/1250 (44.0 min)
+[sdturbo] 920/1250 (44.4 min)
+[sdturbo] 930/1250 (44.9 min)
+[sdturbo] 940/1250 (45.4 min)
+[sdturbo] 950/1250 (45.9 min)
+[sdturbo] 960/1250 (46.4 min)
+[sdturbo] 970/1250 (46.8 min)
+[sdturbo] 980/1250 (47.3 min)
+[sdturbo] 990/1250 (47.8 min)
+[sdturbo] 1000/1250 (48.3 min)
+[sdturbo] 1010/1250 (48.8 min)
+[sdturbo] 1020/1250 (49.3 min)
+[sdturbo] 1030/1250 (49.7 min)
+[sdturbo] 1040/1250 (50.2 min)
+[sdturbo] 1050/1250 (50.7 min)
+[sdturbo] 1060/1250 (51.2 min)
+[sdturbo] 1070/1250 (51.7 min)
+[sdturbo] 1080/1250 (52.2 min)
+[sdturbo] 1090/1250 (52.6 min)
+[sdturbo] 1100/1250 (53.1 min)
+[sdturbo] 1110/1250 (53.6 min)
+[sdturbo] 1120/1250 (54.1 min)
+[sdturbo] 1130/1250 (54.6 min)
+[sdturbo] 1140/1250 (55.1 min)
+[sdturbo] 1150/1250 (55.5 min)
+[sdturbo] 1160/1250 (56.0 min)
+[sdturbo] 1170/1250 (56.5 min)
+[sdturbo] 1180/1250 (57.0 min)
+[sdturbo] 1190/1250 (57.5 min)
+[sdturbo] 1200/1250 (58.0 min)
+[sdturbo] 1210/1250 (58.4 min)
+[sdturbo] 1220/1250 (58.9 min)
+[sdturbo] 1230/1250 (59.4 min)
+[sdturbo] 1240/1250 (59.9 min)
+[sdturbo] 1250/1250 (60.4 min)
+[sdturbo] done -> G:\GitHub\Latent_Style\Related_Works\runs\sdturbo_5x5\images
+ 
+[STEP2] CUT 2026/03/07 ÷‹¡˘  3:58:44.75 
+CMD: "G:\GitHub\Latent_Style\Related_Works\..\Related_Works\envs\cut\Scripts\python.exe" "G:\GitHub\Latent_Style\Related_Works\..\Related_Works\cut_infer_5x5.py" --size 256 
+[CUT] done target=cezanne -> G:\GitHub\Latent_Style\Related_Works\runs\cut_5x5\infer_5x5\images
+[CUT] done target=Hayao -> G:\GitHub\Latent_Style\Related_Works\runs\cut_5x5\infer_5x5\images
+[CUT] done target=monet -> G:\GitHub\Latent_Style\Related_Works\runs\cut_5x5\infer_5x5\images
+[CUT] done target=photo -> G:\GitHub\Latent_Style\Related_Works\runs\cut_5x5\infer_5x5\images
+[CUT] done target=vangogh -> G:\GitHub\Latent_Style\Related_Works\runs\cut_5x5\infer_5x5\images
+[CUT] all done -> G:\GitHub\Latent_Style\Related_Works\runs\cut_5x5\infer_5x5\images
+[CUT] summary -> G:\GitHub\Latent_Style\Related_Works\runs\cut_5x5\infer_5x5\summary.json
+ 
+[STEP3] SDEdit 2026/03/07 ÷‹¡˘  3:59:46.81 
+CMD: "G:\GitHub\Latent_Style\Related_Works\..\Related_Works\envs\sdedit\Scripts\python.exe" "G:\GitHub\Latent_Style\Related_Works\..\Related_Works\sdedit_generate_5x5.py" --test_dir "G:\GitHub\Latent_Style\style_data\overfit50" --out_dir "G:\GitHub\Latent_Style\Related_Works\..\Related_Works\runs\sdedit_multi" --size 256 --strengths 0.3,0.6,0.8 --steps 50 --guidance 6.0 --seed 42 
+[sdedit] Loading runwayml/stable-diffusion-v1-5 dtype=torch.float16 device=cuda
+Loading pipeline components...:   0%|          | 0/6 [00:00<?, ?it/s]Loading pipeline components...:  33%|®Ä®Ä®Ä®Ü      | 2/6 [00:02<00:04,  1.17s/it]Loading pipeline components...:  67%|®Ä®Ä®Ä®Ä®Ä®Ä®É   | 4/6 [00:02<00:01,  1.66it/s]
+Loading weights:   0%|          | 0/196 [00:00<?, ?it/s][A
+Loading weights:   1%|          | 2/196 [00:00<00:12, 15.10it/s][ALoading weights: 100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 196/196 [00:00<00:00, 1218.25it/s]
+[1mCLIPTextModel LOAD REPORT[0m from: C:\Users\xy\.cache\huggingface\hub\models--runwayml--stable-diffusion-v1-5\snapshots\451f4fe16113bff5a5d2269ed5ad43b0592e9a14\text_encoder
+Key                                | Status     |  | 
+-----------------------------------+------------+--+-
+text_model.embeddings.position_ids | UNEXPECTED |  | 
+
+[3mNotes:
+- UNEXPECTED[3m	:can be ignored when loading from different task/architecture; not ok if you expect identical arch.[0m
+Loading pipeline components...:  83%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ü | 5/6 [00:03<00:00,  2.00it/s]Loading pipeline components...: 100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 6/6 [00:03<00:00,  1.96it/s]
+G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\diffusers\pipelines\pipeline_utils.py:2263: FutureWarning: `enable_vae_slicing` is deprecated and will be removed in version 0.40.0. Calling `enable_vae_slicing()` on a `StableDiffusionImg2ImgPipeline` is deprecated and this method will be removed in a future version. Please use `pipe.vae.enable_slicing()`.
+  deprecate(
+[sdedit str=0.30] 20/1250 (2.9 min)
+[sdedit str=0.30] 40/1250 (5.8 min)
+[sdedit str=0.30] 60/1250 (8.6 min)
+[sdedit str=0.30] 80/1250 (11.5 min)
+[sdedit str=0.30] 100/1250 (14.4 min)
+[sdedit str=0.30] 120/1250 (17.2 min)
+[sdedit str=0.30] 140/1250 (20.1 min)
+[sdedit str=0.30] 160/1250 (23.0 min)
+[sdedit str=0.30] 180/1250 (25.9 min)
+[sdedit str=0.30] 200/1250 (28.7 min)
+[sdedit str=0.30] 220/1250 (31.6 min)
+[sdedit str=0.30] 240/1250 (34.5 min)
+[sdedit str=0.30] 260/1250 (37.3 min)
+[sdedit str=0.30] 280/1250 (40.2 min)
+[sdedit str=0.30] 300/1250 (43.1 min)
+[sdedit str=0.30] 320/1250 (45.9 min)
+[sdedit str=0.30] 340/1250 (48.8 min)
+[sdedit str=0.30] 360/1250 (51.6 min)
+[sdedit str=0.30] 380/1250 (54.5 min)
+[sdedit str=0.30] 400/1250 (57.4 min)
+[sdedit str=0.30] 420/1250 (60.3 min)
+[sdedit str=0.30] 440/1250 (63.1 min)
+[sdedit str=0.30] 460/1250 (66.0 min)
+[sdedit str=0.30] 480/1250 (68.9 min)
+[sdedit str=0.30] 500/1250 (71.7 min)
+[sdedit str=0.30] 520/1250 (74.6 min)
+[sdedit str=0.30] 540/1250 (77.5 min)
+[sdedit str=0.30] 560/1250 (80.4 min)
+[sdedit str=0.30] 580/1250 (83.2 min)
+[sdedit str=0.30] 600/1250 (86.1 min)
+[sdedit str=0.30] 620/1250 (89.0 min)
+[sdedit str=0.30] 640/1250 (91.8 min)
+[sdedit str=0.30] 660/1250 (94.7 min)
+[sdedit str=0.30] 680/1250 (97.6 min)
+[sdedit str=0.30] 700/1250 (100.4 min)
+[sdedit str=0.30] 720/1250 (103.3 min)
+[sdedit str=0.30] 740/1250 (106.2 min)
+[sdedit str=0.30] 760/1250 (109.0 min)
+[sdedit str=0.30] 780/1250 (111.9 min)
+[sdedit str=0.30] 800/1250 (114.8 min)
+[sdedit str=0.30] 820/1250 (117.7 min)
+[sdedit str=0.30] 840/1250 (120.5 min)
+[sdedit str=0.30] 860/1250 (123.4 min)
+[sdedit str=0.30] 880/1250 (126.3 min)
+[sdedit str=0.30] 900/1250 (129.1 min)
+[sdedit str=0.30] 920/1250 (132.0 min)
+[sdedit str=0.30] 940/1250 (134.9 min)
+[sdedit str=0.30] 960/1250 (137.7 min)
+[sdedit str=0.30] 980/1250 (140.6 min)
+[sdedit str=0.30] 1000/1250 (143.5 min)
+[sdedit str=0.30] 1020/1250 (146.4 min)
+[sdedit str=0.30] 1040/1250 (149.2 min)
+[sdedit str=0.30] 1060/1250 (152.1 min)
+[sdedit str=0.30] 1080/1250 (155.0 min)
+[sdedit str=0.30] 1100/1250 (157.8 min)
+[sdedit str=0.30] 1120/1250 (160.7 min)
+[sdedit str=0.30] 1140/1250 (163.6 min)
+[sdedit str=0.30] 1160/1250 (166.5 min)
+[sdedit str=0.30] 1180/1250 (169.3 min)
+[sdedit str=0.30] 1200/1250 (172.2 min)
+[sdedit str=0.30] 1220/1250 (175.1 min)
+[sdedit str=0.30] 1240/1250 (177.9 min)
+[sdedit] strength 0.30 done -> G:\GitHub\Latent_Style\Related_Works\runs\sdedit_multi\str_0.30\images
+[sdedit str=0.60] 20/1250 (5.4 min)
+[sdedit str=0.60] 40/1250 (10.9 min)
+[sdedit str=0.60] 60/1250 (16.3 min)
+[sdedit str=0.60] 80/1250 (21.8 min)
+[sdedit str=0.60] 100/1250 (27.2 min)
+[sdedit str=0.60] 120/1250 (32.7 min)
+[sdedit str=0.60] 140/1250 (38.1 min)
+[sdedit str=0.60] 160/1250 (43.6 min)
+[sdedit str=0.60] 180/1250 (49.0 min)
+[sdedit str=0.60] 200/1250 (54.5 min)
+[sdedit str=0.60] 220/1250 (60.0 min)
+[sdedit str=0.60] 240/1250 (65.4 min)
+[sdedit str=0.60] 260/1250 (70.8 min)
+[sdedit str=0.60] 280/1250 (76.3 min)
+[sdedit str=0.60] 300/1250 (81.7 min)
+[sdedit str=0.60] 320/1250 (87.2 min)
+[sdedit str=0.60] 340/1250 (92.7 min)
+[sdedit str=0.60] 360/1250 (98.1 min)
+[sdedit str=0.60] 380/1250 (103.6 min)
+[sdedit str=0.60] 400/1250 (109.0 min)
+[sdedit str=0.60] 420/1250 (114.5 min)
+[sdedit str=0.60] 440/1250 (120.0 min)
+[sdedit str=0.60] 460/1250 (125.4 min)
+[sdedit str=0.60] 480/1250 (130.9 min)
+[sdedit str=0.60] 500/1250 (136.4 min)
+[sdedit str=0.60] 520/1250 (141.8 min)
+[sdedit str=0.60] 540/1250 (147.3 min)
+[sdedit str=0.60] 560/1250 (152.7 min)
+[sdedit str=0.60] 580/1250 (158.2 min)
+[sdedit str=0.60] 600/1250 (163.7 min)
+[sdedit str=0.60] 620/1250 (169.1 min)
+[sdedit str=0.60] 640/1250 (174.6 min)
+[sdedit str=0.60] 660/1250 (180.1 min)
+[sdedit str=0.60] 680/1250 (185.5 min)
+[sdedit str=0.60] 700/1250 (191.0 min)
+[sdedit str=0.60] 720/1250 (196.5 min)
+[sdedit str=0.60] 740/1250 (201.9 min)
+[sdedit str=0.60] 760/1250 (207.4 min)
+[sdedit str=0.60] 780/1250 (212.8 min)
+[sdedit str=0.60] 800/1250 (218.3 min)
+[sdedit str=0.60] 820/1250 (223.7 min)
+[sdedit str=0.60] 840/1250 (229.2 min)
+[sdedit str=0.60] 860/1250 (234.7 min)
+[sdedit str=0.60] 880/1250 (240.1 min)
+[sdedit str=0.60] 900/1250 (245.6 min)
+[sdedit str=0.60] 920/1250 (251.1 min)
+[sdedit str=0.60] 940/1250 (256.5 min)
+[sdedit str=0.60] 960/1250 (262.0 min)
+[sdedit str=0.60] 980/1250 (267.6 min)
+[sdedit str=0.60] 1000/1250 (273.2 min)
+[sdedit str=0.60] 1020/1250 (278.7 min)
+Traceback (most recent call last):
+  File "G:\GitHub\Latent_Style\Related_Works\sdedit_generate_5x5.py", line 214, in <module>
+    main()
+  File "G:\GitHub\Latent_Style\Related_Works\sdedit_generate_5x5.py", line 150, in main
+    img = pipe(
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\torch\utils\_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\diffusers\pipelines\stable_diffusion\pipeline_stable_diffusion_img2img.py", line 1103, in __call__
+    noise_pred = self.unet(
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\torch\nn\modules\module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\torch\nn\modules\module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\accelerate\hooks.py", line 192, in new_forward
+    output = module._old_forward(*args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\diffusers\utils\peft_utils.py", line 315, in wrapper
+    result = forward_fn(self, *args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\diffusers\models\unets\unet_2d_condition.py", line 1210, in forward
+    sample = upsample_block(
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\torch\nn\modules\module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\torch\nn\modules\module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\diffusers\models\unets\unet_2d_blocks.py", line 2458, in forward
+    hidden_states = attn(
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\torch\nn\modules\module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\torch\nn\modules\module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\diffusers\models\transformers\transformer_2d.py", line 427, in forward
+    hidden_states = block(
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\torch\nn\modules\module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\torch\nn\modules\module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\diffusers\models\attention.py", line 1069, in forward
+    ff_output = self.ff(norm_hidden_states)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\torch\nn\modules\module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\torch\nn\modules\module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\diffusers\models\attention.py", line 1741, in forward
+    hidden_states = module(hidden_states)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\torch\nn\modules\module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\torch\nn\modules\module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\diffusers\models\activations.py", line 117, in forward
+    hidden_states = self.proj(hidden_states)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\torch\nn\modules\module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\torch\nn\modules\module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\accelerate\hooks.py", line 187, in new_forward
+    args, kwargs = module._hf_hook.pre_forward(module, *args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\accelerate\hooks.py", line 50, in wrapper
+    return wrapper._compiled_fn(*args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\torch\_dynamo\eval_frame.py", line 1181, in _fn
+    return fn(*args, **kwargs)
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\accelerate\hooks.py", line 378, in pre_forward
+    set_module_tensor_to_device(
+  File "G:\GitHub\Latent_Style\Related_Works\envs\sdedit\lib\site-packages\accelerate\utils\modeling.py", line 343, in set_module_tensor_to_device
+    new_value = value.to(device, non_blocking=non_blocking)
+KeyboardInterrupt
+^C

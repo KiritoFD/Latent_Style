@@ -10,10 +10,10 @@
         "num_groups": 4,
         "latent_scale_factor": 0.18215,
         "residual_gain": 1.0,
-        "output_clamp_enabled": true,
+        "output_clamp_enabled": false,
         "output_clamp_min": -2.5,
         "output_clamp_max": 2.5,
-        "decoder_mod_clamp_enabled": true,
+        "decoder_mod_clamp_enabled": false,
         "decoder_mod_gamma_min": -0.9,
         "decoder_mod_gamma_max": 3.0,
         "decoder_mod_beta_min": -2.0,
@@ -32,9 +32,8 @@
         "ada_mix_rank": 32
     },
     "loss": {
-        "w_swd": 50.0,
+        "w_swd": 40.0,
         "swd_patch_sizes": [
-            5,
             7,
             11,
             15,
@@ -51,9 +50,9 @@
         "swd_batch_size": 64,
         "swd_use_high_freq": true,
         "w_color": 0.5,
-        "w_identity": 0.6,
+        "w_identity": 0.8,
         "w_delta_tv": 0.05,
-        "swd_hf_weight_ratio": 5.0
+        "swd_hf_weight_ratio": 3.0
     },
     "training": {
         "seed": 42,
@@ -72,7 +71,7 @@
         "grad_clip_norm": 0.5,
         "num_epochs": 80,
         "save_interval": 20,
-        "full_eval_interval": 40,
+        "full_eval_interval": 20,
         "full_eval_on_last_epoch": true,
         "full_eval_batch_size": 4,
         "full_eval_max_src_samples": 30,
@@ -128,7 +127,7 @@
         "virtual_length_multiplier": 1
     },
     "checkpoint": {
-        "save_dir": "../decoder-E-extreme-brush"
+        "save_dir": "../decoder-H-MSCTM-mult-tv-1"
     },
     "inference": {
         "num_steps": 1,
