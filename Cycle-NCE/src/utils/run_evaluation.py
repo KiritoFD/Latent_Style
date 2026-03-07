@@ -52,6 +52,12 @@ if str(_ROOT) not in sys.path:
 from utils.inference import LGTInference, load_vae, encode_image, decode_latent
 from utils.classify import DEFAULT_EVAL_IMAGE_CLASSIFIER_CKPT, load_eval_image_classifier
 
+# KID (official implementation via torchmetrics)
+try:
+    from torchmetrics.image.kid import KernelInceptionDistance
+except Exception:
+    KernelInceptionDistance = None
+
 # ==========================================
 # Optimized Feature Extractors
 # ==========================================
@@ -579,6 +585,57 @@ def _compute_fid_for_pair(
     return float(_frechet_distance(mu_s, cov_s, mu_r, cov_r))
 
 
+def _load_uint8_rgb_tensor_299(path: str) -> torch.Tensor:
+    img = Image.open(path).convert("RGB").resize((299, 299), Image.Resampling.BICUBIC)
+    # np.asarray(PIL.Image) can produce a non-writable view, which triggers a PyTorch warning.
+    # Copy to ensure a writable, contiguous buffer.
+    arr = np.asarray(img, dtype=np.uint8).copy()
+    if arr.ndim != 3 or arr.shape[2] != 3:
+        raise ValueError(f"Unexpected image shape for KID: {arr.shape}")
+    return torch.from_numpy(arr).permute(2, 0, 1).contiguous()
+
+
+def _compute_kid_for_pair(
+    gen_paths: list[str],
+    ref_paths: list[str],
+    *,
+    device: str,
+    subset_size: int,
+    max_gen: int,
+    max_ref: int,
+    batch_size: int,
+) -> tuple[float | None, float | None]:
+    if KernelInceptionDistance is None:
+        raise RuntimeError("torchmetrics is required for KID (KernelInceptionDistance) but is not available.")
+    g = list(gen_paths or [])[: max(1, int(max_gen))]
+    r = list(ref_paths or [])[: max(1, int(max_ref))]
+    if not g or not r:
+        return None, None
+
+    # torchmetrics enforces subset_size <= number of samples for both sets.
+    subset = max(2, int(subset_size))
+    subset = min(subset, len(g), len(r))
+    if subset < 2:
+        return None, None
+
+    kid = KernelInceptionDistance(subset_size=int(subset)).to(device)
+    kid.eval()
+
+    def _update(paths: list[str], *, real: bool):
+        bs = max(1, int(batch_size))
+        for i in range(0, len(paths), bs):
+            chunk = paths[i : i + bs]
+            imgs = torch.stack([_load_uint8_rgb_tensor_299(p) for p in chunk], dim=0).to(device)
+            kid.update(imgs, real=bool(real))
+
+    _update(r, real=True)
+    _update(g, real=False)
+    mean, std = kid.compute()
+    mean_f = float(mean.detach().cpu().item()) if hasattr(mean, "detach") else float(mean)
+    std_f = float(std.detach().cpu().item()) if hasattr(std, "detach") else float(std)
+    return mean_f, std_f
+
+
 def _load_eval_image_tensor(path: Path, size: int = 256) -> torch.Tensor:
     img = Image.open(path).convert("RGB").resize((size, size))
     return T.ToTensor()(img)
@@ -821,7 +878,7 @@ def main():
     parser.add_argument('--output', type=str, default=None, help="Single-checkpoint mode: output directory")
     parser.add_argument('--config', type=str, default="../config.json", help="Auto mode config path")
     parser.add_argument('--test_dir', type=str, default=None)
-    parser.add_argument('--cache_dir', type=str, default="../eval_cache", help="Directory to store shared feature caches")
+    parser.add_argument('--cache_dir', type=str, default="../../eval_cache", help="Directory to store shared feature caches")
     parser.add_argument('--num_steps', type=int, default=15)
     parser.add_argument('--step_size', type=float, default=1.0)
     parser.add_argument('--style_strength', type=float, default=None, help="Global style strength in [0,1]; default uses checkpoint config")
@@ -846,6 +903,11 @@ def main():
     parser.add_argument('--eval_art_fid_max_ref', type=int, default=200, help="Max target-style reference images per pair for FID_style")
     parser.add_argument('--eval_art_fid_batch_size', type=int, default=16, help="Batch size for inception feature extraction in ArtFID")
     parser.add_argument('--eval_art_fid_photo_only', action='store_true', help="Compute ArtFID/FID only for photo->art directions")
+    parser.add_argument('--eval_enable_kid', action='store_true', help="Enable KID metric (official torchmetrics implementation)")
+    parser.add_argument('--eval_kid_max_gen', type=int, default=200, help="Max generated images per pair for KID")
+    parser.add_argument('--eval_kid_max_ref', type=int, default=200, help="Max target-style reference images per pair for KID")
+    parser.add_argument('--eval_kid_subset_size', type=int, default=50, help="Subset size for KID (torchmetrics)")
+    parser.add_argument('--eval_kid_batch_size', type=int, default=8, help="Batch size for KID image loading/inception")
     parser.add_argument('--eval_lpips_chunk_size', type=int, default=2, help="LPIPS chunk size for conservative VRAM usage")
     parser.add_argument('--eval_lpips_no_cpu_fallback', action='store_true', help="Disable CPU fallback when LPIPS CUDA OOM occurs")
     parser.add_argument('--reuse_generated', action='store_true', help="Reuse existing generated images in output dir/images (or legacy output dir) and skip generation")
@@ -1570,6 +1632,11 @@ def main():
         art_fid_max_ref=int(args.eval_art_fid_max_ref),
         art_fid_batch_size=int(args.eval_art_fid_batch_size),
         art_fid_photo_only=bool(args.eval_art_fid_photo_only),
+        enable_kid=bool(args.eval_enable_kid),
+        kid_max_gen=int(args.eval_kid_max_gen),
+        kid_max_ref=int(args.eval_kid_max_ref),
+        kid_subset_size=int(args.eval_kid_subset_size),
+        kid_batch_size=int(args.eval_kid_batch_size),
     )
 
 def generate_summary_json(
@@ -1586,6 +1653,11 @@ def generate_summary_json(
     art_fid_max_ref: int = 200,
     art_fid_batch_size: int = 16,
     art_fid_photo_only: bool = False,
+    enable_kid: bool = False,
+    kid_max_gen: int = 200,
+    kid_max_ref: int = 200,
+    kid_subset_size: int = 50,
+    kid_batch_size: int = 8,
 ):
     print("\n妫ｅ啯鎯?Generating Summary...")
     rows = []
@@ -1609,6 +1681,17 @@ def generate_summary_json(
         except Exception as e:
             fid_runner = None
             print(f"  WARNING: ArtFID/Inception unavailable in offline/local-only mode: {e}")
+    if enable_kid and KernelInceptionDistance is None:
+        raise RuntimeError("KID requested (--eval_enable_kid) but torchmetrics is not available.")
+    if enable_kid:
+        # torchmetrics KID depends on torch-fidelity for Inception weights/features.
+        try:
+            import torch_fidelity  # noqa: F401
+        except Exception as e:
+            raise RuntimeError(
+                "KID requested (--eval_enable_kid) but torch-fidelity is not available. "
+                "Install it via `pip install torch-fidelity` (or `pip install torchmetrics[image]`)."
+            ) from e
 
     matrix = defaultdict(lambda: defaultdict(list))
     for r in rows:
@@ -1706,6 +1789,65 @@ def generate_summary_json(
                 stats['fid_baseline'] = None
                 stats['delta_fid'] = None
                 stats['delta_fid_ratio'] = None
+
+            if enable_kid and style_real_paths is not None:
+                try:
+                    gen_paths = []
+                    for x in items:
+                        gp = _resolve_gen_image_path(out_dir, x.get('gen_image', ''))
+                        if gp is not None:
+                            gen_paths.append(str(gp.resolve()))
+                    ref_paths = list(style_real_paths.get(tgt, []))
+                    kid_style, kid_style_std = _compute_kid_for_pair(
+                        gen_paths,
+                        ref_paths,
+                        device=device,
+                        subset_size=max(2, int(kid_subset_size)),
+                        max_gen=max(1, int(kid_max_gen)),
+                        max_ref=max(1, int(kid_max_ref)),
+                        batch_size=max(1, int(kid_batch_size)),
+                    )
+                    stats['kid_style'] = kid_style
+                    stats['kid_style_std'] = kid_style_std
+                    src_paths = []
+                    src_map = src_name_to_path.get(str(src), {})
+                    for x in items:
+                        sp = src_map.get(str(x.get('src_image', '')))
+                        if sp:
+                            src_paths.append(sp)
+                    kid_baseline, kid_baseline_std = _compute_kid_for_pair(
+                        src_paths,
+                        ref_paths,
+                        device=device,
+                        subset_size=max(2, int(kid_subset_size)),
+                        max_gen=max(1, int(kid_max_gen)),
+                        max_ref=max(1, int(kid_max_ref)),
+                        batch_size=max(1, int(kid_batch_size)),
+                    )
+                    stats['kid_baseline'] = kid_baseline
+                    stats['kid_baseline_std'] = kid_baseline_std
+                    if kid_style is not None and kid_baseline is not None:
+                        delta_kid = float(kid_baseline) - float(kid_style)
+                        stats['delta_kid'] = delta_kid
+                        stats['delta_kid_ratio'] = float(delta_kid / max(float(kid_baseline), 1e-8))
+                    else:
+                        stats['delta_kid'] = None
+                        stats['delta_kid_ratio'] = None
+                except Exception as e:
+                    print(f"WARNING: KID failed for {src}->{tgt}: {e}")
+                    stats['kid_style'] = None
+                    stats['kid_style_std'] = None
+                    stats['kid_baseline'] = None
+                    stats['kid_baseline_std'] = None
+                    stats['delta_kid'] = None
+                    stats['delta_kid_ratio'] = None
+            else:
+                stats['kid_style'] = None
+                stats['kid_style_std'] = None
+                stats['kid_baseline'] = None
+                stats['kid_baseline_std'] = None
+                stats['delta_kid'] = None
+                stats['delta_kid_ratio'] = None
             
             # Classification Accuracy for this pair
             cls_results = [x['class_correct'] for x in items if x['class_correct'] != 'N/A']
@@ -1772,6 +1914,10 @@ def generate_summary_json(
             'delta_fid': "fid_baseline - fid (higher is better).",
             'delta_fid_ratio': "delta_fid / fid_baseline (relative improvement ratio).",
             'art_fid': "computed as (1 + fid_style) * (1 + content_lpips)",
+            'kid_baseline': "KID between source-domain images and target-style references (torchmetrics).",
+            'kid': "KID between generated images and target-style references (torchmetrics).",
+            'delta_kid': "kid_baseline - kid (higher is better).",
+            'delta_kid_ratio': "delta_kid / kid_baseline (relative improvement ratio).",
         },
         'matrix_breakdown': matrix_json,
         'analysis': {
@@ -1784,6 +1930,10 @@ def generate_summary_json(
                 'delta_fid': pool_avg([t for t in transfer_pool if t.get('delta_fid') is not None], 'delta_fid', default=None),
                 'delta_fid_ratio': pool_avg([t for t in transfer_pool if t.get('delta_fid_ratio') is not None], 'delta_fid_ratio', default=None),
                 'art_fid': pool_avg([t for t in transfer_pool if t.get('art_fid') is not None], 'art_fid', default=None),
+                'kid_baseline': pool_avg([t for t in transfer_pool if t.get('kid_baseline') is not None], 'kid_baseline', default=None),
+                'kid': pool_avg([t for t in transfer_pool if t.get('kid_style') is not None], 'kid_style', default=None),
+                'delta_kid': pool_avg([t for t in transfer_pool if t.get('delta_kid') is not None], 'delta_kid', default=None),
+                'delta_kid_ratio': pool_avg([t for t in transfer_pool if t.get('delta_kid_ratio') is not None], 'delta_kid_ratio', default=None),
                 'classifier_acc': pool_avg([t for t in transfer_pool if t['classifier_acc'] is not None], 'classifier_acc')
             },
             'photo_to_art_performance': {
@@ -1794,6 +1944,10 @@ def generate_summary_json(
                 'delta_fid': pool_avg([t for t in photo_transfer_pool if t.get('delta_fid') is not None], 'delta_fid', default=None),
                 'delta_fid_ratio': pool_avg([t for t in photo_transfer_pool if t.get('delta_fid_ratio') is not None], 'delta_fid_ratio', default=None),
                 'art_fid': pool_avg([t for t in photo_transfer_pool if t.get('art_fid') is not None], 'art_fid', default=None),
+                'kid_baseline': pool_avg([t for t in photo_transfer_pool if t.get('kid_baseline') is not None], 'kid_baseline', default=None),
+                'kid': pool_avg([t for t in photo_transfer_pool if t.get('kid_style') is not None], 'kid_style', default=None),
+                'delta_kid': pool_avg([t for t in photo_transfer_pool if t.get('delta_kid') is not None], 'delta_kid', default=None),
+                'delta_kid_ratio': pool_avg([t for t in photo_transfer_pool if t.get('delta_kid_ratio') is not None], 'delta_kid_ratio', default=None),
                 'valid': len(photo_transfer_pool) > 0,
                 'classifier_acc': pool_avg([t for t in photo_transfer_pool if t['classifier_acc'] is not None], 'classifier_acc')
             }

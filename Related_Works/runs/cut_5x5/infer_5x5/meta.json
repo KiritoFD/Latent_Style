@@ -1,0 +1,15 @@
+{
+  "method": "cut",
+  "targets": [
+    "cezanne",
+    "Hayao",
+    "monet",
+    "photo",
+    "vangogh"
+  ],
+  "datasets_root": "G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets",
+  "checkpoints_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\checkpoints",
+  "results_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\raw_results",
+  "size": 256,
+  "num_test": 1000000
+}

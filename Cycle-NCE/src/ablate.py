@@ -13,26 +13,21 @@ def create_sweep() -> None:
     base = load_base_config()
     out_dir = Path(__file__).resolve().parent
 
-    # Final 4-way shootout:
-    # focus on HF ratio, patch receptive field, and TV damping under hard numerical defenses.
-    # Format: (name, hf_ratio, w_delta_tv, patch_sizes)
+    # Single validation run for MS-CTM.
     experiments = [
-        ("M1-Aggressive-Fine", 5.0, 0.05, [5, 7, 11, 15, 23]),
-        ("M2-Smooth-Impasto", 5.0, 0.15, [5, 7, 11, 15, 23]),
-        ("M3-Macro-Flowing", 5.0, 0.05, [11, 15, 23]),
-        ("M4-Gentle-Balanced", 3.0, 0.05, [5, 7, 11, 15, 23]),
+        ("decoder-H-MSCTM", 5.0, 0.05, [5, 7, 11, 15, 23]),
     ]
 
-    run_bat = out_dir / "run_final_shootout_4.bat"
+    run_bat = out_dir / "run_decoder_H_MSCTM.bat"
     with open(run_bat, "w", encoding="utf-8") as f_bat:
         f_bat.write("@echo off\n")
         f_bat.write("setlocal\n")
         f_bat.write("cd /d %~dp0\n")
         f_bat.write("if %errorlevel% neq 0 exit /b %errorlevel%\n")
-        f_bat.write('set "AGG_ROOT=..\\final-shootout-aggregate"\n')
+        f_bat.write('set "AGG_ROOT=..\\decoder-H-MSCTM-aggregate"\n')
         f_bat.write("if not exist \"%AGG_ROOT%\" mkdir \"%AGG_ROOT%\"\n")
         f_bat.write("echo ==========================================\n")
-        f_bat.write("echo Starting 4-Way Final Shootout (120 Epochs)\n")
+        f_bat.write("echo Starting decoder-H-MSCTM (120 Epochs)\n")
         f_bat.write("echo ==========================================\n\n")
 
         for name, hf_ratio, w_tv, patches in experiments:
@@ -62,7 +57,7 @@ def create_sweep() -> None:
 
             # 4) Output path (prefix keeps downstream collectors compatible).
             cfg.setdefault("checkpoint", {})
-            exp_dir = f"ablate_{name}"
+            exp_dir = name
             cfg["checkpoint"]["save_dir"] = f"../{exp_dir}"
 
             cfg_filename = f"config_{name}.json"
@@ -104,7 +99,7 @@ def create_sweep() -> None:
         )
         f_bat.write("if %errorlevel% neq 0 exit /b %errorlevel%\n")
 
-    print("\nrun_final_shootout_4.bat has been generated.")
+    print("\nrun_decoder_H_MSCTM.bat has been generated.")
 
 
 if __name__ == "__main__":
