@@ -1,0 +1,28 @@
+{
+  "checkpoint": "outputs/model/last.pt",
+  "out_dir": "outputs/vis_solid_naive/eval/last",
+  "testA": "datasets/testA",
+  "testB": "datasets/testB",
+  "compact_paths": false,
+  "src_root": "",
+  "gen_root": "",
+  "latents_scaled": false,
+  "latent_divisor": 1.0,
+  "vae_model": "",
+  "vae_subfolder": null,
+  "vae_scaling_factor": 0.18215,
+  "A2B": {
+    "count": 121,
+    "content_lpips": 0.38767660907969986,
+    "content_clip": 0.7895037482592685,
+    "style_clip": 0.5402774589120849,
+    "fid": 158.12819244443259
+  },
+  "B2A": {
+    "count": 751,
+    "content_lpips": 0.34516355103643215,
+    "content_clip": 0.8792548328836495,
+    "style_clip": 0.3397380157253555,
+    "fid": 153.16172639161235
+  }
+}

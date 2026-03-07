@@ -75,6 +75,9 @@ class LBMModel(BaseModel):
         self.target_key = config.target_key
         self.mask_key = config.mask_key
         self.bridge_noise_sigma = config.bridge_noise_sigma
+        self.enable_minibatch_ot = bool(getattr(config, "enable_minibatch_ot", False))
+        self.minibatch_ot_cost = getattr(config, "minibatch_ot_cost", "latent_l2")
+        self.minibatch_ot_detach = bool(getattr(config, "minibatch_ot_detach", True))
 
         self.num_iterations = nn.Parameter(
             torch.tensor(0, dtype=torch.float32), requires_grad=False
@@ -132,6 +135,34 @@ class LBMModel(BaseModel):
 
         else:
             z_source = source_image
+
+        if self.enable_minibatch_ot and z.shape[0] > 1:
+            if self.minibatch_ot_cost != "latent_l2":
+                raise ValueError(f"Unsupported minibatch_ot_cost: {self.minibatch_ot_cost}")
+
+            z_cost = z.detach() if self.minibatch_ot_detach else z
+            z_source_cost = z_source.detach() if self.minibatch_ot_detach else z_source
+
+            # Compute cost on CPU to avoid extra GPU pressure (B is small).
+            with torch.no_grad():
+                a = z_source_cost.float().reshape(z_source_cost.shape[0], -1).cpu()
+                b = z_cost.float().reshape(z_cost.shape[0], -1).cpu()
+                cost = torch.cdist(a, b, p=2).numpy()
+
+                try:
+                    from scipy.optimize import linear_sum_assignment  # type: ignore
+                except Exception as e:  # pragma: no cover
+                    raise ImportError("scipy is required for enable_minibatch_ot") from e
+
+                row_ind, col_ind = linear_sum_assignment(cost)
+                perm = torch.as_tensor(col_ind, device=z.device, dtype=torch.long)
+
+            z = z.index_select(0, perm)
+            batch[self.target_key] = batch[self.target_key].index_select(0, perm)
+            if self.mask_key in batch:
+                batch[self.mask_key] = batch[self.mask_key].index_select(0, perm)
+                valid_mask = valid_mask.index_select(0, perm)
+                valid_mask_for_latent = valid_mask_for_latent.index_select(0, perm)
 
         # Get conditionings
         conditioning = self._get_conditioning(batch, *args, **kwargs)

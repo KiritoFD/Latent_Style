@@ -81,6 +81,9 @@ class LBMConfig(ModelConfig):
     selected_timesteps: Optional[List[float]] = None
     prob: Optional[List[float]] = None
     bridge_noise_sigma: float = 0.001
+    enable_minibatch_ot: bool = False
+    minibatch_ot_cost: Literal["latent_l2"] = "latent_l2"
+    minibatch_ot_detach: bool = True
 
     def __post_init__(self):
         super().__post_init__()
