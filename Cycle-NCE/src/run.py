@@ -30,6 +30,17 @@ _ALLOWED_LOSS_KEYS = {
     "w_swd",
     "w_identity",
     "w_delta_tv",
+    "w_nce",
+    "w_nce_identity",
+    "nce_tau",
+    "nce_num_patches",
+    "nce_layer_weights",
+    "style_probe_enabled",
+    "style_probe_layer_index",
+    "style_probe_batch_size",
+    "style_probe_lr",
+    "style_probe_weight_decay",
+    "style_probe_use_spectral_norm",
     "swd_patch_sizes",
     "swd_num_projections",
     "swd_projection_chunk_size",
@@ -49,6 +60,7 @@ _LOSS_WEIGHT_KEYS = (
     "w_color",
     "w_identity",
     "w_delta_tv",
+    "w_nce",
 )
 
 
@@ -311,14 +323,32 @@ def main() -> None:
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f swd=%.4f color=%.4f idt=%.4f dtv=%.4f idr=%.2f lr=%.2e data=%.1fs comp=%.1fs",
+            (
+                "Epoch %d/%d | loss=%.4f swd=%.4f swd_hf=%.4f "
+                "color=%.4f idt=%.4f dtv=%.4f "
+                "nce=%.4f nce_xid=%.4f nce_id=%.4f "
+                "skip_g=%.3f±%.3f[min=%.3f,max=%.3f] "
+                "probe(real=%.3f fake=%.3f conf=%.3f) "
+                "idr=%.2f lr=%.2e data=%.1fs comp=%.1fs"
+            ),
             epoch,
             trainer.num_epochs,
             metrics["loss"],
             metrics.get("swd", 0.0),
+            metrics.get("swd_hf", 0.0),
             metrics.get("color", 0.0),
             metrics.get("identity", 0.0),
             metrics.get("delta_tv", 0.0),
+            metrics.get("patch_nce", 0.0),
+            metrics.get("patch_nce_xid", 0.0),
+            metrics.get("patch_nce_id", 0.0),
+            metrics.get("skip_gate_mean", 0.0),
+            metrics.get("skip_gate_std", 0.0),
+            metrics.get("skip_gate_min", 0.0),
+            metrics.get("skip_gate_max", 0.0),
+            metrics.get("style_probe_real_acc", 0.0),
+            metrics.get("style_probe_fake_acc", 0.0),
+            metrics.get("style_probe_fake_conf", 0.0),
             metrics.get("identity_ratio", 0.0),
             metrics["lr"],
             metrics.get("data_time_sec", 0.0),
@@ -338,6 +368,14 @@ def main() -> None:
             if ckpt_path is None:
                 ckpt_path = trainer.save_checkpoint(epoch, metrics)
             trainer.run_full_evaluation(epoch, checkpoint_path=ckpt_path)
+
+        if getattr(trainer, "max_train_steps", 0) > 0 and trainer.global_step >= int(trainer.max_train_steps):
+            logger.info(
+                "Reached training.max_train_steps=%d at global_step=%d. Stop training.",
+                int(trainer.max_train_steps),
+                int(trainer.global_step),
+            )
+            break
         epoch += 1
 
     logger.info("Training completed.")
