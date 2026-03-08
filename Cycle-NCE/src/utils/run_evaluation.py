@@ -867,6 +867,24 @@ def main():
     parser.add_argument('--clip_modelscope_cache_dir', type=str, default="", help="Optional ModelScope cache directory")
     parser.add_argument('--clip_hf_cache_dir', type=str, default="", help="HuggingFace cache dir for CLIP; default uses <cache_dir>/hf")
     parser.add_argument('--clip_allow_network', action='store_true', help="Allow online model fetch if local cache is missing (default off)")
+    parser.add_argument(
+        '--clip_backend',
+        type=str,
+        default="openai",
+        choices=["openai", "hf", "none"],
+        help="CLIP backend for clip_* metrics: openai (official), hf (transformers), none (disable).",
+    )
+    parser.add_argument(
+        '--clip_openai_model',
+        type=str,
+        default="ViT-B/32",
+        help="OpenAI CLIP model name for --clip_backend openai (e.g. ViT-B/32).",
+    )
+    parser.add_argument(
+        '--clip_optional',
+        action='store_true',
+        help="If CLIP cannot be loaded, continue with clip_* = 0 (default: fail to avoid silent zeros).",
+    )
     parser.add_argument('--eval_classifier_only', action='store_true', help="Run only classifier evaluation (skip LPIPS/CLIP)")
     parser.add_argument('--eval_disable_lpips', action='store_true', help="Skip LPIPS metrics (keep CLIP)")
     parser.add_argument('--eval_enable_art_fid', action='store_true', help="Enable ArtFID metric: (1+FID_style)*(1+LPIPS_content)")
@@ -923,7 +941,7 @@ def main():
     os.environ.setdefault("HF_HOME", str(hf_cache_dir))
     os.environ.setdefault("HF_HUB_CACHE", str(hub_cache_dir))
     os.environ.setdefault("TRANSFORMERS_CACHE", str((hf_cache_dir / "transformers").resolve()))
-    if not bool(args.clip_allow_network):
+    if str(getattr(args, "clip_backend", "hf")).strip().lower() == "hf" and not bool(args.clip_allow_network):
         os.environ.setdefault("HF_HUB_OFFLINE", "1")
         os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
     print(f"HF cache dir: {hf_cache_dir}")
@@ -1156,7 +1174,15 @@ def main():
     clip_model = None
     clip_processor = None
     has_clip = False
-    clip_model_tag = str(args.clip_model_name).strip() or "openai/clip-vit-base-patch32"
+    clip_backend = str(getattr(args, "clip_backend", "hf")).strip().lower()
+    clip_preprocess = None  # OpenAI CLIP preprocess
+    clip_encode_pils = None  # Callable[[list[PIL.Image]], Tensor[B,D]] on device
+    if clip_backend == "openai":
+        clip_model_tag = f"openai:{str(getattr(args, 'clip_openai_model', 'ViT-B/32')).strip() or 'ViT-B/32'}"
+    elif clip_backend == "hf":
+        clip_model_tag = str(args.clip_model_name).strip() or "openai/clip-vit-base-patch32"
+    else:
+        clip_model_tag = "none"
     to_pil = ToPILImage()
 
     if run_full_metrics:
@@ -1172,67 +1198,139 @@ def main():
             except Exception as e:
                 print(f"  WARNING: Failed to load LPIPS: {e}")
 
-        try:
-            from transformers import CLIPModel, CLIPProcessor
-
-            clip_sources = []
-            clip_model_name = str(args.clip_model_name).strip() or "openai/clip-vit-base-patch32"
-            if str(args.clip_model_name).strip():
-                local_snapshot = _find_local_hf_snapshot(hf_cache_dir, clip_model_name)
-                if local_snapshot:
-                    clip_sources.append(local_snapshot)
-                clip_sources.append(clip_model_name)
-
-            ms_id = str(args.clip_modelscope_id).strip()
-            if ms_id:
-                try:
-                    from modelscope.hub.snapshot_download import snapshot_download
-
-                    ms_kwargs = {}
-                    ms_cache_dir = str(args.clip_modelscope_cache_dir).strip()
-                    if not ms_cache_dir:
-                        ms_cache_dir = str((hf_cache_dir / "modelscope").resolve())
-                    ms_kwargs["cache_dir"] = ms_cache_dir
-                    try:
-                        ms_local = snapshot_download(ms_id, local_files_only=(not bool(args.clip_allow_network)), **ms_kwargs)
-                    except TypeError:
-                        if bool(args.clip_allow_network):
-                            ms_local = snapshot_download(ms_id, **ms_kwargs)
-                        else:
-                            raise
-                    clip_sources.append(ms_local)
-                    print(f"  ModelScope CLIP cache: {ms_local}")
-                except Exception as ms_exc:
-                    print(f"  WARNING: ModelScope CLIP fallback unavailable: {ms_exc}")
-
-            last_err = None
-            for src in clip_sources:
-                try:
-                    clip_model, clip_processor = _load_clip_from_source(
-                        CLIPModel,
-                        CLIPProcessor,
-                        src,
-                        device,
-                        local_only=(not bool(args.clip_allow_network)),
-                        cache_dir=str(hf_cache_dir),
-                    )
-                    clip_model.eval()
-                    has_clip = True
-                    clip_model_tag = str(src)
-                    print(f"  CLIP Loaded from: {src}")
-                    break
-                except Exception as load_exc:
-                    last_err = load_exc
-                    continue
-            if not has_clip and last_err is not None:
-                raise last_err
-        except Exception as e:
-            print(f"  CLIP unavailable (offline/local-only mode), continue without CLIP metrics: {e}")
+        if clip_backend == "none":
+            has_clip = False
+        elif clip_backend == "openai":
             try:
-                dbg = _debug_clip_cache_state(hf_cache_dir, clip_model_name)
-                print(f"  CLIP cache diagnosis: {dbg}")
-            except Exception:
-                pass
+                import clip as openai_clip
+
+                clip_cache_root = (cache_dir / "clip_openai").resolve()
+                clip_cache_root.mkdir(parents=True, exist_ok=True)
+                model_name = str(getattr(args, "clip_openai_model", "ViT-B/32")).strip() or "ViT-B/32"
+
+                if not bool(args.clip_allow_network):
+                    # Fail fast (avoid hanging downloads) if weights are missing.
+                    url = getattr(openai_clip, "_MODELS", {}).get(model_name)
+                    if url:
+                        expected = clip_cache_root / Path(str(url)).name
+                        if not expected.exists():
+                            raise FileNotFoundError(
+                                f"OpenAI CLIP weights not found in cache: {expected}. "
+                                f"Run once with --clip_allow_network to download, or pre-download into {clip_cache_root}."
+                            )
+
+                clip_model, clip_preprocess = openai_clip.load(
+                    model_name,
+                    device=device,
+                    download_root=str(clip_cache_root),
+                )
+                clip_model.eval()
+                has_clip = True
+                clip_model_tag = f"openai:{model_name}"
+                print(f"  CLIP Loaded (OpenAI): {model_name} (cache={clip_cache_root})")
+            except Exception as e:
+                if bool(getattr(args, "clip_optional", False)):
+                    print(f"  WARNING: OpenAI CLIP unavailable, continue without CLIP metrics: {e}")
+                    has_clip = False
+                    clip_model = None
+                    clip_preprocess = None
+                else:
+                    raise
+        elif clip_backend == "hf":
+            clip_model_name = str(args.clip_model_name).strip() or "openai/clip-vit-base-patch32"
+            try:
+                from transformers import CLIPModel, CLIPProcessor
+
+                clip_sources = []
+                if str(args.clip_model_name).strip():
+                    local_snapshot = _find_local_hf_snapshot(hf_cache_dir, clip_model_name)
+                    if local_snapshot:
+                        clip_sources.append(local_snapshot)
+                    clip_sources.append(clip_model_name)
+
+                ms_id = str(args.clip_modelscope_id).strip()
+                if ms_id:
+                    try:
+                        from modelscope.hub.snapshot_download import snapshot_download
+
+                        ms_kwargs = {}
+                        ms_cache_dir = str(args.clip_modelscope_cache_dir).strip()
+                        if not ms_cache_dir:
+                            ms_cache_dir = str((hf_cache_dir / "modelscope").resolve())
+                        ms_kwargs["cache_dir"] = ms_cache_dir
+                        try:
+                            ms_local = snapshot_download(
+                                ms_id, local_files_only=(not bool(args.clip_allow_network)), **ms_kwargs
+                            )
+                        except TypeError:
+                            if bool(args.clip_allow_network):
+                                ms_local = snapshot_download(ms_id, **ms_kwargs)
+                            else:
+                                raise
+                        clip_sources.append(ms_local)
+                        print(f"  ModelScope CLIP cache: {ms_local}")
+                    except Exception as ms_exc:
+                        print(f"  WARNING: ModelScope CLIP fallback unavailable: {ms_exc}")
+
+                last_err = None
+                for src in clip_sources:
+                    try:
+                        clip_model, clip_processor = _load_clip_from_source(
+                            CLIPModel,
+                            CLIPProcessor,
+                            src,
+                            device,
+                            local_only=(not bool(args.clip_allow_network)),
+                            cache_dir=str(hf_cache_dir),
+                        )
+                        clip_model.eval()
+                        has_clip = True
+                        clip_model_tag = str(src)
+                        print(f"  CLIP Loaded (HF) from: {src}")
+                        break
+                    except Exception as load_exc:
+                        last_err = load_exc
+                        continue
+                if not has_clip and last_err is not None:
+                    raise last_err
+            except Exception as e:
+                if bool(getattr(args, "clip_optional", False)):
+                    print(f"  WARNING: HF CLIP unavailable, continue without CLIP metrics: {e}")
+                    try:
+                        dbg = _debug_clip_cache_state(hf_cache_dir, clip_model_name)
+                        print(f"  CLIP cache diagnosis: {dbg}")
+                    except Exception:
+                        pass
+                    has_clip = False
+                    clip_model = None
+                    clip_processor = None
+                else:
+                    raise
+        else:
+            raise ValueError(f"Invalid --clip_backend: {clip_backend}")
+
+        if has_clip and clip_model is not None:
+            if clip_backend == "openai":
+                if clip_preprocess is None:
+                    raise RuntimeError("OpenAI CLIP preprocess missing")
+
+                def clip_encode_pils(pils):  # noqa: ANN001
+                    imgs = torch.stack([clip_preprocess(im) for im in pils], dim=0).to(device)
+                    feats = clip_model.encode_image(imgs)
+                    feats = feats.to(dtype=torch.float32)
+                    if feats.ndim == 1:
+                        feats = feats.unsqueeze(0)
+                    return feats / (feats.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+
+            else:
+
+                def clip_encode_pils(pils):  # noqa: ANN001
+                    inputs = _safe_to_eval_device(clip_processor(images=pils, return_tensors='pt'), device)
+                    out = clip_model.get_image_features(**inputs)
+                    feats = _extract_clip_embeddings(out).to(device, dtype=torch.float32)
+                    if feats.ndim == 1:
+                        feats = feats.unsqueeze(0)
+                    return feats / (feats.norm(p=2, dim=-1, keepdim=True) + 1e-8)
 
     # Prepare Reference Features (Cache)
     style_sig = ",".join(style_subdirs)
@@ -1295,13 +1393,7 @@ def main():
                             with torch.no_grad():
                                 c_emb = None
                                 if has_clip and clip_model is not None:
-                                    inputs = _safe_to_eval_device(
-                                        clip_processor(images=batch_pils, return_tensors='pt'),
-                                        device,
-                                    )
-                                    out = clip_model.get_image_features(**inputs)
-                                    c_emb = _extract_clip_embeddings(out)
-                                    c_emb = (c_emb / (c_emb.norm(p=2, dim=-1, keepdim=True) + 1e-8)).cpu()
+                                    c_emb = clip_encode_pils(batch_pils).detach().cpu()
 
                             for i, img_path in enumerate(batch_paths):
                                 ref_features[style_id].append({
@@ -1445,15 +1537,7 @@ def main():
             if has_clip and clip_model is not None:
                 # Gen CLIP
                 pil_gens = [to_pil(img.float()) for img in gen_imgs_cpu]
-                inputs_gen = _safe_to_eval_device(
-                    clip_processor(images=pil_gens, return_tensors='pt'),
-                    device,
-                )
-                out_gen = clip_model.get_image_features(**inputs_gen)
-                gen_clips = _extract_clip_embeddings(out_gen).to(device, dtype=torch.float32)
-                # Ensure shape
-                if gen_clips.ndim == 1: gen_clips = gen_clips.unsqueeze(0)
-                gen_clips = gen_clips / (gen_clips.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+                gen_clips = clip_encode_pils(pil_gens)
                 
                 # Src CLIP (cache by source path; source repeats across many target styles)
                 miss_indices = [i for i, k in enumerate(src_keys) if k not in src_clip_cache]
@@ -1466,15 +1550,7 @@ def main():
                             pil_img = Image.open(batch_items[i]['src_path']).convert('RGB')
                             src_pil_cache[src_path] = pil_img
                         pil_srcs_miss.append(pil_img)
-                    inputs_src = _safe_to_eval_device(
-                        clip_processor(images=pil_srcs_miss, return_tensors='pt'),
-                        device,
-                    )
-                    out_src = clip_model.get_image_features(**inputs_src)
-                    src_miss = _extract_clip_embeddings(out_src).to(device, dtype=torch.float32)
-                    if src_miss.ndim == 1:
-                        src_miss = src_miss.unsqueeze(0)
-                    src_miss = src_miss / (src_miss.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+                    src_miss = clip_encode_pils(pil_srcs_miss)
                     src_miss_cpu = src_miss.detach().cpu()
                     for j, idx in enumerate(miss_indices):
                         src_clip_cache[src_keys[idx]] = src_miss_cpu[j].clone()
