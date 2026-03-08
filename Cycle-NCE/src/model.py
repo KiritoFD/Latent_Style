@@ -202,6 +202,7 @@ class LatentAdaCUT(nn.Module):
         upsample_mode: str = "nearest",
         upsample_blur: bool = True,
         upsample_blur_kernel: str = "box3",
+        nce_proj_dim: int = 128,
         **kwargs,
     ) -> None:
         super().__init__()
@@ -211,6 +212,7 @@ class LatentAdaCUT(nn.Module):
         _ = num_decoder_blocks
         self.latent_channels = int(latent_channels)
         self.num_styles = int(num_styles)
+        self.style_dim = int(style_dim)
         self.use_checkpointing = bool(use_checkpointing)
         self.latent_scale_factor = float(latent_scale_factor)
         self.residual_gain = float(residual_gain)
@@ -222,6 +224,7 @@ class LatentAdaCUT(nn.Module):
         self.decoder_mag_eps = float(decoder_mag_eps)
         self.lift_channels = int(lift_channels) if lift_channels is not None else int(base_dim)
         self.body_channels = int(base_dim * 2)
+        self.nce_proj_dim = max(1, int(nce_proj_dim))
 
         self.inject_gate_hires = max(0.0, min(1.0, float(inject_gate_hires)))
         self.inject_gate_body = max(0.0, min(1.0, float(inject_gate_body)))
@@ -270,6 +273,28 @@ class LatentAdaCUT(nn.Module):
         )
         self.dec_act = nn.SiLU()
         self.dec_out = nn.Conv2d(self.lift_channels, latent_channels, kernel_size=3, stride=1, padding=1)
+
+        # Lightweight projection heads for latent-space PatchNCE.
+        # layer0/layer1 at 32x32, layer2 at 16x16 bottleneck.
+        self.nce_projector = nn.ModuleList(
+            [
+                nn.Sequential(
+                    nn.Conv2d(self.lift_channels, self.nce_proj_dim, kernel_size=1),
+                    nn.SiLU(),
+                    nn.Conv2d(self.nce_proj_dim, self.nce_proj_dim, kernel_size=1),
+                ),
+                nn.Sequential(
+                    nn.Conv2d(self.lift_channels, self.nce_proj_dim, kernel_size=1),
+                    nn.SiLU(),
+                    nn.Conv2d(self.nce_proj_dim, self.nce_proj_dim, kernel_size=1),
+                ),
+                nn.Sequential(
+                    nn.Conv2d(self.body_channels, self.nce_proj_dim, kernel_size=1),
+                    nn.SiLU(),
+                    nn.Conv2d(self.nce_proj_dim, self.nce_proj_dim, kernel_size=1),
+                ),
+            ]
+        )
 
         if self.upsample_blur:
             if self.upsample_blur_kernel == "gaussian3":
@@ -406,6 +431,24 @@ class LatentAdaCUT(nn.Module):
         h = self.skip_fusion(torch.cat([h, filtered_skip], dim=1))
         h = self._run_decoder(h, style_code=style_code, gate=gate_decoder)
         return self._compute_delta(h)
+
+    def get_nce_features(self, x: torch.Tensor) -> list[torch.Tensor]:
+        """
+        Extract multi-layer latent features for PatchNCE.
+        Feature 0: after enc_in.
+        Feature 1: after hires_body.
+        Feature 2: after downsample (16x16 bottleneck).
+        """
+        feat = x / max(self.latent_scale_factor, 1e-8)
+        h = self.enc_in_act(self.enc_in(feat))
+        out0 = self.nce_projector[0](h)
+        if len(self.hires_body) > 0:
+            style_code = h.new_zeros((h.shape[0], self.style_dim))
+            h = self._run_style_blocks(h, blocks=self.hires_body, style_code=style_code, gate=0.0)
+        out1 = self.nce_projector[1](h)
+        h_down = self.down(h)
+        out2 = self.nce_projector[2](h_down)
+        return [out0, out1, out2]
 
     def _predict_delta(self, x: torch.Tensor, style_id: torch.Tensor | int, style_strength: float | None = None) -> torch.Tensor:
         strength = self._resolve_style_strength(style_strength)

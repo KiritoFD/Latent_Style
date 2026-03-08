@@ -19,7 +19,7 @@
         "decoder_mod_beta_min": -2.0,
         "decoder_mod_beta_max": 2.0,
         "decoder_mag_stabilizer_enabled": true,
-        "decoder_mag_target_scale": 0.5,
+        "decoder_mag_target_scale": 1.0,
         "decoder_mag_eps": 1e-06,
         "style_spatial_pre_gain_16": 1.0,
         "use_decoder_adagn": true,
@@ -32,7 +32,7 @@
         "ada_mix_rank": 32
     },
     "loss": {
-        "w_swd": 40.0,
+        "w_swd": 20.0,
         "swd_patch_sizes": [
             7,
             11,
@@ -49,10 +49,14 @@
         "swd_cdf_sample_chunk_size": 256,
         "swd_batch_size": 64,
         "swd_use_high_freq": true,
-        "w_color": 0.5,
-        "w_identity": 0.8,
-        "w_delta_tv": 0.05,
-        "swd_hf_weight_ratio": 3.0
+        "w_color": 0.0,
+        "w_identity": 0.5,
+        "w_delta_tv": 0.0,
+        "swd_hf_weight_ratio": 1.5,
+        "w_nce": 2.0,
+        "w_nce_identity": 0.5,
+        "nce_tau": 0.07,
+        "nce_num_patches": 128
     },
     "training": {
         "seed": 42,
@@ -127,7 +131,7 @@
         "virtual_length_multiplier": 1
     },
     "checkpoint": {
-        "save_dir": "../decoder-H-MSCTM-mult-tv-1"
+        "save_dir": "../nce"
     },
     "inference": {
         "num_steps": 1,

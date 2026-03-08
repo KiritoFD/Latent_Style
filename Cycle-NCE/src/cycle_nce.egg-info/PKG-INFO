@@ -67,6 +67,7 @@ Requires-Dist: tomli==2.4.0
 Requires-Dist: torch==2.10.0+cu128
 Requires-Dist: torchaudio==2.10.0
 Requires-Dist: torchvision==0.25.0
+Requires-Dist: torchmetrics==1.8.1
 Requires-Dist: tqdm==4.67.3
 Requires-Dist: transformers==5.2.0
 Requires-Dist: triton-windows==3.6.0.post25

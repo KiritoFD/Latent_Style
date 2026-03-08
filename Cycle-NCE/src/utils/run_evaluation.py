@@ -321,7 +321,13 @@ def _save_summary_grid_png(rows, out_dir: Path, style_order: list[str] | None = 
     if not style_order:
         return None
 
-    # src_style -> src_image -> tgt_style -> path
+    def _to_f(v, default: float = 0.0) -> float:
+        try:
+            return float(v)
+        except Exception:
+            return float(default)
+
+    # src_style -> src_image -> tgt_style -> {path, clip_style, content_lpips}
     by_src = defaultdict(lambda: defaultdict(dict))
     for r in rows:
         src_style = str(r.get("src_style", ""))
@@ -330,23 +336,57 @@ def _save_summary_grid_png(rows, out_dir: Path, style_order: list[str] | None = 
         p = _resolve_gen_image_path(out_dir, str(r.get("gen_image", "")))
         if (not src_style) or (not src_image) or (not tgt_style) or (p is None):
             continue
-        by_src[src_style][src_image][tgt_style] = p
+        by_src[src_style][src_image][tgt_style] = {
+            "path": p,
+            "clip_style": _to_f(r.get("clip_style", 0.0), 0.0),
+            "content_lpips": _to_f(r.get("content_lpips", 0.0), 0.0),
+        }
 
-    # Pick one representative source image per row style (best coverage, then name).
+    # Pick one representative source image per row style:
+    # maximize mean clip_style across transfers to OTHER styles.
     chosen = {}
     for src_style in style_order:
         candidates = by_src.get(src_style, {})
         if not candidates:
             chosen[src_style] = {}
             continue
-        ranked = sorted(candidates.items(), key=lambda kv: (-len(kv[1]), kv[0]))
-        chosen[src_style] = ranked[0][1]
+        best_key = None
+        best_map = None
+        best_src_img = None
+        for src_img, tgt_map in candidates.items():
+            transfer_scores = []
+            for tgt_style in style_order:
+                if tgt_style == src_style:
+                    continue
+                item = tgt_map.get(tgt_style)
+                if item is None:
+                    continue
+                transfer_scores.append(float(item.get("clip_style", 0.0)))
+            coverage = len(transfer_scores)
+            if coverage <= 0:
+                continue
+            mean_clip = float(np.mean(transfer_scores))
+            min_clip = float(np.min(transfer_scores))
+            # Higher mean clip first, then min clip, then coverage.
+            rank_key = (mean_clip, min_clip, coverage, src_img)
+            if best_key is None or rank_key > best_key:
+                best_key = rank_key
+                best_map = tgt_map
+                best_src_img = src_img
+        if best_map is None:
+            ranked = sorted(candidates.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+            best_src_img, best_map = ranked[0]
+        chosen[src_style] = {
+            "src_image": str(best_src_img),
+            "tgt_map": best_map,
+        }
 
     existing_paths = []
     for src_style in style_order:
-        tgt_map = chosen.get(src_style, {})
+        tgt_map = chosen.get(src_style, {}).get("tgt_map", {})
         for tgt_style in style_order:
-            p = tgt_map.get(tgt_style)
+            item = tgt_map.get(tgt_style)
+            p = item.get("path") if isinstance(item, dict) else None
             if p is not None and p.exists():
                 existing_paths.append(p)
     if not existing_paths:
@@ -368,16 +408,19 @@ def _save_summary_grid_png(rows, out_dir: Path, style_order: list[str] | None = 
 
     try:
         font = ImageFont.truetype("arial.ttf", size=28)
+        font_small = ImageFont.truetype("arial.ttf", size=16)
     except Exception:
         font = ImageFont.load_default()
+        font_small = font
 
     bg = (0, 0, 0)
     fg = (255, 255, 255)
     pad = 18
     header_h = 56
-    left_w = 140
+    metric_h = 24
+    left_w = 220
     canvas_w = left_w + n * cell_w + (n + 1) * pad
-    canvas_h = header_h + n * cell_h + (n + 1) * pad
+    canvas_h = header_h + n * (cell_h + metric_h) + (n + 1) * pad
     canvas = Image.new("RGB", (canvas_w, canvas_h), color=bg)
     draw = ImageDraw.Draw(canvas)
 
@@ -388,13 +431,17 @@ def _save_summary_grid_png(rows, out_dir: Path, style_order: list[str] | None = 
 
     for ri, src_style in enumerate(style_order):
         x = 6
-        y = header_h + pad + ri * (cell_h + pad) + max(0, (cell_h - 28) // 2)
+        y = header_h + pad + ri * (cell_h + metric_h + pad) + max(0, (cell_h - 28) // 2)
         draw.text((x, y), src_style, fill=fg, font=font)
-        tgt_map = chosen.get(src_style, {})
+        src_img = chosen.get(src_style, {}).get("src_image", "")
+        if src_img:
+            draw.text((x, y + 30), Path(src_img).stem, fill=(200, 200, 200), font=font_small)
+        tgt_map = chosen.get(src_style, {}).get("tgt_map", {})
         for ci, tgt_style in enumerate(style_order):
             px = left_w + pad + ci * (cell_w + pad)
-            py = header_h + pad + ri * (cell_h + pad)
-            p = tgt_map.get(tgt_style)
+            py = header_h + pad + ri * (cell_h + metric_h + pad)
+            item = tgt_map.get(tgt_style)
+            p = item.get("path") if isinstance(item, dict) else None
             if p is None or not p.exists():
                 continue
             try:
@@ -402,10 +449,18 @@ def _save_summary_grid_png(rows, out_dir: Path, style_order: list[str] | None = 
                     canvas.paste(im, (px, py))
             except Exception:
                 continue
+            clip_style = float(item.get("clip_style", 0.0))
+            c_lpips = float(item.get("content_lpips", 0.0))
+            stat_text = f"clip={clip_style:.3f} lpips={c_lpips:.3f}"
+            draw.text((px + 4, py + cell_h + 3), stat_text, fill=(230, 230, 230), font=font_small)
 
     out_path = out_dir / "summary_grid.png"
     canvas.save(out_path, format="PNG")
     print(f"Summary grid saved: {out_path}")
+    print("Summary grid source selection (max transfer clip_style mean):")
+    for src_style in style_order:
+        src_img = chosen.get(src_style, {}).get("src_image", "")
+        print(f"  {src_style}: {Path(src_img).stem if src_img else '(none)'}")
     return out_path
 
 def _extract_clip_embeddings(output):
@@ -631,6 +686,22 @@ def _parse_generated_name(filename: str, style_names: list[str]) -> tuple[str, s
     return None
 
 
+def _infer_style_names_from_generated_files(files: list[Path]) -> list[str]:
+    styles = set()
+    for p in files:
+        stem = p.stem
+        if "_to_" not in stem:
+            continue
+        left, tgt = stem.rsplit("_to_", 1)
+        if tgt:
+            styles.add(str(tgt))
+        if "_" in left:
+            src_style = left.split("_", 1)[0]
+            if src_style:
+                styles.add(str(src_style))
+    return sorted(styles)
+
+
 def _is_ref_cache_valid(ref_features: dict, need_clip: bool) -> bool:
     if not isinstance(ref_features, dict) or not ref_features:
         return False
@@ -845,8 +916,10 @@ def _auto_run_missing_full_eval(args) -> None:
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('eval_dir', nargs='?', default=None, help="One-shot mode: target full_eval directory (reuse existing images).")
     parser.add_argument('--checkpoint', type=str, default=None, help="Single-checkpoint mode: path to checkpoint")
     parser.add_argument('--output', type=str, default=None, help="Single-checkpoint mode: output directory")
+    parser.add_argument('--style_subdirs', type=str, default="", help="Optional comma-separated style names for reuse-only eval without checkpoint")
     parser.add_argument('--config', type=str, default="../config.json", help="Auto mode config path")
     parser.add_argument('--test_dir', type=str, default=None)
     parser.add_argument('--cache_dir', type=str, default="../../eval_cache", help="Directory to store shared feature caches")
@@ -903,8 +976,21 @@ def main():
     parser.add_argument('--generation_only', action='store_true', help="Only generate translated images, skip all evaluation metrics")
     args = parser.parse_args()
 
-    if (args.checkpoint is None) ^ (args.output is None):
-        raise ValueError("Both --checkpoint and --output must be provided together.")
+    # One-shot mode: `run_evaluation.py <full_eval_dir>`
+    if args.eval_dir and not args.output:
+        args.output = str(args.eval_dir)
+        args.reuse_generated = True
+        args.force_regen = True
+
+    if args.output is None:
+        if args.checkpoint is None:
+            _auto_run_missing_full_eval(args)
+            return
+        raise ValueError("--output is required when --checkpoint is provided.")
+    if args.checkpoint is None and (not args.reuse_generated):
+        raise ValueError("--checkpoint is required unless --reuse_generated is set.")
+    if args.checkpoint is None and args.generation_only:
+        raise ValueError("--generation_only requires --checkpoint (cannot generate without model checkpoint).")
     if args.checkpoint is None and args.output is None:
         _auto_run_missing_full_eval(args)
         return
@@ -950,19 +1036,27 @@ def main():
     # Thread Pool for Async I/O
     io_pool = ThreadPoolExecutor(max_workers=4)
     
-    checkpoint_path = Path(args.checkpoint)
-    if not checkpoint_path.exists(): raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
-    
-    ckpt = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
-    cfg = ckpt.get('config', {})
+    checkpoint_path: Path | None = None
+    cfg = {}
+    if args.checkpoint is not None:
+        checkpoint_path = Path(args.checkpoint)
+        if not checkpoint_path.exists():
+            raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
+        ckpt = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
+        cfg = ckpt.get('config', {})
+    else:
+        print("Single-run eval in reuse-only mode (no checkpoint).")
     
     # Resolve Test Data Path
     test_dir_raw = args.test_dir if args.test_dir else cfg.get('training', {}).get('test_image_dir', '')
+    if not str(test_dir_raw).strip():
+        # Reuse-only fallback for convenience.
+        test_dir_raw = "../../style_data/overfit50"
     resolved_test_dir = _resolve_existing_path(
         test_dir_raw,
         [
             Path.cwd(),
-            checkpoint_path.parent.resolve(),
+            *( [checkpoint_path.parent.resolve()] if checkpoint_path is not None else [] ),
             Path(__file__).resolve().parent,
             Path(__file__).resolve().parents[1],
             Path(__file__).resolve().parents[2],
@@ -972,10 +1066,15 @@ def main():
         raise ValueError(f"Test directory not found: {test_dir_raw}")
     test_dir = resolved_test_dir
 
-    style_subdirs = cfg.get('data', {}).get('style_subdirs', [])
+    style_subdirs = [x.strip() for x in str(args.style_subdirs).split(",") if x.strip()]
     if not style_subdirs:
-        # Fallback: auto-detect subdirs
+        style_subdirs = list(cfg.get('data', {}).get('style_subdirs', []))
+    if not style_subdirs:
         style_subdirs = [d.name for d in test_dir.iterdir() if d.is_dir()]
+    if (not style_subdirs) and args.reuse_generated:
+        style_subdirs = _infer_style_names_from_generated_files(_list_reuse_generated_files(out_dir))
+    if not style_subdirs:
+        raise ValueError("Failed to infer style names. Provide --style_subdirs or valid --test_dir folders.")
     
     test_images = {}
     for style_id, style_name in enumerate(style_subdirs):
@@ -1034,6 +1133,8 @@ def main():
         print(f"  Reused {len(generated_buffer)} generated images")
 
     if not generated_buffer:
+        if checkpoint_path is None:
+            raise RuntimeError("No reusable images found and no checkpoint provided. Cannot run generation phase.")
         print(f"\nPhase 1: Generation (Batch Size {args.batch_size})")
 
         lgt = LGTInference(
@@ -1129,7 +1230,7 @@ def main():
             torch.cuda.empty_cache()
         gc.collect()
         summary = {
-            "checkpoint": str(checkpoint_path),
+            "checkpoint": str(checkpoint_path) if checkpoint_path is not None else "(reuse-only:no-checkpoint)",
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "mode": "generation_only",
             "generated_count": int(len(generated_buffer)),
@@ -1153,15 +1254,42 @@ def main():
 
     if args.image_classifier_path:
         try:
-            image_ckpt = Path(args.image_classifier_path)
-            if not image_ckpt.is_absolute():
-                image_ckpt = (Path(__file__).resolve().parent / image_ckpt).resolve()
-            if not image_ckpt.exists():
-                print(f"  WARNING: image style classifier checkpoint not found: {image_ckpt}")
+            classifier_path_candidates = [str(args.image_classifier_path)]
+            cfg_classifier = str(cfg.get("training", {}).get("full_eval_image_classifier_path", "")).strip()
+            if cfg_classifier:
+                classifier_path_candidates.append(cfg_classifier)
+            classifier_path_candidates.extend(
+                [
+                    str(cache_dir / "eval_style_image_classifier.pt"),
+                    str(Path(__file__).resolve().parents[2] / "eval_cache" / "eval_style_image_classifier.pt"),
+                ]
+            )
+
+            base_dirs = [
+                Path.cwd(),
+                out_dir,
+                cache_dir,
+                Path(__file__).resolve().parent,
+                Path(__file__).resolve().parents[1],
+                Path(__file__).resolve().parents[2],
+            ]
+            if checkpoint_path is not None:
+                base_dirs.insert(1, checkpoint_path.parent.resolve())
+
+            resolved_ckpt = None
+            for raw in classifier_path_candidates:
+                resolved_ckpt = _resolve_existing_path(raw, base_dirs)
+                if resolved_ckpt is not None:
+                    break
+
+            if resolved_ckpt is None:
+                print("  WARNING: image style classifier checkpoint not found. Tried:")
+                for raw in classifier_path_candidates:
+                    print(f"    - {raw}")
             else:
-                image_classifier = load_eval_image_classifier(image_ckpt, device=device)
+                image_classifier = load_eval_image_classifier(resolved_ckpt, device=device)
                 classifier_label_names = list(image_classifier.classes)
-                print(f"  Loaded image style classifier: {image_ckpt} (classes={len(classifier_label_names)})")
+                print(f"  Loaded image style classifier: {resolved_ckpt} (classes={len(classifier_label_names)})")
         except Exception as e:
             print(f"  WARNING: failed to load image style classifier: {e}")
             image_classifier = None
@@ -1664,10 +1792,11 @@ def main():
     style_real_paths = {}
     for _, (style_name, img_list) in test_images.items():
         style_real_paths[style_name] = [str(p) for p in img_list]
+    ckpt_for_summary = checkpoint_path if checkpoint_path is not None else Path("(reuse-only:no-checkpoint)")
     generate_summary_json(
         csv_path,
         out_dir,
-        checkpoint_path,
+        ckpt_for_summary,
         style_order=list(style_subdirs),
         style_real_paths=style_real_paths,
         source_style_paths=style_real_paths,
