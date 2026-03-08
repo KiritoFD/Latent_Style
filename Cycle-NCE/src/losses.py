@@ -253,6 +253,22 @@ class AdaCUTObjective:
         self.w_nce_identity = float(loss_cfg.get("w_nce_identity", 1.0))
         self.nce_tau = float(loss_cfg.get("nce_tau", 0.07))
         self.nce_num_patches = int(loss_cfg.get("nce_num_patches", 128))
+        layer_weights_cfg = loss_cfg.get("nce_layer_weights", [1.0, 1.0, 1.0])
+        if isinstance(layer_weights_cfg, (list, tuple)):
+            self.nce_layer_weights = [float(v) for v in layer_weights_cfg if float(v) > 0.0]
+        else:
+            self.nce_layer_weights = [float(layer_weights_cfg)]
+        if not self.nce_layer_weights:
+            self.nce_layer_weights = [1.0]
+        self.w_gate_reg = float(loss_cfg.get("w_gate_reg", 0.0))
+        self.gate_reg_target_var = float(loss_cfg.get("gate_reg_target_var", 0.05))
+        # Kept for trainer hot-reload compatibility; probe monitoring is optional.
+        self.style_probe_enabled = bool(loss_cfg.get("style_probe_enabled", False))
+        self.style_probe_layer_index = int(loss_cfg.get("style_probe_layer_index", -1))
+        self.style_probe_batch_size = int(loss_cfg.get("style_probe_batch_size", 64))
+        self.style_probe_lr = float(loss_cfg.get("style_probe_lr", 1e-3))
+        self.style_probe_weight_decay = float(loss_cfg.get("style_probe_weight_decay", 0.0))
+        self.style_probe_use_spectral_norm = bool(loss_cfg.get("style_probe_use_spectral_norm", True))
         self.nsight_nvtx = bool(config.get("training", {}).get("nsight_nvtx", False))
         self._sobel_cache: Dict[tuple[int, str, str], tuple[torch.Tensor, torch.Tensor]] = {}
         self._projection_cache: Dict[tuple[int, int, int, str, str], torch.Tensor] = {}
@@ -352,6 +368,22 @@ class AdaCUTObjective:
             # Reuse one sampled xid subset for both SWD and color to reduce gradient jitter.
             xid_valid_idx = self._select_xid_indices(xid_mask)
 
+        gate_t = model.get_skip_gate_tensor()
+        if gate_t is not None:
+            gate_det = gate_t.detach()
+            metrics["skip_gate_mean"] = gate_det.mean()
+            metrics["skip_gate_std"] = gate_det.std(unbiased=False)
+            metrics["skip_gate_min"] = gate_det.min()
+            metrics["skip_gate_max"] = gate_det.max()
+            # Channel variance as a weak "gate should diversify" signal.
+            gate_var = gate_det.var(dim=1, unbiased=False).mean()
+            metrics["gate_var"] = gate_var
+            if self.w_gate_reg > 0.0:
+                gate_var_live = gate_t.var(dim=1, unbiased=False).mean()
+                loss_gate_reg = F.relu(gate_t.new_tensor(self.gate_reg_target_var) - gate_var_live)
+                total_loss = total_loss + self.w_gate_reg * loss_gate_reg
+                metrics["gate_reg"] = loss_gate_reg.detach()
+
         if xid_mask.any() and self.w_swd > 0.0:
             assert xid_valid_idx is not None
             swd_x = pred.index_select(0, xid_valid_idx)
@@ -424,13 +456,14 @@ class AdaCUTObjective:
                 with torch.no_grad():
                     k_feats = model.get_nce_features(xid_content)
                 loss_nce_xid = pred.new_tensor(0.0)
-                for qf, kf in zip(q_feats, k_feats):
+                for i, (qf, kf) in enumerate(zip(q_feats, k_feats)):
+                    w_layer = self.nce_layer_weights[min(i, len(self.nce_layer_weights) - 1)]
                     loss_nce_xid = loss_nce_xid + calc_patch_nce_loss(
                         qf,
                         kf,
                         tau=self.nce_tau,
                         num_patches=self.nce_num_patches,
-                    )
+                    ) * float(w_layer)
                 loss_nce_xid = loss_nce_xid / max(len(q_feats), 1)
                 loss_nce_total = loss_nce_total + loss_nce_xid
                 loss_nce_terms += 1
@@ -444,13 +477,14 @@ class AdaCUTObjective:
                 with torch.no_grad():
                     k_feats = model.get_nce_features(id_content)
                 loss_nce_id = pred.new_tensor(0.0)
-                for qf, kf in zip(q_feats, k_feats):
+                for i, (qf, kf) in enumerate(zip(q_feats, k_feats)):
+                    w_layer = self.nce_layer_weights[min(i, len(self.nce_layer_weights) - 1)]
                     loss_nce_id = loss_nce_id + calc_patch_nce_loss(
                         qf,
                         kf,
                         tau=self.nce_tau,
                         num_patches=self.nce_num_patches,
-                    )
+                    ) * float(w_layer)
                 loss_nce_id = loss_nce_id / max(len(q_feats), 1)
                 loss_nce_total = loss_nce_total + self.w_nce_identity * loss_nce_id
                 loss_nce_terms += 1

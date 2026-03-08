@@ -145,6 +145,7 @@ class StyleAdaptiveSkip(nn.Module):
         self.rewrite_mapper = nn.Linear(style_dim, channels)
         nn.init.zeros_(self.rewrite_mapper.weight)
         nn.init.zeros_(self.rewrite_mapper.bias)
+        self._last_gate_tensor: torch.Tensor | None = None
 
     def forward(
         self,
@@ -164,7 +165,11 @@ class StyleAdaptiveSkip(nn.Module):
         else:
             gate_t = skip_feat.new_tensor(float(gate))
         effective_gate = 1.0 - (1.0 - erase_gate) * gate_t
+        self._last_gate_tensor = effective_gate
         return skip_feat * effective_gate + rewrite_bias * (1.0 - effective_gate)
+
+    def get_last_gate_tensor(self) -> torch.Tensor | None:
+        return self._last_gate_tensor
 
 
 class LatentAdaCUT(nn.Module):
@@ -449,6 +454,9 @@ class LatentAdaCUT(nn.Module):
         h_down = self.down(h)
         out2 = self.nce_projector[2](h_down)
         return [out0, out1, out2]
+
+    def get_skip_gate_tensor(self) -> torch.Tensor | None:
+        return self.skip_filter.get_last_gate_tensor()
 
     def _predict_delta(self, x: torch.Tensor, style_id: torch.Tensor | int, style_strength: float | None = None) -> torch.Tensor:
         strength = self._resolve_style_strength(style_strength)

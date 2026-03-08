@@ -327,6 +327,8 @@ class AdaCUTTrainer:
                     "skip_gate_std",
                     "skip_gate_min",
                     "skip_gate_max",
+                    "gate_var",
+                    "gate_reg",
                     "style_probe_loss",
                     "style_probe_real_acc",
                     "style_probe_fake_acc",
@@ -424,6 +426,11 @@ class AdaCUTTrainer:
         _set_attr("w_nce_identity", float(loss_cfg.get("w_nce_identity", getattr(lf, "w_nce_identity", 1.0))))
         _set_attr("nce_tau", float(loss_cfg.get("nce_tau", getattr(lf, "nce_tau", 0.07))))
         _set_attr("nce_num_patches", int(loss_cfg.get("nce_num_patches", getattr(lf, "nce_num_patches", 128))))
+        _set_attr("w_gate_reg", float(loss_cfg.get("w_gate_reg", getattr(lf, "w_gate_reg", 0.0))))
+        _set_attr(
+            "gate_reg_target_var",
+            float(loss_cfg.get("gate_reg_target_var", getattr(lf, "gate_reg_target_var", 0.05))),
+        )
         layer_weights = loss_cfg.get("nce_layer_weights", getattr(lf, "nce_layer_weights", [1.0]))
         if isinstance(layer_weights, list):
             parsed_nce_layer_weights = [float(v) for v in layer_weights if float(v) > 0.0]
@@ -1093,6 +1100,7 @@ class AdaCUTTrainer:
             "loss", "swd", "swd_hf", "color", "identity", "delta_tv",
             "patch_nce", "patch_nce_xid", "patch_nce_id",
             "skip_gate_mean", "skip_gate_std", "skip_gate_min", "skip_gate_max",
+            "gate_var", "gate_reg",
             "style_probe_loss", "style_probe_real_acc", "style_probe_fake_acc", "style_probe_fake_conf",
             "style_probe_layer", "style_probe_steps",
             "identity_ratio",
@@ -1126,6 +1134,7 @@ class AdaCUTTrainer:
                 f"idt={metrics['identity']:.4f} dtv={metrics['delta_tv']:.4f} "
                 f"nce={metrics['patch_nce']:.4f} xid={metrics['patch_nce_xid']:.4f} id={metrics['patch_nce_id']:.4f} "
                 f"skip_g={metrics['skip_gate_mean']:.3f}+-{metrics['skip_gate_std']:.3f} "
+                f"gate_var={metrics['gate_var']:.4f} gate_reg={metrics['gate_reg']:.4f} "
                 f"probe_r={metrics['style_probe_real_acc']:.3f} probe_f={metrics['style_probe_fake_acc']:.3f} "
                 f"idr={metrics['identity_ratio']:.2f} "
                 f"| data={data_time_total:.1f}s transfer={transfer_time_total:.1f}s fwd={fwd_loss_time_total:.1f}s "
@@ -1154,6 +1163,8 @@ class AdaCUTTrainer:
                     float(metrics.get("skip_gate_std", 0.0)),
                     float(metrics.get("skip_gate_min", 0.0)),
                     float(metrics.get("skip_gate_max", 0.0)),
+                    float(metrics.get("gate_var", 0.0)),
+                    float(metrics.get("gate_reg", 0.0)),
                     float(metrics.get("style_probe_loss", 0.0)),
                     float(metrics.get("style_probe_real_acc", 0.0)),
                     float(metrics.get("style_probe_fake_acc", 0.0)),
