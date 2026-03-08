@@ -39,7 +39,7 @@
             15,
             23
         ],
-        "swd_num_projections": 640,
+        "swd_num_projections": 256,
         "swd_projection_chunk_size": 64,
         "swd_distance_mode": "cdf",
         "swd_cdf_num_bins": 32,
@@ -56,14 +56,7 @@
         "w_nce": 2.0,
         "w_nce_identity": 0.5,
         "nce_tau": 0.07,
-        "nce_num_patches": 128,
-        "nce_layer_weights": [
-            0.5,
-            0.75,
-            1.5
-        ],
-        "w_gate_reg": 0.05,
-        "gate_reg_target_var": 0.05
+        "nce_num_patches": 64
     },
     "training": {
         "seed": 42,
@@ -82,7 +75,7 @@
         "grad_clip_norm": 0.5,
         "num_epochs": 80,
         "save_interval": 20,
-        "full_eval_interval": 20,
+        "full_eval_interval": 40,
         "full_eval_on_last_epoch": true,
         "full_eval_batch_size": 4,
         "full_eval_max_src_samples": 30,
@@ -110,8 +103,10 @@
         "allow_tf32": true,
         "cudnn_benchmark": false,
         "channels_last": true,
-        "use_gradient_checkpointing": true,
+        "use_gradient_checkpointing": false,
         "use_compile": false,
+        "compile_mode": "default",
+        "disable_compile_on_rtx30": false,
         "fused_adamw": true,
         "empty_cache_interval": 0,
         "log_vram_interval": 0,
@@ -138,7 +133,7 @@
         "virtual_length_multiplier": 1
     },
     "checkpoint": {
-        "save_dir": "../nce"
+        "save_dir": "../nce-gate_norm"
     },
     "inference": {
         "num_steps": 1,

@@ -11,6 +11,7 @@ Usage:
 import argparse
 import csv
 import json
+import re
 from collections import OrderedDict
 from datetime import datetime
 from pathlib import Path
@@ -23,7 +24,7 @@ def _read_json(path: Path) -> Dict[str, Any]:
         with path.open('r', encoding='utf-8') as f:
             return json.load(f)
     except Exception as e:
-        print(f"⚠️  Error reading {path}: {e}")
+        print(f"[WARN] Error reading {path}: {e}")
         return {}
 
 
@@ -101,10 +102,64 @@ def _extract_rounds_data(json_data: Dict[str, Any], source_path: Path) -> List[D
     return records
 
 
+def _extract_epoch_from_path(path: Path) -> Optional[int]:
+    for part in path.parts:
+        m = re.fullmatch(r"epoch_(\d+)", part)
+        if m:
+            try:
+                return int(m.group(1))
+            except Exception:
+                return None
+    return None
+
+
+def _extract_experiment_id_from_file_path(path: Path) -> str:
+    parts = list(path.parts)
+    for i, part in enumerate(parts):
+        if part == 'full_eval' and i > 0:
+            candidate = parts[i - 1].strip()
+            if candidate:
+                return candidate
+    return path.parent.name or 'unknown'
+
+
+def _extract_single_summary_data(json_data: Dict[str, Any], source_path: Path) -> List[Dict[str, Any]]:
+    """
+    Extract one row from full_eval/epoch_xxxx/summary.json.
+    """
+    analysis = json_data.get('analysis')
+    if not isinstance(analysis, dict):
+        return []
+
+    transfer = analysis.get('style_transfer_ability')
+    photo_to_art = analysis.get('photo_to_art_performance')
+    if not isinstance(transfer, dict) or not isinstance(photo_to_art, dict):
+        return []
+
+    epoch = _extract_epoch_from_path(source_path)
+    record = {
+        'source_file': str(source_path),
+        'experiment_id': _extract_experiment_id_from_file_path(source_path),
+        'updated_at': json_data.get('timestamp', ''),
+        'summary_path': str(source_path),
+        'epoch': int(epoch) if epoch is not None else '',
+        'transfer_clip_style': transfer.get('clip_style'),
+        'transfer_content_lpips': transfer.get('content_lpips'),
+        'transfer_fid': transfer.get('fid'),
+        'transfer_art_fid': transfer.get('art_fid'),
+        'transfer_classifier_acc': transfer.get('classifier_acc'),
+        'photo_to_art_clip_style': photo_to_art.get('clip_style'),
+        'photo_to_art_fid': photo_to_art.get('fid'),
+        'photo_to_art_art_fid': photo_to_art.get('art_fid'),
+        'photo_to_art_classifier_acc': photo_to_art.get('classifier_acc'),
+    }
+    return [record]
+
+
 def _get_all_json_files(source: Path, recursive: bool = False) -> List[Path]:
-    """Find all summary_history*.json files."""
+    """Find all supported json files (summary_history*.json and summary.json)."""
     if source.is_file():
-        if source.name.startswith('summary_history') and source.suffix == '.json':
+        if source.suffix == '.json' and (source.name.startswith('summary_history') or source.name == 'summary.json'):
             return [source]
         return []
     
@@ -162,7 +217,7 @@ def _read_existing_csv(csv_path: Path) -> Tuple[List[Dict[str, str]], Set[str]]:
         
         return rows, keys
     except Exception as e:
-        print(f"⚠️  Error reading existing CSV: {e}")
+        print(f"[WARN] Error reading existing CSV: {e}")
         return [], set()
 
 
@@ -250,10 +305,10 @@ Examples:
     json_files = _get_all_json_files(source, recursive=args.recursive)
     
     if not json_files:
-        raise SystemExit(f"❌ No summary_history*.json files found in {source}")
+        raise SystemExit(f"❌ No supported json files found in {source}")
     
     if args.verbose:
-        print(f"📁 Found {len(json_files)} JSON file(s)")
+        print(f"[INFO] Found {len(json_files)} JSON file(s)")
         for jf in json_files:
             print(f"   - {jf}")
     
@@ -262,13 +317,15 @@ Examples:
     
     for json_file in json_files:
         if args.verbose:
-            print(f"📖 Processing {json_file}...")
+            print(f"[INFO] Processing {json_file}...")
         
         json_data = _read_json(json_file)
         records = _extract_rounds_data(json_data, json_file)
+        if not records:
+            records = _extract_single_summary_data(json_data, json_file)
         
         if args.verbose:
-            print(f"   └─ Extracted {len(records)} epoch record(s)")
+            print(f"   -> Extracted {len(records)} epoch record(s)")
         
         all_records.extend(records)
     
@@ -282,7 +339,7 @@ Examples:
     existing_rows, existing_keys = _read_existing_csv(output)
     
     if args.verbose and existing_rows:
-        print(f"📖 Found {len(existing_rows)} existing record(s)")
+        print(f"[INFO] Found {len(existing_rows)} existing record(s)")
     
     # Merge with deduplication
     merged_rows, added_count = _merge_and_deduplicate(
@@ -292,7 +349,7 @@ Examples:
     )
     
     if args.verbose:
-        print(f"✨ {added_count} new record(s) to add")
+        print(f"[INFO] {added_count} new record(s) to add")
     
     # Get all field names
     fieldnames = _get_all_fieldnames(merged_rows)
@@ -306,10 +363,10 @@ Examples:
             writer.writeheader()
             writer.writerows(merged_rows)
         
-        print(f"✅ Wrote {len(merged_rows)} total record(s) to {output}")
+        print(f"[OK] Wrote {len(merged_rows)} total record(s) to {output}")
         if added_count > 0:
-            print(f"   └─ Added {added_count} new, kept {len(merged_rows) - added_count} existing")
-        print(f"   └─ {len(fieldnames)} column(s)")
+            print(f"   -> Added {added_count} new, kept {len(merged_rows) - added_count} existing")
+        print(f"   -> {len(fieldnames)} column(s)")
         
     except Exception as e:
         raise SystemExit(f"❌ Error writing CSV: {e}")

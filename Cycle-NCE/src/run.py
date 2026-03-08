@@ -236,6 +236,7 @@ def main() -> None:
     config_path = Path(args.config).resolve()
     with open(config_path, "r", encoding="utf-8") as f:
         config = json.load(f)
+    logger.info("Config path: %s", config_path)
     _validate_loss_config(config)
     _log_active_losses(config)
 
@@ -313,6 +314,8 @@ def main() -> None:
     )
 
     trainer = AdaCUTTrainer(config=config, device=device, config_path=str(config_path))
+    logger.info("Checkpoint dir: %s", trainer.checkpoint_dir.resolve())
+    logger.info("Train log csv: %s", trainer.log_file.resolve())
 
     epoch = int(trainer.start_epoch)
     while epoch <= int(trainer.num_epochs):
@@ -356,6 +359,19 @@ def main() -> None:
             metrics["lr"],
             metrics.get("data_time_sec", 0.0),
             metrics.get("compute_time_sec", 0.0),
+        )
+        logger.info(
+            "Epoch %d extras | nce=%.4f nce_xid=%.4f nce_id=%.4f gate(mean=%.4f std=%.4f min=%.4f max=%.4f var=%.4f reg=%.4f)",
+            epoch,
+            metrics.get("patch_nce", 0.0),
+            metrics.get("patch_nce_xid", 0.0),
+            metrics.get("patch_nce_id", 0.0),
+            metrics.get("skip_gate_mean", 0.0),
+            metrics.get("skip_gate_std", 0.0),
+            metrics.get("skip_gate_min", 0.0),
+            metrics.get("skip_gate_max", 0.0),
+            metrics.get("gate_var", 0.0),
+            metrics.get("gate_reg", 0.0),
         )
 
         ckpt_path = None

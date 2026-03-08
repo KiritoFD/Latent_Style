@@ -138,10 +138,29 @@ class NormFreeModulation(nn.Module):
 class StyleAdaptiveSkip(nn.Module):
     def __init__(self, channels: int, style_dim: int) -> None:
         super().__init__()
+        groups = max(1, min(4, int(channels)))
+        while channels % groups != 0 and groups > 1:
+            groups -= 1
+        hidden = max(1, int(channels) // 4)
+
+        # Style-driven per-channel gate (global).
         self.gate_mapper = nn.Sequential(
             nn.Linear(style_dim, channels),
             nn.Sigmoid(),
         )
+        # Content-driven spatial gate.
+        self.content_gate = nn.Sequential(
+            nn.GroupNorm(groups, channels, affine=False),
+            nn.Conv2d(channels, hidden, kernel_size=1, stride=1, padding=0),
+            nn.SiLU(),
+            nn.Conv2d(hidden, channels, kernel_size=1, stride=1, padding=0),
+            nn.Sigmoid(),
+        )
+        # Style-controlled mix ratio between global(style) and local(content) gates.
+        self.mix_proj = nn.Linear(style_dim, 1)
+        nn.init.zeros_(self.mix_proj.weight)
+        nn.init.zeros_(self.mix_proj.bias)
+
         self.rewrite_mapper = nn.Linear(style_dim, channels)
         nn.init.zeros_(self.rewrite_mapper.weight)
         nn.init.zeros_(self.rewrite_mapper.bias)
@@ -158,15 +177,18 @@ class StyleAdaptiveSkip(nn.Module):
                 f"Batch mismatch: style_code batch={style_code.shape[0]} vs skip_feat batch={skip_feat.shape[0]}"
             )
         b, c, _, _ = skip_feat.shape
-        erase_gate = self.gate_mapper(style_code).view(b, c, 1, 1)
+        style_gate = self.gate_mapper(style_code).view(b, c, 1, 1)
+        content_gate = self.content_gate(skip_feat)
+        mix = torch.sigmoid(self.mix_proj(style_code)).view(b, 1, 1, 1)
+        effective_gate = mix * style_gate + (1.0 - mix) * content_gate
         rewrite_bias = self.rewrite_mapper(style_code).view(b, c, 1, 1)
         if isinstance(gate, torch.Tensor):
             gate_t = gate.to(device=skip_feat.device, dtype=skip_feat.dtype)
         else:
             gate_t = skip_feat.new_tensor(float(gate))
-        effective_gate = 1.0 - (1.0 - erase_gate) * gate_t
-        self._last_gate_tensor = effective_gate
-        return skip_feat * effective_gate + rewrite_bias * (1.0 - effective_gate)
+        final_gate = 1.0 - (1.0 - effective_gate) * gate_t
+        self._last_gate_tensor = final_gate
+        return skip_feat * final_gate + rewrite_bias * (1.0 - final_gate)
 
     def get_last_gate_tensor(self) -> torch.Tensor | None:
         return self._last_gate_tensor
