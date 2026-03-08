@@ -28,11 +28,7 @@ def _read_json(path: Path) -> Dict[str, Any]:
 
 
 def _extract_experiment_id_from_summary_path(summary_path: str) -> str:
-    """
-    Extract experiment name from summary_path.
-    e.g., "..\decoder-H-MSCTM-no_clamp_mult-tv-2\full_eval\epoch_0020\summary.json"
-    -> "decoder-H-MSCTM-no_clamp_mult-tv-2"
-    """
+   
     if not summary_path:
         return 'unknown'
     

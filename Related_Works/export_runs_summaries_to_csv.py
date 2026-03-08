@@ -212,6 +212,16 @@ def main() -> None:
         help="Output directory for CSVs (default: current directory)",
     )
     ap.add_argument(
+        "--eval_out",
+        default=None,
+        help="Eval CSV filename (default: runs_eval_summary.csv)",
+    )
+    ap.add_argument(
+        "--gen_out",
+        default=None,
+        help="Gen CSV filename (default: runs_gen_summary.csv)",
+    )
+    ap.add_argument(
         "--no_matrix",
         action="store_true",
         help="Do not export per-style-pair matrix CSV for eval summaries",
@@ -226,8 +236,8 @@ def main() -> None:
 
     summaries = sorted(runs_root.rglob("summary.json"))
 
-    eval_out = out_dir / "runs_eval_summary.csv"
-    gen_out = out_dir / "runs_gen_summary.csv"
+    eval_out = out_dir / (args.eval_out or "runs_eval_summary.csv")
+    gen_out = out_dir / (args.gen_out or "runs_gen_summary.csv")
 
     n_eval, n_pairs = export_eval_csv(
         runs_root, summaries, eval_out, include_pair_rows=(not bool(args.no_matrix))
@@ -244,4 +254,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
