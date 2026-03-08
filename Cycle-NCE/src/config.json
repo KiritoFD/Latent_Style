@@ -56,7 +56,14 @@
         "w_nce": 2.0,
         "w_nce_identity": 0.5,
         "nce_tau": 0.07,
-        "nce_num_patches": 128
+        "nce_num_patches": 128,
+        "nce_layer_weights": [
+            0.5,
+            0.75,
+            1.5
+        ],
+        "w_gate_reg": 0.05,
+        "gate_reg_target_var": 0.05
     },
     "training": {
         "seed": 42,

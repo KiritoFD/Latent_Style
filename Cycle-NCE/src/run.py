@@ -35,6 +35,8 @@ _ALLOWED_LOSS_KEYS = {
     "nce_tau",
     "nce_num_patches",
     "nce_layer_weights",
+    "w_gate_reg",
+    "gate_reg_target_var",
     "style_probe_enabled",
     "style_probe_layer_index",
     "style_probe_batch_size",
@@ -61,6 +63,7 @@ _LOSS_WEIGHT_KEYS = (
     "w_identity",
     "w_delta_tv",
     "w_nce",
+    "w_gate_reg",
 )
 
 
