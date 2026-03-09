@@ -6,6 +6,7 @@ src/dataset.py
 src/losses.py
 src/main.py
 src/model.py
+src/prob.py
 src/run.py
 src/trainer.py
 src/cycle_nce.egg-info/PKG-INFO

@@ -41,7 +41,6 @@ class AdaCUTLatentDataset(Dataset):
         self,
         data_root: str,
         style_subdirs: Sequence[str],
-        clip_feature_root: str | None = None,
         allow_hflip: bool = True,
         preload_to_gpu: bool = False,
         preload_max_vram_gb: float = 0.0,
@@ -51,7 +50,6 @@ class AdaCUTLatentDataset(Dataset):
     ) -> None:
         self.data_root = Path(data_root)
         self.style_subdirs = list(style_subdirs)
-        self.clip_feature_root = Path(clip_feature_root) if clip_feature_root else None
         self.allow_hflip = bool(allow_hflip)
         requested_preload_to_gpu = bool(preload_to_gpu)
         self.preload_max_vram_gb = max(0.0, float(preload_max_vram_gb))
@@ -74,8 +72,6 @@ class AdaCUTLatentDataset(Dataset):
             raise ValueError("At least two style domains are required for cross-domain sampling")
 
         self.style_tensors: Dict[int, torch.Tensor] = {}
-        self.style_files: Dict[int, list[Path]] = {}
-        self._feature_cache: Dict[tuple[int, int], torch.Tensor] = {}
         logger.info("Loading latent dataset from %s", self.data_root)
         for style_id, subdir in enumerate(self.style_subdirs):
             style_dir = self.data_root / subdir
@@ -85,11 +81,7 @@ class AdaCUTLatentDataset(Dataset):
             latents = [_load_latent_file(p) for p in files]
             stack = torch.stack(latents, dim=0)
             self.style_tensors[style_id] = stack
-            self.style_files[style_id] = files
             logger.info("  style=%s id=%d count=%d", subdir, style_id, stack.shape[0])
-
-        if self.clip_feature_root is not None:
-            logger.info("Using precomputed CLIP feature root: %s", self.clip_feature_root)
 
         total_count = sum(int(t.shape[0]) for t in self.style_tensors.values())
         self.content_count = max(1, total_count)
@@ -193,37 +185,6 @@ class AdaCUTLatentDataset(Dataset):
             return torch.flip(x, dims=[-1])
         return x
 
-    def _load_clip_feature(self, style_id: int, sample_idx: int) -> torch.Tensor:
-        if self.clip_feature_root is None:
-            raise RuntimeError(
-                "target_style_feat requested but data.clip_feature_root is not set."
-            )
-        key = (int(style_id), int(sample_idx))
-        cached = self._feature_cache.get(key)
-        if cached is not None:
-            return cached
-
-        style_name = self.style_subdirs[int(style_id)]
-        latent_path = self.style_files[int(style_id)][int(sample_idx)]
-        stem = latent_path.stem
-        feat_path = self.clip_feature_root / style_name / f"{stem}.feat.pt"
-        if not feat_path.exists():
-            feat_path = self.clip_feature_root / style_name / f"{stem}.pt"
-        if not feat_path.exists():
-            raise FileNotFoundError(f"Missing CLIP feature for {latent_path}: {feat_path}")
-
-        obj = torch.load(feat_path, map_location="cpu", weights_only=False)
-        if isinstance(obj, dict):
-            for k in ("feat", "feature", "clip_feat", "embedding"):
-                if k in obj:
-                    obj = obj[k]
-                    break
-        feat = torch.as_tensor(obj, dtype=torch.float32).view(-1)
-        if feat.numel() != 512:
-            raise ValueError(f"CLIP feature must be 512-d, got {feat.numel()} from {feat_path}")
-        self._feature_cache[key] = feat
-        return feat
-
     def __getitem__(self, index: int) -> Dict[str, torch.Tensor | int]:
         # Ultra-lightweight getitem using pre-computed indices
         content_style_id = int(self._cache_content_style_ids[index])
@@ -237,12 +198,10 @@ class AdaCUTLatentDataset(Dataset):
 
         content = self._maybe_flip(c_pool[c_idx], self._cache_flip_content, index)
         target_style = self._maybe_flip(t_pool[t_idx], self._cache_flip_target, index)
-        target_style_feat = self._load_clip_feature(target_style_id, t_idx)
 
         return {
             "content": content,
             "target_style": target_style,
-            "target_style_feat": target_style_feat,
             "target_style_id": target_style_id,
             "source_style_id": content_style_id,
         }

@@ -4,6 +4,7 @@
         "base_dim": 96,
         "lift_channels": 128,
         "style_dim": 160,
+        "clip_dim": 512,
         "num_styles": 5,
         "num_hires_blocks": 4,
         "num_res_blocks": 6,
@@ -29,15 +30,17 @@
         "style_id_spatial_jitter_px": 4,
         "upsample_blur": true,
         "upsample_blur_kernel": "gaussian3",
-        "ada_mix_rank": 32
+        "ada_mix_rank": 32,
+        "style_bank_default_sigma": 0.05,
+        "style_bank_train_noise_scale": 1.0
     },
     "loss": {
-        "w_swd": 20.0,
+        "w_swd": 35.0,
         "swd_patch_sizes": [
-            9,
-            11,
-            13,
-            15
+            2,
+            3,
+            4,
+            5
         ],
         "swd_num_projections": 256,
         "swd_projection_chunk_size": 64,
@@ -49,23 +52,23 @@
         "swd_cdf_sample_chunk_size": 256,
         "swd_batch_size": 64,
         "swd_use_high_freq": true,
-        "w_color": 0.0,
+        "w_color": 2.0,
         "w_identity": 0.5,
         "w_delta_tv": 0.0,
         "swd_hf_weight_ratio": 1.5,
-        "w_nce": 1.0,
+        "w_nce": 2.0,
         "w_nce_identity": 0.5,
-        "nce_tau": 0.07,
-        "nce_num_patches": 64,
         "nce_layer_weights": [
-            0.0,
-            0.4,
+            0.2,
+            0.5,
             1.0
-        ]
+        ],
+        "nce_tau": 0.07,
+        "nce_num_patches": 64
     },
     "training": {
         "seed": 42,
-        "batch_size": 256,
+        "batch_size": 192,
         "accumulation_steps": 1,
         "num_workers": -1,
         "persistent_workers": true,
@@ -73,8 +76,8 @@
         "pin_memory": true,
         "cpu_threads": 4,
         "cpu_interop_threads": 2,
-        "learning_rate": 0.000224,
-        "min_learning_rate": 2.2400000000000002e-05,
+        "learning_rate": 0.000168,
+        "min_learning_rate": 1.68e-05,
         "weight_decay": 0.0001,
         "scheduler": "cosine",
         "grad_clip_norm": 0.5,
@@ -109,7 +112,7 @@
         "cudnn_benchmark": false,
         "channels_last": true,
         "use_gradient_checkpointing": true,
-        "use_compile": false,
+        "use_compile": true,
         "compile_mode": "default",
         "disable_compile_on_rtx30": false,
         "fused_adamw": true,
@@ -123,6 +126,8 @@
     },
     "data": {
         "data_root": "../../latent-256",
+        "clip_feature_root": "../../clip-feats-vitb32",
+        "style_bank_stats_path": "../../clip-feats-vitb32/style_bank_stats.pt",
         "image_root": "../../style_data/train",
         "style_subdirs": [
             "photo",
@@ -138,7 +143,7 @@
         "virtual_length_multiplier": 1
     },
     "checkpoint": {
-        "save_dir": "../ablate_E7_15Series_Free_LR14e4_wNCE1"
+        "save_dir": "../clocor1_E8_MicroExtreme_Soft_LR14e4"
     },
     "inference": {
         "num_steps": 1,
