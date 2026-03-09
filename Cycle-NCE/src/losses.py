@@ -346,7 +346,6 @@ class AdaCUTObjective:
         model: LatentAdaCUT,
         content: torch.Tensor,
         target_style: torch.Tensor,
-        target_style_feat: torch.Tensor,
         target_style_id: torch.Tensor,
         source_style_id: torch.Tensor | None = None,
         debug_timing: bool = False,
@@ -357,7 +356,7 @@ class AdaCUTObjective:
         id_ratio = id_mask.float().mean()
 
         with self._nvtx_range("loss/pred", nvtx_enabled):
-            pred = model(content, style_feat=target_style_feat, step_size=1.0, style_strength=1.0)
+            pred = model(content, style_id=target_style_id, step_size=1.0, style_strength=1.0)
 
         work_dtype = pred.dtype
         target_cast = target_style.to(dtype=work_dtype)
