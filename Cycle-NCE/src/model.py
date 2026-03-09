@@ -7,6 +7,88 @@ import torch.nn.functional as F
 import torch.utils.checkpoint as ckpt
 
 
+class StyleProjector(nn.Module):
+    def __init__(self, clip_dim: int = 512, style_dim: int = 160) -> None:
+        super().__init__()
+        self.clip_dim = int(clip_dim)
+        self.style_dim = int(style_dim)
+        self.ln = nn.LayerNorm(self.clip_dim)
+        self.net = nn.Sequential(
+            nn.Linear(self.clip_dim, 256),
+            nn.SiLU(),
+            nn.Linear(256, self.style_dim),
+        )
+        for m in self.net.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.orthogonal_(m.weight, gain=1.0)
+                nn.init.zeros_(m.bias)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.ndim != 2 or x.shape[1] != self.clip_dim:
+            raise ValueError(f"Expected style_feat shape [B,{self.clip_dim}], got {tuple(x.shape)}")
+        return self.net(self.ln(x))
+
+
+class HybridStyleBank(nn.Module):
+    def __init__(
+        self,
+        *,
+        num_styles: int,
+        clip_dim: int,
+        style_dim: int,
+        default_sigma: float = 0.05,
+        train_noise_scale: float = 1.0,
+    ) -> None:
+        super().__init__()
+        self.num_styles = max(1, int(num_styles))
+        self.clip_dim = max(1, int(clip_dim))
+        self.default_sigma = max(0.0, float(default_sigma))
+        self.train_noise_scale = max(0.0, float(train_noise_scale))
+        self.projector = StyleProjector(clip_dim=self.clip_dim, style_dim=style_dim)
+        self.register_buffer("mu_bank", torch.zeros(self.num_styles, self.clip_dim), persistent=True)
+        self.register_buffer(
+            "sigma_bank",
+            torch.full((self.num_styles, self.clip_dim), float(self.default_sigma)),
+            persistent=True,
+        )
+
+    def set_bank(self, mu: torch.Tensor, sigma: torch.Tensor | None = None) -> None:
+        mu_t = torch.as_tensor(mu, dtype=self.mu_bank.dtype, device=self.mu_bank.device)
+        if mu_t.shape != self.mu_bank.shape:
+            raise ValueError(f"mu shape mismatch: expected {tuple(self.mu_bank.shape)} got {tuple(mu_t.shape)}")
+        self.mu_bank.copy_(mu_t)
+        if sigma is not None:
+            sigma_t = torch.as_tensor(sigma, dtype=self.sigma_bank.dtype, device=self.sigma_bank.device)
+            if sigma_t.shape != self.sigma_bank.shape:
+                raise ValueError(
+                    f"sigma shape mismatch: expected {tuple(self.sigma_bank.shape)} got {tuple(sigma_t.shape)}"
+                )
+            self.sigma_bank.copy_(sigma_t.clamp_min(0.0))
+
+    def sample_feat(self, style_id: torch.Tensor, *, training: bool) -> torch.Tensor:
+        sid = style_id.long().clamp_min(0).clamp_max(self.num_styles - 1)
+        mu = self.mu_bank.index_select(0, sid)
+        if training and self.train_noise_scale > 0.0:
+            sigma = self.sigma_bank.index_select(0, sid).clamp_min(0.0)
+            return mu + torch.randn_like(mu) * sigma * self.train_noise_scale
+        return mu
+
+    def forward(
+        self,
+        *,
+        style_id: torch.Tensor | None = None,
+        external_feat: torch.Tensor | None = None,
+        training: bool,
+    ) -> torch.Tensor:
+        if external_feat is not None:
+            feat = external_feat
+        else:
+            if style_id is None:
+                raise ValueError("style_id is required when external_feat is None.")
+            feat = self.sample_feat(style_id, training=training)
+        return self.projector(feat)
+
+
 class MSContextualAdaGN(nn.Module):
     """
     Multi-Scale Contextual Texture Modulation without absolute coordinates.
@@ -233,6 +315,9 @@ class LatentAdaCUT(nn.Module):
         upsample_blur: bool = True,
         upsample_blur_kernel: str = "box3",
         nce_proj_dim: int = 128,
+        clip_dim: int = 512,
+        style_bank_default_sigma: float = 0.05,
+        style_bank_train_noise_scale: float = 1.0,
         **kwargs,
     ) -> None:
         super().__init__()
@@ -255,6 +340,7 @@ class LatentAdaCUT(nn.Module):
         self.lift_channels = int(lift_channels) if lift_channels is not None else int(base_dim)
         self.body_channels = int(base_dim * 2)
         self.nce_proj_dim = max(1, int(nce_proj_dim))
+        self.clip_dim = max(1, int(clip_dim))
 
         self.inject_gate_hires = max(0.0, min(1.0, float(inject_gate_hires)))
         self.inject_gate_body = max(0.0, min(1.0, float(inject_gate_body)))
@@ -269,8 +355,13 @@ class LatentAdaCUT(nn.Module):
         if self.upsample_blur_kernel not in {"box3", "gaussian3"}:
             self.upsample_blur_kernel = "box3"
 
-        self.style_emb = nn.Embedding(self.num_styles, style_dim)
-        nn.init.normal_(self.style_emb.weight, mean=0.0, std=0.02)
+        self.style_bank = HybridStyleBank(
+            num_styles=self.num_styles,
+            clip_dim=self.clip_dim,
+            style_dim=style_dim,
+            default_sigma=style_bank_default_sigma,
+            train_noise_scale=style_bank_train_noise_scale,
+        )
 
         self.enc_in = nn.Conv2d(latent_channels, self.lift_channels, kernel_size=3, stride=1, padding=1)
         self.enc_in_act = nn.SiLU()
@@ -356,8 +447,38 @@ class LatentAdaCUT(nn.Module):
             style_id = style_id.to(device)
         return style_id.clamp_min(0).clamp_max(max(1, self.num_styles) - 1)
 
-    def _run_block(self, block: ResBlock, h: torch.Tensor, style_code: torch.Tensor, gate: float | torch.Tensor = 1.0) -> torch.Tensor:
-        if self.use_checkpointing and self.training:
+    def _normalize_style_feat_input(
+        self,
+        style_feat: torch.Tensor,
+        *,
+        device: torch.device,
+        batch_size: int,
+    ) -> torch.Tensor:
+        feat = style_feat
+        if feat.ndim == 1:
+            feat = feat.unsqueeze(0)
+        if feat.ndim != 2:
+            raise ValueError(f"style_feat must be [B,{self.clip_dim}] or [{self.clip_dim}], got {tuple(feat.shape)}")
+        if feat.shape[1] != self.clip_dim:
+            raise ValueError(f"style_feat dim mismatch: expected {self.clip_dim}, got {feat.shape[1]}")
+        if feat.shape[0] == 1 and int(batch_size) > 1:
+            feat = feat.expand(int(batch_size), -1)
+        if feat.shape[0] != int(batch_size):
+            raise ValueError(f"style_feat batch mismatch: got {feat.shape[0]} expected {batch_size}")
+        if feat.device != device:
+            feat = feat.to(device)
+        return feat
+
+    def _run_block(
+        self,
+        block: ResBlock,
+        h: torch.Tensor,
+        style_code: torch.Tensor,
+        gate: float | torch.Tensor = 1.0,
+        use_ckpt: bool | None = None,
+    ) -> torch.Tensor:
+        should_ckpt = self.use_checkpointing if use_ckpt is None else bool(use_ckpt)
+        if should_ckpt and self.training:
             gate_in = gate.to(device=h.device, dtype=h.dtype) if torch.is_tensor(gate) else h.new_tensor(float(gate))
             return ckpt.checkpoint(lambda _h, _s, _g, _blk=block: _blk(_h, _s, _g), h, style_code, gate_in, use_reentrant=False)
         return block(h, style_code, gate=gate)
@@ -368,10 +489,11 @@ class LatentAdaCUT(nn.Module):
         blocks: nn.ModuleList,
         style_code: torch.Tensor,
         gate: float | torch.Tensor = 1.0,
+        use_ckpt: bool | None = None,
     ) -> torch.Tensor:
         out = h
         for block in blocks:
-            out = self._run_block(block, out, style_code, gate=gate)
+            out = self._run_block(block, out, style_code, gate=gate, use_ckpt=use_ckpt)
         return out
 
     def _resolve_style_strength(self, style_strength: float | None) -> float:
@@ -435,12 +557,31 @@ class LatentAdaCUT(nn.Module):
             delta = torch.clamp(delta, min=self.output_clamp_min, max=self.output_clamp_max)
         return delta
 
-    def encode_style_id(self, style_id: torch.Tensor | int | None, batch_size: int | None = None) -> torch.Tensor:
+    def encode_style(
+        self,
+        *,
+        style_feat: torch.Tensor | None = None,
+        style_id: torch.Tensor | int | None = None,
+        batch_size: int | None = None,
+    ) -> torch.Tensor:
+        bank_device = self.style_bank.mu_bank.device
+        if batch_size is None:
+            if style_feat is not None:
+                batch_size = int(style_feat.shape[0]) if style_feat.ndim >= 1 else 1
+            elif torch.is_tensor(style_id):
+                batch_size = int(style_id.view(-1).shape[0])
+            else:
+                batch_size = 1
+        if style_feat is not None:
+            feat = self._normalize_style_feat_input(style_feat, device=bank_device, batch_size=int(batch_size))
+            return self.style_bank(external_feat=feat, training=bool(self.training))
         if style_id is None:
-            raise ValueError("style_id is required.")
-        emb_device = self.style_emb.weight.device
-        style_id = self._normalize_style_id_input(style_id, device=emb_device, batch_size=batch_size)
-        return self.style_emb(style_id)
+            raise ValueError("Either style_feat or style_id is required.")
+        sid = self._normalize_style_id_input(style_id, device=bank_device, batch_size=int(batch_size))
+        return self.style_bank(style_id=sid, training=bool(self.training))
+
+    def load_style_bank_stats(self, mu: torch.Tensor, sigma: torch.Tensor | None = None) -> None:
+        self.style_bank.set_bank(mu, sigma)
 
     def _predict_delta_from_context(self, x: torch.Tensor, *, style_code: torch.Tensor, strength: float) -> torch.Tensor:
         gate_hires = self.inject_gate_hires * strength
@@ -449,11 +590,17 @@ class LatentAdaCUT(nn.Module):
 
         feat = x / max(self.latent_scale_factor, 1e-8)
         h = self.enc_in_act(self.enc_in(feat))
-        h = self._run_style_blocks(h, blocks=self.hires_body, style_code=style_code, gate=gate_hires)
+        h = self._run_style_blocks(
+            h,
+            blocks=self.hires_body,
+            style_code=style_code,
+            gate=gate_hires,
+            use_ckpt=self.use_checkpointing,
+        )
         skip_32 = h
 
         h = self.down(h)
-        h = self._run_style_blocks(h, blocks=self.body, style_code=style_code, gate=gate_body)
+        h = self._run_style_blocks(h, blocks=self.body, style_code=style_code, gate=gate_body, use_ckpt=False)
 
         h = self.dec_up(h)
         h = self._apply_upsample_blur(h)
@@ -486,15 +633,23 @@ class LatentAdaCUT(nn.Module):
     def clear_skip_gate_tensor(self) -> None:
         self.skip_filter.clear_last_gate_tensor()
 
-    def _predict_delta(self, x: torch.Tensor, style_id: torch.Tensor | int, style_strength: float | None = None) -> torch.Tensor:
+    def _predict_delta(
+        self,
+        x: torch.Tensor,
+        *,
+        style_feat: torch.Tensor | None = None,
+        style_id: torch.Tensor | int | None = None,
+        style_strength: float | None = None,
+    ) -> torch.Tensor:
         strength = self._resolve_style_strength(style_strength)
-        style_code = self.encode_style_id(style_id, batch_size=x.shape[0])
+        style_code = self.encode_style(style_feat=style_feat, style_id=style_id, batch_size=x.shape[0])
         return self._predict_delta_from_context(x, style_code=style_code, strength=strength)
 
     def integrate(
         self,
         x: torch.Tensor,
-        style_id: torch.Tensor | int,
+        style_id: torch.Tensor | int | None = None,
+        style_feat: torch.Tensor | None = None,
         num_steps: int = 1,
         step_size: float = 1.0,
         style_strength: float | None = None,
@@ -503,7 +658,7 @@ class LatentAdaCUT(nn.Module):
         strength = self._resolve_style_strength(style_strength)
         step_scale = self._style_strength_step_scale(strength)
         per_step = 1.0 / float(steps)
-        style_code = self.encode_style_id(style_id, batch_size=x.shape[0])
+        style_code = self.encode_style(style_feat=style_feat, style_id=style_id, batch_size=x.shape[0])
         h = x
         for _ in range(steps):
             delta = self._predict_delta_from_context(h, style_code=style_code, strength=strength)
@@ -513,13 +668,14 @@ class LatentAdaCUT(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        style_id: torch.Tensor | int,
+        style_id: torch.Tensor | int | None = None,
+        style_feat: torch.Tensor | None = None,
         step_size: float = 1.0,
         style_strength: float | None = None,
     ) -> torch.Tensor:
         strength = self._resolve_style_strength(style_strength)
         step_scale = self._style_strength_step_scale(strength)
-        style_code = self.encode_style_id(style_id, batch_size=x.shape[0])
+        style_code = self.encode_style(style_feat=style_feat, style_id=style_id, batch_size=x.shape[0])
         delta = self._predict_delta_from_context(x, style_code=style_code, strength=strength)
         return x + delta * float(step_size) * step_scale
 

@@ -261,6 +261,7 @@ def main() -> None:
     dataset = AdaCUTLatentDataset(
         data_root=data_cfg.get("data_root", "../../latents"),
         style_subdirs=data_cfg.get("style_subdirs", ["photo", "monet", "vangogh", "cezanne"]),
+        clip_feature_root=data_cfg.get("clip_feature_root", "../../clip-feats-vitb32"),
         allow_hflip=bool(data_cfg.get("allow_hflip", True)),
         preload_to_gpu=bool(data_cfg.get("preload_to_gpu", False)),
         preload_max_vram_gb=float(data_cfg.get("preload_max_vram_gb", 0.0)),

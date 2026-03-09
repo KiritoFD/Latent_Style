@@ -6,6 +6,7 @@ set "AGG_ROOT=..\ablate-8x80-aggregate"
 if not exist "%AGG_ROOT%" mkdir "%AGG_ROOT%"
 echo ==========================================
 echo Starting 8-way ablation (80 Epochs, eval@40/80)
+echo Base batch_size=160, lr_low=1.40e-04, lr_high=3.00e-04
 echo ==========================================
 
 echo.

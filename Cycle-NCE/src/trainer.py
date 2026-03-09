@@ -140,6 +140,7 @@ class AdaCUTTrainer:
             use_checkpointing=grad_ckpt_cfg,
         )
         self.model = self.model.to(device)
+        self._maybe_load_style_bank(config)
         if self.channels_last:
             self._apply_channels_last_(self.model)
 
@@ -354,6 +355,48 @@ class AdaCUTTrainer:
         self.global_step = 0
         self.start_epoch = 1
         self._maybe_resume(str(train_cfg.get("resume_checkpoint", "")))
+
+    def _maybe_load_style_bank(self, config: Dict) -> None:
+        data_cfg = config.get("data", {})
+        stats_path_cfg = str(data_cfg.get("style_bank_stats_path", "")).strip()
+        stats_path: Optional[Path] = None
+        if stats_path_cfg:
+            candidate = Path(stats_path_cfg)
+            if not candidate.is_absolute():
+                base = Path(__file__).resolve().parent
+                candidate = (base / candidate).resolve()
+            stats_path = candidate
+        else:
+            feat_root = str(data_cfg.get("clip_feature_root", "")).strip()
+            if feat_root:
+                candidate = Path(feat_root)
+                if not candidate.is_absolute():
+                    base = Path(__file__).resolve().parent
+                    candidate = (base / candidate).resolve()
+                stats_path = (candidate / "style_bank_stats.pt").resolve()
+
+        if stats_path is None or (not stats_path.exists()):
+            return
+        if not hasattr(self.model, "load_style_bank_stats"):
+            logger.warning("style_bank_stats_path is set but current model has no style bank loader.")
+            return
+
+        try:
+            payload = torch.load(stats_path, map_location="cpu", weights_only=False)
+            if not isinstance(payload, dict) or "mu" not in payload:
+                raise ValueError("style bank stats must be a dict with at least key 'mu'.")
+            mu = torch.as_tensor(payload["mu"], dtype=torch.float32)
+            sigma = payload.get("sigma")
+            sigma_t = torch.as_tensor(sigma, dtype=torch.float32) if sigma is not None else None
+            self.model.load_style_bank_stats(mu, sigma_t)
+            logger.info(
+                "Loaded style bank stats: %s (mu=%s sigma=%s)",
+                stats_path,
+                tuple(mu.shape),
+                tuple(sigma_t.shape) if sigma_t is not None else None,
+            )
+        except Exception as exc:
+            logger.warning("Failed to load style bank stats from %s: %s", stats_path, exc)
 
     @staticmethod
     def _compute_config_digest(config: Dict) -> str:
@@ -687,15 +730,31 @@ class AdaCUTTrainer:
     def _validate_batch_sanity_cpu(self, batch: Dict[str, torch.Tensor]) -> None:
         content = batch.get("content")
         target_style = batch.get("target_style")
+        target_style_feat = batch.get("target_style_feat")
         target_style_id = batch.get("target_style_id")
         source_style_id = batch.get("source_style_id")
-        if not torch.is_tensor(content) or not torch.is_tensor(target_style) or not torch.is_tensor(target_style_id):
-            raise RuntimeError("Missing required batch keys: content/target_style/target_style_id")
+        if (
+            not torch.is_tensor(content)
+            or not torch.is_tensor(target_style)
+            or not torch.is_tensor(target_style_feat)
+            or not torch.is_tensor(target_style_id)
+        ):
+            raise RuntimeError("Missing required batch keys: content/target_style/target_style_feat/target_style_id")
         if source_style_id is not None and not torch.is_tensor(source_style_id):
             raise RuntimeError("source_style_id must be a tensor when provided.")
         # Keep this check on CPU tensors to avoid device sync stalls.
-        if not torch.isfinite(content).all() or not torch.isfinite(target_style).all():
-            raise RuntimeError("Non-finite values in batch tensors (content/target_style).")
+        if (
+            not torch.isfinite(content).all()
+            or not torch.isfinite(target_style).all()
+            or not torch.isfinite(target_style_feat).all()
+        ):
+            raise RuntimeError("Non-finite values in batch tensors (content/target_style/target_style_feat).")
+        feat_dim = int(target_style_feat.shape[-1]) if target_style_feat.ndim >= 1 else -1
+        expected_feat_dim = int(getattr(self.model, "clip_dim", 512))
+        if feat_dim != expected_feat_dim:
+            raise RuntimeError(
+                f"target_style_feat last dim must be {expected_feat_dim}, got {tuple(target_style_feat.shape)}"
+            )
         n_styles = int(getattr(self.model, "num_styles", 0))
         if n_styles > 0:
             sid_min = int(target_style_id.min().item())
@@ -886,6 +945,7 @@ class AdaCUTTrainer:
                 batch = None
                 content = None
                 target_style = None
+                target_style_feat = None
                 target_style_id = None
                 source_style_id = None
                 loss_dict = None
@@ -900,6 +960,7 @@ class AdaCUTTrainer:
                 self._trace_vram(epoch=epoch, step_idx=step_idx, phase="after_move_batch")
                 content = batch["content"]
                 target_style = batch["target_style"]
+                target_style_feat = batch["target_style_feat"]
                 target_style_id = batch["target_style_id"]
                 source_style_id = batch.get("source_style_id")
                 enable_loss_timing = bool(self.loss_timing_interval > 0 and (step_idx % self.loss_timing_interval == 0))
@@ -911,6 +972,7 @@ class AdaCUTTrainer:
                             self.model,
                             content=content,
                             target_style=target_style,
+                            target_style_feat=target_style_feat,
                             target_style_id=target_style_id,
                             source_style_id=source_style_id,
                             debug_timing=enable_loss_timing,
@@ -1053,6 +1115,7 @@ class AdaCUTTrainer:
                 del loss_dict
                 del target_style_id
                 del source_style_id
+                del target_style_feat
                 del target_style
                 del content
                 del batch
