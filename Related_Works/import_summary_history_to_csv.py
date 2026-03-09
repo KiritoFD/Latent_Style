@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Import summary_history.json data to CSV with per-epoch metrics.
+Import summary/history JSON data to CSV with per-epoch metrics.
 Supports incremental updates with deduplication.
 
 Usage:
     python import_summary_history_to_csv.py --input <file_or_dir> --output output.csv
-    python import_summary_history_to_csv.py --input . --output metrics.csv --recursive
+    python import_summary_history_to_csv.py --input . --output metrics.csv
 """
 
 import argparse
@@ -13,7 +13,6 @@ import csv
 import json
 import re
 from collections import OrderedDict
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -113,10 +112,28 @@ def _extract_epoch_from_path(path: Path) -> Optional[int]:
     return None
 
 
+def _extract_epoch_from_checkpoint_string(s: str) -> Optional[int]:
+    if not s:
+        return None
+    m = re.search(r"epoch_(\d+)", s.replace("\\", "/"))
+    if not m:
+        return None
+    try:
+        return int(m.group(1))
+    except Exception:
+        return None
+
+
 def _extract_experiment_id_from_file_path(path: Path) -> str:
     parts = list(path.parts)
     for i, part in enumerate(parts):
-        if part == 'full_eval' and i > 0:
+        part_l = str(part).lower()
+        if part_l == 'full_eval' and i > 0:
+            candidate = parts[i - 1].strip()
+            if candidate:
+                return candidate
+        # Support variants like "full_eval_tokenized", "full_eval_xxx".
+        if part_l.startswith('full_eval') and i > 0:
             candidate = parts[i - 1].strip()
             if candidate:
                 return candidate
@@ -137,6 +154,8 @@ def _extract_single_summary_data(json_data: Dict[str, Any], source_path: Path) -
         return []
 
     epoch = _extract_epoch_from_path(source_path)
+    if epoch is None:
+        epoch = _extract_epoch_from_checkpoint_string(str(json_data.get('checkpoint', '')))
     record = {
         'source_file': str(source_path),
         'experiment_id': _extract_experiment_id_from_file_path(source_path),
@@ -157,9 +176,15 @@ def _extract_single_summary_data(json_data: Dict[str, Any], source_path: Path) -
 
 
 def _get_all_json_files(source: Path, recursive: bool = False) -> List[Path]:
-    """Find all supported json files (summary_history*.json and summary.json)."""
+    """Find all supported json files (summary_history*.json and summary*.json)."""
+    def _is_supported_json(p: Path) -> bool:
+        if p.suffix.lower() != '.json':
+            return False
+        name = p.name.lower()
+        return name.startswith('summary_history') or name.startswith('summary')
+
     if source.is_file():
-        if source.suffix == '.json' and (source.name.startswith('summary_history') or source.name == 'summary.json'):
+        if _is_supported_json(source):
             return [source]
         return []
     
@@ -167,7 +192,7 @@ def _get_all_json_files(source: Path, recursive: bool = False) -> List[Path]:
         return []
     
     pattern = '**/*.json' if recursive else '*.json'
-    return list(source.glob(pattern))
+    return [p for p in source.glob(pattern) if _is_supported_json(p)]
 
 
 def _flatten_record(record: Dict[str, Any]) -> Dict[str, str]:
@@ -271,26 +296,24 @@ def _get_all_fieldnames(records: List[Dict[str, str]]) -> List[str]:
 
 def main() -> None:
     ap = argparse.ArgumentParser(
-        description='Import summary_history.json files to CSV with per-epoch metrics',
+        description='Import summary/history json files to CSV with per-epoch metrics',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
 Examples:
   # Single file
   %(prog)s --input summary_history.json --output metrics.csv
   
-  # Directory (non-recursive)
+  # Directory (recursive by default)
   %(prog)s --input ./runs --output all_metrics.csv
   
-  # Directory (recursive)
-  %(prog)s --input ./runs --output all_metrics.csv --recursive
-  
   # Incremental update (append new records only)
-  %(prog)s --input ./runs --output metrics.csv --recursive
+  %(prog)s --input ./runs --output metrics.csv
         '''
     )
     ap.add_argument('--input', '-i', required=True, help='JSON file or directory')
     ap.add_argument('--output', '-o', required=False,default='summary.csv', help='Output CSV file')
-    ap.add_argument('--recursive', '-r', action='store_true', help='Recursively search for JSON files')
+    ap.add_argument('--recursive', '-r', action='store_true', help='Recursively search for JSON files (default for dirs)')
+    ap.add_argument('--no-recursive', action='store_true', help='Disable recursive search when input is a directory')
     ap.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
     
     args = ap.parse_args()
@@ -301,8 +324,11 @@ Examples:
     if not source.exists():
         raise SystemExit(f"❌ Source not found: {source}")
     
-    # Find JSON files
-    json_files = _get_all_json_files(source, recursive=args.recursive)
+    # Find JSON files (directories default to recursive scan).
+    recursive_scan = bool(args.recursive or source.is_dir())
+    if args.no_recursive:
+        recursive_scan = False
+    json_files = _get_all_json_files(source, recursive=recursive_scan)
     
     if not json_files:
         raise SystemExit(f"❌ No supported json files found in {source}")
