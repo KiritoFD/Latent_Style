@@ -12,6 +12,12 @@ def load_base_config() -> dict:
 def create_sweep() -> None:
     base = load_base_config()
     out_dir = Path(__file__).resolve().parent
+    train_base = base.get("training", {})
+    batch_size = int(train_base.get("batch_size", 160))
+    # Linear scaling rule w.r.t. reference batch=160.
+    lr_scale = float(batch_size) / 160.0
+    lr_low = 1.4e-4 * lr_scale
+    lr_high = 3.0e-4 * lr_scale
 
     # 8-way ERF/NCE ablation:
     # - ERF-heavy sets around 9/15, cap macro at 19 (remove 23)
@@ -22,56 +28,56 @@ def create_sweep() -> None:
             "name": "ablate_E1_Macro19_Rigid_LR14e4",
             "patches": [7, 11, 15, 19],
             "nce_layer_weights": [1.0, 1.0, 1.0],
-            "lr": 1.4e-4,
+            "lr": lr_low,
             "w_nce": 2.0,
         },
         {
             "name": "ablate_E2_15Series_Rigid_LR14e4",
             "patches": [9, 11, 13, 15],
             "nce_layer_weights": [1.0, 1.0, 1.0],
-            "lr": 1.4e-4,
+            "lr": lr_low,
             "w_nce": 2.0,
         },
         {
             "name": "ablate_E3_15Series_Soft_LR14e4",
             "patches": [9, 11, 13, 15],
             "nce_layer_weights": [0.2, 0.5, 1.0],
-            "lr": 1.4e-4,
+            "lr": lr_low,
             "w_nce": 2.0,
         },
         {
             "name": "ablate_E4_9Series_Rigid_LR14e4",
             "patches": [5, 7, 9, 11],
             "nce_layer_weights": [1.0, 1.0, 1.0],
-            "lr": 1.4e-4,
+            "lr": lr_low,
             "w_nce": 2.0,
         },
         {
             "name": "ablate_E5_9Series_Soft_LR14e4",
             "patches": [5, 7, 9, 11],
             "nce_layer_weights": [0.2, 0.5, 1.0],
-            "lr": 1.4e-4,
+            "lr": lr_low,
             "w_nce": 2.0,
         },
         {
             "name": "ablate_E6_9Series_Free_LR30e4",
             "patches": [5, 7, 9, 11],
             "nce_layer_weights": [0.0, 0.4, 1.0],
-            "lr": 3.0e-4,
+            "lr": lr_high,
             "w_nce": 2.0,
         },
         {
             "name": "ablate_E7_15Series_Free_LR14e4_wNCE1",
             "patches": [9, 11, 13, 15],
             "nce_layer_weights": [0.0, 0.4, 1.0],
-            "lr": 1.4e-4,
+            "lr": lr_low,
             "w_nce": 1.0,
         },
         {
             "name": "ablate_E8_MicroExtreme_Soft_LR14e4",
             "patches": [2, 3, 4, 5],
             "nce_layer_weights": [0.2, 0.5, 1.0],
-            "lr": 1.4e-4,
+            "lr": lr_low,
             "w_nce": 2.0,
         },
     ]
@@ -86,6 +92,7 @@ def create_sweep() -> None:
         f_bat.write("if not exist \"%AGG_ROOT%\" mkdir \"%AGG_ROOT%\"\n")
         f_bat.write("echo ==========================================\n")
         f_bat.write("echo Starting 8-way ablation (80 Epochs, eval@40/80)\n")
+        f_bat.write(f"echo Base batch_size={batch_size}, lr_low={lr_low:.2e}, lr_high={lr_high:.2e}\n")
         f_bat.write("echo ==========================================\n\n")
 
         for exp in experiments:
@@ -157,6 +164,7 @@ def create_sweep() -> None:
         f_bat.write("if %errorlevel% neq 0 exit /b %errorlevel%\n")
 
     print("\n8x80.bat has been generated.")
+    print(f"Batch scaling: batch_size={batch_size}, lr_low={lr_low:.2e}, lr_high={lr_high:.2e}")
 
 
 if __name__ == "__main__":

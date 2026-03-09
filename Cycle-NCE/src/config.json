@@ -4,6 +4,7 @@
         "base_dim": 96,
         "lift_channels": 128,
         "style_dim": 160,
+        "clip_dim": 512,
         "num_styles": 5,
         "num_hires_blocks": 4,
         "num_res_blocks": 6,
@@ -29,15 +30,16 @@
         "style_id_spatial_jitter_px": 4,
         "upsample_blur": true,
         "upsample_blur_kernel": "gaussian3",
-        "ada_mix_rank": 32
+        "ada_mix_rank": 32,
+        "style_bank_default_sigma": 0.05,
+        "style_bank_train_noise_scale": 1.0
     },
     "loss": {
-        "w_swd": 20.0,
+        "w_swd": 35.0,
         "swd_patch_sizes": [
-            7,
-            11,
-            15,
-            23
+            5,
+            9,
+            15
         ],
         "swd_num_projections": 256,
         "swd_projection_chunk_size": 64,
@@ -49,12 +51,17 @@
         "swd_cdf_sample_chunk_size": 256,
         "swd_batch_size": 64,
         "swd_use_high_freq": true,
-        "w_color": 0.0,
+        "w_color": 2.0,
         "w_identity": 0.5,
         "w_delta_tv": 0.0,
         "swd_hf_weight_ratio": 1.5,
-        "w_nce": 2.0,
+        "w_nce": 1.5,
         "w_nce_identity": 0.5,
+        "nce_layer_weights": [
+            0.0,
+            0.4,
+            1.0
+        ],
         "nce_tau": 0.07,
         "nce_num_patches": 64
     },
@@ -68,12 +75,12 @@
         "pin_memory": true,
         "cpu_threads": 4,
         "cpu_interop_threads": 2,
-        "learning_rate": 0.00014,
+        "learning_rate": 0.0003,
         "min_learning_rate": 1.4e-05,
         "weight_decay": 0.0001,
         "scheduler": "cosine",
         "grad_clip_norm": 0.5,
-        "num_epochs": 80,
+        "num_epochs": 400,
         "save_interval": 20,
         "full_eval_interval": 40,
         "full_eval_on_last_epoch": true,
@@ -103,8 +110,8 @@
         "allow_tf32": true,
         "cudnn_benchmark": false,
         "channels_last": true,
-        "use_gradient_checkpointing": false,
-        "use_compile": false,
+        "use_gradient_checkpointing": true,
+        "use_compile": true,
         "compile_mode": "default",
         "disable_compile_on_rtx30": false,
         "fused_adamw": true,
@@ -118,6 +125,8 @@
     },
     "data": {
         "data_root": "../../latent-256",
+        "clip_feature_root": "../../clip-feats-vitb32",
+        "style_bank_stats_path": "../../clip-feats-vitb32/style_bank_stats.pt",
         "image_root": "../../style_data/train",
         "style_subdirs": [
             "photo",
@@ -133,7 +142,7 @@
         "virtual_length_multiplier": 1
     },
     "checkpoint": {
-        "save_dir": "../nce-gate_norm"
+        "save_dir": "../nstyle-proj"
     },
     "inference": {
         "num_steps": 1,
