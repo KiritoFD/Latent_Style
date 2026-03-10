@@ -97,13 +97,15 @@ def _train_tokenizer(
     channels_last: bool,
     device: torch.device,
 ) -> None:
+    # If tensors are already preloaded on GPU, pin_memory must stay off.
+    use_pin_memory = (device.type == "cuda") and (not bool(getattr(dataset, "preload_to_gpu", False)))
     loader = DataLoader(
         dataset,
         batch_size=max(1, int(batch_size)),
         shuffle=False,
         drop_last=False,
         num_workers=max(0, int(num_workers)),
-        pin_memory=(device.type == "cuda"),
+        pin_memory=use_pin_memory,
     )
     optimizer = torch.optim.AdamW(tokenizer.parameters(), lr=float(lr), weight_decay=float(weight_decay))
     scaler = torch.amp.GradScaler("cuda", enabled=bool(amp and device.type == "cuda"))

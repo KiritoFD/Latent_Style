@@ -960,6 +960,11 @@ def main():
     )
     parser.add_argument('--eval_classifier_only', action='store_true', help="Run only classifier evaluation (skip LPIPS/CLIP)")
     parser.add_argument('--eval_disable_lpips', action='store_true', help="Skip LPIPS metrics (keep CLIP)")
+    parser.add_argument(
+        '--eval_only_lpips_clip_style',
+        action='store_true',
+        help="Compute only content LPIPS and CLIP style similarity (skip style LPIPS, clip_dir, clip_content, classifier).",
+    )
     parser.add_argument('--eval_enable_art_fid', action='store_true', help="Enable ArtFID metric: (1+FID_style)*(1+LPIPS_content)")
     parser.add_argument('--eval_art_fid_max_gen', type=int, default=200, help="Max generated images per pair for FID_style")
     parser.add_argument('--eval_art_fid_max_ref', type=int, default=200, help="Max target-style reference images per pair for FID_style")
@@ -975,6 +980,8 @@ def main():
     parser.add_argument('--reuse_generated', action='store_true', help="Reuse existing generated images in output dir/images (or legacy output dir) and skip generation")
     parser.add_argument('--generation_only', action='store_true', help="Only generate translated images, skip all evaluation metrics")
     args = parser.parse_args()
+    if args.eval_classifier_only and args.eval_only_lpips_clip_style:
+        raise ValueError("--eval_classifier_only conflicts with --eval_only_lpips_clip_style")
 
     # One-shot mode: `run_evaluation.py <full_eval_dir>`
     if args.eval_dir and not args.output:
@@ -1296,6 +1303,7 @@ def main():
 
     # Skip other metrics if classifier-only mode
     run_full_metrics = not args.eval_classifier_only
+    only_lpips_clip_style = bool(args.eval_only_lpips_clip_style)
 
     # Load Evaluators
     loss_fn = None
@@ -1572,7 +1580,7 @@ def main():
 
     # Cache reference tensors for style LPIPS to avoid repeated disk I/O in inner loops.
     ref_lpips_tensors = {}  # style_id -> Tensor[N_ref, 3, 256, 256] on CPU
-    if run_full_metrics and loss_fn:
+    if run_full_metrics and loss_fn and (not only_lpips_clip_style):
         max_ref_compare = int(args.max_ref_compare)
         for sid, feats in ref_features.items():
             refs = feats[:]
@@ -1666,36 +1674,35 @@ def main():
                 # Gen CLIP
                 pil_gens = [to_pil(img.float()) for img in gen_imgs_cpu]
                 gen_clips = clip_encode_pils(pil_gens)
-                
-                # Src CLIP (cache by source path; source repeats across many target styles)
-                miss_indices = [i for i, k in enumerate(src_keys) if k not in src_clip_cache]
-                if miss_indices:
-                    pil_srcs_miss = []
-                    for i in miss_indices:
-                        src_path = str(Path(batch_items[i]['src_path']).resolve())
-                        pil_img = src_pil_cache.get(src_path)
-                        if pil_img is None:
-                            pil_img = Image.open(batch_items[i]['src_path']).convert('RGB')
-                            src_pil_cache[src_path] = pil_img
-                        pil_srcs_miss.append(pil_img)
-                    src_miss = clip_encode_pils(pil_srcs_miss)
-                    src_miss_cpu = src_miss.detach().cpu()
-                    for j, idx in enumerate(miss_indices):
-                        src_clip_cache[src_keys[idx]] = src_miss_cpu[j].clone()
-                src_clips = torch.stack([src_clip_cache[k] for k in src_keys], dim=0).to(device, dtype=torch.float32)
-                
-                c_clip_scores = F.cosine_similarity(gen_clips, src_clips).cpu().float().numpy()
+                if not only_lpips_clip_style:
+                    # Src CLIP (cache by source path; source repeats across many target styles)
+                    miss_indices = [i for i, k in enumerate(src_keys) if k not in src_clip_cache]
+                    if miss_indices:
+                        pil_srcs_miss = []
+                        for i in miss_indices:
+                            src_path = str(Path(batch_items[i]['src_path']).resolve())
+                            pil_img = src_pil_cache.get(src_path)
+                            if pil_img is None:
+                                pil_img = Image.open(batch_items[i]['src_path']).convert('RGB')
+                                src_pil_cache[src_path] = pil_img
+                            pil_srcs_miss.append(pil_img)
+                        src_miss = clip_encode_pils(pil_srcs_miss)
+                        src_miss_cpu = src_miss.detach().cpu()
+                        for j, idx in enumerate(miss_indices):
+                            src_clip_cache[src_keys[idx]] = src_miss_cpu[j].clone()
+                    src_clips = torch.stack([src_clip_cache[k] for k in src_keys], dim=0).to(device, dtype=torch.float32)
+                    c_clip_scores = F.cosine_similarity(gen_clips, src_clips).cpu().float().numpy()
 
             # 3. Classifier Predictions
             pred_indices = [-1] * len(batch_items)
-            if image_classifier is not None:
+            if image_classifier is not None and (not only_lpips_clip_style):
                 preds = image_classifier.predict_indices(gen_imgs).cpu().numpy().tolist()
                 pred_indices = preds
 
             # 4. Style Metrics & Row Writing
             # 4a. Style LPIPS in grouped batches by target style to reduce overhead.
             s_lpips_scores = [0.0] * len(batch_items)
-            if loss_fn and ref_lpips_tensors:
+            if (not only_lpips_clip_style) and loss_fn and ref_lpips_tensors:
                 lpips_chunk_size = max(1, int(args.eval_lpips_chunk_size))
                 lpips_cpu_fallback = not bool(args.eval_lpips_no_cpu_fallback)
                 groups = defaultdict(list)
@@ -1758,7 +1765,13 @@ def main():
                 # clip_style: absolute similarity to target style prototype.
                 s_clip_dir = 0.0
                 s_clip_style = 0.0
-                if has_clip and gen_clips is not None and src_clips is not None and tgt_id in ref_clip_prototypes:
+                if only_lpips_clip_style:
+                    if has_clip and gen_clips is not None and tgt_id in ref_clip_prototypes:
+                        tgt_proto = ref_clip_prototypes[tgt_id]  # [1, D]
+                        gen_emb = gen_clips[i:i+1]              # [1, D]
+                        if gen_emb.shape[-1] == tgt_proto.shape[-1]:
+                            s_clip_style = F.cosine_similarity(gen_emb, tgt_proto).item()
+                elif has_clip and gen_clips is not None and src_clips is not None and tgt_id in ref_clip_prototypes:
                     tgt_proto = ref_clip_prototypes[tgt_id]  # [1, D]
                     gen_emb = gen_clips[i:i+1]              # [1, D]
                     src_emb = src_clips[i:i+1]              # [1, D]

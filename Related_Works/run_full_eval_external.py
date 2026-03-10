@@ -48,6 +48,19 @@ def main():
     ap.add_argument("--out_dir", required=True, help="Directory containing images/ to reuse and write summary.json")
     ap.add_argument("--cache_dir", default="Cycle-NCE/src/eval_cache", help="Shared cache dir")
     ap.add_argument("--clip_allow_network", action="store_true")
+    ap.add_argument(
+        "--clip_backend",
+        type=str,
+        default="hf",
+        choices=["openai", "hf", "none"],
+        help="CLIP backend for eval metrics (default: hf to avoid openai-clip dependency).",
+    )
+    ap.add_argument(
+        "--clip_openai_model",
+        type=str,
+        default="ViT-B/32",
+        help="OpenAI CLIP model name when --clip_backend openai.",
+    )
     ap.add_argument("--batch_size", type=int, default=2)
     ap.add_argument("--eval_lpips_chunk_size", type=int, default=1)
     ap.add_argument("--max_ref_compare", type=int, default=50)
@@ -115,6 +128,9 @@ def main():
         cmd += ["--max_src_samples", str(int(args.max_src_samples))]
     if args.clip_allow_network:
         cmd += ["--clip_allow_network"]
+    cmd += ["--clip_backend", str(args.clip_backend)]
+    if str(args.clip_backend).lower() == "openai":
+        cmd += ["--clip_openai_model", str(args.clip_openai_model)]
     if args.force_regen:
         cmd += ["--force_regen"]
     if args.enable_kid:
