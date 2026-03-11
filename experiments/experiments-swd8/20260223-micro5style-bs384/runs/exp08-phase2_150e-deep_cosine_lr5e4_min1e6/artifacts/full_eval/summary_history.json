@@ -1,0 +1,105 @@
+{
+  "num_rounds": 4,
+  "latest": {
+    "epoch": 150,
+    "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp08-phase2_150e-deep_cosine_lr5e4_min1e6\\artifacts\\full_eval\\epoch_0150\\summary.json",
+    "transfer_clip_style": 0.6510172791182994,
+    "transfer_content_lpips": 0.37875968149,
+    "transfer_classifier_acc": 0.0,
+    "photo_to_art_clip_style": 0.6191749204695225,
+    "photo_to_art_classifier_acc": 0.0
+  },
+  "mean": {
+    "transfer_clip_style": 0.6500407599806786,
+    "transfer_content_lpips": 0.37373206586,
+    "transfer_classifier_acc": 0.0,
+    "photo_to_art_clip_style": 0.6169334094226361,
+    "photo_to_art_classifier_acc": 0.0
+  },
+  "best": {
+    "best_transfer_classifier_acc": {
+      "epoch": 40,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp08-phase2_150e-deep_cosine_lr5e4_min1e6\\artifacts\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.648569884955883,
+      "transfer_content_lpips": 0.37332636402,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6134402787685395,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_clip_style": {
+      "epoch": 150,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp08-phase2_150e-deep_cosine_lr5e4_min1e6\\artifacts\\full_eval\\epoch_0150\\summary.json",
+      "transfer_clip_style": 0.6510172791182994,
+      "transfer_content_lpips": 0.37875968149,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6191749204695225,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_classifier_acc": {
+      "epoch": 40,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp08-phase2_150e-deep_cosine_lr5e4_min1e6\\artifacts\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.648569884955883,
+      "transfer_content_lpips": 0.37332636402,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6134402787685395,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_clip_style": {
+      "epoch": 150,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp08-phase2_150e-deep_cosine_lr5e4_min1e6\\artifacts\\full_eval\\epoch_0150\\summary.json",
+      "transfer_clip_style": 0.6510172791182994,
+      "transfer_content_lpips": 0.37875968149,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6191749204695225,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_content_lpips": {
+      "epoch": 80,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp08-phase2_150e-deep_cosine_lr5e4_min1e6\\artifacts\\full_eval\\epoch_0080\\summary.json",
+      "transfer_clip_style": 0.6498063989579677,
+      "transfer_content_lpips": 0.37036207251,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6173805193603039,
+      "photo_to_art_classifier_acc": 0.0
+    }
+  },
+  "rounds": [
+    {
+      "epoch": 40,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp08-phase2_150e-deep_cosine_lr5e4_min1e6\\artifacts\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.648569884955883,
+      "transfer_content_lpips": 0.37332636402,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6134402787685395,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    {
+      "epoch": 80,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp08-phase2_150e-deep_cosine_lr5e4_min1e6\\artifacts\\full_eval\\epoch_0080\\summary.json",
+      "transfer_clip_style": 0.6498063989579677,
+      "transfer_content_lpips": 0.37036207251,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6173805193603039,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    {
+      "epoch": 120,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp08-phase2_150e-deep_cosine_lr5e4_min1e6\\artifacts\\full_eval\\epoch_0120\\summary.json",
+      "transfer_clip_style": 0.650769476890564,
+      "transfer_content_lpips": 0.37248014542,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6177379190921783,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    {
+      "epoch": 150,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp08-phase2_150e-deep_cosine_lr5e4_min1e6\\artifacts\\full_eval\\epoch_0150\\summary.json",
+      "transfer_clip_style": 0.6510172791182994,
+      "transfer_content_lpips": 0.37875968149,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6191749204695225,
+      "photo_to_art_classifier_acc": 0.0
+    }
+  ],
+  "updated_at": "2026-02-24 14:59:04"
+}

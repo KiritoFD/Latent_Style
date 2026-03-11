@@ -26,35 +26,45 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 _ALLOWED_LOSS_KEYS = {
-    "w_semigroup",
-    "semigroup_loss_type",
-    "semigroup_lowpass_strength",
-    "semigroup_split_min",
-    "semigroup_split_max",
-    "semigroup_teacher_no_grad",
-    "semigroup_target_detach",
-    "semigroup_subset_ratio",
-    "semigroup_max_samples",
-    "semigroup_every_n_steps",
-    "semigroup_pool_size",
-    "semigroup_num_steps",
-    "w_delta_tv",
-    "w_delta_l2",
-    "w_output_tv",
+    "w_color",
     "w_swd",
-    "w_color_moment",
     "w_identity",
+    "w_delta_tv",
+    "w_nce",
+    "w_nce_identity",
+    "nce_tau",
+    "nce_num_patches",
+    "nce_layer_weights",
+    "w_gate_reg",
+    "gate_reg_target_var",
+    "style_probe_enabled",
+    "style_probe_layer_index",
+    "style_probe_batch_size",
+    "style_probe_lr",
+    "style_probe_weight_decay",
+    "style_probe_use_spectral_norm",
     "swd_patch_sizes",
     "swd_num_projections",
-    "train_num_steps_min",
-    "train_num_steps_max",
-    "train_step_size_min",
-    "train_step_size_max",
-    "train_style_strength_min",
-    "train_style_strength_max",
+    "swd_projection_chunk_size",
+    "swd_distance_mode",
+    "swd_cdf_num_bins",
+    "swd_cdf_tau",
+    "swd_cdf_sample_size",
+    "swd_cdf_bin_chunk_size",
+    "swd_cdf_sample_chunk_size",
+    "swd_batch_size",
+    "swd_use_high_freq",
+    "swd_hf_weight_ratio",
 }
 _FORBIDDEN_LOSS_KEYS = {"w_distill", "distill_low_only", "distill_cross_domain_only", "w_code", "style_loss_source"}
-_LOSS_WEIGHT_KEYS = ("w_semigroup", "w_swd", "w_color_moment", "w_identity", "w_delta_tv", "w_delta_l2", "w_output_tv")
+_LOSS_WEIGHT_KEYS = (
+    "w_swd",
+    "w_color",
+    "w_identity",
+    "w_delta_tv",
+    "w_nce",
+    "w_gate_reg",
+)
 
 
 def _set_seed(seed: int) -> None:
@@ -71,8 +81,8 @@ def _configure_cuda_allocator(config: dict) -> None:
     train_cfg = config.get("training", {})
     alloc_conf = str(train_cfg.get("cuda_alloc_conf", "")).strip()
     if not alloc_conf:
-        # Keep allocator policy conservative to reduce fragmentation under long runs.
-        alloc_conf = "expandable_segments:True"
+        # Stable fallback for platforms where expandable_segments is unsupported.
+        alloc_conf = "max_split_size_mb:128,garbage_collection_threshold:0.8"
     current = os.environ.get("PYTORCH_ALLOC_CONF", "").strip()
     if current:
         logger.info("Use existing PYTORCH_ALLOC_CONF=%s", current)
@@ -181,11 +191,23 @@ def _resolve_num_workers(config: dict, *, preload_to_gpu: bool = False) -> int:
     if requested is not None:
         requested = int(requested)
         if requested >= 0:
+            # Windows multi-process DataLoader can fail with shared mapping error 1455
+            # under memory pressure. Default to single-process unless explicitly overridden.
+            if os.name == "nt" and requested > 0:
+                allow_mp = bool(train_cfg.get("windows_allow_multiprocess_dataloader", False))
+                if not allow_mp:
+                    logger.warning(
+                        "num_workers=%d requested on Windows, forcing num_workers=0 for stability "
+                        "(set training.windows_allow_multiprocess_dataloader=true to override).",
+                        requested,
+                    )
+                    return 0
             return requested
     cpu_count = os.cpu_count() or 4
-    # -1/None means auto. Keep Windows worker count conservative for stability.
+    # -1/None means auto.
     if os.name == "nt":
-        return max(4, min(8, cpu_count // 2))
+        # Prefer single-process DataLoader on Windows to avoid file mapping failures.
+        return 0
     return max(2, min(8, cpu_count // 2))
 
 def _validate_loss_config(config: dict) -> None:
@@ -214,6 +236,7 @@ def main() -> None:
     config_path = Path(args.config).resolve()
     with open(config_path, "r", encoding="utf-8") as f:
         config = json.load(f)
+    logger.info("Config path: %s", config_path)
     _validate_loss_config(config)
     _log_active_losses(config)
 
@@ -291,28 +314,64 @@ def main() -> None:
     )
 
     trainer = AdaCUTTrainer(config=config, device=device, config_path=str(config_path))
+    logger.info("Checkpoint dir: %s", trainer.checkpoint_dir.resolve())
+    logger.info("Train log csv: %s", trainer.log_file.resolve())
 
-    for epoch in range(trainer.start_epoch, trainer.num_epochs + 1):
+    epoch = int(trainer.start_epoch)
+    while epoch <= int(trainer.num_epochs):
+        trainer.reload_config_from_disk(epoch)
+        if epoch > int(trainer.num_epochs):
+            break
+
         dataset.set_epoch(epoch)
         metrics = trainer.train_epoch(dataloader, epoch)
         trainer.step_scheduler()
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f swd=%.4f moment=%.4f dtv=%.4f dl2=%.4f steps=%.1f h=%.2f s=%.2f lr=%.2e data=%.1fs comp=%.1fs",
+            (
+                "Epoch %d/%d | loss=%.4f swd=%.4f swd_hf=%.4f "
+                "color=%.4f idt=%.4f dtv=%.4f "
+                "nce=%.4f nce_xid=%.4f nce_id=%.4f "
+                "skip_g=%.3f±%.3f[min=%.3f,max=%.3f] "
+                "probe(real=%.3f fake=%.3f conf=%.3f) "
+                "idr=%.2f lr=%.2e data=%.1fs comp=%.1fs"
+            ),
             epoch,
             trainer.num_epochs,
             metrics["loss"],
             metrics.get("swd", 0.0),
-            metrics.get("moment", 0.0),
+            metrics.get("swd_hf", 0.0),
+            metrics.get("color", 0.0),
+            metrics.get("identity", 0.0),
             metrics.get("delta_tv", 0.0),
-            metrics.get("delta_l2", 0.0),
-            metrics.get("train_num_steps", 0.0),
-            metrics.get("train_step_size", 0.0),
-            metrics.get("train_style_strength", 0.0),
+            metrics.get("patch_nce", 0.0),
+            metrics.get("patch_nce_xid", 0.0),
+            metrics.get("patch_nce_id", 0.0),
+            metrics.get("skip_gate_mean", 0.0),
+            metrics.get("skip_gate_std", 0.0),
+            metrics.get("skip_gate_min", 0.0),
+            metrics.get("skip_gate_max", 0.0),
+            metrics.get("style_probe_real_acc", 0.0),
+            metrics.get("style_probe_fake_acc", 0.0),
+            metrics.get("style_probe_fake_conf", 0.0),
+            metrics.get("identity_ratio", 0.0),
             metrics["lr"],
             metrics.get("data_time_sec", 0.0),
             metrics.get("compute_time_sec", 0.0),
+        )
+        logger.info(
+            "Epoch %d extras | nce=%.4f nce_xid=%.4f nce_id=%.4f gate(mean=%.4f std=%.4f min=%.4f max=%.4f var=%.4f reg=%.4f)",
+            epoch,
+            metrics.get("patch_nce", 0.0),
+            metrics.get("patch_nce_xid", 0.0),
+            metrics.get("patch_nce_id", 0.0),
+            metrics.get("skip_gate_mean", 0.0),
+            metrics.get("skip_gate_std", 0.0),
+            metrics.get("skip_gate_min", 0.0),
+            metrics.get("skip_gate_max", 0.0),
+            metrics.get("gate_var", 0.0),
+            metrics.get("gate_reg", 0.0),
         )
 
         ckpt_path = None
@@ -328,6 +387,15 @@ def main() -> None:
             if ckpt_path is None:
                 ckpt_path = trainer.save_checkpoint(epoch, metrics)
             trainer.run_full_evaluation(epoch, checkpoint_path=ckpt_path)
+
+        if getattr(trainer, "max_train_steps", 0) > 0 and trainer.global_step >= int(trainer.max_train_steps):
+            logger.info(
+                "Reached training.max_train_steps=%d at global_step=%d. Stop training.",
+                int(trainer.max_train_steps),
+                int(trainer.global_step),
+            )
+            break
+        epoch += 1
 
     logger.info("Training completed.")
 

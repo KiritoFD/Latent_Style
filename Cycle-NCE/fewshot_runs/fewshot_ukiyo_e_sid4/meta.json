@@ -1,0 +1,10 @@
+{
+  "base_checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\nce-swd_0.25-cl_0.01\\epoch_0120.pt",
+  "patched_checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\fewshot_runs\\fewshot_ukiyo_e_sid4\\epoch_0120_fewshot_ukiyo_e.pt",
+  "tokenizer_ckpt": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\nce-swd_0.25-cl_0.01\\tokenizer_distill_0120_uv_rerun-50000\\tokenizer.pt",
+  "fewshot_image_dir": "G:\\GitHub\\Latent_Style\\wikiart_fewshot\\ukiyo_e_processed_256\\train6",
+  "latent_dir": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\fewshot_runs\\fewshot_ukiyo_e_sid4\\latents\\ukiyo_e",
+  "replace_style_id": 4,
+  "replace_style_name": "cezanne",
+  "refine_steps": 200
+}

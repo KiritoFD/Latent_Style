@@ -1,0 +1,162 @@
+{
+  "num_rounds": 1,
+  "latest": {
+    "epoch": 150,
+    "summary_path": "..\\exp_S2_color_blind\\full_eval\\epoch_0150\\summary.json",
+    "transfer_clip_style": 0.7022627408802509,
+    "transfer_content_lpips": 0.5441855823333334,
+    "transfer_fid": 328.82141429889913,
+    "transfer_art_fid": 524.0720578842235,
+    "transfer_classifier_acc": 0.0,
+    "photo_to_art_clip_style": 0.6966058348615964,
+    "photo_to_art_fid": 328.82141429889913,
+    "photo_to_art_art_fid": 524.0720578842235,
+    "photo_to_art_classifier_acc": 0.0
+  },
+  "mean": {
+    "transfer_clip_style": 0.7022627408802509,
+    "transfer_content_lpips": 0.5441855823333334,
+    "transfer_fid": 328.82141429889913,
+    "transfer_art_fid": 524.0720578842235,
+    "transfer_classifier_acc": 0.0,
+    "photo_to_art_clip_style": 0.6966058348615964,
+    "photo_to_art_fid": 328.82141429889913,
+    "photo_to_art_art_fid": 524.0720578842235,
+    "photo_to_art_classifier_acc": 0.0
+  },
+  "best": {
+    "best_transfer_classifier_acc": {
+      "epoch": 150,
+      "summary_path": "..\\exp_S2_color_blind\\full_eval\\epoch_0150\\summary.json",
+      "transfer_clip_style": 0.7022627408802509,
+      "transfer_content_lpips": 0.5441855823333334,
+      "transfer_fid": 328.82141429889913,
+      "transfer_art_fid": 524.0720578842235,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6966058348615964,
+      "photo_to_art_fid": 328.82141429889913,
+      "photo_to_art_art_fid": 524.0720578842235,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_clip_style": {
+      "epoch": 150,
+      "summary_path": "..\\exp_S2_color_blind\\full_eval\\epoch_0150\\summary.json",
+      "transfer_clip_style": 0.7022627408802509,
+      "transfer_content_lpips": 0.5441855823333334,
+      "transfer_fid": 328.82141429889913,
+      "transfer_art_fid": 524.0720578842235,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6966058348615964,
+      "photo_to_art_fid": 328.82141429889913,
+      "photo_to_art_art_fid": 524.0720578842235,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_fid": {
+      "epoch": 150,
+      "summary_path": "..\\exp_S2_color_blind\\full_eval\\epoch_0150\\summary.json",
+      "transfer_clip_style": 0.7022627408802509,
+      "transfer_content_lpips": 0.5441855823333334,
+      "transfer_fid": 328.82141429889913,
+      "transfer_art_fid": 524.0720578842235,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6966058348615964,
+      "photo_to_art_fid": 328.82141429889913,
+      "photo_to_art_art_fid": 524.0720578842235,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_art_fid": {
+      "epoch": 150,
+      "summary_path": "..\\exp_S2_color_blind\\full_eval\\epoch_0150\\summary.json",
+      "transfer_clip_style": 0.7022627408802509,
+      "transfer_content_lpips": 0.5441855823333334,
+      "transfer_fid": 328.82141429889913,
+      "transfer_art_fid": 524.0720578842235,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6966058348615964,
+      "photo_to_art_fid": 328.82141429889913,
+      "photo_to_art_art_fid": 524.0720578842235,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_classifier_acc": {
+      "epoch": 150,
+      "summary_path": "..\\exp_S2_color_blind\\full_eval\\epoch_0150\\summary.json",
+      "transfer_clip_style": 0.7022627408802509,
+      "transfer_content_lpips": 0.5441855823333334,
+      "transfer_fid": 328.82141429889913,
+      "transfer_art_fid": 524.0720578842235,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6966058348615964,
+      "photo_to_art_fid": 328.82141429889913,
+      "photo_to_art_art_fid": 524.0720578842235,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_clip_style": {
+      "epoch": 150,
+      "summary_path": "..\\exp_S2_color_blind\\full_eval\\epoch_0150\\summary.json",
+      "transfer_clip_style": 0.7022627408802509,
+      "transfer_content_lpips": 0.5441855823333334,
+      "transfer_fid": 328.82141429889913,
+      "transfer_art_fid": 524.0720578842235,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6966058348615964,
+      "photo_to_art_fid": 328.82141429889913,
+      "photo_to_art_art_fid": 524.0720578842235,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_fid": {
+      "epoch": 150,
+      "summary_path": "..\\exp_S2_color_blind\\full_eval\\epoch_0150\\summary.json",
+      "transfer_clip_style": 0.7022627408802509,
+      "transfer_content_lpips": 0.5441855823333334,
+      "transfer_fid": 328.82141429889913,
+      "transfer_art_fid": 524.0720578842235,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6966058348615964,
+      "photo_to_art_fid": 328.82141429889913,
+      "photo_to_art_art_fid": 524.0720578842235,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_art_fid": {
+      "epoch": 150,
+      "summary_path": "..\\exp_S2_color_blind\\full_eval\\epoch_0150\\summary.json",
+      "transfer_clip_style": 0.7022627408802509,
+      "transfer_content_lpips": 0.5441855823333334,
+      "transfer_fid": 328.82141429889913,
+      "transfer_art_fid": 524.0720578842235,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6966058348615964,
+      "photo_to_art_fid": 328.82141429889913,
+      "photo_to_art_art_fid": 524.0720578842235,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_content_lpips": {
+      "epoch": 150,
+      "summary_path": "..\\exp_S2_color_blind\\full_eval\\epoch_0150\\summary.json",
+      "transfer_clip_style": 0.7022627408802509,
+      "transfer_content_lpips": 0.5441855823333334,
+      "transfer_fid": 328.82141429889913,
+      "transfer_art_fid": 524.0720578842235,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6966058348615964,
+      "photo_to_art_fid": 328.82141429889913,
+      "photo_to_art_art_fid": 524.0720578842235,
+      "photo_to_art_classifier_acc": 0.0
+    }
+  },
+  "rounds": [
+    {
+      "epoch": 150,
+      "summary_path": "..\\exp_S2_color_blind\\full_eval\\epoch_0150\\summary.json",
+      "transfer_clip_style": 0.7022627408802509,
+      "transfer_content_lpips": 0.5441855823333334,
+      "transfer_fid": 328.82141429889913,
+      "transfer_art_fid": 524.0720578842235,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6966058348615964,
+      "photo_to_art_fid": 328.82141429889913,
+      "photo_to_art_art_fid": 524.0720578842235,
+      "photo_to_art_classifier_acc": 0.0
+    }
+  ],
+  "updated_at": "2026-03-03 08:24:47"
+}

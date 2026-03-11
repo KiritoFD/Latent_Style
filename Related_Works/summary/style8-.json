@@ -1,0 +1,114 @@
+{
+  "num_rounds": 5,
+  "latest": {
+    "epoch": 250,
+    "summary_path": "..\\style8-\\full_eval\\epoch_0250\\summary.json",
+    "transfer_clip_style": 0.44089226484298705,
+    "transfer_content_lpips": 0.24391540705999998,
+    "transfer_classifier_acc": 0.0,
+    "photo_to_art_clip_style": 0.4732224529981613,
+    "photo_to_art_classifier_acc": 0.0
+  },
+  "mean": {
+    "transfer_clip_style": 0.44114807552099233,
+    "transfer_content_lpips": 0.24391645564400002,
+    "transfer_classifier_acc": 0.0,
+    "photo_to_art_clip_style": 0.473518241763115,
+    "photo_to_art_classifier_acc": 0.0
+  },
+  "best": {
+    "best_transfer_classifier_acc": {
+      "epoch": 50,
+      "summary_path": "..\\style8-\\full_eval\\epoch_0050\\summary.json",
+      "transfer_clip_style": 0.44108049243688585,
+      "transfer_content_lpips": 0.24389943514999998,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.4735227119922638,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_clip_style": {
+      "epoch": 200,
+      "summary_path": "..\\style8-\\full_eval\\epoch_0200\\summary.json",
+      "transfer_clip_style": 0.4414529123902321,
+      "transfer_content_lpips": 0.24392064856,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.47395190358161926,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_classifier_acc": {
+      "epoch": 50,
+      "summary_path": "..\\style8-\\full_eval\\epoch_0050\\summary.json",
+      "transfer_clip_style": 0.44108049243688585,
+      "transfer_content_lpips": 0.24389943514999998,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.4735227119922638,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_clip_style": {
+      "epoch": 200,
+      "summary_path": "..\\style8-\\full_eval\\epoch_0200\\summary.json",
+      "transfer_clip_style": 0.4414529123902321,
+      "transfer_content_lpips": 0.24392064856,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.47395190358161926,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_content_lpips": {
+      "epoch": 50,
+      "summary_path": "..\\style8-\\full_eval\\epoch_0050\\summary.json",
+      "transfer_clip_style": 0.44108049243688585,
+      "transfer_content_lpips": 0.24389943514999998,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.4735227119922638,
+      "photo_to_art_classifier_acc": 0.0
+    }
+  },
+  "rounds": [
+    {
+      "epoch": 50,
+      "summary_path": "..\\style8-\\full_eval\\epoch_0050\\summary.json",
+      "transfer_clip_style": 0.44108049243688585,
+      "transfer_content_lpips": 0.24389943514999998,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.4735227119922638,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    {
+      "epoch": 100,
+      "summary_path": "..\\style8-\\full_eval\\epoch_0100\\summary.json",
+      "transfer_clip_style": 0.4413513731956482,
+      "transfer_content_lpips": 0.24390813579999998,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.4736509341001511,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    {
+      "epoch": 150,
+      "summary_path": "..\\style8-\\full_eval\\epoch_0150\\summary.json",
+      "transfer_clip_style": 0.44096333473920823,
+      "transfer_content_lpips": 0.24393865165000003,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.4732432061433792,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    {
+      "epoch": 200,
+      "summary_path": "..\\style8-\\full_eval\\epoch_0200\\summary.json",
+      "transfer_clip_style": 0.4414529123902321,
+      "transfer_content_lpips": 0.24392064856,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.47395190358161926,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    {
+      "epoch": 250,
+      "summary_path": "..\\style8-\\full_eval\\epoch_0250\\summary.json",
+      "transfer_clip_style": 0.44089226484298705,
+      "transfer_content_lpips": 0.24391540705999998,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.4732224529981613,
+      "photo_to_art_classifier_acc": 0.0
+    }
+  ],
+  "updated_at": "2026-02-22 09:17:27"
+}

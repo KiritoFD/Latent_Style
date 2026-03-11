@@ -115,6 +115,7 @@ class LGTInference:
             self.style_strength = None
         else:
             self.style_strength = float(style_strength if style_strength is not None else cfg_strength)
+
     @torch.no_grad()
     def inversion(self, x1):
         # AdaCUT is direct mapping; inversion is identity for compatibility.
@@ -127,12 +128,9 @@ class LGTInference:
         b = x0.shape[0]
         if isinstance(target_style_id, int):
             target_style_id = torch.full((b,), target_style_id, dtype=torch.long, device=x0.device)
-        # Deployment path: style transfer by style_id only (no reference image required).
         return self.model.integrate(
             x0,
             style_id=target_style_id,
-            style_ref=None,
-            style_mix_alpha=0.0,
             num_steps=max(1, int(num_steps)),
             step_size=self.step_size,
             style_strength=self.style_strength,

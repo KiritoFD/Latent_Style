@@ -1,0 +1,41 @@
+{
+  "num_rounds": 4,
+  "latest": {
+    "epoch": 200,
+    "summary_path": "..\\swd-256-100-6-50-1.5k\\full_eval\\epoch_0200\\summary.json",
+    "transfer_clip_style": 0.5236334744095802,
+    "transfer_content_lpips": 0.30614729395,
+    "photo_to_art_clip_style": 0.4814885534346104
+  },
+  "rounds": [
+    {
+      "epoch": 50,
+      "summary_path": "..\\swd-256-100-6-50-1.5k\\full_eval\\epoch_0050\\summary.json",
+      "transfer_clip_style": 0.5234063765406609,
+      "transfer_content_lpips": 0.30524043630000003,
+      "photo_to_art_clip_style": 0.48190954700112343
+    },
+    {
+      "epoch": 100,
+      "summary_path": "..\\swd-256-100-6-50-1.5k\\full_eval\\epoch_0100\\summary.json",
+      "transfer_clip_style": 0.5250990872085095,
+      "transfer_content_lpips": 0.30757097014999996,
+      "photo_to_art_clip_style": 0.4841911196708679
+    },
+    {
+      "epoch": 150,
+      "summary_path": "..\\swd-256-100-6-50-1.5k\\full_eval\\epoch_0150\\summary.json",
+      "transfer_clip_style": 0.5241532281041147,
+      "transfer_content_lpips": 0.3065683237,
+      "photo_to_art_clip_style": 0.48153496980667115
+    },
+    {
+      "epoch": 200,
+      "summary_path": "..\\swd-256-100-6-50-1.5k\\full_eval\\epoch_0200\\summary.json",
+      "transfer_clip_style": 0.5236334744095802,
+      "transfer_content_lpips": 0.30614729395,
+      "photo_to_art_clip_style": 0.4814885534346104
+    }
+  ],
+  "updated_at": "2026-02-18 08:00:24"
+}

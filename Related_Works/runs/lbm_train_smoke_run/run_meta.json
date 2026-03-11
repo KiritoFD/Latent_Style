@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-03-08T01:16:45",
+  "train_shards": [
+    "runs\\lbm_train_wds_smoke_photo_to_monet\\train-000000.tar"
+  ],
+  "val_shards": [
+    "runs\\lbm_train_wds_smoke_photo_to_monet\\val-000000.tar"
+  ],
+  "out_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\runs\\lbm_train_smoke_run",
+  "backbone": "stabilityai/stable-diffusion-xl-base-1.0",
+  "image_size": 256,
+  "batch_size": 2,
+  "accum": 1,
+  "num_workers": 0,
+  "max_steps": 1,
+  "lr": 1e-05,
+  "enable_minibatch_ot": true,
+  "bridge_noise_sigma": 0.005,
+  "seed": 42
+}

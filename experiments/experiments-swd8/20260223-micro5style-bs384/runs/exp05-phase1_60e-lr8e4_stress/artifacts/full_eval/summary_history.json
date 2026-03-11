@@ -1,0 +1,87 @@
+{
+  "num_rounds": 2,
+  "latest": {
+    "epoch": 60,
+    "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp05-phase1_60e-lr8e4_stress\\artifacts\\full_eval\\epoch_0060\\summary.json",
+    "transfer_clip_style": 0.6488584309816361,
+    "transfer_content_lpips": 0.37590619316999996,
+    "transfer_classifier_acc": 0.0,
+    "photo_to_art_clip_style": 0.6146508936583996,
+    "photo_to_art_classifier_acc": 0.0
+  },
+  "mean": {
+    "transfer_clip_style": 0.648182440251112,
+    "transfer_content_lpips": 0.375654851915,
+    "transfer_classifier_acc": 0.0,
+    "photo_to_art_clip_style": 0.6138891112059355,
+    "photo_to_art_classifier_acc": 0.0
+  },
+  "best": {
+    "best_transfer_classifier_acc": {
+      "epoch": 40,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp05-phase1_60e-lr8e4_stress\\artifacts\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.6475064495205879,
+      "transfer_content_lpips": 0.37540351066,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6131273287534714,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_clip_style": {
+      "epoch": 60,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp05-phase1_60e-lr8e4_stress\\artifacts\\full_eval\\epoch_0060\\summary.json",
+      "transfer_clip_style": 0.6488584309816361,
+      "transfer_content_lpips": 0.37590619316999996,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6146508936583996,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_classifier_acc": {
+      "epoch": 40,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp05-phase1_60e-lr8e4_stress\\artifacts\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.6475064495205879,
+      "transfer_content_lpips": 0.37540351066,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6131273287534714,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_clip_style": {
+      "epoch": 60,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp05-phase1_60e-lr8e4_stress\\artifacts\\full_eval\\epoch_0060\\summary.json",
+      "transfer_clip_style": 0.6488584309816361,
+      "transfer_content_lpips": 0.37590619316999996,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6146508936583996,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_content_lpips": {
+      "epoch": 40,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp05-phase1_60e-lr8e4_stress\\artifacts\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.6475064495205879,
+      "transfer_content_lpips": 0.37540351066,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6131273287534714,
+      "photo_to_art_classifier_acc": 0.0
+    }
+  },
+  "rounds": [
+    {
+      "epoch": 40,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp05-phase1_60e-lr8e4_stress\\artifacts\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.6475064495205879,
+      "transfer_content_lpips": 0.37540351066,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6131273287534714,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    {
+      "epoch": 60,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp05-phase1_60e-lr8e4_stress\\artifacts\\full_eval\\epoch_0060\\summary.json",
+      "transfer_clip_style": 0.6488584309816361,
+      "transfer_content_lpips": 0.37590619316999996,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6146508936583996,
+      "photo_to_art_classifier_acc": 0.0
+    }
+  ],
+  "updated_at": "2026-02-24 08:49:16"
+}

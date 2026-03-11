@@ -1,0 +1,2 @@
+experiment_id,epoch,source_file,updated_at,transfer_clip_style,transfer_content_lpips,transfer_fid,transfer_art_fid,transfer_classifier_acc,photo_to_art_clip_style,photo_to_art_fid,photo_to_art_art_fid,photo_to_art_classifier_acc,summary_path
+Related_Works,20,G:\GitHub\Latent_Style\Related_Works\summary_history (2).json,2026-03-07 23:23:34,0.6552714234093825,0.41690402363333334,291.2200097518538,418.3039224233603,0.0,0.6324137675265471,291.2200097518538,418.3039224233603,0.0,..\decoder-H-MSCTM-no_clamp_mult-tv-2\full_eval\epoch_0020\summary.json
