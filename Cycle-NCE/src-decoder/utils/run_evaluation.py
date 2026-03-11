@@ -9,6 +9,7 @@ import os
 import sys
 import subprocess
 from pathlib import Path
+from contextlib import nullcontext
 import torch
 
 # 妫ｅ啯鏆?Enable Tensor Cores for float32 matrix multiplication (Fixes UserWarning)
@@ -51,11 +52,33 @@ if str(_ROOT) not in sys.path:
 from utils.inference import LGTInference, load_vae, encode_image, decode_latent
 from utils.classify import DEFAULT_EVAL_IMAGE_CLASSIFIER_CKPT, load_eval_image_classifier
 
-# KID (official implementation via torchmetrics)
-try:
-    from torchmetrics.image.kid import KernelInceptionDistance
-except Exception:
-    KernelInceptionDistance = None
+# ==========================================
+# Optimized Feature Extractors
+# ==========================================
+
+class VGGFeatureExtractor(torch.nn.Module):
+    def __init__(self, device='cuda'):
+        super().__init__()
+        # Load VGG only once, freeze immediately
+        # Use weights parameter instead of deprecated pretrained=True
+        vgg = models.vgg16(weights=models.VGG16_Weights.DEFAULT).features.eval().to(device)
+        for p in vgg.parameters(): p.requires_grad = False
+        self.vgg = vgg
+        self.layer_ids = [8, 15] 
+        self.register_buffer('mean', torch.tensor([0.485, 0.456, 0.406], device=device).view(1,3,1,1))
+        self.register_buffer('std', torch.tensor([0.229, 0.224, 0.225], device=device).view(1,3,1,1))
+
+    def get_features(self, x):
+        # Normalize and extract
+        x = (x.to(self.mean.device) - self.mean) / self.std
+        feats = []
+        h = x
+        for i, layer in enumerate(self.vgg):
+            h = layer(h)
+            if i in self.layer_ids:
+                feats.append(h.detach().cpu()) # Store on CPU to save VRAM
+        return feats
+
 
 def _safe_to_eval_device(batch, device: str):
     """
@@ -321,13 +344,7 @@ def _save_summary_grid_png(rows, out_dir: Path, style_order: list[str] | None = 
     if not style_order:
         return None
 
-    def _to_f(v, default: float = 0.0) -> float:
-        try:
-            return float(v)
-        except Exception:
-            return float(default)
-
-    # src_style -> src_image -> tgt_style -> {path, clip_style, content_lpips}
+    # src_style -> src_image -> tgt_style -> path
     by_src = defaultdict(lambda: defaultdict(dict))
     for r in rows:
         src_style = str(r.get("src_style", ""))
@@ -336,57 +353,23 @@ def _save_summary_grid_png(rows, out_dir: Path, style_order: list[str] | None = 
         p = _resolve_gen_image_path(out_dir, str(r.get("gen_image", "")))
         if (not src_style) or (not src_image) or (not tgt_style) or (p is None):
             continue
-        by_src[src_style][src_image][tgt_style] = {
-            "path": p,
-            "clip_style": _to_f(r.get("clip_style", 0.0), 0.0),
-            "content_lpips": _to_f(r.get("content_lpips", 0.0), 0.0),
-        }
+        by_src[src_style][src_image][tgt_style] = p
 
-    # Pick one representative source image per row style:
-    # maximize mean clip_style across transfers to OTHER styles.
+    # Pick one representative source image per row style (best coverage, then name).
     chosen = {}
     for src_style in style_order:
         candidates = by_src.get(src_style, {})
         if not candidates:
             chosen[src_style] = {}
             continue
-        best_key = None
-        best_map = None
-        best_src_img = None
-        for src_img, tgt_map in candidates.items():
-            transfer_scores = []
-            for tgt_style in style_order:
-                if tgt_style == src_style:
-                    continue
-                item = tgt_map.get(tgt_style)
-                if item is None:
-                    continue
-                transfer_scores.append(float(item.get("clip_style", 0.0)))
-            coverage = len(transfer_scores)
-            if coverage <= 0:
-                continue
-            mean_clip = float(np.mean(transfer_scores))
-            min_clip = float(np.min(transfer_scores))
-            # Higher mean clip first, then min clip, then coverage.
-            rank_key = (mean_clip, min_clip, coverage, src_img)
-            if best_key is None or rank_key > best_key:
-                best_key = rank_key
-                best_map = tgt_map
-                best_src_img = src_img
-        if best_map is None:
-            ranked = sorted(candidates.items(), key=lambda kv: (-len(kv[1]), kv[0]))
-            best_src_img, best_map = ranked[0]
-        chosen[src_style] = {
-            "src_image": str(best_src_img),
-            "tgt_map": best_map,
-        }
+        ranked = sorted(candidates.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+        chosen[src_style] = ranked[0][1]
 
     existing_paths = []
     for src_style in style_order:
-        tgt_map = chosen.get(src_style, {}).get("tgt_map", {})
+        tgt_map = chosen.get(src_style, {})
         for tgt_style in style_order:
-            item = tgt_map.get(tgt_style)
-            p = item.get("path") if isinstance(item, dict) else None
+            p = tgt_map.get(tgt_style)
             if p is not None and p.exists():
                 existing_paths.append(p)
     if not existing_paths:
@@ -408,19 +391,16 @@ def _save_summary_grid_png(rows, out_dir: Path, style_order: list[str] | None = 
 
     try:
         font = ImageFont.truetype("arial.ttf", size=28)
-        font_small = ImageFont.truetype("arial.ttf", size=16)
     except Exception:
         font = ImageFont.load_default()
-        font_small = font
 
     bg = (0, 0, 0)
     fg = (255, 255, 255)
     pad = 18
     header_h = 56
-    metric_h = 24
-    left_w = 220
+    left_w = 140
     canvas_w = left_w + n * cell_w + (n + 1) * pad
-    canvas_h = header_h + n * (cell_h + metric_h) + (n + 1) * pad
+    canvas_h = header_h + n * cell_h + (n + 1) * pad
     canvas = Image.new("RGB", (canvas_w, canvas_h), color=bg)
     draw = ImageDraw.Draw(canvas)
 
@@ -431,17 +411,13 @@ def _save_summary_grid_png(rows, out_dir: Path, style_order: list[str] | None = 
 
     for ri, src_style in enumerate(style_order):
         x = 6
-        y = header_h + pad + ri * (cell_h + metric_h + pad) + max(0, (cell_h - 28) // 2)
+        y = header_h + pad + ri * (cell_h + pad) + max(0, (cell_h - 28) // 2)
         draw.text((x, y), src_style, fill=fg, font=font)
-        src_img = chosen.get(src_style, {}).get("src_image", "")
-        if src_img:
-            draw.text((x, y + 30), Path(src_img).stem, fill=(200, 200, 200), font=font_small)
-        tgt_map = chosen.get(src_style, {}).get("tgt_map", {})
+        tgt_map = chosen.get(src_style, {})
         for ci, tgt_style in enumerate(style_order):
             px = left_w + pad + ci * (cell_w + pad)
-            py = header_h + pad + ri * (cell_h + metric_h + pad)
-            item = tgt_map.get(tgt_style)
-            p = item.get("path") if isinstance(item, dict) else None
+            py = header_h + pad + ri * (cell_h + pad)
+            p = tgt_map.get(tgt_style)
             if p is None or not p.exists():
                 continue
             try:
@@ -449,18 +425,10 @@ def _save_summary_grid_png(rows, out_dir: Path, style_order: list[str] | None = 
                     canvas.paste(im, (px, py))
             except Exception:
                 continue
-            clip_style = float(item.get("clip_style", 0.0))
-            c_lpips = float(item.get("content_lpips", 0.0))
-            stat_text = f"clip={clip_style:.3f} lpips={c_lpips:.3f}"
-            draw.text((px + 4, py + cell_h + 3), stat_text, fill=(230, 230, 230), font=font_small)
 
     out_path = out_dir / "summary_grid.png"
     canvas.save(out_path, format="PNG")
     print(f"Summary grid saved: {out_path}")
-    print("Summary grid source selection (max transfer clip_style mean):")
-    for src_style in style_order:
-        src_img = chosen.get(src_style, {}).get("src_image", "")
-        print(f"  {src_style}: {Path(src_img).stem if src_img else '(none)'}")
     return out_path
 
 def _extract_clip_embeddings(output):
@@ -611,57 +579,6 @@ def _compute_fid_for_pair(
     return float(_frechet_distance(mu_s, cov_s, mu_r, cov_r))
 
 
-def _load_uint8_rgb_tensor_299(path: str) -> torch.Tensor:
-    img = Image.open(path).convert("RGB").resize((299, 299), Image.Resampling.BICUBIC)
-    # np.asarray(PIL.Image) can produce a non-writable view, which triggers a PyTorch warning.
-    # Copy to ensure a writable, contiguous buffer.
-    arr = np.asarray(img, dtype=np.uint8).copy()
-    if arr.ndim != 3 or arr.shape[2] != 3:
-        raise ValueError(f"Unexpected image shape for KID: {arr.shape}")
-    return torch.from_numpy(arr).permute(2, 0, 1).contiguous()
-
-
-def _compute_kid_for_pair(
-    gen_paths: list[str],
-    ref_paths: list[str],
-    *,
-    device: str,
-    subset_size: int,
-    max_gen: int,
-    max_ref: int,
-    batch_size: int,
-) -> tuple[float | None, float | None]:
-    if KernelInceptionDistance is None:
-        raise RuntimeError("torchmetrics is required for KID (KernelInceptionDistance) but is not available.")
-    g = list(gen_paths or [])[: max(1, int(max_gen))]
-    r = list(ref_paths or [])[: max(1, int(max_ref))]
-    if not g or not r:
-        return None, None
-
-    # torchmetrics enforces subset_size <= number of samples for both sets.
-    subset = max(2, int(subset_size))
-    subset = min(subset, len(g), len(r))
-    if subset < 2:
-        return None, None
-
-    kid = KernelInceptionDistance(subset_size=int(subset)).to(device)
-    kid.eval()
-
-    def _update(paths: list[str], *, real: bool):
-        bs = max(1, int(batch_size))
-        for i in range(0, len(paths), bs):
-            chunk = paths[i : i + bs]
-            imgs = torch.stack([_load_uint8_rgb_tensor_299(p) for p in chunk], dim=0).to(device)
-            kid.update(imgs, real=bool(real))
-
-    _update(r, real=True)
-    _update(g, real=False)
-    mean, std = kid.compute()
-    mean_f = float(mean.detach().cpu().item()) if hasattr(mean, "detach") else float(mean)
-    std_f = float(std.detach().cpu().item()) if hasattr(std, "detach") else float(std)
-    return mean_f, std_f
-
-
 def _load_eval_image_tensor(path: Path, size: int = 256) -> torch.Tensor:
     img = Image.open(path).convert("RGB").resize((size, size))
     return T.ToTensor()(img)
@@ -684,22 +601,6 @@ def _parse_generated_name(filename: str, style_names: list[str]) -> tuple[str, s
             if src_stem:
                 return src_style, src_stem, tgt_style
     return None
-
-
-def _infer_style_names_from_generated_files(files: list[Path]) -> list[str]:
-    styles = set()
-    for p in files:
-        stem = p.stem
-        if "_to_" not in stem:
-            continue
-        left, tgt = stem.rsplit("_to_", 1)
-        if tgt:
-            styles.add(str(tgt))
-        if "_" in left:
-            src_style = left.split("_", 1)[0]
-            if src_style:
-                styles.add(str(src_style))
-    return sorted(styles)
 
 
 def _is_ref_cache_valid(ref_features: dict, need_clip: bool) -> bool:
@@ -916,13 +817,11 @@ def _auto_run_missing_full_eval(args) -> None:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('eval_dir', nargs='?', default=None, help="One-shot mode: target full_eval directory (reuse existing images).")
     parser.add_argument('--checkpoint', type=str, default=None, help="Single-checkpoint mode: path to checkpoint")
     parser.add_argument('--output', type=str, default=None, help="Single-checkpoint mode: output directory")
-    parser.add_argument('--style_subdirs', type=str, default="", help="Optional comma-separated style names for reuse-only eval without checkpoint")
     parser.add_argument('--config', type=str, default="../config.json", help="Auto mode config path")
     parser.add_argument('--test_dir', type=str, default=None)
-    parser.add_argument('--cache_dir', type=str, default="../../eval_cache", help="Directory to store shared feature caches")
+    parser.add_argument('--cache_dir', type=str, default="../eval_cache", help="Directory to store shared feature caches")
     parser.add_argument('--num_steps', type=int, default=15)
     parser.add_argument('--step_size', type=float, default=1.0)
     parser.add_argument('--style_strength', type=float, default=None, help="Global style strength in [0,1]; default uses checkpoint config")
@@ -940,64 +839,21 @@ def main():
     parser.add_argument('--clip_modelscope_cache_dir', type=str, default="", help="Optional ModelScope cache directory")
     parser.add_argument('--clip_hf_cache_dir', type=str, default="", help="HuggingFace cache dir for CLIP; default uses <cache_dir>/hf")
     parser.add_argument('--clip_allow_network', action='store_true', help="Allow online model fetch if local cache is missing (default off)")
-    parser.add_argument(
-        '--clip_backend',
-        type=str,
-        default="openai",
-        choices=["openai", "hf", "none"],
-        help="CLIP backend for clip_* metrics: openai (official), hf (transformers), none (disable).",
-    )
-    parser.add_argument(
-        '--clip_openai_model',
-        type=str,
-        default="ViT-B/32",
-        help="OpenAI CLIP model name for --clip_backend openai (e.g. ViT-B/32).",
-    )
-    parser.add_argument(
-        '--clip_optional',
-        action='store_true',
-        help="If CLIP cannot be loaded, continue with clip_* = 0 (default: fail to avoid silent zeros).",
-    )
     parser.add_argument('--eval_classifier_only', action='store_true', help="Run only classifier evaluation (skip LPIPS/CLIP)")
     parser.add_argument('--eval_disable_lpips', action='store_true', help="Skip LPIPS metrics (keep CLIP)")
-    parser.add_argument(
-        '--eval_only_lpips_clip_style',
-        action='store_true',
-        help="Compute only content LPIPS and CLIP style similarity (skip style LPIPS, clip_dir, clip_content, classifier).",
-    )
     parser.add_argument('--eval_enable_art_fid', action='store_true', help="Enable ArtFID metric: (1+FID_style)*(1+LPIPS_content)")
     parser.add_argument('--eval_art_fid_max_gen', type=int, default=200, help="Max generated images per pair for FID_style")
     parser.add_argument('--eval_art_fid_max_ref', type=int, default=200, help="Max target-style reference images per pair for FID_style")
     parser.add_argument('--eval_art_fid_batch_size', type=int, default=16, help="Batch size for inception feature extraction in ArtFID")
     parser.add_argument('--eval_art_fid_photo_only', action='store_true', help="Compute ArtFID/FID only for photo->art directions")
-    parser.add_argument('--eval_enable_kid', action='store_true', help="Enable KID metric (official torchmetrics implementation)")
-    parser.add_argument('--eval_kid_max_gen', type=int, default=200, help="Max generated images per pair for KID")
-    parser.add_argument('--eval_kid_max_ref', type=int, default=200, help="Max target-style reference images per pair for KID")
-    parser.add_argument('--eval_kid_subset_size', type=int, default=50, help="Subset size for KID (torchmetrics)")
-    parser.add_argument('--eval_kid_batch_size', type=int, default=8, help="Batch size for KID image loading/inception")
     parser.add_argument('--eval_lpips_chunk_size', type=int, default=2, help="LPIPS chunk size for conservative VRAM usage")
     parser.add_argument('--eval_lpips_no_cpu_fallback', action='store_true', help="Disable CPU fallback when LPIPS CUDA OOM occurs")
     parser.add_argument('--reuse_generated', action='store_true', help="Reuse existing generated images in output dir/images (or legacy output dir) and skip generation")
     parser.add_argument('--generation_only', action='store_true', help="Only generate translated images, skip all evaluation metrics")
     args = parser.parse_args()
-    if args.eval_classifier_only and args.eval_only_lpips_clip_style:
-        raise ValueError("--eval_classifier_only conflicts with --eval_only_lpips_clip_style")
 
-    # One-shot mode: `run_evaluation.py <full_eval_dir>`
-    if args.eval_dir and not args.output:
-        args.output = str(args.eval_dir)
-        args.reuse_generated = True
-        args.force_regen = True
-
-    if args.output is None:
-        if args.checkpoint is None:
-            _auto_run_missing_full_eval(args)
-            return
-        raise ValueError("--output is required when --checkpoint is provided.")
-    if args.checkpoint is None and (not args.reuse_generated):
-        raise ValueError("--checkpoint is required unless --reuse_generated is set.")
-    if args.checkpoint is None and args.generation_only:
-        raise ValueError("--generation_only requires --checkpoint (cannot generate without model checkpoint).")
+    if (args.checkpoint is None) ^ (args.output is None):
+        raise ValueError("Both --checkpoint and --output must be provided together.")
     if args.checkpoint is None and args.output is None:
         _auto_run_missing_full_eval(args)
         return
@@ -1034,7 +890,7 @@ def main():
     os.environ.setdefault("HF_HOME", str(hf_cache_dir))
     os.environ.setdefault("HF_HUB_CACHE", str(hub_cache_dir))
     os.environ.setdefault("TRANSFORMERS_CACHE", str((hf_cache_dir / "transformers").resolve()))
-    if str(getattr(args, "clip_backend", "hf")).strip().lower() == "hf" and not bool(args.clip_allow_network):
+    if not bool(args.clip_allow_network):
         os.environ.setdefault("HF_HUB_OFFLINE", "1")
         os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
     print(f"HF cache dir: {hf_cache_dir}")
@@ -1043,27 +899,19 @@ def main():
     # Thread Pool for Async I/O
     io_pool = ThreadPoolExecutor(max_workers=4)
     
-    checkpoint_path: Path | None = None
-    cfg = {}
-    if args.checkpoint is not None:
-        checkpoint_path = Path(args.checkpoint)
-        if not checkpoint_path.exists():
-            raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
-        ckpt = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
-        cfg = ckpt.get('config', {})
-    else:
-        print("Single-run eval in reuse-only mode (no checkpoint).")
+    checkpoint_path = Path(args.checkpoint)
+    if not checkpoint_path.exists(): raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
+    
+    ckpt = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
+    cfg = ckpt.get('config', {})
     
     # Resolve Test Data Path
     test_dir_raw = args.test_dir if args.test_dir else cfg.get('training', {}).get('test_image_dir', '')
-    if not str(test_dir_raw).strip():
-        # Reuse-only fallback for convenience.
-        test_dir_raw = "../../style_data/overfit50"
     resolved_test_dir = _resolve_existing_path(
         test_dir_raw,
         [
             Path.cwd(),
-            *( [checkpoint_path.parent.resolve()] if checkpoint_path is not None else [] ),
+            checkpoint_path.parent.resolve(),
             Path(__file__).resolve().parent,
             Path(__file__).resolve().parents[1],
             Path(__file__).resolve().parents[2],
@@ -1073,15 +921,10 @@ def main():
         raise ValueError(f"Test directory not found: {test_dir_raw}")
     test_dir = resolved_test_dir
 
-    style_subdirs = [x.strip() for x in str(args.style_subdirs).split(",") if x.strip()]
+    style_subdirs = cfg.get('data', {}).get('style_subdirs', [])
     if not style_subdirs:
-        style_subdirs = list(cfg.get('data', {}).get('style_subdirs', []))
-    if not style_subdirs:
+        # Fallback: auto-detect subdirs
         style_subdirs = [d.name for d in test_dir.iterdir() if d.is_dir()]
-    if (not style_subdirs) and args.reuse_generated:
-        style_subdirs = _infer_style_names_from_generated_files(_list_reuse_generated_files(out_dir))
-    if not style_subdirs:
-        raise ValueError("Failed to infer style names. Provide --style_subdirs or valid --test_dir folders.")
     
     test_images = {}
     for style_id, style_name in enumerate(style_subdirs):
@@ -1140,8 +983,6 @@ def main():
         print(f"  Reused {len(generated_buffer)} generated images")
 
     if not generated_buffer:
-        if checkpoint_path is None:
-            raise RuntimeError("No reusable images found and no checkpoint provided. Cannot run generation phase.")
         print(f"\nPhase 1: Generation (Batch Size {args.batch_size})")
 
         lgt = LGTInference(
@@ -1237,7 +1078,7 @@ def main():
             torch.cuda.empty_cache()
         gc.collect()
         summary = {
-            "checkpoint": str(checkpoint_path) if checkpoint_path is not None else "(reuse-only:no-checkpoint)",
+            "checkpoint": str(checkpoint_path),
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "mode": "generation_only",
             "generated_count": int(len(generated_buffer)),
@@ -1261,67 +1102,37 @@ def main():
 
     if args.image_classifier_path:
         try:
-            classifier_path_candidates = [str(args.image_classifier_path)]
-            cfg_classifier = str(cfg.get("training", {}).get("full_eval_image_classifier_path", "")).strip()
-            if cfg_classifier:
-                classifier_path_candidates.append(cfg_classifier)
-            classifier_path_candidates.extend(
-                [
-                    str(cache_dir / "eval_style_image_classifier.pt"),
-                    str(Path(__file__).resolve().parents[2] / "eval_cache" / "eval_style_image_classifier.pt"),
-                ]
-            )
-
-            base_dirs = [
-                Path.cwd(),
-                out_dir,
-                cache_dir,
-                Path(__file__).resolve().parent,
-                Path(__file__).resolve().parents[1],
-                Path(__file__).resolve().parents[2],
-            ]
-            if checkpoint_path is not None:
-                base_dirs.insert(1, checkpoint_path.parent.resolve())
-
-            resolved_ckpt = None
-            for raw in classifier_path_candidates:
-                resolved_ckpt = _resolve_existing_path(raw, base_dirs)
-                if resolved_ckpt is not None:
-                    break
-
-            if resolved_ckpt is None:
-                print("  WARNING: image style classifier checkpoint not found. Tried:")
-                for raw in classifier_path_candidates:
-                    print(f"    - {raw}")
+            image_ckpt = Path(args.image_classifier_path)
+            if not image_ckpt.is_absolute():
+                image_ckpt = (Path(__file__).resolve().parent / image_ckpt).resolve()
+            if not image_ckpt.exists():
+                print(f"  WARNING: image style classifier checkpoint not found: {image_ckpt}")
             else:
-                image_classifier = load_eval_image_classifier(resolved_ckpt, device=device)
+                image_classifier = load_eval_image_classifier(image_ckpt, device=device)
                 classifier_label_names = list(image_classifier.classes)
-                print(f"  Loaded image style classifier: {resolved_ckpt} (classes={len(classifier_label_names)})")
+                print(f"  Loaded image style classifier: {image_ckpt} (classes={len(classifier_label_names)})")
         except Exception as e:
             print(f"  WARNING: failed to load image style classifier: {e}")
             image_classifier = None
 
     # Skip other metrics if classifier-only mode
     run_full_metrics = not args.eval_classifier_only
-    only_lpips_clip_style = bool(args.eval_only_lpips_clip_style)
 
     # Load Evaluators
+    vgg_extractor = None
     loss_fn = None
     clip_model = None
     clip_processor = None
     has_clip = False
-    clip_backend = str(getattr(args, "clip_backend", "hf")).strip().lower()
-    clip_preprocess = None  # OpenAI CLIP preprocess
-    clip_encode_pils = None  # Callable[[list[PIL.Image]], Tensor[B,D]] on device
-    if clip_backend == "openai":
-        clip_model_tag = f"openai:{str(getattr(args, 'clip_openai_model', 'ViT-B/32')).strip() or 'ViT-B/32'}"
-    elif clip_backend == "hf":
-        clip_model_tag = str(args.clip_model_name).strip() or "openai/clip-vit-base-patch32"
-    else:
-        clip_model_tag = "none"
+    clip_model_tag = str(args.clip_model_name).strip() or "openai/clip-vit-base-patch32"
     to_pil = ToPILImage()
 
     if run_full_metrics:
+        try:
+            vgg_extractor = VGGFeatureExtractor(device=device)
+        except Exception as e:
+            vgg_extractor = None
+            print(f"  WARNING: VGG feature extractor unavailable in offline/local-only mode: {e}")
         # Initialize LPIPS
         if args.eval_disable_lpips:
             loss_fn = None
@@ -1334,139 +1145,67 @@ def main():
             except Exception as e:
                 print(f"  WARNING: Failed to load LPIPS: {e}")
 
-        if clip_backend == "none":
-            has_clip = False
-        elif clip_backend == "openai":
-            try:
-                import clip as openai_clip
+        try:
+            from transformers import CLIPModel, CLIPProcessor
 
-                clip_cache_root = (cache_dir / "clip_openai").resolve()
-                clip_cache_root.mkdir(parents=True, exist_ok=True)
-                model_name = str(getattr(args, "clip_openai_model", "ViT-B/32")).strip() or "ViT-B/32"
-
-                if not bool(args.clip_allow_network):
-                    # Fail fast (avoid hanging downloads) if weights are missing.
-                    url = getattr(openai_clip, "_MODELS", {}).get(model_name)
-                    if url:
-                        expected = clip_cache_root / Path(str(url)).name
-                        if not expected.exists():
-                            raise FileNotFoundError(
-                                f"OpenAI CLIP weights not found in cache: {expected}. "
-                                f"Run once with --clip_allow_network to download, or pre-download into {clip_cache_root}."
-                            )
-
-                clip_model, clip_preprocess = openai_clip.load(
-                    model_name,
-                    device=device,
-                    download_root=str(clip_cache_root),
-                )
-                clip_model.eval()
-                has_clip = True
-                clip_model_tag = f"openai:{model_name}"
-                print(f"  CLIP Loaded (OpenAI): {model_name} (cache={clip_cache_root})")
-            except Exception as e:
-                if bool(getattr(args, "clip_optional", False)):
-                    print(f"  WARNING: OpenAI CLIP unavailable, continue without CLIP metrics: {e}")
-                    has_clip = False
-                    clip_model = None
-                    clip_preprocess = None
-                else:
-                    raise
-        elif clip_backend == "hf":
+            clip_sources = []
             clip_model_name = str(args.clip_model_name).strip() or "openai/clip-vit-base-patch32"
+            if str(args.clip_model_name).strip():
+                local_snapshot = _find_local_hf_snapshot(hf_cache_dir, clip_model_name)
+                if local_snapshot:
+                    clip_sources.append(local_snapshot)
+                clip_sources.append(clip_model_name)
+
+            ms_id = str(args.clip_modelscope_id).strip()
+            if ms_id:
+                try:
+                    from modelscope.hub.snapshot_download import snapshot_download
+
+                    ms_kwargs = {}
+                    ms_cache_dir = str(args.clip_modelscope_cache_dir).strip()
+                    if not ms_cache_dir:
+                        ms_cache_dir = str((hf_cache_dir / "modelscope").resolve())
+                    ms_kwargs["cache_dir"] = ms_cache_dir
+                    try:
+                        ms_local = snapshot_download(ms_id, local_files_only=(not bool(args.clip_allow_network)), **ms_kwargs)
+                    except TypeError:
+                        if bool(args.clip_allow_network):
+                            ms_local = snapshot_download(ms_id, **ms_kwargs)
+                        else:
+                            raise
+                    clip_sources.append(ms_local)
+                    print(f"  ModelScope CLIP cache: {ms_local}")
+                except Exception as ms_exc:
+                    print(f"  WARNING: ModelScope CLIP fallback unavailable: {ms_exc}")
+
+            last_err = None
+            for src in clip_sources:
+                try:
+                    clip_model, clip_processor = _load_clip_from_source(
+                        CLIPModel,
+                        CLIPProcessor,
+                        src,
+                        device,
+                        local_only=(not bool(args.clip_allow_network)),
+                        cache_dir=str(hf_cache_dir),
+                    )
+                    clip_model.eval()
+                    has_clip = True
+                    clip_model_tag = str(src)
+                    print(f"  CLIP Loaded from: {src}")
+                    break
+                except Exception as load_exc:
+                    last_err = load_exc
+                    continue
+            if not has_clip and last_err is not None:
+                raise last_err
+        except Exception as e:
+            print(f"  CLIP unavailable (offline/local-only mode), continue without CLIP metrics: {e}")
             try:
-                from transformers import CLIPModel, CLIPProcessor
-
-                clip_sources = []
-                if str(args.clip_model_name).strip():
-                    local_snapshot = _find_local_hf_snapshot(hf_cache_dir, clip_model_name)
-                    if local_snapshot:
-                        clip_sources.append(local_snapshot)
-                    clip_sources.append(clip_model_name)
-
-                ms_id = str(args.clip_modelscope_id).strip()
-                if ms_id:
-                    try:
-                        from modelscope.hub.snapshot_download import snapshot_download
-
-                        ms_kwargs = {}
-                        ms_cache_dir = str(args.clip_modelscope_cache_dir).strip()
-                        if not ms_cache_dir:
-                            ms_cache_dir = str((hf_cache_dir / "modelscope").resolve())
-                        ms_kwargs["cache_dir"] = ms_cache_dir
-                        try:
-                            ms_local = snapshot_download(
-                                ms_id, local_files_only=(not bool(args.clip_allow_network)), **ms_kwargs
-                            )
-                        except TypeError:
-                            if bool(args.clip_allow_network):
-                                ms_local = snapshot_download(ms_id, **ms_kwargs)
-                            else:
-                                raise
-                        clip_sources.append(ms_local)
-                        print(f"  ModelScope CLIP cache: {ms_local}")
-                    except Exception as ms_exc:
-                        print(f"  WARNING: ModelScope CLIP fallback unavailable: {ms_exc}")
-
-                last_err = None
-                for src in clip_sources:
-                    try:
-                        clip_model, clip_processor = _load_clip_from_source(
-                            CLIPModel,
-                            CLIPProcessor,
-                            src,
-                            device,
-                            local_only=(not bool(args.clip_allow_network)),
-                            cache_dir=str(hf_cache_dir),
-                        )
-                        clip_model.eval()
-                        has_clip = True
-                        clip_model_tag = str(src)
-                        print(f"  CLIP Loaded (HF) from: {src}")
-                        break
-                    except Exception as load_exc:
-                        last_err = load_exc
-                        continue
-                if not has_clip and last_err is not None:
-                    raise last_err
-            except Exception as e:
-                if bool(getattr(args, "clip_optional", False)):
-                    print(f"  WARNING: HF CLIP unavailable, continue without CLIP metrics: {e}")
-                    try:
-                        dbg = _debug_clip_cache_state(hf_cache_dir, clip_model_name)
-                        print(f"  CLIP cache diagnosis: {dbg}")
-                    except Exception:
-                        pass
-                    has_clip = False
-                    clip_model = None
-                    clip_processor = None
-                else:
-                    raise
-        else:
-            raise ValueError(f"Invalid --clip_backend: {clip_backend}")
-
-        if has_clip and clip_model is not None:
-            if clip_backend == "openai":
-                if clip_preprocess is None:
-                    raise RuntimeError("OpenAI CLIP preprocess missing")
-
-                def clip_encode_pils(pils):  # noqa: ANN001
-                    imgs = torch.stack([clip_preprocess(im) for im in pils], dim=0).to(device)
-                    feats = clip_model.encode_image(imgs)
-                    feats = feats.to(dtype=torch.float32)
-                    if feats.ndim == 1:
-                        feats = feats.unsqueeze(0)
-                    return feats / (feats.norm(p=2, dim=-1, keepdim=True) + 1e-8)
-
-            else:
-
-                def clip_encode_pils(pils):  # noqa: ANN001
-                    inputs = _safe_to_eval_device(clip_processor(images=pils, return_tensors='pt'), device)
-                    out = clip_model.get_image_features(**inputs)
-                    feats = _extract_clip_embeddings(out).to(device, dtype=torch.float32)
-                    if feats.ndim == 1:
-                        feats = feats.unsqueeze(0)
-                    return feats / (feats.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+                dbg = _debug_clip_cache_state(hf_cache_dir, clip_model_name)
+                print(f"  CLIP cache diagnosis: {dbg}")
+            except Exception:
+                pass
 
     # Prepare Reference Features (Cache)
     style_sig = ",".join(style_subdirs)
@@ -1524,16 +1263,26 @@ def main():
                     for b_start in pbar:
                         batch_paths = sampled_refs[b_start:b_start + ref_bs]
                         try:
-                            # Keep raw PILs for CLIP so CLIPProcessor applies its own canonical resize/crop.
-                            batch_pils = [Image.open(img_path).convert('RGB') for img_path in batch_paths]
-                            with torch.no_grad():
+                            batch_pils = [Image.open(img_path).convert('RGB').resize((256, 256)) for img_path in batch_paths]
+                            batch_t = torch.stack([T.ToTensor()(img_pil) for img_pil in batch_pils], dim=0).to(device)
+
+                            amp_ctx = torch.autocast('cuda', dtype=torch.bfloat16) if device == 'cuda' else nullcontext()
+                            with torch.no_grad(), amp_ctx:
+                                v_feats = vgg_extractor.get_features(batch_t) if vgg_extractor is not None else []
                                 c_emb = None
                                 if has_clip and clip_model is not None:
-                                    c_emb = clip_encode_pils(batch_pils).detach().cpu()
+                                    inputs = _safe_to_eval_device(
+                                        clip_processor(images=batch_pils, return_tensors='pt'),
+                                        device,
+                                    )
+                                    out = clip_model.get_image_features(**inputs)
+                                    c_emb = _extract_clip_embeddings(out)
+                                    c_emb = (c_emb / (c_emb.norm(p=2, dim=-1, keepdim=True) + 1e-8)).cpu()
 
                             for i, img_path in enumerate(batch_paths):
                                 ref_features[style_id].append({
                                     'path': str(img_path),
+                                    'vgg': [vf[i:i+1] for vf in v_feats] if v_feats else [],
                                     'clip': c_emb[i:i+1] if c_emb is not None else None
                                 })
                         except Exception as e:
@@ -1579,9 +1328,8 @@ def main():
                     print(f"  闁宠法濯寸粭?Failed to prepare CLIP matrix for style {sid}: {e}")
 
     # Cache reference tensors for style LPIPS to avoid repeated disk I/O in inner loops.
-    # style_lpips is intentionally disabled in this script.
     ref_lpips_tensors = {}  # style_id -> Tensor[N_ref, 3, 256, 256] on CPU
-    if False:
+    if run_full_metrics and loss_fn:
         max_ref_compare = int(args.max_ref_compare)
         for sid, feats in ref_features.items():
             refs = feats[:]
@@ -1597,8 +1345,7 @@ def main():
                 ref_lpips_tensors[sid] = torch.stack(tensors, dim=0).contiguous()
 
     # Cache source images/CLIP embeddings to avoid repeated work across many target styles.
-    src_img_cache = {}   # abs src path -> Tensor[3,256,256] on CPU (LPIPS path)
-    src_pil_cache = {}   # abs src path -> PIL.Image (CLIP path)
+    src_img_cache = {}   # abs src path -> Tensor[3,256,256] on CPU
     src_clip_cache = {}  # abs src path -> Tensor[D] on CPU
 
     csv_path = out_dir / 'metrics.csv'
@@ -1674,36 +1421,46 @@ def main():
             if has_clip and clip_model is not None:
                 # Gen CLIP
                 pil_gens = [to_pil(img.float()) for img in gen_imgs_cpu]
-                gen_clips = clip_encode_pils(pil_gens)
-                if not only_lpips_clip_style:
-                    # Src CLIP (cache by source path; source repeats across many target styles)
-                    miss_indices = [i for i, k in enumerate(src_keys) if k not in src_clip_cache]
-                    if miss_indices:
-                        pil_srcs_miss = []
-                        for i in miss_indices:
-                            src_path = str(Path(batch_items[i]['src_path']).resolve())
-                            pil_img = src_pil_cache.get(src_path)
-                            if pil_img is None:
-                                pil_img = Image.open(batch_items[i]['src_path']).convert('RGB')
-                                src_pil_cache[src_path] = pil_img
-                            pil_srcs_miss.append(pil_img)
-                        src_miss = clip_encode_pils(pil_srcs_miss)
-                        src_miss_cpu = src_miss.detach().cpu()
-                        for j, idx in enumerate(miss_indices):
-                            src_clip_cache[src_keys[idx]] = src_miss_cpu[j].clone()
-                    src_clips = torch.stack([src_clip_cache[k] for k in src_keys], dim=0).to(device, dtype=torch.float32)
-                    c_clip_scores = F.cosine_similarity(gen_clips, src_clips).cpu().float().numpy()
+                inputs_gen = _safe_to_eval_device(
+                    clip_processor(images=pil_gens, return_tensors='pt'),
+                    device,
+                )
+                out_gen = clip_model.get_image_features(**inputs_gen)
+                gen_clips = _extract_clip_embeddings(out_gen).to(device, dtype=torch.float32)
+                # Ensure shape
+                if gen_clips.ndim == 1: gen_clips = gen_clips.unsqueeze(0)
+                gen_clips = gen_clips / (gen_clips.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+                
+                # Src CLIP (cache by source path; source repeats across many target styles)
+                miss_indices = [i for i, k in enumerate(src_keys) if k not in src_clip_cache]
+                if miss_indices:
+                    pil_srcs_miss = [to_pil(src_imgs_cpu[i].float()) for i in miss_indices]
+                    inputs_src = _safe_to_eval_device(
+                        clip_processor(images=pil_srcs_miss, return_tensors='pt'),
+                        device,
+                    )
+                    out_src = clip_model.get_image_features(**inputs_src)
+                    src_miss = _extract_clip_embeddings(out_src).to(device, dtype=torch.float32)
+                    if src_miss.ndim == 1:
+                        src_miss = src_miss.unsqueeze(0)
+                    src_miss = src_miss / (src_miss.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+                    src_miss_cpu = src_miss.detach().cpu()
+                    for j, idx in enumerate(miss_indices):
+                        src_clip_cache[src_keys[idx]] = src_miss_cpu[j].clone()
+                src_clips = torch.stack([src_clip_cache[k] for k in src_keys], dim=0).to(device, dtype=torch.float32)
+                
+                c_clip_scores = F.cosine_similarity(gen_clips, src_clips).cpu().float().numpy()
 
             # 3. Classifier Predictions
             pred_indices = [-1] * len(batch_items)
-            if image_classifier is not None and (not only_lpips_clip_style):
+            if image_classifier is not None:
                 preds = image_classifier.predict_indices(gen_imgs).cpu().numpy().tolist()
                 pred_indices = preds
 
             # 4. Style Metrics & Row Writing
             # 4a. Style LPIPS in grouped batches by target style to reduce overhead.
             s_lpips_scores = [0.0] * len(batch_items)
-            if False:
+            if loss_fn and ref_lpips_tensors:
                 lpips_chunk_size = max(1, int(args.eval_lpips_chunk_size))
                 lpips_cpu_fallback = not bool(args.eval_lpips_no_cpu_fallback)
                 groups = defaultdict(list)
@@ -1766,13 +1523,7 @@ def main():
                 # clip_style: absolute similarity to target style prototype.
                 s_clip_dir = 0.0
                 s_clip_style = 0.0
-                if only_lpips_clip_style:
-                    if has_clip and gen_clips is not None and tgt_id in ref_clip_prototypes:
-                        tgt_proto = ref_clip_prototypes[tgt_id]  # [1, D]
-                        gen_emb = gen_clips[i:i+1]              # [1, D]
-                        if gen_emb.shape[-1] == tgt_proto.shape[-1]:
-                            s_clip_style = F.cosine_similarity(gen_emb, tgt_proto).item()
-                elif has_clip and gen_clips is not None and src_clips is not None and tgt_id in ref_clip_prototypes:
+                if has_clip and gen_clips is not None and src_clips is not None and tgt_id in ref_clip_prototypes:
                     tgt_proto = ref_clip_prototypes[tgt_id]  # [1, D]
                     gen_emb = gen_clips[i:i+1]              # [1, D]
                     src_emb = src_clips[i:i+1]              # [1, D]
@@ -1806,11 +1557,10 @@ def main():
     style_real_paths = {}
     for _, (style_name, img_list) in test_images.items():
         style_real_paths[style_name] = [str(p) for p in img_list]
-    ckpt_for_summary = checkpoint_path if checkpoint_path is not None else Path("(reuse-only:no-checkpoint)")
     generate_summary_json(
         csv_path,
         out_dir,
-        ckpt_for_summary,
+        checkpoint_path,
         style_order=list(style_subdirs),
         style_real_paths=style_real_paths,
         source_style_paths=style_real_paths,
@@ -1820,11 +1570,6 @@ def main():
         art_fid_max_ref=int(args.eval_art_fid_max_ref),
         art_fid_batch_size=int(args.eval_art_fid_batch_size),
         art_fid_photo_only=bool(args.eval_art_fid_photo_only),
-        enable_kid=bool(args.eval_enable_kid),
-        kid_max_gen=int(args.eval_kid_max_gen),
-        kid_max_ref=int(args.eval_kid_max_ref),
-        kid_subset_size=int(args.eval_kid_subset_size),
-        kid_batch_size=int(args.eval_kid_batch_size),
     )
 
 def generate_summary_json(
@@ -1841,11 +1586,6 @@ def generate_summary_json(
     art_fid_max_ref: int = 200,
     art_fid_batch_size: int = 16,
     art_fid_photo_only: bool = False,
-    enable_kid: bool = False,
-    kid_max_gen: int = 200,
-    kid_max_ref: int = 200,
-    kid_subset_size: int = 50,
-    kid_batch_size: int = 8,
 ):
     print("\n妫ｅ啯鎯?Generating Summary...")
     rows = []
@@ -1869,17 +1609,6 @@ def generate_summary_json(
         except Exception as e:
             fid_runner = None
             print(f"  WARNING: ArtFID/Inception unavailable in offline/local-only mode: {e}")
-    if enable_kid and KernelInceptionDistance is None:
-        raise RuntimeError("KID requested (--eval_enable_kid) but torchmetrics is not available.")
-    if enable_kid:
-        # torchmetrics KID depends on torch-fidelity for Inception weights/features.
-        try:
-            import torch_fidelity  # noqa: F401
-        except Exception as e:
-            raise RuntimeError(
-                "KID requested (--eval_enable_kid) but torch-fidelity is not available. "
-                "Install it via `pip install torch-fidelity` (or `pip install torchmetrics[image]`)."
-            ) from e
 
     matrix = defaultdict(lambda: defaultdict(list))
     for r in rows:
@@ -1977,65 +1706,6 @@ def generate_summary_json(
                 stats['fid_baseline'] = None
                 stats['delta_fid'] = None
                 stats['delta_fid_ratio'] = None
-
-            if enable_kid and style_real_paths is not None:
-                try:
-                    gen_paths = []
-                    for x in items:
-                        gp = _resolve_gen_image_path(out_dir, x.get('gen_image', ''))
-                        if gp is not None:
-                            gen_paths.append(str(gp.resolve()))
-                    ref_paths = list(style_real_paths.get(tgt, []))
-                    kid_style, kid_style_std = _compute_kid_for_pair(
-                        gen_paths,
-                        ref_paths,
-                        device=device,
-                        subset_size=max(2, int(kid_subset_size)),
-                        max_gen=max(1, int(kid_max_gen)),
-                        max_ref=max(1, int(kid_max_ref)),
-                        batch_size=max(1, int(kid_batch_size)),
-                    )
-                    stats['kid_style'] = kid_style
-                    stats['kid_style_std'] = kid_style_std
-                    src_paths = []
-                    src_map = src_name_to_path.get(str(src), {})
-                    for x in items:
-                        sp = src_map.get(str(x.get('src_image', '')))
-                        if sp:
-                            src_paths.append(sp)
-                    kid_baseline, kid_baseline_std = _compute_kid_for_pair(
-                        src_paths,
-                        ref_paths,
-                        device=device,
-                        subset_size=max(2, int(kid_subset_size)),
-                        max_gen=max(1, int(kid_max_gen)),
-                        max_ref=max(1, int(kid_max_ref)),
-                        batch_size=max(1, int(kid_batch_size)),
-                    )
-                    stats['kid_baseline'] = kid_baseline
-                    stats['kid_baseline_std'] = kid_baseline_std
-                    if kid_style is not None and kid_baseline is not None:
-                        delta_kid = float(kid_baseline) - float(kid_style)
-                        stats['delta_kid'] = delta_kid
-                        stats['delta_kid_ratio'] = float(delta_kid / max(float(kid_baseline), 1e-8))
-                    else:
-                        stats['delta_kid'] = None
-                        stats['delta_kid_ratio'] = None
-                except Exception as e:
-                    print(f"WARNING: KID failed for {src}->{tgt}: {e}")
-                    stats['kid_style'] = None
-                    stats['kid_style_std'] = None
-                    stats['kid_baseline'] = None
-                    stats['kid_baseline_std'] = None
-                    stats['delta_kid'] = None
-                    stats['delta_kid_ratio'] = None
-            else:
-                stats['kid_style'] = None
-                stats['kid_style_std'] = None
-                stats['kid_baseline'] = None
-                stats['kid_baseline_std'] = None
-                stats['delta_kid'] = None
-                stats['delta_kid_ratio'] = None
             
             # Classification Accuracy for this pair
             cls_results = [x['class_correct'] for x in items if x['class_correct'] != 'N/A']
@@ -2102,10 +1772,6 @@ def generate_summary_json(
             'delta_fid': "fid_baseline - fid (higher is better).",
             'delta_fid_ratio': "delta_fid / fid_baseline (relative improvement ratio).",
             'art_fid': "computed as (1 + fid_style) * (1 + content_lpips)",
-            'kid_baseline': "KID between source-domain images and target-style references (torchmetrics).",
-            'kid': "KID between generated images and target-style references (torchmetrics).",
-            'delta_kid': "kid_baseline - kid (higher is better).",
-            'delta_kid_ratio': "delta_kid / kid_baseline (relative improvement ratio).",
         },
         'matrix_breakdown': matrix_json,
         'analysis': {
@@ -2118,10 +1784,6 @@ def generate_summary_json(
                 'delta_fid': pool_avg([t for t in transfer_pool if t.get('delta_fid') is not None], 'delta_fid', default=None),
                 'delta_fid_ratio': pool_avg([t for t in transfer_pool if t.get('delta_fid_ratio') is not None], 'delta_fid_ratio', default=None),
                 'art_fid': pool_avg([t for t in transfer_pool if t.get('art_fid') is not None], 'art_fid', default=None),
-                'kid_baseline': pool_avg([t for t in transfer_pool if t.get('kid_baseline') is not None], 'kid_baseline', default=None),
-                'kid': pool_avg([t for t in transfer_pool if t.get('kid_style') is not None], 'kid_style', default=None),
-                'delta_kid': pool_avg([t for t in transfer_pool if t.get('delta_kid') is not None], 'delta_kid', default=None),
-                'delta_kid_ratio': pool_avg([t for t in transfer_pool if t.get('delta_kid_ratio') is not None], 'delta_kid_ratio', default=None),
                 'classifier_acc': pool_avg([t for t in transfer_pool if t['classifier_acc'] is not None], 'classifier_acc')
             },
             'photo_to_art_performance': {
@@ -2132,10 +1794,6 @@ def generate_summary_json(
                 'delta_fid': pool_avg([t for t in photo_transfer_pool if t.get('delta_fid') is not None], 'delta_fid', default=None),
                 'delta_fid_ratio': pool_avg([t for t in photo_transfer_pool if t.get('delta_fid_ratio') is not None], 'delta_fid_ratio', default=None),
                 'art_fid': pool_avg([t for t in photo_transfer_pool if t.get('art_fid') is not None], 'art_fid', default=None),
-                'kid_baseline': pool_avg([t for t in photo_transfer_pool if t.get('kid_baseline') is not None], 'kid_baseline', default=None),
-                'kid': pool_avg([t for t in photo_transfer_pool if t.get('kid_style') is not None], 'kid_style', default=None),
-                'delta_kid': pool_avg([t for t in photo_transfer_pool if t.get('delta_kid') is not None], 'delta_kid', default=None),
-                'delta_kid_ratio': pool_avg([t for t in photo_transfer_pool if t.get('delta_kid_ratio') is not None], 'delta_kid_ratio', default=None),
                 'valid': len(photo_transfer_pool) > 0,
                 'classifier_acc': pool_avg([t for t in photo_transfer_pool if t['classifier_acc'] is not None], 'classifier_acc')
             }

@@ -1,1 +1,0 @@
-epoch,loss,semigroup,swd,identity,identity_ratio,delta_l1,output_tv,train_num_steps,train_step_size,train_style_strength,lr,data_time_sec,transfer_time_sec,fwd_loss_time_sec,backward_time_sec,optimizer_time_sec,step_overhead_time_sec,compute_time_sec,epoch_time_sec,samples_seen,samples_per_sec,compute_samples_per_sec

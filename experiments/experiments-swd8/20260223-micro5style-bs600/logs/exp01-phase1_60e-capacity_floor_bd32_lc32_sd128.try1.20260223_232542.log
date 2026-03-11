@@ -1,4 +1,0 @@
-2026-02-23 23:25:44,712 - INFO - Active losses: w_swd, w_identity, w_delta_l1
-2026-02-23 23:25:44,746 - INFO - Device: cpu
-2026-02-23 23:25:44,747 - INFO - Seed: 42
-2026-02-23 23:25:44,747 - INFO - Loading latent dataset from ..\..\latent-256

@@ -40,9 +40,9 @@
         "swd_batch_size": 64,
         "swd_use_high_freq": true,
         "w_color": 0.5,
-        "w_identity": 0.05,
-        "w_delta_tv": 0.005,
-        "swd_hf_weight_ratio": 5.0
+        "w_identity": 0.3,
+        "w_delta_tv": 0.0,
+        "swd_hf_weight_ratio": 2.0
     },
     "training": {
         "seed": 42,
@@ -117,7 +117,7 @@
         "virtual_length_multiplier": 1
     },
     "checkpoint": {
-        "save_dir": "../decoder-E-extreme-brush"
+        "save_dir": "../decoder-F-tv-off"
     },
     "inference": {
         "num_steps": 1,

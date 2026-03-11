@@ -1,9 +1,0 @@
-CWD: /mnt/i/Github/Latent_Style/Cycle-NCE/src
-Command:
-/home/xy/miniconda3/envs/cu128/bin/python /mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py --config /mnt/i/Github/Latent_Style/Cycle-NCE/style_ablation-50/configs/inj_no_decoder_spatial.json
-
-Start: 2026-02-14T08:58:01.379553
-
-2026-02-14 08:58:03,078 - INFO - Device: cuda
-2026-02-14 08:58:03,079 - INFO - Seed: 42
-2026-02-14 08:58:03,079 - INFO - Loading latent dataset from ../../latent-256

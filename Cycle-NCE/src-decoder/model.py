@@ -149,14 +149,13 @@ class StyleAdaptiveSkip(nn.Module):
     Style-driven skip filtering that can suppress source high-frequency leakage.
     """
 
-    def __init__(self, channels: int, style_dim: int, content_retention_boost: float = 0.0) -> None:
+    def __init__(self, channels: int, style_dim: int) -> None:
         super().__init__()
         self.gate_mapper = nn.Sequential(
             nn.Linear(style_dim, channels),
             nn.Sigmoid(),
         )
         self.rewrite_mapper = nn.Linear(style_dim, channels)
-        self.content_retention_boost = max(0.0, min(1.0, float(content_retention_boost)))
         # Stable init: start from near identity skip passthrough.
         nn.init.zeros_(self.rewrite_mapper.weight)
         nn.init.zeros_(self.rewrite_mapper.bias)
@@ -175,8 +174,6 @@ class StyleAdaptiveSkip(nn.Module):
         else:
             gate_t = skip_feat.new_tensor(float(gate))
         effective_gate = 1.0 - (1.0 - erase_gate) * gate_t
-        if self.content_retention_boost > 0.0:
-            effective_gate = effective_gate + (1.0 - effective_gate) * self.content_retention_boost
         return skip_feat * effective_gate + rewrite_bias * (1.0 - effective_gate)
 
 
@@ -217,7 +214,6 @@ class LatentAdaCUT(nn.Module):
         upsample_blur: bool = True,
         upsample_blur_kernel: str = "box3",
         ada_mix_rank: int = 16,
-        style_skip_content_retention_boost: float = 0.0,
     ) -> None:
         super().__init__()
         self.latent_channels = int(latent_channels)
@@ -242,7 +238,6 @@ class LatentAdaCUT(nn.Module):
         self.upsample_blur = bool(upsample_blur)
         self.upsample_blur_kernel = str(upsample_blur_kernel).lower()
         self.ada_mix_rank = max(1, int(ada_mix_rank))
-        self.style_skip_content_retention_boost = max(0.0, min(1.0, float(style_skip_content_retention_boost)))
         if self.upsample_blur_kernel not in {"box3", "gaussian3"}:
             self.upsample_blur_kernel = "box3"
 
@@ -280,11 +275,7 @@ class LatentAdaCUT(nn.Module):
             nn.Conv2d(self.body_channels + self.lift_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
             nn.SiLU(),
         )
-        self.skip_filter = StyleAdaptiveSkip(
-            self.lift_channels,
-            style_dim,
-            content_retention_boost=self.style_skip_content_retention_boost,
-        )
+        self.skip_filter = StyleAdaptiveSkip(self.lift_channels, style_dim)
         self.dec_conv = nn.Conv2d(self.lift_channels, self.lift_channels, kernel_size=3, stride=1, padding=1)
         self.dec_mod = NormFreeModulation(self.lift_channels, style_dim)
         self.dec_act = nn.SiLU()
@@ -647,7 +638,6 @@ def build_model_from_config(
         "upsample_blur",
         "upsample_blur_kernel",
         "ada_mix_rank",
-        "style_skip_content_retention_boost",
     }
     unknown_keys = sorted(k for k in model_cfg.keys() if k not in known_keys)
     if unknown_keys:
@@ -682,5 +672,4 @@ def build_model_from_config(
         upsample_blur=bool(model_cfg.get("upsample_blur", True)),
         upsample_blur_kernel=str(model_cfg.get("upsample_blur_kernel", "box3")),
         ada_mix_rank=int(model_cfg.get("ada_mix_rank", 16)),
-        style_skip_content_retention_boost=float(model_cfg.get("style_skip_content_retention_boost", 0.0)),
     )

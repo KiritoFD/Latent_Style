@@ -38,11 +38,11 @@
         "swd_cdf_bin_chunk_size": 4,
         "swd_cdf_sample_chunk_size": 256,
         "swd_batch_size": 64,
-        "swd_use_high_freq": true,
+        "swd_use_high_freq": false,
         "w_color": 0.5,
-        "w_identity": 0.05,
+        "w_identity": 0.25,
         "w_delta_tv": 0.005,
-        "swd_hf_weight_ratio": 5.0
+        "swd_hf_weight_ratio": 2.0
     },
     "training": {
         "seed": 42,
@@ -117,7 +117,7 @@
         "virtual_length_multiplier": 1
     },
     "checkpoint": {
-        "save_dir": "../decoder-E-extreme-brush"
+        "save_dir": "../decoder-C-relaxed-id-nohf"
     },
     "inference": {
         "num_steps": 1,

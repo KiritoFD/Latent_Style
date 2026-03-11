@@ -1,8 +1,0 @@
-{
-  "checkpoint": "1swd-dit-2style\\epoch_0010.pt",
-  "timestamp": "2026-02-24 20:55:22",
-  "mode": "generation_only",
-  "generated_count": 200,
-  "output_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\1swd-dit-2style\\full_eval\\epoch_0010",
-  "note": "Metrics are intentionally skipped. Run evaluation later with --reuse_generated."
-}
