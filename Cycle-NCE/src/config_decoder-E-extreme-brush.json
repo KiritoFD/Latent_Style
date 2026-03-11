@@ -40,13 +40,13 @@
         "swd_batch_size": 64,
         "swd_use_high_freq": true,
         "w_color": 0.5,
-        "w_identity": 1.2,
-        "w_delta_tv": 0.2,
+        "w_identity": 0.05,
+        "w_delta_tv": 0.005,
         "swd_hf_weight_ratio": 5.0
     },
     "training": {
         "seed": 42,
-        "batch_size": 160,
+        "batch_size": 320,
         "accumulation_steps": 1,
         "num_workers": -1,
         "persistent_workers": true,

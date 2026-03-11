@@ -1579,8 +1579,9 @@ def main():
                     print(f"  闁宠法濯寸粭?Failed to prepare CLIP matrix for style {sid}: {e}")
 
     # Cache reference tensors for style LPIPS to avoid repeated disk I/O in inner loops.
+    # style_lpips is intentionally disabled in this script.
     ref_lpips_tensors = {}  # style_id -> Tensor[N_ref, 3, 256, 256] on CPU
-    if run_full_metrics and loss_fn and (not only_lpips_clip_style):
+    if False:
         max_ref_compare = int(args.max_ref_compare)
         for sid, feats in ref_features.items():
             refs = feats[:]
@@ -1702,7 +1703,7 @@ def main():
             # 4. Style Metrics & Row Writing
             # 4a. Style LPIPS in grouped batches by target style to reduce overhead.
             s_lpips_scores = [0.0] * len(batch_items)
-            if (not only_lpips_clip_style) and loss_fn and ref_lpips_tensors:
+            if False:
                 lpips_chunk_size = max(1, int(args.eval_lpips_chunk_size))
                 lpips_cpu_fallback = not bool(args.eval_lpips_no_cpu_fallback)
                 groups = defaultdict(list)

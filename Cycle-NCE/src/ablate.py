@@ -1,10 +1,10 @@
-﻿import copy
+import copy
 import json
 from pathlib import Path
 
 
 def load_base_config() -> dict:
-    base_path = Path(__file__).resolve().parent / "config.json"
+    base_path = Path(__file__).resolve().parent / "config_decoder-D-sweetspot.json"
     with open(base_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -12,159 +12,94 @@ def load_base_config() -> dict:
 def create_sweep() -> None:
     base = load_base_config()
     out_dir = Path(__file__).resolve().parent
-    train_base = base.get("training", {})
-    batch_size = int(train_base.get("batch_size", 160))
-    # Linear scaling rule w.r.t. reference batch=160.
-    lr_scale = float(batch_size) / 160.0
-    lr_low = 1.4e-4 * lr_scale
-    lr_high = 3.0e-4 * lr_scale
 
-    # 8-way ERF/NCE ablation:
-    # - ERF-heavy sets around 9/15, cap macro at 19 (remove 23)
-    # - include one extreme micro set [2,3,4,5] as counter-example
-    # - hold schedule fixed at 80 epochs, eval at 40/80
+    # Orthogonal ablation sweep around decoder-D-sweetspot.
+    # exp0 = baseline; exp1~exp5 each modifies one axis only.
     experiments = [
-        {
-            "name": "clocor1_E1_Macro19_Rigid_LR14e4",
-            "patches": [7, 11, 15, 19],
-            "nce_layer_weights": [1.0, 1.0, 1.0],
-            "lr": lr_low,
-            "w_nce": 2.0,
-        },
-        {
-            "name": "clocor1_E2_15Series_Rigid_LR14e4",
-            "patches": [9, 11, 13, 15],
-            "nce_layer_weights": [1.0, 1.0, 1.0],
-            "lr": lr_low,
-            "w_nce": 2.0,
-        },
-        {
-            "name": "clocor1_E3_15Series_Soft_LR14e4",
-            "patches": [9, 11, 13, 15],
-            "nce_layer_weights": [0.2, 0.5, 1.0],
-            "lr": lr_low,
-            "w_nce": 2.0,
-        },
-        {
-            "name": "clocor1_E4_9Series_Rigid_LR14e4",
-            "patches": [5, 7, 9, 11],
-            "nce_layer_weights": [1.0, 1.0, 1.0],
-            "lr": lr_low,
-            "w_nce": 2.0,
-        },
-        {
-            "name": "clocor1_E5_9Series_Soft_LR14e4",
-            "patches": [5, 7, 9, 11],
-            "nce_layer_weights": [0.2, 0.5, 1.0],
-            "lr": lr_low,
-            "w_nce": 2.0,
-        },
-        {
-            "name": "clocor1_E6_9Series_Free_LR30e4",
-            "patches": [5, 7, 9, 11],
-            "nce_layer_weights": [0.0, 0.4, 1.0],
-            "lr": lr_high,
-            "w_nce": 2.0,
-        },
-        {
-            "name": "clocor1_E7_15Series_Free_LR14e4_wNCE1",
-            "patches": [9, 11, 13, 15],
-            "nce_layer_weights": [0.0, 0.4, 1.0],
-            "lr": lr_low,
-            "w_nce": 1.0,
-        },
-        {
-            "name": "clocor1_E8_MicroExtreme_Soft_LR14e4",
-            "patches": [2, 3, 4, 5],
-            "nce_layer_weights": [0.2, 0.5, 1.0],
-            "lr": lr_low,
-            "w_nce": 2.0,
-        },
+        ("exp0-baseline", {}),
+        ("exp1-hf-ratio-4p0", {"loss": {"swd_hf_weight_ratio": 4.0}}),
+        ("exp2-large-patches", {"loss": {"swd_patch_sizes": [11, 15, 23, 31]}}),
+        ("exp3-hard-cdf", {"loss": {"swd_cdf_num_bins": 128, "swd_cdf_tau": 0.005}}),
+        ("exp4-skip-retain-plus20", {"model": {"style_skip_content_retention_boost": 0.2}}),
+        ("exp5-proj-1280", {"loss": {"swd_num_projections": 1280}}),
     ]
 
-    run_bat = out_dir / "8x80.bat"
+    run_bat = out_dir / "run_decoder_orthogonal_ablate_6.bat"
     with open(run_bat, "w", encoding="utf-8") as f_bat:
         f_bat.write("@echo off\n")
         f_bat.write("setlocal\n")
         f_bat.write("cd /d %~dp0\n")
         f_bat.write("if %errorlevel% neq 0 exit /b %errorlevel%\n")
-        f_bat.write('set "AGG_ROOT=..\\ablate-8x80-aggregate"\n')
+        f_bat.write('set "AGG_ROOT=..\\decoder-orthogonal-ablation-aggregate"\n')
         f_bat.write("if not exist \"%AGG_ROOT%\" mkdir \"%AGG_ROOT%\"\n")
         f_bat.write("echo ==========================================\n")
-        f_bat.write("echo Starting 8-way ablation (80 Epochs, eval@40/80)\n")
-        f_bat.write(f"echo Base batch_size={batch_size}, lr_low={lr_low:.2e}, lr_high={lr_high:.2e}\n")
+        f_bat.write("echo Starting 6 Orthogonal Decoder Ablations\n")
         f_bat.write("echo ==========================================\n\n")
 
-        for exp in experiments:
+        for name, delta in experiments:
             cfg = copy.deepcopy(base)
 
-            # Keep model-level defaults from base; only ablate target axes.
-            cfg.setdefault("loss", {})
-            cfg["loss"]["swd_patch_sizes"] = [int(p) for p in exp["patches"]]
-            cfg["loss"]["nce_layer_weights"] = [float(v) for v in exp["nce_layer_weights"]]
-            cfg["loss"]["w_nce"] = float(exp["w_nce"])
-
+            # Fixed infra + schedule requested by the experiment protocol.
             cfg.setdefault("training", {})
-            cfg["training"]["learning_rate"] = float(exp["lr"])
-            cfg["training"]["min_learning_rate"] = float(exp["lr"]) * 0.1
-            cfg["training"]["num_epochs"] = 80
+            cfg["training"]["batch_size"] = 320
+            cfg["training"]["use_gradient_checkpointing"] = True
+            cfg["training"]["num_epochs"] = 120
             cfg["training"]["full_eval_interval"] = 40
             cfg["training"]["full_eval_on_last_epoch"] = True
             cfg["training"]["save_interval"] = 20
 
-            cfg.setdefault("checkpoint", {})
-            exp_dir = exp["name"]
-            cfg["checkpoint"]["save_dir"] = f"../{exp_dir}"
+            # New baseline loss settings.
+            cfg.setdefault("loss", {})
+            cfg["loss"]["w_swd"] = 40.0
+            cfg["loss"]["w_identity"] = 0.45
 
-            cfg_filename = f"config_{exp['name']}.json"
+            # Apply one orthogonal delta for this experiment.
+            for section, section_delta in delta.items():
+                cfg.setdefault(section, {})
+                cfg[section].update(section_delta)
+
+            cfg.setdefault("checkpoint", {})
+            cfg["checkpoint"]["save_dir"] = f"../{name}"
+
+            cfg_filename = f"config_{name}.json"
             cfg_path = out_dir / cfg_filename
             with open(cfg_path, "w", encoding="utf-8") as f_cfg:
                 json.dump(cfg, f_cfg, indent=4, ensure_ascii=False)
 
             print(
-                f"Generated: {cfg_filename:45s} | "
-                f"patch={exp['patches']} nce={exp['nce_layer_weights']} "
-                f"lr={exp['lr']:.1e} w_nce={exp['w_nce']:.1f}"
+                f"generated: {cfg_filename:42s} | "
+                f"epochs={cfg['training']['num_epochs']} "
+                f"eval={cfg['training']['full_eval_interval']} "
+                f"w_swd={cfg['loss']['w_swd']:.1f} "
+                f"w_id={cfg['loss']['w_identity']:.2f}"
             )
 
             f_bat.write("echo.\n")
             f_bat.write("echo ------------------------------------------\n")
-            f_bat.write(f"echo Running Experiment: {exp['name']}\n")
+            f_bat.write(f"echo Running Experiment: {name}\n")
             f_bat.write("echo ------------------------------------------\n")
             f_bat.write(f"uv run run.py --config {cfg_filename}\n")
             f_bat.write("if %errorlevel% neq 0 exit /b %errorlevel%\n")
             f_bat.write(
                 "robocopy "
-                f"\"..\\{exp_dir}\\full_eval\" "
-                f"\"%AGG_ROOT%\\{exp_dir}\\full_eval\" "
+                f"\"..\\{name}\\full_eval\" "
+                f"\"%AGG_ROOT%\\{name}\\full_eval\" "
                 "/E /R:1 /W:1 /XD images\n"
             )
             f_bat.write("if %errorlevel% geq 8 exit /b %errorlevel%\n")
 
-        # Collect intermediate and final snapshots.
         f_bat.write("\n")
         f_bat.write("echo.\n")
-        f_bat.write("echo Aggregating epoch_0040 metrics ...\n")
+        f_bat.write("echo Aggregating summary_history metrics ...\n")
         f_bat.write(
             "uv run python ..\\scripts\\collect_ablation_results.py "
             "--root \"%AGG_ROOT%\" "
             "--output-dir \"%AGG_ROOT%\" "
-            "--epoch-dir epoch_0040 "
-            "--summary-csv summary_history_metrics_e040.csv\n"
-        )
-        f_bat.write("if %errorlevel% neq 0 exit /b %errorlevel%\n")
-        f_bat.write("echo Aggregating epoch_0080 metrics ...\n")
-        f_bat.write(
-            "uv run python ..\\scripts\\collect_ablation_results.py "
-            "--root \"%AGG_ROOT%\" "
-            "--output-dir \"%AGG_ROOT%\" "
-            "--epoch-dir epoch_0080 "
-            "--summary-csv summary_history_metrics_e080.csv\n"
+            "--epoch-dir epoch_0120\n"
         )
         f_bat.write("if %errorlevel% neq 0 exit /b %errorlevel%\n")
 
-    print("\n8x80.bat has been generated.")
-    print(f"Batch scaling: batch_size={batch_size}, lr_low={lr_low:.2e}, lr_high={lr_high:.2e}")
+    print("\nrun_decoder_orthogonal_ablate_6.bat has been generated.")
 
 
 if __name__ == "__main__":
