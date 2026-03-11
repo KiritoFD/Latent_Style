@@ -1,0 +1,117 @@
+
+
+=== CMD ===
+G:\GitHub\Latent_Style\Related_Works\envs\cut\Scripts\python.exe test.py --dataroot G:\GitHub\Latent_Style\Related_Works\runs\cut_5x5\datasets\to_photo --name cut_to_photo --CUT_mode CUT --phase test --num_test 1000000 --results_dir G:\GitHub\Latent_Style\Related_Works\runs\cut_5x5\raw_results --checkpoints_dir G:\GitHub\Latent_Style\Related_Works\runs\cut_5x5\checkpoints --load_size 256 --crop_size 256 --preprocess resize_and_crop --netG resnet_6blocks --ngf 48 --ndf 48 --nce_layers 0,4,8 --nce_idt False --num_patches 160
+----------------- Options ---------------
+                 CUT_mode: CUT                           
+               batch_size: 1                             
+          checkpoints_dir: G:\GitHub\Latent_Style\Related_Works\runs\cut_5x5\checkpoints	[default: ./checkpoints]
+                crop_size: 256                           
+                 dataroot: G:\GitHub\Latent_Style\Related_Works\runs\cut_5x5\datasets\to_photo	[default: placeholder]
+             dataset_mode: unaligned                     
+                direction: AtoB                          
+          display_winsize: 256                           
+               easy_label: experiment_name               
+                    epoch: latest                        
+                     eval: False                         
+        flip_equivariance: False                         
+                  gpu_ids: 0                             
+                init_gain: 0.02                          
+                init_type: xavier                        
+                 input_nc: 3                             
+                  isTrain: False                         	[default: None]
+               lambda_GAN: 1.0                           
+               lambda_NCE: 1.0                           
+                load_size: 256                           
+         max_dataset_size: inf                           
+                    model: cut                           
+               n_layers_D: 3                             
+                     name: cut_to_photo                  	[default: experiment_name]
+                    nce_T: 0.07                          
+                  nce_idt: False                         	[default: True]
+nce_includes_all_negatives_from_minibatch: False                         
+               nce_layers: 0,4,8                         	[default: 0,4,8,12,16]
+                      ndf: 48                            	[default: 64]
+                     netD: basic                         
+                     netF: mlp_sample                    
+                  netF_nc: 256                           
+                     netG: resnet_6blocks                	[default: resnet_9blocks]
+                      ngf: 48                            	[default: 64]
+             no_antialias: False                         
+          no_antialias_up: False                         
+               no_dropout: True                          
+                  no_flip: False                         
+                    normD: instance                      
+                    normG: instance                      
+              num_patches: 160                           	[default: 256]
+                 num_test: 1000000                       	[default: 50]
+              num_threads: 4                             
+                output_nc: 3                             
+                    phase: test                          
+                pool_size: 0                             
+               preprocess: resize_and_crop               
+         random_scale_max: 3.0                           
+              results_dir: G:\GitHub\Latent_Style\Related_Works\runs\cut_5x5\raw_results	[default: ./results/]
+           serial_batches: False                         
+stylegan2_G_num_downsampling: 1                             
+                   suffix:                               
+                  verbose: False                         
+----------------- End -------------------
+dataset [UnalignedDataset] was created
+dataset [UnalignedDataset] was created
+model [CUTModel] was created
+creating web directory G:\GitHub\Latent_Style\Related_Works\runs\cut_5x5\raw_results\cut_to_photo\test_latest
+loading the model from G:\GitHub\Latent_Style\Related_Works\runs\cut_5x5\checkpoints\cut_to_photo\latest_net_G.pth
+---------- Networks initialized -------------
+[Network G] Total number of parameters : 4.413 M
+-----------------------------------------------
+processing (0000)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\Hayao__0.jpg']
+processing (0005)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\Hayao__1002.jpg']
+processing (0010)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\Hayao__1007.jpg']
+processing (0015)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\Hayao__1011.jpg']
+processing (0020)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\Hayao__1016.jpg']
+processing (0025)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\Hayao__1020.jpg']
+processing (0030)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\Hayao__1025.jpg']
+processing (0035)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\Hayao__103.jpg']
+processing (0040)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\Hayao__104.jpg']
+processing (0045)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\Hayao__1044.jpg']
+processing (0050)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\cezanne__00057.jpg']
+processing (0055)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\cezanne__00155.jpg']
+processing (0060)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\cezanne__00212.jpg']
+processing (0065)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\cezanne__00262.jpg']
+processing (0070)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\cezanne__00286.jpg']
+processing (0075)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\cezanne__00342.jpg']
+processing (0080)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\cezanne__00382.jpg']
+processing (0085)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\cezanne__00411.jpg']
+processing (0090)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\cezanne__00466.jpg']
+processing (0095)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\cezanne__00582.jpg']
+processing (0100)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\monet__00018.jpg']
+processing (0105)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\monet__00153.jpg']
+processing (0110)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\monet__00282.jpg']
+processing (0115)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\monet__00349.jpg']
+processing (0120)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\monet__00446.jpg']
+processing (0125)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\monet__00695.jpg']
+processing (0130)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\monet__00789.jpg']
+processing (0135)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\monet__00959.jpg']
+processing (0140)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\monet__01099.jpg']
+processing (0145)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\monet__01208.jpg']
+processing (0150)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\photo__2013-11-08 16_45_24.jpg']
+processing (0155)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\photo__2013-11-10 20_27_52.jpg']
+processing (0160)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\photo__2013-11-12 01_54_20.jpg']
+processing (0165)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\photo__2013-11-14 07_02_49.jpg']
+processing (0170)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\photo__2013-11-17 09_05_09.jpg']
+processing (0175)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\photo__2013-11-17 23_58_45.jpg']
+processing (0180)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\photo__2013-11-18 11_46_45.jpg']
+processing (0185)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\photo__2013-11-20 11_21_32.jpg']
+processing (0190)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\photo__2013-11-21 16_49_08.jpg']
+processing (0195)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\photo__2013-11-23 13_03_15.jpg']
+processing (0200)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\vangogh__00005.jpg']
+processing (0205)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\vangogh__00116.jpg']
+processing (0210)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\vangogh__00167.jpg']
+processing (0215)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\vangogh__00186.jpg']
+processing (0220)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\vangogh__00264.jpg']
+processing (0225)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\vangogh__00295.jpg']
+processing (0230)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\vangogh__00418.jpg']
+processing (0235)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\vangogh__00455.jpg']
+processing (0240)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\vangogh__00549.jpg']
+processing (0245)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\datasets\\to_photo\\testA\\vangogh__00668.jpg']

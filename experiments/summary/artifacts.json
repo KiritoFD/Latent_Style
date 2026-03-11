@@ -1,0 +1,78 @@
+{
+  "num_rounds": 1,
+  "latest": {
+    "epoch": 40,
+    "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp09-phase2_150e-flat_lr3e4\\artifacts\\full_eval\\epoch_0040\\summary.json",
+    "transfer_clip_style": 0.6461915446817874,
+    "transfer_content_lpips": 0.36234942645,
+    "transfer_classifier_acc": 0.0,
+    "photo_to_art_clip_style": 0.6105746096372604,
+    "photo_to_art_classifier_acc": 0.0
+  },
+  "mean": {
+    "transfer_clip_style": 0.6461915446817874,
+    "transfer_content_lpips": 0.36234942645,
+    "transfer_classifier_acc": 0.0,
+    "photo_to_art_clip_style": 0.6105746096372604,
+    "photo_to_art_classifier_acc": 0.0
+  },
+  "best": {
+    "best_transfer_classifier_acc": {
+      "epoch": 40,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp09-phase2_150e-flat_lr3e4\\artifacts\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.6461915446817874,
+      "transfer_content_lpips": 0.36234942645,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6105746096372604,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_clip_style": {
+      "epoch": 40,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp09-phase2_150e-flat_lr3e4\\artifacts\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.6461915446817874,
+      "transfer_content_lpips": 0.36234942645,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6105746096372604,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_classifier_acc": {
+      "epoch": 40,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp09-phase2_150e-flat_lr3e4\\artifacts\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.6461915446817874,
+      "transfer_content_lpips": 0.36234942645,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6105746096372604,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_clip_style": {
+      "epoch": 40,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp09-phase2_150e-flat_lr3e4\\artifacts\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.6461915446817874,
+      "transfer_content_lpips": 0.36234942645,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6105746096372604,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_content_lpips": {
+      "epoch": 40,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp09-phase2_150e-flat_lr3e4\\artifacts\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.6461915446817874,
+      "transfer_content_lpips": 0.36234942645,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6105746096372604,
+      "photo_to_art_classifier_acc": 0.0
+    }
+  },
+  "rounds": [
+    {
+      "epoch": 40,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp09-phase2_150e-flat_lr3e4\\artifacts\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.6461915446817874,
+      "transfer_content_lpips": 0.36234942645,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6105746096372604,
+      "photo_to_art_classifier_acc": 0.0
+    }
+  ],
+  "updated_at": "2026-02-24 15:51:06"
+}

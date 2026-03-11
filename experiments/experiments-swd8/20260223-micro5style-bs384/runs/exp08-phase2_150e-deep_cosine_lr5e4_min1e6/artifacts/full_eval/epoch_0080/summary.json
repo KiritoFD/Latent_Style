@@ -1,0 +1,314 @@
+{
+  "checkpoint": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp08-phase2_150e-deep_cosine_lr5e4_min1e6\\artifacts\\epoch_0080.pt",
+  "timestamp": "2026-02-24 13:25:44",
+  "metrics_note": {
+    "clip_dir": "cos( CLIP(gen)-CLIP(src), CLIP(target_style_proto)-CLIP(src) ) - Measures edit direction.",
+    "clip_style": "cos( CLIP(gen), CLIP(target_style_proto) ) - Measures absolute style similarity.",
+    "art_fid": "computed as (1 + fid_style) * (1 + content_lpips)"
+  },
+  "matrix_breakdown": {
+    "photo": {
+      "photo": {
+        "count": 50,
+        "clip_dir": 0.3270459219813347,
+        "clip_style": 0.7924494671821595,
+        "style_lpips": 0.7492303991317749,
+        "content_lpips": 0.3036370638,
+        "clip_content": 0.897991997,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "Hayao": {
+        "count": 50,
+        "clip_dir": 0.5188395059108735,
+        "clip_style": 0.6290784513950348,
+        "style_lpips": 0.7620198965072632,
+        "content_lpips": 0.40808447159999994,
+        "clip_content": 0.8198372834000002,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "monet": {
+        "count": 50,
+        "clip_dir": 0.2724256919324398,
+        "clip_style": 0.5944625014066696,
+        "style_lpips": 0.7529728698730469,
+        "content_lpips": 0.3096700406,
+        "clip_content": 0.8981843088000001,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "vangogh": {
+        "count": 50,
+        "clip_dir": 0.42179378896951675,
+        "clip_style": 0.6430181473493576,
+        "style_lpips": 0.7839459431171417,
+        "content_lpips": 0.4301240146,
+        "clip_content": 0.8580168866000001,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "cezanne": {
+        "count": 50,
+        "clip_dir": 0.3879842108488083,
+        "clip_style": 0.6029629772901535,
+        "style_lpips": 0.7562702691555023,
+        "content_lpips": 0.37643653,
+        "clip_content": 0.8572809752,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      }
+    },
+    "Hayao": {
+      "photo": {
+        "count": 50,
+        "clip_dir": 0.2588472603261471,
+        "clip_style": 0.5377678883075714,
+        "style_lpips": 0.7722297763824463,
+        "content_lpips": 0.3797813718,
+        "clip_content": 0.9107077248000001,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "Hayao": {
+        "count": 50,
+        "clip_dir": 0.2721301632747054,
+        "clip_style": 0.8483439648151397,
+        "style_lpips": 0.7276050996780395,
+        "content_lpips": 0.1987886227,
+        "clip_content": 0.9440369136000001,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "monet": {
+        "count": 50,
+        "clip_dir": 0.17665906466543674,
+        "clip_style": 0.4466394799947739,
+        "style_lpips": 0.7733438420295715,
+        "content_lpips": 0.3205033382,
+        "clip_content": 0.9079507009999999,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "vangogh": {
+        "count": 50,
+        "clip_dir": 0.2908693352341652,
+        "clip_style": 0.556048469543457,
+        "style_lpips": 0.7825371587276458,
+        "content_lpips": 0.31034924939999997,
+        "clip_content": 0.9000372456,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "cezanne": {
+        "count": 50,
+        "clip_dir": 0.17115741316229105,
+        "clip_style": 0.4935851657390595,
+        "style_lpips": 0.7703135657310486,
+        "content_lpips": 0.2875455866,
+        "clip_content": 0.9278049643999998,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      }
+    },
+    "monet": {
+      "photo": {
+        "count": 50,
+        "clip_dir": 0.47851543605327607,
+        "clip_style": 0.7132583999633789,
+        "style_lpips": 0.7451365900039673,
+        "content_lpips": 0.37938452000000006,
+        "clip_content": 0.8700367161999999,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "Hayao": {
+        "count": 50,
+        "clip_dir": 0.49575826942920687,
+        "clip_style": 0.6011794930696488,
+        "style_lpips": 0.751889305114746,
+        "content_lpips": 0.43894543160000005,
+        "clip_content": 0.8454508357999999,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "monet": {
+        "count": 50,
+        "clip_dir": 0.28305430814623833,
+        "clip_style": 0.8335831797122956,
+        "style_lpips": 0.7115913903713227,
+        "content_lpips": 0.3393130204,
+        "clip_content": 0.9030478124,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "vangogh": {
+        "count": 50,
+        "clip_dir": 0.37884232550859454,
+        "clip_style": 0.7965992891788483,
+        "style_lpips": 0.7437414085865021,
+        "content_lpips": 0.3779459866,
+        "clip_content": 0.8675228490000001,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "cezanne": {
+        "count": 50,
+        "clip_dir": 0.33239028185606,
+        "clip_style": 0.7789058315753937,
+        "style_lpips": 0.7317936313152313,
+        "content_lpips": 0.3771832424,
+        "clip_content": 0.8720114993999999,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      }
+    },
+    "vangogh": {
+      "photo": {
+        "count": 50,
+        "clip_dir": 0.48080415427684786,
+        "clip_style": 0.6938123333454133,
+        "style_lpips": 0.7541082286834717,
+        "content_lpips": 0.4279126172,
+        "clip_content": 0.8299011810000002,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "Hayao": {
+        "count": 50,
+        "clip_dir": 0.47442090094089506,
+        "clip_style": 0.63480513215065,
+        "style_lpips": 0.7455549931526184,
+        "content_lpips": 0.41440940140000004,
+        "clip_content": 0.8317715527999999,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "monet": {
+        "count": 50,
+        "clip_dir": 0.2665687742829323,
+        "clip_style": 0.7597520506381988,
+        "style_lpips": 0.7418310022354127,
+        "content_lpips": 0.3272024296,
+        "clip_content": 0.8900078746000001,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "vangogh": {
+        "count": 50,
+        "clip_dir": 0.26456530049443244,
+        "clip_style": 0.8012944602966309,
+        "style_lpips": 0.7312120866775512,
+        "content_lpips": 0.3359879642,
+        "clip_content": 0.8815266179999999,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "cezanne": {
+        "count": 50,
+        "clip_dir": 0.2794899693131447,
+        "clip_style": 0.7733715975284576,
+        "style_lpips": 0.7398376441001893,
+        "content_lpips": 0.339311699,
+        "clip_content": 0.8809850705999999,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      }
+    },
+    "cezanne": {
+      "photo": {
+        "count": 50,
+        "clip_dir": 0.4270781695842743,
+        "clip_style": 0.63856161236763,
+        "style_lpips": 0.7489480209350586,
+        "content_lpips": 0.3974932632,
+        "clip_content": 0.8549306818,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "Hayao": {
+        "count": 50,
+        "clip_dir": 0.45581210613250733,
+        "clip_style": 0.5995169699192047,
+        "style_lpips": 0.7397032046318054,
+        "content_lpips": 0.3800459692,
+        "clip_content": 0.8611279089999999,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "monet": {
+        "count": 50,
+        "clip_dir": 0.2519585160911083,
+        "clip_style": 0.7358847272396087,
+        "style_lpips": 0.7325474762916565,
+        "content_lpips": 0.3368509614,
+        "clip_content": 0.8794700393999999,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "vangogh": {
+        "count": 50,
+        "clip_dir": 0.32845345318317415,
+        "clip_style": 0.7669174611568451,
+        "style_lpips": 0.7426377952098846,
+        "content_lpips": 0.38806132579999997,
+        "clip_content": 0.8588164498,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      },
+      "cezanne": {
+        "count": 50,
+        "clip_dir": 0.26242603406310083,
+        "clip_style": 0.7889989674091339,
+        "style_lpips": 0.7200197792053222,
+        "content_lpips": 0.3397315218,
+        "clip_content": 0.8774647746,
+        "fid_style": null,
+        "art_fid": null,
+        "classifier_acc": null
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "clip_dir": 0.357433431385085,
+      "clip_style": 0.6498063989579677,
+      "content_lpips": 0.37036207251,
+      "art_fid": 0.0,
+      "classifier_acc": 0.0
+    },
+    "photo_to_art_performance": {
+      "clip_dir": 0.4002607994154096,
+      "clip_style": 0.6173805193603039,
+      "art_fid": 0.0,
+      "valid": true,
+      "classifier_acc": 0.0
+    }
+  },
+  "classification_report": null,
+  "detailed_style_metrics": {}
+}

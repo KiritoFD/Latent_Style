@@ -1,0 +1,34 @@
+2026-02-15 09:03:37,770 - modelscope - INFO - Got 5 files, start to download ...
+Style reference mode: prototype (count=8, seed=2026)
+WARNING: inference is style_id-only; style_ref_mode is ignored.
+
+Phase 1: Generation (Batch Size 20)
+Downloading Model from https://www.modelscope.cn to directory: /home/xy/.cache/huggingface/hub/modelscope/stabilityai_sd-vae-ft-mse/stabilityai/sd-vae-ft-mse
+Processing 5 items:   0%|          | 0.00/5.00 [00:00<?, ?it/s]
+Downloading [config.json]:   0%|          | 0.00/547 [00:00<?, ?B/s][A
+
+Downloading [configuration.json]:   0%|          | 0.00/64.0 [00:00<?, ?B/s][A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:   0%|          | 0.00/319M [00:00<?, ?B/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:   0%|          | 0.00/319M [00:00<?, ?B/s][A[A[A[A
+
+
+
+
+Downloading [README.md]:   0%|          | 0.00/6.68k [00:00<?, ?B/s][A[A[A[A[A
+
+Downloading [configuration.json]: 100%|██████████| 64.0/64.0 [00:00<00:00, 209B/s][A[ADownloading [configuration.json]: 100%|██████████| 64.0/64.0 [00:00<00:00, 208B/s]
+Processing 5 items:  20%|██        | 1.00/5.00 [00:00<00:01, 3.18it/s]
+
+
+
+
+Downloading [README.md]: 100%|██████████| 6.68k/6.68k [00:00<00:00, 17.2kB/s][A[A[A[A[ADownloading [README.md]: 100%|██████████| 6.68k/6.68k [00:00<00:00, 17.2kB/s]
+
+
+
+Downloading [diffusion_pytorch_model.bin]:   0%|          | 1.00M/319M [00:00<02:33, 2.18MB/s][A[A[A

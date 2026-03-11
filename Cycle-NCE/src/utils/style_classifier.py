@@ -119,48 +119,59 @@ def build_latent_dataset(
 # -------------------------
 # Augmentations (content suppression)
 # -------------------------
-def _random_crop_resize(x: torch.Tensor, min_scale: float = 0.7) -> torch.Tensor:
-    # x: [B,C,H,W]
-    B, C, H, W = x.shape
-    if H < 4 or W < 4:
+def _random_crop_resize_single(x: torch.Tensor, min_scale: float = 0.7) -> torch.Tensor:
+    # x: [C,H,W]
+    _, h_dim, w_dim = x.shape
+    if h_dim < 4 or w_dim < 4:
         return x
-    scale = float(torch.empty(1).uniform_(min_scale, 1.0).item())
-    nh = max(2, int(H * scale))
-    nw = max(2, int(W * scale))
-    top = int(torch.randint(0, max(1, H - nh + 1), (1,)).item())
-    left = int(torch.randint(0, max(1, W - nw + 1), (1,)).item())
-    crop = x[:, :, top:top + nh, left:left + nw]
-    return F.interpolate(crop, size=(H, W), mode="bilinear", align_corners=False)
+    scale = float(torch.empty((), device=x.device).uniform_(min_scale, 1.0).item())
+    nh = max(2, int(h_dim * scale))
+    nw = max(2, int(w_dim * scale))
+    top = int(torch.randint(0, max(1, h_dim - nh + 1), (1,), device=x.device).item())
+    left = int(torch.randint(0, max(1, w_dim - nw + 1), (1,), device=x.device).item())
+    crop = x[:, top:top + nh, left:left + nw].unsqueeze(0)
+    return F.interpolate(crop, size=(h_dim, w_dim), mode="bilinear", align_corners=False).squeeze(0)
 
 
-def _random_shift(x: torch.Tensor, max_shift: int = 2) -> torch.Tensor:
+def _random_shift_single(x: torch.Tensor, max_shift: int = 2) -> torch.Tensor:
+    # x: [C,H,W]
     if max_shift <= 0:
         return x
-    dy = int(torch.randint(-max_shift, max_shift + 1, (1,)).item())
-    dx = int(torch.randint(-max_shift, max_shift + 1, (1,)).item())
+    dy = int(torch.randint(-max_shift, max_shift + 1, (1,), device=x.device).item())
+    dx = int(torch.randint(-max_shift, max_shift + 1, (1,), device=x.device).item())
     if dx == 0 and dy == 0:
         return x
-    return torch.roll(x, shifts=(dy, dx), dims=(2, 3))
+    return torch.roll(x, shifts=(dy, dx), dims=(1, 2))
 
 
-def _patch_shuffle(x: torch.Tensor, grid: int = 2) -> torch.Tensor:
-    # split into grid x grid patches and permute patches (keeps local texture, breaks layout)
-    B, C, H, W = x.shape
-    if H % grid != 0 or W % grid != 0 or H < grid or W < grid:
+def _patch_shuffle_single(x: torch.Tensor, grid: int = 2) -> torch.Tensor:
+    # x: [C,H,W] split into grid x grid patches and permute patches.
+    c_dim, h_dim, w_dim = x.shape
+    if h_dim % grid != 0 or w_dim % grid != 0 or h_dim < grid or w_dim < grid:
         return x
-    ph, pw = H // grid, W // grid
+    ph, pw = h_dim // grid, w_dim // grid
     patches = []
     for i in range(grid):
         for j in range(grid):
-            patches.append(x[:, :, i*ph:(i+1)*ph, j*pw:(j+1)*pw])
+            patches.append(x[:, i * ph:(i + 1) * ph, j * pw:(j + 1) * pw])
     idx = torch.randperm(len(patches), device=x.device)
     patches = [patches[i] for i in idx.tolist()]
     rows = []
     k = 0
     for i in range(grid):
-        rows.append(torch.cat(patches[k:k+grid], dim=3))
+        rows.append(torch.cat(patches[k:k + grid], dim=2))
         k += grid
-    return torch.cat(rows, dim=2)
+    return torch.cat(rows, dim=1)
+
+
+def _patch_shuffle(x: torch.Tensor, grid: int = 2) -> torch.Tensor:
+    # Batch wrapper with independent permutation per sample.
+    if x.ndim != 4:
+        return x
+    out = x.clone()
+    for i in range(out.shape[0]):
+        out[i] = _patch_shuffle_single(out[i], grid=grid)
+    return out
 
 def _lowpass(x: torch.Tensor, lowpass_size: int = 8) -> torch.Tensor:
     # lowpass via down-up sampling (area -> bilinear)
@@ -170,6 +181,65 @@ def _lowpass(x: torch.Tensor, lowpass_size: int = 8) -> torch.Tensor:
     lp = F.interpolate(x, size=(lowpass_size, lowpass_size), mode="area")
     lp = F.interpolate(lp, size=(H, W), mode="bilinear", align_corners=False)
     return lp
+
+class LatentAugmenter(nn.Module):
+    def __init__(
+        self,
+        p_crop: float = 0.5,
+        p_shift: float = 0.5,
+        p_patch_shuffle: float = 0.3,
+        p_highpass: float = 0.3,
+        lowpass_size: int = 8,
+        patch_grid: int = 2,
+        shift_max: int = 2,
+        crop_min_scale: float = 0.7,
+    ) -> None:
+        super().__init__()
+        self.p_crop = max(0.0, min(1.0, float(p_crop)))
+        self.p_shift = max(0.0, min(1.0, float(p_shift)))
+        self.p_patch_shuffle = max(0.0, min(1.0, float(p_patch_shuffle)))
+        self.p_highpass = max(0.0, min(1.0, float(p_highpass)))
+        self.lowpass_size = max(1, int(lowpass_size))
+        self.patch_grid = max(1, int(patch_grid))
+        self.shift_max = max(0, int(shift_max))
+        self.crop_min_scale = max(0.1, min(1.0, float(crop_min_scale)))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.ndim != 4:
+            return x
+        bsz = int(x.shape[0])
+        if bsz <= 0:
+            return x
+        out = x.clone()
+        device = out.device
+
+        if self.p_crop > 0.0:
+            mask = torch.rand((bsz,), device=device) < self.p_crop
+            idx = torch.where(mask)[0]
+            for i in idx.tolist():
+                out[i] = _random_crop_resize_single(out[i], min_scale=self.crop_min_scale)
+
+        if self.p_shift > 0.0 and self.shift_max > 0:
+            mask = torch.rand((bsz,), device=device) < self.p_shift
+            idx = torch.where(mask)[0]
+            for i in idx.tolist():
+                out[i] = _random_shift_single(out[i], max_shift=self.shift_max)
+
+        if self.p_patch_shuffle > 0.0 and self.patch_grid > 1:
+            mask = torch.rand((bsz,), device=device) < self.p_patch_shuffle
+            idx = torch.where(mask)[0]
+            for i in idx.tolist():
+                out[i] = _patch_shuffle_single(out[i], grid=self.patch_grid)
+
+        if self.p_highpass > 0.0:
+            mask = torch.rand((bsz,), device=device) < self.p_highpass
+            if bool(mask.any()):
+                hp = out - _lowpass(out, lowpass_size=self.lowpass_size)
+                alpha = mask.view(bsz, 1, 1, 1).to(dtype=out.dtype)
+                out = out * (1.0 - alpha) + hp * alpha
+
+        return out
+
 
 def augment_latent(
     x: torch.Tensor,
@@ -181,17 +251,16 @@ def augment_latent(
     patch_grid: int = 2,
     shift_max: int = 2,
 ) -> torch.Tensor:
-    # x: [B,C,H,W]
-    if torch.rand(1).item() < p_crop:
-        x = _random_crop_resize(x, min_scale=0.7)
-    if torch.rand(1).item() < p_shift:
-        x = _random_shift(x, max_shift=shift_max)
-    if torch.rand(1).item() < p_patch_shuffle:
-        x = _patch_shuffle(x, grid=patch_grid)
-    if torch.rand(1).item() < p_highpass:
-        lp = _lowpass(x, lowpass_size=lowpass_size)
-        x = x - lp
-    return x
+    augmenter = LatentAugmenter(
+        p_crop=p_crop,
+        p_shift=p_shift,
+        p_patch_shuffle=p_patch_shuffle,
+        p_highpass=p_highpass,
+        lowpass_size=lowpass_size,
+        patch_grid=patch_grid,
+        shift_max=shift_max,
+    )
+    return augmenter(x)
 
 
 # -------------------------
@@ -253,6 +322,11 @@ class StyleClassifier(nn.Module):
         self.input_size_train = int(input_size_train)
         self.input_size_infer = int(input_size_infer)
         self.lowpass_size = int(lowpass_size)
+        if self.use_gram and int(in_channels) <= 8:
+            logger.warning(
+                "use_gram=True with very low channels (C=%d): Gram branch is low-capacity and should be treated as auxiliary only.",
+                int(in_channels),
+            )
 
         gn_groups = 8
         while gn_groups > 1 and (w % gn_groups != 0):
@@ -480,6 +554,7 @@ def invariance_metrics(
     """
     model.eval()
     aug_cfg = aug_cfg or {}
+    augmenter = LatentAugmenter(**aug_cfg)
 
     agree = 0
     total = 0
@@ -493,7 +568,7 @@ def invariance_metrics(
         pred0 = p0.argmax(dim=1)
 
         for _ in range(K):
-            xa = augment_latent(x, **aug_cfg)
+            xa = augmenter(x)
             logits1 = model(xa)
             p1 = F.softmax(logits1, dim=1)
             pred1 = p1.argmax(dim=1)
@@ -892,6 +967,7 @@ def train(
         patch_grid=aug_patch_grid,
         shift_max=aug_shift_max,
     )
+    augmenter = LatentAugmenter(**aug_cfg)
 
     for epoch in range(1, epochs + 1):
         model.train()
@@ -904,7 +980,7 @@ def train(
             optimizer.zero_grad(set_to_none=True)
             with torch.cuda.amp.autocast(enabled=use_amp):
                 if train_aug:
-                    x_aug = augment_latent(x, **aug_cfg)
+                    x_aug = augmenter(x)
                     logits_pair = model(torch.cat([x, x_aug], dim=0))
                     logits = logits_pair[: x.shape[0]]
                     logits_aug = logits_pair[x.shape[0] :]

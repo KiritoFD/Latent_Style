@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "I:\Github\Latent_Style\Cycle-NCE\src\utils\run_evaluation.py", line 1703, in <module>
+    main() 
+  File "I:\Github\Latent_Style\Cycle-NCE\src\utils\run_evaluation.py", line 748, in main
+    ckpt = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
+  File "I:\Github\Latent_Style\.venv\lib\site-packages\torch\serialization.py", line 1549, in load
+    return _load(
+  File "I:\Github\Latent_Style\.venv\lib\site-packages\torch\serialization.py", line 2143, in _load
+    result = unpickler.load()
+  File "I:\Github\Latent_Style\.venv\lib\site-packages\torch\serialization.py", line 2107, in persistent_load
+    typed_storage = load_tensor(
+  File "I:\Github\Latent_Style\.venv\lib\site-packages\torch\serialization.py", line 2060, in load_tensor
+    zip_file.get_storage_from_record(name, numel, torch.UntypedStorage)
+RuntimeError: [enforce fail at alloc_cpu.cpp:117] data. DefaultCPUAllocator: not enough memory: you tried to allocate 9437184 bytes.

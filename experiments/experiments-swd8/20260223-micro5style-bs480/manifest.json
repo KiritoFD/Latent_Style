@@ -1,0 +1,88 @@
+{
+  "created_at": "2026-02-23 23:51:14",
+  "base_config": "I:\\Github\\Latent_Style\\Cycle-NCE\\src\\config.json",
+  "pack_root": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480",
+  "num_experiments": 10,
+  "experiments": [
+    {
+      "exp_id": "exp00",
+      "phase": "phase1_60e",
+      "name": "exp00-phase1_60e-baseline_bs480_lr2e4_bd64_sd256",
+      "note": "60e baseline anchor for fast screening.",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp00-phase1_60e-baseline_bs480_lr2e4_bd64_sd256\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp00-phase1_60e-baseline_bs480_lr2e4_bd64_sd256\\artifacts"
+    },
+    {
+      "exp_id": "exp01",
+      "phase": "phase1_60e",
+      "name": "exp01-phase1_60e-capacity_floor_bd32_lc32_sd128",
+      "note": "Capacity floor probe (<1M class) for collapse check.",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp01-phase1_60e-capacity_floor_bd32_lc32_sd128\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp01-phase1_60e-capacity_floor_bd32_lc32_sd128\\artifacts"
+    },
+    {
+      "exp_id": "exp02",
+      "phase": "phase1_60e",
+      "name": "exp02-phase1_60e-capacity_ceiling_bd128_lc128_sd256",
+      "note": "Capacity ceiling for overfit/stability tradeoff.",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp02-phase1_60e-capacity_ceiling_bd128_lc128_sd256\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp02-phase1_60e-capacity_ceiling_bd128_lc128_sd256\\artifacts"
+    },
+    {
+      "exp_id": "exp03",
+      "phase": "phase1_60e",
+      "name": "exp03-phase1_60e-style_ctrl_sd512",
+      "note": "Keep backbone small, enlarge style control bandwidth.",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp03-phase1_60e-style_ctrl_sd512\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp03-phase1_60e-style_ctrl_sd512\\artifacts"
+    },
+    {
+      "exp_id": "exp04",
+      "phase": "phase1_60e",
+      "name": "exp04-phase1_60e-lr4e4_speedup",
+      "note": "High-energy LR speedup under large batch.",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp04-phase1_60e-lr4e4_speedup\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp04-phase1_60e-lr4e4_speedup\\artifacts"
+    },
+    {
+      "exp_id": "exp05",
+      "phase": "phase1_60e",
+      "name": "exp05-phase1_60e-lr8e4_stress",
+      "note": "Aggressive LR stress test for stability envelope.",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp05-phase1_60e-lr8e4_stress\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp05-phase1_60e-lr8e4_stress\\artifacts"
+    },
+    {
+      "exp_id": "exp06",
+      "phase": "phase1_60e",
+      "name": "exp06-phase1_60e-l1_relax_wdl1_0p01",
+      "note": "Relax content tether to release style deformation.",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp06-phase1_60e-l1_relax_wdl1_0p01\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp06-phase1_60e-l1_relax_wdl1_0p01\\artifacts"
+    },
+    {
+      "exp_id": "exp07",
+      "phase": "phase1_60e",
+      "name": "exp07-phase1_60e-swd_patch_1_3",
+      "note": "Multi-scale local texture alignment (1x1 + 3x3).",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp07-phase1_60e-swd_patch_1_3\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp07-phase1_60e-swd_patch_1_3\\artifacts"
+    },
+    {
+      "exp_id": "exp08",
+      "phase": "phase2_150e",
+      "name": "exp08-phase2_150e-deep_cosine_lr5e4_min1e6",
+      "note": "Long-run deep cosine cool-down.",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp08-phase2_150e-deep_cosine_lr5e4_min1e6\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp08-phase2_150e-deep_cosine_lr5e4_min1e6\\artifacts"
+    },
+    {
+      "exp_id": "exp09",
+      "phase": "phase2_150e",
+      "name": "exp09-phase2_150e-flat_lr3e4",
+      "note": "Flat LR track (cosine with equal min_lr acts constant).",
+      "config_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp09-phase2_150e-flat_lr3e4\\config.json",
+      "save_dir": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs480\\runs\\exp09-phase2_150e-flat_lr3e4\\artifacts"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "lgt": {
+    "name": "AdaCUT",
+    "num_images": 10,
+    "avg_total_ms": 49.05870000002324,
+    "avg_encode_ms": 14.331300000048941,
+    "avg_generation_ms": 6.050900000263937,
+    "avg_decode_ms": 28.676249999989523,
+    "throughput_ips": 20.38374437152893
+  },
+  "sd15": {
+    "name": "SD1.5_img2img",
+    "num_images": 10,
+    "avg_total_ms": 447.1024899998156,
+    "throughput_ips": 2.2366236430497457
+  },
+  "speedup_lgt_vs_sd15": 9.113622864030312
+}

@@ -1,0 +1,87 @@
+{
+  "num_rounds": 2,
+  "latest": {
+    "epoch": 60,
+    "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp01-phase1_60e-capacity_floor_bd32_lc32_sd128\\artifacts\\full_eval\\epoch_0060\\summary.json",
+    "transfer_clip_style": 0.6463891822397708,
+    "transfer_content_lpips": 0.34825276383500003,
+    "transfer_classifier_acc": 0.0,
+    "photo_to_art_clip_style": 0.6062293885648251,
+    "photo_to_art_classifier_acc": 0.0
+  },
+  "mean": {
+    "transfer_clip_style": 0.6457061700522899,
+    "transfer_content_lpips": 0.3477736494925,
+    "transfer_classifier_acc": 0.0,
+    "photo_to_art_clip_style": 0.6054898225516081,
+    "photo_to_art_classifier_acc": 0.0
+  },
+  "best": {
+    "best_transfer_classifier_acc": {
+      "epoch": 40,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp01-phase1_60e-capacity_floor_bd32_lc32_sd128\\artifacts\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.645023157864809,
+      "transfer_content_lpips": 0.34729453514999997,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6047502565383911,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_clip_style": {
+      "epoch": 60,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp01-phase1_60e-capacity_floor_bd32_lc32_sd128\\artifacts\\full_eval\\epoch_0060\\summary.json",
+      "transfer_clip_style": 0.6463891822397708,
+      "transfer_content_lpips": 0.34825276383500003,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6062293885648251,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_classifier_acc": {
+      "epoch": 40,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp01-phase1_60e-capacity_floor_bd32_lc32_sd128\\artifacts\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.645023157864809,
+      "transfer_content_lpips": 0.34729453514999997,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6047502565383911,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_clip_style": {
+      "epoch": 60,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp01-phase1_60e-capacity_floor_bd32_lc32_sd128\\artifacts\\full_eval\\epoch_0060\\summary.json",
+      "transfer_clip_style": 0.6463891822397708,
+      "transfer_content_lpips": 0.34825276383500003,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6062293885648251,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_content_lpips": {
+      "epoch": 40,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp01-phase1_60e-capacity_floor_bd32_lc32_sd128\\artifacts\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.645023157864809,
+      "transfer_content_lpips": 0.34729453514999997,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6047502565383911,
+      "photo_to_art_classifier_acc": 0.0
+    }
+  },
+  "rounds": [
+    {
+      "epoch": 40,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp01-phase1_60e-capacity_floor_bd32_lc32_sd128\\artifacts\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.645023157864809,
+      "transfer_content_lpips": 0.34729453514999997,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6047502565383911,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    {
+      "epoch": 60,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\experiments\\20260223-micro5style-bs384\\runs\\exp01-phase1_60e-capacity_floor_bd32_lc32_sd128\\artifacts\\full_eval\\epoch_0060\\summary.json",
+      "transfer_clip_style": 0.6463891822397708,
+      "transfer_content_lpips": 0.34825276383500003,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6062293885648251,
+      "photo_to_art_classifier_acc": 0.0
+    }
+  ],
+  "updated_at": "2026-02-24 02:14:48"
+}

@@ -1,0 +1,11 @@
+{
+  "src_dir": "G:\\GitHub\\Latent_Style\\style_data\\val_clean50\\photo",
+  "tgt_dir": "G:\\GitHub\\Latent_Style\\style_data\\val_clean50\\monet",
+  "out_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\runs\\lbm_train_wds_smoke_photo_to_monet",
+  "prefix": "val",
+  "num_samples": 10,
+  "seed": 43,
+  "src_count": 50,
+  "tgt_count": 50,
+  "pattern": "file:G:\\GitHub\\Latent_Style\\Related_Works\\runs\\lbm_train_wds_smoke_photo_to_monet\\val-%06d.tar"
+}

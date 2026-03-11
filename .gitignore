@@ -1,7 +1,7 @@
 *.arrow
 *.pt
 *.rar
-.jpg
+*.jpg
 *.mnn
 *.data
 *.onnx
@@ -13,3 +13,4 @@ Thermal/.compile_cache/*
 compile_cache/*
 torch_compile_cache/*
 Cycle-NCE/torch_compile_cache/*
+Related_Works/Cycle-NCE/src/eval_cache/

@@ -1,0 +1,114 @@
+{
+  "num_rounds": 5,
+  "latest": {
+    "epoch": 200,
+    "summary_path": "..\\1swd-dit-5style\\full_eval\\epoch_0200\\summary.json",
+    "transfer_clip_style": 0.6526670122146607,
+    "transfer_content_lpips": 0.3818510137500001,
+    "transfer_classifier_acc": 0.0,
+    "photo_to_art_clip_style": 0.623781261742115,
+    "photo_to_art_classifier_acc": 0.0
+  },
+  "mean": {
+    "transfer_clip_style": 0.6496254123210907,
+    "transfer_content_lpips": 0.36853215492900004,
+    "transfer_classifier_acc": 0.0,
+    "photo_to_art_clip_style": 0.6182520025670527,
+    "photo_to_art_classifier_acc": 0.0
+  },
+  "best": {
+    "best_transfer_classifier_acc": {
+      "epoch": 40,
+      "summary_path": "..\\1swd-dit-5style\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.6456182362437249,
+      "transfer_content_lpips": 0.35657093848,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6114160193502902,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_clip_style": {
+      "epoch": 200,
+      "summary_path": "..\\1swd-dit-5style\\full_eval\\epoch_0200\\summary.json",
+      "transfer_clip_style": 0.6526670122146607,
+      "transfer_content_lpips": 0.3818510137500001,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.623781261742115,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_classifier_acc": {
+      "epoch": 40,
+      "summary_path": "..\\1swd-dit-5style\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.6456182362437249,
+      "transfer_content_lpips": 0.35657093848,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6114160193502902,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_clip_style": {
+      "epoch": 200,
+      "summary_path": "..\\1swd-dit-5style\\full_eval\\epoch_0200\\summary.json",
+      "transfer_clip_style": 0.6526670122146607,
+      "transfer_content_lpips": 0.3818510137500001,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.623781261742115,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_content_lpips": {
+      "epoch": 40,
+      "summary_path": "..\\1swd-dit-5style\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.6456182362437249,
+      "transfer_content_lpips": 0.35657093848,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6114160193502902,
+      "photo_to_art_classifier_acc": 0.0
+    }
+  },
+  "rounds": [
+    {
+      "epoch": 40,
+      "summary_path": "..\\1swd-dit-5style\\full_eval\\epoch_0040\\summary.json",
+      "transfer_clip_style": 0.6456182362437249,
+      "transfer_content_lpips": 0.35657093848,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6114160193502902,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    {
+      "epoch": 80,
+      "summary_path": "..\\1swd-dit-5style\\full_eval\\epoch_0080\\summary.json",
+      "transfer_clip_style": 0.6470392261147498,
+      "transfer_content_lpips": 0.35867722997999996,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6152417051792145,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    {
+      "epoch": 120,
+      "summary_path": "..\\1swd-dit-5style\\full_eval\\epoch_0120\\summary.json",
+      "transfer_clip_style": 0.650802581846714,
+      "transfer_content_lpips": 0.366607967875,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6194314204156398,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    {
+      "epoch": 160,
+      "summary_path": "..\\1swd-dit-5style\\full_eval\\epoch_0160\\summary.json",
+      "transfer_clip_style": 0.6520000051856041,
+      "transfer_content_lpips": 0.37895362456,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6213896061480045,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    {
+      "epoch": 200,
+      "summary_path": "..\\1swd-dit-5style\\full_eval\\epoch_0200\\summary.json",
+      "transfer_clip_style": 0.6526670122146607,
+      "transfer_content_lpips": 0.3818510137500001,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.623781261742115,
+      "photo_to_art_classifier_acc": 0.0
+    }
+  ],
+  "updated_at": "2026-02-23 22:33:12"
+}
