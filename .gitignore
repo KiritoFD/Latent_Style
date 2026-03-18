@@ -5,11 +5,8 @@
 *.mnn
 *.data
 *.onnx
-!/src/checkpoints-lsfm/
-!/src/checkpoints-lsfm/**
 data/*
 *.zip
-Thermal/.compile_cache/*
 compile_cache/*
 torch_compile_cache/*
 Cycle-NCE/torch_compile_cache/*
