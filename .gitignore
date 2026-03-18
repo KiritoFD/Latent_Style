@@ -29,14 +29,22 @@ Thumbs.db
 .idea/
 
 # Experiment/local artifacts
-logs/
-full_eval/
-inference/
-experiments/
+logs/**
+full_eval/**
+inference/**
+experiments/**
 *_cache/
-eval_cache/
+eval_cache/**
 comile_cache/
 full_300-*/
 full_300_*/
 full_strong_style/
 overfit50-*/
+
+# Exception: keep "grid" images trackable everywhere
+!**/*grid*.png
+!**/*grid*.jpg
+!**/*grid*.jpeg
+!**/*grid*.webp
+!**/*grid*.gif
+!**/*grid*.bmp

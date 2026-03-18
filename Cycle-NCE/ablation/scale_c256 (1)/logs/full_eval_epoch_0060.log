@@ -1,0 +1,74 @@
+I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\huggingface_hub\utils\_validators.py:202: UserWarning: The `local_dir_use_symlinks` argument is deprecated and ignored in `hf_hub_download`. Downloading to a local directory does not use symlinks anymore.
+  warnings.warn(
+I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\torchvision\models\_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\torchvision\models\_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+HF cache dir: I:\Github\Latent_Style\Cycle-NCE\eval_cache\hf
+HF hub cache dir: I:\Github\Latent_Style\Cycle-NCE\eval_cache\hf\hub
+
+Phase 1: Reuse generated images from I:\Github\Latent_Style\Cycle-NCE\scale_c256\full_eval\epoch_0060\images
+  Reused 0 generated images
+
+Phase 1: Generation (Batch Size 4)
+  Generating Batch 1/38
+  Generating Batch 2/38
+  Generating Batch 3/38
+  Generating Batch 4/38
+  Generating Batch 5/38
+  Generating Batch 6/38
+  Generating Batch 7/38
+  Generating Batch 8/38
+  Generating Batch 9/38
+  Generating Batch 10/38
+  Generating Batch 11/38
+  Generating Batch 12/38
+  Generating Batch 13/38
+  Generating Batch 14/38
+  Generating Batch 15/38
+  Generating Batch 16/38
+  Generating Batch 17/38
+  Generating Batch 18/38
+  Generating Batch 19/38
+  Generating Batch 20/38
+  Generating Batch 21/38
+  Generating Batch 22/38
+  Generating Batch 23/38
+  Generating Batch 24/38
+  Generating Batch 25/38
+  Generating Batch 26/38
+  Generating Batch 27/38
+  Generating Batch 28/38
+  Generating Batch 29/38
+  Generating Batch 30/38
+  Generating Batch 31/38
+  Generating Batch 32/38
+  Generating Batch 33/38
+  Generating Batch 34/38
+  Generating Batch 35/38
+  Generating Batch 36/38
+  Generating Batch 37/38
+  Generating Batch 38/38
+  Generation models unloaded
+
+æ££å†©ç•?Phase 2: Evaluation
+  WARNING: image style classifier checkpoint not found. Tried:
+    - ../eval_cache/eval_style_image_classifier.pt
+    - ../eval_cache/eval_style_image_classifier.pt
+    - I:\Github\Latent_Style\Cycle-NCE\eval_cache\eval_style_image_classifier.pt
+    - I:\Github\Latent_Style\Cycle-NCE\eval_cache\eval_style_image_classifier.pt
+  LPIPS Loaded
+  CLIP Loaded (OpenAI): ViT-B/32 (cache=I:\Github\Latent_Style\Cycle-NCE\eval_cache\clip_openai)
+Found global reference cache: I:\Github\Latent_Style\Cycle-NCE\eval_cache\ref_feats_547f5728b3_m80.pt
+  Reference cache loaded successfully
+  Processing 750 generated images...
+
+æ££å†©æƒ?Generating Summary...
+é–?Summary saved: I:\Github\Latent_Style\Cycle-NCE\scale_c256\full_eval\epoch_0060\summary.json
+Summary grid saved: I:\Github\Latent_Style\Cycle-NCE\scale_c256\full_eval\epoch_0060\summary_grid.png
+Summary grid source selection (max transfer clip_style mean):
+  photo: 2013-11-17 16_40_10
+  Hayao: 1044
+  monet: 00812
+  vangogh: 00292
+  cezanne: 00204
