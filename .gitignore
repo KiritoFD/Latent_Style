@@ -1,0 +1,16 @@
+*.arrow
+*.pt
+*.rar
+*.jpg
+*.mnn
+*.data
+*.onnx
+data/*
+*.zip
+compile_cache/*
+torch_compile_cache/*
+Cycle-NCE/torch_compile_cache/*
+Related_Works/Cycle-NCE/src/eval_cache/
+*.ckpt
+Related_Works/external/
+.venv/

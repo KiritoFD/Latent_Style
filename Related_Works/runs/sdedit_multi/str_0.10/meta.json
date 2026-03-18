@@ -1,0 +1,32 @@
+{
+  "method": "sdedit",
+  "model_id": "runwayml/stable-diffusion-v1-5",
+  "size": 256,
+  "strength": 0.1,
+  "steps": 50,
+  "guidance": 6.0,
+  "seed": 42,
+  "batch": 4,
+  "low_vram": false,
+  "empty_cache_every": 0,
+  "styles": [
+    "cezanne",
+    "Hayao",
+    "monet",
+    "photo",
+    "vangogh"
+  ],
+  "source_count": 250,
+  "prompts": {
+    "photo": "a realistic photograph",
+    "monet": "an impressionist oil painting in Claude Monet style",
+    "vangogh": "an expressive painting in Vincent van Gogh style",
+    "cezanne": "a post-impressionist painting in Paul Cezanne style",
+    "Hayao": "a hand-drawn anime frame in Hayao Miyazaki style"
+  },
+  "generated_images": 1000,
+  "elapsed_sec": 191.70082930000353,
+  "inference_sec": 190.90522130003956,
+  "avg_infer_sec_per_generated": 0.19090522130003956,
+  "timestamp": "2026-03-07 12:53:53"
+}

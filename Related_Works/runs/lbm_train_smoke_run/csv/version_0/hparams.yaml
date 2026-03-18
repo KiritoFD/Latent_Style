@@ -1,0 +1,50 @@
+model_config:
+  bridge_noise_sigma: 0.005
+  enable_minibatch_ot: true
+  input_key: image
+  latent_loss_type: l2
+  latent_loss_weight: 1.0
+  logit_mean: 0.0
+  logit_std: 1.0
+  mask_key: null
+  minibatch_ot_cost: latent_l2
+  minibatch_ot_detach: true
+  name: LBMConfig
+  pixel_loss_max_size: 256
+  pixel_loss_type: lpips
+  pixel_loss_weight: 0.0
+  prob: null
+  selected_timesteps: null
+  source_key: source_image
+  target_key: target_image
+  timestep_sampling: log_normal
+pipeline_config: !!python/object:lbm.trainer.training_config.TrainingConfig
+  backup_every: 50
+  experiment_id: null
+  learning_rate: 1.0e-05
+  log_keys:
+  - source_image
+  - target_image
+  log_samples_model_kwargs:
+    input_shape: !!python/tuple
+    - 4
+    - 32
+    - 32
+    num_steps:
+    - 1
+  lr_scheduler_frequency: 1
+  lr_scheduler_interval: step
+  lr_scheduler_kwargs: {}
+  lr_scheduler_name: null
+  metrics: null
+  name: TrainingConfig
+  optimizer_kwargs:
+    betas: !!python/tuple
+    - 0.9
+    - 0.999
+    weight_decay: 0.01
+  optimizer_name: AdamW
+  tracking_metrics: null
+  trainable_params:
+  - denoiser.*
+verbose: false

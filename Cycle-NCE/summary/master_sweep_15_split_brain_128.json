@@ -1,0 +1,114 @@
+{
+  "num_rounds": 1,
+  "latest": {
+    "epoch": 100,
+    "summary_path": "..\\master_sweep_15_split_brain_128\\full_eval\\epoch_0100\\summary.json",
+    "transfer_clip_style": 0.6768034092585247,
+    "transfer_content_lpips": 0.47962787835,
+    "transfer_fid": null,
+    "transfer_art_fid": null,
+    "transfer_classifier_acc": 0.0,
+    "photo_to_art_clip_style": 0.6598403126001359,
+    "photo_to_art_fid": null,
+    "photo_to_art_art_fid": null,
+    "photo_to_art_classifier_acc": 0.0
+  },
+  "mean": {
+    "transfer_clip_style": 0.6768034092585247,
+    "transfer_content_lpips": 0.47962787835,
+    "transfer_fid": null,
+    "transfer_art_fid": null,
+    "transfer_classifier_acc": 0.0,
+    "photo_to_art_clip_style": 0.6598403126001359,
+    "photo_to_art_fid": null,
+    "photo_to_art_art_fid": null,
+    "photo_to_art_classifier_acc": 0.0
+  },
+  "best": {
+    "best_transfer_classifier_acc": {
+      "epoch": 100,
+      "summary_path": "..\\master_sweep_15_split_brain_128\\full_eval\\epoch_0100\\summary.json",
+      "transfer_clip_style": 0.6768034092585247,
+      "transfer_content_lpips": 0.47962787835,
+      "transfer_fid": null,
+      "transfer_art_fid": null,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6598403126001359,
+      "photo_to_art_fid": null,
+      "photo_to_art_art_fid": null,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_clip_style": {
+      "epoch": 100,
+      "summary_path": "..\\master_sweep_15_split_brain_128\\full_eval\\epoch_0100\\summary.json",
+      "transfer_clip_style": 0.6768034092585247,
+      "transfer_content_lpips": 0.47962787835,
+      "transfer_fid": null,
+      "transfer_art_fid": null,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6598403126001359,
+      "photo_to_art_fid": null,
+      "photo_to_art_art_fid": null,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_fid": null,
+    "best_transfer_art_fid": null,
+    "best_photo_to_art_classifier_acc": {
+      "epoch": 100,
+      "summary_path": "..\\master_sweep_15_split_brain_128\\full_eval\\epoch_0100\\summary.json",
+      "transfer_clip_style": 0.6768034092585247,
+      "transfer_content_lpips": 0.47962787835,
+      "transfer_fid": null,
+      "transfer_art_fid": null,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6598403126001359,
+      "photo_to_art_fid": null,
+      "photo_to_art_art_fid": null,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_clip_style": {
+      "epoch": 100,
+      "summary_path": "..\\master_sweep_15_split_brain_128\\full_eval\\epoch_0100\\summary.json",
+      "transfer_clip_style": 0.6768034092585247,
+      "transfer_content_lpips": 0.47962787835,
+      "transfer_fid": null,
+      "transfer_art_fid": null,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6598403126001359,
+      "photo_to_art_fid": null,
+      "photo_to_art_art_fid": null,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_fid": null,
+    "best_photo_to_art_art_fid": null,
+    "best_transfer_content_lpips": {
+      "epoch": 100,
+      "summary_path": "..\\master_sweep_15_split_brain_128\\full_eval\\epoch_0100\\summary.json",
+      "transfer_clip_style": 0.6768034092585247,
+      "transfer_content_lpips": 0.47962787835,
+      "transfer_fid": null,
+      "transfer_art_fid": null,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6598403126001359,
+      "photo_to_art_fid": null,
+      "photo_to_art_art_fid": null,
+      "photo_to_art_classifier_acc": 0.0
+    }
+  },
+  "rounds": [
+    {
+      "epoch": 100,
+      "summary_path": "..\\master_sweep_15_split_brain_128\\full_eval\\epoch_0100\\summary.json",
+      "transfer_clip_style": 0.6768034092585247,
+      "transfer_content_lpips": 0.47962787835,
+      "transfer_fid": null,
+      "transfer_art_fid": null,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6598403126001359,
+      "photo_to_art_fid": null,
+      "photo_to_art_art_fid": null,
+      "photo_to_art_classifier_acc": 0.0
+    }
+  ],
+  "updated_at": "2026-03-01 09:21:14"
+}
