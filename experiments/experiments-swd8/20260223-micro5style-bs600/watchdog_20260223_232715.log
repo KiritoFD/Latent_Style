@@ -1,7 +1,0 @@
-[2026-02-23 23:27:15] starting detached watchdog
-Traceback (most recent call last):
-  File "I:\Github\Latent_Style\Cycle-NCE\src\watchdog_experiments.py", line 209, in <module>
-    main()
-  File "I:\Github\Latent_Style\Cycle-NCE\src\watchdog_experiments.py", line 147, in main
-    raise FileNotFoundError(f"manifest.json not found: {pack_root / 'manifest.json'}")
-FileNotFoundError: manifest.json not found: I:\Github\Latent_Style\Cycle-NCE\src\experiments\20260223-micro5style-bs600\manifest.json

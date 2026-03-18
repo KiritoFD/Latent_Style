@@ -1,1 +1,0 @@
-epoch,loss,struct,cycle,stroke_gram,color_moment,delta_tv,delta_l2,train_num_steps,train_step_size,train_style_strength,lr,data_time_sec,compute_time_sec,epoch_time_sec

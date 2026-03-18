@@ -201,35 +201,6 @@ def calc_hf_swd_loss(
     )
 
 
-def calc_patch_nce_loss(
-    feat_q: torch.Tensor,
-    feat_k: torch.Tensor,
-    *,
-    tau: float = 0.07,
-    num_patches: int = 128,
-) -> torch.Tensor:
-    """
-    Infra-optimized latent-space PatchNCE.
-    Negatives are restricted within each image to avoid O((B*N)^2) VRAM blow-up.
-    """
-    if feat_q.shape != feat_k.shape:
-        raise ValueError(f"PatchNCE feature shape mismatch: q={tuple(feat_q.shape)} k={tuple(feat_k.shape)}")
-    bsz, channels, h, w = feat_q.shape
-    if bsz <= 0 or channels <= 0 or h <= 0 or w <= 0:
-        return feat_q.new_tensor(0.0)
-    feat_k = feat_k.detach()
-    q = feat_q.view(bsz, channels, -1).transpose(1, 2)
-    k = feat_k.view(bsz, channels, -1).transpose(1, 2)
-    n_tokens = h * w
-    n_pick = min(max(1, int(num_patches)), n_tokens)
-    sel = torch.randperm(n_tokens, device=feat_q.device)[:n_pick]
-    q_sel = F.normalize(q[:, sel, :], dim=-1)
-    k_sel = F.normalize(k[:, sel, :], dim=-1)
-    logits = torch.bmm(q_sel, k_sel.transpose(1, 2)) / max(float(tau), 1e-6)
-    labels = torch.arange(n_pick, device=logits.device, dtype=torch.long).unsqueeze(0).expand(bsz, -1)
-    return F.cross_entropy(logits.reshape(-1, n_pick), labels.reshape(-1))
-
-
 class AdaCUTObjective:
     def __init__(self, config: Dict) -> None:
         loss_cfg = config.get("loss", {})
@@ -249,26 +220,6 @@ class AdaCUTObjective:
         self.w_identity = float(loss_cfg.get("w_identity", 2.0))
         self.w_delta_tv = float(loss_cfg.get("w_delta_tv", 0.0))
         self.w_color = float(loss_cfg.get("w_color", 15.0))
-        self.w_nce = float(loss_cfg.get("w_nce", 0.0))
-        self.w_nce_identity = float(loss_cfg.get("w_nce_identity", 1.0))
-        self.nce_tau = float(loss_cfg.get("nce_tau", 0.07))
-        self.nce_num_patches = int(loss_cfg.get("nce_num_patches", 128))
-        layer_weights_cfg = loss_cfg.get("nce_layer_weights", [1.0, 1.0, 1.0])
-        if isinstance(layer_weights_cfg, (list, tuple)):
-            self.nce_layer_weights = [float(v) for v in layer_weights_cfg if float(v) > 0.0]
-        else:
-            self.nce_layer_weights = [float(layer_weights_cfg)]
-        if not self.nce_layer_weights:
-            self.nce_layer_weights = [1.0]
-        self.w_gate_reg = float(loss_cfg.get("w_gate_reg", 0.0))
-        self.gate_reg_target_var = float(loss_cfg.get("gate_reg_target_var", 0.05))
-        # Kept for trainer hot-reload compatibility; probe monitoring is optional.
-        self.style_probe_enabled = bool(loss_cfg.get("style_probe_enabled", False))
-        self.style_probe_layer_index = int(loss_cfg.get("style_probe_layer_index", -1))
-        self.style_probe_batch_size = int(loss_cfg.get("style_probe_batch_size", 64))
-        self.style_probe_lr = float(loss_cfg.get("style_probe_lr", 1e-3))
-        self.style_probe_weight_decay = float(loss_cfg.get("style_probe_weight_decay", 0.0))
-        self.style_probe_use_spectral_norm = bool(loss_cfg.get("style_probe_use_spectral_norm", True))
         self.nsight_nvtx = bool(config.get("training", {}).get("nsight_nvtx", False))
         self._sobel_cache: Dict[tuple[int, str, str], tuple[torch.Tensor, torch.Tensor]] = {}
         self._projection_cache: Dict[tuple[int, int, int, str, str], torch.Tensor] = {}
@@ -368,25 +319,6 @@ class AdaCUTObjective:
             # Reuse one sampled xid subset for both SWD and color to reduce gradient jitter.
             xid_valid_idx = self._select_xid_indices(xid_mask)
 
-        gate_t = model.get_skip_gate_tensor()
-        if gate_t is not None:
-            gate_det = gate_t.detach()
-            metrics["skip_gate_mean"] = gate_det.mean()
-            metrics["skip_gate_std"] = gate_det.std(unbiased=False)
-            metrics["skip_gate_min"] = gate_det.min()
-            metrics["skip_gate_max"] = gate_det.max()
-            # Channel variance as a weak "gate should diversify" signal.
-            gate_var = gate_det.var(dim=1, unbiased=False).mean()
-            metrics["gate_var"] = gate_var
-            if self.w_gate_reg > 0.0:
-                gate_var_live = gate_t.var(dim=1, unbiased=False).mean()
-                loss_gate_reg = F.relu(gate_t.new_tensor(self.gate_reg_target_var) - gate_var_live)
-                total_loss = total_loss + self.w_gate_reg * loss_gate_reg
-                metrics["gate_reg"] = loss_gate_reg.detach()
-        # Release module-held gate tensor reference ASAP to avoid unnecessary graph retention.
-        if hasattr(model, "clear_skip_gate_tensor"):
-            model.clear_skip_gate_tensor()
-
         if xid_mask.any() and self.w_swd > 0.0:
             assert xid_valid_idx is not None
             swd_x = pred.index_select(0, xid_valid_idx)
@@ -441,62 +373,11 @@ class AdaCUTObjective:
             assert xid_valid_idx is not None
             pred_f32 = pred.float()
             target_f32 = target_cast.float()
-            p_pool = F.adaptive_avg_pool2d(pred_f32.index_select(0, xid_valid_idx), (1, 1))
-            t_pool = F.adaptive_avg_pool2d(target_f32.index_select(0, xid_valid_idx), (1, 1))
+            p_pool = F.adaptive_avg_pool2d(pred_f32.index_select(0, xid_valid_idx), (4, 4))
+            t_pool = F.adaptive_avg_pool2d(target_f32.index_select(0, xid_valid_idx), (4, 4))
             loss_color = F.mse_loss(p_pool, t_pool)
             total_loss += self.w_color * loss_color
             metrics["color"] = loss_color.detach()
-
-        if self.w_nce > 0.0:
-            loss_nce_total = pred.new_tensor(0.0)
-            loss_nce_terms = 0
-
-            if xid_mask.any():
-                assert xid_valid_idx is not None
-                xid_content = content_cast.index_select(0, xid_valid_idx)
-                xid_pred = pred.index_select(0, xid_valid_idx)
-                q_feats = model.get_nce_features(xid_pred)
-                with torch.no_grad():
-                    k_feats = model.get_nce_features(xid_content)
-                loss_nce_xid = pred.new_tensor(0.0)
-                for i, (qf, kf) in enumerate(zip(q_feats, k_feats)):
-                    w_layer = self.nce_layer_weights[min(i, len(self.nce_layer_weights) - 1)]
-                    loss_nce_xid = loss_nce_xid + calc_patch_nce_loss(
-                        qf,
-                        kf,
-                        tau=self.nce_tau,
-                        num_patches=self.nce_num_patches,
-                    ) * float(w_layer)
-                loss_nce_xid = loss_nce_xid / max(len(q_feats), 1)
-                loss_nce_total = loss_nce_total + loss_nce_xid
-                loss_nce_terms += 1
-                metrics["patch_nce_xid"] = loss_nce_xid.detach()
-
-            if id_mask.any() and self.w_nce_identity > 0.0:
-                id_valid_idx = torch.nonzero(id_mask, as_tuple=False).squeeze(1)
-                id_content = content_cast.index_select(0, id_valid_idx)
-                id_pred = pred.index_select(0, id_valid_idx)
-                q_feats = model.get_nce_features(id_pred)
-                with torch.no_grad():
-                    k_feats = model.get_nce_features(id_content)
-                loss_nce_id = pred.new_tensor(0.0)
-                for i, (qf, kf) in enumerate(zip(q_feats, k_feats)):
-                    w_layer = self.nce_layer_weights[min(i, len(self.nce_layer_weights) - 1)]
-                    loss_nce_id = loss_nce_id + calc_patch_nce_loss(
-                        qf,
-                        kf,
-                        tau=self.nce_tau,
-                        num_patches=self.nce_num_patches,
-                    ) * float(w_layer)
-                loss_nce_id = loss_nce_id / max(len(q_feats), 1)
-                loss_nce_total = loss_nce_total + self.w_nce_identity * loss_nce_id
-                loss_nce_terms += 1
-                metrics["patch_nce_id"] = loss_nce_id.detach()
-
-            if loss_nce_terms > 0:
-                loss_nce = loss_nce_total / float(loss_nce_terms)
-                total_loss += self.w_nce * loss_nce
-                metrics["patch_nce"] = loss_nce.detach()
 
         if self.w_identity > 0.0 and id_mask.any():
             with self._nvtx_range("loss/identity", nvtx_enabled):

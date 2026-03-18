@@ -1,8 +1,0 @@
-2026-02-23 23:39:26,359 - INFO - Active losses: w_swd, w_identity, w_delta_l1
-2026-02-23 23:39:26,373 - INFO - Device: cpu
-2026-02-23 23:39:26,373 - INFO - Seed: 42
-2026-02-23 23:39:26,374 - INFO - Loading latent dataset from ..\..\latent-256
-2026-02-23 23:39:29,429 - INFO -   style=photo id=0 count=6187
-2026-02-23 23:39:30,274 - INFO -   style=Hayao id=1 count=1752
-2026-02-23 23:39:30,732 - INFO -   style=monet id=2 count=972
-2026-02-23 23:39:31,058 - INFO -   style=vangogh id=3 count=600

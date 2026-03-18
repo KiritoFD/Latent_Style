@@ -299,7 +299,6 @@ class AdaCUTTrainer:
         self.accumulation_steps = max(1, int(train_cfg.get("accumulation_steps", 1)))
         self.log_interval = max(0, int(train_cfg.get("log_interval", 20)))
         self.use_tqdm = bool(train_cfg.get("use_tqdm", True))
-        self.max_train_steps = int(train_cfg.get("max_train_steps", 0))
         self.num_epochs = int(train_cfg.get("num_epochs", 100))
         self.save_interval = max(1, int(train_cfg.get("save_interval", 10)))
         self.full_eval_interval = max(0, int(train_cfg.get("full_eval_interval", 50)))
@@ -316,25 +315,9 @@ class AdaCUTTrainer:
                     "epoch",
                     "loss",
                     "swd",
-                    "swd_hf",
                     "color",
                     "identity",
                     "delta_tv",
-                    "patch_nce",
-                    "patch_nce_xid",
-                    "patch_nce_id",
-                    "skip_gate_mean",
-                    "skip_gate_std",
-                    "skip_gate_min",
-                    "skip_gate_max",
-                    "gate_var",
-                    "gate_reg",
-                    "style_probe_loss",
-                    "style_probe_real_acc",
-                    "style_probe_fake_acc",
-                    "style_probe_fake_conf",
-                    "style_probe_layer",
-                    "style_probe_steps",
                     "identity_ratio",
                     "lr",
                     "data_time_sec",
@@ -422,41 +405,6 @@ class AdaCUTTrainer:
         _set_attr("w_color", float(loss_cfg.get("w_color", lf.w_color)))
         _set_attr("w_identity", float(loss_cfg.get("w_identity", lf.w_identity)))
         _set_attr("w_delta_tv", float(loss_cfg.get("w_delta_tv", lf.w_delta_tv)))
-        _set_attr("w_nce", float(loss_cfg.get("w_nce", getattr(lf, "w_nce", 0.0))))
-        _set_attr("w_nce_identity", float(loss_cfg.get("w_nce_identity", getattr(lf, "w_nce_identity", 1.0))))
-        _set_attr("nce_tau", float(loss_cfg.get("nce_tau", getattr(lf, "nce_tau", 0.07))))
-        _set_attr("nce_num_patches", int(loss_cfg.get("nce_num_patches", getattr(lf, "nce_num_patches", 128))))
-        _set_attr("w_gate_reg", float(loss_cfg.get("w_gate_reg", getattr(lf, "w_gate_reg", 0.0))))
-        _set_attr(
-            "gate_reg_target_var",
-            float(loss_cfg.get("gate_reg_target_var", getattr(lf, "gate_reg_target_var", 0.05))),
-        )
-        layer_weights = loss_cfg.get("nce_layer_weights", getattr(lf, "nce_layer_weights", [1.0]))
-        if isinstance(layer_weights, list):
-            parsed_nce_layer_weights = [float(v) for v in layer_weights if float(v) > 0.0]
-        else:
-            parsed_nce_layer_weights = [float(layer_weights)]
-        if not parsed_nce_layer_weights:
-            parsed_nce_layer_weights = [1.0]
-        _set_attr("nce_layer_weights", parsed_nce_layer_weights)
-        _set_attr("style_probe_enabled", bool(loss_cfg.get("style_probe_enabled", getattr(lf, "style_probe_enabled", False))))
-        _set_attr(
-            "style_probe_layer_index",
-            int(loss_cfg.get("style_probe_layer_index", getattr(lf, "style_probe_layer_index", -1))),
-        )
-        _set_attr(
-            "style_probe_batch_size",
-            int(loss_cfg.get("style_probe_batch_size", getattr(lf, "style_probe_batch_size", 64))),
-        )
-        _set_attr("style_probe_lr", float(loss_cfg.get("style_probe_lr", getattr(lf, "style_probe_lr", 1e-3))))
-        _set_attr(
-            "style_probe_weight_decay",
-            float(loss_cfg.get("style_probe_weight_decay", getattr(lf, "style_probe_weight_decay", 0.0))),
-        )
-        _set_attr(
-            "style_probe_use_spectral_norm",
-            bool(loss_cfg.get("style_probe_use_spectral_norm", getattr(lf, "style_probe_use_spectral_norm", True))),
-        )
         _set_attr("nsight_nvtx", bool(training_cfg.get("nsight_nvtx", lf.nsight_nvtx)))
         if any(
             k in changed
@@ -544,11 +492,6 @@ class AdaCUTTrainer:
         self.use_tqdm = bool(train_cfg.get("use_tqdm", self.use_tqdm))
         if self.use_tqdm != old_use_tqdm:
             changed["training.use_tqdm"] = (old_use_tqdm, self.use_tqdm)
-
-        old_max_train_steps = self.max_train_steps
-        self.max_train_steps = int(train_cfg.get("max_train_steps", self.max_train_steps))
-        if self.max_train_steps != old_max_train_steps:
-            changed["training.max_train_steps"] = (old_max_train_steps, self.max_train_steps)
 
         requested_empty_cache_interval = max(0, int(train_cfg.get("empty_cache_interval", self.empty_cache_interval)))
         if requested_empty_cache_interval > 0:
@@ -873,8 +816,6 @@ class AdaCUTTrainer:
 
         with profiler_ctx as prof:
             for step_idx, raw_batch in enumerate(progress, start=1):
-                if self.max_train_steps > 0 and self.global_step >= self.max_train_steps:
-                    break
                 self._maybe_toggle_cuda_profiler()
                 step_enter = time.perf_counter()
                 data_time_total += max(0.0, step_enter - data_wait_start)
@@ -997,10 +938,6 @@ class AdaCUTTrainer:
                     progress.set_postfix(
                         loss=f"{_get_avg('loss'):.4f}",
                         swd=f"{_get_avg('swd'):.4f}",
-                        nce=f"{_get_avg('patch_nce'):.4f}",
-                        p_real=f"{_get_avg('style_probe_real_acc'):.3f}",
-                        p_fake=f"{_get_avg('style_probe_fake_acc'):.3f}",
-                        p_conf=f"{_get_avg('style_probe_fake_conf'):.3f}",
                         color=f"{_get_avg('color'):.4f}",
                         idt=f"{_get_avg('identity'):.4f}",
                         dtv=f"{_get_avg('delta_tv'):.4f}",
@@ -1012,21 +949,12 @@ class AdaCUTTrainer:
                     )
                     if not self.use_tqdm:
                         logger.info(
-                            (
-                                "epoch %d step %d/%d | loss=%.4f swd=%.4f "
-                                "nce=%.4f probe(real=%.3f fake=%.3f conf=%.3f) "
-                                "color=%.4f idt=%.4f dtv=%.4f idr=%.2f | "
-                                "data %.1fms comp %.1fms | %.2f it/s eta %.1fs"
-                            ),
+                            "epoch %d step %d/%d | loss=%.4f swd=%.4f color=%.4f idt=%.4f dtv=%.4f idr=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
                             epoch,
                             step_idx,
                             total_steps,
                             _get_avg('loss'),
                             _get_avg('swd'),
-                            _get_avg('patch_nce'),
-                            _get_avg('style_probe_real_acc'),
-                            _get_avg('style_probe_fake_acc'),
-                            _get_avg('style_probe_fake_conf'),
                             _get_avg('color'),
                             _get_avg('identity'),
                             _get_avg('delta_tv'),
@@ -1097,13 +1025,7 @@ class AdaCUTTrainer:
         
         # Fill missing keys with 0.0 for safety
         expected_keys = [
-            "loss", "swd", "swd_hf", "color", "identity", "delta_tv",
-            "patch_nce", "patch_nce_xid", "patch_nce_id",
-            "skip_gate_mean", "skip_gate_std", "skip_gate_min", "skip_gate_max",
-            "gate_var", "gate_reg",
-            "style_probe_loss", "style_probe_real_acc", "style_probe_fake_acc", "style_probe_fake_conf",
-            "style_probe_layer", "style_probe_steps",
-            "identity_ratio",
+            "loss", "swd", "color", "identity", "delta_tv", "identity_ratio",
             "data_time_sec", "transfer_time_sec", "fwd_loss_time_sec", "backward_time_sec",
             "optimizer_time_sec", "step_overhead_time_sec", "compute_time_sec",
             "samples_seen", "samples_per_sec", "compute_samples_per_sec",
@@ -1129,14 +1051,9 @@ class AdaCUTTrainer:
             tqdm.write(
                 f"[Epoch {epoch}/{self.num_epochs}] "
                 f"loss={metrics['loss']:.4f} "
-                f"swd={metrics['swd']:.4f} swd_hf={metrics['swd_hf']:.4f} "
+                f"swd={metrics['swd']:.4f} "
                 f"color={metrics['color']:.4f} "
-                f"idt={metrics['identity']:.4f} dtv={metrics['delta_tv']:.4f} "
-                f"nce={metrics['patch_nce']:.4f} xid={metrics['patch_nce_xid']:.4f} id={metrics['patch_nce_id']:.4f} "
-                f"skip_g={metrics['skip_gate_mean']:.3f}+-{metrics['skip_gate_std']:.3f} "
-                f"gate_var={metrics['gate_var']:.4f} gate_reg={metrics['gate_reg']:.4f} "
-                f"probe_r={metrics['style_probe_real_acc']:.3f} probe_f={metrics['style_probe_fake_acc']:.3f} "
-                f"idr={metrics['identity_ratio']:.2f} "
+                f"idt={metrics['identity']:.4f} dtv={metrics['delta_tv']:.4f} idr={metrics['identity_ratio']:.2f} "
                 f"| data={data_time_total:.1f}s transfer={transfer_time_total:.1f}s fwd={fwd_loss_time_total:.1f}s "
                 f"bwd={backward_time_total:.1f}s opt={optimizer_time_total:.1f}s overhead={step_overhead_time_total:.1f}s "
                 f"compute={compute_time_total:.1f}s total={epoch_time:.1f}s "
@@ -1152,25 +1069,9 @@ class AdaCUTTrainer:
                     int(epoch),
                     float(metrics.get("loss", 0.0)),
                     float(metrics.get("swd", 0.0)),
-                    float(metrics.get("swd_hf", 0.0)),
                     float(metrics.get("color", 0.0)),
                     float(metrics.get("identity", 0.0)),
                     float(metrics.get("delta_tv", 0.0)),
-                    float(metrics.get("patch_nce", 0.0)),
-                    float(metrics.get("patch_nce_xid", 0.0)),
-                    float(metrics.get("patch_nce_id", 0.0)),
-                    float(metrics.get("skip_gate_mean", 0.0)),
-                    float(metrics.get("skip_gate_std", 0.0)),
-                    float(metrics.get("skip_gate_min", 0.0)),
-                    float(metrics.get("skip_gate_max", 0.0)),
-                    float(metrics.get("gate_var", 0.0)),
-                    float(metrics.get("gate_reg", 0.0)),
-                    float(metrics.get("style_probe_loss", 0.0)),
-                    float(metrics.get("style_probe_real_acc", 0.0)),
-                    float(metrics.get("style_probe_fake_acc", 0.0)),
-                    float(metrics.get("style_probe_fake_conf", 0.0)),
-                    float(metrics.get("style_probe_layer", 0.0)),
-                    float(metrics.get("style_probe_steps", 0.0)),
                     float(metrics.get("identity_ratio", 0.0)),
                     float(metrics.get("lr", 0.0)),
                     float(metrics.get("data_time_sec", 0.0)),
