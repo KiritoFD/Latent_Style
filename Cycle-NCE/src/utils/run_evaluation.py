@@ -2097,6 +2097,7 @@ def generate_summary_json(
         'metrics_note': {
             'clip_dir': "cos( CLIP(gen)-CLIP(src), CLIP(target_style_proto)-CLIP(src) ) - Measures edit direction.",
             'clip_style': "cos( CLIP(gen), CLIP(target_style_proto) ) - Measures absolute style similarity.",
+            'clip_content': "cos( CLIP(gen), CLIP(src) ) - Measures semantic/content preservation.",
             'fid_baseline': "FID between source-domain images and target-style references.",
             'fid': "FID between generated images and target-style real references (Inception features).",
             'delta_fid': "fid_baseline - fid (higher is better).",
@@ -2112,6 +2113,7 @@ def generate_summary_json(
             'style_transfer_ability': {
                 'clip_dir': pool_avg(transfer_pool, 'clip_dir'),
                 'clip_style': pool_avg(transfer_pool, 'clip_style'),
+                'clip_content': pool_avg(transfer_pool, 'clip_content'),
                 'content_lpips': pool_avg(transfer_pool, 'content_lpips'),
                 'fid_baseline': pool_avg([t for t in transfer_pool if t.get('fid_baseline') is not None], 'fid_baseline', default=None),
                 'fid': pool_avg([t for t in transfer_pool if t.get('fid_style') is not None], 'fid_style', default=None),
@@ -2127,6 +2129,7 @@ def generate_summary_json(
             'photo_to_art_performance': {
                 'clip_dir': pool_avg(photo_transfer_pool, 'clip_dir'),
                 'clip_style': pool_avg(photo_transfer_pool, 'clip_style'),
+                'clip_content': pool_avg(photo_transfer_pool, 'clip_content'),
                 'fid_baseline': pool_avg([t for t in photo_transfer_pool if t.get('fid_baseline') is not None], 'fid_baseline', default=None),
                 'fid': pool_avg([t for t in photo_transfer_pool if t.get('fid_style') is not None], 'fid_style', default=None),
                 'delta_fid': pool_avg([t for t in photo_transfer_pool if t.get('delta_fid') is not None], 'delta_fid', default=None),

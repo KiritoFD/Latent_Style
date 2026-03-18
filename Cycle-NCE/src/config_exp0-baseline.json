@@ -29,7 +29,7 @@
             15,
             23
         ],
-        "swd_num_projections": 640,
+        "swd_num_projections": 320,
         "swd_projection_chunk_size": 64,
         "swd_distance_mode": "cdf",
         "swd_cdf_num_bins": 32,
@@ -59,7 +59,7 @@
         "weight_decay": 0.0001,
         "scheduler": "cosine",
         "grad_clip_norm": 0.5,
-        "num_epochs": 120,
+        "num_epochs": 80,
         "save_interval": 20,
         "full_eval_interval": 40,
         "full_eval_on_last_epoch": true,

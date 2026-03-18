@@ -18,10 +18,11 @@
         "style_id_spatial_jitter_px": 4,
         "upsample_blur": true,
         "upsample_blur_kernel": "gaussian3",
-        "ada_mix_rank": 32
+        "ada_mix_rank": 32,
+        "inject_gate_decoder": 0.85
     },
     "loss": {
-        "w_swd": 50.0,
+        "w_swd": 40.0,
         "swd_patch_sizes": [
             5,
             7,
@@ -40,9 +41,9 @@
         "swd_batch_size": 64,
         "swd_use_high_freq": true,
         "w_color": 0.5,
-        "w_identity": 0.3,
-        "w_delta_tv": 0.005,
-        "swd_hf_weight_ratio": 2.0
+        "w_identity": 0.45,
+        "w_delta_tv": 0.015,
+        "swd_hf_weight_ratio": 4.0
     },
     "training": {
         "seed": 42,
@@ -59,8 +60,8 @@
         "weight_decay": 0.0001,
         "scheduler": "cosine",
         "grad_clip_norm": 0.5,
-        "num_epochs": 160,
-        "save_interval": 40,
+        "num_epochs": 100,
+        "save_interval": 20,
         "full_eval_interval": 40,
         "full_eval_on_last_epoch": true,
         "full_eval_batch_size": 4,
@@ -117,7 +118,7 @@
         "virtual_length_multiplier": 1
     },
     "checkpoint": {
-        "save_dir": "../decoder-D-160"
+        "save_dir": "../exp06_god_combo"
     },
     "inference": {
         "num_steps": 1,

@@ -123,9 +123,9 @@ def main():
         str(int(args.max_ref_compare)),
         "--max_ref_cache",
         str(int(args.max_ref_cache)),
+        "--max_src_samples",
+        str(int(args.max_src_samples)),
     ]
-    if int(args.max_src_samples) > 0:
-        cmd += ["--max_src_samples", str(int(args.max_src_samples))]
     if args.clip_allow_network:
         cmd += ["--clip_allow_network"]
     cmd += ["--clip_backend", str(args.clip_backend)]
