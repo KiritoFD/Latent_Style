@@ -140,6 +140,47 @@ def _extract_experiment_id_from_file_path(path: Path) -> str:
     return path.parent.name or 'unknown'
 
 
+def _safe_mean(values: List[float]) -> Optional[float]:
+    if not values:
+        return None
+    return float(sum(values) / len(values))
+
+
+def _extract_clip_content_from_matrix(json_data: Dict[str, Any]) -> Tuple[Optional[float], Optional[float]]:
+    """
+    Fallback extraction for clip_content when analysis sections do not expose it.
+
+    Returns:
+      (transfer_clip_content, photo_to_art_clip_content)
+    """
+    matrix = json_data.get('matrix_breakdown')
+    if not isinstance(matrix, dict):
+        return None, None
+
+    transfer_vals: List[float] = []
+    photo_to_art_vals: List[float] = []
+
+    for src_name, src_row in matrix.items():
+        if not isinstance(src_row, dict):
+            continue
+        for tgt_name, cell in src_row.items():
+            if not isinstance(cell, dict):
+                continue
+            value = cell.get('clip_content')
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
+                continue
+
+            # Transfer proxy: all off-diagonal pairs.
+            if str(src_name) != str(tgt_name):
+                transfer_vals.append(float(value))
+
+            # Photo->Art proxy: photo row to non-photo targets.
+            if str(src_name) == 'photo' and str(tgt_name) != 'photo':
+                photo_to_art_vals.append(float(value))
+
+    return _safe_mean(transfer_vals), _safe_mean(photo_to_art_vals)
+
+
 def _extract_single_summary_data(json_data: Dict[str, Any], source_path: Path) -> List[Dict[str, Any]]:
     """
     Extract one row from full_eval/epoch_xxxx/summary.json.
@@ -153,6 +194,15 @@ def _extract_single_summary_data(json_data: Dict[str, Any], source_path: Path) -
     if not isinstance(transfer, dict) or not isinstance(photo_to_art, dict):
         return []
 
+    matrix_transfer_clip_content, matrix_photo_to_art_clip_content = _extract_clip_content_from_matrix(json_data)
+    transfer_clip_content = transfer.get('clip_content')
+    if transfer_clip_content is None:
+        transfer_clip_content = matrix_transfer_clip_content
+
+    photo_to_art_clip_content = photo_to_art.get('clip_content')
+    if photo_to_art_clip_content is None:
+        photo_to_art_clip_content = matrix_photo_to_art_clip_content
+
     epoch = _extract_epoch_from_path(source_path)
     if epoch is None:
         epoch = _extract_epoch_from_checkpoint_string(str(json_data.get('checkpoint', '')))
@@ -163,11 +213,13 @@ def _extract_single_summary_data(json_data: Dict[str, Any], source_path: Path) -
         'summary_path': str(source_path),
         'epoch': int(epoch) if epoch is not None else '',
         'transfer_clip_style': transfer.get('clip_style'),
+        'transfer_clip_content': transfer_clip_content,
         'transfer_content_lpips': transfer.get('content_lpips'),
         'transfer_fid': transfer.get('fid'),
         'transfer_art_fid': transfer.get('art_fid'),
         'transfer_classifier_acc': transfer.get('classifier_acc'),
         'photo_to_art_clip_style': photo_to_art.get('clip_style'),
+        'photo_to_art_clip_content': photo_to_art_clip_content,
         'photo_to_art_fid': photo_to_art.get('fid'),
         'photo_to_art_art_fid': photo_to_art.get('art_fid'),
         'photo_to_art_classifier_acc': photo_to_art.get('classifier_acc'),
@@ -272,9 +324,10 @@ def _get_all_fieldnames(records: List[Dict[str, str]]) -> List[str]:
     # Priority order for common columns
     priority = [
         'experiment_id', 'epoch', 'source_file', 'updated_at',
-        'transfer_clip_style', 'transfer_content_lpips',
+        'transfer_clip_style', 'transfer_clip_content', 'transfer_content_lpips',
         'transfer_fid', 'transfer_art_fid', 'transfer_classifier_acc',
-        'photo_to_art_clip_style', 'photo_to_art_fid', 'photo_to_art_art_fid',
+        'photo_to_art_clip_style', 'photo_to_art_clip_content',
+        'photo_to_art_fid', 'photo_to_art_art_fid',
         'photo_to_art_classifier_acc',
     ]
     
@@ -292,6 +345,15 @@ def _get_all_fieldnames(records: List[Dict[str, str]]) -> List[str]:
                 seen.add(key)
     
     return result
+
+
+def _has_clip_content(record: Dict[str, str]) -> bool:
+    """Keep only rows that contain at least one clip_content metric."""
+    for key in ('transfer_clip_content', 'photo_to_art_clip_content'):
+        value = record.get(key, '')
+        if value not in {'', None}:
+            return True
+    return False
 
 
 def main() -> None:
@@ -373,9 +435,15 @@ Examples:
         existing_keys,
         flat_records,
     )
+
+    removed_missing_clip_content = len(merged_rows)
+    merged_rows = [row for row in merged_rows if _has_clip_content(row)]
+    removed_missing_clip_content -= len(merged_rows)
     
     if args.verbose:
         print(f"[INFO] {added_count} new record(s) to add")
+        if removed_missing_clip_content > 0:
+            print(f"[INFO] Removed {removed_missing_clip_content} record(s) without clip_content")
     
     # Get all field names
     fieldnames = _get_all_fieldnames(merged_rows)
@@ -392,6 +460,8 @@ Examples:
         print(f"[OK] Wrote {len(merged_rows)} total record(s) to {output}")
         if added_count > 0:
             print(f"   -> Added {added_count} new, kept {len(merged_rows) - added_count} existing")
+        if removed_missing_clip_content > 0:
+            print(f"   -> Removed {removed_missing_clip_content} row(s) without clip_content")
         print(f"   -> {len(fieldnames)} column(s)")
         
     except Exception as e:

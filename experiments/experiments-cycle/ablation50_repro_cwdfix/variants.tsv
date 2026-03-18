@@ -1,2 +1,0 @@
-variant	category	config_path	run_dir	status	note
-baseline_50e	baseline	G:\GitHub\Latent_Style\Cycle-NCE\experiments-cycle\ablation50_repro_cwdfix\configs\baseline_50e.json	G:\GitHub\Latent_Style\Cycle-NCE\experiments-cycle\ablation50_repro_cwdfix\baseline_50e	failed	50-epoch short-run baseline (legacy warmup keys removed).
