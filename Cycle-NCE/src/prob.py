@@ -4,10 +4,11 @@ import argparse
 import copy
 import json
 import logging
+import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 import torch
 import torch.nn as nn
@@ -61,7 +62,13 @@ def _find_style_emb_key(state_dict: Dict[str, torch.Tensor]) -> str:
     return candidates[0]
 
 
-def _build_dataset(config: Dict, config_dir: Path, device: torch.device) -> AdaCUTLatentDataset:
+def _build_dataset(
+    config: Dict,
+    config_dir: Path,
+    device: torch.device,
+    *,
+    force_preload_to_gpu: bool = False,
+) -> AdaCUTLatentDataset:
     data_cfg = config.get("data", {})
     data_root = _resolve_path(str(data_cfg.get("data_root", "")), config_dir)
     if not data_root.exists():
@@ -73,7 +80,7 @@ def _build_dataset(config: Dict, config_dir: Path, device: torch.device) -> AdaC
         data_root=str(data_root),
         style_subdirs=style_subdirs,
         allow_hflip=bool(data_cfg.get("allow_hflip", False)),
-        preload_to_gpu=bool(data_cfg.get("preload_to_gpu", False)),
+        preload_to_gpu=bool(force_preload_to_gpu or data_cfg.get("preload_to_gpu", False)),
         preload_max_vram_gb=float(data_cfg.get("preload_max_vram_gb", 0.0)),
         preload_reserve_ratio=float(data_cfg.get("preload_reserve_ratio", 0.35)),
         virtual_length_multiplier=int(data_cfg.get("virtual_length_multiplier", 1)),
@@ -95,6 +102,7 @@ def _train_tokenizer(
     num_workers: int,
     amp: bool,
     channels_last: bool,
+    epoch_resample_interval: int,
     device: torch.device,
 ) -> None:
     # If tensors are already preloaded on GPU, pin_memory must stay off.
@@ -112,8 +120,12 @@ def _train_tokenizer(
     tokenizer.train()
 
     max_steps = max(1, int(steps_per_epoch))
+    resample_interval = max(1, int(epoch_resample_interval))
+    cache_epoch = None
     for epoch in range(1, max(1, int(epochs)) + 1):
-        dataset.set_epoch(epoch)
+        if cache_epoch is None or ((epoch - 1) % resample_interval == 0):
+            cache_epoch = 1 + ((epoch - 1) // resample_interval)
+            dataset.set_epoch(cache_epoch)
         running = 0.0
         count = 0
         for step_idx, batch in enumerate(loader, start=1):
@@ -137,7 +149,33 @@ def _train_tokenizer(
             count += 1
 
         epoch_loss = running / max(1, count)
-        logger.info("Tokenizer epoch %d/%d | mse=%.6f | steps=%d", epoch, epochs, epoch_loss, count)
+        logger.info(
+            "Tokenizer epoch %d/%d | mse=%.6f | steps=%d | cache_epoch=%d",
+            epoch,
+            epochs,
+            epoch_loss,
+            count,
+            int(cache_epoch),
+        )
+
+
+def _configure_cpu_threads(cpu_threads: int, cpu_interop_threads: Optional[int]) -> None:
+    if int(cpu_threads) <= 0:
+        return
+    n = max(1, int(cpu_threads))
+    torch.set_num_threads(n)
+    if cpu_interop_threads is not None and int(cpu_interop_threads) > 0:
+        try:
+            torch.set_num_interop_threads(max(1, int(cpu_interop_threads)))
+        except RuntimeError as exc:
+            logger.warning("Failed to set torch interop threads: %s", exc)
+    os.environ["OMP_NUM_THREADS"] = str(n)
+    os.environ["MKL_NUM_THREADS"] = str(n)
+    logger.info(
+        "CPU threading limited: torch_num_threads=%d interop=%s",
+        n,
+        str(cpu_interop_threads) if cpu_interop_threads is not None else "default",
+    )
 
 
 @torch.no_grad()
@@ -252,6 +290,20 @@ def main() -> None:
     parser.add_argument("--amp", action="store_true", help="Enable CUDA autocast(bf16) for tokenizer training")
     parser.add_argument("--compile", action="store_true", help="torch.compile tokenizer")
     parser.add_argument("--channels_last", action="store_true", help="Use channels_last memory format for tokenizer input")
+    parser.add_argument(
+        "--epoch_resample_interval",
+        type=int,
+        default=1,
+        help="Rebuild dataset random-sampling cache every N epochs (higher reduces CPU overhead).",
+    )
+    parser.add_argument("--cpu_threads", type=int, default=0, help="Limit torch/OMP/MKL CPU threads; 0 keeps defaults")
+    parser.add_argument(
+        "--cpu_interop_threads",
+        type=int,
+        default=0,
+        help="Limit torch interop threads; 0 keeps default",
+    )
+    parser.add_argument("--force_preload_to_gpu", action="store_true", help="Force preload dataset tensors to GPU")
     parser.add_argument("--run_full_eval", action="store_true", help="Run full_eval using patched checkpoint")
     parser.add_argument("--full_eval_output", type=str, default="", help="Optional full_eval output dir")
     args = parser.parse_args()
@@ -279,6 +331,11 @@ def main() -> None:
     out_dir = Path(args.output_dir).expanduser().resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    _configure_cpu_threads(
+        cpu_threads=int(args.cpu_threads),
+        cpu_interop_threads=(None if int(args.cpu_interop_threads) <= 0 else int(args.cpu_interop_threads)),
+    )
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info("Device: %s", device)
 
@@ -289,7 +346,12 @@ def main() -> None:
     num_styles, style_dim = int(style_bank.shape[0]), int(style_bank.shape[1])
     logger.info("Found style_emb: key=%s shape=(%d, %d)", style_emb_key, num_styles, style_dim)
 
-    dataset = _build_dataset(config, config_dir, device)
+    dataset = _build_dataset(
+        config,
+        config_dir,
+        device,
+        force_preload_to_gpu=bool(args.force_preload_to_gpu),
+    )
     tokenizer = StyleTokenizer(style_dim=style_dim).to(device)
     if args.channels_last:
         tokenizer = tokenizer.to(memory_format=torch.channels_last)
@@ -308,6 +370,7 @@ def main() -> None:
         num_workers=int(args.num_workers),
         amp=bool(args.amp),
         channels_last=bool(args.channels_last),
+        epoch_resample_interval=int(args.epoch_resample_interval),
         device=device,
     )
 

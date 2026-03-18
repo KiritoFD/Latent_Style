@@ -46,6 +46,8 @@ class TextureDictAdaGN(nn.Module):
         )
         nn.init.constant_(self.spatial_attn[-1].bias, 0.0)
         self._coord_cache: dict[tuple[int, int, str, str], torch.Tensor] = {}
+        self.ablation_no_adagn = False
+        self.ablation_no_adagn_zero_out = True
 
     def _get_coord_grid(self, h_dim: int, w_dim: int, *, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
         key = (int(h_dim), int(w_dim), str(device), str(dtype))
@@ -82,7 +84,11 @@ class TextureDictAdaGN(nn.Module):
         mixed_flat = torch.bmm(u_demod, z_modulated)
         mixed = mixed_flat.view(b, c, h_dim, w_dim)
 
-        adagn = normalized * scale + mixed + shift
+        if self.ablation_no_adagn:
+            # Extreme ablation: completely remove style-driven modulation in this block.
+            adagn = torch.zeros_like(normalized) if self.ablation_no_adagn_zero_out else normalized
+        else:
+            adagn = normalized * scale + mixed + shift
         final_gate = gate if isinstance(gate, float) else gate.to(device=x.device, dtype=x.dtype)
         return normalized + final_gate * (adagn - normalized)
 
@@ -160,6 +166,8 @@ class StyleAdaptiveSkip(nn.Module):
         # Stable init: start from near identity skip passthrough.
         nn.init.zeros_(self.rewrite_mapper.weight)
         nn.init.zeros_(self.rewrite_mapper.bias)
+        self.ablation_naive_skip = False
+        self.ablation_naive_skip_gain = 1.5
 
     def forward(
         self,
@@ -167,6 +175,9 @@ class StyleAdaptiveSkip(nn.Module):
         style_code: torch.Tensor,
         gate: float | torch.Tensor = 1.0,
     ) -> torch.Tensor:
+        if self.ablation_naive_skip:
+            # Extreme ablation: force unfiltered skip leakage with boosted magnitude.
+            return skip_feat * self.ablation_naive_skip_gain
         b, c, _, _ = skip_feat.shape
         erase_gate = self.gate_mapper(style_code).view(b, c, 1, 1)
         rewrite_bias = self.rewrite_mapper(style_code).view(b, c, 1, 1)
@@ -218,6 +229,12 @@ class LatentAdaCUT(nn.Module):
         upsample_blur_kernel: str = "box3",
         ada_mix_rank: int = 16,
         style_skip_content_retention_boost: float = 0.0,
+        ablation_no_adagn: bool = False,
+        ablation_no_adagn_zero_out: bool = True,
+        ablation_naive_skip: bool = False,
+        ablation_naive_skip_gain: float = 1.5,
+        ablation_no_residual: bool = False,
+        ablation_no_residual_gain: float = 1.0,
     ) -> None:
         super().__init__()
         self.latent_channels = int(latent_channels)
@@ -243,6 +260,12 @@ class LatentAdaCUT(nn.Module):
         self.upsample_blur_kernel = str(upsample_blur_kernel).lower()
         self.ada_mix_rank = max(1, int(ada_mix_rank))
         self.style_skip_content_retention_boost = max(0.0, min(1.0, float(style_skip_content_retention_boost)))
+        self.ablation_no_adagn = bool(ablation_no_adagn)
+        self.ablation_no_adagn_zero_out = bool(ablation_no_adagn_zero_out)
+        self.ablation_naive_skip = bool(ablation_naive_skip)
+        self.ablation_naive_skip_gain = max(0.0, float(ablation_naive_skip_gain))
+        self.ablation_no_residual = bool(ablation_no_residual)
+        self.ablation_no_residual_gain = max(0.0, float(ablation_no_residual_gain))
         if self.upsample_blur_kernel not in {"box3", "gaussian3"}:
             self.upsample_blur_kernel = "box3"
 
@@ -302,6 +325,13 @@ class LatentAdaCUT(nn.Module):
         else:
             self.register_buffer("_upsample_blur_kernel", torch.empty(0), persistent=False)
         self._upsample_blur_kernel_cache: dict[tuple[int, str], torch.Tensor] = {}
+        if self.ablation_no_adagn:
+            for module in self.modules():
+                if isinstance(module, TextureDictAdaGN):
+                    module.ablation_no_adagn = True
+        if self.ablation_naive_skip:
+            self.skip_filter.ablation_naive_skip = True
+            self.skip_filter.ablation_naive_skip_gain = self.ablation_naive_skip_gain
 
     def _normalize_style_id_input(
         self,
@@ -608,6 +638,9 @@ class LatentAdaCUT(nn.Module):
             style_maps=style_maps,
             strength=strength,
         )
+        if self.ablation_no_residual:
+            # Extreme ablation: remove x-anchoring and rescale delta to full latent magnitude.
+            return (delta / (self.latent_scale_factor * max(self.residual_gain, 1e-5))) * self.ablation_no_residual_gain
         return x + delta * float(step_size) * step_scale
 
 def count_parameters(model: nn.Module) -> int:
@@ -648,6 +681,12 @@ def build_model_from_config(
         "upsample_blur_kernel",
         "ada_mix_rank",
         "style_skip_content_retention_boost",
+        "ablation_no_adagn",
+        "ablation_no_adagn_zero_out",
+        "ablation_naive_skip",
+        "ablation_naive_skip_gain",
+        "ablation_no_residual",
+        "ablation_no_residual_gain",
     }
     unknown_keys = sorted(k for k in model_cfg.keys() if k not in known_keys)
     if unknown_keys:
@@ -683,4 +722,10 @@ def build_model_from_config(
         upsample_blur_kernel=str(model_cfg.get("upsample_blur_kernel", "box3")),
         ada_mix_rank=int(model_cfg.get("ada_mix_rank", 16)),
         style_skip_content_retention_boost=float(model_cfg.get("style_skip_content_retention_boost", 0.0)),
+        ablation_no_adagn=bool(model_cfg.get("ablation_no_adagn", False)),
+        ablation_no_adagn_zero_out=bool(model_cfg.get("ablation_no_adagn_zero_out", True)),
+        ablation_naive_skip=bool(model_cfg.get("ablation_naive_skip", False)),
+        ablation_naive_skip_gain=float(model_cfg.get("ablation_naive_skip_gain", 1.5)),
+        ablation_no_residual=bool(model_cfg.get("ablation_no_residual", False)),
+        ablation_no_residual_gain=float(model_cfg.get("ablation_no_residual_gain", 1.0)),
     )

@@ -18,7 +18,8 @@
         "style_id_spatial_jitter_px": 4,
         "upsample_blur": true,
         "upsample_blur_kernel": "gaussian3",
-        "ada_mix_rank": 32
+        "ada_mix_rank": 32,
+        "num_decoder_blocks": 1
     },
     "loss": {
         "w_swd": 50.0,
@@ -59,9 +60,9 @@
         "weight_decay": 0.0001,
         "scheduler": "cosine",
         "grad_clip_norm": 0.5,
-        "num_epochs": 160,
-        "save_interval": 40,
-        "full_eval_interval": 40,
+        "num_epochs": 60,
+        "save_interval": 20,
+        "full_eval_interval": 20,
         "full_eval_on_last_epoch": true,
         "full_eval_batch_size": 4,
         "full_eval_max_src_samples": 30,
@@ -117,7 +118,7 @@
         "virtual_length_multiplier": 1
     },
     "checkpoint": {
-        "save_dir": "../decoder-D-160"
+        "save_dir": "../baseline"
     },
     "inference": {
         "num_steps": 1,

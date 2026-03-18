@@ -1,857 +1,782 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Experiments & Related Works Scatter Plot</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CSV Scatter Viewer (Dual Metrics)</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        
         .container {
-            max-width: 1400px;
+            max-width: 1500px;
             margin: 0 auto;
-            background: white;
+            background: #fff;
             border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
         }
-        
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
+            color: #fff;
+            padding: 22px;
             text-align: center;
         }
-        
-        .header h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-        
-        .header p {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-        
+        .header h1 { font-size: 24px; margin-bottom: 6px; }
+        .header p { font-size: 13px; opacity: 0.9; }
+
         .content {
             display: grid;
-            grid-template-columns: 350px 1fr;
-            gap: 20px;
-            padding: 30px;
+            grid-template-columns: 360px 1fr;
+            gap: 18px;
+            padding: 22px;
         }
-        
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        
+        .sidebar { display: grid; gap: 14px; }
         .section {
-            background: #f8f9fa;
+            border: 1px solid #e3e3e3;
             border-radius: 8px;
-            padding: 20px;
-            border: 1px solid #e0e0e0;
+            padding: 14px;
+            background: #f8f9fb;
         }
-        
         .section h2 {
-            font-size: 14px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 12px;
+            font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            color: #333;
         }
-        
         textarea {
             width: 100%;
-            height: 300px;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
+            min-height: 260px;
             resize: vertical;
-            transition: border-color 0.2s;
-        }
-        
-        textarea:focus {
-            outline: none;
-            border-color: #667eea;
+            border: 1px solid #d2d2d2;
+            border-radius: 6px;
+            padding: 10px;
+            font-family: Consolas, 'Courier New', monospace;
+            font-size: 12px;
             background: #fff;
         }
-        
-        textarea::placeholder {
-            color: #999;
-        }
-        
-        .button-group {
-            display: flex;
-            gap: 8px;
-        }
-        
+        .button-row { display: flex; gap: 8px; margin-top: 10px; }
         button {
             flex: 1;
-            padding: 10px 16px;
             border: none;
             border-radius: 6px;
-            font-size: 13px;
+            padding: 9px 10px;
+            font-size: 12px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
-        
-        .btn-plot {
-            background: #667eea;
-            color: white;
-        }
-        
-        .btn-plot:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn-plot:active {
-            transform: translateY(0);
-        }
-        
-        .btn-clear {
-            background: #e0e0e0;
-            color: #666;
-        }
-        
-        .btn-clear:hover {
-            background: #d0d0d0;
-        }
-        
-        .info-box {
-            background: #e3f2fd;
-            border-left: 4px solid #667eea;
-            padding: 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            color: #1976d2;
-            line-height: 1.5;
-        }
-        
-        .legend {
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            padding: 12px;
-            font-size: 12px;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-        
-        .legend-marker {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        
-        .legend-marker.marker-x {
-            width: 14px;
-            height: 14px;
-            border-radius: 2px;
-            transform: rotate(45deg);
-            margin: 0 6px;
-        }
-        
-        .main {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        #plot {
+        .btn-primary { background: #667eea; color: white; }
+        .btn-secondary { background: #d8d8d8; color: #333; }
+        .btn-green { background: #27ae60; color: white; }
+
+        .filter-grid { display: grid; gap: 8px; }
+        .filter-grid label { font-size: 12px; color: #666; }
+        .filter-grid input {
             width: 100%;
-            height: 700px;
-            background: white;
-            border-radius: 8px;
+            border: 1px solid #d2d2d2;
+            border-radius: 5px;
+            padding: 6px;
+            font-size: 12px;
+            background: #fff;
         }
-        
+
+        .axis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .axis-subtitle {
+            font-size: 11px;
+            font-weight: 700;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 6px;
+        }
+
+        #groupCheckboxes {
+            max-height: 260px;
+            overflow-y: auto;
+            display: grid;
+            gap: 6px;
+            padding-right: 4px;
+        }
+
+        .main { display: grid; gap: 16px; }
+        .plot-card {
+            border: 1px solid #e3e3e3;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
+        }
+        .plot-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #333;
+            padding: 10px 12px;
+            background: #f7f7f7;
+            border-bottom: 1px solid #ececec;
+        }
+        .plot { width: 100%; height: 520px; }
+
         .stats {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-top: 20px;
-        }
-        
-        .stat-box {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 6px;
-            text-align: center;
-            border: 1px solid #e0e0e0;
-        }
-        
-        .stat-label {
-            font-size: 11px;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
-        }
-        
-        .stat-value {
-            font-size: 18px;
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .error {
-            background: #ffebee;
-            color: #c62828;
-            padding: 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            margin-bottom: 12px;
-            border-left: 4px solid #c62828;
-        }
-        
-        .color-tab {
-            background: #f0f0f0;
-            margin-bottom: 12px;
-        }
-        
-        .color-item {
-            padding: 8px;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
             gap: 8px;
         }
-        
-        .color-swatch {
-            width: 14px;
-            height: 14px;
-            border-radius: 3px;
+        .stat-box {
+            border: 1px solid #e4e4e4;
+            border-radius: 6px;
+            text-align: center;
+            padding: 8px;
+            background: #fff;
+        }
+        .stat-label { font-size: 11px; color: #777; margin-bottom: 3px; }
+        .stat-value { font-size: 17px; font-weight: 700; color: #333; }
+
+        .error {
+            border-left: 4px solid #c62828;
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        @media (max-width: 1100px) {
+            .content { grid-template-columns: 1fr; }
+            .plot { height: 440px; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>📊 Experiments & Related Works Scatter Plot</h1>
-            <p>Paste experiment CSV data to visualize clip_style vs 1-content_lpips comparison</p>
-        </div>
-        
-        <div class="content">
-            <!-- Sidebar -->
-            <div class="sidebar">
-                <!-- CSV Input -->
-                <div class="section">
-                    <h2>📋 Paste CSV Data</h2>
-                    <textarea id="csvInput" placeholder="Paste CSV data here. Expected columns:
-- experiment_id (or label)
-- group (optional, for coloring)
-- transfer_clip_style (or clip_style)
-- transfer_content_lpips (or content_lpips)
+<div class="container">
+    <div class="header">
+        <h1>Experiments + Related Works (Dual Metric Plots)</h1>
+        <p>Two plots: clip_content and 1-content_lpips. Same experiment group is connected by epoch order.</p>
+    </div>
 
-Example:
-experiment_id,group,transfer_clip_style,transfer_content_lpips
-exp_001,group_a,0.65,0.42
-exp_002,group_b,0.72,0.38"></textarea>
-                    <div class="button-group" style="margin-top: 12px;">
-                        <button class="btn-plot" onclick="plotData()">Plot</button>
-                        <button class="btn-clear" onclick="clearData()">Clear</button>
-                    </div>
+    <div class="content">
+        <div class="sidebar">
+            <div class="section">
+                <h2>CSV Input</h2>
+                <textarea id="csvInput" placeholder="Paste CSV here, or click Load sort.csv"></textarea>
+                <div class="button-row">
+                    <button class="btn-primary" onclick="plotData()">Plot</button>
+                    <button class="btn-green" onclick="loadSortCsv()">Load sort.csv</button>
+                    <button class="btn-secondary" onclick="clearData()">Clear</button>
                 </div>
-                
-                <!-- Info -->
-                <div class="info-box">
-                    ℹ️ Related Works data is pre-loaded with black X markers. Paste your experiment data to overlay.
+            </div>
+
+            <div class="section">
+                <h2>Auto Axis</h2>
+                <div style="font-size:12px; color:#666; line-height:1.6;">
+                    Axis limits are now auto-computed from visible points (including related works),
+                    with adaptive padding.
                 </div>
-                
-                <!-- Group Filter -->
-                <div class="section">
-                    <h2>👥 Groups</h2>
-                    <div style="display: flex; gap: 6px; margin-bottom: 12px;">
-                        <button onclick="selectAllGroups()" style="flex: 1; padding: 6px; font-size: 11px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Select All</button>
-                        <button onclick="selectNoneGroups()" style="flex: 1; padding: 6px; font-size: 11px; background: #ccc; color: #333; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Select None</button>
-                    </div>
-                    <div id="groupCheckboxes" style="max-height: 250px; overflow-y: auto; display: grid; gap: 6px;">
-                        <!-- Will be populated by JavaScript -->
-                    </div>
+            </div>
+
+            <div class="section">
+                <h2>Axis Limits</h2>
+
+                <div class="axis-subtitle">Plot 1 (clip_content vs clip_style)</div>
+                <div class="axis-grid">
+                    <input id="p1xMin" type="number" step="any" placeholder="X min" />
+                    <input id="p1xMax" type="number" step="any" placeholder="X max" />
+                    <input id="p1yMin" type="number" step="any" placeholder="Y min" />
+                    <input id="p1yMax" type="number" step="any" placeholder="Y max" />
                 </div>
-                
-                <!-- Filter Settings -->
-                <div class="section">
-                    <h2>🔍 Filter Settings</h2>
-                    <div style="display: grid; gap: 10px;">
-                        <div>
-                            <label style="font-size: 12px; color: #666;">Min clip_style</label>
-                            <input type="number" id="minClipStyle" value="0.001" step="0.001" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">
-                        </div>
-                        <div>
-                            <label style="font-size: 12px; color: #666;">Max clip_style</label>
-                            <input type="number" id="maxClipStyle" value="1.5" step="0.01" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">
-                        </div>
-                        <div>
-                            <label style="font-size: 12px; color: #666;">Min 1-lpips</label>
-                            <input type="number" id="minInvLpips" value="0" step="0.01" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">
-                        </div>
-                        <div>
-                            <label style="font-size: 12px; color: #666;">Max 1-lpips</label>
-                            <input type="number" id="maxInvLpips" value="1" step="0.01" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">
-                        </div>
-                    </div>
+
+                <div class="axis-subtitle">Plot 2 (1-content_lpips vs clip_style)</div>
+                <div class="axis-grid">
+                    <input id="p2xMin" type="number" step="any" placeholder="X min" />
+                    <input id="p2xMax" type="number" step="any" placeholder="X max" />
+                    <input id="p2yMin" type="number" step="any" placeholder="Y min" />
+                    <input id="p2yMax" type="number" step="any" placeholder="Y max" />
                 </div>
-                
-                <!-- Legend -->
-                <div class="section">
-                    <h2>🎨 Legend</h2>
-                    <div class="legend">
-                        <div class="legend-item">
-                            <div class="legend-marker" style="background: #1f77b4;"></div>
-                            <span>Group: default</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-marker" style="background: #ff7f0e;"></div>
-                            <span>Group: color2</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-marker" style="background: #2ca02c;"></div>
-                            <span>Group: color3</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-marker" style="background: #d62728;"></div>
-                            <span>Group: color4</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-marker marker-x" style="background: black;"></div>
-                            <span>Related Works</span>
-                        </div>
-                    </div>
+
+                <div class="button-row" style="margin-top: 0;">
+                    <button class="btn-primary" onclick="plotData()">Apply Limits</button>
+                    <button class="btn-secondary" onclick="resetAxisLimits()">Reset Limits</button>
                 </div>
-                
-                <!-- Stats -->
-                <div class="section">
-                    <h2>📈 Statistics</h2>
-                    <div class="stats">
-                        <div class="stat-box">
-                            <div class="stat-label">Exp Points</div>
-                            <div class="stat-value" id="statExpCount">0</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-label">RW Points</div>
-                            <div class="stat-value" id="statRwCount">7</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-label">Total</div>
-                            <div class="stat-value" id="statTotal">7</div>
-                        </div>
+            </div>
+
+            <div class="section">
+                <h2>Groups</h2>
+                <div class="button-row" style="margin-top: 0; margin-bottom: 8px;">
+                    <button class="btn-primary" onclick="selectAllGroups()">Select All</button>
+                    <button class="btn-secondary" onclick="selectNoneGroups()">Select None</button>
+                </div>
+                <div id="groupCheckboxes"></div>
+            </div>
+
+            <div class="section">
+                <h2>Stats</h2>
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-label">Exp Points</div>
+                        <div class="stat-value" id="statExpCount">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">RW Points</div>
+                        <div class="stat-value" id="statRwCount">6</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Groups</div>
+                        <div class="stat-value" id="statGroupCount">0</div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Main Plot Area -->
-            <div class="main">
-                <div id="errorContainer"></div>
-                <div id="plot"></div>
+
+            <div class="section" style="font-size:12px; color:#555; line-height:1.5;">
+                Related works includes <b>SaMST</b>, <b>StarGAN</b>, and <b>SDEdit</b> baselines.
+            </div>
+
+            <div class="section">
+                <h2>Related Works</h2>
+                <div class="button-row" style="margin-top: 0; margin-bottom: 8px;">
+                    <button class="btn-primary" onclick="selectAllRelatedWorks()">Select All</button>
+                    <button class="btn-secondary" onclick="selectNoneRelatedWorks()">Select None</button>
+                </div>
+                <div id="relatedWorksCheckboxes"></div>
+            </div>
+        </div>
+
+        <div class="main">
+            <div id="errorContainer"></div>
+
+            <div class="plot-card">
+                <div class="plot-title">Plot 1: clip_content vs clip_style</div>
+                <div id="plotClipContent" class="plot"></div>
+            </div>
+
+            <div class="plot-card">
+                <div class="plot-title">Plot 2: 1-content_lpips vs clip_style</div>
+                <div id="plotInvLpips" class="plot"></div>
             </div>
         </div>
     </div>
-    
-    <script>
-        // Color palette
-        const colorPalette = [
-            '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728',
-            '#9467bd', '#8c564b', '#e377c2', '#7f7f7f',
-            '#bcbd22', '#17becf', '#e377c2', '#7f7f7f'
-        ];
-        
-        // Related Works data from runs_eval_summary.csv
-        const relatedWorksData = [
-            { run_id: 'SaMST' ,clip_style: 0.7015548599759738, content_lpips: 0.5596446539666667 },
-            { run_id: 'sdedit_multi/str_0.20', clip_style: 0.67268446067969, content_lpips: 0.5065612172666667 },
-            { run_id: 'sdedit_multi/str_0.35', clip_style: 0.6605416262149811, content_lpips: 0.60866913015 },
-            { run_id: 'sdedit_multi/str_0.40', clip_style: 0.6607765423258146, content_lpips: 0.6400118600833334 },
-            { run_id: 'sdturbo_5x5', clip_style: 0.7609570495287579, content_lpips: 0.7787251609999999 }
-        ];
-        
-        let allGroups = new Set();
-        let enabledGroups = new Set();
-        
-        // Helper: Extract experiment name from summary_path or source_file
-        function extractExpName(summaryPath, sourceFile) {
-            // Priority 1: Try to extract from summary_path (e.g., "..\decoder-H-MSCTM-no_clamp_mult-tv-2\full_eval\epoch_0040\summary.json")
-            if (summaryPath) {
-                const normalized = summaryPath.replace(/\\/g, '/');
-                const parts = normalized.split('/');
-                // Find the part before "full_eval" or similar pattern
-                for (let i = 0; i < parts.length; i++) {
-                    if (parts[i].includes('full_eval') || parts[i].includes('epoch_')) {
-                        if (i > 0 && parts[i - 1]) {
-                            const expName = parts[i - 1].trim();
-                            if (expName && expName !== '..' && expName !== '.') {
-                                return expName;
-                            }
-                        }
-                    }
-                }
-                // If no "full_eval" pattern found, try to get the first non-empty part
-                for (const part of parts) {
-                    if (part && part !== '..' && part !== '.' && !part.includes('summary.json')) {
-                        return part;
-                    }
-                }
-            }
-            
-            // Priority 2: Fallback to source_file extraction
-            if (sourceFile) {
-                const filename = sourceFile.split('\\').pop().split('/').pop();
-                return filename.replace('.json', '').trim();
-            }
-            
-            return 'unknown';
-        }
-        
-        // Helper: Extract group prefix from experiment name
-        function extractGroupPrefix(expName) {
-            // Try to extract prefix before first special character
-            if (expName.includes('-')) {
-                const parts = expName.split('-');
-                // Group by first token(s)
-                if (parts[0] && parts[1]) {
-                    return `${parts[0]}-${parts[1]}`;
-                }
-                return parts[0];
-            }
-            
-            if (expName.includes('_')) {
-                const parts = expName.split('_');
-                if (parts[0]) {
-                    // For things like "ablate_A0", group by "ablate_A0"
-                    return `${parts[0]}_${parts[1] || ''}`.replace(/_$/, '');
-                }
-                return parts[0];
-            }
-            
-            // Fallback: return first word
-            return expName.split(/[^a-zA-Z0-9]/)[0];
-        }
-        
-        // Helpers
-        function asFloat(x) {
-            if (x === null || x === undefined) return null;
-            const n = parseFloat(x);
-            return isNaN(n) ? null : n;
-        }
-        
-        function oneMinusLpips(x) {
-            const v = asFloat(x);
-            if (v === null) return null;
-            return 1.0 - v;
-        }
-        
-        function parseCSV(text) {
-            const lines = text.trim().split('\n');
-            if (lines.length < 2) return [];
-            
-            const headers = lines[0].split(',').map(h => h.trim());
-            const records = [];
-            
-            for (let i = 1; i < lines.length; i++) {
-                const parts = lines[i].split(',').map(p => p.trim());
-                if (parts.length < headers.length) continue;
-                
-                const record = {};
-                for (let j = 0; j < headers.length; j++) {
-                    record[headers[j]] = parts[j];
-                }
-                records.push(record);
-            }
-            
-            return records;
-        }
-        
-        function showError(msg) {
-            const container = document.getElementById('errorContainer');
-            container.innerHTML = `<div class="error">❌ ${msg}</div>`;
-        }
-        
-        function clearError() {
-            document.getElementById('errorContainer').innerHTML = '';
-        }
-        
-        function populateGroupCheckboxes(groups) {
-            const container = document.getElementById('groupCheckboxes');
-            container.innerHTML = '';
-            
-            const sortedGroups = Array.from(groups).sort();
-            allGroups = new Set(sortedGroups);
-            
-            for (const group of sortedGroups) {
-                const label = document.createElement('label');
-                label.style.display = 'flex';
-                label.style.alignItems = 'center';
-                label.style.fontSize = '12px';
-                label.style.cursor = 'pointer';
-                
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = `group-${group}`;
-                checkbox.checked = enabledGroups.has(group);
-                checkbox.onchange = () => {
-                    if (checkbox.checked) {
-                        enabledGroups.add(group);
-                    } else {
-                        enabledGroups.delete(group);
-                    }
-                    plotData();
-                };
-                
-                const colorIdx = Array.from(sortedGroups).indexOf(group);
-                const color = colorPalette[colorIdx % colorPalette.length];
-                
-                const swatch = document.createElement('span');
-                swatch.style.display = 'inline-block';
-                swatch.style.width = '12px';
-                swatch.style.height = '12px';
-                swatch.style.backgroundColor = color;
-                swatch.style.borderRadius = '2px';
-                swatch.style.marginRight = '8px';
-                
-                const span = document.createElement('span');
-                span.textContent = group;
-                
-                label.appendChild(checkbox);
-                label.appendChild(swatch);
-                label.appendChild(span);
-                container.appendChild(label);
-            }
-        }
-        
-        function selectAllGroups() {
-            if (allGroups.size === 0) return;
-            for (const group of allGroups) {
-                enabledGroups.add(group);
-                const checkbox = document.getElementById(`group-${group}`);
-                if (checkbox) checkbox.checked = true;
-            }
+</div>
+
+<script>
+const colorPalette = [
+    '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728',
+    '#9467bd', '#8c564b', '#e377c2', '#7f7f7f',
+    '#bcbd22', '#17becf'
+];
+
+const relatedWorksData = [
+    { run_id: 'SaMST', clip_style: 0.7015254672368367, content_lpips: 0.5596446539666667, clip_content: 0.6903258735934894 },
+    { run_id: 'StarGAN-v2-latent', clip_style: 0.5850053535695089, content_lpips: 0.3471460113142112, clip_content: 0.8667943727225065 },
+    { run_id: 'SDEdit str=0.10', clip_style: 0.668227516, content_lpips: 0.400086479 },
+    { run_id: 'SDEdit str=0.20', clip_style: 0.673292905, content_lpips: 0.506561217 },
+    { run_id: 'SDEdit str=0.35', clip_style: 0.661137411, content_lpips: 0.60866913 },
+    { run_id: 'SDEdit str=0.40', clip_style: 0.661359812, content_lpips: 0.64001186 }
+];
+
+let allGroups = new Set();
+let enabledGroups = new Set();
+let hasInitializedGroups = false;
+let allRelatedWorks = new Set();
+let enabledRelatedWorks = new Set();
+let hasInitializedRelatedWorks = false;
+
+function asFloat(v) {
+    const n = parseFloat(v);
+    return Number.isNaN(n) ? null : n;
+}
+
+function oneMinus(v) {
+    const n = asFloat(v);
+    return n === null ? null : (1 - n);
+}
+
+function parseCSV(text) {
+    const lines = text.trim().split('\n').filter(Boolean);
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(',').map(s => s.trim());
+    const out = [];
+
+    for (let i = 1; i < lines.length; i++) {
+        const parts = lines[i].split(',').map(s => s.trim());
+        if (parts.length < headers.length) continue;
+        const row = {};
+        for (let j = 0; j < headers.length; j++) row[headers[j]] = parts[j];
+        row.__rowIndex = i;
+        out.push(row);
+    }
+    return out;
+}
+
+function findColumn(headers, candidates) {
+    for (const c of candidates) {
+        const hit = headers.find(h => h.trim().toLowerCase() === c);
+        if (hit) return hit;
+    }
+    for (const c of candidates) {
+        const hit = headers.find(h => h.trim().toLowerCase().includes(c));
+        if (hit) return hit;
+    }
+    return null;
+}
+
+function findLpipsColumn(headers) {
+    const inv = [
+        '1-transfer_content_lpips', '1_transfer_content_lpips',
+        'inv-transfer_content_lpips', 'inv_transfer_content_lpips',
+        'inv-lpips', 'inv_lpips', '1-lpips', '1_lpips'
+    ];
+    const raw = ['transfer_content_lpips', 'content_lpips', 'lpips'];
+
+    const invKey = findColumn(headers, inv);
+    if (invKey) return { key: invKey, alreadyInverted: true };
+    const rawKey = findColumn(headers, raw);
+    if (rawKey) return { key: rawKey, alreadyInverted: false };
+    return null;
+}
+
+function showError(msg) {
+    document.getElementById('errorContainer').innerHTML = `<div class="error">${msg}</div>`;
+}
+
+function clearError() {
+    document.getElementById('errorContainer').innerHTML = '';
+}
+
+function populateGroupCheckboxes(groups) {
+    allGroups = new Set(Array.from(groups).sort());
+    enabledGroups = new Set(Array.from(enabledGroups).filter(g => allGroups.has(g)));
+
+    if (!hasInitializedGroups && enabledGroups.size === 0) {
+        enabledGroups = new Set(allGroups);
+        hasInitializedGroups = true;
+    }
+
+    const container = document.getElementById('groupCheckboxes');
+    container.innerHTML = '';
+
+    const sorted = Array.from(allGroups).sort();
+    sorted.forEach((group, idx) => {
+        const color = colorPalette[idx % colorPalette.length];
+        const row = document.createElement('label');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.gap = '8px';
+        row.style.fontSize = '12px';
+        row.style.cursor = 'pointer';
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = enabledGroups.has(group);
+        cb.onchange = () => {
+            if (cb.checked) enabledGroups.add(group); else enabledGroups.delete(group);
             plotData();
-        }
-        
-        function selectNoneGroups() {
-            if (allGroups.size === 0) return;
-            enabledGroups.clear();
-            for (const group of allGroups) {
-                const checkbox = document.getElementById(`group-${group}`);
-                if (checkbox) checkbox.checked = false;
-            }
+        };
+
+        const swatch = document.createElement('span');
+        swatch.style.width = '11px';
+        swatch.style.height = '11px';
+        swatch.style.borderRadius = '3px';
+        swatch.style.backgroundColor = color;
+
+        const text = document.createElement('span');
+        text.textContent = group;
+
+        row.appendChild(cb);
+        row.appendChild(swatch);
+        row.appendChild(text);
+        container.appendChild(row);
+    });
+
+    document.getElementById('statGroupCount').textContent = String(sorted.length);
+}
+
+function populateRelatedWorksCheckboxes() {
+    allRelatedWorks = new Set(relatedWorksData.map(rw => rw.run_id));
+    enabledRelatedWorks = new Set(Array.from(enabledRelatedWorks).filter(name => allRelatedWorks.has(name)));
+
+    if (!hasInitializedRelatedWorks && enabledRelatedWorks.size === 0) {
+        enabledRelatedWorks = new Set(allRelatedWorks);
+        hasInitializedRelatedWorks = true;
+    }
+
+    const container = document.getElementById('relatedWorksCheckboxes');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const sorted = Array.from(allRelatedWorks).sort();
+    sorted.forEach((name) => {
+        const row = document.createElement('label');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.gap = '8px';
+        row.style.fontSize = '12px';
+        row.style.cursor = 'pointer';
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = enabledRelatedWorks.has(name);
+        cb.onchange = () => {
+            if (cb.checked) enabledRelatedWorks.add(name); else enabledRelatedWorks.delete(name);
             plotData();
-        }
-        
-        function plotData() {
-            clearError();
-            
-            const csvText = document.getElementById('csvInput').value.trim();
-            if (!csvText) {
-                showError('Please paste CSV data first');
-                return;
-            }
-            
-            const records = parseCSV(csvText);
-            if (records.length === 0) {
-                showError('No valid records found in CSV');
-                return;
-            }
-            
-            // Get filter thresholds
-            const minClipStyle = parseFloat(document.getElementById('minClipStyle').value) || 0.001;
-            const maxClipStyle = parseFloat(document.getElementById('maxClipStyle').value) || 1.5;
-            const minInvLpips = parseFloat(document.getElementById('minInvLpips').value) || 0;
-            const maxInvLpips = parseFloat(document.getElementById('maxInvLpips').value) || 1;
-            
-            // Infer column names
-            const sample = records[0];
-            const clipStyleKey = Object.keys(sample).find(k => 
-                k.includes('clip_style')
-            ) || 'transfer_clip_style';
-            const lpipsKey = Object.keys(sample).find(k => 
-                k.includes('lpips') || k.includes('content')
-            ) || 'transfer_content_lpips';
-            const sourceFileKey = Object.keys(sample).find(k => 
-                k.includes('source_file')
-            ) || 'source_file';
-            const summaryPathKey = Object.keys(sample).find(k => 
-                k.includes('summary_path')
-            ) || 'summary_path';
-            const epochKey = Object.keys(sample).find(k => 
-                k.includes('epoch')
-            ) || 'epoch';
-            
-            // Build group map with experiment names from summary_path or source_file
-            const groupMap = {};
-            const expPoints = [];
-            let filteredOut = 0;
-            const groups = new Set();
-            
-            for (const r of records) {
-                const x = asFloat(r[clipStyleKey]);
-                const y = oneMinusLpips(r[lpipsKey]);
-                
-                if (x === null || y === null) continue;
-                
-                // Extract experiment name from summary_path or source_file
-                const summaryPath = r[summaryPathKey] || '';
-                const sourceFile = r[sourceFileKey] || '';
-                const expName = extractExpName(summaryPath, sourceFile);
-                const groupPrefix = extractGroupPrefix(expName);
-                const epoch = r[epochKey] || '';
-                
-                // Create label with epoch info if available
-                const label = epoch ? `${expName} (${epoch})` : expName;
-                
-                groups.add(groupPrefix);
-                
-                // Apply filters
-                if (x < minClipStyle || x > maxClipStyle || y < minInvLpips || y > maxInvLpips) {
-                    filteredOut++;
-                    continue;
-                }
-                
-                // Skip if group not enabled
-                if (!enabledGroups.has(groupPrefix)) {
-                    continue;
-                }
-                
-                if (!groupMap[groupPrefix]) {
-                    groupMap[groupPrefix] = [];
-                }
-                groupMap[groupPrefix].push({ x, y, label });
-                expPoints.push({ x, y, label, group: groupPrefix });
-            }
-            
-            // Update group checkboxes if groups changed
-            if (groups.size > 0) {
-                populateGroupCheckboxes(groups);
-            } else {
-                // If no groups found, clear the checkboxes
-                document.getElementById('groupCheckboxes').innerHTML = '';
-                allGroups.clear();
-                enabledGroups.clear();
-            }
-            
-            // Build traces for experiment points
-            const traces = [];
-            const sortedGroups = Array.from(Object.keys(groupMap)).sort();
-            
-            for (let i = 0; i < sortedGroups.length; i++) {
-                const group = sortedGroups[i];
-                const points = groupMap[group];
-                const xs = points.map(p => p.x);
-                const ys = points.map(p => p.y);
-                
-                traces.push({
-                    x: xs,
-                    y: ys,
-                    mode: 'markers+text',
-                    type: 'scatter',
-                    name: group,
-                    marker: {
-                        size: 8,
-                        color: colorPalette[i % colorPalette.length],
-                        opacity: 0.85
-                    },
-                    text: points.map(p => p.label),
-                    textposition: 'bottom left',
-                    textfont: {
-                        size: 9,
-                        color: 'black'
-                    },
-                    hovertemplate: '<b>%{text}</b><br>clip_style: %{x:.4f}<br>1-lpips: %{y:.4f}<extra></extra>'
-                });
-            }
-            
-            // Add Related Works trace (with same filters)
-            const rwFiltered = relatedWorksData.filter(p => {
-                const invLpips = oneMinusLpips(p.content_lpips);
-                return p.clip_style >= minClipStyle && 
-                       p.clip_style <= maxClipStyle &&
-                       invLpips >= minInvLpips &&
-                       invLpips <= maxInvLpips;
-            });
-            
-            const rwXs = rwFiltered.map(p => p.clip_style);
-            const rwYs = rwFiltered.map(p => oneMinusLpips(p.content_lpips));
-            
-            traces.push({
-                x: rwXs,
-                y: rwYs,
-                mode: 'markers+text',
-                type: 'scatter',
-                name: 'related_works',
-                marker: {
-                    size: 12,
-                    symbol: 'x',
-                    color: 'black',
-                    opacity: 0.95,
-                    line: { width: 1.5 }
-                },
-                text: rwFiltered.map(p => p.run_id.split('/').pop()),
-                textposition: 'bottom left',
-                textfont: {
-                    size: 9,
-                    color: 'black'
-                },
-                hovertemplate: '<b>%{text}</b><br>clip_style: %{x:.4f}<br>1-lpips: %{y:.4f}<extra></extra>'
-            });
-            
-            // Layout
-            const layout = {
-                title: {
-                    text: 'clip_style vs 1-content_lpips',
-                    font: { size: 18 }
-                },
-                xaxis: {
-                    title: 'clip_style (higher better)',
-                    zeroline: false,
-                    showgrid: true,
-                    gridwidth: 1,
-                    gridcolor: '#ddd'
-                },
-                yaxis: {
-                    title: '1-content_lpips (higher better)',
-                    zeroline: false,
-                    showgrid: true,
-                    gridwidth: 1,
-                    gridcolor: '#ddd'
-                },
-                hovermode: 'closest',
-                plot_bgcolor: '#fafafa',
-                paper_bgcolor: 'white',
-                font: { family: '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif' },
-                margin: { l: 70, r: 280, t: 60, b: 70 },
-                legend: {
-                    x: 1.02,
-                    y: 1,
-                    xanchor: 'left',
-                    yanchor: 'top',
-                    bgcolor: 'rgba(255, 255, 255, 0.9)',
-                    bordercolor: '#999',
-                    borderwidth: 1
-                }
-            };
-            
-            const config = {
-                responsive: true,
-                displayModeBar: true,
-                displaylogo: false
-            };
-            
-            Plotly.newPlot('plot', traces, layout, config);
-            
-            // Update stats
-            const totalExp = expPoints.length;
-            document.getElementById('statExpCount').textContent = totalExp + (filteredOut > 0 ? ` (${filteredOut} filtered)` : '');
-            document.getElementById('statRwCount').textContent = rwFiltered.length + (rwFiltered.length < relatedWorksData.length ? ` (${relatedWorksData.length - rwFiltered.length} filtered)` : '');
-            document.getElementById('statTotal').textContent = totalExp + rwFiltered.length;
-        }
-        
-        function clearData() {
-            document.getElementById('csvInput').value = '';
-            document.getElementById('minClipStyle').value = '0.001';
-            document.getElementById('maxClipStyle').value = '1.5';
-            document.getElementById('minInvLpips').value = '0';
-            document.getElementById('maxInvLpips').value = '1';
-            document.getElementById('groupCheckboxes').innerHTML = '';
-            clearError();
-            document.getElementById('statExpCount').textContent = '0';
-            document.getElementById('statTotal').textContent = '7';
-            Plotly.purge('plot');
-        }
-        
-        // Initialize with just related works on page load
-        window.addEventListener('load', function() {
-            const rwXs = relatedWorksData.map(p => p.clip_style);
-            const rwYs = relatedWorksData.map(p => oneMinusLpips(p.content_lpips));
-            
-            const trace = {
-                x: rwXs,
-                y: rwYs,
-                mode: 'markers+text',
-                type: 'scatter',
-                name: 'related_works',
-                marker: {
-                    size: 12,
-                    symbol: 'x',
-                    color: 'black',
-                    opacity: 0.95,
-                    line: { width: 1.5 }
-                },
-                text: relatedWorksData.map(p => p.run_id.split('/').pop()),
-                textposition: 'bottom left',
-                textfont: {
-                    size: 9,
-                    color: 'black'
-                },
-                hovertemplate: '<b>%{text}</b><br>clip_style: %{x:.4f}<br>1-lpips: %{y:.4f}<extra></extra>'
-            };
-            
-            const layout = {
-                title: {
-                    text: 'clip_style vs 1-content_lpips',
-                    font: { size: 18 }
-                },
-                xaxis: {
-                    title: 'clip_style (higher better)',
-                    zeroline: false,
-                    showgrid: true,
-                    gridwidth: 1,
-                    gridcolor: '#ddd'
-                },
-                yaxis: {
-                    title: '1-content_lpips (higher better)',
-                    zeroline: false,
-                    showgrid: true,
-                    gridwidth: 1,
-                    gridcolor: '#ddd'
-                },
-                hovermode: 'closest',
-                plot_bgcolor: '#fafafa',
-                paper_bgcolor: 'white',
-                font: { family: '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif' },
-                margin: { l: 70, r: 280, t: 60, b: 70 },
-                legend: {
-                    x: 1.02,
-                    y: 1,
-                    xanchor: 'left',
-                    yanchor: 'top',
-                    bgcolor: 'rgba(255, 255, 255, 0.9)',
-                    bordercolor: '#999',
-                    borderwidth: 1
-                }
-            };
-            
-            const config = {
-                responsive: true,
-                displayModeBar: true,
-                displaylogo: false
-            };
-            
-            Plotly.newPlot('plot', [trace], layout, config);
+        };
+
+        const swatch = document.createElement('span');
+        swatch.style.width = '11px';
+        swatch.style.height = '11px';
+        swatch.style.borderRadius = '3px';
+        swatch.style.backgroundColor = '#000';
+
+        const text = document.createElement('span');
+        text.textContent = name;
+
+        row.appendChild(cb);
+        row.appendChild(swatch);
+        row.appendChild(text);
+        container.appendChild(row);
+    });
+}
+
+function selectAllGroups() {
+    if (allGroups.size === 0) return;
+    enabledGroups = new Set(allGroups);
+    hasInitializedGroups = true;
+    plotData();
+}
+
+function selectNoneGroups() {
+    if (allGroups.size === 0) return;
+    enabledGroups.clear();
+    hasInitializedGroups = true;
+    plotData();
+}
+
+function selectAllRelatedWorks() {
+    if (allRelatedWorks.size === 0) return;
+    enabledRelatedWorks = new Set(allRelatedWorks);
+    hasInitializedRelatedWorks = true;
+    plotData();
+}
+
+function selectNoneRelatedWorks() {
+    if (allRelatedWorks.size === 0) return;
+    enabledRelatedWorks.clear();
+    hasInitializedRelatedWorks = true;
+    plotData();
+}
+
+function buildGroupSeries(records, cols, metric) {
+    const map = {};
+    let expCount = 0;
+
+    for (const r of records) {
+        const x = asFloat(r[cols.clipStyle]);
+        const y = metric === 'clip_content'
+            ? asFloat(r[cols.clipContent])
+            : (cols.lpips.alreadyInverted ? asFloat(r[cols.lpips.key]) : oneMinus(r[cols.lpips.key]));
+
+        if (x === null || y === null) continue;
+
+        const group = String(r[cols.expId] || '').trim();
+        if (!group) continue;
+        if (!enabledGroups.has(group)) continue;
+
+        const epochRaw = r[cols.epoch];
+        const epochNum = asFloat(epochRaw);
+        const order = epochNum === null ? Number.MAX_SAFE_INTEGER : epochNum;
+        const label = epochRaw ? `${group} (${epochRaw})` : group;
+
+        if (!map[group]) map[group] = [];
+        map[group].push({ x, y, label, order, row: r.__rowIndex });
+        expCount += 1;
+    }
+
+    Object.keys(map).forEach(g => {
+        map[g].sort((a, b) => {
+            if (a.order !== b.order) return a.order - b.order;
+            return a.row - b.row;
         });
-    </script>
+    });
+
+    return { map, expCount };
+}
+
+function calcAutoRange(values, padRatio = 0.12) {
+    const valid = values.filter(v => Number.isFinite(v));
+    if (valid.length === 0) return [0, 1];
+    let min = Math.min(...valid);
+    let max = Math.max(...valid);
+    if (min === max) {
+        const d = Math.max(Math.abs(min) * 0.05, 0.03);
+        min -= d;
+        max += d;
+    } else {
+        const span = max - min;
+        const pad = Math.max(span * padRatio, 0.015);
+        min -= pad;
+        max += pad;
+    }
+    return [min, max];
+}
+
+function getRangesFromTraces(traces) {
+    const xs = [];
+    const ys = [];
+    traces.forEach(t => {
+        (t.x || []).forEach(v => xs.push(v));
+        (t.y || []).forEach(v => ys.push(v));
+    });
+    return {
+        xRange: calcAutoRange(xs),
+        yRange: calcAutoRange(ys)
+    };
+}
+
+function readAxisRange(minId, maxId) {
+    const minVal = asFloat(document.getElementById(minId)?.value);
+    const maxVal = asFloat(document.getElementById(maxId)?.value);
+    if (minVal === null || maxVal === null) return null;
+    if (minVal >= maxVal) return null;
+    return [minVal, maxVal];
+}
+
+function getManualRanges(metric) {
+    if (metric === 'clip_content') {
+        return {
+            xRange: readAxisRange('p1xMin', 'p1xMax'),
+            yRange: readAxisRange('p1yMin', 'p1yMax')
+        };
+    }
+    return {
+        xRange: readAxisRange('p2xMin', 'p2xMax'),
+        yRange: readAxisRange('p2yMin', 'p2yMax')
+    };
+}
+
+function resetAxisLimits() {
+    ['p1xMin', 'p1xMax', 'p1yMin', 'p1yMax', 'p2xMin', 'p2xMax', 'p2yMin', 'p2yMax']
+        .forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+    plotData();
+}
+
+function buildTraces(groupMap, metric) {
+    const traces = [];
+    const groups = Object.keys(groupMap).sort();
+
+    groups.forEach((group, idx) => {
+        const pts = groupMap[group];
+        traces.push({
+            x: pts.map(p => p.y),
+            y: pts.map(p => p.x),
+            text: pts.map(p => p.label),
+            mode: 'lines+markers+text',
+            type: 'scatter',
+            name: group,
+            line: { width: 2, color: colorPalette[idx % colorPalette.length] },
+            marker: { size: 8, color: colorPalette[idx % colorPalette.length] },
+            textposition: 'top center',
+            textfont: { size: 9, color: '#222' },
+            hovertemplate: metric === 'clip_content'
+                ? '<b>%{text}</b><br>clip_content: %{x:.4f}<br>clip_style: %{y:.4f}<extra></extra>'
+                : '<b>%{text}</b><br>1-content_lpips: %{x:.4f}<br>clip_style: %{y:.4f}<extra></extra>'
+        });
+    });
+
+    const rwPts = relatedWorksData
+        .filter(rw => enabledRelatedWorks.has(rw.run_id))
+        .map((rw) => {
+            const x = metric === 'clip_content' ? asFloat(rw.clip_content) : oneMinus(rw.content_lpips);
+            const y = asFloat(rw.clip_style);
+            return { x, y, label: rw.run_id };
+        })
+        .filter(p => p.x !== null && p.y !== null);
+
+    if (rwPts.length > 0) {
+        traces.push({
+            x: rwPts.map(p => p.x),
+            y: rwPts.map(p => p.y),
+            text: rwPts.map(p => p.label),
+            mode: 'markers+text',
+            type: 'scatter',
+            name: 'Related Works',
+            marker: {
+                symbol: 'x',
+                color: 'black',
+                size: 13,
+                line: { width: 2 }
+            },
+            textposition: 'bottom left',
+            textfont: { size: 11, color: 'black' },
+            hovertemplate: metric === 'clip_content'
+                ? '<b>%{text}</b><br>clip_content: %{x:.4f}<br>clip_style: %{y:.4f}<extra></extra>'
+                : '<b>%{text}</b><br>1-content_lpips: %{x:.4f}<br>clip_style: %{y:.4f}<extra></extra>'
+        });
+    }
+
+    return traces;
+}
+
+function renderPlot(divId, traces, metric) {
+    const autoRanges = getRangesFromTraces(traces);
+    const manualRanges = getManualRanges(metric);
+    const xRange = manualRanges.xRange || autoRanges.xRange;
+    const yRange = manualRanges.yRange || autoRanges.yRange;
+    const layout = {
+        title: {
+            text: metric === 'clip_content' ? 'clip_content vs clip_style' : '1-content_lpips vs clip_style',
+            font: { size: 17 }
+        },
+        xaxis: {
+            title: metric === 'clip_content' ? 'clip_content' : '1-content_lpips',
+            range: xRange,
+            showgrid: true,
+            gridcolor: '#e0e0e0'
+        },
+        yaxis: {
+            title: 'clip_style',
+            range: yRange,
+            showgrid: true,
+            gridcolor: '#e0e0e0',
+            scaleanchor: 'x',
+            scaleratio: 1
+        },
+        hovermode: 'closest',
+        plot_bgcolor: '#fafafa',
+        paper_bgcolor: '#ffffff',
+        margin: { l: 70, r: 210, t: 56, b: 64 },
+        legend: {
+            x: 1.02,
+            y: 1,
+            xanchor: 'left',
+            yanchor: 'top',
+            bgcolor: 'rgba(255,255,255,0.9)',
+            bordercolor: '#ccc',
+            borderwidth: 1
+        }
+    };
+
+    Plotly.newPlot(divId, traces, layout, { responsive: true, displaylogo: false });
+}
+
+function inferColumns(records) {
+    const headers = Object.keys(records[0]);
+
+    const expId = findColumn(headers, ['experiment_id']);
+    const epoch = findColumn(headers, ['epoch']);
+    const clipStyle = findColumn(headers, ['transfer_clip_style', 'clip_style']);
+    const clipContent = findColumn(headers, ['transfer_clip_content', 'clip_content', 'clip_dir']);
+    const lpips = findLpipsColumn(headers);
+
+    if (!expId) throw new Error('Missing experiment_id column');
+    if (!clipStyle) throw new Error('Missing clip_style column');
+    if (!clipContent) throw new Error('Missing clip_content column');
+    if (!lpips) throw new Error('Missing content_lpips/transfer_content_lpips (or inverted lpips) column');
+
+    return {
+        expId,
+        epoch: epoch || '__missing_epoch__',
+        clipStyle,
+        clipContent,
+        lpips
+    };
+}
+
+function plotData() {
+    clearError();
+    if (!hasInitializedRelatedWorks) populateRelatedWorksCheckboxes();
+
+    const text = document.getElementById('csvInput').value.trim();
+    if (!text) {
+        renderRelatedOnly();
+        document.getElementById('statExpCount').textContent = '0';
+        document.getElementById('statRwCount').textContent = String(enabledRelatedWorks.size);
+        return;
+    }
+
+    const records = parseCSV(text);
+    if (records.length === 0) {
+        showError('No valid rows in CSV');
+        return;
+    }
+
+    let cols;
+    try {
+        cols = inferColumns(records);
+    } catch (e) {
+        showError(e.message);
+        return;
+    }
+
+    const groups = new Set(records.map(r => String(r[cols.expId] || '').trim()).filter(Boolean));
+    populateGroupCheckboxes(groups);
+
+    const clipContentSeries = buildGroupSeries(records, cols, 'clip_content');
+    const invLpipsSeries = buildGroupSeries(records, cols, 'inv_lpips');
+
+    const clipContentTraces = buildTraces(clipContentSeries.map, 'clip_content');
+    const invLpipsTraces = buildTraces(invLpipsSeries.map, 'inv_lpips');
+
+    renderPlot('plotClipContent', clipContentTraces, 'clip_content');
+    renderPlot('plotInvLpips', invLpipsTraces, 'inv_lpips');
+
+    document.getElementById('statExpCount').textContent = String(Math.max(clipContentSeries.expCount, invLpipsSeries.expCount));
+    document.getElementById('statRwCount').textContent = String(enabledRelatedWorks.size);
+}
+
+function renderRelatedOnly() {
+    renderPlot('plotClipContent', buildTraces({}, 'clip_content'), 'clip_content');
+    renderPlot('plotInvLpips', buildTraces({}, 'inv_lpips'), 'inv_lpips');
+}
+
+function clearData() {
+    document.getElementById('csvInput').value = '';
+    document.getElementById('groupCheckboxes').innerHTML = '';
+    document.getElementById('relatedWorksCheckboxes').innerHTML = '';
+    allGroups.clear();
+    enabledGroups.clear();
+    hasInitializedGroups = false;
+    allRelatedWorks.clear();
+    enabledRelatedWorks.clear();
+    hasInitializedRelatedWorks = false;
+
+    document.getElementById('statExpCount').textContent = '0';
+    document.getElementById('statRwCount').textContent = String(relatedWorksData.length);
+    document.getElementById('statGroupCount').textContent = '0';
+
+    clearError();
+    populateRelatedWorksCheckboxes();
+    renderRelatedOnly();
+}
+
+async function loadSortCsv() {
+    clearError();
+    try {
+        const res = await fetch('./sort.csv', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const txt = await res.text();
+        document.getElementById('csvInput').value = txt;
+        plotData();
+    } catch (e) {
+        showError(`Cannot auto-load sort.csv (${e.message}). Please paste CSV manually.`);
+    }
+}
+
+window.addEventListener('load', async () => {
+    populateRelatedWorksCheckboxes();
+    renderRelatedOnly();
+    await loadSortCsv();
+});
+</script>
 </body>
 </html>

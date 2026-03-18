@@ -21,7 +21,7 @@
         "ada_mix_rank": 32
     },
     "loss": {
-        "w_swd": 50.0,
+        "w_swd": 40.0,
         "swd_patch_sizes": [
             5,
             7,
@@ -39,8 +39,8 @@
         "swd_cdf_sample_chunk_size": 256,
         "swd_batch_size": 64,
         "swd_use_high_freq": true,
-        "w_color": 0.5,
-        "w_identity": 0.3,
+        "w_color": 1.5,
+        "w_identity": 0.45,
         "w_delta_tv": 0.005,
         "swd_hf_weight_ratio": 2.0
     },
@@ -59,8 +59,8 @@
         "weight_decay": 0.0001,
         "scheduler": "cosine",
         "grad_clip_norm": 0.5,
-        "num_epochs": 160,
-        "save_interval": 40,
+        "num_epochs": 60,
+        "save_interval": 20,
         "full_eval_interval": 40,
         "full_eval_on_last_epoch": true,
         "full_eval_batch_size": 4,
@@ -117,7 +117,7 @@
         "virtual_length_multiplier": 1
     },
     "checkpoint": {
-        "save_dir": "../decoder-D-160"
+        "save_dir": "../exp02_color_1p5"
     },
     "inference": {
         "num_steps": 1,

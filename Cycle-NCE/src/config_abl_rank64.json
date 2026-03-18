@@ -18,7 +18,7 @@
         "style_id_spatial_jitter_px": 4,
         "upsample_blur": true,
         "upsample_blur_kernel": "gaussian3",
-        "ada_mix_rank": 32
+        "ada_mix_rank": 64
     },
     "loss": {
         "w_swd": 50.0,
@@ -46,7 +46,7 @@
     },
     "training": {
         "seed": 42,
-        "batch_size": 320,
+        "batch_size": 96,
         "accumulation_steps": 1,
         "num_workers": -1,
         "persistent_workers": true,
@@ -59,7 +59,7 @@
         "weight_decay": 0.0001,
         "scheduler": "cosine",
         "grad_clip_norm": 0.5,
-        "num_epochs": 160,
+        "num_epochs": 80,
         "save_interval": 40,
         "full_eval_interval": 40,
         "full_eval_on_last_epoch": true,
@@ -117,7 +117,7 @@
         "virtual_length_multiplier": 1
     },
     "checkpoint": {
-        "save_dir": "../decoder-D-160"
+        "save_dir": "../abl_rank8"
     },
     "inference": {
         "num_steps": 1,
