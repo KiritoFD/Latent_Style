@@ -57,6 +57,11 @@ try:
 except Exception:
     KernelInceptionDistance = None
 
+try:
+    from torchmetrics.image.fid import FrechetInceptionDistance
+except Exception:
+    FrechetInceptionDistance = None
+
 def _safe_to_eval_device(batch, device: str):
     """
     Move processor outputs to device when possible (BatchEncoding supports .to()).
@@ -505,6 +510,26 @@ def _extract_inception_feats(paths, runner, max_images: int = 200):
     return runner.extract(paths, max_images=max_images)
 
 
+def _collect_metric_image_paths(paths, max_images: int) -> list[str]:
+    out = []
+    seen = set()
+    for raw in list(paths or []):
+        try:
+            p = Path(str(raw))
+        except Exception:
+            continue
+        if not p.exists() or not p.is_file():
+            continue
+        rp = str(p.resolve())
+        if rp in seen:
+            continue
+        seen.add(rp)
+        out.append(rp)
+        if len(out) >= max(1, int(max_images)):
+            break
+    return out
+
+
 class _InceptionFeatRunner:
     def __init__(self, device: str, batch_size: int = 16):
         self.device = str(device)
@@ -567,6 +592,7 @@ def _compute_art_fid_for_pair(
     mean_content_lpips: float,
     *,
     runner,
+    device: str,
     max_gen: int,
     max_ref: int,
     ref_cache: dict | None = None,
@@ -576,6 +602,7 @@ def _compute_art_fid_for_pair(
         gen_paths,
         ref_paths,
         runner=runner,
+        device=device,
         max_gen=max_gen,
         max_ref=max_ref,
         ref_cache=ref_cache,
@@ -592,16 +619,37 @@ def _compute_fid_for_pair(
     ref_paths,
     *,
     runner,
+    device: str,
     max_gen: int,
     max_ref: int,
     ref_cache: dict | None = None,
     ref_cache_key: str | None = None,
 ):
-    s_feats = _extract_inception_feats(src_paths, runner=runner, max_images=max_gen)
+    gen = _collect_metric_image_paths(src_paths, max_gen)
+    ref = _collect_metric_image_paths(ref_paths, max_ref)
+    if len(gen) < 2 or len(ref) < 2:
+        return None
+    if FrechetInceptionDistance is not None:
+        fid = FrechetInceptionDistance(normalize=False).to(device)
+        fid.eval()
+
+        def _update(paths: list[str], *, real: bool):
+            bs = max(1, int(getattr(runner, "batch_size", 16)))
+            for i in range(0, len(paths), bs):
+                chunk = paths[i : i + bs]
+                imgs = torch.stack([_load_uint8_rgb_tensor_299(p) for p in chunk], dim=0).to(device)
+                fid.update(imgs, real=bool(real))
+
+        _update(ref, real=True)
+        _update(gen, real=False)
+        score = fid.compute()
+        return float(score.detach().cpu().item()) if hasattr(score, "detach") else float(score)
+
+    s_feats = _extract_inception_feats(gen, runner=runner, max_images=max_gen)
     if ref_cache is not None and ref_cache_key is not None and ref_cache_key in ref_cache:
         r_feats = ref_cache[ref_cache_key]
     else:
-        r_feats = _extract_inception_feats(ref_paths, runner=runner, max_images=max_ref)
+        r_feats = _extract_inception_feats(ref, runner=runner, max_images=max_ref)
         if ref_cache is not None and ref_cache_key is not None:
             ref_cache[ref_cache_key] = r_feats
     if s_feats.shape[0] < 2 or r_feats.shape[0] < 2:
@@ -633,8 +681,8 @@ def _compute_kid_for_pair(
 ) -> tuple[float | None, float | None]:
     if KernelInceptionDistance is None:
         raise RuntimeError("torchmetrics is required for KID (KernelInceptionDistance) but is not available.")
-    g = list(gen_paths or [])[: max(1, int(max_gen))]
-    r = list(ref_paths or [])[: max(1, int(max_ref))]
+    g = _collect_metric_image_paths(gen_paths, max_gen)
+    r = _collect_metric_image_paths(ref_paths, max_ref)
     if not g or not r:
         return None, None
 
@@ -905,6 +953,16 @@ def _auto_run_missing_full_eval(args) -> None:
             cmd += ["--eval_art_fid_batch_size", str(args.eval_art_fid_batch_size)]
             if args.eval_art_fid_photo_only:
                 cmd += ["--eval_art_fid_photo_only"]
+        else:
+            cmd += ["--no-eval_enable_art_fid"]
+        if args.eval_enable_kid:
+            cmd += ["--eval_enable_kid"]
+            cmd += ["--eval_kid_max_gen", str(args.eval_kid_max_gen)]
+            cmd += ["--eval_kid_max_ref", str(args.eval_kid_max_ref)]
+            cmd += ["--eval_kid_subset_size", str(args.eval_kid_subset_size)]
+            cmd += ["--eval_kid_batch_size", str(args.eval_kid_batch_size)]
+        else:
+            cmd += ["--no-eval_enable_kid"]
         if args.reuse_generated:
             cmd += ["--reuse_generated"]
         if args.generation_only:
@@ -965,12 +1023,22 @@ def main():
         action='store_true',
         help="Compute only content LPIPS and CLIP style similarity (skip style LPIPS, clip_dir, clip_content, classifier).",
     )
-    parser.add_argument('--eval_enable_art_fid', action='store_true', help="Enable ArtFID metric: (1+FID_style)*(1+LPIPS_content)")
+    parser.add_argument(
+        '--eval_enable_art_fid',
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Enable ArtFID/FID metric (default: enabled). Use --no-eval_enable_art_fid to disable.",
+    )
     parser.add_argument('--eval_art_fid_max_gen', type=int, default=200, help="Max generated images per pair for FID_style")
     parser.add_argument('--eval_art_fid_max_ref', type=int, default=200, help="Max target-style reference images per pair for FID_style")
     parser.add_argument('--eval_art_fid_batch_size', type=int, default=16, help="Batch size for inception feature extraction in ArtFID")
     parser.add_argument('--eval_art_fid_photo_only', action='store_true', help="Compute ArtFID/FID only for photo->art directions")
-    parser.add_argument('--eval_enable_kid', action='store_true', help="Enable KID metric (official torchmetrics implementation)")
+    parser.add_argument(
+        '--eval_enable_kid',
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Enable KID metric (default: enabled). Use --no-eval_enable_kid to disable.",
+    )
     parser.add_argument('--eval_kid_max_gen', type=int, default=200, help="Max generated images per pair for KID")
     parser.add_argument('--eval_kid_max_ref', type=int, default=200, help="Max target-style reference images per pair for KID")
     parser.add_argument('--eval_kid_subset_size', type=int, default=50, help="Subset size for KID (torchmetrics)")
@@ -1578,24 +1646,6 @@ def main():
                 except Exception as e:
                     print(f"  闁宠法濯寸粭?Failed to prepare CLIP matrix for style {sid}: {e}")
 
-    # Cache reference tensors for style LPIPS to avoid repeated disk I/O in inner loops.
-    # style_lpips is intentionally disabled in this script.
-    ref_lpips_tensors = {}  # style_id -> Tensor[N_ref, 3, 256, 256] on CPU
-    if False:
-        max_ref_compare = int(args.max_ref_compare)
-        for sid, feats in ref_features.items():
-            refs = feats[:]
-            if max_ref_compare > 0:
-                refs = refs[:min(len(refs), max_ref_compare)]
-            tensors = []
-            for r in refs:
-                try:
-                    tensors.append(_load_eval_image_tensor(Path(r["path"])))
-                except Exception:
-                    continue
-            if tensors:
-                ref_lpips_tensors[sid] = torch.stack(tensors, dim=0).contiguous()
-
     # Cache source images/CLIP embeddings to avoid repeated work across many target styles.
     src_img_cache = {}   # abs src path -> Tensor[3,256,256] on CPU (LPIPS path)
     src_pil_cache = {}   # abs src path -> PIL.Image (CLIP path)
@@ -1611,7 +1661,7 @@ def main():
         'src_image',
         'gen_image',
         'content_lpips',
-        'style_lpips',
+        
         'clip_dir',
         'clip_style',
         'clip_content',
@@ -1701,47 +1751,6 @@ def main():
                 pred_indices = preds
 
             # 4. Style Metrics & Row Writing
-            # 4a. Style LPIPS in grouped batches by target style to reduce overhead.
-            s_lpips_scores = [0.0] * len(batch_items)
-            if False:
-                lpips_chunk_size = max(1, int(args.eval_lpips_chunk_size))
-                lpips_cpu_fallback = not bool(args.eval_lpips_no_cpu_fallback)
-                groups = defaultdict(list)
-                for i, item in enumerate(batch_items):
-                    groups[int(item['tgt_style_id'])].append(i)
-
-                for tgt_id, idxs in groups.items():
-                    refs_cpu = ref_lpips_tensors.get(int(tgt_id))
-                    if refs_cpu is None or refs_cpu.numel() == 0:
-                        continue
-                    idx_t = torch.tensor(idxs, dtype=torch.long, device=gen_imgs.device)
-                    gen_group = gen_imgs.index_select(0, idx_t).float()
-                    bg = int(gen_group.shape[0])
-                    n_ref = int(refs_cpu.shape[0])
-                    sum_d = torch.zeros((bg,), dtype=torch.float32)
-
-                    for rs in range(0, n_ref, lpips_chunk_size):
-                        re = min(rs + lpips_chunk_size, n_ref)
-                        ref_chunk = refs_cpu[rs:re].to(device, non_blocking=True).float()
-                        rc = int(ref_chunk.shape[0])
-                        pair_gen = gen_group.repeat_interleave(rc, dim=0)
-                        pair_ref = ref_chunk.repeat(bg, 1, 1, 1)
-                        d = _lpips_forward_safe(
-                            loss_fn,
-                            pair_gen,
-                            pair_ref,
-                            device=device,
-                            chunk_size=max(lpips_chunk_size, 1),
-                            cpu_fallback=lpips_cpu_fallback,
-                            tag="style_lpips",
-                        )
-                        d = d.view(bg, rc)
-                        sum_d += d.sum(dim=1)
-                        del ref_chunk, pair_gen, pair_ref
-                    mean_d = (sum_d / max(n_ref, 1)).tolist()
-                    for j, idx in enumerate(idxs):
-                        s_lpips_scores[idx] = float(mean_d[j])
-
             for i, item in enumerate(batch_items):
                 tgt_id = item['tgt_style_id']
                 tgt_name = item['tgt_style_name']
@@ -1790,7 +1799,7 @@ def main():
                     'src_image': item['src_path'].name,
                     'gen_image': item['gen_name'],
                     'content_lpips': c_lpips_vals[i],
-                    'style_lpips': s_lpips_scores[i],
+                    
                     'clip_dir': s_clip_dir,
                     'clip_style': s_clip_style,
                     'clip_content': c_clip_scores[i],
@@ -1860,7 +1869,9 @@ def generate_summary_json(
 
     fid_runner = None
     ref_fid_cache = {}
-    if enable_art_fid and style_real_paths is not None:
+    if enable_art_fid:
+        if style_real_paths is None:
+            raise RuntimeError("ArtFID/FID requested but style_real_paths is missing.")
         try:
             fid_runner = _InceptionFeatRunner(
                 device=device,
@@ -1868,10 +1879,17 @@ def generate_summary_json(
             )
         except Exception as e:
             fid_runner = None
-            print(f"  WARNING: ArtFID/Inception unavailable in offline/local-only mode: {e}")
+            if FrechetInceptionDistance is None:
+                raise RuntimeError(
+                    "ArtFID/FID requested but no available backend. "
+                    "Install torchmetrics[image] and torch-fidelity, or ensure Inception weights are available offline."
+                ) from e
+            print(f"  WARNING: Inception runner unavailable, fallback to torchmetrics FID: {e}")
     if enable_kid and KernelInceptionDistance is None:
         raise RuntimeError("KID requested (--eval_enable_kid) but torchmetrics is not available.")
     if enable_kid:
+        if style_real_paths is None:
+            raise RuntimeError("KID requested (--eval_enable_kid) but style_real_paths is missing.")
         # torchmetrics KID depends on torch-fidelity for Inception weights/features.
         try:
             import torch_fidelity  # noqa: F401
@@ -1914,7 +1932,7 @@ def generate_summary_json(
                 'count': len(items),
                 'clip_dir': np.mean([to_f(x.get('clip_dir', x.get('clip_style', 0.0))) for x in items]),
                 'clip_style': np.mean([to_f(x.get('clip_style', x.get('clip_dir', 0.0))) for x in items]),
-                'style_lpips': np.mean([to_f(x['style_lpips']) for x in items]),
+                
                 'content_lpips': mean_content_lpips,
                 'clip_content': np.mean([to_f(x.get('clip_content', 0)) for x in items]),
             }
@@ -1934,6 +1952,7 @@ def generate_summary_json(
                         ref_paths,
                         float(mean_content_lpips),
                         runner=fid_runner,
+                        device=device,
                         max_gen=max(1, int(art_fid_max_gen)),
                         max_ref=max(1, int(art_fid_max_ref)),
                         ref_cache=ref_fid_cache,
@@ -1951,6 +1970,7 @@ def generate_summary_json(
                         src_paths,
                         ref_paths,
                         runner=fid_runner,
+                        device=device,
                         max_gen=max(1, int(art_fid_max_gen)),
                         max_ref=max(1, int(art_fid_max_ref)),
                         ref_cache=ref_fid_cache,
