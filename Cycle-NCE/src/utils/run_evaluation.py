@@ -1916,6 +1916,7 @@ def generate_summary_json(
             src_name_to_path[str(s_name)] = d
 
     matrix_json = {}
+    all_pool = []
     transfer_pool = []
     identity_pool = []
     photo_transfer_pool = []
@@ -2072,6 +2073,7 @@ def generate_summary_json(
                 stats['classifier_acc'] = None
 
             matrix_json[src][tgt] = stats
+            all_pool.append(stats)
             
             if src == tgt:
                 identity_pool.append(stats)
@@ -2131,20 +2133,20 @@ def generate_summary_json(
         'matrix_breakdown': matrix_json,
         'analysis': {
             'style_transfer_ability': {
-                'clip_dir': pool_avg(transfer_pool, 'clip_dir'),
-                'clip_style': pool_avg(transfer_pool, 'clip_style'),
-                'clip_content': pool_avg(transfer_pool, 'clip_content'),
-                'content_lpips': pool_avg(transfer_pool, 'content_lpips'),
-                'fid_baseline': pool_avg([t for t in transfer_pool if t.get('fid_baseline') is not None], 'fid_baseline', default=None),
-                'fid': pool_avg([t for t in transfer_pool if t.get('fid_style') is not None], 'fid_style', default=None),
-                'delta_fid': pool_avg([t for t in transfer_pool if t.get('delta_fid') is not None], 'delta_fid', default=None),
-                'delta_fid_ratio': pool_avg([t for t in transfer_pool if t.get('delta_fid_ratio') is not None], 'delta_fid_ratio', default=None),
-                'art_fid': pool_avg([t for t in transfer_pool if t.get('art_fid') is not None], 'art_fid', default=None),
-                'kid_baseline': pool_avg([t for t in transfer_pool if t.get('kid_baseline') is not None], 'kid_baseline', default=None),
-                'kid': pool_avg([t for t in transfer_pool if t.get('kid_style') is not None], 'kid_style', default=None),
-                'delta_kid': pool_avg([t for t in transfer_pool if t.get('delta_kid') is not None], 'delta_kid', default=None),
-                'delta_kid_ratio': pool_avg([t for t in transfer_pool if t.get('delta_kid_ratio') is not None], 'delta_kid_ratio', default=None),
-                'classifier_acc': pool_avg([t for t in transfer_pool if t['classifier_acc'] is not None], 'classifier_acc')
+                'clip_dir': pool_avg(all_pool, 'clip_dir'),
+                'clip_style': pool_avg(all_pool, 'clip_style'),
+                'clip_content': pool_avg(all_pool, 'clip_content'),
+                'content_lpips': pool_avg(all_pool, 'content_lpips'),
+                'fid_baseline': pool_avg([t for t in all_pool if t.get('fid_baseline') is not None], 'fid_baseline', default=None),
+                'fid': pool_avg([t for t in all_pool if t.get('fid_style') is not None], 'fid_style', default=None),
+                'delta_fid': pool_avg([t for t in all_pool if t.get('delta_fid') is not None], 'delta_fid', default=None),
+                'delta_fid_ratio': pool_avg([t for t in all_pool if t.get('delta_fid_ratio') is not None], 'delta_fid_ratio', default=None),
+                'art_fid': pool_avg([t for t in all_pool if t.get('art_fid') is not None], 'art_fid', default=None),
+                'kid_baseline': pool_avg([t for t in all_pool if t.get('kid_baseline') is not None], 'kid_baseline', default=None),
+                'kid': pool_avg([t for t in all_pool if t.get('kid_style') is not None], 'kid_style', default=None),
+                'delta_kid': pool_avg([t for t in all_pool if t.get('delta_kid') is not None], 'delta_kid', default=None),
+                'delta_kid_ratio': pool_avg([t for t in all_pool if t.get('delta_kid_ratio') is not None], 'delta_kid_ratio', default=None),
+                'classifier_acc': pool_avg([t for t in all_pool if t['classifier_acc'] is not None], 'classifier_acc')
             },
             'photo_to_art_performance': {
                 'clip_dir': pool_avg(photo_transfer_pool, 'clip_dir'),
