@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import gc
 import json
+import math
 import shutil
 import logging
 import os
@@ -90,19 +91,9 @@ class AdaCUTTrainer:
 
         requested_channels_last = bool(train_cfg.get("channels_last", False) and device.type == "cuda")
         self.channels_last = bool(requested_channels_last)
-        requested_empty_cache_interval = max(0, int(train_cfg.get("empty_cache_interval", 0)))
-        self.empty_cache_interval = 0
-        if requested_empty_cache_interval > 0:
-            logger.warning(
-                "empty_cache_interval=%d requested but forcibly disabled for allocator stability.",
-                requested_empty_cache_interval,
-            )
         self.log_vram_interval = max(0, int(train_cfg.get("log_vram_interval", 0)))
         self.gc_collect_interval = max(0, int(train_cfg.get("gc_collect_interval", 0)))
         self.trace_vram_steps = max(0, int(train_cfg.get("trace_vram_steps", 1)))
-        requested_loss_timing_interval = max(0, int(train_cfg.get("loss_timing_interval", 0)))
-        # Force-disable CUDA event timing in training path to avoid synchronize overhead.
-        self.loss_timing_interval = 0
         self.strict_batch_sanity = bool(train_cfg.get("strict_batch_sanity", True))
         self.strict_batch_sanity_interval = max(1, int(train_cfg.get("strict_batch_sanity_interval", 1)))
         requested_cuda_sync_debug = bool(train_cfg.get("cuda_sync_debug", False))
@@ -110,8 +101,6 @@ class AdaCUTTrainer:
         self.cuda_sync_debug = False
         if requested_cuda_sync_debug:
             logger.warning("cuda_sync_debug requested but forcibly disabled for throughput stability.")
-        if requested_loss_timing_interval > 0:
-            logger.warning("loss_timing_interval=%d requested but forcibly disabled for throughput.", requested_loss_timing_interval)
         self.enable_profiler = bool(train_cfg.get("enable_profiler", False))
         self.nsight_cuda_profile = bool(train_cfg.get("nsight_cuda_profile", False))
         self.nsight_capture_start_step = max(0, int(train_cfg.get("nsight_capture_start_step", 10)))
@@ -240,7 +229,7 @@ class AdaCUTTrainer:
 
         logger.info("Model params: %s", f"{count_parameters(self.model):,}")
         logger.info(
-            "Infra | channels_last=%s tf32=%s cudnn_benchmark=%s grad_ckpt=%s compile=%s backend=%s mode=%s fullgraph=%s cudagraphs=%s gc_collect_interval=%d loss_timing_interval=%d strict_batch_sanity=%s strict_batch_sanity_interval=%d cuda_sync_debug=%s profiler=%s alloc_conf=%s",
+            "Infra | channels_last=%s tf32=%s cudnn_benchmark=%s grad_ckpt=%s compile=%s backend=%s mode=%s fullgraph=%s cudagraphs=%s gc_collect_interval=%d strict_batch_sanity=%s strict_batch_sanity_interval=%d cuda_sync_debug=%s profiler=%s alloc_conf=%s",
             self.channels_last,
             self.allow_tf32,
             self.cudnn_benchmark,
@@ -251,7 +240,6 @@ class AdaCUTTrainer:
             self.compile_fullgraph if self.use_compile else False,
             ("off" if getattr(self, "compile_disable_cudagraphs", True) else "on") if self.use_compile else "off",
             self.gc_collect_interval,
-            self.loss_timing_interval,
             self.strict_batch_sanity,
             self.strict_batch_sanity_interval,
             self.cuda_sync_debug,
@@ -319,6 +307,13 @@ class AdaCUTTrainer:
                 T_max=max(1, int(train_cfg.get("num_epochs", 100))),
                 eta_min=float(train_cfg.get("min_learning_rate", 1e-5)),
             )
+        self.base_lrs = [float(group.get("lr", 0.0)) for group in self.optimizer.param_groups]
+        self.warmup_steps = max(0, int(train_cfg.get("warmup_steps", 0)))
+        self.warmup_ratio = max(0.0, float(train_cfg.get("warmup_ratio", 0.0)))
+        self.warmup_start_factor = float(train_cfg.get("warmup_start_factor", 0.0))
+        self.warmup_start_factor = min(max(self.warmup_start_factor, 0.0), 1.0)
+        self._warmup_ready = self.warmup_steps > 0
+        self._warmup_logged = False
 
         self.loss_fn = AdaCUTObjective(config)
 
@@ -504,6 +499,20 @@ class AdaCUTTrainer:
         self.grad_clip_norm = float(train_cfg.get("grad_clip_norm", self.grad_clip_norm))
         if self.grad_clip_norm != old_grad_clip:
             changed["training.grad_clip_norm"] = (old_grad_clip, self.grad_clip_norm)
+        old_warmup_steps = self.warmup_steps
+        self.warmup_steps = max(0, int(train_cfg.get("warmup_steps", self.warmup_steps)))
+        if self.warmup_steps != old_warmup_steps:
+            changed["training.warmup_steps"] = (old_warmup_steps, self.warmup_steps)
+        old_warmup_ratio = self.warmup_ratio
+        self.warmup_ratio = max(0.0, float(train_cfg.get("warmup_ratio", self.warmup_ratio)))
+        if self.warmup_ratio != old_warmup_ratio:
+            changed["training.warmup_ratio"] = (old_warmup_ratio, self.warmup_ratio)
+        old_warmup_start_factor = self.warmup_start_factor
+        self.warmup_start_factor = float(train_cfg.get("warmup_start_factor", self.warmup_start_factor))
+        self.warmup_start_factor = min(max(self.warmup_start_factor, 0.0), 1.0)
+        if self.warmup_start_factor != old_warmup_start_factor:
+            changed["training.warmup_start_factor"] = (old_warmup_start_factor, self.warmup_start_factor)
+        self._warmup_ready = self.warmup_steps > 0
 
         old_acc_steps = self.accumulation_steps
         self.accumulation_steps = max(1, int(train_cfg.get("accumulation_steps", self.accumulation_steps)))
@@ -519,13 +528,6 @@ class AdaCUTTrainer:
         self.use_tqdm = bool(train_cfg.get("use_tqdm", self.use_tqdm))
         if self.use_tqdm != old_use_tqdm:
             changed["training.use_tqdm"] = (old_use_tqdm, self.use_tqdm)
-
-        requested_empty_cache_interval = max(0, int(train_cfg.get("empty_cache_interval", self.empty_cache_interval)))
-        if requested_empty_cache_interval > 0:
-            logger.warning(
-                "Config hot-reload requested empty_cache_interval=%d but it remains disabled for allocator stability.",
-                requested_empty_cache_interval,
-            )
 
         old_log_vram_interval = self.log_vram_interval
         self.log_vram_interval = max(0, int(train_cfg.get("log_vram_interval", self.log_vram_interval)))
@@ -549,6 +551,7 @@ class AdaCUTTrainer:
                 group["lr"] = new_lr
                 changed["training.learning_rate"] = (old_lr, new_lr)
                 break
+        self.base_lrs = [float(group.get("lr", 0.0)) for group in self.optimizer.param_groups]
         for group in self.optimizer.param_groups:
             old_wd = float(group.get("weight_decay", 0.0))
             new_wd = float(train_cfg.get("weight_decay", old_wd))
@@ -790,6 +793,26 @@ class AdaCUTTrainer:
         if self.scheduler is not None:
             self.scheduler.step()
 
+    def _resolve_warmup_steps(self, *, total_batches: int) -> None:
+        if self._warmup_ready:
+            return
+        if self.warmup_ratio <= 0.0:
+            return
+        steps_per_epoch = max(1, int(math.ceil(float(total_batches) / float(max(1, self.accumulation_steps)))))
+        estimated_total_steps = max(1, int(self.num_epochs) * steps_per_epoch)
+        self.warmup_steps = max(1, int(round(estimated_total_steps * self.warmup_ratio)))
+        self._warmup_ready = True
+
+    def _apply_warmup_lr(self) -> None:
+        if self.warmup_steps <= 0:
+            return
+        if self.global_step >= self.warmup_steps:
+            return
+        progress = float(self.global_step + 1) / float(max(1, self.warmup_steps))
+        factor = self.warmup_start_factor + (1.0 - self.warmup_start_factor) * min(max(progress, 0.0), 1.0)
+        for base_lr, group in zip(self.base_lrs, self.optimizer.param_groups):
+            group["lr"] = float(base_lr) * factor
+
     def train_epoch(self, dataloader: DataLoader, epoch: int) -> Dict[str, float]:
         self.model.train()
         epoch_start = time.time()
@@ -808,6 +831,15 @@ class AdaCUTTrainer:
         compute_time_total = 0.0
 
         total_steps = len(dataloader)
+        self._resolve_warmup_steps(total_batches=total_steps)
+        if self.warmup_steps > 0 and not self._warmup_logged:
+            logger.info(
+                "LR warmup enabled: warmup_steps=%d start_factor=%.3f base_lr=%s",
+                self.warmup_steps,
+                self.warmup_start_factor,
+                ",".join(f"{v:.3e}" for v in self.base_lrs),
+            )
+            self._warmup_logged = True
         progress = tqdm(
             dataloader,
             total=total_steps,
@@ -870,7 +902,6 @@ class AdaCUTTrainer:
                 target_style = batch["target_style"]
                 target_style_id = batch["target_style_id"]
                 source_style_id = batch.get("source_style_id")
-                enable_loss_timing = bool(self.loss_timing_interval > 0 and (step_idx % self.loss_timing_interval == 0))
 
                 t0 = time.perf_counter()
                 with self._nvtx_range("loss_compute"):
@@ -881,7 +912,6 @@ class AdaCUTTrainer:
                             target_style=target_style,
                             target_style_id=target_style_id,
                             source_style_id=source_style_id,
-                            debug_timing=enable_loss_timing,
                         )
                         loss = loss_dict["loss"]
                 fwd_loss_step += max(0.0, time.perf_counter() - t0)
@@ -903,22 +933,6 @@ class AdaCUTTrainer:
                         _vram_metric("loss_vram_total_alloc_mb"),
                         _vram_metric("loss_vram_total_peak_from_start_mb"),
                     )
-                if "loss_time_total_ms" in (loss_dict or {}):
-                    def _time_metric(name: str) -> float:
-                        v = loss_dict.get(name)
-                        if v is None:
-                            return 0.0
-                        return float(v.detach().item())
-                    logger.info(
-                        "LOSS_TIME epoch=%d step=%d | pred=%.2fms style=%.2fms delta=%.2fms semigroup=%.2fms total=%.2fms",
-                        epoch,
-                        step_idx,
-                        _time_metric("loss_time_pred_ms"),
-                        _time_metric("loss_time_style_ms"),
-                        _time_metric("loss_time_delta_ms"),
-                        _time_metric("loss_time_semigroup_ms"),
-                        _time_metric("loss_time_total_ms"),
-                    )
                 self._trace_vram(epoch=epoch, step_idx=step_idx, phase="after_loss_compute")
 
                 loss_to_backward = loss / self.accumulation_steps
@@ -934,6 +948,7 @@ class AdaCUTTrainer:
                     with self._nvtx_range("optimizer_step"):
                         if self.grad_clip_norm > 0:
                             torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip_norm)
+                        self._apply_warmup_lr()
                         self.optimizer.step()
                         self.optimizer.zero_grad(set_to_none=True)
                     optimizer_step += max(0.0, time.perf_counter() - t0)
@@ -1018,6 +1033,7 @@ class AdaCUTTrainer:
         if num_batches > 0 and (num_batches % self.accumulation_steps != 0):
             if self.grad_clip_norm > 0:
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip_norm)
+            self._apply_warmup_lr()
             self.optimizer.step()
             self.optimizer.zero_grad(set_to_none=True)
             self.global_step += 1

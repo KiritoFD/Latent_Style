@@ -577,23 +577,6 @@ class LatentAdaCUT(nn.Module):
         )
         return self._compute_delta(h)
 
-    def _predict_delta(
-        self,
-        x: torch.Tensor,
-        style_id: torch.Tensor | int,
-        style_strength: float | None = None,
-    ) -> torch.Tensor:
-        strength = self._resolve_style_strength(style_strength)
-        style_code, style_maps = self._prepare_style_context(
-            style_id=style_id,
-        )
-        return self._predict_delta_from_context(
-            x,
-            style_code=style_code,
-            style_maps=style_maps,
-            strength=strength,
-        )
-
     def integrate(
         self,
         x: torch.Tensor,

@@ -127,189 +127,6 @@ def _lowfreq(x: torch.Tensor, pool: int = 4, blur: bool = True) -> torch.Tensor:
     return y
 
 
-def _gram(x: torch.Tensor) -> torch.Tensor:
-    b, c, h, w = x.shape
-    f = x.view(b, c, h * w)
-    return torch.bmm(f, f.transpose(1, 2)) / max(c * h * w, 1)
-
-
-def _cov(x: torch.Tensor) -> torch.Tensor:
-    b, c, h, w = x.shape
-    f = x.view(b, c, h * w)
-    f = f - f.mean(dim=2, keepdim=True)
-    return torch.bmm(f, f.transpose(1, 2)) / max(h * w, 1)
-
-
-def _channelwise_wasserstein(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    b, c, h, w = x.shape
-    n = max(1, h * w)
-    xf = x.view(b, c, n)
-    yf = y.view(b, c, n)
-    xs, _ = torch.sort(xf, dim=-1)
-    ys, _ = torch.sort(yf, dim=-1)
-    return F.l1_loss(xs, ys)
-
-
-def _corr(x: torch.Tensor) -> torch.Tensor:
-    b, c, h, w = x.shape
-    f = x.view(b, c, h * w)
-    f = f - f.mean(dim=2, keepdim=True)
-    f = F.normalize(f, dim=2, eps=1e-6)
-    return torch.bmm(f, f.transpose(1, 2))
-
-
-def _moments(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    f = x.view(x.shape[0], x.shape[1], -1)
-    mean = f.mean(dim=-1)
-    centered = f - mean.unsqueeze(-1)
-    std = centered.pow(2).mean(dim=-1).clamp_min(1e-6).sqrt()
-    normed = centered / std.unsqueeze(-1)
-    skew = normed.pow(3).mean(dim=-1)
-    kurt = normed.pow(4).mean(dim=-1)
-    return mean, std, skew, kurt
-
-
-def _soft_histogram(x: torch.Tensor, *, num_bins: int, tau: float) -> torch.Tensor:
-    b, c, h, w = x.shape
-    n = max(1, h * w)
-    xf = x.view(b, c, n)
-    lo = xf.amin(dim=-1, keepdim=True)
-    hi = xf.amax(dim=-1, keepdim=True)
-    span = (hi - lo).clamp_min(1e-5)
-    centers = torch.linspace(0.0, 1.0, max(8, int(num_bins)), device=x.device, dtype=x.dtype).view(1, 1, -1)
-    centers = lo + centers * span
-    widths = span / float(max(8, int(num_bins)) - 1)
-    logits = 1.0 - (xf.unsqueeze(-1) - centers.unsqueeze(2)).abs() / (widths.unsqueeze(-1) + max(float(tau), 1e-5))
-    weights = torch.softmax(logits * 8.0, dim=-1)
-    hist = weights.mean(dim=2)
-    return hist / hist.sum(dim=-1, keepdim=True).clamp_min(1e-6)
-
-
-def _histogram_cdf_loss(x: torch.Tensor, y: torch.Tensor, *, num_bins: int, tau: float) -> torch.Tensor:
-    hx = _soft_histogram(x, num_bins=num_bins, tau=tau)
-    hy = _soft_histogram(y, num_bins=num_bins, tau=tau)
-    cdf_x = torch.cumsum(hx, dim=-1)
-    cdf_y = torch.cumsum(hy, dim=-1)
-    return F.l1_loss(cdf_x, cdf_y)
-
-
-def _spectrum_loss(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    fx = torch.fft.rfft2(x.float(), norm="ortho")
-    fy = torch.fft.rfft2(y.float(), norm="ortho")
-    mag_x = torch.log1p(torch.abs(fx))
-    mag_y = torch.log1p(torch.abs(fy))
-    return F.l1_loss(mag_x, mag_y)
-
-
-def calc_latent_color_loss(
-    pred: torch.Tensor,
-    target: torch.Tensor,
-    *,
-    mode: str = "lowfreq_hybrid",
-    pool: int = 4,
-    blur: bool = True,
-    w_mean: float = 1.0,
-    w_std: float = 0.5,
-    w_cov: float = 0.5,
-    w_corr: float = 0.5,
-    w_gram: float = 0.25,
-    w_l1: float = 0.25,
-    w_wass: float = 0.5,
-    w_hist: float = 0.5,
-    w_moment3: float = 0.25,
-    w_moment4: float = 0.25,
-    w_spectrum: float = 0.25,
-    num_bins: int = 32,
-    hist_tau: float = 0.02,
-) -> torch.Tensor:
-    p = _lowfreq(pred, pool=pool, blur=blur)
-    t = _lowfreq(target, pool=pool, blur=blur)
-    mean_p, std_p, skew_p, kurt_p = _moments(p)
-    mean_t, std_t, skew_t, kurt_t = _moments(t)
-    mean_loss = F.l1_loss(mean_p, mean_t)
-    std_loss = F.l1_loss(std_p, std_t)
-    skew_loss = F.l1_loss(skew_p, skew_t)
-    kurt_loss = F.l1_loss(kurt_p, kurt_t)
-    cov_loss = F.l1_loss(_cov(p), _cov(t))
-    corr_loss = F.l1_loss(_corr(p), _corr(t))
-    gram_loss = F.l1_loss(_gram(p), _gram(t))
-    l1_loss = F.l1_loss(p, t)
-    wass_loss = _channelwise_wasserstein(p, t)
-    hist_loss = _histogram_cdf_loss(p, t, num_bins=num_bins, tau=hist_tau)
-    spectrum_loss = _spectrum_loss(p, t)
-    m = str(mode).lower()
-    if m in {"stats", "lowfreq_stats", "stats_cov"}:
-        return w_mean * mean_loss + w_std * std_loss + w_cov * cov_loss
-    if m in {"cov", "lowfreq_cov"}:
-        return mean_loss + cov_loss
-    if m in {"moments", "moment"}:
-        return w_mean * mean_loss + w_std * std_loss + w_moment3 * skew_loss + w_moment4 * kurt_loss
-    if m in {"corr", "correlation", "stats_corr"}:
-        return w_mean * mean_loss + w_std * std_loss + w_corr * corr_loss
-    if m in {"hist", "soft_hist", "cdf"}:
-        return w_mean * mean_loss + w_std * std_loss + w_hist * hist_loss
-    if m in {"stats_hist", "hist_cov"}:
-        return w_mean * mean_loss + w_std * std_loss + w_cov * cov_loss + w_hist * hist_loss
-    if m in {"spectrum", "fft", "freq"}:
-        return w_mean * mean_loss + w_std * std_loss + w_spectrum * spectrum_loss
-    if m in {"stats_spectrum", "hist_spectrum"}:
-        return w_mean * mean_loss + w_std * std_loss + w_hist * hist_loss + w_spectrum * spectrum_loss
-    if m in {"wasserstein", "lowfreq_wasserstein", "wass"}:
-        return w_mean * mean_loss + w_std * std_loss + w_wass * wass_loss
-    if m in {"stats_wasserstein", "lowfreq_stats_wasserstein", "stats_cov_wass"}:
-        return w_mean * mean_loss + w_std * std_loss + w_cov * cov_loss + w_wass * wass_loss
-    if m in {"l1", "lowfreq_l1", "direct"}:
-        return l1_loss
-    if m in {"full_distribution", "distribution", "color_full"}:
-        return (
-            w_mean * mean_loss
-            + w_std * std_loss
-            + w_cov * cov_loss
-            + w_corr * corr_loss
-            + w_wass * wass_loss
-            + w_hist * hist_loss
-            + w_moment3 * skew_loss
-            + w_moment4 * kurt_loss
-            + w_spectrum * spectrum_loss
-        )
-    return (
-        w_mean * mean_loss
-        + w_std * std_loss
-        + w_cov * cov_loss
-        + w_corr * corr_loss
-        + w_gram * gram_loss
-        + w_l1 * l1_loss
-        + w_wass * wass_loss
-        + w_hist * hist_loss
-        + w_moment3 * skew_loss
-        + w_moment4 * kurt_loss
-        + w_spectrum * spectrum_loss
-    )
-
-
-def calc_latent_nce_loss(
-    source: torch.Tensor,
-    target: torch.Tensor,
-    *,
-    tau: float = 0.07,
-    num_patches: int = 128,
-    pool: int = 2,
-) -> torch.Tensor:
-    s = _lowfreq(source, pool=pool, blur=False)
-    t = _lowfreq(target, pool=pool, blur=False)
-    b, c, h, w = s.shape
-    n = h * w
-    if n <= 1:
-        return torch.zeros((), device=s.device, dtype=torch.float32)
-    s_flat = F.normalize(s.view(b, c, n).transpose(1, 2), dim=-1)
-    t_flat = F.normalize(t.view(b, c, n).transpose(1, 2), dim=-1)
-    m = max(1, min(int(num_patches), n))
-    idx = torch.rand(b, n, device=s.device).argsort(dim=1)[:, :m]
-    q = torch.gather(s_flat, 1, idx.unsqueeze(-1).expand(-1, -1, c))
-    logits = torch.bmm(q, t_flat.transpose(1, 2)) / max(float(tau), 1e-6)
-    return F.cross_entropy(logits.reshape(b * m, n), idx.reshape(b * m))
-
-
 def calc_swd_loss(
     x: torch.Tensor,
     y: torch.Tensor,
@@ -369,17 +186,6 @@ def calc_swd_loss(
     bin_chunk = max(1, int(cdf_bin_chunk_size))
     sample_chunk = max(32, int(cdf_sample_chunk_size))
 
-    def _soft_cdf_mean(proj: torch.Tensor, grid: torch.Tensor) -> torch.Tensor:
-        bsz, n_proj, n_pts = proj.shape
-        k_bins = int(grid.shape[0])
-        acc = torch.zeros((bsz, n_proj, k_bins), device=proj.device, dtype=proj.dtype)
-        for n0 in range(0, n_pts, sample_chunk):
-            n1 = min(n_pts, n0 + sample_chunk)
-            p = proj[:, :, n0:n1].unsqueeze(-1)
-            g = grid.view(1, 1, 1, k_bins)
-            acc = acc + torch.sigmoid((g - p) / tau).sum(dim=2)
-        return acc / float(n_pts)
-
     for p in patch_sizes:
         if projection_bank is not None and p in projection_bank:
             rand_weights = projection_bank[p]
@@ -393,35 +199,70 @@ def calc_swd_loss(
             w = rand_weights[start:end]
             x_proj = F.conv2d(x, w, padding=p // 2).view(x.shape[0], end - start, -1)
             y_proj = F.conv2d(y, w, padding=p // 2).view(y.shape[0], end - start, -1)
-
-            if use_cdf:
-                n_pts = int(x_proj.shape[-1])
-                if n_pts > sample_size:
-                    sample_idx = torch.randint(0, n_pts, (sample_size,), device=x_proj.device)
-                    x_proj = x_proj.index_select(2, sample_idx)
-                    y_proj = y_proj.index_select(2, sample_idx)
-                min_val = torch.minimum(x_proj.amin().detach(), y_proj.amin().detach())
-                max_val = torch.maximum(x_proj.amax().detach(), y_proj.amax().detach())
-                span = (max_val - min_val).clamp_min(1e-6)
-                dx = span / float(cdf_bins - 1)
-                grid = torch.linspace(min_val, max_val, cdf_bins, device=x_proj.device, dtype=x_proj.dtype)
-                swd_chunk = torch.tensor(0.0, device=device, dtype=torch.float32)
-                for b0 in range(0, cdf_bins, bin_chunk):
-                    b1 = min(cdf_bins, b0 + bin_chunk)
-                    g = grid[b0:b1]
-                    cdf_x = _soft_cdf_mean(x_proj, g)
-                    cdf_y = _soft_cdf_mean(y_proj, g)
-                    swd_chunk = swd_chunk + (cdf_x - cdf_y).abs().sum(dim=-1).mean() * dx
-                patch_loss = patch_loss + swd_chunk * ((end - start) / float(num_projections))
-            else:
-                x_sorted, _ = torch.sort(x_proj, dim=2)
-                y_sorted, _ = torch.sort(y_proj, dim=2)
-                patch_loss = patch_loss + F.l1_loss(x_sorted, y_sorted) * ((end - start) / float(num_projections))
+            swd_chunk, _ = _swd_distance_from_projected(
+                x_proj,
+                y_proj,
+                use_cdf=use_cdf,
+                cdf_bins=cdf_bins,
+                tau=tau,
+                sample_size=sample_size,
+                bin_chunk=bin_chunk,
+                sample_chunk=sample_chunk,
+                sample_idx=None,
+            )
+            patch_loss = patch_loss + swd_chunk * ((end - start) / float(num_projections))
         total_loss += patch_loss
     return total_loss / max(len(patch_sizes), 1)
 
 
-def calc_hf_swd_loss(
+def _swd_distance_from_projected(
+    x_proj: torch.Tensor,
+    y_proj: torch.Tensor,
+    *,
+    use_cdf: bool,
+    cdf_bins: int,
+    tau: float,
+    sample_size: int,
+    bin_chunk: int,
+    sample_chunk: int,
+    sample_idx: torch.Tensor | None,
+) -> tuple[torch.Tensor, torch.Tensor | None]:
+    del bin_chunk
+    if not use_cdf:
+        x_sorted, _ = torch.sort(x_proj, dim=2)
+        y_sorted, _ = torch.sort(y_proj, dim=2)
+        return F.l1_loss(x_sorted, y_sorted), sample_idx
+
+    n_pts = int(x_proj.shape[-1])
+    if n_pts > sample_size:
+        if sample_idx is None:
+            sample_idx = torch.randint(0, n_pts, (sample_size,), device=x_proj.device)
+        x_proj = x_proj.index_select(2, sample_idx)
+        y_proj = y_proj.index_select(2, sample_idx)
+        n_pts = int(x_proj.shape[-1])
+
+    min_val = torch.minimum(x_proj.amin().detach(), y_proj.amin().detach())
+    max_val = torch.maximum(x_proj.amax().detach(), y_proj.amax().detach())
+    span = (max_val - min_val).clamp_min(1e-6)
+    dx = span / float(cdf_bins - 1)
+    grid = torch.linspace(min_val, max_val, cdf_bins, device=x_proj.device, dtype=x_proj.dtype)
+    g = grid.view(1, 1, 1, cdf_bins)
+    bsz, n_proj, _ = x_proj.shape
+    acc_x = torch.zeros((bsz, n_proj, cdf_bins), device=x_proj.device, dtype=x_proj.dtype)
+    acc_y = torch.zeros((bsz, n_proj, cdf_bins), device=x_proj.device, dtype=x_proj.dtype)
+    for n0 in range(0, n_pts, sample_chunk):
+        n1 = min(n_pts, n0 + sample_chunk)
+        px = x_proj[:, :, n0:n1].unsqueeze(-1)
+        py = y_proj[:, :, n0:n1].unsqueeze(-1)
+        acc_x = acc_x + torch.sigmoid((g - px) / tau).sum(dim=2)
+        acc_y = acc_y + torch.sigmoid((g - py) / tau).sum(dim=2)
+    cdf_x = acc_x / float(n_pts)
+    cdf_y = acc_y / float(n_pts)
+    swd_chunk = (cdf_x - cdf_y).abs().sum(dim=-1).mean() * dx
+    return swd_chunk, sample_idx
+
+
+def calc_swd_and_hf_loss(
     x: torch.Tensor,
     y: torch.Tensor,
     patch_sizes: list[int],
@@ -435,7 +276,9 @@ def calc_hf_swd_loss(
     cdf_sample_chunk_size: int = 128,
     sobel_kernels: tuple[torch.Tensor, torch.Tensor] | None = None,
     projection_bank: Dict[int, torch.Tensor] | None = None,
-) -> torch.Tensor:
+) -> tuple[torch.Tensor, torch.Tensor]:
+    x = x.contiguous()
+    y = y.contiguous()
     c = int(x.shape[1])
     device = x.device
     if sobel_kernels is None:
@@ -456,31 +299,76 @@ def calc_hf_swd_loss(
 
     x_gx = F.conv2d(x, weight_x, padding=1, groups=c)
     x_gy = F.conv2d(x, weight_y, padding=1, groups=c)
+    hf_x = torch.sqrt(x_gx.pow(2) + x_gy.pow(2) + 1e-8)
+    del x_gx, x_gy
     y_gx = F.conv2d(y, weight_x, padding=1, groups=c)
     y_gy = F.conv2d(y, weight_y, padding=1, groups=c)
-    hf_x = torch.sqrt(x_gx.pow(2) + x_gy.pow(2) + 1e-8)
     hf_y = torch.sqrt(y_gx.pow(2) + y_gy.pow(2) + 1e-8)
+    del y_gx, y_gy
     hf_x = hf_x / (hf_x.mean(dim=(2, 3), keepdim=True) + 1e-5)
     hf_y = hf_y / (hf_y.mean(dim=(2, 3), keepdim=True) + 1e-5)
 
-    dummy_ids = torch.zeros((hf_x.shape[0],), device=hf_x.device, dtype=torch.long)
-    return calc_swd_loss(
-        hf_x,
-        hf_y,
-        dummy_ids,
-        patch_sizes,
-        num_projections=num_projections,
-        use_high_freq=False,
-        projection_chunk_size=projection_chunk_size,
-        distance_mode=distance_mode,
-        cdf_num_bins=cdf_num_bins,
-        cdf_tau=cdf_tau,
-        cdf_sample_size=cdf_sample_size,
-        cdf_bin_chunk_size=cdf_bin_chunk_size,
-        cdf_sample_chunk_size=cdf_sample_chunk_size,
-        sobel_kernels=None,
-        projection_bank=projection_bank,
-    )
+    chunk = int(projection_chunk_size)
+    if chunk <= 0 or chunk >= num_projections:
+        chunk = num_projections
+    mode = str(distance_mode).lower()
+    use_cdf = mode in {"cdf", "softcdf", "cdf_soft"}
+    cdf_bins = max(8, int(cdf_num_bins))
+    tau = max(1e-5, float(cdf_tau))
+    sample_size = max(32, int(cdf_sample_size))
+    bin_chunk = max(1, int(cdf_bin_chunk_size))
+    sample_chunk = max(32, int(cdf_sample_chunk_size))
+
+    total_base = torch.tensor(0.0, device=device, dtype=torch.float32)
+    total_hf = torch.tensor(0.0, device=device, dtype=torch.float32)
+    for p in patch_sizes:
+        if projection_bank is not None and p in projection_bank:
+            rand_weights = projection_bank[p]
+        else:
+            rand_weights = torch.randn(num_projections, c, p, p, device=device, dtype=x.dtype)
+            rand_weights = F.normalize(rand_weights.view(num_projections, -1), p=2, dim=1).view_as(rand_weights)
+
+        patch_base = torch.tensor(0.0, device=device, dtype=torch.float32)
+        patch_hf = torch.tensor(0.0, device=device, dtype=torch.float32)
+        for start in range(0, num_projections, chunk):
+            end = min(num_projections, start + chunk)
+            w = rand_weights[start:end]
+            x_proj = F.conv2d(x, w, padding=p // 2).view(x.shape[0], end - start, -1)
+            y_proj = F.conv2d(y, w, padding=p // 2).view(y.shape[0], end - start, -1)
+            hf_x_proj = F.conv2d(hf_x, w, padding=p // 2).view(hf_x.shape[0], end - start, -1)
+            hf_y_proj = F.conv2d(hf_y, w, padding=p // 2).view(hf_y.shape[0], end - start, -1)
+
+            base_chunk, sample_idx = _swd_distance_from_projected(
+                x_proj,
+                y_proj,
+                use_cdf=use_cdf,
+                cdf_bins=cdf_bins,
+                tau=tau,
+                sample_size=sample_size,
+                bin_chunk=bin_chunk,
+                sample_chunk=sample_chunk,
+                sample_idx=None,
+            )
+            hf_chunk, _ = _swd_distance_from_projected(
+                hf_x_proj,
+                hf_y_proj,
+                use_cdf=use_cdf,
+                cdf_bins=cdf_bins,
+                tau=tau,
+                sample_size=sample_size,
+                bin_chunk=bin_chunk,
+                sample_chunk=sample_chunk,
+                sample_idx=sample_idx,
+            )
+            weight = (end - start) / float(num_projections)
+            patch_base = patch_base + base_chunk * weight
+            patch_hf = patch_hf + hf_chunk * weight
+
+        total_base = total_base + patch_base
+        total_hf = total_hf + patch_hf
+
+    denom = max(len(patch_sizes), 1)
+    return total_base / denom, total_hf / denom
 
 
 class AdaCUTObjective:
@@ -509,29 +397,6 @@ class AdaCUTObjective:
         raw_color_ch_weights = loss_cfg.get("color_latent_channel_weights", [0.1, 0.1, 1.0, 1.0])
         self.color_latent_channel_weights = tuple(float(v) for v in raw_color_ch_weights)
         self.color_legacy_pool = int(loss_cfg.get("color_legacy_pool", 4))
-        self.w_latent_color = float(loss_cfg.get("w_latent_color", 0.0))
-        self.latent_color_mode = str(loss_cfg.get("latent_color_mode", "lowfreq_hybrid")).lower()
-        self.latent_color_pool = int(loss_cfg.get("latent_color_pool", 4))
-        self.latent_color_blur = bool(loss_cfg.get("latent_color_blur", True))
-        self.latent_color_w_mean = float(loss_cfg.get("latent_color_w_mean", 1.0))
-        self.latent_color_w_std = float(loss_cfg.get("latent_color_w_std", 0.5))
-        self.latent_color_w_cov = float(loss_cfg.get("latent_color_w_cov", 0.5))
-        self.latent_color_w_corr = float(loss_cfg.get("latent_color_w_corr", 0.5))
-        self.latent_color_w_gram = float(loss_cfg.get("latent_color_w_gram", 0.25))
-        self.latent_color_w_l1 = float(loss_cfg.get("latent_color_w_l1", 0.25))
-        self.latent_color_w_wass = float(loss_cfg.get("latent_color_w_wass", 0.5))
-        self.latent_color_w_hist = float(loss_cfg.get("latent_color_w_hist", 0.5))
-        self.latent_color_w_moment3 = float(loss_cfg.get("latent_color_w_moment3", 0.25))
-        self.latent_color_w_moment4 = float(loss_cfg.get("latent_color_w_moment4", 0.25))
-        self.latent_color_w_spectrum = float(loss_cfg.get("latent_color_w_spectrum", 0.25))
-        self.latent_color_num_bins = int(loss_cfg.get("latent_color_num_bins", 32))
-        self.latent_color_hist_tau = float(loss_cfg.get("latent_color_hist_tau", 0.02))
-        self.w_nce = float(loss_cfg.get("w_nce", 0.0))
-        self.use_nce = bool(loss_cfg.get("use_nce", self.w_nce > 0.0))
-        self.nce_tau = float(loss_cfg.get("nce_tau", 0.07))
-        self.nce_num_patches = int(loss_cfg.get("nce_num_patches", 128))
-        self.nce_pool = int(loss_cfg.get("nce_pool", 2))
-        self.nce_mode = str(loss_cfg.get("nce_mode", "content")).lower()
         self.nsight_nvtx = bool(config.get("training", {}).get("nsight_nvtx", False))
         self._sobel_cache: Dict[tuple[int, str, str], tuple[torch.Tensor, torch.Tensor]] = {}
         self._projection_cache: Dict[tuple[int, int, int, str, str], torch.Tensor] = {}
@@ -598,9 +463,7 @@ class AdaCUTObjective:
         target_style: torch.Tensor,
         target_style_id: torch.Tensor,
         source_style_id: torch.Tensor | None = None,
-        debug_timing: bool = False,
     ) -> Dict[str, torch.Tensor]:
-        del debug_timing
         nvtx_enabled = bool(self.nsight_nvtx and content.is_cuda)
         id_mask = torch.zeros_like(target_style_id, dtype=torch.bool) if source_style_id is None else (source_style_id.long() == target_style_id.long())
         xid_mask = ~id_mask
@@ -619,27 +482,9 @@ class AdaCUTObjective:
             swd_x = pred.index_select(0, xid_idx)
             swd_y = target_cast.index_select(0, xid_idx)
             bank = self._get_projection_bank(int(swd_x.shape[1]), device=swd_x.device, dtype=swd_x.dtype)
-            ls = calc_swd_loss(
-                swd_x,
-                swd_y,
-                target_style_id.index_select(0, xid_idx),
-                self.swd_patch_sizes,
-                self.swd_num_projections,
-                use_high_freq=False,
-                projection_chunk_size=self.swd_projection_chunk_size,
-                distance_mode=self.swd_distance_mode,
-                cdf_num_bins=self.swd_cdf_num_bins,
-                cdf_tau=self.swd_cdf_tau,
-                cdf_sample_size=self.swd_cdf_sample_size,
-                cdf_bin_chunk_size=self.swd_cdf_bin_chunk_size,
-                cdf_sample_chunk_size=self.swd_cdf_sample_chunk_size,
-                projection_bank=bank,
-            )
-            total = total + self.w_swd * ls
-            metrics["swd"] = ls.detach()
             if self.swd_use_high_freq:
                 sobel = self._get_sobel_kernels(int(swd_x.shape[1]), device=swd_x.device, dtype=swd_x.dtype)
-                lhf = calc_hf_swd_loss(
+                ls, lhf = calc_swd_and_hf_loss(
                     swd_x,
                     swd_y,
                     self.swd_patch_sizes,
@@ -654,34 +499,31 @@ class AdaCUTObjective:
                     sobel_kernels=sobel,
                     projection_bank=bank,
                 )
+                total = total + self.w_swd * ls
+                metrics["swd"] = ls.detach()
                 total = total + (self.w_swd * self.swd_hf_weight_ratio) * lhf
                 metrics["swd_hf"] = lhf.detach()
+            else:
+                ls = calc_swd_loss(
+                    swd_x,
+                    swd_y,
+                    target_style_id.index_select(0, xid_idx),
+                    self.swd_patch_sizes,
+                    self.swd_num_projections,
+                    use_high_freq=False,
+                    projection_chunk_size=self.swd_projection_chunk_size,
+                    distance_mode=self.swd_distance_mode,
+                    cdf_num_bins=self.swd_cdf_num_bins,
+                    cdf_tau=self.swd_cdf_tau,
+                    cdf_sample_size=self.swd_cdf_sample_size,
+                    cdf_bin_chunk_size=self.swd_cdf_bin_chunk_size,
+                    cdf_sample_chunk_size=self.swd_cdf_sample_chunk_size,
+                    projection_bank=bank,
+                )
+                total = total + self.w_swd * ls
+                metrics["swd"] = ls.detach()
 
-        if xid_idx is not None and xid_idx.numel() > 0 and self.w_latent_color > 0.0:
-            lcol = calc_latent_color_loss(
-                pred.index_select(0, xid_idx),
-                target_cast.index_select(0, xid_idx),
-                mode=self.latent_color_mode,
-                pool=self.latent_color_pool,
-                blur=self.latent_color_blur,
-                w_mean=self.latent_color_w_mean,
-                w_std=self.latent_color_w_std,
-                w_cov=self.latent_color_w_cov,
-                w_corr=self.latent_color_w_corr,
-                w_gram=self.latent_color_w_gram,
-                w_l1=self.latent_color_w_l1,
-                w_wass=self.latent_color_w_wass,
-                w_hist=self.latent_color_w_hist,
-                w_moment3=self.latent_color_w_moment3,
-                w_moment4=self.latent_color_w_moment4,
-                w_spectrum=self.latent_color_w_spectrum,
-                num_bins=self.latent_color_num_bins,
-                hist_tau=self.latent_color_hist_tau,
-            )
-            total = total + self.w_latent_color * lcol
-            metrics["latent_color"] = lcol.detach()
-            metrics["color"] = lcol.detach()
-        elif xid_idx is not None and xid_idx.numel() > 0 and self.w_color > 0.0:
+        if xid_idx is not None and xid_idx.numel() > 0 and self.w_color > 0.0:
             pred_color = pred.float().index_select(0, xid_idx)
             target_color = target_cast.float().index_select(0, xid_idx)
             if self.color_mode == "legacy_pool_mse":
@@ -713,35 +555,6 @@ class AdaCUTObjective:
             ltv = _tv_per_sample(pred - content_cast).mean()
             total = total + self.w_delta_tv * ltv
             metrics["delta_tv"] = ltv.detach()
-
-        if xid_idx is not None and xid_idx.numel() > 0 and self.use_nce and self.w_nce > 0.0:
-            nce_terms = []
-            if self.nce_mode in {"content", "content_only", "both"}:
-                lnce_content = calc_latent_nce_loss(
-                    content_cast.index_select(0, xid_idx),
-                    pred.index_select(0, xid_idx),
-                    tau=self.nce_tau,
-                    num_patches=self.nce_num_patches,
-                    pool=self.nce_pool,
-                )
-                nce_terms.append(lnce_content)
-                metrics["nce_content"] = lnce_content.detach()
-            if self.nce_mode in {"identity", "id"} and id_mask.any():
-                id_idx = torch.nonzero(id_mask, as_tuple=False).squeeze(1)
-                if id_idx.numel() > 0:
-                    lnce_id = calc_latent_nce_loss(
-                        content_cast.index_select(0, id_idx),
-                        pred.index_select(0, id_idx),
-                        tau=self.nce_tau,
-                        num_patches=self.nce_num_patches,
-                        pool=self.nce_pool,
-                    )
-                    nce_terms.append(lnce_id)
-                    metrics["nce_identity"] = lnce_id.detach()
-            if nce_terms:
-                lnce = torch.stack([t.float() for t in nce_terms]).mean()
-                total = total + self.w_nce * lnce
-                metrics["nce"] = lnce.detach()
 
         metrics["loss"] = total
         return metrics
