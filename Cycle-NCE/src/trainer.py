@@ -339,7 +339,6 @@ class AdaCUTTrainer:
                     "swd",
                     "color",
                     "identity",
-                    "delta_tv",
                     "identity_ratio",
                     "lr",
                     "data_time_sec",
@@ -426,7 +425,6 @@ class AdaCUTTrainer:
         )
         _set_attr("w_color", float(loss_cfg.get("w_color", lf.w_color)))
         _set_attr("w_identity", float(loss_cfg.get("w_identity", lf.w_identity)))
-        _set_attr("w_delta_tv", float(loss_cfg.get("w_delta_tv", lf.w_delta_tv)))
         _set_attr("nsight_nvtx", bool(training_cfg.get("nsight_nvtx", lf.nsight_nvtx)))
         if any(
             k in changed
@@ -982,7 +980,6 @@ class AdaCUTTrainer:
                         swd=f"{_get_avg('swd'):.4f}",
                         color=f"{_get_avg('color'):.4f}",
                         idt=f"{_get_avg('identity'):.4f}",
-                        dtv=f"{_get_avg('delta_tv'):.4f}",
                         idr=f"{_get_avg('identity_ratio'):.2f}",
                         data_ms=f"{(1000.0 * data_time_total / max(step_idx, 1)):.1f}",
                         comp_ms=f"{(1000.0 * compute_time_total / max(step_idx, 1)):.1f}",
@@ -991,7 +988,7 @@ class AdaCUTTrainer:
                     )
                     if not self.use_tqdm:
                         logger.info(
-                            "epoch %d step %d/%d | loss=%.4f swd=%.4f color=%.4f idt=%.4f dtv=%.4f idr=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
+                            "epoch %d step %d/%d | loss=%.4f swd=%.4f color=%.4f idt=%.4f idr=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
                             epoch,
                             step_idx,
                             total_steps,
@@ -999,7 +996,6 @@ class AdaCUTTrainer:
                             _get_avg('swd'),
                             _get_avg('color'),
                             _get_avg('identity'),
-                            _get_avg('delta_tv'),
                             _get_avg('identity_ratio'),
                             (1000.0 * data_time_total / max(step_idx, 1)),
                             (1000.0 * compute_time_total / max(step_idx, 1)),
@@ -1068,7 +1064,7 @@ class AdaCUTTrainer:
         
         # Fill missing keys with 0.0 for safety
         expected_keys = [
-            "loss", "swd", "color", "identity", "delta_tv", "identity_ratio",
+            "loss", "swd", "color", "identity", "identity_ratio",
             "data_time_sec", "transfer_time_sec", "fwd_loss_time_sec", "backward_time_sec",
             "optimizer_time_sec", "step_overhead_time_sec", "compute_time_sec",
             "samples_seen", "samples_per_sec", "compute_samples_per_sec",
@@ -1096,7 +1092,7 @@ class AdaCUTTrainer:
                 f"loss={metrics['loss']:.4f} "
                 f"swd={metrics['swd']:.4f} "
                 f"color={metrics['color']:.4f} "
-                f"idt={metrics['identity']:.4f} dtv={metrics['delta_tv']:.4f} idr={metrics['identity_ratio']:.2f} "
+                f"idt={metrics['identity']:.4f} idr={metrics['identity_ratio']:.2f} "
                 f"| data={data_time_total:.1f}s transfer={transfer_time_total:.1f}s fwd={fwd_loss_time_total:.1f}s "
                 f"bwd={backward_time_total:.1f}s opt={optimizer_time_total:.1f}s overhead={step_overhead_time_total:.1f}s "
                 f"compute={compute_time_total:.1f}s total={epoch_time:.1f}s "
@@ -1114,7 +1110,6 @@ class AdaCUTTrainer:
                     float(metrics.get("swd", 0.0)),
                     float(metrics.get("color", 0.0)),
                     float(metrics.get("identity", 0.0)),
-                    float(metrics.get("delta_tv", 0.0)),
                     float(metrics.get("identity_ratio", 0.0)),
                     float(metrics.get("lr", 0.0)),
                     float(metrics.get("data_time_sec", 0.0)),

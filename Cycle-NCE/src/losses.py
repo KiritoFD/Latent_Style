@@ -105,12 +105,6 @@ def calc_spatial_agnostic_color_loss(
     raise ValueError(f"Unsupported color_mode '{mode}'.")
 
 
-def _tv_per_sample(x: torch.Tensor) -> torch.Tensor:
-    tv_x = (x[:, :, :, 1:] - x[:, :, :, :-1]).abs().mean(dim=(1, 2, 3))
-    tv_y = (x[:, :, 1:, :] - x[:, :, :-1, :]).abs().mean(dim=(1, 2, 3))
-    return tv_x + tv_y
-
-
 def _gaussian_blur(x: torch.Tensor) -> torch.Tensor:
     c = int(x.shape[1])
     k = x.new_tensor([[1.0, 2.0, 1.0], [2.0, 4.0, 2.0], [1.0, 2.0, 1.0]]) / 16.0
@@ -388,7 +382,6 @@ class AdaCUTObjective:
         self.swd_use_high_freq = bool(loss_cfg.get("swd_use_high_freq", True))
         self.swd_hf_weight_ratio = float(loss_cfg.get("swd_hf_weight_ratio", 2.0))
         self.w_identity = float(loss_cfg.get("w_identity", 2.0))
-        self.w_delta_tv = float(loss_cfg.get("w_delta_tv", 0.0))
         self.w_color = float(loss_cfg.get("w_color", 0.0))
         self.color_mode = _canonical_color_mode(str(loss_cfg.get("color_mode", "pseudo_rgb_adain")))
         self.color_eps = float(loss_cfg.get("color_eps", 1e-6))
@@ -550,11 +543,6 @@ class AdaCUTObjective:
             lid = ((pred - content_cast).abs().mean(dim=(1, 2, 3)) * id_mask.float()).sum() / id_mask.float().sum().clamp_min(1.0)
             total = total + self.w_identity * lid
             metrics["identity"] = lid.detach()
-
-        if self.w_delta_tv > 0.0:
-            ltv = _tv_per_sample(pred - content_cast).mean()
-            total = total + self.w_delta_tv * ltv
-            metrics["delta_tv"] = ltv.detach()
 
         metrics["loss"] = total
         return metrics

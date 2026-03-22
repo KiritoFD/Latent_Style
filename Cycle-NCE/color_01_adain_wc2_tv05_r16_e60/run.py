@@ -34,7 +34,6 @@ _ALLOWED_LOSS_KEYS = {
     "color_legacy_pool",
     "w_swd",
     "w_identity",
-    "w_delta_tv",
     "swd_patch_sizes",
     "swd_num_projections",
     "swd_projection_chunk_size",
@@ -53,7 +52,6 @@ _LOSS_WEIGHT_KEYS = (
     "w_swd",
     "w_color",
     "w_identity",
-    "w_delta_tv",
 )
 
 
@@ -316,14 +314,13 @@ def main() -> None:
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f swd=%.4f color=%.4f idt=%.4f dtv=%.4f idr=%.2f lr=%.2e data=%.1fs comp=%.1fs",
+            "Epoch %d/%d | loss=%.4f swd=%.4f color=%.4f idt=%.4f idr=%.2f lr=%.2e data=%.1fs comp=%.1fs",
             epoch,
             trainer.num_epochs,
             metrics["loss"],
             metrics.get("swd", 0.0),
             metrics.get("color", 0.0),
             metrics.get("identity", 0.0),
-            metrics.get("delta_tv", 0.0),
             metrics.get("identity_ratio", 0.0),
             metrics["lr"],
             metrics.get("data_time_sec", 0.0),
