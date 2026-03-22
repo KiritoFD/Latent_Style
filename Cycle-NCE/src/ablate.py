@@ -14,11 +14,13 @@ def _cleanup_old_outputs(out_dir: Path) -> None:
         "config_color_0*_*.json",
         "config_color_ablation_exp*.json",
         "config_weight_exp*.json",
+        "config_style_oa_*.json",
         "config_tmp_batch*.json",
         "run_color_r16_e60.bat",
         "run_color_ablation_anchor_4.bat",
         "anchor4.bat",
         "weight.bat",
+        "style_oa.bat",
     ]
     removed = 0
     for pattern in old_patterns:
@@ -30,7 +32,7 @@ def _cleanup_old_outputs(out_dir: Path) -> None:
         print(f"cleaned old files: {removed}")
 
 
-def generate_weight8() -> None:
+def generate_style_oa8() -> None:
     base = load_base_config()
     out_dir = Path(__file__).resolve().parent
     _cleanup_old_outputs(out_dir)
@@ -45,9 +47,9 @@ def generate_weight8() -> None:
     # - loss_timing_interval: forcibly disabled in trainer for throughput
     for k in ("profile_loss_vram", "empty_cache_interval", "loss_timing_interval"):
         base["training"].pop(k, None)
-    base["training"]["num_epochs"] = 60
-    base["training"]["full_eval_interval"] = 30
-    base["training"]["save_interval"] = 30
+    base["training"]["num_epochs"] = 120
+    base["training"]["full_eval_interval"] = 60
+    base["training"]["save_interval"] = 60
     base["training"]["full_eval_on_last_epoch"] = True
     base["training"]["batch_size"] = 320
     base["training"]["learning_rate"] = 2e-4
@@ -59,6 +61,7 @@ def generate_weight8() -> None:
     base.setdefault("loss", {})
     for k in (
         "w_latent_color",
+        "w_delta_tv",
         "latent_color_mode",
         "latent_color_pool",
         "latent_color_blur",
@@ -73,10 +76,9 @@ def generate_weight8() -> None:
         "nce_mode",
     ):
         base["loss"].pop(k, None)
-    base["loss"]["w_swd"] = 30.0
-    base["loss"]["w_identity"] = 2.0
+    base["loss"]["w_swd"] = 60.0
+    base["loss"]["w_identity"] = 1.5
     base["loss"]["w_color"] = 2.0
-    base["loss"]["w_delta_tv"] = 0.1
     base["loss"]["color_eps"] = 1e-6
     base["loss"]["color_legacy_pool"] = 4
     base["loss"]["color_mode"] = "latent_decoupled_adain"
@@ -86,29 +88,33 @@ def generate_weight8() -> None:
     base["data"].pop("image_root", None)
 
     experiments = [
-        ("weight_exp1_latent_adain_swd30_tv01_id20_r16_e60", {"color_mode": "latent_decoupled_adain", "w_swd": 30.0, "w_delta_tv": 0.1, "w_identity": 2.0}),
-        ("weight_exp2_latent_adain_swd30_tv00_id40_r16_e60", {"color_mode": "latent_decoupled_adain", "w_swd": 30.0, "w_delta_tv": 0.0, "w_identity": 4.0}),
-        ("weight_exp3_latent_adain_swd60_tv01_id20_r16_e60", {"color_mode": "latent_decoupled_adain", "w_swd": 60.0, "w_delta_tv": 0.1, "w_identity": 2.0}),
-        ("weight_exp4_latent_adain_swd60_tv00_id40_r16_e60", {"color_mode": "latent_decoupled_adain", "w_swd": 60.0, "w_delta_tv": 0.0, "w_identity": 4.0}),
-        ("weight_exp5_pseudo_hist_swd30_tv01_id20_r16_e60", {"color_mode": "pseudo_rgb_hist", "w_swd": 30.0, "w_delta_tv": 0.1, "w_identity": 2.0}),
-        ("weight_exp6_pseudo_hist_swd30_tv00_id40_r16_e60", {"color_mode": "pseudo_rgb_hist", "w_swd": 30.0, "w_delta_tv": 0.0, "w_identity": 4.0}),
-        ("weight_exp7_pseudo_hist_swd60_tv01_id20_r16_e60", {"color_mode": "pseudo_rgb_hist", "w_swd": 60.0, "w_delta_tv": 0.1, "w_identity": 2.0}),
-        ("weight_exp8_pseudo_hist_swd60_tv00_id40_r16_e60", {"color_mode": "pseudo_rgb_hist", "w_swd": 60.0, "w_delta_tv": 0.0, "w_identity": 4.0}),
+        ("style_oa_1_lr2e4_wc2_swd60_id15_e120", {"learning_rate": 2e-4, "w_color": 2.0, "w_swd": 60.0, "w_identity": 1.5}),
+        ("style_oa_2_lr2e4_wc2_swd90_id30_e120", {"learning_rate": 2e-4, "w_color": 2.0, "w_swd": 90.0, "w_identity": 3.0}),
+        ("style_oa_3_lr2e4_wc5_swd60_id30_e120", {"learning_rate": 2e-4, "w_color": 5.0, "w_swd": 60.0, "w_identity": 3.0}),
+        ("style_oa_4_lr2e4_wc5_swd90_id15_e120", {"learning_rate": 2e-4, "w_color": 5.0, "w_swd": 90.0, "w_identity": 1.5}),
+        ("style_oa_5_lr5e4_wc2_swd60_id30_e120", {"learning_rate": 5e-4, "w_color": 2.0, "w_swd": 60.0, "w_identity": 3.0}),
+        ("style_oa_6_lr5e4_wc2_swd90_id15_e120", {"learning_rate": 5e-4, "w_color": 2.0, "w_swd": 90.0, "w_identity": 1.5}),
+        ("style_oa_7_lr5e4_wc5_swd60_id15_e120", {"learning_rate": 5e-4, "w_color": 5.0, "w_swd": 60.0, "w_identity": 1.5}),
+        ("style_oa_8_lr5e4_wc5_swd90_id30_e120", {"learning_rate": 5e-4, "w_color": 5.0, "w_swd": 90.0, "w_identity": 3.0}),
     ]
 
-    run_bat = out_dir / "weight.bat"
+    run_bat = out_dir / "style_oa.bat"
     with open(run_bat, "w", encoding="utf-8") as f_bat:
         f_bat.write("@echo off\n")
         f_bat.write("setlocal\n")
         f_bat.write("cd /d %~dp0\n")
         f_bat.write("if %errorlevel% neq 0 exit /b %errorlevel%\n")
         f_bat.write("echo ==========================================\n")
-        f_bat.write("echo Running Weight 2x2x2 Ablation (8 exps)\n")
+        f_bat.write("echo Running Style OA Orthogonal Ablation (8 exps)\n")
         f_bat.write("echo ==========================================\n")
 
-        for i, (name, loss_delta) in enumerate(experiments, start=1):
+        for i, (name, cfg_delta) in enumerate(experiments, start=1):
             cfg = copy.deepcopy(base)
-            cfg["loss"].update(loss_delta)
+            cfg["training"]["learning_rate"] = float(cfg_delta["learning_rate"])
+            cfg["training"]["min_learning_rate"] = float(cfg_delta["learning_rate"]) * 0.1
+            cfg["loss"]["w_color"] = float(cfg_delta["w_color"])
+            cfg["loss"]["w_swd"] = float(cfg_delta["w_swd"])
+            cfg["loss"]["w_identity"] = float(cfg_delta["w_identity"])
             cfg.setdefault("checkpoint", {})
             cfg["checkpoint"]["save_dir"] = f"../{name}"
 
@@ -121,10 +127,10 @@ def generate_weight8() -> None:
             print(
                 f"generated: {cfg_filename:74s} | "
                 f"exp={i} mode={cfg['loss']['color_mode']:24s} "
+                f"lr={cfg['training']['learning_rate']:.1e} "
                 f"w_swd={cfg['loss']['w_swd']:.0f} "
                 f"w_id={cfg['loss']['w_identity']:.2f} "
-                f"w_color={cfg['loss']['w_color']:.2f} "
-                f"w_tv={cfg['loss']['w_delta_tv']:.2f}"
+                f"w_color={cfg['loss']['w_color']:.2f}"
             )
 
             f_bat.write("echo.\n")
@@ -135,10 +141,10 @@ def generate_weight8() -> None:
             f_bat.write("if %errorlevel% neq 0 exit /b %errorlevel%\n")
 
         f_bat.write("echo.\n")
-        f_bat.write("echo Weight ablation finished.\n")
+        f_bat.write("echo Style OA ablation finished.\n")
 
-    print("\nweight.bat has been generated.")
+    print("\nstyle_oa.bat has been generated.")
 
 
 if __name__ == "__main__":
-    generate_weight8()
+    generate_style_oa8()

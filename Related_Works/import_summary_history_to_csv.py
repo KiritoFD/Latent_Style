@@ -17,6 +17,24 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
+def _is_tokenized_path_parts(parts: List[str]) -> bool:
+    for part in parts:
+        p = str(part).lower()
+        if "tokenized" in p:
+            return True
+    return False
+
+
+def _with_tokenized_suffix(exp_id: str, is_tokenized: bool) -> str:
+    if not exp_id:
+        return exp_id
+    if not is_tokenized:
+        return exp_id
+    if exp_id.endswith("_tokenized"):
+        return exp_id
+    return f"{exp_id}_tokenized"
+
+
 def _read_json(path: Path) -> Dict[str, Any]:
     """Read JSON file with error handling."""
     try:
@@ -35,6 +53,7 @@ def _extract_experiment_id_from_summary_path(summary_path: str) -> str:
     # Normalize path separators
     normalized = summary_path.replace('\\', '/')
     parts = normalized.split('/')
+    tokenized = _is_tokenized_path_parts(parts)
     
     # Find the directory before "full_eval", "eval", "epoch_*", or "summary.json"
     for i, part in enumerate(parts):
@@ -42,12 +61,12 @@ def _extract_experiment_id_from_summary_path(summary_path: str) -> str:
             if i > 0:
                 exp_name = parts[i - 1].strip()
                 if exp_name and exp_name not in {'.', '..'}:
-                    return exp_name
+                    return _with_tokenized_suffix(exp_name, tokenized)
     
     # Fallback: return first non-trivial directory name
     for part in parts:
         if part and part not in {'.', '..', 'summary.json'}:
-            return part
+            return _with_tokenized_suffix(part, tokenized)
     
     return 'unknown'
 
@@ -126,18 +145,19 @@ def _extract_epoch_from_checkpoint_string(s: str) -> Optional[int]:
 
 def _extract_experiment_id_from_file_path(path: Path) -> str:
     parts = list(path.parts)
+    tokenized = _is_tokenized_path_parts([str(p) for p in parts])
     for i, part in enumerate(parts):
         part_l = str(part).lower()
         if part_l == 'full_eval' and i > 0:
             candidate = parts[i - 1].strip()
             if candidate:
-                return candidate
+                return _with_tokenized_suffix(candidate, tokenized)
         # Support variants like "full_eval_tokenized", "full_eval_xxx".
         if part_l.startswith('full_eval') and i > 0:
             candidate = parts[i - 1].strip()
             if candidate:
-                return candidate
-    return path.parent.name or 'unknown'
+                return _with_tokenized_suffix(candidate, tokenized)
+    return _with_tokenized_suffix(path.parent.name or 'unknown', tokenized)
 
 
 def _safe_mean(values: List[float]) -> Optional[float]:
@@ -273,6 +293,19 @@ def _get_dedup_key(record: Dict[str, str]) -> str:
     return f"{exp_id}|{epoch}|{source}"
 
 
+def _normalize_experiment_id_in_row(row: Dict[str, str]) -> Dict[str, str]:
+    exp_id = str(row.get("experiment_id", "") or "")
+    summary_path = str(row.get("summary_path", "") or "")
+    source_file = str(row.get("source_file", "") or "")
+    probe = summary_path if summary_path else source_file
+    if not probe:
+        return row
+    parts = probe.replace("\\", "/").split("/")
+    if _is_tokenized_path_parts(parts):
+        row["experiment_id"] = _with_tokenized_suffix(exp_id, True)
+    return row
+
+
 def _read_existing_csv(csv_path: Path) -> Tuple[List[Dict[str, str]], Set[str]]:
     """Read existing CSV and extract dedup keys."""
     if not csv_path.exists():
@@ -288,6 +321,7 @@ def _read_existing_csv(csv_path: Path) -> Tuple[List[Dict[str, str]], Set[str]]:
                 return [], set()
             
             for row in reader:
+                row = _normalize_experiment_id_in_row(row)
                 rows.append(row)
                 key = _get_dedup_key(row)
                 keys.add(key)
