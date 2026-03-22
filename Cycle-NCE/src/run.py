@@ -26,7 +26,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 _ALLOWED_LOSS_KEYS = {
-    "w_latent_color",
     "w_color",
     "color_mode",
     "color_eps",
@@ -48,34 +47,10 @@ _ALLOWED_LOSS_KEYS = {
     "swd_batch_size",
     "swd_use_high_freq",
     "swd_hf_weight_ratio",
-    "latent_color_mode",
-    "latent_color_pool",
-    "latent_color_blur",
-    "latent_color_w_mean",
-    "latent_color_w_std",
-    "latent_color_w_cov",
-    "latent_color_w_corr",
-    "latent_color_w_gram",
-    "latent_color_w_l1",
-    "latent_color_w_wass",
-    "latent_color_w_hist",
-    "latent_color_w_moment3",
-    "latent_color_w_moment4",
-    "latent_color_w_spectrum",
-    "latent_color_num_bins",
-    "latent_color_hist_tau",
-    "use_nce",
-    "w_nce",
-    "nce_tau",
-    "nce_num_patches",
-    "nce_pool",
-    "nce_mode",
 }
 _FORBIDDEN_LOSS_KEYS = {"w_distill", "distill_low_only", "distill_cross_domain_only", "w_code", "style_loss_source"}
 _LOSS_WEIGHT_KEYS = (
     "w_swd",
-    "w_latent_color",
-    "w_nce",
     "w_color",
     "w_identity",
     "w_delta_tv",
