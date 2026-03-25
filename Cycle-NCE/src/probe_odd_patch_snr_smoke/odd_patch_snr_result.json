@@ -1,0 +1,20 @@
+{
+  "config_path": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\src\\config_style_oa_5_lr5e4_wc2_swd60_id30_e120.json",
+  "data_root": "G:\\GitHub\\Latent_Style\\latent-256",
+  "photo_domain": "photo",
+  "target_styles": [
+    "Hayao",
+    "monet",
+    "vangogh",
+    "cezanne"
+  ],
+  "n_common_samples": 16,
+  "patch_sizes": [
+    1,
+    3,
+    5
+  ],
+  "hf_ratio": 2.0,
+  "best_patch_by_mean_combined_snr": 1,
+  "best_mean_combined_snr": 1.2039042242650033
+}

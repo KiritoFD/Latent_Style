@@ -1,0 +1,86 @@
+{
+  "config_path": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\src\\config_style_oa_5_lr5e4_wc2_swd60_id30_e120.json",
+  "data_root": "G:\\GitHub\\Latent_Style\\latent-256",
+  "photo_domain": "photo",
+  "target_styles": [
+    "Hayao",
+    "monet",
+    "vangogh",
+    "cezanne"
+  ],
+  "n_common_samples": 16,
+  "patch_sizes": [
+    5,
+    7
+  ],
+  "hf_ratios": [
+    0.0,
+    2.5,
+    5.0
+  ],
+  "num_projections": 32,
+  "distance_mode": "cdf",
+  "metrics": {
+    "Hayao": {
+      "5": {
+        "inter_base": 0.2435486614704132,
+        "intra_base": 0.13610682636499405,
+        "inter_hf": 0.08643034845590591,
+        "intra_hf": 0.09029501304030418
+      },
+      "7": {
+        "inter_base": 0.24074648320674896,
+        "intra_base": 0.11103857681155205,
+        "inter_hf": 0.08491997420787811,
+        "intra_hf": 0.08664416149258614
+      }
+    },
+    "monet": {
+      "5": {
+        "inter_base": 0.27431437373161316,
+        "intra_base": 0.1606602892279625,
+        "inter_hf": 0.10277673602104187,
+        "intra_hf": 0.07517630979418755
+      },
+      "7": {
+        "inter_base": 0.23897060751914978,
+        "intra_base": 0.12189322710037231,
+        "inter_hf": 0.07486877590417862,
+        "intra_hf": 0.07926923036575317
+      }
+    },
+    "vangogh": {
+      "5": {
+        "inter_base": 0.27899736166000366,
+        "intra_base": 0.13674654811620712,
+        "inter_hf": 0.09489674866199493,
+        "intra_hf": 0.0683746263384819
+      },
+      "7": {
+        "inter_base": 0.24900245666503906,
+        "intra_base": 0.11639478802680969,
+        "inter_hf": 0.08203452080488205,
+        "intra_hf": 0.08350076898932457
+      }
+    },
+    "cezanne": {
+      "5": {
+        "inter_base": 0.29682427644729614,
+        "intra_base": 0.2842848524451256,
+        "inter_hf": 0.08877614885568619,
+        "intra_hf": 0.08300136029720306
+      },
+      "7": {
+        "inter_base": 0.20437729358673096,
+        "intra_base": 0.1905979961156845,
+        "inter_hf": 0.0863959938287735,
+        "intra_hf": 0.07300194725394249
+      }
+    }
+  },
+  "best": {
+    "patch_size": 7,
+    "hf_ratio": 0.0,
+    "snr": 1.8350529079940665
+  }
+}
