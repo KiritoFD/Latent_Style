@@ -327,10 +327,17 @@ def calc_swd_and_hf_loss(
         for start in range(0, num_projections, chunk):
             end = min(num_projections, start + chunk)
             w = rand_weights[start:end]
-            x_proj = F.conv2d(x, w, padding=p // 2).view(x.shape[0], end - start, -1)
-            y_proj = F.conv2d(y, w, padding=p // 2).view(y.shape[0], end - start, -1)
-            hf_x_proj = F.conv2d(hf_x, w, padding=p // 2).view(hf_x.shape[0], end - start, -1)
-            hf_y_proj = F.conv2d(hf_y, w, padding=p // 2).view(hf_y.shape[0], end - start, -1)
+            # Fuse base/hf projections per domain to reduce conv launch count (4 -> 2)
+            # without changing numerical semantics.
+            x_cat = torch.cat([x, hf_x], dim=0)
+            y_cat = torch.cat([y, hf_y], dim=0)
+            x_proj_cat = F.conv2d(x_cat, w, padding=p // 2).view(x_cat.shape[0], end - start, -1)
+            y_proj_cat = F.conv2d(y_cat, w, padding=p // 2).view(y_cat.shape[0], end - start, -1)
+            b = x.shape[0]
+            x_proj = x_proj_cat[:b]
+            hf_x_proj = x_proj_cat[b:]
+            y_proj = y_proj_cat[:b]
+            hf_y_proj = y_proj_cat[b:]
 
             base_chunk, sample_idx = _swd_distance_from_projected(
                 x_proj,
@@ -393,6 +400,26 @@ class AdaCUTObjective:
         self.nsight_nvtx = bool(config.get("training", {}).get("nsight_nvtx", False))
         self._sobel_cache: Dict[tuple[int, str, str], tuple[torch.Tensor, torch.Tensor]] = {}
         self._projection_cache: Dict[tuple[int, int, int, str, str], torch.Tensor] = {}
+        self._color_factor_cache: Dict[tuple[str, str], torch.Tensor] = {}
+        self._color_weight_cache: Dict[tuple[str, str], torch.Tensor] = {}
+
+    def _get_color_factor_tensor(self, *, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
+        key = (str(device), str(dtype))
+        cached = self._color_factor_cache.get(key)
+        if cached is not None:
+            return cached
+        t = torch.tensor(self.color_pseudo_rgb_factors, device=device, dtype=dtype)
+        self._color_factor_cache[key] = t
+        return t
+
+    def _get_color_weight_tensor(self, *, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
+        key = (str(device), str(dtype))
+        cached = self._color_weight_cache.get(key)
+        if cached is not None:
+            return cached
+        t = torch.tensor(self.color_latent_channel_weights, device=device, dtype=dtype)
+        self._color_weight_cache[key] = t
+        return t
 
     def _get_sobel_kernels(
         self,
@@ -494,8 +521,10 @@ class AdaCUTObjective:
                 )
                 total = total + self.w_swd * ls
                 metrics["swd"] = ls.detach()
+                metrics["_swd_raw"] = ls
                 total = total + (self.w_swd * self.swd_hf_weight_ratio) * lhf
                 metrics["swd_hf"] = lhf.detach()
+                metrics["_swd_hf_raw"] = lhf
             else:
                 ls = calc_swd_loss(
                     swd_x,
@@ -515,6 +544,7 @@ class AdaCUTObjective:
                 )
                 total = total + self.w_swd * ls
                 metrics["swd"] = ls.detach()
+                metrics["_swd_raw"] = ls
 
         if xid_idx is not None and xid_idx.numel() > 0 and self.w_color > 0.0:
             pred_color = pred.float().index_select(0, xid_idx)
@@ -531,18 +561,20 @@ class AdaCUTObjective:
                     target_color,
                     mode=self.color_mode,
                     eps=self.color_eps,
-                    pseudo_rgb_factors=pred_color.new_tensor(self.color_pseudo_rgb_factors),
-                    latent_channel_weights=pred_color.new_tensor(self.color_latent_channel_weights),
+                    pseudo_rgb_factors=self._get_color_factor_tensor(device=pred_color.device, dtype=pred_color.dtype),
+                    latent_channel_weights=self._get_color_weight_tensor(device=pred_color.device, dtype=pred_color.dtype),
                     pool=self.color_legacy_pool,
                     blur=True,
                 )
             total = total + self.w_color * lcol
             metrics["color"] = lcol.detach()
+            metrics["_color_raw"] = lcol
 
         if self.w_identity > 0.0 and id_mask.any():
             lid = ((pred - content_cast).abs().mean(dim=(1, 2, 3)) * id_mask.float()).sum() / id_mask.float().sum().clamp_min(1.0)
             total = total + self.w_identity * lid
             metrics["identity"] = lid.detach()
+            metrics["_identity_raw"] = lid
 
         metrics["loss"] = total
         return metrics

@@ -35,6 +35,26 @@ def _with_tokenized_suffix(exp_id: str, is_tokenized: bool) -> str:
     return f"{exp_id}_tokenized"
 
 
+def _normalize_experiment_candidate(parts: List[str], idx: int) -> str:
+    """
+    Normalize experiment id candidate around `parts[idx]`:
+    - default: current segment
+    - if current segment is a generic container like 'experiment(s)',
+      fallback to one-level-up segment as experiment id.
+    """
+    if idx < 0 or idx >= len(parts):
+        return ""
+    candidate = str(parts[idx]).strip()
+    if not candidate:
+        return ""
+    lc = candidate.lower()
+    if lc in {"experiment", "experiments"} and idx - 1 >= 0:
+        upper = str(parts[idx - 1]).strip()
+        if upper and upper not in {".", ".."}:
+            return upper
+    return candidate
+
+
 def _read_json(path: Path) -> Dict[str, Any]:
     """Read JSON file with error handling."""
     try:
@@ -59,7 +79,7 @@ def _extract_experiment_id_from_summary_path(summary_path: str) -> str:
     for i, part in enumerate(parts):
         if part in {'full_eval', 'eval'} or part.startswith('epoch_'):
             if i > 0:
-                exp_name = parts[i - 1].strip()
+                exp_name = _normalize_experiment_candidate(parts, i - 1)
                 if exp_name and exp_name not in {'.', '..'}:
                     return _with_tokenized_suffix(exp_name, tokenized)
     
@@ -149,12 +169,12 @@ def _extract_experiment_id_from_file_path(path: Path) -> str:
     for i, part in enumerate(parts):
         part_l = str(part).lower()
         if part_l == 'full_eval' and i > 0:
-            candidate = parts[i - 1].strip()
+            candidate = _normalize_experiment_candidate([str(p) for p in parts], i - 1)
             if candidate:
                 return _with_tokenized_suffix(candidate, tokenized)
         # Support variants like "full_eval_tokenized", "full_eval_xxx".
         if part_l.startswith('full_eval') and i > 0:
-            candidate = parts[i - 1].strip()
+            candidate = _normalize_experiment_candidate([str(p) for p in parts], i - 1)
             if candidate:
                 return _with_tokenized_suffix(candidate, tokenized)
     return _with_tokenized_suffix(path.parent.name or 'unknown', tokenized)

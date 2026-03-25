@@ -46,7 +46,18 @@ def _resolve_path(path_str: str, base_dir: Path) -> Path:
     p = Path(path_str)
     if p.is_absolute():
         return p
-    return (base_dir / p).resolve()
+    src_dir = Path(__file__).resolve().parent
+    candidates = [
+        (base_dir / p),
+        (src_dir / p),
+        (src_dir.parent / p),
+        (Path.cwd() / p),
+    ]
+    for c in candidates:
+        rc = c.resolve()
+        if rc.exists():
+            return rc
+    return candidates[0].resolve()
 
 
 def _strip_compile_prefix(state_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:

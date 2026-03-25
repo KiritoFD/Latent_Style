@@ -83,7 +83,19 @@ class AdaCUTTrainer:
 
         torch.set_float32_matmul_precision("high")
         self.allow_tf32 = bool(train_cfg.get("allow_tf32", True))
-        self.cudnn_benchmark = bool(train_cfg.get("cudnn_benchmark", False))
+        cudnn_benchmark_cfg = train_cfg.get("cudnn_benchmark", "auto")
+        if isinstance(cudnn_benchmark_cfg, str):
+            mode = cudnn_benchmark_cfg.strip().lower()
+            if mode == "off":
+                self.cudnn_benchmark = False
+            elif mode == "on":
+                self.cudnn_benchmark = True
+            else:
+                # auto: latent training uses fixed tensor shapes; benchmark is typically safe and faster.
+                self.cudnn_benchmark = bool(device.type == "cuda")
+        else:
+            # Backward compatible bool config.
+            self.cudnn_benchmark = bool(cudnn_benchmark_cfg)
         if torch.cuda.is_available():
             torch.backends.cuda.matmul.allow_tf32 = self.allow_tf32
             torch.backends.cudnn.allow_tf32 = self.allow_tf32
@@ -256,10 +268,9 @@ class AdaCUTTrainer:
 
         self.use_amp = bool(train_cfg.get("use_amp", False) and device.type == "cuda")
         amp_dtype_cfg = str(train_cfg.get("amp_dtype", "bf16")).lower()
-        if amp_dtype_cfg in {"fp16", "float16", "half"}:
-            self.amp_dtype = torch.float16
-        else:
-            self.amp_dtype = torch.bfloat16
+        if amp_dtype_cfg not in {"bf16", "bfloat16"}:
+            logger.warning("amp_dtype=%s requested, but training enforces bf16 for stability.", amp_dtype_cfg)
+        self.amp_dtype = torch.bfloat16
         if device.type != "cuda":
             self.use_amp = False
 
@@ -300,8 +311,35 @@ class AdaCUTTrainer:
         )
 
         self.scheduler = None
-        scheduler_name = str(train_cfg.get("scheduler", "cosine")).lower()
-        if scheduler_name == "cosine":
+        self.scheduler_name = str(train_cfg.get("scheduler", "cosine")).lower()
+        self.scheduler_step_mode = "epoch"
+        self._onecycle_initialized = False
+        self._pending_scheduler_state_dict = None
+        if self.scheduler_name == "cosine":
+            self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                self.optimizer,
+                T_max=max(1, int(train_cfg.get("num_epochs", 100))),
+                eta_min=float(train_cfg.get("min_learning_rate", 1e-5)),
+            )
+        elif self.scheduler_name == "multistep":
+            raw_milestones = train_cfg.get("multistep_milestones", [45, 55])
+            if isinstance(raw_milestones, (list, tuple)):
+                milestones = sorted({int(v) for v in raw_milestones if int(v) > 0})
+            else:
+                milestones = [45, 55]
+            if not milestones:
+                milestones = [45, 55]
+            self.scheduler = torch.optim.lr_scheduler.MultiStepLR(
+                self.optimizer,
+                milestones=milestones,
+                gamma=float(train_cfg.get("multistep_gamma", 0.1)),
+            )
+        elif self.scheduler_name == "onecycle":
+            # OneCycleLR requires steps_per_epoch and is initialized lazily in train_epoch.
+            self.scheduler_step_mode = "batch"
+        else:
+            logger.warning("Unknown scheduler=%s, fallback to cosine.", self.scheduler_name)
+            self.scheduler_name = "cosine"
             self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 self.optimizer,
                 T_max=max(1, int(train_cfg.get("num_epochs", 100))),
@@ -313,6 +351,10 @@ class AdaCUTTrainer:
         self.warmup_start_factor = float(train_cfg.get("warmup_start_factor", 0.0))
         self.warmup_start_factor = min(max(self.warmup_start_factor, 0.0), 1.0)
         self._warmup_ready = self.warmup_steps > 0
+        if self.scheduler_name == "onecycle" and self.warmup_steps > 0:
+            logger.warning("warmup_steps is ignored when scheduler=onecycle (OneCycleLR handles warmup internally).")
+            self.warmup_steps = 0
+            self._warmup_ready = False
         self._warmup_logged = False
 
         self.loss_fn = AdaCUTObjective(config)
@@ -320,6 +362,7 @@ class AdaCUTTrainer:
         self.grad_clip_norm = float(train_cfg.get("grad_clip_norm", 1.0))
         self.accumulation_steps = max(1, int(train_cfg.get("accumulation_steps", 1)))
         self.log_interval = max(0, int(train_cfg.get("log_interval", 20)))
+        self.grad_direction_interval = max(0, int(train_cfg.get("grad_direction_interval", 0)))
         self.use_tqdm = bool(train_cfg.get("use_tqdm", True))
         self.num_epochs = int(train_cfg.get("num_epochs", 100))
         self.save_interval = max(1, int(train_cfg.get("save_interval", 10)))
@@ -352,6 +395,9 @@ class AdaCUTTrainer:
                     "samples_seen",
                     "samples_per_sec",
                     "compute_samples_per_sec",
+                    "gradcos_swd_color",
+                    "gradcos_swd_identity",
+                    "gradcos_color_identity",
                 ]
             )
 
@@ -365,6 +411,53 @@ class AdaCUTTrainer:
             return json.dumps(config, sort_keys=True, ensure_ascii=False)
         except Exception:
             return ""
+
+    @staticmethod
+    def _flattened_grad_cosine(
+        grads_a: list[torch.Tensor | None],
+        grads_b: list[torch.Tensor | None],
+    ) -> float:
+        dot = 0.0
+        na = 0.0
+        nb = 0.0
+        for ga, gb in zip(grads_a, grads_b):
+            if ga is None or gb is None:
+                continue
+            a = ga.detach().float()
+            b = gb.detach().float()
+            dot += float((a * b).sum().item())
+            na += float((a * a).sum().item())
+            nb += float((b * b).sum().item())
+        if na <= 0.0 or nb <= 0.0:
+            return 0.0
+        return float(dot / ((na * nb) ** 0.5 + 1e-12))
+
+    def _compute_grad_direction_metrics(
+        self,
+        loss_dict: Dict[str, torch.Tensor],
+    ) -> Dict[str, float]:
+        swd_raw = loss_dict.get("_swd_raw")
+        swd_hf_raw = loss_dict.get("_swd_hf_raw")
+        color_raw = loss_dict.get("_color_raw")
+        identity_raw = loss_dict.get("_identity_raw")
+        if swd_raw is None or color_raw is None or identity_raw is None:
+            return {}
+        swd_term = swd_raw
+        if swd_hf_raw is not None:
+            swd_term = swd_term + float(getattr(self.loss_fn, "swd_hf_weight_ratio", 1.0)) * swd_hf_raw
+
+        params = [p for p in self.model.parameters() if p.requires_grad]
+        if not params:
+            return {}
+        g_swd = torch.autograd.grad(swd_term, params, retain_graph=True, allow_unused=True)
+        g_color = torch.autograd.grad(color_raw, params, retain_graph=True, allow_unused=True)
+        g_idt = torch.autograd.grad(identity_raw, params, retain_graph=True, allow_unused=True)
+
+        return {
+            "gradcos_swd_color": self._flattened_grad_cosine(list(g_swd), list(g_color)),
+            "gradcos_swd_identity": self._flattened_grad_cosine(list(g_swd), list(g_idt)),
+            "gradcos_color_identity": self._flattened_grad_cosine(list(g_color), list(g_idt)),
+        }
 
     def _apply_loss_hot_config(self, config: Dict) -> Dict[str, tuple[float | int | str | list[int], float | int | str | list[int]]]:
         changed: Dict[str, tuple[float | int | str | list[int], float | int | str | list[int]]] = {}
@@ -632,11 +725,15 @@ class AdaCUTTrainer:
                 self.optimizer.load_state_dict(state["optimizer_state_dict"])
             except ValueError as exc:
                 logger.warning("Skip optimizer state restore due to mismatch: %s", exc)
-        if self.scheduler is not None and "scheduler_state_dict" in state and state["scheduler_state_dict"] is not None:
-            try:
-                self.scheduler.load_state_dict(state["scheduler_state_dict"])
-            except ValueError as exc:
-                logger.warning("Skip scheduler state restore due to mismatch: %s", exc)
+        if "scheduler_state_dict" in state and state["scheduler_state_dict"] is not None:
+            if self.scheduler is not None:
+                try:
+                    self.scheduler.load_state_dict(state["scheduler_state_dict"])
+                except ValueError as exc:
+                    logger.warning("Skip scheduler state restore due to mismatch: %s", exc)
+            else:
+                # OneCycleLR is initialized lazily after dataloader shape is known.
+                self._pending_scheduler_state_dict = state["scheduler_state_dict"]
         self.global_step = int(state.get("global_step", 0))
         self.start_epoch = int(state.get("epoch", 0)) + 1
         logger.info("Resumed from %s at epoch=%d global_step=%d", ckpt_path, self.start_epoch, self.global_step)
@@ -788,8 +885,40 @@ class AdaCUTTrainer:
                 self.nsight_cuda_profile = False
 
     def step_scheduler(self) -> None:
-        if self.scheduler is not None:
+        if self.scheduler is not None and self.scheduler_step_mode == "epoch":
             self.scheduler.step()
+
+    def _init_onecycle_scheduler_if_needed(self, *, total_batches: int) -> None:
+        if self.scheduler_name != "onecycle" or self._onecycle_initialized:
+            return
+        train_cfg = self.config.get("training", {})
+        steps_per_epoch = max(1, int(math.ceil(float(total_batches) / float(max(1, self.accumulation_steps)))))
+        max_lr = float(train_cfg.get("onecycle_max_lr", train_cfg.get("learning_rate", 1e-3)))
+        self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
+            self.optimizer,
+            max_lr=max_lr,
+            epochs=max(1, int(self.num_epochs)),
+            steps_per_epoch=steps_per_epoch,
+            pct_start=float(train_cfg.get("onecycle_pct_start", 0.3)),
+            anneal_strategy=str(train_cfg.get("onecycle_anneal_strategy", "cos")),
+            div_factor=float(train_cfg.get("onecycle_div_factor", 25.0)),
+            final_div_factor=float(train_cfg.get("onecycle_final_div_factor", 1e4)),
+        )
+        self._onecycle_initialized = True
+        logger.info(
+            "OneCycleLR initialized | max_lr=%.3e steps_per_epoch=%d epochs=%d pct_start=%.3f",
+            max_lr,
+            steps_per_epoch,
+            int(self.num_epochs),
+            float(train_cfg.get("onecycle_pct_start", 0.3)),
+        )
+        if self._pending_scheduler_state_dict is not None:
+            try:
+                self.scheduler.load_state_dict(self._pending_scheduler_state_dict)
+                logger.info("Restored deferred scheduler_state_dict for OneCycleLR.")
+            except ValueError as exc:
+                logger.warning("Skip deferred scheduler state restore due to mismatch: %s", exc)
+            self._pending_scheduler_state_dict = None
 
     def _resolve_warmup_steps(self, *, total_batches: int) -> None:
         if self._warmup_ready:
@@ -829,6 +958,7 @@ class AdaCUTTrainer:
         compute_time_total = 0.0
 
         total_steps = len(dataloader)
+        self._init_onecycle_scheduler_if_needed(total_batches=total_steps)
         self._resolve_warmup_steps(total_batches=total_steps)
         if self.warmup_steps > 0 and not self._warmup_logged:
             logger.info(
@@ -872,6 +1002,12 @@ class AdaCUTTrainer:
             logger.info("Profiler enabled -> %s", self.profiler_dir)
 
         with profiler_ctx as prof:
+            grad_cos_accum = {
+                "gradcos_swd_color": 0.0,
+                "gradcos_swd_identity": 0.0,
+                "gradcos_color_identity": 0.0,
+            }
+            grad_cos_count = 0
             for step_idx, raw_batch in enumerate(progress, start=1):
                 self._maybe_toggle_cuda_profiler()
                 step_enter = time.perf_counter()
@@ -932,6 +1068,13 @@ class AdaCUTTrainer:
                         _vram_metric("loss_vram_total_peak_from_start_mb"),
                     )
                 self._trace_vram(epoch=epoch, step_idx=step_idx, phase="after_loss_compute")
+                if self.grad_direction_interval > 0 and (step_idx % self.grad_direction_interval == 0):
+                    with self._nvtx_range("grad_direction_probe"):
+                        gcoss = self._compute_grad_direction_metrics(loss_dict)
+                    if gcoss:
+                        grad_cos_count += 1
+                        for k, v in gcoss.items():
+                            grad_cos_accum[k] += float(v)
 
                 loss_to_backward = loss / self.accumulation_steps
                 t0 = time.perf_counter()
@@ -948,6 +1091,8 @@ class AdaCUTTrainer:
                             torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip_norm)
                         self._apply_warmup_lr()
                         self.optimizer.step()
+                        if self.scheduler is not None and self.scheduler_step_mode == "batch":
+                            self.scheduler.step()
                         self.optimizer.zero_grad(set_to_none=True)
                     optimizer_step += max(0.0, time.perf_counter() - t0)
                     self._trace_vram(epoch=epoch, step_idx=step_idx, phase="after_optimizer_step")
@@ -958,6 +1103,8 @@ class AdaCUTTrainer:
                 # Accumulate detached metrics without per-step host sync.
                 for k, v in loss_dict.items():
                     if v is None:
+                        continue
+                    if str(k).startswith("_"):
                         continue
                     vd = v.detach()
                     if k in metric_accum:
@@ -1031,6 +1178,8 @@ class AdaCUTTrainer:
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip_norm)
             self._apply_warmup_lr()
             self.optimizer.step()
+            if self.scheduler is not None and self.scheduler_step_mode == "batch":
+                self.scheduler.step()
             self.optimizer.zero_grad(set_to_none=True)
             self.global_step += 1
         self._maybe_toggle_cuda_profiler()
@@ -1071,6 +1220,14 @@ class AdaCUTTrainer:
         ]
         for k in expected_keys:
             metrics.setdefault(k, 0.0)
+        if grad_cos_count > 0:
+            metrics["gradcos_swd_color"] = float(grad_cos_accum["gradcos_swd_color"] / grad_cos_count)
+            metrics["gradcos_swd_identity"] = float(grad_cos_accum["gradcos_swd_identity"] / grad_cos_count)
+            metrics["gradcos_color_identity"] = float(grad_cos_accum["gradcos_color_identity"] / grad_cos_count)
+        else:
+            metrics["gradcos_swd_color"] = 0.0
+            metrics["gradcos_swd_identity"] = 0.0
+            metrics["gradcos_color_identity"] = 0.0
 
         metrics.update({
             "data_time_sec": data_time_total,
@@ -1084,6 +1241,9 @@ class AdaCUTTrainer:
             "samples_seen": float(samples_seen),
             "samples_per_sec": samples_per_sec,
             "compute_samples_per_sec": compute_samples_per_sec,
+            "gradcos_swd_color": float(metrics.get("gradcos_swd_color", 0.0)),
+            "gradcos_swd_identity": float(metrics.get("gradcos_swd_identity", 0.0)),
+            "gradcos_color_identity": float(metrics.get("gradcos_color_identity", 0.0)),
         })
 
         if self.use_tqdm:
@@ -1123,6 +1283,9 @@ class AdaCUTTrainer:
                     int(float(metrics.get("samples_seen", 0.0))),
                     float(metrics.get("samples_per_sec", 0.0)),
                     float(metrics.get("compute_samples_per_sec", 0.0)),
+                    float(metrics.get("gradcos_swd_color", 0.0)),
+                    float(metrics.get("gradcos_swd_identity", 0.0)),
+                    float(metrics.get("gradcos_color_identity", 0.0)),
                 ]
             )
 
