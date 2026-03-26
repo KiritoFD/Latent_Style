@@ -39,8 +39,27 @@
     "swd_cdf_bin_chunk_size": 4,
     "swd_cdf_sample_chunk_size": 256,
     "swd_batch_size": 64,
+    "swd_use_high_freq": true,
+    "swd_hf_weight_ratio": 1.0,
     "w_color": 80.0,
     "w_identity": 30.0,
+    "use_nce": true,
+    "w_nce": 1.5,
+    "nce_mode": "xid",
+    "nce_feature_layers": [
+      "enc_32",
+      "body_16",
+      "dec_32"
+    ],
+    "nce_layer_weights": [
+      0.5,
+      1.0,
+      1.0
+    ],
+    "nce_tau": 0.07,
+    "nce_num_patches": 256,
+    "nce_pool": 1,
+    "nce_detach_source": true,
     "color_eps": 1e-06,
     "color_legacy_pool": 4,
     "color_mode": "latent_decoupled_adain"

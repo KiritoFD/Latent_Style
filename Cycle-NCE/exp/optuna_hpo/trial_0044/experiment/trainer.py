@@ -362,7 +362,7 @@ class AdaCUTTrainer:
         self.grad_clip_norm = float(train_cfg.get("grad_clip_norm", 1.0))
         self.accumulation_steps = max(1, int(train_cfg.get("accumulation_steps", 1)))
         self.log_interval = max(0, int(train_cfg.get("log_interval", 20)))
-        self.grad_direction_interval = max(0, int(train_cfg.get("grad_direction_interval", 0)))
+        self.grad_direction_interval = max(0, int(train_cfg.get("grad_direction_interval", 20)))
         self.use_tqdm = bool(train_cfg.get("use_tqdm", True))
         self.num_epochs = int(train_cfg.get("num_epochs", 100))
         self.save_interval = max(1, int(train_cfg.get("save_interval", 10)))
@@ -380,9 +380,7 @@ class AdaCUTTrainer:
                     "epoch",
                     "loss",
                     "swd",
-                    "swd_hf",
                     "color",
-                    "nce",
                     "identity",
                     "identity_ratio",
                     "lr",
@@ -510,35 +508,8 @@ class AdaCUTTrainer:
             int(loss_cfg.get("swd_cdf_sample_chunk_size", getattr(lf, "swd_cdf_sample_chunk_size", 128))),
         )
         _set_attr("swd_batch_size", int(loss_cfg.get("swd_batch_size", lf.swd_batch_size)))
-        _set_attr("swd_use_high_freq", bool(loss_cfg.get("swd_use_high_freq", getattr(lf, "swd_use_high_freq", False))))
-        _set_attr(
-            "swd_hf_weight_ratio",
-            float(loss_cfg.get("swd_hf_weight_ratio", getattr(lf, "swd_hf_weight_ratio", 1.0))),
-        )
         _set_attr("w_color", float(loss_cfg.get("w_color", lf.w_color)))
         _set_attr("w_identity", float(loss_cfg.get("w_identity", lf.w_identity)))
-        _set_attr("w_nce", float(loss_cfg.get("w_nce", getattr(lf, "w_nce", 0.0))))
-        _set_attr("use_nce", bool(loss_cfg.get("use_nce", getattr(lf, "use_nce", False))))
-        _set_attr("nce_mode", str(loss_cfg.get("nce_mode", getattr(lf, "nce_mode", "xid"))).lower())
-        raw_nce_layers = loss_cfg.get("nce_feature_layers", getattr(lf, "nce_feature_layers", ["enc_32", "body_16", "dec_32"]))
-        if isinstance(raw_nce_layers, list):
-            parsed_nce_layers = [str(v) for v in raw_nce_layers]
-        else:
-            parsed_nce_layers = ["enc_32", "body_16", "dec_32"]
-        _set_attr("nce_feature_layers", parsed_nce_layers)
-        raw_nce_weights = loss_cfg.get("nce_layer_weights", getattr(lf, "nce_layer_weights", [1.0]))
-        if isinstance(raw_nce_weights, list):
-            parsed_nce_weights = [float(v) for v in raw_nce_weights]
-        else:
-            parsed_nce_weights = [1.0]
-        _set_attr("nce_layer_weights", parsed_nce_weights)
-        _set_attr("nce_tau", float(loss_cfg.get("nce_tau", getattr(lf, "nce_tau", 0.07))))
-        _set_attr("nce_num_patches", int(loss_cfg.get("nce_num_patches", getattr(lf, "nce_num_patches", 256))))
-        _set_attr("nce_pool", int(loss_cfg.get("nce_pool", getattr(lf, "nce_pool", 1))))
-        _set_attr(
-            "nce_detach_source",
-            bool(loss_cfg.get("nce_detach_source", getattr(lf, "nce_detach_source", True))),
-        )
         _set_attr("nsight_nvtx", bool(training_cfg.get("nsight_nvtx", lf.nsight_nvtx)))
         if any(
             k in changed
@@ -551,19 +522,12 @@ class AdaCUTTrainer:
                 "loss.swd_cdf_sample_size",
                 "loss.swd_cdf_bin_chunk_size",
                 "loss.swd_cdf_sample_chunk_size",
-                "loss.swd_use_high_freq",
             )
         ):
             try:
                 proj_cache = getattr(lf, "_projection_cache", None)
                 if isinstance(proj_cache, dict):
                     proj_cache.clear()
-            except Exception:
-                pass
-            try:
-                sobel_cache = getattr(lf, "_sobel_cache", None)
-                if isinstance(sobel_cache, dict):
-                    sobel_cache.clear()
             except Exception:
                 pass
 
@@ -1153,9 +1117,7 @@ class AdaCUTTrainer:
                     progress.set_postfix(
                         loss=f"{_get_avg('loss'):.4f}",
                         swd=f"{_get_avg('swd'):.4f}",
-                        hf=f"{_get_avg('swd_hf'):.4f}",
                         color=f"{_get_avg('color'):.4f}",
-                        nce=f"{_get_avg('nce'):.4f}",
                         idt=f"{_get_avg('identity'):.4f}",
                         idr=f"{_get_avg('identity_ratio'):.2f}",
                         data_ms=f"{(1000.0 * data_time_total / max(step_idx, 1)):.1f}",
@@ -1165,15 +1127,13 @@ class AdaCUTTrainer:
                     )
                     if not self.use_tqdm:
                         logger.info(
-                            "epoch %d step %d/%d | loss=%.4f swd=%.4f hf=%.4f color=%.4f nce=%.4f idt=%.4f idr=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
+                            "epoch %d step %d/%d | loss=%.4f swd=%.4f color=%.4f idt=%.4f idr=%.2f | data %.1fms comp %.1fms | %.2f it/s eta %.1fs",
                             epoch,
                             step_idx,
                             total_steps,
                             _get_avg('loss'),
                             _get_avg('swd'),
-                            _get_avg('swd_hf'),
                             _get_avg('color'),
-                            _get_avg('nce'),
                             _get_avg('identity'),
                             _get_avg('identity_ratio'),
                             (1000.0 * data_time_total / max(step_idx, 1)),
@@ -1245,7 +1205,7 @@ class AdaCUTTrainer:
         
         # Fill missing keys with 0.0 for safety
         expected_keys = [
-            "loss", "swd", "swd_hf", "color", "nce", "identity", "identity_ratio",
+            "loss", "swd", "color", "identity", "identity_ratio",
             "data_time_sec", "transfer_time_sec", "fwd_loss_time_sec", "backward_time_sec",
             "optimizer_time_sec", "step_overhead_time_sec", "compute_time_sec",
             "samples_seen", "samples_per_sec", "compute_samples_per_sec",
@@ -1257,9 +1217,9 @@ class AdaCUTTrainer:
             metrics["gradcos_swd_identity"] = float(grad_cos_accum["gradcos_swd_identity"] / grad_cos_count)
             metrics["gradcos_color_identity"] = float(grad_cos_accum["gradcos_color_identity"] / grad_cos_count)
         else:
-            metrics["gradcos_swd_color"] = 0.0
-            metrics["gradcos_swd_identity"] = 0.0
-            metrics["gradcos_color_identity"] = 0.0
+            metrics["gradcos_swd_color"] = float("nan")
+            metrics["gradcos_swd_identity"] = float("nan")
+            metrics["gradcos_color_identity"] = float("nan")
 
         metrics.update({
             "data_time_sec": data_time_total,
@@ -1283,9 +1243,7 @@ class AdaCUTTrainer:
                 f"[Epoch {epoch}/{self.num_epochs}] "
                 f"loss={metrics['loss']:.4f} "
                 f"swd={metrics['swd']:.4f} "
-                f"hf={metrics['swd_hf']:.4f} "
                 f"color={metrics['color']:.4f} "
-                f"nce={metrics['nce']:.4f} "
                 f"idt={metrics['identity']:.4f} idr={metrics['identity_ratio']:.2f} "
                 f"| data={data_time_total:.1f}s transfer={transfer_time_total:.1f}s fwd={fwd_loss_time_total:.1f}s "
                 f"bwd={backward_time_total:.1f}s opt={optimizer_time_total:.1f}s overhead={step_overhead_time_total:.1f}s "
@@ -1302,9 +1260,7 @@ class AdaCUTTrainer:
                     int(epoch),
                     float(metrics.get("loss", 0.0)),
                     float(metrics.get("swd", 0.0)),
-                    float(metrics.get("swd_hf", 0.0)),
                     float(metrics.get("color", 0.0)),
-                    float(metrics.get("nce", 0.0)),
                     float(metrics.get("identity", 0.0)),
                     float(metrics.get("identity_ratio", 0.0)),
                     float(metrics.get("lr", 0.0)),

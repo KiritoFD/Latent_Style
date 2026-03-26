@@ -121,6 +121,45 @@ def _lowfreq(x: torch.Tensor, pool: int = 4, blur: bool = True) -> torch.Tensor:
     return y
 
 
+def _resolve_layer_weights(layers: list[str], raw_weights: tuple[float, ...] | list[float]) -> list[float]:
+    if not layers:
+        return []
+    weights = [float(w) for w in raw_weights]
+    if not weights:
+        return [1.0] * len(layers)
+    if len(weights) < len(layers):
+        weights.extend([weights[-1]] * (len(layers) - len(weights)))
+    return weights[: len(layers)]
+
+
+def _sample_patch_indices(batch: int, total_patches: int, num_patches: int, device: torch.device) -> torch.Tensor:
+    sample_count = max(1, min(int(num_patches), int(total_patches)))
+    return torch.rand(batch, total_patches, device=device).argsort(dim=1)[:, :sample_count]
+
+
+def calc_patch_nce_loss(
+    source: torch.Tensor,
+    target: torch.Tensor,
+    *,
+    tau: float = 0.07,
+    num_patches: int = 256,
+    pool: int = 1,
+) -> torch.Tensor:
+    src = _lowfreq(source, pool=max(1, int(pool)), blur=False)
+    tgt = _lowfreq(target, pool=max(1, int(pool)), blur=False)
+    bsz, channels, height, width = src.shape
+    total_patches = int(height * width)
+    if total_patches <= 1:
+        return torch.zeros((), device=src.device, dtype=torch.float32)
+
+    src_flat = F.normalize(src.view(bsz, channels, total_patches).transpose(1, 2), dim=-1)
+    tgt_flat = F.normalize(tgt.view(bsz, channels, total_patches).transpose(1, 2), dim=-1)
+    patch_idx = _sample_patch_indices(bsz, total_patches, int(num_patches), src.device)
+    sampled_tgt = torch.gather(tgt_flat, 1, patch_idx.unsqueeze(-1).expand(-1, -1, channels))
+    logits = torch.bmm(sampled_tgt, src_flat.transpose(1, 2)) / max(float(tau), 1e-6)
+    return F.cross_entropy(logits.reshape(-1, total_patches), patch_idx.reshape(-1))
+
+
 def calc_swd_loss(
     x: torch.Tensor,
     y: torch.Tensor,
@@ -180,6 +219,66 @@ def calc_swd_loss(
             patch_loss = patch_loss + swd_chunk * ((end - start) / float(num_projections))
         total_loss += patch_loss
     return total_loss / max(len(patch_sizes), 1)
+
+
+def calc_hf_swd_loss(
+    x: torch.Tensor,
+    y: torch.Tensor,
+    patch_sizes: list[int],
+    *,
+    num_projections: int = 256,
+    projection_chunk_size: int = 0,
+    distance_mode: str = "cdf",
+    cdf_num_bins: int = 64,
+    cdf_tau: float = 0.01,
+    cdf_sample_size: int = 256,
+    cdf_bin_chunk_size: int = 16,
+    cdf_sample_chunk_size: int = 128,
+    sobel_kernels: tuple[torch.Tensor, torch.Tensor] | None = None,
+    projection_bank: Dict[int, torch.Tensor] | None = None,
+) -> torch.Tensor:
+    channels = int(x.shape[1])
+    device = x.device
+    if sobel_kernels is None:
+        sobel_x = torch.tensor(
+            [[-1.0, 0.0, 1.0], [-2.0, 0.0, 2.0], [-1.0, 0.0, 1.0]],
+            device=device,
+            dtype=x.dtype,
+        )
+        sobel_y = torch.tensor(
+            [[-1.0, -2.0, -1.0], [0.0, 0.0, 0.0], [1.0, 2.0, 1.0]],
+            device=device,
+            dtype=x.dtype,
+        )
+        weight_x = sobel_x.view(1, 1, 3, 3).expand(channels, 1, 3, 3).contiguous()
+        weight_y = sobel_y.view(1, 1, 3, 3).expand(channels, 1, 3, 3).contiguous()
+    else:
+        weight_x, weight_y = sobel_kernels
+
+    x_gx = F.conv2d(x, weight_x, padding=1, groups=channels)
+    x_gy = F.conv2d(x, weight_y, padding=1, groups=channels)
+    y_gx = F.conv2d(y, weight_x, padding=1, groups=channels)
+    y_gy = F.conv2d(y, weight_y, padding=1, groups=channels)
+    hf_x = torch.sqrt(x_gx.pow(2) + x_gy.pow(2) + 1e-8)
+    hf_y = torch.sqrt(y_gx.pow(2) + y_gy.pow(2) + 1e-8)
+    hf_x = hf_x / (hf_x.mean(dim=(2, 3), keepdim=True) + 1e-5)
+    hf_y = hf_y / (hf_y.mean(dim=(2, 3), keepdim=True) + 1e-5)
+    dummy_ids = torch.zeros((hf_x.shape[0],), device=device, dtype=torch.long)
+    return calc_swd_loss(
+        hf_x,
+        hf_y,
+        dummy_ids,
+        patch_sizes,
+        num_projections=num_projections,
+        projection_chunk_size=projection_chunk_size,
+        distance_mode=distance_mode,
+        cdf_num_bins=cdf_num_bins,
+        cdf_tau=cdf_tau,
+        cdf_sample_size=cdf_sample_size,
+        cdf_bin_chunk_size=cdf_bin_chunk_size,
+        cdf_sample_chunk_size=cdf_sample_chunk_size,
+        projection_bank=projection_bank,
+    )
 
 
 def _swd_distance_from_projected(
@@ -243,8 +342,21 @@ class AdaCUTObjective:
         self.swd_cdf_bin_chunk_size = int(loss_cfg.get("swd_cdf_bin_chunk_size", 16))
         self.swd_cdf_sample_chunk_size = int(loss_cfg.get("swd_cdf_sample_chunk_size", 128))
         self.swd_batch_size = int(loss_cfg.get("swd_batch_size", 0))
+        self.swd_use_high_freq = bool(loss_cfg.get("swd_use_high_freq", False))
+        self.swd_hf_weight_ratio = float(loss_cfg.get("swd_hf_weight_ratio", 1.0))
         self.w_identity = float(loss_cfg.get("w_identity", 2.0))
         self.w_color = float(loss_cfg.get("w_color", 0.0))
+        self.w_nce = float(loss_cfg.get("w_nce", 0.0))
+        self.use_nce = bool(loss_cfg.get("use_nce", self.w_nce > 0.0))
+        self.nce_mode = str(loss_cfg.get("nce_mode", "xid")).lower()
+        raw_nce_layers = loss_cfg.get("nce_feature_layers", ["enc_32", "body_16", "dec_32"])
+        self.nce_feature_layers = [str(v) for v in raw_nce_layers] if isinstance(raw_nce_layers, list) else ["enc_32", "body_16", "dec_32"]
+        raw_nce_weights = loss_cfg.get("nce_layer_weights", [1.0] * max(len(self.nce_feature_layers), 1))
+        self.nce_layer_weights = [float(v) for v in raw_nce_weights] if isinstance(raw_nce_weights, list) else [1.0] * max(len(self.nce_feature_layers), 1)
+        self.nce_tau = float(loss_cfg.get("nce_tau", 0.07))
+        self.nce_num_patches = int(loss_cfg.get("nce_num_patches", 256))
+        self.nce_pool = int(loss_cfg.get("nce_pool", 1))
+        self.nce_detach_source = bool(loss_cfg.get("nce_detach_source", True))
         self.color_mode = _canonical_color_mode(str(loss_cfg.get("color_mode", "pseudo_rgb_adain")))
         self.color_eps = float(loss_cfg.get("color_eps", 1e-6))
         raw_color_factors = loss_cfg.get("color_pseudo_rgb_factors", _DEFAULT_SD15_PSEUDO_RGB_FACTORS)
@@ -256,6 +368,7 @@ class AdaCUTObjective:
         self._projection_cache: Dict[tuple[int, int, int, str, str], torch.Tensor] = {}
         self._color_factor_cache: Dict[tuple[str, str], torch.Tensor] = {}
         self._color_weight_cache: Dict[tuple[str, str], torch.Tensor] = {}
+        self._sobel_cache: Dict[tuple[int, str, str], tuple[torch.Tensor, torch.Tensor]] = {}
 
     def _get_color_factor_tensor(self, *, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
         key = (str(device), str(dtype))
@@ -287,6 +400,24 @@ class AdaCUTObjective:
                 self._projection_cache[key] = w
             bank[p] = w
         return bank
+
+    def _get_sobel_kernels(
+        self,
+        channels: int,
+        *,
+        device: torch.device,
+        dtype: torch.dtype,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        key = (int(channels), str(device), str(dtype))
+        cached = self._sobel_cache.get(key)
+        if cached is not None:
+            return cached
+        sx = torch.tensor([[-1.0, 0.0, 1.0], [-2.0, 0.0, 2.0], [-1.0, 0.0, 1.0]], device=device, dtype=dtype)
+        sy = torch.tensor([[-1.0, -2.0, -1.0], [0.0, 0.0, 0.0], [1.0, 2.0, 1.0]], device=device, dtype=dtype)
+        wx = sx.view(1, 1, 3, 3).expand(channels, 1, 3, 3).contiguous()
+        wy = sy.view(1, 1, 3, 3).expand(channels, 1, 3, 3).contiguous()
+        self._sobel_cache[key] = (wx, wy)
+        return wx, wy
 
     def _select_xid_indices(self, xid_mask: torch.Tensor) -> torch.Tensor:
         valid = torch.nonzero(xid_mask, as_tuple=False).squeeze(1)
@@ -356,6 +487,24 @@ class AdaCUTObjective:
             total = total + self.w_swd * ls
             metrics["swd"] = ls.detach()
             metrics["_swd_raw"] = ls
+            if self.swd_use_high_freq:
+                lhf = calc_hf_swd_loss(
+                    swd_x,
+                    swd_y,
+                    self.swd_patch_sizes,
+                    num_projections=self.swd_num_projections,
+                    projection_chunk_size=self.swd_projection_chunk_size,
+                    distance_mode=self.swd_distance_mode,
+                    cdf_num_bins=self.swd_cdf_num_bins,
+                    cdf_tau=self.swd_cdf_tau,
+                    cdf_sample_size=self.swd_cdf_sample_size,
+                    cdf_bin_chunk_size=self.swd_cdf_bin_chunk_size,
+                    cdf_sample_chunk_size=self.swd_cdf_sample_chunk_size,
+                    sobel_kernels=self._get_sobel_kernels(int(swd_x.shape[1]), device=swd_x.device, dtype=swd_x.dtype),
+                    projection_bank=bank,
+                )
+                total = total + (self.w_swd * self.swd_hf_weight_ratio) * lhf
+                metrics["swd_hf"] = lhf.detach()
 
         if xid_idx is not None and xid_idx.numel() > 0 and self.w_color > 0.0:
             pred_color = pred.float().index_select(0, xid_idx)
@@ -386,6 +535,61 @@ class AdaCUTObjective:
             total = total + self.w_identity * lid
             metrics["identity"] = lid.detach()
             metrics["_identity_raw"] = lid
+
+        if self.use_nce and self.w_nce > 0.0 and self.nce_feature_layers:
+            mode = self.nce_mode
+
+            def _compute_nce(indices: torch.Tensor, metric_prefix: str) -> torch.Tensor | None:
+                if indices.numel() == 0:
+                    return None
+                pred_subset = pred.index_select(0, indices)
+                content_subset = content_cast.index_select(0, indices)
+                pred_features = model.extract_nce_features(pred_subset, feature_layers=self.nce_feature_layers)
+                if self.nce_detach_source:
+                    with torch.no_grad():
+                        source_features = model.extract_nce_features(content_subset, feature_layers=self.nce_feature_layers)
+                else:
+                    source_features = model.extract_nce_features(content_subset, feature_layers=self.nce_feature_layers)
+
+                weights = _resolve_layer_weights(self.nce_feature_layers, self.nce_layer_weights)
+                weighted_losses = []
+                weight_sum = 0.0
+                for layer_name, layer_weight in zip(self.nce_feature_layers, weights):
+                    src_feat = source_features.get(layer_name)
+                    tgt_feat = pred_features.get(layer_name)
+                    if src_feat is None or tgt_feat is None:
+                        continue
+                    layer_loss = calc_patch_nce_loss(
+                        src_feat.detach() if self.nce_detach_source else src_feat,
+                        tgt_feat,
+                        tau=self.nce_tau,
+                        num_patches=self.nce_num_patches,
+                        pool=self.nce_pool,
+                    )
+                    metrics[f"{metric_prefix}_{layer_name}"] = layer_loss.detach()
+                    weighted_losses.append(layer_loss * float(layer_weight))
+                    weight_sum += float(layer_weight)
+                if not weighted_losses or weight_sum <= 0.0:
+                    return None
+                return torch.stack([v.float() for v in weighted_losses]).sum() / weight_sum
+
+            nce_terms = []
+            if mode in {"xid", "cross", "cross_domain", "both"} and xid_idx is not None and xid_idx.numel() > 0:
+                nce_xid = _compute_nce(xid_idx, "nce_xid")
+                if nce_xid is not None:
+                    metrics["nce_xid"] = nce_xid.detach()
+                    nce_terms.append(nce_xid)
+            if mode in {"identity", "id", "both"} and id_mask.any():
+                id_idx = torch.nonzero(id_mask, as_tuple=False).squeeze(1)
+                nce_id = _compute_nce(id_idx, "nce_id")
+                if nce_id is not None:
+                    metrics["nce_identity"] = nce_id.detach()
+                    nce_terms.append(nce_id)
+            if nce_terms:
+                lnce = torch.stack([v.float() for v in nce_terms]).mean()
+                total = total + self.w_nce * lnce
+                metrics["nce"] = lnce.detach()
+                metrics["_nce_raw"] = lnce
 
         metrics["loss"] = total
         return metrics

@@ -25,7 +25,14 @@
   },
   "loss": {
     "w_swd": 150.0,
-    "swd_patch_sizes": [1, 3, 5, 9, 15],
+    "swd_patch_sizes": [
+      1,
+      3,
+      5,
+      9,
+      15,
+      25
+    ],
     "swd_num_projections": 320,
     "swd_projection_chunk_size": 128,
     "swd_distance_mode": "cdf",
@@ -36,11 +43,19 @@
     "swd_cdf_sample_chunk_size": 256,
     "swd_batch_size": 64,
     "w_color": 50.0,
-    "w_identity": 30.0,
+    "w_identity": 45.0,
     "color_eps": 1e-06,
-    "color_latent_channel_weights": [2.0, 1.0, 1.0, 1.0],
+    "color_latent_channel_weights": [
+      2.0,
+      1.0,
+      1.0,
+      1.0
+    ],
     "color_luma_range_weight": 2.0,
-    "color_luma_quantiles": [0.1, 0.9],
+    "color_luma_quantiles": [
+      0.1,
+      0.9
+    ],
     "color_legacy_pool": 4,
     "color_mode": "latent_decoupled_adain"
   },
@@ -126,7 +141,7 @@
     "virtual_length_multiplier": 1
   },
   "checkpoint": {
-    "save_dir": "../base"
+    "save_dir": "../cross_attn_Run_4_id_tight_45"
   },
   "inference": {
     "num_steps": 1,
