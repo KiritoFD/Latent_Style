@@ -13,7 +13,45 @@ import torch.nn.functional as F
 try:
     from .losses import calc_swd_and_hf_loss
 except Exception:
-    from losses import calc_swd_and_hf_loss
+    try:
+        from losses import calc_swd_and_hf_loss
+    except Exception:
+        from losses import calc_swd_loss
+
+        def calc_swd_and_hf_loss(
+            x: torch.Tensor,
+            y: torch.Tensor,
+            patch_sizes: list[int],
+            num_projections: int = 256,
+            projection_chunk_size: int = 0,
+            distance_mode: str = "cdf",
+            cdf_num_bins: int = 64,
+            cdf_tau: float = 0.01,
+            cdf_sample_size: int = 256,
+            cdf_bin_chunk_size: int = 16,
+            cdf_sample_chunk_size: int = 128,
+            sobel_kernels=None,
+            projection_bank=None,
+        ) -> tuple[torch.Tensor, torch.Tensor]:
+            del sobel_kernels
+            dummy_ids = torch.zeros((x.shape[0],), device=x.device, dtype=torch.long)
+            base = calc_swd_loss(
+                x,
+                y,
+                dummy_ids,
+                patch_sizes,
+                num_projections=num_projections,
+                projection_chunk_size=projection_chunk_size,
+                distance_mode=distance_mode,
+                cdf_num_bins=cdf_num_bins,
+                cdf_tau=cdf_tau,
+                cdf_sample_size=cdf_sample_size,
+                cdf_bin_chunk_size=cdf_bin_chunk_size,
+                cdf_sample_chunk_size=cdf_sample_chunk_size,
+                projection_bank=projection_bank,
+            )
+            hf = torch.zeros_like(base)
+            return base, hf
 
 
 def _resolve_path(path_str: str, base_dir: Path) -> Path:
@@ -383,4 +421,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

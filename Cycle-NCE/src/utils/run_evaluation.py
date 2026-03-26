@@ -50,6 +50,12 @@ if str(_ROOT) not in sys.path:
 
 from utils.inference import LGTInference, load_vae, encode_image, decode_latent
 from utils.classify import DEFAULT_EVAL_IMAGE_CLASSIFIER_CKPT, load_eval_image_classifier
+from utils.artfid_metric import (
+    compute_artfid_content_distance_from_paths,
+    compute_artfid_fid_from_paths,
+    load_artfid_feature_extractor,
+    load_artfid_lpips,
+)
 
 # KID (official implementation via torchmetrics)
 try:
@@ -589,29 +595,50 @@ def _frechet_distance(mu1, sigma1, mu2, sigma2):
 def _compute_art_fid_for_pair(
     gen_paths,
     ref_paths,
-    mean_content_lpips: float,
+    src_paths,
     *,
-    runner,
+    feature_model,
+    lpips_loss_fn,
     device: str,
+    batch_size: int,
     max_gen: int,
     max_ref: int,
     ref_cache: dict | None = None,
     ref_cache_key: str | None = None,
 ):
-    fid_style = _compute_fid_for_pair(
-        gen_paths,
-        ref_paths,
-        runner=runner,
+    gen = _collect_metric_image_paths(gen_paths, max_gen)
+    ref = _collect_metric_image_paths(ref_paths, max_ref)
+    src = _collect_metric_image_paths(src_paths, max_gen)
+    if len(gen) < 2 or len(ref) < 2:
+        return None, None, None
+    if not src:
+        return None, None, None
+    n = min(len(gen), len(src))
+    gen = gen[:n]
+    src = src[:n]
+    if len(gen) < 1:
+        return None, None, None
+
+    artfid_fid = compute_artfid_fid_from_paths(
+        gen,
+        ref,
+        model=feature_model,
+        batch_size=max(1, int(batch_size)),
         device=device,
-        max_gen=max_gen,
-        max_ref=max_ref,
         ref_cache=ref_cache,
         ref_cache_key=ref_cache_key,
     )
-    if fid_style is None:
-        return None, None
-    art_fid = (1.0 + float(fid_style)) * (1.0 + float(mean_content_lpips))
-    return float(fid_style), float(art_fid)
+    artfid_content = compute_artfid_content_distance_from_paths(
+        gen,
+        src,
+        loss_fn=lpips_loss_fn,
+        batch_size=max(1, int(batch_size)),
+        device=device,
+    )
+    if artfid_fid is None or artfid_content is None:
+        return artfid_fid, artfid_content, None
+    art_fid = (1.0 + float(artfid_fid)) * (1.0 + float(artfid_content))
+    return float(artfid_fid), float(artfid_content), float(art_fid)
 
 
 def _compute_fid_for_pair(
@@ -1829,6 +1856,7 @@ def main():
         art_fid_max_ref=int(args.eval_art_fid_max_ref),
         art_fid_batch_size=int(args.eval_art_fid_batch_size),
         art_fid_photo_only=bool(args.eval_art_fid_photo_only),
+        cache_dir=cache_dir,
         enable_kid=bool(args.eval_enable_kid),
         kid_max_gen=int(args.eval_kid_max_gen),
         kid_max_ref=int(args.eval_kid_max_ref),
@@ -1850,6 +1878,7 @@ def generate_summary_json(
     art_fid_max_ref: int = 200,
     art_fid_batch_size: int = 16,
     art_fid_photo_only: bool = False,
+    cache_dir: str | Path | None = None,
     enable_kid: bool = False,
     kid_max_gen: int = 200,
     kid_max_ref: int = 200,
@@ -1869,6 +1898,9 @@ def generate_summary_json(
 
     fid_runner = None
     ref_fid_cache = {}
+    artfid_feature_model = None
+    artfid_lpips_loss = None
+    artfid_ref_cache = {}
     if enable_art_fid:
         if style_real_paths is None:
             raise RuntimeError("ArtFID/FID requested but style_real_paths is missing.")
@@ -1885,6 +1917,11 @@ def generate_summary_json(
                     "Install torchmetrics[image] and torch-fidelity, or ensure Inception weights are available offline."
                 ) from e
             print(f"  WARNING: Inception runner unavailable, fallback to torchmetrics FID: {e}")
+        artfid_feature_model = load_artfid_feature_extractor(
+            device=device,
+            cache_dir=cache_dir,
+        )
+        artfid_lpips_loss = load_artfid_lpips(device=device)
     if enable_kid and KernelInceptionDistance is None:
         raise RuntimeError("KID requested (--eval_enable_kid) but torchmetrics is not available.")
     if enable_kid:
@@ -1948,10 +1985,31 @@ def generate_summary_json(
                         if gp is not None:
                             gen_paths.append(str(gp.resolve()))
                     ref_paths = list(style_real_paths.get(tgt, []))
-                    fid_style, art_fid = _compute_art_fid_for_pair(
+                    src_paths = []
+                    src_map = src_name_to_path.get(str(src), {})
+                    for x in items:
+                        sp = src_map.get(str(x.get('src_image', '')))
+                        if sp:
+                            src_paths.append(sp)
+                    artfid_style_fid, artfid_content_lpips, art_fid = _compute_art_fid_for_pair(
                         gen_paths,
                         ref_paths,
-                        float(mean_content_lpips),
+                        src_paths,
+                        feature_model=artfid_feature_model,
+                        lpips_loss_fn=artfid_lpips_loss,
+                        device=device,
+                        batch_size=max(1, int(art_fid_batch_size)),
+                        max_gen=max(1, int(art_fid_max_gen)),
+                        max_ref=max(1, int(art_fid_max_ref)),
+                        ref_cache=artfid_ref_cache,
+                        ref_cache_key=str(tgt),
+                    )
+                    stats['art_fid_fid'] = artfid_style_fid
+                    stats['art_fid_content_lpips'] = artfid_content_lpips
+                    stats['art_fid'] = art_fid
+                    fid_style = _compute_fid_for_pair(
+                        gen_paths,
+                        ref_paths,
                         runner=fid_runner,
                         device=device,
                         max_gen=max(1, int(art_fid_max_gen)),
@@ -1960,13 +2018,6 @@ def generate_summary_json(
                         ref_cache_key=str(tgt),
                     )
                     stats['fid_style'] = fid_style
-                    stats['art_fid'] = art_fid
-                    src_paths = []
-                    src_map = src_name_to_path.get(str(src), {})
-                    for x in items:
-                        sp = src_map.get(str(x.get('src_image', '')))
-                        if sp:
-                            src_paths.append(sp)
                     fid_baseline = _compute_fid_for_pair(
                         src_paths,
                         ref_paths,
@@ -1988,12 +2039,16 @@ def generate_summary_json(
                 except Exception as e:
                     print(f"WARNING: ArtFID failed for {src}->{tgt}: {e}")
                     stats['fid_style'] = None
+                    stats['art_fid_fid'] = None
+                    stats['art_fid_content_lpips'] = None
                     stats['art_fid'] = None
                     stats['fid_baseline'] = None
                     stats['delta_fid'] = None
                     stats['delta_fid_ratio'] = None
             else:
                 stats['fid_style'] = None
+                stats['art_fid_fid'] = None
+                stats['art_fid_content_lpips'] = None
                 stats['art_fid'] = None
                 stats['fid_baseline'] = None
                 stats['delta_fid'] = None
@@ -2113,6 +2168,27 @@ def generate_summary_json(
         correct = sum(1 for t, p in zip(y_true, y_pred) if t.lower() == p.lower())
         cls_report = {"accuracy": correct / len(y_true)}
 
+    def build_pool_summary(pool, *, valid: bool | None = None):
+        return {
+            'clip_dir': pool_avg(pool, 'clip_dir'),
+            'clip_style': pool_avg(pool, 'clip_style'),
+            'clip_content': pool_avg(pool, 'clip_content'),
+            'content_lpips': pool_avg(pool, 'content_lpips'),
+            'art_fid_content_lpips': pool_avg([t for t in pool if t.get('art_fid_content_lpips') is not None], 'art_fid_content_lpips', default=None),
+            'fid_baseline': pool_avg([t for t in pool if t.get('fid_baseline') is not None], 'fid_baseline', default=None),
+            'fid': pool_avg([t for t in pool if t.get('fid_style') is not None], 'fid_style', default=None),
+            'delta_fid': pool_avg([t for t in pool if t.get('delta_fid') is not None], 'delta_fid', default=None),
+            'delta_fid_ratio': pool_avg([t for t in pool if t.get('delta_fid_ratio') is not None], 'delta_fid_ratio', default=None),
+            'art_fid_fid': pool_avg([t for t in pool if t.get('art_fid_fid') is not None], 'art_fid_fid', default=None),
+            'art_fid': pool_avg([t for t in pool if t.get('art_fid') is not None], 'art_fid', default=None),
+            'kid_baseline': pool_avg([t for t in pool if t.get('kid_baseline') is not None], 'kid_baseline', default=None),
+            'kid': pool_avg([t for t in pool if t.get('kid_style') is not None], 'kid_style', default=None),
+            'delta_kid': pool_avg([t for t in pool if t.get('delta_kid') is not None], 'delta_kid', default=None),
+            'delta_kid_ratio': pool_avg([t for t in pool if t.get('delta_kid_ratio') is not None], 'delta_kid_ratio', default=None),
+            'classifier_acc': pool_avg([t for t in pool if t['classifier_acc'] is not None], 'classifier_acc'),
+            **({'valid': bool(valid)} if valid is not None else {}),
+        }
+
     summary = {
         'checkpoint': str(ckpt_path),
         'timestamp': time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -2124,7 +2200,9 @@ def generate_summary_json(
             'fid': "FID between generated images and target-style real references (Inception features).",
             'delta_fid': "fid_baseline - fid (higher is better).",
             'delta_fid_ratio': "delta_fid / fid_baseline (relative improvement ratio).",
-            'art_fid': "computed as (1 + fid_style) * (1 + content_lpips)",
+            'art_fid_fid': "Academic ArtFID style term: FID computed with the official art-domain Inception checkpoint.",
+            'art_fid_content_lpips': "Academic ArtFID content term: mean LPIPS-Alex between generated and source content images.",
+            'art_fid': "Academic ArtFID: (1 + art_fid_fid) * (1 + art_fid_content_lpips).",
             'kid_baseline': "KID between source-domain images and target-style references (torchmetrics).",
             'kid': "KID between generated images and target-style references (torchmetrics).",
             'delta_kid': "kid_baseline - kid (higher is better).",
@@ -2132,38 +2210,10 @@ def generate_summary_json(
         },
         'matrix_breakdown': matrix_json,
         'analysis': {
-            'style_transfer_ability': {
-                'clip_dir': pool_avg(all_pool, 'clip_dir'),
-                'clip_style': pool_avg(all_pool, 'clip_style'),
-                'clip_content': pool_avg(all_pool, 'clip_content'),
-                'content_lpips': pool_avg(all_pool, 'content_lpips'),
-                'fid_baseline': pool_avg([t for t in all_pool if t.get('fid_baseline') is not None], 'fid_baseline', default=None),
-                'fid': pool_avg([t for t in all_pool if t.get('fid_style') is not None], 'fid_style', default=None),
-                'delta_fid': pool_avg([t for t in all_pool if t.get('delta_fid') is not None], 'delta_fid', default=None),
-                'delta_fid_ratio': pool_avg([t for t in all_pool if t.get('delta_fid_ratio') is not None], 'delta_fid_ratio', default=None),
-                'art_fid': pool_avg([t for t in all_pool if t.get('art_fid') is not None], 'art_fid', default=None),
-                'kid_baseline': pool_avg([t for t in all_pool if t.get('kid_baseline') is not None], 'kid_baseline', default=None),
-                'kid': pool_avg([t for t in all_pool if t.get('kid_style') is not None], 'kid_style', default=None),
-                'delta_kid': pool_avg([t for t in all_pool if t.get('delta_kid') is not None], 'delta_kid', default=None),
-                'delta_kid_ratio': pool_avg([t for t in all_pool if t.get('delta_kid_ratio') is not None], 'delta_kid_ratio', default=None),
-                'classifier_acc': pool_avg([t for t in all_pool if t['classifier_acc'] is not None], 'classifier_acc')
-            },
-            'photo_to_art_performance': {
-                'clip_dir': pool_avg(photo_transfer_pool, 'clip_dir'),
-                'clip_style': pool_avg(photo_transfer_pool, 'clip_style'),
-                'clip_content': pool_avg(photo_transfer_pool, 'clip_content'),
-                'fid_baseline': pool_avg([t for t in photo_transfer_pool if t.get('fid_baseline') is not None], 'fid_baseline', default=None),
-                'fid': pool_avg([t for t in photo_transfer_pool if t.get('fid_style') is not None], 'fid_style', default=None),
-                'delta_fid': pool_avg([t for t in photo_transfer_pool if t.get('delta_fid') is not None], 'delta_fid', default=None),
-                'delta_fid_ratio': pool_avg([t for t in photo_transfer_pool if t.get('delta_fid_ratio') is not None], 'delta_fid_ratio', default=None),
-                'art_fid': pool_avg([t for t in photo_transfer_pool if t.get('art_fid') is not None], 'art_fid', default=None),
-                'kid_baseline': pool_avg([t for t in photo_transfer_pool if t.get('kid_baseline') is not None], 'kid_baseline', default=None),
-                'kid': pool_avg([t for t in photo_transfer_pool if t.get('kid_style') is not None], 'kid_style', default=None),
-                'delta_kid': pool_avg([t for t in photo_transfer_pool if t.get('delta_kid') is not None], 'delta_kid', default=None),
-                'delta_kid_ratio': pool_avg([t for t in photo_transfer_pool if t.get('delta_kid_ratio') is not None], 'delta_kid_ratio', default=None),
-                'valid': len(photo_transfer_pool) > 0,
-                'classifier_acc': pool_avg([t for t in photo_transfer_pool if t['classifier_acc'] is not None], 'classifier_acc')
-            }
+            'all_pairs_overview': build_pool_summary(all_pool),
+            'style_transfer_ability': build_pool_summary(transfer_pool),
+            'identity_reconstruction': build_pool_summary(identity_pool),
+            'photo_to_art_performance': build_pool_summary(photo_transfer_pool, valid=len(photo_transfer_pool) > 0),
         },
         'classification_report': cls_report,
         'detailed_style_metrics': detailed_metrics

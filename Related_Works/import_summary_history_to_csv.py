@@ -12,6 +12,7 @@ import argparse
 import csv
 import json
 import re
+import sqlite3
 from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -180,6 +181,109 @@ def _extract_experiment_id_from_file_path(path: Path) -> str:
     return _with_tokenized_suffix(path.parent.name or 'unknown', tokenized)
 
 
+def _fmt_float(x: Any, *, sig: int = 3) -> str:
+    try:
+        v = float(x)
+    except Exception:
+        return "na"
+    if v == 0:
+        return "0"
+    s = f"{v:.{sig}g}"
+    s = s.replace("+0", "").replace("+", "")
+    return s
+
+
+def _safe_get(d: Dict[str, Any], *keys: str) -> Any:
+    cur: Any = d
+    for k in keys:
+        if not isinstance(cur, dict):
+            return None
+        cur = cur.get(k)
+    return cur
+
+
+def _build_trial_label(
+    trial_number: int,
+    params: Dict[str, Any],
+    user_attrs: Dict[str, Any],
+    config_path: Optional[Path] = None,
+) -> str:
+    lr = params.get("lr_v2", params.get("lr"))
+    wswd = params.get("w_swd")
+    wc = params.get("w_color")
+    hf = params.get("hf_ratio")
+    wid = params.get("w_idt", user_attrs.get("w_idt"))
+
+    if config_path is not None and config_path.exists():
+        cfg = _read_json(config_path)
+        lr = _safe_get(cfg, "training", "learning_rate") if lr is None else lr
+        wswd = _safe_get(cfg, "loss", "w_swd") if wswd is None else wswd
+        wc = _safe_get(cfg, "loss", "w_color") if wc is None else wc
+        hf = _safe_get(cfg, "loss", "swd_hf_weight_ratio") if hf is None else hf
+        wid = _safe_get(cfg, "loss", "w_identity") if wid is None else wid
+
+    return "_".join(
+        [
+            f"trial_{trial_number:04d}",
+            f"lr{_fmt_float(lr)}",
+            f"swd{_fmt_float(wswd)}",
+            f"wc{_fmt_float(wc)}",
+            f"hf{_fmt_float(hf)}",
+            f"id{_fmt_float(wid)}",
+        ]
+    )
+
+
+def _build_optuna_trial_label_map(source: Path) -> Dict[str, str]:
+    root = source if source.is_dir() else source.parent
+    db_files = sorted(root.glob("*.db")) + sorted(root.glob("**/*.db"))
+    mapping: Dict[str, str] = {}
+
+    for db_path in db_files:
+        try:
+            con = sqlite3.connect(str(db_path))
+            con.row_factory = sqlite3.Row
+            cur = con.cursor()
+            trials = cur.execute("SELECT trial_id, number FROM trials ORDER BY trial_id").fetchall()
+            for t in trials:
+                trial_id = int(t["trial_id"])
+                trial_number = int(t["number"])
+                short_id = f"trial_{trial_number:04d}"
+
+                p_rows = cur.execute(
+                    "SELECT param_name, param_value FROM trial_params WHERE trial_id = ?",
+                    (trial_id,),
+                ).fetchall()
+                params = {str(r["param_name"]): r["param_value"] for r in p_rows}
+
+                a_rows = cur.execute(
+                    "SELECT key, value_json FROM trial_user_attributes WHERE trial_id = ?",
+                    (trial_id,),
+                ).fetchall()
+                user_attrs: Dict[str, Any] = {}
+                for ar in a_rows:
+                    k = str(ar["key"])
+                    vj = ar["value_json"]
+                    try:
+                        user_attrs[k] = json.loads(vj) if vj is not None else None
+                    except Exception:
+                        user_attrs[k] = vj
+
+                config_path: Optional[Path] = None
+                exp_dir = user_attrs.get("exp_dir")
+                if isinstance(exp_dir, str) and exp_dir:
+                    cand = Path(exp_dir) / "config.json"
+                    if cand.exists():
+                        config_path = cand
+
+                mapping[short_id] = _build_trial_label(trial_number, params, user_attrs, config_path)
+            con.close()
+        except Exception as e:
+            print(f"[WARN] Failed reading db {db_path}: {e}")
+
+    return mapping
+
+
 def _safe_mean(values: List[float]) -> Optional[float]:
     if not values:
         return None
@@ -267,12 +371,14 @@ def _extract_single_summary_data(json_data: Dict[str, Any], source_path: Path) -
     return [record]
 
 
-def _get_all_json_files(source: Path, recursive: bool = False) -> List[Path]:
+def _get_all_json_files(source: Path, recursive: bool = False, summary_only: bool = False) -> List[Path]:
     """Find all supported json files (summary_history*.json and summary*.json)."""
     def _is_supported_json(p: Path) -> bool:
         if p.suffix.lower() != '.json':
             return False
         name = p.name.lower()
+        if summary_only:
+            return name == 'summary.json'
         return name.startswith('summary_history') or name.startswith('summary')
 
     if source.is_file():
@@ -323,6 +429,16 @@ def _normalize_experiment_id_in_row(row: Dict[str, str]) -> Dict[str, str]:
     parts = probe.replace("\\", "/").split("/")
     if _is_tokenized_path_parts(parts):
         row["experiment_id"] = _with_tokenized_suffix(exp_id, True)
+    return row
+
+
+def _apply_trial_label_map(row: Dict[str, str], label_map: Dict[str, str]) -> Dict[str, str]:
+    exp_id = str(row.get("experiment_id", "") or "")
+    tokenized = exp_id.endswith("_tokenized")
+    base = exp_id[:-10] if tokenized else exp_id
+    mapped = label_map.get(base)
+    if mapped:
+        row["experiment_id"] = _with_tokenized_suffix(mapped, tokenized)
     return row
 
 
@@ -431,6 +547,13 @@ Examples:
     ap.add_argument('--recursive', '-r', action='store_true', help='Recursively search for JSON files (default for dirs)')
     ap.add_argument('--no-recursive', action='store_true', help='Disable recursive search when input is a directory')
     ap.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
+    ap.add_argument('--fresh', action='store_true', help='Ignore existing CSV and rebuild from current input only')
+    ap.add_argument('--summary-only', action='store_true', help='Only parse files named summary.json (ignore summary_history*.json)')
+    ap.add_argument(
+        '--drop-missing-clip-content',
+        action='store_true',
+        help='Drop rows where both transfer_clip_content and photo_to_art_clip_content are empty',
+    )
     
     args = ap.parse_args()
     
@@ -444,7 +567,7 @@ Examples:
     recursive_scan = bool(args.recursive or source.is_dir())
     if args.no_recursive:
         recursive_scan = False
-    json_files = _get_all_json_files(source, recursive=recursive_scan)
+    json_files = _get_all_json_files(source, recursive=recursive_scan, summary_only=bool(args.summary_only))
     
     if not json_files:
         raise SystemExit(f"❌ No supported json files found in {source}")
@@ -474,11 +597,23 @@ Examples:
     if not all_records:
         raise SystemExit("❌ No records extracted from JSON files")
     
+    trial_label_map = _build_optuna_trial_label_map(source)
+    if args.verbose and trial_label_map:
+        print(f"[INFO] Loaded {len(trial_label_map)} trial label(s) from optuna DB")
+
     # Flatten records for CSV
-    flat_records = [_flatten_record(r) for r in all_records]
+    flat_records = []
+    for r in all_records:
+        fr = _flatten_record(r)
+        if trial_label_map:
+            fr = _apply_trial_label_map(fr, trial_label_map)
+        flat_records.append(fr)
     
-    # Read existing CSV if it exists
-    existing_rows, existing_keys = _read_existing_csv(output)
+    # Read existing CSV if it exists (unless fresh rebuild is requested)
+    if args.fresh:
+        existing_rows, existing_keys = [], set()
+    else:
+        existing_rows, existing_keys = _read_existing_csv(output)
     
     if args.verbose and existing_rows:
         print(f"[INFO] Found {len(existing_rows)} existing record(s)")
@@ -490,9 +625,11 @@ Examples:
         flat_records,
     )
 
-    removed_missing_clip_content = len(merged_rows)
-    merged_rows = [row for row in merged_rows if _has_clip_content(row)]
-    removed_missing_clip_content -= len(merged_rows)
+    removed_missing_clip_content = 0
+    if args.drop_missing_clip_content:
+        removed_missing_clip_content = len(merged_rows)
+        merged_rows = [row for row in merged_rows if _has_clip_content(row)]
+        removed_missing_clip_content -= len(merged_rows)
     
     if args.verbose:
         print(f"[INFO] {added_count} new record(s) to add")

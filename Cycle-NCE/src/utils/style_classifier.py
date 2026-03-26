@@ -1,20 +1,26 @@
 import argparse
+import csv
 import hashlib
 import json
 import logging
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Tuple, Dict, Any, Optional
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from PIL import Image
 from torch.utils.data import Dataset, DataLoader, random_split, Sampler
 
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+
+from utils.inference import encode_image, load_vae
 
 logger = logging.getLogger(__name__)
 
@@ -289,80 +295,113 @@ class ResBlock(nn.Module):
         return x + res
 
 
+def color_jitter_latent(x: torch.Tensor, strength: float = 0.2) -> torch.Tensor:
+    if strength <= 0.0 or x.ndim != 4:
+        return x
+    bsz, channels = int(x.shape[0]), int(x.shape[1])
+    device = x.device
+    mean = x.mean(dim=(2, 3), keepdim=True)
+    shift = torch.randn((bsz, channels, 1, 1), device=device, dtype=x.dtype) * float(strength)
+    scale = torch.randn((bsz, channels, 1, 1), device=device, dtype=x.dtype).mul(float(strength)).exp()
+    return (x - mean) * scale + mean + shift
+
+
+def extract_texture_edges(x: torch.Tensor) -> torch.Tensor:
+    if x.ndim != 4:
+        return x
+    channels = int(x.shape[1])
+    kx = x.new_tensor(
+        [[-1.0, 0.0, 1.0], [-2.0, 0.0, 2.0], [-1.0, 0.0, 1.0]]
+    ).view(1, 1, 3, 3).repeat(channels, 1, 1, 1)
+    ky = x.new_tensor(
+        [[-1.0, -2.0, -1.0], [0.0, 0.0, 0.0], [1.0, 2.0, 1.0]]
+    ).view(1, 1, 3, 3).repeat(channels, 1, 1, 1)
+    gx = F.conv2d(x, kx, padding=1, groups=channels)
+    gy = F.conv2d(x, ky, padding=1, groups=channels)
+    return torch.sqrt(gx.square() + gy.square() + 1e-8)
+
+
+class GeMPool2d(nn.Module):
+    def __init__(self, p: float = 3.0, eps: float = 1e-6):
+        super().__init__()
+        self.p = nn.Parameter(torch.tensor(float(p)))
+        self.eps = float(eps)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        p = self.p.clamp(min=1.0, max=8.0)
+        pooled = F.avg_pool2d(x.clamp_min(self.eps).pow(p), kernel_size=(x.shape[-2], x.shape[-1]))
+        return pooled.pow(1.0 / p)
+
+
 class StyleClassifier(nn.Module):
     """
-    Enhanced latent style classifier:
-    - ResNet texture stream
-    - Explicit statistics stream (gram/mean/std)
-    - Spatial-info suppression by global pooling
+    Texture-first latent style classifier.
+    It intentionally suppresses low-frequency color bias and forces the model
+    to rely on high-frequency stroke/edge structure.
     """
 
     def __init__(
         self,
         in_channels: int = 4,
         num_classes: int = 2,
-        width: int = 64,
-        dropout: float = 0.2,
+        width: int = 128,
+        dropout: float = 0.3,
         use_stats: bool = True,
         use_gram: bool = True,
         use_lowpass_stats: bool = True,
         spatial_shuffle: bool = False,
-        input_size_train: int = 8,
-        input_size_infer: int = 8,
+        input_size_train: int = 32,
+        input_size_infer: int = 32,
         lowpass_size: int = 8,
+        color_jitter_strength: float = 0.3,
+        edge_gain: float = 1.0,
         **kwargs,
     ):
         super().__init__()
         w = int(width)
-
-        self.use_stats = bool(use_stats)
-        self.use_gram = bool(use_gram)
-        self.use_lowpass_stats = bool(use_lowpass_stats)
         self.spatial_shuffle = bool(spatial_shuffle)
         self.input_size_train = int(input_size_train)
         self.input_size_infer = int(input_size_infer)
         self.lowpass_size = int(lowpass_size)
-        if self.use_gram and int(in_channels) <= 8:
-            logger.warning(
-                "use_gram=True with very low channels (C=%d): Gram branch is low-capacity and should be treated as auxiliary only.",
-                int(in_channels),
+        self.color_jitter_strength = max(0.0, float(color_jitter_strength))
+        self.edge_gain = float(edge_gain)
+        if bool(use_stats) or bool(use_gram) or bool(use_lowpass_stats):
+            logger.info(
+                "Texture-first classifier ignores explicit stats/Gram branches to avoid color shortcut learning."
             )
 
         gn_groups = 8
         while gn_groups > 1 and (w % gn_groups != 0):
             gn_groups //= 2
 
+        feature_channels = int(in_channels) * 2
         self.stem = nn.Sequential(
-            nn.Conv2d(in_channels, w, 3, padding=1),
+            nn.Conv2d(feature_channels, w, 3, padding=1),
             nn.GroupNorm(gn_groups, w),
             nn.SiLU(inplace=True),
         )
 
-        self.layer1 = nn.Sequential(ResBlock(w), ResBlock(w))
-        self.down1 = nn.Conv2d(w, w * 2, 3, stride=2, padding=1)  # 32->16
-        self.layer2 = nn.Sequential(ResBlock(w * 2), ResBlock(w * 2))
-        self.down2 = nn.Conv2d(w * 2, w * 4, 3, stride=2, padding=1)  # 16->8
-        self.layer3 = nn.Sequential(ResBlock(w * 4), ResBlock(w * 4))
-        self.global_pool = nn.AdaptiveAvgPool2d(1)
+        self.encoder = nn.Sequential(
+            ResBlock(w),
+            nn.Conv2d(w, w * 2, 3, stride=2, padding=1),
+            ResBlock(w * 2),
+            nn.Conv2d(w * 2, w * 4, 3, stride=2, padding=1),
+            ResBlock(w * 4),
+            nn.Conv2d(w * 4, w * 4, 3, stride=2, padding=1),
+            ResBlock(w * 4),
+        )
+        self.pool = GeMPool2d(p=3.0)
 
-        stats_dim = 0
-        if self.use_stats:
-            stats_dim += in_channels * 2
-        if self.use_lowpass_stats:
-            stats_dim += in_channels * 2
-        if self.use_gram:
-            stats_dim += in_channels * in_channels
-
-        head_in = (w * 4) + stats_dim
+        head_in = w * 4
         self.head = nn.Sequential(
             nn.LayerNorm(head_in),
             nn.Dropout(p=float(dropout)),
-            nn.Linear(head_in, 512),
+            nn.Linear(head_in, 384),
             nn.SiLU(inplace=True),
             nn.Dropout(p=float(dropout)),
-            nn.Linear(512, 256),
+            nn.Linear(384, 192),
             nn.SiLU(inplace=True),
-            nn.Linear(256, num_classes),
+            nn.Linear(192, num_classes),
         )
 
         self.apply(self._init_weights)
@@ -385,50 +424,25 @@ class StyleClassifier(nn.Module):
             x = F.interpolate(x, size=(target, target), mode="area")
         return x
 
-    @staticmethod
-    def _calc_gram(x: torch.Tensor) -> torch.Tensor:
-        b, c, h, w = x.shape
-        feat = x.view(b, c, h * w)
-        feat_t = feat.transpose(1, 2)
-        gram = feat.bmm(feat_t) / max(c * h * w, 1)
-        return gram.view(b, -1)
-
-    def _extract_explicit_stats(self, x: torch.Tensor) -> torch.Tensor:
-        parts = []
-        lp_map = _lowpass(x, lowpass_size=self.lowpass_size)
-        lp_up = F.interpolate(lp_map, size=x.shape[-2:], mode="bilinear", align_corners=False)
-        hp_map = x - lp_up
-
-        if self.use_stats:
-            parts.append(hp_map.mean(dim=(2, 3)))
-            parts.append(hp_map.std(dim=(2, 3), unbiased=False))
-        if self.use_lowpass_stats:
-            parts.append(lp_map.mean(dim=(2, 3)))
-            parts.append(lp_map.std(dim=(2, 3), unbiased=False))
-        if self.use_gram:
-            parts.append(self._calc_gram(x))
-
-        if not parts:
-            return torch.zeros((x.shape[0], 0), device=x.device, dtype=x.dtype)
-        return torch.cat(parts, dim=1)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self._resize_for_mode(x)
+    def _texture_preprocess(self, x: torch.Tensor) -> torch.Tensor:
+        if self.training and self.color_jitter_strength > 0.0:
+            x = color_jitter_latent(x, strength=self.color_jitter_strength)
         if self.training and self.spatial_shuffle:
             x = _patch_shuffle(x, grid=2)
 
-        feat = self.stem(x)
-        feat = self.layer1(feat)
-        feat = self.down1(feat)
-        feat = self.layer2(feat)
-        feat = self.down2(feat)
-        feat = self.layer3(feat)
-        cnn_feat = self.global_pool(feat).flatten(1)
+        lp_map = _lowpass(x, lowpass_size=self.lowpass_size)
+        lp_up = F.interpolate(lp_map, size=x.shape[-2:], mode="bilinear", align_corners=False)
+        hp_map = x - lp_up
+        edges = extract_texture_edges(hp_map)
+        return torch.cat([hp_map, edges * self.edge_gain], dim=1)
 
-        stats_feat = self._extract_explicit_stats(x)
-        if stats_feat.shape[1] > 0:
-            cnn_feat = torch.cat([cnn_feat, stats_feat], dim=1)
-        return self.head(cnn_feat)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self._resize_for_mode(x)
+        feat = self._texture_preprocess(x)
+        feat = self.stem(feat)
+        feat = self.encoder(feat)
+        feat = self.pool(feat).flatten(1)
+        return self.head(feat)
 
 
 # -------------------------
@@ -758,6 +772,13 @@ class EMA:
         self.backup = None
 
 
+def _merged_ema_state_dict(model: nn.Module, ema: EMA) -> Dict[str, torch.Tensor]:
+    merged = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+    for key, value in ema.shadow.items():
+        merged[key] = value.detach().cpu().clone()
+    return merged
+
+
 def _resolve_num_workers(requested: int, is_windows: bool) -> int:
     if requested >= 0:
         return requested
@@ -833,6 +854,8 @@ def train(
     use_temperature_scaling: bool,
     temp_iters: int,
     temp_lr: float,
+    color_jitter_strength: float,
+    edge_gain: float,
 ):
     with open(config_path, "r", encoding="utf-8") as f:
         config = json.load(f)
@@ -909,9 +932,10 @@ def train(
         drop_last=False,
     )
 
-    input_size_train = int(config.get("loss", {}).get("style_classifier_input_size_train", 8))
+    input_size_train = int(config.get("loss", {}).get("style_classifier_input_size_train", 32))
     input_size_infer = int(config.get("loss", {}).get("style_classifier_input_size_infer", input_size_train))
     lowpass_size_cfg = int(config.get("loss", {}).get("style_classifier_lowpass_size", aug_lowpass_size))
+    class_names = list(config.get("data", {}).get("style_subdirs") or [f"style{i}" for i in range(num_classes)])
 
     model = StyleClassifier(
         in_channels=in_channels,
@@ -925,6 +949,8 @@ def train(
         input_size_train=input_size_train,
         input_size_infer=input_size_infer,
         lowpass_size=lowpass_size_cfg,
+        color_jitter_strength=float(color_jitter_strength),
+        edge_gain=float(edge_gain),
     ).to(device)
 
     # class prior for balanced softmax / diagnostics
@@ -981,9 +1007,10 @@ def train(
             with torch.cuda.amp.autocast(enabled=use_amp):
                 if train_aug:
                     x_aug = augmenter(x)
-                    logits_pair = model(torch.cat([x, x_aug], dim=0))
-                    logits = logits_pair[: x.shape[0]]
-                    logits_aug = logits_pair[x.shape[0] :]
+                    # Avoid concatenating clean/aug batches, which doubles activation
+                    # memory and is the main cause of OOM on 8GB GPUs.
+                    logits = model(x)
+                    logits_aug = model(x_aug)
 
                     if use_balanced_softmax:
                         loss_clean = balanced_softmax_ce(
@@ -1122,12 +1149,22 @@ def train(
             best_temperature = float(temperature)
 
             output_path.parent.mkdir(parents=True, exist_ok=True)
+            inference_state_dict = _merged_ema_state_dict(model, ema)
             payload = {
                 "model_state_dict": model.state_dict(),
+                "inference_state_dict": inference_state_dict,
                 "ema_state_dict": ema.shadow,
                 "meta": {
                     "in_channels": in_channels,
                     "num_classes": num_classes,
+                    "classes": class_names,
+                    "width": int(width),
+                    "dropout": float(dropout),
+                    "input_size_train": int(input_size_train),
+                    "input_size_infer": int(input_size_infer),
+                    "lowpass_size": int(lowpass_size_cfg),
+                    "color_jitter_strength": float(color_jitter_strength),
+                    "edge_gain": float(edge_gain),
                     "best_val_macro_recall": best_val,
                     "classifier_usable": report["classifier_usable"],
                     "fail_reasons": report["fail_reasons"],
@@ -1149,19 +1186,187 @@ def train(
             logger.info(f"Wrote report to {json_path}")
 
 
+def load_style_classifier_checkpoint(ckpt_path: Path, device: torch.device | str) -> tuple[StyleClassifier, dict[str, Any], float]:
+    payload = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+    if not isinstance(payload, dict):
+        raise ValueError(f"Invalid checkpoint format: {ckpt_path}")
+    meta = dict(payload.get("meta", {}))
+    model = StyleClassifier(
+        in_channels=int(meta.get("in_channels", 4)),
+        num_classes=int(meta.get("num_classes", 5)),
+        width=int(meta.get("width", 128)),
+        dropout=float(meta.get("dropout", 0.3)),
+        input_size_train=int(meta.get("input_size_train", 32)),
+        input_size_infer=int(meta.get("input_size_infer", 32)),
+        lowpass_size=int(meta.get("lowpass_size", 8)),
+        color_jitter_strength=float(meta.get("color_jitter_strength", 0.0)),
+        edge_gain=float(meta.get("edge_gain", 1.0)),
+        use_stats=False,
+        use_gram=False,
+        use_lowpass_stats=False,
+        spatial_shuffle=False,
+    ).to(device)
+    state = payload.get("inference_state_dict")
+    if state is None:
+        state = payload.get("model_state_dict")
+        ema_state = payload.get("ema_state_dict")
+        if isinstance(state, dict) and isinstance(ema_state, dict):
+            merged = dict(state)
+            merged.update(ema_state)
+            state = merged
+    if not isinstance(state, dict):
+        raise ValueError(f"Checkpoint missing model state: {ckpt_path}")
+    model.load_state_dict(state, strict=True)
+    model.eval()
+    temperature = float(meta.get("temperature", 1.0))
+    return model, meta, temperature
+
+
+def _open_image_as_tensor(path: Path, image_size: int = 256) -> torch.Tensor:
+    with Image.open(path) as img:
+        img = img.convert("RGB")
+        if int(image_size) > 0 and img.size != (int(image_size), int(image_size)):
+            img = img.resize((int(image_size), int(image_size)), Image.BICUBIC)
+        arr = np.asarray(img, dtype=np.float32) / 255.0
+    tensor = torch.from_numpy(arr).permute(2, 0, 1).contiguous()
+    return tensor * 2.0 - 1.0
+
+
+def _resolve_eval_dir(path: Path) -> Path:
+    path = path.expanduser().resolve()
+    if path.is_file() and path.name.lower() == "summary.json":
+        path = path.parent
+    if (path / "images").is_dir():
+        return path
+    if path.name == "images" and path.is_dir():
+        return path.parent
+    raise FileNotFoundError(f"Unsupported eval dir path (missing images/): {path}")
+
+
+def _parse_target_style_id(path: Path, class_to_idx: Dict[str, int]) -> Optional[int]:
+    m = re.search(r"_to_([^._\\/\s]+)$", path.stem)
+    if not m:
+        return None
+    target = m.group(1)
+    return class_to_idx.get(target)
+
+
+def _summarize_confusion(conf: torch.Tensor, classes: list[str]) -> Dict[str, Any]:
+    recalls: Dict[str, float] = {}
+    for idx, cls_name in enumerate(classes):
+        tp = float(conf[idx, idx].item())
+        total = float(conf[idx, :].sum().item())
+        recalls[cls_name] = tp / max(total, 1.0)
+    return {
+        "per_class_recall": recalls,
+        "confusion_matrix": conf.to(torch.int64).cpu().tolist(),
+    }
+
+
+@torch.no_grad()
+def score_eval_dir(
+    eval_dir: Path,
+    model: StyleClassifier,
+    class_names: list[str],
+    temperature: float,
+    device: torch.device,
+    *,
+    image_size: int = 256,
+    batch_size: int = 8,
+    vae_cache_dir: Optional[Path] = None,
+) -> Dict[str, Any]:
+    eval_dir = _resolve_eval_dir(eval_dir)
+    image_dir = eval_dir / "images"
+    image_paths = sorted(p for p in image_dir.iterdir() if p.is_file() and p.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp", ".bmp"})
+    class_to_idx = {name: idx for idx, name in enumerate(class_names)}
+
+    scored: list[tuple[Path, int]] = []
+    skipped: list[str] = []
+    for path in image_paths:
+        target_id = _parse_target_style_id(path, class_to_idx)
+        if target_id is None:
+            skipped.append(path.name)
+            continue
+        scored.append((path, target_id))
+
+    if not scored:
+        raise RuntimeError(f"No scoreable images found in {eval_dir}")
+
+    vae = load_vae(device=str(device), cache_dir=str(vae_cache_dir) if vae_cache_dir else None)
+    conf = torch.zeros((len(class_names), len(class_names)), dtype=torch.int64)
+    correct = 0
+    total = 0
+    confidence_sum = 0.0
+
+    for start in range(0, len(scored), max(1, int(batch_size))):
+        batch_items = scored[start:start + max(1, int(batch_size))]
+        imgs = torch.stack([_open_image_as_tensor(path, image_size=image_size) for path, _ in batch_items], dim=0)
+        targets = torch.tensor([target for _, target in batch_items], dtype=torch.long, device=device)
+        latents = encode_image(vae, imgs, device=str(device)).float()
+        logits = model(latents)
+        if float(temperature) > 0.0 and abs(float(temperature) - 1.0) > 1e-6:
+            logits = logits / float(temperature)
+        probs = F.softmax(logits, dim=1)
+        preds = probs.argmax(dim=1)
+        correct += int((preds == targets).sum().item())
+        total += int(targets.numel())
+        confidence_sum += float(probs.max(dim=1).values.sum().item())
+        for tgt, pred in zip(targets.detach().cpu(), preds.detach().cpu()):
+            conf[int(tgt.item()), int(pred.item())] += 1
+
+    summary = _summarize_confusion(conf, class_names)
+    rel = eval_dir.relative_to(eval_dir.anchor) if eval_dir.anchor else eval_dir
+    return {
+        "eval_dir": str(eval_dir),
+        "relative_eval_dir": str(rel),
+        "num_images": total,
+        "acc": correct / max(total, 1),
+        "macro_recall": float(sum(summary["per_class_recall"].values()) / max(len(summary["per_class_recall"]), 1)),
+        "mean_confidence": confidence_sum / max(total, 1),
+        "temperature": float(temperature),
+        "skipped_images": json.dumps(skipped, ensure_ascii=False),
+        "per_class_recall": json.dumps(summary["per_class_recall"], ensure_ascii=False),
+        "confusion_matrix": json.dumps(summary["confusion_matrix"], ensure_ascii=False),
+    }
+
+
+def write_score_csv(rows: list[Dict[str, Any]], out_csv: Path) -> None:
+    out_csv.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = [
+        "eval_dir",
+        "relative_eval_dir",
+        "num_images",
+        "acc",
+        "macro_recall",
+        "mean_confidence",
+        "temperature",
+        "skipped_images",
+        "per_class_recall",
+        "confusion_matrix",
+    ]
+    with out_csv.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)
+
+
 def main():
-    parser = argparse.ArgumentParser("Train robust latent style classifier + auto evaluation report")
+    parser = argparse.ArgumentParser("Train texture-first latent style classifier or score eval dirs")
+    parser.add_argument("--mode", type=str, default="train", choices=["train", "score_eval_dirs"])
     parser.add_argument("--config", type=str, default=str(_ROOT / "config.json"))
     parser.add_argument("--output", type=str, default=str(_ROOT / "style_classifier.pt"))
     parser.add_argument("--epochs", type=int, default=200)
-    parser.add_argument("--batch_size", type=int, default=1024)
+    parser.add_argument("--batch_size", type=int, default=160)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--val_ratio", type=float, default=0.1)
 
-    parser.add_argument("--width", type=int, default=64)
-    parser.add_argument("--dropout", type=float, default=0.1)
+    parser.add_argument("--width", type=int, default=128)
+    parser.add_argument("--dropout", type=float, default=0.3)
     parser.add_argument("--label_smoothing", type=float, default=0.05)
     parser.add_argument("--no_amp", action="store_true", default=False)
+    parser.add_argument("--color_jitter_strength", type=float, default=0.3)
+    parser.add_argument("--edge_gain", type=float, default=1.0)
 
     parser.add_argument("--no_stats_branch", action="store_true", default=False)
     parser.add_argument("--no_gram", action="store_true", default=False)
@@ -1193,9 +1398,41 @@ def main():
     parser.add_argument("--no_temperature_scaling", action="store_true", default=False)
     parser.add_argument("--temp_iters", type=int, default=200)
     parser.add_argument("--temp_lr", type=float, default=0.05)
+    parser.add_argument("--classifier_ckpt", type=str, default="")
+    parser.add_argument("--eval_dirs", nargs="*", default=[])
+    parser.add_argument("--csv_out", type=str, default=str(_ROOT / "style_classifier_eval_dirs.csv"))
+    parser.add_argument("--score_image_size", type=int, default=256)
+    parser.add_argument("--score_batch_size", type=int, default=8)
+    parser.add_argument("--vae_cache_dir", type=str, default="")
 
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+    if str(args.mode) == "score_eval_dirs":
+        ckpt_path = Path(args.classifier_ckpt or args.output).expanduser().resolve()
+        if not ckpt_path.exists():
+            raise FileNotFoundError(f"classifier checkpoint not found: {ckpt_path}")
+        if not args.eval_dirs:
+            raise ValueError("--eval_dirs is required in score_eval_dirs mode")
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model, meta, temperature = load_style_classifier_checkpoint(ckpt_path, device=device)
+        class_names = list(meta.get("classes") or [f"style{i}" for i in range(int(meta.get("num_classes", 5)))])
+        rows = [
+            score_eval_dir(
+                Path(raw_dir),
+                model,
+                class_names,
+                temperature,
+                device,
+                image_size=int(args.score_image_size),
+                batch_size=int(args.score_batch_size),
+                vae_cache_dir=Path(args.vae_cache_dir).expanduser().resolve() if args.vae_cache_dir else None,
+            )
+            for raw_dir in args.eval_dirs
+        ]
+        write_score_csv(rows, Path(args.csv_out).expanduser().resolve())
+        logger.info("Wrote eval-dir classifier CSV: %s", Path(args.csv_out).expanduser().resolve())
+        return
 
     train(
         config_path=Path(args.config),
@@ -1233,6 +1470,8 @@ def main():
         use_temperature_scaling=not args.no_temperature_scaling,
         temp_iters=int(args.temp_iters),
         temp_lr=float(args.temp_lr),
+        color_jitter_strength=float(args.color_jitter_strength),
+        edge_gain=float(args.edge_gain),
     )
 
 

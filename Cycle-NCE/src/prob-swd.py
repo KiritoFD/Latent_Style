@@ -12,9 +12,9 @@ import torch
 import torch.nn.functional as F
 
 try:
-    from .losses import calc_swd_and_hf_loss
+    from .losses import calc_swd_loss
 except Exception:
-    from losses import calc_swd_and_hf_loss
+    from losses import calc_swd_loss
 
 
 def _resolve_path(path_str: str, base_dir: Path) -> Path:
@@ -110,15 +110,16 @@ def _calc_pair_loss_batched(
     cdf_sample_chunk_size: int,
     projection_bank: Dict[int, torch.Tensor],
     batch_size: int,
-) -> tuple[torch.Tensor, torch.Tensor]:
+) -> torch.Tensor:
     n = min(int(x.shape[0]), int(y.shape[0]))
     if n <= 0:
-        z = x.new_tensor(0.0, dtype=torch.float32)
-        return z, z
+        return x.new_tensor(0.0, dtype=torch.float32)
     if batch_size <= 0 or batch_size >= n:
-        return calc_swd_and_hf_loss(
+        dummy_ids = torch.zeros((n,), device=x.device, dtype=torch.long)
+        return calc_swd_loss(
             x[:n],
             y[:n],
+            dummy_ids,
             patch_combo,
             num_projections=num_projections,
             projection_chunk_size=projection_chunk_size,
@@ -132,15 +133,16 @@ def _calc_pair_loss_batched(
         )
 
     acc_base = x.new_tensor(0.0, dtype=torch.float32)
-    acc_hf = x.new_tensor(0.0, dtype=torch.float32)
     seen = 0
     for s in range(0, n, int(batch_size)):
         e = min(n, s + int(batch_size))
         xb = x[s:e]
         yb = y[s:e]
-        lb, lh = calc_swd_and_hf_loss(
+        dummy_ids = torch.zeros((int(e - s),), device=xb.device, dtype=torch.long)
+        lb = calc_swd_loss(
             xb,
             yb,
+            dummy_ids,
             patch_combo,
             num_projections=num_projections,
             projection_chunk_size=projection_chunk_size,
@@ -154,11 +156,10 @@ def _calc_pair_loss_batched(
         )
         w = float(e - s)
         acc_base = acc_base + lb * w
-        acc_hf = acc_hf + lh * w
         seen += int(e - s)
 
     denom = float(max(1, seen))
-    return acc_base / denom, acc_hf / denom
+    return acc_base / denom
 
 
 def _num_chunks(n: int, batch_size: int) -> int:
@@ -171,7 +172,7 @@ def _num_chunks(n: int, batch_size: int) -> int:
 
 @torch.no_grad()
 def main() -> None:
-    parser = argparse.ArgumentParser(description="CUDA dual-band SWD probe with exact loss-coupled combo optimization")
+    parser = argparse.ArgumentParser(description="CUDA SWD patch-combo probe (base SWD only)")
     parser.add_argument("--config", type=str, default="config_style_oa_5_lr5e4_wc2_swd60_id30_e120.json")
     parser.add_argument("--photo-domain", type=str, default="photo")
     parser.add_argument("--patch-min", type=int, default=1)
@@ -180,8 +181,6 @@ def main() -> None:
     parser.add_argument("--patch-sizes", type=int, nargs="+", default=None)
     parser.add_argument("--combo-min-size", type=int, default=1)
     parser.add_argument("--combo-max-size", type=int, default=25)
-    parser.add_argument("--hf-ratio-min", type=float, default=0.0)
-    parser.add_argument("--hf-ratio-max", type=float, default=5.0)
     parser.add_argument("--max-samples", type=int, default=0, help="0 means use all samples")
     parser.add_argument("--eval-batch-size", type=int, default=0, help="Per-loss eval batch size; <=0 means full")
     parser.add_argument("--trials", type=int, default=1000)
@@ -278,7 +277,7 @@ def main() -> None:
         tgt_a[s] = a
         tgt_b[s] = b
 
-    def eval_combo_snr(patch_combo: List[int], hf_ratio: float, trial_seed: int) -> float:
+    def eval_combo_snr(patch_combo: List[int], trial_seed: int) -> float:
         ch = int(src_full.shape[1])
         bank = _build_projection_bank(
             channels=ch,
@@ -291,7 +290,7 @@ def main() -> None:
 
         scores: List[float] = []
         for style in target_styles:
-            inter_base, inter_hf = _calc_pair_loss_batched(
+            inter_base = _calc_pair_loss_batched(
                 src_full,
                 tgt_full[style],
                 patch_combo,
@@ -306,7 +305,7 @@ def main() -> None:
                 cdf_sample_chunk_size=cdf_sample_chunk,
                 projection_bank=bank,
             )
-            intra_src_base, intra_src_hf = _calc_pair_loss_batched(
+            intra_src_base = _calc_pair_loss_batched(
                 src_a,
                 src_b,
                 patch_combo,
@@ -321,7 +320,7 @@ def main() -> None:
                 cdf_sample_chunk_size=cdf_sample_chunk,
                 projection_bank=bank,
             )
-            intra_tgt_base, intra_tgt_hf = _calc_pair_loss_batched(
+            intra_tgt_base = _calc_pair_loss_batched(
                 tgt_a[style],
                 tgt_b[style],
                 patch_combo,
@@ -338,8 +337,7 @@ def main() -> None:
             )
 
             intra_base = 0.5 * (intra_src_base + intra_tgt_base)
-            intra_hf = 0.5 * (intra_src_hf + intra_tgt_hf)
-            snr = (inter_base + float(hf_ratio) * inter_hf) / (intra_base + float(hf_ratio) * intra_hf + 1e-8)
+            snr = inter_base / (intra_base + 1e-8)
             scores.append(float(snr.item()))
 
         return float(np.mean(scores))
@@ -347,21 +345,23 @@ def main() -> None:
     patch_idx = list(range(len(patch_candidates)))
 
     def objective(trial: optuna.Trial) -> float:
-        hf_ratio = trial.suggest_float("hf_ratio", float(args.hf_ratio_min), float(args.hf_ratio_max))
         selected = [i for i in patch_idx if trial.suggest_int(f"use_p{patch_candidates[i]}", 0, 1) == 1]
         if len(selected) < cmin or len(selected) > cmax:
             raise optuna.TrialPruned()
 
         patch_combo = [patch_candidates[i] for i in selected]
         trial_seed = int(args.seed) + trial.number * 100_003
-        score = eval_combo_snr(patch_combo, hf_ratio, trial_seed)
+        score = eval_combo_snr(patch_combo, trial_seed)
 
         trial.set_user_attr("patches", patch_combo)
         trial.set_user_attr("num_patches", len(patch_combo))
-        trial.set_user_attr("hf_ratio", float(hf_ratio))
         return float(score)
 
-    sampler = optuna.samplers.TPESampler(seed=int(args.seed), multivariate=True)
+    sampler = optuna.samplers.TPESampler(
+        seed=int(args.seed),
+        multivariate=False,
+        warn_independent_sampling=False,
+    )
     study = optuna.create_study(
         direction="maximize",
         sampler=sampler,
@@ -392,13 +392,12 @@ def main() -> None:
     csv_path = out_dir / "prob_swd_exact_topk.csv"
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(["rank", "trial", "snr", "hf_ratio", "num_patches", "patches"])
+        writer.writerow(["rank", "trial", "snr", "num_patches", "patches"])
         for rank, t in enumerate(topk, start=1):
             writer.writerow([
                 rank,
                 int(t.number),
                 f"{float(t.value):.8f}",
-                f"{float(t.user_attrs.get('hf_ratio', 0.0)):.6f}",
                 int(t.user_attrs.get("num_patches", 0)),
                 ",".join(str(x) for x in t.user_attrs.get("patches", [])),
             ])
@@ -407,13 +406,12 @@ def main() -> None:
     if bool(args.save_all_trials_csv):
         with open(all_trials_csv_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
-            writer.writerow(["trial", "state", "snr", "hf_ratio", "num_patches", "patches"])
+            writer.writerow(["trial", "state", "snr", "num_patches", "patches"])
             for t in study.trials:
                 writer.writerow([
                     int(t.number),
                     str(t.state),
                     (f"{float(t.value):.8f}" if t.value is not None else ""),
-                    f"{float(t.user_attrs.get('hf_ratio', 0.0)):.6f}",
                     int(t.user_attrs.get("num_patches", 0)),
                     ",".join(str(x) for x in t.user_attrs.get("patches", [])),
                 ])
@@ -431,8 +429,6 @@ def main() -> None:
             "interrupted": bool(interrupted),
             "combo_min_size": cmin,
             "combo_max_size": cmax,
-            "hf_ratio_min": float(args.hf_ratio_min),
-            "hf_ratio_max": float(args.hf_ratio_max),
             "max_samples": int(args.max_samples),
             "eval_batch_size": int(args.eval_batch_size),
             "effective_samples_per_domain": int(n_common),
@@ -450,12 +446,11 @@ def main() -> None:
             "cdf_sample_size": cdf_sample_size,
             "cdf_bin_chunk_size": cdf_bin_chunk,
             "cdf_sample_chunk_size": cdf_sample_chunk,
-            "objective_impl": "calc_swd_and_hf_loss direct trial evaluation",
+            "objective_impl": "calc_swd_loss direct trial evaluation",
         },
         "best": {
             "trial": int(best.number),
             "snr": float(best.value),
-            "hf_ratio": float(best.user_attrs.get("hf_ratio", 0.0)),
             "num_patches": int(best.user_attrs.get("num_patches", 0)),
             "patches": [int(x) for x in best.user_attrs.get("patches", [])],
         },
@@ -464,7 +459,6 @@ def main() -> None:
                 "rank": int(i + 1),
                 "trial": int(t.number),
                 "snr": float(t.value),
-                "hf_ratio": float(t.user_attrs.get("hf_ratio", 0.0)),
                 "num_patches": int(t.user_attrs.get("num_patches", 0)),
                 "patches": [int(x) for x in t.user_attrs.get("patches", [])],
             }
@@ -479,7 +473,7 @@ def main() -> None:
 
     print("[DONE] Exact CUDA search complete")
     print(
-        f"[DONE] Best snr={float(best.value):.6f}, hf_ratio={float(best.user_attrs.get('hf_ratio', 0.0)):.4f}, "
+        f"[DONE] Best snr={float(best.value):.6f}, "
         f"n={int(best.user_attrs.get('num_patches', 0))}, patches={best.user_attrs.get('patches', [])}"
     )
     print(f"[DONE] JSON: {json_path}")
