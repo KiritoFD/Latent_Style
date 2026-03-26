@@ -44,12 +44,24 @@ _ALLOWED_LOSS_KEYS = {
     "swd_cdf_bin_chunk_size",
     "swd_cdf_sample_chunk_size",
     "swd_batch_size",
+    "swd_use_high_freq",
+    "swd_hf_weight_ratio",
+    "w_nce",
+    "use_nce",
+    "nce_mode",
+    "nce_feature_layers",
+    "nce_layer_weights",
+    "nce_tau",
+    "nce_num_patches",
+    "nce_pool",
+    "nce_detach_source",
 }
 _FORBIDDEN_LOSS_KEYS = {"w_distill", "distill_low_only", "distill_cross_domain_only", "w_code", "style_loss_source"}
 _LOSS_WEIGHT_KEYS = (
     "w_swd",
     "w_color",
     "w_identity",
+    "w_nce",
 )
 
 
@@ -240,7 +252,10 @@ def _validate_loss_config(config: dict) -> None:
 def _log_active_losses(config: dict) -> None:
     loss_cfg = config.get("loss", {})
     active = [k for k in _LOSS_WEIGHT_KEYS if float(loss_cfg.get(k, 0.0)) > 0.0]
-    logger.info("Active losses: %s", ", ".join(active) if active else "(none)")
+    extras = []
+    if bool(loss_cfg.get("swd_use_high_freq", False)):
+        extras.append("hf_swd")
+    logger.info("Active losses: %s", ", ".join(active + extras) if (active or extras) else "(none)")
 
 
 def main() -> None:

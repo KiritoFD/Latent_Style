@@ -18,14 +18,18 @@
     "style_id_spatial_jitter_px": 4,
     "upsample_blur": true,
     "upsample_blur_kernel": "gaussian3",
-    "ada_mix_rank": 16,
-    "style_modulator_type": "cross_attn",
-    "style_attn_num_tokens": 16,
-    "style_attn_num_heads": 4
+    "ada_mix_rank": 16
   },
   "loss": {
-    "w_swd": 150.0,
-    "swd_patch_sizes": [1, 3, 5, 9, 15],
+    "w_swd": 100.0,
+    "swd_patch_sizes": [
+      1,
+      3,
+      5,
+      9,
+      15,
+      25
+    ],
     "swd_num_projections": 320,
     "swd_projection_chunk_size": 128,
     "swd_distance_mode": "cdf",
@@ -35,18 +39,34 @@
     "swd_cdf_bin_chunk_size": 4,
     "swd_cdf_sample_chunk_size": 256,
     "swd_batch_size": 64,
+    "swd_use_high_freq": true,
+    "swd_hf_weight_ratio": 1.0,
     "w_color": 50.0,
     "w_identity": 30.0,
+    "use_nce": true,
+    "w_nce": 1.5,
+    "nce_mode": "xid",
+    "nce_feature_layers": [
+      "enc_32",
+      "body_16",
+      "dec_32"
+    ],
+    "nce_layer_weights": [
+      0.5,
+      1.0,
+      1.0
+    ],
+    "nce_tau": 0.07,
+    "nce_num_patches": 256,
+    "nce_pool": 1,
+    "nce_detach_source": true,
     "color_eps": 1e-06,
-    "color_latent_channel_weights": [2.0, 1.0, 1.0, 1.0],
-    "color_luma_range_weight": 2.0,
-    "color_luma_quantiles": [0.1, 0.9],
     "color_legacy_pool": 4,
     "color_mode": "latent_decoupled_adain"
   },
   "training": {
     "seed": 42,
-    "batch_size": 256,
+    "batch_size": 320,
     "accumulation_steps": 1,
     "num_workers": -1,
     "persistent_workers": true,
@@ -126,7 +146,7 @@
     "virtual_length_multiplier": 1
   },
   "checkpoint": {
-    "save_dir": "../base"
+    "save_dir": "../light-1"
   },
   "inference": {
     "num_steps": 1,

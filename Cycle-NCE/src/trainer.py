@@ -33,6 +33,36 @@ logger = logging.getLogger(__name__)
 _COMPILE_BACKEND = "inductor"
 _COMPILE_MODE = "default"
 _COMPILE_FULLGRAPH = False
+_TRAIN_LOG_COLUMNS = [
+    "epoch",
+    "loss",
+    "swd",
+    "color",
+    "identity",
+    "identity_ratio",
+    "lr",
+    "data_time_sec",
+    "transfer_time_sec",
+    "fwd_loss_time_sec",
+    "backward_time_sec",
+    "optimizer_time_sec",
+    "step_overhead_time_sec",
+    "compute_time_sec",
+    "epoch_time_sec",
+    "samples_seen",
+    "samples_per_sec",
+    "compute_samples_per_sec",
+    "gradcos_swd_color",
+    "gradcos_swd_identity",
+    "gradcos_color_identity",
+]
+_SNAPSHOT_SOURCE_FILES = [
+    "trainer.py",
+    "losses.py",
+    "model.py",
+    "dataset.py",
+    "run.py",
+]
 
 
 def _is_rtx_30_series(name: str) -> bool:
@@ -156,17 +186,8 @@ class AdaCUTTrainer:
             json.dump(config, f, indent=2, ensure_ascii=False)
         
         # Save source files
-        src_files = [
-            'trainer.py',
-            'losses.py',
-            'losses_v2.py',
-            'model.py',
-            'dataset.py',
-            'run.py',
-            'config_decoder-D-sweetspot.json'
-        ]
         src_dir = Path(__file__).parent
-        for fname in src_files:
+        for fname in _SNAPSHOT_SOURCE_FILES:
             src = src_dir / fname
             if src.exists():
                 shutil.copy2(src, exp_dir / fname)
@@ -375,31 +396,7 @@ class AdaCUTTrainer:
         self.log_file = self.log_dir / f"training_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         with open(self.log_file, "w", encoding="utf-8", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(
-                [
-                    "epoch",
-                    "loss",
-                    "swd",
-                    "color",
-                    "identity",
-                    "identity_ratio",
-                    "lr",
-                    "data_time_sec",
-                    "transfer_time_sec",
-                    "fwd_loss_time_sec",
-                    "backward_time_sec",
-                    "optimizer_time_sec",
-                    "step_overhead_time_sec",
-                    "compute_time_sec",
-                    "epoch_time_sec",
-                    "samples_seen",
-                    "samples_per_sec",
-                    "compute_samples_per_sec",
-                    "gradcos_swd_color",
-                    "gradcos_swd_identity",
-                    "gradcos_color_identity",
-                ]
-            )
+            writer.writerow(_TRAIN_LOG_COLUMNS)
 
         self.global_step = 0
         self.start_epoch = 1
@@ -509,6 +506,19 @@ class AdaCUTTrainer:
         )
         _set_attr("swd_batch_size", int(loss_cfg.get("swd_batch_size", lf.swd_batch_size)))
         _set_attr("w_color", float(loss_cfg.get("w_color", lf.w_color)))
+        raw_color_weights = loss_cfg.get("color_latent_channel_weights", getattr(lf, "color_latent_channel_weights", [2.0, 1.0, 1.0, 1.0]))
+        if isinstance(raw_color_weights, list):
+            parsed_color_weights = tuple(float(v) for v in raw_color_weights)
+        else:
+            parsed_color_weights = getattr(lf, "color_latent_channel_weights", (2.0, 1.0, 1.0, 1.0))
+        _set_attr("color_latent_channel_weights", parsed_color_weights)
+        _set_attr("color_luma_range_weight", float(loss_cfg.get("color_luma_range_weight", getattr(lf, "color_luma_range_weight", 2.0))))
+        raw_luma_quantiles = loss_cfg.get("color_luma_quantiles", getattr(lf, "color_luma_quantiles", (0.1, 0.9)))
+        if isinstance(raw_luma_quantiles, list) and len(raw_luma_quantiles) >= 2:
+            parsed_luma_quantiles = (float(raw_luma_quantiles[0]), float(raw_luma_quantiles[1]))
+        else:
+            parsed_luma_quantiles = getattr(lf, "color_luma_quantiles", (0.1, 0.9))
+        _set_attr("color_luma_quantiles", parsed_luma_quantiles)
         _set_attr("w_identity", float(loss_cfg.get("w_identity", lf.w_identity)))
         _set_attr("nsight_nvtx", bool(training_cfg.get("nsight_nvtx", lf.nsight_nvtx)))
         if any(
@@ -522,12 +532,19 @@ class AdaCUTTrainer:
                 "loss.swd_cdf_sample_size",
                 "loss.swd_cdf_bin_chunk_size",
                 "loss.swd_cdf_sample_chunk_size",
+                "loss.color_latent_channel_weights",
             )
         ):
             try:
                 proj_cache = getattr(lf, "_projection_cache", None)
                 if isinstance(proj_cache, dict):
                     proj_cache.clear()
+            except Exception:
+                pass
+            try:
+                color_weight_cache = getattr(lf, "_color_weight_cache", None)
+                if isinstance(color_weight_cache, dict):
+                    color_weight_cache.clear()
             except Exception:
                 pass
 
