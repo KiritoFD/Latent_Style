@@ -55,13 +55,13 @@ def _build_trial_config(
     full_eval_interval: int,
     w_color: float,
     w_swd: float,
-    swd_hf_weight_ratio: float,
     ada_mix_rank: int,
     multistep_milestones: list[int],
     multistep_gamma: float,
     onecycle_max_lr: float,
     onecycle_pct_start: float,
     onecycle_anneal_strategy: str,
+    grad_direction_interval: int,
 ) -> Dict[str, Any]:
     cfg = copy.deepcopy(base_cfg)
     cfg.setdefault("training", {})
@@ -93,11 +93,15 @@ def _build_trial_config(
     cfg["training"]["cuda_sync_debug"] = False
     cfg["training"]["strict_batch_sanity"] = False
     cfg["training"]["gc_collect_interval"] = 0
+    cfg["training"]["grad_direction_interval"] = int(max(0, grad_direction_interval))
 
     cfg["loss"]["w_identity"] = float(w_identity)
     cfg["loss"]["w_color"] = float(w_color)
     cfg["loss"]["w_swd"] = float(w_swd)
-    cfg["loss"]["swd_hf_weight_ratio"] = float(swd_hf_weight_ratio)
+    cfg["loss"]["swd_patch_sizes"] = [1, 3, 5, 9, 15, 25]
+    # HF-SWD branch removed from training; scrub legacy keys from base configs.
+    cfg["loss"].pop("swd_use_high_freq", None)
+    cfg["loss"].pop("swd_hf_weight_ratio", None)
     # Fixed-shape SWD kernel-launch reduction (hardcoded).
     cfg["loss"]["swd_projection_chunk_size"] = 128
     cfg["loss"]["swd_cdf_sample_chunk_size"] = 256
@@ -131,7 +135,6 @@ def _dump_trials_csv(study: optuna.Study, out_csv: Path) -> None:
                 "w_idt",
                 "w_swd",
                 "w_color",
-                "hf_ratio",
                 "ada_mix_rank",
                 "scheduler",
                 "clip_style",
@@ -154,7 +157,6 @@ def _dump_trials_csv(study: optuna.Study, out_csv: Path) -> None:
                     "w_idt": _pick_param(t.params, ("w_idt_v2", "w_idt")) or t.user_attrs.get("w_idt", ""),
                     "w_swd": _pick_param(t.params, ("w_swd",)),
                     "w_color": _pick_param(t.params, ("w_color",)),
-                    "hf_ratio": _pick_param(t.params, ("hf_ratio", "swd_hf_weight_ratio")),
                     "ada_mix_rank": _pick_param(t.params, ("ada_mix_rank",)) or t.user_attrs.get("ada_mix_rank", ""),
                     "scheduler": _pick_param(t.params, ("scheduler_v2", "scheduler")),
                     "clip_style": t.user_attrs.get("clip_style", ""),
@@ -304,16 +306,12 @@ def _warm_start_from_study(
     w_color_min: float,
     w_color_max: float,
     fixed_w_color: float,
-    hf_ratio_min: float,
-    hf_ratio_max: float,
-    fixed_hf_ratio: float,
     max_trials: int,
 ) -> tuple[int, int]:
     complete_state = optuna.trial.TrialState.COMPLETE
     lr_dist = optuna.distributions.FloatDistribution(low=float(lr_min), high=float(lr_max), log=True)
     w_swd_dist = optuna.distributions.FloatDistribution(low=float(w_swd_min), high=float(w_swd_max), log=False)
     w_color_dist = optuna.distributions.FloatDistribution(low=float(w_color_min), high=float(w_color_max), log=False)
-    hf_ratio_dist = optuna.distributions.FloatDistribution(low=float(hf_ratio_min), high=float(hf_ratio_max), log=False)
 
     imported = 0
     skipped = 0
@@ -348,13 +346,6 @@ def _warm_start_from_study(
         w_color = float(max(w_color_min, min(w_color_max, float(w_color))))
         params["w_color"] = w_color
         dists["w_color"] = w_color_dist
-
-        hf_ratio = _pick_trial_param(t.params, ("hf_ratio", "swd_hf_weight_ratio"))
-        if hf_ratio is None:
-            hf_ratio = fixed_hf_ratio
-        hf_ratio = float(max(hf_ratio_min, min(hf_ratio_max, float(hf_ratio))))
-        params["hf_ratio"] = hf_ratio
-        dists["hf_ratio"] = hf_ratio_dist
 
         if not (lr_min <= lr <= lr_max):
             skipped += 1
@@ -416,6 +407,11 @@ def main() -> None:
     parser.add_argument("--warm_start_onecycle_peak_scale", type=float, default=1.3, help="Fallback: old onecycle peak_lr ~= lr * scale.")
     parser.add_argument("--workdir", type=Path, default=SRC_DIR / "style_oa" / "optuna_hpo")
     parser.add_argument("--n_trials", type=int, default=30)
+    parser.add_argument(
+        "--interrupt_as_fail",
+        action="store_true",
+        help="Treat KeyboardInterrupt inside a trial as a failed trial and continue optimization.",
+    )
     
     parser.add_argument("--single_objective", action="store_true", help="Revert to single objective (pareto score).")
     parser.add_argument("--alpha", type=float, default=1.0, help="pareto = style_weight * clip_style + alpha * (1 - lpips)")
@@ -434,12 +430,9 @@ def main() -> None:
     
     parser.add_argument("--w_color_min", type=float, default=1.0)
     parser.add_argument("--w_color_max", type=float, default=5.0)
-    parser.add_argument("--hf_ratio_min", type=float, default=1.0)
-    parser.add_argument("--hf_ratio_max", type=float, default=3.0)
 
     parser.add_argument("--fixed_w_color", type=float, default=2.0)
     parser.add_argument("--fixed_w_swd", type=float, default=60.0)
-    parser.add_argument("--fixed_hf_ratio", type=float, default=2.0)
     parser.add_argument("--fixed_ada_mix_rank", type=int, default=16)
 
     parser.add_argument(
@@ -453,6 +446,12 @@ def main() -> None:
     parser.add_argument("--onecycle_max_lr_scale", type=float, default=1.3)
     parser.add_argument("--onecycle_pct_start", type=float, default=0.3)
     parser.add_argument("--onecycle_anneal_strategy", type=str, default="cos")
+    parser.add_argument(
+        "--grad_direction_interval",
+        type=int,
+        default=20,
+        help="Compute gradient cosine metrics every N steps (0 disables).",
+    )
     args = parser.parse_args()
 
     base_config_path = args.base_config.resolve()
@@ -464,7 +463,11 @@ def main() -> None:
     base_cfg = _load_json(base_config_path)
 
     storage = args.storage.strip() or f"sqlite:///{(workdir / (args.study_name + '.db')).as_posix()}"
-    sampler = optuna.samplers.TPESampler(seed=args.seed, multivariate=True)
+    sampler = optuna.samplers.TPESampler(
+        seed=args.seed,
+        multivariate=False,
+        warn_independent_sampling=False,
+    )
     
     is_multi_obj = not args.single_objective
     
@@ -511,9 +514,6 @@ def main() -> None:
                     w_color_min=float(args.w_color_min),
                     w_color_max=float(args.w_color_max),
                     fixed_w_color=float(args.fixed_w_color),
-                    hf_ratio_min=float(args.hf_ratio_min),
-                    hf_ratio_max=float(args.hf_ratio_max),
-                    fixed_hf_ratio=float(args.fixed_hf_ratio),
                     max_trials=args.warm_start_max_trials,
                 )
                 print(
@@ -539,10 +539,9 @@ def main() -> None:
         peak_lr = float(base_lr)
         onecycle_max_lr = float(base_lr)
 
-        # Only search four variables: lr, w_swd, hf_ratio, w_color.
+        # Only search three variables: lr, w_swd, w_color.
         w_idt = int(args.fixed_w_idt)
         w_swd = trial.suggest_float("w_swd", args.w_swd_min, args.w_swd_max)
-        hf_ratio = trial.suggest_float("hf_ratio", args.hf_ratio_min, args.hf_ratio_max)
         w_color = trial.suggest_float("w_color", args.w_color_min, args.w_color_max)
         ada_mix_rank = int(args.fixed_ada_mix_rank)
 
@@ -558,18 +557,23 @@ def main() -> None:
             full_eval_interval=args.full_eval_interval,
             w_color=w_color,
             w_swd=w_swd,
-            swd_hf_weight_ratio=hf_ratio,
             ada_mix_rank=ada_mix_rank,
             multistep_milestones=multistep_milestones,
             multistep_gamma=float(args.multistep_gamma),
             onecycle_max_lr=onecycle_max_lr,
             onecycle_pct_start=float(args.onecycle_pct_start),
             onecycle_anneal_strategy=str(args.onecycle_anneal_strategy),
+            grad_direction_interval=int(args.grad_direction_interval),
         )
         trial_cfg_path = trial_dir / "config.json"
         _save_json(trial_cfg_path, trial_cfg)
 
-        _run_trial_training(trial_cfg_path)
+        try:
+            _run_trial_training(trial_cfg_path)
+        except KeyboardInterrupt as exc:
+            if args.interrupt_as_fail:
+                raise RuntimeError("Trial interrupted by KeyboardInterrupt") from exc
+            raise
 
         exp_dir = Path(trial_cfg["checkpoint"]["save_dir"])
         summary_path = _find_summary_file(exp_dir, args.epochs)
@@ -583,7 +587,6 @@ def main() -> None:
         trial.set_user_attr("scheduler", scheduler)
         trial.set_user_attr("peak_lr", peak_lr)
         trial.set_user_attr("w_idt", w_idt)
-        trial.set_user_attr("hf_ratio", hf_ratio)
         trial.set_user_attr("ada_mix_rank", ada_mix_rank)
         trial.set_user_attr("summary_path", str(summary_path.resolve()))
         trial.set_user_attr("exp_dir", str(exp_dir.resolve()))
@@ -598,7 +601,7 @@ def main() -> None:
         objective,
         n_trials=args.n_trials,
         gc_after_trial=True,
-        catch=(subprocess.CalledProcessError, FileNotFoundError, KeyError, ValueError),
+        catch=(subprocess.CalledProcessError, FileNotFoundError, KeyError, ValueError, RuntimeError),
     )
 
     _dump_trials_csv(study, workdir / f"{args.study_name}_trials.csv")
