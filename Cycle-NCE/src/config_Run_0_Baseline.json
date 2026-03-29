@@ -20,8 +20,9 @@
     "upsample_blur_kernel": "gaussian3",
     "ada_mix_rank": 16,
     "style_modulator_type": "cross_attn",
-    "style_attn_num_tokens": 16,
-    "style_attn_num_heads": 4
+    "style_attn_num_tokens": 64,
+    "style_attn_num_heads": 4,
+    "style_attn_sharpen_scale": 2.0
   },
   "loss": {
     "w_swd": 150.0,

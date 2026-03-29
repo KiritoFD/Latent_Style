@@ -94,6 +94,15 @@ def _load_clip_from_source(CLIPModel, CLIPProcessor, src: str, device: str, *, l
         return model, processor
     except TypeError:
         # Compatibility with older transformers signatures.
+        # In strict local mode, old transformers may ignore local-only semantics.
+        # Guard against accidental online fetch by allowing fallback only for real local paths.
+        if local_only:
+            src_path = Path(str(src)).expanduser()
+            if not src_path.exists():
+                raise RuntimeError(
+                    "Current transformers build does not support local_files_only in from_pretrained, "
+                    f"and source is not a local path: {src}. Please provide a local snapshot directory."
+                )
         model_kwargs.pop("local_files_only", None)
         proc_kwargs.pop("local_files_only", None)
         model = CLIPModel.from_pretrained(src, **model_kwargs).to(device)
@@ -656,7 +665,10 @@ def _compute_fid_for_pair(
     ref = _collect_metric_image_paths(ref_paths, max_ref)
     if len(gen) < 2 or len(ref) < 2:
         return None
-    if FrechetInceptionDistance is not None:
+    # Prefer the lightweight runner path when available so `ref_cache`
+    # can actually amortize repeated target-style computations.
+    # torchmetrics FID is kept as a fallback only when runner is unavailable.
+    if runner is None and FrechetInceptionDistance is not None:
         fid = FrechetInceptionDistance(normalize=False).to(device)
         fid.eval()
 
@@ -1007,7 +1019,7 @@ def main():
     parser.add_argument('--style_subdirs', type=str, default="", help="Optional comma-separated style names for reuse-only eval without checkpoint")
     parser.add_argument('--config', type=str, default="../config.json", help="Auto mode config path")
     parser.add_argument('--test_dir', type=str, default=None)
-    parser.add_argument('--cache_dir', type=str, default="../../eval_cache", help="Directory to store shared feature caches")
+    parser.add_argument('--cache_dir', type=str, default="../eval_cache", help="Directory to store shared feature caches")
     parser.add_argument('--num_steps', type=int, default=15)
     parser.add_argument('--step_size', type=float, default=1.0)
     parser.add_argument('--style_strength', type=float, default=None, help="Global style strength in [0,1]; default uses checkpoint config")
@@ -1126,12 +1138,14 @@ def main():
     if not hub_cache_dir.exists() and any(hf_cache_dir.glob("models--*")):
         hub_cache_dir = hf_cache_dir
     # Pin all HuggingFace caches to one stable directory for offline reuse.
-    os.environ.setdefault("HF_HOME", str(hf_cache_dir))
-    os.environ.setdefault("HF_HUB_CACHE", str(hub_cache_dir))
-    os.environ.setdefault("TRANSFORMERS_CACHE", str((hf_cache_dir / "transformers").resolve()))
+    os.environ["HF_HOME"] = str(hf_cache_dir)
+    os.environ["HF_HUB_CACHE"] = str(hub_cache_dir)
+    os.environ["TRANSFORMERS_CACHE"] = str((hf_cache_dir / "transformers").resolve())
     if str(getattr(args, "clip_backend", "hf")).strip().lower() == "hf" and not bool(args.clip_allow_network):
-        os.environ.setdefault("HF_HUB_OFFLINE", "1")
-        os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+        os.environ["HF_HUB_OFFLINE"] = "1"
+        os.environ["TRANSFORMERS_OFFLINE"] = "1"
+        os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
+        os.environ["MODELSCOPE_OFFLINE"] = "1"
     print(f"HF cache dir: {hf_cache_dir}")
     print(f"HF hub cache dir: {hub_cache_dir}")
     
@@ -1473,11 +1487,30 @@ def main():
                 from transformers import CLIPModel, CLIPProcessor
 
                 clip_sources = []
-                if str(args.clip_model_name).strip():
+                local_only = (not bool(args.clip_allow_network))
+                model_name_raw = str(args.clip_model_name).strip()
+                if model_name_raw:
+                    # 1) Direct local path.
+                    model_name_path = Path(model_name_raw).expanduser()
+                    if model_name_path.exists():
+                        clip_sources.append(str(model_name_path.resolve()))
+
+                    # 2) HF cache snapshot path.
                     local_snapshot = _find_local_hf_snapshot(hf_cache_dir, clip_model_name)
                     if local_snapshot:
                         clip_sources.append(local_snapshot)
-                    clip_sources.append(clip_model_name)
+
+                    # 3) Remote repo-id fallback only when network is explicitly allowed.
+                    if not local_only:
+                        clip_sources.append(clip_model_name)
+
+                if local_only and not clip_sources:
+                    dbg = _debug_clip_cache_state(hf_cache_dir, clip_model_name)
+                    raise FileNotFoundError(
+                        "Offline CLIP load requires local cache, but no local source was found. "
+                        f"clip_model_name={clip_model_name}, hf_cache_dir={hf_cache_dir}. "
+                        f"Cache diagnosis: {dbg}"
+                    )
 
                 ms_id = str(args.clip_modelscope_id).strip()
                 if ms_id:
@@ -1952,6 +1985,27 @@ def generate_summary_json(
                     continue
             src_name_to_path[str(s_name)] = d
 
+    # Build reusable path lists once per (src_style, tgt_style) pair to avoid
+    # repeated path resolution / dict lookups across multiple metric families.
+    pair_metric_paths = {}
+    for src, targets in matrix.items():
+        src_map = src_name_to_path.get(str(src), {})
+        for tgt, items in targets.items():
+            gen_paths = []
+            src_paths = []
+            for x in items:
+                gp = _resolve_gen_image_path(out_dir, x.get('gen_image', ''))
+                if gp is not None:
+                    gen_paths.append(str(gp.resolve()))
+                sp = src_map.get(str(x.get('src_image', '')))
+                if sp:
+                    src_paths.append(sp)
+            pair_metric_paths[(str(src), str(tgt))] = {
+                "gen_paths": gen_paths,
+                "src_paths": src_paths,
+                "ref_paths": list(style_real_paths.get(tgt, [])) if isinstance(style_real_paths, dict) else [],
+            }
+
     matrix_json = {}
     all_pool = []
     transfer_pool = []
@@ -1979,18 +2033,10 @@ def generate_summary_json(
                 should_compute_art_fid = (src.lower() == "photo" and src.lower() != tgt.lower())
             if should_compute_art_fid:
                 try:
-                    gen_paths = []
-                    for x in items:
-                        gp = _resolve_gen_image_path(out_dir, x.get('gen_image', ''))
-                        if gp is not None:
-                            gen_paths.append(str(gp.resolve()))
-                    ref_paths = list(style_real_paths.get(tgt, []))
-                    src_paths = []
-                    src_map = src_name_to_path.get(str(src), {})
-                    for x in items:
-                        sp = src_map.get(str(x.get('src_image', '')))
-                        if sp:
-                            src_paths.append(sp)
+                    pair_paths = pair_metric_paths.get((str(src), str(tgt)), {})
+                    gen_paths = list(pair_paths.get("gen_paths", []))
+                    src_paths = list(pair_paths.get("src_paths", []))
+                    ref_paths = list(pair_paths.get("ref_paths", []))
                     artfid_style_fid, artfid_content_lpips, art_fid = _compute_art_fid_for_pair(
                         gen_paths,
                         ref_paths,
@@ -2056,12 +2102,10 @@ def generate_summary_json(
 
             if enable_kid and style_real_paths is not None:
                 try:
-                    gen_paths = []
-                    for x in items:
-                        gp = _resolve_gen_image_path(out_dir, x.get('gen_image', ''))
-                        if gp is not None:
-                            gen_paths.append(str(gp.resolve()))
-                    ref_paths = list(style_real_paths.get(tgt, []))
+                    pair_paths = pair_metric_paths.get((str(src), str(tgt)), {})
+                    gen_paths = list(pair_paths.get("gen_paths", []))
+                    src_paths = list(pair_paths.get("src_paths", []))
+                    ref_paths = list(pair_paths.get("ref_paths", []))
                     kid_style, kid_style_std = _compute_kid_for_pair(
                         gen_paths,
                         ref_paths,
@@ -2073,12 +2117,6 @@ def generate_summary_json(
                     )
                     stats['kid_style'] = kid_style
                     stats['kid_style_std'] = kid_style_std
-                    src_paths = []
-                    src_map = src_name_to_path.get(str(src), {})
-                    for x in items:
-                        sp = src_map.get(str(x.get('src_image', '')))
-                        if sp:
-                            src_paths.append(sp)
                     kid_baseline, kid_baseline_std = _compute_kid_for_pair(
                         src_paths,
                         ref_paths,
