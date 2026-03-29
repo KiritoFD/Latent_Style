@@ -87,6 +87,10 @@ def _has_distill_outputs(distill_out: Path, tokenized_eval_out: Path, epoch_name
     return False
 
 
+def _distill_tag(distill_epochs: int) -> str:
+    return f"distill_epochs{int(distill_epochs)}"
+
+
 def _process_experiment(*, src_dir: Path, exp_dir: Path, args: argparse.Namespace) -> None:
     epoch_dirs = _iter_epoch_dirs(exp_dir)
     if args.only_epoch:
@@ -126,8 +130,9 @@ def _process_experiment(*, src_dir: Path, exp_dir: Path, args: argparse.Namespac
         if args.skip_distill:
             continue
 
-        tokenized_eval_out = exp_dir / "full_eval" / f"{epoch_name}_tokenized"
-        distill_out = distill_root / epoch_name
+        distill_tag = _distill_tag(int(args.distill_epochs))
+        tokenized_eval_out = exp_dir / "full_eval" / f"{epoch_name}_tokenized_{distill_tag}"
+        distill_out = distill_root / f"{epoch_name}_{distill_tag}"
         if (not args.force_distill) and _has_distill_outputs(distill_out, tokenized_eval_out, epoch_name):
             print(f"[SKIP] distill outputs exist, resume from next epoch: {distill_out}")
             continue
@@ -178,7 +183,7 @@ def main() -> None:
     )
     parser.add_argument("--exp_dir", type=str, required=True, help="Experiment dir or parent root dir")
     parser.add_argument("--recursive", action="store_true", help="Recursively discover and process child experiment dirs")
-    parser.add_argument("--distill_epochs", type=int, default=2000, help="prob.py --epochs")
+    parser.add_argument("--distill_epochs", type=int, default=200, help="prob.py --epochs")
     parser.add_argument("--steps_per_epoch", type=int, default=500, help="prob.py --steps_per_epoch")
     parser.add_argument("--batch_size", type=int, default=256, help="prob.py --batch_size")
     parser.add_argument("--num_workers", type=int, default=0, help="prob.py --num_workers")

@@ -1,0 +1,107 @@
+I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\huggingface_hub\utils\_validators.py:202: UserWarning: The `local_dir_use_symlinks` argument is deprecated and ignored in `hf_hub_download`. Downloading to a local directory does not use symlinks anymore.
+  warnings.warn(
+I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\torchvision\models\_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\torchvision\models\_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+HF cache dir: I:\Github\Latent_Style\Cycle-NCE\eval_cache\hf
+HF hub cache dir: I:\Github\Latent_Style\Cycle-NCE\eval_cache\hf\hub
+
+Phase 1: Reuse generated images from I:\Github\Latent_Style\Cycle-NCE\ca_pram_final_3_lr6_id25_swd60_c5\full_eval\epoch_0080\images
+  Reused 0 generated images
+
+Phase 1: Generation (Batch Size 4)
+  Generating Batch 1/38
+  Generating Batch 2/38
+  Generating Batch 3/38
+  Generating Batch 4/38
+  Generating Batch 5/38
+  Generating Batch 6/38
+  Generating Batch 7/38
+  Generating Batch 8/38
+  Generating Batch 9/38
+  Generating Batch 10/38
+  Generating Batch 11/38
+  Generating Batch 12/38
+  Generating Batch 13/38
+  Generating Batch 14/38
+  Generating Batch 15/38
+  Generating Batch 16/38
+  Generating Batch 17/38
+  Generating Batch 18/38
+  Generating Batch 19/38
+  Generating Batch 20/38
+  Generating Batch 21/38
+  Generating Batch 22/38
+  Generating Batch 23/38
+  Generating Batch 24/38
+  Generating Batch 25/38
+  Generating Batch 26/38
+  Generating Batch 27/38
+  Generating Batch 28/38
+  Generating Batch 29/38
+  Generating Batch 30/38
+  Generating Batch 31/38
+  Generating Batch 32/38
+  Generating Batch 33/38
+  Generating Batch 34/38
+  Generating Batch 35/38
+  Generating Batch 36/38
+  Generating Batch 37/38
+  Generating Batch 38/38
+  Generation models unloaded
+
+棣冩�?Phase 2: Evaluation
+  WARNING: image style classifier checkpoint not found. Tried:
+    - ../eval_cache/eval_style_image_classifier.pt
+    - ../eval_cache/eval_style_image_classifier.pt
+    - I:\Github\Latent_Style\Cycle-NCE\eval_cache\eval_style_image_classifier.pt
+    - I:\Github\Latent_Style\Cycle-NCE\eval_cache\eval_style_image_classifier.pt
+  LPIPS Loaded
+  CLIP Loaded (OpenAI): ViT-B/32 (cache=I:\Github\Latent_Style\Cycle-NCE\eval_cache\clip_openai)
+Found global reference cache: I:\Github\Latent_Style\Cycle-NCE\eval_cache\ref_feats_547f5728b3_m80.pt
+  Reference cache loaded successfully
+  Processing 750 generated images...
+
+棣冩�?Generating Summary...
+urllib3.exceptions.SSLError: EOF occurred in violation of protocol (_ssl.c:997)
+
+The above exception was the direct cause of the following exception:
+
+urllib3.exceptions.ProxyError: ('Unable to connect to proxy', SSLError(SSLEOFError(8, 'EOF occurred in violation of protocol (_ssl.c:997)')))
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\requests\adapters.py", line 644, in send
+    resp = conn.urlopen(
+  File "I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\urllib3\connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+  File "I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\urllib3\util\retry.py", line 535, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='huggingface.co', port=443): Max retries exceeded with url: /matthias-wright/art_inception/resolve/main/art_inception.pth (Caused by ProxyError('Unable to connect to proxy', SSLError(SSLEOFError(8, 'EOF occurred in violation of protocol (_ssl.c:997)'))))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "I:\Github\Latent_Style\Cycle-NCE\src\utils\run_evaluation.py", line 2231, in <module>
+    main()
+  File "I:\Github\Latent_Style\Cycle-NCE\src\utils\run_evaluation.py", line 1846, in main
+    generate_summary_json(
+  File "I:\Github\Latent_Style\Cycle-NCE\src\utils\run_evaluation.py", line 1920, in generate_summary_json
+    artfid_feature_model = load_artfid_feature_extractor(
+  File "I:\Github\Latent_Style\Cycle-NCE\src\utils\artfid_metric.py", line 88, in load_artfid_feature_extractor
+    ckpt = download_art_inception_checkpoint(cache_dir=cache_dir)
+  File "I:\Github\Latent_Style\Cycle-NCE\src\utils\artfid_metric.py", line 33, in download_art_inception_checkpoint
+    with requests.get(ARTFID_ART_INCEPTION_URL, stream=True, timeout=120) as resp:
+  File "I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\requests\api.py", line 73, in get
+    return request("get", url, params=params, **kwargs)
+  File "I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\requests\api.py", line 59, in request
+    return session.request(method=method, url=url, **kwargs)
+  File "I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\requests\sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+  File "I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\requests\sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+  File "I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\requests\adapters.py", line 671, in send
+    raise ProxyError(e, request=request)
+requests.exceptions.ProxyError: HTTPSConnectionPool(host='huggingface.co', port=443): Max retries exceeded with url: /matthias-wright/art_inception/resolve/main/art_inception.pth (Caused by ProxyError('Unable to connect to proxy', SSLError(SSLEOFError(8, 'EOF occurred in violation of protocol (_ssl.c:997)'))))

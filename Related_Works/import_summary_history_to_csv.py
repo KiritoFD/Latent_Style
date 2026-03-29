@@ -36,6 +36,43 @@ def _with_tokenized_suffix(exp_id: str, is_tokenized: bool) -> str:
     return f"{exp_id}_tokenized"
 
 
+def _extract_distill_epochs_from_text(text: str) -> Optional[str]:
+    if not text:
+        return None
+    normalized = str(text).replace("\\", "/")
+    m = re.search(r"distill_epochs[_-]?(\d+)", normalized)
+    if not m:
+        return None
+    try:
+        return str(int(m.group(1)))
+    except Exception:
+        return m.group(1)
+
+
+def _with_distill_suffix(exp_id: str, distill_epochs: Optional[str]) -> str:
+    if not exp_id or not distill_epochs:
+        return exp_id
+    suffix = f"_distill_epochs{distill_epochs}"
+    if exp_id.endswith(suffix):
+        return exp_id
+    return f"{exp_id}{suffix}"
+
+
+def _split_experiment_suffixes(exp_id: str) -> Tuple[str, Optional[str], bool]:
+    tokenized = exp_id.endswith("_tokenized")
+    base = exp_id[:-10] if tokenized else exp_id
+    m = re.search(r"_distill_epochs(\d+)$", base)
+    distill_epochs = m.group(1) if m else None
+    if m:
+        base = base[:m.start()]
+    return base, distill_epochs, tokenized
+
+
+def _split_path_parts(path_text: str) -> List[str]:
+    normalized = str(path_text).replace("\\", "/")
+    return [p for p in normalized.split("/") if p not in {"", "."}]
+
+
 def _normalize_experiment_candidate(parts: List[str], idx: int) -> str:
     """
     Normalize experiment id candidate around `parts[idx]`:
@@ -73,8 +110,9 @@ def _extract_experiment_id_from_summary_path(summary_path: str) -> str:
     
     # Normalize path separators
     normalized = summary_path.replace('\\', '/')
-    parts = normalized.split('/')
+    parts = _split_path_parts(normalized)
     tokenized = _is_tokenized_path_parts(parts)
+    distill_epochs = _extract_distill_epochs_from_text(normalized)
     
     # Find the directory before "full_eval", "eval", "epoch_*", or "summary.json"
     for i, part in enumerate(parts):
@@ -82,11 +120,13 @@ def _extract_experiment_id_from_summary_path(summary_path: str) -> str:
             if i > 0:
                 exp_name = _normalize_experiment_candidate(parts, i - 1)
                 if exp_name and exp_name not in {'.', '..'}:
+                    exp_name = _with_distill_suffix(exp_name, distill_epochs)
                     return _with_tokenized_suffix(exp_name, tokenized)
     
     # Fallback: return first non-trivial directory name
     for part in parts:
         if part and part not in {'.', '..', 'summary.json'}:
+            part = _with_distill_suffix(part, distill_epochs)
             return _with_tokenized_suffix(part, tokenized)
     
     return 'unknown'
@@ -167,18 +207,22 @@ def _extract_epoch_from_checkpoint_string(s: str) -> Optional[int]:
 def _extract_experiment_id_from_file_path(path: Path) -> str:
     parts = list(path.parts)
     tokenized = _is_tokenized_path_parts([str(p) for p in parts])
+    distill_epochs = _extract_distill_epochs_from_text(str(path))
     for i, part in enumerate(parts):
         part_l = str(part).lower()
         if part_l == 'full_eval' and i > 0:
             candidate = _normalize_experiment_candidate([str(p) for p in parts], i - 1)
             if candidate:
+                candidate = _with_distill_suffix(candidate, distill_epochs)
                 return _with_tokenized_suffix(candidate, tokenized)
         # Support variants like "full_eval_tokenized", "full_eval_xxx".
         if part_l.startswith('full_eval') and i > 0:
             candidate = _normalize_experiment_candidate([str(p) for p in parts], i - 1)
             if candidate:
+                candidate = _with_distill_suffix(candidate, distill_epochs)
                 return _with_tokenized_suffix(candidate, tokenized)
-    return _with_tokenized_suffix(path.parent.name or 'unknown', tokenized)
+    fallback = _with_distill_suffix(path.parent.name or 'unknown', distill_epochs)
+    return _with_tokenized_suffix(fallback, tokenized)
 
 
 def _fmt_float(x: Any, *, sig: int = 3) -> str:
@@ -333,9 +377,10 @@ def _extract_single_summary_data(json_data: Dict[str, Any], source_path: Path) -
     if not isinstance(analysis, dict):
         return []
 
+    all_pairs = analysis.get('all_pairs_overview')
     transfer = analysis.get('style_transfer_ability')
     photo_to_art = analysis.get('photo_to_art_performance')
-    if not isinstance(transfer, dict) or not isinstance(photo_to_art, dict):
+    if not isinstance(all_pairs, dict) or not isinstance(transfer, dict) or not isinstance(photo_to_art, dict):
         return []
 
     matrix_transfer_clip_content, matrix_photo_to_art_clip_content = _extract_clip_content_from_matrix(json_data)
@@ -356,6 +401,12 @@ def _extract_single_summary_data(json_data: Dict[str, Any], source_path: Path) -
         'updated_at': json_data.get('timestamp', ''),
         'summary_path': str(source_path),
         'epoch': int(epoch) if epoch is not None else '',
+        'all_clip_style': all_pairs.get('clip_style'),
+        'all_clip_content': all_pairs.get('clip_content'),
+        'all_content_lpips': all_pairs.get('content_lpips'),
+        'all_fid': all_pairs.get('fid'),
+        'all_art_fid': all_pairs.get('art_fid'),
+        'all_classifier_acc': all_pairs.get('classifier_acc'),
         'transfer_clip_style': transfer.get('clip_style'),
         'transfer_clip_content': transfer_clip_content,
         'transfer_content_lpips': transfer.get('content_lpips'),
@@ -426,18 +477,22 @@ def _normalize_experiment_id_in_row(row: Dict[str, str]) -> Dict[str, str]:
     probe = summary_path if summary_path else source_file
     if not probe:
         return row
-    parts = probe.replace("\\", "/").split("/")
+    parts = _split_path_parts(probe)
+    distill_epochs = _extract_distill_epochs_from_text(probe)
+    exp_id = _with_distill_suffix(exp_id, distill_epochs)
     if _is_tokenized_path_parts(parts):
         row["experiment_id"] = _with_tokenized_suffix(exp_id, True)
+    else:
+        row["experiment_id"] = exp_id
     return row
 
 
 def _apply_trial_label_map(row: Dict[str, str], label_map: Dict[str, str]) -> Dict[str, str]:
     exp_id = str(row.get("experiment_id", "") or "")
-    tokenized = exp_id.endswith("_tokenized")
-    base = exp_id[:-10] if tokenized else exp_id
+    base, distill_epochs, tokenized = _split_experiment_suffixes(exp_id)
     mapped = label_map.get(base)
     if mapped:
+        mapped = _with_distill_suffix(mapped, distill_epochs)
         row["experiment_id"] = _with_tokenized_suffix(mapped, tokenized)
     return row
 
@@ -494,6 +549,8 @@ def _get_all_fieldnames(records: List[Dict[str, str]]) -> List[str]:
     # Priority order for common columns
     priority = [
         'experiment_id', 'epoch', 'source_file', 'updated_at',
+        'all_clip_style', 'all_clip_content', 'all_content_lpips',
+        'all_fid', 'all_art_fid', 'all_classifier_acc',
         'transfer_clip_style', 'transfer_clip_content', 'transfer_content_lpips',
         'transfer_fid', 'transfer_art_fid', 'transfer_classifier_acc',
         'photo_to_art_clip_style', 'photo_to_art_clip_content',
