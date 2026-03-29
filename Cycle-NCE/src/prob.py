@@ -280,6 +280,12 @@ def _build_full_eval_cmd(config: Dict, checkpoint_path: Path, out_dir: Path) -> 
         cmd += ["--eval_art_fid_batch_size", str(int(cfg_train.get("full_eval_art_fid_batch_size", 8)))]
         if bool(cfg_train.get("full_eval_art_fid_photo_only", False)):
             cmd += ["--eval_art_fid_photo_only"]
+    if bool(cfg_train.get("full_eval_enable_kid", False)):
+        cmd += ["--eval_enable_kid"]
+        cmd += ["--eval_kid_max_gen", str(int(cfg_train.get("full_eval_kid_max_gen", 120)))]
+        cmd += ["--eval_kid_max_ref", str(int(cfg_train.get("full_eval_kid_max_ref", 120)))]
+        cmd += ["--eval_kid_subset_size", str(int(cfg_train.get("full_eval_kid_subset_size", 50)))]
+        cmd += ["--eval_kid_batch_size", str(int(cfg_train.get("full_eval_kid_batch_size", 8)))]
     if bool(cfg_train.get("full_eval_reuse_generated", True)):
         cmd += ["--reuse_generated"]
     if bool(cfg_train.get("full_eval_generation_only", False)):

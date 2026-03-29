@@ -24,22 +24,42 @@ def _find_ckpt(exp_dir: Path, epoch_name: str) -> Path:
     raise FileNotFoundError(f"Checkpoint not found for {epoch_name}: expected {direct}")
 
 
-def _iter_epoch_dirs(exp_dir: Path) -> list[Path]:
-    full_eval_dir = exp_dir / "full_eval"
-    if not full_eval_dir.exists():
-        raise FileNotFoundError(f"full_eval directory not found: {full_eval_dir}")
+def _iter_epoch_names(exp_dir: Path) -> list[str]:
+    names: set[str] = set()
 
-    epoch_dirs = [p for p in full_eval_dir.iterdir() if p.is_dir() and re.fullmatch(r"epoch_\d+", p.name)]
-    if not epoch_dirs:
-        raise FileNotFoundError(f"No epoch_* directories found under {full_eval_dir}")
-    return sorted(epoch_dirs, key=lambda p: p.name)
+    full_eval_dir = exp_dir / "full_eval"
+    if full_eval_dir.exists() and full_eval_dir.is_dir():
+        for p in full_eval_dir.iterdir():
+            if p.is_dir() and re.fullmatch(r"epoch_\d+", p.name):
+                names.add(p.name)
+
+    for ckpt in exp_dir.rglob("epoch_*.pt"):
+        if re.fullmatch(r"epoch_\d+\.pt", ckpt.name):
+            names.add(ckpt.stem)
+
+    if not names:
+        raise FileNotFoundError(f"No epoch_* found from full_eval or checkpoints under: {exp_dir}")
+    return sorted(names)
+
+
+def _has_epoch_ckpt(path: Path) -> bool:
+    for ckpt in path.glob("epoch_*.pt"):
+        if re.fullmatch(r"epoch_\d+\.pt", ckpt.name):
+            return True
+    checkpoints_dir = path / "checkpoints"
+    if checkpoints_dir.exists() and checkpoints_dir.is_dir():
+        for ckpt in checkpoints_dir.glob("epoch_*.pt"):
+            if re.fullmatch(r"epoch_\d+\.pt", ckpt.name):
+                return True
+    return False
 
 
 def _is_experiment_dir(path: Path) -> bool:
     full_eval_dir = path / "full_eval"
-    if not full_eval_dir.exists() or not full_eval_dir.is_dir():
-        return False
-    return any(p.is_dir() and re.fullmatch(r"epoch_\d+", p.name) for p in full_eval_dir.iterdir())
+    has_full_eval_epochs = full_eval_dir.exists() and full_eval_dir.is_dir() and any(
+        p.is_dir() and re.fullmatch(r"epoch_\d+", p.name) for p in full_eval_dir.iterdir()
+    )
+    return has_full_eval_epochs or _has_epoch_ckpt(path)
 
 
 def _discover_experiment_dirs(root_dir: Path) -> list[Path]:
@@ -52,6 +72,13 @@ def _discover_experiment_dirs(root_dir: Path) -> list[Path]:
         parent = full_eval_dir.parent.resolve()
         if _is_experiment_dir(parent):
             found.append(parent)
+    for ckpt in root_dir.rglob("epoch_*.pt"):
+        if not re.fullmatch(r"epoch_\d+\.pt", ckpt.name):
+            continue
+        parent = ckpt.parent.resolve()
+        candidate = parent.parent if parent.name.lower() == "checkpoints" else parent
+        if _is_experiment_dir(candidate):
+            found.append(candidate.resolve())
     return sorted({p.resolve() for p in found}, key=lambda p: str(p).lower())
 
 
@@ -92,28 +119,29 @@ def _distill_tag(distill_epochs: int) -> str:
 
 
 def _process_experiment(*, src_dir: Path, exp_dir: Path, args: argparse.Namespace) -> None:
-    epoch_dirs = _iter_epoch_dirs(exp_dir)
+    epoch_names = _iter_epoch_names(exp_dir)
     if args.only_epoch:
-        epoch_dirs = [p for p in epoch_dirs if p.name == args.only_epoch]
-        if not epoch_dirs:
-            raise ValueError(f"only_epoch not found under {exp_dir / 'full_eval'}: {args.only_epoch}")
+        epoch_names = [n for n in epoch_names if n == args.only_epoch]
+        if not epoch_names:
+            raise ValueError(f"only_epoch not found under full_eval/checkpoints: {args.only_epoch}")
 
     distill_root = exp_dir / "tokenizer_distill"
     distill_root.mkdir(parents=True, exist_ok=True)
 
     print(f"\n######## Experiment: {exp_dir} ########")
-    for epoch_dir in epoch_dirs:
-        epoch_name = epoch_dir.name
+    for epoch_name in epoch_names:
+        epoch_dir = exp_dir / "full_eval" / epoch_name
         ckpt = _find_ckpt(exp_dir, epoch_name)
 
         print(f"\n===== {epoch_name} =====")
         print(f"checkpoint: {ckpt}")
-        print(f"existing eval dir: {epoch_dir}")
+        print(f"eval dir: {epoch_dir}")
 
         if not args.skip_reuse_eval:
             if _has_summary_json(epoch_dir):
                 print(f"[SKIP] summary exists, skip reuse-eval only: {epoch_dir}")
             else:
+                epoch_dir.mkdir(parents=True, exist_ok=True)
                 reuse_cmd = [
                     "uv",
                     "run",

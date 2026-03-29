@@ -1065,8 +1065,8 @@ def main():
     parser.add_argument(
         '--eval_enable_art_fid',
         action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Enable ArtFID/FID metric (default: enabled). Use --no-eval_enable_art_fid to disable.",
+        default=False,
+        help="Enable ArtFID/FID metric (default: disabled). Use --eval_enable_art_fid to enable.",
     )
     parser.add_argument('--eval_art_fid_max_gen', type=int, default=200, help="Max generated images per pair for FID_style")
     parser.add_argument('--eval_art_fid_max_ref', type=int, default=200, help="Max target-style reference images per pair for FID_style")
@@ -1075,8 +1075,8 @@ def main():
     parser.add_argument(
         '--eval_enable_kid',
         action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Enable KID metric (default: enabled). Use --no-eval_enable_kid to disable.",
+        default=False,
+        help="Enable KID metric (default: disabled). Use --eval_enable_kid to enable.",
     )
     parser.add_argument('--eval_kid_max_gen', type=int, default=200, help="Max generated images per pair for KID")
     parser.add_argument('--eval_kid_max_ref', type=int, default=200, help="Max target-style reference images per pair for KID")
