@@ -19,16 +19,27 @@
     "body_block_type": "global_attn",
     "decoder_block_type": "window_attn",
     "window_attn_window_size": 8,
-    "skip_fusion_mode": "concat_conv"
+    "skip_fusion_mode": "add_proj"
   },
   "loss": {
-    "w_swd": 120.0,
-    "swd_patch_sizes": [7, 11, 15, 19, 25],
+    "w_swd": 150.0,
+    "swd_patch_sizes": [
+      7,
+      11,
+      15,
+      19,
+      25
+    ],
     "swd_batch_size": 64,
-    "w_color": 40.0,
-    "w_identity": 35.0,
+    "w_color": 50.0,
+    "w_identity": 30.0,
     "color_mode": "latent_decoupled_adain",
-    "color_latent_channel_weights": [2.0, 1.0, 1.0, 1.0],
+    "color_latent_channel_weights": [
+      2.0,
+      1.0,
+      1.0,
+      1.0
+    ],
     "color_luma_range_weight": 5.0
   },
   "training": {
@@ -106,7 +117,7 @@
     "virtual_length_multiplier": 1
   },
   "checkpoint": {
-    "save_dir": "../base"
+    "save_dir": "../arch_2_pM_sA_dL"
   },
   "inference": {
     "num_steps": 1,
