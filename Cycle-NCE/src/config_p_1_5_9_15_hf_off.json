@@ -23,14 +23,11 @@
   },
   "loss": {
     "w_swd": 150.0,
-    "swd_use_high_freq": true,
-    "swd_hf_weight_ratio": 1.5,
     "swd_patch_sizes": [
-      7,
-      11,
-      15,
-      19,
-      25
+      1,
+      5,
+      9,
+      15
     ],
     "swd_batch_size": 64,
     "w_color": 50.0,
@@ -42,7 +39,9 @@
       1.0,
       1.0
     ],
-    "color_luma_range_weight": 5.0
+    "color_luma_range_weight": 5.0,
+    "swd_use_high_freq": false,
+    "swd_hf_weight_ratio": 1.0
   },
   "training": {
     "seed": 42,
@@ -119,7 +118,7 @@
     "virtual_length_multiplier": 1
   },
   "checkpoint": {
-    "save_dir": "../arch_2_pM_sA_dL"
+    "save_dir": "../p_1_5_9_15_hf_off"
   },
   "inference": {
     "num_steps": 1,

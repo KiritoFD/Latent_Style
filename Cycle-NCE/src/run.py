@@ -34,6 +34,8 @@ _ALLOWED_LOSS_KEYS = {
     "color_luma_quantiles",
     "color_legacy_pool",
     "w_swd",
+    "swd_use_high_freq",
+    "swd_hf_weight_ratio",
     "w_identity",
     "swd_patch_sizes",
     "swd_num_projections",
