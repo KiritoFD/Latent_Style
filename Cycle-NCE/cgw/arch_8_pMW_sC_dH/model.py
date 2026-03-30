@@ -410,16 +410,8 @@ class SpatialSelfAttention(nn.Module):
             .reshape(b, c, h_dim, w_dim)
         )
 
-    def forward(self, x: torch.Tensor, shift: bool = False) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         b, c, h_dim, w_dim = x.shape
-        input_is_channels_last = x.is_contiguous(memory_format=torch.channels_last)
-        shift_size = 0
-        if self.mode == "window_attn" and shift:
-            ws = min(self.window_size, h_dim, w_dim)
-            if ws > 1 and (h_dim % ws) == 0 and (w_dim % ws) == 0:
-                shift_size = ws // 2
-        if shift_size > 0:
-            x = torch.roll(x, shifts=(-shift_size, -shift_size), dims=(2, 3))
         qkv = self.qkv(x)
         q, k, v = qkv.chunk(3, dim=1)
         if self.mode == "window_attn":
@@ -451,10 +443,6 @@ class SpatialSelfAttention(nn.Module):
             out = self._restore_windows(out, meta)
         else:
             out = out.view(b, h_dim, w_dim, c).permute(0, 3, 1, 2)
-        if shift_size > 0:
-            out = torch.roll(out, shifts=(shift_size, shift_size), dims=(2, 3))
-        if input_is_channels_last:
-            out = out.contiguous(memory_format=torch.channels_last)
         return self.proj(out)
 
 
@@ -508,14 +496,8 @@ class AttentionBlock(nn.Module):
             nn.Conv2d(hidden_dim, dim, kernel_size=1),
         )
 
-    def forward(
-        self,
-        x: torch.Tensor,
-        style_code: torch.Tensor,
-        gate: float | torch.Tensor = 1.0,
-        shift: bool = False,
-    ) -> torch.Tensor:
-        x = x + self.attn(self.norm1(x, style_code, gate=gate), shift=shift)
+    def forward(self, x: torch.Tensor, style_code: torch.Tensor, gate: float | torch.Tensor = 1.0) -> torch.Tensor:
+        x = x + self.attn(self.norm1(x, style_code, gate=gate))
         x = x + self.ffn(self.norm2(x, style_code, gate=gate))
         return x
 
@@ -674,7 +656,6 @@ class LatentAdaCUT(nn.Module):
         self.hires_block_type = _normalize_feature_block_type(hires_block_type)
         self.body_block_type = _normalize_feature_block_type(body_block_type)
         self.decoder_block_type = _normalize_feature_block_type(decoder_block_type)
-        self.num_decoder_blocks = max(0, int(num_decoder_blocks))
         self.feature_attn_num_heads = max(1, int(feature_attn_num_heads))
         self.feature_attn_mlp_ratio = max(1.0, float(feature_attn_mlp_ratio))
         self.window_attn_window_size = max(1, int(window_attn_window_size))
@@ -685,12 +666,6 @@ class LatentAdaCUT(nn.Module):
         if self.style_skip_content_retention_boost > 0.0:
             warnings.warn(
                 "model.style_skip_content_retention_boost is deprecated and ignored after removing gated skip filtering.",
-                category=UserWarning,
-                stacklevel=2,
-            )
-        if self.decoder_block_type == "window_attn" and (self.num_decoder_blocks % 2) != 0:
-            warnings.warn(
-                "decoder_block_type=window_attn works best with even num_decoder_blocks for shifted-window pairing.",
                 category=UserWarning,
                 stacklevel=2,
             )
@@ -792,7 +767,7 @@ class LatentAdaCUT(nn.Module):
                     feature_attn_mlp_ratio=self.feature_attn_mlp_ratio,
                     window_attn_window_size=self.window_attn_window_size,
                 )
-                for _ in range(self.num_decoder_blocks)
+                for _ in range(max(0, int(num_decoder_blocks)))
             ]
         )
         self.dec_post = nn.Sequential(
@@ -839,26 +814,16 @@ class LatentAdaCUT(nn.Module):
         h: torch.Tensor,
         style_code: torch.Tensor,
         gate: float | torch.Tensor = 1.0,
-        shift: bool = False,
     ) -> torch.Tensor:
-        use_shift = bool(
-            shift
-            and isinstance(block, AttentionBlock)
-            and getattr(getattr(block, "attn", None), "mode", None) == "window_attn"
-        )
         if self.use_checkpointing and self.training:
             gate_in = gate.to(device=h.device, dtype=h.dtype) if torch.is_tensor(gate) else h.new_tensor(float(gate))
             return ckpt.checkpoint(
-                lambda _h, _s, _g, _blk=block, _use_shift=use_shift: (
-                    _blk(_h, _s, _g, shift=True) if _use_shift else _blk(_h, _s, _g)
-                ),
+                lambda _h, _s, _g, _blk=block: _blk(_h, _s, _g),
                 h,
                 style_code,
                 gate_in,
                 use_reentrant=False,
             )
-        if use_shift:
-            return block(h, style_code, gate=gate, shift=True)
         return block(h, style_code, gate=gate)
 
     def _run_style_blocks(
@@ -869,9 +834,8 @@ class LatentAdaCUT(nn.Module):
         gate: float | torch.Tensor = 1.0,
     ) -> torch.Tensor:
         out = h
-        for i, block in enumerate(blocks):
-            use_shift = (i % 2) == 1
-            out = self._run_block(block, out, style_code, gate=gate, shift=use_shift)
+        for block in blocks:
+            out = self._run_block(block, out, style_code, gate=gate)
         return out
 
     def _fuse_skip_features(self, h_up: torch.Tensor, skip_32: torch.Tensor) -> torch.Tensor:
