@@ -38,6 +38,12 @@ _MODEL_CONFIG_DEFAULTS = {
     "style_attn_num_tokens": 64,
     "style_attn_num_heads": 4,
     "style_attn_sharpen_scale": 2.0,
+    "hires_block_type": "conv",
+    "body_block_type": "conv",
+    "decoder_block_type": "conv",
+    "feature_attn_num_heads": 4,
+    "feature_attn_mlp_ratio": 2.0,
+    "window_attn_window_size": 8,
     "style_skip_content_retention_boost": 0.0,
     "ablation_no_adagn": False,
     "ablation_no_adagn_zero_out": True,
@@ -269,6 +275,22 @@ class CrossAttnAdaGN(_BaseStyleModulator):
         return normalized + final_gate * (adagn - normalized)
 
 
+def _normalize_feature_block_type(block_type: str) -> str:
+    kind = str(block_type).strip().lower()
+    aliases = {
+        "cnn": "conv",
+        "res": "conv",
+        "resblock": "conv",
+        "global": "global_attn",
+        "global_attention": "global_attn",
+        "attn": "global_attn",
+        "window": "window_attn",
+        "window_attention": "window_attn",
+        "windowed_attn": "window_attn",
+    }
+    return aliases.get(kind, kind if kind in {"conv", "global_attn", "window_attn"} else "conv")
+
+
 def _build_style_modulator(
     modulator_type: str,
     *,
@@ -336,6 +358,182 @@ class ResBlock(nn.Module):
         h = self.act(self.norm2(h, style_code, gate=gate))
         h = self.conv2(h)
         return x + h
+
+
+class SpatialSelfAttention(nn.Module):
+    def __init__(
+        self,
+        dim: int,
+        num_heads: int = 4,
+        mode: str = "global_attn",
+        window_size: int = 8,
+    ) -> None:
+        super().__init__()
+        self.dim = int(dim)
+        self.num_heads = max(1, min(int(num_heads), self.dim))
+        while self.dim % self.num_heads != 0 and self.num_heads > 1:
+            self.num_heads -= 1
+        self.head_dim = self.dim // self.num_heads
+        self.mode = _normalize_feature_block_type(mode)
+        self.window_size = max(1, int(window_size))
+        self.qkv = nn.Conv2d(self.dim, self.dim * 3, kernel_size=1, bias=False)
+        self.proj = nn.Conv2d(self.dim, self.dim, kernel_size=1, bias=False)
+
+    def _reshape_windows(self, x: torch.Tensor) -> tuple[torch.Tensor, tuple[int, int, int, int, int]]:
+        b, c, h_dim, w_dim = x.shape
+        ws = min(self.window_size, h_dim, w_dim)
+        if (h_dim % ws) != 0 or (w_dim % ws) != 0:
+            return x, (b, c, h_dim, w_dim, 0)
+        x = (
+            x.view(b, c, h_dim // ws, ws, w_dim // ws, ws)
+            .permute(0, 2, 4, 3, 5, 1)
+            .reshape(-1, ws * ws, c)
+        )
+        return x, (b, c, h_dim, w_dim, ws)
+
+    def _restore_windows(self, x: torch.Tensor, meta: tuple[int, int, int, int, int]) -> torch.Tensor:
+        b, c, h_dim, w_dim, ws = meta
+        if ws == 0:
+            return x
+        return (
+            x.view(b, h_dim // ws, w_dim // ws, ws, ws, c)
+            .permute(0, 5, 1, 3, 2, 4)
+            .reshape(b, c, h_dim, w_dim)
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        b, c, h_dim, w_dim = x.shape
+        qkv = self.qkv(x)
+        q, k, v = qkv.chunk(3, dim=1)
+        if self.mode == "window_attn":
+            q_tokens, meta = self._reshape_windows(q)
+            k_tokens, _ = self._reshape_windows(k)
+            v_tokens, _ = self._reshape_windows(v)
+            if meta[-1] == 0:
+                q_tokens = q.permute(0, 2, 3, 1).reshape(b, h_dim * w_dim, c)
+                k_tokens = k.permute(0, 2, 3, 1).reshape(b, h_dim * w_dim, c)
+                v_tokens = v.permute(0, 2, 3, 1).reshape(b, h_dim * w_dim, c)
+                used_windows = False
+            else:
+                used_windows = True
+        else:
+            q_tokens = q.permute(0, 2, 3, 1).reshape(b, h_dim * w_dim, c)
+            k_tokens = k.permute(0, 2, 3, 1).reshape(b, h_dim * w_dim, c)
+            v_tokens = v.permute(0, 2, 3, 1).reshape(b, h_dim * w_dim, c)
+            used_windows = False
+
+        batch_tokens = q_tokens.shape[0]
+        seq_len = q_tokens.shape[1]
+        q_heads = q_tokens.view(batch_tokens, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+        k_heads = k_tokens.view(batch_tokens, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+        v_heads = v_tokens.view(batch_tokens, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+        attn = F.scaled_dot_product_attention(q_heads, k_heads, v_heads)
+        out = attn.transpose(1, 2).reshape(batch_tokens, seq_len, c)
+
+        if used_windows:
+            out = self._restore_windows(out, meta)
+        else:
+            out = out.view(b, h_dim, w_dim, c).permute(0, 3, 1, 2)
+        return self.proj(out)
+
+
+class AttentionBlock(nn.Module):
+    def __init__(
+        self,
+        dim: int,
+        style_dim: int,
+        num_groups: int = 8,
+        ada_mix_rank: int = 16,
+        style_modulator_type: str = "texture_dict",
+        style_attn_num_tokens: int = 16,
+        style_attn_num_heads: int = 4,
+        style_attn_sharpen_scale: float = 2.0,
+        feature_attn_num_heads: int = 4,
+        feature_attn_mlp_ratio: float = 2.0,
+        attn_mode: str = "global_attn",
+        window_size: int = 8,
+    ) -> None:
+        super().__init__()
+        hidden_dim = max(dim, int(round(dim * max(1.0, float(feature_attn_mlp_ratio)))))
+        self.norm1 = _build_style_modulator(
+            style_modulator_type,
+            dim=dim,
+            style_dim=style_dim,
+            num_groups=num_groups,
+            ada_mix_rank=ada_mix_rank,
+            attn_num_tokens=style_attn_num_tokens,
+            attn_num_heads=style_attn_num_heads,
+            attn_sharpen_scale=style_attn_sharpen_scale,
+        )
+        self.attn = SpatialSelfAttention(
+            dim=dim,
+            num_heads=feature_attn_num_heads,
+            mode=attn_mode,
+            window_size=window_size,
+        )
+        self.norm2 = _build_style_modulator(
+            style_modulator_type,
+            dim=dim,
+            style_dim=style_dim,
+            num_groups=num_groups,
+            ada_mix_rank=ada_mix_rank,
+            attn_num_tokens=style_attn_num_tokens,
+            attn_num_heads=style_attn_num_heads,
+            attn_sharpen_scale=style_attn_sharpen_scale,
+        )
+        self.ffn = nn.Sequential(
+            nn.Conv2d(dim, hidden_dim, kernel_size=1),
+            nn.SiLU(),
+            nn.Conv2d(hidden_dim, dim, kernel_size=1),
+        )
+
+    def forward(self, x: torch.Tensor, style_code: torch.Tensor, gate: float | torch.Tensor = 1.0) -> torch.Tensor:
+        x = x + self.attn(self.norm1(x, style_code, gate=gate))
+        x = x + self.ffn(self.norm2(x, style_code, gate=gate))
+        return x
+
+
+def _build_feature_block(
+    block_type: str,
+    *,
+    dim: int,
+    style_dim: int,
+    num_groups: int,
+    ada_mix_rank: int,
+    style_modulator_type: str,
+    style_attn_num_tokens: int,
+    style_attn_num_heads: int,
+    style_attn_sharpen_scale: float,
+    feature_attn_num_heads: int,
+    feature_attn_mlp_ratio: float,
+    window_attn_window_size: int,
+) -> nn.Module:
+    kind = _normalize_feature_block_type(block_type)
+    if kind == "conv":
+        return ResBlock(
+            dim=dim,
+            style_dim=style_dim,
+            num_groups=num_groups,
+            ada_mix_rank=ada_mix_rank,
+            style_modulator_type=style_modulator_type,
+            style_attn_num_tokens=style_attn_num_tokens,
+            style_attn_num_heads=style_attn_num_heads,
+            style_attn_sharpen_scale=style_attn_sharpen_scale,
+        )
+    return AttentionBlock(
+        dim=dim,
+        style_dim=style_dim,
+        num_groups=num_groups,
+        ada_mix_rank=ada_mix_rank,
+        style_modulator_type=style_modulator_type,
+        style_attn_num_tokens=style_attn_num_tokens,
+        style_attn_num_heads=style_attn_num_heads,
+        style_attn_sharpen_scale=style_attn_sharpen_scale,
+        feature_attn_num_heads=feature_attn_num_heads,
+        feature_attn_mlp_ratio=feature_attn_mlp_ratio,
+        attn_mode=kind,
+        window_size=window_attn_window_size,
+    )
 
 
 class NormFreeModulation(nn.Module):
@@ -445,6 +643,12 @@ class LatentAdaCUT(nn.Module):
         style_attn_num_tokens: int = 16,
         style_attn_num_heads: int = 4,
         style_attn_sharpen_scale: float = 2.0,
+        hires_block_type: str = "conv",
+        body_block_type: str = "conv",
+        decoder_block_type: str = "conv",
+        feature_attn_num_heads: int = 4,
+        feature_attn_mlp_ratio: float = 2.0,
+        window_attn_window_size: int = 8,
         style_skip_content_retention_boost: float = 0.0,
         ablation_no_adagn: bool = False,
         ablation_no_adagn_zero_out: bool = True,
@@ -480,6 +684,12 @@ class LatentAdaCUT(nn.Module):
         self.style_attn_num_tokens = max(1, int(style_attn_num_tokens))
         self.style_attn_num_heads = max(1, int(style_attn_num_heads))
         self.style_attn_sharpen_scale = max(0.1, float(style_attn_sharpen_scale))
+        self.hires_block_type = _normalize_feature_block_type(hires_block_type)
+        self.body_block_type = _normalize_feature_block_type(body_block_type)
+        self.decoder_block_type = _normalize_feature_block_type(decoder_block_type)
+        self.feature_attn_num_heads = max(1, int(feature_attn_num_heads))
+        self.feature_attn_mlp_ratio = max(1.0, float(feature_attn_mlp_ratio))
+        self.window_attn_window_size = max(1, int(window_attn_window_size))
         self.style_skip_content_retention_boost = max(0.0, min(1.0, float(style_skip_content_retention_boost)))
         self.ablation_no_adagn = bool(ablation_no_adagn)
         self.ablation_no_adagn_zero_out = bool(ablation_no_adagn_zero_out)
@@ -502,15 +712,19 @@ class LatentAdaCUT(nn.Module):
         self.enc_in_act = nn.SiLU()
         self.hires_body = nn.ModuleList(
             [
-                ResBlock(
-                    self.lift_channels,
-                    style_dim,
+                _build_feature_block(
+                    self.hires_block_type,
+                    dim=self.lift_channels,
+                    style_dim=style_dim,
                     num_groups=num_groups,
                     ada_mix_rank=self.ada_mix_rank,
                     style_modulator_type=self.style_modulator_type,
                     style_attn_num_tokens=self.style_attn_num_tokens,
                     style_attn_num_heads=self.style_attn_num_heads,
                     style_attn_sharpen_scale=self.style_attn_sharpen_scale,
+                    feature_attn_num_heads=self.feature_attn_num_heads,
+                    feature_attn_mlp_ratio=self.feature_attn_mlp_ratio,
+                    window_attn_window_size=self.window_attn_window_size,
                 )
                 for _ in range(max(0, int(num_hires_blocks)))
             ]
@@ -519,15 +733,19 @@ class LatentAdaCUT(nn.Module):
 
         self.body = nn.ModuleList(
             [
-                ResBlock(
-                    self.body_channels,
-                    style_dim,
+                _build_feature_block(
+                    self.body_block_type,
+                    dim=self.body_channels,
+                    style_dim=style_dim,
                     num_groups=num_groups,
                     ada_mix_rank=self.ada_mix_rank,
                     style_modulator_type=self.style_modulator_type,
                     style_attn_num_tokens=self.style_attn_num_tokens,
                     style_attn_num_heads=self.style_attn_num_heads,
                     style_attn_sharpen_scale=self.style_attn_sharpen_scale,
+                    feature_attn_num_heads=self.feature_attn_num_heads,
+                    feature_attn_mlp_ratio=self.feature_attn_mlp_ratio,
+                    window_attn_window_size=self.window_attn_window_size,
                 )
                 for _ in range(num_res_blocks)
             ]
@@ -547,7 +765,29 @@ class LatentAdaCUT(nn.Module):
             style_dim,
             content_retention_boost=self.style_skip_content_retention_boost,
         )
-        self.dec_conv = nn.Conv2d(self.lift_channels, self.lift_channels, kernel_size=3, stride=1, padding=1)
+        self.decoder_blocks = nn.ModuleList(
+            [
+                _build_feature_block(
+                    self.decoder_block_type,
+                    dim=self.lift_channels,
+                    style_dim=style_dim,
+                    num_groups=num_groups,
+                    ada_mix_rank=self.ada_mix_rank,
+                    style_modulator_type=self.style_modulator_type,
+                    style_attn_num_tokens=self.style_attn_num_tokens,
+                    style_attn_num_heads=self.style_attn_num_heads,
+                    style_attn_sharpen_scale=self.style_attn_sharpen_scale,
+                    feature_attn_num_heads=self.feature_attn_num_heads,
+                    feature_attn_mlp_ratio=self.feature_attn_mlp_ratio,
+                    window_attn_window_size=self.window_attn_window_size,
+                )
+                for _ in range(max(0, int(num_decoder_blocks)))
+            ]
+        )
+        self.dec_post = nn.Sequential(
+            nn.Conv2d(self.lift_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
+            nn.SiLU(),
+        )
         self.dec_mod = NormFreeModulation(self.lift_channels, style_dim)
         self.dec_act = nn.SiLU()
         self.dec_out = nn.Conv2d(self.lift_channels, latent_channels, kernel_size=3, stride=1, padding=1)
@@ -587,7 +827,7 @@ class LatentAdaCUT(nn.Module):
 
     def _run_block(
         self,
-        block: ResBlock,
+        block: nn.Module,
         h: torch.Tensor,
         style_code: torch.Tensor,
         gate: float | torch.Tensor = 1.0,
@@ -637,13 +877,19 @@ class LatentAdaCUT(nn.Module):
         if self.use_checkpointing and self.training:
             gate_in = gate.to(device=h.device, dtype=h.dtype) if torch.is_tensor(gate) else h.new_tensor(float(gate))
             return ckpt.checkpoint(
-                lambda _h, _s, _g: self.dec_act(self.dec_mod(self.dec_conv(_h), _s, gate=_g)),
+                lambda _h, _s, _g: self.dec_act(self.dec_mod(self.dec_post(self._run_style_blocks(_h, self.decoder_blocks, _s, gate=_g)), _s, gate=_g)),
                 h,
                 style_code,
                 gate_in,
                 use_reentrant=False,
             )
-        h = self.dec_conv(h)
+        h = self._run_style_blocks(
+            h,
+            blocks=self.decoder_blocks,
+            style_code=style_code,
+            gate=gate,
+        )
+        h = self.dec_post(h)
         h = self.dec_mod(h, style_code, gate=gate)
         h = self.dec_act(h)
         return h
@@ -981,6 +1227,12 @@ def build_model_from_config(
         style_attn_num_tokens=int(model_cfg.get("style_attn_num_tokens", _MODEL_CONFIG_DEFAULTS["style_attn_num_tokens"])),
         style_attn_num_heads=int(model_cfg.get("style_attn_num_heads", _MODEL_CONFIG_DEFAULTS["style_attn_num_heads"])),
         style_attn_sharpen_scale=float(model_cfg.get("style_attn_sharpen_scale", _MODEL_CONFIG_DEFAULTS["style_attn_sharpen_scale"])),
+        hires_block_type=str(model_cfg.get("hires_block_type", _MODEL_CONFIG_DEFAULTS["hires_block_type"])),
+        body_block_type=str(model_cfg.get("body_block_type", _MODEL_CONFIG_DEFAULTS["body_block_type"])),
+        decoder_block_type=str(model_cfg.get("decoder_block_type", _MODEL_CONFIG_DEFAULTS["decoder_block_type"])),
+        feature_attn_num_heads=int(model_cfg.get("feature_attn_num_heads", _MODEL_CONFIG_DEFAULTS["feature_attn_num_heads"])),
+        feature_attn_mlp_ratio=float(model_cfg.get("feature_attn_mlp_ratio", _MODEL_CONFIG_DEFAULTS["feature_attn_mlp_ratio"])),
+        window_attn_window_size=int(model_cfg.get("window_attn_window_size", _MODEL_CONFIG_DEFAULTS["window_attn_window_size"])),
         style_skip_content_retention_boost=float(model_cfg.get("style_skip_content_retention_boost", _MODEL_CONFIG_DEFAULTS["style_skip_content_retention_boost"])),
         ablation_no_adagn=bool(model_cfg.get("ablation_no_adagn", _MODEL_CONFIG_DEFAULTS["ablation_no_adagn"])),
         ablation_no_adagn_zero_out=bool(model_cfg.get("ablation_no_adagn_zero_out", _MODEL_CONFIG_DEFAULTS["ablation_no_adagn_zero_out"])),

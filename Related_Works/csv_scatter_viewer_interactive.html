@@ -32,11 +32,17 @@
 
         .content {
             display: grid;
-            grid-template-columns: 360px 1fr;
+            grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
             gap: 18px;
             padding: 22px;
+            align-items: start;
         }
-        .sidebar { display: grid; gap: 14px; }
+        .sidebar {
+            display: grid;
+            gap: 14px;
+            align-content: start;
+            min-width: 0;
+        }
         .section {
             border: 1px solid #e3e3e3;
             border-radius: 8px;
@@ -102,7 +108,7 @@
             margin-bottom: 6px;
         }
 
-        #groupCheckboxes {
+        .scroll-list {
             max-height: 260px;
             overflow-y: auto;
             display: grid;
@@ -110,7 +116,11 @@
             padding-right: 4px;
         }
 
-        .main { display: grid; gap: 16px; }
+        .main {
+            display: grid;
+            gap: 16px;
+            min-width: 0;
+        }
         .plot-card {
             border: 1px solid #e3e3e3;
             border-radius: 8px;
@@ -127,7 +137,7 @@
         }
         .plot-layout {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 240px;
+            grid-template-columns: minmax(0, 1fr) clamp(190px, 24vw, 280px);
             gap: 10px;
             padding: 12px;
             align-items: start;
@@ -147,8 +157,9 @@
             padding: 8px;
             background: #fbfbfb;
             max-height: 100%;
-            overflow-y: auto;
+            overflow: hidden;
         }
+        .plot-legend .scroll-list { max-height: 320px; }
         .plot-legend-title {
             font-size: 11px;
             font-weight: 700;
@@ -201,7 +212,7 @@
             .content { grid-template-columns: 1fr; }
             .plot-layout { grid-template-columns: 1fr; }
             .plot-wrap { min-height: 300px; }
-            .plot-legend { max-height: 180px; }
+            .plot-legend .scroll-list { max-height: 180px; }
         }
     </style>
 </head>
@@ -209,7 +220,7 @@
 <div class="container">
     <div class="header">
         <h1>Experiments + Related Works (Dual Metric Plots)</h1>
-        <p>Two plots: preferred metrics are all_clip_content and all_content_lpips, with automatic fallback to transfer_* columns.</p>
+        <p>Two plots based on unified metrics: clip_style, clip_content, and content_lpips.</p>
     </div>
 
     <div class="content">
@@ -263,7 +274,7 @@
                     <button class="btn-primary" onclick="selectAllGroups()">Select All</button>
                     <button class="btn-secondary" onclick="selectNoneGroups()">Select None</button>
                 </div>
-                <div id="groupCheckboxes"></div>
+                <div id="groupCheckboxes" class="scroll-list"></div>
             </div>
 
             <div class="section">
@@ -294,7 +305,7 @@
                     <button class="btn-primary" onclick="selectAllRelatedWorks()">Select All</button>
                     <button class="btn-secondary" onclick="selectNoneRelatedWorks()">Select None</button>
                 </div>
-                <div id="relatedWorksCheckboxes"></div>
+                <div id="relatedWorksCheckboxes" class="scroll-list"></div>
             </div>
         </div>
 
@@ -332,6 +343,7 @@ const colorPalette = [
 ];
 
 const relatedWorksData = [
+    { run_id: 'S2WAT (ours, e2000)', clip_style: 0.6612154104808965, content_lpips: 0.5602266595166667, clip_content: 0.6941274672666667 },
     { run_id: 'SaMST', clip_style: 0.7015254672368367, content_lpips: 0.5596446539666667, clip_content: 0.6903258735934894 },
     { run_id: 'StarGAN-v2-latent', clip_style: 0.5850053535695089, content_lpips: 0.3471460113142112, clip_content: 0.8667943727225065 },
     { run_id: 'SDEdit str=0.10', clip_style: 0.668227516, content_lpips: 0.400086479 },
@@ -357,10 +369,36 @@ function oneMinus(v) {
     return n === null ? null : (1 - n);
 }
 
+function getNumericFromCandidates(row, keys) {
+    for (const key of (keys || [])) {
+        if (!key) continue;
+        const n = asFloat(row[key]);
+        if (n !== null) return n;
+    }
+    return null;
+}
+
+function getInvLpipsFromCandidates(row, candidates) {
+    for (const c of (candidates || [])) {
+        if (!c || !c.key) continue;
+        const n = asFloat(row[c.key]);
+        if (n === null) continue;
+        return c.alreadyInverted ? n : (1 - n);
+    }
+    return null;
+}
+
 function parseCSV(text) {
     const lines = text.trim().split('\n').filter(Boolean);
     if (lines.length < 2) return [];
-    const headers = lines[0].split(',').map(s => s.trim());
+    const rawHeaders = lines[0].split(',').map(s => s.trim().replace(/^\uFEFF/, ''));
+    const seen = new Map();
+    const headers = rawHeaders.map((h, idx) => {
+        const base = h || `col_${idx + 1}`;
+        const n = seen.get(base) || 0;
+        seen.set(base, n + 1);
+        return n === 0 ? base : `${base}__dup${n + 1}`;
+    });
     const out = [];
 
     for (let i = 1; i < lines.length; i++) {
@@ -388,13 +426,15 @@ function findColumn(headers, candidates) {
 
 function findLpipsColumn(headers) {
     const inv = [
+        '1-content_lpips', '1_content_lpips',
+        'inv-content_lpips', 'inv_content_lpips',
         '1-all_content_lpips', '1_all_content_lpips',
         'inv-all_content_lpips', 'inv_all_content_lpips',
         '1-transfer_content_lpips', '1_transfer_content_lpips',
         'inv-transfer_content_lpips', 'inv_transfer_content_lpips',
         'inv-lpips', 'inv_lpips', '1-lpips', '1_lpips'
     ];
-    const raw = ['all_content_lpips', 'transfer_content_lpips', 'content_lpips', 'lpips'];
+    const raw = ['content_lpips', 'lpips', 'all_content_lpips', 'transfer_content_lpips'];
 
     const invKey = findColumn(headers, inv);
     if (invKey) return { key: invKey, alreadyInverted: true };
@@ -538,10 +578,10 @@ function buildGroupSeries(records, cols, metric) {
     let expCount = 0;
 
     for (const r of records) {
-        const x = asFloat(r[cols.clipStyle]);
+        const x = getNumericFromCandidates(r, cols.clipStyleCandidates);
         const y = metric === 'clip_content'
-            ? asFloat(r[cols.clipContent])
-            : (cols.lpips.alreadyInverted ? asFloat(r[cols.lpips.key]) : oneMinus(r[cols.lpips.key]));
+            ? getNumericFromCandidates(r, cols.clipContentCandidates)
+            : getInvLpipsFromCandidates(r, cols.lpipsCandidates);
 
         if (x === null || y === null) continue;
 
@@ -600,25 +640,18 @@ function getRangesFromTraces(traces) {
     };
 }
 
-function readAxisRange(minId, maxId) {
+function resolveAxisRange(autoRange, minId, maxId) {
     const minVal = asFloat(document.getElementById(minId)?.value);
     const maxVal = asFloat(document.getElementById(maxId)?.value);
-    if (minVal === null || maxVal === null) return null;
-    if (minVal >= maxVal) return null;
-    return [minVal, maxVal];
-}
 
-function getManualRanges(metric) {
-    if (metric === 'clip_content') {
-        return {
-            xRange: readAxisRange('p1xMin', 'p1xMax'),
-            yRange: readAxisRange('p1yMin', 'p1yMax')
-        };
-    }
-    return {
-        xRange: readAxisRange('p2xMin', 'p2xMax'),
-        yRange: readAxisRange('p2yMin', 'p2yMax')
-    };
+    let lo = autoRange[0];
+    let hi = autoRange[1];
+
+    if (minVal !== null) lo = minVal;
+    if (maxVal !== null) hi = maxVal;
+
+    if (!(lo < hi)) return null;
+    return [lo, hi];
 }
 
 function resetAxisLimits() {
@@ -628,6 +661,23 @@ function resetAxisLimits() {
             if (el) el.value = '';
         });
     plotData();
+}
+
+function validateAxisInputs() {
+    const checks = [
+        ['p1xMin', 'p1xMax', 'Plot 1 X'],
+        ['p1yMin', 'p1yMax', 'Plot 1 Y'],
+        ['p2xMin', 'p2xMax', 'Plot 2 X'],
+        ['p2yMin', 'p2yMax', 'Plot 2 Y']
+    ];
+    for (const [minId, maxId, label] of checks) {
+        const minVal = asFloat(document.getElementById(minId)?.value);
+        const maxVal = asFloat(document.getElementById(maxId)?.value);
+        if (minVal !== null && maxVal !== null && !(minVal < maxVal)) {
+            return `${label} limit invalid: min must be less than max.`;
+        }
+    }
+    return null;
 }
 
 function buildTraces(groupMap, metric) {
@@ -661,11 +711,15 @@ function buildTraces(groupMap, metric) {
         .filter(p => p.x !== null && p.y !== null);
 
     if (rwPts.length > 0) {
+        const rwTextPositions = ['top center', 'bottom center', 'top right', 'bottom right', 'top left', 'bottom left'];
         traces.push({
             x: rwPts.map(p => p.x),
             y: rwPts.map(p => p.y),
             customdata: rwPts.map(p => p.label),
-            mode: 'markers',
+            text: rwPts.map(p => p.label),
+            textposition: rwPts.map((_, idx) => rwTextPositions[idx % rwTextPositions.length]),
+            textfont: { color: '#111', size: 11 },
+            mode: 'markers+text',
             type: 'scatter',
             name: 'Related Works',
             marker: {
@@ -687,7 +741,7 @@ function renderLegend(legendId, traces) {
     const el = document.getElementById(legendId);
     if (!el) return;
     if (!traces || traces.length === 0) {
-        el.innerHTML = '<div class="plot-legend-title">Legend</div><div class="plot-legend-item">No visible traces</div>';
+        el.innerHTML = '<div class="plot-legend-title">Legend</div><div class="scroll-list"><div class="plot-legend-item">No visible traces</div></div>';
         return;
     }
 
@@ -701,14 +755,18 @@ function renderLegend(legendId, traces) {
         `;
     }).join('');
 
-    el.innerHTML = `<div class="plot-legend-title">Legend</div>${rows}`;
+    el.innerHTML = `<div class="plot-legend-title">Legend</div><div class="scroll-list">${rows}</div>`;
 }
 
 function renderPlot(divId, legendId, traces, metric) {
     const autoRanges = getRangesFromTraces(traces);
-    const manualRanges = getManualRanges(metric);
-    const xRange = manualRanges.xRange || autoRanges.xRange;
-    const yRange = manualRanges.yRange || autoRanges.yRange;
+    const ids = metric === 'clip_content'
+        ? { xMin: 'p1xMin', xMax: 'p1xMax', yMin: 'p1yMin', yMax: 'p1yMax' }
+        : { xMin: 'p2xMin', xMax: 'p2xMax', yMin: 'p2yMin', yMax: 'p2yMax' };
+
+    const xRange = resolveAxisRange(autoRanges.xRange, ids.xMin, ids.xMax) || autoRanges.xRange;
+    const yRange = resolveAxisRange(autoRanges.yRange, ids.yMin, ids.yMax) || autoRanges.yRange;
+
     const layout = {
         title: {
             text: metric === 'clip_content' ? 'clip_content vs clip_style' : '1-content_lpips vs clip_style',
@@ -724,9 +782,7 @@ function renderPlot(divId, legendId, traces, metric) {
             title: 'clip_style',
             range: yRange,
             showgrid: true,
-            gridcolor: '#e0e0e0',
-            scaleanchor: 'x',
-            scaleratio: 1
+            gridcolor: '#e0e0e0'
         },
         hovermode: 'closest',
         plot_bgcolor: '#fafafa',
@@ -744,26 +800,61 @@ function inferColumns(records) {
 
     const expId = findColumn(headers, ['experiment_id']);
     const epoch = findColumn(headers, ['epoch']);
-    const clipStyle = findColumn(headers, ['all_clip_style', 'transfer_clip_style', 'clip_style']);
-    const clipContent = findColumn(headers, ['all_clip_content', 'transfer_clip_content', 'clip_content', 'clip_dir']);
-    const lpips = findLpipsColumn(headers);
+    const clipStyleUnified = findColumn(headers, ['clip_style']);
+    const clipStyleAll = findColumn(headers, ['all_clip_style']);
+    const clipStyleTransfer = findColumn(headers, ['transfer_clip_style']);
+    const clipContentUnified = findColumn(headers, ['clip_content']);
+    const clipContentAll = findColumn(headers, ['all_clip_content']);
+    const clipContentTransfer = findColumn(headers, ['transfer_clip_content', 'clip_dir']);
+
+    const lpipsUnifiedInv = findColumn(headers, [
+        '1-content_lpips', '1_content_lpips',
+        'inv-content_lpips', 'inv_content_lpips'
+    ]);
+    const lpipsUnifiedRaw = findColumn(headers, ['content_lpips', 'lpips']);
+    const lpipsAllInv = findColumn(headers, [
+        '1-all_content_lpips', '1_all_content_lpips',
+        'inv-all_content_lpips', 'inv_all_content_lpips'
+    ]);
+    const lpipsAllRaw = findColumn(headers, ['all_content_lpips']);
+    const lpipsTransferInv = findColumn(headers, [
+        '1-transfer_content_lpips', '1_transfer_content_lpips',
+        'inv-transfer_content_lpips', 'inv_transfer_content_lpips'
+    ]);
+    const lpipsTransferRaw = findColumn(headers, ['transfer_content_lpips']);
+
+    const clipStyleCandidates = [clipStyleUnified, clipStyleAll, clipStyleTransfer].filter(Boolean);
+    const clipContentCandidates = [clipContentUnified, clipContentAll, clipContentTransfer].filter(Boolean);
+    const lpipsCandidates = [
+        { key: lpipsUnifiedInv, alreadyInverted: true },
+        { key: lpipsUnifiedRaw, alreadyInverted: false },
+        { key: lpipsAllInv, alreadyInverted: true },
+        { key: lpipsAllRaw, alreadyInverted: false },
+        { key: lpipsTransferInv, alreadyInverted: true },
+        { key: lpipsTransferRaw, alreadyInverted: false },
+    ].filter(x => x.key);
 
     if (!expId) throw new Error('Missing experiment_id column');
-    if (!clipStyle) throw new Error('Missing clip_style column');
-    if (!clipContent) throw new Error('Missing clip_content column');
-    if (!lpips) throw new Error('Missing content_lpips/transfer_content_lpips (or inverted lpips) column');
+    if (clipStyleCandidates.length === 0) throw new Error('Missing clip_style column');
+    if (clipContentCandidates.length === 0) throw new Error('Missing clip_content column');
+    if (lpipsCandidates.length === 0) throw new Error('Missing content_lpips column');
 
     return {
         expId,
         epoch: epoch || '__missing_epoch__',
-        clipStyle,
-        clipContent,
-        lpips
+        clipStyleCandidates,
+        clipContentCandidates,
+        lpipsCandidates
     };
 }
 
 function plotData() {
     clearError();
+    const axisError = validateAxisInputs();
+    if (axisError) {
+        showError(axisError);
+        return;
+    }
     if (!hasInitializedRelatedWorks) populateRelatedWorksCheckboxes();
 
     const text = document.getElementById('csvInput').value.trim();

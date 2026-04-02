@@ -1,0 +1,26 @@
+G:\GitHub\Latent_Style\Cycle-NCE\.venv\lib\site-packages\torch\functional.py:505: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\TensorShape.cpp:4383.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+Running args: 
+base_lr = 0.0001
+batch_size = 1
+checkpoint_import_path = G:\GitHub\Latent_Style\Related_Works\S2WAT-main\pre_trained_models\checkpoint_bs1_safe\checkpoint_7_epoch.pkl
+checkpoint_save_interval = 1
+checkpoint_save_path = G:\GitHub\Latent_Style\Related_Works\S2WAT-main\pre_trained_models\checkpoint_bs1_safe
+content_dir = G:\GitHub\Latent_Style\Related_Works\S2WAT-main\input\Train\Content
+content_weight = 2
+epoch = 1
+grad_checkpoint = True
+id1_weight = 50
+id2_weight = 1
+img_size = 256
+loss_count_interval = 1
+precision = bf16
+resume_train = True
+style_dir = G:\GitHub\Latent_Style\Related_Works\S2WAT-main\input\Train\Style
+style_weight = 3
+train_size = 0
+vgg_dir = G:\GitHub\Latent_Style\Related_Works\S2WAT-main\pre_trained_models\vgg_normalised.pth
+
+loading checkpoint...
+loading finished
+Epoch 8: 79.03596496582031

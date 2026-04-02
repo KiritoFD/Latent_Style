@@ -14,6 +14,7 @@ import json
 import re
 import sqlite3
 from collections import OrderedDict
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -462,6 +463,76 @@ def _flatten_record(record: Dict[str, Any]) -> Dict[str, str]:
     return flat
 
 
+def _is_non_empty(value: Any) -> bool:
+    if value is None:
+        return False
+    return str(value).strip() != ""
+
+
+def _pick_first_non_empty(row: Dict[str, str], keys: List[str]) -> str:
+    for key in keys:
+        if _is_non_empty(row.get(key, "")):
+            return str(row.get(key, ""))
+    return ""
+
+
+def _normalize_bom_keys_in_row(row: Dict[str, str]) -> Dict[str, str]:
+    """
+    Normalize potential BOM-prefixed header names (e.g. '\\ufeffexperiment_id').
+    Keep the first non-empty value when keys collapse to same normalized name.
+    """
+    normalized: Dict[str, str] = {}
+    for raw_key, raw_val in row.items():
+        key = str(raw_key).lstrip("\ufeff")
+        val = str(raw_val) if raw_val is not None else ""
+        if key not in normalized:
+            normalized[key] = val
+            continue
+        # Prefer non-empty value over empty.
+        if (not _is_non_empty(normalized[key])) and _is_non_empty(val):
+            normalized[key] = val
+    return normalized
+
+
+def _normalize_metric_columns(row: Dict[str, str]) -> Dict[str, str]:
+    """
+    Unified metrics layer:
+    1) If all_* is missing, fallback to transfer_* for legacy runs.
+    2) Emit canonical columns clip_style / clip_content / content_lpips.
+    """
+    legacy_backfill = [
+        ("all_clip_style", "transfer_clip_style"),
+        ("all_clip_content", "transfer_clip_content"),
+        ("all_content_lpips", "transfer_content_lpips"),
+        ("all_fid", "transfer_fid"),
+        ("all_art_fid", "transfer_art_fid"),
+        ("all_classifier_acc", "transfer_classifier_acc"),
+    ]
+    for dst, src in legacy_backfill:
+        if (not _is_non_empty(row.get(dst, ""))) and _is_non_empty(row.get(src, "")):
+            row[dst] = str(row.get(src, ""))
+
+    row["clip_style"] = _pick_first_non_empty(
+        row,
+        ["clip_style", "all_clip_style", "transfer_clip_style", "photo_to_art_clip_style"],
+    )
+    row["clip_content"] = _pick_first_non_empty(
+        row,
+        ["clip_content", "all_clip_content", "transfer_clip_content", "photo_to_art_clip_content"],
+    )
+    row["content_lpips"] = _pick_first_non_empty(
+        row,
+        ["content_lpips", "all_content_lpips", "transfer_content_lpips"],
+    )
+    return row
+
+
+def _normalize_row_schema(row: Dict[str, str]) -> Dict[str, str]:
+    row = _normalize_bom_keys_in_row(row)
+    row = _normalize_metric_columns(row)
+    return row
+
+
 def _get_dedup_key(record: Dict[str, str]) -> str:
     """Generate key for deduplication."""
     exp_id = record.get('experiment_id', 'unknown')
@@ -506,12 +577,13 @@ def _read_existing_csv(csv_path: Path) -> Tuple[List[Dict[str, str]], Set[str]]:
     keys = set()
     
     try:
-        with csv_path.open('r', encoding='utf-8', newline='') as f:
+        with csv_path.open('r', encoding='utf-8-sig', newline='') as f:
             reader = csv.DictReader(f)
             if reader.fieldnames is None:
                 return [], set()
             
             for row in reader:
+                row = _normalize_row_schema(row)
                 row = _normalize_experiment_id_in_row(row)
                 rows.append(row)
                 key = _get_dedup_key(row)
@@ -541,6 +613,76 @@ def _merge_and_deduplicate(
     return existing, added
 
 
+def _normalize_numeric_string(value: Any) -> Optional[str]:
+    """
+    Normalize numeric string for exact-value comparison.
+    Returns None for non-numeric or empty values.
+    """
+    if value is None:
+        return None
+    text = str(value).strip()
+    if text == "":
+        return None
+
+    lowered = text.lower()
+    if lowered in {"nan", "none", "null", "inf", "+inf", "-inf"}:
+        return None
+
+    try:
+        num = Decimal(text)
+    except (InvalidOperation, ValueError):
+        return None
+
+    if num == 0:
+        return "0"
+    return str(num.normalize())
+
+
+def _build_numeric_signature(record: Dict[str, str]) -> Tuple[Tuple[str, str], ...]:
+    """
+    Build a deterministic signature from all numeric columns in a row.
+    Two rows with identical signatures have fully matching numeric values.
+    """
+    ignore_fields = {"experiment_id", "source_file", "updated_at", "summary_path"}
+    signature: List[Tuple[str, str]] = []
+
+    for key in sorted(record.keys()):
+        if key in ignore_fields:
+            continue
+        normalized = _normalize_numeric_string(record.get(key, ""))
+        if normalized is not None:
+            signature.append((key, normalized))
+
+    return tuple(signature)
+
+
+def _deduplicate_numeric_rows(rows: List[Dict[str, str]]) -> Tuple[List[Dict[str, str]], int]:
+    """
+    Remove rows that have exactly matching numeric values.
+    Keeps the first occurrence and drops subsequent duplicates.
+    """
+    seen: Set[Tuple[Tuple[str, str], ...]] = set()
+    deduped: List[Dict[str, str]] = []
+    removed = 0
+
+    for row in rows:
+        signature = _build_numeric_signature(row)
+
+        # If a row has no numeric values, keep it as-is.
+        if not signature:
+            deduped.append(row)
+            continue
+
+        if signature in seen:
+            removed += 1
+            continue
+
+        seen.add(signature)
+        deduped.append(row)
+
+    return deduped, removed
+
+
 def _get_all_fieldnames(records: List[Dict[str, str]]) -> List[str]:
     """Get all unique field names in order."""
     seen = set()
@@ -549,6 +691,7 @@ def _get_all_fieldnames(records: List[Dict[str, str]]) -> List[str]:
     # Priority order for common columns
     priority = [
         'experiment_id', 'epoch', 'source_file', 'updated_at',
+        'clip_style', 'clip_content', 'content_lpips',
         'all_clip_style', 'all_clip_content', 'all_content_lpips',
         'all_fid', 'all_art_fid', 'all_classifier_acc',
         'transfer_clip_style', 'transfer_clip_content', 'transfer_content_lpips',
@@ -576,7 +719,7 @@ def _get_all_fieldnames(records: List[Dict[str, str]]) -> List[str]:
 
 def _has_clip_content(record: Dict[str, str]) -> bool:
     """Keep only rows that contain at least one clip_content metric."""
-    for key in ('transfer_clip_content', 'photo_to_art_clip_content'):
+    for key in ('clip_content', 'all_clip_content', 'transfer_clip_content', 'photo_to_art_clip_content'):
         value = record.get(key, '')
         if value not in {'', None}:
             return True
@@ -664,6 +807,7 @@ Examples:
         fr = _flatten_record(r)
         if trial_label_map:
             fr = _apply_trial_label_map(fr, trial_label_map)
+        fr = _normalize_row_schema(fr)
         flat_records.append(fr)
     
     # Read existing CSV if it exists (unless fresh rebuild is requested)
@@ -682,6 +826,8 @@ Examples:
         flat_records,
     )
 
+    merged_rows, removed_numeric_duplicates = _deduplicate_numeric_rows(merged_rows)
+
     removed_missing_clip_content = 0
     if args.drop_missing_clip_content:
         removed_missing_clip_content = len(merged_rows)
@@ -690,6 +836,8 @@ Examples:
     
     if args.verbose:
         print(f"[INFO] {added_count} new record(s) to add")
+        if removed_numeric_duplicates > 0:
+            print(f"[INFO] Removed {removed_numeric_duplicates} numeric-duplicate record(s)")
         if removed_missing_clip_content > 0:
             print(f"[INFO] Removed {removed_missing_clip_content} record(s) without clip_content")
     
@@ -708,6 +856,8 @@ Examples:
         print(f"[OK] Wrote {len(merged_rows)} total record(s) to {output}")
         if added_count > 0:
             print(f"   -> Added {added_count} new, kept {len(merged_rows) - added_count} existing")
+        if removed_numeric_duplicates > 0:
+            print(f"   -> Removed {removed_numeric_duplicates} row(s) with identical numeric values")
         if removed_missing_clip_content > 0:
             print(f"   -> Removed {removed_missing_clip_content} row(s) without clip_content")
         print(f"   -> {len(fieldnames)} column(s)")
