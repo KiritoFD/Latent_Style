@@ -1363,13 +1363,18 @@ class AdaCUTTrainer:
             str(cfg_train.get("full_eval_clip_modelscope_id", "")),
             "--clip_modelscope_cache_dir",
             str(cfg_train.get("full_eval_clip_modelscope_cache_dir", "")),
+            "--clip_backend",
+            str(cfg_train.get("full_eval_clip_backend", "hf")),
             "--clip_hf_cache_dir",
-            str(cfg_train.get("full_eval_clip_hf_cache_dir", "../eval_cache/hf")),
+            str(cfg_train.get("full_eval_clip_hf_cache_dir", "./eval_cache/hf")),
             "--image_classifier_path",
-            str(cfg_train.get("full_eval_image_classifier_path", "../eval_cache/eval_style_image_classifier.pt")),
+            str(cfg_train.get("full_eval_image_classifier_path", "./eval_cache/eval_style_image_classifier.pt")),
         ]
         if bool(cfg_train.get("full_eval_clip_allow_network", False)):
-            cmd += ["--clip_allow_network"]
+            logger.warning(
+                "training.full_eval_clip_allow_network=True is ignored in src mainline. "
+                "Full-eval CLIP is forced to local-cache-only mode."
+            )
         full_eval_style_strength = cfg_train.get("full_eval_style_strength", cfg_infer.get("style_strength"))
         if full_eval_style_strength is not None:
             cmd += ["--style_strength", str(float(full_eval_style_strength))]

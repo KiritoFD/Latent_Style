@@ -92,8 +92,8 @@
     "full_eval_image_classifier_path": "../eval_cache/eval_style_image_classifier.pt",
     "full_eval_clip_hf_cache_dir": "../eval_cache/hf",
     "full_eval_classifier_only": false,
-    "full_eval_disable_lpips": false,
-    "full_eval_enable_art_fid": true,
+    "full_eval_disable_lpips": true,
+    "full_eval_enable_art_fid": false,
     "full_eval_art_fid_max_gen": 120,
     "full_eval_art_fid_max_ref": 120,
     "full_eval_art_fid_batch_size": 8,
@@ -124,7 +124,11 @@
     "onecycle_anneal_strategy": "cos",
     "cuda_sync_debug": false,
     "strict_batch_sanity": false,
-    "gc_collect_interval": 0
+    "gc_collect_interval": 0,
+    "full_eval_clip_allow_network": false,
+    "full_eval_reuse_generated": true,
+    "full_eval_clip_backend": "hf",
+    "full_eval_enable_kid": false
   },
   "data": {
     "data_root": "../../latent-256",
