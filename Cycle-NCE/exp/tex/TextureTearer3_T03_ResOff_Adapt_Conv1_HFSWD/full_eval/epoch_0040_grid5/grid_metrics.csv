@@ -1,0 +1,26 @@
+src_style,tgt_style,src_image,gen_image,clip_style,content_lpips,reused
+photo,photo,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\photo_2013-11-08 16_45_24_to_photo.jpg,0.7843307256698608,0.28500488,True
+photo,Hayao,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\photo_2013-11-08 16_45_24_to_Hayao.jpg,0.5793322324752808,0.29861674,True
+photo,monet,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\photo_2013-11-08 16_45_24_to_monet.jpg,0.5184975266456604,0.27738258,True
+photo,vangogh,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\photo_2013-11-08 16_45_24_to_vangogh.jpg,0.5060562491416931,0.2803058,True
+photo,cezanne,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\photo_2013-11-08 16_45_24_to_cezanne.jpg,0.4773266017436981,0.27601042,True
+Hayao,photo,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\Hayao_0_to_photo.jpg,0.5359064936637878,0.19651909,True
+Hayao,Hayao,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\Hayao_0_to_Hayao.jpg,0.8617223501205444,0.18611033,True
+Hayao,monet,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\Hayao_0_to_monet.jpg,0.4373376667499542,0.18065043,True
+Hayao,vangogh,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\Hayao_0_to_vangogh.jpg,0.5020822286605835,0.168965,True
+Hayao,cezanne,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\Hayao_0_to_cezanne.jpg,0.46359944343566895,0.1727684,True
+monet,photo,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\monet_00018_to_photo.jpg,0.7399930953979492,0.3920045,True
+monet,Hayao,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\monet_00018_to_Hayao.jpg,0.6248624324798584,0.40100458,True
+monet,monet,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\monet_00018_to_monet.jpg,0.8053644895553589,0.38857406,True
+monet,vangogh,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\monet_00018_to_vangogh.jpg,0.7585265636444092,0.38790372,True
+monet,cezanne,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\monet_00018_to_cezanne.jpg,0.7530379295349121,0.38656706,True
+vangogh,photo,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\vangogh_00090_to_photo.jpg,0.5823622941970825,0.27039135,True
+vangogh,Hayao,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\vangogh_00090_to_Hayao.jpg,0.6120826005935669,0.26701072,True
+vangogh,monet,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\vangogh_00090_to_monet.jpg,0.5919042229652405,0.2585501,True
+vangogh,vangogh,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\vangogh_00090_to_vangogh.jpg,0.7001374363899231,0.24650162,True
+vangogh,cezanne,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\vangogh_00090_to_cezanne.jpg,0.6951402425765991,0.25014952,True
+cezanne,photo,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\cezanne_00057_to_photo.jpg,0.6249751448631287,0.3052703,True
+cezanne,Hayao,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\cezanne_00057_to_Hayao.jpg,0.6225901246070862,0.30372804,True
+cezanne,monet,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\cezanne_00057_to_monet.jpg,0.6872525215148926,0.29902285,True
+cezanne,vangogh,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\cezanne_00057_to_vangogh.jpg,0.7431975603103638,0.29292524,True
+cezanne,cezanne,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\tex\TextureTearer3_T03_ResOff_Adapt_Conv1_HFSWD\full_eval\epoch_0040\images\cezanne_00057_to_cezanne.jpg,0.8025821447372437,0.29454827,True

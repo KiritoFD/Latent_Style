@@ -37,6 +37,13 @@ def _find_style_emb_key(state_dict: dict[str, torch.Tensor]) -> str:
     return keys[0]
 
 
+def _find_style_spatial_key(state_dict: dict[str, torch.Tensor]) -> str | None:
+    keys = [k for k in state_dict.keys() if k.endswith("style_spatial_id_16")]
+    if not keys:
+        return None
+    return keys[0]
+
+
 def _iter_images(root: Path) -> Iterable[Path]:
     exts = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
     for p in sorted(root.rglob("*")):
@@ -215,30 +222,56 @@ def patch_checkpoint_style(
     out_ckpt: Path,
     replace_style_id: int,
     new_style_vec: torch.Tensor,
-) -> tuple[Path, list[str]]:
+    append_style_name: str = "",
+    append_new_style: bool = False,
+) -> tuple[Path, list[str], int]:
     ckpt = torch.load(checkpoint, map_location="cpu", weights_only=False)
     if "model_state_dict" not in ckpt:
         raise KeyError("checkpoint missing model_state_dict")
     model_sd = ckpt["model_state_dict"]
     clean_sd = _strip_compile_prefix(model_sd)
     style_key = _find_style_emb_key(clean_sd)
+    spatial_key = _find_style_spatial_key(clean_sd)
     style_bank = clean_sd[style_key]
 
     n = int(style_bank.shape[0])
-    if replace_style_id < 0 or replace_style_id >= n:
-        raise ValueError(f"replace_style_id={replace_style_id} out of range [0,{n-1}]")
-
-    for k in list(model_sd.keys()):
-        if k.endswith("style_emb.weight"):
-            model_sd[k][replace_style_id] = new_style_vec.to(dtype=model_sd[k].dtype)
-
-    out_ckpt.parent.mkdir(parents=True, exist_ok=True)
-    torch.save(ckpt, out_ckpt)
-
     style_names: list[str] = []
     cfg = ckpt.get("config", {})
     style_names = list(cfg.get("data", {}).get("style_subdirs", []) or [])
-    return out_ckpt, style_names
+
+    if append_new_style:
+        append_name = str(append_style_name).strip()
+        if not append_name:
+            raise ValueError("append_style_name is required when append_new_style is enabled")
+
+        new_sid = n
+        for k in list(model_sd.keys()):
+            if k.endswith("style_emb.weight"):
+                vec = new_style_vec.to(dtype=model_sd[k].dtype).view(1, -1)
+                model_sd[k] = torch.cat([model_sd[k], vec], dim=0)
+            elif k.endswith("style_spatial_id_16"):
+                extra = torch.zeros_like(model_sd[k][:1])
+                model_sd[k] = torch.cat([model_sd[k], extra], dim=0)
+
+        model_cfg = cfg.setdefault("model", {})
+        model_cfg["num_styles"] = int(n + 1)
+        data_cfg = cfg.setdefault("data", {})
+        cur_names = list(data_cfg.get("style_subdirs", []) or [])
+        cur_names.append(append_name)
+        data_cfg["style_subdirs"] = cur_names
+        style_names = cur_names
+    else:
+        if replace_style_id < 0 or replace_style_id >= n:
+            raise ValueError(f"replace_style_id={replace_style_id} out of range [0,{n-1}]")
+
+        new_sid = int(replace_style_id)
+        for k in list(model_sd.keys()):
+            if k.endswith("style_emb.weight"):
+                model_sd[k][replace_style_id] = new_style_vec.to(dtype=model_sd[k].dtype)
+
+    out_ckpt.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(ckpt, out_ckpt)
+    return out_ckpt, style_names, new_sid
 
 
 def run_eval_lpips_clip_style(
@@ -292,6 +325,8 @@ def main() -> None:
     parser.add_argument("--fewshot_image_dir", required=True, type=str, help="Few-shot style image root (5-10 images recommended)")
     parser.add_argument("--output_dir", type=str, default="../fewshot_ukiyoe_runs", help="Output root")
     parser.add_argument("--replace_style_id", type=int, default=-1, help="Which style slot to overwrite; -1 means last style id")
+    parser.add_argument("--append_new_style", action="store_true", help="Append as a brand new style slot instead of overwriting an existing one")
+    parser.add_argument("--new_style_name", type=str, default="", help="Required when --append_new_style is set")
     parser.add_argument("--image_size", type=int, default=256)
     parser.add_argument("--resize_mode", type=str, default="stretch", choices=["stretch", "center_crop"])
     parser.add_argument("--max_images", type=int, default=10)
@@ -336,11 +371,17 @@ def main() -> None:
     num_styles = int(style_bank.shape[0])
     style_names = list(cfg.get("data", {}).get("style_subdirs", []) or [])
 
+    append_new_style = bool(args.append_new_style)
     replace_sid = int(args.replace_style_id)
-    if replace_sid < 0:
-        replace_sid = num_styles - 1
-    if replace_sid < 0 or replace_sid >= num_styles:
-        raise ValueError(f"Invalid replace_style_id={replace_sid}, num_styles={num_styles}")
+    if append_new_style:
+        replace_sid = num_styles
+        if not str(args.new_style_name).strip():
+            raise ValueError("--new_style_name is required when --append_new_style is enabled")
+    else:
+        if replace_sid < 0:
+            replace_sid = num_styles - 1
+        if replace_sid < 0 or replace_sid >= num_styles:
+            raise ValueError(f"Invalid replace_style_id={replace_sid}, num_styles={num_styles}")
 
     tag = f"fewshot_{args.latent_subdir_name}_sid{replace_sid}"
     work_dir = out_root / tag
@@ -393,14 +434,19 @@ def main() -> None:
     print(f"[tokenizer] saved style vector: {style_vec_path}")
 
     patched_ckpt = work_dir / f"{ckpt_path.stem}_fewshot_{args.latent_subdir_name}.pt"
-    patched_ckpt, names = patch_checkpoint_style(
+    patched_ckpt, names, final_sid = patch_checkpoint_style(
         checkpoint=ckpt_path,
         out_ckpt=patched_ckpt,
         replace_style_id=replace_sid,
         new_style_vec=final_vec,
+        append_style_name=str(args.new_style_name),
+        append_new_style=append_new_style,
     )
-    target_name = names[replace_sid] if 0 <= replace_sid < len(names) else f"style_{replace_sid}"
-    print(f"[patch] style id {replace_sid} ({target_name}) replaced. checkpoint: {patched_ckpt}")
+    target_name = names[final_sid] if 0 <= final_sid < len(names) else f"style_{final_sid}"
+    if append_new_style:
+        print(f"[patch] appended new style id {final_sid} ({target_name}). checkpoint: {patched_ckpt}")
+    else:
+        print(f"[patch] style id {final_sid} ({target_name}) replaced. checkpoint: {patched_ckpt}")
 
     meta_path = work_dir / "meta.json"
     with open(meta_path, "w", encoding="utf-8") as f:
@@ -411,8 +457,9 @@ def main() -> None:
                 "tokenizer_ckpt": str(tokenizer_ckpt),
                 "fewshot_image_dir": str(image_dir),
                 "latent_dir": str(latent_dir),
-                "replace_style_id": replace_sid,
+                "replace_style_id": final_sid,
                 "replace_style_name": target_name,
+                "append_new_style": append_new_style,
                 "refine_steps": int(args.refine_steps),
             },
             f,

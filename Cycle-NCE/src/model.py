@@ -60,6 +60,12 @@ _MODEL_CONFIG_DEFAULTS = {
     "ablation_naive_skip_gain": 1.5,
     "ablation_no_residual": False,
     "ablation_no_residual_gain": 1.0,
+    "aline": False,
+    "aline_eps": 1e-6,
+    "aline_train_only": True,
+    "output_moment_match": False,
+    "output_moment_match_eps": 1e-6,
+    "output_moment_match_train_only": True,
 }
 _KNOWN_MODEL_CONFIG_KEYS = set(_MODEL_CONFIG_DEFAULTS) | {"lift_channels"}
 
@@ -731,6 +737,9 @@ class LatentAdaCUT(nn.Module):
         ablation_naive_skip_gain: float = 1.5,
         ablation_no_residual: bool = False,
         ablation_no_residual_gain: float = 1.0,
+        output_moment_match: bool = False,
+        output_moment_match_eps: float = 1e-6,
+        output_moment_match_train_only: bool = True,
     ) -> None:
         super().__init__()
         self.latent_channels = int(latent_channels)
@@ -792,6 +801,9 @@ class LatentAdaCUT(nn.Module):
             self.skip_naive_gain = self.ablation_naive_skip_gain
         self.ablation_no_residual = bool(ablation_no_residual)
         self.ablation_no_residual_gain = max(0.0, float(ablation_no_residual_gain))
+        self.output_moment_match = bool(output_moment_match)
+        self.output_moment_match_eps = max(1e-8, float(output_moment_match_eps))
+        self.output_moment_match_train_only = bool(output_moment_match_train_only)
         if self.upsample_blur_kernel not in {"box3", "gaussian3"}:
             self.upsample_blur_kernel = "box3"
 
@@ -1214,6 +1226,7 @@ class LatentAdaCUT(nn.Module):
         num_steps: int = 1,
         step_size: float = 1.0,
         style_strength: float | None = None,
+        target_style_latent: torch.Tensor | None = None,
     ) -> torch.Tensor:
         steps = max(1, int(num_steps))
         strength = self._resolve_style_strength(style_strength)
@@ -1231,7 +1244,7 @@ class LatentAdaCUT(nn.Module):
                 strength=strength,
             )
             h = h + delta * float(step_size) * step_scale * per_step
-        return h
+        return self._apply_output_moment_match(h, target_style_latent)
 
     def _perturb_anchor_if_needed(self, x: torch.Tensor) -> torch.Tensor:
         if self.input_anchor_noise_std <= 0.0:
@@ -1240,12 +1253,40 @@ class LatentAdaCUT(nn.Module):
             return x
         return x + torch.randn_like(x) * self.input_anchor_noise_std
 
+    def _apply_output_moment_match(
+        self,
+        pred: torch.Tensor,
+        target_style_latent: torch.Tensor | None,
+    ) -> torch.Tensor:
+        if not self.output_moment_match or target_style_latent is None:
+            return pred
+        if self.output_moment_match_train_only and not self.training:
+            return pred
+
+        ref = target_style_latent
+        if ref.shape != pred.shape:
+            raise ValueError(
+                "target_style_latent shape must match model output shape, "
+                f"got pred={tuple(pred.shape)} ref={tuple(ref.shape)}"
+            )
+        if ref.device != pred.device:
+            ref = ref.to(device=pred.device)
+        if ref.dtype != pred.dtype:
+            ref = ref.to(dtype=pred.dtype)
+
+        pred_mean = pred.mean(dim=(2, 3), keepdim=True)
+        pred_std = pred.std(dim=(2, 3), keepdim=True, unbiased=False).clamp_min(self.output_moment_match_eps)
+        ref_mean = ref.mean(dim=(2, 3), keepdim=True)
+        ref_std = ref.std(dim=(2, 3), keepdim=True, unbiased=False).clamp_min(self.output_moment_match_eps)
+        return ((pred - pred_mean) / pred_std) * ref_std + ref_mean
+
     def forward(
         self,
         x: torch.Tensor,
         style_id: torch.Tensor | int,
         step_size: float = 1.0,
         style_strength: float | None = None,
+        target_style_latent: torch.Tensor | None = None,
     ) -> torch.Tensor:
         strength = self._resolve_style_strength(style_strength)
         step_scale = self._style_strength_step_scale(strength)
@@ -1260,9 +1301,11 @@ class LatentAdaCUT(nn.Module):
         )
         if self.ablation_no_residual:
             # Extreme ablation: remove x-anchoring and rescale delta to full latent magnitude.
-            return (delta / (self.latent_scale_factor * max(self.residual_gain, 1e-5))) * self.ablation_no_residual_gain
+            pred = (delta / (self.latent_scale_factor * max(self.residual_gain, 1e-5))) * self.ablation_no_residual_gain
+            return self._apply_output_moment_match(pred, target_style_latent)
         anchor = self._perturb_anchor_if_needed(x)
-        return anchor + delta * float(step_size) * step_scale
+        pred = anchor + delta * float(step_size) * step_scale
+        return self._apply_output_moment_match(pred, target_style_latent)
 
 def count_parameters(model: nn.Module) -> int:
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -1289,6 +1332,21 @@ def build_model_from_config(
         skip_mode = "normalized"
     if "skip_routing_mode" not in model_cfg and "skip_frequency_gated" in model_cfg:
         skip_mode = "normalized" if bool(model_cfg.get("skip_frequency_gated", True)) else "naive"
+
+    aline_enabled = bool(model_cfg.get("aline", _MODEL_CONFIG_DEFAULTS["aline"]))
+    aline_eps = float(model_cfg.get("aline_eps", _MODEL_CONFIG_DEFAULTS["aline_eps"]))
+    aline_train_only = bool(model_cfg.get("aline_train_only", _MODEL_CONFIG_DEFAULTS["aline_train_only"]))
+    output_moment_match = bool(model_cfg.get("output_moment_match", _MODEL_CONFIG_DEFAULTS["output_moment_match"]))
+    output_moment_match_eps = float(model_cfg.get("output_moment_match_eps", _MODEL_CONFIG_DEFAULTS["output_moment_match_eps"]))
+    output_moment_match_train_only = bool(
+        model_cfg.get("output_moment_match_train_only", _MODEL_CONFIG_DEFAULTS["output_moment_match_train_only"])
+    )
+    if "aline" in model_cfg:
+        output_moment_match = aline_enabled
+    if "aline_eps" in model_cfg:
+        output_moment_match_eps = aline_eps
+    if "aline_train_only" in model_cfg:
+        output_moment_match_train_only = aline_train_only
 
     return LatentAdaCUT(
         latent_channels=int(model_cfg.get("latent_channels", _MODEL_CONFIG_DEFAULTS["latent_channels"])),
@@ -1337,4 +1395,7 @@ def build_model_from_config(
         ablation_naive_skip_gain=float(model_cfg.get("ablation_naive_skip_gain", _MODEL_CONFIG_DEFAULTS["ablation_naive_skip_gain"])),
         ablation_no_residual=bool(model_cfg.get("ablation_no_residual", _MODEL_CONFIG_DEFAULTS["ablation_no_residual"])),
         ablation_no_residual_gain=float(model_cfg.get("ablation_no_residual_gain", _MODEL_CONFIG_DEFAULTS["ablation_no_residual_gain"])),
+        output_moment_match=output_moment_match,
+        output_moment_match_eps=output_moment_match_eps,
+        output_moment_match_train_only=output_moment_match_train_only,
     )

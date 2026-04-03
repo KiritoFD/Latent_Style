@@ -445,7 +445,13 @@ class AdaCUTObjective:
         id_ratio = id_mask.float().mean()
 
         with self._nvtx_range("loss/pred", nvtx_enabled):
-            pred = model(content, style_id=target_style_id, step_size=1.0, style_strength=1.0)
+            pred = model(
+                content,
+                style_id=target_style_id,
+                step_size=1.0,
+                style_strength=1.0,
+                target_style_latent=target_style,
+            )
 
         content_cast = content.to(dtype=pred.dtype)
         target_cast = target_style.to(dtype=pred.dtype)

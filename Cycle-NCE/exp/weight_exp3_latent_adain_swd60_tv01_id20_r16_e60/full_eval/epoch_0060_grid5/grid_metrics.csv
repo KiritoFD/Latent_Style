@@ -1,0 +1,26 @@
+src_style,tgt_style,src_image,gen_image,clip_style,content_lpips,reused
+photo,photo,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_photo.jpg,0.7681570053100586,0.26201743,True
+photo,Hayao,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_Hayao.jpg,0.6425161361694336,0.67313105,True
+photo,monet,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_monet.jpg,0.6570038795471191,0.62901765,True
+photo,vangogh,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_vangogh.jpg,0.6545246243476868,0.7874062,True
+photo,cezanne,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_cezanne.jpg,0.6225429773330688,0.7039584,True
+Hayao,photo,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\Hayao_0_to_photo.jpg,0.6711732745170593,0.49155188,True
+Hayao,Hayao,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\Hayao_0_to_Hayao.jpg,0.8685696721076965,0.16367367,True
+Hayao,monet,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\Hayao_0_to_monet.jpg,0.5713707208633423,0.4840733,True
+Hayao,vangogh,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\Hayao_0_to_vangogh.jpg,0.6725928783416748,0.4861798,True
+Hayao,cezanne,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\Hayao_0_to_cezanne.jpg,0.5952968597412109,0.5140468,True
+monet,photo,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\monet_00018_to_photo.jpg,0.7866648435592651,0.4717124,True
+monet,Hayao,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\monet_00018_to_Hayao.jpg,0.6037968397140503,0.6127238,True
+monet,monet,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\monet_00018_to_monet.jpg,0.8062701225280762,0.4316401,True
+monet,vangogh,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\monet_00018_to_vangogh.jpg,0.7565076351165771,0.5733902,True
+monet,cezanne,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\monet_00018_to_cezanne.jpg,0.6999726295471191,0.5899987,True
+vangogh,photo,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\vangogh_00090_to_photo.jpg,0.6603007912635803,0.6195467,True
+vangogh,Hayao,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\vangogh_00090_to_Hayao.jpg,0.6206472516059875,0.57519716,True
+vangogh,monet,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\vangogh_00090_to_monet.jpg,0.5695245265960693,0.5347957,True
+vangogh,vangogh,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\vangogh_00090_to_vangogh.jpg,0.709583580493927,0.48508435,True
+vangogh,cezanne,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\vangogh_00090_to_cezanne.jpg,0.5952790975570679,0.5465133,True
+cezanne,photo,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\cezanne_00057_to_photo.jpg,0.6169922947883606,0.41473103,True
+cezanne,Hayao,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\cezanne_00057_to_Hayao.jpg,0.6481238007545471,0.41282076,True
+cezanne,monet,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\cezanne_00057_to_monet.jpg,0.6498421430587769,0.34963393,True
+cezanne,vangogh,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\cezanne_00057_to_vangogh.jpg,0.7693231701850891,0.43216947,True
+cezanne,cezanne,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\weight_exp3_latent_adain_swd60_tv01_id20_r16_e60\full_eval\epoch_0060\images\cezanne_00057_to_cezanne.jpg,0.749008297920227,0.4157262,True
