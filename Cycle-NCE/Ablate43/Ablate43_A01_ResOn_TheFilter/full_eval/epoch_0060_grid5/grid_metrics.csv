@@ -1,0 +1,26 @@
+src_style,tgt_style,src_image,gen_image,clip_style,content_lpips,reused
+photo,photo,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_photo.jpg,0.7157506942749023,0.50341773,True
+photo,Hayao,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_Hayao.jpg,0.6433583498001099,0.5121763,True
+photo,monet,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_monet.jpg,0.6290308237075806,0.49630916,True
+photo,vangogh,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_vangogh.jpg,0.6309776306152344,0.5542601,True
+photo,cezanne,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_cezanne.jpg,0.5996528267860413,0.50022936,True
+Hayao,photo,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\Hayao_0_to_photo.jpg,0.6267812252044678,0.39657298,True
+Hayao,Hayao,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\Hayao_0_to_Hayao.jpg,0.7828080654144287,0.32149452,True
+Hayao,monet,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\Hayao_0_to_monet.jpg,0.4667853116989136,0.37305152,True
+Hayao,vangogh,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\Hayao_0_to_vangogh.jpg,0.5316365361213684,0.35544023,True
+Hayao,cezanne,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\Hayao_0_to_cezanne.jpg,0.5164753794670105,0.37336987,True
+monet,photo,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\monet_00018_to_photo.jpg,0.7945700883865356,0.5094926,True
+monet,Hayao,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\monet_00018_to_Hayao.jpg,0.6542003750801086,0.54863214,True
+monet,monet,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\monet_00018_to_monet.jpg,0.8103617429733276,0.48525757,True
+monet,vangogh,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\monet_00018_to_vangogh.jpg,0.7864360809326172,0.5035478,True
+monet,cezanne,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\monet_00018_to_cezanne.jpg,0.7631853818893433,0.5112563,True
+vangogh,photo,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\vangogh_00090_to_photo.jpg,0.6105891466140747,0.5261624,True
+vangogh,Hayao,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\vangogh_00090_to_Hayao.jpg,0.6641775965690613,0.49308002,True
+vangogh,monet,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\vangogh_00090_to_monet.jpg,0.5832395553588867,0.46611568,True
+vangogh,vangogh,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\vangogh_00090_to_vangogh.jpg,0.6918190121650696,0.41095448,True
+vangogh,cezanne,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\vangogh_00090_to_cezanne.jpg,0.6866257786750793,0.44914773,True
+cezanne,photo,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\cezanne_00057_to_photo.jpg,0.6202607154846191,0.38475215,True
+cezanne,Hayao,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\cezanne_00057_to_Hayao.jpg,0.6281890273094177,0.37216046,True
+cezanne,monet,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\cezanne_00057_to_monet.jpg,0.6637144088745117,0.35991687,True
+cezanne,vangogh,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\cezanne_00057_to_vangogh.jpg,0.7356963157653809,0.35532656,True
+cezanne,cezanne,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_A01_ResOn_TheFilter\full_eval\epoch_0060\images\cezanne_00057_to_cezanne.jpg,0.7900810837745667,0.3569064,True

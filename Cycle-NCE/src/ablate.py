@@ -6,7 +6,14 @@ import json
 from pathlib import Path
 
 
-SERIES_NAME = "micro"
+SERIES_NAME = "Aline120"
+
+FORCED_TRAINING_OVERRIDES = {
+    "num_epochs": 120,
+    "save_interval": 40,
+    "full_eval_interval": 40,
+    "full_eval_on_last_epoch": True,
+}
 
 
 def _load_base_config(src_dir: Path, base_config_arg: str | None) -> tuple[dict, Path]:
@@ -43,80 +50,84 @@ def _deep_update(dst: dict, src: dict) -> None:
 
 EXPERIMENTS: list[tuple[str, dict]] = [
     (
-        "E01_Patch3_Gain4_LR2e4",
+        "aline_01_oracle",
         {
             "model": {
+                "aline": True,
                 "ablation_no_residual": True,
-                "num_decoder_blocks": 2,
-                "residual_gain": 4.0,
-            },
-            "loss": {
-                "w_identity": 0.0,
-                "swd_patch_sizes": [3],
-                "w_swd": 250.0,
-            },
-            "training": {
-                "learning_rate": 2e-4,
-            },
-        },
-    ),
-    (
-        "E02_Patch3_5_Gain4_LR2e4",
-        {
-            "model": {
-                "ablation_no_residual": True,
-                "num_decoder_blocks": 2,
-                "residual_gain": 4.0,
-            },
-            "loss": {
-                "w_identity": 0.0,
-                "swd_patch_sizes": [3, 5],
-                "swd_use_high_freq": True,
-                "swd_hf_weight_ratio": 10.0,
-                "w_swd": 250.0,
-            },
-            "training": {
-                "learning_rate": 2e-4,
-            },
-        },
-    ),
-    (
-        "E03_Patch3_5_7_Gain4_LR2e4",
-        {
-            "model": {
-                "ablation_no_residual": True,
-                "num_decoder_blocks": 2,
-                "residual_gain": 4.0,
-            },
-            "loss": {
-                "w_identity": 0.0,
-                "swd_patch_sizes": [3, 5, 7],
-                "swd_use_high_freq": True,
-                "swd_hf_weight_ratio": 10.0,
-                "w_swd": 250.0,
-            },
-            "training": {
-                "learning_rate": 2e-4,
-            },
-        },
-    ),
-    (
-        "E04_Patch1_3_5_Gain4_LR2e4",
-        {
-            "model": {
-                "ablation_no_residual": True,
-                "num_decoder_blocks": 2,
-                "residual_gain": 4.0,
+                "residual_gain": 2.0,
             },
             "loss": {
                 "w_identity": 0.0,
                 "swd_patch_sizes": [1, 3, 5],
-                "swd_use_high_freq": True,
-                "swd_hf_weight_ratio": 10.0,
                 "w_swd": 250.0,
+                "w_color": 50.0,
             },
-            "training": {
-                "learning_rate": 2e-4,
+        },
+    ),
+    (
+        "aline_02_texture_maniac",
+        {
+            "model": {
+                "aline": True,
+                "ablation_no_residual": True,
+                "residual_gain": 2.5,
+            },
+            "loss": {
+                "w_identity": 0.0,
+                "w_swd": 300.0,
+                "swd_patch_sizes": [3, 5],
+                "w_color": 50.0,
+            },
+        },
+    ),
+    (
+        "aline_03_ghost_wireframe",
+        {
+            "model": {
+                "aline": True,
+                "ablation_no_residual": False,
+                "ablation_naive_skip": True,
+                "ablation_naive_skip_gain": 0.15,
+                "residual_gain": 1.5,
+            },
+            "loss": {
+                "w_identity": 0.0,
+                "w_swd": 250.0,
+                "swd_patch_sizes": [3, 5, 7],
+                "w_color": 50.0,
+            },
+        },
+    ),
+    (
+        "aline_04_macro_trap",
+        {
+            "model": {
+                "aline": True,
+                "ablation_no_residual": True,
+                "residual_gain": 1.5,
+            },
+            "loss": {
+                "w_identity": 0.0,
+                "w_swd": 200.0,
+                "swd_patch_sizes": [5, 7, 9],
+                "w_color": 50.0,
+            },
+        },
+    ),
+    (
+        "aline_05_idt_poison",
+        {
+            "model": {
+                "aline": True,
+                "ablation_no_residual": True,
+                "residual_gain": 1.5,
+            },
+            "loss": {
+                "w_identity": 20.0,
+                "w_swd": 150.0,
+                "swd_patch_sizes": [1, 3, 5],
+                "w_color": 50.0,
             },
         },
     ),
@@ -137,6 +148,7 @@ def generate(src_dir: Path, base_config_arg: str | None = None) -> list[str]:
         cfg.setdefault("checkpoint", {})
         cfg.setdefault("training", {})
         _deep_update(cfg, patch)
+        _deep_update(cfg["training"], FORCED_TRAINING_OVERRIDES)
         cfg["checkpoint"]["save_dir"] = f"../{SERIES_NAME}_{name}"
         cfg_name = f"config_{name}.json"
         _write_json(output_dir / cfg_name, cfg)
@@ -167,20 +179,24 @@ def _write_run_script(src_dir: Path, run_ids: list[str]) -> None:
         f.write(f"set \"TARGET_DIR=%ROOT_DIR%\\{SERIES_NAME}\"\n")
         f.write("if not exist \"%TARGET_DIR%\" mkdir \"%TARGET_DIR%\"\n\n")
         f.write(f"for /d %%D in (\"%ROOT_DIR%\\{SERIES_NAME}_*\") do (\n")
-        f.write("  echo Copying %%~nxD to %TARGET_DIR%...\n")
-        f.write("  robocopy \"%%~fD\" \"%TARGET_DIR%\\%%~nxD\" /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP\n")
+        f.write("  echo Moving %%~nxD to %TARGET_DIR%...\n")
+        f.write("  robocopy \"%%~fD\" \"%TARGET_DIR%\\%%~nxD\" /MOVE /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP\n")
         f.write("  if errorlevel 8 exit /b 8\n")
+        f.write("  if exist \"%%~fD\" rmdir \"%%~fD\" /S /Q\n")
         f.write(")\n\n")
-        f.write("echo Copy finished. Running batch distill eval...\n")
+        f.write("echo Move finished. Running batch distill eval...\n")
         f.write("cd /d \"%ROOT_DIR%\"\n")
         f.write(f"uv run src/batch_distill_full_eval.py --exp_dir {SERIES_NAME}\n")
+        f.write("if %errorlevel% neq 0 exit /b %errorlevel%\n\n")
+        f.write("echo Distill/eval finished. Exporting CSV summary...\n")
+        f.write(f"python import_summary_history_to_csv.py -i {SERIES_NAME} -o {SERIES_NAME}.csv\n")
         f.write("if %errorlevel% neq 0 exit /b %errorlevel%\n\n")
         f.write("echo All done.\n")
     print(f"generated: {script_path.name}")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate micro ablation suite.")
+    parser = argparse.ArgumentParser(description="Generate Aline120 experiment suite.")
     parser.add_argument(
         "--base-config",
         type=str,

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CSV Scatter Viewer (Dual Metrics)</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div class="header-title">
+            <h1>Latent Style Metrics</h1>
+            <p>Unified Analysis of Style, Content & Perceptual Distances</p>
+        </div>
+        <button class="theme-toggle" onclick="toggleTheme()" id="themeToggleBtn">Switch to Dark Mode</button>
+    </div>
+
+    <div class="content">
+        <div class="sidebar">
+            <div class="section" id="csvDropZone">
+                <h2>CSV Data Feed (Drag & Drop)</h2>
+                <textarea id="csvInput" placeholder="Paste metric CSV rows here, or drag and drop CSV files..."></textarea>
+                <div class="button-row">
+                    <button class="btn-primary" onclick="plotData()">Render Analysis</button>
+                    <input type="file" id="csvFileInput" accept=".csv" style="display: none;" multiple />
+                    <button class="btn-primary" onclick="document.getElementById('csvFileInput').click()">Upload CSV</button>
+                    <button class="btn-secondary" onclick="clearData()">Clear</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Coordinate Constraints</h2>
+                
+                <div style="margin-bottom: 1rem;">
+                    <div class="axis-subtitle" style="margin-bottom: 0.5rem; color: var(--text-primary);">P1: Clip Content vs Style</div>
+                    <div class="axis-grid">
+                        <div class="axis-input-group"><label>X Min</label><input id="p1xMin" type="number" step="any" value="0.35" /></div>
+                        <div class="axis-input-group"><label>X Max</label><input id="p1xMax" type="number" step="any" value="0.7" /></div>
+                        <div class="axis-input-group"><label>Y Min</label><input id="p1yMin" type="number" step="any" value="0.55" /></div>
+                        <div class="axis-input-group"><label>Y Max</label><input id="p1yMax" type="number" step="any" /></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="axis-subtitle" style="margin-bottom: 0.5rem; color: var(--text-primary);">P2: 1-LPIPS vs Style</div>
+                    <div class="axis-grid">
+                        <div class="axis-input-group"><label>X Min</label><input id="p2xMin" type="number" step="any" value="0.35" /></div>
+                        <div class="axis-input-group"><label>X Max</label><input id="p2xMax" type="number" step="any" value="0.7" /></div>
+                        <div class="axis-input-group"><label>Y Min</label><input id="p2yMin" type="number" step="any" value="0.55" /></div>
+                        <div class="axis-input-group"><label>Y Max</label><input id="p2yMax" type="number" step="any" /></div>
+                    </div>
+                </div>
+
+                <div class="button-row" style="margin-top: 1rem;">
+                    <button class="btn-primary" style="flex: 2;" onclick="plotData()">Apply Bounds</button>
+                    <button class="btn-secondary" onclick="resetAxisLimits()">Reset</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Groups</h2>
+                <div class="config-row">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="checkbox" id="toggleLines" checked onchange="plotData()"> Show Lines
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="checkbox" id="toggleVibrant" checked onchange="plotData()"> Vibrant Points
+                    </label>
+                </div>
+                <div class="config-row">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="checkbox" id="toggleHideDistill" onchange="plotData()"> Hide "distill" Experiments
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="checkbox" id="toggleMultiColorWithinGroup" checked onchange="plotData()"> Multi-color Points in Group
+                    </label>
+                </div>
+                <div class="button-row" style="margin-top: 0; margin-bottom: 8px;">
+                    <button class="btn-primary" onclick="selectAllGroups()">Select All</button>
+                    <button class="btn-secondary" onclick="selectNoneGroups()">Select None</button>
+                </div>
+                <div id="groupCheckboxes" class="scroll-list"></div>
+            </div>
+
+            <div class="section">
+                <h2>Stats</h2>
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-label">Exp Points</div>
+                        <div class="stat-value" id="statExpCount">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">RW Points</div>
+                        <div class="stat-value" id="statRwCount">6</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Groups</div>
+                        <div class="stat-value" id="statGroupCount">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" style="font-size:12px; color:#555; line-height:1.5;">
+                Related works includes <b>SaMST</b>, <b>StarGAN</b>, and <b>SDEdit</b> baselines.
+            </div>
+
+            <div class="section">
+                <h2>Related Works</h2>
+                <div class="button-row" style="margin-top: 0; margin-bottom: 8px;">
+                    <button class="btn-primary" onclick="selectAllRelatedWorks()">Select All</button>
+                    <button class="btn-secondary" onclick="selectNoneRelatedWorks()">Select None</button>
+                </div>
+                <div id="relatedWorksCheckboxes" class="scroll-list"></div>
+            </div>
+        </div>
+
+        <div class="main">
+            <div id="errorContainer"></div>
+
+            <div class="plot-card">
+                <div class="plot-title">Plot 1: clip_content vs clip_style</div>
+                <div class="plot-layout">
+                    <div class="plot-wrap">
+                        <div id="plotClipContent" class="plot"></div>
+                    </div>
+                    <div id="legendClipContent" class="plot-legend"></div>
+                </div>
+            </div>
+
+            <div class="plot-card">
+                <div class="plot-title">Plot 2: 1-content_lpips vs clip_style</div>
+                <div class="plot-layout">
+                    <div class="plot-wrap">
+                        <div id="plotInvLpips" class="plot"></div>
+                    </div>
+                    <div id="legendInvLpips" class="plot-legend"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

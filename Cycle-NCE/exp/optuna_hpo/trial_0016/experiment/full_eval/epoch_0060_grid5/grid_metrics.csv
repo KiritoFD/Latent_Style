@@ -1,0 +1,26 @@
+src_style,tgt_style,src_image,gen_image,clip_style,content_lpips,reused
+photo,photo,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_photo.jpg,0.749183714389801,0.32797888,True
+photo,Hayao,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_Hayao.jpg,0.6173120141029358,0.5860216,True
+photo,monet,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_monet.jpg,0.6589050889015198,0.6093472,True
+photo,vangogh,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_vangogh.jpg,0.6545231342315674,0.77681345,True
+photo,cezanne,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_cezanne.jpg,0.637689471244812,0.61673427,True
+Hayao,photo,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\Hayao_0_to_photo.jpg,0.6864498257637024,0.5386518,True
+Hayao,Hayao,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\Hayao_0_to_Hayao.jpg,0.8639920949935913,0.22919077,True
+Hayao,monet,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\Hayao_0_to_monet.jpg,0.6580026149749756,0.49678588,True
+Hayao,vangogh,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\Hayao_0_to_vangogh.jpg,0.7463703751564026,0.51901484,True
+Hayao,cezanne,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\Hayao_0_to_cezanne.jpg,0.6335756778717041,0.5421211,True
+monet,photo,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\monet_00018_to_photo.jpg,0.7172247171401978,0.50801873,True
+monet,Hayao,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\monet_00018_to_Hayao.jpg,0.536861777305603,0.5770842,True
+monet,monet,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\monet_00018_to_monet.jpg,0.7617124915122986,0.44893682,True
+monet,vangogh,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\monet_00018_to_vangogh.jpg,0.765289306640625,0.53244245,True
+monet,cezanne,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\monet_00018_to_cezanne.jpg,0.7873479127883911,0.5252949,True
+vangogh,photo,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\vangogh_00090_to_photo.jpg,0.5895805954933167,0.6811261,True
+vangogh,Hayao,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\vangogh_00090_to_Hayao.jpg,0.5850808620452881,0.57930404,True
+vangogh,monet,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\vangogh_00090_to_monet.jpg,0.6543461084365845,0.5518873,True
+vangogh,vangogh,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\vangogh_00090_to_vangogh.jpg,0.7552010416984558,0.4414258,True
+vangogh,cezanne,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\vangogh_00090_to_cezanne.jpg,0.6614015698432922,0.29647622,True
+cezanne,photo,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\cezanne_00057_to_photo.jpg,0.6194846630096436,0.43868604,True
+cezanne,Hayao,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\cezanne_00057_to_Hayao.jpg,0.577812910079956,0.4077499,True
+cezanne,monet,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\cezanne_00057_to_monet.jpg,0.7044706344604492,0.30442208,True
+cezanne,vangogh,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\cezanne_00057_to_vangogh.jpg,0.7184275984764099,0.43217227,True
+cezanne,cezanne,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\exp\optuna_hpo\trial_0016\experiment\full_eval\epoch_0060\images\cezanne_00057_to_cezanne.jpg,0.8198891878128052,0.30636662,True

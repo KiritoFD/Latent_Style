@@ -558,7 +558,7 @@
     "all_pairs_overview": {
       "clip_dir": 0.4033522065083185,
       "clip_style": 0.6927371478080748,
-      "clip_content": 0.8346158679199999,
+      "clip_content": 0.8346158679199999,                                                                                                                    
       "content_lpips": 0.4053712536933333,
       "art_fid_content_lpips": null,
       "fid_baseline": null,
