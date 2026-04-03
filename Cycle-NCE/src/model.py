@@ -737,6 +737,9 @@ class LatentAdaCUT(nn.Module):
         ablation_naive_skip_gain: float = 1.5,
         ablation_no_residual: bool = False,
         ablation_no_residual_gain: float = 1.0,
+        aline: bool = False,
+        aline_eps: float = 1e-6,
+        aline_train_only: bool = True,
         output_moment_match: bool = False,
         output_moment_match_eps: float = 1e-6,
         output_moment_match_train_only: bool = True,
@@ -801,6 +804,9 @@ class LatentAdaCUT(nn.Module):
             self.skip_naive_gain = self.ablation_naive_skip_gain
         self.ablation_no_residual = bool(ablation_no_residual)
         self.ablation_no_residual_gain = max(0.0, float(ablation_no_residual_gain))
+        self.aline = bool(aline)
+        self.aline_eps = max(1e-8, float(aline_eps))
+        self.aline_train_only = bool(aline_train_only)
         self.output_moment_match = bool(output_moment_match)
         self.output_moment_match_eps = max(1e-8, float(output_moment_match_eps))
         self.output_moment_match_train_only = bool(output_moment_match_train_only)
@@ -924,6 +930,14 @@ class LatentAdaCUT(nn.Module):
         self.dec_mod = NormFreeModulation(self.lift_channels, style_dim)
         self.dec_act = nn.SiLU()
         self.dec_out = nn.Conv2d(self.lift_channels, latent_channels, kernel_size=3, stride=1, padding=1)
+
+        # Dynamic covariance predictor (micro hypernetwork) for latent-space color alignment.
+        self.color_matrix_pred = nn.Linear(style_dim, self.latent_channels * self.latent_channels)
+        self.color_bias_pred = nn.Linear(style_dim, self.latent_channels)
+        nn.init.zeros_(self.color_matrix_pred.weight)
+        nn.init.zeros_(self.color_matrix_pred.bias)
+        nn.init.zeros_(self.color_bias_pred.weight)
+        nn.init.zeros_(self.color_bias_pred.bias)
 
         if self.upsample_blur:
             if self.upsample_blur_kernel == "gaussian3":
@@ -1244,6 +1258,7 @@ class LatentAdaCUT(nn.Module):
                 strength=strength,
             )
             h = h + delta * float(step_size) * step_scale * per_step
+        h = self._apply_dynamic_covariance_align(h, style_code)
         return self._apply_output_moment_match(h, target_style_latent)
 
     def _perturb_anchor_if_needed(self, x: torch.Tensor) -> torch.Tensor:
@@ -1280,6 +1295,32 @@ class LatentAdaCUT(nn.Module):
         ref_std = ref.std(dim=(2, 3), keepdim=True, unbiased=False).clamp_min(self.output_moment_match_eps)
         return ((pred - pred_mean) / pred_std) * ref_std + ref_mean
 
+    def _apply_dynamic_covariance_align(
+        self,
+        pred: torch.Tensor,
+        style_code: torch.Tensor,
+    ) -> torch.Tensor:
+        if not self.aline:
+            return pred
+        if self.aline_train_only and not self.training:
+            return pred
+
+        b, c, h_dim, w_dim = pred.shape
+        if c != self.latent_channels:
+            return pred
+
+        delta_w = self.color_matrix_pred(style_code).view(b, c, c)
+        bias = self.color_bias_pred(style_code).view(b, c, 1)
+        ident = torch.eye(c, device=pred.device, dtype=pred.dtype).unsqueeze(0).expand(b, -1, -1)
+        w = ident + delta_w
+
+        pred_flat = pred.view(b, c, h_dim * w_dim)
+        pred_mean = pred_flat.mean(dim=2, keepdim=True)
+        pred_std = pred_flat.std(dim=2, keepdim=True, unbiased=False).clamp_min(self.aline_eps)
+        pred_norm = (pred_flat - pred_mean) / pred_std
+        pred_aligned = torch.bmm(w, pred_norm) + bias
+        return pred_aligned.view(b, c, h_dim, w_dim)
+
     def forward(
         self,
         x: torch.Tensor,
@@ -1302,9 +1343,11 @@ class LatentAdaCUT(nn.Module):
         if self.ablation_no_residual:
             # Extreme ablation: remove x-anchoring and rescale delta to full latent magnitude.
             pred = (delta / (self.latent_scale_factor * max(self.residual_gain, 1e-5))) * self.ablation_no_residual_gain
+            pred = self._apply_dynamic_covariance_align(pred, style_code)
             return self._apply_output_moment_match(pred, target_style_latent)
         anchor = self._perturb_anchor_if_needed(x)
         pred = anchor + delta * float(step_size) * step_scale
+        pred = self._apply_dynamic_covariance_align(pred, style_code)
         return self._apply_output_moment_match(pred, target_style_latent)
 
 def count_parameters(model: nn.Module) -> int:
@@ -1341,12 +1384,6 @@ def build_model_from_config(
     output_moment_match_train_only = bool(
         model_cfg.get("output_moment_match_train_only", _MODEL_CONFIG_DEFAULTS["output_moment_match_train_only"])
     )
-    if "aline" in model_cfg:
-        output_moment_match = aline_enabled
-    if "aline_eps" in model_cfg:
-        output_moment_match_eps = aline_eps
-    if "aline_train_only" in model_cfg:
-        output_moment_match_train_only = aline_train_only
 
     return LatentAdaCUT(
         latent_channels=int(model_cfg.get("latent_channels", _MODEL_CONFIG_DEFAULTS["latent_channels"])),
@@ -1395,6 +1432,9 @@ def build_model_from_config(
         ablation_naive_skip_gain=float(model_cfg.get("ablation_naive_skip_gain", _MODEL_CONFIG_DEFAULTS["ablation_naive_skip_gain"])),
         ablation_no_residual=bool(model_cfg.get("ablation_no_residual", _MODEL_CONFIG_DEFAULTS["ablation_no_residual"])),
         ablation_no_residual_gain=float(model_cfg.get("ablation_no_residual_gain", _MODEL_CONFIG_DEFAULTS["ablation_no_residual_gain"])),
+        aline=aline_enabled,
+        aline_eps=aline_eps,
+        aline_train_only=aline_train_only,
         output_moment_match=output_moment_match,
         output_moment_match_eps=output_moment_match_eps,
         output_moment_match_train_only=output_moment_match_train_only,

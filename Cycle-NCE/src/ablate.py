@@ -9,9 +9,9 @@ from pathlib import Path
 SERIES_NAME = "Aline120"
 
 FORCED_TRAINING_OVERRIDES = {
-    "num_epochs": 120,
-    "save_interval": 40,
-    "full_eval_interval": 40,
+    "num_epochs": 30,
+    "save_interval": 10,
+    "full_eval_interval": 10,
     "full_eval_on_last_epoch": True,
 }
 
@@ -54,6 +54,7 @@ EXPERIMENTS: list[tuple[str, dict]] = [
         {
             "model": {
                 "aline": True,
+                "aline_train_only": False,
                 "ablation_no_residual": True,
                 "residual_gain": 2.0,
             },
@@ -61,7 +62,7 @@ EXPERIMENTS: list[tuple[str, dict]] = [
                 "w_identity": 0.0,
                 "swd_patch_sizes": [1, 3, 5],
                 "w_swd": 250.0,
-                "w_color": 50.0,
+                "w_color": 150.0,
             },
         },
     ),
@@ -70,6 +71,7 @@ EXPERIMENTS: list[tuple[str, dict]] = [
         {
             "model": {
                 "aline": True,
+                "aline_train_only": False,
                 "ablation_no_residual": True,
                 "residual_gain": 2.5,
             },
@@ -77,7 +79,7 @@ EXPERIMENTS: list[tuple[str, dict]] = [
                 "w_identity": 0.0,
                 "w_swd": 300.0,
                 "swd_patch_sizes": [3, 5],
-                "w_color": 50.0,
+                "w_color": 150.0,
             },
         },
     ),
@@ -86,6 +88,7 @@ EXPERIMENTS: list[tuple[str, dict]] = [
         {
             "model": {
                 "aline": True,
+                "aline_train_only": False,
                 "ablation_no_residual": False,
                 "ablation_naive_skip": True,
                 "ablation_naive_skip_gain": 0.15,
@@ -95,7 +98,7 @@ EXPERIMENTS: list[tuple[str, dict]] = [
                 "w_identity": 0.0,
                 "w_swd": 250.0,
                 "swd_patch_sizes": [3, 5, 7],
-                "w_color": 50.0,
+                "w_color": 150.0,
             },
         },
     ),
@@ -104,6 +107,7 @@ EXPERIMENTS: list[tuple[str, dict]] = [
         {
             "model": {
                 "aline": True,
+                "aline_train_only": False,
                 "ablation_no_residual": True,
                 "residual_gain": 1.5,
             },
@@ -111,7 +115,7 @@ EXPERIMENTS: list[tuple[str, dict]] = [
                 "w_identity": 0.0,
                 "w_swd": 200.0,
                 "swd_patch_sizes": [5, 7, 9],
-                "w_color": 50.0,
+                "w_color": 150.0,
             },
         },
     ),
@@ -120,6 +124,7 @@ EXPERIMENTS: list[tuple[str, dict]] = [
         {
             "model": {
                 "aline": True,
+                "aline_train_only": False,
                 "ablation_no_residual": True,
                 "residual_gain": 1.5,
             },
@@ -127,7 +132,7 @@ EXPERIMENTS: list[tuple[str, dict]] = [
                 "w_identity": 20.0,
                 "w_swd": 150.0,
                 "swd_patch_sizes": [1, 3, 5],
-                "w_color": 50.0,
+                "w_color": 150.0,
             },
         },
     ),
