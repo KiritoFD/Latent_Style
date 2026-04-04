@@ -13,7 +13,7 @@
 - [run_sweep.py](run_sweep.py)
   few-shot 消融扫描脚本。它会读取 [configs/example.yaml](configs/example.yaml#L4) 中的 `exp_root`，为不同的 `data.max_samples_b` 生成隔离实验目录、配置快照、日志和汇总表。
 
-- [utils/eval_latent_cyclegan.py](utils/eval_latent_cyclegan.py)
+- [eval/eval_latent_cyclegan.py](eval/eval_latent_cyclegan.py)
   latent-space CycleGAN 评估脚本，用于加载 checkpoint 并输出评估结果。
 
 ## 关键配置
