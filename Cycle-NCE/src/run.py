@@ -27,13 +27,11 @@ logger = logging.getLogger(__name__)
 
 _ALLOWED_LOSS_KEYS = {
     "w_color",
-    "color_mode",
-    "color_eps",
-    "color_latent_channel_weights",
-    "color_luma_range_weight",
-    "color_luma_quantiles",
-    "color_legacy_pool",
+    "w_oob",
+    "oob_threshold",
     "w_swd",
+    "w_swd_micro",
+    "w_swd_macro",
     "swd_use_high_freq",
     "swd_hf_weight_ratio",
     "w_identity",
@@ -51,7 +49,10 @@ _ALLOWED_LOSS_KEYS = {
 _FORBIDDEN_LOSS_KEYS = {"w_distill", "distill_low_only", "distill_cross_domain_only", "w_code", "style_loss_source"}
 _LOSS_WEIGHT_KEYS = (
     "w_swd",
+    "w_swd_micro",
+    "w_swd_macro",
     "w_color",
+    "w_oob",
     "w_identity",
 )
 

@@ -7,7 +7,7 @@
     "num_styles": 5,
     "num_hires_blocks": 2,
     "num_res_blocks": 1,
-    "num_decoder_blocks": 4,
+    "num_decoder_blocks": 2,
     "num_groups": 4,
     "latent_scale_factor": 0.18215,
     "residual_gain": 1,

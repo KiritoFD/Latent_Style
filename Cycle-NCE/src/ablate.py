@@ -6,12 +6,13 @@ import json
 from pathlib import Path
 
 
-SERIES_NAME = "Aline120"
+SERIES_NAME = "45"
 
 FORCED_TRAINING_OVERRIDES = {
+    "batch_size":256,
     "num_epochs": 30,
-    "save_interval": 10,
-    "full_eval_interval": 10,
+    "save_interval": 30,
+    "full_eval_interval": 30,
     "full_eval_on_last_epoch": True,
 }
 
@@ -50,89 +51,79 @@ def _deep_update(dst: dict, src: dict) -> None:
 
 EXPERIMENTS: list[tuple[str, dict]] = [
     (
-        "aline_01_oracle",
+        "01_golden_funnel",
         {
             "model": {
-                "aline": True,
-                "aline_train_only": False,
-                "ablation_no_residual": True,
-                "residual_gain": 2.0,
-            },
-            "loss": {
-                "w_identity": 0.0,
-                "swd_patch_sizes": [1, 3, 5],
-                "w_swd": 250.0,
-                "w_color": 150.0,
-            },
-        },
-    ),
-    (
-        "aline_02_texture_maniac",
-        {
-            "model": {
-                "aline": True,
-                "aline_train_only": False,
-                "ablation_no_residual": True,
-                "residual_gain": 2.5,
-            },
-            "loss": {
-                "w_identity": 0.0,
-                "w_swd": 300.0,
-                "swd_patch_sizes": [3, 5],
-                "w_color": 150.0,
-            },
-        },
-    ),
-    (
-        "aline_03_ghost_wireframe",
-        {
-            "model": {
-                "aline": True,
-                "aline_train_only": False,
                 "ablation_no_residual": False,
-                "ablation_naive_skip": True,
-                "ablation_naive_skip_gain": 0.15,
-                "residual_gain": 1.5,
+                "style_attn_temperature": 0.08,
+                "skip_routing_mode": "naive",
+                "skip_naive_gain": 0.15,
             },
             "loss": {
-                "w_identity": 0.0,
-                "w_swd": 250.0,
-                "swd_patch_sizes": [3, 5, 7],
-                "w_color": 150.0,
+                "w_identity": 8.0,
+                "swd_patch_sizes": [1, 3, 5, 11, 21],
+                "w_swd_micro": 1.0,
+                "w_swd_macro": 10.0,
+                "w_color": 50.0,
+                "w_oob": 10.0,
             },
         },
     ),
     (
-        "aline_04_macro_trap",
+        "02_naked_fusion",
         {
             "model": {
-                "aline": True,
-                "aline_train_only": False,
-                "ablation_no_residual": True,
-                "residual_gain": 1.5,
+                "ablation_no_residual": False,
+                "skip_routing_mode": "naive",
+                "skip_naive_gain": 0.15,
+                "style_attn_temperature": 0.08,
+                "ablation_disable_spatial_prior": True,
             },
             "loss": {
-                "w_identity": 0.0,
-                "w_swd": 200.0,
-                "swd_patch_sizes": [5, 7, 9],
-                "w_color": 150.0,
+                "w_identity": 8.0,
+                "swd_patch_sizes": [1, 3, 5, 11, 21],
+                "w_swd_micro": 1.0,
+                "w_swd_macro": 10.0,
+                "w_color": 50.0,
+                "w_oob": 10.0,
             },
         },
     ),
     (
-        "aline_05_idt_poison",
+        "03_macro_dictator",
         {
             "model": {
-                "aline": True,
-                "aline_train_only": False,
-                "ablation_no_residual": True,
-                "residual_gain": 1.5,
+                "ablation_no_residual": False,
+                "skip_routing_mode": "naive",
+                "skip_naive_gain": 0.15,
+                "style_attn_temperature": 0.08,
             },
             "loss": {
-                "w_identity": 20.0,
-                "w_swd": 150.0,
-                "swd_patch_sizes": [1, 3, 5],
-                "w_color": 150.0,
+                "w_identity": 8.0,
+                "swd_patch_sizes": [7, 15, 25],
+                "w_swd_micro": 0.0,
+                "w_swd_macro": 20.0,
+                "w_color": 40.0,
+                "w_oob": 10.0,
+            },
+        },
+    ),
+    (
+        "04_micro_rebel",
+        {
+            "model": {
+                "ablation_no_residual": False,
+                "style_attn_temperature": 0.08,
+                "skip_routing_mode": "naive",
+                "skip_naive_gain": 0.15,
+            },
+            "loss": {
+                "w_identity": 8.0,
+                "swd_patch_sizes": [1, 3],
+                "w_swd_micro": 15.0,
+                "w_swd_macro": 0.0,
+                "w_color": 40.0,
+                "w_oob": 10.0,
             },
         },
     ),
@@ -154,6 +145,8 @@ def generate(src_dir: Path, base_config_arg: str | None = None) -> list[str]:
         cfg.setdefault("training", {})
         _deep_update(cfg, patch)
         _deep_update(cfg["training"], FORCED_TRAINING_OVERRIDES)
+        if "w_swd_micro" in cfg["loss"] or "w_swd_macro" in cfg["loss"]:
+            cfg["loss"].pop("w_swd", None)
         cfg["checkpoint"]["save_dir"] = f"../{SERIES_NAME}_{name}"
         cfg_name = f"config_{name}.json"
         _write_json(output_dir / cfg_name, cfg)
@@ -167,6 +160,7 @@ def generate(src_dir: Path, base_config_arg: str | None = None) -> list[str]:
 
 def _write_run_script(src_dir: Path, run_ids: list[str]) -> None:
     script_path = src_dir / f"{SERIES_NAME}.bat"
+    final_epoch = int(FORCED_TRAINING_OVERRIDES["num_epochs"])
     with open(script_path, "w", encoding="utf-8") as f:
         f.write("@echo off\n")
         f.write("setlocal\n")
@@ -196,12 +190,33 @@ def _write_run_script(src_dir: Path, run_ids: list[str]) -> None:
         f.write("echo Distill/eval finished. Exporting CSV summary...\n")
         f.write(f"python import_summary_history_to_csv.py -i {SERIES_NAME} -o {SERIES_NAME}.csv\n")
         f.write("if %errorlevel% neq 0 exit /b %errorlevel%\n\n")
+        f.write("echo Running MA probe per experiment...\n")
+        f.write(f"set \"FINAL_EPOCH={final_epoch:04d}\"\n")
+        f.write(f"for /d %%D in (\"%TARGET_DIR%\\{SERIES_NAME}_*\") do (\n")
+        f.write("  if exist \"%%~fD\\epoch_%FINAL_EPOCH%.pt\" (\n")
+        f.write("    echo Probing %%~nxD with %%~fD\\epoch_%FINAL_EPOCH%.pt...\n")
+        f.write("    uv run src/probe_ma.py --checkpoint \"%%~fD\\epoch_%FINAL_EPOCH%.pt\" --num-samples 8 --json-out \"%%~fD\\ma_probe_epoch_%FINAL_EPOCH%.json\"\n")
+        f.write("    if %errorlevel% neq 0 exit /b %errorlevel%\n")
+        f.write("    uv run src/probe_ma_sweep.py --input-glob \"%%~fD\\ma_probe*.json\" --output-dir \"%%~fD\" --output-prefix ma_probe_view\n")
+        f.write("    if %errorlevel% neq 0 exit /b %errorlevel%\n")
+        f.write("  ) else (\n")
+        f.write("    echo WARNING: checkpoint not found for %%~nxD at %%~fD\\epoch_%FINAL_EPOCH%.pt\n")
+        f.write("  )\n")
+        f.write(")\n\n")
+        f.write("echo Building cross-experiment MA summary...\n")
+        f.write(f"uv run src/probe_ma_sweep.py --input-glob \"%TARGET_DIR%\\{SERIES_NAME}_*\\ma_probe*.json\" --output-dir \"%TARGET_DIR%\" --output-prefix ma_probe_all_pairs\n")
+        f.write("if %errorlevel% neq 0 exit /b %errorlevel%\n\n")
+        f.write(f"for /d %%D in (\"%TARGET_DIR%\\{SERIES_NAME}_*\") do (\n")
+        f.write("  if exist \"%TARGET_DIR%\\ma_probe_all_pairs.html\" copy /Y \"%TARGET_DIR%\\ma_probe_all_pairs.html\" \"%%~fD\\ma_probe_all_pairs.html\" >nul\n")
+        f.write("  if exist \"%TARGET_DIR%\\ma_probe_all_pairs.csv\" copy /Y \"%TARGET_DIR%\\ma_probe_all_pairs.csv\" \"%%~fD\\ma_probe_all_pairs.csv\" >nul\n")
+        f.write("  if exist \"%TARGET_DIR%\\ma_probe_all_pairs.json\" copy /Y \"%TARGET_DIR%\\ma_probe_all_pairs.json\" \"%%~fD\\ma_probe_all_pairs.json\" >nul\n")
+        f.write(")\n\n")
         f.write("echo All done.\n")
     print(f"generated: {script_path.name}")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate Aline120 experiment suite.")
+    parser = argparse.ArgumentParser(description="Generate freq experiment suite.")
     parser.add_argument(
         "--base-config",
         type=str,
