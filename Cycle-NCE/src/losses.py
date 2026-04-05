@@ -273,73 +273,82 @@ class AdaCUTObjective:
 
         swd_x = pred.index_select(0, xid_idx)
         swd_y = target_style.index_select(0, xid_idx)
-        x_struct, x_color = swd_x.chunk(2, dim=1)
-        y_struct, y_color = swd_y.chunk(2, dim=1)
-
-        x_struct = F.instance_norm(x_struct)
-        y_struct = F.instance_norm(y_struct)
-        x_color = F.instance_norm(x_color)
-        y_color = F.instance_norm(y_color)
+        x_norm = F.instance_norm(swd_x)
+        y_norm = F.instance_norm(swd_y)
+        if swd_x.shape[1] >= 2:
+            x_struct = swd_x[:, :2, :, :]
+            y_struct = swd_y[:, :2, :, :]
+        else:
+            x_struct = swd_x
+            y_struct = swd_y
         indexed_style_ids = target_style_id.index_select(0, xid_idx)
 
-        loss_struct = torch.tensor(0.0, device=pred.device, dtype=torch.float32)
+        loss_micro = torch.tensor(0.0, device=pred.device, dtype=torch.float32)
         if self.w_swd_micro > 0.0:
+            micro_patches = [p for p in self.swd_patch_sizes if p <= 3]
+            x_hp = x_struct - F.avg_pool2d(x_struct, kernel_size=5, stride=1, padding=2)
+            y_hp = y_struct - F.avg_pool2d(y_struct, kernel_size=5, stride=1, padding=2)
+            x_micro_base = F.instance_norm(x_hp)
+            y_micro_base = F.instance_norm(y_hp)
             if self.swd_use_high_freq:
-                hf_x = self._compute_fused_hf_feature(x_struct)
+                hf_x = self._compute_fused_hf_feature(x_micro_base)
                 with torch.no_grad():
-                    hf_y = self._compute_fused_hf_feature(y_struct)
+                    hf_y = self._compute_fused_hf_feature(y_micro_base)
                 ratio = max(0.0, float(self.swd_hf_weight_ratio))
-                x_struct_in = torch.cat([x_struct, hf_x * ratio], dim=1)
-                y_struct_in = torch.cat([y_struct, hf_y * ratio], dim=1)
+                x_micro = torch.cat([x_micro_base, hf_x * ratio], dim=1)
+                y_micro = torch.cat([y_micro_base, hf_y * ratio], dim=1)
             else:
-                x_struct_in = x_struct
-                y_struct_in = y_struct
+                x_micro = x_micro_base
+                y_micro = y_micro_base
 
-            struct_patches = [p for p in self.swd_patch_sizes if p <= 3]
-            if struct_patches:
-                bank_struct = self._get_projection_bank(
-                    int(x_struct_in.shape[1]),
+            if micro_patches:
+                bank_micro = self._get_projection_bank(
+                    int(x_micro.shape[1]),
                     device=pred.device,
                     dtype=pred.dtype,
                 )
-                loss_struct = calc_swd_loss(
-                    x_struct_in,
-                    y_struct_in,
+                loss_micro = calc_swd_loss(
+                    x_micro,
+                    y_micro,
                     indexed_style_ids,
-                    struct_patches,
+                    micro_patches,
                     self.swd_num_projections,
                     projection_chunk_size=self.swd_projection_chunk_size,
                     distance_mode=self.swd_distance_mode,
                     cdf_num_bins=self.swd_cdf_num_bins,
                     cdf_tau=self.swd_cdf_tau,
                     cdf_sample_size=self.swd_cdf_sample_size,
-                    projection_bank=bank_struct,
+                    projection_bank=bank_micro,
                 )
 
-        loss_color = torch.tensor(0.0, device=pred.device, dtype=torch.float32)
+        loss_macro = torch.tensor(0.0, device=pred.device, dtype=torch.float32)
         if self.w_swd_macro > 0.0:
-            color_patches = [p for p in self.swd_patch_sizes if p >= 5]
-            if color_patches:
-                bank_color = self._get_projection_bank(
-                    int(x_color.shape[1]),
+            macro_patches = [p for p in self.swd_patch_sizes if p >= 11]
+            if macro_patches:
+                x_color_lp = F.avg_pool2d(swd_x, kernel_size=5, stride=1, padding=2)
+                y_color_lp = F.avg_pool2d(swd_y, kernel_size=5, stride=1, padding=2)
+                x_macro = F.instance_norm(x_color_lp)
+                y_macro = F.instance_norm(y_color_lp)
+                bank_macro = self._get_projection_bank(
+                    int(x_macro.shape[1]),
                     device=pred.device,
                     dtype=pred.dtype,
                 )
-                loss_color = calc_swd_loss(
-                    x_color,
-                    y_color,
+                loss_macro = calc_swd_loss(
+                    x_macro,
+                    y_macro,
                     indexed_style_ids,
-                    color_patches,
+                    macro_patches,
                     self.swd_num_projections,
                     projection_chunk_size=self.swd_projection_chunk_size,
                     distance_mode=self.swd_distance_mode,
                     cdf_num_bins=self.swd_cdf_num_bins,
                     cdf_tau=self.swd_cdf_tau,
                     cdf_sample_size=self.swd_cdf_sample_size,
-                    projection_bank=bank_color,
+                    projection_bank=bank_macro,
                 )
 
-        return loss_struct * self.w_swd_micro + loss_color * self.w_swd_macro
+        return loss_micro * self.w_swd_micro + loss_macro * self.w_swd_macro
 
     def _compute_color_term(
         self,
@@ -379,20 +388,24 @@ class AdaCUTObjective:
         target_style: torch.Tensor,
         target_style_id: torch.Tensor,
         source_style_id: torch.Tensor | None = None,
+        pred_override: torch.Tensor | None = None,
     ) -> Dict[str, torch.Tensor]:
         nvtx_enabled = bool(self.nsight_nvtx and content.is_cuda)
         id_mask = torch.zeros_like(target_style_id, dtype=torch.bool) if source_style_id is None else (source_style_id.long() == target_style_id.long())
         xid_mask = ~id_mask
         id_ratio = id_mask.float().mean()
 
-        with self._nvtx_range("loss/pred", nvtx_enabled):
-            pred = model(
-                content,
-                style_id=target_style_id,
-                step_size=1.0,
-                style_strength=1.0,
-                target_style_latent=target_style,
-            )
+        if pred_override is None:
+            with self._nvtx_range("loss/pred", nvtx_enabled):
+                pred = model(
+                    content,
+                    style_id=target_style_id,
+                    step_size=1.0,
+                    style_strength=1.0,
+                    target_style_latent=target_style,
+                )
+        else:
+            pred = pred_override
 
         content_cast = content.to(dtype=pred.dtype)
         target_cast = target_style.to(dtype=pred.dtype)

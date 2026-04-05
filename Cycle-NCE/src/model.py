@@ -10,7 +10,6 @@ import torch.nn.functional as F
 import torch.utils.checkpoint as ckpt
 
 
-_CROSS_ATTN_MODULATOR_KINDS = {"cross_attn", "cross_attention", "attn", "sam"}
 _SKIP_FUSION_MODES = {"concat_conv", "add_proj"}
 _MODEL_CONFIG_DEFAULTS = {
     "latent_channels": 4,
@@ -24,48 +23,54 @@ _MODEL_CONFIG_DEFAULTS = {
     "latent_scale_factor": 0.18215,
     "residual_gain": 0.1,
     "style_spatial_pre_gain_16": 0.35,
-    "use_decoder_adagn": True,
-    "inject_gate_hires": 0.0,
-    "inject_gate_body": 1.0,
-    "inject_gate_decoder": 1.0,
     "style_strength_default": 1.0,
     "style_strength_step_curve": "linear",
     "upsample_mode": "nearest",
     "style_id_spatial_jitter_px": 0,
     "upsample_blur": True,
     "upsample_blur_kernel": "box3",
-    "ada_mix_rank": 16,
-    "style_modulator_type": "cross_attn",
     "style_attn_num_tokens": 64,
     "style_attn_num_heads": 4,
     "style_attn_sharpen_scale": 2.0,
     "hires_block_type": "conv",
     "body_block_type": "conv",
     "decoder_block_type": "conv",
+    "semantic_attn_temperature": 0.08,
     "feature_attn_num_heads": 4,
     "window_attn_window_size": 8,
     "skip_fusion_mode": "concat_conv",
     "skip_routing_mode": "normalized",
     "skip_naive_gain": 1.0,
-    # Legacy keys kept for compatibility with older configs.
-    "skip_frequency_gated": True,
-    "skip_low_freq_base_retention": 0.5,
     "style_skip_content_retention_boost": 0.0,
     "input_anchor_noise_std": 0.0,
     "input_anchor_noise_eval": False,
-    "ablation_no_adagn": False,
-    "ablation_no_adagn_zero_out": True,
-    "ablation_naive_skip": False,
-    "ablation_naive_skip_gain": 1.5,
     "ablation_no_residual": False,
     "ablation_no_residual_gain": 1.0,
     "style_attn_temperature": 0.5,
     "ablation_disable_spatial_prior": False,
+    "ablation_skip_clean": True,
+    "ablation_skip_blur": True,
+    "ablation_decoder_highpass": True,
+    "color_highway_gain": 1.0,
     "output_moment_match": False,
     "output_moment_match_eps": 1e-6,
     "output_moment_match_train_only": True,
 }
-_KNOWN_MODEL_CONFIG_KEYS = set(_MODEL_CONFIG_DEFAULTS) | {"lift_channels"}
+_LEGACY_MODEL_CONFIG_KEYS = {
+    "use_decoder_adagn",
+    "inject_gate_hires",
+    "inject_gate_body",
+    "inject_gate_decoder",
+    "ada_mix_rank",
+    "style_modulator_type",
+    "skip_frequency_gated",
+    "skip_low_freq_base_retention",
+    "ablation_no_adagn",
+    "ablation_no_adagn_zero_out",
+    "ablation_naive_skip",
+    "ablation_naive_skip_gain",
+}
+_KNOWN_MODEL_CONFIG_KEYS = set(_MODEL_CONFIG_DEFAULTS) | {"lift_channels"} | _LEGACY_MODEL_CONFIG_KEYS
 
 
 def _resolve_group_count(channels: int, preferred: int) -> int:
@@ -75,24 +80,7 @@ def _resolve_group_count(channels: int, preferred: int) -> int:
     return groups
 
 
-class _BaseStyleModulator(nn.Module):
-    def __init__(self) -> None:
-        super().__init__()
-        self.ablation_no_adagn = False
-        self.ablation_no_adagn_zero_out = True
-
-    def _resolve_gate(self, x: torch.Tensor, gate: float | torch.Tensor) -> torch.Tensor:
-        if isinstance(gate, torch.Tensor):
-            return gate.to(device=x.device, dtype=x.dtype)
-        return x.new_tensor(float(gate))
-
-
-def _normalize_style_modulator_type(modulator_type: str) -> str:
-    del modulator_type
-    return "cross_attn"
-
-
-class CrossAttnAdaGN(_BaseStyleModulator):
+class CrossAttnAdaGN(nn.Module):
     """
     Cross-attention style modulation with learnable style tokens.
     """
@@ -193,13 +181,10 @@ class CrossAttnAdaGN(_BaseStyleModulator):
         style_content = style_content + self.ffn(self.ffn_norm(style_content))
         style_content = style_content.transpose(1, 2).reshape(b, c, h_dim, w_dim)
 
-        if self.ablation_no_adagn:
-            adagn = torch.zeros_like(normalized) if self.ablation_no_adagn_zero_out else normalized
-        else:
-            style_residual = shift + (style_content * self.gamma)
-            # Clamp style-only residual energy to prevent shallow-layer MA spikes from
-            # detonating the latent before the residual anchor can stabilize it.
-            adagn = normalized * scale + torch.tanh(style_residual) * 3.0
+        style_residual = shift + (style_content * self.gamma)
+        # Clamp style-only residual energy to prevent shallow-layer MA spikes from
+        # detonating the latent before the residual anchor can stabilize it.
+        adagn = normalized * scale + torch.tanh(style_residual) * 3.0
         final_gate = gate if isinstance(gate, float) else gate.to(device=x.device, dtype=x.dtype)
         return normalized + final_gate * (adagn - normalized)
 
@@ -221,19 +206,15 @@ def _normalize_feature_block_type(block_type: str) -> str:
 
 
 def _build_style_modulator(
-    modulator_type: str,
     *,
     dim: int,
     style_dim: int,
     num_groups: int,
-    ada_mix_rank: int,
     attn_num_tokens: int,
     attn_num_heads: int,
     attn_sharpen_scale: float,
     attn_temperature: float,
 ) -> nn.Module:
-    del modulator_type
-    del ada_mix_rank
     return CrossAttnAdaGN(
         dim=dim,
         style_dim=style_dim,
@@ -251,8 +232,6 @@ class ResBlock(nn.Module):
         dim: int,
         style_dim: int,
         num_groups: int = 8,
-        ada_mix_rank: int = 16,
-        style_modulator_type: str = "cross_attn",
         style_attn_num_tokens: int = 16,
         style_attn_num_heads: int = 4,
         style_attn_sharpen_scale: float = 2.0,
@@ -260,11 +239,9 @@ class ResBlock(nn.Module):
     ) -> None:
         super().__init__()
         self.norm1 = _build_style_modulator(
-            style_modulator_type,
             dim=dim,
             style_dim=style_dim,
             num_groups=num_groups,
-            ada_mix_rank=ada_mix_rank,
             attn_num_tokens=style_attn_num_tokens,
             attn_num_heads=style_attn_num_heads,
             attn_sharpen_scale=style_attn_sharpen_scale,
@@ -272,11 +249,9 @@ class ResBlock(nn.Module):
         )
         self.conv1 = nn.Conv2d(dim, dim, kernel_size=3, stride=1, padding=1)
         self.norm2 = _build_style_modulator(
-            style_modulator_type,
             dim=dim,
             style_dim=style_dim,
             num_groups=num_groups,
-            ada_mix_rank=ada_mix_rank,
             attn_num_tokens=style_attn_num_tokens,
             attn_num_heads=style_attn_num_heads,
             attn_sharpen_scale=style_attn_sharpen_scale,
@@ -388,8 +363,6 @@ class AttentionBlock(nn.Module):
         dim: int,
         style_dim: int,
         num_groups: int = 8,
-        ada_mix_rank: int = 16,
-        style_modulator_type: str = "cross_attn",
         style_attn_num_tokens: int = 16,
         style_attn_num_heads: int = 4,
         style_attn_sharpen_scale: float = 2.0,
@@ -400,11 +373,9 @@ class AttentionBlock(nn.Module):
     ) -> None:
         super().__init__()
         self.norm1 = _build_style_modulator(
-            style_modulator_type,
             dim=dim,
             style_dim=style_dim,
             num_groups=num_groups,
-            ada_mix_rank=ada_mix_rank,
             attn_num_tokens=style_attn_num_tokens,
             attn_num_heads=style_attn_num_heads,
             attn_sharpen_scale=style_attn_sharpen_scale,
@@ -428,14 +399,53 @@ class AttentionBlock(nn.Module):
         return x
 
 
+class SemanticCrossAttn(nn.Module):
+    def __init__(self, dim: int, num_groups: int = 8, temperature: float = 0.08) -> None:
+        super().__init__()
+        self.temperature = max(1e-4, float(temperature))
+        self.norm = nn.GroupNorm(_resolve_group_count(dim, num_groups), dim, affine=False)
+        self.to_q = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
+        self.to_k = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
+        self.to_v = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
+        self.gamma = nn.Parameter(torch.zeros(1, dim, 1, 1))
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        style_map: torch.Tensor,
+        gate: float | torch.Tensor = 1.0,
+    ) -> torch.Tensor:
+        b, c, h_dim, w_dim = x.shape
+        if style_map.shape[:1] != x.shape[:1]:
+            raise ValueError(f"batch size mismatch: x={tuple(x.shape)} style_map={tuple(style_map.shape)}")
+        if style_map.shape[1] != c:
+            raise ValueError(f"x channels {c} must match style_map channels {style_map.shape[1]}")
+        if style_map.shape[-2:] != (h_dim, w_dim):
+            raise ValueError(f"spatial mismatch: x={tuple(x.shape)} style_map={tuple(style_map.shape)}")
+
+        normalized = self.norm(x)
+        q_dehydrated = F.instance_norm(normalized)
+        k_dehydrated = F.instance_norm(style_map)
+        q = self.to_q(q_dehydrated).view(b, c, -1).transpose(1, 2)
+        k = self.to_k(k_dehydrated).view(b, c, -1)
+        v = self.to_v(style_map).view(b, c, -1).transpose(1, 2)
+
+        attn = torch.bmm(q, k) * (c ** -0.5) / self.temperature
+        attn = F.softmax(attn, dim=-1)
+        painted = torch.bmm(attn, v).transpose(1, 2).view(b, c, h_dim, w_dim)
+        painted_smoothed = F.avg_pool2d(painted, kernel_size=3, stride=1, padding=1)
+
+        final_gate = gate if isinstance(gate, float) else gate.to(device=x.device, dtype=x.dtype)
+        delta = torch.tanh(painted_smoothed) * 3.0 * (1.0 + self.gamma)
+        return x + final_gate * delta
+
+
 def _build_feature_block(
     block_type: str,
     *,
     dim: int,
     style_dim: int,
     num_groups: int,
-    ada_mix_rank: int,
-    style_modulator_type: str,
     style_attn_num_tokens: int,
     style_attn_num_heads: int,
     style_attn_sharpen_scale: float,
@@ -449,8 +459,6 @@ def _build_feature_block(
             dim=dim,
             style_dim=style_dim,
             num_groups=num_groups,
-            ada_mix_rank=ada_mix_rank,
-            style_modulator_type=style_modulator_type,
             style_attn_num_tokens=style_attn_num_tokens,
             style_attn_num_heads=style_attn_num_heads,
             style_attn_sharpen_scale=style_attn_sharpen_scale,
@@ -460,8 +468,6 @@ def _build_feature_block(
         dim=dim,
         style_dim=style_dim,
         num_groups=num_groups,
-        ada_mix_rank=ada_mix_rank,
-        style_modulator_type=style_modulator_type,
         style_attn_num_tokens=style_attn_num_tokens,
         style_attn_num_heads=style_attn_num_heads,
         style_attn_sharpen_scale=style_attn_sharpen_scale,
@@ -495,6 +501,37 @@ class NormFreeModulation(nn.Module):
         gamma = gamma * gate_t
         beta = beta * gate_t
         return x * (1.0 + gamma) + beta
+
+
+class DecoderTextureBlock(nn.Module):
+    def __init__(self, dim: int, style_dim: int, num_groups: int = 8) -> None:
+        super().__init__()
+        self.norm = nn.GroupNorm(_resolve_group_count(dim, num_groups), dim, affine=True)
+        self.mapper = nn.Sequential(
+            nn.Linear(style_dim, dim),
+            nn.SiLU(),
+            nn.Linear(dim, dim * 2),
+        )
+        self.conv = nn.Conv2d(dim, dim, kernel_size=3, stride=1, padding=1)
+        self.act = nn.SiLU()
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        style_code: torch.Tensor,
+        gate: float | torch.Tensor = 1.0,
+    ) -> torch.Tensor:
+        normalized = self.norm(x)
+        gamma, beta = self.mapper(style_code).chunk(2, dim=-1)
+        gamma = gamma.view(-1, gamma.shape[1], 1, 1).to(dtype=x.dtype)
+        beta = beta.view(-1, beta.shape[1], 1, 1).to(dtype=x.dtype)
+
+        h = normalized * (1.0 + gamma) + beta
+        delta_raw = self.conv(self.act(h))
+        local_mean = F.avg_pool2d(delta_raw, kernel_size=5, stride=1, padding=2)
+        delta_texture = delta_raw - local_mean
+        final_gate = gate if isinstance(gate, float) else gate.to(device=x.device, dtype=x.dtype)
+        return x + final_gate * torch.tanh(delta_texture) * 3.0
 
 
 class StyleRoutingSkip(nn.Module):
@@ -600,18 +637,12 @@ class LatentAdaCUT(nn.Module):
         latent_scale_factor: float = 0.18215,
         residual_gain: float = 0.1,
         style_spatial_pre_gain_16: float = 0.35,
-        use_decoder_adagn: bool = True,
-        inject_gate_hires: float = 0.0,
-        inject_gate_body: float = 1.0,
-        inject_gate_decoder: float = 1.0,
         style_strength_default: float = 1.0,
         style_strength_step_curve: str = "linear",
         upsample_mode: str = "nearest",
         style_id_spatial_jitter_px: int = 0,
         upsample_blur: bool = True,
         upsample_blur_kernel: str = "box3",
-        ada_mix_rank: int = 16,
-        style_modulator_type: str = "cross_attn",
         style_attn_num_tokens: int = 16,
         style_attn_num_heads: int = 4,
         style_attn_sharpen_scale: float = 2.0,
@@ -619,6 +650,7 @@ class LatentAdaCUT(nn.Module):
         hires_block_type: str = "conv",
         body_block_type: str = "conv",
         decoder_block_type: str = "conv",
+        semantic_attn_temperature: float = 0.08,
         feature_attn_num_heads: int = 4,
         window_attn_window_size: int = 8,
         skip_fusion_mode: str = "concat_conv",
@@ -627,13 +659,13 @@ class LatentAdaCUT(nn.Module):
         style_skip_content_retention_boost: float = 0.0,
         input_anchor_noise_std: float = 0.0,
         input_anchor_noise_eval: bool = False,
-        ablation_no_adagn: bool = False,
-        ablation_no_adagn_zero_out: bool = True,
-        ablation_naive_skip: bool = False,
-        ablation_naive_skip_gain: float = 1.5,
         ablation_no_residual: bool = False,
         ablation_no_residual_gain: float = 1.0,
         ablation_disable_spatial_prior: bool = False,
+        ablation_skip_clean: bool = True,
+        ablation_skip_blur: bool = True,
+        ablation_decoder_highpass: bool = True,
+        color_highway_gain: float = 1.0,
         output_moment_match: bool = False,
         output_moment_match_eps: float = 1e-6,
         output_moment_match_train_only: bool = True,
@@ -649,11 +681,6 @@ class LatentAdaCUT(nn.Module):
         self.num_hires_blocks = max(0, int(num_hires_blocks))
         self.num_res_blocks = max(0, int(num_res_blocks))
         self.style_spatial_pre_gain_16 = float(style_spatial_pre_gain_16)
-        # Pruned paths: keep only pre-inject + main AdaGN style route.
-        self.use_decoder_adagn = bool(use_decoder_adagn)
-        del inject_gate_hires
-        del inject_gate_body
-        del inject_gate_decoder
         self.style_strength_default = max(0.0, min(1.0, float(style_strength_default)))
         self.style_strength_step_curve = str(style_strength_step_curve).lower()
         if self.style_strength_step_curve not in {"linear", "smoothstep", "sqrt"}:
@@ -662,8 +689,6 @@ class LatentAdaCUT(nn.Module):
         self.style_id_spatial_jitter_px = max(0, int(style_id_spatial_jitter_px))
         self.upsample_blur = bool(upsample_blur)
         self.upsample_blur_kernel = str(upsample_blur_kernel).lower()
-        self.ada_mix_rank = max(1, int(ada_mix_rank))
-        self.style_modulator_type = _normalize_style_modulator_type(style_modulator_type)
         self.style_attn_num_tokens = max(1, int(style_attn_num_tokens))
         self.style_attn_num_heads = max(1, int(style_attn_num_heads))
         self.style_attn_sharpen_scale = max(0.1, float(style_attn_sharpen_scale))
@@ -671,6 +696,7 @@ class LatentAdaCUT(nn.Module):
         self.hires_block_type = _normalize_feature_block_type(hires_block_type)
         self.body_block_type = _normalize_feature_block_type(body_block_type)
         self.decoder_block_type = _normalize_feature_block_type(decoder_block_type)
+        self.semantic_attn_temperature = max(1e-4, float(semantic_attn_temperature))
         self.num_decoder_blocks = max(0, int(num_decoder_blocks))
         self.feature_attn_num_heads = max(1, int(feature_attn_num_heads))
         self.window_attn_window_size = max(1, int(window_attn_window_size))
@@ -691,16 +717,13 @@ class LatentAdaCUT(nn.Module):
                 category=UserWarning,
                 stacklevel=2,
             )
-        self.ablation_no_adagn = bool(ablation_no_adagn)
-        self.ablation_no_adagn_zero_out = bool(ablation_no_adagn_zero_out)
-        self.ablation_naive_skip = bool(ablation_naive_skip)
-        self.ablation_naive_skip_gain = max(0.0, float(ablation_naive_skip_gain))
-        if self.ablation_naive_skip:
-            self.skip_routing_mode = "naive"
-            self.skip_naive_gain = self.ablation_naive_skip_gain
         self.ablation_no_residual = bool(ablation_no_residual)
         self.ablation_no_residual_gain = max(0.0, float(ablation_no_residual_gain))
         self.ablation_disable_spatial_prior = bool(ablation_disable_spatial_prior)
+        self.ablation_skip_clean = bool(ablation_skip_clean)
+        self.ablation_skip_blur = bool(ablation_skip_blur)
+        self.ablation_decoder_highpass = bool(ablation_decoder_highpass)
+        self.color_highway_gain = float(color_highway_gain)
         self.output_moment_match = bool(output_moment_match)
         self.output_moment_match_eps = max(1e-8, float(output_moment_match_eps))
         self.output_moment_match_train_only = bool(output_moment_match_train_only)
@@ -724,8 +747,6 @@ class LatentAdaCUT(nn.Module):
                     dim=self.lift_channels,
                     style_dim=style_dim,
                     num_groups=num_groups,
-                    ada_mix_rank=self.ada_mix_rank,
-                    style_modulator_type=self.style_modulator_type,
                     style_attn_num_tokens=self.style_attn_num_tokens,
                     style_attn_num_heads=self.style_attn_num_heads,
                     style_attn_sharpen_scale=self.style_attn_sharpen_scale,
@@ -738,21 +759,12 @@ class LatentAdaCUT(nn.Module):
         )
         self.down = nn.Conv2d(self.lift_channels, self.body_channels, kernel_size=4, stride=2, padding=1)
 
-        self.body = nn.ModuleList(
+        self.body_blocks = nn.ModuleList(
             [
-                _build_feature_block(
-                    self.body_block_type,
+                SemanticCrossAttn(
                     dim=self.body_channels,
-                    style_dim=style_dim,
                     num_groups=num_groups,
-                    ada_mix_rank=self.ada_mix_rank,
-                    style_modulator_type=self.style_modulator_type,
-                    style_attn_num_tokens=self.style_attn_num_tokens,
-                    style_attn_num_heads=self.style_attn_num_heads,
-                    style_attn_sharpen_scale=self.style_attn_sharpen_scale,
-                    feature_attn_num_heads=self.feature_attn_num_heads,
-                    style_attn_temperature=self.style_attn_temperature,
-                    window_attn_window_size=self.window_attn_window_size,
+                    temperature=self.semantic_attn_temperature,
                 )
                 for _ in range(self.num_res_blocks)
             ]
@@ -800,19 +812,10 @@ class LatentAdaCUT(nn.Module):
             )
         self.decoder_blocks = nn.ModuleList(
             [
-                _build_feature_block(
-                    self.decoder_block_type,
+                DecoderTextureBlock(
                     dim=self.lift_channels,
                     style_dim=style_dim,
                     num_groups=num_groups,
-                    ada_mix_rank=self.ada_mix_rank,
-                    style_modulator_type=self.style_modulator_type,
-                    style_attn_num_tokens=self.style_attn_num_tokens,
-                    style_attn_num_heads=self.style_attn_num_heads,
-                    style_attn_sharpen_scale=self.style_attn_sharpen_scale,
-                    feature_attn_num_heads=self.feature_attn_num_heads,
-                    style_attn_temperature=self.style_attn_temperature,
-                    window_attn_window_size=self.window_attn_window_size,
                 )
                 for _ in range(self.num_decoder_blocks)
             ]
@@ -824,6 +827,16 @@ class LatentAdaCUT(nn.Module):
         self.dec_mod = NormFreeModulation(self.lift_channels, style_dim)
         self.dec_act = nn.SiLU()
         self.dec_out = nn.Conv2d(self.lift_channels, latent_channels, kernel_size=3, stride=1, padding=1)
+        self.style_map_proj = nn.Conv2d(self.latent_channels, self.body_channels, kernel_size=1, stride=1, padding=0)
+        self.highway_proj = nn.Conv2d(
+            self.body_channels,
+            self.latent_channels,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+        )
+        nn.init.zeros_(self.highway_proj.weight)
+        nn.init.zeros_(self.highway_proj.bias)
 
         if self.upsample_blur:
             if self.upsample_blur_kernel == "gaussian3":
@@ -845,10 +858,6 @@ class LatentAdaCUT(nn.Module):
             nn.SiLU(),
             nn.Conv2d(16, 1, kernel_size=3, padding=1),
         )
-        if self.ablation_no_adagn:
-            for module in self.modules():
-                if isinstance(module, CrossAttnAdaGN):
-                    module.ablation_no_adagn = True
 
     def _normalize_style_id_input(
         self,
@@ -897,11 +906,13 @@ class LatentAdaCUT(nn.Module):
         blocks: nn.ModuleList,
         style_code: torch.Tensor,
         base_idx: int = 0,
+        gate_scale: float = 1.0,
     ) -> torch.Tensor:
         out = h
+        gs = max(0.0, float(gate_scale))
         for i, block in enumerate(blocks):
             use_shift = (i % 2) == 1
-            current_gate = torch.tanh(F.softplus(self.block_gains[base_idx + i]))
+            current_gate = torch.tanh(F.softplus(self.block_gains[base_idx + i])) * gs
             out = self._run_block(block, out, style_code, gate=current_gate, shift=use_shift)
         return out
 
@@ -923,14 +934,19 @@ class LatentAdaCUT(nn.Module):
             gate=gate,
             naive_gain=self.skip_naive_gain,
         )
+        skip_processed = skip_feat
+        if self.ablation_skip_clean:
+            skip_processed = F.instance_norm(skip_processed)
+        if self.ablation_skip_blur:
+            skip_processed = F.avg_pool2d(skip_processed, kernel_size=3, stride=1, padding=1)
 
         if self.skip_fusion_mode == "add_proj":
             h_base = self.skip_up_proj(h_up)
-            skip_base = self.skip_src_proj(skip_feat)
+            skip_base = self.skip_src_proj(skip_processed)
             h_base.add_(skip_base)
             return self.skip_fusion(h_base)
 
-        return self.skip_fusion(torch.cat([h_up, skip_feat], dim=1))
+        return self.skip_fusion(torch.cat([h_up, skip_processed], dim=1))
 
     def _resolve_style_strength(self, style_strength: float | None) -> float:
         if style_strength is None:
@@ -950,17 +966,15 @@ class LatentAdaCUT(nn.Module):
         h: torch.Tensor,
         style_code: torch.Tensor,
         base_idx: int,
+        gate_scale: float = 1.0,
     ) -> torch.Tensor:
-        h = self._run_style_blocks(
+        return self._run_style_blocks(
             h,
             blocks=self.decoder_blocks,
             style_code=style_code,
             base_idx=base_idx,
+            gate_scale=gate_scale,
         )
-        h = self.dec_post(h)
-        h = self.dec_mod(h, style_code, gate=1.0)
-        h = self.dec_act(h)
-        return h
 
     def _prepare_style_maps(
         self,
@@ -1090,7 +1104,9 @@ class LatentAdaCUT(nn.Module):
         *,
         style_code: torch.Tensor,
         style_maps: StyleMaps,
+        override_palette: torch.Tensor | None = None,
         strength: float,
+        target_style_latent: torch.Tensor | None = None,
     ) -> torch.Tensor:
         feat = x / max(self.latent_scale_factor, 1e-8)
         h = self.enc_in_act(self.enc_in(feat))
@@ -1099,54 +1115,134 @@ class LatentAdaCUT(nn.Module):
             blocks=self.hires_body,
             style_code=style_code,
             base_idx=0,
+            gate_scale=0.0,
         )
-        # Preserve shallow structure features for flexible decoder-side fusion.
         skip_32 = h
 
         h = self.down(h)
-        style_spatial_16 = self._prepare_spatial_map(style_maps.map_16, h)
-        if style_spatial_16 is not None:
-            h = h + (self.style_spatial_pre_gain_16 * strength) * torch.tanh(style_spatial_16)
-        h = self._run_style_blocks(
-            h,
-            blocks=self.body,
-            style_code=style_code,
-            base_idx=len(self.hires_body),
+        style_map_proj: torch.Tensor | None = None
+        if override_palette is not None:
+            style_map_proj = override_palette
+            if style_map_proj.device != h.device:
+                style_map_proj = style_map_proj.to(device=h.device)
+            if style_map_proj.dtype != h.dtype:
+                style_map_proj = style_map_proj.to(dtype=h.dtype)
+            if style_map_proj.shape[0] == 1 and h.shape[0] > 1:
+                style_map_proj = style_map_proj.expand(h.shape[0], -1, -1, -1)
+            elif style_map_proj.shape[0] != h.shape[0]:
+                raise ValueError(
+                    f"override_palette batch mismatch: expected {h.shape[0]} or 1, got {style_map_proj.shape[0]}"
+                )
+            if style_map_proj.shape[1] == self.latent_channels:
+                style_map_proj = self.style_map_proj(style_map_proj)
+            elif style_map_proj.shape[1] != self.body_channels:
+                raise ValueError(
+                    f"override_palette channels must be {self.body_channels} or {self.latent_channels}, got {style_map_proj.shape[1]}"
+                )
+            if style_map_proj.shape[-2:] != h.shape[-2:]:
+                style_map_proj = F.interpolate(
+                    style_map_proj,
+                    size=h.shape[-2:],
+                    mode="bilinear",
+                    align_corners=False,
+                )
+        elif target_style_latent is not None:
+            if target_style_latent.shape[1] != self.latent_channels:
+                raise ValueError(
+                    f"target_style_latent channels must be {self.latent_channels}, got {target_style_latent.shape[1]}"
+                )
+            if target_style_latent.device != h.device:
+                target_style_latent = target_style_latent.to(device=h.device)
+            if target_style_latent.dtype != h.dtype:
+                target_style_latent = target_style_latent.to(dtype=h.dtype)
+
+            style_map_resized = F.interpolate(
+                target_style_latent,
+                size=h.shape[-2:],
+                mode="bilinear",
+                align_corners=False,
+            )
+            style_map_proj = self.style_map_proj(style_map_resized)
+        else:
+            style_spatial_16 = self._prepare_spatial_map(style_maps.map_16, h)
+            if style_spatial_16 is None:
+                raise ValueError("style spatial prior is required for id-only inference.")
+            # ID priors already live in bottleneck channel space, so they can feed the semantic painter directly.
+            style_map_proj = style_spatial_16
+
+        for block in self.body_blocks:
+            h = block(h, style_map=style_map_proj, gate=1.0)
+        h_body = h
+        color_highway = F.interpolate(
+            h_body,
+            scale_factor=2.0,
+            mode="bilinear",
+            align_corners=False,
         )
+        color_highway = self.highway_proj(color_highway)
 
         h = self.dec_up(h)
         h = self._apply_upsample_blur(h)
-        h = self._fuse_skip_features(h, skip_32, style_code=style_code, gate=1.0)
+        h = self._fuse_skip_features(h, skip_32, style_code=style_code, gate=0.0)
         h = self._run_decoder(
             h,
             style_code=style_code,
-            base_idx=len(self.hires_body) + len(self.body),
+            base_idx=len(self.hires_body) + len(self.body_blocks),
+            gate_scale=strength,
         )
-        return self._compute_delta(h)
+        delta_raw = self._compute_delta(h)
+        if self.ablation_decoder_highpass:
+            delta_mean = F.avg_pool2d(delta_raw, kernel_size=5, stride=1, padding=2)
+            delta_hp = delta_raw - delta_mean
+        else:
+            delta_hp = delta_raw
+
+        highway_gain = float(self.color_highway_gain)
+        return delta_hp + color_highway * highway_gain
 
     def integrate(
         self,
         x: torch.Tensor,
-        style_id: torch.Tensor | int,
+        style_id: torch.Tensor | int | None,
         num_steps: int = 1,
         step_size: float = 1.0,
         style_strength: float | None = None,
         target_style_latent: torch.Tensor | None = None,
+        style_code_override: torch.Tensor | None = None,
+        override_palette: torch.Tensor | None = None,
     ) -> torch.Tensor:
         steps = max(1, int(num_steps))
         strength = self._resolve_style_strength(style_strength)
         step_scale = self._style_strength_step_scale(strength)
         per_step = 1.0 / float(steps)
-        style_code, style_maps = self._prepare_style_context(
-            style_id=style_id,
-        )
+        if style_code_override is not None:
+            style_code = style_code_override
+            if style_code.ndim == 1:
+                style_code = style_code.unsqueeze(0)
+            if style_code.device != x.device:
+                style_code = style_code.to(device=x.device)
+            if style_code.dtype != x.dtype:
+                style_code = style_code.to(dtype=x.dtype)
+            if style_code.shape[0] == 1 and x.shape[0] > 1:
+                style_code = style_code.expand(x.shape[0], -1)
+            elif style_code.shape[0] != x.shape[0]:
+                raise ValueError(f"style_code_override batch mismatch: expected {x.shape[0]} or 1, got {style_code.shape[0]}")
+            style_maps = StyleMaps()
+        else:
+            if style_id is None:
+                raise ValueError("style_id is required when style_code_override is not provided.")
+            style_code, style_maps = self._prepare_style_context(
+                style_id=style_id,
+            )
         h = x
         for _ in range(steps):
             delta = self._predict_delta_from_context(
                 h,
                 style_code=style_code,
                 style_maps=style_maps,
+                override_palette=override_palette,
                 strength=strength,
+                target_style_latent=target_style_latent,
             )
             h = h + delta * float(step_size) * step_scale * per_step
         return self._apply_output_moment_match(h, target_style_latent)
@@ -1188,21 +1284,41 @@ class LatentAdaCUT(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        style_id: torch.Tensor | int,
+        style_id: torch.Tensor | int | None,
         step_size: float = 1.0,
         style_strength: float | None = None,
         target_style_latent: torch.Tensor | None = None,
+        style_code_override: torch.Tensor | None = None,
+        override_palette: torch.Tensor | None = None,
     ) -> torch.Tensor:
         strength = self._resolve_style_strength(style_strength)
         step_scale = self._style_strength_step_scale(strength)
-        style_code, style_maps = self._prepare_style_context(
-            style_id=style_id,
-        )
+        if style_code_override is not None:
+            style_code = style_code_override
+            if style_code.ndim == 1:
+                style_code = style_code.unsqueeze(0)
+            if style_code.device != x.device:
+                style_code = style_code.to(device=x.device)
+            if style_code.dtype != x.dtype:
+                style_code = style_code.to(dtype=x.dtype)
+            if style_code.shape[0] == 1 and x.shape[0] > 1:
+                style_code = style_code.expand(x.shape[0], -1)
+            elif style_code.shape[0] != x.shape[0]:
+                raise ValueError(f"style_code_override batch mismatch: expected {x.shape[0]} or 1, got {style_code.shape[0]}")
+            style_maps = StyleMaps()
+        else:
+            if style_id is None:
+                raise ValueError("style_id is required when style_code_override is not provided.")
+            style_code, style_maps = self._prepare_style_context(
+                style_id=style_id,
+            )
         delta = self._predict_delta_from_context(
             x,
             style_code=style_code,
             style_maps=style_maps,
+            override_palette=override_palette,
             strength=strength,
+            target_style_latent=target_style_latent,
         )
         if self.ablation_no_residual:
             # Extreme ablation: remove x-anchoring and rescale delta to full latent magnitude.
@@ -1279,18 +1395,12 @@ def build_model_from_config(
         latent_scale_factor=float(model_cfg.get("latent_scale_factor", _MODEL_CONFIG_DEFAULTS["latent_scale_factor"])),
         residual_gain=float(model_cfg.get("residual_gain", _MODEL_CONFIG_DEFAULTS["residual_gain"])),
         style_spatial_pre_gain_16=float(model_cfg.get("style_spatial_pre_gain_16", _MODEL_CONFIG_DEFAULTS["style_spatial_pre_gain_16"])),
-        use_decoder_adagn=bool(model_cfg.get("use_decoder_adagn", _MODEL_CONFIG_DEFAULTS["use_decoder_adagn"])),
-        inject_gate_hires=float(model_cfg.get("inject_gate_hires", _MODEL_CONFIG_DEFAULTS["inject_gate_hires"])),
-        inject_gate_body=float(model_cfg.get("inject_gate_body", _MODEL_CONFIG_DEFAULTS["inject_gate_body"])),
-        inject_gate_decoder=float(model_cfg.get("inject_gate_decoder", _MODEL_CONFIG_DEFAULTS["inject_gate_decoder"])),
         style_strength_default=float(model_cfg.get("style_strength_default", _MODEL_CONFIG_DEFAULTS["style_strength_default"])),
         style_strength_step_curve=str(model_cfg.get("style_strength_step_curve", _MODEL_CONFIG_DEFAULTS["style_strength_step_curve"])),
         upsample_mode=str(model_cfg.get("upsample_mode", _MODEL_CONFIG_DEFAULTS["upsample_mode"])),
         style_id_spatial_jitter_px=int(model_cfg.get("style_id_spatial_jitter_px", _MODEL_CONFIG_DEFAULTS["style_id_spatial_jitter_px"])),
         upsample_blur=bool(model_cfg.get("upsample_blur", _MODEL_CONFIG_DEFAULTS["upsample_blur"])),
         upsample_blur_kernel=str(model_cfg.get("upsample_blur_kernel", _MODEL_CONFIG_DEFAULTS["upsample_blur_kernel"])),
-        ada_mix_rank=int(model_cfg.get("ada_mix_rank", _MODEL_CONFIG_DEFAULTS["ada_mix_rank"])),
-        style_modulator_type=str(model_cfg.get("style_modulator_type", _MODEL_CONFIG_DEFAULTS["style_modulator_type"])),
         style_attn_num_tokens=int(model_cfg.get("style_attn_num_tokens", _MODEL_CONFIG_DEFAULTS["style_attn_num_tokens"])),
         style_attn_num_heads=int(model_cfg.get("style_attn_num_heads", _MODEL_CONFIG_DEFAULTS["style_attn_num_heads"])),
         style_attn_sharpen_scale=float(model_cfg.get("style_attn_sharpen_scale", _MODEL_CONFIG_DEFAULTS["style_attn_sharpen_scale"])),
@@ -1298,6 +1408,9 @@ def build_model_from_config(
         hires_block_type=str(model_cfg.get("hires_block_type", _MODEL_CONFIG_DEFAULTS["hires_block_type"])),
         body_block_type=str(model_cfg.get("body_block_type", _MODEL_CONFIG_DEFAULTS["body_block_type"])),
         decoder_block_type=str(model_cfg.get("decoder_block_type", _MODEL_CONFIG_DEFAULTS["decoder_block_type"])),
+        semantic_attn_temperature=float(
+            model_cfg.get("semantic_attn_temperature", _MODEL_CONFIG_DEFAULTS["semantic_attn_temperature"])
+        ),
         feature_attn_num_heads=int(model_cfg.get("feature_attn_num_heads", _MODEL_CONFIG_DEFAULTS["feature_attn_num_heads"])),
         window_attn_window_size=int(model_cfg.get("window_attn_window_size", _MODEL_CONFIG_DEFAULTS["window_attn_window_size"])),
         skip_fusion_mode=str(model_cfg.get("skip_fusion_mode", _MODEL_CONFIG_DEFAULTS["skip_fusion_mode"])),
@@ -1306,15 +1419,17 @@ def build_model_from_config(
         style_skip_content_retention_boost=float(model_cfg.get("style_skip_content_retention_boost", _MODEL_CONFIG_DEFAULTS["style_skip_content_retention_boost"])),
         input_anchor_noise_std=float(model_cfg.get("input_anchor_noise_std", _MODEL_CONFIG_DEFAULTS["input_anchor_noise_std"])),
         input_anchor_noise_eval=bool(model_cfg.get("input_anchor_noise_eval", _MODEL_CONFIG_DEFAULTS["input_anchor_noise_eval"])),
-        ablation_no_adagn=bool(model_cfg.get("ablation_no_adagn", _MODEL_CONFIG_DEFAULTS["ablation_no_adagn"])),
-        ablation_no_adagn_zero_out=bool(model_cfg.get("ablation_no_adagn_zero_out", _MODEL_CONFIG_DEFAULTS["ablation_no_adagn_zero_out"])),
-        ablation_naive_skip=bool(model_cfg.get("ablation_naive_skip", _MODEL_CONFIG_DEFAULTS["ablation_naive_skip"])),
-        ablation_naive_skip_gain=float(model_cfg.get("ablation_naive_skip_gain", _MODEL_CONFIG_DEFAULTS["ablation_naive_skip_gain"])),
         ablation_no_residual=bool(model_cfg.get("ablation_no_residual", _MODEL_CONFIG_DEFAULTS["ablation_no_residual"])),
         ablation_no_residual_gain=float(model_cfg.get("ablation_no_residual_gain", _MODEL_CONFIG_DEFAULTS["ablation_no_residual_gain"])),
         ablation_disable_spatial_prior=bool(
             model_cfg.get("ablation_disable_spatial_prior", _MODEL_CONFIG_DEFAULTS["ablation_disable_spatial_prior"])
         ),
+        ablation_skip_clean=bool(model_cfg.get("ablation_skip_clean", _MODEL_CONFIG_DEFAULTS["ablation_skip_clean"])),
+        ablation_skip_blur=bool(model_cfg.get("ablation_skip_blur", _MODEL_CONFIG_DEFAULTS["ablation_skip_blur"])),
+        ablation_decoder_highpass=bool(
+            model_cfg.get("ablation_decoder_highpass", _MODEL_CONFIG_DEFAULTS["ablation_decoder_highpass"])
+        ),
+        color_highway_gain=float(model_cfg.get("color_highway_gain", _MODEL_CONFIG_DEFAULTS["color_highway_gain"])),
         output_moment_match=output_moment_match,
         output_moment_match_eps=output_moment_match_eps,
         output_moment_match_train_only=output_moment_match_train_only,

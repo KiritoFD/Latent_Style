@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MA Probe Sweep Viewer</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --text: #16202a;
+      --muted: #5f6b76;
+      --line: #d9dee5;
+      --accent: #17324d;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; background: var(--bg); color: var(--text); }
+    .wrap { max-width: 1600px; margin: 0 auto; padding: 24px; }
+    .header { margin-bottom: 18px; }
+    .header h1 { margin: 0 0 6px 0; font-size: 24px; }
+    .header p { margin: 0; color: var(--muted); }
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 18px 0 20px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+    .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-value { font-size: 26px; font-weight: 700; margin-top: 6px; }
+    .plot { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px; margin-bottom: 16px; }
+    .table-wrap { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+    th { position: sticky; top: 0; background: #f9fafb; z-index: 1; }
+    .muted { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <h1>MA Probe Sweep Viewer</h1>
+      <p>Batch overview of stage-level MA heat and hottest layers.</p>
+    </div>
+
+    <div class="stats">
+      <div class="card"><div class="stat-label">Runs</div><div class="stat-value" id="statRuns">0</div></div>
+      <div class="card"><div class="stat-label">Checkpoints</div><div class="stat-value" id="statCkpts">0</div></div>
+      <div class="card"><div class="stat-label">Peak MA</div><div class="stat-value" id="statPeak">0</div></div>
+      <div class="card"><div class="stat-label">Most Common Top Stage</div><div class="stat-value" id="statStage">-</div></div>
+    </div>
+
+    <div class="plot"><div id="stageBar" style="height: 480px;"></div></div>
+    <div class="plot"><div id="stageScatter" style="height: 480px;"></div></div>
+    <div class="plot"><div id="layerHeatmap" style="height: 720px;"></div></div>
+
+    <div class="table-wrap">
+      <table id="summaryTable">
+        <thead>
+          <tr>
+            <th>Run</th>
+            <th>Checkpoint</th>
+            <th>Top Layer</th>
+            <th>Top Stage</th>
+            <th>Peak MA</th>
+            <th>Hires</th>
+            <th>Body</th>
+            <th>Skip</th>
+            <th>Decoder</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const pageData = {"records": [{"run_name": "photo -> Hayao", "source": "I:\\Github\\Latent_Style\\Cycle-NCE\\45\\45_04_micro_rebel\\ma_probe_epoch_0030.json", "checkpoint": "I:\\Github\\Latent_Style\\Cycle-NCE\\45\\45_04_micro_rebel\\epoch_0030.pt", "source_style": "photo", "target_style": "Hayao", "top_layer_name": "dec_post", "top_layer_stage": "decoder", "top_layer_max_ma_ratio": 229.37399291992188, "top_layer_mean_ma_ratio": 16.668048858642578, "num_layers": 25, "stem_max": 10.273634910583496, "stem_mean": 8.972690343856812, "hires_max": 15.037968635559082, "hires_mean": 10.98806349436442, "body_max": 8.025465965270996, "body_mean": 6.829850673675537, "skip_max": 12.811076164245605, "skip_mean": 9.75602638721466, "decoder_max": 229.37399291992188, "decoder_mean": 45.50296330451965, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}], "layer_names": ["dec_post", "dec_mod", "hires_body.0.norm1", "hires_body.1", "skip_router", "hires_body.0", "skip_fusion", "enc_in", "hires_body.1.norm1", "decoder_blocks.0.norm1", "decoder_blocks.1.norm2", "hires_body.0.norm2", "body.0.norm1", "decoder_blocks.1.norm1", "hires_body.1.norm2", "down", "skip_src_proj", "skip_up_proj", "body.0", "dec_up", "decoder_blocks.0", "decoder_blocks.0.norm2", "decoder_blocks.1", "body.0.attn"], "layer_matrix": [[229.37399291992188, 167.47625732421875, 15.037968635559082, 12.811076164245605, 12.811076164245605, 11.970916748046875, 11.688655853271484, 10.273634910583496, 9.942383766174316, 9.29037857055664, 8.676405906677246, 8.493870735168457, 8.025465965270996, 7.86769962310791, 7.6721649169921875, 7.671745777130127, 7.315623760223389, 7.208749771118164, 7.178587436676025, 7.178587436676025, 7.116519451141357, 6.699328899383545, 6.262791156768799, 5.28549861907959]]};
+    const records = pageData.records || [];
+
+    function fmt(v) {
+      return (v === null || v === undefined || Number.isNaN(v)) ? '-' : Number(v).toFixed(2);
+    }
+
+    function buildStats() {
+      document.getElementById('statRuns').textContent = String(records.length);
+      document.getElementById('statCkpts').textContent = String(new Set(records.map(r => r.checkpoint).filter(Boolean)).size);
+      const peak = Math.max(...records.map(r => Number(r.top_layer_max_ma_ratio || 0)), 0);
+      document.getElementById('statPeak').textContent = peak.toFixed(2);
+      const counts = new Map();
+      for (const r of records) {
+        const k = r.top_layer_stage || 'n/a';
+        counts.set(k, (counts.get(k) || 0) + 1);
+      }
+      let bestStage = '-';
+      let bestCount = -1;
+      for (const [k, v] of counts.entries()) {
+        if (v > bestCount) { bestCount = v; bestStage = k; }
+      }
+      document.getElementById('statStage').textContent = bestStage;
+    }
+
+    function renderStageBar() {
+      const runNames = records.map(r => r.run_name);
+      const stages = ['stem_max', 'hires_max', 'body_max', 'skip_max', 'decoder_max', 'output_max'];
+      const labels = {
+        stem_max: 'stem',
+        hires_max: 'hires',
+        body_max: 'body',
+        skip_max: 'skip',
+        decoder_max: 'decoder',
+        output_max: 'output'
+      };
+      const colors = ['#9aa5b1', '#d94841', '#f59f00', '#2b8a3e', '#1971c2', '#5f3dc4'];
+      const traces = stages.map((stageKey, idx) => {
+        return {
+          type: 'bar',
+          name: labels[stageKey],
+          x: runNames,
+          y: records.map(r => r[stageKey]),
+          marker: { color: colors[idx] }
+        };
+      });
+      Plotly.newPlot('stageBar', traces, {
+        barmode: 'group',
+        title: 'Stage Peak MA Ratio by Run',
+        paper_bgcolor: '#ffffff',
+        plot_bgcolor: '#ffffff',
+        xaxis: { tickangle: -35 },
+        yaxis: { title: 'max MA ratio' },
+        margin: { l: 60, r: 20, t: 50, b: 140 }
+      }, { responsive: true, displaylogo: false });
+    }
+
+    function renderStageScatter() {
+      Plotly.newPlot('stageScatter', [{
+        type: 'scatter',
+        mode: 'markers+text',
+        x: records.map(r => r.hires_max),
+        y: records.map(r => r.decoder_max),
+        text: records.map(r => r.run_name),
+        textposition: 'top center',
+        customdata: records.map(r => [r.top_layer_name, r.top_layer_max_ma_ratio, r.skip_max]),
+        marker: {
+          size: records.map(r => 10 + Number(r.top_layer_max_ma_ratio || 0)),
+          color: records.map(r => r.skip_max),
+          colorscale: 'YlOrRd',
+          showscale: true,
+          colorbar: { title: 'skip max' },
+          line: { color: '#17324d', width: 1 }
+        },
+        hovertemplate: '<b>%{text}</b><br>hires=%{x:.2f}<br>decoder=%{y:.2f}<br>top=%{customdata[0]}<br>top ratio=%{customdata[1]:.2f}<br>skip=%{customdata[2]:.2f}<extra></extra>'
+      }], {
+        title: 'Hires vs Decoder MA',
+        xaxis: { title: 'hires max MA ratio' },
+        yaxis: { title: 'decoder max MA ratio' },
+        paper_bgcolor: '#ffffff',
+        plot_bgcolor: '#ffffff',
+        margin: { l: 60, r: 20, t: 50, b: 60 }
+      }, { responsive: true, displaylogo: false });
+    }
+
+    function renderLayerHeatmap() {
+      Plotly.newPlot('layerHeatmap', [{
+        type: 'heatmap',
+        x: pageData.layer_names,
+        y: records.map(r => r.run_name),
+        z: pageData.layer_matrix,
+        colorscale: 'YlOrRd',
+        colorbar: { title: 'max MA ratio' },
+        hovertemplate: 'run=%{y}<br>layer=%{x}<br>ratio=%{z:.2f}<extra></extra>'
+      }], {
+        title: 'Top Layer Heatmap',
+        paper_bgcolor: '#ffffff',
+        plot_bgcolor: '#ffffff',
+        xaxis: { tickangle: -40 },
+        margin: { l: 140, r: 20, t: 50, b: 180 }
+      }, { responsive: true, displaylogo: false });
+    }
+
+    function renderTable() {
+      const tbody = document.querySelector('#summaryTable tbody');
+      tbody.innerHTML = records.map(r => `
+        <tr>
+          <td>${r.run_name}</td>
+          <td class="muted">${r.checkpoint ? r.checkpoint.split(/[\\/]/).slice(-1)[0] : '-'}</td>
+          <td>${r.top_layer_name || '-'}</td>
+          <td>${r.top_layer_stage || '-'}</td>
+          <td>${fmt(r.top_layer_max_ma_ratio)}</td>
+          <td>${fmt(r.hires_max)}</td>
+          <td>${fmt(r.body_max)}</td>
+          <td>${fmt(r.skip_max)}</td>
+          <td>${fmt(r.decoder_max)}</td>
+        </tr>
+      `).join('');
+    }
+
+    buildStats();
+    renderStageBar();
+    renderStageScatter();
+    renderLayerHeatmap();
+    renderTable();
+  </script>
+</body>
+</html>
