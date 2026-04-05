@@ -1,0 +1,16 @@
+torch
+torchvision
+tqdm
+pyyaml
+pandas
+plotly
+streamlit
+streamlit-autorefresh
+diffusers
+transformers
+accelerate
+safetensors
+pillow
+matplotlib
+clean-fid
+numpy
