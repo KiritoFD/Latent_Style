@@ -168,9 +168,7 @@ def _swd_distance_from_projected(
 class AdaCUTObjective:
     def __init__(self, config: Dict) -> None:
         loss_cfg = config.get("loss", {})
-        legacy_w_swd = float(loss_cfg.get("w_swd", 0.0))
-        self.w_swd_micro = float(loss_cfg.get("w_swd_micro", 1.0 if legacy_w_swd <= 0.0 else 1.0))
-        self.w_swd_macro = float(loss_cfg.get("w_swd_macro", 10.0 if legacy_w_swd <= 0.0 else legacy_w_swd))
+        self.w_swd = float(loss_cfg.get("w_swd", 30.0))
         self.swd_use_high_freq = bool(loss_cfg.get("swd_use_high_freq", False))
         self.swd_hf_weight_ratio = max(0.0, float(loss_cfg.get("swd_hf_weight_ratio", 1.0)))
         self.swd_patch_sizes = [int(p) for p in loss_cfg.get("swd_patch_sizes", [3, 5])]
@@ -268,87 +266,80 @@ class AdaCUTObjective:
         target_style_id: torch.Tensor,
         xid_idx: torch.Tensor | None,
     ) -> torch.Tensor | None:
-        if xid_idx is None or xid_idx.numel() == 0 or (self.w_swd_micro <= 0.0 and self.w_swd_macro <= 0.0):
+        if xid_idx is None or xid_idx.numel() == 0 or self.w_swd <= 0.0:
             return None
-
         swd_x = pred.index_select(0, xid_idx)
         swd_y = target_style.index_select(0, xid_idx)
-        x_norm = F.instance_norm(swd_x)
-        y_norm = F.instance_norm(swd_y)
-        if swd_x.shape[1] >= 2:
-            x_struct = swd_x[:, :2, :, :]
-            y_struct = swd_y[:, :2, :, :]
+        x_struct, x_color = swd_x.chunk(2, dim=1)
+        y_struct, y_color = swd_y.chunk(2, dim=1)
+
+        x_struct = F.instance_norm(x_struct)
+        y_struct = F.instance_norm(y_struct)
+        x_color = F.instance_norm(x_color)
+        y_color = F.instance_norm(y_color)
+
+        if self.swd_use_high_freq:
+            hf_x = self._compute_fused_hf_feature(x_struct)
+            with torch.no_grad():
+                hf_y = self._compute_fused_hf_feature(y_struct)
+            ratio = max(0.0, float(self.swd_hf_weight_ratio))
+            x_struct_in = torch.cat([x_struct, hf_x * ratio], dim=1)
+            y_struct_in = torch.cat([y_struct, hf_y * ratio], dim=1)
         else:
-            x_struct = swd_x
-            y_struct = swd_y
+            x_struct_in = x_struct
+            y_struct_in = y_struct
+
+        struct_patches = [p for p in self.swd_patch_sizes if p <= 3]
+        color_patches = [p for p in self.swd_patch_sizes if p >= 3]
         indexed_style_ids = target_style_id.index_select(0, xid_idx)
 
-        loss_micro = torch.tensor(0.0, device=pred.device, dtype=torch.float32)
-        if self.w_swd_micro > 0.0:
-            micro_patches = [p for p in self.swd_patch_sizes if p <= 3]
-            x_hp = x_struct - F.avg_pool2d(x_struct, kernel_size=5, stride=1, padding=2)
-            y_hp = y_struct - F.avg_pool2d(y_struct, kernel_size=5, stride=1, padding=2)
-            x_micro_base = F.instance_norm(x_hp)
-            y_micro_base = F.instance_norm(y_hp)
-            if self.swd_use_high_freq:
-                hf_x = self._compute_fused_hf_feature(x_micro_base)
-                with torch.no_grad():
-                    hf_y = self._compute_fused_hf_feature(y_micro_base)
-                ratio = max(0.0, float(self.swd_hf_weight_ratio))
-                x_micro = torch.cat([x_micro_base, hf_x * ratio], dim=1)
-                y_micro = torch.cat([y_micro_base, hf_y * ratio], dim=1)
-            else:
-                x_micro = x_micro_base
-                y_micro = y_micro_base
+        loss_struct = torch.tensor(0.0, device=pred.device, dtype=torch.float32)
+        if struct_patches:
+            bank_struct = self._get_projection_bank(
+                int(x_struct_in.shape[1]),
+                device=x_struct_in.device,
+                dtype=x_struct_in.dtype,
+            )
+            loss_struct = calc_swd_loss(
+                x_struct_in,
+                y_struct_in,
+                indexed_style_ids,
+                struct_patches,
+                self.swd_num_projections,
+                projection_chunk_size=self.swd_projection_chunk_size,
+                distance_mode=self.swd_distance_mode,
+                cdf_num_bins=self.swd_cdf_num_bins,
+                cdf_tau=self.swd_cdf_tau,
+                cdf_sample_size=self.swd_cdf_sample_size,
+                cdf_bin_chunk_size=self.swd_cdf_bin_chunk_size,
+                cdf_sample_chunk_size=self.swd_cdf_sample_chunk_size,
+                projection_bank=bank_struct,
+            )
 
-            if micro_patches:
-                bank_micro = self._get_projection_bank(
-                    int(x_micro.shape[1]),
-                    device=pred.device,
-                    dtype=pred.dtype,
-                )
-                loss_micro = calc_swd_loss(
-                    x_micro,
-                    y_micro,
-                    indexed_style_ids,
-                    micro_patches,
-                    self.swd_num_projections,
-                    projection_chunk_size=self.swd_projection_chunk_size,
-                    distance_mode=self.swd_distance_mode,
-                    cdf_num_bins=self.swd_cdf_num_bins,
-                    cdf_tau=self.swd_cdf_tau,
-                    cdf_sample_size=self.swd_cdf_sample_size,
-                    projection_bank=bank_micro,
-                )
+        loss_color = torch.tensor(0.0, device=pred.device, dtype=torch.float32)
+        if color_patches:
+            bank_color = self._get_projection_bank(
+                int(x_color.shape[1]),
+                device=x_color.device,
+                dtype=x_color.dtype,
+            )
+            loss_color = calc_swd_loss(
+                x_color,
+                y_color,
+                indexed_style_ids,
+                color_patches,
+                self.swd_num_projections,
+                projection_chunk_size=self.swd_projection_chunk_size,
+                distance_mode=self.swd_distance_mode,
+                cdf_num_bins=self.swd_cdf_num_bins,
+                cdf_tau=self.swd_cdf_tau,
+                cdf_sample_size=self.swd_cdf_sample_size,
+                cdf_bin_chunk_size=self.swd_cdf_bin_chunk_size,
+                cdf_sample_chunk_size=self.swd_cdf_sample_chunk_size,
+                projection_bank=bank_color,
+            )
 
-        loss_macro = torch.tensor(0.0, device=pred.device, dtype=torch.float32)
-        if self.w_swd_macro > 0.0:
-            macro_patches = [p for p in self.swd_patch_sizes if p >= 11]
-            if macro_patches:
-                x_color_lp = F.avg_pool2d(swd_x, kernel_size=5, stride=1, padding=2)
-                y_color_lp = F.avg_pool2d(swd_y, kernel_size=5, stride=1, padding=2)
-                x_macro = F.instance_norm(x_color_lp)
-                y_macro = F.instance_norm(y_color_lp)
-                bank_macro = self._get_projection_bank(
-                    int(x_macro.shape[1]),
-                    device=pred.device,
-                    dtype=pred.dtype,
-                )
-                loss_macro = calc_swd_loss(
-                    x_macro,
-                    y_macro,
-                    indexed_style_ids,
-                    macro_patches,
-                    self.swd_num_projections,
-                    projection_chunk_size=self.swd_projection_chunk_size,
-                    distance_mode=self.swd_distance_mode,
-                    cdf_num_bins=self.swd_cdf_num_bins,
-                    cdf_tau=self.swd_cdf_tau,
-                    cdf_sample_size=self.swd_cdf_sample_size,
-                    projection_bank=bank_macro,
-                )
-
-        return loss_micro * self.w_swd_micro + loss_macro * self.w_swd_macro
+        return (loss_struct + loss_color) * 0.5
 
     def _compute_color_term(
         self,
@@ -373,12 +364,8 @@ class AdaCUTObjective:
     ) -> torch.Tensor | None:
         if self.w_identity <= 0.0 or not id_mask.any():
             return None
-
-        # Relax identity on high frequencies while keeping low-frequency structure aligned.
-        pred_blur = F.avg_pool2d(pred, kernel_size=3, stride=1, padding=1)
-        content_blur = F.avg_pool2d(content, kernel_size=3, stride=1, padding=1)
-        pred_struct = F.instance_norm(pred_blur)
-        content_struct = F.instance_norm(content_blur)
+        pred_struct = F.instance_norm(pred)
+        content_struct = F.instance_norm(content)
         return _masked_l1_mean(pred_struct, content_struct, id_mask)
 
     def compute(
@@ -388,24 +375,20 @@ class AdaCUTObjective:
         target_style: torch.Tensor,
         target_style_id: torch.Tensor,
         source_style_id: torch.Tensor | None = None,
-        pred_override: torch.Tensor | None = None,
     ) -> Dict[str, torch.Tensor]:
         nvtx_enabled = bool(self.nsight_nvtx and content.is_cuda)
         id_mask = torch.zeros_like(target_style_id, dtype=torch.bool) if source_style_id is None else (source_style_id.long() == target_style_id.long())
         xid_mask = ~id_mask
         id_ratio = id_mask.float().mean()
 
-        if pred_override is None:
-            with self._nvtx_range("loss/pred", nvtx_enabled):
-                pred = model(
-                    content,
-                    style_id=target_style_id,
-                    step_size=1.0,
-                    style_strength=1.0,
-                    target_style_latent=target_style,
-                )
-        else:
-            pred = pred_override
+        with self._nvtx_range("loss/pred", nvtx_enabled):
+            pred = model(
+                content,
+                style_id=target_style_id,
+                step_size=1.0,
+                style_strength=1.0,
+                target_style_latent=target_style,
+            )
 
         content_cast = content.to(dtype=pred.dtype)
         target_cast = target_style.to(dtype=pred.dtype)
@@ -415,7 +398,7 @@ class AdaCUTObjective:
 
         ls = self._compute_swd_term(pred, target_cast, target_style_id, xid_idx)
         if ls is not None:
-            total = total + ls
+            total = total + self.w_swd * ls
             metrics["swd"] = ls.detach()
             metrics["_swd_raw"] = ls
 

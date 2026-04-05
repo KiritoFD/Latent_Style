@@ -11,13 +11,7 @@
     "num_groups": 4,
     "latent_scale_factor": 0.18215,
     "residual_gain": 1.5,
-    "style_spatial_pre_gain_16": 0.35,
-    "style_strength_default": 1.0,
-    "style_strength_step_curve": "linear",
-    "upsample_mode": "nearest",
-    "style_id_spatial_jitter_px": 0,
-    "upsample_blur": true,
-    "upsample_blur_kernel": "box3",
+    "style_modulator_type": "cross_attn",
     "style_attn_num_tokens": 64,
     "style_attn_num_heads": 4,
     "style_attn_sharpen_scale": 2.5,
@@ -25,39 +19,30 @@
     "hires_block_type": "conv",
     "body_block_type": "global_attn",
     "decoder_block_type": "conv",
-    "semantic_attn_temperature": 0.08,
-    "feature_attn_num_heads": 4,
     "window_attn_window_size": 8,
     "skip_fusion_mode": "add_proj",
-    "skip_routing_mode": "none",
-    "skip_naive_gain": 1.0,
+    "inject_gate_hires": 0,
+    "skip_routing_mode": "naive",
+    "skip_naive_gain": 0.15,
     "style_skip_content_retention_boost": 0.0,
-    "input_anchor_noise_std": 0.0,
-    "input_anchor_noise_eval": false,
-    "ablation_skip_clean": true,
-    "ablation_skip_blur": true,
-    "ablation_no_residual": true,
-    "ablation_no_residual_gain": 1.0,
-    "ablation_disable_spatial_prior": false,
-    "output_moment_match": false,
-    "output_moment_match_eps": 0.000001,
-    "output_moment_match_train_only": true
+    "inject_gate_decoder": 1,
+    "ablation_no_residual": false
   },
   "loss": {
-    "w_swd_micro": 0.0,
-    "w_swd_macro": 80.0,
     "swd_patch_sizes": [
-      11,
+      7,
       15,
       25
     ],
     "swd_batch_size": 64,
-    "w_color": 40,
+    "w_color": 40.0,
     "w_oob": 10.0,
     "oob_threshold": 3.0,
-    "w_identity": 5.0,
+    "w_identity": 8.0,
     "swd_use_high_freq": false,
-    "swd_hf_weight_ratio": 1.0
+    "swd_hf_weight_ratio": 1.0,
+    "w_swd_micro": 0.0,
+    "w_swd_macro": 20.0
   },
   "training": {
     "seed": 42,
@@ -66,9 +51,9 @@
     "weight_decay": 0.0001,
     "scheduler": "cosine",
     "grad_clip_norm": 1.0,
-    "num_epochs": 60,
-    "save_interval": 60,
-    "full_eval_interval": 60,
+    "num_epochs": 30,
+    "save_interval": 30,
+    "full_eval_interval": 30,
     "full_eval_on_last_epoch": true,
     "num_workers": 4,
     "persistent_workers": true,
@@ -135,7 +120,7 @@
     "virtual_length_multiplier": 1
   },
   "checkpoint": {
-    "save_dir": "../heavy_decode"
+    "save_dir": "../45_03_macro_dictator"
   },
   "inference": {
     "num_steps": 1,

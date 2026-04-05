@@ -6,14 +6,21 @@ import json
 from pathlib import Path
 
 
-SERIES_NAME = "45"
+SERIES_NAME = "46"
 
 FORCED_TRAINING_OVERRIDES = {
-    "batch_size":256,
-    "num_epochs": 30,
-    "save_interval": 30,
-    "full_eval_interval": 30,
+    "batch_size": 256,
+    "num_epochs": 80,
+    "save_interval": 40,
+    "full_eval_interval": 40,
     "full_eval_on_last_epoch": True,
+    "learning_rate": 1e-4,
+    "warmup_ratio": 0.125,
+    "warmup_start_factor": 0.0,
+}
+
+FORCED_LOSS_OVERRIDES = {
+    "swd_num_projections": 384,
 }
 
 
@@ -51,79 +58,128 @@ def _deep_update(dst: dict, src: dict) -> None:
 
 EXPERIMENTS: list[tuple[str, dict]] = [
     (
-        "01_golden_funnel",
+        "00_holy_grail",
         {
             "model": {
-                "ablation_no_residual": False,
-                "style_attn_temperature": 0.08,
-                "skip_routing_mode": "naive",
-                "skip_naive_gain": 0.15,
+                "ablation_no_residual": True,
+                "ablation_skip_clean": True,
+                "ablation_skip_blur": True,
+                "ablation_decoder_highpass": True,
+                "color_highway_gain": 0.5,
+                "semantic_attn_temperature": 0.08,
             },
             "loss": {
-                "w_identity": 8.0,
-                "swd_patch_sizes": [1, 3, 5, 11, 21],
-                "w_swd_micro": 1.0,
-                "w_swd_macro": 10.0,
-                "w_color": 50.0,
-                "w_oob": 10.0,
+                "swd_patch_sizes": [1, 3, 11, 15, 25],
+                "w_swd_micro": 5.0,
+                "w_swd_macro": 80.0,
             },
         },
     ),
     (
-        "02_naked_fusion",
+        "01_highway_cut",
         {
             "model": {
-                "ablation_no_residual": False,
-                "skip_routing_mode": "naive",
-                "skip_naive_gain": 0.15,
-                "style_attn_temperature": 0.08,
-                "ablation_disable_spatial_prior": True,
+                "ablation_no_residual": True,
+                "ablation_skip_clean": True,
+                "ablation_skip_blur": True,
+                "ablation_decoder_highpass": True,
+                "color_highway_gain": 0.0,
+                "semantic_attn_temperature": 0.08,
             },
             "loss": {
-                "w_identity": 8.0,
-                "swd_patch_sizes": [1, 3, 5, 11, 21],
-                "w_swd_micro": 1.0,
-                "w_swd_macro": 10.0,
-                "w_color": 50.0,
-                "w_oob": 10.0,
+                "swd_patch_sizes": [1, 3, 11, 15, 25],
+                "w_swd_micro": 5.0,
+                "w_swd_macro": 80.0,
             },
         },
     ),
     (
-        "03_macro_dictator",
+        "02_dirty_skip",
         {
             "model": {
-                "ablation_no_residual": False,
-                "skip_routing_mode": "naive",
-                "skip_naive_gain": 0.15,
-                "style_attn_temperature": 0.08,
+                "ablation_no_residual": True,
+                "ablation_skip_clean": False,
+                "ablation_skip_blur": False,
+                "ablation_decoder_highpass": True,
+                "color_highway_gain": 0.5,
+                "semantic_attn_temperature": 0.08,
             },
             "loss": {
-                "w_identity": 8.0,
-                "swd_patch_sizes": [7, 15, 25],
-                "w_swd_micro": 0.0,
-                "w_swd_macro": 20.0,
-                "w_color": 40.0,
-                "w_oob": 10.0,
+                "swd_patch_sizes": [1, 3, 11, 15, 25],
+                "w_swd_micro": 5.0,
+                "w_swd_macro": 80.0,
             },
         },
     ),
     (
-        "04_micro_rebel",
+        "03_decoder_usurpation",
         {
             "model": {
-                "ablation_no_residual": False,
-                "style_attn_temperature": 0.08,
-                "skip_routing_mode": "naive",
-                "skip_naive_gain": 0.15,
+                "ablation_no_residual": True,
+                "ablation_skip_clean": True,
+                "ablation_skip_blur": True,
+                "ablation_decoder_highpass": False,
+                "color_highway_gain": 0.5,
+                "semantic_attn_temperature": 0.08,
             },
             "loss": {
-                "w_identity": 8.0,
+                "swd_patch_sizes": [1, 3, 11, 15, 25],
+                "w_swd_micro": 5.0,
+                "w_swd_macro": 80.0,
+            },
+        },
+    ),
+    (
+        "04_muddy_routing",
+        {
+            "model": {
+                "ablation_no_residual": True,
+                "ablation_skip_clean": True,
+                "ablation_skip_blur": True,
+                "ablation_decoder_highpass": True,
+                "color_highway_gain": 0.5,
+                "semantic_attn_temperature": 0.5,
+            },
+            "loss": {
+                "swd_patch_sizes": [1, 3, 11, 15, 25],
+                "w_swd_micro": 5.0,
+                "w_swd_macro": 80.0,
+            },
+        },
+    ),
+    (
+        "05_micro_dictatorship",
+        {
+            "model": {
+                "ablation_no_residual": True,
+                "ablation_skip_clean": True,
+                "ablation_skip_blur": True,
+                "ablation_decoder_highpass": True,
+                "color_highway_gain": 0.5,
+                "semantic_attn_temperature": 0.08,
+            },
+            "loss": {
                 "swd_patch_sizes": [1, 3],
-                "w_swd_micro": 15.0,
+                "w_swd_micro": 80.0,
                 "w_swd_macro": 0.0,
-                "w_color": 40.0,
-                "w_oob": 10.0,
+            },
+        },
+    ),
+    (
+        "06_hard_anchor",
+        {
+            "model": {
+                "ablation_no_residual": False,
+                "ablation_skip_clean": True,
+                "ablation_skip_blur": True,
+                "ablation_decoder_highpass": True,
+                "color_highway_gain": 0.5,
+                "semantic_attn_temperature": 0.08,
+            },
+            "loss": {
+                "swd_patch_sizes": [1, 3, 11, 15, 25],
+                "w_swd_micro": 5.0,
+                "w_swd_macro": 80.0,
             },
         },
     ),
@@ -145,6 +201,7 @@ def generate(src_dir: Path, base_config_arg: str | None = None) -> list[str]:
         cfg.setdefault("training", {})
         _deep_update(cfg, patch)
         _deep_update(cfg["training"], FORCED_TRAINING_OVERRIDES)
+        _deep_update(cfg["loss"], FORCED_LOSS_OVERRIDES)
         if "w_swd_micro" in cfg["loss"] or "w_swd_macro" in cfg["loss"]:
             cfg["loss"].pop("w_swd", None)
         cfg["checkpoint"]["save_dir"] = f"../{SERIES_NAME}_{name}"
@@ -161,6 +218,8 @@ def generate(src_dir: Path, base_config_arg: str | None = None) -> list[str]:
 def _write_run_script(src_dir: Path, run_ids: list[str]) -> None:
     script_path = src_dir / f"{SERIES_NAME}.bat"
     final_epoch = int(FORCED_TRAINING_OVERRIDES["num_epochs"])
+    distill_epochs = 200
+    distill_tag = f"distill_epochs{distill_epochs}"
     with open(script_path, "w", encoding="utf-8") as f:
         f.write("@echo off\n")
         f.write("setlocal\n")
@@ -183,24 +242,41 @@ def _write_run_script(src_dir: Path, run_ids: list[str]) -> None:
         f.write("  if errorlevel 8 exit /b 8\n")
         f.write("  if exist \"%%~fD\" rmdir \"%%~fD\" /S /Q\n")
         f.write(")\n\n")
-        f.write("echo Move finished. Running batch distill eval...\n")
+        f.write("echo Move finished. Exporting pre-distill CSV summary...\n")
         f.write("cd /d \"%ROOT_DIR%\"\n")
-        f.write(f"uv run src/batch_distill_full_eval.py --exp_dir {SERIES_NAME}\n")
+        f.write(f"python import_summary_history_to_csv.py -i {SERIES_NAME} -o {SERIES_NAME}_pre_distill.csv\n")
         f.write("if %errorlevel% neq 0 exit /b %errorlevel%\n\n")
-        f.write("echo Distill/eval finished. Exporting CSV summary...\n")
+        f.write("echo Running batch distill + post-distill eval...\n")
+        f.write(
+            f"uv run src/batch_distill_full_eval.py --exp_dir {SERIES_NAME} --recursive --distill_mode tokenizer --distill_epochs {distill_epochs}\n"
+        )
+        f.write("if %errorlevel% neq 0 exit /b %errorlevel%\n\n")
+        f.write("echo Distill/eval finished. Exporting post-distill CSV summary...\n")
+        f.write(f"python import_summary_history_to_csv.py -i {SERIES_NAME} -o {SERIES_NAME}_post_distill.csv\n")
+        f.write("if %errorlevel% neq 0 exit /b %errorlevel%\n")
         f.write(f"python import_summary_history_to_csv.py -i {SERIES_NAME} -o {SERIES_NAME}.csv\n")
         f.write("if %errorlevel% neq 0 exit /b %errorlevel%\n\n")
-        f.write("echo Running MA probe per experiment...\n")
+        f.write("echo Running MA probe per experiment (base + tokenized)...\n")
         f.write(f"set \"FINAL_EPOCH={final_epoch:04d}\"\n")
+        f.write(f"set \"DISTILL_TAG={distill_tag}\"\n")
         f.write(f"for /d %%D in (\"%TARGET_DIR%\\{SERIES_NAME}_*\") do (\n")
         f.write("  if exist \"%%~fD\\epoch_%FINAL_EPOCH%.pt\" (\n")
-        f.write("    echo Probing %%~nxD with %%~fD\\epoch_%FINAL_EPOCH%.pt...\n")
-        f.write("    uv run src/probe_ma.py --checkpoint \"%%~fD\\epoch_%FINAL_EPOCH%.pt\" --num-samples 8 --json-out \"%%~fD\\ma_probe_epoch_%FINAL_EPOCH%.json\"\n")
-        f.write("    if %errorlevel% neq 0 exit /b %errorlevel%\n")
-        f.write("    uv run src/probe_ma_sweep.py --input-glob \"%%~fD\\ma_probe*.json\" --output-dir \"%%~fD\" --output-prefix ma_probe_view\n")
+        f.write("    echo Probing BASE %%~nxD with %%~fD\\epoch_%FINAL_EPOCH%.pt...\n")
+        f.write("    uv run src/probe_ma.py --checkpoint \"%%~fD\\epoch_%FINAL_EPOCH%.pt\" --num-samples 8 --json-out \"%%~fD\\ma_probe_base_epoch_%FINAL_EPOCH%.json\"\n")
         f.write("    if %errorlevel% neq 0 exit /b %errorlevel%\n")
         f.write("  ) else (\n")
-        f.write("    echo WARNING: checkpoint not found for %%~nxD at %%~fD\\epoch_%FINAL_EPOCH%.pt\n")
+        f.write("    echo WARNING: base checkpoint not found for %%~nxD at %%~fD\\epoch_%FINAL_EPOCH%.pt\n")
+        f.write("  )\n")
+        f.write("  if exist \"%%~fD\\tokenizer_distill\\epoch_%FINAL_EPOCH%_%DISTILL_TAG%\\epoch_%FINAL_EPOCH%_tokenized.pt\" (\n")
+        f.write("    echo Probing TOKENIZED %%~nxD with tokenizer_distill\\epoch_%FINAL_EPOCH%_%DISTILL_TAG%\\epoch_%FINAL_EPOCH%_tokenized.pt...\n")
+        f.write("    uv run src/probe_ma.py --checkpoint \"%%~fD\\tokenizer_distill\\epoch_%FINAL_EPOCH%_%DISTILL_TAG%\\epoch_%FINAL_EPOCH%_tokenized.pt\" --num-samples 8 --json-out \"%%~fD\\ma_probe_tokenized_epoch_%FINAL_EPOCH%.json\"\n")
+        f.write("    if %errorlevel% neq 0 exit /b %errorlevel%\n")
+        f.write("  ) else (\n")
+        f.write("    echo WARNING: tokenized checkpoint not found for %%~nxD at %%~fD\\tokenizer_distill\\epoch_%FINAL_EPOCH%_%DISTILL_TAG%\\epoch_%FINAL_EPOCH%_tokenized.pt\n")
+        f.write("  )\n")
+        f.write("  if exist \"%%~fD\\ma_probe*.json\" (\n")
+        f.write("    uv run src/probe_ma_sweep.py --input-glob \"%%~fD\\ma_probe*.json\" --output-dir \"%%~fD\" --output-prefix ma_probe_view\n")
+        f.write("    if %errorlevel% neq 0 exit /b %errorlevel%\n")
         f.write("  )\n")
         f.write(")\n\n")
         f.write("echo Building cross-experiment MA summary...\n")

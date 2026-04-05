@@ -104,7 +104,12 @@ def _has_summary_json(eval_dir: Path) -> bool:
     return any(eval_dir.glob("summary*.json"))
 
 
-def _has_distill_outputs(distill_out: Path, tokenized_eval_out: Path, epoch_name: str) -> bool:
+def _has_distill_outputs(distill_out: Path, tokenized_eval_out: Path, epoch_name: str, distill_mode: str) -> bool:
+    mode = str(distill_mode).strip().lower()
+    if mode == "cartridge":
+        expected_cartridge = distill_out / "cartridge.pt"
+        return expected_cartridge.exists()
+
     expected_ckpt = distill_out / f"{epoch_name}_tokenized.pt"
     expected_tokenizer = distill_out / "tokenizer.pt"
     if expected_ckpt.exists() or expected_tokenizer.exists():
@@ -161,42 +166,77 @@ def _process_experiment(*, src_dir: Path, exp_dir: Path, args: argparse.Namespac
         distill_tag = _distill_tag(int(args.distill_epochs))
         tokenized_eval_out = exp_dir / "full_eval" / f"{epoch_name}_tokenized_{distill_tag}"
         distill_out = distill_root / f"{epoch_name}_{distill_tag}"
-        if (not args.force_distill) and _has_distill_outputs(distill_out, tokenized_eval_out, epoch_name):
+        if (not args.force_distill) and _has_distill_outputs(
+            distill_out,
+            tokenized_eval_out,
+            epoch_name,
+            str(args.distill_mode),
+        ):
             print(f"[SKIP] distill outputs exist, resume from next epoch: {distill_out}")
             continue
 
         distill_out.mkdir(parents=True, exist_ok=True)
         tokenized_eval_out.mkdir(parents=True, exist_ok=True)
 
-        prob_cmd = [
-            "uv",
-            "run",
-            "python",
-            "prob.py",
-            "--checkpoint",
-            str(ckpt),
-            "--output_dir",
-            str(distill_out),
-            "--epochs",
-            str(int(args.distill_epochs)),
-            "--steps_per_epoch",
-            str(int(args.steps_per_epoch)),
-            "--batch_size",
-            str(int(args.batch_size)),
-            "--num_workers",
-            str(int(args.num_workers)),
-            "--run_full_eval",
-            "--full_eval_output",
-            str(tokenized_eval_out),
-        ]
-        if args.amp:
-            prob_cmd.append("--amp")
-        if args.channels_last:
-            prob_cmd.append("--channels_last")
-        if args.compile:
-            prob_cmd.append("--compile")
-
-        _run(prob_cmd, cwd=src_dir, dry_run=bool(args.dry_run))
+        mode = str(args.distill_mode).strip().lower()
+        if mode == "cartridge":
+            distill_cmd = [
+                "uv",
+                "run",
+                "python",
+                "distill_cartridge.py",
+                "--checkpoint",
+                str(ckpt),
+                "--output_dir",
+                str(distill_out),
+                "--epochs",
+                str(int(args.distill_epochs)),
+                "--steps_per_epoch",
+                str(int(args.steps_per_epoch)),
+                "--batch_size",
+                str(int(args.batch_size)),
+                "--num_workers",
+                str(int(args.num_workers)),
+                "--num_colors",
+                str(int(args.cartridge_num_colors)),
+            ]
+            if args.amp:
+                distill_cmd.append("--amp")
+            if args.channels_last:
+                distill_cmd.append("--channels_last")
+            if args.compile:
+                distill_cmd.append("--compile")
+            if args.run_full_eval_after_distill:
+                print("[WARN] --run_full_eval_after_distill is not supported in cartridge mode yet; skipping post-distill eval.")
+            _run(distill_cmd, cwd=src_dir, dry_run=bool(args.dry_run))
+        else:
+            prob_cmd = [
+                "uv",
+                "run",
+                "python",
+                "prob.py",
+                "--checkpoint",
+                str(ckpt),
+                "--output_dir",
+                str(distill_out),
+                "--epochs",
+                str(int(args.distill_epochs)),
+                "--steps_per_epoch",
+                str(int(args.steps_per_epoch)),
+                "--batch_size",
+                str(int(args.batch_size)),
+                "--num_workers",
+                str(int(args.num_workers)),
+            ]
+            if args.run_full_eval_after_distill:
+                prob_cmd.extend(["--run_full_eval", "--full_eval_output", str(tokenized_eval_out)])
+            if args.amp:
+                prob_cmd.append("--amp")
+            if args.channels_last:
+                prob_cmd.append("--channels_last")
+            if args.compile:
+                prob_cmd.append("--compile")
+            _run(prob_cmd, cwd=src_dir, dry_run=bool(args.dry_run))
 
 
 def main() -> None:
@@ -204,8 +244,8 @@ def main() -> None:
         description=(
             "Batch pipeline for experiment directories:\n"
             "1) Re-evaluate existing full_eval/epoch_* by reusing generated images\n"
-            "2) Distill tokenizer via src/prob.py\n"
-            "3) Run full_eval for distilled checkpoint\n"
+            "2) Distill artifact via src/prob.py (tokenizer) or src/distill_cartridge.py (cartridge)\n"
+            "3) Optionally run full_eval for distilled checkpoint (tokenizer mode)\n"
             "Supports recursive scan from a parent directory."
         )
     )
@@ -215,6 +255,9 @@ def main() -> None:
     parser.add_argument("--steps_per_epoch", type=int, default=500, help="prob.py --steps_per_epoch")
     parser.add_argument("--batch_size", type=int, default=256, help="prob.py --batch_size")
     parser.add_argument("--num_workers", type=int, default=0, help="prob.py --num_workers")
+    parser.add_argument("--distill_mode", type=str, default="tokenizer", choices=["tokenizer", "cartridge"])
+    parser.add_argument("--cartridge_num_colors", type=int, default=64, help="distill_cartridge.py --num_colors")
+    parser.add_argument("--skip_post_eval", action="store_true", help="Skip post-distillation full_eval step")
     parser.add_argument("--amp", action="store_true", help="Enable prob.py --amp")
     parser.add_argument("--channels_last", action="store_true", help="Enable prob.py --channels_last")
     parser.add_argument("--compile", action="store_true", help="Enable prob.py --compile")
@@ -224,6 +267,7 @@ def main() -> None:
     parser.add_argument("--only_epoch", type=str, default="", help="Run a single epoch dir name, e.g. epoch_0120")
     parser.add_argument("--dry_run", action="store_true", help="Print commands only")
     args = parser.parse_args()
+    args.run_full_eval_after_distill = bool(not args.skip_post_eval)
 
     src_dir = Path(__file__).resolve().parent
     exp_dir = _resolve_exp_dir(args.exp_dir, src_dir)
