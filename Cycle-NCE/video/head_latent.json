@@ -1,0 +1,16 @@
+{
+  "fps": 30.0,
+  "frame_count": 179,
+  "orig_size": [
+    1920,
+    1080
+  ],
+  "proc_size": [
+    256,
+    256
+  ],
+  "vae": "stabilityai/sd-vae-ft-mse",
+  "scaling_factor": 0.18215,
+  "dtype": "float16",
+  "source_video": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\head.mp4"
+}

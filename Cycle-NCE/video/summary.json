@@ -1,0 +1,21 @@
+{
+  "input_video": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\head.mp4",
+  "fps": 30.0,
+  "frame_count": 179,
+  "experiments": [
+    "cut_to_cezanne",
+    "cut_to_Hayao",
+    "cut_to_monet",
+    "cut_to_photo",
+    "cut_to_vangogh"
+  ],
+  "outputs": {
+    "cut_to_cezanne": "G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\video\\head_20260404_140655\\cut_to_cezanne.mp4",
+    "cut_to_Hayao": "G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\video\\head_20260404_140655\\cut_to_Hayao.mp4",
+    "cut_to_monet": "G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\video\\head_20260404_140655\\cut_to_monet.mp4",
+    "cut_to_photo": "G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\video\\head_20260404_140655\\cut_to_photo.mp4",
+    "cut_to_vangogh": "G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\video\\head_20260404_140655\\cut_to_vangogh.mp4"
+  },
+  "grid_video": "G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\video\\head_20260404_140655\\compare_orig_plus5_3x2.mp4",
+  "run_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\runs\\cut_5x5\\video\\head_20260404_140655"
+}

@@ -161,6 +161,10 @@ function clearError() {
     document.getElementById('errorContainer').innerHTML = '';
 }
 
+function showInfo(msg) {
+    document.getElementById('errorContainer').innerHTML = `<div class="info">${msg}</div>`;
+}
+
 function populateGroupCheckboxes(groups) {
     allGroups = new Set(Array.from(groups).sort());
     enabledGroups = new Set(Array.from(enabledGroups).filter(g => allGroups.has(g)));
@@ -773,6 +777,33 @@ function clearData() {
     renderRelatedOnly();
 }
 
+async function tryAutoloadDefaultCsv() {
+    const textarea = document.getElementById('csvInput');
+    if (!textarea || textarea.value.trim()) return;
+
+    const csvUrl = './freq.csv';
+    try {
+        const resp = await fetch(csvUrl, { cache: 'no-store' });
+        if (!resp.ok) {
+            throw new Error(`HTTP ${resp.status}`);
+        }
+        const text = await resp.text();
+        if (!text.trim()) {
+            throw new Error('CSV is empty');
+        }
+        textarea.value = text;
+        plotData();
+        showInfo('Auto-loaded ./freq.csv');
+    } catch (err) {
+        renderRelatedOnly();
+        const isFileProtocol = window.location.protocol === 'file:';
+        const hint = isFileProtocol
+            ? 'Browser blocked auto-loading local CSV under file://. Use Upload CSV, paste freq.csv, or open via a local server.'
+            : `Failed to auto-load ./freq.csv (${err.message}). Use Upload CSV or paste data manually.`;
+        showInfo(hint);
+    }
+}
+
 function appendCSVText(newText) {
     const textarea = document.getElementById('csvInput');
     const existingText = textarea.value.trim();
@@ -847,4 +878,5 @@ window.addEventListener('load', async () => {
     populateRelatedWorksCheckboxes();
     renderRelatedOnly();
     setupFileUpload();
+    await tryAutoloadDefaultCsv();
 });

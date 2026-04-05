@@ -15,6 +15,7 @@
     "style_attn_num_tokens": 64,
     "style_attn_num_heads": 4,
     "style_attn_sharpen_scale": 2.5,
+    "style_attn_temperature": 0.08,
     "hires_block_type": "conv",
     "body_block_type": "global_attn",
     "decoder_block_type": "conv",
@@ -36,15 +37,9 @@
     ],
     "swd_batch_size": 64,
     "w_color": 50,
+    "w_oob": 10.0,
+    "oob_threshold": 3.0,
     "w_identity": 0,
-    "color_mode": "latent_decoupled_adain",
-    "color_latent_channel_weights": [
-      2.0,
-      1.0,
-      1.0,
-      1.0
-    ],
-    "color_luma_range_weight": 5.0,
     "swd_use_high_freq": false,
     "swd_hf_weight_ratio": 1.0
   },

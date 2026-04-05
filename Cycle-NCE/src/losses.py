@@ -12,68 +12,21 @@ except ImportError:
     from model import LatentAdaCUT
 
 
-_DEFAULT_COLOR_CHANNEL_WEIGHTS = (2.0, 1.0, 1.0, 1.0)
-_DEFAULT_LUMA_QUANTILES = (0.1, 0.9)
+_DEFAULT_SD15_PSEUDO_RGB_FACTORS: tuple[tuple[float, ...], ...] = (
+    (0.298, 0.207, 0.208, 0.206),
+    (0.187, 0.286, 0.173, 0.262),
+    (-0.158, 0.189, 0.264, 0.225),
+)
+_RGB_TO_YUV_MATRIX: tuple[tuple[float, ...], ...] = (
+    (0.299, 0.587, 0.114),
+    (-0.147, -0.289, 0.436),
+    (0.615, -0.515, -0.100),
+)
 
 
-def _canonical_color_mode(mode: str) -> str:
-    m = str(mode).strip().lower()
-    if m in {"latent_decoupled_adain", "latent_adain", "decoupled", "scheme3", "proposal3", "v3"}:
-        return "latent_decoupled_adain"
-    return m
-
-
-def _resolve_color_channel_weights(
-    channels: int,
-    *,
-    device: torch.device,
-    dtype: torch.dtype,
-    latent_channel_weights: torch.Tensor | None,
-) -> torch.Tensor:
-    if latent_channel_weights is None:
-        if int(channels) == 4:
-            return torch.tensor(_DEFAULT_COLOR_CHANNEL_WEIGHTS, device=device, dtype=dtype)
-        return torch.ones((channels,), device=device, dtype=dtype)
-    ch_weights = latent_channel_weights.to(device=device, dtype=dtype)
-    if ch_weights.ndim != 1 or ch_weights.shape[0] != channels:
-        raise ValueError(
-            f"color_latent_channel_weights must be [C] and match latent channels C={channels}, "
-            f"got {tuple(ch_weights.shape)}"
-        )
-    return ch_weights
-
-
-def _resolve_luma_quantiles(luma_quantiles: tuple[float, float]) -> tuple[float, float]:
-    q_low = float(luma_quantiles[0]) if len(luma_quantiles) > 0 else _DEFAULT_LUMA_QUANTILES[0]
-    q_high = float(luma_quantiles[1]) if len(luma_quantiles) > 1 else _DEFAULT_LUMA_QUANTILES[1]
-    q_low = min(max(q_low, 0.0), 1.0)
-    q_high = min(max(q_high, 0.0), 1.0)
-    if q_low > q_high:
-        q_low, q_high = q_high, q_low
-    return q_low, q_high
-
-
-def _calc_luma_range_loss(
-    pred_low: torch.Tensor,
-    target_low: torch.Tensor,
-    *,
-    luma_quantiles: tuple[float, float],
-) -> torch.Tensor:
-    q_low, q_high = _resolve_luma_quantiles(luma_quantiles)
-    pred_luma = pred_low[:, 0].reshape(pred_low.shape[0], -1)
-    target_luma = target_low[:, 0].reshape(target_low.shape[0], -1)
-    n = int(pred_luma.shape[1])
-    if n <= 1:
-        return pred_low.new_zeros(())
-
-    low_idx = min(n - 1, max(0, int(round((n - 1) * q_low))))
-    high_idx = min(n - 1, max(0, int(round((n - 1) * q_high))))
-    pred_sorted, _ = torch.sort(pred_luma, dim=1)
-    with torch.no_grad():
-        target_sorted, _ = torch.sort(target_luma, dim=1)
-    pred_q = torch.stack([pred_sorted[:, low_idx], pred_sorted[:, high_idx]], dim=1)
-    target_q = torch.stack([target_sorted[:, low_idx], target_sorted[:, high_idx]], dim=1)
-    return F.mse_loss(pred_q, target_q)
+def exponential_oob_loss(z: torch.Tensor, threshold: float = 3.0) -> torch.Tensor:
+    excess = F.relu(z.abs() - float(threshold))
+    return (torch.exp(excess) - 1.0).mean()
 
 
 def _masked_l1_mean(pred: torch.Tensor, target: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
@@ -83,64 +36,25 @@ def _masked_l1_mean(pred: torch.Tensor, target: torch.Tensor, mask: torch.Tensor
 def calc_spatial_agnostic_color_loss(
     pred: torch.Tensor,
     target: torch.Tensor,
-    *,
-    mode: str = "latent_decoupled_adain",
-    eps: float = 1e-6,
-    latent_channel_weights: torch.Tensor | None = None,
-    luma_range_weight: float = 0.0,
-    luma_quantiles: tuple[float, float] = (0.1, 0.9),
-    pool: int = 4,
-    blur: bool = True,
 ) -> torch.Tensor:
-    m = _canonical_color_mode(mode)
     pred_f32 = pred.float()
     target_f32 = target.float()
-    if m != "latent_decoupled_adain":
+    if pred_f32.shape[1] != 4 or target_f32.shape[1] != 4:
         raise ValueError(
-            f"Unsupported color_mode '{mode}'. Only latent_decoupled_adain is kept in the src mainline."
+            f"YUV color loss expects 4 latent channels, got pred={pred_f32.shape[1]} target={target_f32.shape[1]}"
         )
-
-    pred_low = _lowfreq(pred_f32, pool=pool, blur=blur)
-    target_low = _lowfreq(target_f32, pool=pool, blur=blur)
-    pred_mean = pred_low.mean(dim=(2, 3))
-    pred_std = torch.sqrt(pred_low.var(dim=(2, 3), unbiased=False) + max(float(eps), 1e-8))
-    with torch.no_grad():
-        target_mean = target_low.mean(dim=(2, 3))
-        target_std = torch.sqrt(target_low.var(dim=(2, 3), unbiased=False) + max(float(eps), 1e-8))
-
-    ch_weights = _resolve_color_channel_weights(
-        int(pred_low.shape[1]),
-        device=pred_low.device,
-        dtype=pred_low.dtype,
-        latent_channel_weights=latent_channel_weights,
-    )
-    loss_mean = F.mse_loss(pred_mean, target_mean, reduction="none")
-    loss_std = F.mse_loss(pred_std, target_std, reduction="none")
-    weights = ch_weights.view(1, -1)
-    base_loss = (loss_mean * weights).mean() + (loss_std * weights).mean()
-
-    range_weight = max(0.0, float(luma_range_weight))
-    if range_weight <= 0.0 or pred_low.shape[1] < 1:
-        return base_loss
-
-    luma_range_loss = _calc_luma_range_loss(pred_low, target_low, luma_quantiles=luma_quantiles)
-    return base_loss + (range_weight * luma_range_loss)
-
-
-def _gaussian_blur(x: torch.Tensor) -> torch.Tensor:
-    c = int(x.shape[1])
-    k = x.new_tensor([[1.0, 2.0, 1.0], [2.0, 4.0, 2.0], [1.0, 2.0, 1.0]]) / 16.0
-    w = k.view(1, 1, 3, 3).expand(c, 1, 3, 3).contiguous()
-    return F.conv2d(x, w, padding=1, groups=c)
-
-
-def _lowfreq(x: torch.Tensor, pool: int = 4, blur: bool = True) -> torch.Tensor:
-    y = x.float()
-    if blur:
-        y = _gaussian_blur(y)
-    if int(pool) > 1:
-        y = F.avg_pool2d(y, kernel_size=int(pool), stride=int(pool))
-    return y
+    latent_yuv_factors = pred_f32.new_tensor(_RGB_TO_YUV_MATRIX) @ pred_f32.new_tensor(_DEFAULT_SD15_PSEUDO_RGB_FACTORS)
+    pred_yuv = torch.einsum("bc...,dc->bd...", pred_f32, latent_yuv_factors)
+    target_yuv = torch.einsum("bc...,dc->bd...", target_f32, latent_yuv_factors)
+    pred_mean = pred_yuv.mean(dim=(-2, -1))
+    target_mean = target_yuv.mean(dim=(-2, -1))
+    pred_std = pred_yuv.std(dim=(-2, -1))
+    target_std = target_yuv.std(dim=(-2, -1))
+    loss_brightness = F.mse_loss(pred_mean[:, 0], target_mean[:, 0])
+    loss_contrast = F.mse_loss(pred_std[:, 0], target_std[:, 0])
+    loss_tint = F.mse_loss(pred_mean[:, 1:], target_mean[:, 1:])
+    loss_saturation = F.mse_loss(pred_std[:, 1:], target_std[:, 1:])
+    return loss_brightness + loss_contrast + loss_tint + loss_saturation
 
 
 def calc_swd_loss(
@@ -254,7 +168,9 @@ def _swd_distance_from_projected(
 class AdaCUTObjective:
     def __init__(self, config: Dict) -> None:
         loss_cfg = config.get("loss", {})
-        self.w_swd = float(loss_cfg.get("w_swd", 30.0))
+        legacy_w_swd = float(loss_cfg.get("w_swd", 0.0))
+        self.w_swd_micro = float(loss_cfg.get("w_swd_micro", 1.0 if legacy_w_swd <= 0.0 else 1.0))
+        self.w_swd_macro = float(loss_cfg.get("w_swd_macro", 10.0 if legacy_w_swd <= 0.0 else legacy_w_swd))
         self.swd_use_high_freq = bool(loss_cfg.get("swd_use_high_freq", False))
         self.swd_hf_weight_ratio = max(0.0, float(loss_cfg.get("swd_hf_weight_ratio", 1.0)))
         self.swd_patch_sizes = [int(p) for p in loss_cfg.get("swd_patch_sizes", [3, 5])]
@@ -269,30 +185,11 @@ class AdaCUTObjective:
         self.swd_batch_size = int(loss_cfg.get("swd_batch_size", 0))
         self.w_identity = float(loss_cfg.get("w_identity", 2.0))
         self.w_color = float(loss_cfg.get("w_color", 0.0))
-        self.color_mode = _canonical_color_mode(str(loss_cfg.get("color_mode", "latent_decoupled_adain")))
-        self.color_eps = float(loss_cfg.get("color_eps", 1e-6))
-        raw_color_ch_weights = loss_cfg.get("color_latent_channel_weights", list(_DEFAULT_COLOR_CHANNEL_WEIGHTS))
-        self.color_latent_channel_weights = tuple(float(v) for v in raw_color_ch_weights)
-        self.color_luma_range_weight = float(loss_cfg.get("color_luma_range_weight", 2.0))
-        raw_luma_quantiles = loss_cfg.get("color_luma_quantiles", list(_DEFAULT_LUMA_QUANTILES))
-        if isinstance(raw_luma_quantiles, (list, tuple)) and len(raw_luma_quantiles) >= 2:
-            self.color_luma_quantiles = (float(raw_luma_quantiles[0]), float(raw_luma_quantiles[1]))
-        else:
-            self.color_luma_quantiles = _DEFAULT_LUMA_QUANTILES
-        self.color_legacy_pool = int(loss_cfg.get("color_legacy_pool", 4))
+        self.w_oob = float(loss_cfg.get("w_oob", 0.0))
+        self.oob_threshold = float(loss_cfg.get("oob_threshold", 3.0))
         self.nsight_nvtx = bool(config.get("training", {}).get("nsight_nvtx", False))
         self._projection_cache: Dict[tuple[int, int, int, str, str], torch.Tensor] = {}
-        self._color_weight_cache: Dict[tuple[str, str], torch.Tensor] = {}
         self._sobel_kernel_cache: Dict[tuple[int, str, str], tuple[torch.Tensor, torch.Tensor]] = {}
-
-    def _get_color_weight_tensor(self, *, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
-        key = (str(device), str(dtype))
-        cached = self._color_weight_cache.get(key)
-        if cached is not None:
-            return cached
-        t = torch.tensor(self.color_latent_channel_weights, device=device, dtype=dtype)
-        self._color_weight_cache[key] = t
-        return t
 
     def _get_projection_bank(self, channels: int, *, device: torch.device, dtype: torch.dtype) -> Dict[int, torch.Tensor]:
         bank: Dict[int, torch.Tensor] = {}
@@ -371,33 +268,78 @@ class AdaCUTObjective:
         target_style_id: torch.Tensor,
         xid_idx: torch.Tensor | None,
     ) -> torch.Tensor | None:
-        if xid_idx is None or xid_idx.numel() == 0 or self.w_swd <= 0.0:
+        if xid_idx is None or xid_idx.numel() == 0 or (self.w_swd_micro <= 0.0 and self.w_swd_macro <= 0.0):
             return None
+
         swd_x = pred.index_select(0, xid_idx)
         swd_y = target_style.index_select(0, xid_idx)
-        if self.swd_use_high_freq:
-            hf_x = self._compute_fused_hf_feature(swd_x)
-            with torch.no_grad():
-                hf_y = self._compute_fused_hf_feature(swd_y)
-            ratio = max(0.0, float(self.swd_hf_weight_ratio))
-            swd_x = torch.cat([swd_x, hf_x * ratio], dim=1)
-            swd_y = torch.cat([swd_y, hf_y * ratio], dim=1)
-        bank = self._get_projection_bank(int(swd_x.shape[1]), device=swd_x.device, dtype=swd_x.dtype)
-        return calc_swd_loss(
-            swd_x,
-            swd_y,
-            target_style_id.index_select(0, xid_idx),
-            self.swd_patch_sizes,
-            self.swd_num_projections,
-            projection_chunk_size=self.swd_projection_chunk_size,
-            distance_mode=self.swd_distance_mode,
-            cdf_num_bins=self.swd_cdf_num_bins,
-            cdf_tau=self.swd_cdf_tau,
-            cdf_sample_size=self.swd_cdf_sample_size,
-            cdf_bin_chunk_size=self.swd_cdf_bin_chunk_size,
-            cdf_sample_chunk_size=self.swd_cdf_sample_chunk_size,
-            projection_bank=bank,
-        )
+        x_struct, x_color = swd_x.chunk(2, dim=1)
+        y_struct, y_color = swd_y.chunk(2, dim=1)
+
+        x_struct = F.instance_norm(x_struct)
+        y_struct = F.instance_norm(y_struct)
+        x_color = F.instance_norm(x_color)
+        y_color = F.instance_norm(y_color)
+        indexed_style_ids = target_style_id.index_select(0, xid_idx)
+
+        loss_struct = torch.tensor(0.0, device=pred.device, dtype=torch.float32)
+        if self.w_swd_micro > 0.0:
+            if self.swd_use_high_freq:
+                hf_x = self._compute_fused_hf_feature(x_struct)
+                with torch.no_grad():
+                    hf_y = self._compute_fused_hf_feature(y_struct)
+                ratio = max(0.0, float(self.swd_hf_weight_ratio))
+                x_struct_in = torch.cat([x_struct, hf_x * ratio], dim=1)
+                y_struct_in = torch.cat([y_struct, hf_y * ratio], dim=1)
+            else:
+                x_struct_in = x_struct
+                y_struct_in = y_struct
+
+            struct_patches = [p for p in self.swd_patch_sizes if p <= 3]
+            if struct_patches:
+                bank_struct = self._get_projection_bank(
+                    int(x_struct_in.shape[1]),
+                    device=pred.device,
+                    dtype=pred.dtype,
+                )
+                loss_struct = calc_swd_loss(
+                    x_struct_in,
+                    y_struct_in,
+                    indexed_style_ids,
+                    struct_patches,
+                    self.swd_num_projections,
+                    projection_chunk_size=self.swd_projection_chunk_size,
+                    distance_mode=self.swd_distance_mode,
+                    cdf_num_bins=self.swd_cdf_num_bins,
+                    cdf_tau=self.swd_cdf_tau,
+                    cdf_sample_size=self.swd_cdf_sample_size,
+                    projection_bank=bank_struct,
+                )
+
+        loss_color = torch.tensor(0.0, device=pred.device, dtype=torch.float32)
+        if self.w_swd_macro > 0.0:
+            color_patches = [p for p in self.swd_patch_sizes if p >= 5]
+            if color_patches:
+                bank_color = self._get_projection_bank(
+                    int(x_color.shape[1]),
+                    device=pred.device,
+                    dtype=pred.dtype,
+                )
+                loss_color = calc_swd_loss(
+                    x_color,
+                    y_color,
+                    indexed_style_ids,
+                    color_patches,
+                    self.swd_num_projections,
+                    projection_chunk_size=self.swd_projection_chunk_size,
+                    distance_mode=self.swd_distance_mode,
+                    cdf_num_bins=self.swd_cdf_num_bins,
+                    cdf_tau=self.swd_cdf_tau,
+                    cdf_sample_size=self.swd_cdf_sample_size,
+                    projection_bank=bank_color,
+                )
+
+        return loss_struct * self.w_swd_micro + loss_color * self.w_swd_macro
 
     def _compute_color_term(
         self,
@@ -412,13 +354,6 @@ class AdaCUTObjective:
         return calc_spatial_agnostic_color_loss(
             pred_color,
             target_color,
-            mode=self.color_mode,
-            eps=self.color_eps,
-            latent_channel_weights=self._get_color_weight_tensor(device=pred_color.device, dtype=pred_color.dtype),
-            luma_range_weight=self.color_luma_range_weight,
-            luma_quantiles=self.color_luma_quantiles,
-            pool=self.color_legacy_pool,
-            blur=True,
         )
 
     def _compute_identity_term(
@@ -429,7 +364,13 @@ class AdaCUTObjective:
     ) -> torch.Tensor | None:
         if self.w_identity <= 0.0 or not id_mask.any():
             return None
-        return _masked_l1_mean(pred, content, id_mask)
+
+        # Relax identity on high frequencies while keeping low-frequency structure aligned.
+        pred_blur = F.avg_pool2d(pred, kernel_size=3, stride=1, padding=1)
+        content_blur = F.avg_pool2d(content, kernel_size=3, stride=1, padding=1)
+        pred_struct = F.instance_norm(pred_blur)
+        content_struct = F.instance_norm(content_blur)
+        return _masked_l1_mean(pred_struct, content_struct, id_mask)
 
     def compute(
         self,
@@ -461,7 +402,7 @@ class AdaCUTObjective:
 
         ls = self._compute_swd_term(pred, target_cast, target_style_id, xid_idx)
         if ls is not None:
-            total = total + self.w_swd * ls
+            total = total + ls
             metrics["swd"] = ls.detach()
             metrics["_swd_raw"] = ls
 
@@ -470,6 +411,12 @@ class AdaCUTObjective:
             total = total + self.w_color * lcol
             metrics["color"] = lcol.detach()
             metrics["_color_raw"] = lcol
+
+        if self.w_oob > 0.0:
+            loob = exponential_oob_loss(pred, threshold=self.oob_threshold)
+            total = total + self.w_oob * loob
+            metrics["oob"] = loob.detach()
+            metrics["_oob_raw"] = loob
 
         lid = self._compute_identity_term(pred, content_cast, id_mask)
         if lid is not None:
