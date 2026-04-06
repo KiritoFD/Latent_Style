@@ -64,7 +64,13 @@ def _strip_compile_prefix(state_dict: Dict[str, torch.Tensor]) -> Dict[str, torc
     return state_dict
 
 
-def _build_dataset(config: Dict, config_dir: Path, device: torch.device) -> AdaCUTLatentDataset:
+def _build_dataset(
+    config: Dict,
+    config_dir: Path,
+    device: torch.device,
+    *,
+    force_preload_to_gpu: bool = False,
+) -> AdaCUTLatentDataset:
     data_cfg = config.get("data", {})
     data_root = _resolve_path(str(data_cfg.get("data_root", "")), config_dir)
     if not data_root.exists():
@@ -76,7 +82,8 @@ def _build_dataset(config: Dict, config_dir: Path, device: torch.device) -> AdaC
         data_root=str(data_root),
         style_subdirs=style_subdirs,
         allow_hflip=bool(data_cfg.get("allow_hflip", False)),
-        preload_to_gpu=bool(data_cfg.get("preload_to_gpu", False)),
+        # Distillation should default to low VRAM footprint; preload only when explicitly requested.
+        preload_to_gpu=bool(force_preload_to_gpu),
         preload_max_vram_gb=float(data_cfg.get("preload_max_vram_gb", 0.0)),
         preload_reserve_ratio=float(data_cfg.get("preload_reserve_ratio", 0.35)),
         virtual_length_multiplier=int(data_cfg.get("virtual_length_multiplier", 1)),
@@ -188,13 +195,14 @@ def main() -> None:
     parser.add_argument("--output_dir", type=str, default="../cartridge_distill", help="Output directory")
     parser.add_argument("--epochs", type=int, default=200)
     parser.add_argument("--steps_per_epoch", type=int, default=500)
-    parser.add_argument("--batch_size", type=int, default=256)
+    parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=5e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-4)
     parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("--num_colors", type=int, default=64)
-    parser.add_argument("--amp", action="store_true")
-    parser.add_argument("--channels_last", action="store_true")
+    parser.add_argument("--force_preload_to_gpu", action="store_true")
+    parser.add_argument("--amp", action="store_true", help="Enable bf16 autocast on CUDA.")
+    parser.add_argument("--channels_last", action="store_true", help="Use channels_last for model/input tensors on CUDA.")
     parser.add_argument("--compile", action="store_true", help="torch.compile cartridge module")
     parser.add_argument("--run_full_eval", action="store_true", help="Reserved for future support")
     parser.add_argument("--full_eval_output", type=str, default="", help="Reserved for future support")
@@ -221,7 +229,14 @@ def main() -> None:
     logger.info("Device: %s", device)
 
     model = _build_model(ckpt, config, device)
-    dataset = _build_dataset(config, cfg_path.parent.resolve(), device)
+    if bool(args.channels_last) and device.type == "cuda":
+        model = model.to(memory_format=torch.channels_last)
+    dataset = _build_dataset(
+        config,
+        cfg_path.parent.resolve(),
+        device,
+        force_preload_to_gpu=bool(args.force_preload_to_gpu),
+    )
     loader = _build_loader(dataset, int(args.batch_size), int(args.num_workers), device)
     objective = AdaCUTObjective(config)
 

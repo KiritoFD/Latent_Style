@@ -41,6 +41,7 @@ _MODEL_CONFIG_DEFAULTS = {
     "skip_fusion_mode": "concat_conv",
     "skip_routing_mode": "normalized",
     "skip_naive_gain": 1.0,
+    "skip_residual_weight": 0.1,
     "style_skip_content_retention_boost": 0.0,
     "input_anchor_noise_std": 0.0,
     "input_anchor_noise_eval": False,
@@ -50,6 +51,8 @@ _MODEL_CONFIG_DEFAULTS = {
     "ablation_disable_spatial_prior": False,
     "ablation_skip_clean": True,
     "ablation_skip_blur": True,
+    "skip_bottleneck_channels": 16,
+    "skip_spatial_dropout_p": 0.15,
     "ablation_decoder_highpass": True,
     "color_highway_gain": 1.0,
     "output_moment_match": False,
@@ -407,7 +410,7 @@ class SemanticCrossAttn(nn.Module):
         self.to_q = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
         self.to_k = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
         self.to_v = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
-        self.gamma = nn.Parameter(torch.zeros(1, dim, 1, 1))
+        self.gamma = nn.Parameter(torch.ones(1, dim, 1, 1) * 0.1)
 
     def forward(
         self,
@@ -656,6 +659,7 @@ class LatentAdaCUT(nn.Module):
         skip_fusion_mode: str = "concat_conv",
         skip_routing_mode: str = "normalized",
         skip_naive_gain: float = 1.0,
+        skip_residual_weight: float = 0.1,
         style_skip_content_retention_boost: float = 0.0,
         input_anchor_noise_std: float = 0.0,
         input_anchor_noise_eval: bool = False,
@@ -664,6 +668,8 @@ class LatentAdaCUT(nn.Module):
         ablation_disable_spatial_prior: bool = False,
         ablation_skip_clean: bool = True,
         ablation_skip_blur: bool = True,
+        skip_bottleneck_channels: int = 16,
+        skip_spatial_dropout_p: float = 0.15,
         ablation_decoder_highpass: bool = True,
         color_highway_gain: float = 1.0,
         output_moment_match: bool = False,
@@ -708,6 +714,7 @@ class LatentAdaCUT(nn.Module):
             self.skip_routing_mode = "normalized"
         self.skip_disabled = self.skip_routing_mode == "none"
         self.skip_naive_gain = max(0.0, float(skip_naive_gain))
+        self.skip_residual_weight = max(0.0, float(skip_residual_weight))
         self.style_skip_content_retention_boost = max(0.0, min(1.0, float(style_skip_content_retention_boost)))
         self.input_anchor_noise_std = max(0.0, float(input_anchor_noise_std))
         self.input_anchor_noise_eval = bool(input_anchor_noise_eval)
@@ -722,6 +729,8 @@ class LatentAdaCUT(nn.Module):
         self.ablation_disable_spatial_prior = bool(ablation_disable_spatial_prior)
         self.ablation_skip_clean = bool(ablation_skip_clean)
         self.ablation_skip_blur = bool(ablation_skip_blur)
+        self.skip_bottleneck_channels = max(1, int(skip_bottleneck_channels))
+        self.skip_spatial_dropout_p = max(0.0, min(1.0, float(skip_spatial_dropout_p)))
         self.ablation_decoder_highpass = bool(ablation_decoder_highpass)
         self.color_highway_gain = float(color_highway_gain)
         self.output_moment_match = bool(output_moment_match)
@@ -810,6 +819,14 @@ class LatentAdaCUT(nn.Module):
                 mode=self.skip_routing_mode,
                 content_retention_boost=self.style_skip_content_retention_boost,
             )
+        squeeze_channels = max(1, min(self.lift_channels, self.skip_bottleneck_channels))
+        self.skip_squeeze = nn.Sequential(
+            nn.Conv2d(self.lift_channels, squeeze_channels, kernel_size=1, stride=1, padding=0, bias=False),
+            nn.InstanceNorm2d(squeeze_channels, affine=False),
+            nn.SiLU(),
+            nn.Conv2d(squeeze_channels, self.lift_channels, kernel_size=1, stride=1, padding=0, bias=False),
+        )
+        self.skip_spatial_dropout = nn.Dropout2d(p=self.skip_spatial_dropout_p)
         self.decoder_blocks = nn.ModuleList(
             [
                 DecoderTextureBlock(
@@ -847,8 +864,14 @@ class LatentAdaCUT(nn.Module):
             else:
                 k = torch.ones((3, 3), dtype=torch.float32) / 9.0
             self.register_buffer("_upsample_blur_kernel", k.view(1, 1, 3, 3), persistent=False)
+            self.register_buffer(
+                "_upsample_blur_kernel_body",
+                k.view(1, 1, 3, 3).repeat(self.body_channels, 1, 1, 1).contiguous(),
+                persistent=False,
+            )
         else:
             self.register_buffer("_upsample_blur_kernel", torch.empty(0), persistent=False)
+            self.register_buffer("_upsample_blur_kernel_body", torch.empty(0), persistent=False)
         self._upsample_blur_kernel_cache: dict[tuple[int, str], torch.Tensor] = {}
         total_blocks = self.num_hires_blocks + self.num_res_blocks + self.num_decoder_blocks
         init_gains = torch.linspace(-2.0, 1.0, max(1, total_blocks))
@@ -939,14 +962,16 @@ class LatentAdaCUT(nn.Module):
             skip_processed = F.instance_norm(skip_processed)
         if self.ablation_skip_blur:
             skip_processed = F.avg_pool2d(skip_processed, kernel_size=3, stride=1, padding=1)
+        skip_processed = self.skip_squeeze(skip_processed)
+        skip_processed = self.skip_spatial_dropout(skip_processed)
 
         if self.skip_fusion_mode == "add_proj":
             h_base = self.skip_up_proj(h_up)
-            skip_base = self.skip_src_proj(skip_processed)
+            skip_base = self.skip_src_proj(skip_processed) * self.skip_residual_weight
             h_base.add_(skip_base)
             return self.skip_fusion(h_base)
 
-        return self.skip_fusion(torch.cat([h_up, skip_processed], dim=1))
+        return self.skip_fusion(torch.cat([h_up, skip_processed * self.skip_residual_weight], dim=1))
 
     def _resolve_style_strength(self, style_strength: float | None) -> float:
         if style_strength is None:
@@ -1002,15 +1027,18 @@ class LatentAdaCUT(nn.Module):
         b, c, _, _ = h.shape
         if c <= 0 or b <= 0:
             return h
-        key = (int(c), str(h.device))
-        kernel = self._upsample_blur_kernel_cache.get(key)
-        if kernel is None:
-            kernel = (
-                self._upsample_blur_kernel.to(device=h.device, dtype=torch.float32)
-                .repeat(c, 1, 1, 1)
-                .contiguous()
-            )
-            self._upsample_blur_kernel_cache[key] = kernel
+        if c == self.body_channels and self._upsample_blur_kernel_body.numel() > 0:
+            kernel = self._upsample_blur_kernel_body.to(device=h.device, dtype=torch.float32)
+        else:
+            key = (int(c), str(h.device))
+            kernel = self._upsample_blur_kernel_cache.get(key)
+            if kernel is None:
+                kernel = (
+                    self._upsample_blur_kernel.to(device=h.device, dtype=torch.float32)
+                    .repeat(c, 1, 1, 1)
+                    .contiguous()
+                )
+                self._upsample_blur_kernel_cache[key] = kernel
         h_dtype = h.dtype
         if h.device.type == "cuda":
             with torch.amp.autocast("cuda", enabled=False):
@@ -1416,6 +1444,7 @@ def build_model_from_config(
         skip_fusion_mode=str(model_cfg.get("skip_fusion_mode", _MODEL_CONFIG_DEFAULTS["skip_fusion_mode"])),
         skip_routing_mode=skip_mode,
         skip_naive_gain=float(model_cfg.get("skip_naive_gain", _MODEL_CONFIG_DEFAULTS["skip_naive_gain"])),
+        skip_residual_weight=float(model_cfg.get("skip_residual_weight", _MODEL_CONFIG_DEFAULTS["skip_residual_weight"])),
         style_skip_content_retention_boost=float(model_cfg.get("style_skip_content_retention_boost", _MODEL_CONFIG_DEFAULTS["style_skip_content_retention_boost"])),
         input_anchor_noise_std=float(model_cfg.get("input_anchor_noise_std", _MODEL_CONFIG_DEFAULTS["input_anchor_noise_std"])),
         input_anchor_noise_eval=bool(model_cfg.get("input_anchor_noise_eval", _MODEL_CONFIG_DEFAULTS["input_anchor_noise_eval"])),
@@ -1426,6 +1455,12 @@ def build_model_from_config(
         ),
         ablation_skip_clean=bool(model_cfg.get("ablation_skip_clean", _MODEL_CONFIG_DEFAULTS["ablation_skip_clean"])),
         ablation_skip_blur=bool(model_cfg.get("ablation_skip_blur", _MODEL_CONFIG_DEFAULTS["ablation_skip_blur"])),
+        skip_bottleneck_channels=int(
+            model_cfg.get("skip_bottleneck_channels", _MODEL_CONFIG_DEFAULTS["skip_bottleneck_channels"])
+        ),
+        skip_spatial_dropout_p=float(
+            model_cfg.get("skip_spatial_dropout_p", _MODEL_CONFIG_DEFAULTS["skip_spatial_dropout_p"])
+        ),
         ablation_decoder_highpass=bool(
             model_cfg.get("ablation_decoder_highpass", _MODEL_CONFIG_DEFAULTS["ablation_decoder_highpass"])
         ),

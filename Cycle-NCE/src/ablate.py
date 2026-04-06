@@ -183,6 +183,67 @@ EXPERIMENTS: list[tuple[str, dict]] = [
             },
         },
     ),
+    (
+        "07_rebuild_holy_grail",
+        {
+            "model": {
+                "ablation_no_residual": True,
+                "ablation_skip_clean": True,
+                "ablation_skip_blur": True,
+                "ablation_decoder_highpass": False,
+                "color_highway_gain": 1.0,
+                "semantic_attn_temperature": 0.1,
+            },
+            "loss": {
+                "w_identity": 3.0,
+                "idr": 0.25,
+                "w_swd_micro": 5.0,
+                "w_swd_macro": 40.0,
+                "swd_patch_sizes": [5, 7, 11, 15],
+            },
+        },
+    ),
+    (
+        "08_natural_spectrum_reset",
+        {
+            "model": {
+                "ablation_decoder_highpass": False,
+                "color_highway_gain": 1.0,
+                "semantic_attn_temperature": 0.08,
+            },
+            "loss": {
+                "w_color": 25.0,
+                "w_identity": 1.0,
+                "idr": 0.0,
+                "w_swd_micro": 15.0,
+                "w_swd_macro": 40.0,
+                "swd_patch_sizes": [3, 5, 7, 11, 15],
+            },
+        },
+    ),
+    (
+        "09_real_holy_grail",
+        {
+            "model": {
+                "num_hires_blocks": 1,
+                "ablation_decoder_highpass": False,
+                "color_highway_gain": 1.0,
+                "semantic_attn_temperature": 0.08,
+                "ablation_skip_clean": True,
+                "ablation_skip_blur": True,
+                "skip_spatial_dropout_p": 0.2,
+                "skip_residual_weight": 0.1,
+            },
+            "loss": {
+                "w_color": 25.0,
+                "w_identity": 5.0,
+                "idr": 0.0,
+                "w_swd_micro": 15.0,
+                "w_swd_macro": 40.0,
+                "swd_patch_sizes": [3, 5, 7, 11, 15],
+            },
+        },
+    ),
 ]
 
 
@@ -248,7 +309,7 @@ def _write_run_script(src_dir: Path, run_ids: list[str]) -> None:
         f.write("if %errorlevel% neq 0 exit /b %errorlevel%\n\n")
         f.write("echo Running batch distill + post-distill eval...\n")
         f.write(
-            f"uv run src/batch_distill_full_eval.py --exp_dir {SERIES_NAME} --recursive --distill_mode tokenizer --distill_epochs {distill_epochs}\n"
+            f"uv run src/batch_distill_full_eval.py --exp_dir {SERIES_NAME} --recursive --distill_mode tokenizer --distill_epochs {distill_epochs} --batch_size 32\n"
         )
         f.write("if %errorlevel% neq 0 exit /b %errorlevel%\n\n")
         f.write("echo Distill/eval finished. Exporting post-distill CSV summary...\n")

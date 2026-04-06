@@ -59,7 +59,7 @@
     "w_identity": 5.0,
     "swd_use_high_freq": false,
     "swd_hf_weight_ratio": 1.0,
-    "swd_num_projections": 512
+    "swd_num_projections": 384
   },
   "training": {
     "seed": 42,

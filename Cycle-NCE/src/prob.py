@@ -91,7 +91,8 @@ def _build_dataset(
         data_root=str(data_root),
         style_subdirs=style_subdirs,
         allow_hflip=bool(data_cfg.get("allow_hflip", False)),
-        preload_to_gpu=bool(force_preload_to_gpu or data_cfg.get("preload_to_gpu", False)),
+        # Distillation should be conservative with VRAM; only preload when explicitly forced.
+        preload_to_gpu=bool(force_preload_to_gpu),
         preload_max_vram_gb=float(data_cfg.get("preload_max_vram_gb", 0.0)),
         preload_reserve_ratio=float(data_cfg.get("preload_reserve_ratio", 0.35)),
         virtual_length_multiplier=int(data_cfg.get("virtual_length_multiplier", 1)),
