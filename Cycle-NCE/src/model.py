@@ -409,24 +409,27 @@ class SemanticCrossAttn(nn.Module):
     def __init__(
         self,
         dim: int,
-        num_groups: int = 8,
+        num_groups: int = 4,
         temperature: float = 0.08,
         paint_only: bool = False,
     ) -> None:
         super().__init__()
-        self.temperature = max(1e-4, float(temperature))
         self.paint_only = bool(paint_only)
-        self.norm = nn.GroupNorm(_resolve_group_count(dim, num_groups), dim, affine=False)
+        self.norm_x = nn.GroupNorm(_resolve_group_count(dim, num_groups), dim)
+        self.norm_s = nn.GroupNorm(_resolve_group_count(dim, num_groups), dim)
         self.to_q = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
         self.to_k = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
         self.to_v = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
-        self.gamma = nn.Parameter(torch.ones(1, dim, 1, 1) * 0.1)
+        self.log_temp = nn.Parameter(torch.tensor([math.log(max(1e-4, float(temperature)))], dtype=torch.float32))
+        self.gamma = nn.Parameter(torch.zeros(1, dim, 1, 1))
         self.last_attn: torch.Tensor | None = None
         self.gate_conv = nn.Sequential(
             nn.Conv2d(dim, dim, kernel_size=3, padding=1),
             nn.SiLU(),
             nn.Conv2d(dim, dim, kernel_size=1),
         )
+        nn.init.constant_(self.gate_conv[-1].bias, 1.0)
+        nn.init.zeros_(self.gate_conv[-1].weight)
 
     def forward(
         self,
@@ -442,28 +445,26 @@ class SemanticCrossAttn(nn.Module):
         if style_map.shape[-2:] != (h_dim, w_dim):
             raise ValueError(f"spatial mismatch: x={tuple(x.shape)} style_map={tuple(style_map.shape)}")
 
-        normalized = self.norm(x)
-        norm_s = self.norm(style_map)
-        q_dehydrated = F.instance_norm(normalized)
-        k_dehydrated = F.instance_norm(norm_s)
-        q = self.to_q(q_dehydrated).view(b, c, -1).transpose(1, 2)
-        k = self.to_k(k_dehydrated).view(b, c, -1)
-        v = self.to_v(norm_s).view(b, c, -1).transpose(1, 2)
+        nx = self.norm_x(x)
+        ns = self.norm_s(style_map)
 
-        q = F.normalize(q, p=2.0, dim=-1)
-        k = F.normalize(k, p=2.0, dim=1)
-        attn = torch.bmm(q, k) / self.temperature
+        q = self.to_q(nx).view(b, c, -1).transpose(1, 2)
+        k = self.to_k(ns).view(b, c, -1)
+        v = self.to_v(ns).view(b, c, -1).transpose(1, 2)
+
+        temp = torch.exp(self.log_temp).clamp(1e-4, 10.0)
+        scale = (c ** -0.5) / temp
+        attn = torch.bmm(q, k) * scale
         attn = F.softmax(attn, dim=-1)
         self.last_attn = attn
         painted = torch.bmm(attn, v).transpose(1, 2).view(b, c, h_dim, w_dim)
-        painted_smoothed = F.avg_pool2d(painted, kernel_size=3, stride=1, padding=1)
 
         if self.paint_only:
-            return painted_smoothed
+            return painted
 
-        learned_gate = torch.sigmoid(self.gate_conv(normalized))
+        learned_gate = torch.sigmoid(self.gate_conv(nx))
         final_gate = gate if isinstance(gate, float) else gate.to(device=x.device, dtype=x.dtype)
-        delta = torch.tanh(painted_smoothed) * 3.0 * (1.0 + self.gamma) * learned_gate
+        delta = painted * (1.0 + self.gamma) * learned_gate
         return x + final_gate * delta
 
 
@@ -1012,9 +1013,8 @@ class LatentAdaCUT(nn.Module):
         if self.skip_disabled:
             return self.skip_fusion(self.skip_up_proj(h_up))
 
-        skip_32_clean = F.instance_norm(skip_32)
         skip_feat = self.skip_router(
-            skip_32_clean,
+            skip_32,
             style_code=style_code,
             gate=gate,
             naive_gain=self.skip_naive_gain,
