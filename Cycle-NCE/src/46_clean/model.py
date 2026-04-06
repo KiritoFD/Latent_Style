@@ -60,7 +60,6 @@ _MODEL_CONFIG_DEFAULTS = {
     "output_moment_match": False,
     "output_moment_match_eps": 1e-6,
     "output_moment_match_train_only": True,
-    "use_style_blender": False,
 }
 _LEGACY_MODEL_CONFIG_KEYS = {
     "use_decoder_adagn",
@@ -406,16 +405,9 @@ class AttentionBlock(nn.Module):
 
 
 class SemanticCrossAttn(nn.Module):
-    def __init__(
-        self,
-        dim: int,
-        num_groups: int = 8,
-        temperature: float = 0.08,
-        paint_only: bool = False,
-    ) -> None:
+    def __init__(self, dim: int, num_groups: int = 8, temperature: float = 0.08) -> None:
         super().__init__()
         self.temperature = max(1e-4, float(temperature))
-        self.paint_only = bool(paint_only)
         self.norm = nn.GroupNorm(_resolve_group_count(dim, num_groups), dim, affine=False)
         self.to_q = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
         self.to_k = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
@@ -450,25 +442,9 @@ class SemanticCrossAttn(nn.Module):
         painted = torch.bmm(attn, v).transpose(1, 2).view(b, c, h_dim, w_dim)
         painted_smoothed = F.avg_pool2d(painted, kernel_size=3, stride=1, padding=1)
 
-        if self.paint_only:
-            return painted_smoothed
-
         final_gate = gate if isinstance(gate, float) else gate.to(device=x.device, dtype=x.dtype)
         delta = torch.tanh(painted_smoothed) * 3.0 * (1.0 + self.gamma)
         return x + final_gate * delta
-
-
-class StyleBlender(nn.Module):
-    def __init__(self, dim: int, num_groups: int = 8) -> None:
-        super().__init__()
-        self.norm = nn.GroupNorm(_resolve_group_count(dim, num_groups), dim)
-        self.conv = nn.Conv2d(dim, dim, kernel_size=1, stride=1, padding=0)
-        self.alpha = nn.Parameter(torch.ones(1) * 0.5)
-
-    def forward(self, content_feat: torch.Tensor, style_feat: torch.Tensor) -> torch.Tensor:
-        blend_ratio = torch.sigmoid(self.alpha).to(device=content_feat.device, dtype=content_feat.dtype)
-        blended = torch.lerp(content_feat, style_feat, blend_ratio)
-        return self.conv(self.norm(blended))
 
 
 def _build_feature_block(
@@ -707,7 +683,6 @@ class LatentAdaCUT(nn.Module):
         output_moment_match: bool = False,
         output_moment_match_eps: float = 1e-6,
         output_moment_match_train_only: bool = True,
-        use_style_blender: bool = False,
     ) -> None:
         super().__init__()
         self.latent_channels = int(latent_channels)
@@ -771,7 +746,6 @@ class LatentAdaCUT(nn.Module):
         self.output_moment_match = bool(output_moment_match)
         self.output_moment_match_eps = max(1e-8, float(output_moment_match_eps))
         self.output_moment_match_train_only = bool(output_moment_match_train_only)
-        self.use_style_blender = bool(use_style_blender)
         if self.upsample_blur_kernel not in {"box3", "gaussian3"}:
             self.upsample_blur_kernel = "box3"
 
@@ -810,12 +784,10 @@ class LatentAdaCUT(nn.Module):
                     dim=self.body_channels,
                     num_groups=num_groups,
                     temperature=self.semantic_attn_temperature,
-                    paint_only=self.use_style_blender,
                 )
                 for _ in range(self.num_res_blocks)
             ]
         )
-        self.blender = StyleBlender(dim=self.body_channels, num_groups=num_groups) if self.use_style_blender else None
 
         # Decoder: 16 -> 32
         upsample_kwargs = {"scale_factor": 2, "mode": self.upsample_mode}
@@ -1171,7 +1143,6 @@ class LatentAdaCUT(nn.Module):
             gate_scale=0.0,
         )
         h = self.down(h)
-        content_feat_16 = h
         style_map_proj: torch.Tensor | None = None
         if override_palette is not None:
             style_map_proj = override_palette
@@ -1223,19 +1194,10 @@ class LatentAdaCUT(nn.Module):
             style_map_proj = style_spatial_16
 
         semantic_attn: torch.Tensor | None = None
-        if self.use_style_blender:
-            h_painted = content_feat_16
-            for block in self.body_blocks:
-                h_painted = block(h_painted, style_map=style_map_proj, gate=1.0)
-                semantic_attn = getattr(block, "last_attn", semantic_attn)
-            if self.blender is None:
-                raise RuntimeError("Style blender is enabled but not initialized.")
-            h_body = self.blender(content_feat_16, h_painted)
-        else:
-            for block in self.body_blocks:
-                h = block(h, style_map=style_map_proj, gate=1.0)
-                semantic_attn = getattr(block, "last_attn", semantic_attn)
-            h_body = h
+        for block in self.body_blocks:
+            h = block(h, style_map=style_map_proj, gate=1.0)
+            semantic_attn = getattr(block, "last_attn", semantic_attn)
+        h_body = h
         h = self.dec_up(h_body)
         h = self._apply_upsample_blur(h)
         # Project bottleneck channels into decoder width while keeping the clean
