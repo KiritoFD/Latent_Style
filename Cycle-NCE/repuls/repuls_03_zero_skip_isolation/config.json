@@ -40,7 +40,6 @@
     "ablation_no_residual_gain": 1.0,
     "ablation_disable_spatial_prior": false,
     "ablation_direct_delta_blend": true,
-    "raw_latent_splat_highway": true,
     "output_moment_match": false,
     "output_moment_match_eps": 1e-06,
     "output_moment_match_train_only": true,
@@ -69,11 +68,12 @@
     "swd_use_high_freq": false,
     "swd_hf_weight_ratio": 1.0,
     "idr": 0.0,
-    "swd_num_projections": 384
+    "swd_num_projections": 384,
+    "swd_distance_mode": "sort"
   },
   "training": {
     "seed": 42,
-    "batch_size": 256,
+    "batch_size": 320,
     "learning_rate": 0.0001,
     "weight_decay": 0.0001,
     "scheduler": "cosine",
@@ -147,7 +147,7 @@
     "virtual_length_multiplier": 1
   },
   "checkpoint": {
-    "save_dir": "../46_repulse"
+    "save_dir": "../repuls_03_zero_skip_isolation"
   },
   "inference": {
     "num_steps": 1,

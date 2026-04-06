@@ -38,12 +38,11 @@ def soft_repulsive_loss(
 ) -> torch.Tensor:
     mode = str(dist_mode).strip().lower()
     if mode == "mse":
-        diff = ((pred - content) ** 2).mean(dim=1)
+        diff = ((pred - content) ** 2).mean(dim=(1, 2, 3))
     else:
-        diff = (pred - content).abs().mean(dim=1)
+        diff = (pred - content).abs().mean(dim=(1, 2, 3))
     tau = max(float(temperature), 1e-4)
-    penalty = F.softplus((pred.new_tensor(float(margin)) - diff) / tau) * tau
-    return penalty.mean(dim=(1, 2))
+    return F.softplus((pred.new_tensor(float(margin)) - diff) / tau) * tau
 
 
 def _masked_l1_mean(pred: torch.Tensor, target: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:

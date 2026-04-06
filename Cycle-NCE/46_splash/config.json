@@ -54,6 +54,7 @@
     "w_repulsive": 25.0,
     "repulsive_margin": 0.8,
     "repulsive_temperature": 0.2,
+    "repulsive_mode": "l1",
     "swd_patch_sizes": [
       3,
       5,
@@ -69,7 +70,8 @@
     "swd_use_high_freq": false,
     "swd_hf_weight_ratio": 1.0,
     "idr": 0.0,
-    "swd_num_projections": 384
+    "swd_num_projections": 384,
+    "swd_distance_mode": "sort"
   },
   "training": {
     "seed": 42,
@@ -147,7 +149,7 @@
     "virtual_length_multiplier": 1
   },
   "checkpoint": {
-    "save_dir": "../46_repulse"
+    "save_dir": "../46_splash"
   },
   "inference": {
     "num_steps": 1,
