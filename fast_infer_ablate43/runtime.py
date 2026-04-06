@@ -3,6 +3,7 @@
 import argparse
 import importlib.util
 import json
+import sys
 from pathlib import Path
 from typing import Iterable
 
@@ -56,6 +57,9 @@ def _load_model_builder(model_py: Path):
     if spec is None or spec.loader is None:
         raise RuntimeError(f"Failed to load model module: {model_py}")
     mod = importlib.util.module_from_spec(spec)
+    # torch.compile / dynamo may try to import this module by name while tracing.
+    # Register it so importlib can resolve "ablate43_model" later.
+    sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
     build_fn = getattr(mod, "build_model_from_config", None)
     if build_fn is None:

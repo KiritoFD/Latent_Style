@@ -106,6 +106,8 @@ def _has_summary_json(eval_dir: Path) -> bool:
 
 def _has_distill_outputs(distill_out: Path, tokenized_eval_out: Path, epoch_name: str, distill_mode: str) -> bool:
     mode = str(distill_mode).strip().lower()
+    if mode == "style_map":
+        mode = "cartridge"
     if mode == "cartridge":
         expected_cartridge = distill_out / "cartridge.pt"
         return expected_cartridge.exists()
@@ -179,6 +181,8 @@ def _process_experiment(*, src_dir: Path, exp_dir: Path, args: argparse.Namespac
         tokenized_eval_out.mkdir(parents=True, exist_ok=True)
 
         mode = str(args.distill_mode).strip().lower()
+        if mode == "style_map":
+            mode = "cartridge"
         if mode == "cartridge":
             distill_cmd = [
                 "uv",
@@ -200,9 +204,11 @@ def _process_experiment(*, src_dir: Path, exp_dir: Path, args: argparse.Namespac
                 "--num_colors",
                 str(int(args.cartridge_num_colors)),
             ]
-            if args.amp:
+            use_amp = bool(args.amp or (not args.no_amp))
+            use_channels_last = bool(args.channels_last or (not args.no_channels_last))
+            if use_amp:
                 distill_cmd.append("--amp")
-            if args.channels_last:
+            if use_channels_last:
                 distill_cmd.append("--channels_last")
             if args.compile:
                 distill_cmd.append("--compile")
@@ -253,13 +259,20 @@ def main() -> None:
     parser.add_argument("--recursive", action="store_true", help="Recursively discover and process child experiment dirs")
     parser.add_argument("--distill_epochs", type=int, default=200, help="prob.py --epochs")
     parser.add_argument("--steps_per_epoch", type=int, default=500, help="prob.py --steps_per_epoch")
-    parser.add_argument("--batch_size", type=int, default=256, help="prob.py --batch_size")
+    parser.add_argument("--batch_size", type=int, default=64, help="Distillation batch size (prob.py/distill_cartridge.py)")
     parser.add_argument("--num_workers", type=int, default=0, help="prob.py --num_workers")
-    parser.add_argument("--distill_mode", type=str, default="tokenizer", choices=["tokenizer", "cartridge"])
+    parser.add_argument(
+        "--distill_mode",
+        type=str,
+        default="cartridge",
+        choices=["tokenizer", "cartridge", "style_map"],
+    )
     parser.add_argument("--cartridge_num_colors", type=int, default=64, help="distill_cartridge.py --num_colors")
     parser.add_argument("--skip_post_eval", action="store_true", help="Skip post-distillation full_eval step")
-    parser.add_argument("--amp", action="store_true", help="Enable prob.py --amp")
-    parser.add_argument("--channels_last", action="store_true", help="Enable prob.py --channels_last")
+    parser.add_argument("--amp", action="store_true", help="Force enable AMP")
+    parser.add_argument("--channels_last", action="store_true", help="Force enable channels_last")
+    parser.add_argument("--no_amp", action="store_true", help="Disable AMP in cartridge distillation")
+    parser.add_argument("--no_channels_last", action="store_true", help="Disable channels_last in cartridge distillation")
     parser.add_argument("--compile", action="store_true", help="Enable prob.py --compile")
     parser.add_argument("--skip_reuse_eval", action="store_true", help="Skip step 1")
     parser.add_argument("--skip_distill", action="store_true", help="Skip step 2/3")

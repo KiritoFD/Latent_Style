@@ -42,6 +42,7 @@ class AdaCUTLatentDataset(Dataset):
         data_root: str,
         style_subdirs: Sequence[str],
         allow_hflip: bool = True,
+        identity_ratio: float | None = None,
         preload_to_gpu: bool = False,
         preload_max_vram_gb: float = 0.0,
         preload_reserve_ratio: float = 0.35,
@@ -51,6 +52,7 @@ class AdaCUTLatentDataset(Dataset):
         self.data_root = Path(data_root)
         self.style_subdirs = list(style_subdirs)
         self.allow_hflip = bool(allow_hflip)
+        self.identity_ratio = None if identity_ratio is None else float(max(0.0, min(1.0, identity_ratio)))
         requested_preload_to_gpu = bool(preload_to_gpu)
         self.preload_max_vram_gb = max(0.0, float(preload_max_vram_gb))
         self.preload_reserve_ratio = max(0.0, min(0.95, float(preload_reserve_ratio)))
@@ -164,7 +166,24 @@ class AdaCUTLatentDataset(Dataset):
         
         self._cache_content_style_ids = torch.randint(0, n_styles, (N,), generator=g)
         # Uniform target sampling across all styles (including source style).
-        self._cache_target_style_ids = torch.randint(0, n_styles, (N,), generator=g)
+        if self.identity_ratio is None:
+            # Backward compatible behavior: uniform target sampling over all styles.
+            self._cache_target_style_ids = torch.randint(0, n_styles, (N,), generator=g)
+        else:
+            # Controlled identity ratio:
+            # - identity samples use target=source
+            # - non-identity samples sample uniformly from all other styles.
+            identity_mask = torch.rand(N, generator=g) < float(self.identity_ratio)
+            target_style_ids = self._cache_content_style_ids.clone()
+            if n_styles > 1:
+                non_id = ~identity_mask
+                non_id_count = int(non_id.sum().item())
+                if non_id_count > 0:
+                    rand_other = torch.randint(0, n_styles - 1, (non_id_count,), generator=g)
+                    src_non_id = self._cache_content_style_ids[non_id]
+                    adjusted = rand_other + (rand_other >= src_non_id).long()
+                    target_style_ids[non_id] = adjusted
+            self._cache_target_style_ids = target_style_ids
 
         # Random floats for selecting index within the chosen style
         self._cache_content_rands = torch.rand(N, generator=g)

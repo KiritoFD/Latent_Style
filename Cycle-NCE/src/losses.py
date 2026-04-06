@@ -33,6 +33,10 @@ def _masked_l1_mean(pred: torch.Tensor, target: torch.Tensor, mask: torch.Tensor
     return ((pred - target).abs().mean(dim=(1, 2, 3)) * mask.float()).sum() / mask.float().sum().clamp_min(1.0)
 
 
+def _masked_mse_mean(pred: torch.Tensor, target: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    return (((pred - target) ** 2).mean(dim=(1, 2, 3)) * mask.float()).sum() / mask.float().sum().clamp_min(1.0)
+
+
 def calc_spatial_agnostic_color_loss(
     pred: torch.Tensor,
     target: torch.Tensor,
@@ -273,8 +277,6 @@ class AdaCUTObjective:
 
         swd_x = pred.index_select(0, xid_idx)
         swd_y = target_style.index_select(0, xid_idx)
-        x_norm = F.instance_norm(swd_x)
-        y_norm = F.instance_norm(swd_y)
         if swd_x.shape[1] >= 2:
             x_struct = swd_x[:, :2, :, :]
             y_struct = swd_y[:, :2, :, :]
@@ -288,8 +290,9 @@ class AdaCUTObjective:
             micro_patches = [p for p in self.swd_patch_sizes if p <= 3]
             x_hp = x_struct - F.avg_pool2d(x_struct, kernel_size=5, stride=1, padding=2)
             y_hp = y_struct - F.avg_pool2d(y_struct, kernel_size=5, stride=1, padding=2)
-            x_micro_base = F.instance_norm(x_hp)
-            y_micro_base = F.instance_norm(y_hp)
+            # Keep raw high-pass energy so SWD can see true local mean/variance shifts.
+            x_micro_base = x_hp
+            y_micro_base = y_hp
             if self.swd_use_high_freq:
                 hf_x = self._compute_fused_hf_feature(x_micro_base)
                 with torch.no_grad():
@@ -327,8 +330,8 @@ class AdaCUTObjective:
             if macro_patches:
                 x_color_lp = F.avg_pool2d(swd_x, kernel_size=5, stride=1, padding=2)
                 y_color_lp = F.avg_pool2d(swd_y, kernel_size=5, stride=1, padding=2)
-                x_macro = F.instance_norm(x_color_lp)
-                y_macro = F.instance_norm(y_color_lp)
+                x_macro = x_color_lp
+                y_macro = y_color_lp
                 bank_macro = self._get_projection_bank(
                     int(x_macro.shape[1]),
                     device=pred.device,
@@ -374,12 +377,10 @@ class AdaCUTObjective:
         if self.w_identity <= 0.0 or not id_mask.any():
             return None
 
-        # Relax identity on high frequencies while keeping low-frequency structure aligned.
-        pred_blur = F.avg_pool2d(pred, kernel_size=3, stride=1, padding=1)
-        content_blur = F.avg_pool2d(content, kernel_size=3, stride=1, padding=1)
-        pred_struct = F.instance_norm(pred_blur)
-        content_struct = F.instance_norm(content_blur)
-        return _masked_l1_mean(pred_struct, content_struct, id_mask)
+        # Topology-only identity: remove style magnitude (mean/variance), keep spatial structure.
+        pred_struct = F.instance_norm(pred)
+        content_struct = F.instance_norm(content)
+        return _masked_mse_mean(pred_struct, content_struct, id_mask)
 
     def compute(
         self,
