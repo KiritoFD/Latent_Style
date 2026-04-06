@@ -6,11 +6,11 @@
     "style_dim": 160,
     "num_styles": 5,
     "num_hires_blocks": 1,
-    "num_res_blocks": 3,
+    "num_res_blocks": 4,
     "num_decoder_blocks": 2,
     "num_groups": 4,
     "latent_scale_factor": 0.18215,
-    "residual_gain": 1.0,
+    "residual_gain": 1.5,
     "style_spatial_pre_gain_16": 0.35,
     "style_strength_default": 1.0,
     "style_strength_step_curve": "linear",
@@ -29,8 +29,8 @@
     "feature_attn_num_heads": 4,
     "window_attn_window_size": 8,
     "skip_fusion_mode": "add_proj",
-    "skip_routing_mode": "naive",
-    "skip_naive_gain": 0.6,
+    "skip_routing_mode": "none",
+    "skip_naive_gain": 1.0,
     "style_skip_content_retention_boost": 0.0,
     "input_anchor_noise_std": 0.0,
     "input_anchor_noise_eval": false,
@@ -45,20 +45,21 @@
     "output_moment_match_eps": 1e-06,
     "output_moment_match_train_only": true,
     "ablation_decoder_highpass": false,
-    "color_highway_gain": 0.5,
+    "color_highway_gain": 0.0,
     "skip_spatial_dropout_p": 0.0,
-    "skip_residual_weight": 1.0
+    "skip_residual_weight": 1.0,
+    "use_style_blender": true
   },
   "loss": {
     "w_swd_unified": 80.0,
     "swd_patch_sizes": [
-      3,
       7,
-      15
+      15,
+      25
     ],
     "swd_batch_size": 64,
     "swd_distance_mode": "cdf",
-    "w_color": 20.0,
+    "w_color": 25.0,
     "w_oob": 10.0,
     "oob_threshold": 3.0,
     "w_identity": 40.0,
@@ -75,7 +76,7 @@
     "scheduler": "cosine",
     "grad_clip_norm": 1.0,
     "num_epochs": 120,
-    "save_interval": 40,
+    "save_interval": 20,
     "full_eval_interval": 40,
     "full_eval_on_last_epoch": true,
     "num_workers": 4,
@@ -143,7 +144,7 @@
     "virtual_length_multiplier": 1
   },
   "checkpoint": {
-    "save_dir": "../46_clean"
+    "save_dir": "../46_blend"
   },
   "inference": {
     "num_steps": 1,
