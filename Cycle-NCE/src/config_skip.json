@@ -50,7 +50,7 @@
     "skip_residual_weight": 1.0
   },
   "loss": {
-    "w_swd_unified": 80.0,
+    "w_swd_unified": 20.0,
     "swd_patch_sizes": [
       3,
       7,
@@ -58,10 +58,10 @@
     ],
     "swd_batch_size": 64,
     "swd_distance_mode": "cdf",
-    "w_color": 20.0,
-    "w_oob": 10.0,
+    "w_color": 5.0,
+    "w_oob": 2.0,
     "oob_threshold": 3.0,
-    "w_identity": 40.0,
+    "w_identity": 10.0,
     "swd_use_high_freq": false,
     "swd_hf_weight_ratio": 1.0,
     "idr": 0.0,

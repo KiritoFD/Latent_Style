@@ -443,13 +443,16 @@ class SemanticCrossAttn(nn.Module):
             raise ValueError(f"spatial mismatch: x={tuple(x.shape)} style_map={tuple(style_map.shape)}")
 
         normalized = self.norm(x)
+        norm_s = self.norm(style_map)
         q_dehydrated = F.instance_norm(normalized)
-        k_dehydrated = F.instance_norm(style_map)
+        k_dehydrated = F.instance_norm(norm_s)
         q = self.to_q(q_dehydrated).view(b, c, -1).transpose(1, 2)
         k = self.to_k(k_dehydrated).view(b, c, -1)
-        v = self.to_v(style_map).view(b, c, -1).transpose(1, 2)
+        v = self.to_v(norm_s).view(b, c, -1).transpose(1, 2)
 
-        attn = torch.bmm(q, k) * (c ** -0.5) / self.temperature
+        q = F.normalize(q, p=2.0, dim=-1)
+        k = F.normalize(k, p=2.0, dim=1)
+        attn = torch.bmm(q, k) / self.temperature
         attn = F.softmax(attn, dim=-1)
         self.last_attn = attn
         painted = torch.bmm(attn, v).transpose(1, 2).view(b, c, h_dim, w_dim)
@@ -475,6 +478,22 @@ class StyleBlender(nn.Module):
         blend_ratio = torch.sigmoid(self.alpha).to(device=content_feat.device, dtype=content_feat.dtype)
         blended = torch.lerp(content_feat, style_feat, blend_ratio)
         return self.conv(self.norm(blended))
+
+
+class SimpleResBlock(nn.Module):
+    def __init__(self, dim: int, num_groups: int = 8) -> None:
+        super().__init__()
+        groups = _resolve_group_count(dim, num_groups)
+        self.norm1 = nn.GroupNorm(groups, dim)
+        self.conv1 = nn.Conv2d(dim, dim, kernel_size=3, stride=1, padding=1)
+        self.norm2 = nn.GroupNorm(groups, dim)
+        self.conv2 = nn.Conv2d(dim, dim, kernel_size=3, stride=1, padding=1)
+        self.act = nn.SiLU()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        h = self.conv1(self.act(self.norm1(x)))
+        h = self.conv2(self.act(self.norm2(h)))
+        return x + h
 
 
 def _build_feature_block(
@@ -873,10 +892,9 @@ class LatentAdaCUT(nn.Module):
         self.skip_spatial_dropout = nn.Dropout2d(p=self.skip_spatial_dropout_p)
         self.decoder_blocks = nn.ModuleList(
             [
-                nn.Sequential(
-                    nn.Conv2d(self.lift_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
-                    nn.SiLU(),
-                    nn.Conv2d(self.lift_channels, self.lift_channels, kernel_size=3, stride=1, padding=1),
+                SimpleResBlock(
+                    dim=self.lift_channels,
+                    num_groups=num_groups,
                 )
                 for _ in range(self.num_decoder_blocks)
             ]
@@ -888,7 +906,6 @@ class LatentAdaCUT(nn.Module):
         self.dec_mod = NormFreeModulation(self.lift_channels, style_dim)
         self.dec_act = nn.SiLU()
         self.dec_out = nn.Conv2d(self.lift_channels, latent_channels, kernel_size=3, stride=1, padding=1)
-        self.style_map_proj = nn.Conv2d(self.latent_channels, self.body_channels, kernel_size=1, stride=1, padding=0)
         self.highway_proj = nn.Conv2d(
             self.body_channels,
             self.latent_channels,
@@ -1084,7 +1101,7 @@ class LatentAdaCUT(nn.Module):
         h: torch.Tensor,
     ) -> torch.Tensor:
         delta = self.dec_out(h) * self.latent_scale_factor * self.residual_gain
-        return delta
+        return torch.tanh(delta / 4.0) * 4.0
 
     def encode_style_id(self, style_id: torch.Tensor | int | None) -> torch.Tensor:
         if style_id is None:
@@ -1168,41 +1185,51 @@ class LatentAdaCUT(nn.Module):
         strength: float,
         target_style_latent: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        feat = x / max(self.latent_scale_factor, 1e-8)
-        h = self.enc_in_act(self.enc_in(feat))
-        h = self._run_style_blocks(
-            h,
+        feat_c = x / max(self.latent_scale_factor, 1e-8)
+        h_c = self.enc_in_act(self.enc_in(feat_c))
+        h_c = self._run_style_blocks(
+            h_c,
             blocks=self.hires_body,
             style_code=style_code,
             base_idx=0,
             gate_scale=0.0,
         )
-        skip_32 = h
-        h = self.down(h)
-        content_feat_16 = h
+        skip_32 = h_c
+        content_feat_16 = self.down(h_c)
         style_map_proj: torch.Tensor | None = None
+
         if override_palette is not None:
             style_map_proj = override_palette
-            if style_map_proj.device != h.device:
-                style_map_proj = style_map_proj.to(device=h.device)
-            if style_map_proj.dtype != h.dtype:
-                style_map_proj = style_map_proj.to(dtype=h.dtype)
-            if style_map_proj.shape[0] == 1 and h.shape[0] > 1:
-                style_map_proj = style_map_proj.expand(h.shape[0], -1, -1, -1)
-            elif style_map_proj.shape[0] != h.shape[0]:
+            if style_map_proj.device != content_feat_16.device:
+                style_map_proj = style_map_proj.to(device=content_feat_16.device)
+            if style_map_proj.dtype != content_feat_16.dtype:
+                style_map_proj = style_map_proj.to(dtype=content_feat_16.dtype)
+            if style_map_proj.shape[0] == 1 and content_feat_16.shape[0] > 1:
+                style_map_proj = style_map_proj.expand(content_feat_16.shape[0], -1, -1, -1)
+            elif style_map_proj.shape[0] != content_feat_16.shape[0]:
                 raise ValueError(
-                    f"override_palette batch mismatch: expected {h.shape[0]} or 1, got {style_map_proj.shape[0]}"
+                    "override_palette batch mismatch: "
+                    f"expected {content_feat_16.shape[0]} or 1, got {style_map_proj.shape[0]}"
                 )
             if style_map_proj.shape[1] == self.latent_channels:
-                style_map_proj = self.style_map_proj(style_map_proj)
+                feat_s = style_map_proj / max(self.latent_scale_factor, 1e-8)
+                h_s = self.enc_in_act(self.enc_in(feat_s))
+                h_s = self._run_style_blocks(
+                    h_s,
+                    blocks=self.hires_body,
+                    style_code=style_code,
+                    base_idx=0,
+                    gate_scale=0.0,
+                )
+                style_map_proj = self.down(h_s)
             elif style_map_proj.shape[1] != self.body_channels:
                 raise ValueError(
                     f"override_palette channels must be {self.body_channels} or {self.latent_channels}, got {style_map_proj.shape[1]}"
                 )
-            if style_map_proj.shape[-2:] != h.shape[-2:]:
+            if style_map_proj.shape[-2:] != content_feat_16.shape[-2:]:
                 style_map_proj = F.interpolate(
                     style_map_proj,
-                    size=h.shape[-2:],
+                    size=content_feat_16.shape[-2:],
                     mode="bilinear",
                     align_corners=False,
                 )
@@ -1211,23 +1238,25 @@ class LatentAdaCUT(nn.Module):
                 raise ValueError(
                     f"target_style_latent channels must be {self.latent_channels}, got {target_style_latent.shape[1]}"
                 )
-            if target_style_latent.device != h.device:
-                target_style_latent = target_style_latent.to(device=h.device)
-            if target_style_latent.dtype != h.dtype:
-                target_style_latent = target_style_latent.to(dtype=h.dtype)
+            if target_style_latent.device != content_feat_16.device:
+                target_style_latent = target_style_latent.to(device=content_feat_16.device)
+            if target_style_latent.dtype != content_feat_16.dtype:
+                target_style_latent = target_style_latent.to(dtype=content_feat_16.dtype)
 
-            style_map_resized = F.interpolate(
-                target_style_latent,
-                size=h.shape[-2:],
-                mode="bilinear",
-                align_corners=False,
+            feat_s = target_style_latent / max(self.latent_scale_factor, 1e-8)
+            h_s = self.enc_in_act(self.enc_in(feat_s))
+            h_s = self._run_style_blocks(
+                h_s,
+                blocks=self.hires_body,
+                style_code=style_code,
+                base_idx=0,
+                gate_scale=0.0,
             )
-            style_map_proj = self.style_map_proj(style_map_resized)
+            style_map_proj = self.down(h_s)
         else:
-            style_spatial_16 = self._prepare_spatial_map(style_maps.map_16, h)
+            style_spatial_16 = self._prepare_spatial_map(style_maps.map_16, content_feat_16)
             if style_spatial_16 is None:
                 raise ValueError("style spatial prior is required for id-only inference.")
-            # ID priors already live in bottleneck channel space, so they can feed the semantic painter directly.
             style_map_proj = style_spatial_16
 
         semantic_attn: torch.Tensor | None = None
@@ -1240,6 +1269,7 @@ class LatentAdaCUT(nn.Module):
                 raise RuntimeError("Style blender is enabled but not initialized.")
             h_body = self.blender(content_feat_16, h_painted)
         else:
+            h = content_feat_16
             for block in self.body_blocks:
                 h = block(h, style_map=style_map_proj, gate=1.0)
                 semantic_attn = getattr(block, "last_attn", semantic_attn)

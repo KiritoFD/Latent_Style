@@ -373,7 +373,7 @@ def main() -> None:
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f swd=%.4f rep=%.4f color=%.4f idt=%.4f idr=%.2f lr=%.2e data=%.1fs comp=%.1fs",
+            "Epoch %d/%d | loss=%.4f swd=%.4f rep=%.4f color=%.4f idt=%.4f idr=%.2f isr=%.3f aent=%.3f amax=%.3f warn=%.0f lr=%.2e data=%.1fs comp=%.1fs",
             epoch,
             trainer.num_epochs,
             metrics["loss"],
@@ -382,6 +382,10 @@ def main() -> None:
             metrics.get("color", 0.0),
             metrics.get("identity", 0.0),
             metrics.get("identity_ratio", 0.0),
+            metrics.get("id_swd_ratio", 0.0),
+            metrics.get("attn_entropy", 0.0),
+            metrics.get("attn_max_prob", 0.0),
+            metrics.get("health_warning_count", 0.0),
             metrics["lr"],
             metrics.get("data_time_sec", 0.0),
             metrics.get("compute_time_sec", 0.0),
