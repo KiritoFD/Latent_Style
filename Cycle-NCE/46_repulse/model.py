@@ -49,7 +49,6 @@ _MODEL_CONFIG_DEFAULTS = {
     "ablation_no_residual_gain": 1.0,
     "style_attn_temperature": 0.5,
     "ablation_disable_spatial_prior": False,
-    "ablation_direct_delta_blend": False,
     "ablation_skip_clean": True,
     "ablation_skip_blur": True,
     "skip_bottleneck_channels": 16,
@@ -669,7 +668,6 @@ class LatentAdaCUT(nn.Module):
         ablation_no_residual: bool = False,
         ablation_no_residual_gain: float = 1.0,
         ablation_disable_spatial_prior: bool = False,
-        ablation_direct_delta_blend: bool = False,
         ablation_skip_clean: bool = True,
         ablation_skip_blur: bool = True,
         skip_bottleneck_channels: int = 16,
@@ -731,7 +729,6 @@ class LatentAdaCUT(nn.Module):
         self.ablation_no_residual = bool(ablation_no_residual)
         self.ablation_no_residual_gain = max(0.0, float(ablation_no_residual_gain))
         self.ablation_disable_spatial_prior = bool(ablation_disable_spatial_prior)
-        self.ablation_direct_delta_blend = bool(ablation_direct_delta_blend)
         self.ablation_skip_clean = bool(ablation_skip_clean)
         self.ablation_skip_blur = bool(ablation_skip_blur)
         self.skip_bottleneck_channels = max(1, int(skip_bottleneck_channels))
@@ -1375,13 +1372,9 @@ class LatentAdaCUT(nn.Module):
         if self.ablation_disable_spatial_prior:
             spatial_prior = torch.zeros_like(spatial_prior)
 
-        soft_anchor = F.avg_pool2d(anchor, kernel_size=3, stride=1, padding=1)
-        if self.ablation_direct_delta_blend:
-            pred = soft_anchor + delta * float(step_size) * step_scale
-            return self._apply_output_moment_match(pred, target_style_latent)
-
         raw_alpha = self.alpha_predictor(delta)
         alpha_map = torch.sigmoid(raw_alpha + spatial_prior * 2.0)
+        soft_anchor = F.avg_pool2d(anchor, kernel_size=3, stride=1, padding=1)
         blended_delta = delta * alpha_map
         pred = soft_anchor + blended_delta * float(step_size) * step_scale
         return self._apply_output_moment_match(pred, target_style_latent)
@@ -1461,9 +1454,6 @@ def build_model_from_config(
         ablation_no_residual_gain=float(model_cfg.get("ablation_no_residual_gain", _MODEL_CONFIG_DEFAULTS["ablation_no_residual_gain"])),
         ablation_disable_spatial_prior=bool(
             model_cfg.get("ablation_disable_spatial_prior", _MODEL_CONFIG_DEFAULTS["ablation_disable_spatial_prior"])
-        ),
-        ablation_direct_delta_blend=bool(
-            model_cfg.get("ablation_direct_delta_blend", _MODEL_CONFIG_DEFAULTS["ablation_direct_delta_blend"])
         ),
         ablation_skip_clean=bool(model_cfg.get("ablation_skip_clean", _MODEL_CONFIG_DEFAULTS["ablation_skip_clean"])),
         ablation_skip_blur=bool(model_cfg.get("ablation_skip_blur", _MODEL_CONFIG_DEFAULTS["ablation_skip_blur"])),

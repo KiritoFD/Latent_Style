@@ -43,12 +43,13 @@
     "output_moment_match_eps": 1e-06,
     "output_moment_match_train_only": true,
     "ablation_decoder_highpass": false,
-    "color_highway_gain": 0.3,
+    "color_highway_gain": 0.5,
     "skip_spatial_dropout_p": 0.2,
     "skip_residual_weight": 0.1
   },
   "loss": {
-    "w_swd_unified": 50.0,
+    "w_swd_micro": 15.0,
+    "w_swd_macro": 40.0,
     "swd_patch_sizes": [
       3,
       5,

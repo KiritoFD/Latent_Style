@@ -142,7 +142,7 @@
     "virtual_length_multiplier": 1
   },
   "checkpoint": {
-    "save_dir": "../46_in-idt"
+    "save_dir": "../in-idt"
   },
   "inference": {
     "num_steps": 1,
