@@ -1,0 +1,1 @@
+epoch,loss,swd,color,oob,identity,identity_ratio,lr,data_time_sec,transfer_time_sec,fwd_loss_time_sec,backward_time_sec,optimizer_time_sec,step_overhead_time_sec,compute_time_sec,epoch_time_sec,samples_seen,samples_per_sec,compute_samples_per_sec

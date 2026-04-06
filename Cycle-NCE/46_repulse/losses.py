@@ -34,13 +34,8 @@ def soft_repulsive_loss(
     content: torch.Tensor,
     margin: float = 0.5,
     temperature: float = 0.1,
-    dist_mode: str = "l1",
 ) -> torch.Tensor:
-    mode = str(dist_mode).strip().lower()
-    if mode == "mse":
-        diff = ((pred - content) ** 2).mean(dim=(1, 2, 3))
-    else:
-        diff = (pred - content).abs().mean(dim=(1, 2, 3))
+    diff = (pred - content).abs().mean(dim=(1, 2, 3))
     tau = max(float(temperature), 1e-4)
     return F.softplus((pred.new_tensor(float(margin)) - diff) / tau) * tau
 
@@ -208,7 +203,6 @@ class AdaCUTObjective:
         self.w_repulsive = float(loss_cfg.get("w_repulsive", 0.0))
         self.repulsive_margin = float(loss_cfg.get("repulsive_margin", 0.5))
         self.repulsive_temperature = float(loss_cfg.get("repulsive_temperature", 0.1))
-        self.repulsive_mode = str(loss_cfg.get("repulsive_mode", "l1")).strip().lower()
         self.w_color = float(loss_cfg.get("w_color", 0.0))
         self.w_oob = float(loss_cfg.get("w_oob", 0.0))
         self.oob_threshold = float(loss_cfg.get("oob_threshold", 3.0))
@@ -456,7 +450,6 @@ class AdaCUTObjective:
             content,
             margin=self.repulsive_margin,
             temperature=self.repulsive_temperature,
-            dist_mode=self.repulsive_mode,
         )
         return (repulsive_per_sample * xid_mask.float()).sum() / xid_mask.float().sum().clamp_min(1.0)
 

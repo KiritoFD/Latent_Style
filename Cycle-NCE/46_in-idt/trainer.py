@@ -29,7 +29,6 @@ _TRAIN_LOG_COLUMNS = [
     "epoch",
     "loss",
     "swd",
-    "repulsive",
     "color",
     "oob",
     "identity",
@@ -429,7 +428,6 @@ class AdaCUTTrainer:
                 progress.set_postfix(
                     loss=f"{_get_avg('loss'):.4f}",
                     swd=f"{_get_avg('swd'):.4f}",
-                    rep=f"{_get_avg('repulsive'):.4f}",
                     color=f"{_get_avg('color'):.4f}",
                     idt=f"{_get_avg('identity'):.4f}",
                     idr=f"{_get_avg('identity_ratio'):.2f}",
@@ -475,7 +473,6 @@ class AdaCUTTrainer:
 
         metrics.setdefault("loss", 0.0)
         metrics.setdefault("swd", 0.0)
-        metrics.setdefault("repulsive", 0.0)
         metrics.setdefault("color", 0.0)
         metrics.setdefault("oob", 0.0)
         metrics.setdefault("identity", 0.0)
@@ -502,7 +499,6 @@ class AdaCUTTrainer:
                     int(epoch),
                     float(metrics.get("loss", 0.0)),
                     float(metrics.get("swd", 0.0)),
-                    float(metrics.get("repulsive", 0.0)),
                     float(metrics.get("color", 0.0)),
                     float(metrics.get("oob", 0.0)),
                     float(metrics.get("identity", 0.0)),

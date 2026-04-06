@@ -29,22 +29,6 @@ def exponential_oob_loss(z: torch.Tensor, threshold: float = 3.0) -> torch.Tenso
     return (torch.exp(excess) - 1.0).mean()
 
 
-def soft_repulsive_loss(
-    pred: torch.Tensor,
-    content: torch.Tensor,
-    margin: float = 0.5,
-    temperature: float = 0.1,
-    dist_mode: str = "l1",
-) -> torch.Tensor:
-    mode = str(dist_mode).strip().lower()
-    if mode == "mse":
-        diff = ((pred - content) ** 2).mean(dim=(1, 2, 3))
-    else:
-        diff = (pred - content).abs().mean(dim=(1, 2, 3))
-    tau = max(float(temperature), 1e-4)
-    return F.softplus((pred.new_tensor(float(margin)) - diff) / tau) * tau
-
-
 def _masked_l1_mean(pred: torch.Tensor, target: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     return ((pred - target).abs().mean(dim=(1, 2, 3)) * mask.float()).sum() / mask.float().sum().clamp_min(1.0)
 
@@ -205,10 +189,6 @@ class AdaCUTObjective:
         self.swd_cdf_sample_chunk_size = int(loss_cfg.get("swd_cdf_sample_chunk_size", 128))
         self.swd_batch_size = int(loss_cfg.get("swd_batch_size", 0))
         self.w_identity = float(loss_cfg.get("w_identity", 2.0))
-        self.w_repulsive = float(loss_cfg.get("w_repulsive", 0.0))
-        self.repulsive_margin = float(loss_cfg.get("repulsive_margin", 0.5))
-        self.repulsive_temperature = float(loss_cfg.get("repulsive_temperature", 0.1))
-        self.repulsive_mode = str(loss_cfg.get("repulsive_mode", "l1")).strip().lower()
         self.w_color = float(loss_cfg.get("w_color", 0.0))
         self.w_oob = float(loss_cfg.get("w_oob", 0.0))
         self.oob_threshold = float(loss_cfg.get("oob_threshold", 3.0))
@@ -443,23 +423,6 @@ class AdaCUTObjective:
         content_struct = F.instance_norm(content_luma)
         return _masked_mse_mean(pred_struct, content_struct, id_mask)
 
-    def _compute_repulsive_term(
-        self,
-        pred: torch.Tensor,
-        content: torch.Tensor,
-        xid_mask: torch.Tensor,
-    ) -> torch.Tensor | None:
-        if self.w_repulsive <= 0.0 or not xid_mask.any():
-            return None
-        repulsive_per_sample = soft_repulsive_loss(
-            pred,
-            content,
-            margin=self.repulsive_margin,
-            temperature=self.repulsive_temperature,
-            dist_mode=self.repulsive_mode,
-        )
-        return (repulsive_per_sample * xid_mask.float()).sum() / xid_mask.float().sum().clamp_min(1.0)
-
     def compute(
         self,
         model: LatentAdaCUT,
@@ -500,30 +463,20 @@ class AdaCUTObjective:
 
         lcol = self._compute_color_term(pred, target_cast, xid_idx)
         if lcol is not None:
-            lcol_weighted = self.w_color * lcol
-            total = total + lcol_weighted
-            metrics["color"] = lcol_weighted.detach()
+            total = total + self.w_color * lcol
+            metrics["color"] = lcol.detach()
             metrics["_color_raw"] = lcol
 
         if self.w_oob > 0.0:
             loob = exponential_oob_loss(pred, threshold=self.oob_threshold)
-            loob_weighted = self.w_oob * loob
-            total = total + loob_weighted
-            metrics["oob"] = loob_weighted.detach()
+            total = total + self.w_oob * loob
+            metrics["oob"] = loob.detach()
             metrics["_oob_raw"] = loob
-
-        lrepel = self._compute_repulsive_term(pred, content_cast, xid_mask)
-        if lrepel is not None:
-            lrepel_weighted = self.w_repulsive * lrepel
-            total = total + lrepel_weighted
-            metrics["repulsive"] = lrepel_weighted.detach()
-            metrics["_repulsive_raw"] = lrepel
 
         lid = self._compute_identity_term(pred, content_cast, id_mask)
         if lid is not None:
-            lid_weighted = self.w_identity * lid
-            total = total + lid_weighted
-            metrics["identity"] = lid_weighted.detach()
+            total = total + self.w_identity * lid
+            metrics["identity"] = lid.detach()
             metrics["_identity_raw"] = lid
 
         metrics["loss"] = total

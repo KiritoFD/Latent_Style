@@ -33,7 +33,6 @@ _ALLOWED_LOSS_KEYS = {
     "w_repulsive",
     "repulsive_margin",
     "repulsive_temperature",
-    "repulsive_mode",
     "w_swd",
     "w_swd_unified",
     "w_swd_micro",

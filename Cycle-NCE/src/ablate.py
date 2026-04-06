@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import argparse
 import copy
@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 
-SERIES_NAME = "46"
+SERIES_NAME = "repuls"
 
 FORCED_TRAINING_OVERRIDES = {
     "batch_size": 256,
@@ -19,8 +19,14 @@ FORCED_TRAINING_OVERRIDES = {
     "warmup_start_factor": 0.0,
 }
 
+FORCED_MODEL_OVERRIDES = {
+    "ablation_no_residual": False,
+    "ablation_direct_delta_blend": True,
+}
+
 FORCED_LOSS_OVERRIDES = {
     "swd_num_projections": 384,
+    "swd_distance_mode": "sort",
 }
 
 
@@ -31,9 +37,9 @@ def _load_base_config(src_dir: Path, base_config_arg: str | None) -> tuple[dict,
             base_path = (src_dir / base_path).resolve()
     else:
         candidates = [
+            (src_dir / "config_repulse.json").resolve(),
+            (src_dir / "config_in-idt.json").resolve(),
             (src_dir / "config.json").resolve(),
-            (src_dir / "config_p_1_5_9_15_hf_1p0.json").resolve(),
-            (src_dir.parent / "hf" / "config_p_1_5_9_15_hf_1p0.json").resolve(),
         ]
         base_path = next((p for p in candidates if p.exists()), candidates[-1])
     if not base_path.exists():
@@ -58,189 +64,90 @@ def _deep_update(dst: dict, src: dict) -> None:
 
 EXPERIMENTS: list[tuple[str, dict]] = [
     (
-        "00_holy_grail",
+        "00_l1_mean_filter",
+        {
+            "loss": {
+                "w_repulsive": 25.0,
+                "repulsive_margin": 0.8,
+                "repulsive_temperature": 0.2,
+                "repulsive_mode": "l1",
+                "w_swd_unified": 50.0,
+            },
+        },
+    ),
+    (
+        "01_mse_local_tear",
+        {
+            "loss": {
+                "w_repulsive": 30.0,
+                "repulsive_margin": 0.3,
+                "repulsive_temperature": 0.2,
+                "repulsive_mode": "mse",
+                "w_swd_unified": 50.0,
+            },
+        },
+    ),
+    (
+        "02_micro_mesh",
         {
             "model": {
-                "ablation_no_residual": True,
-                "ablation_skip_clean": True,
+                "skip_bottleneck_channels": 2,
+                "skip_spatial_dropout_p": 0.3,
                 "ablation_skip_blur": True,
-                "ablation_decoder_highpass": True,
-                "color_highway_gain": 0.5,
-                "semantic_attn_temperature": 0.08,
-            },
-            "loss": {
-                "swd_patch_sizes": [1, 3, 11, 15, 25],
-                "w_swd_micro": 5.0,
-                "w_swd_macro": 80.0,
             },
         },
     ),
     (
-        "01_highway_cut",
+        "03_zero_skip_isolation",
         {
             "model": {
-                "ablation_no_residual": True,
-                "ablation_skip_clean": True,
-                "ablation_skip_blur": True,
-                "ablation_decoder_highpass": True,
-                "color_highway_gain": 0.0,
-                "semantic_attn_temperature": 0.08,
-            },
-            "loss": {
-                "swd_patch_sizes": [1, 3, 11, 15, 25],
-                "w_swd_micro": 5.0,
-                "w_swd_macro": 80.0,
+                "skip_routing_mode": "none",
             },
         },
     ),
     (
-        "02_dirty_skip",
+        "04_subzero_one_hot",
         {
             "model": {
-                "ablation_no_residual": True,
-                "ablation_skip_clean": False,
-                "ablation_skip_blur": False,
-                "ablation_decoder_highpass": True,
-                "color_highway_gain": 0.5,
-                "semantic_attn_temperature": 0.08,
-            },
-            "loss": {
-                "swd_patch_sizes": [1, 3, 11, 15, 25],
-                "w_swd_micro": 5.0,
-                "w_swd_macro": 80.0,
+                "semantic_attn_temperature": 0.05,
+                "color_highway_gain": 0.2,
             },
         },
     ),
     (
-        "03_decoder_usurpation",
+        "05_highway_override",
         {
             "model": {
-                "ablation_no_residual": True,
-                "ablation_skip_clean": True,
-                "ablation_skip_blur": True,
-                "ablation_decoder_highpass": False,
-                "color_highway_gain": 0.5,
-                "semantic_attn_temperature": 0.08,
+                "color_highway_gain": 0.9,
             },
             "loss": {
-                "swd_patch_sizes": [1, 3, 11, 15, 25],
-                "w_swd_micro": 5.0,
-                "w_swd_macro": 80.0,
+                "w_repulsive": 20.0,
+                "repulsive_mode": "l1",
+                "swd_patch_sizes": [3, 5],
             },
         },
     ),
     (
-        "04_muddy_routing",
+        "06_structure_sacrifice",
         {
-            "model": {
-                "ablation_no_residual": True,
-                "ablation_skip_clean": True,
-                "ablation_skip_blur": True,
-                "ablation_decoder_highpass": True,
-                "color_highway_gain": 0.5,
-                "semantic_attn_temperature": 0.5,
-            },
             "loss": {
-                "swd_patch_sizes": [1, 3, 11, 15, 25],
-                "w_swd_micro": 5.0,
-                "w_swd_macro": 80.0,
-            },
-        },
-    ),
-    (
-        "05_micro_dictatorship",
-        {
-            "model": {
-                "ablation_no_residual": True,
-                "ablation_skip_clean": True,
-                "ablation_skip_blur": True,
-                "ablation_decoder_highpass": True,
-                "color_highway_gain": 0.5,
-                "semantic_attn_temperature": 0.08,
-            },
-            "loss": {
-                "swd_patch_sizes": [1, 3],
-                "w_swd_micro": 80.0,
-                "w_swd_macro": 0.0,
-            },
-        },
-    ),
-    (
-        "06_hard_anchor",
-        {
-            "model": {
-                "ablation_no_residual": False,
-                "ablation_skip_clean": True,
-                "ablation_skip_blur": True,
-                "ablation_decoder_highpass": True,
-                "color_highway_gain": 0.5,
-                "semantic_attn_temperature": 0.08,
-            },
-            "loss": {
-                "swd_patch_sizes": [1, 3, 11, 15, 25],
-                "w_swd_micro": 5.0,
-                "w_swd_macro": 80.0,
-            },
-        },
-    ),
-    (
-        "07_rebuild_holy_grail",
-        {
-            "model": {
-                "ablation_no_residual": True,
-                "ablation_skip_clean": True,
-                "ablation_skip_blur": True,
-                "ablation_decoder_highpass": False,
-                "color_highway_gain": 1.0,
-                "semantic_attn_temperature": 0.1,
-            },
-            "loss": {
-                "w_identity": 3.0,
-                "idr": 0.25,
-                "w_swd_micro": 5.0,
-                "w_swd_macro": 40.0,
-                "swd_patch_sizes": [5, 7, 11, 15],
-            },
-        },
-    ),
-    (
-        "08_natural_spectrum_reset",
-        {
-            "model": {
-                "ablation_decoder_highpass": False,
-                "color_highway_gain": 1.0,
-                "semantic_attn_temperature": 0.08,
-            },
-            "loss": {
-                "w_color": 25.0,
                 "w_identity": 1.0,
-                "idr": 0.0,
-                "w_swd_micro": 15.0,
-                "w_swd_macro": 40.0,
-                "swd_patch_sizes": [3, 5, 7, 11, 15],
+                "w_swd_unified": 60.0,
+                "w_repulsive": 30.0,
+                "repulsive_margin": 0.3,
+                "repulsive_temperature": 0.2,
+                "repulsive_mode": "mse",
             },
         },
     ),
     (
-        "09_real_holy_grail",
+        "07_edge_rebel",
         {
-            "model": {
-                "num_hires_blocks": 1,
-                "ablation_decoder_highpass": False,
-                "color_highway_gain": 1.0,
-                "semantic_attn_temperature": 0.08,
-                "ablation_skip_clean": True,
-                "ablation_skip_blur": True,
-                "skip_spatial_dropout_p": 0.2,
-                "skip_residual_weight": 0.1,
-            },
             "loss": {
-                "w_color": 25.0,
-                "w_identity": 5.0,
-                "idr": 0.0,
-                "w_swd_micro": 15.0,
-                "w_swd_macro": 40.0,
-                "swd_patch_sizes": [3, 5, 7, 11, 15],
+                "w_repulsive": 25.0,
+                "swd_use_high_freq": True,
+                "swd_hf_weight_ratio": 0.25,
+                "w_identity": 4.0,
             },
         },
     ),
@@ -260,11 +167,19 @@ def generate(src_dir: Path, base_config_arg: str | None = None) -> list[str]:
         cfg.setdefault("loss", {})
         cfg.setdefault("checkpoint", {})
         cfg.setdefault("training", {})
+
+        _deep_update(cfg["model"], FORCED_MODEL_OVERRIDES)
         _deep_update(cfg, patch)
         _deep_update(cfg["training"], FORCED_TRAINING_OVERRIDES)
         _deep_update(cfg["loss"], FORCED_LOSS_OVERRIDES)
-        if "w_swd_micro" in cfg["loss"] or "w_swd_macro" in cfg["loss"]:
+
+        if "w_swd_unified" in cfg["loss"]:
             cfg["loss"].pop("w_swd", None)
+            cfg["loss"].pop("w_swd_micro", None)
+            cfg["loss"].pop("w_swd_macro", None)
+        elif "w_swd_micro" in cfg["loss"] or "w_swd_macro" in cfg["loss"]:
+            cfg["loss"].pop("w_swd", None)
+
         cfg["checkpoint"]["save_dir"] = f"../{SERIES_NAME}_{name}"
         cfg_name = f"config_{name}.json"
         _write_json(output_dir / cfg_name, cfg)
@@ -353,12 +268,12 @@ def _write_run_script(src_dir: Path, run_ids: list[str]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate freq experiment suite.")
+    parser = argparse.ArgumentParser(description="Generate repuls experiment suite.")
     parser.add_argument(
         "--base-config",
         type=str,
         default=None,
-        help="Optional base config path. Default uses src/config.json.",
+        help="Optional base config path. Default uses src/config_repulse.json.",
     )
     args = parser.parse_args()
 

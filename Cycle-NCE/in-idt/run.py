@@ -30,10 +30,6 @@ _ALLOWED_LOSS_KEYS = {
     "w_color",
     "w_oob",
     "oob_threshold",
-    "w_repulsive",
-    "repulsive_margin",
-    "repulsive_temperature",
-    "repulsive_mode",
     "w_swd",
     "w_swd_unified",
     "w_swd_micro",
@@ -59,7 +55,6 @@ _LOSS_WEIGHT_KEYS = (
     "w_swd_unified",
     "w_swd_micro",
     "w_swd_macro",
-    "w_repulsive",
     "w_color",
     "w_oob",
     "w_identity",
@@ -373,12 +368,11 @@ def main() -> None:
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f swd=%.4f rep=%.4f color=%.4f idt=%.4f idr=%.2f lr=%.2e data=%.1fs comp=%.1fs",
+            "Epoch %d/%d | loss=%.4f swd=%.4f color=%.4f idt=%.4f idr=%.2f lr=%.2e data=%.1fs comp=%.1fs",
             epoch,
             trainer.num_epochs,
             metrics["loss"],
             metrics.get("swd", 0.0),
-            metrics.get("repulsive", 0.0),
             metrics.get("color", 0.0),
             metrics.get("identity", 0.0),
             metrics.get("identity_ratio", 0.0),

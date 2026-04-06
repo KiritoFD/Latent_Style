@@ -36,9 +36,10 @@
     "input_anchor_noise_eval": false,
     "ablation_skip_clean": true,
     "ablation_skip_blur": true,
-    "ablation_no_residual": true,
+    "ablation_no_residual": false,
     "ablation_no_residual_gain": 1.0,
     "ablation_disable_spatial_prior": false,
+    "ablation_direct_delta_blend": true,
     "output_moment_match": false,
     "output_moment_match_eps": 1e-06,
     "output_moment_match_train_only": true,
@@ -48,7 +49,10 @@
     "skip_residual_weight": 0.1
   },
   "loss": {
-    "w_swd_unified": 50.0,
+    "w_swd_unified": 60.0,
+    "w_repulsive": 30.0,
+    "repulsive_margin": 0.3,
+    "repulsive_temperature": 0.2,
     "swd_patch_sizes": [
       3,
       5,
@@ -60,11 +64,13 @@
     "w_color": 25.0,
     "w_oob": 10.0,
     "oob_threshold": 3.0,
-    "w_identity": 5.0,
+    "w_identity": 1.0,
     "swd_use_high_freq": false,
     "swd_hf_weight_ratio": 1.0,
     "idr": 0.0,
-    "swd_num_projections": 384
+    "swd_num_projections": 384,
+    "repulsive_mode": "mse",
+    "swd_distance_mode": "sort"
   },
   "training": {
     "seed": 42,
@@ -142,7 +148,7 @@
     "virtual_length_multiplier": 1
   },
   "checkpoint": {
-    "save_dir": "../46_in-idt"
+    "save_dir": "../repuls_06_structure_sacrifice"
   },
   "inference": {
     "num_steps": 1,

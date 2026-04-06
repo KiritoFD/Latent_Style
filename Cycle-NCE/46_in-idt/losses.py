@@ -29,22 +29,6 @@ def exponential_oob_loss(z: torch.Tensor, threshold: float = 3.0) -> torch.Tenso
     return (torch.exp(excess) - 1.0).mean()
 
 
-def soft_repulsive_loss(
-    pred: torch.Tensor,
-    content: torch.Tensor,
-    margin: float = 0.5,
-    temperature: float = 0.1,
-    dist_mode: str = "l1",
-) -> torch.Tensor:
-    mode = str(dist_mode).strip().lower()
-    if mode == "mse":
-        diff = ((pred - content) ** 2).mean(dim=(1, 2, 3))
-    else:
-        diff = (pred - content).abs().mean(dim=(1, 2, 3))
-    tau = max(float(temperature), 1e-4)
-    return F.softplus((pred.new_tensor(float(margin)) - diff) / tau) * tau
-
-
 def _masked_l1_mean(pred: torch.Tensor, target: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     return ((pred - target).abs().mean(dim=(1, 2, 3)) * mask.float()).sum() / mask.float().sum().clamp_min(1.0)
 
@@ -189,7 +173,6 @@ class AdaCUTObjective:
     def __init__(self, config: Dict) -> None:
         loss_cfg = config.get("loss", {})
         legacy_w_swd = float(loss_cfg.get("w_swd", 0.0))
-        self.w_swd_unified = float(loss_cfg.get("w_swd_unified", 0.0))
         self.w_swd_micro = float(loss_cfg.get("w_swd_micro", 1.0 if legacy_w_swd <= 0.0 else 1.0))
         self.w_swd_macro = float(loss_cfg.get("w_swd_macro", 10.0 if legacy_w_swd <= 0.0 else legacy_w_swd))
         self.swd_use_high_freq = bool(loss_cfg.get("swd_use_high_freq", False))
@@ -205,37 +188,21 @@ class AdaCUTObjective:
         self.swd_cdf_sample_chunk_size = int(loss_cfg.get("swd_cdf_sample_chunk_size", 128))
         self.swd_batch_size = int(loss_cfg.get("swd_batch_size", 0))
         self.w_identity = float(loss_cfg.get("w_identity", 2.0))
-        self.w_repulsive = float(loss_cfg.get("w_repulsive", 0.0))
-        self.repulsive_margin = float(loss_cfg.get("repulsive_margin", 0.5))
-        self.repulsive_temperature = float(loss_cfg.get("repulsive_temperature", 0.1))
-        self.repulsive_mode = str(loss_cfg.get("repulsive_mode", "l1")).strip().lower()
         self.w_color = float(loss_cfg.get("w_color", 0.0))
         self.w_oob = float(loss_cfg.get("w_oob", 0.0))
         self.oob_threshold = float(loss_cfg.get("oob_threshold", 3.0))
         self.nsight_nvtx = bool(config.get("training", {}).get("nsight_nvtx", False))
-        self._projection_cache: Dict[tuple[int, int, int, str, str, str], torch.Tensor] = {}
+        self._projection_cache: Dict[tuple[int, int, int, str, str], torch.Tensor] = {}
         self._sobel_kernel_cache: Dict[tuple[int, str, str], tuple[torch.Tensor, torch.Tensor]] = {}
 
-    def _get_projection_bank(
-        self,
-        channels: int,
-        *,
-        device: torch.device,
-        dtype: torch.dtype,
-        mask_mode: str = "none",
-    ) -> Dict[int, torch.Tensor]:
+    def _get_projection_bank(self, channels: int, *, device: torch.device, dtype: torch.dtype) -> Dict[int, torch.Tensor]:
         bank: Dict[int, torch.Tensor] = {}
-        mode = str(mask_mode).strip().lower()
         for p in self.swd_patch_sizes:
-            key = (int(channels), int(p), int(self.swd_num_projections), str(device), str(dtype), mode)
+            key = (int(channels), int(p), int(self.swd_num_projections), str(device), str(dtype))
             w = self._projection_cache.get(key)
             if w is None:
                 with torch.no_grad():
                     w = torch.randn(self.swd_num_projections, channels, p, p, device=device, dtype=dtype)
-                    if mode == "luma_chroma_masked" and channels >= 2:
-                        luma_count = max(1, min(self.swd_num_projections - 1, int(self.swd_num_projections * 0.6)))
-                        w[:luma_count, 1:, :, :] = 0.0
-                        w[luma_count:, 0:1, :, :] = 0.0
                     w = F.normalize(w.view(self.swd_num_projections, -1), p=2, dim=1).view_as(w)
                 self._projection_cache[key] = w
             bank[p] = w
@@ -305,44 +272,18 @@ class AdaCUTObjective:
         target_style_id: torch.Tensor,
         xid_idx: torch.Tensor | None,
     ) -> torch.Tensor | None:
-        if xid_idx is None or xid_idx.numel() == 0:
+        if xid_idx is None or xid_idx.numel() == 0 or (self.w_swd_micro <= 0.0 and self.w_swd_macro <= 0.0):
             return None
 
         swd_x = pred.index_select(0, xid_idx)
         swd_y = target_style.index_select(0, xid_idx)
-        indexed_style_ids = target_style_id.index_select(0, xid_idx)
-
-        if self.w_swd_unified > 0.0:
-            bank_unified = self._get_projection_bank(
-                int(swd_x.shape[1]),
-                device=pred.device,
-                dtype=pred.dtype,
-                mask_mode="luma_chroma_masked",
-            )
-            loss_unified = calc_swd_loss(
-                swd_x,
-                swd_y,
-                indexed_style_ids,
-                self.swd_patch_sizes,
-                self.swd_num_projections,
-                projection_chunk_size=self.swd_projection_chunk_size,
-                distance_mode=self.swd_distance_mode,
-                cdf_num_bins=self.swd_cdf_num_bins,
-                cdf_tau=self.swd_cdf_tau,
-                cdf_sample_size=self.swd_cdf_sample_size,
-                projection_bank=bank_unified,
-            )
-            return loss_unified * self.w_swd_unified
-
-        if self.w_swd_micro <= 0.0 and self.w_swd_macro <= 0.0:
-            return None
-
         if swd_x.shape[1] >= 2:
             x_struct = swd_x[:, :2, :, :]
             y_struct = swd_y[:, :2, :, :]
         else:
             x_struct = swd_x
             y_struct = swd_y
+        indexed_style_ids = target_style_id.index_select(0, xid_idx)
 
         loss_micro = torch.tensor(0.0, device=pred.device, dtype=torch.float32)
         if self.w_swd_micro > 0.0:
@@ -436,29 +377,10 @@ class AdaCUTObjective:
         if self.w_identity <= 0.0 or not id_mask.any():
             return None
 
-        # Luma-only identity: keep channel-0 structure aligned while leaving chroma channels unconstrained.
-        pred_luma = pred[:, 0:1, :, :]
-        content_luma = content[:, 0:1, :, :]
-        pred_struct = F.instance_norm(pred_luma)
-        content_struct = F.instance_norm(content_luma)
+        # Topology-only identity: remove style magnitude (mean/variance), keep spatial structure.
+        pred_struct = F.instance_norm(pred)
+        content_struct = F.instance_norm(content)
         return _masked_mse_mean(pred_struct, content_struct, id_mask)
-
-    def _compute_repulsive_term(
-        self,
-        pred: torch.Tensor,
-        content: torch.Tensor,
-        xid_mask: torch.Tensor,
-    ) -> torch.Tensor | None:
-        if self.w_repulsive <= 0.0 or not xid_mask.any():
-            return None
-        repulsive_per_sample = soft_repulsive_loss(
-            pred,
-            content,
-            margin=self.repulsive_margin,
-            temperature=self.repulsive_temperature,
-            dist_mode=self.repulsive_mode,
-        )
-        return (repulsive_per_sample * xid_mask.float()).sum() / xid_mask.float().sum().clamp_min(1.0)
 
     def compute(
         self,
@@ -500,30 +422,20 @@ class AdaCUTObjective:
 
         lcol = self._compute_color_term(pred, target_cast, xid_idx)
         if lcol is not None:
-            lcol_weighted = self.w_color * lcol
-            total = total + lcol_weighted
-            metrics["color"] = lcol_weighted.detach()
+            total = total + self.w_color * lcol
+            metrics["color"] = lcol.detach()
             metrics["_color_raw"] = lcol
 
         if self.w_oob > 0.0:
             loob = exponential_oob_loss(pred, threshold=self.oob_threshold)
-            loob_weighted = self.w_oob * loob
-            total = total + loob_weighted
-            metrics["oob"] = loob_weighted.detach()
+            total = total + self.w_oob * loob
+            metrics["oob"] = loob.detach()
             metrics["_oob_raw"] = loob
-
-        lrepel = self._compute_repulsive_term(pred, content_cast, xid_mask)
-        if lrepel is not None:
-            lrepel_weighted = self.w_repulsive * lrepel
-            total = total + lrepel_weighted
-            metrics["repulsive"] = lrepel_weighted.detach()
-            metrics["_repulsive_raw"] = lrepel
 
         lid = self._compute_identity_term(pred, content_cast, id_mask)
         if lid is not None:
-            lid_weighted = self.w_identity * lid
-            total = total + lid_weighted
-            metrics["identity"] = lid_weighted.detach()
+            total = total + self.w_identity * lid
+            metrics["identity"] = lid.detach()
             metrics["_identity_raw"] = lid
 
         metrics["loss"] = total
