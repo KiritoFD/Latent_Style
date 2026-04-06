@@ -1225,16 +1225,12 @@ class LatentAdaCUT(nn.Module):
             painted_raw = torch.bmm(semantic_attn, raw_v).transpose(1, 2).view(
                 bsz, self.latent_channels, h_dim, w_dim
             )
-            # Stitch patch-match discontinuities before upsampling to suppress checkerboard splats.
-            painted_raw = F.avg_pool2d(painted_raw, kernel_size=3, stride=1, padding=1)
             color_highway = F.interpolate(
                 painted_raw,
                 scale_factor=2.0,
                 mode="bilinear",
                 align_corners=False,
             )
-            # Convert absolute painted latent into a residual update before the final anchor add.
-            color_highway = color_highway - x
         else:
             color_highway = F.interpolate(
                 h_body,

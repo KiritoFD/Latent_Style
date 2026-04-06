@@ -22,6 +22,7 @@ FORCED_TRAINING_OVERRIDES = {
 FORCED_MODEL_OVERRIDES = {
     "ablation_no_residual": False,
     "ablation_direct_delta_blend": True,
+    "raw_latent_splat_highway": True,
 }
 
 FORCED_LOSS_OVERRIDES = {

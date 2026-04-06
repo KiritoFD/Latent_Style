@@ -50,7 +50,6 @@ _MODEL_CONFIG_DEFAULTS = {
     "style_attn_temperature": 0.5,
     "ablation_disable_spatial_prior": False,
     "ablation_direct_delta_blend": False,
-    "raw_latent_splat_highway": False,
     "ablation_skip_clean": True,
     "ablation_skip_blur": True,
     "skip_bottleneck_channels": 16,
@@ -413,7 +412,6 @@ class SemanticCrossAttn(nn.Module):
         self.to_k = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
         self.to_v = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
         self.gamma = nn.Parameter(torch.ones(1, dim, 1, 1) * 0.1)
-        self.last_attn: torch.Tensor | None = None
 
     def forward(
         self,
@@ -438,7 +436,6 @@ class SemanticCrossAttn(nn.Module):
 
         attn = torch.bmm(q, k) * (c ** -0.5) / self.temperature
         attn = F.softmax(attn, dim=-1)
-        self.last_attn = attn
         painted = torch.bmm(attn, v).transpose(1, 2).view(b, c, h_dim, w_dim)
         painted_smoothed = F.avg_pool2d(painted, kernel_size=3, stride=1, padding=1)
 
@@ -673,7 +670,6 @@ class LatentAdaCUT(nn.Module):
         ablation_no_residual_gain: float = 1.0,
         ablation_disable_spatial_prior: bool = False,
         ablation_direct_delta_blend: bool = False,
-        raw_latent_splat_highway: bool = False,
         ablation_skip_clean: bool = True,
         ablation_skip_blur: bool = True,
         skip_bottleneck_channels: int = 16,
@@ -736,7 +732,6 @@ class LatentAdaCUT(nn.Module):
         self.ablation_no_residual_gain = max(0.0, float(ablation_no_residual_gain))
         self.ablation_disable_spatial_prior = bool(ablation_disable_spatial_prior)
         self.ablation_direct_delta_blend = bool(ablation_direct_delta_blend)
-        self.raw_latent_splat_highway = bool(raw_latent_splat_highway)
         self.ablation_skip_clean = bool(ablation_skip_clean)
         self.ablation_skip_blur = bool(ablation_skip_blur)
         self.skip_bottleneck_channels = max(1, int(skip_bottleneck_channels))
@@ -1208,41 +1203,16 @@ class LatentAdaCUT(nn.Module):
             # ID priors already live in bottleneck channel space, so they can feed the semantic painter directly.
             style_map_proj = style_spatial_16
 
-        semantic_attn: torch.Tensor | None = None
         for block in self.body_blocks:
             h = block(h, style_map=style_map_proj, gate=1.0)
-            semantic_attn = getattr(block, "last_attn", semantic_attn)
         h_body = h
-        if self.raw_latent_splat_highway and semantic_attn is not None and target_style_latent is not None:
-            bsz, _, h_dim, w_dim = h_body.shape
-            raw_style_map = F.interpolate(
-                target_style_latent,
-                size=(h_dim, w_dim),
-                mode="bilinear",
-                align_corners=False,
-            )
-            raw_v = raw_style_map.view(bsz, self.latent_channels, -1).transpose(1, 2)
-            painted_raw = torch.bmm(semantic_attn, raw_v).transpose(1, 2).view(
-                bsz, self.latent_channels, h_dim, w_dim
-            )
-            # Stitch patch-match discontinuities before upsampling to suppress checkerboard splats.
-            painted_raw = F.avg_pool2d(painted_raw, kernel_size=3, stride=1, padding=1)
-            color_highway = F.interpolate(
-                painted_raw,
-                scale_factor=2.0,
-                mode="bilinear",
-                align_corners=False,
-            )
-            # Convert absolute painted latent into a residual update before the final anchor add.
-            color_highway = color_highway - x
-        else:
-            color_highway = F.interpolate(
-                h_body,
-                scale_factor=2.0,
-                mode="bilinear",
-                align_corners=False,
-            )
-            color_highway = self.highway_proj(color_highway)
+        color_highway = F.interpolate(
+            h_body,
+            scale_factor=2.0,
+            mode="bilinear",
+            align_corners=False,
+        )
+        color_highway = self.highway_proj(color_highway)
 
         h = self.dec_up(h)
         h = self._apply_upsample_blur(h)
@@ -1494,9 +1464,6 @@ def build_model_from_config(
         ),
         ablation_direct_delta_blend=bool(
             model_cfg.get("ablation_direct_delta_blend", _MODEL_CONFIG_DEFAULTS["ablation_direct_delta_blend"])
-        ),
-        raw_latent_splat_highway=bool(
-            model_cfg.get("raw_latent_splat_highway", _MODEL_CONFIG_DEFAULTS["raw_latent_splat_highway"])
         ),
         ablation_skip_clean=bool(model_cfg.get("ablation_skip_clean", _MODEL_CONFIG_DEFAULTS["ablation_skip_clean"])),
         ablation_skip_blur=bool(model_cfg.get("ablation_skip_blur", _MODEL_CONFIG_DEFAULTS["ablation_skip_blur"])),
