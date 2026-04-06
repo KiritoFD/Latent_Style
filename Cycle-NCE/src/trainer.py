@@ -46,6 +46,10 @@ _TRAIN_LOG_COLUMNS = [
     "samples_seen",
     "samples_per_sec",
     "compute_samples_per_sec",
+    "attn_entropy",
+    "attn_max_prob",
+    "id_swd_ratio",
+    "health_warning_count",
 ]
 
 _SNAPSHOT_SOURCE_FILES = [
@@ -102,6 +106,13 @@ class AdaCUTTrainer:
 
         self.channels_last = bool(train_cfg.get("channels_last", False) and device.type == "cuda")
         self.gc_collect_interval = max(0, int(train_cfg.get("gc_collect_interval", 0)))
+        self.enable_health_sentinel = bool(train_cfg.get("enable_health_sentinel", True))
+        self.sentinel_warn_cooldown_steps = max(1, int(train_cfg.get("sentinel_warn_cooldown_steps", 100)))
+        self.sentinel_attn_max_prob = float(train_cfg.get("sentinel_attn_max_prob", 0.985))
+        self.sentinel_attn_entropy_min = float(train_cfg.get("sentinel_attn_entropy_min", 0.20))
+        self.sentinel_id_swd_min_ratio = float(train_cfg.get("sentinel_id_swd_min_ratio", 0.03))
+        self.sentinel_ratio_min_swd = float(train_cfg.get("sentinel_ratio_min_swd", 0.05))
+        self._last_health_warning_step = -10**9
 
         grad_ckpt_cfg = bool(train_cfg.get("use_gradient_checkpointing", False))
         self.model = build_model_from_config(model_cfg, use_checkpointing=grad_ckpt_cfg).to(device)
@@ -214,6 +225,112 @@ class AdaCUTTrainer:
         self.global_step = 0
         self.start_epoch = 1
         self._maybe_resume(str(train_cfg.get("resume_checkpoint", "")))
+
+    def _unwrap_model_for_introspection(self) -> torch.nn.Module:
+        model_obj = self.model
+        for attr in ("_orig_mod", "module"):
+            if hasattr(model_obj, attr):
+                model_obj = getattr(model_obj, attr)
+        return model_obj
+
+    def _collect_semantic_attn_stats(self) -> Dict[str, float]:
+        model_obj = self._unwrap_model_for_introspection()
+        blocks = getattr(model_obj, "body_blocks", None)
+        if blocks is None:
+            return {}
+
+        entropy_vals = []
+        peak_vals = []
+        with torch.no_grad():
+            for block in blocks:
+                attn = getattr(block, "last_attn", None)
+                if attn is None or not torch.is_tensor(attn) or attn.numel() == 0:
+                    continue
+                probs = attn.detach().float().clamp_min(1e-8)
+                ent = -(probs * probs.log()).sum(dim=-1)
+                denom = math.log(float(max(2, int(probs.shape[-1]))))
+                ent_norm = ent / max(denom, 1e-8)
+                peak = probs.max(dim=-1).values
+                entropy_vals.append(ent_norm.mean())
+                peak_vals.append(peak.mean())
+
+        if not entropy_vals:
+            return {}
+        entropy = float(torch.stack(entropy_vals).mean().item())
+        peak = float(torch.stack(peak_vals).mean().item())
+        return {
+            "attn_entropy": entropy,
+            "attn_max_prob": peak,
+        }
+
+    def _compute_health_signals(self, loss_dict: Dict[str, torch.Tensor], attn_stats: Dict[str, float]) -> Dict[str, float]:
+        swd_weighted = float(loss_dict.get("swd", torch.tensor(0.0, device=self.device)).detach().item())
+        identity_weighted = float(loss_dict.get("identity", torch.tensor(0.0, device=self.device)).detach().item())
+        id_swd_ratio = identity_weighted / max(abs(swd_weighted), 1e-8)
+        signals = {
+            "id_swd_ratio": id_swd_ratio,
+            "health_warning_count": 0.0,
+        }
+        if "attn_entropy" in attn_stats:
+            signals["attn_entropy"] = float(attn_stats["attn_entropy"])
+        if "attn_max_prob" in attn_stats:
+            signals["attn_max_prob"] = float(attn_stats["attn_max_prob"])
+        return signals
+
+    def _maybe_emit_health_warning(
+        self,
+        *,
+        epoch: int,
+        step_idx: int,
+        loss_dict: Dict[str, torch.Tensor],
+        signals: Dict[str, float],
+    ) -> float:
+        if not self.enable_health_sentinel:
+            return 0.0
+
+        swd_weighted = float(loss_dict.get("swd", torch.tensor(0.0, device=self.device)).detach().item())
+        id_weighted = float(loss_dict.get("identity", torch.tensor(0.0, device=self.device)).detach().item())
+        id_swd_ratio = float(signals.get("id_swd_ratio", 0.0))
+        attn_entropy = float(signals.get("attn_entropy", 1.0))
+        attn_max_prob = float(signals.get("attn_max_prob", 0.0))
+
+        attn_collapse = (
+            ("attn_entropy" in signals)
+            and ("attn_max_prob" in signals)
+            and attn_max_prob >= self.sentinel_attn_max_prob
+            and attn_entropy <= self.sentinel_attn_entropy_min
+        )
+        id_floor_risk = (
+            abs(swd_weighted) >= self.sentinel_ratio_min_swd
+            and id_swd_ratio < self.sentinel_id_swd_min_ratio
+        )
+        if not (attn_collapse or id_floor_risk):
+            return 0.0
+
+        if (self.global_step - self._last_health_warning_step) < self.sentinel_warn_cooldown_steps:
+            return 1.0
+
+        reasons = []
+        if attn_collapse:
+            reasons.append(
+                f"attn collapse risk (max_prob={attn_max_prob:.4f} >= {self.sentinel_attn_max_prob:.4f}, "
+                f"entropy={attn_entropy:.4f} <= {self.sentinel_attn_entropy_min:.4f})"
+            )
+        if id_floor_risk:
+            reasons.append(
+                f"identity floor weak (id/swd={id_swd_ratio:.4f} < {self.sentinel_id_swd_min_ratio:.4f}, "
+                f"idt={id_weighted:.4f}, swd={swd_weighted:.4f})"
+            )
+
+        logger.warning(
+            "Health sentinel triggered | epoch=%d step=%d global_step=%d | %s",
+            epoch,
+            step_idx,
+            self.global_step,
+            " ; ".join(reasons),
+        )
+        self._last_health_warning_step = int(self.global_step)
+        return 1.0
 
     def _find_latest_checkpoint(self) -> Optional[Path]:
         ckpts = sorted(self.checkpoint_dir.glob("epoch_*.pt"))
@@ -379,6 +496,16 @@ class AdaCUTTrainer:
                 loss = loss_dict["loss"]
             fwd_loss_step += max(0.0, time.perf_counter() - t0)
 
+            attn_stats = self._collect_semantic_attn_stats()
+            health_signals = self._compute_health_signals(loss_dict, attn_stats)
+            warn_count = self._maybe_emit_health_warning(
+                epoch=epoch,
+                step_idx=step_idx,
+                loss_dict=loss_dict,
+                signals=health_signals,
+            )
+            health_signals["health_warning_count"] = float(warn_count)
+
             loss_to_backward = loss / self.accumulation_steps
             t0 = time.perf_counter()
             loss_to_backward.backward()
@@ -404,6 +531,8 @@ class AdaCUTTrainer:
                     continue
                 vd = v.detach()
                 metric_accum[k] = metric_accum.get(k, 0) + vd
+            for k, v in health_signals.items():
+                metric_accum[k] = metric_accum.get(k, 0) + torch.tensor(float(v), device=self.device)
             num_batches += 1
 
             step_elapsed = max(0.0, time.perf_counter() - step_compute_start)
@@ -432,6 +561,9 @@ class AdaCUTTrainer:
                     rep=f"{_get_avg('repulsive'):.4f}",
                     color=f"{_get_avg('color'):.4f}",
                     idt=f"{_get_avg('identity'):.4f}",
+                    isr=f"{_get_avg('id_swd_ratio'):.3f}",
+                    aent=f"{_get_avg('attn_entropy'):.3f}",
+                    amax=f"{_get_avg('attn_max_prob'):.3f}",
                     idr=f"{_get_avg('identity_ratio'):.2f}",
                     data_ms=f"{(1000.0 * data_time_total / max(step_idx, 1)):.1f}",
                     comp_ms=f"{(1000.0 * compute_time_total / max(step_idx, 1)):.1f}",
@@ -480,6 +612,10 @@ class AdaCUTTrainer:
         metrics.setdefault("oob", 0.0)
         metrics.setdefault("identity", 0.0)
         metrics.setdefault("identity_ratio", 0.0)
+        metrics.setdefault("attn_entropy", 0.0)
+        metrics.setdefault("attn_max_prob", 0.0)
+        metrics.setdefault("id_swd_ratio", 0.0)
+        metrics.setdefault("health_warning_count", 0.0)
         metrics["lr"] = lr
         metrics["data_time_sec"] = data_time_total
         metrics["transfer_time_sec"] = transfer_time_total
@@ -519,6 +655,10 @@ class AdaCUTTrainer:
                     int(float(metrics.get("samples_seen", 0.0))),
                     float(metrics.get("samples_per_sec", 0.0)),
                     float(metrics.get("compute_samples_per_sec", 0.0)),
+                    float(metrics.get("attn_entropy", 0.0)),
+                    float(metrics.get("attn_max_prob", 0.0)),
+                    float(metrics.get("id_swd_ratio", 0.0)),
+                    float(metrics.get("health_warning_count", 0.0)),
                 ]
             )
 

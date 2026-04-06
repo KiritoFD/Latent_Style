@@ -436,14 +436,14 @@ class AdaCUTObjective:
         content: torch.Tensor,
         id_mask: torch.Tensor,
     ) -> torch.Tensor | None:
-        if self.w_identity <= 0.0 or not id_mask.any():
+        if self.w_identity <= 0.0:
             return None
 
         pred_blur = F.avg_pool2d(pred, kernel_size=3, stride=1, padding=1)
         content_blur = F.avg_pool2d(content, kernel_size=3, stride=1, padding=1)
         pred_struct = F.instance_norm(pred_blur)
         content_struct = F.instance_norm(content_blur)
-        return _masked_l1_mean(pred_struct, content_struct, id_mask)
+        return F.l1_loss(pred_struct, content_struct)
 
     def _compute_repulsive_term(
         self,
