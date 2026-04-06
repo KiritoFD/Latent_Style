@@ -312,17 +312,19 @@ class AdaCUTObjective:
         swd_x = pred.index_select(0, xid_idx)
         swd_y = target_style.index_select(0, xid_idx)
         indexed_style_ids = target_style_id.index_select(0, xid_idx)
+        swd_x_norm = F.instance_norm(swd_x)
+        swd_y_norm = F.instance_norm(swd_y)
 
         if self.w_swd_unified > 0.0:
             bank_unified = self._get_projection_bank(
-                int(swd_x.shape[1]),
+                int(swd_x_norm.shape[1]),
                 device=pred.device,
                 dtype=pred.dtype,
                 mask_mode="luma_chroma_masked",
             )
             loss_unified = calc_swd_loss(
-                swd_x,
-                swd_y,
+                swd_x_norm,
+                swd_y_norm,
                 indexed_style_ids,
                 self.swd_patch_sizes,
                 self.swd_num_projections,
@@ -338,12 +340,12 @@ class AdaCUTObjective:
         if self.w_swd_micro <= 0.0 and self.w_swd_macro <= 0.0:
             return None
 
-        if swd_x.shape[1] >= 2:
-            x_struct = swd_x[:, :2, :, :]
-            y_struct = swd_y[:, :2, :, :]
+        if swd_x_norm.shape[1] >= 2:
+            x_struct = swd_x_norm[:, :2, :, :]
+            y_struct = swd_y_norm[:, :2, :, :]
         else:
-            x_struct = swd_x
-            y_struct = swd_y
+            x_struct = swd_x_norm
+            y_struct = swd_y_norm
 
         loss_micro = torch.tensor(0.0, device=pred.device, dtype=torch.float32)
         if self.w_swd_micro > 0.0:
@@ -388,8 +390,8 @@ class AdaCUTObjective:
         if self.w_swd_macro > 0.0:
             macro_patches = [p for p in self.swd_patch_sizes if p >= 11]
             if macro_patches:
-                x_color_lp = F.avg_pool2d(swd_x, kernel_size=5, stride=1, padding=2)
-                y_color_lp = F.avg_pool2d(swd_y, kernel_size=5, stride=1, padding=2)
+                x_color_lp = F.avg_pool2d(swd_x_norm, kernel_size=5, stride=1, padding=2)
+                y_color_lp = F.avg_pool2d(swd_y_norm, kernel_size=5, stride=1, padding=2)
                 x_macro = x_color_lp
                 y_macro = y_color_lp
                 bank_macro = self._get_projection_bank(

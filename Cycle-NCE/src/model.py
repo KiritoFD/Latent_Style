@@ -422,6 +422,11 @@ class SemanticCrossAttn(nn.Module):
         self.to_v = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
         self.gamma = nn.Parameter(torch.ones(1, dim, 1, 1) * 0.1)
         self.last_attn: torch.Tensor | None = None
+        self.gate_conv = nn.Sequential(
+            nn.Conv2d(dim, dim, kernel_size=3, padding=1),
+            nn.SiLU(),
+            nn.Conv2d(dim, dim, kernel_size=1),
+        )
 
     def forward(
         self,
@@ -453,8 +458,9 @@ class SemanticCrossAttn(nn.Module):
         if self.paint_only:
             return painted_smoothed
 
+        learned_gate = torch.sigmoid(self.gate_conv(normalized))
         final_gate = gate if isinstance(gate, float) else gate.to(device=x.device, dtype=x.dtype)
-        delta = torch.tanh(painted_smoothed) * 3.0 * (1.0 + self.gamma)
+        delta = torch.tanh(painted_smoothed) * 3.0 * (1.0 + self.gamma) * learned_gate
         return x + final_gate * delta
 
 
