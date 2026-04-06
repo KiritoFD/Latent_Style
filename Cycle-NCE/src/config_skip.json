@@ -143,7 +143,7 @@
     "virtual_length_multiplier": 1
   },
   "checkpoint": {
-    "save_dir": "../46_clean"
+    "save_dir": "../46_skip"
   },
   "inference": {
     "num_steps": 1,

@@ -989,9 +989,8 @@ class LatentAdaCUT(nn.Module):
         if self.skip_disabled:
             return self.skip_fusion(self.skip_up_proj(h_up))
 
-        skip_32_clean = F.instance_norm(skip_32)
         skip_feat = self.skip_router(
-            skip_32_clean,
+            skip_32,
             style_code=style_code,
             gate=gate,
             naive_gain=self.skip_naive_gain,
@@ -1171,7 +1170,6 @@ class LatentAdaCUT(nn.Module):
             base_idx=0,
             gate_scale=0.0,
         )
-        skip_32 = h
         h = self.down(h)
         content_feat_16 = h
         style_map_proj: torch.Tensor | None = None
@@ -1238,11 +1236,13 @@ class LatentAdaCUT(nn.Module):
                 h = block(h, style_map=style_map_proj, gate=1.0)
                 semantic_attn = getattr(block, "last_attn", semantic_attn)
             h_body = h
-        h_up = self.dec_up(h_body)
-        h_up = self._apply_upsample_blur(h_up)
-        h_fused = self._fuse_skip_features(h_up, skip_32, style_code=style_code, gate=1.0)
-        h_dec = self._run_decoder(h_fused)
-        delta_raw = self._compute_delta(h_dec)
+        h = self.dec_up(h_body)
+        h = self._apply_upsample_blur(h)
+        # Project bottleneck channels into decoder width while keeping the clean
+        # single-path architecture free of encoder skip fusion.
+        h = self.skip_fusion(self.skip_up_proj(h))
+        h = self._run_decoder(h)
+        delta_raw = self._compute_delta(h)
         return delta_raw
 
     def integrate(
