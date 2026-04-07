@@ -264,7 +264,7 @@ def main() -> None:
     parser.add_argument(
         "--distill_mode",
         type=str,
-        default="cartridge",
+        default="tokenizer",
         choices=["tokenizer", "cartridge", "style_map"],
     )
     parser.add_argument("--cartridge_num_colors", type=int, default=64, help="distill_cartridge.py --num_colors")
