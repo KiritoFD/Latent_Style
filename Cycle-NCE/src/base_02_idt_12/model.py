@@ -49,7 +49,6 @@ _MODEL_CONFIG_DEFAULTS = {
     "skip_bottleneck_channels": 16,
     "skip_spatial_dropout_p": 0.15,
     "color_highway_gain": 1.0,
-    "ablation_disable_pos_emb": False,
     "output_moment_match": False,
     "output_moment_match_eps": 1e-6,
     "output_moment_match_train_only": True,
@@ -129,7 +128,6 @@ class CrossAttnAdaGN(nn.Module):
         self.query_norm = nn.LayerNorm(dim)
         self.ffn_norm = nn.LayerNorm(dim)
         self.gamma = nn.Parameter(torch.zeros(1, dim, 1, 1))
-        self.ablation_disable_pos_emb = False
         self._coord_cache: dict[tuple[int, int, str, str], torch.Tensor] = {}
 
     def _get_coord_grid(self, h_dim: int, w_dim: int, *, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
@@ -155,12 +153,9 @@ class CrossAttnAdaGN(nn.Module):
         style_tokens = self.style_tokens_basis.unsqueeze(0) + style_bias
         style_tokens = self.token_norm(style_tokens)
 
-        if getattr(self, "ablation_disable_pos_emb", False):
-            pos_emb = 0.0
-        else:
-            coords = self._get_coord_grid(h_dim, w_dim, device=x.device, dtype=x.dtype).expand(b, -1, -1, -1)
-            pos = coords.permute(0, 2, 3, 1).reshape(b, h_dim * w_dim, 2)
-            pos_emb = self.pos_proj(pos)
+        coords = self._get_coord_grid(h_dim, w_dim, device=x.device, dtype=x.dtype).expand(b, -1, -1, -1)
+        pos = coords.permute(0, 2, 3, 1).reshape(b, h_dim * w_dim, 2)
+        pos_emb = self.pos_proj(pos)
         q_in = self.query_norm(normalized.permute(0, 2, 3, 1).reshape(b, h_dim * w_dim, c) + pos_emb)
 
         q = self.q_proj(q_in).view(b, h_dim * w_dim, self.num_heads, self.head_dim).transpose(1, 2)
@@ -1365,7 +1360,7 @@ def build_model_from_config(
         model_cfg.get("output_moment_match_train_only", _MODEL_CONFIG_DEFAULTS["output_moment_match_train_only"])
     )
 
-    model = LatentAdaCUT(
+    return LatentAdaCUT(
         latent_channels=int(model_cfg.get("latent_channels", _MODEL_CONFIG_DEFAULTS["latent_channels"])),
         num_styles=int(model_cfg.get("num_styles", _MODEL_CONFIG_DEFAULTS["num_styles"])),
         style_dim=int(model_cfg.get("style_dim", _MODEL_CONFIG_DEFAULTS["style_dim"])),
@@ -1415,8 +1410,3 @@ def build_model_from_config(
         output_moment_match_eps=output_moment_match_eps,
         output_moment_match_train_only=output_moment_match_train_only,
     )
-    if bool(model_cfg.get("ablation_disable_pos_emb", _MODEL_CONFIG_DEFAULTS["ablation_disable_pos_emb"])):
-        for module in model.modules():
-            if isinstance(module, CrossAttnAdaGN):
-                module.ablation_disable_pos_emb = True
-    return model
