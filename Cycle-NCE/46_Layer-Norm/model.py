@@ -395,16 +395,12 @@ class AttentionBlock(nn.Module):
 class SemanticCrossAttn(nn.Module):
     def __init__(self, dim: int, num_groups: int = 8, temperature: float = 0.08) -> None:
         super().__init__()
-        del temperature
-        groups = _resolve_group_count(dim, num_groups)
-        self.norm_c = nn.GroupNorm(groups, dim, affine=False)
-        self.norm_s = nn.GroupNorm(groups, dim, affine=False)
+        self.temperature = max(1e-4, float(temperature))
+        self.norm = nn.GroupNorm(_resolve_group_count(dim, num_groups), dim, affine=False)
         self.to_q = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
         self.to_k = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
         self.to_v = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
-        self.proj_out = nn.Conv2d(dim, dim, kernel_size=1)
-        nn.init.kaiming_normal_(self.proj_out.weight, a=0.2)
-        nn.init.zeros_(self.proj_out.bias)
+        self.gamma = nn.Parameter(torch.ones(1, dim, 1, 1) * 0.1)
         self.last_attn: torch.Tensor | None = None
 
     def forward(
@@ -421,25 +417,22 @@ class SemanticCrossAttn(nn.Module):
         if style_map.shape[-2:] != (h_dim, w_dim):
             raise ValueError(f"spatial mismatch: x={tuple(x.shape)} style_map={tuple(style_map.shape)}")
 
-        nc = self.norm_c(x)
-        ns = self.norm_s(style_map)
-        qc = F.layer_norm(nc.permute(0, 2, 3, 1), [c]).permute(0, 3, 1, 2)
-        ks = F.layer_norm(ns.permute(0, 2, 3, 1), [c]).permute(0, 3, 1, 2)
-
-        q = self.to_q(qc).view(b, c, -1).transpose(1, 2)
-        k = self.to_k(ks).view(b, c, -1)
+        normalized = self.norm(x)
+        q_dehydrated = F.instance_norm(normalized)
+        k_dehydrated = F.instance_norm(style_map)
+        q = self.to_q(q_dehydrated).view(b, c, -1).transpose(1, 2)
+        k = self.to_k(k_dehydrated).view(b, c, -1)
         v = self.to_v(style_map).view(b, c, -1).transpose(1, 2)
 
-        q = F.normalize(q, dim=-1)
-        k = F.normalize(k, dim=1)
-        attn = torch.bmm(q, k) / 0.05
+        attn = torch.bmm(q, k) * (c ** -0.5) / self.temperature
         attn = F.softmax(attn, dim=-1)
         self.last_attn = attn
         painted = torch.bmm(attn, v).transpose(1, 2).view(b, c, h_dim, w_dim)
         painted_smoothed = F.avg_pool2d(painted, kernel_size=3, stride=1, padding=1)
 
         final_gate = gate if isinstance(gate, float) else gate.to(device=x.device, dtype=x.dtype)
-        return x + final_gate * self.proj_out(painted_smoothed)
+        delta = torch.tanh(painted_smoothed) * 3.0 * (1.0 + self.gamma)
+        return x + final_gate * delta
 
 
 def _build_feature_block(
@@ -833,10 +826,6 @@ class LatentAdaCUT(nn.Module):
         self.dec_mod = NormFreeModulation(self.lift_channels, style_dim)
         self.dec_act = nn.SiLU()
         self.dec_out = nn.Conv2d(self.lift_channels, latent_channels, kernel_size=3, stride=1, padding=1)
-        nn.init.kaiming_normal_(self.dec_out.weight, a=0.2)
-        with torch.no_grad():
-            self.dec_out.weight.mul_(0.01)
-        nn.init.zeros_(self.dec_out.bias)
         self.style_map_proj = nn.Conv2d(self.latent_channels, self.body_channels, kernel_size=1, stride=1, padding=0)
         self.highway_proj = nn.Conv2d(
             self.body_channels,

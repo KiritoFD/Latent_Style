@@ -45,9 +45,16 @@ _MODEL_CONFIG_DEFAULTS = {
     "style_skip_content_retention_boost": 0.0,
     "input_anchor_noise_std": 0.0,
     "input_anchor_noise_eval": False,
+    "ablation_no_residual": False,
+    "ablation_no_residual_gain": 1.0,
     "style_attn_temperature": 0.5,
+    "ablation_disable_spatial_prior": False,
+    "ablation_direct_delta_blend": False,
+    "ablation_skip_clean": True,
+    "ablation_skip_blur": True,
     "skip_bottleneck_channels": 16,
     "skip_spatial_dropout_p": 0.15,
+    "ablation_decoder_highpass": True,
     "color_highway_gain": 1.0,
     "output_moment_match": False,
     "output_moment_match_eps": 1e-6,
@@ -62,6 +69,10 @@ _LEGACY_MODEL_CONFIG_KEYS = {
     "style_modulator_type",
     "skip_frequency_gated",
     "skip_low_freq_base_retention",
+    "ablation_no_adagn",
+    "ablation_no_adagn_zero_out",
+    "ablation_naive_skip",
+    "ablation_naive_skip_gain",
 }
 _KNOWN_MODEL_CONFIG_KEYS = set(_MODEL_CONFIG_DEFAULTS) | {"lift_channels"} | _LEGACY_MODEL_CONFIG_KEYS
 
@@ -395,17 +406,12 @@ class AttentionBlock(nn.Module):
 class SemanticCrossAttn(nn.Module):
     def __init__(self, dim: int, num_groups: int = 8, temperature: float = 0.08) -> None:
         super().__init__()
-        del temperature
-        groups = _resolve_group_count(dim, num_groups)
-        self.norm_c = nn.GroupNorm(groups, dim, affine=False)
-        self.norm_s = nn.GroupNorm(groups, dim, affine=False)
+        self.temperature = max(1e-4, float(temperature))
+        self.norm = nn.GroupNorm(_resolve_group_count(dim, num_groups), dim, affine=False)
         self.to_q = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
         self.to_k = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
         self.to_v = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
-        self.proj_out = nn.Conv2d(dim, dim, kernel_size=1)
-        nn.init.kaiming_normal_(self.proj_out.weight, a=0.2)
-        nn.init.zeros_(self.proj_out.bias)
-        self.last_attn: torch.Tensor | None = None
+        self.gamma = nn.Parameter(torch.ones(1, dim, 1, 1) * 0.1)
 
     def forward(
         self,
@@ -421,25 +427,21 @@ class SemanticCrossAttn(nn.Module):
         if style_map.shape[-2:] != (h_dim, w_dim):
             raise ValueError(f"spatial mismatch: x={tuple(x.shape)} style_map={tuple(style_map.shape)}")
 
-        nc = self.norm_c(x)
-        ns = self.norm_s(style_map)
-        qc = F.layer_norm(nc.permute(0, 2, 3, 1), [c]).permute(0, 3, 1, 2)
-        ks = F.layer_norm(ns.permute(0, 2, 3, 1), [c]).permute(0, 3, 1, 2)
-
-        q = self.to_q(qc).view(b, c, -1).transpose(1, 2)
-        k = self.to_k(ks).view(b, c, -1)
+        normalized = self.norm(x)
+        q_dehydrated = F.instance_norm(normalized)
+        k_dehydrated = F.instance_norm(style_map)
+        q = self.to_q(q_dehydrated).view(b, c, -1).transpose(1, 2)
+        k = self.to_k(k_dehydrated).view(b, c, -1)
         v = self.to_v(style_map).view(b, c, -1).transpose(1, 2)
 
-        q = F.normalize(q, dim=-1)
-        k = F.normalize(k, dim=1)
-        attn = torch.bmm(q, k) / 0.05
+        attn = torch.bmm(q, k) * (c ** -0.5) / self.temperature
         attn = F.softmax(attn, dim=-1)
-        self.last_attn = attn
         painted = torch.bmm(attn, v).transpose(1, 2).view(b, c, h_dim, w_dim)
         painted_smoothed = F.avg_pool2d(painted, kernel_size=3, stride=1, padding=1)
 
         final_gate = gate if isinstance(gate, float) else gate.to(device=x.device, dtype=x.dtype)
-        return x + final_gate * self.proj_out(painted_smoothed)
+        delta = torch.tanh(painted_smoothed) * 3.0 * (1.0 + self.gamma)
+        return x + final_gate * delta
 
 
 def _build_feature_block(
@@ -664,8 +666,15 @@ class LatentAdaCUT(nn.Module):
         style_skip_content_retention_boost: float = 0.0,
         input_anchor_noise_std: float = 0.0,
         input_anchor_noise_eval: bool = False,
+        ablation_no_residual: bool = False,
+        ablation_no_residual_gain: float = 1.0,
+        ablation_disable_spatial_prior: bool = False,
+        ablation_direct_delta_blend: bool = False,
+        ablation_skip_clean: bool = True,
+        ablation_skip_blur: bool = True,
         skip_bottleneck_channels: int = 16,
         skip_spatial_dropout_p: float = 0.15,
+        ablation_decoder_highpass: bool = True,
         color_highway_gain: float = 1.0,
         output_moment_match: bool = False,
         output_moment_match_eps: float = 1e-6,
@@ -719,8 +728,15 @@ class LatentAdaCUT(nn.Module):
                 category=UserWarning,
                 stacklevel=2,
             )
+        self.ablation_no_residual = bool(ablation_no_residual)
+        self.ablation_no_residual_gain = max(0.0, float(ablation_no_residual_gain))
+        self.ablation_disable_spatial_prior = bool(ablation_disable_spatial_prior)
+        self.ablation_direct_delta_blend = bool(ablation_direct_delta_blend)
+        self.ablation_skip_clean = bool(ablation_skip_clean)
+        self.ablation_skip_blur = bool(ablation_skip_blur)
         self.skip_bottleneck_channels = max(1, int(skip_bottleneck_channels))
         self.skip_spatial_dropout_p = max(0.0, min(1.0, float(skip_spatial_dropout_p)))
+        self.ablation_decoder_highpass = bool(ablation_decoder_highpass)
         self.color_highway_gain = float(color_highway_gain)
         self.output_moment_match = bool(output_moment_match)
         self.output_moment_match_eps = max(1e-8, float(output_moment_match_eps))
@@ -833,10 +849,6 @@ class LatentAdaCUT(nn.Module):
         self.dec_mod = NormFreeModulation(self.lift_channels, style_dim)
         self.dec_act = nn.SiLU()
         self.dec_out = nn.Conv2d(self.lift_channels, latent_channels, kernel_size=3, stride=1, padding=1)
-        nn.init.kaiming_normal_(self.dec_out.weight, a=0.2)
-        with torch.no_grad():
-            self.dec_out.weight.mul_(0.01)
-        nn.init.zeros_(self.dec_out.bias)
         self.style_map_proj = nn.Conv2d(self.latent_channels, self.body_channels, kernel_size=1, stride=1, padding=0)
         self.highway_proj = nn.Conv2d(
             self.body_channels,
@@ -869,6 +881,12 @@ class LatentAdaCUT(nn.Module):
         total_blocks = self.num_hires_blocks + self.num_res_blocks + self.num_decoder_blocks
         init_gains = torch.linspace(-2.0, 1.0, max(1, total_blocks))
         self.block_gains = nn.Parameter(init_gains)
+        self.alpha_predictor = nn.Sequential(
+            nn.Conv2d(self.latent_channels, 16, kernel_size=3, padding=1),
+            nn.SiLU(),
+            nn.Conv2d(16, 1, kernel_size=3, padding=1),
+        )
+
     def _normalize_style_id_input(
         self,
         style_id: torch.Tensor | int,
@@ -944,7 +962,12 @@ class LatentAdaCUT(nn.Module):
             gate=gate,
             naive_gain=self.skip_naive_gain,
         )
-        skip_processed = self.skip_squeeze(skip_feat)
+        skip_processed = skip_feat
+        if self.ablation_skip_clean:
+            skip_processed = F.instance_norm(skip_processed)
+        if self.ablation_skip_blur:
+            skip_processed = F.avg_pool2d(skip_processed, kernel_size=5, stride=1, padding=2)
+        skip_processed = self.skip_squeeze(skip_processed)
         skip_processed = self.skip_spatial_dropout(skip_processed)
 
         if self.skip_fusion_mode == "add_proj":
@@ -1201,8 +1224,14 @@ class LatentAdaCUT(nn.Module):
             gate_scale=strength,
         )
         delta_raw = self._compute_delta(h)
+        if self.ablation_decoder_highpass:
+            delta_mean = F.avg_pool2d(delta_raw, kernel_size=5, stride=1, padding=2)
+            delta_hp = delta_raw - delta_mean
+        else:
+            delta_hp = delta_raw
+
         highway_gain = float(self.color_highway_gain)
-        return delta_raw + color_highway * highway_gain
+        return delta_hp + color_highway * highway_gain
 
     def integrate(
         self,
@@ -1324,8 +1353,37 @@ class LatentAdaCUT(nn.Module):
             strength=strength,
             target_style_latent=target_style_latent,
         )
+        if self.ablation_no_residual:
+            # Extreme ablation: remove x-anchoring and rescale delta to full latent magnitude.
+            pred = (delta / (self.latent_scale_factor * max(self.residual_gain, 1e-5))) * self.ablation_no_residual_gain
+            return self._apply_output_moment_match(pred, target_style_latent)
+
+        # Dynamic content fusion gate with explicit edge-preserving prior.
         anchor = self._perturb_anchor_if_needed(x)
-        pred = anchor + delta * float(step_size) * step_scale
+        x_struct = x[:, :2, :, :]
+        laplacian = x.new_tensor(
+            [[-1.0, -1.0, -1.0], [-1.0, 8.0, -1.0], [-1.0, -1.0, -1.0]]
+        ).view(1, 1, 3, 3)
+        bsz, channels, h_dim, w_dim = x_struct.shape
+        hf_energy = F.conv2d(
+            x_struct.reshape(bsz * channels, 1, h_dim, w_dim),
+            laplacian,
+            padding=1,
+        ).reshape(bsz, channels, h_dim, w_dim)
+        mag = hf_energy.abs().mean(dim=1, keepdim=True)
+        spatial_prior = 1.0 - (mag / (mag.amax(dim=(2, 3), keepdim=True) + 1e-5))
+        if self.ablation_disable_spatial_prior:
+            spatial_prior = torch.zeros_like(spatial_prior)
+
+        soft_anchor = F.avg_pool2d(anchor, kernel_size=3, stride=1, padding=1)
+        if self.ablation_direct_delta_blend:
+            pred = soft_anchor + delta * float(step_size) * step_scale
+            return self._apply_output_moment_match(pred, target_style_latent)
+
+        raw_alpha = self.alpha_predictor(delta)
+        alpha_map = torch.sigmoid(raw_alpha + spatial_prior * 2.0)
+        blended_delta = delta * alpha_map
+        pred = soft_anchor + blended_delta * float(step_size) * step_scale
         return self._apply_output_moment_match(pred, target_style_latent)
 
 def count_parameters(model: nn.Module) -> int:
@@ -1399,11 +1457,24 @@ def build_model_from_config(
         style_skip_content_retention_boost=float(model_cfg.get("style_skip_content_retention_boost", _MODEL_CONFIG_DEFAULTS["style_skip_content_retention_boost"])),
         input_anchor_noise_std=float(model_cfg.get("input_anchor_noise_std", _MODEL_CONFIG_DEFAULTS["input_anchor_noise_std"])),
         input_anchor_noise_eval=bool(model_cfg.get("input_anchor_noise_eval", _MODEL_CONFIG_DEFAULTS["input_anchor_noise_eval"])),
+        ablation_no_residual=bool(model_cfg.get("ablation_no_residual", _MODEL_CONFIG_DEFAULTS["ablation_no_residual"])),
+        ablation_no_residual_gain=float(model_cfg.get("ablation_no_residual_gain", _MODEL_CONFIG_DEFAULTS["ablation_no_residual_gain"])),
+        ablation_disable_spatial_prior=bool(
+            model_cfg.get("ablation_disable_spatial_prior", _MODEL_CONFIG_DEFAULTS["ablation_disable_spatial_prior"])
+        ),
+        ablation_direct_delta_blend=bool(
+            model_cfg.get("ablation_direct_delta_blend", _MODEL_CONFIG_DEFAULTS["ablation_direct_delta_blend"])
+        ),
+        ablation_skip_clean=bool(model_cfg.get("ablation_skip_clean", _MODEL_CONFIG_DEFAULTS["ablation_skip_clean"])),
+        ablation_skip_blur=bool(model_cfg.get("ablation_skip_blur", _MODEL_CONFIG_DEFAULTS["ablation_skip_blur"])),
         skip_bottleneck_channels=int(
             model_cfg.get("skip_bottleneck_channels", _MODEL_CONFIG_DEFAULTS["skip_bottleneck_channels"])
         ),
         skip_spatial_dropout_p=float(
             model_cfg.get("skip_spatial_dropout_p", _MODEL_CONFIG_DEFAULTS["skip_spatial_dropout_p"])
+        ),
+        ablation_decoder_highpass=bool(
+            model_cfg.get("ablation_decoder_highpass", _MODEL_CONFIG_DEFAULTS["ablation_decoder_highpass"])
         ),
         color_highway_gain=float(model_cfg.get("color_highway_gain", _MODEL_CONFIG_DEFAULTS["color_highway_gain"])),
         output_moment_match=output_moment_match,

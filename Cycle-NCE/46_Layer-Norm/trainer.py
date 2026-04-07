@@ -31,12 +31,9 @@ _TRAIN_LOG_COLUMNS = [
     "swd",
     "repulsive",
     "color",
+    "oob",
     "identity",
     "identity_ratio",
-    "sched_factor",
-    "idt_anchor",
-    "topo_align",
-    "idt_repel",
     "aent",
     "amax",
     "lr",
@@ -413,8 +410,6 @@ class AdaCUTTrainer:
                     target_style=target_style,
                     target_style_id=target_style_id,
                     source_style_id=source_style_id,
-                    epoch=epoch,
-                    num_epochs=self.num_epochs,
                 )
                 loss = loss_dict["loss"]
             attn_metrics = self._collect_attention_metrics()
@@ -475,10 +470,6 @@ class AdaCUTTrainer:
                     rep=f"{_get_avg('repulsive'):.4f}",
                     color=f"{_get_avg('color'):.4f}",
                     idt=f"{_get_avg('identity'):.4f}",
-                    sf=f"{_get_avg('sched_factor'):.3f}",
-                    ida=f"{_get_avg('idt_anchor'):.4f}",
-                    topo=f"{_get_avg('topo_align'):.4f}",
-                    repi=f"{_get_avg('idt_repel'):.4f}",
                     idr=f"{_get_avg('identity_ratio'):.2f}",
                     aent=f"{_get_avg('aent'):.3f}",
                     amax=f"{_get_avg('amax'):.3f}",
@@ -526,11 +517,9 @@ class AdaCUTTrainer:
         metrics.setdefault("swd", 0.0)
         metrics.setdefault("repulsive", 0.0)
         metrics.setdefault("color", 0.0)
+        metrics.setdefault("oob", 0.0)
         metrics.setdefault("identity", 0.0)
         metrics.setdefault("identity_ratio", 0.0)
-        metrics.setdefault("sched_factor", 0.0)
-        metrics.setdefault("idt_anchor", 0.0)
-        metrics.setdefault("idt_transfer", 0.0)
         metrics.setdefault("aent", 0.0)
         metrics.setdefault("amax", 0.0)
         metrics["lr"] = lr
@@ -557,12 +546,9 @@ class AdaCUTTrainer:
                     float(metrics.get("swd", 0.0)),
                     float(metrics.get("repulsive", 0.0)),
                     float(metrics.get("color", 0.0)),
+                    float(metrics.get("oob", 0.0)),
                     float(metrics.get("identity", 0.0)),
                     float(metrics.get("identity_ratio", 0.0)),
-                    float(metrics.get("sched_factor", 0.0)),
-                    float(metrics.get("idt_anchor", 0.0)),
-                    float(metrics.get("topo_align", 0.0)),
-                    float(metrics.get("idt_repel", 0.0)),
                     float(metrics.get("aent", 0.0)),
                     float(metrics.get("amax", 0.0)),
                     float(metrics.get("lr", 0.0)),

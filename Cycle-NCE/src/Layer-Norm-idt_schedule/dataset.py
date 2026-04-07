@@ -43,8 +43,6 @@ class AdaCUTLatentDataset(Dataset):
         style_subdirs: Sequence[str],
         allow_hflip: bool = True,
         identity_ratio: float | None = None,
-        group_by_content: bool = False,
-        grouped_style_count: int = 1,
         preload_to_gpu: bool = False,
         preload_max_vram_gb: float = 0.0,
         preload_reserve_ratio: float = 0.35,
@@ -55,7 +53,6 @@ class AdaCUTLatentDataset(Dataset):
         self.style_subdirs = list(style_subdirs)
         self.allow_hflip = bool(allow_hflip)
         self.identity_ratio = None if identity_ratio is None else float(max(0.0, min(1.0, identity_ratio)))
-        self.group_by_content = bool(group_by_content)
         requested_preload_to_gpu = bool(preload_to_gpu)
         self.preload_max_vram_gb = max(0.0, float(preload_max_vram_gb))
         self.preload_reserve_ratio = max(0.0, min(0.95, float(preload_reserve_ratio)))
@@ -75,7 +72,6 @@ class AdaCUTLatentDataset(Dataset):
             raise ValueError("style_subdirs cannot be empty")
         if len(self.style_subdirs) < 2:
             raise ValueError("At least two style domains are required for cross-domain sampling")
-        self.grouped_style_count = max(1, min(int(grouped_style_count), len(self.style_subdirs)))
 
         self.style_tensors: Dict[int, torch.Tensor] = {}
         logger.info("Loading latent dataset from %s", self.data_root)
@@ -167,74 +163,38 @@ class AdaCUTLatentDataset(Dataset):
         g.manual_seed((self.epoch + 1) * 1000003)
         
         n_styles = len(self.style_subdirs)
-
-        if self.group_by_content and self.grouped_style_count > 1:
-            group_size = self.grouped_style_count
-            n_groups = (N + group_size - 1) // group_size
-
-            base_content_style_ids = torch.randint(0, n_styles, (n_groups,), generator=g)
-            base_content_rands = torch.rand(n_groups, generator=g)
-            if self.allow_hflip:
-                base_flip_content = torch.rand(n_groups, generator=g) < 0.5
-                base_flip_target = torch.rand(n_groups, group_size, generator=g) < 0.5
-            else:
-                base_flip_content = None
-                base_flip_target = None
-
-            target_style_ids = torch.empty((n_groups, group_size), dtype=torch.long)
-            target_style_ids[:, 0] = base_content_style_ids
-            if group_size > 1:
-                rand_perm = torch.rand((n_groups, n_styles - 1), generator=g)
-                order = torch.argsort(rand_perm, dim=1)
-                base_options = torch.arange(n_styles - 1, dtype=torch.long).unsqueeze(0).expand(n_groups, -1)
-                selected = torch.gather(base_options, 1, order[:, : group_size - 1])
-                adjusted = selected + (selected >= base_content_style_ids.unsqueeze(1)).long()
-                target_style_ids[:, 1:] = adjusted
-
-            target_rands = torch.rand((n_groups, group_size), generator=g)
-
-            self._cache_content_style_ids = base_content_style_ids.repeat_interleave(group_size)[:N]
-            self._cache_target_style_ids = target_style_ids.reshape(-1)[:N]
-            self._cache_content_rands = base_content_rands.repeat_interleave(group_size)[:N]
-            self._cache_target_rands = target_rands.reshape(-1)[:N]
-            if self.allow_hflip:
-                self._cache_flip_content = base_flip_content.repeat_interleave(group_size)[:N]
-                self._cache_flip_target = base_flip_target.reshape(-1)[:N]
-            else:
-                self._cache_flip_content = None
-                self._cache_flip_target = None
+        
+        self._cache_content_style_ids = torch.randint(0, n_styles, (N,), generator=g)
+        # Uniform target sampling across all styles (including source style).
+        if self.identity_ratio is None:
+            # Backward compatible behavior: uniform target sampling over all styles.
+            self._cache_target_style_ids = torch.randint(0, n_styles, (N,), generator=g)
         else:
-            self._cache_content_style_ids = torch.randint(0, n_styles, (N,), generator=g)
-            # Uniform target sampling across all styles (including source style).
-            if self.identity_ratio is None:
-                # Backward compatible behavior: uniform target sampling over all styles.
-                self._cache_target_style_ids = torch.randint(0, n_styles, (N,), generator=g)
-            else:
-                # Controlled identity ratio:
-                # - identity samples use target=source
-                # - non-identity samples sample uniformly from all other styles.
-                identity_mask = torch.rand(N, generator=g) < float(self.identity_ratio)
-                target_style_ids = self._cache_content_style_ids.clone()
-                if n_styles > 1:
-                    non_id = ~identity_mask
-                    non_id_count = int(non_id.sum().item())
-                    if non_id_count > 0:
-                        rand_other = torch.randint(0, n_styles - 1, (non_id_count,), generator=g)
-                        src_non_id = self._cache_content_style_ids[non_id]
-                        adjusted = rand_other + (rand_other >= src_non_id).long()
-                        target_style_ids[non_id] = adjusted
-                self._cache_target_style_ids = target_style_ids
+            # Controlled identity ratio:
+            # - identity samples use target=source
+            # - non-identity samples sample uniformly from all other styles.
+            identity_mask = torch.rand(N, generator=g) < float(self.identity_ratio)
+            target_style_ids = self._cache_content_style_ids.clone()
+            if n_styles > 1:
+                non_id = ~identity_mask
+                non_id_count = int(non_id.sum().item())
+                if non_id_count > 0:
+                    rand_other = torch.randint(0, n_styles - 1, (non_id_count,), generator=g)
+                    src_non_id = self._cache_content_style_ids[non_id]
+                    adjusted = rand_other + (rand_other >= src_non_id).long()
+                    target_style_ids[non_id] = adjusted
+            self._cache_target_style_ids = target_style_ids
 
-            # Random floats for selecting index within the chosen style
-            self._cache_content_rands = torch.rand(N, generator=g)
-            self._cache_target_rands = torch.rand(N, generator=g)
+        # Random floats for selecting index within the chosen style
+        self._cache_content_rands = torch.rand(N, generator=g)
+        self._cache_target_rands = torch.rand(N, generator=g)
 
-            if self.allow_hflip:
-                self._cache_flip_content = torch.rand(N, generator=g) < 0.5
-                self._cache_flip_target = torch.rand(N, generator=g) < 0.5
-            else:
-                self._cache_flip_content = None
-                self._cache_flip_target = None
+        if self.allow_hflip:
+            self._cache_flip_content = torch.rand(N, generator=g) < 0.5
+            self._cache_flip_target = torch.rand(N, generator=g) < 0.5
+        else:
+            self._cache_flip_content = None
+            self._cache_flip_target = None
 
     def __len__(self) -> int:
         return self.length

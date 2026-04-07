@@ -31,14 +31,9 @@ _TRAIN_LOG_COLUMNS = [
     "swd",
     "repulsive",
     "color",
+    "oob",
     "identity",
     "identity_ratio",
-    "sched_factor",
-    "idt_anchor",
-    "topo_align",
-    "idt_repel",
-    "aent",
-    "amax",
     "lr",
     "data_time_sec",
     "transfer_time_sec",
@@ -69,39 +64,6 @@ def _strip_compile_prefix(state_dict: Dict[str, torch.Tensor]) -> Dict[str, torc
 
 
 class AdaCUTTrainer:
-    @staticmethod
-    def _unwrap_model(module: torch.nn.Module) -> torch.nn.Module:
-        return getattr(module, "_orig_mod", module)
-
-    def _collect_attention_metrics(self) -> Dict[str, torch.Tensor]:
-        model = self._unwrap_model(self.model)
-        body_blocks = getattr(model, "body_blocks", None)
-        if body_blocks is None:
-            return {}
-
-        attn_tensors = []
-        for block in body_blocks:
-            attn = getattr(block, "last_attn", None)
-            if torch.is_tensor(attn) and attn.numel() > 0:
-                attn_tensors.append(attn)
-        if not attn_tensors:
-            return {}
-
-        entropies = []
-        maxima = []
-        for attn in attn_tensors:
-            attn_f = attn.detach().float()
-            probs = attn_f.clamp_min(1e-8)
-            entropy = -(probs * probs.log()).sum(dim=-1)
-            entropy = entropy / math.log(float(attn_f.shape[-1]))
-            entropies.append(entropy.mean())
-            maxima.append(attn_f.amax(dim=-1).mean())
-
-        return {
-            "aent": torch.stack(entropies).mean(),
-            "amax": torch.stack(maxima).mean(),
-        }
-
     @staticmethod
     def _apply_channels_last_(module: torch.nn.Module) -> None:
         for p in module.parameters():
@@ -413,13 +375,8 @@ class AdaCUTTrainer:
                     target_style=target_style,
                     target_style_id=target_style_id,
                     source_style_id=source_style_id,
-                    epoch=epoch,
-                    num_epochs=self.num_epochs,
                 )
                 loss = loss_dict["loss"]
-            attn_metrics = self._collect_attention_metrics()
-            if attn_metrics:
-                loss_dict.update(attn_metrics)
             fwd_loss_step += max(0.0, time.perf_counter() - t0)
 
             loss_to_backward = loss / self.accumulation_steps
@@ -475,13 +432,7 @@ class AdaCUTTrainer:
                     rep=f"{_get_avg('repulsive'):.4f}",
                     color=f"{_get_avg('color'):.4f}",
                     idt=f"{_get_avg('identity'):.4f}",
-                    sf=f"{_get_avg('sched_factor'):.3f}",
-                    ida=f"{_get_avg('idt_anchor'):.4f}",
-                    topo=f"{_get_avg('topo_align'):.4f}",
-                    repi=f"{_get_avg('idt_repel'):.4f}",
                     idr=f"{_get_avg('identity_ratio'):.2f}",
-                    aent=f"{_get_avg('aent'):.3f}",
-                    amax=f"{_get_avg('amax'):.3f}",
                     data_ms=f"{(1000.0 * data_time_total / max(step_idx, 1)):.1f}",
                     comp_ms=f"{(1000.0 * compute_time_total / max(step_idx, 1)):.1f}",
                     it_s=f"{step_per_sec:.2f}",
@@ -526,13 +477,9 @@ class AdaCUTTrainer:
         metrics.setdefault("swd", 0.0)
         metrics.setdefault("repulsive", 0.0)
         metrics.setdefault("color", 0.0)
+        metrics.setdefault("oob", 0.0)
         metrics.setdefault("identity", 0.0)
         metrics.setdefault("identity_ratio", 0.0)
-        metrics.setdefault("sched_factor", 0.0)
-        metrics.setdefault("idt_anchor", 0.0)
-        metrics.setdefault("idt_transfer", 0.0)
-        metrics.setdefault("aent", 0.0)
-        metrics.setdefault("amax", 0.0)
         metrics["lr"] = lr
         metrics["data_time_sec"] = data_time_total
         metrics["transfer_time_sec"] = transfer_time_total
@@ -557,14 +504,9 @@ class AdaCUTTrainer:
                     float(metrics.get("swd", 0.0)),
                     float(metrics.get("repulsive", 0.0)),
                     float(metrics.get("color", 0.0)),
+                    float(metrics.get("oob", 0.0)),
                     float(metrics.get("identity", 0.0)),
                     float(metrics.get("identity_ratio", 0.0)),
-                    float(metrics.get("sched_factor", 0.0)),
-                    float(metrics.get("idt_anchor", 0.0)),
-                    float(metrics.get("topo_align", 0.0)),
-                    float(metrics.get("idt_repel", 0.0)),
-                    float(metrics.get("aent", 0.0)),
-                    float(metrics.get("amax", 0.0)),
                     float(metrics.get("lr", 0.0)),
                     float(metrics.get("data_time_sec", 0.0)),
                     float(metrics.get("transfer_time_sec", 0.0)),

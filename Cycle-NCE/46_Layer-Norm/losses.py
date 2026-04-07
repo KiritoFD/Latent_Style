@@ -24,6 +24,11 @@ _RGB_TO_YUV_MATRIX: tuple[tuple[float, ...], ...] = (
 )
 
 
+def exponential_oob_loss(z: torch.Tensor, threshold: float = 3.0) -> torch.Tensor:
+    excess = F.relu(z.abs() - float(threshold))
+    return (torch.exp(excess) - 1.0).mean()
+
+
 def soft_repulsive_loss(
     pred: torch.Tensor,
     content: torch.Tensor,
@@ -205,10 +210,9 @@ class AdaCUTObjective:
         self.repulsive_temperature = float(loss_cfg.get("repulsive_temperature", 0.1))
         self.repulsive_mode = str(loss_cfg.get("repulsive_mode", "l1")).strip().lower()
         self.w_color = float(loss_cfg.get("w_color", 0.0))
+        self.w_oob = float(loss_cfg.get("w_oob", 0.0))
+        self.oob_threshold = float(loss_cfg.get("oob_threshold", 3.0))
         self.nsight_nvtx = bool(config.get("training", {}).get("nsight_nvtx", False))
-        data_cfg = config.get("data", {})
-        self.group_by_content = bool(data_cfg.get("group_by_content", False))
-        self.grouped_style_count = max(1, int(data_cfg.get("grouped_style_count", 1)))
         self._projection_cache: Dict[tuple[int, int, int, str, str, str], torch.Tensor] = {}
         self._sobel_kernel_cache: Dict[tuple[int, str, str], tuple[torch.Tensor, torch.Tensor]] = {}
 
@@ -429,40 +433,24 @@ class AdaCUTObjective:
         content: torch.Tensor,
         id_mask: torch.Tensor,
     ) -> torch.Tensor | None:
-        del id_mask
-        if self.w_identity <= 0.0:
+        if self.w_identity <= 0.0 or not id_mask.any():
             return None
-        return F.l1_loss(pred, content)
+
+        # Luma-only identity: keep channel-0 structure aligned while leaving chroma channels unconstrained.
+        pred_luma = pred[:, 0:1, :, :]
+        content_luma = content[:, 0:1, :, :]
+        pred_struct = F.instance_norm(pred_luma)
+        content_struct = F.instance_norm(content_luma)
+        return _masked_mse_mean(pred_struct, content_struct, id_mask)
 
     def _compute_repulsive_term(
         self,
         pred: torch.Tensor,
         content: torch.Tensor,
         xid_mask: torch.Tensor,
-        target_style_id: torch.Tensor | None = None,
     ) -> torch.Tensor | None:
         if self.w_repulsive <= 0.0 or not xid_mask.any():
             return None
-        if self.group_by_content and self.grouped_style_count > 1:
-            group_size = self.grouped_style_count
-            num_groups = int(pred.shape[0]) // group_size
-            if num_groups > 0:
-                usable = num_groups * group_size
-                pred_g = pred[:usable].reshape(num_groups, group_size, *pred.shape[1:])
-                rolled_g = torch.roll(pred_g, shifts=1, dims=1)
-                repulsive_per_pair = soft_repulsive_loss(
-                    pred_g.reshape(-1, *pred.shape[1:]),
-                    rolled_g.reshape(-1, *pred.shape[1:]),
-                    margin=self.repulsive_margin,
-                    temperature=self.repulsive_temperature,
-                    dist_mode=self.repulsive_mode,
-                )
-                if target_style_id is not None:
-                    ids_g = target_style_id[:usable].reshape(num_groups, group_size)
-                    valid_mask = (ids_g != torch.roll(ids_g, shifts=1, dims=1)).reshape(-1)
-                    if valid_mask.any():
-                        return (repulsive_per_pair * valid_mask.float()).sum() / valid_mask.float().sum().clamp_min(1.0)
-                return repulsive_per_pair.mean()
         repulsive_per_sample = soft_repulsive_loss(
             pred,
             content,
@@ -480,14 +468,11 @@ class AdaCUTObjective:
         target_style_id: torch.Tensor,
         source_style_id: torch.Tensor | None = None,
         pred_override: torch.Tensor | None = None,
-        epoch: int = 1,
-        num_epochs: int = 1,
     ) -> Dict[str, torch.Tensor]:
         nvtx_enabled = bool(self.nsight_nvtx and content.is_cuda)
         id_mask = torch.zeros_like(target_style_id, dtype=torch.bool) if source_style_id is None else (source_style_id.long() == target_style_id.long())
         xid_mask = ~id_mask
         id_ratio = id_mask.float().mean()
-        del epoch, num_epochs
 
         if pred_override is None:
             with self._nvtx_range("loss/pred", nvtx_enabled):
@@ -504,10 +489,7 @@ class AdaCUTObjective:
         content_cast = content.to(dtype=pred.dtype)
         target_cast = target_style.to(dtype=pred.dtype)
         total = torch.tensor(0.0, device=content.device)
-        metrics = {
-            "identity_ratio": id_ratio.detach(),
-            "sched_factor": pred.new_tensor(1.0).detach(),
-        }
+        metrics = {"identity_ratio": id_ratio.detach()}
         xid_idx = self._select_xid_indices(xid_mask) if xid_mask.any() else None
 
         ls = self._compute_swd_term(pred, target_cast, target_style_id, xid_idx)
@@ -523,50 +505,26 @@ class AdaCUTObjective:
             metrics["color"] = lcol_weighted.detach()
             metrics["_color_raw"] = lcol
 
-        identity_total_weighted = torch.tensor(0.0, device=content.device, dtype=pred.dtype)
-        identity_total_raw = torch.tensor(0.0, device=content.device, dtype=pred.dtype)
+        if self.w_oob > 0.0:
+            loob = exponential_oob_loss(pred, threshold=self.oob_threshold)
+            loob_weighted = self.w_oob * loob
+            total = total + loob_weighted
+            metrics["oob"] = loob_weighted.detach()
+            metrics["_oob_raw"] = loob
 
-        if self.w_identity > 0.0 and id_mask.any():
-            l_idt_anchor = F.l1_loss(pred[id_mask], content_cast[id_mask])
-            l_idt_anchor_weighted = l_idt_anchor * (self.w_identity * 5.0)
-            total = total + l_idt_anchor_weighted
-            identity_total_weighted = identity_total_weighted + l_idt_anchor_weighted
-            identity_total_raw = identity_total_raw + l_idt_anchor
-            metrics["idt_anchor"] = l_idt_anchor_weighted.detach()
-            metrics["_idt_anchor_raw"] = l_idt_anchor
-
-        if self.w_identity > 0.0 and xid_mask.any():
-            pred_xid = pred[xid_mask]
-            content_xid = content_cast[xid_mask]
-            p_n = F.instance_norm(F.avg_pool2d(pred_xid, kernel_size=3, stride=1, padding=1), eps=1e-3)
-            c_n = F.instance_norm(F.avg_pool2d(content_xid, kernel_size=3, stride=1, padding=1), eps=1e-3)
-            l_topo = F.l1_loss(p_n, c_n)
-            l_topo_weighted = l_topo * self.w_identity
-            total = total + l_topo_weighted
-            identity_total_weighted = identity_total_weighted + l_topo_weighted
-            identity_total_raw = identity_total_raw + l_topo
-            metrics["topo_align"] = l_topo_weighted.detach()
-            metrics["_topo_align_raw"] = l_topo
-
-            dist_per_sample = (pred_xid - content_xid).abs().mean(dim=(1, 2, 3))
-            l_idt_repel = F.relu(pred.new_tensor(0.5) - dist_per_sample).mean()
-            l_idt_repel_weighted = l_idt_repel * (self.w_identity * 2.0)
-            total = total + l_idt_repel_weighted
-            identity_total_weighted = identity_total_weighted + l_idt_repel_weighted
-            identity_total_raw = identity_total_raw + l_idt_repel
-            metrics["idt_repel"] = l_idt_repel_weighted.detach()
-            metrics["_idt_repel_raw"] = l_idt_repel
-
-        if float(identity_total_weighted.detach().item()) > 0.0:
-            metrics["identity"] = identity_total_weighted.detach()
-            metrics["_identity_raw"] = identity_total_raw
-
-        lrepel = self._compute_repulsive_term(pred, content_cast, xid_mask, target_style_id=target_style_id)
+        lrepel = self._compute_repulsive_term(pred, content_cast, xid_mask)
         if lrepel is not None:
             lrepel_weighted = self.w_repulsive * lrepel
             total = total + lrepel_weighted
             metrics["repulsive"] = lrepel_weighted.detach()
             metrics["_repulsive_raw"] = lrepel
+
+        lid = self._compute_identity_term(pred, content_cast, id_mask)
+        if lid is not None:
+            lid_weighted = self.w_identity * lid
+            total = total + lid_weighted
+            metrics["identity"] = lid_weighted.detach()
+            metrics["_identity_raw"] = lid
 
         metrics["loss"] = total
         return metrics

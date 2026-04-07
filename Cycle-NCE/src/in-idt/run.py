@@ -28,6 +28,8 @@ logger = logging.getLogger(__name__)
 
 _ALLOWED_LOSS_KEYS = {
     "w_color",
+    "w_oob",
+    "oob_threshold",
     "w_repulsive",
     "repulsive_margin",
     "repulsive_temperature",
@@ -59,6 +61,7 @@ _LOSS_WEIGHT_KEYS = (
     "w_swd_macro",
     "w_repulsive",
     "w_color",
+    "w_oob",
     "w_identity",
 )
 
@@ -295,8 +298,6 @@ def main() -> None:
         data_root=data_cfg.get("data_root", "../../latents"),
         style_subdirs=data_cfg.get("style_subdirs", ["photo", "monet", "vangogh", "cezanne"]),
         allow_hflip=bool(data_cfg.get("allow_hflip", True)),
-        group_by_content=bool(data_cfg.get("group_by_content", False)),
-        grouped_style_count=int(data_cfg.get("grouped_style_count", 1)),
         preload_to_gpu=bool(data_cfg.get("preload_to_gpu", False)),
         preload_max_vram_gb=float(data_cfg.get("preload_max_vram_gb", 0.0)),
         preload_reserve_ratio=float(data_cfg.get("preload_reserve_ratio", 0.35)),
@@ -342,7 +343,7 @@ def main() -> None:
     dataloader_kwargs = dict(
         dataset=dataset,
         batch_size=batch_size,
-        shuffle=not bool(getattr(dataset, "group_by_content", False)),
+        shuffle=True,
         drop_last=True,
         num_workers=num_workers,
         pin_memory=pin_memory and (not preload_to_gpu),
@@ -372,7 +373,7 @@ def main() -> None:
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f swd=%.4f rep=%.4f color=%.4f idt=%.4f ida=%.4f topo=%.4f repi=%.4f sf=%.3f idr=%.2f aent=%.3f amax=%.3f lr=%.2e data=%.1fs comp=%.1fs",
+            "Epoch %d/%d | loss=%.4f swd=%.4f rep=%.4f color=%.4f idt=%.4f idr=%.2f lr=%.2e data=%.1fs comp=%.1fs",
             epoch,
             trainer.num_epochs,
             metrics["loss"],
@@ -380,13 +381,7 @@ def main() -> None:
             metrics.get("repulsive", 0.0),
             metrics.get("color", 0.0),
             metrics.get("identity", 0.0),
-            metrics.get("idt_anchor", 0.0),
-            metrics.get("topo_align", 0.0),
-            metrics.get("idt_repel", 0.0),
-            metrics.get("sched_factor", 0.0),
             metrics.get("identity_ratio", 0.0),
-            metrics.get("aent", 0.0),
-            metrics.get("amax", 0.0),
             metrics["lr"],
             metrics.get("data_time_sec", 0.0),
             metrics.get("compute_time_sec", 0.0),

@@ -432,7 +432,7 @@ class SemanticCrossAttn(nn.Module):
 
         q = F.normalize(q, dim=-1)
         k = F.normalize(k, dim=1)
-        attn = torch.bmm(q, k) / 0.05
+        attn = torch.bmm(q, k) / 0.02
         attn = F.softmax(attn, dim=-1)
         self.last_attn = attn
         painted = torch.bmm(attn, v).transpose(1, 2).view(b, c, h_dim, w_dim)
@@ -833,10 +833,6 @@ class LatentAdaCUT(nn.Module):
         self.dec_mod = NormFreeModulation(self.lift_channels, style_dim)
         self.dec_act = nn.SiLU()
         self.dec_out = nn.Conv2d(self.lift_channels, latent_channels, kernel_size=3, stride=1, padding=1)
-        nn.init.kaiming_normal_(self.dec_out.weight, a=0.2)
-        with torch.no_grad():
-            self.dec_out.weight.mul_(0.01)
-        nn.init.zeros_(self.dec_out.bias)
         self.style_map_proj = nn.Conv2d(self.latent_channels, self.body_channels, kernel_size=1, stride=1, padding=0)
         self.highway_proj = nn.Conv2d(
             self.body_channels,
