@@ -428,16 +428,8 @@ class SemanticCrossAttn(nn.Module):
             nn.SiLU(),
             nn.Conv2d(dim, dim, kernel_size=1),
         )
-        nn.init.kaiming_normal_(self.gate_conv[0].weight, a=math.sqrt(5))
-        if self.gate_conv[0].bias is not None:
-            fan_in0, _ = nn.init._calculate_fan_in_and_fan_out(self.gate_conv[0].weight)
-            bound0 = 1 / math.sqrt(fan_in0) if fan_in0 > 0 else 0
-            nn.init.uniform_(self.gate_conv[0].bias, -bound0, bound0)
-        nn.init.kaiming_normal_(self.gate_conv[-1].weight, a=math.sqrt(5))
-        if self.gate_conv[-1].bias is not None:
-            fan_in1, _ = nn.init._calculate_fan_in_and_fan_out(self.gate_conv[-1].weight)
-            bound1 = 1 / math.sqrt(fan_in1) if fan_in1 > 0 else 0
-            nn.init.uniform_(self.gate_conv[-1].bias, -bound1, bound1)
+        nn.init.constant_(self.gate_conv[-1].bias, 1.0)
+        nn.init.zeros_(self.gate_conv[-1].weight)
 
     def forward(
         self,
@@ -980,9 +972,8 @@ class LatentAdaCUT(nn.Module):
             and isinstance(block, AttentionBlock)
             and getattr(getattr(block, "attn", None), "mode", None) == "window_attn"
         )
-        gate_in = gate.to(device=h.device, dtype=h.dtype) if torch.is_tensor(gate) else h.new_tensor(float(gate))
-        gate_is_zero = bool(torch.count_nonzero(gate_in.detach()).item() == 0)
-        if self.use_checkpointing and self.training and not gate_is_zero:
+        if self.use_checkpointing and self.training:
+            gate_in = gate.to(device=h.device, dtype=h.dtype) if torch.is_tensor(gate) else h.new_tensor(float(gate))
             return ckpt.checkpoint(
                 lambda _h, _s, _g, _blk=block, _use_shift=use_shift: (
                     _blk(_h, _s, _g, shift=True) if _use_shift else _blk(_h, _s, _g)
@@ -993,8 +984,8 @@ class LatentAdaCUT(nn.Module):
                 use_reentrant=False,
             )
         if use_shift:
-            return block(h, style_code, gate=gate_in, shift=True)
-        return block(h, style_code, gate=gate_in)
+            return block(h, style_code, gate=gate, shift=True)
+        return block(h, style_code, gate=gate)
 
     def _run_style_blocks(
         self,
@@ -1198,16 +1189,15 @@ class LatentAdaCUT(nn.Module):
     ) -> torch.Tensor:
         feat_c = x / max(self.latent_scale_factor, 1e-8)
         h_c = self.enc_in_act(self.enc_in(feat_c))
-        with torch.no_grad():
-            h_c_no_grad = h_c.clone()
-            for block in self.hires_body:
-                h_c_no_grad = block(h_c_no_grad, style_code, gate=0.0)
-        skip_32 = h_c_no_grad
-
-        h_c_grad = h_c
-        for block in self.hires_body:
-            h_c_grad = block(h_c_grad, style_code, gate=0.0)
-        content_feat_16 = self.down(h_c_grad)
+        h_c = self._run_style_blocks(
+            h_c,
+            blocks=self.hires_body,
+            style_code=style_code,
+            base_idx=0,
+            gate_scale=0.0,
+        )
+        skip_32 = h_c
+        content_feat_16 = self.down(h_c)
         style_map_proj: torch.Tensor | None = None
 
         if override_palette is not None:

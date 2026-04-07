@@ -257,14 +257,14 @@ def main() -> None:
     )
     parser.add_argument("--exp_dir", type=str, required=True, help="Experiment dir or parent root dir")
     parser.add_argument("--recursive", action="store_true", help="Recursively discover and process child experiment dirs")
-    parser.add_argument("--distill_epochs", type=int, default=200, help="prob.py --epochs")
+    parser.add_argument("--distill_epochs", type=int, default=20, help="prob.py --epochs")
     parser.add_argument("--steps_per_epoch", type=int, default=500, help="prob.py --steps_per_epoch")
     parser.add_argument("--batch_size", type=int, default=64, help="Distillation batch size (prob.py/distill_cartridge.py)")
     parser.add_argument("--num_workers", type=int, default=0, help="prob.py --num_workers")
     parser.add_argument(
         "--distill_mode",
         type=str,
-        default="cartridge",
+        default="tokenizer",
         choices=["tokenizer", "cartridge", "style_map"],
     )
     parser.add_argument("--cartridge_num_colors", type=int, default=64, help="distill_cartridge.py --num_colors")

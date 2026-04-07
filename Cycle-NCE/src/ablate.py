@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import copy
@@ -38,6 +38,7 @@ def _load_base_config(src_dir: Path, base_config_arg: str | None) -> tuple[dict,
             base_path = (src_dir / base_path).resolve()
     else:
         candidates = [
+            (src_dir / "config_skip.json").resolve(),
             (src_dir / "config_repulse.json").resolve(),
             (src_dir / "config_in-idt.json").resolve(),
             (src_dir / "config.json").resolve(),
@@ -65,90 +66,132 @@ def _deep_update(dst: dict, src: dict) -> None:
 
 EXPERIMENTS: list[tuple[str, dict]] = [
     (
-        "00_l1_mean_filter",
-        {
-            "loss": {
-                "w_repulsive": 25.0,
-                "repulsive_margin": 0.8,
-                "repulsive_temperature": 0.2,
-                "repulsive_mode": "l1",
-                "w_swd_unified": 50.0,
-            },
-        },
-    ),
-    (
-        "01_mse_local_tear",
-        {
-            "loss": {
-                "w_repulsive": 30.0,
-                "repulsive_margin": 0.3,
-                "repulsive_temperature": 0.2,
-                "repulsive_mode": "mse",
-                "w_swd_unified": 50.0,
-            },
-        },
-    ),
-    (
-        "02_micro_mesh",
+        "01_safe_baseline",
         {
             "model": {
-                "skip_bottleneck_channels": 2,
-                "skip_spatial_dropout_p": 0.3,
-                "ablation_skip_blur": True,
+                "skip_routing_mode": "naive",
+                "skip_naive_gain": 0.6,
+                "semantic_attn_temperature": 0.08,
             },
+            "loss": {
+                "w_swd_unified": 20.0,
+                "w_identity": 10.0,
+                "swd_patch_sizes": [3, 7, 15],
+            },
+            "training": {"learning_rate": 1e-05},
         },
     ),
     (
-        "03_zero_skip_isolation",
+        "02_macro_only",
+        {
+            "model": {
+                "skip_routing_mode": "naive",
+                "skip_naive_gain": 0.6,
+                "semantic_attn_temperature": 0.08,
+            },
+            "loss": {
+                "w_swd_unified": 30.0,
+                "w_identity": 10.0,
+                "swd_patch_sizes": [7, 15, 25],
+            },
+            "training": {"learning_rate": 1e-05},
+        },
+    ),
+    (
+        "03_no_skip_extreme",
         {
             "model": {
                 "skip_routing_mode": "none",
-            },
-        },
-    ),
-    (
-        "04_subzero_one_hot",
-        {
-            "model": {
-                "semantic_attn_temperature": 0.05,
-                "color_highway_gain": 0.2,
-            },
-        },
-    ),
-    (
-        "05_highway_override",
-        {
-            "model": {
-                "color_highway_gain": 0.9,
+                "semantic_attn_temperature": 0.08,
             },
             "loss": {
-                "w_repulsive": 20.0,
-                "repulsive_mode": "l1",
-                "swd_patch_sizes": [3, 5],
+                "w_swd_unified": 30.0,
+                "w_identity": 15.0,
+                "swd_patch_sizes": [3, 7, 15],
             },
+            "training": {"learning_rate": 1e-05},
         },
     ),
     (
-        "06_structure_sacrifice",
+        "04_strong_identity",
         {
+            "model": {
+                "skip_routing_mode": "naive",
+                "skip_naive_gain": 0.8,
+                "semantic_attn_temperature": 0.08,
+            },
             "loss": {
-                "w_identity": 1.0,
+                "w_swd_unified": 20.0,
+                "w_identity": 30.0,
+                "swd_patch_sizes": [3, 7, 15],
+            },
+            "training": {"learning_rate": 1e-05},
+        },
+    ),
+    (
+        "05_high_style_push",
+        {
+            "model": {
+                "skip_routing_mode": "naive",
+                "skip_naive_gain": 0.4,
+                "semantic_attn_temperature": 0.08,
+            },
+            "loss": {
                 "w_swd_unified": 60.0,
-                "w_repulsive": 30.0,
-                "repulsive_margin": 0.3,
-                "repulsive_temperature": 0.2,
-                "repulsive_mode": "mse",
+                "w_identity": 10.0,
+                "swd_patch_sizes": [3, 7, 15, 25],
             },
+            "training": {"learning_rate": 1e-05},
         },
     ),
     (
-        "07_edge_rebel",
+        "06_soft_attention",
         {
+            "model": {
+                "skip_routing_mode": "naive",
+                "skip_naive_gain": 0.6,
+                "semantic_attn_temperature": 0.2,
+            },
             "loss": {
-                "w_repulsive": 25.0,
-                "swd_use_high_freq": True,
-                "swd_hf_weight_ratio": 0.25,
-                "w_identity": 4.0,
+                "w_swd_unified": 30.0,
+                "w_identity": 10.0,
+                "swd_patch_sizes": [3, 7, 15],
+            },
+            "training": {"learning_rate": 1e-05},
+        },
+    ),
+    (
+        "07_sharp_attention",
+        {
+            "model": {
+                "skip_routing_mode": "naive",
+                "skip_naive_gain": 0.6,
+                "semantic_attn_temperature": 0.03,
+            },
+            "loss": {
+                "w_swd_unified": 30.0,
+                "w_identity": 10.0,
+                "swd_patch_sizes": [3, 7, 15],
+            },
+            "training": {"learning_rate": 1e-05},
+        },
+    ),
+    (
+        "08_high_lr_stress_test",
+        {
+            "model": {
+                "skip_routing_mode": "naive",
+                "skip_naive_gain": 0.5,
+                "semantic_attn_temperature": 0.08,
+            },
+            "loss": {
+                "w_swd_unified": 20.0,
+                "w_identity": 10.0,
+                "swd_patch_sizes": [3, 7, 15],
+            },
+            "training": {
+                "learning_rate": 5e-05,
+                "warmup_ratio": 0.2,
             },
         },
     ),
@@ -169,9 +212,9 @@ def generate(src_dir: Path, base_config_arg: str | None = None) -> list[str]:
         cfg.setdefault("checkpoint", {})
         cfg.setdefault("training", {})
 
+        _deep_update(cfg["training"], FORCED_TRAINING_OVERRIDES)
         _deep_update(cfg["model"], FORCED_MODEL_OVERRIDES)
         _deep_update(cfg, patch)
-        _deep_update(cfg["training"], FORCED_TRAINING_OVERRIDES)
         _deep_update(cfg["loss"], FORCED_LOSS_OVERRIDES)
 
         if "w_swd_unified" in cfg["loss"]:
@@ -274,7 +317,7 @@ def main() -> None:
         "--base-config",
         type=str,
         default=None,
-        help="Optional base config path. Default uses src/config_repulse.json.",
+        help="Optional base config path. Default uses src/config_skip.json.",
     )
     args = parser.parse_args()
 
