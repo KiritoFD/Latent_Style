@@ -55,6 +55,8 @@
     ],
     "swd_batch_size": 64,
     "swd_distance_mode": "cdf",
+    "swd_tree_num_trees": 16,
+    "swd_tree_max_depth": 8,
     "w_color": 50.0,
     "w_identity": 5,
     "swd_use_high_freq": false,
@@ -143,7 +145,7 @@
     "virtual_length_multiplier": 1
   },
   "checkpoint": {
-    "save_dir": "../chess_01_baseline"
+    "save_dir": "../Gate_01_baseline"
   },
   "inference": {
     "num_steps": 1,

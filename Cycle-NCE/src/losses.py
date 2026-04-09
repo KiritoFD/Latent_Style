@@ -85,6 +85,8 @@ def calc_swd_loss(
     cdf_sample_size: int = 256,
     cdf_bin_chunk_size: int = 16,
     cdf_sample_chunk_size: int = 128,
+    tree_num_trees: int = 16,
+    tree_max_depth: int = 8,
     projection_bank: Dict[int, torch.Tensor] | None = None,
 ) -> torch.Tensor:
     del style_ids
@@ -98,6 +100,7 @@ def calc_swd_loss(
         chunk = num_projections
     mode = str(distance_mode).lower()
     use_cdf = mode in {"cdf", "softcdf", "cdf_soft"}
+    use_tree = mode in {"tree", "db_tsw", "db-tsw"}
     cdf_bins = max(8, int(cdf_num_bins))
     tau = max(1e-5, float(cdf_tau))
     sample_size = max(32, int(cdf_sample_size))
@@ -117,20 +120,95 @@ def calc_swd_loss(
             w = rand_weights[start:end]
             x_proj = F.conv2d(x, w, padding=p // 2).view(x.shape[0], end - start, -1)
             y_proj = F.conv2d(y, w, padding=p // 2).view(y.shape[0], end - start, -1)
-            swd_chunk, _ = _swd_distance_from_projected(
-                x_proj,
-                y_proj,
-                use_cdf=use_cdf,
-                cdf_bins=cdf_bins,
-                tau=tau,
-                sample_size=sample_size,
-                bin_chunk=bin_chunk,
-                sample_chunk=sample_chunk,
-                sample_idx=None,
-            )
+            if use_tree:
+                swd_chunk = _db_tsw(
+                    x_proj.transpose(1, 2).contiguous(),
+                    y_proj.transpose(1, 2).contiguous(),
+                    num_trees=tree_num_trees,
+                    max_depth=tree_max_depth,
+                )
+            else:
+                swd_chunk, _ = _swd_distance_from_projected(
+                    x_proj,
+                    y_proj,
+                    use_cdf=use_cdf,
+                    cdf_bins=cdf_bins,
+                    tau=tau,
+                    sample_size=sample_size,
+                    bin_chunk=bin_chunk,
+                    sample_chunk=sample_chunk,
+                    sample_idx=None,
+                )
             patch_loss = patch_loss + swd_chunk * ((end - start) / float(num_projections))
         total_loss += patch_loss
     return total_loss / max(len(patch_sizes), 1)
+
+
+def _db_tsw(
+    x: torch.Tensor,
+    y: torch.Tensor,
+    *,
+    num_trees: int = 16,
+    max_depth: int = 8,
+) -> torch.Tensor:
+    """
+    GPU-friendly tree-sliced distance using tensorized level-order traversal.
+    x, y: [B, N, C]
+    """
+    bsz, n_pts, feat_dim = x.shape
+    device = x.device
+    dtype = x.dtype
+
+    num_trees = max(1, int(num_trees))
+    max_depth = max(1, int(max_depth))
+    total_internal = (1 << max_depth) - 1
+
+    split_rules = torch.randn(num_trees, total_internal, feat_dim, device=device, dtype=dtype)
+    split_rules = F.normalize(split_rules, dim=-1)
+    split_bias = torch.zeros(num_trees, total_internal, device=device, dtype=dtype)
+
+    tree_ids = torch.arange(num_trees, device=device).view(1, 1, num_trees)
+    x_nodes = torch.zeros((bsz, n_pts, num_trees), device=device, dtype=torch.long)
+    y_nodes = torch.zeros((bsz, n_pts, num_trees), device=device, dtype=torch.long)
+
+    offset = 0
+    for depth in range(max_depth):
+        nodes_at_depth = 1 << depth
+        level_rules = split_rules[:, offset : offset + nodes_at_depth, :].permute(1, 0, 2).contiguous()
+        level_bias = split_bias[:, offset : offset + nodes_at_depth].transpose(0, 1).contiguous()
+
+        x_rule = level_rules[x_nodes, tree_ids.expand(bsz, n_pts, -1)]
+        y_rule = level_rules[y_nodes, tree_ids.expand(bsz, n_pts, -1)]
+        x_thr = level_bias[x_nodes, tree_ids.expand(bsz, n_pts, -1)]
+        y_thr = level_bias[y_nodes, tree_ids.expand(bsz, n_pts, -1)]
+
+        x_dots = (x.unsqueeze(2) * x_rule).sum(dim=-1)
+        y_dots = (y.unsqueeze(2) * y_rule).sum(dim=-1)
+
+        x_nodes = (x_nodes * 2) + (x_dots > x_thr).long()
+        y_nodes = (y_nodes * 2) + (y_dots > y_thr).long()
+        offset += nodes_at_depth
+
+    num_leaves = 1 << max_depth
+    mass_x = torch.zeros((bsz, num_trees, num_leaves), device=device, dtype=torch.float32)
+    mass_y = torch.zeros((bsz, num_trees, num_leaves), device=device, dtype=torch.float32)
+    ones = torch.ones((bsz, n_pts, num_trees), device=device, dtype=torch.float32)
+    mass_x.scatter_add_(2, x_nodes.transpose(1, 2), ones.transpose(1, 2))
+    mass_y.scatter_add_(2, y_nodes.transpose(1, 2), ones.transpose(1, 2))
+    mass_x = mass_x / float(max(n_pts, 1))
+    mass_y = mass_y / float(max(n_pts, 1))
+
+    diff = mass_x - mass_y
+    total = torch.zeros((bsz, num_trees), device=device, dtype=torch.float32)
+    current = diff
+    level_weight = 1.0
+    for _depth in range(max_depth, 0, -1):
+        total = total + current.abs().sum(dim=-1) * level_weight
+        if current.shape[-1] == 1:
+            break
+        current = current.view(bsz, num_trees, -1, 2).sum(dim=-1)
+        level_weight *= 0.5
+    return total.mean()
 
 
 def _swd_distance_from_projected(
@@ -198,13 +276,17 @@ class AdaCUTObjective:
         self.swd_cdf_sample_size = int(loss_cfg.get("swd_cdf_sample_size", 256))
         self.swd_cdf_bin_chunk_size = int(loss_cfg.get("swd_cdf_bin_chunk_size", 16))
         self.swd_cdf_sample_chunk_size = int(loss_cfg.get("swd_cdf_sample_chunk_size", 128))
+        self.swd_tree_num_trees = int(loss_cfg.get("swd_tree_num_trees", 16))
+        self.swd_tree_max_depth = int(loss_cfg.get("swd_tree_max_depth", 8))
         self.swd_batch_size = int(loss_cfg.get("swd_batch_size", 0))
         self.w_identity = float(loss_cfg.get("w_identity", 2.0))
+        self.idt_mode = str(loss_cfg.get("idt_mode", "topology")).strip().lower()
         self.w_repulsive = float(loss_cfg.get("w_repulsive", 0.0))
         self.repulsive_margin = float(loss_cfg.get("repulsive_margin", 0.5))
         self.repulsive_temperature = float(loss_cfg.get("repulsive_temperature", 0.1))
         self.repulsive_mode = str(loss_cfg.get("repulsive_mode", "l1")).strip().lower()
         self.w_color = float(loss_cfg.get("w_color", 0.0))
+        self.w_aux_delta_variance = float(loss_cfg.get("w_aux_delta_variance", 0.0))
         self.nsight_nvtx = bool(config.get("training", {}).get("nsight_nvtx", False))
         data_cfg = config.get("data", {})
         self.group_by_content = bool(data_cfg.get("group_by_content", False))
@@ -326,6 +408,8 @@ class AdaCUTObjective:
                 cdf_num_bins=self.swd_cdf_num_bins,
                 cdf_tau=self.swd_cdf_tau,
                 cdf_sample_size=self.swd_cdf_sample_size,
+                tree_num_trees=self.swd_tree_num_trees,
+                tree_max_depth=self.swd_tree_max_depth,
                 projection_bank=bank_unified,
             )
             return loss_unified * self.w_swd_unified
@@ -376,6 +460,8 @@ class AdaCUTObjective:
                     cdf_num_bins=self.swd_cdf_num_bins,
                     cdf_tau=self.swd_cdf_tau,
                     cdf_sample_size=self.swd_cdf_sample_size,
+                    tree_num_trees=self.swd_tree_num_trees,
+                    tree_max_depth=self.swd_tree_max_depth,
                     projection_bank=bank_micro,
                 )
 
@@ -403,6 +489,8 @@ class AdaCUTObjective:
                     cdf_num_bins=self.swd_cdf_num_bins,
                     cdf_tau=self.swd_cdf_tau,
                     cdf_sample_size=self.swd_cdf_sample_size,
+                    tree_num_trees=self.swd_tree_num_trees,
+                    tree_max_depth=self.swd_tree_max_depth,
                     projection_bank=bank_macro,
                 )
 
@@ -433,6 +521,23 @@ class AdaCUTObjective:
         if self.w_identity <= 0.0:
             return None
         return F.l1_loss(pred, content)
+
+    def _compute_topology_alignment(
+        self,
+        pred_xid: torch.Tensor,
+        content_xid: torch.Tensor,
+    ) -> torch.Tensor:
+        mode = self.idt_mode
+        if mode == "energy":
+            p_energy = F.avg_pool2d(pred_xid.pow(2).mean(dim=1, keepdim=True), kernel_size=3, stride=1, padding=1)
+            c_energy = F.avg_pool2d(content_xid.pow(2).mean(dim=1, keepdim=True), kernel_size=3, stride=1, padding=1)
+            p_ref = F.instance_norm(p_energy, eps=1e-3)
+            c_ref = F.instance_norm(c_energy, eps=1e-3)
+            return F.l1_loss(p_ref, c_ref)
+
+        p_ref = F.instance_norm(F.avg_pool2d(pred_xid, kernel_size=3, stride=1, padding=1), eps=1e-3)
+        c_ref = F.instance_norm(F.avg_pool2d(content_xid, kernel_size=3, stride=1, padding=1), eps=1e-3)
+        return F.l1_loss(p_ref, c_ref)
 
     def _compute_repulsive_term(
         self,
@@ -538,9 +643,7 @@ class AdaCUTObjective:
         if self.w_identity > 0.0 and xid_mask.any():
             pred_xid = pred[xid_mask]
             content_xid = content_cast[xid_mask]
-            p_n = F.instance_norm(F.avg_pool2d(pred_xid, kernel_size=3, stride=1, padding=1), eps=1e-3)
-            c_n = F.instance_norm(F.avg_pool2d(content_xid, kernel_size=3, stride=1, padding=1), eps=1e-3)
-            l_topo = F.l1_loss(p_n, c_n)
+            l_topo = self._compute_topology_alignment(pred_xid, content_xid)
             l_topo_weighted = l_topo * self.w_identity
             total = total + l_topo_weighted
             identity_total_weighted = identity_total_weighted + l_topo_weighted
@@ -567,6 +670,14 @@ class AdaCUTObjective:
             total = total + lrepel_weighted
             metrics["repulsive"] = lrepel_weighted.detach()
             metrics["_repulsive_raw"] = lrepel
+
+        last_delta = getattr(model, "last_delta", None)
+        if self.w_aux_delta_variance > 0.0 and torch.is_tensor(last_delta):
+            delta_variance = torch.var(last_delta.float(), dim=(2, 3), unbiased=False).mean()
+            l_aux = pred.new_tensor(self.w_aux_delta_variance) * (1.0 / (delta_variance + 1e-6))
+            total = total + l_aux
+            metrics["aux_delta"] = l_aux.detach()
+            metrics["_aux_delta_raw"] = delta_variance.detach()
 
         metrics["loss"] = total
         return metrics

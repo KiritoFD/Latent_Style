@@ -50,6 +50,11 @@ _MODEL_CONFIG_DEFAULTS = {
     "skip_spatial_dropout_p": 0.15,
     "color_highway_gain": 1.0,
     "ablation_disable_pos_emb": False,
+    "ablation_direct_qk": False,
+    "ablation_raw_v": False,
+    "ablation_no_smooth": False,
+    "ablation_numerical_fixes": False,
+    "attn_gate_mode": "none",
     "output_moment_match": False,
     "output_moment_match_eps": 1e-6,
     "output_moment_match_train_only": True,
@@ -400,7 +405,6 @@ class AttentionBlock(nn.Module):
 class SemanticCrossAttn(nn.Module):
     def __init__(self, dim: int, num_groups: int = 8, temperature: float = 0.08) -> None:
         super().__init__()
-        del temperature
         groups = _resolve_group_count(dim, num_groups)
         self.norm_c = nn.GroupNorm(groups, dim, affine=False)
         self.norm_s = nn.GroupNorm(groups, dim, affine=False)
@@ -408,43 +412,69 @@ class SemanticCrossAttn(nn.Module):
         self.to_k = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
         self.to_v = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
         self.proj_out = nn.Conv2d(dim, dim, kernel_size=1)
+        self.gate_conv = nn.Conv2d(dim, dim, kernel_size=1)
         nn.init.kaiming_normal_(self.proj_out.weight, a=0.2)
         nn.init.zeros_(self.proj_out.bias)
+        nn.init.zeros_(self.gate_conv.weight)
+        nn.init.zeros_(self.gate_conv.bias)
+        self.ablation_direct_qk = False
+        self.ablation_raw_v = False
+        self.ablation_no_smooth = False
+        self.attn_gate_mode = "none"
+        self.attn_temperature = max(1e-4, float(temperature))
         self.last_attn: torch.Tensor | None = None
 
     def forward(
         self,
-        x: torch.Tensor,
+        x_c: torch.Tensor,
         style_map: torch.Tensor,
         gate: float | torch.Tensor = 1.0,
     ) -> torch.Tensor:
-        b, c, h_dim, w_dim = x.shape
-        if style_map.shape[:1] != x.shape[:1]:
-            raise ValueError(f"batch size mismatch: x={tuple(x.shape)} style_map={tuple(style_map.shape)}")
+        b, c, h_dim, w_dim = x_c.shape
+        if style_map.shape[:1] != x_c.shape[:1]:
+            raise ValueError(f"batch size mismatch: x={tuple(x_c.shape)} style_map={tuple(style_map.shape)}")
         if style_map.shape[1] != c:
             raise ValueError(f"x channels {c} must match style_map channels {style_map.shape[1]}")
         if style_map.shape[-2:] != (h_dim, w_dim):
-            raise ValueError(f"spatial mismatch: x={tuple(x.shape)} style_map={tuple(style_map.shape)}")
+            raise ValueError(f"spatial mismatch: x={tuple(x_c.shape)} style_map={tuple(style_map.shape)}")
 
-        nc = self.norm_c(x)
+        nc = self.norm_c(x_c)
         ns = self.norm_s(style_map)
         qc = F.layer_norm(nc.permute(0, 2, 3, 1), [c]).permute(0, 3, 1, 2)
         ks = F.layer_norm(ns.permute(0, 2, 3, 1), [c]).permute(0, 3, 1, 2)
 
-        q = self.to_q(qc).view(b, c, -1).transpose(1, 2)
-        k = self.to_k(ks).view(b, c, -1)
-        v = self.to_v(style_map).view(b, c, -1).transpose(1, 2)
+        if getattr(self, "ablation_direct_qk", False):
+            q = qc.view(b, c, -1).transpose(1, 2)
+            k = ks.view(b, c, -1)
+        else:
+            q = self.to_q(qc).view(b, c, -1).transpose(1, 2)
+            k = self.to_k(ks).view(b, c, -1)
+
+        if getattr(self, "ablation_raw_v", False):
+            v = style_map.view(b, c, -1).transpose(1, 2)
+        else:
+            v = self.to_v(style_map).view(b, c, -1).transpose(1, 2)
 
         q = F.normalize(q, dim=-1)
         k = F.normalize(k, dim=1)
-        attn = torch.bmm(q, k) / 0.05
+        attn = torch.bmm(q, k) / max(float(getattr(self, "attn_temperature", 0.08)), 1e-4)
         attn = F.softmax(attn, dim=-1)
         self.last_attn = attn
         painted = torch.bmm(attn, v).transpose(1, 2).view(b, c, h_dim, w_dim)
-        painted_smoothed = F.avg_pool2d(painted, kernel_size=3, stride=1, padding=1)
+        if getattr(self, "ablation_no_smooth", False):
+            painted_smoothed = painted
+        else:
+            painted_smoothed = F.avg_pool2d(painted, kernel_size=3, stride=1, padding=1)
 
-        final_gate = gate if isinstance(gate, float) else gate.to(device=x.device, dtype=x.dtype)
-        return x + final_gate * self.proj_out(painted_smoothed)
+        final_gate = gate if isinstance(gate, float) else gate.to(device=x_c.device, dtype=x_c.dtype)
+        delta = final_gate * self.proj_out(painted_smoothed)
+        gate_mode = str(getattr(self, "attn_gate_mode", "none")).strip().lower()
+        if gate_mode == "learned":
+            mix = torch.sigmoid(self.gate_conv(x_c))
+            return x_c * (1.0 - mix) + delta * mix
+        if gate_mode == "fixed":
+            return x_c * 0.5 + delta * 0.5
+        return x_c + delta
 
 
 def _build_feature_block(
@@ -565,6 +595,7 @@ class StyleRoutingSkip(nn.Module):
         )
         self.rewrite_mapper = nn.Linear(style_dim, self.channels)
         self.content_retention_boost = max(0.0, min(1.0, float(content_retention_boost)))
+        self.ablation_numerical_fixes = False
         # Stable init for adaptive branch.
         nn.init.zeros_(self.rewrite_mapper.weight)
         nn.init.zeros_(self.rewrite_mapper.bias)
@@ -606,6 +637,8 @@ class StyleRoutingSkip(nn.Module):
         if mode == "adaptive":
             erase_gate = self.gate_mapper(style_code).view(b, c, 1, 1).to(dtype=skip_feat.dtype)
             rewrite_bias = self.rewrite_mapper(style_code).view(b, c, 1, 1).to(dtype=skip_feat.dtype)
+            if getattr(self, "ablation_numerical_fixes", False):
+                rewrite_bias = torch.tanh(rewrite_bias / 10.0) * 10.0
             if self.content_retention_boost > 0.0:
                 erase_gate = erase_gate + (1.0 - erase_gate) * self.content_retention_boost
             effective_erase = 1.0 - (1.0 - erase_gate) * gate_t
@@ -730,6 +763,7 @@ class LatentAdaCUT(nn.Module):
         self.output_moment_match = bool(output_moment_match)
         self.output_moment_match_eps = max(1e-8, float(output_moment_match_eps))
         self.output_moment_match_train_only = bool(output_moment_match_train_only)
+        self.last_delta: torch.Tensor | None = None
         if self.upsample_blur_kernel not in {"box3", "gaussian3"}:
             self.upsample_blur_kernel = "box3"
 
@@ -1039,6 +1073,8 @@ class LatentAdaCUT(nn.Module):
         h: torch.Tensor,
     ) -> torch.Tensor:
         delta = self.dec_out(h) * self.latent_scale_factor * self.residual_gain
+        if getattr(self, "ablation_numerical_fixes", False):
+            delta = torch.tanh(delta / 4.0) * 4.0
         return delta
 
     def encode_style_id(self, style_id: torch.Tensor | int | None) -> torch.Tensor:
@@ -1329,6 +1365,7 @@ class LatentAdaCUT(nn.Module):
             strength=strength,
             target_style_latent=target_style_latent,
         )
+        self.last_delta = delta
         anchor = self._perturb_anchor_if_needed(x)
         pred = anchor + delta * float(step_size) * step_scale
         return self._apply_output_moment_match(pred, target_style_latent)
@@ -1419,4 +1456,23 @@ def build_model_from_config(
         for module in model.modules():
             if isinstance(module, CrossAttnAdaGN):
                 module.ablation_disable_pos_emb = True
+    disable_pos = bool(model_cfg.get("ablation_disable_pos_emb", _MODEL_CONFIG_DEFAULTS["ablation_disable_pos_emb"]))
+    direct_qk = bool(model_cfg.get("ablation_direct_qk", _MODEL_CONFIG_DEFAULTS["ablation_direct_qk"]))
+    raw_v = bool(model_cfg.get("ablation_raw_v", _MODEL_CONFIG_DEFAULTS["ablation_raw_v"]))
+    no_smooth = bool(model_cfg.get("ablation_no_smooth", _MODEL_CONFIG_DEFAULTS["ablation_no_smooth"]))
+    attn_gate_mode = str(model_cfg.get("attn_gate_mode", _MODEL_CONFIG_DEFAULTS["attn_gate_mode"])).strip().lower()
+    if attn_gate_mode not in {"none", "fixed", "learned"}:
+        attn_gate_mode = "none"
+    attn_temperature = float(
+        model_cfg.get("semantic_attn_temperature", _MODEL_CONFIG_DEFAULTS["semantic_attn_temperature"])
+    )
+    for module in model.modules():
+        if isinstance(module, CrossAttnAdaGN):
+            module.ablation_disable_pos_emb = disable_pos
+        if isinstance(module, SemanticCrossAttn):
+            module.ablation_direct_qk = direct_qk
+            module.ablation_raw_v = raw_v
+            module.ablation_no_smooth = no_smooth
+            module.attn_gate_mode = attn_gate_mode
+            module.attn_temperature = max(1e-4, attn_temperature)
     return model

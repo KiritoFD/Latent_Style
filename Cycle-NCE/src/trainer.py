@@ -32,6 +32,7 @@ _TRAIN_LOG_COLUMNS = [
     "repulsive",
     "color",
     "identity",
+    "aux_delta",
     "identity_ratio",
     "sched_factor",
     "idt_anchor",
@@ -475,6 +476,7 @@ class AdaCUTTrainer:
                     rep=f"{_get_avg('repulsive'):.4f}",
                     color=f"{_get_avg('color'):.4f}",
                     idt=f"{_get_avg('identity'):.4f}",
+                    aux=f"{_get_avg('aux_delta'):.4f}",
                     sf=f"{_get_avg('sched_factor'):.3f}",
                     ida=f"{_get_avg('idt_anchor'):.4f}",
                     topo=f"{_get_avg('topo_align'):.4f}",
@@ -527,6 +529,7 @@ class AdaCUTTrainer:
         metrics.setdefault("repulsive", 0.0)
         metrics.setdefault("color", 0.0)
         metrics.setdefault("identity", 0.0)
+        metrics.setdefault("aux_delta", 0.0)
         metrics.setdefault("identity_ratio", 0.0)
         metrics.setdefault("sched_factor", 0.0)
         metrics.setdefault("idt_anchor", 0.0)

@@ -39,6 +39,8 @@ _ALLOWED_LOSS_KEYS = {
     "swd_use_high_freq",
     "swd_hf_weight_ratio",
     "w_identity",
+    "idt_mode",
+    "w_aux_delta_variance",
     "idr",
     "swd_patch_sizes",
     "swd_num_projections",
@@ -49,6 +51,8 @@ _ALLOWED_LOSS_KEYS = {
     "swd_cdf_sample_size",
     "swd_cdf_bin_chunk_size",
     "swd_cdf_sample_chunk_size",
+    "swd_tree_num_trees",
+    "swd_tree_max_depth",
     "swd_batch_size",
 }
 _FORBIDDEN_LOSS_KEYS = {"w_distill", "distill_low_only", "distill_cross_domain_only", "w_code", "style_loss_source"}
@@ -60,6 +64,7 @@ _LOSS_WEIGHT_KEYS = (
     "w_repulsive",
     "w_color",
     "w_identity",
+    "w_aux_delta_variance",
 )
 
 
@@ -372,7 +377,7 @@ def main() -> None:
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f swd=%.4f rep=%.4f color=%.4f idt=%.4f ida=%.4f topo=%.4f repi=%.4f sf=%.3f idr=%.2f aent=%.3f amax=%.3f lr=%.2e data=%.1fs comp=%.1fs",
+            "Epoch %d/%d | loss=%.4f swd=%.4f rep=%.4f color=%.4f idt=%.4f aux=%.4f ida=%.4f topo=%.4f repi=%.4f sf=%.3f idr=%.2f aent=%.3f amax=%.3f lr=%.2e data=%.1fs comp=%.1fs",
             epoch,
             trainer.num_epochs,
             metrics["loss"],
@@ -380,6 +385,7 @@ def main() -> None:
             metrics.get("repulsive", 0.0),
             metrics.get("color", 0.0),
             metrics.get("identity", 0.0),
+            metrics.get("aux_delta", 0.0),
             metrics.get("idt_anchor", 0.0),
             metrics.get("topo_align", 0.0),
             metrics.get("idt_repel", 0.0),

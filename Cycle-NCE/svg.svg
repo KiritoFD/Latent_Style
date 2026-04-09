@@ -1,0 +1,2615 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="2800"
+   height="1750"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="svg.svg"
+   inkscape:export-filename="GitHub\Latent_Style\Cycle-NCE\svg.svg"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:export-bgcolor="#ffffffff"
+     inkscape:zoom="0.3264813"
+     inkscape:cx="1494.7257"
+     inkscape:cy="751.9573"
+     inkscape:window-width="1907"
+     inkscape:window-height="1045"
+     inkscape:window-x="-16000"
+     inkscape:window-y="-15852"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="g1">
+    <inkscape:page
+       x="0"
+       y="0"
+       width="2800"
+       height="1750"
+       id="page2"
+       margin="0"
+       bleed="0" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1">
+    <linearGradient
+       id="linearGradient17"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#eef1f4;stop-opacity:1;"
+         offset="0"
+         id="stop17" />
+      <stop
+         style="stop-color:#eef1f4;stop-opacity:0;"
+         offset="1"
+         id="stop18" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient13"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#fcf8f8;stop-opacity:1;"
+         offset="0"
+         id="stop12" />
+      <stop
+         style="stop-color:#f8fcf9;stop-opacity:0;"
+         offset="1"
+         id="stop13" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient10"
+       inkscape:swatch="gradient">
+      <stop
+         style="stop-color:#fafafa;stop-opacity:1;"
+         offset="0"
+         id="stop10" />
+      <stop
+         style="stop-color:#fafafa;stop-opacity:0;"
+         offset="1"
+         id="stop11" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient4"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#fcf8f8;stop-opacity:1;"
+         offset="0"
+         id="stop4" />
+      <stop
+         style="stop-color:#fcf8f8;stop-opacity:0;"
+         offset="1"
+         id="stop5" />
+    </linearGradient>
+    <marker
+       markerUnits="userSpaceOnUse"
+       orient="auto"
+       markerHeight="11"
+       markerWidth="11"
+       refY="5"
+       refX="8"
+       viewBox="0 0 10 10"
+       id="arrow">
+      <path
+         id="svg_1"
+         fill="#2f2f2f"
+         d="M 0,1 8,5 0,9 Z" />
+    </marker>
+    <marker
+       markerUnits="userSpaceOnUse"
+       orient="auto"
+       markerHeight="9"
+       markerWidth="9"
+       refY="5"
+       refX="8"
+       viewBox="0 0 10 10"
+       id="arrowSmall">
+      <path
+         id="svg_2"
+         fill="#2f2f2f"
+         d="M 0,1 8,5 0,9 Z" />
+    </marker>
+    <marker
+       markerUnits="userSpaceOnUse"
+       orient="auto"
+       markerHeight="9"
+       markerWidth="9"
+       refY="5"
+       refX="8"
+       viewBox="0 0 10 10"
+       id="arrowGold">
+      <path
+         id="svg_3"
+         fill="#ad8c43"
+         d="M 0,1 8,5 0,9 Z" />
+    </marker>
+    <marker
+       markerUnits="userSpaceOnUse"
+       orient="auto"
+       markerHeight="9"
+       markerWidth="9"
+       refY="5"
+       refX="8"
+       viewBox="0 0 10 10"
+       id="arrowRose">
+      <path
+         id="svg_4"
+         fill="#b06e75"
+         d="M 0,1 8,5 0,9 Z" />
+    </marker>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient4"
+       id="linearGradient5"
+       x1="289.10141"
+       y1="1007.0978"
+       x2="296.70361"
+       y2="1007.0978"
+       gradientUnits="userSpaceOnUse" />
+    <marker
+       markerUnits="userSpaceOnUse"
+       orient="auto"
+       markerHeight="9"
+       markerWidth="9"
+       refY="5"
+       refX="8"
+       viewBox="0 0 10 10"
+       id="arrowRose-8">
+      <path
+         id="svg_4-2"
+         fill="#b06e75"
+         d="M 0,1 8,5 0,9 Z" />
+    </marker>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient4"
+       id="linearGradient6"
+       gradientUnits="userSpaceOnUse"
+       x1="289.10141"
+       y1="1007.0978"
+       x2="296.70361"
+       y2="1007.0978"
+       gradientTransform="matrix(-0.00925272,-0.67791289,1.8229091,-5.2375139e-4,-729.51096,1653.3022)" />
+    <marker
+       markerUnits="userSpaceOnUse"
+       orient="auto"
+       markerHeight="9"
+       markerWidth="9"
+       refY="5"
+       refX="8"
+       viewBox="0 0 10 10"
+       id="arrowRose-1">
+      <path
+         id="svg_4-6"
+         fill="#b06e75"
+         d="M 0,1 8,5 0,9 Z" />
+    </marker>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient4"
+       id="linearGradient8"
+       gradientUnits="userSpaceOnUse"
+       x1="289.10141"
+       y1="1007.0978"
+       x2="296.70361"
+       y2="1007.0978"
+       gradientTransform="matrix(1.1302778,0,0,0.73256923,156.09192,390.25212)" />
+    <marker
+       markerUnits="userSpaceOnUse"
+       orient="auto"
+       markerHeight="9"
+       markerWidth="9"
+       refY="5"
+       refX="8"
+       viewBox="0 0 10 10"
+       id="arrowRose-2">
+      <path
+         id="svg_4-7"
+         fill="#b06e75"
+         d="M 0,1 8,5 0,9 Z" />
+    </marker>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient4"
+       id="linearGradient9"
+       gradientUnits="userSpaceOnUse"
+       x1="289.10141"
+       y1="1007.0978"
+       x2="296.70361"
+       y2="1007.0978"
+       gradientTransform="translate(421.89858,34.80682)" />
+    <marker
+       markerUnits="userSpaceOnUse"
+       orient="auto"
+       markerHeight="9"
+       markerWidth="9"
+       refY="5"
+       refX="8"
+       viewBox="0 0 10 10"
+       id="arrowRose-2-4">
+      <path
+         id="svg_4-7-1"
+         fill="#b06e75"
+         d="M 0,1 8,5 0,9 Z" />
+    </marker>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient13"
+       id="linearGradient14"
+       x1="2535.0012"
+       y1="924.55432"
+       x2="2542.2012"
+       y2="924.55432"
+       gradientUnits="userSpaceOnUse" />
+    <marker
+       markerUnits="userSpaceOnUse"
+       orient="auto"
+       markerHeight="9"
+       markerWidth="9"
+       refY="5"
+       refX="8"
+       viewBox="0 0 10 10"
+       id="arrowRose-2-7">
+      <path
+         id="svg_4-7-9"
+         fill="#b06e75"
+         d="M 0,1 8,5 0,9 Z" />
+    </marker>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient17"
+       id="linearGradient18"
+       x1="58"
+       y1="1419.5543"
+       x2="65.199997"
+       y2="1419.5543"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(165.39998,-6.1259251)" />
+    <marker
+       markerUnits="userSpaceOnUse"
+       orient="auto"
+       markerHeight="9"
+       markerWidth="9"
+       refY="5"
+       refX="8"
+       viewBox="0 0 10 10"
+       id="arrowRose-2-7-2">
+      <path
+         id="svg_4-7-9-8"
+         fill="#b06e75"
+         d="M 0,1 8,5 0,9 Z" />
+    </marker>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient17"
+       id="linearGradient19"
+       gradientUnits="userSpaceOnUse"
+       x1="58"
+       y1="1419.5543"
+       x2="65.199997"
+       y2="1419.5543"
+       gradientTransform="translate(152.99192,-143.41223)" />
+    <marker
+       markerUnits="userSpaceOnUse"
+       orient="auto"
+       markerHeight="9"
+       markerWidth="9"
+       refY="5"
+       refX="8"
+       viewBox="0 0 10 10"
+       id="arrowRose-2-7-0">
+      <path
+         id="svg_4-7-9-9"
+         fill="#b06e75"
+         d="M 0,1 8,5 0,9 Z" />
+    </marker>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient17"
+       id="linearGradient20"
+       gradientUnits="userSpaceOnUse"
+       x1="58"
+       y1="1419.5543"
+       x2="65.199997"
+       y2="1419.5543"
+       gradientTransform="matrix(1.2467621,0,0,0.61396109,218.03547,466.75033)" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient10"
+       id="linearGradient23"
+       gradientUnits="userSpaceOnUse"
+       x1="116.68182"
+       y1="1569.1869"
+       x2="2619.6819"
+       y2="1569.1869"
+       gradientTransform="translate(107.20369,-3.0629582)" />
+  </defs>
+  <g
+     id="g1"
+     transform="translate(4.3316831,-36.819306)">
+    <title
+       id="title1">Layer 1</title>
+    <text
+       id="svg_5"
+       fill="#1f1f1f"
+       font="700 54px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="title"
+       y="66"
+       x="1400"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Latent AdaCUT architecture</text>
+    <path
+       stroke="#2f2f2f"
+       id="svg_6"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4.50364"
+       class="arrowThin"
+       d="M 119.93399,448.31506 V 110.20018 H 2521.8671 v 363.12338" />
+    <text
+       id="svg_7"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="102"
+       x="2340"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">global residual z</text>
+    <ellipse
+       id="svg_8"
+       stroke-width="4"
+       stroke="#ad8c43"
+       fill="#efe5d0"
+       class="cond"
+       ry="18"
+       rx="86"
+       cy="175"
+       cx="1360" />
+    <rect
+       id="svg_9"
+       stroke-width="4"
+       stroke="#ad8c43"
+       fill="#efe5d0"
+       class="cond"
+       rx="8"
+       height="44"
+       width="172"
+       y="173.91708"
+       x="1272.9171" />
+    <ellipse
+       id="svg_10"
+       stroke-width="3.45652"
+       stroke="#ad8c43"
+       fill="#efe5d0"
+       class="cond"
+       ry="13.398599"
+       rx="86.271744"
+       cy="218.45854"
+       cx="1361.0829" />
+    <text
+       id="svg_11"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="label"
+       y="196.5854"
+       x="1360"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Style code W</text>
+    <text
+       id="svg_12"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="250"
+       x="1360"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">conditioning bus</text>
+    <path
+       id="svg_13"
+       marker-end="url(#arrowGold)"
+       stroke-dasharray="10, 8"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#ad8c43"
+       class="darrow"
+       d="m 482.09777,261.42946 1863.82423,-1e-5"
+       sodipodi:nodetypes="cc" />
+    <polygon
+       id="svg_14"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="156,660 84,660 92,340 148,340 "
+       transform="matrix(1.175654,0,0,0.99894041,-14.580952,0.5297952)" />
+    <text
+       id="svg_15"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       transform="rotate(-90,120,500)"
+       text-anchor="middle"
+       class="label"
+       y="500"
+       x="120"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Input latent z</text>
+    <text
+       id="svg_16"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       transform="rotate(-90,152,500)"
+       text-anchor="middle"
+       class="tiny"
+       y="500"
+       x="152"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">4 × 32 × 32</text>
+    <polygon
+       id="svg_17"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="2706,680 2634,680 2642,320 2698,320 "
+       transform="matrix(1.3185004,0,0,0.57992348,-839.02533,230.61376)"
+       inkscape:transform-center-x="-2.1658415"
+       inkscape:transform-center-y="1.0829208" />
+    <text
+       id="svg_18"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       transform="rotate(-90,2670,500)"
+       text-anchor="middle"
+       class="label"
+       y="500"
+       x="2670"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Output latent ẑ</text>
+    <text
+       id="svg_19"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       transform="rotate(-90,2702,500)"
+       text-anchor="middle"
+       class="tiny"
+       y="500"
+       x="2702"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">4 × 32 × 32</text>
+    <rect
+       id="svg_20"
+       stroke-width="4"
+       stroke="#5d7daa"
+       fill="#dfe8f5"
+       class="op"
+       rx="16"
+       height="145"
+       width="180"
+       y="420"
+       x="230" />
+    <text
+       id="svg_21"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="label"
+       y="475"
+       x="320"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Input lifting</text>
+    <text
+       id="svg_22"
+       fill="#555555"
+       font="400 21px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="sub"
+       y="510"
+       x="320"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">3×3 Conv + SiLU</text>
+    <text
+       id="svg_23"
+       fill="#555555"
+       font="400 21px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="sub"
+       y="542"
+       x="320"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">4 → 128</text>
+    <polygon
+       id="svg_24"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#f7f9fb"
+       class="tensorTop"
+       points="638,384 488,384 470,402 620,402 "
+       transform="translate(43.316832,-44.399752)" />
+    <polygon
+       id="svg_25"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="620,532 470,532 470,402 620,402 "
+       transform="translate(40.068069,-41.15099)" />
+    <polygon
+       id="svg_26"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="638,514 620,532 620,402 638,384 "
+       transform="translate(42.233911,-40.068069)" />
+    <text
+       id="svg_27"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="417.09778"
+       x="581.81934"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">ϕ₀</text>
+    <text
+       id="svg_28"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="441.43442"
+       x="582.90222"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">128 × 32 × 32</text>
+    <rect
+       id="svg_29"
+       stroke-width="4"
+       stroke="#5d7daa"
+       fill="#dfe8f5"
+       class="op"
+       rx="16"
+       height="185"
+       width="250"
+       y="620"
+       x="360" />
+    <text
+       id="svg_30"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="label"
+       y="690"
+       x="485"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Hi-res encoder</text>
+    <text
+       id="svg_31"
+       fill="#555555"
+       font="400 21px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="sub"
+       y="726"
+       x="485"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">4× ResBlock + MSContextualAdaGN</text>
+    <text
+       id="svg_32"
+       fill="#555555"
+       font="400 21px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="sub"
+       y="758"
+       x="485"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">32×32 high-resolution path</text>
+    <polygon
+       id="svg_33"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#f7f9fb"
+       class="tensorTop"
+       points="785,630 803,612 678,612 660,630 " />
+    <polygon
+       id="svg_34"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="785,630 785,780 660,780 660,630 " />
+    <polygon
+       id="svg_35"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="803,612 803,762 785,780 785,630 " />
+    <text
+       id="svg_36"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="687"
+       x="722"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">ϕ₁</text>
+    <text
+       id="svg_37"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="720"
+       x="722"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">128 × 32 × 32</text>
+    <rect
+       id="svg_38"
+       stroke-width="4"
+       stroke="#7b86b7"
+       fill="#e8ecf8"
+       class="op2"
+       rx="16"
+       height="99.678215"
+       width="201.49753"
+       y="816.16339"
+       x="716.95557" />
+    <text
+       id="svg_39"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="label"
+       y="851.66339"
+       x="815.20544"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Downsample</text>
+    <text
+       id="svg_40"
+       fill="#555555"
+       font="400 21px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="sub"
+       y="886.66339"
+       x="815.20544"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;white-space:pre;inline-size:159.352;display:inline"
+       xml:space="preserve"><tspan
+         x="815.20544"
+         y="886.66339"
+         id="tspan2">4×4 Conv, stride 2</tspan></text>
+    <polygon
+       id="svg_41"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#f7f9fb"
+       class="tensorTop"
+       points="1150,805 1168,787 1078,787 1060,805 " />
+    <polygon
+       id="svg_42"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="1150,805 1150,901 1060,901 1060,805 " />
+    <polygon
+       id="svg_43"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="1168,787 1168,883 1150,901 1150,805 " />
+    <text
+       id="svg_44"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="843"
+       x="1105"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">ϕ₂</text>
+    <text
+       id="svg_45"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="876"
+       x="1105"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">192 × 16 × 16</text>
+    <rect
+       id="svg_46"
+       stroke-width="4"
+       stroke="#5d7daa"
+       fill="#dfe8f5"
+       class="op"
+       rx="16"
+       height="160"
+       width="270"
+       y="770"
+       x="1220" />
+    <text
+       id="svg_47"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="label"
+       y="721.9707"
+       x="1507.9884"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:20.8744px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:1.11827"
+       transform="scale(0.89423928,1.1182689)">Bottleneck body</text>
+    <text
+       id="svg_48"
+       fill="#555555"
+       font="400 21px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="sub"
+       y="866"
+       x="1355"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">6× ResBlock + MSContextualAdaGN</text>
+    <text
+       id="svg_49"
+       fill="#555555"
+       font="400 21px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="sub"
+       y="898"
+       x="1355"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">16×16 deep latent path</text>
+    <polygon
+       id="svg_50"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#f7f9fb"
+       class="tensorTop"
+       points="1632,805 1650,787 1558,787 1540,805 " />
+    <polygon
+       id="svg_51"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="1632,805 1632,901 1540,901 1540,805 " />
+    <polygon
+       id="svg_52"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="1650,787 1650,883 1632,901 1632,805 " />
+    <text
+       id="svg_53"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="843"
+       x="1586"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">C=192</text>
+    <text
+       id="svg_54"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="876"
+       x="1586"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">H=W=16</text>
+    <rect
+       id="svg_55"
+       stroke-width="4"
+       stroke="#7b86b7"
+       fill="#e8ecf8"
+       class="op2"
+       rx="16"
+       height="130"
+       width="195"
+       y="790"
+       x="1740" />
+    <text
+       id="svg_56"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="label"
+       y="843"
+       x="1837"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Upsample</text>
+    <text
+       id="svg_57"
+       fill="#555555"
+       font="400 21px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="sub"
+       y="878"
+       x="1837"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Bilinear ×2 + Blur</text>
+    <polygon
+       id="svg_58"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#f7f9fb"
+       class="tensorTop"
+       points="2110,630 2128,612 2003,612 1985,630 " />
+    <polygon
+       id="svg_59"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="2110,630 2110,780 1985,780 1985,630 " />
+    <polygon
+       id="svg_60"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="2128,612 2128,762 2110,780 2110,630 " />
+    <text
+       id="svg_61"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="687"
+       x="2047"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">128 × 32 × 32</text>
+    <rect
+       id="svg_62"
+       stroke-width="4"
+       stroke="#5d7daa"
+       fill="#dfe8f5"
+       class="op"
+       rx="16"
+       height="185"
+       width="195"
+       y="620"
+       x="2170" />
+    <text
+       id="svg_63"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="label"
+       y="690"
+       x="2267"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Skip fusion</text>
+    <text
+       id="svg_64"
+       fill="#555555"
+       font="400 21px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="sub"
+       y="726"
+       x="2267"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Concat + 3×3 Conv</text>
+    <text
+       id="svg_65"
+       fill="#555555"
+       font="400 21px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="sub"
+       y="758"
+       x="2267"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">merge upsampled + filtered skip</text>
+    <rect
+       id="svg_66"
+       stroke-width="4"
+       stroke="#5d7daa"
+       fill="#dfe8f5"
+       class="op"
+       rx="16"
+       height="165"
+       width="215"
+       y="432.72726"
+       x="2247.2727" />
+    <text
+       id="svg_67"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="label"
+       y="485"
+       x="2347"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Decoder</text>
+    <text
+       id="svg_68"
+       fill="#555555"
+       font="400 21px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="sub"
+       y="520"
+       x="2347"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">3×3 Conv + NFM + 3×3 Conv</text>
+    <text
+       id="svg_69"
+       fill="#555555"
+       font="400 21px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="sub"
+       y="552"
+       x="2347"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">predict residual ΔZ</text>
+    <path
+       id="svg_70"
+       marker-end="url(#arrow)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="6"
+       stroke="#2f2f2f"
+       class="arrow"
+       d="m 156,500 h 74" />
+    <path
+       id="svg_71"
+       marker-end="url(#arrow)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="7.48888"
+       stroke="#2f2f2f"
+       class="arrow"
+       d="m 414.92236,460.5953 h 93.4721" />
+    <path
+       id="svg_72"
+       marker-end="url(#arrow)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="6"
+       stroke="#2f2f2f"
+       class="arrow"
+       d="M 591.12748,484.21966 521.14976,620.13182" />
+    <path
+       id="svg_73"
+       marker-end="url(#arrow)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="6"
+       stroke="#2f2f2f"
+       class="arrow"
+       d="m 610,712 h 50" />
+    <path
+       id="svg_74"
+       marker-end="url(#arrow)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="5.14955"
+       stroke="#2f2f2f"
+       class="arrow"
+       d="m 728.2629,778.21339 79.16728,38.22669"
+       sodipodi:nodetypes="cc" />
+    <path
+       id="svg_75"
+       marker-end="url(#arrow)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="6"
+       stroke="#2f2f2f"
+       class="arrow"
+       d="M 924.03466,859.33168 1060,855"
+       sodipodi:nodetypes="cc" />
+    <path
+       id="svg_76"
+       marker-end="url(#arrow)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="6"
+       stroke="#2f2f2f"
+       class="arrow"
+       d="m 1168,855 h 52" />
+    <path
+       id="svg_77"
+       marker-end="url(#arrow)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="6"
+       stroke="#2f2f2f"
+       class="arrow"
+       d="m 1490,855 h 50" />
+    <path
+       id="svg_78"
+       marker-end="url(#arrow)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="6"
+       stroke="#2f2f2f"
+       class="arrow"
+       d="m 1650,855 h 90" />
+    <path
+       id="svg_79"
+       marker-end="url(#arrow)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="6"
+       stroke="#2f2f2f"
+       class="arrow"
+       d="m 1935,855 50,-150" />
+    <path
+       stroke="#2f2f2f"
+       id="svg_80"
+       marker-end="url(#arrow)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="6"
+       class="arrow"
+       d="M 2115.0588,705 H 2170" />
+    <path
+       id="svg_82"
+       marker-end="url(#arrow)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="6"
+       stroke="#2f2f2f"
+       class="arrow"
+       d="m 2455,500 h 65" />
+    <text
+       id="svg_83"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="label"
+       y="478"
+       x="2485"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">ΔZ</text>
+    <circle
+       id="svg_84"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       fill="#ffffff"
+       class="plusCircle"
+       r="27"
+       cy="500"
+       cx="2520" />
+    <text
+       id="svg_85"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="label"
+       y="510.91611"
+       x="2521.4744"
+       transform="scale(1.0002742,0.99972586)"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:3.09596">⊕</text>
+    <path
+       id="svg_86"
+       marker-end="url(#arrow)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="6.14428"
+       stroke="#2f2f2f"
+       class="arrow"
+       d="m 2547.146,498.98848 87.0397,2.02304" />
+    <path
+       id="svg_87"
+       marker-end="url(#arrowGold)"
+       stroke-dasharray="10, 8"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#ad8c43"
+       class="darrow"
+       d="M 483.91708,257.09777 485,620"
+       sodipodi:nodetypes="cc" />
+    <path
+       id="svg_89"
+       marker-end="url(#arrowGold)"
+       stroke-dasharray="10, 8"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#ad8c43"
+       class="darrow"
+       d="M 1352.1658,260.34653 1350,350"
+       sodipodi:nodetypes="cc" />
+    <path
+       id="svg_90"
+       marker-end="url(#arrowGold)"
+       stroke-dasharray="10, 8"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4.13418"
+       stroke="#ad8c43"
+       class="darrow"
+       d="M 2345.9171,261.56589 2347,428.66337"
+       sodipodi:nodetypes="cc" />
+    <circle
+       id="svg_91"
+       stroke-width="4"
+       stroke="#ad8c43"
+       fill="#efe5d0"
+       class="cond"
+       r="14"
+       cy="600"
+       cx="485" />
+    <text
+       id="svg_92"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="606"
+       x="485"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">γβ</text>
+    <circle
+       id="svg_93"
+       stroke-width="4"
+       stroke="#ad8c43"
+       fill="#efe5d0"
+       class="cond"
+       r="14"
+       cy="374.2265"
+       cx="2346.9556" />
+    <text
+       id="svg_94"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="379.14355"
+       x="2346.9556"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">γβ</text>
+    <text
+       id="svg_96"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="726.54456"
+       x="1446.0099"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">γβ</text>
+    <rect
+       stroke="#8f6ab0"
+       id="svg_97"
+       stroke-width="4"
+       fill="#eadff3"
+       class="skip"
+       rx="16"
+       height="128.18181"
+       width="1040"
+       y="305"
+       x="850" />
+    <text
+       id="svg_98"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="label"
+       y="358"
+       x="1370"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">StyleAdaptiveSkip bridge</text>
+    <text
+       id="svg_99"
+       fill="#555555"
+       font="400 21px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="sub"
+       y="386"
+       x="1370"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">filtered skip from ϕ₁ to Skip fusion</text>
+    <path
+       id="svg_100"
+       marker-end="url(#arrow)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="6"
+       stroke="#2f2f2f"
+       class="arrow"
+       d="M 722,630 V 350 h 128" />
+    <path
+       stroke="#2f2f2f"
+       id="svg_101"
+       marker-end="url(#arrow)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="6"
+       class="arrow"
+       d="m 1888.1818,406.36363 h 305.9091 V 620" />
+    <rect
+       id="svg_102"
+       stroke-width="2.99247"
+       stroke="#d3d3d3"
+       fill="#fafafa"
+       class="band"
+       rx="18.000111"
+       height="427.84167"
+       width="1220.0076"
+       y="989.99622"
+       x="950.59027" />
+    <rect
+       id="svg_103"
+       stroke-dasharray="10, 8"
+       stroke-width="3"
+       stroke="#a9a9a9"
+       fill="none"
+       class="callout"
+       rx="14"
+       height="390"
+       width="1180"
+       y="1007.8342"
+       x="970.59406" />
+    <text
+       id="svg_104"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="start"
+       class="label"
+       y="1047.8341"
+       x="1020.5941"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Zoom-in A: StyleAdaptiveSkip</text>
+    <polygon
+       id="svg_105"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#f7f9fb"
+       class="tensorTop"
+       points="922,1132 812,1132 800,1144 910,1144 "
+       transform="translate(190.59406,-2.1658416)" />
+    <polygon
+       id="svg_106"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="910,1216 800,1216 800,1144 910,1144 "
+       transform="translate(190.59406,-2.1658416)" />
+    <polygon
+       id="svg_107"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="922,1204 910,1216 910,1144 922,1132 "
+       transform="translate(190.59406,-2.1658416)" />
+    <text
+       id="svg_108"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="1129.8341"
+       x="1045.5941"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Skip Feat</text>
+    <text
+       id="svg_109"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="1249.8341"
+       x="1045.5941"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">C×H×W</text>
+    <rect
+       id="svg_110"
+       stroke-width="4"
+       stroke="#7b86b7"
+       fill="#e8ecf8"
+       class="op2"
+       rx="16"
+       height="60"
+       width="210"
+       y="1097.3267"
+       x="1164.0966" />
+    <text
+       id="svg_111"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="1132.1609"
+       x="1266.3893"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">GroupNorm → 1×1 Conv</text>
+    <rect
+       id="svg_112"
+       stroke-width="4"
+       stroke="#7b86b7"
+       fill="#e8ecf8"
+       class="op2"
+       rx="16"
+       height="60"
+       width="220"
+       y="1185.9901"
+       x="1156.5161" />
+    <text
+       id="svg_113"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="1219.7413"
+       x="1267.0576"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">SiLU → 1×1 Conv → Sigmoid</text>
+    <polygon
+       id="svg_114"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#f7f9fb"
+       class="tensorTop"
+       points="1342,1134 1270,1134 1260,1144 1332,1144 "
+       transform="translate(190.59406,-2.1658416)" />
+    <polygon
+       id="svg_115"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="1332,1216 1260,1216 1260,1144 1332,1144 "
+       transform="translate(190.59406,-2.1658416)" />
+    <polygon
+       id="svg_116"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="1342,1206 1332,1216 1332,1144 1342,1134 "
+       transform="translate(190.59406,-2.1658416)" />
+    <text
+       id="svg_117"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="1129.8341"
+       x="1486.5941"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Spatial Mask</text>
+    <circle
+       id="svg_118"
+       stroke-width="3"
+       stroke="#2f2f2f"
+       fill="#ffffff"
+       class="mulCircle"
+       r="22"
+       cy="1177.8341"
+       cx="1660.5941" />
+    <text
+       id="svg_119"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="1185.8341"
+       x="1660.5941"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">mix</text>
+    <polygon
+       id="svg_120"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#f7f9fb"
+       class="tensorTop"
+       points="1628,1134 1550,1134 1540,1144 1618,1144 "
+       transform="translate(190.59406,-2.1658416)" />
+    <polygon
+       id="svg_121"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="1618,1216 1540,1216 1540,1144 1618,1144 "
+       transform="translate(190.59406,-2.1658416)" />
+    <polygon
+       id="svg_122"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="1628,1206 1618,1216 1618,1144 1628,1134 "
+       transform="translate(190.59406,-2.1658416)" />
+    <text
+       id="svg_123"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="1129.8341"
+       x="1769.5941"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Effective Gate</text>
+    <circle
+       id="svg_124"
+       stroke-width="3"
+       stroke="#2f2f2f"
+       fill="#ffffff"
+       class="mulCircle"
+       r="20"
+       cy="1177.8341"
+       cx="1880.5941" />
+    <text
+       id="svg_125"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="label"
+       y="1184.8341"
+       x="1880.5941"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">×</text>
+    <circle
+       id="svg_126"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       fill="#ffffff"
+       class="plusCircle"
+       r="20"
+       cy="1177.8341"
+       cx="2000.5941" />
+    <text
+       id="svg_127"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="label"
+       y="1184.8341"
+       x="2000.5941"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">⊕</text>
+    <polygon
+       id="svg_128"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#f7f9fb"
+       class="tensorTop"
+       points="1954,1134 1860,1134 1850,1144 1944,1144 "
+       transform="translate(190.59406,-2.1658416)" />
+    <polygon
+       id="svg_129"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="1944,1216 1850,1216 1850,1144 1944,1144 "
+       transform="translate(190.59406,-2.1658416)" />
+    <polygon
+       id="svg_130"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="1954,1206 1944,1216 1944,1144 1954,1134 "
+       transform="translate(190.59406,-2.1658416)" />
+    <text
+       id="svg_131"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="1129.8341"
+       x="2087.594"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Filtered Skip</text>
+    <path
+       id="svg_132"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       class="arrowThin"
+       d="m 1112.5941,1177.8342 h 189.0767 148.9233"
+       sodipodi:nodetypes="ccc" />
+    <path
+       id="svg_133"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       class="arrowThin"
+       d="m 1532.5941,1177.8342 h 106" />
+    <path
+       id="svg_134"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       class="arrowThin"
+       d="m 1682.5941,1177.8342 h 48" />
+    <path
+       id="svg_135"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       class="arrowThin"
+       d="m 1818.5941,1177.8342 h 42" />
+    <path
+       id="svg_136"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       class="arrowThin"
+       d="m 1900.5941,1177.8342 h 80" />
+    <path
+       id="svg_137"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       class="arrowThin"
+       d="m 2020.5941,1177.8342 h 20" />
+    <ellipse
+       id="svg_138"
+       stroke-width="4"
+       stroke="#ad8c43"
+       fill="#efe5d0"
+       class="cond"
+       ry="12"
+       rx="54"
+       cy="1322.8341"
+       cx="1045.5941" />
+    <rect
+       id="svg_139"
+       stroke-width="4"
+       stroke="#ad8c43"
+       fill="#efe5d0"
+       class="cond"
+       rx="8"
+       height="34"
+       width="108"
+       y="1322.8341"
+       x="991.59406" />
+    <ellipse
+       id="svg_140"
+       stroke-width="4"
+       stroke="#ad8c43"
+       fill="#efe5d0"
+       class="cond"
+       ry="12"
+       rx="54"
+       cy="1356.8341"
+       cx="1045.5941" />
+    <text
+       id="svg_141"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="1338.2537"
+       x="1046.677"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Style W</text>
+    <path
+       id="svg_142"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       class="arrowThin"
+       d="m 1099.5941,1339.8342 h 881" />
+    <rect
+       id="svg_143"
+       stroke-width="4"
+       stroke="#7b86b7"
+       fill="#e8ecf8"
+       class="op2"
+       rx="16"
+       height="56"
+       width="145"
+       y="1287.8341"
+       x="1210.5941" />
+    <text
+       id="svg_144"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="1321.8341"
+       x="1282.5941"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Linear → Sigmoid</text>
+    <polygon
+       id="svg_145"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#f7f9fb"
+       class="tensorTop"
+       points="1255,1274 1231,1274 1225,1280 1249,1280 "
+       transform="translate(190.59406,-2.1658416)" />
+    <polygon
+       id="svg_146"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="1249,1360 1225,1360 1225,1280 1249,1280 "
+       transform="translate(190.59406,-2.1658416)" />
+    <polygon
+       id="svg_147"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="1255,1354 1249,1360 1249,1280 1255,1274 "
+       transform="translate(190.59406,-2.1658416)" />
+    <text
+       id="svg_148"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="start"
+       class="tiny"
+       y="1311.8341"
+       x="1450.5941"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Channel Mask</text>
+    <path
+       id="svg_150"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       class="arrowThin"
+       d="m 1355.5941,1315.8342 h 60" />
+    <path
+       id="svg_151"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="2.81725"
+       stroke="#2f2f2f"
+       class="arrowThin"
+       d="m 1428.5693,1272.8254 v -47.1161 h 232.6786 l 0.5415,-26.349"
+       sodipodi:nodetypes="cccc" />
+    <rect
+       id="svg_152"
+       stroke-width="4"
+       stroke="#ad8c43"
+       fill="#efe5d0"
+       class="cond"
+       rx="16"
+       height="56"
+       width="110"
+       y="1287.8341"
+       x="1590.5941" />
+    <text
+       id="svg_153"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="1321.8341"
+       x="1645.5941"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">α mix</text>
+    <path
+       id="svg_155"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       class="arrowThin"
+       d="m 1700.5941,1315.8342 v -116 h -40" />
+    <rect
+       id="svg_156"
+       stroke-width="4"
+       stroke="#ad8c43"
+       fill="#efe5d0"
+       class="cond"
+       rx="16"
+       height="48"
+       width="96"
+       y="1287.8341"
+       x="1930.5941" />
+    <text
+       id="svg_157"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="1317.8341"
+       x="1978.5941"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Linear</text>
+    <text
+       id="svg_158"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="start"
+       class="tiny"
+       y="1317.8341"
+       x="2060.594"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Rewrite Bias</text>
+    <text
+       id="svg_159"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="start"
+       class="tiny"
+       y="1262.8341"
+       x="1950.5941"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">× (1−Gate)</text>
+    <path
+       id="svg_161"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       class="arrowThin"
+       d="m 2026.5941,1311.8342 v -114 h -26" />
+    <path
+       id="svg_162"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="2.21093"
+       stroke="#7e7e7e"
+       class="grayline"
+       d="m 1370.3945,432.5077 v 560.62817 h -16.7109" />
+    <rect
+       id="svg_163"
+       stroke-width="3"
+       stroke="#d3d3d3"
+       fill="#fafafa"
+       class="band"
+       rx="18"
+       height="260"
+       width="620"
+       y="451.37375"
+       x="1177.9269" />
+    <path
+       id="svg_164"
+       d="m 1197.0099,470.54455 c 0,-6.52055 5.4795,-12 12,-12 h 560 c 6.5206,0 12,5.47945 12,12 v 200 c 0,6.52055 -5.4794,12 -12,12 h -560 c -6.5205,0 -12,-5.47945 -12,-12 z"
+       opacity="undefined"
+       stroke-dasharray="10, 8"
+       stroke-width="3"
+       stroke="#a9a9a9"
+       fill="none" />
+    <text
+       id="svg_165"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="start"
+       class="label"
+       y="484.71536"
+       x="1211.0149"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Zoom-in B: MSContextualAdaGN</text>
+    <polygon
+       id="svg_166"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#f7f9fb"
+       class="tensorTop"
+       points="2176,189 2120,189 2112,197 2168,197 "
+       transform="translate(-900.9901,320.54455)" />
+    <polygon
+       id="svg_167"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="2168,253 2112,253 2112,197 2168,197 "
+       transform="translate(-900.9901,320.54455)" />
+    <polygon
+       id="svg_168"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="2176,245 2168,253 2168,197 2176,189 "
+       transform="translate(-900.9901,320.54455)" />
+    <text
+       id="svg_169"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="505.54456"
+       x="1239.0099"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Input X</text>
+    <rect
+       id="svg_170"
+       stroke-width="4"
+       stroke="#7b86b7"
+       fill="#e8ecf8"
+       class="op2"
+       rx="16"
+       height="44.331673"
+       width="120.15588"
+       y="523.37872"
+       x="1283.849" />
+    <text
+       id="svg_171"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="551.54456"
+       x="1345.0099"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">GroupNorm</text>
+    <polygon
+       id="svg_172"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#f7f9fb"
+       class="tensorTop"
+       points="2389,189 2333,189 2325,197 2381,197 "
+       transform="translate(-900.9901,320.54455)" />
+    <polygon
+       stroke="#8b9199"
+       id="svg_173"
+       stroke-width="4"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="2382.1765,240.05882 2326.1765,240.05882 2326.1765,197 2382.1765,197 "
+       transform="translate(-900.9901,320.54455)" />
+    <polygon
+       stroke="#8b9199"
+       id="svg_174"
+       stroke-width="4"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="2389,234.70588 2381,241.23529 2381,195.52941 2389,189 "
+       transform="translate(-900.9901,320.54455)" />
+    <text
+       id="svg_175"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="505.54456"
+       x="1452.0099"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">X_norm</text>
+    <circle
+       stroke="#2f2f2f"
+       id="svg_176"
+       stroke-width="3"
+       fill="#ffffff"
+       class="mulCircle"
+       r="20.941179"
+       cy="548.48572"
+       cx="1675.4806" />
+    <text
+       id="svg_177"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="552.72101"
+       x="1673.1276"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">⊙</text>
+    <circle
+       id="svg_178"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       fill="#ffffff"
+       class="plusCircle"
+       r="18"
+       cy="545.54456"
+       cx="1727.0099" />
+    <text
+       id="svg_179"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="551.54456"
+       x="1727.0099"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">+</text>
+    <polygon
+       id="svg_180"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#f7f9fb"
+       class="tensorTop"
+       points="2715,189 2673,189 2665,197 2707,197 "
+       transform="translate(-900.9901,320.54455)" />
+    <polygon
+       id="svg_181"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="2707,253 2665,253 2665,197 2707,197 "
+       transform="translate(-900.9901,320.54455)" />
+    <polygon
+       id="svg_182"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="2715,245 2707,253 2707,197 2715,189 "
+       transform="translate(-900.9901,320.54455)" />
+    <text
+       id="svg_183"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="505.54456"
+       x="1785.0099"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">AdaGN</text>
+    <path
+       id="svg_184"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       class="arrowThin"
+       d="m 1275.0099,545.54455 h 24" />
+    <path
+       id="svg_185"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       class="arrowThin"
+       d="m 1391.0099,545.54455 h 33" />
+    <path
+       id="svg_186"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       class="arrowThin"
+       d="m 1488.0099,545.54455 h 173" />
+    <path
+       id="svg_187"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       class="arrowThin"
+       d="m 1697.0099,545.54455 h 12" />
+    <path
+       id="svg_188"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       class="arrowThin"
+       d="m 1745.0099,545.54455 h 19" />
+    <rect
+       id="svg_189"
+       stroke-width="4"
+       stroke="#7b86b7"
+       fill="#e8ecf8"
+       class="op2"
+       rx="16"
+       height="28"
+       width="150"
+       y="595.54456"
+       x="1539.0099" />
+    <text
+       id="svg_190"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="615.54456"
+       x="1614.0099"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">3×3 Conv → a₁</text>
+    <rect
+       id="svg_191"
+       stroke-width="4"
+       stroke="#7b86b7"
+       fill="#e8ecf8"
+       class="op2"
+       rx="16"
+       height="28"
+       width="150"
+       y="635.54456"
+       x="1539.0099" />
+    <text
+       stroke="null"
+       id="svg_192"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="655.54456"
+       x="1614.0099"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">dilated Conv → a₂</text>
+    <path
+       stroke="#2f2f2f"
+       id="svg_193"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       class="arrowThin"
+       d="m 1452.0099,559.4269 v 66.11765 h 87" />
+    <ellipse
+       id="svg_194"
+       stroke-width="4"
+       stroke="#ad8c43"
+       fill="#efe5d0"
+       class="cond"
+       ry="12"
+       rx="54"
+       cy="662.54456"
+       cx="1261.0099" />
+    <rect
+       id="svg_195"
+       stroke-width="4"
+       stroke="#ad8c43"
+       fill="#efe5d0"
+       class="cond"
+       rx="8"
+       height="34"
+       width="108"
+       y="662.54456"
+       x="1207.0099" />
+    <ellipse
+       id="svg_196"
+       stroke-width="4"
+       stroke="#ad8c43"
+       fill="#efe5d0"
+       class="cond"
+       ry="12"
+       rx="54"
+       cy="696.54456"
+       cx="1261.0099" />
+    <text
+       id="svg_197"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="685.54456"
+       x="1261.0099"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Style W</text>
+    <path
+       stroke="#2f2f2f"
+       id="svg_198"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       class="arrowThin"
+       d="m 1315.0099,679.54455 h 134" />
+    <rect
+       stroke="#ad8c43"
+       id="svg_199"
+       stroke-width="4"
+       fill="#efe5d0"
+       class="cond"
+       rx="16"
+       height="40"
+       width="68.94117"
+       y="642.89746"
+       x="1327.2452" />
+    <text
+       id="svg_200"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="664.19159"
+       x="1363.4803"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">γ, β</text>
+    <rect
+       stroke="#ad8c43"
+       id="svg_201"
+       stroke-width="4"
+       fill="#efe5d0"
+       class="cond"
+       rx="16"
+       height="40"
+       width="68.235283"
+       y="641.07928"
+       x="1442.2452" />
+    <text
+       stroke="null"
+       id="svg_202"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="665.15417"
+       x="1474.3842"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">τ₁, τ₂</text>
+    <path
+       stroke="#2f2f2f"
+       id="svg_205"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       class="arrowThin"
+       d="m 1355.3307,641.61406 v -73.57753 h 306.8557" />
+    <path
+       stroke="#2f2f2f"
+       id="svg_206"
+       marker-end="url(#arrowSmall)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       class="arrowThin"
+       d="m 1507.4857,672.64615 h 182.4331 V 556.27182" />
+    <path
+       stroke="#7e7e7e"
+       id="svg_207"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="0.382828"
+       class="grayline"
+       d="m 483.69141,601.69141 h 688.56279 v 8.87573" />
+    <path
+       id="svg_208"
+       d="m 225.38551,1504.3916 c 0,-11.9544 10.04566,-22 22,-22 H 2703.3855 c 11.9544,0 22,10.0456 22,22 v 166 c 0,11.9543 -10.0456,22 -22,22 H 247.38551 c -11.95434,0 -22,-10.0457 -22,-22 z m 1350.32179,-59.1386 0.9071,119.941"
+       opacity="undefined"
+       stroke-width="3"
+       stroke="#d3d3d3"
+       fill="#fafafa"
+       sodipodi:nodetypes="ssssssssscc"
+       style="fill:url(#linearGradient23);stroke:#0e311e;stroke-width:5;stroke-dasharray:none;stroke-opacity:1" />
+    <text
+       id="svg_209"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="start"
+       class="label"
+       y="1505.9647"
+       x="401.81802"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Train-time objectives</text>
+    <polygon
+       id="svg_210"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#f7f9fb"
+       class="tensorTop"
+       points="268,1570 182,1570 170,1582 256,1582 "
+       transform="translate(165.39998,-6.1259251)" />
+    <polygon
+       id="svg_211"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="256,1638 170,1638 170,1582 256,1582 "
+       transform="translate(165.39998,-6.1259251)" />
+    <polygon
+       id="svg_212"
+       stroke-width="4"
+       stroke="#8b9199"
+       fill="#eef1f4"
+       class="tensorFace"
+       points="268,1626 256,1638 256,1582 268,1570 "
+       transform="translate(165.39998,-6.1259251)" />
+    <text
+       id="svg_213"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="1567.874"
+       x="378.39996"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Target Style Latent</text>
+    <text
+       id="svg_214"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="1647.874"
+       x="378.39996"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Z_target</text>
+    <rect
+       id="svg_215"
+       stroke-width="4"
+       stroke="#bb747b"
+       fill="#f5e2e3"
+       class="loss"
+       rx="16"
+       height="88"
+       width="360"
+       y="1561.874"
+       x="568.02374" />
+    <text
+       id="svg_216"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="label"
+       y="1597.8237"
+       x="739.64062"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:20.9671px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:1.12324"
+       transform="scale(0.99964681,1.0003533)">Cross-domain matching</text>
+    <text
+       id="svg_217"
+       fill="#555555"
+       font="400 21px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="sub"
+       y="1633.2057"
+       x="732.86285"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">SWD + HF-SWD + Color</text>
+    <rect
+       id="svg_218"
+       stroke-width="4"
+       stroke="#bb747b"
+       fill="#f5e2e3"
+       class="loss"
+       rx="16"
+       height="88"
+       width="250"
+       y="1559.1827"
+       x="1049.4742" />
+    <text
+       id="svg_219"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="label"
+       y="1590.9539"
+       x="1165.4393"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Identity loss</text>
+    <text
+       id="svg_220"
+       fill="#555555"
+       font="400 21px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="sub"
+       y="1624.0168"
+       x="1160.582"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">L1 + NCE-id</text>
+    <rect
+       id="svg_221"
+       stroke-width="4"
+       stroke="#bb747b"
+       fill="#f5e2e3"
+       class="loss"
+       rx="16"
+       height="108"
+       width="360"
+       y="1558"
+       x="1370" />
+    <text
+       id="svg_222"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="label"
+       y="1600"
+       x="1550"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Latent feature taps</text>
+    <text
+       id="svg_223"
+       fill="#555555"
+       font="400 21px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="sub"
+       y="1630"
+       x="1550"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Keys: ϕ₀ · ϕ₁ · ϕ₂</text>
+    <rect
+       id="svg_224"
+       stroke-width="4"
+       stroke="#7b86b7"
+       fill="#e8ecf8"
+       class="op2"
+       rx="16"
+       height="108"
+       width="160"
+       y="1558"
+       x="2300" />
+    <text
+       id="svg_225"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="label"
+       y="1598"
+       x="2380"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Shared</text>
+    <text
+       id="svg_226"
+       fill="#555555"
+       font="400 21px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="sub"
+       y="1628"
+       x="2380"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">nce_projector</text>
+    <rect
+       id="svg_227"
+       stroke-width="4"
+       stroke="#bb747b"
+       fill="#f5e2e3"
+       class="loss"
+       rx="16"
+       height="78"
+       width="360"
+       y="1598"
+       x="1840" />
+    <text
+       id="svg_228"
+       fill="#1f1f1f"
+       font="700 28px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="label"
+       y="1630"
+       x="2020"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">PatchNCE loss</text>
+    <text
+       id="svg_229"
+       fill="#555555"
+       font="400 21px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="sub"
+       y="1669.7648"
+       x="2027.0588"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Query–Key funnel</text>
+    <path
+       id="svg_230"
+       marker-end="url(#arrowRose)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="3.72565"
+       stroke="#b06e75"
+       class="tap"
+       d="m 294.84078,562.05601 -2.15682,890.08349"
+       style="fill:url(#linearGradient5);fill-opacity:1;stroke:#707aae;stroke-opacity:1" />
+    <path
+       id="svg_236"
+       marker-end="url(#arrowRose)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4.11182"
+       stroke="#b06e75"
+       class="tap"
+       d="m 2711.151,629.2161 -12.9951,980.5047"
+       sodipodi:nodetypes="cc" />
+    <path
+       id="svg_237"
+       marker-end="url(#arrowRose)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#b06e75"
+       class="tap"
+       d="M 2700.3218,1607.6683 2460,1612"
+       sodipodi:nodetypes="cc" />
+    <path
+       id="svg_241"
+       marker-end="url(#arrowRose)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#b06e75"
+       class="tap"
+       d="m 1730,1612 h 110" />
+    <path
+       id="svg_242"
+       marker-end="url(#arrowRose)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="4"
+       stroke="#b06e75"
+       class="tap"
+       d="M 2300,1612 H 2200" />
+    <circle
+       id="svg_243"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       fill="#ffffff"
+       class="plusCircle"
+       r="10"
+       cy="1648"
+       cx="1940" />
+    <circle
+       id="svg_244"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       fill="#ffffff"
+       class="plusCircle"
+       r="10"
+       cy="1648"
+       cx="2020" />
+    <circle
+       id="svg_245"
+       stroke-width="4"
+       stroke="#2f2f2f"
+       fill="#ffffff"
+       class="plusCircle"
+       r="10"
+       cy="1648"
+       cx="2105" />
+    <text
+       id="svg_246"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="1653"
+       x="1940"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">q</text>
+    <text
+       id="svg_247"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="1653"
+       x="2020"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">+</text>
+    <text
+       id="svg_248"
+       fill="#666666"
+       font="400 17px Arial, Helvetica, sans-serif"
+       text-anchor="middle"
+       class="tiny"
+       y="1653"
+       x="2105"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">−</text>
+    <path
+       id="svg_249"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="3"
+       stroke="#7e7e7e"
+       class="grayline"
+       d="m 1952,1648 h 56" />
+    <path
+       id="svg_250"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="3"
+       stroke="#7e7e7e"
+       class="grayline"
+       d="m 2032,1648 h 61" />
+    <text
+       id="svg_251"
+       fill="#777777"
+       font="italic 16px Arial, Helvetica, sans-serif"
+       text-anchor="start"
+       class="note"
+       y="1730"
+       x="145"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">All tensors operate in NHWC (channels_last) memory layout for optimal Tensor Core utilization.</text>
+    <path
+       style="fill:#000000"
+       d="m 2329.3626,596.68936 c 1.0829,19.49257 0,0 0,0 z"
+       id="path1" />
+    <path
+       style="fill:#000000"
+       d="m 2319.6163,594.52352 c 0,27.07301 0,27.07301 0,27.07301"
+       id="path2" />
+    <path
+       style="fill:#000000;stroke-width:1.09437"
+       d="m 2365.099,597.77227 -91.965,23.82426 -7.6637,-1.83263"
+       id="path3" />
+    <path
+       id="svg_230-7"
+       marker-end="url(#arrowRose-1)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="3.39015"
+       stroke="#b06e75"
+       class="tap"
+       d="m 489.34389,801.99703 -2.43781,652.04767"
+       style="fill:url(#linearGradient8);fill-opacity:1;stroke:#707aae;stroke-opacity:1;marker-end:url(#arrowRose-1)" />
+    <path
+       id="svg_230-43"
+       marker-end="url(#arrowRose-2)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="3.72565"
+       stroke="#b06e75"
+       class="tap"
+       d="m 820.69976,913.0757 0.009,541.383"
+       style="fill:url(#linearGradient9);fill-opacity:1;stroke:#707aae;stroke-opacity:1;marker-end:url(#arrowRose-2)"
+       sodipodi:nodetypes="cc" />
+    <path
+       id="svg_230-43-8"
+       marker-end="url(#arrowRose-2-4)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="3.72565"
+       stroke="#b06e75"
+       class="tap"
+       d="m 2642.5516,625.70689 0.01,901.59211 m 4.6074,1.1814 -2014.84935,-7.4721"
+       style="fill:url(#linearGradient14);fill-opacity:1;stroke:#707aae;stroke-opacity:1;marker-end:url(#arrowRose-2-4)"
+       sodipodi:nodetypes="cccc" />
+    <path
+       id="svg_230-43-9"
+       marker-end="url(#arrowRose-2-7)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="3.72565"
+       stroke="#b06e75"
+       class="tap"
+       d="m 388.3463,1571.5735 -2.15684,-53.1723"
+       style="fill:url(#linearGradient18);fill-opacity:1;fill-rule:nonzero;stroke:#70ae71;stroke-width:3.726;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#arrowRose-2-7)"
+       sodipodi:nodetypes="cc" />
+    <path
+       id="svg_230-43-9-2"
+       marker-end="url(#arrowRose-2-7-2)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="3.72565"
+       stroke="#b06e75"
+       class="tap"
+       d="m 390.91333,1518.3515 246.20362,1.0056"
+       style="fill:url(#linearGradient19);fill-opacity:1;fill-rule:nonzero;stroke:#82ae70;stroke-width:3.726;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#arrowRose-2-7-2)"
+       sodipodi:nodetypes="cc" />
+    <path
+       id="svg_230-43-9-6"
+       marker-end="url(#arrowRose-2-7-0)"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       stroke-width="3.72565"
+       stroke="#b06e75"
+       class="tap"
+       d="m 772.77614,1562.3868 -1.33892,-39.2749"
+       style="fill:url(#linearGradient20);fill-opacity:1;fill-rule:nonzero;stroke:#709bae;stroke-width:3.25991;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#arrowRose-2-7-0)"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:#eef1f4;fill-opacity:1;fill-rule:nonzero;stroke:#0e311e;stroke-width:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 119.24147,655.58357 114.06921,1770.4102"
+       id="path25" />
+    <path
+       style="fill:#eef1f4;fill-opacity:1;fill-rule:nonzero;stroke:#0e311e;stroke-width:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 1095.2146,1758.0303 -976.13141,6.0343"
+       id="path25-3"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:#eef1f4;fill-opacity:1;fill-rule:nonzero;stroke:#0e311e;stroke-width:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 2698.035,1614.2786 0.9536,140.8046 m 2.6686,3.3361 -1469.2684,-3.1546 m -139.4165,3.4546 4.0165,-113.4212 m 134.5576,111.4472 4.0165,-113.4212"
+       id="path25-3-6"
+       sodipodi:nodetypes="cccccccc" />
+  </g>
+  <path
+     id="svg_230-5"
+     marker-end="url(#arrowRose-8)"
+     stroke-linejoin="round"
+     stroke-linecap="round"
+     fill="none"
+     stroke-width="4.14164"
+     stroke="#b06e75"
+     class="tap"
+     d="m 290.1722,1416.3121 1291.1874,-3.3356"
+     style="fill:url(#linearGradient6);fill-opacity:1;stroke:#707aae;stroke-opacity:1;marker-end:url(#arrowRose-8)"
+     sodipodi:nodetypes="cc" />
+</svg>

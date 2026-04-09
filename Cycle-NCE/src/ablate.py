@@ -6,12 +6,12 @@ import json
 from pathlib import Path
 
 
-SERIES_NAME = "chess"
+SERIES_NAME = "Gate"
 DEFAULT_BASE_CONFIG = "Layer-Norm.json"
 
 FORCED_TRAINING_OVERRIDES = {
     "batch_size": 256,
-    "num_epochs": 60,
+    "num_epochs": 120,
     "save_interval": 30,
     "full_eval_interval": 30,
     "full_eval_on_last_epoch": True,
@@ -49,20 +49,46 @@ def _deep_update(dst: dict, src: dict) -> None:
 
 EXPERIMENTS: list[tuple[str, dict]] = [
     ("01_baseline", {}),
-    ("02_no_pos_emb", {"model": {"ablation_disable_pos_emb": True}}),
-    ("03_high_temp_attn", {"model": {"semantic_attn_temperature": 0.5, "style_attn_temperature": 0.5}}),
-    ("04_no_color_highway", {"model": {"color_highway_gain": 0.0}}),
-    ("05_no_skip", {"model": {"skip_routing_mode": "none"}}),
-    ("06_patch_micro_only", {"loss": {"swd_patch_sizes": [3]}}),
-    ("07_patch_macro_only", {"loss": {"swd_patch_sizes": [25]}}),
-    ("08_swd_sort_mode", {"loss": {"swd_distance_mode": "sort"}}),
+    ("02_weak_decoder", {"model": {"num_decoder_blocks": 1}}),
     (
-        "09_no_pos_high_temp",
-        {"model": {"ablation_disable_pos_emb": True, "semantic_attn_temperature": 0.5, "style_attn_temperature": 0.5}},
+        "03_restore_skip_shortcut",
+        {"model": {"skip_routing_mode": "adaptive", "skip_fusion_mode": "add_proj"}},
+    ),
+    ("04_attn_gate_fixed", {"model": {"attn_gate_mode": "fixed"}}),
+    ("05_attn_gate_learned", {"model": {"attn_gate_mode": "learned"}}),
+    (
+        "06_gate_learned_idt_energy",
+        {"model": {"attn_gate_mode": "learned"}, "loss": {"idt_mode": "energy", "w_identity": 200.0}},
+    ),
+    ("07_aux_loss_weak", {"loss": {"w_aux_delta_variance": 0.1}}),
+    ("08_aux_loss_strong", {"loss": {"w_aux_delta_variance": 1.0}}),
+    (
+        "09_gate_and_bipolar",
+        {"model": {"attn_gate_mode": "learned"}, "loss": {"swd_patch_sizes": [3, 25]}},
     ),
     (
-        "10_macro_no_skip",
-        {"model": {"skip_routing_mode": "none"}, "loss": {"swd_patch_sizes": [25]}},
+        "10_gate_and_low_color",
+        {"model": {"attn_gate_mode": "learned"}, "loss": {"w_color": 10.0, "w_swd_unified": 60.0}},
+    ),
+    (
+        "11_gate_bipolar_low_color",
+        {
+            "model": {"attn_gate_mode": "learned"},
+            "loss": {"w_color": 10.0, "w_swd_unified": 60.0, "swd_patch_sizes": [3, 25]},
+        },
+    ),
+    (
+        "12_gate_energy_bipolar_low_color",
+        {
+            "model": {"attn_gate_mode": "learned"},
+            "loss": {
+                "idt_mode": "energy",
+                "w_identity": 200.0,
+                "w_color": 10.0,
+                "w_swd_unified": 60.0,
+                "swd_patch_sizes": [3, 25],
+            },
+        },
     ),
 ]
 
