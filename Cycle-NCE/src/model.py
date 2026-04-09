@@ -1460,6 +1460,9 @@ def build_model_from_config(
     direct_qk = bool(model_cfg.get("ablation_direct_qk", _MODEL_CONFIG_DEFAULTS["ablation_direct_qk"]))
     raw_v = bool(model_cfg.get("ablation_raw_v", _MODEL_CONFIG_DEFAULTS["ablation_raw_v"]))
     no_smooth = bool(model_cfg.get("ablation_no_smooth", _MODEL_CONFIG_DEFAULTS["ablation_no_smooth"]))
+    numerical_fixes = bool(
+        model_cfg.get("ablation_numerical_fixes", _MODEL_CONFIG_DEFAULTS["ablation_numerical_fixes"])
+    )
     attn_gate_mode = str(model_cfg.get("attn_gate_mode", _MODEL_CONFIG_DEFAULTS["attn_gate_mode"])).strip().lower()
     if attn_gate_mode not in {"none", "fixed", "learned"}:
         attn_gate_mode = "none"
@@ -1469,10 +1472,13 @@ def build_model_from_config(
     for module in model.modules():
         if isinstance(module, CrossAttnAdaGN):
             module.ablation_disable_pos_emb = disable_pos
+        if isinstance(module, StyleRoutingSkip):
+            module.ablation_numerical_fixes = numerical_fixes
         if isinstance(module, SemanticCrossAttn):
             module.ablation_direct_qk = direct_qk
             module.ablation_raw_v = raw_v
             module.ablation_no_smooth = no_smooth
             module.attn_gate_mode = attn_gate_mode
             module.attn_temperature = max(1e-4, attn_temperature)
+    model.ablation_numerical_fixes = numerical_fixes
     return model

@@ -6,12 +6,12 @@ import json
 from pathlib import Path
 
 
-SERIES_NAME = "Gate"
+SERIES_NAME = "NumFix"
 DEFAULT_BASE_CONFIG = "Layer-Norm.json"
 
 FORCED_TRAINING_OVERRIDES = {
     "batch_size": 256,
-    "num_epochs": 120,
+    "num_epochs": 60,
     "save_interval": 30,
     "full_eval_interval": 30,
     "full_eval_on_last_epoch": True,
@@ -20,6 +20,11 @@ FORCED_TRAINING_OVERRIDES = {
 }
 
 FORCED_LOSS_OVERRIDES = {}
+
+BASE_MODEL_CONFIG = {
+    "skip_routing_mode": "adaptive",
+    "skip_fusion_mode": "add_proj",
+}
 
 
 def _load_base_config(src_dir: Path, base_config_arg: str | None) -> tuple[dict, Path]:
@@ -48,45 +53,38 @@ def _deep_update(dst: dict, src: dict) -> None:
 
 
 EXPERIMENTS: list[tuple[str, dict]] = [
-    ("01_baseline", {}),
-    ("02_weak_decoder", {"model": {"num_decoder_blocks": 1}}),
+    ("01_baseline_burn", {"model": BASE_MODEL_CONFIG}),
     (
-        "03_restore_skip_shortcut",
-        {"model": {"skip_routing_mode": "adaptive", "skip_fusion_mode": "add_proj"}},
-    ),
-    ("04_attn_gate_fixed", {"model": {"attn_gate_mode": "fixed"}}),
-    ("05_attn_gate_learned", {"model": {"attn_gate_mode": "learned"}}),
-    (
-        "06_gate_learned_idt_energy",
-        {"model": {"attn_gate_mode": "learned"}, "loss": {"idt_mode": "energy", "w_identity": 200.0}},
-    ),
-    ("07_aux_loss_weak", {"loss": {"w_aux_delta_variance": 0.1}}),
-    ("08_aux_loss_strong", {"loss": {"w_aux_delta_variance": 1.0}}),
-    (
-        "09_gate_and_bipolar",
-        {"model": {"attn_gate_mode": "learned"}, "loss": {"swd_patch_sizes": [3, 25]}},
+        "02_baseline_shielded",
+        {"model": {**BASE_MODEL_CONFIG, "ablation_numerical_fixes": True}},
     ),
     (
-        "10_gate_and_low_color",
-        {"model": {"attn_gate_mode": "learned"}, "loss": {"w_color": 10.0, "w_swd_unified": 60.0}},
+        "03_shielded_relax_idt",
+        {"model": {**BASE_MODEL_CONFIG, "ablation_numerical_fixes": True}, "loss": {"w_identity": 3.0}},
     ),
     (
-        "11_gate_bipolar_low_color",
+        "04_shielded_high_swd",
         {
-            "model": {"attn_gate_mode": "learned"},
-            "loss": {"w_color": 10.0, "w_swd_unified": 60.0, "swd_patch_sizes": [3, 25]},
+            "model": {**BASE_MODEL_CONFIG, "ablation_numerical_fixes": True},
+            "loss": {"w_swd_unified": 80.0, "w_color": 10.0},
         },
     ),
     (
-        "12_gate_energy_bipolar_low_color",
+        "05_shielded_bipolar_patch",
         {
-            "model": {"attn_gate_mode": "learned"},
-            "loss": {
-                "idt_mode": "energy",
-                "w_identity": 200.0,
-                "w_color": 10.0,
-                "w_swd_unified": 60.0,
-                "swd_patch_sizes": [3, 25],
+            "model": {**BASE_MODEL_CONFIG, "ablation_numerical_fixes": True},
+            "loss": {"swd_patch_sizes": [3, 25]},
+        },
+    ),
+    (
+        "06_shielded_attn_unleashed",
+        {
+            "model": {
+                **BASE_MODEL_CONFIG,
+                "ablation_numerical_fixes": True,
+                "ablation_direct_qk": True,
+                "ablation_raw_v": True,
+                "ablation_no_smooth": True,
             },
         },
     ),
