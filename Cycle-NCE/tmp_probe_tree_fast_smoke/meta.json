@@ -1,0 +1,31 @@
+{
+  "config": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\src\\Layer-Norm.json",
+  "data_root": "G:\\GitHub\\Latent_Style\\latent-256",
+  "image_root": "G:\\GitHub\\Latent_Style\\style_data\\train",
+  "styles": [
+    "photo",
+    "Hayao",
+    "monet",
+    "vangogh",
+    "cezanne"
+  ],
+  "max_samples_per_domain": 8,
+  "common_samples_per_domain": 8,
+  "patch_sizes": [
+    3,
+    25
+  ],
+  "num_projections": 16,
+  "tree_num_trees": 4,
+  "tree_max_depth": 4,
+  "max_tree_patches": 64,
+  "pixel_size": 64,
+  "device": "cpu",
+  "load_times_ms": {
+    "photo": 97.96040000014727,
+    "Hayao": 23.124399999915113,
+    "monet": 17.221499999777734,
+    "vangogh": 14.191799999935029,
+    "cezanne": 49.865999999838095
+  }
+}

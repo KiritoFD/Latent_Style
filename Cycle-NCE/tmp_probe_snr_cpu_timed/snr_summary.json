@@ -1,0 +1,85 @@
+{
+  "summary": [
+    {
+      "snr": 3.3927821469216406,
+      "mean_intra": 0.025972325230577555,
+      "mean_inter": 0.08811844135634601,
+      "median_intra": 0.026663435623049736,
+      "median_inter": 0.08462852239608765,
+      "num_intra_pairs": 5,
+      "num_inter_pairs": 40,
+      "mode": "pixel_gram",
+      "elapsed_sec": 0.0019930000000840664
+    },
+    {
+      "snr": 2.0250012091855365,
+      "mean_intra": 0.05502355322241783,
+      "mean_inter": 0.11142276180908084,
+      "median_intra": 0.06926801055669785,
+      "median_inter": 0.10561439394950867,
+      "num_intra_pairs": 5,
+      "num_inter_pairs": 40,
+      "mode": "pixel_swd_patch_3_25",
+      "elapsed_sec": 0.011348099999963779
+    },
+    {
+      "snr": 1.645176864682548,
+      "mean_intra": 0.14333919771015644,
+      "mean_inter": 0.23581833187490703,
+      "median_intra": 0.1216222494840622,
+      "median_inter": 0.22614673525094986,
+      "num_intra_pairs": 5,
+      "num_inter_pairs": 40,
+      "mode": "latent_swd_patch_3_25",
+      "elapsed_sec": 0.01114529999995284
+    },
+    {
+      "snr": 1.358695652173913,
+      "mean_intra": 0.8625,
+      "mean_inter": 1.171875,
+      "median_intra": 0.875,
+      "median_inter": 1.109375,
+      "num_intra_pairs": 5,
+      "num_inter_pairs": 40,
+      "mode": "latent_tree_swd_patch_3_25",
+      "elapsed_sec": 0.0893528999999944
+    },
+    {
+      "snr": 1.282688438369507,
+      "mean_intra": 0.15736292488873005,
+      "mean_inter": 0.20184760438278318,
+      "median_intra": 0.06521110981702805,
+      "median_inter": 0.16988752037286758,
+      "num_intra_pairs": 5,
+      "num_inter_pairs": 40,
+      "mode": "latent_gram",
+      "elapsed_sec": 0.00531639999996969
+    },
+    {
+      "snr": 0.916139240506329,
+      "mean_intra": 0.49375,
+      "mean_inter": 0.45234375,
+      "median_intra": 0.5625,
+      "median_inter": 0.40625,
+      "num_intra_pairs": 5,
+      "num_inter_pairs": 40,
+      "mode": "pixel_tree_swd_patch_3_25",
+      "elapsed_sec": 0.07284950000007484
+    }
+  ],
+  "compute_times_sec": {
+    "latent_gram": 0.00531639999996969,
+    "latent_swd_patch_3_25": 0.01114529999995284,
+    "latent_tree_swd_patch_3_25": 0.0893528999999944,
+    "pixel_gram": 0.0019930000000840664,
+    "pixel_swd_patch_3_25": 0.011348099999963779,
+    "pixel_tree_swd_patch_3_25": 0.07284950000007484
+  },
+  "load_times_sec": {
+    "photo": 0.08585640000001149,
+    "Hayao": 0.01779260000000704,
+    "monet": 0.011112899999943693,
+    "vangogh": 0.008075499999904423,
+    "cezanne": 0.039454700000078446
+  }
+}

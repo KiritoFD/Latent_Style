@@ -6,14 +6,14 @@ import json
 from pathlib import Path
 
 
-SERIES_NAME = "NumFix"
+SERIES_NAME = "Marathon"
 DEFAULT_BASE_CONFIG = "Layer-Norm.json"
 
 FORCED_TRAINING_OVERRIDES = {
     "batch_size": 256,
-    "num_epochs": 60,
-    "save_interval": 30,
-    "full_eval_interval": 30,
+    "num_epochs": 180,
+    "save_interval": 60,
+    "full_eval_interval": 60,
     "full_eval_on_last_epoch": True,
     "warmup_ratio": 0.1,
     "learning_rate": 8e-5,
@@ -24,6 +24,11 @@ FORCED_LOSS_OVERRIDES = {}
 BASE_MODEL_CONFIG = {
     "skip_routing_mode": "adaptive",
     "skip_fusion_mode": "add_proj",
+    "ablation_numerical_fixes": True,
+    "ablation_disable_pos_emb": True,
+    "ablation_direct_qk": True,
+    "ablation_raw_v": True,
+    "ablation_no_smooth": True,
 }
 
 
@@ -53,39 +58,66 @@ def _deep_update(dst: dict, src: dict) -> None:
 
 
 EXPERIMENTS: list[tuple[str, dict]] = [
-    ("01_baseline_burn", {"model": BASE_MODEL_CONFIG}),
     (
-        "02_baseline_shielded",
-        {"model": {**BASE_MODEL_CONFIG, "ablation_numerical_fixes": True}},
-    ),
-    (
-        "03_shielded_relax_idt",
-        {"model": {**BASE_MODEL_CONFIG, "ablation_numerical_fixes": True}, "loss": {"w_identity": 3.0}},
-    ),
-    (
-        "04_shielded_high_swd",
+        "01_marathon_baseline",
         {
-            "model": {**BASE_MODEL_CONFIG, "ablation_numerical_fixes": True},
-            "loss": {"w_swd_unified": 80.0, "w_color": 10.0},
+            "model": BASE_MODEL_CONFIG,
+            "loss": {"swd_patch_sizes": [3, 25], "w_swd_unified": 60.0, "w_color": 10.0, "w_identity": 8.0},
         },
     ),
     (
-        "05_shielded_bipolar_patch",
+        "02_heavy_style",
         {
-            "model": {**BASE_MODEL_CONFIG, "ablation_numerical_fixes": True},
-            "loss": {"swd_patch_sizes": [3, 25]},
+            "model": BASE_MODEL_CONFIG,
+            "loss": {"swd_patch_sizes": [3, 25], "w_swd_unified": 90.0, "w_color": 10.0, "w_identity": 8.0},
         },
     ),
     (
-        "06_shielded_attn_unleashed",
+        "03_relax_idt",
         {
-            "model": {
-                **BASE_MODEL_CONFIG,
-                "ablation_numerical_fixes": True,
-                "ablation_direct_qk": True,
-                "ablation_raw_v": True,
-                "ablation_no_smooth": True,
+            "model": BASE_MODEL_CONFIG,
+            "loss": {"swd_patch_sizes": [3, 25], "w_swd_unified": 60.0, "w_color": 10.0, "w_identity": 4.0},
+        },
+    ),
+    (
+        "04_mode_seeking_repulse",
+        {
+            "model": BASE_MODEL_CONFIG,
+            "loss": {
+                "swd_patch_sizes": [3, 25],
+                "w_swd_unified": 60.0,
+                "w_repulsive": 20.0,
+                "repulsive_margin": 1.5,
+                "w_identity": 8.0,
             },
+        },
+    ),
+    (
+        "05_extreme_bipolar",
+        {
+            "model": BASE_MODEL_CONFIG,
+            "loss": {"swd_patch_sizes": [3, 31], "w_swd_unified": 60.0, "w_color": 10.0, "w_identity": 8.0},
+        },
+    ),
+    (
+        "06_color_starvation",
+        {
+            "model": BASE_MODEL_CONFIG,
+            "loss": {"swd_patch_sizes": [3, 25], "w_swd_unified": 80.0, "w_color": 5.0, "w_identity": 8.0},
+        },
+    ),
+    (
+        "07_with_smooth_ablation",
+        {
+            "model": {**BASE_MODEL_CONFIG, "ablation_no_smooth": False},
+            "loss": {"swd_patch_sizes": [3, 25], "w_swd_unified": 60.0, "w_color": 10.0, "w_identity": 8.0},
+        },
+    ),
+    (
+        "08_the_hail_mary",
+        {
+            "model": BASE_MODEL_CONFIG,
+            "loss": {"swd_patch_sizes": [3, 31], "w_swd_unified": 100.0, "w_repulsive": 20.0, "w_color": 3.0, "w_identity": 3.0},
         },
     ),
 ]

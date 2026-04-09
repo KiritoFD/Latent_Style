@@ -1,0 +1,23 @@
+{
+  "config": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\src\\Layer-Norm.json",
+  "data_root": "G:\\GitHub\\Latent_Style\\latent-256",
+  "image_root": "G:\\GitHub\\Latent_Style\\style_data\\train",
+  "styles": [
+    "photo",
+    "Hayao",
+    "monet",
+    "vangogh",
+    "cezanne"
+  ],
+  "max_samples_per_domain": 8,
+  "common_samples_per_domain": 8,
+  "patch_sizes": [
+    3,
+    25
+  ],
+  "num_projections": 16,
+  "tree_num_trees": 4,
+  "tree_max_depth": 4,
+  "max_tree_patches": 64,
+  "pixel_size": 64
+}

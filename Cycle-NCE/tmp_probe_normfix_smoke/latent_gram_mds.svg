@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
+<rect width="100%" height="100%" fill="white"/>
+<text x="450.0" y="28" text-anchor="middle" font-size="22" font-family="Arial">MDS Scatter: latent_gram</text>
+<rect x="70" y="50" width="650" height="420" fill="none" stroke="black"/>
+<circle cx="281.7" cy="313.9" r="4.2" fill="#2f6fed" fill-opacity="0.75"/>
+<circle cx="357.9" cy="271.3" r="4.2" fill="#2f6fed" fill-opacity="0.75"/>
+<circle cx="458.9" cy="271.9" r="4.2" fill="#ff7a00" fill-opacity="0.75"/>
+<circle cx="70.0" cy="257.2" r="4.2" fill="#ff7a00" fill-opacity="0.75"/>
+<circle cx="493.0" cy="321.2" r="4.2" fill="#1fa971" fill-opacity="0.75"/>
+<circle cx="426.3" cy="470.0" r="4.2" fill="#1fa971" fill-opacity="0.75"/>
+<circle cx="560.4" cy="50.0" r="4.2" fill="#a046f2" fill-opacity="0.75"/>
+<circle cx="603.9" cy="177.4" r="4.2" fill="#a046f2" fill-opacity="0.75"/>
+<circle cx="697.0" cy="352.4" r="4.2" fill="#d64545" fill-opacity="0.75"/>
+<circle cx="720.0" cy="366.0" r="4.2" fill="#d64545" fill-opacity="0.75"/>
+<rect x="750" y="60" width="14" height="14" fill="#2f6fed"/>
+<text x="770" y="72" font-size="14" font-family="Arial">photo</text>
+<rect x="750" y="84" width="14" height="14" fill="#ff7a00"/>
+<text x="770" y="96" font-size="14" font-family="Arial">Hayao</text>
+<rect x="750" y="108" width="14" height="14" fill="#1fa971"/>
+<text x="770" y="120" font-size="14" font-family="Arial">monet</text>
+<rect x="750" y="132" width="14" height="14" fill="#a046f2"/>
+<text x="770" y="144" font-size="14" font-family="Arial">vangogh</text>
+<rect x="750" y="156" width="14" height="14" fill="#d64545"/>
+<text x="770" y="168" font-size="14" font-family="Arial">cezanne</text>
+</svg>

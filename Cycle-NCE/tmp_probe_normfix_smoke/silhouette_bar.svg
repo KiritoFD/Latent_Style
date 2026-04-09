@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
+<rect width="100%" height="100%" fill="white"/>
+<text x="450.0" y="30" text-anchor="middle" font-size="22" font-family="Arial">Silhouette Comparison (Higher is Better)</text>
+<line x1="80" y1="440" x2="870" y2="440" stroke="black"/>
+<line x1="80" y1="60" x2="80" y2="440" stroke="black"/>
+<rect x="99.8" y="82.0" width="92.2" height="358.0" fill="#2f6fed"/>
+<text x="145.8" y="74.0" text-anchor="middle" font-size="14" font-family="Arial">0.320</text>
+<text x="145.8" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">pixel_gram</text>
+<rect x="231.4" y="70.0" width="92.2" height="370.0" fill="#ff7a00"/>
+<text x="277.5" y="62.0" text-anchor="middle" font-size="14" font-family="Arial">0.330</text>
+<text x="277.5" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">latent_gram</text>
+<rect x="363.1" y="148.9" width="92.2" height="291.1" fill="#1fa971"/>
+<text x="409.2" y="140.9" text-anchor="middle" font-size="14" font-family="Arial">0.260</text>
+<text x="409.2" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">latent_swd_patch_3_25</text>
+<rect x="494.8" y="210.9" width="92.2" height="229.1" fill="#a046f2"/>
+<text x="540.8" y="202.9" text-anchor="middle" font-size="14" font-family="Arial">0.204</text>
+<text x="540.8" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">pixel_swd_patch_3_25</text>
+<rect x="626.4" y="448.6" width="92.2" height="-8.6" fill="#d64545"/>
+<text x="672.5" y="440.6" text-anchor="middle" font-size="14" font-family="Arial">-0.008</text>
+<text x="672.5" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">pixel_tree_swd_patch_3_25</text>
+<rect x="758.1" y="723.5" width="92.2" height="-283.5" fill="#0ea5e9"/>
+<text x="804.2" y="715.5" text-anchor="middle" font-size="14" font-family="Arial">-0.253</text>
+<text x="804.2" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">latent_tree_swd_patch_3_25</text>
+</svg>

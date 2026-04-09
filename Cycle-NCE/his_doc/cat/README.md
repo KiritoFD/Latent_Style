@@ -16,6 +16,7 @@
 1. [README.md](/g:/GitHub/Latent_Style/Cycle-NCE/his_doc/cat/README.md)
 2. [MATERIAL_MAP.md](/g:/GitHub/Latent_Style/Cycle-NCE/his_doc/cat/MATERIAL_MAP.md)
 3. [MIDTERM_DEFENSE_READING_ORDER.md](/g:/GitHub/Latent_Style/Cycle-NCE/his_doc/cat/MIDTERM_DEFENSE_READING_ORDER.md)
+4. [2026-04-09_MASTER_DOSSIER.md](/g:/GitHub/Latent_Style/Cycle-NCE/his_doc/reports/2026-04-09_MASTER_DOSSIER.md)
 
 ### `raw`
 

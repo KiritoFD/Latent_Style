@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
+<rect width="100%" height="100%" fill="white"/>
+<text x="450.0" y="28" text-anchor="middle" font-size="22" font-family="Arial">MDS Scatter: latent_gram</text>
+<rect x="70" y="50" width="650" height="420" fill="none" stroke="black"/>
+<circle cx="687.5" cy="294.5" r="4.2" fill="#2f6fed" fill-opacity="0.75"/>
+<circle cx="367.7" cy="297.7" r="4.2" fill="#2f6fed" fill-opacity="0.75"/>
+<circle cx="210.9" cy="311.3" r="4.2" fill="#2f6fed" fill-opacity="0.75"/>
+<circle cx="310.6" cy="233.0" r="4.2" fill="#2f6fed" fill-opacity="0.75"/>
+<circle cx="278.6" cy="176.6" r="4.2" fill="#2f6fed" fill-opacity="0.75"/>
+<circle cx="133.3" cy="265.9" r="4.2" fill="#2f6fed" fill-opacity="0.75"/>
+<circle cx="77.0" cy="315.3" r="4.2" fill="#2f6fed" fill-opacity="0.75"/>
+<circle cx="682.2" cy="91.3" r="4.2" fill="#2f6fed" fill-opacity="0.75"/>
+<circle cx="70.0" cy="262.2" r="4.2" fill="#ff7a00" fill-opacity="0.75"/>
+<circle cx="720.0" cy="302.9" r="4.2" fill="#ff7a00" fill-opacity="0.75"/>
+<circle cx="531.6" cy="370.5" r="4.2" fill="#ff7a00" fill-opacity="0.75"/>
+<circle cx="143.0" cy="217.2" r="4.2" fill="#ff7a00" fill-opacity="0.75"/>
+<circle cx="717.3" cy="470.0" r="4.2" fill="#ff7a00" fill-opacity="0.75"/>
+<circle cx="108.2" cy="297.6" r="4.2" fill="#ff7a00" fill-opacity="0.75"/>
+<circle cx="507.5" cy="325.9" r="4.2" fill="#ff7a00" fill-opacity="0.75"/>
+<circle cx="235.2" cy="366.1" r="4.2" fill="#ff7a00" fill-opacity="0.75"/>
+<circle cx="193.5" cy="278.0" r="4.2" fill="#1fa971" fill-opacity="0.75"/>
+<circle cx="214.8" cy="326.5" r="4.2" fill="#1fa971" fill-opacity="0.75"/>
+<circle cx="353.5" cy="351.4" r="4.2" fill="#1fa971" fill-opacity="0.75"/>
+<circle cx="279.1" cy="268.2" r="4.2" fill="#1fa971" fill-opacity="0.75"/>
+<circle cx="224.2" cy="236.5" r="4.2" fill="#1fa971" fill-opacity="0.75"/>
+<circle cx="78.0" cy="219.0" r="4.2" fill="#1fa971" fill-opacity="0.75"/>
+<circle cx="104.8" cy="216.5" r="4.2" fill="#1fa971" fill-opacity="0.75"/>
+<circle cx="220.1" cy="326.5" r="4.2" fill="#1fa971" fill-opacity="0.75"/>
+<circle cx="158.9" cy="190.2" r="4.2" fill="#a046f2" fill-opacity="0.75"/>
+<circle cx="143.5" cy="200.4" r="4.2" fill="#a046f2" fill-opacity="0.75"/>
+<circle cx="542.9" cy="50.0" r="4.2" fill="#a046f2" fill-opacity="0.75"/>
+<circle cx="510.4" cy="75.5" r="4.2" fill="#a046f2" fill-opacity="0.75"/>
+<circle cx="173.5" cy="209.7" r="4.2" fill="#a046f2" fill-opacity="0.75"/>
+<circle cx="180.1" cy="214.9" r="4.2" fill="#a046f2" fill-opacity="0.75"/>
+<circle cx="412.0" cy="165.3" r="4.2" fill="#a046f2" fill-opacity="0.75"/>
+<circle cx="430.2" cy="133.6" r="4.2" fill="#a046f2" fill-opacity="0.75"/>
+<circle cx="109.9" cy="298.5" r="4.2" fill="#d64545" fill-opacity="0.75"/>
+<circle cx="99.9" cy="301.2" r="4.2" fill="#d64545" fill-opacity="0.75"/>
+<circle cx="408.9" cy="327.9" r="4.2" fill="#d64545" fill-opacity="0.75"/>
+<circle cx="416.3" cy="328.3" r="4.2" fill="#d64545" fill-opacity="0.75"/>
+<circle cx="367.4" cy="302.2" r="4.2" fill="#d64545" fill-opacity="0.75"/>
+<circle cx="366.1" cy="310.4" r="4.2" fill="#d64545" fill-opacity="0.75"/>
+<circle cx="216.5" cy="282.3" r="4.2" fill="#d64545" fill-opacity="0.75"/>
+<circle cx="222.0" cy="272.3" r="4.2" fill="#d64545" fill-opacity="0.75"/>
+<rect x="750" y="60" width="14" height="14" fill="#2f6fed"/>
+<text x="770" y="72" font-size="14" font-family="Arial">photo</text>
+<rect x="750" y="84" width="14" height="14" fill="#ff7a00"/>
+<text x="770" y="96" font-size="14" font-family="Arial">Hayao</text>
+<rect x="750" y="108" width="14" height="14" fill="#1fa971"/>
+<text x="770" y="120" font-size="14" font-family="Arial">monet</text>
+<rect x="750" y="132" width="14" height="14" fill="#a046f2"/>
+<text x="770" y="144" font-size="14" font-family="Arial">vangogh</text>
+<rect x="750" y="156" width="14" height="14" fill="#d64545"/>
+<text x="770" y="168" font-size="14" font-family="Arial">cezanne</text>
+</svg>

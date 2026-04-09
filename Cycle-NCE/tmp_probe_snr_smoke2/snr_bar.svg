@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
+<rect width="100%" height="100%" fill="white"/>
+<text x="450.0" y="30" text-anchor="middle" font-size="22" font-family="Arial">SNR Comparison (Latent Gram vs SWD vs Tree-SWD)</text>
+<line x1="80" y1="440" x2="870" y2="440" stroke="black"/>
+<line x1="80" y1="60" x2="80" y2="440" stroke="black"/>
+<rect x="99.8" y="70.0" width="92.2" height="370.0" fill="#2f6fed"/>
+<text x="145.8" y="62.0" text-anchor="middle" font-size="14" font-family="Arial">1.311</text>
+<text x="145.8" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">latent_swd_patch_3_25</text>
+<rect x="231.4" y="97.0" width="92.2" height="343.0" fill="#ff7a00"/>
+<text x="277.5" y="89.0" text-anchor="middle" font-size="14" font-family="Arial">1.215</text>
+<text x="277.5" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">pixel_tree_swd_patch_3_25</text>
+<rect x="363.1" y="111.5" width="92.2" height="328.5" fill="#1fa971"/>
+<text x="409.2" y="103.5" text-anchor="middle" font-size="14" font-family="Arial">1.164</text>
+<text x="409.2" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">latent_tree_swd_patch_3_25</text>
+<rect x="494.8" y="123.5" width="92.2" height="316.5" fill="#a046f2"/>
+<text x="540.8" y="115.5" text-anchor="middle" font-size="14" font-family="Arial">1.122</text>
+<text x="540.8" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">latent_gram</text>
+<rect x="626.4" y="131.0" width="92.2" height="309.0" fill="#d64545"/>
+<text x="672.5" y="123.0" text-anchor="middle" font-size="14" font-family="Arial">1.095</text>
+<text x="672.5" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">pixel_gram</text>
+<rect x="758.1" y="133.7" width="92.2" height="306.3" fill="#0ea5e9"/>
+<text x="804.2" y="125.7" text-anchor="middle" font-size="14" font-family="Arial">1.085</text>
+<text x="804.2" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">pixel_swd_patch_3_25</text>
+</svg>

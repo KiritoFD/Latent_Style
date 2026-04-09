@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
+<rect width="100%" height="100%" fill="white"/>
+<text x="450.0" y="30" text-anchor="middle" font-size="22" font-family="Arial">SNR Comparison (Latent Gram vs SWD vs Tree-SWD)</text>
+<line x1="80" y1="440" x2="870" y2="440" stroke="black"/>
+<line x1="80" y1="60" x2="80" y2="440" stroke="black"/>
+<rect x="96.9" y="70.0" width="79.0" height="370.0" fill="#2f6fed"/>
+<text x="136.4" y="62.0" text-anchor="middle" font-size="14" font-family="Arial">3.393</text>
+<text x="136.4" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">pixel_gram</text>
+<rect x="209.8" y="219.2" width="79.0" height="220.8" fill="#ff7a00"/>
+<text x="249.3" y="211.2" text-anchor="middle" font-size="14" font-family="Arial">2.025</text>
+<text x="249.3" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">pixel_swd_patch_3_25</text>
+<rect x="322.6" y="260.6" width="79.0" height="179.4" fill="#1fa971"/>
+<text x="362.1" y="252.6" text-anchor="middle" font-size="14" font-family="Arial">1.645</text>
+<text x="362.1" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">latent_swd_patch_3_25</text>
+<rect x="435.5" y="285.1" width="79.0" height="154.9" fill="#a046f2"/>
+<text x="475.0" y="277.1" text-anchor="middle" font-size="14" font-family="Arial">1.420</text>
+<text x="475.0" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">latent_tree_swd_patch_3_25</text>
+<rect x="548.4" y="295.7" width="79.0" height="144.3" fill="#d64545"/>
+<text x="587.9" y="287.7" text-anchor="middle" font-size="14" font-family="Arial">1.324</text>
+<text x="587.9" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">pixel_vgg_gram</text>
+<rect x="661.2" y="296.1" width="79.0" height="143.9" fill="#0ea5e9"/>
+<text x="700.7" y="288.1" text-anchor="middle" font-size="14" font-family="Arial">1.320</text>
+<text x="700.7" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">pixel_tree_swd_patch_3_25</text>
+<rect x="774.1" y="300.1" width="79.0" height="139.9" fill="#2f6fed"/>
+<text x="813.6" y="292.1" text-anchor="middle" font-size="14" font-family="Arial">1.283</text>
+<text x="813.6" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">latent_gram</text>
+</svg>

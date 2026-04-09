@@ -638,7 +638,7 @@ class StyleRoutingSkip(nn.Module):
             erase_gate = self.gate_mapper(style_code).view(b, c, 1, 1).to(dtype=skip_feat.dtype)
             rewrite_bias = self.rewrite_mapper(style_code).view(b, c, 1, 1).to(dtype=skip_feat.dtype)
             if getattr(self, "ablation_numerical_fixes", False):
-                rewrite_bias = torch.tanh(rewrite_bias / 10.0) * 10.0
+                rewrite_bias = torch.tanh(rewrite_bias / 4.0) * 4.0
             if self.content_retention_boost > 0.0:
                 erase_gate = erase_gate + (1.0 - erase_gate) * self.content_retention_boost
             effective_erase = 1.0 - (1.0 - erase_gate) * gate_t
@@ -1072,10 +1072,7 @@ class LatentAdaCUT(nn.Module):
         self,
         h: torch.Tensor,
     ) -> torch.Tensor:
-        delta = self.dec_out(h) * self.latent_scale_factor * self.residual_gain
-        if getattr(self, "ablation_numerical_fixes", False):
-            delta = torch.tanh(delta / 4.0) * 4.0
-        return delta
+        return self.dec_out(h) * self.latent_scale_factor * self.residual_gain
 
     def encode_style_id(self, style_id: torch.Tensor | int | None) -> torch.Tensor:
         if style_id is None:
@@ -1243,7 +1240,10 @@ class LatentAdaCUT(nn.Module):
         )
         delta_raw = self._compute_delta(h)
         highway_gain = float(self.color_highway_gain)
-        return delta_raw + color_highway * highway_gain
+        total_delta = delta_raw + color_highway * highway_gain
+        if getattr(self, "ablation_numerical_fixes", False):
+            total_delta = torch.tanh(total_delta / 2.5) * 2.5
+        return total_delta
 
     def integrate(
         self,

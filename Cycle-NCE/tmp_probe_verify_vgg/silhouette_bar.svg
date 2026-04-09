@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
+<rect width="100%" height="100%" fill="white"/>
+<text x="450.0" y="30" text-anchor="middle" font-size="22" font-family="Arial">Silhouette Comparison (Higher is Better)</text>
+<line x1="80" y1="440" x2="870" y2="440" stroke="black"/>
+<line x1="80" y1="60" x2="80" y2="440" stroke="black"/>
+<rect x="96.9" y="92.4" width="79.0" height="347.6" fill="#2f6fed"/>
+<text x="136.4" y="84.4" text-anchor="middle" font-size="14" font-family="Arial">0.291</text>
+<text x="136.4" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">pixel_gram</text>
+<rect x="209.8" y="70.0" width="79.0" height="370.0" fill="#ff7a00"/>
+<text x="249.3" y="62.0" text-anchor="middle" font-size="14" font-family="Arial">0.310</text>
+<text x="249.3" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">pixel_swd_patch_3_25</text>
+<rect x="322.6" y="195.3" width="79.0" height="244.7" fill="#1fa971"/>
+<text x="362.1" y="187.3" text-anchor="middle" font-size="14" font-family="Arial">0.205</text>
+<text x="362.1" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">latent_swd_patch_3_25</text>
+<rect x="435.5" y="346.4" width="79.0" height="93.6" fill="#a046f2"/>
+<text x="475.0" y="338.4" text-anchor="middle" font-size="14" font-family="Arial">0.078</text>
+<text x="475.0" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">latent_tree_swd_patch_3_25</text>
+<rect x="548.4" y="287.2" width="79.0" height="152.8" fill="#d64545"/>
+<text x="587.9" y="279.2" text-anchor="middle" font-size="14" font-family="Arial">0.128</text>
+<text x="587.9" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">pixel_vgg_gram</text>
+<rect x="661.2" y="778.7" width="79.0" height="-338.7" fill="#0ea5e9"/>
+<text x="700.7" y="770.7" text-anchor="middle" font-size="14" font-family="Arial">-0.284</text>
+<text x="700.7" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">pixel_tree_swd_patch_3_25</text>
+<rect x="774.1" y="205.2" width="79.0" height="234.8" fill="#2f6fed"/>
+<text x="813.6" y="197.2" text-anchor="middle" font-size="14" font-family="Arial">0.197</text>
+<text x="813.6" y="462.0" text-anchor="middle" font-size="12" font-family="Arial">latent_gram</text>
+</svg>

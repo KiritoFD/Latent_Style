@@ -1,0 +1,78 @@
+{
+  "summary": [
+    {
+      "snr": 1.1695922573803905,
+      "mean_intra": 0.2876600905507103,
+      "mean_inter": 0.3364450146654528,
+      "median_intra": 0.26336075365543365,
+      "median_inter": 0.31617167592048645,
+      "num_intra_pairs": 399000,
+      "num_inter_pairs": 1600000,
+      "silhouette": 0.015270337100768253,
+      "mode": "latent_swd",
+      "elapsed_ms": 30778.65229999952
+    },
+    {
+      "snr": 1.140507622275247,
+      "mean_intra": 1.620416017727623,
+      "mean_inter": 1.8480968194752558,
+      "median_intra": 1.5485473275184631,
+      "median_inter": 1.78299880027771,
+      "num_intra_pairs": 399000,
+      "num_inter_pairs": 1600000,
+      "silhouette": 0.008766855610264879,
+      "mode": "pixel_vgg_gram",
+      "elapsed_ms": 46684.25269999989
+    },
+    {
+      "snr": 1.088731105584961,
+      "mean_intra": 1240.1111005272567,
+      "mean_inter": 1350.1475295252228,
+      "median_intra": 1110.8865966796875,
+      "median_inter": 1225.563232421875,
+      "num_intra_pairs": 399000,
+      "num_inter_pairs": 1600000,
+      "silhouette": -0.03224952345253314,
+      "mode": "pixel_mse",
+      "elapsed_ms": 3147.6742999993803
+    },
+    {
+      "snr": 1.0840924975578166,
+      "mean_intra": 19.20446372606596,
+      "mean_inter": 20.81941504504934,
+      "median_intra": 16.19806480407715,
+      "median_inter": 17.885631561279297,
+      "num_intra_pairs": 399000,
+      "num_inter_pairs": 1600000,
+      "silhouette": -0.05512216726118582,
+      "mode": "latent_gram",
+      "elapsed_ms": 312.2180999998818
+    },
+    {
+      "snr": 1.076784483633995,
+      "mean_intra": 4797.162363692348,
+      "mean_inter": 5165.5099986969,
+      "median_intra": 4580.598388671875,
+      "median_inter": 4934.229248046875,
+      "num_intra_pairs": 399000,
+      "num_inter_pairs": 1600000,
+      "silhouette": 0.004574086349191249,
+      "mode": "latent_mse",
+      "elapsed_ms": 2124.2952000002333
+    }
+  ],
+  "compute_times_ms": {
+    "latent_mse": 2124.2952000002333,
+    "pixel_mse": 3147.6742999993803,
+    "pixel_vgg_gram": 46684.25269999989,
+    "latent_gram": 312.2180999998818,
+    "latent_swd": 30778.65229999952
+  },
+  "load_times_ms": {
+    "photo": 641.1078999999518,
+    "Hayao": 467.9671000003509,
+    "monet": 525.5301000006511,
+    "vangogh": 478.0207999992854,
+    "cezanne": 469.6557999996003
+  }
+}

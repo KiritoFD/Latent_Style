@@ -173,7 +173,7 @@ def _num_chunks(n: int, batch_size: int) -> int:
 @torch.no_grad()
 def main() -> None:
     parser = argparse.ArgumentParser(description="CUDA SWD patch-combo probe (base SWD only)")
-    parser.add_argument("--config", type=str, default="config_style_oa_5_lr5e4_wc2_swd60_id30_e120.json")
+    parser.add_argument("--config", type=str, default="config.json")
     parser.add_argument("--photo-domain", type=str, default="photo")
     parser.add_argument("--patch-min", type=int, default=1)
     parser.add_argument("--patch-max", type=int, default=25)
@@ -466,7 +466,7 @@ def main() -> None:
         ],
     }
 
-    json_path = out_dir / "prob_swd_exact_result.json"
+    json_path = out_dir / "config.json"
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2, ensure_ascii=False)
         f.write("\n")
