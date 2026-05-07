@@ -59,7 +59,7 @@
     "eps": 0.0001,
     "bridge_sigma": 0.05,
     "w_kinetic": 2.0,
-    "w_color": 0.0,
+    "w_color": 15.0,
     "w_repulsive": 0.1,
     "omf_color_patch_size": 5,
     "repulsive_pool_size": 4,
@@ -152,7 +152,7 @@
     "virtual_length_multiplier": 1
   },
   "checkpoint": {
-    "save_dir": "./experiments/omf_ablation_matrix/artifacts/05_color_05"
+    "save_dir": "./experiments/omf_ablation_matrix/artifacts/02_balanced_omf"
   },
   "inference": {
     "num_steps": 12,
@@ -160,7 +160,7 @@
     "style_strength": 1.0
   },
   "ablation": {
-    "name": "05_color_05",
-    "notes": "no contextual color branch"
+    "name": "02_balanced_omf",
+    "notes": "balanced omf baseline"
   }
 }

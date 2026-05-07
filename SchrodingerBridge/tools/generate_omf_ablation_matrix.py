@@ -26,13 +26,13 @@ def deep_update(dst: dict, patch: dict) -> dict:
 
 
 def build_experiments() -> list[dict]:
-    common_bridge = {
+    balanced_bridge = {
         "objective_mode": "omf",
-        "loss_type": "mse",
-        "w_kinetic": 1.0,
-        "terminal_swd_weight": 20.0,
-        "w_color": 8.0,
-        "w_repulsive": 0.2,
+        "loss_type": "omf",
+        "w_kinetic": 2.0,
+        "terminal_swd_weight": 25.0,
+        "w_color": 15.0,
+        "w_repulsive": 0.1,
     }
     common_training = {
         "num_epochs": 100,
@@ -42,93 +42,78 @@ def build_experiments() -> list[dict]:
 
     return [
         {
-            "name": "01_gold_no_skip",
-            "notes": "gold baseline with no skip routing",
+            "name": "01_strict_anchor",
+            "notes": "strong kinetic anchor, no skip routing",
             "patch": {
-                "bridge": common_bridge,
+                "bridge": {**balanced_bridge, "w_kinetic": 5.0, "terminal_swd_weight": 15.0, "w_color": 10.0, "w_repulsive": 0.1},
                 "training": common_training,
                 "model": {"skip_routing_mode": "none"},
             },
         },
         {
-            "name": "02_gold_norm_skip",
-            "notes": "gold baseline with normalized skip routing",
+            "name": "02_balanced_omf",
+            "notes": "balanced omf baseline",
             "patch": {
-                "bridge": common_bridge,
-                "training": common_training,
-                "model": {"skip_routing_mode": "normalized"},
-            },
-        },
-        {
-            "name": "03_no_repulsive",
-            "notes": "remove repulsive term entirely",
-            "patch": {
-                "bridge": {**common_bridge, "w_repulsive": 0.0},
+                "bridge": balanced_bridge,
                 "training": common_training,
                 "model": {"skip_routing_mode": "none"},
             },
         },
         {
-            "name": "04_repulsive_05",
-            "notes": "slightly stronger repulsive term",
+            "name": "03_aggressive_style",
+            "notes": "maximize swd texture pressure",
             "patch": {
-                "bridge": {**common_bridge, "w_repulsive": 0.5},
+                "bridge": {**balanced_bridge, "w_kinetic": 1.0, "terminal_swd_weight": 40.0},
                 "training": common_training,
                 "model": {"skip_routing_mode": "none"},
+            },
+        },
+        {
+            "name": "04_arch_skip",
+            "notes": "balanced omf with normalized skip routing and add_proj fusion",
+            "patch": {
+                "bridge": balanced_bridge,
+                "training": common_training,
+                "model": {
+                    "skip_routing_mode": "normalized",
+                    "skip_fusion_mode": "add_proj",
+                },
             },
         },
         {
             "name": "05_color_05",
-            "notes": "lower contextual color pressure",
+            "notes": "no contextual color branch",
             "patch": {
-                "bridge": {**common_bridge, "w_color": 5.0},
+                "bridge": {**balanced_bridge, "w_color": 0.0},
                 "training": common_training,
                 "model": {"skip_routing_mode": "none"},
             },
         },
         {
-            "name": "06_color_12",
-            "notes": "stronger contextual color pressure",
+            "name": "06_high_color",
+            "notes": "strong contextual color branch",
             "patch": {
-                "bridge": {**common_bridge, "w_color": 12.0},
+                "bridge": {**balanced_bridge, "w_color": 30.0},
                 "training": common_training,
                 "model": {"skip_routing_mode": "none"},
             },
         },
         {
-            "name": "07_swd_10",
-            "notes": "lighter terminal swd texture force",
+            "name": "07_pure_physics",
+            "notes": "pure kinetic plus swd without color or repulsive",
             "patch": {
-                "bridge": {**common_bridge, "terminal_swd_weight": 10.0},
+                "bridge": {**balanced_bridge, "w_kinetic": 4.0, "terminal_swd_weight": 30.0, "w_color": 0.0, "w_repulsive": 0.0},
                 "training": common_training,
                 "model": {"skip_routing_mode": "none"},
             },
         },
         {
-            "name": "08_swd_30",
-            "notes": "stronger terminal swd texture force",
+            "name": "08_heavy_repulsive",
+            "notes": "balanced omf with heavier repulsive force",
             "patch": {
-                "bridge": {**common_bridge, "terminal_swd_weight": 30.0},
+                "bridge": {**balanced_bridge, "w_repulsive": 0.5},
                 "training": common_training,
                 "model": {"skip_routing_mode": "none"},
-            },
-        },
-        {
-            "name": "09_kinetic_05",
-            "notes": "lighter kinetic regularization",
-            "patch": {
-                "bridge": {**common_bridge, "w_kinetic": 0.5},
-                "training": common_training,
-                "model": {"skip_routing_mode": "none"},
-            },
-        },
-        {
-            "name": "10_kinetic_20_norm_skip",
-            "notes": "stronger kinetic regularization plus normalized skip",
-            "patch": {
-                "bridge": {**common_bridge, "w_kinetic": 2.0},
-                "training": common_training,
-                "model": {"skip_routing_mode": "normalized"},
             },
         },
     ]
@@ -174,7 +159,17 @@ def generate_bat(manifests: list[dict]) -> None:
     lines = [
         "@echo off",
         "setlocal",
+        "setlocal EnableDelayedExpansion",
         "cd /d \"%~dp0\"",
+        "",
+        "set \"STATUS_DIR=experiments\\omf_ablation_matrix\"",
+        "if not exist \"%STATUS_DIR%\" mkdir \"%STATUS_DIR%\"",
+        "set \"STATUS_LOG=%STATUS_DIR%\\run_status.csv\"",
+        "echo name,train_status,train_rc,eval_status,eval_rc,checkpoint_exists>\"%STATUS_LOG%\"",
+        "set /a FAIL_COUNT=0",
+        "set /a TRAIN_FAIL_COUNT=0",
+        "set /a EVAL_FAIL_COUNT=0",
+        "set /a SKIP_EVAL_COUNT=0",
         "",
         "echo Running OMF ablation matrix...",
         "echo.",
@@ -189,22 +184,49 @@ def generate_bat(manifests: list[dict]) -> None:
             [
                 f"echo [{name}] train",
                 f"python run.py --config \"{cfg}\"",
-                "if errorlevel 1 goto :error",
-                f"echo [{name}] eval",
-                f"python run_evaluation.py \"{ckpt}\" --output \"{eval_out}\" --batch_size 4",
-                "if errorlevel 1 goto :error",
+                "set \"TRAIN_RC=!ERRORLEVEL!\"",
+                "if not \"!TRAIN_RC!\"==\"0\" (",
+                "  set /a FAIL_COUNT+=1",
+                "  set /a TRAIN_FAIL_COUNT+=1",
+                "  set \"TRAIN_STATUS=FAIL\"",
+                ") else (",
+                "  set \"TRAIN_STATUS=OK\"",
+                ")",
+                "",
+                f"if exist \"{ckpt}\" (",
+                f"  echo [{name}] eval",
+                f"  python run_evaluation.py \"{ckpt}\" --output \"{eval_out}\" --batch_size 4",
+                "  set \"EVAL_RC=!ERRORLEVEL!\"",
+                "  if not \"!EVAL_RC!\"==\"0\" (",
+                "    set /a FAIL_COUNT+=1",
+                "    set /a EVAL_FAIL_COUNT+=1",
+                "    set \"EVAL_STATUS=FAIL\"",
+                "  ) else (",
+                "    set \"EVAL_STATUS=OK\"",
+                "  )",
+                "  set \"CKPT_STATUS=YES\"",
+                ") else (",
+                f"  echo [{name}] checkpoint missing, skip eval",
+                "  set /a FAIL_COUNT+=1",
+                "  set /a SKIP_EVAL_COUNT+=1",
+                "  set \"EVAL_RC=NA\"",
+                "  set \"EVAL_STATUS=SKIP\"",
+                "  set \"CKPT_STATUS=NO\"",
+                ")",
+                "echo "
+                + f"{name}"
+                + ",!TRAIN_STATUS!,!TRAIN_RC!,!EVAL_STATUS!,!EVAL_RC!,!CKPT_STATUS!>>\"%STATUS_LOG%\"",
                 "echo.",
             ]
         )
     lines.extend(
         [
-            "echo All OMF ablation runs finished.",
-            "exit /b 0",
-            "",
-            ":error",
             "echo.",
-            "echo OMF ablation matrix aborted due to an error.",
-            "exit /b 1",
+            "echo OMF ablation runs finished.",
+            "echo Status log: %STATUS_LOG%",
+            "echo Total failures: !FAIL_COUNT! ^| train: !TRAIN_FAIL_COUNT! ^| eval: !EVAL_FAIL_COUNT! ^| skipped eval: !SKIP_EVAL_COUNT!",
+            "if not \"!FAIL_COUNT!\"==\"0\" exit /b 1",
+            "exit /b 0",
         ]
     )
     BAT_PATH.write_text("\r\n".join(lines) + "\r\n", encoding="utf-8")

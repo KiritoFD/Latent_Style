@@ -30,7 +30,6 @@ class OTFlowMatchingObjective:
         self.w_kinetic = max(0.0, float(bridge_cfg.get("w_kinetic", 1.0)))
         self.w_color = max(0.0, float(bridge_cfg.get("w_color", 15.0)))
         self.w_repulsive = max(0.0, float(bridge_cfg.get("w_repulsive", 10.0)))
-        self.w_flow = max(0.0, float(bridge_cfg.get("w_flow", 0.0)))
         self.color_patch_size = max(1, int(bridge_cfg.get("omf_color_patch_size", 5)))
         self.repulsive_pool_size = max(1, int(bridge_cfg.get("repulsive_pool_size", 4)))
         self.repulsive_temperature = max(1e-4, float(bridge_cfg.get("repulsive_temperature", 0.25)))
@@ -293,6 +292,20 @@ class OTFlowMatchingObjective:
         target_style_id: torch.Tensor,
         source_style_id: torch.Tensor | None = None,
     ) -> Dict[str, torch.Tensor]:
+        if content.device.type == "cuda":
+            autocast_ctx = torch.amp.autocast("cuda", enabled=False)
+        else:
+            autocast_ctx = torch.autocast("cpu", enabled=False)
+
+        with torch.no_grad():
+            with autocast_ctx:
+                matched_target, ot_cost, plan_entropy = self._ot_match_targets(
+                    content,
+                    target_style,
+                    target_style_id,
+                    source_style_id,
+                )
+
         t_fixed = content.new_ones(content.shape[0])
         pred_velocity = model(
             content,
@@ -302,23 +315,6 @@ class OTFlowMatchingObjective:
         pred_endpoint = content + pred_velocity
 
         total_loss = content.new_tensor(0.0, dtype=torch.float32)
-        ot_cost = content.new_tensor(0.0, dtype=torch.float32)
-        plan_entropy = content.new_tensor(0.0, dtype=torch.float32)
-        matched_target: torch.Tensor | None = None
-        if self.w_flow > 0.0:
-            if content.device.type == "cuda":
-                autocast_ctx = torch.amp.autocast("cuda", enabled=False)
-            else:
-                autocast_ctx = torch.autocast("cpu", enabled=False)
-            with torch.no_grad():
-                with autocast_ctx:
-                    matched_target, ot_cost, plan_entropy = self._ot_match_targets(
-                        content,
-                        target_style,
-                        target_style_id,
-                        source_style_id,
-                    )
-
         metrics: Dict[str, torch.Tensor] = {
             "ot_cost": ot_cost.detach(),
             "plan_entropy": plan_entropy.detach(),
@@ -328,21 +324,10 @@ class OTFlowMatchingObjective:
             "endpoint_abs": pred_endpoint.abs().mean().detach(),
         }
 
-        if self.w_flow > 0.0 and matched_target is not None:
-            flow_loss = self._loss(pred_endpoint, matched_target)
-            flow_weighted = flow_loss * self.w_flow
-            total_loss = total_loss + flow_weighted
-            metrics["flow"] = flow_weighted.detach()
-        else:
-            metrics["flow"] = content.new_tensor(0.0, dtype=torch.float32)
-
-        kinetic_loss = (pred_velocity.float() ** 2).mean()
-        if self.w_kinetic > 0.0:
-            kinetic_weighted = kinetic_loss * self.w_kinetic
-            total_loss = total_loss + kinetic_weighted
-            metrics["kinetic_energy"] = kinetic_weighted.detach()
-        else:
-            metrics["kinetic_energy"] = content.new_tensor(0.0, dtype=torch.float32)
+        flow_loss = self._loss(pred_endpoint, matched_target)
+        total_loss = total_loss + flow_loss
+        metrics["flow"] = flow_loss.detach()
+        metrics["kinetic_energy"] = content.new_tensor(0.0, dtype=torch.float32)
 
         swd_loss = self._calc_terminal_swd_loss(
             pred_endpoint,
@@ -359,7 +344,7 @@ class OTFlowMatchingObjective:
         if self.w_color > 0.0:
             color_loss = self._calc_local_contextual_color_loss(
                 pred_endpoint,
-                target_style,
+                matched_target,
                 patch_size=self.color_patch_size,
             )
             total_loss = total_loss + color_loss * self.w_color
@@ -378,7 +363,7 @@ class OTFlowMatchingObjective:
             target_style_id=target_style_id,
         )
         if repel_raw is not None and self.w_repulsive > 0.0:
-            repel_clamped = torch.clamp(repel_raw, max=1.0)
+            repel_clamped = torch.clamp(repel_raw, max=5.0)
             total_loss = total_loss + repel_clamped * self.w_repulsive
             metrics["repulsive"] = (repel_clamped * self.w_repulsive).detach()
         else:
