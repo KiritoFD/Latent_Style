@@ -1,74 +1,60 @@
 {
   "experiments": [
     {
-      "name": "01_gold_no_skip",
-      "notes": "gold baseline with no skip routing",
-      "config_path": "experiments/omf_ablation_matrix/configs/01_gold_no_skip.json",
-      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/01_gold_no_skip/epoch_0100.pt",
-      "eval_output": "experiments/omf_ablation_matrix/full_eval/01_gold_no_skip"
+      "name": "01_strict_anchor",
+      "notes": "strong kinetic anchor, no skip routing",
+      "config_path": "experiments/omf_ablation_matrix/configs/01_strict_anchor.json",
+      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/01_strict_anchor/epoch_0100.pt",
+      "eval_output": "experiments/omf_ablation_matrix/full_eval/01_strict_anchor"
     },
     {
-      "name": "02_gold_norm_skip",
-      "notes": "gold baseline with normalized skip routing",
-      "config_path": "experiments/omf_ablation_matrix/configs/02_gold_norm_skip.json",
-      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/02_gold_norm_skip/epoch_0100.pt",
-      "eval_output": "experiments/omf_ablation_matrix/full_eval/02_gold_norm_skip"
+      "name": "02_balanced_omf",
+      "notes": "balanced omf baseline",
+      "config_path": "experiments/omf_ablation_matrix/configs/02_balanced_omf.json",
+      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/02_balanced_omf/epoch_0100.pt",
+      "eval_output": "experiments/omf_ablation_matrix/full_eval/02_balanced_omf"
     },
     {
-      "name": "03_no_repulsive",
-      "notes": "remove repulsive term entirely",
-      "config_path": "experiments/omf_ablation_matrix/configs/03_no_repulsive.json",
-      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/03_no_repulsive/epoch_0100.pt",
-      "eval_output": "experiments/omf_ablation_matrix/full_eval/03_no_repulsive"
+      "name": "03_aggressive_style",
+      "notes": "maximize swd texture pressure",
+      "config_path": "experiments/omf_ablation_matrix/configs/03_aggressive_style.json",
+      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/03_aggressive_style/epoch_0100.pt",
+      "eval_output": "experiments/omf_ablation_matrix/full_eval/03_aggressive_style"
     },
     {
-      "name": "04_repulsive_05",
-      "notes": "slightly stronger repulsive term",
-      "config_path": "experiments/omf_ablation_matrix/configs/04_repulsive_05.json",
-      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/04_repulsive_05/epoch_0100.pt",
-      "eval_output": "experiments/omf_ablation_matrix/full_eval/04_repulsive_05"
+      "name": "04_arch_skip",
+      "notes": "balanced omf with normalized skip routing and add_proj fusion",
+      "config_path": "experiments/omf_ablation_matrix/configs/04_arch_skip.json",
+      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/04_arch_skip/epoch_0100.pt",
+      "eval_output": "experiments/omf_ablation_matrix/full_eval/04_arch_skip"
     },
     {
       "name": "05_color_05",
-      "notes": "lower contextual color pressure",
+      "notes": "no contextual color branch",
       "config_path": "experiments/omf_ablation_matrix/configs/05_color_05.json",
       "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/05_color_05/epoch_0100.pt",
       "eval_output": "experiments/omf_ablation_matrix/full_eval/05_color_05"
     },
     {
-      "name": "06_color_12",
-      "notes": "stronger contextual color pressure",
-      "config_path": "experiments/omf_ablation_matrix/configs/06_color_12.json",
-      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/06_color_12/epoch_0100.pt",
-      "eval_output": "experiments/omf_ablation_matrix/full_eval/06_color_12"
+      "name": "06_high_color",
+      "notes": "strong contextual color branch",
+      "config_path": "experiments/omf_ablation_matrix/configs/06_high_color.json",
+      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/06_high_color/epoch_0100.pt",
+      "eval_output": "experiments/omf_ablation_matrix/full_eval/06_high_color"
     },
     {
-      "name": "07_swd_10",
-      "notes": "lighter terminal swd texture force",
-      "config_path": "experiments/omf_ablation_matrix/configs/07_swd_10.json",
-      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/07_swd_10/epoch_0100.pt",
-      "eval_output": "experiments/omf_ablation_matrix/full_eval/07_swd_10"
+      "name": "07_pure_physics",
+      "notes": "pure kinetic plus swd without color or repulsive",
+      "config_path": "experiments/omf_ablation_matrix/configs/07_pure_physics.json",
+      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/07_pure_physics/epoch_0100.pt",
+      "eval_output": "experiments/omf_ablation_matrix/full_eval/07_pure_physics"
     },
     {
-      "name": "08_swd_30",
-      "notes": "stronger terminal swd texture force",
-      "config_path": "experiments/omf_ablation_matrix/configs/08_swd_30.json",
-      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/08_swd_30/epoch_0100.pt",
-      "eval_output": "experiments/omf_ablation_matrix/full_eval/08_swd_30"
-    },
-    {
-      "name": "09_kinetic_05",
-      "notes": "lighter kinetic regularization",
-      "config_path": "experiments/omf_ablation_matrix/configs/09_kinetic_05.json",
-      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/09_kinetic_05/epoch_0100.pt",
-      "eval_output": "experiments/omf_ablation_matrix/full_eval/09_kinetic_05"
-    },
-    {
-      "name": "10_kinetic_20_norm_skip",
-      "notes": "stronger kinetic regularization plus normalized skip",
-      "config_path": "experiments/omf_ablation_matrix/configs/10_kinetic_20_norm_skip.json",
-      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/10_kinetic_20_norm_skip/epoch_0100.pt",
-      "eval_output": "experiments/omf_ablation_matrix/full_eval/10_kinetic_20_norm_skip"
+      "name": "08_heavy_repulsive",
+      "notes": "balanced omf with heavier repulsive force",
+      "config_path": "experiments/omf_ablation_matrix/configs/08_heavy_repulsive.json",
+      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/08_heavy_repulsive/epoch_0100.pt",
+      "eval_output": "experiments/omf_ablation_matrix/full_eval/08_heavy_repulsive"
     }
   ]
 }
