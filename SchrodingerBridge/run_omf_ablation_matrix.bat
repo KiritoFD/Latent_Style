@@ -28,7 +28,7 @@ if not "!TRAIN_RC!"=="0" (
 
 if exist "experiments\omf_ablation_matrix\artifacts\01_strict_anchor\epoch_0100.pt" (
   echo [01_strict_anchor] eval
-  python run_evaluation.py "experiments\omf_ablation_matrix\artifacts\01_strict_anchor\epoch_0100.pt" --output "experiments\omf_ablation_matrix\full_eval\01_strict_anchor" --batch_size 4
+  python run_evaluation.py "experiments\omf_ablation_matrix\artifacts\01_strict_anchor\epoch_0100.pt" --output "experiments\omf_ablation_matrix\full_eval\01_strict_anchor" --batch_size 2
   set "EVAL_RC=!ERRORLEVEL!"
   if not "!EVAL_RC!"=="0" (
     set /a FAIL_COUNT+=1
@@ -61,7 +61,7 @@ if not "!TRAIN_RC!"=="0" (
 
 if exist "experiments\omf_ablation_matrix\artifacts\02_balanced_omf\epoch_0100.pt" (
   echo [02_balanced_omf] eval
-  python run_evaluation.py "experiments\omf_ablation_matrix\artifacts\02_balanced_omf\epoch_0100.pt" --output "experiments\omf_ablation_matrix\full_eval\02_balanced_omf" --batch_size 4
+  python run_evaluation.py "experiments\omf_ablation_matrix\artifacts\02_balanced_omf\epoch_0100.pt" --output "experiments\omf_ablation_matrix\full_eval\02_balanced_omf" --batch_size 2
   set "EVAL_RC=!ERRORLEVEL!"
   if not "!EVAL_RC!"=="0" (
     set /a FAIL_COUNT+=1
@@ -94,7 +94,7 @@ if not "!TRAIN_RC!"=="0" (
 
 if exist "experiments\omf_ablation_matrix\artifacts\03_aggressive_style\epoch_0100.pt" (
   echo [03_aggressive_style] eval
-  python run_evaluation.py "experiments\omf_ablation_matrix\artifacts\03_aggressive_style\epoch_0100.pt" --output "experiments\omf_ablation_matrix\full_eval\03_aggressive_style" --batch_size 4
+  python run_evaluation.py "experiments\omf_ablation_matrix\artifacts\03_aggressive_style\epoch_0100.pt" --output "experiments\omf_ablation_matrix\full_eval\03_aggressive_style" --batch_size 2
   set "EVAL_RC=!ERRORLEVEL!"
   if not "!EVAL_RC!"=="0" (
     set /a FAIL_COUNT+=1
@@ -127,7 +127,7 @@ if not "!TRAIN_RC!"=="0" (
 
 if exist "experiments\omf_ablation_matrix\artifacts\04_arch_skip\epoch_0100.pt" (
   echo [04_arch_skip] eval
-  python run_evaluation.py "experiments\omf_ablation_matrix\artifacts\04_arch_skip\epoch_0100.pt" --output "experiments\omf_ablation_matrix\full_eval\04_arch_skip" --batch_size 4
+  python run_evaluation.py "experiments\omf_ablation_matrix\artifacts\04_arch_skip\epoch_0100.pt" --output "experiments\omf_ablation_matrix\full_eval\04_arch_skip" --batch_size 2
   set "EVAL_RC=!ERRORLEVEL!"
   if not "!EVAL_RC!"=="0" (
     set /a FAIL_COUNT+=1
@@ -160,7 +160,7 @@ if not "!TRAIN_RC!"=="0" (
 
 if exist "experiments\omf_ablation_matrix\artifacts\05_color_05\epoch_0100.pt" (
   echo [05_color_05] eval
-  python run_evaluation.py "experiments\omf_ablation_matrix\artifacts\05_color_05\epoch_0100.pt" --output "experiments\omf_ablation_matrix\full_eval\05_color_05" --batch_size 4
+  python run_evaluation.py "experiments\omf_ablation_matrix\artifacts\05_color_05\epoch_0100.pt" --output "experiments\omf_ablation_matrix\full_eval\05_color_05" --batch_size 2
   set "EVAL_RC=!ERRORLEVEL!"
   if not "!EVAL_RC!"=="0" (
     set /a FAIL_COUNT+=1
@@ -193,7 +193,7 @@ if not "!TRAIN_RC!"=="0" (
 
 if exist "experiments\omf_ablation_matrix\artifacts\06_high_color\epoch_0100.pt" (
   echo [06_high_color] eval
-  python run_evaluation.py "experiments\omf_ablation_matrix\artifacts\06_high_color\epoch_0100.pt" --output "experiments\omf_ablation_matrix\full_eval\06_high_color" --batch_size 4
+  python run_evaluation.py "experiments\omf_ablation_matrix\artifacts\06_high_color\epoch_0100.pt" --output "experiments\omf_ablation_matrix\full_eval\06_high_color" --batch_size 2
   set "EVAL_RC=!ERRORLEVEL!"
   if not "!EVAL_RC!"=="0" (
     set /a FAIL_COUNT+=1
@@ -226,7 +226,7 @@ if not "!TRAIN_RC!"=="0" (
 
 if exist "experiments\omf_ablation_matrix\artifacts\07_pure_physics\epoch_0100.pt" (
   echo [07_pure_physics] eval
-  python run_evaluation.py "experiments\omf_ablation_matrix\artifacts\07_pure_physics\epoch_0100.pt" --output "experiments\omf_ablation_matrix\full_eval\07_pure_physics" --batch_size 4
+  python run_evaluation.py "experiments\omf_ablation_matrix\artifacts\07_pure_physics\epoch_0100.pt" --output "experiments\omf_ablation_matrix\full_eval\07_pure_physics" --batch_size 2
   set "EVAL_RC=!ERRORLEVEL!"
   if not "!EVAL_RC!"=="0" (
     set /a FAIL_COUNT+=1
@@ -259,7 +259,7 @@ if not "!TRAIN_RC!"=="0" (
 
 if exist "experiments\omf_ablation_matrix\artifacts\08_heavy_repulsive\epoch_0100.pt" (
   echo [08_heavy_repulsive] eval
-  python run_evaluation.py "experiments\omf_ablation_matrix\artifacts\08_heavy_repulsive\epoch_0100.pt" --output "experiments\omf_ablation_matrix\full_eval\08_heavy_repulsive" --batch_size 4
+  python run_evaluation.py "experiments\omf_ablation_matrix\artifacts\08_heavy_repulsive\epoch_0100.pt" --output "experiments\omf_ablation_matrix\full_eval\08_heavy_repulsive" --batch_size 2
   set "EVAL_RC=!ERRORLEVEL!"
   if not "!EVAL_RC!"=="0" (
     set /a FAIL_COUNT+=1

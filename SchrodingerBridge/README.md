@@ -27,14 +27,14 @@ on top of the LANCET latent backbone.
 
 ## Layout
 
-- `src/schrodinger_bridge/lancet_backbone.py`: copied LANCET backbone from `Cycle-NCE`
-- `src/schrodinger_bridge/model.py`: time-conditioned vector field wrapper on top of LANCET
-- `src/schrodinger_bridge/ot_cost.py`: SWD-based OT cost oracle with migrated projection/CDF and
+- `src/lancet_backbone.py`: copied LANCET backbone from `Cycle-NCE`
+- `src/model.py`: time-conditioned vector field wrapper on top of LANCET
+- `src/ot_cost.py`: SWD-based OT cost oracle with migrated projection/CDF and
   micro/macro feature handling
-- `src/schrodinger_bridge/losses.py`: Sinkhorn coupling, stochastic SB bridge loss, terminal SWD
-- `src/schrodinger_bridge/trainer.py`: training loop, logging, checkpoints
-- `src/schrodinger_bridge/dataset.py`: latent dataset loader reused from the existing project
-- `src/schrodinger_bridge/utils/`: evaluation and inference utilities kept compatible with the old
+- `src/losses.py`: Sinkhorn coupling, stochastic SB bridge loss, terminal SWD
+- `src/trainer.py`: training loop, logging, checkpoints
+- `src/dataset.py`: latent dataset loader reused from the existing project
+- `src/utils/`: evaluation and inference utilities kept compatible with the old
   tooling
 - `run.py`: root wrapper that dispatches into the `src/` package
 

@@ -1,0 +1,4 @@
+name,train_status,train_rc,checkpoint_exists
+A_baseline,OK,0,YES
+B_no_kinetic,OK,0,YES
+C_no_low_freq,OK,0,YES

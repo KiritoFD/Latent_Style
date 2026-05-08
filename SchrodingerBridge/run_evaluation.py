@@ -37,6 +37,10 @@ def _strip_flag(argv: list[str], name: str) -> list[str]:
     return out
 
 
+def _summary_already_exists(out_dir: Path) -> bool:
+    return (out_dir / "summary.json").is_file()
+
+
 def _inject_defaults(root: Path, argv: list[str]) -> list[str]:
     workspace = root.parent
     local_clip_dir = workspace / "Cycle-NCE" / "eval_cache" / "manual_clip" / "openai-clip-vit-base-patch32"
@@ -71,7 +75,7 @@ def _single_eval(root: Path, argv: list[str]) -> int:
     sys.argv = [sys.argv[0], *argv]
     import runpy
 
-    runpy.run_module("schrodinger_bridge.utils.run_evaluation", run_name="__main__")
+    runpy.run_module("utils.run_evaluation", run_name="__main__")
     return 0
 
 
@@ -80,6 +84,16 @@ def _find_ckpts(ckpt_dir: Path) -> list[Path]:
         [p for p in ckpt_dir.glob("epoch_*.pt") if p.is_file()],
         key=lambda p: p.name.lower(),
     )
+
+
+def _find_experiment_dirs(parent_dir: Path) -> list[Path]:
+    out: list[Path] = []
+    for child in sorted(parent_dir.iterdir(), key=lambda p: p.name.lower()):
+        if not child.is_dir():
+            continue
+        if _find_ckpts(child):
+            out.append(child)
+    return out
 
 
 def _summary_metrics(summary_path: Path) -> dict[str, object]:
@@ -172,30 +186,35 @@ def _write_batch_summary(out_root: Path, rows: list[dict[str, object]]) -> None:
             writer.writerow({key: row.get(key) for key in viewer_fieldnames})
 
 
-def _batch_eval(root: Path, ckpt_dir: Path, argv: list[str]) -> int:
+def _collect_batch_rows(root: Path, ckpt_dir: Path, output_root: Path, passthrough: list[str]) -> tuple[list[dict[str, object]], int]:
     ckpts = _find_ckpts(ckpt_dir)
-    if not ckpts:
-        print(f"No checkpoint files found under: {ckpt_dir}")
-        return 1
-
-    output_flag = _flag_value(argv, "--output")
-    output_root = Path(output_flag).resolve() if output_flag else (ckpt_dir / "full_eval")
-    passthrough = _strip_flag(argv, "--output")
-
-    print(f"Batch eval | ckpt dir: {ckpt_dir}")
-    print(f"Batch eval | output root: {output_root}")
-    print(f"Batch eval | checkpoints: {len(ckpts)}")
-
     rows: list[dict[str, object]] = []
     fail_count = 0
     experiment_id = ckpt_dir.name
+    force_rerun = _has_flag(passthrough, "--force")
+    passthrough = _strip_flag(passthrough, "--force")
     for ckpt in ckpts:
         epoch_name = ckpt.stem
         out_dir = output_root / epoch_name
+        summary_path = out_dir / "summary.json"
+        if summary_path.exists() and not force_rerun:
+            print(f"\n[{epoch_name}] skip existing -> {out_dir}")
+            row: dict[str, object] = {
+                "experiment_id": experiment_id,
+                "epoch": epoch_name,
+                "checkpoint_path": str(ckpt),
+                "output_dir": str(out_dir),
+                "status": "skipped_existing",
+                "returncode": 0,
+                "summary_exists": True,
+            }
+            row.update(_summary_metrics(summary_path))
+            rows.append(row)
+            continue
+
         cmd = [sys.executable, str(root / "run_evaluation.py"), str(ckpt), "--output", str(out_dir), *passthrough]
         print(f"\n[{epoch_name}] eval -> {out_dir}")
         result = subprocess.run(cmd, cwd=root)
-        summary_path = out_dir / "summary.json"
         row: dict[str, object] = {
             "experiment_id": experiment_id,
             "epoch": epoch_name,
@@ -210,9 +229,56 @@ def _batch_eval(root: Path, ckpt_dir: Path, argv: list[str]) -> int:
         if result.returncode != 0:
             fail_count += 1
         rows.append(row)
+    return rows, fail_count
+
+
+def _batch_eval(root: Path, ckpt_dir: Path, argv: list[str]) -> int:
+    ckpts = _find_ckpts(ckpt_dir)
+    if not ckpts:
+        print(f"No checkpoint files found under: {ckpt_dir}")
+        return 1
+
+    output_flag = _flag_value(argv, "--output")
+    output_root = Path(output_flag).resolve() if output_flag else (ckpt_dir / "full_eval")
+    passthrough = _strip_flag(argv, "--output")
+
+    print(f"Batch eval | ckpt dir: {ckpt_dir}")
+    print(f"Batch eval | output root: {output_root}")
+    print(f"Batch eval | checkpoints: {len(ckpts)}")
+
+    rows, fail_count = _collect_batch_rows(root, ckpt_dir, output_root, passthrough)
 
     _write_batch_summary(output_root, rows)
     print(f"\nBatch eval finished | failures: {fail_count} | summary: {output_root / 'batch_summary.csv'}")
+    return 1 if fail_count > 0 else 0
+
+
+def _multi_experiment_eval(root: Path, parent_dir: Path, argv: list[str]) -> int:
+    exp_dirs = _find_experiment_dirs(parent_dir)
+    if not exp_dirs:
+        print(f"No experiment directories with epoch_*.pt found under: {parent_dir}")
+        return 1
+
+    output_flag = _flag_value(argv, "--output")
+    output_root = Path(output_flag).resolve() if output_flag else (parent_dir / "full_eval")
+    passthrough = _strip_flag(argv, "--output")
+
+    print(f"Multi-experiment eval | parent dir: {parent_dir}")
+    print(f"Multi-experiment eval | output root: {output_root}")
+    print(f"Multi-experiment eval | experiments: {len(exp_dirs)}")
+
+    all_rows: list[dict[str, object]] = []
+    fail_count = 0
+    for exp_dir in exp_dirs:
+        exp_output_root = output_root / exp_dir.name
+        print(f"\n== Experiment: {exp_dir.name} ==")
+        rows, exp_fail = _collect_batch_rows(root, exp_dir, exp_output_root, passthrough)
+        _write_batch_summary(exp_output_root, rows)
+        all_rows.extend(rows)
+        fail_count += exp_fail
+
+    _write_batch_summary(output_root, all_rows)
+    print(f"\nMulti-experiment eval finished | failures: {fail_count} | summary: {output_root / 'batch_summary.csv'}")
     return 1 if fail_count > 0 else 0
 
 
@@ -226,6 +292,10 @@ def main() -> None:
     if positional and not has_checkpoint_flag:
         first = Path(positional[0]).resolve()
         if first.is_dir():
+            if _find_ckpts(first):
+                raise SystemExit(_batch_eval(root, first, normalized))
+            if _find_experiment_dirs(first):
+                raise SystemExit(_multi_experiment_eval(root, first, normalized))
             raise SystemExit(_batch_eval(root, first, normalized))
         if first.suffix.lower() == ".pt":
             remainder = normalized[1:]
@@ -239,6 +309,10 @@ def main() -> None:
         if ckpt_value:
             ckpt_path = Path(ckpt_value).resolve()
             if ckpt_path.is_dir():
+                if _find_ckpts(ckpt_path):
+                    raise SystemExit(_batch_eval(root, ckpt_path, normalized))
+                if _find_experiment_dirs(ckpt_path):
+                    raise SystemExit(_multi_experiment_eval(root, ckpt_path, normalized))
                 raise SystemExit(_batch_eval(root, ckpt_path, normalized))
             if not _has_flag(normalized, "--output"):
                 normalized.extend(["--output", str(root / "artifacts" / "full_eval" / ckpt_path.stem)])

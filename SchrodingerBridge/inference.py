@@ -20,7 +20,7 @@ def _bootstrap_src() -> Path:
 
 ROOT = _bootstrap_src()
 
-from schrodinger_bridge.utils.inference import (  # noqa: E402
+from utils.inference import (  # noqa: E402
     LGTInference,
     decode_latent,
     encode_image,
