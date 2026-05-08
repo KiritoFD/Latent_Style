@@ -195,7 +195,7 @@ def generate_bat(manifests: list[dict]) -> None:
                 "",
                 f"if exist \"{ckpt}\" (",
                 f"  echo [{name}] eval",
-                f"  python run_evaluation.py \"{ckpt}\" --output \"{eval_out}\" --batch_size 4",
+                f"  python run_evaluation.py \"{ckpt}\" --output \"{eval_out}\" --batch_size 2",
                 "  set \"EVAL_RC=!ERRORLEVEL!\"",
                 "  if not \"!EVAL_RC!\"==\"0\" (",
                 "    set /a FAIL_COUNT+=1",

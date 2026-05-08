@@ -1,0 +1,32 @@
+{
+  "experiments": [
+    {
+      "name": "latent60_01_naked",
+      "config_path": "experiments/latent60_01_naked.json",
+      "checkpoint_dir": "experiments/latent60_01_naked",
+      "checkpoint_path": "experiments/latent60_01_naked/epoch_0060.pt",
+      "eval_output": "experiments/full_eval/latent60_01_naked"
+    },
+    {
+      "name": "latent60_02_patch_nce",
+      "config_path": "experiments/latent60_02_patch_nce.json",
+      "checkpoint_dir": "experiments/latent60_02_patch_nce",
+      "checkpoint_path": "experiments/latent60_02_patch_nce/epoch_0060.pt",
+      "eval_output": "experiments/full_eval/latent60_02_patch_nce"
+    },
+    {
+      "name": "latent60_03_low_freq",
+      "config_path": "experiments/latent60_03_low_freq.json",
+      "checkpoint_dir": "experiments/latent60_03_low_freq",
+      "checkpoint_path": "experiments/latent60_03_low_freq/epoch_0060.pt",
+      "eval_output": "experiments/full_eval/latent60_03_low_freq"
+    },
+    {
+      "name": "latent60_04_nce_low_freq",
+      "config_path": "experiments/latent60_04_nce_low_freq.json",
+      "checkpoint_dir": "experiments/latent60_04_nce_low_freq",
+      "checkpoint_path": "experiments/latent60_04_nce_low_freq/epoch_0060.pt",
+      "eval_output": "experiments/full_eval/latent60_04_nce_low_freq"
+    }
+  ]
+}
