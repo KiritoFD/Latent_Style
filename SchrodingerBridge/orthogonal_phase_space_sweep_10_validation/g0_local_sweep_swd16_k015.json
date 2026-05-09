@@ -1,10 +1,10 @@
 {
   "_base": "../config.json",
   "bridge": {
-    "w_kinetic": 0.05,
+    "w_kinetic": 0.15,
     "w_low_freq": 0.0,
     "w_cycle": 0.0,
-    "terminal_swd_weight": 50.0,
+    "terminal_swd_weight": 16.0,
     "low_freq_kernel_size": 5,
     "swd_use_high_freq": false
   },
@@ -15,11 +15,11 @@
     "full_eval_batch_size": 2
   },
   "checkpoint": {
-    "save_dir": "./o10_off"
+    "save_dir": "./o10_l1"
   },
   "ablation": {
-    "name": "g0_off_manifold_explosion10",
-    "axis": "destructive_fullband",
-    "notes": "10-epoch off-manifold validation with full-band semantic SWD and minimal kinetic damping."
+    "name": "g0_local_sweep_swd16_k015",
+    "axis": "local_sweep",
+    "notes": "Local sweep point L1: slightly reduced full-band SWD tension with same kinetic damping as softbackoff."
   }
 }
