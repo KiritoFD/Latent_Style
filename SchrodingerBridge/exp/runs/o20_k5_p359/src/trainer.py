@@ -39,8 +39,6 @@ _TRAIN_LOG_COLUMNS = [
     "t_mean",
     "velocity_abs",
     "endpoint_abs",
-    "velocity_max",
-    "endpoint_max",
     "lr",
     "data_time_sec",
     "forward_time_sec",
@@ -129,17 +127,11 @@ class SBTrainer:
         self.use_tqdm = bool(train_cfg.get("use_tqdm", True))
         self.num_epochs = int(train_cfg.get("num_epochs", 60))
         self.save_interval = max(1, int(train_cfg.get("save_interval", 10)))
-        self.numeric_debug = bool(train_cfg.get("numeric_debug", False))
-        self.numeric_debug_interval = max(1, int(train_cfg.get("numeric_debug_interval", 10)))
-        self.numeric_debug_halt_on_nonfinite = bool(train_cfg.get("numeric_debug_halt_on_nonfinite", True))
-        self.numeric_debug_dump_limit = max(1, int(train_cfg.get("numeric_debug_dump_limit", 200)))
-        self.numeric_debug_events = 0
 
         self.checkpoint_dir = Path(ckpt_cfg.get("save_dir", "./artifacts"))
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         self.log_dir = self.checkpoint_dir / "logs"
         self.log_dir.mkdir(parents=True, exist_ok=True)
-        self.numeric_debug_file = self.checkpoint_dir / "numeric_debug.jsonl"
 
         with open(self.checkpoint_dir / "config.json", "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2, ensure_ascii=False)
@@ -162,96 +154,6 @@ class SBTrainer:
         self.start_epoch = 1
         self._maybe_resume(str(train_cfg.get("resume_checkpoint", "")))
         self._configure_distillation()
-
-    def _tensor_stats(self, value: torch.Tensor | None) -> Dict[str, float]:
-        if value is None:
-            return {
-                "is_present": 0.0,
-                "finite_ratio": 1.0,
-                "mean_abs": 0.0,
-                "max_abs": 0.0,
-                "mean": 0.0,
-            }
-        x = value.detach().float()
-        finite = torch.isfinite(x)
-        finite_ratio = float(finite.float().mean().item()) if x.numel() > 0 else 1.0
-        safe = torch.nan_to_num(x, nan=0.0, posinf=0.0, neginf=0.0)
-        return {
-            "is_present": 1.0,
-            "finite_ratio": finite_ratio,
-            "mean_abs": float(safe.abs().mean().item()) if safe.numel() > 0 else 0.0,
-            "max_abs": float(safe.abs().amax().item()) if safe.numel() > 0 else 0.0,
-            "mean": float(safe.mean().item()) if safe.numel() > 0 else 0.0,
-        }
-
-    def _grad_stats(self) -> Dict[str, float | str | None]:
-        grad_max = 0.0
-        grad_mean = 0.0
-        counted = 0
-        first_nonfinite_name = None
-        first_nonfinite_ratio = 1.0
-        max_name = None
-        for name, param in self.model.named_parameters():
-            grad = param.grad
-            if grad is None:
-                continue
-            g = grad.detach().float()
-            finite = torch.isfinite(g)
-            finite_ratio = float(finite.float().mean().item()) if g.numel() > 0 else 1.0
-            safe = torch.nan_to_num(g, nan=0.0, posinf=0.0, neginf=0.0)
-            gmax = float(safe.abs().amax().item()) if safe.numel() > 0 else 0.0
-            grad_mean += float(safe.abs().mean().item()) if safe.numel() > 0 else 0.0
-            counted += 1
-            if gmax > grad_max:
-                grad_max = gmax
-                max_name = name
-            if first_nonfinite_name is None and finite_ratio < 1.0:
-                first_nonfinite_name = name
-                first_nonfinite_ratio = finite_ratio
-        return {
-            "grad_abs_max": grad_max,
-            "grad_abs_mean": (grad_mean / counted) if counted > 0 else 0.0,
-            "grad_abs_max_name": max_name,
-            "first_nonfinite_grad_name": first_nonfinite_name,
-            "first_nonfinite_grad_ratio": first_nonfinite_ratio,
-        }
-
-    def _write_numeric_debug(
-        self,
-        *,
-        epoch: int,
-        step: int,
-        stage: str,
-        loss_dict: Dict[str, torch.Tensor],
-        target_style_id: torch.Tensor,
-        source_style_id: torch.Tensor | None,
-        extra: Optional[Dict[str, object]] = None,
-    ) -> None:
-        if not self.numeric_debug or self.numeric_debug_events >= self.numeric_debug_dump_limit:
-            return
-        payload: Dict[str, object] = {
-            "epoch": int(epoch),
-            "step": int(step),
-            "stage": stage,
-            "global_step": int(self.global_step),
-            "loss": float(torch.nan_to_num(loss_dict["loss"].detach().float(), nan=0.0, posinf=0.0, neginf=0.0).item()),
-            "loss_is_finite": bool(torch.isfinite(loss_dict["loss"].detach()).item()),
-            "metrics": {
-                key: float(torch.nan_to_num(value.detach().float(), nan=0.0, posinf=0.0, neginf=0.0).item())
-                for key, value in loss_dict.items()
-                if torch.is_tensor(value) and value.ndim == 0
-            },
-            "target_style_ids": [int(v) for v in target_style_id.detach().cpu().tolist()],
-            "source_style_ids": [int(v) for v in source_style_id.detach().cpu().tolist()] if source_style_id is not None else None,
-            "semantic_attn": self._tensor_stats(getattr(self.model, "last_semantic_attn", None)),
-            "semantic_k": self._tensor_stats(getattr(self.model, "last_semantic_k", None)),
-        }
-        if extra:
-            payload["extra"] = extra
-        self.numeric_debug_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.numeric_debug_file, "a", encoding="utf-8") as f:
-            f.write(json.dumps(payload, ensure_ascii=False) + "\n")
-        self.numeric_debug_events += 1
 
     def _build_optimizer(self, params) -> torch.optim.Optimizer:
         requested_fused = bool(self.train_cfg.get("fused_adamw", self.device.type == "cuda"))
@@ -441,66 +343,20 @@ class SBTrainer:
                     )
                 loss = loss_dict["loss"]
             forward_time_total += max(0.0, time.perf_counter() - t0)
-            if self.numeric_debug and (step_idx == 1 or step_idx % self.numeric_debug_interval == 0 or not torch.isfinite(loss.detach()).item()):
-                self._write_numeric_debug(
-                    epoch=epoch,
-                    step=step_idx,
-                    stage="forward",
-                    loss_dict=loss_dict,
-                    target_style_id=target_style_id,
-                    source_style_id=source_style_id,
-                )
-            if not torch.isfinite(loss.detach()).item():
-                msg = f"Non-finite loss detected at epoch={epoch} step={step_idx}"
-                logger.error(msg)
-                if self.numeric_debug_halt_on_nonfinite:
-                    raise FloatingPointError(msg)
 
             t0 = time.perf_counter()
             (loss / self.accumulation_steps).backward()
             backward_time_total += max(0.0, time.perf_counter() - t0)
-            grad_report = self._grad_stats()
-            has_nonfinite_grad = bool(grad_report["first_nonfinite_grad_name"] is not None)
-            if self.numeric_debug and (step_idx == 1 or step_idx % self.numeric_debug_interval == 0 or has_nonfinite_grad):
-                self._write_numeric_debug(
-                    epoch=epoch,
-                    step=step_idx,
-                    stage="backward",
-                    loss_dict=loss_dict,
-                    target_style_id=target_style_id,
-                    source_style_id=source_style_id,
-                    extra=grad_report,
-                )
-            if has_nonfinite_grad:
-                msg = (
-                    f"Non-finite gradient detected at epoch={epoch} step={step_idx} "
-                    f"param={grad_report['first_nonfinite_grad_name']}"
-                )
-                logger.error(msg)
-                if self.numeric_debug_halt_on_nonfinite:
-                    raise FloatingPointError(msg)
 
             should_step = (step_idx % self.accumulation_steps == 0)
             if should_step:
                 t0 = time.perf_counter()
-                total_grad_norm = None
                 if self.grad_clip_norm > 0.0:
-                    total_grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip_norm)
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip_norm)
                 self.optimizer.step()
                 self.optimizer.zero_grad(set_to_none=True)
                 optimizer_time_total += max(0.0, time.perf_counter() - t0)
                 self.global_step += 1
-                if self.numeric_debug and (step_idx == 1 or step_idx % self.numeric_debug_interval == 0):
-                    extra = {"clipped_grad_norm": float(total_grad_norm.item()) if total_grad_norm is not None else 0.0}
-                    self._write_numeric_debug(
-                        epoch=epoch,
-                        step=step_idx,
-                        stage="optimizer",
-                        loss_dict=loss_dict,
-                        target_style_id=target_style_id,
-                        source_style_id=source_style_id,
-                        extra=extra,
-                    )
 
             for key, value in loss_dict.items():
                 if value is None:
@@ -562,8 +418,6 @@ class SBTrainer:
         metrics.setdefault("t_mean", 0.0)
         metrics.setdefault("velocity_abs", 0.0)
         metrics.setdefault("endpoint_abs", 0.0)
-        metrics.setdefault("velocity_max", 0.0)
-        metrics.setdefault("endpoint_max", 0.0)
         metrics["lr"] = float(self.optimizer.param_groups[0]["lr"])
         metrics["data_time_sec"] = data_time_total
         metrics["forward_time_sec"] = forward_time_total
@@ -592,8 +446,6 @@ class SBTrainer:
             float(metrics.get("t_mean", 0.0)),
             float(metrics.get("velocity_abs", 0.0)),
             float(metrics.get("endpoint_abs", 0.0)),
-            float(metrics.get("velocity_max", 0.0)),
-            float(metrics.get("endpoint_max", 0.0)),
             float(metrics.get("lr", 0.0)),
             float(metrics.get("data_time_sec", 0.0)),
             float(metrics.get("forward_time_sec", 0.0)),

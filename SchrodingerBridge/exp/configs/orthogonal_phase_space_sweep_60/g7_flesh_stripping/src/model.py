@@ -38,8 +38,6 @@ _MODEL_CONFIG_DEFAULTS = {
     "body_block_type": "global_attn",
     "decoder_block_type": "conv",
     "semantic_attn_temperature": 0.08,
-    "velocity_head_mode": "identity",
-    "velocity_tanh_limit": 20.0,
     "feature_attn_num_heads": 4,
     "window_attn_window_size": 8,
     "skip_fusion_mode": "add_proj",
@@ -83,14 +81,10 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self,
         *,
         time_dim: int = 256,
-        velocity_head_mode: str = "identity",
-        velocity_tanh_limit: float = 20.0,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
         self.time_dim = int(time_dim)
-        self.velocity_head_mode = str(velocity_head_mode).strip().lower()
-        self.velocity_tanh_limit = max(1e-3, float(velocity_tanh_limit))
         self.bridge_style_dim = int(self.style_emb.embedding_dim)
         self.time_mlp = nn.Sequential(
             nn.Linear(self.time_dim, self.bridge_style_dim),
@@ -104,10 +98,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
     ) -> torch.Tensor:
         # In bridge mode, the backbone predicts the instantaneous velocity field
         # directly instead of a bounded residual-to-anchor delta.
-        raw_delta = self.dec_out(h)
-        if self.velocity_head_mode == "tanh":
-            raw_delta = torch.tanh(raw_delta) * self.velocity_tanh_limit
-        return raw_delta * self.latent_scale_factor * self.residual_gain
+        return self.dec_out(h) * self.latent_scale_factor * self.residual_gain
 
     def _resolve_t_input(self, x: torch.Tensor, t: torch.Tensor | float | None) -> torch.Tensor:
         if t is None:
@@ -323,8 +314,6 @@ def build_model_from_config(
         body_block_type=str(model_cfg.get("body_block_type", _MODEL_CONFIG_DEFAULTS["body_block_type"])),
         decoder_block_type=str(model_cfg.get("decoder_block_type", _MODEL_CONFIG_DEFAULTS["decoder_block_type"])),
         semantic_attn_temperature=float(model_cfg.get("semantic_attn_temperature", _MODEL_CONFIG_DEFAULTS["semantic_attn_temperature"])),
-        velocity_head_mode=str(model_cfg.get("velocity_head_mode", _MODEL_CONFIG_DEFAULTS["velocity_head_mode"])),
-        velocity_tanh_limit=float(model_cfg.get("velocity_tanh_limit", _MODEL_CONFIG_DEFAULTS["velocity_tanh_limit"])),
         feature_attn_num_heads=int(model_cfg.get("feature_attn_num_heads", _MODEL_CONFIG_DEFAULTS["feature_attn_num_heads"])),
         window_attn_window_size=int(model_cfg.get("window_attn_window_size", _MODEL_CONFIG_DEFAULTS["window_attn_window_size"])),
         skip_fusion_mode=str(model_cfg.get("skip_fusion_mode", _MODEL_CONFIG_DEFAULTS["skip_fusion_mode"])),

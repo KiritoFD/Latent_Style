@@ -433,7 +433,7 @@ class OTFlowMatchingObjective:
         mean_pair_sim = sim[pair_mask].mean().detach()
         return repel_raw, mean_pair_sim
 
-    def _compute_omf_details(
+    def _compute_omf(
         self,
         model: TimeConditionedLANCETBridge,
         *,
@@ -441,7 +441,7 @@ class OTFlowMatchingObjective:
         target_style: torch.Tensor,
         target_style_id: torch.Tensor,
         source_style_id: torch.Tensor | None = None,
-    ) -> tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor], Dict[str, torch.Tensor | None]]:
+    ) -> Dict[str, torch.Tensor]:
         t_fixed = content.new_ones(content.shape[0])
         pred_velocity = model(
             content,
@@ -472,17 +472,6 @@ class OTFlowMatchingObjective:
                         source_style_id,
                     )
 
-        component_tensors: Dict[str, torch.Tensor] = {
-            "flow": content.new_tensor(0.0, dtype=torch.float32),
-            "kinetic_energy": content.new_tensor(0.0, dtype=torch.float32),
-            "terminal_swd": content.new_tensor(0.0, dtype=torch.float32),
-            "low_freq_anchor": content.new_tensor(0.0, dtype=torch.float32),
-            "color": content.new_tensor(0.0, dtype=torch.float32),
-            "patch_nce": content.new_tensor(0.0, dtype=torch.float32),
-            "cycle": content.new_tensor(0.0, dtype=torch.float32),
-            "repulsive": content.new_tensor(0.0, dtype=torch.float32),
-        }
-
         metrics: Dict[str, torch.Tensor] = {
             "ot_cost": ot_cost.detach(),
             "plan_entropy": plan_entropy.detach(),
@@ -502,7 +491,6 @@ class OTFlowMatchingObjective:
             flow_loss = self._loss(pred_endpoint, matched_target)
             flow_weighted = flow_loss * self.w_flow
             total_loss = total_loss + flow_weighted
-            component_tensors["flow"] = flow_weighted
             metrics["flow"] = flow_weighted.detach()
         else:
             metrics["flow"] = content.new_tensor(0.0, dtype=torch.float32)
@@ -511,7 +499,6 @@ class OTFlowMatchingObjective:
         if self.w_kinetic > 0.0:
             kinetic_weighted = kinetic_loss * self.w_kinetic
             total_loss = total_loss + kinetic_weighted
-            component_tensors["kinetic_energy"] = kinetic_weighted
             metrics["kinetic_energy"] = kinetic_weighted.detach()
         else:
             metrics["kinetic_energy"] = content.new_tensor(0.0, dtype=torch.float32)
@@ -527,10 +514,8 @@ class OTFlowMatchingObjective:
                     target_style_id,
                 )
             if swd_loss is not None:
-                swd_weighted = swd_loss * self.terminal_swd_weight
-                total_loss = total_loss + swd_weighted
-                component_tensors["terminal_swd"] = swd_weighted
-                metrics["terminal_swd"] = swd_weighted.detach()
+                total_loss = total_loss + swd_loss * self.terminal_swd_weight
+                metrics["terminal_swd"] = (swd_loss * self.terminal_swd_weight).detach()
             else:
                 metrics["terminal_swd"] = content.new_tensor(0.0, dtype=torch.float32)
             metrics["low_freq_anchor"] = content.new_tensor(0.0, dtype=torch.float32)
@@ -557,10 +542,8 @@ class OTFlowMatchingObjective:
                 # Low-frequency channels carry exposure and coarse tonal layout, so
                 # we lock them to a content-preserving, target-colored anchor.
                 low_freq_loss = F.l1_loss(pred_low, color_anchored_low.detach())
-                low_weighted = low_freq_loss * self.w_low_freq
-                total_loss = total_loss + low_weighted
-                component_tensors["low_freq_anchor"] = low_weighted
-                metrics["low_freq_anchor"] = low_weighted.detach()
+                total_loss = total_loss + low_freq_loss * self.w_low_freq
+                metrics["low_freq_anchor"] = (low_freq_loss * self.w_low_freq).detach()
             else:
                 metrics["low_freq_anchor"] = content.new_tensor(0.0, dtype=torch.float32)
 
@@ -574,10 +557,8 @@ class OTFlowMatchingObjective:
                     target_style_id,
                 )
             if swd_loss is not None:
-                swd_weighted = swd_loss * self.terminal_swd_weight
-                total_loss = total_loss + swd_weighted
-                component_tensors["terminal_swd"] = swd_weighted
-                metrics["terminal_swd"] = swd_weighted.detach()
+                total_loss = total_loss + swd_loss * self.terminal_swd_weight
+                metrics["terminal_swd"] = (swd_loss * self.terminal_swd_weight).detach()
             else:
                 metrics["terminal_swd"] = content.new_tensor(0.0, dtype=torch.float32)
 
@@ -587,10 +568,8 @@ class OTFlowMatchingObjective:
                 target_style,
                 patch_size=self.color_patch_size,
             )
-            color_weighted = color_loss * self.w_color
-            total_loss = total_loss + color_weighted
-            component_tensors["color"] = color_weighted
-            metrics["color"] = color_weighted.detach()
+            total_loss = total_loss + color_loss * self.w_color
+            metrics["color"] = (color_loss * self.w_color).detach()
         else:
             metrics["color"] = content.new_tensor(0.0, dtype=torch.float32)
 
@@ -603,10 +582,8 @@ class OTFlowMatchingObjective:
                 normalize_eps=self.normalize_eps,
                 logit_clamp=self.logit_clamp,
             )
-            nce_weighted = nce_loss * self.w_nce
-            total_loss = total_loss + nce_weighted
-            component_tensors["patch_nce"] = nce_weighted
-            metrics["patch_nce"] = nce_weighted.detach()
+            total_loss = total_loss + nce_loss * self.w_nce
+            metrics["patch_nce"] = (nce_loss * self.w_nce).detach()
         else:
             metrics["patch_nce"] = content.new_tensor(0.0, dtype=torch.float32)
 
@@ -622,10 +599,8 @@ class OTFlowMatchingObjective:
             metrics["cycle_velocity_max"] = cycle_velocity.abs().amax().detach()
             metrics["cycle_endpoint_max"] = z_aba.abs().amax().detach()
             cycle_loss = self._cosine_lock_loss(z_aba, content)
-            cycle_weighted = cycle_loss * self.w_cycle
-            total_loss = total_loss + cycle_weighted
-            component_tensors["cycle"] = cycle_weighted
-            metrics["cycle"] = cycle_weighted.detach()
+            total_loss = total_loss + cycle_loss * self.w_cycle
+            metrics["cycle"] = (cycle_loss * self.w_cycle).detach()
         else:
             metrics["cycle"] = content.new_tensor(0.0, dtype=torch.float32)
             metrics["cycle_velocity_max"] = content.new_tensor(0.0, dtype=torch.float32)
@@ -643,10 +618,8 @@ class OTFlowMatchingObjective:
         )
         if repel_raw is not None and self.w_repulsive > 0.0:
             repel_clamped = torch.clamp(repel_raw, max=1.0)
-            repel_weighted = repel_clamped * self.w_repulsive
-            total_loss = total_loss + repel_weighted
-            component_tensors["repulsive"] = repel_weighted
-            metrics["repulsive"] = repel_weighted.detach()
+            total_loss = total_loss + repel_clamped * self.w_repulsive
+            metrics["repulsive"] = (repel_clamped * self.w_repulsive).detach()
         else:
             metrics["repulsive"] = content.new_tensor(0.0, dtype=torch.float32)
         metrics["repulsive_pair_sim"] = mean_pair_sim
@@ -656,32 +629,6 @@ class OTFlowMatchingObjective:
             metrics["identity_ratio"] = id_mask.float().mean().detach()
 
         metrics["loss"] = total_loss
-        debug_state: Dict[str, torch.Tensor | None] = {
-            "pred_velocity": pred_velocity.detach(),
-            "pred_endpoint": pred_endpoint.detach(),
-            "semantic_attn": attn_plan.detach() if attn_plan is not None else None,
-            "semantic_k": semantic_k.detach() if semantic_k is not None else None,
-            "content": content.detach(),
-            "target_style": target_style.detach(),
-        }
-        return metrics, component_tensors, debug_state
-
-    def _compute_omf(
-        self,
-        model: TimeConditionedLANCETBridge,
-        *,
-        content: torch.Tensor,
-        target_style: torch.Tensor,
-        target_style_id: torch.Tensor,
-        source_style_id: torch.Tensor | None = None,
-    ) -> Dict[str, torch.Tensor]:
-        metrics, _, _ = self._compute_omf_details(
-            model,
-            content=content,
-            target_style=target_style,
-            target_style_id=target_style_id,
-            source_style_id=source_style_id,
-        )
         return metrics
 
     def compute(
@@ -754,30 +701,6 @@ class OTFlowMatchingObjective:
             id_mask = source_style_id.long() == target_style_id.long()
             metrics["identity_ratio"] = id_mask.float().mean().detach()
         return metrics
-
-    def compute_debug(
-        self,
-        model: TimeConditionedLANCETBridge,
-        *,
-        content: torch.Tensor,
-        target_style: torch.Tensor,
-        target_style_id: torch.Tensor,
-        source_style_id: torch.Tensor | None = None,
-    ) -> Dict[str, Dict[str, torch.Tensor] | Dict[str, torch.Tensor | None]]:
-        if self.objective_mode != "omf":
-            raise NotImplementedError("compute_debug currently supports objective_mode='omf' only.")
-        metrics, components, state = self._compute_omf_details(
-            model,
-            content=content,
-            target_style=target_style,
-            target_style_id=target_style_id,
-            source_style_id=source_style_id,
-        )
-        return {
-            "metrics": metrics,
-            "components": components,
-            "state": state,
-        }
 
     def compute_distill(
         self,
