@@ -89,7 +89,6 @@ class OTFlowMatchingObjective:
         self.nce_temperature = max(1e-6, float(bridge_cfg.get("nce_temperature", 0.07)))
         self.low_freq_kernel_size = max(1, int(bridge_cfg.get("low_freq_kernel_size", 7)))
         self.semantic_swd_num_projections = max(1, int(bridge_cfg.get("semantic_swd_num_projections", 64)))
-        self.swd_use_high_freq = bool(bridge_cfg.get("swd_use_high_freq", True))
         self.color_patch_size = max(1, int(bridge_cfg.get("omf_color_patch_size", 5)))
         self.repulsive_pool_size = max(1, int(bridge_cfg.get("repulsive_pool_size", 4)))
         self.repulsive_temperature = max(1e-4, float(bridge_cfg.get("repulsive_temperature", 0.25)))
@@ -479,64 +478,47 @@ class OTFlowMatchingObjective:
         else:
             metrics["kinetic_energy"] = content.new_tensor(0.0, dtype=torch.float32)
 
-        if not self.swd_use_high_freq:
-            if self.terminal_swd_weight > 0.0 and semantic_k is not None:
-                swd_loss = self._semantic_guided_swd(pred_endpoint, target_style, semantic_k)
-            else:
-                swd_loss = self._calc_terminal_swd_loss(
-                    pred_endpoint,
-                    target_style,
-                    source_style_id,
-                    target_style_id,
-                )
-            if swd_loss is not None:
-                total_loss = total_loss + swd_loss * self.terminal_swd_weight
-                metrics["terminal_swd"] = (swd_loss * self.terminal_swd_weight).detach()
-            else:
-                metrics["terminal_swd"] = content.new_tensor(0.0, dtype=torch.float32)
-            metrics["low_freq_anchor"] = content.new_tensor(0.0, dtype=torch.float32)
+        pred_low, pred_high = self._freq_split(pred_endpoint, kernel_size=self.low_freq_kernel_size)
+        content_low, _ = self._freq_split(content, kernel_size=self.low_freq_kernel_size)
+        _, target_high = self._freq_split(target_style, kernel_size=self.low_freq_kernel_size)
+
+        # AdaIN color anchoring: preserve the coarse geometry from content_low,
+        # but force its global palette statistics to match the target style.
+        b_low, c_low, h_low, w_low = content_low.shape
+        content_flat = content_low.reshape(b_low, c_low, -1)
+        target_flat = target_style.reshape(target_style.shape[0], target_style.shape[1], -1)
+
+        mu_c = content_flat.mean(dim=2, keepdim=True)
+        std_c = content_flat.std(dim=2, keepdim=True) + 1e-5
+        mu_t = target_flat.mean(dim=2, keepdim=True)
+        std_t = target_flat.std(dim=2, keepdim=True) + 1e-5
+
+        color_anchored_low = ((content_flat - mu_c) / std_c) * std_t + mu_t
+        color_anchored_low = color_anchored_low.reshape(b_low, c_low, h_low, w_low)
+
+        if self.w_low_freq > 0.0:
+            # Low-frequency channels carry exposure and coarse tonal layout, so
+            # we lock them to a content-preserving, target-colored anchor.
+            low_freq_loss = F.l1_loss(pred_low, color_anchored_low.detach())
+            total_loss = total_loss + low_freq_loss * self.w_low_freq
+            metrics["low_freq_anchor"] = (low_freq_loss * self.w_low_freq).detach()
         else:
-            pred_low, pred_high = self._freq_split(pred_endpoint, kernel_size=self.low_freq_kernel_size)
-            content_low, _ = self._freq_split(content, kernel_size=self.low_freq_kernel_size)
-            _, target_high = self._freq_split(target_style, kernel_size=self.low_freq_kernel_size)
+            metrics["low_freq_anchor"] = content.new_tensor(0.0, dtype=torch.float32)
 
-            # AdaIN color anchoring: preserve the coarse geometry from content_low,
-            # but force its global palette statistics to match the target style.
-            b_low, c_low, h_low, w_low = content_low.shape
-            content_flat = content_low.reshape(b_low, c_low, -1)
-            target_flat = target_style.reshape(target_style.shape[0], target_style.shape[1], -1)
-
-            mu_c = content_flat.mean(dim=2, keepdim=True)
-            std_c = content_flat.std(dim=2, keepdim=True) + 1e-5
-            mu_t = target_flat.mean(dim=2, keepdim=True)
-            std_t = target_flat.std(dim=2, keepdim=True) + 1e-5
-
-            color_anchored_low = ((content_flat - mu_c) / std_c) * std_t + mu_t
-            color_anchored_low = color_anchored_low.reshape(b_low, c_low, h_low, w_low)
-
-            if self.w_low_freq > 0.0:
-                # Low-frequency channels carry exposure and coarse tonal layout, so
-                # we lock them to a content-preserving, target-colored anchor.
-                low_freq_loss = F.l1_loss(pred_low, color_anchored_low.detach())
-                total_loss = total_loss + low_freq_loss * self.w_low_freq
-                metrics["low_freq_anchor"] = (low_freq_loss * self.w_low_freq).detach()
-            else:
-                metrics["low_freq_anchor"] = content.new_tensor(0.0, dtype=torch.float32)
-
-            if self.terminal_swd_weight > 0.0 and semantic_k is not None:
-                swd_loss = self._semantic_guided_swd(pred_high, target_high, semantic_k)
-            else:
-                swd_loss = self._calc_terminal_swd_loss(
-                    pred_high,
-                    target_high,
-                    source_style_id,
-                    target_style_id,
-                )
-            if swd_loss is not None:
-                total_loss = total_loss + swd_loss * self.terminal_swd_weight
-                metrics["terminal_swd"] = (swd_loss * self.terminal_swd_weight).detach()
-            else:
-                metrics["terminal_swd"] = content.new_tensor(0.0, dtype=torch.float32)
+        if self.terminal_swd_weight > 0.0 and semantic_k is not None:
+            swd_loss = self._semantic_guided_swd(pred_high, target_high, semantic_k)
+        else:
+            swd_loss = self._calc_terminal_swd_loss(
+                pred_high,
+                target_high,
+                source_style_id,
+                target_style_id,
+            )
+        if swd_loss is not None:
+            total_loss = total_loss + swd_loss * self.terminal_swd_weight
+            metrics["terminal_swd"] = (swd_loss * self.terminal_swd_weight).detach()
+        else:
+            metrics["terminal_swd"] = content.new_tensor(0.0, dtype=torch.float32)
 
         if self.w_color > 0.0:
             color_loss = self._calc_local_contextual_color_loss(
