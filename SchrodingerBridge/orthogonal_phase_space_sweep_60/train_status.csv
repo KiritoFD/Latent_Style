@@ -1,0 +1,10 @@
+name,train_status,train_rc,checkpoint_exists
+g0_universe_center,OK,0,YES
+g1_absolute_release,OK,0,YES
+g2_absolute_freeze,OK,0,YES
+g3_gravity_black_hole,OK,0,YES
+g4_gravity_vacuum,OK,0,YES
+g5_midfreq_strangulation,OK,0,YES
+g6_structure_amnesty,OK,0,YES
+g7_flesh_stripping,OK,0,YES
+g8_absolute_nailgun,OK,0,YES

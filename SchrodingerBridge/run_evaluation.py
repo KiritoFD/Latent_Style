@@ -301,7 +301,7 @@ def main() -> None:
             remainder = normalized[1:]
             normalized = ["--checkpoint", str(first), *remainder]
             if not _has_flag(normalized, "--output"):
-                default_output = str(root / "artifacts" / "full_eval" / first.stem)
+                default_output = str(first.parent / "full_eval" / first.stem)
                 normalized.extend(["--output", default_output])
 
     if has_checkpoint_flag:
@@ -315,7 +315,7 @@ def main() -> None:
                     raise SystemExit(_multi_experiment_eval(root, ckpt_path, normalized))
                 raise SystemExit(_batch_eval(root, ckpt_path, normalized))
             if not _has_flag(normalized, "--output"):
-                normalized.extend(["--output", str(root / "artifacts" / "full_eval" / ckpt_path.stem)])
+                normalized.extend(["--output", str(ckpt_path.parent / "full_eval" / ckpt_path.stem)])
 
     raise SystemExit(_single_eval(root, normalized))
 

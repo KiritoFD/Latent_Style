@@ -480,22 +480,34 @@ class OTFlowMatchingObjective:
 
         pred_low, pred_high = self._freq_split(pred_endpoint, kernel_size=self.low_freq_kernel_size)
         content_low, _ = self._freq_split(content, kernel_size=self.low_freq_kernel_size)
+        _, target_high = self._freq_split(target_style, kernel_size=self.low_freq_kernel_size)
+
+        # AdaIN color anchoring: preserve the coarse geometry from content_low,
+        # but force its global palette statistics to match the target style.
+        b_low, c_low, h_low, w_low = content_low.shape
+        content_flat = content_low.reshape(b_low, c_low, -1)
+        target_flat = target_style.reshape(target_style.shape[0], target_style.shape[1], -1)
+
+        mu_c = content_flat.mean(dim=2, keepdim=True)
+        std_c = content_flat.std(dim=2, keepdim=True) + 1e-5
+        mu_t = target_flat.mean(dim=2, keepdim=True)
+        std_t = target_flat.std(dim=2, keepdim=True) + 1e-5
+
+        color_anchored_low = ((content_flat - mu_c) / std_c) * std_t + mu_t
+        color_anchored_low = color_anchored_low.reshape(b_low, c_low, h_low, w_low)
 
         if self.w_low_freq > 0.0:
             # Low-frequency channels carry exposure and coarse tonal layout, so
-            # we anchor absolute values here instead of only locking direction.
-            low_freq_loss = F.l1_loss(pred_low, content_low)
+            # we lock them to a content-preserving, target-colored anchor.
+            low_freq_loss = F.l1_loss(pred_low, color_anchored_low.detach())
             total_loss = total_loss + low_freq_loss * self.w_low_freq
             metrics["low_freq_anchor"] = (low_freq_loss * self.w_low_freq).detach()
         else:
             metrics["low_freq_anchor"] = content.new_tensor(0.0, dtype=torch.float32)
 
         if self.terminal_swd_weight > 0.0 and semantic_k is not None:
-            # Use semantic projection axes, but keep target high-frequency variance intact.
-            _, target_high = self._freq_split(target_style, kernel_size=self.low_freq_kernel_size)
             swd_loss = self._semantic_guided_swd(pred_high, target_high, semantic_k)
         else:
-            _, target_high = self._freq_split(target_style, kernel_size=self.low_freq_kernel_size)
             swd_loss = self._calc_terminal_swd_loss(
                 pred_high,
                 target_high,
