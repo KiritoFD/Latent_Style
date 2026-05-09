@@ -104,9 +104,10 @@ def _summary_metrics(summary_path: Path) -> dict[str, object]:
     photo = analysis.get("photo_to_art_performance", {}) or {}
     return {
         "checkpoint": str(payload.get("checkpoint", "")),
-        "clip_style": transfer.get("clip_style"),
-        "clip_content": transfer.get("clip_content"),
-        "content_lpips": transfer.get("content_lpips"),
+        # Primary columns should reflect the global "all pairs" overview.
+        "clip_style": all_pairs.get("clip_style"),
+        "clip_content": all_pairs.get("clip_content"),
+        "content_lpips": all_pairs.get("content_lpips"),
         "all_clip_style": all_pairs.get("clip_style"),
         "all_clip_content": all_pairs.get("clip_content"),
         "all_content_lpips": all_pairs.get("content_lpips"),

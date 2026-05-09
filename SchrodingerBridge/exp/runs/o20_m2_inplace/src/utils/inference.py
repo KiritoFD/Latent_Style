@@ -17,7 +17,6 @@ import numpy as np
 import torch
 from PIL import Image
 
-from inference_config import resolve_inference_section
 from model import build_model_from_config
 
 logger = logging.getLogger(__name__)
@@ -92,7 +91,7 @@ class LGTInference:
         checkpoint = torch.load(model_path, map_location=device, weights_only=False)
         config = checkpoint["config"]
         bridge_cfg = config.get("bridge", {})
-        infer_cfg = resolve_inference_section(config)
+        infer_cfg = config.get("inference", {})
         model_cfg = config.get("model", {})
         self.objective_mode = str(bridge_cfg.get("objective_mode", "flow_matching")).strip().lower()
         state_dict = checkpoint["model_state_dict"]

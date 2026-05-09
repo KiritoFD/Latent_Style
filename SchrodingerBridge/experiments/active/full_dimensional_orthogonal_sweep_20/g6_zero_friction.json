@@ -1,0 +1,14 @@
+{
+  "_base": "./_suite_base.json",
+  "checkpoint": {
+    "save_dir": "./exp/runs/fd20_g6_zero_friction"
+  },
+  "ablation": {
+    "name": "g6_zero_friction",
+    "axis": "dynamics",
+    "notes": "Keep G0 SWD pressure but collapse kinetic damping toward zero."
+  },
+  "bridge": {
+    "w_kinetic": 0.1
+  }
+}

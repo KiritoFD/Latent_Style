@@ -1,0 +1,14 @@
+{
+  "_base": "./_suite_base.json",
+  "checkpoint": {
+    "save_dir": "./exp/runs/fd20_g7_sharp_ot"
+  },
+  "ablation": {
+    "name": "g7_sharp_ot",
+    "axis": "temperature",
+    "notes": "Lower semantic attention temperature to 0.08 and test the sharp-routing edge."
+  },
+  "model": {
+    "semantic_attn_temperature": 0.08
+  }
+}

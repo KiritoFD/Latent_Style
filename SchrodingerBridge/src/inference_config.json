@@ -1,0 +1,17 @@
+{
+  "inference": {
+    "num_steps": 12,
+    "step_size": 1.0,
+    "style_strength": 1.0
+  },
+  "full_eval": {
+    "num_steps": 12,
+    "step_size": 1.0,
+    "style_strength": 1.0,
+    "batch_size": 2,
+    "max_src_samples": 30,
+    "max_ref_compare": 24,
+    "max_ref_cache": 80,
+    "ref_feature_batch_size": 8
+  }
+}
