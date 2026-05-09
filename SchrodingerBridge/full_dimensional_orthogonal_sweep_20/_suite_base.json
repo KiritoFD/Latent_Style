@@ -1,5 +1,5 @@
 {
-  "_base": "../../../config.json",
+  "_base": "../config.json",
   "model": {
     "base_dim": 64,
     "num_res_blocks": 4,

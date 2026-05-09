@@ -78,7 +78,7 @@ Artifacts:
 
 To keep training and evaluation artifacts together, the follow-up confirmation run was executed in-place:
 
-- config: [`experiments/active/g0_blackdot_m2_damped20_inplace.json`](</g:/GitHub/Latent_Style/SchrodingerBridge/experiments/active/g0_blackdot_m2_damped20_inplace.json:1>)
+- config: [`g0_blackdot_m2_damped20_inplace.json`](</g:/GitHub/Latent_Style/SchrodingerBridge/g0_blackdot_m2_damped20_inplace.json:1>)
 - run dir: [`exp/runs/o20_m2_inplace`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o20_m2_inplace:1>)
 - eval root: [`exp/runs/o20_m2_inplace/full_eval`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o20_m2_inplace/full_eval:1>)
 
@@ -149,7 +149,7 @@ The registry has been refreshed at:
 
 The focused black-dot table is maintained by:
 
-- [`scripts/archive_blackdot_experiments.py`](</g:/GitHub/Latent_Style/SchrodingerBridge/scripts/archive_blackdot_experiments.py:1>)
+- [`archive_blackdot_experiments.py`](</g:/GitHub/Latent_Style/SchrodingerBridge/archive_blackdot_experiments.py:1>)
 
 It now captures both:
 

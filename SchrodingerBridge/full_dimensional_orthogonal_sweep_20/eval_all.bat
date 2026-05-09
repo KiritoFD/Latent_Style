@@ -1,9 +1,9 @@
 @echo off
 setlocal
 setlocal EnableDelayedExpansion
-cd /d "%~dp0\..\..\.."
+cd /d "%~dp0\.."
 
-set "STATUS_LOG=experiments\active\full_dimensional_orthogonal_sweep_20\eval_status.csv"
+set "STATUS_LOG=full_dimensional_orthogonal_sweep_20\eval_status.csv"
 echo name,eval_status,eval_rc>"%STATUS_LOG%"
 set /a FAIL_COUNT=0
 

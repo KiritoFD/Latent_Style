@@ -14,9 +14,9 @@ We are using the numerically safer post-mitigation regime as the base and then s
 
 The suite is generated under:
 
-- config root: [experiments/active/full_dimensional_orthogonal_sweep_20](/g:/GitHub/Latent_Style/SchrodingerBridge/experiments/active/full_dimensional_orthogonal_sweep_20:1)
-- manifest: [manifest.json](/g:/GitHub/Latent_Style/SchrodingerBridge/experiments/active/full_dimensional_orthogonal_sweep_20/manifest.json:1)
-- plan table: [plan.csv](/g:/GitHub/Latent_Style/SchrodingerBridge/experiments/active/full_dimensional_orthogonal_sweep_20/plan.csv:1)
+- config root: [full_dimensional_orthogonal_sweep_20](/g:/GitHub/Latent_Style/SchrodingerBridge/full_dimensional_orthogonal_sweep_20:1)
+- manifest: [manifest.json](/g:/GitHub/Latent_Style/SchrodingerBridge/full_dimensional_orthogonal_sweep_20/manifest.json:1)
+- plan table: [plan.csv](/g:/GitHub/Latent_Style/SchrodingerBridge/full_dimensional_orthogonal_sweep_20/plan.csv:1)
 
 Run outputs are designed to land in-place under `exp/runs/fd20_*`, with each run writing its own `full_eval/`.
 
@@ -48,6 +48,6 @@ Use the funnel the sweep was designed for:
 
 ## Entry points
 
-- generator: [scripts/generate_full_dimensional_orthogonal_sweep_20.py](/g:/GitHub/Latent_Style/SchrodingerBridge/scripts/generate_full_dimensional_orthogonal_sweep_20.py:1)
-- train all: [run_all.bat](/g:/GitHub/Latent_Style/SchrodingerBridge/experiments/active/full_dimensional_orthogonal_sweep_20/run_all.bat:1)
-- eval all: [eval_all.bat](/g:/GitHub/Latent_Style/SchrodingerBridge/experiments/active/full_dimensional_orthogonal_sweep_20/eval_all.bat:1)
+- generator: [generate_full_dimensional_orthogonal_sweep_20.py](/g:/GitHub/Latent_Style/SchrodingerBridge/generate_full_dimensional_orthogonal_sweep_20.py:1)
+- train all: [run_all.bat](/g:/GitHub/Latent_Style/SchrodingerBridge/full_dimensional_orthogonal_sweep_20/run_all.bat:1)
+- eval all: [eval_all.bat](/g:/GitHub/Latent_Style/SchrodingerBridge/full_dimensional_orthogonal_sweep_20/eval_all.bat:1)
