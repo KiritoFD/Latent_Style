@@ -1,0 +1,20 @@
+{
+  "_base": "../orthogonal_phase_space_sweep_10_validation/g0_local_sweep_swd16_k030.json",
+  "training": {
+    "num_epochs": 1,
+    "save_interval": 1,
+    "log_interval": 10,
+    "numeric_debug": true,
+    "numeric_debug_interval": 10,
+    "numeric_debug_halt_on_nonfinite": true,
+    "numeric_debug_dump_limit": 120
+  },
+  "checkpoint": {
+    "save_dir": "./o_debug_l5"
+  },
+  "ablation": {
+    "name": "g0_l5_numeric_debug",
+    "axis": "numeric_debug",
+    "notes": "One-epoch numeric debug run on pre-HF-branch full-band L5 baseline."
+  }
+}

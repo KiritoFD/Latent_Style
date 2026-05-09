@@ -1,0 +1,267 @@
+﻿[
+    {
+        "category":  "runs",
+        "name":  "o10e",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10e"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10l1",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10l1"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10l2",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10l2"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10l3",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10l3"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10l4",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10l4"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10l5",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10l5"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10pb",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10pb"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10pc",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10pc"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10pn",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10pn"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10pr",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10pr"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10s",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10s"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10_l1",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10_l1"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10_l2",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10_l2"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10_l3",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10_l3"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10_l4",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10_l4"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10_l5",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10_l5"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10_off",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10_off"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10_probe_base",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10_probe_base"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10_probe_cycle",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10_probe_cycle"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10_probe_nce",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10_probe_nce"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10_probe_repulsive",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10_probe_repulsive"
+    },
+    {
+        "category":  "runs",
+        "name":  "o10_soft",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o10_soft"
+    },
+    {
+        "category":  "runs",
+        "name":  "o20a",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o20a"
+    },
+    {
+        "category":  "runs",
+        "name":  "o20cahf",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o20cahf"
+    },
+    {
+        "category":  "runs",
+        "name":  "o20d1",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o20d1"
+    },
+    {
+        "category":  "runs",
+        "name":  "o20d2",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o20d2"
+    },
+    {
+        "category":  "runs",
+        "name":  "o20d3",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o20d3"
+    },
+    {
+        "category":  "runs",
+        "name":  "o20k3p135",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o20k3p135"
+    },
+    {
+        "category":  "runs",
+        "name":  "o20_adain_val",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o20_adain_val"
+    },
+    {
+        "category":  "runs",
+        "name":  "o20_cycle_adain_hf",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o20_cycle_adain_hf"
+    },
+    {
+        "category":  "runs",
+        "name":  "o20_d1",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o20_d1"
+    },
+    {
+        "category":  "runs",
+        "name":  "o20_d2",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o20_d2"
+    },
+    {
+        "category":  "runs",
+        "name":  "o20_d3",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o20_d3"
+    },
+    {
+        "category":  "runs",
+        "name":  "o20_k3_p135",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o20_k3_p135"
+    },
+    {
+        "category":  "runs",
+        "name":  "o20_k5_p359",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o20_k5_p359"
+    },
+    {
+        "category":  "runs",
+        "name":  "o30e3",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o30e3"
+    },
+    {
+        "category":  "runs",
+        "name":  "o_debug_d3",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o_debug_d3"
+    },
+    {
+        "category":  "runs",
+        "name":  "o_debug_l5",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o_debug_l5"
+    },
+    {
+        "category":  "runs",
+        "name":  "o_debug_l5_tanh",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\runs\\o_debug_l5_tanh"
+    },
+    {
+        "category":  "configs",
+        "name":  "high_tension_phase_space_sweep",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\configs\\high_tension_phase_space_sweep"
+    },
+    {
+        "category":  "configs",
+        "name":  "orthogonal_phase_space_sweep_10_validation",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\configs\\orthogonal_phase_space_sweep_10_validation"
+    },
+    {
+        "category":  "configs",
+        "name":  "orthogonal_phase_space_sweep_20_validation",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\configs\\orthogonal_phase_space_sweep_20_validation"
+    },
+    {
+        "category":  "configs",
+        "name":  "orthogonal_phase_space_sweep_30_validation",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\configs\\orthogonal_phase_space_sweep_30_validation"
+    },
+    {
+        "category":  "configs",
+        "name":  "orthogonal_phase_space_sweep_60",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\configs\\orthogonal_phase_space_sweep_60"
+    },
+    {
+        "category":  "configs",
+        "name":  "orthogonal_phase_space_sweep_debug",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\configs\\orthogonal_phase_space_sweep_debug"
+    },
+    {
+        "category":  "legacy",
+        "name":  "artifacts",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\legacy\\artifacts"
+    },
+    {
+        "category":  "legacy",
+        "name":  "artifacts_omf_e30",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\legacy\\artifacts_omf_e30"
+    },
+    {
+        "category":  "legacy",
+        "name":  "artifacts_omf_monge_e20",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\legacy\\artifacts_omf_monge_e20"
+    },
+    {
+        "category":  "legacy",
+        "name":  "horse2zebra_omf",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\legacy\\horse2zebra_omf"
+    },
+    {
+        "category":  "legacy",
+        "name":  "launch_logs",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\legacy\\launch_logs"
+    },
+    {
+        "category":  "legacy",
+        "name":  "ot-exp",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\legacy\\ot-exp"
+    },
+    {
+        "category":  "legacy",
+        "name":  "ot-exp-80",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\legacy\\ot-exp-80"
+    },
+    {
+        "category":  "legacy",
+        "name":  "ot-exp-struct",
+        "destination":  "g:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\legacy\\ot-exp-struct"
+    }
+]

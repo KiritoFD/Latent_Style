@@ -1,0 +1,20 @@
+{
+  "_base": "../orthogonal_phase_space_sweep_20_validation/g0_damping_hybrid20.json",
+  "training": {
+    "num_epochs": 1,
+    "save_interval": 1,
+    "log_interval": 10,
+    "numeric_debug": true,
+    "numeric_debug_interval": 10,
+    "numeric_debug_halt_on_nonfinite": true,
+    "numeric_debug_dump_limit": 120
+  },
+  "checkpoint": {
+    "save_dir": "./o_debug_d3"
+  },
+  "ablation": {
+    "name": "g0_d3_numeric_debug",
+    "axis": "numeric_debug",
+    "notes": "One-epoch numeric debug run on pre-HF-branch hybrid damping setup."
+  }
+}
