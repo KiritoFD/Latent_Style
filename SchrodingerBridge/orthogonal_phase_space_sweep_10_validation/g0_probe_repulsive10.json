@@ -1,0 +1,27 @@
+{
+  "_base": "../config.json",
+  "bridge": {
+    "w_kinetic": 0.30,
+    "w_low_freq": 0.0,
+    "w_cycle": 0.0,
+    "w_repulsive": 0.20,
+    "w_nce": 0.0,
+    "terminal_swd_weight": 16.0,
+    "low_freq_kernel_size": 5,
+    "swd_use_high_freq": false
+  },
+  "training": {
+    "num_epochs": 10,
+    "save_interval": 10,
+    "log_interval": 10,
+    "full_eval_batch_size": 2
+  },
+  "checkpoint": {
+    "save_dir": "./o10_probe_repulsive"
+  },
+  "ablation": {
+    "name": "g0_probe_repulsive10",
+    "axis": "numeric_probe",
+    "notes": "Probe repulsive-loss stability under finite-value guards."
+  }
+}
