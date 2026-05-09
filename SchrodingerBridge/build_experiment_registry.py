@@ -171,7 +171,7 @@ def build_registry(repo: Path) -> list[dict[str, Any]]:
 
 
 def main() -> None:
-    repo = Path(__file__).resolve().parents[1]
+    repo = Path(__file__).resolve().parent
     out_dir = repo / "docs" / "experiments"
     out_dir.mkdir(parents=True, exist_ok=True)
 

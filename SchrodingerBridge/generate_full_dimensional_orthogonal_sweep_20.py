@@ -5,8 +5,8 @@ import json
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
-SUITE_ROOT = ROOT / "experiments" / "active" / "full_dimensional_orthogonal_sweep_20"
+ROOT = Path(__file__).resolve().parent
+SUITE_ROOT = ROOT / "full_dimensional_orthogonal_sweep_20"
 BASE_CONFIG_PATH = SUITE_ROOT / "_suite_base.json"
 MANIFEST_PATH = SUITE_ROOT / "manifest.json"
 PLAN_CSV_PATH = SUITE_ROOT / "plan.csv"
@@ -24,12 +24,12 @@ def _run_dir(name: str) -> str:
 
 
 def _config_path(name: str) -> str:
-    return f"experiments/active/full_dimensional_orthogonal_sweep_20/{name}.json"
+    return f"full_dimensional_orthogonal_sweep_20/{name}.json"
 
 
 def _write_suite_base() -> None:
     payload = {
-        "_base": "../../../config.json",
+        "_base": "../config.json",
         "model": {
             "base_dim": 64,
             "num_res_blocks": 4,
@@ -239,9 +239,9 @@ def _write_bat_scripts(manifest: list[dict]) -> None:
         "@echo off",
         "setlocal",
         "setlocal EnableDelayedExpansion",
-        "cd /d \"%~dp0\\..\\..\\..\"",
+        "cd /d \"%~dp0\\..\"",
         "",
-        "set \"STATUS_LOG=experiments\\active\\full_dimensional_orthogonal_sweep_20\\train_status.csv\"",
+        "set \"STATUS_LOG=full_dimensional_orthogonal_sweep_20\\train_status.csv\"",
         "echo name,train_status,train_rc,checkpoint_exists>\"%STATUS_LOG%\"",
         "set /a FAIL_COUNT=0",
         "",
@@ -250,9 +250,9 @@ def _write_bat_scripts(manifest: list[dict]) -> None:
         "@echo off",
         "setlocal",
         "setlocal EnableDelayedExpansion",
-        "cd /d \"%~dp0\\..\\..\\..\"",
+        "cd /d \"%~dp0\\..\"",
         "",
-        "set \"STATUS_LOG=experiments\\active\\full_dimensional_orthogonal_sweep_20\\eval_status.csv\"",
+        "set \"STATUS_LOG=full_dimensional_orthogonal_sweep_20\\eval_status.csv\"",
         "echo name,eval_status,eval_rc>\"%STATUS_LOG%\"",
         "set /a FAIL_COUNT=0",
         "",
