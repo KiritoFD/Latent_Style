@@ -149,7 +149,7 @@ The registry has been refreshed at:
 
 The focused black-dot table is maintained by:
 
-- [`tools/archive_blackdot_experiments.py`](</g:/GitHub/Latent_Style/SchrodingerBridge/tools/archive_blackdot_experiments.py:1>)
+- [`scripts/archive_blackdot_experiments.py`](</g:/GitHub/Latent_Style/SchrodingerBridge/scripts/archive_blackdot_experiments.py:1>)
 
 It now captures both:
 
