@@ -26,6 +26,7 @@ from utils.inference import (  # noqa: E402
     encode_image,
     load_vae,
 )
+from inference_config import resolve_inference_section  # noqa: E402
 
 
 def _load_config(path: Path) -> dict:
@@ -100,9 +101,10 @@ def main(argv: list[str] | None = None) -> int:
     input_path = Path(args.input_path).expanduser().resolve()
     output_path = Path(args.output_path).expanduser().resolve()
     config = _load_config(checkpoint_path)
+    infer_cfg = resolve_inference_section(config)
     style_names = _style_names(config)
     target_style_id, target_style_name = _resolve_target_style(str(args.target_style), style_names)
-    default_num_steps = int(config.get("inference", {}).get("num_steps", 12))
+    default_num_steps = int(infer_cfg.get("num_steps", 12))
 
     images = _collect_images(input_path)
     if not images:

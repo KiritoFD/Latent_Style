@@ -1,0 +1,17 @@
+{
+  "_base": "./_suite_base.json",
+  "checkpoint": {
+    "save_dir": "./exp/runs/fd20_g3_bimodal_split"
+  },
+  "ablation": {
+    "name": "g3_bimodal_split",
+    "axis": "patch_scales",
+    "notes": "Bimodal patch bank with a hollowed-out mid band to test scale discontinuity."
+  },
+  "bridge": {
+    "swd_patch_sizes": [
+      3,
+      25
+    ]
+  }
+}

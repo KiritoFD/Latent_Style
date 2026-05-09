@@ -1,0 +1,15 @@
+{
+  "_base": "../../o10_m2/config.json",
+  "training": {
+    "num_epochs": 20,
+    "save_interval": 10,
+    "resume_checkpoint": ""
+  },
+  "checkpoint": {
+    "save_dir": "./o20_m2_inplace"
+  },
+  "ablation": {
+    "name": "g0_blackdot_m2_damped20_inplace",
+    "notes": "20-epoch in-place full-eval confirmation run for the M2 black-dot mitigation setting."
+  }
+}

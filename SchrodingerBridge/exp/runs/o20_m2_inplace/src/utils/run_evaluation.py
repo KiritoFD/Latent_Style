@@ -52,7 +52,6 @@ from utils.artfid_metric import (
     load_artfid_feature_extractor,
     load_artfid_lpips,
 )
-from inference_config import load_inference_defaults, resolve_full_eval_section
 
 # KID (official implementation via torchmetrics)
 try:
@@ -1013,8 +1012,6 @@ def _auto_run_missing_full_eval(args) -> None:
 
 
 def main():
-    runtime_defaults = load_inference_defaults()
-    full_eval_defaults = runtime_defaults.get("full_eval", {}) or {}
     parser = argparse.ArgumentParser()
     parser.add_argument('eval_dir', nargs='?', default=None, help="One-shot mode: target full_eval directory (reuse existing images).")
     parser.add_argument('--checkpoint', type=str, default=None, help="Single-checkpoint mode: path to checkpoint")
@@ -1023,15 +1020,15 @@ def main():
     parser.add_argument('--config', type=str, default="../config.json", help="Auto mode config path")
     parser.add_argument('--test_dir', type=str, default=None)
     parser.add_argument('--cache_dir', type=str, default="../eval_cache", help="Directory to store shared feature caches")
-    parser.add_argument('--num_steps', type=int, default=int(full_eval_defaults.get("num_steps", 12)))
-    parser.add_argument('--step_size', type=float, default=float(full_eval_defaults.get("step_size", 1.0)))
-    parser.add_argument('--style_strength', type=float, default=full_eval_defaults.get("style_strength", None), help="Global style strength in [0,1]; default uses src/inference_config.json")
+    parser.add_argument('--num_steps', type=int, default=15)
+    parser.add_argument('--step_size', type=float, default=1.0)
+    parser.add_argument('--style_strength', type=float, default=None, help="Global style strength in [0,1]; default uses checkpoint config")
     parser.add_argument('--style_adapter', type=str, default="", help="Optional external style adapter (.pt) to override style_emb/style_spatial_id_16")
-    parser.add_argument('--max_src_samples', type=int, default=int(full_eval_defaults.get("max_src_samples", 30)), help="Max source images per style; <=0 means all")
-    parser.add_argument('--max_ref_compare', type=int, default=int(full_eval_defaults.get("max_ref_compare", 50)), help="Max refs for LPIPS style compare; <=0 means all cached refs")
-    parser.add_argument('--max_ref_cache', type=int, default=int(full_eval_defaults.get("max_ref_cache", 256)), help="Max reference images per style used for cache/features; <=0 means all")
-    parser.add_argument('--ref_feature_batch_size', type=int, default=int(full_eval_defaults.get("ref_feature_batch_size", 64)), help="Batch size for reference feature extraction")
-    parser.add_argument('--batch_size', type=int, default=int(full_eval_defaults.get("batch_size", 2)), help="Generation batch size for evaluation. Lower this if VRAM is tight.")
+    parser.add_argument('--max_src_samples', type=int, default=30, help="Max source images per style; <=0 means all")
+    parser.add_argument('--max_ref_compare', type=int, default=50, help="Max refs for LPIPS style compare; <=0 means all cached refs")
+    parser.add_argument('--max_ref_cache', type=int, default=256, help="Max reference images per style used for cache/features; <=0 means all")
+    parser.add_argument('--ref_feature_batch_size', type=int, default=64, help="Batch size for reference feature extraction")
+    parser.add_argument('--batch_size', type=int, default=2, help="Generation batch size for evaluation. Lower this if VRAM is tight.")
     parser.add_argument('--force_regen', action='store_true', help="Force regenerate evaluation outputs/metrics (does not rebuild global ref cache)")
     parser.add_argument('--force_regen_ref_cache', action='store_true', help="Force rebuild global reference-feature cache only")
     parser.add_argument('--ref_cache_lock_timeout', type=int, default=900, help="Seconds to wait for another process building reference cache")
@@ -1164,16 +1161,6 @@ def main():
             raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
         ckpt = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
         cfg = ckpt.get('config', {})
-        resolved_full_eval = resolve_full_eval_section(cfg)
-        if resolved_full_eval:
-            args.num_steps = int(resolved_full_eval.get("num_steps", args.num_steps))
-            args.step_size = float(resolved_full_eval.get("step_size", args.step_size))
-            args.style_strength = resolved_full_eval.get("style_strength", args.style_strength)
-            args.batch_size = int(resolved_full_eval.get("batch_size", args.batch_size))
-            args.max_src_samples = int(resolved_full_eval.get("max_src_samples", args.max_src_samples))
-            args.max_ref_compare = int(resolved_full_eval.get("max_ref_compare", args.max_ref_compare))
-            args.max_ref_cache = int(resolved_full_eval.get("max_ref_cache", args.max_ref_cache))
-            args.ref_feature_batch_size = int(resolved_full_eval.get("ref_feature_batch_size", args.ref_feature_batch_size))
     else:
         print("Single-run eval in reuse-only mode (no checkpoint).")
     

@@ -1,0 +1,14 @@
+{
+  "_base": "./_suite_base.json",
+  "checkpoint": {
+    "save_dir": "./exp/runs/fd20_g11_cycle_drop"
+  },
+  "ablation": {
+    "name": "g11_cycle_drop",
+    "axis": "cycle",
+    "notes": "Remove the cycle penalty and measure whether forward-only damping plus AdaIN is enough."
+  },
+  "bridge": {
+    "w_cycle": 0.0
+  }
+}

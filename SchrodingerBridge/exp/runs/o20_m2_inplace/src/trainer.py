@@ -14,7 +14,6 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from inference_config import compact_runtime_config
 from losses import OTFlowMatchingObjective
 from model import build_model_from_config, count_parameters
 
@@ -75,7 +74,6 @@ def _strip_compile_prefix(state_dict: Dict[str, torch.Tensor]) -> Dict[str, torc
 class SBTrainer:
     def __init__(self, config: Dict, device: torch.device, config_path: Optional[str] = None) -> None:
         self.config = config
-        self.serialized_config = compact_runtime_config(config)
         self.device = device
         self.config_path = config_path
 
@@ -144,7 +142,7 @@ class SBTrainer:
         self.numeric_debug_file = self.checkpoint_dir / "numeric_debug.jsonl"
 
         with open(self.checkpoint_dir / "config.json", "w", encoding="utf-8") as f:
-            json.dump(self.serialized_config, f, indent=2, ensure_ascii=False)
+            json.dump(config, f, indent=2, ensure_ascii=False)
 
         pkg_dir = Path(__file__).parent
         snapshot_root = self.checkpoint_dir / "src"
@@ -618,7 +616,7 @@ class SBTrainer:
             "model_state_dict": self.model.state_dict(),
             "optimizer_state_dict": self.optimizer.state_dict(),
             "scheduler_state_dict": self.scheduler.state_dict() if self.scheduler is not None else None,
-            "config": self.serialized_config,
+            "config": self.config,
             "metrics": metrics,
         }
         torch.save(payload, path)

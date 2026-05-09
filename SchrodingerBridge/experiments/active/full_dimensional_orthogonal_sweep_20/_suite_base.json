@@ -1,0 +1,39 @@
+{
+  "_base": "../../../config.json",
+  "model": {
+    "base_dim": 64,
+    "num_res_blocks": 4,
+    "semantic_attn_temperature": 0.12
+  },
+  "bridge": {
+    "objective_mode": "omf",
+    "ot_cost_mode": "swd",
+    "terminal_num_steps": 4,
+    "terminal_swd_on_identity": false,
+    "terminal_swd_weight": 10.0,
+    "w_kinetic": 0.45,
+    "w_low_freq": 1.0,
+    "w_cycle": 0.2,
+    "w_color": 0.0,
+    "w_repulsive": 0.0,
+    "w_nce": 0.0,
+    "low_freq_kernel_size": 5,
+    "semantic_swd_num_projections": 64,
+    "swd_num_projections": 64,
+    "swd_patch_sizes": [
+      3,
+      5,
+      7,
+      15
+    ],
+    "swd_distance_mode": "cdf",
+    "swd_use_high_freq": true
+  },
+  "training": {
+    "batch_size": 32,
+    "learning_rate": 0.0002,
+    "num_epochs": 20,
+    "save_interval": 10,
+    "resume_checkpoint": ""
+  }
+}

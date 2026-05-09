@@ -2,12 +2,13 @@
 
 ## Scope
 
-This round focused on one concrete failure mode: localized black artifacts / dark holes that appeared in the aggressive full-band SWD regime. We also cleaned the workspace by moving older experiment assets under [`exp/`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp:1>).
+This round focused on one concrete failure mode: localized black artifacts / dark holes that appeared in the aggressive full-band SWD regime. The workspace has now been cleaned so both legacy and black-dot mitigation runs live under [`exp/`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp:1>).
 
-Current active runs intentionally kept at repo root:
+Current archived black-dot runs:
 
-- training: [`o10_m1`](</g:/GitHub/Latent_Style/SchrodingerBridge/o10_m1:1>), [`o10_m2`](</g:/GitHub/Latent_Style/SchrodingerBridge/o10_m2:1>), [`o10_m3`](</g:/GitHub/Latent_Style/SchrodingerBridge/o10_m3:1>)
-- evaluation: [`o10m1`](</g:/GitHub/Latent_Style/SchrodingerBridge/o10m1:1>), [`o10m2`](</g:/GitHub/Latent_Style/SchrodingerBridge/o10m2:1>), [`o10m3`](</g:/GitHub/Latent_Style/SchrodingerBridge/o10m3:1>)
+- training: [`exp/runs/o10_m1`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o10_m1:1>), [`exp/runs/o10_m2`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o10_m2:1>), [`exp/runs/o10_m3`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o10_m3:1>)
+- evaluation: [`exp/runs/o10m1`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o10m1:1>), [`exp/runs/o10m2`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o10m2:1>), [`exp/runs/o10m3`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o10m3:1>)
+- in-place confirmation: [`exp/runs/o20_m2_inplace`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o20_m2_inplace:1>) with [`full_eval`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o20_m2_inplace/full_eval:1>)
 
 Archived historical experiments:
 
@@ -52,8 +53,8 @@ Three 10-epoch mitigations were trained from the current main codebase:
 
 Artifacts:
 
-- train logs: [`o10_m1/train_stdout.log`](</g:/GitHub/Latent_Style/SchrodingerBridge/o10_m1/train_stdout.log:1>), [`o10_m2/train_stdout.log`](</g:/GitHub/Latent_Style/SchrodingerBridge/o10_m2/train_stdout.log:1>), [`o10_m3/train_stdout.log`](</g:/GitHub/Latent_Style/SchrodingerBridge/o10_m3/train_stdout.log:1>)
-- eval summaries: [`o10m1/summary.json`](</g:/GitHub/Latent_Style/SchrodingerBridge/o10m1/summary.json:1>), [`o10m2/summary.json`](</g:/GitHub/Latent_Style/SchrodingerBridge/o10m2/summary.json:1>), [`o10m3/summary.json`](</g:/GitHub/Latent_Style/SchrodingerBridge/o10m3/summary.json:1>)
+- train logs: [`exp/runs/o10_m1/train_stdout.log`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o10_m1/train_stdout.log:1>), [`exp/runs/o10_m2/train_stdout.log`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o10_m2/train_stdout.log:1>), [`exp/runs/o10_m3/train_stdout.log`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o10_m3/train_stdout.log:1>)
+- eval summaries: [`exp/runs/o10m1/summary.json`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o10m1/summary.json:1>), [`exp/runs/o10m2/summary.json`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o10m2/summary.json:1>), [`exp/runs/o10m3/summary.json`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o10m3/summary.json:1>)
 
 ## Results
 
@@ -73,11 +74,38 @@ Artifacts:
 - `M2`: the cleanest and most stable point of this round. It gives up some style strength, but the gain in structural continuity and LPIPS is real.
 - `M3`: best "style retention" of the new trio, but it starts drifting back toward the older darker / harsher artifacts.
 
+## In-place 20 Epoch Confirmation
+
+To keep training and evaluation artifacts together, the follow-up confirmation run was executed in-place:
+
+- config: [`experiments/active/g0_blackdot_m2_damped20_inplace.json`](</g:/GitHub/Latent_Style/SchrodingerBridge/experiments/active/g0_blackdot_m2_damped20_inplace.json:1>)
+- run dir: [`exp/runs/o20_m2_inplace`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o20_m2_inplace:1>)
+- eval root: [`exp/runs/o20_m2_inplace/full_eval`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o20_m2_inplace/full_eval:1>)
+
+Main metrics:
+
+| epoch | all `clip_style` | all `clip_content` | all `LPIPS` | transfer `clip_style` | transfer `clip_content` | transfer `LPIPS` |
+|---|---:|---:|---:|---:|---:|---:|
+| `epoch_0010` | 0.7017 | 0.8238 | 0.4427 | 0.6743 | 0.8169 | 0.4558 |
+| `epoch_0020` | 0.7052 | 0.8095 | 0.4503 | 0.6791 | 0.8029 | 0.4632 |
+
+This run stayed numerically stable through 20 epochs. It supports the current hypothesis that the black-dot issue is mainly a training-time force-balance problem rather than an evaluation-only or inference-only bug.
+
+## Batch Summary Semantics
+
+The batch-summary export has been corrected so that:
+
+- `clip_style`, `clip_content`, `content_lpips` now mean **all-pairs overview**
+- `transfer_*` means **style-transfer subset**
+- `photo_to_art_*` means **photo-to-art subset**
+
+This fixes the earlier mismatch where the main columns were labeled like global metrics but actually contained transfer-only values.
+
 Reference grids:
 
-- [`o10m1/summary_grid.png`](</g:/GitHub/Latent_Style/SchrodingerBridge/o10m1/summary_grid.png:1>)
-- [`o10m2/summary_grid.png`](</g:/GitHub/Latent_Style/SchrodingerBridge/o10m2/summary_grid.png:1>)
-- [`o10m3/summary_grid.png`](</g:/GitHub/Latent_Style/SchrodingerBridge/o10m3/summary_grid.png:1>)
+- [`exp/runs/o10m1/summary_grid.png`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o10m1/summary_grid.png:1>)
+- [`exp/runs/o10m2/summary_grid.png`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o10m2/summary_grid.png:1>)
+- [`exp/runs/o10m3/summary_grid.png`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs/o10m3/summary_grid.png:1>)
 
 ## Mature Conclusion For Now
 
@@ -117,8 +145,13 @@ The registry has been refreshed at:
 
 - [`docs/experiments/experiment_registry.json`](</g:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/experiment_registry.json:1>)
 - [`docs/experiments/experiment_registry.csv`](</g:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/experiment_registry.csv:1>)
+- [`docs/experiments/blackdot_mitigation_runs.csv`](</g:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/blackdot_mitigation_runs.csv:1>)
+
+The focused black-dot table is maintained by:
+
+- [`tools/archive_blackdot_experiments.py`](</g:/GitHub/Latent_Style/SchrodingerBridge/tools/archive_blackdot_experiments.py:1>)
 
 It now captures both:
 
-- current root-level runs (`o10_m1`, `o10m1`, etc.)
-- archived runs under [`exp/runs`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs:1>)
+- archived black-dot runs under [`exp/runs`](</g:/GitHub/Latent_Style/SchrodingerBridge/exp/runs:1>)
+- older archived sweep/debug runs under the same `exp/runs` root

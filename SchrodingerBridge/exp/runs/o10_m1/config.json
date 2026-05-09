@@ -90,14 +90,6 @@
     "use_gradient_checkpointing": true,
     "fused_adamw": true,
     "resume_checkpoint": "",
-    "full_eval_batch_size": 2,
-    "full_eval_max_src_samples": 30,
-    "full_eval_max_ref_compare": 24,
-    "full_eval_max_ref_cache": 80,
-    "full_eval_ref_feature_batch_size": 8,
-    "full_eval_num_steps": 12,
-    "full_eval_step_size": 1.0,
-    "full_eval_style_strength": 1.0,
     "test_image_dir": "../style_data/overfit50",
     "full_eval_cache_dir": "../Cycle-NCE/eval_cache",
     "full_eval_image_classifier_path": "../Cycle-NCE/eval_cache/eval_style_image_classifier.pt",
@@ -126,11 +118,6 @@
   },
   "checkpoint": {
     "save_dir": "./o10_m1"
-  },
-  "inference": {
-    "num_steps": 12,
-    "step_size": 1.0,
-    "style_strength": 1.0
   },
   "ablation": {
     "name": "g0_blackdot_m1_softbalance10",

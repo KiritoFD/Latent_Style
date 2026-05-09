@@ -26,7 +26,7 @@
     "hires_block_type": "conv",
     "body_block_type": "global_attn",
     "decoder_block_type": "conv",
-    "semantic_attn_temperature": 0.08,
+    "semantic_attn_temperature": 0.12,
     "feature_attn_num_heads": 4,
     "window_attn_window_size": 8,
     "skip_fusion_mode": "add_proj",
@@ -50,17 +50,17 @@
     "ot_cost_mode": "swd",
     "terminal_num_steps": 4,
     "terminal_swd_on_identity": false,
-    "w_kinetic": 1.5,
-    "w_low_freq": 1.0,
-    "w_cycle": 1.0,
-    "terminal_swd_weight": 0.15,
+    "w_kinetic": 0.45,
+    "w_low_freq": 0.0,
+    "w_cycle": 0.2,
+    "terminal_swd_weight": 10.0,
     "w_color": 0.0,
     "w_repulsive": 0.0,
     "w_nce": 0.0,
-    "low_freq_kernel_size": 7,
+    "low_freq_kernel_size": 5,
     "semantic_swd_num_projections": 64,
     "swd_distance_mode": "cdf",
-    "swd_use_high_freq": true
+    "swd_use_high_freq": false
   },
   "training": {
     "seed": 42,
@@ -78,9 +78,9 @@
     "weight_decay": 0.0001,
     "scheduler": "cosine",
     "grad_clip_norm": 1.0,
-    "num_epochs": 80,
+    "num_epochs": 10,
     "save_interval": 10,
-    "log_interval": 20,
+    "log_interval": 10,
     "use_tqdm": true,
     "use_amp": true,
     "amp_dtype": "bf16",
@@ -89,8 +89,7 @@
     "channels_last": true,
     "use_gradient_checkpointing": true,
     "fused_adamw": true,
-    "resume_checkpoint": "",
-    "full_eval_batch_size": 6,
+    "resume_checkpoint": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\o10_m2\\epoch_0010.pt",
     "test_image_dir": "../style_data/overfit50",
     "full_eval_cache_dir": "../Cycle-NCE/eval_cache",
     "full_eval_image_classifier_path": "../Cycle-NCE/eval_cache/eval_style_image_classifier.pt",
@@ -118,6 +117,11 @@
     "virtual_length_multiplier": 1
   },
   "checkpoint": {
-    "save_dir": "./ot-exp-80"
+    "save_dir": "./o10_m2"
+  },
+  "ablation": {
+    "name": "g0_blackdot_m2_damped10",
+    "axis": "blackdot_mitigation",
+    "notes": "More conservative damping sweep to suppress endpoint spikes and reduce dark artifact risk."
   }
 }

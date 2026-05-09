@@ -1,0 +1,15 @@
+{
+  "_base": "./_suite_base.json",
+  "checkpoint": {
+    "save_dir": "./exp/runs/fd20_g4_high_tension"
+  },
+  "ablation": {
+    "name": "g4_high_tension",
+    "axis": "dynamics",
+    "notes": "Raise SWD tension and kinetic damping together to test the high-pressure operating ceiling."
+  },
+  "bridge": {
+    "terminal_swd_weight": 15.0,
+    "w_kinetic": 0.6
+  }
+}

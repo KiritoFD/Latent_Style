@@ -1,0 +1,11 @@
+{
+  "_base": "./_suite_base.json",
+  "checkpoint": {
+    "save_dir": "./exp/runs/fd20_g0_golden_pedestal"
+  },
+  "ablation": {
+    "name": "g0_golden_pedestal",
+    "axis": "center",
+    "notes": "Universe center: damped M2-style base with AdaIN low-frequency anchor and multi-scale [3,5,7,15] SWD pyramid."
+  }
+}
