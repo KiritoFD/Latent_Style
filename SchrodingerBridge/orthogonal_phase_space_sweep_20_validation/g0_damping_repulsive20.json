@@ -1,25 +1,26 @@
 {
   "_base": "../config.json",
   "bridge": {
-    "w_kinetic": 0.05,
+    "w_kinetic": 0.30,
     "w_low_freq": 0.0,
     "w_cycle": 0.0,
-    "terminal_swd_weight": 50.0,
+    "w_repulsive": 0.20,
+    "terminal_swd_weight": 16.0,
     "low_freq_kernel_size": 5,
     "swd_use_high_freq": false
   },
   "training": {
-    "num_epochs": 10,
+    "num_epochs": 20,
     "save_interval": 10,
     "log_interval": 10,
     "full_eval_batch_size": 2
   },
   "checkpoint": {
-    "save_dir": "./o10_off"
+    "save_dir": "./o20_d2"
   },
   "ablation": {
-    "name": "g0_off_manifold_explosion10",
-    "axis": "destructive_fullband",
-    "notes": "10-epoch off-manifold validation with full-band semantic SWD and minimal kinetic damping."
+    "name": "g0_damping_repulsive20",
+    "axis": "damping_axes",
+    "notes": "20-epoch full-band run from L5 with light repulsive damping."
   }
 }
