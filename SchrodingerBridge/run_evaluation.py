@@ -102,6 +102,7 @@ def _summary_metrics(summary_path: Path) -> dict[str, object]:
     all_pairs = analysis.get("all_pairs_overview", {}) or {}
     transfer = analysis.get("style_transfer_ability", {}) or {}
     photo = analysis.get("photo_to_art_performance", {}) or {}
+    identity = analysis.get("identity_reconstruction", {}) or {}
     return {
         "checkpoint": str(payload.get("checkpoint", "")),
         # Primary columns should reflect the global "all pairs" overview.
@@ -123,6 +124,22 @@ def _summary_metrics(summary_path: Path) -> dict[str, object]:
         "clip_style_photo_to_art": photo.get("clip_style"),
         "clip_content_photo_to_art": photo.get("clip_content"),
         "content_lpips_photo_to_art": photo.get("content_lpips"),
+        "cmmd_all": all_pairs.get("cmmd"),
+        "dino_structure_all": all_pairs.get("dino_structure"),
+        "gram_micro_all": all_pairs.get("gram_micro"),
+        "gram_macro_all": all_pairs.get("gram_macro"),
+        "cmmd_transfer": transfer.get("cmmd"),
+        "dino_structure_transfer": transfer.get("dino_structure"),
+        "gram_micro_transfer": transfer.get("gram_micro"),
+        "gram_macro_transfer": transfer.get("gram_macro"),
+        "cmmd_photo_to_art": photo.get("cmmd"),
+        "dino_structure_photo_to_art": photo.get("dino_structure"),
+        "gram_micro_photo_to_art": photo.get("gram_micro"),
+        "gram_macro_photo_to_art": photo.get("gram_macro"),
+        "cmmd_identity": identity.get("cmmd"),
+        "dino_structure_identity": identity.get("dino_structure"),
+        "gram_micro_identity": identity.get("gram_micro"),
+        "gram_macro_identity": identity.get("gram_macro"),
     }
 
 
@@ -160,6 +177,22 @@ def _write_batch_summary(out_root: Path, rows: list[dict[str, object]]) -> None:
         "clip_style_photo_to_art",
         "clip_content_photo_to_art",
         "content_lpips_photo_to_art",
+        "cmmd_all",
+        "dino_structure_all",
+        "gram_micro_all",
+        "gram_macro_all",
+        "cmmd_transfer",
+        "dino_structure_transfer",
+        "gram_micro_transfer",
+        "gram_macro_transfer",
+        "cmmd_photo_to_art",
+        "dino_structure_photo_to_art",
+        "gram_micro_photo_to_art",
+        "gram_macro_photo_to_art",
+        "cmmd_identity",
+        "dino_structure_identity",
+        "gram_micro_identity",
+        "gram_macro_identity",
     ]
     with csv_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -179,6 +212,10 @@ def _write_batch_summary(out_root: Path, rows: list[dict[str, object]]) -> None:
         "transfer_clip_style",
         "transfer_clip_content",
         "transfer_content_lpips",
+        "cmmd_all",
+        "dino_structure_all",
+        "gram_micro_all",
+        "gram_macro_all",
     ]
     with viewer_csv_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=viewer_fieldnames)

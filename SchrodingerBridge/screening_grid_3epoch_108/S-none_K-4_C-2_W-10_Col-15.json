@@ -1,0 +1,20 @@
+{
+  "_base": "./_suite_base.json",
+  "model": {
+    "skip_routing_mode": "none"
+  },
+  "bridge": {
+    "w_kinetic": 4.0,
+    "w_cycle": 2.0,
+    "terminal_swd_weight": 10.0,
+    "w_color": 15.0
+  },
+  "checkpoint": {
+    "save_dir": "./exp/grid_search_3epoch/S-none_K-4_C-2_W-10_Col-15"
+  },
+  "ablation": {
+    "name": "S-none_K-4_C-2_W-10_Col-15",
+    "axis": "3epoch_screening",
+    "notes": "Grid 30/108 | skip=none kin=4.0 cyc=2.0 swd=10.0 color=15.0"
+  }
+}

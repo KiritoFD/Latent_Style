@@ -48,6 +48,6 @@ Use the funnel the sweep was designed for:
 
 ## Entry points
 
-- generator: [generate_full_dimensional_orthogonal_sweep_20.py](/g:/GitHub/Latent_Style/SchrodingerBridge/generate_full_dimensional_orthogonal_sweep_20.py:1)
+- generator: [gen_orth_12.py](/g:/GitHub/Latent_Style/SchrodingerBridge/gen_orth_12.py:1)
 - train all: [run_all.bat](/g:/GitHub/Latent_Style/SchrodingerBridge/full_dimensional_orthogonal_sweep_20/run_all.bat:1)
 - eval all: [eval_all.bat](/g:/GitHub/Latent_Style/SchrodingerBridge/full_dimensional_orthogonal_sweep_20/eval_all.bat:1)
