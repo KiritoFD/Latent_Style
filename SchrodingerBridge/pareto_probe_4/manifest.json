@@ -1,0 +1,64 @@
+{
+  "suite": "pareto_probe_4",
+  "base_config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\orth12\\fd20_g0_golden_pedestal_e15s1_b32\\config.json",
+  "grid_root": "./exp/pareto_probe_4",
+  "num_experiments": 4,
+  "experiments": [
+    {
+      "index": 0,
+      "name": "S-add__K-3_C-2_W-10_Col-15",
+      "config_path": "pareto_probe_4/S-add__K-3_C-2_W-10_Col-15.json",
+      "run_dir": "./exp/pareto_probe_4/S-add__K-3_C-2_W-10_Col-15",
+      "eval_dir": "./exp/pareto_probe_4/S-add__K-3_C-2_W-10_Col-15/full_eval",
+      "params": {
+        "skip": "add_proj",
+        "kin": 3.0,
+        "cyc": 2.0,
+        "swd": 10.0,
+        "col": 15.0
+      }
+    },
+    {
+      "index": 1,
+      "name": "S-norm_K-3_C-2_W-10_Col-15",
+      "config_path": "pareto_probe_4/S-norm_K-3_C-2_W-10_Col-15.json",
+      "run_dir": "./exp/pareto_probe_4/S-norm_K-3_C-2_W-10_Col-15",
+      "eval_dir": "./exp/pareto_probe_4/S-norm_K-3_C-2_W-10_Col-15/full_eval",
+      "params": {
+        "skip": "normalized",
+        "kin": 3.0,
+        "cyc": 2.0,
+        "swd": 10.0,
+        "col": 15.0
+      }
+    },
+    {
+      "index": 2,
+      "name": "S-add__K-5_C-5_W-15_Col-15",
+      "config_path": "pareto_probe_4/S-add__K-5_C-5_W-15_Col-15.json",
+      "run_dir": "./exp/pareto_probe_4/S-add__K-5_C-5_W-15_Col-15",
+      "eval_dir": "./exp/pareto_probe_4/S-add__K-5_C-5_W-15_Col-15/full_eval",
+      "params": {
+        "skip": "add_proj",
+        "kin": 5.0,
+        "cyc": 5.0,
+        "swd": 15.0,
+        "col": 15.0
+      }
+    },
+    {
+      "index": 3,
+      "name": "S-norm_K-5_C-5_W-15_Col-15",
+      "config_path": "pareto_probe_4/S-norm_K-5_C-5_W-15_Col-15.json",
+      "run_dir": "./exp/pareto_probe_4/S-norm_K-5_C-5_W-15_Col-15",
+      "eval_dir": "./exp/pareto_probe_4/S-norm_K-5_C-5_W-15_Col-15/full_eval",
+      "params": {
+        "skip": "normalized",
+        "kin": 5.0,
+        "cyc": 5.0,
+        "swd": 15.0,
+        "col": 15.0
+      }
+    }
+  ]
+}

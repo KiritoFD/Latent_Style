@@ -28,7 +28,7 @@ KEEP_ROOT_FILES = {
     "archive_experiments.py",
     "archive_blackdot_experiments.py",
     "build_experiment_registry.py",
-    "generate_full_dimensional_orthogonal_sweep_20.py",
+    "gen_orth_12.py",
     "config.json",
     "g0_blackdot_m2_damped20_inplace.json",
     "inference.py",

@@ -1,0 +1,36 @@
+# SchrodingerBridge runtime requirements
+#
+# This file is biased toward evaluation/full_eval support:
+# - CLIP / HF feature extraction
+# - LPIPS
+# - KID / FID
+# - DINOv2 / modern post-hoc metrics
+#
+# For CUDA installs, prefer installing torch / torchvision from the official
+# PyTorch index that matches your local CUDA version before `pip install -r requirements.txt`.
+#
+# Example (CUDA 12.1):
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+#   pip install -r requirements.txt
+
+torch>=2.3
+torchvision>=0.18
+
+numpy>=1.24
+scipy>=1.10
+pillow>=10.0
+tqdm>=4.66
+
+transformers>=4.41
+huggingface-hub>=0.23
+safetensors>=0.4
+
+diffusers>=0.27
+
+scikit-learn>=1.4
+lpips>=0.1.4
+torchmetrics>=1.4
+torch-fidelity>=0.3.0
+
+# Optional but supported by src/utils/inference.py
+modelscope>=1.15

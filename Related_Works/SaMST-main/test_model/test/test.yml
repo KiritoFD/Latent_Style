@@ -1,0 +1,6 @@
+content_image_dir: G:\GitHub\Latent_Style\Related_Works\SaMST-main\content
+content_scale: null
+cuda: 1
+model: G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\checkpoints\samst\Hayao\epoch_100.model
+output_image_dir: G:\GitHub\Latent_Style\Related_Works\SaMST-main\outputs/
+style_num: 1
