@@ -1,0 +1,20 @@
+run,train_status,train_elapsed_sec,train_batch_size,train_max_iter,train_n_epochs,infer_status,infer_elapsed_sec,infer_images,infer_sec_per_image,note
+adain_4g_bg,ok,6.045,4,100,,,,,,
+adain_4g_real,,,,,,ok,5.736,750,0.007647999999999999,Inference succeeded but visual output is invalid; timing still recorded.
+adain_7g_full,,,,,,ok,0.269,10,0.0269,
+adain_7g_v32k,ok,9220.393,8,32000,,ok,9.281,750,0.012374666666666667,Full train + strict 750 inference timing available.
+adain_7g_vgg19,ok,262.78,4,2000,,ok,9.098,750,0.012130666666666668,Full train + strict 750 inference timing available.
+adain_smoke,ok,1.082,4,10,,,,,,
+adain_smoke2,ok,1.56,4,20,,,,,,
+adain_vgg19_smoke,ok,7.06,4,50,,ok,0.23,15,0.015333333333333334,
+cast_smoke,failed,8.554,1,,1,,,,,
+cast_smoke2,ok,26.654,1,,1,failed,3.759,0,,
+cast_smoke3,ok,29.366,1,,1,failed,4.032,0,,Training is a 1-epoch smoke run; inference failed in this smoke config.
+samst_750_strict,,,,,,ok,39.826,750,0.053101333333333334,Only strict full-750 inference time is recorded here; training time was not preserved in `summary.json`.
+styleid_750_strict,,,,,,ok,603.316,750,0.8044213333333333,"Inference timing is not a fair full-750 run: `photo` was actually generated (~603s), other targets were reused/copied."
+stytr2_smoke,failed,2.558,1,1,,,,,,
+stytr2_smoke2,failed,4.412,1,1,,,,,,
+stytr2_smoke3,failed,5.23,1,1,,,,,,
+stytr2_smoke4,failed,5.469,1,1,,,,,,
+stytr2_smoke5,ok,372.048,1,1,,failed,7.055,0,,
+stytr2_smoke6,ok,59.25,1,1,,ok,35.81,5,7.162000000000001,"Training is a 1-iter smoke run (`max_iter=1`), not a full epoch."

@@ -1,0 +1,46 @@
+{
+  "results": [
+    {
+      "target": "photo",
+      "images": 150,
+      "lpips": 0.567,
+      "clip_style": 0.6799,
+      "clip_content": 0.8207
+    },
+    {
+      "target": "monet",
+      "images": 150,
+      "lpips": 0.4094,
+      "clip_style": 0.7418,
+      "clip_content": 0.8364
+    },
+    {
+      "target": "vangogh",
+      "images": 150,
+      "lpips": 0.4116,
+      "clip_style": 0.7716,
+      "clip_content": 0.8356
+    },
+    {
+      "target": "cezanne",
+      "images": 150,
+      "lpips": 0.4101,
+      "clip_style": 0.7533,
+      "clip_content": 0.8356
+    },
+    {
+      "target": "Hayao",
+      "images": 150,
+      "lpips": 0.5336,
+      "clip_style": 0.6504,
+      "clip_content": 0.7684
+    },
+    {
+      "target": "ALL",
+      "images": 750,
+      "lpips": 0.4664,
+      "clip_style": 0.7194,
+      "clip_content": 0.8193
+    }
+  ]
+}

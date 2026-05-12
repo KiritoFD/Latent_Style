@@ -1,0 +1,9 @@
+method,run,status,images,match_ref,missing_ref,extra,targets,lpips,clip_style,clip_content,ssim_y,edge_f1,hf_ratio_src
+Ours epoch_0007,ours_k1_c0_w20_col0_epoch_0007,ok,750,750,0,0,Hayao:150 cezanne:150 monet:150 photo:150 vangogh:150,0.4587,0.7041,0.8043,0.4545,0.311,0.857
+StyleID strict,styleid_750_strict,ok,750,750,0,0,Hayao:150 cezanne:150 monet:150 photo:150 vangogh:150,0.7497,0.7597,0.5519,0.1466,0.1954,1.3291
+SaMST strict,samst_750_strict,ok,750,750,0,0,Hayao:150 cezanne:150 monet:150 photo:150 vangogh:150,0.4664,0.7194,0.8193,0.652,0.5162,0.5864
+AdaIN v32k,adain_7g_v32k,ok,750,750,0,0,Hayao:150 cezanne:150 monet:150 photo:150 vangogh:150,0.6298,0.713,0.699,0.3246,0.0167,0.1935
+AdaIN vgg19,adain_7g_vgg19,ok,750,750,0,0,Hayao:150 cezanne:150 monet:150 photo:150 vangogh:150,0.687,0.693,0.5991,,,
+AdaIN bad,adain_4g_real,invalid,750,750,0,0,Hayao:150 cezanne:150 monet:150 photo:150 vangogh:150,0.849,0.6308,0.5297,,,
+SaMST refmatch,samst_750_refmatch,partial,450,450,300,0,cezanne:150 monet:150 vangogh:150,0.4104,0.7558,0.8355,,,
+StyleID refmatch,styleid_750_refmatch,partial,600,600,150,0,Hayao:150 cezanne:150 monet:150 vangogh:150,0.7908,0.7933,0.5444,,,
