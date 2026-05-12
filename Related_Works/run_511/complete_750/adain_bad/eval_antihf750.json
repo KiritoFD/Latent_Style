@@ -1,0 +1,88 @@
+{
+  "results": [
+    {
+      "target": "photo",
+      "images": 150,
+      "style_raw": 0.699,
+      "style_drop_blur": 0.0,
+      "style_drop_ds": -0.0002,
+      "hf_z": -1.0113,
+      "chroma_hf_z": -1.3525,
+      "flat_hf_z": -1.6068,
+      "style_drop_blur_z": -0.0319,
+      "style_drop_ds_z": 0.2886,
+      "hf_artifact_index": -1.0007,
+      "hf_artifact_index_pos": 0.0
+    },
+    {
+      "target": "monet",
+      "images": 150,
+      "style_raw": 0.5641,
+      "style_drop_blur": 0.0,
+      "style_drop_ds": 0.0008,
+      "hf_z": -1.1945,
+      "chroma_hf_z": -1.0971,
+      "flat_hf_z": -2.4062,
+      "style_drop_blur_z": -1.5095,
+      "style_drop_ds_z": -0.9258,
+      "hf_artifact_index": -1.5519,
+      "hf_artifact_index_pos": 0.0
+    },
+    {
+      "target": "vangogh",
+      "images": 150,
+      "style_raw": 0.6241,
+      "style_drop_blur": 0.0,
+      "style_drop_ds": 0.0054,
+      "hf_z": -1.5744,
+      "chroma_hf_z": -1.0252,
+      "flat_hf_z": -2.59,
+      "style_drop_blur_z": -1.6265,
+      "style_drop_ds_z": -0.3739,
+      "hf_artifact_index": -1.704,
+      "hf_artifact_index_pos": 0.0
+    },
+    {
+      "target": "cezanne",
+      "images": 150,
+      "style_raw": 0.5884,
+      "style_drop_blur": 0.0,
+      "style_drop_ds": 0.0065,
+      "hf_z": -1.9789,
+      "chroma_hf_z": -0.912,
+      "flat_hf_z": -2.4744,
+      "style_drop_blur_z": -2.0577,
+      "style_drop_ds_z": -0.1718,
+      "hf_artifact_index": -1.8558,
+      "hf_artifact_index_pos": 0.0
+    },
+    {
+      "target": "Hayao",
+      "images": 150,
+      "style_raw": 0.6788,
+      "style_drop_blur": 0.0,
+      "style_drop_ds": -0.0001,
+      "hf_z": -2.1966,
+      "chroma_hf_z": -1.3293,
+      "flat_hf_z": -1.5809,
+      "style_drop_blur_z": -0.5786,
+      "style_drop_ds_z": -0.5642,
+      "hf_artifact_index": -1.4214,
+      "hf_artifact_index_pos": 0.0
+    },
+    {
+      "target": "ALL",
+      "images": 750,
+      "style_raw": 0.6309,
+      "style_drop_blur": 0.0,
+      "style_drop_ds": 0.0025,
+      "hf_z": -1.5912,
+      "chroma_hf_z": -1.1432,
+      "flat_hf_z": -2.1317,
+      "style_drop_blur_z": -1.1609,
+      "style_drop_ds_z": -0.3494,
+      "hf_artifact_index": -1.5067,
+      "hf_artifact_index_pos": 0.0
+    }
+  ]
+}

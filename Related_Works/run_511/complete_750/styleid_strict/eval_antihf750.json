@@ -1,0 +1,88 @@
+{
+  "results": [
+    {
+      "target": "photo",
+      "images": 150,
+      "style_raw": 0.6386,
+      "style_drop_blur": -0.0177,
+      "style_drop_ds": -0.0248,
+      "hf_z": -0.6631,
+      "chroma_hf_z": -0.6547,
+      "flat_hf_z": -0.8515,
+      "style_drop_blur_z": -0.666,
+      "style_drop_ds_z": -0.6121,
+      "hf_artifact_index": -0.7088,
+      "hf_artifact_index_pos": 0.0831
+    },
+    {
+      "target": "monet",
+      "images": 150,
+      "style_raw": 0.8359,
+      "style_drop_blur": 0.0261,
+      "style_drop_ds": -0.0271,
+      "hf_z": -0.2087,
+      "chroma_hf_z": -0.0538,
+      "flat_hf_z": -0.2739,
+      "style_drop_blur_z": -0.8319,
+      "style_drop_ds_z": -2.8543,
+      "hf_artifact_index": -0.3421,
+      "hf_artifact_index_pos": 0.2014
+    },
+    {
+      "target": "vangogh",
+      "images": 150,
+      "style_raw": 0.8452,
+      "style_drop_blur": 0.0273,
+      "style_drop_ds": -0.0026,
+      "hf_z": 0.5111,
+      "chroma_hf_z": 2.0801,
+      "flat_hf_z": 0.8655,
+      "style_drop_blur_z": -0.9411,
+      "style_drop_ds_z": -0.8511,
+      "hf_artifact_index": 0.6289,
+      "hf_artifact_index_pos": 0.9223
+    },
+    {
+      "target": "cezanne",
+      "images": 150,
+      "style_raw": 0.8158,
+      "style_drop_blur": 0.0255,
+      "style_drop_ds": -0.0137,
+      "hf_z": 0.0978,
+      "chroma_hf_z": 0.74,
+      "flat_hf_z": 0.5904,
+      "style_drop_blur_z": -1.239,
+      "style_drop_ds_z": -1.3789,
+      "hf_artifact_index": 0.0473,
+      "hf_artifact_index_pos": 0.403
+    },
+    {
+      "target": "Hayao",
+      "images": 150,
+      "style_raw": 0.6944,
+      "style_drop_blur": 0.0059,
+      "style_drop_ds": 0.0099,
+      "hf_z": 0.772,
+      "chroma_hf_z": 3.7401,
+      "flat_hf_z": 3.112,
+      "style_drop_blur_z": -0.4272,
+      "style_drop_ds_z": -0.0761,
+      "hf_artifact_index": 1.7992,
+      "hf_artifact_index_pos": 1.9432
+    },
+    {
+      "target": "ALL",
+      "images": 750,
+      "style_raw": 0.766,
+      "style_drop_blur": 0.0134,
+      "style_drop_ds": -0.0117,
+      "hf_z": 0.1018,
+      "chroma_hf_z": 1.1703,
+      "flat_hf_z": 0.6885,
+      "style_drop_blur_z": -0.821,
+      "style_drop_ds_z": -1.1545,
+      "hf_artifact_index": 0.2849,
+      "hf_artifact_index_pos": 0.7106
+    }
+  ]
+}
