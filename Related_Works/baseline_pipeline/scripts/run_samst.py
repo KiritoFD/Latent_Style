@@ -15,8 +15,8 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
 PIPELINE_ROOT = SCRIPT_DIR.parent
-REPO_ROOT = PIPELINE_ROOT.parent.parent
-STYLE_DATA = REPO_ROOT / "style_data"
+WORKSPACE_ROOT = PIPELINE_ROOT.parent.parent
+STYLE_DATA = WORKSPACE_ROOT / "style_data"
 OVERFIT50 = STYLE_DATA / "overfit50"
 SAMST_REPO = PIPELINE_ROOT.parent / "SaMST-main"
 
@@ -50,28 +50,54 @@ def prepare_dataset(style_name):
     return dataset_dir
 
 
-ALL_STYLES = ["photo", "monet", "vangogh", "ukiyoe", "cezanne", "Hayao"]
+ALL_STYLES = ["photo", "monet", "vangogh", "cezanne", "Hayao"]
 
 
-def prepare_test_input():
+def _manifest_paths(content_manifest: Path | None) -> list[Path] | None:
+    if content_manifest is None:
+        return None
+    out: list[Path] = []
+    for line in content_manifest.read_text(encoding="utf-8").splitlines():
+        name = line.strip()
+        if not name:
+            continue
+        content_style, img_name = name.split("_", 1)
+        out.append(OVERFIT50 / content_style / img_name)
+    return out
+
+
+def prepare_test_input(max_images=0, content_manifest: Path | None = None):
     """Prepare test content images from all 5 overfit50 directories."""
     test_dir = SAMST_REPO / "content"
+    shutil.rmtree(str(test_dir), ignore_errors=True)
     test_dir.mkdir(parents=True, exist_ok=True)
 
-    for content_style in ALL_STYLES:
-        src = OVERFIT50 / content_style
-        if not src.exists():
-            continue
-        for img in sorted(src.glob("*.jpg")):
-            # Prefix with content style to avoid name collisions
+    manifest_files = _manifest_paths(content_manifest)
+    if manifest_files is not None:
+        files = manifest_files[:max_images] if max_images > 0 else manifest_files
+        for img in files:
+            content_style = img.parent.name
             dst = test_dir / f"{content_style}_{img.name}"
             if not dst.exists():
                 shutil.copy2(str(img), str(dst))
+    else:
+        for content_style in ALL_STYLES:
+            src = OVERFIT50 / content_style
+            if not src.exists():
+                continue
+            files = sorted(src.glob("*.jpg"))
+            if max_images > 0:
+                files = files[:max_images]
+            for img in files:
+                # Prefix with content style to avoid name collisions
+                dst = test_dir / f"{content_style}_{img.name}"
+                if not dst.exists():
+                    shutil.copy2(str(img), str(dst))
 
     return test_dir
 
 
-def train(style_name, epochs=100, smoke=False):
+def train(style_name, epochs=100, smoke=False, checkpoint_root: Path | None = None):
     """Train SaMST for one style."""
     if not SAMST_REPO.exists():
         print(f"[ERROR] SaMST repo not found at {SAMST_REPO}")
@@ -95,7 +121,7 @@ def train(style_name, epochs=100, smoke=False):
         "batch_size": batch_size,
         "dataset": "../../train_dataset/content/",
         "style_image": "../../train_dataset/style/",
-        "save_model_dir": str(PIPELINE_ROOT / "checkpoints" / "samst" / style_name),
+        "save_model_dir": str((checkpoint_root or (PIPELINE_ROOT / "checkpoints" / "samst")) / style_name),
         "image_size": 128 if smoke else 256,
         "style_size": 256 if smoke else 512,
         "cuda": 1,
@@ -106,7 +132,7 @@ def train(style_name, epochs=100, smoke=False):
         "lr": 0.001,
         "weight_decay": 0.5,
         "step_size": 25,
-        "save_interval": max(1, n_epochs),
+        "save_interval": min(10, max(1, n_epochs)),
         "log_interval": 10,
         "checkpoint_interval": 100,
         "checkpoint_model_dir": None,
@@ -130,7 +156,13 @@ def train(style_name, epochs=100, smoke=False):
     return result.returncode
 
 
-def infer(target_style, max_images=0):
+def infer(
+    target_style,
+    max_images=0,
+    output_root: Path | None = None,
+    content_manifest: Path | None = None,
+    checkpoint_root: Path | None = None,
+):
     """Run SaMST inference: all 5 content dirs -> target_style = 5*30=150 images."""
     if not SAMST_REPO.exists():
         print(f"[ERROR] SaMST repo not found at {SAMST_REPO}")
@@ -142,10 +174,10 @@ def infer(target_style, max_images=0):
         print(f"[ERROR] Test script not found: {test_script}")
         return 1
 
-    prepare_test_input()
+    prepare_test_input(max_images=max_images, content_manifest=content_manifest)
 
     # Find trained model
-    ckpt_dir = PIPELINE_ROOT / "checkpoints" / "samst" / target_style
+    ckpt_dir = (checkpoint_root or (PIPELINE_ROOT / "checkpoints" / "samst")) / target_style
     model_files = sorted(ckpt_dir.glob("epoch_*.model"))
     if not model_files:
         print(f"[ERROR] No trained model found in {ckpt_dir}")
@@ -154,7 +186,8 @@ def infer(target_style, max_images=0):
 
     # SaMST test outputs to a temp dir, then we rename style1 -> final format
     raw_output_dir = SAMST_REPO / "outputs"
-    final_output_dir = PIPELINE_ROOT / "results" / "samst" / target_style
+    final_base = output_root or (PIPELINE_ROOT / "results" / "samst")
+    final_output_dir = final_base / target_style
     final_output_dir.mkdir(parents=True, exist_ok=True)
 
     config = {
@@ -209,22 +242,27 @@ def main():
                        choices=["train", "infer", "all", "smoke"])
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--max_images", type=int, default=0, help="Max images (0=all)")
+    parser.add_argument("--output_root", type=Path, default=PIPELINE_ROOT / "results" / "samst")
+    parser.add_argument("--checkpoint_root", type=Path, default=PIPELINE_ROOT / "checkpoints" / "samst")
+    parser.add_argument("--content_manifest", type=Path, default=None)
     args = parser.parse_args()
+    manifest = args.content_manifest.resolve() if args.content_manifest else None
+    checkpoint_root = args.checkpoint_root.resolve()
 
     if args.mode == "smoke":
-        rc = train(args.style, smoke=True)
+        rc = train(args.style, smoke=True, checkpoint_root=checkpoint_root)
         if rc != 0:
             return rc
-        rc = infer(args.style, args.max_images)
+        rc = infer(args.style, args.max_images, args.output_root.resolve(), manifest, checkpoint_root)
     elif args.mode == "train":
-        rc = train(args.style, args.epochs)
+        rc = train(args.style, args.epochs, checkpoint_root=checkpoint_root)
     elif args.mode == "infer":
-        rc = infer(args.style, args.max_images)
+        rc = infer(args.style, args.max_images, args.output_root.resolve(), manifest, checkpoint_root)
     else:  # all
-        rc = train(args.style, args.epochs)
+        rc = train(args.style, args.epochs, checkpoint_root=checkpoint_root)
         if rc != 0:
             return rc
-        rc = infer(args.style, args.max_images)
+        rc = infer(args.style, args.max_images, args.output_root.resolve(), manifest, checkpoint_root)
 
     return rc
 

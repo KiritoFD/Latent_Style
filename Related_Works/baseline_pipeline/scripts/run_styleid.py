@@ -19,8 +19,8 @@ from functools import partial
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
 PIPELINE_ROOT = SCRIPT_DIR.parent
-REPO_ROOT = PIPELINE_ROOT.parent.parent
-STYLE_DATA = REPO_ROOT / "style_data"
+WORKSPACE_ROOT = PIPELINE_ROOT.parent.parent
+STYLE_DATA = WORKSPACE_ROOT / "style_data"
 OVERFIT50 = STYLE_DATA / "overfit50"
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -65,7 +65,7 @@ class AttentionInjector:
         self.hooks.clear()
 
 
-ALL_STYLES = ["photo", "monet", "vangogh", "ukiyoe", "cezanne", "Hayao"]
+ALL_STYLES = ["photo", "monet", "vangogh", "cezanne", "Hayao"]
 
 STYLE_PROMPTS = {
     "monet": "impressionist painting by Claude Monet, soft brushstrokes, water lilies",
@@ -77,9 +77,23 @@ STYLE_PROMPTS = {
 }
 
 
-def run_styleid(target_style, max_images=0):
+def _manifest_items(content_manifest: Path | None) -> list[tuple[str, Path]] | None:
+    if content_manifest is None:
+        return None
+    out: list[tuple[str, Path]] = []
+    for line in content_manifest.read_text(encoding="utf-8").splitlines():
+        name = line.strip()
+        if not name:
+            continue
+        content_style, img_name = name.split("_", 1)
+        out.append((content_style, OVERFIT50 / content_style / img_name))
+    return out
+
+
+def run_styleid(target_style, max_images=0, output_root: Path | None = None, content_manifest: Path | None = None):
     """Run StyleID-style inference: all 5 content dirs -> target_style = 30*5=150 images."""
-    output_dir = PIPELINE_ROOT / "results" / "styleid" / target_style
+    output_base = output_root or (PIPELINE_ROOT / "results" / "styleid")
+    output_dir = output_base / target_style
     output_dir.mkdir(parents=True, exist_ok=True)
 
     style_dir = OVERFIT50 / target_style
@@ -88,14 +102,14 @@ def run_styleid(target_style, max_images=0):
         return 1
 
     from diffusers import (
-        StableDiffusionPipeline,
+        StableDiffusionImg2ImgPipeline,
         DDIMScheduler,
         DDIMInverseScheduler,
     )
 
     print("[StyleID] Loading Stable Diffusion v1.5...")
     model_id = "runwayml/stable-diffusion-v1-5"
-    pipe = StableDiffusionPipeline.from_pretrained(
+    pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
         model_id, torch_dtype=DTYPE, safety_checker=None
     )
     pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
@@ -106,20 +120,19 @@ def run_styleid(target_style, max_images=0):
 
     style_prompt = STYLE_PROMPTS.get(target_style, f"painting in {target_style} style")
 
-    # Process all 5 content directories -> 5*30 = 150 images per target style
-    for content_style in ALL_STYLES:
-        content_dir = OVERFIT50 / content_style
-        if not content_dir.exists():
-            continue
+    manifest_items = _manifest_items(content_manifest)
+    if manifest_items is None:
+        manifest_items = []
+        for content_style in ALL_STYLES:
+            content_dir = OVERFIT50 / content_style
+            if content_dir.exists():
+                manifest_items.extend((content_style, p) for p in sorted(content_dir.glob("*.jpg")))
+    if max_images > 0:
+        manifest_items = manifest_items[:max_images]
 
-        content_files = sorted(content_dir.glob("*.jpg"))
-        if max_images > 0:
-            content_files = content_files[:max_images]
-
-        tag = f"StyleID/{content_style}_to_{target_style}"
-        print(f"[{tag}] {len(content_files)} images")
-
-        for img_path in tqdm(content_files, desc=tag):
+    tag = f"StyleID/to_{target_style}"
+    print(f"[{tag}] {len(manifest_items)} images")
+    for content_style, img_path in tqdm(manifest_items, desc=tag):
             out_name = f"{content_style}_{img_path.stem}_to_{target_style}.jpg"
             out_path = output_dir / out_name
             if out_path.exists():
@@ -152,9 +165,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--style", type=str, required=True)
     parser.add_argument("--max_images", type=int, default=0, help="Max images (0=all)")
+    parser.add_argument("--output_root", type=Path, default=PIPELINE_ROOT / "results" / "styleid")
+    parser.add_argument("--content_manifest", type=Path, default=None)
     args = parser.parse_args()
 
-    return run_styleid(args.style, args.max_images)
+    manifest = args.content_manifest.resolve() if args.content_manifest else None
+    return run_styleid(args.style, args.max_images, args.output_root.resolve(), manifest)
 
 
 if __name__ == "__main__":

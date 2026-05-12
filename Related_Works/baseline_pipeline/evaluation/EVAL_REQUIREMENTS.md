@@ -1,110 +1,499 @@
-# Baseline Evaluation Requirements
+# Baseline Reproduction And Evaluation Requirements
 
-## Image Format Requirements
+## Goal
 
-每张图命名格式: `{content_style}_{stem}_to_{target_style}.jpg`
+This document turns the current baseline reproduction work into a paper-grade comparison track.
 
-每个 baseline 需要 **750 张图** = 5 content styles x 5 target styles x 30 images
+The immediate objective is not to claim SOTA yet. The immediate objective is to align the repository with the three evaluation lines that matter most for 2024-2025 style transfer papers:
 
-### Content Styles & Target Styles
-- photo, monet, vangogh, cezanne, Hayao
+1. `CAST / StyleID / SRCA-SM` style 800-output protocol
+2. `SaMST` multi-style protocol
+3. `ArtBank` artist/domain protocol
 
-### 严格对应的 30 张内容图 (来自 SB 参考实验)
+At the moment, this repo already has:
 
-以下列表是 `SchrodingerBridge/exp/pareto_probe_4/S-add__K-3_C-2_W-10_Col-15/full_eval/epoch_0001/images/` 中使用的精确内容图。每个 baseline 必须对这 750 个 (content_style, stem, target_style) 组合生成图片。
+- internal `CLIP-style`
+- internal `CLIP-content`
+- internal `content LPIPS`
+- `ArtFID/FID` support in `SchrodingerBridge/src/utils/run_evaluation.py`
+- post-hoc modern metrics support in `SchrodingerBridge/src/utils/modern_metrics.py`
+  - `cmmd`
+  - `dino_structure`
+  - `gram_micro`
+  - `gram_macro`
 
-#### photo (30 stems)
+But the baseline pipeline is still centered on the old lightweight protocol, so the main task is to upgrade the comparison stack without losing the work already completed.
+
+Current execution note on `2026-05-11`:
+
+- the current engineering protocol is frozen to the Ours reference folder at `SchrodingerBridge/exp/pareto_probe_4/S-add__K-3_C-2_W-10_Col-15/full_eval/epoch_0001/images`
+- this gives `5 source styles x 5 target styles x 30 source images = 750 outputs`
+- styles are `photo / monet / vangogh / cezanne / Hayao`
+- `ukiyoe` is not used in this protocol
+- the paper-exact `20 content x 40 style = 800 outputs` protocol remains a separate future alignment step for direct CAST/StyleID comparisons
+
+## Current Repository Reality
+
+### What already exists
+
+- Baseline launch scripts exist in `Related_Works/baseline_pipeline/scripts/`
+  - `copy_cut_results.py`
+  - `run_s2wat.py`
+  - `run_samst.py`
+  - `run_styleid.py`
+  - `run_style_aligned.py`
+- Old baseline evaluation exists in `Related_Works/baseline_pipeline/evaluation/`
+  - `eval_all_baselines.py`
+  - `eval_with_sb.py`
+  - `run_sb_eval_all.py`
+  - `run_sb_eval_v2.py`
+- Main-model evaluation stack already supports stronger metrics in `SchrodingerBridge`
+  - `ArtFID/FID` hooks in `SchrodingerBridge/src/utils/run_evaluation.py`
+  - post-hoc modern metrics in `SchrodingerBridge/src/utils/modern_metrics.py`
+  - batch refresh helper in `SchrodingerBridge/append_modern_metrics.py`
+
+### What is already reproduced or partially reproduced
+
+- `CUT`
+  - current-protocol outputs were manually migrated from reusable `Related_Works/runs/cut_5x5/infer_5x5/images`
+  - `results/cut/protocol_a_800/images`: `750` matched images
+  - current protocol metrics are recorded
+- `StyleID`
+  - inference script exists and has been repaired for the current diffusers img2img call path
+  - full current-protocol inference completed for `photo / monet / vangogh / cezanne / Hayao`
+  - `results/styleid/protocol_a_800/images`: `750` matched images
+  - current protocol metrics and per-target inference timing are recorded
+- `SaMST`
+  - training and inference scripts exist
+  - checkpoints exist for `monet / vangogh / cezanne / ukiyoe / Hayao`
+  - `photo` checkpoint/output is still missing
+  - current-protocol outputs were manually migrated from reusable external full-eval results
+  - `results/samst/protocol_a_800/images`: `750` matched images
+  - current protocol metrics are recorded
+- `S2WAT`
+  - training and inference scripts exist
+  - checkpoints exist for `photo / monet / vangogh / cezanne / Hayao`
+  - `ukiyoe` is not complete
+  - current-protocol inference completed for `photo / monet / vangogh / cezanne / Hayao`
+  - `results/s2wat/protocol_a_800/images`: `750` matched images
+  - current protocol metrics are recorded
+- `StyleAligned`
+  - script exists
+  - no reliable recorded evaluation table found yet
+
+### What the current baseline tables actually cover
+
+`Related_Works/baseline_pipeline/results/protocol_eval_table_protocol_a_800.csv` is the best current snapshot of protocol-aligned baseline comparisons already executed. It covers:
+
+- `ours_pareto_probe_4_epoch_0001`
+- `cut`
+- `samst`
+- `s2wat`
+- `styleid`
+- `sdturbo`
+- `sdedit_str_0p10`
+- `sdedit_str_0p20`
+- `sdedit_str_0p35`
+- `sdedit_str_0p40`
+
+with only:
+
+- `content_lpips`
+- `clip_style`
+- `clip_content`
+- `eval_sec`
+
+This is useful as the current internal screening table, but it is not the final main-paper protocol because `ArtFID/FID/CFSD` and paper-exact `800` outputs still need to land.
+
+## AAAI Baseline Strategy
+
+The paper story should not rely on only `CycleGAN/CUT`, and it should not rely on only `AdaIN/StyTr2`.
+
+Current target positioning:
+
+```text
+fast latent-space multi-style / domain-level artistic style transfer
 ```
-2013-11-08 16_45_24
-2013-11-10 12_45_41
-2013-11-10 19_30_53
-2013-11-11 22_03_00
-2013-11-12 01_54_20
-2013-11-12 10_29_19
-2013-11-12 16_58_40
-2013-11-14 07_04_51
-2013-11-14 14_11_02
-2013-11-16 04_17_00
-2013-11-17 09_05_09
-2013-11-17 14_54_20
-2013-11-17 16_40_10
-2013-11-17 17_36_09
-2013-11-17 18_08_26
-2013-11-17 23_58_45
-2013-11-18 02_42_31
-2013-11-18 06_58_36
-2013-11-18 08_52_05
-2013-11-18 11_46_45
-2013-11-19 00_58_04
-2013-11-19 05_01_31
-2013-11-20 11_21_32
-2013-11-21 01_47_41
-2013-11-21 05_56_32
-2013-11-21 17_44_44
-2013-11-22 14_12_35
-2013-11-22 14_15_50
-2013-11-23 13_03_15
-2013-11-25 10_46_18
+
+This requires three comparison lines:
+
+1. multi-style / efficiency line
+2. arbitrary style transfer line
+3. artist-domain transfer line
+
+### Main-paper minimum baseline set
+
+```text
+AdaIN
+StyTr2
+AesPA-Net
+AesFA
+CAST
+StyleID
+SaMST
+CycleGAN
+CUT / FastCUT
+Ours
 ```
 
-#### monet (30 stems)
-```
-00018, 00075, 00092, 00278, 00282, 00286, 00291, 00389, 00429, 00444,
-00446, 00542, 00557, 00607, 00677, 00695, 00756, 00776, 00786, 00789,
-00812, 00928, 00959, 01039, 01059, 01127, 01151, 01155, 01208, 01326
-```
+### Stronger AAAI baseline set
 
-#### vangogh (30 stems)
-```
-00005, 00090, 00098, 00163, 00167, 00169, 00177, 00202, 00220, 00243,
-00264, 00272, 00277, 00289, 00292, 00295, 00321, 00352, 00412, 00418,
-00427, 00436, 00455, 00519, 00528, 00557, 00561, 00573, 00668, 00681
-```
-
-#### cezanne (30 stems)
-```
-00057, 00104, 00123, 00204, 00212, 00219, 00223, 00263, 00271, 00275,
-00286, 00298, 00303, 00332, 00335, 00342, 00348, 00375, 00379, 00382,
-00388, 00393, 00411, 00428, 00437, 00517, 00546, 00576, 00582, 00605
+```text
+AdaIN
+AdaAttN
+StyTr2
+AesPA-Net
+AesFA
+CAST
+StyleID
+SaMST
+CycleGAN
+CUT / FastCUT
+ArtBank
+ACID-Style
+Ours
 ```
 
-#### Hayao (30 stems)
+### Main-paper table plan
+
+Table 1: COCO/WikiArt standard AST protocol.
+
+```text
+20 content x 40 style = 800 outputs
+Methods: AdaIN, AdaAttN, StyTr2, AesPA-Net, AesFA, CAST, StyleID, Ours
+Metrics: ArtFID, FID, LPIPS, CFSD, CLIP-content, CLIP-style, Time, Params
 ```
-0, 1000, 1001, 1006, 1007, 1008, 1009, 1012, 1014, 1015,
-1016, 1017, 1018, 1019, 102, 1020, 1021, 1023, 1024, 1025,
-1026, 1028, 103, 1033, 1039, 1040, 1041, 1042, 1044, 1049
+
+Table 2: SaMST-style multi-style efficiency protocol.
+
+```text
+500 content x 100 style = 50k outputs
+Methods: StyleBank, S2WAT/MicroAST/ATK, SaMST, Ours
+Metrics: ArtFID, CF, GE+LP, FLOPs, Time, Params, OIP, Style Capacity
 ```
 
-## 各 Baseline 当前资产状态
+Table 3: artist-domain / CycleGAN-CUT protocol.
 
-### CUT
-- 来源: `Related_Works/runs/cut_5x5/infer_5x5/images/` (1250张, 25x50, 命名正确)
-- 状态: **可直接筛选** - 从1250张中按上述stem列表筛选出750张
-- 无需推理
+```text
+Domains: Monet, Van Gogh, Cezanne, Ukiyo-e, Photo
+Methods: CycleGAN, CUT/FastCUT, ArtBank, Ours
+Metrics: CLIP artist prompt score, LPIPS, DINO/CLIP-content, KID/FID pooled by target, train time, inference time
+```
 
-### StyleID
-- 来源: `baseline_pipeline/results/styleid/{target}/` (每目标250张, 5内容x50)
-- photo目标: 仅22张, **需补推理128张** (但只需上述30个stem对应的内容图)
-- monet~Hayao: 各250张, 命名正确
-- 状态: 需对photo目标补推理, 然后按stem列表筛选
+Table 4: user study.
 
-### SaMST
-- monet~cezanne: 各300张 (250新命名+50旧命名), 按stem列表从新命名中筛选
-- Hayao: 刚完成推理300张 (250新+50旧), 按stem列表从新命名中筛选
-- photo: **需训练+推理**
-- 状态: 需训photo, 然后全部按stem列表筛选
+```text
+Content preservation preference
+Style fidelity preference
+Overall preference / aesthetics
+```
 
-### S2WAT
-- monet~Hayao: 各250-310张, 按stem列表筛选
-- photo: **需训练+推理**
-- 状态: 需训photo, 然后全部按stem列表筛选
+### Execution priority
 
-## 执行顺序 (串行GPU)
+First batch:
 
-1. S2WAT photo 训练 (2000 epochs, ~2-3h)
-2. S2WAT photo 推理
-3. SaMST photo 训练 (100 epochs, ~1h)
-4. SaMST photo 推理
-5. StyleID photo 推理 (~15min)
-6. 按stem列表筛选750张到 images/ 目录
-7. SB评估
+```text
+AdaIN
+StyTr2
+AesPA-Net
+AesFA
+CAST
+StyleID
+SaMST
+CycleGAN
+CUT / FastCUT
+Ours
+```
+
+Second batch:
+
+```text
+ArtBank
+AdaAttN
+EFDM
+ACID-Style
+```
+
+Optional:
+
+```text
+QuantArt
+InST
+DiffuseIT
+DiffStyle
+CSGO
+StyleSSP
+Attention Distillation
+```
+
+### Claim boundary
+
+Until all relevant protocol-aligned tables exist, do not claim:
+
+```text
+Ours outperforms SaMST / CAST / StyleID / AesFA.
+```
+
+Current defensible framing is:
+
+```text
+content-preserving + very fast adaptation
+```
+
+not yet:
+
+```text
+style fidelity SOTA
+```
+
+## Main Protocols To Align
+
+## Protocol A: 800-output paper protocol
+
+This is the first paper protocol to land.
+
+Important distinction:
+
+- current engineering protocol: `750` outputs from the frozen Ours reference folder, no `ukiyoe`
+- paper target protocol: `800` outputs following the standard `20 content x 40 style` COCO/WikiArt-style setup
+
+- dataset: `COCO-like content + WikiArt-like style`
+- size: `20 content x 40 style = 800 outputs`
+- resolution: `512 x 512`
+- primary metrics:
+  - `ArtFID`
+  - `FID`
+  - `LPIPS`
+  - `CFSD` or `CSFD`
+  - `CLIP-style`
+  - `Time`
+  - `Params`
+
+Target comparison set:
+
+- `AdaIN`
+- `StyTr2`
+- `AesPA-Net`
+- `CAST`
+- `StyleID`
+- `SaMST`
+- `Ours`
+
+Optional additions if capacity allows:
+
+- `AesFA`
+- `SRCA-SM`
+- `AdaAttN`
+- `EFDM`
+
+## Protocol B: SaMST multi-style protocol
+
+This is the second protocol to land.
+
+- size: `500 content x 100 style = 50,000 outputs`
+- primary metrics:
+  - `ArtFID`
+  - `CF`
+  - `GE+LP`
+  - `FLOPs`
+  - `Time`
+  - `Params`
+  - `OIP`
+  - `Style capacity`
+
+This protocol is expensive and should be treated as a final-stage run, not a daily dev loop.
+
+## Protocol C: ArtBank artist/domain protocol
+
+This is the third protocol to land if the paper story remains artist/domain oriented.
+
+- dataset: artist/domain transfer set
+- primary metrics:
+  - `CLIP score to artist prompt`
+  - `user preference`
+  - `Time`
+
+Target comparison set:
+
+- `CycleGAN`
+- `CUT`
+- `ArtBank`
+- `Ours`
+
+## Metric Status In This Repo
+
+### Already implemented or close to usable
+
+- `CLIP-style`
+- `CLIP-content`
+- `content LPIPS`
+- `ArtFID`
+- `FID`
+- `cmmd`
+- `dino_structure`
+- `gram_micro`
+- `gram_macro`
+
+### Not found as working repo-level implementations yet
+
+- `CFSD / CSFD`
+- `CF`
+- `GE+LP`
+- `AesPA style loss`
+- `AesPA pattern difference`
+- `SSIM`
+- `user preference`
+- unified `Time / Params / FLOPs / OIP / style capacity` collection
+
+This means the repo is no longer at zero, but it is also not yet aligned with any single strong paper protocol end-to-end.
+
+## Baseline Priority
+
+## Tier 0: must land
+
+- `SaMST`
+- `CAST`
+- `StyleID`
+- `AesPA-Net`
+- `StyTr2`
+- `AdaIN`
+
+## Tier 1: strongly recommended
+
+- `AesFA`
+- `ArtBank`
+- `CUT`
+- `CycleGAN`
+
+## Tier 2: stretch
+
+- `SRCA-SM`
+- `QuantArt`
+- `EFDM`
+- `AdaAttN`
+- `InST`
+- `DiffuseIT`
+- `DiffStyle`
+
+## Execution Plan
+
+## Phase 1: stop protocol drift
+
+Deliverables:
+
+- use this file as the baseline evaluation contract
+- maintain live status in `SchrodingerBridge/docs/experiments/2026-05-11-baseline-reproduction-progress.md`
+- maintain run history in `SchrodingerBridge/docs/experiments/2026-05-11-baseline-reproduction-lab-notes.md`
+
+## Phase 2: unify baseline outputs
+
+Requirement:
+
+- each baseline must produce a clean evaluation-ready image set
+- naming should remain compatible with `SchrodingerBridge` reuse flow
+- image set should be explicitly versioned by protocol
+
+Minimum naming rule:
+
+- preserve filenames with source style, source stem, and target style
+- avoid mixing old exploratory outputs and protocol outputs in the same folder
+
+Recommended output roots:
+
+- `Related_Works/baseline_pipeline/results/<baseline>/protocol_a_800/`
+- `Related_Works/baseline_pipeline/results/<baseline>/protocol_b_samst/`
+- `Related_Works/baseline_pipeline/results/<baseline>/protocol_c_artist/`
+
+## Phase 3: baseline evaluation upgrade
+
+Replace the old assumption that baseline evaluation only means:
+
+- `clip_style`
+- `clip_content`
+- `content_lpips`
+
+New requirement:
+
+- baseline outputs must be runnable through the same `SchrodingerBridge` evaluation stack used by the main model
+- for protocol A, baseline tables should at minimum include:
+  - `ArtFID`
+  - `FID`
+  - `LPIPS`
+  - `CLIP-style`
+  - `CLIP-content`
+  - `cmmd`
+  - `dino_structure`
+  - `gram_micro`
+  - `gram_macro`
+
+Note:
+
+- `cmmd / dino_structure / gram_*` are not one-to-one replacements for paper metrics like `CFSD`, but they are useful as internal bridge metrics before the official missing metrics are implemented.
+
+## Phase 4: missing metric implementation
+
+Required additions:
+
+1. `CFSD / CSFD`
+2. `Time / Params / FLOPs`
+3. `CF / GE+LP`
+4. optional `SSIM`
+5. optional user-study tooling
+
+## Immediate Next Runs
+
+Recommended order:
+
+1. freeze the current protocol-A file layout and image naming
+2. finish baseline completeness checks for `CUT / StyleID / SaMST / S2WAT / StyleAligned`
+3. patch baseline evaluation so baseline outputs can reuse `SchrodingerBridge` `ArtFID/FID + modern metrics`
+4. generate the first current-protocol comparison subset for:
+   - `Ours`
+   - `StyleID`
+   - `SaMST`
+   - `CUT`
+5. add `AdaIN` and `StyTr2`
+6. only after protocol A is stable, move to `SaMST` 50k and `ArtBank` artist/domain evaluation
+
+Current state:
+
+- steps 1, 2, and the CLIP/LPIPS part of step 4 are done for the `750`-image engineering protocol
+- `StyleID` inference timing is recorded in `results/runtime_summary_protocol_a_800.csv`
+- next execution focus is official-checkpoint setup or fallback reproduction for `AdaIN / StyTr2 / CAST / AesPA-Net / AesFA / CycleGAN`
+
+## Final Main-Paper Scope
+
+Do not place a dozen baselines into the main table.
+
+Main paper should be scoped to:
+
+- Table 1 quality comparison: `AdaIN / StyTr2 / AesPA-Net / AesFA / CAST / StyleID / SaMST / Ours`
+- Table 2 efficiency and scalability: `SaMST / CAST / StyleID / Ours`
+- Figure 1 time-to-quality: `CycleGAN / FastCUT / SaMST / Ours`
+- Table 3 ablation: six key variants only
+- Table 4 user study: `Ours` versus `CAST / StyleID / SaMST / StyTr2`
+
+Execution consequence:
+
+- `CycleGAN` and `FastCUT` are not part of the AST main quality table
+- `CycleGAN` is trained locally only for the time-to-quality figure
+- `FastCUT/CUT` already has local checkpoints and migrated outputs, so it should not be retrained now
+- `AdaIN / StyTr2 / AesPA-Net / AesFA / CAST` should use official pretrained inference paths, not local scratch training, unless official weights are unavailable
+
+## Current Honest Claim Boundary
+
+Until protocol A is landed, the honest claim boundary is:
+
+- the repo shows promising internal content-preservation behavior
+- the repo already has partial baseline reproductions
+- the repo already has code support for stronger metrics than the baseline tables currently show
+- the repo does not yet support a fair headline claim against `SaMST / CAST / StyleID / AesPA / AesFA`
+
+Do not claim:
+
+- better than `SaMST`
+- better than `CAST`
+- better than `StyleID`
+- better than `AesFA`
+
+until the corresponding protocol-aligned table is actually produced.
