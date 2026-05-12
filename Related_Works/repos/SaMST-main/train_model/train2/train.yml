@@ -1,5 +1,5 @@
 ae_weight: 1000.0
-batch_size: 2
+batch_size: 1
 begin_checkpoint: null
 begin_epoch: null
 checkpoint_interval: 100
@@ -7,15 +7,15 @@ checkpoint_model_dir: null
 content_weight: 100000.0
 cuda: 1
 dataset: ../../train_dataset/content/
-epochs: 100
-image_size: 256
+epochs: 1
+image_size: 128
 log_interval: 10
 lr: 0.001
-save_interval: 100
-save_model_dir: G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\checkpoints\samst\Hayao
+save_interval: 1
+save_model_dir: G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\checkpoints\samst_smoke\monet
 seed: 7
 step_size: 25
 style_image: ../../train_dataset/style/
-style_size: 512
+style_size: 256
 style_weight: 10000000000.0
 weight_decay: 0.5

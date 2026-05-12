@@ -10,21 +10,21 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
 PIPELINE_ROOT = SCRIPT_DIR.parent
-REPO_ROOT = PIPELINE_ROOT.parent.parent
-CUT_RESULTS = REPO_ROOT / "Related_Works" / "runs" / "cut_5x5"
+WORKSPACE_ROOT = PIPELINE_ROOT.parent.parent
+CUT_RESULTS = WORKSPACE_ROOT / "Related_Works" / "runs" / "cut_5x5"
 OUTPUT_DIR = PIPELINE_ROOT / "results" / "cut"
 
 ALL_STYLES = ["photo", "monet", "vangogh", "ukiyoe", "cezanne", "Hayao"]
 
 
-def copy_cut_results():
-    source_dir = CUT_RESULTS / "infer_val_clean_5x5" / "images"
+def copy_cut_results(output_root: Path = OUTPUT_DIR, source_dir: Path | None = None):
+    source_dir = source_dir or (CUT_RESULTS / "infer_5x5" / "images")
     if not source_dir.exists():
         print(f"[ERROR] CUT results not found at {source_dir}")
         return 1
 
     for style in ALL_STYLES:
-        (OUTPUT_DIR / style).mkdir(parents=True, exist_ok=True)
+        (output_root / style).mkdir(parents=True, exist_ok=True)
 
     files = list(source_dir.glob("*.jpg")) + list(source_dir.glob("*.png"))
     count = 0
@@ -38,14 +38,14 @@ def copy_cut_results():
         if tgt_style not in ALL_STYLES:
             continue
 
-        dst = OUTPUT_DIR / tgt_style / f.name
+        dst = output_root / tgt_style / f.name
         if not dst.exists():
             shutil.copy2(f, dst)
         count += 1
 
     print(f"[CUT] Copied {count} results")
     for style in ALL_STYLES:
-        n = len(list((OUTPUT_DIR / style).glob("*")))
+        n = len(list((output_root / style).glob("*")))
         if n > 0:
             print(f"  {style}: {n} images")
 
@@ -53,4 +53,8 @@ def copy_cut_results():
 
 
 if __name__ == "__main__":
-    copy_cut_results()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output_root", type=Path, default=OUTPUT_DIR)
+    parser.add_argument("--source_dir", type=Path, default=CUT_RESULTS / "infer_5x5" / "images")
+    args = parser.parse_args()
+    raise SystemExit(copy_cut_results(args.output_root.resolve(), args.source_dir.resolve()))

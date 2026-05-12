@@ -43,8 +43,8 @@ if sys.version_info < (3, 12):
         print(f"[WARN] Python {sys.version} detected. Recommend Python 3.12+")
 
 PIPELINE_ROOT = Path(__file__).parent.resolve()
-REPO_ROOT = PIPELINE_ROOT.parent.parent  # g:\GitHub\Latent_Style
-STYLE_DATA = REPO_ROOT / "style_data"
+WORKSPACE_ROOT = PIPELINE_ROOT.parent.parent
+STYLE_DATA = WORKSPACE_ROOT / "style_data"
 OVERFIT50 = STYLE_DATA / "overfit50"
 TRAIN_DATA = STYLE_DATA / "train"
 
