@@ -1,0 +1,3 @@
+baseline,style,phase,protocol,output_root,elapsed_sec,status,error
+cut,all,copy,protocol_smoke_cut,G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\cut\protocol_smoke_cut,0.39,ok,
+cut,all,eval,protocol_smoke_cut,G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\cut\protocol_smoke_cut,26.362,ok,

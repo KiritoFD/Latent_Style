@@ -1,0 +1,14 @@
+{
+  "runs": [
+    {
+      "stage": "train",
+      "status": "failed",
+      "returncode": 1,
+      "elapsed_sec": 7.199,
+      "checkpoint_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke3\\aespa\\checkpoints\\aespa",
+      "log_path": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke3\\aespa\\logs\\aespa_train.log",
+      "max_iter": 1,
+      "batch_size": 1
+    }
+  ]
+}

@@ -21,7 +21,8 @@ from PIL import Image
 
 
 THIS_DIR = Path(__file__).resolve().parent
-WORKSPACE_ROOT = THIS_DIR.parent
+RUN511_ROOT = THIS_DIR.parent
+WORKSPACE_ROOT = RUN511_ROOT.parent.parent
 STYLE_DATA = WORKSPACE_ROOT / "style_data"
 OVERFIT50 = STYLE_DATA / "overfit50"
 DEFAULT_REFERENCE_IMAGES = (
@@ -198,7 +199,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["train", "infer", "all", "smoke"], default="all")
     parser.add_argument("--profile", choices=sorted(PROFILES), default="7g")
-    parser.add_argument("--run_root", type=Path, default=THIS_DIR / "outputs" / "styleid_750")
+    parser.add_argument("--run_root", type=Path, default=RUN511_ROOT / "outputs" / "styleid_750")
     parser.add_argument("--reference_images_dir", type=Path, default=DEFAULT_REFERENCE_IMAGES)
     parser.add_argument("--limit_per_target", type=int, default=0, help="0 means full 150 per target / 750 total.")
     args = parser.parse_args()

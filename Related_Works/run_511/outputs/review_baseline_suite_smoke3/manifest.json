@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-05-13 23:02:49",
+  "methods": [
+    "stytr2",
+    "cast",
+    "aesfa",
+    "aespa"
+  ],
+  "profile": "4g",
+  "mode": "smoke",
+  "skip_existing": false,
+  "dry_run": false
+}

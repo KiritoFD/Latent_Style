@@ -13,14 +13,17 @@ import csv
 import json
 import os
 import shutil
+import glob
 import sys
 import time
 from pathlib import Path
 
 
 THIS_DIR = Path(__file__).resolve().parent
-WORKSPACE_ROOT = THIS_DIR.parent
-AESFA_REPO = THIS_DIR / "repos" / "AesFA"
+RUN511_ROOT = THIS_DIR.parent
+WORKSPACE_ROOT = RUN511_ROOT.parent.parent
+AESFA_REPO = RUN511_ROOT / "repos" / "AesFA"
+PYTHON_EXE = os.environ.get("UV_PYTHON") or sys.executable
 STYLE_DATA = WORKSPACE_ROOT / "style_data"
 TRAIN_DATA = STYLE_DATA / "train"
 OVERFIT50 = STYLE_DATA / "overfit50"
@@ -38,9 +41,9 @@ STYLES = ["photo", "monet", "vangogh", "cezanne", "Hayao"]
 IMG_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 
 PROFILES = {
-    "4g": {"batch_size": 1, "train_images_per_style": 16, "max_iter": 16000},
-    "7g": {"batch_size": 2, "train_images_per_style": 32, "max_iter": 48000},
-    "11g": {"batch_size": 4, "train_images_per_style": 64, "max_iter": 100000},
+    "4g": {"batch_size": 2, "train_images_per_style": 16, "max_iter": 16000, "save_interval": 2000},
+    "7g": {"batch_size": 2, "train_images_per_style": 32, "max_iter": 48000, "save_interval": 4000},
+    "11g": {"batch_size": 4, "train_images_per_style": 64, "max_iter": 100000, "save_interval": 5000},
 }
 
 
@@ -113,26 +116,29 @@ def train(args: argparse.Namespace, profile: dict[str, int]) -> dict[str, object
     images_per_style = int(args.train_images_per_style or profile["train_images_per_style"])
     max_iter = int(args.max_iter or profile["max_iter"])
     batch_size = int(args.batch_size or profile["batch_size"])
+    save_interval = int(args.save_interval or profile.get("save_interval", min(max_iter, 2000)))
 
     content_root, style_root = prepare_train_data(args.run_root / "datasets", images_per_style)
     ckpt_dir = args.run_root / "checkpoints" / "aesfa"
     log_dir = args.run_root / "tb_logs" / "aesfa"
     log_path = args.run_root / "logs" / "aesfa_train.log"
+    has_resume_ckpt = any(ckpt_dir.glob("model_iter_*_epoch_*.pth"))
+    train_continue = "on" if has_resume_ckpt else "off"
 
     # AesFA uses Config class attributes — launch via inline code
     code = (
         "import os, sys; "
         f"repo={str(AESFA_REPO)!r}; os.chdir(repo); sys.path.insert(0, repo); "
         "from Config import Config; "
-        f"Config.phase='train'; Config.train_continue='off'; Config.data_num={images_per_style}; "
+        f"Config.phase='train'; Config.train_continue={train_continue!r}; Config.data_num={images_per_style}; "
         f"Config.content_dir={str(content_root)!r}; Config.style_dir={str(style_root)!r}; "
         f"Config.file_n='run511'; Config.log_dir={str(log_dir)!r}; Config.ckpt_dir={str(ckpt_dir)!r}; "
         f"Config.img_dir={str(args.run_root / 'preview' / 'aesfa')!r}; Config.vgg_model={str(vgg)!r}; "
-        f"Config.n_iter={max_iter}; Config.save_interval={max_iter}; "
+        f"Config.n_iter={max_iter}; Config.save_interval={max(save_interval, 1)}; "
         f"Config.batch_size={batch_size}; Config.num_workers=0; Config.load_size=256; Config.crop_size=256; "
         "import train; train.main()"
     )
-    rc = run_cmd([sys.executable, "-c", code], AESFA_REPO, log_path)
+    rc = run_cmd([PYTHON_EXE, "-c", code], AESFA_REPO, log_path)
     return {
         "stage": "train",
         "status": "ok" if rc == 0 else "failed",
@@ -141,7 +147,9 @@ def train(args: argparse.Namespace, profile: dict[str, int]) -> dict[str, object
         "checkpoint_dir": str(ckpt_dir),
         "log_path": str(log_path),
         "max_iter": max_iter,
+        "save_interval": save_interval,
         "batch_size": batch_size,
+        "train_continue": train_continue,
     }
 
 
@@ -154,7 +162,11 @@ def infer(args: argparse.Namespace, profile: dict[str, int]) -> dict[str, object
     ckpt_dir = args.run_root / "checkpoints" / "aesfa"
     ckpt = ckpt_dir / "main.pth"
     if not ckpt.exists():
-        return {"stage": "infer", "status": "blocked", "error": f"missing checkpoint {ckpt}"}
+        candidates = sorted(glob.glob(str(ckpt_dir / "model_iter_*_epoch_*.pth")))
+        if candidates:
+            shutil.copy2(candidates[-1], ckpt)
+        if not ckpt.exists():
+            return {"stage": "infer", "status": "blocked", "error": f"missing checkpoint {ckpt}"}
 
     output_dir = args.run_root / "infer_750" / "images"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -201,6 +213,7 @@ def infer(args: argparse.Namespace, profile: dict[str, int]) -> dict[str, object
         code = (
             "import os, sys; "
             f"repo={str(AESFA_REPO)!r}; os.chdir(repo); sys.path.insert(0, repo); "
+            "import types; sys.modules.setdefault('thop', types.SimpleNamespace(profile=lambda *a, **k: (0.0, 0.0))); "
             "from Config import Config; "
             f"Config.phase='test'; Config.multi_to_multi=True; "
             f"Config.test_content_size=256; Config.test_style_size=256; "
@@ -210,7 +223,7 @@ def infer(args: argparse.Namespace, profile: dict[str, int]) -> dict[str, object
             "import test; test.main()"
         )
         start = time.time()
-        rc = run_cmd([sys.executable, "-c", code], AESFA_REPO, log_path)
+        rc = run_cmd([PYTHON_EXE, "-c", code], AESFA_REPO, log_path)
 
         # Rename outputs to match 750-image naming convention
         renamed = 0
@@ -270,20 +283,21 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["train", "infer", "all", "smoke"], default="all")
     parser.add_argument("--profile", choices=sorted(PROFILES), default="7g")
-    parser.add_argument("--run_root", type=Path, default=THIS_DIR / "outputs" / "aesfa_750")
+    parser.add_argument("--run_root", type=Path, default=RUN511_ROOT / "outputs" / "aesfa_750")
     parser.add_argument("--reference_images_dir", type=Path, default=DEFAULT_REFERENCE_IMAGES)
     parser.add_argument("--max_iter", type=int, default=0)
     parser.add_argument("--batch_size", type=int, default=0)
     parser.add_argument("--train_images_per_style", type=int, default=0)
     parser.add_argument("--limit_per_target", type=int, default=0)
+    parser.add_argument("--save_interval", type=int, default=0)
     args = parser.parse_args()
     args.run_root = args.run_root.resolve()
     args.reference_images_dir = args.reference_images_dir.resolve()
     profile = PROFILES[args.profile]
     if args.mode == "smoke":
         args.max_iter = 1
-        args.batch_size = 1
-        args.train_images_per_style = 2
+        args.batch_size = 2
+        args.train_images_per_style = 4
         args.limit_per_target = 1
         args.mode = "all"
 

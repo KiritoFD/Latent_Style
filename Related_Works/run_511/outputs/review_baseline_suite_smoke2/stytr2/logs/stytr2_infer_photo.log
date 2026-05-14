@@ -1,0 +1,6 @@
+
+
+=== CMD ===
+C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe test.py --content_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke2\stytr2\work\stytr2\infer_content\photo --style_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke2\stytr2\work\stytr2\infer_style\photo --output G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke2\stytr2\infer_750\raw\photo --vgg G:\GitHub\Latent_Style\Related_Works\run_511\repos\StyTR-2\experiments\vgg_normalised.pth --decoder_path G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke2\stytr2\checkpoints\stytr2\decoder_iter_1.pth --Trans_path G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke2\stytr2\checkpoints\stytr2\transformer_iter_1.pth --embedding_path G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke2\stytr2\checkpoints\stytr2\embedding_iter_1.pth
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke2\stytr2\work\stytr2\infer_content\photo\Hayao_0.jpg
+<class 'int'>

@@ -1,0 +1,14 @@
+{
+  "method": "aespa",
+  "preflight_status": "ok",
+  "preflight_error": "",
+  "launcher_rc": 1,
+  "launcher_elapsed_sec": 7.507,
+  "train_status": "failed",
+  "train_elapsed_sec": 7.199,
+  "infer_status": "",
+  "infer_elapsed_sec": null,
+  "generated_images": null,
+  "profile_status": "blocked",
+  "profile_error": "FileNotFoundError: [Errno 2] No such file or directory: './baseline_checkpoints/vgg_normalised_conv5_1.t7'"
+}

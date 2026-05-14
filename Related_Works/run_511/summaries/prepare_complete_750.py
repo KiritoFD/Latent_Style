@@ -7,7 +7,8 @@ from pathlib import Path
 
 
 THIS_DIR = Path(__file__).resolve().parent
-WORKSPACE_ROOT = THIS_DIR.parent
+RUN511_ROOT = THIS_DIR.parent
+WORKSPACE_ROOT = RUN511_ROOT.parent.parent
 REFERENCE = (
     WORKSPACE_ROOT
     / "SchrodingerBridge"
@@ -26,16 +27,17 @@ RUNS = {
     / "full_eval"
     / "epoch_0007"
     / "images",
-    "samst_strict": THIS_DIR / "outputs" / "samst_750_strict" / "infer_750" / "images",
-    "styleid_strict": THIS_DIR / "outputs" / "styleid_750_strict" / "infer_750" / "images",
-    "adain_v32k": THIS_DIR / "outputs" / "adain_7g_v32k" / "infer_750" / "images",
-    "adain_vgg19": THIS_DIR / "outputs" / "adain_7g_vgg19" / "infer_750" / "images",
-    "adain_bad": THIS_DIR / "outputs" / "adain_4g_real" / "infer_750" / "images",
+    "samst_strict": RUN511_ROOT / "outputs" / "samst_750_strict" / "infer_750" / "images",
+    "styleid_strict": RUN511_ROOT / "outputs" / "styleid_750_strict" / "infer_750" / "images",
+    "s2wat_strict": RUN511_ROOT / "outputs" / "s2wat_750_strict" / "infer_750" / "images",
+    "adain_v32k": RUN511_ROOT / "outputs" / "adain_7g_v32k" / "infer_750" / "images",
+    "adain_vgg19": RUN511_ROOT / "outputs" / "adain_7g_vgg19" / "infer_750" / "images",
+    "adain_bad": RUN511_ROOT / "outputs" / "adain_4g_real" / "infer_750" / "images",
 }
 
 
 def main() -> int:
-    out_root = THIS_DIR / "complete_750"
+    out_root = RUN511_ROOT / "complete_750"
     ref_names = sorted(p.name for p in REFERENCE.glob("*.jpg"))
     rows = []
 

@@ -7,7 +7,8 @@ from pathlib import Path
 
 
 THIS_DIR = Path(__file__).resolve().parent
-WORKSPACE_ROOT = THIS_DIR.parent
+RUN511_ROOT = THIS_DIR.parent
+WORKSPACE_ROOT = RUN511_ROOT.parent.parent
 SB_RUN = WORKSPACE_ROOT / "SchrodingerBridge" / "S-add__K-1_C-0_W-20_Col-0"
 
 
@@ -33,11 +34,11 @@ def ours_train_metrics() -> dict[str, float]:
 
 def main() -> int:
     ours = ours_train_metrics()
-    samst_probe = read_json(THIS_DIR / "outputs" / "samst_timing_probe" / "summary.json")
+    samst_probe = read_json(RUN511_ROOT / "outputs" / "samst_timing_probe" / "summary.json")
     samst_train = samst_probe["runs"][0]
     samst_epoch1 = float(samst_train["elapsed_sec"])
     samst_epochs_target = 30
-    styleid_strict = read_json(THIS_DIR / "outputs" / "styleid_750_strict" / "summary.json")
+    styleid_strict = read_json(RUN511_ROOT / "outputs" / "styleid_750_strict" / "summary.json")
     styleid_photo = float(styleid_strict["runs"][0]["per_target"][0]["elapsed_sec"])
     payload = {
         "ours_epoch7_train": ours,
@@ -64,7 +65,9 @@ def main() -> int:
             "note": "Strict run actually generated photo target and reused/copied others; full 750 estimate assumes comparable cost across 5 targets.",
         },
     }
-    out = THIS_DIR / "timing_filled.json"
+    docs_dir = RUN511_ROOT / "docs"
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    out = docs_dir / "timing_filled.json"
     out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     md = [
@@ -99,7 +102,7 @@ def main() -> int:
         "- `SaMST` train time was measured for one epoch and extrapolated linearly, per your requested policy.",
         "- `StyleID` full-750 time is still an estimate derived from the actually measured `photo` target runtime.",
     ]
-    md_out = THIS_DIR / "timing_filled_report.md"
+    md_out = docs_dir / "timing_filled_report.md"
     md_out.write_text("\n".join(md) + "\n", encoding="utf-8")
     print(out)
     print(md_out)

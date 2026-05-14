@@ -1,0 +1,48 @@
+{
+  "iteration": 2,
+  "verdict": "Borderline",
+  "overall_score": 6.4,
+  "axis_scores": {
+    "novelty": {
+      "score": 6,
+      "justification": "The method is now framed as terminal SWD plus kinetic latent bridge matching, which is a clearer contribution."
+    },
+    "technical_depth": {
+      "score": 6,
+      "justification": "The SWD formula, bounded-theory paragraph, and architecture table make the method credible, though a full algorithm block and derivation would still help."
+    },
+    "experimental_rigor": {
+      "score": 6,
+      "justification": "The paper now includes strict-750 metrics, baseline completion status, qualitative grids, artifact diagnostics, ablations, sweeps, and theory switches. Remaining risk is incomplete AAAI baseline coverage."
+    },
+    "evidence_presentation": {
+      "score": 7,
+      "justification": "The Ours-vs-SaMST qualitative grid makes the artifact story much clearer."
+    },
+    "writing_clarity": {
+      "score": 6,
+      "justification": "The narrative is coherent but still long and not yet compressed into AAAI style."
+    },
+    "reproducibility": {
+      "score": 7,
+      "justification": "Config details, evaluation protocol, paths, and generated workspace are well preserved."
+    }
+  },
+  "remaining_blockers_for_aaai": [
+    "The manuscript is 12 pages in article format and must be migrated/compressed into the official AAAI format.",
+    "CAST, AesFA, AesPA-Net, and StyTr2 are not yet complete matched strict-750 baselines.",
+    "No user study is included.",
+    "Timing/resource table is still underdeveloped relative to the fast-transfer claim.",
+    "Some references are placeholder-quality BibTeX entries and need bibliographic cleanup.",
+    "The qualitative grid should ideally include source and target reference panels or separate zoom crops for grain artifacts."
+  ],
+  "recommended_next_revision": [
+    "Migrate to official AAAI template and compress to target page count.",
+    "Add a small zoomed qualitative figure focusing on SaMST grain and Ours cleanliness.",
+    "Complete at least CAST or StyTr2 matched strict-750 baseline before submission.",
+    "Add timing/params/VRAM table for Ours, SaMST, StyleID, S2WAT, AdaIN.",
+    "Add user preference or artifact-cleanliness study.",
+    "Clean references using verified metadata."
+  ]
+}
+

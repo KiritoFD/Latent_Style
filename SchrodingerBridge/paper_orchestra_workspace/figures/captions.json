@@ -1,0 +1,7 @@
+{
+  "fig_framework_overview": "Overview of the proposed latent bridge-inspired style transfer framework. A content image is encoded into a compact latent, transported by a style-conditioned velocity field, constrained by terminal SWD and kinetic regularization, and decoded into a stylized output.",
+  "fig_quality_tradeoff": "Strict-750 style-content trade-off. Ours is close to SaMST in raw CLIP-style while retaining a better LPIPS-based trade-off than several baselines; StyleID reaches high style but collapses content.",
+  "fig_artifact_diagnostics": "Artifact-sensitive diagnostics for Ours and SaMST. Mixed-scale metrics are pairwise normalized for readability; the raw numeric values are reported in the experimental table.",
+  "fig_ablation_pareto": "Destructive ablations. Removing terminal SWD improves content but weakens style, while removing kinetic regularization increases style at the cost of severe content degradation.",
+  "fig_weight_sweep_summary": "Summary of the 40-run category-weight sweep. K2 balanced default gives the best EC, whereas K1 balanced default gives the best raw CLIP-style among evaluated checkpoints."
+}

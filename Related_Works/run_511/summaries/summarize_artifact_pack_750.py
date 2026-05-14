@@ -7,7 +7,8 @@ from pathlib import Path
 
 
 THIS_DIR = Path(__file__).resolve().parent
-ROOT = THIS_DIR / "complete_750"
+RUN511_ROOT = THIS_DIR.parent
+ROOT = RUN511_ROOT / "complete_750"
 
 DISPLAY = {
     "ours_epoch_0007": "Ours epoch_0007",
@@ -20,6 +21,8 @@ DISPLAY = {
 
 
 def load_overall(path: Path) -> dict[str, object]:
+    if not path.exists():
+        return {}
     data = json.loads(path.read_text(encoding="utf-8"))
     return next((row for row in data.get("results", []) if row.get("target") == "ALL"), {})
 
@@ -53,6 +56,8 @@ def build_rows() -> list[dict[str, object]]:
     for item in manifest["runs"]:
         run = item["run"]
         art = load_overall(ROOT / run / "eval_artifact_pack750.json")
+        if not art:
+            continue
         row = {
             "run": run,
             "method": DISPLAY.get(run, run),
@@ -75,6 +80,8 @@ def build_rows() -> list[dict[str, object]]:
 
 
 def write_reports(rows: list[dict[str, object]], stem: str, title: str) -> None:
+    if not rows:
+        return
     csv_path = ROOT / f"{stem}.csv"
     with csv_path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))

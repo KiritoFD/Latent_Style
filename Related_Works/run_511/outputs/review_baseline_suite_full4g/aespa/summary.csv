@@ -1,0 +1,3 @@
+batch_size,checkpoint_dir,elapsed_sec,images,images_dir,log_path,max_iter,returncode,stage,status
+1,G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\aespa\checkpoints\aespa,366.296,,,G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\aespa\logs\aespa_train.log,200,0,train,ok
+,,345.275,750,G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\aespa\infer_750\images,,,,infer,ok

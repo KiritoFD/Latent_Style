@@ -30,42 +30,43 @@ from pathlib import Path
 
 
 THIS_DIR = Path(__file__).resolve().parent
-WORKSPACE_ROOT = THIS_DIR.parent
+RUN511_ROOT = THIS_DIR.parent
+WORKSPACE_ROOT = RUN511_ROOT.parent.parent
 
 BASELINES = {
     "stytr2": {
         "script": THIS_DIR / "run_stytr2_750.py",
-        "run_root": THIS_DIR / "outputs" / "stytr2_750",
+        "run_root": RUN511_ROOT / "outputs" / "stytr2_750",
         "label": "StyTR-2",
     },
     "adain": {
         "script": THIS_DIR / "run_adain_750.py",
-        "run_root": THIS_DIR / "outputs" / "adain_750",
+        "run_root": RUN511_ROOT / "outputs" / "adain_750",
         "label": "AdaIN",
     },
     "aesfa": {
         "script": THIS_DIR / "run_aesfa_750.py",
-        "run_root": THIS_DIR / "outputs" / "aesfa_750",
+        "run_root": RUN511_ROOT / "outputs" / "aesfa_750",
         "label": "AesFA",
     },
     "aespa": {
         "script": THIS_DIR / "run_aespa_750.py",
-        "run_root": THIS_DIR / "outputs" / "aespa_750",
+        "run_root": RUN511_ROOT / "outputs" / "aespa_750",
         "label": "AesPA-Net",
     },
     "styleid": {
         "script": THIS_DIR / "run_styleid_750.py",
-        "run_root": THIS_DIR / "outputs" / "styleid_750",
+        "run_root": RUN511_ROOT / "outputs" / "styleid_750",
         "label": "StyleID",
     },
     "samst": {
         "script": THIS_DIR / "run_samst_750.py",
-        "run_root": THIS_DIR / "outputs" / "samst_750",
+        "run_root": RUN511_ROOT / "outputs" / "samst_750",
         "label": "SaMST",
     },
     "cast": {
         "script": THIS_DIR / "run_cast_750.py",
-        "run_root": THIS_DIR / "outputs" / "cast_750",
+        "run_root": RUN511_ROOT / "outputs" / "cast_750",
         "label": "CAST",
     },
 }
@@ -189,7 +190,7 @@ def main() -> int:
     parser.add_argument("--eval_only", action="store_true", help="Skip train/infer, only run eval.")
     args = parser.parse_args()
 
-    output_root = THIS_DIR / "outputs"
+    output_root = RUN511_ROOT / "outputs"
     output_root.mkdir(parents=True, exist_ok=True)
 
     if args.eval_only or args.mode == "eval":

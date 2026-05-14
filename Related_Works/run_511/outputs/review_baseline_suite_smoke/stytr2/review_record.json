@@ -1,0 +1,14 @@
+{
+  "method": "stytr2",
+  "preflight_status": "ok",
+  "preflight_error": "",
+  "launcher_rc": 1,
+  "launcher_elapsed_sec": 0.599,
+  "train_status": "failed",
+  "train_elapsed_sec": 0.239,
+  "infer_status": "",
+  "infer_elapsed_sec": null,
+  "generated_images": null,
+  "profile_status": "blocked",
+  "profile_error": "ModuleNotFoundError: No module named 'torch'"
+}

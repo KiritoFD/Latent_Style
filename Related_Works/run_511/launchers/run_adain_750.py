@@ -27,8 +27,9 @@ from PIL import Image
 
 
 THIS_DIR = Path(__file__).resolve().parent
-WORKSPACE_ROOT = THIS_DIR.parent
-REPO_DIR = THIS_DIR / "repos" / "adain"
+RUN511_ROOT = THIS_DIR.parent
+WORKSPACE_ROOT = RUN511_ROOT.parent.parent
+REPO_DIR = RUN511_ROOT / "repos" / "adain"
 STYLE_DATA = WORKSPACE_ROOT / "style_data"
 TRAIN_DATA = STYLE_DATA / "train"
 OVERFIT50 = STYLE_DATA / "overfit50"
@@ -87,9 +88,9 @@ class StyleTransferDataset(Dataset):
 def find_vgg_weights() -> Path:
     """Find vgg_normalised.pth from any baseline repo."""
     candidates = [
-        THIS_DIR / "repos" / "AesFA" / "vgg_normalised.pth",
-        THIS_DIR / "repos" / "StyTR-2" / "experiments" / "vgg_normalised.pth",
-        THIS_DIR / "repos" / "cast" / "models" / "vgg_normalised.pth",
+        RUN511_ROOT / "repos" / "AesFA" / "vgg_normalised.pth",
+        RUN511_ROOT / "repos" / "StyTR-2" / "experiments" / "vgg_normalised.pth",
+        RUN511_ROOT / "repos" / "cast" / "models" / "vgg_normalised.pth",
     ]
     for p in candidates:
         if p.exists():
@@ -340,7 +341,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["train", "infer", "all", "smoke"], default="all")
     parser.add_argument("--profile", choices=sorted(PROFILES), default="7g")
-    parser.add_argument("--run_root", type=Path, default=THIS_DIR / "outputs" / "adain_750")
+    parser.add_argument("--run_root", type=Path, default=RUN511_ROOT / "outputs" / "adain_750")
     parser.add_argument("--reference_images_dir", type=Path, default=DEFAULT_REFERENCE_IMAGES)
     parser.add_argument("--max_iter", type=int, default=0)
     parser.add_argument("--batch_size", type=int, default=0)

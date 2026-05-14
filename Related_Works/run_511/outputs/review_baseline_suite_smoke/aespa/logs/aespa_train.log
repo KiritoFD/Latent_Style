@@ -1,0 +1,10 @@
+
+
+=== CMD ===
+C:\Program Files\python\python.exe main.py --type train --content_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke\aespa\datasets\train_content --style_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke\aespa\datasets\train_style --max_iter 1 --batch_size 1 --imsize 256 --cropsize 256 --num_workers 0 --train_result_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke\aespa\checkpoints\aespa --comment run511
+Traceback (most recent call last):
+  File "main.py", line 43, in <module>
+    from baseline import Baseline as Baseline
+  File "G:\GitHub\Latent_Style\Related_Works\run_511\repos\AesPA-Net\baseline.py", line 1, in <module>
+    import os, math, random, pdb, time, timeit, cv2
+ModuleNotFoundError: No module named 'cv2'

@@ -1,0 +1,2 @@
+batch_size,checkpoint_dir,elapsed_sec,log_path,max_iter,returncode,stage,status
+1,G:\GitHub\Latent_Style\Related_Works\run_511\outputs\aesfa_smoke_now\checkpoints\aesfa,8.899,G:\GitHub\Latent_Style\Related_Works\run_511\outputs\aesfa_smoke_now\logs\aesfa_train.log,1,1,train,failed

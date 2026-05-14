@@ -1,0 +1,2 @@
+elapsed_sec,error,stage,status
+0,missing G:\GitHub\Latent_Style\Related_Works\run_511\repos\AesPA-Net\baseline_checkpoints\vgg_normalised_conv5_1.t7,train,blocked

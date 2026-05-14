@@ -1,0 +1,43 @@
+{
+  "runs": [
+    {
+      "stage": "infer",
+      "status": "ok",
+      "elapsed_sec": 0.269,
+      "images": 10,
+      "images_dir": "G:\\GitHub\\Latent_Style\\run_511\\outputs\\adain_7g_full\\infer_750\\images",
+      "per_target": [
+        {
+          "target": "photo",
+          "returncode": 0,
+          "renamed": 2,
+          "elapsed_sec": 0.187
+        },
+        {
+          "target": "monet",
+          "returncode": 0,
+          "renamed": 2,
+          "elapsed_sec": 0.015
+        },
+        {
+          "target": "vangogh",
+          "returncode": 0,
+          "renamed": 2,
+          "elapsed_sec": 0.018
+        },
+        {
+          "target": "cezanne",
+          "returncode": 0,
+          "renamed": 2,
+          "elapsed_sec": 0.02
+        },
+        {
+          "target": "Hayao",
+          "returncode": 0,
+          "renamed": 2,
+          "elapsed_sec": 0.019
+        }
+      ]
+    }
+  ]
+}

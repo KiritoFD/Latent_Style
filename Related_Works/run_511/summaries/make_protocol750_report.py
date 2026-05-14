@@ -8,7 +8,8 @@ from pathlib import Path
 
 
 THIS_DIR = Path(__file__).resolve().parent
-WORKSPACE_ROOT = THIS_DIR.parent
+RUN511_ROOT = THIS_DIR.parent
+WORKSPACE_ROOT = RUN511_ROOT.parent.parent
 REFERENCE_IMAGES = (
     WORKSPACE_ROOT
     / "SchrodingerBridge"
@@ -30,65 +31,65 @@ RUNS = [
         / "full_eval"
         / "epoch_0007"
         / "images",
-        THIS_DIR / "outputs" / "ours_k1_c0_w20_col0" / "epoch_0007" / "eval_protocol750_sbmatch.json",
+        RUN511_ROOT / "outputs" / "ours_k1_c0_w20_col0" / "epoch_0007" / "eval_protocol750_sbmatch.json",
         "ok",
     ),
     (
         "StyleID strict",
         "styleid_750_strict",
-        THIS_DIR / "outputs" / "styleid_750_strict" / "infer_750" / "images",
-        THIS_DIR / "outputs" / "styleid_750_strict" / "infer_750" / "eval_protocol750_sbmatch.json",
+        RUN511_ROOT / "outputs" / "styleid_750_strict" / "infer_750" / "images",
+        RUN511_ROOT / "outputs" / "styleid_750_strict" / "infer_750" / "eval_protocol750_sbmatch.json",
         "ok",
     ),
     (
         "SaMST strict",
         "samst_750_strict",
-        THIS_DIR / "outputs" / "samst_750_strict" / "infer_750" / "images",
-        THIS_DIR / "outputs" / "samst_750_strict" / "infer_750" / "eval_protocol750_sbmatch.json",
+        RUN511_ROOT / "outputs" / "samst_750_strict" / "infer_750" / "images",
+        RUN511_ROOT / "outputs" / "samst_750_strict" / "infer_750" / "eval_protocol750_sbmatch.json",
         "ok",
     ),
     (
         "AdaIN v32k",
         "adain_7g_v32k",
-        THIS_DIR / "outputs" / "adain_7g_v32k" / "infer_750" / "images",
-        THIS_DIR / "outputs" / "adain_7g_v32k" / "infer_750" / "eval_protocol750_sbmatch.json",
+        RUN511_ROOT / "outputs" / "adain_7g_v32k" / "infer_750" / "images",
+        RUN511_ROOT / "outputs" / "adain_7g_v32k" / "infer_750" / "eval_protocol750_sbmatch.json",
         "ok",
     ),
     (
         "AdaIN vgg19",
         "adain_7g_vgg19",
-        THIS_DIR / "outputs" / "adain_7g_vgg19" / "infer_750" / "images",
-        THIS_DIR / "outputs" / "adain_7g_vgg19" / "infer_750" / "eval_protocol750_sbmatch.json",
+        RUN511_ROOT / "outputs" / "adain_7g_vgg19" / "infer_750" / "images",
+        RUN511_ROOT / "outputs" / "adain_7g_vgg19" / "infer_750" / "eval_protocol750_sbmatch.json",
         "ok",
     ),
     (
         "AdaIN bad",
         "adain_4g_real",
-        THIS_DIR / "outputs" / "adain_4g_real" / "infer_750" / "images",
-        THIS_DIR / "outputs" / "adain_4g_real" / "infer_750" / "eval_protocol750_sbmatch.json",
+        RUN511_ROOT / "outputs" / "adain_4g_real" / "infer_750" / "images",
+        RUN511_ROOT / "outputs" / "adain_4g_real" / "infer_750" / "eval_protocol750_sbmatch.json",
         "invalid",
     ),
     (
         "SaMST refmatch",
         "samst_750_refmatch",
-        THIS_DIR / "outputs" / "samst_750_refmatch" / "infer_750" / "images",
-        THIS_DIR / "outputs" / "samst_750_refmatch" / "infer_750" / "eval_protocol750_sbmatch.json",
+        RUN511_ROOT / "outputs" / "samst_750_refmatch" / "infer_750" / "images",
+        RUN511_ROOT / "outputs" / "samst_750_refmatch" / "infer_750" / "eval_protocol750_sbmatch.json",
         "partial",
     ),
     (
         "StyleID refmatch",
         "styleid_750_refmatch",
-        THIS_DIR / "outputs" / "styleid_750_refmatch" / "infer_750" / "images",
-        THIS_DIR / "outputs" / "styleid_750_refmatch" / "infer_750" / "eval_protocol750_sbmatch.json",
+        RUN511_ROOT / "outputs" / "styleid_750_refmatch" / "infer_750" / "images",
+        RUN511_ROOT / "outputs" / "styleid_750_refmatch" / "infer_750" / "eval_protocol750_sbmatch.json",
         "partial",
     ),
 ]
 
 GUARD_PATHS = {
-    "ours_k1_c0_w20_col0_epoch_0007": THIS_DIR / "outputs" / "ours_k1_c0_w20_col0" / "epoch_0007" / "eval_guard750.json",
-    "styleid_750_strict": THIS_DIR / "outputs" / "styleid_750_strict" / "infer_750" / "eval_guard750.json",
-    "samst_750_strict": THIS_DIR / "outputs" / "samst_750_strict" / "infer_750" / "eval_guard750.json",
-    "adain_7g_v32k": THIS_DIR / "outputs" / "adain_7g_v32k" / "infer_750" / "eval_guard750.json",
+    "ours_k1_c0_w20_col0_epoch_0007": RUN511_ROOT / "outputs" / "ours_k1_c0_w20_col0" / "epoch_0007" / "eval_guard750.json",
+    "styleid_750_strict": RUN511_ROOT / "outputs" / "styleid_750_strict" / "infer_750" / "eval_guard750.json",
+    "samst_750_strict": RUN511_ROOT / "outputs" / "samst_750_strict" / "infer_750" / "eval_guard750.json",
+    "adain_7g_v32k": RUN511_ROOT / "outputs" / "adain_7g_v32k" / "infer_750" / "eval_guard750.json",
 }
 
 
@@ -138,7 +139,9 @@ def main() -> int:
             }
         )
 
-    csv_path = THIS_DIR / "protocol750_eval_report.csv"
+    docs_dir = RUN511_ROOT / "docs"
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = docs_dir / "protocol750_eval_report.csv"
     with csv_path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0]))
         writer.writeheader()
@@ -175,7 +178,7 @@ def main() -> int:
         ]
     )
 
-    md_path = THIS_DIR / "protocol750_eval_report.md"
+    md_path = docs_dir / "protocol750_eval_report.md"
     md_path.write_text("\n".join(md) + "\n", encoding="utf-8")
     print(csv_path)
     print(md_path)

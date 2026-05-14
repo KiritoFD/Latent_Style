@@ -1,0 +1,4 @@
+baseline,error,note,run_root,status
+prepare-data,,,G:\GitHub\Latent_Style\Related_Works\runs\server_new_baselines\local_preflight,ok
+aespa-net,missing G:\GitHub\Latent_Style\Related_Works\AesPA-Net\baseline_checkpoints\vgg_normalised_conv5_1.t7,training wrapper pending after encoder checkpoint is present,,blocked
+artbank,missing sd-v1-4.ckpt and/or ArtBank embeddings.pt/Mapper.pt,heavy diffusion baseline; do not train until required assets are local,,blocked

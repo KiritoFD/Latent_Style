@@ -1,0 +1,6 @@
+stage,num_steps,checkpoint,output_dir,status,returncode,elapsed_sec,summary_exists,note
+step_sweep,1,G:\GitHub\Latent_Style\SchrodingerBridge\S-add__K-1_C-0_W-20_Col-0\epoch_0007.pt,G:\GitHub\Latent_Style\step_count_sweep\steps_01,ok,0,0.001,True,
+step_sweep,4,G:\GitHub\Latent_Style\SchrodingerBridge\S-add__K-1_C-0_W-20_Col-0\epoch_0007.pt,G:\GitHub\Latent_Style\step_count_sweep\steps_04,ok,0,0.001,True,
+step_sweep,8,G:\GitHub\Latent_Style\SchrodingerBridge\S-add__K-1_C-0_W-20_Col-0\epoch_0007.pt,G:\GitHub\Latent_Style\step_count_sweep\steps_08,ok,0,0.000,True,
+step_sweep,12,G:\GitHub\Latent_Style\SchrodingerBridge\S-add__K-1_C-0_W-20_Col-0\epoch_0007.pt,G:\GitHub\Latent_Style\step_count_sweep\steps_12,ok,0,0.000,True,
+step_sweep,16,G:\GitHub\Latent_Style\SchrodingerBridge\S-add__K-1_C-0_W-20_Col-0\epoch_0007.pt,G:\GitHub\Latent_Style\step_count_sweep\steps_16,ok,0,0.001,True,

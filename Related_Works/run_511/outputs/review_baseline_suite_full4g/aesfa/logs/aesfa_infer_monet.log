@@ -1,0 +1,461 @@
+
+
+=== CMD ===
+C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe -c import os, sys; repo='G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\repos\\AesFA'; os.chdir(repo); sys.path.insert(0, repo); import types; sys.modules.setdefault('thop', types.SimpleNamespace(profile=lambda *a, **k: (0.0, 0.0))); from Config import Config; Config.phase='test'; Config.multi_to_multi=True; Config.test_content_size=256; Config.test_style_size=256; Config.content_dir='G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_full4g\\aesfa\\work\\aesfa\\monet\\content'; Config.style_dir='G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_full4g\\aesfa\\work\\aesfa\\monet\\style'; Config.img_dir='G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_full4g\\aesfa\\preview\\aesfa\\monet'; Config.ckpt_dir='G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_full4g\\aesfa\\checkpoints\\aesfa'; Config.vgg_model='G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\repos\\AesFA\\vgg_normalised.pth'; import test; test.main()
+Version: main
+cuda:0
+content dir: G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\aesfa\work\aesfa\monet\content
+style dir: G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\aesfa\work\aesfa\monet\style
+Test:  150 images:  150 x 1 (batch size) = 150
+checkpoint:  G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\aesfa\checkpoints\aesfa/main.pth
+1 1 1 0.19700288772583008
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0673 GB
+2 2 1 0.00900125503540039
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+3 3 1 0.009504556655883789
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+4 4 1 0.009002208709716797
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+5 5 1 0.01250767707824707
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+6 6 1 0.010001659393310547
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+7 7 1 0.009999513626098633
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+8 8 1 0.00900411605834961
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+9 9 1 0.009665727615356445
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+10 10 1 0.009081602096557617
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+11 11 1 0.008999109268188477
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+12 12 1 0.010000228881835938
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+13 13 1 0.009000062942504883
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+14 14 1 0.00950765609741211
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+15 15 1 0.010000944137573242
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+16 16 1 0.010000228881835938
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+17 17 1 0.009001731872558594
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+18 18 1 0.009001016616821289
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+19 19 1 0.008006095886230469
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+20 20 1 0.008999824523925781
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+21 21 1 0.010999679565429688
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+22 22 1 0.010999917984008789
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+23 23 1 0.009505271911621094
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+24 24 1 0.008999824523925781
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+25 25 1 0.009999513626098633
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+26 26 1 0.009000062942504883
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+27 27 1 0.009002685546875
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+28 28 1 0.008599996566772461
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+29 29 1 0.009001731872558594
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+30 30 1 0.009003639221191406
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+31 31 1 0.008999824523925781
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+32 32 1 0.0069980621337890625
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+33 33 1 0.008999824523925781
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+34 34 1 0.009503364562988281
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+35 35 1 0.009000301361083984
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+36 36 1 0.00850224494934082
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+37 37 1 0.00800013542175293
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+38 38 1 0.008000850677490234
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+39 39 1 0.00900125503540039
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+40 40 1 0.009002208709716797
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+41 41 1 0.009003162384033203
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+42 42 1 0.008503913879394531
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+43 43 1 0.008999824523925781
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+44 44 1 0.007999420166015625
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+45 45 1 0.009000778198242188
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+46 46 1 0.008504629135131836
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+47 47 1 0.008999824523925781
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+48 48 1 0.009000062942504883
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+49 49 1 0.009002447128295898
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+50 50 1 0.009504556655883789
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+51 51 1 0.009001731872558594
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+52 52 1 0.009000062942504883
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+53 53 1 0.009000062942504883
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+54 54 1 0.009505033493041992
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+55 55 1 0.008001565933227539
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+56 56 1 0.009506464004516602
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+57 57 1 0.008000373840332031
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+58 58 1 0.008503913879394531
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+59 59 1 0.009000062942504883
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+60 60 1 0.007999897003173828
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+61 61 1 0.008998870849609375
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+62 62 1 0.008505105972290039
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+63 63 1 0.009022951126098633
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+64 64 1 0.008508443832397461
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+65 65 1 0.015002012252807617
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+66 66 1 0.009000778198242188
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+67 67 1 0.00799870491027832
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+68 68 1 0.007999897003173828
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+69 69 1 0.009002208709716797
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+70 70 1 0.009000062942504883
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+71 71 1 0.006999969482421875
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+72 72 1 0.007999658584594727
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+73 73 1 0.008999824523925781
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+74 74 1 0.00800323486328125
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+75 75 1 0.009568929672241211
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+76 76 1 0.008002281188964844
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+77 77 1 0.009000062942504883
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+78 78 1 0.008507490158081055
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+79 79 1 0.00899958610534668
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+80 80 1 0.008999824523925781
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+81 81 1 0.009001016616821289
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+82 82 1 0.008002281188964844
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+83 83 1 0.009002447128295898
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+84 84 1 0.007999658584594727
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+85 85 1 0.011540889739990234
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+86 86 1 0.007596254348754883
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+87 87 1 0.00999903678894043
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+88 88 1 0.00910329818725586
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+89 89 1 0.009508609771728516
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+90 90 1 0.011000394821166992
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+91 91 1 0.009510278701782227
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+92 92 1 0.00899958610534668
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+93 93 1 0.01050567626953125
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+94 94 1 0.008999824523925781
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+95 95 1 0.00850367546081543
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+96 96 1 0.009503841400146484
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+97 97 1 0.009508609771728516
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+98 98 1 0.009000062942504883
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+99 99 1 0.008999824523925781
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+100 100 1 0.009000062942504883
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+101 101 1 0.008507966995239258
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+102 102 1 0.00917506217956543
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+103 103 1 0.009000062942504883
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+104 104 1 0.009999990463256836
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+105 105 1 0.007999897003173828
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+106 106 1 0.010596036911010742
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+107 107 1 0.00900125503540039
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+108 108 1 0.007998943328857422
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+109 109 1 0.009003639221191406
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+110 110 1 0.01300191879272461
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+111 111 1 0.00899958610534668
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+112 112 1 0.012506246566772461
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+113 113 1 0.010056257247924805
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+114 114 1 0.01000070571899414
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+115 115 1 0.00800180435180664
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+116 116 1 0.008507013320922852
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+117 117 1 0.00961446762084961
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+118 118 1 0.013000011444091797
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+119 119 1 0.013007402420043945
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+120 120 1 0.010002851486206055
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+121 121 1 0.009999990463256836
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+122 122 1 0.011998891830444336
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+123 123 1 0.009001731872558594
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+124 124 1 0.009000301361083984
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+125 125 1 0.009000062942504883
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+126 126 1 0.009065866470336914
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+127 127 1 0.008998394012451172
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+128 128 1 0.009001731872558594
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+129 129 1 0.007999897003173828
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+130 130 1 0.009089231491088867
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+131 131 1 0.008002042770385742
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+132 132 1 0.015002250671386719
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+133 133 1 0.009000062942504883
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+134 134 1 0.00899958610534668
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+135 135 1 0.009000301361083984
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+136 136 1 0.007999897003173828
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+137 137 1 0.007999420166015625
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+138 138 1 0.008000373840332031
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+139 139 1 0.009000062942504883
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+140 140 1 0.009002685546875
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+141 141 1 0.009000062942504883
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+142 142 1 0.008999347686767578
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+143 143 1 0.01399993896484375
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+144 144 1 0.009002208709716797
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+145 145 1 0.008000612258911133
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+146 146 1 0.007999897003173828
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+147 147 1 0.007999658584594727
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+148 148 1 0.009000062942504883
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+149 149 1 0.01250457763671875
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+150 150 1 0.008000612258911133
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0680 GB
+[AesFA] Content size: 256 Style size: 256  Total images: 150 Avg Testing time: 0.010503349304199218

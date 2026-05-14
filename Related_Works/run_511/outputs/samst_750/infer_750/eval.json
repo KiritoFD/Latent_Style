@@ -1,0 +1,32 @@
+{
+  "results": [
+    {
+      "target": "monet",
+      "images": 250,
+      "lpips": NaN,
+      "clip_style": 0.6876,
+      "clip_content": 0.8391
+    },
+    {
+      "target": "vangogh",
+      "images": 250,
+      "lpips": NaN,
+      "clip_style": 0.6808,
+      "clip_content": 0.8382
+    },
+    {
+      "target": "cezanne",
+      "images": 250,
+      "lpips": NaN,
+      "clip_style": 0.6179,
+      "clip_content": 0.8359
+    },
+    {
+      "target": "ALL",
+      "images": 750,
+      "lpips": NaN,
+      "clip_style": 0.6621,
+      "clip_content": 0.8377
+    }
+  ]
+}

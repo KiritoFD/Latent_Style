@@ -1,0 +1,10 @@
+{
+  "runs": [
+    {
+      "stage": "train",
+      "status": "blocked",
+      "error": "missing G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\repos\\AesPA-Net\\baseline_checkpoints\\vgg_normalised_conv5_1.t7",
+      "elapsed_sec": 0
+    }
+  ]
+}

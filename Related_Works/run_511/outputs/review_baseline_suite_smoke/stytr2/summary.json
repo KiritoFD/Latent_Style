@@ -1,0 +1,14 @@
+{
+  "runs": [
+    {
+      "stage": "train",
+      "status": "failed",
+      "returncode": 1,
+      "elapsed_sec": 0.239,
+      "checkpoint_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke\\stytr2\\checkpoints\\stytr2",
+      "log_path": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke\\stytr2\\logs\\stytr2_train.log",
+      "max_iter": 1,
+      "batch_size": 1
+    }
+  ]
+}

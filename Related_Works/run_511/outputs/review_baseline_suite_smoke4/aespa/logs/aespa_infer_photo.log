@@ -1,0 +1,20 @@
+
+
+=== CMD ===
+C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe main.py --type test --content_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke4\aespa\work\aespa\photo\content --style_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke4\aespa\work\aespa\photo\style --test_result_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke4\aespa\test_results\photo --imsize 256 --cropsize 256
+Traceback (most recent call last):
+  File "G:\GitHub\Latent_Style\Related_Works\run_511\repos\AesPA-Net\main.py", line 49, in <module>
+    model.test(args)
+  File "G:\GitHub\Latent_Style\Related_Works\run_511\repos\AesPA-Net\baseline.py", line 626, in test
+    self.network.decoder.load_state_dict(torch.load(os.path.join(self.result_st_dir, 'dec_model_.pth'))['state_dict'])
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\serialization.py", line 1530, in load
+    with _open_file_like(f, "rb") as opened_file:
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\serialization.py", line 795, in _open_file_like
+    return _open_file(name_or_buffer, mode)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\serialization.py", line 776, in __init__
+    super().__init__(open(name, mode))  # noqa: SIM115
+                     ^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: './train_results\\log\\dec_model_.pth'

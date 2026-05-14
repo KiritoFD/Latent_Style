@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "outputs"
 
 
@@ -80,8 +80,10 @@ def fmt(value: object) -> str:
 
 def main() -> int:
     rows = [summarize_run(p) for p in sorted(OUT.iterdir()) if p.is_dir()]
-    csv_path = ROOT / "outputs_inventory.csv"
-    md_path = ROOT / "outputs_inventory.md"
+    docs_dir = ROOT / "docs"
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = docs_dir / "outputs_inventory.csv"
+    md_path = docs_dir / "outputs_inventory.md"
     keys = [
         "run",
         "images",

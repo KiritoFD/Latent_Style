@@ -1,0 +1,26 @@
+
+
+=== CMD ===
+C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe main.py --type train --content_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\aespa_smoke_debug\datasets\train_content --style_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\aespa_smoke_debug\datasets\train_style --max_iter 1 --batch_size 1 --imsize 256 --cropsize 256 --num_workers 0 --train_result_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\aespa_smoke_debug\checkpoints\aespa --comment run511
+Traceback (most recent call last):
+  File "G:\GitHub\Latent_Style\Related_Works\run_511\repos\AesPA-Net\main.py", line 47, in <module>
+    model.train()
+  File "G:\GitHub\Latent_Style\Related_Works\run_511\repos\AesPA-Net\baseline.py", line 408, in train
+    wandb.init(project="New_style_transfer")
+  File "C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\wandb\sdk\wandb_init.py", line 1603, in init
+    get_sentry().reraise(e)
+  File "C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\wandb\analytics\sentry.py", line 190, in reraise
+    raise exc.with_traceback(tb)
+  File "C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\wandb\sdk\wandb_init.py", line 1524, in init
+    wi.maybe_login(init_settings)
+  File "C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\wandb\sdk\wandb_init.py", line 200, in maybe_login
+    wandb_login._login(
+  File "C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\wandb\sdk\wandb_login.py", line 190, in _login
+    auth = _find_or_prompt_for_key(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\wandb\sdk\wandb_login.py", line 266, in _find_or_prompt_for_key
+    auth = wbauth.authenticate_session(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\wandb\sdk\lib\wbauth\authenticate.py", line 139, in authenticate_session
+    raise UsageError(
+wandb.errors.errors.UsageError: No API key configured. Use `wandb login` to log in.

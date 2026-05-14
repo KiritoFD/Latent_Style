@@ -1,0 +1,1 @@
+$ C:\Program Files\python\python.exe run_evaluation.py G:\GitHub\Latent_Style\lambda_grid\runs\kin_1p0__swd_20p0 --output G:\GitHub\Latent_Style\lambda_grid\eval\kin_1p0__swd_20p0 --batch_size 2 --num_steps 12 --step_size 1.0

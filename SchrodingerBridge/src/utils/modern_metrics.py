@@ -264,7 +264,7 @@ def append_modern_metrics_to_summary(eval_dir: Path, cfg: ModernMetricConfig) ->
 
     payload = json.loads(summary_path.read_text(encoding="utf-8"))
     rows = load_metrics_rows(metrics_path)
-    images_root = eval_dir
+    images_root = eval_dir / "images" if (eval_dir / "images").is_dir() else eval_dir
 
     pair_buckets: dict[tuple[str, str], list[dict[str, str]]] = defaultdict(list)
     for row in rows:

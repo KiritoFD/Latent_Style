@@ -12,7 +12,7 @@
     },
     {
       "run": "samst_strict",
-      "src_dir": "G:\\GitHub\\Latent_Style\\run_511\\outputs\\samst_750_strict\\infer_750\\images",
+      "src_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\samst_750_strict\\infer_750\\images",
       "images": 750,
       "ref_match": 750,
       "missing": 0,
@@ -21,7 +21,16 @@
     },
     {
       "run": "styleid_strict",
-      "src_dir": "G:\\GitHub\\Latent_Style\\run_511\\outputs\\styleid_750_strict\\infer_750\\images",
+      "src_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\styleid_750_strict\\infer_750\\images",
+      "images": 750,
+      "ref_match": 750,
+      "missing": 0,
+      "extra_in_source": 0,
+      "status": "ok"
+    },
+    {
+      "run": "s2wat_strict",
+      "src_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\s2wat_750_strict\\infer_750\\images",
       "images": 750,
       "ref_match": 750,
       "missing": 0,
@@ -30,7 +39,7 @@
     },
     {
       "run": "adain_v32k",
-      "src_dir": "G:\\GitHub\\Latent_Style\\run_511\\outputs\\adain_7g_v32k\\infer_750\\images",
+      "src_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\adain_7g_v32k\\infer_750\\images",
       "images": 750,
       "ref_match": 750,
       "missing": 0,
@@ -39,7 +48,7 @@
     },
     {
       "run": "adain_vgg19",
-      "src_dir": "G:\\GitHub\\Latent_Style\\run_511\\outputs\\adain_7g_vgg19\\infer_750\\images",
+      "src_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\adain_7g_vgg19\\infer_750\\images",
       "images": 750,
       "ref_match": 750,
       "missing": 0,
@@ -48,7 +57,7 @@
     },
     {
       "run": "adain_bad",
-      "src_dir": "G:\\GitHub\\Latent_Style\\run_511\\outputs\\adain_4g_real\\infer_750\\images",
+      "src_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\adain_4g_real\\infer_750\\images",
       "images": 750,
       "ref_match": 750,
       "missing": 0,

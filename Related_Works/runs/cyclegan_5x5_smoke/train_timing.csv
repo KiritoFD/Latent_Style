@@ -1,0 +1,2 @@
+target,status,returncode,elapsed_sec,dataroot,checkpoint_dir,log_path,n_epochs,n_epochs_decay,max_dataset_size,load_size,crop_size,netG,ngf,ndf
+monet,ok,0,9.954,G:\GitHub\Latent_Style\Related_Works\runs\cut_5x5\datasets\to_monet,G:\GitHub\Latent_Style\Related_Works\runs\cyclegan_5x5_smoke\checkpoints\cyclegan_to_monet,G:\GitHub\Latent_Style\Related_Works\runs\cyclegan_5x5_smoke\logs\cyclegan_to_monet.log,1,0,8,128,128,resnet_6blocks,32,32

@@ -1,0 +1,12 @@
+method,current_row,status,next_action,priority
+AdaIN,adain_v32k strict 750,complete,use existing row,P0
+SaMST,samst_strict strict 750,complete,use existing row with artifact diagnostics,P0
+StyleID,styleid_strict strict 750,complete_enough,re-run only if tuning prompts/settings,P0
+Ours,S-add__K-1_C-0_W-20_Col-0 epoch 7,complete,use requested epoch 7,P0
+CAST,cast_smoke3 train ok infer failed,adapter_incomplete,fix inference/export then smoke then full 750,P1
+AesFA,aesfa_timing_probe failed,adapter_incomplete,fix dependency/weight issue then smoke then full 750,P1
+AesPA-Net,no successful run,adapter_incomplete,preflight then smoke then full 750,P1
+StyTR2,stytr2_smoke6 5 images,smoke_only,prefer official/pretrained or conservative full run,P1
+S2WAT,s2wat 2000-epoch ckpts + run_511 smoke ok,adapter_ready,run Related_Works/run_511/launchers/run_s2wat_750.bat for strict 750 + eval,P1
+CUT/FastCUT,cut_5x5 legacy images,reusable_supplement,use for supplement/time-to-quality,P2
+SANet/AdaAttN/OTFormer/ACID-Style,no adapted local runner,deferred,do after P0/P1 are stable,P3

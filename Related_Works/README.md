@@ -1,52 +1,60 @@
 # Related Works
 
-Baseline methods and evaluation infrastructure for style transfer comparison.
+Baseline methods, reproduced outputs, and evaluation infrastructure for style transfer comparison.
+
+## Current Ledgers
+
+These files are the current source of truth for the reproduction state:
+
+- `docs/REPRO_DATA_INDEX.md`: human-readable inventory of reproduced outputs, reusable legacy image folders, timing/status rows, and strict protocol-750 coverage.
+- `results/repro_data_inventory.csv`: machine-readable run/output inventory.
+- `results/repro_data_files.csv`: machine-readable CSV/JSON/Markdown/HTML data-file ledger.
+- `results/metrics_summary/`: standalone metric-summary folder for quick reading and paper/result aggregation.
+- `results/json_archive/`: top-level aggregate JSON archive.
+- `run_511/complete_750/summary_all_tested_metrics.csv`: source copy of all tested strict protocol-750 metrics.
+- `run_511/docs/BASELINE_RUN_PLAN.md`: current baseline completion/next-run plan.
+- `run_511/docs/ADVANCED_METRICS_TOOLCHAIN.md`: advanced metric scripts, dependencies, and interpretation notes.
+
+Refresh after new runs:
+
+```bat
+python Related_Works\scripts\collect_repro_inventory.py
+```
 
 ## Directory Structure
 
-```
+```text
 Related_Works/
   repos/                  # Baseline method repositories
-    AdaIN-style-official/ # AdaIN (Huang & Belongie 2017)
-    AesFA/                # AesFA (Kim et al. 2024)
-    AesPA-Net/            # AesPA-Net (Kim et al. 2023)
-    ArtBank/              # ArtBank (Liu et al. 2024)
-    blora/                # BLORA baseline
-    cut/                  # CUT (Park et al. 2020)
-    Cycle-NCE/            # CycleNCE variant
-    cyclegan_turbo/       # CycleGAN-Turbo
-    Dreambooth-Stable-Diffusion-main/
-    external/             # External eval assets
-    pytorch-CycleGAN-and-pix2pix/
-    S2WAT-main/           # S2WAT (Mao et al. 2023)
-    SaMST-main/           # SaMST (Deng et al. 2024)
-    style_aligned/        # StyleAligned
-    styleid/              # StyleID (Hertz et al. 2024)
-    StyTR-2/              # StyTR-2 (Deng et al. 2022)
-    s2wat/                # S2WAT (alternate)
-  run_511/                # Protocol-750 evaluation runner & results
-    complete_750/         # Aggregated eval results (AdaIN/SaMST/StyleID/Ours)
-    outputs/              # Inference outputs
-    repos/                # Working copies of repos used by run_511
-    eval_*.py             # Evaluation scripts
-    run_*.py / run_*.bat  # Experiment launchers
-    timing_metrics_combined.json  # Ours vs SaMST full comparison
-  baseline_pipeline/      # Older baseline pipeline infrastructure
-  runs/                   # Experiment run history (tracked)
-  summary/                # Aggregated experiment summaries (tracked)
-  scripts/                # Utility scripts (export, plot, convert, etc.)
-  results/                # CSV/JSON result files and scatter plots
-  docs/                   # Documentation (README_TOOLS.md, jobs.md)
+  run_511/                # Protocol-750 launchers, metrics, summaries, and results
+    complete_750/         # Aggregated strict 750-image eval results
+    outputs/              # Training/inference outputs and smoke runs
+    repos/                # Working copies used by run_511 wrappers
+    eval/                 # Evaluation scripts
+    launchers/            # .bat and .py train/infer launchers
+    summaries/            # Report builders and timing scripts
+    docs/                 # run_511 status, timing, and metric docs
+  baseline_pipeline/      # Older baseline pipeline infrastructure and migrated ckpts
+  runs/                   # Legacy experiment run history and reusable generated images
+  summary/                # Aggregated historical experiment summaries
+  scripts/                # Utility scripts, including the reproduction inventory collector
+  results/                # CSV/JSON result files and generated inventories
+  docs/                   # Top-level documentation
 ```
 
 ## Completed Evaluations (Protocol-750)
 
-See `run_511/complete_750/` for full eval suites. Key results in `Plan_Docs/RESULTS_SUMMARY.md`.
+See `run_511/complete_750/` for strict 750-image eval suites. The canonical generated tables are:
 
-| Method | LPIPS↓ | CLIP-style↑ | CLIP-content↑ | SSIM-Y↑ | Status |
-|--------|--------|-------------|---------------|---------|--------|
-| Ours 7ep | 0.451 | 0.716 | 0.809 | 0.455 | complete |
-| SaMST 100ep | 0.466 | 0.719 | 0.819 | 0.652 | complete |
-| StyleID | 0.750 | 0.760 | 0.552 | 0.147 | complete |
-| AdaIN v32k | 0.630 | 0.713 | 0.699 | 0.325 | complete |
-| AdaIN vgg19 | 0.687 | 0.693 | 0.599 | 0.290 | complete |
+- `run_511/complete_750/summary_complete_750.md`
+- `run_511/complete_750/summary_complete_750.csv`
+- `run_511/complete_750/summary_all_tested_metrics.md`
+- `run_511/complete_750/summary_all_tested_metrics.csv`
+
+Current strict rows include `Ours epoch_0007`, `SaMST strict`, `StyleID strict`, `AdaIN v32k`, `AdaIN vgg19`, and `AdaIN bad`.
+
+## Advanced Metrics
+
+The advanced anti-artifact stack is documented in `run_511/docs/ADVANCED_METRICS_TOOLCHAIN.md`.
+
+The main interpretation so far: SaMST is structurally strong, so SSIM/Edge/CLIP-content favor it, but the artifact pack starts exposing its micro-grain weakness through NR-IQA, high-frequency patch KID, and FFT-shape diagnostics. Plain KID is kept for completeness but is not sufficient to catch this failure mode.

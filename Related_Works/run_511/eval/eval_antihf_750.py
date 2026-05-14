@@ -23,7 +23,7 @@ from PIL import Image
 
 
 THIS_DIR = Path(__file__).resolve().parent
-WORKSPACE_ROOT = THIS_DIR.parent
+WORKSPACE_ROOT = THIS_DIR.parents[2]
 OVERFIT50 = WORKSPACE_ROOT / "style_data" / "overfit50"
 CLIP_CACHE = WORKSPACE_ROOT / "Cycle-NCE" / "eval_cache" / "manual_clip" / "openai-clip-vit-base-patch32"
 STYLES = ["photo", "monet", "vangogh", "cezanne", "Hayao"]

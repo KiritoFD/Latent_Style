@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-05-13 22:37:15",
+  "base_config": "I:\\Github\\Latent_Style\\SchrodingerBridge\\S-add__K-1_C-0_W-20_Col-0\\config.json",
+  "base_checkpoint": "I:\\Github\\Latent_Style\\SchrodingerBridge\\S-add__K-1_C-0_W-20_Col-0\\epoch_0007.pt",
+  "output_root": "I:\\Github\\Latent_Style\\SchrodingerBridge\\review_additional_experiments",
+  "step_values": [
+    1,
+    4,
+    8,
+    12,
+    16
+  ],
+  "lambda_kin_values": [
+    0.5,
+    1.0,
+    2.0
+  ],
+  "lambda_swd_values": [
+    10.0,
+    20.0,
+    30.0
+  ],
+  "lambda_num_epochs": 8,
+  "eval_batch_size": 2,
+  "eval_num_steps": 12,
+  "eval_step_size": 1.0,
+  "profile_batch_sizes": [
+    1,
+    4
+  ],
+  "profile_warmup": 10,
+  "profile_iters": 50,
+  "dry_run": false,
+  "skip_existing": false
+}

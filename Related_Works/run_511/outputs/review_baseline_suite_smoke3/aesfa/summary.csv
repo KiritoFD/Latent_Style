@@ -1,0 +1,3 @@
+batch_size,checkpoint_dir,elapsed_sec,error,log_path,max_iter,returncode,stage,status
+2,G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke3\aesfa\checkpoints\aesfa,10.052,,G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke3\aesfa\logs\aesfa_train.log,1,0,train,ok
+,,,missing checkpoint G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke3\aesfa\checkpoints\aesfa\main.pth,,,,infer,blocked

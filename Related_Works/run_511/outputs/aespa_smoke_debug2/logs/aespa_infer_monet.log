@@ -1,0 +1,39 @@
+
+
+=== CMD ===
+C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe main.py --type test --content_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\aespa_smoke_debug2\work\aespa\monet\content --style_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\aespa_smoke_debug2\work\aespa\monet\style --train_result_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\aespa_smoke_debug2\checkpoints\aespa --test_result_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\aespa_smoke_debug2\test_results\monet --comment run511 --batch_size 1 --imsize 256 --cropsize 256
+fatal   : Memory allocation failure
+Traceback (most recent call last):
+  File "G:\GitHub\Latent_Style\Related_Works\run_511\repos\AesPA-Net\main.py", line 49, in <module>
+    model.test(args)
+  File "G:\GitHub\Latent_Style\Related_Works\run_511\repos\AesPA-Net\baseline.py", line 670, in test
+    stylization, attn_style_4_1, attn_style_5_1, attn_map_4_1, attn_map_5_1 = self.network(content, style, style_adaptive_alpha, gray_content, style)
+                                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\module.py", line 1779, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\module.py", line 1790, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\GitHub\Latent_Style\Related_Works\run_511\repos\AesPA-Net\aespanet_models.py", line 672, in forward
+    gray_style_feat = self.encode(gray_style_feat, gray_style_skips)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\GitHub\Latent_Style\Related_Works\run_511\repos\AesPA-Net\aespanet_models.py", line 647, in encode
+    return self.encoder.encode(x, skips)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\GitHub\Latent_Style\Related_Works\run_511\repos\AesPA-Net\aespanet_models.py", line 405, in encode
+    out = self.relu(self.conv1_2(self.pad(out)))
+                                 ^^^^^^^^^^^^^
+  File "C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\module.py", line 1779, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\module.py", line 1790, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\padding.py", line 377, in forward
+    return F.pad(input, self.padding, "reflect")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\functional.py", line 5430, in pad
+    return torch._C._nn.pad(input, pad, mode, value)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 18.00 MiB. GPU 0 has a total capacity of 8.00 GiB of which 6.43 GiB is free. Of the allocated memory 409.12 MiB is allocated by PyTorch, and 32.88 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)

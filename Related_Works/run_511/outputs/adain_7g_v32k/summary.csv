@@ -1,0 +1,3 @@
+batch_size,checkpoint_dir,elapsed_sec,images,images_dir,log_path,max_iter,returncode,stage,status
+8,G:\GitHub\Latent_Style\run_511\outputs\adain_7g_v32k\checkpoints\adain,9220.393,,,G:\GitHub\Latent_Style\run_511\outputs\adain_7g_v32k\logs\adain_train.log,32000,0,train,ok
+,,9.281,750,G:\GitHub\Latent_Style\run_511\outputs\adain_7g_v32k\infer_750\images,,,,infer,ok
