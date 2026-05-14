@@ -1052,7 +1052,7 @@ def main():
     parser.add_argument('--max_ref_compare', type=int, default=int(full_eval_defaults.get("max_ref_compare", 50)), help="Max refs for LPIPS style compare; <=0 means all cached refs")
     parser.add_argument('--max_ref_cache', type=int, default=int(full_eval_defaults.get("max_ref_cache", 256)), help="Max reference images per style used for cache/features; <=0 means all")
     parser.add_argument('--ref_feature_batch_size', type=int, default=int(full_eval_defaults.get("ref_feature_batch_size", 64)), help="Batch size for reference feature extraction")
-    parser.add_argument('--batch_size', type=int, default=int(full_eval_defaults.get("batch_size", 2)), help="Generation batch size for evaluation. Lower this if VRAM is tight.")
+    parser.add_argument('--batch_size', type=int, default=int(full_eval_defaults.get("batch_size", 8)), help="Generation batch size for evaluation. Lower this if VRAM is tight.")
     parser.add_argument('--force_regen', action='store_true', help="Force regenerate evaluation outputs/metrics (does not rebuild global ref cache)")
     parser.add_argument('--force_regen_ref_cache', action='store_true', help="Force rebuild global reference-feature cache only")
     parser.add_argument('--ref_cache_lock_timeout', type=int, default=900, help="Seconds to wait for another process building reference cache")
