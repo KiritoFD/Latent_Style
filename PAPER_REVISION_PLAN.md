@@ -20,6 +20,23 @@ Upgrade the current AAAI draft from a coherent internal draft to a submission-re
 
 ## Completed
 
+### Latest paper cleanup
+
+- Removed internal bookkeeping-style material from the main paper:
+  - dropped the `Claim-evidence map` table from the main text
+  - dropped the `Baseline completion status` table from the main text
+  - removed wording such as `current local study`, `local CLIP cache`, `newly completed`, and `review-added` where it read like experiment bookkeeping instead of paper evidence
+- Added the AAAI-26 reproducibility checklist after the references in the paper source.
+- Improved layout quality in the main comparison section:
+  - `Table 5` no longer uses `\resizebox{\textwidth}{!}` and now renders at a natural scale
+  - recompiled `paper_aaai2026.pdf` after the cleanup
+- Removed the procedure-style `Table 2` from the main text and folded the training/inference summary back into prose.
+- Rebuilt the architecture overview figure with a clearer two-level layout:
+  - explicit inference pathway
+  - explicit training-only conditioning and supervision
+  - legend for solid vs dashed arrows
+  - updated caption for reproducible reading
+
 ### Repo and paper audit
 
 - Located the active AAAI submission source at `SchrodingerBridge/paper_orchestra_workspace/aaai_submission/`.
