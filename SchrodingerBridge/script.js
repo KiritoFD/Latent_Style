@@ -62,13 +62,12 @@ function getCurrentThemeColors() {
 }
 
 const relatedWorksData = [
-    { run_id: 'S2WAT (AAAI 2024)', clip_style: 0.6068, content_lpips: 0.8012, clip_content: 0.5423 },
-    { run_id: 'SaMST (ACCV 2024)', clip_style: 0.6314, content_lpips: 0.5525, clip_content: 0.5463 },
-    { run_id: 'StyleID (CVPR 2024)', clip_style: 0.6764, content_lpips: 0.7708, clip_content: 0.4427 },
-    { run_id: 'CUT (ECCV 2020)', clip_style: 0.6549, content_lpips: 0.8027, clip_content: 0.5241 },
-    { run_id: 'StarGAN-v2', clip_style: 0.5850, content_lpips: 0.3471, clip_content: 0.8668 },
-    { run_id: 'SDEdit str=0.35', clip_style: 0.6611, content_lpips: 0.6087 },
-    { run_id: 'SDEdit str=0.40', clip_style: 0.6614, content_lpips: 0.6400 }
+    { run_id: 'SaMST strict', clip_style: 0.7194, content_lpips: 0.4664, clip_content: 0.8193 },
+    { run_id: 'StyleID strict', clip_style: 0.7597, content_lpips: 0.7497, clip_content: 0.5519 },
+    { run_id: 'S2WAT strict', clip_style: 0.7139, content_lpips: 0.5263, clip_content: 0.7465 },
+    { run_id: 'AdaIN v32k', clip_style: 0.7130, content_lpips: 0.6298, clip_content: 0.6990 },
+    { run_id: 'AdaIN vgg19', clip_style: 0.6930, content_lpips: 0.6870, clip_content: 0.5991 },
+    { run_id: 'AdaIN bad', clip_style: 0.6308, content_lpips: 0.8490, clip_content: 0.5297 }
 ];
 
 function asFloat(v) {
@@ -626,10 +625,13 @@ function renderPlot(divId, legendId, traces, metric) {
             tickfont: { color: colors.font_color, size: 10 }
         },
         hovermode: 'closest',
+        hoverlabel: {
+            align: 'right'
+        },
         plot_bgcolor: colors.plot_bgcolor,
         paper_bgcolor: colors.paper_bgcolor,
         font: { color: colors.font_color, family: 'var(--font-mono)' },
-        margin: { l: 60, r: 20, t: 50, b: 50 },
+        margin: { l: 60, r: 56, t: 50, b: 50 },
         showlegend: false
     };
 
@@ -648,6 +650,46 @@ function renderPlot(divId, legendId, traces, metric) {
     Plotly.newPlot(divId, traces, layout, config);
     renderLegend(legendId, traces);
 }
+
+function togglePlotCard(cardId, plotId) {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    const isCollapsed = card.classList.toggle('collapsed');
+    const button = card.querySelector(`#toggle${plotId === 'plotClipContent' ? 'ClipContent' : 'Plot'}Btn`);
+    if (button) button.textContent = isCollapsed ? 'Expand' : 'Collapse';
+    if (!isCollapsed && window.Plotly && plotId) {
+        setTimeout(() => Plotly.Plots.resize(plotId), 50);
+    }
+}
+
+async function downloadPlot(plotId, filename) {
+    const el = document.getElementById(plotId);
+    if (!el || !window.Plotly) return;
+    await Plotly.downloadImage(el, {
+        format: 'png',
+        filename: filename || plotId,
+        width: 1500,
+        height: 1000,
+        scale: 2
+    });
+}
+
+async function downloadAllPlots() {
+    const clipCard = document.getElementById('cardClipContent');
+    const wasCollapsed = clipCard?.classList.contains('collapsed');
+    if (wasCollapsed) {
+        clipCard.classList.remove('collapsed');
+        const btn = document.getElementById('toggleClipContentBtn');
+        if (btn) btn.textContent = 'Collapse';
+        await new Promise(resolve => setTimeout(resolve, 80));
+        if (window.Plotly) Plotly.Plots.resize('plotClipContent');
+    }
+    await downloadPlot('plotClipContent', 'clip_content_vs_style');
+    await downloadPlot('plotInvLpips', 'inv_lpips_vs_style');
+}
+
+window.exportScatterPlot = downloadPlot;
+window.exportAllScatterPlots = downloadAllPlots;
 
 function inferColumns(records) {
     const headers = Object.keys(records[0]);

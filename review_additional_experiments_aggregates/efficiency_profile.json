@@ -1,0 +1,123 @@
+{
+  "timestamp": "2026-05-14 10:33:51",
+  "checkpoint": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\S-add__K-1_C-0_W-20_Col-0\\epoch_0007.pt",
+  "device": "cuda",
+  "measurement_scope": "latent_generator_only",
+  "latent_shape": [
+    4,
+    32,
+    32
+  ],
+  "objective_mode": "omf",
+  "notes": [
+    "Params are exact for the transport network only.",
+    "FLOPs/MACs are best-effort and may be null if no profiling backend is installed.",
+    "Throughput and VRAM are measured on dummy 32x32 latent tensors without VAE encode/decode."
+  ],
+  "params": 3909717,
+  "macs": null,
+  "flops": null,
+  "flops_backend": null,
+  "records": [
+    {
+      "batch_size": 1,
+      "num_steps": 1,
+      "elapsed_sec": 0.48837609999463893,
+      "avg_sec_per_iter": 0.00976752199989278,
+      "avg_sec_per_img": 0.00976752199989278,
+      "throughput_img_per_sec": 102.38011237763041,
+      "peak_vram_mb": 33.4287109375,
+      "peak_reserved_mb": 48.0
+    },
+    {
+      "batch_size": 1,
+      "num_steps": 4,
+      "elapsed_sec": 0.47602980000374373,
+      "avg_sec_per_iter": 0.009520596000074875,
+      "avg_sec_per_img": 0.009520596000074875,
+      "throughput_img_per_sec": 105.03544105769592,
+      "peak_vram_mb": 33.4287109375,
+      "peak_reserved_mb": 50.0
+    },
+    {
+      "batch_size": 1,
+      "num_steps": 8,
+      "elapsed_sec": 0.47898220000206493,
+      "avg_sec_per_iter": 0.009579644000041299,
+      "avg_sec_per_img": 0.009579644000041299,
+      "throughput_img_per_sec": 104.3880127482492,
+      "peak_vram_mb": 33.4287109375,
+      "peak_reserved_mb": 48.0
+    },
+    {
+      "batch_size": 1,
+      "num_steps": 12,
+      "elapsed_sec": 0.48944009999831906,
+      "avg_sec_per_iter": 0.00978880199996638,
+      "avg_sec_per_img": 0.00978880199996638,
+      "throughput_img_per_sec": 102.15754696064283,
+      "peak_vram_mb": 33.4287109375,
+      "peak_reserved_mb": 48.0
+    },
+    {
+      "batch_size": 1,
+      "num_steps": 16,
+      "elapsed_sec": 0.47096420000161743,
+      "avg_sec_per_iter": 0.009419284000032349,
+      "avg_sec_per_img": 0.009419284000032349,
+      "throughput_img_per_sec": 106.16518198162044,
+      "peak_vram_mb": 33.4287109375,
+      "peak_reserved_mb": 48.0
+    },
+    {
+      "batch_size": 4,
+      "num_steps": 1,
+      "elapsed_sec": 0.4796684000029927,
+      "avg_sec_per_iter": 0.009593368000059855,
+      "avg_sec_per_img": 0.0023983420000149636,
+      "throughput_img_per_sec": 416.95471287821374,
+      "peak_vram_mb": 61.4658203125,
+      "peak_reserved_mb": 72.0
+    },
+    {
+      "batch_size": 4,
+      "num_steps": 4,
+      "elapsed_sec": 0.468276200001128,
+      "avg_sec_per_iter": 0.00936552400002256,
+      "avg_sec_per_img": 0.00234138100000564,
+      "throughput_img_per_sec": 427.09836630501025,
+      "peak_vram_mb": 61.4658203125,
+      "peak_reserved_mb": 72.0
+    },
+    {
+      "batch_size": 4,
+      "num_steps": 8,
+      "elapsed_sec": 0.4708574000032968,
+      "avg_sec_per_iter": 0.009417148000065935,
+      "avg_sec_per_img": 0.002354287000016484,
+      "throughput_img_per_sec": 424.7570495835887,
+      "peak_vram_mb": 61.4658203125,
+      "peak_reserved_mb": 72.0
+    },
+    {
+      "batch_size": 4,
+      "num_steps": 12,
+      "elapsed_sec": 0.4606378999960725,
+      "avg_sec_per_iter": 0.00921275799992145,
+      "avg_sec_per_img": 0.0023031894999803624,
+      "throughput_img_per_sec": 434.1805135914896,
+      "peak_vram_mb": 61.4658203125,
+      "peak_reserved_mb": 72.0
+    },
+    {
+      "batch_size": 4,
+      "num_steps": 16,
+      "elapsed_sec": 0.45425739999336656,
+      "avg_sec_per_iter": 0.009085147999867331,
+      "avg_sec_per_img": 0.002271286999966833,
+      "throughput_img_per_sec": 440.27901362293835,
+      "peak_vram_mb": 61.4658203125,
+      "peak_reserved_mb": 72.0
+    }
+  ]
+}

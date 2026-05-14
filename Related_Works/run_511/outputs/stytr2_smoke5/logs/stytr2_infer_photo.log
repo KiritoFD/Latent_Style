@@ -1,0 +1,11 @@
+
+
+=== CMD ===
+C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe test.py --content_dir G:\GitHub\Latent_Style\run_511\outputs\stytr2_smoke5\work\stytr2\infer_content\photo --style_dir G:\GitHub\Latent_Style\run_511\outputs\stytr2_smoke5\work\stytr2\infer_style\photo --output G:\GitHub\Latent_Style\run_511\outputs\stytr2_smoke5\infer_750\raw\photo --vgg G:\GitHub\Latent_Style\run_511\repos\StyTR-2\experiments\vgg_normalised.pth --decoder_path G:\GitHub\Latent_Style\run_511\outputs\stytr2_smoke5\checkpoints\stytr2\decoder_iter_1.pth --Trans_path G:\GitHub\Latent_Style\run_511\outputs\stytr2_smoke5\checkpoints\stytr2\transformer_iter_1.pth --embedding_path G:\GitHub\Latent_Style\run_511\outputs\stytr2_smoke5\checkpoints\stytr2\embedding_iter_1.pth
+G:\GitHub\Latent_Style\run_511\outputs\stytr2_smoke5\work\stytr2\infer_content\photo\Hayao_0.jpg
+<class 'int'>
+Traceback (most recent call last):
+  File "G:\GitHub\Latent_Style\run_511\repos\StyTR-2\test.py", line 174, in <module>
+    output = output.cpu()
+             ^^^^^^^^^^
+AttributeError: 'tuple' object has no attribute 'cpu'

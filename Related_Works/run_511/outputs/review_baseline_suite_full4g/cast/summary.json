@@ -1,0 +1,53 @@
+{
+  "runs": [
+    {
+      "stage": "train",
+      "status": "ok",
+      "returncode": 0,
+      "elapsed_sec": 1759.798,
+      "checkpoint_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_full4g\\cast\\checkpoints\\run511_cast",
+      "log_path": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_full4g\\cast\\logs\\cast_train.log",
+      "n_epochs": 100,
+      "batch_size": 1
+    },
+    {
+      "stage": "infer",
+      "status": "ok",
+      "elapsed_sec": 75.469,
+      "images": 750,
+      "images_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_full4g\\cast\\infer_750\\images",
+      "per_target": [
+        {
+          "target": "photo",
+          "returncode": 0,
+          "renamed": 150,
+          "elapsed_sec": 15.584
+        },
+        {
+          "target": "monet",
+          "returncode": 0,
+          "renamed": 150,
+          "elapsed_sec": 15.0
+        },
+        {
+          "target": "vangogh",
+          "returncode": 0,
+          "renamed": 150,
+          "elapsed_sec": 14.709
+        },
+        {
+          "target": "cezanne",
+          "returncode": 0,
+          "renamed": 150,
+          "elapsed_sec": 14.841
+        },
+        {
+          "target": "Hayao",
+          "returncode": 0,
+          "renamed": 150,
+          "elapsed_sec": 14.88
+        }
+      ]
+    }
+  ]
+}

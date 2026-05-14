@@ -199,6 +199,13 @@ button.btn-secondary:hover {
     color: var(--text-primary);
 }
 
+button.btn-compact {
+    flex: 0 0 auto;
+    padding: 0.4rem 0.65rem;
+    font-size: 0.68rem;
+    line-height: 1;
+}
+
 .axis-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -267,11 +274,23 @@ button.btn-secondary:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 1rem;
+}
+.plot-title-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    flex: 0 0 auto;
 }
 .plot-layout {
     display: grid;
     grid-template-columns: 1fr 260px;
+    align-items: stretch;
     padding: 0;
+}
+.plot-card.collapsed .plot-layout {
+    display: none;
 }
 .plot-wrap {
     width: 100%;
@@ -286,6 +305,9 @@ button.btn-secondary:hover {
     padding: 1.25rem;
     display: flex;
     flex-direction: column;
+    height: 540px;
+    min-height: 0;
+    overflow: hidden;
 }
 .plot-legend-title {
     font-size: 0.7rem;
@@ -303,6 +325,7 @@ button.btn-secondary:hover {
     max-height: none;
     flex: 1;
     overflow-y: auto;
+    min-height: 0;
 }
 
 .plot-legend-item {
@@ -364,5 +387,7 @@ button.btn-secondary:hover {
     .sidebar { border-right: none; border-bottom: 1px solid var(--border-color); max-height: none; }
     .plot-layout { grid-template-columns: 1fr; }
     .plot-wrap { height: 480px; }
-    .plot-legend { border-left: none; border-top: 1px solid var(--border-color); max-height: 240px; }
+    .plot-legend { border-left: none; border-top: 1px solid var(--border-color); height: 240px; max-height: 240px; }
+    .plot-title { align-items: flex-start; flex-direction: column; }
+    .plot-title-actions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
 }

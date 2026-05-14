@@ -93,7 +93,7 @@
                     </div>
                     <div class="stat-box">
                         <div class="stat-label">RW Points</div>
-                        <div class="stat-value" id="statRwCount">7</div>
+                        <div class="stat-value" id="statRwCount">6</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-label">Groups</div>
@@ -103,7 +103,7 @@
             </div>
 
             <div class="section" style="font-size:12px; color:#555; line-height:1.5;">
-                Related works includes <b>S2WAT</b>, <b>SaMST</b>, <b>StyleID</b>, <b>CUT</b>, <b>StarGAN</b>, and <b>SDEdit</b> baselines.
+                Baseline overlay uses the latest strict-750 related-work metrics: <b>SaMST</b>, <b>StyleID</b>, <b>S2WAT</b>, and <b>AdaIN</b>.
             </div>
 
             <div class="section">
@@ -119,8 +119,14 @@
         <div class="main">
             <div id="errorContainer"></div>
 
-            <div class="plot-card">
-                <div class="plot-title">Plot 1: clip_content vs clip_style</div>
+            <div class="plot-card collapsed" id="cardClipContent">
+                <div class="plot-title">
+                    <span>Plot 1: clip_content vs clip_style</span>
+                    <div class="plot-title-actions">
+                        <button class="btn-secondary btn-compact" onclick="togglePlotCard('cardClipContent', 'plotClipContent')" id="toggleClipContentBtn">Expand</button>
+                        <button class="btn-secondary btn-compact" onclick="downloadPlot('plotClipContent', 'clip_content_vs_style')">Export PNG</button>
+                    </div>
+                </div>
                 <div class="plot-layout">
                     <div class="plot-wrap">
                         <div id="plotClipContent" class="plot"></div>
@@ -130,7 +136,13 @@
             </div>
 
             <div class="plot-card">
-                <div class="plot-title">Plot 2: 1-content_lpips vs clip_style</div>
+                <div class="plot-title">
+                    <span>Plot 2: 1-content_lpips vs clip_style</span>
+                    <div class="plot-title-actions">
+                        <button class="btn-secondary btn-compact" onclick="downloadPlot('plotInvLpips', 'inv_lpips_vs_style')">Export PNG</button>
+                        <button class="btn-primary btn-compact" onclick="downloadAllPlots()">Export All</button>
+                    </div>
+                </div>
                 <div class="plot-layout">
                     <div class="plot-wrap">
                         <div id="plotInvLpips" class="plot"></div>

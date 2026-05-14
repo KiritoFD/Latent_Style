@@ -1,0 +1,96 @@
+{
+  "runs": [
+    {
+      "stage": "eval",
+      "status": "ok",
+      "elapsed_sec": 640.715,
+      "tasks": [
+        {
+          "task": "artifact",
+          "returncode": 0,
+          "output": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\s2wat_750_strict\\infer_750\\eval_artifact_pack750.json",
+          "elapsed_sec": 621.932,
+          "status": "ok"
+        },
+        {
+          "task": "hf_kid",
+          "returncode": 0,
+          "output": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\s2wat_750_strict\\infer_750\\eval_hf_patch_kid750.json",
+          "elapsed_sec": 11.743,
+          "status": "ok"
+        },
+        {
+          "task": "plain_kid",
+          "returncode": 0,
+          "output": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\s2wat_750_strict\\infer_750\\eval_plain_kid750.json",
+          "elapsed_sec": 7.039,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "stage": "infer",
+      "status": "ok",
+      "device": "cuda",
+      "img_size": 256,
+      "images_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\s2wat_750_strict\\infer_750\\images",
+      "images": 750,
+      "requested": 750,
+      "generated_new": 750,
+      "elapsed_sec": 84.073,
+      "sec_per_requested": 0.112097,
+      "per_target": [
+        {
+          "target": "photo",
+          "checkpoint": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\checkpoints\\s2wat\\photo\\checkpoint_2000_epoch.pkl",
+          "style_reference": "G:\\GitHub\\Latent_Style\\style_data\\overfit50\\photo\\2013-11-08 16_45_24.jpg",
+          "images_requested": 150,
+          "generated": 150,
+          "skipped_existing": 0,
+          "elapsed_sec": 15.744,
+          "sec_per_requested": 0.104963
+        },
+        {
+          "target": "monet",
+          "checkpoint": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\checkpoints\\s2wat\\monet\\checkpoint_2000_epoch.pkl",
+          "style_reference": "G:\\GitHub\\Latent_Style\\style_data\\overfit50\\monet\\00018.jpg",
+          "images_requested": 150,
+          "generated": 150,
+          "skipped_existing": 0,
+          "elapsed_sec": 15.402,
+          "sec_per_requested": 0.102682
+        },
+        {
+          "target": "vangogh",
+          "checkpoint": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\checkpoints\\s2wat\\vangogh\\checkpoint_2000_epoch.pkl",
+          "style_reference": "G:\\GitHub\\Latent_Style\\style_data\\overfit50\\vangogh\\00005.jpg",
+          "images_requested": 150,
+          "generated": 150,
+          "skipped_existing": 0,
+          "elapsed_sec": 15.852,
+          "sec_per_requested": 0.105679
+        },
+        {
+          "target": "cezanne",
+          "checkpoint": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\checkpoints\\s2wat\\cezanne\\checkpoint_2000_epoch.pkl",
+          "style_reference": "G:\\GitHub\\Latent_Style\\style_data\\overfit50\\cezanne\\00057.jpg",
+          "images_requested": 150,
+          "generated": 150,
+          "skipped_existing": 0,
+          "elapsed_sec": 16.082,
+          "sec_per_requested": 0.107213
+        },
+        {
+          "target": "Hayao",
+          "checkpoint": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\checkpoints\\s2wat\\Hayao\\checkpoint_2000_epoch.pkl",
+          "style_reference": "G:\\GitHub\\Latent_Style\\style_data\\overfit50\\Hayao\\0.jpg",
+          "images_requested": 150,
+          "generated": 150,
+          "skipped_existing": 0,
+          "elapsed_sec": 15.642,
+          "sec_per_requested": 0.104277
+        }
+      ]
+    }
+  ]
+}

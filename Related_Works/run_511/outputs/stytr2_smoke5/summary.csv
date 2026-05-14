@@ -1,0 +1,3 @@
+batch_size,checkpoint_dir,elapsed_sec,images,images_dir,log_path,max_iter,returncode,stage,status
+1,G:\GitHub\Latent_Style\run_511\outputs\stytr2_smoke5\checkpoints\stytr2,372.048,,,G:\GitHub\Latent_Style\run_511\outputs\stytr2_smoke5\logs\stytr2_train.log,1,0,train,ok
+,,7.055,0,G:\GitHub\Latent_Style\run_511\outputs\stytr2_smoke5\infer_750\images,,,,infer,failed

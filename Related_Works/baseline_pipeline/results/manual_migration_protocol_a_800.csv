@@ -1,0 +1,9 @@
+baseline,source_dir,output_root,status,copied,missing,missing_preview,elapsed_sec
+ours_pareto_probe_4_epoch_0001,G:\GitHub\Latent_Style\SchrodingerBridge\exp\pareto_probe_4\S-add__K-3_C-2_W-10_Col-15\full_eval\epoch_0001\images,G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\ours_pareto_probe_4_epoch_0001\protocol_a_800,ok,750,0,,1.028
+cut,G:\GitHub\Latent_Style\Related_Works\runs\cut_5x5\infer_5x5\images,G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\cut\protocol_a_800,ok,750,0,,1.019
+samst,G:\GitHub\Latent_Style\Related_Works\external\SaMST\full_eval\repro_5style_train2\epoch_0100_overfit50\images,G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samst\protocol_a_800,ok,750,0,,1.084
+sdturbo,G:\GitHub\Latent_Style\Related_Works\runs\sdturbo_5x5\images,G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\sdturbo\protocol_a_800,ok,750,0,,1.065
+sdedit_str_0p10,G:\GitHub\Latent_Style\Related_Works\runs\sdedit_multi\str_0.10\images,G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\sdedit_str_0p10\protocol_a_800,ok,750,0,,1.218
+sdedit_str_0p20,G:\GitHub\Latent_Style\Related_Works\runs\sdedit_multi\str_0.20\images,G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\sdedit_str_0p20\protocol_a_800,ok,750,0,,1.141
+sdedit_str_0p35,G:\GitHub\Latent_Style\Related_Works\runs\sdedit_multi\str_0.35\images,G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\sdedit_str_0p35\protocol_a_800,ok,750,0,,1.123
+sdedit_str_0p40,G:\GitHub\Latent_Style\Related_Works\runs\sdedit_multi\str_0.40\images,G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\sdedit_str_0p40\protocol_a_800,ok,750,0,,1.125

@@ -7,7 +7,8 @@ from pathlib import Path
 
 
 THIS_DIR = Path(__file__).resolve().parent
-ROOT = THIS_DIR / "outputs"
+RUN511_ROOT = THIS_DIR.parent
+ROOT = RUN511_ROOT / "outputs"
 
 
 def load_summary(path: Path) -> dict[str, object] | None:
@@ -81,7 +82,9 @@ def main() -> int:
             }
         )
 
-    csv_path = THIS_DIR / "timing_summary.csv"
+    docs_dir = RUN511_ROOT / "docs"
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = docs_dir / "timing_summary.csv"
     with csv_path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         writer.writeheader()
@@ -117,7 +120,7 @@ def main() -> int:
         ]
     )
 
-    md_path = THIS_DIR / "timing_summary.md"
+    md_path = docs_dir / "timing_summary.md"
     md_path.write_text("\n".join(md) + "\n", encoding="utf-8")
     print(csv_path)
     print(md_path)

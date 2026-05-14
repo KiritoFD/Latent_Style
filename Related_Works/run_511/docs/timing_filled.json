@@ -1,0 +1,30 @@
+{
+  "ours_epoch7_train": {
+    "epochs_measured": 7,
+    "train_total_to_epoch7_sec": 309.902,
+    "train_avg_epoch_sec": 44.272,
+    "samples_per_sec_epoch7": 239.855
+  },
+  "ours_epoch7_infer": {
+    "generated_images": 750,
+    "measured_elapsed_sec": 85.414,
+    "sec_per_image": 0.113885,
+    "source": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\S-add__K-1_C-0_W-20_Col-0\\full_eval_timing_epoch7\\summary.json"
+  },
+  "samst_train_extrapolated": {
+    "profile": "4g",
+    "styles_measured": 5,
+    "epochs_measured": 1,
+    "epoch1_elapsed_sec_total": 67.687,
+    "target_epochs": 30,
+    "estimated_total_train_sec": 2030.61,
+    "note": "Measured 1 epoch across 5 styles with batch_size=1, train_images_per_style=16, then extrapolated linearly."
+  },
+  "styleid_infer_estimated": {
+    "training_free": true,
+    "measured_photo_150_sec": 603.267,
+    "estimated_full_750_sec": 3016.335,
+    "estimated_sec_per_image": 4.02178,
+    "note": "Strict run actually generated photo target and reused/copied others; full 750 estimate assumes comparable cost across 5 targets."
+  }
+}

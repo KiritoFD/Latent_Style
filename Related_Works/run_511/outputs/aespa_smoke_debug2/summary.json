@@ -1,0 +1,37 @@
+{
+  "runs": [
+    {
+      "stage": "train",
+      "status": "ok",
+      "returncode": 0,
+      "elapsed_sec": 10.01,
+      "checkpoint_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\aespa_smoke_debug2\\checkpoints\\aespa",
+      "log_path": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\aespa_smoke_debug2\\logs\\aespa_train.log",
+      "max_iter": 1,
+      "batch_size": 1
+    },
+    {
+      "stage": "infer",
+      "status": "failed",
+      "elapsed_sec": 53.209,
+      "images": 0,
+      "images_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\aespa_smoke_debug2\\infer_750\\images",
+      "per_target": [
+        {
+          "target": "photo",
+          "returncode": 0,
+          "renamed": 0,
+          "elapsed_sec": 17.149,
+          "log_path": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\aespa_smoke_debug2\\logs\\aespa_infer_photo.log"
+        },
+        {
+          "target": "monet",
+          "returncode": 1,
+          "renamed": 0,
+          "elapsed_sec": 36.054,
+          "log_path": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\aespa_smoke_debug2\\logs\\aespa_infer_monet.log"
+        }
+      ]
+    }
+  ]
+}

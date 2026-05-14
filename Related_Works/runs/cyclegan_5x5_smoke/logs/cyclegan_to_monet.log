@@ -1,0 +1,88 @@
+
+
+=== CMD ===
+C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe train.py --dataroot G:\GitHub\Latent_Style\Related_Works\runs\cut_5x5\datasets\to_monet --name cyclegan_to_monet --model cycle_gan --checkpoints_dir G:\GitHub\Latent_Style\Related_Works\runs\cyclegan_5x5_smoke\checkpoints --no_html --n_epochs 1 --n_epochs_decay 0 --save_epoch_freq 1 --print_freq 4 --max_dataset_size 8 --load_size 128 --crop_size 128 --netG resnet_6blocks --ngf 32 --ndf 32 --batch_size 1 --num_threads 0
+G:\GitHub\Latent_Style\Related_Works\pytorch-CycleGAN-and-pix2pix\models\base_model.py:182: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\torch\csrc\autograd\generated\python_variable_methods.cpp:837.)
+  errors_ret[name] = float(getattr(self, "loss_" + name))  # float(...) works for both scalar tensor and float number
+----------------- Options ---------------
+               batch_size: 1                             
+                    beta1: 0.5                           
+          checkpoints_dir: G:\GitHub\Latent_Style\Related_Works\runs\cyclegan_5x5_smoke\checkpoints	[default: ./checkpoints]
+           continue_train: False                         
+                crop_size: 128                           	[default: 256]
+                 dataroot: G:\GitHub\Latent_Style\Related_Works\runs\cut_5x5\datasets\to_monet	[default: None]
+             dataset_mode: unaligned                     
+                direction: AtoB                          
+             display_freq: 400                           
+          display_winsize: 256                           
+                    epoch: latest                        
+              epoch_count: 1                             
+                 gan_mode: lsgan                         
+                init_gain: 0.02                          
+                init_type: normal                        
+                 input_nc: 3                             
+                  isTrain: True                          	[default: None]
+                 lambda_A: 10.0                          
+                 lambda_B: 10.0                          
+          lambda_identity: 0.5                           
+                load_iter: 0                             	[default: 0]
+                load_size: 128                           	[default: 286]
+                       lr: 0.0002                        
+           lr_decay_iters: 50                            
+                lr_policy: linear                        
+         max_dataset_size: 8                             	[default: inf]
+                    model: cycle_gan                     
+                 n_epochs: 1                             	[default: 100]
+           n_epochs_decay: 0                             	[default: 100]
+               n_layers_D: 3                             
+                     name: cyclegan_to_monet             	[default: experiment_name]
+                      ndf: 32                            	[default: 64]
+                     netD: basic                         
+                     netG: resnet_6blocks                	[default: resnet_9blocks]
+                      ngf: 32                            	[default: 64]
+               no_dropout: True                          
+                  no_flip: False                         
+                  no_html: True                          	[default: False]
+                     norm: instance                      
+              num_threads: 0                             	[default: 4]
+                output_nc: 3                             
+                    phase: train                         
+                pool_size: 50                            
+               preprocess: resize_and_crop               
+               print_freq: 4                             	[default: 100]
+             save_by_iter: False                         
+          save_epoch_freq: 1                             	[default: 5]
+         save_latest_freq: 5000                          
+           serial_batches: False                         
+                   suffix:                               
+         update_html_freq: 1000                          
+                use_wandb: False                         
+                  verbose: False                         
+       wandb_project_name: CycleGAN-and-pix2pix          
+----------------- End -------------------
+Initialized with device cuda:0
+dataset [UnalignedDataset] was created
+The number of training images = 8
+model [CycleGANModel] was created
+Initialized with device cuda:0
+initialize network with normal
+Initialized with device cuda:0
+initialize network with normal
+Initialized with device cuda:0
+initialize network with normal
+Initialized with device cuda:0
+initialize network with normal
+---------- Networks initialized -------------
+[Network G_A] Total number of parameters : 1.965 M
+[Network G_B] Total number of parameters : 1.965 M
+[Network D_A] Total number of parameters : 0.694 M
+[Network D_B] Total number of parameters : 0.694 M
+-----------------------------------------------
+[Rank 0] (epoch: 1, iters: 4, time: 0.068, data: 0.010) , D_A: 0.870, G_A: 0.818, cycle_A: 5.013, idt_A: 2.350, D_B: 0.859, G_B: 0.835, cycle_B: 4.785, idt_B: 2.495
+
+[Rank 0] (epoch: 1, iters: 8, time: 0.064, data: 0.003) , D_A: 0.697, G_A: 0.764, cycle_A: 3.530, idt_A: 2.029, D_B: 0.697, G_B: 0.945, cycle_B: 4.274, idt_B: 1.744
+
+learning rate 0.0002000 -> 0.0000000
+saving the model at the end of epoch 1, iters 8
+End of epoch 1 / 1 	 Time Taken: 5 sec

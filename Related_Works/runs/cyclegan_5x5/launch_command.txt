@@ -1,0 +1,1 @@
+﻿python G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\scripts\train_cyclegan_targets.py --targets monet vangogh cezanne Hayao --run_root G:\GitHub\Latent_Style\Related_Works\runs\cyclegan_5x5 --n_epochs 10 --n_epochs_decay 10 --max_dataset_size 1000 --load_size 256 --crop_size 256 --save_epoch_freq 5 --print_freq 200

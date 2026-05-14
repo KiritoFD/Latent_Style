@@ -1,0 +1,5 @@
+AdaIN training: max_iter=100, batch_size=4, device=cuda
+VGG weights: G:\GitHub\Latent_Style\Related_Works\AesFA\vgg_normalised.pth
+iter 50/100  loss_c=0.0000  loss_s=4.9563  total=49.5628
+iter 100/100  loss_c=0.0000  loss_s=6.1614  total=61.6139
+Saved checkpoint: G:\GitHub\Latent_Style\run_511\outputs\adain_4g_bg\checkpoints\adain\decoder.pth

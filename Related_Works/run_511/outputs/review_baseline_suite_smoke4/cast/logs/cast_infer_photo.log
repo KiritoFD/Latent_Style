@@ -1,0 +1,77 @@
+
+
+=== CMD ===
+C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe test.py --dataroot G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke4\cast\work\infer\photo\cast_data --name run511_cast --model cast --checkpoints_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke4\cast\checkpoints --results_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke4\cast\results_cast\photo --epoch 1 --eval --num_test 1 --gpu_ids 0
+----------------- Options ---------------
+                CAST_mode: CAST                          
+               batch_size: 1                             
+          checkpoints_dir: G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke4\cast\checkpoints	[default: ./checkpoints]
+                crop_size: 256                           
+                 dataroot: G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke4\cast\work\infer\photo\cast_data	[default: placeholder]
+             dataset_mode: unaligned                     
+                direction: AtoB                          
+          display_winsize: 256                           
+               easy_label: experiment_name               
+                    epoch: 1                             	[default: latest]
+                     eval: True                          	[default: False]
+              feature_dim: 256                           
+                  gpu_ids: 0                             
+          hypersphere_dim: 256                           
+                init_gain: 0.02                          
+                init_type: xavier                        
+                 input_nc: 3                             
+                  isTrain: False                         	[default: None]
+               lambda_CYC: 4.0                           
+           lambda_GAN_D_A: 1.0                           
+           lambda_GAN_D_B: 1.0                           
+           lambda_GAN_G_A: 0.1                           
+           lambda_GAN_G_B: 0.1                           
+             lambda_NCE_D: 1.0                           
+             lambda_NCE_G: 0.05                          
+                load_size: 256                           
+             max_conv_dim: 512                           
+         max_dataset_size: inf                           
+                    model: cast                          
+               n_layers_D: 3                             
+                     name: run511_cast                   	[default: experiment_name]
+               nce_layers: 0,1,2,3                       
+                      ndf: 64                            
+                     netD: basic                         
+                     netG: resnet_9blocks                
+                      ngf: 64                            
+             no_antialias: False                         
+          no_antialias_up: False                         
+               no_dropout: True                          
+                  no_flip: False                         
+                    normD: instance                      
+                    normG: instance                      
+                 num_test: 1                             	[default: 5000]
+              num_threads: 4                             
+                output_nc: 3                             
+                    phase: test                          
+                pool_size: 0                             
+               preprocess: resize_and_crop               
+               queue_size: 4096                          
+         random_scale_max: 3.0                           
+              results_dir: G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke4\cast\results_cast\photo	[default: ./results/]
+           serial_batches: False                         
+                style_dim: 256                           
+                   suffix:                               
+              temperature: 0.07                          
+                  verbose: False                         
+----------------- End -------------------
+dataset [UnalignedDataset] was created
+initialize network with normal
+initialize network with normal
+initialize network with normal
+model [CASTModel] was created
+creating web directory G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke4\cast\results_cast\photo\run511_cast\test_1
+loading the model from G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke4\cast\checkpoints\run511_cast\1_net_AE.pth
+loading the model from G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke4\cast\checkpoints\run511_cast\1_net_Dec_A.pth
+loading the model from G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke4\cast\checkpoints\run511_cast\1_net_Dec_B.pth
+---------- Networks initialized -------------
+[Network AE] Total number of parameters : 3.506 M
+[Network Dec_A] Total number of parameters : 3.505 M
+[Network Dec_B] Total number of parameters : 3.505 M
+-----------------------------------------------
+processing (0000)-th image... ['G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke4\\cast\\work\\infer\\photo\\cast_data\\testA\\Hayao_0.jpg']

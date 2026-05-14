@@ -1,0 +1,19 @@
+{
+  "runs": [
+    {
+      "stage": "train",
+      "status": "ok",
+      "returncode": 0,
+      "elapsed_sec": 10.052,
+      "checkpoint_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke3\\aesfa\\checkpoints\\aesfa",
+      "log_path": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke3\\aesfa\\logs\\aesfa_train.log",
+      "max_iter": 1,
+      "batch_size": 2
+    },
+    {
+      "stage": "infer",
+      "status": "blocked",
+      "error": "missing checkpoint G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke3\\aesfa\\checkpoints\\aesfa\\main.pth"
+    }
+  ]
+}

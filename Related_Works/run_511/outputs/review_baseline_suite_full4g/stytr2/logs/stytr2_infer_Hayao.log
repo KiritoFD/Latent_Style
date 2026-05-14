@@ -1,0 +1,304 @@
+
+
+=== CMD ===
+C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe test.py --content_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao --style_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_style\Hayao --output G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\infer_750\raw\Hayao --vgg G:\GitHub\Latent_Style\Related_Works\run_511\repos\StyTR-2\experiments\vgg_normalised.pth --decoder_path G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\checkpoints\stytr2\decoder_iter_500.pth --Trans_path G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\checkpoints\stytr2\transformer_iter_500.pth --embedding_path G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\checkpoints\stytr2\embedding_iter_500.pth
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00057.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00104.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00123.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00204.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00212.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00219.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00223.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00263.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00271.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00275.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00286.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00298.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00303.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00332.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00335.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00342.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00348.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00375.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00379.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00382.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00388.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00393.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00411.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00428.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00437.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00517.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00546.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00576.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00582.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\cezanne_00605.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_0.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1000.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1001.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1006.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1007.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1008.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1009.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1012.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1014.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1015.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1016.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1017.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1018.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1019.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_102.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1020.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1021.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1023.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1024.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1025.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1026.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1028.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_103.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1033.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1039.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1040.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1041.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1042.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1044.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\Hayao_1049.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00018.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00075.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00092.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00278.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00282.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00286.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00291.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00389.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00429.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00444.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00446.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00542.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00557.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00607.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00677.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00695.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00756.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00776.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00786.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00789.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00812.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00928.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_00959.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_01039.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_01059.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_01127.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_01151.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_01155.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_01208.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\monet_01326.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-08 16_45_24.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-10 12_45_41.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-10 19_30_53.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-11 22_03_00.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-12 01_54_20.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-12 10_29_19.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-12 16_58_40.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-14 07_04_51.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-14 14_11_02.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-16 04_17_00.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-17 09_05_09.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-17 14_54_20.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-17 16_40_10.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-17 17_36_09.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-17 18_08_26.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-17 23_58_45.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-18 02_42_31.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-18 06_58_36.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-18 08_52_05.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-18 11_46_45.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-19 00_58_04.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-19 05_01_31.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-20 11_21_32.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-21 01_47_41.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-21 05_56_32.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-21 17_44_44.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-22 14_12_35.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-22 14_15_50.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-23 13_03_15.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\photo_2013-11-25 10_46_18.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00005.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00090.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00098.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00163.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00167.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00169.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00177.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00202.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00220.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00243.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00264.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00272.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00277.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00289.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00292.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00295.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00321.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00352.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00412.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00418.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00427.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00436.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00455.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00519.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00528.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00557.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00561.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00573.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00668.jpg
+<class 'int'>
+G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_full4g\stytr2\work\stytr2\infer_content\Hayao\vangogh_00681.jpg
+<class 'int'>

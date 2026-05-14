@@ -1,0 +1,58 @@
+{
+  "results": [
+    {
+      "target": "photo",
+      "images": 150,
+      "ssim_y": 0.3136,
+      "edge_f1": 0.0011,
+      "edge_iou": 0.0006,
+      "hf_ratio_src": 0.0901,
+      "hf_gen": 0.0231
+    },
+    {
+      "target": "monet",
+      "images": 150,
+      "ssim_y": 0.3198,
+      "edge_f1": 0.0038,
+      "edge_iou": 0.0019,
+      "hf_ratio_src": 0.2332,
+      "hf_gen": 0.0609
+    },
+    {
+      "target": "vangogh",
+      "images": 150,
+      "ssim_y": 0.3316,
+      "edge_f1": 0.0418,
+      "edge_iou": 0.0217,
+      "hf_ratio_src": 0.3267,
+      "hf_gen": 0.0848
+    },
+    {
+      "target": "cezanne",
+      "images": 150,
+      "ssim_y": 0.3326,
+      "edge_f1": 0.0039,
+      "edge_iou": 0.002,
+      "hf_ratio_src": 0.1509,
+      "hf_gen": 0.0392
+    },
+    {
+      "target": "Hayao",
+      "images": 150,
+      "ssim_y": 0.3255,
+      "edge_f1": 0.0329,
+      "edge_iou": 0.017,
+      "hf_ratio_src": 0.167,
+      "hf_gen": 0.0428
+    },
+    {
+      "target": "ALL",
+      "images": 750,
+      "ssim_y": 0.3246,
+      "edge_f1": 0.0167,
+      "edge_iou": 0.0086,
+      "hf_ratio_src": 0.1935,
+      "hf_gen": 0.0501
+    }
+  ]
+}

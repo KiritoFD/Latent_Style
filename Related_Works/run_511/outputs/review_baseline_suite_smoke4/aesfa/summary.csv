@@ -1,0 +1,3 @@
+batch_size,checkpoint_dir,elapsed_sec,images,images_dir,log_path,max_iter,returncode,stage,status
+2,G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke4\aesfa\checkpoints\aesfa,4.824,,,G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke4\aesfa\logs\aesfa_train.log,1,0,train,ok
+,,2.182,0,G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke4\aesfa\infer_750\images,,,,infer,failed

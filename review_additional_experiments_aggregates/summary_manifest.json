@@ -1,0 +1,13 @@
+{
+  "output_root": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\review_additional_experiments\\review_additional_experiments",
+  "step_rows": 5,
+  "lambda_final_rows": 9,
+  "lambda_best_rows": 9,
+  "efficiency_rows": 10,
+  "files": {
+    "step_sweep_pareto": "G:\\GitHub\\Latent_Style\\review_additional_experiments_aggregates\\step_sweep_pareto.csv",
+    "lambda_grid_final_epoch": "G:\\GitHub\\Latent_Style\\review_additional_experiments_aggregates\\lambda_grid_final_epoch.csv",
+    "lambda_grid_best_transfer_ec": "G:\\GitHub\\Latent_Style\\review_additional_experiments_aggregates\\lambda_grid_best_transfer_ec.csv",
+    "efficiency_profile": "G:\\GitHub\\Latent_Style\\review_additional_experiments_aggregates\\efficiency_profile.csv"
+  }
+}

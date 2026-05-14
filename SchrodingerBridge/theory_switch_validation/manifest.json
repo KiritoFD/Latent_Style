@@ -1,0 +1,69 @@
+{
+  "base_config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\S-add__K-1_C-0_W-20_Col-0\\config.json",
+  "variants": [
+    {
+      "experiment_id": "T0_k2_baseline",
+      "note": "K2 baseline from the same base config; no new switch enabled.",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\theory_switch_validation\\configs\\T0_k2_baseline.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\theory_switch_validation\\T0_k2_baseline",
+      "model_updates": "{}",
+      "bridge_updates": "{}"
+    },
+    {
+      "experiment_id": "T1_sinkhorn_routing",
+      "note": "Semantic attention uses Sinkhorn-style doubly normalized routing.",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\theory_switch_validation\\configs\\T1_sinkhorn_routing.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\theory_switch_validation\\T1_sinkhorn_routing",
+      "model_updates": "{\"semantic_attn_routing_mode\": \"sinkhorn\", \"semantic_sinkhorn_iters\": 3}",
+      "bridge_updates": "{}"
+    },
+    {
+      "experiment_id": "T2_entropy_gate_2p5",
+      "note": "Kinetic penalty gated by semantic attention entropy, moderate strength.",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\theory_switch_validation\\configs\\T2_entropy_gate_2p5.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\theory_switch_validation\\T2_entropy_gate_2p5",
+      "model_updates": "{}",
+      "bridge_updates": "{\"kinetic_entropy_gate_weight\": 2.5}"
+    },
+    {
+      "experiment_id": "T3_entropy_gate_5p0",
+      "note": "Kinetic penalty gated by semantic attention entropy, strong strength.",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\theory_switch_validation\\configs\\T3_entropy_gate_5p0.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\theory_switch_validation\\T3_entropy_gate_5p0",
+      "model_updates": "{}",
+      "bridge_updates": "{\"kinetic_entropy_gate_weight\": 5.0}"
+    },
+    {
+      "experiment_id": "T4_sinkhorn_entropy",
+      "note": "Sinkhorn routing plus moderate entropy-gated kinetic penalty.",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\theory_switch_validation\\configs\\T4_sinkhorn_entropy.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\theory_switch_validation\\T4_sinkhorn_entropy",
+      "model_updates": "{\"semantic_attn_routing_mode\": \"sinkhorn\", \"semantic_sinkhorn_iters\": 3}",
+      "bridge_updates": "{\"kinetic_entropy_gate_weight\": 2.5}"
+    },
+    {
+      "experiment_id": "T5_color_soft_w2",
+      "note": "Mild contextual color loss with regular softmax transport.",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\theory_switch_validation\\configs\\T5_color_soft_w2.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\theory_switch_validation\\T5_color_soft_w2",
+      "model_updates": "{}",
+      "bridge_updates": "{\"w_color\": 2.0, \"color_transport_mode\": \"softmax\"}"
+    },
+    {
+      "experiment_id": "T6_color_gumbel_w2",
+      "note": "Mild contextual color loss with hard Gumbel transport.",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\theory_switch_validation\\configs\\T6_color_gumbel_w2.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\theory_switch_validation\\T6_color_gumbel_w2",
+      "model_updates": "{}",
+      "bridge_updates": "{\"w_color\": 2.0, \"color_transport_mode\": \"gumbel_hard\", \"color_gumbel_tau\": 1.0}"
+    },
+    {
+      "experiment_id": "T7_all_switches_mild",
+      "note": "Combined mild package: Sinkhorn routing, entropy gate, and Gumbel color transport.",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\theory_switch_validation\\configs\\T7_all_switches_mild.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\theory_switch_validation\\T7_all_switches_mild",
+      "model_updates": "{\"semantic_attn_routing_mode\": \"sinkhorn\", \"semantic_sinkhorn_iters\": 3}",
+      "bridge_updates": "{\"kinetic_entropy_gate_weight\": 2.5, \"w_color\": 2.0, \"color_transport_mode\": \"gumbel_hard\", \"color_gumbel_tau\": 1.0}"
+    }
+  ]
+}

@@ -19,8 +19,10 @@ from pathlib import Path
 
 
 THIS_DIR = Path(__file__).resolve().parent
-WORKSPACE_ROOT = THIS_DIR.parent
-AESPA_REPO = THIS_DIR / "repos" / "AesPA-Net"
+RUN511_ROOT = THIS_DIR.parent
+WORKSPACE_ROOT = RUN511_ROOT.parent.parent
+AESPA_REPO = RUN511_ROOT / "repos" / "AesPA-Net"
+PYTHON_EXE = os.environ.get("UV_PYTHON") or sys.executable
 STYLE_DATA = WORKSPACE_ROOT / "style_data"
 TRAIN_DATA = STYLE_DATA / "train"
 OVERFIT50 = STYLE_DATA / "overfit50"
@@ -90,11 +92,14 @@ def reference_names(reference_images_dir: Path) -> list[str]:
 
 def run_cmd(cmd: list[str], cwd: Path, log_path: Path) -> int:
     log_path.parent.mkdir(parents=True, exist_ok=True)
+    env = os.environ.copy()
+    env["WANDB_MODE"] = "disabled"
+    env["WANDB_DISABLED"] = "true"
     with log_path.open("a", encoding="utf-8", errors="replace") as f:
         f.write("\n\n=== CMD ===\n")
         f.write(" ".join(cmd) + "\n")
         f.flush()
-        proc = subprocess.Popen(cmd, cwd=str(cwd), stdout=f, stderr=subprocess.STDOUT)
+        proc = subprocess.Popen(cmd, cwd=str(cwd), stdout=f, stderr=subprocess.STDOUT, env=env)
         return proc.wait()
 
 
@@ -104,9 +109,16 @@ def run_cmd(cmd: list[str], cwd: Path, log_path: Path) -> int:
 
 def check_assets() -> dict[str, object]:
     """Check that required AesPA-Net assets exist."""
-    vgg = AESPA_REPO / "baseline_checkpoints" / "vgg_normalised_conv5_1.t7"
-    if not vgg.exists():
-        return {"status": "blocked", "error": f"missing {vgg}"}
+    candidates = [
+        AESPA_REPO / "baseline_checkpoints" / "vgg_normalised_conv5_1.pth",
+        AESPA_REPO / "baseline_checkpoints" / "vgg_normalised_conv5_1.t7",
+        AESPA_REPO / "baseline_checkpoints" / "vgg_normalised_conv5_1.pkl",
+    ]
+    if not any(path.exists() for path in candidates):
+        return {
+            "status": "blocked",
+            "error": "missing baseline_checkpoints/vgg_normalised_conv5_1.[pth|t7|pkl]",
+        }
     return {"status": "ok"}
 
 
@@ -129,7 +141,7 @@ def train(args: argparse.Namespace, profile: dict[str, int]) -> dict[str, object
 
     log_path = args.run_root / "logs" / "aespa_train.log"
     cmd = [
-        sys.executable,
+        PYTHON_EXE,
         "main.py",
         "--type", "train",
         "--content_dir", str(content_dir),
@@ -217,12 +229,16 @@ def infer(args: argparse.Namespace, profile: dict[str, int]) -> dict[str, object
         log_path = args.run_root / "logs" / f"aespa_infer_{target}.log"
 
         cmd = [
-            sys.executable,
+            PYTHON_EXE,
             "main.py",
             "--type", "test",
             "--content_dir", str(content_dir),
             "--style_dir", str(style_dir),
+            "--train_result_dir", str(args.run_root / "checkpoints" / "aespa"),
             "--test_result_dir", str(test_result_dir),
+            "--comment", "run511",
+            "--batch_size", "1",
+            "--num_workers", "0",
             "--imsize", "256",
             "--cropsize", "256",
         ]
@@ -232,7 +248,8 @@ def infer(args: argparse.Namespace, profile: dict[str, int]) -> dict[str, object
         # Rename outputs
         renamed = 0
         if test_result_dir.exists():
-            for img in sorted(test_result_dir.rglob("*.jpg")):
+            candidates = list(test_result_dir.rglob("*.jpg")) + list(test_result_dir.rglob("*.png"))
+            for img in sorted(candidates):
                 if renamed < len(selected):
                     shutil.copy2(img, output_dir / selected[renamed])
                     renamed += 1
@@ -280,7 +297,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["train", "infer", "all", "smoke", "preflight"], default="all")
     parser.add_argument("--profile", choices=sorted(PROFILES), default="7g")
-    parser.add_argument("--run_root", type=Path, default=THIS_DIR / "outputs" / "aespa_750")
+    parser.add_argument("--run_root", type=Path, default=RUN511_ROOT / "outputs" / "aespa_750")
     parser.add_argument("--reference_images_dir", type=Path, default=DEFAULT_REFERENCE_IMAGES)
     parser.add_argument("--max_iter", type=int, default=0)
     parser.add_argument("--batch_size", type=int, default=0)

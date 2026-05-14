@@ -1,0 +1,1 @@
+$ C:\Program Files\python\python.exe run_evaluation.py G:\GitHub\Latent_Style\SchrodingerBridge\S-add__K-1_C-0_W-20_Col-0\epoch_0007.pt --output G:\GitHub\Latent_Style\step_count_sweep\steps_08 --batch_size 2 --num_steps 8 --step_size 1.0

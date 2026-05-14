@@ -52,3 +52,4 @@ Related_Works/**/*.png
 !**/*grid*.gif
 !**/*grid*.bmp
 *.pkl
+*.Archer

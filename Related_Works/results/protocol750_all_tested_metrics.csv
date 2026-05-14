@@ -1,0 +1,7 @@
+source,run,path,images,ref_match,lpips,clip_style,clip_content,ssim_y,edge_f1,blur_style_drop,down_style_drop,extra_edge_rate,chroma_speckle_z,flat_chroma_hf_z,musiq,maniqa,dists_content,fft_radial_kl_style,fft_slope_error,chroma_grain_index,hf_patch_kid,plain_kid,has_protocol_eval,has_guard_eval,has_artifact_pack,has_hf_patch_kid,has_plain_kid
+complete_750,ours_epoch_0007,Related_Works/run_511/complete_750/ours_epoch_0007,750,750,0.4587,0.7041,0.8043,0.4545,0.311,0.0034,-0.0014,0.0764,-0.486,-0.5239,49.2059,0.4057,0.2477,0.0853,0.5473,0.1391,4.169393,0.052437,True,True,True,True,True
+complete_750,samst_strict,Related_Works/run_511/complete_750/samst_strict,750,750,0.4664,0.7194,0.8193,0.652,0.5162,0.0025,-0.0012,0.1077,0.2636,-0.3002,36.095,0.3139,0.2943,0.2419,1.0536,-0.0063,6.759762,0.048909,True,True,True,True,True
+complete_750,styleid_strict,Related_Works/run_511/complete_750/styleid_strict,750,750,0.7497,0.7597,0.5519,0.1466,0.1954,-0.0005,-0.012,0.2886,0.7909,1.9891,,,,,,,,,True,True,False,False,False
+complete_750,adain_v32k,Related_Works/run_511/complete_750/adain_v32k,750,750,0.6298,0.713,0.699,0.3246,0.0167,0.0391,0.0185,0.0071,1.1066,-1.271,,,,,,,,,True,True,False,False,False
+complete_750,adain_vgg19,Related_Works/run_511/complete_750/adain_vgg19,750,750,0.687,0.693,0.5991,0.2897,0.0182,0.0662,0.0361,0.0197,0.3528,-1.4401,,,,,,,,,True,True,False,False,False
+complete_750,adain_bad,Related_Works/run_511/complete_750/adain_bad,750,750,0.849,0.6308,0.5297,0.2868,0.0,0.007,0.0,0.0,410.2368,-1.829,,,,,,,,,True,True,False,False,False

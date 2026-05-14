@@ -1,0 +1,2 @@
+batch_size,checkpoint_dir,elapsed_sec,log_path,max_iter,returncode,stage,status
+4,G:\GitHub\Latent_Style\run_511\outputs\adain_smoke2\checkpoints\adain,1.56,G:\GitHub\Latent_Style\run_511\outputs\adain_smoke2\logs\adain_train.log,20,0,train,ok

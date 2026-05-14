@@ -1,0 +1,58 @@
+{
+  "runs": [
+    {
+      "stage": "train",
+      "status": "ok",
+      "returncode": 0,
+      "elapsed_sec": 12.107,
+      "checkpoint_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\aespa_smoke_recheck\\checkpoints\\aespa",
+      "log_path": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\aespa_smoke_recheck\\logs\\aespa_train.log",
+      "max_iter": 1,
+      "batch_size": 1
+    },
+    {
+      "stage": "infer",
+      "status": "ok",
+      "elapsed_sec": 37.974,
+      "images": 5,
+      "images_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\aespa_smoke_recheck\\infer_750\\images",
+      "per_target": [
+        {
+          "target": "photo",
+          "returncode": 0,
+          "renamed": 1,
+          "elapsed_sec": 7.694,
+          "log_path": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\aespa_smoke_recheck\\logs\\aespa_infer_photo.log"
+        },
+        {
+          "target": "monet",
+          "returncode": 0,
+          "renamed": 1,
+          "elapsed_sec": 7.742,
+          "log_path": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\aespa_smoke_recheck\\logs\\aespa_infer_monet.log"
+        },
+        {
+          "target": "vangogh",
+          "returncode": 0,
+          "renamed": 1,
+          "elapsed_sec": 7.531,
+          "log_path": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\aespa_smoke_recheck\\logs\\aespa_infer_vangogh.log"
+        },
+        {
+          "target": "cezanne",
+          "returncode": 0,
+          "renamed": 1,
+          "elapsed_sec": 7.731,
+          "log_path": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\aespa_smoke_recheck\\logs\\aespa_infer_cezanne.log"
+        },
+        {
+          "target": "Hayao",
+          "returncode": 0,
+          "renamed": 1,
+          "elapsed_sec": 7.262,
+          "log_path": "G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\aespa_smoke_recheck\\logs\\aespa_infer_Hayao.log"
+        }
+      ]
+    }
+  ]
+}

@@ -7,7 +7,8 @@ from pathlib import Path
 
 
 THIS_DIR = Path(__file__).resolve().parent
-ROOT = THIS_DIR / "complete_750"
+RUN511_ROOT = THIS_DIR.parent
+ROOT = RUN511_ROOT / "complete_750"
 
 DISPLAY = {
     "ours_epoch_0007": "Ours epoch_0007",

@@ -19,8 +19,10 @@ from pathlib import Path
 
 
 THIS_DIR = Path(__file__).resolve().parent
-WORKSPACE_ROOT = THIS_DIR.parent
-CAST_REPO = THIS_DIR / "repos" / "cast"
+RUN511_ROOT = THIS_DIR.parent
+WORKSPACE_ROOT = RUN511_ROOT.parent.parent
+CAST_REPO = RUN511_ROOT / "repos" / "cast"
+PYTHON_EXE = os.environ.get("UV_PYTHON") or sys.executable
 STYLE_DATA = WORKSPACE_ROOT / "style_data"
 TRAIN_DATA = STYLE_DATA / "train"
 OVERFIT50 = STYLE_DATA / "overfit50"
@@ -145,7 +147,7 @@ def train(args: argparse.Namespace, profile: dict[str, int]) -> dict[str, object
 
     log_path = args.run_root / "logs" / "cast_train.log"
     cmd = [
-        sys.executable, "train.py",
+        PYTHON_EXE, "train.py",
         "--dataroot", str(dataroot),
         "--name", "run511_cast",
         "--model", "cast",
@@ -157,6 +159,8 @@ def train(args: argparse.Namespace, profile: dict[str, int]) -> dict[str, object
         "--checkpoints_dir", str(args.run_root / "checkpoints"),
         "--load_size", "286",
         "--crop_size", "256",
+        "--num_threads", "0",
+        "--serial_batches",
         "--no_html",
         "--display_id", "-1",
         "--gpu_ids", "0",
@@ -230,7 +234,7 @@ def infer(args: argparse.Namespace, profile: dict[str, int]) -> dict[str, object
         log_path = args.run_root / "logs" / f"cast_infer_{target}.log"
 
         cmd = [
-            sys.executable, "test.py",
+            PYTHON_EXE, "test.py",
             "--dataroot", str(dataroot),
             "--name", "run511_cast",
             "--model", "cast",
@@ -302,7 +306,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["train", "infer", "all", "smoke", "preflight"], default="all")
     parser.add_argument("--profile", choices=sorted(PROFILES), default="7g")
-    parser.add_argument("--run_root", type=Path, default=THIS_DIR / "outputs" / "cast_750")
+    parser.add_argument("--run_root", type=Path, default=RUN511_ROOT / "outputs" / "cast_750")
     parser.add_argument("--reference_images_dir", type=Path, default=DEFAULT_REFERENCE_IMAGES)
     parser.add_argument("--batch_size", type=int, default=0)
     parser.add_argument("--train_images_per_style", type=int, default=0)

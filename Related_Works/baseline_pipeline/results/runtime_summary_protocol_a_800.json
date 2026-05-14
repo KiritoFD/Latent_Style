@@ -1,0 +1,54 @@
+{
+  "runs": [
+    {
+      "baseline": "styleid",
+      "style": "photo",
+      "phase": "infer",
+      "protocol": "protocol_a_800",
+      "output_root": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\styleid\\protocol_a_800",
+      "elapsed_sec": 621.843,
+      "status": "ok",
+      "error": ""
+    },
+    {
+      "baseline": "styleid",
+      "style": "monet",
+      "phase": "infer",
+      "protocol": "protocol_a_800",
+      "output_root": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\styleid\\protocol_a_800",
+      "elapsed_sec": 615.819,
+      "status": "ok",
+      "error": ""
+    },
+    {
+      "baseline": "styleid",
+      "style": "vangogh",
+      "phase": "infer",
+      "protocol": "protocol_a_800",
+      "output_root": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\styleid\\protocol_a_800",
+      "elapsed_sec": 618.603,
+      "status": "ok",
+      "error": ""
+    },
+    {
+      "baseline": "styleid",
+      "style": "cezanne",
+      "phase": "infer",
+      "protocol": "protocol_a_800",
+      "output_root": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\styleid\\protocol_a_800",
+      "elapsed_sec": 613.676,
+      "status": "ok",
+      "error": ""
+    },
+    {
+      "baseline": "styleid",
+      "style": "Hayao",
+      "phase": "infer",
+      "protocol": "protocol_a_800",
+      "output_root": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\styleid\\protocol_a_800",
+      "elapsed_sec": 615.346,
+      "status": "ok",
+      "error": ""
+    }
+  ]
+}

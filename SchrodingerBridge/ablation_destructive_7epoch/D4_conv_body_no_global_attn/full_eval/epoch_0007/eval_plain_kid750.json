@@ -1,0 +1,34 @@
+{
+  "results": [
+    {
+      "target": "photo",
+      "images": 150,
+      "kid": 0.088967
+    },
+    {
+      "target": "monet",
+      "images": 150,
+      "kid": 0.045109
+    },
+    {
+      "target": "vangogh",
+      "images": 150,
+      "kid": 0.029661
+    },
+    {
+      "target": "cezanne",
+      "images": 150,
+      "kid": 0.028935
+    },
+    {
+      "target": "Hayao",
+      "images": 150,
+      "kid": 0.079978
+    },
+    {
+      "target": "ALL",
+      "images": 750,
+      "kid": 0.05453
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+
+
+=== CMD ===
+C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe main.py --type test --content_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke5\aespa\work\aespa\cezanne\content --style_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke5\aespa\work\aespa\cezanne\style --train_result_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke5\aespa\checkpoints\aespa --test_result_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke5\aespa\test_results\cezanne --comment run511 --imsize 256 --cropsize 256
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py:3824: RuntimeWarning: Mean of empty slice
+  return _methods._mean(a, axis=axis, dtype=dtype,
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\_methods.py:142: RuntimeWarning: invalid value encountered in scalar divide
+  ret = ret.dtype.type(ret / rcount)
+avg :  nan

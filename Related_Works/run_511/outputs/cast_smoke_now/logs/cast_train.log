@@ -1,0 +1,4 @@
+
+
+=== CMD ===
+C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe train.py --dataroot G:\GitHub\Latent_Style\Related_Works\run_511\outputs\cast_smoke_now\work\cast_data --name run511_cast --model cast --batch_size 1 --n_epochs 1 --n_epochs_decay 0 --save_epoch_freq 1 --save_latest_freq 100000000 --checkpoints_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\cast_smoke_now\checkpoints --load_size 286 --crop_size 256 --no_html --display_id -1 --gpu_ids 0

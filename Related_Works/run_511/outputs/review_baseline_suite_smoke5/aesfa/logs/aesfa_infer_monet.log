@@ -1,0 +1,14 @@
+
+
+=== CMD ===
+C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe -c import os, sys; repo='G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\repos\\AesFA'; os.chdir(repo); sys.path.insert(0, repo); import types; sys.modules.setdefault('thop', types.SimpleNamespace(profile=lambda *a, **k: (0.0, 0.0))); from Config import Config; Config.phase='test'; Config.multi_to_multi=True; Config.test_content_size=256; Config.test_style_size=256; Config.content_dir='G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke5\\aesfa\\work\\aesfa\\monet\\content'; Config.style_dir='G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke5\\aesfa\\work\\aesfa\\monet\\style'; Config.img_dir='G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke5\\aesfa\\preview\\aesfa\\monet'; Config.ckpt_dir='G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke5\\aesfa\\checkpoints\\aesfa'; Config.vgg_model='G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\repos\\AesFA\\vgg_normalised.pth'; import test; test.main()
+Version: main
+cuda:0
+content dir: G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke5\aesfa\work\aesfa\monet\content
+style dir: G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke5\aesfa\work\aesfa\monet\style
+Test:  1 images:  1 x 1 (batch size) = 1
+checkpoint:  G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke5\aesfa\checkpoints\aesfa/main.pth
+1 1 1 0.1784508228302002
+GFLOPS: 0.0000, Params: 0.0000
+Max GPU memory allocated: 0.0673 GB
+[AesFA] Content size: 256 Style size: 256  Total images: 1 Avg Testing time: 0.1784508228302002

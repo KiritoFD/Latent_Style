@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -19,8 +20,10 @@ from pathlib import Path
 
 
 THIS_DIR = Path(__file__).resolve().parent
-WORKSPACE_ROOT = THIS_DIR.parent
-STYTR_REPO = THIS_DIR / "repos" / "StyTR-2"
+RUN511_ROOT = THIS_DIR.parent
+WORKSPACE_ROOT = RUN511_ROOT.parent.parent
+STYTR_REPO = RUN511_ROOT / "repos" / "StyTR-2"
+PYTHON_EXE = os.environ.get("UV_PYTHON") or sys.executable
 STYLE_DATA = WORKSPACE_ROOT / "style_data"
 TRAIN_DATA = STYLE_DATA / "train"
 OVERFIT50 = STYLE_DATA / "overfit50"
@@ -140,7 +143,7 @@ def train(args: argparse.Namespace, profile: dict[str, int]) -> dict[str, object
     max_iter = int(args.max_iter or profile["max_iter"])
     batch_size = int(args.batch_size or profile["batch_size"])
     cmd = [
-        sys.executable,
+        PYTHON_EXE,
         "train.py",
         "--content_dir",
         str(content_dir),
@@ -204,7 +207,7 @@ def infer(args: argparse.Namespace, profile: dict[str, int]) -> dict[str, object
         raw_dir.mkdir(parents=True, exist_ok=True)
         log_path = args.run_root / "logs" / f"stytr2_infer_{target}.log"
         cmd = [
-            sys.executable,
+            PYTHON_EXE,
             "test.py",
             "--content_dir",
             str(content_dir),
@@ -273,7 +276,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["train", "infer", "all", "smoke"], default="all")
     parser.add_argument("--profile", choices=sorted(PROFILES), default="7g")
-    parser.add_argument("--run_root", type=Path, default=THIS_DIR / "outputs" / "stytr2_750")
+    parser.add_argument("--run_root", type=Path, default=RUN511_ROOT / "outputs" / "stytr2_750")
     parser.add_argument("--reference_images_dir", type=Path, default=DEFAULT_REFERENCE_IMAGES)
     parser.add_argument("--max_iter", type=int, default=0)
     parser.add_argument("--batch_size", type=int, default=0)

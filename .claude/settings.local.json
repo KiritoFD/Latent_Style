@@ -12,7 +12,9 @@
       "Bash(powershell.exe -NoProfile -Command \"Get-ChildItem 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\baseline_pipeline\\\\results\\\\samst' -Directory | Select-Object -ExpandProperty Name\")",
       "Bash(powershell.exe -NoProfile -Command \"Get-ChildItem 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\baseline_pipeline\\\\results\\\\styleid' -Directory | Select-Object -ExpandProperty Name\")",
       "Bash(powershell.exe -NoProfile -Command \"Get-ChildItem 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\baseline_pipeline\\\\results\\\\style_aligned' -Directory | Select-Object -ExpandProperty Name\")",
-      "Bash(powershell.exe -NoProfile -Command \"Get-ChildItem 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\baseline_pipeline\\\\results\\\\cyclegan_turbo' -Directory | Select-Object -ExpandProperty Name\")"
+      "Bash(powershell.exe -NoProfile -Command \"Get-ChildItem 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\baseline_pipeline\\\\results\\\\cyclegan_turbo' -Directory | Select-Object -ExpandProperty Name\")",
+      "Bash(curl -sL https://raw.githubusercontent.com/xunhuang1995/AdaIN-style/master/lib/StyleINLossModule.lua)",
+      "Bash(powershell -Command \"Get-ChildItem 'g:\\\\GitHub\\\\Latent_Style\\\\SchrodingerBridge' -Depth 0 | Select-Object Name, Mode | Format-Table -AutoSize\")"
     ]
   }
 }

@@ -1,0 +1,9 @@
+
+
+=== CMD ===
+C:\Program Files\python\python.exe -c import os, sys; repo='G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\repos\\AesFA'; os.chdir(repo); sys.path.insert(0, repo); from Config import Config; Config.phase='train'; Config.train_continue='off'; Config.data_num=2; Config.content_dir='G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke\\aesfa\\datasets\\aesfa_content'; Config.style_dir='G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke\\aesfa\\datasets\\aesfa_style'; Config.file_n='run511'; Config.log_dir='G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke\\aesfa\\tb_logs\\aesfa'; Config.ckpt_dir='G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke\\aesfa\\checkpoints\\aesfa'; Config.img_dir='G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke\\aesfa\\preview\\aesfa'; Config.vgg_model='G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\repos\\AesFA\\vgg_normalised.pth'; Config.n_iter=1; Config.save_interval=1; Config.batch_size=1; Config.num_workers=0; Config.load_size=256; Config.crop_size=256; import train; train.main()
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "G:\GitHub\Latent_Style\Related_Works\run_511\repos\AesFA\train.py", line 2, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
