@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 
 # Configuration
-S2WAT_ROOT = "../../../../Related_Works/S2WAT-main"
+S2WAT_ROOT = "../../../../Related_Works/repos/S2WAT-main"
 OUTPUT_DIR = "../results/s2wat"
 STYLE_DATA_ROOT = "../../../style_data"
 TEST_CONTENT_DIR = "../../../style_data/overfit50/photo"
