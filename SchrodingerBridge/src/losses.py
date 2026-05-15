@@ -90,6 +90,11 @@ class OTFlowMatchingObjective:
         self.w_nce = max(0.0, float(bridge_cfg.get("w_nce", 0.0)))
         self.w_low_freq = max(0.0, float(bridge_cfg.get("w_low_freq", 0.0)))
         self.w_cycle = max(0.0, float(bridge_cfg.get("w_cycle", 0.0)))
+        self.w_curvature = max(0.0, float(bridge_cfg.get("w_curvature", 0.0)))
+        self.curvature_dt = max(0.01, float(bridge_cfg.get("curvature_dt", 0.15)))
+        self.kinetic_mode = str(bridge_cfg.get("kinetic_mode", "endpoint")).strip().lower()
+        if self.kinetic_mode not in {"endpoint", "path"}:
+            self.kinetic_mode = "endpoint"
         self.nce_num_patches = max(1, int(bridge_cfg.get("nce_num_patches", 256)))
         self.nce_temperature = max(1e-6, float(bridge_cfg.get("nce_temperature", 0.07)))
         self.low_freq_kernel_size = max(1, int(bridge_cfg.get("low_freq_kernel_size", 7)))
@@ -768,6 +773,24 @@ class OTFlowMatchingObjective:
         flow_loss = self._loss(pred_velocity, target_velocity)
         total_loss = flow_loss
 
+        kinetic_loss = content.new_tensor(0.0, dtype=torch.float32)
+        if self.w_kinetic > 0.0 and self.kinetic_mode == "path":
+            kinetic_loss = (pred_velocity.float() ** 2).mean()
+            total_loss = total_loss + kinetic_loss * self.w_kinetic
+
+        curvature_loss = content.new_tensor(0.0, dtype=torch.float32)
+        if self.w_curvature > 0.0:
+            dt = self.curvature_dt
+            t2 = (t + dt).clamp(max=self.t_max)
+            x_t2 = x_t + pred_velocity * dt
+            pred_v2 = model(
+                x_t2,
+                t=t2,
+                style_id=target_style_id,
+            )
+            curvature_loss = self._loss(pred_v2, pred_velocity)
+            total_loss = total_loss + curvature_loss * self.w_curvature
+
         terminal_swd, endpoint_abs = self._terminal_swd(
             model,
             content=content,
@@ -781,6 +804,8 @@ class OTFlowMatchingObjective:
         metrics: Dict[str, torch.Tensor] = {
             "loss": total_loss,
             "flow": flow_loss.detach(),
+            "kinetic_energy": (kinetic_loss * self.w_kinetic).detach(),
+            "curvature": (curvature_loss * self.w_curvature).detach(),
             "ot_cost": ot_cost.detach(),
             "plan_entropy": plan_entropy.detach(),
             "bridge_sigma": content.new_tensor(self.bridge_sigma, dtype=torch.float32),

@@ -25,6 +25,7 @@ _TRAIN_LOG_COLUMNS = [
     "loss",
     "flow",
     "kinetic_energy",
+    "curvature",
     "low_freq_anchor",
     "ot_cost",
     "terminal_swd",
@@ -517,6 +518,8 @@ class SBTrainer:
                 progress.set_postfix(
                     loss=f"{_avg('loss'):.4f}",
                     flow=f"{_avg('flow'):.4f}" if not self.distill_enabled else f"{_avg('distill_velocity'):.4f}",
+                    kin=f"{_avg('kinetic_energy'):.4f}",
+                    curv=f"{_avg('curvature'):.4f}",
                     ot=f"{_avg('ot_cost'):.4f}",
                     tswd=f"{_avg('terminal_swd'):.4f}" if not self.distill_enabled else f"{_avg('distill_endpoint'):.4f}",
                     low=f"{_avg('low_freq_anchor'):.4f}",
@@ -554,6 +557,7 @@ class SBTrainer:
         metrics.setdefault("loss", 0.0)
         metrics.setdefault("flow", 0.0)
         metrics.setdefault("kinetic_energy", 0.0)
+        metrics.setdefault("curvature", 0.0)
         metrics.setdefault("distill_velocity", 0.0)
         metrics.setdefault("distill_endpoint", 0.0)
         metrics.setdefault("ot_cost", 0.0)
@@ -586,6 +590,7 @@ class SBTrainer:
             float(metrics.get("loss", 0.0)),
             float(metrics.get("flow", 0.0)),
             float(metrics.get("kinetic_energy", 0.0)),
+            float(metrics.get("curvature", 0.0)),
             float(metrics.get("ot_cost", 0.0)),
             float(metrics.get("terminal_swd", 0.0)),
             float(metrics.get("color", 0.0)),
