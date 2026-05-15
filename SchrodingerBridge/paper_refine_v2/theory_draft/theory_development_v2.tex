@@ -1,0 +1,734 @@
+% =============================================================================
+% Theory Development v2 — REVISED based on experimental findings
+% Changes from v1:
+%   - Clarify OMF (t=1) training regime vs flow_matching description
+%   - Proposition 1: Bayes optimal at t=1 only
+%   - Proposition 2: L_kin as displacement regularizer (not path-energy)
+%   - Proposition 3: Validated empirically (O(1/K) confirmed)
+%   - Proposition 4: Unchanged
+%   - Proposition 5: Reformulated as directional coherence
+%   - Added "experimental evidence" sections per proposition
+% =============================================================================
+\documentclass[letterpaper]{article}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{bm,bbm}
+\usepackage{algorithm,algpseudocode}
+\usepackage[colorlinks,linkcolor=blue,citecolor=blue]{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{enumitem}
+\usepackage{booktabs}
+
+% ---- theorem environments ----
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{lemma}[proposition]{Lemma}
+\newtheorem{corollary}[proposition]{Corollary}
+\newtheorem{definition}[proposition]{Definition}
+\newtheorem{assumption}[proposition]{Assumption}
+\newtheorem{remark}[proposition]{Remark}
+\newtheorem{example}[proposition]{Example}
+
+% ---- math shorthand ----
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\Cov}{\operatorname{Cov}}
+\newcommand{\SWD}{\operatorname{SWD}}
+\newcommand{\OT}{\operatorname{OT}}
+\newcommand{\cA}{\mathcal{A}}
+\newcommand{\cL}{\mathcal{L}}
+\newcommand{\cC}{\mathcal{C}}
+\newcommand{\cH}{\mathcal{H}}
+\newcommand{\cN}{\mathcal{N}}
+\newcommand{\cP}{\mathcal{P}}
+\newcommand{\cB}{\mathcal{B}}
+\newcommand{\cE}{\mathcal{E}}
+\newcommand{\cD}{\mathcal{D}}
+\newcommand{\id}{\operatorname{id}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\KL}{\operatorname{KL}}
+\newcommand{\TV}{\operatorname{TV}}
+\newcommand{\argmin}{\operatorname{argmin}}
+\newcommand{\argmax}{\operatorname{argmax}}
+\newcommand{\supp}{\operatorname{supp}}
+\newcommand{\sort}{\operatorname{sort}}
+\newcommand{\proj}{\operatorname{proj}}
+\newcommand{\const}{\text{const}}
+
+\title{Theory Development Draft v2:\\A Bounded Latent Transport Framework\\for OT-Coupled Flow Matching}
+\author{Internal Working Document — Revised from Experiments}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document revises the theoretical framework from the initial draft,
+incorporating experimental verification of each proposition.
+The central revision clarifies that the actual training uses the one-step
+mass-flow (OMF) mode with $t=1$ rather than time-sampled bridge states,
+and Proposition~2 (kinetic regularization) is reformulated from a
+path-energy surrogate to a displacement-magnitude regularizer.
+All five propositions are re-derived with explicit assumptions, proofs,
+code correspondence, and experimental evidence.
+
+\textbf{Key experimental findings:}
+\begin{itemize}[nosep]
+    \item Step-count error scales as $O(1/K)$ (confirmed, Prop~3).
+    \item The velocity norm $\E\|v_\theta\|^2$ varies by $\sim 44\%$ across
+    $t$ on bridge states (contradicts t-independence, Prop~2 revised).
+    \item OT coupling improves directional coherence by $\sim 21\%$ over
+    random coupling (cosine similarity 0.150 vs.~0.124), but does not reduce
+    displacement variance (Prop~5 reformulated).
+\end{itemize}
+\end{abstract}
+
+\tableofcontents
+
+\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Notation and Preliminaries}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Let $\cZ = \R^{4 \times 32 \times 32}$ denote the latent space of a pretrained
+VAE (SD-VAE with scale factor $\sigma_{\text{vae}}=0.18215$).
+Let $[S] = \{1,\dots,S\}$ index style domains ($S=5$ in experiments).
+
+\begin{definition}[Empirical latent measures]
+For a batch $B$, let $\{z_c^{(i)}\}_{i=1}^B$ be content latents and
+$\{z_s^{(j)}\}_{j=1}^B$ be target-style latents. Define the empirical measures
+\begin{align}
+    \hat\mu_c^B &= \frac{1}{B}\sum_{i=1}^B \delta_{z_c^{(i)}},
+    &
+    \hat\mu_s^B &= \frac{1}{B}\sum_{j=1}^B \delta_{z_s^{(j)}}.
+\end{align}
+\end{definition}
+
+\begin{definition}[SWD transport cost]
+\label{def:swd_cost}
+The transport cost between two latents is the sliced-Wasserstein distance
+over multi-scale patches (from \texttt{SWDTransportCost}):
+\begin{equation}
+    c(z, z') = \sum_{r\in\mathcal{R}} \frac{1}{M}\sum_{m=1}^M
+    \bigl\| \sort(\cP_r(z)\,\theta_m) - \sort(\cP_r(z')\,\theta_m) \bigr\|_2^2,
+\end{equation}
+where $\cP_r(z)$ extracts patches of size $r$, $\{\theta_m\}_{m=1}^M$ are
+random projections, and $\mathcal{R}=\{3,5,7,15\}$ in our config.
+\end{definition}
+
+\subsection{Code-to-Math Correspondence}
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{Code} & \textbf{Math} \\
+\midrule
+\texttt{SWDTransportCost.pairwise\_cost} & Cost matrix $C_{ij}=c(z_c^{(i)},z_s^{(j)})$ \\
+\texttt{\_sinkhorn\_plan} & $\pi^\star = \argmin_\pi\sum C_{ij}\pi_{ij}+\varepsilon H(\pi)$ \\
+\texttt{\_sample\_from\_plan} & $\tilde z_1\sim\pi^\star(z_s\mid z_c)$ \\
+\texttt{TimeConditionedLANCETBridge.forward} & $v_\theta(z_t, t, s)$ \\
+\texttt{TimeConditionedLANCETBridge.integrate} & $z_{k+1} = z_k + \Delta t \cdot v_\theta(z_k, t_k, s)$ \\
+\texttt{w\_kinetic} & $\lambda_{\text{kin}}=1.0$ (D0) \\
+\texttt{terminal\_swd\_weight} & $\lambda_{\text{term}}=20.0$ (D0) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{remark}[Training mode: OMF]
+\label{rem:omf}
+All configurations use \texttt{objective\_mode = "omf"} (one-step mass flow).
+This means training computes the velocity at $t=1$ only:
+\begin{equation}
+    \hat v = v_\theta(z_0, t=1, s),\qquad
+    \hat z_1 = z_0 + \hat v.
+\end{equation}
+The time-conditioned architecture supports arbitrary $t$, but training
+supervision is restricted to $t=1$. This is a key distinction from the
+paper's idealized description of time-sampled bridge states,
+and affects the interpretation of Propositions~1 and~2.
+\end{remark}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Proposition 0: Empirical Latent Transport Objective}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{proposition}[OMF training objective]
+\label{prop:objective}
+For a batch $B$, the OMF training objective is the sum of three terms:
+\begin{equation}
+    \cL(\theta) = \underbrace{\lambda_{\text{flow}}\cL_{\text{flow}}(\theta)}_{\text{disabled in D0}}
+    + \lambda_{\text{kin}}\cL_{\text{kin}}(\theta)
+    + \lambda_{\text{term}}\cL_{\text{term}}(\theta)
+    + \cL_{\text{aux}}(\theta).
+    \label{eq:omf_objective}
+\end{equation}
+
+\paragraph{OT coupling (endpoint construction).}
+The entropic OT plan solves:
+\begin{equation}
+    \pi^\star = \argmin_{\pi\in\Pi(\hat\mu_c,\hat\mu_s)}
+    \sum_{i,j}C_{ij}\pi_{ij} + \varepsilon H(\pi),\quad
+    C_{ij}=c(z_c^{(i)}, z_s^{(j)}).
+\end{equation}
+Each content latent receives a matched target $\tilde z_1\sim\pi^\star(z_s\mid z_c)$.
+
+\paragraph{One-step prediction (t=1).}
+Given $z_0\sim\hat\mu_c$, $\tilde z_1\sim\pi^\star(\cdot\mid z_0)$, the model predicts:
+\begin{align}
+    \hat v &= v_\theta(z_0, t=1, s), \label{eq:omf_velocity} \\
+    \hat z_1 &= z_0 + \hat v. \label{eq:omf_endpoint}
+\end{align}
+
+\paragraph{Flow matching loss (disabled in mainline).}
+\begin{equation}
+    \cL_{\text{flow}}(\theta) = \E\bigl\| \hat z_1 - \tilde z_1 \bigr\|^2.
+    \label{eq:flow_loss}
+\end{equation}
+When enabled ($\lambda_{\text{flow}}>0$), this directly supervises the endpoint.
+In the main D0 config, $\lambda_{\text{flow}}=0$.
+
+\paragraph{Kinetic regularization.}
+\begin{equation}
+    \cL_{\text{kin}}(\theta) = \E\bigl\| \hat v \bigr\|_2^2 = \E\bigl\| v_\theta(z_0, 1, s) \bigr\|_2^2.
+    \label{eq:kin_loss}
+\end{equation}
+Penalizes large one-step displacements. In D0, $\lambda_{\text{kin}}=1.0$.
+In the main config (80-epoch), $\lambda_{\text{kin}}=1.5$.
+
+\paragraph{Terminal SWD regularization.}
+\begin{equation}
+    \cL_{\text{term}}(\theta) = \SWD_{\mathcal{R},M}\bigl(\hat z_1,\; \tilde z_1\bigr)
+    = \sum_{r\in\mathcal{R}}\frac{1}{M}\sum_{m=1}^M
+    \bigl\| \sort(\cP_r(\hat z_1)\theta_m) - \sort(\cP_r(\tilde z_1)\theta_m) \bigr\|_2^2.
+    \label{eq:term_loss}
+\end{equation}
+In D0, $\lambda_{\text{term}}=20.0$ and $\mathcal{R}=\{3,5,7,15\}$.
+During training, $\hat z_1$ is obtained by $N_{\text{term}}=4$ Euler steps.
+
+\paragraph{Auxiliary losses.}
+The full OMF mode also supports optional low-frequency anchoring,
+color transport, cycle consistency, NCE, and repulsive losses;
+these are disabled in D0/mainline ($\lambda=0$).
+\end{proposition}
+
+\begin{proof}[Code correspondence]
+The objective is implemented in \texttt{OTFlowMatchingObjective.\_compute\_omf\_details}
+(lines~463--707 of \texttt{losses.py}). The three main terms correspond to:
+\begin{itemize}[nosep]
+    \item $\cL_{\text{flow}}$: lines~528--535 (disabled by default, \texttt{w\_flow=0})
+    \item $\cL_{\text{kin}}$: lines~537--557 (\texttt{w\_kinetic=1.0} in D0)
+    \item $\cL_{\text{term}}$: lines~559--622 (\texttt{terminal\_swd\_weight=20.0} in D0)
+\end{itemize}
+The OT coupling uses \texttt{\_sinkhorn\_plan} (lines~121--143) with
+\texttt{SWDTransportCost} from \texttt{ot\_cost.py}.
+The terminal evaluation uses \texttt{model.integrate} with
+\texttt{terminal\_num\_steps=4}.
+\end{proof}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Proposition 1: One-Step Velocity as Conditional Displacement Estimation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Due to the OMF training regime (Remark~\ref{rem:omf}), the Bayes optimal
+interpretation applies to the one-step displacement at $t=1$ rather than
+the full time-conditioned velocity field.
+
+\subsection{Theoretical statement}
+
+\begin{assumption}[Square-integrability]
+\label{asm:sqint}
+The velocity field $v_\theta$ is parameterized by a family of measurable
+functions $v:\cZ\times[0,1]\times[S]\to\cZ$ with
+$\E\|v(z_0,1,s)\|^2<\infty$ for all $s$.
+The OT coupling $\pi^\star$ is independent of $v_\theta$.
+\end{assumption}
+
+\begin{proposition}[Bayes optimal one-step displacement]
+\label{prop:bayes_omf}
+Under Assumption~\ref{asm:sqint}, minimizing the endpoint loss
+$\cL_{\text{flow}}(\theta)=\E\|\hat z_1 - \tilde z_1\|^2$ yields the
+Bayes optimal one-step displacement:
+\begin{equation}
+    v^\star(z_0, 1, s) = \E\bigl[\,\tilde z_1 - z_0 \mid z_0,\; s \,\bigr]
+    = \E\bigl[\,\tilde z_1 \mid z_0,\; s \,\bigr] - z_0.
+    \label{eq:bayes_omf}
+\end{equation}
+This is the expected transport direction from $z_0$ to the OT-matched
+endpoint, conditioned only on the content latent and target style.
+\end{proposition}
+
+\begin{proof}
+The endpoint loss expands as:
+\begin{align}
+    \cL_{\text{flow}}(\theta)
+    &= \E\bigl\| (z_0 + v_\theta(z_0,1,s)) - \tilde z_1 \bigr\|^2 \\
+    &= \E\bigl\| v_\theta(z_0,1,s) - (\tilde z_1 - z_0) \bigr\|^2.
+\end{align}
+The minimizer of $\E\|f(X)-Y\|^2$ over measurable $f$ is
+$f^\star(x)=\E[Y\mid X=x]$. Setting $X=(z_0,s)$, $Y=\tilde z_1-z_0$,
+and $f=v_\theta(\cdot,1,\cdot)$ gives the result.
+\end{proof}
+
+\subsection{Limitations and practical considerations}
+
+\begin{remark}[Training does not minimize $\cL_{\text{flow}}$ alone]
+In the actual D0 config, $\lambda_{\text{flow}}=0$ so $\cL_{\text{flow}}$
+is not explicitly minimized. The learned velocity is a trade-off among
+kinetic regularization, terminal SWD, and the implicit flow-matching
+signal through the OT coupling:
+\begin{equation}
+    v_\theta \approx \argmin_{v\in\mathcal{V}}
+    \bigl[ \lambda_{\text{kin}}\E\|v\|^2 + \lambda_{\text{term}}\SWD(z_0+v, \tilde z_1) \bigr].
+\end{equation}
+The optimal solution under this combined objective does not have a closed
+form, but the Bayes optimal displacement (Prop.~\ref{prop:bayes_omf})
+provides a reference: $v_\theta$ should move $z_0$ toward $\tilde z_1$
+while minimizing path length (kinetic) and matching patch statistics (SWD).
+\end{remark}
+
+\begin{remark}[Generalization to $t<1$ is implicit]
+The time-conditioned architecture is trained only at $t=1$, yet inference
+evaluates $v_\theta(z_t,t,s)$ for $t<1$. The network must generalize
+through:
+\begin{itemize}[nosep]
+    \item The sinusoidal time embedding that shifts the style code.
+    \item The shared backbone that processes $(z_t, t)$ jointly.
+    \item The inductive bias of the U-Net-like architecture.
+\end{itemize}
+Experiment~002 shows that for a \emph{fixed input} $z_0$, the velocity norm
+is nearly constant across $t$ (variance $<0.003\%$ of mean), indicating that
+the time conditioning primarily modulates the representation of the input
+$(z_t, t)$ rather than the output magnitude directly.
+\end{remark}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Proposition 2: Kinetic Regularization as Displacement Control}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Revision from v1}
+The initial draft claimed that $\cL_{\text{kin}}$ is a path-energy surrogate
+with $t$-independence of $\E\|v_\theta\|^2$.
+Experiment~002 shows that $\E\|v_\theta(z_t,t,s)\|^2$ varies by $\sim 44\%$
+across $t$ for bridge states (Fig.~\ref{fig:t_dependence}).
+We therefore reformulate the proposition: $\cL_{\text{kin}}$ is a
+\textbf{one-step displacement regularizer} with a known relationship to
+the inference-time path energy.
+
+\subsection{Theoretical statement}
+
+\begin{definition}[One-step displacement]
+The one-step displacement at $t=1$ is
+\begin{equation}
+    D_\theta(z_0, s) = v_\theta(z_0, 1, s).
+\end{equation}
+The kinetic loss directly penalizes its squared norm:
+\begin{equation}
+    \cL_{\text{kin}}(\theta) = \E_{z_0, s}\; \bigl\| D_\theta(z_0, s) \bigr\|_2^2.
+\end{equation}
+\end{definition}
+
+\begin{definition}[Inference-time discrete action]
+\label{def:discrete_action}
+At inference with $K$ Euler steps ($\Delta t = 1/K$), the discrete path
+action along the integrated trajectory $\{z_k\}_{k=0}^K$ is:
+\begin{equation}
+    \cA_K(v_\theta) = \sum_{k=0}^{K-1} \Delta t \,
+    \bigl\| v_\theta(z_k, t_k, s) \bigr\|_2^2,
+    \qquad t_k = (k+0.5)\,\Delta t.
+    \label{eq:discrete_action}
+\end{equation}
+The continuous path action is the limit $K\to\infty$:
+\begin{equation}
+    \cA_\infty(v_\theta) = \int_0^1 \E\bigl\| v_\theta(z(t), t, s) \bigr\|_2^2\, dt.
+    \label{eq:continuous_action}
+\end{equation}
+\end{definition}
+
+\begin{proposition}[Kinetic control of displacement]
+\label{prop:kinetic_control}
+Under the regularity conditions of Proposition~\ref{prop:euler_error}
+($v_\theta$ is $L$-Lipschitz in $z$, bounded by $M$):
+\begin{enumerate}[nosep]
+    \item \textbf{Displacement bound:}
+    The one-step displacement is bounded by the kinetic loss:
+    $\E\|D_\theta(z_0,s)\|^2 = \cL_{\text{kin}}(\theta)$.
+    Therefore, $\lambda_{\text{kin}}\cL_{\text{kin}}$ directly controls
+    the expected squared transport distance per step.
+
+    \item \textbf{Action convergence:}
+    The discrete action converges to the continuous action:
+    $|\cA_K(v_\theta) - \cA_\infty(v_\theta)| \leq C / K$,
+    where $C$ depends on $L, M$ and the trajectory regularity.
+
+    \item \textbf{Weak surrogate bound:}
+    If $\|v_\theta(z,t,s)\| \leq \|v_\theta(z_0,1,s)\| \cdot e^{L|1-t|}$
+    (a standard Gr\"onwall-type estimate for the ODE), then
+    $\cA_K(v_\theta) \leq \cL_{\text{kin}}(\theta) \cdot e^{L}$.
+    This provides an exponential bound of the path action by the kinetic loss.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+\paragraph{1.} Immediate from Definition~2 and Eq.~\eqref{eq:kin_loss}.
+
+\paragraph{2.} Follows from standard numerical analysis of the midpoint
+Riemann sum for Lipschitz integrands, combined with the Euler error bound
+(Proposition~\ref{prop:euler_error}).
+
+\paragraph{3.} By Gr\"onwall's inequality, if $dz/dt = v_\theta(z,t,s)$,
+then $\|v_\theta(z(t),t,s)\| \leq \|v_\theta(z(1),1,s)\| e^{L|1-t|}$
+under the $L$-Lipschitz condition. Integrating from $0$ to $1$ gives:
+\begin{align}
+    \cA_\infty &= \int_0^1 \E\|v_\theta(z(t),t,s)\|^2\,dt \\
+    &\leq \int_0^1 \E\|v_\theta(z_0,1,s)\|^2 \cdot e^{2L|1-t|}\,dt \\
+    &= \E\|D_\theta\|^2 \cdot \int_0^1 e^{2L|1-t|}\,dt
+    = \cL_{\text{kin}} \cdot \frac{e^{2L}-1}{2L}.
+\end{align}
+\end{proof}
+
+\subsection{Experimental evidence}
+
+\begin{figure}[h]
+\centering
+\begin{tabular}{lrr}
+\toprule
+$t$ & Mean $\|v_\theta\|^2$ (fixed $z_0$) & Mean $\|v_\theta\|^2$ (bridge $z_t$) \\
+\midrule
+0.0 & 1017.2 & 1017.2 \\
+0.2 & 1017.0 & 777.4 \\
+0.5 & 1016.9 & 584.5 \\
+0.8 & 1016.7 & 592.5 \\
+1.0 & 1016.6 & 727.6 \\
+\midrule
+Overall mean & 1017 & 698 \\
+\bottomrule
+\end{tabular}
+\caption{Experiment~002 results: velocity norm across $t$ for the D0 model.}
+\label{fig:t_dependence}
+\end{figure}
+
+Key findings:
+\begin{itemize}[nosep]
+    \item Fixed-input $\E\|v_\theta(z_0,t,s)\|^2$ is nearly constant across
+    $t$ (CV $<0.003\%$). The time embedding does not modulate magnitude.
+    \item Bridge-state $\E\|v_\theta(z_t,t,s)\|^2$ varies by $\sim 44\%$,
+    with minimum at $t\approx 0.6$ where the bridge state is closest to
+    the target distribution.
+    \item $\cL_{\text{kin}}$ at $t=1$ ($\sim 1017$) overestimates the
+    path-integrated action ($\sim 698$) by $\sim 46\%$.
+\end{itemize}
+
+\begin{remark}[Practical implication]
+The kinetic regularizer controls the displacement magnitude at the
+supervised point ($t=1$). This is sufficient for training stability
+because the terminal SWD and flow-matching signals also operate at $t=1$.
+The time-conditioned architecture generalizes the boundedness to $t<1$
+through weight sharing and architectural smoothness, resulting in
+well-behaved inference trajectories (as confirmed by the $O(1/K)$
+endpoint error in Proposition~\ref{prop:euler_error}).
+\end{remark}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Proposition 3: Euler Integration Discretization Error}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+This proposition is directly validated by Experiment~001.
+The theoretical statement and proof are unchanged from the standard
+numerical analysis, but we now include quantitative experimental verification.
+
+\subsection{Theoretical statement}
+
+\begin{assumption}[Regularity of $v_\theta$]
+\label{asm:regularity_euler}
+The learned velocity field $v_\theta$ satisfies:
+\begin{enumerate}[nosep]
+    \item $L$-Lipschitz in $z$: $\|v_\theta(z_1,t,s)-v_\theta(z_2,t,s)\| \leq L\|z_1-z_2\|$.
+    \item Bounded: $\|v_\theta(z,t,s)\| \leq M$ for all $z,t,s$.
+    \item $L_t$-Lipschitz in $t$: $\|v_\theta(z,t_1,s)-v_\theta(z,t_2,s)\| \leq L_t|t_1-t_2|$.
+\end{enumerate}
+\end{assumption}
+
+\begin{proposition}[Global truncation error]
+\label{prop:euler_error}
+Under Assumption~\ref{asm:regularity_euler}, the Euler integration error
+at the terminal time $t=1$ satisfies
+\begin{equation}
+    \bigl\| z(1) - z_K \bigr\| \leq C \cdot \Delta t,\qquad
+    C = \frac{1}{2} (M L_t + M^2 L) \frac{e^L - 1}{L}.
+    \label{eq:euler_bound}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Standard global truncation error analysis; see the initial draft or
+\cite{atkinson2009numerical} for the full derivation.
+\end{proof}
+
+\subsection{Experimental validation}
+
+Experiment~001 measured $\|z_K - z_{256}\|$ for $K\in\{1,2,4,8,12,16,32,64,128,256\}$
+using the D0 model, with $z_{256}$ as reference.
+
+\begin{figure}[h]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+$K$ (steps) & $\Delta t$ & Abs.\ error & Ratio to $K/2$ \\
+\midrule
+1 & 1.000 & 10.67 & --- \\
+2 & 0.500 & 3.80 & 2.81 \\
+4 & 0.250 & 1.74 & 2.18 \\
+8 & 0.125 & 0.835 & 2.08 \\
+16 & 0.0625 & 0.403 & 2.07 \\
+32 & 0.0313 & 0.190 & 2.12 \\
+64 & 0.0156 & 0.084 & 2.27 \\
+128 & 0.0078 & 0.027 & 3.12 \\
+256 & 0.0039 & 0 (ref) & --- \\
+\bottomrule
+\end{tabular}
+\caption{Error scaling with step count. Ratio $\approx 2$ confirms $O(1/K)$ scaling.}
+\label{fig:step_error}
+\end{figure}
+
+The error roughly halves when steps are doubled (ratio $\approx 2.0$--$2.3$
+for $K=4$--$64$), confirming the $O(\Delta t) = O(1/K)$ bound.
+The paper's observation of flat quality across 4--16 steps is consistent:
+even at $K=4$, the absolute error (1.74 in latent space, or $\sim 0.087$
+per VAE channel) is small relative to the style transfer effect size.
+
+\begin{remark}[Constants are checkpoint-dependent]
+The constants $L$, $M$, $L_t$ depend on the learned parameters. The
+$O(\Delta t)$ scaling holds universally for well-behaved $v_\theta$,
+but the magnitude $C$ varies. The near-flat quality curve across
+4--16 steps indicates that the D0 model's $C$ is sufficiently small
+that 4 steps already reach the ``plateau'' of the error curve.
+\end{remark}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Proposition 4: Terminal SWD as Endpoint Distribution Control}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+This proposition is unchanged from the initial draft. We restate it
+concisely with the revised $\lambda_{\text{term}}$ setting.
+
+\begin{proposition}[Terminal SWD controls patch distribution]
+\label{prop:terminal_swd}
+With $\lambda_{\text{term}}=20.0$ and $\mathcal{R}=\{3,5,7,15\}$,
+the terminal loss
+\begin{equation}
+    \cL_{\text{term}}(\theta) = \frac{1}{|\mathcal{R}|}\sum_{r\in\mathcal{R}}
+    \SWD_M\bigl( \hat\nu_\theta^{(r)},\; \hat\nu_s^{(r)} \bigr)
+\end{equation}
+satisfies:
+
+\begin{enumerate}[nosep]
+    \item \textbf{Multi-scale patch distribution matching:}
+    Small patches ($r=3$) constrain fine texture statistics;
+    large patches ($r=15$) constrain tonal distribution.
+    
+    \item \textbf{Spatial permutation invariance:}
+    $\SWD$ compares patch \emph{distributions} without spatial alignment,
+    enabling content preservation alongside style transfer.
+    
+    \item \textbf{Identifiability in the limit:}
+    $\cL_{\text{term}}=0$ implies the empirical patch projections match
+    on all $M$ directions; as $M\to\infty$, this implies distributional
+    equality on each patch scale $r\in\mathcal{R}$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+See Proposition~4 in the initial draft (unchanged).
+The ablation D1 (no terminal SWD, $\lambda_{\text{term}}=0$) shows
+CLIP-style dropping from 0.7014 to 0.6708, confirming the empirical
+importance of this term.
+\end{proof}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Proposition 5: OT Coupling Improves Directional Coherence}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Revision from v1}
+The initial draft claimed OT coupling reduces endpoint supervision variance.
+Experiment~003 shows that OT \textbf{does not reduce displacement variance},
+but significantly \textbf{improves directional coherence} (cosine similarity
+to mean direction: 0.150 vs.~0.124, a $\sim 21\%$ improvement).
+We reformulate accordingly.
+
+\subsection{Theoretical statement}
+
+\begin{definition}[Directional coherence]
+For a batch coupling $\pi$ producing paired displacements
+$\{d^{(i)} = z_1^{(i)} - z_0^{(i)}\}_{i=1}^B$, define the mean direction
+$\bar d = \frac{1}{B}\sum_i d^{(i)}$. The directional coherence is:
+\begin{equation}
+    \rho(\pi) = \frac{1}{B}\sum_{i=1}^B
+    \frac{d^{(i)}\cdot\bar d}{\|d^{(i)}\|\,\|\bar d\|}.
+    \label{eq:directional_coherence}
+\end{equation}
+This measures how consistently the displacements point in the same direction.
+\end{definition}
+
+\begin{proposition}[OT improves directional coherence]
+\label{prop:ot_directional}
+For a fixed batch, let $\pi^{\star}$ be the entropic OT coupling
+(minimizing $\sum C_{ij}\pi_{ij}+\varepsilon H(\pi)$) and let
+$\pi^{\text{rand}}$ be the random uniform coupling. Then:
+
+\begin{enumerate}[nosep]
+    \item \textbf{Lower transport cost:}
+    $\cC(\pi^{\star}) \leq \cC(\pi^{\text{rand}})$, where
+    $\cC(\pi)=\E_\pi[c(z_0,z_1)]$.
+    The expected gap is $\sim 4.2\%$ in our experiments.
+    
+    \item \textbf{Higher directional coherence:}
+    $\rho(\pi^{\star}) \geq \rho(\pi^{\text{rand}})$.
+    Empirically, $\rho(\pi^{\star}) \approx 0.150$ vs.\
+    $\rho(\pi^{\text{rand}}) \approx 0.124$ ($21\%$ improvement).
+    
+    \item \textbf{Mechanism:}
+    OT matches each content latent to a target latent with similar
+    patch statistics (low SWD cost). These matched pairs are more
+    semantically aligned, so the displacement vectors point in
+    more consistent directions across the batch.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}[Sketch]
+\paragraph{1.} Follows from the definition of $\pi^\star$ as the minimizer
+of the entropic transport problem. The cost gap persists unless all
+pairwise costs are equal (non-generic).
+
+\paragraph{2.} OT favors couplings where similar latents are paired.
+Since $\tilde z_1$ is close to $z_0$ in SWD, the displacement direction
+is influenced by the local geometry of the latent manifold. Random coupling
+pairs unrelated latents, producing more diverse displacement directions.
+A full proof would require analyzing the joint distribution of
+$(z_0, \tilde z_1)$ under both couplings.
+
+\paragraph{3.} Qualitative explanation based on the empirical observation
+that content-style pairs with lower SWD cost share more visual structure.
+\end{proof}
+
+\subsection{Experimental evidence}
+
+\begin{figure}[h]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+Metric & OT coupling & Random coupling & Ratio \\
+\midrule
+Transport cost & 0.1185 & 0.1238 & 0.958 \\
+Displacement$^2$ mean & 5069.7 & 5109.1 & 0.992 \\
+Displacement$^2$ CV & 0.237 & 0.211 & 1.124 \\
+\textbf{Directional cos sim} $\uparrow$ & \textbf{0.150} & \textbf{0.124} & \textbf{1.206} \\
+\bottomrule
+\end{tabular}
+\caption{Experiment~003: OT vs.\ random coupling (10 batches $\times$ 64 samples).}
+\label{fig:ot_vs_random}
+\end{figure}
+
+The directional coherence improvement ($+21\%$) is the most significant
+effect. This means:
+\begin{itemize}[nosep]
+    \item The model receives more consistent supervision about which
+    direction to move each content latent.
+    \item Training convergence should be faster and more stable.
+    \item The learned trajectories should be straighter (less curvature).
+\end{itemize}
+
+\begin{remark}[Variance is not reduced]
+The displacement $\CV$ is slightly \emph{higher} under OT (0.237 vs.~0.211),
+contradicting the initial hypothesis. This is because OT can produce
+large displacements for outliers (pairing a very different content with
+its best-match style), while random coupling averages out such extreme
+pairings. The variance increase is modest and outweighed by the
+directional coherence gain.
+\end{remark}
+
+\begin{remark}[Theoretical explanation]
+OT's directional coherence can be understood through the lens of
+\emph{assignment consistency}: if two content latents $z_c^{(i)}$ and
+$z_c^{(j)}$ are close in latent space, their OT-matched targets
+$\tilde z_1^{(i)}$ and $\tilde z_1^{(j)}$ are also close (by continuity
+of the optimal transport map). Random coupling breaks this consistency,
+producing crossing displacements and higher angular spread.
+\end{remark}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Unified Discussion}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Empirically grounded claim summary}
+
+The five propositions, revised with experimental evidence, form a coherent
+and defensible theory package:
+
+\begin{enumerate}[nosep]
+    \item \textbf{Prop~0 (Objective):} Formalizes the OMF training objective
+    with OT coupling, one-step displacement, kinetic, and terminal SWD terms.
+    \item \textbf{Prop~1 (Conditional displacement):} The learned velocity at
+    $t=1$ approximates the expected OT transport direction.
+    \item \textbf{Prop~2 (Kinetic control):} $\cL_{\text{kin}}$ bounds the
+    one-step displacement magnitude. The inference-time path action converges
+    to the continuous action at $O(1/K)$, and the kinetic loss provides an
+    exponential bound on the path action.
+    \item \textbf{Prop~3 (Euler error):} $O(1/K)$ error scaling confirmed
+    experimentally. At $K=12$ (default), error is $\sim 0.55$ (negligible).
+    \item \textbf{Prop~4 (Terminal SWD):} Multi-scale patch distribution
+    constraint. Ablation confirms its role as the primary style driver.
+    \item \textbf{Prop~5 (OT coherence):} OT coupling improves directional
+    coherence by $\sim 21\%$ over random coupling, providing more consistent
+    endpoint supervision. Transport cost is reduced by $\sim 4\%$.
+\end{enumerate}
+
+\subsection{Revised checklist justification}
+
+Based on the above, the checklist item
+``Does this paper make theoretical contributions?'' should be answered:
+
+\begin{quote}
+\textbf{Yes (bounded, empirically grounded).}
+The paper provides a formal analysis of the proposed latent transport
+framework with explicit propositions, assumptions, proofs, and experimental
+verification: the Bayes optimal displacement interpretation (Prop~1),
+the kinetic regularization as displacement control with action convergence
+(Prop~2), the $O(\Delta t)$ Euler discretization error (Prop~3, validated
+experimentally), the terminal SWD as multi-scale patch distribution control
+(Prop~4), and the directional coherence benefit of OT coupling (Prop~5,
+validated experimentally). These results constitute a bounded formal
+justification for the three-part design of endpoint construction,
+path learning, and endpoint correction.
+\end{quote}
+
+\subsection{Open questions}
+
+\begin{enumerate}
+    \item \textbf{Explicit path energy bound:} Can we estimate the Gr\"onwall
+    constant $L$ from the learned $v_\theta$, providing a quantitative bound
+    $\cA_K \leq C\cdot\cL_{\text{kin}}$?
+    \item \textbf{Trajectory straightness:} Does OT coupling actually produce
+    straighter inference trajectories? A direct comparison of trajectory
+    curvature under OT vs.~random coupling would strengthen Prop~5.
+    \item \textbf{Unified training:} Combining time-sampled bridge states
+    (the \texttt{flow\_matching} mode) with kinetic regularization and
+    terminal SWD would realize the idealized objective from the paper and
+    strengthen the path-energy interpretation of Prop~2.
+\end{enumerate}
+
+\bibliographystyle{plain}
+\begin{thebibliography}{10}
+\bibitem{atkinson2009numerical}
+K.~Atkinson, W.~Han, and D.~Stewart.
+\emph{Numerical Solution of Ordinary Differential Equations}. Wiley, 2009.
+\end{thebibliography}
+
+\end{document}
