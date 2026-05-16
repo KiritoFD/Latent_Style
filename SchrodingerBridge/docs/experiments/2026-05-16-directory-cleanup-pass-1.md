@@ -25,3 +25,14 @@ Recent work had produced a split between the actual paper location and the older
 ## Next Cleanup Step
 
 Move clearly non-active packaged snapshots out of the root and keep the working surface narrow.
+
+## Pass 2 Completed
+
+After this note was created, a second cleanup step was executed:
+
+- moved `grid_search_3epoch.rar` into `archives/root_level_snapshots/`
+- moved `review_additional_experiments.rar` into `archives/root_level_snapshots/`
+- moved `src.zip` into `archives/root_level_snapshots/`
+- removed root `__pycache__/`
+
+This was intentionally limited to archive-like and cache-like files only.
