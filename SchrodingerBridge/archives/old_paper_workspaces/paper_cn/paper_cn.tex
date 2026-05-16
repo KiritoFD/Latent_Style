@@ -1,0 +1,343 @@
+﻿\documentclass[letterpaper]{article}
+\usepackage[submission]{aaai2026}
+\usepackage{xeCJK}
+\setCJKmainfont{SimSun}
+\setCJKsansfont{SimHei}
+\setCJKmonofont{FangSong}
+\usepackage{times}
+\usepackage{helvet}
+\usepackage{courier}
+\usepackage[hyphens]{url}
+\usepackage{graphicx}
+\urlstyle{rm}
+\def\UrlFont{\rm}
+\usepackage{natbib}
+\usepackage{caption}
+\frenchspacing
+\setlength{\pdfpagewidth}{8.5in}
+\setlength{\pdfpageheight}{11in}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{placeins}
+\usetikzlibrary{arrows.meta,positioning,calc,fit}
+\pdfinfo{
+/TemplateVersion (2026.1)
+}
+\setcounter{secnumdepth}{0}
+
+\title{潜变量桥接匹配：基于最优传输耦合流匹配的高效域级艺术风格迁移}
+\author{匿名投稿}
+\affiliations{}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+本文研究域级艺术风格迁移中风格强度、内容保留与计算成本三者之间的实际矛盾。我们提出潜变量桥接匹配（LBM），一种高效的潜空间框架，融合了小批量OT耦合、时间条件流匹配、语义路由和终端切片Wasserstein正则化。OT耦合为非配对监督提供合理的风格域端点，流匹配学习稳定的潜变量传输路径，终端SWD将积分后的输出对齐到目标域的块统计特征。在严格的750输出协议（5域×5风格×30图像）下，我们的3.9M参数模型在最接近的高效基线SaMST上达到近乎一致的CLIP风格（0.716对0.719），提升了LPIPS和EC，训练成本降低约21.8倍，推理速度相当，同时在核心迁移指标上优于更重的S2WAT基线。这些结果将LBM置于域级艺术风格迁移的有利效率-质量帕累托前沿。
+\end{abstract}
+
+\section{引言}
+艺术风格迁移长期以来一直是分离图像内容与视觉表现的测试平台。经典神经风格迁移表明，卷积特征和Gram统计量可以合成引人注目的艺术纹理\cite{gatys2016image}，而前馈任意风格迁移通过基于归一化的风格调制使实时部署成为可能\cite{huang2017adain}。最近的注意力、Transformer、免训练和基于扩散的方法提高了灵活性和风格保真度\cite{park2019sanet,deng2022stytr2,hong2023aespa,huang2024aesfa,gim2024cast,chung2024styleid}。然而，实际的多风格艺术迁移仍然暴露出一个持久的三向矛盾：强目标风格表达、忠实的内容保留和低计算成本。
+
+这种矛盾在域级多风格迁移中尤为明显。高效的多风格系统可以支持多种风格和快速推理，但输出可能变得平淡、过度平滑或被结构化颗粒伪影污染。基于扩散或免训练的方法可以产生强烈的风格语义，但可能在内容保持评估下成本高昂或遭受语义漂移。在我们严格的750输出协议下，StyleID获得了最高的原始CLIP风格分数，但表现出严重的内容崩溃，而SaMST取得了强劲的原始风格和内容分数，却产生了可见的模糊和颗粒状纹理伪影。这些观察表明，仅凭标准风格/内容指标是不够的。一个有竞争力的系统还必须评估感知质量和伪影敏感的纹理真实感。特别是，当局部纹理变得模糊或颗粒状时，低频结构指标可能高估感知质量。
+
+我们提出\emph{潜变量桥接匹配}（LBM），将风格化建模为OT耦合的潜变量流匹配。该方法不直接预测RGB图像，而是在紧凑的VAE潜变量上运行，包含三个集成组件：(i)一个小批量熵OT耦合，通过切片Wasserstein代价匹配非配对的内容和目标风格潜变量；(ii)一个时间条件速度场，在随机采样的桥接时间上通过流匹配监督进行训练；以及(iii)一个终端SWD正则化器，将欧拉积分后的端点拉向目标风格分布。可学习的风格空间先验和语义交叉注意力提供了高效的域级条件化，无需逐图像优化或扩散采样。
+
+我们的贡献如下：
+\begin{itemize}
+    \item \textbf{用于域级艺术迁移的结构化潜变量传输公式}，将非配对监督分解为基于OT的端点构建、路径流学习和终端端点正则化。
+    \item \textbf{轻量级潜变量骨干网络，带有语义路由和学习到的空间风格先验}，实现高效的域级迁移，无需逐图像优化、扩散采样或参考特定编码。
+    \item \textbf{与最接近的高效基线SaMST相比的强效率-质量结果}：接近一致的CLIP风格（0.716对比0.719），改进的LPIPS（0.451对比0.466），更高的EC（0.393对比0.384），以及在可比推理速度下训练成本降低约$22\times$。
+    \item \textbf{对更重的S2WAT基线的一致性改进}：更高的CLIP风格，显著更低的LPIPS，更高的EC，以及$16.7\times$更小的模型——表明效率提升并非以牺牲迁移质量为代价。
+\end{itemize}
+
+\section{相关工作}
+\paragraph{经典与任意神经风格迁移.}
+神经风格迁移始于基于优化的特征重建和Gram矩阵风格损失\cite{gatys2016image}。AdaIN后来通过对齐通道维度的特征统计量实现了实时任意迁移\cite{huang2017adain}。基于注意力的方法如SANet通过风格注意力特征聚合改进了局部风格匹配\cite{park2019sanet}。最近的审美和模式感知方法，包括AesPA-Net和AesFA，进一步强调了模式可重复性、审美特征和高质量任意风格化\cite{hong2023aespa,huang2024aesfa}。这些方法展示了特征统计和局部匹配的价值，但它们通常不显式建模具有终端分布约束的风格条件化传输路径。
+
+\paragraph{Transformer与多风格迁移.}
+基于Transformer的风格迁移方法如StyTr2和S2WAT使用注意力机制来改善内容-风格交互和长程特征建模\cite{deng2022stytr2,xia2024s2wat}。多风格方法将多种风格摊销到一个紧凑系统中；SaMST是最近的代表性工作，具有可插拔风格表示、低参数数量和快速推理\cite{liu2024samst}。这些系统与我们高效多风格迁移的目标直接相关。在我们的实验中，SaMST作为最接近的高效基线，而S2WAT作为最相关的重型模型参考。与仅通过表示注入风格的方法不同，我们的方法将语义交叉注意力置于潜变量桥接目标内部，因此终端分布匹配和动力学正则化显式地塑造了风格-内容的权衡。
+
+\paragraph{免训练与扩散方法.}
+免训练和基于扩散的方法为灵活的风格迁移提供了不同路径。CAST使用VQ自编码器进行内容自适应的免训练风格迁移\cite{gim2024cast}，而StyleID无需训练即可将风格注入大规模扩散模型\cite{chung2024styleid}。这些方法在视觉上可能很强大，但扩散采样和语义漂移可能限制其适用于快速域级迁移。我们的工作针对一个互补的效率区间：紧凑的潜变量集成，带有风格ID条件化，而非迭代扩散采样或逐风格优化。
+
+\paragraph{分布匹配与感知评估.}
+我们的目标受最优传输和分布匹配的启发。Sinkhorn距离和计算最优传输为近似传输问题提供了高效工具\cite{cuturi2013sinkhorn,peyre2019computational}，而薛定谔问题将熵传输与随机路径测度联系起来\cite{leonard2014survey}。我们使用SWD作为轻量级的终端分布匹配目标。我们对OT的使用是实用性的而非定理层面的：它作为潜空间中小批量的端点构建机制，而非声称精确的全局传输最优性。在评估方面，我们结合了感知和分布度量，包括LPIPS\cite{zhang2018lpips}、FID\cite{heusel2017fid}、KID\cite{binkowski2018kid}、DISTS\cite{ding2020dists}、MUSIQ\cite{ke2021musiq}、MANIQA\cite{yang2022maniqa}以及风格迁移特定的ArtFID\cite{wright2022artfid}。这种广泛的指标集很重要，因为原始的CLIP风格和结构分数可能无法惩罚颗粒状伪影。
+
+\section{方法}
+\subsection{概述}
+LBM最好被理解为一种用于域级艺术迁移的结构化潜变量传输设计。我们将其建模为OT耦合的潜变量流匹配。设$z_0 \in \mathbb{R}^{4 \times 32 \times 32}$表示内容图像的VAE潜变量，$s$表示目标风格域标识符。该方法包含三个组件：(i)一个最优传输耦合，在每个小批量内匹配非配对的内容和目标风格潜变量；(ii)一个时间条件速度场$v_\theta(z_t,t,s)$，在随机采样的桥接时间上通过流匹配监督进行训练；以及(iii)一个终端切片Wasserstein正则化器，将积分后的端点拉向目标风格分布。在推理时，学习到的向量场通过显式欧拉步骤进行积分，并由VAE解码器解码。
+
+\subsection{无配对潜域采样与OT耦合}
+我们直接在预计算的VAE潜变量上训练，无需配对监督。每个小批量从所有源域采样内容潜变量$\{z_c\}$，并从请求的目标域采样目标风格潜变量$\{z_s\}$。通过均匀的目标域采样自然包含恒等配对，这可以稳定围绕同域映射的学习传输。
+
+我们不使用随机目标分配，而是使用切片Wasserstein代价构建小批量传输耦合。对于一批内容潜变量$\{z_c^{(i)}\}$和目标风格潜变量$\{z_s^{(j)}\}$，SWD代价矩阵为
+\begin{equation}
+    C_{ij} = \mathrm{SWD}\bigl(z_c^{(i)}, z_s^{(j)}\bigr) .
+\end{equation}
+然后通过Sinkhorn算法获得熵最优传输计划：
+\begin{equation}
+    \pi^\star = \arg\min_\pi \sum_{ij} C_{ij}\pi_{ij} + \epsilon H(\pi),
+\end{equation}
+其中$H(\pi)$是熵正则化器。每个内容潜变量被匹配到其耦合的目标$\tilde{z}_1 \sim \pi^\star(z_s|z_c)$。这种耦合提供了风格域端点，无需空间对齐的目标。
+
+\subsection{时间条件潜变量流匹配}
+该方法的核心是一个时间条件速度场$v_\theta(z_t,t,s)$，它沿随机桥接传输潜变量。在随机采样的时间$t\sim\mathcal{U}(0,1)$处，桥接状态为
+\begin{equation}
+    z_t = (1-t)z_0 + t\tilde{z}_1 + \sigma\sqrt{t(1-t)}\,\epsilon,
+    \quad \epsilon\sim\mathcal{N}(0,I),
+\end{equation}
+目标速度为传输的导数：
+\begin{equation}
+    u_t = \tilde{z}_1 - z_0 + \sigma\frac{1-2t}{2\sqrt{t(1-t)}}\,\epsilon .
+\end{equation}
+流匹配目标监督网络预测该速度：
+\begin{equation}
+    \mathcal{L}_{\mathrm{FM}} = \mathbb{E}_{z_0,\tilde{z}_1,t,\epsilon}\,
+    \bigl\|v_\theta(z_t,t,s) - u_t\bigr\|^2 .
+\end{equation}
+该公式可以解释为沿随机桥接学习一个类似去噪的速度场，并且它自然地分离了路径内容保持和端点风格匹配。
+
+\paragraph{架构.}
+时间条件骨干网络使用添加到风格编码中的正弦时间嵌入。实现是一个类似U-Net的潜变量主干，在$16\times16$分辨率下包含四个语义交叉注意力主体块。目标风格由一个可学习的空间先验$P_s\in\mathbb{R}^{128\times16\times16}$表示。语义交叉注意力将风格先验注入内容特征，而跳跃连接保持空间结构。
+
+\paragraph{互补角色.}
+各组件处理不同的子问题。OT耦合为非配对监督提供目标风格端点，但不提供传输动力学。流匹配学习如何向这些端点移动，但本身不能保证积分后的端点匹配目标域的纹理统计量。终端SWD正则化这种端点不匹配，而语义交叉注意力为风格写入位置提供局部路由。破坏性消融实验直接验证了终端SWD和动力学正则化的作用；分离OT耦合和语义路由的额外组件研究留待未来工作。
+
+\subsection{终端SWD正则化}
+除流匹配监督外，一个终端损失将欧拉积分后的端点正则化到目标风格分布。设$\Phi_\theta(z_0,s)$表示从$z_0$以风格$s$积分$v_\theta$得到的端点。终端损失为
+\begin{equation}
+    \mathcal{L}_{\mathrm{term}} = \mathrm{SWD}\bigl(\Phi_\theta(z_0,s),\,\tilde{z}_1\bigr),
+\end{equation}
+其中SWD使用64个投影在块大小$\{3,5,7,15\}$上比较生成的端点块与耦合的目标块。
+
+完整的训练目标结合了流匹配、终端分布匹配和动力学路径正则化：
+\begin{equation}
+    \mathcal{L} = \mathcal{L}_{\mathrm{FM}} + \lambda_{\mathrm{term}}\mathcal{L}_{\mathrm{term}} + \lambda_{\mathrm{kin}}\mathcal{L}_{\mathrm{kin}},
+\end{equation}
+其中$\mathcal{L}_{\mathrm{kin}} = \mathbb{E}\|v_\theta\|_2^2$惩罚过度的潜变量位移。主要配置使用$\lambda_{\mathrm{term}}=20.0$和$\lambda_{\mathrm{kin}}=1.0$。颜色、循环、NCE和排斥损失在主设置中被禁用。这种三部分损失分离了驱动风格和保持内容的力量。
+
+\paragraph{有限理论主张.}
+该方法并非精确的薛定谔桥求解器。它不估计前向和后向随机分数，也不优化完整的熵对偶目标。桥接视角被用作一个可处理的训练原则：流匹配路径约束、终端分布正则化器和动力学惩罚。这种有限解释在经验上得到反映——移除终端约束会削弱风格，而移除路径惩罚会破坏内容。
+
+更具体地，设$\mathcal{P}_r(\hat{z}_1)$为从生成端点提取的大小为$r$的潜变量块集，$\mathcal{P}_r(z_s)$为来自目标风格样本的对应块集。对于投影方向$\{\theta_m\}_{m=1}^M$，经验终端目标为
+\begin{multline}
+    \mathcal{L}_{\mathrm{swd}} =
+    \sum_{r\in\mathcal{R}} \frac{1}{M} \sum_{m=1}^{M}
+    \bigl\|
+    \operatorname{sort}\!\bigl(\mathcal{P}_r(\hat{z}_1)\theta_m\bigr) \\
+    -
+    \operatorname{sort}\!\bigl(\mathcal{P}_r(z_s)\theta_m\bigr)
+    \bigr\|_2^2 .
+\end{multline}
+这里$\mathcal{R}=\{3,5,7,15\}$为主要配置。因此该损失检查生成的端点是否具有目标风格的块统计量，而非在空间上匹配任何特定艺术作品。
+
+
+\begin{figure}[t]
+    \centering
+    \vspace{-0.5cm}
+    \resizebox{0.88\columnwidth}{!}{\input{framework_figure.tikz.tex}}
+    \caption{潜变量传输模型概览。}
+    \label{fig:framework}
+\end{figure}
+
+\section{实验}
+\subsection{协议与指标}
+我们在严格的750输出协议下评估：五个源域乘以五个目标域乘以30张源图像。五个域分别为photo、Hayao、Monet、Van Gogh和Cezanne；当前协议未使用Ukiyo-e。我们报告CLIP风格、CLIP内容、LPIPS内容和综合分数
+\begin{equation}
+    \mathrm{EC} = \mathrm{CLIP\mbox{-}style}\cdot(1-\mathrm{LPIPS}).
+\end{equation}
+为进行伪影敏感分析，我们还报告MUSIQ、MANIQA、DISTS内容、高频块KID、FFT斜率误差和浅层Gram微统计量。我们对Ours、SaMST、StyleID、S2WAT和AdaIN变体端到端运行严格750协议。
+
+\paragraph{指标分类.}
+我们使用四组指标。原始语义指标（CLIP风格和CLIP内容）衡量输出是否被识别为风格对齐且与输入语义相关。感知内容指标（LPIPS和DISTS内容）衡量视觉结构保持。分布风格指标（包括KID、Gram统计和高频块KID）评估生成的纹理统计量是否类似目标风格图像。无参考图像质量指标（MUSIQ和MANIQA）帮助检测脏乱或过度处理的输出。我们仅将EC用作扫描选择的内部帕累托诊断工具；所有结论均对照单个指标进行验证。
+
+\subsection{主要对比}
+\begin{table*}[t]
+\centering
+\caption{严格750协议下的效率对比。$\uparrow$ = 越高越好，$\downarrow$ = 越低越好。推理时间为750张图像的端到端时间。标记$\dagger$的训练时间为外推值。}
+\label{tab:main}
+\small
+\setlength{\tabcolsep}{5pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+Method & Params & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & EC$\uparrow$ & Infer & s/img & Train sec \\
+\midrule
+Ours ep7 & 3.9 M & 0.716 & 0.451 & 0.393 & 40.0 s & 0.053 & 309.9 \\
+SaMST & 6.0 M & 0.719 & 0.466 & 0.384 & 39.8 s & 0.053 & 6768.7$\dagger$ \\
+S2WAT & 65 M & 0.714 & 0.526 & 0.338 & 45.1 s & 0.060 & 10600$\dagger$ \\
+AdaIN v32k & $\sim$5 M & 0.713 & 0.630 & 0.264 & 9.3 s & 0.012 & 9220.4 \\
+\midrule
+StyleID & SD-based & 0.760 & 0.750 & 0.190 & 603.3 s & 0.804 & training-free \\
+CAST & 7.0 M & 0.665 & 0.726 & 0.182 & 75.5 s & 0.101 & training-free \\
+\bottomrule
+\end{tabular}
+}
+\smallskip
+\footnoterule\small
+$\dagger$外推值。
+\end{table*}
+
+关键的对比是与SaMST和S2WAT。最强的高效基线是SaMST。相对于SaMST，我们的方法在CLIP风格上基本匹配（0.716对比0.719），改进了LPIPS（0.451对比0.466）和EC（0.393对比0.384），参数从6.0M减少到3.9M，训练成本降低约$22\times$，推理速度相当。这是核心实证结果：LBM在显著降低训练成本的同时，保持了最强高效基线的质量水平。
+
+与S2WAT相比，LBM不仅更小且训练成本更低，而且在核心迁移指标上更强：更高的CLIP风格、显著更低的LPIPS和更高的EC。这一比较表明，效率提升并非以牺牲迁移质量为代价——LBM在这个更重的基线上是帕累托占优的。
+
+AdaIN推理速度更快，但明显低于高质量前沿（LPIPS 0.630，EC 0.264），而StyleID以严重的内容漂移（LPIPS 0.750，CLIP内容0.552）和慢得多的推理（每750张图像603秒）为代价，获得了最高的原始CLIP风格（0.760）。CAST和基于扩散的StyleID受到内容漂移或高推理成本的限制。综合来看，这些比较表明LBM既可作为最强轻量级基线（SaMST）的高效替代方案，也可作为更重的基于Transformer的迁移模型（S2WAT）的更强替代方案。
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.82\linewidth]{fig_quality_tradeoff.png}
+    \caption{严格750协议下的风格-内容权衡。Ours在原始CLIP风格上接近SaMST，同时保持比多个基线更好的基于LPIPS的权衡；StyleID达到高风格但内容崩溃。}
+    \label{fig:tradeoff}
+\end{figure}
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.98\textwidth]{fig_qual_grid_ours_vs_samst.png}
+    \caption{Ours第7轮和SaMST严格的5乘5源-目标域定性网格。行表示源域，列表示目标域。SaMST保留粗略结构但常产生模糊的颗粒状表面纹理；Ours原始风格不那么激进但视觉上更干净。}
+    \label{fig:qual_grid}
+\end{figure*}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.92\linewidth]{fig_zoom_ours_vs_samst.png}
+    \caption{匹配的Ours和SaMST输出的中心纹理裁剪，隔离表面纹理失效模式。}
+    \label{fig:zoom}
+\end{figure}
+
+\subsection{与SaMST的伪影敏感对比}
+由于SaMST是核心指标下最接近的高效基线，我们将其作为伪影聚焦诊断的主要目标。虽然其总体分数具有竞争力，但放大检查揭示了标准风格/内容指标未能充分惩罚的模糊和颗粒状局部纹理。诸如CLIP内容、SSIM和边缘重叠等指标奖励低频结构保持；因此，只要物体边界仍然可见，即使局部纹理视觉上脏乱，颗粒状输出也可能获得良好分数。
+
+为捕获这种失效模式，我们检查了表~\ref{tab:artifact}中的伪影敏感诊断指标。Ours将MUSIQ从36.10提升到49.21，MANIQA从0.314提升到0.406，DISTS内容从0.294降低到0.248，高频块KID从6.76降低到4.17，FFT斜率误差从1.054降低到0.547。这些改进表明，我们的方法虽然在原始风格上稍不激进，但在块级别上明显更干净——与图~\ref{fig:qual_grid}中的定性网格一致。
+
+\begin{table}[t]
+\centering
+\caption{Ours与SaMST的伪影敏感对比。}
+\label{tab:artifact}
+\begin{tabular}{lrr}
+\toprule
+Metric & Ours e7 & SaMST \\
+\midrule
+MUSIQ $\uparrow$ & 49.2059 & 36.0950 \\
+MANIQA $\uparrow$ & 0.4057 & 0.3139 \\
+DISTS-content $\downarrow$ & 0.2477 & 0.2943 \\
+HF-Patch-KID $\downarrow$ & 4.1694 & 6.7598 \\
+FFT slope error $\downarrow$ & 0.5473 & 1.0536 \\
+Gram micro $\downarrow$ & 0.0798 & 0.0947 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{消融实验}
+\begin{table}[t]
+\centering
+\caption{严格750协议下的消融实验。}
+\label{tab:ablation}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Variant & CLIP-S & CLIP-C & LPIPS & EC \\
+\midrule
+D0 full & 0.7014 & 0.8022 & 0.4593 & 0.3791 \\
+D1 w/o terminal SWD & 0.6708 & 0.8989 & 0.3490 & 0.4368 \\
+D2 w/o kinetic & 0.7159 & 0.6624 & 0.6375 & 0.2596 \\
+D8 strong color loss & 0.6923 & 0.6629 & 0.5675 & 0.2994 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+表~\ref{tab:ablation}中的消融结果揭示了模型的机制。移除终端SWD获得了极好的内容保持但风格较弱，表明终端分布匹配是主要的风格驱动力。移除动力学正则化保持了风格但内容崩溃，确认了路径能量惩罚的必要性。强颜色损失同时损害了内容和分布质量，因此主线中未使用朴素的颜色匹配。
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.82\linewidth]{fig_ablation_pareto.png}
+    \caption{消融实验。移除终端SWD改善了内容但削弱了风格，而移除动力学正则化增加了风格但以严重的内容退化为代价。}
+    \label{fig:ablation}
+\end{figure}
+
+\subsection{权重扫描与理论开关}
+40轮类别权重扫描训练了20个采样方案，每个方案使用$K \in \{1,2\}$训练8轮，每轮评估共320个检查点。最佳EC结果是第3轮的K2平衡默认设置，CLIP风格0.6980，CLIP内容0.8727，LPIPS 0.3777，EC 0.4343。扫描中最佳原始风格结果是第8轮的K1平衡默认设置，CLIP风格0.7161，CLIP内容0.7984，LPIPS 0.4605，EC 0.3863。扫描表明，更复杂的类别权重并不一致优于平衡采样。
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.86\linewidth]{fig_weight_sweep_summary.png}
+    \caption{40轮类别权重扫描总结。K2平衡默认给出最佳EC，而K1平衡默认在评估的检查点中给出最佳原始CLIP风格。}
+    \label{fig:sweep}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.82\linewidth]{fig_train_efficiency_pareto.png}
+    \caption{训练效率帕累托图（对数刻度）。Ours在比较的方法中实现了最高的EC，同时处于最低的训练成本区域。标记大小反映参数数量。基线训练时间遵循表~\ref{tab:main}中的外推值（$\dagger$）。}
+    \label{fig:pareto}
+\end{figure}
+
+我们还评估了可选的理论开关。Sinkhorn归一化的语义路由和熵门控动力学正则化改善了EC/内容但降低了原始CLIP风格。最佳理论开关EC是权重为5.0的第1轮熵门控动力学，CLIP风格0.6916，CLIP内容0.8804，LPIPS 0.3684，EC 0.4368。颜色传输略微提高了原始风格但损害了LPIPS和内容，因此未被选为主要方案。
+
+\subsection{步数与$\lambda$敏感性}
+额外的步数扫描评估了所选第7轮检查点的1、4、8、12和16步欧拉积分。主要观察结果是质量曲线在此范围内几乎平坦。全对CLIP风格分数仅从0.7159变化到0.7162，而LPIPS紧密集中在0.4514附近。照片到艺术的运行点同样稳定：CLIP风格仅从0.6712变化到0.6715，LPIPS保持在0.4881附近。这意味着12步默认值并非脆弱的调优最优值。事实上，4步已经恢复了几乎相同的质量，而测得的端到端严格750吞吐量从1步时的8.43图像/秒增加到4步时的9.54图像/秒，并在8-16步时保持在9.34-9.50图像/秒左右。因此我们保留12步作为保守默认值，但扫描表明，当边际延迟减少重要时，低步数部署是可行的。
+
+我们还对$\lambda_{\mathrm{kin}} \in \{0.5, 1.0, 2.0\}$和$\lambda_{\mathrm{swd}} \in \{10, 20, 30\}$进行了$3 \times 3$网格扫描，每个设置训练8轮。结果曲面平滑且可解释，而非不规则。增加动力学权重同时降低终端压力系统地改善了内容保持：在第8轮，设置$(2.0, 10)$产生CLIP内容0.8734，LPIPS 0.3720，EC 0.4373，而默认设置$(1.0, 20)$为CLIP内容0.8124，LPIPS 0.4477，EC 0.3937。相反，较弱的动力学权重或较强的终端权重将模型推向更激进但内容保真度更低的风格化；例如，$(0.5, 30)$将CLIP内容降至0.6926，LPIPS升至0.5538。该网格中最佳的传输EC检查点一致出现在第3轮附近，再次表明该协议暴露了一个广泛的风格-内容前沿面，而非单个脆弱端点。
+
+\subsection{资源使用与可复现性}
+端到端推理和训练时间列于表~\ref{tab:main}中的主要指标旁边。所有计时均在NVIDIA RTX 4070笔记本GPU（8 GB显存）上使用相同的严格750协议测量。标记$\dagger$的训练时间从单轮探测中外推得到。StyleID按设计是免训练的。
+
+所有报告的严格750评估使用相同的域协议和预处理流程。我们还在40轮扫描中评估了每一轮，共产生320个检查点评估。仅使用最终轮选择可能隐藏风格-内容权衡：K2平衡默认在第3轮实现了最佳EC，而K1平衡默认在第8轮实现了最佳原始风格。为提高可复现性，每次训练运行存储解析后的运行时配置、源文件快照、检查点和每轮CSV日志。Python、NumPy、PyTorch和DataLoader工作线程的随机种子每次运行固定。
+
+
+\section{讨论与局限性}
+我们不声称在所有方法中最大化原始风格识别；相反，我们声称在高效域级迁移区间中取得了显著更强的效率-质量权衡。核心结果是LBM保持了接近SaMST的质量（CLIP风格0.716对比0.719），改进了LPIPS和EC，训练成本降低约$22\times$，并且在核心迁移指标上优于更重的S2WAT基线——一个有利的效率-质量运行点。重要的是，这种效率提升并非以跌落质量前沿为代价：它伴随着比SaMST更好的LPIPS/EC和比S2WAT更强的核心权衡指标。
+
+当前研究仍有若干局限性。首先，风格表示是域级的而非参考图像特定的；这使得推理高效但限制了复现独特单图像笔触模式或解决跨域原型冲突的能力。其次，欧拉积分特意保持简单，因此当潜变量路径外推到更激进的设置或更高分辨率时，离散化误差可能累积。第三，SWD项使用启发式的多尺度块投影而非精确传输求解器，因此桥接解释应保持有限和实用而非完全理论化。第四，虽然对比基线完成了核心指标和效率分析，但完整的伪影诊断包仅对部分方法重新运行，且尚未收集用户研究数据。最后，超出当前256分辨率协议的高分辨率泛化仍有待验证。未来工作应评估更丰富的域原型先验、受控的积分范围、更高分辨率的外推以及人类偏好研究。
+
+\section{结论}
+我们提出了OT耦合的潜变量流匹配，用于高效的域级艺术迁移。该方法结合了三个互补目标：流匹配损失监督时间条件速度场沿随机潜变量桥接的演化；终端切片Wasserstein匹配将积分后的端点拉向目标风格分布；动力学正则化约束路径位移以保持内容。在严格的750输出评估下，得到的3.9M参数模型实现了有竞争力的CLIP风格（0.716），高风格方法中最低的LPIPS（0.451），最佳的EC分数（0.393），以及比重的前馈基线显著更低的训练成本——这是域级艺术迁移的一个帕累托高效运行点。
+
+\FloatBarrier
+\bibliography{refs}
+
+\clearpage
+\small
+\setlength{\itemsep}{1pt}
+\setlength{\parskip}{2pt}
+\section*{可复现性检查清单}
+\noindent\textbf{本文}
+\begin{itemize}
+\item 包含所引入AI方法的概念性大纲和/或伪代码描述：\textbf{是}。
+\item 清晰区分观点、假设和推测与客观事实和结果：\textbf{是}。
+\item 为不太熟悉的读者提供标记良好的教学参考资料，以获取复现本文所需的背景知识：\textbf{是}。
+\end{itemize}
+
+\noindent\textbf{本文是否有理论贡献？} \textbf{否}。本文使用有界的桥接启发式动机而非定理层面的理论主张。
+
+\noindent\textbf{本文是否依赖一个或多个数据集？} \textbf{是}。
+\begin{itemize}
+\item 给出了在所选数据集上进行实验的动机：\textbf{是}。
+\item 本文引入的所有新数据集均包含在数据附录中：\textbf{不适用}。
+\item 本文引入的所有新数据集将在论文发表后公开，并附带允许免费用于研究目的的许可：\textbf{不适用}。
+\item 来自现有文献的所有数据集均附有适当的引用：\textbf{是}。
+\item 来自现有文献的所有数据集均可公开获取：\textbf{是}。
+\item 所有不可公开获取的数据集均详细描述，并解释为何公开可用的替代方案在科学上不令人满意：\textbf{不适用}。
+\end{itemize}
+
+\noindent\textbf{本文是否包含计算实验？} \textbf{是}。
+\begin{itemize}
+\item 本文陈述了论文开发过程中每个（超）参数尝试的值数量和范围，以及选择最终参数设置的标准：\textbf{部分}。
+\item 预处理数据所需的任何代码均包含在附录中：\textbf{否}。
+\item 进行和分析实验所需的所有源代码均包含在代码附录中：\textbf{否}。
+\item 进行和分析实验所需的所有源代码将在论文发表后公开，并附带允许免费用于研究目的的许可：\textbf{部分}。
+\item 实现新方法的所有源代码均包含详细注释，说明实现过程，并引用每步来源的论文：\textbf{部分}。
+\item 如果算法依赖随机性，则描述设置随机种子的方法，足以允许复现结果：\textbf{部分}。
+\item 本文指定了运行实验所用的计算基础设施，包括硬件/软件细节：\textbf{部分}。
+\item 本文正式描述了所使用的评估指标，并解释了选择这些指标的动机：\textbf{是}。
+\item 本文说明了用于计算每个报告结果的算法运行次数：\textbf{是}。
+\item 实验分析超越单一维度的性能总结，包括变异、置信度或其他分布信息的度量：\textbf{是}。
+\item 任何性能改进或下降的显著性均使用适当的统计检验判断：\textbf{否}。
+\item 本文列出了论文实验中每个模型/算法的所有最终（超）参数：\textbf{部分}。
+\end{itemize}
+
+\end{document}

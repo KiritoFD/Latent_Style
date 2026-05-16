@@ -93,9 +93,8 @@ class OTFlowMatchingObjective:
         self.w_curvature = max(0.0, float(bridge_cfg.get("w_curvature", 0.0)))
         self.curvature_dt = max(0.01, float(bridge_cfg.get("curvature_dt", 0.15)))
         self.kinetic_mode = str(bridge_cfg.get("kinetic_mode", "endpoint")).strip().lower()
-        if self.kinetic_mode not in {"endpoint", "path", "time_gated"}:
+        if self.kinetic_mode not in {"endpoint", "path"}:
             self.kinetic_mode = "endpoint"
-        self.kinetic_gate_exponent = max(0.0, float(bridge_cfg.get("kinetic_gate_exponent", 1.0)))
         self.nce_num_patches = max(1, int(bridge_cfg.get("nce_num_patches", 256)))
         self.nce_temperature = max(1e-6, float(bridge_cfg.get("nce_temperature", 0.07)))
         self.low_freq_kernel_size = max(1, int(bridge_cfg.get("low_freq_kernel_size", 7)))
@@ -775,13 +774,8 @@ class OTFlowMatchingObjective:
         total_loss = flow_loss
 
         kinetic_loss = content.new_tensor(0.0, dtype=torch.float32)
-        if self.w_kinetic > 0.0 and self.kinetic_mode in {"path", "time_gated"}:
-            v_sq = pred_velocity.float() ** 2
-            if self.kinetic_mode == "time_gated":
-                gate = t.view(-1, 1, 1, 1).float() ** self.kinetic_gate_exponent
-                kinetic_loss = (gate * v_sq).mean()
-            else:
-                kinetic_loss = v_sq.mean()
+        if self.w_kinetic > 0.0 and self.kinetic_mode == "path":
+            kinetic_loss = (pred_velocity.float() ** 2).mean()
             total_loss = total_loss + kinetic_loss * self.w_kinetic
 
         curvature_loss = content.new_tensor(0.0, dtype=torch.float32)

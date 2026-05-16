@@ -12,8 +12,8 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_BASE_CONFIG = ROOT / "ablation_destructive_7epoch" / "configs" / "D0_full_correct_7ep.json"
-DEFAULT_RESUME_CHECKPOINT = ROOT / "S-add__K-1_C-0_W-20_Col-0" / "epoch_0007.pt"
+DEFAULT_BASE_CONFIG = ROOT / "S-add__K-1_C-0_W-20_Col-0" / "config.json"
+DEFAULT_RESUME_CHECKPOINT: Path | None = None
 DEFAULT_OUTPUT_ROOT = ROOT / "exp" / "phase1_diagnostic_probes"
 TRAIN_ENTRYPOINT = ROOT / "src" / "run.py"
 EVAL_ENTRYPOINT = ROOT / "src" / "utils" / "run_evaluation.py"
@@ -348,10 +348,18 @@ def filter_experiments(
     return selected
 
 
+def _subprocess_env() -> dict[str, str]:
+    env = os.environ.copy()
+    src_dir = str(ROOT / "src")
+    existing = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = src_dir + os.pathsep + existing if existing else src_dir
+    return env
+
+
 def launch_experiment(config_path: Path) -> int:
     command = [sys.executable, str(TRAIN_ENTRYPOINT), "--config", str(config_path)]
     print(f"[launch] {' '.join(command)}")
-    completed = subprocess.run(command, cwd=str(ROOT))
+    completed = subprocess.run(command, cwd=str(ROOT), env=_subprocess_env())
     return int(completed.returncode)
 
 
@@ -384,7 +392,7 @@ def run_evaluation_for_checkpoint(
     if force_regen:
         command.append("--force_regen")
     print(f"[eval] {' '.join(command)}")
-    completed = subprocess.run(command, cwd=str(ROOT))
+    completed = subprocess.run(command, cwd=str(ROOT), env=_subprocess_env())
     return int(completed.returncode)
 
 
@@ -444,7 +452,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--resume",
         type=Path,
-        default=DEFAULT_RESUME_CHECKPOINT if DEFAULT_RESUME_CHECKPOINT.exists() else None,
+        default=None,
         help="Optional checkpoint to inject into training.resume_checkpoint.",
     )
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT, help="Directory for generated configs and runs.")
