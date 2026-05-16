@@ -16,6 +16,7 @@ DEFAULT_BASE_CONFIG = ROOT / "ablation_destructive_7epoch" / "configs" / "D0_ful
 DEFAULT_RESUME_CHECKPOINT = ROOT / "S-add__K-1_C-0_W-20_Col-0" / "epoch_0007.pt"
 DEFAULT_OUTPUT_ROOT = ROOT / "exp" / "phase1_diagnostic_probes"
 TRAIN_ENTRYPOINT = ROOT / "src" / "run.py"
+EVAL_ENTRYPOINT = ROOT / "src" / "utils" / "run_evaluation.py"
 
 
 def _relpath(from_dir: Path, target: Path) -> str:
@@ -84,14 +85,12 @@ def build_phase1_experiments() -> list[dict[str, Any]]:
             _make_experiment(
                 exp_id=f"p1_hard_monge_tau_{_format_value(tau)}",
                 probe_group="ot_coupling_plan",
-                probe_axis="hard_monge_placeholder",
-                rationale="Requested hard Monge / gumbel-hard probe. Preserved in the plan, but current root code does not expose semantic gumbel-hard routing.",
+                probe_axis="semantic_gumbel_tau",
+                rationale="Hard Monge probe via semantic gumbel-hard routing to test whether sharper one-to-one transport releases high-frequency style.",
                 overrides={
                     "model.semantic_attn_routing_mode": "gumbel_hard",
-                    "model.semantic_attn_gumbel_tau": tau,
+                    "model.semantic_gumbel_tau": tau,
                 },
-                supported=False,
-                unsupported_reason="Current src/lancet_backbone.py only accepts semantic_attn_routing_mode in {softmax, sinkhorn}.",
             )
         )
 
@@ -356,6 +355,81 @@ def launch_experiment(config_path: Path) -> int:
     return int(completed.returncode)
 
 
+def find_latest_checkpoint(run_dir: Path) -> Path | None:
+    ckpt_dir = run_dir / "checkpoints"
+    candidates = sorted(ckpt_dir.glob("epoch_*.pt"))
+    return candidates[-1] if candidates else None
+
+
+def run_evaluation_for_checkpoint(
+    *,
+    checkpoint_path: Path,
+    eval_dir: Path,
+    eval_batch_size: int,
+    num_steps: int,
+    force_regen: bool,
+) -> int:
+    command = [
+        sys.executable,
+        str(EVAL_ENTRYPOINT),
+        "--checkpoint",
+        str(checkpoint_path),
+        "--output",
+        str(eval_dir),
+        "--batch_size",
+        str(eval_batch_size),
+        "--num_steps",
+        str(num_steps),
+    ]
+    if force_regen:
+        command.append("--force_regen")
+    print(f"[eval] {' '.join(command)}")
+    completed = subprocess.run(command, cwd=str(ROOT))
+    return int(completed.returncode)
+
+
+def extract_summary_metrics(summary_path: Path) -> dict[str, Any]:
+    payload = json.loads(summary_path.read_text(encoding="utf-8"))
+    analysis = payload.get("analysis", payload)
+    primary = analysis.get("style_transfer_ability", {}) or analysis.get("all_pairs_overview", {})
+    photo_to_art = analysis.get("photo_to_art_performance", {})
+    return {
+        "clip_style": primary.get("clip_style"),
+        "clip_content": primary.get("clip_content"),
+        "content_lpips": primary.get("content_lpips"),
+        "clip_dir": primary.get("clip_dir"),
+        "p2a_clip_style": photo_to_art.get("clip_style"),
+        "p2a_clip_content": photo_to_art.get("clip_content"),
+        "p2a_lpips": photo_to_art.get("content_lpips"),
+    }
+
+
+def write_eval_summary(output_root: Path, rows: list[dict[str, Any]]) -> None:
+    summary_json = output_root / "evaluation_summary.json"
+    summary_csv = output_root / "evaluation_summary.csv"
+    with summary_json.open("w", encoding="utf-8") as f:
+        json.dump(rows, f, indent=2, ensure_ascii=True)
+        f.write("\n")
+
+    fieldnames = [
+        "id",
+        "checkpoint",
+        "summary_path",
+        "clip_style",
+        "clip_content",
+        "content_lpips",
+        "clip_dir",
+        "p2a_clip_style",
+        "p2a_clip_content",
+        "p2a_lpips",
+    ]
+    with summary_csv.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({key: row.get(key, "") for key in fieldnames})
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Generate and optionally launch the Phase 1 diagnostic probes from one script."
@@ -363,7 +437,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--action",
         choices=["plan", "launch", "list"],
-        default="plan",
+        default="launch",
         help="plan: generate configs+manifest only; launch: generate then run sequentially; list: print experiment ids only.",
     )
     parser.add_argument("--base-config", type=Path, default=DEFAULT_BASE_CONFIG, help="Baseline config to inherit from.")
@@ -406,6 +480,18 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="In launch mode, continue after a failed run instead of stopping immediately.",
     )
+    parser.add_argument("--eval-batch-size", type=int, default=6, help="Batch size for automatic post-run evaluation.")
+    parser.add_argument("--eval-num-steps", type=int, default=4, help="Inference steps for automatic post-run evaluation.")
+    parser.add_argument(
+        "--no-force-eval-regen",
+        action="store_true",
+        help="Do not pass --force_regen to run_evaluation.py.",
+    )
+    parser.add_argument(
+        "--skip-eval",
+        action="store_true",
+        help="Launch training only and skip automatic evaluation.",
+    )
     return parser.parse_args()
 
 
@@ -419,6 +505,8 @@ def main() -> int:
         raise FileNotFoundError(f"Base config not found: {base_config}")
     if not TRAIN_ENTRYPOINT.exists():
         raise FileNotFoundError(f"Training entrypoint not found: {TRAIN_ENTRYPOINT}")
+    if not EVAL_ENTRYPOINT.exists():
+        raise FileNotFoundError(f"Evaluation entrypoint not found: {EVAL_ENTRYPOINT}")
     if resume_checkpoint is not None and not resume_checkpoint.exists():
         raise FileNotFoundError(f"Resume checkpoint not found: {resume_checkpoint}")
 
@@ -488,6 +576,8 @@ def main() -> int:
         return 0
 
     failures: list[tuple[str, int]] = []
+    eval_failures: list[tuple[str, int]] = []
+    eval_rows: list[dict[str, Any]] = []
     for exp, config_path in generated:
         code = launch_experiment(config_path)
         if code != 0:
@@ -495,11 +585,66 @@ def main() -> int:
             print(f"[failed] {exp['id']} exit_code={code}")
             if not args.keep_going:
                 break
+            continue
+        if args.skip_eval:
+            continue
+
+        run_dir = output_root / "runs" / exp["id"]
+        checkpoint_path = find_latest_checkpoint(run_dir)
+        if checkpoint_path is None:
+            eval_failures.append((exp["id"], 9001))
+            print(f"[eval-missing] {exp['id']} no checkpoint found under {run_dir / 'checkpoints'}")
+            if not args.keep_going:
+                break
+            continue
+
+        eval_dir = run_dir / "full_eval" / checkpoint_path.stem
+        eval_code = run_evaluation_for_checkpoint(
+            checkpoint_path=checkpoint_path,
+            eval_dir=eval_dir,
+            eval_batch_size=args.eval_batch_size,
+            num_steps=args.eval_num_steps,
+            force_regen=not args.no_force_eval_regen,
+        )
+        if eval_code != 0:
+            eval_failures.append((exp["id"], eval_code))
+            print(f"[eval-failed] {exp['id']} exit_code={eval_code}")
+            if not args.keep_going:
+                break
+            continue
+
+        summary_path = eval_dir / "summary.json"
+        if not summary_path.exists():
+            eval_failures.append((exp["id"], 9002))
+            print(f"[eval-missing] {exp['id']} summary missing at {summary_path}")
+            if not args.keep_going:
+                break
+            continue
+        metrics = extract_summary_metrics(summary_path)
+        eval_rows.append(
+            {
+                "id": exp["id"],
+                "checkpoint": str(checkpoint_path),
+                "summary_path": str(summary_path),
+                **metrics,
+            }
+        )
+        clip_style = metrics.get("clip_style")
+        content_lpips = metrics.get("content_lpips")
+        print(f"[eval-summary] {exp['id']} clip_style={clip_style} content_lpips={content_lpips}")
 
     if failures:
         print("[summary] failed runs:")
         for exp_id, code in failures:
             print(f"- {exp_id}: exit_code={code}")
+    if eval_rows:
+        write_eval_summary(output_root, eval_rows)
+        print(f"[summary] evaluation summary written to {output_root / 'evaluation_summary.csv'}")
+    if eval_failures:
+        print("[summary] evaluation failures:")
+        for exp_id, code in eval_failures:
+            print(f"- {exp_id}: exit_code={code}")
+    if failures or eval_failures:
         return 1
 
     print("[summary] all launched runs completed successfully.")
