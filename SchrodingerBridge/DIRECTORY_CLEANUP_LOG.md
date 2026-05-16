@@ -82,3 +82,24 @@ The root now better reflects the active project structure:
 - active paper and theory remain visible
 - evidence directories remain untouched
 - bulky packaged snapshots no longer crowd the root
+
+## 2026-05-16: Pass 3
+
+### Executed Actions
+
+1. Removed transient LaTeX build logs from the legacy `paper_refine_v2/` workspace:
+   - `aaai_submission/xelatex_build.log`
+   - `aaai_submission/xelatex_pass1.log`
+   - `aaai_submission/xelatex_pass2.log`
+   - `aaai_submission/xelatex_pass3.log`
+   - `final/texput.log`
+2. Added local ignore rules to keep those logs from reappearing in Git status.
+
+### Boundaries
+
+This pass intentionally did not touch:
+
+- modified paper sources
+- modified figures
+- tracked PDFs
+- any experimental evidence directory
