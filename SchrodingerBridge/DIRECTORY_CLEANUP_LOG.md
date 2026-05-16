@@ -57,3 +57,28 @@ Make the active paper, active theory, and active experimental record obvious bef
 ### Principle
 
 The immediate need is clarity, not aggressiveness. Archive first, delete later only when there is no ambiguity.
+
+## 2026-05-16: Pass 2
+
+### Executed Actions
+
+1. Moved root-level packaged snapshots into:
+   `archives/root_level_snapshots/`
+2. Archived:
+   - `grid_search_3epoch.rar`
+   - `review_additional_experiments.rar`
+   - `src.zip`
+3. Removed root cache directory:
+   - `__pycache__/`
+
+### Reasoning
+
+These files were not active entry points, not canonical evidence folders, and not appropriate to keep at the top level. Moving the large snapshot bundles preserves recoverability while cleaning the working surface.
+
+### Result
+
+The root now better reflects the active project structure:
+
+- active paper and theory remain visible
+- evidence directories remain untouched
+- bulky packaged snapshots no longer crowd the root
