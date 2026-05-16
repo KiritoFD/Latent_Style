@@ -1061,7 +1061,7 @@ def main():
     parser.add_argument('--clip_modelscope_id', type=str, default="", help="Optional ModelScope model id for CLIP fallback")
     parser.add_argument('--clip_modelscope_cache_dir', type=str, default="", help="Optional ModelScope cache directory")
     parser.add_argument('--clip_hf_cache_dir', type=str, default="", help="HuggingFace cache dir for CLIP; default uses <cache_dir>/hf")
-    parser.add_argument('--clip_allow_network', action='store_true', default=True, help="Allow online model fetch if local cache is missing (default on)")
+    parser.add_argument('--clip_allow_network', action='store_true', help="Allow online model fetch if local cache is missing (default off)")
     parser.add_argument(
         '--clip_backend',
         type=str,
