@@ -1,0 +1,9 @@
+{
+  "samst": {
+    "clip_style": 0.7035,
+    "clip_content": 0.7621,
+    "content_lpips": 0.5571,
+    "clip_dir": 0.5302
+  },
+  "ours": {}
+}

@@ -1,0 +1,31 @@
+{
+  "_base": "../../../ablation_destructive_7epoch/configs/D0_full_correct_7ep.json",
+  "checkpoint": {
+    "save_dir": "./exp/phase1_diagnostic_probes/runs/p1_softmax_temp_0p24/checkpoints"
+  },
+  "phase1_probe": {
+    "phase": "phase1_diagnostic_probes",
+    "probe_group": "ot_coupling_plan",
+    "probe_axis": "semantic_attn_temperature",
+    "rationale": "Probe whether a sharper semantic coupling raises style by reducing barycentric averaging.",
+    "supported": true
+  },
+  "ablation": {
+    "name": "p1_softmax_temp_0p24",
+    "axis": "semantic_attn_temperature",
+    "notes": "Probe whether a sharper semantic coupling raises style by reducing barycentric averaging."
+  },
+  "training": {
+    "resume_checkpoint": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\S-add__K-1_C-0_W-20_Col-0\\epoch_0007.pt",
+    "num_epochs": 12,
+    "save_interval": 1,
+    "log_interval": 20,
+    "num_workers": 0,
+    "persistent_workers": false,
+    "prefetch_factor": 2
+  },
+  "model": {
+    "semantic_attn_routing_mode": "softmax",
+    "semantic_attn_temperature": 0.24
+  }
+}

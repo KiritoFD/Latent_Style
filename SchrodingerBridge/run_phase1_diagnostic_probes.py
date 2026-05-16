@@ -586,6 +586,9 @@ def main() -> int:
     failures: list[tuple[str, int]] = []
     eval_failures: list[tuple[str, int]] = []
     eval_rows: list[dict[str, Any]] = []
+
+    # Phase 1: Train all experiments
+    print(f"[phase1] === Training {len(generated)} experiments ===")
     for exp, config_path in generated:
         code = launch_experiment(config_path)
         if code != 0:
@@ -594,52 +597,57 @@ def main() -> int:
             if not args.keep_going:
                 break
             continue
-        if args.skip_eval:
-            continue
 
-        run_dir = output_root / "runs" / exp["id"]
-        checkpoint_path = find_latest_checkpoint(run_dir)
-        if checkpoint_path is None:
-            eval_failures.append((exp["id"], 9001))
-            print(f"[eval-missing] {exp['id']} no checkpoint found under {run_dir / 'checkpoints'}")
-            if not args.keep_going:
-                break
-            continue
+    # Phase 2: Evaluate all completed experiments (unless --skip-eval)
+    if not args.skip_eval:
+        print(f"[phase1] === Evaluating completed experiments ===")
+        for exp, config_path in generated:
+            if any(fid == exp["id"] for fid, _ in failures):
+                continue
 
-        eval_dir = run_dir / "full_eval" / checkpoint_path.stem
-        eval_code = run_evaluation_for_checkpoint(
-            checkpoint_path=checkpoint_path,
-            eval_dir=eval_dir,
-            eval_batch_size=args.eval_batch_size,
-            num_steps=args.eval_num_steps,
-            force_regen=not args.no_force_eval_regen,
-        )
-        if eval_code != 0:
-            eval_failures.append((exp["id"], eval_code))
-            print(f"[eval-failed] {exp['id']} exit_code={eval_code}")
-            if not args.keep_going:
-                break
-            continue
+            run_dir = output_root / "runs" / exp["id"]
+            checkpoint_path = find_latest_checkpoint(run_dir)
+            if checkpoint_path is None:
+                eval_failures.append((exp["id"], 9001))
+                print(f"[eval-missing] {exp['id']} no checkpoint found under {run_dir / 'checkpoints'}")
+                if not args.keep_going:
+                    break
+                continue
 
-        summary_path = eval_dir / "summary.json"
-        if not summary_path.exists():
-            eval_failures.append((exp["id"], 9002))
-            print(f"[eval-missing] {exp['id']} summary missing at {summary_path}")
-            if not args.keep_going:
-                break
-            continue
-        metrics = extract_summary_metrics(summary_path)
-        eval_rows.append(
-            {
-                "id": exp["id"],
-                "checkpoint": str(checkpoint_path),
-                "summary_path": str(summary_path),
-                **metrics,
-            }
-        )
-        clip_style = metrics.get("clip_style")
-        content_lpips = metrics.get("content_lpips")
-        print(f"[eval-summary] {exp['id']} clip_style={clip_style} content_lpips={content_lpips}")
+            eval_dir = run_dir / "full_eval" / checkpoint_path.stem
+            eval_code = run_evaluation_for_checkpoint(
+                checkpoint_path=checkpoint_path,
+                eval_dir=eval_dir,
+                eval_batch_size=args.eval_batch_size,
+                num_steps=args.eval_num_steps,
+                force_regen=not args.no_force_eval_regen,
+            )
+            if eval_code != 0:
+                eval_failures.append((exp["id"], eval_code))
+                print(f"[eval-failed] {exp['id']} exit_code={eval_code}")
+                if not args.keep_going:
+                    break
+                continue
+
+            summary_path = eval_dir / "summary.json"
+            if not summary_path.exists():
+                eval_failures.append((exp["id"], 9002))
+                print(f"[eval-missing] {exp['id']} summary missing at {summary_path}")
+                if not args.keep_going:
+                    break
+                continue
+            metrics = extract_summary_metrics(summary_path)
+            eval_rows.append(
+                {
+                    "id": exp["id"],
+                    "checkpoint": str(checkpoint_path),
+                    "summary_path": str(summary_path),
+                    **metrics,
+                }
+            )
+            clip_style = metrics.get("clip_style")
+            content_lpips = metrics.get("content_lpips")
+            print(f"[eval-summary] {exp['id']} clip_style={clip_style} content_lpips={content_lpips}")
 
     if failures:
         print("[summary] failed runs:")
