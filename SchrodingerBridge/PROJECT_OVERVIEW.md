@@ -11,6 +11,7 @@
 | Failure reflections | `maths/REFLECTIONS.md` | Active |
 | Experiment history | `EXPERIMENT_LOG.md` | Empirical source of truth |
 | Cleanup record | `DIRECTORY_CLEANUP_LOG.md` | Directory hygiene decisions |
+| Root directory manifest | `ROOT_DIRECTORY_MANIFEST.md` | Top-level classification |
 | Main code | `src/` | Active implementation |
 
 ## What This Folder Contains
