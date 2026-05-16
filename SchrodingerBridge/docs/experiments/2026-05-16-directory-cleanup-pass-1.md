@@ -36,3 +36,15 @@ After this note was created, a second cleanup step was executed:
 - removed root `__pycache__/`
 
 This was intentionally limited to archive-like and cache-like files only.
+
+## Pass 3 Completed
+
+The legacy `paper_refine_v2/` workspace still contains real work, so only transient LaTeX build logs were removed:
+
+- `aaai_submission/xelatex_build.log`
+- `aaai_submission/xelatex_pass1.log`
+- `aaai_submission/xelatex_pass2.log`
+- `aaai_submission/xelatex_pass3.log`
+- `final/texput.log`
+
+Local `.gitignore` files were added in those subdirectories so the same logs stop polluting status output.
