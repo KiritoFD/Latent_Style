@@ -52,6 +52,7 @@ Canonical writeup:
 
 - `maths/FULL_EVIDENCE_ANALYSIS_2026-05-16.md`
 - `maths/CSV_STATISTICAL_APPENDIX_2026-05-16.md`
+- `maths/DECISION_TREE_AND_EXPERIMENT_PLAN.md`
 
 What was added in this pass:
 
