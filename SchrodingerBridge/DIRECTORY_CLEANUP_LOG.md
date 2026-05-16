@@ -103,3 +103,23 @@ This pass intentionally did not touch:
 - modified figures
 - tracked PDFs
 - any experimental evidence directory
+
+## 2026-05-16: Pass 4
+
+### Documentation Consolidation
+
+Added:
+
+- `ROOT_DIRECTORY_MANIFEST.md`
+- `docs/experiments/2026-05-16-root-directory-audit.md`
+- `docs/experiments/2026-05-16-aborted-fast-k05-attempt.md`
+
+### Why
+
+The repository still contains many root-level historical workspaces. Before further cleanup or theory work, we need one stable written inventory of what is active, what is evidence, and what is merely staging.
+
+### Current Deferred Targets
+
+- `path_kinetic/` structural cleanup
+- duplication between `paper_refine_v2/` and `paper_orchestra_workspace/`
+- any move of large evidence directories such as `weight_sweep_40/` or `grid_search_3epoch/`
