@@ -38,6 +38,7 @@ _MODEL_CONFIG_DEFAULTS = {
     "semantic_attn_temperature": 0.08,
     "semantic_attn_routing_mode": "softmax",
     "semantic_sinkhorn_iters": 3,
+    "semantic_gumbel_tau": 1.0,
     "feature_attn_num_heads": 4,
     "window_attn_window_size": 8,
     "skip_fusion_mode": "concat_conv",
@@ -101,6 +102,12 @@ def _sinkhorn_attention(logits: torch.Tensor, *, iters: int = 3, eps: float = 1e
         log_p = log_p - torch.logsumexp(log_p, dim=1, keepdim=True)
         log_p = log_p - torch.logsumexp(log_p, dim=2, keepdim=True)
     return torch.exp(log_p).clamp_min(eps).to(dtype=logits.dtype)
+
+
+def _gumbel_hard_attention(logits: torch.Tensor, *, tau: float = 1.0) -> torch.Tensor:
+    flat = logits.reshape(-1, logits.shape[-1])
+    attn = F.gumbel_softmax(flat, tau=max(1e-3, float(tau)), hard=True, dim=-1)
+    return attn.view_as(logits).to(dtype=logits.dtype)
 
 
 class CrossAttnAdaGN(nn.Module):
@@ -431,13 +438,15 @@ class SemanticCrossAttn(nn.Module):
         paint_only: bool = False,
         routing_mode: str = "softmax",
         sinkhorn_iters: int = 3,
+        gumbel_tau: float = 1.0,
     ) -> None:
         super().__init__()
         self.paint_only = bool(paint_only)
         self.routing_mode = str(routing_mode).strip().lower()
-        if self.routing_mode not in {"softmax", "sinkhorn"}:
+        if self.routing_mode not in {"softmax", "sinkhorn", "gumbel_hard"}:
             self.routing_mode = "softmax"
         self.sinkhorn_iters = max(1, int(sinkhorn_iters))
+        self.gumbel_tau = max(1e-3, float(gumbel_tau))
         self.norm_x = nn.GroupNorm(_resolve_group_count(dim, num_groups), dim)
         self.norm_s = nn.GroupNorm(_resolve_group_count(dim, num_groups), dim)
         self.to_q = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
@@ -491,6 +500,8 @@ class SemanticCrossAttn(nn.Module):
         attn = torch.bmm(q, k) * scale
         if self.routing_mode == "sinkhorn":
             attn = _sinkhorn_attention(attn, iters=self.sinkhorn_iters)
+        elif self.routing_mode == "gumbel_hard":
+            attn = _gumbel_hard_attention(attn, tau=self.gumbel_tau)
         else:
             attn = F.softmax(attn, dim=-1)
         self.last_attn = attn
@@ -750,6 +761,7 @@ class LatentAdaCUT(nn.Module):
         semantic_attn_temperature: float = 0.08,
         semantic_attn_routing_mode: str = "softmax",
         semantic_sinkhorn_iters: int = 3,
+        semantic_gumbel_tau: float = 1.0,
         feature_attn_num_heads: int = 4,
         window_attn_window_size: int = 8,
         skip_fusion_mode: str = "concat_conv",
@@ -803,9 +815,10 @@ class LatentAdaCUT(nn.Module):
         self.decoder_block_type = _normalize_feature_block_type(decoder_block_type)
         self.semantic_attn_temperature = max(1e-4, float(semantic_attn_temperature))
         self.semantic_attn_routing_mode = str(semantic_attn_routing_mode).strip().lower()
-        if self.semantic_attn_routing_mode not in {"softmax", "sinkhorn"}:
+        if self.semantic_attn_routing_mode not in {"softmax", "sinkhorn", "gumbel_hard"}:
             self.semantic_attn_routing_mode = "softmax"
         self.semantic_sinkhorn_iters = max(1, int(semantic_sinkhorn_iters))
+        self.semantic_gumbel_tau = max(1e-3, float(semantic_gumbel_tau))
         self.num_decoder_blocks = max(0, int(num_decoder_blocks))
         self.feature_attn_num_heads = max(1, int(feature_attn_num_heads))
         self.window_attn_window_size = max(1, int(window_attn_window_size))
@@ -883,6 +896,7 @@ class LatentAdaCUT(nn.Module):
                     paint_only=self.use_style_blender,
                     routing_mode=self.semantic_attn_routing_mode,
                     sinkhorn_iters=self.semantic_sinkhorn_iters,
+                    gumbel_tau=self.semantic_gumbel_tau,
                 )
                 for _ in range(self.num_res_blocks)
             ]
@@ -1524,6 +1538,7 @@ def build_model_from_config(
             model_cfg.get("semantic_attn_routing_mode", _MODEL_CONFIG_DEFAULTS["semantic_attn_routing_mode"])
         ),
         semantic_sinkhorn_iters=int(model_cfg.get("semantic_sinkhorn_iters", _MODEL_CONFIG_DEFAULTS["semantic_sinkhorn_iters"])),
+        semantic_gumbel_tau=float(model_cfg.get("semantic_gumbel_tau", _MODEL_CONFIG_DEFAULTS["semantic_gumbel_tau"])),
         feature_attn_num_heads=int(model_cfg.get("feature_attn_num_heads", _MODEL_CONFIG_DEFAULTS["feature_attn_num_heads"])),
         window_attn_window_size=int(model_cfg.get("window_attn_window_size", _MODEL_CONFIG_DEFAULTS["window_attn_window_size"])),
         skip_fusion_mode=str(model_cfg.get("skip_fusion_mode", _MODEL_CONFIG_DEFAULTS["skip_fusion_mode"])),
