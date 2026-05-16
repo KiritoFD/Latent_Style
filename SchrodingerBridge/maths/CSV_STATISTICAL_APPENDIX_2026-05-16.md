@@ -101,7 +101,19 @@ Top K2 runs:
 
 The sweep is effectively flat.
 
-## 5. Residual Scale Sweep
+## 5. Step Count Sweep
+
+| run | style | content | LPIPS |
+|---|---:|---:|---:|
+| steps_01 | 0.715977 | 0.808622 | 0.451390 |
+| steps_04 | 0.716029 | 0.808607 | 0.451416 |
+| steps_08 | 0.715928 | 0.808500 | 0.451408 |
+| steps_12 | 0.716167 | 0.808688 | 0.451406 |
+| steps_16 | 0.716105 | 0.808645 | 0.451392 |
+
+This sweep is also effectively flat.
+
+## 6. Residual Scale Sweep
 
 | run | style | content |
 |---|---:|---:|
@@ -112,7 +124,7 @@ The sweep is effectively flat.
 
 This sweep is not flat. It shows a clear overshoot curve.
 
-## 6. Theory Switch Validation: Delta vs `T0_k2_baseline`
+## 7. Theory Switch Validation: Delta vs `T0_k2_baseline`
 
 Reference row:
 
@@ -130,7 +142,7 @@ Delta table:
 | T6_color_gumbel_w2 | epoch_0003 | +0.002093 | -0.026158 | +0.026706 |
 | T7_all_switches_mild | epoch_0003 | -0.001436 | -0.001946 | +0.000884 |
 
-## 7. High-Tension Sweep: Best by Experiment
+## 8. High-Tension Sweep: Best by Experiment
 
 | experiment_id | best_epoch | style | content | LPIPS |
 |---|---|---:|---:|---:|
@@ -142,7 +154,7 @@ Correlations inside this sweep:
 - `corr(clip_style, content_lpips) = +0.9900`
 - `corr(clip_style, clip_content) = -0.9923`
 
-## 8. Orthogonal Phase Sweep: Best by Experiment
+## 9. Orthogonal Phase Sweep: Best by Experiment
 
 Top best-per-experiment rows:
 

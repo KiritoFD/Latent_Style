@@ -297,7 +297,39 @@ Mathematical explanation:
 
 if the field is already close to self-calibrated in magnitude, then changing the inference scalar by `1.25` vs `1.5` vs `2.0` does not move the endpoint into a new regime. The model is direction-limited rather than horizon-limited in this neighborhood.
 
-## 8. Residual Scale Sweep: Amplitude Matters More Than Horizon
+## 8. Step Count Sweep: More Integration Steps Do Not Materially Help
+
+From `review_additional_experiments/review_additional_experiments/step_count_sweep`:
+
+- `steps_01`: `style 0.715977`, `content 0.808622`, `LPIPS 0.451390`
+- `steps_04`: `style 0.716029`, `content 0.808607`, `LPIPS 0.451416`
+- `steps_08`: `style 0.715928`, `content 0.808500`, `LPIPS 0.451408`
+- `steps_12`: `style 0.716167`, `content 0.808688`, `LPIPS 0.451406`
+- `steps_16`: `style 0.716105`, `content 0.808645`, `LPIPS 0.451392`
+
+This is another near-flat sweep.
+
+### 8.1 Interpretation
+
+Increasing the number of integration steps from `1` to `16` does not change the result in any meaningful way.
+
+That means the model is not currently bottlenecked by coarse numerical integration.
+
+### 8.2 Mathematical explanation
+
+If repeated application of the learned residual field gave progressively better alignment, then step count should produce a monotone or at least structured gain curve.
+
+Instead, the curve is flat. The most likely reading is:
+
+- the learned update is already behaving like a one-shot endpoint corrector
+- repeated subdivision of the same field does not unlock a better manifold
+- therefore style quality is limited by the learned field itself, not by insufficient Euler resolution
+
+This supports the same conclusion as the step-size sweep:
+
+the next gains should come from better endpoint pressure and better amplitude control, not from simply using more inference steps.
+
+## 9. Residual Scale Sweep: Amplitude Matters More Than Horizon
 
 From `residual_scale_sweep_summary.csv`:
 
@@ -336,7 +368,7 @@ That is exactly what the residual sweep shows.
 
 This also explains why `step_size` is almost flat while `residual_scale` matters: the model is sensitive to the amplitude of the learned update branch itself, not to small external changes in horizon around the same branch.
 
-## 9. Theory Switch Validation: What Cross-Attention Variants Really Do
+## 10. Theory Switch Validation: What Cross-Attention Variants Really Do
 
 From `theory_switch_validation_report.md` and the per-run batch summaries:
 
@@ -382,7 +414,7 @@ These results are actually a cross-attention story:
 
 So the body cross-attention is already expressing the main project tradeoff.
 
-## 10. High-Tension and Orthogonal Sweeps: Over-constraint Regimes
+## 11. High-Tension and Orthogonal Sweeps: Over-constraint Regimes
 
 ### 10.1 High-tension sweep
 
@@ -412,7 +444,7 @@ Mathematical interpretation:
 
 these phase-space variants are mostly redistributing regularization pressure rather than changing the underlying endpoint objective. They do not create a new mechanism for style alignment, so they stay in a low-style safe regime.
 
-## 11. Training Speed Is Not the Main Bottleneck
+## 12. Training Speed Is Not the Main Bottleneck
 
 From `training_times_documentation.md`:
 
@@ -431,7 +463,39 @@ It is:
 
 This is a very different question.
 
-## 12. Statistical Cautions
+## 13. Evidence Tiers
+
+Not all statements in this document are equally strong. The repository now supports three evidence tiers.
+
+### 13.1 Strong evidence
+
+These are supported by direct ablations or repeated sweep structure:
+
+- terminal SWD is necessary
+- removing kinetic raises style but collapses content
+- K1 is more style-seeking than K2
+- step size is not an important lever near the current baseline
+- step count is not an important lever near the current baseline
+- residual amplitude is an important lever
+- strong color loss is harmful in the tested form
+
+### 13.2 Medium evidence
+
+These are well supported but still regime-dependent:
+
+- Sinkhorn and entropy-gated variants are better viewed as safety regularizers than style maximizers
+- `semantic_k_abs` tracks style intensity better than `semantic_attn_mean`
+- high-tension and orthogonal sweeps mostly move along the same tradeoff frontier
+
+### 13.3 Weak or provisional evidence
+
+These are useful working hypotheses, but should not be treated as settled:
+
+- the exact functional form of style gain versus residual amplitude
+- the exact causal meaning of `plan_entropy`
+- the degree to which `semantic_k_abs` is a universal predictor outside the current ablations
+
+## 14. Statistical Cautions
 
 Some correlations should not be over-read.
 
@@ -457,7 +521,7 @@ The safer analyses are:
 
 That is what this document prioritizes.
 
-## 13. Main Insights
+## 15. Main Insights
 
 ### Insight 1
 
@@ -504,7 +568,7 @@ K-family regime matters more than sampler recipe details.
 
 So if the explicit goal is to exceed SaMST on style, starting from `K1` is more logical than starting from `K2`.
 
-## 14. Mathematical Reading of the Frontier
+## 16. Mathematical Reading of the Frontier
 
 The best reduced model remains:
 
@@ -558,7 +622,25 @@ So the actual operative model is:
 
 That is not a formal theorem. But it is the most faithful mathematical summary of the code plus data we currently have.
 
-## 15. Actionable Theory Conclusion
+## 17. Immediate Research Implications
+
+The evidence now rules out several tempting but low-yield next moves.
+
+### 17.1 What not to do first
+
+- do not spend GPU budget on larger step counts
+- do not spend GPU budget on tiny step-size adjustments
+- do not assume K2 can out-style K1 by recipe tuning alone
+- do not revive strong color modules as the first rescue path
+
+### 17.2 What the current evidence says to do first
+
+1. stay on the `K1` side of the family
+2. treat residual amplitude and kinetic pressure as primary levers
+3. treat endpoint SWD pressure as the next lever after amplitude/kinetic
+4. use routing-smoothing ideas only when style is already high enough and content needs repair
+
+## 18. Actionable Theory Conclusion
 
 The next serious experiment family should not start from scratch and should not begin with new modules.
 
