@@ -209,7 +209,23 @@ and computes
 
 So time-gated kinetic does not change the target style directly. It changes where in normalized time the path is allowed to move more freely.
 
-## 7. What the Model Is Really Optimizing
+## 7. Why Step Count and Step Size Are Weak Levers in the Current Regime
+
+The code supports multi-step integration, but the existing sweeps show:
+
+- changing step size around the current baseline hardly changes final metrics
+- increasing step count from `1` to `16` hardly changes final metrics
+
+So the current model behaves much more like a learned endpoint corrector than like a delicate ODE solver that needs better numerical resolution.
+
+Mathematically, that means:
+
+- the dominant error is model bias in `delta_theta`
+- not discretization error from too few Euler steps
+
+This is why residual amplitude can matter a lot while step count does not.
+
+## 8. What the Model Is Really Optimizing
 
 The most faithful compact expression for the active branch is:
 
