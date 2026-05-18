@@ -46,21 +46,14 @@
     "use_style_blender": false
   },
   "bridge": {
-    "objective_mode": "omf",
     "ot_cost_mode": "swd",
     "terminal_num_steps": 4,
     "terminal_swd_on_identity": false,
     "w_kinetic": 1.5,
-    "w_low_freq": 1.0,
-    "w_cycle": 1.0,
+    "w_curvature": 0.0,
     "terminal_swd_weight": 0.15,
-    "w_color": 0.0,
-    "w_repulsive": 0.0,
-    "w_nce": 0.0,
-    "low_freq_kernel_size": 7,
     "semantic_swd_num_projections": 64,
-    "swd_distance_mode": "cdf",
-    "swd_use_high_freq": true
+    "swd_distance_mode": "cdf"
   },
   "training": {
     "seed": 42,
