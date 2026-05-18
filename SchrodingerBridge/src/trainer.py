@@ -39,7 +39,7 @@ _SNAPSHOT_SOURCE_FILES = [
     "trainer.py",
     "losses.py",
     "model.py",
-    "lancet_backbone.py",
+    "model.py",
     "ot_cost.py",
     "dataset.py",
     "run.py",
