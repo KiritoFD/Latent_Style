@@ -505,6 +505,10 @@ class SemanticCrossAttn(nn.Module):
         else:
             attn = F.softmax(attn, dim=-1)
         self.last_attn = attn
+        # Prophecy 1 diagnostic: column variance of attention matrix
+        # A_col_var = Var(sum_i A_{ij}) — measures "many-to-one" concentration
+        with torch.no_grad():
+            self.last_A_col_var = attn.sum(dim=1).var(dim=1).mean().item()
         self.last_k = F.normalize(k, p=2, dim=1)
         painted = torch.bmm(attn, v).transpose(1, 2).view(b, c, h_dim, w_dim)
 
