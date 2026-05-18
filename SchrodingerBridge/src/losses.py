@@ -540,29 +540,34 @@ class OTFlowMatchingObjective:
         else:
             metrics["flow"] = content.new_tensor(0.0, dtype=torch.float32)
 
-        kinetic_energy_map = pred_velocity.float() ** 2
-        entropy_weight = self._semantic_entropy_weight(attn_plan, output_size=pred_velocity.shape[-2:])
-        if entropy_weight is not None:
-            kinetic_multiplier = 1.0 + entropy_weight * self.kinetic_entropy_gate_weight
-            kinetic_loss = (kinetic_energy_map * kinetic_multiplier).mean()
-            metrics["kinetic_entropy_mean"] = entropy_weight.mean().detach()
-            metrics["kinetic_entropy_gate_weight"] = content.new_tensor(
-                self.kinetic_entropy_gate_weight,
-                dtype=torch.float32,
-            )
-        else:
-            kinetic_loss = kinetic_energy_map.mean()
-            metrics["kinetic_entropy_mean"] = content.new_tensor(0.0, dtype=torch.float32)
-            metrics["kinetic_entropy_gate_weight"] = content.new_tensor(0.0, dtype=torch.float32)
         if self.w_kinetic > 0.0:
+            kinetic_energy_map = pred_velocity.float() ** 2
+            entropy_weight = self._semantic_entropy_weight(attn_plan, output_size=pred_velocity.shape[-2:])
+            if entropy_weight is not None:
+                kinetic_multiplier = 1.0 + entropy_weight * self.kinetic_entropy_gate_weight
+                kinetic_loss = (kinetic_energy_map * kinetic_multiplier).mean()
+                metrics["kinetic_entropy_mean"] = entropy_weight.mean().detach()
+                metrics["kinetic_entropy_gate_weight"] = content.new_tensor(
+                    self.kinetic_entropy_gate_weight,
+                    dtype=torch.float32,
+                )
+            else:
+                kinetic_loss = kinetic_energy_map.mean()
+                metrics["kinetic_entropy_mean"] = content.new_tensor(0.0, dtype=torch.float32)
+                metrics["kinetic_entropy_gate_weight"] = content.new_tensor(0.0, dtype=torch.float32)
             kinetic_weighted = kinetic_loss * self.w_kinetic
             total_loss = total_loss + kinetic_weighted
             component_tensors["kinetic_energy"] = kinetic_weighted
             metrics["kinetic_energy"] = kinetic_weighted.detach()
         else:
             metrics["kinetic_energy"] = content.new_tensor(0.0, dtype=torch.float32)
+            metrics["kinetic_entropy_mean"] = content.new_tensor(0.0, dtype=torch.float32)
+            metrics["kinetic_entropy_gate_weight"] = content.new_tensor(0.0, dtype=torch.float32)
 
-        if not self.swd_use_high_freq:
+        if self.terminal_swd_weight <= 0.0:
+            metrics["terminal_swd"] = content.new_tensor(0.0, dtype=torch.float32)
+            metrics["low_freq_anchor"] = content.new_tensor(0.0, dtype=torch.float32)
+        elif not self.swd_use_high_freq:
             if semantic_k is not None:
                 swd_loss = self._semantic_guided_swd(pred_endpoint, target_style, semantic_k)
             else:
@@ -677,25 +682,29 @@ class OTFlowMatchingObjective:
             metrics["cycle_velocity_max"] = content.new_tensor(0.0, dtype=torch.float32)
             metrics["cycle_endpoint_max"] = content.new_tensor(0.0, dtype=torch.float32)
 
-        xid_mask = (
-            source_style_id.long() != target_style_id.long()
-            if source_style_id is not None
-            else torch.ones_like(target_style_id, dtype=torch.bool)
-        )
-        repel_raw, mean_pair_sim = self._collect_repulsive_components(
-            pred_endpoint,
-            xid_mask,
-            target_style_id=target_style_id,
-        )
-        if repel_raw is not None and self.w_repulsive > 0.0:
-            repel_clamped = torch.clamp(repel_raw, max=1.0)
-            repel_weighted = repel_clamped * self.w_repulsive
-            total_loss = total_loss + repel_weighted
-            component_tensors["repulsive"] = repel_weighted
-            metrics["repulsive"] = repel_weighted.detach()
+        if self.w_repulsive > 0.0:
+            xid_mask = (
+                source_style_id.long() != target_style_id.long()
+                if source_style_id is not None
+                else torch.ones_like(target_style_id, dtype=torch.bool)
+            )
+            repel_raw, mean_pair_sim = self._collect_repulsive_components(
+                pred_endpoint,
+                xid_mask,
+                target_style_id=target_style_id,
+            )
+            if repel_raw is not None:
+                repel_clamped = torch.clamp(repel_raw, max=1.0)
+                repel_weighted = repel_clamped * self.w_repulsive
+                total_loss = total_loss + repel_weighted
+                component_tensors["repulsive"] = repel_weighted
+                metrics["repulsive"] = repel_weighted.detach()
+            else:
+                metrics["repulsive"] = content.new_tensor(0.0, dtype=torch.float32)
+            metrics["repulsive_pair_sim"] = mean_pair_sim
         else:
             metrics["repulsive"] = content.new_tensor(0.0, dtype=torch.float32)
-        metrics["repulsive_pair_sim"] = mean_pair_sim
+            metrics["repulsive_pair_sim"] = content.new_tensor(0.0, dtype=torch.float32)
 
         if source_style_id is not None:
             id_mask = source_style_id.long() == target_style_id.long()
