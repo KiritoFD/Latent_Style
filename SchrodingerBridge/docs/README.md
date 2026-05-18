@@ -8,6 +8,16 @@
 | [Architecture](architecture.md) | Code structure, loss components, data flow |
 | [Remote Server](remote_server.md) | SSH, schtasks, GameViewer, SaMST pipeline |
 
+## Mathematical Foundations
+
+| Document | Description |
+|----------|-------------|
+| [Maths Overview](maths/README.md) | 理论推导、数学模型和实验证据索引 |
+| [Code-Faithful Model](maths/MODEL.md) | 状态空间、端点映射、损失函数形式化 |
+| [Theory Reset](maths/THEORY_RESET_2026-05-16.md) | 围绕最小可验证声明的理论重建 |
+| [Decision Tree](maths/DECISION_TREE_AND_EXPERIMENT_PLAN.md) | 数学决策树和实验计划 |
+| [Reflections (ZH)](maths/REFLECTIONS.md) | 实验反思与理论修正 |
+
 ## Development Reports
 
 | Document | Description |
