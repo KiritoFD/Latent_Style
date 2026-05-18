@@ -14,7 +14,7 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from inference_config import compact_runtime_config
+from config import compact_runtime_config
 from losses import OTFlowMatchingObjective
 from model import build_model_from_config, count_parameters
 
@@ -40,10 +40,9 @@ _SNAPSHOT_SOURCE_FILES = [
     "losses.py",
     "model.py",
     "model.py",
-    "ot_cost.py",
     "dataset.py",
     "run.py",
-    "utils/inference.py",
+    "inference.py",
     "utils/run_evaluation.py",
 ]
 
@@ -362,7 +361,30 @@ class SBTrainer:
         if self.scheduler is not None:
             self.scheduler.step()
 
+    def apply_semantic_temp(self, epoch: int) -> None:
+        model_cfg = self.config.get("model", {})
+        schedule = str(model_cfg.get("semantic_attn_temp_schedule", "constant")).strip().lower()
+        if schedule == "constant":
+            return
+        t_start = max(1e-4, float(model_cfg.get("semantic_attn_temp_start", 0.08)))
+        t_end = max(1e-4, float(model_cfg.get("semantic_attn_temp_end", 0.08)))
+        total = max(1, int(self.num_epochs))
+        progress = min(1.0, max(0.0, (epoch - 1) / (total - 1)))
+        if schedule == "linear":
+            temp = t_start + (t_end - t_start) * progress
+        elif schedule == "cosine":
+            temp = t_end + (t_start - t_end) * (1.0 + math.cos(progress * math.pi)) / 2.0
+        elif schedule == "exp":
+            temp = t_start * (t_end / t_start) ** max(progress, 1e-8)
+        else:
+            return
+        temp = max(1e-4, min(10.0, float(temp)))
+        for block in self.model.body_blocks:
+            with torch.no_grad():
+                block.log_temp.fill_(math.log(temp))
+
     def train_epoch(self, dataloader: DataLoader, epoch: int) -> Dict[str, float]:
+        self.apply_semantic_temp(epoch)
         self.model.train()
         epoch_start = time.time()
         metric_accum: Dict[str, torch.Tensor] = {}
