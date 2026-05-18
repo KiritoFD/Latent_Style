@@ -1,0 +1,17 @@
+{
+  "_base": "../../config.json",
+  "model": {
+    "semantic_attn_routing_mode": "sinkhorn"
+  },
+  "bridge": {
+    "terminal_swd_weight": 0.15,
+    "w_kinetic": 1.5
+  },
+  "training": {
+    "num_epochs": 8,
+    "save_interval": 8
+  },
+  "checkpoint": {
+    "save_dir": "./exp/armored_breakthrough_proper/sinkhorn_baseline"
+  }
+}
