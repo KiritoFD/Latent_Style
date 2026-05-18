@@ -196,11 +196,8 @@ class OTFlowMatchingObjective:
             return None, content.new_tensor(0.0, dtype=torch.float32)
 
         endpoint = model.integrate(
-            content,
-            style_id=target_style_id,
-            num_steps=self.terminal_num_steps,
-            step_size=1.0,
-            style_strength=1.0,
+            content, style_id=target_style_id,
+            num_steps=self.terminal_num_steps, step_size=1.0, style_strength=1.0,
         )
         if source_style_id is None or self.terminal_swd_on_identity:
             mask = torch.ones_like(target_style_id, dtype=torch.bool)
@@ -209,32 +206,20 @@ class OTFlowMatchingObjective:
         active = torch.nonzero(mask, as_tuple=False).squeeze(1)
         if active.numel() == 0:
             return None, endpoint.abs().mean().detach()
-        term = self.transport_cost.aligned_cost(
-            endpoint.index_select(0, active),
-            matched_target.index_select(0, active),
-        )
-        return term, endpoint.abs().mean().detach()
 
-    def _calc_terminal_swd_loss(
-        self,
-        pred_endpoint: torch.Tensor,
-        target_style: torch.Tensor,
-        source_style_id: torch.Tensor | None,
-        target_style_id: torch.Tensor,
-    ) -> torch.Tensor | None:
-        if self.terminal_swd_weight <= 0.0:
-            return None
-        if source_style_id is None or self.terminal_swd_on_identity:
-            active = torch.arange(pred_endpoint.shape[0], device=pred_endpoint.device)
+        k_matrix = model.last_semantic_k
+        if k_matrix is not None:
+            term = self._semantic_guided_swd(
+                endpoint.index_select(0, active),
+                matched_target.index_select(0, active),
+                k_matrix.index_select(0, active) if k_matrix.shape[0] > 1 else k_matrix,
+            )
         else:
-            mask = source_style_id.long() != target_style_id.long()
-            active = torch.nonzero(mask, as_tuple=False).squeeze(1)
-        if active.numel() == 0:
-            return None
-        return self.transport_cost.aligned_cost(
-            pred_endpoint.index_select(0, active),
-            target_style.index_select(0, active),
-        )
+            term = self.transport_cost.aligned_cost(
+                endpoint.index_select(0, active),
+                matched_target.index_select(0, active),
+            )
+        return term, endpoint.abs().mean().detach()
 
     def _semantic_entropy_weight(self, attn_plan: torch.Tensor | None, output_size: tuple[int, int]) -> torch.Tensor | None:
         if attn_plan is None or self.kinetic_entropy_gate_weight <= 0.0:
