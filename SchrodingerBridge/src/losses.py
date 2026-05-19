@@ -249,13 +249,13 @@ class OTFlowMatchingObjective:
     ) -> torch.Tensor | None:
         if self.terminal_swd_weight <= 0.0:
             return None
+        if semantic_k is not None:
+            return self._semantic_guided_swd(pred_endpoint, target_style, semantic_k)
         active = self._terminal_active_indices(pred_endpoint, source_style_id, target_style_id)
         if active.numel() == 0:
             return None
         pred_active = pred_endpoint.index_select(0, active)
         target_active = target_style.index_select(0, active)
-        if semantic_k is not None:
-            return self._semantic_guided_swd(pred_active, target_active, semantic_k.index_select(0, active))
         return self.transport_cost.aligned_cost(pred_active, target_active)
 
     def _terminal_swd(
