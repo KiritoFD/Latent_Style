@@ -5,4 +5,5 @@ __all__ = [
     "classify",
     "modern_metrics",
     "run_evaluation",
+    "training",
 ]
