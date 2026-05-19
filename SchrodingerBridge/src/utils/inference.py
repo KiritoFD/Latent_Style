@@ -17,8 +17,7 @@ import numpy as np
 import torch
 from PIL import Image
 
-from config_schema import ExperimentConfig
-from inference_config import resolve_inference_section
+from config_schema import ExperimentConfig, resolve_inference_section
 from model import build_model_from_config
 
 logger = logging.getLogger(__name__)

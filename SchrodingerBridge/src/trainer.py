@@ -11,8 +11,7 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from config_schema import ExperimentConfig
-from inference_config import compact_runtime_config
+from config_schema import ExperimentConfig, compact_runtime_config
 from losses import OTFlowMatchingObjective
 from model import build_model_from_config, count_parameters
 from utils.training import (

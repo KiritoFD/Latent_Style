@@ -40,10 +40,13 @@ TRAIN_LOG_COLUMNS = [
 
 
 SNAPSHOT_SOURCE_FILES = [
+    "config_schema.py",
     "trainer.py",
     "losses.py",
     "model.py",
     "lancet_backbone.py",
+    "lancet_blocks.py",
+    "lancet_runtime.py",
     "ot_cost.py",
     "dataset.py",
     "run.py",

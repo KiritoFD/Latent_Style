@@ -10,8 +10,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from config_loader import load_experiment_config
-from config_schema import ExperimentConfig
+from config_schema import ExperimentConfig, load_experiment_config
 from dataset import AdaCUTLatentDataset
 from trainer import SBTrainer
 

@@ -1,7 +1,30 @@
 from __future__ import annotations
 
+import copy
+import json
 from dataclasses import asdict, dataclass, field, fields
+from functools import lru_cache
+from pathlib import Path
 from typing import Any, Mapping
+
+
+INFERENCE_DEFAULTS: dict[str, dict[str, Any]] = {
+    "inference": {
+        "num_steps": 12,
+        "step_size": 1.0,
+        "style_strength": 1.0,
+    },
+    "full_eval": {
+        "num_steps": 12,
+        "step_size": 1.0,
+        "style_strength": 1.0,
+        "batch_size": 2,
+        "max_src_samples": 30,
+        "max_ref_compare": 24,
+        "max_ref_cache": 80,
+        "ref_feature_batch_size": 8,
+    },
+}
 
 
 def _section_dict(value: Mapping[str, Any] | None) -> dict[str, Any]:
@@ -341,3 +364,135 @@ class ExperimentConfig:
             payload["ablation"] = dict(self.ablation)
         payload.update(self.extra_sections)
         return payload
+
+
+def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    merged = copy.deepcopy(base)
+    for key, value in override.items():
+        if key == "_base":
+            continue
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _deep_merge(merged[key], value)
+        else:
+            merged[key] = copy.deepcopy(value)
+    return merged
+
+
+def load_config(config_path: str | Path, *, _seen: set[Path] | None = None) -> dict[str, Any]:
+    path = Path(config_path).resolve()
+    seen = set() if _seen is None else _seen
+    if path in seen:
+        chain = " -> ".join(str(p) for p in [*seen, path])
+        raise ValueError(f"Config inheritance cycle detected: {chain}")
+    seen.add(path)
+
+    with open(path, "r", encoding="utf-8") as f:
+        raw = json.load(f)
+
+    base_ref = raw.get("_base")
+    if not base_ref:
+        return raw
+
+    base_paths = base_ref if isinstance(base_ref, list) else [base_ref]
+    merged: dict[str, Any] = {}
+    for item in base_paths:
+        base_path = Path(item)
+        if not base_path.is_absolute():
+            base_path = (path.parent / base_path).resolve()
+        merged = _deep_merge(merged, load_config(base_path, _seen=seen.copy()))
+
+    return _deep_merge(merged, raw)
+
+
+def load_experiment_config(config_path: str | Path) -> ExperimentConfig:
+    return ExperimentConfig.from_mapping(load_config(config_path))
+
+
+def _config_dict(config: dict[str, Any] | ExperimentConfig | None) -> dict[str, Any]:
+    if isinstance(config, ExperimentConfig):
+        return config.to_dict()
+    if isinstance(config, dict):
+        return config
+    return {}
+
+
+@lru_cache(maxsize=1)
+def load_inference_defaults() -> dict[str, Any]:
+    return copy.deepcopy(INFERENCE_DEFAULTS)
+
+
+def resolve_inference_section(config: dict[str, Any] | ExperimentConfig | None) -> dict[str, Any]:
+    defaults = dict(load_inference_defaults().get("inference", {}) or {})
+    config_dict = _config_dict(config)
+    local = config_dict.get("inference", {}) or {}
+    if isinstance(local, dict):
+        defaults.update(local)
+    return defaults
+
+
+def resolve_full_eval_section(config: dict[str, Any] | ExperimentConfig | None) -> dict[str, Any]:
+    defaults = dict(load_inference_defaults().get("full_eval", {}) or {})
+    config_dict = _config_dict(config)
+    training = config_dict.get("training", {}) or {}
+    if isinstance(training, dict):
+        mapping = {
+            "num_steps": "full_eval_num_steps",
+            "step_size": "full_eval_step_size",
+            "style_strength": "full_eval_style_strength",
+            "batch_size": "full_eval_batch_size",
+            "max_src_samples": "full_eval_max_src_samples",
+            "max_ref_compare": "full_eval_max_ref_compare",
+            "max_ref_cache": "full_eval_max_ref_cache",
+            "ref_feature_batch_size": "full_eval_ref_feature_batch_size",
+        }
+        for dst_key, src_key in mapping.items():
+            if src_key in training and training.get(src_key) is not None:
+                defaults[dst_key] = training.get(src_key)
+    local = config_dict.get("full_eval", {}) or {}
+    if isinstance(local, dict):
+        defaults.update(local)
+    return defaults
+
+
+def compact_runtime_config(config: dict[str, Any] | ExperimentConfig | None) -> dict[str, Any]:
+    config_dict = _config_dict(config)
+    if not config_dict:
+        return {}
+
+    compact = copy.deepcopy(config_dict)
+    infer_defaults = dict(load_inference_defaults().get("inference", {}) or {})
+    full_eval_defaults = dict(load_inference_defaults().get("full_eval", {}) or {})
+
+    infer_local = compact.get("inference")
+    if isinstance(infer_local, dict):
+        pruned_infer = {k: v for k, v in infer_local.items() if infer_defaults.get(k) != v}
+        if pruned_infer:
+            compact["inference"] = pruned_infer
+        else:
+            compact.pop("inference", None)
+
+    full_eval_local = compact.get("full_eval")
+    if isinstance(full_eval_local, dict):
+        pruned_full_eval = {k: v for k, v in full_eval_local.items() if full_eval_defaults.get(k) != v}
+        if pruned_full_eval:
+            compact["full_eval"] = pruned_full_eval
+        else:
+            compact.pop("full_eval", None)
+
+    training = compact.get("training")
+    if isinstance(training, dict):
+        mapping = {
+            "full_eval_num_steps": "num_steps",
+            "full_eval_step_size": "step_size",
+            "full_eval_style_strength": "style_strength",
+            "full_eval_batch_size": "batch_size",
+            "full_eval_max_src_samples": "max_src_samples",
+            "full_eval_max_ref_compare": "max_ref_compare",
+            "full_eval_max_ref_cache": "max_ref_cache",
+            "full_eval_ref_feature_batch_size": "ref_feature_batch_size",
+        }
+        for train_key, default_key in mapping.items():
+            if train_key in training and full_eval_defaults.get(default_key) == training.get(train_key):
+                training.pop(train_key, None)
+
+    return compact
