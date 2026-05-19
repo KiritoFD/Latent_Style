@@ -48,8 +48,8 @@ SNAPSHOT_SOURCE_FILES = [
     "lancet_blocks.py",
     "lancet_runtime.py",
     "ot_cost.py",
-    "dataset.py",
     "run.py",
+    "utils/dataset.py",
     "utils/inference.py",
     "utils/run_evaluation.py",
 ]

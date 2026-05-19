@@ -11,8 +11,8 @@ import torch
 from torch.utils.data import DataLoader
 
 from config_schema import ExperimentConfig, load_experiment_config
-from dataset import AdaCUTLatentDataset
 from trainer import SBTrainer
+from utils.dataset import AdaCUTLatentDataset
 
 logging.basicConfig(
     level=logging.INFO,
