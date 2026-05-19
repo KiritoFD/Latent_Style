@@ -297,6 +297,32 @@ def _base_candidate() -> Candidate:
     )
 
 
+def _legacy_a_candidates(until: str = "") -> list[Candidate]:
+    out: list[Candidate] = []
+    stop = until.strip()
+    for kin in [1.00, 0.85, 0.70, 0.55, 0.40]:
+        for swd in [20.0, 24.0, 28.0, 32.0]:
+            name = f"A_kin{kin:g}_swd{swd:g}"
+            out.append(
+                Candidate(
+                    name=name,
+                    stage="legacy_motion_grid",
+                    hypothesis="legacy_motion_budget_x_endpoint_pressure",
+                    reason="Imported from the earlier batch-grid runner; evaluated before sequential branching resumes.",
+                    w_kinetic=kin,
+                    terminal_swd_weight=swd,
+                    w_variance_penalty=0.0,
+                    residual_gain=1.0,
+                    semantic_attn_temperature=0.12,
+                    semantic_swd_num_projections=64,
+                    swd_num_projections=64,
+                )
+            )
+            if stop and name == stop:
+                return out
+    return out
+
+
 def _variance_candidate(value: float) -> Candidate:
     tag = str(value).replace(".", "p")
     return Candidate(
@@ -538,6 +564,50 @@ def train_and_eval(
     return rows, _best_epoch(rows)
 
 
+def import_existing_candidates(
+    candidates: list[Candidate],
+    *,
+    epochs: list[int],
+    config_root: Path,
+    output_root: Path,
+    eval_root: Path,
+    base_config: Path,
+    baseline: dict[str, float],
+    dry_run: bool,
+    force_eval: bool,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    all_rows: list[dict[str, Any]] = []
+    best_rows: list[dict[str, Any]] = []
+    for candidate in candidates:
+        _write_config(candidate, config_root=config_root, base_config=base_config, output_root=output_root)
+        run_dir = output_root / candidate.name
+        available_epochs = [epoch for epoch in epochs if (run_dir / f"epoch_{epoch:04d}.pt").exists()]
+        if not available_epochs:
+            print(f"[legacy missing] {candidate.name}: no checkpoint under {run_dir}")
+            continue
+        for epoch in available_epochs:
+            ckpt = run_dir / f"epoch_{epoch:04d}.pt"
+            out_dir = eval_root / candidate.name / f"epoch_{epoch:04d}"
+            summary = out_dir / "summary.json"
+            if summary.exists() and not force_eval:
+                print(f"[legacy eval skip] {candidate.name} epoch {epoch}: {summary}")
+                continue
+            rc = _run([sys.executable, "run_evaluation.py", str(ckpt), "--output", str(out_dir)], cwd=ROOT, dry_run=dry_run)
+            if rc != 0:
+                raise RuntimeError(f"Legacy eval failed for {candidate.name} epoch {epoch}: return code {rc}")
+        rows = _collect_candidate_rows(
+            candidate,
+            epochs=available_epochs,
+            output_root=output_root,
+            eval_root=eval_root,
+            baseline=baseline,
+        )
+        if rows:
+            all_rows.extend(rows)
+            best_rows.append(_best_epoch(rows))
+    return all_rows, best_rows
+
+
 def _load_existing_best(output_root: Path) -> list[dict[str, Any]]:
     path = output_root / "decision_tree_best.csv"
     if not path.exists():
@@ -567,6 +637,12 @@ def main() -> None:
     parser.add_argument("--eval-root", type=Path, default=DEFAULT_OUTPUT_ROOT / "full_eval")
     parser.add_argument("--eval-epochs", type=str, default="4,6,8")
     parser.add_argument("--max-experiments", type=int, default=16)
+    parser.add_argument(
+        "--import-legacy-a-until",
+        type=str,
+        default="",
+        help="Import/evaluate old A_kin*_swd* batch-grid runs through this candidate name.",
+    )
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--force-train", action="store_true")
     parser.add_argument("--force-eval", action="store_true")
@@ -584,6 +660,28 @@ def main() -> None:
         f"lpips={baseline['content_lpips_all']:.6f} content={baseline['clip_content_all']:.6f}"
     )
     print(f"[budget] max_experiments={args.max_experiments} eval_epochs={eval_epochs}")
+
+    if args.import_legacy_a_until:
+        legacy = _legacy_a_candidates(args.import_legacy_a_until)
+        print(f"[legacy] importing {len(legacy)} A-grid candidates through {args.import_legacy_a_until}")
+        legacy_rows, legacy_best = import_existing_candidates(
+            legacy,
+            epochs=eval_epochs,
+            config_root=args.config_root,
+            output_root=args.output_root,
+            eval_root=args.eval_root,
+            base_config=args.base_config,
+            baseline=baseline,
+            dry_run=args.dry_run,
+            force_eval=args.force_eval,
+        )
+        all_rows.extend(legacy_rows)
+        by_name = {str(row.get("name")): row for row in best_rows}
+        for row in legacy_best:
+            by_name[str(row.get("name"))] = row
+        best_rows = sorted(by_name.values(), key=lambda row: float(row.get("score") or -9999.0), reverse=True)
+        tried.update(str(row.get("name")) for row in legacy_best)
+        _write_tables(all_rows, best_rows, output_root=args.output_root)
 
     while len(best_rows) < args.max_experiments:
         candidate = choose_next(best_rows, tried)

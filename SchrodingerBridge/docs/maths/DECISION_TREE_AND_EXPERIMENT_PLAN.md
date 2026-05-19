@@ -211,3 +211,46 @@ configs/decision_tree_clip_style/*.json
 ```
 
 `decision_tree_results.csv` 记录每个实验的所有 eval epoch；`decision_tree_best.csv` 记录每个实验的 best epoch；`decision_tree_ledger.jsonl` 按实验顺序记录候选配置、best epoch 和当时的 global best。
+
+## 7. Legacy A-grid 导入
+
+`2026-05-19` 检查了上一版 batch-grid 的 A 分支，用户确认最后启动过的命令是：
+
+```text
+python src/run.py --config configs/decision_tree_clip_style/A_kin0.55_swd24.json
+```
+
+这对应旧网格中的前 `14` 组：
+
+```text
+A_kin1_swd20
+A_kin1_swd24
+A_kin1_swd28
+A_kin1_swd32
+A_kin0.85_swd20
+A_kin0.85_swd24
+A_kin0.85_swd28
+A_kin0.85_swd32
+A_kin0.7_swd20
+A_kin0.7_swd24
+A_kin0.7_swd28
+A_kin0.7_swd32
+A_kin0.55_swd20
+A_kin0.55_swd24
+```
+
+当前工作区检查结果：这些 run 目录下没有可 eval 的 `epoch_0004.pt`、`epoch_0006.pt` 或 `epoch_0008.pt`，因此没有写入指标结论。runner 已加入导入命令：
+
+```bat
+python run_clip_style_decision_tree.py --import-legacy-a-until A_kin0.55_swd24 --max-experiments 0
+```
+
+如果这些 checkpoint 从别处恢复到：
+
+```text
+exp/decision_tree_clip_style/A_kin*/epoch_0004.pt
+exp/decision_tree_clip_style/A_kin*/epoch_0006.pt
+exp/decision_tree_clip_style/A_kin*/epoch_0008.pt
+```
+
+再次运行上面的导入命令即可自动 eval、汇总并让 sequential 决策树从这些历史结果之后继续。
