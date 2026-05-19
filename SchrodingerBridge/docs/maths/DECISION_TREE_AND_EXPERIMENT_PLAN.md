@@ -1,468 +1,245 @@
-# Mathematical Decision Tree and Experiment Plan
+# 提升 clip_style 的决策树实验方案
 
-Reviewed on `2026-05-16`.
+更新日期：`2026-05-19`。
 
-This document translates the current mathematical reading into an operational decision tree.
+目标：在 `S-add__K-1_C-0_W-20_Col-0` 谱系上，提高 `clip_style_all`，同时不让 `content_lpips_all` 弱于参考太多。速度和文件规模是 bonus，质量和代码一致性优先。
 
-The goal is not to be short. The goal is to make every branch mathematically defensible and tied to actual repository evidence.
+参考指标：
 
-## 1. Optimization Target
+```text
+baseline:
+  clip_style_all    = 0.7167235834
+  content_lpips_all = 0.4615265376
+  clip_content_all  = 0.7977139172
 
-The active reduced model is:
+current batch64 refactor:
+  epoch 8 clip_style_all    = 0.7128111729
+  epoch 8 content_lpips_all = 0.4613536712
+```
 
-`min_theta lambda_swd * SWD(z_1, Z_style) + lambda_kin * E||v_theta||^2`
+## 1. 核心假设
 
-with additional architecture-level control coming from:
+当前模型不是风格容量不足，而是 baseline 附近偏保守。`clip_style` 的主要控制量是：
 
-- semantic cross-attention routing sharpness
-- skip-path retention versus overwrite
-- delivered residual amplitude
+```text
+style_gain ~= terminal_swd_pressure
+           * delivered_residual_amplitude
+           / kinetic_pressure
+```
 
-The practical project objective is:
+同时内容保持大致受：
 
-1. push `clip_style` above the current D0 / K1 baseline family
-2. aim at or above `SaMST strict = 0.7194`
-3. keep training near or below `1 min / epoch`
-4. avoid entering the known collapse regimes
+```text
+content_preservation ~= kinetic_pressure
+                     * skip/content retention
+                     * routing smoothness
+```
 
-## 2. What Counts as a Good Regime
+所以第一轮实验不加新 loss，不改数据，不改 evaluation，只在当前有效目标上做受控搜索。
 
-The repository already gives us four anchor regimes.
-
-### 2.1 Safe baseline regime
-
-- `D0_full_correct_7ep`: `style 0.7014`, `content 0.8022`, `LPIPS 0.4593`
-- `K1_r00_balanced_default`: `style 0.716126`, `content 0.798365`, `LPIPS 0.460504`
-
-Interpretation:
-
-- strong enough content retention
-- style still below SaMST in the strict baseline comparison
-- good reference regime for future branches
-
-### 2.2 Style frontier regime
-
-- `residual_1p25`: `style 0.721854`, `content 0.763490`
-- `anchor_hybrid_all`: `style 0.7186`, `content 0.6433`, `LPIPS 0.6876`
-
-Interpretation:
-
-- the architecture can reach or nearly reach the desired style range
-- but content is already under visible stress
-
-### 2.3 Collapse regime
-
-- `D2_no_kinetic`: `style 0.7159`, `content 0.6624`, `LPIPS 0.6375`
-- `anchor_skip_only`: `style 0.7363`, `content 0.5947`, `LPIPS 0.8528`
-
-Interpretation:
-
-- style can rise, but the route is unusable
-- this is not a candidate endpoint, only a warning region
-
-### 2.4 Over-constrained regime
-
-- `high_tension` and `orthogonal_phase` families
-- `K2` family as a whole relative to `K1`
-
-Interpretation:
-
-- content is safer
-- style is too low
-- regularization pressure dominates endpoint style pressure
-
-## 3. Primary Variables and Their Mathematical Meaning
-
-### 3.1 `lambda_kin` / `w_kinetic`
-
-Meaning:
-
-- controls the motion budget
-- higher value discourages latent displacement
-- lower value permits stronger style movement
-
-Evidence:
-
-- removing kinetic raises style but destroys content
-
-So `w_kinetic` is the main first-order style-content knob.
-
-### 3.2 `lambda_swd` / `terminal_swd_weight`
-
-Meaning:
-
-- controls how strongly the endpoint is forced toward target style statistics
-
-Evidence:
-
-- no terminal SWD causes large style failure
-- increasing SWD from `15` to `30` helps in `experiments_root`
-- increasing further to `45` does not keep helping
-
-So `terminal_swd_weight` is a useful but saturating endpoint-pressure knob.
-
-### 3.3 residual amplitude
-
-Meaning:
-
-- controls the delivered magnitude of the learned update
-
-Evidence:
-
-- `residual_1p25` and `residual_1p5` increase style
-- `residual_2p0` overshoots and degrades both style and content
-
-So residual amplitude is a local high-sensitivity lever.
-
-### 3.4 routing sharpness / regularization
-
-Meaning:
-
-- controls whether cross-attention paints style sharply or diffusely
-
-Evidence:
-
-- Sinkhorn and entropy-gated variants slightly reduce style but improve content and LPIPS
-
-So routing regularization is a second-line repair lever, not a first-line style lever.
-
-### 3.5 step size and step count
-
-Meaning:
-
-- numerical integration controls
-
-Evidence:
-
-- both sweeps are essentially flat
-
-So they are not first-line optimization variables in the present regime.
-
-## 4. Mathematical Decision Tree
+## 2. 决策树
 
 ```text
 Start
 |
-|-- A. Are we on the K1 / D0-style lineage?
+|-- A. batch=64 的参考谱系是否可复现？
 |      |
-|      |-- No:
-|      |     Move back to K1 / trusted D0-family config.
-|      |     Reason: K2 and high-tension families are systematically too conservative.
+|      |-- 否：
+|      |     停止风格搜索，先修训练/eval/config 对齐。
 |      |
-|      |-- Yes:
-|            Continue.
+|      |-- 是：
+|            进入运动预算搜索。
 |
-|-- B. Can we recover baseline behavior?
+|-- B. 降低 kinetic 后 style 是否上升？
 |      |
-|      |-- No:
-|      |     Do not run theory experiments yet.
-|      |     Fix config lineage, checkpoint path, logging, dataloader instability, or evaluation mismatch.
+|      |-- 是，且 LPIPS 没坏：
+|      |     继续提高 terminal_swd_weight 或 residual_gain。
 |      |
-|      |-- Yes:
-|            Continue.
+|      |-- 是，但 LPIPS 明显坏：
+|      |     回退 kinetic，保留较温和 SWD；必要时测试 Sinkhorn 修复。
+|      |
+|      |-- 否：
+|            说明不是 motion budget 主瓶颈，转向 endpoint pressure。
 |
-|-- C. Is style still below the target frontier?
+|-- C. 提高 terminal_swd_weight 后 style 是否上升？
 |      |
-|      |-- No:
-|      |     Continue to content repair branch.
+|      |-- 是，且 LPIPS 稳：
+|      |     锁定该区域，补评中间 epoch。
 |      |
-|      |-- Yes:
-|            First lower kinetic or slightly raise residual amplitude.
+|      |-- 是，但 LPIPS 坏：
+|      |     降低 residual_gain 或提高 kinetic。
+|      |
+|      |-- 否：
+|            SWD 已饱和，转向 residual_gain / routing 分支。
 |
-|-- D. After style-raising move, did content collapse?
+|-- D. residual_gain 提高后是否带来更好 Pareto？
 |      |
-|      |-- No:
-|      |     Consider modest endpoint SWD increase next.
+|      |-- 是：
+|      |     记录为推理/训练幅度候选。
 |      |
-|      |-- Yes:
-|      |     Undo the last aggressive move.
-|      |     Then use smoother routing or more content-preserving pressure.
+|      |-- 否：
+|            不继续放大残差，避免进入 overshoot。
 |
-|-- E. Is style still below SaMST after the safe frontier move?
+|-- E. 如果 style 高但 LPIPS 滑坡：
 |      |
-|      |-- Yes:
-|      |     Increase endpoint pressure before adding new modules.
-|      |
-|      |-- No:
-|            Lock the regime and only then test speed-preserving simplifications.
+|      |-- 测试 Sinkhorn / partial Sinkhorn。
+|      |-- 若 style 被压回 baseline 以下，放弃该修复路线。
 |
-|-- F. Is training speed above the practical budget?
-|      |
-|      |-- No:
-|      |     Keep the mathematically cleaner setup.
-|      |
-|      |-- Yes:
-|            Reduce SWD projections first, not model semantics.
+|-- F. 如果质量达标：
+       |
+       |-- 测试 projection=32 速度分支。
+       |-- 只有质量基本不掉，才把它作为最终候选。
 ```
 
-## 5. Branch-by-Branch Interpretation
+## 3. 实验预算
 
-### Branch A: Choose the correct family first
+用户允许 `36-48` 组量级。统一训练 `8 epoch`，batch 固定为 `64`。因为最佳 epoch 可能出现在中间，evaluation 分两层：
 
-Decision:
+### 第一层：所有实验必评
 
-- prefer `K1` over `K2` if the explicit objective is maximum achievable style
+评估：
 
-Mathematical reason:
+```text
+epoch_0004
+epoch_0006
+epoch_0008
+```
 
-`K2` behaves like a more averaged, more regularized transport regime.
+理由：
 
-Data reason:
+- epoch 4 能捕捉早期 style 峰值；
+- epoch 6 是中期折中；
+- epoch 8 对齐参考配置；
+- 对 48 组来说是 144 次 eval，仍比 48 组全 epoch eval 更可控。
 
-- K1 best-per-experiment mean style: `0.710957`
-- K2 best-per-experiment mean style: `0.706426`
+### 第二层：Pareto 前列补评
 
-while K2 preserves content better.
+对第一层里 Pareto 前 `12` 个 run，再补评：
 
-Conclusion:
+```text
+epoch_0005
+epoch_0007
+```
 
-`K2` is useful for safety, not for breaking the style frontier.
+理由：如果最佳点卡在 5/7，补评会抓到；如果某组在 4/6/8 都不行，就不浪费补评预算。
 
-### Branch B: Baseline recovery is logically prior to theory
+## 4. 36-48 组矩阵
 
-Decision:
+实验矩阵分四个 block，总计默认 `48` 组。
 
-- if baseline is not reproducible, stop experimental branching
+### Block A：主运动预算 x 端点压力
 
-Mathematical reason:
+```text
+w_kinetic in [1.00, 0.85, 0.70, 0.55, 0.40]
+terminal_swd_weight in [20, 24, 28, 32]
+```
 
-all later comparisons assume a stable local reference point in objective space.
+共 `20` 组。
 
-If the baseline itself is not stable, then observed deltas cannot be attributed to the intended variable.
+验证：
 
-Practical triggers for this branch:
+- 如果 kinetic 降低带来 style 增益且 LPIPS 稳，motion budget 假设成立；
+- 如果 terminal SWD 提高带来 style 增益，endpoint pressure 假设成立；
+- 如果二者都不动，说明主要瓶颈不在 active objective 的权重比例。
 
-- wrong config lineage
-- broken checkpoint continuation
-- dataloader instability
-- evaluation mismatch
+### Block B：残差幅度小范围
 
-### Branch C: The first style-raising move
+在较可能的区域上测试：
 
-Decision:
+```text
+w_kinetic in [0.85, 0.70, 0.55]
+terminal_swd_weight in [20, 24, 28]
+residual_gain in [1.10, 1.20]
+```
 
-- lower `w_kinetic` first
-- or make a modest residual-amplitude increase
+共 `18` 组。
 
-Mathematical reason:
+验证：
 
-both levers directly increase effective displacement budget.
+- 如果 `1.10/1.20` 提升 style 且 LPIPS 可控，说明 baseline 交付幅度偏保守；
+- 如果 LPIPS 恶化快，说明应回到权重比而不是继续放大 residual。
 
-`w_kinetic` acts on the objective:
+### Block C：routing 修复
 
-`style pressure / motion penalty ~ lambda_swd / lambda_kin`
+只在高风格风险区测试：
 
-Residual amplitude acts on the realized endpoint displacement:
+```text
+(w_kinetic, terminal_swd_weight) in [(0.70, 28), (0.55, 28), (0.55, 32), (0.40, 24)]
+semantic_attn_routing_mode = sinkhorn
+semantic_sinkhorn_iters in [2, 3]
+```
 
-`z_1(a) = z_0 + a * Delta_theta`
+共 `8` 组。
 
-Data reason:
+验证：
 
-- `D2_no_kinetic` proves the style direction
-- residual sweep proves amplitude sensitivity
+- 如果 Sinkhorn 保住 LPIPS 且 style 不掉太多，它是修复器；
+- 如果 style 被明显压低，则不作为主路线。
 
-Conclusion:
+### Block D：速度分支
 
-these are the cleanest first-line frontier levers.
+在两组主候选上测试：
 
-### Branch D: Detect collapse versus progress
+```text
+semantic_swd_num_projections = 32
+swd_num_projections = 32
+```
 
-Decision:
+共 `2` 组。
 
-- if style rises but content falls toward `D2` or `anchor_skip_only`, back off immediately
+验证：只在质量接近时保留；否则宁可保持 64 projection。
 
-Mathematical reason:
+## 5. 判定规则
 
-the system has crossed from "useful displacement" into "overwritten structure".
+脚本使用以下分层判定：
 
-Observable signs:
+```text
+target:
+  clip_style_all >= baseline_style
+  content_lpips_all <= baseline_lpips + 0.010
 
-- LPIPS moving toward `0.60+`
-- content falling toward `0.66` or below
-- behavior approaching `D2_no_kinetic`
+promising:
+  clip_style_all >= current_batch64_style + 0.002
+  content_lpips_all <= baseline_lpips + 0.020
 
-Corrective actions:
+collapse:
+  content_lpips_all >= 0.530
+  or clip_content_all <= 0.740
+```
 
-1. raise kinetic back up
-2. reduce residual amplitude
-3. only after that, consider routing smoothing
+最终不是只选最高 style，而是先过滤 collapse，再按：
 
-### Branch E: Raise endpoint pressure only after motion is in the right regime
+```text
+score = 100 * (clip_style - baseline_style)
+      - 25  * max(0, content_lpips - baseline_lpips)
+      - 5   * max(0, epoch_time_sec - 70) / 70
+```
 
-Decision:
+排序。
 
-- increase `terminal_swd_weight` after style has responded to motion-budget tuning
+## 6. 执行脚本
 
-Mathematical reason:
+大脚本：
 
-SWD pressure is effective only when the model has enough motion capacity to reach better style regions.
+```text
+SchrodingerBridge/run_clip_style_decision_tree.py
+```
 
-If the model is still motion-starved, more endpoint pressure can mostly create distortion.
+常用命令：
 
-Data reason:
+```powershell
+cd G:\GitHub\Latent_Style\SchrodingerBridge
+python run_clip_style_decision_tree.py --dry-run
+python run_clip_style_decision_tree.py --train --eval-main --eval-topk
+```
 
-- `15 -> 30` helps
-- `30 -> 45` does not keep helping
+脚本职责：
 
-Conclusion:
-
-`terminal_swd_weight` should be a second move, not the first move.
-
-### Branch F: Speed optimization comes last
-
-Decision:
-
-- only optimize speed after the quality regime is right
-
-Mathematical reason:
-
-step count and step size are already shown to be weak levers, so the cleanest speed lever is estimator cost reduction, not semantic redesign.
-
-Best current speed lever:
-
-- reduce SWD projections `64 -> 32`
-
-Reason:
-
-- same estimator target
-- higher variance, but cleaner interpretation than changing semantics
-
-## 6. Concrete Decision Thresholds
-
-These thresholds are not universal laws. They are regime markers derived from current evidence.
-
-### 6.1 Good zone
-
-- style at or above baseline family
-- content around `0.79 - 0.81`
-- LPIPS around `0.45 - 0.47`
-
-### 6.2 Promising frontier zone
-
-- style near `0.718 - 0.722`
-- content still clearly above the D2 regime
-- LPIPS not exploding toward skip-collapse values
-
-### 6.3 Warning zone
-
-- content near `0.70`
-- LPIPS near `0.55 - 0.60`
-
-Interpretation:
-
-style may be rising, but we are close to entering collapse.
-
-### 6.4 Collapse zone
-
-- content near `0.66` or lower
-- LPIPS near `0.64+`
-- behavior resembling `D2_no_kinetic` or worse
-
-Action:
-
-- stop the branch
-- do not attempt to rescue it by piling on new losses first
-
-## 7. Ordered Experiment Matrix
-
-The order below follows the mathematics of the decision tree.
-
-### Stage 0: Re-anchor
-
-Use:
-
-- trusted K1 / D0-family config
-- trusted checkpoint lineage
-
-Purpose:
-
-- recover a stable local reference point
-
-### Stage 1: Motion-budget search
-
-Test in this order:
-
-1. baseline reproduction
-2. `w_kinetic` slightly lower than baseline
-3. `w_kinetic` moderately lower than baseline
-4. modest residual-amplitude increase
-
-Reason:
-
-- these are the cleanest ways to move toward the style frontier
-
-### Stage 2: Endpoint-pressure search
-
-Only after Stage 1 finds a non-collapsed style gain:
-
-1. baseline SWD pressure
-2. moderately increased SWD pressure
-
-Reason:
-
-- endpoint pressure should refine a useful displacement regime, not try to create one from nothing
-
-### Stage 3: Safety repair
-
-Only if style is high enough but content is slipping:
-
-1. Sinkhorn routing
-2. entropy-gated kinetic
-
-Reason:
-
-- these are content-repair mechanisms
-- their measured effect is to trade a little style for better preservation
-
-### Stage 4: Speed-preserving simplification
-
-Only after the quality regime is chosen:
-
-1. reduce SWD projections
-2. test whether quality remains within tolerance
-
-Reason:
-
-- this is the least theory-disruptive speed move
-
-## 8. What the Decision Tree Forbids
-
-The current evidence is strong enough to rule out several unprincipled moves.
-
-### 8.1 Forbidden as first moves
-
-- increasing step count
-- tuning step size in tiny increments
-- switching from K1 to K2 to chase higher style
-- reviving strong color loss
-- using skip-heavy routes to win style metrics
-
-### 8.2 Forbidden interpretation
-
-Do not interpret these as success:
-
-- style increase with LPIPS collapse
-- style increase caused by skip overwrite
-- one-off gains from a regime already known to be unstable
-
-## 9. Final Mathematical Summary
-
-The repository evidence supports the following compact decision law:
-
-1. If style is too low, first increase effective displacement budget.
-2. If displacement budget increase causes collapse, reduce amplitude before adding complexity.
-3. If displacement is healthy but style still trails, increase endpoint distribution pressure.
-4. If style is good enough but content degrades, use routing-smoothing or entropy-gated repair.
-5. Only after the quality regime is solved should speed-oriented simplifications be tested.
-
-In symbols, the project should currently prioritize:
-
-`first: displacement control`
-
-`second: endpoint pressure`
-
-`third: repair regularization`
-
-`fourth: estimator-cost reduction`
-
-That order is the most mathematically faithful reading of the current code and all available experiment data.
+- 生成 48 组 config；
+- 每组训练 8 epoch；
+- 跳过已有 checkpoint 和已有 summary，支持断点续跑；
+- 第一层评估 epoch 4/6/8；
+- 按 Pareto 选前 12，补评 epoch 5/7；
+- 汇总 CSV/JSON；
+- 给每条结果标注 `target/promising/collapse/weak`；
+- 输出下一轮应该增加/回退的方向。
