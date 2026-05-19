@@ -125,6 +125,7 @@ def _config_payload(candidate: Candidate, *, base_config: Path, output_root: Pat
             "batch_size": 64,
             "num_epochs": 8,
             "save_interval": 1,
+            "full_eval_batch_size": 6,
         },
         "checkpoint": {
             "save_dir": save_dir,
