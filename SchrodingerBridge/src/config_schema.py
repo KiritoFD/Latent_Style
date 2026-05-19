@@ -155,6 +155,7 @@ class BridgeConfig:
     sinkhorn_stabilize: bool = True
     bridge_sigma: float = 0.05
     terminal_swd_weight: float = 0.1
+    w_variance_penalty: float = 0.0
     terminal_num_steps: int = 4
     terminal_swd_on_identity: bool = False
     w_kinetic: float = 1.0

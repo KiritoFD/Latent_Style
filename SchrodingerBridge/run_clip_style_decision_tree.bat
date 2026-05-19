@@ -7,7 +7,7 @@ echo Running clip_style decision-tree experiments...
 echo Root: %CD%
 echo.
 
-python run_clip_style_decision_tree.py --train --eval-main --eval-topk --summarize %*
+python run_clip_style_decision_tree.py --max-experiments 16 %*
 
 set EXIT_CODE=%ERRORLEVEL%
 echo.
