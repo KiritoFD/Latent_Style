@@ -14,7 +14,8 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from config import compact_runtime_config
+from config_schema import ExperimentConfig
+from inference_config import compact_runtime_config
 from losses import OTFlowMatchingObjective
 from model import build_model_from_config, count_parameters
 
@@ -25,13 +26,34 @@ _TRAIN_LOG_COLUMNS = [
     "loss",
     "flow",
     "kinetic_energy",
+    "curvature",
+    "low_freq_anchor",
     "ot_cost",
     "terminal_swd",
+    "color",
+    "patch_nce",
+    "cycle",
+    "repulsive",
+    "semantic_attn_mean",
+    "semantic_k_abs",
+    "plan_entropy",
+    "kinetic_entropy_mean",
+    "kinetic_entropy_gate_weight",
+    "bridge_sigma",
+    "identity_ratio",
     "t_mean",
     "velocity_abs",
     "endpoint_abs",
+    "velocity_max",
+    "endpoint_max",
     "lr",
+    "data_time_sec",
+    "forward_time_sec",
+    "backward_time_sec",
+    "optimizer_time_sec",
+    "compute_time_sec",
     "epoch_time_sec",
+    "samples_seen",
     "samples_per_sec",
 ]
 
@@ -39,10 +61,11 @@ _SNAPSHOT_SOURCE_FILES = [
     "trainer.py",
     "losses.py",
     "model.py",
-    "model.py",
+    "lancet_backbone.py",
+    "ot_cost.py",
     "dataset.py",
     "run.py",
-    "inference.py",
+    "utils/inference.py",
     "utils/run_evaluation.py",
 ]
 
@@ -54,15 +77,15 @@ def _strip_compile_prefix(state_dict: Dict[str, torch.Tensor]) -> Dict[str, torc
 
 
 class SBTrainer:
-    def __init__(self, config: Dict, device: torch.device, config_path: Optional[str] = None) -> None:
+    def __init__(self, config: ExperimentConfig, device: torch.device, config_path: Optional[str] = None) -> None:
         self.config = config
         self.serialized_config = compact_runtime_config(config)
         self.device = device
         self.config_path = config_path
 
-        train_cfg = config.get("training", {})
-        model_cfg = config.get("model", {})
-        ckpt_cfg = config.get("checkpoint", {})
+        train_cfg = config.training.to_dict()
+        model_cfg = config.model
+        ckpt_cfg = config.checkpoint
         self.train_cfg = train_cfg
         self.distill_cfg = dict(train_cfg.get("distill", {}) or {})
         self.distill_enabled = bool(self.distill_cfg.get("enabled", False))
@@ -118,7 +141,7 @@ class SBTrainer:
         self.numeric_debug_dump_limit = max(1, int(train_cfg.get("numeric_debug_dump_limit", 200)))
         self.numeric_debug_events = 0
 
-        self.checkpoint_dir = Path(ckpt_cfg.get("save_dir", "./artifacts"))
+        self.checkpoint_dir = Path(ckpt_cfg.save_dir)
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         self.log_dir = self.checkpoint_dir / "logs"
         self.log_dir.mkdir(parents=True, exist_ok=True)
@@ -304,7 +327,7 @@ class SBTrainer:
             self.model.load_state_dict(teacher_state, strict=True)
 
         teacher = build_model_from_config(
-            self.config.get("model", {}),
+            self.config.model,
             use_checkpointing=False,
         ).to(self.device)
         if self.channels_last:
@@ -361,30 +384,7 @@ class SBTrainer:
         if self.scheduler is not None:
             self.scheduler.step()
 
-    def apply_semantic_temp(self, epoch: int) -> None:
-        model_cfg = self.config.get("model", {})
-        schedule = str(model_cfg.get("semantic_attn_temp_schedule", "constant")).strip().lower()
-        if schedule == "constant":
-            return
-        t_start = max(1e-4, float(model_cfg.get("semantic_attn_temp_start", 0.08)))
-        t_end = max(1e-4, float(model_cfg.get("semantic_attn_temp_end", 0.08)))
-        total = max(1, int(self.num_epochs))
-        progress = min(1.0, max(0.0, (epoch - 1) / (total - 1)))
-        if schedule == "linear":
-            temp = t_start + (t_end - t_start) * progress
-        elif schedule == "cosine":
-            temp = t_end + (t_start - t_end) * (1.0 + math.cos(progress * math.pi)) / 2.0
-        elif schedule == "exp":
-            temp = t_start * (t_end / t_start) ** max(progress, 1e-8)
-        else:
-            return
-        temp = max(1e-4, min(10.0, float(temp)))
-        for block in self.model.body_blocks:
-            with torch.no_grad():
-                block.log_temp.fill_(math.log(temp))
-
     def train_epoch(self, dataloader: DataLoader, epoch: int) -> Dict[str, float]:
-        self.apply_semantic_temp(epoch)
         self.model.train()
         epoch_start = time.time()
         metric_accum: Dict[str, torch.Tensor] = {}
@@ -520,8 +520,14 @@ class SBTrainer:
                     loss=f"{_avg('loss'):.4f}",
                     flow=f"{_avg('flow'):.4f}" if not self.distill_enabled else f"{_avg('distill_velocity'):.4f}",
                     kin=f"{_avg('kinetic_energy'):.4f}",
+                    curv=f"{_avg('curvature'):.4f}",
                     ot=f"{_avg('ot_cost'):.4f}",
                     tswd=f"{_avg('terminal_swd'):.4f}" if not self.distill_enabled else f"{_avg('distill_endpoint'):.4f}",
+                    low=f"{_avg('low_freq_anchor'):.4f}",
+                    color=f"{_avg('color'):.4f}",
+                    nce=f"{_avg('patch_nce'):.4f}",
+                    cyc=f"{_avg('cycle'):.4f}",
+                    rep=f"{_avg('repulsive'):.4f}",
                     t=f"{_avg('t_mean'):.3f}",
                 )
 

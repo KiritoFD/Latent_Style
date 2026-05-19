@@ -6,8 +6,18 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from config_schema import ExperimentConfig
+
 
 _DEFAULTS_PATH = Path(__file__).resolve().with_name("inference_config.json")
+
+
+def _config_dict(config: dict[str, Any] | ExperimentConfig | None) -> dict[str, Any]:
+    if isinstance(config, ExperimentConfig):
+        return config.to_dict()
+    if isinstance(config, dict):
+        return config
+    return {}
 
 
 @lru_cache(maxsize=1)
@@ -22,9 +32,10 @@ def load_inference_defaults() -> dict[str, Any]:
 
 def resolve_inference_section(config: dict[str, Any] | None) -> dict[str, Any]:
     defaults = dict(load_inference_defaults().get("inference", {}) or {})
-    if not isinstance(config, dict):
+    config_dict = _config_dict(config)
+    if not config_dict:
         return defaults
-    local = config.get("inference", {}) or {}
+    local = config_dict.get("inference", {}) or {}
     if isinstance(local, dict):
         defaults.update(local)
     return defaults
@@ -32,9 +43,10 @@ def resolve_inference_section(config: dict[str, Any] | None) -> dict[str, Any]:
 
 def resolve_full_eval_section(config: dict[str, Any] | None) -> dict[str, Any]:
     defaults = dict(load_inference_defaults().get("full_eval", {}) or {})
-    if not isinstance(config, dict):
+    config_dict = _config_dict(config)
+    if not config_dict:
         return defaults
-    training = config.get("training", {}) or {}
+    training = config_dict.get("training", {}) or {}
     if isinstance(training, dict):
         mapping = {
             "num_steps": "full_eval_num_steps",
@@ -47,19 +59,20 @@ def resolve_full_eval_section(config: dict[str, Any] | None) -> dict[str, Any]:
             "ref_feature_batch_size": "full_eval_ref_feature_batch_size",
         }
         for dst_key, src_key in mapping.items():
-            if src_key in training:
+            if src_key in training and training.get(src_key) is not None:
                 defaults[dst_key] = training.get(src_key)
-    local = config.get("full_eval", {}) or {}
+    local = config_dict.get("full_eval", {}) or {}
     if isinstance(local, dict):
         defaults.update(local)
     return defaults
 
 
 def compact_runtime_config(config: dict[str, Any] | None) -> dict[str, Any]:
-    if not isinstance(config, dict):
+    config_dict = _config_dict(config)
+    if not config_dict:
         return {}
 
-    compact = copy.deepcopy(config)
+    compact = copy.deepcopy(config_dict)
     infer_defaults = dict(load_inference_defaults().get("inference", {}) or {})
     full_eval_defaults = dict(load_inference_defaults().get("full_eval", {}) or {})
 

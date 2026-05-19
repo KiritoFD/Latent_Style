@@ -17,6 +17,7 @@ import numpy as np
 import torch
 from PIL import Image
 
+from config_schema import ExperimentConfig
 from inference_config import resolve_inference_section
 from model import build_model_from_config
 
@@ -91,16 +92,15 @@ class LGTInference:
         self.num_steps = int(num_steps)
 
         checkpoint = torch.load(model_path, map_location=device, weights_only=False)
-        config = checkpoint["config"]
-        bridge_cfg = config.get("bridge", {})
+        config = ExperimentConfig.from_mapping(checkpoint["config"])
+        bridge_cfg = config.bridge
         infer_cfg = resolve_inference_section(config)
-        model_cfg = config.get("model", {})
-        self.objective_mode = str(bridge_cfg.get("objective_mode", "flow_matching")).strip().lower()
+        self.objective_mode = str(bridge_cfg.objective_mode).strip().lower()
         state_dict = checkpoint["model_state_dict"]
         if any(k.startswith("_orig_mod.") for k in state_dict.keys()):
             state_dict = {k.replace("_orig_mod.", ""): v for k, v in state_dict.items()}
 
-        self.model = build_model_from_config(model_cfg, use_checkpointing=False).to(device)
+        self.model = build_model_from_config(config.model, use_checkpointing=False).to(device)
         try:
             self.model.load_state_dict(state_dict, strict=True)
         except RuntimeError as exc:

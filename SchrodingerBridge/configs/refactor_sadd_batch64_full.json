@@ -1,0 +1,13 @@
+{
+  "_base": "../S-add__K-1_C-0_W-20_Col-0/config.json",
+  "training": {
+    "batch_size": 64,
+    "num_epochs": 8
+  },
+  "checkpoint": {
+    "save_dir": "./exp/refactor_sadd_batch64_full"
+  },
+  "ablation": {
+    "name": "refactor_sadd_batch64_full"
+  }
+}
