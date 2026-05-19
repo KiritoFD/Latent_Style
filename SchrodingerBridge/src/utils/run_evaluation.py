@@ -52,7 +52,7 @@ from utils.artfid_metric import (
     load_artfid_feature_extractor,
     load_artfid_lpips,
 )
-from inference_config import load_inference_defaults, resolve_full_eval_section
+from config_schema import load_inference_defaults, resolve_full_eval_section
 
 # KID (official implementation via torchmetrics)
 try:
@@ -1063,7 +1063,7 @@ def main():
     parser.add_argument('--cache_dir', type=str, default="../eval_cache", help="Directory to store shared feature caches")
     parser.add_argument('--num_steps', type=int, default=int(full_eval_defaults.get("num_steps", 12)))
     parser.add_argument('--step_size', type=float, default=float(full_eval_defaults.get("step_size", 1.0)))
-    parser.add_argument('--style_strength', type=float, default=full_eval_defaults.get("style_strength", None), help="Global style strength in [0,1]; default uses src/inference_config.json")
+    parser.add_argument('--style_strength', type=float, default=full_eval_defaults.get("style_strength", None), help="Global style strength in [0,1]")
     parser.add_argument('--residual_scale', type=float, default=1.0, help="Post-endpoint latent residual scale for inference strengthening. 1.0 keeps default behavior.")
     parser.add_argument('--style_adapter', type=str, default="", help="Optional external style adapter (.pt) to override style_emb/style_spatial_id_16")
     parser.add_argument('--max_src_samples', type=int, default=int(full_eval_defaults.get("max_src_samples", 30)), help="Max source images per style; <=0 means all")
