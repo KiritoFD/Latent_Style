@@ -10,7 +10,8 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from config_loader import load_config
+from config_loader import load_experiment_config
+from config_schema import ExperimentConfig
 from dataset import AdaCUTLatentDataset
 from trainer import SBTrainer
 
@@ -29,10 +30,10 @@ def _set_seed(seed: int) -> None:
         torch.cuda.manual_seed_all(seed)
 
 
-def _set_cpu_threads(config: dict) -> None:
-    train_cfg = config.get("training", {})
-    cpu_threads = train_cfg.get("cpu_threads")
-    cpu_interop_threads = train_cfg.get("cpu_interop_threads")
+def _set_cpu_threads(config: ExperimentConfig) -> None:
+    train_cfg = config.training
+    cpu_threads = train_cfg.cpu_threads
+    cpu_interop_threads = train_cfg.cpu_interop_threads
     if cpu_threads is not None:
         try:
             torch.set_num_threads(int(cpu_threads))
@@ -59,14 +60,13 @@ def main() -> None:
     args = parser.parse_args()
 
     config_path = Path(args.config).resolve()
-    config = load_config(config_path)
+    config = load_experiment_config(config_path)
 
     if args.resume:
-        config.setdefault("training", {})
-        config["training"]["resume_checkpoint"] = args.resume
+        config.training.resume_checkpoint = args.resume
 
-    train_cfg = config.get("training", {})
-    seed = int(train_cfg.get("seed", 42))
+    train_cfg = config.training
+    seed = int(train_cfg.seed)
     _set_seed(seed)
     _set_cpu_threads(config)
 
@@ -74,34 +74,33 @@ def main() -> None:
     logger.info("Device: %s", device)
     logger.info("Seed: %d", seed)
 
-    data_cfg = config.get("data", {})
+    data_cfg = config.data
     dataset = AdaCUTLatentDataset(
-        data_root=data_cfg.get("data_root", "../latent-256"),
-        style_subdirs=data_cfg.get("style_subdirs", ["photo", "Hayao", "monet", "vangogh", "cezanne"]),
-        allow_hflip=bool(data_cfg.get("allow_hflip", False)),
-        identity_ratio=data_cfg.get("identity_ratio", None),
-        batch_size_hint=int(train_cfg.get("batch_size", 24)),
-        balance_target_styles_per_batch=bool(data_cfg.get("balance_target_styles_per_batch", True)),
-        preload_to_gpu=bool(data_cfg.get("preload_to_gpu", False)),
-        preload_max_vram_gb=float(data_cfg.get("preload_max_vram_gb", 0.0)),
-        preload_reserve_ratio=float(data_cfg.get("preload_reserve_ratio", 0.35)),
-        virtual_length_multiplier=float(data_cfg.get("virtual_length_multiplier", 1.0)),
-        content_style_sampling_weights=data_cfg.get("content_style_sampling_weights"),
-        target_style_sampling_weights=data_cfg.get("target_style_sampling_weights"),
+        data_root=data_cfg.data_root,
+        style_subdirs=data_cfg.style_subdirs,
+        allow_hflip=bool(data_cfg.allow_hflip),
+        identity_ratio=data_cfg.identity_ratio,
+        batch_size_hint=int(train_cfg.batch_size),
+        balance_target_styles_per_batch=bool(data_cfg.balance_target_styles_per_batch),
+        preload_to_gpu=bool(data_cfg.preload_to_gpu),
+        preload_max_vram_gb=float(data_cfg.preload_max_vram_gb),
+        preload_reserve_ratio=float(data_cfg.preload_reserve_ratio),
+        virtual_length_multiplier=float(data_cfg.virtual_length_multiplier),
+        content_style_sampling_weights=data_cfg.content_style_sampling_weights,
+        target_style_sampling_weights=data_cfg.target_style_sampling_weights,
         device=str(device),
     )
 
     style_count = len(dataset.style_subdirs)
-    if int(config.get("model", {}).get("num_styles", style_count)) != style_count:
+    if int(config.model.num_styles) != style_count:
         logger.warning("model.num_styles mismatch detected; forcing to %d", style_count)
-        config.setdefault("model", {})
-        config["model"]["num_styles"] = style_count
+        config.model.num_styles = style_count
 
-    batch_size = int(train_cfg.get("batch_size", 24))
-    num_workers = int(train_cfg.get("num_workers", 0))
-    shuffle = bool(train_cfg.get("shuffle", False))
-    persistent_workers = bool(train_cfg.get("persistent_workers", False) and num_workers > 0)
-    pin_memory = bool(train_cfg.get("pin_memory", device.type == "cuda"))
+    batch_size = int(train_cfg.batch_size)
+    num_workers = int(train_cfg.num_workers)
+    shuffle = bool(train_cfg.shuffle)
+    persistent_workers = bool(train_cfg.persistent_workers and num_workers > 0)
+    pin_memory = bool(train_cfg.pin_memory)
     generator = torch.Generator().manual_seed(seed)
 
     dataloader_kwargs = dict(
@@ -116,7 +115,7 @@ def main() -> None:
     )
     if num_workers > 0:
         dataloader_kwargs["persistent_workers"] = persistent_workers
-        dataloader_kwargs["prefetch_factor"] = max(1, int(train_cfg.get("prefetch_factor", 2)))
+        dataloader_kwargs["prefetch_factor"] = max(1, int(train_cfg.prefetch_factor))
     dataloader = DataLoader(**dataloader_kwargs)
 
     logger.info(

@@ -1,0 +1,337 @@
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass, field, fields
+from typing import Any, Mapping
+
+
+def _section_dict(value: Mapping[str, Any] | None) -> dict[str, Any]:
+    return dict(value or {})
+
+
+def _split_known_fields(cls: type[Any], payload: Mapping[str, Any] | None) -> tuple[dict[str, Any], dict[str, Any]]:
+    data = _section_dict(payload)
+    known_names = {item.name for item in fields(cls) if item.init and item.name != "extra"}
+    known = {key: data[key] for key in known_names if key in data}
+    extra = {key: value for key, value in data.items() if key not in known_names}
+    return known, extra
+
+
+@dataclass
+class ModelConfig:
+    latent_channels: int = 4
+    num_styles: int = 5
+    style_dim: int = 160
+    time_dim: int = 256
+    base_dim: int = 64
+    lift_channels: int | None = None
+    num_hires_blocks: int = 2
+    num_res_blocks: int = 4
+    num_decoder_blocks: int = 2
+    num_groups: int = 4
+    latent_scale_factor: float = 0.18215
+    residual_gain: float = 1.0
+    style_spatial_pre_gain_16: float = 0.35
+    style_strength_default: float = 1.0
+    style_strength_step_curve: str = "linear"
+    upsample_mode: str = "nearest"
+    style_id_spatial_jitter_px: int = 0
+    upsample_blur: bool = True
+    upsample_blur_kernel: str = "box3"
+    style_attn_num_tokens: int = 128
+    style_attn_num_heads: int = 4
+    style_attn_sharpen_scale: float = 2.5
+    style_attn_temperature: float = 0.08
+    hires_block_type: str = "conv"
+    body_block_type: str = "global_attn"
+    decoder_block_type: str = "conv"
+    semantic_attn_temperature: float = 0.08
+    semantic_attn_routing_mode: str = "softmax"
+    semantic_sinkhorn_iters: int = 3
+    semantic_gumbel_tau: float = 1.0
+    velocity_head_mode: str = "identity"
+    velocity_tanh_limit: float = 20.0
+    feature_attn_num_heads: int = 4
+    window_attn_window_size: int = 8
+    skip_fusion_mode: str = "add_proj"
+    skip_routing_mode: str = "none"
+    skip_naive_gain: float = 1.0
+    skip_residual_weight: float = 0.1
+    style_skip_content_retention_boost: float = 0.0
+    input_anchor_noise_std: float = 0.0
+    input_anchor_noise_eval: bool = False
+    ablation_no_residual: bool = False
+    ablation_no_residual_gain: float = 1.0
+    ablation_disable_spatial_prior: bool = False
+    ablation_direct_delta_blend: bool = False
+    raw_latent_splat_highway: bool = False
+    ablation_skip_clean: bool = True
+    ablation_skip_blur: bool = True
+    skip_bottleneck_channels: int = 16
+    skip_spatial_dropout_p: float = 0.15
+    ablation_decoder_highpass: bool = True
+    color_highway_gain: float = 1.0
+    output_moment_match: bool = False
+    output_moment_match_eps: float = 1e-6
+    output_moment_match_train_only: bool = False
+    use_style_blender: bool = False
+    use_checkpointing: bool = False
+    extra: dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_mapping(cls, payload: Mapping[str, Any] | None) -> "ModelConfig":
+        known, extra = _split_known_fields(cls, payload)
+        cfg = cls(**known)
+        cfg.extra = extra
+        return cfg
+
+    def validated(self, *, use_checkpointing: bool | None = None) -> "ModelConfig":
+        cfg = ModelConfig.from_mapping(self.to_dict())
+        if use_checkpointing is not None:
+            cfg.use_checkpointing = bool(use_checkpointing)
+        if cfg.lift_channels is None:
+            cfg.lift_channels = int(cfg.base_dim)
+        return cfg
+
+    def to_dict(self) -> dict[str, Any]:
+        payload = asdict(self)
+        extra = payload.pop("extra", {})
+        payload.update(extra)
+        return payload
+
+
+@dataclass
+class BridgeConfig:
+    objective_mode: str = "omf"
+    loss_type: str = "omf"
+    ot_cost_mode: str = "swd"
+    t_min: float = 0.0
+    t_max: float = 1.0
+    identity_endpoint: bool = False
+    eps: float = 1e-4
+    coupling_solver: str = "sinkhorn"
+    sinkhorn_epsilon: float = 0.05
+    sinkhorn_iters: int = 60
+    sinkhorn_stabilize: bool = True
+    bridge_sigma: float = 0.05
+    terminal_swd_weight: float = 0.1
+    terminal_num_steps: int = 4
+    terminal_swd_on_identity: bool = False
+    w_kinetic: float = 1.0
+    w_color: float = 0.0
+    w_repulsive: float = 0.0
+    w_flow: float = 0.0
+    w_nce: float = 0.0
+    w_low_freq: float = 0.0
+    w_cycle: float = 0.0
+    w_curvature: float = 0.0
+    curvature_dt: float = 0.15
+    kinetic_mode: str = "endpoint"
+    kinetic_gate_exponent: float = 1.0
+    nce_num_patches: int = 256
+    nce_temperature: float = 0.07
+    low_freq_kernel_size: int = 7
+    semantic_swd_num_projections: int = 64
+    swd_distance_mode: str = "cdf"
+    swd_use_high_freq: bool = True
+    swd_patch_sizes: list[int] = field(default_factory=lambda: [1, 3, 5, 9])
+    swd_num_projections: int = 64
+    swd_projection_chunk_size: int = 32
+    swd_cdf_num_bins: int = 32
+    swd_cdf_tau: float = 0.01
+    swd_cdf_sample_size: int = 256
+    swd_cdf_bin_chunk_size: int = 4
+    swd_cdf_sample_chunk_size: int = 128
+    swd_hf_weight_ratio: float = 1.0
+    swd_micro_patch_max: int = 3
+    swd_macro_patch_min: int = 5
+    swd_micro_weight: float = 1.0
+    swd_macro_weight: float = 1.0
+    swd_deterministic_subsample: bool = True
+    omf_color_patch_size: int = 5
+    color_transport_mode: str = "softmax"
+    color_gumbel_tau: float = 1.0
+    kinetic_entropy_gate_weight: float = 0.0
+    repulsive_pool_size: int = 4
+    repulsive_temperature: float = 0.25
+    normalize_eps: float = 1e-8
+    logit_clamp: float = 50.0
+    velocity_clamp: float = 20.0
+    endpoint_clamp: float = 24.0
+    similarity_clamp: float = 50.0
+    extra: dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_mapping(cls, payload: Mapping[str, Any] | None) -> "BridgeConfig":
+        known, extra = _split_known_fields(cls, payload)
+        cfg = cls(**known)
+        cfg.extra = extra
+        return cfg
+
+    def to_dict(self) -> dict[str, Any]:
+        payload = asdict(self)
+        extra = payload.pop("extra", {})
+        payload.update(extra)
+        return payload
+
+
+@dataclass
+class TrainingConfig:
+    seed: int = 42
+    batch_size: int = 64
+    accumulation_steps: int = 1
+    num_workers: int = 0
+    shuffle: bool = False
+    persistent_workers: bool = False
+    prefetch_factor: int = 2
+    pin_memory: bool = True
+    cpu_threads: int | None = None
+    cpu_interop_threads: int | None = None
+    learning_rate: float = 2e-4
+    min_learning_rate: float = 1e-5
+    weight_decay: float = 1e-4
+    scheduler: str = "cosine"
+    multistep_milestones: list[int] = field(default_factory=lambda: [40, 55])
+    multistep_gamma: float = 0.1
+    grad_clip_norm: float = 1.0
+    num_epochs: int = 60
+    save_interval: int = 10
+    log_interval: int = 20
+    use_tqdm: bool = True
+    use_amp: bool = False
+    amp_dtype: str = "bf16"
+    allow_tf32: bool = True
+    cudnn_benchmark: bool = True
+    channels_last: bool = False
+    use_gradient_checkpointing: bool = False
+    fused_adamw: bool = True
+    resume_checkpoint: str = ""
+    full_eval_batch_size: int = 20
+    full_eval_num_steps: int | None = None
+    full_eval_step_size: float | None = None
+    full_eval_style_strength: float | None = None
+    full_eval_max_src_samples: int | None = None
+    full_eval_max_ref_compare: int | None = None
+    full_eval_max_ref_cache: int | None = None
+    full_eval_ref_feature_batch_size: int | None = None
+    test_image_dir: str = "../style_data/overfit50"
+    full_eval_cache_dir: str = "../eval_cache"
+    full_eval_image_classifier_path: str = "../eval_cache/eval_style_image_classifier.pt"
+    full_eval_clip_hf_cache_dir: str = "../eval_cache/hf"
+    full_eval_clip_backend: str = "hf"
+    full_eval_classifier_only: bool = False
+    full_eval_disable_lpips: bool = False
+    full_eval_enable_art_fid: bool = False
+    full_eval_enable_kid: bool = False
+    numeric_debug: bool = False
+    numeric_debug_interval: int = 10
+    numeric_debug_halt_on_nonfinite: bool = True
+    numeric_debug_dump_limit: int = 200
+    distill: dict[str, Any] = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_mapping(cls, payload: Mapping[str, Any] | None) -> "TrainingConfig":
+        known, extra = _split_known_fields(cls, payload)
+        cfg = cls(**known)
+        cfg.extra = extra
+        return cfg
+
+    def to_dict(self) -> dict[str, Any]:
+        payload = asdict(self)
+        extra = payload.pop("extra", {})
+        payload.update(extra)
+        return payload
+
+
+@dataclass
+class DataConfig:
+    data_root: str = "../latent-256"
+    style_subdirs: list[str] = field(default_factory=lambda: ["photo", "Hayao", "monet", "vangogh", "cezanne"])
+    allow_hflip: bool = True
+    identity_ratio: float | None = None
+    balance_target_styles_per_batch: bool = True
+    preload_to_gpu: bool = False
+    preload_max_vram_gb: float = 0.0
+    preload_reserve_ratio: float = 0.35
+    virtual_length_multiplier: float = 1.0
+    content_style_sampling_weights: list[float] | None = None
+    target_style_sampling_weights: list[float] | None = None
+    extra: dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_mapping(cls, payload: Mapping[str, Any] | None) -> "DataConfig":
+        known, extra = _split_known_fields(cls, payload)
+        cfg = cls(**known)
+        cfg.extra = extra
+        return cfg
+
+    def to_dict(self) -> dict[str, Any]:
+        payload = asdict(self)
+        extra = payload.pop("extra", {})
+        payload.update(extra)
+        return payload
+
+
+@dataclass
+class CheckpointConfig:
+    save_dir: str = "./artifacts"
+    extra: dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_mapping(cls, payload: Mapping[str, Any] | None) -> "CheckpointConfig":
+        known, extra = _split_known_fields(cls, payload)
+        cfg = cls(**known)
+        cfg.extra = extra
+        return cfg
+
+    def to_dict(self) -> dict[str, Any]:
+        payload = asdict(self)
+        extra = payload.pop("extra", {})
+        payload.update(extra)
+        return payload
+
+
+@dataclass
+class ExperimentConfig:
+    model: ModelConfig = field(default_factory=ModelConfig)
+    bridge: BridgeConfig = field(default_factory=BridgeConfig)
+    training: TrainingConfig = field(default_factory=TrainingConfig)
+    data: DataConfig = field(default_factory=DataConfig)
+    checkpoint: CheckpointConfig = field(default_factory=CheckpointConfig)
+    inference: dict[str, Any] = field(default_factory=dict)
+    full_eval: dict[str, Any] = field(default_factory=dict)
+    ablation: dict[str, Any] = field(default_factory=dict)
+    extra_sections: dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_mapping(cls, payload: Mapping[str, Any] | None) -> "ExperimentConfig":
+        data = _section_dict(payload)
+        known_sections = {"model", "bridge", "training", "data", "checkpoint", "inference", "full_eval", "ablation"}
+        return cls(
+            model=ModelConfig.from_mapping(data.get("model")),
+            bridge=BridgeConfig.from_mapping(data.get("bridge")),
+            training=TrainingConfig.from_mapping(data.get("training")),
+            data=DataConfig.from_mapping(data.get("data")),
+            checkpoint=CheckpointConfig.from_mapping(data.get("checkpoint")),
+            inference=_section_dict(data.get("inference")),
+            full_eval=_section_dict(data.get("full_eval")),
+            ablation=_section_dict(data.get("ablation")),
+            extra_sections={key: value for key, value in data.items() if key not in known_sections},
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        payload = {
+            "model": self.model.to_dict(),
+            "bridge": self.bridge.to_dict(),
+            "training": self.training.to_dict(),
+            "data": self.data.to_dict(),
+            "checkpoint": self.checkpoint.to_dict(),
+        }
+        if self.inference:
+            payload["inference"] = dict(self.inference)
+        if self.full_eval:
+            payload["full_eval"] = dict(self.full_eval)
+        if self.ablation:
+            payload["ablation"] = dict(self.ablation)
+        payload.update(self.extra_sections)
+        return payload

@@ -1,0 +1,9 @@
+{
+  "_base": "../configs/refactor_sadd_batch64_full.json",
+  "training": {
+    "num_epochs": 10
+  },
+  "ablation": {
+    "name": "refactor_sadd_batch64_continue10"
+  }
+}

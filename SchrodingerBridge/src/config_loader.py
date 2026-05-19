@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from config_schema import ExperimentConfig
+
 
 def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     merged = copy.deepcopy(base)
@@ -42,3 +44,7 @@ def load_config(config_path: str | Path, *, _seen: set[Path] | None = None) -> d
         merged = _deep_merge(merged, load_config(base_path, _seen=seen.copy()))
 
     return _deep_merge(merged, raw)
+
+
+def load_experiment_config(config_path: str | Path) -> ExperimentConfig:
+    return ExperimentConfig.from_mapping(load_config(config_path))

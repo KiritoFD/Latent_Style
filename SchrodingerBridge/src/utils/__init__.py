@@ -1,11 +1,8 @@
-"""
-Utility modules for dataset, checkpointing, inference, and evaluation.
-"""
+"""Utility modules for inference, evaluation, and metric tooling."""
 
 __all__ = [
-    "dataset",
-    "checkpoint",
     "inference",
     "classify",
+    "modern_metrics",
     "run_evaluation",
 ]

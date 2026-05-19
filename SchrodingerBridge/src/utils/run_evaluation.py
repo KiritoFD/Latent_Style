@@ -66,8 +66,26 @@ except Exception:
     FrechetInceptionDistance = None
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
-_WORKSPACE_ROOT = _PROJECT_ROOT.parent
-_DEFAULT_LOCAL_CLIP_DIR = _WORKSPACE_ROOT / "Cycle-NCE" / "eval_cache" / "manual_clip" / "openai-clip-vit-base-patch32"
+_WORKSPACE_ROOT = _PROJECT_ROOT
+
+
+def _resolve_default_local_clip_dir() -> Path:
+    """
+    Prefer the workspace's shared CLIP snapshot, but keep compatibility with
+    older layouts that stored it under Cycle-NCE/eval_cache.
+    """
+    candidates = [
+        _WORKSPACE_ROOT / "eval_cache" / "manual_clip" / "openai-clip-vit-base-patch32",
+        _WORKSPACE_ROOT / "Cycle-NCE" / "eval_cache" / "manual_clip" / "openai-clip-vit-base-patch32",
+        _PROJECT_ROOT / "eval_cache" / "manual_clip" / "openai-clip-vit-base-patch32",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
+_DEFAULT_LOCAL_CLIP_DIR = _resolve_default_local_clip_dir()
 
 def _safe_to_eval_device(batch, device: str):
     """
@@ -1061,7 +1079,7 @@ def main():
     parser.add_argument('--clip_modelscope_id', type=str, default="", help="Optional ModelScope model id for CLIP fallback")
     parser.add_argument('--clip_modelscope_cache_dir', type=str, default="", help="Optional ModelScope cache directory")
     parser.add_argument('--clip_hf_cache_dir', type=str, default="", help="HuggingFace cache dir for CLIP; default uses <cache_dir>/hf")
-    parser.add_argument('--clip_allow_network', action='store_true', default=True, help="Allow online model fetch if local cache is missing (default on)")
+    parser.add_argument('--clip_allow_network', action='store_true', help="Allow online model fetch if local cache is missing (default off)")
     parser.add_argument(
         '--clip_backend',
         type=str,
