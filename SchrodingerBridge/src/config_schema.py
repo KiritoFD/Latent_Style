@@ -16,6 +16,24 @@ def _split_known_fields(cls: type[Any], payload: Mapping[str, Any] | None) -> tu
     return known, extra
 
 
+_RETIRED_BRIDGE_KEYS = {
+    "w_color",
+    "w_repulsive",
+    "w_nce",
+    "w_low_freq",
+    "w_cycle",
+    "nce_num_patches",
+    "nce_temperature",
+    "low_freq_kernel_size",
+    "omf_color_patch_size",
+    "color_transport_mode",
+    "color_gumbel_tau",
+    "kinetic_entropy_gate_weight",
+    "repulsive_pool_size",
+    "repulsive_temperature",
+}
+
+
 @dataclass
 class ModelConfig:
     latent_channels: int = 4
@@ -117,19 +135,11 @@ class BridgeConfig:
     terminal_num_steps: int = 4
     terminal_swd_on_identity: bool = False
     w_kinetic: float = 1.0
-    w_color: float = 0.0
-    w_repulsive: float = 0.0
     w_flow: float = 0.0
-    w_nce: float = 0.0
-    w_low_freq: float = 0.0
-    w_cycle: float = 0.0
     w_curvature: float = 0.0
     curvature_dt: float = 0.15
     kinetic_mode: str = "endpoint"
     kinetic_gate_exponent: float = 1.0
-    nce_num_patches: int = 256
-    nce_temperature: float = 0.07
-    low_freq_kernel_size: int = 7
     semantic_swd_num_projections: int = 64
     swd_distance_mode: str = "cdf"
     swd_use_high_freq: bool = True
@@ -147,12 +157,6 @@ class BridgeConfig:
     swd_micro_weight: float = 1.0
     swd_macro_weight: float = 1.0
     swd_deterministic_subsample: bool = True
-    omf_color_patch_size: int = 5
-    color_transport_mode: str = "softmax"
-    color_gumbel_tau: float = 1.0
-    kinetic_entropy_gate_weight: float = 0.0
-    repulsive_pool_size: int = 4
-    repulsive_temperature: float = 0.25
     normalize_eps: float = 1e-8
     logit_clamp: float = 50.0
     velocity_clamp: float = 20.0
@@ -163,6 +167,8 @@ class BridgeConfig:
     @classmethod
     def from_mapping(cls, payload: Mapping[str, Any] | None) -> "BridgeConfig":
         known, extra = _split_known_fields(cls, payload)
+        for key in _RETIRED_BRIDGE_KEYS:
+            extra.pop(key, None)
         cfg = cls(**known)
         cfg.extra = extra
         return cfg

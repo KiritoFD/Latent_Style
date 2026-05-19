@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 from typing import Dict
 
 import torch
@@ -12,62 +11,15 @@ from model import TimeConditionedLANCETBridge
 from ot_cost import SWDTransportCost
 
 
-def calc_latent_patch_nce_loss(
-    pred: torch.Tensor,
-    content: torch.Tensor,
-    *,
-    num_patches: int = 256,
-    temperature: float = 0.07,
-    normalize_eps: float = 1e-8,
-    logit_clamp: float = 50.0,
-) -> torch.Tensor:
-    """
-    Pure latent-space PatchNCE that anchors local semantics at matched positions.
-    """
-    bsz, channels, height, width = pred.shape
-    total_patches = height * width
-    num_patches = max(1, min(int(num_patches), int(total_patches)))
-    if total_patches <= 1 or num_patches <= 1:
-        return pred.new_tensor(0.0, dtype=torch.float32)
-
-    feat_q = pred.reshape(bsz, channels, total_patches).transpose(1, 2)
-    feat_k = content.reshape(bsz, channels, total_patches).transpose(1, 2)
-    perm = torch.randperm(total_patches, device=pred.device)[:num_patches]
-
-    q_sampled = feat_q[:, perm, :]
-    k_sampled = feat_k[:, perm, :]
-
-    q_norm = F.normalize(q_sampled.float(), p=2, dim=-1, eps=normalize_eps)
-    k_norm = F.normalize(k_sampled.float(), p=2, dim=-1, eps=normalize_eps)
-    logits = torch.bmm(q_norm, k_norm.transpose(1, 2)) / max(float(temperature), 1e-6)
-    logits = torch.nan_to_num(logits, nan=0.0, posinf=logit_clamp, neginf=-logit_clamp)
-    logits = logits.clamp(min=-logit_clamp, max=logit_clamp)
-    labels = torch.arange(num_patches, device=pred.device, dtype=torch.long).unsqueeze(0).expand(bsz, -1)
-    return F.cross_entropy(logits.reshape(-1, num_patches), labels.reshape(-1))
-
-
-def calc_low_freq_structure_loss(
-    pred: torch.Tensor,
-    content: torch.Tensor,
-    *,
-    kernel_size: int = 7,
-) -> torch.Tensor:
-    """
-    Color-decoupled low-frequency anchor that preserves only coarse geometry.
-    """
-    kernel_size = max(1, int(kernel_size))
-    pred_in = F.instance_norm(pred.float(), eps=1e-3)
-    content_in = F.instance_norm(content.float(), eps=1e-3)
-    if kernel_size <= 1:
-        return F.mse_loss(pred_in, content_in)
-
-    pad = kernel_size // 2
-    pred_low = F.avg_pool2d(pred_in, kernel_size=kernel_size, stride=1, padding=pad)
-    content_low = F.avg_pool2d(content_in, kernel_size=kernel_size, stride=1, padding=pad)
-    return F.mse_loss(pred_low, content_low)
-
-
 class OTFlowMatchingObjective:
+    """Training objective kept to the components that survived experiments.
+
+    The historical heuristic losses (PatchNCE, local color, low-frequency
+    anchor, cycle, and repulsive terms) are intentionally absent here. They are
+    documented as disabled/dead in docs/cleanup_report.md and were already zero
+    in the active S-add K1/W20 configuration.
+    """
+
     def __init__(self, config: Dict | ExperimentConfig) -> None:
         if isinstance(config, ExperimentConfig):
             bridge_cfg = config.bridge
@@ -75,52 +27,39 @@ class OTFlowMatchingObjective:
         else:
             bridge_cfg = BridgeConfig.from_mapping(config.get("bridge", {}))
             train_cfg = TrainingConfig.from_mapping(config.get("training", {}))
+
         self.objective_mode = str(bridge_cfg.objective_mode).strip().lower()
         self.t_min = float(bridge_cfg.t_min)
         self.t_max = float(bridge_cfg.t_max)
         self.loss_type = str(bridge_cfg.loss_type).strip().lower()
         self.identity_endpoint = bool(bridge_cfg.identity_endpoint)
         self.eps = float(bridge_cfg.eps)
+
         self.coupling_solver = str(bridge_cfg.coupling_solver).strip().lower()
         self.sinkhorn_epsilon = max(float(bridge_cfg.sinkhorn_epsilon), 1e-5)
         self.sinkhorn_iters = max(int(bridge_cfg.sinkhorn_iters), 1)
         self.sinkhorn_stabilize = bool(bridge_cfg.sinkhorn_stabilize)
+
         self.bridge_sigma = max(0.0, float(bridge_cfg.bridge_sigma))
         self.terminal_swd_weight = max(0.0, float(bridge_cfg.terminal_swd_weight))
         self.terminal_num_steps = max(1, int(bridge_cfg.terminal_num_steps))
         self.terminal_swd_on_identity = bool(bridge_cfg.terminal_swd_on_identity)
+        self.semantic_swd_num_projections = max(1, int(bridge_cfg.semantic_swd_num_projections))
+
         self.w_kinetic = max(0.0, float(bridge_cfg.w_kinetic))
-        self.w_color = max(0.0, float(bridge_cfg.w_color))
-        self.w_repulsive = max(0.0, float(bridge_cfg.w_repulsive))
         self.w_flow = max(0.0, float(bridge_cfg.w_flow))
-        self.w_nce = max(0.0, float(bridge_cfg.w_nce))
-        self.w_low_freq = max(0.0, float(bridge_cfg.w_low_freq))
-        self.w_cycle = max(0.0, float(bridge_cfg.w_cycle))
         self.w_curvature = max(0.0, float(bridge_cfg.w_curvature))
         self.curvature_dt = max(0.01, float(bridge_cfg.curvature_dt))
         self.kinetic_mode = str(bridge_cfg.kinetic_mode).strip().lower()
         if self.kinetic_mode not in {"endpoint", "path", "time_gated"}:
             self.kinetic_mode = "endpoint"
         self.kinetic_gate_exponent = max(0.0, float(bridge_cfg.kinetic_gate_exponent))
-        self.nce_num_patches = max(1, int(bridge_cfg.nce_num_patches))
-        self.nce_temperature = max(1e-6, float(bridge_cfg.nce_temperature))
-        self.low_freq_kernel_size = max(1, int(bridge_cfg.low_freq_kernel_size))
-        self.semantic_swd_num_projections = max(1, int(bridge_cfg.semantic_swd_num_projections))
-        self.swd_use_high_freq = bool(bridge_cfg.swd_use_high_freq)
-        self.color_patch_size = max(1, int(bridge_cfg.omf_color_patch_size))
-        self.color_transport_mode = str(bridge_cfg.color_transport_mode).strip().lower()
-        if self.color_transport_mode not in {"softmax", "gumbel_hard"}:
-            self.color_transport_mode = "softmax"
-        self.color_gumbel_tau = max(1e-3, float(bridge_cfg.color_gumbel_tau))
-        self.kinetic_entropy_gate_weight = max(0.0, float(bridge_cfg.kinetic_entropy_gate_weight))
-        self.repulsive_pool_size = max(1, int(bridge_cfg.repulsive_pool_size))
-        self.repulsive_temperature = max(1e-4, float(bridge_cfg.repulsive_temperature))
+
         self.normalize_eps = max(1e-8, float(bridge_cfg.normalize_eps))
-        self.logit_clamp = max(1.0, float(bridge_cfg.logit_clamp))
         self.velocity_clamp = max(1.0, float(bridge_cfg.velocity_clamp))
         self.endpoint_clamp = max(self.velocity_clamp, float(bridge_cfg.endpoint_clamp))
-        self.similarity_clamp = max(1.0, float(bridge_cfg.similarity_clamp))
         self.transport_cost = SWDTransportCost(config)
+
         distill_cfg = train_cfg.distill
         self.distill_velocity_weight = max(0.0, float(distill_cfg.get("velocity_weight", 1.0)))
         self.distill_endpoint_weight = max(0.0, float(distill_cfg.get("endpoint_weight", 0.0)))
@@ -171,9 +110,7 @@ class OTFlowMatchingObjective:
             row_t = torch.from_numpy(row_ind).to(device=cost.device, dtype=torch.long)
             col_t = torch.from_numpy(col_ind).to(device=cost.device, dtype=torch.long)
             matched = target_group.index_select(0, col_t)
-            selected_cost = cost[row_t, col_t].mean()
-            entropy = cost.new_tensor(0.0)
-            return matched, selected_cost, entropy
+            return matched, cost[row_t, col_t].mean(), cost.new_tensor(0.0)
 
         plan = self._sinkhorn_plan(cost)
         matched, entropy = self._sample_from_plan(plan, target_group)
@@ -190,16 +127,15 @@ class OTFlowMatchingObjective:
         matched = torch.empty_like(target_style)
         total_cost = content.new_tensor(0.0, dtype=torch.float32)
         total_entropy = content.new_tensor(0.0, dtype=torch.float32)
-        unique_styles = torch.unique(target_style_id.long(), sorted=True)
 
-        for style_id in unique_styles.tolist():
+        for style_id in torch.unique(target_style_id.long(), sorted=True).tolist():
             mask = target_style_id.long() == int(style_id)
             indices = torch.nonzero(mask, as_tuple=False).squeeze(1)
             if indices.numel() == 0:
                 continue
+
             content_group = content.index_select(0, indices)
             target_group = target_style.index_select(0, indices)
-
             if source_style_id is not None and self.identity_endpoint:
                 same_style_mask = source_style_id.index_select(0, indices).long() == int(style_id)
             else:
@@ -252,15 +188,75 @@ class OTFlowMatchingObjective:
         noise = torch.randn_like(content)
         x_t = base + (self.bridge_sigma * bridge_std) * noise
         d_std_dt = ((1.0 - 2.0 * t) / (2.0 * torch.sqrt(bridge_var))).view(-1, 1, 1, 1)
-        target_velocity = velocity + (self.bridge_sigma * d_std_dt) * noise
-        return x_t, target_velocity
+        return x_t, velocity + (self.bridge_sigma * d_std_dt) * noise
 
     def _loss(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        if self.loss_type == "l1":
-            return F.l1_loss(pred, target)
         if self.loss_type == "huber":
             return F.smooth_l1_loss(pred, target, beta=0.5)
+        if self.loss_type == "l1":
+            return F.l1_loss(pred, target)
         return F.mse_loss(pred, target)
+
+    def _terminal_active_indices(
+        self,
+        pred_endpoint: torch.Tensor,
+        source_style_id: torch.Tensor | None,
+        target_style_id: torch.Tensor,
+    ) -> torch.Tensor:
+        if source_style_id is None or self.terminal_swd_on_identity:
+            return torch.arange(pred_endpoint.shape[0], device=pred_endpoint.device)
+        mask = source_style_id.long() != target_style_id.long()
+        return torch.nonzero(mask, as_tuple=False).squeeze(1)
+
+    def _semantic_guided_swd(
+        self,
+        pred_hf: torch.Tensor,
+        target_hf: torch.Tensor,
+        k_matrix: torch.Tensor,
+    ) -> torch.Tensor:
+        bsz, channels, _, _ = pred_hf.shape
+        pred_flat = pred_hf.float().view(bsz, channels, -1)
+        target_flat = target_hf.float().view(bsz, channels, -1)
+
+        semantic_scores = k_matrix.float().abs().mean(dim=1)
+        if semantic_scores.shape[-1] > self.semantic_swd_num_projections:
+            idx = torch.topk(
+                semantic_scores,
+                k=self.semantic_swd_num_projections,
+                dim=-1,
+                largest=True,
+                sorted=False,
+            ).indices
+        else:
+            idx = torch.arange(semantic_scores.shape[-1], device=k_matrix.device, dtype=torch.long).unsqueeze(0).expand(bsz, -1)
+
+        gather_idx = idx.unsqueeze(1).expand(-1, channels, -1)
+        semantic_axes = torch.gather(target_flat, 2, gather_idx)
+        theta = F.normalize(semantic_axes, p=2, dim=1, eps=self.normalize_eps)
+        proj_pred = torch.bmm(theta.transpose(1, 2), pred_flat)
+        proj_target = torch.bmm(theta.transpose(1, 2), target_flat)
+        proj_pred = torch.nan_to_num(proj_pred, nan=0.0, posinf=self.endpoint_clamp, neginf=-self.endpoint_clamp)
+        proj_target = torch.nan_to_num(proj_target, nan=0.0, posinf=self.endpoint_clamp, neginf=-self.endpoint_clamp)
+        return (torch.sort(proj_pred, dim=-1).values - torch.sort(proj_target, dim=-1).values).abs().mean()
+
+    def _calc_terminal_swd_loss(
+        self,
+        pred_endpoint: torch.Tensor,
+        target_style: torch.Tensor,
+        source_style_id: torch.Tensor | None,
+        target_style_id: torch.Tensor,
+        semantic_k: torch.Tensor | None = None,
+    ) -> torch.Tensor | None:
+        if self.terminal_swd_weight <= 0.0:
+            return None
+        active = self._terminal_active_indices(pred_endpoint, source_style_id, target_style_id)
+        if active.numel() == 0:
+            return None
+        pred_active = pred_endpoint.index_select(0, active)
+        target_active = target_style.index_select(0, active)
+        if semantic_k is not None:
+            return self._semantic_guided_swd(pred_active, target_active, semantic_k.index_select(0, active))
+        return self.transport_cost.aligned_cost(pred_active, target_active)
 
     def _terminal_swd(
         self,
@@ -281,11 +277,7 @@ class OTFlowMatchingObjective:
             step_size=1.0,
             style_strength=1.0,
         )
-        if source_style_id is None or self.terminal_swd_on_identity:
-            mask = torch.ones_like(target_style_id, dtype=torch.bool)
-        else:
-            mask = source_style_id.long() != target_style_id.long()
-        active = torch.nonzero(mask, as_tuple=False).squeeze(1)
+        active = self._terminal_active_indices(endpoint, source_style_id, target_style_id)
         if active.numel() == 0:
             return None, endpoint.new_tensor(0.0, dtype=torch.float32)
         term = self.transport_cost.aligned_cost(
@@ -293,183 +285,6 @@ class OTFlowMatchingObjective:
             matched_target.index_select(0, active),
         )
         return term, endpoint.abs().mean().detach()
-
-    def _calc_terminal_swd_loss(
-        self,
-        pred_endpoint: torch.Tensor,
-        target_style: torch.Tensor,
-        source_style_id: torch.Tensor | None,
-        target_style_id: torch.Tensor,
-    ) -> torch.Tensor | None:
-        if self.terminal_swd_weight <= 0.0:
-            return None
-        if source_style_id is None or self.terminal_swd_on_identity:
-            active = torch.arange(pred_endpoint.shape[0], device=pred_endpoint.device)
-        else:
-            mask = source_style_id.long() != target_style_id.long()
-            active = torch.nonzero(mask, as_tuple=False).squeeze(1)
-        if active.numel() == 0:
-            return None
-        return self.transport_cost.aligned_cost(
-            pred_endpoint.index_select(0, active),
-            target_style.index_select(0, active),
-        )
-
-    def _avg_pool_exact(self, x: torch.Tensor, patch_size: int) -> torch.Tensor:
-        if patch_size <= 1:
-            return x
-        return F.avg_pool2d(x, kernel_size=patch_size, stride=patch_size, ceil_mode=False)
-
-    def _calc_local_contextual_color_loss(
-        self,
-        pred_endpoint: torch.Tensor,
-        target_style: torch.Tensor,
-        *,
-        patch_size: int,
-    ) -> torch.Tensor:
-        pred_low = self._avg_pool_exact(pred_endpoint.float(), patch_size)
-        target_low = self._avg_pool_exact(target_style.float(), patch_size)
-
-        bsz, channels, h_dim, w_dim = pred_low.shape
-        q = pred_low.mean(dim=1, keepdim=True).flatten(2).transpose(1, 2)
-        k = target_low.mean(dim=1, keepdim=True).flatten(2)
-        q_norm = F.normalize(q, dim=-1, eps=self.normalize_eps)
-        k_norm = F.normalize(k, dim=1, eps=self.normalize_eps)
-        attn = torch.bmm(q_norm, k_norm)
-        attn = torch.nan_to_num(attn, nan=0.0, posinf=self.logit_clamp, neginf=-self.logit_clamp)
-        logits = (attn / 0.07).clamp(min=-self.logit_clamp, max=self.logit_clamp)
-        if self.color_transport_mode == "gumbel_hard":
-            attn = F.gumbel_softmax(logits, tau=self.color_gumbel_tau, hard=True, dim=-1)
-        else:
-            attn = F.softmax(logits, dim=-1)
-
-        v = target_low.flatten(2).transpose(1, 2)
-        warped = torch.bmm(attn, v).transpose(1, 2).reshape(bsz, channels, h_dim, w_dim)
-        return F.l1_loss(pred_low, warped)
-
-    def _semantic_entropy_weight(self, attn_plan: torch.Tensor | None, output_size: tuple[int, int]) -> torch.Tensor | None:
-        if attn_plan is None or self.kinetic_entropy_gate_weight <= 0.0:
-            return None
-        if attn_plan.ndim != 3 or attn_plan.shape[-1] <= 1:
-            return None
-        bsz, query_hw, key_hw = attn_plan.shape
-        side = int(round(query_hw ** 0.5))
-        if side * side != query_hw:
-            return None
-        attn = attn_plan.float().clamp_min(1e-8)
-        entropy = -(attn * attn.log()).sum(dim=-1)
-        entropy = entropy / max(math.log(float(key_hw)), 1e-8)
-        entropy = entropy.clamp(0.0, 1.0).view(bsz, 1, side, side)
-        if entropy.shape[-2:] != output_size:
-            entropy = F.interpolate(entropy, size=output_size, mode="bilinear", align_corners=False)
-        return entropy
-
-    def _freq_split(self, x: torch.Tensor, kernel_size: int = 5) -> tuple[torch.Tensor, torch.Tensor]:
-        kernel_size = max(1, int(kernel_size))
-        if kernel_size <= 1:
-            low = x.float()
-            return low, x.float() - low
-        low = F.avg_pool2d(x.float(), kernel_size=kernel_size, stride=1, padding=kernel_size // 2)
-        high = x.float() - low
-        return low, high
-
-    def _infer_attn_hw(self, attn: torch.Tensor) -> tuple[int, int] | None:
-        hw = int(attn.shape[2])
-        side = int(round(hw ** 0.5))
-        if side * side != hw:
-            return None
-        return side, side
-
-    def _barycentric_target(self, target_style: torch.Tensor, attn: torch.Tensor, *, output_size: tuple[int, int]) -> torch.Tensor:
-        bsz, channels, _, _ = target_style.shape
-        attn_hw = self._infer_attn_hw(attn)
-        if attn_hw is None:
-            if target_style.shape[-2:] != output_size:
-                return F.interpolate(target_style.float(), size=output_size, mode="bilinear", align_corners=False)
-            return target_style.float()
-        target_resized = target_style.float()
-        if attn_hw is not None and target_resized.shape[-2:] != attn_hw:
-            target_resized = F.interpolate(target_resized, size=attn_hw, mode="bilinear", align_corners=False)
-        value = target_resized.view(bsz, channels, -1).transpose(1, 2)
-        projected = torch.bmm(attn.float(), value).transpose(1, 2)
-        if attn_hw is None:
-            projected = projected.view(bsz, channels, 1, -1)
-        else:
-            projected = projected.view(bsz, channels, attn_hw[0], attn_hw[1])
-        if projected.shape[-2:] != output_size:
-            projected = F.interpolate(projected, size=output_size, mode="bilinear", align_corners=False)
-        return projected
-
-    def _cosine_lock_loss(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        pred_flat = pred.flatten(1)
-        target_flat = target.flatten(1)
-        return 1.0 - F.cosine_similarity(pred_flat, target_flat, dim=1, eps=1e-8).mean()
-
-    def _semantic_guided_swd(
-        self,
-        pred_hf: torch.Tensor,
-        target_hf: torch.Tensor,
-        k_matrix: torch.Tensor,
-    ) -> torch.Tensor:
-        """
-        Slice high-frequency distributions along semantic key directions instead of random axes.
-        """
-        bsz, channels, _, _ = pred_hf.shape
-        pred_flat = pred_hf.float().view(bsz, channels, -1)
-        target_flat = target_hf.float().view(bsz, channels, -1)
-
-        # The deepest semantic keys live in backbone feature space rather than
-        # latent channel space, so we use them to pick the most style-relevant
-        # spatial positions and then form projection axes from target latents.
-        semantic_scores = k_matrix.float().abs().mean(dim=1)
-        if semantic_scores.shape[-1] > self.semantic_swd_num_projections:
-            idx = torch.topk(semantic_scores, k=self.semantic_swd_num_projections, dim=-1, largest=True, sorted=False).indices
-        else:
-            idx = torch.arange(semantic_scores.shape[-1], device=k_matrix.device, dtype=torch.long).unsqueeze(0).expand(bsz, -1)
-
-        gather_idx = idx.unsqueeze(1).expand(-1, channels, -1)
-        semantic_axes = torch.gather(target_flat, 2, gather_idx)
-        theta = F.normalize(semantic_axes, p=2, dim=1, eps=self.normalize_eps)
-        proj_pred = torch.bmm(theta.transpose(1, 2), pred_flat)
-        proj_target = torch.bmm(theta.transpose(1, 2), target_flat)
-        proj_pred = torch.nan_to_num(proj_pred, nan=0.0, posinf=self.endpoint_clamp, neginf=-self.endpoint_clamp)
-        proj_target = torch.nan_to_num(proj_target, nan=0.0, posinf=self.endpoint_clamp, neginf=-self.endpoint_clamp)
-        proj_pred_sorted, _ = torch.sort(proj_pred, dim=-1)
-        proj_target_sorted, _ = torch.sort(proj_target, dim=-1)
-        return (proj_pred_sorted - proj_target_sorted).abs().mean()
-
-    def _collect_repulsive_components(
-        self,
-        pred_endpoint: torch.Tensor,
-        cross_domain_mask: torch.Tensor,
-        *,
-        target_style_id: torch.Tensor,
-    ) -> tuple[torch.Tensor | None, torch.Tensor]:
-        active = torch.nonzero(cross_domain_mask, as_tuple=False).squeeze(1)
-        if active.numel() <= 1:
-            zero = pred_endpoint.new_tensor(0.0, dtype=torch.float32)
-            return None, zero
-
-        pooled = F.avg_pool2d(
-            pred_endpoint.index_select(0, active).float(),
-            kernel_size=self.repulsive_pool_size,
-            stride=self.repulsive_pool_size,
-            ceil_mode=False,
-        )
-        feats = F.normalize(pooled.flatten(1), dim=1, eps=self.normalize_eps)
-        tgt_ids = target_style_id.index_select(0, active).long()
-        sim = feats @ feats.transpose(0, 1)
-        sim = torch.nan_to_num(sim, nan=0.0, posinf=self.similarity_clamp, neginf=-self.similarity_clamp)
-        sim = sim.clamp(min=-self.similarity_clamp, max=self.similarity_clamp)
-        eye = torch.eye(sim.shape[0], device=sim.device, dtype=torch.bool)
-        same_target = tgt_ids.unsqueeze(1) == tgt_ids.unsqueeze(0)
-        pair_mask = same_target & (~eye)
-        if not pair_mask.any():
-            zero = pred_endpoint.new_tensor(0.0, dtype=torch.float32)
-            return None, zero
-        repel_raw = torch.logsumexp(sim[pair_mask] / self.repulsive_temperature, dim=0)
-        mean_pair_sim = sim[pair_mask].mean().detach()
-        return repel_raw, mean_pair_sim
 
     def _compute_omf_details(
         self,
@@ -481,21 +296,17 @@ class OTFlowMatchingObjective:
         source_style_id: torch.Tensor | None = None,
     ) -> tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor], Dict[str, torch.Tensor | None]]:
         t_fixed = content.new_ones(content.shape[0])
-        pred_velocity = model(
-            content,
-            t=t_fixed,
-            style_id=target_style_id,
-        )
+        pred_velocity = model(content, t=t_fixed, style_id=target_style_id)
         pred_velocity = self._sanitize_tensor(pred_velocity, clamp_value=self.velocity_clamp)
-        pred_endpoint = content + pred_velocity
-        pred_endpoint = self._sanitize_tensor(pred_endpoint, clamp_value=self.endpoint_clamp)
+        pred_endpoint = self._sanitize_tensor(content + pred_velocity, clamp_value=self.endpoint_clamp)
         attn_plan = model.last_semantic_attn
         semantic_k = model.last_semantic_k
 
         total_loss = content.new_tensor(0.0, dtype=torch.float32)
+        flow_loss = content.new_tensor(0.0, dtype=torch.float32)
         ot_cost = content.new_tensor(0.0, dtype=torch.float32)
         plan_entropy = content.new_tensor(0.0, dtype=torch.float32)
-        matched_target: torch.Tensor | None = None
+
         if self.w_flow > 0.0:
             if content.device.type == "cuda":
                 autocast_ctx = torch.amp.autocast("cuda", enabled=False)
@@ -509,19 +320,29 @@ class OTFlowMatchingObjective:
                         target_style_id,
                         source_style_id,
                     )
+            flow_loss = self._loss(pred_endpoint, matched_target) * self.w_flow
+            total_loss = total_loss + flow_loss
 
-        component_tensors: Dict[str, torch.Tensor] = {
-            "flow": content.new_tensor(0.0, dtype=torch.float32),
-            "kinetic_energy": content.new_tensor(0.0, dtype=torch.float32),
-            "terminal_swd": content.new_tensor(0.0, dtype=torch.float32),
-            "low_freq_anchor": content.new_tensor(0.0, dtype=torch.float32),
-            "color": content.new_tensor(0.0, dtype=torch.float32),
-            "patch_nce": content.new_tensor(0.0, dtype=torch.float32),
-            "cycle": content.new_tensor(0.0, dtype=torch.float32),
-            "repulsive": content.new_tensor(0.0, dtype=torch.float32),
-        }
+        kinetic_loss = (pred_velocity.float() ** 2).mean() * self.w_kinetic if self.w_kinetic > 0.0 else content.new_tensor(0.0)
+        total_loss = total_loss + kinetic_loss
+
+        terminal_swd = self._calc_terminal_swd_loss(
+            pred_endpoint,
+            target_style,
+            source_style_id,
+            target_style_id,
+            semantic_k=semantic_k,
+        )
+        terminal_loss = content.new_tensor(0.0, dtype=torch.float32)
+        if terminal_swd is not None:
+            terminal_loss = terminal_swd * self.terminal_swd_weight
+            total_loss = total_loss + terminal_loss
 
         metrics: Dict[str, torch.Tensor] = {
+            "loss": total_loss,
+            "flow": flow_loss.detach(),
+            "kinetic_energy": kinetic_loss.detach(),
+            "terminal_swd": terminal_loss.detach(),
             "ot_cost": ot_cost.detach(),
             "plan_entropy": plan_entropy.detach(),
             "bridge_sigma": content.new_tensor(0.0, dtype=torch.float32),
@@ -530,192 +351,18 @@ class OTFlowMatchingObjective:
             "velocity_max": pred_velocity.abs().amax().detach(),
             "endpoint_abs": pred_endpoint.abs().mean().detach(),
             "endpoint_max": pred_endpoint.abs().amax().detach(),
-            "semantic_attn_mean": attn_plan.mean().detach() if attn_plan is not None else content.new_tensor(0.0, dtype=torch.float32),
-            "semantic_attn_max": attn_plan.abs().amax().detach() if attn_plan is not None else content.new_tensor(0.0, dtype=torch.float32),
-            "semantic_k_abs": semantic_k.abs().mean().detach() if semantic_k is not None else content.new_tensor(0.0, dtype=torch.float32),
-            "semantic_k_max": semantic_k.abs().amax().detach() if semantic_k is not None else content.new_tensor(0.0, dtype=torch.float32),
+            "semantic_attn_mean": attn_plan.mean().detach() if attn_plan is not None else content.new_tensor(0.0),
+            "semantic_k_abs": semantic_k.abs().mean().detach() if semantic_k is not None else content.new_tensor(0.0),
         }
-
-        if self.w_flow > 0.0 and matched_target is not None:
-            flow_loss = self._loss(pred_endpoint, matched_target)
-            flow_weighted = flow_loss * self.w_flow
-            total_loss = total_loss + flow_weighted
-            component_tensors["flow"] = flow_weighted
-            metrics["flow"] = flow_weighted.detach()
-        else:
-            metrics["flow"] = content.new_tensor(0.0, dtype=torch.float32)
-
-        if self.w_kinetic > 0.0:
-            kinetic_energy_map = pred_velocity.float() ** 2
-            entropy_weight = self._semantic_entropy_weight(attn_plan, output_size=pred_velocity.shape[-2:])
-            if entropy_weight is not None:
-                kinetic_multiplier = 1.0 + entropy_weight * self.kinetic_entropy_gate_weight
-                kinetic_loss = (kinetic_energy_map * kinetic_multiplier).mean()
-                metrics["kinetic_entropy_mean"] = entropy_weight.mean().detach()
-                metrics["kinetic_entropy_gate_weight"] = content.new_tensor(
-                    self.kinetic_entropy_gate_weight,
-                    dtype=torch.float32,
-                )
-            else:
-                kinetic_loss = kinetic_energy_map.mean()
-                metrics["kinetic_entropy_mean"] = content.new_tensor(0.0, dtype=torch.float32)
-                metrics["kinetic_entropy_gate_weight"] = content.new_tensor(0.0, dtype=torch.float32)
-            kinetic_weighted = kinetic_loss * self.w_kinetic
-            total_loss = total_loss + kinetic_weighted
-            component_tensors["kinetic_energy"] = kinetic_weighted
-            metrics["kinetic_energy"] = kinetic_weighted.detach()
-        else:
-            metrics["kinetic_energy"] = content.new_tensor(0.0, dtype=torch.float32)
-            metrics["kinetic_entropy_mean"] = content.new_tensor(0.0, dtype=torch.float32)
-            metrics["kinetic_entropy_gate_weight"] = content.new_tensor(0.0, dtype=torch.float32)
-
-        if self.terminal_swd_weight <= 0.0:
-            metrics["terminal_swd"] = content.new_tensor(0.0, dtype=torch.float32)
-            metrics["low_freq_anchor"] = content.new_tensor(0.0, dtype=torch.float32)
-        elif not self.swd_use_high_freq:
-            if semantic_k is not None:
-                swd_loss = self._semantic_guided_swd(pred_endpoint, target_style, semantic_k)
-            else:
-                swd_loss = self._calc_terminal_swd_loss(
-                    pred_endpoint,
-                    target_style,
-                    source_style_id,
-                    target_style_id,
-                )
-            if swd_loss is not None:
-                swd_weighted = swd_loss * self.terminal_swd_weight
-                total_loss = total_loss + swd_weighted
-                component_tensors["terminal_swd"] = swd_weighted
-                metrics["terminal_swd"] = swd_weighted.detach()
-            else:
-                metrics["terminal_swd"] = content.new_tensor(0.0, dtype=torch.float32)
-            metrics["low_freq_anchor"] = content.new_tensor(0.0, dtype=torch.float32)
-        else:
-            pred_low, pred_high = self._freq_split(pred_endpoint, kernel_size=self.low_freq_kernel_size)
-            content_low, _ = self._freq_split(content, kernel_size=self.low_freq_kernel_size)
-            _, target_high = self._freq_split(target_style, kernel_size=self.low_freq_kernel_size)
-
-            # AdaIN color anchoring: preserve the coarse geometry from content_low,
-            # but force its global palette statistics to match the target style.
-            b_low, c_low, h_low, w_low = content_low.shape
-            content_flat = content_low.reshape(b_low, c_low, -1)
-            target_flat = target_style.reshape(target_style.shape[0], target_style.shape[1], -1)
-
-            mu_c = content_flat.mean(dim=2, keepdim=True)
-            std_c = content_flat.std(dim=2, keepdim=True) + 1e-5
-            mu_t = target_flat.mean(dim=2, keepdim=True)
-            std_t = target_flat.std(dim=2, keepdim=True) + 1e-5
-
-            color_anchored_low = ((content_flat - mu_c) / std_c) * std_t + mu_t
-            color_anchored_low = color_anchored_low.reshape(b_low, c_low, h_low, w_low)
-
-            if self.w_low_freq > 0.0:
-                # Low-frequency channels carry exposure and coarse tonal layout, so
-                # we lock them to a content-preserving, target-colored anchor.
-                low_freq_loss = F.l1_loss(pred_low, color_anchored_low.detach())
-                low_weighted = low_freq_loss * self.w_low_freq
-                total_loss = total_loss + low_weighted
-                component_tensors["low_freq_anchor"] = low_weighted
-                metrics["low_freq_anchor"] = low_weighted.detach()
-            else:
-                metrics["low_freq_anchor"] = content.new_tensor(0.0, dtype=torch.float32)
-
-            if semantic_k is not None:
-                swd_loss = self._semantic_guided_swd(pred_high, target_high, semantic_k)
-            else:
-                swd_loss = self._calc_terminal_swd_loss(
-                    pred_high,
-                    target_high,
-                    source_style_id,
-                    target_style_id,
-                )
-            if swd_loss is not None:
-                swd_weighted = swd_loss * self.terminal_swd_weight
-                total_loss = total_loss + swd_weighted
-                component_tensors["terminal_swd"] = swd_weighted
-                metrics["terminal_swd"] = swd_weighted.detach()
-            else:
-                metrics["terminal_swd"] = content.new_tensor(0.0, dtype=torch.float32)
-
-        if self.w_color > 0.0:
-            color_loss = self._calc_local_contextual_color_loss(
-                pred_endpoint,
-                target_style,
-                patch_size=self.color_patch_size,
-            )
-            color_weighted = color_loss * self.w_color
-            total_loss = total_loss + color_weighted
-            component_tensors["color"] = color_weighted
-            metrics["color"] = color_weighted.detach()
-        else:
-            metrics["color"] = content.new_tensor(0.0, dtype=torch.float32)
-
-        if self.w_nce > 0.0:
-            nce_loss = calc_latent_patch_nce_loss(
-                pred_endpoint,
-                content,
-                num_patches=self.nce_num_patches,
-                temperature=self.nce_temperature,
-                normalize_eps=self.normalize_eps,
-                logit_clamp=self.logit_clamp,
-            )
-            nce_weighted = nce_loss * self.w_nce
-            total_loss = total_loss + nce_weighted
-            component_tensors["patch_nce"] = nce_weighted
-            metrics["patch_nce"] = nce_weighted.detach()
-        else:
-            metrics["patch_nce"] = content.new_tensor(0.0, dtype=torch.float32)
-
-        if self.w_cycle > 0.0 and source_style_id is not None:
-            cycle_velocity = model(
-                pred_endpoint,
-                t=t_fixed,
-                style_id=source_style_id,
-            )
-            cycle_velocity = self._sanitize_tensor(cycle_velocity, clamp_value=self.velocity_clamp)
-            z_aba = pred_endpoint + cycle_velocity
-            z_aba = self._sanitize_tensor(z_aba, clamp_value=self.endpoint_clamp)
-            metrics["cycle_velocity_max"] = cycle_velocity.abs().amax().detach()
-            metrics["cycle_endpoint_max"] = z_aba.abs().amax().detach()
-            cycle_loss = self._cosine_lock_loss(z_aba, content)
-            cycle_weighted = cycle_loss * self.w_cycle
-            total_loss = total_loss + cycle_weighted
-            component_tensors["cycle"] = cycle_weighted
-            metrics["cycle"] = cycle_weighted.detach()
-        else:
-            metrics["cycle"] = content.new_tensor(0.0, dtype=torch.float32)
-            metrics["cycle_velocity_max"] = content.new_tensor(0.0, dtype=torch.float32)
-            metrics["cycle_endpoint_max"] = content.new_tensor(0.0, dtype=torch.float32)
-
-        if self.w_repulsive > 0.0:
-            xid_mask = (
-                source_style_id.long() != target_style_id.long()
-                if source_style_id is not None
-                else torch.ones_like(target_style_id, dtype=torch.bool)
-            )
-            repel_raw, mean_pair_sim = self._collect_repulsive_components(
-                pred_endpoint,
-                xid_mask,
-                target_style_id=target_style_id,
-            )
-            if repel_raw is not None:
-                repel_clamped = torch.clamp(repel_raw, max=1.0)
-                repel_weighted = repel_clamped * self.w_repulsive
-                total_loss = total_loss + repel_weighted
-                component_tensors["repulsive"] = repel_weighted
-                metrics["repulsive"] = repel_weighted.detach()
-            else:
-                metrics["repulsive"] = content.new_tensor(0.0, dtype=torch.float32)
-            metrics["repulsive_pair_sim"] = mean_pair_sim
-        else:
-            metrics["repulsive"] = content.new_tensor(0.0, dtype=torch.float32)
-            metrics["repulsive_pair_sim"] = content.new_tensor(0.0, dtype=torch.float32)
-
         if source_style_id is not None:
             id_mask = source_style_id.long() == target_style_id.long()
             metrics["identity_ratio"] = id_mask.float().mean().detach()
 
-        metrics["loss"] = total_loss
+        components = {
+            "flow": flow_loss,
+            "kinetic_energy": kinetic_loss,
+            "terminal_swd": terminal_loss,
+        }
         debug_state: Dict[str, torch.Tensor | None] = {
             "pred_velocity": pred_velocity.detach(),
             "pred_endpoint": pred_endpoint.detach(),
@@ -724,7 +371,7 @@ class OTFlowMatchingObjective:
             "content": content.detach(),
             "target_style": target_style.detach(),
         }
-        return metrics, component_tensors, debug_state
+        return metrics, components, debug_state
 
     def _compute_omf(
         self,
@@ -761,6 +408,7 @@ class OTFlowMatchingObjective:
                 target_style_id=target_style_id,
                 source_style_id=source_style_id,
             )
+
         if content.device.type == "cuda":
             autocast_ctx = torch.amp.autocast("cuda", enabled=False)
         else:
@@ -775,16 +423,8 @@ class OTFlowMatchingObjective:
                 )
 
         t = self._sample_t(content)
-        x_t, target_velocity = self._bridge_state_and_velocity(
-            content=content,
-            matched_target=matched_target,
-            t=t,
-        )
-        pred_velocity = model(
-            x_t,
-            t=t,
-            style_id=target_style_id,
-        )
+        x_t, target_velocity = self._bridge_state_and_velocity(content=content, matched_target=matched_target, t=t)
+        pred_velocity = model(x_t, t=t, style_id=target_style_id)
         flow_loss = self._loss(pred_velocity, target_velocity)
         total_loss = flow_loss
 
@@ -802,12 +442,7 @@ class OTFlowMatchingObjective:
         if self.w_curvature > 0.0:
             dt = self.curvature_dt
             t2 = (t + dt).clamp(max=self.t_max)
-            x_t2 = x_t + pred_velocity * dt
-            pred_v2 = model(
-                x_t2,
-                t=t2,
-                style_id=target_style_id,
-            )
+            pred_v2 = model(x_t + pred_velocity * dt, t=t2, style_id=target_style_id)
             curvature_loss = self._loss(pred_v2, pred_velocity)
             total_loss = total_loss + curvature_loss * self.w_curvature
 
@@ -832,9 +467,8 @@ class OTFlowMatchingObjective:
             "t_mean": t.mean().detach(),
             "velocity_abs": target_velocity.abs().mean().detach(),
             "endpoint_abs": endpoint_abs.detach(),
+            "terminal_swd": terminal_swd.detach() if terminal_swd is not None else content.new_tensor(0.0),
         }
-        if terminal_swd is not None:
-            metrics["terminal_swd"] = terminal_swd.detach()
         if source_style_id is not None:
             id_mask = source_style_id.long() == target_style_id.long()
             metrics["identity_ratio"] = id_mask.float().mean().detach()
@@ -858,11 +492,7 @@ class OTFlowMatchingObjective:
             target_style_id=target_style_id,
             source_style_id=source_style_id,
         )
-        return {
-            "metrics": metrics,
-            "components": components,
-            "state": state,
-        }
+        return {"metrics": metrics, "components": components, "state": state}
 
     def compute_distill(
         self,
@@ -887,16 +517,8 @@ class OTFlowMatchingObjective:
                     source_style_id,
                 )
             t = self._sample_t(content)
-            x_t, _ = self._bridge_state_and_velocity(
-                content=content,
-                matched_target=matched_target,
-                t=t,
-            )
-            teacher_velocity = teacher_model(
-                x_t,
-                t=t,
-                style_id=target_style_id,
-            )
+            x_t, _ = self._bridge_state_and_velocity(content=content, matched_target=matched_target, t=t)
+            teacher_velocity = teacher_model(x_t, t=t, style_id=target_style_id)
             teacher_endpoint = None
             if self.distill_endpoint_weight > 0.0:
                 teacher_endpoint = teacher_model.integrate(
@@ -907,11 +529,7 @@ class OTFlowMatchingObjective:
                     style_strength=1.0,
                 )
 
-        pred_velocity = model(
-            x_t,
-            t=t,
-            style_id=target_style_id,
-        )
+        pred_velocity = model(x_t, t=t, style_id=target_style_id)
         velocity_loss = F.mse_loss(pred_velocity, teacher_velocity)
         total_loss = velocity_loss * self.distill_velocity_weight
 

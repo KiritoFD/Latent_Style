@@ -138,19 +138,14 @@ def main() -> None:
         trainer.step_scheduler()
         trainer.log_epoch(epoch, metrics)
         logger.info(
-            "Epoch %d/%d | loss=%.4f flow=%.4f kin=%.4f low=%.4f ot=%.4f tswd=%.4f color=%.4f nce=%.4f cyc=%.4f rep=%.4f attn=%.3f k=%.3f ent=%.3f sigma=%.3f idr=%.2f t=%.3f |v|=%.3f lr=%.2e data=%.1fs comp=%.1fs",
+            "Epoch %d/%d | loss=%.4f flow=%.4f kin=%.4f ot=%.4f tswd=%.4f attn=%.3f k=%.3f ent=%.3f sigma=%.3f idr=%.2f t=%.3f |v|=%.3f lr=%.2e data=%.1fs comp=%.1fs",
             epoch,
             trainer.num_epochs,
             metrics.get("loss", 0.0),
             metrics.get("flow", 0.0),
             metrics.get("kinetic_energy", 0.0),
-            metrics.get("low_freq_anchor", 0.0),
             metrics.get("ot_cost", 0.0),
             metrics.get("terminal_swd", 0.0),
-            metrics.get("color", 0.0),
-            metrics.get("patch_nce", 0.0),
-            metrics.get("cycle", 0.0),
-            metrics.get("repulsive", 0.0),
             metrics.get("semantic_attn_mean", 0.0),
             metrics.get("semantic_k_abs", 0.0),
             metrics.get("plan_entropy", 0.0),

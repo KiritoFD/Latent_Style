@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import csv
 import json
 import logging
-import math
-import shutil
 import time
 from datetime import datetime
 from pathlib import Path
@@ -18,62 +15,15 @@ from config_schema import ExperimentConfig
 from inference_config import compact_runtime_config
 from losses import OTFlowMatchingObjective
 from model import build_model_from_config, count_parameters
+from utils.training import (
+    append_training_log,
+    build_adamw,
+    initialize_training_log,
+    strip_compile_prefix,
+    write_config_and_source_snapshot,
+)
 
 logger = logging.getLogger(__name__)
-
-_TRAIN_LOG_COLUMNS = [
-    "epoch",
-    "loss",
-    "flow",
-    "kinetic_energy",
-    "curvature",
-    "low_freq_anchor",
-    "ot_cost",
-    "terminal_swd",
-    "color",
-    "patch_nce",
-    "cycle",
-    "repulsive",
-    "semantic_attn_mean",
-    "semantic_k_abs",
-    "plan_entropy",
-    "kinetic_entropy_mean",
-    "kinetic_entropy_gate_weight",
-    "bridge_sigma",
-    "identity_ratio",
-    "t_mean",
-    "velocity_abs",
-    "endpoint_abs",
-    "velocity_max",
-    "endpoint_max",
-    "lr",
-    "data_time_sec",
-    "forward_time_sec",
-    "backward_time_sec",
-    "optimizer_time_sec",
-    "compute_time_sec",
-    "epoch_time_sec",
-    "samples_seen",
-    "samples_per_sec",
-]
-
-_SNAPSHOT_SOURCE_FILES = [
-    "trainer.py",
-    "losses.py",
-    "model.py",
-    "lancet_backbone.py",
-    "ot_cost.py",
-    "dataset.py",
-    "run.py",
-    "utils/inference.py",
-    "utils/run_evaluation.py",
-]
-
-
-def _strip_compile_prefix(state_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
-    if any(k.startswith("_orig_mod.") for k in state_dict.keys()):
-        return {k.replace("_orig_mod.", ""): v for k, v in state_dict.items()}
-    return state_dict
 
 
 class SBTrainer:
@@ -147,22 +97,14 @@ class SBTrainer:
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.numeric_debug_file = self.checkpoint_dir / "numeric_debug.jsonl"
 
-        with open(self.checkpoint_dir / "config.json", "w", encoding="utf-8") as f:
-            json.dump(self.serialized_config, f, indent=2, ensure_ascii=False)
-
-        pkg_dir = Path(__file__).parent
-        snapshot_root = self.checkpoint_dir / "src"
-        snapshot_root.mkdir(parents=True, exist_ok=True)
-        for fname in _SNAPSHOT_SOURCE_FILES:
-            src = pkg_dir / fname
-            if src.exists():
-                dst = snapshot_root / fname
-                dst.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(src, dst)
+        write_config_and_source_snapshot(
+            checkpoint_dir=self.checkpoint_dir,
+            serialized_config=self.serialized_config,
+            package_dir=Path(__file__).parent,
+        )
 
         self.log_file = self.log_dir / f"training_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-        with open(self.log_file, "w", encoding="utf-8", newline="") as f:
-            csv.writer(f).writerow(_TRAIN_LOG_COLUMNS)
+        initialize_training_log(self.log_file)
 
         self.global_step = 0
         self.start_epoch = 1
@@ -260,23 +202,7 @@ class SBTrainer:
         self.numeric_debug_events += 1
 
     def _build_optimizer(self, params) -> torch.optim.Optimizer:
-        requested_fused = bool(self.train_cfg.get("fused_adamw", self.device.type == "cuda"))
-        use_fused = bool(requested_fused and self.device.type == "cuda")
-        try:
-            return torch.optim.AdamW(
-                params,
-                lr=float(self.train_cfg.get("learning_rate", 2e-4)),
-                weight_decay=float(self.train_cfg.get("weight_decay", 1e-4)),
-                betas=(0.9, 0.999),
-                fused=use_fused,
-            )
-        except TypeError:
-            return torch.optim.AdamW(
-                params,
-                lr=float(self.train_cfg.get("learning_rate", 2e-4)),
-                weight_decay=float(self.train_cfg.get("weight_decay", 1e-4)),
-                betas=(0.9, 0.999),
-            )
+        return build_adamw(params, self.train_cfg, self.device)
 
     def _find_latest_checkpoint(self) -> Optional[Path]:
         ckpts = sorted(self.checkpoint_dir.glob("epoch_*.pt"))
@@ -293,7 +219,7 @@ class SBTrainer:
             logger.info("No checkpoint found, start from scratch.")
             return
         state = torch.load(ckpt_path, map_location=self.device, weights_only=False)
-        self.model.load_state_dict(_strip_compile_prefix(state["model_state_dict"]), strict=True)
+        self.model.load_state_dict(strip_compile_prefix(state["model_state_dict"]), strict=True)
         if "optimizer_state_dict" in state:
             self.optimizer.load_state_dict(state["optimizer_state_dict"])
         if self.scheduler is not None and state.get("scheduler_state_dict") is not None:
@@ -322,7 +248,7 @@ class SBTrainer:
             raise FileNotFoundError(f"Distillation teacher checkpoint not found: {teacher_ckpt}")
 
         state = torch.load(teacher_ckpt, map_location=self.device, weights_only=False)
-        teacher_state = _strip_compile_prefix(state["model_state_dict"])
+        teacher_state = strip_compile_prefix(state["model_state_dict"])
         if not str(self.train_cfg.get("resume_checkpoint", "")).strip():
             self.model.load_state_dict(teacher_state, strict=True)
 
@@ -523,11 +449,6 @@ class SBTrainer:
                     curv=f"{_avg('curvature'):.4f}",
                     ot=f"{_avg('ot_cost'):.4f}",
                     tswd=f"{_avg('terminal_swd'):.4f}" if not self.distill_enabled else f"{_avg('distill_endpoint'):.4f}",
-                    low=f"{_avg('low_freq_anchor'):.4f}",
-                    color=f"{_avg('color'):.4f}",
-                    nce=f"{_avg('patch_nce'):.4f}",
-                    cyc=f"{_avg('cycle'):.4f}",
-                    rep=f"{_avg('repulsive'):.4f}",
                     t=f"{_avg('t_mean'):.3f}",
                 )
 
@@ -563,8 +484,6 @@ class SBTrainer:
         metrics.setdefault("distill_endpoint", 0.0)
         metrics.setdefault("ot_cost", 0.0)
         metrics.setdefault("terminal_swd", 0.0)
-        metrics.setdefault("color", 0.0)
-        metrics.setdefault("repulsive", 0.0)
         metrics.setdefault("plan_entropy", 0.0)
         metrics.setdefault("bridge_sigma", 0.0)
         metrics.setdefault("identity_ratio", 0.0)
@@ -585,46 +504,7 @@ class SBTrainer:
         return metrics
 
     def log_epoch(self, epoch: int, metrics: Dict[str, float]) -> None:
-        self.log_dir.mkdir(parents=True, exist_ok=True)
-        row_map = {
-            "epoch": int(epoch),
-            "loss": float(metrics.get("loss", 0.0)),
-            "flow": float(metrics.get("flow", 0.0)),
-            "kinetic_energy": float(metrics.get("kinetic_energy", 0.0)),
-            "curvature": float(metrics.get("curvature", 0.0)),
-            "low_freq_anchor": float(metrics.get("low_freq_anchor", 0.0)),
-            "ot_cost": float(metrics.get("ot_cost", 0.0)),
-            "terminal_swd": float(metrics.get("terminal_swd", 0.0)),
-            "color": float(metrics.get("color", 0.0)),
-            "patch_nce": float(metrics.get("patch_nce", 0.0)),
-            "cycle": float(metrics.get("cycle", 0.0)),
-            "repulsive": float(metrics.get("repulsive", 0.0)),
-            "semantic_attn_mean": float(metrics.get("semantic_attn_mean", 0.0)),
-            "semantic_k_abs": float(metrics.get("semantic_k_abs", 0.0)),
-            "plan_entropy": float(metrics.get("plan_entropy", 0.0)),
-            "kinetic_entropy_mean": float(metrics.get("kinetic_entropy_mean", 0.0)),
-            "kinetic_entropy_gate_weight": float(metrics.get("kinetic_entropy_gate_weight", 0.0)),
-            "bridge_sigma": float(metrics.get("bridge_sigma", 0.0)),
-            "identity_ratio": float(metrics.get("identity_ratio", 0.0)),
-            "t_mean": float(metrics.get("t_mean", 0.0)),
-            "velocity_abs": float(metrics.get("velocity_abs", 0.0)),
-            "endpoint_abs": float(metrics.get("endpoint_abs", 0.0)),
-            "velocity_max": float(metrics.get("velocity_max", 0.0)),
-            "endpoint_max": float(metrics.get("endpoint_max", 0.0)),
-            "lr": float(metrics.get("lr", 0.0)),
-            "data_time_sec": float(metrics.get("data_time_sec", 0.0)),
-            "forward_time_sec": float(metrics.get("forward_time_sec", 0.0)),
-            "backward_time_sec": float(metrics.get("backward_time_sec", 0.0)),
-            "optimizer_time_sec": float(metrics.get("optimizer_time_sec", 0.0)),
-            "compute_time_sec": float(metrics.get("compute_time_sec", 0.0)),
-            "epoch_time_sec": float(metrics.get("epoch_time_sec", 0.0)),
-            "samples_seen": int(float(metrics.get("samples_seen", 0.0))),
-            "samples_per_sec": float(metrics.get("samples_per_sec", 0.0)),
-        }
-        row = [row_map[col] for col in _TRAIN_LOG_COLUMNS]
-        self.log_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.log_file, "a", encoding="utf-8", newline="") as f:
-            csv.writer(f).writerow(row)
+        append_training_log(self.log_file, metrics, epoch)
 
     def save_checkpoint(self, epoch: int, metrics: Dict[str, float]) -> Path:
         path = self.checkpoint_dir / f"epoch_{epoch:04d}.pt"
