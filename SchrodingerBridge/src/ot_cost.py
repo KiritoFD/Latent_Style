@@ -28,12 +28,6 @@ class SWDTransportCost:
         self.swd_patch_sizes = [int(p) for p in bridge_cfg.swd_patch_sizes]
         self.swd_num_projections = int(bridge_cfg.swd_num_projections)
         self.swd_projection_chunk_size = int(bridge_cfg.swd_projection_chunk_size)
-        self.swd_distance_mode = str(bridge_cfg.swd_distance_mode).lower()
-        self.swd_cdf_num_bins = int(bridge_cfg.swd_cdf_num_bins)
-        self.swd_cdf_tau = float(bridge_cfg.swd_cdf_tau)
-        self.swd_cdf_sample_size = int(bridge_cfg.swd_cdf_sample_size)
-        self.swd_cdf_bin_chunk_size = int(bridge_cfg.swd_cdf_bin_chunk_size)
-        self.swd_cdf_sample_chunk_size = int(bridge_cfg.swd_cdf_sample_chunk_size)
         self.swd_use_high_freq = bool(bridge_cfg.swd_use_high_freq)
         self.swd_hf_weight_ratio = max(0.0, float(bridge_cfg.swd_hf_weight_ratio))
         self.swd_micro_patch_max = int(bridge_cfg.swd_micro_patch_max)
@@ -44,10 +38,8 @@ class SWDTransportCost:
         self.swd_macro_patch_min = int(bridge_cfg.swd_macro_patch_min or default_macro_min)
         self.swd_micro_weight = max(0.0, float(bridge_cfg.swd_micro_weight))
         self.swd_macro_weight = max(0.0, float(bridge_cfg.swd_macro_weight))
-        self.swd_deterministic_subsample = bool(bridge_cfg.swd_deterministic_subsample)
         self._projection_cache: Dict[tuple[int, int, int, str, str], torch.Tensor] = {}
         self._sobel_kernel_cache: Dict[tuple[int, str], tuple[torch.Tensor, torch.Tensor]] = {}
-        self._sample_idx_cache: Dict[tuple[int, int, str], torch.Tensor] = {}
 
     def _get_projection_bank(
         self,
@@ -126,111 +118,21 @@ class SWDTransportCost:
     def _prepare_macro_features(self, z_norm: torch.Tensor) -> torch.Tensor:
         return F.avg_pool2d(z_norm, kernel_size=5, stride=1, padding=2)
 
-    def _select_sample_indices(self, n_pts: int, *, device: torch.device) -> torch.Tensor | None:
-        sample_size = max(32, int(self.swd_cdf_sample_size))
-        if n_pts <= sample_size:
-            return None
-        key = (int(n_pts), int(sample_size), str(device))
-        cached = self._sample_idx_cache.get(key)
-        if cached is not None:
-            return cached
-        if self.swd_deterministic_subsample:
-            idx = (torch.arange(sample_size, device=device, dtype=torch.long) * n_pts) // sample_size
-        else:
-            idx = torch.randint(0, n_pts, (sample_size,), device=device)
-        self._sample_idx_cache[key] = idx
-        return idx
-
     def _pairwise_from_projected(self, x_proj: torch.Tensor, y_proj: torch.Tensor) -> torch.Tensor:
         x_proj = x_proj.float()
         y_proj = y_proj.float()
-        mode = str(self.swd_distance_mode).lower()
-        use_cdf = mode in {"cdf", "softcdf", "cdf_soft"}
-        n_pts = int(x_proj.shape[-1])
-        sample_idx = self._select_sample_indices(n_pts, device=x_proj.device)
-        if sample_idx is not None:
-            x_proj = x_proj.index_select(2, sample_idx)
-            y_proj = y_proj.index_select(2, sample_idx)
-            n_pts = int(x_proj.shape[-1])
-
-        if not use_cdf:
-            x_sorted, _ = torch.sort(x_proj, dim=2)
-            y_sorted, _ = torch.sort(y_proj, dim=2)
-            return (x_sorted.unsqueeze(1) - y_sorted.unsqueeze(0)).abs().mean(dim=(2, 3))
-
-        bins = max(8, int(self.swd_cdf_num_bins))
-        tau = max(1e-5, float(self.swd_cdf_tau))
-        bin_chunk = max(1, int(self.swd_cdf_bin_chunk_size))
-        sample_chunk = max(32, int(self.swd_cdf_sample_chunk_size))
-        min_val = float(torch.minimum(x_proj.amin().detach(), y_proj.amin().detach()).item())
-        max_val = float(torch.maximum(x_proj.amax().detach(), y_proj.amax().detach()).item())
-        span = max(max_val - min_val, 1e-6)
-        dx = span / float(bins - 1)
-        grid = torch.linspace(min_val, max_val, bins, device=x_proj.device, dtype=torch.float32)
-        bx, n_proj, _ = x_proj.shape
-        by = int(y_proj.shape[0])
-        acc_x = torch.zeros((bx, n_proj, bins), device=x_proj.device, dtype=torch.float32)
-        acc_y = torch.zeros((by, n_proj, bins), device=y_proj.device, dtype=torch.float32)
-        for b0 in range(0, bins, bin_chunk):
-            b1 = min(bins, b0 + bin_chunk)
-            g = grid[b0:b1].view(1, 1, 1, b1 - b0)
-            bin_x = torch.zeros((bx, n_proj, b1 - b0), device=x_proj.device, dtype=torch.float32)
-            bin_y = torch.zeros((by, n_proj, b1 - b0), device=y_proj.device, dtype=torch.float32)
-            for n0 in range(0, n_pts, sample_chunk):
-                n1 = min(n_pts, n0 + sample_chunk)
-                bin_x = bin_x + torch.sigmoid((g - x_proj[:, :, n0:n1].unsqueeze(-1)) / tau).sum(dim=2)
-                bin_y = bin_y + torch.sigmoid((g - y_proj[:, :, n0:n1].unsqueeze(-1)) / tau).sum(dim=2)
-            acc_x[:, :, b0:b1] = bin_x
-            acc_y[:, :, b0:b1] = bin_y
-        cdf_x = acc_x / float(n_pts)
-        cdf_y = acc_y / float(n_pts)
-        return (cdf_x.unsqueeze(1) - cdf_y.unsqueeze(0)).abs().sum(dim=-1).mean(dim=-1) * dx
+        x_sorted, _ = torch.sort(x_proj, dim=2)
+        y_sorted, _ = torch.sort(y_proj, dim=2)
+        return (x_sorted.unsqueeze(1) - y_sorted.unsqueeze(0)).abs().mean(dim=(2, 3))
 
     def _aligned_from_projected(self, x_proj: torch.Tensor, y_proj: torch.Tensor) -> torch.Tensor:
         x_proj = x_proj.float()
         y_proj = y_proj.float()
         if x_proj.shape[0] != y_proj.shape[0]:
             raise ValueError(f"aligned SWD expects equal batch size, got {x_proj.shape[0]} vs {y_proj.shape[0]}")
-        mode = str(self.swd_distance_mode).lower()
-        use_cdf = mode in {"cdf", "softcdf", "cdf_soft"}
-        n_pts = int(x_proj.shape[-1])
-        sample_idx = self._select_sample_indices(n_pts, device=x_proj.device)
-        if sample_idx is not None:
-            x_proj = x_proj.index_select(2, sample_idx)
-            y_proj = y_proj.index_select(2, sample_idx)
-            n_pts = int(x_proj.shape[-1])
-
-        if not use_cdf:
-            x_sorted, _ = torch.sort(x_proj, dim=2)
-            y_sorted, _ = torch.sort(y_proj, dim=2)
-            return (x_sorted - y_sorted).abs().mean()
-
-        bins = max(8, int(self.swd_cdf_num_bins))
-        tau = max(1e-5, float(self.swd_cdf_tau))
-        bin_chunk = max(1, int(self.swd_cdf_bin_chunk_size))
-        sample_chunk = max(32, int(self.swd_cdf_sample_chunk_size))
-        min_val = float(torch.minimum(x_proj.amin().detach(), y_proj.amin().detach()).item())
-        max_val = float(torch.maximum(x_proj.amax().detach(), y_proj.amax().detach()).item())
-        span = max(max_val - min_val, 1e-6)
-        dx = span / float(bins - 1)
-        grid = torch.linspace(min_val, max_val, bins, device=x_proj.device, dtype=torch.float32)
-        bsz, n_proj, _ = x_proj.shape
-        acc_x = torch.zeros((bsz, n_proj, bins), device=x_proj.device, dtype=torch.float32)
-        acc_y = torch.zeros((bsz, n_proj, bins), device=y_proj.device, dtype=torch.float32)
-        for b0 in range(0, bins, bin_chunk):
-            b1 = min(bins, b0 + bin_chunk)
-            g = grid[b0:b1].view(1, 1, 1, b1 - b0)
-            bin_x = torch.zeros((bsz, n_proj, b1 - b0), device=x_proj.device, dtype=torch.float32)
-            bin_y = torch.zeros((bsz, n_proj, b1 - b0), device=y_proj.device, dtype=torch.float32)
-            for n0 in range(0, n_pts, sample_chunk):
-                n1 = min(n_pts, n0 + sample_chunk)
-                bin_x = bin_x + torch.sigmoid((g - x_proj[:, :, n0:n1].unsqueeze(-1)) / tau).sum(dim=2)
-                bin_y = bin_y + torch.sigmoid((g - y_proj[:, :, n0:n1].unsqueeze(-1)) / tau).sum(dim=2)
-            acc_x[:, :, b0:b1] = bin_x
-            acc_y[:, :, b0:b1] = bin_y
-        cdf_x = acc_x / float(n_pts)
-        cdf_y = acc_y / float(n_pts)
-        return (cdf_x - cdf_y).abs().sum(dim=-1).mean() * dx
+        x_sorted, _ = torch.sort(x_proj, dim=2)
+        y_sorted, _ = torch.sort(y_proj, dim=2)
+        return (x_sorted - y_sorted).abs().mean()
 
     def _branch_pairwise_cost(
         self,

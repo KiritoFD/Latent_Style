@@ -60,14 +60,17 @@ skip fusion / skip routing 决定干净内容结构可以绕过 body 的程度�
 
 ```text
 min_theta  lambda_swd * SWD_sem(z1, Z_style; K_style)
+         + lambda_swd * lambda_var * VarAlign_sem(z1, Z_style; K_style)
          + lambda_kin * E ||v_theta||^2
 ```
 
 其中：
 
 - `lambda_swd = terminal_swd_weight`；
+- `lambda_var = w_variance_penalty`；
 - `lambda_kin = w_kinetic`；
 - `SWD_sem` 是终点 SWD，当前代码允许用 semantic keys 对投影方向做语义引导；
+- `VarAlign_sem` 是 anti-grayness 方差对齐项，只在 `w_variance_penalty > 0` 时启用；
 - semantic SWD 必须作用在完整 batch 上，不能只作用在非 identity 子集上，否则目标会偏离参考实现。
 
 在最近清理后，以下分支不属于 active objective：
@@ -79,6 +82,8 @@ min_theta  lambda_swd * SWD_sem(z1, Z_style; K_style)
 - repulsive anti-collapse。
 
 这些分支要么已被实验否定，要么在参考配置中恒为 0，并且已经从当前 loss 实现中移除。
+
+`ot_cost.py` 的 transport cost 现在统一使用 `torch.sort` 版一维 Wasserstein。历史 CDF / soft-CDF 分支不再作为慢路径参与训练。
 
 ## 4. 两个主要控制量
 
@@ -101,6 +106,16 @@ lambda_swd * SWD(z1, Z_style)
 ```
 
 它是不可替代项。没有 terminal SWD，`clip_style` 明显下降。增加它可能提高风格，但收益会饱和，过高可能把模型推向失真方向。
+
+### 4.3 `w_variance_penalty`
+
+`w_variance_penalty` 是反发灰协议的核心旋钮。对语义投影后的预测和目标分布，除了排序后的 Wasserstein 均值距离，还显式对齐每条投影轴上的方差：
+
+```text
+VarAlign_sem = E |Var(<theta, z1>) - Var(<theta, z_style>)|
+```
+
+它试图修复的不是空间结构，而是风格投影里的对比度/笔触强度。风险是方差过强可能撕裂内容结构，所以它必须和 `w_kinetic` 联动搜索。
 
 ## 5. 残差幅度和推理增强
 

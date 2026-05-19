@@ -1,245 +1,213 @@
-# 提升 clip_style 的决策树实验方案
+# Sequential clip_style 决策树实验方案
 
 更新日期：`2026-05-19`。
 
-目标：在 `S-add__K-1_C-0_W-20_Col-0` 谱系上，提高 `clip_style_all`，同时不让 `content_lpips_all` 弱于参考太多。速度和文件规模是 bonus，质量和代码一致性优先。
+这版方案不再做“先跑完整网格，再事后筛选”。实验必须逐个推进：
+
+```text
+train one experiment for 8 epochs
+-> eval epoch 4/6/8 immediately
+-> record all metrics
+-> pick that experiment's best epoch
+-> update global history
+-> choose the next experiment from the decision tree
+```
+
+总预算先设为 `16` 组。每组固定 `batch_size=64`、`num_epochs=8`、`save_interval=1`。
+
+## 1. 当前锚点
+
+参考目录：
+
+```text
+S-add__K-1_C-0_W-20_Col-0/full_eval/epoch_0008/summary.json
+```
 
 参考指标：
 
 ```text
-baseline:
-  clip_style_all    = 0.7167235834
-  content_lpips_all = 0.4615265376
-  clip_content_all  = 0.7977139172
-
-current batch64 refactor:
-  epoch 8 clip_style_all    = 0.7128111729
-  epoch 8 content_lpips_all = 0.4613536712
+clip_style_all    = 0.7167235834
+content_lpips_all = 0.4615265376
+clip_content_all  = 0.7977139172
 ```
 
-## 1. 核心假设
-
-当前模型不是风格容量不足，而是 baseline 附近偏保守。`clip_style` 的主要控制量是：
+最近 batch=64 refactor 分支：
 
 ```text
-style_gain ~= terminal_swd_pressure
-           * delivered_residual_amplitude
-           / kinetic_pressure
+exp/refactor_clean_batch64_e10_fix/full_eval/epoch_0008/summary.json
+clip_style_all    = 0.7128111729
+content_lpips_all = 0.4613536712
 ```
 
-同时内容保持大致受：
+## 2. 新增理论钩子：Anti-Grayness Protocol
+
+核心病理假设：`clip_style` 上不去，不只是均值分布没贴近目标风格，也可能是投影后的方差偏低，导致输出发灰、对比度不足、笔触不够极端。
+
+因此 semantic SWD 从：
 
 ```text
-content_preservation ~= kinetic_pressure
-                     * skip/content retention
-                     * routing smoothness
+L_sem = E |sort(<theta, z_pred>) - sort(<theta, z_style>)|
 ```
 
-所以第一轮实验不加新 loss，不改数据，不改 evaluation，只在当前有效目标上做受控搜索。
-
-## 2. 决策树
+扩展为：
 
 ```text
-Start
-|
-|-- A. batch=64 的参考谱系是否可复现？
-|      |
-|      |-- 否：
-|      |     停止风格搜索，先修训练/eval/config 对齐。
-|      |
-|      |-- 是：
-|            进入运动预算搜索。
-|
-|-- B. 降低 kinetic 后 style 是否上升？
-|      |
-|      |-- 是，且 LPIPS 没坏：
-|      |     继续提高 terminal_swd_weight 或 residual_gain。
-|      |
-|      |-- 是，但 LPIPS 明显坏：
-|      |     回退 kinetic，保留较温和 SWD；必要时测试 Sinkhorn 修复。
-|      |
-|      |-- 否：
-|            说明不是 motion budget 主瓶颈，转向 endpoint pressure。
-|
-|-- C. 提高 terminal_swd_weight 后 style 是否上升？
-|      |
-|      |-- 是，且 LPIPS 稳：
-|      |     锁定该区域，补评中间 epoch。
-|      |
-|      |-- 是，但 LPIPS 坏：
-|      |     降低 residual_gain 或提高 kinetic。
-|      |
-|      |-- 否：
-|            SWD 已饱和，转向 residual_gain / routing 分支。
-|
-|-- D. residual_gain 提高后是否带来更好 Pareto？
-|      |
-|      |-- 是：
-|      |     记录为推理/训练幅度候选。
-|      |
-|      |-- 否：
-|            不继续放大残差，避免进入 overshoot。
-|
-|-- E. 如果 style 高但 LPIPS 滑坡：
-|      |
-|      |-- 测试 Sinkhorn / partial Sinkhorn。
-|      |-- 若 style 被压回 baseline 以下，放弃该修复路线。
-|
-|-- F. 如果质量达标：
-       |
-       |-- 测试 projection=32 速度分支。
-       |-- 只有质量基本不掉，才把它作为最终候选。
+L_sem_var = L_sem
+          + w_variance_penalty
+            * E |Var(<theta, z_pred>) - Var(<theta, z_style>)|
 ```
 
-## 3. 实验预算
+这个项只在 `w_variance_penalty > 0` 时启用。它不是恢复旧的 color / low-frequency / NCE 分支，而是在当前有效的 semantic SWD 内部补上对比度约束。
 
-用户允许 `36-48` 组量级。统一训练 `8 epoch`，batch 固定为 `64`。因为最佳 epoch 可能出现在中间，evaluation 分两层：
+## 3. 固定实验常数
 
-### 第一层：所有实验必评
-
-评估：
+根节点和后续分支默认使用：
 
 ```text
-epoch_0004
-epoch_0006
-epoch_0008
-```
-
-理由：
-
-- epoch 4 能捕捉早期 style 峰值；
-- epoch 6 是中期折中；
-- epoch 8 对齐参考配置；
-- 对 48 组来说是 144 次 eval，仍比 48 组全 epoch eval 更可控。
-
-### 第二层：Pareto 前列补评
-
-对第一层里 Pareto 前 `12` 个 run，再补评：
-
-```text
-epoch_0005
-epoch_0007
-```
-
-理由：如果最佳点卡在 5/7，补评会抓到；如果某组在 4/6/8 都不行，就不浪费补评预算。
-
-## 4. 36-48 组矩阵
-
-实验矩阵分四个 block，总计默认 `48` 组。
-
-### Block A：主运动预算 x 端点压力
-
-```text
-w_kinetic in [1.00, 0.85, 0.70, 0.55, 0.40]
-terminal_swd_weight in [20, 24, 28, 32]
-```
-
-共 `20` 组。
-
-验证：
-
-- 如果 kinetic 降低带来 style 增益且 LPIPS 稳，motion budget 假设成立；
-- 如果 terminal SWD 提高带来 style 增益，endpoint pressure 假设成立；
-- 如果二者都不动，说明主要瓶颈不在 active objective 的权重比例。
-
-### Block B：残差幅度小范围
-
-在较可能的区域上测试：
-
-```text
-w_kinetic in [0.85, 0.70, 0.55]
-terminal_swd_weight in [20, 24, 28]
-residual_gain in [1.10, 1.20]
-```
-
-共 `18` 组。
-
-验证：
-
-- 如果 `1.10/1.20` 提升 style 且 LPIPS 可控，说明 baseline 交付幅度偏保守；
-- 如果 LPIPS 恶化快，说明应回到权重比而不是继续放大 residual。
-
-### Block C：routing 修复
-
-只在高风格风险区测试：
-
-```text
-(w_kinetic, terminal_swd_weight) in [(0.70, 28), (0.55, 28), (0.55, 32), (0.40, 24)]
-semantic_attn_routing_mode = sinkhorn
-semantic_sinkhorn_iters in [2, 3]
-```
-
-共 `8` 组。
-
-验证：
-
-- 如果 Sinkhorn 保住 LPIPS 且 style 不掉太多，它是修复器；
-- 如果 style 被明显压低，则不作为主路线。
-
-### Block D：速度分支
-
-在两组主候选上测试：
-
-```text
-semantic_swd_num_projections = 32
 swd_num_projections = 32
+semantic_swd_num_projections = 32
+semantic_attn_temperature = 0.04
+semantic_attn_routing_mode = softmax
+retired heuristic losses = absent / ignored
 ```
 
-共 `2` 组。
+`ot_cost.py` 中的 CDF soft-SWD 慢路径已经移除，即使旧 config 写着 `swd_distance_mode=cdf`，实际也走 `torch.sort` 版一维 Wasserstein。
 
-验证：只在质量接近时保留；否则宁可保持 64 projection。
+## 4. 决策规则
 
-## 5. 判定规则
-
-脚本使用以下分层判定：
+每个实验评估 `epoch_0004`、`epoch_0006`、`epoch_0008`。该实验的 best epoch 由以下 score 选出：
 
 ```text
+score = 100 * (clip_style_all - baseline_style)
+      - 25  * max(0, content_lpips_all - baseline_lpips)
+      - time_penalty
+      - collapse_penalty
+```
+
+标签：
+
+```text
+win:
+  clip_style_all >= 0.72
+  content_lpips_all < 0.45
+
+high_style_borderline:
+  clip_style_all >= 0.72
+  content_lpips_all <= 0.46
+
 target:
   clip_style_all >= baseline_style
-  content_lpips_all <= baseline_lpips + 0.010
+  content_lpips_all <= baseline_lpips + 0.01
 
 promising:
-  clip_style_all >= current_batch64_style + 0.002
-  content_lpips_all <= baseline_lpips + 0.020
+  clip_style_all >= 0.718
+  content_lpips_all <= 0.48
 
 collapse:
-  content_lpips_all >= 0.530
-  or clip_content_all <= 0.740
+  content_lpips_all >= 0.53
+  or clip_content_all <= 0.74
 ```
 
-最终不是只选最高 style，而是先过滤 collapse，再按：
+## 5. 16 组自适应树
+
+### Stage 0：根节点确认
+
+第一组：
 
 ```text
-score = 100 * (clip_style - baseline_style)
-      - 25  * max(0, content_lpips - baseline_lpips)
-      - 5   * max(0, epoch_time_sec - 70) / 70
+s00_root_sort32_temp004
+w_kinetic = 1.0
+terminal_swd_weight = 20
+w_variance_penalty = 0
+residual_gain = 1.0
 ```
 
-排序。
+目的：确认 fast sort SWD + projection=32 + temp=0.04 后，谱系没有跑偏。
 
-## 6. 执行脚本
+### Stage 1：方差突破
 
-大脚本：
+先跑：
 
 ```text
-SchrodingerBridge/run_clip_style_decision_tree.py
+s01_var1_res115_kin125_swd25
+w_variance_penalty = 1.0
+residual_gain = 1.15
+w_kinetic = 1.25
+terminal_swd_weight = 25
 ```
 
-常用命令：
+随后根据结果选择：
 
-```powershell
-cd G:\GitHub\Latent_Style\SchrodingerBridge
-python run_clip_style_decision_tree.py --dry-run
-python run_clip_style_decision_tree.py --train --eval-main --eval-topk
+- style 未到 `0.72`：继续 `w_variance_penalty = 3 / 5 / 7.5`；
+- style 到 `0.72` 且 LPIPS `< 0.45`：进入 confirmation；
+- style 到 `0.72` 但 LPIPS `> 0.46`：进入 kinetic compensation。
+
+### Stage 2：动能装甲补偿
+
+如果方差惩罚拿到 style 但撕裂结构，固定当前最好的 variance 强度，测试：
+
+```text
+w_kinetic = 1.5,  terminal_swd_weight = 35
+w_kinetic = 1.75, terminal_swd_weight = 40
+w_kinetic = 2.0,  terminal_swd_weight = 40
 ```
 
-脚本职责：
+目的：用更大的运动惩罚把 LPIPS 拉回 `0.45` 附近，同时保留 semantic SWD 的高方差风格。
 
-- 生成 48 组 config；
-- 每组训练 8 epoch；
-- 跳过已有 checkpoint 和已有 summary，支持断点续跑；
-- 第一层评估 epoch 4/6/8；
-- 按 Pareto 选前 12，补评 epoch 5/7；
-- 汇总 CSV/JSON；
-- 给每条结果标注 `target/promising/collapse/weak`；
-- 输出下一轮应该增加/回退的方向。
+### Stage 3：端点压力 / 残差幅度
+
+如果 style 长期停在 `0.718` 以下，说明方差项不够，需要继续推 endpoint pressure 或 delivered amplitude：
+
+```text
+residual_gain = 1.20
+terminal_swd_weight = 30 / 35
+w_kinetic = 1.0
+w_variance_penalty = 5 / 7.5
+```
+
+### Stage 4：温度修复
+
+如果前面仍不能平衡，脚本会用固定温度作为退火代理：
+
+```text
+semantic_attn_temperature = 0.06
+semantic_attn_temperature = 0.03
+```
+
+真正的 epoch-wise annealing 可以后续再进 `trainer.py`，但第一轮 16 组先用固定温度判断 routing 温度是否值得继续投资。
+
+### Stage 5：胜利确认
+
+如果出现 `win`：
+
+```text
+seed = 43
+projection = 64
+```
+
+至少做两个确认实验，避免把一次随机波动误判为可发表结果。
+
+## 6. 执行入口
+
+启动：
+
+```bat
+G:\GitHub\Latent_Style\SchrodingerBridge\run_clip_style_decision_tree.bat
+```
+
+调试：
+
+```bat
+G:\GitHub\Latent_Style\SchrodingerBridge\run_clip_style_decision_tree.bat --dry-run --max-experiments 3
+```
+
+输出：
+
+```text
+exp/decision_tree_clip_style/decision_tree_results.csv
+exp/decision_tree_clip_style/decision_tree_best.csv
+exp/decision_tree_clip_style/decision_tree_ledger.jsonl
+configs/decision_tree_clip_style/*.json
+```
+
+`decision_tree_results.csv` 记录每个实验的所有 eval epoch；`decision_tree_best.csv` 记录每个实验的 best epoch；`decision_tree_ledger.jsonl` 按实验顺序记录候选配置、best epoch 和当时的 global best。

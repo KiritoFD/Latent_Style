@@ -42,6 +42,7 @@ class OTFlowMatchingObjective:
 
         self.bridge_sigma = max(0.0, float(bridge_cfg.bridge_sigma))
         self.terminal_swd_weight = max(0.0, float(bridge_cfg.terminal_swd_weight))
+        self.w_variance_penalty = max(0.0, float(bridge_cfg.w_variance_penalty))
         self.terminal_num_steps = max(1, int(bridge_cfg.terminal_num_steps))
         self.terminal_swd_on_identity = bool(bridge_cfg.terminal_swd_on_identity)
         self.semantic_swd_num_projections = max(1, int(bridge_cfg.semantic_swd_num_projections))
@@ -237,7 +238,13 @@ class OTFlowMatchingObjective:
         proj_target = torch.bmm(theta.transpose(1, 2), target_flat)
         proj_pred = torch.nan_to_num(proj_pred, nan=0.0, posinf=self.endpoint_clamp, neginf=-self.endpoint_clamp)
         proj_target = torch.nan_to_num(proj_target, nan=0.0, posinf=self.endpoint_clamp, neginf=-self.endpoint_clamp)
-        return (torch.sort(proj_pred, dim=-1).values - torch.sort(proj_target, dim=-1).values).abs().mean()
+        mean_loss = (torch.sort(proj_pred, dim=-1).values - torch.sort(proj_target, dim=-1).values).abs().mean()
+        if self.w_variance_penalty <= 0.0:
+            return mean_loss
+        pred_var = proj_pred.var(dim=-1, unbiased=False)
+        target_var = proj_target.var(dim=-1, unbiased=False)
+        var_loss = (pred_var - target_var).abs().mean()
+        return mean_loss + self.w_variance_penalty * var_loss
 
     def _calc_terminal_swd_loss(
         self,
