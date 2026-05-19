@@ -254,3 +254,87 @@ exp/decision_tree_clip_style/A_kin*/epoch_0008.pt
 ```
 
 再次运行上面的导入命令即可自动 eval、汇总并让 sequential 决策树从这些历史结果之后继续。
+
+## 8. DINO 结构复评：2026-05-19
+
+用户观察新图后指出：内容物体几乎没变，LPIPS 很低并不代表风格转移成功。于是停止 sequential runner，改用 DINOv2 penultimate-patch self-similarity distance 复评结构变化。
+
+指标定义：
+
+```text
+dino_structure = MSE(SSM_DINO(gen), SSM_DINO(src))
+```
+
+方向：越低代表生成图和源内容的 DINO patch 自相似结构越接近，也就是物体/布局越没动。
+
+输出文件：
+
+```text
+exp/decision_tree_clip_style/dino_structure_compare_with_samst.csv
+```
+
+同口径 SaMST 对照使用：
+
+```text
+Related_Works/baseline_pipeline/results/samst/protocol_a_800
+```
+
+### 8.1 结果表
+
+| Run | DINO-structure ↓ | CLIP-style ↑ | CLIP-content ↑ | LPIPS ↓ | 结论 |
+|---|---:|---:|---:|---:|---|
+| `s21_temp_var0p0_temp0p03_e0008` | 0.01729 | 0.70762 | 0.80483 | 0.44756 | 结构最稳，但风格不足 |
+| `s00_root_sort32_temp004_e0006` | 0.01833 | 0.71163 | 0.79793 | 0.45951 | 根节点偏保守 |
+| `s30_confirm_seed43_s00_root_sort32_temp004_e0008` | 0.01862 | 0.71296 | 0.80314 | 0.45660 | seed 确认仍偏保守 |
+| `s20_temp_var0p0_temp0p06_e0008` | 0.01965 | 0.71090 | 0.78749 | 0.46301 | 温度变软没有带来风格 |
+| `SaMST_protocol_a_800` | 0.02012 | 0.72531 | 0.77519 | 0.53904 | 风格强，但结构/LPIPS 代价明显 |
+| `s21_temp_var1p0_temp0p03_e0008` | 0.03244 | 0.71877 | 0.69930 | 0.57038 | 方差路线开始结构崩 |
+| `s12_comp_var1p0_kin2p0_swd40_e0008` | 0.03311 | 0.72431 | 0.70214 | 0.57060 | 风格接近 SaMST，但结构崩 |
+| `s20_temp_var1p0_temp0p06_e0008` | 0.03379 | 0.72655 | 0.70136 | 0.57538 | raw style 最高之一，但不可用 |
+| `s01_var1p0_res115_kin125_swd25_e0008` | 0.03497 | 0.72465 | 0.69208 | 0.57797 | anti-grayness 直接撕裂结构 |
+| `s10_comp_var1p0_kin1p5_swd35_e0008` | 0.03567 | 0.72416 | 0.68129 | 0.58938 | kinetic compensation 没救回结构 |
+| `s11_comp_var1p0_kin1p75_swd40_e0008` | 0.03587 | 0.72642 | 0.68838 | 0.58545 | 更强 kinetic 仍不可用 |
+
+### 8.2 结论
+
+DINO 复评支持用户的视觉判断：
+
+1. 低 LPIPS / 低 DINO 结构距离的模型基本没有充分改变内容物体的视觉结构，因此风格也偏低。
+2. `w_variance_penalty=1` 可以把 CLIP-style 推到 `0.724+`，但 DINO-structure 从约 `0.018` 跳到 `0.033-0.036`，LPIPS 也到 `0.57+`，说明它不是“反发灰成功”，而是把结构撕裂了。
+3. SaMST 在这组 protocol 下是 `style=0.7253, dino_structure=0.0201, LPIPS=0.5390`。我们的保守分支结构更稳，但 style 明显不足；我们的 variance 分支 style 接近/超过 SaMST，但结构比 SaMST 更坏。
+
+### 8.3 决策树更新
+
+立即停止：
+
+```text
+w_variance_penalty >= 1 的主线搜索
+继续 kinetic compensation 去救 variance 分支
+把低 LPIPS 当成成功信号
+```
+
+下一轮目标改为：
+
+```text
+在 dino_structure <= 0.0205 附近，把 CLIP-style 从 0.711-0.713 提到至少 0.718
+```
+
+新的 guard：
+
+```text
+usable:
+  dino_structure <= 0.0205
+  content_lpips <= 0.48
+  clip_content >= 0.775
+
+style frontier:
+  clip_style >= 0.718
+  且满足 usable
+
+collapse:
+  dino_structure >= 0.030
+  or content_lpips >= 0.53
+  or clip_content <= 0.74
+```
+
+下一步不应继续加 terminal/variance 暴力项，而应回到“风格注入机制”本身：例如 style spatial prior / cross-attention 温度调度 / residual amplitude 的更细粒度推理 sweep，并且每一步必须用 DINO guard。
