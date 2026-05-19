@@ -235,7 +235,7 @@ class TrainingConfig:
     use_gradient_checkpointing: bool = False
     fused_adamw: bool = True
     resume_checkpoint: str = ""
-    full_eval_batch_size: int = 20
+    full_eval_batch_size: int = 6
     full_eval_num_steps: int | None = None
     full_eval_step_size: float | None = None
     full_eval_style_strength: float | None = None
