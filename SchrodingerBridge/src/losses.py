@@ -57,11 +57,21 @@ class OTFlowMatchingObjective:
         self.eps = float(bridge_cfg.eps)
 
         self.coupling_solver = str(bridge_cfg.coupling_solver).strip().lower()
+        self.coupling_feature_mode = str(bridge_cfg.coupling_feature_mode).strip().lower()
+        self.coupling_lowfreq_kernel = max(1, int(bridge_cfg.coupling_lowfreq_kernel))
+        if self.coupling_lowfreq_kernel % 2 == 0:
+            self.coupling_lowfreq_kernel += 1
+        self.coupling_edge_weight = max(0.0, float(bridge_cfg.coupling_edge_weight))
         self.sinkhorn_epsilon = max(float(bridge_cfg.sinkhorn_epsilon), 1e-5)
         self.sinkhorn_iters = max(int(bridge_cfg.sinkhorn_iters), 1)
         self.sinkhorn_stabilize = bool(bridge_cfg.sinkhorn_stabilize)
 
         self.bridge_sigma = max(0.0, float(bridge_cfg.bridge_sigma))
+        self.bridge_noise_mode = str(bridge_cfg.bridge_noise_mode).strip().lower()
+        self.bridge_style_noise_kernel = max(1, int(bridge_cfg.bridge_style_noise_kernel))
+        if self.bridge_style_noise_kernel % 2 == 0:
+            self.bridge_style_noise_kernel += 1
+        self.bridge_style_noise_flat_gamma = max(0.0, float(bridge_cfg.bridge_style_noise_flat_gamma))
         self.terminal_swd_weight = max(0.0, float(bridge_cfg.terminal_swd_weight))
         self.w_variance_penalty = max(0.0, float(bridge_cfg.w_variance_penalty))
         self.w_content_anchor = max(0.0, float(bridge_cfg.w_content_anchor))
@@ -94,6 +104,12 @@ class OTFlowMatchingObjective:
         self.w_stokes_viscous = max(0.0, float(bridge_cfg.w_stokes_viscous))
         self.w_phase_separation = max(0.0, float(bridge_cfg.w_phase_separation))
         self.phase_gradient_weight = max(0.0, float(bridge_cfg.phase_gradient_weight))
+        self.w_fourier_phase_lock = max(0.0, float(bridge_cfg.w_fourier_phase_lock))
+        self.fourier_phase_lock_highpass = bool(bridge_cfg.fourier_phase_lock_highpass)
+        self.w_head_color_tv = max(0.0, float(bridge_cfg.w_head_color_tv))
+        self.w_head_color_energy = max(0.0, float(bridge_cfg.w_head_color_energy))
+        self.w_head_amp_energy = max(0.0, float(bridge_cfg.w_head_amp_energy))
+        self.w_warp_curl_reward = max(0.0, float(bridge_cfg.w_warp_curl_reward))
         self.kantorovich_potential = (
             KantorovichPotential(int(model_cfg.latent_channels), int(bridge_cfg.kantorovich_channels))
             if self.w_kantorovich > 0.0
@@ -106,6 +122,15 @@ class OTFlowMatchingObjective:
         self.terminal_num_steps = max(1, int(bridge_cfg.terminal_num_steps))
         self.terminal_swd_on_identity = bool(bridge_cfg.terminal_swd_on_identity)
         self.semantic_swd_num_projections = max(1, int(bridge_cfg.semantic_swd_num_projections))
+        self.terminal_swd_mode = str(bridge_cfg.terminal_swd_mode).strip().lower()
+        if self.terminal_swd_mode not in {"standard", "spectral_orthogonal", "semantic_quotient"}:
+            self.terminal_swd_mode = "standard"
+        self.spectral_swd_low_weight = max(0.0, float(bridge_cfg.spectral_swd_low_weight))
+        self.spectral_swd_high_weight = max(0.0, float(bridge_cfg.spectral_swd_high_weight))
+        self.spectral_swd_low_kernel = max(1, int(bridge_cfg.spectral_swd_low_kernel))
+        if self.spectral_swd_low_kernel % 2 == 0:
+            self.spectral_swd_low_kernel += 1
+        self.semantic_quotient_bins = max(2, int(bridge_cfg.semantic_quotient_bins))
 
         self.w_kinetic = max(0.0, float(bridge_cfg.w_kinetic))
         self.w_flow = max(0.0, float(bridge_cfg.w_flow))
@@ -169,12 +194,60 @@ class OTFlowMatchingObjective:
         entropy = -(row_probs * row_probs.clamp_min(1e-12).log()).sum(dim=1).mean()
         return matched, entropy
 
+    def _coupling_edge_map(self, x: torch.Tensor) -> torch.Tensor:
+        gx = x[..., :, 1:] - x[..., :, :-1]
+        gy = x[..., 1:, :] - x[..., :-1, :]
+        gx = F.pad(gx, (0, 1, 0, 0))
+        gy = F.pad(gy, (0, 0, 0, 1))
+        return torch.sqrt(gx.square().mean(dim=1, keepdim=True) + gy.square().mean(dim=1, keepdim=True) + 1e-8)
+
+    def _kernel_lowpass(self, x: torch.Tensor, kernel_size: int) -> torch.Tensor:
+        kernel = max(1, int(kernel_size))
+        if kernel <= 1:
+            return x.float()
+        if kernel % 2 == 0:
+            kernel += 1
+        pad = kernel // 2
+        return F.avg_pool2d(x.float(), kernel_size=kernel, stride=1, padding=pad)
+
+    def _coupling_feature_tensor(self, x: torch.Tensor) -> torch.Tensor:
+        mode = self.coupling_feature_mode
+        if mode in {"latent", "raw", ""}:
+            return x
+        low = self._kernel_lowpass(x, self.coupling_lowfreq_kernel)
+        if mode == "lowfreq":
+            return low
+        if mode in {"lowfreq_edge", "edge_lowfreq"}:
+            edge = self._coupling_edge_map(low)
+            if self.coupling_edge_weight > 0.0:
+                edge = edge * self.coupling_edge_weight
+            return torch.cat([low, edge], dim=1)
+        return x
+
+    def _style_bridge_noise(self, content: torch.Tensor, matched_target: torch.Tensor) -> torch.Tensor:
+        mode = self.bridge_noise_mode
+        if mode in {"gaussian", "", "randn"}:
+            return torch.randn_like(content)
+
+        low = self._kernel_lowpass(matched_target, self.bridge_style_noise_kernel)
+        noise = matched_target.float() - low
+        if mode in {"style_highfreq_flat", "style_hf_flat", "flat_style_highfreq"} and self.bridge_style_noise_flat_gamma > 0.0:
+            edge = self._coupling_edge_map(self._kernel_lowpass(content, self.bridge_style_noise_kernel))
+            flat_mask = torch.exp(-self.bridge_style_noise_flat_gamma * edge)
+            noise = noise * flat_mask
+
+        noise_std = noise.flatten(1).std(dim=1, unbiased=False, keepdim=True).clamp_min(1e-6).view(-1, 1, 1, 1)
+        return noise / noise_std
+
     def _solve_group_coupling(
         self,
         content_group: torch.Tensor,
         target_group: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        cost = self.transport_cost.pairwise_cost(content_group, target_group)
+        cost = self.transport_cost.pairwise_cost(
+            self._coupling_feature_tensor(content_group),
+            self._coupling_feature_tensor(target_group),
+        )
         if self.coupling_solver == "hungarian":
             row_ind, col_ind = linear_sum_assignment(cost.detach().cpu().numpy())
             row_t = torch.from_numpy(row_ind).to(device=cost.device, dtype=torch.long)
@@ -255,7 +328,7 @@ class OTFlowMatchingObjective:
 
         bridge_var = (t * (1.0 - t)).clamp_min(self.eps)
         bridge_std = torch.sqrt(bridge_var).view(-1, 1, 1, 1)
-        noise = torch.randn_like(content)
+        noise = self._style_bridge_noise(content, matched_target)
         x_t = base + (self.bridge_sigma * bridge_std) * noise
         d_std_dt = ((1.0 - 2.0 * t) / (2.0 * torch.sqrt(bridge_var))).view(-1, 1, 1, 1)
         return x_t, velocity + (self.bridge_sigma * d_std_dt) * noise
@@ -324,6 +397,54 @@ class OTFlowMatchingObjective:
         dy = state[..., 1:, :] - state[..., :-1, :]
         grad = 0.5 * (dx.square().mean() + dy.square().mean())
         return (double_well + self.phase_gradient_weight * grad) * self.w_phase_separation
+
+    def _fourier_phase_lock_loss(self, pred_endpoint: torch.Tensor, content: torch.Tensor) -> torch.Tensor:
+        if self.w_fourier_phase_lock <= 0.0:
+            return pred_endpoint.new_tensor(0.0, dtype=torch.float32)
+        pred = pred_endpoint.float()
+        base = content.float().detach()
+        if self.fourier_phase_lock_highpass:
+            pred = pred - self._lowpass(pred)
+            base = base - self._lowpass(base)
+        pred_fft = torch.fft.rfft2(pred, norm="ortho")
+        base_fft = torch.fft.rfft2(base, norm="ortho")
+        phase_delta = torch.angle(pred_fft * torch.conj(base_fft))
+        return (1.0 - torch.cos(phase_delta)).mean() * self.w_fourier_phase_lock
+
+    def _raw_head_tax_loss(self, model: TimeConditionedLANCETBridge, content: torch.Tensor) -> torch.Tensor:
+        raw = getattr(model, "last_raw_diffeomorphic", None)
+        if raw is None:
+            return content.new_tensor(0.0, dtype=torch.float32)
+        channels = int(content.shape[1])
+        raw = raw.float()
+        color = raw[:, :channels]
+        total = content.new_tensor(0.0, dtype=torch.float32)
+        if self.w_head_color_energy > 0.0:
+            total = total + color.square().mean() * self.w_head_color_energy
+        if self.w_head_color_tv > 0.0:
+            dx = color[..., :, 1:] - color[..., :, :-1]
+            dy = color[..., 1:, :] - color[..., :-1, :]
+            total = total + (dx.abs().mean() + dy.abs().mean()) * self.w_head_color_tv
+        if self.w_head_amp_energy > 0.0 and raw.shape[1] >= channels + 3:
+            mode = str(getattr(model, "diffeomorphic_head_mode", "standard"))
+            if mode == "factorized_amp":
+                amp = raw[:, channels : channels + 1]
+                total = total + amp.square().mean() * self.w_head_amp_energy
+        if self.w_warp_curl_reward > 0.0 and raw.shape[1] >= channels + 2:
+            mode = str(getattr(model, "diffeomorphic_head_mode", "standard"))
+            if mode == "factorized_amp":
+                warp = raw[:, channels + 1 : channels + 3]
+            else:
+                warp = raw[:, channels : channels + 2]
+            if warp.shape[1] == 2:
+                dv_dx = warp[:, 1:2, :, 1:] - warp[:, 1:2, :, :-1]
+                du_dy = warp[:, 0:1, 1:, :] - warp[:, 0:1, :-1, :]
+                dv_dx = F.pad(dv_dx, (0, 1, 0, 0))
+                du_dy = F.pad(du_dy, (0, 0, 0, 1))
+                curl = dv_dx - du_dy
+                # Negative term is intentional: it subsidizes coherent rotational flow.
+                total = total - curl.abs().mean() * self.w_warp_curl_reward
+        return total
 
     def _gradient_magnitude(self, x: torch.Tensor) -> torch.Tensor:
         channels = int(x.shape[1])
@@ -554,6 +675,7 @@ class OTFlowMatchingObjective:
         source_style_id: torch.Tensor | None,
         target_style_id: torch.Tensor,
         semantic_k: torch.Tensor | None = None,
+        content: torch.Tensor | None = None,
     ) -> torch.Tensor | None:
         if self.terminal_swd_weight <= 0.0:
             return None
@@ -564,7 +686,55 @@ class OTFlowMatchingObjective:
             return None
         pred_active = pred_endpoint.index_select(0, active)
         target_active = target_style.index_select(0, active)
+        if self.terminal_swd_mode == "spectral_orthogonal":
+            return self._spectral_orthogonal_swd(pred_active, target_active)
+        if self.terminal_swd_mode == "semantic_quotient" and content is not None:
+            content_active = content.index_select(0, active)
+            return self._semantic_quotient_swd(pred_active, target_active, content_active)
         return self.transport_cost.aligned_cost(pred_active, target_active)
+
+    def _spectral_orthogonal_swd(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        kernel = self.spectral_swd_low_kernel
+        pred_low = F.avg_pool2d(pred.float(), kernel_size=kernel, stride=1, padding=kernel // 2)
+        target_low = F.avg_pool2d(target.float(), kernel_size=kernel, stride=1, padding=kernel // 2)
+        pred_high = pred.float() - pred_low
+        target_high = target.float() - target_low
+        total = pred.new_tensor(0.0, dtype=torch.float32)
+        weight = self.spectral_swd_low_weight + self.spectral_swd_high_weight
+        if self.spectral_swd_low_weight > 0.0:
+            total = total + self.transport_cost.aligned_cost(pred_low, target_low) * self.spectral_swd_low_weight
+        if self.spectral_swd_high_weight > 0.0:
+            total = total + self.transport_cost.aligned_cost(pred_high, target_high) * self.spectral_swd_high_weight
+        return total / max(weight, 1e-8)
+
+    def _semantic_quotient_swd(self, pred: torch.Tensor, target: torch.Tensor, guide: torch.Tensor) -> torch.Tensor:
+        bsz, channels, h_dim, w_dim = pred.shape
+        guide_low = F.avg_pool2d(guide.float().mean(dim=1, keepdim=True), kernel_size=5, stride=1, padding=2)
+        flat_guide = guide_low.view(bsz, -1)
+        pred_flat = pred.float().view(bsz, channels, -1)
+        target_flat = target.float().view(bsz, channels, -1)
+        losses: list[torch.Tensor] = []
+        bins = self.semantic_quotient_bins
+        for idx in range(bins):
+            lo = torch.quantile(flat_guide.detach(), idx / bins, dim=1, keepdim=True)
+            hi = torch.quantile(flat_guide.detach(), (idx + 1) / bins, dim=1, keepdim=True)
+            if idx == bins - 1:
+                mask = (flat_guide >= lo) & (flat_guide <= hi)
+            else:
+                mask = (flat_guide >= lo) & (flat_guide < hi)
+            if not bool(mask.any().item()):
+                continue
+            masked_pred = pred_flat * mask.unsqueeze(1).to(dtype=pred_flat.dtype)
+            masked_target = target_flat * mask.unsqueeze(1).to(dtype=target_flat.dtype)
+            losses.append(
+                self.transport_cost.aligned_cost(
+                    masked_pred.view(bsz, channels, h_dim, w_dim),
+                    masked_target.view(bsz, channels, h_dim, w_dim),
+                )
+            )
+        if not losses:
+            return self.transport_cost.aligned_cost(pred, target)
+        return torch.stack(losses).mean()
 
     def _terminal_swd(
         self,
@@ -637,6 +807,8 @@ class OTFlowMatchingObjective:
         anisotropic_kinetic = self._anisotropic_kinetic_loss(pred_velocity, content)
         stokes_viscous = self._stokes_viscous_loss(pred_velocity)
         phase_separation = self._phase_separation_loss(pred_endpoint)
+        fourier_phase_lock = self._fourier_phase_lock_loss(pred_endpoint, content)
+        head_tax = self._raw_head_tax_loss(model, content)
         total_loss = total_loss + kinetic_loss
 
         content_anchor = self._content_anchor_loss(pred_endpoint, content)
@@ -666,6 +838,8 @@ class OTFlowMatchingObjective:
             + anisotropic_kinetic
             + stokes_viscous
             + phase_separation
+            + fourier_phase_lock
+            + head_tax
         )
 
         terminal_swd = self._calc_terminal_swd_loss(
@@ -674,6 +848,7 @@ class OTFlowMatchingObjective:
             source_style_id,
             target_style_id,
             semantic_k=semantic_k,
+            content=content,
         )
         terminal_loss = content.new_tensor(0.0, dtype=torch.float32)
         if terminal_swd is not None:
@@ -687,6 +862,8 @@ class OTFlowMatchingObjective:
             "anisotropic_kinetic": anisotropic_kinetic.detach(),
             "stokes_viscous": stokes_viscous.detach(),
             "phase_separation": phase_separation.detach(),
+            "fourier_phase_lock": fourier_phase_lock.detach(),
+            "head_tax": head_tax.detach(),
             "terminal_swd": terminal_loss.detach(),
             "content_anchor": content_anchor.detach(),
             "edge_anchor": edge_anchor.detach(),
@@ -720,6 +897,8 @@ class OTFlowMatchingObjective:
             "anisotropic_kinetic": anisotropic_kinetic,
             "stokes_viscous": stokes_viscous,
             "phase_separation": phase_separation,
+            "fourier_phase_lock": fourier_phase_lock,
+            "head_tax": head_tax,
             "terminal_swd": terminal_loss,
             "content_anchor": content_anchor,
             "edge_anchor": edge_anchor,
@@ -815,7 +994,9 @@ class OTFlowMatchingObjective:
         anisotropic_kinetic = self._anisotropic_kinetic_loss(pred_velocity, content)
         stokes_viscous = self._stokes_viscous_loss(pred_velocity)
         phase_separation = self._phase_separation_loss(x_t + pred_velocity)
-        total_loss = total_loss + anisotropic_kinetic + stokes_viscous + phase_separation
+        fourier_phase_lock = self._fourier_phase_lock_loss(x_t + pred_velocity, content)
+        head_tax = self._raw_head_tax_loss(model, content)
+        total_loss = total_loss + anisotropic_kinetic + stokes_viscous + phase_separation + fourier_phase_lock + head_tax
 
         curvature_loss = content.new_tensor(0.0, dtype=torch.float32)
         if self.w_curvature > 0.0:
@@ -842,6 +1023,8 @@ class OTFlowMatchingObjective:
             "anisotropic_kinetic": anisotropic_kinetic.detach(),
             "stokes_viscous": stokes_viscous.detach(),
             "phase_separation": phase_separation.detach(),
+            "fourier_phase_lock": fourier_phase_lock.detach(),
+            "head_tax": head_tax.detach(),
             "curvature": (curvature_loss * self.w_curvature).detach(),
             "ot_cost": ot_cost.detach(),
             "plan_entropy": plan_entropy.detach(),

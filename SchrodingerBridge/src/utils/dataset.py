@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
 from typing import Dict, Sequence
@@ -51,6 +52,10 @@ class AdaCUTLatentDataset(Dataset):
         virtual_length_multiplier: float = 1.0,
         content_style_sampling_weights: Sequence[float] | None = None,
         target_style_sampling_weights: Sequence[float] | None = None,
+        pairing_cache_path: str = "",
+        pairing_cache_topk: int = 4,
+        pairing_cache_sample_mode: str = "uniform_topk",
+        pairing_cache_cross_only: bool = True,
         device: str = "cpu",
     ) -> None:
         self.data_root = Path(data_root)
@@ -65,6 +70,9 @@ class AdaCUTLatentDataset(Dataset):
         self.preload_to_gpu = False
         self.device = device
         self.epoch = 0
+        self.style_item_stems: Dict[int, list[str]] = {}
+        self.style_base_to_indices: Dict[int, dict[str, list[int]]] = {}
+        self.offline_pairing_map: dict[tuple[str, str, str], list[str]] = {}
         
         # Cache for pre-computed indices to remove CPU overhead in __getitem__
         self._cache_content_style_ids = None
@@ -89,6 +97,7 @@ class AdaCUTLatentDataset(Dataset):
             latents = [_load_latent_file(p) for p in files]
             stack = torch.stack(latents, dim=0)
             self.style_tensors[style_id] = stack
+            self._register_style_index(style_id, files)
             logger.info("  style=%s id=%d count=%d", subdir, style_id, stack.shape[0])
 
         total_count = sum(int(t.shape[0]) for t in self.style_tensors.values())
@@ -98,9 +107,15 @@ class AdaCUTLatentDataset(Dataset):
         self.length = max(1, int(round(self.content_count * effective_multiplier)))
         self.content_style_sampling_weights = self._normalize_style_weights(content_style_sampling_weights, "content_style_sampling_weights")
         self.target_style_sampling_weights = self._normalize_style_weights(target_style_sampling_weights, "target_style_sampling_weights")
+        self.pairing_cache_path = str(pairing_cache_path or "").strip()
+        self.pairing_cache_topk = max(1, int(pairing_cache_topk))
+        self.pairing_cache_sample_mode = str(pairing_cache_sample_mode).strip().lower() or "uniform_topk"
+        self.pairing_cache_cross_only = bool(pairing_cache_cross_only)
 
         if requested_preload_to_gpu:
             self._try_preload_to_gpu()
+        if self.pairing_cache_path:
+            self._load_pairing_cache(self.pairing_cache_path)
 
         # Initialize deterministic caches so __getitem__ is always safe.
         self.set_epoch(0)
@@ -211,6 +226,56 @@ class AdaCUTLatentDataset(Dataset):
             len(self.style_tensors),
         )
 
+    def _normalize_base_stem(self, stem: str) -> str:
+        text = str(stem)
+        return text[:-5] if text.endswith("_flip") else text
+
+    def _register_style_index(self, style_id: int, files: list[Path]) -> None:
+        stems = [p.stem for p in files]
+        self.style_item_stems[style_id] = stems
+        base_to_indices: dict[str, list[int]] = {}
+        for idx, stem in enumerate(stems):
+            base_stem = self._normalize_base_stem(stem)
+            base_to_indices.setdefault(base_stem, []).append(idx)
+        self.style_base_to_indices[style_id] = base_to_indices
+
+    def _load_pairing_cache(self, cache_path: str) -> None:
+        path = Path(cache_path)
+        if not path.is_absolute():
+            path = path.resolve()
+        if not path.exists():
+            logger.warning("pairing cache not found: %s", path)
+            return
+
+        if path.suffix.lower() == ".json":
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        else:
+            payload = torch.load(path, map_location="cpu", weights_only=False)
+
+        raw_pairs = payload.get("pairs", payload if isinstance(payload, dict) else {})
+        pair_map: dict[tuple[str, str, str], list[str]] = {}
+
+        if isinstance(raw_pairs, dict):
+            for key, value in raw_pairs.items():
+                if isinstance(key, str) and "|" in key:
+                    src_style, src_stem, tgt_style = key.split("|", 2)
+                    targets = [str(x) for x in value][: self.pairing_cache_topk]
+                    if targets:
+                        pair_map[(src_style, src_stem, tgt_style)] = targets
+                    continue
+                if isinstance(value, dict):
+                    src_style = str(key)
+                    for src_stem, target_map in value.items():
+                        if not isinstance(target_map, dict):
+                            continue
+                        for tgt_style, targets in target_map.items():
+                            target_list = [str(x) for x in targets][: self.pairing_cache_topk]
+                            if target_list:
+                                pair_map[(src_style, str(src_stem), str(tgt_style))] = target_list
+
+        self.offline_pairing_map = pair_map
+        logger.info("Loaded pairing cache %s with %d source-target routes", path, len(self.offline_pairing_map))
+
     def set_epoch(self, epoch: int) -> None:
         self.epoch = int(epoch)
         
@@ -281,6 +346,39 @@ class AdaCUTLatentDataset(Dataset):
             return torch.flip(x, dims=[-1])
         return x
 
+    def _sample_target_index_from_pairing(
+        self,
+        *,
+        content_style_id: int,
+        content_index: int,
+        target_style_id: int,
+        fallback_index: int,
+        random_value: float,
+    ) -> int:
+        if not self.offline_pairing_map:
+            return fallback_index
+        if self.pairing_cache_cross_only and content_style_id == target_style_id:
+            return fallback_index
+
+        src_style = self.style_subdirs[content_style_id]
+        tgt_style = self.style_subdirs[target_style_id]
+        src_stem = self._normalize_base_stem(self.style_item_stems[content_style_id][content_index])
+        candidates = self.offline_pairing_map.get((src_style, src_stem, tgt_style))
+        if not candidates:
+            return fallback_index
+
+        if self.pairing_cache_sample_mode == "top1":
+            chosen_stem = candidates[0]
+        else:
+            chosen_idx = min(int(random_value * len(candidates)), len(candidates) - 1)
+            chosen_stem = candidates[chosen_idx]
+
+        target_indices = self.style_base_to_indices[target_style_id].get(chosen_stem)
+        if not target_indices:
+            return fallback_index
+        picked_variant = min(int(random_value * len(target_indices)), len(target_indices) - 1)
+        return int(target_indices[picked_variant])
+
     def __getitem__(self, index: int) -> Dict[str, torch.Tensor | int]:
         # Ultra-lightweight getitem using pre-computed indices
         content_style_id = int(self._cache_content_style_ids[index])
@@ -291,6 +389,13 @@ class AdaCUTLatentDataset(Dataset):
 
         c_idx = int(self._cache_content_rands[index] * c_pool.shape[0])
         t_idx = int(self._cache_target_rands[index] * t_pool.shape[0])
+        t_idx = self._sample_target_index_from_pairing(
+            content_style_id=content_style_id,
+            content_index=c_idx,
+            target_style_id=target_style_id,
+            fallback_index=t_idx,
+            random_value=float(self._cache_target_rands[index]),
+        )
 
         content = self._maybe_flip(c_pool[c_idx], self._cache_flip_content, index)
         target_style = self._maybe_flip(t_pool[t_idx], self._cache_flip_target, index)

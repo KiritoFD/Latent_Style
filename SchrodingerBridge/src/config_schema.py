@@ -89,6 +89,8 @@ class ModelConfig:
     semantic_attn_routing_mode: str = "softmax"
     semantic_sinkhorn_iters: int = 3
     semantic_gumbel_tau: float = 1.0
+    semantic_self_topology_gate: bool = False
+    semantic_self_topology_blend: float = 1.0
     velocity_head_mode: str = "identity"
     velocity_tanh_limit: float = 20.0
     feature_attn_num_heads: int = 4
@@ -112,10 +114,28 @@ class ModelConfig:
     ablation_decoder_highpass: bool = True
     color_highway_gain: float = 1.0
     use_diffeomorphic_stroke: bool = False
+    dynamic_style_operator_head: bool = False
+    dynamic_style_operator_hidden_mult: float = 1.0
+    zero_init_output_head: bool = False
+    diffeomorphic_head_mode: str = "standard"
     diffeomorphic_color_strength: float = 0.85
     diffeomorphic_warp_strength: float = 0.08
     diffeomorphic_texture_gate_strength: float = 8.0
     diffeomorphic_normal_leak: float = 0.0
+    diffeomorphic_color_lowpass_kernel: int = 1
+    diffeomorphic_color_edge_gamma: float = 0.0
+    diffeomorphic_amp_strength: float = 0.5
+    diffeomorphic_factorized_enable_color: bool = True
+    diffeomorphic_factorized_enable_amp: bool = True
+    diffeomorphic_joint_bilateral_kernel: int = 1
+    diffeomorphic_joint_bilateral_range_sigma: float = 0.5
+    diffeomorphic_divergence_free_warp: bool = False
+    diffeomorphic_metric_mask_gamma: float = 0.0
+    diffeomorphic_metric_mask_smooth_kernel: int = 3
+    diffeomorphic_metric_mask_use_z0: bool = False
+    latent_canvas_strength: float = 0.0
+    latent_canvas_edge_gamma: float = 4.0
+    latent_canvas_highpass_kernel: int = 5
     pre_integrate_moment_match: bool = False
     pre_integrate_moment_blend: float = 1.0
     output_moment_match: bool = False
@@ -157,10 +177,16 @@ class BridgeConfig:
     identity_endpoint: bool = False
     eps: float = 1e-4
     coupling_solver: str = "sinkhorn"
+    coupling_feature_mode: str = "latent"
+    coupling_lowfreq_kernel: int = 9
+    coupling_edge_weight: float = 0.0
     sinkhorn_epsilon: float = 0.05
     sinkhorn_iters: int = 60
     sinkhorn_stabilize: bool = True
     bridge_sigma: float = 0.05
+    bridge_noise_mode: str = "gaussian"
+    bridge_style_noise_kernel: int = 5
+    bridge_style_noise_flat_gamma: float = 0.0
     terminal_swd_weight: float = 0.1
     w_variance_penalty: float = 0.0
     w_content_anchor: float = 0.0
@@ -194,6 +220,12 @@ class BridgeConfig:
     w_stokes_viscous: float = 0.0
     w_phase_separation: float = 0.0
     phase_gradient_weight: float = 0.05
+    w_fourier_phase_lock: float = 0.0
+    fourier_phase_lock_highpass: bool = True
+    w_head_color_tv: float = 0.0
+    w_head_color_energy: float = 0.0
+    w_head_amp_energy: float = 0.0
+    w_warp_curl_reward: float = 0.0
     style_energy_floor_ratio: float = 0.6
     anchor_pool_size: int = 9
     terminal_num_steps: int = 4
@@ -205,6 +237,11 @@ class BridgeConfig:
     kinetic_mode: str = "endpoint"
     kinetic_gate_exponent: float = 1.0
     semantic_swd_num_projections: int = 64
+    terminal_swd_mode: str = "standard"
+    spectral_swd_low_weight: float = 1.0
+    spectral_swd_high_weight: float = 1.0
+    spectral_swd_low_kernel: int = 5
+    semantic_quotient_bins: int = 4
     swd_distance_mode: str = "cdf"
     swd_use_high_freq: bool = True
     swd_patch_sizes: list[int] = field(default_factory=lambda: [1, 3, 5, 9])
@@ -331,6 +368,10 @@ class DataConfig:
     virtual_length_multiplier: float = 1.0
     content_style_sampling_weights: list[float] | None = None
     target_style_sampling_weights: list[float] | None = None
+    pairing_cache_path: str = ""
+    pairing_cache_topk: int = 4
+    pairing_cache_sample_mode: str = "uniform_topk"
+    pairing_cache_cross_only: bool = True
     extra: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
