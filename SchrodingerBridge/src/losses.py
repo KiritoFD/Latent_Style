@@ -3,12 +3,31 @@ from __future__ import annotations
 from typing import Dict
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn.utils import spectral_norm
 from scipy.optimize import linear_sum_assignment
 
-from config_schema import BridgeConfig, ExperimentConfig, TrainingConfig
+from config_schema import BridgeConfig, ExperimentConfig, ModelConfig, TrainingConfig
 from model import TimeConditionedLANCETBridge
 from ot_cost import SWDTransportCost
+
+
+class KantorovichPotential(nn.Module):
+    def __init__(self, channels: int, hidden_channels: int = 64) -> None:
+        super().__init__()
+        hidden = max(8, int(hidden_channels))
+        groups = max(1, min(4, hidden))
+        self.net = nn.Sequential(
+            spectral_norm(nn.Conv2d(channels, hidden, kernel_size=1)),
+            nn.SiLU(),
+            spectral_norm(nn.Conv2d(hidden, hidden, kernel_size=3, padding=1, groups=groups)),
+            nn.SiLU(),
+            spectral_norm(nn.Conv2d(hidden, 1, kernel_size=1)),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x.float()).mean(dim=(1, 2, 3))
 
 
 class OTFlowMatchingObjective:
@@ -24,9 +43,11 @@ class OTFlowMatchingObjective:
         if isinstance(config, ExperimentConfig):
             bridge_cfg = config.bridge
             train_cfg = config.training
+            model_cfg = config.model
         else:
             bridge_cfg = BridgeConfig.from_mapping(config.get("bridge", {}))
             train_cfg = TrainingConfig.from_mapping(config.get("training", {}))
+            model_cfg = ModelConfig.from_mapping(config.get("model", {}))
 
         self.objective_mode = str(bridge_cfg.objective_mode).strip().lower()
         self.t_min = float(bridge_cfg.t_min)
@@ -43,6 +64,45 @@ class OTFlowMatchingObjective:
         self.bridge_sigma = max(0.0, float(bridge_cfg.bridge_sigma))
         self.terminal_swd_weight = max(0.0, float(bridge_cfg.terminal_swd_weight))
         self.w_variance_penalty = max(0.0, float(bridge_cfg.w_variance_penalty))
+        self.w_content_anchor = max(0.0, float(bridge_cfg.w_content_anchor))
+        self.w_edge_anchor = max(0.0, float(bridge_cfg.w_edge_anchor))
+        self.w_style_energy_floor = max(0.0, float(bridge_cfg.w_style_energy_floor))
+        self.w_lowfreq_velocity = max(0.0, float(bridge_cfg.w_lowfreq_velocity))
+        self.w_style_contrastive = max(0.0, float(bridge_cfg.w_style_contrastive))
+        self.style_contrastive_temperature = max(1e-4, float(bridge_cfg.style_contrastive_temperature))
+        self.style_contrastive_pool_size = max(1, int(bridge_cfg.style_contrastive_pool_size))
+        self.w_residual_style_direction = max(0.0, float(bridge_cfg.w_residual_style_direction))
+        self.w_semantic_entropy = max(0.0, float(bridge_cfg.w_semantic_entropy))
+        self.semantic_entropy_target = max(0.0, float(bridge_cfg.semantic_entropy_target))
+        self.w_spectral_amplitude = max(0.0, float(bridge_cfg.w_spectral_amplitude))
+        self.spectral_amplitude_channels = max(1, int(bridge_cfg.spectral_amplitude_channels))
+        self.spectral_amplitude_highpass = bool(bridge_cfg.spectral_amplitude_highpass)
+        self.w_divergence = max(0.0, float(bridge_cfg.w_divergence))
+        self.divergence_samples = max(1, int(bridge_cfg.divergence_samples))
+        self.w_feature_riemannian = max(0.0, float(bridge_cfg.w_feature_riemannian))
+        self.w_kantorovich = max(0.0, float(bridge_cfg.w_kantorovich))
+        self.kantorovich_steps = max(0, int(bridge_cfg.kantorovich_steps))
+        self.kantorovich_lr = max(1e-8, float(bridge_cfg.kantorovich_lr))
+        self.sb_noise_epsilon = max(0.0, float(bridge_cfg.sb_noise_epsilon))
+        self.retinex_target_blend = max(0.0, min(1.0, float(bridge_cfg.retinex_target_blend)))
+        self.retinex_kernel_size = max(3, int(bridge_cfg.retinex_kernel_size))
+        if self.retinex_kernel_size % 2 == 0:
+            self.retinex_kernel_size += 1
+        self.w_anisotropic_kinetic = max(0.0, float(bridge_cfg.w_anisotropic_kinetic))
+        self.anisotropic_normal_weight = max(0.0, float(bridge_cfg.anisotropic_normal_weight))
+        self.anisotropic_tangent_weight = max(0.0, float(bridge_cfg.anisotropic_tangent_weight))
+        self.w_stokes_viscous = max(0.0, float(bridge_cfg.w_stokes_viscous))
+        self.w_phase_separation = max(0.0, float(bridge_cfg.w_phase_separation))
+        self.phase_gradient_weight = max(0.0, float(bridge_cfg.phase_gradient_weight))
+        self.kantorovich_potential = (
+            KantorovichPotential(int(model_cfg.latent_channels), int(bridge_cfg.kantorovich_channels))
+            if self.w_kantorovich > 0.0
+            else None
+        )
+        self.style_energy_floor_ratio = max(0.0, float(bridge_cfg.style_energy_floor_ratio))
+        self.anchor_pool_size = max(1, int(bridge_cfg.anchor_pool_size))
+        if self.anchor_pool_size % 2 == 0:
+            self.anchor_pool_size += 1
         self.terminal_num_steps = max(1, int(bridge_cfg.terminal_num_steps))
         self.terminal_swd_on_identity = bool(bridge_cfg.terminal_swd_on_identity)
         self.semantic_swd_num_projections = max(1, int(bridge_cfg.semantic_swd_num_projections))
@@ -64,6 +124,15 @@ class OTFlowMatchingObjective:
         distill_cfg = train_cfg.distill
         self.distill_velocity_weight = max(0.0, float(distill_cfg.get("velocity_weight", 1.0)))
         self.distill_endpoint_weight = max(0.0, float(distill_cfg.get("endpoint_weight", 0.0)))
+
+    def potential_parameters(self) -> list[nn.Parameter]:
+        if self.kantorovich_potential is None:
+            return []
+        return list(self.kantorovich_potential.parameters())
+
+    def _ensure_potential_device(self, x: torch.Tensor) -> None:
+        if self.kantorovich_potential is not None:
+            self.kantorovich_potential.to(device=x.device)
 
     def _sanitize_tensor(self, x: torch.Tensor, *, clamp_value: float) -> torch.Tensor:
         x = torch.nan_to_num(x.float(), nan=0.0, posinf=clamp_value, neginf=-clamp_value)
@@ -198,6 +267,238 @@ class OTFlowMatchingObjective:
             return F.l1_loss(pred, target)
         return F.mse_loss(pred, target)
 
+    def _lowpass(self, x: torch.Tensor) -> torch.Tensor:
+        pad = self.anchor_pool_size // 2
+        return F.avg_pool2d(x.float(), kernel_size=self.anchor_pool_size, stride=1, padding=pad)
+
+    def _retinex_target(self, content: torch.Tensor, style: torch.Tensor) -> torch.Tensor:
+        if self.retinex_target_blend <= 0.0:
+            return style
+        pad = self.retinex_kernel_size // 2
+        illum_c = F.avg_pool2d(content.float(), self.retinex_kernel_size, stride=1, padding=pad)
+        illum_s = F.avg_pool2d(style.float(), self.retinex_kernel_size, stride=1, padding=pad)
+        ref_c = content.float() - illum_c
+        ref_s = style.float() - illum_s
+        mu_c = ref_c.mean(dim=(2, 3), keepdim=True)
+        std_c = ref_c.std(dim=(2, 3), unbiased=False, keepdim=True).clamp_min(1e-6)
+        mu_s = ref_s.mean(dim=(2, 3), keepdim=True)
+        std_s = ref_s.std(dim=(2, 3), unbiased=False, keepdim=True).clamp_min(1e-6)
+        target = illum_c + ((ref_c - mu_c) / std_c) * std_s + mu_s
+        return style.float().lerp(target, self.retinex_target_blend)
+
+    def _anisotropic_kinetic_loss(self, pred_velocity: torch.Tensor, content: torch.Tensor) -> torch.Tensor:
+        if self.w_anisotropic_kinetic <= 0.0:
+            return content.new_tensor(0.0, dtype=torch.float32)
+        channels = int(content.shape[1])
+        kx = content.new_tensor([[-1.0, 0.0, 1.0], [-2.0, 0.0, 2.0], [-1.0, 0.0, 1.0]]).view(1, 1, 3, 3)
+        ky = content.new_tensor([[-1.0, -2.0, -1.0], [0.0, 0.0, 0.0], [1.0, 2.0, 1.0]]).view(1, 1, 3, 3)
+        kx = kx.expand(channels, 1, 3, 3).contiguous()
+        ky = ky.expand(channels, 1, 3, 3).contiguous()
+        dx = F.conv2d(content.float(), kx, padding=1, groups=channels).detach()
+        dy = F.conv2d(content.float(), ky, padding=1, groups=channels).detach()
+        norm = torch.sqrt(dx.square() + dy.square() + self.normalize_eps)
+        nx, ny = dx / norm, dy / norm
+        tx, ty = -ny, nx
+        v = pred_velocity.float()
+        normal = 0.5 * ((v * nx).square().mean() + (v * ny).square().mean())
+        tangent = 0.5 * ((v * tx).square().mean() + (v * ty).square().mean())
+        return (normal * self.anisotropic_normal_weight + tangent * self.anisotropic_tangent_weight) * self.w_anisotropic_kinetic
+
+    def _stokes_viscous_loss(self, pred_velocity: torch.Tensor) -> torch.Tensor:
+        if self.w_stokes_viscous <= 0.0:
+            return pred_velocity.new_tensor(0.0, dtype=torch.float32)
+        channels = int(pred_velocity.shape[1])
+        kernel = pred_velocity.new_tensor([[0.0, 1.0, 0.0], [1.0, -4.0, 1.0], [0.0, 1.0, 0.0]]).view(1, 1, 3, 3)
+        kernel = kernel.expand(channels, 1, 3, 3).contiguous()
+        lap = F.conv2d(pred_velocity.float(), kernel, padding=1, groups=channels)
+        return lap.square().mean() * self.w_stokes_viscous
+
+    def _phase_separation_loss(self, pred_endpoint: torch.Tensor) -> torch.Tensor:
+        if self.w_phase_separation <= 0.0:
+            return pred_endpoint.new_tensor(0.0, dtype=torch.float32)
+        state = F.instance_norm(pred_endpoint.float(), eps=1e-5)
+        double_well = (state.square() - 1.0).square().mean()
+        if self.phase_gradient_weight <= 0.0:
+            return double_well * self.w_phase_separation
+        dx = state[..., :, 1:] - state[..., :, :-1]
+        dy = state[..., 1:, :] - state[..., :-1, :]
+        grad = 0.5 * (dx.square().mean() + dy.square().mean())
+        return (double_well + self.phase_gradient_weight * grad) * self.w_phase_separation
+
+    def _gradient_magnitude(self, x: torch.Tensor) -> torch.Tensor:
+        channels = int(x.shape[1])
+        kx = x.new_tensor([[-1.0, 0.0, 1.0], [-2.0, 0.0, 2.0], [-1.0, 0.0, 1.0]]).view(1, 1, 3, 3)
+        ky = x.new_tensor([[-1.0, -2.0, -1.0], [0.0, 0.0, 0.0], [1.0, 2.0, 1.0]]).view(1, 1, 3, 3)
+        kx = kx.expand(channels, 1, 3, 3).contiguous()
+        ky = ky.expand(channels, 1, 3, 3).contiguous()
+        gx = F.conv2d(x.float(), kx, padding=1, groups=channels)
+        gy = F.conv2d(x.float(), ky, padding=1, groups=channels)
+        return torch.sqrt(gx.square() + gy.square() + self.normalize_eps)
+
+    def _diff_x(self, x: torch.Tensor) -> torch.Tensor:
+        return F.pad(x[..., :, 1:] - x[..., :, :-1], (0, 1, 0, 0))
+
+    def _diff_y(self, x: torch.Tensor) -> torch.Tensor:
+        return F.pad(x[..., 1:, :] - x[..., :-1, :], (0, 0, 0, 1))
+
+    def _content_anchor_loss(self, pred_endpoint: torch.Tensor, content: torch.Tensor) -> torch.Tensor:
+        if self.w_content_anchor <= 0.0:
+            return content.new_tensor(0.0, dtype=torch.float32)
+        return F.l1_loss(self._lowpass(pred_endpoint), self._lowpass(content)) * self.w_content_anchor
+
+    def _edge_anchor_loss(self, pred_endpoint: torch.Tensor, content: torch.Tensor) -> torch.Tensor:
+        if self.w_edge_anchor <= 0.0:
+            return content.new_tensor(0.0, dtype=torch.float32)
+        pred_edges = self._gradient_magnitude(self._lowpass(pred_endpoint))
+        content_edges = self._gradient_magnitude(self._lowpass(content))
+        return F.l1_loss(pred_edges, content_edges) * self.w_edge_anchor
+
+    def _style_energy_floor_loss(self, pred_endpoint: torch.Tensor, target_style: torch.Tensor) -> torch.Tensor:
+        if self.w_style_energy_floor <= 0.0:
+            return target_style.new_tensor(0.0, dtype=torch.float32)
+        pred_high = pred_endpoint.float() - self._lowpass(pred_endpoint)
+        target_high = target_style.float() - self._lowpass(target_style)
+        pred_energy = pred_high.std(dim=(2, 3), unbiased=False)
+        target_energy = target_high.std(dim=(2, 3), unbiased=False)
+        floor = target_energy.detach() * self.style_energy_floor_ratio
+        return F.relu(floor - pred_energy).mean() * self.w_style_energy_floor
+
+    def _lowfreq_velocity_loss(self, pred_velocity: torch.Tensor) -> torch.Tensor:
+        if self.w_lowfreq_velocity <= 0.0:
+            return pred_velocity.new_tensor(0.0, dtype=torch.float32)
+        return self._lowpass(pred_velocity).abs().mean() * self.w_lowfreq_velocity
+
+    def _style_signature(self, x: torch.Tensor) -> torch.Tensor:
+        high = x.float() - self._lowpass(x)
+        pooled = F.adaptive_avg_pool2d(high, self.style_contrastive_pool_size).flatten(1)
+        stats = torch.cat(
+            [
+                pooled,
+                high.mean(dim=(2, 3)),
+                high.std(dim=(2, 3), unbiased=False),
+            ],
+            dim=1,
+        )
+        return F.normalize(stats, p=2, dim=1, eps=self.normalize_eps)
+
+    def _style_contrastive_loss(
+        self,
+        pred_endpoint: torch.Tensor,
+        target_style: torch.Tensor,
+        target_style_id: torch.Tensor,
+    ) -> torch.Tensor:
+        if self.w_style_contrastive <= 0.0 or pred_endpoint.shape[0] < 2:
+            return pred_endpoint.new_tensor(0.0, dtype=torch.float32)
+        pred_feat = self._style_signature(pred_endpoint)
+        target_feat = self._style_signature(target_style).detach()
+        logits = pred_feat @ target_feat.transpose(0, 1) / self.style_contrastive_temperature
+        labels = torch.arange(pred_endpoint.shape[0], device=pred_endpoint.device)
+        loss = F.cross_entropy(logits, labels)
+
+        same_style = target_style_id.view(-1, 1).long() == target_style_id.view(1, -1).long()
+        same_style.fill_diagonal_(False)
+        if same_style.any():
+            log_prob = F.log_softmax(logits, dim=1)
+            soft_pos = -(log_prob * same_style.float()).sum(dim=1) / same_style.float().sum(dim=1).clamp_min(1.0)
+            loss = 0.5 * (loss + soft_pos.mean())
+        return loss * self.w_style_contrastive
+
+    def _residual_style_direction_loss(
+        self,
+        pred_endpoint: torch.Tensor,
+        content: torch.Tensor,
+        target_style: torch.Tensor,
+    ) -> torch.Tensor:
+        if self.w_residual_style_direction <= 0.0:
+            return pred_endpoint.new_tensor(0.0, dtype=torch.float32)
+        pred_delta = (pred_endpoint.float() - content.float()) - self._lowpass(pred_endpoint.float() - content.float())
+        style_delta = (target_style.float() - content.float()) - self._lowpass(target_style.float() - content.float())
+        pred_vec = pred_delta.flatten(1)
+        style_vec = style_delta.detach().flatten(1)
+        return (1.0 - F.cosine_similarity(pred_vec, style_vec, dim=1, eps=self.normalize_eps)).mean() * self.w_residual_style_direction
+
+    def _semantic_entropy_loss(self, attn_plan: torch.Tensor | None, content: torch.Tensor) -> torch.Tensor:
+        if self.w_semantic_entropy <= 0.0 or attn_plan is None:
+            return content.new_tensor(0.0, dtype=torch.float32)
+        probs = attn_plan.float().clamp_min(1e-8)
+        entropy = -(probs * probs.log()).sum(dim=-1).mean()
+        target = entropy.new_tensor(self.semantic_entropy_target)
+        return (entropy - target).square() * self.w_semantic_entropy
+
+    def _spectral_amplitude_loss(self, pred_endpoint: torch.Tensor, target_style: torch.Tensor) -> torch.Tensor:
+        if self.w_spectral_amplitude <= 0.0:
+            return pred_endpoint.new_tensor(0.0, dtype=torch.float32)
+        channels = min(self.spectral_amplitude_channels, int(pred_endpoint.shape[1]), int(target_style.shape[1]))
+        pred = pred_endpoint[:, :channels].float()
+        target = target_style[:, :channels].float()
+        if self.spectral_amplitude_highpass:
+            pred = pred - self._lowpass(pred)
+            target = target - self._lowpass(target)
+        amp_pred = torch.log(torch.abs(torch.fft.rfft2(pred, norm="ortho")) + 1e-8)
+        amp_target = torch.log(torch.abs(torch.fft.rfft2(target, norm="ortho")) + 1e-8)
+        return F.l1_loss(amp_pred, amp_target.detach()) * self.w_spectral_amplitude
+
+    def _divergence_penalty(self, x: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
+        if self.w_divergence <= 0.0:
+            return x.new_tensor(0.0, dtype=torch.float32)
+        endpoint = (x + v).float()
+        source = x.float().detach()
+        src_dx = source[..., :, 1:] - source[..., :, :-1]
+        src_dy = source[..., 1:, :] - source[..., :-1, :]
+        end_dx = endpoint[..., :, 1:] - endpoint[..., :, :-1]
+        end_dy = endpoint[..., 1:, :] - endpoint[..., :-1, :]
+        src_energy = 0.5 * (src_dx.abs().mean(dim=(1, 2, 3)) + src_dy.abs().mean(dim=(1, 2, 3)))
+        end_energy = 0.5 * (end_dx.abs().mean(dim=(1, 2, 3)) + end_dy.abs().mean(dim=(1, 2, 3)))
+        collapse = F.relu(src_energy * 0.85 - end_energy)
+        return collapse.mean() * self.w_divergence
+
+    def _feature_riemannian_loss(
+        self,
+        model: TimeConditionedLANCETBridge,
+        content: torch.Tensor,
+        pred_velocity: torch.Tensor,
+    ) -> torch.Tensor:
+        if self.w_feature_riemannian <= 0.0:
+            return content.new_tensor(0.0, dtype=torch.float32)
+        enc_in = getattr(model, "enc_in", None)
+        enc_act = getattr(model, "enc_in_act", None)
+        if enc_in is None or enc_act is None:
+            return (pred_velocity.float() ** 2).mean() * self.w_feature_riemannian
+        feat_0 = enc_act(enc_in(content.float()))
+        feat_1 = enc_act(enc_in((content + pred_velocity).float()))
+        return F.mse_loss(feat_1, feat_0.detach()) * self.w_feature_riemannian
+
+    def _kantorovich_generator_loss(self, pred_endpoint: torch.Tensor, target_style: torch.Tensor) -> torch.Tensor:
+        if self.w_kantorovich <= 0.0 or self.kantorovich_potential is None:
+            return pred_endpoint.new_tensor(0.0, dtype=torch.float32)
+        self._ensure_potential_device(pred_endpoint)
+        for param in self.kantorovich_potential.parameters():
+            param.requires_grad_(False)
+        pred_score = self.kantorovich_potential(pred_endpoint).mean()
+        target_score = self.kantorovich_potential(target_style.detach()).mean()
+        return (target_score - pred_score) * self.w_kantorovich
+
+    def compute_kantorovich_critic(
+        self,
+        model: TimeConditionedLANCETBridge,
+        *,
+        content: torch.Tensor,
+        target_style: torch.Tensor,
+        target_style_id: torch.Tensor,
+    ) -> torch.Tensor | None:
+        if self.w_kantorovich <= 0.0 or self.kantorovich_potential is None or self.kantorovich_steps <= 0:
+            return None
+        self._ensure_potential_device(content)
+        for param in self.kantorovich_potential.parameters():
+            param.requires_grad_(True)
+        with torch.no_grad():
+            t_fixed = content.new_ones(content.shape[0])
+            pred_velocity = model(content, t=t_fixed, style_id=target_style_id)
+            pred_endpoint = self._sanitize_tensor(content + pred_velocity, clamp_value=self.endpoint_clamp)
+        pred_score = self.kantorovich_potential(pred_endpoint.detach()).mean()
+        target_score = self.kantorovich_potential(target_style.detach()).mean()
+        return -(target_score - pred_score)
+
     def _terminal_active_indices(
         self,
         pred_endpoint: torch.Tensor,
@@ -303,9 +604,11 @@ class OTFlowMatchingObjective:
         source_style_id: torch.Tensor | None = None,
     ) -> tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor], Dict[str, torch.Tensor | None]]:
         t_fixed = content.new_ones(content.shape[0])
-        pred_velocity = model(content, t=t_fixed, style_id=target_style_id)
+        content_for_model = content
+        target_for_loss = self._retinex_target(content, target_style)
+        pred_velocity = model(content_for_model, t=t_fixed, style_id=target_style_id)
         pred_velocity = self._sanitize_tensor(pred_velocity, clamp_value=self.velocity_clamp)
-        pred_endpoint = self._sanitize_tensor(content + pred_velocity, clamp_value=self.endpoint_clamp)
+        pred_endpoint = self._sanitize_tensor(content_for_model + pred_velocity, clamp_value=self.endpoint_clamp)
         attn_plan = model.last_semantic_attn
         semantic_k = model.last_semantic_k
 
@@ -331,11 +634,43 @@ class OTFlowMatchingObjective:
             total_loss = total_loss + flow_loss
 
         kinetic_loss = (pred_velocity.float() ** 2).mean() * self.w_kinetic if self.w_kinetic > 0.0 else content.new_tensor(0.0)
+        anisotropic_kinetic = self._anisotropic_kinetic_loss(pred_velocity, content)
+        stokes_viscous = self._stokes_viscous_loss(pred_velocity)
+        phase_separation = self._phase_separation_loss(pred_endpoint)
         total_loss = total_loss + kinetic_loss
+
+        content_anchor = self._content_anchor_loss(pred_endpoint, content)
+        edge_anchor = self._edge_anchor_loss(pred_endpoint, content)
+        style_energy_floor = self._style_energy_floor_loss(pred_endpoint, target_for_loss)
+        lowfreq_velocity = self._lowfreq_velocity_loss(pred_velocity)
+        style_contrastive = self._style_contrastive_loss(pred_endpoint, target_for_loss, target_style_id)
+        residual_style_direction = self._residual_style_direction_loss(pred_endpoint, content, target_for_loss)
+        semantic_entropy = self._semantic_entropy_loss(attn_plan, content)
+        spectral_amplitude = self._spectral_amplitude_loss(pred_endpoint, target_for_loss)
+        divergence = self._divergence_penalty(content_for_model, pred_velocity)
+        feature_riemannian = self._feature_riemannian_loss(model, content, pred_velocity)
+        kantorovich = self._kantorovich_generator_loss(pred_endpoint, target_for_loss)
+        total_loss = (
+            total_loss
+            + content_anchor
+            + edge_anchor
+            + style_energy_floor
+            + lowfreq_velocity
+            + style_contrastive
+            + residual_style_direction
+            + semantic_entropy
+            + spectral_amplitude
+            + divergence
+            + feature_riemannian
+            + kantorovich
+            + anisotropic_kinetic
+            + stokes_viscous
+            + phase_separation
+        )
 
         terminal_swd = self._calc_terminal_swd_loss(
             pred_endpoint,
-            target_style,
+            target_for_loss,
             source_style_id,
             target_style_id,
             semantic_k=semantic_k,
@@ -349,7 +684,21 @@ class OTFlowMatchingObjective:
             "loss": total_loss,
             "flow": flow_loss.detach(),
             "kinetic_energy": kinetic_loss.detach(),
+            "anisotropic_kinetic": anisotropic_kinetic.detach(),
+            "stokes_viscous": stokes_viscous.detach(),
+            "phase_separation": phase_separation.detach(),
             "terminal_swd": terminal_loss.detach(),
+            "content_anchor": content_anchor.detach(),
+            "edge_anchor": edge_anchor.detach(),
+            "style_energy_floor": style_energy_floor.detach(),
+            "lowfreq_velocity": lowfreq_velocity.detach(),
+            "style_contrastive": style_contrastive.detach(),
+            "residual_style_direction": residual_style_direction.detach(),
+            "semantic_entropy": semantic_entropy.detach(),
+            "spectral_amplitude": spectral_amplitude.detach(),
+            "divergence": divergence.detach(),
+            "feature_riemannian": feature_riemannian.detach(),
+            "kantorovich": kantorovich.detach(),
             "ot_cost": ot_cost.detach(),
             "plan_entropy": plan_entropy.detach(),
             "bridge_sigma": content.new_tensor(0.0, dtype=torch.float32),
@@ -368,7 +717,21 @@ class OTFlowMatchingObjective:
         components = {
             "flow": flow_loss,
             "kinetic_energy": kinetic_loss,
+            "anisotropic_kinetic": anisotropic_kinetic,
+            "stokes_viscous": stokes_viscous,
+            "phase_separation": phase_separation,
             "terminal_swd": terminal_loss,
+            "content_anchor": content_anchor,
+            "edge_anchor": edge_anchor,
+            "style_energy_floor": style_energy_floor,
+            "lowfreq_velocity": lowfreq_velocity,
+            "style_contrastive": style_contrastive,
+            "residual_style_direction": residual_style_direction,
+            "semantic_entropy": semantic_entropy,
+            "spectral_amplitude": spectral_amplitude,
+            "divergence": divergence,
+            "feature_riemannian": feature_riemannian,
+            "kantorovich": kantorovich,
         }
         debug_state: Dict[str, torch.Tensor | None] = {
             "pred_velocity": pred_velocity.detach(),
@@ -376,7 +739,7 @@ class OTFlowMatchingObjective:
             "semantic_attn": attn_plan.detach() if attn_plan is not None else None,
             "semantic_k": semantic_k.detach() if semantic_k is not None else None,
             "content": content.detach(),
-            "target_style": target_style.detach(),
+            "target_style": target_for_loss.detach(),
         }
         return metrics, components, debug_state
 
@@ -428,9 +791,14 @@ class OTFlowMatchingObjective:
                     target_style_id,
                     source_style_id,
                 )
+                if self.retinex_target_blend > 0.0:
+                    matched_target = self._retinex_target(content, matched_target)
 
         t = self._sample_t(content)
         x_t, target_velocity = self._bridge_state_and_velocity(content=content, matched_target=matched_target, t=t)
+        if self.sb_noise_epsilon > 0.0:
+            bridge_gate = torch.sqrt((t.float() * (1.0 - t.float())).clamp_min(0.0)).view(-1, 1, 1, 1)
+            x_t = x_t + torch.randn_like(x_t) * (self.sb_noise_epsilon ** 0.5) * bridge_gate
         pred_velocity = model(x_t, t=t, style_id=target_style_id)
         flow_loss = self._loss(pred_velocity, target_velocity)
         total_loss = flow_loss
@@ -444,6 +812,10 @@ class OTFlowMatchingObjective:
             else:
                 kinetic_loss = v_sq.mean()
             total_loss = total_loss + kinetic_loss * self.w_kinetic
+        anisotropic_kinetic = self._anisotropic_kinetic_loss(pred_velocity, content)
+        stokes_viscous = self._stokes_viscous_loss(pred_velocity)
+        phase_separation = self._phase_separation_loss(x_t + pred_velocity)
+        total_loss = total_loss + anisotropic_kinetic + stokes_viscous + phase_separation
 
         curvature_loss = content.new_tensor(0.0, dtype=torch.float32)
         if self.w_curvature > 0.0:
@@ -467,6 +839,9 @@ class OTFlowMatchingObjective:
             "loss": total_loss,
             "flow": flow_loss.detach(),
             "kinetic_energy": (kinetic_loss * self.w_kinetic).detach(),
+            "anisotropic_kinetic": anisotropic_kinetic.detach(),
+            "stokes_viscous": stokes_viscous.detach(),
+            "phase_separation": phase_separation.detach(),
             "curvature": (curvature_loss * self.w_curvature).detach(),
             "ot_cost": ot_cost.detach(),
             "plan_entropy": plan_entropy.detach(),

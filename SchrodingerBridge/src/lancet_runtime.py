@@ -8,6 +8,7 @@ import torch.nn.functional as F
 import torch.utils.checkpoint as ckpt
 
 from lancet_blocks import AttentionBlock, StyleMaps
+from utils.diffeomorphic import apply_texture_aligned_diffeomorphic_stroke
 
 
 class LatentAdaCUTRuntimeMixin:
@@ -168,9 +169,26 @@ class LatentAdaCUTRuntimeMixin:
     def _compute_delta(
         self,
         h: torch.Tensor,
+        x: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        delta = self.dec_out(h) * self.latent_scale_factor * self.residual_gain
+        raw = self.dec_out(h)
+        if bool(getattr(self, "use_diffeomorphic_stroke", False)):
+            if x is None:
+                raise ValueError("diffeomorphic stroke mode requires input x.")
+            return self._apply_diffeomorphic_stroke(x, raw)
+        delta = raw * self.latent_scale_factor * self.residual_gain
         return torch.tanh(delta / 4.0) * 4.0
+
+    def _apply_diffeomorphic_stroke(self, x: torch.Tensor, raw_out: torch.Tensor) -> torch.Tensor:
+        stroked = apply_texture_aligned_diffeomorphic_stroke(
+            x,
+            raw_out,
+            color_strength=float(getattr(self, "diffeomorphic_color_strength", 0.85)),
+            warp_strength=float(getattr(self, "diffeomorphic_warp_strength", 0.08)),
+            gate_strength=float(getattr(self, "diffeomorphic_texture_gate_strength", 8.0)),
+            normal_leak=float(getattr(self, "diffeomorphic_normal_leak", 0.0)),
+        )
+        return stroked - x.float()
 
     def encode_style_id(self, style_id: torch.Tensor | int | None) -> torch.Tensor:
         if style_id is None:
@@ -348,7 +366,7 @@ class LatentAdaCUTRuntimeMixin:
         h_up = self._apply_upsample_blur(h_up)
         h_fused = self._fuse_skip_features(h_up, skip_32, style_code=style_code, gate=1.0)
         h_dec = self._run_decoder(h_fused)
-        delta_raw = self._compute_delta(h_dec)
+        delta_raw = self._compute_delta(h_dec, x=x)
         return delta_raw
 
     def integrate(
@@ -366,6 +384,7 @@ class LatentAdaCUTRuntimeMixin:
         strength = self._resolve_style_strength(style_strength)
         step_scale = self._style_strength_step_scale(strength)
         per_step = 1.0 / float(steps)
+        x = self._apply_pre_integrate_moment_match(x, target_style_latent)
         if style_code_override is not None:
             style_code = style_code_override
             if style_code.ndim == 1:
@@ -397,6 +416,27 @@ class LatentAdaCUTRuntimeMixin:
             )
             h = h + delta * float(step_size) * step_scale * per_step
         return self._apply_output_moment_match(h, target_style_latent)
+
+    def _apply_pre_integrate_moment_match(
+        self,
+        x: torch.Tensor,
+        target_style_latent: torch.Tensor | None,
+    ) -> torch.Tensor:
+        if (not self.pre_integrate_moment_match) or target_style_latent is None:
+            return x
+        ref = target_style_latent
+        if ref.shape != x.shape:
+            raise ValueError(
+                "target_style_latent shape must match model input shape, "
+                f"got x={tuple(x.shape)} ref={tuple(ref.shape)}"
+            )
+        ref = ref.to(device=x.device, dtype=x.dtype)
+        x_mean = x.mean(dim=(2, 3), keepdim=True)
+        x_std = x.std(dim=(2, 3), keepdim=True, unbiased=False).clamp_min(self.output_moment_match_eps)
+        ref_mean = ref.mean(dim=(2, 3), keepdim=True)
+        ref_std = ref.std(dim=(2, 3), keepdim=True, unbiased=False).clamp_min(self.output_moment_match_eps)
+        mapped = ((x - x_mean) / x_std) * ref_std + ref_mean
+        return x.lerp(mapped, self.pre_integrate_moment_blend)
 
     def _perturb_anchor_if_needed(self, x: torch.Tensor) -> torch.Tensor:
         if self.input_anchor_noise_std <= 0.0:
