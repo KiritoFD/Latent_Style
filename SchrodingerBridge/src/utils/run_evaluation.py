@@ -1065,6 +1065,7 @@ def main():
     parser.add_argument('--step_size', type=float, default=float(full_eval_defaults.get("step_size", 1.0)))
     parser.add_argument('--style_strength', type=float, default=full_eval_defaults.get("style_strength", None), help="Global style strength in [0,1]")
     parser.add_argument('--residual_scale', type=float, default=1.0, help="Post-endpoint latent residual scale for inference strengthening. 1.0 keeps default behavior.")
+    parser.add_argument('--vae_decode_scale', type=float, default=None, help="Override VAE scaling factor for decode only; encode/model latent scale stay unchanged.")
     parser.add_argument('--style_adapter', type=str, default="", help="Optional external style adapter (.pt) to override style_emb/style_spatial_id_16")
     parser.add_argument('--max_src_samples', type=int, default=int(full_eval_defaults.get("max_src_samples", 30)), help="Max source images per style; <=0 means all")
     parser.add_argument('--max_ref_compare', type=int, default=int(full_eval_defaults.get("max_ref_compare", 50)), help="Max refs for LPIPS style compare; <=0 means all cached refs")
@@ -1129,7 +1130,15 @@ def main():
     parser.add_argument('--eval_lpips_no_cpu_fallback', action='store_true', help="Disable CPU fallback when LPIPS CUDA OOM occurs")
     parser.add_argument('--reuse_generated', action='store_true', help="Reuse existing generated images in output dir/images (or legacy output dir) and skip generation")
     parser.add_argument('--generation_only', action='store_true', help="Only generate translated images, skip all evaluation metrics")
+    parser.add_argument('--seed', type=int, default=-1, help="Seed RNGs for reproducible VAE latent sampling/generation; <0 leaves RNG state untouched.")
     args = parser.parse_args()
+    if int(args.seed) >= 0:
+        seed = int(args.seed)
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
     if args.eval_classifier_only and args.eval_only_lpips_clip_style:
         raise ValueError("--eval_classifier_only conflicts with --eval_only_lpips_clip_style")
 
@@ -1370,7 +1379,7 @@ def main():
                         latents_gen = lgt.generation(latents_x0, tgt_ids)
                         if abs(scale_out - 1.0) > 1e-4:
                             latents_gen = latents_gen * scale_out
-                        imgs_gen = decode_latent(vae, latents_gen, device) # [B, 3, H, W]
+                        imgs_gen = decode_latent(vae, latents_gen, device, scaling_factor=args.vae_decode_scale) # [B, 3, H, W]
 
                         # Offload to CPU & Save Async
                         imgs_gen_cpu = imgs_gen.cpu()

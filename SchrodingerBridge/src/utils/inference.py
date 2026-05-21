@@ -267,9 +267,10 @@ def encode_image(vae, image_tensor, device="cuda"):
 
 
 @torch.no_grad()
-def decode_latent(vae, latent, device="cuda"):
+def decode_latent(vae, latent, device="cuda", scaling_factor=None):
     latent = latent.to(device, dtype=torch.float16)
-    latent = latent / vae.config.scaling_factor
+    scale = float(vae.config.scaling_factor if scaling_factor is None else scaling_factor)
+    latent = latent / max(scale, 1e-8)
     image = vae.decode(latent).sample
     image = (image + 1.0) / 2.0
     return torch.clamp(image, 0.0, 1.0)
