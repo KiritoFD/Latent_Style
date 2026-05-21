@@ -87,6 +87,10 @@ def main() -> None:
         virtual_length_multiplier=float(data_cfg.virtual_length_multiplier),
         content_style_sampling_weights=data_cfg.content_style_sampling_weights,
         target_style_sampling_weights=data_cfg.target_style_sampling_weights,
+        pairing_cache_path=data_cfg.pairing_cache_path,
+        pairing_cache_topk=int(data_cfg.pairing_cache_topk),
+        pairing_cache_sample_mode=str(data_cfg.pairing_cache_sample_mode),
+        pairing_cache_cross_only=bool(data_cfg.pairing_cache_cross_only),
         device=str(device),
     )
 
@@ -118,7 +122,7 @@ def main() -> None:
     dataloader = DataLoader(**dataloader_kwargs)
 
     logger.info(
-        "DataLoader | batch=%d workers=%d shuffle=%s pin_memory=%s persistent_workers=%s preload_to_gpu=%s balanced_target=%s",
+        "DataLoader | batch=%d workers=%d shuffle=%s pin_memory=%s persistent_workers=%s preload_to_gpu=%s balanced_target=%s pairing_cache=%s pairing_mode=%s topk=%d",
         batch_size,
         num_workers,
         shuffle,
@@ -126,6 +130,9 @@ def main() -> None:
         persistent_workers,
         bool(getattr(dataset, "preload_to_gpu", False)),
         bool(getattr(dataset, "balance_target_styles_per_batch", False)),
+        bool(getattr(dataset, "offline_pairing_map", {})),
+        str(getattr(dataset, "pairing_cache_sample_mode", "")),
+        int(getattr(dataset, "pairing_cache_topk", 0)),
     )
 
     trainer = SBTrainer(config=config, device=device, config_path=str(config_path))
