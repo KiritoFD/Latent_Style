@@ -8,6 +8,7 @@ import torch.nn as nn
 
 from config_schema import ModelConfig
 from lancet_backbone import LatentAdaCUT, count_parameters
+from utils.diffeomorphic import apply_texture_aligned_diffeomorphic_stroke
 
 
 def sinusoidal_time_embedding(t: torch.Tensor, dim: int) -> torch.Tensor:
@@ -37,8 +38,20 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             nn.Linear(self.bridge_style_dim, self.bridge_style_dim),
         )
 
-    def _compute_delta(self, h: torch.Tensor) -> torch.Tensor:
+    def _compute_delta(self, h: torch.Tensor, x: torch.Tensor | None = None) -> torch.Tensor:
         raw_delta = self.dec_out(h)
+        if bool(getattr(self, "use_diffeomorphic_stroke", False)):
+            if x is None:
+                raise ValueError("diffeomorphic stroke mode requires input x.")
+            stroked = apply_texture_aligned_diffeomorphic_stroke(
+                x,
+                raw_delta,
+                color_strength=float(getattr(self, "diffeomorphic_color_strength", 0.85)),
+                warp_strength=float(getattr(self, "diffeomorphic_warp_strength", 0.08)),
+                gate_strength=float(getattr(self, "diffeomorphic_texture_gate_strength", 8.0)),
+                normal_leak=float(getattr(self, "diffeomorphic_normal_leak", 0.0)),
+            )
+            return stroked - x.float()
         if self.velocity_head_mode == "tanh":
             raw_delta = torch.tanh(raw_delta) * self.velocity_tanh_limit
         return raw_delta * self.latent_scale_factor * self.residual_gain
@@ -166,13 +179,14 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         style_code_override: torch.Tensor | None = None,
         override_palette: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        del target_style_latent, override_palette
+        del override_palette
         if style_id is None:
             raise ValueError("style_id is required for bridge integration.")
         steps = max(1, int(num_steps))
         horizon = self._resolve_integration_horizon(step_size=step_size, style_strength=style_strength)
         if horizon <= 0.0:
             return x
+        x = self._apply_pre_integrate_moment_match(x, target_style_latent)
         dt = horizon / float(steps)
         h = x
         for idx in range(steps):
@@ -180,6 +194,28 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             velocity = self.forward(h, t=t, style_id=style_id, style_code_override=style_code_override)
             h = h + velocity * dt
         return h
+
+    def _apply_pre_integrate_moment_match(
+        self,
+        x: torch.Tensor,
+        target_style_latent: torch.Tensor | None,
+    ) -> torch.Tensor:
+        if (not self.pre_integrate_moment_match) or target_style_latent is None:
+            return x
+        ref = target_style_latent
+        if ref.shape != x.shape:
+            raise ValueError(
+                "target_style_latent shape must match model input shape, "
+                f"got x={tuple(x.shape)} ref={tuple(ref.shape)}"
+            )
+        ref = ref.to(device=x.device, dtype=x.dtype)
+        eps = self.output_moment_match_eps
+        x_mean = x.mean(dim=(2, 3), keepdim=True)
+        x_std = x.std(dim=(2, 3), keepdim=True, unbiased=False).clamp_min(eps)
+        ref_mean = ref.mean(dim=(2, 3), keepdim=True)
+        ref_std = ref.std(dim=(2, 3), keepdim=True, unbiased=False).clamp_min(eps)
+        mapped = ((x - x_mean) / x_std) * ref_std + ref_mean
+        return x.lerp(mapped, self.pre_integrate_moment_blend)
 
 
 def _normalize_skip_routing_mode(config: ModelConfig) -> ModelConfig:

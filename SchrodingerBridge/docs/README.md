@@ -30,7 +30,9 @@
 
 | Report | Date | Topic |
 |--------|------|-------|
+| [Model/Modules/Losses Technical Note](presentations/2026-05-21-model-modules-losses-and-results.md) | 2026-05-21 | 当前模型架构、已确认模块、Loss 与实验结果汇总说明 |
 | [Scale Experiment](scale_experiment_report.md) | 2026-05 | 1024px WikiArt 27-genre evaluation |
+| [256 Diffeomorphic Tangent Progress](experiments/2026-05-20-256-diffeomorphic-tangent-progress.md) | 2026-05-20 | 256px diffeomorphic stroke / tangent warp 实验进展与结论 |
 | [Baseline Reproduction](experiments/2026-05-11-baseline-reproduction-lab-notes.md) | 2026-05-11 | Baseline SOTA reproduction |
 | [Theory Reset Plan](experiments/2026-05-16-theory-reset-and-fast-k05-plan.md) | 2026-05-16 | OT-Coupled Latent Flow Matching theory |
 | [Phase 1 Diagnostic](experiments/2026-05-16-phase1-diagnostic-launcher.md) | 2026-05-16 | Diagnostic probe framework |
