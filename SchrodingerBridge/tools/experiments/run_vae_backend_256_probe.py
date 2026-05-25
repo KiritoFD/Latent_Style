@@ -201,6 +201,193 @@ VARIANTS.update(
 )
 
 
+def _sdxl_minimal_10g_variant(
+    *,
+    terminal_swd_weight: float,
+    patch_sizes: list[int],
+    name: str,
+    model_scale_override: float | None = None,
+    eval_decode_scale: float | None = None,
+    style_strength: float = 1.0,
+    num_steps: int = 12,
+) -> dict:
+    variant = deepcopy(VARIANTS["sdxl_s0_minimal"])
+    variant.update(
+        {
+            "batch_size": 128,
+            "eval_batch_size": 16,
+            "learning_rate": 1e-5,
+            "terminal_swd_weight": terminal_swd_weight,
+            "grad_clip_norm": 0.25,
+            "notes": name,
+        }
+    )
+    variant["bridge_overrides"] = {
+        **dict(variant.get("bridge_overrides", {}) or {}),
+        "swd_patch_sizes": patch_sizes,
+        "swd_num_projections": 24 if max(patch_sizes) <= 5 else 32,
+        "semantic_swd_num_projections": 24 if max(patch_sizes) <= 5 else 32,
+        "swd_projection_chunk_size": 8,
+        "swd_cdf_sample_size": 96,
+    }
+    variant["full_eval_overrides"] = {
+        "num_steps": int(num_steps),
+        "step_size": 1.0,
+        "style_strength": float(style_strength),
+    }
+    variant["inference_overrides"] = dict(variant["full_eval_overrides"])
+    if model_scale_override is not None:
+        variant["model_latent_scale_factor"] = float(model_scale_override)
+    if eval_decode_scale is not None:
+        variant["eval_decode_scale"] = float(eval_decode_scale)
+    return variant
+
+
+VARIANTS.update(
+    {
+        "sdxl_min10g_swd2_p13": _sdxl_minimal_10g_variant(
+            terminal_swd_weight=2.0,
+            patch_sizes=[1, 3],
+            name="Start from SDXL minimal content-good point; double terminal SWD only.",
+        ),
+        "sdxl_min10g_swd4_p13": _sdxl_minimal_10g_variant(
+            terminal_swd_weight=4.0,
+            patch_sizes=[1, 3],
+            name="Minimal content-good point with stronger but still local SWD.",
+        ),
+        "sdxl_min10g_swd2_p135": _sdxl_minimal_10g_variant(
+            terminal_swd_weight=2.0,
+            patch_sizes=[1, 3, 5],
+            name="Minimal content-good point with a small mid-patch style channel.",
+        ),
+        "sdxl_min10g_swd2_p13_decode010": _sdxl_minimal_10g_variant(
+            terminal_swd_weight=2.0,
+            patch_sizes=[1, 3],
+            eval_decode_scale=0.10,
+            name="Minimal SWD2 with lower decode scale only; tests SDXL visible contrast sensitivity.",
+        ),
+        "sdxl_min10g_swd2_p13_decode016": _sdxl_minimal_10g_variant(
+            terminal_swd_weight=2.0,
+            patch_sizes=[1, 3],
+            eval_decode_scale=0.16,
+            name="Minimal SWD2 with higher decode scale only; tests SDXL visible style saturation.",
+        ),
+        "sdxl_min10g_swd2_p13_model010": _sdxl_minimal_10g_variant(
+            terminal_swd_weight=2.0,
+            patch_sizes=[1, 3],
+            model_scale_override=0.10,
+            name="Minimal SWD2 with lower model latent scale; tests SDXL ODE/loss scale alignment.",
+        ),
+        "sdxl_min10g_swd2_p13_model016": _sdxl_minimal_10g_variant(
+            terminal_swd_weight=2.0,
+            patch_sizes=[1, 3],
+            model_scale_override=0.16,
+            name="Minimal SWD2 with higher model latent scale; tests SDXL ODE/loss scale alignment.",
+        ),
+        "sdxl_min10g_swd2_p13_steps16": _sdxl_minimal_10g_variant(
+            terminal_swd_weight=2.0,
+            patch_sizes=[1, 3],
+            num_steps=16,
+            style_strength=1.0,
+            name="Minimal SWD2 with longer inference horizon, no architecture change.",
+        ),
+    }
+)
+
+
+def _sdxl_minimal_loss_arch_variant(
+    *,
+    name: str,
+    terminal_swd_weight: float = 2.0,
+    patch_sizes: list[int] | None = None,
+    bridge_overrides: dict | None = None,
+    model_overrides: dict | None = None,
+    learning_rate: float = 1e-5,
+) -> dict:
+    variant = _sdxl_minimal_10g_variant(
+        terminal_swd_weight=terminal_swd_weight,
+        patch_sizes=patch_sizes or [1, 3],
+        name=name,
+    )
+    variant["learning_rate"] = float(learning_rate)
+    variant["bridge_overrides"] = {
+        **dict(variant.get("bridge_overrides", {}) or {}),
+        **dict(bridge_overrides or {}),
+    }
+    variant["model_overrides"] = {
+        **dict(variant.get("model_overrides", {}) or {}),
+        **dict(model_overrides or {}),
+    }
+    return variant
+
+
+VARIANTS.update(
+    {
+        "sdxl_min10g_loss_kin025_swd2": _sdxl_minimal_loss_arch_variant(
+            name="Minimal SDXL with lower kinetic weight; test whether style is under-moving.",
+            terminal_swd_weight=2.0,
+            bridge_overrides={"w_kinetic": 0.25},
+        ),
+        "sdxl_min10g_loss_kin05_swd4": _sdxl_minimal_loss_arch_variant(
+            name="Minimal SDXL with higher SWD but softened kinetic regularization.",
+            terminal_swd_weight=4.0,
+            bridge_overrides={"w_kinetic": 0.5},
+        ),
+        "sdxl_min10g_loss_content005_swd4": _sdxl_minimal_loss_arch_variant(
+            name="Minimal SDXL with content anchor guarding stronger SWD.",
+            terminal_swd_weight=4.0,
+            bridge_overrides={"w_content_anchor": 0.05, "w_kinetic": 0.5},
+        ),
+        "sdxl_min10g_loss_spectral_swd2": _sdxl_minimal_loss_arch_variant(
+            name="Minimal SDXL with spectral-orthogonal terminal SWD.",
+            terminal_swd_weight=2.0,
+            bridge_overrides={
+                "terminal_swd_mode": "spectral_orthogonal",
+                "spectral_swd_low_weight": 0.5,
+                "spectral_swd_high_weight": 1.5,
+                "w_kinetic": 0.5,
+            },
+        ),
+        "sdxl_min10g_loss_micro_macro": _sdxl_minimal_loss_arch_variant(
+            name="Minimal SDXL with explicit micro/macro patch weighting.",
+            terminal_swd_weight=2.0,
+            patch_sizes=[1, 3, 5],
+            bridge_overrides={
+                "swd_micro_weight": 1.5,
+                "swd_macro_weight": 0.5,
+                "swd_micro_patch_max": 3,
+                "swd_macro_patch_min": 5,
+                "w_kinetic": 0.5,
+            },
+        ),
+        "sdxl_min10g_arch_res1_swd2": _sdxl_minimal_loss_arch_variant(
+            name="Minimal SDXL plus one residual body block; tests capacity without full t01.",
+            terminal_swd_weight=2.0,
+            model_overrides={"num_res_blocks": 1},
+            bridge_overrides={"w_kinetic": 0.5},
+        ),
+        "sdxl_min10g_arch_spatial005_swd2": _sdxl_minimal_loss_arch_variant(
+            name="Minimal SDXL with tiny learnable spatial style prior.",
+            terminal_swd_weight=2.0,
+            model_overrides={"style_spatial_pre_gain_16": 0.05},
+            bridge_overrides={"w_kinetic": 0.5},
+        ),
+        "sdxl_min10g_arch_diffeo002_swd2": _sdxl_minimal_loss_arch_variant(
+            name="Minimal SDXL with tiny diffeomorphic head.",
+            terminal_swd_weight=2.0,
+            model_overrides={
+                "use_diffeomorphic_stroke": True,
+                "diffeomorphic_warp_strength": 0.002,
+                "diffeomorphic_color_strength": 0.25,
+                "diffeomorphic_texture_gate_strength": 2.0,
+                "diffeomorphic_normal_leak": 0.0,
+            },
+            bridge_overrides={"w_kinetic": 0.5},
+        ),
+    }
+)
+
+
 def _query_gpu_used_mb() -> int | None:
     try:
         out = subprocess.check_output(
@@ -279,7 +466,8 @@ def _write_config(
         latent_h = int(cfg.get("model", {}).get("latent_size", 32))
         latent_w = latent_h
     cfg["model"]["latent_channels"] = int(latent_channels)
-    cfg["model"]["latent_scale_factor"] = float(scale)
+    model_scale = float(variant.get("model_latent_scale_factor", scale))
+    cfg["model"]["latent_scale_factor"] = model_scale
     cfg["model"]["style_attn_num_tokens"] = int(max(64, min(256, (latent_h * latent_w) // 4)))
     for key in (
         "style_spatial_pre_gain_16",
@@ -329,11 +517,14 @@ def _write_config(
     cfg["bridge"]["swd_num_projections"] = min(int(cfg["bridge"].get("swd_num_projections", 64)), 32)
     for key, value in dict(variant.get("bridge_overrides", {}) or {}).items():
         cfg["bridge"][key] = value
+    inference_overrides = dict(variant.get("inference_overrides", {}) or {})
+    full_eval_overrides = dict(variant.get("full_eval_overrides", {}) or {})
     cfg["inference"] = {
         "num_steps": 12,
         "step_size": 1.0,
         "style_strength": 1.0,
     }
+    cfg["inference"].update(inference_overrides)
     cfg["full_eval"] = {
         "num_steps": 12,
         "step_size": 1.0,
@@ -344,6 +535,7 @@ def _write_config(
         "max_ref_cache": 80,
         "ref_feature_batch_size": 8,
     }
+    cfg["full_eval"].update(full_eval_overrides)
     cfg["ablation"] = {
         "name": out_dir.name,
         "axis": "vae_backend_256",
@@ -374,6 +566,8 @@ def _summary_row(
         "variant": name,
         "vae_model": vae_model,
         "vae_scaling_factor": scale,
+        "model_latent_scale_factor": variant.get("model_latent_scale_factor", scale),
+        "eval_decode_scale": variant.get("eval_decode_scale", scale),
         "batch_size": variant.get("batch_size", ""),
         "eval_batch_size": variant.get("eval_batch_size", ""),
         "max_train_batches_per_epoch": training_overrides.get("max_train_batches_per_epoch", ""),
@@ -526,13 +720,13 @@ def main() -> int:
                 "--vae_model",
                 vae_model,
                 "--vae_decode_scale",
-                str(scale),
+                str(float(variant.get("eval_decode_scale", scale))),
                 "--num_steps",
-                "12",
+                str(int((variant.get("full_eval_overrides", {}) or {}).get("num_steps", 12))),
                 "--step_size",
-                "1.0",
+                str(float((variant.get("full_eval_overrides", {}) or {}).get("step_size", 1.0))),
                 "--style_strength",
-                "1.0",
+                str(float((variant.get("full_eval_overrides", {}) or {}).get("style_strength", 1.0))),
                 "--max_src_samples",
                 "30",
             ]

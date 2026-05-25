@@ -21,7 +21,7 @@ Get-CimInstance Win32_Process |
   ConvertTo-Csv -NoTypeInformation
 Write-Output '###TASKS'
 `$taskRows = @()
-foreach (`$name in @('LANCET_VAE_Backend_256_Probe','LANCET_VAE_Backend_256_SDXL','LANCET_VAE_Backend_256_SDXL_10G_Ladder','LANCET_VAE_Backend_256_SDXL_10G_Candidates')) {
+foreach (`$name in @('LANCET_VAE_Backend_256_Probe','LANCET_VAE_Backend_256_SDXL','LANCET_VAE_Backend_256_SDXL_10G_Ladder','LANCET_VAE_Backend_256_SDXL_10G_Candidates','LANCET_VAE_Backend_256_SDXL_MinimalScale','LANCET_VAE_Backend_256_SDXL_LossArch')) {
   `$task = Get-ScheduledTask -TaskName `$name -ErrorAction SilentlyContinue
   if (`$null -eq `$task) {
     `$taskRows += [pscustomobject]@{task=`$name; exists='false'; state=''; last_result=''; last_run_time=''; next_run_time=''}
@@ -37,6 +37,10 @@ Write-Output '###SDXL_10G_LADDER_CSV'
 if (Test-Path 'exp\vae_backend_256_sdxl_10g_ladder\vae_backend_256_results.csv') { Get-Content 'exp\vae_backend_256_sdxl_10g_ladder\vae_backend_256_results.csv' -Tail 12 }
 Write-Output '###SDXL_10G_CANDIDATES_CSV'
 if (Test-Path 'exp\vae_backend_256_sdxl_10g_candidates\vae_backend_256_results.csv') { Get-Content 'exp\vae_backend_256_sdxl_10g_candidates\vae_backend_256_results.csv' -Tail 16 }
+Write-Output '###SDXL_MINIMAL_SCALE_CSV'
+if (Test-Path 'exp\vae_backend_256_sdxl_minimal_scale_switches\vae_backend_256_results.csv') { Get-Content 'exp\vae_backend_256_sdxl_minimal_scale_switches\vae_backend_256_results.csv' -Tail 16 }
+Write-Output '###SDXL_LOSS_ARCH_CSV'
+if (Test-Path 'exp\vae_backend_256_sdxl_minimal_loss_arch\vae_backend_256_results.csv') { Get-Content 'exp\vae_backend_256_sdxl_minimal_loss_arch\vae_backend_256_results.csv' -Tail 16 }
 Write-Output '###PROBE_CSV'
 if (Test-Path 'exp\vae_backend_256_probe\vae_backend_256_results.csv') { Get-Content 'exp\vae_backend_256_probe\vae_backend_256_results.csv' -Tail 8 }
 "@
@@ -68,6 +72,8 @@ $tasks = Get-Section $lines "TASKS"
 $sdxl = Get-Section $lines "SDXL_CSV"
 $sdxl10gLadder = Get-Section $lines "SDXL_10G_LADDER_CSV"
 $sdxl10gCandidates = Get-Section $lines "SDXL_10G_CANDIDATES_CSV"
+$sdxlMinimalScale = Get-Section $lines "SDXL_MINIMAL_SCALE_CSV"
+$sdxlLossArch = Get-Section $lines "SDXL_LOSS_ARCH_CSV"
 $probe = Get-Section $lines "PROBE_CSV"
 
 @(
@@ -102,6 +108,16 @@ $probe = Get-Section $lines "PROBE_CSV"
     "## SDXL 10G Candidates CSV Tail",
     '```csv',
     ($sdxl10gCandidates -join "`n"),
+    '```',
+    "",
+    "## SDXL Minimal Scale CSV Tail",
+    '```csv',
+    ($sdxlMinimalScale -join "`n"),
+    '```',
+    "",
+    "## SDXL Loss Arch CSV Tail",
+    '```csv',
+    ($sdxlLossArch -join "`n"),
     '```',
     "",
     "## Probe CSV Tail",

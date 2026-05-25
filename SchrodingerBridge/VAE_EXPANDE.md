@@ -124,6 +124,37 @@
 - 结论：`sdxl_t01_recover` 虽然稳定且显存达标，但并没有恢复 SD15 t01 的双指标；style 低于 minimal，content_lpips 也明显恶化。暂判为 SDXL latent 尺度/解码可见风格与原 t01 结构不相容，不作为主线会师点。
 - 队列已自动进入 `sdxl_style_push`，目前训练稳定；下一步重点看强 terminal SWD + `[3,5,7]` patch 是否能把 style 拉回 `0.70+`。
 
+2026-05-25 23:26 路线修正：
+
+- `sdxl_style_push` 已完成 epoch 6/7/8，训练 peak VRAM 约 `10050MB`，但结果仍差：
+  - epoch 6：`clip_style=0.6621`，`content_lpips=0.7077`，`EC=0.1936`
+  - epoch 7：`clip_style=0.6582`，`content_lpips=0.6986`，`EC=0.1984`
+  - epoch 8：`clip_style=0.6614`，`content_lpips=0.7004`，`EC=0.1982`
+- 已停止后续 `sdxl_content_guard/sdxl_t01_fullish`，避免继续在已证伪的强 t01 迁移路线上耗时。
+- 新判断：SDXL 当前最可靠基座是 `sdxl_s0_minimal` 的 `~0.667 style / ~0.302 LPIPS` 内容保真点。后续应从这个点向外推，而不是直接复制 SD15 t01。
+- 新实验组 `sdxl_minimal_scale_switches`：
+  - 保持 minimal 架构：无 semantic body、无 diffeomorphic head、zero-init output head。
+  - 只扫温和 SWD、patch、`model_latent_scale_factor`、`vae_decode_scale`、推理步数。
+  - 训练 batch 固定 128；eval batch 提升到 16；sleep 监控节奏改为 120 秒。
+
+2026-05-25 23:33 优先级修正：
+
+- `sdxl_minimal_scale_switches` 已在首组 epoch 3 前停止；原因是当前更优先的问题不是 decode scale，而是 minimal 基座上的 loss 比重与架构开关。
+- 新队列 `sdxl_minimal_loss_arch` 从 `sdxl_s0_minimal` 内容好点出发，先只测：
+  - loss 比重：降低 `w_kinetic`、提高 terminal SWD、增加 `w_content_anchor`。
+  - SWD 形式：`spectral_orthogonal`、micro/macro patch 权重。
+  - 架构开关：`num_res_blocks=1`、极低 `style_spatial_pre_gain_16=0.05`、极弱 diffeomorphic head。
+- 目标不是一次冲到 0.72，而是先找到哪类开关能在 `content_lpips ~0.30` 附近提高 style；找到有效方向后再做 scale / 推理参数第二层扫描。
+
+2026-05-25 23:48 首组 loss 结果：
+
+- `sdxl_min10g_loss_kin025_swd2` 已完成 epoch 6/7/8，peak VRAM `7755MB`；minimal 架构较轻，显存低于 10G 但数值稳定。
+- 指标：
+  - epoch 6：`clip_style=0.6716`，`content_lpips=0.3289`，`EC=0.4507`
+  - epoch 7：`clip_style=0.6714`，`content_lpips=0.3304`，`EC=0.4496`
+  - epoch 8：`clip_style=0.6714`，`content_lpips=0.3304`，`EC=0.4495`
+- 相对 `sdxl_s0_minimal`：style 约 `+0.0044`，但 LPIPS 约 `+0.0285`，EC 下降。结论是降低 `w_kinetic` 能让风格略动，但不是高性价比方向；需要看 `content_anchor`、spectral SWD 或轻架构开关是否能更好地保内容。
+
 阶段队列：
 
 0. `sdxl_s0_minimal`
