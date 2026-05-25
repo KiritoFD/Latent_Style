@@ -86,9 +86,11 @@ class LGTInference:
         style_strength=None,
         style_adapter_path=None,
         residual_scale=1.0,
+        force_integrate=False,
     ):
         self.device = device
         self.num_steps = int(num_steps)
+        self.force_integrate = bool(force_integrate)
 
         checkpoint = torch.load(model_path, map_location=device, weights_only=False)
         config = ExperimentConfig.from_mapping(checkpoint["config"])
@@ -149,7 +151,7 @@ class LGTInference:
         b = x0.shape[0]
         if isinstance(target_style_id, int):
             target_style_id = torch.full((b,), target_style_id, dtype=torch.long, device=x0.device)
-        if self.objective_mode == "omf":
+        if self.objective_mode == "omf" and (not self.force_integrate):
             endpoint = self.model.endpoint_map(
                 x0,
                 style_id=target_style_id,
@@ -192,14 +194,28 @@ class LGTInference:
 def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
     from diffusers import AutoencoderKL
 
+    force_dtype = torch.float16
+    if str(model_id).lower() in {"sdxl-fp32", "sdxl-float32"}:
+        model_id = "stabilityai/sdxl-vae"
+        force_dtype = torch.float32
+    elif str(model_id).lower() in {"sdxl-fp16-fix", "sdxl-fix"}:
+        model_id = "madebyollin/sdxl-vae-fp16-fix"
+        force_dtype = torch.float16
+
     vae_presets = {
         "sd15": "stabilityai/sd-vae-ft-mse",
         "sdxl": "stabilityai/sdxl-vae",
         "mse": "stabilityai/sd-vae-ft-mse",
         "ema": "stabilityai/sd-vae-ft-ema",
+        "flux1": "black-forest-labs/FLUX.1-schnell",
+        "flux1-dev": "black-forest-labs/FLUX.1-dev",
+        "flux1-schnell": "black-forest-labs/FLUX.1-schnell",
+        "flux2": "black-forest-labs/FLUX.2-klein-4B",
+        "flux2-klein": "black-forest-labs/FLUX.2-klein-4B",
     }
     if model_id in vae_presets:
         model_id = vae_presets[model_id]
+    use_subfolder = str(model_id).lower().startswith("black-forest-labs/flux")
 
     if cache_dir is None:
         cache_dir = os.path.expanduser("~/.cache/huggingface/hub")
@@ -208,7 +224,8 @@ def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
     try:
         vae = AutoencoderKL.from_pretrained(
             model_id,
-            torch_dtype=torch.float16,
+            subfolder=("vae" if use_subfolder else None),
+            torch_dtype=force_dtype,
             cache_dir=cache_dir,
             local_files_only=True,
         ).to(device)
@@ -222,7 +239,7 @@ def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
         found = _find_hf_repo_root(ms_dest)
         if found:
             try:
-                vae = AutoencoderKL.from_pretrained(found, torch_dtype=torch.float16, local_files_only=True).to(
+                vae = AutoencoderKL.from_pretrained(found, torch_dtype=force_dtype, local_files_only=True).to(
                     device
                 )
                 vae.eval()
@@ -240,13 +257,18 @@ def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
             else:
                 root = _find_hf_repo_root(dest)
             if root:
-                vae = AutoencoderKL.from_pretrained(root, torch_dtype=torch.float16).to(device)
+                vae = AutoencoderKL.from_pretrained(root, subfolder=("vae" if use_subfolder else None), torch_dtype=force_dtype).to(device)
                 vae.eval()
                 return vae
         except Exception as exc:
             logger.warning("ModelScope VAE load failed: %s", exc)
 
-    vae = AutoencoderKL.from_pretrained(model_id, torch_dtype=torch.float16, cache_dir=cache_dir).to(device)
+    vae = AutoencoderKL.from_pretrained(
+        model_id,
+        subfolder=("vae" if use_subfolder else None),
+        torch_dtype=force_dtype,
+        cache_dir=cache_dir,
+    ).to(device)
     vae.eval()
     return vae
 
@@ -260,17 +282,21 @@ def load_vae(device="cuda", model_id="sd15", cache_dir=None):
 
 @torch.no_grad()
 def encode_image(vae, image_tensor, device="cuda"):
-    image_tensor = image_tensor.to(device, dtype=torch.float16)
+    vae_dtype = next(vae.parameters()).dtype
+    image_tensor = image_tensor.to(device, dtype=vae_dtype)
     latent = vae.encode(image_tensor).latent_dist.sample()
-    latent = latent * vae.config.scaling_factor
+    shift = float(getattr(vae.config, "shift_factor", 0.0) or 0.0)
+    latent = (latent - shift) * vae.config.scaling_factor
     return latent
 
 
 @torch.no_grad()
 def decode_latent(vae, latent, device="cuda", scaling_factor=None):
-    latent = latent.to(device, dtype=torch.float16)
+    vae_dtype = next(vae.parameters()).dtype
+    latent = latent.to(device, dtype=vae_dtype)
     scale = float(vae.config.scaling_factor if scaling_factor is None else scaling_factor)
-    latent = latent / max(scale, 1e-8)
+    shift = float(getattr(vae.config, "shift_factor", 0.0) or 0.0)
+    latent = (latent / max(scale, 1e-8)) + shift
     image = vae.decode(latent).sample
     image = (image + 1.0) / 2.0
     return torch.clamp(image, 0.0, 1.0)

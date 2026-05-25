@@ -14,12 +14,17 @@ import torch
 # 妫ｅ啯鏆?Enable Tensor Cores for float32 matrix multiplication (Fixes UserWarning)
 torch.set_float32_matmul_precision('high')
 
+_SRC_ROOT = Path(__file__).resolve().parents[1]
+if str(_SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SRC_ROOT))
+
 import numpy as np
 import csv
 import random
 import gc
 import time
 import hashlib
+import re
 from tqdm import tqdm
 from collections import defaultdict
 from PIL import Image, ImageDraw, ImageFont
@@ -52,6 +57,7 @@ from utils.artfid_metric import (
     load_artfid_feature_extractor,
     load_artfid_lpips,
 )
+from utils.modern_metrics import ModernMetricConfig, append_modern_metrics_to_summary
 from config_schema import load_inference_defaults, resolve_full_eval_section
 
 # KID (official implementation via torchmetrics)
@@ -67,6 +73,15 @@ except Exception:
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _WORKSPACE_ROOT = _PROJECT_ROOT
+
+
+def _cli_flag_present(*names: str) -> bool:
+    argv = sys.argv[1:]
+    for token in argv:
+        for name in names:
+            if token == name or token.startswith(name + "="):
+                return True
+    return False
 
 
 def _resolve_default_local_clip_dir() -> Path:
@@ -328,6 +343,8 @@ def _list_reuse_generated_files(out_dir: Path) -> list[Path]:
     candidates.extend(sorted(out_dir.glob("*_to_*.jpg")))
     candidates.extend(sorted((out_dir / "images").glob("*_to_*.png")))
     candidates.extend(sorted(out_dir.glob("*_to_*.png")))
+    candidates.extend(sorted((out_dir / "images").glob("*_to_*.jpeg")))
+    candidates.extend(sorted(out_dir.glob("*_to_*.jpeg")))
     dedup = {}
     for p in candidates:
         dedup[str(p.resolve())] = p
@@ -372,7 +389,14 @@ def _resolve_gen_image_path(out_dir: Path, gen_image_value: str) -> Path | None:
     return None
 
 
-def _save_summary_grid_png(rows, out_dir: Path, style_order: list[str] | None = None) -> Path | None:
+def _save_summary_grid_png(
+    rows,
+    out_dir: Path,
+    style_order: list[str] | None = None,
+    filename: str = "summary_grid.png",
+    selection_mode: str = "max_clip_style",
+    fixed_sources: dict[str, str] | None = None,
+) -> Path | None:
     if not rows:
         return None
     if not style_order:
@@ -401,19 +425,47 @@ def _save_summary_grid_png(rows, out_dir: Path, style_order: list[str] | None = 
             "content_lpips": _to_f(r.get("content_lpips", 0.0), 0.0),
         }
 
-    # Pick one representative source image per row style:
-    # maximize mean clip_style across transfers to OTHER styles.
+    def _natural_key(value: str):
+        parts = re.split(r"(\d+)", str(value))
+        return [int(p) if p.isdigit() else p.lower() for p in parts]
+
+    def _item_ec(item: dict) -> float:
+        return float(item.get("clip_style", 0.0)) * (1.0 - float(item.get("content_lpips", 0.0)))
+
+    # Pick one representative source image per row style.
     chosen = {}
+    selection_mode = str(selection_mode or "max_clip_style").strip().lower()
+    fixed_sources = {str(k): str(v) for k, v in (fixed_sources or {}).items()}
     for src_style in style_order:
         candidates = by_src.get(src_style, {})
         if not candidates:
             chosen[src_style] = {}
+            continue
+        if selection_mode in {"fixed", "fixed_source", "fixed_sources"} and src_style in fixed_sources:
+            want = fixed_sources[src_style]
+            exact = [(k, v) for k, v in candidates.items() if k == want or Path(k).stem == want]
+            if exact:
+                best_src_img, best_map = exact[0]
+                chosen[src_style] = {
+                    "src_image": str(best_src_img),
+                    "tgt_map": best_map,
+                }
+                continue
+            print(f"  WARNING: fixed source not found for {src_style}: {want}")
+        if selection_mode == "first":
+            ranked = sorted(candidates.items(), key=lambda kv: _natural_key(kv[0]))
+            best_src_img, best_map = ranked[0]
+            chosen[src_style] = {
+                "src_image": str(best_src_img),
+                "tgt_map": best_map,
+            }
             continue
         best_key = None
         best_map = None
         best_src_img = None
         for src_img, tgt_map in candidates.items():
             transfer_scores = []
+            transfer_ec_scores = []
             for tgt_style in style_order:
                 if tgt_style == src_style:
                     continue
@@ -421,13 +473,19 @@ def _save_summary_grid_png(rows, out_dir: Path, style_order: list[str] | None = 
                 if item is None:
                     continue
                 transfer_scores.append(float(item.get("clip_style", 0.0)))
+                transfer_ec_scores.append(_item_ec(item))
             coverage = len(transfer_scores)
             if coverage <= 0:
                 continue
             mean_clip = float(np.mean(transfer_scores))
             min_clip = float(np.min(transfer_scores))
-            # Higher mean clip first, then min clip, then coverage.
-            rank_key = (mean_clip, min_clip, coverage, src_img)
+            mean_ec = float(np.mean(transfer_ec_scores)) if transfer_ec_scores else 0.0
+            min_ec = float(np.min(transfer_ec_scores)) if transfer_ec_scores else 0.0
+            # Higher selected metric first, then stable secondary terms.
+            if selection_mode == "max_ec":
+                rank_key = (mean_ec, min_ec, mean_clip, coverage, src_img)
+            else:
+                rank_key = (mean_clip, min_clip, mean_ec, coverage, src_img)
             if best_key is None or rank_key > best_key:
                 best_key = rank_key
                 best_map = tgt_map
@@ -513,14 +571,35 @@ def _save_summary_grid_png(rows, out_dir: Path, style_order: list[str] | None = 
             stat_text = f"clip={clip_style:.3f} lpips={c_lpips:.3f}"
             draw.text((px + 4, py + cell_h + 3), stat_text, fill=(230, 230, 230), font=font_small)
 
-    out_path = out_dir / "summary_grid.png"
+    out_path = out_dir / filename
     canvas.save(out_path, format="PNG")
     print(f"Summary grid saved: {out_path}")
-    print("Summary grid source selection (max transfer clip_style mean):")
+    print(f"Summary grid source selection ({selection_mode}):")
     for src_style in style_order:
         src_img = chosen.get(src_style, {}).get("src_image", "")
         print(f"  {src_style}: {Path(src_img).stem if src_img else '(none)'}")
     return out_path
+
+
+def _canonicalize_style_subdirs(test_dir: Path, style_subdirs: list[str]) -> list[str]:
+    clean = []
+    seen = set()
+    for name in style_subdirs:
+        key = str(name).strip()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        clean.append(key)
+
+    # Historical overfit50 protocol is strictly the canonical 5 styles.
+    canonical_overfit50 = ["photo", "monet", "vangogh", "cezanne", "Hayao"]
+    if test_dir.name.lower() == "overfit50":
+        available = {d.name for d in test_dir.iterdir() if d.is_dir()}
+        if all(name in available for name in canonical_overfit50):
+            filtered = [name for name in clean if name in canonical_overfit50]
+            return filtered or canonical_overfit50
+
+    return clean
 
 def _extract_clip_embeddings(output):
     """
@@ -1018,6 +1097,8 @@ def _auto_run_missing_full_eval(args) -> None:
             cmd += ["--test_dir", str(args.test_dir)]
         if args.style_strength is not None:
             cmd += ["--style_strength", str(args.style_strength)]
+        if args.force_integrate:
+            cmd += ["--force_integrate"]
         if args.force_regen:
             cmd += ["--force_regen"]
         if args.eval_classifier_only:
@@ -1041,6 +1122,11 @@ def _auto_run_missing_full_eval(args) -> None:
             cmd += ["--eval_kid_batch_size", str(args.eval_kid_batch_size)]
         else:
             cmd += ["--no-eval_enable_kid"]
+        if args.eval_enable_modern_metrics:
+            cmd += ["--eval_enable_modern_metrics"]
+            cmd += ["--eval_modern_batch_size", str(args.eval_modern_batch_size)]
+            cmd += ["--eval_dino_model_name", str(args.eval_dino_model_name)]
+            cmd += ["--eval_modern_clip_model_name", str(args.eval_modern_clip_model_name)]
         if args.reuse_generated:
             cmd += ["--reuse_generated"]
         if args.generation_only:
@@ -1064,8 +1150,12 @@ def main():
     parser.add_argument('--num_steps', type=int, default=int(full_eval_defaults.get("num_steps", 12)))
     parser.add_argument('--step_size', type=float, default=float(full_eval_defaults.get("step_size", 1.0)))
     parser.add_argument('--style_strength', type=float, default=full_eval_defaults.get("style_strength", None), help="Global style strength in [0,1]")
+    parser.add_argument('--force_integrate', action='store_true', help="For OMF checkpoints, use time integration instead of endpoint_map.")
     parser.add_argument('--residual_scale', type=float, default=1.0, help="Post-endpoint latent residual scale for inference strengthening. 1.0 keeps default behavior.")
     parser.add_argument('--vae_decode_scale', type=float, default=None, help="Override VAE scaling factor for decode only; encode/model latent scale stay unchanged.")
+    parser.add_argument('--vae_model', type=str, default="sd15", help="VAE model alias/id for encode/decode: sd15, sdxl, flux1, flux2, or HF repo id.")
+    parser.add_argument('--vae_path', type=str, default="", help="Optional local VAE directory. Overrides --vae_model.")
+    parser.add_argument('--image_ext', type=str, default="jpg", help="Generated image extension for Phase 1 save path: jpg or png.")
     parser.add_argument('--style_adapter', type=str, default="", help="Optional external style adapter (.pt) to override style_emb/style_spatial_id_16")
     parser.add_argument('--max_src_samples', type=int, default=int(full_eval_defaults.get("max_src_samples", 30)), help="Max source images per style; <=0 means all")
     parser.add_argument('--max_ref_compare', type=int, default=int(full_eval_defaults.get("max_ref_compare", 50)), help="Max refs for LPIPS style compare; <=0 means all cached refs")
@@ -1126,12 +1216,23 @@ def main():
     parser.add_argument('--eval_kid_max_ref', type=int, default=200, help="Max target-style reference images per pair for KID")
     parser.add_argument('--eval_kid_subset_size', type=int, default=50, help="Subset size for KID (torchmetrics)")
     parser.add_argument('--eval_kid_batch_size', type=int, default=8, help="Batch size for KID image loading/inception")
+    parser.add_argument(
+        '--eval_enable_modern_metrics',
+        action='store_true',
+        help="Append modern post-hoc metrics to summary.json: DINO-SSM structure, CLIP-CMMD, and VGG Gram texture diagnostics.",
+    )
+    parser.add_argument('--eval_modern_batch_size', type=int, default=6, help="Batch size for modern metrics.")
+    parser.add_argument('--eval_dino_model_name', type=str, default="facebook/dinov2-small", help="DINOv2 model for structure SSM distance.")
+    parser.add_argument('--eval_modern_clip_model_name', type=str, default="openai/clip-vit-base-patch32", help="CLIP model for CLIP-CMMD.")
     parser.add_argument('--eval_lpips_chunk_size', type=int, default=2, help="LPIPS chunk size for conservative VRAM usage")
     parser.add_argument('--eval_lpips_no_cpu_fallback', action='store_true', help="Disable CPU fallback when LPIPS CUDA OOM occurs")
     parser.add_argument('--reuse_generated', action='store_true', help="Reuse existing generated images in output dir/images (or legacy output dir) and skip generation")
     parser.add_argument('--generation_only', action='store_true', help="Only generate translated images, skip all evaluation metrics")
     parser.add_argument('--seed', type=int, default=-1, help="Seed RNGs for reproducible VAE latent sampling/generation; <0 leaves RNG state untouched.")
     args = parser.parse_args()
+    args.image_ext = str(args.image_ext or "jpg").strip().lower().lstrip(".")
+    if args.image_ext not in {"jpg", "jpeg", "png"}:
+        raise ValueError(f"Unsupported --image_ext: {args.image_ext}")
     if int(args.seed) >= 0:
         seed = int(args.seed)
         random.seed(seed)
@@ -1214,14 +1315,22 @@ def main():
         cfg = ckpt.get('config', {})
         resolved_full_eval = resolve_full_eval_section(cfg)
         if resolved_full_eval:
-            args.num_steps = int(resolved_full_eval.get("num_steps", args.num_steps))
-            args.step_size = float(resolved_full_eval.get("step_size", args.step_size))
-            args.style_strength = resolved_full_eval.get("style_strength", args.style_strength)
-            args.batch_size = int(resolved_full_eval.get("batch_size", args.batch_size))
-            args.max_src_samples = int(resolved_full_eval.get("max_src_samples", args.max_src_samples))
-            args.max_ref_compare = int(resolved_full_eval.get("max_ref_compare", args.max_ref_compare))
-            args.max_ref_cache = int(resolved_full_eval.get("max_ref_cache", args.max_ref_cache))
-            args.ref_feature_batch_size = int(resolved_full_eval.get("ref_feature_batch_size", args.ref_feature_batch_size))
+            if not _cli_flag_present("--num_steps"):
+                args.num_steps = int(resolved_full_eval.get("num_steps", args.num_steps))
+            if not _cli_flag_present("--step_size"):
+                args.step_size = float(resolved_full_eval.get("step_size", args.step_size))
+            if not _cli_flag_present("--style_strength"):
+                args.style_strength = resolved_full_eval.get("style_strength", args.style_strength)
+            if not _cli_flag_present("--batch_size"):
+                args.batch_size = int(resolved_full_eval.get("batch_size", args.batch_size))
+            if not _cli_flag_present("--max_src_samples"):
+                args.max_src_samples = int(resolved_full_eval.get("max_src_samples", args.max_src_samples))
+            if not _cli_flag_present("--max_ref_compare"):
+                args.max_ref_compare = int(resolved_full_eval.get("max_ref_compare", args.max_ref_compare))
+            if not _cli_flag_present("--max_ref_cache"):
+                args.max_ref_cache = int(resolved_full_eval.get("max_ref_cache", args.max_ref_cache))
+            if not _cli_flag_present("--ref_feature_batch_size"):
+                args.ref_feature_batch_size = int(resolved_full_eval.get("ref_feature_batch_size", args.ref_feature_batch_size))
     else:
         print("Single-run eval in reuse-only mode (no checkpoint).")
     
@@ -1244,15 +1353,34 @@ def main():
         raise ValueError(f"Test directory not found: {test_dir_raw}")
     test_dir = resolved_test_dir
 
+    cfg_style_subdirs = [str(x).strip() for x in list(cfg.get('data', {}).get('style_subdirs', [])) if str(x).strip()]
     style_subdirs = [x.strip() for x in str(args.style_subdirs).split(",") if x.strip()]
+    if style_subdirs and checkpoint_path is not None and cfg_style_subdirs:
+        if set(style_subdirs) == set(cfg_style_subdirs) and style_subdirs != cfg_style_subdirs:
+            print(
+                "  WARNING: --style_subdirs order differs from checkpoint config order. "
+                "Reordering to checkpoint config to preserve style-id mapping."
+            )
+            style_subdirs = list(cfg_style_subdirs)
     if not style_subdirs:
-        style_subdirs = list(cfg.get('data', {}).get('style_subdirs', []))
+        style_subdirs = list(cfg_style_subdirs)
     if not style_subdirs:
         style_subdirs = [d.name for d in test_dir.iterdir() if d.is_dir()]
     if (not style_subdirs) and args.reuse_generated:
         style_subdirs = _infer_style_names_from_generated_files(_list_reuse_generated_files(out_dir))
+    style_subdirs = _canonicalize_style_subdirs(test_dir, style_subdirs)
     if not style_subdirs:
         raise ValueError("Failed to infer style names. Provide --style_subdirs or valid --test_dir folders.")
+
+    reuse_only_jpeg_eval = bool(args.reuse_generated and checkpoint_path is None)
+    metrics_filename = "metrics_reuse_generated.csv" if reuse_only_jpeg_eval else "metrics.csv"
+    summary_filename = "summary_reuse_generated.json" if reuse_only_jpeg_eval else "summary.json"
+    summary_grid_filename = "summary_grid_reuse_generated.png" if reuse_only_jpeg_eval else "summary_grid.png"
+    if reuse_only_jpeg_eval:
+        print(
+            "  WARNING: reuse-only evaluation is reading saved image files back from disk. "
+            "This path is convenient for diagnostics, but it is not the canonical in-memory full-eval used for paper metrics."
+        )
     
     test_images = {}
     for style_id, style_name in enumerate(style_subdirs):
@@ -1342,8 +1470,13 @@ def main():
             style_strength=args.style_strength,
             residual_scale=args.residual_scale,
             style_adapter_path=(args.style_adapter or None),
+            force_integrate=bool(args.force_integrate),
         )
-        vae = load_vae(device)
+        if str(args.vae_path).strip():
+            from diffusers import AutoencoderKL
+            vae = AutoencoderKL.from_pretrained(str(args.vae_path).strip(), torch_dtype=torch.float16).to(device).eval()
+        else:
+            vae = load_vae(device, model_id=str(args.vae_model).strip() or "sd15")
         model_scale = float(getattr(lgt.model, "latent_scale_factor", 0.18215))
         vae_scale = float(getattr(getattr(vae, "config", None), "scaling_factor", model_scale))
         scale_in = model_scale / max(vae_scale, 1e-8)
@@ -1386,7 +1519,7 @@ def main():
 
                         for i in range(len(batch_info)):
                             src_item = batch_info[i]
-                            out_name = f"{src_item['style_name']}_{src_item['path'].stem}_to_{tgt_name}.jpg"
+                            out_name = f"{src_item['style_name']}_{src_item['path'].stem}_to_{tgt_name}.{args.image_ext}"
                             out_path = images_dir / out_name
                             out_rel = Path("images") / out_name
 
@@ -1424,7 +1557,10 @@ def main():
                     "gen_image": it["gen_name"],
                 }
             )
-        _save_summary_grid_png(grid_rows, out_dir, style_order=list(style_subdirs))
+        _save_summary_grid_png(grid_rows, out_dir, style_order=list(style_subdirs), filename=summary_grid_filename, selection_mode="max_clip_style")
+        _save_summary_grid_png(grid_rows, out_dir, style_order=list(style_subdirs), filename="summary_grid_first.png", selection_mode="first")
+        _save_summary_grid_png(grid_rows, out_dir, style_order=list(style_subdirs), filename="summary_grid_max_clip_style.png", selection_mode="max_clip_style")
+        _save_summary_grid_png(grid_rows, out_dir, style_order=list(style_subdirs), filename="summary_grid_max_ec.png", selection_mode="max_ec")
         if device == "cuda":
             torch.cuda.empty_cache()
         gc.collect()
@@ -1436,7 +1572,7 @@ def main():
             "output_dir": str(out_dir),
             "note": "Metrics are intentionally skipped. Run evaluation later with --reuse_generated.",
         }
-        sum_path = out_dir / "summary.json"
+        sum_path = out_dir / summary_filename
         with open(sum_path, "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2, ensure_ascii=False)
         print(f"Summary saved: {sum_path}")
@@ -1794,7 +1930,7 @@ def main():
     src_pil_cache = {}   # abs src path -> PIL.Image (CLIP path)
     src_clip_cache = {}  # abs src path -> Tensor[D] on CPU
 
-    csv_path = out_dir / 'metrics.csv'
+    csv_path = out_dir / metrics_filename
     # Re-evaluation on reused images should overwrite metrics to avoid mixing old/new classifier outputs.
     csv_mode = 'w' if args.force_regen or args.reuse_generated or not csv_path.exists() else 'a'
     csv_file = open(csv_path, csv_mode, newline='')
@@ -1963,6 +2099,8 @@ def main():
         csv_path,
         out_dir,
         ckpt_for_summary,
+        summary_filename=summary_filename,
+        summary_grid_filename=summary_grid_filename,
         style_order=list(style_subdirs),
         style_real_paths=style_real_paths,
         source_style_paths=style_real_paths,
@@ -1979,12 +2117,27 @@ def main():
         kid_subset_size=int(args.eval_kid_subset_size),
         kid_batch_size=int(args.eval_kid_batch_size),
     )
+    if bool(args.eval_enable_modern_metrics):
+        append_modern_metrics_to_summary(
+            out_dir,
+            ModernMetricConfig(
+                test_dir=test_dir,
+                device=device,
+                clip_model_name=str(args.eval_modern_clip_model_name),
+                dino_model_name=str(args.eval_dino_model_name),
+                batch_size=max(1, int(args.eval_modern_batch_size)),
+            ),
+            summary_filename=summary_filename,
+            metrics_filename=metrics_filename,
+        )
 
 def generate_summary_json(
     csv_path,
     out_dir,
     ckpt_path,
     *,
+    summary_filename: str = "summary.json",
+    summary_grid_filename: str = "summary_grid.png",
     style_order=None,
     style_real_paths=None,
     source_style_paths=None,
@@ -2340,11 +2493,14 @@ def generate_summary_json(
         'detailed_style_metrics': detailed_metrics
     }
     
-    sum_path = out_dir / 'summary.json'
+    sum_path = out_dir / summary_filename
     with open(sum_path, 'w') as f:
         json.dump(summary, f, indent=2)
     print(f"闁?Summary saved: {sum_path}")
-    _save_summary_grid_png(rows, out_dir, style_order=style_order)
+    _save_summary_grid_png(rows, out_dir, style_order=style_order, filename=summary_grid_filename, selection_mode="max_clip_style")
+    _save_summary_grid_png(rows, out_dir, style_order=style_order, filename="summary_grid_first.png", selection_mode="first")
+    _save_summary_grid_png(rows, out_dir, style_order=style_order, filename="summary_grid_max_clip_style.png", selection_mode="max_clip_style")
+    _save_summary_grid_png(rows, out_dir, style_order=style_order, filename="summary_grid_max_ec.png", selection_mode="max_ec")
     if fid_runner is not None:
         fid_runner.close()
 

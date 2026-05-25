@@ -365,6 +365,8 @@ class SemanticCrossAttn(nn.Module):
         routing_mode: str = "softmax",
         sinkhorn_iters: int = 3,
         gumbel_tau: float = 1.0,
+        self_topology_gate: bool = False,
+        self_topology_blend: float = 1.0,
     ) -> None:
         super().__init__()
         self.paint_only = bool(paint_only)
@@ -373,6 +375,8 @@ class SemanticCrossAttn(nn.Module):
             self.routing_mode = "softmax"
         self.sinkhorn_iters = max(1, int(sinkhorn_iters))
         self.gumbel_tau = max(1e-3, float(gumbel_tau))
+        self.self_topology_gate = bool(self_topology_gate)
+        self.self_topology_blend = max(0.0, min(1.0, float(self_topology_blend)))
         self.norm_x = nn.GroupNorm(_resolve_group_count(dim, num_groups), dim)
         self.norm_s = nn.GroupNorm(_resolve_group_count(dim, num_groups), dim)
         self.to_q = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
@@ -420,19 +424,32 @@ class SemanticCrossAttn(nn.Module):
         q = self.to_q(q_dehydrated).view(b, c, -1).transpose(1, 2)
         k = self.to_k(k_dehydrated).view(b, c, -1)
         v = self.to_v(ns).view(b, c, -1).transpose(1, 2)
+        q = torch.nan_to_num(q.float(), nan=0.0, posinf=1e4, neginf=-1e4).clamp_(-1e4, 1e4)
+        k = torch.nan_to_num(k.float(), nan=0.0, posinf=1e4, neginf=-1e4).clamp_(-1e4, 1e4)
+        v = torch.nan_to_num(v.float(), nan=0.0, posinf=1e4, neginf=-1e4).clamp_(-1e4, 1e4)
 
         temp = torch.exp(self.log_temp).clamp(1e-4, 10.0)
         scale = (c ** -0.5) / temp
         attn = torch.bmm(q, k) * scale
+        attn = torch.nan_to_num(attn, nan=0.0, posinf=50.0, neginf=-50.0).clamp_(-50.0, 50.0)
         if self.routing_mode == "sinkhorn":
             attn = _sinkhorn_attention(attn, iters=self.sinkhorn_iters)
         elif self.routing_mode == "gumbel_hard":
             attn = _gumbel_hard_attention(attn, tau=self.gumbel_tau)
         else:
             attn = F.softmax(attn, dim=-1)
+        attn = torch.nan_to_num(attn, nan=0.0, posinf=1.0, neginf=0.0).to(dtype=x.dtype)
         self.last_attn = attn
         self.last_k = F.normalize(k, p=2, dim=1)
-        painted = torch.bmm(attn, v).transpose(1, 2).view(b, c, h_dim, w_dim)
+        painted_tokens = torch.bmm(attn.float(), v).to(dtype=x.dtype)
+        if self.self_topology_gate and self.self_topology_blend > 0.0:
+            self_logits = torch.bmm(q, q.transpose(1, 2)) * scale
+            self_logits = torch.nan_to_num(self_logits, nan=0.0, posinf=50.0, neginf=-50.0).clamp_(-50.0, 50.0)
+            self_attn = F.softmax(self_logits, dim=-1)
+            self_attn = torch.nan_to_num(self_attn, nan=0.0, posinf=1.0, neginf=0.0)
+            topology_painted = torch.bmm(self_attn, painted_tokens)
+            painted_tokens = torch.lerp(painted_tokens, topology_painted, self.self_topology_blend)
+        painted = painted_tokens.transpose(1, 2).view(b, c, h_dim, w_dim)
 
         if self.paint_only:
             return painted
