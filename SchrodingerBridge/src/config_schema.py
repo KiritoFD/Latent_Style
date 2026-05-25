@@ -338,6 +338,7 @@ class TrainingConfig:
     numeric_debug_interval: int = 10
     numeric_debug_halt_on_nonfinite: bool = True
     numeric_debug_dump_limit: int = 200
+    max_train_batches_per_epoch: int = 0
     distill: dict[str, Any] = field(default_factory=dict)
     extra: dict[str, Any] = field(default_factory=dict)
 

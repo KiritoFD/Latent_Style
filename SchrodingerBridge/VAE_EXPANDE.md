@@ -1,6 +1,6 @@
 # VAE 扩展实验备忘
 
-更新时间：2026-05-25 22:05
+更新时间：2026-05-25 23:00
 
 ## 当前目标
 
@@ -81,6 +81,48 @@
   - eval epochs：6,7,8
   - out root：`exp\vae_backend_256_sdxl`
 - 启动后已看到 `src\run.py --config exp\vae_backend_256_sdxl\sdxl_s0_minimal\config.json` 进程。
+
+2026-05-25 23:00 执行更新：
+
+- 已中止低显存 SDXL 队列：`LANCET_VAE_Backend_256_SDXL` 停止后 GPU 回到空闲。
+- 已完成并保留的低显存归档结果：
+  - `sdxl_s0_minimal`：epoch 6/7/8 均成功；最佳约 `clip_style=0.6671`、`content_lpips=0.3017`、`EC=0.4657`。
+  - `sdxl_s0_minimal_diffeo`：epoch 6/7/8 均成功；最佳约 `clip_style=0.6673`、`content_lpips=0.3203`、`EC=0.4534`。
+- 结论：minimal 路线证明 SDXL fp32 latent 可稳定训练/eval，但显存仅约 4.2GB，且 style 明显不足；不作为冲 SaMST 的主线。
+- 新约束：后续正式 SDXL 运行以 9.0-10.8GB peak VRAM 为目标；runner 已规划记录每次训练/eval 的 `peak_gpu_memory_mb`。
+- 下一步：运行 `sdxl_mem_b96/b128/b160/b192` memory ladder，每档 1 epoch、30 batch，选定 10G 级默认 batch 后启动 `sdxl_t01_recover/style_push/content_guard/t01_fullish`。
+
+2026-05-25 23:06 执行更新：
+
+- 10G memory ladder 有效结果：
+  - `batch=96`：`peak_gpu_memory_mb=7553`，稳定但低于目标。
+  - `batch=128`：`peak_gpu_memory_mb=9795`，稳定，落在 9.0-10.8GB 目标区间。
+  - `batch=160`：`peak_gpu_memory_mb=11808`，稳定但越过 10.8GB 上限。
+  - `batch=192`：运行中瞬时约 11.78GB，因 160 已越界而主动停止，不作为正式配置。
+- 决策：SDXL 10G 阶段默认训练 batch 固定为 128。
+- 已启动 `LANCET_VAE_Backend_256_SDXL_10G_Candidates`：
+  - variants：`sdxl_t01_recover,sdxl_style_push,sdxl_content_guard,sdxl_t01_fullish`
+  - epochs：8
+  - eval epochs：6,7,8
+  - out root：`exp\vae_backend_256_sdxl_10g_candidates`
+- 启动后 `sdxl_t01_recover` 已进入真实训练，观测显存约 9.65GB，符合 10G 目标。
+
+2026-05-25 23:05 监控更新：
+
+- `LANCET_VAE_Backend_256_SDXL_10G_Candidates` 正在运行。
+- 当前子进程为 `sdxl_t01_recover`，训练到 epoch 6/8；GPU 约 `9697/12288MB`，util 约 `95%`，温度约 `65C`。
+- 最新 log 无 OOM / non-finite，loss 主要由 terminal SWD 与 kinetic 项组成，训练过程稳定。
+- 候选结果 CSV 尚未出现；原因是 eval 只在 ckpt 6/7/8 生成后启动。下一步继续等待 epoch 6 eval 写入，再判断 style 是否突破 minimal 路线。
+
+2026-05-25 23:17 结果更新：
+
+- `sdxl_t01_recover` 已完成 epoch 6/7/8 训练与 eval，训练 peak VRAM 记录为 `9906MB`，符合 10G 目标。
+- 指标：
+  - epoch 6：`clip_style=0.6484`，`content_lpips=0.6539`，`EC=0.2244`
+  - epoch 7：`clip_style=0.6481`，`content_lpips=0.6454`，`EC=0.2298`
+  - epoch 8：`clip_style=0.6541`，`content_lpips=0.6485`，`EC=0.2299`
+- 结论：`sdxl_t01_recover` 虽然稳定且显存达标，但并没有恢复 SD15 t01 的双指标；style 低于 minimal，content_lpips 也明显恶化。暂判为 SDXL latent 尺度/解码可见风格与原 t01 结构不相容，不作为主线会师点。
+- 队列已自动进入 `sdxl_style_push`，目前训练稳定；下一步重点看强 terminal SWD + `[3,5,7]` patch 是否能把 style 拉回 `0.70+`。
 
 阶段队列：
 

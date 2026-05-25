@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import time
+from copy import deepcopy
 from pathlib import Path
 
 import torch
@@ -138,17 +139,110 @@ VARIANTS = {
 }
 
 
-def _run(cmd: list[str], log_path: Path, cwd: Path) -> int:
+def _sdxl_t01_variant(*, batch_size: int, eval_batch_size: int = 8, name: str = "") -> dict:
+    return {
+        "vae_model": "sdxl-fp32",
+        "latent_root": "latent-256-sdxl-fp32",
+        "batch_size": batch_size,
+        "eval_batch_size": eval_batch_size,
+        "learning_rate": 6e-5,
+        "terminal_swd_weight": 10.0,
+        "style_spatial_pre_gain_16": 0.30,
+        "diffeomorphic_warp_strength": 0.02,
+        "grad_clip_norm": 0.75,
+        "bridge_overrides": {
+            "swd_patch_sizes": [3, 5, 7],
+            "swd_num_projections": 32,
+            "semantic_swd_num_projections": 32,
+            "swd_projection_chunk_size": 16,
+            "swd_cdf_sample_size": 128,
+        },
+        "notes": name or "SDXL t01-style recovered candidate.",
+    }
+
+
+for _bs in (96, 128, 160, 192):
+    _v = _sdxl_t01_variant(batch_size=_bs, eval_batch_size=4, name=f"SDXL memory ladder batch={_bs}.")
+    _v["training_overrides"] = {"max_train_batches_per_epoch": 30}
+    VARIANTS[f"sdxl_mem_b{_bs}"] = _v
+
+VARIANTS.update(
+    {
+        "sdxl_t01_recover": _sdxl_t01_variant(batch_size=128, eval_batch_size=8, name="SDXL recovered t01 geometry, conservative style pressure."),
+        "sdxl_style_push": {
+            **_sdxl_t01_variant(batch_size=128, eval_batch_size=8, name="SDXL high style pressure with texton patches."),
+            "learning_rate": 8e-5,
+            "terminal_swd_weight": 20.0,
+            "style_spatial_pre_gain_16": 0.35,
+            "diffeomorphic_warp_strength": 0.03,
+        },
+        "sdxl_content_guard": {
+            **_sdxl_t01_variant(batch_size=128, eval_batch_size=8, name="SDXL style push with lower tangent warp for content preservation."),
+            "learning_rate": 6e-5,
+            "terminal_swd_weight": 16.0,
+            "style_spatial_pre_gain_16": 0.26,
+            "diffeomorphic_warp_strength": 0.012,
+        },
+        "sdxl_t01_fullish": {
+            **_sdxl_t01_variant(batch_size=128, eval_batch_size=8, name="SDXL near-t01 full pressure probe."),
+            "learning_rate": 1e-4,
+            "terminal_swd_weight": 20.0,
+            "style_spatial_pre_gain_16": 0.35,
+            "diffeomorphic_warp_strength": 0.03,
+            "bridge_overrides": {
+                "swd_patch_sizes": [3, 5, 7, 15],
+                "swd_num_projections": 32,
+                "semantic_swd_num_projections": 32,
+                "swd_projection_chunk_size": 16,
+                "swd_cdf_sample_size": 128,
+            },
+        },
+    }
+)
+
+
+def _query_gpu_used_mb() -> int | None:
+    try:
+        out = subprocess.check_output(
+            ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        return None
+    values: list[int] = []
+    for line in out.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            values.append(int(float(line.split(",")[0].strip())))
+        except ValueError:
+            continue
+    return max(values) if values else None
+
+
+def _run(cmd: list[str], log_path: Path, cwd: Path) -> tuple[int, int | None]:
     log_path.parent.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
     src_path = str((ROOT / "src").resolve())
     env["PYTHONPATH"] = src_path + os.pathsep + env.get("PYTHONPATH", "")
+    peak_gpu_mb = _query_gpu_used_mb()
     with log_path.open("a", encoding="utf-8", errors="replace") as log:
         log.write("\n\n>>> " + " ".join(cmd) + "\n")
         log.flush()
-        proc = subprocess.run(cmd, cwd=str(cwd), stdout=log, stderr=subprocess.STDOUT, text=True, env=env)
+        proc = subprocess.Popen(cmd, cwd=str(cwd), stdout=log, stderr=subprocess.STDOUT, text=True, env=env)
+        while proc.poll() is None:
+            used = _query_gpu_used_mb()
+            if used is not None:
+                peak_gpu_mb = used if peak_gpu_mb is None else max(peak_gpu_mb, used)
+            time.sleep(2.0)
+        used = _query_gpu_used_mb()
+        if used is not None:
+            peak_gpu_mb = used if peak_gpu_mb is None else max(peak_gpu_mb, used)
         log.write(f"\n<<< exit={proc.returncode}\n")
-        return int(proc.returncode)
+        log.write(f"<<< peak_gpu_memory_mb={peak_gpu_mb if peak_gpu_mb is not None else ''}\n")
+        return int(proc.returncode), peak_gpu_mb
 
 
 def _infer_latent_shape(latent_root: Path) -> tuple[int, int, int]:
@@ -165,9 +259,25 @@ def _infer_latent_shape(latent_root: Path) -> tuple[int, int, int]:
     raise FileNotFoundError(f"No latent .pt files found under {latent_root}")
 
 
-def _write_config(base_cfg: dict, out_dir: Path, latent_root: Path, scale: float, variant: dict, epochs: int) -> Path:
+def _write_config(
+    base_cfg: dict,
+    out_dir: Path,
+    latent_root: Path,
+    scale: float,
+    variant: dict,
+    epochs: int,
+    max_train_batches: int = 0,
+    allow_missing_latent_shape: bool = False,
+) -> Path:
     cfg = json.loads(json.dumps(base_cfg))
-    latent_channels, latent_h, latent_w = _infer_latent_shape(latent_root)
+    try:
+        latent_channels, latent_h, latent_w = _infer_latent_shape(latent_root)
+    except FileNotFoundError:
+        if not allow_missing_latent_shape:
+            raise
+        latent_channels = int(cfg.get("model", {}).get("latent_channels", 4))
+        latent_h = int(cfg.get("model", {}).get("latent_size", 32))
+        latent_w = latent_h
     cfg["model"]["latent_channels"] = int(latent_channels)
     cfg["model"]["latent_scale_factor"] = float(scale)
     cfg["model"]["style_attn_num_tokens"] = int(max(64, min(256, (latent_h * latent_w) // 4)))
@@ -205,6 +315,8 @@ def _write_config(base_cfg: dict, out_dir: Path, latent_root: Path, scale: float
     train["numeric_debug_halt_on_nonfinite"] = True
     for key, value in dict(variant.get("training_overrides", {}) or {}).items():
         train[key] = value
+    if int(max_train_batches) > 0:
+        train["max_train_batches_per_epoch"] = int(max_train_batches)
     train["full_eval_cache_dir"] = str((ROOT.parent / "eval_cache").resolve())
     train["full_eval_clip_hf_cache_dir"] = str((ROOT.parent / "eval_cache" / "hf").resolve())
     train["full_eval_image_classifier_path"] = str((ROOT.parent / "eval_cache" / "eval_style_image_classifier.pt").resolve())
@@ -244,12 +356,28 @@ def _write_config(base_cfg: dict, out_dir: Path, latent_root: Path, scale: float
     return dst
 
 
-def _summary_row(exp_dir: Path, name: str, epoch: int, status: str, seconds: float, scale: float, vae_model: str) -> dict:
+def _summary_row(
+    exp_dir: Path,
+    name: str,
+    epoch: int,
+    status: str,
+    seconds: float,
+    scale: float,
+    vae_model: str,
+    variant: dict | None = None,
+    peak_gpu_memory_mb: int | None = None,
+) -> dict:
     summary = exp_dir / "full_eval" / f"epoch_{epoch:04d}" / "summary.json"
+    variant = variant or {}
+    training_overrides = dict(variant.get("training_overrides", {}) or {})
     row = {
         "variant": name,
         "vae_model": vae_model,
         "vae_scaling_factor": scale,
+        "batch_size": variant.get("batch_size", ""),
+        "eval_batch_size": variant.get("eval_batch_size", ""),
+        "max_train_batches_per_epoch": training_overrides.get("max_train_batches_per_epoch", ""),
+        "peak_gpu_memory_mb": peak_gpu_memory_mb if peak_gpu_memory_mb is not None else "",
         "epoch": epoch,
         "status": status,
         "seconds": round(seconds, 2),
@@ -279,6 +407,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--out-root", type=Path, default=ROOT / "exp" / "vae_backend_256_probe")
     parser.add_argument("--cache-dir", type=Path, default=ROOT.parent / "eval_cache" / "hf")
     parser.add_argument("--max-per-style", type=int, default=0)
+    parser.add_argument("--max-train-batches", type=int, default=0)
     parser.add_argument("--skip-existing-latents", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args()
@@ -287,17 +416,30 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     names = [x.strip() for x in args.variants.split(",") if x.strip()]
-    eval_epochs = [int(x.strip()) for x in args.eval_epochs.split(",") if x.strip()]
+    eval_epochs = []
+    if str(args.eval_epochs).strip().lower() not in {"", "none", "no", "false", "0"}:
+        eval_epochs = [int(x.strip()) for x in args.eval_epochs.split(",") if x.strip()]
     base_cfg = json.loads(BASE_CONFIG.read_text(encoding="utf-8"))
     rows: list[dict] = []
     args.out_root.mkdir(parents=True, exist_ok=True)
     ledger = args.out_root / "vae_backend_256_results.csv"
 
+    def write_ledger() -> None:
+        if rows:
+            with ledger.open("w", encoding="utf-8", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+                writer.writeheader()
+                writer.writerows(rows)
+
     for name in names:
         if name not in VARIANTS:
             print(f"[skip] unknown variant {name}", flush=True)
             continue
-        variant = VARIANTS[name]
+        variant = deepcopy(VARIANTS[name])
+        if int(args.max_train_batches) > 0:
+            training_overrides = dict(variant.get("training_overrides", {}) or {})
+            training_overrides["max_train_batches_per_epoch"] = int(args.max_train_batches)
+            variant["training_overrides"] = training_overrides
         start = time.time()
         exp_dir = args.out_root / name
         log = exp_dir / "run.log"
@@ -329,31 +471,47 @@ def main() -> int:
             if args.dry_run:
                 print("[dry-run]", " ".join(cmd))
             else:
-                rc = _run(cmd, log, ROOT)
+                rc, peak = _run(cmd, log, ROOT)
                 if rc != 0:
-                    rows.append(_summary_row(exp_dir, name, 0, f"encode_failed_{rc}", time.time() - start, scale, vae_model))
+                    rows.append(_summary_row(exp_dir, name, 0, f"encode_failed_{rc}", time.time() - start, scale, vae_model, variant, peak))
+                    write_ledger()
                     continue
 
         if manifest.exists():
             meta = json.loads(manifest.read_text(encoding="utf-8"))
             scale = float(meta.get("vae_scaling_factor", scale))
-        config_path = _write_config(base_cfg, exp_dir, latent_root, scale, variant, int(args.epochs))
+        config_path = _write_config(
+            base_cfg,
+            exp_dir,
+            latent_root,
+            scale,
+            variant,
+            int(args.epochs),
+            int(args.max_train_batches),
+            allow_missing_latent_shape=bool(args.dry_run),
+        )
         shutil.copy2(ROOT / "src" / "utils" / "inference.py", exp_dir / "inference_snapshot.py")
         shutil.copy2(ROOT / "src" / "utils" / "run_evaluation.py", exp_dir / "run_evaluation_snapshot.py")
 
         train_cmd = [sys.executable, str(ROOT / "src" / "run.py"), "--config", str(config_path)]
+        peak = None
         if args.dry_run:
             print("[dry-run]", " ".join(train_cmd))
         else:
-            rc = _run(train_cmd, log, ROOT)
+            rc, peak = _run(train_cmd, log, ROOT)
             if rc != 0:
-                rows.append(_summary_row(exp_dir, name, 0, f"train_failed_{rc}", time.time() - start, scale, vae_model))
+                rows.append(_summary_row(exp_dir, name, 0, f"train_failed_{rc}", time.time() - start, scale, vae_model, variant, peak))
+                write_ledger()
                 continue
+        if not eval_epochs:
+            rows.append(_summary_row(exp_dir, name, int(args.epochs), "train_ok", time.time() - start, scale, vae_model, variant, peak))
+            write_ledger()
 
         for epoch in eval_epochs:
             ckpt = exp_dir / f"epoch_{epoch:04d}.pt"
             if not ckpt.exists():
-                rows.append(_summary_row(exp_dir, name, epoch, "missing_ckpt", time.time() - start, scale, vae_model))
+                rows.append(_summary_row(exp_dir, name, epoch, "missing_ckpt", time.time() - start, scale, vae_model, variant, peak))
+                write_ledger()
                 continue
             eval_dir = exp_dir / "full_eval" / f"epoch_{epoch:04d}"
             eval_cmd = [
@@ -382,19 +540,14 @@ def main() -> int:
                 print("[dry-run]", " ".join(eval_cmd))
                 status = "dry_run"
             else:
-                rc = _run(eval_cmd, log, ROOT)
+                rc, eval_peak = _run(eval_cmd, log, ROOT)
+                if eval_peak is not None:
+                    peak = eval_peak if peak is None else max(peak, eval_peak)
                 status = "ok" if rc == 0 else f"eval_failed_{rc}"
-            rows.append(_summary_row(exp_dir, name, epoch, status, time.time() - start, scale, vae_model))
-            with ledger.open("w", encoding="utf-8", newline="") as f:
-                writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-                writer.writeheader()
-                writer.writerows(rows)
+            rows.append(_summary_row(exp_dir, name, epoch, status, time.time() - start, scale, vae_model, variant, peak))
+            write_ledger()
 
-    if rows:
-        with ledger.open("w", encoding="utf-8", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-            writer.writeheader()
-            writer.writerows(rows)
+    write_ledger()
     print(ledger.resolve(), flush=True)
     return 0
 

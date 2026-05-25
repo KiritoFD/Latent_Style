@@ -46,7 +46,6 @@ class SBTrainer:
             torch.backends.cuda.matmul.allow_tf32 = self.allow_tf32
             torch.backends.cudnn.allow_tf32 = self.allow_tf32
             torch.backends.cudnn.benchmark = bool(train_cfg.get("cudnn_benchmark", True))
-
         self.channels_last = bool(train_cfg.get("channels_last", False) and device.type == "cuda")
         self.use_amp = bool(train_cfg.get("use_amp", False) and device.type == "cuda")
         amp_dtype_cfg = str(train_cfg.get("amp_dtype", "bf16")).lower()
@@ -78,12 +77,23 @@ class SBTrainer:
             )
 
         self.loss_fn = OTFlowMatchingObjective(config)
+        potential_params = self.loss_fn.potential_parameters()
+        self.potential_optimizer = (
+            torch.optim.AdamW(
+                potential_params,
+                lr=float(config.bridge.kantorovich_lr),
+                weight_decay=0.0,
+            )
+            if potential_params
+            else None
+        )
         self.grad_clip_norm = float(train_cfg.get("grad_clip_norm", 1.0))
         self.accumulation_steps = max(1, int(train_cfg.get("accumulation_steps", 1)))
         self.log_interval = max(0, int(train_cfg.get("log_interval", 20)))
         self.use_tqdm = bool(train_cfg.get("use_tqdm", True))
         self.num_epochs = int(train_cfg.get("num_epochs", 60))
         self.save_interval = max(1, int(train_cfg.get("save_interval", 10)))
+        self.max_train_batches_per_epoch = max(0, int(train_cfg.get("max_train_batches_per_epoch", 0)))
         self.numeric_debug = bool(train_cfg.get("numeric_debug", False))
         self.numeric_debug_interval = max(1, int(train_cfg.get("numeric_debug_interval", 10)))
         self.numeric_debug_halt_on_nonfinite = bool(train_cfg.get("numeric_debug_halt_on_nonfinite", True))
@@ -100,6 +110,7 @@ class SBTrainer:
             checkpoint_dir=self.checkpoint_dir,
             serialized_config=self.serialized_config,
             package_dir=Path(__file__).parent,
+            config_path=Path(self.config_path).resolve() if self.config_path else None,
         )
 
         self.log_file = self.log_dir / f"training_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
@@ -221,6 +232,10 @@ class SBTrainer:
         self.model.load_state_dict(strip_compile_prefix(state["model_state_dict"]), strict=True)
         if "optimizer_state_dict" in state:
             self.optimizer.load_state_dict(state["optimizer_state_dict"])
+        if self.potential_optimizer is not None and state.get("potential_optimizer_state_dict") is not None:
+            self.potential_optimizer.load_state_dict(state["potential_optimizer_state_dict"])
+        if self.loss_fn.kantorovich_potential is not None and state.get("kantorovich_potential_state_dict") is not None:
+            self.loss_fn.kantorovich_potential.load_state_dict(state["kantorovich_potential_state_dict"])
         if self.scheduler is not None and state.get("scheduler_state_dict") is not None:
             self.scheduler.load_state_dict(state["scheduler_state_dict"])
         self.global_step = int(state.get("global_step", 0))
@@ -320,9 +335,12 @@ class SBTrainer:
         optimizer_time_total = 0.0
         compute_time_total = 0.0
 
+        progress_total = len(dataloader)
+        if self.max_train_batches_per_epoch > 0:
+            progress_total = min(progress_total, self.max_train_batches_per_epoch)
         progress = tqdm(
             dataloader,
-            total=len(dataloader),
+            total=progress_total,
             desc=f"Epoch {epoch}/{self.num_epochs}",
             dynamic_ncols=True,
             leave=True,
@@ -338,6 +356,8 @@ class SBTrainer:
             return float((metric_accum[name] / num_batches).item())
 
         for step_idx, raw_batch in enumerate(progress, start=1):
+            if self.max_train_batches_per_epoch > 0 and step_idx > self.max_train_batches_per_epoch:
+                break
             step_enter = time.perf_counter()
             data_time_total += max(0.0, step_enter - data_wait_start)
 
@@ -346,6 +366,22 @@ class SBTrainer:
             target_style = batch["target_style"]
             target_style_id = batch["target_style_id"]
             source_style_id = batch.get("source_style_id")
+            kantorovich_critic_value = 0.0
+
+            if self.potential_optimizer is not None and not self.distill_enabled:
+                for _ in range(max(1, int(self.config.bridge.kantorovich_steps))):
+                    self.potential_optimizer.zero_grad(set_to_none=True)
+                    critic_loss = self.loss_fn.compute_kantorovich_critic(
+                        self.model,
+                        content=content,
+                        target_style=target_style,
+                        target_style_id=target_style_id,
+                    )
+                    if critic_loss is None:
+                        break
+                    critic_loss.backward()
+                    self.potential_optimizer.step()
+                    kantorovich_critic_value = float(critic_loss.detach().float().item())
 
             t0 = time.perf_counter()
             if self.device.type == "cuda":
@@ -371,6 +407,8 @@ class SBTrainer:
                         source_style_id=source_style_id,
                     )
                 loss = loss_dict["loss"]
+                if self.potential_optimizer is not None:
+                    loss_dict["kantorovich_critic"] = content.new_tensor(kantorovich_critic_value)
             forward_time_total += max(0.0, time.perf_counter() - t0)
             if self.numeric_debug and (step_idx == 1 or step_idx % self.numeric_debug_interval == 0 or not torch.isfinite(loss.detach()).item()):
                 self._write_numeric_debug(
@@ -478,6 +516,11 @@ class SBTrainer:
         metrics.setdefault("loss", 0.0)
         metrics.setdefault("flow", 0.0)
         metrics.setdefault("kinetic_energy", 0.0)
+        metrics.setdefault("anisotropic_kinetic", 0.0)
+        metrics.setdefault("stokes_viscous", 0.0)
+        metrics.setdefault("phase_separation", 0.0)
+        metrics.setdefault("fourier_phase_lock", 0.0)
+        metrics.setdefault("head_tax", 0.0)
         metrics.setdefault("curvature", 0.0)
         metrics.setdefault("distill_velocity", 0.0)
         metrics.setdefault("distill_endpoint", 0.0)
@@ -512,6 +555,10 @@ class SBTrainer:
             "global_step": int(self.global_step),
             "model_state_dict": self.model.state_dict(),
             "optimizer_state_dict": self.optimizer.state_dict(),
+            "potential_optimizer_state_dict": self.potential_optimizer.state_dict() if self.potential_optimizer is not None else None,
+            "kantorovich_potential_state_dict": (
+                self.loss_fn.kantorovich_potential.state_dict() if self.loss_fn.kantorovich_potential is not None else None
+            ),
             "scheduler_state_dict": self.scheduler.state_dict() if self.scheduler is not None else None,
             "config": self.serialized_config,
             "metrics": metrics,
