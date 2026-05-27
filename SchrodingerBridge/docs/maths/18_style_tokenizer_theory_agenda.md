@@ -462,6 +462,22 @@ operator test is `dynamic_style_feature_operator`: the same independent
 so the tokenizer controls an active vector-field actuator rather than only the
 last residual projection.
 
+That feature-level operator was also negative:
+
+```text
+ema_style_vocab_factorized_feature_w36 epoch8:
+  clip_style = 0.664501
+  content_lpips = 0.327682
+  EC = 0.446756
+  Hayao clip_style = 0.580768
+```
+
+This falsifies the "actuator placement alone" hypothesis. The feature operator
+increased motion but degraded tokenizer metric-space alignment. The next
+theory step is not more capacity; it is identifiability. `identity`, `grammar`,
+and `band` need direct data-derived field losses before the backbone can learn
+to assign the right physical meaning to each field.
+
 ### Stage D: Spiral Back To Backbone
 
 Only after the tokenizer has measurable coverage and executability should the
@@ -471,15 +487,12 @@ backbone.
 
 ## Current Task List
 
-1. Finish remote `ema_style_vocab_factorized_w36` and
-   `ema_style_vocab_factorized_w40_stylepush`.
-2. For each factorized run, report global metrics and per-style Hayao metrics.
-3. Run tokenizer component scorecard, metric-space diagnosis, and gradient audit
-   on the best factorized checkpoint.
-4. Inspect `summary_grid_first.png` and Hayao-specific grids, not only averages.
-5. If factorized binding improves representation diagnostics but not style,
-   add data-derived field losses: low SWD for identity, high/abs-high SWD for
-   grammar, and band-energy ratio for band gains.
-6. If factorized binding fails both metrics and diagnostics, add explicit
-   flat-plane / contour operators before increasing embedding size.
-7. Log every step in `docs/logs/experiment_ledger.md`.
+1. Add data-derived field losses:
+   low-frequency style measure for `identity`, high/abs-high measure for
+   `grammar`, and multiscale energy ratio for `band`.
+2. Add an orthogonality/cross-cov penalty so the three fields stop encoding the
+   same axis.
+3. Re-run the best stable backbone with the field-loss tokenizer objective.
+4. Inspect first-grid and Hayao grids; global average alone is insufficient.
+5. Only if field losses fail, add explicit flat-plane / contour operators.
+6. Log every step in `docs/logs/experiment_ledger.md`.

@@ -581,8 +581,8 @@ does not provide enough style actuator capacity. Component scorecard:
 band-energy alignment (`-0.4545`), and high cross-covariance across fields.
 
 Code follow-up added locally: `dynamic_style_feature_operator`, a decoder
-feature-level factorized operator using the same `StyleTokenFields`. The next
-probe variant is `ema_style_vocab_factorized_feature_w36`.
+feature-level factorized operator using the same `StyleTokenFields`. The probe
+variant is `ema_style_vocab_factorized_feature_w36`.
 
 `ema_style_vocab_factorized_w40_stylepush` confirms the same failure mode:
 
@@ -598,6 +598,24 @@ grammar vs abs-high correlation (`spearman=0.7576`) but keeps identity-low at
 `0.0000` and band-energy inverted (`spearman=-0.4545`). Raising terminal SWD
 therefore does not solve the tokenizer; the actuator level and band supervision
 are the blockers.
+
+`ema_style_vocab_factorized_feature_w36` also completed and is a negative
+result:
+
+| epoch | clip_style | content_lpips | EC |
+|---:|---:|---:|---:|
+| 6 | 0.663724 | 0.325178 | 0.447895 |
+| 7 | 0.664565 | 0.327200 | 0.447120 |
+| 8 | 0.664501 | 0.327682 | 0.446756 |
+
+The feature operator increased train-time velocity (`|v|` rose to about
+`0.169`) but did not convert that motion into style. Component scorecard:
+`coverage=0.500`, `component=0.544`, band active rows `0`. Metric-space
+diagnosis degraded versus final-head-only: full-style isometry fell to
+`spearman=0.0182`, grammar/high stayed weak (`0.2364`), and identity-low stayed
+zero. Conclusion: actuator placement alone is insufficient. The next mainline
+change should make the fields identifiable with data-derived field losses
+before adding more operator capacity.
 
 ---
 
