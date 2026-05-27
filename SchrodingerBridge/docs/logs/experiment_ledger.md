@@ -228,6 +228,138 @@ out: exp\style_tokenizer_vocab_refit\w36_epoch8
 At 2026-05-27 18:58 local time it was running `m10`, with GPU around
 `6959 / 12288 MiB` and `93%` utilization.
 
+### Tokenizer-Only Refit Result
+
+`LANCET_TOKENIZER_VOCAB_REFIT` finished successfully.
+
+| recipe | clip_style | LPIPS | Hayao cross style | Hayao cross LPIPS | weakest cross target |
+|---|---:|---:|---:|---:|---|
+| `m10_token_vocab_swd_anchor` | 0.710066 | 0.466699 | 0.618145 | 0.517782 | Hayao |
+| `m11_token_vocab_stylepush` | 0.710138 | 0.466697 | 0.618121 | 0.517815 | Hayao |
+
+This is a useful negative result. The global LPIPS is excellent, but style is
+still below the `0.72` target and Hayao is far below the other styles.
+Increasing the tokenizer-only style pressure did not change the result.
+
+Adapter scorecard:
+
+| recipe | grammar active | band active | erank g/b | coverage | component |
+|---|---:|---:|---:|---:|---:|
+| `m10_token_vocab_swd_anchor` | 2 | 2 | 0.370 / 0.606 | 0.500 | 0.444 |
+| `m11_token_vocab_stylepush` | 2 | 2 | 0.370 / 0.603 | 0.500 | 0.444 |
+
+Direct checkpoint-vs-adapter diff shows why the score did not move:
+
+```text
+grammar delta: exactly 0 for all styles
+band delta: mainly Cezanne, with only tiny movement elsewhere
+```
+
+Gradient audit under the `m10` objective:
+
+| style | grammar grad norm | band grad norm | current grammar norm | current band norm |
+|---|---:|---:|---:|---:|
+| Hayao | 1.66e-05 | 3.85e-04 | 0.8863 | 0.3565 |
+| Monet | 0.00e+00 | 3.38e-04 | 0.0000 | 0.0036 |
+| Van Gogh | 0.00e+00 | 4.31e-04 | 0.0000 | 0.0014 |
+| Cezanne | 0.00e+00 | 3.45e-04 | 0.5679 | 0.3307 |
+
+Verdict: the current tokenizer vocabulary is under-executable. `grammar_vocab`
+is mostly diagnostic state, not an effective training handle. In this backbone
+configuration, grammar only reaches the flatten/high-frequency suppression
+path, so vocabulary-only refit cannot create the missing style operators.
+
+### Tokenizer Projector Route
+
+The next tokenizer-only route keeps the backbone weights frozen but lets the
+tokenizer fields produce an explicit style-code delta through
+`style_tokenizer.code_projector`.
+
+Code support added:
+
+- `style_adapter.pt` now stores `style_tokenizer.project_code` and
+  `style_tokenizer.code_projector.*`.
+- inference and calibration loaders restore those tokenizer projector fields.
+- `m12_token_projector_swd_anchor` and `m13_token_projector_stylepush` train
+  `grammar_vocab`, `band_vocab`, and `code_projector` while freezing backbone,
+  `style_emb`, and `style_spatial_id_16`.
+- `tools/experiments/diagnose_style_tokenizer_gradients.py` audits per-style
+  grammar/band gradient flow.
+
+Smoke result: `m12` with two iterations per style completed and saved an
+adapter. Anchor loss became nonzero after the first update, which confirms that
+the tokenizer projector changes the endpoint instead of merely perturbing the
+band gains.
+
+Remote full run:
+
+```text
+process: hidden Start-Process batch
+out: exp\style_tokenizer_projector_refit\w36_epoch8
+recipes: m12_token_projector_swd_anchor,m13_token_projector_stylepush
+started: 2026-05-27 19:37 local time
+```
+
+High-level tokenizer agenda:
+
+```text
+docs/maths/18_style_tokenizer_theory_agenda.md
+```
+
+This document records the current supervision signal, completed tokenizer
+tests, negative evidence, and the theory problems that must be solved before
+more backbone sweeps are justified.
+
+Projector full run result:
+
+| recipe | clip_style | LPIPS | Hayao style | Hayao LPIPS |
+|---|---:|---:|---:|---:|
+| `m12_token_projector_swd_anchor` | 0.709745 | 0.430403 | 0.614650 | 0.482358 |
+| `m13_token_projector_stylepush` | 0.709595 | 0.434844 | 0.622817 | 0.488738 |
+
+Scorecard:
+
+| recipe | grammar active | band active | erank g/b | coverage | component |
+|---|---:|---:|---:|---:|---:|
+| `m12` | 2 | 2 | 0.384 / 0.599 | 0.500 | 0.445 |
+| `m13` | 2 | 2 | 0.377 / 0.629 | 0.500 | 0.449 |
+
+Metric-space diagnosis:
+
+| recipe | identity-low rho | grammar-high rho | grammar-abs-high rho | band-energy rho | all-full rho |
+|---|---:|---:|---:|---:|---:|
+| `m12` | 0.000 | 0.139 | 0.321 | -0.103 | -0.055 |
+| `m13` | 0.000 | 0.139 | 0.406 | -0.236 | -0.042 |
+
+Verdict: `cat+project` is not the right tokenizer abstraction. It improves the
+endpoint enough to lower LPIPS, but it does not create an isometric or
+orthogonal style metric space. Move to the hard-bound operator route:
+
+```text
+identity -> pointwise color/channel operator
+grammar  -> depthwise spatial operator
+band     -> low/mid/high residual gains
+```
+
+Remote hard-binding run launched:
+
+```text
+task: LANCET_FACTORIZED_TOKENIZER
+started: 2026-05-27 20:21 local time
+variants: ema_style_vocab_factorized_w36, ema_style_vocab_factorized_w40_stylepush
+output: exp\vae_backend_256_probe
+status logs: exp\factorized_tokenizer_status\stdout.log / stderr.log
+```
+
+First health check after launch:
+
+```text
+variant: ema_style_vocab_factorized_w36
+progress: epoch 3/8
+GPU: ~8260 / 12288 MiB, 100% util
+status: finite; no OOM/non-finite observed
+```
+
 ---
 
 ## Experiment Note: 2026-05-27 Post-VAE EMA Verdict
@@ -374,6 +506,34 @@ queue is:
 Both use balanced style exposure. Hayao is evaluated separately because it is
 the clearest failure slice, but it is not oversampled or upweighted in the
 main tokenizer spiral.
+
+### 2026-05-27 Tokenizer Metric-Space / Operator-Binding Update
+
+**Status**: Local code support added; remote projector refit still running.
+
+The tokenizer objective has been reframed as representation learning rather
+than only stronger backbone control. A good tokenizer must be:
+
+- algebraically orthogonal across `identity`, `grammar`, and `band`;
+- bound to distinct operator families;
+- diagnosed against frequency-separated training-data measures.
+
+Code support added:
+
+- `tools/experiments/diagnose_style_token_metric_space.py` now reports
+  token/data distance correlations for full, low, high, abs-high, and
+  low/mid/high energy-ratio distances.
+- `src/lancet_backbone.py` now supports
+  `dynamic_style_operator_mode="factorized_token"`, binding:
+  - `identity` to pointwise `1x1` channel mixing and bias;
+  - `grammar` to depthwise `3x3` spatial kernels;
+  - `band_gains` to direct low/mid/high residual-band scaling.
+- `run_vae_backend_256_probe.py` gained:
+  - `ema_style_vocab_factorized_w36`;
+  - `ema_style_vocab_factorized_w40_stylepush`.
+
+This does not use Seedream or any external generated image as supervision.
+Seedream remains diagnostic-only.
 
 ---
 

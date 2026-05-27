@@ -159,6 +159,125 @@ If this raises coverage and style, the tokenizer was under-trained. If coverage
 still stays at two active styles, the field parameterization or objective is
 wrong.
 
+## Vocabulary-Only Refit Finding
+
+The frozen-backbone vocabulary refit answered the refitability question:
+
+| recipe | clip_style | LPIPS | Hayao cross style | Hayao cross LPIPS |
+|---|---:|---:|---:|---:|
+| `m10_token_vocab_swd_anchor` | 0.710066 | 0.466699 | 0.618145 | 0.517782 |
+| `m11_token_vocab_stylepush` | 0.710138 | 0.466697 | 0.618121 | 0.517815 |
+
+This is not enough to claim tokenizer progress. The adapter scorecard still
+shows only two active non-photo grammar/band rows, and a direct tensor diff
+shows that `grammar_vocab` did not change at all. The only meaningful adapter
+movement was in `band_vocab`, mostly for Cezanne.
+
+The gradient audit explains the failure mode:
+
+```text
+grammar gradient:
+  Hayao: tiny but nonzero
+  Monet / Van Gogh / Cezanne: zero under the current objective
+
+band gradient:
+  nonzero for all target styles, but too small and too low-dimensional
+```
+
+Interpretation: the existing grammar coordinates are mostly non-executable in
+the current network. They can be logged and diagnosed, but the training
+objective cannot use them as a strong handle. This means "increase tokenizer
+loss" is the wrong next move.
+
+## Tokenizer Projector Hypothesis
+
+The next tokenizer-only change is to let named fields produce a residual
+style-code delta:
+
+```text
+base style_emb
++ code_projector(identity, grammar, band)
+-> style_code consumed by the existing style-conditioned blocks
+```
+
+This keeps the backbone weights fixed but changes the tokenizer from a passive
+side table into an executable controller. It tests whether the current backbone
+already has unused style capacity that the old tokenizer could not address.
+
+The adapter format now stores:
+
+```text
+style_tokenizer.project_code
+style_tokenizer.code_projector.*
+style_tokenizer.grammar_vocab.weight
+style_tokenizer.band_vocab.weight
+```
+
+Success criteria for this route:
+
+- the projector route must improve global style beyond `0.710` without losing
+  the good LPIPS band near `0.47`;
+- Hayao cross-target style must rise materially, otherwise the projector only
+  adds generic style pressure;
+- the component scorecard should show either higher coverage/rank or a clear
+  downstream gain;
+- if projector training helps, tokenizer capacity was the bottleneck; if it
+  fails, the missing piece is an explicit flat-plane / contour operator rather
+  than another vocabulary optimizer.
+
+Result:
+
+| recipe | clip_style | LPIPS | Hayao cross style | Hayao cross LPIPS |
+|---|---:|---:|---:|---:|
+| `m12_token_projector_swd_anchor` | 0.709745 | 0.430403 | 0.614650 | 0.482358 |
+| `m13_token_projector_stylepush` | 0.709595 | 0.434844 | 0.622817 | 0.488738 |
+
+The route is therefore negative for style. It gives excellent LPIPS, but does
+not move global style above the vocabulary-only `~0.710` band. The tokenizer
+scorecard still reports only two active grammar/band non-photo rows, and
+metric-space diagnosis shows weak token/data distance alignment. This supports
+the hard-binding revision below.
+
+## Operator-Bound Tokenizer Revision
+
+The projector route is deliberately not the final representation. It still
+mixes fields through a learned projection and can hide tokenizer collapse
+inside an anonymous `style_code`. The stricter representation-learning route is
+now:
+
+```text
+identity -> 1x1 pointwise color/channel operator
+grammar  -> depthwise 3x3 spatial operator
+band     -> direct low/mid/high residual energy gains
+```
+
+This is exposed as:
+
+```json
+{
+  "model": {
+    "style_tokenizer_enable": true,
+    "style_token_grammar_dim": 32,
+    "dynamic_style_operator_head": true,
+    "dynamic_style_operator_mode": "factorized_token"
+  }
+}
+```
+
+The corresponding probe variants are:
+
+```text
+ema_style_vocab_factorized_w36
+ema_style_vocab_factorized_w40_stylepush
+```
+
+These runs test a specific hypothesis: the old tokenizer failed because its
+named fields had no enforced operator meaning. If factorized binding improves
+field gradients, token/data metric correlation, and Hayao visual cleanliness,
+the tokenizer problem was a representation-to-operator mismatch. If it does
+not, the next missing component is likely a dedicated flat-plane / contour
+operator rather than a larger embedding table.
+
 ## Spiral Protocol
 
 The intended loop is:

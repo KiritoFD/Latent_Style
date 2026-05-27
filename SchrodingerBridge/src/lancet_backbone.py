@@ -19,7 +19,7 @@ from lancet_blocks import (
     _resolve_group_count,
 )
 from lancet_runtime import LatentAdaCUTRuntimeMixin
-from style_tokenizer import StyleTokenizer
+from style_tokenizer import StyleTokenFields, StyleTokenizer
 
 
 _SKIP_FUSION_MODES = {"concat_conv", "add_proj"}
@@ -54,6 +54,128 @@ class DynamicOperatorHead(nn.Module):
         x_grouped = x_content.reshape(1, b * c, h, w)
         out = F.conv2d(x_grouped, weights, bias=bias, padding=1, groups=b)
         return out.view(b, self.out_channels, h, w)
+
+
+class FactorizedDynamicOperatorHead(nn.Module):
+    """Token-bound output operator.
+
+    This head is intentionally not another anonymous hypernetwork. It binds the
+    named tokenizer fields to separate operator factors:
+
+    - grammar controls depthwise spatial kernels;
+    - identity controls pointwise channel mixing and bias;
+    - band gains rescale low/mid/high residual bands directly.
+    """
+
+    def __init__(
+        self,
+        *,
+        in_channels: int,
+        out_channels: int,
+        identity_dim: int,
+        grammar_dim: int,
+        band_channels: int,
+        band_low_kernel: int = 9,
+        band_mid_kernel: int = 3,
+    ) -> None:
+        super().__init__()
+        self.in_channels = int(in_channels)
+        self.out_channels = int(out_channels)
+        self.band_channels = max(0, min(int(band_channels), self.out_channels))
+        self.band_low_kernel = self._odd_kernel(band_low_kernel)
+        self.band_mid_kernel = self._odd_kernel(band_mid_kernel)
+        self.spatial_gen = nn.Linear(int(grammar_dim), self.in_channels * 9)
+        self.pointwise_gen = nn.Linear(int(identity_dim), self.out_channels * self.in_channels)
+        self.bias_gen = nn.Linear(int(identity_dim), self.out_channels)
+
+    @staticmethod
+    def _odd_kernel(value: int) -> int:
+        kernel = max(1, int(value))
+        if kernel % 2 == 0:
+            kernel += 1
+        return kernel
+
+    @staticmethod
+    def _match_batch(field: torch.Tensor, batch: int, *, device: torch.device, dtype: torch.dtype, name: str) -> torch.Tensor:
+        field = field.to(device=device, dtype=dtype)
+        if field.ndim == 1:
+            field = field.unsqueeze(0)
+        if field.shape[0] == 1 and batch > 1:
+            field = field.expand(batch, -1)
+        elif field.shape[0] != batch:
+            raise ValueError(f"{name} batch mismatch: expected {batch} or 1, got {field.shape[0]}")
+        return field
+
+    def _apply_band_gains(self, out: torch.Tensor, band_gains: torch.Tensor | None) -> torch.Tensor:
+        if band_gains is None or self.band_channels <= 0:
+            return out
+        b, _, _, _ = out.shape
+        gains = band_gains.to(device=out.device, dtype=out.dtype)
+        if gains.ndim == 2:
+            gains = gains.view(gains.shape[0], gains.shape[1], 1, 1)
+        if gains.shape[0] == 1 and b > 1:
+            gains = gains.expand(b, -1, -1, -1)
+        elif gains.shape[0] != b:
+            raise ValueError(f"band gain batch mismatch: expected {b} or 1, got {gains.shape[0]}")
+        if gains.shape[1] < 3:
+            return out
+
+        primary = out[:, : self.band_channels].float()
+        low = F.avg_pool2d(primary, kernel_size=self.band_low_kernel, stride=1, padding=self.band_low_kernel // 2)
+        inner = F.avg_pool2d(primary, kernel_size=self.band_mid_kernel, stride=1, padding=self.band_mid_kernel // 2)
+        mid = inner - low
+        high = primary - inner
+        routed = low * gains[:, 0:1].float() + mid * gains[:, 1:2].float() + high * gains[:, 2:3].float()
+        if self.band_channels == self.out_channels:
+            return routed.to(dtype=out.dtype)
+        return torch.cat([routed.to(dtype=out.dtype), out[:, self.band_channels :]], dim=1)
+
+    def zero_initialize_output(self) -> None:
+        nn.init.zeros_(self.spatial_gen.bias)
+        nn.init.zeros_(self.bias_gen.weight)
+        nn.init.zeros_(self.bias_gen.bias)
+
+    def forward(self, x_content: torch.Tensor, style_tokens: StyleTokenFields | None) -> torch.Tensor:
+        if style_tokens is None:
+            raise ValueError("factorized dynamic operator requires StyleTokenFields")
+        b, c, h, w = x_content.shape
+        if c != self.in_channels:
+            raise ValueError(f"factorized dynamic operator expected {self.in_channels} channels, got {c}")
+
+        grammar = self._match_batch(
+            style_tokens.grammar,
+            b,
+            device=x_content.device,
+            dtype=x_content.dtype,
+            name="grammar",
+        )
+        identity = self._match_batch(
+            style_tokens.identity,
+            b,
+            device=x_content.device,
+            dtype=x_content.dtype,
+            name="identity",
+        )
+
+        spatial = self.spatial_gen(grammar.float()).view(b * self.in_channels, 1, 3, 3)
+        spatial = torch.tanh(spatial) / 3.0
+        x_spatial = F.conv2d(
+            x_content.reshape(1, b * c, h, w).float(),
+            spatial,
+            padding=1,
+            groups=b * self.in_channels,
+        ).view(b, self.in_channels, h, w)
+
+        pointwise = self.pointwise_gen(identity.float()).view(b * self.out_channels, self.in_channels, 1, 1)
+        pointwise = torch.tanh(pointwise) / max(1, self.in_channels) ** 0.5
+        bias = self.bias_gen(identity.float()).reshape(-1)
+        out = F.conv2d(
+            x_spatial.reshape(1, b * self.in_channels, h, w),
+            pointwise,
+            bias=bias,
+            groups=b,
+        ).view(b, self.out_channels, h, w)
+        return self._apply_band_gains(out.to(dtype=x_content.dtype), style_tokens.band_gains)
 
 
 class StyleHighpassDepthwiseHead(nn.Module):
@@ -494,7 +616,12 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         self.color_highway_gain = float(cfg.color_highway_gain)
         self.use_diffeomorphic_stroke = bool(cfg.use_diffeomorphic_stroke)
         self.dynamic_style_operator_head = bool(cfg.dynamic_style_operator_head)
+        self.dynamic_style_operator_mode = str(cfg.dynamic_style_operator_mode).strip().lower()
+        if self.dynamic_style_operator_mode not in {"full", "factorized_token"}:
+            self.dynamic_style_operator_mode = "full"
         self.dynamic_style_operator_hidden_mult = max(0.25, float(cfg.dynamic_style_operator_hidden_mult))
+        self.dynamic_style_operator_band_low_kernel = max(1, int(cfg.dynamic_style_operator_band_low_kernel))
+        self.dynamic_style_operator_band_mid_kernel = max(1, int(cfg.dynamic_style_operator_band_mid_kernel))
         self.style_highpass_depthwise_head = bool(cfg.style_highpass_depthwise_head)
         self.style_highpass_depthwise_strength = max(0.0, float(cfg.style_highpass_depthwise_strength))
         self.style_highpass_depthwise_kernel = max(1, int(cfg.style_highpass_depthwise_kernel))
@@ -867,12 +994,25 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             out_channels = latent_channels + (2 if self.use_diffeomorphic_stroke else 0)
         self.output_channels = out_channels
         if self.dynamic_style_operator_head:
-            self.output_head = DynamicOperatorHead(
-                in_channels=self.lift_channels,
-                style_dim=style_dim,
-                out_channels=out_channels,
-                hidden_mult=self.dynamic_style_operator_hidden_mult,
-            )
+            if self.dynamic_style_operator_mode == "factorized_token":
+                if not self.style_tokenizer_enable:
+                    raise ValueError("dynamic_style_operator_mode='factorized_token' requires style_tokenizer_enable=True")
+                self.output_head = FactorizedDynamicOperatorHead(
+                    in_channels=self.lift_channels,
+                    out_channels=out_channels,
+                    identity_dim=int(cfg.style_token_identity_dim),
+                    grammar_dim=int(cfg.style_token_grammar_dim),
+                    band_channels=latent_channels,
+                    band_low_kernel=self.dynamic_style_operator_band_low_kernel,
+                    band_mid_kernel=self.dynamic_style_operator_band_mid_kernel,
+                )
+            else:
+                self.output_head = DynamicOperatorHead(
+                    in_channels=self.lift_channels,
+                    style_dim=style_dim,
+                    out_channels=out_channels,
+                    hidden_mult=self.dynamic_style_operator_hidden_mult,
+                )
             self.dec_out = None
         else:
             self.dec_out = nn.Conv2d(self.lift_channels, out_channels, kernel_size=3, stride=1, padding=1)
@@ -981,10 +1121,17 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         )
         self._zero_initialize_output_head()
 
-    def _decode_output_raw(self, h: torch.Tensor, style_code: torch.Tensor | None = None) -> torch.Tensor:
+    def _decode_output_raw(
+        self,
+        h: torch.Tensor,
+        style_code: torch.Tensor | None = None,
+        style_tokens: StyleTokenFields | None = None,
+    ) -> torch.Tensor:
         if self.dynamic_style_operator_head:
             if self.output_head is None:
                 raise RuntimeError("dynamic style operator head is enabled but not initialized")
+            if isinstance(self.output_head, FactorizedDynamicOperatorHead):
+                return self.output_head(h, style_tokens)
             if style_code is None:
                 raise ValueError("style_code is required when dynamic_style_operator_head is enabled")
             return self.output_head(h, style_code)
@@ -997,6 +1144,9 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             return
         if self.dynamic_style_operator_head:
             if self.output_head is None:
+                return
+            if hasattr(self.output_head, "zero_initialize_output"):
+                self.output_head.zero_initialize_output()
                 return
             nn.init.zeros_(self.output_head.weight_generator[-1].weight)
             nn.init.zeros_(self.output_head.weight_generator[-1].bias)

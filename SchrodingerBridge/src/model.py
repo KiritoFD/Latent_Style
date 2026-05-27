@@ -40,7 +40,8 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
 
     def _compute_delta(self, h: torch.Tensor, x: torch.Tensor | None = None) -> torch.Tensor:
         style_code = getattr(self, "_current_style_code_for_head", None)
-        raw_delta = self._decode_output_raw(h, style_code=style_code)
+        style_tokens = getattr(self, "_last_style_token_fields", None)
+        raw_delta = self._decode_output_raw(h, style_code=style_code, style_tokens=style_tokens)
         self.last_raw_diffeomorphic = raw_delta
         if bool(getattr(self, "use_diffeomorphic_stroke", False)):
             if x is None:

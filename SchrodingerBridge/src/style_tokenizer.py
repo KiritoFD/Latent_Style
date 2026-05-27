@@ -102,6 +102,8 @@ class StyleTokenizer(nn.Module):
         band_logits_3 = band_logits[:, :3]
         band_gains = 1.0 + torch.tanh(band_logits_3).view(base_code.shape[0], 3, 1, 1) * self.band_gain_scale
         code = base_code * self.code_residual_scale
+        # Legacy diagnostic path. The operator-bound route keeps this disabled
+        # and lets the backbone consume StyleTokenFields directly.
         if self.project_code:
             token_input = torch.cat([base_code.float(), identity.float(), grammar.float(), band_logits.float()], dim=1)
             token_delta = self.code_projector(token_input).to(device=base_code.device, dtype=base_code.dtype)

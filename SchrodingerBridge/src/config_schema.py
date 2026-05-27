@@ -126,7 +126,10 @@ class ModelConfig:
     color_highway_gain: float = 1.0
     use_diffeomorphic_stroke: bool = False
     dynamic_style_operator_head: bool = False
+    dynamic_style_operator_mode: str = "full"
     dynamic_style_operator_hidden_mult: float = 1.0
+    dynamic_style_operator_band_low_kernel: int = 9
+    dynamic_style_operator_band_mid_kernel: int = 3
     style_highpass_depthwise_head: bool = False
     style_highpass_depthwise_kernel: int = 3
     style_highpass_depthwise_lowpass_kernel: int = 5

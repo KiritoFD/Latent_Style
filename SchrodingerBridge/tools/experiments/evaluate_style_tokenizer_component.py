@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import math
 import sys
 from pathlib import Path
@@ -53,6 +54,12 @@ def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
 
 def _load_vocab_tensors(exp_dir: Path) -> tuple[dict[str, Any], str]:
     ckpt = _latest_checkpoint(exp_dir)
+    artifact_kind = "checkpoint"
+    if ckpt is None:
+        adapter = exp_dir / "style_adapter.pt"
+        if adapter.exists():
+            ckpt = adapter
+            artifact_kind = "adapter"
     if ckpt is None:
         return {}, ""
     try:
@@ -66,6 +73,8 @@ def _load_vocab_tensors(exp_dir: Path) -> tuple[dict[str, Any], str]:
     state = payload.get("model_state_dict") if isinstance(payload, dict) else None
     if state is None and isinstance(payload, dict):
         state = payload.get("state_dict")
+    if state is None and isinstance(payload, dict) and any(key in payload for key in VOCAB_SUFFIXES.values()):
+        state = payload
     if state is None:
         state = payload
     tensors: dict[str, Any] = {}
@@ -76,7 +85,61 @@ def _load_vocab_tensors(exp_dir: Path) -> tuple[dict[str, Any], str]:
         tensor = state[matched].detach().float()
         if tensor.ndim == 2:
             tensors[name] = tensor
-    return tensors, str(ckpt)
+    return tensors, f"{artifact_kind}:{ckpt}"
+
+
+def _append_eval_summary_rows(
+    rows: list[dict[str, Any]],
+    summary: Path,
+    *,
+    epoch: str,
+) -> None:
+    try:
+        payload = json.loads(summary.read_text(encoding="utf-8"))
+    except Exception:
+        return
+    analysis = payload.get("analysis") or {}
+    overview = analysis.get("all_pairs_overview") or {}
+    if isinstance(overview, dict):
+        rows.append({"epoch": epoch, "scope": "all_pairs", "style": "ALL", **_flatten_metrics(overview), "summary": str(summary)})
+    for scope_name in ("by_target_style", "cross_by_target_style", "by_source_style", "cross_by_source_style"):
+        scope = analysis.get(scope_name) or {}
+        if not isinstance(scope, dict):
+            continue
+        for style, metrics in sorted(scope.items()):
+            if isinstance(metrics, dict):
+                rows.append({"epoch": epoch, "scope": scope_name, "style": style, **_flatten_metrics(metrics), "summary": str(summary)})
+
+
+def _flatten_metrics(metrics: dict[str, Any]) -> dict[str, Any]:
+    keep = [
+        "pair_count",
+        "image_count",
+        "clip_dir",
+        "clip_style",
+        "clip_content",
+        "content_lpips",
+        "ec",
+        "classifier_acc",
+        "valid",
+    ]
+    return {key: metrics.get(key, "") for key in keep if key in metrics}
+
+
+def _read_eval_rows_any(exp_dir: Path) -> list[dict[str, Any]]:
+    rows = _read_eval_rows(exp_dir)
+    direct_summaries = [
+        (exp_dir / "full_eval_summary.json", "adapter"),
+        (exp_dir / "summary_reuse_generated.json", "adapter_reuse"),
+        (exp_dir / "full_eval" / "summary_reuse_generated.json", "adapter_reuse"),
+        (exp_dir / "full_eval" / "summary.json", "adapter"),
+    ]
+    seen = {str(row.get("summary", "")) for row in rows}
+    for summary, epoch in direct_summaries:
+        if summary.exists() and str(summary) not in seen:
+            _append_eval_summary_rows(rows, summary, epoch=epoch)
+            seen.add(str(summary))
+    return rows
 
 
 def _effective_rank(tensor: Any) -> dict[str, float]:
@@ -186,10 +249,13 @@ def _discrimination_lookup(rows: list[dict[str, Any]], key: str, metric: str) ->
 
 
 def _component_summary(exp_dir: Path, style_names: list[str], limit_events: int, active_eps: float) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    debug_events = _load_jsonl(exp_dir / "numeric_debug.jsonl", limit_events)
+    try:
+        debug_events = _load_jsonl(exp_dir / "numeric_debug.jsonl", limit_events)
+    except FileNotFoundError:
+        debug_events = []
     debug_rows = _aggregate(debug_events, DEFAULT_KEYS, style_names)
     discrimination = _discrimination_rows(debug_rows, style_names)
-    eval_rows = _read_eval_rows(exp_dir)
+    eval_rows = _read_eval_rows_any(exp_dir)
     vocab_rows, vocab_summary = _vocab_rows(exp_dir, style_names, active_eps=active_eps)
 
     latest_all = _latest_metric(eval_rows, "all_pairs")
@@ -213,6 +279,7 @@ def _component_summary(exp_dir: Path, style_names: list[str], limit_events: int,
         _safe_float(row.get("normalized_range")) or 0.0
         for row in actuator_rows
     ]
+    has_numeric_debug = bool(debug_events)
 
     grammar_disc = _discrimination_lookup(discrimination, "style_token_grammar", "abs_mean_last")
     band_disc = _discrimination_lookup(discrimination, "style_token_band_gains", "mean_last")
@@ -250,6 +317,7 @@ def _component_summary(exp_dir: Path, style_names: list[str], limit_events: int,
         "hayao_high_delta_vs_others": high_disc.get("Hayao_delta_vs_others", ""),
         "actuator_noncollapsed_count": len(noncollapsed),
         "actuator_count": len(actuator_rows),
+        "has_numeric_debug": has_numeric_debug,
         "actuator_mean_normalized_range": mean(actuator_norm_ranges) if actuator_norm_ranges else "",
         "capacity_score": capacity_score,
         "coverage_score": coverage_score,
@@ -312,6 +380,8 @@ def _write_markdown(path: Path, rows: list[dict[str, Any]], vocab_rows: list[dic
             issues.append("coverage is incomplete")
         if float(row.get("capacity_score") or 0.0) < 0.50:
             issues.append("effective rank is low")
+        if not bool(row.get("has_numeric_debug")):
+            issues.append("actuator sensitivity not measured for this artifact")
         if not bool(row.get("passes_style_gate")):
             issues.append("style gate not met")
         if not bool(row.get("passes_lpips_gate")):

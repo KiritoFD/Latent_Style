@@ -172,8 +172,9 @@ class LatentAdaCUTRuntimeMixin:
         x: torch.Tensor | None = None,
     ) -> torch.Tensor:
         style_code = getattr(self, "_current_style_code_for_head", None)
+        style_tokens = getattr(self, "_last_style_token_fields", None)
         carrier_debug: dict[str, torch.Tensor | None] = dict(getattr(self, "carrier_debug", {}) or {})
-        raw = self._decode_output_raw(h, style_code=style_code)
+        raw = self._decode_output_raw(h, style_code=style_code, style_tokens=style_tokens)
         self.last_raw_diffeomorphic = raw
         if bool(getattr(self, "use_diffeomorphic_stroke", False)):
             if x is None:

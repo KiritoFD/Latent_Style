@@ -65,7 +65,10 @@ class MainlineStyleRecipe:
     save_every: int = 0
     optimize_style_emb: bool = True
     optimize_tokenizer: bool = False
+    optimize_token_projector: bool = False
+    force_token_project_code: bool = False
     token_l2_weight: float = 0.0
+    token_projector_l2_weight: float = 0.0
 
 
 RECIPES = [
@@ -203,6 +206,50 @@ RECIPES = [
         optimize_tokenizer=True,
         token_l2_weight=0.020,
     ),
+    MainlineStyleRecipe(
+        name="m12_token_projector_swd_anchor",
+        optimize_spatial=False,
+        iters_per_style=120,
+        ode_steps=12,
+        batch_size=14,
+        lr=1.0e-3,
+        swd_weight=1.15,
+        anchor_weight=0.20,
+        grad_weight=0.14,
+        delta_tv_weight=0.05,
+        emb_l2_weight=0.0,
+        spatial_l2_weight=0.0,
+        highpass_kernel=3,
+        save_every=60,
+        optimize_style_emb=False,
+        optimize_tokenizer=True,
+        optimize_token_projector=True,
+        force_token_project_code=True,
+        token_l2_weight=0.020,
+        token_projector_l2_weight=0.005,
+    ),
+    MainlineStyleRecipe(
+        name="m13_token_projector_stylepush",
+        optimize_spatial=False,
+        iters_per_style=140,
+        ode_steps=12,
+        batch_size=14,
+        lr=8.0e-4,
+        swd_weight=1.55,
+        anchor_weight=0.12,
+        grad_weight=0.10,
+        delta_tv_weight=0.04,
+        emb_l2_weight=0.0,
+        spatial_l2_weight=0.0,
+        highpass_kernel=5,
+        save_every=70,
+        optimize_style_emb=False,
+        optimize_tokenizer=True,
+        optimize_token_projector=True,
+        force_token_project_code=True,
+        token_l2_weight=0.015,
+        token_projector_l2_weight=0.003,
+    ),
 ]
 
 
@@ -290,6 +337,19 @@ def _apply_style_adapter(model, adapter_path: Path, device: str) -> None:
                 target = getattr(tokenizer, "identity_vocab", None)
                 if torch.is_tensor(target) and target.shape == identity.shape:
                     target.copy_(identity.to(device=target.device, dtype=target.dtype))
+            project_code = adapter.get("style_tokenizer.project_code")
+            if project_code is not None:
+                tokenizer.project_code = bool(project_code)
+            projector = getattr(tokenizer, "code_projector", None)
+            if projector is not None:
+                prefix = "style_tokenizer.code_projector."
+                projector_state = {
+                    key[len(prefix):]: value.to(device=device)
+                    for key, value in adapter.items()
+                    if str(key).startswith(prefix) and torch.is_tensor(value)
+                }
+                if projector_state:
+                    projector.load_state_dict(projector_state, strict=False)
 
 
 def run_recipe(
@@ -328,8 +388,13 @@ def run_recipe(
     if recipe.optimize_tokenizer:
         if tokenizer is None:
             raise RuntimeError(f"{recipe.name} requires style_tokenizer_enable=True in the checkpoint config")
+        if recipe.force_token_project_code:
+            tokenizer.project_code = True
         tokenizer.grammar_vocab.weight.requires_grad_(True)
         tokenizer.band_vocab.weight.requires_grad_(True)
+        if recipe.optimize_token_projector:
+            for p in tokenizer.code_projector.parameters():
+                p.requires_grad_(True)
 
     base_style_emb = model.style_emb.weight.detach().clone()
     base_style_spatial = (
@@ -347,12 +412,19 @@ def run_recipe(
         if recipe.optimize_tokenizer and tokenizer is not None
         else None
     )
+    base_projector = (
+        {key: value.detach().clone() for key, value in tokenizer.code_projector.state_dict().items()}
+        if recipe.optimize_token_projector and tokenizer is not None
+        else None
+    )
 
     params = [model.style_emb.weight] if recipe.optimize_style_emb else []
     if recipe.optimize_spatial and hasattr(model, "style_spatial_id_16"):
         params.append(model.style_spatial_id_16)
     if recipe.optimize_tokenizer and tokenizer is not None:
         params.extend([tokenizer.grammar_vocab.weight, tokenizer.band_vocab.weight])
+        if recipe.optimize_token_projector:
+            params.extend(list(tokenizer.code_projector.parameters()))
     if not params:
         raise RuntimeError(f"{recipe.name} selected no trainable style parameters")
     optimizer = torch.optim.AdamW(params, lr=recipe.lr, weight_decay=0.0)
@@ -392,6 +464,14 @@ def run_recipe(
             token_l2 = pred.new_tensor(0.0)
             if recipe.token_l2_weight > 0.0 and tokenizer is not None and base_grammar is not None and base_band is not None:
                 token_l2 = _l2_mean(tokenizer.grammar_vocab.weight, base_grammar) + _l2_mean(tokenizer.band_vocab.weight, base_band)
+            projector_l2 = pred.new_tensor(0.0)
+            if (
+                recipe.token_projector_l2_weight > 0.0
+                and tokenizer is not None
+                and base_projector is not None
+            ):
+                for key, current in tokenizer.code_projector.named_parameters():
+                    projector_l2 = projector_l2 + _l2_mean(current, base_projector[key].to(device=current.device, dtype=current.dtype))
 
             loss = (
                 recipe.swd_weight * swd
@@ -401,6 +481,7 @@ def run_recipe(
                 + recipe.emb_l2_weight * emb_l2
                 + recipe.spatial_l2_weight * spatial_l2
                 + recipe.token_l2_weight * token_l2
+                + recipe.token_projector_l2_weight * projector_l2
             )
             if not torch.isfinite(loss.detach()):
                 raise FloatingPointError(f"Non-finite loss in {recipe.name} style={style_name} iter={iteration}")
@@ -421,6 +502,7 @@ def run_recipe(
                 "emb_l2": float(emb_l2.detach().item()),
                 "spatial_l2": float(spatial_l2.detach().item()),
                 "token_l2": float(token_l2.detach().item()),
+                "token_projector_l2": float(projector_l2.detach().item()),
             }
             losses.append(row)
 
