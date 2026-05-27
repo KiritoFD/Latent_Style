@@ -473,10 +473,22 @@ ema_style_vocab_factorized_feature_w36 epoch8:
 ```
 
 This falsifies the "actuator placement alone" hypothesis. The feature operator
-increased motion but degraded tokenizer metric-space alignment. The next
-theory step is not more capacity; it is identifiability. `identity`, `grammar`,
-and `band` need direct data-derived field losses before the backbone can learn
-to assign the right physical meaning to each field.
+increased motion but degraded tokenizer metric-space alignment.
+
+Correction after visual review: these factorized runs are also visually
+unacceptable because they preserve structure by turning the endpoint into a
+low-contrast, hazy, near-identity field. They must not be used as the new
+baseline even though LPIPS is low. The style-normal anchor is still the
+adapter-calibrated `m02_embspatial_highpass_style` result:
+
+| anchor | clip_style | content_lpips | EC |
+|---|---:|---:|---:|
+| `m02_embspatial_highpass_style` | 0.71073 | 0.40735 | 0.84967 |
+
+Therefore the next theory step is not to add more loss terms to the main OMF
+objective. Tokenizer research should first be constrained to this style-normal
+level: any tokenizer route that drops visible style toward the factorized
+`0.665` regime is a negative result, regardless of LPIPS.
 
 ### Stage D: Spiral Back To Backbone
 
@@ -487,12 +499,17 @@ backbone.
 
 ## Current Task List
 
-1. Add data-derived field losses:
-   low-frequency style measure for `identity`, high/abs-high measure for
-   `grammar`, and multiscale energy ratio for `band`.
-2. Add an orthogonality/cross-cov penalty so the three fields stop encoding the
-   same axis.
-3. Re-run the best stable backbone with the field-loss tokenizer objective.
-4. Inspect first-grid and Hayao grids; global average alone is insufficient.
-5. Only if field losses fail, add explicit flat-plane / contour operators.
+1. Keep the style-normal anchor active: `m02_embspatial_highpass_style`
+   (`0.71073 / 0.40735 / 0.84967`). Do not promote factorized output/feature
+   runs; they are hazy negative controls.
+2. Do not modify the main OMF loss yet. First answer whether tokenizer changes
+   are necessary and executable on top of the style-normal anchor.
+3. Treat tokenizer as a component problem: measure coverage, effective rank,
+   field response, gradient/Jacobian to endpoint, per-style field norms, and
+   Hayao cross-target metrics.
+4. If tokenizer is changed, use adapter-level or routing-level probes that keep
+   the m02 visual style gate. Required gate: no global clip_style collapse below
+   about `0.705`, no hazy first-grid regression.
+5. Only after a tokenizer route preserves style should backbone training be
+   restarted with that route.
 6. Log every step in `docs/logs/experiment_ledger.md`.

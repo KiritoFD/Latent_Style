@@ -617,6 +617,28 @@ zero. Conclusion: actuator placement alone is insufficient. The next mainline
 change should make the fields identifiable with data-derived field losses
 before adding more operator capacity.
 
+### 2026-05-27 Correction: Do Not Promote Hazy Factorized Tokenizer Runs
+
+Visual review rejects the factorized output/feature runs as a mainline path.
+They are content-safe but visibly hazy and de-stylized, with global style near
+`0.665`, far below the style-normal adapter anchor.
+
+Active anchor is restored to:
+
+| anchor | clip_style | content_lpips | EC |
+|---|---:|---:|---:|
+| `m02_embspatial_highpass_style` | 0.71073 | 0.40735 | 0.84967 |
+
+The local field-loss edit proposed after the factorized diagnosis was reverted
+before launch and did not remain in `src/config_schema.py` or `src/losses.py`.
+The remote scheduled tasks `LANCET_FACTORIZED_TOKENIZER` and
+`LANCET_FACTORIZED_FEATURE` were disabled to prevent the hazy route from
+restarting.
+
+Updated rule: tokenizer research must be evaluated against the m02 visual
+style gate first. Do not change the main OMF loss or promote a tokenizer route
+unless it preserves visible style; low LPIPS alone is not a success.
+
 ---
 
 ## Experiment 001: armored_breakthrough_8ep_sinkhorn_sw60
