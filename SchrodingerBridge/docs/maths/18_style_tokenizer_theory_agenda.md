@@ -513,3 +513,70 @@ backbone.
 5. Only after a tokenizer route preserves style should backbone training be
    restarted with that route.
 6. Log every step in `docs/logs/experiment_ledger.md`.
+
+## Completed Tokenizer Probe: Band-Gate Coordinates
+
+Decision: the tokenizer step must not touch the output head and must not add
+main OMF losses. The safe execution surface already exists in
+`StyleBlender._style_texton_band_allocation`: `style_tokens.band_gains` can
+multiply the texton carrier's low, mid, and high bands.
+
+One-line hypothesis:
+
+```text
+Freeze the texton backbone; train only tokenizer.band_vocab as the low/mid/high
+texton energy valve.
+```
+
+This is a cleaner tokenizer test than the factorized output head because:
+
+- it preserves the proven `style_emb + style_spatial_id_16 + transport_texton`
+  style path;
+- it gives `band_logits` an executable physical meaning;
+- it cannot by itself replace the whole endpoint with a hazy near-identity
+  output;
+- it directly targets the observed per-style frequency mismatch, especially
+  Hayao's need for flatter planes and less generic high-pass texture.
+
+The implementation is intentionally separate from backbone training:
+
+```text
+tools/experiments/run_tokenizer_bandgate_calibration.py
+```
+
+It constructs a tokenizer-enabled copy of a texton checkpoint, loads the source
+weights non-strictly, freezes every existing parameter, and trains only:
+
+```text
+style_tokenizer.band_vocab.weight
+```
+
+The first gate is visual/style preservation, not just LPIPS:
+
+```text
+clip_style must not collapse below ~0.705, first-grid must not become hazy.
+```
+
+Result on 2026-05-27:
+
+| recipe | clip_style | content_lpips | Hayao clip_style | verdict |
+|---|---:|---:|---:|---|
+| `bg00_band_anchor` | 0.71289 | 0.44403 | 0.60185 | safe but style-neutral |
+| `bg01_band_stylepush` | 0.71264 | 0.44406 | 0.60096 | safe but style-neutral |
+
+Interpretation:
+
+- Band-gate calibration did not reproduce the hazy factorized failure. It stays
+  above the style gate and improves LPIPS relative to the texton source.
+- It also does not raise style. The global style remains near `0.713`, and
+  Hayao remains the weakest target near `0.601`.
+- Therefore band-gate is a valid tokenizer coordinate and a content-safety
+  valve, but it is too low-rank to be the primary style actuator.
+- The active rollback anchor remains `m02_embspatial_highpass_style`
+  (`0.71073 / 0.40735 / 0.84967`). Factorized output/feature routes are
+  rejected as hazy negative controls and must not be promoted.
+
+Revised rule: tokenizer work should change representation or routing only
+after preserving this style-normal level. Do not increase scalar losses to hide
+tokenizer weakness; if the first grid becomes foggy, stop and return to the
+anchor.

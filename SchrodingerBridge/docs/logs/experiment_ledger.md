@@ -639,6 +639,67 @@ Updated rule: tokenizer research must be evaluated against the m02 visual
 style gate first. Do not change the main OMF loss or promote a tokenizer route
 unless it preserves visible style; low LPIPS alone is not a success.
 
+### 2026-05-27 Tokenizer Band-Gate Calibration
+
+Hypothesis:
+
+```text
+Freeze the texton backbone; train only tokenizer.band_vocab as the low/mid/high
+texton carrier valve.
+```
+
+This was a tokenizer-only stage in the tokenizer/backbone spiral. It did not
+modify the main OMF loss and did not bind tokenizer fields to the output head.
+The execution surface is the existing
+`StyleBlender._style_texton_band_allocation`, where `style_tokens.band_gains`
+multiply low/mid/high texton deltas.
+
+Script:
+
+```text
+tools/experiments/run_tokenizer_bandgate_calibration.py
+```
+
+Planned source checkpoint:
+
+```text
+exp\vae_backend\ema_transport_texton\ema_transport_texton_w34_guard\epoch_0006.pt
+```
+
+Reason: this texton checkpoint is the strongest style-normal backbone with an
+explicit texton carrier (`0.71451 / 0.48261 / 0.36968` from prior eval). The
+m02 adapter remains the LPIPS anchor, but it was produced on the AdaIN carrier
+and does not expose the texton band valve.
+
+Recipes:
+
+| recipe | trainable parameters | purpose |
+|---|---|---|
+| `bg00_band_anchor` | `style_tokenizer.band_vocab.weight` only | conservative band-coordinate fit |
+| `bg01_band_stylepush` | `style_tokenizer.band_vocab.weight` only | stronger style push with teacher anchor |
+
+Results:
+
+| recipe | clip_style | content_lpips | Hayao clip_style | verdict |
+|---|---:|---:|---:|---|
+| `bg00_band_anchor` | 0.71289 | 0.44403 | 0.60185 | safe but style-neutral |
+| `bg01_band_stylepush` | 0.71264 | 0.44406 | 0.60096 | safe but style-neutral |
+
+CSV copied locally:
+
+```text
+exp\tokenizer_bandgate_calibration\tokenizer_bandgate_results.csv
+```
+
+Decision gate: passed the metric style gate, but not enough to become a style
+actuator. It is not the hazy `factorized_*` failure mode, but it also does not
+increase style. Keep it as a diagnostic/safety coordinate only.
+
+Rollback decision after visual/style review: the active style-normal anchor is
+still `m02_embspatial_highpass_style` (`0.71073 / 0.40735 / 0.84967`). Do not
+promote the factorized output/feature routes; they are hazy negative controls.
+Do not change the main OMF loss to compensate for tokenizer weakness.
+
 ---
 
 ## Experiment 001: armored_breakthrough_8ep_sinkhorn_sw60
