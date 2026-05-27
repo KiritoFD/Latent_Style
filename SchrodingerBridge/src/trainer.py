@@ -132,7 +132,10 @@ class SBTrainer:
             }
         x = value.detach().float()
         finite = torch.isfinite(x)
-        finite_ratio = float(finite.float().mean().item()) if x.numel() > 0 else 1.0
+        if x.numel() == 0 or bool(finite.all().item()):
+            finite_ratio = 1.0
+        else:
+            finite_ratio = float(finite.float().mean().item())
         safe = torch.nan_to_num(x, nan=0.0, posinf=0.0, neginf=0.0)
         return {
             "is_present": 1.0,
@@ -155,7 +158,8 @@ class SBTrainer:
                 continue
             g = grad.detach().float()
             finite = torch.isfinite(g)
-            finite_ratio = float(finite.float().mean().item()) if g.numel() > 0 else 1.0
+            all_finite = bool(finite.all().item()) if g.numel() > 0 else True
+            finite_ratio = 1.0 if all_finite else float(finite.float().mean().item())
             safe = torch.nan_to_num(g, nan=0.0, posinf=0.0, neginf=0.0)
             gmax = float(safe.abs().amax().item()) if safe.numel() > 0 else 0.0
             grad_mean += float(safe.abs().mean().item()) if safe.numel() > 0 else 0.0
@@ -163,7 +167,7 @@ class SBTrainer:
             if gmax > grad_max:
                 grad_max = gmax
                 max_name = name
-            if first_nonfinite_name is None and finite_ratio < 1.0:
+            if first_nonfinite_name is None and not all_finite:
                 first_nonfinite_name = name
                 first_nonfinite_ratio = finite_ratio
         return {
@@ -187,6 +191,7 @@ class SBTrainer:
     ) -> None:
         if not self.numeric_debug or self.numeric_debug_events >= self.numeric_debug_dump_limit:
             return
+        carrier_debug = dict(getattr(self.model, "carrier_debug", {}) or {})
         payload: Dict[str, object] = {
             "epoch": int(epoch),
             "step": int(step),
@@ -203,6 +208,14 @@ class SBTrainer:
             "source_style_ids": [int(v) for v in source_style_id.detach().cpu().tolist()] if source_style_id is not None else None,
             "semantic_attn": self._tensor_stats(getattr(self.model, "last_semantic_attn", None)),
             "semantic_k": self._tensor_stats(getattr(self.model, "last_semantic_k", None)),
+            "carrier_debug": {
+                key: self._tensor_stats(value)
+                for key, value in carrier_debug.items()
+            },
+            "carrier_debug_by_target_style": {
+                key: self._tensor_stats_by_style(value, target_style_id)
+                for key, value in carrier_debug.items()
+            },
         }
         if extra:
             payload["extra"] = extra
@@ -210,6 +223,31 @@ class SBTrainer:
         with open(self.numeric_debug_file, "a", encoding="utf-8") as f:
             f.write(json.dumps(payload, ensure_ascii=False) + "\n")
         self.numeric_debug_events += 1
+
+    def _tensor_stats_by_style(self, tensor: torch.Tensor | None, style_ids: torch.Tensor) -> Dict[str, Dict[str, float | int]]:
+        if tensor is None or not torch.is_tensor(tensor):
+            return {}
+        if tensor.ndim == 0 or int(tensor.shape[0]) != int(style_ids.shape[0]):
+            return {}
+        out: Dict[str, Dict[str, float | int]] = {}
+        ids = style_ids.detach().long().cpu()
+        flat = tensor.detach().float().cpu().reshape(int(tensor.shape[0]), -1)
+        for sid in torch.unique(ids, sorted=True).tolist():
+            mask = ids == int(sid)
+            if not bool(mask.any()):
+                continue
+            values = torch.nan_to_num(flat[mask], nan=0.0, posinf=0.0, neginf=0.0)
+            if values.numel() == 0:
+                continue
+            out[str(int(sid))] = {
+                "count": int(mask.sum().item()),
+                "mean": float(values.mean().item()),
+                "std": float(values.std(unbiased=False).item()),
+                "abs_mean": float(values.abs().mean().item()),
+                "max": float(values.max().item()),
+                "min": float(values.min().item()),
+            }
+        return out
 
     def _build_optimizer(self, params) -> torch.optim.Optimizer:
         return build_adamw(params, self.train_cfg, self.device)
