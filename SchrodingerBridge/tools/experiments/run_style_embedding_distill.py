@@ -224,11 +224,6 @@ def _save_style_adapter(path: Path, model) -> None:
     if tokenizer is not None:
         payload["style_tokenizer.grammar_vocab.weight"] = tokenizer.grammar_vocab.weight.detach().cpu()
         payload["style_tokenizer.band_vocab.weight"] = tokenizer.band_vocab.weight.detach().cpu()
-        payload["style_tokenizer.project_code"] = bool(getattr(tokenizer, "project_code", False))
-        projector = getattr(tokenizer, "code_projector", None)
-        if projector is not None:
-            for key, value in projector.state_dict().items():
-                payload[f"style_tokenizer.code_projector.{key}"] = value.detach().cpu()
         identity = getattr(tokenizer, "identity_vocab", None)
         if torch.is_tensor(identity):
             payload["style_tokenizer.identity_vocab"] = identity.detach().cpu()

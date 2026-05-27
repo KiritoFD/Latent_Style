@@ -130,6 +130,11 @@ class ModelConfig:
     dynamic_style_operator_hidden_mult: float = 1.0
     dynamic_style_operator_band_low_kernel: int = 9
     dynamic_style_operator_band_mid_kernel: int = 3
+    dynamic_style_feature_operator: bool = False
+    dynamic_style_feature_operator_strength: float = 0.0
+    dynamic_style_feature_operator_band_low_kernel: int = 9
+    dynamic_style_feature_operator_band_mid_kernel: int = 3
+    dynamic_style_feature_operator_tanh_scale: float = 4.0
     style_highpass_depthwise_head: bool = False
     style_highpass_depthwise_kernel: int = 3
     style_highpass_depthwise_lowpass_kernel: int = 5

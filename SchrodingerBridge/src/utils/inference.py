@@ -160,19 +160,6 @@ class LGTInference:
                     target = getattr(tokenizer, "identity_vocab", None)
                     if torch.is_tensor(target) and target.shape == identity.shape:
                         target.copy_(identity.to(device=target.device, dtype=target.dtype))
-                project_code = adapter.get("style_tokenizer.project_code")
-                if project_code is not None:
-                    tokenizer.project_code = bool(project_code)
-                projector = getattr(tokenizer, "code_projector", None)
-                if projector is not None:
-                    prefix = "style_tokenizer.code_projector."
-                    projector_state = {
-                        key[len(prefix):]: value.to(device=self.device)
-                        for key, value in adapter.items()
-                        if str(key).startswith(prefix) and torch.is_tensor(value)
-                    }
-                    if projector_state:
-                        projector.load_state_dict(projector_state, strict=False)
         logger.info("Loaded style adapter: %s", adapter_path)
 
     @torch.no_grad()

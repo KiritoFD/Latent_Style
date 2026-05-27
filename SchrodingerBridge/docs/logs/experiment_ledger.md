@@ -535,6 +535,70 @@ Code support added:
 This does not use Seedream or any external generated image as supervision.
 Seedream remains diagnostic-only.
 
+### 2026-05-27 Operator-Bound Tokenizer Cleanup
+
+**Status**: Local implementation updated; remote factorized run that was already
+active keeps running on the previously synced snapshot.
+
+The old tokenizer projector path is now retired from the runnable tokenizer
+implementation. `StyleTokenizer` no longer builds `code_projector`, no longer
+stores `project_code`, and no longer concatenates `base_code`, `identity`,
+`grammar`, and `band_logits` in `forward`. It returns `StyleTokenFields` plus
+the deterministic residual base code only.
+
+Reason: the projector experiment was a negative representation result. It can
+lower LPIPS, but it re-mixes fields through an anonymous `style_code` and does
+not produce a disentangled metric space. Future tokenizer runs should use
+operator-bound fields or explicit field-statistic losses.
+
+### 2026-05-27 Factorized w36 Result And Feature-Operator Follow-Up
+
+**Status**: w36 and w40 completed on remote.
+
+`ema_style_vocab_factorized_w36` completed epochs 6/7/8. Best result is not a
+style solution:
+
+| epoch | clip_style | content_lpips | EC |
+|---:|---:|---:|---:|
+| 6 | 0.665652 | 0.323192 | 0.450519 |
+| 7 | 0.666157 | 0.324339 | 0.450096 |
+| 8 | 0.665982 | 0.324816 | 0.449660 |
+
+Per-style epoch 8 confirms Hayao is still the weak slice:
+
+| target | clip_style | LPIPS |
+|---|---:|---:|
+| Hayao | 0.586460 | 0.375123 |
+| monet | 0.634582 | 0.296655 |
+| vangogh | 0.662697 | 0.300282 |
+| cezanne | 0.648391 | 0.312260 |
+
+Diagnosis: final-head-only factorized binding strongly preserves content but
+does not provide enough style actuator capacity. Component scorecard:
+`coverage=0.500`, `component=0.598`, grammar active rows `4`, band active rows
+`0`. Metric-space diagnosis shows useful grammar/abs-high alignment
+(`spearman=0.6121`) but weak identity-low alignment (`0.0000`), inverted
+band-energy alignment (`-0.4545`), and high cross-covariance across fields.
+
+Code follow-up added locally: `dynamic_style_feature_operator`, a decoder
+feature-level factorized operator using the same `StyleTokenFields`. The next
+probe variant is `ema_style_vocab_factorized_feature_w36`.
+
+`ema_style_vocab_factorized_w40_stylepush` confirms the same failure mode:
+
+| epoch | clip_style | content_lpips | EC |
+|---:|---:|---:|---:|
+| 6 | 0.665316 | 0.321302 | 0.451549 |
+| 7 | 0.665672 | 0.322517 | 0.450982 |
+| 8 | 0.665615 | 0.323082 | 0.450567 |
+
+W40 component scorecard is worse than W36 (`coverage=0.375`,
+`component=0.500`, band active rows `0`). Metric-space diagnosis improves
+grammar vs abs-high correlation (`spearman=0.7576`) but keeps identity-low at
+`0.0000` and band-energy inverted (`spearman=-0.4545`). Raising terminal SWD
+therefore does not solve the tokenizer; the actuator level and band supervision
+are the blockers.
+
 ---
 
 ## Experiment 001: armored_breakthrough_8ep_sinkhorn_sw60

@@ -35,8 +35,6 @@ class StyleTokenizer(nn.Module):
         code_residual_scale: float = 1.0,
         band_gain_scale: float = 0.35,
         learn_identity: bool = False,
-        zero_init_projection: bool = True,
-        project_code: bool = False,
     ) -> None:
         super().__init__()
         self.num_styles = max(1, int(num_styles))
@@ -46,7 +44,6 @@ class StyleTokenizer(nn.Module):
         self.band_dim = max(1, int(band_dim))
         self.code_residual_scale = max(0.0, float(code_residual_scale))
         self.band_gain_scale = max(0.0, float(band_gain_scale))
-        self.project_code = bool(project_code)
 
         identity = self._build_simplex_identity(self.num_styles, self.identity_dim)
         if learn_identity:
@@ -56,15 +53,7 @@ class StyleTokenizer(nn.Module):
 
         self.grammar_vocab = nn.Embedding(self.num_styles, self.grammar_dim)
         self.band_vocab = nn.Embedding(self.num_styles, self.band_dim)
-        self.code_projector = nn.Sequential(
-            nn.Linear(self.style_dim + self.identity_dim + self.grammar_dim + self.band_dim, self.style_dim),
-            nn.SiLU(),
-            nn.Linear(self.style_dim, self.style_dim),
-        )
         self._init_vocab()
-        if zero_init_projection:
-            nn.init.zeros_(self.code_projector[-1].weight)
-            nn.init.zeros_(self.code_projector[-1].bias)
 
     @staticmethod
     def _build_simplex_identity(num_styles: int, identity_dim: int) -> torch.Tensor:
@@ -102,12 +91,6 @@ class StyleTokenizer(nn.Module):
         band_logits_3 = band_logits[:, :3]
         band_gains = 1.0 + torch.tanh(band_logits_3).view(base_code.shape[0], 3, 1, 1) * self.band_gain_scale
         code = base_code * self.code_residual_scale
-        # Legacy diagnostic path. The operator-bound route keeps this disabled
-        # and lets the backbone consume StyleTokenFields directly.
-        if self.project_code:
-            token_input = torch.cat([base_code.float(), identity.float(), grammar.float(), band_logits.float()], dim=1)
-            token_delta = self.code_projector(token_input).to(device=base_code.device, dtype=base_code.dtype)
-            code = code + token_delta
         fields = StyleTokenFields(
             identity=identity,
             grammar=grammar,

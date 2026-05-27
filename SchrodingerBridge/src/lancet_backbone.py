@@ -622,6 +622,11 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         self.dynamic_style_operator_hidden_mult = max(0.25, float(cfg.dynamic_style_operator_hidden_mult))
         self.dynamic_style_operator_band_low_kernel = max(1, int(cfg.dynamic_style_operator_band_low_kernel))
         self.dynamic_style_operator_band_mid_kernel = max(1, int(cfg.dynamic_style_operator_band_mid_kernel))
+        self.dynamic_style_feature_operator = bool(cfg.dynamic_style_feature_operator)
+        self.dynamic_style_feature_operator_strength = max(0.0, float(cfg.dynamic_style_feature_operator_strength))
+        self.dynamic_style_feature_operator_band_low_kernel = max(1, int(cfg.dynamic_style_feature_operator_band_low_kernel))
+        self.dynamic_style_feature_operator_band_mid_kernel = max(1, int(cfg.dynamic_style_feature_operator_band_mid_kernel))
+        self.dynamic_style_feature_operator_tanh_scale = max(1e-4, float(cfg.dynamic_style_feature_operator_tanh_scale))
         self.style_highpass_depthwise_head = bool(cfg.style_highpass_depthwise_head)
         self.style_highpass_depthwise_strength = max(0.0, float(cfg.style_highpass_depthwise_strength))
         self.style_highpass_depthwise_kernel = max(1, int(cfg.style_highpass_depthwise_kernel))
@@ -810,8 +815,6 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
                 code_residual_scale=float(cfg.style_token_code_residual_scale),
                 band_gain_scale=float(cfg.style_token_band_gain_scale),
                 learn_identity=bool(cfg.style_token_learn_identity),
-                zero_init_projection=bool(cfg.style_token_zero_init_projection),
-                project_code=bool(cfg.style_token_project_code),
             )
             if self.style_tokenizer_enable
             else None
@@ -1017,6 +1020,20 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         else:
             self.dec_out = nn.Conv2d(self.lift_channels, out_channels, kernel_size=3, stride=1, padding=1)
             self.output_head = None
+        self.style_token_feature_operator = None
+        if self.dynamic_style_feature_operator and self.dynamic_style_feature_operator_strength > 0.0:
+            if not self.style_tokenizer_enable:
+                raise ValueError("dynamic_style_feature_operator requires style_tokenizer_enable=True")
+            self.style_token_feature_operator = FactorizedDynamicOperatorHead(
+                in_channels=self.lift_channels,
+                out_channels=self.lift_channels,
+                identity_dim=int(cfg.style_token_identity_dim),
+                grammar_dim=int(cfg.style_token_grammar_dim),
+                band_channels=self.lift_channels,
+                band_low_kernel=self.dynamic_style_feature_operator_band_low_kernel,
+                band_mid_kernel=self.dynamic_style_feature_operator_band_mid_kernel,
+            )
+            self.style_token_feature_operator.zero_initialize_output()
         self.style_highpass_head = None
         self.style_highpass_region_gate_head = None
         self.style_lowpass_head = None

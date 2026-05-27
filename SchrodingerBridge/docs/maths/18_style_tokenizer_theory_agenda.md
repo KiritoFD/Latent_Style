@@ -402,6 +402,9 @@ The projector gave no global style gain and only a small Hayao lift
 (`0.6147 -> 0.6228`) while preserving low LPIPS. This is not a performance
 solution. It mainly proves that the fields can influence the endpoint if routed
 through `style_code`, but that route destroys the desired field semantics.
+The route is now retired from the runnable tokenizer implementation: `StyleTokenizer`
+returns independent fields only, and the old `cat -> code_projector -> style_code`
+path is kept only as a historical negative result in this document.
 
 ### Stage B: Add Data-Derived Field Targets
 
@@ -435,6 +438,30 @@ Candidate missing operators if hard binding still fails:
 - high-frequency suppression gated away from true semantic edges;
 - texton injection that is style-specific rather than globally mid-band.
 
+First result from the hard-bound output-head-only run:
+
+```text
+ema_style_vocab_factorized_w36 epoch8:
+  clip_style = 0.665982
+  content_lpips = 0.324816
+  EC = 0.449660
+  Hayao clip_style = 0.586460
+
+ema_style_vocab_factorized_w40_stylepush epoch8:
+  clip_style = 0.665615
+  content_lpips = 0.323082
+  EC = 0.450567
+  Hayao clip_style = 0.584838
+```
+
+Interpretation: this is not a style solution. It proves the fields can preserve
+structure extremely well, but binding them only at the terminal output head
+turns the model into a conservative near-identity vector field. The next
+operator test is `dynamic_style_feature_operator`: the same independent
+`StyleTokenFields` are injected into decoder features before the output head,
+so the tokenizer controls an active vector-field actuator rather than only the
+last residual projection.
+
 ### Stage D: Spiral Back To Backbone
 
 Only after the tokenizer has measurable coverage and executability should the
@@ -444,10 +471,15 @@ backbone.
 
 ## Current Task List
 
-1. Finish `m12/m13` projector refit and run full eval.
-2. Run the component scorecard on `m12/m13`.
-3. Run gradient/Jacobian audit on `m12/m13`.
-4. Inspect first-grid and Hayao grid, not only global metrics.
-5. If projector helps, design field-statistic supervision.
-6. If projector fails, implement explicit flat-plane / contour operators.
+1. Finish remote `ema_style_vocab_factorized_w36` and
+   `ema_style_vocab_factorized_w40_stylepush`.
+2. For each factorized run, report global metrics and per-style Hayao metrics.
+3. Run tokenizer component scorecard, metric-space diagnosis, and gradient audit
+   on the best factorized checkpoint.
+4. Inspect `summary_grid_first.png` and Hayao-specific grids, not only averages.
+5. If factorized binding improves representation diagnostics but not style,
+   add data-derived field losses: low SWD for identity, high/abs-high SWD for
+   grammar, and band-energy ratio for band gains.
+6. If factorized binding fails both metrics and diagnostics, add explicit
+   flat-plane / contour operators before increasing embedding size.
 7. Log every step in `docs/logs/experiment_ledger.md`.

@@ -255,11 +255,17 @@ RECIPES = [
 
 def _parse_recipes(spec: str) -> list[MainlineStyleRecipe]:
     if not spec.strip():
-        return RECIPES
+        return [r for r in RECIPES if not (r.optimize_token_projector or r.force_token_project_code)]
     keep = {item.strip() for item in spec.split(",") if item.strip()}
     selected = [recipe for recipe in RECIPES if recipe.name in keep]
     if not selected:
         raise ValueError(f"No matching recipes for {spec!r}")
+    retired = [r.name for r in selected if r.optimize_token_projector or r.force_token_project_code]
+    if retired:
+        raise ValueError(
+            "Retired tokenizer-projector recipes are no longer runnable after the operator-bound tokenizer refactor: "
+            + ", ".join(retired)
+        )
     return selected
 
 
@@ -337,19 +343,6 @@ def _apply_style_adapter(model, adapter_path: Path, device: str) -> None:
                 target = getattr(tokenizer, "identity_vocab", None)
                 if torch.is_tensor(target) and target.shape == identity.shape:
                     target.copy_(identity.to(device=target.device, dtype=target.dtype))
-            project_code = adapter.get("style_tokenizer.project_code")
-            if project_code is not None:
-                tokenizer.project_code = bool(project_code)
-            projector = getattr(tokenizer, "code_projector", None)
-            if projector is not None:
-                prefix = "style_tokenizer.code_projector."
-                projector_state = {
-                    key[len(prefix):]: value.to(device=device)
-                    for key, value in adapter.items()
-                    if str(key).startswith(prefix) and torch.is_tensor(value)
-                }
-                if projector_state:
-                    projector.load_state_dict(projector_state, strict=False)
 
 
 def run_recipe(
@@ -369,6 +362,11 @@ def run_recipe(
     init_style_adapter: Path | None,
 ) -> dict:
     rng = random.Random(seed)
+    if recipe.optimize_token_projector or recipe.force_token_project_code:
+        raise RuntimeError(
+            f"{recipe.name} uses the retired cat/project tokenizer route. "
+            "Use operator-bound tokenizer recipes or legacy checkpoints only for diagnosis."
+        )
     model, config = _load_checkpoint_model(checkpoint, device)
     teacher, _ = _load_checkpoint_model(checkpoint, device)
     if init_style_adapter is not None:
@@ -388,13 +386,8 @@ def run_recipe(
     if recipe.optimize_tokenizer:
         if tokenizer is None:
             raise RuntimeError(f"{recipe.name} requires style_tokenizer_enable=True in the checkpoint config")
-        if recipe.force_token_project_code:
-            tokenizer.project_code = True
         tokenizer.grammar_vocab.weight.requires_grad_(True)
         tokenizer.band_vocab.weight.requires_grad_(True)
-        if recipe.optimize_token_projector:
-            for p in tokenizer.code_projector.parameters():
-                p.requires_grad_(True)
 
     base_style_emb = model.style_emb.weight.detach().clone()
     base_style_spatial = (
@@ -412,19 +405,11 @@ def run_recipe(
         if recipe.optimize_tokenizer and tokenizer is not None
         else None
     )
-    base_projector = (
-        {key: value.detach().clone() for key, value in tokenizer.code_projector.state_dict().items()}
-        if recipe.optimize_token_projector and tokenizer is not None
-        else None
-    )
-
     params = [model.style_emb.weight] if recipe.optimize_style_emb else []
     if recipe.optimize_spatial and hasattr(model, "style_spatial_id_16"):
         params.append(model.style_spatial_id_16)
     if recipe.optimize_tokenizer and tokenizer is not None:
         params.extend([tokenizer.grammar_vocab.weight, tokenizer.band_vocab.weight])
-        if recipe.optimize_token_projector:
-            params.extend(list(tokenizer.code_projector.parameters()))
     if not params:
         raise RuntimeError(f"{recipe.name} selected no trainable style parameters")
     optimizer = torch.optim.AdamW(params, lr=recipe.lr, weight_decay=0.0)
@@ -465,13 +450,6 @@ def run_recipe(
             if recipe.token_l2_weight > 0.0 and tokenizer is not None and base_grammar is not None and base_band is not None:
                 token_l2 = _l2_mean(tokenizer.grammar_vocab.weight, base_grammar) + _l2_mean(tokenizer.band_vocab.weight, base_band)
             projector_l2 = pred.new_tensor(0.0)
-            if (
-                recipe.token_projector_l2_weight > 0.0
-                and tokenizer is not None
-                and base_projector is not None
-            ):
-                for key, current in tokenizer.code_projector.named_parameters():
-                    projector_l2 = projector_l2 + _l2_mean(current, base_projector[key].to(device=current.device, dtype=current.dtype))
 
             loss = (
                 recipe.swd_weight * swd

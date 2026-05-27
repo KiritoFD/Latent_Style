@@ -573,9 +573,18 @@ class LatentAdaCUTRuntimeMixin:
         h_up = self._apply_upsample_blur(h_up)
         h_fused = self._fuse_skip_features(h_up, skip_32, style_code=style_code, gate=1.0)
         h_dec = self._run_decoder(h_fused)
+        style_tokens = getattr(self, "_last_style_token_fields", None)
+        token_feature_operator = getattr(self, "style_token_feature_operator", None)
+        token_feature_strength = float(getattr(self, "dynamic_style_feature_operator_strength", 0.0))
+        self.carrier_debug = dict(getattr(self, "carrier_debug", {}) or {})
+        if token_feature_operator is not None and token_feature_strength > 0.0:
+            token_feature_delta = token_feature_operator(h_dec, style_tokens)
+            token_feature_scale = float(getattr(self, "dynamic_style_feature_operator_tanh_scale", 4.0))
+            token_feature_add = torch.tanh(token_feature_delta / token_feature_scale) * token_feature_scale * token_feature_strength
+            self.carrier_debug["style_token_feature_delta"] = token_feature_add.detach()
+            h_dec = h_dec + token_feature_add
         feature_operator = getattr(self, "decoder_feature_style_operator", None)
         feature_strength = float(getattr(self, "decoder_feature_style_operator_strength", 0.0))
-        self.carrier_debug = dict(getattr(self, "carrier_debug", {}) or {})
         if feature_operator is not None and feature_strength > 0.0:
             feature_delta = feature_operator(h_dec, style_code)
             if bool(getattr(self, "decoder_feature_style_operator_support_gate", False)):

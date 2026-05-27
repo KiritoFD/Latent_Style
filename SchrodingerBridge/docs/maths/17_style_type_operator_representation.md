@@ -238,6 +238,12 @@ scorecard still reports only two active grammar/band non-photo rows, and
 metric-space diagnosis shows weak token/data distance alignment. This supports
 the hard-binding revision below.
 
+Implementation decision: the projector route is retired from the main code
+path. It remains useful as evidence that an anonymous style-code delta can
+improve LPIPS, but it violates the tokenizer axioms because it re-mixes
+identity, grammar, and band before the backbone sees them. New tokenizer work
+must consume independent `StyleTokenFields`.
+
 ## Operator-Bound Tokenizer Revision
 
 The projector route is deliberately not the final representation. It still
