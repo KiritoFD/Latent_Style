@@ -854,11 +854,9 @@ class StyleBlender(nn.Module):
             grammar = grammar.expand(b, -1)
         elif grammar.shape[0] != b:
             raise ValueError(f"style grammar batch mismatch: expected {b} or 1, got {grammar.shape[0]}")
-        flatness = torch.relu(torch.tanh(grammar[:, 1:2].float())) if grammar.shape[1] > 1 else grammar.new_zeros(b, 1)
-        suppress = torch.relu(torch.tanh(grammar[:, 7:8].float())) if grammar.shape[1] > 7 else grammar.new_zeros(b, 1)
+        flatness = torch.tanh(grammar[:, 1:2].float()) if grammar.shape[1] > 1 else grammar.new_zeros(b, 1)
+        suppress = torch.tanh(grammar[:, 7:8].float()) if grammar.shape[1] > 7 else grammar.new_zeros(b, 1)
         token_strength = ((flatness + suppress) * 0.5).view(b, 1, 1, 1)
-        if bool(torch.count_nonzero(token_strength.detach()).item() == 0):
-            return content_feat.new_zeros(content_feat.shape)
         high = content_feat.float() - self._lowpass(content_feat, self.token_flatten_kernel).float()
         smooth_region = (1.0 - support_gate.float()).clamp_min(0.0)
         delta = -high * where_gate.float() * smooth_region * token_strength * self.token_flatten_strength

@@ -15,7 +15,25 @@ import torch
 
 
 ROOT = Path(__file__).resolve().parents[2]
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+from config_schema import load_config
+
 BASE_CONFIG = ROOT / "exp" / "diffeomorphic_tangent_sweep" / "t01_ws0p03_g6_nl0p05" / "config.json"
+BASE_CONFIG_FALLBACKS = [
+    BASE_CONFIG,
+    ROOT / "configs" / "diffeomorphic_tangent_sweep" / "t01_ws0p03_g6_nl0p05.json",
+    ROOT / "config.json",
+]
+
+
+def _load_base_config() -> dict:
+    base_config_path = next((path for path in BASE_CONFIG_FALLBACKS if path.exists()), None)
+    if base_config_path is None:
+        searched = "\n".join(f"  - {path}" for path in BASE_CONFIG_FALLBACKS)
+        raise FileNotFoundError(f"No base config found. Searched:\n{searched}")
+    return load_config(base_config_path)
 
 VARIANTS = {
     "sdxl": {
@@ -4783,6 +4801,104 @@ VARIANTS.update(
                 "edge_phase_kernel": 5,
             },
         ),
+        "ema_style_vocab_neutral_w34": _clone_variant(
+            "ema_transport_texton_w34_guard",
+            notes=(
+                "No-prior tokenizer backbone: grammar and band vocabulary start neutral for every style. "
+                "The backbone must learn to read fields from data; success requires by-target field separation, "
+                "especially a learned Hayao flat/contour response, not a hand-initialized one."
+            ),
+            learning_rate=2.7e-5,
+            batch_size=96,
+            eval_batch_size=12,
+            model_overrides={
+                "style_tokenizer_enable": True,
+                "style_token_identity_dim": 16,
+                "style_token_grammar_dim": 9,
+                "style_token_band_dim": 3,
+                "style_token_code_residual_scale": 1.0,
+                "style_token_band_gain_scale": 0.38,
+                "style_token_zero_init_projection": True,
+                "style_token_project_code": False,
+                "style_token_flatten_strength": 0.085,
+                "style_token_flatten_kernel": 5,
+                "style_blender_texton_style_allocate": False,
+                "style_blender_texton_use_style_code": False,
+                "style_blender_texton_hidden_mult": 1.10,
+                "style_blender_texton_style_scale": 0.0,
+                "style_blender_texton_low_strength": 0.22,
+                "style_blender_texton_mid_strength": 0.62,
+                "style_blender_texton_high_strength": 0.035,
+                "style_blender_transport_floor": 0.20,
+                "style_blender_amp_floor": 0.38,
+                "style_skip_content_retention_boost": 0.42,
+                "structure_barrier_gamma": 0.66,
+            },
+            bridge_overrides={
+                "w_kinetic": 2.10,
+                "w_content_anchor": 0.50,
+                "w_edge_anchor": 0.17,
+                "w_style_energy_floor": 0.055,
+                "style_energy_floor_ratio": 0.82,
+                "w_spectral_amplitude": 0.070,
+                "w_flat_highpass_suppression": 0.012,
+                "w_edge_phase_alignment": 0.010,
+            },
+        ),
+        "ema_style_vocab_neutral_hayao_w36": _clone_variant(
+            "ema_transport_texton_w34_guard",
+            notes=(
+                "No-prior tokenizer Hayao diagnostic: target sampling and style-term weights emphasize Hayao, "
+                "but the vocabulary itself starts neutral. This tests whether Hayao can be learned as a field "
+                "state after the backbone receives the tokenizer interface."
+            ),
+            terminal_swd_weight=36.0,
+            learning_rate=2.55e-5,
+            batch_size=96,
+            eval_batch_size=12,
+            data_overrides={
+                "target_style_sampling_weights": [0.9, 2.8, 1.0, 1.0, 1.0],
+            },
+            model_overrides={
+                "style_tokenizer_enable": True,
+                "style_token_identity_dim": 16,
+                "style_token_grammar_dim": 9,
+                "style_token_band_dim": 3,
+                "style_token_code_residual_scale": 1.0,
+                "style_token_band_gain_scale": 0.45,
+                "style_token_zero_init_projection": True,
+                "style_token_project_code": False,
+                "style_token_flatten_strength": 0.115,
+                "style_token_flatten_kernel": 7,
+                "style_blender_texton_style_allocate": False,
+                "style_blender_texton_use_style_code": False,
+                "style_blender_texton_hidden_mult": 1.10,
+                "style_blender_texton_style_scale": 0.0,
+                "style_blender_texton_low_strength": 0.27,
+                "style_blender_texton_mid_strength": 0.58,
+                "style_blender_texton_high_strength": 0.025,
+                "style_blender_texton_tanh_scale": 0.39,
+                "style_blender_transport_floor": 0.23,
+                "style_blender_amp_floor": 0.40,
+                "style_skip_content_retention_boost": 0.42,
+                "structure_barrier_gamma": 0.66,
+            },
+            bridge_overrides={
+                "target_style_loss_weights": [1.0, 1.55, 1.0, 1.0, 1.0],
+                "w_kinetic": 2.15,
+                "w_content_anchor": 0.50,
+                "w_edge_anchor": 0.17,
+                "w_style_energy_floor": 0.058,
+                "style_energy_floor_ratio": 0.82,
+                "w_spectral_amplitude": 0.074,
+                "w_flat_highpass_suppression": 0.016,
+                "flat_highpass_gamma": 8.0,
+                "flat_highpass_kernel": 7,
+                "w_edge_phase_alignment": 0.012,
+                "edge_phase_gamma": 8.0,
+                "edge_phase_kernel": 5,
+            },
+        ),
         "ema_transport_texton_alloc_w34": _clone_variant(
             "ema_transport_texton_w34_guard",
             notes=(
@@ -5225,7 +5341,7 @@ def main() -> int:
     eval_epochs = []
     if str(args.eval_epochs).strip().lower() not in {"", "none", "no", "false", "0"}:
         eval_epochs = [int(x.strip()) for x in args.eval_epochs.split(",") if x.strip()]
-    base_cfg = json.loads(BASE_CONFIG.read_text(encoding="utf-8"))
+    base_cfg = _load_base_config()
     rows: list[dict] = []
     args.out_root.mkdir(parents=True, exist_ok=True)
     ledger = args.out_root / "vae_backend_256_results.csv"

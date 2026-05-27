@@ -92,6 +92,53 @@ Sinkhorn alone (no SWD increase) should reproduce baseline Style (~0.703) with b
 
 ---
 
+## 2026-05-27 Tokenizer No-Prior Correction
+
+**Status**: Implemented code-level correction; no new GPU run yet.
+
+### Trigger
+
+The first style-tokenizer runs used structured fields, but the tokenizer
+initialization also contained hand-coded Hayao / Van-Gogh style priors. That is
+not the intended tokenizer problem. The intended problem is to give the model a
+field schema and let the vocabulary values be learned.
+
+### Evidence Before Correction
+
+Remote tokenizer probes:
+
+| run | best global clip_style | content_lpips | Hayao cross clip_style | verdict |
+|---|---:|---:|---:|---|
+| `ema_style_vocab_texton_w34` | 0.7084 | 0.5144 | 0.6429 | below anchor, weak Hayao |
+| `ema_style_vocab_hayao_w36` | 0.7069 | 0.5445 | 0.6531 | mild Hayao lift but LPIPS worse |
+
+The debug readout also showed that the field responses were small and generic.
+This is not a clean test of tokenizer theory because the vocabulary started
+with manual style priors.
+
+### Code Change
+
+- `src/style_tokenizer.py`: remove all manual per-style grammar/band priors.
+- `src/lancet_blocks.py`: make the token flatten response signed and
+  differentiable at zero, so neutral zero initialization is still trainable.
+- `docs/maths/16_tokenizer_no_prior_spiral.md`: record the no-prior tokenizer
+  spiral protocol.
+
+### Current Hypothesis
+
+Tokenizer progress should be spiral-shaped:
+
+```text
+neutral tokenizer backbone -> vocabulary-only refinement -> actuator diagnosis
+-> revised backbone -> refined vocabulary
+```
+
+The next backbone run should not be judged only by one global average. It must
+report per-target and cross-target metrics, especially Hayao. Success requires
+Hayao to become a learned field pattern, not a manually initialized pattern.
+
+---
+
 ## Experiment 001: armored_breakthrough_8ep_sinkhorn_sw60
 
 **Status**: Planned  

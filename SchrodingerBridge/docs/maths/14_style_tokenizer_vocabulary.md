@@ -38,8 +38,10 @@ minimal sense that the old `style_emb` remains the base code:
 style_code = legacy_style_emb
 ```
 
-The carrier reads `grammar` and `band` directly. During tokenizer-backbone
-training, both anonymous shortcuts are disabled:
+The carrier reads `grammar` and `band` directly. These fields are structured,
+but they must not contain hand-written style priors. The field names define the
+coordinate system; the field values must be learned from data. During
+tokenizer-backbone training, both anonymous shortcuts are disabled:
 
 - `style_token_project_code = false`
 - `style_blender_texton_use_style_code = false`
@@ -55,6 +57,39 @@ gradient tensor was caused by float32 reduction precision when averaging an
 all-True boolean mask. Gradient checks must use `finite.all()` first and only
 compute a ratio after the all-finite check fails. We do not use gradient
 sanitation for this route.
+
+## No-Prior Correction
+
+The first tokenizer implementation accidentally mixed two ideas:
+
+1. a structured vocabulary coordinate system;
+2. manual per-style initial values for Hayao and Van Gogh.
+
+That is the wrong abstraction. A tokenizer should not know that Hayao is flat
+or that Van Gogh is high-texture before training. It should only provide fields
+that make those distinctions learnable and inspectable.
+
+The corrected initialization is:
+
+```text
+identity: fixed simplex code, only identifying the target class
+grammar:  all zeros
+band:     all zeros, hence band gains start at 1
+```
+
+The grammar actuator is also changed to be differentiable at zero. In the first
+implementation, `relu(tanh(grammar))` made the flatten branch inactive at the
+neutral point, so a zero-initialized field could become a dead gate. The current
+field response is signed:
+
+```text
+flatten_response = tanh(grammar_flatness) + tanh(grammar_highfreq)
+```
+
+Positive values suppress high-frequency fragments in flat regions; negative
+values may preserve or amplify local texton energy. This keeps the neutral
+state unbiased while allowing gradients to decide whether a style wants
+flat-color planes or dense texture.
 
 ## Field Semantics
 
@@ -78,7 +113,7 @@ grammar = [
 identity so two styles can share an identity distance while still using very
 different physical actuators.
 
-Expected field profiles:
+Expected field profiles are diagnostic hypotheses, not initialization priors:
 
 ```text
 Hayao:
@@ -92,17 +127,20 @@ Van Gogh:
 
 ## Backbone-First Training
 
-The training order should be:
+The training order should be a spiral:
 
-1. Train a main backbone with tokenizer fields enabled.
+1. Train a usable backbone with neutral tokenizer fields enabled.
 2. Inspect `numeric_debug.jsonl` by target style:
    - `style_token_grammar`
    - `style_token_band_gains`
    - `body_transport_texton_band_alloc`
    - `body_transport_texton_flatten_delta`
    - low/mid/high texton deltas
-3. Only if the backbone shows field-specific response, freeze it and refine the
-   vocabulary.
+3. Freeze the backbone and refine only the vocabulary.
+4. If the learned vocabulary exposes a missing actuator, unfreeze the relevant
+   backbone branch and train the next backbone.
+5. Repeat backbone -> vocabulary -> diagnosis, instead of treating tokenizer
+   training as a one-shot adapter.
 
 The vocabulary-only phase is useful only after the backbone has learned the
 field semantics. Otherwise the vocabulary is just another post-hoc style table

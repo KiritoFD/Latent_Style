@@ -102,6 +102,12 @@ response is too small and too generic. The high-frequency delta remains tiny,
 and the Hayao flattening path is not enough to create clean color planes. This
 means the idea is not disproved, but the first readout design is weak.
 
+Important correction: these first tokenizer runs used manual per-style
+grammar/band priors. They are therefore diagnostics, not clean evidence about a
+learned tokenizer vocabulary. The mainline tokenizer must start with neutral
+zero grammar/band fields and a differentiable zero point, then learn the style
+fields from data through the backbone/vocabulary spiral.
+
 ## Model Implication
 
 Do not spend the next round on scalar sweeps alone. EMA needs a style operator
@@ -142,4 +148,3 @@ global clip_style > 0.72
 content_lpips <= 0.50 preferred, <= 0.52 acceptable for a style-push probe
 Hayao target clip_style must rise, not only the global average
 ```
-
