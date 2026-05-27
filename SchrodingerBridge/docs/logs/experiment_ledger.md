@@ -4,6 +4,57 @@ Format: Each experiment block logs hypothesis, config delta, results, and verdic
 
 ---
 
+## Experiment Note: 2026-05-27 Post-VAE EMA Verdict
+
+**Status**: Evidence review
+**Scope**: Remote post-VAE result CSVs under `exp/vae_backend*` and tokenizer
+probe outputs.
+
+### Conclusion
+
+EMA is not fundamentally unusable. The current evidence shows two regimes:
+
+- high-style EMA can reach the target band but sacrifices content:
+  `ema_guard_w20_lowwarp e7 = clip_style 0.7245 / LPIPS 0.5526`;
+- content-safe EMA is close but still short on style:
+  `ema_transport_texton_w34_guard e6 = 0.7145 / 0.4826`,
+  `ema_bodyblend_w28_guard e6 = 0.7158 / 0.4972`.
+
+SDXL and KL-f4 are currently lower-style in the same post-VAE exploration:
+SDXL is around `0.667` in the stable minimal line, and KL-f4 is around `0.654`.
+
+### Important Boundary
+
+Do not use the old pre-VAE-switch t00/t01 numbers as a clean EMA-vs-MSE A/B.
+They are useful historical capacity evidence for the old system, but not proof
+that the current EMA backend is worse or better than MSE.
+
+### Per-Style Diagnosis
+
+The current EMA problem is not global. Strong content-safe EMA rows already
+reach high target-style means for Van Gogh, Cezanne, and Monet, but Hayao stays
+near `0.66-0.67` and often has worse LPIPS. This points to a missing macro
+flat-color / contour operator rather than a dead VAE.
+
+### Tokenizer Probe
+
+The tokenizer probe completed:
+
+- `ema_style_vocab_texton_w34`: best `0.7084 / 0.5144`;
+- `ema_style_vocab_hayao_w36`: best `0.7068 / 0.5445`.
+
+Verdict: the first factorized-tokenizer readout is too weak and too generic.
+The route remains conceptually valid, but it must be paired with a stronger
+macro carrier rather than treated as a post-hoc style table.
+
+### Next Hypothesis
+
+Use EMA as the main post-VAE backend. Start from a content-safe carrier and add
+explicit macro flat-color and edge-contour branches for Hayao. Continue to use
+Seedream only as a diagnostic visual reference, not as a training objective.
+
+---
+
 ## Experiment 000: armored_breakthrough_8ep_sinkhorn_baseline
 
 **Status**: Planned
