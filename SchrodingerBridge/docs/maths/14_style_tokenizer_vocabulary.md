@@ -142,6 +142,11 @@ The training order should be a spiral:
 5. Repeat backbone -> vocabulary -> diagnosis, instead of treating tokenizer
    training as a one-shot adapter.
 
+Hayao is deliberately kept as a reporting slice rather than a manually boosted
+training target. If it stays weak while the other styles improve, that is
+evidence that the tokenizer/backbone is missing a field or actuator, not a
+license to hide the problem behind per-style sampling weights.
+
 The vocabulary-only phase is useful only after the backbone has learned the
 field semantics. Otherwise the vocabulary is just another post-hoc style table
 and will collapse like the previous adapter.

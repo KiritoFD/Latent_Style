@@ -4845,20 +4845,17 @@ VARIANTS.update(
                 "w_edge_phase_alignment": 0.010,
             },
         ),
-        "ema_style_vocab_neutral_hayao_w36": _clone_variant(
+        "ema_style_vocab_neutral_w36_stylepush": _clone_variant(
             "ema_transport_texton_w34_guard",
             notes=(
-                "No-prior tokenizer Hayao diagnostic: target sampling and style-term weights emphasize Hayao, "
-                "but the vocabulary itself starts neutral. This tests whether Hayao can be learned as a field "
-                "state after the backbone receives the tokenizer interface."
+                "No-prior tokenizer style-push: keep style sampling and style losses balanced across all targets, "
+                "but increase the tokenizer-facing carrier pressure. This tests whether neutral fields can "
+                "differentiate style grammar without hand weighting any single target."
             ),
             terminal_swd_weight=36.0,
             learning_rate=2.55e-5,
             batch_size=96,
             eval_batch_size=12,
-            data_overrides={
-                "target_style_sampling_weights": [0.9, 2.8, 1.0, 1.0, 1.0],
-            },
             model_overrides={
                 "style_tokenizer_enable": True,
                 "style_token_identity_dim": 16,
@@ -4884,7 +4881,6 @@ VARIANTS.update(
                 "structure_barrier_gamma": 0.66,
             },
             bridge_overrides={
-                "target_style_loss_weights": [1.0, 1.55, 1.0, 1.0, 1.0],
                 "w_kinetic": 2.15,
                 "w_content_anchor": 0.50,
                 "w_edge_anchor": 0.17,

@@ -137,6 +137,18 @@ The next backbone run should not be judged only by one global average. It must
 report per-target and cross-target metrics, especially Hayao. Success requires
 Hayao to become a learned field pattern, not a manually initialized pattern.
 
+### Follow-up Correction
+
+The tokenizer mainline also avoids manual Hayao training pressure. The clean
+queue is:
+
+- `ema_style_vocab_neutral_w34`
+- `ema_style_vocab_neutral_w36_stylepush`
+
+Both use balanced style exposure. Hayao is evaluated separately because it is
+the clearest failure slice, but it is not oversampled or upweighted in the
+main tokenizer spiral.
+
 ---
 
 ## Experiment 001: armored_breakthrough_8ep_sinkhorn_sw60

@@ -134,9 +134,10 @@ Added variants:
 | variant | purpose |
 |---|---|
 | `ema_style_vocab_neutral_w34` | clean backbone readout with no style-specific vocabulary priors |
-| `ema_style_vocab_neutral_hayao_w36` | Hayao-emphasis diagnostic with neutral vocabulary initialization |
+| `ema_style_vocab_neutral_w36_stylepush` | balanced style-pressure readout with the same neutral vocabulary initialization |
 
-The second variant may emphasize Hayao through sampling/loss weights, but this
-is not a vocabulary prior. The vocabulary still starts neutral; the run asks
-whether the native objective can learn a Hayao-specific field state when Hayao
-is given enough training signal.
+The second variant must not emphasize Hayao through sampling or loss weights.
+Hayao remains a diagnostic slice, not a training shortcut. If the neutral
+tokenizer cannot learn a Hayao-specific field state under balanced exposure,
+the conclusion is a missing field/operator or objective signal, not that the
+run needs manual Hayao weighting.
