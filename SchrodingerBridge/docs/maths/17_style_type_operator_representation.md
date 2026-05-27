@@ -99,8 +99,9 @@ On `ema_style_vocab_texton_w34`, the debug readout shows:
 
 Interpretation: the first tokenizer did not merely fail to create a Hayao
 field. It created a weak field that the current texton carrier cannot execute
-as a clean Hayao operator. The next architecture step should add or expose a
-macro flat-color / contour actuator, then revisit vocabulary-only refinement.
+as a clean Hayao operator. Before changing the backbone again, the tokenizer
+itself should be treated as a component with explicit capacity, coverage, and
+sensitivity metrics.
 
 The first clean no-prior run, `ema_style_vocab_neutral_w34`, confirms the same
 mechanism without manual style weighting:
@@ -112,8 +113,51 @@ mechanism without manual style weighting:
 - Hayao flattening is activated, but visible style remains weak.
 
 Therefore the next move is not a larger class embedding. It is a backbone
-operator revision: add a controllable flat-plane / contour-preserving branch
-and then test whether the already-learned Hayao fields can drive it.
+operator diagnosis deferred until the vocabulary is understood. The tokenizer
+phase should first ask:
+
+```text
+capacity: does the vocabulary have enough effective rank?
+coverage: does every non-photo style occupy non-neutral fields?
+sensitivity: does changing a field move the carrier in a measurable direction?
+refitability: with the backbone frozen, can vocabulary-only optimization improve
+             style without harming LPIPS?
+```
+
+If those tests fail, the problem is tokenizer design/training. If they pass and
+Hayao remains weak, then the missing piece is a backbone operator that consumes
+the learned fields.
+
+## Component Metrics
+
+The tokenizer is now judged as a component before another backbone change:
+
+| metric | question | failure signal |
+|---|---|---|
+| effective rank | does the vocabulary use its nominal dimensions? | low rank in grammar or band |
+| field coverage | do all non-photo styles leave neutral coordinates? | only Hayao/Cezanne active |
+| sensitivity | do fields move carrier deltas? | collapsed `body_transport_texton_*` deltas |
+| downstream gate | does refitting improve style without LPIPS drift? | style gain below noise or LPIPS worsens |
+
+The current clean tokenizer fails mainly on coverage. `neutral_w34` and
+`neutral_w36_stylepush` both activate grammar/band only for Hayao and Cezanne,
+while Monet and Van Gogh remain near zero grammar. That means the tokenizer is
+not yet a full style vocabulary even though its Hayao field is nonzero.
+
+The next empirical step is vocabulary-only refinement with a fixed backbone:
+
+```text
+freeze backbone
+freeze style_emb
+freeze style_spatial_id_16
+optimize grammar_vocab and band_vocab only
+export style_adapter.pt
+evaluate with the same full protocol
+```
+
+If this raises coverage and style, the tokenizer was under-trained. If coverage
+still stays at two active styles, the field parameterization or objective is
+wrong.
 
 ## Spiral Protocol
 

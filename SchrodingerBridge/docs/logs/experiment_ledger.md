@@ -102,8 +102,10 @@ checkpoint band norm: Hayao=0.355879, Cezanne=0.331349, others near zero
 Interpretation: the neutral tokenizer can discover non-trivial Hayao and
 Cezanne fields without manual style weighting. However, Hayao remains visually
 and metrically weak, so the next architecture step should not be "more Hayao
-weight"; it should expose an executable macro flat-plane / clean-contour
-operator that these fields can control.
+weight". With a usable backbone already available, the immediate next step is
+to treat tokenizer quality as its own component: measure vocabulary capacity,
+coverage, sensitivity, and vocabulary-only refinement before changing the
+backbone again.
 
 ### 2026-05-27 18:31 Follow-up Check
 
@@ -123,9 +125,108 @@ The readout confirms the main interpretation:
 - style-token grammar is not collapsed;
 - Hayao has the strongest grammar and flattening response;
 - Hayao still has the weakest cross-target style score;
-- therefore the current texton/flatten carrier exposes too weak a Hayao
-  operator. The next controlled change should be a tokenizer-driven
-  flat-plane / contour branch rather than target-style reweighting.
+- therefore the current tokenizer has real but incomplete field separation.
+  The next controlled change should focus on tokenizer/vocabulary quality
+  rather than target-style reweighting or another backbone branch.
+
+### Tokenizer Component Scorecard
+
+The second clean tokenizer run, `ema_style_vocab_neutral_w36_stylepush`,
+finished successfully.
+
+| run | epoch | clip_style | LPIPS | EC | Hayao cross style | Hayao cross LPIPS |
+|---|---:|---:|---:|---:|---:|---:|
+| `neutral_w34` | 8 | 0.707817 | 0.514850 | 0.343397 | 0.643154 | 0.566445 |
+| `neutral_w36_stylepush` | 8 | 0.708146 | 0.519977 | 0.339926 | 0.645181 | 0.570138 |
+
+Tokenizer/component diagnostics for `neutral_w36_stylepush`:
+
+```text
+grammar normalized_range: 3.443
+band-gain normalized_range: 0.065
+Hayao flatten delta vs others: +0.007022
+Hayao low-delta vs others: +0.006179
+Hayao high-delta vs others: -0.000042
+grammar norm: Hayao=0.886319, Cezanne=0.567891, photo/Monet/VanGogh=0
+band norm: Hayao=0.356546, Cezanne=0.330701, others near zero
+```
+
+Component verdict: the tokenizer is not collapsed globally, but it is not yet
+a good style vocabulary. It mainly learns Hayao and Cezanne grammar/band
+offsets, while Monet/VanGogh/photo remain nearly at neutral grammar. Increasing
+style pressure gives only `+0.00033` global style and `+0.00203` Hayao style
+while worsening LPIPS. The next tokenizer work should define and optimize
+component metrics directly: vocabulary effective rank, per-style field
+coverage, field-to-actuator sensitivity, and by-style downstream deltas.
+
+### Tokenizer Component Scorecard Tool
+
+Added:
+
+```text
+tools/experiments/evaluate_style_tokenizer_component.py
+```
+
+Remote output:
+
+```text
+exp\vae_backend_256_probe\tokenizer_component_scorecard\
+```
+
+The component scorecard treats tokenizer quality as separate from backbone
+quality. It reports:
+
+- vocabulary effective rank;
+- active non-photo styles for grammar and band vocabularies;
+- per-style vocabulary rows;
+- field-to-actuator sensitivity;
+- downstream style/LPIPS gates.
+
+Current scorecard:
+
+| run | style | LPIPS | Hayao style | grammar active | band active | erank g/b | coverage | sensitivity | component |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `neutral_w34` | 0.707817 | 0.514850 | 0.643154 | 2 | 2 | 0.370 / 0.632 | 0.500 | 1.000 | 0.676 |
+| `neutral_w36_stylepush` | 0.708146 | 0.519977 | 0.645181 | 2 | 2 | 0.370 / 0.634 | 0.500 | 1.000 | 0.669 |
+
+This makes the tokenizer bottleneck concrete: the carrier reads some fields,
+but vocabulary coverage is poor. Only Hayao and Cezanne leave neutral
+grammar/band rows. Monet and Van Gogh are not receiving explicit grammar
+coordinates, so the current tokenizer is not a full style vocabulary yet.
+
+### Tokenizer-Only Refit Route
+
+Extended `tools/experiments/run_style_embedding_mainline_calibration.py` with
+tokenizer-only recipes:
+
+```text
+m10_token_vocab_swd_anchor
+m11_token_vocab_stylepush
+```
+
+These freeze the backbone, `style_emb`, and `style_spatial_id_16`, then optimize
+only:
+
+```text
+style_tokenizer.grammar_vocab.weight
+style_tokenizer.band_vocab.weight
+```
+
+A smoke run on `ema_style_vocab_neutral_w36_stylepush/epoch_0008.pt` completed
+with `--max-iters-per-style 2 --skip-eval`. It confirmed nonzero tokenizer
+gradient flow and saved `style_adapter.pt`.
+
+The full remote queue was launched:
+
+```text
+task: LANCET_TOKENIZER_VOCAB_REFIT
+checkpoint: exp\vae_backend_256_probe\ema_style_vocab_neutral_w36_stylepush\epoch_0008.pt
+recipes: m10_token_vocab_swd_anchor,m11_token_vocab_stylepush
+out: exp\style_tokenizer_vocab_refit\w36_epoch8
+```
+
+At 2026-05-27 18:58 local time it was running `m10`, with GPU around
+`6959 / 12288 MiB` and `93%` utilization.
 
 ---
 
