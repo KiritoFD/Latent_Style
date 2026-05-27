@@ -700,6 +700,56 @@ still `m02_embspatial_highpass_style` (`0.71073 / 0.40735 / 0.84967`). Do not
 promote the factorized output/feature routes; they are hazy negative controls.
 Do not change the main OMF loss to compensate for tokenizer weakness.
 
+### 2026-05-27 Tokenizer-Gated Transport-AdaIN Plan
+
+Hypothesis:
+
+```text
+Tokenizer should not replace the output head; it should act as a low-rank
+valve over the proven m02 transport-AdaIN carrier.
+```
+
+Code changes:
+
+- `model.style_token_adain_gate_enable` defaults to `false`;
+- when enabled, `transport_adain` reads `style_tokens.band_gains` and multiplies
+  low/mid/high AdaIN residual bands;
+- when enabled, `style_tokens.grammar` also controls the existing flat-region
+  high-pass suppression path;
+- no main OMF loss changes.
+
+Script:
+
+```text
+tools/experiments/run_tokenizer_adain_gate_calibration.py
+```
+
+Source:
+
+```text
+checkpoint: exp\vae_backend\ema_transport_moment\ema_transport_adain_w34_guard\epoch_0006.pt
+init adapter: exp\style_embedding_mainline_calibration\ema_transport_adain_w34_e6_fulltrain\m02_embspatial_highpass_style\style_adapter.pt
+```
+
+Trainable parameters:
+
+```text
+style_tokenizer.grammar_vocab.weight
+style_tokenizer.band_vocab.weight
+```
+
+Recipes:
+
+| recipe | purpose |
+|---|---|
+| `ag00_m02_safe_gate` | conservative tokenizer gate over m02 |
+| `ag01_m02_style_gate` | stronger tokenizer gate, acceptable only if style rises without fog |
+
+Decision gate: reject immediately if the grid becomes hazy or global style
+falls below the m02 style-normal level. Keep only if global style moves toward
+`0.72+` or Hayao cross-style improves without LPIPS leaving the `0.47-0.50`
+working band.
+
 ---
 
 ## Experiment 001: armored_breakthrough_8ep_sinkhorn_sw60

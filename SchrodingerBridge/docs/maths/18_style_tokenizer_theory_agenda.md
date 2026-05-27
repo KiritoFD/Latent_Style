@@ -580,3 +580,48 @@ Revised rule: tokenizer work should change representation or routing only
 after preserving this style-normal level. Do not increase scalar losses to hide
 tokenizer weakness; if the first grid becomes foggy, stop and return to the
 anchor.
+
+## Next Probe: Tokenizer-Gated Transport-AdaIN
+
+One-line hypothesis:
+
+```text
+Tokenizer should not replace the output head; it should act as a low-rank
+valve over the proven m02 transport-AdaIN carrier.
+```
+
+Reasoning:
+
+- The m02 anchor is style-normal and content-safe, but Hayao remains weak.
+- Texton-only band gates are safe but too weak because the texton carrier is
+  not the active m02 carrier.
+- The dangerous factorized head failed because it replaced the endpoint
+  operator and collapsed into a hazy near-identity map.
+- Therefore the next executable tokenizer field should be attached to the
+  m02 carrier itself: band tokens multiply transport-AdaIN low/mid/high
+  residuals, while grammar tokens only suppress high-frequency drift in flat
+  regions.
+
+Implementation:
+
+```text
+model.style_token_adain_gate_enable = true
+tools/experiments/run_tokenizer_adain_gate_calibration.py
+```
+
+The switch defaults to `false`, so previous checkpoints keep their original
+behavior. The probe loads `ema_transport_adain_w34_guard/epoch_0006.pt`,
+applies `m02_embspatial_highpass_style/style_adapter.pt`, freezes the backbone,
+`style_emb`, and `style_spatial_id_16`, then trains only:
+
+```text
+style_tokenizer.grammar_vocab.weight
+style_tokenizer.band_vocab.weight
+```
+
+Decision gate:
+
+- reject if style drops below the m02 style-normal range or first-grid becomes
+  foggy;
+- keep only if global style rises toward `0.72+` or Hayao cross-style improves
+  without LPIPS leaving the useful `0.47-0.50` band.

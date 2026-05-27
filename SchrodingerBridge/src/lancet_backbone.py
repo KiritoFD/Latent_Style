@@ -560,6 +560,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         self.style_token_flatten_kernel = max(1, int(cfg.style_token_flatten_kernel))
         if self.style_token_flatten_kernel % 2 == 0:
             self.style_token_flatten_kernel += 1
+        self.style_token_adain_gate_enable = bool(cfg.style_token_adain_gate_enable)
         self.style_strength_step_curve = str(cfg.style_strength_step_curve).lower()
         if self.style_strength_step_curve not in {"linear", "smoothstep", "sqrt"}:
             self.style_strength_step_curve = "linear"
@@ -923,6 +924,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
                 texton_high_strength=self.style_blender_texton_high_strength,
                 token_flatten_strength=self.style_token_flatten_strength,
                 token_flatten_kernel=self.style_token_flatten_kernel,
+                token_adain_gate_enable=self.style_token_adain_gate_enable,
             )
             if self.use_style_blender
             else None

@@ -73,6 +73,7 @@ class ModelConfig:
     style_token_project_code: bool = False
     style_token_flatten_strength: float = 0.0
     style_token_flatten_kernel: int = 5
+    style_token_adain_gate_enable: bool = False
     time_dim: int = 256
     base_dim: int = 64
     lift_channels: int | None = None

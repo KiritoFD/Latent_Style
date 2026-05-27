@@ -522,6 +522,7 @@ class StyleBlender(nn.Module):
         texton_high_strength: float = 0.05,
         token_flatten_strength: float = 0.0,
         token_flatten_kernel: int = 5,
+        token_adain_gate_enable: bool = False,
     ) -> None:
         super().__init__()
         groups = _resolve_group_count(dim, num_groups)
@@ -616,6 +617,7 @@ class StyleBlender(nn.Module):
         self.token_flatten_kernel = max(1, int(token_flatten_kernel))
         if self.token_flatten_kernel % 2 == 0:
             self.token_flatten_kernel += 1
+        self.token_adain_gate_enable = bool(token_adain_gate_enable)
         self.region_gate_generator: nn.Module | None = None
         if self.mode == "region_paint" and style_dim is not None and int(style_dim) > 0:
             hidden_dim = max(8, int(round(float(style_dim) * max(0.25, float(region_hidden_mult)))))
@@ -1020,17 +1022,32 @@ class StyleBlender(nn.Module):
             phase_gate = self._phase_gate(content_feat, mid + high)
             low_gate = transport_gate * support_gate if self.transport_low_use_support else transport_gate
             detail_gate = transport_gate * support_gate * phase_gate
-            low_add = torch.tanh(low / scale) * scale * low_gate * self.transport_low_strength
-            mid_add = torch.tanh(mid / scale) * scale * detail_gate * self.transport_mid_strength
-            high_add = torch.tanh(high / scale) * scale * detail_gate * self.transport_high_strength
+            if self.token_adain_gate_enable and style_tokens is not None:
+                band_alloc = self._style_texton_band_allocation(style_emb, content_feat, style_tokens)
+                low_alloc = band_alloc[:, 0:1]
+                mid_alloc = band_alloc[:, 1:2]
+                high_alloc = band_alloc[:, 2:3]
+            else:
+                band_alloc = content_feat.new_ones(content_feat.shape[0], 3, 1, 1)
+                low_alloc = mid_alloc = high_alloc = content_feat.new_ones(content_feat.shape[0], 1, 1, 1)
+            low_add = torch.tanh(low / scale) * scale * low_gate * self.transport_low_strength * low_alloc
+            mid_add = torch.tanh(mid / scale) * scale * detail_gate * self.transport_mid_strength * mid_alloc
+            high_add = torch.tanh(high / scale) * scale * detail_gate * self.transport_high_strength * high_alloc
+            flatten_add = (
+                self._style_token_flatten_delta(content_feat, style_tokens, transport_gate, support_gate)
+                if self.token_adain_gate_enable
+                else content_feat.new_zeros(content_feat.shape)
+            )
             self.last_debug["body_transport_adain_gate"] = transport_gate.detach()
             self.last_debug["body_transport_adain_support_gate"] = support_gate.detach()
             self.last_debug["body_transport_adain_phase_gate"] = phase_gate.detach()
+            self.last_debug["body_transport_adain_band_alloc"] = band_alloc.detach()
             self.last_debug["body_transport_adain_low_gate"] = low_gate.detach()
             self.last_debug["body_transport_adain_low_delta"] = low_add.detach()
             self.last_debug["body_transport_adain_mid_delta"] = mid_add.detach()
             self.last_debug["body_transport_adain_high_delta"] = high_add.detach()
-            return content_feat + low_add + mid_add + high_add
+            self.last_debug["body_transport_adain_flatten_delta"] = flatten_add.detach()
+            return content_feat + low_add + mid_add + high_add + flatten_add
         if self.mode == "transport_amp":
             content_mean, content_std = self._local_mean_std(content_feat, self.adain_moment_kernel)
             style_mean, style_std = self._local_mean_std(style_feat, self.adain_moment_kernel)
