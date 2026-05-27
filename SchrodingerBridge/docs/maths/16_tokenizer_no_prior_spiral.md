@@ -2,6 +2,11 @@
 
 Date: 2026-05-27
 
+See also
+[`17_style_type_operator_representation.md`](17_style_type_operator_representation.md)
+for the higher-level definition of a style type as executable operator
+coordinates.
+
 ## Position
 
 The style tokenizer should be a learnable coordinate system, not a hand-coded

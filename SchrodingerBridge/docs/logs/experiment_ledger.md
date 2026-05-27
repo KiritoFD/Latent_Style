@@ -4,6 +4,131 @@ Format: Each experiment block logs hypothesis, config delta, results, and verdic
 
 ---
 
+## Experiment Note: 2026-05-27 Neutral Tokenizer Spiral
+
+**Status**: Running on remote
+**Remote task**: `LANCET_STYLE_VOCAB_NEUTRAL_SPIRAL`
+**Remote path**: `I:\Github\Latent_Style\SchrodingerBridge`
+**Started**: 2026-05-27 18:05 local time
+
+### Hypothesis
+
+Style type should be represented as executable operator coordinates, not as a
+single class embedding. The clean tokenizer queue should keep target exposure
+balanced and test whether `identity / grammar / band / residual` fields can
+separate target styles by themselves.
+
+Hayao is a diagnostic slice only. It must not be manually oversampled or
+upweighted. If Hayao remains poor, the diagnosis should identify whether the
+vocabulary failed to separate Hayao or whether the backbone lacks the correct
+flat-color / contour operator.
+
+### Running Variants
+
+```text
+ema_style_vocab_neutral_w34
+ema_style_vocab_neutral_w36_stylepush
+```
+
+Both variants use neutral tokenizer initialization and balanced style exposure.
+
+### Current Remote Health Check
+
+At 2026-05-27 18:09 local time:
+
+```text
+task: running
+gpu: 8153 / 12288 MiB, 100% utilization
+active variant: ema_style_vocab_neutral_w34
+process: run_vae_backend_256_probe.py -> src/run.py
+```
+
+### Diagnostic Tool Update
+
+`tools/experiments/summarize_style_tokenizer_debug.py` now writes:
+
+```text
+style_tokenizer_debug_readout.md
+style_tokenizer_debug_by_style.csv
+style_tokenizer_field_discrimination.csv
+style_tokenizer_eval_overview.csv
+style_tokenizer_checkpoint_vocab.csv
+```
+
+The tool reports:
+
+- global and cross-target eval rows;
+- per-target tokenizer/carrier responses;
+- normalized field separability;
+- Hayao delta versus the other styles;
+- whether weak Hayao means tokenizer collapse or missing executable operator.
+
+### Evidence From Earlier Tokenizer Probe
+
+Running the updated diagnostic on the earlier `ema_style_vocab_texton_w34`
+shows:
+
+```text
+global: clip_style=0.708368, content_lpips=0.514357
+Hayao cross: clip_style=0.642931, content_lpips=0.565908
+grammar normalized_range=3.442
+Hayao flattening delta vs others=0.004876
+```
+
+Verdict: Hayao fields can separate, but the visible result remains weak. This
+points to an insufficient or wrong executable Hayao operator rather than a
+need for manual Hayao target weighting.
+
+### First Clean Result
+
+`ema_style_vocab_neutral_w34` finished on the remote task.
+
+| epoch | global clip_style | content_lpips | EC | Hayao cross clip_style | Hayao cross LPIPS |
+|---|---:|---:|---:|---:|---:|
+| 6 | 0.704802 | 0.514826 | 0.341952 | 0.647169 | 0.558829 |
+| 7 | 0.707341 | 0.512390 | 0.344907 | 0.643466 | 0.566596 |
+| 8 | 0.707817 | 0.514850 | 0.343397 | 0.643154 | 0.566445 |
+
+Tokenizer readout at epoch 8:
+
+```text
+grammar normalized_range=3.443
+Hayao flattening delta vs others=0.004895
+Hayao band mean is below others
+checkpoint grammar norm: Hayao=0.885814, Cezanne=0.567891, photo/Monet/VanGogh=0
+checkpoint band norm: Hayao=0.355879, Cezanne=0.331349, others near zero
+```
+
+Interpretation: the neutral tokenizer can discover non-trivial Hayao and
+Cezanne fields without manual style weighting. However, Hayao remains visually
+and metrically weak, so the next architecture step should not be "more Hayao
+weight"; it should expose an executable macro flat-plane / clean-contour
+operator that these fields can control.
+
+### 2026-05-27 18:31 Follow-up Check
+
+`ema_style_vocab_neutral_w36_stylepush` is still running. The remote GPU is
+busy at roughly `4881 / 12288 MiB` and `98%` utilization, so the queue was left
+untouched.
+
+The completed `w34` diagnostic was regenerated on the remote:
+
+```text
+python tools\experiments\summarize_style_tokenizer_debug.py ^
+  exp\vae_backend_256_probe\ema_style_vocab_neutral_w34 --limit-events 80
+```
+
+The readout confirms the main interpretation:
+
+- style-token grammar is not collapsed;
+- Hayao has the strongest grammar and flattening response;
+- Hayao still has the weakest cross-target style score;
+- therefore the current texton/flatten carrier exposes too weak a Hayao
+  operator. The next controlled change should be a tokenizer-driven
+  flat-plane / contour branch rather than target-style reweighting.
+
+---
+
 ## Experiment Note: 2026-05-27 Post-VAE EMA Verdict
 
 **Status**: Evidence review

@@ -224,7 +224,7 @@ class SBTrainer:
             f.write(json.dumps(payload, ensure_ascii=False) + "\n")
         self.numeric_debug_events += 1
 
-    def _tensor_stats_by_style(self, tensor: torch.Tensor | None, style_ids: torch.Tensor) -> Dict[str, Dict[str, float | int]]:
+    def _tensor_stats_by_style(self, tensor: torch.Tensor | None, style_ids: torch.Tensor) -> Dict[str, Dict[str, object]]:
         if tensor is None or not torch.is_tensor(tensor):
             return {}
         if tensor.ndim == 0 or int(tensor.shape[0]) != int(style_ids.shape[0]):
@@ -247,6 +247,17 @@ class SBTrainer:
                 "max": float(values.max().item()),
                 "min": float(values.min().item()),
             }
+            # Keep tiny tokenizer/control vectors interpretable for later
+            # field-level diagnosis. Dense spatial tensors stay summarized.
+            if values.ndim == 2 and values.shape[1] <= 16:
+                component_mean = values.mean(dim=0)
+                component_abs_mean = values.abs().mean(dim=0)
+                out[str(int(sid))]["component_mean"] = [
+                    float(v) for v in component_mean.tolist()
+                ]
+                out[str(int(sid))]["component_abs_mean"] = [
+                    float(v) for v in component_abs_mean.tolist()
+                ]
         return out
 
     def _build_optimizer(self, params) -> torch.optim.Optimizer:
