@@ -750,6 +750,37 @@ falls below the m02 style-normal level. Keep only if global style moves toward
 `0.72+` or Hayao cross-style improves without LPIPS leaving the `0.47-0.50`
 working band.
 
+Result on 2026-05-27:
+
+| recipe | clip_style | content_lpips | Hayao clip_style | verdict |
+|---|---:|---:|---:|---|
+| `ag00_m02_safe_gate` | 0.71076 | 0.40728 | 0.60489 | style-normal but neutral |
+| `ag01_m02_style_gate` | 0.71061 | 0.40729 | 0.60514 | style-normal but neutral |
+
+Interpretation: the tokenizer-gated AdaIN path is safe, but it does not lift
+style. It should not be promoted as a breakthrough. The only active anchor is
+still `m02_embspatial_highpass_style` (`0.71073 / 0.40735 / 0.84967`).
+
+Correction after user review: do not pivot this into a scalar-loss edit. The
+tokenizer question is whether fields are executable on top of the style-normal
+carrier. Hazy/de-stylized factorized routes remain hard negative controls, not
+candidate baselines. Remote scheduled tasks for the old tokenizer/factorized
+queues were stopped and disabled:
+
+```text
+LANCET_FACTORIZED_FEATURE
+LANCET_FACTORIZED_TOKENIZER
+LANCET_STYLE_VOCAB_TOKENIZER
+LANCET_STYLE_VOCAB_NEUTRAL_SPIRAL
+LANCET_TOKENIZER_ADAIN_GATE
+LANCET_TOKENIZER_BANDGATE
+LANCET_TOKENIZER_PROJECTOR_REFIT
+LANCET_TOKENIZER_VOCAB_REFIT
+```
+
+Next action is diagnostic only: compare tokenizer field movement and endpoint
+sensitivity around the m02 anchor before changing backbone or loss.
+
 ---
 
 ## Experiment 001: armored_breakthrough_8ep_sinkhorn_sw60

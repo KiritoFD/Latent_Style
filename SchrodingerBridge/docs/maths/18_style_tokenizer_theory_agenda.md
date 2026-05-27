@@ -412,7 +412,7 @@ Do not use external generated references as training targets. Compute style
 statistics from the training latent/style image pools and use them to make
 token fields identifiable.
 
-Candidate losses:
+Candidate component diagnostics, not active training losses:
 
 ```text
 band target loss: token band_gains should match target style multiscale energy ratios
@@ -625,3 +625,23 @@ Decision gate:
   foggy;
 - keep only if global style rises toward `0.72+` or Hayao cross-style improves
   without LPIPS leaving the useful `0.47-0.50` band.
+
+Result on 2026-05-27:
+
+| recipe | clip_style | content_lpips | Hayao clip_style | verdict |
+|---|---:|---:|---:|---|
+| `ag00_m02_safe_gate` | 0.71076 | 0.40728 | 0.60489 | safe but style-neutral |
+| `ag01_m02_style_gate` | 0.71061 | 0.40729 | 0.60514 | safe but style-neutral |
+
+This confirms that tokenizer fields can be connected to the m02 carrier without
+causing the hazy factorized failure, but the connection is too weak to solve
+style. The current rollback state is:
+
+1. The active style-normal anchor is `m02_embspatial_highpass_style`
+   (`0.71073 / 0.40735 / 0.84967`).
+2. No main OMF loss changes should be made to compensate for tokenizer weakness.
+3. Hazy/de-stylized factorized output or feature operators are rejected even if
+   LPIPS is low.
+4. The next tokenizer step is a diagnostic, not a new training run: measure
+   token field movement, endpoint sensitivity, and per-style carrier response
+   around the m02 anchor.
