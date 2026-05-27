@@ -20,6 +20,8 @@ Cycle-NCE/torch_compile_cache/*
 Related_Works/Cycle-NCE/src/eval_cache/
 *.ckpt
 Related_Works/external/
+Related_Works/repos/
+Related_Works/run_511/repos/
 .venv/
 venv/
 env/
@@ -33,6 +35,7 @@ logs/**
 full_eval/**
 inference/**
 experiments/**
+SchrodingerBridge/exp/
 *_cache/
 eval_cache/**
 comile_cache/
@@ -53,3 +56,8 @@ Related_Works/**/*.png
 !**/*grid*.bmp
 *.pkl
 *.Archer
+
+# Local cleanup archives and dry-run artifacts
+archive/
+SchrodingerBridge/archives/
+.codex_tmp_dryrun/
