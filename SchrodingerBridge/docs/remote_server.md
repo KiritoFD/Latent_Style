@@ -1,5 +1,8 @@
 # Remote Server Guide
 
+For exact SSH, `scp`, `schtasks`, log-tail, and tokenizer launch commands, see
+[`remote_command_execution.md`](remote_command_execution.md).
+
 ## Connection
 
 Server: `100.115.18.62:2222`, user `administrator`, SSH key auth.
