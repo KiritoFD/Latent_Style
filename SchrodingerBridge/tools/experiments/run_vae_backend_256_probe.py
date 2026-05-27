@@ -4783,6 +4783,96 @@ VARIANTS.update(
                 "edge_phase_kernel": 5,
             },
         ),
+        "ema_style_vocab_tokenizer_only_e8": _clone_variant(
+            "ema_style_vocab_texton_w34",
+            notes=(
+                "Tokenizer-only spiral step: resume the first readable-field backbone and freeze the transport "
+                "backbone. Only the factorized style vocabulary is optimized, testing whether identity/grammar/band "
+                "fields can improve style allocation without moving the actuator."
+            ),
+            resume_from_variant="ema_style_vocab_texton_w34",
+            resume_epoch=8,
+            batch_size=128,
+            eval_batch_size=16,
+            learning_rate=2.4e-4,
+            model_overrides={
+                "style_token_learn_identity": True,
+                "style_token_project_code": False,
+                "style_token_band_gain_scale": 0.52,
+                "style_token_flatten_strength": 0.095,
+            },
+            training_overrides={
+                "resume_load_optimizer": False,
+                "trainable_param_patterns": [
+                    "style_tokenizer.*",
+                ],
+                "freeze_param_patterns": [],
+            },
+        ),
+        "ema_style_vocab_tokenizer_hayao_e8": _clone_variant(
+            "ema_style_vocab_texton_w34",
+            notes=(
+                "Tokenizer-only Hayao grammar step: freeze the first readable-field backbone and fit only vocabulary "
+                "fields under Hayao-biased sampling/loss. This tests whether Hayao needs a different frequency code "
+                "rather than a new backbone."
+            ),
+            resume_from_variant="ema_style_vocab_texton_w34",
+            resume_epoch=8,
+            batch_size=128,
+            eval_batch_size=16,
+            terminal_swd_weight=36.0,
+            learning_rate=2.8e-4,
+            data_overrides={
+                "target_style_sampling_weights": [0.9, 2.8, 1.0, 1.0, 1.0],
+            },
+            model_overrides={
+                "style_token_learn_identity": True,
+                "style_token_project_code": False,
+                "style_token_band_gain_scale": 0.62,
+                "style_token_flatten_strength": 0.135,
+                "style_token_flatten_kernel": 7,
+            },
+            bridge_overrides={
+                "target_style_loss_weights": [1.0, 1.65, 1.0, 1.0, 1.0],
+                "w_flat_highpass_suppression": 0.020,
+                "flat_highpass_gamma": 8.0,
+                "flat_highpass_kernel": 7,
+                "w_edge_phase_alignment": 0.012,
+            },
+            training_overrides={
+                "resume_load_optimizer": False,
+                "trainable_param_patterns": [
+                    "style_tokenizer.*",
+                ],
+                "freeze_param_patterns": [],
+            },
+        ),
+        "ema_style_vocab_tokenizer_project_e8": _clone_variant(
+            "ema_style_vocab_texton_w34",
+            notes=(
+                "Tokenizer-only projection diagnostic: freeze the backbone but allow the tokenizer code projector. "
+                "If this helps without visual fragmentation, the anonymous residual code is still useful as a "
+                "low-rank correction; if it collapses, the fields should stay explicit."
+            ),
+            resume_from_variant="ema_style_vocab_texton_w34",
+            resume_epoch=8,
+            batch_size=128,
+            eval_batch_size=16,
+            learning_rate=1.2e-4,
+            model_overrides={
+                "style_token_learn_identity": True,
+                "style_token_project_code": True,
+                "style_token_band_gain_scale": 0.52,
+                "style_token_code_residual_scale": 1.0,
+            },
+            training_overrides={
+                "resume_load_optimizer": False,
+                "trainable_param_patterns": [
+                    "style_tokenizer.*",
+                ],
+                "freeze_param_patterns": [],
+            },
+        ),
         "ema_transport_texton_alloc_w34": _clone_variant(
             "ema_transport_texton_w34_guard",
             notes=(
@@ -5254,6 +5344,14 @@ def main() -> int:
         manifest = latent_root / "manifest.json"
         status = "ok"
         scale = 0.18215
+        if variant.get("resume_from_variant"):
+            resume_from = str(variant["resume_from_variant"])
+            resume_epoch = int(variant.get("resume_epoch", args.epochs))
+            resume_ckpt = args.out_root / resume_from / f"epoch_{resume_epoch:04d}.pt"
+            training_overrides = dict(variant.get("training_overrides", {}) or {})
+            training_overrides["resume_checkpoint"] = str(resume_ckpt.resolve())
+            training_overrides.setdefault("resume_load_optimizer", False)
+            variant["training_overrides"] = training_overrides
 
         if not (args.skip_existing_latents and manifest.exists()):
             cmd = [

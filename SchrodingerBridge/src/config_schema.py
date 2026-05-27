@@ -467,6 +467,11 @@ class TrainingConfig:
     use_gradient_checkpointing: bool = False
     fused_adamw: bool = True
     resume_checkpoint: str = ""
+    resume_load_optimizer: bool = True
+    reset_style_tokenizer_priors: bool = False
+    reset_style_tokenizer_projection: bool = False
+    trainable_param_patterns: list[str] = field(default_factory=list)
+    freeze_param_patterns: list[str] = field(default_factory=list)
     full_eval_batch_size: int = 6
     full_eval_num_steps: int | None = None
     full_eval_step_size: float | None = None
