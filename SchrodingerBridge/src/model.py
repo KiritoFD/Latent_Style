@@ -8,7 +8,7 @@ import torch.nn as nn
 
 from config_schema import ModelConfig
 from lancet_backbone import LatentAdaCUT, count_parameters
-from utils.diffeomorphic import apply_texture_aligned_diffeomorphic_stroke
+from utils.diffeomorphic import apply_texture_aligned_diffeomorphic_stroke, build_diffeomorphic_guide
 
 
 def sinusoidal_time_embedding(t: torch.Tensor, dim: int) -> torch.Tensor:
@@ -39,17 +39,37 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         )
 
     def _compute_delta(self, h: torch.Tensor, x: torch.Tensor | None = None) -> torch.Tensor:
-        raw_delta = self.dec_out(h)
+        style_code = getattr(self, "_current_style_code_for_head", None)
+        raw_delta = self._decode_output_raw(h, style_code=style_code)
+        self.last_raw_diffeomorphic = raw_delta
         if bool(getattr(self, "use_diffeomorphic_stroke", False)):
             if x is None:
                 raise ValueError("diffeomorphic stroke mode requires input x.")
             stroked = apply_texture_aligned_diffeomorphic_stroke(
                 x,
                 raw_delta,
+                guide=build_diffeomorphic_guide(
+                    x,
+                    mode=str(getattr(self, "diffeomorphic_guide_mode", "mean")),
+                    channel=int(getattr(self, "diffeomorphic_guide_channel", 2)),
+                    weights=getattr(self, "diffeomorphic_guide_weights", None),
+                ),
                 color_strength=float(getattr(self, "diffeomorphic_color_strength", 0.85)),
                 warp_strength=float(getattr(self, "diffeomorphic_warp_strength", 0.08)),
                 gate_strength=float(getattr(self, "diffeomorphic_texture_gate_strength", 8.0)),
                 normal_leak=float(getattr(self, "diffeomorphic_normal_leak", 0.0)),
+                color_lowpass_kernel=int(getattr(self, "diffeomorphic_color_lowpass_kernel", 1)),
+                color_edge_gamma=float(getattr(self, "diffeomorphic_color_edge_gamma", 0.0)),
+                head_mode=str(getattr(self, "diffeomorphic_head_mode", "standard")),
+                amp_strength=float(getattr(self, "diffeomorphic_amp_strength", 0.5)),
+                factorized_enable_color=bool(getattr(self, "diffeomorphic_factorized_enable_color", True)),
+                factorized_enable_amp=bool(getattr(self, "diffeomorphic_factorized_enable_amp", True)),
+                joint_bilateral_kernel=int(getattr(self, "diffeomorphic_joint_bilateral_kernel", 1)),
+                joint_bilateral_range_sigma=float(getattr(self, "diffeomorphic_joint_bilateral_range_sigma", 0.5)),
+                divergence_free_warp=bool(getattr(self, "diffeomorphic_divergence_free_warp", False)),
+                metric_anchor=getattr(self, "_integration_anchor_x", None) if bool(getattr(self, "diffeomorphic_metric_mask_use_z0", False)) else x,
+                metric_mask_gamma=float(getattr(self, "diffeomorphic_metric_mask_gamma", 0.0)),
+                metric_mask_smooth_kernel=int(getattr(self, "diffeomorphic_metric_mask_smooth_kernel", 3)),
             )
             return stroked - x.float()
         if self.velocity_head_mode == "tanh":
@@ -81,6 +101,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         if style_code_override is None:
             style_code = self.encode_style_id(style_id)
         else:
+            self._last_style_token_fields = None
             style_code = style_code_override
             if style_code.ndim == 1:
                 style_code = style_code.unsqueeze(0)
@@ -187,12 +208,15 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         if horizon <= 0.0:
             return x
         x = self._apply_pre_integrate_moment_match(x, target_style_latent)
+        x = self._inject_flat_highfreq_canvas(x, target_style_latent)
         dt = horizon / float(steps)
         h = x
+        self._integration_anchor_x = x
         for idx in range(steps):
             t = horizon * ((idx + 0.5) / float(steps))
             velocity = self.forward(h, t=t, style_id=style_id, style_code_override=style_code_override)
             h = h + velocity * dt
+        self._integration_anchor_x = None
         return h
 
     def _apply_pre_integrate_moment_match(
@@ -216,6 +240,31 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         ref_std = ref.std(dim=(2, 3), keepdim=True, unbiased=False).clamp_min(eps)
         mapped = ((x - x_mean) / x_std) * ref_std + ref_mean
         return x.lerp(mapped, self.pre_integrate_moment_blend)
+
+    def _inject_flat_highfreq_canvas(
+        self,
+        x: torch.Tensor,
+        target_style_latent: torch.Tensor | None,
+    ) -> torch.Tensor:
+        strength = float(getattr(self, "latent_canvas_strength", 0.0))
+        if strength <= 0.0:
+            return x
+        ref = target_style_latent
+        if ref is None or ref.shape != x.shape:
+            noise = torch.randn_like(x)
+        else:
+            ref = ref.to(device=x.device, dtype=x.dtype)
+            kernel = max(1, int(getattr(self, "latent_canvas_highpass_kernel", 5)))
+            if kernel % 2 == 0:
+                kernel += 1
+            noise = ref - torch.nn.functional.avg_pool2d(ref.float(), kernel_size=kernel, stride=1, padding=kernel // 2).to(dtype=ref.dtype)
+        gx = x[..., :, 1:] - x[..., :, :-1]
+        gy = x[..., 1:, :] - x[..., :-1, :]
+        gx = torch.nn.functional.pad(gx.float(), (0, 1, 0, 0))
+        gy = torch.nn.functional.pad(gy.float(), (0, 0, 0, 1))
+        edge = torch.sqrt(gx.square() + gy.square() + 1e-12).mean(dim=1, keepdim=True)
+        flat_mask = torch.exp(-float(getattr(self, "latent_canvas_edge_gamma", 4.0)) * edge)
+        return x + noise * flat_mask.to(dtype=x.dtype) * strength
 
 
 def _normalize_skip_routing_mode(config: ModelConfig) -> ModelConfig:

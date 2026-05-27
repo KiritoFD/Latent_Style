@@ -233,6 +233,84 @@ def build_phase1_experiments() -> list[dict[str, Any]]:
     return exps
 
 
+def build_armored_breakthrough_experiments() -> list[dict[str, Any]]:
+    """36-run armored breakthrough matrix: 3 (shield) x 3 (swd) x 2 (gain) x 2 (kin)."""
+    exps: list[dict[str, Any]] = []
+
+    # Axis 1: Structural Shield (routing + skip combo)
+    shield_configs = [
+        ("snorm", "sinkhorn", 3, "normalized", {}),
+        ("sft004", "softmax", None, "adaptive", {"model.semantic_attn_temperature": 0.04}),
+        ("sadpt", "sinkhorn", 3, "adaptive", {}),
+    ]
+
+    # Axis 2: SWD Pressure
+    swd_configs = [
+        ("sw25", 25.0),
+        ("sw35", 35.0),
+        ("sw45", 45.0),
+    ]
+
+    # Axis 3: Residual Gain
+    gain_configs = [
+        ("g115", 1.15),
+        ("g130", 1.3),
+    ]
+
+    # Axis 4: Kinetic Anchor
+    kin_configs = [
+        ("k10", 1.0),
+        ("k125", 1.25),
+    ]
+
+    # Fixed overrides for all armored breakthrough experiments
+    fixed_overrides: dict[str, Any] = {
+        "bridge.w_color": 0.0,
+        "bridge.w_cycle": 0.0,
+        "bridge.w_nce": 0.0,
+        "bridge.w_repulsive": 0.0,
+        "bridge.w_low_freq": 0.0,
+        "bridge.swd_use_high_freq": False,
+        "bridge.semantic_swd_num_projections": 32,
+        "bridge.swd_num_projections": 32,
+    }
+
+    for shield_suffix, routing_mode, sinkhorn_iters, skip_mode, extra_params in shield_configs:
+        for swd_suffix, terminal_swd_weight in swd_configs:
+            for gain_suffix, residual_gain in gain_configs:
+                for kin_suffix, w_kinetic in kin_configs:
+                    exp_id = f"ab_{shield_suffix}_{swd_suffix}_{gain_suffix}_{kin_suffix}"
+                    overrides: dict[str, Any] = {
+                        **fixed_overrides,
+                        "model.semantic_attn_routing_mode": routing_mode,
+                        "model.skip_routing_mode": skip_mode,
+                        "bridge.terminal_swd_weight": terminal_swd_weight,
+                        "model.residual_gain": residual_gain,
+                        "bridge.w_kinetic": w_kinetic,
+                        **extra_params,
+                    }
+                    if sinkhorn_iters is not None:
+                        overrides["model.semantic_sinkhorn_iters"] = sinkhorn_iters
+
+                    rationale_parts = [
+                        f"shield={routing_mode}+{skip_mode}",
+                        f"swd={terminal_swd_weight}",
+                        f"gain={residual_gain}",
+                        f"kin={w_kinetic}",
+                    ]
+                    exps.append(
+                        _make_experiment(
+                            exp_id=exp_id,
+                            probe_group="armored_breakthrough",
+                            probe_axis=f"shield={shield_suffix}_swd={terminal_swd_weight}_gain={residual_gain}_kin={w_kinetic}",
+                            rationale=f"Armored breakthrough: {', '.join(rationale_parts)}",
+                            overrides=overrides,
+                        )
+                    )
+
+    return exps
+
+
 def build_runtime_config(
     exp: dict[str, Any],
     *,
@@ -468,6 +546,8 @@ def parse_args() -> argparse.Namespace:
             "manifold_resistance",
             "terminal_measure_pressure",
             "bypass_and_residual_dynamics",
+            "clean_base",
+            "armored_breakthrough",
         ],
         help="Restrict to one probe group.",
     )
@@ -488,6 +568,13 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="In launch mode, continue after a failed run instead of stopping immediately.",
     )
+    parser.add_argument(
+        "--phase",
+        type=str,
+        default="phase1",
+        choices=["phase1", "clean_base"],
+        help="Which experiment set to generate/launch. phase1=original 42 probes, clean_base=36 Occam's razor probes.",
+    )
     parser.add_argument("--eval-batch-size", type=int, default=6, help="Batch size for automatic post-run evaluation.")
     parser.add_argument("--eval-num-steps", type=int, default=4, help="Inference steps for automatic post-run evaluation.")
     parser.add_argument(
@@ -506,7 +593,6 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     base_config = args.base_config.resolve()
-    output_root = args.output_root.resolve()
     resume_checkpoint = args.resume.resolve() if args.resume else None
 
     if not base_config.exists():
@@ -518,7 +604,15 @@ def main() -> int:
     if resume_checkpoint is not None and not resume_checkpoint.exists():
         raise FileNotFoundError(f"Resume checkpoint not found: {resume_checkpoint}")
 
-    experiments = build_phase1_experiments()
+    if args.phase == "clean_base":
+        experiments = build_armored_breakthrough_experiments()
+        default_output = ROOT / "exp" / "armored_breakthrough"
+    else:
+        experiments = build_phase1_experiments()
+        default_output = DEFAULT_OUTPUT_ROOT
+
+    output_root = default_output.resolve() if args.output_root == DEFAULT_OUTPUT_ROOT else args.output_root.resolve()
+
     selected = filter_experiments(
         experiments,
         probe_group=args.probe_group,

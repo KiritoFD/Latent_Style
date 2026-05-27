@@ -83,8 +83,8 @@ class StyleTokenizer(nn.Module):
             nn.init.zeros_(self.grammar_vocab.weight)
             nn.init.zeros_(self.band_vocab.weight)
 
-            # Style order in the current 256x256 latent datasets is:
-            # photo, Hayao, monet, vangogh, cezanne.
+            # Style order in the current dataset is normally:
+            # Art_Nouveau_Modern, Hayao, cezanne, monet, vangogh.
             # These are only weak priors; all values remain trainable.
             if self.num_styles >= 2 and self.grammar_dim >= 8:
                 hayao = self.grammar_vocab.weight[1]
@@ -94,21 +94,15 @@ class StyleTokenizer(nn.Module):
                 hayao[5] = -0.20  # mid texton
                 hayao[6] = -0.35  # high texture
                 hayao[7] = 0.45  # high-frequency suppression
-            if self.num_styles >= 4 and self.grammar_dim >= 8:
-                vangogh = self.grammar_vocab.weight[3]
+            if self.num_styles >= 5 and self.grammar_dim >= 8:
+                vangogh = self.grammar_vocab.weight[4]
                 vangogh[5] = 0.40
                 vangogh[6] = 0.35
                 vangogh[7] = -0.20
             if self.num_styles >= 2 and self.band_dim >= 3:
                 self.band_vocab.weight[1, :3] = torch.tensor([0.25, -0.05, -0.25])
-            if self.num_styles >= 4 and self.band_dim >= 3:
-                self.band_vocab.weight[3, :3] = torch.tensor([-0.05, 0.25, 0.20])
-
-    def reset_vocabulary_priors(self, *, reset_projection: bool = False) -> None:
-        self._init_vocab()
-        if reset_projection:
-            nn.init.zeros_(self.code_projector[-1].weight)
-            nn.init.zeros_(self.code_projector[-1].bias)
+            if self.num_styles >= 5 and self.band_dim >= 3:
+                self.band_vocab.weight[4, :3] = torch.tensor([-0.05, 0.25, 0.20])
 
     def forward(self, style_id: torch.Tensor | int, base_code: torch.Tensor) -> tuple[torch.Tensor, StyleTokenFields]:
         if isinstance(style_id, int):

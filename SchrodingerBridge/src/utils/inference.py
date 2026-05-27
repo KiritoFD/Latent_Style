@@ -10,12 +10,16 @@ from __future__ import annotations
 
 import logging
 import os
+import zipfile
+from pathlib import Path
+from urllib.request import urlretrieve
 import sys
 from typing import Optional
 
 import numpy as np
 import torch
 from PIL import Image
+import yaml
 
 from config_schema import ExperimentConfig, resolve_inference_section
 from model import build_model_from_config
@@ -127,6 +131,8 @@ class LGTInference:
             raise ValueError(f"Unsupported style adapter format: {adapter_path}")
         with torch.no_grad():
             style_emb = adapter.get("style_emb.weight")
+            if style_emb is None:
+                style_emb = adapter.get("style_emb.mu")
             if style_emb is not None:
                 self.model.style_emb.weight.copy_(style_emb.to(device=self.model.style_emb.weight.device, dtype=self.model.style_emb.weight.dtype))
             style_spatial = adapter.get("style_spatial_id_16")
@@ -137,6 +143,23 @@ class LGTInference:
                         dtype=self.model.style_spatial_id_16.dtype,
                     )
                 )
+            tokenizer = getattr(self.model, "style_tokenizer", None)
+            if tokenizer is not None:
+                grammar = adapter.get("style_tokenizer.grammar_vocab.weight")
+                if grammar is not None:
+                    tokenizer.grammar_vocab.weight.copy_(
+                        grammar.to(device=tokenizer.grammar_vocab.weight.device, dtype=tokenizer.grammar_vocab.weight.dtype)
+                    )
+                band = adapter.get("style_tokenizer.band_vocab.weight")
+                if band is not None:
+                    tokenizer.band_vocab.weight.copy_(
+                        band.to(device=tokenizer.band_vocab.weight.device, dtype=tokenizer.band_vocab.weight.dtype)
+                    )
+                identity = adapter.get("style_tokenizer.identity_vocab")
+                if identity is not None:
+                    target = getattr(tokenizer, "identity_vocab", None)
+                    if torch.is_tensor(target) and target.shape == identity.shape:
+                        target.copy_(identity.to(device=target.device, dtype=target.dtype))
         logger.info("Loaded style adapter: %s", adapter_path)
 
     @torch.no_grad()
@@ -195,12 +218,15 @@ def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
     from diffusers import AutoencoderKL
 
     force_dtype = torch.float16
+    model_key = str(model_id).strip().lower()
     if str(model_id).lower() in {"sdxl-fp32", "sdxl-float32"}:
         model_id = "stabilityai/sdxl-vae"
         force_dtype = torch.float32
     elif str(model_id).lower() in {"sdxl-fp16-fix", "sdxl-fix"}:
         model_id = "madebyollin/sdxl-vae-fp16-fix"
         force_dtype = torch.float16
+    elif model_key in {"kl-f4", "compvis-kl-f4", "compvis/kl-f4"}:
+        return _load_compvis_kl_f4_vae(device=device, cache_dir=cache_dir, torch_dtype=force_dtype)
 
     vae_presets = {
         "sd15": "stabilityai/sd-vae-ft-mse",
@@ -273,6 +299,63 @@ def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
     return vae
 
 
+def _load_compvis_kl_f4_vae(device="cuda", cache_dir=None, torch_dtype=torch.float16):
+    from diffusers import AutoencoderKL
+
+    if cache_dir is None:
+        cache_dir = os.path.expanduser("~/.cache/huggingface/hub")
+    root = Path(cache_dir) / "compvis_kl_f4"
+    root.mkdir(parents=True, exist_ok=True)
+    ckpt = root / "model.ckpt"
+    config = root / "autoencoder_kl_64x64x3.yaml"
+    if not ckpt.exists():
+        zip_path = root / "kl-f4.zip"
+        if not zip_path.exists():
+            urlretrieve("https://ommer-lab.com/files/latent-diffusion/kl-f4.zip", zip_path)
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            for member in zf.namelist():
+                name = Path(member).name
+                if name == "model.ckpt":
+                    with zf.open(member) as src, ckpt.open("wb") as dst:
+                        dst.write(src.read())
+                elif name in {"config.yaml", "project.yaml"} and not config.exists():
+                    with zf.open(member) as src, config.open("wb") as dst:
+                        dst.write(src.read())
+    if not config.exists():
+        urlretrieve(
+            "https://raw.githubusercontent.com/CompVis/latent-diffusion/main/configs/autoencoder/autoencoder_kl_64x64x3.yaml",
+            config,
+        )
+    checkpoint_payload = torch.load(str(ckpt), map_location="cpu", weights_only=False)
+    checkpoint = checkpoint_payload.get("state_dict", checkpoint_payload) if isinstance(checkpoint_payload, dict) else checkpoint_payload
+    autoencoder_config = yaml.safe_load(config.read_text(encoding="utf-8"))
+    original_config = {
+        "model": {
+            "params": {
+                "scale_factor": 1.0,
+                "first_stage_config": {
+                    "params": {
+                        "ddconfig": autoencoder_config["model"]["params"]["ddconfig"],
+                        "embed_dim": autoencoder_config["model"]["params"].get("embed_dim", 3),
+                    }
+                },
+            }
+        }
+    }
+    vae = AutoencoderKL.from_single_file(
+        checkpoint,
+        original_config=original_config,
+        scaling_factor=1.0,
+        torch_dtype=torch_dtype,
+        local_files_only=True,
+    ).to(device)
+    vae.eval()
+    # The standalone LDM first-stage autoencoder is not an SD latent with 0.18215 scaling.
+    vae.config.scaling_factor = 1.0
+    vae.config.shift_factor = 0.0
+    return vae
+
+
 def load_vae(device="cuda", model_id="sd15", cache_dir=None):
     if device == "cuda" and not torch.cuda.is_available():
         logger.warning("CUDA not available, fallback to CPU for VAE.")
@@ -281,10 +364,15 @@ def load_vae(device="cuda", model_id="sd15", cache_dir=None):
 
 
 @torch.no_grad()
-def encode_image(vae, image_tensor, device="cuda"):
+def encode_image(vae, image_tensor, device="cuda", latent_mode: str = "sample"):
     vae_dtype = next(vae.parameters()).dtype
     image_tensor = image_tensor.to(device, dtype=vae_dtype)
-    latent = vae.encode(image_tensor).latent_dist.sample()
+    latent_dist = vae.encode(image_tensor).latent_dist
+    mode = str(latent_mode).strip().lower()
+    if mode in {"mode", "mean", "deterministic"}:
+        latent = latent_dist.mode()
+    else:
+        latent = latent_dist.sample()
     shift = float(getattr(vae.config, "shift_factor", 0.0) or 0.0)
     latent = (latent - shift) * vae.config.scaling_factor
     return latent

@@ -43,9 +43,9 @@ def _summary_already_exists(out_dir: Path) -> bool:
 
 def _inject_defaults(root: Path, argv: list[str]) -> list[str]:
     workspace = root.parent
-    local_clip_dir = workspace / "eval_cache" / "manual_clip" / "openai-clip-vit-base-patch32"
+    local_clip_dir = workspace / "Cycle-NCE" / "eval_cache" / "manual_clip" / "openai-clip-vit-base-patch32"
     default_test_dir = workspace / "style_data" / "overfit50"
-    default_cache_dir = workspace / "eval_cache"
+    default_cache_dir = workspace / "Cycle-NCE" / "eval_cache"
     default_clip_hf_cache_dir = default_cache_dir / "hf"
 
     has_clip_model_name = _has_flag(argv, "--clip_model_name")

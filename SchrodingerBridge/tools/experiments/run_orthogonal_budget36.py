@@ -205,7 +205,37 @@ def build_candidates() -> list[Candidate]:
     add("tax_t00_zero_curl", "head_tax", model=zt00, bridge={"w_head_color_tv": 0.03, "w_head_color_energy": 0.003, "w_warp_curl_reward": 0.002})
 
     assert len(candidates) == 36, f"expected 36 candidates, got {len(candidates)}"
-    return candidates
+
+    # Execution order is intentionally decoupled from candidate naming so we can
+    # reprioritize unfinished runs without invalidating existing run directories.
+    priority = {
+        # Pairing-first block: offline DINO pairing before latent proxy coupling.
+        "26_dino_t00_zero_top8": 0,
+        "27_dino_t00_zero_top4": 1,
+        "28_dino_t00_zero_top8_led": 2,
+        "29_dino_t01_zero_top8": 3,
+        "18_couple_t00_zero_low5": 4,
+        "19_couple_t00_zero_low9": 5,
+        "20_couple_t00_zero_led5": 6,
+        "21_couple_t00_zero_led9": 7,
+        "22_couple_t00_zero_led9h": 8,
+        "23_couple_t01_zero_low9": 9,
+        "24_couple_t01_zero_led9": 10,
+        "25_couple_t01_zero_led9h": 11,
+        # Remaining bridge variants.
+        "14_bridge_t00_zero_flat005": 12,
+        "15_bridge_t00_zero_flat007": 13,
+        "16_bridge_t01_zero_hf005": 14,
+        "17_bridge_t01_zero_flat005": 15,
+        # Loss and head-budget families last.
+        "30_spec_t00_zero_bal": 16,
+        "31_spec_t00_zero_low2": 17,
+        "32_spec_t01_zero_bal": 18,
+        "33_tax_t00_zero_soft": 19,
+        "34_tax_t00_zero_std": 20,
+        "35_tax_t00_zero_curl": 21,
+    }
+    return sorted(candidates, key=lambda c: (priority.get(c.name, -1), c.name))
 
 
 def _config_payload(candidate: Candidate, *, output_root: Path, default_train_epochs: int) -> dict[str, Any]:

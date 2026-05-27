@@ -1,0 +1,37 @@
+{
+  "_base": "../../configs/diffeomorphic_stroke_tangent_local.json",
+  "model": {
+    "use_diffeomorphic_stroke": true,
+    "diffeomorphic_head_mode": "standard",
+    "diffeomorphic_color_strength": 0.85,
+    "diffeomorphic_warp_strength": 0.03,
+    "diffeomorphic_texture_gate_strength": 6.0,
+    "diffeomorphic_normal_leak": 0.0,
+    "diffeomorphic_color_lowpass_kernel": 1,
+    "diffeomorphic_color_edge_gamma": 0.0,
+    "semantic_self_topology_gate": false
+  },
+  "bridge": {
+    "terminal_swd_mode": "semantic_quotient",
+    "semantic_quotient_bins": 6
+  },
+  "training": {
+    "seed": 42,
+    "batch_size": 192,
+    "full_eval_batch_size": 20,
+    "num_epochs": 6,
+    "num_workers": 0,
+    "persistent_workers": false,
+    "save_interval": 1,
+    "resume_checkpoint": ""
+  },
+  "checkpoint": {
+    "save_dir": "./exp/curated_boundary_ideas/06_quotient_bins6"
+  },
+  "ablation": {
+    "name": "06_quotient_bins6",
+    "stage": "curated_boundary_ideas",
+    "axis": "semantic_quotient_swd",
+    "notes": "Curated one-idea boundary probe; each idea gets at most 3-4 runs."
+  }
+}

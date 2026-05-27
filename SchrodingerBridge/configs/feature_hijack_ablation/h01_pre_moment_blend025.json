@@ -1,0 +1,66 @@
+{
+  "_base": "../../S-add__K-1_C-0_W-20_Col-0/config.json",
+  "model": {
+    "residual_gain": 1.0,
+    "semantic_attn_temperature": 0.04,
+    "semantic_attn_routing_mode": "softmax",
+    "semantic_sinkhorn_iters": 3,
+    "pre_integrate_moment_match": true,
+    "pre_integrate_moment_blend": 0.25
+  },
+  "bridge": {
+    "objective_mode": "omf",
+    "w_kinetic": 1.0,
+    "terminal_swd_weight": 20.0,
+    "w_variance_penalty": 0.0,
+    "w_content_anchor": 0.0,
+    "w_edge_anchor": 0.0,
+    "w_style_energy_floor": 0.0,
+    "w_lowfreq_velocity": 0.0,
+    "w_style_contrastive": 0.0,
+    "style_contrastive_temperature": 0.08,
+    "w_residual_style_direction": 0.0,
+    "w_semantic_entropy": 0.0,
+    "semantic_entropy_target": 2.2,
+    "w_spectral_amplitude": 0.05,
+    "w_divergence": 0.0,
+    "w_feature_riemannian": 0.0,
+    "w_kantorovich": 0.0,
+    "w_nonlocal_structure": 0.0,
+    "nonlocal_structure_pool": 8,
+    "sb_noise_epsilon": 0.0,
+    "style_energy_floor_ratio": 0.6,
+    "semantic_swd_num_projections": 32,
+    "swd_num_projections": 32,
+    "swd_micro_weight": 1.0,
+    "swd_macro_weight": 1.0,
+    "swd_scale_invariant_patches": true,
+    "swd_adaptive_highpass": true,
+    "swd_use_dilated_projections": false,
+    "swd_projection_dilation": 2,
+    "swd_distance_mode": "sort"
+  },
+  "training": {
+    "seed": 42,
+    "batch_size": 80,
+    "accumulation_steps": 1,
+    "num_workers": 2,
+    "persistent_workers": true,
+    "num_epochs": 8,
+    "save_interval": 1,
+    "use_amp": true,
+    "use_gradient_checkpointing": true,
+    "channels_last": true,
+    "full_eval_batch_size": 6
+  },
+  "checkpoint": {
+    "save_dir": "./exp/feature_hijack_ablation/h01_pre_moment_blend025"
+  },
+  "ablation": {
+    "name": "h01_pre_moment_blend025",
+    "axis": "sequential_clip_style_decision_tree",
+    "stage": "feature_hijack_ablation",
+    "hypothesis": "diagonal_bures_prefit_reduces_global_style_gap",
+    "reason": "Gentle pre-integration moment map; should raise style if reference latents are available without forcing full AdaIN."
+  }
+}

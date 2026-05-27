@@ -4,7 +4,6 @@ import json
 import logging
 import time
 from datetime import datetime
-from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -65,7 +64,17 @@ class SBTrainer:
 
         self.scheduler = None
         self.scheduler_name = str(train_cfg.get("scheduler", "cosine")).lower()
-        self._rebuild_scheduler()
+        if self.scheduler_name == "multistep":
+            milestones = sorted(int(v) for v in train_cfg.get("multistep_milestones", [40, 55]))
+            gamma = float(train_cfg.get("multistep_gamma", 0.1))
+            self.scheduler = torch.optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=milestones, gamma=gamma)
+        else:
+            self.scheduler_name = "cosine"
+            self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                self.optimizer,
+                T_max=max(1, int(train_cfg.get("num_epochs", 60))),
+                eta_min=float(train_cfg.get("min_learning_rate", 5e-5)),
+            )
 
         self.loss_fn = OTFlowMatchingObjective(config)
         potential_params = self.loss_fn.potential_parameters()
@@ -110,8 +119,6 @@ class SBTrainer:
         self.global_step = 0
         self.start_epoch = 1
         self._maybe_resume(str(train_cfg.get("resume_checkpoint", "")))
-        self._maybe_reset_style_tokenizer_priors()
-        self._configure_trainable_scope()
         self._configure_distillation()
 
     def _tensor_stats(self, value: torch.Tensor | None) -> Dict[str, float]:
@@ -245,19 +252,6 @@ class SBTrainer:
     def _build_optimizer(self, params) -> torch.optim.Optimizer:
         return build_adamw(params, self.train_cfg, self.device)
 
-    def _rebuild_scheduler(self) -> None:
-        if self.scheduler_name == "multistep":
-            milestones = sorted(int(v) for v in self.train_cfg.get("multistep_milestones", [40, 55]))
-            gamma = float(self.train_cfg.get("multistep_gamma", 0.1))
-            self.scheduler = torch.optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=milestones, gamma=gamma)
-        else:
-            self.scheduler_name = "cosine"
-            self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                self.optimizer,
-                T_max=max(1, int(self.train_cfg.get("num_epochs", 60))),
-                eta_min=float(self.train_cfg.get("min_learning_rate", 5e-5)),
-            )
-
     def _find_latest_checkpoint(self) -> Optional[Path]:
         ckpts = sorted(self.checkpoint_dir.glob("epoch_*.pt"))
         return ckpts[-1] if ckpts else None
@@ -274,7 +268,7 @@ class SBTrainer:
             return
         state = torch.load(ckpt_path, map_location=self.device, weights_only=False)
         self.model.load_state_dict(strip_compile_prefix(state["model_state_dict"]), strict=True)
-        if bool(self.train_cfg.get("resume_load_optimizer", True)) and "optimizer_state_dict" in state:
+        if "optimizer_state_dict" in state:
             self.optimizer.load_state_dict(state["optimizer_state_dict"])
         if self.potential_optimizer is not None and state.get("potential_optimizer_state_dict") is not None:
             self.potential_optimizer.load_state_dict(state["potential_optimizer_state_dict"])
@@ -285,59 +279,6 @@ class SBTrainer:
         self.global_step = int(state.get("global_step", 0))
         self.start_epoch = int(state.get("epoch", 0)) + 1
         logger.info("Resumed from %s at epoch=%d global_step=%d", ckpt_path, self.start_epoch, self.global_step)
-
-    def _maybe_reset_style_tokenizer_priors(self) -> None:
-        if not bool(self.train_cfg.get("reset_style_tokenizer_priors", False)):
-            return
-        tokenizer = getattr(self.model, "style_tokenizer", None)
-        if tokenizer is None or not hasattr(tokenizer, "reset_vocabulary_priors"):
-            raise RuntimeError("reset_style_tokenizer_priors requested, but model has no resettable style_tokenizer.")
-        tokenizer.reset_vocabulary_priors(
-            reset_projection=bool(self.train_cfg.get("reset_style_tokenizer_projection", False))
-        )
-        logger.info(
-            "Reset style tokenizer priors after checkpoint load | reset_projection=%s",
-            bool(self.train_cfg.get("reset_style_tokenizer_projection", False)),
-        )
-
-    @staticmethod
-    def _matches_any_param_pattern(name: str, patterns: list[str]) -> bool:
-        for pattern in patterns:
-            pattern = str(pattern).strip()
-            if not pattern:
-                continue
-            if fnmatchcase(name, pattern) or pattern in name:
-                return True
-        return False
-
-    def _configure_trainable_scope(self) -> None:
-        trainable_patterns = [str(v).strip() for v in self.train_cfg.get("trainable_param_patterns", []) if str(v).strip()]
-        freeze_patterns = [str(v).strip() for v in self.train_cfg.get("freeze_param_patterns", []) if str(v).strip()]
-        if not trainable_patterns and not freeze_patterns:
-            return
-
-        if trainable_patterns:
-            for name, param in self.model.named_parameters():
-                param.requires_grad_(self._matches_any_param_pattern(name, trainable_patterns))
-
-        if freeze_patterns:
-            for name, param in self.model.named_parameters():
-                if self._matches_any_param_pattern(name, freeze_patterns):
-                    param.requires_grad_(False)
-
-        trainable = [(name, param) for name, param in self.model.named_parameters() if param.requires_grad]
-        if not trainable:
-            raise RuntimeError(
-                "training.trainable_param_patterns/freeze_param_patterns selected no trainable parameters."
-            )
-        self.optimizer = self._build_optimizer([param for _, param in trainable])
-        self._rebuild_scheduler()
-        logger.info(
-            "Trainable scope | count=%d/%d params=%s",
-            len(trainable),
-            sum(1 for _ in self.model.parameters()),
-            ", ".join(name for name, _ in trainable[:24]) + (" ..." if len(trainable) > 24 else ""),
-        )
 
     def _reset_trainable_style_params(self, mode: str) -> None:
         with torch.no_grad():
@@ -398,7 +339,11 @@ class SBTrainer:
             raise RuntimeError("Distillation enabled but no trainable parameters were selected.")
         self.optimizer = self._build_optimizer(trainable_params)
         if self.scheduler is not None:
-            self._rebuild_scheduler()
+            self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                self.optimizer,
+                T_max=max(1, int(self.train_cfg.get("num_epochs", 60))),
+                eta_min=float(self.train_cfg.get("min_learning_rate", 5e-5)),
+            )
         logger.info("Distill mode=%s | trainable=%s", mode, ", ".join(trainable_names))
 
     def _move_batch(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:

@@ -26,6 +26,8 @@ class SWDTransportCost:
             bridge_cfg = BridgeConfig.from_mapping(config.get("bridge", {}))
         self.cost_mode = str(bridge_cfg.ot_cost_mode).strip().lower()
         self.swd_patch_sizes = [int(p) for p in bridge_cfg.swd_patch_sizes]
+        if bool(bridge_cfg.swd_scale_invariant_patches):
+            self.swd_patch_sizes = [p for p in self.swd_patch_sizes if p <= 3] or [1, 2, 3]
         self.swd_num_projections = int(bridge_cfg.swd_num_projections)
         self.swd_projection_chunk_size = int(bridge_cfg.swd_projection_chunk_size)
         self.swd_use_high_freq = bool(bridge_cfg.swd_use_high_freq)
@@ -38,6 +40,18 @@ class SWDTransportCost:
         self.swd_macro_patch_min = int(bridge_cfg.swd_macro_patch_min or default_macro_min)
         self.swd_micro_weight = max(0.0, float(bridge_cfg.swd_micro_weight))
         self.swd_macro_weight = max(0.0, float(bridge_cfg.swd_macro_weight))
+        self.swd_adaptive_highpass = bool(bridge_cfg.swd_adaptive_highpass)
+        self.swd_highpass_kernel_size = max(1, int(bridge_cfg.swd_highpass_kernel_size))
+        if self.swd_highpass_kernel_size % 2 == 0:
+            self.swd_highpass_kernel_size += 1
+        self.swd_signed_highpass_weight = max(0.0, float(bridge_cfg.swd_signed_highpass_weight))
+        self.swd_abs_highpass_weight = max(0.0, float(bridge_cfg.swd_abs_highpass_weight))
+        self.swd_use_dilated_projections = bool(bridge_cfg.swd_use_dilated_projections)
+        self.swd_projection_dilation = max(1, int(bridge_cfg.swd_projection_dilation))
+        self.swd_channel_whiten = bool(bridge_cfg.swd_channel_whiten)
+        self.swd_channel_whiten_eps = max(1e-8, float(bridge_cfg.swd_channel_whiten_eps))
+        self.w_nonlocal_structure = max(0.0, float(bridge_cfg.w_nonlocal_structure))
+        self.nonlocal_structure_pool = max(2, int(bridge_cfg.nonlocal_structure_pool))
         self._projection_cache: Dict[tuple[int, int, int, str, str], torch.Tensor] = {}
         self._sobel_kernel_cache: Dict[tuple[int, str], tuple[torch.Tensor, torch.Tensor]] = {}
 
@@ -105,18 +119,39 @@ class SWDTransportCost:
         return mag / (mag.mean(dim=(2, 3), keepdim=True) + 1e-5)
 
     def _prepare_micro_features(self, z_norm: torch.Tensor) -> torch.Tensor:
+        _, channels, h, w = z_norm.shape
         if z_norm.shape[1] >= 2:
             base = z_norm[:, :2, :, :]
         else:
             base = z_norm
-        high_pass = base - F.avg_pool2d(base, kernel_size=5, stride=1, padding=2)
+        if self.swd_adaptive_highpass:
+            kernel_size = max(3, (min(int(h), int(w)) // 32) * 2 + 1)
+        else:
+            kernel_size = self.swd_highpass_kernel_size
+        pad = kernel_size // 2
+        high_pass = base - F.avg_pool2d(base, kernel_size=kernel_size, stride=1, padding=pad)
+        features: list[torch.Tensor] = []
+        if self.swd_signed_highpass_weight > 0.0:
+            features.append(high_pass * self.swd_signed_highpass_weight)
+        if self.swd_abs_highpass_weight > 0.0:
+            features.append(high_pass.abs() * self.swd_abs_highpass_weight)
         if not self.swd_use_high_freq:
-            return high_pass
+            return torch.cat(features, dim=1) if features else high_pass
         hf = self._compute_fused_hf_feature(high_pass)
-        return torch.cat([high_pass, hf * self.swd_hf_weight_ratio], dim=1)
+        if self.swd_hf_weight_ratio > 0.0:
+            features.append(hf * self.swd_hf_weight_ratio)
+        return torch.cat(features, dim=1) if features else high_pass
 
     def _prepare_macro_features(self, z_norm: torch.Tensor) -> torch.Tensor:
         return F.avg_pool2d(z_norm, kernel_size=5, stride=1, padding=2)
+
+    def _channel_whiten(self, z: torch.Tensor) -> torch.Tensor:
+        z = z.float().contiguous()
+        if not self.swd_channel_whiten:
+            return z
+        return (z - z.mean(dim=(2, 3), keepdim=True)) / (
+            z.std(dim=(2, 3), keepdim=True, unbiased=False) + self.swd_channel_whiten_eps
+        )
 
     def _pairwise_from_projected(self, x_proj: torch.Tensor, y_proj: torch.Tensor) -> torch.Tensor:
         x_proj = x_proj.float()
@@ -157,8 +192,10 @@ class SWDTransportCost:
             for start in range(0, self.swd_num_projections, chunk):
                 end = min(self.swd_num_projections, start + chunk)
                 w = weights[start:end]
-                x_proj = F.conv2d(x_feat, w, padding=patch_size // 2).view(x_feat.shape[0], end - start, -1)
-                y_proj = F.conv2d(y_feat, w, padding=patch_size // 2).view(y_feat.shape[0], end - start, -1)
+                dilation = self.swd_projection_dilation if self.swd_use_dilated_projections and patch_size > 1 else 1
+                padding = ((patch_size - 1) * dilation + 1) // 2
+                x_proj = F.conv2d(x_feat, w, padding=padding, dilation=dilation).view(x_feat.shape[0], end - start, -1)
+                y_proj = F.conv2d(y_feat, w, padding=padding, dilation=dilation).view(y_feat.shape[0], end - start, -1)
                 patch_cost = patch_cost + self._pairwise_from_projected(x_proj, y_proj) * (
                     (end - start) / float(self.swd_num_projections)
                 )
@@ -190,30 +227,48 @@ class SWDTransportCost:
             for start in range(0, self.swd_num_projections, chunk):
                 end = min(self.swd_num_projections, start + chunk)
                 w = weights[start:end]
-                x_proj = F.conv2d(x_feat, w, padding=patch_size // 2).view(x_feat.shape[0], end - start, -1)
-                y_proj = F.conv2d(y_feat, w, padding=patch_size // 2).view(y_feat.shape[0], end - start, -1)
+                dilation = self.swd_projection_dilation if self.swd_use_dilated_projections and patch_size > 1 else 1
+                padding = ((patch_size - 1) * dilation + 1) // 2
+                x_proj = F.conv2d(x_feat, w, padding=padding, dilation=dilation).view(x_feat.shape[0], end - start, -1)
+                y_proj = F.conv2d(y_feat, w, padding=padding, dilation=dilation).view(y_feat.shape[0], end - start, -1)
                 patch_cost = patch_cost + self._aligned_from_projected(x_proj, y_proj) * (
                     (end - start) / float(self.swd_num_projections)
                 )
             total = total + patch_cost
         return total / float(denom)
 
+    def _nonlocal_structure_cost(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        pool = int(self.nonlocal_structure_pool)
+        x_pool = F.adaptive_avg_pool2d(x.float(), (pool, pool)).flatten(2)
+        y_pool = F.adaptive_avg_pool2d(y.float(), (pool, pool)).flatten(2)
+        x_norm = F.normalize(x_pool, p=2, dim=1, eps=1e-6)
+        y_norm = F.normalize(y_pool, p=2, dim=1, eps=1e-6)
+        x_struct = torch.bmm(x_norm.transpose(1, 2), x_norm)
+        y_struct = torch.bmm(y_norm.transpose(1, 2), y_norm)
+        return (x_struct.unsqueeze(1) - y_struct.unsqueeze(0)).pow(2).mean(dim=(2, 3))
+
     def pairwise_cost(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         if self.cost_mode == "l2":
-            return torch.cdist(x.flatten(1).float(), y.flatten(1).float(), p=2).pow(2)
+            base = torch.cdist(x.flatten(1).float(), y.flatten(1).float(), p=2).pow(2)
+            if self.w_nonlocal_structure > 0.0:
+                base = base + self._nonlocal_structure_cost(x, y) * self.w_nonlocal_structure
+            return base
 
         x_f32 = x.float().contiguous()
         y_f32 = y.float().contiguous()
-        x_norm = F.instance_norm(x_f32, eps=1e-3)
-        y_norm = F.instance_norm(y_f32, eps=1e-3)
+        x_norm = self._channel_whiten(x_f32)
+        y_norm = self._channel_whiten(y_f32)
 
         if self.cost_mode in {"swd_unified", "swd_full", "unified"}:
-            return self._branch_pairwise_cost(
+            base = self._branch_pairwise_cost(
                 x_norm,
                 y_norm,
                 patch_sizes=self.swd_patch_sizes,
                 mask_mode="luma_chroma_masked",
             )
+            if self.w_nonlocal_structure > 0.0:
+                base = base + self._nonlocal_structure_cost(x_norm, y_norm) * self.w_nonlocal_structure
+            return base
 
         micro_patches = [p for p in self.swd_patch_sizes if p <= self.swd_micro_patch_max]
         macro_patches = [p for p in self.swd_patch_sizes if p >= self.swd_macro_patch_min]
@@ -250,13 +305,17 @@ class SWDTransportCost:
             )
             weight_sum += self.swd_macro_weight
         if weight_sum <= 0.0:
-            return self._branch_pairwise_cost(
+            base = self._branch_pairwise_cost(
                 x_norm,
                 y_norm,
                 patch_sizes=self.swd_patch_sizes,
                 mask_mode="none",
             )
-        return total / float(weight_sum)
+        else:
+            base = total / float(weight_sum)
+        if self.w_nonlocal_structure > 0.0:
+            base = base + self._nonlocal_structure_cost(x_norm, y_norm) * self.w_nonlocal_structure
+        return base
 
     def aligned_cost(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         if self.cost_mode == "l2":
@@ -266,8 +325,8 @@ class SWDTransportCost:
 
         x_f32 = x.float().contiguous()
         y_f32 = y.float().contiguous()
-        x_norm = F.instance_norm(x_f32, eps=1e-3)
-        y_norm = F.instance_norm(y_f32, eps=1e-3)
+        x_norm = self._channel_whiten(x_f32)
+        y_norm = self._channel_whiten(y_f32)
 
         if self.cost_mode in {"swd_unified", "swd_full", "unified"}:
             return self._branch_aligned_cost(

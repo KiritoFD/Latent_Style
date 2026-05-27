@@ -87,6 +87,10 @@ class OTFlowMatchingObjective:
         self.w_spectral_amplitude = max(0.0, float(bridge_cfg.w_spectral_amplitude))
         self.spectral_amplitude_channels = max(1, int(bridge_cfg.spectral_amplitude_channels))
         self.spectral_amplitude_highpass = bool(bridge_cfg.spectral_amplitude_highpass)
+        self.target_style_loss_weights = [
+            max(0.0, float(v))
+            for v in (bridge_cfg.target_style_loss_weights or [])
+        ]
         self.w_divergence = max(0.0, float(bridge_cfg.w_divergence))
         self.divergence_samples = max(1, int(bridge_cfg.divergence_samples))
         self.w_feature_riemannian = max(0.0, float(bridge_cfg.w_feature_riemannian))
@@ -106,9 +110,21 @@ class OTFlowMatchingObjective:
         self.phase_gradient_weight = max(0.0, float(bridge_cfg.phase_gradient_weight))
         self.w_fourier_phase_lock = max(0.0, float(bridge_cfg.w_fourier_phase_lock))
         self.fourier_phase_lock_highpass = bool(bridge_cfg.fourier_phase_lock_highpass)
+        self.w_flat_highpass_suppression = max(0.0, float(bridge_cfg.w_flat_highpass_suppression))
+        self.flat_highpass_gamma = max(0.0, float(bridge_cfg.flat_highpass_gamma))
+        self.flat_highpass_kernel = max(1, int(bridge_cfg.flat_highpass_kernel))
+        if self.flat_highpass_kernel % 2 == 0:
+            self.flat_highpass_kernel += 1
+        self.w_edge_phase_alignment = max(0.0, float(bridge_cfg.w_edge_phase_alignment))
+        self.edge_phase_gamma = max(0.0, float(bridge_cfg.edge_phase_gamma))
+        self.edge_phase_kernel = max(1, int(bridge_cfg.edge_phase_kernel))
+        if self.edge_phase_kernel % 2 == 0:
+            self.edge_phase_kernel += 1
         self.w_head_color_tv = max(0.0, float(bridge_cfg.w_head_color_tv))
         self.w_head_color_energy = max(0.0, float(bridge_cfg.w_head_color_energy))
         self.w_head_amp_energy = max(0.0, float(bridge_cfg.w_head_amp_energy))
+        self.w_head_warp_energy = max(0.0, float(bridge_cfg.w_head_warp_energy))
+        self.w_head_warp_tv = max(0.0, float(bridge_cfg.w_head_warp_tv))
         self.w_warp_curl_reward = max(0.0, float(bridge_cfg.w_warp_curl_reward))
         self.kantorovich_potential = (
             KantorovichPotential(int(model_cfg.latent_channels), int(bridge_cfg.kantorovich_channels))
@@ -123,7 +139,7 @@ class OTFlowMatchingObjective:
         self.terminal_swd_on_identity = bool(bridge_cfg.terminal_swd_on_identity)
         self.semantic_swd_num_projections = max(1, int(bridge_cfg.semantic_swd_num_projections))
         self.terminal_swd_mode = str(bridge_cfg.terminal_swd_mode).strip().lower()
-        if self.terminal_swd_mode not in {"standard", "spectral_orthogonal", "semantic_quotient"}:
+        if self.terminal_swd_mode not in {"standard", "spectral_orthogonal", "semantic_quotient", "semantic_moment"}:
             self.terminal_swd_mode = "standard"
         self.spectral_swd_low_weight = max(0.0, float(bridge_cfg.spectral_swd_low_weight))
         self.spectral_swd_high_weight = max(0.0, float(bridge_cfg.spectral_swd_high_weight))
@@ -411,6 +427,38 @@ class OTFlowMatchingObjective:
         phase_delta = torch.angle(pred_fft * torch.conj(base_fft))
         return (1.0 - torch.cos(phase_delta)).mean() * self.w_fourier_phase_lock
 
+    def _laplacian(self, x: torch.Tensor) -> torch.Tensor:
+        channels = int(x.shape[1])
+        kernel = x.new_tensor([[0.0, -1.0, 0.0], [-1.0, 4.0, -1.0], [0.0, -1.0, 0.0]]).view(1, 1, 3, 3)
+        kernel = kernel.expand(channels, 1, 3, 3).contiguous()
+        return F.conv2d(x.float(), kernel, padding=1, groups=channels)
+
+    def _edge_support(self, content: torch.Tensor, *, gamma: float, kernel: int) -> torch.Tensor:
+        guide = self._kernel_lowpass(content.float(), kernel)
+        edge = self._gradient_magnitude(guide).mean(dim=1, keepdim=True).detach()
+        scale = edge.flatten(1).mean(dim=1, keepdim=True).clamp_min(self.normalize_eps).view(-1, 1, 1, 1)
+        return 1.0 - torch.exp(-gamma * edge / scale)
+
+    def _flat_highpass_suppression_loss(self, pred_endpoint: torch.Tensor, content: torch.Tensor) -> torch.Tensor:
+        if self.w_flat_highpass_suppression <= 0.0:
+            return content.new_tensor(0.0, dtype=torch.float32)
+        edge_support = self._edge_support(content, gamma=self.flat_highpass_gamma, kernel=self.flat_highpass_kernel)
+        flat_support = (1.0 - edge_support).detach()
+        delta = pred_endpoint.float() - content.float()
+        high_delta = delta - self._kernel_lowpass(delta, self.flat_highpass_kernel)
+        return (flat_support * high_delta.abs().mean(dim=1, keepdim=True)).mean() * self.w_flat_highpass_suppression
+
+    def _edge_phase_alignment_loss(self, pred_endpoint: torch.Tensor, content: torch.Tensor) -> torch.Tensor:
+        if self.w_edge_phase_alignment <= 0.0:
+            return content.new_tensor(0.0, dtype=torch.float32)
+        edge_support = self._edge_support(content, gamma=self.edge_phase_gamma, kernel=self.edge_phase_kernel)
+        base_phase = self._laplacian(self._kernel_lowpass(content.float(), self.edge_phase_kernel)).detach()
+        delta_phase = self._laplacian(pred_endpoint.float() - content.float())
+        product = base_phase * delta_phase
+        denom = base_phase.abs().mean(dim=1, keepdim=True).clamp_min(self.normalize_eps).detach()
+        anti_phase = F.relu(-product / denom).mean(dim=1, keepdim=True)
+        return (edge_support.detach() * anti_phase).mean() * self.w_edge_phase_alignment
+
     def _raw_head_tax_loss(self, model: TimeConditionedLANCETBridge, content: torch.Tensor) -> torch.Tensor:
         raw = getattr(model, "last_raw_diffeomorphic", None)
         if raw is None:
@@ -430,20 +478,28 @@ class OTFlowMatchingObjective:
             if mode == "factorized_amp":
                 amp = raw[:, channels : channels + 1]
                 total = total + amp.square().mean() * self.w_head_amp_energy
-        if self.w_warp_curl_reward > 0.0 and raw.shape[1] >= channels + 2:
+        has_warp_tax = self.w_head_warp_energy > 0.0 or self.w_head_warp_tv > 0.0 or self.w_warp_curl_reward > 0.0
+        if has_warp_tax and raw.shape[1] >= channels + 2:
             mode = str(getattr(model, "diffeomorphic_head_mode", "standard"))
             if mode == "factorized_amp":
                 warp = raw[:, channels + 1 : channels + 3]
             else:
                 warp = raw[:, channels : channels + 2]
             if warp.shape[1] == 2:
-                dv_dx = warp[:, 1:2, :, 1:] - warp[:, 1:2, :, :-1]
-                du_dy = warp[:, 0:1, 1:, :] - warp[:, 0:1, :-1, :]
-                dv_dx = F.pad(dv_dx, (0, 1, 0, 0))
-                du_dy = F.pad(du_dy, (0, 0, 0, 1))
-                curl = dv_dx - du_dy
-                # Negative term is intentional: it subsidizes coherent rotational flow.
-                total = total - curl.abs().mean() * self.w_warp_curl_reward
+                if self.w_head_warp_energy > 0.0:
+                    total = total + warp.square().mean() * self.w_head_warp_energy
+                if self.w_head_warp_tv > 0.0:
+                    dx = warp[..., :, 1:] - warp[..., :, :-1]
+                    dy = warp[..., 1:, :] - warp[..., :-1, :]
+                    total = total + (dx.abs().mean() + dy.abs().mean()) * self.w_head_warp_tv
+                if self.w_warp_curl_reward > 0.0:
+                    dv_dx = warp[:, 1:2, :, 1:] - warp[:, 1:2, :, :-1]
+                    du_dy = warp[:, 0:1, 1:, :] - warp[:, 0:1, :-1, :]
+                    dv_dx = F.pad(dv_dx, (0, 1, 0, 0))
+                    du_dy = F.pad(du_dy, (0, 0, 0, 1))
+                    curl = dv_dx - du_dy
+                    # Negative term is intentional: it subsidizes coherent rotational flow.
+                    total = total - curl.abs().mean() * self.w_warp_curl_reward
         return total
 
     def _gradient_magnitude(self, x: torch.Tensor) -> torch.Tensor:
@@ -558,6 +614,29 @@ class OTFlowMatchingObjective:
         amp_pred = torch.log(torch.abs(torch.fft.rfft2(pred, norm="ortho")) + 1e-8)
         amp_target = torch.log(torch.abs(torch.fft.rfft2(target, norm="ortho")) + 1e-8)
         return F.l1_loss(amp_pred, amp_target.detach()) * self.w_spectral_amplitude
+
+    def _target_style_loss_scale(
+        self,
+        target_style_id: torch.Tensor,
+        source_style_id: torch.Tensor | None = None,
+        *,
+        cross_only: bool = True,
+    ) -> torch.Tensor:
+        if not self.target_style_loss_weights:
+            return target_style_id.new_tensor(1.0, dtype=torch.float32)
+        ids = target_style_id.long()
+        weights = torch.ones(ids.shape, device=ids.device, dtype=torch.float32)
+        table = torch.tensor(self.target_style_loss_weights, device=ids.device, dtype=torch.float32)
+        valid = (ids >= 0) & (ids < table.numel())
+        if valid.any():
+            weights[valid] = table.index_select(0, ids[valid])
+        if cross_only and source_style_id is not None:
+            active = source_style_id.long() != ids
+            if active.any():
+                weights = weights[active]
+            else:
+                return target_style_id.new_tensor(1.0, dtype=torch.float32)
+        return weights.mean().clamp_min(0.0)
 
     def _divergence_penalty(self, x: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
         if self.w_divergence <= 0.0:
@@ -691,6 +770,9 @@ class OTFlowMatchingObjective:
         if self.terminal_swd_mode == "semantic_quotient" and content is not None:
             content_active = content.index_select(0, active)
             return self._semantic_quotient_swd(pred_active, target_active, content_active)
+        if self.terminal_swd_mode == "semantic_moment" and content is not None:
+            content_active = content.index_select(0, active)
+            return self._semantic_moment_loss(pred_active, target_active, content_active)
         return self.transport_cost.aligned_cost(pred_active, target_active)
 
     def _spectral_orthogonal_swd(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
@@ -732,6 +814,47 @@ class OTFlowMatchingObjective:
                     masked_target.view(bsz, channels, h_dim, w_dim),
                 )
             )
+        if not losses:
+            return self.transport_cost.aligned_cost(pred, target)
+        return torch.stack(losses).mean()
+
+    def _semantic_moment_loss(self, pred: torch.Tensor, target: torch.Tensor, content_guide: torch.Tensor) -> torch.Tensor:
+        """Region-statistic style target that does not reward unpaired spatial phase."""
+        bsz, channels, _, _ = pred.shape
+        bins = self.semantic_quotient_bins
+        pred_low = self._kernel_lowpass(pred, 5)
+        target_low = self._kernel_lowpass(target, 5)
+        pred_high = pred.float() - pred_low
+        target_high = target.float() - target_low
+        pred_env = torch.sqrt(self._kernel_lowpass(pred_high.square(), 5) + self.normalize_eps)
+        target_env = torch.sqrt(self._kernel_lowpass(target_high.square(), 5) + self.normalize_eps)
+        pred_guide = self._kernel_lowpass(content_guide.float().mean(dim=1, keepdim=True), 5).view(bsz, -1)
+        target_guide = self._kernel_lowpass(target.float().mean(dim=1, keepdim=True), 5).view(bsz, -1)
+
+        def region_stats(values: torch.Tensor, guide_flat: torch.Tensor, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
+            values_flat = values.float().view(bsz, channels, -1)
+            lo = torch.quantile(guide_flat.detach(), idx / bins, dim=1, keepdim=True)
+            hi = torch.quantile(guide_flat.detach(), (idx + 1) / bins, dim=1, keepdim=True)
+            if idx == bins - 1:
+                mask = (guide_flat >= lo) & (guide_flat <= hi)
+            else:
+                mask = (guide_flat >= lo) & (guide_flat < hi)
+            weights = mask.to(dtype=values_flat.dtype)
+            denom = weights.sum(dim=1, keepdim=True).clamp_min(1.0)
+            mean = (values_flat * weights.unsqueeze(1)).sum(dim=2) / denom
+            centered = values_flat - mean.unsqueeze(-1)
+            var = (centered.square() * weights.unsqueeze(1)).sum(dim=2) / denom
+            return mean, torch.sqrt(var.clamp_min(0.0) + self.normalize_eps)
+
+        losses: list[torch.Tensor] = []
+        for idx in range(bins):
+            pred_low_mean, pred_low_std = region_stats(pred_low, pred_guide, idx)
+            target_low_mean, target_low_std = region_stats(target_low, target_guide, idx)
+            pred_env_mean, pred_env_std = region_stats(pred_env, pred_guide, idx)
+            target_env_mean, target_env_std = region_stats(target_env, target_guide, idx)
+            low_loss = (pred_low_mean - target_low_mean).abs().mean() + 0.50 * (pred_low_std - target_low_std).abs().mean()
+            env_loss = (pred_env_mean - target_env_mean).abs().mean() + 0.50 * (pred_env_std - target_env_std).abs().mean()
+            losses.append(low_loss + 0.45 * env_loss)
         if not losses:
             return self.transport_cost.aligned_cost(pred, target)
         return torch.stack(losses).mean()
@@ -808,6 +931,8 @@ class OTFlowMatchingObjective:
         stokes_viscous = self._stokes_viscous_loss(pred_velocity)
         phase_separation = self._phase_separation_loss(pred_endpoint)
         fourier_phase_lock = self._fourier_phase_lock_loss(pred_endpoint, content)
+        flat_highpass_suppression = self._flat_highpass_suppression_loss(pred_endpoint, content)
+        edge_phase_alignment = self._edge_phase_alignment_loss(pred_endpoint, content)
         head_tax = self._raw_head_tax_loss(model, content)
         total_loss = total_loss + kinetic_loss
 
@@ -819,9 +944,17 @@ class OTFlowMatchingObjective:
         residual_style_direction = self._residual_style_direction_loss(pred_endpoint, content, target_for_loss)
         semantic_entropy = self._semantic_entropy_loss(attn_plan, content)
         spectral_amplitude = self._spectral_amplitude_loss(pred_endpoint, target_for_loss)
+        target_style_loss_scale = self._target_style_loss_scale(target_style_id, source_style_id)
+        if self.target_style_loss_weights:
+            style_energy_floor = style_energy_floor * target_style_loss_scale
+            style_contrastive = style_contrastive * target_style_loss_scale
+            residual_style_direction = residual_style_direction * target_style_loss_scale
+            spectral_amplitude = spectral_amplitude * target_style_loss_scale
         divergence = self._divergence_penalty(content_for_model, pred_velocity)
         feature_riemannian = self._feature_riemannian_loss(model, content, pred_velocity)
         kantorovich = self._kantorovich_generator_loss(pred_endpoint, target_for_loss)
+        if self.target_style_loss_weights:
+            kantorovich = kantorovich * target_style_loss_scale
         total_loss = (
             total_loss
             + content_anchor
@@ -839,6 +972,8 @@ class OTFlowMatchingObjective:
             + stokes_viscous
             + phase_separation
             + fourier_phase_lock
+            + flat_highpass_suppression
+            + edge_phase_alignment
             + head_tax
         )
 
@@ -852,7 +987,7 @@ class OTFlowMatchingObjective:
         )
         terminal_loss = content.new_tensor(0.0, dtype=torch.float32)
         if terminal_swd is not None:
-            terminal_loss = terminal_swd * self.terminal_swd_weight
+            terminal_loss = terminal_swd * self.terminal_swd_weight * target_style_loss_scale
             total_loss = total_loss + terminal_loss
 
         metrics: Dict[str, torch.Tensor] = {
@@ -863,6 +998,8 @@ class OTFlowMatchingObjective:
             "stokes_viscous": stokes_viscous.detach(),
             "phase_separation": phase_separation.detach(),
             "fourier_phase_lock": fourier_phase_lock.detach(),
+            "flat_highpass_suppression": flat_highpass_suppression.detach(),
+            "edge_phase_alignment": edge_phase_alignment.detach(),
             "head_tax": head_tax.detach(),
             "terminal_swd": terminal_loss.detach(),
             "content_anchor": content_anchor.detach(),
@@ -886,6 +1023,7 @@ class OTFlowMatchingObjective:
             "endpoint_max": pred_endpoint.abs().amax().detach(),
             "semantic_attn_mean": attn_plan.mean().detach() if attn_plan is not None else content.new_tensor(0.0),
             "semantic_k_abs": semantic_k.abs().mean().detach() if semantic_k is not None else content.new_tensor(0.0),
+            "target_style_loss_scale": target_style_loss_scale.detach(),
         }
         if source_style_id is not None:
             id_mask = source_style_id.long() == target_style_id.long()
@@ -898,6 +1036,8 @@ class OTFlowMatchingObjective:
             "stokes_viscous": stokes_viscous,
             "phase_separation": phase_separation,
             "fourier_phase_lock": fourier_phase_lock,
+            "flat_highpass_suppression": flat_highpass_suppression,
+            "edge_phase_alignment": edge_phase_alignment,
             "head_tax": head_tax,
             "terminal_swd": terminal_loss,
             "content_anchor": content_anchor,
@@ -995,8 +1135,19 @@ class OTFlowMatchingObjective:
         stokes_viscous = self._stokes_viscous_loss(pred_velocity)
         phase_separation = self._phase_separation_loss(x_t + pred_velocity)
         fourier_phase_lock = self._fourier_phase_lock_loss(x_t + pred_velocity, content)
+        flat_highpass_suppression = self._flat_highpass_suppression_loss(x_t + pred_velocity, content)
+        edge_phase_alignment = self._edge_phase_alignment_loss(x_t + pred_velocity, content)
         head_tax = self._raw_head_tax_loss(model, content)
-        total_loss = total_loss + anisotropic_kinetic + stokes_viscous + phase_separation + fourier_phase_lock + head_tax
+        total_loss = (
+            total_loss
+            + anisotropic_kinetic
+            + stokes_viscous
+            + phase_separation
+            + fourier_phase_lock
+            + flat_highpass_suppression
+            + edge_phase_alignment
+            + head_tax
+        )
 
         curvature_loss = content.new_tensor(0.0, dtype=torch.float32)
         if self.w_curvature > 0.0:
@@ -1024,6 +1175,8 @@ class OTFlowMatchingObjective:
             "stokes_viscous": stokes_viscous.detach(),
             "phase_separation": phase_separation.detach(),
             "fourier_phase_lock": fourier_phase_lock.detach(),
+            "flat_highpass_suppression": flat_highpass_suppression.detach(),
+            "edge_phase_alignment": edge_phase_alignment.detach(),
             "head_tax": head_tax.detach(),
             "curvature": (curvature_loss * self.w_curvature).detach(),
             "ot_cost": ot_cost.detach(),

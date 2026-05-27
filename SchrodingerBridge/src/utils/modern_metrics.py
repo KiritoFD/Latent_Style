@@ -42,6 +42,16 @@ def load_metrics_rows(metrics_csv: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(f))
 
 
+def _resolve_eval_image_path(eval_dir: Path, rel_path: str) -> Path:
+    path = Path(rel_path)
+    if path.is_absolute():
+        return path
+    direct = eval_dir / path
+    if direct.exists():
+        return direct
+    return eval_dir / "images" / path.name
+
+
 @dataclass
 class ModernMetricConfig:
     test_dir: Path
@@ -264,8 +274,6 @@ def append_modern_metrics_to_summary(eval_dir: Path, cfg: ModernMetricConfig) ->
 
     payload = json.loads(summary_path.read_text(encoding="utf-8"))
     rows = load_metrics_rows(metrics_path)
-    images_root = eval_dir / "images" if (eval_dir / "images").is_dir() else eval_dir
-
     pair_buckets: dict[tuple[str, str], list[dict[str, str]]] = defaultdict(list)
     for row in rows:
         pair_buckets[(row["src_style"], row["tgt_style"])].append(row)
@@ -291,7 +299,7 @@ def append_modern_metrics_to_summary(eval_dir: Path, cfg: ModernMetricConfig) ->
     photo_pool: list[dict[str, Any]] = []
 
     for (src_style, tgt_style), bucket in pair_buckets.items():
-        gen_paths = [images_root / row["gen_image"] for row in bucket]
+        gen_paths = [_resolve_eval_image_path(eval_dir, row["gen_image"]) for row in bucket]
         src_paths = [cfg.test_dir / src_style / row["src_image"] for row in bucket]
         clip_style_val = _mean([float(row["clip_style"]) for row in bucket if row.get("clip_style")])
         clip_content_val = _mean([float(row["clip_content"]) for row in bucket if row.get("clip_content")])

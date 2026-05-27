@@ -1,0 +1,37 @@
+{
+  "_base": "../../configs/diffeomorphic_stroke_tangent_local.json",
+  "model": {
+    "use_diffeomorphic_stroke": true,
+    "diffeomorphic_warp_strength": 0.03,
+    "diffeomorphic_texture_gate_strength": 6.0,
+    "diffeomorphic_normal_leak": 0.0,
+    "diffeomorphic_color_strength": 0.85
+  },
+  "bridge": {
+    "w_impasto_divergence": 0.15,
+    "impasto_energy_ratio": 0.75
+  },
+  "training": {
+    "seed": 42,
+    "batch_size": 192,
+    "full_eval_batch_size": 20,
+    "num_epochs": 8,
+    "num_workers": 0,
+    "persistent_workers": false,
+    "save_interval": 1,
+    "resume_checkpoint": ""
+  },
+  "checkpoint": {
+    "save_dir": "./exp/physical_loss_tree/p1_00_t00_imp_low"
+  },
+  "ablation": {
+    "name": "p1_00_t00_imp_low",
+    "stage": "physical_loss_tree",
+    "phase": "p1",
+    "axis": "loss_principle_exploration",
+    "families": [
+      "impasto"
+    ],
+    "notes": "weak divergence-to-high-frequency impasto coupling"
+  }
+}
