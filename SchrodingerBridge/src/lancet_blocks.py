@@ -523,6 +523,33 @@ class StyleBlender(nn.Module):
         token_flatten_strength: float = 0.0,
         token_flatten_kernel: int = 5,
         token_adain_gate_enable: bool = False,
+        token_reader_enable: bool = False,
+        token_reader_hidden: int = 32,
+        token_reader_scale: float = 0.20,
+        token_grammar_texture_enable: bool = False,
+        token_grammar_texture_scale: float = 0.35,
+        token_texton_carrier_enable: bool = False,
+        token_texton_carrier_strength: float = 0.12,
+        token_texton_carrier_hidden_mult: float = 0.75,
+        token_texton_carrier_tanh_scale: float = 0.45,
+        token_prototype_carrier_enable: bool = False,
+        token_prototype_carrier_strength: float = 0.16,
+        token_prototype_carrier_hidden_mult: float = 0.75,
+        token_prototype_carrier_tanh_scale: float = 0.45,
+        token_depthwise_filter_enable: bool = False,
+        token_depthwise_filter_strength: float = 0.0,
+        token_depthwise_filter_tanh_scale: float = 0.35,
+        token_depthwise_filter_basis_offset: int = 8,
+        token_depthwise_filter_learnable_gate: bool = False,
+        token_depthwise_filter_learnable_gate_scale: float = 0.5,
+        token_depthwise_filter_style_basis_gate: bool = False,
+        token_depthwise_filter_style_basis_gate_scale: float = 0.75,
+        token_depthwise_filter_style_basis_delta: bool = False,
+        token_depthwise_filter_style_basis_delta_scale: float = 0.30,
+        num_styles: int = 1,
+        token_identity_dim: int = 16,
+        token_grammar_dim: int = 9,
+        token_band_dim: int = 3,
     ) -> None:
         super().__init__()
         groups = _resolve_group_count(dim, num_groups)
@@ -618,6 +645,81 @@ class StyleBlender(nn.Module):
         if self.token_flatten_kernel % 2 == 0:
             self.token_flatten_kernel += 1
         self.token_adain_gate_enable = bool(token_adain_gate_enable)
+        self.token_reader_scale = max(0.0, float(token_reader_scale))
+        self.token_reader: nn.Module | None = None
+        if bool(token_reader_enable):
+            token_dim = max(1, int(token_identity_dim)) + max(1, int(token_grammar_dim)) + max(1, int(token_band_dim))
+            hidden_dim = max(4, int(token_reader_hidden))
+            self.token_reader = nn.Sequential(
+                nn.Linear(token_dim, hidden_dim),
+                nn.SiLU(),
+                nn.Linear(hidden_dim, 3),
+            )
+            nn.init.zeros_(self.token_reader[-1].weight)
+            nn.init.zeros_(self.token_reader[-1].bias)
+        self.token_grammar_texture_enable = bool(token_grammar_texture_enable)
+        self.token_grammar_texture_scale = max(0.0, float(token_grammar_texture_scale))
+        self.token_texton_carrier_enable = bool(token_texton_carrier_enable)
+        self.token_texton_carrier_strength = max(0.0, float(token_texton_carrier_strength))
+        self.token_texton_carrier_tanh_scale = max(1e-4, float(token_texton_carrier_tanh_scale))
+        self.token_texton_carrier_mapper: nn.Module | None = None
+        if self.token_texton_carrier_enable and self.token_texton_carrier_strength > 0.0:
+            carrier_hidden = max(dim, int(round(float(dim) * max(0.25, float(token_texton_carrier_hidden_mult)))))
+            carrier_groups = _resolve_group_count(carrier_hidden, num_groups)
+            self.token_texton_carrier_mapper = nn.Sequential(
+                nn.Conv2d(dim * 3, carrier_hidden, kernel_size=3, stride=1, padding=1),
+                nn.GroupNorm(carrier_groups, carrier_hidden),
+                nn.SiLU(),
+                nn.Conv2d(carrier_hidden, dim, kernel_size=3, stride=1, padding=1),
+            )
+            nn.init.zeros_(self.token_texton_carrier_mapper[-1].weight)
+            nn.init.zeros_(self.token_texton_carrier_mapper[-1].bias)
+        self.token_prototype_carrier_enable = bool(token_prototype_carrier_enable)
+        self.token_prototype_carrier_strength = max(0.0, float(token_prototype_carrier_strength))
+        self.token_prototype_carrier_tanh_scale = max(1e-4, float(token_prototype_carrier_tanh_scale))
+        self.token_prototype_carrier_mapper: nn.Module | None = None
+        if self.token_prototype_carrier_enable and self.token_prototype_carrier_strength > 0.0:
+            proto_hidden = max(dim, int(round(float(dim) * max(0.25, float(token_prototype_carrier_hidden_mult)))))
+            proto_groups = _resolve_group_count(proto_hidden, num_groups)
+            self.token_prototype_carrier_mapper = nn.Sequential(
+                nn.Conv2d(dim * 3, proto_hidden, kernel_size=3, stride=1, padding=1),
+                nn.GroupNorm(proto_groups, proto_hidden),
+                nn.SiLU(),
+                nn.Conv2d(proto_hidden, dim, kernel_size=3, stride=1, padding=1),
+            )
+            nn.init.zeros_(self.token_prototype_carrier_mapper[-1].weight)
+            nn.init.zeros_(self.token_prototype_carrier_mapper[-1].bias)
+        self.token_depthwise_filter_enable = bool(token_depthwise_filter_enable)
+        self.token_depthwise_filter_strength = max(0.0, float(token_depthwise_filter_strength))
+        self.token_depthwise_filter_tanh_scale = max(1e-4, float(token_depthwise_filter_tanh_scale))
+        self.token_depthwise_filter_basis_offset = max(0, int(token_depthwise_filter_basis_offset))
+        self.token_depthwise_filter_learnable_gate_scale = max(0.0, float(token_depthwise_filter_learnable_gate_scale))
+        self.token_depthwise_filter_style_basis_gate_scale = max(0.0, float(token_depthwise_filter_style_basis_gate_scale))
+        self.token_depthwise_filter_style_basis_delta_scale = max(0.0, float(token_depthwise_filter_style_basis_delta_scale))
+        self.num_styles = max(1, int(num_styles))
+        depthwise_basis = self._build_token_depthwise_filter_basis()
+        depthwise_basis_count = int(depthwise_basis.shape[0])
+        if bool(token_depthwise_filter_learnable_gate):
+            self.token_depthwise_filter_gate_logits = nn.Parameter(torch.zeros(2, dtype=torch.float32))
+        else:
+            self.register_parameter("token_depthwise_filter_gate_logits", None)
+        if bool(token_depthwise_filter_style_basis_gate):
+            self.token_depthwise_filter_style_basis_gate_logits = nn.Parameter(
+                torch.zeros(self.num_styles, depthwise_basis_count, dtype=torch.float32)
+            )
+        else:
+            self.register_parameter("token_depthwise_filter_style_basis_gate_logits", None)
+        if bool(token_depthwise_filter_style_basis_delta):
+            self.token_depthwise_filter_style_basis_delta = nn.Parameter(
+                torch.zeros(self.num_styles, depthwise_basis_count, 3, 3, dtype=torch.float32)
+            )
+        else:
+            self.register_parameter("token_depthwise_filter_style_basis_delta", None)
+        self.register_buffer(
+            "_token_depthwise_filter_basis",
+            depthwise_basis,
+            persistent=False,
+        )
         self.region_gate_generator: nn.Module | None = None
         if self.mode == "region_paint" and style_dim is not None and int(style_dim) > 0:
             hidden_dim = max(8, int(round(float(style_dim) * max(0.25, float(region_hidden_mult)))))
@@ -664,6 +766,23 @@ class StyleBlender(nn.Module):
             nn.init.normal_(self.texton_mapper[-1].weight, mean=0.0, std=1e-3)
             nn.init.zeros_(self.texton_mapper[-1].bias)
         self.last_debug: dict[str, torch.Tensor] = {}
+
+    @staticmethod
+    def _build_token_depthwise_filter_basis() -> torch.Tensor:
+        kernels = [
+            [[0.0, -1.0, 0.0], [-1.0, 4.0, -1.0], [0.0, -1.0, 0.0]],
+            [[-1.0, -1.0, -1.0], [-1.0, 8.0, -1.0], [-1.0, -1.0, -1.0]],
+            [[-1.0, 0.0, 1.0], [-2.0, 0.0, 2.0], [-1.0, 0.0, 1.0]],
+            [[-1.0, -2.0, -1.0], [0.0, 0.0, 0.0], [1.0, 2.0, 1.0]],
+            [[-2.0, -1.0, 0.0], [-1.0, 0.0, 1.0], [0.0, 1.0, 2.0]],
+            [[0.0, 1.0, 2.0], [-1.0, 0.0, 1.0], [-2.0, -1.0, 0.0]],
+            [[1.0, -2.0, 1.0], [-2.0, 4.0, -2.0], [1.0, -2.0, 1.0]],
+            [[0.0, 1.0, 0.0], [1.0, -4.0, 1.0], [0.0, 1.0, 0.0]],
+        ]
+        basis = torch.tensor(kernels, dtype=torch.float32).view(len(kernels), 1, 3, 3)
+        basis = basis - basis.mean(dim=(2, 3), keepdim=True)
+        denom = basis.abs().sum(dim=(2, 3), keepdim=True).clamp_min(1e-6)
+        return basis / denom
 
     @staticmethod
     def _lowpass(x: torch.Tensor, kernel: int) -> torch.Tensor:
@@ -835,7 +954,158 @@ class StyleBlender(nn.Module):
                 raise ValueError(f"style batch mismatch: expected {b} or 1, got {style_emb.shape[0]}")
             logits = self.texton_band_allocator(style_emb.float()).view(b, 3, 1, 1)
             gains = gains * (1.0 + torch.tanh(logits) * self.texton_allocate_scale)
+        if self.token_reader is not None and style_tokens is not None and self.token_reader_scale > 0.0:
+            token_input = self._style_token_reader_input(style_tokens, b, content_feat.device)
+            logits = self.token_reader(token_input).view(b, 3, 1, 1)
+            gains = gains * (1.0 + torch.tanh(logits) * self.token_reader_scale)
         return gains.to(device=content_feat.device, dtype=content_feat.dtype)
+
+    @staticmethod
+    def _match_token_field(field: torch.Tensor, batch: int, device: torch.device, name: str) -> torch.Tensor:
+        field = field.to(device=device, dtype=torch.float32)
+        if field.ndim == 1:
+            field = field.unsqueeze(0)
+        if field.shape[0] == 1 and batch > 1:
+            field = field.expand(batch, -1)
+        elif field.shape[0] != batch:
+            raise ValueError(f"{name} batch mismatch: expected {batch} or 1, got {field.shape[0]}")
+        return field
+
+    def _style_token_reader_input(self, style_tokens: object, batch: int, device: torch.device) -> torch.Tensor:
+        identity = getattr(style_tokens, "identity", None)
+        grammar = getattr(style_tokens, "grammar", None)
+        band = getattr(style_tokens, "band_logits", None)
+        if not (torch.is_tensor(identity) and torch.is_tensor(grammar) and torch.is_tensor(band)):
+            raise ValueError("token_reader requires identity, grammar, and band_logits fields")
+        return torch.cat(
+            [
+                self._match_token_field(identity, batch, device, "identity"),
+                self._match_token_field(grammar, batch, device, "grammar"),
+                self._match_token_field(band, batch, device, "band_logits"),
+            ],
+            dim=1,
+        )
+
+    def _style_token_grammar_texture_alloc(
+        self,
+        style_tokens: object | None,
+        batch: int,
+        device: torch.device,
+        dtype: torch.dtype,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        one = torch.ones(batch, 1, 1, 1, device=device, dtype=dtype)
+        if not self.token_grammar_texture_enable or self.token_grammar_texture_scale <= 0.0 or style_tokens is None:
+            return one, one
+        grammar = getattr(style_tokens, "grammar", None)
+        if not torch.is_tensor(grammar) or grammar.numel() == 0:
+            return one, one
+        grammar = self._match_token_field(grammar, batch, device, "grammar")
+        mid = grammar[:, 5:6] if grammar.shape[1] > 5 else grammar.new_zeros(batch, 1)
+        high = grammar[:, 6:7] if grammar.shape[1] > 6 else grammar.new_zeros(batch, 1)
+        scale = float(self.token_grammar_texture_scale)
+        mid_alloc = 1.0 + torch.tanh(mid).view(batch, 1, 1, 1) * scale
+        high_alloc = 1.0 + torch.tanh(high).view(batch, 1, 1, 1) * scale
+        return mid_alloc.to(device=device, dtype=dtype), high_alloc.to(device=device, dtype=dtype)
+
+    def _style_token_texton_carrier_delta(
+        self,
+        content_feat: torch.Tensor,
+        residual_feat: torch.Tensor,
+        style_tokens: object | None,
+        detail_gate: torch.Tensor,
+        mid_alloc: torch.Tensor,
+        high_alloc: torch.Tensor,
+    ) -> torch.Tensor:
+        if (
+            self.token_texton_carrier_mapper is None
+            or self.token_texton_carrier_strength <= 0.0
+            or style_tokens is None
+        ):
+            return content_feat.new_zeros(content_feat.shape)
+        grammar = getattr(style_tokens, "grammar", None)
+        if not torch.is_tensor(grammar) or grammar.numel() == 0:
+            return content_feat.new_zeros(content_feat.shape)
+        b = content_feat.shape[0]
+        grammar = self._match_token_field(grammar, b, content_feat.device, "grammar")
+        g_mid = torch.tanh(grammar[:, 5:6]).view(b, 1, 1, 1) if grammar.shape[1] > 5 else grammar.new_zeros(b, 1, 1, 1)
+        g_high = torch.tanh(grammar[:, 6:7]).view(b, 1, 1, 1) if grammar.shape[1] > 6 else grammar.new_zeros(b, 1, 1, 1)
+        residual_f = residual_feat.float()
+        inner = self._lowpass(residual_feat, self.dual_mid_inner_kernel).float()
+        outer = self._lowpass(residual_feat, self.dual_mid_outer_kernel).float()
+        residual_mid = inner - outer
+        residual_high = residual_f - inner
+        content_high = content_feat.float() - self._lowpass(content_feat, self.dual_mid_inner_kernel).float()
+        token_seed = residual_mid * (1.0 + g_mid) + residual_high * (1.0 + g_high)
+        carrier = self.token_texton_carrier_mapper(
+            torch.cat(
+                [
+                    self.content_norm(content_feat).float(),
+                    content_high,
+                    token_seed,
+                ],
+                dim=1,
+            ).to(dtype=content_feat.dtype)
+        )
+        carrier_f = carrier.float()
+        carrier_inner = self._lowpass(carrier, self.dual_mid_inner_kernel).float()
+        carrier_outer = self._lowpass(carrier, self.dual_mid_outer_kernel).float()
+        carrier_mid = carrier_inner - carrier_outer
+        carrier_high = carrier_f - carrier_inner
+        scale = self.token_texton_carrier_tanh_scale
+        mid_add = torch.tanh(carrier_mid / scale) * scale * detail_gate.float() * mid_alloc.float()
+        high_add = torch.tanh(carrier_high / scale) * scale * detail_gate.float() * high_alloc.float()
+        add = (mid_add * self.texton_mid_strength + high_add * self.texton_high_strength) * self.token_texton_carrier_strength
+        return add.to(device=content_feat.device, dtype=content_feat.dtype)
+
+    def _style_token_prototype_carrier_delta(
+        self,
+        content_feat: torch.Tensor,
+        style_feat: torch.Tensor,
+        style_tokens: object | None,
+        detail_gate: torch.Tensor,
+        mid_alloc: torch.Tensor,
+        high_alloc: torch.Tensor,
+    ) -> torch.Tensor:
+        if (
+            self.token_prototype_carrier_mapper is None
+            or self.token_prototype_carrier_strength <= 0.0
+            or style_tokens is None
+        ):
+            return content_feat.new_zeros(content_feat.shape)
+        grammar = getattr(style_tokens, "grammar", None)
+        if not torch.is_tensor(grammar) or grammar.numel() == 0:
+            return content_feat.new_zeros(content_feat.shape)
+        b = content_feat.shape[0]
+        grammar = self._match_token_field(grammar, b, content_feat.device, "grammar")
+        g_mid = torch.tanh(grammar[:, 5:6]).view(b, 1, 1, 1) if grammar.shape[1] > 5 else grammar.new_zeros(b, 1, 1, 1)
+        g_high = torch.tanh(grammar[:, 6:7]).view(b, 1, 1, 1) if grammar.shape[1] > 6 else grammar.new_zeros(b, 1, 1, 1)
+
+        style_inner = self._lowpass(style_feat, self.dual_mid_inner_kernel).float()
+        style_outer = self._lowpass(style_feat, self.dual_mid_outer_kernel).float()
+        style_mid = style_inner - style_outer
+        style_high = style_feat.float() - style_inner
+        content_high = content_feat.float() - self._lowpass(content_feat, self.dual_mid_inner_kernel).float()
+        proto_seed = style_mid * (1.0 + g_mid) + style_high * (1.0 + g_high)
+        carrier = self.token_prototype_carrier_mapper(
+            torch.cat(
+                [
+                    self.content_norm(content_feat).float(),
+                    proto_seed,
+                    content_high,
+                ],
+                dim=1,
+            ).to(dtype=content_feat.dtype)
+        )
+        carrier_f = carrier.float()
+        carrier_inner = self._lowpass(carrier, self.dual_mid_inner_kernel).float()
+        carrier_outer = self._lowpass(carrier, self.dual_mid_outer_kernel).float()
+        carrier_mid = carrier_inner - carrier_outer
+        carrier_high = carrier_f - carrier_inner
+        scale = self.token_prototype_carrier_tanh_scale
+        mid_add = torch.tanh(carrier_mid / scale) * scale * detail_gate.float() * mid_alloc.float()
+        high_add = torch.tanh(carrier_high / scale) * scale * detail_gate.float() * high_alloc.float()
+        add = (mid_add * self.texton_mid_strength + high_add * self.texton_high_strength) * self.token_prototype_carrier_strength
+        return add.to(device=content_feat.device, dtype=content_feat.dtype)
 
     def _style_token_flatten_delta(
         self,
@@ -863,6 +1133,92 @@ class StyleBlender(nn.Module):
         smooth_region = (1.0 - support_gate.float()).clamp_min(0.0)
         delta = -high * where_gate.float() * smooth_region * token_strength * self.token_flatten_strength
         return delta.to(device=content_feat.device, dtype=content_feat.dtype)
+
+    def _style_token_depthwise_filter_delta(
+        self,
+        residual_feat: torch.Tensor,
+        style_tokens: object | None,
+        detail_gate: torch.Tensor,
+        mid_alloc: torch.Tensor,
+        high_alloc: torch.Tensor,
+    ) -> torch.Tensor:
+        if (
+            not self.token_depthwise_filter_enable
+            or self.token_depthwise_filter_strength <= 0.0
+            or style_tokens is None
+        ):
+            return residual_feat.new_zeros(residual_feat.shape)
+        grammar = getattr(style_tokens, "grammar", None)
+        if not torch.is_tensor(grammar) or grammar.numel() == 0:
+            return residual_feat.new_zeros(residual_feat.shape)
+        b, c, h_dim, w_dim = residual_feat.shape
+        grammar = self._match_token_field(grammar, b, residual_feat.device, "grammar")
+        basis = self._token_depthwise_filter_basis.to(device=residual_feat.device, dtype=torch.float32)
+        basis_count = int(basis.shape[0])
+        offset = int(self.token_depthwise_filter_basis_offset)
+        coeff = grammar.new_zeros(b, basis_count)
+        if grammar.shape[1] > offset:
+            take = min(basis_count, grammar.shape[1] - offset)
+            coeff[:, :take] = grammar[:, offset : offset + take]
+        coeff = torch.tanh(coeff.float())
+        style_basis_gate = self.token_depthwise_filter_style_basis_gate_logits
+        style_id = getattr(style_tokens, "style_id", None)
+        if (
+            style_basis_gate is not None
+            and self.token_depthwise_filter_style_basis_gate_scale > 0.0
+            and torch.is_tensor(style_id)
+        ):
+            style_id = style_id.to(device=residual_feat.device, dtype=torch.long).view(-1)
+            if style_id.shape[0] == 1 and b > 1:
+                style_id = style_id.expand(b)
+            elif style_id.shape[0] != b:
+                style_id = style_id[:1].expand(b)
+            style_id = style_id.clamp_min(0).clamp_max(self.num_styles - 1)
+            basis_gate = style_basis_gate.index_select(0, style_id).float()
+            coeff = coeff * (1.0 + torch.tanh(basis_gate) * self.token_depthwise_filter_style_basis_gate_scale)
+        basis_for_sample = basis.unsqueeze(0).expand(b, -1, -1, -1, -1)
+        basis_delta = self.token_depthwise_filter_style_basis_delta
+        if (
+            basis_delta is not None
+            and self.token_depthwise_filter_style_basis_delta_scale > 0.0
+            and torch.is_tensor(style_id)
+        ):
+            style_id_delta = style_id.to(device=residual_feat.device, dtype=torch.long).view(-1)
+            if style_id_delta.shape[0] == 1 and b > 1:
+                style_id_delta = style_id_delta.expand(b)
+            elif style_id_delta.shape[0] != b:
+                style_id_delta = style_id_delta[:1].expand(b)
+            style_id_delta = style_id_delta.clamp_min(0).clamp_max(self.num_styles - 1)
+            delta = basis_delta.index_select(0, style_id_delta).float()
+            delta = delta - delta.mean(dim=(-2, -1), keepdim=True)
+            delta = delta / delta.flatten(2).norm(dim=-1, keepdim=True).view(b, basis_count, 1, 1).clamp_min(1.0)
+            delta = delta.unsqueeze(2)
+            basis_for_sample = basis_for_sample + torch.tanh(delta) * self.token_depthwise_filter_style_basis_delta_scale
+            basis_for_sample = basis_for_sample - basis_for_sample.mean(dim=(-2, -1), keepdim=True)
+        kernels = (coeff.view(b, basis_count, 1, 1, 1) * basis_for_sample).sum(dim=1, keepdim=True)
+
+        residual_f = residual_feat.float()
+        inner = self._lowpass(residual_feat, self.dual_mid_inner_kernel).float()
+        outer = self._lowpass(residual_feat, self.dual_mid_outer_kernel).float()
+        residual_mid = inner - outer
+        residual_high = residual_f - inner
+        gate_logits = self.token_depthwise_filter_gate_logits
+        if gate_logits is not None and self.token_depthwise_filter_learnable_gate_scale > 0.0:
+            gate = 1.0 + torch.tanh(gate_logits.float()).view(1, 2, 1, 1) * self.token_depthwise_filter_learnable_gate_scale
+            residual_mid = residual_mid * gate[:, 0:1]
+            residual_high = residual_high * gate[:, 1:2]
+        source = residual_mid * mid_alloc.float() + residual_high * high_alloc.float()
+        x = source.view(1, b * c, h_dim, w_dim)
+        weight = kernels.view(b, 1, 1, 3, 3).expand(b, c, 1, 3, 3).reshape(b * c, 1, 3, 3)
+        filtered = F.conv2d(x, weight, padding=1, groups=b * c).view(b, c, h_dim, w_dim)
+        scale = self.token_depthwise_filter_tanh_scale
+        delta = (
+            torch.tanh(filtered / scale)
+            * scale
+            * detail_gate.float()
+            * self.token_depthwise_filter_strength
+        )
+        return delta.to(device=residual_feat.device, dtype=residual_feat.dtype)
 
     def _transport_confidence_gate(
         self,
@@ -1027,14 +1383,58 @@ class StyleBlender(nn.Module):
                 low_alloc = band_alloc[:, 0:1]
                 mid_alloc = band_alloc[:, 1:2]
                 high_alloc = band_alloc[:, 2:3]
+                grammar_mid_alloc, grammar_high_alloc = self._style_token_grammar_texture_alloc(
+                    style_tokens,
+                    content_feat.shape[0],
+                    content_feat.device,
+                    content_feat.dtype,
+                )
+                mid_alloc = mid_alloc * grammar_mid_alloc
+                high_alloc = high_alloc * grammar_high_alloc
             else:
                 band_alloc = content_feat.new_ones(content_feat.shape[0], 3, 1, 1)
                 low_alloc = mid_alloc = high_alloc = content_feat.new_ones(content_feat.shape[0], 1, 1, 1)
+                grammar_mid_alloc = grammar_high_alloc = content_feat.new_ones(content_feat.shape[0], 1, 1, 1)
             low_add = torch.tanh(low / scale) * scale * low_gate * self.transport_low_strength * low_alloc
             mid_add = torch.tanh(mid / scale) * scale * detail_gate * self.transport_mid_strength * mid_alloc
             high_add = torch.tanh(high / scale) * scale * detail_gate * self.transport_high_strength * high_alloc
+            texton_carrier_add = (
+                self._style_token_texton_carrier_delta(
+                    content_feat,
+                    residual,
+                    style_tokens,
+                    detail_gate,
+                    mid_alloc,
+                    high_alloc,
+                )
+                if self.token_adain_gate_enable
+                else content_feat.new_zeros(content_feat.shape)
+            )
+            prototype_carrier_add = (
+                self._style_token_prototype_carrier_delta(
+                    content_feat,
+                    style_feat,
+                    style_tokens,
+                    detail_gate,
+                    mid_alloc,
+                    high_alloc,
+                )
+                if self.token_adain_gate_enable
+                else content_feat.new_zeros(content_feat.shape)
+            )
             flatten_add = (
                 self._style_token_flatten_delta(content_feat, style_tokens, transport_gate, support_gate)
+                if self.token_adain_gate_enable
+                else content_feat.new_zeros(content_feat.shape)
+            )
+            depthwise_filter_add = (
+                self._style_token_depthwise_filter_delta(
+                    residual,
+                    style_tokens,
+                    detail_gate,
+                    mid_alloc,
+                    high_alloc,
+                )
                 if self.token_adain_gate_enable
                 else content_feat.new_zeros(content_feat.shape)
             )
@@ -1042,12 +1442,26 @@ class StyleBlender(nn.Module):
             self.last_debug["body_transport_adain_support_gate"] = support_gate.detach()
             self.last_debug["body_transport_adain_phase_gate"] = phase_gate.detach()
             self.last_debug["body_transport_adain_band_alloc"] = band_alloc.detach()
+            self.last_debug["body_transport_adain_grammar_mid_alloc"] = grammar_mid_alloc.detach()
+            self.last_debug["body_transport_adain_grammar_high_alloc"] = grammar_high_alloc.detach()
             self.last_debug["body_transport_adain_low_gate"] = low_gate.detach()
             self.last_debug["body_transport_adain_low_delta"] = low_add.detach()
             self.last_debug["body_transport_adain_mid_delta"] = mid_add.detach()
             self.last_debug["body_transport_adain_high_delta"] = high_add.detach()
+            self.last_debug["body_transport_adain_token_texton_delta"] = texton_carrier_add.detach()
+            self.last_debug["body_transport_adain_token_prototype_delta"] = prototype_carrier_add.detach()
             self.last_debug["body_transport_adain_flatten_delta"] = flatten_add.detach()
-            return content_feat + low_add + mid_add + high_add + flatten_add
+            self.last_debug["body_transport_adain_depthwise_filter_delta"] = depthwise_filter_add.detach()
+            return (
+                content_feat
+                + low_add
+                + mid_add
+                + high_add
+                + texton_carrier_add
+                + prototype_carrier_add
+                + flatten_add
+                + depthwise_filter_add
+            )
         if self.mode == "transport_amp":
             content_mean, content_std = self._local_mean_std(content_feat, self.adain_moment_kernel)
             style_mean, style_std = self._local_mean_std(style_feat, self.adain_moment_kernel)
@@ -1316,3 +1730,4 @@ class StyleRoutingSkip(nn.Module):
 @dataclass
 class StyleMaps:
     map_16: torch.Tensor | None = None
+    style_id: torch.Tensor | None = None

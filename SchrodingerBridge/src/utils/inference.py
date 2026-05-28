@@ -143,6 +143,56 @@ class LGTInference:
                         dtype=self.model.style_spatial_id_16.dtype,
                     )
                 )
+            style_memory = adapter.get("style_memory_bank_16")
+            if style_memory is not None and hasattr(self.model, "style_memory_bank_16"):
+                self.model.style_memory_bank_16 = style_memory.to(
+                    device=self.model.style_spatial_id_16.device,
+                    dtype=self.model.style_spatial_id_16.dtype,
+                ).contiguous()
+            style_memory_logits = adapter.get("style_memory_bank_logits")
+            if style_memory_logits is not None and hasattr(self.model, "style_memory_bank_logits"):
+                self.model.style_memory_bank_logits = style_memory_logits.to(
+                    device=self.model.style_spatial_id_16.device,
+                    dtype=self.model.style_spatial_id_16.dtype,
+                ).contiguous()
+            style_memory_type_ids = adapter.get("style_memory_bank_type_ids")
+            if style_memory_type_ids is not None and hasattr(self.model, "style_memory_bank_type_ids"):
+                self.model.style_memory_bank_type_ids = style_memory_type_ids.to(
+                    device=self.model.style_spatial_id_16.device,
+                    dtype=torch.long,
+                ).contiguous()
+            style_memory_type_logits = adapter.get("style_memory_bank_type_logits")
+            if style_memory_type_logits is not None and hasattr(self.model, "style_memory_bank_type_logits"):
+                self.model.style_memory_bank_type_logits = style_memory_type_logits.to(
+                    device=self.model.style_spatial_id_16.device,
+                    dtype=self.model.style_spatial_id_16.dtype,
+                ).contiguous()
+            for key in [
+                "style_memory_bank_blend",
+                "style_memory_bank_route_strength",
+                "style_memory_bank_route_temperature",
+                "style_memory_bank_type_gate_gamma",
+                "style_memory_bank_type_gate_temperature",
+                "style_memory_bank_residual_strength",
+                "style_memory_bank_residual_tanh_scale",
+                "style_memory_bank_residual_highpass_kernel",
+                "style_memory_bank_residual_center_base",
+                "style_memory_bank_residual_center_content",
+                "style_memory_bank_residual_gate_gamma",
+                "style_memory_bank_residual_gate_floor",
+                "style_memory_bank_residual_gate_kernel",
+            ]:
+                value = adapter.get(key)
+                if value is not None and hasattr(self.model, key):
+                    setattr(
+                        self.model,
+                        key,
+                        torch.as_tensor(
+                            value,
+                            device=self.model.style_spatial_id_16.device,
+                            dtype=self.model.style_spatial_id_16.dtype,
+                        ).reshape(()),
+                    )
             tokenizer = getattr(self.model, "style_tokenizer", None)
             if tokenizer is not None:
                 grammar = adapter.get("style_tokenizer.grammar_vocab.weight")
@@ -168,7 +218,15 @@ class LGTInference:
         return x1.clone()
 
     @torch.no_grad()
-    def generation(self, x0, target_style_id, num_steps=None):
+    def generation(
+        self,
+        x0,
+        target_style_id,
+        num_steps=None,
+        *,
+        target_style_latent=None,
+        override_palette=None,
+    ):
         if num_steps is None:
             num_steps = self.num_steps
         b = x0.shape[0]
@@ -180,6 +238,8 @@ class LGTInference:
                 style_id=target_style_id,
                 step_size=self.step_size,
                 style_strength=self.style_strength,
+                target_style_latent=target_style_latent,
+                override_palette=override_palette,
             )
             if abs(self.residual_scale - 1.0) > 1e-6:
                 return x0 + (endpoint - x0) * self.residual_scale
@@ -190,6 +250,8 @@ class LGTInference:
             num_steps=max(1, int(num_steps)),
             step_size=self.step_size,
             style_strength=self.style_strength,
+            target_style_latent=target_style_latent,
+            override_palette=override_palette,
         )
 
     @torch.no_grad()
@@ -199,9 +261,17 @@ class LGTInference:
         target_style_id,
         num_steps=None,
         return_intermediate=False,
+        target_style_latent=None,
+        override_palette=None,
     ):
         x0 = self.inversion(x_source)
-        x_target = self.generation(x0, target_style_id, num_steps)
+        x_target = self.generation(
+            x0,
+            target_style_id,
+            num_steps,
+            target_style_latent=target_style_latent,
+            override_palette=override_palette,
+        )
         if return_intermediate:
             return x_target, x0
         return x_target

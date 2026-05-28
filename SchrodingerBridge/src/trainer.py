@@ -119,6 +119,8 @@ class SBTrainer:
         self.global_step = 0
         self.start_epoch = 1
         self._maybe_resume(str(train_cfg.get("resume_checkpoint", "")))
+        self._maybe_load_style_adapter(str(train_cfg.get("style_adapter_path", "")).strip())
+        self._configure_trainable_patterns()
         self._configure_distillation()
 
     def _tensor_stats(self, value: torch.Tensor | None) -> Dict[str, float]:
@@ -278,9 +280,28 @@ class SBTrainer:
             logger.info("No checkpoint found, start from scratch.")
             return
         state = torch.load(ckpt_path, map_location=self.device, weights_only=False)
-        self.model.load_state_dict(strip_compile_prefix(state["model_state_dict"]), strict=True)
-        if "optimizer_state_dict" in state:
+        model_state = strip_compile_prefix(state["model_state_dict"])
+        allow_missing = self._as_pattern_list(self.train_cfg.get("resume_allow_missing_name_patterns", []))
+        if allow_missing:
+            incompatible = self.model.load_state_dict(model_state, strict=False)
+            bad_missing = [
+                key
+                for key in incompatible.missing_keys
+                if not any(pattern in key for pattern in allow_missing)
+            ]
+            if bad_missing or incompatible.unexpected_keys:
+                raise RuntimeError(
+                    "Checkpoint key mismatch outside resume allowlist: "
+                    f"missing={bad_missing} unexpected={list(incompatible.unexpected_keys)}"
+                )
+            if incompatible.missing_keys:
+                logger.info("Allowed missing checkpoint keys: %s", ", ".join(incompatible.missing_keys[:80]))
+        else:
+            self.model.load_state_dict(model_state, strict=True)
+        if "optimizer_state_dict" in state and not bool(self.train_cfg.get("resume_skip_optimizer", False)):
             self.optimizer.load_state_dict(state["optimizer_state_dict"])
+        elif bool(self.train_cfg.get("resume_skip_optimizer", False)):
+            logger.info("Skipped optimizer resume by config; using fresh optimizer for selected trainable surface.")
         if self.potential_optimizer is not None and state.get("potential_optimizer_state_dict") is not None:
             self.potential_optimizer.load_state_dict(state["potential_optimizer_state_dict"])
         if self.loss_fn.kantorovich_potential is not None and state.get("kantorovich_potential_state_dict") is not None:
@@ -290,6 +311,205 @@ class SBTrainer:
         self.global_step = int(state.get("global_step", 0))
         self.start_epoch = int(state.get("epoch", 0)) + 1
         logger.info("Resumed from %s at epoch=%d global_step=%d", ckpt_path, self.start_epoch, self.global_step)
+
+    def _resolve_runtime_path(self, path: str) -> Path:
+        out = Path(path)
+        if not out.is_absolute():
+            out = (Path.cwd() / out).resolve()
+        return out
+
+    def _maybe_load_style_adapter(self, style_adapter_path: str) -> None:
+        if not style_adapter_path:
+            return
+        adapter_path = self._resolve_runtime_path(style_adapter_path)
+        if not adapter_path.exists():
+            raise FileNotFoundError(f"Training style adapter not found: {adapter_path}")
+        adapter = torch.load(adapter_path, map_location=self.device, weights_only=False)
+        if not isinstance(adapter, dict):
+            raise ValueError(f"Unsupported training style adapter format: {adapter_path}")
+        with torch.no_grad():
+            style_emb = adapter.get("style_emb.weight")
+            if style_emb is None:
+                style_emb = adapter.get("style_emb.mu")
+            if style_emb is not None and hasattr(self.model, "style_emb"):
+                self.model.style_emb.weight.copy_(
+                    style_emb.to(device=self.model.style_emb.weight.device, dtype=self.model.style_emb.weight.dtype)
+                )
+            style_spatial = adapter.get("style_spatial_id_16")
+            if style_spatial is not None and hasattr(self.model, "style_spatial_id_16"):
+                self.model.style_spatial_id_16.copy_(
+                    style_spatial.to(
+                        device=self.model.style_spatial_id_16.device,
+                        dtype=self.model.style_spatial_id_16.dtype,
+                    )
+                )
+            style_memory = adapter.get("style_memory_bank_16")
+            if style_memory is not None and hasattr(self.model, "style_memory_bank_16"):
+                self.model.style_memory_bank_16 = style_memory.to(
+                    device=self.model.style_spatial_id_16.device,
+                    dtype=self.model.style_spatial_id_16.dtype,
+                ).contiguous()
+            style_memory_logits = adapter.get("style_memory_bank_logits")
+            if style_memory_logits is not None and hasattr(self.model, "style_memory_bank_logits"):
+                self.model.style_memory_bank_logits = style_memory_logits.to(
+                    device=self.model.style_spatial_id_16.device,
+                    dtype=self.model.style_spatial_id_16.dtype,
+                ).contiguous()
+            style_memory_type_ids = adapter.get("style_memory_bank_type_ids")
+            if style_memory_type_ids is not None and hasattr(self.model, "style_memory_bank_type_ids"):
+                self.model.style_memory_bank_type_ids = style_memory_type_ids.to(
+                    device=self.model.style_spatial_id_16.device,
+                    dtype=torch.long,
+                ).contiguous()
+            style_memory_type_logits = adapter.get("style_memory_bank_type_logits")
+            if style_memory_type_logits is not None and hasattr(self.model, "style_memory_bank_type_logits"):
+                self.model.style_memory_bank_type_logits = style_memory_type_logits.to(
+                    device=self.model.style_spatial_id_16.device,
+                    dtype=self.model.style_spatial_id_16.dtype,
+                ).contiguous()
+            for key in [
+                "style_memory_bank_blend",
+                "style_memory_bank_route_strength",
+                "style_memory_bank_route_temperature",
+                "style_memory_bank_type_gate_gamma",
+                "style_memory_bank_type_gate_temperature",
+                "style_memory_bank_residual_strength",
+                "style_memory_bank_residual_tanh_scale",
+                "style_memory_bank_residual_highpass_kernel",
+                "style_memory_bank_residual_center_base",
+                "style_memory_bank_residual_center_content",
+                "style_memory_bank_residual_gate_gamma",
+                "style_memory_bank_residual_gate_floor",
+                "style_memory_bank_residual_gate_kernel",
+            ]:
+                value = adapter.get(key)
+                if value is not None and hasattr(self.model, key):
+                    setattr(
+                        self.model,
+                        key,
+                        torch.as_tensor(
+                            value,
+                            device=self.model.style_spatial_id_16.device,
+                            dtype=self.model.style_spatial_id_16.dtype,
+                        ).reshape(()),
+                    )
+            tokenizer = getattr(self.model, "style_tokenizer", None)
+            if tokenizer is not None:
+                grammar = adapter.get("style_tokenizer.grammar_vocab.weight")
+                if grammar is not None:
+                    tokenizer.grammar_vocab.weight.copy_(
+                        grammar.to(device=tokenizer.grammar_vocab.weight.device, dtype=tokenizer.grammar_vocab.weight.dtype)
+                    )
+                band = adapter.get("style_tokenizer.band_vocab.weight")
+                if band is not None:
+                    tokenizer.band_vocab.weight.copy_(
+                        band.to(device=tokenizer.band_vocab.weight.device, dtype=tokenizer.band_vocab.weight.dtype)
+                    )
+                identity = adapter.get("style_tokenizer.identity_vocab")
+                if identity is not None and hasattr(tokenizer, "identity_vocab") and torch.is_tensor(tokenizer.identity_vocab):
+                    tokenizer.identity_vocab.copy_(
+                        identity.to(device=tokenizer.identity_vocab.device, dtype=tokenizer.identity_vocab.dtype)
+                    )
+        logger.info("Loaded training style adapter: %s", adapter_path)
+
+    def _as_pattern_list(self, value: object) -> list[str]:
+        if value is None or value == "":
+            return []
+        if isinstance(value, str):
+            return [item.strip() for item in value.split(",") if item.strip()]
+        if isinstance(value, (list, tuple)):
+            return [str(item).strip() for item in value if str(item).strip()]
+        raise TypeError(f"Unsupported trainable/freeze pattern payload: {type(value)!r}")
+
+    def _as_lr_multiplier_list(self, value: object) -> list[tuple[str, float]]:
+        if value is None or value == "":
+            return []
+        items = value
+        if isinstance(value, str):
+            items = [item.strip().split(":", 1) for item in value.split(",") if item.strip()]
+        out: list[tuple[str, float]] = []
+        if isinstance(items, (list, tuple)):
+            for item in items:
+                if isinstance(item, str):
+                    if ":" not in item:
+                        raise ValueError(f"LR multiplier entry must be pattern:multiplier, got {item!r}")
+                    pattern, multiplier = item.split(":", 1)
+                elif isinstance(item, (list, tuple)) and len(item) == 2:
+                    pattern, multiplier = item
+                else:
+                    raise TypeError(f"Unsupported LR multiplier entry: {item!r}")
+                pattern = str(pattern).strip()
+                if not pattern:
+                    raise ValueError("LR multiplier pattern cannot be empty")
+                out.append((pattern, float(multiplier)))
+            return out
+        raise TypeError(f"Unsupported trainable_lr_multipliers payload: {type(value)!r}")
+
+    def _build_trainable_param_groups(self, named_params: list[tuple[str, torch.nn.Parameter]]) -> list[dict[str, object]]:
+        multipliers = self._as_lr_multiplier_list(self.train_cfg.get("trainable_lr_multipliers", []))
+        if not multipliers:
+            return [{"params": [param for _, param in named_params]}]
+        base_lr = float(self.train_cfg.get("learning_rate", 2e-4))
+        groups: dict[float, list[torch.nn.Parameter]] = {}
+        named_group_debug: list[str] = []
+        for name, param in named_params:
+            multiplier = 1.0
+            for pattern, candidate in multipliers:
+                if pattern in name:
+                    multiplier = float(candidate)
+                    break
+            groups.setdefault(multiplier, []).append(param)
+            named_group_debug.append(f"{name}:{multiplier:g}")
+        logger.info("Trainable LR multipliers: %s", ", ".join(f"{p}={m:g}" for p, m in multipliers))
+        logger.info("Matched trainable LR groups: %s", ", ".join(named_group_debug[:120]))
+        return [
+            {"params": params, "lr": base_lr * multiplier}
+            for multiplier, params in groups.items()
+            if params
+        ]
+
+    def _configure_trainable_patterns(self) -> None:
+        trainable_patterns = self._as_pattern_list(self.train_cfg.get("trainable_name_patterns", []))
+        freeze_patterns = self._as_pattern_list(self.train_cfg.get("freeze_name_patterns", []))
+        if not trainable_patterns and not freeze_patterns:
+            return
+        if trainable_patterns:
+            for _, param in self.model.named_parameters():
+                param.requires_grad_(False)
+        matched_trainable: list[str] = []
+        matched_frozen: list[str] = []
+        for name, param in self.model.named_parameters():
+            if trainable_patterns and any(pattern in name for pattern in trainable_patterns):
+                param.requires_grad_(True)
+                matched_trainable.append(name)
+            if freeze_patterns and any(pattern in name for pattern in freeze_patterns):
+                param.requires_grad_(False)
+                matched_frozen.append(name)
+        trainable_params = [p for p in self.model.parameters() if p.requires_grad]
+        if not trainable_params:
+            raise RuntimeError(
+                "Trainable pattern configuration selected no parameters. "
+                f"trainable={trainable_patterns} freeze={freeze_patterns}"
+            )
+        trainable_named_params = [(name, param) for name, param in self.model.named_parameters() if param.requires_grad]
+        self.optimizer = self._build_optimizer(self._build_trainable_param_groups(trainable_named_params))
+        if self.scheduler is not None:
+            self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                self.optimizer,
+                T_max=max(1, int(self.train_cfg.get("num_epochs", 60))),
+                eta_min=float(self.train_cfg.get("min_learning_rate", 5e-5)),
+            )
+        logger.info(
+            "Trainable pattern config | trainable_patterns=%s freeze_patterns=%s trainable_param_tensors=%d trainable_params=%d",
+            trainable_patterns,
+            freeze_patterns,
+            len(trainable_params),
+            sum(int(p.numel()) for p in trainable_params),
+        )
+        if matched_trainable:
+            logger.info("Matched trainable names: %s", ", ".join(matched_trainable[:80]))
+        if matched_frozen:
+            logger.info("Matched frozen names: %s", ", ".join(matched_frozen[:80]))
 
     def _reset_trainable_style_params(self, mode: str) -> None:
         with torch.no_grad():

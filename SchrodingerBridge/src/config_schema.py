@@ -74,6 +74,29 @@ class ModelConfig:
     style_token_flatten_strength: float = 0.0
     style_token_flatten_kernel: int = 5
     style_token_adain_gate_enable: bool = False
+    style_token_reader_enable: bool = False
+    style_token_reader_hidden: int = 32
+    style_token_reader_scale: float = 0.20
+    style_token_grammar_texture_enable: bool = False
+    style_token_grammar_texture_scale: float = 0.35
+    style_token_texton_carrier_enable: bool = False
+    style_token_texton_carrier_strength: float = 0.12
+    style_token_texton_carrier_hidden_mult: float = 0.75
+    style_token_texton_carrier_tanh_scale: float = 0.45
+    style_token_prototype_carrier_enable: bool = False
+    style_token_prototype_carrier_strength: float = 0.16
+    style_token_prototype_carrier_hidden_mult: float = 0.75
+    style_token_prototype_carrier_tanh_scale: float = 0.45
+    style_token_depthwise_filter_enable: bool = False
+    style_token_depthwise_filter_strength: float = 0.0
+    style_token_depthwise_filter_tanh_scale: float = 0.35
+    style_token_depthwise_filter_basis_offset: int = 8
+    style_token_depthwise_filter_learnable_gate: bool = False
+    style_token_depthwise_filter_learnable_gate_scale: float = 0.5
+    style_token_depthwise_filter_style_basis_gate: bool = False
+    style_token_depthwise_filter_style_basis_gate_scale: float = 0.75
+    style_token_depthwise_filter_style_basis_delta: bool = False
+    style_token_depthwise_filter_style_basis_delta_scale: float = 0.30
     time_dim: int = 256
     base_dim: int = 64
     lift_channels: int | None = None
@@ -476,6 +499,9 @@ class TrainingConfig:
     use_gradient_checkpointing: bool = False
     fused_adamw: bool = True
     resume_checkpoint: str = ""
+    resume_allow_missing_name_patterns: list[str] = field(default_factory=list)
+    resume_skip_optimizer: bool = False
+    trainable_lr_multipliers: list[list[Any]] = field(default_factory=list)
     full_eval_batch_size: int = 6
     full_eval_num_steps: int | None = None
     full_eval_step_size: float | None = None

@@ -79,6 +79,18 @@ class AdainGateRecipe:
     band_gain_scale: float
     flatten_strength: float
     flatten_kernel: int
+    grammar_texture_enable: bool = False
+    grammar_texture_scale: float = 0.0
+    texton_carrier_enable: bool = False
+    texton_carrier_strength: float = 0.0
+    texton_carrier_hidden_mult: float = 0.75
+    texton_carrier_tanh_scale: float = 0.45
+    prototype_carrier_enable: bool = False
+    prototype_carrier_strength: float = 0.0
+    prototype_carrier_hidden_mult: float = 0.75
+    prototype_carrier_tanh_scale: float = 0.45
+    texton_mid_strength: float = 0.72
+    texton_high_strength: float = 0.08
     save_every: int = 0
 
 
@@ -118,6 +130,150 @@ RECIPES = [
         flatten_strength=0.070,
         flatten_kernel=7,
         save_every=75,
+    ),
+    AdainGateRecipe(
+        name="ag02_m02_g56_texture_anchor",
+        iters_per_style=160,
+        batch_size=14,
+        ode_steps=12,
+        lr=1.1e-3,
+        swd_weight=0.76,
+        hp_swd_weight=1.10,
+        anchor_weight=0.16,
+        grad_weight=0.10,
+        delta_tv_weight=0.040,
+        token_l2_weight=0.012,
+        highpass_kernel=5,
+        band_gain_scale=0.22,
+        flatten_strength=0.0,
+        flatten_kernel=7,
+        grammar_texture_enable=True,
+        grammar_texture_scale=0.35,
+        save_every=80,
+    ),
+    AdainGateRecipe(
+        name="ag03_m02_g56_texture_push",
+        iters_per_style=180,
+        batch_size=14,
+        ode_steps=12,
+        lr=1.0e-3,
+        swd_weight=0.84,
+        hp_swd_weight=1.32,
+        anchor_weight=0.10,
+        grad_weight=0.08,
+        delta_tv_weight=0.035,
+        token_l2_weight=0.010,
+        highpass_kernel=5,
+        band_gain_scale=0.24,
+        flatten_strength=0.0,
+        flatten_kernel=7,
+        grammar_texture_enable=True,
+        grammar_texture_scale=0.45,
+        save_every=90,
+    ),
+    AdainGateRecipe(
+        name="tc00_m02_texton_carrier_anchor",
+        iters_per_style=180,
+        batch_size=12,
+        ode_steps=12,
+        lr=7.5e-4,
+        swd_weight=0.78,
+        hp_swd_weight=1.20,
+        anchor_weight=0.14,
+        grad_weight=0.10,
+        delta_tv_weight=0.045,
+        token_l2_weight=0.012,
+        highpass_kernel=5,
+        band_gain_scale=0.22,
+        flatten_strength=0.0,
+        flatten_kernel=7,
+        grammar_texture_enable=True,
+        grammar_texture_scale=0.35,
+        texton_carrier_enable=True,
+        texton_carrier_strength=0.16,
+        texton_carrier_hidden_mult=0.75,
+        texton_carrier_tanh_scale=0.42,
+        texton_mid_strength=0.72,
+        texton_high_strength=0.11,
+        save_every=90,
+    ),
+    AdainGateRecipe(
+        name="tc01_m02_texton_carrier_push",
+        iters_per_style=200,
+        batch_size=12,
+        ode_steps=12,
+        lr=6.5e-4,
+        swd_weight=0.84,
+        hp_swd_weight=1.45,
+        anchor_weight=0.10,
+        grad_weight=0.08,
+        delta_tv_weight=0.040,
+        token_l2_weight=0.010,
+        highpass_kernel=5,
+        band_gain_scale=0.24,
+        flatten_strength=0.0,
+        flatten_kernel=7,
+        grammar_texture_enable=True,
+        grammar_texture_scale=0.42,
+        texton_carrier_enable=True,
+        texton_carrier_strength=0.22,
+        texton_carrier_hidden_mult=0.85,
+        texton_carrier_tanh_scale=0.42,
+        texton_mid_strength=0.70,
+        texton_high_strength=0.14,
+        save_every=100,
+    ),
+    AdainGateRecipe(
+        name="pc00_m02_prototype_carrier_anchor",
+        iters_per_style=180,
+        batch_size=12,
+        ode_steps=12,
+        lr=7.0e-4,
+        swd_weight=0.78,
+        hp_swd_weight=1.18,
+        anchor_weight=0.13,
+        grad_weight=0.10,
+        delta_tv_weight=0.045,
+        token_l2_weight=0.012,
+        highpass_kernel=5,
+        band_gain_scale=0.22,
+        flatten_strength=0.0,
+        flatten_kernel=7,
+        grammar_texture_enable=True,
+        grammar_texture_scale=0.35,
+        prototype_carrier_enable=True,
+        prototype_carrier_strength=0.18,
+        prototype_carrier_hidden_mult=0.75,
+        prototype_carrier_tanh_scale=0.42,
+        texton_mid_strength=0.72,
+        texton_high_strength=0.11,
+        save_every=90,
+    ),
+    AdainGateRecipe(
+        name="pc01_m02_prototype_carrier_push",
+        iters_per_style=200,
+        batch_size=12,
+        ode_steps=12,
+        lr=6.0e-4,
+        swd_weight=0.84,
+        hp_swd_weight=1.42,
+        anchor_weight=0.09,
+        grad_weight=0.08,
+        delta_tv_weight=0.040,
+        token_l2_weight=0.010,
+        highpass_kernel=5,
+        band_gain_scale=0.24,
+        flatten_strength=0.0,
+        flatten_kernel=7,
+        grammar_texture_enable=True,
+        grammar_texture_scale=0.42,
+        prototype_carrier_enable=True,
+        prototype_carrier_strength=0.26,
+        prototype_carrier_hidden_mult=0.85,
+        prototype_carrier_tanh_scale=0.42,
+        texton_mid_strength=0.70,
+        texton_high_strength=0.14,
+        save_every=100,
     ),
 ]
 
@@ -195,6 +351,18 @@ def _load_tokenizer_adain_model(
             "style_token_flatten_strength": float(recipe.flatten_strength),
             "style_token_flatten_kernel": int(recipe.flatten_kernel),
             "style_token_adain_gate_enable": True,
+            "style_token_grammar_texture_enable": bool(recipe.grammar_texture_enable),
+            "style_token_grammar_texture_scale": float(recipe.grammar_texture_scale),
+            "style_token_texton_carrier_enable": bool(recipe.texton_carrier_enable),
+            "style_token_texton_carrier_strength": float(recipe.texton_carrier_strength),
+            "style_token_texton_carrier_hidden_mult": float(recipe.texton_carrier_hidden_mult),
+            "style_token_texton_carrier_tanh_scale": float(recipe.texton_carrier_tanh_scale),
+            "style_token_prototype_carrier_enable": bool(recipe.prototype_carrier_enable),
+            "style_token_prototype_carrier_strength": float(recipe.prototype_carrier_strength),
+            "style_token_prototype_carrier_hidden_mult": float(recipe.prototype_carrier_hidden_mult),
+            "style_token_prototype_carrier_tanh_scale": float(recipe.prototype_carrier_tanh_scale),
+            "style_blender_texton_mid_strength": float(recipe.texton_mid_strength),
+            "style_blender_texton_high_strength": float(recipe.texton_high_strength),
         }
     )
     state = ckpt["model_state_dict"]
@@ -275,6 +443,31 @@ def run_recipe(
     tokenizer.grammar_vocab.weight.requires_grad_(True)
     tokenizer.band_vocab.weight.requires_grad_(True)
     params = [tokenizer.grammar_vocab.weight, tokenizer.band_vocab.weight]
+    carrier_param_names: list[str] = []
+    if recipe.texton_carrier_enable:
+        blender = getattr(model, "blender", None)
+        if blender is None:
+            raise RuntimeError(f"{recipe.name} requires a StyleBlender carrier")
+        for name, param in blender.named_parameters():
+            if name.startswith("token_texton_carrier_mapper."):
+                param.requires_grad_(True)
+                params.append(param)
+                carrier_param_names.append(f"blender.{name}")
+        if not carrier_param_names:
+            raise RuntimeError(f"{recipe.name} enabled texton carrier but found no carrier parameters")
+    if recipe.prototype_carrier_enable:
+        blender = getattr(model, "blender", None)
+        if blender is None:
+            raise RuntimeError(f"{recipe.name} requires a StyleBlender prototype carrier")
+        proto_param_names: list[str] = []
+        for name, param in blender.named_parameters():
+            if name.startswith("token_prototype_carrier_mapper."):
+                param.requires_grad_(True)
+                params.append(param)
+                proto_param_names.append(f"blender.{name}")
+        if not proto_param_names:
+            raise RuntimeError(f"{recipe.name} enabled prototype carrier but found no prototype parameters")
+        carrier_param_names.extend(proto_param_names)
     base_grammar = tokenizer.grammar_vocab.weight.detach().clone()
     base_band = tokenizer.band_vocab.weight.detach().clone()
     optimizer = torch.optim.AdamW(params, lr=recipe.lr, weight_decay=0.0)
@@ -321,6 +514,19 @@ def run_recipe(
             with torch.no_grad():
                 gains = 1.0 + torch.tanh(tokenizer.band_vocab.weight[:, :3]) * float(recipe.band_gain_scale)
                 grammar_norm = tokenizer.grammar_vocab.weight[style_id].detach().float().norm()
+                debug = dict(getattr(model, "carrier_debug", {}) or {})
+                texton_delta = debug.get("body_transport_adain_token_texton_delta")
+                prototype_delta = debug.get("body_transport_adain_token_prototype_delta")
+                texton_rms = (
+                    texton_delta.detach().float().square().mean().sqrt()
+                    if torch.is_tensor(texton_delta)
+                    else pred.new_tensor(0.0)
+                )
+                prototype_rms = (
+                    prototype_delta.detach().float().square().mean().sqrt()
+                    if torch.is_tensor(prototype_delta)
+                    else pred.new_tensor(0.0)
+                )
             row = {
                 "recipe": recipe.name,
                 "style_id": style_id,
@@ -337,13 +543,16 @@ def run_recipe(
                 "gain_low": float(gains[style_id, 0].detach().item()),
                 "gain_mid": float(gains[style_id, 1].detach().item()),
                 "gain_high": float(gains[style_id, 2].detach().item()),
+                "texton_carrier_rms": float(texton_rms.detach().item()),
+                "prototype_carrier_rms": float(prototype_rms.detach().item()),
             }
             losses.append(row)
             if iteration == 1 or iteration % 25 == 0 or iteration == iters_per_style:
                 print(
                     f"[{recipe.name}] style={style_name} iter={iteration}/{iters_per_style} "
                     f"loss={row['loss']:.4f} swd={row['swd']:.4f} hp={row['hp_swd']:.4f} "
-                    f"anchor={row['anchor']:.5f} gains=({row['gain_low']:.3f},{row['gain_mid']:.3f},{row['gain_high']:.3f})"
+                    f"anchor={row['anchor']:.5f} gains=({row['gain_low']:.3f},{row['gain_mid']:.3f},{row['gain_high']:.3f}) "
+                    f"carrier=({row['texton_carrier_rms']:.5f},{row['prototype_carrier_rms']:.5f})"
                 )
             if recipe.save_every > 0 and iteration % recipe.save_every == 0:
                 _save_style_adapter(recipe_dir / f"style_adapter_style{style_id}_iter{iteration:04d}.pt", model)
@@ -379,8 +588,12 @@ def run_recipe(
             "elapsed_seconds": time.time() - start_time,
             "hypothesis": (
                 "Freeze the m02 transport-AdaIN anchor and train only tokenizer grammar/band fields. "
-                "The fields gate low/mid/high AdaIN residual bands and apply grammar flattening in flat regions."
+                "The fields gate low/mid/high AdaIN residual bands. Carrier recipes additionally train a "
+                "zero-start texton carrier. Prototype-carrier recipes source the carrier from the style-routed "
+                "semantic feature instead of content-high/AdaIN residuals, testing whether the missing style "
+                "basis is a source/routing problem rather than an amplitude problem."
             ),
+            "trainable_carrier_params": carrier_param_names,
             "missing_keys_from_source": getattr(model, "_tokenizer_load_missing", []),
             "unexpected_keys_from_source": getattr(model, "_tokenizer_load_unexpected", []),
         },

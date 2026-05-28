@@ -561,6 +561,38 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         if self.style_token_flatten_kernel % 2 == 0:
             self.style_token_flatten_kernel += 1
         self.style_token_adain_gate_enable = bool(cfg.style_token_adain_gate_enable)
+        self.style_token_reader_enable = bool(cfg.style_token_reader_enable)
+        self.style_token_reader_hidden = max(4, int(cfg.style_token_reader_hidden))
+        self.style_token_reader_scale = max(0.0, float(cfg.style_token_reader_scale))
+        self.style_token_grammar_texture_enable = bool(cfg.style_token_grammar_texture_enable)
+        self.style_token_grammar_texture_scale = max(0.0, float(cfg.style_token_grammar_texture_scale))
+        self.style_token_texton_carrier_enable = bool(cfg.style_token_texton_carrier_enable)
+        self.style_token_texton_carrier_strength = max(0.0, float(cfg.style_token_texton_carrier_strength))
+        self.style_token_texton_carrier_hidden_mult = max(0.25, float(cfg.style_token_texton_carrier_hidden_mult))
+        self.style_token_texton_carrier_tanh_scale = max(1e-4, float(cfg.style_token_texton_carrier_tanh_scale))
+        self.style_token_prototype_carrier_enable = bool(cfg.style_token_prototype_carrier_enable)
+        self.style_token_prototype_carrier_strength = max(0.0, float(cfg.style_token_prototype_carrier_strength))
+        self.style_token_prototype_carrier_hidden_mult = max(0.25, float(cfg.style_token_prototype_carrier_hidden_mult))
+        self.style_token_prototype_carrier_tanh_scale = max(1e-4, float(cfg.style_token_prototype_carrier_tanh_scale))
+        self.style_token_depthwise_filter_enable = bool(cfg.style_token_depthwise_filter_enable)
+        self.style_token_depthwise_filter_strength = max(0.0, float(cfg.style_token_depthwise_filter_strength))
+        self.style_token_depthwise_filter_tanh_scale = max(1e-4, float(cfg.style_token_depthwise_filter_tanh_scale))
+        self.style_token_depthwise_filter_basis_offset = max(0, int(cfg.style_token_depthwise_filter_basis_offset))
+        self.style_token_depthwise_filter_learnable_gate = bool(cfg.style_token_depthwise_filter_learnable_gate)
+        self.style_token_depthwise_filter_learnable_gate_scale = max(
+            0.0,
+            float(cfg.style_token_depthwise_filter_learnable_gate_scale),
+        )
+        self.style_token_depthwise_filter_style_basis_gate = bool(cfg.style_token_depthwise_filter_style_basis_gate)
+        self.style_token_depthwise_filter_style_basis_gate_scale = max(
+            0.0,
+            float(cfg.style_token_depthwise_filter_style_basis_gate_scale),
+        )
+        self.style_token_depthwise_filter_style_basis_delta = bool(cfg.style_token_depthwise_filter_style_basis_delta)
+        self.style_token_depthwise_filter_style_basis_delta_scale = max(
+            0.0,
+            float(cfg.style_token_depthwise_filter_style_basis_delta_scale),
+        )
         self.style_strength_step_curve = str(cfg.style_strength_step_curve).lower()
         if self.style_strength_step_curve not in {"linear", "smoothstep", "sqrt"}:
             self.style_strength_step_curve = "linear"
@@ -825,6 +857,28 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         # Learnable style-id spatial priors for inference without reference image.
         self.style_spatial_id_16 = nn.Parameter(torch.zeros(self.num_styles, self.body_channels, 16, 16))
         nn.init.normal_(self.style_spatial_id_16, mean=0.0, std=0.02)
+        # Optional adapter-loaded multi-prototype style source.
+        #
+        # This is intentionally a non-persistent buffer so old checkpoints keep
+        # strict load compatibility. A style adapter may populate it at
+        # inference time; when empty, the legacy single-map path is unchanged.
+        self.register_buffer("style_memory_bank_16", torch.empty(0), persistent=False)
+        self.register_buffer("style_memory_bank_logits", torch.empty(0), persistent=False)
+        self.register_buffer("style_memory_bank_type_ids", torch.empty(0, dtype=torch.long), persistent=False)
+        self.register_buffer("style_memory_bank_type_logits", torch.empty(0), persistent=False)
+        self.register_buffer("style_memory_bank_blend", torch.tensor(1.0, dtype=torch.float32), persistent=False)
+        self.register_buffer("style_memory_bank_route_strength", torch.tensor(0.0, dtype=torch.float32), persistent=False)
+        self.register_buffer("style_memory_bank_route_temperature", torch.tensor(8.0, dtype=torch.float32), persistent=False)
+        self.register_buffer("style_memory_bank_type_gate_gamma", torch.tensor(2.5, dtype=torch.float32), persistent=False)
+        self.register_buffer("style_memory_bank_type_gate_temperature", torch.tensor(1.0, dtype=torch.float32), persistent=False)
+        self.register_buffer("style_memory_bank_residual_strength", torch.tensor(0.0, dtype=torch.float32), persistent=False)
+        self.register_buffer("style_memory_bank_residual_tanh_scale", torch.tensor(0.55, dtype=torch.float32), persistent=False)
+        self.register_buffer("style_memory_bank_residual_highpass_kernel", torch.tensor(1.0, dtype=torch.float32), persistent=False)
+        self.register_buffer("style_memory_bank_residual_center_base", torch.tensor(1.0, dtype=torch.float32), persistent=False)
+        self.register_buffer("style_memory_bank_residual_center_content", torch.tensor(0.0, dtype=torch.float32), persistent=False)
+        self.register_buffer("style_memory_bank_residual_gate_gamma", torch.tensor(0.0, dtype=torch.float32), persistent=False)
+        self.register_buffer("style_memory_bank_residual_gate_floor", torch.tensor(0.20, dtype=torch.float32), persistent=False)
+        self.register_buffer("style_memory_bank_residual_gate_kernel", torch.tensor(5.0, dtype=torch.float32), persistent=False)
 
         # 32x32 lift stage before downsampling.
         self.enc_in = nn.Conv2d(latent_channels, self.lift_channels, kernel_size=3, stride=1, padding=1)
@@ -925,6 +979,33 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
                 token_flatten_strength=self.style_token_flatten_strength,
                 token_flatten_kernel=self.style_token_flatten_kernel,
                 token_adain_gate_enable=self.style_token_adain_gate_enable,
+                token_reader_enable=self.style_token_reader_enable,
+                token_reader_hidden=self.style_token_reader_hidden,
+                token_reader_scale=self.style_token_reader_scale,
+                token_grammar_texture_enable=self.style_token_grammar_texture_enable,
+                token_grammar_texture_scale=self.style_token_grammar_texture_scale,
+                token_texton_carrier_enable=self.style_token_texton_carrier_enable,
+                token_texton_carrier_strength=self.style_token_texton_carrier_strength,
+                token_texton_carrier_hidden_mult=self.style_token_texton_carrier_hidden_mult,
+                token_texton_carrier_tanh_scale=self.style_token_texton_carrier_tanh_scale,
+                token_prototype_carrier_enable=self.style_token_prototype_carrier_enable,
+                token_prototype_carrier_strength=self.style_token_prototype_carrier_strength,
+                token_prototype_carrier_hidden_mult=self.style_token_prototype_carrier_hidden_mult,
+                token_prototype_carrier_tanh_scale=self.style_token_prototype_carrier_tanh_scale,
+                token_depthwise_filter_enable=self.style_token_depthwise_filter_enable,
+                token_depthwise_filter_strength=self.style_token_depthwise_filter_strength,
+                token_depthwise_filter_tanh_scale=self.style_token_depthwise_filter_tanh_scale,
+                token_depthwise_filter_basis_offset=self.style_token_depthwise_filter_basis_offset,
+                token_depthwise_filter_learnable_gate=self.style_token_depthwise_filter_learnable_gate,
+                token_depthwise_filter_learnable_gate_scale=self.style_token_depthwise_filter_learnable_gate_scale,
+                token_depthwise_filter_style_basis_gate=self.style_token_depthwise_filter_style_basis_gate,
+                token_depthwise_filter_style_basis_gate_scale=self.style_token_depthwise_filter_style_basis_gate_scale,
+                token_depthwise_filter_style_basis_delta=self.style_token_depthwise_filter_style_basis_delta,
+                token_depthwise_filter_style_basis_delta_scale=self.style_token_depthwise_filter_style_basis_delta_scale,
+                num_styles=self.num_styles,
+                token_identity_dim=int(cfg.style_token_identity_dim),
+                token_grammar_dim=int(cfg.style_token_grammar_dim),
+                token_band_dim=int(cfg.style_token_band_dim),
             )
             if self.use_style_blender
             else None

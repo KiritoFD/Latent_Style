@@ -9,6 +9,7 @@ import torch.nn.functional as F
 
 @dataclass(frozen=True)
 class StyleTokenFields:
+    style_id: torch.Tensor
     identity: torch.Tensor
     grammar: torch.Tensor
     band_logits: torch.Tensor
@@ -92,6 +93,7 @@ class StyleTokenizer(nn.Module):
         band_gains = 1.0 + torch.tanh(band_logits_3).view(base_code.shape[0], 3, 1, 1) * self.band_gain_scale
         code = base_code * self.code_residual_scale
         fields = StyleTokenFields(
+            style_id=style_id,
             identity=identity,
             grammar=grammar,
             band_logits=band_logits_3,

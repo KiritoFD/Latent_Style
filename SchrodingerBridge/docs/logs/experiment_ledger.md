@@ -450,6 +450,285 @@ Sinkhorn alone (no SWD increase) should reproduce baseline Style (~0.703) with b
 
 ---
 
+## Experiment 2026-05-28: vae_backend_256_mse_controls
+
+**Status**: Completed  
+**Date**: 2026-05-28  
+**Output**: `exp/vae_backend_256_mse_controls/vae_backend_256_results.csv`
+
+### Hypothesis
+If the current EMA carriers are merely mismatched to the EMA latent statistics,
+then cloning the same architectures/losses/schedules onto the original MSE
+backend should give a clean style lift without worsening LPIPS.
+
+### Controlled Delta
+Only the VAE backend and latent root changed:
+
+```text
+vae_model = mse
+latent_root = latent-256
+```
+
+### Best Results
+
+| variant | best epoch | clip_style | content_lpips | EC | readout |
+|---|---:|---:|---:|---:|---|
+| `mse_plain4_w20_anchor` | 6 | `0.703597` | `0.419917` | `0.408145` | small gain |
+| `mse_dynamic_guard_w28` | 6 | `0.710273` | `0.446022` | `0.393476` | small gain |
+| `mse_transport_texton_w34_guard` | 6 | `0.718588` | `0.483008` | `0.371505` | best content-safe MSE row |
+| `mse_bodyblend_w28_guard` | 6 | `0.715295` | `0.485741` | `0.367846` | LPIPS improves, style does not |
+| `mse_guard_w20_lowwarp` | 7 | `0.725233` | `0.553443` | `0.323858` | high style, over LPIPS budget |
+
+### Verdict
+MSE is a useful control and slightly helps the texton carrier, but it does not
+solve the target. No MSE row satisfies `clip_style > 0.72` with
+`content_lpips < 0.50`. The next mainline should remain architecture/tokenizer
+work, using `mse_transport_texton_w34_guard` as a diagnostic near-miss rather
+than promoting MSE as the default backend.
+
+---
+
+## Experiment 004: memory_residual_backbone_probe
+
+**Status**: Completed diagnostic  
+**Date**: 2026-05-28  
+**Path**: `exp/memory_residual_backbone_probe`
+
+### Hypothesis
+If reference-memory works because it supplies a concrete style source, an
+id-only routed prototype bank should help once it bypasses the frozen style-map
+interface and enters the trainable actuator as a separate residual field.
+
+### Config
+```text
+rs00_memory_residual_s22_e2:
+  adapter = mr00_residual_hightex_k4_s22
+  residual = routed_memory - base_map
+  residual_strength = 0.22
+  trainable = body_blocks, blender, skip_fusion, decoder_blocks, dec_post, dec_mod, output_head
+
+rs01_memory_residual_hp_s32_e2:
+  adapter = mr01_residual_hightex_k4_hp_s32
+  residual = highpass(routed_memory - base_map), support gated
+  residual_strength = 0.32
+  trainable = same as rs00
+```
+
+### Results
+```text
+rs00: clip_style=0.707073, content_lpips=0.432237, Hayao=0.606759
+rs01: clip_style=0.707358, content_lpips=0.429501, Hayao=0.606127
+ag02: clip_style=0.710955, content_lpips=0.407269, Hayao=0.605668
+```
+
+### Verdict
+Negative. The residual branch is active and finite, but it lowers global style
+and worsens content relative to ag02. This rejects untyped prototype residual
+injection and residual/highpass strength sweeps.
+
+---
+
+## Experiment 2026-05-28: reference_memory_generation_probe
+
+**Status**: Completed diagnostic  
+**Artifacts**: `exp/reference_memory_generation_probe_full`
+
+### Hypothesis
+
+If the m02/tokenizer plateau is caused by a centroid-like id-only style source,
+then using an internal target-style latent as the runtime style source should
+lift CLIP style before any loss or backbone change.
+
+### Protocol
+
+- checkpoint/style adapter frozen;
+- no training, no loss modification;
+- patched inference plumbing to pass `target_style_latent` into the existing
+  runtime source path;
+- 750 generated images per recipe, evaluated with reuse-generated full-eval.
+
+### Results
+
+| id | clip_style | content_lpips | Hayao clip_style | verdict |
+|---|---:|---:|---:|---|
+| `rm00_random_ref1` | 0.715127 | 0.477313 | 0.628046 | strong source-quality diagnostic |
+| `rm01_lowfreq_match_k8` | 0.715447 | 0.477220 | 0.627415 | selector not decisive |
+
+### Interpretation
+
+The backbone can use real target-style source features. The missing piece is
+not another scalar loss knob; it is a better tokenizer-controlled style source.
+The next model change should internalize this as a local multi-prototype memory
+bank rather than requiring an exemplar/reference image during final inference.
+
+---
+
+## Experiment 2026-05-28: tokenizer prototype carrier pc00/pc01
+
+**Status**: Completed diagnostic  
+**Config**: `exp/tokenizer_prototype_carrier_calibration`
+
+### Hypothesis
+If the tokenizer plateau is caused by residual source mismatch, a zero-start
+carrier sourced from the style-routed `style_feat` should add visible textons
+while preserving the m02 content anchor.
+
+### Results
+| run | clip_style | content_lpips | Hayao clip_style | verdict |
+|---|---:|---:|---:|---|
+| `pc00_m02_prototype_carrier_anchor` | 0.710468 | 0.406890 | 0.605174 | safe but below ag02 |
+| `pc01_m02_prototype_carrier_push` | 0.710299 | 0.407741 | 0.605220 | stronger carrier worsens aggregate metrics |
+
+### Verdict
+Prototype-carrier energy is nonzero, but generic `style_feat` is not a
+style-discriminative source. Do not add more amplitude to this branch.
+
+---
+
+## Experiment 2026-05-28: style memory bank mb00/mb02
+
+**Status**: Completed diagnostic  
+**Config**: `tools/experiments/run_style_memory_bank_probe.py`  
+**Results**: `exp/style_memory_bank_probe/style_memory_bank_results.csv`
+
+### Hypothesis
+If m02 is style-limited by an averaged learned style source, blending
+`style_spatial_id_16` with training-set body-feature prototypes should lift
+CLIP style before any tokenizer/loss change.
+
+### Results
+| run | source | clip_style | content_lpips | Hayao clip_style | verdict |
+|---|---|---:|---:|---:|---|
+| `mb00_body_mean_blend25` | 25% mean body prototype | 0.710612 | 0.407762 | 0.604948 | safe but below m02/ag02 |
+| `mb02_body_exemplar_blend35` | 35% high-texture exemplar | 0.710516 | 0.409222 | 0.606350 | Hayao slightly up, LPIPS worse, global style flat |
+
+### Verdict
+Single-map memory replacement is not enough. Mean prototypes are too smooth;
+single exemplars add texture but hurt content and do not lift global style.
+If memory is pursued, it must be token-selected multi-prototype routing rather
+than one blended `style_spatial_id_16` map.
+
+---
+
+## Experiment 2026-05-28: style_memory_bank_adapter_probe bm00/bm01/bm02
+
+**Status**: Completed diagnostic / rejected as mainline  
+**Config**: `tools/experiments/run_style_memory_bank_adapter_probe.py`  
+**Results**: `exp/style_memory_bank_adapter_probe/style_memory_bank_adapter_results.csv`  
+**Analysis**: `exp/analysis/style_memory_bank_adapter_probe_20260528/analysis.md`
+
+### Hypothesis
+
+If explicit reference latents work because they supply real target-style source
+features, an id-only adapter-side multi-prototype bank should recover part of
+that style lift without a test-time reference.
+
+### Protocol
+
+- checkpoint and `m02_embspatial_highpass_style` adapter frozen;
+- no loss modification and no backbone training;
+- build `style_memory_bank_16` from internal training-set body features;
+- evaluate 750 generated images per recipe with reuse-generated full-eval.
+
+### Results
+
+| run | source | clip_style | content_lpips | Hayao clip_style | verdict |
+|---|---|---:|---:|---:|---|
+| `bm00_hightex_k4_blend65` | 4 high-texture prototypes, blend 0.65 | 0.710854 | 0.407380 | 0.605454 | safe but below ag02 |
+| `bm01_diverse_k4_blend65` | 4 low-frequency diverse prototypes, blend 0.65 | 0.710676 | 0.407408 | 0.605344 | diversity does not help |
+| `bm02_hightex_k4_boost_blend75` | high-texture prototypes, boost 1.12, blend 0.75 | 0.710693 | 0.407397 | 0.605188 | stronger texture does not help |
+
+### Verdict
+
+The static id-only bank is a clean negative result. The prototypes have real
+high-texture energy and the adapter path is active, but global style-level
+mixtures still collapse into the m02 plateau. The reference-memory gain needs
+local/content-conditioned routing, not a larger `style_spatial_id_16` centroid.
+Do not push blend/boost/loss on this design.
+
+---
+
+## Experiment 2026-05-28: local route memory bank br00/br01
+
+**Status**: Completed diagnostic / rejected as mainline  
+**Config**: `tools/experiments/run_style_memory_bank_adapter_probe.py`  
+**Results**: `exp/style_memory_bank_adapter_route_probe`  
+**Analysis**: `exp/analysis/style_memory_bank_adapter_route_probe_20260528/analysis.md`
+
+### Hypothesis
+
+Static style-id mixtures failed because they collapse prototypes into one
+centroid. Local content-conditioned dictionary attention over prototype tokens
+could preserve the sample-local geometry that made reference-memory useful.
+
+### Results
+
+| run | route | clip_style | content_lpips | Hayao clip_style | verdict |
+|---|---|---:|---:|---:|---|
+| `br00_route_hightex_k4_s45` | high-texture k4, route strength 0.45 | 0.710530 | 0.407402 | 0.604825 | below ag02 |
+| `br01_route_hightex_k4_s65` | high-texture k4, route strength 0.65 | 0.710609 | 0.407408 | 0.604584 | below ag02; Hayao worse |
+
+### Verdict
+
+The route is active but too late/too weak: inserting a content-routed map into
+the old frozen style-map interface does not recover the reference-memory lift.
+The next valid route is not temperature/strength sweeping; it is a trainable
+router-aware actuator or a backbone phase with the router present from the
+start.
+
+---
+
+## Experiment 2026-05-28: tc00/tc01 tokenizer texton carrier
+
+**Status**: Completed diagnostic / rejected as mainline  
+**Date**: 2026-05-28  
+**Launcher**: `tools/experiments/run_tokenizer_adain_gate_calibration.py`
+
+### Hypothesis
+The m02 tokenizer plateau is not caused by token values or scalar loss pressure.
+It is caused by a missing high-frequency carrier: g56 made `grammar[5]`
+executable, but the native high residual path stayed almost dead. Add a
+zero-start token-selectable texton residual, train only tokenizer fields plus
+that carrier, and keep m02 as the teacher anchor.
+
+### Config Delta
+```json
+{
+  "model": {
+    "style_token_texton_carrier_enable": true,
+    "style_token_texton_carrier_strength": "0.16 for tc00, 0.22 for tc01",
+    "style_token_texton_carrier_hidden_mult": "0.75 for tc00, 0.85 for tc01",
+    "style_token_texton_carrier_tanh_scale": 0.42,
+    "style_token_grammar_texture_enable": true,
+    "style_token_adain_gate_enable": true
+  },
+  "freeze_policy": "freeze m02 backbone/style_emb/style_spatial; train grammar_vocab, band_vocab, token_texton_carrier_mapper only"
+}
+```
+
+### Decision Gate
+- promote only if the first-class grid is not hazy and style rises above
+  `ag02=0.710955`;
+- strong candidate only if it approaches `0.72` while LPIPS stays below `0.50`;
+- reject immediately if it reproduces the factorized-token haze failure.
+
+### Results
+```text
+tc00_m02_texton_carrier_anchor: 0.7104315019 clip_style / 0.4073038044 LPIPS / Hayao 0.6047670975
+tc01_m02_texton_carrier_push:   0.7106213341 clip_style / 0.4069454408 LPIPS / Hayao 0.6058331524
+```
+
+Both grids were non-hazy and structurally close to m02, but neither beat
+`ag02_m02_g56_texture_anchor = 0.7109550617 / 0.4072693332`.
+
+### Verdict
+Simple zero-start residual carrier is not enough. The failure is not numerical
+instability or haze; it is representational. The carrier is still derived from
+content high bands and the same AdaIN residual, so it cannot inject a genuinely
+new style texton source. Next carrier must be style-routed/prototype-based.
+
+---
+
 ## 2026-05-27 Tokenizer No-Prior Correction
 
 **Status**: Implemented code-level correction; no new GPU run yet.
@@ -780,6 +1059,187 @@ LANCET_TOKENIZER_VOCAB_REFIT
 
 Next action is diagnostic only: compare tokenizer field movement and endpoint
 sensitivity around the m02 anchor before changing backbone or loss.
+
+### 2026-05-28 Tokenizer Spiral Registry
+
+User requirement update: every tokenizer/backbone spiral experiment now needs a
+structured document and CSV row stating configuration, purpose, result metrics,
+what was verified, and what adjustment follows.
+
+New registry files:
+
+```text
+docs/logs/tokenizer_spiral_experiment_registry.md
+docs/logs/tokenizer_spiral_experiment_registry.csv
+```
+
+These files are now the compact decision ledger for the tokenizer spiral. The
+long-form `experiment_ledger.md` keeps narrative context; the registry keeps
+row-level experiment decisions.
+
+### 2026-05-28 Stat-Initialized Tokenizer Probe
+
+One-line hypothesis:
+
+```text
+If the tokenizer is a style coordinate system, measured training-pool frequency
+coordinates should already move the m02 carrier without training the token values.
+```
+
+Script:
+
+```text
+tools/experiments/run_tokenizer_stat_vocab_probe.py
+```
+
+Configuration:
+
+- checkpoint: `exp/vae_backend/ema_transport_moment/ema_transport_adain_w34_guard/epoch_0006.pt`
+- init adapter: `exp/style_embedding_mainline_calibration/ema_transport_adain_w34_e6_fulltrain/m02_embspatial_highpass_style/style_adapter.pt`
+- latent root: `I:\Github\Latent_Style\latent-256-sd15-ema`
+- no optimization; map per-style latent statistics into tokenizer `grammar` and
+  `band_vocab`
+- two scales: `sv00_stat_m02_conservative`, `sv01_stat_m02_balanced`
+
+Results:
+
+| recipe | clip_style | content_lpips | Hayao cross style | verdict |
+|---|---:|---:|---:|---|
+| `sv00_stat_m02_conservative` | 0.710740 | 0.407393 | 0.605003 | safe but neutral |
+| `sv01_stat_m02_balanced` | 0.710551 | 0.407434 | 0.604945 | safe but neutral |
+
+Visual gate: first-grid review is not hazy and remains in the m02 visual
+family.
+
+Verified claim: the problem is not just bad token numeric values. The measured
+token coordinates barely move the endpoint, so the m02 carrier is under-reading
+the tokenizer.
+
+Adjustment: freeze the stat vocabulary and m02 backbone, then train only a
+small zero-initialized `token_reader` attached to the existing transport-AdaIN
+band allocator.
+
+### 2026-05-28 Stat Token Reader Probe
+
+One-line hypothesis:
+
+```text
+Freeze the stat tokenizer and the m02 carrier; train only a zero-initialized
+reader so the carrier learns how to interpret measured style coordinates.
+```
+
+Code changes:
+
+- `model.style_token_reader_enable`, `style_token_reader_hidden`,
+  `style_token_reader_scale`
+- `StyleBlender.token_reader`, default off and zero-initialized
+- `tools/experiments/run_tokenizer_stat_reader_probe.py`
+
+The switch defaults to off. When on, the reader consumes
+`identity + grammar + band_logits` and only modulates the existing low/mid/high
+transport-AdaIN residual gains. It does not replace the output head and does
+not change the main OMF loss.
+
+Current result:
+
+| recipe | clip_style | content_lpips | Hayao cross style | verdict |
+|---|---:|---:|---:|---|
+| `sr00_stat_reader_safe` | 0.710698 | 0.405284 | 0.604194 | safe but style-neutral |
+| `sr01_stat_reader_style` | 0.710523 | 0.402585 | 0.604742 | safe but style-neutral |
+
+`sr00` and `sr01` first-grid outputs are not hazy and remain in the m02 family,
+but neither moves style. Treat the reader probe as a safety-control result, not
+a breakthrough.
+
+Correction after user review: do not turn this into a scalar-loss route. The
+active rollback anchor is still `m02_embspatial_highpass_style`
+(`0.71073 / 0.40735 / 0.84967`). The rejected factorized routes remain hard
+negative controls because their low LPIPS came from haze/de-stylization. The
+next tokenizer work must diagnose representation/readout around m02 before any
+new training objective is considered.
+
+### 2026-05-28 m02 Operator Binding g56 Diagnostic
+
+One-line hypothesis:
+
+```text
+grammar[5]/grammar[6] should become executable style coordinates if they are
+hard-bound to the existing m02 transport-AdaIN mid/high residual gains.
+```
+
+Implementation:
+
+- added `model.style_token_grammar_texture_enable`, default `false`;
+- added `model.style_token_grammar_texture_scale`, default `0.35`;
+- `StyleBlender` now optionally maps `grammar[5]` to mid residual gain and
+  `grammar[6]` to high residual gain inside `transport_adain`;
+- main OMF loss is unchanged;
+- diagnostic script:
+  `tools/experiments/diagnose_m02_tokenizer_operator_binding.py`.
+
+Planned diagnostic id: `m02_operator_binding_g56`.
+
+Decision gate:
+
+- promote only if grammar mid/high perturbations create measurable mid/high
+  endpoint motion without a low-band fog response;
+- reject if band-low remains the only strong route;
+- next stage, if passed, is tokenizer-only training with m02 frozen.
+
+Result:
+
+| readout | endpoint response |
+|---|---:|
+| strongest `band_low` perturbation | `0.00730` RMS |
+| strongest `grammar_mid_texton` perturbation | `0.00543` RMS |
+| `stat_vocab_preview` range | `0.00493-0.00603` RMS |
+| `grammar_high_texture` perturbation | about `0.0002` RMS |
+
+Verdict: partial pass. `grammar[5]` now has a real mid-texton actuator, close
+enough to `band_mid` to justify a tokenizer-only run. `grammar[6]` remains weak,
+so the high-texture path is not solved. Next action is `ag02/ag03`: freeze m02
+and train only grammar/band through the g56 binding. Reject immediately if the
+first grid becomes foggy.
+
+Tokenizer-only g56 results:
+
+| recipe | clip_style | content_lpips | Hayao cross style | verdict |
+|---|---:|---:|---:|---|
+| `ag02_m02_g56_texture_anchor` | 0.710955 | 0.407269 | 0.605668 | safe but marginal |
+| `ag03_m02_g56_texture_push` | 0.710725 | 0.407305 | 0.605254 | pressure does not help |
+
+Conclusion: g56 is stable and not foggy, but the gain is too small. The active
+bottleneck is not tokenizer field values or scalar loss pressure; it is that
+the high-frequency carrier remains weak. A next attempt should add or expose a
+real high-texture carrier, then train tokenizer fields against it with m02
+frozen.
+
+### 2026-05-28 Prototype-Carrier Follow-up
+
+Texton carrier result:
+
+| recipe | clip_style | content_lpips | Hayao cross style | verdict |
+|---|---:|---:|---:|---|
+| `tc00_m02_texton_carrier_anchor` | 0.710431 | 0.407304 | 0.604767 | safe but below m02/ag02 |
+| `tc01_m02_texton_carrier_push` | 0.710621 | 0.406945 | 0.605833 | safe but no global style lift |
+
+Verified claim:
+
+```text
+Adding a trainable carrier around content-high/AdaIN residuals is not enough;
+the missing variable is likely carrier source/routing, not scalar amplitude.
+```
+
+Next experiment:
+
+```text
+pc00/pc01: freeze m02 backbone and style adapter, train grammar+band vocab plus
+zero-start token_prototype_carrier_mapper sourced from style-routed style_feat.
+```
+
+This keeps Seedream out of the training path and does not alter the main loss.
+Promotion gate is strict: beat `ag02_m02_g56_texture_anchor` visually and on
+`clip_style`; reject immediately if grids are hazy/de-stylized.
 
 ---
 

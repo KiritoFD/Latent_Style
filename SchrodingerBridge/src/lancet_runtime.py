@@ -124,8 +124,11 @@ class LatentAdaCUTRuntimeMixin:
         self,
         style_id: torch.Tensor | int,
     ) -> StyleMaps:
+        spatial_device = self.style_spatial_id_16.device
+        normalized_style_id = self._normalize_style_id_input(style_id, device=spatial_device)
         return StyleMaps(
-            map_16=self.encode_style_spatial_id(style_id).get(16),
+            map_16=self.encode_style_spatial_id(normalized_style_id).get(16),
+            style_id=normalized_style_id,
         )
 
     def _prepare_spatial_map(self, style_map: torch.Tensor | None, target: torch.Tensor) -> torch.Tensor | None:
@@ -401,7 +404,37 @@ class LatentAdaCUTRuntimeMixin:
     def encode_style_spatial_id(self, style_id: torch.Tensor | int) -> dict[int, torch.Tensor]:
         spatial_device = self.style_spatial_id_16.device
         style_id = self._normalize_style_id_input(style_id, device=spatial_device)
-        maps = {16: self.style_spatial_id_16.index_select(0, style_id)}
+        base_map = self.style_spatial_id_16.index_select(0, style_id)
+        memory_bank = getattr(self, "style_memory_bank_16", None)
+        memory_logits = getattr(self, "style_memory_bank_logits", None)
+        use_memory = (
+            torch.is_tensor(memory_bank)
+            and memory_bank.numel() > 0
+            and memory_bank.ndim == 5
+            and memory_bank.shape[0] >= self.num_styles
+            and memory_bank.shape[2:] == base_map.shape[1:]
+        )
+        route_strength = getattr(self, "style_memory_bank_route_strength", None)
+        route_active = bool(
+            torch.is_tensor(route_strength)
+            and route_strength.numel() > 0
+            and float(route_strength.detach().cpu().item()) > 0.0
+        )
+        use_memory = use_memory and not route_active
+        if use_memory:
+            bank = memory_bank.to(device=base_map.device, dtype=base_map.dtype).index_select(0, style_id)
+            if torch.is_tensor(memory_logits) and memory_logits.numel() > 0 and memory_logits.ndim == 2:
+                logits = memory_logits.to(device=base_map.device, dtype=base_map.dtype).index_select(0, style_id)
+                logits = logits[:, : bank.shape[1]]
+            else:
+                logits = torch.zeros(bank.shape[:2], device=base_map.device, dtype=base_map.dtype)
+            weights = torch.softmax(logits, dim=1).view(bank.shape[0], bank.shape[1], 1, 1, 1)
+            memory_map = (bank * weights).sum(dim=1)
+            blend_value = getattr(self, "style_memory_bank_blend", None)
+            blend = float(blend_value.detach().cpu().item()) if torch.is_tensor(blend_value) else 1.0
+            blend = max(0.0, min(1.0, blend))
+            base_map = base_map.lerp(memory_map, blend)
+        maps = {16: base_map}
         if self.training and self.style_id_spatial_jitter_px > 0:
             max_jit = self.style_id_spatial_jitter_px
             shifts_y = torch.randint(
@@ -440,6 +473,178 @@ class LatentAdaCUTRuntimeMixin:
             maps[16] = _jitter_batch(maps[16])
         maps[16] = self._normalize_style_map(maps[16])
         return maps
+
+    def _build_content_routed_style_memory(
+        self,
+        content_feat_16: torch.Tensor,
+        *,
+        style_id: torch.Tensor | None,
+    ) -> torch.Tensor | None:
+        memory_bank = getattr(self, "style_memory_bank_16", None)
+        if (
+            style_id is None
+            or not torch.is_tensor(memory_bank)
+            or memory_bank.numel() == 0
+            or memory_bank.ndim != 5
+            or memory_bank.shape[0] < self.num_styles
+            or memory_bank.shape[2] != content_feat_16.shape[1]
+        ):
+            return None
+        style_id = self._normalize_style_id_input(style_id, device=content_feat_16.device)
+        bank = memory_bank.to(device=content_feat_16.device, dtype=content_feat_16.dtype).index_select(0, style_id)
+        if bank.shape[-2:] != content_feat_16.shape[-2:]:
+            b, k, c, _, _ = bank.shape
+            bank = F.interpolate(
+                bank.view(b * k, c, bank.shape[-2], bank.shape[-1]),
+                size=content_feat_16.shape[-2:],
+                mode="bilinear",
+                align_corners=False,
+            ).view(b, k, c, content_feat_16.shape[-2], content_feat_16.shape[-1])
+        b, k, c, h, w = bank.shape
+        type_ids_all = getattr(self, "style_memory_bank_type_ids", None)
+        if torch.is_tensor(type_ids_all) and type_ids_all.numel() > 0:
+            type_ids_all = type_ids_all.to(device=content_feat_16.device, dtype=torch.long)
+            if type_ids_all.ndim == 1:
+                type_ids = type_ids_all[:k].view(1, k).expand(b, -1)
+            elif type_ids_all.ndim == 2 and type_ids_all.shape[0] >= self.num_styles:
+                type_ids = type_ids_all.index_select(0, style_id)[:, :k]
+            else:
+                type_ids = None
+            if type_ids is not None and type_ids.shape == (b, k):
+                typed = self._build_typed_content_routed_style_memory(
+                    content_feat_16,
+                    bank=bank,
+                    style_id=style_id,
+                    type_ids=type_ids,
+                )
+                if typed is not None:
+                    return typed
+        query = F.normalize(content_feat_16.float().flatten(2), dim=1, eps=1e-6)
+        tokens = bank.float().flatten(3).permute(0, 2, 1, 3).reshape(b, c, k * h * w)
+        keys = F.normalize(tokens, dim=1, eps=1e-6)
+        temperature_value = getattr(self, "style_memory_bank_route_temperature", None)
+        temperature = (
+            float(temperature_value.detach().cpu().item())
+            if torch.is_tensor(temperature_value) and temperature_value.numel() > 0
+            else 8.0
+        )
+        sim = torch.einsum("bcq,bcn->bqn", query, keys) * max(0.1, min(32.0, temperature))
+        memory_logits = getattr(self, "style_memory_bank_logits", None)
+        if torch.is_tensor(memory_logits) and memory_logits.numel() > 0 and memory_logits.ndim == 2:
+            logits = memory_logits.to(device=content_feat_16.device, dtype=torch.float32).index_select(0, style_id)
+            logits = logits[:, :k].unsqueeze(-1).expand(b, k, h * w).reshape(b, k * h * w)
+            sim = sim + logits.unsqueeze(1)
+        weights = torch.softmax(sim, dim=-1)
+        routed = torch.einsum("bqn,bcn->bcq", weights, tokens).view(b, c, h, w)
+        return self._normalize_style_map(routed).to(dtype=content_feat_16.dtype)
+
+    def _style_memory_type_gate_logits(
+        self,
+        content_feat_16: torch.Tensor,
+    ) -> torch.Tensor:
+        x = content_feat_16.float()
+        low = F.avg_pool2d(x, kernel_size=5, stride=1, padding=2)
+        high_energy = (x - low).abs().mean(dim=1, keepdim=True)
+        gx = low[..., :, 1:] - low[..., :, :-1]
+        gy = low[..., 1:, :] - low[..., :-1, :]
+        gx = F.pad(gx, (0, 1, 0, 0))
+        gy = F.pad(gy, (0, 0, 0, 1))
+        edge_energy = torch.sqrt(gx.square() + gy.square() + 1e-12).mean(dim=1, keepdim=True)
+        high_norm = high_energy / high_energy.flatten(1).mean(dim=1).view(-1, 1, 1, 1).clamp_min(1e-6)
+        edge_norm = edge_energy / edge_energy.flatten(1).mean(dim=1).view(-1, 1, 1, 1).clamp_min(1e-6)
+        gamma = max(0.0, self._memory_bank_scalar("style_memory_bank_type_gate_gamma", 2.5))
+        flat = -gamma * (high_norm + edge_norm)
+        edge = gamma * (edge_norm - 0.35 * high_norm)
+        texton = gamma * high_norm
+        return torch.cat([flat, edge, texton], dim=1)
+
+    def _build_typed_content_routed_style_memory(
+        self,
+        content_feat_16: torch.Tensor,
+        *,
+        bank: torch.Tensor,
+        style_id: torch.Tensor,
+        type_ids: torch.Tensor,
+    ) -> torch.Tensor | None:
+        b, k, c, h, w = bank.shape
+        query = F.normalize(content_feat_16.float().flatten(2), dim=1, eps=1e-6)
+        tokens = bank.float().flatten(3).permute(0, 2, 1, 3).reshape(b, c, k * h * w)
+        keys = F.normalize(tokens, dim=1, eps=1e-6)
+        temperature_value = getattr(self, "style_memory_bank_route_temperature", None)
+        temperature = (
+            float(temperature_value.detach().cpu().item())
+            if torch.is_tensor(temperature_value) and temperature_value.numel() > 0
+            else 8.0
+        )
+        sim = torch.einsum("bcq,bcn->bqn", query, keys) * max(0.1, min(32.0, temperature))
+        memory_logits = getattr(self, "style_memory_bank_logits", None)
+        if torch.is_tensor(memory_logits) and memory_logits.numel() > 0 and memory_logits.ndim == 2:
+            logits = memory_logits.to(device=content_feat_16.device, dtype=torch.float32).index_select(0, style_id)
+            logits = logits[:, :k].unsqueeze(-1).expand(b, k, h * w).reshape(b, k * h * w)
+            sim = sim + logits.unsqueeze(1)
+
+        type_gate_logits = self._style_memory_type_gate_logits(content_feat_16)
+        type_logits = getattr(self, "style_memory_bank_type_logits", None)
+        if torch.is_tensor(type_logits) and type_logits.numel() > 0 and type_logits.ndim == 2:
+            prior = type_logits.to(device=content_feat_16.device, dtype=torch.float32).index_select(0, style_id)
+            type_gate_logits = type_gate_logits + prior[:, :3].view(b, 3, 1, 1)
+        gate_temp = max(1e-4, self._memory_bank_scalar("style_memory_bank_type_gate_temperature", 1.0))
+        type_gates = torch.softmax(type_gate_logits / gate_temp, dim=1)
+        self._last_style_memory_type_gates = type_gates.detach()
+
+        token_type = type_ids.clamp_min(0).clamp_max(2).unsqueeze(-1).expand(b, k, h * w).reshape(b, k * h * w)
+        routed = torch.zeros((b, c, h * w), device=content_feat_16.device, dtype=torch.float32)
+        any_type = False
+        for type_idx in range(3):
+            mask = token_type == type_idx
+            if not bool(mask.any().item()):
+                continue
+            any_type = True
+            sim_type = sim.masked_fill(~mask.unsqueeze(1), -1.0e4)
+            weights = torch.softmax(sim_type, dim=-1)
+            routed_type = torch.einsum("bqn,bcn->bcq", weights, tokens).view(b, c, h, w)
+            routed = routed + (routed_type * type_gates[:, type_idx : type_idx + 1]).flatten(2)
+        if not any_type:
+            return None
+        return self._normalize_style_map(routed.view(b, c, h, w)).to(dtype=content_feat_16.dtype)
+
+    def _memory_bank_scalar(self, name: str, default: float) -> float:
+        value = getattr(self, name, None)
+        if torch.is_tensor(value) and value.numel() > 0:
+            return float(value.detach().cpu().reshape(-1)[0].item())
+        return float(default)
+
+    def _build_style_memory_residual_source(
+        self,
+        routed_memory: torch.Tensor | None,
+        base_map: torch.Tensor | None,
+        content_feat_16: torch.Tensor,
+    ) -> torch.Tensor | None:
+        strength = max(0.0, self._memory_bank_scalar("style_memory_bank_residual_strength", 0.0))
+        if routed_memory is None or strength <= 0.0:
+            return None
+        source = routed_memory.float()
+        if self._memory_bank_scalar("style_memory_bank_residual_center_content", 0.0) > 0.5:
+            source = source - self._normalize_style_map(content_feat_16).float()
+        elif self._memory_bank_scalar("style_memory_bank_residual_center_base", 1.0) > 0.5 and base_map is not None:
+            source = source - base_map.float()
+        kernel = int(round(self._memory_bank_scalar("style_memory_bank_residual_highpass_kernel", 1.0)))
+        if kernel > 1:
+            if kernel % 2 == 0:
+                kernel += 1
+            source = source - F.avg_pool2d(source, kernel_size=kernel, stride=1, padding=kernel // 2)
+        gate_gamma = max(0.0, self._memory_bank_scalar("style_memory_bank_residual_gate_gamma", 0.0))
+        if gate_gamma > 0.0:
+            gate = self._style_band_support_gate(
+                content_feat_16,
+                gamma=gate_gamma,
+                floor=max(0.0, min(1.0, self._memory_bank_scalar("style_memory_bank_residual_gate_floor", 0.20))),
+                kernel=int(round(self._memory_bank_scalar("style_memory_bank_residual_gate_kernel", 5.0))),
+            )
+            source = source * gate.float()
+        scale = max(1e-4, self._memory_bank_scalar("style_memory_bank_residual_tanh_scale", 0.55))
+        add = torch.tanh(source / scale) * scale * strength
+        return add.to(device=content_feat_16.device, dtype=content_feat_16.dtype)
 
     @staticmethod
     def _match_style_map(style_map: torch.Tensor | None, target: torch.Tensor) -> torch.Tensor | None:
@@ -481,6 +686,7 @@ class LatentAdaCUTRuntimeMixin:
             h_c_grad = block(h_c_grad, style_code, gate=0.0)
         content_feat_16 = self.down(h_c_grad)
         style_map_proj: torch.Tensor | None = None
+        memory_residual_source: torch.Tensor | None = None
 
         if override_palette is not None:
             style_map_proj = override_palette
@@ -541,10 +747,32 @@ class LatentAdaCUTRuntimeMixin:
             style_spatial_16 = self._prepare_spatial_map(style_maps.map_16, content_feat_16)
             if style_spatial_16 is None:
                 raise ValueError("style spatial prior is required for id-only inference.")
+            routed_memory = self._build_content_routed_style_memory(
+                content_feat_16,
+                style_id=style_maps.style_id,
+            )
+            if routed_memory is not None:
+                memory_residual_source = self._build_style_memory_residual_source(
+                    routed_memory,
+                    style_spatial_16,
+                    content_feat_16,
+                )
+                route_strength_value = getattr(self, "style_memory_bank_route_strength", None)
+                route_strength = (
+                    float(route_strength_value.detach().cpu().item())
+                    if torch.is_tensor(route_strength_value) and route_strength_value.numel() > 0
+                    else 0.0
+                )
+                route_strength = max(0.0, min(1.0, route_strength))
+                style_spatial_16 = style_spatial_16.lerp(routed_memory, route_strength)
             style_map_proj = style_spatial_16
 
         semantic_attn: torch.Tensor | None = None
         self.carrier_debug = {}
+        type_gates = getattr(self, "_last_style_memory_type_gates", None)
+        if type_gates is not None:
+            self.carrier_debug["style_memory_type_gates"] = type_gates.detach()
+            self._last_style_memory_type_gates = None
         if self.use_style_blender:
             h_painted = content_feat_16
             for block in self.body_blocks:
@@ -569,6 +797,9 @@ class LatentAdaCUTRuntimeMixin:
                 h = block(h, style_map=style_map_proj, gate=1.0)
                 semantic_attn = getattr(block, "last_attn", semantic_attn)
             h_body = h
+        if memory_residual_source is not None:
+            h_body = h_body + memory_residual_source
+            self.carrier_debug["style_memory_residual_delta"] = memory_residual_source.detach()
         h_up = self.dec_up(h_body)
         h_up = self._apply_upsample_blur(h_up)
         h_fused = self._fuse_skip_features(h_up, skip_32, style_code=style_code, gate=1.0)

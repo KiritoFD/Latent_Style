@@ -5269,6 +5269,32 @@ VARIANTS.update(
 )
 
 
+MSE_CONTROL_BASES = {
+    "mse_plain4_w20_anchor": "ema_plain4_w20_anchor",
+    "mse_dynamic_guard_w28": "ema_dynamic_guard_w28",
+    "mse_transport_texton_w34_guard": "ema_transport_texton_w34_guard",
+    "mse_bodyblend_w28_guard": "ema_bodyblend_w28_guard",
+    "mse_guard_w20_lowwarp": "ema_guard_w20_lowwarp",
+}
+
+
+VARIANTS.update(
+    {
+        mse_name: _clone_variant(
+            ema_name,
+            vae_model="mse",
+            latent_root="latent-256",
+            notes=(
+                f"MSE backend control cloned from {ema_name}: same architecture, loss, "
+                "training schedule, and eval settings, with only the SD 1.5 MSE VAE "
+                "latent/decode backend changed for a clean EMA-vs-MSE comparison."
+            ),
+        )
+        for mse_name, ema_name in MSE_CONTROL_BASES.items()
+    }
+)
+
+
 def _query_gpu_used_mb() -> int | None:
     try:
         out = subprocess.check_output(
@@ -5325,6 +5351,16 @@ def _infer_latent_shape(latent_root: Path) -> tuple[int, int, int]:
             raise ValueError(f"Expected latent [C,H,W], got {shape} from {path}")
         return int(shape[0]), int(shape[1]), int(shape[2])
     raise FileNotFoundError(f"No latent .pt files found under {latent_root}")
+
+
+def _latent_root_has_pt(latent_root: Path) -> bool:
+    if not latent_root.exists():
+        return False
+    try:
+        next(latent_root.rglob("*.pt"))
+    except StopIteration:
+        return False
+    return True
 
 
 def _write_config(
@@ -5524,10 +5560,11 @@ def main() -> int:
         latent_root = ROOT.parent / str(variant["latent_root"])
         vae_model = str(variant["vae_model"])
         manifest = latent_root / "manifest.json"
+        has_existing_latents = manifest.exists() or _latent_root_has_pt(latent_root)
         status = "ok"
         scale = 0.18215
 
-        if not (args.skip_existing_latents and manifest.exists()):
+        if not (args.skip_existing_latents and has_existing_latents):
             cmd = [
                 sys.executable,
                 str(ROOT / "tools" / "experiments" / "preprocess_latents_vae_variant.py"),

@@ -145,6 +145,8 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         step_size: float = 1.0,
         style_strength: float | None = None,
         style_code_override: torch.Tensor | None = None,
+        target_style_latent: torch.Tensor | None = None,
+        override_palette: torch.Tensor | None = None,
     ) -> torch.Tensor:
         if style_id is None:
             raise ValueError("style_id is required for endpoint map.")
@@ -152,7 +154,14 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         if horizon <= 0.0:
             return x
         t_fixed = torch.full((x.shape[0],), 1.0, device=x.device, dtype=x.dtype)
-        velocity = self.forward(x, t=t_fixed, style_id=style_id, style_code_override=style_code_override)
+        velocity = self.forward(
+            x,
+            t=t_fixed,
+            style_id=style_id,
+            target_style_latent=target_style_latent,
+            style_code_override=style_code_override,
+            override_palette=override_palette,
+        )
         return x + velocity * horizon
 
     def forward(
@@ -167,7 +176,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         style_code_override: torch.Tensor | None = None,
         override_palette: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        del source, step_size, style_strength, target_style_latent, override_palette
+        del source, step_size, style_strength
         if style_id is None and style_code_override is None:
             raise ValueError("style_id or style_code_override is required.")
         t_tensor = self._resolve_t_input(x, t)
@@ -184,9 +193,9 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             x,
             style_code=style_code,
             style_maps=style_maps,
-            override_palette=None,
+            override_palette=override_palette,
             strength=1.0,
-            target_style_latent=None,
+            target_style_latent=target_style_latent,
         )
 
     @torch.no_grad()
@@ -201,7 +210,6 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         style_code_override: torch.Tensor | None = None,
         override_palette: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        del override_palette
         if style_id is None:
             raise ValueError("style_id is required for bridge integration.")
         steps = max(1, int(num_steps))
@@ -215,7 +223,14 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self._integration_anchor_x = x
         for idx in range(steps):
             t = horizon * ((idx + 0.5) / float(steps))
-            velocity = self.forward(h, t=t, style_id=style_id, style_code_override=style_code_override)
+            velocity = self.forward(
+                h,
+                t=t,
+                style_id=style_id,
+                target_style_latent=target_style_latent,
+                style_code_override=style_code_override,
+                override_palette=override_palette,
+            )
             h = h + velocity * dt
         self._integration_anchor_x = None
         return h
