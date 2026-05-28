@@ -36,114 +36,6 @@ def _gumbel_hard_attention(logits: torch.Tensor, *, tau: float = 1.0) -> torch.T
     return attn.view_as(logits).to(dtype=logits.dtype)
 
 
-class CrossAttnAdaGN(nn.Module):
-    """
-    Cross-attention style modulation with learnable style tokens.
-    """
-
-    def __init__(
-        self,
-        dim: int,
-        style_dim: int,
-        num_groups: int = 4,
-        num_tokens: int = 64,
-        num_heads: int = 4,
-        sharpen_scale: float = 2.0,
-        attn_temperature: float = 0.5,
-    ) -> None:
-        super().__init__()
-        groups = max(1, min(int(num_groups), int(dim)))
-        while dim % groups != 0 and groups > 1:
-            groups -= 1
-        self.norm = nn.GroupNorm(groups, dim, affine=False)
-        self.dim = int(dim)
-        self.num_tokens = max(1, int(num_tokens))
-        self.num_heads = max(1, min(int(num_heads), int(dim)))
-        while self.dim % self.num_heads != 0 and self.num_heads > 1:
-            self.num_heads -= 1
-        self.head_dim = self.dim // self.num_heads
-        self.sharpen_scale = max(0.1, float(sharpen_scale))
-        self.attn_temperature = max(1e-3, float(attn_temperature))
-
-        self.global_proj = nn.Linear(style_dim, dim * 2)
-        nn.init.zeros_(self.global_proj.weight)
-        nn.init.zeros_(self.global_proj.bias)
-        with torch.no_grad():
-            self.global_proj.bias[:dim] = 1.0
-
-        self.style_tokens_basis = nn.Parameter(torch.randn(self.num_tokens, dim) * 0.02)
-        self.style_proj = nn.Linear(style_dim, dim)
-        self.pos_proj = nn.Sequential(
-            nn.Linear(2, dim),
-            nn.SiLU(),
-            nn.Linear(dim, dim),
-        )
-        self.q_proj = nn.Linear(dim, dim)
-        self.k_proj = nn.Linear(dim, dim)
-        self.v_proj = nn.Linear(dim, dim)
-        self.out_proj = nn.Linear(dim, dim)
-        self.ffn = nn.Sequential(
-            nn.Linear(dim, dim * 2),
-            nn.SiLU(),
-            nn.Linear(dim * 2, dim),
-        )
-        self.token_norm = nn.LayerNorm(dim)
-        self.query_norm = nn.LayerNorm(dim)
-        self.ffn_norm = nn.LayerNorm(dim)
-        self.gamma = nn.Parameter(torch.zeros(1, dim, 1, 1))
-        self._coord_cache: dict[tuple[int, int, str, str], torch.Tensor] = {}
-
-    def _get_coord_grid(self, h_dim: int, w_dim: int, *, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
-        key = (int(h_dim), int(w_dim), str(device), str(dtype))
-        cached = self._coord_cache.get(key)
-        if cached is not None:
-            return cached
-        grid_y, grid_x = torch.meshgrid(
-            torch.linspace(-1.0, 1.0, h_dim, device=device, dtype=dtype),
-            torch.linspace(-1.0, 1.0, w_dim, device=device, dtype=dtype),
-            indexing="ij",
-        )
-        coords = torch.stack([grid_x, grid_y], dim=0).unsqueeze(0).contiguous()
-        self._coord_cache[key] = coords
-        return coords
-
-    def forward(self, x: torch.Tensor, style_code: torch.Tensor, gate: float | torch.Tensor = 1.0) -> torch.Tensor:
-        b, c, h_dim, w_dim = x.shape
-        normalized = self.norm(x)
-        scale, shift = self.global_proj(style_code).unsqueeze(-1).unsqueeze(-1).chunk(2, dim=1)
-
-        style_bias = self.style_proj(style_code).unsqueeze(1)
-        style_tokens = self.style_tokens_basis.unsqueeze(0) + style_bias
-        style_tokens = self.token_norm(style_tokens)
-
-        coords = self._get_coord_grid(h_dim, w_dim, device=x.device, dtype=x.dtype).expand(b, -1, -1, -1)
-        pos = coords.permute(0, 2, 3, 1).reshape(b, h_dim * w_dim, 2)
-        pos_emb = self.pos_proj(pos)
-        q_in = self.query_norm(normalized.permute(0, 2, 3, 1).reshape(b, h_dim * w_dim, c) + pos_emb)
-
-        q = self.q_proj(q_in).view(b, h_dim * w_dim, self.num_heads, self.head_dim).transpose(1, 2)
-        k = self.k_proj(style_tokens).view(b, self.num_tokens, self.num_heads, self.head_dim).transpose(1, 2)
-        v = self.v_proj(style_tokens).view(b, self.num_tokens, self.num_heads, self.head_dim).transpose(1, 2)
-
-        base_scale = 1.0 / math.sqrt(float(self.head_dim))
-        attn_out = F.scaled_dot_product_attention(
-            q,
-            k,
-            v,
-            scale=(base_scale * self.sharpen_scale) / self.attn_temperature,
-        )
-        style_content = attn_out.transpose(1, 2).reshape(b, h_dim * w_dim, c)
-        style_content = self.out_proj(style_content)
-        style_content = style_content + self.ffn(self.ffn_norm(style_content))
-        style_content = style_content.transpose(1, 2).reshape(b, c, h_dim, w_dim)
-
-        style_residual = shift + (style_content * self.gamma)
-        # Clamp style-only residual energy to prevent shallow-layer MA spikes from
-        # detonating the latent before the residual anchor can stabilize it.
-        adagn = normalized * scale + torch.tanh(style_residual) * 3.0
-        final_gate = gate if isinstance(gate, float) else gate.to(device=x.device, dtype=x.dtype)
-        return normalized + final_gate * (adagn - normalized)
-
 
 def _normalize_feature_block_type(block_type: str) -> str:
     kind = str(block_type).strip().lower()
@@ -161,198 +53,6 @@ def _normalize_feature_block_type(block_type: str) -> str:
     return aliases.get(kind, kind if kind in {"conv", "global_attn", "window_attn"} else "conv")
 
 
-def _build_style_modulator(
-    *,
-    dim: int,
-    style_dim: int,
-    num_groups: int,
-    attn_num_tokens: int,
-    attn_num_heads: int,
-    attn_sharpen_scale: float,
-    attn_temperature: float,
-) -> nn.Module:
-    return CrossAttnAdaGN(
-        dim=dim,
-        style_dim=style_dim,
-        num_groups=num_groups,
-        num_tokens=attn_num_tokens,
-        num_heads=attn_num_heads,
-        sharpen_scale=attn_sharpen_scale,
-        attn_temperature=attn_temperature,
-    )
-
-
-class ResBlock(nn.Module):
-    def __init__(
-        self,
-        dim: int,
-        style_dim: int,
-        num_groups: int = 8,
-        style_attn_num_tokens: int = 16,
-        style_attn_num_heads: int = 4,
-        style_attn_sharpen_scale: float = 2.0,
-        style_attn_temperature: float = 0.5,
-    ) -> None:
-        super().__init__()
-        self.norm1 = _build_style_modulator(
-            dim=dim,
-            style_dim=style_dim,
-            num_groups=num_groups,
-            attn_num_tokens=style_attn_num_tokens,
-            attn_num_heads=style_attn_num_heads,
-            attn_sharpen_scale=style_attn_sharpen_scale,
-            attn_temperature=style_attn_temperature,
-        )
-        self.conv1 = nn.Conv2d(dim, dim, kernel_size=3, stride=1, padding=1)
-        self.norm2 = _build_style_modulator(
-            dim=dim,
-            style_dim=style_dim,
-            num_groups=num_groups,
-            attn_num_tokens=style_attn_num_tokens,
-            attn_num_heads=style_attn_num_heads,
-            attn_sharpen_scale=style_attn_sharpen_scale,
-            attn_temperature=style_attn_temperature,
-        )
-        self.conv2 = nn.Conv2d(dim, dim, kernel_size=3, stride=1, padding=1)
-        self.act = nn.SiLU()
-
-    def forward(self, x: torch.Tensor, style_code: torch.Tensor, gate: float | torch.Tensor = 1.0) -> torch.Tensor:
-        h = self.act(self.norm1(x, style_code, gate=gate))
-        h = self.conv1(h)
-        h = self.act(self.norm2(h, style_code, gate=gate))
-        h = self.conv2(h)
-        return x + h
-
-
-class SpatialSelfAttention(nn.Module):
-    def __init__(
-        self,
-        dim: int,
-        num_heads: int = 4,
-        mode: str = "global_attn",
-        window_size: int = 8,
-    ) -> None:
-        super().__init__()
-        self.dim = int(dim)
-        self.num_heads = max(1, min(int(num_heads), self.dim))
-        while self.dim % self.num_heads != 0 and self.num_heads > 1:
-            self.num_heads -= 1
-        self.head_dim = self.dim // self.num_heads
-        self.mode = _normalize_feature_block_type(mode)
-        self.window_size = max(1, int(window_size))
-        self.qkv = nn.Conv2d(self.dim, self.dim * 3, kernel_size=1, bias=False)
-        self.proj = nn.Conv2d(self.dim, self.dim, kernel_size=1, bias=False)
-
-    def _reshape_windows(self, x: torch.Tensor) -> tuple[torch.Tensor, tuple[int, int, int, int, int]]:
-        b, c, h_dim, w_dim = x.shape
-        ws = min(self.window_size, h_dim, w_dim)
-        if (h_dim % ws) != 0 or (w_dim % ws) != 0:
-            return x, (b, c, h_dim, w_dim, 0)
-        x = (
-            x.view(b, c, h_dim // ws, ws, w_dim // ws, ws)
-            .permute(0, 2, 4, 3, 5, 1)
-            .reshape(-1, ws * ws, c)
-        )
-        return x, (b, c, h_dim, w_dim, ws)
-
-    def _restore_windows(self, x: torch.Tensor, meta: tuple[int, int, int, int, int]) -> torch.Tensor:
-        b, c, h_dim, w_dim, ws = meta
-        if ws == 0:
-            return x
-        return (
-            x.view(b, h_dim // ws, w_dim // ws, ws, ws, c)
-            .permute(0, 5, 1, 3, 2, 4)
-            .reshape(b, c, h_dim, w_dim)
-        )
-
-    def forward(self, x: torch.Tensor, shift: bool = False) -> torch.Tensor:
-        b, c, h_dim, w_dim = x.shape
-        input_is_channels_last = x.is_contiguous(memory_format=torch.channels_last)
-        shift_size = 0
-        if self.mode == "window_attn" and shift:
-            ws = min(self.window_size, h_dim, w_dim)
-            if ws > 1 and (h_dim % ws) == 0 and (w_dim % ws) == 0:
-                shift_size = ws // 2
-        if shift_size > 0:
-            x = torch.roll(x, shifts=(-shift_size, -shift_size), dims=(2, 3))
-        qkv = self.qkv(x)
-        q, k, v = qkv.chunk(3, dim=1)
-        if self.mode == "window_attn":
-            q_tokens, meta = self._reshape_windows(q)
-            k_tokens, _ = self._reshape_windows(k)
-            v_tokens, _ = self._reshape_windows(v)
-            if meta[-1] == 0:
-                q_tokens = q.permute(0, 2, 3, 1).reshape(b, h_dim * w_dim, c)
-                k_tokens = k.permute(0, 2, 3, 1).reshape(b, h_dim * w_dim, c)
-                v_tokens = v.permute(0, 2, 3, 1).reshape(b, h_dim * w_dim, c)
-                used_windows = False
-            else:
-                used_windows = True
-        else:
-            q_tokens = q.permute(0, 2, 3, 1).reshape(b, h_dim * w_dim, c)
-            k_tokens = k.permute(0, 2, 3, 1).reshape(b, h_dim * w_dim, c)
-            v_tokens = v.permute(0, 2, 3, 1).reshape(b, h_dim * w_dim, c)
-            used_windows = False
-
-        batch_tokens = q_tokens.shape[0]
-        seq_len = q_tokens.shape[1]
-        q_heads = q_tokens.view(batch_tokens, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
-        k_heads = k_tokens.view(batch_tokens, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
-        v_heads = v_tokens.view(batch_tokens, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
-        attn = F.scaled_dot_product_attention(q_heads, k_heads, v_heads)
-        out = attn.transpose(1, 2).reshape(batch_tokens, seq_len, c)
-
-        if used_windows:
-            out = self._restore_windows(out, meta)
-        else:
-            out = out.view(b, h_dim, w_dim, c).permute(0, 3, 1, 2)
-        if shift_size > 0:
-            out = torch.roll(out, shifts=(shift_size, shift_size), dims=(2, 3))
-        if input_is_channels_last:
-            out = out.contiguous(memory_format=torch.channels_last)
-        return self.proj(out)
-
-
-class AttentionBlock(nn.Module):
-    def __init__(
-        self,
-        dim: int,
-        style_dim: int,
-        num_groups: int = 8,
-        style_attn_num_tokens: int = 16,
-        style_attn_num_heads: int = 4,
-        style_attn_sharpen_scale: float = 2.0,
-        feature_attn_num_heads: int = 4,
-        style_attn_temperature: float = 0.5,
-        attn_mode: str = "global_attn",
-        window_size: int = 8,
-    ) -> None:
-        super().__init__()
-        self.norm1 = _build_style_modulator(
-            dim=dim,
-            style_dim=style_dim,
-            num_groups=num_groups,
-            attn_num_tokens=style_attn_num_tokens,
-            attn_num_heads=style_attn_num_heads,
-            attn_sharpen_scale=style_attn_sharpen_scale,
-            attn_temperature=style_attn_temperature,
-        )
-        self.attn = SpatialSelfAttention(
-            dim=dim,
-            num_heads=feature_attn_num_heads,
-            mode=attn_mode,
-            window_size=window_size,
-        )
-
-    def forward(
-        self,
-        x: torch.Tensor,
-        style_code: torch.Tensor,
-        gate: float | torch.Tensor = 1.0,
-        shift: bool = False,
-    ) -> torch.Tensor:
-        x = x + self.attn(self.norm1(x, style_code, gate=gate), shift=shift)
-        return x
 
 
 class SemanticCrossAttn(nn.Module):
@@ -486,7 +186,6 @@ class StyleBlender(nn.Module):
         dual_mid_outer_kernel: int = 11,
         dual_phase_gamma: float = 3.0,
         dual_phase_floor: float = 0.35,
-        style_dim: int | None = None,
         region_bins: int = 5,
         region_gamma: float = 4.0,
         region_floor: float = 0.18,
@@ -513,10 +212,6 @@ class StyleBlender(nn.Module):
         amp_high_strength: float = 0.04,
         texton_hidden_mult: float = 0.75,
         texton_tanh_scale: float = 0.45,
-        texton_style_scale: float = 0.35,
-        texton_use_style_code: bool = True,
-        texton_style_allocate: bool = False,
-        texton_allocate_scale: float = 0.5,
         texton_low_strength: float = 0.18,
         texton_mid_strength: float = 0.72,
         texton_high_strength: float = 0.05,
@@ -633,10 +328,6 @@ class StyleBlender(nn.Module):
         self.amp_mid_strength = max(0.0, float(amp_mid_strength))
         self.amp_high_strength = max(0.0, float(amp_high_strength))
         self.texton_tanh_scale = max(1e-4, float(texton_tanh_scale))
-        self.texton_style_scale = max(0.0, float(texton_style_scale))
-        self.texton_use_style_code = bool(texton_use_style_code)
-        self.texton_style_allocate = bool(texton_style_allocate)
-        self.texton_allocate_scale = max(0.0, float(texton_allocate_scale))
         self.texton_low_strength = max(0.0, float(texton_low_strength))
         self.texton_mid_strength = max(0.0, float(texton_mid_strength))
         self.texton_high_strength = max(0.0, float(texton_high_strength))
@@ -720,49 +411,18 @@ class StyleBlender(nn.Module):
             depthwise_basis,
             persistent=False,
         )
-        self.region_gate_generator: nn.Module | None = None
-        if self.mode == "region_paint" and style_dim is not None and int(style_dim) > 0:
-            hidden_dim = max(8, int(round(float(style_dim) * max(0.25, float(region_hidden_mult)))))
-            self.region_gate_generator = nn.Sequential(
-                nn.Linear(int(style_dim), hidden_dim),
-                nn.SiLU(),
-                nn.Linear(hidden_dim, self.region_bins),
-            )
-            nn.init.zeros_(self.region_gate_generator[-1].weight)
-            nn.init.zeros_(self.region_gate_generator[-1].bias)
-            centers = torch.linspace(-1.25, 1.25, self.region_bins, dtype=torch.float32).view(1, self.region_bins, 1, 1)
-            self.register_buffer("region_centers", centers, persistent=False)
         self.texton_style_generator: nn.Module | None = None
         self.texton_band_allocator: nn.Module | None = None
         self.texton_mapper: nn.Module | None = None
-        if self.mode == "transport_texton" and style_dim is not None and int(style_dim) > 0:
-            style_hidden = max(16, int(round(float(style_dim) * max(0.25, float(texton_hidden_mult)))))
+        if self.mode == "transport_texton":
             texton_hidden = max(dim, int(round(float(dim) * max(0.25, float(texton_hidden_mult)))))
             texton_groups = _resolve_group_count(texton_hidden, num_groups)
-            if self.texton_use_style_code and self.texton_style_scale > 0.0:
-                self.texton_style_generator = nn.Sequential(
-                    nn.Linear(int(style_dim), style_hidden),
-                    nn.SiLU(),
-                    nn.Linear(style_hidden, dim * 2),
-                )
-            if self.texton_style_allocate:
-                self.texton_band_allocator = nn.Sequential(
-                    nn.Linear(int(style_dim), style_hidden),
-                    nn.SiLU(),
-                    nn.Linear(style_hidden, 3),
-                )
             self.texton_mapper = nn.Sequential(
                 nn.Conv2d(dim * 3, texton_hidden, kernel_size=3, stride=1, padding=1),
                 nn.GroupNorm(texton_groups, texton_hidden),
                 nn.SiLU(),
                 nn.Conv2d(texton_hidden, dim, kernel_size=3, stride=1, padding=1),
             )
-            if self.texton_style_generator is not None:
-                nn.init.zeros_(self.texton_style_generator[-1].weight)
-                nn.init.zeros_(self.texton_style_generator[-1].bias)
-            if self.texton_band_allocator is not None:
-                nn.init.zeros_(self.texton_band_allocator[-1].weight)
-                nn.init.zeros_(self.texton_band_allocator[-1].bias)
             nn.init.normal_(self.texton_mapper[-1].weight, mean=0.0, std=1e-3)
             nn.init.zeros_(self.texton_mapper[-1].bias)
         self.last_debug: dict[str, torch.Tensor] = {}
@@ -846,17 +506,8 @@ class StyleBlender(nn.Module):
             gate = self.dual_phase_floor + (1.0 - self.dual_phase_floor) * gate
         return gate.to(dtype=content_feat.dtype)
 
-    def _style_region_gate(self, content_feat: torch.Tensor, style_emb: torch.Tensor | None) -> torch.Tensor:
-        if self.region_gate_generator is None or style_emb is None:
-            return content_feat.new_ones(content_feat.shape[0], 1, content_feat.shape[2], content_feat.shape[3])
+    def _style_region_gate(self, content_feat: torch.Tensor) -> torch.Tensor:
         b = content_feat.shape[0]
-        if style_emb.ndim == 1:
-            style_emb = style_emb.unsqueeze(0)
-        if style_emb.shape[0] == 1 and b > 1:
-            style_emb = style_emb.expand(b, -1)
-        elif style_emb.shape[0] != b:
-            raise ValueError(f"style batch mismatch: expected {b} or 1, got {style_emb.shape[0]}")
-
         region = content_feat.float().mean(dim=1, keepdim=True)
         if self.region_smooth_kernel > 1:
             region = F.avg_pool2d(
@@ -868,9 +519,15 @@ class StyleBlender(nn.Module):
         mean = region.flatten(1).mean(dim=1).view(b, 1, 1, 1)
         std = region.flatten(1).std(dim=1, unbiased=False).view(b, 1, 1, 1).clamp_min(1e-6)
         region = (region - mean) / std
-        centers = self.region_centers.to(device=content_feat.device, dtype=torch.float32)
+        centers = torch.linspace(
+            -1.25,
+            1.25,
+            self.region_bins,
+            device=content_feat.device,
+            dtype=torch.float32,
+        ).view(1, self.region_bins, 1, 1)
         assignment = torch.softmax(-self.region_gamma * (region - centers).square(), dim=1)
-        weights = torch.sigmoid(self.region_gate_generator(style_emb.float())).view(b, self.region_bins, 1, 1)
+        weights = content_feat.new_ones(b, self.region_bins, 1, 1)
         gate = (assignment * weights).sum(dim=1, keepdim=True)
         if self.region_floor > 0.0:
             gate = self.region_floor + (1.0 - self.region_floor) * gate
@@ -893,35 +550,17 @@ class StyleBlender(nn.Module):
         self,
         content_feat: torch.Tensor,
         residual_feat: torch.Tensor,
-        style_emb: torch.Tensor | None,
     ) -> torch.Tensor:
         if self.texton_mapper is None:
             return residual_feat
         b, c, h_dim, w_dim = content_feat.shape
         content_band = content_feat - self._lowpass(content_feat, self.dual_mid_outer_kernel)
-        if self.texton_style_generator is None or style_emb is None:
-            gamma = content_feat.new_zeros(b, c, 1, 1)
-            beta = content_feat.new_zeros(b, c, 1, 1)
-        else:
-            if style_emb.ndim == 1:
-                style_emb = style_emb.unsqueeze(0)
-            if style_emb.shape[0] == 1 and b > 1:
-                style_emb = style_emb.expand(b, -1)
-            elif style_emb.shape[0] != b:
-                raise ValueError(f"style batch mismatch: expected {b} or 1, got {style_emb.shape[0]}")
-            params = self.texton_style_generator(style_emb.float()).view(b, 2 * c, 1, 1)
-            gamma, beta = params.chunk(2, dim=1)
-            gamma = torch.tanh(gamma) * self.texton_style_scale
-            beta = torch.tanh(beta) * self.texton_style_scale
-            gamma = gamma.to(device=content_feat.device, dtype=content_feat.dtype)
-            beta = beta.to(device=content_feat.device, dtype=content_feat.dtype)
-        style_seed = content_band * (1.0 + gamma) + beta
         carrier = self.texton_mapper(
             torch.cat(
                 [
                     self.content_norm(content_feat),
                     residual_feat.to(dtype=content_feat.dtype),
-                    style_seed,
+                    content_band,
                 ],
                 dim=1,
             )
@@ -930,7 +569,6 @@ class StyleBlender(nn.Module):
 
     def _style_texton_band_allocation(
         self,
-        style_emb: torch.Tensor | None,
         content_feat: torch.Tensor,
         style_tokens: object | None = None,
     ) -> torch.Tensor:
@@ -945,15 +583,6 @@ class StyleBlender(nn.Module):
             elif token_gains.shape[0] != b:
                 raise ValueError(f"style token batch mismatch: expected {b} or 1, got {token_gains.shape[0]}")
             gains = gains * token_gains.to(device=content_feat.device, dtype=content_feat.dtype)
-        if self.texton_band_allocator is not None and style_emb is not None and self.texton_allocate_scale > 0.0:
-            if style_emb.ndim == 1:
-                style_emb = style_emb.unsqueeze(0)
-            if style_emb.shape[0] == 1 and b > 1:
-                style_emb = style_emb.expand(b, -1)
-            elif style_emb.shape[0] != b:
-                raise ValueError(f"style batch mismatch: expected {b} or 1, got {style_emb.shape[0]}")
-            logits = self.texton_band_allocator(style_emb.float()).view(b, 3, 1, 1)
-            gains = gains * (1.0 + torch.tanh(logits) * self.texton_allocate_scale)
         if self.token_reader is not None and style_tokens is not None and self.token_reader_scale > 0.0:
             token_input = self._style_token_reader_input(style_tokens, b, content_feat.device)
             logits = self.token_reader(token_input).view(b, 3, 1, 1)
@@ -1264,7 +893,6 @@ class StyleBlender(nn.Module):
         self,
         content_feat: torch.Tensor,
         style_feat: torch.Tensor,
-        style_emb: torch.Tensor | None = None,
         semantic_attn: torch.Tensor | None = None,
         style_tokens: object | None = None,
     ) -> torch.Tensor:
@@ -1322,7 +950,7 @@ class StyleBlender(nn.Module):
             outer = self._lowpass(residual, self.dual_mid_outer_kernel)
             mid = inner - outer
             high = residual - inner
-            region_gate = self._style_region_gate(content_feat, style_emb)
+            region_gate = self._style_region_gate(content_feat)
             support_gate = self._content_support_gate(content_feat)
             phase_gate = self._phase_gate(content_feat, mid + high)
             detail_gate = region_gate * support_gate * phase_gate
@@ -1379,7 +1007,7 @@ class StyleBlender(nn.Module):
             low_gate = transport_gate * support_gate if self.transport_low_use_support else transport_gate
             detail_gate = transport_gate * support_gate * phase_gate
             if self.token_adain_gate_enable and style_tokens is not None:
-                band_alloc = self._style_texton_band_allocation(style_emb, content_feat, style_tokens)
+                band_alloc = self._style_texton_band_allocation(content_feat, style_tokens)
                 low_alloc = band_alloc[:, 0:1]
                 mid_alloc = band_alloc[:, 1:2]
                 high_alloc = band_alloc[:, 2:3]
@@ -1497,7 +1125,7 @@ class StyleBlender(nn.Module):
             normalized = (content_feat.float() - content_mean) / content_std
             target = normalized * style_std + style_mean
             residual = target.to(device=content_feat.device, dtype=content_feat.dtype) - content_feat
-            carrier = self._style_texton_seed(content_feat, residual, style_emb)
+            carrier = self._style_texton_seed(content_feat, residual)
             scale = self.texton_tanh_scale
             low = self._lowpass(carrier, self.dual_low_kernel)
             inner = self._lowpass(carrier, self.dual_mid_inner_kernel)
@@ -1508,7 +1136,7 @@ class StyleBlender(nn.Module):
             amp_gate = self._style_amplitude_gate(carrier)
             support_gate = self._content_support_gate(content_feat)
             phase_gate = self._phase_gate(content_feat, mid + high)
-            band_alloc = self._style_texton_band_allocation(style_emb, content_feat, style_tokens)
+            band_alloc = self._style_texton_band_allocation(content_feat, style_tokens)
             low_alloc = band_alloc[:, 0:1]
             mid_alloc = band_alloc[:, 1:2]
             high_alloc = band_alloc[:, 2:3]
@@ -1553,178 +1181,6 @@ class SimpleResBlock(nn.Module):
         h = self.conv2(self.act(self.norm2(h)))
         return x + h
 
-
-def _build_feature_block(
-    block_type: str,
-    *,
-    dim: int,
-    style_dim: int,
-    num_groups: int,
-    style_attn_num_tokens: int,
-    style_attn_num_heads: int,
-    style_attn_sharpen_scale: float,
-    feature_attn_num_heads: int,
-    style_attn_temperature: float,
-    window_attn_window_size: int,
-) -> nn.Module:
-    kind = _normalize_feature_block_type(block_type)
-    if kind == "conv":
-        return ResBlock(
-            dim=dim,
-            style_dim=style_dim,
-            num_groups=num_groups,
-            style_attn_num_tokens=style_attn_num_tokens,
-            style_attn_num_heads=style_attn_num_heads,
-            style_attn_sharpen_scale=style_attn_sharpen_scale,
-            style_attn_temperature=style_attn_temperature,
-        )
-    return AttentionBlock(
-        dim=dim,
-        style_dim=style_dim,
-        num_groups=num_groups,
-        style_attn_num_tokens=style_attn_num_tokens,
-        style_attn_num_heads=style_attn_num_heads,
-        style_attn_sharpen_scale=style_attn_sharpen_scale,
-        feature_attn_num_heads=feature_attn_num_heads,
-        style_attn_temperature=style_attn_temperature,
-        attn_mode=kind,
-        window_size=window_attn_window_size,
-    )
-
-
-class NormFreeModulation(nn.Module):
-    """
-    Decoder-side style modulation without spatial normalization.
-    Preserves local contrast while injecting high-frequency style controls.
-    """
-
-    def __init__(self, channels: int, style_dim: int) -> None:
-        super().__init__()
-        self.mapper = nn.Linear(style_dim, channels * 2)
-        # From-scratch training benefits from a live style path on step 0.
-        nn.init.normal_(self.mapper.weight, mean=0.0, std=0.02)
-        nn.init.zeros_(self.mapper.bias)
-
-    def forward(self, x: torch.Tensor, style_code: torch.Tensor, gate: float | torch.Tensor = 1.0) -> torch.Tensor:
-        params = self.mapper(style_code).view(x.shape[0], -1, 1, 1)
-        gamma, beta = params.chunk(2, dim=1)
-        if isinstance(gate, torch.Tensor):
-            gate_t = gate.to(device=x.device, dtype=x.dtype)
-        else:
-            gate_t = x.new_tensor(float(gate))
-        gamma = gamma * gate_t
-        beta = beta * gate_t
-        return x * (1.0 + gamma) + beta
-
-
-class DecoderTextureBlock(nn.Module):
-    def __init__(self, dim: int, style_dim: int, num_groups: int = 8) -> None:
-        super().__init__()
-        self.norm = nn.GroupNorm(_resolve_group_count(dim, num_groups), dim, affine=True)
-        self.mapper = nn.Sequential(
-            nn.Linear(style_dim, dim),
-            nn.SiLU(),
-            nn.Linear(dim, dim * 2),
-        )
-        nn.init.normal_(self.mapper[-1].weight, mean=0.0, std=0.05)
-        nn.init.zeros_(self.mapper[-1].bias)
-        self.conv = nn.Conv2d(dim, dim, kernel_size=3, stride=1, padding=1)
-        self.act = nn.SiLU()
-
-    def forward(
-        self,
-        x: torch.Tensor,
-        style_code: torch.Tensor,
-        gate: float | torch.Tensor = 1.0,
-    ) -> torch.Tensor:
-        normalized = self.norm(x)
-        gamma, beta = self.mapper(style_code).chunk(2, dim=-1)
-        gamma = gamma.view(-1, gamma.shape[1], 1, 1).to(dtype=x.dtype)
-        beta = beta.view(-1, beta.shape[1], 1, 1).to(dtype=x.dtype)
-
-        h = normalized * (1.0 + gamma) + beta
-        delta_raw = self.conv(self.act(h))
-        local_mean = F.avg_pool2d(delta_raw, kernel_size=5, stride=1, padding=2)
-        delta_texture = delta_raw - local_mean
-        final_gate = gate if isinstance(gate, float) else gate.to(device=x.device, dtype=x.dtype)
-        return x + final_gate * torch.tanh(delta_texture) * 3.0
-
-
-class StyleRoutingSkip(nn.Module):
-    """
-    Unified skip ablation module.
-    Supports 4 modes: none, naive, adaptive, normalized.
-    """
-
-    def __init__(
-        self,
-        channels: int,
-        style_dim: int,
-        mode: str = "normalized",
-        content_retention_boost: float = 0.0,
-    ) -> None:
-        super().__init__()
-        self.channels = int(channels)
-        self.mode = str(mode).strip().lower()
-        self.gate_mapper = nn.Sequential(
-            nn.Linear(style_dim, self.channels),
-            nn.Sigmoid(),
-        )
-        self.rewrite_mapper = nn.Linear(style_dim, self.channels)
-        self.content_retention_boost = max(0.0, min(1.0, float(content_retention_boost)))
-        # Stable init for adaptive branch.
-        nn.init.zeros_(self.rewrite_mapper.weight)
-        nn.init.zeros_(self.rewrite_mapper.bias)
-        # Normalized mode components.
-        groups = max(1, min(8, self.channels))
-        while self.channels % groups != 0 and groups > 1:
-            groups -= 1
-        self.norm = nn.GroupNorm(groups, self.channels, affine=False)
-        self.style_scale = nn.Linear(style_dim, self.channels)
-        self.style_shift = nn.Linear(style_dim, self.channels)
-        nn.init.zeros_(self.style_scale.weight)
-        nn.init.ones_(self.style_scale.bias)
-        nn.init.zeros_(self.style_shift.weight)
-        nn.init.zeros_(self.style_shift.bias)
-
-    def forward(
-        self,
-        skip_feat: torch.Tensor,
-        style_code: torch.Tensor,
-        gate: float | torch.Tensor = 1.0,
-        naive_gain: float = 1.0,
-    ) -> torch.Tensor:
-        b, c, _, _ = skip_feat.shape
-        if isinstance(gate, torch.Tensor):
-            gate_t = gate.to(device=skip_feat.device, dtype=skip_feat.dtype)
-            if gate_t.ndim == 0:
-                gate_t = gate_t.view(1, 1, 1, 1)
-            elif gate_t.ndim == 1:
-                gate_t = gate_t.view(-1, 1, 1, 1)
-            else:
-                gate_t = gate_t.view(gate_t.shape[0], 1, 1, 1)
-        else:
-            gate_t = skip_feat.new_tensor(float(gate)).view(1, 1, 1, 1)
-        mode = self.mode
-        if mode == "none":
-            return skip_feat * (1.0 - gate_t)
-        if mode == "naive":
-            return skip_feat * (1.0 - gate_t) + (skip_feat * float(naive_gain)) * gate_t
-        if mode == "adaptive":
-            erase_gate = self.gate_mapper(style_code).view(b, c, 1, 1).to(dtype=skip_feat.dtype)
-            rewrite_bias = self.rewrite_mapper(style_code).view(b, c, 1, 1).to(dtype=skip_feat.dtype)
-            if self.content_retention_boost > 0.0:
-                erase_gate = erase_gate + (1.0 - erase_gate) * self.content_retention_boost
-            effective_erase = 1.0 - (1.0 - erase_gate) * gate_t
-            effective_bias = rewrite_bias * gate_t
-            return skip_feat * effective_erase + effective_bias
-        if mode == "normalized":
-            normalized_skip = self.norm(skip_feat)
-            scale = self.style_scale(style_code).view(b, c, 1, 1).to(dtype=skip_feat.dtype)
-            shift = self.style_shift(style_code).view(b, c, 1, 1).to(dtype=skip_feat.dtype)
-            modulated_skip = normalized_skip * scale + shift
-            return skip_feat * (1.0 - gate_t) + modulated_skip * gate_t
-        raise ValueError(f"Unknown skip mode: {self.mode}")
 
 
 @dataclass

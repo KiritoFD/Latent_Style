@@ -5,9 +5,8 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.utils.checkpoint as ckpt
 
-from lancet_blocks import AttentionBlock, StyleMaps
+from lancet_blocks import StyleMaps
 from utils.diffeomorphic import apply_texture_aligned_diffeomorphic_stroke, build_diffeomorphic_guide
 
 
@@ -26,69 +25,17 @@ class LatentAdaCUTRuntimeMixin:
             style_id = style_id.to(device)
         return style_id.clamp_min(0).clamp_max(max(1, self.num_styles) - 1)
 
-    def _run_block(
-        self,
-        block: nn.Module,
-        h: torch.Tensor,
-        style_code: torch.Tensor,
-        gate: float | torch.Tensor = 1.0,
-        shift: bool = False,
-    ) -> torch.Tensor:
-        use_shift = bool(
-            shift
-            and isinstance(block, AttentionBlock)
-            and getattr(getattr(block, "attn", None), "mode", None) == "window_attn"
-        )
-        gate_in = gate.to(device=h.device, dtype=h.dtype) if torch.is_tensor(gate) else h.new_tensor(float(gate))
-        gate_is_zero = bool(torch.count_nonzero(gate_in.detach()).item() == 0)
-        if self.use_checkpointing and self.training and not gate_is_zero:
-            return ckpt.checkpoint(
-                lambda _h, _s, _g, _blk=block, _use_shift=use_shift: (
-                    _blk(_h, _s, _g, shift=True) if _use_shift else _blk(_h, _s, _g)
-                ),
-                h,
-                style_code,
-                gate_in,
-                use_reentrant=False,
-            )
-        if use_shift:
-            return block(h, style_code, gate=gate_in, shift=True)
-        return block(h, style_code, gate=gate_in)
-
-    def _run_style_blocks(
-        self,
-        h: torch.Tensor,
-        blocks: nn.ModuleList,
-        style_code: torch.Tensor,
-        base_idx: int = 0,
-        gate_scale: float = 1.0,
-    ) -> torch.Tensor:
-        out = h
-        gs = max(0.0, float(gate_scale))
-        for i, block in enumerate(blocks):
-            use_shift = (i % 2) == 1
-            current_gate = torch.tanh(F.softplus(self.block_gains[base_idx + i])) * gs
-            out = self._run_block(block, out, style_code, gate=current_gate, shift=use_shift)
-        return out
-
     def _fuse_skip_features(
         self,
         h_up: torch.Tensor,
         skip_32: torch.Tensor,
-        style_code: torch.Tensor,
-        gate: float | torch.Tensor = 1.0,
     ) -> torch.Tensor:
         # Hard no-skip path: physically disconnect encoder skip source and keep only
         # the upsample projection branch.
         if self.skip_disabled:
             return self.skip_fusion(self.skip_up_proj(h_up))
 
-        skip_feat = self.skip_router(
-            skip_32,
-            style_code=style_code,
-            gate=gate,
-            naive_gain=self.skip_naive_gain,
-        )
+        skip_feat = skip_32
 
         if self.skip_fusion_mode == "add_proj":
             h_base = self.skip_up_proj(h_up)
@@ -138,10 +85,13 @@ class LatentAdaCUTRuntimeMixin:
         self,
         *,
         style_id: torch.Tensor | int,
-    ) -> tuple[torch.Tensor, StyleMaps]:
-        style_code = self.encode_style_id(style_id)
+        batch_size: int,
+        device: torch.device,
+        dtype: torch.dtype,
+    ) -> tuple[object, StyleMaps]:
+        style_tokens = self.encode_style_tokens(style_id, batch_size=batch_size, device=device, dtype=dtype)
         style_maps = self._prepare_style_maps(style_id=style_id)
-        return style_code, style_maps
+        return style_tokens, style_maps
 
     def _apply_upsample_blur(self, h: torch.Tensor) -> torch.Tensor:
         if not self.upsample_blur or self._upsample_blur_kernel.numel() == 0:
@@ -174,10 +124,9 @@ class LatentAdaCUTRuntimeMixin:
         h: torch.Tensor,
         x: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        style_code = getattr(self, "_current_style_code_for_head", None)
         style_tokens = getattr(self, "_last_style_token_fields", None)
         carrier_debug: dict[str, torch.Tensor | None] = dict(getattr(self, "carrier_debug", {}) or {})
-        raw = self._decode_output_raw(h, style_code=style_code, style_tokens=style_tokens)
+        raw = self._decode_output_raw(h, style_tokens=style_tokens)
         self.last_raw_diffeomorphic = raw
         if bool(getattr(self, "use_diffeomorphic_stroke", False)):
             if x is None:
@@ -186,65 +135,6 @@ class LatentAdaCUTRuntimeMixin:
         delta = raw * self.latent_scale_factor * self.residual_gain
         delta = torch.tanh(delta / 4.0) * 4.0
         carrier_debug["raw_delta"] = delta.detach()
-        highpass_head = getattr(self, "style_highpass_head", None)
-        highpass_strength = float(getattr(self, "style_highpass_depthwise_strength", 0.0))
-        style_code = getattr(self, "_current_style_code_for_head", None)
-        if highpass_head is not None and highpass_strength > 0.0 and style_code is not None:
-            if x is None:
-                raise ValueError("style highpass depthwise head requires input x.")
-            highpass_delta = highpass_head(x, style_code)
-            if bool(getattr(self, "style_highpass_depthwise_support_gate", False)):
-                highpass_gate = self._style_highpass_support_gate(x)
-                carrier_debug["highpass_gate"] = highpass_gate.detach()
-                highpass_delta = highpass_delta * highpass_gate
-            if bool(getattr(self, "style_highpass_depthwise_semantic_gate", False)):
-                semantic_attn = getattr(self, "_current_semantic_attn_for_head", None)
-                semantic_gate = self._style_highpass_semantic_gate(semantic_attn, x)
-                carrier_debug["highpass_semantic_gate"] = semantic_gate.detach()
-                highpass_delta = highpass_delta * semantic_gate
-            if bool(getattr(self, "style_highpass_depthwise_region_gate", False)):
-                region_gate_head = getattr(self, "style_highpass_region_gate_head", None)
-                if region_gate_head is not None:
-                    region_gate = region_gate_head(x, style_code)
-                    carrier_debug["highpass_region_gate"] = region_gate.detach()
-                    highpass_delta = highpass_delta * region_gate
-            highpass_add = torch.tanh(highpass_delta / 4.0) * 4.0 * highpass_strength
-            carrier_debug["highpass_delta"] = highpass_add.detach()
-            delta = delta + highpass_add
-        lowpass_head = getattr(self, "style_lowpass_head", None)
-        lowpass_strength = float(getattr(self, "style_lowpass_affine_strength", 0.0))
-        if lowpass_head is not None and lowpass_strength > 0.0 and style_code is not None:
-            if x is None:
-                raise ValueError("style lowpass affine head requires input x.")
-            lowpass_delta = lowpass_head(x, style_code)
-            lowpass_add = torch.tanh(lowpass_delta / 4.0) * 4.0 * lowpass_strength
-            carrier_debug["lowpass_affine_delta"] = lowpass_add.detach()
-            delta = delta + lowpass_add
-        lowpass_mix = getattr(self, "style_lowpass_mix", None)
-        lowpass_mix_strength = float(getattr(self, "style_lowpass_mix_strength", 0.0))
-        if lowpass_mix is not None and lowpass_mix_strength > 0.0 and style_code is not None:
-            if x is None:
-                raise ValueError("style lowpass mix head requires input x.")
-            lowpass_mix_delta = lowpass_mix(x, style_code)
-            lowpass_mix_add = torch.tanh(lowpass_mix_delta / 4.0) * 4.0 * lowpass_mix_strength
-            carrier_debug["lowpass_mix_delta"] = lowpass_mix_add.detach()
-            delta = delta + lowpass_mix_add
-        midband_operator = getattr(self, "style_midband_operator", None)
-        midband_strength = float(getattr(self, "style_midband_operator_strength", 0.0))
-        if midband_operator is not None and midband_strength > 0.0 and style_code is not None:
-            if x is None:
-                raise ValueError("style midband operator head requires input x.")
-            midband_delta = midband_operator(x, style_code)
-            if bool(getattr(self, "style_midband_operator_support_gate", False)):
-                gamma = float(getattr(self, "style_midband_operator_support_gamma", 4.5))
-                floor = float(getattr(self, "style_midband_operator_support_floor", 0.15))
-                kernel = max(1, int(getattr(self, "style_midband_operator_support_smooth_kernel", 5)))
-                midband_gate = self._style_band_support_gate(x, gamma=gamma, floor=floor, kernel=kernel)
-                carrier_debug["midband_gate"] = midband_gate.detach()
-                midband_delta = midband_delta * midband_gate
-            midband_add = torch.tanh(midband_delta / 4.0) * 4.0 * midband_strength
-            carrier_debug["midband_delta"] = midband_add.detach()
-            delta = delta + midband_add
         if bool(getattr(self, "output_residual_router", False)):
             if x is None:
                 raise ValueError("output residual router requires input x.")
@@ -295,12 +185,6 @@ class LatentAdaCUTRuntimeMixin:
         gate = 1.0 - torch.exp(-gamma * support / denom)
         return gate.to(device=x.device, dtype=x.dtype)
 
-    def _style_highpass_support_gate(self, x: torch.Tensor) -> torch.Tensor:
-        gamma = float(getattr(self, "style_highpass_depthwise_support_gamma", 4.0))
-        floor = float(getattr(self, "style_highpass_depthwise_support_floor", 0.0))
-        kernel = max(1, int(getattr(self, "style_highpass_depthwise_support_smooth_kernel", 3)))
-        return self._style_band_support_gate(x, gamma=gamma, floor=floor, kernel=kernel)
-
     def _style_band_support_gate(self, x: torch.Tensor, *, gamma: float, floor: float, kernel: int) -> torch.Tensor:
         if kernel % 2 == 0:
             kernel += 1
@@ -316,33 +200,6 @@ class LatentAdaCUTRuntimeMixin:
         gate = 1.0 - torch.exp(-gamma * support / denom)
         if floor > 0.0:
             gate = floor + (1.0 - floor) * gate
-        return gate.to(device=x.device, dtype=x.dtype)
-
-    def _style_highpass_semantic_gate(
-        self,
-        semantic_attn: torch.Tensor | None,
-        x: torch.Tensor,
-    ) -> torch.Tensor:
-        if semantic_attn is None:
-            return torch.ones((x.shape[0], 1, x.shape[2], x.shape[3]), device=x.device, dtype=x.dtype)
-        attn = semantic_attn.float()
-        if attn.ndim != 3 or attn.shape[0] != x.shape[0]:
-            return torch.ones((x.shape[0], 1, x.shape[2], x.shape[3]), device=x.device, dtype=x.dtype)
-        tokens = int(attn.shape[1])
-        side = int(round(tokens ** 0.5))
-        if side * side != tokens:
-            return torch.ones((x.shape[0], 1, x.shape[2], x.shape[3]), device=x.device, dtype=x.dtype)
-        confidence = attn.max(dim=-1).values.view(x.shape[0], 1, side, side)
-        power = float(getattr(self, "style_highpass_depthwise_semantic_power", 1.0))
-        if power != 1.0:
-            confidence = confidence.clamp_min(0.0).pow(power)
-        denom = confidence.flatten(1).mean(dim=1).view(-1, 1, 1, 1).clamp_min(1e-6)
-        gamma = float(getattr(self, "style_highpass_depthwise_semantic_gamma", 3.0))
-        gate = 1.0 - torch.exp(-gamma * confidence / denom)
-        floor = float(getattr(self, "style_highpass_depthwise_semantic_floor", 0.0))
-        if floor > 0.0:
-            gate = floor + (1.0 - floor) * gate
-        gate = F.interpolate(gate, size=x.shape[-2:], mode="bilinear", align_corners=False)
         return gate.to(device=x.device, dtype=x.dtype)
 
     def _apply_diffeomorphic_stroke(self, x: torch.Tensor, raw_out: torch.Tensor) -> torch.Tensor:
@@ -382,19 +239,24 @@ class LatentAdaCUTRuntimeMixin:
         )
         return stroked - x.float()
 
-    def encode_style_id(self, style_id: torch.Tensor | int | None) -> torch.Tensor:
+    def encode_style_tokens(
+        self,
+        style_id: torch.Tensor | int | None,
+        *,
+        batch_size: int | None = None,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ):
         if style_id is None:
             raise ValueError("style_id is required.")
-        emb_device = self.style_emb.weight.device
-        style_id = self._normalize_style_id_input(style_id, device=emb_device)
-        base_code = self.style_emb(style_id)
-        self._last_style_token_fields = None
         tokenizer = getattr(self, "style_tokenizer", None)
         if tokenizer is None:
-            return base_code
-        style_code, fields = tokenizer(style_id, base_code)
+            raise RuntimeError("StyleTokenizer is required; anonymous style vectors have been removed.")
+        token_device = device or next(tokenizer.parameters()).device
+        style_id = self._normalize_style_id_input(style_id, device=token_device)
+        fields = tokenizer(style_id, batch_size=batch_size, device=token_device, dtype=dtype)
         self._last_style_token_fields = fields
-        return style_code
+        return fields
 
     @staticmethod
     def _normalize_style_map(feat: torch.Tensor) -> torch.Tensor:
@@ -667,23 +529,24 @@ class LatentAdaCUTRuntimeMixin:
         self,
         x: torch.Tensor,
         *,
-        style_code: torch.Tensor,
+        style_tokens: object,
         style_maps: StyleMaps,
         override_palette: torch.Tensor | None = None,
         strength: float,
         target_style_latent: torch.Tensor | None = None,
     ) -> torch.Tensor:
+        self._last_style_token_fields = style_tokens
         feat_c = x / max(self.latent_scale_factor, 1e-8)
         h_c = self.enc_in_act(self.enc_in(feat_c))
         with torch.no_grad():
             h_c_no_grad = h_c.clone()
             for block in self.hires_body:
-                h_c_no_grad = block(h_c_no_grad, style_code, gate=0.0)
+                h_c_no_grad = block(h_c_no_grad)
         skip_32 = h_c_no_grad
 
         h_c_grad = h_c
         for block in self.hires_body:
-            h_c_grad = block(h_c_grad, style_code, gate=0.0)
+            h_c_grad = block(h_c_grad)
         content_feat_16 = self.down(h_c_grad)
         style_map_proj: torch.Tensor | None = None
         memory_residual_source: torch.Tensor | None = None
@@ -704,13 +567,8 @@ class LatentAdaCUTRuntimeMixin:
             if style_map_proj.shape[1] == self.latent_channels:
                 feat_s = style_map_proj / max(self.latent_scale_factor, 1e-8)
                 h_s = self.enc_in_act(self.enc_in(feat_s))
-                h_s = self._run_style_blocks(
-                    h_s,
-                    blocks=self.hires_body,
-                    style_code=style_code,
-                    base_idx=0,
-                    gate_scale=0.0,
-                )
+                for block in self.hires_body:
+                    h_s = block(h_s)
                 style_map_proj = self.down(h_s)
             elif style_map_proj.shape[1] != self.body_channels:
                 raise ValueError(
@@ -735,13 +593,8 @@ class LatentAdaCUTRuntimeMixin:
 
             feat_s = target_style_latent / max(self.latent_scale_factor, 1e-8)
             h_s = self.enc_in_act(self.enc_in(feat_s))
-            h_s = self._run_style_blocks(
-                h_s,
-                blocks=self.hires_body,
-                style_code=style_code,
-                base_idx=0,
-                gate_scale=0.0,
-            )
+            for block in self.hires_body:
+                h_s = block(h_s)
             style_map_proj = self.down(h_s)
         else:
             style_spatial_16 = self._prepare_spatial_map(style_maps.map_16, content_feat_16)
@@ -780,8 +633,7 @@ class LatentAdaCUTRuntimeMixin:
                 semantic_attn = getattr(block, "last_attn", semantic_attn)
             if self.blender is None:
                 raise RuntimeError("Style blender is enabled but not initialized.")
-            style_tokens = getattr(self, "_last_style_token_fields", None)
-            h_body = self.blender(content_feat_16, h_painted, style_code, semantic_attn, style_tokens=style_tokens)
+            h_body = self.blender(content_feat_16, h_painted, semantic_attn=semantic_attn, style_tokens=style_tokens)
             if style_tokens is not None:
                 self.carrier_debug["style_token_grammar"] = style_tokens.grammar.detach()
                 self.carrier_debug["style_token_band_gains"] = style_tokens.band_gains.detach()
@@ -802,9 +654,8 @@ class LatentAdaCUTRuntimeMixin:
             self.carrier_debug["style_memory_residual_delta"] = memory_residual_source.detach()
         h_up = self.dec_up(h_body)
         h_up = self._apply_upsample_blur(h_up)
-        h_fused = self._fuse_skip_features(h_up, skip_32, style_code=style_code, gate=1.0)
+        h_fused = self._fuse_skip_features(h_up, skip_32)
         h_dec = self._run_decoder(h_fused)
-        style_tokens = getattr(self, "_last_style_token_fields", None)
         token_feature_operator = getattr(self, "style_token_feature_operator", None)
         token_feature_strength = float(getattr(self, "dynamic_style_feature_operator_strength", 0.0))
         self.carrier_debug = dict(getattr(self, "carrier_debug", {}) or {})
@@ -814,24 +665,8 @@ class LatentAdaCUTRuntimeMixin:
             token_feature_add = torch.tanh(token_feature_delta / token_feature_scale) * token_feature_scale * token_feature_strength
             self.carrier_debug["style_token_feature_delta"] = token_feature_add.detach()
             h_dec = h_dec + token_feature_add
-        feature_operator = getattr(self, "decoder_feature_style_operator", None)
-        feature_strength = float(getattr(self, "decoder_feature_style_operator_strength", 0.0))
-        if feature_operator is not None and feature_strength > 0.0:
-            feature_delta = feature_operator(h_dec, style_code)
-            if bool(getattr(self, "decoder_feature_style_operator_support_gate", False)):
-                gamma = float(getattr(self, "decoder_feature_style_operator_support_gamma", 4.5))
-                floor = float(getattr(self, "decoder_feature_style_operator_support_floor", 0.15))
-                kernel = max(1, int(getattr(self, "decoder_feature_style_operator_support_smooth_kernel", 5)))
-                feature_gate = self._style_band_support_gate(x, gamma=gamma, floor=floor, kernel=kernel)
-                feature_delta = feature_delta * feature_gate
-                self.carrier_debug["decoder_feature_gate"] = feature_gate.detach()
-            feature_add = torch.tanh(feature_delta / 4.0) * 4.0 * feature_strength
-            self.carrier_debug["decoder_feature_delta"] = feature_add.detach()
-            h_dec = h_dec + feature_add
-        self._current_style_code_for_head = style_code
         self._current_semantic_attn_for_head = semantic_attn
         delta_raw = self._compute_delta(h_dec, x=x)
-        self._current_style_code_for_head = None
         self._current_semantic_attn_for_head = None
         return delta_raw
 
@@ -843,7 +678,6 @@ class LatentAdaCUTRuntimeMixin:
         step_size: float = 1.0,
         style_strength: float | None = None,
         target_style_latent: torch.Tensor | None = None,
-        style_code_override: torch.Tensor | None = None,
         override_palette: torch.Tensor | None = None,
     ) -> torch.Tensor:
         steps = max(1, int(num_steps))
@@ -852,32 +686,20 @@ class LatentAdaCUTRuntimeMixin:
         per_step = 1.0 / float(steps)
         x = self._apply_pre_integrate_moment_match(x, target_style_latent)
         x = self._inject_flat_highfreq_canvas(x, target_style_latent)
-        if style_code_override is not None:
-            self._last_style_token_fields = None
-            style_code = style_code_override
-            if style_code.ndim == 1:
-                style_code = style_code.unsqueeze(0)
-            if style_code.device != x.device:
-                style_code = style_code.to(device=x.device)
-            if style_code.dtype != x.dtype:
-                style_code = style_code.to(dtype=x.dtype)
-            if style_code.shape[0] == 1 and x.shape[0] > 1:
-                style_code = style_code.expand(x.shape[0], -1)
-            elif style_code.shape[0] != x.shape[0]:
-                raise ValueError(f"style_code_override batch mismatch: expected {x.shape[0]} or 1, got {style_code.shape[0]}")
-            style_maps = StyleMaps()
-        else:
-            if style_id is None:
-                raise ValueError("style_id is required when style_code_override is not provided.")
-            style_code, style_maps = self._prepare_style_context(
-                style_id=style_id,
-            )
+        if style_id is None:
+            raise ValueError("style_id is required.")
+        style_tokens, style_maps = self._prepare_style_context(
+            style_id=style_id,
+            batch_size=x.shape[0],
+            device=x.device,
+            dtype=x.dtype,
+        )
         h = x
         self._integration_anchor_x = x
         for _ in range(steps):
             delta = self._predict_delta_from_context(
                 h,
-                style_code=style_code,
+                style_tokens=style_tokens,
                 style_maps=style_maps,
                 override_palette=override_palette,
                 strength=strength,
@@ -997,34 +819,21 @@ class LatentAdaCUTRuntimeMixin:
         step_size: float = 1.0,
         style_strength: float | None = None,
         target_style_latent: torch.Tensor | None = None,
-        style_code_override: torch.Tensor | None = None,
         override_palette: torch.Tensor | None = None,
     ) -> torch.Tensor:
         strength = self._resolve_style_strength(style_strength)
         step_scale = self._style_strength_step_scale(strength)
-        if style_code_override is not None:
-            self._last_style_token_fields = None
-            style_code = style_code_override
-            if style_code.ndim == 1:
-                style_code = style_code.unsqueeze(0)
-            if style_code.device != x.device:
-                style_code = style_code.to(device=x.device)
-            if style_code.dtype != x.dtype:
-                style_code = style_code.to(dtype=x.dtype)
-            if style_code.shape[0] == 1 and x.shape[0] > 1:
-                style_code = style_code.expand(x.shape[0], -1)
-            elif style_code.shape[0] != x.shape[0]:
-                raise ValueError(f"style_code_override batch mismatch: expected {x.shape[0]} or 1, got {style_code.shape[0]}")
-            style_maps = StyleMaps()
-        else:
-            if style_id is None:
-                raise ValueError("style_id is required when style_code_override is not provided.")
-            style_code, style_maps = self._prepare_style_context(
-                style_id=style_id,
-            )
+        if style_id is None:
+            raise ValueError("style_id is required.")
+        style_tokens, style_maps = self._prepare_style_context(
+            style_id=style_id,
+            batch_size=x.shape[0],
+            device=x.device,
+            dtype=x.dtype,
+        )
         delta = self._predict_delta_from_context(
             x,
-            style_code=style_code,
+            style_tokens=style_tokens,
             style_maps=style_maps,
             override_palette=override_palette,
             strength=strength,

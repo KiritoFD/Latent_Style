@@ -429,3 +429,29 @@ LR: grammar 4.5e-4, band 1.575e-4, style-basis gate 1.35e-3, basis delta 6.75e-4
 source: fo18 epoch_0002 checkpoint
 launch: 2026-05-28 14:53 on remote 3060 after deleting two-batch smoke output
 ```
+
+## 2026-05-28 Active Source Reset
+
+No new experiment was launched for this entry.
+
+The active `src` codebase was reset to remove the anonymous legacy style
+vector path. The model now exposes only named tokenizer/operator fields:
+`identity`, `grammar`, `band_logits`, and `band_gains`. The former embedding
+adapter path is no longer copied into the model during training or inference.
+
+Active-source cleanup:
+
+- removed anonymous dynamic operator heads and style-vector highpass/lowpass
+  operator heads;
+- removed style-vector feature blocks, decoder modulation, and skip-router
+  modulation from the active model path;
+- removed obsolete config keys from `ModelConfig`, including `style_dim` and
+  the retired vector-projection/operator-mode controls;
+- kept tokenizer fields, style spatial priors, memory-bank routing, and
+  token-bound factorized operators.
+
+Design record: `docs/maths/19_operator_tokenizer_code_reset.md`.
+
+Interpretation: older registry rows that mention freezing or loading the
+former embedding are historical evidence only. New mainline tokenizer work
+must operate through named fields or spatial/memory/operator surfaces.

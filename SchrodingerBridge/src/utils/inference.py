@@ -130,11 +130,6 @@ class LGTInference:
         if not isinstance(adapter, dict):
             raise ValueError(f"Unsupported style adapter format: {adapter_path}")
         with torch.no_grad():
-            style_emb = adapter.get("style_emb.weight")
-            if style_emb is None:
-                style_emb = adapter.get("style_emb.mu")
-            if style_emb is not None:
-                self.model.style_emb.weight.copy_(style_emb.to(device=self.model.style_emb.weight.device, dtype=self.model.style_emb.weight.dtype))
             style_spatial = adapter.get("style_spatial_id_16")
             if style_spatial is not None and hasattr(self.model, "style_spatial_id_16"):
                 self.model.style_spatial_id_16.copy_(

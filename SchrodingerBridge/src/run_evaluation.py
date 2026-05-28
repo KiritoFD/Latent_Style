@@ -1,4 +1,4 @@
-﻿"""
+"""
 LGT Evaluation Pro: Optimized with Pipeline Offloading, Async I/O & Vectorization
 Target Hardware: RTX 4070 Laptop (8GB VRAM) | CPU: 7940HX
 """
@@ -11,7 +11,7 @@ import subprocess
 from pathlib import Path
 import torch
 
-# 妫ｅ啯鏆?Enable Tensor Cores for float32 matrix multiplication (Fixes UserWarning)
+# 棣冩�?Enable Tensor Cores for float32 matrix multiplication (Fixes UserWarning)
 torch.set_float32_matmul_precision('high')
 
 _SRC_ROOT = Path(__file__).resolve().parents[1]
@@ -615,7 +615,7 @@ def _extract_clip_embeddings(output):
         return output.image_embeds
     if hasattr(output, 'text_embeds') and output.text_embeds is not None:
         return output.text_embeds
-    # 妫ｅ啯鏆?Fix: Support pooler_output (BaseModelOutputWithPooling)
+    # 棣冩�?Fix: Support pooler_output (BaseModelOutputWithPooling)
     if hasattr(output, 'pooler_output') and output.pooler_output is not None:
         return output.pooler_output
         
@@ -1156,7 +1156,7 @@ def main():
     parser.add_argument('--vae_model', type=str, default="sd15", help="VAE model alias/id for encode/decode: sd15, sdxl, flux1, flux2, or HF repo id.")
     parser.add_argument('--vae_path', type=str, default="", help="Optional local VAE directory. Overrides --vae_model.")
     parser.add_argument('--image_ext', type=str, default="jpg", help="Generated image extension for Phase 1 save path: jpg or png.")
-    parser.add_argument('--style_adapter', type=str, default="", help="Optional external style adapter (.pt) to override style_emb/style_spatial_id_16")
+    parser.add_argument('--style_adapter', type=str, default="", help="Optional external style adapter (.pt) to override tokenizer/style_spatial_id_16")
     parser.add_argument('--max_src_samples', type=int, default=int(full_eval_defaults.get("max_src_samples", 30)), help="Max source images per style; <=0 means all")
     parser.add_argument('--max_ref_compare', type=int, default=int(full_eval_defaults.get("max_ref_compare", 50)), help="Max refs for LPIPS style compare; <=0 means all cached refs")
     parser.add_argument('--max_ref_cache', type=int, default=int(full_eval_defaults.get("max_ref_cache", 256)), help="Max reference images per style used for cache/features; <=0 means all")
@@ -1581,7 +1581,7 @@ def main():
     # ==========================================
     # PHASE 2: EVALUATION (VGG + CLIP)
     # ==========================================
-    print(f"\n妫ｅ啯鐣?Phase 2: Evaluation")
+    print(f"\n棣冩�?Phase 2: Evaluation")
     
     # Load image classifier (single evaluation path)
     image_classifier = None
@@ -1923,7 +1923,7 @@ def main():
                         proto = proto / (proto.norm(p=2, dim=-1, keepdim=True) + 1e-8)
                         ref_clip_prototypes[sid] = proto.to(device, dtype=torch.float32)
                 except Exception as e:
-                    print(f"  闁宠法濯寸粭?Failed to prepare CLIP matrix for style {sid}: {e}")
+                    print(f"  閳跨媴绗?Failed to prepare CLIP matrix for style {sid}: {e}")
 
     # Cache source images/CLIP embeddings to avoid repeated work across many target styles.
     src_img_cache = {}   # abs src path -> Tensor[3,256,256] on CPU (LPIPS path)
@@ -2154,7 +2154,7 @@ def generate_summary_json(
     kid_subset_size: int = 50,
     kid_batch_size: int = 8,
 ):
-    print("\n妫ｅ啯鎯?Generating Summary...")
+    print("\n棣冩�?Generating Summary...")
     rows = []
     if csv_path.exists():
         with open(csv_path, 'r') as f:
@@ -2434,7 +2434,7 @@ def generate_summary_json(
         try:
             cls_report = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
             
-            # 闁圭粯鍔曡ぐ鍥即鐎靛憡绾悷娆忓€诲▓鎴犳嫚閿斿墽鐭庡ǎ鍥ｅ墲娴?
+            # 閹绘劕褰囬弴瀵告纯鐟欏倻娈戠拠锔剧矎娣団剝�?
             precision, recall, f1, support = precision_recall_fscore_support(y_true, y_pred, average=None, labels=list(cls_report.keys())[:-3], zero_division=0)
             unique_labels = list(cls_report.keys())[:-3]
             for i, label in enumerate(unique_labels):
@@ -2444,10 +2444,10 @@ def generate_summary_json(
                     "f1_score": float(f1[i]),
                     "support": int(support[i])
                 }
-            print("\n闁?Classification Report:")
+            print("\n�?Classification Report:")
             print(classification_report(y_true, y_pred, zero_division=0))
         except Exception as e:
-            print(f"闁宠法濯寸粭?Failed to generate classification report: {e}")
+            print(f"閳跨媴绗?Failed to generate classification report: {e}")
     elif y_true:
         # Manual simple accuracy if sklearn missing
         correct = sum(1 for t, p in zip(y_true, y_pred) if t.lower() == p.lower())
@@ -2519,7 +2519,7 @@ def generate_summary_json(
     sum_path = out_dir / summary_filename
     with open(sum_path, 'w') as f:
         json.dump(summary, f, indent=2)
-    print(f"闁?Summary saved: {sum_path}")
+    print(f"�?Summary saved: {sum_path}")
     _save_summary_grid_png(rows, out_dir, style_order=style_order, filename=summary_grid_filename, selection_mode="max_clip_style")
     _save_summary_grid_png(rows, out_dir, style_order=style_order, filename="summary_grid_first.png", selection_mode="first")
     _save_summary_grid_png(rows, out_dir, style_order=style_order, filename="summary_grid_max_clip_style.png", selection_mode="max_clip_style")

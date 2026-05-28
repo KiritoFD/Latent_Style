@@ -328,13 +328,6 @@ class SBTrainer:
         if not isinstance(adapter, dict):
             raise ValueError(f"Unsupported training style adapter format: {adapter_path}")
         with torch.no_grad():
-            style_emb = adapter.get("style_emb.weight")
-            if style_emb is None:
-                style_emb = adapter.get("style_emb.mu")
-            if style_emb is not None and hasattr(self.model, "style_emb"):
-                self.model.style_emb.weight.copy_(
-                    style_emb.to(device=self.model.style_emb.weight.device, dtype=self.model.style_emb.weight.dtype)
-                )
             style_spatial = adapter.get("style_spatial_id_16")
             if style_spatial is not None and hasattr(self.model, "style_spatial_id_16"):
                 self.model.style_spatial_id_16.copy_(
@@ -513,8 +506,6 @@ class SBTrainer:
 
     def _reset_trainable_style_params(self, mode: str) -> None:
         with torch.no_grad():
-            if mode in {"style_emb_only", "style_branch"} and hasattr(self.model, "style_emb"):
-                torch.nn.init.normal_(self.model.style_emb.weight, mean=0.0, std=0.02)
             if mode == "style_branch" and hasattr(self.model, "style_spatial_id_16"):
                 torch.nn.init.normal_(self.model.style_spatial_id_16, mean=0.0, std=0.02)
 
@@ -547,17 +538,14 @@ class SBTrainer:
             param.requires_grad_(False)
         self.teacher_model = teacher
 
-        mode = str(self.distill_cfg.get("mode", "style_emb_only")).strip().lower()
-        if mode not in {"style_emb_only", "style_branch"}:
+        mode = str(self.distill_cfg.get("mode", "style_branch")).strip().lower()
+        if mode not in {"style_branch"}:
             raise ValueError(f"Unsupported distill mode: {mode}")
 
         for _, param in self.model.named_parameters():
             param.requires_grad_(False)
 
         trainable_names: list[str] = []
-        if mode in {"style_emb_only", "style_branch"}:
-            self.model.style_emb.weight.requires_grad_(True)
-            trainable_names.append("style_emb.weight")
         if mode == "style_branch":
             self.model.style_spatial_id_16.requires_grad_(True)
             trainable_names.append("style_spatial_id_16")

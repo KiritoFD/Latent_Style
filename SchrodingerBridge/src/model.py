@@ -31,17 +31,10 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.time_dim = int(bridge_config.time_dim)
         self.velocity_head_mode = str(bridge_config.velocity_head_mode).strip().lower()
         self.velocity_tanh_limit = max(1e-3, float(bridge_config.velocity_tanh_limit))
-        self.bridge_style_dim = int(self.style_emb.embedding_dim)
-        self.time_mlp = nn.Sequential(
-            nn.Linear(self.time_dim, self.bridge_style_dim),
-            nn.SiLU(),
-            nn.Linear(self.bridge_style_dim, self.bridge_style_dim),
-        )
 
     def _compute_delta(self, h: torch.Tensor, x: torch.Tensor | None = None) -> torch.Tensor:
-        style_code = getattr(self, "_current_style_code_for_head", None)
         style_tokens = getattr(self, "_last_style_token_fields", None)
-        raw_delta = self._decode_output_raw(h, style_code=style_code, style_tokens=style_tokens)
+        raw_delta = self._decode_output_raw(h, style_tokens=style_tokens)
         self.last_raw_diffeomorphic = raw_delta
         if bool(getattr(self, "use_diffeomorphic_stroke", False)):
             if x is None:
@@ -91,30 +84,6 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             raise ValueError(f"time batch mismatch: expected {x.shape[0]} or 1, got {t.shape[0]}")
         return t
 
-    def _compute_style_code(
-        self,
-        *,
-        x: torch.Tensor,
-        style_id: torch.Tensor | int | None,
-        t: torch.Tensor,
-        style_code_override: torch.Tensor | None = None,
-    ) -> torch.Tensor:
-        if style_code_override is None:
-            style_code = self.encode_style_id(style_id)
-        else:
-            self._last_style_token_fields = None
-            style_code = style_code_override
-            if style_code.ndim == 1:
-                style_code = style_code.unsqueeze(0)
-            style_code = style_code.to(device=x.device, dtype=x.dtype)
-        if style_code.shape[0] == 1 and x.shape[0] > 1:
-            style_code = style_code.expand(x.shape[0], -1)
-        elif style_code.shape[0] != x.shape[0]:
-            raise ValueError(f"style code batch mismatch: expected {x.shape[0]} or 1, got {style_code.shape[0]}")
-
-        time_code = self.time_mlp(sinusoidal_time_embedding(t, self.time_dim).to(dtype=style_code.dtype))
-        return style_code + time_code
-
     def _resolve_integration_horizon(self, *, step_size: float, style_strength: float | None) -> float:
         strength = self._resolve_style_strength(style_strength)
         horizon = max(0.0, float(step_size)) * strength
@@ -144,7 +113,6 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         *,
         step_size: float = 1.0,
         style_strength: float | None = None,
-        style_code_override: torch.Tensor | None = None,
         target_style_latent: torch.Tensor | None = None,
         override_palette: torch.Tensor | None = None,
     ) -> torch.Tensor:
@@ -159,7 +127,6 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             t=t_fixed,
             style_id=style_id,
             target_style_latent=target_style_latent,
-            style_code_override=style_code_override,
             override_palette=override_palette,
         )
         return x + velocity * horizon
@@ -173,25 +140,22 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         step_size: float = 1.0,
         style_strength: float | None = None,
         target_style_latent: torch.Tensor | None = None,
-        style_code_override: torch.Tensor | None = None,
         override_palette: torch.Tensor | None = None,
     ) -> torch.Tensor:
         del source, step_size, style_strength
-        if style_id is None and style_code_override is None:
-            raise ValueError("style_id or style_code_override is required.")
-        t_tensor = self._resolve_t_input(x, t)
-        style_code = self._compute_style_code(
-            x=x,
-            style_id=style_id,
-            t=t_tensor,
-            style_code_override=style_code_override,
-        )
         if style_id is None:
-            raise ValueError("style_id is required for bridge spatial conditioning.")
-        style_maps = self._prepare_style_maps(style_id=style_id)
+            raise ValueError("style_id is required.")
+        t_tensor = self._resolve_t_input(x, t)
+        del t_tensor
+        style_tokens, style_maps = self._prepare_style_context(
+            style_id=style_id,
+            batch_size=x.shape[0],
+            device=x.device,
+            dtype=x.dtype,
+        )
         return self._predict_delta_from_context(
             x,
-            style_code=style_code,
+            style_tokens=style_tokens,
             style_maps=style_maps,
             override_palette=override_palette,
             strength=1.0,
@@ -207,7 +171,6 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         step_size: float = 1.0,
         style_strength: float | None = None,
         target_style_latent: torch.Tensor | None = None,
-        style_code_override: torch.Tensor | None = None,
         override_palette: torch.Tensor | None = None,
     ) -> torch.Tensor:
         if style_id is None:
@@ -228,7 +191,6 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                 t=t,
                 style_id=style_id,
                 target_style_latent=target_style_latent,
-                style_code_override=style_code_override,
                 override_palette=override_palette,
             )
             h = h + velocity * dt
