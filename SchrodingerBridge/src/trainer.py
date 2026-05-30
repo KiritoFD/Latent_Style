@@ -253,9 +253,10 @@ class SBTrainer:
             return
         state = torch.load(ckpt_path, map_location=self.device, weights_only=False)
         self.model.load_state_dict(strip_compile_prefix(state["model_state_dict"]), strict=True)
-        if "optimizer_state_dict" in state:
+        resume_optimizer = bool(self.train_cfg.get("resume_optimizer", True))
+        if resume_optimizer and "optimizer_state_dict" in state:
             self.optimizer.load_state_dict(state["optimizer_state_dict"])
-        if self.scheduler is not None and state.get("scheduler_state_dict") is not None:
+        if resume_optimizer and self.scheduler is not None and state.get("scheduler_state_dict") is not None:
             self.scheduler.load_state_dict(state["scheduler_state_dict"])
         self.global_step = int(state.get("global_step", 0))
         self.start_epoch = int(state.get("epoch", 0)) + 1

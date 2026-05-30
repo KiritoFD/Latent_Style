@@ -321,6 +321,7 @@ class TrainingConfig:
     use_gradient_checkpointing: bool = False
     fused_adamw: bool = True
     resume_checkpoint: str = ""
+    resume_optimizer: bool = True
     freeze_mode: str = "none"
     freeze_reinit_trainable: bool = False
     full_eval_batch_size: int = 6

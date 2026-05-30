@@ -214,7 +214,8 @@
     "numeric_debug_dump_limit": 200,
     "distill": {},
     "freeze_mode": "backbone_only",
-    "freeze_reinit_trainable": false
+    "freeze_reinit_trainable": false,
+    "resume_optimizer": false
   },
   "data": {
     "data_root": "../../Latent_Style/latent-256",
