@@ -113,6 +113,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             identity_dim=int(cfg.tokenizer_identity_dim),
             texture_dim=int(cfg.tokenizer_texture_dim),
             geometry_dim=int(cfg.tokenizer_geometry_dim),
+            init_std=float(cfg.tokenizer_init_std),
             projection_mode=str(cfg.tokenizer_projection_mode),
             residual_gain=float(cfg.tokenizer_residual_gain),
         )

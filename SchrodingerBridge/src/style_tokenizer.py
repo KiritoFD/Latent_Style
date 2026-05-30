@@ -35,9 +35,14 @@ class FactorizedStyleTokenizer(nn.Module):
         self.init_std = max(1e-6, float(init_std))
         self.projection_mode = str(projection_mode).strip().lower()
         self.residual_gain = float(residual_gain)
-        if self.projection_mode not in {"concat", "additive", "carrier_residual"}:
+        if self.projection_mode not in {"concat", "additive", "carrier_residual", "direct_code"}:
             raise ValueError(f"Unsupported tokenizer projection_mode: {projection_mode}")
 
+        if self.projection_mode == "direct_code":
+            self.direct_code = nn.Embedding(self.num_styles, self.style_dim)
+            self.last_debug: dict[str, torch.Tensor] = {}
+            self.reset_parameters()
+            return
         if self.projection_mode == "carrier_residual":
             self.carrier = nn.Embedding(self.num_styles, self.style_dim)
         self.identity = nn.Embedding(self.num_styles, self.identity_dim)
@@ -72,6 +77,8 @@ class FactorizedStyleTokenizer(nn.Module):
     @property
     def weight(self) -> torch.Tensor:
         # Compatibility for code that only needs a device anchor.
+        if self.projection_mode == "direct_code":
+            return self.direct_code.weight
         if self.projection_mode == "carrier_residual":
             return self.carrier.weight
         if self.projection_mode == "concat":
@@ -79,6 +86,9 @@ class FactorizedStyleTokenizer(nn.Module):
         return self.identity_projector[-1].weight
 
     def reset_parameters(self) -> None:
+        if self.projection_mode == "direct_code":
+            nn.init.normal_(self.direct_code.weight, mean=0.0, std=self.init_std)
+            return
         if self.projection_mode == "carrier_residual":
             nn.init.normal_(self.carrier.weight, mean=0.0, std=self.init_std)
         nn.init.normal_(self.identity.weight, mean=0.0, std=self.init_std)
@@ -155,9 +165,22 @@ class FactorizedStyleTokenizer(nn.Module):
                 )
             self.last_debug = debug
 
+    def _record_direct_debug(self, style_code: torch.Tensor) -> None:
+        with torch.no_grad():
+            code = style_code.detach().float()
+            self.last_debug = {
+                "style_code_norm": code.norm(dim=1).mean(),
+                "style_code_abs_mean": code.abs().mean(),
+                "style_code_abs_max": code.abs().amax(),
+            }
+
     def forward(self, style_id: torch.Tensor, t: torch.Tensor | None = None) -> torch.Tensor:
         del t
         style_id = style_id.long().view(-1)
+        if self.projection_mode == "direct_code":
+            style_code = self.direct_code(style_id)
+            self._record_direct_debug(style_code)
+            return style_code
         gates = self.field_gates.to(dtype=self.identity.weight.dtype)
         identity = self.identity(style_id) * gates[0]
         texture = self.texture(style_id) * gates[1]
