@@ -1066,7 +1066,7 @@ def main():
     parser.add_argument('--style_strength', type=float, default=full_eval_defaults.get("style_strength", None), help="Global style strength in [0,1]")
     parser.add_argument('--residual_scale', type=float, default=1.0, help="Post-endpoint latent residual scale for inference strengthening. 1.0 keeps default behavior.")
     parser.add_argument('--vae_decode_scale', type=float, default=None, help="Override VAE scaling factor for decode only; encode/model latent scale stay unchanged.")
-    parser.add_argument('--style_adapter', type=str, default="", help="Optional external style adapter (.pt) to override style_emb/style_spatial_id_16")
+    parser.add_argument('--style_adapter', type=str, default="", help="Optional external style adapter (.pt) to override style_tokenizer/style_spatial_id_16")
     parser.add_argument('--max_src_samples', type=int, default=int(full_eval_defaults.get("max_src_samples", 30)), help="Max source images per style; <=0 means all")
     parser.add_argument('--max_ref_compare', type=int, default=int(full_eval_defaults.get("max_ref_compare", 50)), help="Max refs for LPIPS style compare; <=0 means all cached refs")
     parser.add_argument('--max_ref_cache', type=int, default=int(full_eval_defaults.get("max_ref_cache", 256)), help="Max reference images per style used for cache/features; <=0 means all")

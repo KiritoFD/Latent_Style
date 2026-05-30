@@ -163,6 +163,22 @@ class SBTrainer:
             "first_nonfinite_grad_ratio": first_nonfinite_ratio,
         }
 
+    def _tokenizer_debug_stats(self) -> Dict[str, float]:
+        tokenizer = getattr(self.model, "style_tokenizer", None)
+        raw = getattr(tokenizer, "last_debug", {}) if tokenizer is not None else {}
+        stats: Dict[str, float] = {}
+        for key, value in raw.items():
+            if torch.is_tensor(value):
+                stats[f"tokenizer_{key}"] = float(torch.nan_to_num(value.detach().float()).item())
+        if tokenizer is not None:
+            for name, param in tokenizer.named_parameters():
+                grad = param.grad
+                if grad is not None:
+                    stats[f"tokenizer_grad_{name.replace('.', '_')}"] = float(
+                        torch.nan_to_num(grad.detach().float().abs().mean()).item()
+                    )
+        return stats
+
     def _write_numeric_debug(
         self,
         *,
@@ -195,6 +211,9 @@ class SBTrainer:
         }
         if extra:
             payload["extra"] = extra
+        token_stats = self._tokenizer_debug_stats()
+        if token_stats:
+            payload["style_tokenizer"] = token_stats
         self.numeric_debug_file.parent.mkdir(parents=True, exist_ok=True)
         with open(self.numeric_debug_file, "a", encoding="utf-8") as f:
             f.write(json.dumps(payload, ensure_ascii=False) + "\n")
@@ -229,8 +248,8 @@ class SBTrainer:
 
     def _reset_trainable_style_params(self, mode: str) -> None:
         with torch.no_grad():
-            if mode in {"style_emb_only", "style_branch"} and hasattr(self.model, "style_emb"):
-                torch.nn.init.normal_(self.model.style_emb.weight, mean=0.0, std=0.02)
+            if mode in {"tokenizer_only", "style_branch"} and hasattr(self.model, "style_tokenizer"):
+                self.model.style_tokenizer.reset_parameters()
             if mode == "style_branch" and hasattr(self.model, "style_spatial_id_16"):
                 torch.nn.init.normal_(self.model.style_spatial_id_16, mean=0.0, std=0.02)
 
@@ -263,17 +282,18 @@ class SBTrainer:
             param.requires_grad_(False)
         self.teacher_model = teacher
 
-        mode = str(self.distill_cfg.get("mode", "style_emb_only")).strip().lower()
-        if mode not in {"style_emb_only", "style_branch"}:
+        mode = str(self.distill_cfg.get("mode", "tokenizer_only")).strip().lower()
+        if mode not in {"tokenizer_only", "style_branch"}:
             raise ValueError(f"Unsupported distill mode: {mode}")
 
         for _, param in self.model.named_parameters():
             param.requires_grad_(False)
 
         trainable_names: list[str] = []
-        if mode in {"style_emb_only", "style_branch"}:
-            self.model.style_emb.weight.requires_grad_(True)
-            trainable_names.append("style_emb.weight")
+        if mode in {"tokenizer_only", "style_branch"}:
+            for name, param in self.model.style_tokenizer.named_parameters():
+                param.requires_grad_(True)
+                trainable_names.append(f"style_tokenizer.{name}")
         if mode == "style_branch":
             self.model.style_spatial_id_16.requires_grad_(True)
             trainable_names.append("style_spatial_id_16")

@@ -190,12 +190,14 @@ class LatentAdaCUTRuntimeMixin:
         )
         return stroked - x.float()
 
-    def encode_style_id(self, style_id: torch.Tensor | int | None) -> torch.Tensor:
+    def encode_style_id(self, style_id: torch.Tensor | int | None, t: torch.Tensor | None = None) -> torch.Tensor:
         if style_id is None:
             raise ValueError("style_id is required.")
-        emb_device = self.style_emb.weight.device
-        style_id = self._normalize_style_id_input(style_id, device=emb_device)
-        return self.style_emb(style_id)
+        token_device = self.style_tokenizer.weight.device
+        style_id = self._normalize_style_id_input(style_id, device=token_device)
+        if t is not None and t.device != token_device:
+            t = t.to(device=token_device)
+        return self.style_tokenizer(style_id, t=t)
 
     @staticmethod
     def _normalize_style_map(feat: torch.Tensor) -> torch.Tensor:
@@ -366,6 +368,7 @@ class LatentAdaCUTRuntimeMixin:
         h_up = self._apply_upsample_blur(h_up)
         h_fused = self._fuse_skip_features(h_up, skip_32, style_code=style_code, gate=1.0)
         h_dec = self._run_decoder(h_fused)
+        h_dec = self.dec_act(self.dec_mod(h_dec, style_code, gate=1.0))
         delta_raw = self._compute_delta(h_dec, x=x)
         return delta_raw
 
