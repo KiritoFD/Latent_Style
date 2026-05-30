@@ -108,6 +108,7 @@ class SBTrainer:
         self.global_step = 0
         self.start_epoch = 1
         self._maybe_resume(str(train_cfg.get("resume_checkpoint", "")))
+        self._configure_freeze_mode()
         self._configure_distillation()
 
     def _tensor_stats(self, value: torch.Tensor | None) -> Dict[str, float]:
@@ -222,6 +223,20 @@ class SBTrainer:
     def _build_optimizer(self, params) -> torch.optim.Optimizer:
         return build_adamw(params, self.train_cfg, self.device)
 
+    def _rebuild_scheduler_for_current_optimizer(self) -> None:
+        if self.scheduler is None:
+            return
+        if self.scheduler_name == "multistep":
+            milestones = sorted(int(v) for v in self.train_cfg.get("multistep_milestones", [40, 55]))
+            gamma = float(self.train_cfg.get("multistep_gamma", 0.1))
+            self.scheduler = torch.optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=milestones, gamma=gamma)
+            return
+        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            self.optimizer,
+            T_max=max(1, int(self.train_cfg.get("num_epochs", 60))),
+            eta_min=float(self.train_cfg.get("min_learning_rate", 5e-5)),
+        )
+
     def _find_latest_checkpoint(self) -> Optional[Path]:
         ckpts = sorted(self.checkpoint_dir.glob("epoch_*.pt"))
         return ckpts[-1] if ckpts else None
@@ -252,6 +267,52 @@ class SBTrainer:
                 self.model.style_tokenizer.reset_parameters()
             if mode == "style_branch" and hasattr(self.model, "style_spatial_id_16"):
                 torch.nn.init.normal_(self.model.style_spatial_id_16, mean=0.0, std=0.02)
+
+    def _configure_freeze_mode(self) -> None:
+        if self.distill_enabled:
+            return
+        mode = str(self.train_cfg.get("freeze_mode", "none")).strip().lower()
+        if mode in {"", "none", "all"}:
+            return
+        aliases = {
+            "style_tokenizer_only": "tokenizer_only",
+            "token_only": "tokenizer_only",
+            "tokenizer_branch": "style_branch",
+            "lancet_only": "backbone_only",
+            "consumer_only": "backbone_only",
+            "freeze_tokenizer": "backbone_only",
+        }
+        mode = aliases.get(mode, mode)
+        if mode not in {"tokenizer_only", "style_branch", "backbone_only"}:
+            raise ValueError(f"Unsupported freeze_mode: {mode}")
+
+        for _, param in self.model.named_parameters():
+            param.requires_grad_(False)
+
+        trainable_names: list[str] = []
+        if mode in {"tokenizer_only", "style_branch"}:
+            for name, param in self.model.style_tokenizer.named_parameters():
+                param.requires_grad_(True)
+                trainable_names.append(f"style_tokenizer.{name}")
+        if mode == "style_branch":
+            self.model.style_spatial_id_16.requires_grad_(True)
+            trainable_names.append("style_spatial_id_16")
+        if mode == "backbone_only":
+            for name, param in self.model.named_parameters():
+                if name.startswith("style_tokenizer."):
+                    continue
+                param.requires_grad_(True)
+                trainable_names.append(name)
+
+        if bool(self.train_cfg.get("freeze_reinit_trainable", False)):
+            self._reset_trainable_style_params(mode)
+
+        trainable_params = [p for p in self.model.parameters() if p.requires_grad]
+        if not trainable_params:
+            raise RuntimeError(f"freeze_mode={mode} selected no trainable parameters.")
+        self.optimizer = self._build_optimizer(trainable_params)
+        self._rebuild_scheduler_for_current_optimizer()
+        logger.info("Freeze mode=%s | trainable_count=%d | trainable=%s", mode, len(trainable_params), ", ".join(trainable_names[:24]))
 
     def _configure_distillation(self) -> None:
         if not self.distill_enabled:
@@ -306,11 +367,7 @@ class SBTrainer:
             raise RuntimeError("Distillation enabled but no trainable parameters were selected.")
         self.optimizer = self._build_optimizer(trainable_params)
         if self.scheduler is not None:
-            self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                self.optimizer,
-                T_max=max(1, int(self.train_cfg.get("num_epochs", 60))),
-                eta_min=float(self.train_cfg.get("min_learning_rate", 5e-5)),
-            )
+            self._rebuild_scheduler_for_current_optimizer()
         logger.info("Distill mode=%s | trainable=%s", mode, ", ".join(trainable_names))
 
     def _move_batch(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
