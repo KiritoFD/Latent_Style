@@ -7,19 +7,19 @@ This restart uses documented baselines instead of the failed `high032` tokenizer
 1. `t01_ws0p03_g6_nl0p05` is the raw-style/Pareto baseline.
    Evidence: `docs/experiments/2026-05-20-256-diffeomorphic-tangent-progress.md` reports `clip_style=0.7264`, `LPIPS=0.5170`, `clip_content=0.7570`, `DINO-SSM=0.0263`. The 2026-05-22 regression-fix note confirms the checkpoint can reproduce `clip_style=0.7264026194016138`.
 
-2. `t00_ws0p03_g6_nl0` is the stable structure baseline.
-   Evidence: the same docs report `clip_style=0.7259`, `LPIPS=0.5166`, `clip_content=0.7602`, `DINO-SSM=0.0259`.
-
-3. EC best is a separate content-preserving reference, not the same operating point.
+2. EC best is the content-preserving reference.
    Evidence: `docs/repro_report_zh/00_总览与核心结论.md` records `K2_r00_balanced_default epoch3` with `CLIP-S=0.6980`, `CLIP-C=0.8727`, `LPIPS=0.3777`, `EC=0.4343`, and `Entropy gate 5.0 epoch1` with `CLIP-S=0.6916`, `CLIP-C=0.8804`, `LPIPS=0.3684`, `EC=0.4368`.
 
-The tokenizer line should therefore be judged against two endpoints: keep `t01/t00` style strength from collapsing, while learning a representation knob that can move toward EC-best behavior without manual per-style hacks.
+3. `t00_ws0p03_g6_nl0` is only a same-family sanity check, not the tokenizer baseline.
+   Evidence: the same docs report `clip_style=0.7259`, `LPIPS=0.5166`, `clip_content=0.7602`, `DINO-SSM=0.0259`.
+
+The tokenizer line should therefore be judged against two endpoints: preserve `t01` style strength, while learning a representation knob that can move toward EC-best content preservation without manual per-style hacks.
 
 Current baseline policy:
 
 - Primary style baseline: `t01_ws0p03_g6_nl0p05`, because it is the documented paper-facing strong-style operating point.
-- Stability fallback: `t00_ws0p03_g6_nl0`, because it is the adjacent stable structure point from the same sweep.
 - Content-preserving reference: EC-best (`K2_r00_balanced_default epoch3` and `Entropy gate 5.0 epoch1`), because these define the low-LPIPS/high-content endpoint rather than the style endpoint.
+- Sanity check only: `t00_ws0p03_g6_nl0`, because it is adjacent to `t01` in the same tangent sweep but is not the selected baseline for tokenizer work.
 - Invalid baseline for this restart: failed high032/set-encoder tokenizer runs. They are negative ablations only.
 
 ## Representation Hypothesis
@@ -130,3 +130,43 @@ Interpretation:
 - It does not recover the documented t01 style endpoint (`clip_style=0.7264, LPIPS=0.5170`).
 - It lands closer to the EC/content-preserving side than the t01 style side: LPIPS is much lower, but style strength collapses by about 0.017.
 - Therefore the next tokenizer step should not simply increase token count. The immediate bottleneck is style actuation strength: the projected fields reach the decoder, but the current consumer path is too conservative to match t01's diffeomorphic style pull.
+
+## Run 002: Alternating Freeze Probe
+
+Purpose: separate tokenizer optimization from LANCET consumer optimization.
+
+Code changes:
+
+- Added `training.freeze_mode` for non-distill OMF training.
+- Supported `tokenizer_only`, `style_branch`, and `backbone_only`.
+- Added `training.resume_optimizer=false` so alternating freeze modes can resume model weights without loading incompatible optimizer parameter groups.
+
+Tokenizer-only continuation:
+
+- Config: `configs/tokenizer_t01_factorized_tokonly_e12.json`
+- Resume: `tokenizer_t01_factorized_base/epoch_0008.pt`
+- Freeze: LANCET frozen, tokenizer trainable.
+- Result: no improvement.
+
+| run | all CLIP-S | all LPIPS | all CLIP-C | transfer CLIP-S | transfer LPIPS | photo2art CLIP-S | photo2art LPIPS |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| base e8 | 0.70916 | 0.43720 | 0.82501 | 0.68145 | 0.44806 | 0.65771 | 0.46710 |
+| tokenizer-only e12 | 0.70847 | 0.43848 | 0.82306 | 0.68078 | 0.44889 | 0.65800 | 0.46818 |
+
+Backbone-only continuation:
+
+- Config: `configs/tokenizer_t01_factorized_backbone_e16.json`
+- Resume: `tokenizer_t01_factorized_tokonly_e12/epoch_0012.pt`
+- Freeze: tokenizer frozen, LANCET/style spatial branch trainable.
+- Result: small style improvement, with expected LPIPS/content tradeoff.
+
+| run | all CLIP-S | all LPIPS | all CLIP-C | transfer CLIP-S | transfer LPIPS | photo2art CLIP-S | photo2art LPIPS |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| tokenizer-only e12 | 0.70847 | 0.43848 | 0.82306 | 0.68078 | 0.44889 | 0.65800 | 0.46818 |
+| backbone-only e16 | 0.71260 | 0.44534 | 0.81980 | 0.68583 | 0.45689 | 0.66056 | 0.47175 |
+
+Conclusion:
+
+- The current tokenizer is not merely undertrained: tokenizer-only optimization cannot recover style.
+- The LANCET consumer can extract slightly more style from the same frozen tokens, so the actuator path matters.
+- The remaining gap to t01 is still large. The next representation step should remove `concat -> LayerNorm -> Linear` field mixing and use independent field projections. This keeps the parameter budget small while making field usage more identifiable.

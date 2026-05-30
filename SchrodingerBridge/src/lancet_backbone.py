@@ -113,6 +113,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             identity_dim=int(cfg.tokenizer_identity_dim),
             texture_dim=int(cfg.tokenizer_texture_dim),
             geometry_dim=int(cfg.tokenizer_geometry_dim),
+            projection_mode=str(cfg.tokenizer_projection_mode),
         )
 
         # Learnable style-id spatial priors for inference without reference image.
