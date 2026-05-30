@@ -304,3 +304,19 @@ Hypothesis:
 
 - If the bottleneck is tokenizer expressivity, this should move style above `0.71260` without changing the main actuator.
 - If it fails, the remaining bottleneck is not tokenizer size; it is the consumer path/loss target that maps style codes into image-space edits.
+
+Run 005 result:
+
+| run | all CLIP-S | all LPIPS | all CLIP-C | transfer CLIP-S | transfer LPIPS | photo2art CLIP-S | photo2art LPIPS |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| backbone-only e16 base | 0.71260 | 0.44534 | 0.81980 | 0.68583 | 0.45689 | 0.66056 | 0.47175 |
+| big tokenizer-only e8 | 0.71197 | 0.43917 | 0.82560 | 0.68472 | 0.45051 | 0.65970 | 0.47238 |
+| big tokenizer-only e10 | 0.71229 | 0.43867 | 0.82543 | 0.68511 | 0.44986 | 0.65981 | 0.47143 |
+| big tokenizer-only e12 | 0.71191 | 0.43799 | 0.82585 | 0.68472 | 0.44911 | 0.65995 | 0.47157 |
+
+Interpretation:
+
+- Enlarging the tokenizer while freezing LANCET does not break the current style ceiling. Best style is `0.71229`, slightly below the frozen-backbone source point `0.71260`.
+- It does improve LPIPS/content slightly, so the larger tokenizer can re-center the conditioning inside the existing actuator's basin.
+- This is useful evidence: the current gap to `t01=0.7264` is not primarily raw tokenizer capacity. The bottleneck is the consumer/actuator path or the target distribution induced by the loss.
+- Next representation step should keep the best tokenizer checkpoint as a content-preserving tokenizer variant, then unfreeze a narrow style-actuator subset instead of the whole backbone. Candidate trainable subset: tokenizer + decoder modulation + semantic/style spatial routing, with the rest frozen.
