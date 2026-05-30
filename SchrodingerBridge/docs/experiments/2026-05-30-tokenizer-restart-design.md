@@ -246,3 +246,23 @@ Acceptance criteria:
 - Must not regress below `concat base e8` (`0.70916 / 0.43720`) if it is merely capacity-restoring.
 - To matter as a tokenizer base, it should move toward `backbone-only e16` or higher (`0.71260 / 0.44534`) while preserving LPIPS near `0.45`.
 - The true target remains beyond the documented `t01` style endpoint: `clip_style >= 0.73` with LPIPS near `0.45`.
+
+Run-004 calibration:
+
+- `batch_size=160` reached about `8.85GB`, slightly below the formal-training target. It was stopped at epoch 2.
+- `batch_size=176` reached about `9.6GB`, with all tokenizer gradients non-zero.
+- Important protocol correction: batch176 has about half the optimizer steps per epoch compared with the earlier batch80 runs. Therefore batch176/8epoch is a VRAM-calibrated diagnostic, not an update-budget-matched comparison to Run 001.
+
+Batch176/8epoch full eval:
+
+| run | all CLIP-S | all LPIPS | all CLIP-C | transfer CLIP-S | transfer LPIPS | photo2art CLIP-S | photo2art LPIPS |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| carrier b176 e6 | 0.70214 | 0.44095 | 0.81206 | 0.67634 | 0.45031 | 0.64744 | 0.45252 |
+| carrier b176 e7 | 0.70340 | 0.44802 | 0.80897 | 0.67834 | 0.45713 | 0.64637 | 0.46342 |
+| carrier b176 e8 | 0.70216 | 0.44755 | 0.81036 | 0.67663 | 0.45728 | 0.64494 | 0.45751 |
+
+Interim interpretation:
+
+- The b176/e8 result is worse than concat and additive, but it has only about half the update budget.
+- Do not use this as final evidence against the carrier tokenizer.
+- Next run: `configs/tokenizer_t01_carrier_base_b176_e16.json`, from scratch, batch176, 16 epochs. This keeps the 9-10.8GB VRAM discipline while restoring an optimizer-step budget close to the earlier batch80/8epoch tokenizer base.
