@@ -24,6 +24,8 @@ class FactorizedStyleTokenizer(nn.Module):
         init_std: float = 0.02,
         projection_mode: str = "concat",
         residual_gain: float = 0.5,
+        num_atoms: int = 32,
+        atom_temperature: float = 0.25,
     ) -> None:
         super().__init__()
         self.num_styles = max(1, int(num_styles))
@@ -35,11 +37,19 @@ class FactorizedStyleTokenizer(nn.Module):
         self.init_std = max(1e-6, float(init_std))
         self.projection_mode = str(projection_mode).strip().lower()
         self.residual_gain = float(residual_gain)
-        if self.projection_mode not in {"concat", "additive", "carrier_residual", "direct_code"}:
+        self.num_atoms = max(2, int(num_atoms))
+        self.atom_temperature = max(1e-3, float(atom_temperature))
+        if self.projection_mode not in {"concat", "additive", "carrier_residual", "direct_code", "concept_atoms"}:
             raise ValueError(f"Unsupported tokenizer projection_mode: {projection_mode}")
 
         if self.projection_mode == "direct_code":
             self.direct_code = nn.Embedding(self.num_styles, self.style_dim)
+            self.last_debug: dict[str, torch.Tensor] = {}
+            self.reset_parameters()
+            return
+        if self.projection_mode == "concept_atoms":
+            self.atom_logits = nn.Embedding(self.num_styles, self.num_atoms)
+            self.concept_atoms = nn.Parameter(torch.empty(self.num_atoms, self.style_dim))
             self.last_debug: dict[str, torch.Tensor] = {}
             self.reset_parameters()
             return
@@ -79,6 +89,8 @@ class FactorizedStyleTokenizer(nn.Module):
         # Compatibility for code that only needs a device anchor.
         if self.projection_mode == "direct_code":
             return self.direct_code.weight
+        if self.projection_mode == "concept_atoms":
+            return self.concept_atoms
         if self.projection_mode == "carrier_residual":
             return self.carrier.weight
         if self.projection_mode == "concat":
@@ -88,6 +100,10 @@ class FactorizedStyleTokenizer(nn.Module):
     def reset_parameters(self) -> None:
         if self.projection_mode == "direct_code":
             nn.init.normal_(self.direct_code.weight, mean=0.0, std=self.init_std)
+            return
+        if self.projection_mode == "concept_atoms":
+            nn.init.normal_(self.atom_logits.weight, mean=0.0, std=self.init_std)
+            nn.init.normal_(self.concept_atoms, mean=0.0, std=self.init_std)
             return
         if self.projection_mode == "carrier_residual":
             nn.init.normal_(self.carrier.weight, mean=0.0, std=self.init_std)
@@ -174,12 +190,35 @@ class FactorizedStyleTokenizer(nn.Module):
                 "style_code_abs_max": code.abs().amax(),
             }
 
+    def _record_atom_debug(self, style_code: torch.Tensor, weights: torch.Tensor) -> None:
+        with torch.no_grad():
+            code = style_code.detach().float()
+            probs = weights.detach().float()
+            entropy = -(probs * probs.clamp_min(1e-8).log()).sum(dim=1).mean()
+            max_prob = probs.max(dim=1).values.mean()
+            effective_atoms = torch.exp(entropy)
+            self.last_debug = {
+                "style_code_norm": code.norm(dim=1).mean(),
+                "style_code_abs_mean": code.abs().mean(),
+                "style_code_abs_max": code.abs().amax(),
+                "atom_entropy": entropy,
+                "atom_effective_count": effective_atoms,
+                "atom_max_prob": max_prob,
+                "atom_table_norm": self.concept_atoms.detach().float().norm(dim=1).mean(),
+            }
+
     def forward(self, style_id: torch.Tensor, t: torch.Tensor | None = None) -> torch.Tensor:
         del t
         style_id = style_id.long().view(-1)
         if self.projection_mode == "direct_code":
             style_code = self.direct_code(style_id)
             self._record_direct_debug(style_code)
+            return style_code
+        if self.projection_mode == "concept_atoms":
+            logits = self.atom_logits(style_id)
+            weights = F.softmax(logits / self.atom_temperature, dim=-1)
+            style_code = weights @ self.concept_atoms
+            self._record_atom_debug(style_code, weights)
             return style_code
         gates = self.field_gates.to(dtype=self.identity.weight.dtype)
         identity = self.identity(style_id) * gates[0]
