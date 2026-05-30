@@ -344,5 +344,66 @@ Design:
 
 Interpretation rule:
 
-- If direct-code tokenizer exceeds `0.71260`, the previous tokenizer architectures were the bottleneck.
-- If it plateaus near or below `0.71260`, frozen LANCET's style actuator is the bottleneck; further tokenizer-only capacity is unlikely to reach `0.73`.
+- If direct-code tokenizer exceeds `0.71260`, the previous style-id tokenizer architectures were the bottleneck.
+- If it plateaus near or below `0.71260`, the frozen single global-code interface is saturated for style-id-only deterministic lookup.
+- This is not the tokenizer representation upper bound. It does not test stochastic tokenizers, sparse shared vocabularies, spatial tokens, per-layer tokens, or semantic-region-conditioned token injection.
+
+## Representation Boundary Correction
+
+Tokenizer and LANCET must be separated by role:
+
+- Tokenizer represents "what the style is" as an executable control object, currently `style_code`.
+- LANCET consumes that control object and performs the latent ODE/image edit.
+- In tokenizer-only training, LANCET is frozen but still mounted in the forward/backward graph. Gradients pass through frozen LANCET into tokenizer parameters; LANCET weights are not updated.
+
+Do not train a tokenizer encoder on per-sample `target_style` latent for the main benchmark. The standard evaluation/inference path only provides `target_style_id`; letting the tokenizer read the target latent during training creates a condition mismatch and leaks information that is unavailable at deployment. The main tokenizer object must therefore learn from style identity/learned vocab parameters into `style_code`, while richer future tokenizers should still respect the same available conditioning boundary.
+
+Next valid tokenizer probes:
+
+- direct `style_code` table as a control probe for the frozen single-code interface.
+- sparse concept-atom tokenizer: style id -> logits over shared learnable atoms -> `style_code`.
+- distributional tokenizer: style id -> mean/logvar over executable code with KL/entropy control, sampled during training and deterministic at eval.
+- multi-token tokenizer only after LANCET is explicitly extended to consume layer-specific tokens, not by leaking target latents.
+
+## Run 007 Plan: Frozen LANCET, Sparse Concept-Atom Tokenizer
+
+This is the next valid representation probe after the direct-code control.
+
+Design:
+
+```text
+style_id -> atom_logits [K]
+weights = softmax(atom_logits / tau)
+style_code = weights @ concept_atoms[K, style_dim]
+```
+
+Config:
+
+- `configs/tokenizer_t01_concept_atoms_tokonly_from_backbone_e16.json`
+- Base checkpoint: `exp/tokenizer_t01_factorized_backbone_e16/epoch_0016.pt`
+- Freeze mode: `tokenizer_only`
+- Ignore checkpoint `style_tokenizer.*` and reset tokenizer.
+- `K=32`, `tau=0.12`, no target latent input.
+- `tokenizer_init_std=0.2` so the initial atom mixture is not a near-uniform low-norm average.
+
+Hypothesis:
+
+- If concept atoms beat direct code or big concat, shared atoms give a better style metric space than independent style vectors.
+- If atoms underperform but show low entropy collapse, the next change is entropy/temperature control, not LANCET changes.
+- If atoms match direct code, the frozen single-code consumer is likely the limit and the next valid step is per-layer token consumption in LANCET.
+
+Local smoke before remote training:
+
+- Config loads: `configs/tokenizer_t01_concept_atoms_tokonly_from_backbone_e16.json`.
+- Batch2 CPU OMF smoke with reduced SWD projections is finite.
+- Trainable path under manual tokenizer-only freeze:
+  - non-zero tokenizer gradients: `atom_logits.weight`, `concept_atoms`
+  - non-tokenizer backbone grad count: `0`
+- Debug state is populated:
+  - `atom_entropy ~= 2.26`
+  - `atom_effective_count ~= 9.6` out of `K=32`
+  - `atom_max_prob ~= 0.39`
+  - `style_code_norm ~= 1.11`
+- No tokenizer path reads per-sample `target_style` latent. The target latent appears only in loss/evaluation targets and in existing optional moment/spatial paths when explicitly passed, not in tokenizer conditioning.
+
+This smoke validates graph connectivity only. It is not evidence of metric improvement.
