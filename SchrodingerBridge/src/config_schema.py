@@ -324,6 +324,9 @@ class TrainingConfig:
     fused_adamw: bool = True
     resume_checkpoint: str = ""
     resume_optimizer: bool = True
+    resume_model_strict: bool = True
+    resume_ignore_prefixes: list[str] = field(default_factory=list)
+    resume_training_state: bool = True
     freeze_mode: str = "none"
     freeze_reinit_trainable: bool = False
     full_eval_batch_size: int = 6

@@ -252,14 +252,40 @@ class SBTrainer:
             logger.info("No checkpoint found, start from scratch.")
             return
         state = torch.load(ckpt_path, map_location=self.device, weights_only=False)
-        self.model.load_state_dict(strip_compile_prefix(state["model_state_dict"]), strict=True)
+        model_state = strip_compile_prefix(state["model_state_dict"])
+        resume_model_strict = bool(self.train_cfg.get("resume_model_strict", True))
+        ignore_prefixes = tuple(str(v) for v in self.train_cfg.get("resume_ignore_prefixes", []) if str(v))
+        if resume_model_strict and not ignore_prefixes:
+            self.model.load_state_dict(model_state, strict=True)
+        else:
+            current = self.model.state_dict()
+            compatible = {}
+            skipped = []
+            for key, value in model_state.items():
+                if ignore_prefixes and key.startswith(ignore_prefixes):
+                    skipped.append(key)
+                    continue
+                if key not in current or current[key].shape != value.shape:
+                    skipped.append(key)
+                    continue
+                compatible[key] = value
+            missing, unexpected = self.model.load_state_dict(compatible, strict=False)
+            logger.info(
+                "Partially resumed model from %s | loaded=%d skipped=%d missing=%d unexpected=%d",
+                ckpt_path,
+                len(compatible),
+                len(skipped),
+                len(missing),
+                len(unexpected),
+            )
         resume_optimizer = bool(self.train_cfg.get("resume_optimizer", True))
         if resume_optimizer and "optimizer_state_dict" in state:
             self.optimizer.load_state_dict(state["optimizer_state_dict"])
         if resume_optimizer and self.scheduler is not None and state.get("scheduler_state_dict") is not None:
             self.scheduler.load_state_dict(state["scheduler_state_dict"])
-        self.global_step = int(state.get("global_step", 0))
-        self.start_epoch = int(state.get("epoch", 0)) + 1
+        if bool(self.train_cfg.get("resume_training_state", True)):
+            self.global_step = int(state.get("global_step", 0))
+            self.start_epoch = int(state.get("epoch", 0)) + 1
         logger.info("Resumed from %s at epoch=%d global_step=%d", ckpt_path, self.start_epoch, self.global_step)
 
     def _reset_trainable_style_params(self, mode: str) -> None:
