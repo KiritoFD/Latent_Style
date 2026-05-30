@@ -90,3 +90,43 @@ Implementation note from the first smoke:
    - compare movement against `t01/t00` and EC-best endpoints.
 
 Success is not a smoke test. The real target remains `clip_style >= 0.73` with `LPIPS` near `0.45`, verified on strict evaluation and visual grids.
+
+## Run 001: Factorized Tokenizer on t01 Settings
+
+Code/config state used for the run: branch `codex/tokenizer-clean-c3058eab` at `4efa1c32a` before this result note was appended.
+
+Config: `configs/tokenizer_t01_factorized_base.json`
+
+Key implementation details:
+
+- Replaced the opaque style table with `FactorizedStyleTokenizer(identity=24, texture=32, geometry=24)`.
+- Kept the LANCET consumer interface as one projected `style_code`.
+- Added decoder-side `NormFreeModulation` before the delta head because the first smoke found zero tokenizer gradients without it.
+- Used t01-derived model/loss settings and explicit shared remote paths for `latent-256`, `style_data/overfit50`, and `eval_cache`.
+
+Smoke:
+
+- Remote Windows Python, batch 16, CUDA, one short epoch.
+- Forward was finite.
+- Backward debug showed non-zero gradients for `identity`, `texture`, `geometry`, field gates, and projector.
+
+Full train:
+
+- Remote 3060, Windows Python, batch 80, 8 epochs from scratch.
+- Output directory: `exp/tokenizer_t01_factorized_base`.
+- Final checkpoint: `epoch_0008.pt`.
+
+Strict full_eval, 750 generated images:
+
+| epoch | all CLIP-S | all LPIPS | all CLIP-C | transfer CLIP-S | transfer LPIPS | photo2art CLIP-S | photo2art LPIPS |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 6 | 0.70917 | 0.44540 | 0.82241 | 0.68136 | 0.45646 | 0.65869 | 0.47874 |
+| 7 | 0.70797 | 0.42961 | 0.82872 | 0.67996 | 0.43985 | 0.65391 | 0.45190 |
+| 8 | 0.70916 | 0.43720 | 0.82501 | 0.68145 | 0.44806 | 0.65771 | 0.46710 |
+
+Interpretation:
+
+- This tokenizer is live and trainable; the previous failure mode of a silent style branch is fixed.
+- It does not recover the documented t01 style endpoint (`clip_style=0.7264, LPIPS=0.5170`).
+- It lands closer to the EC/content-preserving side than the t01 style side: LPIPS is much lower, but style strength collapses by about 0.017.
+- Therefore the next tokenizer step should not simply increase token count. The immediate bottleneck is style actuation strength: the projected fields reach the decoder, but the current consumer path is too conservative to match t01's diffeomorphic style pull.
