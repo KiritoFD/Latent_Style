@@ -235,10 +235,10 @@ This is not a return to external `style_emb`: the carrier is part of `Factorized
 
 Config:
 
-- `configs/tokenizer_t01_carrier_base_b160.json`
+- `configs/tokenizer_t01_carrier_base_b176.json`
 - `tokenizer_projection_mode="carrier_residual"`
 - `tokenizer_residual_gain=0.5`
-- `batch_size=160`, selected to target the remote 3060 9-10GB formal-training profile rather than the earlier 5.3GB batch80 diagnostic profile.
+- `batch_size=176`, selected after a batch160 calibration reached about 8.85GB and therefore sat just below the remote 3060 9-10.8GB formal-training target.
 
 Acceptance criteria:
 
