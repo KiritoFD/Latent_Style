@@ -170,3 +170,79 @@ Conclusion:
 - The current tokenizer is not merely undertrained: tokenizer-only optimization cannot recover style.
 - The LANCET consumer can extract slightly more style from the same frozen tokens, so the actuator path matters.
 - The remaining gap to t01 is still large. The next representation step should remove `concat -> LayerNorm -> Linear` field mixing and use independent field projections. This keeps the parameter budget small while making field usage more identifiable.
+
+## Run 003: Additive Field Projection Probe
+
+Purpose: test whether removing the single `concat -> LayerNorm -> Linear` bottleneck helps the three fields stay identifiable.
+
+Code/config:
+
+- Config: `configs/tokenizer_t01_additive_base.json`
+- Same t01-derived model/loss settings as `tokenizer_t01_factorized_base`.
+- Changed only tokenizer projection:
+  - `identity -> LayerNorm -> Linear(style_dim)`
+  - `texture -> LayerNorm -> Linear(style_dim)`
+  - `geometry -> LayerNorm -> Linear(style_dim)`
+  - `style_code = (identity_code + texture_code + geometry_code) / sqrt(3)`
+- Run location: remote 3060 Windows worktree `I:\Github\Latent_Style_TokenizerClean`.
+- Batch size: 80. This keeps the comparison matched to Run 001, but only uses about 5.3GB VRAM, so it is a comparable diagnostic rather than the final 10GB-throughput profile.
+
+Tokenizer diagnostics:
+
+- The tokenizer is connected: identity, texture, geometry, field gates, and all three projectors receive non-zero gradients.
+- The raw token fields are not collapsed at epoch 8 (`identity_texture_cos ~= -0.118`, `identity_geometry_cos ~= -0.043`, `texture_geometry_cos ~= 0.060`).
+- The projected style-code fields are still substantially aligned (`identity_texture_code_cos ~= 0.445`, `identity_geometry_code_cos ~= 0.443`, `texture_geometry_code_cos ~= 0.390`). This means independent projectors did not produce an orthogonal actuation basis after projection; the consumer still sees a fairly shared direction in `style_code` space.
+
+Full eval:
+
+| run | all CLIP-S | all LPIPS | all CLIP-C | transfer CLIP-S | transfer LPIPS | photo2art CLIP-S | photo2art LPIPS |
+|---|---:|---:|---:|---:|---:|---:|
+| concat base e8 | 0.70916 | 0.43720 | 0.82501 | 0.68145 | 0.44806 | 0.65771 | 0.46710 |
+| additive e6 | 0.70846 | 0.45124 | 0.80889 | 0.68315 | 0.46114 | 0.65930 | 0.47702 |
+| additive e7 | 0.70701 | 0.43451 | 0.81745 | 0.68077 | 0.44362 | 0.65321 | 0.44972 |
+| additive e8 | 0.70844 | 0.44170 | 0.81346 | 0.68265 | 0.45150 | 0.65681 | 0.46589 |
+| backbone-only e16 | 0.71260 | 0.44534 | 0.81980 | 0.68583 | 0.45689 | 0.66056 | 0.47175 |
+| t01 target | 0.7264 | 0.5170 | 0.7570 | - | - | - | - |
+| EC-best reference | 0.6980 | 0.3777 | 0.8727 | - | - | - | - |
+
+Interpretation:
+
+- Additive projection is not a positive move. It is at best neutral on style and worse than the previous `backbone_only` continuation.
+- The result remains between EC-best and t01: LPIPS/content are much better than t01, but style is far below t01 by about `0.018`.
+- The bottleneck is not only field mixing. The tokenizer path lacks a high-capacity style carrier/actuator that can preserve the original t01-style pull while making identity/texture/geometry measurable.
+- Next probe should not be a larger black-box tokenizer. It should be a small carrier-plus-fields tokenizer: keep a full `style_dim` carrier table inside the tokenizer, add low-dimensional diagnostic fields as residual controls, and expose per-field projection norms/cosines. This restores the missing style-code rank while preserving tokenizer observability.
+
+## Run 004 Plan: Carrier-Plus-Fields Tokenizer
+
+Rationale:
+
+- The `concat` and `additive` probes both use only `24+32+24` raw token dimensions before projection. That is a representation bottleneck compared with the original full-rank `style_dim=160` style conditioning.
+- The failure mode is not tokenizer silence: gradients are live. The failure is insufficient style actuation/rank after the tokenizer projection.
+- Therefore the next design should restore a full-rank style carrier inside the tokenizer while keeping fields as measurable residual controls.
+
+Design:
+
+```text
+style_id -> carrier [style_dim=160]
+style_id -> identity [24] -> projected identity_code [160]
+style_id -> texture  [32] -> projected texture_code  [160]
+style_id -> geometry [24] -> projected geometry_code [160]
+residual_code = (identity_code + texture_code + geometry_code) / sqrt(3)
+style_code = carrier + tokenizer_residual_gain * residual_code
+```
+
+This is not a return to external `style_emb`: the carrier is part of `FactorizedStyleTokenizer`, is logged with the tokenizer, and can be frozen or ablated with the other fields. It gives the backbone a full-rank style carrier so the first tokenizer base has a fair chance to preserve `t01` style strength.
+
+Config:
+
+- `configs/tokenizer_t01_carrier_base_b160.json`
+- `tokenizer_projection_mode="carrier_residual"`
+- `tokenizer_residual_gain=0.5`
+- `batch_size=160`, selected to target the remote 3060 9-10GB formal-training profile rather than the earlier 5.3GB batch80 diagnostic profile.
+
+Acceptance criteria:
+
+- Must reach non-zero gradients for `carrier`, all three raw fields, field gates, and all three field projectors.
+- Must not regress below `concat base e8` (`0.70916 / 0.43720`) if it is merely capacity-restoring.
+- To matter as a tokenizer base, it should move toward `backbone-only e16` or higher (`0.71260 / 0.44534`) while preserving LPIPS near `0.45`.
+- The true target remains beyond the documented `t01` style endpoint: `clip_style >= 0.73` with LPIPS near `0.45`.
