@@ -23,6 +23,7 @@ class FactorizedStyleTokenizer(nn.Module):
         geometry_dim: int = 24,
         init_std: float = 0.02,
         projection_mode: str = "concat",
+        residual_gain: float = 0.5,
     ) -> None:
         super().__init__()
         self.num_styles = max(1, int(num_styles))
@@ -33,9 +34,12 @@ class FactorizedStyleTokenizer(nn.Module):
         self.field_dim = self.identity_dim + self.texture_dim + self.geometry_dim
         self.init_std = max(1e-6, float(init_std))
         self.projection_mode = str(projection_mode).strip().lower()
-        if self.projection_mode not in {"concat", "additive"}:
+        self.residual_gain = float(residual_gain)
+        if self.projection_mode not in {"concat", "additive", "carrier_residual"}:
             raise ValueError(f"Unsupported tokenizer projection_mode: {projection_mode}")
 
+        if self.projection_mode == "carrier_residual":
+            self.carrier = nn.Embedding(self.num_styles, self.style_dim)
         self.identity = nn.Embedding(self.num_styles, self.identity_dim)
         self.texture = nn.Embedding(self.num_styles, self.texture_dim)
         self.geometry = nn.Embedding(self.num_styles, self.geometry_dim)
@@ -68,11 +72,15 @@ class FactorizedStyleTokenizer(nn.Module):
     @property
     def weight(self) -> torch.Tensor:
         # Compatibility for code that only needs a device anchor.
+        if self.projection_mode == "carrier_residual":
+            return self.carrier.weight
         if self.projection_mode == "concat":
             return self.projector[-1].weight
         return self.identity_projector[-1].weight
 
     def reset_parameters(self) -> None:
+        if self.projection_mode == "carrier_residual":
+            nn.init.normal_(self.carrier.weight, mean=0.0, std=self.init_std)
         nn.init.normal_(self.identity.weight, mean=0.0, std=self.init_std)
         nn.init.normal_(self.texture.weight, mean=0.0, std=self.init_std)
         nn.init.normal_(self.geometry.weight, mean=0.0, std=self.init_std)
@@ -98,6 +106,8 @@ class FactorizedStyleTokenizer(nn.Module):
         identity_code: torch.Tensor | None = None,
         texture_code: torch.Tensor | None = None,
         geometry_code: torch.Tensor | None = None,
+        carrier_code: torch.Tensor | None = None,
+        residual_code: torch.Tensor | None = None,
     ) -> None:
         with torch.no_grad():
             id_f = identity.detach().float()
@@ -133,6 +143,16 @@ class FactorizedStyleTokenizer(nn.Module):
                         "texture_geometry_code_cos": F.cosine_similarity(tex_c, geo_c, dim=1).mean(),
                     }
                 )
+            if carrier_code is not None and residual_code is not None:
+                carrier_f = carrier_code.detach().float()
+                residual_f = residual_code.detach().float()
+                debug.update(
+                    {
+                        "carrier_norm": carrier_f.norm(dim=1).mean(),
+                        "residual_code_norm": residual_f.norm(dim=1).mean(),
+                        "carrier_residual_cos": F.cosine_similarity(carrier_f, residual_f, dim=1).mean(),
+                    }
+                )
             self.last_debug = debug
 
     def forward(self, style_id: torch.Tensor, t: torch.Tensor | None = None) -> torch.Tensor:
@@ -150,6 +170,22 @@ class FactorizedStyleTokenizer(nn.Module):
         identity_code = self.identity_projector(identity)
         texture_code = self.texture_projector(texture)
         geometry_code = self.geometry_projector(geometry)
-        style_code = (identity_code + texture_code + geometry_code) / (3.0 ** 0.5)
+        residual_code = (identity_code + texture_code + geometry_code) / (3.0 ** 0.5)
+        if self.projection_mode == "carrier_residual":
+            carrier_code = self.carrier(style_id)
+            style_code = carrier_code + self.residual_gain * residual_code
+            self._record_debug(
+                identity,
+                texture,
+                geometry,
+                style_code,
+                identity_code,
+                texture_code,
+                geometry_code,
+                carrier_code,
+                residual_code,
+            )
+            return style_code
+        style_code = residual_code
         self._record_debug(identity, texture, geometry, style_code, identity_code, texture_code, geometry_code)
         return style_code
