@@ -31,7 +31,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.time_dim = int(bridge_config.time_dim)
         self.velocity_head_mode = str(bridge_config.velocity_head_mode).strip().lower()
         self.velocity_tanh_limit = max(1e-3, float(bridge_config.velocity_tanh_limit))
-        self.bridge_style_dim = int(self.style_emb.embedding_dim)
+        self.bridge_style_dim = int(self.style_tokenizer.embedding_dim)
         self.time_mlp = nn.Sequential(
             nn.Linear(self.time_dim, self.bridge_style_dim),
             nn.SiLU(),
@@ -79,7 +79,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         style_code_override: torch.Tensor | None = None,
     ) -> torch.Tensor:
         if style_code_override is None:
-            style_code = self.encode_style_id(style_id)
+            style_code = self.encode_style_id(style_id, t=t)
         else:
             style_code = style_code_override
             if style_code.ndim == 1:

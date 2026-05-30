@@ -18,6 +18,7 @@ from lancet_blocks import (
     _resolve_group_count,
 )
 from lancet_runtime import LatentAdaCUTRuntimeMixin
+from style_tokenizer import FactorizedStyleTokenizer
 
 
 _SKIP_FUSION_MODES = {"concat_conv", "add_proj"}
@@ -103,8 +104,16 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         if self.upsample_blur_kernel not in {"box3", "gaussian3"}:
             self.upsample_blur_kernel = "box3"
 
-        self.style_emb = nn.Embedding(self.num_styles, style_dim)
-        nn.init.normal_(self.style_emb.weight, mean=0.0, std=0.02)
+        tokenizer_kind = str(cfg.style_tokenizer).strip().lower()
+        if tokenizer_kind != "factorized":
+            raise ValueError(f"Unsupported style_tokenizer: {cfg.style_tokenizer}")
+        self.style_tokenizer = FactorizedStyleTokenizer(
+            num_styles=self.num_styles,
+            style_dim=style_dim,
+            identity_dim=int(cfg.tokenizer_identity_dim),
+            texture_dim=int(cfg.tokenizer_texture_dim),
+            geometry_dim=int(cfg.tokenizer_geometry_dim),
+        )
 
         # Learnable style-id spatial priors for inference without reference image.
         self.style_spatial_id_16 = nn.Parameter(torch.zeros(self.num_styles, self.body_channels, 16, 16))

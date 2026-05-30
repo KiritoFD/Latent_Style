@@ -62,6 +62,10 @@ class ModelConfig:
     latent_channels: int = 4
     num_styles: int = 5
     style_dim: int = 160
+    style_tokenizer: str = "factorized"
+    tokenizer_identity_dim: int = 24
+    tokenizer_texture_dim: int = 32
+    tokenizer_geometry_dim: int = 24
     time_dim: int = 256
     base_dim: int = 64
     lift_channels: int | None = None
