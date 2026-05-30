@@ -199,10 +199,10 @@
     "full_eval_max_ref_compare": null,
     "full_eval_max_ref_cache": null,
     "full_eval_ref_feature_batch_size": null,
-    "test_image_dir": "../style_data/overfit50",
-    "full_eval_cache_dir": "../Cycle-NCE/eval_cache",
-    "full_eval_image_classifier_path": "../Cycle-NCE/eval_cache/eval_style_image_classifier.pt",
-    "full_eval_clip_hf_cache_dir": "../Cycle-NCE/eval_cache/hf",
+    "test_image_dir": "../../Latent_Style/style_data/overfit50",
+    "full_eval_cache_dir": "../../Latent_Style/eval_cache",
+    "full_eval_image_classifier_path": "../../Latent_Style/eval_cache/eval_style_image_classifier.pt",
+    "full_eval_clip_hf_cache_dir": "../../Latent_Style/eval_cache/hf",
     "full_eval_clip_backend": "hf",
     "full_eval_classifier_only": false,
     "full_eval_disable_lpips": false,
@@ -215,7 +215,7 @@
     "distill": {}
   },
   "data": {
-    "data_root": "../latent-256",
+    "data_root": "../../Latent_Style/latent-256",
     "style_subdirs": [
       "photo",
       "Hayao",
