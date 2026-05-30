@@ -407,3 +407,28 @@ Local smoke before remote training:
 - No tokenizer path reads per-sample `target_style` latent. The target latent appears only in loss/evaluation targets and in existing optional moment/spatial paths when explicitly passed, not in tokenizer conditioning.
 
 This smoke validates graph connectivity only. It is not evidence of metric improvement.
+
+Remote trainer smoke:
+
+- Remote path: `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge`
+- Device: CUDA on the remote 3060.
+- Entry: `SBTrainer` with the real concept-atom config, reduced to one batch for smoke.
+- Resume/freeze path is valid: checkpoint `exp/tokenizer_t01_factorized_backbone_e16/epoch_0016.pt` is found and loaded.
+- Trainable params:
+  - `style_tokenizer.concept_atoms`
+  - `style_tokenizer.atom_logits.weight`
+- `all_trainable_tokenizer=true`; no LANCET/backbone params are trainable.
+- One-batch loss is finite; peak smoke memory at batch16 is about `0.55GB`.
+- Atom debug at trainer smoke:
+  - `atom_entropy ~= 2.71`
+  - `atom_effective_count ~= 15.0`
+  - `atom_max_prob ~= 0.21`
+  - `style_code_norm ~= 0.77`
+
+This confirms the actual training entry obeys the intended tokenizer-only graph. A separate batch224 one-step memory calibration is still required before formal remote training.
+
+Remote memory calibration:
+
+- Batch224 one-step trainer smoke: `peak_gb ~= 7.37`, below the formal 9-10.8GB target.
+- Batch288 one-step trainer smoke: `peak_gb ~= 9.47`, finite loss, `all_trainable_tokenizer=true`.
+- Formal tokenizer-only concept-atom config is therefore set to `batch_size=288`.
