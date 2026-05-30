@@ -266,3 +266,41 @@ Interim interpretation:
 - The b176/e8 result is worse than concat and additive, but it has only about half the update budget.
 - Do not use this as final evidence against the carrier tokenizer.
 - Next run: `configs/tokenizer_t01_carrier_base_b176_e16.json`, from scratch, batch176, 16 epochs. This keeps the 9-10.8GB VRAM discipline while restoring an optimizer-step budget close to the earlier batch80/8epoch tokenizer base.
+
+Batch176/16epoch update-budget-matched full eval:
+
+| run | all CLIP-S | all LPIPS | all CLIP-C | transfer CLIP-S | transfer LPIPS | photo2art CLIP-S | photo2art LPIPS |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| carrier b176 e12 | 0.70506 | 0.46357 | 0.78630 | 0.68190 | 0.47350 | 0.65511 | 0.48638 |
+| carrier b176 e14 | 0.70563 | 0.46507 | 0.79129 | 0.68185 | 0.47519 | 0.65689 | 0.48687 |
+| carrier b176 e16 | 0.70469 | 0.46356 | 0.78949 | 0.68077 | 0.47323 | 0.65344 | 0.48141 |
+
+Conclusion:
+
+- Even after matching update budget, `carrier_residual` is worse than `concat base e8` and much worse than `backbone-only e16`.
+- Training diagnostics explain the failure: the residual branch grows much larger than the carrier (`residual_code_norm ~= 2.78`, `carrier_norm ~= 0.285` at epoch16), and projected field cosines rise to `0.45-0.55`. The tokenizer fields remain trainable, but their projected actuation space collapses toward a shared direction.
+- `carrier_residual` should be treated as a negative representation probe. Do not use it as the base for tokenizer-only refinement.
+
+## Run 005 Plan: Freeze LANCET, Expand Tokenizer Only
+
+The appropriate current tokenizer-LANCET base is `tokenizer_t01_factorized_backbone_e16`, not the carrier branch:
+
+- It is the best verified tokenizer-line point so far: `all CLIP-S=0.71260`, `LPIPS=0.44534`.
+- It is still below `t01`, but it has a working consumer path and LPIPS near the target range.
+
+Next experiment:
+
+- Config: `configs/tokenizer_t01_big_tokonly_from_backbone_e16.json`
+- Initialize from `exp/tokenizer_t01_factorized_backbone_e16/epoch_0016.pt`.
+- Freeze all LANCET/backbone parameters.
+- Ignore old `style_tokenizer.*` checkpoint keys and train a larger tokenizer from scratch:
+  - `identity_dim=48`
+  - `texture_dim=64`
+  - `geometry_dim=48`
+  - `projection_mode="concat"`
+- Use `resume_training_state=false` so the checkpoint is treated as initialization rather than a continuation epoch.
+
+Hypothesis:
+
+- If the bottleneck is tokenizer expressivity, this should move style above `0.71260` without changing the main actuator.
+- If it fails, the remaining bottleneck is not tokenizer size; it is the consumer path/loss target that maps style codes into image-space edits.
