@@ -320,3 +320,29 @@ Interpretation:
 - It does improve LPIPS/content slightly, so the larger tokenizer can re-center the conditioning inside the existing actuator's basin.
 - This is useful evidence: the current gap to `t01=0.7264` is not primarily raw tokenizer capacity. The bottleneck is the consumer/actuator path or the target distribution induced by the loss.
 - Next representation step should keep the best tokenizer checkpoint as a content-preserving tokenizer variant, then unfreeze a narrow style-actuator subset instead of the whole backbone. Candidate trainable subset: tokenizer + decoder modulation + semantic/style spatial routing, with the rest frozen.
+
+## Run 006 Plan: Frozen-Backbone Direct-Code Upper Bound
+
+User decision: before unfreezing any actuator, first push tokenizer-only as far as possible.
+
+Rationale:
+
+- `big tokenizer-only` slightly improved LPIPS/content but did not improve style over `backbone-only e16`.
+- That result still contains a tokenizer architectural bottleneck: `identity/texture/geometry -> concat projector`.
+- To measure the frozen-backbone upper bound, remove the field bottleneck entirely and train a direct per-style `style_code` table inside `FactorizedStyleTokenizer`.
+
+Design:
+
+- Config: `configs/tokenizer_t01_direct_tokonly_from_backbone_e16.json`
+- Base checkpoint: `exp/tokenizer_t01_factorized_backbone_e16/epoch_0016.pt`
+- Freeze mode: `tokenizer_only`
+- Ignore checkpoint `style_tokenizer.*` and reset tokenizer.
+- Tokenizer mode: `tokenizer_projection_mode="direct_code"`
+- Tokenizer parameters: exactly `num_styles * style_dim = 5 * 160 = 800` trainable code parameters.
+- `tokenizer_init_std=0.2` so initial code norm is not near-zero.
+- `learning_rate=5e-4`, `num_epochs=24`.
+
+Interpretation rule:
+
+- If direct-code tokenizer exceeds `0.71260`, the previous tokenizer architectures were the bottleneck.
+- If it plateaus near or below `0.71260`, frozen LANCET's style actuator is the bottleneck; further tokenizer-only capacity is unlikely to reach `0.73`.

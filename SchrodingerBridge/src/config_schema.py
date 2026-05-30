@@ -68,6 +68,7 @@ class ModelConfig:
     tokenizer_geometry_dim: int = 24
     tokenizer_projection_mode: str = "concat"
     tokenizer_residual_gain: float = 0.5
+    tokenizer_init_std: float = 0.02
     time_dim: int = 256
     base_dim: int = 64
     lift_channels: int | None = None
