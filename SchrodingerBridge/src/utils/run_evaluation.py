@@ -328,19 +328,35 @@ def _uint8_hwc_to_float_chw(image: torch.Tensor) -> torch.Tensor:
     return image.permute(2, 0, 1).contiguous().to(torch.float32).div_(255.0)
 
 
-def save_image_task(image_cpu, path):
+def save_image_task(image_cpu, path, backend: str = "pil_png"):
     """Async save task to avoid blocking GPU loop."""
     try:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         if torch.is_tensor(image_cpu) and image_cpu.dtype == torch.uint8:
+            if backend == "torchvision_png":
+                from torchvision.io import write_png
+
+                chw = image_cpu.permute(2, 0, 1).contiguous() if image_cpu.ndim == 3 else image_cpu.contiguous()
+                write_png(chw.cpu(), str(path))
+                return
             arr = image_cpu.detach().cpu().numpy()
             if arr.ndim == 3 and arr.shape[-1] in (1, 3, 4):
-                Image.fromarray(arr.squeeze(-1) if arr.shape[-1] == 1 else arr).save(path)
+                image = Image.fromarray(arr.squeeze(-1) if arr.shape[-1] == 1 else arr)
+                image.save(path, format="PNG")
                 return
         save_image(image_cpu, path)
     except Exception as e:
         print(f"Error saving {path}: {e}")
+
+
+def _sync_cuda_if(device: str, enabled: bool) -> None:
+    if enabled and str(device).startswith("cuda") and torch.cuda.is_available():
+        torch.cuda.synchronize()
+
+
+def _add_timing(timings: dict[str, float], key: str, start: float) -> None:
+    timings[key] = float(timings.get(key, 0.0) + (time.perf_counter() - start))
 
 
 def _list_reuse_generated_files(out_dir: Path) -> list[Path]:
@@ -818,7 +834,7 @@ def _load_eval_image_tensor(path: Path, size: int = 256) -> torch.Tensor:
 def _parse_generated_name(filename: str, style_names: list[str]) -> tuple[str, str, str] | None:
     """
     Parse generated image name:
-    {src_style}_{src_stem}_to_{tgt_style}.jpg
+    {src_style}_{src_stem}_to_{tgt_style}.png
     """
     stem = Path(filename).stem
     if "_to_" not in stem:
@@ -1029,6 +1045,10 @@ def _auto_run_missing_full_eval(args) -> None:
             "--max_ref_cache", str(args.max_ref_cache),
             "--ref_feature_batch_size", str(args.ref_feature_batch_size),
             "--batch_size", str(args.batch_size),
+            "--target_chunk_size", str(args.target_chunk_size),
+            "--vae_decode_batch_size", str(args.vae_decode_batch_size),
+            "--image_save_workers", str(args.image_save_workers),
+            "--image_save_backend", str(args.image_save_backend),
             "--clip_model_name", str(args.clip_model_name),
             "--clip_modelscope_id", str(args.clip_modelscope_id),
             "--clip_modelscope_cache_dir", str(args.clip_modelscope_cache_dir),
@@ -1065,6 +1085,8 @@ def _auto_run_missing_full_eval(args) -> None:
             cmd += ["--reuse_generated"]
         if args.generation_only:
             cmd += ["--generation_only"]
+        if not bool(args.save_summary_grid):
+            cmd += ["--no-save_summary_grid"]
         if not bool(args.eval_only_lpips_clip_style):
             cmd += ["--no-eval_only_lpips_clip_style"]
 
@@ -1112,6 +1134,16 @@ def main():
         default=int(full_eval_defaults.get("vae_decode_batch_size", 0)),
         help="Decode generated latents in chunks. <=0 uses batch_size*target_chunk_size.",
     )
+    parser.add_argument('--image_save_workers', type=int, default=int(full_eval_defaults.get("image_save_workers", 4)), help="Async image writer worker count.")
+    parser.add_argument(
+        '--image_save_backend',
+        type=str,
+        default=str(full_eval_defaults.get("image_save_backend", "pil_png")),
+        choices=["pil_png", "torchvision_png"],
+        help="Generated image save backend.",
+    )
+    parser.add_argument('--profile_timing', action='store_true', help="Synchronize CUDA around generation stages for accurate timing breakdown.")
+    parser.add_argument('--save_summary_grid', action=argparse.BooleanOptionalAction, default=bool(full_eval_defaults.get("save_summary_grid", True)), help="Save visual summary_grid.png. Disable for pure throughput timing.")
     parser.add_argument('--force_regen', action='store_true', help="Force regenerate evaluation outputs/metrics (does not rebuild global ref cache)")
     parser.add_argument('--force_regen_ref_cache', action='store_true', help="Force rebuild global reference-feature cache only")
     parser.add_argument('--ref_cache_lock_timeout', type=int, default=900, help="Seconds to wait for another process building reference cache")
@@ -1249,8 +1281,7 @@ def main():
     print(f"HF cache dir: {hf_cache_dir}")
     print(f"HF hub cache dir: {hub_cache_dir}")
     
-    # Thread Pool for Async I/O
-    io_pool = ThreadPoolExecutor(max_workers=4)
+    io_pool = None
     
     checkpoint_path: Path | None = None
     cfg = {}
@@ -1280,8 +1311,21 @@ def main():
                 args.max_ref_cache = int(resolved_full_eval["max_ref_cache"])
             if "ref_feature_batch_size" in resolved_full_eval and not _cli_provided("ref_feature_batch_size"):
                 args.ref_feature_batch_size = int(resolved_full_eval["ref_feature_batch_size"])
+            if "target_chunk_size" in resolved_full_eval and not _cli_provided("target_chunk_size"):
+                args.target_chunk_size = int(resolved_full_eval["target_chunk_size"])
+            if "vae_decode_batch_size" in resolved_full_eval and not _cli_provided("vae_decode_batch_size"):
+                args.vae_decode_batch_size = int(resolved_full_eval["vae_decode_batch_size"])
+            if "image_save_workers" in resolved_full_eval and not _cli_provided("image_save_workers"):
+                args.image_save_workers = int(resolved_full_eval["image_save_workers"])
+            if "image_save_backend" in resolved_full_eval and not _cli_provided("image_save_backend"):
+                args.image_save_backend = str(resolved_full_eval["image_save_backend"])
+            if "save_summary_grid" in resolved_full_eval and not _cli_provided("save_summary_grid"):
+                args.save_summary_grid = bool(resolved_full_eval["save_summary_grid"])
     else:
         print("Single-run eval in reuse-only mode (no checkpoint).")
+
+    image_save_workers = max(1, int(args.image_save_workers))
+    io_pool = ThreadPoolExecutor(max_workers=image_save_workers)
     
     # Resolve Test Data Path
     test_dir_raw = args.test_dir if args.test_dir else cfg.get('training', {}).get('test_image_dir', '')
@@ -1339,6 +1383,8 @@ def main():
     num_src_total = len(all_src_info)
     num_styles = len(style_subdirs)
     expected_generated = num_src_total * num_styles
+    timings: dict[str, float] = {}
+    wall_start = time.perf_counter()
 
     auto_reuse, found_generated = _should_auto_reuse_generated(
         out_dir=out_dir,
@@ -1392,6 +1438,7 @@ def main():
             raise RuntimeError("No reusable images found and no checkpoint provided. Cannot run generation phase.")
         print(f"\nPhase 1: Generation (Batch Size {args.batch_size})")
 
+        t0 = time.perf_counter()
         lgt = LGTInference(
             str(checkpoint_path),
             device=device,
@@ -1401,6 +1448,9 @@ def main():
             residual_scale=args.residual_scale,
             style_adapter_path=(args.style_adapter or None),
         )
+        _sync_cuda_if(device, bool(args.profile_timing))
+        _add_timing(timings, "load_lancet", t0)
+        t0 = time.perf_counter()
         vae = load_vae(
             device,
             model_id=str(args.vae_model),
@@ -1410,6 +1460,8 @@ def main():
             compile_fullgraph=bool(args.vae_compile_fullgraph),
             compile_cache_dir=str(args.vae_compile_cache_dir),
         )
+        _sync_cuda_if(device, bool(args.profile_timing))
+        _add_timing(timings, "load_vae", t0)
         model_scale = float(getattr(lgt.model, "latent_scale_factor", 0.18215))
         vae_scale = float(getattr(getattr(vae, "config", None), "scaling_factor", model_scale))
         scale_in = model_scale / max(vae_scale, 1e-8)
@@ -1424,19 +1476,25 @@ def main():
             print(f"  Generating Batch {b_start//args.batch_size + 1}/{(num_src_total-1)//args.batch_size + 1}")
 
             # Load Source Images
+            t0 = time.perf_counter()
             src_tensors = []
             for item in batch_info:
                 src_tensors.append(_load_eval_image_tensor(item['path']))
 
             src_batch = torch.stack(src_tensors).to(device)
+            _sync_cuda_if(device, bool(args.profile_timing))
+            _add_timing(timings, "source_load_to_device", t0)
 
             with torch.autocast('cuda', dtype=torch.bfloat16):
                 with torch.no_grad():
                     # Inversion
+                    t0 = time.perf_counter()
                     latents_src = encode_image(vae, src_batch, device)
                     if abs(scale_in - 1.0) > 1e-4:
                         latents_src = latents_src * scale_in
                     latents_x0 = lgt.inversion(latents_src)
+                    _sync_cuda_if(device, bool(args.profile_timing))
+                    _add_timing(timings, "encode_inversion", t0)
 
                     target_chunk = max(1, min(num_styles, int(args.target_chunk_size)))
                     default_decode_bs = max(1, len(batch_info) * target_chunk)
@@ -1456,31 +1514,46 @@ def main():
                             ],
                             dim=0,
                         )
+                        t0 = time.perf_counter()
                         latents_gen = lgt.generation(repeated_latents, tgt_ids)
                         if abs(scale_out - 1.0) > 1e-4:
                             latents_gen = latents_gen * scale_out
+                        _sync_cuda_if(device, bool(args.profile_timing))
+                        _add_timing(timings, "lancet_generation", t0)
 
                         meta = []
                         for tgt_id in chunk_style_ids:
                             tgt_name = style_subdirs[tgt_id]
                             for src_item in batch_info:
-                                out_name = f"{src_item['style_name']}_{src_item['path'].stem}_to_{tgt_name}.jpg"
+                                out_name = f"{src_item['style_name']}_{src_item['path'].stem}_to_{tgt_name}.png"
                                 meta.append((src_item, tgt_name, tgt_id, out_name))
 
                         for dec_start in range(0, latents_gen.shape[0], vae_decode_bs):
                             dec_end = min(latents_gen.shape[0], dec_start + vae_decode_bs)
+                            t0 = time.perf_counter()
                             imgs_gen = decode_latent(
                                 vae,
                                 latents_gen[dec_start:dec_end],
                                 device,
                                 scaling_factor=args.vae_decode_scale,
                             )
+                            _sync_cuda_if(device, bool(args.profile_timing))
+                            _add_timing(timings, "vae_decode", t0)
+                            t0 = time.perf_counter()
                             imgs_gen_u8_cpu = _images_01_to_uint8_hwc_cpu(imgs_gen)
+                            _sync_cuda_if(device, bool(args.profile_timing))
+                            _add_timing(timings, "uint8_cpu_copy", t0)
+                            t0 = time.perf_counter()
                             for local_i, (src_item, tgt_name, tgt_id, out_name) in enumerate(meta[dec_start:dec_end]):
                                 out_path = images_dir / out_name
                                 out_rel = Path("images") / out_name
                                 gen_img_u8 = imgs_gen_u8_cpu[local_i]
-                                io_pool.submit(save_image_task, gen_img_u8, out_path)
+                                io_pool.submit(
+                                    save_image_task,
+                                    gen_img_u8,
+                                    out_path,
+                                    str(args.image_save_backend),
+                                )
                                 generated_buffer.append({
                                     'src_path': src_item['path'],
                                     'src_style': src_item['style_name'],
@@ -1489,6 +1562,7 @@ def main():
                                     'gen_img': gen_img_u8,
                                     'gen_name': out_rel.as_posix()
                                 })
+                            _add_timing(timings, "image_save_submit", t0)
                             del imgs_gen, imgs_gen_u8_cpu
                         del repeated_latents, tgt_ids, latents_gen
 
@@ -1502,27 +1576,44 @@ def main():
 
     if args.generation_only:
         print("\nGeneration-only mode enabled: skip Phase 2 metrics/LPIPS/CLIP.")
+        t0 = time.perf_counter()
         io_pool.shutdown(wait=True)
-        grid_rows = []
-        for it in generated_buffer:
-            grid_rows.append(
-                {
-                    "src_style": it["src_style"],
-                    "tgt_style": it["tgt_style_name"],
-                    "src_image": Path(it["src_path"]).name,
-                    "gen_image": it["gen_name"],
-                }
-            )
-        _save_summary_grid_png(grid_rows, out_dir, style_order=list(style_subdirs))
+        _add_timing(timings, "image_save_join", t0)
+        if bool(args.save_summary_grid):
+            grid_rows = []
+            for it in generated_buffer:
+                grid_rows.append(
+                    {
+                        "src_style": it["src_style"],
+                        "tgt_style": it["tgt_style_name"],
+                        "src_image": Path(it["src_path"]).name,
+                        "gen_image": it["gen_name"],
+                    }
+                )
+            t0 = time.perf_counter()
+            _save_summary_grid_png(grid_rows, out_dir, style_order=list(style_subdirs))
+            _add_timing(timings, "summary_grid", t0)
         if device == "cuda":
             torch.cuda.empty_cache()
         gc.collect()
+        timings["wall_total"] = float(time.perf_counter() - wall_start)
         summary = {
             "checkpoint": str(checkpoint_path) if checkpoint_path is not None else "(reuse-only:no-checkpoint)",
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "mode": "generation_only",
             "generated_count": int(len(generated_buffer)),
             "output_dir": str(out_dir),
+            "settings": {
+                "vae_model": str(args.vae_model),
+                "batch_size": int(args.batch_size),
+                "target_chunk_size": int(args.target_chunk_size),
+                "vae_decode_batch_size": int(args.vae_decode_batch_size),
+                "image_save_workers": int(args.image_save_workers),
+                "image_save_backend": str(args.image_save_backend),
+                "profile_timing": bool(args.profile_timing),
+                "save_summary_grid": bool(args.save_summary_grid),
+            },
+            "timings_sec": {k: float(v) for k, v in sorted(timings.items())},
             "note": "Metrics are intentionally skipped. Run evaluation later with --reuse_generated.",
         }
         sum_path = out_dir / "summary.json"

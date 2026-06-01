@@ -14,6 +14,7 @@ import time
 from pathlib import Path
 
 import yaml
+from PIL import Image, ImageOps
 
 
 WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
@@ -59,7 +60,7 @@ def _target_ckpt_dir(ckpt_root: Path, target_style: str) -> Path:
     return ckpt_root / f"wikiart5_3600_target_{target_style}_b2_e15"
 
 
-def _prepare_content_dir(image_root: Path, style_names: list[str], max_src_per_style: int) -> Path:
+def _prepare_content_dir(image_root: Path, style_names: list[str], max_src_per_style: int, resize_content: int) -> Path:
     content_dir = SAMST_REPO / "content"
     shutil.rmtree(content_dir, ignore_errors=True)
     content_dir.mkdir(parents=True, exist_ok=True)
@@ -72,7 +73,20 @@ def _prepare_content_dir(image_root: Path, style_names: list[str], max_src_per_s
         if max_src_per_style > 0:
             files = files[:max_src_per_style]
         for src in files:
-            shutil.copy2(src, content_dir / f"{style}_{src.name}")
+            dst = content_dir / f"{style}_{src.stem}.png"
+            if resize_content > 0:
+                with Image.open(src) as image:
+                    image = ImageOps.exif_transpose(image).convert("RGB")
+                    image = ImageOps.fit(
+                        image,
+                        (resize_content, resize_content),
+                        method=Image.Resampling.LANCZOS,
+                        centering=(0.5, 0.5),
+                    )
+                    image.save(dst)
+            else:
+                with Image.open(src) as image:
+                    ImageOps.exif_transpose(image).convert("RGB").save(dst)
     return content_dir
 
 
@@ -83,6 +97,8 @@ def _run_one_target(
     image_root: Path,
     style_names: list[str],
     max_src_per_style: int,
+    content_scale: int | None,
+    resize_content: int,
     ckpt_root: Path,
     images_out: Path,
 ) -> int:
@@ -95,14 +111,14 @@ def _run_one_target(
     if not test_script.is_file():
         raise FileNotFoundError(f"missing SaMST test.py: {test_script}")
 
-    content_dir = _prepare_content_dir(image_root, style_names, max_src_per_style)
+    content_dir = _prepare_content_dir(image_root, style_names, max_src_per_style, resize_content)
     raw_output = SAMST_REPO / "outputs"
     shutil.rmtree(raw_output, ignore_errors=True)
     raw_output.mkdir(parents=True, exist_ok=True)
 
     test_yml = {
         "content_image_dir": str(content_dir),
-        "content_scale": None,
+        "content_scale": content_scale,
         "output_image_dir": str(raw_output) + "/",
         "model": str(ckpt),
         "style_num": 1,
@@ -122,9 +138,9 @@ def _run_one_target(
             continue
         original = src.name[len("style1_") :]
         stem = Path(original).stem
-        suffix = Path(original).suffix or ".jpg"
-        dst = images_out / f"{stem}_to_{target_style}{suffix}"
-        shutil.copy2(src, dst)
+        dst = images_out / f"{stem}_to_{target_style}.png"
+        with Image.open(src) as image:
+            ImageOps.exif_transpose(image).convert("RGB").save(dst)
         copied += 1
     print(f"[SaMST] epoch={epoch:04d} target={target_style} copied={copied}", flush=True)
     return 0
@@ -144,6 +160,8 @@ def generate_epoch(args: argparse.Namespace, epoch: int, style_names: list[str])
             image_root=args.image_root,
             style_names=style_names,
             max_src_per_style=args.max_src_per_style,
+            content_scale=args.content_scale if int(args.content_scale) > 0 else None,
+            resize_content=max(0, int(args.resize_content)),
             ckpt_root=args.ckpt_root,
             images_out=images_out,
         )
@@ -175,6 +193,8 @@ def main() -> int:
     parser.add_argument("--ckpt-root", type=Path, default=DEFAULT_CKPT_ROOT)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     parser.add_argument("--max-src-per-style", type=int, default=30)
+    parser.add_argument("--content-scale", type=int, default=1, help="SaMST scale divisor; <=0 keeps original size in SaMST loader.")
+    parser.add_argument("--resize-content", type=int, default=512, help="Pre-resize copied content images to this square size; <=0 copies originals.")
     args = parser.parse_args()
 
     args.image_root = args.image_root.resolve()
