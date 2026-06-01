@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
+from pathlib import Path
 from typing import Optional
 
 import numpy as np
@@ -37,6 +38,103 @@ except Exception:
     except Exception:
         ms_snapshot_download = None
         MODELSCOPE_AVAILABLE = False
+
+
+class VAEDecodeWrapper(torch.nn.Module):
+    """Minimal tensor-only VAE decoder wrapper for torch.compile."""
+
+    def __init__(self, vae: torch.nn.Module) -> None:
+        super().__init__()
+        self.post_quant_conv = vae.post_quant_conv
+        self.decoder = vae.decoder
+
+    def forward(self, z: torch.Tensor) -> torch.Tensor:
+        z = self.post_quant_conv(z)
+        return self.decoder(z)
+
+
+def configure_torch_compile_cache(cache_dir: str | os.PathLike | None) -> None:
+    if cache_dir is None or not str(cache_dir).strip():
+        return
+    root = os.path.abspath(os.path.expanduser(str(cache_dir)))
+    os.makedirs(root, exist_ok=True)
+    inductor_dir = os.path.join(root, "inductor")
+    triton_dir = os.path.join(root, "triton")
+    os.makedirs(inductor_dir, exist_ok=True)
+    os.makedirs(triton_dir, exist_ok=True)
+    os.environ.setdefault("TORCHINDUCTOR_CACHE_DIR", inductor_dir)
+    os.environ.setdefault("TRITON_CACHE_DIR", triton_dir)
+
+
+class ORTVAEDecoder:
+    """Fixed-shape ONNX Runtime VAE decoder with CUDA I/O binding."""
+
+    def __init__(
+        self,
+        onnx_path: str | os.PathLike,
+        *,
+        device_id: int = 0,
+        use_tensorrt: bool = False,
+        trt_cache_dir: str | os.PathLike | None = None,
+    ) -> None:
+        import onnxruntime as ort
+
+        self.onnx_path = str(Path(onnx_path).resolve())
+        self.device_id = int(device_id)
+        providers = []
+        if use_tensorrt:
+            cache_dir = str(Path(trt_cache_dir or Path(self.onnx_path).with_suffix(".trt_cache")).resolve())
+            os.makedirs(cache_dir, exist_ok=True)
+            providers.append(
+                (
+                    "TensorrtExecutionProvider",
+                    {
+                        "device_id": self.device_id,
+                        "trt_engine_cache_enable": True,
+                        "trt_engine_cache_path": cache_dir,
+                        "trt_fp16_enable": True,
+                    },
+                )
+            )
+        providers.extend(
+            [
+                ("CUDAExecutionProvider", {"device_id": self.device_id}),
+                "CPUExecutionProvider",
+            ]
+        )
+        sess_options = ort.SessionOptions()
+        sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+        self.session = ort.InferenceSession(self.onnx_path, sess_options=sess_options, providers=providers)
+        self.input_name = self.session.get_inputs()[0].name
+        self.output_name = self.session.get_outputs()[0].name
+        self.providers = self.session.get_providers()
+
+    @torch.no_grad()
+    def decode(self, latent: torch.Tensor, *, scaling_factor: float) -> torch.Tensor:
+        latent = latent.to(device=f"cuda:{self.device_id}", dtype=torch.float16).contiguous()
+        latent = (latent / max(float(scaling_factor), 1e-8)).contiguous()
+        b, _, h, w = latent.shape
+        output = torch.empty((b, 3, h * 8, w * 8), device=latent.device, dtype=torch.float16).contiguous()
+        binding = self.session.io_binding()
+        binding.bind_input(
+            name=self.input_name,
+            device_type="cuda",
+            device_id=self.device_id,
+            element_type=np.float16,
+            shape=tuple(latent.shape),
+            buffer_ptr=latent.data_ptr(),
+        )
+        binding.bind_output(
+            name=self.output_name,
+            device_type="cuda",
+            device_id=self.device_id,
+            element_type=np.float16,
+            shape=tuple(output.shape),
+            buffer_ptr=output.data_ptr(),
+        )
+        self.session.run_with_iobinding(binding)
+        image = (output + 1.0) / 2.0
+        return torch.clamp(image, 0.0, 1.0)
 
 
 def _call_modelscope_snapshot(repo_id: str, dest: str):
@@ -254,21 +352,69 @@ def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
     return vae
 
 
-def load_vae(device="cuda", model_id="sd15", cache_dir=None):
+def load_vae(
+    device="cuda",
+    model_id="ema",
+    cache_dir=None,
+    *,
+    enable_xformers: bool = True,
+    compile_decoder: bool = False,
+    compile_method: str = "pt2",
+    compile_mode: str = "reduce-overhead",
+    compile_fullgraph: bool = False,
+    compile_cache_dir: str | os.PathLike | None = None,
+):
     if device == "cuda" and not torch.cuda.is_available():
         logger.warning("CUDA not available, fallback to CPU for VAE.")
         device = "cpu"
+    requested_compile_method = str(compile_method or "pt2").strip().lower()
     vae = download_vae_with_fallback(model_id, device=device, cache_dir=cache_dir)
     if str(device).startswith("cuda"):
         try:
-            vae = vae.to(memory_format=torch.channels_last)
+            vae = vae.to(device=device, dtype=torch.float16, memory_format=torch.channels_last)
         except Exception:
             logger.debug("VAE channels_last conversion skipped.", exc_info=True)
+        for method_name in ("disable_slicing", "disable_tiling"):
+            try:
+                method = getattr(vae, method_name, None)
+                if callable(method):
+                    method()
+            except Exception:
+                logger.debug("VAE %s skipped.", method_name, exc_info=True)
         try:
-            if hasattr(vae, "enable_xformers_memory_efficient_attention"):
+            if enable_xformers and requested_compile_method != "jit" and hasattr(vae, "enable_xformers_memory_efficient_attention"):
                 vae.enable_xformers_memory_efficient_attention()
         except Exception:
             logger.debug("VAE xFormers attention not available; continue without it.", exc_info=True)
+        if bool(compile_decoder):
+            try:
+                wrapper = VAEDecodeWrapper(vae).to(device=device, dtype=torch.float16, memory_format=torch.channels_last)
+                wrapper.eval()
+                method = requested_compile_method
+                if method == "jit":
+                    dummy_z = torch.randn(1, 4, 64, 64, device=device, dtype=torch.float16)
+                    if str(device).startswith("cuda"):
+                        dummy_z = dummy_z.contiguous(memory_format=torch.channels_last)
+                    with torch.inference_mode():
+                        vae.compiled_decoder = torch.jit.trace(wrapper, dummy_z, strict=False)
+                        vae.compiled_decoder = torch.jit.freeze(vae.compiled_decoder.eval())
+                    logger.info("Enabled TorchScript VAE decoder.")
+                elif method in {"pt2", "compile", "torch_compile"}:
+                    configure_torch_compile_cache(compile_cache_dir)
+                    vae.compiled_decoder = torch.compile(
+                        wrapper,
+                        mode=str(compile_mode or "reduce-overhead"),
+                        fullgraph=bool(compile_fullgraph),
+                    )
+                    logger.info(
+                        "Enabled torch.compile VAE decoder: mode=%s fullgraph=%s",
+                        str(compile_mode or "reduce-overhead"),
+                        bool(compile_fullgraph),
+                    )
+                else:
+                    raise ValueError(f"Unsupported VAE compile method: {compile_method}")
+            except Exception:
+                logger.exception("VAE decoder compile setup failed; falling back to diffusers decode.")
     return vae
 
 
@@ -289,7 +435,19 @@ def decode_latent(vae, latent, device="cuda", scaling_factor=None):
         latent = latent.contiguous(memory_format=torch.channels_last)
     scale = float(vae.config.scaling_factor if scaling_factor is None else scaling_factor)
     latent = latent / max(scale, 1e-8)
-    image = vae.decode(latent).sample
+    compiled_decoder = getattr(vae, "compiled_decoder", None)
+    if compiled_decoder is not None:
+        try:
+            image = compiled_decoder(latent)
+        except Exception:
+            logger.exception("Compiled VAE decoder failed; falling back to diffusers decode.")
+            try:
+                delattr(vae, "compiled_decoder")
+            except Exception:
+                pass
+            image = vae.decode(latent).sample
+    else:
+        image = vae.decode(latent).sample
     image = (image + 1.0) / 2.0
     return torch.clamp(image, 0.0, 1.0)
 
