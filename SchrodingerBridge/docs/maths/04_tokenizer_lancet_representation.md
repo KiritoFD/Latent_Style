@@ -219,6 +219,33 @@ Sparse concept atoms remain a valid probe, but only as a vocabulary geometry
 test. They are not sufficient by themselves unless LANCET has a reason to use
 different atoms differently across source conditions.
 
+The first budget evidence is consistent with this. A target-only
+`tokenbudget_gradfix` run looked good on quick/n6 (`0.798214 / 0.299028`) but
+did not beat the selected full base after all-5x5 evaluation (`0.790876 /
+0.306589`). Two safety-budget variants were clearly negative on quick/n6
+(`0.783885 / 0.352117` and `0.784784 / 0.357282`). Therefore a budget table or
+metric decoder indexed only by target style is still an overgrown style-strength
+knob. It lacks the missing variable: how risky this target style is for this
+source/content geometry.
+
+The next representation object should be:
+
+```text
+target_style_metric = tokenizer(target_style_id)
+execution_budget = small_bounded_head(target_style_metric, source_style_or_content_stats)
+style_code = renderer_style_code(target_style_metric)
+renderer consumes style_code plus [low_gain, high_gain]
+```
+
+This separates two questions:
+
+- what is the target style as a metric object?
+- how much of that style should be executed on this source image?
+
+This is also the cleanest way to absorb the SaMAM observation: SaMAM's LPIPS can
+keep improving after style saturates, which implies the missing factor is not
+raw style capacity but execution restraint.
+
 ## 7. Acceptance Checks Before Training
 
 A tokenizer experiment is invalid unless:
