@@ -48,7 +48,8 @@ concat -> LayerNorm -> Linear -> style_code [style_dim=160]
 Important constraints:
 
 - No transformer in Stage 1.
-- No style latent encoder in Stage 1.
+- No target-latent or reference-image encoder in Stage 1. The tokenizer is a
+  style-id/vocabulary representation module, not an evidence encoder.
 - No external teacher or Seedream path.
 - Keep the LANCET consumer interface unchanged: it still receives one `style_code`.
 - Store debug tensors: per-field norm, pairwise cosine, and projected code norm.
@@ -355,6 +356,8 @@ Tokenizer and LANCET must be separated by role:
 - Tokenizer represents "what the style is" as an executable control object, currently `style_code`.
 - LANCET consumes that control object and performs the latent ODE/image edit.
 - In tokenizer-only training, LANCET is frozen but still mounted in the forward/backward graph. Gradients pass through frozen LANCET into tokenizer parameters; LANCET weights are not updated.
+- There are not two style encoders. The mainline has one tokenizer; any LANCET
+  encoder blocks are content/actuation blocks, not style-evidence encoders.
 
 Do not train a tokenizer encoder on per-sample `target_style` latent for the main benchmark. The standard evaluation/inference path only provides `target_style_id`; letting the tokenizer read the target latent during training creates a condition mismatch and leaks information that is unavailable at deployment. The main tokenizer object must therefore learn from style identity/learned vocab parameters into `style_code`, while richer future tokenizers should still respect the same available conditioning boundary.
 
@@ -432,3 +435,199 @@ Remote memory calibration:
 - Batch224 one-step trainer smoke: `peak_gb ~= 7.37`, below the formal 9-10.8GB target.
 - Batch288 one-step trainer smoke: `peak_gb ~= 9.47`, finite loss, `all_trainable_tokenizer=true`.
 - Formal tokenizer-only concept-atom config is therefore set to `batch_size=288`.
+
+Run 007 result:
+
+- Remote path: `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge`.
+- Training completed to `epoch_0024`.
+- Strict full_eval was run for epochs 8, 16, and 24.
+
+| run | all CLIP-S | all LPIPS | all CLIP-C | transfer CLIP-S | transfer LPIPS | photo2art CLIP-S | photo2art LPIPS |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| concept atoms e8 | 0.70089 | 0.42239 | 0.83576 | 0.67254 | 0.42782 | 0.64701 | 0.44629 |
+| concept atoms e16 | 0.70478 | 0.42587 | 0.83281 | 0.67685 | 0.43294 | 0.65196 | 0.45241 |
+| concept atoms e24 | 0.70551 | 0.42661 | 0.83238 | 0.67773 | 0.43403 | 0.65304 | 0.45373 |
+| backbone-only e16 base | 0.71260 | 0.44534 | 0.81980 | 0.68583 | 0.45689 | 0.66056 | 0.47175 |
+
+Tokenizer diagnostics:
+
+- Atom entropy fell from about `2.45` early to about `1.70` by epoch 24.
+- Effective atom count fell from about `11.6` to about `5.5` out of `K=32`.
+- `style_code_norm` rose from about `1.03` to about `2.29`.
+- `concept_atoms` and `atom_logits.weight` retained non-zero gradients.
+
+Conclusion:
+
+- Sparse concept atoms are live, but this version is a negative probe.
+- The low LPIPS/high content numbers mean the frozen LANCET can execute a
+  conservative code, but pure shared atoms lose too much style pull.
+- The likely failure is a representation-rank bottleneck: forcing every style
+  through a convex mixture of shared atoms removes the per-style prototype
+  capacity that the frozen single-code LANCET expects.
+- This is not a tokenizer upper bound. It only rejects pure concept atoms as a
+  replacement for the current single-code interface.
+
+## Run 008 Plan: Direct Prototype + Shared Atom Residual Warmup
+
+Purpose: test whether shared concept atoms add useful structure when they do not
+replace each style's full-rank executable prototype. This is a tokenizer
+initialization run, not a standalone performance run.
+
+The previous pure-atom run had no per-style full-rank carrier. That makes the
+representation elegant but too restrictive for a frozen LANCET trained to
+consume one dense `style_code`. The next tokenizer should be nested: it can
+degenerate to direct code if atoms are useless, while still exposing a shared
+vocabulary if atoms help.
+
+Design:
+
+```text
+style_id -> prototype_code [style_dim]
+style_id -> atom_logits [K]
+atom_residual = softmax(atom_logits / tau) @ concept_atoms[K, style_dim]
+style_code = prototype_code + residual_gain * atom_residual
+```
+
+Boundary:
+
+- Inputs remain only `target_style_id` and learned tokenizer parameters.
+- No current batch `target_style` latent, reference image, or external model
+  output enters the tokenizer.
+- Target latents remain only as the loss-side style distribution.
+
+Config:
+
+- `configs/tokenizer_t01_direct_atom_residual_tokonly_from_backbone_e16.json`
+- Base checkpoint: `exp/tokenizer_t01_factorized_backbone_e16/epoch_0016.pt`.
+- Freeze mode: `tokenizer_only`.
+- Ignore old `style_tokenizer.*` checkpoint keys and reset tokenizer.
+- `tokenizer_projection_mode="direct_atom_residual"`.
+- `K=32`, `tau=0.25`, `tokenizer_residual_gain=0.25`.
+- `num_epochs=2`.
+- Save dir: `exp/tokenizer_t01_direct_atom_residual_warmup_e2_from_backbone_e16`.
+- Batch should reuse the concept-atom calibrated `batch_size=288` unless smoke
+  memory contradicts it.
+
+Interpretation:
+
+- Do not evaluate this run as a final model. Its job is to move tokenizer weights
+  out of random initialization and into a finite, executable style-control
+  region.
+- Acceptance is diagnostic: finite short training, non-zero gradients for
+  `direct_code`, `concept_atoms`, and `atom_logits`, and sane debug values for
+  prototype norm, atom residual norm, atom entropy, and prototype-residual
+  cosine.
+- The real test is Run 009: whether a fresh LANCET trained from scratch can read
+  the warm-started fixed tokenizer vocabulary.
+
+Remote smoke:
+
+- Config loads on remote Windows Python.
+- Batch2 real OMF smoke on CUDA is finite: loss about `6.36`.
+- Trainable parameters are exactly:
+  - `style_tokenizer.concept_atoms`
+  - `style_tokenizer.direct_code.weight`
+  - `style_tokenizer.atom_logits.weight`
+- All three receive non-zero gradients.
+- Initial debug state:
+  - `prototype_norm ~= 2.53`
+  - `atom_residual_norm ~= 0.58`
+  - `atom_entropy ~= 3.24`
+  - `atom_effective_count ~= 25.4`
+  - `prototype_residual_cos ~= -0.03`
+
+Warmup result:
+
+- The first accidental launch used the old 24-epoch setting and was stopped at
+  `epoch_0008`; it is not part of the main evidence for this route.
+- The corrected Stage A warmup runs only 2 epochs.
+- Output: `exp/tokenizer_t01_direct_atom_residual_warmup_e2_from_backbone_e16/epoch_0002.pt`.
+- Runtime was about one minute on the remote 3060 with batch 288.
+- Final epoch metrics: loss `8.0729`, terminal SWD `7.9375`, kinetic `0.1639`.
+- Numeric debug at epoch 2:
+  - `style_code_norm ~= 2.56`
+  - `prototype_norm ~= 2.56`
+  - `atom_residual_norm ~= 0.56`
+  - `atom_entropy ~= 3.22`
+  - `atom_effective_count ~= 25.0 / 32`
+  - `prototype_residual_cos ~= 0.02`
+  - non-zero gradients for `direct_code.weight`, `concept_atoms`, and
+    `atom_logits.weight`
+
+Interpretation of warmup:
+
+- This is a valid initializer: finite, connected, and not atom-collapsed.
+- It is not a trained tokenizer claim and should not be evaluated as a final
+  stylization model.
+- The next evidence comes from whether LANCET can learn to consume this fixed
+  vocabulary.
+
+## Run 009 Plan: Trained Tokenizer, Fresh LANCET Consumer
+
+Purpose: test whether a learned tokenizer can act as a stable style vocabulary
+for a newly trained LANCET, instead of only being optimized inside an already
+formed LANCET loss landscape.
+
+This route is different from the earlier alternating continuation:
+
+```text
+Stage A:
+existing LANCET frozen
+style_id -> Tokenizer(theta_T) -> style_code
+content, style_code -> frozen LANCET -> endpoint -> SWD/OMF
+
+Stage B:
+load only style_tokenizer.* from Stage A
+initialize LANCET(theta_L) from scratch
+freeze Tokenizer(theta_T)
+content, fixed style_code -> fresh LANCET(theta_L) -> endpoint -> SWD/OMF
+```
+
+Why this is valid:
+
+- The tokenizer still only sees `target_style_id`; no target latent or reference
+  image enters the conditioning path.
+- Stage A learns an executable style vocabulary through the old LANCET.
+- Stage B asks whether a new LANCET can learn to render that fixed vocabulary
+  better than the old consumer.
+- This isolates representation stability from actuator training, rather than
+  letting both modules move and hide the failure mode.
+
+Implementation requirement:
+
+- Use `training.resume_include_prefixes=["style_tokenizer."]` so Stage B loads
+  only tokenizer weights from the Stage A checkpoint.
+- Use `freeze_mode="backbone_only"` so tokenizer parameters are frozen while
+  LANCET trains.
+- Do not use `resume_ignore_prefixes` in Stage B; include-prefix filtering is
+  the authority.
+
+Config:
+
+- Stage A warmup: `configs/tokenizer_t01_direct_atom_residual_tokonly_from_backbone_e16.json`
+- Stage B: `configs/tokenizer_t01_direct_atom_residual_frozen_tok_fresh_lancet_e16.json`
+
+Implementation smoke:
+
+- Added `training.resume_include_prefixes` for checkpoint filtering.
+- A remote smoke checkpoint confirmed that Stage B loads only
+  `style_tokenizer.*`.
+- In Stage B smoke, tokenizer parameters are all loaded equal to Stage A,
+  tokenizer trainable count is zero, and non-tokenizer LANCET parameters are
+  trainable.
+- A second remote smoke using the real Stage A warmup checkpoint confirmed:
+  - tokenizer trainable count is zero;
+  - LANCET trainable parameter count is non-zero;
+  - one batch loss is finite (`~9.13`);
+  - tokenizer gradient count is zero;
+  - non-tokenizer backbone gradients are present.
+
+Interpretation:
+
+- If Stage B beats the Stage A frozen-LANCET endpoint, the tokenizer vocabulary
+  is useful but the previous actuator was limiting.
+- If Stage B regresses badly, the tokenizer was overfit to the old LANCET's
+  actuation geometry and is not a portable style representation.
+- If Stage B matches the best tokenizer-line result but cannot approach
+  `t01=0.7264`, the next required architecture change is not tokenizer size; it
+  is a richer LANCET consumer interface, such as layer-specific style tokens.

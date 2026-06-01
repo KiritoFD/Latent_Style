@@ -1,0 +1,56 @@
+{
+  "_base": "tokenizer_t01_direct_atom_residual_frozen_tok_fresh_lancet_e16.json",
+  "model": {
+    "num_styles": 5,
+    "tokenizer_projection_mode": "direct_atom_residual",
+    "tokenizer_residual_gain": 0.25,
+    "tokenizer_num_atoms": 32,
+    "tokenizer_atom_temperature": 0.25,
+    "tokenizer_init_std": 0.2
+  },
+  "training": {
+    "batch_size": 16,
+    "learning_rate": 0.0002,
+    "num_epochs": 1,
+    "save_interval": 1,
+    "resume_checkpoint": "",
+    "resume_model_strict": false,
+    "resume_include_prefixes": [],
+    "resume_ignore_prefixes": [],
+    "resume_training_state": false,
+    "resume_optimizer": false,
+    "freeze_mode": "none",
+    "freeze_reinit_trainable": false,
+    "num_workers": 0,
+    "use_amp": true,
+    "amp_dtype": "bf16",
+    "channels_last": true,
+    "use_gradient_checkpointing": true,
+    "numeric_debug": true,
+    "numeric_debug_interval": 20,
+    "full_eval_batch_size": 1
+  },
+  "data": {
+    "data_root": "I:/wikiart_latents_512_ema",
+    "style_subdirs": [
+      "Realism",
+      "Impressionism",
+      "Post_Impressionism",
+      "Expressionism",
+      "Symbolism"
+    ],
+    "allow_hflip": true,
+    "identity_ratio": null,
+    "balance_target_styles_per_batch": true,
+    "preload_to_gpu": false,
+    "virtual_length_multiplier": 0.02
+  },
+  "checkpoint": {
+    "save_dir": "./exp/wikiart512_ema_direct_atom_residual_calib_b16"
+  },
+  "ablation": {
+    "name": "wikiart512_ema_direct_atom_residual_calib_b16",
+    "axis": "wikiart512_tokenizer_lancet",
+    "notes": "512-native EMA WikiArt latent calibration: 5 styles, 3600 train + 30 held-out test per style."
+  }
+}

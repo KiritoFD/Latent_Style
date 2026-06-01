@@ -255,13 +255,17 @@ class SBTrainer:
         model_state = strip_compile_prefix(state["model_state_dict"])
         resume_model_strict = bool(self.train_cfg.get("resume_model_strict", True))
         ignore_prefixes = tuple(str(v) for v in self.train_cfg.get("resume_ignore_prefixes", []) if str(v))
-        if resume_model_strict and not ignore_prefixes:
+        include_prefixes = tuple(str(v) for v in self.train_cfg.get("resume_include_prefixes", []) if str(v))
+        if resume_model_strict and not ignore_prefixes and not include_prefixes:
             self.model.load_state_dict(model_state, strict=True)
         else:
             current = self.model.state_dict()
             compatible = {}
             skipped = []
             for key, value in model_state.items():
+                if include_prefixes and not key.startswith(include_prefixes):
+                    skipped.append(key)
+                    continue
                 if ignore_prefixes and key.startswith(ignore_prefixes):
                     skipped.append(key)
                     continue
@@ -271,12 +275,14 @@ class SBTrainer:
                 compatible[key] = value
             missing, unexpected = self.model.load_state_dict(compatible, strict=False)
             logger.info(
-                "Partially resumed model from %s | loaded=%d skipped=%d missing=%d unexpected=%d",
+                "Partially resumed model from %s | loaded=%d skipped=%d missing=%d unexpected=%d include=%s ignore=%s",
                 ckpt_path,
                 len(compatible),
                 len(skipped),
                 len(missing),
                 len(unexpected),
+                list(include_prefixes),
+                list(ignore_prefixes),
             )
         resume_optimizer = bool(self.train_cfg.get("resume_optimizer", True))
         if resume_optimizer and "optimizer_state_dict" in state:

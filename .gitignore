@@ -53,3 +53,23 @@ Related_Works/**/*.png
 !**/*grid*.bmp
 *.pkl
 *.Archer
+
+# Codex/local scratch directories
+.codex_*/
+66688
+
+# Bulk external baseline checkouts and generated results
+Related_Works/repos/**
+Related_Works/run_511/repos/**
+Related_Works/baseline_pipeline/results/**
+Related_Works/baseline_pipeline/manual_grid_requests/**
+
+# SchrodingerBridge runtime outputs
+SchrodingerBridge/exp/**
+SchrodingerBridge/external_eval/**
+SchrodingerBridge/archives/code_backups/**
+SchrodingerBridge/docs/experiments/history_audit_local_*.json
+
+# Top-level runtime dumps
+archive/**
+exp/**

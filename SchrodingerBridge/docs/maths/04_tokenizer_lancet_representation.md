@@ -17,6 +17,12 @@ Tokenizer answers: what is this style?
 
 LANCET answers: how do I draw the content latent using that style control?
 
+There is only one style-side representation module in the main benchmark:
+`Tokenizer`. LANCET may internally contain U-Net encoder/decoder blocks, but
+those are part of the renderer/actuator, not a second style encoder. A separate
+target-evidence encoder is a different reference-guided protocol and is not part
+of this benchmark.
+
 The tokenizer is not an image translator, adapter, or teacher model. It must
 produce an executable style representation from information that is available at
 training and evaluation time. In the current benchmark this conditioning input is
@@ -45,6 +51,11 @@ training uses `target_style` latent but full evaluation calls only
 from deployment. That can improve training loss while making the reported
 benchmark meaningless.
 
+The target latent remains valid on the right side of the objective: it is the
+sample set used by SWD/OMF and related distribution losses. It is invalid only
+when it becomes conditioning input to the tokenizer or LANCET forward path in the
+main style-id benchmark.
+
 ## 3. Training Graphs
 
 Tokenizer-only training still includes LANCET:
@@ -69,6 +80,25 @@ endpoint, target style distribution -> OMF/SWD loss
 
 Joint training is allowed only after each side has a measured role. Otherwise a
 loss improvement cannot be attributed to representation or actuation.
+
+Tokenizer-pretrain followed by fresh LANCET training is also valid if the
+checkpoint loading boundary is explicit:
+
+```text
+Stage A: freeze LANCET, briefly warm up Tokenizer through frozen LANCET.
+Stage B: initialize LANCET from scratch, load only style_tokenizer.*, freeze or
+nearly freeze Tokenizer, and train LANCET to consume that fixed vocabulary.
+```
+
+This tests representation portability. If the fixed tokenizer transfers to a
+fresh LANCET, it is closer to a real style vocabulary. If it only works with the
+old LANCET that shaped it, then the tokenizer has learned an actuator-specific
+coordinate system rather than a stable style representation.
+
+Stage A should not be treated as a full optimizer race. Its role is to produce a
+good initialization for the vocabulary: finite gradients, non-collapsed code
+statistics, and a style-code region the renderer can execute. The performance
+claim belongs to Stage B or later alternating cycles.
 
 ## 4. Mathematical View
 
@@ -117,6 +147,20 @@ style_code = sum_k softmax(logits_s / tau)_k * atom_k
 This tests whether styles are better represented as combinations of shared
 learned concepts rather than independent continuous codes. It uses no target
 latent and can be evaluated with the normal style-id protocol.
+
+### Prototype Plus Shared Residual Atoms
+
+```text
+style_id -> prototype_code
+style_id -> logits over K shared atoms
+style_code = prototype_code + gain * sum_k softmax(logits_s / tau)_k * atom_k
+```
+
+This is the nested form of the concept-atom hypothesis. The prototype preserves
+the per-style full-rank executable control expected by the current single-code
+LANCET consumer. The shared atom residual tests whether styles also benefit from
+a reusable vocabulary. This is a safer probe than pure atoms because it can
+degenerate to direct code if the shared vocabulary is not useful.
 
 ### Distributional Style Code
 

@@ -97,6 +97,8 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         self.skip_spatial_dropout_p = max(0.0, min(1.0, float(cfg.skip_spatial_dropout_p)))
         self.ablation_decoder_highpass = bool(cfg.ablation_decoder_highpass)
         self.color_highway_gain = float(cfg.color_highway_gain)
+        self.pre_integrate_moment_match = bool(cfg.pre_integrate_moment_match)
+        self.pre_integrate_moment_blend = max(0.0, min(1.0, float(cfg.pre_integrate_moment_blend)))
         self.output_moment_match = bool(cfg.output_moment_match)
         self.output_moment_match_eps = max(1e-8, float(cfg.output_moment_match_eps))
         self.output_moment_match_train_only = bool(cfg.output_moment_match_train_only)

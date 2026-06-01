@@ -125,6 +125,9 @@ class OTFlowMatchingObjective:
         self.terminal_swd_mode = str(bridge_cfg.terminal_swd_mode).strip().lower()
         if self.terminal_swd_mode not in {"standard", "spectral_orthogonal", "semantic_quotient"}:
             self.terminal_swd_mode = "standard"
+        self.terminal_swd_axis_source = str(bridge_cfg.terminal_swd_axis_source).strip().lower()
+        if self.terminal_swd_axis_source not in {"semantic", "random"}:
+            self.terminal_swd_axis_source = "semantic"
         self.spectral_swd_low_weight = max(0.0, float(bridge_cfg.spectral_swd_low_weight))
         self.spectral_swd_high_weight = max(0.0, float(bridge_cfg.spectral_swd_high_weight))
         self.spectral_swd_low_kernel = max(1, int(bridge_cfg.spectral_swd_low_kernel))
@@ -679,13 +682,18 @@ class OTFlowMatchingObjective:
     ) -> torch.Tensor | None:
         if self.terminal_swd_weight <= 0.0:
             return None
-        if semantic_k is not None:
-            return self._semantic_guided_swd(pred_endpoint, target_style, semantic_k)
         active = self._terminal_active_indices(pred_endpoint, source_style_id, target_style_id)
         if active.numel() == 0:
             return None
         pred_active = pred_endpoint.index_select(0, active)
         target_active = target_style.index_select(0, active)
+        if (
+            self.terminal_swd_mode == "standard"
+            and self.terminal_swd_axis_source == "semantic"
+            and semantic_k is not None
+        ):
+            semantic_active = semantic_k.index_select(0, active)
+            return self._semantic_guided_swd(pred_active, target_active, semantic_active)
         if self.terminal_swd_mode == "spectral_orthogonal":
             return self._spectral_orthogonal_swd(pred_active, target_active)
         if self.terminal_swd_mode == "semantic_quotient" and content is not None:

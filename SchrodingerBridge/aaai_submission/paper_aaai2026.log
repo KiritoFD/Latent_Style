@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999998 (TeX Live 2026) (preloaded format=xelatex 2026.4.11)  15 MAY 2026 15:52
+This is XeTeX, Version 3.141592653-2.6-0.999998 (TeX Live 2026) (preloaded format=xelatex 2026.4.11)  1 JUN 2026 09:54
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -555,8 +555,18 @@ LaTeX Font Warning: Font shape `TU/ptm/m/it' undefined
 (Font)              using `TU/ptm/m/n' instead on input line 42.
 
 
+Underfull \hbox (badness 1701) in paragraph at lines 42--43
+\TU/ptm/b/n/10 aligned terminal regularizer that pulls the Euler-
+ []
+
+
 Underfull \hbox (badness 7667) in paragraph at lines 46--47
 []\TU/ptm/b/n/10 A structured latent-transport formulation for
+ []
+
+
+Underfull \hbox (badness 1540) in paragraph at lines 48--49
+[]\TU/ptm/b/n/10 Semantic-Aligned Sliced Wasserstein (SA-SWD),
  []
 
 [1
@@ -578,65 +588,75 @@ Underfull \hbox (badness 3039) in paragraph at lines 113--114
 []\TU/ptm/b/n/10 The complete training objective combines flow
  []
 
-
-Underfull \hbox (badness 1173) in paragraph at lines 147--156
+[3]
+Underfull \hbox (badness 1173) in paragraph at lines 145--154
  \TU/ptm/b/n/10 Notation. Recall the OMF training regime: $[] \OT1/cmr/m/n/10 =
 
  []
 
-[3]
 File: framework_figure.pdf Graphic file (type pdf)
 <use framework_figure.pdf>
- [4]
-Underfull \hbox (badness 1194) in paragraph at lines 280--281
-\TU/ptm/m/it/10 ficiency gain is not obtained by sacrificing trans-
- []
-
-
-Underfull \hbox (badness 1248) in paragraph at lines 282--283
-\TU/ptm/m/it/10 below the high-quality frontier (LPIPS 0.630, EC
- []
-
+[4]
 File: fig_quality_tradeoff.png Graphic file (type bmp)
 <fig_quality_tradeoff.png>
 File: fig_qual_grid_ours_vs_samst.png Graphic file (type bmp)
 <fig_qual_grid_ours_vs_samst.png>
 File: fig_zoom_ours_vs_samst.png Graphic file (type bmp)
 <fig_zoom_ours_vs_samst.png>
-[5]
+ [5]
 File: fig_ablation_pareto.png Graphic file (type bmp)
 <fig_ablation_pareto.png>
 File: fig_weight_sweep_summary.png Graphic file (type bmp)
 <fig_weight_sweep_summary.png>
 
-Underfull \hbox (badness 1137) in paragraph at lines 376--376
+Underfull \hbox (badness 1137) in paragraph at lines 368--368
 []\TU/ptm/m/it/10 Figure 6: |Summary of the 40-run category-weight
  []
 
 File: fig_train_efficiency_pareto.png Graphic file (type bmp)
 <fig_train_efficiency_pareto.png>
 
-Underfull \hbox (badness 10000) in paragraph at lines 387--388
+Underfull \hbox (badness 10000) in paragraph at lines 379--380
 []\TU/ptm/m/it/10 We also evaluated optional theory switches.
  []
 
-[6] [7]
-Underfull \hbox (badness 1127) in paragraph at lines 402--403
-\TU/ptm/m/it/10 We do not claim to maximize raw style recogni-
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [6]
+[7]
+Underfull \hbox (badness 1968) in paragraph at lines 394--395
+\TU/ptm/m/it/10 LBM prioritizes bounded transport efficiency and
  []
 
 
-Underfull \hbox (badness 1997) in paragraph at lines 407--408
-\TU/ptm/m/it/10 combines three complementary objectives: a flow-
+Underfull \hbox (badness 5787) in paragraph at lines 394--395
+\TU/ptm/m/it/10 artifact-sensitive texture realism in the efficient
+ []
+
+
+Underfull \hbox (badness 1142) in paragraph at lines 394--395
+\TU/ptm/m/it/10 0.719), improves LPIPS and EC, reduces training
+ []
+
+
+Underfull \hbox (badness 1436) in paragraph at lines 394--395
+\TU/ptm/m/it/10 cost by about $\OT1/cmr/m/n/10 22\OMS/cmsy/m/n/10 ^^B$\TU/ptm/m
+/it/10 , and outperforms the heavier
+ []
+
+
+Underfull \hbox (badness 1248) in paragraph at lines 399--400
+\TU/ptm/m/it/10 stochastic latent bridges; SA-SWD pulls the inte-
  []
 
 (./paper_aaai2026.bbl [8]) [9]
-Underfull \hbox (badness 2753) in paragraph at lines 424--425
+Underfull \hbox (badness 2753) in paragraph at lines 416--417
 \TU/ptm/b/n/9 Does this paper make theoretical contributions? Yes
  []
 
 
-Underfull \hbox (badness 2050) in paragraph at lines 424--425
+Underfull \hbox (badness 2050) in paragraph at lines 416--417
 \TU/ptm/b/n/9 decomposition connecting the training kinetic loss to
  []
 
@@ -655,10 +675,10 @@ LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 Here is how much of TeX's memory you used:
  15318 strings out of 468168
  308963 string characters out of 5436524
- 707923 words of memory out of 5000000
+ 706923 words of memory out of 5000000
  43773 multiletter control sequences out of 15000+600000
  635653 words of font info for 77 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 84i,12n,94p,1446b,323s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 84i,12n,94p,1490b,323s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
 Output written on paper_aaai2026.pdf (10 pages).

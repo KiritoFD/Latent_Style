@@ -151,31 +151,33 @@ We use four metric groups. Raw semantic metrics, CLIP-style and CLIP-content, me
 \subsection{Main comparison}
 \begin{table*}[t]
 \centering
-\caption{Strict-750 comparison with efficiency. $\uparrow$ = higher is better, $\downarrow$ = lower is better. Inference time end-to-end for 750 images. Training times marked $\dagger$ are extrapolated.}
+\caption{Current strict-750 comparison on the reproduced 512-style protocol. $\uparrow$ = higher is better, $\downarrow$ = lower is better. Inference time is end-to-end for 750 images when available.}
 \label{tab:main}
 \small
 \setlength{\tabcolsep}{5pt}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}lrrrrrrr@{}}
 \toprule
-Method & Params & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & EC$\uparrow$ & Infer & s/img & Train sec \\
+Method & Protocol/checkpoint & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & EC$\uparrow$ & Infer & s/img & Train \\
 \midrule
-Ours ep7 & 3.9 M & 0.716 & 0.451 & 0.393 & 40.0 s & 0.053 & 309.9 \\
-SaMST & 6.0 M & 0.719 & 0.466 & 0.384 & 39.8 s & 0.053 & 6768.7$\dagger$ \\
-S2WAT & 65 M & 0.714 & 0.526 & 0.338 & 45.1 s & 0.060 & 10600$\dagger$ \\
-AdaIN v32k & $\sim$5 M & 0.713 & 0.630 & 0.264 & 9.3 s & 0.012 & 9220.4 \\
+Ours (LBM) & 512 EMA e2 & 0.7905 & 0.3006 & 0.5529 & -- & -- & -- \\
+SaMAM-512 & 5k best-style & 0.7912 & 0.2833 & 0.5671 & 160.0 s & 0.213 & 2h06m \\
+SaMAM-512 & 10k best-LPIPS & 0.7851 & 0.1643 & 0.6562 & 160.0 s & 0.213 & 4h25m \\
+SaMAM-256 & 25k reference & 0.6938 & 0.3940 & 0.4205 & -- & -- & $>$3h56m \\
+SaMST & strict historical & 0.7194 & 0.4664 & 0.3839 & 39.8 s & 0.053 & probe only \\
 \midrule
-StyleID & SD-based & 0.760 & 0.750 & 0.190 & 603.3 s & 0.804 & training-free \\
-CAST & 7.0 M & 0.665 & 0.726 & 0.182 & 75.5 s & 0.101 & training-free \\
+SaMST-512 & 30-epoch run & \multicolumn{6}{c}{incomplete: Realism/Impressionism finished; remaining targets resumable} \\
 \bottomrule
 \end{tabular}
 }
 \smallskip
 \footnoterule\small
-$\dagger$Extrapolated.
+EC is computed as CLIP-S$\times(1-\mathrm{LPIPS})$. SaMAM-512 inference is measured as 2250 outputs over three checkpoints in 480.1s. The current SaMST-512 run has not yet produced a complete 30-epoch strict-750 result.
 \end{table*}
 
-Table~\ref{tab:main} reveals a clear style-content-efficiency trade-off. StyleID obtains the highest raw CLIP-style score, but its LPIPS of 0.750 indicates severe content drift and its diffusion-based inference is over 15$\times$ slower. SaMST is the closest efficient competitor and slightly exceeds our CLIP-style by 0.003; however, Ours achieves lower LPIPS (0.451 vs 0.466), higher EC (0.393 vs 0.384), fewer parameters (3.9M vs 6.0M), and substantially lower training cost (310 s vs 6769 s). S2WAT reaches a similar CLIP-style but has much worse LPIPS (0.526) and a 16.7$\times$ larger model. AdaIN remains the fastest method, but its LPIPS and EC are far behind (0.630, 0.264). CAST and diffusion-based StyleID are constrained by content drift or high inference cost. These results support our main claim: Ours does not maximize a single metric alone, but provides a favorable Pareto point for efficient domain-level artistic transfer.
+Table~\ref{tab:main} shows a more precise current status than the earlier 256-based draft. LBM decisively exceeds the historical strict SaMST result in both CLIP-style and LPIPS. Against the newly reproduced SaMAM-512 baseline, however, the result is mixed: LBM is essentially tied with SaMAM's best-style checkpoint (0.7905 vs.\ 0.7912), but still trails SaMAM in LPIPS, especially after SaMAM continues to 10k steps. This makes the next target concrete: preserve the current style level while reducing LPIPS toward the 0.28--0.16 SaMAM band.
+
+The SaMAM convergence curve also indicates that style and content preservation peak at different times. SaMAM-512 reaches its best CLIP-style at 5k, while LPIPS continues improving through 10k. SaMAM-256 shows the same qualitative behavior at lower absolute style: style plateaus around 14k, while LPIPS keeps decreasing through 25k. Therefore, future LBM improvements should not blindly increase style pressure; they should target content-preserving execution for the weak source-target cells, especially Realism-source transfers and Expressionism/Symbolism targets.
 
 \begin{figure}[t]
     \centering
