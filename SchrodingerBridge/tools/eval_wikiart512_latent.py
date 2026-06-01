@@ -350,78 +350,103 @@ def evaluate(args: argparse.Namespace) -> dict:
     rows: list[dict] = []
     metric_batch = max(1, int(args.batch_size))
 
-    for target_id, target_name in enumerate(classes):
-        for start in tqdm(range(0, len(items), metric_batch), desc=f"generate -> {target_name}"):
+    target_chunk = max(1, min(len(classes), int(args.target_chunk_size)))
+    default_decode_bs = max(1, metric_batch * target_chunk)
+    vae_decode_bs = max(1, int(args.vae_decode_batch_size) if int(args.vae_decode_batch_size) > 0 else default_decode_bs)
+
+    for target_start in range(0, len(classes), target_chunk):
+        target_ids_chunk = list(range(target_start, min(len(classes), target_start + target_chunk)))
+        target_label = ",".join(classes[idx] for idx in target_ids_chunk)
+        for start in tqdm(range(0, len(items), metric_batch), desc=f"generate -> {target_label}"):
             batch = items[start : start + metric_batch]
             latents = torch.stack([_load_latent(item["latent_path"]) for item in batch], dim=0).to(device)
-            target_ids = torch.full((latents.shape[0],), target_id, dtype=torch.long, device=device)
             with torch.no_grad():
-                out_latents = infer.transfer_style(latents, target_style_id=target_ids, num_steps=int(args.num_steps))
-                latent_delta = (out_latents.float() - latents.float()).flatten(1)
+                repeated_latents = latents.repeat(len(target_ids_chunk), 1, 1, 1)
+                target_ids = torch.cat(
+                    [
+                        torch.full((latents.shape[0],), target_id, dtype=torch.long, device=device)
+                        for target_id in target_ids_chunk
+                    ],
+                    dim=0,
+                )
+                out_latents = infer.transfer_style(repeated_latents, target_style_id=target_ids, num_steps=int(args.num_steps))
+                latent_delta = (out_latents.float() - repeated_latents.float()).flatten(1)
                 latent_delta_l2 = latent_delta.norm(dim=1).detach().cpu().numpy()
                 latent_delta_abs_mean = latent_delta.abs().mean(dim=1).detach().cpu().numpy()
-                decoded = decode_latent(vae, out_latents, device=str(device)).detach().cpu()
+            decoded_parts = []
+            for dec_start in range(0, out_latents.shape[0], vae_decode_bs):
+                dec_end = min(out_latents.shape[0], dec_start + vae_decode_bs)
+                with torch.no_grad():
+                    decoded_parts.append(decode_latent(vae, out_latents[dec_start:dec_end], device=str(device)).detach().cpu())
+            decoded = torch.cat(decoded_parts, dim=0)
 
-            gen_pils = []
-            gen_lpips = []
-            src_lpips = []
-            for i, item in enumerate(batch):
-                gen_name = f"{item['source_style']}__{item['stem']}__to__{target_name}.png"
-                gen_path = gen_dir / gen_name
-                _save_png(decoded[i], gen_path)
-                gen_pils.append(_pil_from_tensor_01(decoded[i]))
-                gen_lpips.append(decoded[i] * 2.0 - 1.0)
+            for local_target_idx, target_id in enumerate(target_ids_chunk):
+                target_name = classes[target_id]
+                offset = local_target_idx * len(batch)
+                decoded_slice = decoded[offset : offset + len(batch)]
+                delta_l2_slice = latent_delta_l2[offset : offset + len(batch)]
+                delta_abs_slice = latent_delta_abs_mean[offset : offset + len(batch)]
 
-                src_key = str(item["image_path"].resolve())
-                if src_key not in source_lpips_cache:
-                    source_lpips_cache[src_key] = _load_metric_tensor(item["image_path"], int(args.image_size))
-                src_lpips.append(source_lpips_cache[src_key])
-                if src_key not in source_clip_cache:
-                    with Image.open(item["image_path"]) as im:
-                        pil = ImageOps.exif_transpose(im).convert("RGB")
-                        source_clip_cache[src_key] = encode_clip([pil]).detach().cpu()[0]
+                gen_pils = []
+                gen_lpips = []
+                src_lpips = []
+                for i, item in enumerate(batch):
+                    gen_name = f"{item['source_style']}__{item['stem']}__to__{target_name}.png"
+                    gen_path = gen_dir / gen_name
+                    _save_png(decoded_slice[i], gen_path)
+                    gen_pils.append(_pil_from_tensor_01(decoded_slice[i]))
+                    gen_lpips.append(decoded_slice[i] * 2.0 - 1.0)
 
-            with torch.no_grad():
-                gen_clip = encode_clip(gen_pils)
-                src_clip = torch.stack([source_clip_cache[str(item["image_path"].resolve())] for item in batch], dim=0).to(device)
-                target_proto = style_prototypes[target_id].expand(gen_clip.shape[0], -1)
-                clip_style = F.cosine_similarity(gen_clip, target_proto, dim=-1).detach().cpu().numpy()
-                clip_content = F.cosine_similarity(gen_clip, src_clip, dim=-1).detach().cpu().numpy()
-                source_to_target_clip = F.cosine_similarity(src_clip, target_proto, dim=-1)
-                clip_style_gain = F.cosine_similarity(gen_clip, target_proto, dim=-1) - source_to_target_clip
-                dir_gen = gen_clip - src_clip
-                dir_tgt = target_proto - src_clip
-                dir_gen = dir_gen / dir_gen.norm(dim=-1, keepdim=True).clamp_min(1e-8)
-                dir_tgt = dir_tgt / dir_tgt.norm(dim=-1, keepdim=True).clamp_min(1e-8)
-                clip_dir = F.cosine_similarity(dir_gen, dir_tgt, dim=-1).detach().cpu().numpy()
-                source_to_target_clip = source_to_target_clip.detach().cpu().numpy()
-                clip_style_gain = clip_style_gain.detach().cpu().numpy()
-                lp_gen = torch.stack(gen_lpips, dim=0).to(device)
-                lp_src = torch.stack(src_lpips, dim=0).to(device)
-                content_lpips = lpips_model(lp_gen, lp_src).view(-1).detach().cpu().numpy()
+                    src_key = str(item["image_path"].resolve())
+                    if src_key not in source_lpips_cache:
+                        source_lpips_cache[src_key] = _load_metric_tensor(item["image_path"], int(args.image_size))
+                    src_lpips.append(source_lpips_cache[src_key])
+                    if src_key not in source_clip_cache:
+                        with Image.open(item["image_path"]) as im:
+                            pil = ImageOps.exif_transpose(im).convert("RGB")
+                            source_clip_cache[src_key] = encode_clip([pil]).detach().cpu()[0]
 
-            for i, item in enumerate(batch):
-                gen_name = f"{item['source_style']}__{item['stem']}__to__{target_name}.png"
-                rows.append(
-                    {
-                        "src_style": item["source_style"],
-                        "tgt_style": target_name,
-                        "src_image": str(item["image_path"]),
-                        "src_latent": str(item["latent_path"]),
-                        "gen_image": str(gen_dir / gen_name),
-                        "clip_style": float(clip_style[i]),
-                        "source_to_target_clip": float(source_to_target_clip[i]),
-                        "clip_style_gain": float(clip_style_gain[i]),
-                        "clip_dir": float(clip_dir[i]),
-                        "clip_content": float(clip_content[i]),
-                        "content_lpips": float(content_lpips[i]),
-                        "latent_delta_l2": float(latent_delta_l2[i]),
-                        "latent_delta_abs_mean": float(latent_delta_abs_mean[i]),
-                    }
-                )
+                with torch.no_grad():
+                    gen_clip = encode_clip(gen_pils)
+                    src_clip = torch.stack([source_clip_cache[str(item["image_path"].resolve())] for item in batch], dim=0).to(device)
+                    target_proto = style_prototypes[target_id].expand(gen_clip.shape[0], -1)
+                    clip_style = F.cosine_similarity(gen_clip, target_proto, dim=-1).detach().cpu().numpy()
+                    clip_content = F.cosine_similarity(gen_clip, src_clip, dim=-1).detach().cpu().numpy()
+                    source_to_target_clip = F.cosine_similarity(src_clip, target_proto, dim=-1)
+                    clip_style_gain = F.cosine_similarity(gen_clip, target_proto, dim=-1) - source_to_target_clip
+                    dir_gen = gen_clip - src_clip
+                    dir_tgt = target_proto - src_clip
+                    dir_gen = dir_gen / dir_gen.norm(dim=-1, keepdim=True).clamp_min(1e-8)
+                    dir_tgt = dir_tgt / dir_tgt.norm(dim=-1, keepdim=True).clamp_min(1e-8)
+                    clip_dir = F.cosine_similarity(dir_gen, dir_tgt, dim=-1).detach().cpu().numpy()
+                    source_to_target_clip = source_to_target_clip.detach().cpu().numpy()
+                    clip_style_gain = clip_style_gain.detach().cpu().numpy()
+                    lp_gen = torch.stack(gen_lpips, dim=0).to(device)
+                    lp_src = torch.stack(src_lpips, dim=0).to(device)
+                    content_lpips = lpips_model(lp_gen, lp_src).view(-1).detach().cpu().numpy()
 
-            for pil in gen_pils:
-                pil.close()
+                for i, item in enumerate(batch):
+                    gen_name = f"{item['source_style']}__{item['stem']}__to__{target_name}.png"
+                    rows.append(
+                        {
+                            "src_style": item["source_style"],
+                            "tgt_style": target_name,
+                            "src_image": str(item["image_path"]),
+                            "src_latent": str(item["latent_path"]),
+                            "gen_image": str(gen_dir / gen_name),
+                            "clip_style": float(clip_style[i]),
+                            "source_to_target_clip": float(source_to_target_clip[i]),
+                            "clip_style_gain": float(clip_style_gain[i]),
+                            "clip_dir": float(clip_dir[i]),
+                            "clip_content": float(clip_content[i]),
+                            "content_lpips": float(content_lpips[i]),
+                            "latent_delta_l2": float(delta_l2_slice[i]),
+                            "latent_delta_abs_mean": float(delta_abs_slice[i]),
+                        }
+                    )
+
+                for pil in gen_pils:
+                    pil.close()
 
     csv_path = out_dir / "metrics.csv"
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
@@ -476,6 +501,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--image-size", type=int, default=512)
     parser.add_argument("--batch-size", type=int, default=2)
+    parser.add_argument("--target-chunk-size", type=int, default=1)
+    parser.add_argument("--vae-decode-batch-size", type=int, default=0)
     parser.add_argument("--ref-batch-size", type=int, default=16)
     parser.add_argument("--max-per-source-style", type=int, default=0)
     parser.add_argument("--num-steps", type=int, default=4)

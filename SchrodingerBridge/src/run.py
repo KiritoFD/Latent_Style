@@ -52,6 +52,15 @@ def _seed_worker(worker_id: int) -> None:
     torch.set_num_threads(1)
 
 
+def _resolve_num_workers(requested: int) -> int:
+    if requested >= 0:
+        return requested
+    if os.name == "nt":
+        return 0
+    cpu_count = os.cpu_count() or 4
+    return max(2, min(8, cpu_count // 2))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train latent Schrodinger bridge model")
     parser.add_argument("--config", type=str, default="config.json", help="Path to config json")
@@ -100,7 +109,7 @@ def main() -> None:
         config.model.num_styles = style_count
 
     batch_size = int(train_cfg.batch_size)
-    num_workers = int(train_cfg.num_workers)
+    num_workers = _resolve_num_workers(int(train_cfg.num_workers))
     shuffle = bool(train_cfg.shuffle)
     persistent_workers = bool(train_cfg.persistent_workers and num_workers > 0)
     pin_memory = bool(train_cfg.pin_memory)
