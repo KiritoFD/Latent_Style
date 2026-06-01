@@ -23,6 +23,8 @@ INFERENCE_DEFAULTS: dict[str, dict[str, Any]] = {
         "max_ref_compare": 24,
         "max_ref_cache": 80,
         "ref_feature_batch_size": 8,
+        "target_chunk_size": 1,
+        "vae_decode_batch_size": 0,
     },
 }
 
@@ -71,6 +73,11 @@ class ModelConfig:
     tokenizer_init_std: float = 0.02
     tokenizer_num_atoms: int = 32
     tokenizer_atom_temperature: float = 0.25
+    tokenizer_field_dropout_p: float = 0.0
+    tokenizer_code_l2_norm: bool = False
+    tokenizer_code_scale: float = 1.0
+    tokenizer_atom_topk: int = 0
+    tokenizer_atom_hard_eval: bool = False
     time_dim: int = 256
     base_dim: int = 64
     lift_channels: int | None = None
@@ -324,6 +331,12 @@ class TrainingConfig:
     allow_tf32: bool = True
     cudnn_benchmark: bool = True
     channels_last: bool = False
+    torch_compile: bool = False
+    torch_compile_backend: str = "inductor"
+    torch_compile_mode: str = "default"
+    torch_compile_fullgraph: bool = False
+    torch_compile_dynamic: bool | None = None
+    torch_compile_cache_dir: str = ""
     use_gradient_checkpointing: bool = False
     fused_adamw: bool = True
     resume_checkpoint: str = ""
@@ -342,6 +355,8 @@ class TrainingConfig:
     full_eval_max_ref_compare: int | None = None
     full_eval_max_ref_cache: int | None = None
     full_eval_ref_feature_batch_size: int | None = None
+    full_eval_target_chunk_size: int | None = None
+    full_eval_vae_decode_batch_size: int | None = None
     test_image_dir: str = "../style_data/overfit50"
     full_eval_cache_dir: str = "../eval_cache"
     full_eval_image_classifier_path: str = "../eval_cache/eval_style_image_classifier.pt"
@@ -548,6 +563,8 @@ def resolve_full_eval_section(config: dict[str, Any] | ExperimentConfig | None) 
             "max_ref_compare": "full_eval_max_ref_compare",
             "max_ref_cache": "full_eval_max_ref_cache",
             "ref_feature_batch_size": "full_eval_ref_feature_batch_size",
+            "target_chunk_size": "full_eval_target_chunk_size",
+            "vae_decode_batch_size": "full_eval_vae_decode_batch_size",
         }
         for dst_key, src_key in mapping.items():
             if src_key in training and training.get(src_key) is not None:
@@ -594,6 +611,8 @@ def compact_runtime_config(config: dict[str, Any] | ExperimentConfig | None) -> 
             "full_eval_max_ref_compare": "max_ref_compare",
             "full_eval_max_ref_cache": "max_ref_cache",
             "full_eval_ref_feature_batch_size": "ref_feature_batch_size",
+            "full_eval_target_chunk_size": "target_chunk_size",
+            "full_eval_vae_decode_batch_size": "vae_decode_batch_size",
         }
         for train_key, default_key in mapping.items():
             if train_key in training and full_eval_defaults.get(default_key) == training.get(train_key):

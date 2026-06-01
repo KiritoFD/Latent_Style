@@ -26,6 +26,11 @@ class FactorizedStyleTokenizer(nn.Module):
         residual_gain: float = 0.5,
         num_atoms: int = 32,
         atom_temperature: float = 0.25,
+        field_dropout_p: float = 0.0,
+        code_l2_norm: bool = False,
+        code_scale: float = 1.0,
+        atom_topk: int = 0,
+        atom_hard_eval: bool = False,
     ) -> None:
         super().__init__()
         self.num_styles = max(1, int(num_styles))
@@ -39,6 +44,11 @@ class FactorizedStyleTokenizer(nn.Module):
         self.residual_gain = float(residual_gain)
         self.num_atoms = max(2, int(num_atoms))
         self.atom_temperature = max(1e-3, float(atom_temperature))
+        self.field_dropout_p = max(0.0, min(1.0, float(field_dropout_p)))
+        self.code_l2_norm = bool(code_l2_norm)
+        self.code_scale = float(code_scale)
+        self.atom_topk = max(0, int(atom_topk))
+        self.atom_hard_eval = bool(atom_hard_eval)
         if self.projection_mode not in {
             "concat",
             "additive",
@@ -256,34 +266,66 @@ class FactorizedStyleTokenizer(nn.Module):
                 "atom_table_norm": self.concept_atoms.detach().float().norm(dim=1).mean(),
             }
 
+    def _postprocess_code(self, style_code: torch.Tensor) -> torch.Tensor:
+        if self.code_l2_norm:
+            style_code = F.normalize(style_code.float(), dim=1).to(dtype=style_code.dtype)
+        if abs(self.code_scale - 1.0) > 1e-8:
+            style_code = style_code * self.code_scale
+        return style_code
+
+    def _atom_weights(self, style_id: torch.Tensor) -> torch.Tensor:
+        logits = self.atom_logits(style_id)
+        if self.atom_topk > 0 and self.atom_topk < logits.shape[1]:
+            topk = torch.topk(logits, k=self.atom_topk, dim=-1).indices
+            mask = torch.zeros_like(logits, dtype=torch.bool)
+            mask.scatter_(1, topk, True)
+            logits = logits.masked_fill(~mask, torch.finfo(logits.dtype).min)
+        if self.atom_hard_eval and not self.training:
+            idx = logits.argmax(dim=-1, keepdim=True)
+            weights = torch.zeros_like(logits)
+            weights.scatter_(1, idx, 1.0)
+            return weights
+        return F.softmax(logits / self.atom_temperature, dim=-1)
+
+    def _field_dropout(self, fields: tuple[torch.Tensor, torch.Tensor, torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        if (not self.training) or self.field_dropout_p <= 0.0:
+            return fields
+        keep = torch.rand((fields[0].shape[0], 3), device=fields[0].device, dtype=fields[0].dtype) >= self.field_dropout_p
+        # Keep at least one field per sample so the tokenizer cannot emit a zero
+        # code solely because of the diagnostic dropout.
+        empty = ~keep.any(dim=1)
+        if bool(empty.any().item()):
+            keep[empty, torch.randint(0, 3, (int(empty.sum().item()),), device=fields[0].device)] = True
+        scale = 1.0 / max(1e-6, 1.0 - self.field_dropout_p)
+        return tuple(field * keep[:, idx : idx + 1] * scale for idx, field in enumerate(fields))  # type: ignore[return-value]
+
     def forward(self, style_id: torch.Tensor, t: torch.Tensor | None = None) -> torch.Tensor:
         del t
         style_id = style_id.long().view(-1)
         if self.projection_mode == "direct_code":
-            style_code = self.direct_code(style_id)
+            style_code = self._postprocess_code(self.direct_code(style_id))
             self._record_direct_debug(style_code)
             return style_code
         if self.projection_mode == "direct_atom_residual":
             prototype_code = self.direct_code(style_id)
-            logits = self.atom_logits(style_id)
-            weights = F.softmax(logits / self.atom_temperature, dim=-1)
+            weights = self._atom_weights(style_id)
             atom_residual = weights @ self.concept_atoms
-            style_code = prototype_code + self.residual_gain * atom_residual
+            style_code = self._postprocess_code(prototype_code + self.residual_gain * atom_residual)
             self._record_direct_atom_residual_debug(style_code, prototype_code, atom_residual, weights)
             return style_code
         if self.projection_mode == "concept_atoms":
-            logits = self.atom_logits(style_id)
-            weights = F.softmax(logits / self.atom_temperature, dim=-1)
-            style_code = weights @ self.concept_atoms
+            weights = self._atom_weights(style_id)
+            style_code = self._postprocess_code(weights @ self.concept_atoms)
             self._record_atom_debug(style_code, weights)
             return style_code
         gates = self.field_gates.to(dtype=self.identity.weight.dtype)
         identity = self.identity(style_id) * gates[0]
         texture = self.texture(style_id) * gates[1]
         geometry = self.geometry(style_id) * gates[2]
+        identity, texture, geometry = self._field_dropout((identity, texture, geometry))
         if self.projection_mode == "concat":
             fields = torch.cat([identity, texture, geometry], dim=1)
-            style_code = self.projector(fields)
+            style_code = self._postprocess_code(self.projector(fields))
             self._record_debug(identity, texture, geometry, style_code)
             return style_code
         identity_code = self.identity_projector(identity)
@@ -292,7 +334,7 @@ class FactorizedStyleTokenizer(nn.Module):
         residual_code = (identity_code + texture_code + geometry_code) / (3.0 ** 0.5)
         if self.projection_mode == "carrier_residual":
             carrier_code = self.carrier(style_id)
-            style_code = carrier_code + self.residual_gain * residual_code
+            style_code = self._postprocess_code(carrier_code + self.residual_gain * residual_code)
             self._record_debug(
                 identity,
                 texture,
@@ -305,6 +347,6 @@ class FactorizedStyleTokenizer(nn.Module):
                 residual_code,
             )
             return style_code
-        style_code = residual_code
+        style_code = self._postprocess_code(residual_code)
         self._record_debug(identity, texture, geometry, style_code, identity_code, texture_code, geometry_code)
         return style_code

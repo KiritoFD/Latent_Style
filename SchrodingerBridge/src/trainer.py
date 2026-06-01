@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import time
 from datetime import datetime
 from pathlib import Path
@@ -19,6 +20,7 @@ from utils.training import (
     build_adamw,
     initialize_training_log,
     strip_compile_prefix,
+    unwrap_compiled_model,
     write_config_and_source_snapshot,
 )
 
@@ -110,6 +112,54 @@ class SBTrainer:
         self._maybe_resume(str(train_cfg.get("resume_checkpoint", "")))
         self._configure_freeze_mode()
         self._configure_distillation()
+        self._configure_compile()
+
+    def _configure_compile(self) -> None:
+        if not bool(self.train_cfg.get("torch_compile", False)):
+            return
+        if not hasattr(torch, "compile"):
+            logger.warning("training.torch_compile requested, but this PyTorch build has no torch.compile.")
+            return
+
+        cache_dir_raw = str(self.train_cfg.get("torch_compile_cache_dir", "")).strip()
+        if cache_dir_raw:
+            cache_dir = Path(cache_dir_raw)
+            if not cache_dir.is_absolute():
+                cache_dir = (Path.cwd() / cache_dir).resolve()
+            inductor_dir = cache_dir / "inductor"
+            triton_dir = cache_dir / "triton"
+            inductor_dir.mkdir(parents=True, exist_ok=True)
+            triton_dir.mkdir(parents=True, exist_ok=True)
+            os.environ.setdefault("TORCHINDUCTOR_CACHE_DIR", str(inductor_dir))
+            os.environ.setdefault("TRITON_CACHE_DIR", str(triton_dir))
+
+        backend = str(self.train_cfg.get("torch_compile_backend", "inductor") or "inductor")
+        mode_raw = str(self.train_cfg.get("torch_compile_mode", "default") or "default").strip()
+        mode = None if mode_raw in {"", "default", "none"} else mode_raw
+        fullgraph = bool(self.train_cfg.get("torch_compile_fullgraph", False))
+        dynamic = self.train_cfg.get("torch_compile_dynamic", None)
+        if dynamic is not None:
+            dynamic = bool(dynamic)
+
+        logger.info(
+            "Compiling model with torch.compile backend=%s mode=%s fullgraph=%s dynamic=%s cache=%s",
+            backend,
+            mode or "default",
+            fullgraph,
+            dynamic,
+            cache_dir_raw or "<default>",
+        )
+        try:
+            self.model = torch.compile(
+                self.model,
+                backend=backend,
+                mode=mode,
+                fullgraph=fullgraph,
+                dynamic=dynamic,
+            )
+        except Exception:
+            logger.exception("torch.compile failed during setup.")
+            raise
 
     def _tensor_stats(self, value: torch.Tensor | None) -> Dict[str, float]:
         if value is None:
@@ -617,10 +667,11 @@ class SBTrainer:
 
     def save_checkpoint(self, epoch: int, metrics: Dict[str, float]) -> Path:
         path = self.checkpoint_dir / f"epoch_{epoch:04d}.pt"
+        model_for_state = unwrap_compiled_model(self.model)
         payload = {
             "epoch": int(epoch),
             "global_step": int(self.global_step),
-            "model_state_dict": self.model.state_dict(),
+            "model_state_dict": model_for_state.state_dict(),
             "optimizer_state_dict": self.optimizer.state_dict(),
             "scheduler_state_dict": self.scheduler.state_dict() if self.scheduler is not None else None,
             "config": self.serialized_config,

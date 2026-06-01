@@ -19,6 +19,7 @@ from PIL import Image
 
 from config_schema import ExperimentConfig, resolve_inference_section
 from model import build_model_from_config
+from utils.training import strip_compile_prefix
 
 logger = logging.getLogger(__name__)
 
@@ -95,9 +96,7 @@ class LGTInference:
         bridge_cfg = config.bridge
         infer_cfg = resolve_inference_section(config)
         self.objective_mode = str(bridge_cfg.objective_mode).strip().lower()
-        state_dict = checkpoint["model_state_dict"]
-        if any(k.startswith("_orig_mod.") for k in state_dict.keys()):
-            state_dict = {k.replace("_orig_mod.", ""): v for k, v in state_dict.items()}
+        state_dict = strip_compile_prefix(checkpoint["model_state_dict"])
 
         self.model = build_model_from_config(config.model, use_checkpointing=False).to(device)
         try:
@@ -259,12 +258,25 @@ def load_vae(device="cuda", model_id="sd15", cache_dir=None):
     if device == "cuda" and not torch.cuda.is_available():
         logger.warning("CUDA not available, fallback to CPU for VAE.")
         device = "cpu"
-    return download_vae_with_fallback(model_id, device=device, cache_dir=cache_dir)
+    vae = download_vae_with_fallback(model_id, device=device, cache_dir=cache_dir)
+    if str(device).startswith("cuda"):
+        try:
+            vae = vae.to(memory_format=torch.channels_last)
+        except Exception:
+            logger.debug("VAE channels_last conversion skipped.", exc_info=True)
+        try:
+            if hasattr(vae, "enable_xformers_memory_efficient_attention"):
+                vae.enable_xformers_memory_efficient_attention()
+        except Exception:
+            logger.debug("VAE xFormers attention not available; continue without it.", exc_info=True)
+    return vae
 
 
 @torch.no_grad()
 def encode_image(vae, image_tensor, device="cuda"):
     image_tensor = image_tensor.to(device, dtype=torch.float16)
+    if image_tensor.ndim == 4 and str(device).startswith("cuda"):
+        image_tensor = image_tensor.contiguous(memory_format=torch.channels_last)
     latent = vae.encode(image_tensor).latent_dist.sample()
     latent = latent * vae.config.scaling_factor
     return latent
@@ -273,6 +285,8 @@ def encode_image(vae, image_tensor, device="cuda"):
 @torch.no_grad()
 def decode_latent(vae, latent, device="cuda", scaling_factor=None):
     latent = latent.to(device, dtype=torch.float16)
+    if latent.ndim == 4 and str(device).startswith("cuda"):
+        latent = latent.contiguous(memory_format=torch.channels_last)
     scale = float(vae.config.scaling_factor if scaling_factor is None else scaling_factor)
     latent = latent / max(scale, 1e-8)
     image = vae.decode(latent).sample

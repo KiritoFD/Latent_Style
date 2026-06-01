@@ -7,6 +7,7 @@
 | 文档 | 描述 |
 |------|------|
 | [MODEL.md](MODEL.md) | 代码忠实的数学模型（状态空间、端点映射、损失函数形式化） |
+| [05_style_transfer_problem_and_next_switches.md](05_style_transfer_problem_and_next_switches.md) | Current problem definition, LANCET design boundary, non-training probes, and next ablation switches |
 | [THEORY_RESET_2026-05-16.md](THEORY_RESET_2026-05-16.md) | 理论重置：围绕最小可验证声明重建 |
 | [DECISION_TREE_AND_EXPERIMENT_PLAN.md](DECISION_TREE_AND_EXPERIMENT_PLAN.md) | 数学决策树和实验计划 |
 | [REFLECTIONS.md](REFLECTIONS.md) | 实验反思与理论修正（中文） |

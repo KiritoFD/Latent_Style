@@ -28,6 +28,9 @@ class SWDTransportCost:
         self.swd_patch_sizes = [int(p) for p in bridge_cfg.swd_patch_sizes]
         self.swd_num_projections = int(bridge_cfg.swd_num_projections)
         self.swd_projection_chunk_size = int(bridge_cfg.swd_projection_chunk_size)
+        self.swd_distance_mode = str(bridge_cfg.swd_distance_mode).strip().lower()
+        self.swd_cdf_num_bins = max(4, int(bridge_cfg.swd_cdf_num_bins))
+        self.swd_cdf_tau = max(1e-5, float(bridge_cfg.swd_cdf_tau))
         self.swd_use_high_freq = bool(bridge_cfg.swd_use_high_freq)
         self.swd_hf_weight_ratio = max(0.0, float(bridge_cfg.swd_hf_weight_ratio))
         self.swd_micro_patch_max = int(bridge_cfg.swd_micro_patch_max)
@@ -38,6 +41,8 @@ class SWDTransportCost:
         self.swd_macro_patch_min = int(bridge_cfg.swd_macro_patch_min or default_macro_min)
         self.swd_micro_weight = max(0.0, float(bridge_cfg.swd_micro_weight))
         self.swd_macro_weight = max(0.0, float(bridge_cfg.swd_macro_weight))
+        self.swd_use_dilated_projections = bool(bridge_cfg.swd_use_dilated_projections)
+        self.swd_projection_dilation = max(1, int(bridge_cfg.swd_projection_dilation))
         self._projection_cache: Dict[tuple[int, int, int, str, str], torch.Tensor] = {}
         self._sobel_kernel_cache: Dict[tuple[int, str], tuple[torch.Tensor, torch.Tensor]] = {}
 
@@ -121,6 +126,8 @@ class SWDTransportCost:
     def _pairwise_from_projected(self, x_proj: torch.Tensor, y_proj: torch.Tensor) -> torch.Tensor:
         x_proj = x_proj.float()
         y_proj = y_proj.float()
+        if self.swd_distance_mode in {"cdf", "soft_cdf", "soft-cdf"}:
+            return self._pairwise_from_projected_cdf(x_proj, y_proj)
         x_sorted, _ = torch.sort(x_proj, dim=2)
         y_sorted, _ = torch.sort(y_proj, dim=2)
         return (x_sorted.unsqueeze(1) - y_sorted.unsqueeze(0)).abs().mean(dim=(2, 3))
@@ -130,9 +137,40 @@ class SWDTransportCost:
         y_proj = y_proj.float()
         if x_proj.shape[0] != y_proj.shape[0]:
             raise ValueError(f"aligned SWD expects equal batch size, got {x_proj.shape[0]} vs {y_proj.shape[0]}")
+        if self.swd_distance_mode in {"cdf", "soft_cdf", "soft-cdf"}:
+            return self._aligned_from_projected_cdf(x_proj, y_proj)
         x_sorted, _ = torch.sort(x_proj, dim=2)
         y_sorted, _ = torch.sort(y_proj, dim=2)
         return (x_sorted - y_sorted).abs().mean()
+
+    def _cdf_grid(self, x_proj: torch.Tensor, y_proj: torch.Tensor) -> torch.Tensor:
+        with torch.no_grad():
+            lo = torch.minimum(x_proj.amin(dim=(0, 2)), y_proj.amin(dim=(0, 2)))
+            hi = torch.maximum(x_proj.amax(dim=(0, 2)), y_proj.amax(dim=(0, 2)))
+            pad = (hi - lo).clamp_min(1e-4) * 0.05
+            lo = lo - pad
+            hi = hi + pad
+            steps = torch.linspace(0.0, 1.0, self.swd_cdf_num_bins, device=x_proj.device, dtype=torch.float32)
+            return lo[:, None] + (hi - lo)[:, None] * steps[None, :]
+
+    def _soft_cdf(self, proj: torch.Tensor, grid: torch.Tensor) -> torch.Tensor:
+        # proj: [B, P, N], grid: [P, M] -> [B, P, M]
+        tau = proj.detach().std(dim=2, unbiased=False).mean(dim=0).clamp_min(1e-4)
+        tau = (tau * self.swd_cdf_tau).clamp_min(1e-5)
+        logits = (grid[None, :, :, None] - proj[:, :, None, :]) / tau[None, :, None, None]
+        return torch.sigmoid(logits).mean(dim=-1)
+
+    def _pairwise_from_projected_cdf(self, x_proj: torch.Tensor, y_proj: torch.Tensor) -> torch.Tensor:
+        grid = self._cdf_grid(x_proj, y_proj)
+        x_cdf = self._soft_cdf(x_proj, grid)
+        y_cdf = self._soft_cdf(y_proj, grid)
+        return (x_cdf.unsqueeze(1) - y_cdf.unsqueeze(0)).abs().mean(dim=(2, 3))
+
+    def _aligned_from_projected_cdf(self, x_proj: torch.Tensor, y_proj: torch.Tensor) -> torch.Tensor:
+        grid = self._cdf_grid(x_proj, y_proj)
+        x_cdf = self._soft_cdf(x_proj, grid)
+        y_cdf = self._soft_cdf(y_proj, grid)
+        return (x_cdf - y_cdf).abs().mean()
 
     def _branch_pairwise_cost(
         self,
@@ -154,11 +192,13 @@ class SWDTransportCost:
         for patch_size in patch_sizes:
             weights = bank[patch_size]
             patch_cost = torch.zeros_like(total)
+            dilation = self.swd_projection_dilation if self.swd_use_dilated_projections else 1
+            padding = (patch_size // 2) * dilation
             for start in range(0, self.swd_num_projections, chunk):
                 end = min(self.swd_num_projections, start + chunk)
                 w = weights[start:end]
-                x_proj = F.conv2d(x_feat, w, padding=patch_size // 2).view(x_feat.shape[0], end - start, -1)
-                y_proj = F.conv2d(y_feat, w, padding=patch_size // 2).view(y_feat.shape[0], end - start, -1)
+                x_proj = F.conv2d(x_feat, w, padding=padding, dilation=dilation).view(x_feat.shape[0], end - start, -1)
+                y_proj = F.conv2d(y_feat, w, padding=padding, dilation=dilation).view(y_feat.shape[0], end - start, -1)
                 patch_cost = patch_cost + self._pairwise_from_projected(x_proj, y_proj) * (
                     (end - start) / float(self.swd_num_projections)
                 )
@@ -187,11 +227,13 @@ class SWDTransportCost:
         for patch_size in patch_sizes:
             weights = bank[patch_size]
             patch_cost = torch.tensor(0.0, device=x_feat.device, dtype=torch.float32)
+            dilation = self.swd_projection_dilation if self.swd_use_dilated_projections else 1
+            padding = (patch_size // 2) * dilation
             for start in range(0, self.swd_num_projections, chunk):
                 end = min(self.swd_num_projections, start + chunk)
                 w = weights[start:end]
-                x_proj = F.conv2d(x_feat, w, padding=patch_size // 2).view(x_feat.shape[0], end - start, -1)
-                y_proj = F.conv2d(y_feat, w, padding=patch_size // 2).view(y_feat.shape[0], end - start, -1)
+                x_proj = F.conv2d(x_feat, w, padding=padding, dilation=dilation).view(x_feat.shape[0], end - start, -1)
+                y_proj = F.conv2d(y_feat, w, padding=padding, dilation=dilation).view(y_feat.shape[0], end - start, -1)
                 patch_cost = patch_cost + self._aligned_from_projected(x_proj, y_proj) * (
                     (end - start) / float(self.swd_num_projections)
                 )

@@ -89,9 +89,8 @@ def generate_for_checkpoint(args, ckpt: Path, sources: list[tuple[str, Path]], s
             for tgt_style, style_path in style_refs.items():
                 style = tensor_for_samam(style_path, args.image_size, device)
                 output = model.forward(content, style)[0].detach().cpu()
-                # Match SchrodingerBridge/src/utils/run_evaluation.py reuse parser:
-                # {src_style}_{src_stem}_to_{tgt_style}.png
-                name = f"{src_style}_{src_path.stem}_to_{tgt_style}.png"
+                # Double separators keep style names with underscores unambiguous.
+                name = f"{src_style}__{src_path.stem}__to__{tgt_style}.png"
                 save_image(output, out_dir / name)
     del model
     torch.cuda.empty_cache()
@@ -124,7 +123,14 @@ def evaluate_images(args, image_dir: Path, sources_by_key: dict[tuple[str, str],
 
     for gen_path in gen_files:
         stem = gen_path.stem
-        src_key, tgt_style = stem.split("__to__", 1)
+        if "__to__" in stem:
+            src_key, tgt_style = stem.split("__to__", 1)
+        elif "_to_" in stem:
+            src_key, tgt_style = stem.split("_to_", 1)
+        else:
+            continue
+        if "__" not in src_key:
+            continue
         src_style, src_stem = src_key.split("__", 1)
         src_path = sources_by_key[(src_style, src_stem)]
 
@@ -154,6 +160,9 @@ def evaluate_images(args, image_dir: Path, sources_by_key: dict[tuple[str, str],
                 "clip_content": clip_content,
             }
         )
+
+    if not rows:
+        raise RuntimeError(f"No generated images could be parsed under {image_dir}")
 
     metrics_csv = image_dir.parent / "metrics.csv"
     with metrics_csv.open("w", newline="", encoding="utf-8") as f:

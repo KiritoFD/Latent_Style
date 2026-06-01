@@ -120,6 +120,11 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             residual_gain=float(cfg.tokenizer_residual_gain),
             num_atoms=int(cfg.tokenizer_num_atoms),
             atom_temperature=float(cfg.tokenizer_atom_temperature),
+            field_dropout_p=float(cfg.tokenizer_field_dropout_p),
+            code_l2_norm=bool(cfg.tokenizer_code_l2_norm),
+            code_scale=float(cfg.tokenizer_code_scale),
+            atom_topk=int(cfg.tokenizer_atom_topk),
+            atom_hard_eval=bool(cfg.tokenizer_atom_hard_eval),
         )
 
         # Learnable style-id spatial priors for inference without reference image.

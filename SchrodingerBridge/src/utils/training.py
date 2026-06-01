@@ -58,8 +58,12 @@ SNAPSHOT_SOURCE_FILES = [
 
 def strip_compile_prefix(state_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
     if any(k.startswith("_orig_mod.") for k in state_dict.keys()):
-        return {k.replace("_orig_mod.", ""): v for k, v in state_dict.items()}
+        return {k.removeprefix("_orig_mod."): v for k, v in state_dict.items()}
     return state_dict
+
+
+def unwrap_compiled_model(model: torch.nn.Module) -> torch.nn.Module:
+    return getattr(model, "_orig_mod", model)
 
 
 def build_adamw(params, train_cfg: dict, device: torch.device) -> torch.optim.Optimizer:

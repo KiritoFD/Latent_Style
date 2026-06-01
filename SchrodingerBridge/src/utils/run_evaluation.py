@@ -1072,6 +1072,18 @@ def main():
     parser.add_argument('--max_ref_cache', type=int, default=int(full_eval_defaults.get("max_ref_cache", 256)), help="Max reference images per style used for cache/features; <=0 means all")
     parser.add_argument('--ref_feature_batch_size', type=int, default=int(full_eval_defaults.get("ref_feature_batch_size", 64)), help="Batch size for reference feature extraction")
     parser.add_argument('--batch_size', type=int, default=int(full_eval_defaults.get("batch_size", 8)), help="Generation batch size for evaluation. Lower this if VRAM is tight.")
+    parser.add_argument(
+        '--target_chunk_size',
+        type=int,
+        default=int(full_eval_defaults.get("target_chunk_size", 1)),
+        help="Number of target styles to generate per source batch. 1 preserves legacy behavior; >1 improves GPU/VAE utilization.",
+    )
+    parser.add_argument(
+        '--vae_decode_batch_size',
+        type=int,
+        default=int(full_eval_defaults.get("vae_decode_batch_size", 0)),
+        help="Decode generated latents in chunks. <=0 uses batch_size*target_chunk_size.",
+    )
     parser.add_argument('--force_regen', action='store_true', help="Force regenerate evaluation outputs/metrics (does not rebuild global ref cache)")
     parser.add_argument('--force_regen_ref_cache', action='store_true', help="Force rebuild global reference-feature cache only")
     parser.add_argument('--ref_cache_lock_timeout', type=int, default=900, help="Seconds to wait for another process building reference cache")
@@ -1372,36 +1384,58 @@ def main():
                         latents_src = latents_src * scale_in
                     latents_x0 = lgt.inversion(latents_src)
 
-                    # Generation for each target style
-                    for tgt_id in range(num_styles):
-                        tgt_name = style_subdirs[tgt_id]
-                        tgt_ids = torch.full((len(batch_info),), tgt_id, device=device, dtype=torch.long)
-                        latents_gen = lgt.generation(latents_x0, tgt_ids)
+                    target_chunk = max(1, min(num_styles, int(args.target_chunk_size)))
+                    default_decode_bs = max(1, len(batch_info) * target_chunk)
+                    vae_decode_bs = max(1, int(args.vae_decode_batch_size) if int(args.vae_decode_batch_size) > 0 else default_decode_bs)
+
+                    # Generation for target-style chunks. This keeps the legacy source
+                    # batch loop but can batch several style IDs through LANCET and VAE,
+                    # which is where full_eval previously under-used the GPU.
+                    for tgt_start in range(0, num_styles, target_chunk):
+                        tgt_end = min(num_styles, tgt_start + target_chunk)
+                        chunk_style_ids = list(range(tgt_start, tgt_end))
+                        repeated_latents = latents_x0.repeat(len(chunk_style_ids), 1, 1, 1)
+                        tgt_ids = torch.cat(
+                            [
+                                torch.full((len(batch_info),), tgt_id, device=device, dtype=torch.long)
+                                for tgt_id in chunk_style_ids
+                            ],
+                            dim=0,
+                        )
+                        latents_gen = lgt.generation(repeated_latents, tgt_ids)
                         if abs(scale_out - 1.0) > 1e-4:
                             latents_gen = latents_gen * scale_out
-                        imgs_gen = decode_latent(vae, latents_gen, device, scaling_factor=args.vae_decode_scale) # [B, 3, H, W]
 
-                        # Offload to CPU & Save Async
-                        imgs_gen_cpu = imgs_gen.cpu()
+                        meta = []
+                        for tgt_id in chunk_style_ids:
+                            tgt_name = style_subdirs[tgt_id]
+                            for src_item in batch_info:
+                                out_name = f"{src_item['style_name']}_{src_item['path'].stem}_to_{tgt_name}.jpg"
+                                meta.append((src_item, tgt_name, tgt_id, out_name))
 
-                        for i in range(len(batch_info)):
-                            src_item = batch_info[i]
-                            out_name = f"{src_item['style_name']}_{src_item['path'].stem}_to_{tgt_name}.jpg"
-                            out_path = images_dir / out_name
-                            out_rel = Path("images") / out_name
-
-                            # Async Save
-                            io_pool.submit(save_image_task, imgs_gen_cpu[i], out_path)
-
-                            # Store for Phase 2
-                            generated_buffer.append({
-                                'src_path': src_item['path'],
-                                'src_style': src_item['style_name'],
-                                'tgt_style_name': tgt_name,
-                                'tgt_style_id': tgt_id,
-                                'gen_img': imgs_gen_cpu[i], # Keep in RAM
-                                'gen_name': out_rel.as_posix()
-                            })
+                        for dec_start in range(0, latents_gen.shape[0], vae_decode_bs):
+                            dec_end = min(latents_gen.shape[0], dec_start + vae_decode_bs)
+                            imgs_gen = decode_latent(
+                                vae,
+                                latents_gen[dec_start:dec_end],
+                                device,
+                                scaling_factor=args.vae_decode_scale,
+                            )
+                            imgs_gen_cpu = imgs_gen.cpu()
+                            for local_i, (src_item, tgt_name, tgt_id, out_name) in enumerate(meta[dec_start:dec_end]):
+                                out_path = images_dir / out_name
+                                out_rel = Path("images") / out_name
+                                io_pool.submit(save_image_task, imgs_gen_cpu[local_i], out_path)
+                                generated_buffer.append({
+                                    'src_path': src_item['path'],
+                                    'src_style': src_item['style_name'],
+                                    'tgt_style_name': tgt_name,
+                                    'tgt_style_id': tgt_id,
+                                    'gen_img': imgs_gen_cpu[local_i],
+                                    'gen_name': out_rel.as_posix()
+                                })
+                            del imgs_gen, imgs_gen_cpu
+                        del repeated_latents, tgt_ids, latents_gen
 
         # Unload Generation Models
         del lgt, vae
