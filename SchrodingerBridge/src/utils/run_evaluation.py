@@ -31,12 +31,6 @@ try:
 except ImportError:
     lpips = None
 
-try:
-    from sklearn.metrics import classification_report, precision_recall_fscore_support
-    SKLEARN_AVAILABLE = True
-except ImportError:
-    SKLEARN_AVAILABLE = False
-
 import torchvision.transforms as T
 import torchvision.models as models
 import torch.nn.functional as F
@@ -44,8 +38,11 @@ from torchvision.transforms import ToPILImage
 from torchvision.utils import save_image
 from scipy import linalg
 
+_SRC_ROOT = Path(__file__).resolve().parents[1]
+if str(_SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SRC_ROOT))
+
 from utils.inference import LGTInference, load_vae, encode_image, decode_latent
-from utils.classify import DEFAULT_EVAL_IMAGE_CLASSIFIER_CKPT, load_eval_image_classifier
 from utils.artfid_metric import (
     compute_artfid_content_distance_from_paths,
     compute_artfid_fid_from_paths,
@@ -313,10 +310,35 @@ def _lpips_forward_safe(
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
 
-def save_image_task(tensor_cpu, path):
-    """Async save task to avoid blocking GPU loop"""
+def _images_01_to_uint8_hwc_cpu(images: torch.Tensor) -> torch.Tensor:
+    """
+    Quantize decoded [0,1] images on GPU before the CPU copy.
+    Copying uint8 NHWC is much cheaper than copying float CHW and converting
+    again inside PIL/torchvision.
+    """
+    if images.ndim == 3:
+        images = images.unsqueeze(0)
+    packed = images.detach().clamp(0.0, 1.0).mul(255.0).round().to(torch.uint8)
+    return packed.permute(0, 2, 3, 1).contiguous().cpu()
+
+
+def _uint8_hwc_to_float_chw(image: torch.Tensor) -> torch.Tensor:
+    if image.ndim != 3:
+        raise ValueError(f"Expected uint8 HWC image, got shape={tuple(image.shape)}")
+    return image.permute(2, 0, 1).contiguous().to(torch.float32).div_(255.0)
+
+
+def save_image_task(image_cpu, path):
+    """Async save task to avoid blocking GPU loop."""
     try:
-        save_image(tensor_cpu, path)
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if torch.is_tensor(image_cpu) and image_cpu.dtype == torch.uint8:
+            arr = image_cpu.detach().cpu().numpy()
+            if arr.ndim == 3 and arr.shape[-1] in (1, 3, 4):
+                Image.fromarray(arr.squeeze(-1) if arr.shape[-1] == 1 else arr).save(path)
+                return
+        save_image(image_cpu, path)
     except Exception as e:
         print(f"Error saving {path}: {e}")
 
@@ -1001,12 +1023,12 @@ def _auto_run_missing_full_eval(args) -> None:
             "--cache_dir", str(args.cache_dir),
             "--num_steps", str(args.num_steps),
             "--step_size", str(args.step_size),
+            "--vae_model", str(args.vae_model),
             "--max_src_samples", str(args.max_src_samples),
             "--max_ref_compare", str(args.max_ref_compare),
             "--max_ref_cache", str(args.max_ref_cache),
             "--ref_feature_batch_size", str(args.ref_feature_batch_size),
             "--batch_size", str(args.batch_size),
-            "--image_classifier_path", str(args.image_classifier_path),
             "--clip_model_name", str(args.clip_model_name),
             "--clip_modelscope_id", str(args.clip_modelscope_id),
             "--clip_modelscope_cache_dir", str(args.clip_modelscope_cache_dir),
@@ -1020,8 +1042,6 @@ def _auto_run_missing_full_eval(args) -> None:
             cmd += ["--style_strength", str(args.style_strength)]
         if args.force_regen:
             cmd += ["--force_regen"]
-        if args.eval_classifier_only:
-            cmd += ["--eval_classifier_only"]
         if args.eval_disable_lpips:
             cmd += ["--eval_disable_lpips"]
         if args.eval_enable_art_fid:
@@ -1045,6 +1065,8 @@ def _auto_run_missing_full_eval(args) -> None:
             cmd += ["--reuse_generated"]
         if args.generation_only:
             cmd += ["--generation_only"]
+        if not bool(args.eval_only_lpips_clip_style):
+            cmd += ["--no-eval_only_lpips_clip_style"]
 
         print(f"\n[Auto] Running: {ckpt_path}")
         subprocess.run(cmd, check=True)
@@ -1065,7 +1087,13 @@ def main():
     parser.add_argument('--step_size', type=float, default=float(full_eval_defaults.get("step_size", 1.0)))
     parser.add_argument('--style_strength', type=float, default=full_eval_defaults.get("style_strength", None), help="Global style strength in [0,1]")
     parser.add_argument('--residual_scale', type=float, default=1.0, help="Post-endpoint latent residual scale for inference strengthening. 1.0 keeps default behavior.")
+    parser.add_argument('--vae_model', type=str, default=str(full_eval_defaults.get("vae_model", "ema")), help="VAE preset or HF id for encode/decode. Defaults to ema.")
     parser.add_argument('--vae_decode_scale', type=float, default=None, help="Override VAE scaling factor for decode only; encode/model latent scale stay unchanged.")
+    parser.add_argument('--vae_compile_decoder', action='store_true', help="Compile the SD VAE decoder wrapper for eval/generation.")
+    parser.add_argument('--vae_compile_method', type=str, default="pt2", choices=["pt2", "jit"])
+    parser.add_argument('--vae_compile_mode', type=str, default="reduce-overhead", choices=["default", "reduce-overhead", "max-autotune", "max-autotune-no-cudagraphs"])
+    parser.add_argument('--vae_compile_fullgraph', action='store_true', help="Use fullgraph=True for compiled VAE decoder.")
+    parser.add_argument('--vae_compile_cache_dir', type=str, default="", help="Persistent torch.compile cache directory for the VAE decoder.")
     parser.add_argument('--style_adapter', type=str, default="", help="Optional external style adapter (.pt) to override style_tokenizer/style_spatial_id_16")
     parser.add_argument('--max_src_samples', type=int, default=int(full_eval_defaults.get("max_src_samples", 30)), help="Max source images per style; <=0 means all")
     parser.add_argument('--max_ref_compare', type=int, default=int(full_eval_defaults.get("max_ref_compare", 50)), help="Max refs for LPIPS style compare; <=0 means all cached refs")
@@ -1087,7 +1115,6 @@ def main():
     parser.add_argument('--force_regen', action='store_true', help="Force regenerate evaluation outputs/metrics (does not rebuild global ref cache)")
     parser.add_argument('--force_regen_ref_cache', action='store_true', help="Force rebuild global reference-feature cache only")
     parser.add_argument('--ref_cache_lock_timeout', type=int, default=900, help="Seconds to wait for another process building reference cache")
-    parser.add_argument('--image_classifier_path', type=str, default=str(DEFAULT_EVAL_IMAGE_CLASSIFIER_CKPT), help="Path to robust image classifier checkpoint for evaluation")
     parser.add_argument('--clip_model_name', type=str, default=str(_DEFAULT_LOCAL_CLIP_DIR), help="HF/local CLIP model name or local directory")
     parser.add_argument('--clip_modelscope_id', type=str, default="", help="Optional ModelScope model id for CLIP fallback")
     parser.add_argument('--clip_modelscope_cache_dir', type=str, default="", help="Optional ModelScope cache directory")
@@ -1111,12 +1138,15 @@ def main():
         action='store_true',
         help="If CLIP cannot be loaded, continue with clip_* = 0 (default: fail to avoid silent zeros).",
     )
-    parser.add_argument('--eval_classifier_only', action='store_true', help="Run only classifier evaluation (skip LPIPS/CLIP)")
     parser.add_argument('--eval_disable_lpips', action='store_true', help="Skip LPIPS metrics (keep CLIP)")
     parser.add_argument(
         '--eval_only_lpips_clip_style',
-        action='store_true',
-        help="Compute only content LPIPS and CLIP style similarity (skip style LPIPS, clip_dir, clip_content, classifier).",
+        action=argparse.BooleanOptionalAction,
+        default=bool(full_eval_defaults.get("only_lpips_clip_style", True)),
+        help=(
+            "Compute only content LPIPS and CLIP style similarity by default. "
+            "Use --no-eval_only_lpips_clip_style to also compute clip_dir and clip_content."
+        ),
     )
     parser.add_argument(
         '--eval_enable_art_fid',
@@ -1144,6 +1174,15 @@ def main():
     parser.add_argument('--generation_only', action='store_true', help="Only generate translated images, skip all evaluation metrics")
     parser.add_argument('--seed', type=int, default=-1, help="Seed RNGs for reproducible VAE latent sampling/generation; <0 leaves RNG state untouched.")
     args = parser.parse_args()
+    raw_cli_flags = {token.split("=", 1)[0] for token in sys.argv[1:] if token.startswith("--")}
+
+    def _cli_provided(name: str) -> bool:
+        underscore = f"--{name}"
+        hyphen = f"--{name.replace('_', '-')}"
+        no_underscore = f"--no-{name}"
+        no_hyphen = f"--no-{name.replace('_', '-')}"
+        return bool({underscore, hyphen, no_underscore, no_hyphen} & raw_cli_flags)
+
     if int(args.seed) >= 0:
         seed = int(args.seed)
         random.seed(seed)
@@ -1151,9 +1190,6 @@ def main():
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
-    if args.eval_classifier_only and args.eval_only_lpips_clip_style:
-        raise ValueError("--eval_classifier_only conflicts with --eval_only_lpips_clip_style")
-
     # One-shot mode: `run_evaluation.py <full_eval_dir>`
     if args.eval_dir and not args.output:
         args.output = str(args.eval_dir)
@@ -1226,14 +1262,24 @@ def main():
         cfg = ckpt.get('config', {})
         resolved_full_eval = resolve_full_eval_section(cfg)
         if resolved_full_eval:
-            args.num_steps = int(resolved_full_eval.get("num_steps", args.num_steps))
-            args.step_size = float(resolved_full_eval.get("step_size", args.step_size))
-            args.style_strength = resolved_full_eval.get("style_strength", args.style_strength)
-            args.batch_size = int(resolved_full_eval.get("batch_size", args.batch_size))
-            args.max_src_samples = int(resolved_full_eval.get("max_src_samples", args.max_src_samples))
-            args.max_ref_compare = int(resolved_full_eval.get("max_ref_compare", args.max_ref_compare))
-            args.max_ref_cache = int(resolved_full_eval.get("max_ref_cache", args.max_ref_cache))
-            args.ref_feature_batch_size = int(resolved_full_eval.get("ref_feature_batch_size", args.ref_feature_batch_size))
+            if "num_steps" in resolved_full_eval and not _cli_provided("num_steps"):
+                args.num_steps = int(resolved_full_eval["num_steps"])
+            if "step_size" in resolved_full_eval and not _cli_provided("step_size"):
+                args.step_size = float(resolved_full_eval["step_size"])
+            if "style_strength" in resolved_full_eval and not _cli_provided("style_strength"):
+                args.style_strength = resolved_full_eval["style_strength"]
+            if "vae_model" in resolved_full_eval and not _cli_provided("vae_model"):
+                args.vae_model = str(resolved_full_eval["vae_model"])
+            if "batch_size" in resolved_full_eval and not _cli_provided("batch_size"):
+                args.batch_size = int(resolved_full_eval["batch_size"])
+            if "max_src_samples" in resolved_full_eval and not _cli_provided("max_src_samples"):
+                args.max_src_samples = int(resolved_full_eval["max_src_samples"])
+            if "max_ref_compare" in resolved_full_eval and not _cli_provided("max_ref_compare"):
+                args.max_ref_compare = int(resolved_full_eval["max_ref_compare"])
+            if "max_ref_cache" in resolved_full_eval and not _cli_provided("max_ref_cache"):
+                args.max_ref_cache = int(resolved_full_eval["max_ref_cache"])
+            if "ref_feature_batch_size" in resolved_full_eval and not _cli_provided("ref_feature_batch_size"):
+                args.ref_feature_batch_size = int(resolved_full_eval["ref_feature_batch_size"])
     else:
         print("Single-run eval in reuse-only mode (no checkpoint).")
     
@@ -1355,7 +1401,15 @@ def main():
             residual_scale=args.residual_scale,
             style_adapter_path=(args.style_adapter or None),
         )
-        vae = load_vae(device)
+        vae = load_vae(
+            device,
+            model_id=str(args.vae_model),
+            compile_decoder=bool(args.vae_compile_decoder),
+            compile_method=str(args.vae_compile_method),
+            compile_mode=str(args.vae_compile_mode),
+            compile_fullgraph=bool(args.vae_compile_fullgraph),
+            compile_cache_dir=str(args.vae_compile_cache_dir),
+        )
         model_scale = float(getattr(lgt.model, "latent_scale_factor", 0.18215))
         vae_scale = float(getattr(getattr(vae, "config", None), "scaling_factor", model_scale))
         scale_in = model_scale / max(vae_scale, 1e-8)
@@ -1421,20 +1475,21 @@ def main():
                                 device,
                                 scaling_factor=args.vae_decode_scale,
                             )
-                            imgs_gen_cpu = imgs_gen.cpu()
+                            imgs_gen_u8_cpu = _images_01_to_uint8_hwc_cpu(imgs_gen)
                             for local_i, (src_item, tgt_name, tgt_id, out_name) in enumerate(meta[dec_start:dec_end]):
                                 out_path = images_dir / out_name
                                 out_rel = Path("images") / out_name
-                                io_pool.submit(save_image_task, imgs_gen_cpu[local_i], out_path)
+                                gen_img_u8 = imgs_gen_u8_cpu[local_i]
+                                io_pool.submit(save_image_task, gen_img_u8, out_path)
                                 generated_buffer.append({
                                     'src_path': src_item['path'],
                                     'src_style': src_item['style_name'],
                                     'tgt_style_name': tgt_name,
                                     'tgt_style_id': tgt_id,
-                                    'gen_img': imgs_gen_cpu[local_i],
+                                    'gen_img': gen_img_u8,
                                     'gen_name': out_rel.as_posix()
                                 })
-                            del imgs_gen, imgs_gen_cpu
+                            del imgs_gen, imgs_gen_u8_cpu
                         del repeated_latents, tgt_ids, latents_gen
 
         # Unload Generation Models
@@ -1446,7 +1501,7 @@ def main():
         raise RuntimeError(f"No generated samples to evaluate in {out_dir}")
 
     if args.generation_only:
-        print("\nGeneration-only mode enabled: skip Phase 2 metrics/classifier/LPIPS/CLIP.")
+        print("\nGeneration-only mode enabled: skip Phase 2 metrics/LPIPS/CLIP.")
         io_pool.shutdown(wait=True)
         grid_rows = []
         for it in generated_buffer:
@@ -1477,58 +1532,11 @@ def main():
         return
 
     # ==========================================
-    # PHASE 2: EVALUATION (VGG + CLIP)
+    # PHASE 2: EVALUATION (LPIPS + CLIP)
     # ==========================================
     print(f"\n妫ｅ啯鐣?Phase 2: Evaluation")
-    
-    # Load image classifier (single evaluation path)
-    image_classifier = None
-    classifier_label_names = list(style_subdirs)
 
-    if args.image_classifier_path:
-        try:
-            classifier_path_candidates = [str(args.image_classifier_path)]
-            cfg_classifier = str(cfg.get("training", {}).get("full_eval_image_classifier_path", "")).strip()
-            if cfg_classifier:
-                classifier_path_candidates.append(cfg_classifier)
-            classifier_path_candidates.extend(
-                [
-                    str(cache_dir / "eval_style_image_classifier.pt"),
-                    str(Path(__file__).resolve().parents[2] / "eval_cache" / "eval_style_image_classifier.pt"),
-                ]
-            )
-
-            base_dirs = [
-                Path.cwd(),
-                out_dir,
-                cache_dir,
-                Path(__file__).resolve().parent,
-                Path(__file__).resolve().parents[1],
-                Path(__file__).resolve().parents[2],
-            ]
-            if checkpoint_path is not None:
-                base_dirs.insert(1, checkpoint_path.parent.resolve())
-
-            resolved_ckpt = None
-            for raw in classifier_path_candidates:
-                resolved_ckpt = _resolve_existing_path(raw, base_dirs)
-                if resolved_ckpt is not None:
-                    break
-
-            if resolved_ckpt is None:
-                print("  WARNING: image style classifier checkpoint not found. Tried:")
-                for raw in classifier_path_candidates:
-                    print(f"    - {raw}")
-            else:
-                image_classifier = load_eval_image_classifier(resolved_ckpt, device=device)
-                classifier_label_names = list(image_classifier.classes)
-                print(f"  Loaded image style classifier: {resolved_ckpt} (classes={len(classifier_label_names)})")
-        except Exception as e:
-            print(f"  WARNING: failed to load image style classifier: {e}")
-            image_classifier = None
-
-    # Skip other metrics if classifier-only mode
-    run_full_metrics = not args.eval_classifier_only
+    run_full_metrics = True
     only_lpips_clip_style = bool(args.eval_only_lpips_clip_style)
 
     # Load Evaluators
@@ -1829,7 +1837,7 @@ def main():
     src_clip_cache = {}  # abs src path -> Tensor[D] on CPU
 
     csv_path = out_dir / 'metrics.csv'
-    # Re-evaluation on reused images should overwrite metrics to avoid mixing old/new classifier outputs.
+    # Re-evaluation on reused images should overwrite metrics to avoid mixing old/new outputs.
     csv_mode = 'w' if args.force_regen or args.reuse_generated or not csv_path.exists() else 'a'
     csv_file = open(csv_path, csv_mode, newline='', encoding='utf-8')
     columns = [
@@ -1842,8 +1850,6 @@ def main():
         'clip_dir',
         'clip_style',
         'clip_content',
-        'pred_style',
-        'class_correct',
     ]
     writer = csv.DictWriter(csv_file, fieldnames=columns)
     if csv_mode == 'w': writer.writeheader()
@@ -1856,7 +1862,15 @@ def main():
         b_end = min(b_start + args.batch_size, total_gen)
         batch_items = generated_buffer[b_start:b_end]
         
-        gen_imgs_cpu = torch.stack([item['gen_img'] for item in batch_items]).contiguous()
+        gen_imgs_cpu = torch.stack(
+            [
+                _uint8_hwc_to_float_chw(item['gen_img'])
+                if torch.is_tensor(item['gen_img']) and item['gen_img'].dtype == torch.uint8
+                else item['gen_img']
+                for item in batch_items
+            ],
+            dim=0,
+        ).contiguous()
         gen_imgs = gen_imgs_cpu.to(device, non_blocking=True)
 
         src_tensors = []
@@ -1873,7 +1887,7 @@ def main():
         src_imgs = src_imgs_cpu.to(device, non_blocking=True)
         
         with torch.no_grad():
-            # 1. Content LPIPS (Skip if classifier only)
+            # 1. Content LPIPS
             c_lpips_vals = []
             if loss_fn:
                 gen_f32 = gen_imgs.float()
@@ -1893,7 +1907,7 @@ def main():
             else:
                 c_lpips_vals = [0.0] * len(batch_items)
 
-            # 2. CLIP Features (Skip if classifier only)
+            # 2. CLIP Features
             gen_clips = None
             src_clips = None
             c_clip_scores = [0.0] * len(batch_items)
@@ -1921,31 +1935,10 @@ def main():
                     src_clips = torch.stack([src_clip_cache[k] for k in src_keys], dim=0).to(device, dtype=torch.float32)
                     c_clip_scores = F.cosine_similarity(gen_clips, src_clips).cpu().float().numpy()
 
-            # 3. Classifier Predictions
-            pred_indices = [-1] * len(batch_items)
-            if image_classifier is not None and (not only_lpips_clip_style):
-                preds = image_classifier.predict_indices(gen_imgs).cpu().numpy().tolist()
-                pred_indices = preds
-
-            # 4. Style Metrics & Row Writing
+            # 3. Style Metrics & Row Writing
             for i, item in enumerate(batch_items):
                 tgt_id = item['tgt_style_id']
                 tgt_name = item['tgt_style_name']
-                
-                # --- Classifier Logic ---
-                pred_idx = pred_indices[i]
-                
-                pred_style_name = "N/A"
-                class_correct = "N/A"
-                
-                if image_classifier is not None and pred_idx != -1:
-                    if pred_idx < len(classifier_label_names):
-                        pred_style_name = classifier_label_names[pred_idx]
-                        is_correct = (str(pred_style_name).lower() == str(tgt_name).lower())
-                        class_correct = 1 if is_correct else 0
-                    else:
-                        pred_style_name = f"Unknown({pred_idx})"
-                        class_correct = 0
 
                 # --- CLIP metrics ---
                 # clip_dir: directional similarity in edit space.
@@ -1980,8 +1973,6 @@ def main():
                     'clip_dir': s_clip_dir,
                     'clip_style': s_clip_style,
                     'clip_content': c_clip_scores[i],
-                    'pred_style': pred_style_name,
-                    'class_correct': class_correct
                 })
             
             csv_file.flush()
@@ -2128,10 +2119,6 @@ def generate_summary_json(
     transfer_pool = []
     identity_pool = []
     photo_transfer_pool = []
-    
-    # Classification Stats
-    y_true = []
-    y_pred = []
 
     for src, targets in matrix.items():
         matrix_json[src] = {}
@@ -2268,20 +2255,6 @@ def generate_summary_json(
                 stats['delta_kid'] = None
                 stats['delta_kid_ratio'] = None
             
-            # Classification Accuracy for this pair
-            cls_results = [x['class_correct'] for x in items if x['class_correct'] != 'N/A']
-            if cls_results:
-                acc = np.mean([int(c) for c in cls_results])
-                stats['classifier_acc'] = acc
-                
-                # Collect for global report
-                for x in items:
-                    if x['class_correct'] != 'N/A':
-                        y_true.append(tgt)
-                        y_pred.append(x['pred_style'])
-            else:
-                stats['classifier_acc'] = None
-
             matrix_json[src][tgt] = stats
             all_pool.append(stats)
             
@@ -2296,32 +2269,6 @@ def generate_summary_json(
         if not pool:
             return default
         return float(np.mean([x[key] for x in pool]))
-
-    # Generate Classification Report
-    cls_report = None
-    detailed_metrics = {}
-    if SKLEARN_AVAILABLE and y_true:
-        try:
-            cls_report = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
-            
-            # 闁圭粯鍔曡ぐ鍥即鐎靛憡绾悷娆忓€诲▓鎴犳嫚閿斿墽鐭庡ǎ鍥ｅ墲娴?
-            precision, recall, f1, support = precision_recall_fscore_support(y_true, y_pred, average=None, labels=list(cls_report.keys())[:-3], zero_division=0)
-            unique_labels = list(cls_report.keys())[:-3]
-            for i, label in enumerate(unique_labels):
-                detailed_metrics[label] = {
-                    "precision": float(precision[i]),
-                    "recall": float(recall[i]),
-                    "f1_score": float(f1[i]),
-                    "support": int(support[i])
-                }
-            print("\n闁?Classification Report:")
-            print(classification_report(y_true, y_pred, zero_division=0))
-        except Exception as e:
-            print(f"闁宠法濯寸粭?Failed to generate classification report: {e}")
-    elif y_true:
-        # Manual simple accuracy if sklearn missing
-        correct = sum(1 for t, p in zip(y_true, y_pred) if t.lower() == p.lower())
-        cls_report = {"accuracy": correct / len(y_true)}
 
     def build_pool_summary(pool, *, valid: bool | None = None):
         return {
@@ -2340,7 +2287,6 @@ def generate_summary_json(
             'kid': pool_avg([t for t in pool if t.get('kid_style') is not None], 'kid_style', default=None),
             'delta_kid': pool_avg([t for t in pool if t.get('delta_kid') is not None], 'delta_kid', default=None),
             'delta_kid_ratio': pool_avg([t for t in pool if t.get('delta_kid_ratio') is not None], 'delta_kid_ratio', default=None),
-            'classifier_acc': pool_avg([t for t in pool if t['classifier_acc'] is not None], 'classifier_acc'),
             **({'valid': bool(valid)} if valid is not None else {}),
         }
 
@@ -2370,8 +2316,6 @@ def generate_summary_json(
             'identity_reconstruction': build_pool_summary(identity_pool),
             'photo_to_art_performance': build_pool_summary(photo_transfer_pool, valid=len(photo_transfer_pool) > 0),
         },
-        'classification_report': cls_report,
-        'detailed_style_metrics': detailed_metrics
     }
     
     sum_path = out_dir / 'summary.json'
