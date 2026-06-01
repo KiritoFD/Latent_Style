@@ -176,3 +176,42 @@ Next action:
 - Do not continue the low-cell sampling line.
 - Keep `0.790/0.300` as the base.
 - Next probe should introduce a bounded, source/content-conditioned execution budget that can reduce movement in content-sensitive cells while preserving the spectral-stat tokenizer. The acceptance gate remains OR-based, but any full promotion still requires strict all-5x5 evaluation.
+
+## 2026-06-01 execution-budget probes
+
+Existing remote budget probes were checked before adding new code.
+
+### Results
+
+| Run | all clip_style | all LPIPS | transfer clip_style | transfer LPIPS | Decision |
+|---|---:|---:|---:|---:|---|
+| Base quick repeat | 0.798453 | 0.330614 | 0.789446 | 0.332046 | reference |
+| `tokenbudget_gradfix_tokonly` quick | 0.798214 | 0.299028 | 0.788999 | 0.300052 | promising quick only |
+| `tokenbudget_gradfix_tokonly` full | 0.790876 | 0.306589 | -- | -- | not promoted; LPIPS worse than base full |
+| `truegrad_tokenbudget_full` quick | 0.799008 | 0.309128 | 0.790271 | 0.310399 | style neutral, LPIPS quick gain |
+| `truegrad_tokenbudget_full` full | 0.791317 | 0.315730 | -- | -- | not promoted; LPIPS too high |
+| `metric_budget_decoder_safety125` quick | 0.783885 | 0.352117 | 0.777616 | 0.352621 | reject |
+| `budget_only_safety125` quick | 0.784784 | 0.357282 | 0.778579 | 0.357363 | reject |
+
+### Interpretation
+
+Target-style-only budget has limited value. The best quick result (`tokenbudget_gradfix_tokonly`) showed that low/high gains can reduce LPIPS on a small sample, but the full all-5x5 result did not beat the selected base. The safety125 budget variants are clearly negative.
+
+This supports the stronger representation claim:
+
+- A target-only execution budget is still too close to a global style strength knob.
+- The budget must be conditioned on the source/content side, because the same target style has different content-risk depending on the source domain and image structure.
+- The next budget design should be pair/content-conditioned and bounded, with very few trainable parameters, rather than a free spatial actuator.
+
+### Next probe specification
+
+Add or reuse a budget interface with the following constraints:
+
+- Inputs: target tokenizer metric fields plus source style ID or low-cost content statistics.
+- Output: two bounded gains `[low_gain, high_gain]` consumed by the existing low/high residual path.
+- Initialization: exact identity budget `[1, 1]`.
+- Bound: narrow log span first, e.g. `exp(tanh(logit) * log(1.25))`.
+- Training: freeze renderer; train only the budget head for a short run.
+- Gate: keep if either quick `clip_style` improves or quick LPIPS improves without a style collapse; promote only after full all-5x5.
+
+The important distinction is that this is an execution budget, not a style representation by itself. The style metric still comes from spectral/color/tokenizer fields; the budget controls how aggressively that style is executed for a particular content condition.
