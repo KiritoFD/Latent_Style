@@ -1,0 +1,27 @@
+{
+  "_base": "tokenizer_t01_direct_atom_residual_tokonly_from_backbone_e16.json",
+  "training": {
+    "batch_size": 80,
+    "learning_rate": 0.0002,
+    "num_epochs": 16,
+    "resume_checkpoint": "exp/tokenizer_t01_direct_atom_residual_warmup_e2_from_backbone_e16/epoch_0002.pt",
+    "resume_model_strict": false,
+    "resume_include_prefixes": [
+      "style_tokenizer."
+    ],
+    "resume_ignore_prefixes": [],
+    "resume_training_state": false,
+    "resume_optimizer": false,
+    "freeze_mode": "backbone_only",
+    "freeze_reinit_trainable": false
+  },
+  "checkpoint": {
+    "save_dir": "./exp/tokenizer_t01_direct_atom_residual_frozen_tok_fresh_lancet_e16"
+  },
+  "ablation": {
+    "name": "tokenizer_direct_atom_residual_frozen_tok_fresh_lancet",
+    "axis": "alternating_training",
+    "notes": "Load only the trained style_tokenizer.* from the tokenizer-only checkpoint, keep it frozen, and train a fresh LANCET consumer from random initialization.",
+    "stage": "tokenizer_lancet_representation"
+  }
+}

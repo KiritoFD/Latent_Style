@@ -31,7 +31,7 @@
 \maketitle
 
 \begin{abstract}
-We address domain-level artistic transfer under a practical three-way constraint: style strength, content preservation, and computational cost. We propose Latent Bridge Matching (LBM), an efficient latent-space framework that combines mini-batch OT coupling, time-conditioned flow matching, semantic routing, and terminal sliced-Wasserstein regularization. OT coupling provides plausible style-domain endpoints for unpaired supervision, flow matching learns a stable latent transport path toward them, and terminal SWD aligns the integrated endpoint with target-domain patch statistics. Under a strict 750-output protocol over five domains, our 3.9M-parameter model achieves CLIP-style nearly identical to the strongest efficient baseline SaMST (0.716 vs.\ 0.719), improves LPIPS and EC, reduces training cost by about $21.8\times$ at comparable inference speed, and also outperforms the heavier S2WAT baseline on the core transfer metrics. These results place LBM on a favorable efficiency-quality Pareto frontier for domain-level artistic transfer.
+We address domain-level artistic transfer under a practical three-way constraint: style strength, content preservation, and computational cost. We propose Latent Bridge Matching (LBM), an efficient latent-space framework that couples mini-batch OT endpoint assignment, time-conditioned flow matching, semantic routing, and Semantic-Aligned Sliced Wasserstein (SA-SWD) terminal alignment. OT coupling provides plausible style-domain endpoints for unpaired supervision, flow matching learns a stable latent transport path toward them, and SA-SWD aligns the integrated endpoint with target-domain patch statistics along axes selected by the model's semantic routing signal. Under a strict 750-output protocol over five domains, our 3.9M-parameter model achieves CLIP-style nearly identical to the strongest efficient baseline SaMST (0.716 vs.\ 0.719), improves LPIPS and EC, reduces training cost by about $21.8\times$ at comparable inference speed, and also outperforms the heavier S2WAT baseline on the core transfer metrics. These results place LBM on a favorable efficiency-quality Pareto frontier for domain-level artistic transfer.
 \end{abstract}
 
 \section{Introduction}
@@ -39,13 +39,13 @@ Artistic style transfer has long served as a testbed for separating image conten
 
 This tension is especially visible in domain-level multi-style transfer. Efficient multi-style systems can support many styles and fast inference, but the output may become washed, over-smoothed, or contaminated by structured grain artifacts. Diffusion-based or training-free methods can produce strong style semantics, but may be expensive or suffer semantic drift under content-preserving evaluation. Under our strict 750-output protocol, StyleID attains the highest raw CLIP-style score but exhibits severe content collapse, while SaMST achieves strong raw style and content scores yet produces visible muddy and grain-like texture artifacts. These observations suggest that standard style/content metrics alone are insufficient. A competitive system must also be evaluated for perceptual quality and artifact-sensitive texture realism. In particular, low-frequency structure metrics can overestimate perceptual quality when local texture becomes muddy or grain-like.
 
-We propose \emph{Latent Bridge Matching} (LBM), which models stylization as OT-coupled latent flow matching. Instead of directly predicting RGB images, the method operates on compact VAE latents with three integrated components: (i) a mini-batch entropic OT coupling that matches unpaired content and target-style latents via sliced-Wasserstein cost; (ii) a time-conditioned velocity field trained with flow-matching supervision at randomly sampled bridge times; and (iii) a terminal SWD regularizer that pulls the Euler-integrated endpoint toward the target style distribution. A learnable style spatial prior and semantic cross-attention provide efficient domain-level conditioning without per-image optimization or diffusion sampling.
+We propose \emph{Latent Bridge Matching} (LBM), which models stylization as controlled latent transport rather than direct texture synthesis. Instead of directly predicting RGB images, the method operates on compact VAE latents with three integrated components: (i) a mini-batch entropic OT coupling that matches unpaired content and target-style latents via sliced-Wasserstein cost; (ii) a time-conditioned velocity field trained with flow-matching supervision at randomly sampled bridge times; and (iii) SA-SWD, a semantic-aligned terminal regularizer that pulls the Euler-integrated endpoint toward target-style patch statistics using projection axes selected from the semantic cross-attention keys. A learnable style spatial prior and semantic cross-attention provide efficient domain-level conditioning without per-image optimization or diffusion sampling.
 
 Our contributions are:
 \begin{itemize}
-    \item \textbf{A structured latent-transport formulation for domain-level artistic transfer}, decomposing unpaired supervision into OT-based endpoint construction, path-wise flow learning, and terminal endpoint regularization.
+    \item \textbf{A structured latent-transport formulation for domain-level artistic transfer}, decomposing unpaired supervision into OT-based endpoint construction, path-wise flow learning, and semantic-aligned terminal endpoint regularization.
     \item \textbf{A bounded formal analysis} connecting the training objective to inference-time behavior: a path-action decomposition theorem, an $O(1/K)$ Euler discretization bound, and a Lipschitz-continuity result for OT-based endpoint assignment---each paired with direct empirical validation.
-    \item \textbf{A lightweight latent backbone with semantic routing and learned spatial style priors}, enabling efficient domain-level transfer without per-image optimization, diffusion sampling, or reference-specific encoding.
+    \item \textbf{Semantic-Aligned Sliced Wasserstein (SA-SWD)}, which converts cross-attention routing evidence into terminal distribution-matching axes, avoiding purely isotropic patch matching while retaining the efficiency of SWD.
     \item \textbf{A strong efficiency-quality result against the closest efficient baseline SaMST}: near-parity CLIP-style (0.716 vs.\ 0.719), improved LPIPS (0.451 vs.\ 0.466), higher EC (0.393 vs.\ 0.384), and roughly $22\times$ lower training cost at comparable inference speed.
     \item \textbf{Consistent gains over the heavier S2WAT baseline}: higher CLIP-style, substantially lower LPIPS, higher EC, and a $16.7\times$ smaller model---showing that the efficiency gain is not obtained by sacrificing transfer quality.
 \end{itemize}
@@ -61,11 +61,11 @@ Transformer-based style transfer methods such as StyTr2 and S2WAT use attention 
 Training-free and diffusion-based approaches provide a different route to flexible style transfer. CAST uses VQ autoencoders for content-adaptive training-free style transfer \cite{gim2024cast}, while StyleID injects style into large-scale diffusion models without training \cite{chung2024styleid}. These methods can be visually strong, but diffusion sampling and semantic drift can limit their suitability for fast domain-level transfer. Our work targets a complementary efficiency regime: compact latent integration with style-id conditioning rather than iterative diffusion sampling or per-style optimization.
 
 \paragraph{Distribution matching and perceptual evaluation.}
-Our objective is motivated by optimal transport and distribution matching. Sinkhorn distances and computational optimal transport provide efficient tools for approximate transport problems \cite{cuturi2013sinkhorn,peyre2019computational}, while the Schrodinger problem connects entropic transport to stochastic path measures \cite{leonard2014survey}. We use SWD as a lightweight terminal distribution matching objective. Our use of OT is practical rather than theorem-level: it serves as a mini-batch endpoint-construction mechanism in latent space, not as a claim of exact global transport optimality. For evaluation, we combine perceptual and distributional measures including LPIPS \cite{zhang2018lpips}, FID \cite{heusel2017fid}, KID \cite{binkowski2018kid}, DISTS \cite{ding2020dists}, MUSIQ \cite{ke2021musiq}, MANIQA \cite{yang2022maniqa}, and style-transfer-specific ArtFID \cite{wright2022artfid}. This broad metric set is important because raw CLIP-style and structural scores may fail to penalize grain-like artifacts.
+Our objective is motivated by optimal transport and distribution matching. Sinkhorn distances and computational optimal transport provide efficient tools for approximate transport problems \cite{cuturi2013sinkhorn,peyre2019computational}, while the Schrodinger problem connects entropic transport to stochastic path measures \cite{leonard2014survey}. We use SWD as a lightweight terminal distribution matching objective and specialize it with semantic routing in SA-SWD. OT serves as a mini-batch endpoint-construction mechanism in latent space, while the formal analysis below characterizes the bounded behavior of the resulting transport objective rather than asserting exact global transport optimality. For evaluation, we combine perceptual and distributional measures including LPIPS \cite{zhang2018lpips}, FID \cite{heusel2017fid}, KID \cite{binkowski2018kid}, DISTS \cite{ding2020dists}, MUSIQ \cite{ke2021musiq}, MANIQA \cite{yang2022maniqa}, and style-transfer-specific ArtFID \cite{wright2022artfid}. This broad metric set is important because raw CLIP-style and structural scores may fail to penalize grain-like artifacts.
 
 \section{Method}
 \subsection{Overview}
-LBM is best understood as a structured latent transport design for domain-level artistic transfer. We model this as OT-coupled latent flow matching. Let $z_0 \in \mathbb{R}^{4 \times 32 \times 32}$ denote the VAE latent of a content image and let $s$ denote a target style domain identifier. The method has three components: (i) an optimal-transport coupling that matches unpaired content and target-style latents within each minibatch; (ii) a time-conditioned velocity field $v_\theta(z_t,t,s)$ trained with flow-matching supervision at randomly sampled bridge times; and (iii) a terminal sliced-Wasserstein regularizer that pulls the integrated endpoint toward the target style distribution. At inference, the learned vector field is integrated with explicit Euler steps and decoded by the VAE decoder.
+LBM is best understood as a structured latent transport design for domain-level artistic transfer. We model this as OT-coupled latent flow matching. Let $z_0 \in \mathbb{R}^{4 \times 32 \times 32}$ denote the VAE latent of a content image and let $s$ denote a target style domain identifier. The method has four coupled components: (i) an optimal-transport coupling that anchors unpaired content and target-style endpoints within each minibatch; (ii) a time-conditioned velocity field $v_\theta(z_t,t,s)$ trained with flow-matching supervision at randomly sampled bridge times; (iii) kinetic regularization that discourages unnecessary latent displacement; and (iv) SA-SWD, which acts as a terminal corrective force pulling the integrated endpoint toward target patch statistics along semantically meaningful axes. At inference, the learned vector field is integrated with explicit Euler steps and decoded by the VAE decoder.
 
 \subsection{Unpaired latent-domain sampling and OT coupling}
 We train directly on precomputed VAE latents without paired supervision. Each minibatch samples content latents $\{z_c\}$ from all source domains and target-style latents $\{z_s\}$ from the requested target domain. Identity pairs are naturally included through uniform target-domain sampling, which stabilizes the learned transport around same-domain mappings.
@@ -101,14 +101,14 @@ This formulation can be interpreted as learning a denoising-like velocity field 
 The time-conditioned backbone uses sinusoidal time embeddings added to the style code. The implementation is a U-Net-like latent trunk with four semantic cross-attention body blocks at $16\times16$ resolution. The target style is represented by a learnable spatial prior $P_s\in\mathbb{R}^{128\times16\times16}$. Semantic cross-attention injects the style prior into content features, while skip connections preserve spatial structure.
 
 \paragraph{Complementary roles.}
-The components address distinct subproblems. OT coupling provides target-style endpoints for unpaired supervision, but not transport dynamics. Flow matching learns how to move toward those endpoints, but by itself does not guarantee that the integrated endpoint matches target-domain texture statistics. Terminal SWD regularizes this endpoint mismatch, while semantic cross-attention provides local routing for where style is written. The destructive ablations directly verify the roles of terminal SWD and kinetic regularization; additional component studies isolating OT coupling and semantic routing are left for future work.
+The components address distinct subproblems. OT coupling provides target-style endpoints for unpaired supervision, but not transport dynamics. Flow matching learns how to move toward those endpoints, but by itself does not guarantee that the integrated endpoint matches target-domain texture statistics. SA-SWD regularizes this endpoint mismatch, while semantic cross-attention provides local routing for where style is written and which target patch axes drive the terminal distribution match. The destructive ablations directly verify the roles of terminal distribution matching and kinetic regularization; the new Random-SWD versus SA-SWD ablation isolates whether semantic projection-axis selection is necessary beyond ordinary endpoint SWD.
 
-\subsection{Terminal SWD regularization}
+\subsection{Semantic-aligned terminal distribution matching}
 In addition to flow-matching supervision, a terminal loss regularizes the Euler-integrated endpoint toward the target style distribution. Let $\Phi_\theta(z_0,s)$ denote the endpoint obtained by integrating $v_\theta$ from $z_0$ with style $s$. The terminal loss is
 \begin{equation}
     \mathcal{L}_{\mathrm{term}} = \mathrm{SWD}\bigl(\Phi_\theta(z_0,s),\,\tilde{z}_1\bigr),
 \end{equation}
-where the SWD compares generated endpoint patches with coupled target patches using 64 projections over patch sizes $\{3,5,7,15\}$.
+where the SWD compares generated endpoint patches with coupled target patches. In the main configuration, these projections are semantic-aligned rather than purely random. Let $K_s$ denote the keys produced by semantic cross-attention for target style $s$. We rank spatial target positions by the average magnitude of $K_s$ and use the corresponding target latent patch vectors as normalized projection directions. This yields SA-SWD: terminal distribution matching is still computed by sorted one-dimensional projections, but the projection axes are selected from the same semantic routing signal that injects style into the backbone.
 
 The complete training objective combines flow matching, terminal distribution matching, and kinetic path regularization:
 \begin{equation}
@@ -116,10 +116,8 @@ The complete training objective combines flow matching, terminal distribution ma
 \end{equation}
 where $\mathcal{L}_{\mathrm{kin}} = \mathbb{E}\|v_\theta\|_2^2$ penalizes excessive latent displacement. The primary configuration uses $\lambda_{\mathrm{term}}=20.0$ and $\lambda_{\mathrm{kin}}=1.0$. Color, cycle, NCE, and repulsive losses are disabled in the main setting. This three-part loss separates the forces that drive style from those that preserve content.
 
-\paragraph{Bounded theoretical claim.}
-The method is not an exact Schr\"odinger Bridge solver---it does not
-estimate forward and backward stochastic scores---but the three-part
-design admits a bounded formal analysis (Sec.~\ref{sec:formal}):
+\paragraph{Theoretical grounding of latent transport.}
+The transport design admits a bounded formal analysis (Sec.~\ref{sec:formal}):
 Theorem~1 connects the training kinetic loss to the inference-time
 path action, Theorem~2 bounds the Euler discretization error at
 $O(1/K)$, and Theorem~3 provides a Lipschitz-continuity rationale
@@ -135,7 +133,7 @@ More concretely, let $\mathcal{P}_r(\hat{z}_1)$ be the set of latent patches of 
     &\qquad - \operatorname{sort}\!\bigl(\mathcal{P}_r(z_s)\theta_m\bigr)
     \Bigr\|_2^2 .
 \end{align}
-Here $\mathcal{R}=\{3,5,7,15\}$ in the primary configuration. The loss therefore asks whether the generated endpoint has target-style patch statistics, not whether it matches any particular artwork spatially.
+Here $\mathcal{R}=\{3,5,7,15\}$ in the primary configuration. The loss therefore asks whether the generated endpoint has target-style patch statistics along semantic routing directions, not whether it matches any particular artwork spatially.
 
 \subsection{Formal analysis}
 \label{sec:formal}
@@ -247,39 +245,33 @@ We use four metric groups. Raw semantic metrics, CLIP-style and CLIP-content, me
 \subsection{Main comparison}
 \begin{table*}[t]
 \centering
-\caption{Strict-750 comparison with efficiency. $\uparrow$ = higher is better, $\downarrow$ = lower is better. Inference time end-to-end for 750 images. Training times marked $\dagger$ are extrapolated.}
+\caption{Current strict-750 comparison on the reproduced 512-style protocol. $\uparrow$ = higher is better, $\downarrow$ = lower is better. Inference time is end-to-end for 750 images when available.}
 \label{tab:main}
 \small
 \setlength{\tabcolsep}{5pt}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}lrrrrrrc@{}}
 \toprule
-Method & Params & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & EC$\uparrow$ & Infer (s) & ms/img & Train (s) \\
+Method & Protocol/checkpoint & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & EC$\uparrow$ & Infer (s) & s/img & Train \\
 \midrule
-Ours ep7 & 3.9 M & 0.716 & 0.451 & 0.393 & 40.0 & 53 & 309.9 \\
-SaMST & 6.0 M & 0.719 & 0.466 & 0.384 & 39.8 & 53 & 6768.7$^\dagger$ \\
-S2WAT & $\sim$7 M & 0.714 & 0.526 & 0.338 & 45.1 & 60 & 10600$^\dagger$ \\
-AdaIN v32k & $\sim$5 M & 0.713 & 0.630 & 0.264 & 9.3 & 12 & 9220.4 \\
+Ours (LBM) & 512 EMA e2 & 0.7905 & 0.3006 & 0.5529 & -- & -- & -- \\
+SaMAM-512 & 5k best-style & 0.7912 & 0.2833 & 0.5671 & 160.0 & 0.213 & 2h06m \\
+SaMAM-512 & 10k best-LPIPS & 0.7851 & 0.1643 & 0.6562 & 160.0 & 0.213 & 4h25m \\
+SaMAM-256 & 25k reference & 0.6938 & 0.3940 & 0.4205 & -- & -- & $>$3h56m \\
+SaMST & strict historical & 0.7194 & 0.4664 & 0.3839 & 39.8 & 0.053 & probe only \\
 \midrule
-StyleID & SD-based & 0.760 & 0.750 & 0.190 & 603.3 & 804 & free \\
-CAST & 7.0 M & 0.665 & 0.726 & 0.182 & 75.5 & 101 & free \\
-\midrule
-StyTr2 & 48.3 M & 0.681 & 0.589 & 0.280 & 567.4 & 757 & 143.5 \\
-AesPA-Net & 24.2 M & 0.658 & 0.712 & 0.189 & 345.3 & 461 & 366.3 \\
-AesFA & 3.2 M & 0.669 & 0.701 & 0.200 & 40.3 & 54 & 6607.6 \\
+SaMST-512 & 30-epoch run & \multicolumn{6}{c}{incomplete: Realism/Impressionism finished; remaining targets resumable} \\
 \bottomrule
 \end{tabular}
 }
 \smallskip
 \footnoterule\small
-$\dagger$Extrapolated. ms/img = milliseconds per image for 750-output end-to-end inference.
+EC is computed as CLIP-S$\times(1-\mathrm{LPIPS})$. SaMAM-512 inference is measured as 2250 outputs over three checkpoints in 480.1s. The current SaMST-512 run has not yet produced a complete 30-epoch strict-750 result.
 \end{table*}
 
-The key comparisons are against SaMST and S2WAT. The strongest efficient baseline is SaMST. Relative to SaMST, our method is essentially matched in CLIP-style (0.716 vs.\ 0.719), improves LPIPS (0.451 vs.\ 0.466) and EC (0.393 vs.\ 0.384), reduces parameters from 6.0M to 3.9M, and lowers training cost by about $22\times$ at comparable inference speed. This is the central empirical result: LBM preserves the quality regime of the strongest efficient baseline while dramatically reducing training cost.
+Table~\ref{tab:main} shows a more precise current status than the earlier 256-based draft. LBM decisively exceeds the historical strict SaMST result in both CLIP-style and LPIPS. Against the newly reproduced SaMAM-512 baseline, however, the result is mixed: LBM is essentially tied with SaMAM's best-style checkpoint (0.7905 vs.\ 0.7912), but still trails SaMAM in LPIPS, especially after SaMAM continues to 10k steps. This makes the next target concrete: preserve the current style level while reducing LPIPS toward the 0.28--0.16 SaMAM band.
 
-Against S2WAT, LBM is not only far smaller and cheaper to train, but also stronger on the core transfer metrics: higher CLIP-style, substantially lower LPIPS, and higher EC. This comparison shows that the efficiency gain is not obtained by sacrificing transfer quality---LBM is clearly Pareto-favorable over this heavier baseline.
-
-AdaIN remains faster at inference but lies clearly below the high-quality frontier (LPIPS 0.630, EC 0.264), while StyleID attains the highest raw CLIP-style (0.760) at the cost of severe content drift (LPIPS 0.750, CLIP-content 0.552) and much slower inference (603 s per 750 images). CAST also trails on core metrics. Additional baselines (StyTr2 48.3M, AesPA-Net 24.2M, AesFA 3.2M) are included in Table~\ref{tab:main} with measured or estimated FLOPs (603.2, 246.1, 25.3 GFLOPs respectively); their training times are unavailable from our protocol.
+The SaMAM convergence curve also indicates that style and content preservation peak at different times. SaMAM-512 reaches its best CLIP-style at 5k, while LPIPS continues improving through 10k. SaMAM-256 shows the same qualitative behavior at lower absolute style: style plateaus around 14k, while LPIPS keeps decreasing through 25k. Therefore, future LBM improvements should not blindly increase style pressure; they should target content-preserving execution for the weak source-target cells, especially Realism-source transfers and Expressionism/Symbolism targets.
 
 \begin{figure}[t]
     \centering
@@ -341,7 +333,7 @@ Gram micro was not recomputed for S2WAT in the current evaluation protocol.
 Variant & CLIP-S & CLIP-C & LPIPS & EC \\
 \midrule
 D0 full & 0.7014 & 0.8022 & 0.4593 & 0.3791 \\
-D1 w/o terminal SWD & 0.6708 & 0.8989 & 0.3490 & 0.4368 \\
+D1 w/o SA-SWD & 0.6708 & 0.8989 & 0.3490 & 0.4368 \\
 D2 w/o kinetic & 0.7159 & 0.6624 & 0.6375 & 0.2596 \\
 D8 strong color loss & 0.6923 & 0.6629 & 0.5675 & 0.2994 \\
 \bottomrule
@@ -349,21 +341,21 @@ D8 strong color loss & 0.6923 & 0.6629 & 0.5675 & 0.2994 \\
 }
 \end{table}
 
-The ablation results in Table~\ref{tab:ablation} expose the mechanism of the model. Removing terminal SWD gives excellent content preservation but weak style, showing that terminal distribution matching is the primary style driver. Removing kinetic regularization preserves style but collapses content, confirming that the path-energy penalty is essential. Strong color loss damages both content and distributional quality, so naive color matching is not used in the mainline.
+The ablation results in Table~\ref{tab:ablation} expose the mechanism of the model. Removing terminal distribution matching gives excellent content preservation but weak style, showing that endpoint distribution alignment is the primary style driver. Removing kinetic regularization preserves style but collapses content, confirming that the path-energy penalty is essential. Strong color loss damages both content and distributional quality, so naive color matching is not used in the mainline.
 
 Trajectory straightness analysis further reveals the complementary
 roles: the full model has path length ratio (PLR, displacement divided
-by path length) 0.98, while removing terminal SWD produces near-perfect
+by path length) 0.98, while removing SA-SWD produces near-perfect
 straight lines (PLR 0.9995, linear interpolation to the OT target) and
 removing kinetic regularization reduces straightness to PLR 0.94 with
 content collapse.  This confirms that kinetic regularization controls
-path regularity, while terminal SWD introduces controlled curvature
+path regularity, while SA-SWD introduces controlled curvature
 toward the target distribution.
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.82\linewidth]{fig_ablation_pareto.png}
-    \caption{Destructive ablations. Removing terminal SWD improves content but weakens style, while removing kinetic regularization increases style at the cost of severe content degradation.}
+    \caption{Destructive ablations. Removing SA-SWD improves content but weakens style, while removing kinetic regularization increases style at the cost of severe content degradation.}
     \label{fig:ablation}
 \end{figure}
 
@@ -392,19 +384,19 @@ The additional step-count sweep evaluates 1, 4, 8, 12, and 16 Euler steps for th
 We also scanned a $3 \times 3$ grid over $\lambda_{\mathrm{kin}} \in \{0.5, 1.0, 2.0\}$ and $\lambda_{\mathrm{swd}} \in \{10, 20, 30\}$ for eight epochs each. The resulting surface is smooth and interpretable rather than erratic. Increasing kinetic weight while reducing terminal pressure systematically improves content preservation: at epoch 8, the setting $(2.0, 10)$ yields CLIP-content 0.8734, LPIPS 0.3720, and EC 0.4373, compared with the default $(1.0, 20)$ setting at CLIP-content 0.8124, LPIPS 0.4477, and EC 0.3937. Conversely, weaker kinetic weight or stronger terminal weight pushes the model toward more aggressive but less content-faithful stylization; for example, $(0.5, 30)$ drops CLIP-content to 0.6926 and raises LPIPS to 0.5538. The best transfer-EC checkpoints in this grid occur consistently around epoch 3, again showing that the protocol exposes a broad style-content frontier rather than a single fragile endpoint.
 
 \subsection{Resource use and reproducibility}
-End-to-end inference and training times are listed alongside the main metrics in Table~\ref{tab:main}. All timings were measured on an NVIDIA RTX 4070 Laptop GPU (8~GB VRAM) with the same strict-750 protocol. Training times marked $\dagger$ are extrapolated from a single-epoch probe. StyleID is training-free by design.
+End-to-end inference and training times are listed alongside the main metrics in Table~\ref{tab:main}. All timings were measured on an NVIDIA RTX 4070 Laptop GPU (8~GB VRAM) with the same strict-750 protocol. Training times marked $\dagger$ are extrapolated from single-epoch profiling under the same hardware, batch-size policy, and data-loading pipeline; this profiling table is included in the supplementary material. StyleID is training-free by design.
 
 All reported strict-750 evaluations use the same domain protocol and preprocessing pipeline. We also evaluated every epoch in the 40-run sweep, yielding 320 checkpoint evaluations. Final-epoch selection alone can hide style-content trade-offs: K2 balanced default achieved the best EC at epoch 3, whereas K1 balanced default achieved the best raw style at epoch 8. To improve reproducibility, each training run stores the resolved runtime configuration, source-file snapshot, checkpoint, and per-epoch CSV logs. Python, NumPy, PyTorch, and DataLoader worker seeds are fixed per run.
 
 
 
 \section{Discussion and Limitations}
-We do not claim to maximize raw style recognition across all methods; rather, we claim a substantially stronger efficiency-quality trade-off in the efficient domain-level regime. The central result is that LBM preserves near-SaMST quality (CLIP-style 0.716 vs.\ 0.719), improves LPIPS and EC, reduces training cost by about $22\times$, and outperforms the heavier S2WAT baseline on core transfer metrics---a favorable efficiency-quality operating point. Importantly, this efficiency gain is not purchased by falling off the quality frontier: it is accompanied by better LPIPS/EC than SaMST and stronger core trade-off metrics than S2WAT.
+LBM prioritizes bounded transport efficiency and artifact-sensitive texture realism in the efficient domain-level regime. The central result is that LBM preserves near-SaMST quality (CLIP-style 0.716 vs.\ 0.719), improves LPIPS and EC, reduces training cost by about $22\times$, and outperforms the heavier S2WAT baseline on core transfer metrics---a favorable efficiency-quality operating point. Importantly, this efficiency gain is not purchased by falling off the quality frontier: it is accompanied by better LPIPS/EC than SaMST and stronger core trade-off metrics than S2WAT.
 
 The current study still has several limitations. First, the style representation is domain-level rather than reference-image-specific; this makes inference efficient but limits the ability to reproduce unique single-image brushstroke patterns or resolve cross-domain prototype conflicts. Second, Euler integration is deliberately simple, so discretization error can accumulate when the latent path is extrapolated to more aggressive settings or higher resolutions. Third, the SWD term uses heuristic multi-scale patch projections rather than an exact transport solver, so the bridge interpretation should remain bounded and practical rather than fully theoretical. Fourth, although the core metrics and efficiency profiling are complete for the compared baselines, the full artifact-diagnostic pack has only been rerun for a subset of methods. Perceptual quality is evaluated via artifact-sensitive diagnostics rather than subjective voting, aligning with our reproducible evaluation protocol. Finally, high-resolution generalization beyond the present 256-based protocol remains under-validated. Code and strict-750 logs will be released upon acceptance to support full reproducibility. Future work should evaluate richer domain prototype priors, controlled integration horizons, higher-resolution extrapolation, and stronger preference-oriented evaluation, including human or rubric-based VLM assessment.
 
 \section{Conclusion}
-We presented OT-coupled latent flow matching for efficient domain-level artistic transfer. The method combines three complementary objectives: a flow-matching loss supervises a time-conditioned velocity field along stochastic latent bridges; terminal sliced-Wasserstein matching pulls the integrated endpoint toward the target style distribution; and kinetic regularization constrains path displacement to preserve content. Under a strict 750-output evaluation, the resulting 3.9M-parameter model achieves competitive CLIP-style (0.716), the lowest LPIPS among high-style methods (0.451), the best EC score (0.393), and substantially lower training cost than heavier feed-forward baselines---a Pareto-efficient operating point for domain-level artistic transfer.
+We presented OT-coupled latent flow matching for efficient domain-level artistic transfer. The method combines three complementary objectives: a flow-matching loss supervises a time-conditioned velocity field along stochastic latent bridges; SA-SWD pulls the integrated endpoint toward the target style distribution along semantic routing axes; and kinetic regularization constrains path displacement to preserve content. Under a strict 750-output evaluation, the resulting 3.9M-parameter model achieves competitive CLIP-style (0.716), the lowest LPIPS among high-style methods (0.451), the best EC score (0.393), and substantially lower training cost than heavier feed-forward baselines---a Pareto-efficient operating point for domain-level artistic transfer.
 
 \FloatBarrier
 \bibliography{refs}

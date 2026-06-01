@@ -247,6 +247,7 @@ class BridgeConfig:
     kinetic_gate_exponent: float = 1.0
     semantic_swd_num_projections: int = 64
     terminal_swd_mode: str = "standard"
+    terminal_swd_axis_source: str = "semantic"
     spectral_swd_low_weight: float = 1.0
     spectral_swd_high_weight: float = 1.0
     spectral_swd_low_kernel: int = 5
@@ -329,6 +330,7 @@ class TrainingConfig:
     resume_optimizer: bool = True
     resume_model_strict: bool = True
     resume_ignore_prefixes: list[str] = field(default_factory=list)
+    resume_include_prefixes: list[str] = field(default_factory=list)
     resume_training_state: bool = True
     freeze_mode: str = "none"
     freeze_reinit_trainable: bool = False

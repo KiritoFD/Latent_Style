@@ -39,11 +39,25 @@ class FactorizedStyleTokenizer(nn.Module):
         self.residual_gain = float(residual_gain)
         self.num_atoms = max(2, int(num_atoms))
         self.atom_temperature = max(1e-3, float(atom_temperature))
-        if self.projection_mode not in {"concat", "additive", "carrier_residual", "direct_code", "concept_atoms"}:
+        if self.projection_mode not in {
+            "concat",
+            "additive",
+            "carrier_residual",
+            "direct_code",
+            "concept_atoms",
+            "direct_atom_residual",
+        }:
             raise ValueError(f"Unsupported tokenizer projection_mode: {projection_mode}")
 
         if self.projection_mode == "direct_code":
             self.direct_code = nn.Embedding(self.num_styles, self.style_dim)
+            self.last_debug: dict[str, torch.Tensor] = {}
+            self.reset_parameters()
+            return
+        if self.projection_mode == "direct_atom_residual":
+            self.direct_code = nn.Embedding(self.num_styles, self.style_dim)
+            self.atom_logits = nn.Embedding(self.num_styles, self.num_atoms)
+            self.concept_atoms = nn.Parameter(torch.empty(self.num_atoms, self.style_dim))
             self.last_debug: dict[str, torch.Tensor] = {}
             self.reset_parameters()
             return
@@ -89,6 +103,8 @@ class FactorizedStyleTokenizer(nn.Module):
         # Compatibility for code that only needs a device anchor.
         if self.projection_mode == "direct_code":
             return self.direct_code.weight
+        if self.projection_mode == "direct_atom_residual":
+            return self.direct_code.weight
         if self.projection_mode == "concept_atoms":
             return self.concept_atoms
         if self.projection_mode == "carrier_residual":
@@ -100,6 +116,11 @@ class FactorizedStyleTokenizer(nn.Module):
     def reset_parameters(self) -> None:
         if self.projection_mode == "direct_code":
             nn.init.normal_(self.direct_code.weight, mean=0.0, std=self.init_std)
+            return
+        if self.projection_mode == "direct_atom_residual":
+            nn.init.normal_(self.direct_code.weight, mean=0.0, std=self.init_std)
+            nn.init.normal_(self.atom_logits.weight, mean=0.0, std=self.init_std)
+            nn.init.normal_(self.concept_atoms, mean=0.0, std=self.init_std)
             return
         if self.projection_mode == "concept_atoms":
             nn.init.normal_(self.atom_logits.weight, mean=0.0, std=self.init_std)
@@ -207,12 +228,48 @@ class FactorizedStyleTokenizer(nn.Module):
                 "atom_table_norm": self.concept_atoms.detach().float().norm(dim=1).mean(),
             }
 
+    def _record_direct_atom_residual_debug(
+        self,
+        style_code: torch.Tensor,
+        prototype_code: torch.Tensor,
+        atom_residual: torch.Tensor,
+        weights: torch.Tensor,
+    ) -> None:
+        with torch.no_grad():
+            code = style_code.detach().float()
+            proto = prototype_code.detach().float()
+            residual = atom_residual.detach().float()
+            probs = weights.detach().float()
+            entropy = -(probs * probs.clamp_min(1e-8).log()).sum(dim=1).mean()
+            max_prob = probs.max(dim=1).values.mean()
+            effective_atoms = torch.exp(entropy)
+            self.last_debug = {
+                "style_code_norm": code.norm(dim=1).mean(),
+                "style_code_abs_mean": code.abs().mean(),
+                "style_code_abs_max": code.abs().amax(),
+                "prototype_norm": proto.norm(dim=1).mean(),
+                "atom_residual_norm": residual.norm(dim=1).mean(),
+                "prototype_residual_cos": F.cosine_similarity(proto, residual, dim=1).mean(),
+                "atom_entropy": entropy,
+                "atom_effective_count": effective_atoms,
+                "atom_max_prob": max_prob,
+                "atom_table_norm": self.concept_atoms.detach().float().norm(dim=1).mean(),
+            }
+
     def forward(self, style_id: torch.Tensor, t: torch.Tensor | None = None) -> torch.Tensor:
         del t
         style_id = style_id.long().view(-1)
         if self.projection_mode == "direct_code":
             style_code = self.direct_code(style_id)
             self._record_direct_debug(style_code)
+            return style_code
+        if self.projection_mode == "direct_atom_residual":
+            prototype_code = self.direct_code(style_id)
+            logits = self.atom_logits(style_id)
+            weights = F.softmax(logits / self.atom_temperature, dim=-1)
+            atom_residual = weights @ self.concept_atoms
+            style_code = prototype_code + self.residual_gain * atom_residual
+            self._record_direct_atom_residual_debug(style_code, prototype_code, atom_residual, weights)
             return style_code
         if self.projection_mode == "concept_atoms":
             logits = self.atom_logits(style_id)

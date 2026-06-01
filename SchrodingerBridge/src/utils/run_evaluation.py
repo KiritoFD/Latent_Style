@@ -1797,7 +1797,7 @@ def main():
     csv_path = out_dir / 'metrics.csv'
     # Re-evaluation on reused images should overwrite metrics to avoid mixing old/new classifier outputs.
     csv_mode = 'w' if args.force_regen or args.reuse_generated or not csv_path.exists() else 'a'
-    csv_file = open(csv_path, csv_mode, newline='')
+    csv_file = open(csv_path, csv_mode, newline='', encoding='utf-8')
     columns = [
         'src_style',
         'tgt_style',
