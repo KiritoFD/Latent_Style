@@ -187,9 +187,37 @@ did not break the style ceiling, while backbone-only continuation recovered some
 style. This means the next tokenizer probe must test representation geometry,
 not just parameter count.
 
-The immediate valid next probe is sparse concept atoms under frozen LANCET. Its
-result should be compared to direct code, factorized concat, and big concat under
-the same checkpoint and evaluation protocol.
+The newer 512-line evidence changes the priority. The confirmed base is
+`0.790531 / 0.300558` from the spectral-stat tokenizer plus full-model
+adaptation. Attempts to improve this by merely reweighting weak matrix cells
+failed on quick/n6 (`0.781003 / 0.396649` vs base quick repeat
+`0.798453 / 0.330614`). This is important: weak-cell sampling is not a
+representation. It increases gradient frequency for hard cases but does not
+give LANCET a new conditional control variable, so the shared vector field can
+leave the good basin.
+
+The immediate valid tokenizer question is therefore no longer "can a larger
+style embedding fit the five style IDs?" The right question is:
+
+```text
+Can the tokenizer expose a compact style metric plus a bounded execution budget
+that tells the frozen/mostly frozen LANCET how far to move for each
+source-target condition?
+```
+
+This keeps the style representation scientific rather than procedural:
+
+- the style metric remains target-domain evidence, such as spectral/color
+  statistics and inter-style distances;
+- the execution budget is a small conditional gate, not a free spatial actuator;
+- the budget should reduce LPIPS in content-sensitive cells without lowering the
+  global style level;
+- if the budget cannot beat the spectral-stat base under the OR gate, it should
+  be rejected before full evaluation.
+
+Sparse concept atoms remain a valid probe, but only as a vocabulary geometry
+test. They are not sufficient by themselves unless LANCET has a reason to use
+different atoms differently across source conditions.
 
 ## 7. Acceptance Checks Before Training
 

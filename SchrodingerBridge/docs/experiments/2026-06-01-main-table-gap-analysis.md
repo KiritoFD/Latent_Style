@@ -141,3 +141,38 @@ The paper main table was updated to the current 512 reproduced protocol. The tex
 - LANCET beats historical strict SaMST.
 - LANCET is style-competitive with SaMAM-512.
 - LANCET still trails SaMAM-512 on LPIPS, so the next technical goal is content-preserving style execution, not more raw style pressure.
+
+## 2026-06-01 low-cell sampling probe
+
+Run:
+
+- Config: `configs/wikiart512_ema_lowcell_weighted_from_0790_e1_b48.json`
+- Checkpoint: `exp/wikiart512_ema_lowcell_weighted_from_0790_e1_b48/epoch_0001.pt`
+- Parent: `exp/wikiart512_ema_spectral_stat_full_adapt_e2_b48/epoch_0002.pt`
+- Training: 1 epoch, 160 batches, batch 48, LR `5e-5`
+- Runtime: 120.67s, 7680 samples, 63.64 samples/s
+- VRAM: about 10.36GB on the remote 3060
+
+Quick/n6 gate:
+
+| Run | all clip_style | all LPIPS | transfer clip_style | transfer LPIPS |
+|---|---:|---:|---:|---:|
+| Base quick repeat | 0.798453 | 0.330614 | 0.789446 | 0.332046 |
+| Base gain2 | 0.799093 | 0.334419 | 0.790322 | 0.335585 |
+| Base gain4 | 0.799627 | 0.346881 | 0.791343 | 0.347640 |
+| Base strength1.25 | 0.800678 | 0.377970 | 0.792385 | 0.379861 |
+| Low-cell b48 | 0.781003 | 0.396649 | 0.775308 | 0.397369 |
+
+Decision: reject. It fails the OR gate because neither primary metric improves. It should not receive full all-5x5 evaluation.
+
+Interpretation:
+
+- Reweighting weak source/target cells is not a representation improvement. It changes the empirical risk but does not provide a new executable degree of freedom for the model.
+- The result worsened both style and LPIPS, which suggests the model used the biased batches to move the shared vector field away from the existing good basin.
+- The weak cells need conditional execution capacity or a better tokenizer geometry, not just more gradient frequency.
+
+Next action:
+
+- Do not continue the low-cell sampling line.
+- Keep `0.790/0.300` as the base.
+- Next probe should introduce a bounded, source/content-conditioned execution budget that can reduce movement in content-sensitive cells while preserving the spectral-stat tokenizer. The acceptance gate remains OR-based, but any full promotion still requires strict all-5x5 evaluation.
