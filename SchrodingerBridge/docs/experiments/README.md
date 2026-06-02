@@ -55,6 +55,7 @@ For the current AAAI 2027 push, start here:
 - `2026-06-03-flow-loss-metric-ablation/README.md`
 - `2026-06-03-saswd-axis-ablation/README.md`
 - `2026-06-03-tokenizer-execution-alignment-protocol.md`
+- `2026-06-03-tokenizer-execution-alignment/README.md`
 
 ## Directory intent
 
