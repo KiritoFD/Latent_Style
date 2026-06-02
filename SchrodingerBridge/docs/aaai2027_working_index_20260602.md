@@ -20,7 +20,9 @@ Rendered output:
 
 Main framework figure:
 
-- `SchrodingerBridge/aaai_submission/framework_lbm_main.png`
+- `SchrodingerBridge/aaai_submission/framework_figure.pdf`
+- fallback raster:
+  - `SchrodingerBridge/aaai_submission/framework_lbm_main.png`
 
 Distinct5 Pareto figure for the paper:
 
