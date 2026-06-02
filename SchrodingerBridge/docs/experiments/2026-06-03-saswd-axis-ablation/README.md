@@ -135,6 +135,30 @@ Gate B remains open. If the current run completes, its quality-only comparison
 may still be usable, but its runtime behavior must be logged as abnormal rather
 than treated as representative formal-speed evidence.
 
+## Best-effort blocker diagnosis
+
+Current evidence ranks the likely causes as:
+
+1. `C` - the random-axis path itself is materially heavier or less efficient;
+2. `A` - generic host/runtime interference is a distant second;
+3. `B` - an accidental resolved-config mismatch is unlikely.
+
+Remote evidence supporting that ranking:
+
+- the semantic and random configs are effectively identical except for
+  `bridge.terminal_swd_axis_source`;
+- the semantic arm completed normally on the same remote host and queue family;
+- the random arm shows pathological throughput on the same machine and branch,
+  with VRAM pinned near the limit and very low effective progress.
+
+Current handling decision:
+
+- do **not** relaunch the same packet yet;
+- allow the current random run to finish if it keeps making progress;
+- treat any resulting summaries as quality-only evidence;
+- do **not** treat the current random-arm wall clock as representative formal
+  speed evidence.
+
 ## Acceptance gate
 
 Paper-safe positive closure requires at least one of:
