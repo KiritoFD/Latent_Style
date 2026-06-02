@@ -76,6 +76,7 @@ Related-work / citation gap notes:
 - `SchrodingerBridge/docs/references/literature_intel_memo_20260603.md`
 - `SchrodingerBridge/docs/references/related_work_gap_candidates_20260603.md`
 - `SchrodingerBridge/docs/references/evaluation_pathology_noop_memo_20260603.md`
+- `SchrodingerBridge/docs/references/related_work_and_intro_gap_recheck_20260603.md`
 
 Core evaluation warning about CLIP-style / no-op:
 
@@ -143,6 +144,9 @@ Key evidence:
 - `SchrodingerBridge/docs/experiments/2026-06-03-saswd-axis-ablation/README.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/README.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/distinct5_time_to_parity_points.csv`
+- `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/figures/distinct5_time_to_clip_style.pdf`
+- `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/figures/distinct5_time_to_lpips.pdf`
+- `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/figures/distinct5_time_to_delta_idt.pdf`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_review_gate_20260603.md`
 
