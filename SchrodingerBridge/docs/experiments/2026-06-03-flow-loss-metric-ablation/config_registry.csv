@@ -1,0 +1,4 @@
+loss_type,seed,config_path,output_dir,remote_task_name,remote_log_path,status,note
+mse,42,SchrodingerBridge/configs/aaai2027/flow_loss_h_base_mse_seed42.json,SchrodingerBridge/exp/aaai2027_flow_loss_h_base_mse_seed42_b44,SB_FlowLoss_H_MSE_S42,SchrodingerBridge/exp/aaai2027_flow_loss_h_base_mse_seed42_b44/remote_train.log,ready,First formal arm to launch on remote 3060
+huber,42,SchrodingerBridge/configs/aaai2027/flow_loss_h_base_huber_seed42.json,SchrodingerBridge/exp/aaai2027_flow_loss_h_base_huber_seed42_b44,SB_FlowLoss_H_HUBER_S42,SchrodingerBridge/exp/aaai2027_flow_loss_h_base_huber_seed42_b44/remote_train.log,queued,Hold until the MSE arm is healthy
+l1,42,SchrodingerBridge/configs/aaai2027/flow_loss_h_base_l1_seed42.json,SchrodingerBridge/exp/aaai2027_flow_loss_h_base_l1_seed42_b44,SB_FlowLoss_H_L1_S42,SchrodingerBridge/exp/aaai2027_flow_loss_h_base_l1_seed42_b44/remote_train.log,queued,Hold until the MSE arm is healthy

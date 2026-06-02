@@ -12,6 +12,10 @@ training, paper-facing reruns, or reusable smoke checks.
 - `distinct5_512_ema_baseline_direct_atom_residual.json`
 - `distinct5_512_ema_variant_*.json`
 
+### Current AAAI 2027 claim-closing ablations
+
+- `aaai2027/flow_loss_h_base_{mse,huber,l1}_seed42.json`
+
 ### Current tokenizer exploration family
 
 - `tokenizer_t01_*.json`
