@@ -1,6 +1,6 @@
 # AAAI 2027 Working Index
 
-Updated: 2026-06-02
+Updated: 2026-06-03
 
 This file is the working entrypoint for the current AAAI 2027 push. It groups
 the paper source, the experiment evidence, the dataset locations, and the
@@ -64,9 +64,11 @@ Continuous reviewer lane:
 - `SchrodingerBridge/docs/reviews/aaai2027_boundary_followup_overclaims_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_gate_b_runtime_anomaly_policy_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_gate_status_and_next_experiment_priority_20260603.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_post_tightening_recheck_20260603.md`
 - `SchrodingerBridge/docs/reviews/distinct5_idt_noop_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_review_gate_20260603.md`
+- `SchrodingerBridge/docs/reviews/tokenizer_claim_matrix_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_representation_theory_queue_20260603.md`
 
 Related-work / citation gap notes:
