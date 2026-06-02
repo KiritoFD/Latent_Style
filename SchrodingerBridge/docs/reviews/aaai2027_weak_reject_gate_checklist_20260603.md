@@ -72,9 +72,9 @@ Current status:
 - Gate B packet is prepared locally:
   - `configs/aaai2027/saswd_axis_h_base_seed42_b44_saswd_semantic.json`
   - `configs/aaai2027/saswd_axis_h_base_seed42_b44_saswd_random.json`
-- semantic arm finished training on the remote `3060` through `epoch_0003.pt`
-- semantic arm is currently in auto full-eval
-- random arm is queued behind the semantic arm
+- semantic arm is fully completed on the remote `3060`
+- semantic summaries now exist for `epoch_0001` through `epoch_0003`
+- random arm is now running on the remote `3060`
 - Gate B remains open until both matched arms complete and are compared directly
 
 ## Gate C - Efficiency fairness closure
