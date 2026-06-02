@@ -21,6 +21,12 @@ throwing away provenance.
 - Added `archives/README.md` so historical bundles are discoverable instead of
   behaving like an opaque file dump.
 
+### Timing payload prune
+
+- Pruned uncited generated timing images while keeping summaries, logs, and
+  wall-time records:
+  - `docs/experiments/2026-06-03-timing-artifact-prune.md`
+
 ## Why this pass matters for writing
 
 The current paper needs a cleaner evidence graph:
