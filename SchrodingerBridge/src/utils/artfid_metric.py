@@ -100,9 +100,12 @@ def load_artfid_lpips(
     return model
 
 
-def load_image_tensor(path: str | Path) -> torch.Tensor:
+def load_image_tensor(path: str | Path, image_size: int = 299) -> torch.Tensor:
     with Image.open(path) as img:
-        arr = np.asarray(img.convert("RGB"), dtype=np.float32) / 255.0
+        img = img.convert("RGB")
+        if image_size > 0 and img.size != (image_size, image_size):
+            img = img.resize((image_size, image_size), Image.Resampling.BICUBIC)
+        arr = np.asarray(img, dtype=np.float32) / 255.0
     return torch.from_numpy(arr).permute(2, 0, 1).contiguous()
 
 

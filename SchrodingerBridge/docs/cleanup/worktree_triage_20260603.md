@@ -110,7 +110,8 @@ Required verification before commit:
 
 Status:
 
-- useful but not yet commit-safe
+- helper-safe after smoke verification
+- commit only together with the helper-boundary note
 
 Files:
 
@@ -126,13 +127,18 @@ Observed change:
 Risk:
 
 - these changes affect evaluation behavior rather than only metadata;
-- they need a focused smoke run on a known bundle before promotion.
+- they must stay clearly separated from the formal `full_eval` contract.
 
-Required verification before commit:
+Verification result:
 
-1. one exact-run comparison on a small eval bundle;
-2. check that ArtFID and CLIP outputs match intended protocol assumptions;
-3. write the verification result into the corresponding eval doc.
+1. a real 750-image legacy archive bundle ran end to end;
+2. helper `artfid_content_lpips_down` aligned closely with the saved archive
+   target-wise value;
+3. `artfid_fid_down` / `artfid_down` did not exactly match the formal archive
+   aggregate, so this helper remains a comparison utility rather than a formal
+   evaluator;
+4. verification note:
+   - `docs/experiments/2026-06-03-selected-style-metrics-helper-smoke.md`
 
 ## Slice E: Related-works helper scripts
 
