@@ -63,18 +63,45 @@ Everything else should remain matched:
 
 Current status:
 
-- semantic arm finished training through `epoch_0003.pt` on remote `3060`
-- semantic arm auto full-eval is now running from `full_eval/epoch_0001`
-- random arm remains queued behind semantic on remote `3060`
+- semantic arm is fully completed on remote `3060`
+- random arm is now actively running on remote `3060`
 - live semantic log:
   - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\saswd_axis_h_base_seed42_b44_saswd_semantic\remote_train.log`
 - current remote path:
   - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\saswd_axis_h_base_seed42_b44_saswd_semantic`
-- latest GPU report during auto eval:
-  - `100% util, 2322/12288 MiB, 122.92 W`
-- latest execution snapshot:
-  - training reached `Epoch 3/3, 113/113`; remote task remained healthy and
-    advanced into deferred full-eval with no crash markers
+- semantic task state after completion:
+  - `SB_SASWD_H_SEM_S42`: `就绪`, `上次结果=0`
+- random task state before relaunch:
+  - `SB_SASWD_H_RAND_S42`: `正在运行`
+- live random log:
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\saswd_axis_h_base_seed42_b44_saswd_random\remote_train.log`
+- first random-arm heartbeat:
+  - entered `Epoch 1/3`
+  - first recorded step window: `0/113`
+  - GPU: `100% util, 8930/12288 MiB, 56.71 W`
+
+## Completed semantic-arm results
+
+Remote summary roots:
+
+- `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\saswd_axis_h_base_seed42_b44_saswd_semantic\full_eval\epoch_0001\summary.json`
+- `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\saswd_axis_h_base_seed42_b44_saswd_semantic\full_eval\epoch_0002\summary.json`
+- `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\saswd_axis_h_base_seed42_b44_saswd_semantic\full_eval\epoch_0003\summary.json`
+
+Key semantic-arm metrics:
+
+| epoch | full clip_style | full lpips | transfer clip_style | transfer lpips |
+|---|---:|---:|---:|---:|
+| `e1` | `0.6963431751` | `0.3313274828` | `0.6650688401` | `0.3391037583` |
+| `e2` | `0.6987337865` | `0.3608344315` | `0.6684234888` | `0.3702646600` |
+| `e3` | `0.6961391042` | `0.3415375931` | `0.6645665071` | `0.3506202180` |
+
+Provisional reading before the random arm lands:
+
+- best full-view style is `e2`, but it pays a clear LPIPS penalty;
+- best full-view LPIPS is `e1`;
+- the semantic arm alone does **not** yet justify a positive SA-SWD novelty
+  claim because the matched random-axis control has not been run.
 
 ## Acceptance gate
 
