@@ -46,6 +46,14 @@ source tree.
 
 This keeps the review process continuous instead of one-shot.
 
+Routine cycles should stay compact:
+
+- append per-lane rows to `aaai2027_review_score_log.csv`
+- append one cycle row to `aaai2027_review_registry.csv`
+
+Write full markdown memos only when the paper-safe boundary, blocker ordering,
+or consensus status actually changes.
+
 When two or more independent reviews exist for the same checkpoint, add a short
 consensus note such as:
 
@@ -60,6 +68,18 @@ Protocol:
 Round registry:
 
 - `aaai2027_review_registry.csv`
+
+Per-lane score / verdict log:
+
+- `aaai2027_review_score_log.csv`
+
+Standing lane roster:
+
+- `aaai2027_reviewer_roster.md`
+
+Reusable review packet:
+
+- `aaai2027_review_packet_template.md`
 
 Use the protocol to decide when to re-run reviewers and the registry to track
 whether the paper is actually converging toward submission safety.

@@ -49,6 +49,9 @@ Continuous reviewer lane:
 
 - `SchrodingerBridge/docs/reviews/aaai2027_review_protocol.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_review_registry.csv`
+- `SchrodingerBridge/docs/reviews/aaai2027_review_score_log.csv`
+- `SchrodingerBridge/docs/reviews/aaai2027_reviewer_roster.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_review_packet_template.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_review_consensus_20260602_r2.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_review_consensus_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_claim_safety_memo_20260603.md`
