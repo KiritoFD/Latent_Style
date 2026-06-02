@@ -90,6 +90,34 @@ Minimum provenance requirement for paper use:
   arguments, resolved checkpoint path, and runtime metadata alongside the
   geometry/eval outputs.
 
+## Current prelaunch state
+
+Heartbeat-confirmed state as of `2026-06-03`:
+
+- remote clean worktree synced by `Linnaeus`:
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge`
+- synced branch / commit:
+  - `codex/tokenizer-clean-c3058eab`
+  - `ebb194669`
+- launch status:
+  - not started
+- blocker:
+  - the selected remote checkpoint payload for
+    `distinct5_512_ema_variant_h_hard_explore_queue_e3_b44_remote`
+    `epoch_0001` is currently missing
+- roots searched by `Linnaeus`:
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge`
+  - `I:\Github\Latent_Style_TokenizerClean`
+  - `I:\Github\Latent_Style`
+- confirmed surviving same-family evidence:
+  - `I:\Github\Latent_Style\SchrodingerBridge\exp\distinct5_512_ema_variant_h_hard_explore_queue_e3_b44_remote\config.json`
+  - `I:\Github\Latent_Style\SchrodingerBridge\exp\distinct5_512_ema_variant_h_hard_explore_queue_e3_b44_remote\logs\training_20260602_235921.csv`
+- confirmed latent train root from the surviving family config:
+  - `/mnt/i/wikiart_distinct5_samam_512_latents_ema/train`
+- policy:
+  - do not substitute another checkpoint silently
+  - recover or prove absence first, then decide the next action explicitly
+
 ## Next update rule
 
 Once the remote run lands:
