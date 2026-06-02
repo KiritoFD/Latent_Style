@@ -5,11 +5,20 @@ is to keep paper-facing evidence moving while preventing unrelated experiment
 helpers, generated files, and exploratory notes from landing in one mixed
 commit.
 
+Update:
+
+- the review-surface slice has already landed in:
+  - `cb175eafe` (`Tighten AAAI paper claims and triage worktree`)
+  - `27f234a28` (`Record agent audit and review gate checklists`)
+- remaining entries below describe the still-dirty or still-unverified slices
+  after those two commits
+
 ## Slice A: Paper-safe writing and review surface
 
 Status:
 
-- ready to commit after final inspection
+- mostly landed
+- reopen only if the manuscript or review state changes again
 
 Files:
 
@@ -20,24 +29,29 @@ Files:
 - `docs/reviews/aaai2027_review_registry.csv`
 - `docs/reviews/aaai2027_review_score_log.csv`
 - `docs/reviews/aaai2027_theory_memo_table_20260603.md`
+- `docs/reviews/aaai2027_claim_to_code_checklist_20260603.md`
+- `docs/reviews/aaai2027_weak_reject_gate_checklist_20260603.md`
 - `docs/references/intro_related_claim_audit_20260603.md`
 - `docs/references/literature_audit_20260603.md`
+- `docs/references/literature_intel_memo_20260603.md`
 - optionally `docs/references/ai_research_prompt_usage_20260602.md`
 
 Reason:
 
-- these files form one coherent paper-facing update:
+- these files formed one coherent paper-facing update:
   - narrower and more defensible manuscript wording;
   - explicit reviewer-state update after the config audit;
-  - literature and theory memos that justify the wording change.
+  - literature, theory, and agent-audit memos that justify the wording change.
 
 Notes:
 
-- `paper_aaai2026.tex` now compiles successfully after the wording changes.
-- The current paper wording is narrowed to:
+- `paper_aaai2026.tex` compiled successfully after the wording changes.
+- the current paper wording is narrowed to:
   - endpoint-side OT + terminal `W1` story is supported;
   - Distinct5 `idt` / no-op diagnosis is supported;
   - local transport residual choice remains open.
+- if this slice reopens, keep it separate from experiment-tooling or helper
+  script changes.
 
 ## Slice B: Generated manuscript artifacts
 
@@ -203,13 +217,13 @@ Reason:
 - not required for the current manuscript-safety update;
 - likely belongs to a separate figure-generation or paper-layout slice.
 
-## Recommended immediate commit order
+## Recommended remaining commit order
 
-1. Slice A plus, if repo policy wants them, Slice B.
-2. Slice C after a tiny eval/config verification pass.
-3. Slice E only after helper-level smoke checks.
-4. Slice D only after metric-output verification.
-5. Slice F and G only with archive/index decisions.
+1. Slice C after a tiny eval/config verification pass.
+2. Slice E only after helper-level smoke checks.
+3. Slice D only after metric-output verification.
+4. Slice F and G only with archive/index decisions.
+5. Slice B only if rendered-paper artifacts are still intentionally tracked.
 
 ## Explicit do-not-mix rule
 
