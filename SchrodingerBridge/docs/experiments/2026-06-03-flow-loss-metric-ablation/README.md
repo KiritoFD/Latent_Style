@@ -46,6 +46,7 @@ Practical consequence:
 
 - the completed `MSE` and `Huber` rows remain useful as run-health and
   baseline-stability evidence
+- the completed `L1` row belongs in the same category
 - they do **not** close the paper's latent-metric or flow-loss thesis
 - the next valid version of this ablation must either:
   - set `w_flow > 0`, or
@@ -144,6 +145,37 @@ Immediate read:
 
 This is exactly why the broader latent-metric story must remain narrow until the
 full `mse / huber / l1` block is closed and compared together.
+
+## L1 seed42 closure
+
+The third formal arm has now completed cleanly, including automatic full-eval.
+
+- train task:
+  - `SB_FlowLoss_H_L1_S42`
+- run root:
+  - `exp/aaai2027_flow_loss_h_base_l1_seed42_b44`
+- log:
+  - `exp/aaai2027_flow_loss_h_base_l1_seed42_b44/remote_train.log`
+
+Recovered metrics:
+
+| epoch | full clip_style | full content_lpips | transfer clip_style | transfer content_lpips | wall_total |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `epoch_0001` | `0.6964` | `0.3313` | `0.6651` | `0.3391` | `96.3s` |
+| `epoch_0002` | `0.6988` | `0.3608` | `0.6685` | `0.3703` | `95.6s` |
+| `epoch_0003` | `0.6960` | `0.3415` | `0.6645` | `0.3507` | `95.3s` |
+
+Immediate read:
+
+- `L1` lands almost exactly on top of the `MSE` and `Huber` runs
+- that observed parity is now fully consistent with the config audit above:
+  the three-way kernel switch did not activate the intended loss path
+- the completed trio should therefore be treated as a **near-null operational
+  control**, not as evidence for or against a broader manifold-aware metric
+  claim
+
+The next valid step is not to average these rows into a paper claim. It is to
+repair the ablation design first.
 
 ## Review-cycle coupling
 
