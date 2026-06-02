@@ -42,6 +42,11 @@ For the current AAAI 2027 push, start here:
 
 - `2026-06-03-flow-loss-metric-ablation-protocol.md`
 
+### Current claim-closing packets
+
+- `2026-06-03-flow-loss-metric-ablation/README.md`
+- `2026-06-03-saswd-axis-ablation/README.md`
+
 ## Directory intent
 
 - dated markdown files:

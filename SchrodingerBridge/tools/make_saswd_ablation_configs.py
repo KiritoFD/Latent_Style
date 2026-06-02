@@ -29,11 +29,24 @@ def _variant(base: dict, *, axis_source: str, exp_name: str) -> dict:
     bridge["terminal_swd_mode"] = "standard"
     bridge["terminal_swd_axis_source"] = axis_source
 
+    checkpoint = payload.setdefault("checkpoint", {})
+    if not isinstance(checkpoint, dict):
+        raise TypeError("Config field 'checkpoint' must be a JSON object")
+    checkpoint["save_dir"] = str(Path("./exp") / exp_name)
+
     experiment = payload.setdefault("experiment", {})
     if isinstance(experiment, dict):
         experiment["name"] = exp_name
         experiment["notes"] = (
             f"SA-SWD projection-axis ablation generated from base config. "
+            f"terminal_swd_axis_source={axis_source}."
+        )
+    ablation = payload.setdefault("ablation", {})
+    if isinstance(ablation, dict):
+        ablation["name"] = exp_name
+        ablation["stage"] = f"saswd_axis_{axis_source}"
+        ablation["notes"] = (
+            f"Matched SA-SWD projection-axis ablation generated from base config. "
             f"terminal_swd_axis_source={axis_source}."
         )
     payload["output_dir"] = str(Path("exp") / exp_name)

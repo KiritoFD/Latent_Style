@@ -1,0 +1,30 @@
+{
+  "_base": "../distinct5_512_ema_variant_h_hard_explore_queue_e3.json",
+  "training": {
+    "seed": 42,
+    "batch_size": 44,
+    "test_image_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "full_eval_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache",
+    "full_eval_clip_hf_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache/hf",
+    "full_eval_batch_size": 4,
+    "full_eval_vae_decode_batch_size": 4
+  },
+  "data": {
+    "data_root": "/mnt/i/wikiart_distinct5_samam_512_latents_ema/train",
+    "latent_cache_dir": "/mnt/i/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache",
+    "pairing_cache_path": "/mnt/i/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt"
+  },
+  "full_eval": {
+    "batch_size": 4,
+    "vae_decode_batch_size": 4
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_saswd_axis_h_base_seed42_b44_base"
+  },
+  "ablation": {
+    "name": "aaai2027_saswd_axis_h_base_seed42_b44_base",
+    "axis": "aaai2027_saswd_axis_ablation",
+    "stage": "saswd_axis_h_base_seed42_b44_base",
+    "notes": "AAAI 2027 SA-SWD projection-axis ablation base. H queue family, seed 42, remote RTX 3060 formal batch 44. Generates matched semantic-axis vs random-axis terminal SWD runs with all other settings fixed."
+  }
+}
