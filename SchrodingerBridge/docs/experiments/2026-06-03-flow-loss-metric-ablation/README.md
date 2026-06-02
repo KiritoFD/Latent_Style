@@ -31,6 +31,12 @@ with `w_flow = 1.0` and disable terminal SA-SWD with
 `terminal_swd_weight = 0.0`, so the compared `loss_type` finally sits on the
 active endpoint-matching path.
 
+Live state of the repaired packet:
+
+- `MSE`: completed with all three `full_eval/epoch_0001..0003/summary.json`
+- `Huber`: running on the remote `RTX 3060`
+- `L1`: queued after Huber
+
 ## Scope
 
 - dataset: `Distinct5-512`
@@ -44,7 +50,13 @@ active endpoint-matching path.
 - formal batch: `44`
 - first seed block: `42`
 
-## Configs
+## Active repaired configs
+
+- `configs/aaai2027/endpoint_metric_h_omf_flow_mse_seed42.json`
+- `configs/aaai2027/endpoint_metric_h_omf_flow_huber_seed42.json`
+- `configs/aaai2027/endpoint_metric_h_omf_flow_l1_seed42.json`
+
+## Archived invalid-trio configs
 
 - `configs/aaai2027/flow_loss_h_base_mse_seed42.json`
 - `configs/aaai2027/flow_loss_h_base_huber_seed42.json`
@@ -78,6 +90,55 @@ Practical consequence:
   - set `w_flow > 0`, or
   - move to the non-`omf` objective path that actually uses `loss_type` on the
     velocity regression term
+
+## Repaired packet status
+
+### Repaired MSE seed42 closure
+
+The first repaired arm has now completed cleanly on the remote `3060`.
+
+- task:
+  - `SB_EndpointMetric_H_OMF_MSE_S42`
+- run root:
+  - `exp/aaai2027_endpoint_metric_h_omf_flow_mse_seed42_b44`
+- log:
+  - `exp/aaai2027_endpoint_metric_h_omf_flow_mse_seed42_b44/remote_train.log`
+
+Recovered metrics:
+
+| epoch | full clip_style | full content_lpips | transfer clip_style | transfer content_lpips | wall_total |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `epoch_0001` | `0.6997619076` | `0.5169997306` | `0.6847187312` | `0.5186539203` | `96.97s` |
+| `epoch_0002` | `0.6971165484` | `0.5478854412` | `0.6862729452` | `0.5501397298` | `95.34s` |
+| `epoch_0003` | `0.6985144924` | `0.5201614953` | `0.6842668918` | `0.5225907604` | `96.25s` |
+
+Immediate read:
+
+- this is the first genuinely activated evidence about endpoint pointwise
+  matching in the current codebase;
+- the packet is operationally healthy, but the result is not competitive with
+  the reviewed H mainline on LPIPS;
+- the best repaired `MSE` point is roughly `0.6998 / 0.5170`;
+- the reviewed H mainline reference is roughly `0.6994 / 0.3213`;
+- early evidence therefore points away from pure endpoint-only pointwise
+  supervision as a mainline replacement for the current W1-style system
+
+### Repaired Huber seed42 live launch
+
+The second repaired arm is now running.
+
+- task:
+  - `SB_EndpointMetric_H_OMF_HUBER_S42`
+- run root:
+  - `exp/aaai2027_endpoint_metric_h_omf_flow_huber_seed42_b44`
+- log:
+  - `exp/aaai2027_endpoint_metric_h_omf_flow_huber_seed42_b44/remote_train.log`
+- live proof:
+  - early log shows nonzero `flow`
+  - `tswd = 0.0000`
+  - remote GPU is around `10.2G / 12G`
+
+The third repaired arm (`L1`) is queued behind Huber.
 
 ## Remote run contract
 
