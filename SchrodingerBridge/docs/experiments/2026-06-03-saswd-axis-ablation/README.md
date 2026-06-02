@@ -67,18 +67,24 @@ Current status:
 - random arm is now actively running on remote `3060`
 - live semantic log:
   - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\saswd_axis_h_base_seed42_b44_saswd_semantic\remote_train.log`
-- current remote path:
+- current semantic run path:
   - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\saswd_axis_h_base_seed42_b44_saswd_semantic`
 - semantic task state after completion:
-  - `SB_SASWD_H_SEM_S42`: `就绪`, `上次结果=0`
-- random task state before relaunch:
-  - `SB_SASWD_H_RAND_S42`: `正在运行`
+  - `SB_SASWD_H_SEM_S42`: ready, last result `0`
+- random task state:
+  - `SB_SASWD_H_RAND_S42`: running
 - live random log:
   - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\saswd_axis_h_base_seed42_b44_saswd_random\remote_train.log`
 - first random-arm heartbeat:
   - entered `Epoch 1/3`
   - first recorded step window: `0/113`
   - GPU: `100% util, 8930/12288 MiB, 56.71 W`
+- later runtime-risk heartbeat:
+  - latest seen progress: `Epoch 1/3`, `36/113`
+  - GPU: `100% util, 12080/12288 MiB, 66.30 W`
+  - observed step times stretched to roughly `9-14s/it`
+  - provisional interpretation: memory-pressure / degraded-throughput risk on
+    this exact packet, not yet a hard crash
 
 ## Completed semantic-arm results
 
