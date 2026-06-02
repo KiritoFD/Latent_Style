@@ -1,0 +1,158 @@
+[
+  {
+    "src_style": "Early_Renaissance",
+    "tgt_style": "Minimalism",
+    "src_stem": "andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece",
+    "source": "I:\\datasets\\wikiart_distinct5_512_images\\test\\Early_Renaissance\\andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece.jpg",
+    "No-op": {
+      "gen": "I:\\Github\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\distinct5_512_20260602\\no_op_identity_5x5\\images\\Early_Renaissance_andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece_to_Minimalism.jpg",
+      "clip_style": 0.6070228815078735,
+      "lpips": 0.0
+    },
+    "SaMAM-2250": {
+      "gen": "I:\\Github\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samam_distinct5_512_mamba_b6_seg250_remote_wsl_20260601_2130_diag\\eval_curve\\step_002250\\images\\Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece__to__Minimalism.png",
+      "clip_style": 0.566084086894989,
+      "lpips": 0.38747233152389526
+    },
+    "LANCET-F": {
+      "gen": "I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\distinct5_512_ema_variant_f_annealed_prototype_ot_queue_e3_b44_remote\\full_eval\\epoch_0001\\images\\Early_Renaissance_Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece_to_Minimalism.png",
+      "clip_style": 0.709753155708313,
+      "lpips": 0.49768794
+    },
+    "LANCET-K": {
+      "gen": "I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\distinct5_512_ema_variant_k_content_adaptive_vq_queue_e3_b44_remote\\full_eval\\epoch_0001\\images\\Early_Renaissance_Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece_to_Minimalism.png",
+      "clip_style": 0.7342023253440857,
+      "lpips": 0.6396321
+    }
+  },
+  {
+    "src_style": "Early_Renaissance",
+    "tgt_style": "Ukiyo_e",
+    "src_stem": "andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece",
+    "source": "I:\\datasets\\wikiart_distinct5_512_images\\test\\Early_Renaissance\\andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece.jpg",
+    "No-op": {
+      "gen": "I:\\Github\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\distinct5_512_20260602\\no_op_identity_5x5\\images\\Early_Renaissance_andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece_to_Ukiyo_e.jpg",
+      "clip_style": 0.6626412868499756,
+      "lpips": 0.0
+    },
+    "SaMAM-2250": {
+      "gen": "I:\\Github\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samam_distinct5_512_mamba_b6_seg250_remote_wsl_20260601_2130_diag\\eval_curve\\step_002250\\images\\Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece__to__Ukiyo_e.png",
+      "clip_style": 0.5712984800338745,
+      "lpips": 0.3211246728897095
+    },
+    "LANCET-F": {
+      "gen": "I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\distinct5_512_ema_variant_f_annealed_prototype_ot_queue_e3_b44_remote\\full_eval\\epoch_0001\\images\\Early_Renaissance_Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece_to_Ukiyo_e.png",
+      "clip_style": 0.7239260077476501,
+      "lpips": 0.3957375
+    },
+    "LANCET-K": {
+      "gen": "I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\distinct5_512_ema_variant_k_content_adaptive_vq_queue_e3_b44_remote\\full_eval\\epoch_0001\\images\\Early_Renaissance_Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece_to_Ukiyo_e.png",
+      "clip_style": 0.711916446685791,
+      "lpips": 0.44953382
+    }
+  },
+  {
+    "src_style": "Impressionism",
+    "tgt_style": "Minimalism",
+    "src_stem": "alfred-sisley_riverbank-at-veneux-1881",
+    "source": "I:\\datasets\\wikiart_distinct5_512_images\\test\\Impressionism\\alfred-sisley_riverbank-at-veneux-1881.jpg",
+    "No-op": {
+      "gen": "I:\\Github\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\distinct5_512_20260602\\no_op_identity_5x5\\images\\Impressionism_alfred-sisley_riverbank-at-veneux-1881_to_Minimalism.jpg",
+      "clip_style": 0.602287769317627,
+      "lpips": 0.0
+    },
+    "SaMAM-2250": {
+      "gen": "I:\\Github\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samam_distinct5_512_mamba_b6_seg250_remote_wsl_20260601_2130_diag\\eval_curve\\step_002250\\images\\Impressionism__alfred-sisley_riverbank-at-veneux-1881__to__Minimalism.png",
+      "clip_style": 0.6228946447372437,
+      "lpips": 0.5850873589515686
+    },
+    "LANCET-F": {
+      "gen": "I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\distinct5_512_ema_variant_f_annealed_prototype_ot_queue_e3_b44_remote\\full_eval\\epoch_0001\\images\\Impressionism_Impressionism__alfred-sisley_riverbank-at-veneux-1881_to_Minimalism.png",
+      "clip_style": 0.8227107524871826,
+      "lpips": 0.48252252
+    },
+    "LANCET-K": {
+      "gen": "I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\distinct5_512_ema_variant_k_content_adaptive_vq_queue_e3_b44_remote\\full_eval\\epoch_0001\\images\\Impressionism_Impressionism__alfred-sisley_riverbank-at-veneux-1881_to_Minimalism.png",
+      "clip_style": 0.8090651035308838,
+      "lpips": 0.62717915
+    }
+  },
+  {
+    "src_style": "Minimalism",
+    "tgt_style": "Rococo",
+    "src_stem": "agnes-martin_happy-valley-1967",
+    "source": "I:\\datasets\\wikiart_distinct5_512_images\\test\\Minimalism\\agnes-martin_happy-valley-1967.jpg",
+    "No-op": {
+      "gen": "I:\\Github\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\distinct5_512_20260602\\no_op_identity_5x5\\images\\Minimalism_agnes-martin_happy-valley-1967_to_Rococo.jpg",
+      "clip_style": 0.5580931305885315,
+      "lpips": 0.0
+    },
+    "SaMAM-2250": {
+      "gen": "I:\\Github\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samam_distinct5_512_mamba_b6_seg250_remote_wsl_20260601_2130_diag\\eval_curve\\step_002250\\images\\Minimalism__agnes-martin_happy-valley-1967__to__Rococo.png",
+      "clip_style": 0.46760159730911255,
+      "lpips": 0.57965487241745
+    },
+    "LANCET-F": {
+      "gen": "I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\distinct5_512_ema_variant_f_annealed_prototype_ot_queue_e3_b44_remote\\full_eval\\epoch_0001\\images\\Minimalism_Minimalism__agnes-martin_happy-valley-1967_to_Rococo.png",
+      "clip_style": 0.5875781774520874,
+      "lpips": 0.3421703
+    },
+    "LANCET-K": {
+      "gen": "I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\distinct5_512_ema_variant_k_content_adaptive_vq_queue_e3_b44_remote\\full_eval\\epoch_0001\\images\\Minimalism_Minimalism__agnes-martin_happy-valley-1967_to_Rococo.png",
+      "clip_style": 0.5899938344955444,
+      "lpips": 0.38294756
+    }
+  },
+  {
+    "src_style": "Rococo",
+    "tgt_style": "Ukiyo_e",
+    "src_stem": "antoine-pesne_carl-heinrich-graun",
+    "source": "I:\\datasets\\wikiart_distinct5_512_images\\test\\Rococo\\antoine-pesne_carl-heinrich-graun.jpg",
+    "No-op": {
+      "gen": "I:\\Github\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\distinct5_512_20260602\\no_op_identity_5x5\\images\\Rococo_antoine-pesne_carl-heinrich-graun_to_Ukiyo_e.jpg",
+      "clip_style": 0.5154950618743896,
+      "lpips": 0.0
+    },
+    "SaMAM-2250": {
+      "gen": "I:\\Github\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samam_distinct5_512_mamba_b6_seg250_remote_wsl_20260601_2130_diag\\eval_curve\\step_002250\\images\\Rococo__antoine-pesne_carl-heinrich-graun__to__Ukiyo_e.png",
+      "clip_style": 0.5390923023223877,
+      "lpips": 0.5419644713401794
+    },
+    "LANCET-F": {
+      "gen": "I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\distinct5_512_ema_variant_f_annealed_prototype_ot_queue_e3_b44_remote\\full_eval\\epoch_0001\\images\\Rococo_Rococo__antoine-pesne_carl-heinrich-graun_to_Ukiyo_e.png",
+      "clip_style": 0.5987567901611328,
+      "lpips": 0.29523328
+    },
+    "LANCET-K": {
+      "gen": "I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\distinct5_512_ema_variant_k_content_adaptive_vq_queue_e3_b44_remote\\full_eval\\epoch_0001\\images\\Rococo_Rococo__antoine-pesne_carl-heinrich-graun_to_Ukiyo_e.png",
+      "clip_style": 0.609998881816864,
+      "lpips": 0.3431766
+    }
+  },
+  {
+    "src_style": "Ukiyo_e",
+    "tgt_style": "Early_Renaissance",
+    "src_stem": "hiroshige_hakone-kosuizu",
+    "source": "I:\\datasets\\wikiart_distinct5_512_images\\test\\Ukiyo_e\\hiroshige_hakone-kosuizu.jpg",
+    "No-op": {
+      "gen": "I:\\Github\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\distinct5_512_20260602\\no_op_identity_5x5\\images\\Ukiyo_e_hiroshige_hakone-kosuizu_to_Early_Renaissance.jpg",
+      "clip_style": 0.6851785778999329,
+      "lpips": 0.0
+    },
+    "SaMAM-2250": {
+      "gen": "I:\\Github\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samam_distinct5_512_mamba_b6_seg250_remote_wsl_20260601_2130_diag\\eval_curve\\step_002250\\images\\Ukiyo_e__hiroshige_hakone-kosuizu__to__Early_Renaissance.png",
+      "clip_style": 0.5670166015625,
+      "lpips": 0.31519484519958496
+    },
+    "LANCET-F": {
+      "gen": "I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\distinct5_512_ema_variant_f_annealed_prototype_ot_queue_e3_b44_remote\\full_eval\\epoch_0001\\images\\Ukiyo_e_Ukiyo_e__hiroshige_hakone-kosuizu_to_Early_Renaissance.png",
+      "clip_style": 0.6753198504447937,
+      "lpips": 0.24959935
+    },
+    "LANCET-K": {
+      "gen": "I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\distinct5_512_ema_variant_k_content_adaptive_vq_queue_e3_b44_remote\\full_eval\\epoch_0001\\images\\Ukiyo_e_Ukiyo_e__hiroshige_hakone-kosuizu_to_Early_Renaissance.png",
+      "clip_style": 0.6407605409622192,
+      "lpips": 0.26721302
+    }
+  }
+]

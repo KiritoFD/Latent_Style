@@ -1,0 +1,42 @@
+{
+  "_base": "local_wsl_wikiart512_style_injection_from_hist_e3.json",
+  "model": {
+    "style_injection_mode": "body_decoder",
+    "style_injection_hidden_dim": 64,
+    "style_injection_scale": 1.0,
+    "style_injection_form": "carrier_gate",
+    "style_injection_gate_log_span": 0.4054651081081644
+  },
+  "training": {
+    "batch_size": 32,
+    "learning_rate": 0.0001,
+    "num_epochs": 3,
+    "save_interval": 1,
+    "resume_checkpoint": "/mnt/g/GitHub/Latent_Style/SchrodingerBridge/exp/local_wsl_wikiart512_hist_b32_e8/epoch_0008.pt",
+    "resume_model_strict": false,
+    "resume_training_state": false,
+    "resume_optimizer": false,
+    "freeze_mode": "injection_only",
+    "freeze_reinit_trainable": false,
+    "numeric_debug": false,
+    "use_tqdm": true,
+    "log_interval": 10,
+    "full_eval_batch_size": 2,
+    "full_eval_target_chunk_size": 5,
+    "full_eval_vae_decode_batch_size": 2
+  },
+  "data": {
+    "virtual_length_multiplier": 0.02
+  },
+  "checkpoint": {
+    "save_dir": "./exp/local_wsl_wikiart512_carrier_gate_from_hist_e3"
+  },
+  "ablation": {
+    "name": "local_wsl_wikiart512_carrier_gate_from_hist_e3",
+    "axis": "carrier_gate_injection",
+    "notes": "Frozen LANCET/tokenizer probe. Replaces mixed style+content injection with factorized target-style carrier and content-only gate at body+decoder sites. Promote only if 150-image gate improves primary metrics or residual decomposition without LPIPS damage."
+  },
+  "bridge": {
+    "w_generated_delta_diversity": 0.0
+  }
+}

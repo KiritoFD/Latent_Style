@@ -21,6 +21,27 @@ This note records same-machine WSL generation-only throughput on the WikiArt512
 | SaMAM | step 10000 | PNG | 750 | 148.0s | 156.45s | 0.209 | official SaMAM curve script, generate-only |
 | SaMST | epoch 15 | PNG | 750 | 319.97s | 320.19s | 0.427 | SaMST wrapper now converts outputs to PNG |
 
+## From-Scratch LANCET Timing
+
+This run uses `configs/archive/20260603_local_wsl_wikiart512/local_wsl_wikiart512_timing_from_scratch_20260602.json`
+on local WSL with WikiArt512 EMA latents. It starts from no checkpoint, trains
+8 epochs, evaluates `epoch_0008.pt`, and keeps the same 750-output PNG protocol.
+
+| Stage | Wall time | Unit | sec/img or step | Notes |
+|---|---:|---:|---:|---|
+| Train from scratch | 66.56s | 8 epochs / 88 steps | 0.756s/step | batch 32, virtual length multiplier 0.02 |
+| Generation only | 55.16s | 750 PNG | 0.0735s/img | no summary grid |
+| Eval only, cold ref cache | 73.43s | 750 PNG | 0.0979s/img | reuses generated images, includes ref feature cache build |
+| Eval only, hot ref cache | 62.54s | 750 PNG | 0.0834s/img | reuses generated images, ref cache hit |
+| Direct full eval | 106.62s | 750 PNG | 0.1422s/img | one command: generate + metrics, hot ref cache |
+
+Direct full eval metrics from this from-scratch `epoch_0008.pt`:
+
+| Scope | clip_style | content_lpips |
+|---|---:|---:|
+| all 5x5 pairs | 0.7738 | 0.3941 |
+| transfer only, excluding identity | 0.7679 | 0.3943 |
+
 ## Artifact Paths
 
 - LANCET PNG no-grid:
@@ -31,8 +52,13 @@ This note records same-machine WSL generation-only throughput on the WikiArt512
   `Related_Works/baseline_pipeline/results/timing_20260602/samam_512_step10000_generate750_rerun_pngcomp`
 - SaMST PNG:
   `Related_Works/baseline_pipeline/results/timing_20260602/samst_wikiart512_epoch15_generate750_png`
+- LANCET from-scratch training:
+  `SchrodingerBridge/exp/timing_20260602/lancet_from_scratch_b32_e8`
+- LANCET from-scratch direct full eval:
+  `SchrodingerBridge/exp/timing_20260602/lancet_from_scratch_e8_full_eval_direct750`
 
-All four artifact directories were checked for `750` generated files.
+The generation/evaluation artifact directories were checked for `750`
+generated PNG files.
 
 ## LANCET Settings
 
