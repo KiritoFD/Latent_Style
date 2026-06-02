@@ -41,6 +41,11 @@ STYLE_PROMPTS = {
     "Post_Impressionism": "\u628a\u56fe\u7247\u8f6c\u4e3aPost_Impressionism\u98ce\u683c",
     "Expressionism": "\u628a\u56fe\u7247\u8f6c\u4e3aExpressionism\u98ce\u683c",
     "Symbolism": "\u628a\u56fe\u7247\u8f6c\u4e3aSymbolism\u98ce\u683c",
+    "photo": "\u628a\u56fe\u7247\u8f6c\u4e3aphoto\u98ce\u683c",
+    "monet": "\u628a\u56fe\u7247\u8f6c\u4e3amonet\u98ce\u683c",
+    "vangogh": "\u628a\u56fe\u7247\u8f6c\u4e3avangogh\u98ce\u683c",
+    "cezanne": "\u628a\u56fe\u7247\u8f6c\u4e3acezanne\u98ce\u683c",
+    "Hayao": "\u628a\u56fe\u7247\u8f6c\u4e3aHayao\u98ce\u683c",
 }
 
 
@@ -125,7 +130,7 @@ def _build_jobs(
         for tgt_style in classes:
             if cross_only and src_style == tgt_style:
                 continue
-            out_name = f"{src_style}__{src_path.stem}__to__{tgt_style}.png"
+            out_name = f"{src_style}_{src_path.stem}_to_{tgt_style}.png"
             jobs.append(
                 Job(
                     src_style=src_style,
@@ -234,15 +239,19 @@ def _request_json(
             "-X",
             "POST",
             url,
-            "--max-time",
-            str(max(1, int(timeout))),
-            "--data-binary",
-            "@-",
-            "-w",
-            "\n__HTTP_STATUS__:%{http_code}",
         ]
         for key, value in headers.items():
-            cmd[6:6] = ["-H", f"{key}: {value}"]
+            cmd.extend(["-H", f"{key}: {value}"])
+        cmd.extend(
+            [
+                "--max-time",
+                str(max(1, int(timeout))),
+                "--data-binary",
+                "@-",
+                "-w",
+                "\n__HTTP_STATUS__:%{http_code}",
+            ]
+        )
         proc = subprocess.run(
             cmd,
             input=body,
@@ -348,6 +357,20 @@ def _download_url(url: str, timeout: float) -> tuple[bytes, float]:
                 return resp.read(), time.time() - start
         except Exception as exc:
             last_exc = exc
+            if attempt >= 3:
+                try:
+                    proc = subprocess.run(
+                        ["curl.exe", "-L", "-sS", url, "--max-time", str(max(1, int(timeout)))],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        check=False,
+                        timeout=max(5, int(timeout) + 30),
+                    )
+                    if proc.returncode == 0 and proc.stdout:
+                        return proc.stdout, time.time() - start
+                    last_exc = RuntimeError(proc.stderr.decode("utf-8", errors="replace")[:500])
+                except Exception as curl_exc:
+                    last_exc = curl_exc
             if attempt >= 5:
                 break
             time.sleep(float(attempt * 2))
@@ -422,15 +445,24 @@ def _payload_for_job(args: argparse.Namespace, job: Job) -> dict[str, Any]:
         "size": args.size,
         "watermark": False,
         "sequential_image_generation": "disabled",
-        "response_format": args.response_format,
     }
+    if args.image_placement != "extra_body" and args.response_format:
+        payload["response_format"] = args.response_format
     if not args.omit_n:
         payload["n"] = 1
     if args.output_format:
         payload["output_format"] = args.output_format
     if args.optimize_prompt_mode:
         payload["optimize_prompt_options"] = {"mode": args.optimize_prompt_mode}
-    if args.image_field in {"image", "image_input", "image_urls", "image_url"}:
+    if args.tags:
+        payload["tags"] = [item.strip() for item in str(args.tags).split(",") if item.strip()]
+    if args.image_placement == "extra_body":
+        payload["extra_body"] = {
+            args.image_field: [image_value],
+        }
+        if args.response_format:
+            payload["extra_body"]["response_format"] = args.response_format
+    elif args.image_field in {"image", "image_input", "image_urls", "image_url"}:
         payload[args.image_field] = [image_value]
     else:
         raise ValueError(f"Unsupported image field: {args.image_field}")
@@ -800,6 +832,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--endpoint", default="/v1/images/generations")
     parser.add_argument("--model", default="doubao-seedream-4-5-251128")
     parser.add_argument("--image-field", default="image", choices=["image", "image_input", "image_urls", "image_url"])
+    parser.add_argument("--image-placement", default="top_level", choices=["top_level", "extra_body"])
+    parser.add_argument("--tags", default="")
     parser.add_argument("--response-format", default="b64_json", choices=["b64_json", "url"])
     parser.add_argument("--output-format", default="")
     parser.add_argument("--resize-output", default="")
