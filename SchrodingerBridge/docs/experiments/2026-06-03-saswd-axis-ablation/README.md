@@ -159,6 +159,10 @@ Current handling decision:
 - do **not** treat the current random-arm wall clock as representative formal
   speed evidence.
 
+Reviewer-side policy link:
+
+- `docs/reviews/aaai2027_gate_b_runtime_anomaly_policy_20260603.md`
+
 ## Acceptance gate
 
 Paper-safe positive closure requires at least one of:

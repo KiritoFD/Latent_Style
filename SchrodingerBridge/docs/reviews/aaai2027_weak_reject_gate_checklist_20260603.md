@@ -81,6 +81,12 @@ Current status:
   as normal formal-speed evidence
 - best-effort diagnosis currently favors the random-axis path itself as the
   primary cause of the slowdown, not accidental config drift
+- reviewer-side runtime-anomaly policy now exists:
+  - `docs/reviews/aaai2027_gate_b_runtime_anomaly_policy_20260603.md`
+- current reviewer-safe policy is:
+  - if the abnormal random run finishes cleanly with matched summaries, Gate B
+    may close on quality-only evidence;
+  - that same run remains inadmissible for runtime-side claims
 - Gate B remains open until both matched arms complete and are compared directly
 
 ## Gate C - Efficiency fairness closure
@@ -100,6 +106,15 @@ Required evidence:
 - timing CSV
 - figure used by the paper
 - short provenance note describing measurement protocol
+
+Current status:
+
+- the protocol note now exists:
+  - `docs/experiments/2026-06-03-time-to-parity/README.md`
+- the canonical CSV template now exists:
+  - `docs/experiments/2026-06-03-time-to-parity/distinct5_time_to_parity_points.csv`
+- Gate C remains open until the CSV is populated from same-scope evidence and
+  the vector figures are generated from it
 
 Not accepted:
 
