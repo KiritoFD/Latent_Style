@@ -2,6 +2,19 @@
 
 Date: 2026-06-03
 
+Status update:
+
+- `2026-06-03` post-run config audit invalidated the originally launched
+  `mse / huber / l1` trio as a theory probe.
+- Resolved configs kept:
+  - `objective_mode = omf`
+  - `w_flow = 0.0`
+- Under the current implementation, this means changing `bridge.loss_type` did
+  not activate the intended loss path.
+- Therefore this document now describes a **superseded protocol**. Keep it for
+  provenance, but do not cite the resulting runs as evidence for the intended
+  loss-kernel thesis.
+
 Purpose:
 
 - close the largest current paper-risk gap;
@@ -17,7 +30,8 @@ Current paper-safe state:
 - endpoint-side `W1` / SA-SWD is supported;
 - the broader `MSE vs Huber vs L1` local flow-residual thesis is not.
 
-This experiment exists to change that status one way or the other.
+The original experiment was intended to change that status one way or the
+other. After the config audit above, it no longer does so.
 
 ## Required controls
 
@@ -42,6 +56,14 @@ This experiment exists to change that status one way or the other.
      - `mse`
      - `huber`
      - `l1`
+
+   Additional activation requirement discovered after launch:
+
+   - the chosen objective path must actually use `loss_type`
+   - this requires either:
+     - `objective_mode = omf` with `w_flow > 0`, or
+     - a non-`omf` objective path in which `loss_type` is applied to the active
+       velocity regression term
 
 5. matched training protocol:
    - same seed set
@@ -99,6 +121,9 @@ The experiment block is not reviewer-ready until all of the following are true:
 
 Do not stop early on one attractive seed.
 
+This block is also not reviewer-ready if a config audit shows that the switched
+hyperparameter is not on the active loss path.
+
 ## What counts as positive evidence
 
 Positive evidence for the broader latent-metric story requires a consistent,
@@ -125,3 +150,20 @@ If that happens, keep the paper centered on:
 - OT-coupled endpoint construction,
 - `W1`-style terminal matching,
 - and `idt`-anchored evaluation.
+
+## Replacement direction after the config audit
+
+The minimum repaired follow-up must do one of the following:
+
+1. `OMF + active flow term`
+   - keep `objective_mode = omf`
+   - set `w_flow > 0`
+   - then rerun `mse / huber / l1`
+
+2. `True velocity-regression probe`
+   - switch to the non-`omf` objective path that applies `loss_type` directly
+     to `pred_velocity` versus `target_velocity`
+   - keep terminal SWD and kinetic settings otherwise matched
+
+Until one of those repaired designs is run, the current launched trio remains
+operationally useful but theoretically non-probing.
