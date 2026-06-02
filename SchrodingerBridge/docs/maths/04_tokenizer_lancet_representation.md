@@ -219,6 +219,74 @@ Sparse concept atoms remain a valid probe, but only as a vocabulary geometry
 test. They are not sufficient by themselves unless LANCET has a reason to use
 different atoms differently across source conditions.
 
+## 7. 2026-06-01 Non-Training Probe Reading
+
+Probe:
+
+```text
+tools/probe_style_representation.py
+  --latent-root /mnt/f/wikiart_latents_512_ema
+  --checkpoint exp/local_wsl_wikiart512_hist_b32_e8/epoch_0008.pt
+  --classes Realism,Impressionism,Post_Impressionism,Expressionism,Symbolism
+  --max-per-style 1000
+  --delta-probe --delta-probe-max-content-per-style 20
+```
+
+Output:
+
+- `exp/probes_20260601/local_hist_e8_latent_tokenizer_delta20/summary.json`
+- `style_latent_stats.csv`
+- `style_latent_pairs.csv`
+- `tokenizer_code_stats.csv`
+- `tokenizer_code_pairs.csv`
+- `generated_delta_stats.csv`
+- `generated_delta_pairs.csv`
+
+Key results:
+
+| Quantity | Value |
+|---|---:|
+| tokenizer effective rank | 3.986 |
+| tokenizer mean off-diagonal cosine | 0.015 |
+| generated-delta effective rank | 3.324 |
+| generated-delta mean off-diagonal cosine | 0.725 |
+| corr latent L2 -> delta L2 | 0.823 |
+| corr tokenizer L2 -> delta L2 | 0.426 |
+| corr latent cosine -> delta cosine | 0.788 |
+| corr tokenizer cosine -> delta cosine | 0.324 |
+
+Interpretation:
+
+- The tokenizer code geometry is not the immediate collapse point in this run.
+  Five style codes are almost orthogonal and have near-full rank for a five-style
+  set.
+- The executed residuals are much more aligned than the tokenizer codes. The
+  average target residual cosine is `0.725`, which means LANCET often applies a
+  shared edit direction with style-specific amplitude or low-rank correction.
+- Generated residual geometry correlates more strongly with real latent style
+  geometry than with tokenizer code geometry. This suggests the trained actuator
+  learned a data-manifold edit basis, but the injection path does not preserve
+  the full tokenizer separation.
+
+Current diagnosis:
+
+```text
+raw tokenizer collapse: not primary
+dataset style separability: partially weak but measurable
+actuation / injection bottleneck: primary suspect
+```
+
+The next tokenizer work should therefore not simply enlarge `style_code`. The
+useful representation question is how to expose controls that the actuator reads
+as distinct executable directions:
+
+- bounded low/high execution budgets conditioned on source/content risk;
+- multi-site injection where separate tokens are consumed at defined blocks;
+- residual vocabulary atoms only if the consumer path can route atoms
+  differently;
+- regularizers or diagnostics that maximize generated-delta rank without
+  blindly increasing LPIPS.
+
 The first budget evidence is consistent with this. A target-only
 `tokenbudget_gradfix` run looked good on quick/n6 (`0.798214 / 0.299028`) but
 did not beat the selected full base after all-5x5 evaluation (`0.790876 /
@@ -258,3 +326,144 @@ A tokenizer experiment is invalid unless:
   field cosines.
 
 Only after these checks pass should the run go to remote 3060 training.
+
+## 8. Delta-Diversity Probe Result
+
+After the non-training probe identified generated residual co-linearity as a
+likely bottleneck, an explicit residual-geometry loss was added:
+
+```text
+w_generated_delta_diversity
+generated_delta_diversity_margin
+```
+
+It groups non-identity samples by target style, computes the mean generated
+residual per target, and penalizes positive off-diagonal cosine between target
+means. This tests the actuation hypothesis directly: if the renderer maps
+different style controls into the same edit direction, forcing residual
+directions apart should improve style expression or at least the residual
+diagnostic.
+
+Local WSL probe, all from `local_wsl_wikiart512_hist_b32_e8/epoch_0008.pt`:
+
+| Run | clip_style | LPIPS | delta rank | delta offdiag cosine |
+|---|---:|---:|---:|---:|
+| base 150 | 0.802409 | 0.358092 | 3.325 | 0.703375 |
+| injection e3 | 0.802399 | 0.358237 | 3.344 | 0.702829 |
+| injection + delta diversity 0.05 | 0.802397 | 0.358240 | 3.344 | 0.702397 |
+| injection + delta diversity 0.50 | 0.802388 | 0.358267 | 3.345 | 0.698567 |
+
+Conclusion:
+
+- The geometry loss affects the intended measured quantity.
+- The metric effect is neutral to slightly negative.
+- Therefore the current frozen small-injector path can rotate residual
+  directions, but those rotations are not yet semantically useful style
+  execution.
+
+This sharpens the representation diagnosis:
+
+```text
+tokenizer code separation: sufficient for this checkpoint
+residual geometry pressure: technically effective but not sufficient
+missing part: executable, content-aware style representation consumed by a
+renderer path with enough capacity
+```
+
+The next tokenizer experiment should therefore train a representation that
+predicts executable control objects rather than only a larger global vector or a
+post-hoc orthogonality penalty.
+
+## 9. Residual Variance Decomposition
+
+`tools/eval_wikiart512_latent.py` now reports
+`generated_delta_variance_decomposition`. It decomposes generated latent
+residual variance by target style, source style, source image, and
+source-target pair. This is a stronger diagnostic than only target-wise residual
+cosine, because it shows what variable actually dominates the vector field.
+
+150-transfer base probe:
+
+```text
+checkpoint: exp/local_wsl_wikiart512_hist_b32_e8/epoch_0008.pt
+output: exp/timing_20260601/lancet_fulleval150_delta_var
+```
+
+Key values:
+
+| Quantity | Value |
+|---|---:|
+| target_between_ratio | 0.0283 |
+| source_style_between_ratio | 0.1437 |
+| source_image_between_ratio | 0.9501 |
+| source_target_pair_between_ratio | 0.1751 |
+| target_after_source_image_ratio | 0.5664 |
+| generated_delta_effective_rank | 3.325 |
+| generated_delta_mean_offdiag_cos | 0.703 |
+
+Interpretation:
+
+- Raw generated residual variance is overwhelmingly content/source-image
+  dominated. This explains why LPIPS remains hard to beat: the model's vector
+  field spends most of its energy on content-conditioned movement.
+- Target style is not absent. After subtracting the per-source-image residual
+  mean, target style explains `56.6%` of the remaining variance.
+- Therefore the failure mode is not "tokenizer has no style information". It is
+  that target-style control lives as a relatively small conditional correction
+  on top of a large content-dependent residual basis.
+
+This changes the next design target:
+
+```text
+Do not only enlarge tokenizer vectors.
+Do not only orthogonalize final residuals.
+Create an executable target-style carrier that survives content-conditioned
+rendering, then let a content-risk gate decide how much of that carrier is safe
+for each source image.
+```
+
+The next valid switch should expose two explicitly separated factors:
+
+- `target_carrier`: target-style residual basis or token set that is shared
+  across source images and consumed by multiple LANCET blocks;
+- `content_gate`: source/content-conditioned low/high or block-wise gate that
+  limits topology damage and LPIPS regression.
+
+## 10. Carrier/Gate Injection Result
+
+The first implementation of this idea is deliberately small:
+
+```text
+style_injection_form = "carrier_gate"
+carrier = MLP(style_code + time_code)
+gate = MLP(content_stats)
+feature_bias = tanh(carrier) * exp(tanh(gate) * gate_log_span)
+```
+
+It replaces the earlier mixed injector where one MLP consumed
+`[style_code, content_stats]`. The goal was to prevent the content-conditioned
+part from absorbing the target style signal.
+
+Local WSL result from the historical e8 checkpoint:
+
+| Run | clip_style | LPIPS | clip_dir | delta rank | offdiag cosine | target ratio | source-image ratio | target after source-image |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| base | 0.802358 | 0.358096 | 0.370340 | 3.325 | 0.703379 | 0.0283 | 0.9501 | 0.5664 |
+| carrier_gate e3 | 0.802273 | 0.358190 | 0.369542 | 3.349 | 0.702816 | 0.0283 | 0.9500 | 0.5669 |
+
+Reading:
+
+- The factorized carrier/gate path can move the residual-rank diagnostic.
+- It does not increase raw target-style variance or improve the headline
+  metrics.
+- Therefore the weak point is not just mixed conditioning inside a small MLP.
+  The style carrier has to enter the renderer as a stronger executable object,
+  not only as a zero-initialized channel bias.
+
+This narrows the next representation design:
+
+```text
+target carrier should produce a residual basis / operator-like token stream;
+content gate should modulate that basis by risk;
+both should be consumed before the final residual, not just as feature bias.
+```
