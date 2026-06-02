@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -131,6 +132,39 @@ def _safe_float(value: str | float | int | None) -> float | None:
         return None
 
 
+def _git_commit() -> str | None:
+    repo_root = Path(__file__).resolve().parents[2]
+    try:
+        return (
+            subprocess.check_output(
+                ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
+                stderr=subprocess.DEVNULL,
+                text=True,
+            )
+            .strip()
+            or None
+        )
+    except Exception:
+        return None
+
+
+def _runtime_metadata(requested_device: str, resolved_device: str) -> dict[str, str | None]:
+    meta: dict[str, str | None] = {
+        "requested_device": requested_device,
+        "resolved_device": resolved_device,
+        "torch_version": torch.__version__,
+        "torch_cuda_version": torch.version.cuda,
+        "cuda_available": str(bool(torch.cuda.is_available())),
+        "cuda_device_name": None,
+    }
+    if resolved_device != "cpu" and torch.cuda.is_available():
+        try:
+            meta["cuda_device_name"] = torch.cuda.get_device_name(0)
+        except Exception:
+            meta["cuda_device_name"] = None
+    return meta
+
+
 def _effective_rank(matrix: torch.Tensor) -> tuple[float, list[float]]:
     _, svals, _ = torch.linalg.svd(matrix - matrix.mean(dim=0, keepdim=True), full_matrices=False)
     rank = float((svals.sum().square() / svals.square().sum().clamp_min(1e-8)).item())
@@ -203,8 +237,9 @@ def _generated_delta_rows(
     num_steps: int,
     step_size: float,
     style_strength: float,
-) -> tuple[list[dict], list[dict], dict]:
+) -> tuple[list[dict], list[dict], dict, list[dict]]:
     content_paths = _content_paths_for_delta_probe(latent_root, names, max_content_per_style)
+    content_path_rows = [{"source_style": source_style, "latent_path": str(path)} for source_style, path in content_paths]
     infer = LGTInference(
         str(checkpoint),
         device=device,
@@ -269,11 +304,19 @@ def _generated_delta_rows(
     gram = F.normalize(matrix, dim=1) @ F.normalize(matrix, dim=1).T
     summary = {
         "generated_delta_content_count": len(content_paths),
+        "generated_delta_content_paths": [row["latent_path"] for row in content_path_rows],
+        "generated_delta_content_path_rows": content_path_rows,
+        "delta_probe_max_content_per_style": int(max_content_per_style),
+        "delta_probe_batch_size": int(batch_size),
+        "delta_probe_num_steps": int(num_steps),
+        "delta_probe_step_size": float(step_size),
+        "delta_probe_style_strength": float(style_strength),
+        "delta_probe_device": device,
         "generated_delta_effective_rank": delta_rank,
         "generated_delta_rank_svals": delta_svals,
         "generated_delta_mean_offdiag_cos": float(((gram.sum() - torch.diagonal(gram).sum()) / max(1, len(names) * (len(names) - 1))).item()),
     }
-    return rows, pair_rows, summary
+    return rows, pair_rows, summary, content_path_rows
 
 
 def _write_csv(path: Path, rows: list[dict]) -> None:
@@ -627,10 +670,11 @@ def main() -> int:
     delta_rows: list[dict] = []
     delta_pair_rows: list[dict] = []
     delta_summary: dict = {}
+    delta_content_rows: list[dict] = []
     if args.delta_probe:
         if args.checkpoint is None:
             raise ValueError("--delta-probe requires --checkpoint")
-        delta_rows, delta_pair_rows, delta_summary = _generated_delta_rows(
+        delta_rows, delta_pair_rows, delta_summary, delta_content_rows = _generated_delta_rows(
             checkpoint=args.checkpoint,
             latent_root=args.latent_root,
             names=names,
@@ -672,6 +716,8 @@ def main() -> int:
     if delta_rows:
         _write_csv(args.output_dir / "generated_delta_stats.csv", delta_rows)
         _write_csv(args.output_dir / "generated_delta_pairs.csv", delta_pair_rows)
+    if delta_content_rows:
+        _write_csv(args.output_dir / "delta_probe_content_paths.csv", delta_content_rows)
     if target_metric_rows:
         _write_csv(args.output_dir / "target_style_metrics.csv", target_metric_rows)
     if joined_style_rows:
@@ -686,10 +732,13 @@ def main() -> int:
     if style_fig is not None:
         figure_paths["fig_stylewise_code_exec_delta_idt"] = str(style_fig)
     summary = {
+        "output_dir": str(args.output_dir),
         "latent_root": str(args.latent_root),
         "checkpoint": str(args.checkpoint) if args.checkpoint else None,
         "eval_metrics_csv": str(args.eval_metrics_csv) if args.eval_metrics_csv else None,
         "idt_metrics_csv": str(args.idt_metrics_csv) if args.idt_metrics_csv else None,
+        "git_commit": _git_commit(),
+        "runtime_metadata": _runtime_metadata(args.device, device),
         "classes": names,
         "style_latent_stats": style_rows,
         "style_latent_pairs": pair_rows,
@@ -697,6 +746,7 @@ def main() -> int:
         "tokenizer_code_pairs": token_pair_rows,
         "generated_delta_stats": delta_rows,
         "generated_delta_pairs": delta_pair_rows,
+        "delta_probe_content_paths": delta_content_rows,
         "target_style_metrics": target_metric_rows,
         "tokenizer_execution_alignment": joined_style_rows,
         "tokenizer_execution_alignment_pairs": joined_pair_rows,

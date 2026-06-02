@@ -59,6 +59,7 @@ Runtime output directory:
 
 Durable paper-side artifacts:
 
+- `delta_probe_content_paths.csv`
 - `target_style_metrics.csv`
 - `tokenizer_execution_alignment.csv`
 - `tokenizer_execution_alignment_pairs.csv`
@@ -82,6 +83,12 @@ Interpretation boundary:
 This packet does **not** by itself prove a new tokenizer design. Its job is to
 localize whether the present bottleneck is code-space weakness or execution-side
 attenuation.
+
+Minimum provenance requirement for paper use:
+
+- the landed packet must preserve the exact content-file list, delta-probe
+  arguments, resolved checkpoint path, and runtime metadata alongside the
+  geometry/eval outputs.
 
 ## Next update rule
 

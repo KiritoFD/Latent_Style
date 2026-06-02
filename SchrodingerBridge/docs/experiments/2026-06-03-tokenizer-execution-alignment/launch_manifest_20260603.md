@@ -37,6 +37,7 @@ Date: 2026-06-03
 
 - `--checkpoint`
 - `--latent-root`
+- `--output-dir`
 - `--delta-probe`
 - `--eval-metrics-csv`
 - `--idt-metrics-csv`
@@ -53,6 +54,7 @@ Date: 2026-06-03
 - `tokenizer_code_pairs.csv`
 - `generated_delta_stats.csv`
 - `generated_delta_pairs.csv`
+- `delta_probe_content_paths.csv`
 - `target_style_metrics.csv`
 - `tokenizer_execution_alignment.csv`
 - `tokenizer_execution_alignment_pairs.csv`
