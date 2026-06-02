@@ -5,6 +5,32 @@ Date: 2026-06-03
 This directory is the execution bundle for the first matched paper-closing
 ablation after the continuous reviewer lane was wired in.
 
+## Current status
+
+The originally launched `mse / huber / l1` trio is now archived as a
+**near-null operational control** because the post-run config audit showed:
+
+- `objective_mode = omf`
+- `w_flow = 0.0`
+
+So `loss_type` never became the active compared term.
+
+The repaired packet now lives here:
+
+- theory packet:
+  - `repaired_endpoint_metric_ablation_packet_20260603.md`
+- remote launch manifest:
+  - `repaired_endpoint_metric_launch_manifest_20260603.md`
+- repaired configs:
+  - `configs/aaai2027/endpoint_metric_h_omf_flow_mse_seed42.json`
+  - `configs/aaai2027/endpoint_metric_h_omf_flow_huber_seed42.json`
+  - `configs/aaai2027/endpoint_metric_h_omf_flow_l1_seed42.json`
+
+These repaired arms keep `objective_mode = omf` but activate the endpoint term
+with `w_flow = 1.0` and disable terminal SA-SWD with
+`terminal_swd_weight = 0.0`, so the compared `loss_type` finally sits on the
+active endpoint-matching path.
+
 ## Scope
 
 - dataset: `Distinct5-512`
