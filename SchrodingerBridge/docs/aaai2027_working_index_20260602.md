@@ -63,9 +63,11 @@ Continuous reviewer lane:
 - `SchrodingerBridge/docs/reviews/aaai2027_boundary_alignment_pass_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_boundary_followup_overclaims_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_gate_b_runtime_anomaly_policy_20260603.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_gate_status_and_next_experiment_priority_20260603.md`
 - `SchrodingerBridge/docs/reviews/distinct5_idt_noop_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_review_gate_20260603.md`
+- `SchrodingerBridge/docs/reviews/tokenizer_representation_theory_queue_20260603.md`
 
 Related-work / citation gap notes:
 
@@ -81,6 +83,8 @@ Cross-dataset comparison report:
 
 - `SchrodingerBridge/docs/experiments/comparison_20260602/comparison_report.md`
 - `SchrodingerBridge/docs/experiments/comparison_20260602/comparison_report.pdf`
+- `SchrodingerBridge/docs/experiments/2026-06-03-exp-surface-classification.md`
+- `SchrodingerBridge/docs/experiments/aaai2027_experiment_logging_contract_20260603.md`
 
 ## 3. Experiment families to cite separately
 

@@ -37,6 +37,11 @@ For the current AAAI 2027 push, start here:
 ### Repo cleanup / archive hygiene
 
 - `2026-06-03-repo-cleanup-and-archive-pass.md`
+- `2026-06-03-exp-surface-classification.md`
+
+### Logging / provenance contract
+
+- `aaai2027_experiment_logging_contract_20260603.md`
 
 ### Next paper-closing protocol
 
