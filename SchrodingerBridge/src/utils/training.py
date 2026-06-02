@@ -17,6 +17,8 @@ TRAIN_LOG_COLUMNS = [
     "curvature",
     "ot_cost",
     "terminal_swd",
+    "terminal_swd_aux",
+    "aux_target_ratio",
     "semantic_attn_mean",
     "semantic_k_abs",
     "plan_entropy",
@@ -36,6 +38,8 @@ TRAIN_LOG_COLUMNS = [
     "epoch_time_sec",
     "samples_seen",
     "samples_per_sec",
+    "cuda_peak_allocated_gb",
+    "cuda_peak_reserved_gb",
 ]
 
 
@@ -68,7 +72,11 @@ def unwrap_compiled_model(model: torch.nn.Module) -> torch.nn.Module:
 
 def build_adamw(params, train_cfg: dict, device: torch.device) -> torch.optim.Optimizer:
     requested_fused = bool(train_cfg.get("fused_adamw", device.type == "cuda"))
-    use_fused = bool(requested_fused and device.type == "cuda")
+    channels_last = bool(train_cfg.get("channels_last", False))
+    # PyTorch 2.3 fused AdamW can reject mixed parameter/gradient layouts when
+    # conv weights are trained under channels_last. Fall back before the first
+    # optimizer step instead of failing inside the hot loop.
+    use_fused = bool(requested_fused and device.type == "cuda" and not channels_last)
     kwargs = {
         "lr": float(train_cfg.get("learning_rate", 2e-4)),
         "weight_decay": float(train_cfg.get("weight_decay", 1e-4)),
@@ -116,6 +124,8 @@ def append_training_log(log_file: Path, metrics: dict[str, float], epoch: int) -
         "curvature": float(metrics.get("curvature", 0.0)),
         "ot_cost": float(metrics.get("ot_cost", 0.0)),
         "terminal_swd": float(metrics.get("terminal_swd", 0.0)),
+        "terminal_swd_aux": float(metrics.get("terminal_swd_aux", 0.0)),
+        "aux_target_ratio": float(metrics.get("aux_target_ratio", 0.0)),
         "semantic_attn_mean": float(metrics.get("semantic_attn_mean", 0.0)),
         "semantic_k_abs": float(metrics.get("semantic_k_abs", 0.0)),
         "plan_entropy": float(metrics.get("plan_entropy", 0.0)),
@@ -135,6 +145,8 @@ def append_training_log(log_file: Path, metrics: dict[str, float], epoch: int) -
         "epoch_time_sec": float(metrics.get("epoch_time_sec", 0.0)),
         "samples_seen": int(float(metrics.get("samples_seen", 0.0))),
         "samples_per_sec": float(metrics.get("samples_per_sec", 0.0)),
+        "cuda_peak_allocated_gb": float(metrics.get("cuda_peak_allocated_gb", 0.0)),
+        "cuda_peak_reserved_gb": float(metrics.get("cuda_peak_reserved_gb", 0.0)),
     }
     row = [row_map[col] for col in TRAIN_LOG_COLUMNS]
     log_file.parent.mkdir(parents=True, exist_ok=True)

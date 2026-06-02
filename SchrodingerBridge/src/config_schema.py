@@ -25,6 +25,7 @@ INFERENCE_DEFAULTS: dict[str, dict[str, Any]] = {
         "ref_feature_batch_size": 8,
         "target_chunk_size": 1,
         "vae_decode_batch_size": 0,
+        "only_lpips_clip_style": True,
     },
 }
 
@@ -72,12 +73,26 @@ class ModelConfig:
     tokenizer_residual_gain: float = 0.5
     tokenizer_init_std: float = 0.02
     tokenizer_num_atoms: int = 32
+    tokenizer_num_prototypes: int = 4
     tokenizer_atom_temperature: float = 0.25
     tokenizer_field_dropout_p: float = 0.0
     tokenizer_code_l2_norm: bool = False
     tokenizer_code_scale: float = 1.0
     tokenizer_atom_topk: int = 0
     tokenizer_atom_hard_eval: bool = False
+    tokenizer_content_adaptive: bool = False
+    tokenizer_content_hidden_dim: int = 64
+    tokenizer_content_gain: float = 0.5
+    tokenizer_content_stopgrad: bool = True
+    tokenizer_content_style_gate: bool = False
+    tokenizer_content_style_gate_max: float = 2.0
+    tokenizer_content_style_gate_init: float = 1.0
+    tokenizer_latent_init_mode: str = "none"
+    tokenizer_latent_init_cache_dir: str = ""
+    tokenizer_latent_init_scale: float = 0.2
+    tokenizer_latent_init_pool_size: int = 4
+    tokenizer_latent_init_kmeans_iters: int = 8
+    tokenizer_latent_init_sample_limit_per_style: int = 1000
     time_dim: int = 256
     base_dim: int = 64
     lift_channels: int | None = None
@@ -88,6 +103,10 @@ class ModelConfig:
     latent_scale_factor: float = 0.18215
     residual_gain: float = 1.0
     style_spatial_pre_gain_16: float = 0.35
+    style_spatial_mode: str = "class"
+    style_spatial_num_prototypes: int = 4
+    style_spatial_routing_temperature: float = 0.25
+    style_spatial_content_hidden_dim: int = 64
     style_strength_default: float = 1.0
     style_strength_step_curve: str = "linear"
     upsample_mode: str = "nearest"
@@ -157,6 +176,14 @@ class ModelConfig:
     output_moment_match: bool = False
     output_moment_match_eps: float = 1e-6
     output_moment_match_train_only: bool = False
+    execution_budget_mode: str = "none"
+    execution_budget_hidden_dim: int = 64
+    execution_budget_log_span: float = 0.22314355131420976
+    style_injection_mode: str = "none"
+    style_injection_form: str = "mixed"
+    style_injection_hidden_dim: int = 64
+    style_injection_scale: float = 1.0
+    style_injection_gate_log_span: float = 0.4054651081081644
     use_style_blender: bool = False
     use_checkpointing: bool = False
     extra: dict[str, Any] = field(default_factory=dict)
@@ -204,6 +231,7 @@ class BridgeConfig:
     bridge_style_noise_kernel: int = 5
     bridge_style_noise_flat_gamma: float = 0.0
     terminal_swd_weight: float = 0.1
+    terminal_swd_aux_weight: float = 0.0
     w_variance_penalty: float = 0.0
     w_content_anchor: float = 0.0
     w_edge_anchor: float = 0.0
@@ -213,6 +241,8 @@ class BridgeConfig:
     style_contrastive_temperature: float = 0.08
     style_contrastive_pool_size: int = 4
     w_residual_style_direction: float = 0.0
+    w_generated_delta_diversity: float = 0.0
+    generated_delta_diversity_margin: float = 0.0
     w_semantic_entropy: float = 0.0
     semantic_entropy_target: float = 2.2
     w_spectral_amplitude: float = 0.0
@@ -324,6 +354,7 @@ class TrainingConfig:
     grad_clip_norm: float = 1.0
     num_epochs: int = 60
     save_interval: int = 10
+    async_checkpoint_save: bool = False
     log_interval: int = 20
     use_tqdm: bool = True
     use_amp: bool = False
@@ -338,6 +369,8 @@ class TrainingConfig:
     torch_compile_dynamic: bool | None = None
     torch_compile_cache_dir: str = ""
     use_gradient_checkpointing: bool = False
+    profile_modules: bool = False
+    profile_sync_cuda: bool = False
     fused_adamw: bool = True
     resume_checkpoint: str = ""
     resume_optimizer: bool = True
@@ -357,12 +390,15 @@ class TrainingConfig:
     full_eval_ref_feature_batch_size: int | None = None
     full_eval_target_chunk_size: int | None = None
     full_eval_vae_decode_batch_size: int | None = None
+    full_eval_only_lpips_clip_style: bool | None = None
+    full_eval_each_epoch: bool = False
+    full_eval_defer_until_training_end: bool = False
+    full_eval_force_regen: bool = False
+    full_eval_profile_timing: bool = False
     test_image_dir: str = "../style_data/overfit50"
     full_eval_cache_dir: str = "../eval_cache"
-    full_eval_image_classifier_path: str = "../eval_cache/eval_style_image_classifier.pt"
     full_eval_clip_hf_cache_dir: str = "../eval_cache/hf"
     full_eval_clip_backend: str = "hf"
-    full_eval_classifier_only: bool = False
     full_eval_disable_lpips: bool = False
     full_eval_enable_art_fid: bool = False
     full_eval_enable_kid: bool = False
@@ -402,8 +438,20 @@ class DataConfig:
     target_style_sampling_weights: list[float] | None = None
     pairing_cache_path: str = ""
     pairing_cache_topk: int = 4
+    pairing_cache_active_topk: int = 0
     pairing_cache_sample_mode: str = "uniform_topk"
+    pairing_cache_rank_schedule: str = "fixed"
+    pairing_cache_min_topk: int = 1
+    pairing_cache_curriculum_epochs: int = 0
+    pairing_cache_rank_power: float = 1.0
+    pairing_cache_explore_prob: float = 0.0
+    pairing_cache_explore_topk: int = 0
+    pairing_cache_dual_target_mix: float = 0.0
+    pairing_cache_dual_target_topk: int = 0
+    pairing_cache_aux_target_topk: int = 0
     pairing_cache_cross_only: bool = True
+    latent_cache_mode: str = "off"
+    latent_cache_dir: str = ""
     extra: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -565,6 +613,7 @@ def resolve_full_eval_section(config: dict[str, Any] | ExperimentConfig | None) 
             "ref_feature_batch_size": "full_eval_ref_feature_batch_size",
             "target_chunk_size": "full_eval_target_chunk_size",
             "vae_decode_batch_size": "full_eval_vae_decode_batch_size",
+            "only_lpips_clip_style": "full_eval_only_lpips_clip_style",
         }
         for dst_key, src_key in mapping.items():
             if src_key in training and training.get(src_key) is not None:
@@ -613,6 +662,7 @@ def compact_runtime_config(config: dict[str, Any] | ExperimentConfig | None) -> 
             "full_eval_ref_feature_batch_size": "ref_feature_batch_size",
             "full_eval_target_chunk_size": "target_chunk_size",
             "full_eval_vae_decode_batch_size": "vae_decode_batch_size",
+            "full_eval_only_lpips_clip_style": "only_lpips_clip_style",
         }
         for train_key, default_key in mapping.items():
             if train_key in training and full_eval_defaults.get(default_key) == training.get(train_key):

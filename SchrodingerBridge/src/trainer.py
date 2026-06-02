@@ -3,12 +3,15 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
+import threading
 import time
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
 
 import torch
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
@@ -25,6 +28,80 @@ from utils.training import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _style_cache_name(style_id: int, subdir: str) -> str:
+    safe = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(subdir)).strip("_") or f"style_{style_id}"
+    return f"{style_id:02d}_{safe}.pt"
+
+
+def _convert_4d_tensors_to_channels_last(module: torch.nn.Module) -> torch.nn.Module:
+    """Keep tokenizer/vector parameters intact while using NHWC for conv tensors."""
+    with torch.no_grad():
+        for param in module.parameters():
+            if param.is_floating_point() and param.ndim == 4:
+                param.data = param.data.contiguous(memory_format=torch.channels_last)
+                if param.grad is not None:
+                    param.grad = param.grad.contiguous(memory_format=torch.channels_last)
+        for buffer in module.buffers():
+            if buffer.is_floating_point() and buffer.ndim == 4:
+                buffer.data = buffer.data.contiguous(memory_format=torch.channels_last)
+    return module
+
+
+def _gradient_stats(x: torch.Tensor) -> torch.Tensor:
+    dx = F.pad(x[..., :, 1:] - x[..., :, :-1], (0, 1, 0, 0))
+    dy = F.pad(x[..., 1:, :] - x[..., :-1, :], (0, 0, 0, 1))
+    mag = torch.sqrt(dx.square() + dy.square() + 1e-8)
+    return torch.cat([mag.mean(dim=(2, 3)), mag.std(dim=(2, 3), unbiased=False)], dim=1)
+
+
+def _latent_style_features(latents: torch.Tensor, *, dim: int, pool_size: int) -> torch.Tensor:
+    x = latents.float().contiguous()
+    low = F.avg_pool2d(x, kernel_size=5, stride=1, padding=2)
+    high = x - low
+    pool = max(1, int(pool_size))
+    parts = [
+        x.mean(dim=(2, 3)),
+        x.std(dim=(2, 3), unbiased=False),
+        low.std(dim=(2, 3), unbiased=False),
+        high.std(dim=(2, 3), unbiased=False),
+        high.abs().mean(dim=(2, 3)),
+        _gradient_stats(x),
+        F.adaptive_avg_pool2d(low, (pool, pool)).flatten(1),
+        F.adaptive_avg_pool2d(high.abs(), (pool, pool)).flatten(1),
+    ]
+    fft_channels = min(2, int(x.shape[1]))
+    if fft_channels > 0:
+        fft_amp = torch.log(torch.fft.rfft2(high[:, :fft_channels], norm="ortho").abs() + 1e-8)
+        parts.append(F.adaptive_avg_pool2d(fft_amp, (pool, max(1, pool // 2))).flatten(1))
+    feat = torch.cat(parts, dim=1)
+    feat = torch.nan_to_num(feat, nan=0.0, posinf=0.0, neginf=0.0)
+    if feat.shape[1] < dim:
+        feat = F.pad(feat, (0, dim - feat.shape[1]))
+    elif feat.shape[1] > dim:
+        feat = feat[:, :dim]
+    return feat.contiguous()
+
+
+def _kmeans_cpu(features: torch.Tensor, *, num_centers: int, iters: int) -> tuple[torch.Tensor, torch.Tensor]:
+    n = int(features.shape[0])
+    k = max(1, min(int(num_centers), n))
+    if n == 0:
+        raise ValueError("Cannot run k-means on an empty feature matrix")
+    init_idx = torch.linspace(0, n - 1, steps=k).round().long()
+    centers = features.index_select(0, init_idx).clone()
+    assign = torch.zeros(n, dtype=torch.long)
+    for _ in range(max(1, int(iters))):
+        assign = torch.cdist(features, centers, p=2).argmin(dim=1)
+        next_centers = centers.clone()
+        for idx in range(k):
+            mask = assign == idx
+            if bool(mask.any()):
+                next_centers[idx] = features[mask].mean(dim=0)
+        centers = F.normalize(next_centers, p=2, dim=1, eps=1e-8)
+    assign = torch.cdist(features, centers, p=2).argmin(dim=1)
+    return centers, assign
 
 
 class SBTrainer:
@@ -58,8 +135,11 @@ class SBTrainer:
             model_cfg,
             use_checkpointing=bool(train_cfg.get("use_gradient_checkpointing", False)),
         ).to(device)
+        self._maybe_initialize_tokenizer_from_latents()
         if self.channels_last:
-            self.model = self.model.to(memory_format=torch.channels_last)
+            self.model = _convert_4d_tensors_to_channels_last(self.model)
+        setattr(self.model, "profile_modules", bool(train_cfg.get("profile_modules", False)))
+        setattr(self.model, "profile_sync_cuda", bool(train_cfg.get("profile_sync_cuda", False)))
 
         logger.info("Model params: %s", f"{count_parameters(self.model):,}")
 
@@ -86,6 +166,8 @@ class SBTrainer:
         self.use_tqdm = bool(train_cfg.get("use_tqdm", True))
         self.num_epochs = int(train_cfg.get("num_epochs", 60))
         self.save_interval = max(1, int(train_cfg.get("save_interval", 10)))
+        self.async_checkpoint_save = bool(train_cfg.get("async_checkpoint_save", False))
+        self._checkpoint_threads: list[threading.Thread] = []
         self.numeric_debug = bool(train_cfg.get("numeric_debug", False))
         self.numeric_debug_interval = max(1, int(train_cfg.get("numeric_debug_interval", 10)))
         self.numeric_debug_halt_on_nonfinite = bool(train_cfg.get("numeric_debug_halt_on_nonfinite", True))
@@ -113,6 +195,125 @@ class SBTrainer:
         self._configure_freeze_mode()
         self._configure_distillation()
         self._configure_compile()
+
+    def _maybe_initialize_tokenizer_from_latents(self) -> None:
+        model_cfg = self.config.model
+        mode = str(getattr(model_cfg, "tokenizer_latent_init_mode", "none") or "none").strip().lower()
+        if mode in {"", "none", "off", "false", "0"}:
+            return
+        tokenizer = getattr(self.model, "style_tokenizer", None)
+        if tokenizer is None:
+            logger.warning("tokenizer_latent_init_mode=%s requested, but model has no style_tokenizer.", mode)
+            return
+        data_cfg = self.config.data
+        style_subdirs = list(data_cfg.style_subdirs)
+        cache_dir = str(getattr(model_cfg, "tokenizer_latent_init_cache_dir", "") or "").strip()
+        latent_cache_dir = Path(cache_dir) if cache_dir else Path(data_cfg.latent_cache_dir or "") / "packed"
+        if not cache_dir:
+            latent_cache_dir = (Path(data_cfg.data_root) / ".latent_cache" / "packed") if not data_cfg.latent_cache_dir else (Path(data_cfg.latent_cache_dir) / "packed")
+        elif (latent_cache_dir / "packed").exists():
+            latent_cache_dir = latent_cache_dir / "packed"
+        if not latent_cache_dir.exists():
+            logger.warning("Skipping tokenizer latent init: packed cache missing at %s", latent_cache_dir)
+            return
+        try:
+            features_by_style = self._load_latent_init_features(latent_cache_dir, style_subdirs)
+            self._apply_tokenizer_latent_init(tokenizer, features_by_style)
+        except Exception:
+            logger.exception("Tokenizer latent init failed; continuing with random tokenizer initialization.")
+
+    def _load_latent_init_features(self, packed_dir: Path, style_subdirs: list[str]) -> list[torch.Tensor]:
+        dim = int(self.config.model.style_dim)
+        pool_size = int(getattr(self.config.model, "tokenizer_latent_init_pool_size", 4))
+        sample_limit = int(getattr(self.config.model, "tokenizer_latent_init_sample_limit_per_style", 1000))
+        features: list[torch.Tensor] = []
+        for style_id, subdir in enumerate(style_subdirs):
+            path = packed_dir / _style_cache_name(style_id, subdir)
+            payload = torch.load(path, map_location="cpu", weights_only=False)
+            if not isinstance(payload, dict) or not torch.is_tensor(payload.get("latents")):
+                raise ValueError(f"Invalid packed latent cache: {path}")
+            latents = payload["latents"].float()
+            if sample_limit > 0 and latents.shape[0] > sample_limit:
+                idx = torch.linspace(0, latents.shape[0] - 1, steps=sample_limit).round().long()
+                latents = latents.index_select(0, idx)
+            features.append(_latent_style_features(latents, dim=dim, pool_size=pool_size))
+        all_features = torch.cat(features, dim=0)
+        mean = all_features.mean(dim=0, keepdim=True)
+        std = all_features.std(dim=0, keepdim=True, unbiased=False).clamp_min(1e-6)
+        return [F.normalize((feat - mean) / std, p=2, dim=1, eps=1e-8) for feat in features]
+
+    def _apply_tokenizer_latent_init(self, tokenizer: torch.nn.Module, features_by_style: list[torch.Tensor]) -> None:
+        projection_mode = str(getattr(tokenizer, "projection_mode", "")).strip().lower()
+        style_dim = int(getattr(tokenizer, "style_dim", self.config.model.style_dim))
+        scale = float(getattr(self.config.model, "tokenizer_latent_init_scale", 0.2)) * (style_dim ** 0.5)
+        kmeans_iters = int(getattr(self.config.model, "tokenizer_latent_init_kmeans_iters", 8))
+        style_means = torch.stack([F.normalize(feat.mean(dim=0, keepdim=True), p=2, dim=1, eps=1e-8).squeeze(0) for feat in features_by_style])
+        style_means = style_means * scale
+        device = next(tokenizer.parameters()).device
+        dtype = next(tokenizer.parameters()).dtype
+
+        with torch.no_grad():
+            if projection_mode == "class_prototypes" and hasattr(tokenizer, "class_prototypes"):
+                k = int(getattr(tokenizer, "num_prototypes", 1))
+                proto_rows: list[torch.Tensor] = []
+                logits_rows: list[torch.Tensor] = []
+                for feat in features_by_style:
+                    centers, assign = _kmeans_cpu(feat, num_centers=k, iters=kmeans_iters)
+                    if centers.shape[0] < k:
+                        centers = torch.cat([centers, centers[-1:].expand(k - centers.shape[0], -1)], dim=0)
+                    counts = torch.bincount(assign, minlength=k).float().clamp_min(1.0)
+                    probs = counts / counts.sum()
+                    proto_rows.append(centers[:k] * scale)
+                    logits_rows.append(torch.log(probs) * float(getattr(tokenizer, "atom_temperature", 1.0)))
+                tokenizer.class_prototypes.copy_(torch.stack(proto_rows).to(device=device, dtype=dtype))
+                tokenizer.prototype_logits.weight.copy_(torch.stack(logits_rows).to(device=device, dtype=dtype))
+                logger.info("Initialized class_prototypes tokenizer from VAE latent statistics.")
+                return
+
+            if projection_mode in {"concept_atoms", "direct_atom_residual", "global_vq"} and hasattr(tokenizer, "concept_atoms"):
+                atom_count = int(getattr(tokenizer, "num_atoms", tokenizer.concept_atoms.shape[0]))
+                all_features = torch.cat(features_by_style, dim=0)
+                atoms, _ = _kmeans_cpu(all_features, num_centers=atom_count, iters=kmeans_iters)
+                if atoms.shape[0] < atom_count:
+                    atoms = torch.cat([atoms, atoms[-1:].expand(atom_count - atoms.shape[0], -1)], dim=0)
+                atoms = atoms[:atom_count] * scale
+                dist = torch.cdist(F.normalize(style_means / max(scale, 1e-8), p=2, dim=1), F.normalize(atoms / max(scale, 1e-8), p=2, dim=1), p=2)
+                logits = -dist * float(getattr(tokenizer, "atom_temperature", 1.0))
+                weights = F.softmax(logits / max(float(getattr(tokenizer, "atom_temperature", 1.0)), 1e-6), dim=-1)
+                tokenizer.concept_atoms.copy_(atoms.to(device=device, dtype=dtype))
+                tokenizer.atom_logits.weight.copy_(logits.to(device=device, dtype=dtype))
+                if projection_mode == "direct_atom_residual" and hasattr(tokenizer, "direct_code"):
+                    residual = weights @ atoms
+                    direct = style_means - float(getattr(tokenizer, "residual_gain", 0.0)) * residual
+                    tokenizer.direct_code.weight.copy_(direct.to(device=device, dtype=dtype))
+                logger.info("Initialized %s tokenizer from VAE latent statistics.", projection_mode)
+                return
+
+            if projection_mode == "direct_code" and hasattr(tokenizer, "direct_code"):
+                tokenizer.direct_code.weight.copy_(style_means.to(device=device, dtype=dtype))
+                logger.info("Initialized direct_code tokenizer from VAE latent statistics.")
+                return
+
+        logger.warning("tokenizer_latent_init_mode requested but unsupported for projection_mode=%s.", projection_mode)
+
+    def _snapshot_for_checkpoint(self, value):
+        if torch.is_tensor(value):
+            return value.detach().cpu().clone()
+        if isinstance(value, dict):
+            return {key: self._snapshot_for_checkpoint(val) for key, val in value.items()}
+        if isinstance(value, list):
+            return [self._snapshot_for_checkpoint(val) for val in value]
+        if isinstance(value, tuple):
+            return tuple(self._snapshot_for_checkpoint(val) for val in value)
+        return value
+
+    def _prune_checkpoint_threads(self) -> None:
+        self._checkpoint_threads = [thread for thread in self._checkpoint_threads if thread.is_alive()]
+
+    def wait_for_pending_checkpoints(self) -> None:
+        for thread in self._checkpoint_threads:
+            thread.join()
+        self._checkpoint_threads.clear()
 
     def _configure_compile(self) -> None:
         if not bool(self.train_cfg.get("torch_compile", False)):
@@ -364,9 +565,13 @@ class SBTrainer:
             "lancet_only": "backbone_only",
             "consumer_only": "backbone_only",
             "freeze_tokenizer": "backbone_only",
+            "execution_budget_only": "budget_only",
+            "budget_branch": "budget_only",
+            "style_injection_only": "injection_only",
+            "injection_branch": "injection_only",
         }
         mode = aliases.get(mode, mode)
-        if mode not in {"tokenizer_only", "style_branch", "backbone_only"}:
+        if mode not in {"tokenizer_only", "style_branch", "backbone_only", "budget_only", "injection_only"}:
             raise ValueError(f"Unsupported freeze_mode: {mode}")
 
         for _, param in self.model.named_parameters():
@@ -380,6 +585,30 @@ class SBTrainer:
         if mode == "style_branch":
             self.model.style_spatial_id_16.requires_grad_(True)
             trainable_names.append("style_spatial_id_16")
+        if mode == "budget_only":
+            budget_head = getattr(self.model, "execution_budget_head", None)
+            if budget_head is None:
+                raise RuntimeError("freeze_mode=budget_only requires model.execution_budget_mode != 'none'.")
+            for name, param in budget_head.named_parameters():
+                param.requires_grad_(True)
+                trainable_names.append(f"execution_budget_head.{name}")
+        if mode == "injection_only":
+            injectors = [
+                ("body_style_injector", getattr(self.model, "body_style_injector", None)),
+                ("decoder_style_injector", getattr(self.model, "decoder_style_injector", None)),
+                ("body_style_carrier", getattr(self.model, "body_style_carrier", None)),
+                ("body_content_gate", getattr(self.model, "body_content_gate", None)),
+                ("decoder_style_carrier", getattr(self.model, "decoder_style_carrier", None)),
+                ("decoder_content_gate", getattr(self.model, "decoder_content_gate", None)),
+            ]
+            for prefix, module in injectors:
+                if module is None:
+                    continue
+                for name, param in module.named_parameters():
+                    param.requires_grad_(True)
+                    trainable_names.append(f"{prefix}.{name}")
+            if not trainable_names:
+                raise RuntimeError("freeze_mode=injection_only requires model.style_injection_mode != 'none'.")
         if mode == "backbone_only":
             for name, param in self.model.named_parameters():
                 if name.startswith("style_tokenizer."):
@@ -419,7 +648,7 @@ class SBTrainer:
             use_checkpointing=False,
         ).to(self.device)
         if self.channels_last:
-            teacher = teacher.to(memory_format=torch.channels_last)
+            teacher = _convert_4d_tensors_to_channels_last(teacher)
         teacher.load_state_dict(teacher_state, strict=True)
         teacher.eval()
         for param in teacher.parameters():
@@ -471,6 +700,8 @@ class SBTrainer:
 
     def train_epoch(self, dataloader: DataLoader, epoch: int) -> Dict[str, float]:
         self.model.train()
+        if self.device.type == "cuda":
+            torch.cuda.reset_peak_memory_stats(self.device)
         epoch_start = time.time()
         metric_accum: Dict[str, torch.Tensor] = {}
         num_batches = 0
@@ -506,6 +737,8 @@ class SBTrainer:
             target_style = batch["target_style"]
             target_style_id = batch["target_style_id"]
             source_style_id = batch.get("source_style_id")
+            aux_target_style = batch.get("aux_target_style")
+            aux_target_valid = batch.get("aux_target_valid")
 
             t0 = time.perf_counter()
             if self.device.type == "cuda":
@@ -529,10 +762,17 @@ class SBTrainer:
                         target_style=target_style,
                         target_style_id=target_style_id,
                         source_style_id=source_style_id,
+                        aux_target_style=aux_target_style,
+                        aux_target_valid=aux_target_valid,
                     )
                 loss = loss_dict["loss"]
             forward_time_total += max(0.0, time.perf_counter() - t0)
-            if self.numeric_debug and (step_idx == 1 or step_idx % self.numeric_debug_interval == 0 or not torch.isfinite(loss.detach()).item()):
+            should_debug_step = self.numeric_debug and (
+                step_idx == 1 or step_idx % self.numeric_debug_interval == 0
+            )
+            loss_is_finite = True
+            if should_debug_step:
+                loss_is_finite = bool(torch.isfinite(loss.detach()).item())
                 self._write_numeric_debug(
                     epoch=epoch,
                     step=step_idx,
@@ -541,7 +781,7 @@ class SBTrainer:
                     target_style_id=target_style_id,
                     source_style_id=source_style_id,
                 )
-            if not torch.isfinite(loss.detach()).item():
+            if should_debug_step and not loss_is_finite:
                 msg = f"Non-finite loss detected at epoch={epoch} step={step_idx}"
                 logger.error(msg)
                 if self.numeric_debug_halt_on_nonfinite:
@@ -550,9 +790,11 @@ class SBTrainer:
             t0 = time.perf_counter()
             (loss / self.accumulation_steps).backward()
             backward_time_total += max(0.0, time.perf_counter() - t0)
-            grad_report = self._grad_stats()
-            has_nonfinite_grad = bool(grad_report["first_nonfinite_grad_name"] is not None)
-            if self.numeric_debug and (step_idx == 1 or step_idx % self.numeric_debug_interval == 0 or has_nonfinite_grad):
+            grad_report = None
+            has_nonfinite_grad = False
+            if should_debug_step:
+                grad_report = self._grad_stats()
+                has_nonfinite_grad = bool(grad_report["first_nonfinite_grad_name"] is not None)
                 self._write_numeric_debug(
                     epoch=epoch,
                     step=step_idx,
@@ -600,7 +842,10 @@ class SBTrainer:
             num_batches += 1
 
             compute_time_total = forward_time_total + backward_time_total + optimizer_time_total
-            if self.use_tqdm:
+            progress_interval = max(1, self.log_interval)
+            if self.use_tqdm and (
+                step_idx == 1 or step_idx % progress_interval == 0 or step_idx == len(dataloader)
+            ):
                 progress.set_postfix(
                     loss=f"{_avg('loss'):.4f}",
                     flow=f"{_avg('flow'):.4f}" if not self.distill_enabled else f"{_avg('distill_velocity'):.4f}",
@@ -643,6 +888,8 @@ class SBTrainer:
         metrics.setdefault("distill_endpoint", 0.0)
         metrics.setdefault("ot_cost", 0.0)
         metrics.setdefault("terminal_swd", 0.0)
+        metrics.setdefault("terminal_swd_aux", 0.0)
+        metrics.setdefault("aux_target_ratio", 0.0)
         metrics.setdefault("plan_entropy", 0.0)
         metrics.setdefault("bridge_sigma", 0.0)
         metrics.setdefault("identity_ratio", 0.0)
@@ -660,12 +907,19 @@ class SBTrainer:
         metrics["epoch_time_sec"] = epoch_time
         metrics["samples_seen"] = float(samples_seen)
         metrics["samples_per_sec"] = samples_per_sec
+        if self.device.type == "cuda":
+            metrics["cuda_peak_allocated_gb"] = float(torch.cuda.max_memory_allocated(self.device) / (1024**3))
+            metrics["cuda_peak_reserved_gb"] = float(torch.cuda.max_memory_reserved(self.device) / (1024**3))
+        else:
+            metrics["cuda_peak_allocated_gb"] = 0.0
+            metrics["cuda_peak_reserved_gb"] = 0.0
         return metrics
 
     def log_epoch(self, epoch: int, metrics: Dict[str, float]) -> None:
         append_training_log(self.log_file, metrics, epoch)
 
     def save_checkpoint(self, epoch: int, metrics: Dict[str, float]) -> Path:
+        self._prune_checkpoint_threads()
         path = self.checkpoint_dir / f"epoch_{epoch:04d}.pt"
         model_for_state = unwrap_compiled_model(self.model)
         payload = {
@@ -677,6 +931,13 @@ class SBTrainer:
             "config": self.serialized_config,
             "metrics": metrics,
         }
-        torch.save(payload, path)
-        logger.info("Saved checkpoint: %s", path)
+        if self.async_checkpoint_save:
+            payload = self._snapshot_for_checkpoint(payload)
+            thread = threading.Thread(target=torch.save, args=(payload, path), daemon=False)
+            thread.start()
+            self._checkpoint_threads.append(thread)
+            logger.info("Scheduled async checkpoint save: %s", path)
+        else:
+            torch.save(payload, path)
+            logger.info("Saved checkpoint: %s", path)
         return path

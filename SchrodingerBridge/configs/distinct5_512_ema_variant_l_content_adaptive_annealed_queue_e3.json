@@ -1,0 +1,18 @@
+{
+  "_base": "distinct5_512_ema_variant_f_annealed_prototype_ot_queue_e3.json",
+  "model": {
+    "tokenizer_content_adaptive": true,
+    "tokenizer_content_hidden_dim": 64,
+    "tokenizer_content_gain": 0.5,
+    "tokenizer_content_stopgrad": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/distinct5_512_ema_variant_l_content_adaptive_annealed_queue_e3"
+  },
+  "ablation": {
+    "name": "distinct5_512_ema_variant_l_content_adaptive_annealed_queue_e3",
+    "axis": "distinct5_512_representation_speed",
+    "stage": "variant_l",
+    "notes": "Variant F plus content-adaptive VQ atom logits. Tests whether content-adaptive style atom routing can keep F's LPIPS-preserving easy-to-hard internal VAE-latent queue curriculum while improving style. No DINO, CLIP supervision, classifier, or external semantic features."
+  }
+}

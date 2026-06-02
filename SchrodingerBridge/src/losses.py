@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import Dict
 
 import torch
@@ -73,6 +74,7 @@ class OTFlowMatchingObjective:
             self.bridge_style_noise_kernel += 1
         self.bridge_style_noise_flat_gamma = max(0.0, float(bridge_cfg.bridge_style_noise_flat_gamma))
         self.terminal_swd_weight = max(0.0, float(bridge_cfg.terminal_swd_weight))
+        self.terminal_swd_aux_weight = max(0.0, float(bridge_cfg.terminal_swd_aux_weight))
         self.w_variance_penalty = max(0.0, float(bridge_cfg.w_variance_penalty))
         self.w_content_anchor = max(0.0, float(bridge_cfg.w_content_anchor))
         self.w_edge_anchor = max(0.0, float(bridge_cfg.w_edge_anchor))
@@ -82,6 +84,8 @@ class OTFlowMatchingObjective:
         self.style_contrastive_temperature = max(1e-4, float(bridge_cfg.style_contrastive_temperature))
         self.style_contrastive_pool_size = max(1, int(bridge_cfg.style_contrastive_pool_size))
         self.w_residual_style_direction = max(0.0, float(bridge_cfg.w_residual_style_direction))
+        self.w_generated_delta_diversity = max(0.0, float(bridge_cfg.w_generated_delta_diversity))
+        self.generated_delta_diversity_margin = float(bridge_cfg.generated_delta_diversity_margin)
         self.w_semantic_entropy = max(0.0, float(bridge_cfg.w_semantic_entropy))
         self.semantic_entropy_target = max(0.0, float(bridge_cfg.semantic_entropy_target))
         self.w_spectral_amplitude = max(0.0, float(bridge_cfg.w_spectral_amplitude))
@@ -152,6 +156,43 @@ class OTFlowMatchingObjective:
         distill_cfg = train_cfg.distill
         self.distill_velocity_weight = max(0.0, float(distill_cfg.get("velocity_weight", 1.0)))
         self.distill_endpoint_weight = max(0.0, float(distill_cfg.get("endpoint_weight", 0.0)))
+        self.profile_modules = bool(train_cfg.profile_modules)
+        self.profile_sync_cuda = bool(train_cfg.profile_sync_cuda)
+        self.last_profile: dict[str, float] = {}
+
+    def _profile_start(self, ref: torch.Tensor) -> float:
+        if not self.profile_modules:
+            return 0.0
+        if self.profile_sync_cuda and ref.device.type == "cuda":
+            torch.cuda.synchronize(ref.device)
+        return time.perf_counter()
+
+    def _profile_end(self, name: str, start: float, ref: torch.Tensor) -> None:
+        if not self.profile_modules:
+            return
+        if self.profile_sync_cuda and ref.device.type == "cuda":
+            torch.cuda.synchronize(ref.device)
+        self.last_profile[name] = self.last_profile.get(name, 0.0) + max(0.0, time.perf_counter() - start)
+
+    def _profile_metrics(self, ref: torch.Tensor) -> dict[str, torch.Tensor]:
+        if not self.profile_modules:
+            return {}
+        return {
+            f"profile_{name}_sec": ref.new_tensor(float(value), dtype=torch.float32)
+            for name, value in self.last_profile.items()
+        }
+
+    def _model_profile_metrics(self, model: nn.Module, ref: torch.Tensor) -> dict[str, torch.Tensor]:
+        if not self.profile_modules:
+            return {}
+        raw = getattr(model, "last_profile", {})
+        if not isinstance(raw, dict):
+            return {}
+        return {
+            f"profile_{name}_sec": ref.new_tensor(float(value), dtype=torch.float32)
+            for name, value in raw.items()
+            if isinstance(value, (int, float))
+        }
 
     def potential_parameters(self) -> list[nn.Parameter]:
         if self.kantorovich_potential is None:
@@ -541,6 +582,46 @@ class OTFlowMatchingObjective:
         style_vec = style_delta.detach().flatten(1)
         return (1.0 - F.cosine_similarity(pred_vec, style_vec, dim=1, eps=self.normalize_eps)).mean() * self.w_residual_style_direction
 
+    def _generated_delta_diversity_loss(
+        self,
+        pred_velocity: torch.Tensor,
+        target_style_id: torch.Tensor,
+        source_style_id: torch.Tensor | None,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        zero = pred_velocity.new_tensor(0.0, dtype=torch.float32)
+        if self.w_generated_delta_diversity <= 0.0 or pred_velocity.shape[0] < 2:
+            return zero, zero, zero
+
+        target_ids = target_style_id.long().view(-1)
+        active_mask = torch.ones_like(target_ids, dtype=torch.bool)
+        if source_style_id is not None:
+            active_mask = source_style_id.long().view(-1) != target_ids
+        active_idx = torch.nonzero(active_mask, as_tuple=False).flatten()
+        if active_idx.numel() < 2:
+            return zero, zero, zero
+
+        active_targets = target_ids.index_select(0, active_idx)
+        unique_targets, inverse = torch.unique(active_targets, sorted=True, return_inverse=True)
+        num_targets = int(unique_targets.numel())
+        if num_targets < 2:
+            return zero, zero, pred_velocity.new_tensor(float(num_targets), dtype=torch.float32)
+
+        deltas = pred_velocity.float().flatten(1).index_select(0, active_idx)
+        means = deltas.new_zeros((num_targets, deltas.shape[1]))
+        means.index_add_(0, inverse, deltas)
+        counts = torch.bincount(inverse, minlength=num_targets).to(device=deltas.device, dtype=deltas.dtype).clamp_min(1.0)
+        means = means / counts.unsqueeze(1)
+        means = F.normalize(means, p=2, dim=1, eps=self.normalize_eps)
+
+        cosine = means @ means.t()
+        offdiag = ~torch.eye(num_targets, dtype=torch.bool, device=cosine.device)
+        offdiag_cos = cosine[offdiag]
+        if offdiag_cos.numel() == 0:
+            return zero, zero, pred_velocity.new_tensor(float(num_targets), dtype=torch.float32)
+        margin = offdiag_cos.new_tensor(self.generated_delta_diversity_margin)
+        loss = F.relu(offdiag_cos - margin).square().mean() * self.w_generated_delta_diversity
+        return loss, offdiag_cos.mean().detach(), pred_velocity.new_tensor(float(num_targets), dtype=torch.float32)
+
     def _semantic_entropy_loss(self, attn_plan: torch.Tensor | None, content: torch.Tensor) -> torch.Tensor:
         if self.w_semantic_entropy <= 0.0 or attn_plan is None:
             return content.new_tensor(0.0, dtype=torch.float32)
@@ -679,10 +760,12 @@ class OTFlowMatchingObjective:
         target_style_id: torch.Tensor,
         semantic_k: torch.Tensor | None = None,
         content: torch.Tensor | None = None,
+        active_mask: torch.Tensor | None = None,
     ) -> torch.Tensor | None:
-        if self.terminal_swd_weight <= 0.0:
-            return None
         active = self._terminal_active_indices(pred_endpoint, source_style_id, target_style_id)
+        if active_mask is not None and active.numel() > 0:
+            mask = active_mask.to(device=pred_endpoint.device).view(-1).bool()
+            active = active.index_select(0, torch.nonzero(mask.index_select(0, active), as_tuple=False).flatten())
         if active.numel() == 0:
             return None
         pred_active = pred_endpoint.index_select(0, active)
@@ -780,11 +863,16 @@ class OTFlowMatchingObjective:
         target_style: torch.Tensor,
         target_style_id: torch.Tensor,
         source_style_id: torch.Tensor | None = None,
+        aux_target_style: torch.Tensor | None = None,
+        aux_target_valid: torch.Tensor | None = None,
     ) -> tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor], Dict[str, torch.Tensor | None]]:
+        self.last_profile = {}
         t_fixed = content.new_ones(content.shape[0])
         content_for_model = content
         target_for_loss = self._retinex_target(content, target_style)
+        t_profile = self._profile_start(content)
         pred_velocity = model(content_for_model, t=t_fixed, style_id=target_style_id)
+        self._profile_end("model_forward", t_profile, content)
         pred_velocity = self._sanitize_tensor(pred_velocity, clamp_value=self.velocity_clamp)
         pred_endpoint = self._sanitize_tensor(content_for_model + pred_velocity, clamp_value=self.endpoint_clamp)
         attn_plan = model.last_semantic_attn
@@ -796,6 +884,7 @@ class OTFlowMatchingObjective:
         plan_entropy = content.new_tensor(0.0, dtype=torch.float32)
 
         if self.w_flow > 0.0:
+            t_profile = self._profile_start(content)
             if content.device.type == "cuda":
                 autocast_ctx = torch.amp.autocast("cuda", enabled=False)
             else:
@@ -808,28 +897,57 @@ class OTFlowMatchingObjective:
                         target_style_id,
                         source_style_id,
                     )
+            self._profile_end("ot_match", t_profile, content)
             flow_loss = self._loss(pred_endpoint, matched_target) * self.w_flow
             total_loss = total_loss + flow_loss
 
-        kinetic_loss = (pred_velocity.float() ** 2).mean() * self.w_kinetic if self.w_kinetic > 0.0 else content.new_tensor(0.0)
-        anisotropic_kinetic = self._anisotropic_kinetic_loss(pred_velocity, content)
-        stokes_viscous = self._stokes_viscous_loss(pred_velocity)
-        phase_separation = self._phase_separation_loss(pred_endpoint)
-        fourier_phase_lock = self._fourier_phase_lock_loss(pred_endpoint, content)
-        head_tax = self._raw_head_tax_loss(model, content)
+        t_profile = self._profile_start(content)
+        zero = content.new_tensor(0.0, dtype=torch.float32)
+        kinetic_loss = (pred_velocity.float() ** 2).mean() * self.w_kinetic if self.w_kinetic > 0.0 else zero
+        anisotropic_kinetic = self._anisotropic_kinetic_loss(pred_velocity, content) if self.w_anisotropic_kinetic > 0.0 else zero
+        stokes_viscous = self._stokes_viscous_loss(pred_velocity) if self.w_stokes_viscous > 0.0 else zero
+        phase_separation = self._phase_separation_loss(pred_endpoint) if self.w_phase_separation > 0.0 else zero
+        fourier_phase_lock = self._fourier_phase_lock_loss(pred_endpoint, content) if self.w_fourier_phase_lock > 0.0 else zero
+        head_tax = (
+            self._raw_head_tax_loss(model, content)
+            if (self.w_head_color_tv + self.w_head_color_energy + self.w_head_amp_energy + self.w_warp_curl_reward) > 0.0
+            else zero
+        )
         total_loss = total_loss + kinetic_loss
 
-        content_anchor = self._content_anchor_loss(pred_endpoint, content)
-        edge_anchor = self._edge_anchor_loss(pred_endpoint, content)
-        style_energy_floor = self._style_energy_floor_loss(pred_endpoint, target_for_loss)
-        lowfreq_velocity = self._lowfreq_velocity_loss(pred_velocity)
-        style_contrastive = self._style_contrastive_loss(pred_endpoint, target_for_loss, target_style_id)
-        residual_style_direction = self._residual_style_direction_loss(pred_endpoint, content, target_for_loss)
-        semantic_entropy = self._semantic_entropy_loss(attn_plan, content)
-        spectral_amplitude = self._spectral_amplitude_loss(pred_endpoint, target_for_loss)
-        divergence = self._divergence_penalty(content_for_model, pred_velocity)
-        feature_riemannian = self._feature_riemannian_loss(model, content, pred_velocity)
-        kantorovich = self._kantorovich_generator_loss(pred_endpoint, target_for_loss)
+        content_anchor = self._content_anchor_loss(pred_endpoint, content) if self.w_content_anchor > 0.0 else zero
+        edge_anchor = self._edge_anchor_loss(pred_endpoint, content) if self.w_edge_anchor > 0.0 else zero
+        style_energy_floor = self._style_energy_floor_loss(pred_endpoint, target_for_loss) if self.w_style_energy_floor > 0.0 else zero
+        lowfreq_velocity = self._lowfreq_velocity_loss(pred_velocity) if self.w_lowfreq_velocity > 0.0 else zero
+        style_contrastive = (
+            self._style_contrastive_loss(pred_endpoint, target_for_loss, target_style_id)
+            if self.w_style_contrastive > 0.0
+            else zero
+        )
+        residual_style_direction = (
+            self._residual_style_direction_loss(pred_endpoint, content, target_for_loss)
+            if self.w_residual_style_direction > 0.0
+            else zero
+        )
+        generated_delta_diversity, generated_delta_mean_offdiag_cos, generated_delta_active_styles = (
+            self._generated_delta_diversity_loss(pred_velocity, target_style_id, source_style_id)
+            if self.w_generated_delta_diversity > 0.0
+            else (zero, zero, zero)
+        )
+        semantic_entropy = self._semantic_entropy_loss(attn_plan, content) if self.w_semantic_entropy > 0.0 else zero
+        spectral_amplitude = (
+            self._spectral_amplitude_loss(pred_endpoint, target_for_loss)
+            if self.w_spectral_amplitude > 0.0
+            else zero
+        )
+        divergence = self._divergence_penalty(content_for_model, pred_velocity) if self.w_divergence > 0.0 else zero
+        feature_riemannian = (
+            self._feature_riemannian_loss(model, content, pred_velocity)
+            if self.w_feature_riemannian > 0.0
+            else zero
+        )
+        kantorovich = self._kantorovich_generator_loss(pred_endpoint, target_for_loss) if self.w_kantorovich > 0.0 else zero
+        self._profile_end("aux_loss", t_profile, content)
         total_loss = (
             total_loss
             + content_anchor
@@ -838,6 +956,7 @@ class OTFlowMatchingObjective:
             + lowfreq_velocity
             + style_contrastive
             + residual_style_direction
+            + generated_delta_diversity
             + semantic_entropy
             + spectral_amplitude
             + divergence
@@ -850,18 +969,44 @@ class OTFlowMatchingObjective:
             + head_tax
         )
 
-        terminal_swd = self._calc_terminal_swd_loss(
-            pred_endpoint,
-            target_for_loss,
-            source_style_id,
-            target_style_id,
-            semantic_k=semantic_k,
-            content=content,
-        )
+        terminal_swd = None
+        if self.terminal_swd_weight > 0.0:
+            t_profile = self._profile_start(content)
+            terminal_swd = self._calc_terminal_swd_loss(
+                pred_endpoint,
+                target_for_loss,
+                source_style_id,
+                target_style_id,
+                semantic_k=semantic_k,
+                content=content,
+            )
+            self._profile_end("terminal_swd", t_profile, content)
         terminal_loss = content.new_tensor(0.0, dtype=torch.float32)
         if terminal_swd is not None:
             terminal_loss = terminal_swd * self.terminal_swd_weight
             total_loss = total_loss + terminal_loss
+        terminal_aux_loss = content.new_tensor(0.0, dtype=torch.float32)
+        aux_target_ratio = content.new_tensor(0.0, dtype=torch.float32)
+        if self.terminal_swd_aux_weight > 0.0 and aux_target_style is not None:
+            aux_target_for_loss = self._retinex_target(content, aux_target_style)
+            aux_mask = None
+            if aux_target_valid is not None:
+                aux_mask = aux_target_valid.to(device=content.device).view(-1) > 0.5
+                aux_target_ratio = aux_mask.float().mean().detach()
+            else:
+                aux_target_ratio = content.new_tensor(1.0, dtype=torch.float32)
+            terminal_aux_swd = self._calc_terminal_swd_loss(
+                pred_endpoint,
+                aux_target_for_loss,
+                source_style_id,
+                target_style_id,
+                semantic_k=semantic_k,
+                content=content,
+                active_mask=aux_mask,
+            )
+            if terminal_aux_swd is not None:
+                terminal_aux_loss = terminal_aux_swd * self.terminal_swd_aux_weight
+                total_loss = total_loss + terminal_aux_loss
 
         metrics: Dict[str, torch.Tensor] = {
             "loss": total_loss,
@@ -873,12 +1018,17 @@ class OTFlowMatchingObjective:
             "fourier_phase_lock": fourier_phase_lock.detach(),
             "head_tax": head_tax.detach(),
             "terminal_swd": terminal_loss.detach(),
+            "terminal_swd_aux": terminal_aux_loss.detach(),
+            "aux_target_ratio": aux_target_ratio.detach(),
             "content_anchor": content_anchor.detach(),
             "edge_anchor": edge_anchor.detach(),
             "style_energy_floor": style_energy_floor.detach(),
             "lowfreq_velocity": lowfreq_velocity.detach(),
             "style_contrastive": style_contrastive.detach(),
             "residual_style_direction": residual_style_direction.detach(),
+            "generated_delta_diversity": generated_delta_diversity.detach(),
+            "generated_delta_mean_offdiag_cos": generated_delta_mean_offdiag_cos.detach(),
+            "generated_delta_active_styles": generated_delta_active_styles.detach(),
             "semantic_entropy": semantic_entropy.detach(),
             "spectral_amplitude": spectral_amplitude.detach(),
             "divergence": divergence.detach(),
@@ -895,6 +1045,8 @@ class OTFlowMatchingObjective:
             "semantic_attn_mean": attn_plan.mean().detach() if attn_plan is not None else content.new_tensor(0.0),
             "semantic_k_abs": semantic_k.abs().mean().detach() if semantic_k is not None else content.new_tensor(0.0),
         }
+        metrics.update(self._profile_metrics(content))
+        metrics.update(self._model_profile_metrics(model, content))
         if source_style_id is not None:
             id_mask = source_style_id.long() == target_style_id.long()
             metrics["identity_ratio"] = id_mask.float().mean().detach()
@@ -908,12 +1060,14 @@ class OTFlowMatchingObjective:
             "fourier_phase_lock": fourier_phase_lock,
             "head_tax": head_tax,
             "terminal_swd": terminal_loss,
+            "terminal_swd_aux": terminal_aux_loss,
             "content_anchor": content_anchor,
             "edge_anchor": edge_anchor,
             "style_energy_floor": style_energy_floor,
             "lowfreq_velocity": lowfreq_velocity,
             "style_contrastive": style_contrastive,
             "residual_style_direction": residual_style_direction,
+            "generated_delta_diversity": generated_delta_diversity,
             "semantic_entropy": semantic_entropy,
             "spectral_amplitude": spectral_amplitude,
             "divergence": divergence,
@@ -938,6 +1092,8 @@ class OTFlowMatchingObjective:
         target_style: torch.Tensor,
         target_style_id: torch.Tensor,
         source_style_id: torch.Tensor | None = None,
+        aux_target_style: torch.Tensor | None = None,
+        aux_target_valid: torch.Tensor | None = None,
     ) -> Dict[str, torch.Tensor]:
         metrics, _, _ = self._compute_omf_details(
             model,
@@ -945,6 +1101,8 @@ class OTFlowMatchingObjective:
             target_style=target_style,
             target_style_id=target_style_id,
             source_style_id=source_style_id,
+            aux_target_style=aux_target_style,
+            aux_target_valid=aux_target_valid,
         )
         return metrics
 
@@ -956,6 +1114,8 @@ class OTFlowMatchingObjective:
         target_style: torch.Tensor,
         target_style_id: torch.Tensor,
         source_style_id: torch.Tensor | None = None,
+        aux_target_style: torch.Tensor | None = None,
+        aux_target_valid: torch.Tensor | None = None,
     ) -> Dict[str, torch.Tensor]:
         if self.objective_mode == "omf":
             return self._compute_omf(
@@ -964,8 +1124,12 @@ class OTFlowMatchingObjective:
                 target_style=target_style,
                 target_style_id=target_style_id,
                 source_style_id=source_style_id,
+                aux_target_style=aux_target_style,
+                aux_target_valid=aux_target_valid,
             )
 
+        self.last_profile = {}
+        t_profile = self._profile_start(content)
         if content.device.type == "cuda":
             autocast_ctx = torch.amp.autocast("cuda", enabled=False)
         else:
@@ -980,17 +1144,22 @@ class OTFlowMatchingObjective:
                 )
                 if self.retinex_target_blend > 0.0:
                     matched_target = self._retinex_target(content, matched_target)
+        self._profile_end("ot_match", t_profile, content)
 
         t = self._sample_t(content)
         x_t, target_velocity = self._bridge_state_and_velocity(content=content, matched_target=matched_target, t=t)
         if self.sb_noise_epsilon > 0.0:
             bridge_gate = torch.sqrt((t.float() * (1.0 - t.float())).clamp_min(0.0)).view(-1, 1, 1, 1)
             x_t = x_t + torch.randn_like(x_t) * (self.sb_noise_epsilon ** 0.5) * bridge_gate
+        t_profile = self._profile_start(content)
         pred_velocity = model(x_t, t=t, style_id=target_style_id)
+        self._profile_end("model_forward", t_profile, content)
         flow_loss = self._loss(pred_velocity, target_velocity)
         total_loss = flow_loss
 
-        kinetic_loss = content.new_tensor(0.0, dtype=torch.float32)
+        t_profile = self._profile_start(content)
+        zero = content.new_tensor(0.0, dtype=torch.float32)
+        kinetic_loss = zero
         if self.w_kinetic > 0.0 and self.kinetic_mode in {"path", "time_gated"}:
             v_sq = pred_velocity.float() ** 2
             if self.kinetic_mode == "time_gated":
@@ -999,12 +1168,22 @@ class OTFlowMatchingObjective:
             else:
                 kinetic_loss = v_sq.mean()
             total_loss = total_loss + kinetic_loss * self.w_kinetic
-        anisotropic_kinetic = self._anisotropic_kinetic_loss(pred_velocity, content)
-        stokes_viscous = self._stokes_viscous_loss(pred_velocity)
-        phase_separation = self._phase_separation_loss(x_t + pred_velocity)
-        fourier_phase_lock = self._fourier_phase_lock_loss(x_t + pred_velocity, content)
-        head_tax = self._raw_head_tax_loss(model, content)
+        anisotropic_kinetic = self._anisotropic_kinetic_loss(pred_velocity, content) if self.w_anisotropic_kinetic > 0.0 else zero
+        endpoint_probe = x_t + pred_velocity if (self.w_phase_separation > 0.0 or self.w_fourier_phase_lock > 0.0) else None
+        stokes_viscous = self._stokes_viscous_loss(pred_velocity) if self.w_stokes_viscous > 0.0 else zero
+        phase_separation = self._phase_separation_loss(endpoint_probe) if endpoint_probe is not None and self.w_phase_separation > 0.0 else zero
+        fourier_phase_lock = (
+            self._fourier_phase_lock_loss(endpoint_probe, content)
+            if endpoint_probe is not None and self.w_fourier_phase_lock > 0.0
+            else zero
+        )
+        head_tax = (
+            self._raw_head_tax_loss(model, content)
+            if (self.w_head_color_tv + self.w_head_color_energy + self.w_head_amp_energy + self.w_warp_curl_reward) > 0.0
+            else zero
+        )
         total_loss = total_loss + anisotropic_kinetic + stokes_viscous + phase_separation + fourier_phase_lock + head_tax
+        self._profile_end("aux_loss", t_profile, content)
 
         curvature_loss = content.new_tensor(0.0, dtype=torch.float32)
         if self.w_curvature > 0.0:
@@ -1014,6 +1193,7 @@ class OTFlowMatchingObjective:
             curvature_loss = self._loss(pred_v2, pred_velocity)
             total_loss = total_loss + curvature_loss * self.w_curvature
 
+        t_profile = self._profile_start(content)
         terminal_swd, endpoint_abs = self._terminal_swd(
             model,
             content=content,
@@ -1021,8 +1201,15 @@ class OTFlowMatchingObjective:
             target_style_id=target_style_id,
             source_style_id=source_style_id,
         )
+        self._profile_end("terminal_swd", t_profile, content)
         if terminal_swd is not None:
             total_loss = total_loss + terminal_swd * self.terminal_swd_weight
+        generated_delta_diversity, generated_delta_mean_offdiag_cos, generated_delta_active_styles = (
+            self._generated_delta_diversity_loss(pred_velocity, target_style_id, source_style_id)
+            if self.w_generated_delta_diversity > 0.0
+            else (zero, zero, zero)
+        )
+        total_loss = total_loss + generated_delta_diversity
 
         metrics: Dict[str, torch.Tensor] = {
             "loss": total_loss,
@@ -1041,7 +1228,12 @@ class OTFlowMatchingObjective:
             "velocity_abs": target_velocity.abs().mean().detach(),
             "endpoint_abs": endpoint_abs.detach(),
             "terminal_swd": terminal_swd.detach() if terminal_swd is not None else content.new_tensor(0.0),
+            "generated_delta_diversity": generated_delta_diversity.detach(),
+            "generated_delta_mean_offdiag_cos": generated_delta_mean_offdiag_cos.detach(),
+            "generated_delta_active_styles": generated_delta_active_styles.detach(),
         }
+        metrics.update(self._profile_metrics(content))
+        metrics.update(self._model_profile_metrics(model, content))
         if source_style_id is not None:
             id_mask = source_style_id.long() == target_style_id.long()
             metrics["identity_ratio"] = id_mask.float().mean().detach()
@@ -1055,6 +1247,8 @@ class OTFlowMatchingObjective:
         target_style: torch.Tensor,
         target_style_id: torch.Tensor,
         source_style_id: torch.Tensor | None = None,
+        aux_target_style: torch.Tensor | None = None,
+        aux_target_valid: torch.Tensor | None = None,
     ) -> Dict[str, Dict[str, torch.Tensor] | Dict[str, torch.Tensor | None]]:
         if self.objective_mode != "omf":
             raise NotImplementedError("compute_debug currently supports objective_mode='omf' only.")
@@ -1064,6 +1258,8 @@ class OTFlowMatchingObjective:
             target_style=target_style,
             target_style_id=target_style_id,
             source_style_id=source_style_id,
+            aux_target_style=aux_target_style,
+            aux_target_valid=aux_target_valid,
         )
         return {"metrics": metrics, "components": components, "state": state}
 

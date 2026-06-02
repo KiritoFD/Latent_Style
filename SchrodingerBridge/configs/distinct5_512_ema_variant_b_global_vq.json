@@ -1,0 +1,24 @@
+{
+  "_base": "distinct5_512_ema_baseline_direct_atom_residual.json",
+  "model": {
+    "tokenizer_projection_mode": "global_vq",
+    "tokenizer_num_atoms": 64,
+    "tokenizer_atom_temperature": 0.18,
+    "tokenizer_atom_topk": 8,
+    "tokenizer_latent_init_mode": "latent_stats",
+    "tokenizer_latent_init_scale": 0.2,
+    "tokenizer_latent_init_pool_size": 4,
+    "tokenizer_latent_init_kmeans_iters": 12,
+    "style_spatial_mode": "vq",
+    "style_spatial_routing_temperature": 0.18
+  },
+  "checkpoint": {
+    "save_dir": "./exp/distinct5_512_ema_variant_b_global_vq_b80"
+  },
+  "ablation": {
+    "name": "distinct5_512_ema_variant_b_global_vq",
+    "axis": "distinct5_512_representation",
+    "stage": "variant_b",
+    "notes": "Global VQ-style codebook. Styles share 64 atoms; each class learns a sparse distribution instead of isolated class-local vectors."
+  }
+}

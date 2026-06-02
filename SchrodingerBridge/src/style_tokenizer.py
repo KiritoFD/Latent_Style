@@ -25,6 +25,7 @@ class FactorizedStyleTokenizer(nn.Module):
         projection_mode: str = "concat",
         residual_gain: float = 0.5,
         num_atoms: int = 32,
+        num_prototypes: int = 4,
         atom_temperature: float = 0.25,
         field_dropout_p: float = 0.0,
         code_l2_norm: bool = False,
@@ -43,6 +44,7 @@ class FactorizedStyleTokenizer(nn.Module):
         self.projection_mode = str(projection_mode).strip().lower()
         self.residual_gain = float(residual_gain)
         self.num_atoms = max(2, int(num_atoms))
+        self.num_prototypes = max(1, int(num_prototypes))
         self.atom_temperature = max(1e-3, float(atom_temperature))
         self.field_dropout_p = max(0.0, min(1.0, float(field_dropout_p)))
         self.code_l2_norm = bool(code_l2_norm)
@@ -56,6 +58,8 @@ class FactorizedStyleTokenizer(nn.Module):
             "direct_code",
             "concept_atoms",
             "direct_atom_residual",
+            "class_prototypes",
+            "global_vq",
         }:
             raise ValueError(f"Unsupported tokenizer projection_mode: {projection_mode}")
 
@@ -71,9 +75,15 @@ class FactorizedStyleTokenizer(nn.Module):
             self.last_debug: dict[str, torch.Tensor] = {}
             self.reset_parameters()
             return
-        if self.projection_mode == "concept_atoms":
+        if self.projection_mode in {"concept_atoms", "global_vq"}:
             self.atom_logits = nn.Embedding(self.num_styles, self.num_atoms)
             self.concept_atoms = nn.Parameter(torch.empty(self.num_atoms, self.style_dim))
+            self.last_debug: dict[str, torch.Tensor] = {}
+            self.reset_parameters()
+            return
+        if self.projection_mode == "class_prototypes":
+            self.prototype_logits = nn.Embedding(self.num_styles, self.num_prototypes)
+            self.class_prototypes = nn.Parameter(torch.empty(self.num_styles, self.num_prototypes, self.style_dim))
             self.last_debug: dict[str, torch.Tensor] = {}
             self.reset_parameters()
             return
@@ -115,8 +125,10 @@ class FactorizedStyleTokenizer(nn.Module):
             return self.direct_code.weight
         if self.projection_mode == "direct_atom_residual":
             return self.direct_code.weight
-        if self.projection_mode == "concept_atoms":
+        if self.projection_mode in {"concept_atoms", "global_vq"}:
             return self.concept_atoms
+        if self.projection_mode == "class_prototypes":
+            return self.class_prototypes
         if self.projection_mode == "carrier_residual":
             return self.carrier.weight
         if self.projection_mode == "concat":
@@ -132,9 +144,13 @@ class FactorizedStyleTokenizer(nn.Module):
             nn.init.normal_(self.atom_logits.weight, mean=0.0, std=self.init_std)
             nn.init.normal_(self.concept_atoms, mean=0.0, std=self.init_std)
             return
-        if self.projection_mode == "concept_atoms":
+        if self.projection_mode in {"concept_atoms", "global_vq"}:
             nn.init.normal_(self.atom_logits.weight, mean=0.0, std=self.init_std)
             nn.init.normal_(self.concept_atoms, mean=0.0, std=self.init_std)
+            return
+        if self.projection_mode == "class_prototypes":
+            nn.init.normal_(self.prototype_logits.weight, mean=0.0, std=self.init_std)
+            nn.init.normal_(self.class_prototypes, mean=0.0, std=self.init_std)
             return
         if self.projection_mode == "carrier_residual":
             nn.init.normal_(self.carrier.weight, mean=0.0, std=self.init_std)
@@ -238,6 +254,22 @@ class FactorizedStyleTokenizer(nn.Module):
                 "atom_table_norm": self.concept_atoms.detach().float().norm(dim=1).mean(),
             }
 
+    def _record_class_prototype_debug(self, style_code: torch.Tensor, weights: torch.Tensor) -> None:
+        with torch.no_grad():
+            code = style_code.detach().float()
+            probs = weights.detach().float()
+            entropy = -(probs * probs.clamp_min(1e-8).log()).sum(dim=1).mean()
+            max_prob = probs.max(dim=1).values.mean()
+            self.last_debug = {
+                "style_code_norm": code.norm(dim=1).mean(),
+                "style_code_abs_mean": code.abs().mean(),
+                "style_code_abs_max": code.abs().amax(),
+                "prototype_entropy": entropy,
+                "prototype_effective_count": torch.exp(entropy),
+                "prototype_max_prob": max_prob,
+                "prototype_table_norm": self.class_prototypes.detach().float().norm(dim=2).mean(),
+            }
+
     def _record_direct_atom_residual_debug(
         self,
         style_code: torch.Tensor,
@@ -287,6 +319,19 @@ class FactorizedStyleTokenizer(nn.Module):
             return weights
         return F.softmax(logits / self.atom_temperature, dim=-1)
 
+    def _class_prototype_weights(self, style_id: torch.Tensor) -> torch.Tensor:
+        logits = self.prototype_logits(style_id)
+        return F.softmax(logits / self.atom_temperature, dim=-1)
+
+    def mixture_weights(self, style_id: torch.Tensor) -> torch.Tensor | None:
+        """Return tokenizer mixture weights when the current mode has atoms."""
+        style_id = style_id.long().view(-1)
+        if self.projection_mode in {"concept_atoms", "direct_atom_residual", "global_vq"}:
+            return self._atom_weights(style_id)
+        if self.projection_mode == "class_prototypes":
+            return self._class_prototype_weights(style_id)
+        return None
+
     def _field_dropout(self, fields: tuple[torch.Tensor, torch.Tensor, torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         if (not self.training) or self.field_dropout_p <= 0.0:
             return fields
@@ -313,10 +358,17 @@ class FactorizedStyleTokenizer(nn.Module):
             style_code = self._postprocess_code(prototype_code + self.residual_gain * atom_residual)
             self._record_direct_atom_residual_debug(style_code, prototype_code, atom_residual, weights)
             return style_code
-        if self.projection_mode == "concept_atoms":
+        if self.projection_mode in {"concept_atoms", "global_vq"}:
             weights = self._atom_weights(style_id)
             style_code = self._postprocess_code(weights @ self.concept_atoms)
             self._record_atom_debug(style_code, weights)
+            return style_code
+        if self.projection_mode == "class_prototypes":
+            weights = self._class_prototype_weights(style_id)
+            prototypes = self.class_prototypes.index_select(0, style_id)
+            style_code = torch.bmm(weights.unsqueeze(1), prototypes).squeeze(1)
+            style_code = self._postprocess_code(style_code)
+            self._record_class_prototype_debug(style_code, weights)
             return style_code
         gates = self.field_gates.to(dtype=self.identity.weight.dtype)
         identity = self.identity(style_id) * gates[0]

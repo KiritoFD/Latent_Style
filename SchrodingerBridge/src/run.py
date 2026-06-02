@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import argparse
 import logging
+import gc
 import os
 import random
+import subprocess
+import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -61,6 +65,34 @@ def _resolve_num_workers(requested: int) -> int:
     return max(2, min(8, cpu_count // 2))
 
 
+def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Path) -> None:
+    train_cfg = config.training
+    out_dir = checkpoint_path.parent / "full_eval" / checkpoint_path.stem
+    eval_script = Path(__file__).resolve().parent / "utils" / "run_evaluation.py"
+    cmd = [
+        sys.executable,
+        str(eval_script),
+        "--checkpoint",
+        str(checkpoint_path),
+        "--output",
+        str(out_dir),
+        "--test_dir",
+        str(train_cfg.test_image_dir),
+        "--cache_dir",
+        str(train_cfg.full_eval_cache_dir),
+    ]
+    if bool(train_cfg.full_eval_force_regen):
+        cmd.append("--force_regen")
+    if bool(train_cfg.full_eval_profile_timing):
+        cmd.append("--profile_timing")
+
+    logger.info("Running full eval for %s -> %s", checkpoint_path, out_dir)
+    start = time.perf_counter()
+    subprocess.run(cmd, check=True)
+    wall = time.perf_counter() - start
+    logger.info("Full eval completed for %s in %.1fs", checkpoint_path.name, wall)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train latent Schrodinger bridge model")
     parser.add_argument("--config", type=str, default="config.json", help="Path to config json")
@@ -98,8 +130,20 @@ def main() -> None:
         target_style_sampling_weights=data_cfg.target_style_sampling_weights,
         pairing_cache_path=data_cfg.pairing_cache_path,
         pairing_cache_topk=int(data_cfg.pairing_cache_topk),
+        pairing_cache_active_topk=int(data_cfg.pairing_cache_active_topk),
         pairing_cache_sample_mode=str(data_cfg.pairing_cache_sample_mode),
+        pairing_cache_rank_schedule=str(data_cfg.pairing_cache_rank_schedule),
+        pairing_cache_min_topk=int(data_cfg.pairing_cache_min_topk),
+        pairing_cache_curriculum_epochs=int(data_cfg.pairing_cache_curriculum_epochs),
+        pairing_cache_rank_power=float(data_cfg.pairing_cache_rank_power),
+        pairing_cache_explore_prob=float(data_cfg.pairing_cache_explore_prob),
+        pairing_cache_explore_topk=int(data_cfg.pairing_cache_explore_topk),
+        pairing_cache_dual_target_mix=float(data_cfg.pairing_cache_dual_target_mix),
+        pairing_cache_dual_target_topk=int(data_cfg.pairing_cache_dual_target_topk),
+        pairing_cache_aux_target_topk=int(data_cfg.pairing_cache_aux_target_topk),
         pairing_cache_cross_only=bool(data_cfg.pairing_cache_cross_only),
+        latent_cache_mode=str(data_cfg.latent_cache_mode),
+        latent_cache_dir=str(data_cfg.latent_cache_dir),
         device=str(device),
     )
 
@@ -131,7 +175,7 @@ def main() -> None:
     dataloader = DataLoader(**dataloader_kwargs)
 
     logger.info(
-        "DataLoader | batch=%d workers=%d shuffle=%s pin_memory=%s persistent_workers=%s preload_to_gpu=%s balanced_target=%s pairing_cache=%s pairing_mode=%s topk=%d",
+        "DataLoader | batch=%d workers=%d shuffle=%s pin_memory=%s persistent_workers=%s preload_to_gpu=%s balanced_target=%s pairing_cache=%s pairing_mode=%s rank_schedule=%s active_topk=%d min_topk=%d curriculum_epochs=%d rank_power=%.3f topk=%d explore=%.3f/%d dual_mix=%.3f/%d aux_topk=%d",
         batch_size,
         num_workers,
         shuffle,
@@ -141,19 +185,43 @@ def main() -> None:
         bool(getattr(dataset, "balance_target_styles_per_batch", False)),
         bool(getattr(dataset, "offline_pairing_map", {})),
         str(getattr(dataset, "pairing_cache_sample_mode", "")),
+        str(getattr(dataset, "pairing_cache_rank_schedule", "")),
+        int(getattr(dataset, "pairing_cache_active_topk", 0)),
+        int(getattr(dataset, "pairing_cache_min_topk", 0)),
+        int(getattr(dataset, "pairing_cache_curriculum_epochs", 0)),
+        float(getattr(dataset, "pairing_cache_rank_power", 1.0)),
         int(getattr(dataset, "pairing_cache_topk", 0)),
+        float(getattr(dataset, "pairing_cache_explore_prob", 0.0)),
+        int(getattr(dataset, "pairing_cache_explore_topk", 0)),
+        float(getattr(dataset, "pairing_cache_dual_target_mix", 0.0)),
+        int(getattr(dataset, "pairing_cache_dual_target_topk", 0)),
+        int(getattr(dataset, "pairing_cache_aux_target_topk", 0)),
     )
 
     trainer = SBTrainer(config=config, device=device, config_path=str(config_path))
+    deferred_eval_checkpoints: list[Path] = []
 
     epoch = int(trainer.start_epoch)
     while epoch <= int(trainer.num_epochs):
         dataset.set_epoch(epoch)
+        if bool(getattr(dataset, "offline_pairing_map", {})):
+            logger.info(
+                "Pairing cache epoch=%d active_topk=%d mode=%s rank_schedule=%s explore=%.3f/%d dual_mix=%.3f/%d aux_topk=%d",
+                epoch,
+                int(dataset.current_pairing_active_topk()),
+                str(getattr(dataset, "pairing_cache_sample_mode", "")),
+                str(getattr(dataset, "pairing_cache_rank_schedule", "")),
+                float(getattr(dataset, "pairing_cache_explore_prob", 0.0)),
+                int(getattr(dataset, "pairing_cache_explore_topk", 0)),
+                float(getattr(dataset, "pairing_cache_dual_target_mix", 0.0)),
+                int(getattr(dataset, "pairing_cache_dual_target_topk", 0)),
+                int(getattr(dataset, "pairing_cache_aux_target_topk", 0)),
+            )
         metrics = trainer.train_epoch(dataloader, epoch)
         trainer.step_scheduler()
         trainer.log_epoch(epoch, metrics)
         logger.info(
-            "Epoch %d/%d | loss=%.4f flow=%.4f kin=%.4f ot=%.4f tswd=%.4f attn=%.3f k=%.3f ent=%.3f sigma=%.3f idr=%.2f t=%.3f |v|=%.3f lr=%.2e data=%.1fs comp=%.1fs",
+            "Epoch %d/%d | loss=%.4f flow=%.4f kin=%.4f ot=%.4f tswd=%.4f attn=%.3f k=%.3f ent=%.3f sigma=%.3f idr=%.2f t=%.3f |v|=%.3f lr=%.2e data=%.1fs comp=%.1fs peak=%.2f/%.2fGB",
             epoch,
             trainer.num_epochs,
             metrics.get("loss", 0.0),
@@ -171,11 +239,32 @@ def main() -> None:
             metrics.get("lr", 0.0),
             metrics.get("data_time_sec", 0.0),
             metrics.get("compute_time_sec", 0.0),
+            metrics.get("cuda_peak_allocated_gb", 0.0),
+            metrics.get("cuda_peak_reserved_gb", 0.0),
         )
         if epoch % trainer.save_interval == 0 or epoch == trainer.num_epochs:
-            trainer.save_checkpoint(epoch, metrics)
+            ckpt_path = trainer.save_checkpoint(epoch, metrics)
+            if bool(train_cfg.full_eval_each_epoch):
+                if hasattr(trainer, "wait_for_pending_checkpoints"):
+                    trainer.wait_for_pending_checkpoints()
+                if bool(getattr(train_cfg, "full_eval_defer_until_training_end", False)):
+                    deferred_eval_checkpoints.append(ckpt_path)
+                else:
+                    _run_full_eval_for_checkpoint(config, ckpt_path)
         epoch += 1
 
+    if hasattr(trainer, "wait_for_pending_checkpoints"):
+        trainer.wait_for_pending_checkpoints()
+    if deferred_eval_checkpoints:
+        logger.info("Deferred full eval queue contains %d checkpoints.", len(deferred_eval_checkpoints))
+        del trainer
+        del dataloader
+        del dataset
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        for ckpt_path in deferred_eval_checkpoints:
+            _run_full_eval_for_checkpoint(config, ckpt_path)
     logger.info("Training completed.")
 
 

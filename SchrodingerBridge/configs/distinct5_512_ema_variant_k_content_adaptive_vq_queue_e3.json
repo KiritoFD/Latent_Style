@@ -1,0 +1,18 @@
+{
+  "_base": "distinct5_512_ema_variant_h_hard_explore_queue_e3.json",
+  "model": {
+    "tokenizer_content_adaptive": true,
+    "tokenizer_content_hidden_dim": 64,
+    "tokenizer_content_gain": 0.5,
+    "tokenizer_content_stopgrad": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/distinct5_512_ema_variant_k_content_adaptive_vq_queue_e3"
+  },
+  "ablation": {
+    "name": "distinct5_512_ema_variant_k_content_adaptive_vq_queue_e3",
+    "axis": "distinct5_512_representation_speed",
+    "stage": "variant_k",
+    "notes": "Variant H plus content-adaptive VQ atom logits. The tokenizer uses style_id as a class prior and low-cost VAE-latent content statistics as a per-image residual over shared atoms. No DINO, CLIP supervision, classifier, or external semantic features."
+  }
+}

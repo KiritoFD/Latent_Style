@@ -1,0 +1,17 @@
+{
+  "_base": "distinct5_512_ema_variant_k_content_adaptive_vq_queue_e3.json",
+  "model": {
+    "tokenizer_content_style_gate": true,
+    "tokenizer_content_style_gate_max": 2.0,
+    "tokenizer_content_style_gate_init": 1.0
+  },
+  "checkpoint": {
+    "save_dir": "./exp/distinct5_512_ema_variant_m_style_gated_content_router_e3"
+  },
+  "ablation": {
+    "name": "distinct5_512_ema_variant_m_style_gated_content_router_e3",
+    "axis": "distinct5_512_representation_speed",
+    "stage": "variant_m",
+    "notes": "Variant K plus a target-style gate on the content-adaptive VQ atom-logit residual. The gate is motivated by K/L matrix diagnosis: Minimalism gains little style from the router but pays a large LPIPS cost. No DINO, CLIP supervision, classifier, or external semantic features."
+  }
+}

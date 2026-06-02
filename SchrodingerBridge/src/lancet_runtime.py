@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import time
 
 import torch
 import torch.nn as nn
@@ -39,8 +40,13 @@ class LatentAdaCUTRuntimeMixin:
             and isinstance(block, AttentionBlock)
             and getattr(getattr(block, "attn", None), "mode", None) == "window_attn"
         )
-        gate_in = gate.to(device=h.device, dtype=h.dtype) if torch.is_tensor(gate) else h.new_tensor(float(gate))
-        gate_is_zero = bool(torch.count_nonzero(gate_in.detach()).item() == 0)
+        if torch.is_tensor(gate):
+            gate_in = gate.to(device=h.device, dtype=h.dtype)
+            gate_is_zero = False
+        else:
+            gate_value = float(gate)
+            gate_in = h.new_tensor(gate_value)
+            gate_is_zero = gate_value == 0.0
         if self.use_checkpointing and self.training and not gate_is_zero:
             return ckpt.checkpoint(
                 lambda _h, _s, _g, _blk=block, _use_shift=use_shift: (
@@ -137,8 +143,179 @@ class LatentAdaCUTRuntimeMixin:
         style_id: torch.Tensor | int,
     ) -> tuple[torch.Tensor, StyleMaps]:
         style_code = self.encode_style_id(style_id)
-        style_maps = self._prepare_style_maps(style_id=style_id)
-        return style_code, style_maps
+        return style_code, StyleMaps()
+
+    def _content_spatial_features(self, feat: torch.Tensor) -> torch.Tensor:
+        xf = feat.float()
+        mean = xf.mean(dim=(2, 3))
+        std = xf.std(dim=(2, 3), unbiased=False)
+        abs_mean = xf.abs().mean(dim=(2, 3))
+        low = F.avg_pool2d(xf, kernel_size=3, stride=1, padding=1)
+        high_abs = (xf - low).abs().mean(dim=(2, 3))
+        energy = xf.flatten(1).square().mean(dim=1, keepdim=True).sqrt()
+        return torch.cat([mean, std, abs_mean, high_abs, energy], dim=1).to(device=feat.device, dtype=feat.dtype)
+
+    def _tokenizer_mixture_weights(self, style_id: torch.Tensor) -> torch.Tensor | None:
+        mixture = getattr(self.style_tokenizer, "mixture_weights", None)
+        if not callable(mixture):
+            return None
+        weights = mixture(style_id.to(device=self.style_tokenizer.weight.device))
+        if weights is None:
+            return None
+        return weights.to(device=style_id.device)
+
+    def _atom_weights_from_logits(self, logits: torch.Tensor) -> torch.Tensor:
+        tokenizer = self.style_tokenizer
+        atom_topk = max(0, int(getattr(tokenizer, "atom_topk", 0)))
+        if atom_topk > 0 and atom_topk < logits.shape[1]:
+            topk = torch.topk(logits, k=atom_topk, dim=-1).indices
+            mask = torch.zeros_like(logits, dtype=torch.bool)
+            mask.scatter_(1, topk, True)
+            logits = logits.masked_fill(~mask, torch.finfo(logits.dtype).min)
+        if bool(getattr(tokenizer, "atom_hard_eval", False)) and not self.training:
+            idx = logits.argmax(dim=-1, keepdim=True)
+            weights = torch.zeros_like(logits)
+            weights.scatter_(1, idx, 1.0)
+            return weights
+        tau = max(1e-3, float(getattr(tokenizer, "atom_temperature", 0.25)))
+        return F.softmax(logits / tau, dim=-1)
+
+    def _style_code_from_atom_weights(self, style_id: torch.Tensor, weights: torch.Tensor) -> torch.Tensor | None:
+        tokenizer = self.style_tokenizer
+        mode = str(getattr(tokenizer, "projection_mode", "")).lower()
+        if mode not in {"concept_atoms", "direct_atom_residual", "global_vq"}:
+            return None
+        if not hasattr(tokenizer, "concept_atoms"):
+            return None
+        atoms = tokenizer.concept_atoms.to(device=weights.device, dtype=weights.dtype)
+        atom_code = weights @ atoms
+        if mode == "direct_atom_residual":
+            if not hasattr(tokenizer, "direct_code"):
+                return None
+            base = tokenizer.direct_code(style_id)
+            style_code = base + float(getattr(tokenizer, "residual_gain", 1.0)) * atom_code
+        else:
+            style_code = atom_code
+        if bool(getattr(tokenizer, "code_l2_norm", False)):
+            style_code = F.normalize(style_code.float(), dim=1).to(dtype=style_code.dtype)
+        code_scale = float(getattr(tokenizer, "code_scale", 1.0))
+        if abs(code_scale - 1.0) > 1e-8:
+            style_code = style_code * code_scale
+        return style_code
+
+    def _adapt_style_code_from_content(
+        self,
+        *,
+        style_id: torch.Tensor | int | None,
+        style_code: torch.Tensor,
+        content_feat_16: torch.Tensor,
+    ) -> torch.Tensor:
+        router = getattr(self, "style_code_content_router", None)
+        if router is None or style_id is None:
+            return style_code
+        tokenizer = self.style_tokenizer
+        if not hasattr(tokenizer, "atom_logits"):
+            return style_code
+
+        token_device = tokenizer.weight.device
+        style_id_t = self._normalize_style_id_input(style_id, device=token_device)
+        batch = int(content_feat_16.shape[0])
+        if style_id_t.shape[0] == 1 and batch > 1:
+            style_id_t = style_id_t.expand(batch)
+        elif style_id_t.shape[0] != batch:
+            return style_code
+
+        feat = content_feat_16.detach() if bool(getattr(self, "tokenizer_content_stopgrad", True)) else content_feat_16
+        feat = self._content_spatial_features(feat).to(device=token_device, dtype=tokenizer.weight.dtype)
+        routed = router(feat)
+        base_logits = tokenizer.atom_logits(style_id_t)
+        gain = float(getattr(self, "tokenizer_content_gain", 0.5))
+        gate_values = None
+        style_gate = getattr(self, "style_code_content_style_gate", None)
+        if style_gate is not None:
+            gate_max = max(1e-3, float(getattr(self, "tokenizer_content_style_gate_max", 2.0)))
+            gate_values = torch.sigmoid(style_gate(style_id_t)).to(dtype=base_logits.dtype) * gate_max
+            gain_tensor = gate_values * gain
+        else:
+            gain_tensor = gain
+        weights = self._atom_weights_from_logits(base_logits + routed.to(dtype=base_logits.dtype) * gain_tensor)
+        adapted = self._style_code_from_atom_weights(style_id_t, weights)
+        if adapted is None:
+            return style_code
+
+        with torch.no_grad():
+            probs = weights.detach().float()
+            entropy = -(probs * probs.clamp_min(1e-8).log()).sum(dim=1).mean()
+            debug = dict(getattr(tokenizer, "last_debug", {}) or {})
+            debug.update(
+                {
+                    "content_atom_delta_abs": routed.detach().float().abs().mean(),
+                    "content_atom_entropy": entropy,
+                    "content_atom_effective_count": torch.exp(entropy),
+                    "content_atom_max_prob": probs.max(dim=1).values.mean(),
+                }
+            )
+            if gate_values is not None:
+                gate_debug = gate_values.detach().float()
+                debug.update(
+                    {
+                        "content_atom_gate_mean": gate_debug.mean(),
+                        "content_atom_gate_min": gate_debug.min(),
+                        "content_atom_gate_max": gate_debug.max(),
+                    }
+                )
+            tokenizer.last_debug = debug
+
+        return adapted.to(device=style_code.device, dtype=style_code.dtype)
+
+    def _build_style_spatial_map(
+        self,
+        *,
+        style_id: torch.Tensor | int,
+        content_feat_16: torch.Tensor,
+        style_code: torch.Tensor,
+    ) -> torch.Tensor:
+        del style_code
+        spatial_device = self.style_spatial_id_16.device
+        style_id_t = self._normalize_style_id_input(style_id, device=spatial_device)
+        mode = str(getattr(self, "style_spatial_mode", "class")).lower()
+        if mode == "class":
+            return self.encode_style_spatial_id(style_id_t).get(16)
+
+        content_feat = content_feat_16.to(device=spatial_device)
+        base_logits = None
+        if getattr(self, "style_spatial_logits", None) is not None:
+            base_logits = self.style_spatial_logits(style_id_t)
+
+        if mode in {"prototype", "content_guided"} and getattr(self, "style_spatial_proto_16", None) is not None:
+            maps = self.style_spatial_proto_16.index_select(0, style_id_t)
+            weights = self._tokenizer_mixture_weights(style_id_t)
+            if weights is None or weights.shape[1] != maps.shape[1]:
+                if base_logits is None:
+                    base_logits = torch.zeros((style_id_t.shape[0], maps.shape[1]), device=spatial_device)
+                weights = F.softmax(base_logits / float(self.style_spatial_routing_temperature), dim=-1)
+            if mode == "content_guided" and getattr(self, "style_spatial_content_router", None) is not None:
+                routed = self.style_spatial_content_router(self._content_spatial_features(content_feat))
+                logits = torch.log(weights.clamp_min(1e-8)) + routed
+                weights = F.softmax(logits / float(self.style_spatial_routing_temperature), dim=-1)
+            out = (weights.view(weights.shape[0], weights.shape[1], 1, 1, 1) * maps).sum(dim=1)
+            return self._normalize_style_map(out)
+
+        if mode in {"vq", "vq_content_guided"} and getattr(self, "style_spatial_atoms_16", None) is not None:
+            maps = self.style_spatial_atoms_16
+            weights = self._tokenizer_mixture_weights(style_id_t)
+            if weights is None or weights.shape[1] != maps.shape[0]:
+                if base_logits is None:
+                    base_logits = torch.zeros((style_id_t.shape[0], maps.shape[0]), device=spatial_device)
+                weights = F.softmax(base_logits / float(self.style_spatial_routing_temperature), dim=-1)
+            if mode == "vq_content_guided" and getattr(self, "style_spatial_content_router", None) is not None:
+                routed = self.style_spatial_content_router(self._content_spatial_features(content_feat))
+                logits = torch.log(weights.clamp_min(1e-8)) + routed
+                weights = F.softmax(logits / float(self.style_spatial_routing_temperature), dim=-1)
+            out = torch.einsum("bn,nchw->bchw", weights, maps)
+            return self._normalize_style_map(out)
+
+        return self.encode_style_spatial_id(style_id_t).get(16)
 
     def _apply_upsample_blur(self, h: torch.Tensor) -> torch.Tensor:
         if not self.upsample_blur or self._upsample_blur_kernel.numel() == 0:
@@ -180,6 +357,10 @@ class LatentAdaCUTRuntimeMixin:
         return torch.tanh(delta / 4.0) * 4.0
 
     def _apply_diffeomorphic_stroke(self, x: torch.Tensor, raw_out: torch.Tensor) -> torch.Tensor:
+        do_profile = bool(getattr(self, "profile_modules", False))
+        if do_profile and bool(getattr(self, "profile_sync_cuda", False)) and x.device.type == "cuda":
+            torch.cuda.synchronize(x.device)
+        t0 = time.perf_counter() if do_profile else 0.0
         stroked = apply_texture_aligned_diffeomorphic_stroke(
             x,
             raw_out,
@@ -188,6 +369,15 @@ class LatentAdaCUTRuntimeMixin:
             gate_strength=float(getattr(self, "diffeomorphic_texture_gate_strength", 8.0)),
             normal_leak=float(getattr(self, "diffeomorphic_normal_leak", 0.0)),
         )
+        if do_profile:
+            if bool(getattr(self, "profile_sync_cuda", False)) and x.device.type == "cuda":
+                torch.cuda.synchronize(x.device)
+            profile = getattr(self, "last_profile", None)
+            if isinstance(profile, dict):
+                profile["diffeomorphic_stroke"] = profile.get("diffeomorphic_stroke", 0.0) + max(
+                    0.0,
+                    time.perf_counter() - t0,
+                )
         return stroked - x.float()
 
     def encode_style_id(self, style_id: torch.Tensor | int | None, t: torch.Tensor | None = None) -> torch.Tensor:
@@ -268,6 +458,7 @@ class LatentAdaCUTRuntimeMixin:
         self,
         x: torch.Tensor,
         *,
+        style_id: torch.Tensor | int | None = None,
         style_code: torch.Tensor,
         style_maps: StyleMaps,
         override_palette: torch.Tensor | None = None,
@@ -286,6 +477,11 @@ class LatentAdaCUTRuntimeMixin:
         for block in self.hires_body:
             h_c_grad = block(h_c_grad, style_code, gate=0.0)
         content_feat_16 = self.down(h_c_grad)
+        style_code = self._adapt_style_code_from_content(
+            style_id=style_id,
+            style_code=style_code,
+            content_feat_16=content_feat_16,
+        )
         style_map_proj: torch.Tensor | None = None
 
         if override_palette is not None:
@@ -344,6 +540,16 @@ class LatentAdaCUTRuntimeMixin:
             )
             style_map_proj = self.down(h_s)
         else:
+            if style_maps.map_16 is None:
+                if style_id is None:
+                    raise ValueError("style_id is required for id-only spatial prior.")
+                style_maps = StyleMaps(
+                    map_16=self._build_style_spatial_map(
+                        style_id=style_id,
+                        content_feat_16=content_feat_16,
+                        style_code=style_code,
+                    )
+                )
             style_spatial_16 = self._prepare_spatial_map(style_maps.map_16, content_feat_16)
             if style_spatial_16 is None:
                 raise ValueError("style spatial prior is required for id-only inference.")
@@ -364,10 +570,15 @@ class LatentAdaCUTRuntimeMixin:
                 h = block(h, style_map=style_map_proj, gate=1.0)
                 semantic_attn = getattr(block, "last_attn", semantic_attn)
             h_body = h
+        style_inject = getattr(self, "_apply_style_feature_injection", None)
+        if callable(style_inject):
+            h_body = style_inject(h_body, x, style_code, site="body")
         h_up = self.dec_up(h_body)
         h_up = self._apply_upsample_blur(h_up)
         h_fused = self._fuse_skip_features(h_up, skip_32, style_code=style_code, gate=1.0)
         h_dec = self._run_decoder(h_fused)
+        if callable(style_inject):
+            h_dec = style_inject(h_dec, x, style_code, site="decoder")
         h_dec = self.dec_act(self.dec_mod(h_dec, style_code, gate=1.0))
         delta_raw = self._compute_delta(h_dec, x=x)
         return delta_raw
@@ -411,6 +622,7 @@ class LatentAdaCUTRuntimeMixin:
         for _ in range(steps):
             delta = self._predict_delta_from_context(
                 h,
+                style_id=style_id,
                 style_code=style_code,
                 style_maps=style_maps,
                 override_palette=override_palette,
@@ -508,6 +720,7 @@ class LatentAdaCUTRuntimeMixin:
             )
         delta = self._predict_delta_from_context(
             x,
+            style_id=style_id,
             style_code=style_code,
             style_maps=style_maps,
             override_palette=override_palette,
