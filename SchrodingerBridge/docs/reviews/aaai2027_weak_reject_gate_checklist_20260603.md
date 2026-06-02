@@ -111,6 +111,15 @@ Required evidence:
 - updated manuscript diff
 - reviewer-facing note pointing to the exact sections changed
 
+Current status:
+
+- adversarial rewrite hit list now exists:
+  - `docs/reviews/aaai2027_rewrite_hit_list_20260603.md`
+- first manuscript-boundary alignment pass is now recorded in:
+  - `docs/reviews/aaai2027_boundary_alignment_pass_20260603.md`
+- Gate D remains open until the paper diff is reviewed against the still-open
+  Gate B and Gate C evidence gaps
+
 ## Pass rule for the next review round
 
 The next round may move above `weak_reject` only if:
