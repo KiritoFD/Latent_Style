@@ -82,3 +82,19 @@ review cycle has touched it and the resulting consensus has been recorded in:
 
 The paper is not allowed to escalate a claim based only on raw metrics or a
 single favorable visual inspection.
+
+## 6. Standing agent roster
+
+Current named reviewer agents that may be reused across cycles:
+
+- `Avicenna`
+  - preferred lane: `adversarial_review`
+- `Harvey`
+  - preferred lane: `scorecard`
+- `Kepler`
+  - preferred lane: `experiment_audit`
+- `Lorentz`
+  - preferred lane: `adversarial_review`
+  - note:
+    - use as a second harsh reader when the current cycle needs a fresh attack
+      on claims, figure logic, or experiment prioritization
