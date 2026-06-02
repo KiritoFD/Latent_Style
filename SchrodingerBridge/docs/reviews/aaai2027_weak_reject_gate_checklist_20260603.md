@@ -6,19 +6,19 @@ Purpose: this is the minimum evidence package required before the next review ro
 
 ## Gate A - Activated endpoint-metric closure
 
-- [ ] Submit one repaired experiment packet in which the switched local loss term is on the **active** transport path.
-- [ ] Use one of only two valid designs:
+- [x] Submit one repaired experiment packet in which the switched local loss term is on the **active** transport path.
+- [x] Use one of only two valid designs:
   - `objective_mode=omf` with `w_flow > 0`, or
   - a non-`omf` velocity-regression path where `loss_type` is provably active.
-- [ ] Log resolved config values in the run artifact, including at least:
+- [x] Log resolved config values in the run artifact, including at least:
   - `objective_mode`
   - `w_flow`
   - `loss_type`
   - dataset
   - batch
   - seed
-- [ ] Provide full-eval results for all compared arms on the same Distinct5 base.
-- [ ] Update `aaai2027_master_experiment_log.csv` with explicit interpretation that distinguishes:
+- [x] Provide full-eval results for all compared arms on the same Distinct5 base.
+- [x] Update `aaai2027_master_experiment_log.csv` with explicit interpretation that distinguishes:
   - activated probe
   - invalidated near-null control
 
@@ -35,12 +35,23 @@ Not accepted:
 - rerunning the old `mse / huber / l1` trio with `w_flow=0.0`
 - prose claiming the path is active without a resolved-config artifact
 
+Current status:
+
+- Gate A is now closed in the **negative** direction.
+- The repaired endpoint-only trio was activated, fully logged, and reviewed in
+  `R20260603C`.
+- The allowed conclusion is narrow:
+  - pure endpoint-only pointwise supervision does not recover the reviewed
+    `H` mainline frontier.
+
 ## Gate B - SA-SWD novelty isolation
 
 - [ ] Run a fixed-base Distinct5 ablation comparing:
   - semantic projection axes
   - random projection axes
-- [ ] Keep backbone, tokenizer family, dataset, seed policy, and evaluation scope matched.
+- [x] Prepare a matched packet with fixed backbone, tokenizer family, dataset,
+  seed policy, and evaluation scope.
+- [ ] Keep backbone, tokenizer family, dataset, seed policy, and evaluation scope matched in the completed runs.
 - [ ] Report whether semantic axes improve at least one headline dimension without unacceptable regression:
   - better style at similar LPIPS, or
   - better LPIPS/artifact profile at similar style
@@ -55,6 +66,16 @@ Not accepted:
 
 - comparing across different tokenizer families or different training scopes
 - qualitative-only claims
+
+Current status:
+
+- Gate B packet is prepared locally:
+  - `configs/aaai2027/saswd_axis_h_base_seed42_b44_saswd_semantic.json`
+  - `configs/aaai2027/saswd_axis_h_base_seed42_b44_saswd_random.json`
+- semantic arm finished training on the remote `3060` through `epoch_0003.pt`
+- semantic arm is currently in auto full-eval
+- random arm is queued behind the semantic arm
+- Gate B remains open until both matched arms complete and are compared directly
 
 ## Gate C - Efficiency fairness closure
 
