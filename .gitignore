@@ -57,6 +57,8 @@ Related_Works/**/*.png
 # Codex/local scratch directories
 .codex_*/
 66688
+Dataset/
+SchrodingerBridge/_codex_tmp/
 
 # Bulk external baseline checkouts and generated results
 Related_Works/repos/**
@@ -73,3 +75,17 @@ SchrodingerBridge/docs/experiments/history_audit_local_*.json
 # Top-level runtime dumps
 archive/**
 exp/**
+
+# Paper build artifacts
+SchrodingerBridge/aaai_submission/*.aux
+SchrodingerBridge/aaai_submission/*.bbl
+SchrodingerBridge/aaai_submission/*.blg
+SchrodingerBridge/aaai_submission/*.fdb_latexmk
+SchrodingerBridge/aaai_submission/*.fls
+SchrodingerBridge/aaai_submission/*.log
+SchrodingerBridge/aaai_submission/*.out
+SchrodingerBridge/aaai_submission/*.synctex.gz
+SchrodingerBridge/aaai_submission/**/*.aux
+SchrodingerBridge/aaai_submission/**/*.log
+SchrodingerBridge/aaai_submission/**/*.out
+SchrodingerBridge/aaai_submission/**/*.synctex.gz
