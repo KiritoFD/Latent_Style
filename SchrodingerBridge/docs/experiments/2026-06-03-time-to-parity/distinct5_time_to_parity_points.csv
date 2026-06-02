@@ -1,0 +1,1 @@
+date,method,variant,dataset,scope,checkpoint_or_step,wall_seconds,timing_mode,includes_eval,eval_scope,eval_wall_seconds,clip_style,content_lpips,delta_idt_full,delta_idt_transfer,hardware,status,timing_quality_flag,evidence_path,note

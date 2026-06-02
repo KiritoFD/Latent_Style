@@ -62,6 +62,7 @@ Continuous reviewer lane:
 - `SchrodingerBridge/docs/reviews/aaai2027_rewrite_hit_list_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_boundary_alignment_pass_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_boundary_followup_overclaims_20260603.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_gate_b_runtime_anomaly_policy_20260603.md`
 - `SchrodingerBridge/docs/reviews/distinct5_idt_noop_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_review_gate_20260603.md`
@@ -133,6 +134,8 @@ Key evidence:
 - `SchrodingerBridge/docs/experiments/2026-06-03-flow-loss-metric-ablation/repaired_endpoint_metric_ablation_packet_20260603.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-flow-loss-metric-ablation/repaired_endpoint_metric_launch_manifest_20260603.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-saswd-axis-ablation/README.md`
+- `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/README.md`
+- `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/distinct5_time_to_parity_points.csv`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_review_gate_20260603.md`
 
