@@ -79,6 +79,8 @@ Current status:
 - if the current random run finishes, its quality summaries may still be
   diagnostically usable, but its wall-clock behavior is not currently credible
   as normal formal-speed evidence
+- best-effort diagnosis currently favors the random-axis path itself as the
+  primary cause of the slowdown, not accidental config drift
 - Gate B remains open until both matched arms complete and are compared directly
 
 ## Gate C - Efficiency fairness closure
