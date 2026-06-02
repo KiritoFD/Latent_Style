@@ -67,6 +67,7 @@ Continuous reviewer lane:
 - `SchrodingerBridge/docs/reviews/aaai2027_gate_c_time_to_parity_audit_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_post_tightening_recheck_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_tokenizer_timing_reaudit_20260603.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_weak_reject_rerun_20260603.md`
 - `SchrodingerBridge/docs/reviews/distinct5_idt_noop_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_review_gate_20260603.md`
@@ -92,6 +93,7 @@ Cross-dataset comparison report:
 - `SchrodingerBridge/docs/experiments/2026-06-03-exp-surface-classification.md`
 - `SchrodingerBridge/docs/experiments/aaai2027_experiment_logging_contract_20260603.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-exploratory-image-prune.md`
+- `SchrodingerBridge/docs/experiments/2026-06-03-smoke-surface-prune.md`
 
 ## 3. Experiment families to cite separately
 
