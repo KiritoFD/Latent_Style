@@ -69,6 +69,7 @@ Continuous reviewer lane:
 - `SchrodingerBridge/docs/reviews/aaai2027_tokenizer_timing_reaudit_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_weak_reject_rerun_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_gate_b_pair_reaudit_20260603.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_tokenizer_probe_successor_family_reread_20260603.md`
 - `SchrodingerBridge/docs/reviews/distinct5_idt_noop_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_review_gate_20260603.md`
@@ -151,6 +152,7 @@ Key evidence:
 - `SchrodingerBridge/docs/experiments/2026-06-03-saswd-axis-ablation/README.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-execution-alignment-protocol.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-execution-alignment/README.md`
+- `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-execution-alignment-l-family/README.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/README.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/distinct5_time_to_parity_points.csv`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/figures/distinct5_time_to_clip_style.pdf`
