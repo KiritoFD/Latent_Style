@@ -6,8 +6,12 @@ import json
 import sys
 from pathlib import Path
 
+import matplotlib
 import torch
 import torch.nn.functional as F
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 
 def _repo_src_path() -> Path:
@@ -111,6 +115,20 @@ def _pair_rows(means: dict[str, torch.Tensor]) -> list[dict]:
                 }
             )
     return rows
+
+
+def _safe_float(value: str | float | int | None) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, (float, int)):
+        return float(value)
+    raw = str(value).strip()
+    if not raw:
+        return None
+    try:
+        return float(raw)
+    except ValueError:
+        return None
 
 
 def _effective_rank(matrix: torch.Tensor) -> tuple[float, list[float]]:
@@ -279,6 +297,273 @@ def _pearson(xs: list[float], ys: list[float]) -> float:
     return float((x * y).sum().div(denom).item())
 
 
+def _style_pair_means(
+    rows: list[dict],
+    *,
+    style_a_key: str,
+    style_b_key: str,
+    l2_key: str,
+    cos_key: str,
+    output_prefix: str,
+) -> dict[str, dict[str, float]]:
+    buckets: dict[str, dict[str, list[float]]] = {}
+    for row in rows:
+        a = str(row[style_a_key])
+        b = str(row[style_b_key])
+        l2 = float(row[l2_key])
+        cos = float(row[cos_key])
+        for name in (a, b):
+            bucket = buckets.setdefault(name, {"l2": [], "cos": []})
+            bucket["l2"].append(l2)
+            bucket["cos"].append(cos)
+    out: dict[str, dict[str, float]] = {}
+    for name, values in buckets.items():
+        out[name] = {
+            f"{output_prefix}_mean_l2_to_others": float(sum(values["l2"]) / max(1, len(values["l2"]))),
+            f"{output_prefix}_mean_cos_to_others": float(sum(values["cos"]) / max(1, len(values["cos"]))),
+        }
+    return out
+
+
+def _read_metrics_csv(path: Path) -> list[dict[str, str]]:
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        return [dict(row) for row in reader]
+
+
+def _aggregate_target_metric(
+    rows: list[dict[str, str]],
+    target_style: str,
+    *,
+    transfer_only: bool,
+) -> dict[str, float | int | None]:
+    selected: list[dict[str, str]] = []
+    for row in rows:
+        if row.get("tgt_style") != target_style:
+            continue
+        if transfer_only and row.get("src_style") == row.get("tgt_style"):
+            continue
+        selected.append(row)
+    if not selected:
+        return {
+            "count": 0,
+            "clip_style": None,
+            "content_lpips": None,
+            "clip_dir": None,
+            "clip_content": None,
+        }
+    def _mean(key: str) -> float | None:
+        vals = [_safe_float(row.get(key)) for row in selected]
+        vals = [v for v in vals if v is not None]
+        if not vals:
+            return None
+        return float(sum(vals) / len(vals))
+    return {
+        "count": len(selected),
+        "clip_style": _mean("clip_style"),
+        "content_lpips": _mean("content_lpips"),
+        "clip_dir": _mean("clip_dir"),
+        "clip_content": _mean("clip_content"),
+    }
+
+
+def _target_metric_rows(
+    *,
+    eval_metrics_csv: Path,
+    idt_metrics_csv: Path,
+    names: list[str],
+) -> list[dict]:
+    eval_rows = _read_metrics_csv(eval_metrics_csv)
+    idt_rows = _read_metrics_csv(idt_metrics_csv)
+    rows: list[dict] = []
+    for name in names:
+        eval_full = _aggregate_target_metric(eval_rows, name, transfer_only=False)
+        eval_transfer = _aggregate_target_metric(eval_rows, name, transfer_only=True)
+        idt_full = _aggregate_target_metric(idt_rows, name, transfer_only=False)
+        idt_transfer = _aggregate_target_metric(idt_rows, name, transfer_only=True)
+        full_style = _safe_float(eval_full["clip_style"])
+        transfer_style = _safe_float(eval_transfer["clip_style"])
+        idt_full_style = _safe_float(idt_full["clip_style"])
+        idt_transfer_style = _safe_float(idt_transfer["clip_style"])
+        rows.append(
+            {
+                "target_style": name,
+                "eval_count_full": int(eval_full["count"]),
+                "eval_count_transfer": int(eval_transfer["count"]),
+                "clip_style_full": full_style,
+                "clip_style_transfer": transfer_style,
+                "content_lpips_full": _safe_float(eval_full["content_lpips"]),
+                "content_lpips_transfer": _safe_float(eval_transfer["content_lpips"]),
+                "idt_clip_style_full": idt_full_style,
+                "idt_clip_style_transfer": idt_transfer_style,
+                "delta_idt_full": None if full_style is None or idt_full_style is None else float(full_style - idt_full_style),
+                "delta_idt_transfer": None if transfer_style is None or idt_transfer_style is None else float(transfer_style - idt_transfer_style),
+            }
+        )
+    return rows
+
+
+def _join_style_rows(
+    *,
+    names: list[str],
+    latent_rows: list[dict],
+    token_rows: list[dict],
+    token_pair_rows: list[dict],
+    delta_rows: list[dict],
+    delta_pair_rows: list[dict],
+    metric_rows: list[dict],
+) -> list[dict]:
+    latent_by = {str(row["style"]): row for row in latent_rows}
+    token_by = {str(row["style"]): row for row in token_rows}
+    delta_by = {str(row["target_style"]): row for row in delta_rows}
+    metrics_by = {str(row["target_style"]): row for row in metric_rows}
+    token_pair_means = _style_pair_means(
+        token_pair_rows,
+        style_a_key="style_a",
+        style_b_key="style_b",
+        l2_key="style_code_l2",
+        cos_key="style_code_cos",
+        output_prefix="style_code",
+    ) if token_pair_rows else {}
+    delta_pair_means = _style_pair_means(
+        delta_pair_rows,
+        style_a_key="target_a",
+        style_b_key="target_b",
+        l2_key="delta_mean_l2",
+        cos_key="delta_mean_cos",
+        output_prefix="delta",
+    ) if delta_pair_rows else {}
+
+    joined: list[dict] = []
+    for name in names:
+        row: dict[str, object] = {"target_style": name}
+        row.update(latent_by.get(name, {}))
+        row.update(token_by.get(name, {}))
+        row.update(token_pair_means.get(name, {}))
+        row.update(delta_by.get(name, {}))
+        row.update(delta_pair_means.get(name, {}))
+        row.update(metrics_by.get(name, {}))
+        joined.append(row)
+    return joined
+
+
+def _join_pair_rows(
+    latent_pairs: list[dict],
+    tokenizer_pairs: list[dict],
+    delta_pairs: list[dict],
+) -> list[dict]:
+    latent = {tuple(sorted((str(r["style_a"]), str(r["style_b"])))): r for r in latent_pairs}
+    tokenizer = {tuple(sorted((str(r["style_a"]), str(r["style_b"])))): r for r in tokenizer_pairs}
+    delta = {tuple(sorted((str(r["target_a"]), str(r["target_b"])))): r for r in delta_pairs}
+    keys = sorted(set(latent) & set(tokenizer) & set(delta))
+    rows: list[dict] = []
+    for a, b in keys:
+        rows.append(
+            {
+                "style_a": a,
+                "style_b": b,
+                "latent_mean_l2": float(latent[(a, b)]["latent_mean_l2"]),
+                "latent_mean_cos": float(latent[(a, b)]["latent_mean_cos"]),
+                "style_code_l2": float(tokenizer[(a, b)]["style_code_l2"]),
+                "style_code_cos": float(tokenizer[(a, b)]["style_code_cos"]),
+                "delta_mean_l2": float(delta[(a, b)]["delta_mean_l2"]),
+                "delta_mean_cos": float(delta[(a, b)]["delta_mean_cos"]),
+            }
+        )
+    return rows
+
+
+def _style_alignment_correlations(rows: list[dict]) -> dict[str, float]:
+    if len(rows) < 2:
+        return {}
+
+    def _corr(x_key: str, y_key: str) -> float | None:
+        xs: list[float] = []
+        ys: list[float] = []
+        for row in rows:
+            x = _safe_float(row.get(x_key))
+            y = _safe_float(row.get(y_key))
+            if x is None or y is None:
+                continue
+            xs.append(x)
+            ys.append(y)
+        if len(xs) < 2:
+            return None
+        return _pearson(xs, ys)
+
+    out: dict[str, float] = {}
+    pairs = [
+        ("style_code_mean_l2_to_others", "delta_idt_full", "corr_style_code_sep_to_delta_idt_full"),
+        ("style_code_mean_l2_to_others", "delta_idt_transfer", "corr_style_code_sep_to_delta_idt_transfer"),
+        ("delta_mean_l2_to_others", "delta_idt_full", "corr_executed_sep_to_delta_idt_full"),
+        ("delta_mean_l2_to_others", "delta_idt_transfer", "corr_executed_sep_to_delta_idt_transfer"),
+        ("delta_sample_l2_mean", "delta_idt_full", "corr_delta_sample_l2_to_delta_idt_full"),
+        ("delta_sample_l2_mean", "delta_idt_transfer", "corr_delta_sample_l2_to_delta_idt_transfer"),
+    ]
+    for x_key, y_key, out_key in pairs:
+        val = _corr(x_key, y_key)
+        if val is not None:
+            out[out_key] = float(val)
+    return out
+
+
+def _plot_pair_scatter(rows: list[dict], out_path: Path) -> Path | None:
+    if not rows:
+        return None
+    x = [float(row["style_code_l2"]) for row in rows]
+    y = [float(row["delta_mean_l2"]) for row in rows]
+    fig, ax = plt.subplots(figsize=(6.2, 4.8))
+    ax.scatter(x, y, s=52, color="#1f77b4", alpha=0.9, edgecolors="white", linewidths=0.7)
+    for row in rows:
+        ax.annotate(
+            f'{row["style_a"][:3]}-{row["style_b"][:3]}',
+            (float(row["style_code_l2"]), float(row["delta_mean_l2"])),
+            xytext=(4, 4),
+            textcoords="offset points",
+            fontsize=8,
+        )
+    ax.set_xlabel("Tokenizer pair distance (L2)")
+    ax.set_ylabel("Executed delta pair distance (L2)")
+    ax.set_title("Code Separation vs Executed Separation")
+    ax.grid(True, alpha=0.25, linewidth=0.6)
+    fig.tight_layout()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path)
+    plt.close(fig)
+    return out_path
+
+
+def _plot_style_scatter(rows: list[dict], out_path: Path) -> Path | None:
+    usable = []
+    for row in rows:
+        x = _safe_float(row.get("style_code_mean_l2_to_others"))
+        y = _safe_float(row.get("delta_mean_l2_to_others"))
+        c = _safe_float(row.get("delta_idt_transfer"))
+        if x is None or y is None or c is None:
+            continue
+        usable.append((str(row["target_style"]), x, y, c))
+    if not usable:
+        return None
+    fig, ax = plt.subplots(figsize=(6.4, 4.9))
+    xs = [item[1] for item in usable]
+    ys = [item[2] for item in usable]
+    cs = [item[3] for item in usable]
+    scatter = ax.scatter(xs, ys, c=cs, s=88, cmap="viridis", edgecolors="black", linewidths=0.6)
+    for name, x, y, _ in usable:
+        ax.annotate(name, (x, y), xytext=(5, 4), textcoords="offset points", fontsize=8)
+    cbar = fig.colorbar(scatter, ax=ax, pad=0.02)
+    cbar.set_label("delta_idt_transfer")
+    ax.set_xlabel("Mean tokenizer distance to other styles")
+    ax.set_ylabel("Mean executed delta distance to other styles")
+    ax.set_title("Stylewise Code/Execution Separation")
+    ax.grid(True, alpha=0.25, linewidth=0.6)
+    fig.tight_layout()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path)
+    plt.close(fig)
+    return out_path
+
+
 def _pair_geometry_correlations(
     latent_pairs: list[dict],
     tokenizer_pairs: list[dict],
@@ -326,6 +611,8 @@ def main() -> int:
     parser.add_argument("--delta-probe-num-steps", type=int, default=4)
     parser.add_argument("--delta-probe-step-size", type=float, default=1.0)
     parser.add_argument("--delta-probe-style-strength", type=float, default=1.0)
+    parser.add_argument("--eval-metrics-csv", type=Path, default=None, help="Per-image metrics.csv for the evaluated checkpoint.")
+    parser.add_argument("--idt-metrics-csv", type=Path, default=None, help="Per-image metrics.csv for the unchanged-image reference on the same split.")
     args = parser.parse_args()
 
     device = args.device if (args.device == "cpu" or torch.cuda.is_available()) else "cpu"
@@ -355,6 +642,26 @@ def main() -> int:
             style_strength=float(args.delta_probe_style_strength),
         )
     correlation_summary = _pair_geometry_correlations(pair_rows, token_pair_rows, delta_pair_rows)
+    target_metric_rows: list[dict] = []
+    if args.eval_metrics_csv is not None or args.idt_metrics_csv is not None:
+        if args.eval_metrics_csv is None or args.idt_metrics_csv is None:
+            raise ValueError("--eval-metrics-csv and --idt-metrics-csv must be provided together")
+        target_metric_rows = _target_metric_rows(
+            eval_metrics_csv=args.eval_metrics_csv,
+            idt_metrics_csv=args.idt_metrics_csv,
+            names=names,
+        )
+    joined_style_rows = _join_style_rows(
+        names=names,
+        latent_rows=style_rows,
+        token_rows=token_rows,
+        token_pair_rows=token_pair_rows,
+        delta_rows=delta_rows,
+        delta_pair_rows=delta_pair_rows,
+        metric_rows=target_metric_rows,
+    ) if token_rows and delta_rows else []
+    joined_pair_rows = _join_pair_rows(pair_rows, token_pair_rows, delta_pair_rows) if token_pair_rows and delta_pair_rows else []
+    style_alignment_summary = _style_alignment_correlations(joined_style_rows)
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     _write_csv(args.output_dir / "style_latent_stats.csv", style_rows)
@@ -365,9 +672,24 @@ def main() -> int:
     if delta_rows:
         _write_csv(args.output_dir / "generated_delta_stats.csv", delta_rows)
         _write_csv(args.output_dir / "generated_delta_pairs.csv", delta_pair_rows)
+    if target_metric_rows:
+        _write_csv(args.output_dir / "target_style_metrics.csv", target_metric_rows)
+    if joined_style_rows:
+        _write_csv(args.output_dir / "tokenizer_execution_alignment.csv", joined_style_rows)
+    if joined_pair_rows:
+        _write_csv(args.output_dir / "tokenizer_execution_alignment_pairs.csv", joined_pair_rows)
+    figure_paths: dict[str, str] = {}
+    pair_fig = _plot_pair_scatter(joined_pair_rows, args.output_dir / "fig_code_vs_executed_pair_l2.pdf")
+    if pair_fig is not None:
+        figure_paths["fig_code_vs_executed_pair_l2"] = str(pair_fig)
+    style_fig = _plot_style_scatter(joined_style_rows, args.output_dir / "fig_stylewise_code_exec_delta_idt.pdf")
+    if style_fig is not None:
+        figure_paths["fig_stylewise_code_exec_delta_idt"] = str(style_fig)
     summary = {
         "latent_root": str(args.latent_root),
         "checkpoint": str(args.checkpoint) if args.checkpoint else None,
+        "eval_metrics_csv": str(args.eval_metrics_csv) if args.eval_metrics_csv else None,
+        "idt_metrics_csv": str(args.idt_metrics_csv) if args.idt_metrics_csv else None,
         "classes": names,
         "style_latent_stats": style_rows,
         "style_latent_pairs": pair_rows,
@@ -375,9 +697,14 @@ def main() -> int:
         "tokenizer_code_pairs": token_pair_rows,
         "generated_delta_stats": delta_rows,
         "generated_delta_pairs": delta_pair_rows,
+        "target_style_metrics": target_metric_rows,
+        "tokenizer_execution_alignment": joined_style_rows,
+        "tokenizer_execution_alignment_pairs": joined_pair_rows,
+        "figure_paths": figure_paths,
         **token_summary,
         **delta_summary,
         **correlation_summary,
+        **style_alignment_summary,
     }
     (args.output_dir / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(args.output_dir / "summary.json")
