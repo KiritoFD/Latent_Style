@@ -70,7 +70,6 @@
     "full_eval_batch_size": 6,
     "test_image_dir": "../style_data/overfit50",
     "full_eval_cache_dir": "../Cycle-NCE/eval_cache",
-    "full_eval_image_classifier_path": "../Cycle-NCE/eval_cache/eval_style_image_classifier.pt",
     "full_eval_clip_hf_cache_dir": "../Cycle-NCE/eval_cache/hf",
     "full_eval_clip_backend": "hf"
   },
