@@ -50,5 +50,7 @@ Archive out of top-level `configs/`:
    place.
 2. Reduce comparison-table provenance heterogeneity before the next paper
    wording escalation.
-3. Run the next paper-closing experiment block with one log-first artifact
-   bundle under `docs/experiments/`.
+3. Enforce the new log-first artifact bundle contract documented in:
+   - `docs/experiments/aaai2027_experiment_logging_contract_20260603.md`
+4. Keep `exp/` cleanup path-safe by following:
+   - `docs/experiments/2026-06-03-exp-surface-classification.md`
