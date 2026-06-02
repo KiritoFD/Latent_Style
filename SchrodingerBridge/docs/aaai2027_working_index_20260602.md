@@ -149,6 +149,7 @@ Key evidence:
 - `SchrodingerBridge/docs/experiments/2026-06-03-flow-loss-metric-ablation/repaired_endpoint_metric_launch_manifest_20260603.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-saswd-axis-ablation/README.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-execution-alignment-protocol.md`
+- `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-execution-alignment/README.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/README.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/distinct5_time_to_parity_points.csv`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/figures/distinct5_time_to_clip_style.pdf`
@@ -229,18 +230,20 @@ or stable config/script locations before being referenced in the paper.
 1. The repaired endpoint-metric trio is now negatively closed and reviewed; its
    claim boundary must stay narrow and must not be re-expanded into a broad
    latent-metric theorem.
-2. The next blocking paper gate is the fixed-base semantic-vs-random SA-SWD
-   axis ablation; both matched arms are now landed, but the random arm is
-   admissible only as quality-only evidence because of severe runtime anomaly.
-   The next step is reviewer re-audit of the landed pair, not manuscript claim
-   escalation.
+2. The fixed-base semantic-vs-random SA-SWD axis ablation is now negatively
+   closed rather than open: both matched arms landed, but the random arm is
+   admissible only as quality-only evidence because of severe runtime anomaly,
+   and the landed pair does not support a positive semantic-axis superiority
+   claim.
 3. Time-to-parity plots should be cited with explicit scope and timing
    definitions, not only as prose summaries.
 4. Worktree cleanup should separate durable paper/docs changes from local temp
    files and data mirrors before broader commits.
 5. After Gate B negative closure, the next highest-priority mechanism gate is
-   the tokenizer code-to-execution alignment probe; the time-to-parity packet
-   should remain secondary unless efficiency wording is broadened again.
+   the tokenizer code-to-execution alignment probe. The formal launch packet is
+   now prepared around the reviewed `H`-family `epoch_0001` point, and the
+   time-to-parity packet should remain secondary unless efficiency wording is
+   broadened again.
 6. Every major checkpoint should trigger a fresh three-lane review round and a
    registry entry, rather than relying on a single frozen review memo.
 7. Config and archive surfaces should stay indexed so the paper-facing rerun
