@@ -38,6 +38,10 @@ For the current AAAI 2027 push, start here:
 
 - `2026-06-03-repo-cleanup-and-archive-pass.md`
 
+### Next paper-closing protocol
+
+- `2026-06-03-flow-loss-metric-ablation-protocol.md`
+
 ## Directory intent
 
 - dated markdown files:
