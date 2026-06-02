@@ -74,6 +74,7 @@ Continuous reviewer lane:
 - `SchrodingerBridge/docs/reviews/endpoint_metric_review_gate_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_claim_matrix_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_code_vs_output_geometry_20260603.md`
+- `SchrodingerBridge/docs/reviews/tokenizer_probe_checkpoint_reselection_policy_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_representation_theory_queue_20260603.md`
 
 Related-work / citation gap notes:
