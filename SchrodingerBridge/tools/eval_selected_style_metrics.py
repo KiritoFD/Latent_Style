@@ -30,6 +30,10 @@ from utils.modern_metrics import ClipEmbedder, VggGramEmbedder, compute_cmmd, li
 
 STYLES = ["photo", "Hayao", "monet", "vangogh", "cezanne"]
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+LOCAL_CLIP_CANDIDATES = [
+    WORKSPACE / "eval_cache" / "manual_clip" / "openai-clip-vit-base-patch32",
+    WORKSPACE / "Cycle-NCE" / "eval_cache" / "manual_clip" / "openai-clip-vit-base-patch32",
+]
 
 
 @dataclass(frozen=True)
@@ -39,6 +43,10 @@ class RunSpec:
     images_dir: Path
     summary_json: Path | None = None
     protocol_json: Path | None = None
+    clip_style: float | None = None
+    clip_content: float | None = None
+    content_lpips: float | None = None
+    transfer_clip_style: float | None = None
 
 
 def parse_name(path: Path) -> tuple[str, str, str] | None:
@@ -77,6 +85,13 @@ def collect_generated(images_dir: Path) -> tuple[dict[str, list[Path]], list[tup
         if src is not None:
             content_pairs.append((src, path))
     return by_target, content_pairs
+
+
+def resolve_clip_source() -> str:
+    for candidate in LOCAL_CLIP_CANDIDATES:
+        if candidate.exists():
+            return str(candidate)
+    return "openai/clip-vit-base-patch32"
 
 
 class InceptionFeat(nn.Module):
@@ -156,6 +171,18 @@ def mean(values: list[float | None]) -> float | None:
 
 
 def load_basic_summary(spec: RunSpec) -> dict[str, Any]:
+    if (
+        spec.clip_style is not None
+        or spec.clip_content is not None
+        or spec.content_lpips is not None
+        or spec.transfer_clip_style is not None
+    ):
+        return {
+            "clip_style": spec.clip_style,
+            "clip_content": spec.clip_content,
+            "content_lpips": spec.content_lpips,
+            "transfer_clip_style": spec.transfer_clip_style,
+        }
     if spec.summary_json and spec.summary_json.exists():
         data = json.loads(spec.summary_json.read_text(encoding="utf-8"))
         overview = data.get("analysis", {}).get("all_pairs_overview", {})
@@ -199,27 +226,27 @@ def try_artfid(spec: RunSpec, content_pairs: list[tuple[Path, Path]], by_target:
         for target, gen_paths in by_target.items():
             if target == "photo" or not gen_paths:
                 continue
-            ref_paths = list_style_images(STYLE_ROOT / target)
+            ref_paths = [str(p) for p in list_style_images(STYLE_ROOT / target)]
+            gen_paths_s = [str(p) for p in gen_paths]
             style_fid = compute_artfid_fid_from_paths(
-                gen_paths,
+                gen_paths_s,
                 ref_paths,
-                feature_model=feature_model,
+                model=feature_model,
                 batch_size=batch_size,
-                max_gen=len(gen_paths),
-                max_ref=len(ref_paths),
+                device=device,
                 ref_cache={},
-                cache_key=f"ref_{target}",
+                ref_cache_key=f"ref_{target}",
             )
             if style_fid is not None:
                 art_style_fids.append(style_fid)
-        src_paths = [src for src, _ in content_pairs]
-        gen_paths = [gen for _, gen in content_pairs]
+        src_paths = [str(src) for src, _ in content_pairs]
+        gen_paths = [str(gen) for _, gen in content_pairs]
         content = compute_artfid_content_distance_from_paths(
             gen_paths,
             src_paths,
-            lpips_loss_fn=lpips_loss,
+            loss_fn=lpips_loss,
             batch_size=batch_size,
-            max_items=len(gen_paths),
+            device=device,
         )
         style_mean = mean(art_style_fids)
         if style_mean is not None and content is not None:
@@ -234,7 +261,7 @@ def evaluate(spec: RunSpec, *, device: str, batch_size: int, enable_artfid: bool
     all_images = sum(len(v) for v in by_target.values())
     torch_device = torch.device(device)
     inception = InceptionFeat().to(torch_device)
-    clip = ClipEmbedder("openai/clip-vit-base-patch32", device=device)
+    clip = ClipEmbedder(resolve_clip_source(), device=device)
     gram = VggGramEmbedder(device=device)
 
     ref_inception: dict[str, np.ndarray] = {}
@@ -310,6 +337,51 @@ def default_specs() -> list[RunSpec]:
         RunSpec("Ours", "epoch_0008", ours / "full_eval" / "epoch_0008" / "images", ours / "full_eval" / "epoch_0008" / "summary.json"),
         RunSpec("Ours", "residual_1p25", ours / "residual_scale_sweep_epoch7" / "residual_1p25" / "images", ours / "residual_scale_sweep_epoch7" / "residual_1p25" / "summary.json"),
         RunSpec("SaMST", "samst_strict", rw / "samst_strict" / "images", protocol_json=rw / "samst_strict" / "eval_protocol750_sbmatch.json"),
+        RunSpec(
+            "StyleID",
+            "styleid_strict",
+            rw / "styleid_strict" / "images",
+            clip_style=0.7597,
+            clip_content=0.5519,
+            content_lpips=0.7497,
+            transfer_clip_style=0.7597,
+        ),
+        RunSpec(
+            "S2WAT",
+            "s2wat_strict",
+            rw / "s2wat_strict" / "images",
+            clip_style=0.7139,
+            clip_content=0.7465,
+            content_lpips=0.5263,
+            transfer_clip_style=0.7139,
+        ),
+        RunSpec(
+            "AdaIN",
+            "adain_v32k",
+            rw / "adain_v32k" / "images",
+            clip_style=0.7130,
+            clip_content=0.6990,
+            content_lpips=0.6298,
+            transfer_clip_style=0.7130,
+        ),
+        RunSpec(
+            "AdaIN",
+            "adain_vgg19",
+            rw / "adain_vgg19" / "images",
+            clip_style=0.6930,
+            clip_content=0.5991,
+            content_lpips=0.6870,
+            transfer_clip_style=0.6930,
+        ),
+        RunSpec(
+            "AdaIN",
+            "adain_bad",
+            rw / "adain_bad" / "images",
+            clip_style=0.6308,
+            clip_content=0.5297,
+            content_lpips=0.8490,
+            transfer_clip_style=0.6308,
+        ),
     ]
 
 
