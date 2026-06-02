@@ -480,14 +480,14 @@ The 40-run category-weight sweep trained 20 sampling recipes with $K \in \{1,2\}
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.82\linewidth]{fig_train_efficiency_pareto.png}
-    \caption{Training-efficiency Pareto plot (log scale). Ours operates in a low-training-cost region while preserving a competitive style-content frontier. Marker size reflects parameter count.}
-    \label{fig:pareto}
+    \includegraphics[width=0.84\linewidth]{figures/fig_distinct5_time_context.pdf}
+    \caption{Same-scope Distinct5 timing-context artifact under the reproduced full $5\times5$ / 750-output protocol, with cumulative training wall time and evaluation excluded from the horizontal axis. LBM is shown as reviewed operating-point records, SaMAM as the currently indexed partial curve, SaMST as the currently available operating point, and \textit{idt} as the unchanged-image reference. This figure is used as bounded timing context rather than as a closed normalized time-to-parity claim.}
+    \label{fig:timecontext}
 \end{figure}
 
 Step-count sensitivity is also stable. Evaluating 1, 4, 8, 12, and 16 Euler steps on the selected epoch-7 checkpoint changes all-pairs CLIP-S only from 0.7159 to 0.7162, while LPIPS remains near 0.4514. Four steps already recover nearly identical quality, with measured strict-750 throughput increasing from 8.43 images/s at one step to 9.54 images/s at four steps and remaining around 9.34--9.50 images/s for 8--16 steps. A $3\times3$ grid over $\lambda_{\mathrm{kin}}\in\{0.5,1.0,2.0\}$ and $\lambda_{\mathrm{swd}}\in\{10,20,30\}$ produced a smooth style-content surface: higher kinetic weight and lighter terminal pressure improve content, while weaker kinetic weight or stronger terminal pressure increases style at the cost of LPIPS.
 
-All reported evaluations use fixed seeds, stored resolved configurations, source snapshots, checkpoints, and per-epoch logs. Historical timings were measured on an RTX 4070 Laptop GPU unless otherwise noted. Distinct5-512 LBM and SaMAM timings are reported separately from the remote RTX 3060 WSL setup, with SaMAM time cumulative over training and LBM time per checkpoint. For the historical table, training and inference cost are reported explicitly in Table~\ref{tab:cost} rather than being folded into a single efficiency claim.
+All reported evaluations use fixed seeds, stored resolved configurations, source snapshots, checkpoints, and per-epoch logs. Historical timings were measured on an RTX 4070 Laptop GPU unless otherwise noted. For Distinct5-512, Figure~\ref{fig:timecontext} replaces mixed timing anecdotes with one explicit same-scope packet: cumulative training wall time is plotted with evaluation excluded, and each method family is labeled by timing mode rather than being forced into a false normalized parity claim. For the historical table, training and inference cost are reported explicitly in Table~\ref{tab:cost} rather than being folded into a single efficiency claim.
 
 
 

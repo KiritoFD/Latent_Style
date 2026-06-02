@@ -165,3 +165,43 @@ Gate C may be treated as closed only when:
 2. the vector figures are generated from that CSV;
 3. the main paper timing language is backed by this artifact rather than by
    mixed operating-point anecdotes.
+
+## Current provenance note
+
+The current `v1` artifact is intentionally narrow and uses only one plotted
+scope:
+
+- dataset:
+  - `Distinct5-512`
+- evaluation scope:
+  - `full 5x5 / 750`
+
+Included rows currently follow these rules:
+
+1. `LBM`
+   - kept as reviewed Distinct5 operating-point records:
+     - `F e1`
+     - `H e1`
+     - `H e2`
+     - `K e1`
+   - cumulative training wall excludes eval
+2. `SaMAM`
+   - kept as the currently indexed Distinct5 partial curve:
+     - `250 -> 2250`
+   - cumulative training wall excludes eval
+3. `SaMST`
+   - kept as the currently indexed Distinct5 operating-point record:
+     - `e15`
+   - no same-scope Distinct5 curve is currently available
+4. `idt`
+   - included as the zero-time reference line only
+
+Explicit exclusions in the current `v1` packet:
+
+- historical strict-750 timings
+- WikiArt512 timings
+- transfer-only rows in the plotted figures
+- abnormal runtime packets such as the random-axis SA-SWD arm
+
+Transfer-only deltas may still appear in the CSV as auxiliary fields, but the
+figures do not mix `full` and `transfer-only` timing curves.
