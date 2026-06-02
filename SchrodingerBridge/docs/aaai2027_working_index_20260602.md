@@ -145,6 +145,7 @@ Key evidence:
 - `SchrodingerBridge/docs/experiments/2026-06-03-flow-loss-metric-ablation/repaired_endpoint_metric_ablation_packet_20260603.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-flow-loss-metric-ablation/repaired_endpoint_metric_launch_manifest_20260603.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-saswd-axis-ablation/README.md`
+- `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-execution-alignment-protocol.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/README.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/distinct5_time_to_parity_points.csv`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/figures/distinct5_time_to_clip_style.pdf`
