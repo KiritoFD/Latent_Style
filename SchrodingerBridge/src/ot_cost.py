@@ -130,7 +130,8 @@ class SWDTransportCost:
             return self._pairwise_from_projected_cdf(x_proj, y_proj)
         x_sorted, _ = torch.sort(x_proj, dim=2)
         y_sorted, _ = torch.sort(y_proj, dim=2)
-        return (x_sorted.unsqueeze(1) - y_sorted.unsqueeze(0)).abs().mean(dim=(2, 3))
+        dim = max(1, int(x_sorted.shape[1]) * int(x_sorted.shape[2]))
+        return torch.cdist(x_sorted.flatten(1), y_sorted.flatten(1), p=1) / float(dim)
 
     def _aligned_from_projected(self, x_proj: torch.Tensor, y_proj: torch.Tensor) -> torch.Tensor:
         x_proj = x_proj.float()

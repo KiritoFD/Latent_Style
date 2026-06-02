@@ -1,0 +1,18 @@
+{
+  "_base": "distinct5_512_ema_variant_d_vq_content_guided.json",
+  "data": {
+    "pairing_cache_path": "/mnt/f/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt",
+    "pairing_cache_topk": 8,
+    "pairing_cache_sample_mode": "uniform_topk",
+    "pairing_cache_cross_only": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/distinct5_512_ema_variant_e_latent_prototype_ot_queue_b80"
+  },
+  "ablation": {
+    "name": "distinct5_512_ema_variant_e_latent_prototype_ot_queue",
+    "axis": "distinct5_512_representation",
+    "stage": "variant_e",
+    "notes": "VQ + content-guided spatial routing with internal VAE-latent prototype-aware pairing cache. No DINO, CLIP supervision, classifier, or external semantic features."
+  }
+}

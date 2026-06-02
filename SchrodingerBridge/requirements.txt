@@ -1,17 +1,16 @@
-# SchrodingerBridge runtime requirements
+# SchrodingerBridge runtime requirements.
 #
-# This file is biased toward evaluation/full_eval support:
-# - CLIP / HF feature extraction
-# - LPIPS
-# - KID / FID
-# - DINOv2 / modern post-hoc metrics
+# Install torch/torchvision from the official PyTorch CUDA index first, then
+# install this file. LANCET benefits from a modern WSL/Linux CUDA stack; torch
+# 2.3.0+cu121 is only the lowest validated compatibility floor from the copied
+# SaMAM WSL env, not the recommended performance target.
 #
-# For CUDA installs, prefer installing torch / torchvision from the official
-# PyTorch index that matches your local CUDA version before `pip install -r requirements.txt`.
-#
-# Example (CUDA 12.1):
-#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+# Recommended WSL/Linux examples:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
 #   pip install -r requirements.txt
+#
+# Validated fallback:
+#   torch==2.3.0+cu121, torchvision==0.18.x
 
 torch>=2.3
 torchvision>=0.18
@@ -20,12 +19,14 @@ numpy>=1.24
 scipy>=1.10
 pillow>=10.0
 tqdm>=4.66
+psutil>=7.0
 
-transformers>=4.41
-huggingface-hub>=0.23
+transformers>=4.57,<5
+huggingface-hub>=0.34,<1
 safetensors>=0.4
+accelerate>=1.10
 
-diffusers>=0.27
+diffusers>=0.38,<0.39
 
 scikit-learn>=1.4
 lpips>=0.1.4
@@ -34,3 +35,9 @@ torch-fidelity>=0.3.0
 
 # Optional but supported by src/utils/inference.py
 modelscope>=1.15
+
+# Optional WSL/Linux acceleration hooks. Keep xformers installed from the same
+# PyTorch CUDA index as torch if needed; its wheel ABI is tightly torch-bound.
+triton>=2.3; platform_system != "Windows"
+xformers>=0.0.35; platform_system != "Windows"
+ninja>=1.11; platform_system != "Windows"

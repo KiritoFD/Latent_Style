@@ -1,0 +1,22 @@
+{
+  "_base": "distinct5_512_ema_variant_h_hard_explore_queue_e3.json",
+  "bridge": {
+    "terminal_swd_aux_weight": 3.0
+  },
+  "data": {
+    "pairing_cache_explore_prob": 0.0,
+    "pairing_cache_explore_topk": 8,
+    "pairing_cache_dual_target_mix": 0.0,
+    "pairing_cache_dual_target_topk": 8,
+    "pairing_cache_aux_target_topk": 8
+  },
+  "checkpoint": {
+    "save_dir": "./exp/distinct5_512_ema_variant_j_aux_hard_swd_queue_e3"
+  },
+  "ablation": {
+    "name": "distinct5_512_ema_variant_j_aux_hard_swd_queue_e3",
+    "axis": "distinct5_512_representation_speed",
+    "stage": "variant_j",
+    "notes": "Clean top-2 target remains the main target; a hard top-8 target is used only as a separate auxiliary terminal SWD term. Internal VAE-latent target shaping only; no DINO, CLIP supervision, classifier, or external semantic features."
+  }
+}

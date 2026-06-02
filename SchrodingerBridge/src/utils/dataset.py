@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Dict, Sequence
 
@@ -54,8 +55,20 @@ class AdaCUTLatentDataset(Dataset):
         target_style_sampling_weights: Sequence[float] | None = None,
         pairing_cache_path: str = "",
         pairing_cache_topk: int = 4,
+        pairing_cache_active_topk: int = 0,
         pairing_cache_sample_mode: str = "uniform_topk",
+        pairing_cache_rank_schedule: str = "fixed",
+        pairing_cache_min_topk: int = 1,
+        pairing_cache_curriculum_epochs: int = 0,
+        pairing_cache_rank_power: float = 1.0,
+        pairing_cache_explore_prob: float = 0.0,
+        pairing_cache_explore_topk: int = 0,
+        pairing_cache_dual_target_mix: float = 0.0,
+        pairing_cache_dual_target_topk: int = 0,
+        pairing_cache_aux_target_topk: int = 0,
         pairing_cache_cross_only: bool = True,
+        latent_cache_mode: str = "off",
+        latent_cache_dir: str = "",
         device: str = "cpu",
     ) -> None:
         self.data_root = Path(data_root)
@@ -79,6 +92,10 @@ class AdaCUTLatentDataset(Dataset):
         self._cache_content_rands = None
         self._cache_target_style_ids = None
         self._cache_target_rands = None
+        self._cache_pairing_rands = None
+        self._cache_pairing_explore_rands = None
+        self._cache_pairing_dual_rands = None
+        self._cache_pairing_aux_rands = None
         self._cache_flip_content = None
         self._cache_flip_target = None
 
@@ -87,15 +104,41 @@ class AdaCUTLatentDataset(Dataset):
         if len(self.style_subdirs) < 2:
             raise ValueError("At least two style domains are required for cross-domain sampling")
 
+        self.pairing_cache_path = str(pairing_cache_path or "").strip()
+        self.pairing_cache_topk = max(1, int(pairing_cache_topk))
+        self.pairing_cache_active_topk = max(0, int(pairing_cache_active_topk))
+        self.pairing_cache_sample_mode = str(pairing_cache_sample_mode).strip().lower() or "uniform_topk"
+        self.pairing_cache_rank_schedule = str(pairing_cache_rank_schedule).strip().lower() or "fixed"
+        if self.pairing_cache_rank_schedule not in {"fixed", "easy_to_hard", "hard_to_easy"}:
+            logger.warning("Unknown pairing_cache_rank_schedule=%s; using fixed.", self.pairing_cache_rank_schedule)
+            self.pairing_cache_rank_schedule = "fixed"
+        self.pairing_cache_min_topk = max(1, int(pairing_cache_min_topk))
+        self.pairing_cache_curriculum_epochs = max(0, int(pairing_cache_curriculum_epochs))
+        self.pairing_cache_rank_power = max(1e-3, float(pairing_cache_rank_power))
+        self.pairing_cache_explore_prob = max(0.0, min(1.0, float(pairing_cache_explore_prob)))
+        self.pairing_cache_explore_topk = max(0, int(pairing_cache_explore_topk))
+        self.pairing_cache_dual_target_mix = max(0.0, min(1.0, float(pairing_cache_dual_target_mix)))
+        self.pairing_cache_dual_target_topk = max(0, int(pairing_cache_dual_target_topk))
+        self.pairing_cache_aux_target_topk = max(0, int(pairing_cache_aux_target_topk))
+        self.pairing_cache_cross_only = bool(pairing_cache_cross_only)
+        self.latent_cache_mode = str(latent_cache_mode or "off").strip().lower()
+        if self.latent_cache_mode not in {"off", "manifest", "packed", "refresh"}:
+            logger.warning("Unknown latent_cache_mode=%s; using off.", self.latent_cache_mode)
+            self.latent_cache_mode = "off"
+        self.latent_cache_dir = Path(latent_cache_dir) if str(latent_cache_dir or "").strip() else (self.data_root / ".latent_cache")
+        if not self.latent_cache_dir.is_absolute():
+            self.latent_cache_dir = (self.data_root / self.latent_cache_dir).resolve()
+        self._latent_manifest: dict[str, list[Path]] | None = None
+        if self.latent_cache_mode != "off":
+            self._latent_manifest = self._load_or_build_manifest(force_refresh=self.latent_cache_mode == "refresh")
+
         self.style_tensors: Dict[int, torch.Tensor] = {}
         logger.info("Loading latent dataset from %s", self.data_root)
         for style_id, subdir in enumerate(self.style_subdirs):
-            style_dir = self.data_root / subdir
-            files = sorted(style_dir.glob("*.pt")) + sorted(style_dir.glob("*.npy"))
+            files = self._resolve_style_files(subdir)
             if not files:
-                raise RuntimeError(f"No latent files found in {style_dir}")
-            latents = [_load_latent_file(p) for p in files]
-            stack = torch.stack(latents, dim=0)
+                raise RuntimeError(f"No latent files found for style={subdir} under {self.data_root}")
+            stack = self._load_style_stack(style_id, subdir, files)
             self.style_tensors[style_id] = stack
             self._register_style_index(style_id, files)
             logger.info("  style=%s id=%d count=%d", subdir, style_id, stack.shape[0])
@@ -107,10 +150,6 @@ class AdaCUTLatentDataset(Dataset):
         self.length = max(1, int(round(self.content_count * effective_multiplier)))
         self.content_style_sampling_weights = self._normalize_style_weights(content_style_sampling_weights, "content_style_sampling_weights")
         self.target_style_sampling_weights = self._normalize_style_weights(target_style_sampling_weights, "target_style_sampling_weights")
-        self.pairing_cache_path = str(pairing_cache_path or "").strip()
-        self.pairing_cache_topk = max(1, int(pairing_cache_topk))
-        self.pairing_cache_sample_mode = str(pairing_cache_sample_mode).strip().lower() or "uniform_topk"
-        self.pairing_cache_cross_only = bool(pairing_cache_cross_only)
 
         if requested_preload_to_gpu:
             self._try_preload_to_gpu()
@@ -119,6 +158,101 @@ class AdaCUTLatentDataset(Dataset):
 
         # Initialize deterministic caches so __getitem__ is always safe.
         self.set_epoch(0)
+
+    def _manifest_path(self) -> Path:
+        return self.latent_cache_dir / "manifest.json"
+
+    def _style_cache_name(self, style_id: int, subdir: str) -> str:
+        safe = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(subdir)).strip("_") or f"style_{style_id}"
+        return f"{style_id:02d}_{safe}.pt"
+
+    def _scan_style_files(self, subdir: str) -> list[Path]:
+        style_dir = self.data_root / subdir
+        return sorted(style_dir.glob("*.pt")) + sorted(style_dir.glob("*.npy"))
+
+    def _load_or_build_manifest(self, *, force_refresh: bool = False) -> dict[str, list[Path]]:
+        manifest_path = self._manifest_path()
+        if not force_refresh and manifest_path.exists():
+            try:
+                payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+                if (
+                    payload.get("schema") == 1
+                    and payload.get("data_root") == str(self.data_root)
+                    and payload.get("style_subdirs") == self.style_subdirs
+                ):
+                    styles = payload.get("styles", {})
+                    manifest: dict[str, list[Path]] = {}
+                    for subdir in self.style_subdirs:
+                        rel_files = styles.get(subdir, {}).get("files", [])
+                        manifest[subdir] = [self.data_root / str(rel) for rel in rel_files]
+                    logger.info("Loaded latent manifest cache: %s", manifest_path)
+                    return manifest
+            except Exception as exc:
+                logger.warning("Ignoring stale latent manifest cache %s (%s).", manifest_path, exc)
+
+        manifest = {subdir: self._scan_style_files(subdir) for subdir in self.style_subdirs}
+        self.latent_cache_dir.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "schema": 1,
+            "data_root": str(self.data_root),
+            "style_subdirs": self.style_subdirs,
+            "styles": {
+                subdir: {
+                    "count": len(files),
+                    "files": [str(path.relative_to(self.data_root)) for path in files],
+                }
+                for subdir, files in manifest.items()
+            },
+        }
+        tmp = manifest_path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(manifest_path)
+        logger.info("Wrote latent manifest cache: %s", manifest_path)
+        return manifest
+
+    def _resolve_style_files(self, subdir: str) -> list[Path]:
+        if self._latent_manifest is not None and subdir in self._latent_manifest:
+            return list(self._latent_manifest[subdir])
+        return self._scan_style_files(subdir)
+
+    def _load_style_stack(self, style_id: int, subdir: str, files: list[Path]) -> torch.Tensor:
+        if self.latent_cache_mode == "packed":
+            packed_dir = self.latent_cache_dir / "packed"
+            packed_path = packed_dir / self._style_cache_name(style_id, subdir)
+            if packed_path.exists():
+                try:
+                    payload = torch.load(packed_path, map_location="cpu", weights_only=False)
+                    if (
+                        isinstance(payload, dict)
+                        and payload.get("schema") == 1
+                        and payload.get("subdir") == subdir
+                        and payload.get("count") == len(files)
+                    ):
+                        latents = torch.as_tensor(payload["latents"]).float()
+                        if latents.ndim == 4:
+                            logger.info("Loaded packed latent cache: %s", packed_path)
+                            return latents
+                except Exception as exc:
+                    logger.warning("Ignoring stale packed latent cache %s (%s).", packed_path, exc)
+
+        latents = [_load_latent_file(p) for p in files]
+        stack = torch.stack(latents, dim=0)
+        if self.latent_cache_mode == "packed":
+            packed_dir = self.latent_cache_dir / "packed"
+            packed_dir.mkdir(parents=True, exist_ok=True)
+            packed_path = packed_dir / self._style_cache_name(style_id, subdir)
+            payload = {
+                "schema": 1,
+                "subdir": subdir,
+                "count": len(files),
+                "files": [str(path.relative_to(self.data_root)) for path in files],
+                "latents": stack,
+            }
+            tmp = packed_path.with_suffix(".tmp")
+            torch.save(payload, tmp)
+            tmp.replace(packed_path)
+            logger.info("Wrote packed latent cache: %s", packed_path)
+        return stack
 
     def _normalize_style_weights(self, weights: Sequence[float] | None, name: str) -> torch.Tensor | None:
         if weights is None:
@@ -276,6 +410,45 @@ class AdaCUTLatentDataset(Dataset):
         self.offline_pairing_map = pair_map
         logger.info("Loaded pairing cache %s with %d source-target routes", path, len(self.offline_pairing_map))
 
+    def _active_pairing_topk(self, candidate_count: int) -> int:
+        max_topk = max(1, min(int(candidate_count), int(self.pairing_cache_topk)))
+        if self.pairing_cache_active_topk > 0:
+            return max(1, min(max_topk, int(self.pairing_cache_active_topk)))
+        min_topk = max(1, min(int(self.pairing_cache_min_topk), max_topk))
+        if self.pairing_cache_rank_schedule == "fixed" or self.pairing_cache_curriculum_epochs <= 1:
+            return max_topk
+        progress = max(0.0, min(1.0, (float(self.epoch) - 1.0) / max(1.0, float(self.pairing_cache_curriculum_epochs - 1))))
+        if self.pairing_cache_rank_schedule == "hard_to_easy":
+            active = max_topk - progress * float(max_topk - min_topk)
+        else:
+            active = min_topk + progress * float(max_topk - min_topk)
+        return max(1, min(max_topk, int(round(active))))
+
+    def _sample_pairing_rank(self, *, active_topk: int, random_value: float, sample_index: int | None = None) -> int:
+        if active_topk <= 1:
+            return 0
+        mode = self.pairing_cache_sample_mode
+        if mode == "top1":
+            return 0
+        if mode in {"rank_stratified", "rank_biased_stratified", "reverse_rank_biased_stratified"}:
+            if sample_index is None:
+                u = max(0.0, min(1.0 - 1e-7, float(random_value)))
+            else:
+                # Deterministic per-epoch rank quantiles reduce batch-to-batch
+                # target hardness jitter while still covering all active ranks.
+                slot = (int(sample_index) + 9973 * int(self.epoch)) % active_topk
+                u = (float(slot) + 0.5) / float(active_topk)
+        else:
+            u = max(0.0, min(1.0 - 1e-7, float(random_value)))
+        if mode in {"rank_biased", "rank_biased_stratified"}:
+            u = u ** self.pairing_cache_rank_power
+        elif mode in {"reverse_rank_biased", "reverse_rank_biased_stratified"}:
+            u = 1.0 - ((1.0 - u) ** self.pairing_cache_rank_power)
+        return min(int(u * active_topk), active_topk - 1)
+
+    def current_pairing_active_topk(self) -> int:
+        return self._active_pairing_topk(self.pairing_cache_topk)
+
     def set_epoch(self, epoch: int) -> None:
         self.epoch = int(epoch)
         
@@ -330,6 +503,10 @@ class AdaCUTLatentDataset(Dataset):
         # Random floats for selecting index within the chosen style
         self._cache_content_rands = torch.rand(N, generator=g)
         self._cache_target_rands = torch.rand(N, generator=g)
+        self._cache_pairing_rands = torch.rand(N, generator=g)
+        self._cache_pairing_explore_rands = torch.rand(N, generator=g)
+        self._cache_pairing_dual_rands = torch.rand(N, generator=g)
+        self._cache_pairing_aux_rands = torch.rand(N, generator=g)
 
         if self.allow_hflip:
             self._cache_flip_content = torch.rand(N, generator=g) < 0.5
@@ -354,6 +531,10 @@ class AdaCUTLatentDataset(Dataset):
         target_style_id: int,
         fallback_index: int,
         random_value: float,
+        rank_random_value: float | None = None,
+        explore_random_value: float | None = None,
+        sample_index: int | None = None,
+        force_hard_topk: int = 0,
     ) -> int:
         if not self.offline_pairing_map:
             return fallback_index
@@ -367,11 +548,40 @@ class AdaCUTLatentDataset(Dataset):
         if not candidates:
             return fallback_index
 
-        if self.pairing_cache_sample_mode == "top1":
-            chosen_stem = candidates[0]
-        else:
-            chosen_idx = min(int(random_value * len(candidates)), len(candidates) - 1)
+        active_topk = self._active_pairing_topk(len(candidates))
+        rank_random = float(random_value if rank_random_value is None else rank_random_value)
+        explore_random = float(random_value if explore_random_value is None else explore_random_value)
+        if force_hard_topk > 0:
+            hard_topk = max(1, min(int(force_hard_topk), int(len(candidates)), int(self.pairing_cache_topk)))
+            if hard_topk <= active_topk:
+                return fallback_index
+            hard_width = max(1, hard_topk - active_topk)
+            hard_u = max(0.0, min(1.0 - 1e-7, rank_random))
+            chosen_idx = active_topk + min(int(hard_u * hard_width), hard_width - 1)
             chosen_stem = candidates[chosen_idx]
+            target_indices = self.style_base_to_indices[target_style_id].get(chosen_stem)
+            if not target_indices:
+                return fallback_index
+            picked_variant = min(int(random_value * len(target_indices)), len(target_indices) - 1)
+            return int(target_indices[picked_variant])
+
+        explore_topk = self.pairing_cache_explore_topk if self.pairing_cache_explore_topk > 0 else self.pairing_cache_topk
+        explore_topk = max(1, min(int(explore_topk), int(len(candidates)), int(self.pairing_cache_topk)))
+        use_hard_explore = (
+            self.pairing_cache_explore_prob > 0.0
+            and explore_topk > active_topk
+            and explore_random < self.pairing_cache_explore_prob
+        )
+        if use_hard_explore:
+            hard_width = max(1, explore_topk - active_topk)
+            chosen_idx = active_topk + min(int(rank_random * hard_width), hard_width - 1)
+        else:
+            chosen_idx = self._sample_pairing_rank(
+                active_topk=active_topk,
+                random_value=rank_random,
+                sample_index=sample_index,
+            )
+        chosen_stem = candidates[chosen_idx]
 
         target_indices = self.style_base_to_indices[target_style_id].get(chosen_stem)
         if not target_indices:
@@ -395,14 +605,51 @@ class AdaCUTLatentDataset(Dataset):
             target_style_id=target_style_id,
             fallback_index=t_idx,
             random_value=float(self._cache_target_rands[index]),
+            rank_random_value=float(self._cache_pairing_rands[index]),
+            explore_random_value=float(self._cache_pairing_explore_rands[index]),
+            sample_index=index,
         )
 
         content = self._maybe_flip(c_pool[c_idx], self._cache_flip_content, index)
         target_style = self._maybe_flip(t_pool[t_idx], self._cache_flip_target, index)
+        aux_target_style = None
+        aux_target_valid = False
+        if self.pairing_cache_dual_target_mix > 0.0:
+            hard_topk = self.pairing_cache_dual_target_topk if self.pairing_cache_dual_target_topk > 0 else self.pairing_cache_topk
+            hard_idx = self._sample_target_index_from_pairing(
+                content_style_id=content_style_id,
+                content_index=c_idx,
+                target_style_id=target_style_id,
+                fallback_index=t_idx,
+                random_value=float(self._cache_target_rands[index]),
+                rank_random_value=float(self._cache_pairing_dual_rands[index]),
+                sample_index=index,
+                force_hard_topk=hard_topk,
+            )
+            if hard_idx != t_idx:
+                hard_target = self._maybe_flip(t_pool[hard_idx], self._cache_flip_target, index)
+                target_style = torch.lerp(target_style, hard_target, self.pairing_cache_dual_target_mix)
+        if self.pairing_cache_aux_target_topk > 0:
+            aux_idx = self._sample_target_index_from_pairing(
+                content_style_id=content_style_id,
+                content_index=c_idx,
+                target_style_id=target_style_id,
+                fallback_index=t_idx,
+                random_value=float(self._cache_target_rands[index]),
+                rank_random_value=float(self._cache_pairing_aux_rands[index]),
+                sample_index=index,
+                force_hard_topk=self.pairing_cache_aux_target_topk,
+            )
+            aux_target_valid = aux_idx != t_idx
+            aux_target_style = self._maybe_flip(t_pool[aux_idx], self._cache_flip_target, index)
 
-        return {
+        item = {
             "content": content,
             "target_style": target_style,
             "target_style_id": target_style_id,
             "source_style_id": content_style_id,
         }
+        if self.pairing_cache_aux_target_topk > 0:
+            item["aux_target_style"] = aux_target_style if aux_target_style is not None else target_style
+            item["aux_target_valid"] = torch.tensor(float(aux_target_valid), dtype=torch.float32)
+        return item

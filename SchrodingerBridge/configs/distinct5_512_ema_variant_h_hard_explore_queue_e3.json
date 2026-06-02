@@ -1,0 +1,20 @@
+{
+  "_base": "distinct5_512_ema_variant_f_annealed_prototype_ot_queue_e3.json",
+  "data": {
+    "pairing_cache_active_topk": 2,
+    "pairing_cache_rank_schedule": "fixed",
+    "pairing_cache_min_topk": 2,
+    "pairing_cache_curriculum_epochs": 0,
+    "pairing_cache_explore_prob": 0.15,
+    "pairing_cache_explore_topk": 8
+  },
+  "checkpoint": {
+    "save_dir": "./exp/distinct5_512_ema_variant_h_hard_explore_queue_e3"
+  },
+  "ablation": {
+    "name": "distinct5_512_ema_variant_h_hard_explore_queue_e3",
+    "axis": "distinct5_512_representation_speed",
+    "stage": "variant_h",
+    "notes": "Variant F with a two-channel internal latent queue: clean stochastic top-2 target sampling plus 15% hard-rank exploration from top-8. No DINO, CLIP supervision, classifier, or external semantic features."
+  }
+}

@@ -54,6 +54,12 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         self.upsample_blur_kernel = str(cfg.upsample_blur_kernel).lower()
         self.style_attn_num_tokens = max(1, int(cfg.style_attn_num_tokens))
         self.style_attn_num_heads = max(1, int(cfg.style_attn_num_heads))
+        self.num_atoms = max(2, int(cfg.tokenizer_num_atoms))
+        self.tokenizer_content_adaptive = bool(cfg.tokenizer_content_adaptive)
+        self.tokenizer_content_gain = float(cfg.tokenizer_content_gain)
+        self.tokenizer_content_stopgrad = bool(cfg.tokenizer_content_stopgrad)
+        self.tokenizer_content_style_gate = bool(cfg.tokenizer_content_style_gate)
+        self.tokenizer_content_style_gate_max = max(1e-3, float(cfg.tokenizer_content_style_gate_max))
         self.style_attn_sharpen_scale = max(0.1, float(cfg.style_attn_sharpen_scale))
         self.style_attn_temperature = max(1e-3, float(cfg.style_attn_temperature))
         self.hires_block_type = _normalize_feature_block_type(cfg.hires_block_type)
@@ -119,6 +125,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             projection_mode=str(cfg.tokenizer_projection_mode),
             residual_gain=float(cfg.tokenizer_residual_gain),
             num_atoms=int(cfg.tokenizer_num_atoms),
+            num_prototypes=int(cfg.tokenizer_num_prototypes),
             atom_temperature=float(cfg.tokenizer_atom_temperature),
             field_dropout_p=float(cfg.tokenizer_field_dropout_p),
             code_l2_norm=bool(cfg.tokenizer_code_l2_norm),
@@ -126,10 +133,68 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             atom_topk=int(cfg.tokenizer_atom_topk),
             atom_hard_eval=bool(cfg.tokenizer_atom_hard_eval),
         )
+        self.style_code_content_router: nn.Module | None = None
+        self.style_code_content_style_gate: nn.Embedding | None = None
+        if self.tokenizer_content_adaptive:
+            router_in = self.body_channels * 4 + 1
+            hidden = max(4, int(cfg.tokenizer_content_hidden_dim))
+            self.style_code_content_router = nn.Sequential(
+                nn.LayerNorm(router_in),
+                nn.Linear(router_in, hidden),
+                nn.SiLU(),
+                nn.Linear(hidden, self.num_atoms),
+            )
+            last = self.style_code_content_router[-1]
+            if isinstance(last, nn.Linear):
+                nn.init.zeros_(last.weight)
+                nn.init.zeros_(last.bias)
+            if self.tokenizer_content_style_gate:
+                self.style_code_content_style_gate = nn.Embedding(self.num_styles, 1)
+                init_ratio = float(cfg.tokenizer_content_style_gate_init) / self.tokenizer_content_style_gate_max
+                init_ratio = max(1e-4, min(1.0 - 1e-4, init_ratio))
+                init_logit = torch.logit(torch.tensor(init_ratio, dtype=torch.float32)).item()
+                nn.init.constant_(self.style_code_content_style_gate.weight, init_logit)
 
-        # Learnable style-id spatial priors for inference without reference image.
+        # Learnable style priors for inference without reference image. The
+        # default class prior keeps historical behavior; prototype/VQ modes are
+        # opt-in representation probes.
+        self.style_spatial_mode = str(cfg.style_spatial_mode).strip().lower()
+        if self.style_spatial_mode not in {"class", "prototype", "content_guided", "vq", "vq_content_guided"}:
+            self.style_spatial_mode = "class"
+        self.style_spatial_num_prototypes = max(1, int(cfg.style_spatial_num_prototypes))
+        self.style_spatial_routing_temperature = max(1e-3, float(cfg.style_spatial_routing_temperature))
         self.style_spatial_id_16 = nn.Parameter(torch.zeros(self.num_styles, self.body_channels, 16, 16))
         nn.init.normal_(self.style_spatial_id_16, mean=0.0, std=0.02)
+        self.style_spatial_proto_16: nn.Parameter | None = None
+        self.style_spatial_atoms_16: nn.Parameter | None = None
+        self.style_spatial_logits: nn.Embedding | None = None
+        self.style_spatial_content_router: nn.Module | None = None
+        if self.style_spatial_mode in {"prototype", "content_guided"}:
+            self.style_spatial_proto_16 = nn.Parameter(
+                torch.zeros(self.num_styles, self.style_spatial_num_prototypes, self.body_channels, 16, 16)
+            )
+            nn.init.normal_(self.style_spatial_proto_16, mean=0.0, std=0.02)
+            self.style_spatial_logits = nn.Embedding(self.num_styles, self.style_spatial_num_prototypes)
+            nn.init.zeros_(self.style_spatial_logits.weight)
+        if self.style_spatial_mode in {"vq", "vq_content_guided"}:
+            self.style_spatial_atoms_16 = nn.Parameter(torch.zeros(self.num_atoms, self.body_channels, 16, 16))
+            nn.init.normal_(self.style_spatial_atoms_16, mean=0.0, std=0.02)
+            self.style_spatial_logits = nn.Embedding(self.num_styles, self.num_atoms)
+            nn.init.zeros_(self.style_spatial_logits.weight)
+        if self.style_spatial_mode in {"content_guided", "vq_content_guided"}:
+            router_out = self.style_spatial_num_prototypes if self.style_spatial_mode == "content_guided" else self.num_atoms
+            router_in = self.body_channels * 4 + 1
+            hidden = max(4, int(cfg.style_spatial_content_hidden_dim))
+            self.style_spatial_content_router = nn.Sequential(
+                nn.LayerNorm(router_in),
+                nn.Linear(router_in, hidden),
+                nn.SiLU(),
+                nn.Linear(hidden, router_out),
+            )
+            last = self.style_spatial_content_router[-1]
+            if isinstance(last, nn.Linear):
+                nn.init.zeros_(last.weight)
+                nn.init.zeros_(last.bias)
 
         # 32x32 lift stage before downsampling.
         self.enc_in = nn.Conv2d(latent_channels, self.lift_channels, kernel_size=3, stride=1, padding=1)

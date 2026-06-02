@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import math
+import time
 from typing import Mapping
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from config_schema import ModelConfig
+from lancet_blocks import StyleMaps
 from lancet_backbone import LatentAdaCUT, count_parameters
 from utils.diffeomorphic import apply_texture_aligned_diffeomorphic_stroke
 
@@ -32,17 +35,193 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.velocity_head_mode = str(bridge_config.velocity_head_mode).strip().lower()
         self.velocity_tanh_limit = max(1e-3, float(bridge_config.velocity_tanh_limit))
         self.bridge_style_dim = int(self.style_tokenizer.embedding_dim)
+        self.execution_budget_mode = str(bridge_config.execution_budget_mode).strip().lower()
+        if self.execution_budget_mode not in {"none", "scalar", "low_high"}:
+            self.execution_budget_mode = "none"
+        self.execution_budget_log_span = max(0.0, float(bridge_config.execution_budget_log_span))
+        self.execution_budget_feature_dim = int(bridge_config.latent_channels) * 4 + 1
+        self.execution_budget_head: nn.Module | None = None
+        if self.execution_budget_mode != "none":
+            hidden = max(4, int(bridge_config.execution_budget_hidden_dim))
+            out_dim = 1 if self.execution_budget_mode == "scalar" else 2
+            self.execution_budget_head = nn.Sequential(
+                nn.LayerNorm(self.bridge_style_dim + self.execution_budget_feature_dim),
+                nn.Linear(self.bridge_style_dim + self.execution_budget_feature_dim, hidden),
+                nn.SiLU(),
+                nn.Linear(hidden, out_dim),
+            )
+            last = self.execution_budget_head[-1]
+            if isinstance(last, nn.Linear):
+                nn.init.zeros_(last.weight)
+                nn.init.zeros_(last.bias)
+        self.style_injection_mode = str(bridge_config.style_injection_mode).strip().lower()
+        if self.style_injection_mode not in {"none", "body", "decoder", "body_decoder"}:
+            self.style_injection_mode = "none"
+        self.style_injection_form = str(bridge_config.style_injection_form).strip().lower()
+        if self.style_injection_form not in {"mixed", "carrier_gate"}:
+            self.style_injection_form = "mixed"
+        self.style_injection_scale = max(0.0, float(bridge_config.style_injection_scale))
+        self.style_injection_gate_log_span = max(0.0, float(bridge_config.style_injection_gate_log_span))
+        injection_in_dim = self.bridge_style_dim + self.execution_budget_feature_dim
+        self.body_style_injector: nn.Module | None = None
+        self.decoder_style_injector: nn.Module | None = None
+        self.body_style_carrier: nn.Module | None = None
+        self.body_content_gate: nn.Module | None = None
+        self.decoder_style_carrier: nn.Module | None = None
+        self.decoder_content_gate: nn.Module | None = None
+        if self.style_injection_mode in {"body", "body_decoder"}:
+            if self.style_injection_form == "carrier_gate":
+                self.body_style_carrier, self.body_content_gate = self._make_carrier_gate_injector(
+                    self.bridge_style_dim,
+                    self.execution_budget_feature_dim,
+                    int(self.body_channels),
+                    int(bridge_config.style_injection_hidden_dim),
+                )
+            else:
+                self.body_style_injector = self._make_style_injector(
+                    injection_in_dim,
+                    int(self.body_channels),
+                    int(bridge_config.style_injection_hidden_dim),
+                )
+        if self.style_injection_mode in {"decoder", "body_decoder"}:
+            if self.style_injection_form == "carrier_gate":
+                self.decoder_style_carrier, self.decoder_content_gate = self._make_carrier_gate_injector(
+                    self.bridge_style_dim,
+                    self.execution_budget_feature_dim,
+                    int(self.lift_channels),
+                    int(bridge_config.style_injection_hidden_dim),
+                )
+            else:
+                self.decoder_style_injector = self._make_style_injector(
+                    injection_in_dim,
+                    int(self.lift_channels),
+                    int(bridge_config.style_injection_hidden_dim),
+                )
         self.time_mlp = nn.Sequential(
             nn.Linear(self.time_dim, self.bridge_style_dim),
             nn.SiLU(),
             nn.Linear(self.bridge_style_dim, self.bridge_style_dim),
         )
+        self.profile_modules = False
+        self.profile_sync_cuda = False
+        self.last_profile: dict[str, float] = {}
+
+    def _profile_start(self, ref: torch.Tensor) -> float:
+        if not bool(getattr(self, "profile_modules", False)):
+            return 0.0
+        if bool(getattr(self, "profile_sync_cuda", False)) and ref.device.type == "cuda":
+            torch.cuda.synchronize(ref.device)
+        return time.perf_counter()
+
+    def _profile_end(self, name: str, start: float, ref: torch.Tensor) -> None:
+        if not bool(getattr(self, "profile_modules", False)):
+            return
+        if bool(getattr(self, "profile_sync_cuda", False)) and ref.device.type == "cuda":
+            torch.cuda.synchronize(ref.device)
+        self.last_profile[name] = self.last_profile.get(name, 0.0) + max(0.0, time.perf_counter() - start)
+
+    @staticmethod
+    def _make_style_injector(input_dim: int, channels: int, hidden_dim: int) -> nn.Module:
+        hidden = max(4, int(hidden_dim))
+        module = nn.Sequential(
+            nn.LayerNorm(int(input_dim)),
+            nn.Linear(int(input_dim), hidden),
+            nn.SiLU(),
+            nn.Linear(hidden, int(channels)),
+        )
+        last = module[-1]
+        if isinstance(last, nn.Linear):
+            nn.init.zeros_(last.weight)
+            nn.init.zeros_(last.bias)
+        return module
+
+    @staticmethod
+    def _make_carrier_gate_injector(
+        style_dim: int,
+        content_dim: int,
+        channels: int,
+        hidden_dim: int,
+    ) -> tuple[nn.Module, nn.Module]:
+        hidden = max(4, int(hidden_dim))
+        carrier = nn.Sequential(
+            nn.LayerNorm(int(style_dim)),
+            nn.Linear(int(style_dim), hidden),
+            nn.SiLU(),
+            nn.Linear(hidden, int(channels)),
+        )
+        gate = nn.Sequential(
+            nn.LayerNorm(int(content_dim)),
+            nn.Linear(int(content_dim), hidden),
+            nn.SiLU(),
+            nn.Linear(hidden, int(channels)),
+        )
+        for module in (carrier, gate):
+            last = module[-1]
+            if isinstance(last, nn.Linear):
+                nn.init.zeros_(last.weight)
+                nn.init.zeros_(last.bias)
+        return carrier, gate
+
+    def _content_budget_features(self, x: torch.Tensor) -> torch.Tensor:
+        xf = x.float()
+        mean = xf.mean(dim=(2, 3))
+        std = xf.std(dim=(2, 3), unbiased=False)
+        abs_mean = xf.abs().mean(dim=(2, 3))
+        low = F.avg_pool2d(xf, kernel_size=3, stride=1, padding=1)
+        high_abs = (xf - low).abs().mean(dim=(2, 3))
+        energy = xf.flatten(1).square().mean(dim=1, keepdim=True).sqrt()
+        feat = torch.cat([mean, std, abs_mean, high_abs, energy], dim=1)
+        return feat.to(device=x.device, dtype=x.dtype)
+
+    def _apply_execution_budget(self, delta: torch.Tensor, x: torch.Tensor, style_code: torch.Tensor) -> torch.Tensor:
+        if self.execution_budget_mode == "none" or self.execution_budget_head is None or self.execution_budget_log_span <= 0.0:
+            return delta
+        content_feat = self._content_budget_features(x)
+        budget_in = torch.cat([style_code, content_feat], dim=1)
+        logits = self.execution_budget_head(budget_in)
+        gains = torch.exp(torch.tanh(logits.float()) * self.execution_budget_log_span).to(dtype=delta.dtype)
+        if self.execution_budget_mode == "scalar":
+            return delta * gains.view(-1, 1, 1, 1)
+        low = F.avg_pool2d(delta.float(), kernel_size=3, stride=1, padding=1).to(dtype=delta.dtype)
+        high = delta - low
+        low_gain = gains[:, 0].view(-1, 1, 1, 1)
+        high_gain = gains[:, 1].view(-1, 1, 1, 1)
+        return low * low_gain + high * high_gain
+
+    def _apply_style_feature_injection(
+        self,
+        feat: torch.Tensor,
+        x: torch.Tensor,
+        style_code: torch.Tensor,
+        *,
+        site: str,
+    ) -> torch.Tensor:
+        if self.style_injection_mode == "none" or self.style_injection_scale <= 0.0:
+            return feat
+        content_feat = self._content_budget_features(x)
+        if self.style_injection_form == "carrier_gate":
+            carrier = self.body_style_carrier if site == "body" else self.decoder_style_carrier
+            gate_head = self.body_content_gate if site == "body" else self.decoder_content_gate
+            if carrier is None or gate_head is None:
+                return feat
+            carrier_bias = torch.tanh(carrier(style_code).float())
+            gate_logits = gate_head(content_feat).float()
+            gate = torch.exp(torch.tanh(gate_logits) * self.style_injection_gate_log_span)
+            bias = (carrier_bias * gate).to(dtype=feat.dtype)
+        else:
+            injector = self.body_style_injector if site == "body" else self.decoder_style_injector
+            if injector is None:
+                return feat
+            inject_in = torch.cat([style_code, content_feat], dim=1)
+            bias = torch.tanh(injector(inject_in).float()).to(dtype=feat.dtype)
+        return feat + bias.view(feat.shape[0], feat.shape[1], 1, 1) * self.style_injection_scale
 
     def _compute_delta(self, h: torch.Tensor, x: torch.Tensor | None = None) -> torch.Tensor:
         raw_delta = self.dec_out(h)
         if bool(getattr(self, "use_diffeomorphic_stroke", False)):
             if x is None:
                 raise ValueError("diffeomorphic stroke mode requires input x.")
+            t_profile = self._profile_start(x)
             stroked = apply_texture_aligned_diffeomorphic_stroke(
                 x,
                 raw_delta,
@@ -51,6 +230,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                 gate_strength=float(getattr(self, "diffeomorphic_texture_gate_strength", 8.0)),
                 normal_leak=float(getattr(self, "diffeomorphic_normal_leak", 0.0)),
             )
+            self._profile_end("diffeomorphic_stroke", t_profile, x)
             return stroked - x.float()
         if self.velocity_head_mode == "tanh":
             raw_delta = torch.tanh(raw_delta) * self.velocity_tanh_limit
@@ -148,24 +328,33 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         del source, step_size, style_strength, target_style_latent, override_palette
         if style_id is None and style_code_override is None:
             raise ValueError("style_id or style_code_override is required.")
+        self.last_profile = {}
         t_tensor = self._resolve_t_input(x, t)
+        t_profile = self._profile_start(x)
         style_code = self._compute_style_code(
             x=x,
             style_id=style_id,
             t=t_tensor,
             style_code_override=style_code_override,
         )
+        self._profile_end("tokenizer", t_profile, x)
         if style_id is None:
             raise ValueError("style_id is required for bridge spatial conditioning.")
-        style_maps = self._prepare_style_maps(style_id=style_id)
-        return self._predict_delta_from_context(
+        t_profile = self._profile_start(x)
+        delta = self._predict_delta_from_context(
             x,
+            style_id=style_id,
             style_code=style_code,
-            style_maps=style_maps,
+            style_maps=StyleMaps(),
             override_palette=None,
             strength=1.0,
             target_style_latent=None,
         )
+        self._profile_end("backbone_forward", t_profile, x)
+        t_profile = self._profile_start(x)
+        out = self._apply_execution_budget(delta, x, style_code)
+        self._profile_end("execution_budget", t_profile, x)
+        return out
 
     @torch.no_grad()
     def integrate(

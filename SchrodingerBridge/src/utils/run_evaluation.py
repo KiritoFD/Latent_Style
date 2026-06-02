@@ -1454,6 +1454,7 @@ def main():
         vae = load_vae(
             device,
             model_id=str(args.vae_model),
+            cache_dir=str(hf_cache_dir),
             compile_decoder=bool(args.vae_compile_decoder),
             compile_method=str(args.vae_compile_method),
             compile_mode=str(args.vae_compile_mode),
@@ -1626,6 +1627,7 @@ def main():
     # PHASE 2: EVALUATION (LPIPS + CLIP)
     # ==========================================
     print(f"\n妫ｅ啯鐣?Phase 2: Evaluation")
+    eval_phase_start = time.perf_counter()
 
     run_full_metrics = True
     only_lpips_clip_style = bool(args.eval_only_lpips_clip_style)
@@ -1948,6 +1950,7 @@ def main():
     # Process Generated Buffer
     total_gen = len(generated_buffer)
     print(f"  Processing {total_gen} generated images...")
+    metric_loop_start = time.perf_counter()
     
     for b_start in range(0, total_gen, args.batch_size):
         b_end = min(b_start + args.batch_size, total_gen)
@@ -2068,8 +2071,14 @@ def main():
             
             csv_file.flush()
 
+    _sync_cuda_if(device, bool(args.profile_timing))
+    _add_timing(timings, "eval_metrics_loop", metric_loop_start)
     csv_file.close()
+    t0 = time.perf_counter()
     io_pool.shutdown(wait=True)
+    _add_timing(timings, "image_save_join", t0)
+    timings["eval_total"] = float(time.perf_counter() - eval_phase_start)
+    timings["wall_total"] = float(time.perf_counter() - wall_start)
     
     style_real_paths = {}
     for _, (style_name, img_list) in test_images.items():
@@ -2094,6 +2103,18 @@ def main():
         kid_max_ref=int(args.eval_kid_max_ref),
         kid_subset_size=int(args.eval_kid_subset_size),
         kid_batch_size=int(args.eval_kid_batch_size),
+        settings={
+            "vae_model": str(args.vae_model),
+            "batch_size": int(args.batch_size),
+            "target_chunk_size": int(args.target_chunk_size),
+            "vae_decode_batch_size": int(args.vae_decode_batch_size),
+            "image_save_workers": int(args.image_save_workers),
+            "image_save_backend": str(args.image_save_backend),
+            "profile_timing": bool(args.profile_timing),
+            "save_summary_grid": bool(args.save_summary_grid),
+            "only_lpips_clip_style": bool(args.eval_only_lpips_clip_style),
+        },
+        timings=timings,
     )
 
 def generate_summary_json(
@@ -2116,6 +2137,8 @@ def generate_summary_json(
     kid_max_ref: int = 200,
     kid_subset_size: int = 50,
     kid_batch_size: int = 8,
+    settings: dict | None = None,
+    timings: dict | None = None,
 ):
     print("\n妫ｅ啯鎯?Generating Summary...")
     rows = []
@@ -2400,6 +2423,8 @@ def generate_summary_json(
             'delta_kid': "kid_baseline - kid (higher is better).",
             'delta_kid_ratio': "delta_kid / kid_baseline (relative improvement ratio).",
         },
+        'settings': dict(settings or {}),
+        'timings_sec': {str(k): float(v) for k, v in sorted((timings or {}).items())},
         'matrix_breakdown': matrix_json,
         'analysis': {
             'all_pairs_overview': build_pool_summary(all_pool),
@@ -2413,7 +2438,8 @@ def generate_summary_json(
     with open(sum_path, 'w') as f:
         json.dump(summary, f, indent=2)
     print(f"闁?Summary saved: {sum_path}")
-    _save_summary_grid_png(rows, out_dir, style_order=style_order)
+    if bool((settings or {}).get("save_summary_grid", True)):
+        _save_summary_grid_png(rows, out_dir, style_order=style_order)
     if fid_runner is not None:
         fid_runner.close()
 
