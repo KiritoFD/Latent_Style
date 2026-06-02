@@ -81,10 +81,9 @@ Immediate read:
 - this means the MSE arm is healthy enough to unlock the queued `Huber` and
   `L1` arms.
 
-## Huber seed42 live status
+## Huber seed42 closure
 
-Remote owner check at `2026-06-03 01:59 +08:00` confirms the second formal arm
-is already healthy on the remote clean worktree.
+The second formal arm has now completed cleanly, including automatic full-eval.
 
 - train task:
   - `SB_FlowLoss_H_HUBER_S42`
@@ -92,15 +91,29 @@ is already healthy on the remote clean worktree.
   - `exp/aaai2027_flow_loss_h_base_huber_seed42_b44`
 - log:
   - `exp/aaai2027_flow_loss_h_base_huber_seed42_b44/remote_train.log`
-- schtasks state:
-  - `Running`
-- latest sampled progress:
-  - `Epoch 2/3`, `112/113` steps
-- sampled device health:
-  - `GPU 95%`, `VRAM 9723 MiB`, `Power 154.87 W`
+- completion:
+  - `2026-06-03 02:07:54 +08:00` wrote `Training completed.`
+  - `schtasks` returned to `Ready`
+  - last result `0`
 
-This status block is intentionally operational, not interpretive. Final metric
-comparison waits for the completed `mse / huber / l1` bundle.
+Recovered metrics:
+
+| epoch | full clip_style | full content_lpips | transfer clip_style | transfer content_lpips | wall_total |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `epoch_0001` | `0.6965` | `0.3322` | `0.6650` | `0.3402` | `97.7s` |
+| `epoch_0002` | `0.6986` | `0.3560` | `0.6680` | `0.3651` | `95.7s` |
+| `epoch_0003` | `0.6961` | `0.3409` | `0.6644` | `0.3498` | `95.3s` |
+
+Immediate read:
+
+- the Huber arm shows the same early-peak structure as the MSE arm
+- best raw style is again `epoch_0002`
+- best LPIPS is again `epoch_0001`
+- the matched Huber results do **not** currently show a decisive advantage over
+  MSE; the practical reading is parity, not a thesis-closing win
+
+This is exactly why the broader latent-metric story must remain narrow until the
+full `mse / huber / l1` block is closed and compared together.
 
 ## Review-cycle coupling
 
