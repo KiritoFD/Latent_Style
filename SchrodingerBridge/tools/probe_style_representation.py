@@ -49,7 +49,11 @@ def _load_latent(path: Path) -> torch.Tensor:
 def _style_names(latent_root: Path, raw: str) -> list[str]:
     if raw.strip():
         return [item.strip() for item in raw.split(",") if item.strip()]
-    return [p.name for p in sorted(latent_root.iterdir(), key=lambda x: x.name) if p.is_dir()]
+    return [
+        p.name
+        for p in sorted(latent_root.iterdir(), key=lambda x: x.name)
+        if p.is_dir() and not p.name.startswith(".")
+    ]
 
 
 def _spectral_ratio(x: torch.Tensor) -> dict[str, float]:
