@@ -64,11 +64,14 @@ Continuous reviewer lane:
 - `SchrodingerBridge/docs/reviews/aaai2027_boundary_followup_overclaims_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_gate_b_runtime_anomaly_policy_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_gate_status_and_next_experiment_priority_20260603.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_gate_c_time_to_parity_audit_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_post_tightening_recheck_20260603.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_tokenizer_timing_reaudit_20260603.md`
 - `SchrodingerBridge/docs/reviews/distinct5_idt_noop_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_review_gate_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_claim_matrix_20260603.md`
+- `SchrodingerBridge/docs/reviews/tokenizer_code_vs_output_geometry_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_representation_theory_queue_20260603.md`
 
 Related-work / citation gap notes:
