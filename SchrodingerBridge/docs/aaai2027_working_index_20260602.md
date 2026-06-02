@@ -57,6 +57,14 @@ Continuous reviewer lane:
 - `SchrodingerBridge/docs/reviews/aaai2027_review_consensus_20260602_r2.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_review_consensus_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_claim_safety_memo_20260603.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_agent_ops_20260603.md`
+- `SchrodingerBridge/docs/reviews/endpoint_metric_claim_boundary_20260603.md`
+- `SchrodingerBridge/docs/reviews/endpoint_metric_review_gate_20260603.md`
+
+Related-work / citation gap notes:
+
+- `SchrodingerBridge/docs/references/literature_intel_memo_20260603.md`
+- `SchrodingerBridge/docs/references/related_work_gap_candidates_20260603.md`
 
 Core evaluation warning about CLIP-style / no-op:
 
@@ -108,6 +116,18 @@ Key tables:
 
 - `SchrodingerBridge/docs/experiments/distinct5_512_20260602/tables/clip_style_vs_1lpips_full_transfer_points.csv`
 - `SchrodingerBridge/docs/experiments/distinct5_512_20260602/artfid_metric_hacking/distinct5_aggregate_artfid_keypoints.csv`
+
+### D. AAAI 2027 claim-closing ablations
+
+Use these only for bounded claim closure, not for the main quality table.
+
+Key evidence:
+
+- `SchrodingerBridge/docs/experiments/2026-06-03-flow-loss-metric-ablation/README.md`
+- `SchrodingerBridge/docs/experiments/2026-06-03-flow-loss-metric-ablation/repaired_endpoint_metric_ablation_packet_20260603.md`
+- `SchrodingerBridge/docs/experiments/2026-06-03-flow-loss-metric-ablation/repaired_endpoint_metric_launch_manifest_20260603.md`
+- `SchrodingerBridge/docs/reviews/endpoint_metric_claim_boundary_20260603.md`
+- `SchrodingerBridge/docs/reviews/endpoint_metric_review_gate_20260603.md`
 
 ## 4. Datasets and split roots
 
@@ -178,10 +198,11 @@ or stable config/script locations before being referenced in the paper.
 
 ## 8. Immediate gaps before the next writing pass
 
-1. An adversarial reviewer memo should live under `SchrodingerBridge/docs/reviews/`.
+1. The repaired endpoint-metric trio still needs final closure and logging for
+   all three arms before it can feed a new review cycle.
 2. The paper still needs a tighter, experiment-backed distance-metric story:
    current evidence strongly supports the `W1` terminal-alignment argument, while
-   the `MSE vs Huber/L1` flow-loss claim still requires direct ablation.
+   the local endpoint-metric story remains narrow and bounded.
 3. Time-to-parity plots should be cited with explicit scope and timing
    definitions, not only as prose summaries.
 4. Worktree cleanup should separate durable paper/docs changes from local temp
