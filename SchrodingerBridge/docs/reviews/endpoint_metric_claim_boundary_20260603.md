@@ -13,20 +13,20 @@ assumes the repaired packet described in
 
 ## What the repaired trio can support
 
-If the resolved configs and logs confirm that the compared kernel is active on
-the endpoint-matching term, then the trio can support a **narrow endpoint-side
-claim**:
+The completed repaired trio now supports a **narrow endpoint-side negative
+closure**:
 
 - it compares `MSE`, `Huber`, and `L1` as **pointwise latent endpoint-matching
   kernels**
-- it can show whether Euclidean-family endpoint penalties are practically
-  distinct or nearly equivalent on this fixed Distinct5 / H-base setup
+- it shows that these Euclidean-family endpoint penalties are practically
+  distinct in the expected local way: repaired `MSE` is the most destructive on
+  LPIPS, while repaired `Huber` and `L1` recover substantially better LPIPS
 - it can support a bounded statement about **endpoint reconstruction kernels**
   under a frozen backbone, queue, OT plan, and eval protocol
-
-If one kernel clearly wins, the paper may say that this kernel is better **for
-this isolated endpoint penalty**. If the three overlap, the paper may say that
-they show **practical parity on the isolated endpoint penalty**.
+- it supports a stronger negative conclusion that **pure endpoint-only
+  pointwise supervision is not the source of the current reviewed H-mainline
+  frontier**, because all three repaired arms remain materially worse on LPIPS
+  than the reviewed H mainline with `W1`-style terminal matching
 
 ## What the repaired trio cannot support
 
@@ -51,11 +51,17 @@ Safe:
   compared only as pointwise latent endpoint-matching kernels."
 - "This result supports a narrow statement about the behavior of endpoint
   Euclidean-family penalties on our fixed setup."
+- "Within this isolated endpoint-only packet, `Huber` and `L1` are much less
+  destructive than `MSE`, but none of the three matches the reviewed H
+  mainline frontier."
+- "The repaired trio closes in the negative direction: pure endpoint-only
+  pointwise supervision is not the source of the current mainline gains."
 - "The result does not generalize to all latent-space L2/MSE uses."
 
 Unsafe:
 
 - "`MSE` is wrong in latent space."
+- "`Huber` or `L1` replaces the current mainline."
 - "`Huber/L1` fixes latent geometry."
 - "This ablation proves manifold-aware losses are necessary everywhere."
 
@@ -64,11 +70,12 @@ Unsafe:
 Safe:
 
 - "The repaired trio is isolated from the `W1`-style terminal term, so it does
-  not test whether SA-SWD terminal matching is better or worse than endpoint
-  Euclidean matching in the full composite objective."
+  not by itself prove why SA-SWD terminal matching wins mechanistically in the
+  full composite objective."
 - "Current evidence for the paper's broader style-endpoint story still comes
-  from OT endpoint construction plus `W1`-style terminal matching, not from the
-  repaired trio alone."
+  from the reviewed OT endpoint construction plus `W1`-style terminal matching
+  mainline, and the repaired trio strengthens that story only indirectly by
+  showing that endpoint-only pointwise supervision falls short."
 
 Unsafe:
 
@@ -94,6 +101,7 @@ Unsafe:
 ## One-sentence paper-safe takeaway
 
 The repaired endpoint-metric trio can at most support a **narrow claim about
-pointwise latent endpoint-matching kernels**; it cannot, by itself, close a
-broader claim about latent-space metrics, terminal `W1` matching, or manifold
-geometry in general.
+pointwise latent endpoint-matching kernels**, plus a negative closure that
+endpoint-only pointwise supervision does not recover the current mainline
+frontier; it still cannot, by itself, close a broader claim about latent-space
+metrics, terminal `W1` matching, or manifold geometry in general.
