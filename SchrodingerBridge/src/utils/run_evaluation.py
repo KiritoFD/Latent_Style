@@ -64,6 +64,7 @@ except Exception:
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _WORKSPACE_ROOT = _PROJECT_ROOT
+_DEFAULT_HF_CLIP_REPO = "openai/clip-vit-base-patch32"
 
 
 def _resolve_default_local_clip_dir() -> Path:
@@ -83,6 +84,27 @@ def _resolve_default_local_clip_dir() -> Path:
 
 
 _DEFAULT_LOCAL_CLIP_DIR = _resolve_default_local_clip_dir()
+
+
+def _manual_clip_candidates(cache_dir: Path | None = None) -> list[Path]:
+    candidates: list[Path] = []
+    if cache_dir is not None:
+        candidates.append(cache_dir / "manual_clip" / "openai-clip-vit-base-patch32")
+    candidates.extend([
+        _DEFAULT_LOCAL_CLIP_DIR,
+        _WORKSPACE_ROOT / "eval_cache" / "manual_clip" / "openai-clip-vit-base-patch32",
+        _WORKSPACE_ROOT / "Cycle-NCE" / "eval_cache" / "manual_clip" / "openai-clip-vit-base-patch32",
+        _PROJECT_ROOT / "eval_cache" / "manual_clip" / "openai-clip-vit-base-patch32",
+    ])
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        key = str(candidate.resolve()) if candidate.exists() else str(candidate)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(candidate)
+    return unique
 
 def _safe_to_eval_device(batch, device: str):
     """
@@ -1147,7 +1169,7 @@ def main():
     parser.add_argument('--force_regen', action='store_true', help="Force regenerate evaluation outputs/metrics (does not rebuild global ref cache)")
     parser.add_argument('--force_regen_ref_cache', action='store_true', help="Force rebuild global reference-feature cache only")
     parser.add_argument('--ref_cache_lock_timeout', type=int, default=900, help="Seconds to wait for another process building reference cache")
-    parser.add_argument('--clip_model_name', type=str, default=str(_DEFAULT_LOCAL_CLIP_DIR), help="HF/local CLIP model name or local directory")
+    parser.add_argument('--clip_model_name', type=str, default=_DEFAULT_HF_CLIP_REPO, help="HF repo id or local CLIP directory")
     parser.add_argument('--clip_modelscope_id', type=str, default="", help="Optional ModelScope model id for CLIP fallback")
     parser.add_argument('--clip_modelscope_cache_dir', type=str, default="", help="Optional ModelScope cache directory")
     parser.add_argument('--clip_hf_cache_dir', type=str, default="", help="HuggingFace cache dir for CLIP; default uses <cache_dir>/hf")
@@ -1700,27 +1722,31 @@ def main():
                 else:
                     raise
         elif clip_backend == "hf":
-            clip_model_name = str(args.clip_model_name).strip() or "openai/clip-vit-base-patch32"
+            clip_model_name = str(args.clip_model_name).strip() or _DEFAULT_HF_CLIP_REPO
             try:
                 from transformers import CLIPModel, CLIPProcessor
 
                 clip_sources = []
                 local_only = (not bool(args.clip_allow_network))
                 model_name_raw = str(args.clip_model_name).strip()
+                for candidate in _manual_clip_candidates(cache_dir):
+                    if candidate.exists():
+                        clip_sources.append(str(candidate.resolve()))
+
                 if model_name_raw:
-                    # 1) Direct local path.
                     model_name_path = Path(model_name_raw).expanduser()
                     if model_name_path.exists():
                         clip_sources.append(str(model_name_path.resolve()))
 
-                    # 2) HF cache snapshot path.
-                    local_snapshot = _find_local_hf_snapshot(hf_cache_dir, clip_model_name)
-                    if local_snapshot:
-                        clip_sources.append(local_snapshot)
+                local_snapshot = _find_local_hf_snapshot(hf_cache_dir, clip_model_name)
+                if local_snapshot:
+                    clip_sources.append(local_snapshot)
 
-                    # 3) Remote repo-id fallback only when network is explicitly allowed.
-                    if not local_only:
-                        clip_sources.append(clip_model_name)
+                if not local_only:
+                    clip_sources.append(clip_model_name)
+
+                # Preserve insertion order while removing duplicates.
+                clip_sources = list(dict.fromkeys(clip_sources))
 
                 if local_only and not clip_sources:
                     dbg = _debug_clip_cache_state(hf_cache_dir, clip_model_name)

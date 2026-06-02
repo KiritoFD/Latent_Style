@@ -80,6 +80,8 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
         str(train_cfg.test_image_dir),
         "--cache_dir",
         str(train_cfg.full_eval_cache_dir),
+        "--clip_hf_cache_dir",
+        str(train_cfg.full_eval_clip_hf_cache_dir),
     ]
     if bool(train_cfg.full_eval_force_regen):
         cmd.append("--force_regen")
