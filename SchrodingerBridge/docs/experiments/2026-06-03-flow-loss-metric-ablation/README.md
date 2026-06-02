@@ -24,6 +24,34 @@ ablation after the continuous reviewer lane was wired in.
 - `configs/aaai2027/flow_loss_h_base_huber_seed42.json`
 - `configs/aaai2027/flow_loss_h_base_l1_seed42.json`
 
+## Critical audit finding
+
+On `2026-06-03`, we re-resolved the three configs through the project config
+loader and found the following effective bridge settings:
+
+| config | objective_mode | loss_type | w_flow |
+| --- | --- | --- | ---: |
+| `flow_loss_h_base_mse_seed42.json` | `omf` | `mse` | `0.0` |
+| `flow_loss_h_base_huber_seed42.json` | `omf` | `huber` | `0.0` |
+| `flow_loss_h_base_l1_seed42.json` | `omf` | `l1` | `0.0` |
+
+Under the current `omf` objective implementation, `loss_type` enters the
+active loss path only through the `w_flow > 0` branch. Since the resolved
+configs keep `w_flow = 0.0`, this entire `mse / huber / l1` bundle is currently
+best interpreted as a **non-probing or near-null ablation**, not as direct
+evidence about whether `MSE`, `Huber`, or `L1` is better for the intended flow
+term.
+
+Practical consequence:
+
+- the completed `MSE` and `Huber` rows remain useful as run-health and
+  baseline-stability evidence
+- they do **not** close the paper's latent-metric or flow-loss thesis
+- the next valid version of this ablation must either:
+  - set `w_flow > 0`, or
+  - move to the non-`omf` objective path that actually uses `loss_type` on the
+    velocity regression term
+
 ## Remote run contract
 
 - repo worktree:
@@ -78,8 +106,8 @@ Immediate read:
 
 - the matched `H`-base `MSE` arm behaves like the previous Distinct5 family:
   style peaks early and LPIPS is already competitive at `epoch_0001`.
-- this means the MSE arm is healthy enough to unlock the queued `Huber` and
-  `L1` arms.
+- this means the MSE arm is healthy enough to validate the remote path, but not
+  enough to support the intended loss-kernel thesis by itself.
 
 ## Huber seed42 closure
 
@@ -111,6 +139,8 @@ Immediate read:
 - best LPIPS is again `epoch_0001`
 - the matched Huber results do **not** currently show a decisive advantage over
   MSE; the practical reading is parity, not a thesis-closing win
+- after the config audit above, even this parity reading must be treated as
+  descriptive only, because the ablation target was not activated as intended
 
 This is exactly why the broader latent-metric story must remain narrow until the
 full `mse / huber / l1` block is closed and compared together.
