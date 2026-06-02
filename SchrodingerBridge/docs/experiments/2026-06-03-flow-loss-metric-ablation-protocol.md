@@ -73,6 +73,21 @@ Preferred secondary diagnostics:
 - `MANIQA`
 - one matched visual panel for obvious artifact or blur differences
 
+## Required review-cycle trigger
+
+This block is paper-closing, so it must trigger the independent reviewer lane.
+
+1. when a seed finishes, update:
+   - `docs/experiments/aaai2027_master_experiment_log.csv`
+2. when one full loss arm finishes, append a compact review cycle:
+   - three lane rows in `docs/reviews/aaai2027_review_score_log.csv`
+   - one cycle row in `docs/reviews/aaai2027_review_registry.csv`
+3. when the full `mse / huber / l1` matched block finishes, run a full
+   consensus refresh
+
+The purpose is to prevent the latent-metric story from being promoted into the
+paper before independent review closes or rejects it.
+
 ## Stop rule
 
 The experiment block is not reviewer-ready until all of the following are true:
