@@ -81,6 +81,9 @@ Current status:
   as normal formal-speed evidence
 - best-effort diagnosis currently favors the random-axis path itself as the
   primary cause of the slowdown, not accidental config drift
+- latest remote heartbeat now upgrades this from degraded throughput to a
+  hard-stall runtime blocker for formal execution, while still allowing a
+  quality-only closure if clean summaries eventually land
 - reviewer-side runtime-anomaly policy now exists:
   - `docs/reviews/aaai2027_gate_b_runtime_anomaly_policy_20260603.md`
 - current reviewer-safe policy is:

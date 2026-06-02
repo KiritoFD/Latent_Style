@@ -93,6 +93,13 @@ Current status:
     normal-speed formal remote-3060 run; if it completes, its quality summaries
     may still be diagnostically useful, but its wall-clock behavior should not
     be treated as normal formal evidence
+- hard-stall runtime heartbeat:
+  - latest seen progress: `Epoch 2/3`, `96/113`
+  - GPU: `100% util, 11226/12288 MiB, 72.21 W`
+  - step times remain near `~8s/it` with no recovery
+  - current interpretation: the run has crossed from degraded throughput into a
+    stop-worthy blocker as a formal execution, but it may still be allowed to
+    continue only for quality-only evidence while it keeps making real progress
 
 ## Completed semantic-arm results
 
@@ -154,7 +161,9 @@ Remote evidence supporting that ranking:
 Current handling decision:
 
 - do **not** relaunch the same packet yet;
-- allow the current random run to finish if it keeps making progress;
+- allow the current random run to finish only if it keeps making real progress;
+- if it stalls further or crashes before summaries exist, stop it and preserve
+  the logs as blocker evidence;
 - treat any resulting summaries as quality-only evidence;
 - do **not** treat the current random-arm wall clock as representative formal
   speed evidence.
