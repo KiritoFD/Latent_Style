@@ -34,8 +34,8 @@ active endpoint-matching path.
 Live state of the repaired packet:
 
 - `MSE`: completed with all three `full_eval/epoch_0001..0003/summary.json`
-- `Huber`: running on the remote `RTX 3060`
-- `L1`: queued after Huber
+- `Huber`: completed with all three `full_eval/epoch_0001..0003/summary.json`
+- `L1`: completed with all three `full_eval/epoch_0001..0003/summary.json`
 
 ## Scope
 
@@ -123,9 +123,9 @@ Immediate read:
 - early evidence therefore points away from pure endpoint-only pointwise
   supervision as a mainline replacement for the current W1-style system
 
-### Repaired Huber seed42 live launch
+### Repaired Huber seed42 closure
 
-The second repaired arm is now running.
+The second repaired arm has now completed cleanly on the remote `3060`.
 
 - task:
   - `SB_EndpointMetric_H_OMF_HUBER_S42`
@@ -133,12 +133,60 @@ The second repaired arm is now running.
   - `exp/aaai2027_endpoint_metric_h_omf_flow_huber_seed42_b44`
 - log:
   - `exp/aaai2027_endpoint_metric_h_omf_flow_huber_seed42_b44/remote_train.log`
-- live proof:
-  - early log shows nonzero `flow`
-  - `tswd = 0.0000`
-  - remote GPU is around `10.2G / 12G`
 
-The third repaired arm (`L1`) is queued behind Huber.
+Recovered metrics:
+
+| epoch | full clip_style | full content_lpips | transfer clip_style | transfer content_lpips |
+| --- | ---: | ---: | ---: | ---: |
+| `epoch_0001` | `0.6928812635` | `0.3556942509` | `0.6633475696` | `0.3561823752` |
+| `epoch_0002` | `0.6923208323` | `0.3650320160` | `0.6638556846` | `0.3652528899` |
+| `epoch_0003` | `0.6909498694` | `0.3497314371` | `0.6608838979` | `0.3499506217` |
+
+Immediate read:
+
+- the repaired Huber arm is substantially less destructive than repaired MSE
+  on LPIPS, but still clearly behind the reviewed H mainline;
+- best balance is `epoch_0001`, while `epoch_0003` is the lowest-LPIPS point;
+- the result supports a bounded negative conclusion about endpoint-only
+  pointwise supervision, not a general Huber-over-MSE theorem.
+
+### Repaired L1 seed42 closure
+
+The third repaired arm has now completed cleanly on the remote `3060`.
+
+- task:
+  - `SB_EndpointMetric_H_OMF_L1_S42`
+- run root:
+  - `exp/aaai2027_endpoint_metric_h_omf_flow_l1_seed42_b44`
+- log:
+  - `exp/aaai2027_endpoint_metric_h_omf_flow_l1_seed42_b44/remote_train.log`
+
+Recovered metrics:
+
+| epoch | full clip_style | full content_lpips | transfer clip_style | transfer content_lpips |
+| --- | ---: | ---: | ---: | ---: |
+| `epoch_0001` | `0.6932040906` | `0.3624896984` | `0.6641346080` | `0.3630398018` |
+| `epoch_0002` | `0.6927190168` | `0.3715741649` | `0.6648551672` | `0.3717617980` |
+| `epoch_0003` | `0.6910941314` | `0.3552152437` | `0.6613619615` | `0.3554974833` |
+
+Immediate read:
+
+- repaired `L1` lands close to repaired Huber and far from repaired MSE;
+- best raw style is `epoch_0001`, while `epoch_0003` is the best LPIPS point;
+- like Huber, it remains materially worse on LPIPS than the reviewed H
+  mainline and does not justify replacing the current W1-style mainline with a
+  pure endpoint-only pointwise objective.
+
+### Repaired trio takeaway
+
+Across all three activated repaired arms:
+
+- repaired `MSE` is the strongest raw-style arm, but collapses LPIPS hardest;
+- repaired `Huber` and `L1` recover much better LPIPS than repaired `MSE`, but
+  still remain far below the reviewed H mainline frontier of roughly
+  `0.6994 / 0.3213`;
+- the packet therefore closes in the negative direction: pure endpoint-only
+  pointwise supervision is not the source of the current mainline gains.
 
 ## Remote run contract
 

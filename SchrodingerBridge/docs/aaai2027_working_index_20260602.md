@@ -198,17 +198,20 @@ or stable config/script locations before being referenced in the paper.
 
 ## 8. Immediate gaps before the next writing pass
 
-1. The repaired endpoint-metric trio still needs final closure and logging for
-   all three arms before it can feed a new review cycle.
-2. The paper still needs a tighter, experiment-backed distance-metric story:
-   current evidence strongly supports the `W1` terminal-alignment argument, while
-   the local endpoint-metric story remains narrow and bounded.
+1. The repaired endpoint-metric trio is now negatively closed and reviewed; its
+   claim boundary must stay narrow and must not be re-expanded into a broad
+   latent-metric theorem.
+2. The next blocking paper gate is the fixed-base semantic-vs-random SA-SWD
+   axis ablation, which determines whether the semantic-axis novelty claim
+   survives.
 3. Time-to-parity plots should be cited with explicit scope and timing
    definitions, not only as prose summaries.
 4. Worktree cleanup should separate durable paper/docs changes from local temp
    files and data mirrors before broader commits.
-5. Every major checkpoint should trigger a fresh three-lane review round and a
+5. The next major figure/claim gate is a normalized same-scope
+   time-to-parity artifact for LBM, SaMAM, and SaMST.
+6. Every major checkpoint should trigger a fresh three-lane review round and a
    registry entry, rather than relying on a single frozen review memo.
-6. Config and archive surfaces should stay indexed so the paper-facing rerun
+7. Config and archive surfaces should stay indexed so the paper-facing rerun
    path is obvious and local timing/refactor residue does not pollute the main
    experiment surface.

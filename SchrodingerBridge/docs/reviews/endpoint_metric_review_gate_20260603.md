@@ -5,9 +5,25 @@ Owner lane: `standby_adversarial_reviewer`
 Scope: repaired endpoint trio only (`MSE / Huber / L1`)
 Purpose: define the exact evidence required for this packet to move the reviewer stance above `weak_reject`, and define the result patterns that still fail.
 
+## 0. Current packet status
+
+Current status after the completed repaired trio:
+
+- packet completeness: `satisfied`
+- activation proof: `satisfied`
+- current outcome pattern: `Pass pattern B`
+- lane interpretation: `negative closure`
+
+Reviewer reading:
+
+- the repaired endpoint trio is now a valid activated packet;
+- it closes the endpoint-only question in the negative direction;
+- it removes the old paper/code mismatch and the old `inactive probe` rejection route;
+- it does **not** by itself upgrade the whole paper above `weak_reject`, because the broader review still depends on the SA-SWD isolation gate and the normalized efficiency gate.
+
 ## 1. Minimum evidence packet required
 
-The endpoint-metric review gate is not open until all of the following exist for the repaired trio:
+The endpoint-metric review gate was not open until all of the following existed for the repaired trio:
 
 - all three repaired configs:
   - `endpoint_metric_h_omf_flow_mse_seed42.json`
@@ -29,7 +45,7 @@ The endpoint-metric review gate is not open until all of the following exist for
   - wall time
 - one explicit comparison against the reviewed H mainline reference, not just arm-vs-arm comparison
 
-Without this full packet, the reviewer treats the trio as incomplete and keeps `weak_reject`.
+This packet is now complete. Without this full packet, the reviewer would treat the trio as incomplete and keep `weak_reject`.
 
 ## 2. What evidence would change the stance
 
@@ -59,6 +75,12 @@ Reviewer reading:
 
 - the packet still changes the stance because it closes the question in the opposite direction;
 - the paper can safely argue that pure pointwise endpoint matching is not the source of the mainline gains.
+
+Current repaired-trio fit:
+
+- `MSE` achieves roughly `0.6998 / 0.5170` at best and is far behind the reviewed H mainline on LPIPS;
+- `Huber` and `L1` recover to roughly `0.3557` / `0.3552` LPIPS, but still remain materially behind the reviewed H mainline reference of roughly `0.6994 / 0.3213`;
+- the packet therefore currently satisfies `Pass pattern B`, not `Pass pattern A`.
 
 ### Pass pattern C - parity with clear null conclusion
 
@@ -131,4 +153,17 @@ For this packet alone, the reviewer may move from `weak_reject` to `narrow_only 
 2. the result supports one of `Pass pattern A/B/C`;
 3. the write-up uses exactly the conclusion that the packet supports, and no stronger one.
 
-Otherwise the endpoint-metric lane remains open and the standing stance stays at `weak_reject`.
+Current endpoint-only decision:
+
+- conditions `1/2/3` are satisfied for a **negative closure** reading;
+- the endpoint-metric lane can now be treated as closed in the negative direction;
+- the allowed narrow claim is:
+  - activated endpoint-only pointwise supervision was tested directly,
+  - the repaired trio did not recover the current W1-style mainline frontier,
+  - therefore pure endpoint-only pointwise supervision is not the source of the mainline gains in this family.
+
+What is still not allowed from this packet:
+
+- claiming that all latent-space `MSE/L2` is broadly invalid;
+- claiming that `Huber` or `L1` is a proven global winner;
+- claiming that the whole paper is now past `weak_reject` without the remaining review gates.
