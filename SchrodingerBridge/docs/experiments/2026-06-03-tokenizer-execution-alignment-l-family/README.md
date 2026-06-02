@@ -45,6 +45,29 @@ Why `L e1`:
 - adversarial reread ranked it as the least unsafe paper-facing successor among
   the currently available `K/J/L/M` payload-backed families.
 
+Path-truth audit confirmed by remote owner:
+
+- artifact root:
+  - `I:\Github\Latent_Style\SchrodingerBridge\exp\distinct5_512_ema_variant_l_content_adaptive_annealed_queue_e3_b44_remote`
+- checkpoint:
+  - `I:\Github\Latent_Style\SchrodingerBridge\exp\distinct5_512_ema_variant_l_content_adaptive_annealed_queue_e3_b44_remote\epoch_0001.pt`
+- config:
+  - `I:\Github\Latent_Style\SchrodingerBridge\exp\distinct5_512_ema_variant_l_content_adaptive_annealed_queue_e3_b44_remote\config.json`
+- eval metrics:
+  - `I:\Github\Latent_Style\SchrodingerBridge\exp\distinct5_512_ema_variant_l_content_adaptive_annealed_queue_e3_b44_remote\full_eval\epoch_0001\metrics.csv`
+
+Current runtime state:
+
+- launch status:
+  - started
+- clean code root:
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge`
+- runtime output dir:
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_execution_alignment_l_e1`
+- execution mode:
+  - split-root launch
+  - clean worktree code plus old artifact-bearing checkpoint / config / metrics
+
 ## Claim boundary
 
 This packet is **not** allowed to inherit the old `H`-family continuity claim.
