@@ -1,4 +1,4 @@
-\begin{thebibliography}{20}
+\begin{thebibliography}{29}
 \providecommand{\natexlab}[1]{#1}
 
 \bibitem[{Bi{\'n}kowski et~al.(2018)Bi{\'n}kowski, Sutherland, Arbel, and
@@ -6,6 +6,14 @@
 Bi{\'n}kowski, M.; Sutherland, D.~J.; Arbel, M.; and Gretton, A. 2018.
 \newblock Demystifying MMD GANs.
 \newblock In \emph{International Conference on Learning Representations}.
+
+\bibitem[{Botti et~al.(2025)Botti, Ergasti, Rossi, Fontanini, Ferrari,
+  Bertozzi, and Prati}]{botti2025mambast}
+Botti, F.; Ergasti, A.; Rossi, L.; Fontanini, T.; Ferrari, C.; Bertozzi, M.;
+  and Prati, A. 2025.
+\newblock Mamba-ST: State Space Model for Efficient Style Transfer.
+\newblock In \emph{Proceedings of the IEEE/CVF Winter Conference on
+  Applications of Computer Vision}, 7786--7795.
 
 \bibitem[{Chung, Hyun, and Heo(2024)}]{chung2024styleid}
 Chung, J.; Hyun, S.; and Heo, J.-P. 2024.
@@ -18,6 +26,12 @@ Chung, J.; Hyun, S.; and Heo, J.-P. 2024.
 Cuturi, M. 2013.
 \newblock Sinkhorn Distances: Lightspeed Computation of Optimal Transport.
 \newblock \emph{Advances in Neural Information Processing Systems}.
+
+\bibitem[{Deng et~al.(2024)Deng, He, Tang, and Dong}]{deng2024zstar}
+Deng, Y.; He, X.; Tang, F.; and Dong, W. 2024.
+\newblock Z*: Zero-shot Style Transfer via Attention Reweighting.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}, 6934--6944.
 
 \bibitem[{Deng et~al.(2022)Deng, Tang, Dong, Sun, Huang, and
   Xu}]{deng2022stytr2}
@@ -71,6 +85,13 @@ Huang, X.; Zhang, Z.; Zhang, J.; et~al. 2024.
 \newblock In \emph{Proceedings of the AAAI Conference on Artificial
   Intelligence}.
 
+\bibitem[{Jiang et~al.(2025)Jiang, Jiang, Yang, Liu, Tsang, and
+  Shou}]{jiang2025sms}
+Jiang, Y.; Jiang, L.; Yang, S.; Liu, J.-W.; Tsang, I.~W.; and Shou, M.~Z. 2025.
+\newblock Balanced Image Stylization with Style Matching Score.
+\newblock In \emph{Proceedings of the IEEE/CVF International Conference on
+  Computer Vision}, 17346--17355.
+
 \bibitem[{Ke et~al.(2021)Ke, Wang, Wang, Milanfar, and Yang}]{ke2021musiq}
 Ke, J.; Wang, Q.; Wang, Y.; Milanfar, P.; and Yang, F. 2021.
 \newblock MUSIQ: Multi-scale Image Quality Transformer.
@@ -82,6 +103,13 @@ L{\'e}onard, C. 2014.
 \newblock A Survey of the Schr{\"o}dinger Problem and Some of Its Connections
   with Optimal Transport.
 \newblock \emph{Discrete and Continuous Dynamical Systems - A}.
+
+\bibitem[{Liu et~al.(2025)Liu, Wang, Zhang, Yu, and Guo}]{liu2025samam}
+Liu, H.; Wang, L.; Zhang, Y.; Yu, Z.; and Guo, Y. 2025.
+\newblock SaMam: Style-aware State Space Model for Arbitrary Image Style
+  Transfer.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}, 28468--28478.
 
 \bibitem[{Liu et~al.(2024)}]{liu2024samst}
 Liu, Y.; et~al. 2024.
@@ -99,17 +127,27 @@ Peyr{\'e}, G.; and Cuturi, M. 2019.
 \newblock Computational Optimal Transport.
 \newblock \emph{Foundations and Trends in Machine Learning}.
 
+\bibitem[{Radford et~al.(2021)Radford, Kim, Hallacy, Ramesh, Goh, Agarwal,
+  Sastry, Askell, Mishkin, Clark, Krueger, and Sutskever}]{radford2021clip}
+Radford, A.; Kim, J.~W.; Hallacy, C.; Ramesh, A.; Goh, G.; Agarwal, S.; Sastry,
+  G.; Askell, A.; Mishkin, P.; Clark, J.; Krueger, G.; and Sutskever, I. 2021.
+\newblock Learning Transferable Visual Models From Natural Language
+  Supervision.
+\newblock In \emph{Proceedings of the 38th International Conference on Machine
+  Learning}, volume 139 of \emph{Proceedings of Machine Learning Research},
+  8748--8763.
+
+\bibitem[{Shang et~al.(2025)Shang, Wang, Wang, and Meng}]{shang2025scsa}
+Shang, C.; Wang, Z.; Wang, H.; and Meng, X. 2025.
+\newblock SCSA: A Plug-and-Play Semantic Continuous-Sparse Attention for
+  Arbitrary Semantic Style Transfer.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}, 13051--13060.
+
 \bibitem[{Wright and Ommer(2022)}]{wright2022artfid}
 Wright, M.; and Ommer, B. 2022.
 \newblock ArtFID: Quantitative Evaluation of Neural Style Transfer.
 \newblock \emph{arXiv preprint arXiv:2207.12280}.
-
-\bibitem[{Xia et~al.(2024)}]{xia2024s2wat}
-Xia, W.; et~al. 2024.
-\newblock S2WAT: Image Style Transfer via Hierarchical Vision Transformer Using
-  Strips Window Attention.
-\newblock In \emph{Proceedings of the AAAI Conference on Artificial
-  Intelligence}.
 
 \bibitem[{Yang et~al.(2022)Yang, Wu, Shi, Lao, Gong, Cao, Wang, and
   Yang}]{yang2022maniqa}
@@ -120,6 +158,13 @@ Yang, S.; Wu, T.; Shi, S.; Lao, S.; Gong, Y.; Cao, M.; Wang, J.; and Yang, Y.
 \newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
   and Pattern Recognition Workshops}.
 
+\bibitem[{Yeh et~al.(2020)Yeh, Tang, Bhattad, Zou, and
+  Forsyth}]{yeh2020calibrated}
+Yeh, M.-C.; Tang, S.; Bhattad, A.; Zou, C.; and Forsyth, D. 2020.
+\newblock Improving Style Transfer with Calibrated Metrics.
+\newblock In \emph{Proceedings of the IEEE/CVF Winter Conference on
+  Applications of Computer Vision}, 3160--3168.
+
 \bibitem[{Zhang et~al.(2018)Zhang, Isola, Efros, Shechtman, and
   Wang}]{zhang2018lpips}
 Zhang, R.; Isola, P.; Efros, A.~A.; Shechtman, E.; and Wang, O. 2018.
@@ -127,5 +172,25 @@ Zhang, R.; Isola, P.; Efros, A.~A.; Shechtman, E.; and Wang, O. 2018.
   Metric.
 \newblock \emph{Proceedings of the IEEE Conference on Computer Vision and
   Pattern Recognition}.
+
+\bibitem[{Zhang et~al.(2025)Zhang, Kang, Liu, Mei, and Li}]{zhang2025hsi}
+Zhang, S.; Kang, H.; Liu, Y.; Mei, F.; and Li, H. 2025.
+\newblock HSI: A Holistic Style Injector for Arbitrary Style Transfer.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}, 23433--23442.
+
+\bibitem[{Zheng et~al.(2024)Zheng, Gao, Zhou, and Qin}]{zheng2024puffnet}
+Zheng, S.; Gao, P.; Zhou, P.; and Qin, J. 2024.
+\newblock Puff-Net: Efficient Style Transfer with Pure Content and Style
+  Feature Fusion Network.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}, 8059--8068.
+
+\bibitem[{Zhou et~al.(2024)Zhou, Zeng, Xu, Liu, Zhao, and
+  Yao}]{zhou2024comprehensiveeval}
+Zhou, X.; Zeng, T.; Xu, H.; Liu, X.; Zhao, J.; and Yao, Y. 2024.
+\newblock A Comprehensive Evaluation of Arbitrary Image Style Transfer Methods.
+\newblock \emph{IEEE Transactions on Visualization and Computer Graphics},
+  30(1): 1--19.
 
 \end{thebibliography}

@@ -42,7 +42,17 @@ Consensus:
 
 Required closure:
 
-- matched `MSE` vs `Huber` vs `L1` ablation under one protocol.
+- the originally launched `MSE` / `Huber` / `L1` block is no longer valid as
+  theory evidence after the config audit.
+- the next required closure is a \emph{repaired} endpoint-metric ablation in
+  which the switched loss term actually lies on the active transport path.
+
+Config-audit update:
+
+- the completed `MSE` / `Huber` / `L1` Distinct5 runs resolved to
+  `objective_mode=omf` with `w_flow=0.0`;
+- changing `loss_type` therefore did not activate the intended comparison term;
+- the resulting trio remains useful as operational stability evidence only.
 
 ### 2. The efficiency claim is still attackable
 
@@ -95,8 +105,9 @@ The paper can continue to say:
 
 ## Immediate experiment order
 
-1. `flow_loss_metric_ablation`
-   - `MSE` vs `Huber` vs `L1`
+1. `endpoint_metric_ablation_repaired`
+   - either `objective_mode=omf` with `w_flow>0`, or a non-`omf` path where
+     `loss_type` is the active transport penalty
    - remote 3060 first
 2. `sa_swd_axis_ablation`
    - semantic vs random axes
@@ -110,7 +121,7 @@ The paper can continue to say:
 
 Do not call the paper AAAI-safe until all of the following are true:
 
-1. the metric claim is backed by a direct ablation;
+1. the metric claim is backed by a direct and activated ablation;
 2. the efficiency claim is backed by a normalized time-to-parity plot;
 3. the no-op insight is elevated into a formal evaluation contribution in the
    manuscript and tables;
