@@ -144,7 +144,8 @@ Verification result:
 
 Status:
 
-- keep separate from main paper/code commits
+- helper-smoked and commit-safe
+- keep separate from main `SchrodingerBridge` paper/code commits
 
 Files:
 
@@ -164,6 +165,14 @@ Policy:
 - commit these only as a dedicated `baseline_pipeline` helper slice after a
   script-level smoke check;
 - do not mix them into `SchrodingerBridge` paper or method commits.
+
+Smoke evidence:
+
+1. `py -3 -m py_compile` passed for all four scripts
+2. `--help` succeeded for:
+   - `run_seedream_wikiart512.py`
+   - `generate_samst_distinct5_eval.py`
+   - `run_samst_distinct5_local.py`
 
 ## Slice F: Maths / theory notebooks
 

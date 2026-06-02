@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import time
+import unicodedata
 from pathlib import Path
 
 import yaml
@@ -60,11 +61,29 @@ def _target_ckpt_dir(ckpt_root: Path, target_style: str) -> Path:
     return ckpt_root / f"wikiart5_3600_target_{target_style}_b2_e15"
 
 
+def _safe_stem(name: str) -> str:
+    text = unicodedata.normalize("NFKD", name)
+    text = text.encode("ascii", "ignore").decode("ascii")
+    out = []
+    prev_sep = False
+    for ch in text:
+        if ch.isalnum():
+            out.append(ch.lower())
+            prev_sep = False
+        else:
+            if not prev_sep:
+                out.append("-")
+                prev_sep = True
+    slug = "".join(out).strip("-")
+    return slug or "img"
+
+
 def _prepare_content_dir(image_root: Path, style_names: list[str], max_src_per_style: int, resize_content: int) -> Path:
     content_dir = SAMST_REPO / "content"
     shutil.rmtree(content_dir, ignore_errors=True)
     content_dir.mkdir(parents=True, exist_ok=True)
 
+    used_names: set[str] = set()
     for style in style_names:
         src_dir = image_root / style
         if not src_dir.is_dir():
@@ -72,8 +91,15 @@ def _prepare_content_dir(image_root: Path, style_names: list[str], max_src_per_s
         files = sorted(p for p in src_dir.iterdir() if p.is_file() and p.suffix.lower() in IMG_EXTS)
         if max_src_per_style > 0:
             files = files[:max_src_per_style]
-        for src in files:
-            dst = content_dir / f"{style}_{src.stem}.png"
+        for idx, src in enumerate(files, start=1):
+            base = f"{style}_{idx:03d}_{_safe_stem(src.stem)}"
+            candidate = base
+            suffix = 2
+            while candidate in used_names:
+                candidate = f"{base}-{suffix}"
+                suffix += 1
+            used_names.add(candidate)
+            dst = content_dir / f"{candidate}.png"
             if resize_content > 0:
                 with Image.open(src) as image:
                     image = ImageOps.exif_transpose(image).convert("RGB")
