@@ -64,7 +64,7 @@ Everything else should remain matched:
 Current status:
 
 - semantic arm is fully completed on remote `3060`
-- random arm is now actively running on remote `3060`
+- random arm is also completed on remote `3060`
 - live semantic log:
   - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\saswd_axis_h_base_seed42_b44_saswd_semantic\remote_train.log`
 - current semantic run path:
@@ -72,7 +72,7 @@ Current status:
 - semantic task state after completion:
   - `SB_SASWD_H_SEM_S42`: ready, last result `0`
 - random task state:
-  - `SB_SASWD_H_RAND_S42`: running
+  - `SB_SASWD_H_RAND_S42`: completed, last result `0`
 - live random log:
   - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\saswd_axis_h_base_seed42_b44_saswd_random\remote_train.log`
 - first random-arm heartbeat:
@@ -100,6 +100,11 @@ Current status:
   - current interpretation: the run has crossed from degraded throughput into a
     stop-worthy blocker as a formal execution, but it may still be allowed to
     continue only for quality-only evidence while it keeps making real progress
+- completion heartbeat:
+  - training finished at `2026-06-03 05:33:28`
+  - full eval landed for `epoch_0001`, `epoch_0002`, and `epoch_0003`
+  - retained evidence class:
+    - `quality_only`
 
 ## Completed semantic-arm results
 
@@ -117,32 +122,62 @@ Key semantic-arm metrics:
 | `e2` | `0.6987337865` | `0.3608344315` | `0.6684234888` | `0.3702646600` |
 | `e3` | `0.6961391042` | `0.3415375931` | `0.6645665071` | `0.3506202180` |
 
-Provisional reading before the random arm lands:
+Semantic-arm reading in isolation:
 
 - best full-view style is `e2`, but it pays a clear LPIPS penalty;
 - best full-view LPIPS is `e1`;
 - the semantic arm alone does **not** yet justify a positive SA-SWD novelty
   claim because the matched random-axis control has not been run.
 
-## Current blocker interpretation
+## Completed random-arm results
 
-The packet is currently split into two evidence classes:
+Remote summary roots:
 
-1. `semantic` is a valid completed arm with usable full-eval summaries;
-2. `random` is still an open matched control, but the current remote runtime
-   state has crossed into a throughput-blocker regime.
+- `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\saswd_axis_h_base_seed42_b44_saswd_random\full_eval\epoch_0001\summary.json`
+- `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\saswd_axis_h_base_seed42_b44_saswd_random\full_eval\epoch_0002\summary.json`
+- `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\saswd_axis_h_base_seed42_b44_saswd_random\full_eval\epoch_0003\summary.json`
 
-Until the random arm either:
+Key random-arm metrics:
 
-- finishes with summaries,
-- crashes,
-- or is relaunched in a healthier runtime state,
+| epoch | full clip_style | full lpips | transfer clip_style | transfer lpips |
+|---|---:|---:|---:|---:|
+| `e1` | `0.6860751852` | `0.2691072983` | `0.6506762915` | `0.2692665908` |
+| `e2` | `0.6863345393` | `0.2706820921` | `0.6507716310` | `0.2710198916` |
+| `e3` | `0.6863872107` | `0.2706962664` | `0.6508313735` | `0.2713293984` |
 
-Gate B remains open. If the current run completes, its quality-only comparison
-may still be usable, but its runtime behavior must be logged as abnormal rather
-than treated as representative formal-speed evidence.
+Random-arm reading:
 
-## Best-effort blocker diagnosis
+- all three epochs cluster tightly;
+- best full-view LPIPS is `e1`;
+- the arm is admissible for `quality_only` evidence, not for formal runtime
+  evidence.
+
+## Pair interpretation after both arms landed
+
+Gate B is no longer missing a control arm. The packet now closes as a
+completed-but-runtime-anomalous pair:
+
+1. `semantic` is a normal completed arm with usable full-eval summaries;
+2. `random` is a completed arm whose quality summaries are usable, but whose
+   runtime is not admissible as representative formal-speed evidence.
+
+Quality-side comparison:
+
+- semantic retains a raw style advantage of roughly `+0.010` to `+0.012`
+  CLIP-style over random across matched epochs;
+- random retains a large LPIPS advantage of roughly `-0.060` to `-0.090`
+  against semantic across matched epochs.
+
+Immediate implication:
+
+- this packet does **not** support a clean positive novelty claim that semantic
+  projection-axis selection dominates the matched random-axis control on the
+  reviewed style/content trade-off;
+- at minimum, the paper must demote semantic projection-axis selection from a
+  proven win to a tested design choice unless reviewer re-audit finds a safer
+  narrower interpretation.
+
+## Best-effort runtime diagnosis
 
 Current evidence ranks the likely causes as:
 
@@ -155,18 +190,18 @@ Remote evidence supporting that ranking:
 - the semantic and random configs are effectively identical except for
   `bridge.terminal_swd_axis_source`;
 - the semantic arm completed normally on the same remote host and queue family;
-- the random arm shows pathological throughput on the same machine and branch,
-  with VRAM pinned near the limit and very low effective progress.
+- the random arm completed on the same machine and branch but sustained
+  pathological throughput, with VRAM pinned near the limit and very low
+  effective progress for most of training.
 
 Current handling decision:
 
-- do **not** relaunch the same packet yet;
-- allow the current random run to finish only if it keeps making real progress;
-- if it stalls further or crashes before summaries exist, stop it and preserve
-  the logs as blocker evidence;
-- treat any resulting summaries as quality-only evidence;
-- do **not** treat the current random-arm wall clock as representative formal
-  speed evidence.
+- keep the current completed random arm as `quality_only` evidence;
+- do **not** use its wall clock in any fair timing or efficiency claim;
+- do **not** relaunch immediately just to seek a prettier runtime trace;
+- if a future paper argument still requires a fair runtime comparison for the
+  random axis, relaunch only under an explicitly healthier runtime condition and
+  log it as a new packet.
 
 Reviewer-side policy link:
 
@@ -180,6 +215,5 @@ Paper-safe positive closure requires at least one of:
 2. semantic axes hold comparable CLIP-style and LPIPS while improving broader
    artifact diagnostics.
 
-If random axes match or beat semantic axes, the paper must stop centering
-semantic projection-axis selection as a proven novelty and instead present it as
-one tested design choice.
+Based on the landed pair, that positive closure is not yet supported. The next
+safe step is reviewer re-audit, not manuscript escalation.
