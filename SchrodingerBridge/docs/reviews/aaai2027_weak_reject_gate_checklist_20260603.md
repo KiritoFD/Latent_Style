@@ -74,7 +74,11 @@ Current status:
   - `configs/aaai2027/saswd_axis_h_base_seed42_b44_saswd_random.json`
 - semantic arm is fully completed on the remote `3060`
 - semantic summaries now exist for `epoch_0001` through `epoch_0003`
-- random arm is now running on the remote `3060`
+- random arm is now running on the remote `3060`, but the current run has
+  crossed into a blocker-grade degraded-throughput state
+- if the current random run finishes, its quality summaries may still be
+  diagnostically usable, but its wall-clock behavior is not currently credible
+  as normal formal-speed evidence
 - Gate B remains open until both matched arms complete and are compared directly
 
 ## Gate C - Efficiency fairness closure

@@ -210,8 +210,8 @@ or stable config/script locations before being referenced in the paper.
    latent-metric theorem.
 2. The next blocking paper gate is the fixed-base semantic-vs-random SA-SWD
    axis ablation; the semantic arm is now fully completed on the remote 3060,
-   and the random arm is actively running as the remaining matched control
-   needed for direct comparison.
+   while the random arm remains the missing matched control and is currently in
+   a degraded-throughput runtime state on the remote machine.
 3. Time-to-parity plots should be cited with explicit scope and timing
    definitions, not only as prose summaries.
 4. Worktree cleanup should separate durable paper/docs changes from local temp

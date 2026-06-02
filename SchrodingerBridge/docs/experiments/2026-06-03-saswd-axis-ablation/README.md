@@ -85,6 +85,14 @@ Current status:
   - observed step times stretched to roughly `9-14s/it`
   - provisional interpretation: memory-pressure / degraded-throughput risk on
     this exact packet, not yet a hard crash
+- blocker-level runtime heartbeat:
+  - latest seen progress: `Epoch 1/3` completed, `Epoch 2/3` entered at `2/113`
+  - epoch-1 compute time alone reached `971.7s`
+  - GPU: `100% util, 11217/12288 MiB, 71.42 W`
+  - current interpretation: this exact random-arm run is no longer a credible
+    normal-speed formal remote-3060 run; if it completes, its quality summaries
+    may still be diagnostically useful, but its wall-clock behavior should not
+    be treated as normal formal evidence
 
 ## Completed semantic-arm results
 
@@ -108,6 +116,24 @@ Provisional reading before the random arm lands:
 - best full-view LPIPS is `e1`;
 - the semantic arm alone does **not** yet justify a positive SA-SWD novelty
   claim because the matched random-axis control has not been run.
+
+## Current blocker interpretation
+
+The packet is currently split into two evidence classes:
+
+1. `semantic` is a valid completed arm with usable full-eval summaries;
+2. `random` is still an open matched control, but the current remote runtime
+   state has crossed into a throughput-blocker regime.
+
+Until the random arm either:
+
+- finishes with summaries,
+- crashes,
+- or is relaunched in a healthier runtime state,
+
+Gate B remains open. If the current run completes, its quality-only comparison
+may still be usable, but its runtime behavior must be logged as abnormal rather
+than treated as representative formal-speed evidence.
 
 ## Acceptance gate
 
