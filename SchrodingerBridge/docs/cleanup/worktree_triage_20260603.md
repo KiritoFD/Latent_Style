@@ -163,24 +163,28 @@ Policy:
 
 Status:
 
-- high-value notes, but not yet merged into a stable doc surface
+- stable research-note surface
+- ready to commit as a notes-only slice
 
 Files:
 
+- `goal.md`
 - `docs/maths/04_tokenizer_lancet_representation.md`
 - `docs/maths/05_style_transfer_problem_and_next_switches.md`
 
 Observed change:
 
+- `goal.md` records the current AAAI-safe direction, claim-repair logic, and
+  experiment closure targets;
 - adds detailed local probe readings, delta-diversity results, variance
   decomposition, and carrier/gate probe notes.
 
 Policy:
 
-- keep, but decide whether these belong in:
-  - the permanent `docs/maths/` notebook surface, or
-  - an archived probe log with an index entry.
-- do not bury them inside a paper-writing commit.
+- keep them as the stable notebook / research-direction surface;
+- commit them separately from manuscript wording and evaluation behavior;
+- use them as citable internal references when deciding which tokenizer or
+  endpoint-metric experiments deserve promotion.
 
 ## Slice G: Archive evidence additions
 
@@ -222,7 +226,8 @@ Reason:
 1. Slice C after a tiny eval/config verification pass.
 2. Slice E only after helper-level smoke checks.
 3. Slice D only after metric-output verification.
-4. Slice F and G only with archive/index decisions.
+4. Slice F as a standalone research-note slice.
+5. Slice G only with archive/index decisions.
 5. Slice B only if rendered-paper artifacts are still intentionally tracked.
 
 ## Explicit do-not-mix rule
