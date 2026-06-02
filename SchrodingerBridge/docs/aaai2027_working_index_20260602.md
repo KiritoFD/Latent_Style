@@ -61,6 +61,7 @@ Continuous reviewer lane:
 - `SchrodingerBridge/docs/reviews/aaai2027_weak_reject_pressure_memo_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_rewrite_hit_list_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_boundary_alignment_pass_20260603.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_boundary_followup_overclaims_20260603.md`
 - `SchrodingerBridge/docs/reviews/distinct5_idt_noop_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_review_gate_20260603.md`

@@ -117,6 +117,13 @@ Current status:
   - `docs/reviews/aaai2027_rewrite_hit_list_20260603.md`
 - first manuscript-boundary alignment pass is now recorded in:
   - `docs/reviews/aaai2027_boundary_alignment_pass_20260603.md`
+- follow-up adversarial memo on residual overclaims now exists:
+  - `docs/reviews/aaai2027_boundary_followup_overclaims_20260603.md`
+- the follow-up memo's two residual risks were immediately narrowed further in
+  the manuscript:
+  - Distinct5 timing language now stays at operating-point context only
+  - the SA-SWD contribution bullet now reads as a current-mainline design, not
+    a closed semantic-axis novelty claim
 - Gate D remains open until the paper diff is reviewed against the still-open
   Gate B and Gate C evidence gaps
 
