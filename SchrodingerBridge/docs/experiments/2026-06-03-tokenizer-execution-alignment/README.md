@@ -114,6 +114,10 @@ Heartbeat-confirmed state as of `2026-06-03`:
   - `I:\Github\Latent_Style\SchrodingerBridge\exp\distinct5_512_ema_variant_h_hard_explore_queue_e3_b44_remote\logs\training_20260602_235921.csv`
 - confirmed latent train root from the surviving family config:
   - `/mnt/i/wikiart_distinct5_samam_512_latents_ema/train`
+- candidate inventory note:
+  - `payload_candidate_inventory_20260603.md`
+- successor packet:
+  - `../2026-06-03-tokenizer-execution-alignment-l-family/README.md`
 - policy:
   - do not substitute another checkpoint silently
   - recover or prove absence first, then decide the next action explicitly
