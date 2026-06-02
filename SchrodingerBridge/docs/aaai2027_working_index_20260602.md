@@ -58,6 +58,8 @@ Continuous reviewer lane:
 - `SchrodingerBridge/docs/reviews/aaai2027_review_consensus_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_claim_safety_memo_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_agent_ops_20260603.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_weak_reject_pressure_memo_20260603.md`
+- `SchrodingerBridge/docs/reviews/distinct5_idt_noop_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_review_gate_20260603.md`
 
@@ -65,6 +67,7 @@ Related-work / citation gap notes:
 
 - `SchrodingerBridge/docs/references/literature_intel_memo_20260603.md`
 - `SchrodingerBridge/docs/references/related_work_gap_candidates_20260603.md`
+- `SchrodingerBridge/docs/references/evaluation_pathology_noop_memo_20260603.md`
 
 Core evaluation warning about CLIP-style / no-op:
 
@@ -203,8 +206,9 @@ or stable config/script locations before being referenced in the paper.
    claim boundary must stay narrow and must not be re-expanded into a broad
    latent-metric theorem.
 2. The next blocking paper gate is the fixed-base semantic-vs-random SA-SWD
-   axis ablation, whose packet is now prepared and awaiting formal remote 3060
-   launch.
+   axis ablation; the semantic arm has completed training and is now in
+   auto full-eval on the remote 3060, while the random arm remains queued
+   behind it.
 3. Time-to-parity plots should be cited with explicit scope and timing
    definitions, not only as prose summaries.
 4. Worktree cleanup should separate durable paper/docs changes from local temp

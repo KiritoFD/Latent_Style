@@ -63,8 +63,18 @@ Everything else should remain matched:
 
 Current status:
 
-- packet prepared locally
-- awaiting formal remote `3060` launch
+- semantic arm finished training through `epoch_0003.pt` on remote `3060`
+- semantic arm auto full-eval is now running from `full_eval/epoch_0001`
+- random arm remains queued behind semantic on remote `3060`
+- live semantic log:
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\saswd_axis_h_base_seed42_b44_saswd_semantic\remote_train.log`
+- current remote path:
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\saswd_axis_h_base_seed42_b44_saswd_semantic`
+- latest GPU report during auto eval:
+  - `100% util, 2322/12288 MiB, 122.92 W`
+- latest execution snapshot:
+  - training reached `Epoch 3/3, 113/113`; remote task remained healthy and
+    advanced into deferred full-eval with no crash markers
 
 ## Acceptance gate
 
