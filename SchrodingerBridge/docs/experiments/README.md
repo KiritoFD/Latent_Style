@@ -39,6 +39,7 @@ For the current AAAI 2027 push, start here:
 - `2026-06-03-repo-cleanup-and-archive-pass.md`
 - `2026-06-03-exp-surface-classification.md`
 - `2026-06-03-timing-artifact-prune.md`
+- `2026-06-03-exploratory-image-prune.md`
 
 ### Logging / provenance contract
 

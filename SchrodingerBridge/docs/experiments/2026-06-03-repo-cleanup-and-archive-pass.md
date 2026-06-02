@@ -27,6 +27,12 @@ throwing away provenance.
   wall-time records:
   - `docs/experiments/2026-06-03-timing-artifact-prune.md`
 
+### Exploratory image prune
+
+- Pruned generated image payloads from frozen exploratory and diagnostic
+  families while keeping summaries, ledgers, checkpoints, and logs:
+  - `docs/experiments/2026-06-03-exploratory-image-prune.md`
+
 ## Why this pass matters for writing
 
 The current paper needs a cleaner evidence graph:
