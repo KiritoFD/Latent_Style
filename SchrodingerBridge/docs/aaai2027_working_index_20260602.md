@@ -87,6 +87,7 @@ Cross-dataset comparison report:
 - `SchrodingerBridge/docs/experiments/comparison_20260602/comparison_report.pdf`
 - `SchrodingerBridge/docs/experiments/2026-06-03-exp-surface-classification.md`
 - `SchrodingerBridge/docs/experiments/aaai2027_experiment_logging_contract_20260603.md`
+- `SchrodingerBridge/docs/experiments/2026-06-03-exploratory-image-prune.md`
 
 ## 3. Experiment families to cite separately
 
