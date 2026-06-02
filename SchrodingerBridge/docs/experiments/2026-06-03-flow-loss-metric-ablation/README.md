@@ -177,6 +177,29 @@ Immediate read:
 The next valid step is not to average these rows into a paper claim. It is to
 repair the ablation design first.
 
+## Replacement block after the config audit
+
+The next paper-facing metric experiment should be a repaired block, not more
+seeds on the invalidated trio.
+
+Minimum valid options:
+
+1. `OMF + active flow term`
+   - keep `objective_mode = omf`
+   - set `w_flow > 0`
+   - then rerun `mse / huber / l1`
+
+2. `True velocity-regression block`
+   - switch to the non-`omf` objective path
+   - ensure `loss_type` is applied directly to the active velocity regression
+   - keep terminal SWD, kinetic, and eval scope otherwise matched
+
+Reviewer-safe interpretation:
+
+- the current trio is archived as an operational near-null control
+- the repaired block is the first valid test of whether a local loss kernel
+  matters at all for this family
+
 ## Review-cycle coupling
 
 After each seed-level completion:
