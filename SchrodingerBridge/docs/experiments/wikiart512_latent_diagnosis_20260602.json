@@ -1,0 +1,167 @@
+{
+  "root": "/mnt/f/wikiart_latents_512_ema",
+  "styles": [
+    "Realism",
+    "Impressionism",
+    "Post_Impressionism",
+    "Expressionism",
+    "Symbolism"
+  ],
+  "sample_per_style": 512,
+  "per_style": {
+    "Realism": {
+      "count": 512,
+      "latent_abs_mean": 0.6595328450202942,
+      "latent_std": 0.8358772993087769,
+      "grad_abs_mean": 0.589867115020752,
+      "fft_low": 2.0286285877227783,
+      "fft_mid": 0.5937427878379822,
+      "fft_high": 0.4722413122653961,
+      "fft_low_ratio": 0.6555355362247786,
+      "fft_mid_ratio": 0.1918633598878156,
+      "fft_high_ratio": 0.15260110388708267,
+      "full_count": 3600
+    },
+    "Impressionism": {
+      "count": 512,
+      "latent_abs_mean": 0.6243867874145508,
+      "latent_std": 0.7920580506324768,
+      "grad_abs_mean": 0.5971444249153137,
+      "fft_low": 1.9394580125808716,
+      "fft_mid": 0.5914335250854492,
+      "fft_high": 0.475195974111557,
+      "fft_low_ratio": 0.6451768303422347,
+      "fft_mid_ratio": 0.19674527862812063,
+      "fft_high_ratio": 0.15807789102931197,
+      "full_count": 3600
+    },
+    "Post_Impressionism": {
+      "count": 512,
+      "latent_abs_mean": 0.6483493447303772,
+      "latent_std": 0.8147954344749451,
+      "grad_abs_mean": 0.6357934474945068,
+      "fft_low": 1.9375724792480469,
+      "fft_mid": 0.6290082931518555,
+      "fft_high": 0.5051343441009521,
+      "fft_low_ratio": 0.6307787036756854,
+      "fft_mid_ratio": 0.204774293609684,
+      "fft_high_ratio": 0.16444700271430499,
+      "full_count": 3600
+    },
+    "Expressionism": {
+      "count": 512,
+      "latent_abs_mean": 0.6896939277648926,
+      "latent_std": 0.8675476312637329,
+      "grad_abs_mean": 0.6136675477027893,
+      "fft_low": 2.102969169616699,
+      "fft_mid": 0.6422927975654602,
+      "fft_high": 0.49145957827568054,
+      "fft_low_ratio": 0.649721991861546,
+      "fft_mid_ratio": 0.19843931229320758,
+      "fft_high_ratio": 0.1518386958449374,
+      "full_count": 3600
+    },
+    "Symbolism": {
+      "count": 512,
+      "latent_abs_mean": 0.6723421812057495,
+      "latent_std": 0.8559550046920776,
+      "grad_abs_mean": 0.593787431716919,
+      "fft_low": 2.0116937160491943,
+      "fft_mid": 0.6008169054985046,
+      "fft_high": 0.4757218062877655,
+      "fft_low_ratio": 0.6514061888335699,
+      "fft_mid_ratio": 0.19455041663409425,
+      "fft_high_ratio": 0.1540433945320119,
+      "full_count": 3600
+    }
+  },
+  "signature_distance": {
+    "Realism": {
+      "Realism": -2.384185791015625e-07,
+      "Impressionism": 0.003096342086791992,
+      "Post_Impressionism": 0.0042153000831604,
+      "Expressionism": 0.0013753175735473633,
+      "Symbolism": 0.0012189149856567383
+    },
+    "Impressionism": {
+      "Realism": 0.003096342086791992,
+      "Impressionism": -1.1920928955078125e-07,
+      "Post_Impressionism": 0.0009251832962036133,
+      "Expressionism": 0.001989603042602539,
+      "Symbolism": 0.0031145215034484863
+    },
+    "Post_Impressionism": {
+      "Realism": 0.004215240478515625,
+      "Impressionism": 0.0009251832962036133,
+      "Post_Impressionism": 5.960464477539063e-08,
+      "Expressionism": 0.00260239839553833,
+      "Symbolism": 0.003980696201324463
+    },
+    "Expressionism": {
+      "Realism": 0.0013753771781921387,
+      "Impressionism": 0.001989603042602539,
+      "Post_Impressionism": 0.0026024580001831055,
+      "Expressionism": 1.1920928955078125e-07,
+      "Symbolism": 0.001809835433959961
+    },
+    "Symbolism": {
+      "Realism": 0.0012189149856567383,
+      "Impressionism": 0.003114461898803711,
+      "Post_Impressionism": 0.003980755805969238,
+      "Expressionism": 0.0018098950386047363,
+      "Symbolism": -1.1920928955078125e-07
+    }
+  },
+  "nearest_styles": {
+    "Realism": [
+      [
+        "Symbolism",
+        0.0012189149856567383
+      ],
+      [
+        "Expressionism",
+        0.0013753175735473633
+      ]
+    ],
+    "Impressionism": [
+      [
+        "Post_Impressionism",
+        0.0009251832962036133
+      ],
+      [
+        "Expressionism",
+        0.001989603042602539
+      ]
+    ],
+    "Post_Impressionism": [
+      [
+        "Impressionism",
+        0.0009251832962036133
+      ],
+      [
+        "Expressionism",
+        0.00260239839553833
+      ]
+    ],
+    "Expressionism": [
+      [
+        "Realism",
+        0.0013753771781921387
+      ],
+      [
+        "Symbolism",
+        0.001809835433959961
+      ]
+    ],
+    "Symbolism": [
+      [
+        "Realism",
+        0.0012189149856567383
+      ],
+      [
+        "Expressionism",
+        0.0018098950386047363
+      ]
+    ]
+  }
+}

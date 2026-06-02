@@ -1,0 +1,10 @@
+dataset,dataset_id,source,method,label,step_or_epoch,scope,count,clip_style,content_lpips,one_minus_lpips,noop_clip_style,style_gain_vs_noop,note,dataset_short,selection_rule
+Legacy256 / overfit50,legacy256_overfit50,No-op audit,No-op,No-op,0,full,750,0.661913,0.000000,1.000000,0.661913,0.000000,unchanged 5x5 copy,Legacy256,reference
+Legacy256 / overfit50,legacy256_overfit50,SaMAM curve,SaMAM,SaMAM 14000,14000,full,750,0.696867,0.436278,0.563722,0.661913,0.034954,SaMAM best clip_style for this scope,Legacy256,max full style_gain_vs_noop
+Legacy256 / overfit50,legacy256_overfit50,LANCET S-add full_eval,LANCET,S-add K-1 C-0 W-20 Col-0 e8,8,full,750,0.716724,0.461527,0.538473,0.661913,0.054810,historical 8-epoch LANCET baseline on overfit50,Legacy256,max full style_gain_vs_noop
+WikiArt512-5style / 3600,wikiart512_5style,No-op audit,No-op,No-op,0,full,750,0.781528,0.000000,1.000000,0.781528,0.000000,unchanged 5x5 copy,WikiArt512-3600,reference
+WikiArt512-5style / 3600,wikiart512_5style,SaMAM curve,SaMAM,SaMAM 5000,5000,full,750,0.791244,0.283292,0.716708,0.781528,0.009716,SaMAM best clip_style,WikiArt512-3600,max full style_gain_vs_noop
+WikiArt512-5style / 3600,wikiart512_5style,LANCET local_wsl_wikiart512_hist_b32_e8,LANCET,local WSL hist b32 e8,8,full,750,0.792298,0.355038,0.644962,0.781528,0.010770,"verified LANCET epoch-8 full eval, 2026-06-01 output",WikiArt512-3600,max full style_gain_vs_noop
+Distinct5-512 / 1000,distinct5_512,No-op audit,No-op,No-op,0,full,750,0.680123,0.000000,1.000000,0.680123,0.000000,unchanged 5x5 copy,Distinct5-1000,reference
+Distinct5-512 / 1000,distinct5_512,SaMAM curve,SaMAM,SaMAM 2000,2000,full,750,0.583346,0.362153,0.637847,0.680123,-0.096777,SaMAM best clip_style for this scope,Distinct5-1000,max full style_gain_vs_noop
+Distinct5-512 / 1000,distinct5_512,LANCET variants,LANCET,K e1,1,full,750,0.700995,0.362294,0.637706,0.680123,0.020872,LANCET best clip_style point,Distinct5-1000,max full style_gain_vs_noop

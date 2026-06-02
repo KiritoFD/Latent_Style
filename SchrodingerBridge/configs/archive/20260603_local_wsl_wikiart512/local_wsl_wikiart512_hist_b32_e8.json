@@ -1,0 +1,34 @@
+{
+  "_base": "../../wikiart512_ema_direct_atom_residual_calib.json",
+  "training": {
+    "batch_size": 32,
+    "num_epochs": 8,
+    "save_interval": 1,
+    "num_workers": 0,
+    "persistent_workers": false,
+    "use_tqdm": true,
+    "log_interval": 20,
+    "numeric_debug": false,
+    "fused_adamw": false,
+    "async_checkpoint_save": true,
+    "torch_compile": false,
+    "full_eval_batch_size": 8,
+    "full_eval_target_chunk_size": 5,
+    "full_eval_vae_decode_batch_size": 16
+  },
+  "data": {
+    "data_root": "/mnt/f/wikiart_latents_512_ema",
+    "virtual_length_multiplier": 0.02,
+    "preload_to_gpu": false,
+    "latent_cache_mode": "packed",
+    "latent_cache_dir": "/mnt/f/wikiart_latents_512_ema/.latent_cache"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/local_wsl_wikiart512_hist_b32_e8"
+  },
+  "ablation": {
+    "name": "local_wsl_wikiart512_hist_b32_e8",
+    "axis": "local_wsl_historical_short_train_eval_timing",
+    "notes": "Local WSL 4070 Laptop from-scratch 512 EMA run using the historical short-training protocol: 5 styles, virtual_length_multiplier=0.02, 8 epochs, full 750-image eval. Batch 32 is the stable local point; historical remote b48 used more VRAM."
+  }
+}

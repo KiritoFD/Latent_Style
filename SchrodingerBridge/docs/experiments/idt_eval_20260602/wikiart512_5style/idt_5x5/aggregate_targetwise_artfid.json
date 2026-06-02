@@ -1,0 +1,107 @@
+{
+  "output_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\idt_eval_20260602\\wikiart512_5style\\idt_5x5",
+  "test_dir": "G:\\GitHub\\Latent_Style\\Dataset\\wikiart512_5style\\test",
+  "generated_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\idt_eval_20260602\\wikiart512_5style\\idt_5x5\\images",
+  "metrics_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\idt_eval_20260602\\wikiart512_5style\\idt_5x5\\metrics.csv",
+  "wall_seconds": 144.75809869999648,
+  "full": {
+    "count": 750,
+    "target_count": 5,
+    "valid_target_count": 5,
+    "per_target": [
+      {
+        "target_style": "Expressionism",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 211.38604849555526,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 212.38604849555526
+      },
+      {
+        "target_style": "Impressionism",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 208.34979896242902,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 209.34979896242902
+      },
+      {
+        "target_style": "Post_Impressionism",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 205.27639407419696,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 206.27639407419696
+      },
+      {
+        "target_style": "Realism",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 209.41074091771387,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 210.41074091771387
+      },
+      {
+        "target_style": "Symbolism",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 218.58778937676067,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 219.58778937676067
+      }
+    ],
+    "aggregate_art_fid_fid": 210.60215436533116,
+    "aggregate_art_fid_content_lpips": 0.0,
+    "aggregate_art_fid": 211.60215436533116
+  },
+  "transfer": {
+    "count": 600,
+    "target_count": 5,
+    "valid_target_count": 5,
+    "per_target": [
+      {
+        "target_style": "Expressionism",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 312.3170229976348,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 313.3170229976348
+      },
+      {
+        "target_style": "Impressionism",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 305.95321753365863,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 306.95321753365863
+      },
+      {
+        "target_style": "Post_Impressionism",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 295.59251882318574,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 296.59251882318574
+      },
+      {
+        "target_style": "Realism",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 311.58083459099197,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 312.58083459099197
+      },
+      {
+        "target_style": "Symbolism",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 332.62959056809495,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 333.62959056809495
+      }
+    ],
+    "aggregate_art_fid_fid": 311.6146369027132,
+    "aggregate_art_fid_content_lpips": 0.0,
+    "aggregate_art_fid": 312.6146369027132
+  }
+}

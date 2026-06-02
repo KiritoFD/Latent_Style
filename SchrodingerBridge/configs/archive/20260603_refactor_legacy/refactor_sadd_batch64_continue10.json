@@ -1,5 +1,5 @@
 {
-  "_base": "../configs/refactor_sadd_batch64_full.json",
+  "_base": "refactor_sadd_batch64_full.json",
   "training": {
     "num_epochs": 10
   },
