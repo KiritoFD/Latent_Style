@@ -126,6 +126,7 @@ Key evidence:
 - `SchrodingerBridge/docs/experiments/2026-06-03-flow-loss-metric-ablation/README.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-flow-loss-metric-ablation/repaired_endpoint_metric_ablation_packet_20260603.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-flow-loss-metric-ablation/repaired_endpoint_metric_launch_manifest_20260603.md`
+- `SchrodingerBridge/docs/experiments/2026-06-03-saswd-axis-ablation/README.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_review_gate_20260603.md`
 
@@ -202,8 +203,8 @@ or stable config/script locations before being referenced in the paper.
    claim boundary must stay narrow and must not be re-expanded into a broad
    latent-metric theorem.
 2. The next blocking paper gate is the fixed-base semantic-vs-random SA-SWD
-   axis ablation, which determines whether the semantic-axis novelty claim
-   survives.
+   axis ablation, whose packet is now prepared and awaiting formal remote 3060
+   launch.
 3. Time-to-parity plots should be cited with explicit scope and timing
    definitions, not only as prose summaries.
 4. Worktree cleanup should separate durable paper/docs changes from local temp
