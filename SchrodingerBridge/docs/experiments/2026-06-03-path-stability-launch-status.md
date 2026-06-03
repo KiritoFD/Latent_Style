@@ -4,7 +4,7 @@ Date: 2026-06-03
 
 Status:
 
-- `in_progress`
+- `running_k025_after_clean_base_completion`
 
 Scope:
 
@@ -101,13 +101,133 @@ Note:
   - `numeric_debug.jsonl`
   - GPU/process state captured above
 
+Re-checked later on `2026-06-03` during local packet audit:
+
+- no matching remote `python` process remained alive
+- GPU had returned to idle:
+  - about `114 MiB`
+  - about `11.6 W`
+  - about `0%` GPU util
+- save dir still contained only:
+  - `epoch_0001.pt`
+  - `logs\training_20260603_144043.csv`
+  - `logs\training_20260603_144732.csv`
+  - `numeric_debug.jsonl`
+- `numeric_debug.jsonl` still showed finite progress through at least:
+  - `epoch 2 step 40`
+- but there was still no:
+  - `epoch_0002.pt`
+  - `full_eval\...\summary.json`
+  - `remote_train.log`
+
+Current operational read:
+
+- the packet has been launched and did real work on the remote 3060;
+- the `base` arm is **not** currently healthy-running;
+- the currently retained runtime surface is partial and mixed across foreground
+  recovery attempts;
+- the packet is therefore not yet admissible as a landed mechanism result.
+
+## Clean rerun recovery
+
+Observed later on `2026-06-03` during the recovery pass:
+
+- the interrupted mixed-artifact save dir was archived to:
+  - `I:\Github\Latent_Style\SchrodingerBridge\exp\aaai2027_path_kinetic_h_base_seed42_b44_interrupted_20260603_1449`
+- a clean launcher was written to:
+  - `I:\Github\Latent_Style\SchrodingerBridge\exp\_launchers\aaai2027_path_kinetic_h_base_seed42_b44_base_clean.cmd`
+- the `base` arm was relaunched from that clean surface
+- a fresh save dir was recreated at:
+  - `I:\Github\Latent_Style\SchrodingerBridge\exp\aaai2027_path_kinetic_h_base_seed42_b44`
+- retained fresh runtime evidence now includes:
+  - `remote_train.log`
+- verified healthy shortly after relaunch:
+  - GPU about `9648 MiB`
+  - GPU about `100%` util
+  - GPU about `154 W`
+- `remote_train.log` shows:
+  - dataset load success
+  - model init success
+  - epoch `1/3` in active progress
+
+Current operational read after recovery:
+
+- the clean rerun is now the authoritative live `base` arm;
+- the archived interrupted directory remains as provenance only;
+- the next gate is still successful completion with retained checkpoints and
+  `full_eval` summaries.
+
+## Clean `base` rerun completion
+
+Re-checked on `2026-06-03` after the recovered rerun finished:
+
+- GPU had returned to idle:
+  - about `114 MiB`
+  - about `0%` util
+  - about `11.7 W`
+- the clean `base` save dir retained the full expected chain:
+  - `remote_train.log`
+  - `epoch_0001.pt`
+  - `epoch_0002.pt`
+  - `epoch_0003.pt`
+  - `full_eval\epoch_0001\summary.json`
+  - `full_eval\epoch_0002\summary.json`
+  - `full_eval\epoch_0003\summary.json`
+- `remote_train.log` ends cleanly with:
+  - full eval completed for `epoch_0003`
+  - `Training completed.`
+  - launcher exit code `0`
+
+Retained full-scope metrics:
+
+- `epoch_0001`
+  - `clip_style = 0.6891`
+  - `content_lpips = 0.4272`
+  - `clip_dir = 0.0000`
+  - `full_eval wall_total = 87.72s`
+- `epoch_0002`
+  - `clip_style = 0.6821`
+  - `content_lpips = 0.4198`
+  - `clip_dir = 0.0000`
+  - `full_eval wall_total = 87.18s`
+- `epoch_0003`
+  - `clip_style = 0.6887`
+  - `content_lpips = 0.4171`
+  - `clip_dir = 0.0000`
+  - `full_eval wall_total = 87.37s`
+
+Current read after `base` landing:
+
+- the clean `base` arm is now reviewer-safe as a retained artifact chain;
+- this closes the earlier provenance hole for the `base` arm only;
+- the mechanism packet is still incomplete until `k025`, `k000`, and the
+  retained probe are landed.
+
+## `k025` launch
+
+Observed on `2026-06-03` after the clean `base` rerun landed:
+
+- a dedicated launcher was created at:
+  - `I:\Github\Latent_Style\SchrodingerBridge\exp\_launchers\aaai2027_path_kinetic_h_base_seed42_b44_k025.cmd`
+- the matched weakened-kinetic arm was launched by direct foreground SSH
+  invocation
+- current save dir:
+  - `I:\Github\Latent_Style\SchrodingerBridge\exp\aaai2027_path_kinetic_h_base_seed42_b44_k025`
+- retained runtime evidence already present:
+  - `remote_train.log`
+- early log and device checks confirm healthy execution:
+  - log timestamp `2026-06-03 15:41:00`
+  - dataset load success
+  - model init success
+  - training entered `epoch 1/3`
+  - GPU about `9648 MiB`
+  - GPU about `96%` util
+  - GPU about `151 W`
+
 ## Still pending
 
-- wait for the running `base` arm to finish and collect:
-  - checkpoints
-  - `full_eval\epoch_0001..0003\summary.json`
-- then relaunch or continue packetized execution for:
-  - `k025`
+- let the current `k025` arm land a retained checkpoint-to-full-eval chain
+- then launch packetized execution for:
   - `k000`
 - then run:
   - `tools\probe_path_stability.py`

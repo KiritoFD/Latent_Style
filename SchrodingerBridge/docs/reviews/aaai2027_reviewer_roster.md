@@ -85,16 +85,13 @@ single favorable visual inspection.
 
 ## 6. Standing agent roster
 
-Current named reviewer agents that may be reused across cycles:
+There is no standing live reviewer agent.
 
-- `Avicenna`
-  - preferred lane: `adversarial_review`
-- `Harvey`
-  - preferred lane: `scorecard`
-- `Kepler`
-  - preferred lane: `experiment_audit`
-- `Lorentz`
-  - preferred lane: `adversarial_review`
-  - note:
-    - use as a second harsh reader when the current cycle needs a fresh attack
-      on claims, figure logic, or experiment prioritization
+Nicknames are disposable and cycle-scoped:
+
+1. a nickname may be reused only after a new agent is explicitly spawned;
+2. old ids must never be assumed reusable just because a nickname reappears;
+3. `aaai2027_agent_ops_20260603.md` is the only live control-plane source for
+   which reviewer agents still exist right now.
+4. historical ids should stay out of this file; they belong in the review CSVs
+   and landed memos only.

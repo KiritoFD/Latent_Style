@@ -84,6 +84,15 @@ Reusable review packet:
 Use the protocol to decide when to re-run reviewers and the registry to track
 whether the paper is actually converging toward submission safety.
 
+Control-plane hygiene:
+
+- `aaai2027_agent_ops_20260603.md` should list only currently live agents;
+- once a lane is completed and closed, keep its history in the CSVs and memos,
+  then remove it from the live roster;
+- do not let reviewer nicknames accumulate as if they were persistent workers.
+- historical `open`, `partial`, or `blocking` values inside the review CSVs are
+  review-state fields, not evidence of a still-running subagent.
+
 Standing claim-boundary memo:
 
 - `aaai2027_claim_safety_memo_20260603.md`
