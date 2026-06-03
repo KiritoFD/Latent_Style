@@ -71,6 +71,7 @@ Continuous reviewer lane:
 - `SchrodingerBridge/docs/reviews/aaai2027_gate_b_pair_reaudit_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_l_family_postlanding_tex_reread_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_l_family_postedit_tex_check_20260603.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_adversarial_gate_refresh_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_tokenizer_execution_alignment_l_family_reread_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_tokenizer_l_family_paper_gate_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_tokenizer_probe_successor_family_reread_20260603.md`
@@ -180,6 +181,12 @@ Unified dataset roots under the repo:
 - `Dataset/wikiart512_5style`
 - `Dataset/distinct5_512`
 
+Legacy in-project dataset helper root:
+
+- `SchrodingerBridge/datasets/horse2zebra`
+  - legacy local sample only
+  - not part of the current AAAI 2027 benchmark surface
+
 SchrodingerBridge-side references:
 
 - `SchrodingerBridge/docs/experiments/comparison_20260602/README.md`
@@ -258,6 +265,11 @@ or stable config/script locations before being referenced in the paper.
    `H`-family packet remains blocked on payload recovery, but a payload-backed
    `L`-family successor packet has now landed and must be cited with explicit
    successor-family scope rather than as restored `H` continuity.
+6. The matched Distinct5 tokenizer-localization packet is now live on the
+   remote `3060`; the working truth is in:
+   - `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-localization-remote-preflight.md`
+   Until all three epoch summaries land, keep this lane in evidence-collection
+   mode rather than manuscript-claim mode.
 6. Every major checkpoint should trigger a fresh three-lane review round and a
    registry entry, rather than relying on a single frozen review memo.
 7. Config and archive surfaces should stay indexed so the paper-facing rerun

@@ -71,6 +71,7 @@ SchrodingerBridge/exp/**
 SchrodingerBridge/external_eval/**
 SchrodingerBridge/archives/code_backups/**
 SchrodingerBridge/docs/experiments/history_audit_local_*.json
+SchrodingerBridge/datasets/**
 
 # Top-level runtime dumps
 archive/**
@@ -86,6 +87,10 @@ SchrodingerBridge/aaai_submission/*.log
 SchrodingerBridge/aaai_submission/*.out
 SchrodingerBridge/aaai_submission/*.synctex.gz
 SchrodingerBridge/aaai_submission/**/*.aux
+SchrodingerBridge/aaai_submission/**/*.bbl
+SchrodingerBridge/aaai_submission/**/*.blg
+SchrodingerBridge/aaai_submission/**/*.fdb_latexmk
+SchrodingerBridge/aaai_submission/**/*.fls
 SchrodingerBridge/aaai_submission/**/*.log
 SchrodingerBridge/aaai_submission/**/*.out
 SchrodingerBridge/aaai_submission/**/*.synctex.gz

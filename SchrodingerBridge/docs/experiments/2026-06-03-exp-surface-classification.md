@@ -64,6 +64,8 @@ These should remain the preferred pattern for new formal runs:
   - currently used by:
     - repaired endpoint-metric packet
     - SA-SWD semantic-vs-random packet
+    - tokenizer execution-alignment `L`-family successor packet
+    - tokenizer-localization matched freeze-direction packet
   - status:
     - formal remote evidence surface
   - rule:
