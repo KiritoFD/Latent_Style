@@ -133,3 +133,32 @@ Latest live status after the handoff
 - current blocking milestone:
   - wait for executor-only `full_eval/epoch_0001..0003/summary.json` to land
     before opening the matched localization packet for adversarial review
+
+Executor-only full-eval crash and recovery path
+
+- latest verified failure surface:
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_localization_l_e1_executoronly_seed42_b44\remote_train.log`
+- exact failing point in the executor log:
+  - `Running full eval for exp/aaai2027_tokenizer_localization_l_e1_executoronly_seed42_b44/epoch_0001.pt -> exp/aaai2027_tokenizer_localization_l_e1_executoronly_seed42_b44/full_eval/epoch_0001`
+- latest verified error:
+  - `ImportError: CLIPModel requires the PyTorch library but it was not found in your environment.`
+
+Interpretation
+
+- executor-only training itself is complete through `epoch_0003.pt`;
+- the blocked surface is executor-only evaluation, not training or checkpoint
+  creation;
+- this mirrors the earlier style-branch eval-environment failure pattern rather
+  than invalidating the training run.
+
+Current recovery action
+
+- `Linnaeus` has been reassigned to recover the executor-only full-eval on the
+  same remote machine while preserving the original output tree;
+- preferred recovery path:
+  - same-machine Windows `py -3` full-eval recovery, since that route already
+    recovered the style-branch summaries successfully;
+- target artifacts remain:
+  - `full_eval/epoch_0001/summary.json`
+  - `full_eval/epoch_0002/summary.json`
+  - `full_eval/epoch_0003/summary.json`
