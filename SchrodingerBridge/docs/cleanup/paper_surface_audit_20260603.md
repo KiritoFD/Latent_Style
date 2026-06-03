@@ -22,7 +22,6 @@ Directly referenced figure files in `paper_aaai2026.tex`:
 - `fig_zoom_ours_vs_samst.png`
 - `figures/fig_distinct5_pareto.pdf`
 - `fig_ablation_pareto.png`
-- `figures/fig_distinct5_time_context.pdf`
 
 Implication:
 
@@ -100,7 +99,6 @@ Do not delete yet:
 - `framework_lbm_main_v5.png`
 - root-level figure PNGs currently referenced by the manuscript
 - `figures/fig_distinct5_pareto.pdf`
-- `figures/fig_distinct5_time_context.pdf`
 - `final/` assets used by the packaged export surface
 
 Reason:

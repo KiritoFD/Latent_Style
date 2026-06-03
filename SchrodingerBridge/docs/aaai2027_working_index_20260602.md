@@ -59,6 +59,7 @@ Continuous reviewer lane:
 - `SchrodingerBridge/docs/reviews/aaai2027_review_consensus_20260602_r2.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_review_consensus_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_claim_safety_memo_20260603.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_review_consensus_20260603_r3.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_agent_ops_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_weak_reject_pressure_memo_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_rewrite_hit_list_20260603.md`
@@ -175,6 +176,7 @@ Key evidence:
 - `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-localization/README.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-localization/launch_manifest_20260603.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-path-stability-protocol.md`
+- `SchrodingerBridge/docs/experiments/2026-06-03-path-stability-launch-status.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/README.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/distinct5_time_to_parity_points.csv`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/figures/distinct5_time_to_clip_style.pdf`
