@@ -1,6 +1,7 @@
 # Review Lane
 
-This directory is the persistent reviewer lane for the AAAI 2027 submission.
+This directory is the persistent reviewer archive and control protocol for the
+AAAI 2027 submission.
 
 The rule is simple: every major paper or experiment checkpoint should be judged
 from at least three independent perspectives:
@@ -45,6 +46,13 @@ source tree.
 4. Fold only evidence-backed findings into the paper or experiment plan.
 
 This keeps the review process continuous instead of one-shot.
+
+Current live status:
+
+- no standing live reviewer subagent
+- no standing live remote-execution subagent
+- `aaai2027_agent_ops_20260603.md` is the only source of truth for anything
+  that is still live right now
 
 Routine cycles should stay compact:
 
@@ -102,14 +110,16 @@ Standing claim-boundary memo:
 The next required three-lane review cycle should be tied to one of two concrete
 events:
 
-1. the matched Distinct5 path-stability / weakened-kinetic packet lands; or
+1. the manuscript absorbs the landed same-family Distinct5 path-stability
+   packet and refreshes its mechanism wording / figure surface; or
 2. the paper body makes another nontrivial claim escalation around Distinct5,
    tokenizer localization, or kinetic/path-energy interpretation.
 
 Control files:
 
-- next mechanism packet:
-  - `../experiments/2026-06-03-path-stability-protocol.md`
+- landed mechanism packet:
+  - `../experiments/2026-06-03-path-stability-launch-status.md`
+  - `../experiments/2026-06-03-path-stability-probe/README.md`
 - current tokenizer-localization outcome packet:
   - `../experiments/2026-06-03-tokenizer-localization/README.md`
   - `../experiments/2026-06-03-tokenizer-localization/readout_20260603.csv`

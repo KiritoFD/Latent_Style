@@ -60,16 +60,21 @@ For the current AAAI 2027 push, start here:
 - `2026-06-03-tokenizer-localization/launch_manifest_20260603.md`
 - `2026-06-03-tokenizer-localization-remote-preflight.md`
 - `2026-06-03-path-stability-protocol.md`
+- `2026-06-03-path-stability-launch-status.md`
+- `2026-06-03-path-stability-probe/README.md`
 
-### Current next remote mechanism packet
+### Current mechanism-closure packet status
 
-The current highest-priority next remote mechanism-closure lane is the matched
-Distinct5 path-stability / weakened-kinetic packet.
+The matched Distinct5 same-family path-stability / weakened-kinetic packet is
+now landed.
 
 Use these files together:
 
-- protocol:
+- protocol and launch chain:
   - `2026-06-03-path-stability-protocol.md`
+  - `2026-06-03-path-stability-launch-status.md`
+- retained probe readout:
+  - `2026-06-03-path-stability-probe/README.md`
 - base config:
   - `../../configs/aaai2027/path_kinetic_h_base_seed42_b44_base.json`
 - weakened/no-kinetic configs:
@@ -81,10 +86,11 @@ Use these files together:
 Current state:
 
 - tokenizer-localization has already landed as a bounded `L`-family packet;
-- path-stability is now prepared locally but not yet launched in the current
-  session because the remote runtime surface still needs recovery;
+- path-stability has now landed as a bounded same-family `H`-packet with
+  retained `base`, `k025`, `k000`, and probe artifacts;
 - do not promote the kinetic/path-energy story beyond its current bounded form
-  until the matched weakened-kinetic packet and probe outputs land.
+  until the manuscript absorbs this landed packet and a fresh review cycle
+  re-checks the claim boundary.
 
 ### Archive / cleanup boundary
 
