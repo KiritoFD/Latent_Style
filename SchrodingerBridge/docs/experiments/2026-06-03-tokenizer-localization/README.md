@@ -15,15 +15,19 @@ Current state:
 
 - protocol drafted:
   - `docs/experiments/2026-06-03-tokenizer-localization-probe-protocol.md`
-- legacy256 preflight explicitly superseded:
+- legacy256 preflight explicitly superseded and replaced by the Distinct5 note:
   - `docs/experiments/2026-06-03-tokenizer-localization-remote-preflight.md`
 - Distinct5 `L e1` matched configs prepared:
   - `configs/aaai2027/tokenizer_localization_l_e1_seed42_b44_base.json`
   - `configs/aaai2027/tokenizer_localization_l_e1_stylebranch_seed42_b44.json`
   - `configs/aaai2027/tokenizer_localization_l_e1_executoronly_seed42_b44.json`
-- remote launch readiness:
-  - pending updated preflight against the Distinct5 `L e1` packet and the new
-    `executor_only` freeze mode
+- remote launch state:
+  - updated Distinct5 `L e1` preflight passed on remote
+  - style-branch arm launched and running on the remote `3060`
+  - executor-only arm launched into queue and waiting for the style-branch arm
+    to finish before taking the GPU
+- launch contract:
+  - `docs/experiments/2026-06-03-tokenizer-localization/launch_manifest_20260603.md`
 
 ## Why this packet exists
 
