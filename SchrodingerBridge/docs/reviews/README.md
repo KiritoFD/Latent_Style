@@ -87,3 +87,22 @@ whether the paper is actually converging toward submission safety.
 Standing claim-boundary memo:
 
 - `aaai2027_claim_safety_memo_20260603.md`
+
+## Current live trigger
+
+The next required three-lane review cycle is blocked on the matched Distinct5
+`L e1` tokenizer-localization packet.
+
+Control files:
+
+- live remote packet truth:
+  - `../experiments/2026-06-03-tokenizer-localization-remote-preflight.md`
+- packet overview:
+  - `../experiments/2026-06-03-tokenizer-localization/README.md`
+- cycle ledger:
+  - `aaai2027_review_registry.csv`
+  - `aaai2027_review_score_log.csv`
+
+Open the next full cycle only after the executor-only arm lands
+`full_eval/epoch_0001..0003/summary.json`, then record the result as a new
+cycle id rather than appending informal commentary to an older round.

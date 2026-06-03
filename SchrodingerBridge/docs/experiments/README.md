@@ -46,17 +46,57 @@ For the current AAAI 2027 push, start here:
 
 - `aaai2027_experiment_logging_contract_20260603.md`
 
-### Next paper-closing protocol
-
-- `2026-06-03-flow-loss-metric-ablation-protocol.md`
-
 ### Current claim-closing packets
 
+- `2026-06-03-flow-loss-metric-ablation-protocol.md`
 - `2026-06-03-flow-loss-metric-ablation/README.md`
 - `2026-06-03-saswd-axis-ablation/README.md`
+- `2026-06-03-time-to-parity/README.md`
 - `2026-06-03-tokenizer-execution-alignment-protocol.md`
 - `2026-06-03-tokenizer-execution-alignment/README.md`
 - `2026-06-03-tokenizer-execution-alignment-l-family/README.md`
+- `2026-06-03-tokenizer-localization-probe-protocol.md`
+- `2026-06-03-tokenizer-localization/README.md`
+- `2026-06-03-tokenizer-localization/launch_manifest_20260603.md`
+- `2026-06-03-tokenizer-localization-remote-preflight.md`
+
+### Current live remote mechanism packet
+
+The current highest-priority remote mechanism-closure lane is the matched
+Distinct5 `L e1` tokenizer-localization pair.
+
+Use these files together:
+
+- packet overview:
+  - `2026-06-03-tokenizer-localization/README.md`
+- exact freeze-direction probe definition:
+  - `2026-06-03-tokenizer-localization-probe-protocol.md`
+- launch manifest:
+  - `2026-06-03-tokenizer-localization/launch_manifest_20260603.md`
+- remote truth / recovery / handoff state:
+  - `2026-06-03-tokenizer-localization-remote-preflight.md`
+- experiment ledger rows:
+  - `aaai2027_master_experiment_log.csv`
+
+Current state:
+
+- style-branch training plus recovered full-eval are complete;
+- executor-only training is complete and its auto full-eval artifact landing is
+  the current blocking milestone;
+- do not widen manuscript claims until the executor-only
+  `full_eval/epoch_0001..0003/summary.json` files land and the next review
+  cycle runs.
+
+### Archive / cleanup boundary
+
+For cleanup or archive questions, do not guess from raw directory names alone.
+Use:
+
+- `2026-06-03-exp-surface-classification.md`
+- `2026-06-03-repo-cleanup-and-archive-pass.md`
+- `../cleanup/worktree_triage_20260603.md`
+- `../cleanup/paper_surface_audit_20260603.md`
+- `../../archives/README.md`
 
 ## Directory intent
 
@@ -73,3 +113,9 @@ When adding a new experiment block, prefer:
 
 1. a dated note for the narrative summary, and
 2. a dedicated dated directory for the raw tables/plots/artifacts.
+
+When a formal `aaai2027_*` packet changes phase from `planned`, `queued`, or
+`running` into `completed`, it must also trigger:
+
+1. a ledger update in `aaai2027_master_experiment_log.csv`, and
+2. a fresh review-cycle check via `../reviews/aaai2027_review_protocol.md`.
