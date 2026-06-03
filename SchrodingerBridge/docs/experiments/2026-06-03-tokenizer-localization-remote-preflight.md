@@ -176,9 +176,11 @@ Latest recovery progress
 
 - landed artifact:
   - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_localization_l_e1_executoronly_seed42_b44\full_eval\epoch_0001\summary.json`
+- landed artifact:
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_localization_l_e1_executoronly_seed42_b44\full_eval\epoch_0002\summary.json`
 - recovery log confirms:
   - `epoch_0001` finished with `[RUN_EPOCH_0001_EXIT] 0`
-  - recovery has already advanced into `epoch_0002`
+  - `epoch_0002` finished with `[RUN_EPOCH_0002_EXIT] 0`
+  - recovery has already advanced into `epoch_0003`
 - still pending:
-  - `full_eval/epoch_0002/summary.json`
   - `full_eval/epoch_0003/summary.json`
