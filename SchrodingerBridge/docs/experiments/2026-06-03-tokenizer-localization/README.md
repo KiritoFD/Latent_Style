@@ -23,11 +23,20 @@ Current state:
   - `configs/aaai2027/tokenizer_localization_l_e1_executoronly_seed42_b44.json`
 - remote launch state:
   - updated Distinct5 `L e1` preflight passed on remote
-  - style-branch arm launched and running on the remote `3060`
-  - executor-only arm launched into queue and waiting for the style-branch arm
-    to finish before taking the GPU
+  - style-branch arm completed training and recovered all three full-eval
+    summaries
+  - executor-only arm completed training after the queue handoff
+  - executor-only auto full-eval then crashed on the remote eval surface and
+    is currently being recovered on the same remote machine
+  - executor-only recovered summaries now include:
+    - `epoch_0001`
+    - `epoch_0002`
+  - current remaining blocker:
+    - `epoch_0003` summary landing for the executor-only arm
 - launch contract:
   - `docs/experiments/2026-06-03-tokenizer-localization/launch_manifest_20260603.md`
+  - live recovery / remote truth note:
+    - `docs/experiments/2026-06-03-tokenizer-localization-remote-preflight.md`
 
 ## Why this packet exists
 
@@ -71,6 +80,17 @@ Both arms must land:
 - `full_eval/epoch_0001/summary.json`
 - `full_eval/epoch_0002/summary.json`
 - `full_eval/epoch_0003/summary.json`
+
+Current partial landing status:
+
+- style-branch:
+  - `epoch_0001/summary.json` landed
+  - `epoch_0002/summary.json` landed
+  - `epoch_0003/summary.json` landed
+- executor-only:
+  - `epoch_0001/summary.json` landed
+  - `epoch_0002/summary.json` landed
+  - `epoch_0003/summary.json` pending at the current checkpoint
 
 The paper-facing interpretation must use:
 
