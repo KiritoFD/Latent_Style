@@ -80,6 +80,7 @@ Continuous reviewer lane:
 - `SchrodingerBridge/docs/reviews/tokenizer_claim_matrix_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_claim_evidence_matrix_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_code_vs_output_geometry_20260603.md`
+- `SchrodingerBridge/docs/reviews/tokenizer_localization_outcome_claim_map_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_execution_alignment_l_family_theory_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_probe_checkpoint_reselection_policy_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_representation_theory_queue_20260603.md`
