@@ -12,6 +12,8 @@ Update:
   - `27f234a28` (`Record agent audit and review gate checklists`)
 - remaining entries below describe the still-dirty or still-unverified slices
   after those two commits
+- the current dirty surface is now dominated by control-plane / index /
+  cleanup-note updates tied to the live Distinct5 tokenizer-localization lane
 
 ## Slice A: Paper-safe writing and review surface
 
@@ -63,11 +65,12 @@ Files:
 
 - `aaai_submission/paper_aaai2026.pdf`
 - `aaai_submission/paper_aaai2026.bbl`
-- `aaai_submission/paper_aaai2026.blg`
 
 Reason:
 
-- these changed only because the paper was rebuilt after the text and bib
+- these are the remaining intentionally tracked rendered-paper outputs after
+  the pure build-side `.blg` artifact was removed from version control;
+- they changed only because the paper was rebuilt after the text and bib
   updates.
 
 Policy:
@@ -236,14 +239,47 @@ Reason:
 - not required for the current manuscript-safety update;
 - likely belongs to a separate figure-generation or paper-layout slice.
 
+## Slice I: Control-plane, index, and cleanup notes
+
+Status:
+
+- coherent and commit-safe as one docs-only slice
+
+Files:
+
+- `docs/aaai2027_working_index_20260602.md`
+- `docs/cleanup/worktree_triage_20260603.md`
+- `docs/cleanup/paper_surface_audit_20260603.md`
+- `docs/experiments/2026-06-03-tokenizer-localization-remote-preflight.md`
+- `docs/experiments/aaai2027_master_experiment_log.csv`
+- `docs/reviews/aaai2027_agent_ops_20260603.md`
+- `docs/reviews/tokenizer_localization_claim_boundary_20260603.md`
+
+Reason:
+
+- these files jointly define the current control plane for:
+  - what the live remote tokenizer-localization packet is doing;
+  - which claim boundary is safe once it lands;
+  - how the worktree and paper surfaces should be cleaned without deleting live
+    assets;
+  - where the current writing and experiment entrypoints are.
+
+Notes:
+
+- this slice should stay docs-only;
+- do not mix it with manuscript wording edits, code, or eval-behavior changes;
+- if committed now, it reduces the current dirty worktree substantially without
+  changing scientific results.
+
 ## Recommended remaining commit order
 
-1. Slice C after a tiny eval/config verification pass.
-2. Slice E only after helper-level smoke checks.
-3. Slice D only after metric-output verification.
-4. Slice F as a standalone research-note slice.
-5. Slice G only with archive/index decisions.
-5. Slice B only if rendered-paper artifacts are still intentionally tracked.
+1. Slice I now as the current docs/control cleanup surface.
+2. Slice C after a tiny eval/config verification pass.
+3. Slice E only after helper-level smoke checks.
+4. Slice D only after metric-output verification.
+5. Slice F as a standalone research-note slice.
+6. Slice G only with archive/index decisions.
+7. Slice B only if rendered-paper artifacts are still intentionally tracked.
 
 ## Explicit do-not-mix rule
 

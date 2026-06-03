@@ -81,6 +81,7 @@ Continuous reviewer lane:
 - `SchrodingerBridge/docs/reviews/tokenizer_claim_matrix_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_claim_evidence_matrix_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_code_vs_output_geometry_20260603.md`
+- `SchrodingerBridge/docs/reviews/tokenizer_localization_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_localization_outcome_claim_map_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_execution_alignment_l_family_theory_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_probe_checkpoint_reselection_policy_20260603.md`
@@ -106,6 +107,11 @@ Cross-dataset comparison report:
 - `SchrodingerBridge/docs/experiments/aaai2027_experiment_logging_contract_20260603.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-exploratory-image-prune.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-smoke-surface-prune.md`
+
+Cleanup / worktree hygiene notes:
+
+- `SchrodingerBridge/docs/cleanup/worktree_triage_20260603.md`
+- `SchrodingerBridge/docs/cleanup/paper_surface_audit_20260603.md`
 
 ## 3. Experiment families to cite separately
 
@@ -265,24 +271,26 @@ or stable config/script locations before being referenced in the paper.
    `H`-family packet remains blocked on payload recovery, but a payload-backed
    `L`-family successor packet has now landed and must be cited with explicit
    successor-family scope rather than as restored `H` continuity.
-6. The matched Distinct5 tokenizer-localization packet is now live on the
-   remote `3060`; the working truth is in:
+6. The matched Distinct5 tokenizer-localization packet is now the live
+   mechanism-closure lane on the remote `3060`; the working truth is in:
    - `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-localization-remote-preflight.md`
-   Until all three epoch summaries land, keep this lane in evidence-collection
-   mode rather than manuscript-claim mode.
-6. Every major checkpoint should trigger a fresh three-lane review round and a
+   Style-branch training plus recovered full-eval are complete, while the
+   executor-only arm has advanced into auto full-eval. Until all three
+   executor summaries land, keep this lane in evidence-collection mode rather
+   than manuscript-claim mode.
+7. Every major checkpoint should trigger a fresh three-lane review round and a
    registry entry, rather than relying on a single frozen review memo.
-7. Config and archive surfaces should stay indexed so the paper-facing rerun
+8. Config and archive surfaces should stay indexed so the paper-facing rerun
    path is obvious and local timing/refactor residue does not pollute the main
    experiment surface.
-8. Manuscript tightening around the landed `L`-family tokenizer evidence has
+9. Manuscript tightening around the landed `L`-family tokenizer evidence has
    now been applied and reviewer-checked once; the next highest-value action is
    a stronger mechanism-side experiment rather than another local wording pass.
-9. The current preferred next mechanism packet is the Distinct5 `L e1`
+10. The current preferred next mechanism packet is the Distinct5 `L e1`
    frozen-direction tokenizer localization probe documented in:
    - `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-localization-probe-protocol.md`
    - `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-localization/launch_manifest_20260603.md`
-10. The earlier legacy256 tokenizer-`t01` localization preflight is retained
-   only as a superseded path-truth note and must not be relaunched as the
-   active paper-facing packet:
+11. The earlier legacy256 tokenizer-`t01` localization route is superseded and
+   must not be relaunched as the active paper-facing packet. The current live
+   remote preflight note for the Distinct5 `L e1` packet is:
    - `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-localization-remote-preflight.md`
