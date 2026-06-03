@@ -231,6 +231,14 @@ class FactorizedStyleTokenizer(nn.Module):
     def _record_direct_debug(self, style_code: torch.Tensor) -> None:
         with torch.no_grad():
             code = style_code.detach().float()
+            if code.numel() == 0 or code.shape[0] == 0:
+                zero = code.new_tensor(0.0)
+                self.last_debug = {
+                    "style_code_norm": zero,
+                    "style_code_abs_mean": zero,
+                    "style_code_abs_max": zero,
+                }
+                return
             self.last_debug = {
                 "style_code_norm": code.norm(dim=1).mean(),
                 "style_code_abs_mean": code.abs().mean(),
@@ -241,6 +249,18 @@ class FactorizedStyleTokenizer(nn.Module):
         with torch.no_grad():
             code = style_code.detach().float()
             probs = weights.detach().float()
+            if code.numel() == 0 or code.shape[0] == 0 or probs.numel() == 0 or probs.shape[0] == 0:
+                zero = code.new_tensor(0.0)
+                self.last_debug = {
+                    "style_code_norm": zero,
+                    "style_code_abs_mean": zero,
+                    "style_code_abs_max": zero,
+                    "atom_entropy": zero,
+                    "atom_effective_count": zero,
+                    "atom_max_prob": zero,
+                    "atom_table_norm": self.concept_atoms.detach().float().norm(dim=1).mean(),
+                }
+                return
             entropy = -(probs * probs.clamp_min(1e-8).log()).sum(dim=1).mean()
             max_prob = probs.max(dim=1).values.mean()
             effective_atoms = torch.exp(entropy)
@@ -258,6 +278,18 @@ class FactorizedStyleTokenizer(nn.Module):
         with torch.no_grad():
             code = style_code.detach().float()
             probs = weights.detach().float()
+            if code.numel() == 0 or code.shape[0] == 0 or probs.numel() == 0 or probs.shape[0] == 0:
+                zero = code.new_tensor(0.0)
+                self.last_debug = {
+                    "style_code_norm": zero,
+                    "style_code_abs_mean": zero,
+                    "style_code_abs_max": zero,
+                    "prototype_entropy": zero,
+                    "prototype_effective_count": zero,
+                    "prototype_max_prob": zero,
+                    "prototype_table_norm": self.class_prototypes.detach().float().norm(dim=2).mean(),
+                }
+                return
             entropy = -(probs * probs.clamp_min(1e-8).log()).sum(dim=1).mean()
             max_prob = probs.max(dim=1).values.mean()
             self.last_debug = {
@@ -282,6 +314,28 @@ class FactorizedStyleTokenizer(nn.Module):
             proto = prototype_code.detach().float()
             residual = atom_residual.detach().float()
             probs = weights.detach().float()
+            if (
+                code.numel() == 0
+                or code.shape[0] == 0
+                or proto.numel() == 0
+                or residual.numel() == 0
+                or probs.numel() == 0
+                or probs.shape[0] == 0
+            ):
+                zero = code.new_tensor(0.0)
+                self.last_debug = {
+                    "style_code_norm": zero,
+                    "style_code_abs_mean": zero,
+                    "style_code_abs_max": zero,
+                    "prototype_norm": zero,
+                    "atom_residual_norm": zero,
+                    "prototype_residual_cos": zero,
+                    "atom_entropy": zero,
+                    "atom_effective_count": zero,
+                    "atom_max_prob": zero,
+                    "atom_table_norm": self.concept_atoms.detach().float().norm(dim=1).mean(),
+                }
+                return
             entropy = -(probs * probs.clamp_min(1e-8).log()).sum(dim=1).mean()
             max_prob = probs.max(dim=1).values.mean()
             effective_atoms = torch.exp(entropy)
