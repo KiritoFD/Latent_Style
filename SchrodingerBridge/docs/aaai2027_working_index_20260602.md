@@ -60,6 +60,8 @@ Continuous reviewer lane:
 - `SchrodingerBridge/docs/reviews/aaai2027_review_consensus_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_claim_safety_memo_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_review_consensus_20260603_r3.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_review_consensus_20260603_r4.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_review_consensus_20260603_r5.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_agent_ops_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_weak_reject_pressure_memo_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_rewrite_hit_list_20260603.md`
@@ -89,6 +91,10 @@ Continuous reviewer lane:
 - `SchrodingerBridge/docs/reviews/tokenizer_execution_alignment_l_family_theory_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_probe_checkpoint_reselection_policy_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_representation_theory_queue_20260603.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_adversarial_review_R20260603N.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_scorecard_R20260603N.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_experiment_audit_R20260603N.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_figure_audit_R20260603N.md`
 
 Related-work / citation gap notes:
 

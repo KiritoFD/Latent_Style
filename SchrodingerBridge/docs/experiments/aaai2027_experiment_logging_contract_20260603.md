@@ -108,6 +108,7 @@ Use these status bands consistently in the master ledger and README notes:
 
 - `planned`
 - `running`
+- `interrupted`
 - `completed`
 - `blocked_inference`
 - `review_pending`
@@ -170,5 +171,7 @@ For the current AAAI 2027 push:
 - all new formal runs should be remote-3060-first unless they are explicit local
   smoke checks;
 - all remote formal runs should use this logging contract;
-- `Linnaeus` is the execution owner responsible for keeping the runtime side of
-  this contract intact.
+- unless a live remote-execution subagent is explicitly registered in
+  `docs/reviews/aaai2027_agent_ops_20260603.md`, the main thread is the
+  execution owner responsible for keeping the runtime side of this contract
+  intact.
