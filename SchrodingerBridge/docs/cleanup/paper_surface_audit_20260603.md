@@ -14,20 +14,22 @@ Primary paper source:
 
 - `aaai_submission/paper_aaai2026.tex`
 - `aaai_submission/refs.bib`
-- `aaai_submission/framework_figure.pdf`
 
 Directly referenced figure files in `paper_aaai2026.tex`:
 
+- `framework_lbm_main_v5.png`
 - `fig_qual_grid_ours_vs_samst.png`
 - `fig_zoom_ours_vs_samst.png`
-- `fig_weight_sweep_summary.png`
+- `figures/fig_distinct5_pareto.pdf`
+- `fig_ablation_pareto.png`
+- `figures/fig_distinct5_time_context.pdf`
 
 Implication:
 
-- these root-level figure files are still active inputs for the current
-  manuscript build;
-- they are not safe deletion candidates until the manuscript is rewritten to
-  consume the newer `figures/` surface instead.
+- the manuscript currently mixes root-level assets and curated `figures/`
+  assets;
+- referenced files are not safe deletion candidates until the manuscript is
+  migrated to one stable surface.
 
 ## 2. Parallel figure surfaces
 
@@ -95,9 +97,10 @@ still references the root-level PNG names directly.
 
 Do not delete yet:
 
-- `framework_figure.pdf`
-- `framework_lbm_main.png`
+- `framework_lbm_main_v5.png`
 - root-level figure PNGs currently referenced by the manuscript
+- `figures/fig_distinct5_pareto.pdf`
+- `figures/fig_distinct5_time_context.pdf`
 - `final/` assets used by the packaged export surface
 
 Reason:

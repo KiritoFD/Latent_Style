@@ -1,60 +1,83 @@
 # AAAI 2027 Gate Status And Next Experiment Priority
 
-Date: 2026-06-03  
-Lane: `adversarial_review`  
-Scope: current Gate A / B / C status only
+Date: 2026-06-03
+Updated after review cycle `R20260603K`
+
+This note is the compact gate summary that should be trusted when older
+same-day memos disagree.
 
 ## Gate A - Activated endpoint-metric closure
 
 - current status:
   - `closed`
-  - closed in the **negative** direction by the repaired endpoint-only trio
-- gap:
-  - no remaining closure gap for Gate A itself
-- can it be closed now:
-  - `yes`
-- cannot claim:
-  - not that all latent-space `MSE/L2` is broadly invalid
-  - not that `Huber` or `L1` is a universal winner
-  - not that the repaired trio proves why the full `OT + SA-SWD + kinetic` mainline wins
+  - closed in the **negative** direction
+- safe reading:
+  - the repaired endpoint-only packet supports:
+    - `pure endpoint-only pointwise supervision does not recover the current
+      W1-style mainline frontier`
+- not safe:
+  - broad latent-metric correction closure
+  - decisive `Huber/L1` superiority language
 
 ## Gate B - SA-SWD semantic-vs-random isolation
 
 - current status:
-  - `open`
-  - semantic arm completed; random arm is matched in design but currently in a runtime-blocker state
-- gap:
-  - missing completed random-axis full-eval summaries and direct semantic-vs-random comparison
-- can it be closed now:
-  - `not yet`
-  - reviewer-safe policy allows closure on **quality-only** evidence if the current abnormal random run finishes cleanly with matched summaries
-  - otherwise a rerun is required
-- cannot claim:
-  - not that semantic projection-axis selection is proven necessary
-  - not that SA-SWD novelty is fully isolated
-  - not that any runtime behavior from the abnormal random run is representative formal evidence
+  - `closed`
+  - closed in the **negative** direction
+- safe reading:
+  - SA-SWD may remain in the paper as the current mainline terminal design
+  - the landed pair does **not** support semantic-axis superiority
+- not safe:
+  - semantic-axis necessity
+  - semantic-axis novelty win
+  - runtime interpretation from the anomalous random arm
 
 ## Gate C - Efficiency fairness closure
 
 - current status:
-  - `open`
-- gap:
-  - missing populated same-scope `time-to-parity` CSV and the corresponding figure/provenance artifact
-- can it be closed now:
-  - `no`
-- cannot claim:
-  - not a fair comparative training-speed win
-  - not a normalized time-to-quality or time-to-parity result
-  - not any broad speedup rhetoric from operating-point bookkeeping alone
+  - `partial`
+- safe reading:
+  - the current timing artifact is good enough for bounded timing-context prose
+- not safe:
+  - broad comparative speedup rhetoric
+  - normalized parity claims stronger than the current artifact supports
 
-## Unique highest-priority next experiment
+## Tokenizer mechanism status
 
-The single highest-priority next experiment is:
+- current status:
+  - `partial`
+- what is landed:
+  - `L`-family execution-alignment successor packet
+  - `L e1` tokenizer-localization packet
+- safe reading:
+  - executed representation is the sharper current question
+  - on the matched `L e1` packet, executor-side refresh is stronger than
+    style-side refresh alone
+- not safe:
+  - family-generic tokenizer closure
+  - restored `H`-family continuity
+  - "tokenizer theory is solved"
 
-- **finish or cleanly rerun the matched Gate B random-axis control on Distinct5-512, then compare it directly against the completed semantic arm**
+## Highest-value next steps
 
-Reason:
+### Paper-side first
 
-- Gate A is already closed;
-- Gate C is still a required artifact, but it does not matter until Gate B stops leaving the SA-SWD novelty claim under-isolated;
-- closing Gate B determines whether the paper may keep SA-SWD as a differentiated mechanism or must downgrade it to a tested design choice.
+1. absorb landed localization and timing artifacts into reviewer-safe wording
+2. demote `figures/fig_distinct5_time_context.pdf` from the main paper
+3. rebuild the Distinct5 evidence spine as one integrated frontier-plus-cases
+   figure
+
+### Remote 3060 next
+
+1. launch the Distinct5 path-stability / weakened-kinetic packet
+2. treat `H`-family tokenizer recovery as second priority because it is still
+   blocked on policy-safe checkpoint recovery
+
+## What should stop now
+
+Do not spend more formal remote budget on:
+
+- extra endpoint-only reruns
+- extra semantic-vs-random reruns
+- new speed rhetoric experiments unless the paper explicitly reopens stronger
+  efficiency claims
