@@ -9,14 +9,18 @@ vector plots.
 
 - `fig_distinct5_pareto.pdf`
 - `fig_distinct5_pareto.png`
+- `fig_path_stability_probe.pdf`
+- `fig_path_stability_probe.png`
 - `clip_style_vs_1lpips_full_lancet_samam_noop.pdf`
 - `clip_style_vs_1lpips_full_lancet_samam_noop.png`
 - `clip_style_vs_1lpips_transfer_lancet_samam_noop.pdf`
 - `clip_style_vs_1lpips_transfer_lancet_samam_noop.png`
 
-The first two files are cited directly by `paper_aaai2026.tex`. The CLIP-style
-vs. `1-LPIPS` plots are active supporting assets for review memos and
-experiment notes under `docs/experiments/`, even though they are not in the
+The Distinct5 Pareto files are cited directly by `paper_aaai2026.tex`.
+`fig_path_stability_probe.*` is the current active mechanism-support candidate
+generated from the landed same-family Distinct5 path-stability packet. The
+CLIP-style vs. `1-LPIPS` plots are active supporting assets for review memos
+and experiment notes under `docs/experiments/`, even though they are not in the
 current manuscript body.
 
 ## Current paper still depends on top-level aaai_submission assets
@@ -39,6 +43,7 @@ presentation materials.
 - `../scripts_gen_distinct5_full_transfer_pareto.py`
 - `../scripts_collect_distinct5_full_transfer_points.py`
 - `../scripts_gen_aaai2027_figures.py`
+- `../scripts_gen_path_stability_probe.py`
 
 ## Exploratory outputs that should not stay in the active surface
 

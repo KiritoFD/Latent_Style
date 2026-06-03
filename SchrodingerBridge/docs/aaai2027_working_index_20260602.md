@@ -49,52 +49,30 @@ Current paper update plan:
 
 - `SchrodingerBridge/docs/experiments/2026-06-02-aaai2027-paper-update-plan.md`
 
-Continuous reviewer lane:
+Review control plane:
 
-- `SchrodingerBridge/docs/reviews/aaai2027_review_protocol.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_review_registry.csv`
-- `SchrodingerBridge/docs/reviews/aaai2027_review_score_log.csv`
-- `SchrodingerBridge/docs/reviews/aaai2027_reviewer_roster.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_review_packet_template.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_review_consensus_20260602_r2.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_review_consensus_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_claim_safety_memo_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_review_consensus_20260603_r3.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_review_consensus_20260603_r4.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_review_consensus_20260603_r5.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_agent_ops_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_weak_reject_pressure_memo_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_rewrite_hit_list_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_boundary_alignment_pass_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_boundary_followup_overclaims_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_gate_b_runtime_anomaly_policy_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_gate_status_and_next_experiment_priority_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_gate_c_time_to_parity_audit_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_post_tightening_recheck_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_tokenizer_timing_reaudit_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_weak_reject_rerun_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_gate_b_pair_reaudit_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_l_family_postlanding_tex_reread_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_l_family_postedit_tex_check_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_adversarial_gate_refresh_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_tokenizer_execution_alignment_l_family_reread_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_tokenizer_l_family_paper_gate_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_tokenizer_probe_successor_family_reread_20260603.md`
-- `SchrodingerBridge/docs/reviews/distinct5_idt_noop_claim_boundary_20260603.md`
-- `SchrodingerBridge/docs/reviews/endpoint_metric_claim_boundary_20260603.md`
-- `SchrodingerBridge/docs/reviews/endpoint_metric_review_gate_20260603.md`
-- `SchrodingerBridge/docs/reviews/tokenizer_claim_matrix_20260603.md`
-- `SchrodingerBridge/docs/reviews/tokenizer_claim_evidence_matrix_20260603.md`
-- `SchrodingerBridge/docs/reviews/tokenizer_code_vs_output_geometry_20260603.md`
-- `SchrodingerBridge/docs/reviews/tokenizer_localization_claim_boundary_20260603.md`
-- `SchrodingerBridge/docs/reviews/tokenizer_localization_outcome_claim_map_20260603.md`
-- `SchrodingerBridge/docs/reviews/tokenizer_execution_alignment_l_family_theory_boundary_20260603.md`
-- `SchrodingerBridge/docs/reviews/tokenizer_probe_checkpoint_reselection_policy_20260603.md`
-- `SchrodingerBridge/docs/reviews/tokenizer_representation_theory_queue_20260603.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_adversarial_review_R20260603N.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_scorecard_R20260603N.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_experiment_audit_R20260603N.md`
-- `SchrodingerBridge/docs/reviews/aaai2027_figure_audit_R20260603N.md`
+- live-state source of truth:
+  - `SchrodingerBridge/docs/reviews/aaai2027_agent_ops_20260603.md`
+- protocol:
+  - `SchrodingerBridge/docs/reviews/aaai2027_review_protocol.md`
+  - `SchrodingerBridge/docs/reviews/aaai2027_reviewer_roster.md`
+  - `SchrodingerBridge/docs/reviews/aaai2027_review_packet_template.md`
+- ledgers:
+  - `SchrodingerBridge/docs/reviews/aaai2027_review_registry.csv`
+  - `SchrodingerBridge/docs/reviews/aaai2027_review_score_log.csv`
+- latest consensus / boundary anchors:
+  - `SchrodingerBridge/docs/reviews/aaai2027_review_consensus_20260603_r5.md`
+  - `SchrodingerBridge/docs/reviews/aaai2027_claim_safety_memo_20260603.md`
+
+Historical review archive:
+
+- all earlier lane memos stay under `SchrodingerBridge/docs/reviews/`
+- those files are evidence history only, not live subagent state
+- latest full archived cycle:
+  - `SchrodingerBridge/docs/reviews/aaai2027_adversarial_review_R20260603N.md`
+  - `SchrodingerBridge/docs/reviews/aaai2027_scorecard_R20260603N.md`
+  - `SchrodingerBridge/docs/reviews/aaai2027_experiment_audit_R20260603N.md`
+  - `SchrodingerBridge/docs/reviews/aaai2027_figure_audit_R20260603N.md`
 
 Related-work / citation gap notes:
 
@@ -183,6 +161,7 @@ Key evidence:
 - `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-localization/launch_manifest_20260603.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-path-stability-protocol.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-path-stability-launch-status.md`
+- `SchrodingerBridge/docs/experiments/2026-06-03-path-stability-probe/README.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/README.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/distinct5_time_to_parity_points.csv`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/figures/distinct5_time_to_clip_style.pdf`
@@ -283,14 +262,14 @@ or stable config/script locations before being referenced in the paper.
    `H`-family packet remains blocked on payload recovery, while the landed
    `L`-family successor and the matched tokenizer-localization packet both now
    define bounded representation-side evidence rather than open launch tasks.
-6. The next highest-priority remote mechanism closure lane is the matched
-   Distinct5 path-stability / weakened-kinetic packet documented in:
-   - `SchrodingerBridge/docs/experiments/2026-06-03-path-stability-protocol.md`
-   - `SchrodingerBridge/configs/aaai2027/path_kinetic_h_base_seed42_b44_base.json`
-   - `SchrodingerBridge/configs/aaai2027/path_kinetic_h_base_seed42_b44_k025.json`
-   - `SchrodingerBridge/configs/aaai2027/path_kinetic_h_base_seed42_b44_k000.json`
-   This is the cleanest remaining route to support the bounded kinetic /
-   path-energy story with current Distinct5 evidence.
+6. The Distinct5 same-family path-stability / weakened-kinetic packet has now
+   landed and is the next manuscript-integration checkpoint, not an open remote
+   launch lane. Current working truth is in:
+   - `SchrodingerBridge/docs/experiments/2026-06-03-path-stability-launch-status.md`
+   - `SchrodingerBridge/docs/experiments/2026-06-03-path-stability-probe/README.md`
+   - `SchrodingerBridge/docs/experiments/aaai2027_master_experiment_log.csv`
+   Keep its claim narrow: practical path stabilization in the current same-
+   family Distinct5 `H` packet, not a broader theorem or cross-family claim.
 7. The matched Distinct5 tokenizer-localization packet is now a completed
    evidence packet, not the live blocking remote lane. Its current working
    truth is in:
@@ -304,8 +283,9 @@ or stable config/script locations before being referenced in the paper.
    experiment surface.
 10. Manuscript tightening around the landed `L`-family tokenizer evidence has
    now been applied and reviewer-checked once; the next highest-value action is
-   a stronger mechanism-side experiment rather than another local wording pass.
+   to absorb the newly landed same-family path-stability packet into the paper
+   and then run one fresh multi-lane review cycle.
 11. The earlier legacy256 tokenizer-`t01` localization route is superseded and
-   must not be relaunched as the active paper-facing packet. The current live
-   remote mechanism-prep note for the next packet is now the Distinct5
-   path-stability protocol rather than another `t01` restart.
+   must not be relaunched as the active paper-facing packet. The active
+   mechanism evidence surface is now the landed Distinct5 path-stability packet,
+   not another `t01` restart.
