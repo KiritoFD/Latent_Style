@@ -59,7 +59,7 @@ Path-truth audit confirmed by remote owner:
 Current runtime state:
 
 - launch status:
-  - started
+  - complete
 - clean code root:
   - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge`
 - runtime output dir:
@@ -67,6 +67,51 @@ Current runtime state:
 - execution mode:
   - split-root launch
   - clean worktree code plus old artifact-bearing checkpoint / config / metrics
+- landed summary:
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_execution_alignment_l_e1\summary.json`
+- landed figures:
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_execution_alignment_l_e1\fig_code_vs_executed_pair_l2.pdf`
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_execution_alignment_l_e1\fig_stylewise_code_exec_delta_idt.pdf`
+
+## Landed readout
+
+Styles evaluated:
+
+- `Early_Renaissance`
+- `Impressionism`
+- `Minimalism`
+- `Rococo`
+- `Ukiyo_e`
+
+Counts:
+
+- `style_latent_stats` count per style:
+  - `256`
+- `generated_delta_stats` content_count per target style:
+  - `100`
+- `delta_probe_max_content_per_style`:
+  - `20`
+- `generated_delta_effective_rank`:
+  - `2.34323`
+
+Headline correlations from `summary.json`:
+
+- `corr_latent_l2_to_delta_l2 = 0.92695`
+- `corr_latent_cos_to_delta_cos = 0.72945`
+- `corr_tokenizer_l2_to_delta_l2 = 0.43463`
+- `corr_tokenizer_cos_to_delta_cos = 0.29773`
+- `corr_style_code_sep_to_delta_idt_full = 0.62229`
+- `corr_style_code_sep_to_delta_idt_transfer = 0.57084`
+- `corr_executed_sep_to_delta_idt_full = 0.63518`
+- `corr_executed_sep_to_delta_idt_transfer = 0.58580`
+- `corr_delta_sample_l2_to_delta_idt_full = 0.78297`
+- `corr_delta_sample_l2_to_delta_idt_transfer = 0.75909`
+
+Durable CSV outputs present:
+
+- `target_style_metrics.csv`
+- `tokenizer_execution_alignment.csv`
+- `tokenizer_execution_alignment_pairs.csv`
 
 ## Claim boundary
 

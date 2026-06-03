@@ -69,12 +69,18 @@ Continuous reviewer lane:
 - `SchrodingerBridge/docs/reviews/aaai2027_tokenizer_timing_reaudit_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_weak_reject_rerun_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_gate_b_pair_reaudit_20260603.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_l_family_postlanding_tex_reread_20260603.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_l_family_postedit_tex_check_20260603.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_tokenizer_execution_alignment_l_family_reread_20260603.md`
+- `SchrodingerBridge/docs/reviews/aaai2027_tokenizer_l_family_paper_gate_20260603.md`
 - `SchrodingerBridge/docs/reviews/aaai2027_tokenizer_probe_successor_family_reread_20260603.md`
 - `SchrodingerBridge/docs/reviews/distinct5_idt_noop_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_claim_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/endpoint_metric_review_gate_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_claim_matrix_20260603.md`
+- `SchrodingerBridge/docs/reviews/tokenizer_claim_evidence_matrix_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_code_vs_output_geometry_20260603.md`
+- `SchrodingerBridge/docs/reviews/tokenizer_execution_alignment_l_family_theory_boundary_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_probe_checkpoint_reselection_policy_20260603.md`
 - `SchrodingerBridge/docs/reviews/tokenizer_representation_theory_queue_20260603.md`
 
@@ -84,6 +90,7 @@ Related-work / citation gap notes:
 - `SchrodingerBridge/docs/references/related_work_gap_candidates_20260603.md`
 - `SchrodingerBridge/docs/references/evaluation_pathology_noop_memo_20260603.md`
 - `SchrodingerBridge/docs/references/related_work_and_intro_gap_recheck_20260603.md`
+- `SchrodingerBridge/docs/references/tokenizer_representation_related_work_refresh_20260603.md`
 
 Core evaluation warning about CLIP-style / no-op:
 
@@ -243,12 +250,15 @@ or stable config/script locations before being referenced in the paper.
 4. Worktree cleanup should separate durable paper/docs changes from local temp
    files and data mirrors before broader commits.
 5. After Gate B negative closure, the next highest-priority mechanism gate is
-   the tokenizer code-to-execution alignment probe. The formal launch packet is
-   now prepared around the reviewed `H`-family `epoch_0001` point, and the
-   time-to-parity packet should remain secondary unless efficiency wording is
-   broadened again.
+   the tokenizer code-to-execution alignment lane. The original reviewed
+   `H`-family packet remains blocked on payload recovery, but a payload-backed
+   `L`-family successor packet has now landed and must be cited with explicit
+   successor-family scope rather than as restored `H` continuity.
 6. Every major checkpoint should trigger a fresh three-lane review round and a
    registry entry, rather than relying on a single frozen review memo.
 7. Config and archive surfaces should stay indexed so the paper-facing rerun
    path is obvious and local timing/refactor residue does not pollute the main
    experiment surface.
+8. Manuscript tightening around the landed `L`-family tokenizer evidence has
+   now been applied and reviewer-checked once; the next highest-value action is
+   a stronger mechanism-side experiment rather than another local wording pass.
