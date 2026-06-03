@@ -29,52 +29,80 @@ driver directly:
 - executor-side attenuation is not proven dominant;
 - current evidence is still only partial mechanism closure.
 
-## 2. Required arms
+## 2. Shared base and required arms
 
-Run the two freeze-direction arms as a matched pair.
+Run the two freeze-direction arms as a matched pair around the same reviewed
+Distinct5 checkpoint:
 
-### Arm A: fresh tokenizer, frozen executor
+- shared family:
+  - `distinct5_512_ema_variant_l_content_adaptive_annealed_queue_e3`
+- shared checkpoint:
+  - `epoch_0001`
+- paper-facing reason:
+  - this is the same `L` family already used by the landed execution-alignment
+    successor packet, so the localization probe stays on the current
+    manuscript-facing mechanism surface rather than dropping back to an older
+    legacy256 tokenizer route
+
+Shared config base:
+
+- `SchrodingerBridge/configs/aaai2027/tokenizer_localization_l_e1_seed42_b44_base.json`
+
+### Arm A: fresh style branch, frozen executor
 
 Meaning:
 
 - keep the current LANCET consumer fixed;
-- train only the tokenizer/style branch;
-- measure how much better style control can become inside the existing
-  execution landscape.
+- reinitialize the style-side control branch;
+- train only the style-side control branch to see how much gain is recoverable
+  inside the current execution landscape.
 
 Current config path:
 
-- `SchrodingerBridge/configs/tokenizer_t01_direct_atom_residual_tokonly_from_backbone_e16.json`
+- `SchrodingerBridge/configs/aaai2027/tokenizer_localization_l_e1_stylebranch_seed42_b44.json`
 
 Key freeze mode:
 
-- `training.freeze_mode = tokenizer_only`
+- `training.freeze_mode = style_branch`
 
 Resume source:
 
-- `exp/tokenizer_t01_factorized_backbone_e16/epoch_0016.pt`
+- `/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/distinct5_512_ema_variant_l_content_adaptive_annealed_queue_e3_b44_remote/epoch_0001.pt`
 
-### Arm B: frozen tokenizer, fresh executor
+Load/reset rule:
+
+- load the reviewed `L e1` executor;
+- ignore and reinitialize:
+  - `style_tokenizer.*`
+  - `style_spatial_id_16`
+
+### Arm B: frozen style branch, fresh executor
 
 Meaning:
 
-- lock a trained tokenizer;
-- reinitialize and train the LANCET consumer/backbone;
-- measure how much gain is recoverable from better execution alone.
+- lock the style-side control branch from the reviewed `L e1` checkpoint;
+- leave the executor random;
+- train only the executor side to see how much gain is recoverable from better
+  execution alone.
 
 Current config path:
 
-- `SchrodingerBridge/configs/tokenizer_t01_direct_atom_residual_frozen_tok_fresh_lancet_e16.json`
+- `SchrodingerBridge/configs/aaai2027/tokenizer_localization_l_e1_executoronly_seed42_b44.json`
 
 Key freeze mode:
 
-- `training.freeze_mode = backbone_only`
+- `training.freeze_mode = executor_only`
 
-Resume chain:
+Resume source:
 
-1. tokenizer warmup checkpoint from:
-   - `exp/tokenizer_t01_direct_atom_residual_warmup_e2_from_backbone_e16/epoch_0002.pt`
-2. then train fresh LANCET consumer with tokenizer frozen
+- `/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/distinct5_512_ema_variant_l_content_adaptive_annealed_queue_e3_b44_remote/epoch_0001.pt`
+
+Load/freeze rule:
+
+- load only:
+  - `style_tokenizer.*`
+  - `style_spatial_id_16`
+- leave the rest of the executor randomly initialized and trainable
 
 ## 3. Scope and runtime policy
 
@@ -175,11 +203,13 @@ Otherwise:
 
 ## 7. Immediate next step
 
-Before launch, verify on the remote `3060` that the required resume chain is
-actually available:
+Before launch, verify on the remote `3060` that all of the following are true:
 
-1. `tokenizer_t01_factorized_backbone_e16/epoch_0016.pt`
-2. `tokenizer_t01_direct_atom_residual_warmup_e2_from_backbone_e16/epoch_0002.pt`
+1. the reviewed `L`-family `epoch_0001` checkpoint is present at the exact
+   remote path recorded above;
+2. the new `aaai2027/tokenizer_localization_l_e1_*` configs resolve cleanly on
+   the remote clean worktree;
+3. the new `executor_only` freeze mode is present in the remote code copy.
 
-If either payload is missing, write a path-truth note first and do not launch a
+If any of these fail, write a path-truth note first and do not launch a
 substitute silently.

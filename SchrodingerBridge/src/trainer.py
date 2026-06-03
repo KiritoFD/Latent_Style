@@ -565,13 +565,16 @@ class SBTrainer:
             "lancet_only": "backbone_only",
             "consumer_only": "backbone_only",
             "freeze_tokenizer": "backbone_only",
+            "renderer_only": "executor_only",
+            "fresh_executor": "executor_only",
+            "freeze_style_branch": "executor_only",
             "execution_budget_only": "budget_only",
             "budget_branch": "budget_only",
             "style_injection_only": "injection_only",
             "injection_branch": "injection_only",
         }
         mode = aliases.get(mode, mode)
-        if mode not in {"tokenizer_only", "style_branch", "backbone_only", "budget_only", "injection_only"}:
+        if mode not in {"tokenizer_only", "style_branch", "backbone_only", "executor_only", "budget_only", "injection_only"}:
             raise ValueError(f"Unsupported freeze_mode: {mode}")
 
         for _, param in self.model.named_parameters():
@@ -612,6 +615,12 @@ class SBTrainer:
         if mode == "backbone_only":
             for name, param in self.model.named_parameters():
                 if name.startswith("style_tokenizer."):
+                    continue
+                param.requires_grad_(True)
+                trainable_names.append(name)
+        if mode == "executor_only":
+            for name, param in self.model.named_parameters():
+                if name.startswith("style_tokenizer.") or name == "style_spatial_id_16":
                     continue
                 param.requires_grad_(True)
                 trainable_names.append(name)
