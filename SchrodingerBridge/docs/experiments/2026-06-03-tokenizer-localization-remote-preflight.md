@@ -162,3 +162,23 @@ Current recovery action
   - `full_eval/epoch_0001/summary.json`
   - `full_eval/epoch_0002/summary.json`
   - `full_eval/epoch_0003/summary.json`
+
+Recovery artifacts now created for executor-only
+
+- recovery log:
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_localization_l_e1_executoronly_seed42_b44\remote_full_eval_recovery.log`
+- recovery helper script:
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_localization_l_e1_executoronly_seed42_b44\recover_full_eval.py`
+- recovery launcher:
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_localization_l_e1_executoronly_seed42_b44\launch_full_eval_recovery.cmd`
+
+Latest recovery progress
+
+- landed artifact:
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_localization_l_e1_executoronly_seed42_b44\full_eval\epoch_0001\summary.json`
+- recovery log confirms:
+  - `epoch_0001` finished with `[RUN_EPOCH_0001_EXIT] 0`
+  - recovery has already advanced into `epoch_0002`
+- still pending:
+  - `full_eval/epoch_0002/summary.json`
+  - `full_eval/epoch_0003/summary.json`
