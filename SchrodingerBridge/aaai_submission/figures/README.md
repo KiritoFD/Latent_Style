@@ -24,12 +24,10 @@ current manuscript body.
 The manuscript currently includes these files from the parent
 `aaai_submission/` directory:
 
-- `framework_lbm_main.png`
+- `framework_lbm_main_v5.png`
 - `fig_qual_grid_ours_vs_samst.png`
 - `fig_zoom_ours_vs_samst.png`
 - `fig_ablation_pareto.png`
-- `fig_weight_sweep_summary.png`
-- `fig_train_efficiency_pareto.png`
 
 These should be normalized into one active figure surface in a later cleanup
 pass, but they remain in place now to avoid breaking older references and
@@ -50,6 +48,7 @@ referencing them explicitly:
 - `../fig_eval_landscape.pdf`
 - `../fig_eval_landscape.png`
 - `../framework_figure.png`
+- `../framework_lbm_main.png`
 - `../framework_lbm_main_saswd.png`
 
 ## Figure hygiene rule
