@@ -15,6 +15,7 @@ training, paper-facing reruns, or reusable smoke checks.
 ### Current AAAI 2027 claim-closing ablations
 
 - `aaai2027/flow_loss_h_base_{mse,huber,l1}_seed42.json`
+- `aaai2027/tokenizer_localization_l_e1_*_seed42_b44.json`
 
 ### Current tokenizer exploration family
 
