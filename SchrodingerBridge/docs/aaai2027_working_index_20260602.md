@@ -161,6 +161,8 @@ Key evidence:
 - `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-execution-alignment/README.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-execution-alignment-l-family/README.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-localization-probe-protocol.md`
+- `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-localization/README.md`
+- `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-localization/launch_manifest_20260603.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/README.md`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/distinct5_time_to_parity_points.csv`
 - `SchrodingerBridge/docs/experiments/2026-06-03-time-to-parity/figures/distinct5_time_to_clip_style.pdf`
@@ -263,6 +265,11 @@ or stable config/script locations before being referenced in the paper.
 8. Manuscript tightening around the landed `L`-family tokenizer evidence has
    now been applied and reviewer-checked once; the next highest-value action is
    a stronger mechanism-side experiment rather than another local wording pass.
-9. The current preferred next mechanism packet is the frozen-direction
-   tokenizer localization probe documented in:
+9. The current preferred next mechanism packet is the Distinct5 `L e1`
+   frozen-direction tokenizer localization probe documented in:
    - `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-localization-probe-protocol.md`
+   - `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-localization/launch_manifest_20260603.md`
+10. The earlier legacy256 tokenizer-`t01` localization preflight is retained
+   only as a superseded path-truth note and must not be relaunched as the
+   active paper-facing packet:
+   - `SchrodingerBridge/docs/experiments/2026-06-03-tokenizer-localization-remote-preflight.md`
