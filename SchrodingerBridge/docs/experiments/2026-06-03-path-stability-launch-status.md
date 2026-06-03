@@ -4,7 +4,7 @@ Date: 2026-06-03
 
 Status:
 
-- `running_k025_after_clean_base_completion`
+- `packet_landed__probe_promotion_condition_met`
 
 Scope:
 
@@ -224,13 +224,160 @@ Observed on `2026-06-03` after the clean `base` rerun landed:
   - GPU about `96%` util
   - GPU about `151 W`
 
+## `k025` completion
+
+Re-checked on `2026-06-03` after the weakened-kinetic run finished:
+
+- GPU returned to idle before the next launch
+- retained artifact chain is complete:
+  - `remote_train.log`
+  - `epoch_0001.pt`
+  - `epoch_0002.pt`
+  - `epoch_0003.pt`
+  - `full_eval\epoch_0001\summary.json`
+  - `full_eval\epoch_0002\summary.json`
+  - `full_eval\epoch_0003\summary.json`
+- `remote_train.log` ends with:
+  - full eval completed for `epoch_0003`
+  - `Training completed.`
+
+Retained full-scope metrics:
+
+- `epoch_0001`
+  - `clip_style = 0.6792`
+  - `content_lpips = 0.4977`
+  - `clip_dir = 0.0000`
+  - `full_eval wall_total = 88.59s`
+- `epoch_0002`
+  - `clip_style = 0.6825`
+  - `content_lpips = 0.4600`
+  - `clip_dir = 0.0000`
+  - `full_eval wall_total = 88.38s`
+- `epoch_0003`
+  - `clip_style = 0.6817`
+  - `content_lpips = 0.4668`
+  - `clip_dir = 0.0000`
+  - `full_eval wall_total = 88.41s`
+
+Current read after `k025` landing:
+
+- weakening the kinetic weight to `0.25` does not obviously improve the current
+  quality frontier over the clean `base` arm;
+- the packet is still incomplete, so no mechanism claim should move yet;
+- the matched `k000` arm remains required for the same-family readout.
+
+## `k000` launch
+
+Observed on `2026-06-03` immediately after `k025` completion:
+
+- a dedicated launcher was created at:
+  - `I:\Github\Latent_Style\SchrodingerBridge\exp\_launchers\aaai2027_path_kinetic_h_base_seed42_b44_k000.cmd`
+- the no-kinetic arm was launched by direct foreground SSH invocation
+- current save dir:
+  - `I:\Github\Latent_Style\SchrodingerBridge\exp\aaai2027_path_kinetic_h_base_seed42_b44_k000`
+- retained runtime evidence already present:
+  - `remote_train.log`
+- early log and device checks confirm healthy execution:
+  - log timestamp `2026-06-03 15:52:30`
+  - dataset load success
+  - model init success
+  - GPU about `9648 MiB`
+  - GPU about `96%` util
+  - GPU about `150 W`
+
+## `k000` completion
+
+Re-checked on `2026-06-03` after the no-kinetic run finished:
+
+- retained artifact chain is complete:
+  - `remote_train.log`
+  - `epoch_0001.pt`
+  - `epoch_0002.pt`
+  - `epoch_0003.pt`
+  - `full_eval\epoch_0001\summary.json`
+  - `full_eval\epoch_0002\summary.json`
+  - `full_eval\epoch_0003\summary.json`
+- `remote_train.log` ends with:
+  - full eval completed for `epoch_0003`
+  - `Training completed.`
+
+Retained full-scope metrics:
+
+- `epoch_0001`
+  - `clip_style = 0.6761`
+  - `content_lpips = 0.5198`
+  - `clip_dir = 0.0000`
+  - `full_eval wall_total = 89.30s`
+- `epoch_0002`
+  - `clip_style = 0.6775`
+  - `content_lpips = 0.4862`
+  - `clip_dir = 0.0000`
+  - `full_eval wall_total = 88.25s`
+- `epoch_0003`
+  - `clip_style = 0.6790`
+  - `content_lpips = 0.5073`
+  - `clip_dir = 0.0000`
+  - `full_eval wall_total = 88.44s`
+
+Current read after `k000` landing:
+
+- removing the kinetic term is materially worse than the clean `base` arm on
+  both style/content quality and the no-op-adjusted mechanism packet;
+- the matched three-arm checkpoint surface is now complete and ready for the
+  retained probe readout.
+
+## Probe completion
+
+Probe run executed on `2026-06-03` with a reviewer-safe matched setup:
+
+- tool:
+  - `tools\probe_path_stability.py`
+- rollout mode:
+  - `field`
+- checkpoint selection:
+  - `H_base = epoch_0001`
+  - `H_k025 = epoch_0001`
+  - `H_k000 = epoch_0001`
+- output dir:
+  - `I:\Github\Latent_Style\SchrodingerBridge\exp\aaai2027_path_stability_probe_h_base_seed42_b44_e1`
+- retained outputs:
+  - `summary.json`
+  - `per_time_stats.csv`
+  - `run_summary.csv`
+  - `fig_velocity_over_time.pdf`
+
+Key matched transfer-direction readout:
+
+- `H_base`
+  - `mean_endpoint_disp_l2 = 80.24`
+  - `mean_path_length_l2 = 80.28`
+  - `mean_peak_velocity_l2 = 80.41`
+- `H_k025`
+  - `mean_endpoint_disp_l2 = 111.71`
+  - `mean_path_length_l2 = 111.72`
+  - `mean_peak_velocity_l2 = 111.83`
+- `H_k000`
+  - `mean_endpoint_disp_l2 = 122.42`
+  - `mean_path_length_l2 = 122.40`
+  - `mean_peak_velocity_l2 = 122.51`
+
+Promotion-rule read:
+
+- the packet satisfies accept rule `1`
+  - weakening or removing kinetic clearly raises transfer-direction velocity
+    magnitude and endpoint/path displacement under matched `epoch_0001`
+    checkpoints;
+- the clean `base` arm therefore has concrete same-family Distinct5 support for
+  the bounded claim that kinetic regularization acts as a practical path
+  stabilizer in the current OMF/field regime;
+- this does **not** justify a broader theorem claim beyond the current bounded
+  wording.
+
 ## Still pending
 
-- let the current `k025` arm land a retained checkpoint-to-full-eval chain
-- then launch packetized execution for:
-  - `k000`
-- then run:
-  - `tools\probe_path_stability.py`
+- absorb the landed packet into manuscript wording and figure priorities
+- open the next four-lane review cycle only after the current write/update pass
+  is stable
 
 ## Policy read
 
