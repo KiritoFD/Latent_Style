@@ -93,6 +93,7 @@ Related-work / citation gap notes:
 - `SchrodingerBridge/docs/references/related_work_gap_candidates_20260603.md`
 - `SchrodingerBridge/docs/references/evaluation_pathology_noop_memo_20260603.md`
 - `SchrodingerBridge/docs/references/related_work_and_intro_gap_recheck_20260603.md`
+- `SchrodingerBridge/docs/references/related_work_framing_patch_priorities_20260603.md`
 - `SchrodingerBridge/docs/references/tokenizer_representation_related_work_refresh_20260603.md`
 
 Core evaluation warning about CLIP-style / no-op:
