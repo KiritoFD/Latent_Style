@@ -87,3 +87,49 @@ Evidence at note time
   - `Freeze mode=style_branch`
 - executor-only log shows live queue state:
   - `WAITING_FOR_STYLE`
+
+Recovery update
+
+- original style-branch auto full-eval crash point:
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_localization_l_e1_stylebranch_seed42_b44\remote_train.log`
+  - failing surface:
+    - `/home/xy/venvs/samam312/bin/python /mnt/i/Github/Latent_Style_TokenizerClean/SchrodingerBridge/src/utils/run_evaluation.py ...`
+  - first observed error:
+    - `ModuleNotFoundError: No module named 'diffusers'`
+
+- recovery task:
+  - task:
+    - `SB_TokenLoc_L_E1_STYLE_EVAL_RECOVER_S42`
+  - wrapper:
+    - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_localization_l_e1_stylebranch_seed42_b44\launch_full_eval_recovery.cmd`
+  - recovery log:
+    - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_localization_l_e1_stylebranch_seed42_b44\remote_full_eval_recovery.log`
+  - preserved earlier recovery attempt:
+    - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_localization_l_e1_stylebranch_seed42_b44\remote_full_eval_recovery_attempt1.log`
+
+- recovered style full-eval outputs now present:
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_localization_l_e1_stylebranch_seed42_b44\full_eval\epoch_0001\summary.json`
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_localization_l_e1_stylebranch_seed42_b44\full_eval\epoch_0002\summary.json`
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_localization_l_e1_stylebranch_seed42_b44\full_eval\epoch_0003\summary.json`
+
+- executor-only handoff:
+  - queue log:
+    - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_localization_l_e1_executoronly_seed42_b44\remote_train.log`
+  - confirmed waiting through:
+    - `[WAITING_FOR_STYLE] 2026/06/03 09:25:52`
+  - confirmed start after style `epoch_0003` summary landed:
+    - `[START] 2026/06/03 09:26:52`
+  - executor-only arm entered active training from the remote clean worktree
+
+Latest live status after the handoff
+
+- verified by the active remote owner (`Linnaeus`) from the same executor log:
+  - training reached `epoch_0003.pt`
+  - auto full-eval has started
+  - log evidence includes:
+    - `Running full eval for ...executoronly.../epoch_0001.pt -> .../full_eval/epoch_0001`
+    - timestamp observed in the remote log:
+      - `2026-06-03 09:30:03`
+- current blocking milestone:
+  - wait for executor-only `full_eval/epoch_0001..0003/summary.json` to land
+    before opening the matched localization packet for adversarial review
