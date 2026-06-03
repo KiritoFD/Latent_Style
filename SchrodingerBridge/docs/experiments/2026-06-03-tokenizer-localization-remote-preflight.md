@@ -178,9 +178,27 @@ Latest recovery progress
   - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_localization_l_e1_executoronly_seed42_b44\full_eval\epoch_0001\summary.json`
 - landed artifact:
   - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_localization_l_e1_executoronly_seed42_b44\full_eval\epoch_0002\summary.json`
+- landed artifact:
+  - `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp\aaai2027_tokenizer_localization_l_e1_executoronly_seed42_b44\full_eval\epoch_0003\summary.json`
 - recovery log confirms:
   - `epoch_0001` finished with `[RUN_EPOCH_0001_EXIT] 0`
   - `epoch_0002` finished with `[RUN_EPOCH_0002_EXIT] 0`
-  - recovery has already advanced into `epoch_0003`
-- still pending:
-  - `full_eval/epoch_0003/summary.json`
+  - `epoch_0003` finished with the expected summary landing
+
+Final landing state
+
+- the matched Distinct5 `L e1` tokenizer-localization packet is now fully
+  landed:
+  - style-branch `epoch_0001..0003`
+  - executor-only `epoch_0001..0003`
+- no remote recovery blocker remains open on this packet
+- durable local readout:
+  - `G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\2026-06-03-tokenizer-localization\readout_20260603.csv`
+
+Bounded outcome note
+
+- on the current matched `L e1` surface, `executor-only` is the stronger
+  one-sided refresh direction on no-op-adjusted style gain under both full and
+  transfer-only scopes
+- this is a local packet outcome only; it does not recover blocked `H`-family
+  continuity or close tokenizer theory globally

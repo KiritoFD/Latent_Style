@@ -90,19 +90,23 @@ Standing claim-boundary memo:
 
 ## Current live trigger
 
-The next required three-lane review cycle is blocked on the matched Distinct5
-`L e1` tokenizer-localization packet.
+The next required three-lane review cycle should be tied to one of two concrete
+events:
+
+1. the matched Distinct5 path-stability / weakened-kinetic packet lands; or
+2. the paper body makes another nontrivial claim escalation around Distinct5,
+   tokenizer localization, or kinetic/path-energy interpretation.
 
 Control files:
 
-- live remote packet truth:
-  - `../experiments/2026-06-03-tokenizer-localization-remote-preflight.md`
-- packet overview:
+- next mechanism packet:
+  - `../experiments/2026-06-03-path-stability-protocol.md`
+- current tokenizer-localization outcome packet:
   - `../experiments/2026-06-03-tokenizer-localization/README.md`
+  - `../experiments/2026-06-03-tokenizer-localization/readout_20260603.csv`
 - cycle ledger:
   - `aaai2027_review_registry.csv`
   - `aaai2027_review_score_log.csv`
 
-Open the next full cycle only after the executor-only arm lands
-`full_eval/epoch_0001..0003/summary.json`, then record the result as a new
-cycle id rather than appending informal commentary to an older round.
+Do not append informal commentary to an older review round. If the evidence
+surface changes, open a new cycle id and keep the review history explicit.
