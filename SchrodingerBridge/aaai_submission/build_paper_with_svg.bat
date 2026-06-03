@@ -1,7 +1,8 @@
 @echo off
 setlocal enabledelayedexpansion
 
-set "SRC=G:\GitHub\Latent_Style\SchrodingerBridge\paper_refine_v2\aaai_submission"
+set "SRC=%~dp0"
+if "%SRC:~-1%"=="\" set "SRC=%SRC:~0,-1%"
 set "OUT=%SRC%\paper_aaai2026.pdf"
 set "TEX=xelatex"
 set "ENGINE=C:\texlive\2026\bin\windows\xelatex.exe"
