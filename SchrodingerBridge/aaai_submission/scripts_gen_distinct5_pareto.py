@@ -26,11 +26,11 @@ plt.rcParams.update(
     {
         "font.family": "serif",
         "font.serif": ["Times New Roman", "DejaVu Serif"],
-        "font.size": 8.8,
-        "axes.labelsize": 9.2,
-        "xtick.labelsize": 8,
-        "ytick.labelsize": 8,
-        "legend.fontsize": 8,
+        "font.size": 9.6,
+        "axes.labelsize": 10.4,
+        "xtick.labelsize": 8.8,
+        "ytick.labelsize": 8.8,
+        "legend.fontsize": 8.8,
         "legend.frameon": False,
         "figure.dpi": 300,
         "savefig.dpi": 300,
@@ -90,7 +90,7 @@ def _annotate(ax, row, dx: float, dy: float, text: str | None = None) -> None:
         textcoords="offset points",
         ha="left" if dx >= 0 else "right",
         va="center",
-        fontsize=6.8,
+        fontsize=7.5,
         color="#333333",
         arrowprops=dict(arrowstyle="-", color="#777777", lw=0.45, shrinkA=0, shrinkB=3),
     )
@@ -111,7 +111,7 @@ def main() -> None:
         "label": "SaMST e15",
     }
 
-    fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.75), gridspec_kw={"width_ratios": [1.05, 1.0]})
+    fig, axes = plt.subplots(1, 2, figsize=(8.4, 3.35), gridspec_kw={"width_ratios": [1.08, 1.0]})
 
     ax = axes[0]
     ax.plot(
@@ -160,8 +160,8 @@ def main() -> None:
     ax.set_ylabel(r"CLIP-style $\uparrow$")
     ax.set_xlim(0.38, 0.74)
     ax.set_ylim(0.535, 0.735)
-    ax.legend(loc="upper left", bbox_to_anchor=(0.02, 0.82))
-    ax.text(0.02, 0.97, "(a) Full evaluated trajectory", transform=ax.transAxes, ha="left", va="top", fontsize=8.5)
+    ax.legend(loc="upper left", bbox_to_anchor=(0.02, 0.84))
+    ax.text(0.02, 0.97, "(a) Full evaluated trajectory", transform=ax.transAxes, ha="left", va="top", fontsize=9.4)
 
     ax = axes[1]
     ax.plot(
@@ -207,12 +207,12 @@ def main() -> None:
     ax.set_ylabel(r"CLIP-style $\uparrow$")
     ax.set_xlim(0.625, 0.690)
     ax.set_ylim(0.575, 0.730)
-    ax.text(0.02, 0.97, "(b) Pareto region", transform=ax.transAxes, ha="left", va="top", fontsize=8.5)
+    ax.text(0.02, 0.97, "(b) Pareto region", transform=ax.transAxes, ha="left", va="top", fontsize=9.4)
 
     for axis in axes:
         axis.tick_params(axis="both", which="major", pad=2)
 
-    fig.subplots_adjust(wspace=0.34)
+    fig.subplots_adjust(left=0.07, right=0.995, top=0.94, bottom=0.18, wspace=0.28)
     fig.savefig(OUT_DIR / "fig_distinct5_pareto.pdf")
     fig.savefig(OUT_DIR / "fig_distinct5_pareto.png")
     print(f"Wrote {OUT_DIR / 'fig_distinct5_pareto.pdf'}")

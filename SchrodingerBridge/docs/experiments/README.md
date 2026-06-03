@@ -59,33 +59,32 @@ For the current AAAI 2027 push, start here:
 - `2026-06-03-tokenizer-localization/README.md`
 - `2026-06-03-tokenizer-localization/launch_manifest_20260603.md`
 - `2026-06-03-tokenizer-localization-remote-preflight.md`
+- `2026-06-03-path-stability-protocol.md`
 
-### Current live remote mechanism packet
+### Current next remote mechanism packet
 
-The current highest-priority remote mechanism-closure lane is the matched
-Distinct5 `L e1` tokenizer-localization pair.
+The current highest-priority next remote mechanism-closure lane is the matched
+Distinct5 path-stability / weakened-kinetic packet.
 
 Use these files together:
 
-- packet overview:
-  - `2026-06-03-tokenizer-localization/README.md`
-- exact freeze-direction probe definition:
-  - `2026-06-03-tokenizer-localization-probe-protocol.md`
-- launch manifest:
-  - `2026-06-03-tokenizer-localization/launch_manifest_20260603.md`
-- remote truth / recovery / handoff state:
-  - `2026-06-03-tokenizer-localization-remote-preflight.md`
+- protocol:
+  - `2026-06-03-path-stability-protocol.md`
+- base config:
+  - `../../configs/aaai2027/path_kinetic_h_base_seed42_b44_base.json`
+- weakened/no-kinetic configs:
+  - `../../configs/aaai2027/path_kinetic_h_base_seed42_b44_k025.json`
+  - `../../configs/aaai2027/path_kinetic_h_base_seed42_b44_k000.json`
 - experiment ledger rows:
   - `aaai2027_master_experiment_log.csv`
 
 Current state:
 
-- style-branch training plus recovered full-eval are complete;
-- executor-only training is complete and its auto full-eval artifact landing is
-  the current blocking milestone;
-- do not widen manuscript claims until the executor-only
-  `full_eval/epoch_0001..0003/summary.json` files land and the next review
-  cycle runs.
+- tokenizer-localization has already landed as a bounded `L`-family packet;
+- path-stability is now prepared locally but not yet launched in the current
+  session because the remote runtime surface still needs recovery;
+- do not promote the kinetic/path-energy story beyond its current bounded form
+  until the matched weakened-kinetic packet and probe outputs land.
 
 ### Archive / cleanup boundary
 

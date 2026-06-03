@@ -26,13 +26,15 @@ Current state:
   - style-branch arm completed training and recovered all three full-eval
     summaries
   - executor-only arm completed training after the queue handoff
-  - executor-only auto full-eval then crashed on the remote eval surface and
-    is currently being recovered on the same remote machine
-  - executor-only recovered summaries now include:
+  - executor-only auto full-eval crashed on the remote eval surface, then was
+    recovered on the same remote machine
+  - both arms now have:
     - `epoch_0001`
     - `epoch_0002`
-  - current remaining blocker:
-    - `epoch_0003` summary landing for the executor-only arm
+    - `epoch_0003`
+    summaries landed under their original output trees
+- durable packet readout:
+  - `docs/experiments/2026-06-03-tokenizer-localization/readout_20260603.csv`
 - launch contract:
   - `docs/experiments/2026-06-03-tokenizer-localization/launch_manifest_20260603.md`
   - live recovery / remote truth note:
@@ -81,7 +83,7 @@ Both arms must land:
 - `full_eval/epoch_0002/summary.json`
 - `full_eval/epoch_0003/summary.json`
 
-Current partial landing status:
+Current landed status:
 
 - style-branch:
   - `epoch_0001/summary.json` landed
@@ -90,7 +92,7 @@ Current partial landing status:
 - executor-only:
   - `epoch_0001/summary.json` landed
   - `epoch_0002/summary.json` landed
-  - `epoch_0003/summary.json` pending at the current checkpoint
+  - `epoch_0003/summary.json` landed
 
 The paper-facing interpretation must use:
 
@@ -99,6 +101,70 @@ The paper-facing interpretation must use:
 - `clip_dir`
 - `delta_idt` or equivalent no-op-adjusted style gain
 - tokenizer/executed geometry diagnostics
+
+## Exact baseline used for `delta_idt`
+
+The packet readout uses the same Distinct5 unchanged-image reference as the
+existing metric-stress notes:
+
+- baseline summary:
+  - `G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\no_op_identity_5x5_summary.json`
+- baseline values:
+  - `all_pairs_overview.clip_style = 0.6801226128737131`
+  - `style_transfer_ability.clip_style = 0.6399208252628644`
+
+`delta_idt` is read as:
+
+- `delta_idt_full = all_pairs_overview.clip_style - 0.6801226128737131`
+- `delta_idt_transfer = style_transfer_ability.clip_style - 0.6399208252628644`
+
+## Full per-epoch readout
+
+The durable machine-readable table is:
+
+- `docs/experiments/2026-06-03-tokenizer-localization/readout_20260603.csv`
+
+Compact human-readable view:
+
+| arm | epoch | full `clip_style` | full `LPIPS` | `delta_idt_full` | transfer `clip_style` | transfer `LPIPS` | `delta_idt_transfer` | identity `clip_style` | identity `LPIPS` |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| style-branch | `e1` | `0.690304` | `0.319396` | `+0.010181` | `0.657570` | `0.319615` | `+0.017650` | `0.821238` | `0.318519` |
+| style-branch | `e2` | `0.690575` | `0.319515` | `+0.010453` | `0.657863` | `0.319992` | `+0.017942` | `0.821426` | `0.317607` |
+| style-branch | `e3` | `0.690619` | `0.319595` | `+0.010497` | `0.657971` | `0.320181` | `+0.018050` | `0.821213` | `0.317251` |
+| executor-only | `e1` | `0.696258` | `0.321755` | `+0.016135` | `0.664571` | `0.329355` | `+0.024650` | `0.823006` | `0.291354` |
+| executor-only | `e2` | `0.691628` | `0.328816` | `+0.011505` | `0.660810` | `0.336322` | `+0.020889` | `0.814898` | `0.298792` |
+| executor-only | `e3` | `0.695719` | `0.335366` | `+0.015596` | `0.663743` | `0.343879` | `+0.023822` | `0.823620` | `0.301315` |
+
+## Outcome on the current `L e1` surface
+
+The matched packet now supports one narrow factual conclusion:
+
+- among the two one-sided refresh arms, `executor-only` is stronger than
+  `style-branch` on no-op-adjusted style movement under both scopes;
+- this is not a marginal one-epoch fluke:
+  - best `style-branch delta_idt_full = +0.010497` at `e3`
+  - best `executor-only delta_idt_full = +0.016135` at `e1`
+  - best `style-branch delta_idt_transfer = +0.018050` at `e3`
+  - best `executor-only delta_idt_transfer = +0.024650` at `e1`
+- the corresponding LPIPS trade-off is modest in the full view
+  (`0.321755` vs `0.319595`) and clearer in the transfer-only view
+  (`0.329355` vs `0.320181`);
+- identity-block LPIPS is also lower for executor-only, although raw identity
+  `clip_style` stays below the Distinct5 unchanged-image identity reference for
+  both arms.
+
+Safe reading:
+
+- on the current matched Distinct5 `L e1` localization packet, the stronger
+  recoverable direction is executor-side refresh rather than style-side refresh
+  alone.
+
+Unsafe reading:
+
+- tokenizer design is solved;
+- tokenizer geometry no longer matters;
+- this closes the broader tokenizer theory;
+- this restores blocked `H`-family continuity.
 
 ## Claim boundary
 

@@ -36,8 +36,9 @@ more defensible conclusion is:
 
 ## 2. Distinct5 is not a trivial overlap split
 
-Distinct5 was constructed from the five most separated WikiArt classes under a
-CLIP-style screening pass:
+Distinct5 is not a strange private benchmark or an adversarially hand-built
+failure set. It was constructed from ordinary WikiArt categories by selecting
+the five most separated classes under a CLIP-style screening pass:
 
 - `Early_Renaissance`
 - `Impressionism`
@@ -62,10 +63,14 @@ Representative high-scoring off-diagonal `idt` pairs:
 - `Ukiyo_e -> Minimalism`: `0.675195`
 - `Ukiyo_e -> Impressionism`: `0.671572`
 
-This matters because it rules out the easy explanation that Distinct5 is
-failing only because the benchmark is stylistically too close. Even after
-separation, the art-domain prior remains high enough that a copied source image
-already looks target-like to CLIP.
+This matters because it makes two easy explanations much less plausible.
+Distinct5 is not too close: the selected domains are deliberately far apart. It
+is also not an exotic trap: the source images are ordinary WikiArt images from
+standard art style categories. Even after separation, the art-domain prior
+remains high enough that a copied source image already looks target-like to
+CLIP. That is exactly why this split is useful. If a metric still certifies
+unchanged-like outputs as success here, the problem is not that the dataset is
+too weird; the problem is that the success condition is too weak.
 
 ## 3. Why Distinct5 is a stronger critique than "metric hacking"
 
@@ -93,6 +98,11 @@ the reverse failure mode:
 > and still fail to move toward the requested target style once compared
 > against an unchanged control.
 
+This is the point that should sting. A respected modern baseline is not merely
+over-scoring some trivial no-op. It is spending distortion budget and reaching
+lower ArtFID while still failing the most basic directional test: did the image
+move toward the requested target style beyond just leaving it alone?
+
 ## 4. What the literature already supports
 
 ### `ArtFID` is valuable, but it is not a target-style gain metric
@@ -105,6 +115,33 @@ That helps our argument, but it does not solve the Distinct5 issue by itself.
 `ArtFID` is still an absolute metric over generated outputs versus target
 references, combined with a content term. It does not ask whether the model
 improved target-style similarity relative to leaving the source untouched.
+
+The Distinct5 reproduced SaMAM packet makes that limitation concrete. Under the
+same target-wise ArtFID protocol used in the paper table:
+
+- `idt`: `ArtFID = 216.5` full, `323.7` transfer-only
+- `SaMAM 2250`: `ArtFID = 146.1` full, `148.2` transfer-only
+
+So `SaMAM < idt` in no-op-adjusted `CLIP-style` is not evidence that the
+reproduction is simply broken. The reproduced model does find a lower-ArtFID
+region. What it fails to do is convert that source-structure-preserving,
+art-domain-plausible movement into positive target-style gain beyond the
+unchanged image. On this split, lower `ArtFID` can therefore coexist with
+negative `\Delta_{\mathrm{idt}}`.
+
+This is also why the interpretation must stay narrow. The issue is not that
+blind structure preservation is always useless; it is that structure
+preservation by itself becomes an absurd success criterion when a copied source
+image is already a strong art-domain sample and already receives substantial
+target-style similarity from `CLIP-style`.
+
+The paper should therefore avoid the weak claim "SaMAM is bad" and make the
+stronger protocol claim: on a normal WikiArt split where target styles are
+deliberately far apart, a respected modern baseline can improve the absolute
+ArtFID target-domain score while still failing an explicit target-style movement
+test. That is a robustness failure of the metric/protocol combination on
+separated art-to-art transfer, not a license to dismiss the whole AST
+literature.
 
 ### Prior AST evaluation work already warns that protocols are unstable
 
@@ -144,8 +181,10 @@ The strongest version of the claim is:
 > art-to-art evaluation. On this split, an unchanged source image already
 > attains substantial target-style similarity, so a trained model can incur
 > nonzero perceptual change yet still fail to exceed the unchanged control.
-> Therefore, `CLIP-style` should be reported together with an explicit `idt`
-> baseline, transfer-only filtering, and no-op-adjusted style gain.
+> Therefore, on separated art-to-art splits such as Distinct5-512, raw
+> `CLIP-style` is materially safer to interpret when reported together with an
+> explicit `idt` baseline, transfer-only filtering, and no-op-adjusted style
+> gain.
 
 What we should not claim:
 
@@ -159,6 +198,8 @@ What we can claim:
 - `idt` is a useful diagnostic control for art-to-art transfer, especially on
   separated style splits
 - our current paper uses that control to reinterpret raw style scores
+- on an ordinary separated WikiArt split, the common absolute-score protocol
+  can certify the wrong success condition for cross-style transfer
 
 ## 6. Immediate paper implications
 

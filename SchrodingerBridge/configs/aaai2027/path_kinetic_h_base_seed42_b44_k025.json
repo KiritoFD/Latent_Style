@@ -1,0 +1,15 @@
+{
+  "_base": "path_kinetic_h_base_seed42_b44_base.json",
+  "bridge": {
+    "w_kinetic": 0.25
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_path_kinetic_h_base_seed42_b44_k025"
+  },
+  "ablation": {
+    "name": "aaai2027_path_kinetic_h_base_seed42_b44_k025",
+    "axis": "aaai2027_path_kinetic",
+    "stage": "kinetic_weakened_025",
+    "notes": "Matched weakened-kinetic arm for the Distinct5 path-stability packet. Keeps the H-family queue and tokenizer fixed while reducing kinetic weight to 0.25."
+  }
+}
