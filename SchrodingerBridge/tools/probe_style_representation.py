@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -46,14 +47,81 @@ def _load_latent(path: Path) -> torch.Tensor:
     return x.contiguous()
 
 
+def _style_cache_name(style_id: int, style: str) -> str:
+    safe = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(style)).strip("_") or f"style_{style_id}"
+    return f"{style_id:02d}_{safe}.pt"
+
+
+def _load_packed_manifest(latent_root: Path) -> dict[str, object] | None:
+    manifest_path = latent_root / ".latent_cache" / "manifest.json"
+    if not manifest_path.exists():
+        return None
+    try:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    return payload
+
+
+def _load_style_examples(latent_root: Path, style: str, style_id: int, max_count: int) -> tuple[torch.Tensor, list[str]]:
+    style_dir = latent_root / style
+    raw_paths = sorted(style_dir.glob("*.pt"), key=lambda p: p.name)
+    if raw_paths:
+        if max_count > 0:
+            raw_paths = raw_paths[:max_count]
+        batch = torch.stack([_load_latent(path) for path in raw_paths], dim=0)
+        refs = [str(path.relative_to(latent_root)) for path in raw_paths]
+        return batch, refs
+
+    manifest = _load_packed_manifest(latent_root)
+    if manifest is None:
+        raise FileNotFoundError(f"No raw latents or packed manifest found for style={style} under {latent_root}")
+    styles = manifest.get("styles", {})
+    if not isinstance(styles, dict) or style not in styles:
+        raise FileNotFoundError(f"Style={style} missing from packed manifest under {latent_root}")
+    style_payload = styles.get(style, {})
+    packed_rel = style_payload.get("packed") if isinstance(style_payload, dict) else None
+    packed_path = latent_root / ".latent_cache" / str(packed_rel or Path("packed") / _style_cache_name(style_id, style))
+    if not packed_path.exists():
+        raise FileNotFoundError(f"Packed latent cache missing for style={style}: {packed_path}")
+    payload = torch.load(packed_path, map_location="cpu", weights_only=False)
+    if isinstance(payload, dict):
+        latents = payload.get("latents", payload.get("data", payload.get("tensor")))
+        refs = payload.get("files", [])
+    else:
+        latents = payload
+        refs = []
+    if not torch.is_tensor(latents):
+        raise TypeError(f"Unsupported packed latent payload: {packed_path}")
+    batch = latents.float()
+    if batch.ndim != 4:
+        raise ValueError(f"Expected packed latents [N,C,H,W], got {tuple(batch.shape)} from {packed_path}")
+    refs = [str(item) for item in refs] if isinstance(refs, list) else []
+    if max_count > 0:
+        batch = batch[:max_count]
+        refs = refs[:max_count]
+    if not refs:
+        refs = [f"{style}/packed_{idx:04d}.pt" for idx in range(batch.shape[0])]
+    return batch.contiguous(), refs
+
+
 def _style_names(latent_root: Path, raw: str) -> list[str]:
     if raw.strip():
         return [item.strip() for item in raw.split(",") if item.strip()]
-    return [
+    dir_names = [
         p.name
         for p in sorted(latent_root.iterdir(), key=lambda x: x.name)
         if p.is_dir() and not p.name.startswith(".")
     ]
+    if dir_names:
+        return dir_names
+    manifest = _load_packed_manifest(latent_root)
+    style_subdirs = manifest.get("style_subdirs", []) if isinstance(manifest, dict) else []
+    if isinstance(style_subdirs, list):
+        return [str(item) for item in style_subdirs if str(item).strip()]
+    return []
 
 
 def _spectral_ratio(x: torch.Tensor) -> dict[str, float]:
@@ -78,13 +146,8 @@ def _spectral_ratio(x: torch.Tensor) -> dict[str, float]:
 def _latent_stats(latent_root: Path, names: list[str], max_per_style: int) -> tuple[list[dict], dict[str, torch.Tensor]]:
     rows: list[dict] = []
     means: dict[str, torch.Tensor] = {}
-    for name in names:
-        paths = sorted((latent_root / name).glob("*.pt"), key=lambda p: p.name)
-        if max_per_style > 0:
-            paths = paths[:max_per_style]
-        if not paths:
-            raise FileNotFoundError(f"No latents under {latent_root / name}")
-        batch = torch.stack([_load_latent(path) for path in paths], dim=0)
+    for style_id, name in enumerate(names):
+        batch, refs = _load_style_examples(latent_root, name, style_id, max_per_style)
         flat = batch.flatten(1)
         mean_vec = flat.mean(dim=0)
         means[name] = mean_vec
@@ -94,7 +157,7 @@ def _latent_stats(latent_root: Path, names: list[str], max_per_style: int) -> tu
         rows.append(
             {
                 "style": name,
-                "count": len(paths),
+                "count": len(refs),
                 "latent_abs_mean": float(flat.abs().mean().item()),
                 "latent_std": float(flat.std(unbiased=False).item()),
                 "latent_cov_trace": float(cov_trace.item()),
@@ -217,16 +280,22 @@ def _tokenizer_rows(checkpoint: Path, names: list[str], device: str) -> tuple[li
     return rows, pair_rows, summary
 
 
-def _content_paths_for_delta_probe(latent_root: Path, names: list[str], max_content_per_style: int) -> list[tuple[str, Path]]:
-    paths: list[tuple[str, Path]] = []
-    for name in names:
-        style_paths = sorted((latent_root / name).glob("*.pt"), key=lambda p: p.name)
-        if max_content_per_style > 0:
-            style_paths = style_paths[:max_content_per_style]
-        paths.extend((name, p) for p in style_paths)
-    if not paths:
+def _content_records_for_delta_probe(latent_root: Path, names: list[str], max_content_per_style: int) -> list[dict[str, object]]:
+    records: list[dict[str, object]] = []
+    for style_id, name in enumerate(names):
+        batch, refs = _load_style_examples(latent_root, name, style_id, max_content_per_style)
+        for idx in range(batch.shape[0]):
+            ref = refs[idx] if idx < len(refs) else f"{name}/packed_{idx:04d}.pt"
+            records.append(
+                {
+                    "source_style": name,
+                    "latent_ref": str(ref),
+                    "latent": batch[idx].contiguous(),
+                }
+            )
+    if not records:
         raise FileNotFoundError(f"No delta-probe latents under {latent_root}")
-    return paths
+    return records
 
 
 @torch.no_grad()
@@ -242,8 +311,11 @@ def _generated_delta_rows(
     step_size: float,
     style_strength: float,
 ) -> tuple[list[dict], list[dict], dict, list[dict]]:
-    content_paths = _content_paths_for_delta_probe(latent_root, names, max_content_per_style)
-    content_path_rows = [{"source_style": source_style, "latent_path": str(path)} for source_style, path in content_paths]
+    content_records = _content_records_for_delta_probe(latent_root, names, max_content_per_style)
+    content_path_rows = [
+        {"source_style": str(record["source_style"]), "latent_path": str(record["latent_ref"])}
+        for record in content_records
+    ]
     infer = LGTInference(
         str(checkpoint),
         device=device,
@@ -257,9 +329,9 @@ def _generated_delta_rows(
     target_l2_sums = {name: 0.0 for name in names}
     target_counts = {name: 0 for name in names}
 
-    for start in range(0, len(content_paths), batch_size):
-        batch_meta = content_paths[start : start + batch_size]
-        x = torch.stack([_load_latent(path) for _, path in batch_meta], dim=0).to(device)
+    for start in range(0, len(content_records), batch_size):
+        batch_meta = content_records[start : start + batch_size]
+        x = torch.stack([record["latent"] for record in batch_meta], dim=0).to(device)
         for target_id, target_name in enumerate(names):
             target_ids = torch.full((x.shape[0],), target_id, dtype=torch.long, device=device)
             y = infer.transfer_style(x, target_style_id=target_ids, num_steps=max(1, int(num_steps)))
@@ -307,7 +379,7 @@ def _generated_delta_rows(
     delta_rank, delta_svals = _effective_rank(matrix)
     gram = F.normalize(matrix, dim=1) @ F.normalize(matrix, dim=1).T
     summary = {
-        "generated_delta_content_count": len(content_paths),
+        "generated_delta_content_count": len(content_records),
         "generated_delta_content_paths": [row["latent_path"] for row in content_path_rows],
         "generated_delta_content_path_rows": content_path_rows,
         "delta_probe_max_content_per_style": int(max_content_per_style),
