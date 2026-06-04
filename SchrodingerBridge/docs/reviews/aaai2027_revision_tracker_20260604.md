@@ -226,3 +226,10 @@ Commit checkpoint:
   surface, rewrote the protocol-hierarchy lead to make that ordering explicit,
   and trimmed the historical main table back to the four core metrics because
   the artifact-sensitive rows now live only in the dedicated follow-up table.
+- 2026-06-04: Batch 5 mechanism-boundary pass rewrote the method object toward
+  an OT-coupled endpoint-trained renderer, restored the landed local `L e1`
+  reading that executor-side refresh beats style-side refresh alone on the
+  matched localization packet, absorbed the bounded same-family `H`
+  path-stability packet as local kinetic/path support, and marked the
+  semantic-vs-random SA-SWD control as quality-only rather than positive
+  novelty closure.
