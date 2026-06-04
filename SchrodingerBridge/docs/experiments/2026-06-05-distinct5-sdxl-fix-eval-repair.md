@@ -67,23 +67,37 @@ python SchrodingerBridge/tools/experiments/run_local_sdxl_fix_eval_repair.py --s
 
 ## Current Status
 
-Closed summaries already verified:
+Closed summaries now verified through:
 
 - `full_eval/epoch_0001/summary.json`
 - `full_eval/epoch_0002/summary.json`
 - `full_eval/epoch_0003/summary.json`
 - `full_eval/epoch_0004/summary.json`
 - `full_eval/epoch_0005/summary.json`
+- `full_eval/epoch_0006/summary.json`
+- `full_eval/epoch_0007/summary.json`
+- `full_eval/epoch_0008/summary.json`
 
-Compare-chain watcher still active:
-
-- [watch_local_sdxl_eval_and_compare.log](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/watch_local_sdxl_eval_and_compare.log)
-
-Expected comparison output after `epoch_0008` lands:
+Comparison output:
 
 - `SchrodingerBridge/docs/experiments/local_distinct5_sdxl_fix_vs_ema_20260605/distinct5_eval_curve_comparison.md`
 
-This note records repair status only. The question
-"does SDXL-fix latent training beat the EMA latent baseline on Distinct5-512?"
-remains open until the repaired curve finishes and the comparison artifact is
-materialized.
+## Outcome
+
+The repaired `SDXL-fix` curve is now closed through `epoch_0008`.
+
+Final read against the retained `LBM-K e1` EMA-latent baseline:
+
+- no `SDXL-fix` epoch exceeds the EMA baseline on full or transfer
+  `clip_style`
+- the best LPIPS improvement appears at `epoch_0004`
+  - transfer `clip_style`: `0.664908` vs EMA `0.671167`
+  - transfer `content LPIPS`: `0.347322` vs EMA `0.372281`
+- the final `epoch_0008` point is worse than EMA on both style and LPIPS
+  - transfer `clip_style`: `0.664678`
+  - transfer `content LPIPS`: `0.387758`
+
+Current conclusion: `Distinct5-512` with the present `K` family does not gain a
+paper-safe upgrade from swapping the training latents from `EMA` to
+`SDXL-fix`. At best it creates a lower-LPIPS but lower-style sub-frontier, and
+the final epoch regresses further.
