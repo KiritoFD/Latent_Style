@@ -99,7 +99,7 @@ def _annotate(ax, row, dx: float, dy: float, text: str | None = None) -> None:
 def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     rows = _read_points()
-    samam = [r for r in rows if r["family"] == "SaMAM"]
+    samam_2250 = next(r for r in rows if r["family"] == "SaMAM" and r["label"] == "SaMAM 2250")
     lancet = [r for r in rows if r["family"] == "LANCET"]
     refs = [r for r in rows if r["family"] == "Reference"]
     idt = refs[0] if refs else None
@@ -114,12 +114,15 @@ def main() -> None:
     fig, axes = plt.subplots(1, 2, figsize=(8.4, 3.35), gridspec_kw={"width_ratios": [1.08, 1.0]})
 
     ax = axes[0]
-    ax.plot(
-        [r["x"] for r in samam],
-        [r["style"] for r in samam],
+    ax.scatter(
+        [samam_2250["x"]],
+        [samam_2250["style"]],
         color=COLORS["samam"],
+        edgecolor="white",
+        linewidth=0.6,
         marker="o",
-        label="SaMAM checkpoints",
+        s=38,
+        label="SaMAM 2250",
         zorder=2,
     )
     ax.scatter(
@@ -148,28 +151,23 @@ def main() -> None:
         zorder=4,
     )
     _annotate(ax, samst, 8, 10, text="SaMST\n5.8h")
-    for r in samam:
-        if r["label"] in {"SaMAM 250", "SaMAM 2000", "SaMAM 2250"}:
-            offset = {
-                "SaMAM 250": (5, -12),
-                "SaMAM 2000": (5, -4),
-                "SaMAM 2250": (5, 10),
-            }[str(r["label"])]
-            _annotate(ax, r, *offset, text=f"{str(r['label']).split()[-1]}\n{_time_label(float(r['train_min']))}")
+    _annotate(ax, samam_2250, 6, 12, text=f"2250\n{_time_label(float(samam_2250['train_min']))}")
     ax.set_xlabel(r"$1-\mathrm{LPIPS}$ (content preservation) $\uparrow$")
     ax.set_ylabel(r"CLIP-style $\uparrow$")
     ax.set_xlim(0.38, 0.74)
     ax.set_ylim(0.535, 0.735)
     ax.legend(loc="upper left", bbox_to_anchor=(0.02, 0.84))
-    ax.text(0.02, 0.97, "(a) Full evaluated trajectory", transform=ax.transAxes, ha="left", va="top", fontsize=9.4)
+    ax.text(0.02, 0.97, "(a) Full reproduced surface", transform=ax.transAxes, ha="left", va="top", fontsize=9.4)
 
     ax = axes[1]
-    ax.plot(
-        [r["x"] for r in samam],
-        [r["style"] for r in samam],
+    ax.scatter(
+        [samam_2250["x"]],
+        [samam_2250["style"]],
         color=COLORS["samam"],
+        edgecolor="white",
+        linewidth=0.6,
         marker="o",
-        alpha=0.8,
+        s=40,
         zorder=2,
     )
     focus = [r for r in lancet if r["label"] in {"E e1", "E e3", "F e1", "H e1", "H e2", "J e1", "K e1", "L e1", "M e1"}]
@@ -195,14 +193,9 @@ def main() -> None:
                 "K e1": (-8, -14),
             }
             _annotate(ax, r, *offsets[str(r["label"])], text=str(r["label"]))
-    best_samam = max(samam, key=lambda r: float(r["style"]))
-    latest_samam = samam[-1]
     ax.scatter([samst["x"]], [samst["style"]], color=COLORS["samst"], marker="X", s=52, zorder=4)
     _annotate(ax, samst, -10, -12, "SaMST")
-    ax.scatter([best_samam["x"]], [best_samam["style"]], color=COLORS["samam"], marker="o", s=42, zorder=4)
-    _annotate(ax, best_samam, 6, 12, "SaMAM 2000\n6.8h")
-    if latest_samam is not best_samam:
-        _annotate(ax, latest_samam, 6, -14, "2250\n7.6h")
+    _annotate(ax, samam_2250, 6, 12, "SaMAM 2250\n7.6h")
     ax.set_xlabel(r"$1-\mathrm{LPIPS}$ $\uparrow$")
     ax.set_ylabel(r"CLIP-style $\uparrow$")
     ax.set_xlim(0.625, 0.690)
