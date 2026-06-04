@@ -126,6 +126,7 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `LOCAL_REMOTE_ARCHAEOLOGY_CONCLUSIONS_CN_20260605.md`: readable Chinese conclusion report for local state, remote state, lineage, timing, cleanup boundary, and 8-hour continuation plan.
 - `manual_top_level_directory_index_20260605.csv`: top-level directory-by-directory manual classification for local G:, remote `I:\Github\Latent_Style`, and remote `I:\Github\Latent_Style_TokenizerClean`.
 - `manual_family_walkthrough_20260605.csv`: family-level walkthrough for local `SchrodingerBridge/exp`, local `Related_Works`, local `Cycle-NCE`, remote main experiment families, and remote TokenizerClean packets.
+- `manual_schrodingerbridge_exp_topdir_ledger_20260605.csv`: every current local `SchrodingerBridge/exp` top-level directory/file opened and classified with weight counts and cleanup decision.
 - `manual_cleanup_retention_and_next_candidates_20260605.csv`: remaining weight/cache classes, keep reasons, and next deletion candidates.
 - `MANUAL_EXPERIMENT_AUDIT_20260605.md`: current hand-checked audit narrative and gap list.
 - `manual_directory_audit_20260605.csv`: checked directory-level evidence rows.
@@ -134,4 +135,5 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `manual_remaining_weight_classes_20260605.csv`: post-cleanup remaining weight classes and keep reasons.
 - `MANUAL_REMOTE_PHASE_SPACE_SWEEP_20260605.md`: detailed notes for the remote phase-space sweep cleanup.
 - `cleanup/manual_deleted_checkpoints_20260605.csv`: local manual deletion ledger.
+- `cleanup/manual_empty_directory_cleanup_20260605.csv`: local empty-directory cleanup ledger for non-evidence zero-file probe trees.
 - `cleanup/remote_manual_deleted_checkpoints_20260605.csv`: remote manual deletion ledger.
