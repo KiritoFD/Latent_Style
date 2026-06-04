@@ -1,0 +1,5 @@
+source_root,period,method,dataset_or_setting,dataset_key,resolution,variant_or_run,scope,images,clip_style,content_lpips,clip_content,ssim_y,edge_f1,musiq,hf_patch_kid,plain_kid,aggregate_art_fid,train_time_value,train_time_unit,train_time_label,infer_time_value,infer_time_unit,infer_time_label,params_m,hardware,status,source_path,source_kind,validity_class,note
+G:/GitHub/Latent_Style,,,path_family_run_summary.csv,path_family_run_summary.csv,,Latent_Style,,,,,,,,,,,,,,,0.001,s,0.001 s,,,,run_summary.csv,generic_csv,timing_evidence,Parsed from run_summary.csv
+G:/GitHub/Latent_Style,,,path_family_run_summary.csv,path_family_run_summary.csv,,Latent_Style,,,,,,,,,,,,,,,0.000,s,0.000 s,,,,run_summary.csv,generic_csv,timing_evidence,Parsed from run_summary.csv
+G:/GitHub/Latent_Style,,,path_family_run_summary.csv,path_family_run_summary.csv,,Latent_Style,,,,,,,,,,,,0.001,s,0.001 s,,,,,,,run_summary.csv,generic_csv,timing_evidence,Parsed from run_summary.csv
+G:/GitHub/Latent_Style,,,path_family_run_summary.csv,path_family_run_summary.csv,,Latent_Style,,,,,,,,,,,,0.000,s,0.000 s,,,,,,,run_summary.csv,generic_csv,timing_evidence,Parsed from run_summary.csv
