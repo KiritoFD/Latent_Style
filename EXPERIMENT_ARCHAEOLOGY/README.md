@@ -107,3 +107,26 @@ This directory contains the curated local G and remote I experiment archaeology 
 ## Cleanup Rule
 
 Only explicitly non-mainline checkpoint candidates were deleted. Ambiguous `review_delete_candidate` files were retained.
+
+
+## Conclusion Reports
+
+- `ARCHAEOLOGY_REPORT.md`: full local + remote experiment archaeology conclusion report.
+- `LOCAL_G_CONCLUSIONS.md`: local G: repository conclusions and cleanup state.
+- `REMOTE_I_CONCLUSIONS.md`: remote I: curated experiment conclusions and cleanup state.
+- `EXPERIMENT_LINEAGE_SUMMARY.md`: chronological experiment lineage and reusable-result map.
+- `conclusions_by_dataset.csv`: one-row-per-dataset conclusion, timing coverage, source examples, and gaps.
+- `cleanup/CLEANUP_AUDIT_SUMMARY.md`: checkpoint and directory cleanup audit summary.
+
+## Manual Evidence Layer
+
+The broad CSVs above are navigation indexes. For checked timing and cleanup evidence, use these manual files first:
+
+- `MANUAL_EXPERIMENT_AUDIT_20260605.md`: current hand-checked audit narrative and gap list.
+- `manual_directory_audit_20260605.csv`: checked directory-level evidence rows.
+- `manual_timing_evidence_20260605.csv`: checked training/inference timing rows with source paths.
+- `manual_remote_phase_space_sweep_20260605.csv`: per-run remote phase-space sweep audit.
+- `manual_remaining_weight_classes_20260605.csv`: post-cleanup remaining weight classes and keep reasons.
+- `MANUAL_REMOTE_PHASE_SPACE_SWEEP_20260605.md`: detailed notes for the remote phase-space sweep cleanup.
+- `cleanup/manual_deleted_checkpoints_20260605.csv`: local manual deletion ledger.
+- `cleanup/remote_manual_deleted_checkpoints_20260605.csv`: remote manual deletion ledger.
