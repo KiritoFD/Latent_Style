@@ -221,3 +221,8 @@ Commit checkpoint:
   historical 256-resolution `ours vs SaMST` grid plus texture crops were
   restored for the artifact-diagnosis section, and the rebuilt PDF returned to
   a stable 13-page layout.
+- 2026-06-04: Batch 4 structure pass moved `Distinct5-512 stress benchmark`
+  ahead of the historical strict-750 packet as the primary experiments
+  surface, rewrote the protocol-hierarchy lead to make that ordering explicit,
+  and trimmed the historical main table back to the four core metrics because
+  the artifact-sensitive rows now live only in the dedicated follow-up table.

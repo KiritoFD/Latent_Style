@@ -270,7 +270,7 @@ The transport cost is also reduced by $4.2\%$ ($0.119$ vs.\ $0.124$).
 
 \section{Experiments}
 \subsection{Protocol hierarchy and metrics}
-We organize the evidence into two non-interchangeable result families. This separation is necessary because the same scalar pair, CLIP-style and LPIPS, can be misleading when datasets, image resolution, or baseline training protocols change.
+We organize the evidence into two non-interchangeable result families, with Distinct5-512 as the primary stress benchmark and the historical strict-750 packet as contextual support. This separation is necessary because the same scalar pair, CLIP-style and LPIPS, can be misleading when datasets, image resolution, or baseline training protocols change.
 
 \paragraph{Historical strict-750.}
 The main legacy protocol uses five domains---photo, Hayao, Monet, Van Gogh, and Cezanne---and evaluates all $5\times5$ source-target directions with 30 source images per source domain, for 750 generated outputs. This is the protocol used for comparisons to SaMST, S2WAT, StyleID, AdaIN, StyTr2, CAST, AesFA, and AesPA-Net.
@@ -288,10 +288,35 @@ For Distinct5-512 we additionally report style gain over the unchanged-image ref
 \end{equation}
 under both the full 5$\times$5 protocol and the transfer-only off-diagonal subset. We use this quantity to define the metric-stress regime exposed by Distinct5-512: raw CLIP-style should not be treated as sufficient evidence of successful target-style transfer if a method either fails to exceed the identical-image prior ($\Delta_{\mathrm{idt}}\le 0$) or exceeds it only by moving into a clearly damaged LPIPS region while also deteriorating broad artifact diagnostics. In this paper, CLIP-S is interpreted as target-style affinity, LPIPS as content displacement, and ArtFID as a broader art-domain realism and artifact diagnostic rather than a direct style-gain score. In particular, lower ArtFID alone does not certify useful stylization on separated art-to-art transfer: its content term rewards source preservation, and its distributional term can reward remaining in a plausible target-domain art manifold even when the requested target-style movement is still below the unchanged-image baseline. EC is used only as a Pareto summary; claims are checked against CLIP-S and LPIPS individually. For artifact-sensitive analysis we also report MUSIQ, MANIQA, DISTS-content, high-frequency patch KID, FFT slope error, shallow Gram micro statistics, and KID where available. All strict-750 baselines use the same source images, target domains, preprocessing, and identity directions. For arbitrary-style methods, one target-domain reference image is supplied per target style; for style-id LBM, the model receives only the target domain identifier. The `idt' control is introduced as a diagnostic baseline for art-to-art transfer rather than as a community standard: our claim is that Distinct5 makes explicit the role of the unchanged-image prior on this split, not that any single existing metric should be discarded.
 
+\subsection{Distinct5-512 stress benchmark}
+Distinct5-512 is a metric-stress benchmark rather than a universal art benchmark. It is not a contrived out-of-distribution trap or a failure-mined adversarial set: all images come from standard WikiArt classes, and the five domains are selected only because they are among the most separated under a CLIP-style screening pass. Table~\ref{tab:distinct5} gives the exact numbers. The comparison is stricter than a single target direction: every method must handle identity directions, nearby art-to-art transfers, and distant cross-style transfers. That is not an exotic demand; it is the minimum sanity condition for an art-to-art metric. If a method is asked to move between deliberately separated WikiArt styles, unchanged output should not be allowed to masquerade as success. On this split, however, the \emph{idt} baseline already reaches CLIP-S 0.6801 while doing no transfer at all, so raw CLIP-style alone overstates performance. Under the current Distinct5-512 full 5$\times$5 / 750-output protocol, LBM occupies the strongest measured CLIP-S / LPIPS trade-off among the currently reproduced positive-$\Delta_{\mathrm{idt}}$ operating points. The content-preserving LBM-F checkpoint reaches CLIP-S 0.6969 and LPIPS 0.3186. The timing entries in Table~\ref{tab:distinct5} are recorded operating-point wall clocks and are included as context only, not as normalized time-to-parity evidence. SaMST-512 shows a different failure mode: raw style rises to 0.7247, but LPIPS degrades to 0.6255 and targetwise ArtFID worsens to 395.7. The closed e5/e15 packet is already near a plateau on transfer CLIP-S and LPIPS: the two checkpoints differ by less than 0.004/0.002, while e15 lowers targetwise ArtFID from 465.7 to 444.5 and still remains in a high-damage regime. The style-seeking LBM-K checkpoint raises CLIP-S to 0.7010 while remaining far below that high-damage region. Relative to the unchanged-image reference, LBM remains positive under both scopes: LBM-F gives $\Delta_{\mathrm{idt}}=+0.0168$ full and $+0.0244$ transfer-only, while LBM-K gives $+0.0209$ full and $+0.0312$ transfer-only. At the trusted SaMAM 2250 checkpoint, transfer CLIP-S remains below the idt floor even though targetwise ArtFID improves from 216.5 to 146.1 on the full scope and from 323.7 to 148.2 on the transfer-only scope. This is the sharp failure case: the reproduced model is not merely producing arbitrary failures; it pays distortion budget, reaches a lower-targetwise-ArtFID regime, and still fails to achieve positive target-style gain beyond idt. On Distinct5, lower targetwise ArtFID can therefore reflect source-structure preservation and generic target-domain plausibility while still failing the requested target-style transfer. The critique is not that a CVPR baseline is globally invalid; it is that the common absolute-score protocol can certify the wrong success condition for art-to-art transfer on an ordinary separated WikiArt split. This section should therefore be read as a frontier comparison on the current reproduced points, not as proof that semantic projection-axis selection is already isolated as the decisive cause.
+
+\begin{table}[t]
+\centering
+\caption{Distinct5-512 strict-750 stress benchmark. All rows use the same 5$\times$5 all-pairs evaluation over 750 generated images. `idt' is the unchanged-image reference copied into every target slot. $\Delta_{\mathrm{idt}}$ is the full-scope style gain over idt and $\Delta_{\mathrm{idt,tr}}$ is the transfer-only off-diagonal gain. `tw-ArtFID' denotes targetwise ArtFID. SaMAM is reported only at the trusted 2250-step checkpoint; later checkpoints are excluded from the active manuscript path. SaMAM and SaMST training time is cumulative wall time with evaluation excluded; LBM times are per-checkpoint remote RTX 3060 training wall times.}
+\label{tab:distinct5}
+\small
+\setlength{\tabcolsep}{4pt}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+Method & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & EC$\uparrow$ & tw-ArtFID$\downarrow$ & $\Delta_{\mathrm{idt}}\uparrow$ & $\Delta_{\mathrm{idt,tr}}\uparrow$ & Train \\
+\midrule
+idt (no-op) & 0.6801 & 0.0000 & 0.6801 & 216.5 & 0.0000 & 0.0000 & 0 \\
+SaMAM 2250 & 0.5811 & 0.3538 & 0.3755 & 146.1 & -0.0990 & -0.0877 & 7.6h \\
+SaMST-512 e15 & \textbf{0.7247} & 0.6255 & 0.2714 & 395.7 & \textbf{+0.0446} & \textbf{+0.0558} & 5.8h \\
+LBM-F e1 & 0.6969 & \textbf{0.3186} & \textbf{0.4748} & \textbf{122.6} & +0.0168 & +0.0244 & 1.2m \\
+LBM-K e1 & 0.7010 & 0.3623 & 0.4470 & 157.2 & +0.0209 & +0.0312 & 1.2m \\
+\bottomrule
+\end{tabular}
+\vspace{1mm}
+}
+\end{table}
+
 \subsection{Historical strict-750 comparison}
 \begin{table*}[t]
 \centering
-\caption{Historical strict-750 comparison in grouped family format. Higher is better for CLIP-S, CLIP-C, EC, MUSIQ, and MANIQA; lower is better for LPIPS, DISTS, HF-KID, and KID.}
+\caption{Historical strict-750 comparison in grouped family format. Higher is better for CLIP-S, CLIP-C, and EC; lower is better for LPIPS. Artifact-sensitive metrics are reported separately in Table~\ref{tab:artifact}.}
 \label{tab:main}
 \small
 \setlength{\tabcolsep}{4pt}
@@ -305,16 +330,11 @@ CLIP-S $\uparrow$ & 0.5976 & 0.6496 & 0.7130 & 0.6374 & 0.7139 & 0.7194 & 0.6652
 CLIP-C $\uparrow$ & 0.5009 & 0.5497 & 0.6990 & 0.6001 & 0.7465 & \textbf{0.8193} & 0.5562 & 0.5519 & 0.8086 \\
 LPIPS $\downarrow$ & 0.8215 & 0.7392 & 0.6298 & 0.6345 & 0.5263 & 0.4664 & 0.7263 & 0.7497 & \textbf{0.4514} \\
 EC $\uparrow$ & 0.1067 & 0.1694 & 0.2639 & 0.2330 & 0.3382 & 0.3839 & 0.1821 & 0.1902 & \textbf{0.3928} \\
-MUSIQ $\uparrow$ & -- & -- & -- & -- & 36.5256 & 36.0950 & -- & -- & \textbf{49.2059} \\
-MANIQA $\uparrow$ & -- & -- & -- & -- & 0.1754 & 0.3139 & -- & -- & \textbf{0.4057} \\
-DISTS $\downarrow$ & -- & -- & -- & -- & 0.2942 & 0.2943 & -- & -- & \textbf{0.2477} \\
-HF-KID $\downarrow$ & -- & -- & -- & -- & 12.6623 & 6.7598 & -- & -- & \textbf{4.1694} \\
-KID $\downarrow$ & -- & -- & -- & -- & 0.0567 & \textbf{0.0489} & -- & -- & 0.0524 \\
 \bottomrule
 \end{tabular}
 \end{table*}
 
-Table~\ref{tab:main} establishes LBM as the strongest compact content-preserving operating point among the reproduced baselines in this historical strict-750 comparison. StyleID reaches the highest raw CLIP-style but collapses content. SaMST is marginally higher on CLIP-S and CLIP-C, yet LBM improves LPIPS and EC while also winning the artifact-sensitive metrics reported below. Relative to S2WAT and AdaIN, LBM preserves substantially more content at comparable or stronger style. The main result here is therefore a quality-frontier claim: within this reproduced table, LBM delivers the cleanest balance of style strength, content fidelity, and artifact control among the compact retrainable systems in the comparison.
+We then place the historical strict-750 packet as contextual support for the older comparison surface. Table~\ref{tab:main} establishes LBM as the strongest compact content-preserving operating point among the reproduced baselines in this historical strict-750 comparison. StyleID reaches the highest raw CLIP-style but collapses content. SaMST is marginally higher on CLIP-S and CLIP-C, yet LBM improves LPIPS and EC while also winning the artifact-sensitive metrics reported below. Relative to S2WAT and AdaIN, LBM preserves substantially more content at comparable or stronger style. The main result here is therefore a quality-frontier claim: within this reproduced table, LBM delivers the cleanest balance of style strength, content fidelity, and artifact control among the compact retrainable systems in the comparison.
 
 \begin{table}[t]
 \centering
@@ -378,31 +398,6 @@ Gram micro was not recomputed for S2WAT in the current evaluation protocol.
 \end{table}
 
 Table~\ref{tab:artifact} shows that LBM is not merely winning by leaving the image unchanged. Relative to SaMST, it improves MUSIQ from 36.10 to 49.21, MANIQA from 0.314 to 0.406, DISTS-content from 0.294 to 0.248, HF-Patch-KID from 6.76 to 4.17, and FFT slope error from 1.054 to 0.547. A paired bootstrap over the 750 per-image scores for Ours gives 95\% intervals of $[0.4467,0.4563]$ for LPIPS and $[0.7091,0.7234]$ for CLIP-S. The photo-to-art subset ($n=120$) yields CLIP-S 0.6716 and LPIPS 0.4882; the non-identity subset ($n=600$) yields CLIP-S 0.6911 and LPIPS 0.4609.
-
-\subsection{Distinct5-512 stress benchmark}
-Distinct5-512 is a metric-stress benchmark rather than a universal art benchmark. It is not a contrived out-of-distribution trap or a failure-mined adversarial set: all images come from standard WikiArt classes, and the five domains are selected only because they are among the most separated under a CLIP-style screening pass. Table~\ref{tab:distinct5} gives the exact numbers. The comparison is stricter than a single target direction: every method must handle identity directions, nearby art-to-art transfers, and distant cross-style transfers. That is not an exotic demand; it is the minimum sanity condition for an art-to-art metric. If a method is asked to move between deliberately separated WikiArt styles, unchanged output should not be allowed to masquerade as success. On this split, however, the \emph{idt} baseline already reaches CLIP-S 0.6801 while doing no transfer at all, so raw CLIP-style alone overstates performance. Under the current Distinct5-512 full 5$\times$5 / 750-output protocol, LBM occupies the strongest measured CLIP-S / LPIPS trade-off among the currently reproduced positive-$\Delta_{\mathrm{idt}}$ operating points. The content-preserving LBM-F checkpoint reaches CLIP-S 0.6969 and LPIPS 0.3186. The timing entries in Table~\ref{tab:distinct5} are recorded operating-point wall clocks and are included as context only, not as normalized time-to-parity evidence. SaMST-512 shows a different failure mode: raw style rises to 0.7247, but LPIPS degrades to 0.6255 and targetwise ArtFID worsens to 395.7. The closed e5/e15 packet is already near a plateau on transfer CLIP-S and LPIPS: the two checkpoints differ by less than 0.004/0.002, while e15 lowers targetwise ArtFID from 465.7 to 444.5 and still remains in a high-damage regime. The style-seeking LBM-K checkpoint raises CLIP-S to 0.7010 while remaining far below that high-damage region. Relative to the unchanged-image reference, LBM remains positive under both scopes: LBM-F gives $\Delta_{\mathrm{idt}}=+0.0168$ full and $+0.0244$ transfer-only, while LBM-K gives $+0.0209$ full and $+0.0312$ transfer-only. At the trusted SaMAM 2250 checkpoint, transfer CLIP-S remains below the idt floor even though targetwise ArtFID improves from 216.5 to 146.1 on the full scope and from 323.7 to 148.2 on the transfer-only scope. This is the sharp failure case: the reproduced model is not merely producing arbitrary failures; it pays distortion budget, reaches a lower-targetwise-ArtFID regime, and still fails to achieve positive target-style gain beyond idt. On Distinct5, lower targetwise ArtFID can therefore reflect source-structure preservation and generic target-domain plausibility while still failing the requested target-style transfer. The critique is not that a CVPR baseline is globally invalid; it is that the common absolute-score protocol can certify the wrong success condition for art-to-art transfer on an ordinary separated WikiArt split. This section should therefore be read as a frontier comparison on the current reproduced points, not as proof that semantic projection-axis selection is already isolated as the decisive cause.
-
-\begin{table}[t]
-\centering
-\caption{Distinct5-512 strict-750 stress benchmark. All rows use the same 5$\times$5 all-pairs evaluation over 750 generated images. `idt' is the unchanged-image reference copied into every target slot. $\Delta_{\mathrm{idt}}$ is the full-scope style gain over idt and $\Delta_{\mathrm{idt,tr}}$ is the transfer-only off-diagonal gain. `tw-ArtFID' denotes targetwise ArtFID. SaMAM is reported only at the trusted 2250-step checkpoint; later checkpoints are excluded from the active manuscript path. SaMAM and SaMST training time is cumulative wall time with evaluation excluded; LBM times are per-checkpoint remote RTX 3060 training wall times.}
-\label{tab:distinct5}
-\small
-\setlength{\tabcolsep}{4pt}
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{@{}lrrrrrrr@{}}
-\toprule
-Method & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & EC$\uparrow$ & tw-ArtFID$\downarrow$ & $\Delta_{\mathrm{idt}}\uparrow$ & $\Delta_{\mathrm{idt,tr}}\uparrow$ & Train \\
-\midrule
-idt (no-op) & 0.6801 & 0.0000 & 0.6801 & 216.5 & 0.0000 & 0.0000 & 0 \\
-SaMAM 2250 & 0.5811 & 0.3538 & 0.3755 & 146.1 & -0.0990 & -0.0877 & 7.6h \\
-SaMST-512 e15 & \textbf{0.7247} & 0.6255 & 0.2714 & 395.7 & \textbf{+0.0446} & \textbf{+0.0558} & 5.8h \\
-LBM-F e1 & 0.6969 & \textbf{0.3186} & \textbf{0.4748} & \textbf{122.6} & +0.0168 & +0.0244 & 1.2m \\
-LBM-K e1 & 0.7010 & 0.3623 & 0.4470 & 157.2 & +0.0209 & +0.0312 & 1.2m \\
-\bottomrule
-\end{tabular}
-\vspace{1mm}
-}
-\end{table}
 
 \subsection{Tokenizer and representation ablations}
 \begin{table*}[t]
