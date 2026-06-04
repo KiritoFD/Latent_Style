@@ -59,6 +59,12 @@ Related_Works/**/*.png
 66688
 Dataset/
 SchrodingerBridge/_codex_tmp/
+tmp/
+SchrodingerBridge/tmp/
+SchrodingerBridge/aaai_submission/tmp_*/
+SchrodingerBridge/aaai_submission_recovery_*/
+SchrodingerBridge/aaai_submission/paper_aaai2026.recovery_backup_*.tex
+SchrodingerBridge/aaai_submission/fix_colors.py
 
 # Bulk external baseline checkouts and generated results
 Related_Works/repos/**
