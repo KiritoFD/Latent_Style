@@ -215,3 +215,9 @@ Commit checkpoint:
   `SaMAM 2000` row and relabeled `tw-ArtFID`, and `fig_distinct5_pareto.*`
   was regenerated so the SaMAM surface is a single trusted `2250` point rather
   than a manuscript-visible checkpoint curve.
+- 2026-06-04: Batch 3 figure pass followed user feedback on information value:
+  the body Distinct5 two-panel scatter was removed as redundant with the
+  page-1 summary, the rejected 512 visual-alignment panel was discarded, the
+  historical 256-resolution `ours vs SaMST` grid plus texture crops were
+  restored for the artifact-diagnosis section, and the rebuilt PDF returned to
+  a stable 13-page layout.
