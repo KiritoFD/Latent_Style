@@ -39,7 +39,7 @@ Transfer-only:
 3. LANCET 的 F/H 点在横轴上领先 SaMAM 2000：F e1 为 `1-LPIPS=0.681355`，H e1 为 `0.678667`，同时 `clip_style` 约 `0.697`。
 4. LANCET 的 K e1 是当前 style 最高点：`clip_style=0.700995`，但 `1-LPIPS=0.637706`，内容保持弱于 F/H。
 5. No-op 5x5 点为 `clip_style=0.680123, content_lpips=0.000000`；transfer-only no-op 为 `clip_style=0.639921, content_lpips=0.000000`。这说明 Distinct5 的 CLIP-style 本身有较高同域/跨类背景相似度，论文主文需要强调 no-op reference，不能只把 LPIPS 接近 0 当作有效风格迁移。
-6. Transfer-only 后，SaMAM-2250 为 `clip_style=0.552252, content_lpips=0.360452`，仍低于 no-op transfer 的 style，且 LPIPS 更差；LANCET F/H/K 的 transfer style 仍显著高于 no-op。
+6. Transfer-only 后，SaMAM-2250 为 `clip_style=0.552252, content_lpips=0.360452`，其判定问题是 `clip_style` 仍低于 no-op transfer 的 `0.639921`；LPIPS 只记录它确实发生了非零位移，不是该结论的失败定义。LANCET F/H/K 的 transfer style 仍显著高于 no-op。
 7. 当前改进方向应从 H/F/K 的差异出发：保留 F/H 的内容保持，同时尝试吸收 K 的 style boost，并用 no-op reference 约束“只保内容不转风格”的伪优势。
 
 ## 当前关键点

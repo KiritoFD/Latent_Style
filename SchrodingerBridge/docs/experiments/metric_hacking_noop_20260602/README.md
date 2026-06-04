@@ -138,10 +138,12 @@ Styles: `Early_Renaissance`, `Impressionism`, `Minimalism`, `Rococo`,
 | transfer | LANCET | best style, K e1 | 0.671167 | 0.372281 | +0.031246 |
 | transfer | LANCET | best LPIPS, F e1 | 0.664360 | 0.324528 | +0.024440 |
 
-Interpretation: on Distinct5-512, SaMAM is worse than no-op under both full and
-transfer-only CLIP-style while also paying nonzero LPIPS. LANCET remains above
-no-op in style, including transfer-only, so it is the only tested model here
-that shows no-op-adjusted target style movement.
+Interpretation: on Distinct5-512, SaMAM is below no-op under both full and
+transfer-only CLIP-style. Its nonzero LPIPS is evidence that the reproduced
+checkpoints do change the image, but those changes do not become positive
+target-style movement. LANCET remains above no-op in style, including
+transfer-only, so it is the only tested model here that shows no-op-adjusted
+target style movement.
 
 ## Aggregate ArtFID Diagnostic
 

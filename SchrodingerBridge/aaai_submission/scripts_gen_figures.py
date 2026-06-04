@@ -44,7 +44,8 @@ FIG_DIR = ROOT / "figures"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 plt.rcParams.update({
-    "font.family": PLOT_CONFIG.get("font_family", "DejaVu Sans"),
+    "font.family": PLOT_CONFIG.get("font_family", "serif"),
+    "font.serif": ["Times New Roman", "DejaVu Serif"],
     "font.size": PLOT_CONFIG.get("font_size", 10),
     "axes.titlesize": PLOT_CONFIG.get("axes_titlesize", 12),
     "axes.labelsize": PLOT_CONFIG.get("axes_labelsize", 10),
@@ -56,6 +57,7 @@ plt.rcParams.update({
 def save(fig, name):
     fig.tight_layout()
     fig.savefig(FIG_DIR / f"{name}.png", dpi=300, bbox_inches="tight")
+    fig.savefig(FIG_DIR / f"{name}.pdf", bbox_inches="tight")
     plt.close(fig)
 
 
@@ -94,13 +96,13 @@ def framework_overview():
 
 def quality_tradeoff():
     data = [
-        ("Ours e7", 0.7161, 1 - 0.4514, 0.3928, "#e64b35", (0.014, 0.005)),
-        ("Ours e8", 0.7167, 1 - 0.4615, 0.3859, "#f39b7f", (0.014, -0.010)),
-        ("SaMST", 0.7194, 1 - 0.4664, 0.3839, "#000000", (0.014, 0.008)),
-        ("StyleID", 0.7597, 1 - 0.7497, 0.1902, "#4dbbd5", (0.010, 0.003)),
-        ("S2WAT", 0.7139, 1 - 0.5263, 0.3382, "#00a087", (0.016, -0.005)),
-        ("AdaIN v32k", 0.7130, 1 - 0.6298, 0.2639, "#3c5488", (0.012, -0.010)),
-        ("AdaIN vgg19", 0.6930, 1 - 0.6870, 0.2169, "#8491b4", (0.014, -0.006)),
+        ("Ours e7", 0.7161, 1 - 0.4514, 0.3928, QUALITY_COLORS.get("Ours e7", "#C44E52"), (0.014, 0.005)),
+        ("Ours e8", 0.7167, 1 - 0.4615, 0.3859, QUALITY_COLORS.get("Ours e8", "#D65F5F"), (0.014, -0.010)),
+        ("SaMST", 0.7194, 1 - 0.4664, 0.3839, QUALITY_COLORS.get("SaMST", "#55A868"), (0.014, 0.008)),
+        ("StyleID", 0.7597, 1 - 0.7497, 0.1902, QUALITY_COLORS.get("StyleID", "#64B5CD"), (0.010, 0.003)),
+        ("S2WAT", 0.7139, 1 - 0.5263, 0.3382, QUALITY_COLORS.get("S2WAT", "#8172B2"), (0.016, -0.005)),
+        ("AdaIN v32k", 0.7130, 1 - 0.6298, 0.2639, QUALITY_COLORS.get("AdaIN", "#4C72B0"), (0.012, -0.010)),
+        ("AdaIN vgg19", 0.6930, 1 - 0.6870, 0.2169, QUALITY_COLORS.get("AdaIN vgg19", "#4C72B0"), (0.014, -0.006)),
     ]
     fig, ax = plt.subplots(figsize=(6.6, 5.0))
     markers = ["o", "o", "D", "^", "s", "v", "<"]
@@ -147,8 +149,8 @@ def artifact_diagnostics():
     norm = vals / vals.max(axis=0, keepdims=True)
     x = np.arange(len(metrics))
     fig, ax = plt.subplots(figsize=(7.2, 4.6))
-    ax.bar(x - 0.18, norm[0], width=0.36, label="Ours e7", color="#e64b35")
-    ax.bar(x + 0.18, norm[1], width=0.36, label="SaMST", color="#333333")
+    ax.bar(x - 0.18, norm[0], width=0.36, label="Ours e7", color=QUALITY_COLORS.get("Ours e7", "#C44E52"))
+    ax.bar(x + 0.18, norm[1], width=0.36, label="SaMST", color=QUALITY_COLORS.get("SaMST", "#55A868"))
     ax.set_xticks(x)
     ax.set_xticklabels(metrics, rotation=25, ha="right")
     ax.set_ylabel("Pairwise normalized value")
@@ -171,7 +173,7 @@ def ablation_pareto():
         3: "D3 -SWD-kin", 8: "D8 +color", 10: "D10 HF-SWD"
     }
     fig, ax = plt.subplots(figsize=(6.3, 5.0))
-    ax.scatter(data[0][2], data[0][1], s=200, c="#e64b35", edgecolor="#003f7f",
+    ax.scatter(data[0][2], data[0][1], s=200, c=QUALITY_COLORS.get("Ours e7", "#C44E52"), edgecolor="#003f7f",
                linewidth=2.0, alpha=0.95, zorder=6, marker='*')
     ax.annotate("★ D0 full", (data[0][2], data[0][1]),
                 (data[0][2] + 0.007, data[0][1] + 0.002),
@@ -182,7 +184,7 @@ def ablation_pareto():
             continue
         if i not in label_map:
             continue
-        ax.scatter(inv_lpips, style, s=80, c="#4dbbd5",
+        ax.scatter(inv_lpips, style, s=80, c=QUALITY_COLORS.get("StyleID", "#64B5CD"),
                    edgecolor="white", linewidth=0.8, alpha=0.85, zorder=5, marker='o')
         ax.annotate(label_map[i], (inv_lpips, style),
                     (inv_lpips + 0.005, style + 0.001),
@@ -202,13 +204,13 @@ def weight_sweep_summary():
     ec = [0.4343, 0.3863]
     x = np.arange(2)
     fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.8))
-    axes[0].bar(x, ec, color=["#e64b35", "#8491b4"])
+    axes[0].bar(x, ec, color=[QUALITY_COLORS.get("Ours e7", "#C44E52"), QUALITY_COLORS.get("AdaIN vgg19", "#4C72B0")])
     axes[0].set_xticks(x)
     axes[0].set_xticklabels(labels)
     axes[0].set_ylabel("EC ↑")
     axes[0].set_title("Composite trade-off")
     axes[0].set_ylim(0.34, 0.45)
-    axes[1].bar(x, clip_style, color=["#8491b4", "#e64b35"])
+    axes[1].bar(x, clip_style, color=[QUALITY_COLORS.get("AdaIN vgg19", "#4C72B0"), QUALITY_COLORS.get("Ours e7", "#C44E52")])
     axes[1].set_xticks(x)
     axes[1].set_xticklabels(labels)
     axes[1].set_ylabel("CLIP-style ↑")
@@ -222,10 +224,10 @@ def weight_sweep_summary():
 def train_efficiency_pareto():
     """EC vs training time. Excludes training-free methods (EC<0.2) which cluster near 0."""
     data = [
-        ("Ours", 0.393, 310, 3.9, "#e64b35"),
-        ("SaMST", 0.384, 6769, 6.0, "#000000"),
-        ("S2WAT", 0.338, 10600, 65, "#00a087"),
-        ("AdaIN", 0.264, 9220, 5, "#3c5488"),
+        ("Ours", 0.393, 310, 3.9, QUALITY_COLORS.get("Ours e7", "#C44E52")),
+        ("SaMST", 0.384, 6769, 6.0, QUALITY_COLORS.get("SaMST", "#55A868")),
+        ("S2WAT", 0.338, 10600, 65, QUALITY_COLORS.get("S2WAT", "#8172B2")),
+        ("AdaIN", 0.264, 9220, 5, QUALITY_COLORS.get("AdaIN", "#4C72B0")),
     ]
     fig, ax = plt.subplots(figsize=(4.8, 4.0))
     for name, ec, train_sec, params, c in data:

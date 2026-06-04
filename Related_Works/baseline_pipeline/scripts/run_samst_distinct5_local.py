@@ -87,6 +87,20 @@ def write_train_config(
     return path
 
 
+def _read_optional_text(path: Path) -> str | None:
+    if not path.exists():
+        return None
+    return path.read_text(encoding="utf-8")
+
+
+def _restore_optional_text(path: Path, content: str | None) -> None:
+    if content is None:
+        if path.exists():
+            path.unlink()
+        return
+    path.write_text(content, encoding="utf-8")
+
+
 def run_target(args: argparse.Namespace, out_root: Path, style: str) -> int:
     train_dir = SAMST_REPO / "train_model" / "train2"
     train_py = train_dir / "train.py"
@@ -97,6 +111,8 @@ def run_target(args: argparse.Namespace, out_root: Path, style: str) -> int:
     train_dataset = prepare_content_view(args.data_root, out_root, int(args.max_train_per_class))
     ckpt_dir = out_root / "checkpoints" / style
     ckpt_dir.mkdir(parents=True, exist_ok=True)
+    train_yml = train_dir / "train.yml"
+    original_train_yml = _read_optional_text(train_yml)
     write_train_config(
         train_dir=train_dir,
         train_dataset=train_dataset,
@@ -112,13 +128,16 @@ def run_target(args: argparse.Namespace, out_root: Path, style: str) -> int:
     log_path.parent.mkdir(parents=True, exist_ok=True)
     cmd = [sys.executable, str(train_py)]
     start = time.time()
-    with log_path.open("a", encoding="utf-8", errors="replace") as log:
-        log.write(f"\n=== START {style} {datetime.now().isoformat()} cmd={cmd} ===\n")
-        log.flush()
-        proc = subprocess.run(cmd, cwd=str(train_dir), stdout=log, stderr=subprocess.STDOUT)
-        elapsed = time.time() - start
-        log.write(f"\n=== END {style} rc={proc.returncode} elapsed_sec={elapsed:.2f} ===\n")
-    return proc.returncode
+    try:
+        with log_path.open("a", encoding="utf-8", errors="replace") as log:
+            log.write(f"\n=== START {style} {datetime.now().isoformat()} cmd={cmd} ===\n")
+            log.flush()
+            proc = subprocess.run(cmd, cwd=str(train_dir), stdout=log, stderr=subprocess.STDOUT)
+            elapsed = time.time() - start
+            log.write(f"\n=== END {style} rc={proc.returncode} elapsed_sec={elapsed:.2f} ===\n")
+        return proc.returncode
+    finally:
+        _restore_optional_text(train_yml, original_train_yml)
 
 
 def main() -> int:
@@ -127,7 +146,7 @@ def main() -> int:
     parser.add_argument("--out-root", type=Path, default=None)
     parser.add_argument("--styles", type=str, default=",".join(STYLES))
     parser.add_argument("--epochs", type=int, default=30)
-    parser.add_argument("--batch-size", type=int, default=2)
+    parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--image-size", type=int, default=256)
     parser.add_argument("--style-size", type=int, default=512)
     parser.add_argument("--max-train-per-class", type=int, default=0, help="Use only the first N train images per class; <=0 uses full train split.")

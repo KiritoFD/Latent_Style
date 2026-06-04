@@ -1,4 +1,4 @@
-\begin{thebibliography}{32}
+\begin{thebibliography}{34}
 \providecommand{\natexlab}[1]{#1}
 
 \bibitem[{An et~al.(2021)An, Huang, Song, Dou, Liu, and Luo}]{an2021artflow}
@@ -164,6 +164,13 @@ Wright, M.; and Ommer, B. 2022.
 \newblock ArtFID: Quantitative Evaluation of Neural Style Transfer.
 \newblock \emph{arXiv preprint arXiv:2207.12280}.
 
+\bibitem[{Xia et~al.(2024)}]{xia2024s2wat}
+Xia, W.; et~al. 2024.
+\newblock S2WAT: Image Style Transfer via Hierarchical Vision Transformer Using
+  Strips Window Attention.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial
+  Intelligence}.
+
 \bibitem[{Xu et~al.(2025)Xu, Xi, Wang, Mao, and Cheng}]{xu2025stylessp}
 Xu, R.; Xi, W.; Wang, X.; Mao, Y.; and Cheng, Z. 2025.
 \newblock StyleSSP: Sampling StartPoint Enhancement for Training-free
@@ -200,6 +207,15 @@ Zhang, S.; Kang, H.; Liu, Y.; Mei, F.; and Li, H. 2025.
 \newblock HSI: A Holistic Style Injector for Arbitrary Style Transfer.
 \newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
   and Pattern Recognition}, 23433--23442.
+
+\bibitem[{Zhang et~al.(2024)Zhang, Zhang, Xing, Li, Zhao, Sun, Lan, Luan,
+  Huang, and Lin}]{zhang2024artbank}
+Zhang, Z.; Zhang, Q.; Xing, W.; Li, G.; Zhao, L.; Sun, J.; Lan, Z.; Luan, J.;
+  Huang, Y.; and Lin, H. 2024.
+\newblock ArtBank: Artistic Style Transfer with Pre-trained Diffusion Model and
+  Implicit Style Prompt Bank.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial
+  Intelligence}, volume~38, 7396--7404.
 
 \bibitem[{Zheng et~al.(2024)Zheng, Gao, Zhou, and Qin}]{zheng2024puffnet}
 Zheng, S.; Gao, P.; Zhou, P.; and Qin, J. 2024.

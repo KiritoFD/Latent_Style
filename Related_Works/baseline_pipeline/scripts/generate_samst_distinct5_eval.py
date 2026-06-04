@@ -41,6 +41,20 @@ DEFAULT_STYLES = [
 IMG_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
+def _read_optional_text(path: Path) -> str | None:
+    if not path.exists():
+        return None
+    return path.read_text(encoding="utf-8")
+
+
+def _restore_optional_text(path: Path, content: str | None) -> None:
+    if content is None:
+        if path.exists():
+            path.unlink()
+        return
+    path.write_text(content, encoding="utf-8")
+
+
 def _list_images(folder: Path, limit: int) -> list[Path]:
     files = sorted(p for p in folder.iterdir() if p.is_file() and p.suffix.lower() in IMG_EXTS)
     return files[:limit] if limit > 0 else files
@@ -104,25 +118,30 @@ def _run_one_target(
         "style_num": 1,
         "cuda": 1,
     }
-    with (test_dir / "test.yml").open("w", encoding="utf-8") as f:
-        yaml.dump(test_yml, f, default_flow_style=False, allow_unicode=True)
+    test_yml_path = test_dir / "test.yml"
+    original_test_yml = _read_optional_text(test_yml_path)
+    try:
+        with test_yml_path.open("w", encoding="utf-8") as f:
+            yaml.dump(test_yml, f, default_flow_style=False, allow_unicode=True)
 
-    print(f"[SaMST distinct5] epoch={epoch:04d} target={target_style} ckpt={ckpt.name}", flush=True)
-    rc = subprocess.run([sys.executable, str(test_script)], cwd=str(test_dir)).returncode
-    if rc != 0:
-        return rc
+        print(f"[SaMST distinct5] epoch={epoch:04d} target={target_style} ckpt={ckpt.name}", flush=True)
+        rc = subprocess.run([sys.executable, str(test_script)], cwd=str(test_dir)).returncode
+        if rc != 0:
+            return rc
 
-    copied = 0
-    raw_files = sorted(p for p in raw_output.iterdir() if p.is_file() and p.name.startswith("style1_"))
-    for src in raw_files:
-        original = src.name[len("style1_") :]
-        stem = Path(original).stem
-        dst = images_out / f"{stem}_to_{target_style}.png"
-        with Image.open(src) as image:
-            ImageOps.exif_transpose(image).convert("RGB").save(dst)
-        copied += 1
-    print(f"[SaMST distinct5] epoch={epoch:04d} target={target_style} copied={copied}", flush=True)
-    return 0
+        copied = 0
+        raw_files = sorted(p for p in raw_output.iterdir() if p.is_file() and p.name.startswith("style1_"))
+        for src in raw_files:
+            original = src.name[len("style1_") :]
+            stem = Path(original).stem
+            dst = images_out / f"{stem}_to_{target_style}.png"
+            with Image.open(src) as image:
+                ImageOps.exif_transpose(image).convert("RGB").save(dst)
+            copied += 1
+        print(f"[SaMST distinct5] epoch={epoch:04d} target={target_style} copied={copied}", flush=True)
+        return 0
+    finally:
+        _restore_optional_text(test_yml_path, original_test_yml)
 
 
 def main() -> int:

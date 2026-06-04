@@ -22,7 +22,7 @@
 | 线 | 状态 | 当前结论 |
 |---|---|---|
 | LANCET Distinct5-512 | 已完成 A-M 表征消融 | F 是 LPIPS 最优，H 是均衡点，K 是 style 最优 |
-| SaMAM Distinct5-512 | 远程 WSL b6 继续训练中 | 2000 step 已评估；style 和 LPIPS 当前最好，2250 正在跑 |
+| SaMAM Distinct5-512 | 已评估到 2250 step，后续收敛包待补齐 | 当前已评估点的 transfer CLIP-S 均低于 IDT；LPIPS 只记录发生了非零改动，不是失败定义 |
 | SaMAM b8 stress | 无效 | 约 step 64 出 NaN，不作为基线 |
 | SaMST Distinct5-512 | 已准备，未启动正式训练 | 等 SaMAM 收敛判断后再跑 |
 
