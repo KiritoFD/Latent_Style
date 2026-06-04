@@ -1,13 +1,12 @@
-"""Generate the Distinct5 page-1 summary figure.
+"""Generate the Distinct5 page-1 summary figure from the closed same-cost packet.
 
-The page-1 surface should carry three ideas at once:
-- IDT-calibrated transfer quality
-- adaptation cost on Distinct5-512
-- artifact-sensitive targetwise ArtFID
+Panel (a) keeps the user's preferred upper-right frontier:
+- x-axis: 1 - LPIPS
+- y-axis: transfer CLIP-S
+- dashed horizontal line: transfer-only IDT floor
+- bubble area: infer-750 wall time
 
-The left panel therefore uses a SaMam-style bubble chart, where circle area
-encodes cumulative training wall time. The right panel keeps the main
-artifact-sensitive comparison as a compact bar chart.
+Panel (b) shows direct inference cost in ms/image.
 """
 
 from __future__ import annotations
@@ -17,8 +16,6 @@ import math
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.lines import Line2D
 
 
 ROOT = Path(__file__).resolve().parent
@@ -27,32 +24,21 @@ POINTS_CSV = (
     REPO_ROOT
     / "SchrodingerBridge"
     / "docs"
-    / "experiments"
-    / "distinct5_512_20260602"
-    / "tables"
-    / "clip_style_vs_1lpips_full_transfer_points.csv"
+    / "timing"
+    / "distinct5_same_cost_20260605.csv"
 )
 OUT_DIR = ROOT / "figures"
-ARTFID_CSV = (
-    REPO_ROOT
-    / "SchrodingerBridge"
-    / "docs"
-    / "experiments"
-    / "comparison_20260602"
-    / "artfid_comparison_points.csv"
-)
+IDT_TRANSFER_CLIP_S = 0.6399208252628644
 
 plt.rcParams.update(
     {
         "font.family": "serif",
         "font.serif": ["Times New Roman", "DejaVu Serif"],
         "font.size": 9.5,
-        "axes.labelsize": 9.7,
+        "axes.labelsize": 9.8,
         "axes.titlesize": 10.2,
-        "xtick.labelsize": 7.8,
-        "ytick.labelsize": 7.8,
-        "legend.fontsize": 7.1,
-        "legend.frameon": False,
+        "xtick.labelsize": 8.1,
+        "ytick.labelsize": 8.1,
         "figure.dpi": 300,
         "savefig.dpi": 300,
         "savefig.bbox": "tight",
@@ -60,299 +46,193 @@ plt.rcParams.update(
         "axes.spines.top": False,
         "axes.spines.right": False,
         "axes.grid": True,
-        "grid.alpha": 0.25,
+        "grid.alpha": 0.23,
         "grid.linewidth": 0.6,
-        "grid.color": "#b0b0b0",
-        "lines.linewidth": 1.75,
+        "grid.color": "#B8B8B8",
     }
 )
 
 COLORS = {
-    "lancet": "#D64045",
-    "lancet_edge": "#8E2529",
-    "samam": "#2F7DB7",
-    "samam_edge": "#20567D",
-    "samst": "#2CA02C",
-    "samst_edge": "#1F6E1F",
-    "idt": "#8E63C0",
-    "text": "#333333",
-    "muted": "#5F6B74",
+    "LBM": "#D94F3D",
+    "LBM_edge": "#8F2E23",
+    "SaMAM": "#2F7DB7",
+    "SaMAM_edge": "#1D547C",
+    "SaMST": "#2B9A5A",
+    "SaMST_edge": "#1C6A3D",
+    "idt": "#7B61C8",
     "panel_bg": "#FCFBF8",
+    "text": "#2F2F2F",
+    "muted": "#5F6B74",
 }
 
+METHOD_ORDER = ["LBM", "SaMAM", "SaMST"]
 
-def read_transfer_rows() -> list[dict[str, object]]:
+
+def read_rows() -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
     with POINTS_CSV.open(newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
-            if row["scope"] != "transfer":
-                continue
-            rows.append(
-                {
-                    "family": row["family"],
-                    "label": row["label"],
-                    "step_or_epoch": row["step_or_epoch"],
-                    "clip_style": float(row["clip_style"]),
-                    "lpips": float(row["content_lpips"]),
-                    "x": float(row["one_minus_lpips"]),
-                    "train_min": float(row["train_min"]),
-                }
-            )
-    return rows
-
-
-def read_transfer_artfid_rows() -> list[dict[str, object]]:
-    rows: list[dict[str, object]] = []
-    with ARTFID_CSV.open(newline="", encoding="utf-8") as f:
-        for row in csv.DictReader(f):
-            if row["dataset"] != "distinct5_512" or row["scope"] != "transfer":
-                continue
             rows.append(
                 {
                     "method": row["method"],
                     "label": row["label"],
-                    "clip_style": float(row["clip_style"]),
-                    "lpips": float(row["content_lpips"]),
+                    "train_wall_seconds": float(row["train_wall_seconds"]),
+                    "train_minutes": float(row["train_minutes"]),
+                    "train_label": row["train_label"],
+                    "infer_wall_seconds": float(row["infer_wall_seconds"]),
+                    "infer_ms_per_image": float(row["infer_ms_per_image"]),
+                    "transfer_clip_style": float(row["transfer_clip_style"]),
+                    "transfer_content_lpips": float(row["transfer_content_lpips"]),
                     "one_minus_lpips": float(row["one_minus_lpips"]),
-                    "artfid": float(row["aggregate_art_fid"]),
-                    "train_time_label": row["train_time_label"],
+                    "transfer_delta_idt": float(row["transfer_delta_idt"]),
                 }
             )
     return rows
 
 
-def pick(rows: list[dict[str, object]], family: str, label: str) -> dict[str, object]:
+def pick(rows: list[dict[str, object]], method: str) -> dict[str, object]:
     for row in rows:
-        if row["family"] == family and row["label"] == label:
+        if row["method"] == method:
             return row
-    raise KeyError((family, label))
+    raise KeyError(method)
 
 
-def pick_artfid(rows: list[dict[str, object]], method: str, label: str) -> dict[str, object]:
-    for row in rows:
-        if row["method"] == method and row["label"] == label:
-            return row
-    raise KeyError((method, label))
+def bubble_area(infer_wall_seconds: float) -> float:
+    return 160.0 + 26.0 * math.sqrt(infer_wall_seconds)
 
 
-def annotate(
-    ax,
-    x: float,
-    y: float,
-    text: str,
-    dx: float,
-    dy: float,
-    color: str,
-    fontsize: float = 7.2,
-) -> None:
+def annotate_point(ax, row: dict[str, object], dx: float, dy: float) -> None:
+    method = str(row["method"])
     ax.annotate(
-        text,
-        (x, y),
+        f"{method}\n{row['train_label']} train",
+        (float(row["one_minus_lpips"]), float(row["transfer_clip_style"])),
         xytext=(dx, dy),
         textcoords="offset points",
         ha="left" if dx >= 0 else "right",
         va="center",
-        fontsize=fontsize,
-        color=color,
-        bbox=dict(boxstyle="round,pad=0.18", fc="white", ec=color, lw=0.55, alpha=0.90),
-        arrowprops=dict(arrowstyle="-", color=color, lw=0.55, shrinkA=2, shrinkB=3),
+        fontsize=7.35,
+        color=COLORS[method],
+        bbox=dict(
+            boxstyle="round,pad=0.2",
+            fc="white",
+            ec=COLORS[f"{method}_edge"],
+            lw=0.55,
+            alpha=0.93,
+        ),
+        arrowprops=dict(
+            arrowstyle="-",
+            color=COLORS[f"{method}_edge"],
+            lw=0.6,
+            shrinkA=2,
+            shrinkB=3,
+        ),
     )
-
-
-def bubble_area(train_min: float) -> float:
-    """Map minutes to readable bubble areas without erasing the minute-scale rows."""
-    if train_min <= 0.0:
-        return 0.0
-    scale = math.log10(train_min + 1.6)
-    return 42.0 + 72.0 * (scale ** 1.22)
-
-
-def time_label(train_min: float) -> str:
-    if train_min < 2.0:
-        return f"{train_min:.1f}m"
-    if train_min < 90.0:
-        return f"{train_min:.0f}m"
-    return f"{train_min / 60.0:.1f}h"
 
 
 def main() -> None:
-    rows = read_transfer_rows()
-    artfid_rows = read_transfer_artfid_rows()
+    rows = read_rows()
+    points = {method: pick(rows, method) for method in METHOD_ORDER}
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    idt = pick(rows, "Reference", "No-op transfer")
-    samst_e5 = pick(rows, "SaMST", "SaMST e5")
-    samst_e15 = pick(rows, "SaMST", "SaMST e15")
-    samam_2250 = pick(rows, "SaMAM", "SaMAM 2250")
-    lbm_f = pick(rows, "LANCET", "F e1")
-    lbm_h = pick(rows, "LANCET", "H e2")
-    lbm_k = pick(rows, "LANCET", "K e1")
-
-    samam_curve = [
-        row
-        for row in rows
-        if row["family"] == "SaMAM" and int(str(row["step_or_epoch"])) <= 2250
-    ]
-    samst_curve = [samst_e5, samst_e15]
-
-    art_idt = pick_artfid(artfid_rows, "idt", "idt")
-    art_samam = pick_artfid(artfid_rows, "SaMAM", "SaMAM best-lpips (2250)")
-    art_lbm_f = pick_artfid(artfid_rows, "LANCET", "LANCET best-lpips (F e1)")
-    art_lbm_k = pick_artfid(artfid_rows, "LANCET", "LANCET best-style (K e1)")
-    art_samst = pick_artfid(artfid_rows, "SaMST", "SaMST e15")
-
-    fig, axes = plt.subplots(1, 2, figsize=(7.15, 2.62), gridspec_kw={"width_ratios": [1.16, 0.94]})
+    fig, axes = plt.subplots(
+        1,
+        2,
+        figsize=(7.12, 2.48),
+        gridspec_kw={"width_ratios": [1.32, 0.74]},
+    )
 
     ax = axes[0]
     ax.set_facecolor(COLORS["panel_bg"])
-    ax.plot(
-        [row["x"] for row in samam_curve],
-        [row["clip_style"] for row in samam_curve],
-        color=COLORS["samam"],
-        linewidth=1.4,
-        label="SaMAM",
-        zorder=2.1,
-        alpha=0.85,
-    )
-
-    ax.scatter(
-        [row["x"] for row in samam_curve],
-        [row["clip_style"] for row in samam_curve],
-        s=[bubble_area(float(row["train_min"])) for row in samam_curve],
-        color=COLORS["samam"],
-        edgecolor="white",
-        linewidth=0.9,
-        alpha=0.86,
-        zorder=3,
-    )
-
-    ax.plot(
-        [row["x"] for row in samst_curve],
-        [row["clip_style"] for row in samst_curve],
-        color=COLORS["samst"],
-        linewidth=1.2,
-        alpha=0.75,
-        zorder=2.2,
-    )
-    ax.scatter(
-        [row["x"] for row in samst_curve],
-        [row["clip_style"] for row in samst_curve],
-        s=[bubble_area(float(row["train_min"])) for row in samst_curve],
-        color=COLORS["samst"],
-        edgecolor="white",
-        linewidth=1.0,
-        alpha=0.86,
-        zorder=3.3,
-        label="SaMST",
-    )
-
-    lbm_rows = [lbm_f, lbm_h, lbm_k]
-    ax.scatter(
-        [row["x"] for row in lbm_rows],
-        [row["clip_style"] for row in lbm_rows],
-        s=[bubble_area(float(row["train_min"])) for row in lbm_rows],
-        color=COLORS["lancet"],
-        edgecolor="white",
-        linewidth=1.0,
-        alpha=0.92,
-        zorder=4.5,
-        label="LBM",
-    )
-    ax.axhline(float(idt["clip_style"]), color=COLORS["idt"], lw=1.15, ls=(0, (7, 4)), zorder=1, label="IDT")
-    ax.text(
-        0.404,
-        float(idt["clip_style"]) + 0.004,
-        "IDT",
-        fontsize=9.9,
+    ax.axhline(
+        IDT_TRANSFER_CLIP_S,
         color=COLORS["idt"],
+        lw=1.25,
+        ls=(0, (7, 4)),
+        zorder=1,
+    )
+    ax.text(
+        0.018,
+        IDT_TRANSFER_CLIP_S + 0.006,
+        "IDT floor",
+        color=COLORS["idt"],
+        fontsize=8.0,
         weight="bold",
     )
 
-    annotate(ax, float(samst_e5["x"]), float(samst_e5["clip_style"]), f"e5 | {time_label(float(samst_e5['train_min']))}", 14, 12, COLORS["samst"], 7.25)
-    annotate(ax, float(samst_e15["x"]), float(samst_e15["clip_style"]), f"e15 | {time_label(float(samst_e15['train_min']))}", 14, -12, COLORS["samst"], 7.25)
-    annotate(ax, float(samam_2250["x"]), float(samam_2250["clip_style"]), f"2250 | {time_label(float(samam_2250['train_min']))}", 14, 10, COLORS["samam"], 7.25)
-    annotate(ax, float(lbm_f["x"]), float(lbm_f["clip_style"]), f"F | {time_label(float(lbm_f['train_min']))}", 14, -10, COLORS["lancet"], 7.25)
-    annotate(ax, float(lbm_h["x"]), float(lbm_h["clip_style"]), f"H | {time_label(float(lbm_h['train_min']))}", -6, -24, COLORS["lancet"], 7.05)
-    annotate(ax, float(lbm_k["x"]), float(lbm_k["clip_style"]), f"K | {time_label(float(lbm_k['train_min']))}", -34, 14, COLORS["lancet"], 7.25)
+    for method in METHOD_ORDER:
+        row = points[method]
+        ax.scatter(
+            float(row["one_minus_lpips"]),
+            float(row["transfer_clip_style"]),
+            s=bubble_area(float(row["infer_wall_seconds"])),
+            color=COLORS[method],
+            edgecolor="white",
+            linewidth=1.1,
+            alpha=0.92,
+            zorder=4,
+        )
+
+    annotate_point(ax, points["LBM"], -52, -24)
+    annotate_point(ax, points["SaMAM"], 14, -2)
+    annotate_point(ax, points["SaMST"], 34, -10)
     ax.text(
-        0.686,
-        0.528,
-        "bubble area $\\propto$ train wall",
+        0.698,
+        0.468,
+        "bubble area $\\propto$ infer-750 wall",
+        ha="right",
+        va="bottom",
         fontsize=7.0,
         style="italic",
         color=COLORS["muted"],
-        ha="right",
     )
-
+    ax.set_xlim(0.0, 0.72)
+    ax.set_ylim(0.46, 0.69)
     ax.set_xlabel(r"$1-\mathrm{LPIPS}$ $\uparrow$")
     ax.set_ylabel(r"Transfer CLIP-S $\uparrow$")
-    ax.set_xlim(0.342, 0.692)
-    ax.set_ylim(0.520, 0.707)
-    ax.set_title("(a) Transfer frontier", pad=3.5)
-    ax.legend(
-        [
-            Line2D([0], [0], color=COLORS["samam"], lw=1.8),
-            Line2D([0], [0], marker="o", linestyle="None", markerfacecolor=COLORS["samst"], markeredgecolor="white", markersize=8),
-            Line2D([0], [0], marker="o", linestyle="None", markerfacecolor=COLORS["lancet"], markeredgecolor="white", markersize=8),
-            Line2D([0], [0], color=COLORS["idt"], lw=1.5, ls=(0, (7, 4))),
-        ],
-        ["SaMAM", "SaMST", "LBM", "IDT"],
-        loc="upper left",
-        bbox_to_anchor=(0.0, -0.235),
-        ncol=4,
-        handletextpad=0.35,
-        columnspacing=0.8,
-        borderaxespad=0.0,
-    )
+    ax.set_title("(a) Same-cost Distinct5 frontier", pad=4.0)
 
     ax = axes[1]
     ax.set_facecolor(COLORS["panel_bg"])
-    labels = ["IDT", "SaMAM\n2250", "LBM-F", "LBM-K", "SaMST\ne15"]
-    artfid = [
-        float(art_idt["artfid"]),
-        float(art_samam["artfid"]),
-        float(art_lbm_f["artfid"]),
-        float(art_lbm_k["artfid"]),
-        float(art_samst["artfid"]),
-    ]
-    inside_labels = [
-        "IDT",
-        str(art_samam["train_time_label"]),
-        str(art_lbm_f["train_time_label"]),
-        str(art_lbm_k["train_time_label"]),
-        str(art_samst["train_time_label"]),
-    ]
-    colors = [COLORS["idt"], COLORS["samam"], COLORS["lancet"], COLORS["lancet"], COLORS["samst"]]
-    edges = [COLORS["idt"], COLORS["samam_edge"], COLORS["lancet_edge"], COLORS["lancet_edge"], COLORS["samst_edge"]]
-    bars = ax.bar(labels, artfid, color=colors, edgecolor=edges, linewidth=0.8, width=0.68)
-    for bar, value, inside in zip(bars, artfid, inside_labels):
+    labels = METHOD_ORDER
+    ms_values = [float(points[method]["infer_ms_per_image"]) for method in labels]
+    infer_wall = [float(points[method]["infer_wall_seconds"]) for method in labels]
+    bars = ax.bar(
+        labels,
+        ms_values,
+        color=[COLORS[method] for method in labels],
+        edgecolor=[COLORS[f"{method}_edge"] for method in labels],
+        linewidth=0.9,
+        width=0.62,
+        zorder=3,
+    )
+    for bar, ms_value, wall_value in zip(bars, ms_values, infer_wall):
         ax.text(
             bar.get_x() + bar.get_width() / 2.0,
-            bar.get_height() * 0.50,
-            inside,
-            ha="center",
-            va="center",
-            fontsize=10.6,
-            color="white",
-            weight="bold",
-        )
-        ax.text(
-            bar.get_x() + bar.get_width() / 2.0,
-            bar.get_height() + 12.0,
-            f"{value:.1f}",
+            bar.get_height() + 10.0,
+            f"{ms_value:.0f}",
             ha="center",
             va="bottom",
-            fontsize=8.5,
+            fontsize=8.4,
             color=COLORS["text"],
             weight="bold",
         )
-    ax.set_ylabel("Targetwise ArtFID")
-    ax.set_ylim(0, 495)
+        ax.text(
+            bar.get_x() + bar.get_width() / 2.0,
+            12.0,
+            f"{wall_value:.0f}s / 750",
+            ha="center",
+            va="bottom",
+            fontsize=7.0,
+            color="white",
+            weight="bold",
+        )
+    ax.set_ylabel("ms / image")
+    ax.set_ylim(0.0, 520.0)
     ax.grid(axis="y")
     ax.grid(axis="x", visible=False)
-    ax.set_title("(b) Artifact-sensitive check", pad=3.5)
+    ax.set_title("(b) Inference cost", pad=4.0)
 
-    fig.subplots_adjust(left=0.073, right=0.995, top=0.845, bottom=0.34, wspace=0.20)
+    fig.subplots_adjust(left=0.073, right=0.995, top=0.87, bottom=0.20, wspace=0.18)
     fig.savefig(OUT_DIR / "fig_distinct5_page1_summary.pdf")
     fig.savefig(OUT_DIR / "fig_distinct5_page1_summary.png")
     print(OUT_DIR / "fig_distinct5_page1_summary.pdf")

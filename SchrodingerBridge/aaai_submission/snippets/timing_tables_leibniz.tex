@@ -30,20 +30,19 @@ LBM & \textbf{5.2 min} & 85.4 s & 114 \\
 \centering
 \footnotesize
 \setlength{\tabcolsep}{4pt}
-\caption{Distinct5-512 recorded operating-point cost under the reviewed full $5\times5$ / 750-output packet. Reported train time is cumulative training wall-clock to the shown checkpoint, with evaluation excluded. This is recorded operating-point cost, not a normalized time-to-quality comparison.}
+\caption{Distinct5-512 same-cost records under the reviewed full $5\times5$ / 750-output packet. Train time is cumulative wall-clock to the shown checkpoint, with evaluation excluded; inference is pure 750-image generation wall time. This is recorded operating-point cost, not a normalized time-to-quality comparison.}
 \label{tab:cost_distinct5}
-\begin{tabular}{@{}lcc@{}}
+\begin{tabular}{@{}lcccc@{}}
 \toprule
-Method & Recorded point & Train to point \\
+Method & Recorded point & Train to point & Infer-750 & ms/img \\
 \midrule
-LBM-F & e1 & \textbf{1.2 min} \\
-LBM-K & e1 & \textbf{1.2 min} \\
-SaMAM & step 2250 & 7.6 h \\
-SaMST & e15 & 5.8 h \\
+LBM & step 350 & \textbf{1.9 min} & \textbf{84.4 s} & \textbf{113} \\
+SaMAM & step 16 & 2.2 min & 109.2 s & 146 \\
+SaMST & 40-step/style & 2.0 min & 345.7 s & 461 \\
 \bottomrule
 \end{tabular}
 
 \vspace{2pt}
-\parbox{0.98\linewidth}{\raggedright\footnotesize\textit{Note.} Distinct5 times are cumulative training wall only, with evaluation excluded. We intentionally omit a shared inference column because same-grade pure-generation timing is still incomplete for the active manuscript rows \texttt{SaMAM-2250} and \texttt{SaMST-e15}; leaving blanks would overstate closure. Post-2250 SaMAM timings are intentionally excluded.}
+\parbox{0.98\linewidth}{\raggedright\footnotesize\textit{Note.} These are the closed same-cost rows used on page~1: all three methods were trained to roughly the same two-minute budget before evaluation. The SaMST row follows the original fast setting with per-style step-40 checkpoints; the table reports its combined Distinct5 packet cost rather than a normalized time-to-quality claim.}
 \end{table}%
 }

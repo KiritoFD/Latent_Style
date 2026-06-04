@@ -855,10 +855,19 @@ def _load_eval_image_tensor(path: Path, size: int = 256) -> torch.Tensor:
 
 def _parse_generated_name(filename: str, style_names: list[str]) -> tuple[str, str, str] | None:
     """
-    Parse generated image name:
-    {src_style}_{src_stem}_to_{tgt_style}.png
+    Parse generated image names from both the native evaluator layout and the
+    baseline bridge scripts:
+    - {src_style}_{src_stem}_to_{tgt_style}.png
+    - {src_style}__{src_stem}__to__{tgt_style}.png
     """
     stem = Path(filename).stem
+    if "__to__" in stem:
+        left, tgt_style = stem.rsplit("__to__", 1)
+        if "__" in left:
+            src_style, src_stem = left.split("__", 1)
+            if src_style in style_names and tgt_style in style_names and src_stem:
+                return src_style, src_stem, tgt_style
+        return None
     if "_to_" not in stem:
         return None
     left, tgt_style = stem.rsplit("_to_", 1)
@@ -876,15 +885,23 @@ def _infer_style_names_from_generated_files(files: list[Path]) -> list[str]:
     styles = set()
     for p in files:
         stem = p.stem
-        if "_to_" not in stem:
+        if "__to__" in stem:
+            left, tgt = stem.rsplit("__to__", 1)
+            if tgt:
+                styles.add(str(tgt))
+            if "__" in left:
+                src_style = left.split("__", 1)[0]
+                if src_style:
+                    styles.add(str(src_style))
             continue
-        left, tgt = stem.rsplit("_to_", 1)
-        if tgt:
-            styles.add(str(tgt))
-        if "_" in left:
-            src_style = left.split("_", 1)[0]
-            if src_style:
-                styles.add(str(src_style))
+        if "_to_" in stem:
+            left, tgt = stem.rsplit("_to_", 1)
+            if tgt:
+                styles.add(str(tgt))
+            if "_" in left:
+                src_style = left.split("_", 1)[0]
+                if src_style:
+                    styles.add(str(src_style))
     return sorted(styles)
 
 
