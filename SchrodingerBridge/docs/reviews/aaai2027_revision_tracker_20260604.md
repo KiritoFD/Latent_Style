@@ -240,3 +240,13 @@ Commit checkpoint:
   IDT-floor community framing in the introduction and conclusion, and tightened
   the 256 qualitative captions around muddy grain artifacts versus cleaner
   brush continuity.
+- 2026-06-04: Batch 7 manuscript-mouth pass separated targetwise ArtFID from
+  the auxiliary aggregate ArtFID diagnostic directly in the metric explanation,
+  removed more internal workflow wording from the method/discussion/conclusion,
+  and wrote `aaai2027_history_reconciliation_after_batch8_20260604.md` to mark
+  which June 4 history items are now recovered versus what remains for the
+  final Phase-5 review gate.
+- 2026-06-04: Batch 8 identity-tightening pass removed the last live
+  `stochastic bridge` headline phrasing from the active method path and aligned
+  the conclusion with the same OT-coupled latent transport model identity used
+  in the body.
