@@ -959,6 +959,38 @@ def _resolve_existing_path(raw_path: str | None, base_dirs: list[Path]) -> Path 
     return None
 
 
+def _candidate_eval_image_roots(root: Path) -> list[Path]:
+    root_str = str(root)
+    candidates = [root]
+    if os.name == "nt":
+        preferred: list[Path] = []
+        if "_samam_512_classview_real" in root_str:
+            preferred.append(Path(root_str.replace("_samam_512_classview_real", "_512_images")))
+        elif "_samam_512_classview" in root_str:
+            preferred.append(Path(root_str.replace("_samam_512_classview", "_512_images")))
+        if "_classview" in root_str and "_classview_real" not in root_str:
+            preferred.append(Path(root_str.replace("_classview", "_classview_real")))
+        candidates = preferred + candidates
+
+    ordered: list[Path] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        key = str(candidate).lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        ordered.append(candidate)
+    return ordered
+
+
+def _prefer_readable_eval_image_root(root: Path) -> Path:
+    for candidate in _candidate_eval_image_roots(root):
+        if candidate.exists() and candidate != root:
+            print(f"[fallback] readable eval image root: {root} -> {candidate}")
+            return candidate
+    return root
+
+
 def _resolve_dir_path(raw_path: str | None, base_dirs: list[Path]) -> Path:
     """
     Resolve directory path predictably across different launch cwd.
@@ -1371,7 +1403,7 @@ def main():
     )
     if resolved_test_dir is None:
         raise ValueError(f"Test directory not found: {test_dir_raw}")
-    test_dir = resolved_test_dir
+    test_dir = _prefer_readable_eval_image_root(resolved_test_dir)
 
     style_subdirs = [x.strip() for x in str(args.style_subdirs).split(",") if x.strip()]
     if not style_subdirs:
