@@ -209,3 +209,9 @@ Commit checkpoint:
   `FloatBarrier` and checklist `\clearpage`, restored the checklist
   significance item to `Partial`, and rebuilt the paper to a `13`-page PDF
   without the end-of-paper blank-page regression.
+- 2026-06-04: Batch 2 tightened the Distinct5 claim surface: the abstract and
+  main Distinct5 paragraph now use the trusted `SaMAM 2250` boundary, the
+  closed `SaMST e5/e15` plateau wording is back, the main table dropped the
+  `SaMAM 2000` row and relabeled `tw-ArtFID`, and `fig_distinct5_pareto.*`
+  was regenerated so the SaMAM surface is a single trusted `2250` point rather
+  than a manuscript-visible checkpoint curve.
