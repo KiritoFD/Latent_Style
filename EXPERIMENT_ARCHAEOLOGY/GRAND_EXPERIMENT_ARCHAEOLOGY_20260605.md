@@ -167,7 +167,6 @@ The local tree is clean with respect to the previously targeted non-mainline che
 The local tree is not "zero weights", and it should not be. Remaining major classes:
 
 - formal WikiArt512 timing anchor weights;
-- local Distinct5 VRAM/probe residue;
 - metric dependencies;
 - data/feature/latent caches;
 - baseline dependency weights;
@@ -175,14 +174,14 @@ The local tree is not "zero weights", and it should not be. Remaining major clas
 
 ### Local next cleanup candidates
 
-The only meaningful local model-weight candidate found in this pass is:
+The earlier local model-weight candidate was refreshed in the continuation pass:
 
 - `SchrodingerBridge/exp/local_wsl_distinct5_512_ema_k_b16_step2min_vramprobe`
-  - 3 files
-  - 203.052 MB
-  - class: local probe checkpoint residue
+  - previous scan: 3 files, 203.052 MB
+  - current scan: 0 files, 0 MB
+  - current class: stale probe checkpoint candidate
 
-This was not deleted because it was not in the already-approved cleanup set and this pass did not introduce new destructive actions. If the next cleanup round is approved, copy its config/log/summary references into a ledger first, then delete the three weights.
+No delete was performed in this continuation because the directory/weights were no longer present when reopened. Current local `SchrodingerBridge/exp` exact extension scan has only 9 weight-like files: 8 formal WikiArt512 epoch weights and 1 ArtFID metric dependency.
 
 Tiny `fake_eval_checkpoint.pt` placeholders exist in baseline result folders. They save almost no disk and may be referenced by result metadata. They belong in a separate placeholder-only cleanup policy, not a disk-recovery pass.
 
