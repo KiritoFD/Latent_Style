@@ -1400,6 +1400,12 @@ def main():
     else:
         print("Single-run eval in reuse-only mode (no checkpoint).")
 
+    # Generation-only probe runs are usually used for timing. Unless the caller
+    # explicitly requests a collage, keep summary-grid export off so the timing
+    # reflects generation rather than post-processing overhead.
+    if args.generation_only and not _cli_provided("save_summary_grid"):
+        args.save_summary_grid = False
+
     image_save_workers = max(1, int(args.image_save_workers))
     io_pool = ThreadPoolExecutor(max_workers=image_save_workers)
     
