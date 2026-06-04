@@ -68,6 +68,7 @@ SchrodingerBridge/aaai_submission/fix_colors.py
 
 # Bulk external baseline checkouts and generated results
 Related_Works/repos/**
+Related_Works/runs/**
 Related_Works/run_511/repos/**
 Related_Works/baseline_pipeline/results/**
 Related_Works/baseline_pipeline/manual_grid_requests/**
