@@ -1,0 +1,26 @@
+% Minimal Distinct5 timing sidecar snippet.
+% Evidence roots:
+% - docs/experiments/2026-06-04-distinct5_same_cost_inventory.csv
+% - docs/experiments/distinct5_512_20260602/baseline_packet_status_20260604/README.md
+
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{Distinct5-512 recorded operating-point cost under the reviewed full $5\times5$ / 750-output packet. Reported train time is cumulative training wall-clock to the shown checkpoint, with evaluation excluded.}
+\label{tab:cost_distinct5_sidecar}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Method & Recorded point & Train to point \\
+\midrule
+LBM-F & e1 & \textbf{1.2 min} \\
+LBM-K & e1 & \textbf{1.2 min} \\
+SaMST & e5 & 1.9 h \\
+SaMST & e15 & 5.8 h \\
+SaMAM & step 2250 & 7.6 h \\
+\bottomrule
+\end{tabular}
+
+\vspace{2pt}
+\parbox{0.98\linewidth}{\raggedright\footnotesize\textit{Note.} We intentionally omit a shared inference column because packet-bound pure-generation timing is only retained for \texttt{SaMST e5} (\texttt{430.8 ms/img}); active manuscript rows such as \texttt{SaMST e15} and \texttt{SaMAM 2250} do not have matching retained inference logs. Partial or audit-only rows such as \texttt{LBM K-longer e4} and \texttt{SaMAM 3000} are excluded.}
+\end{table}
