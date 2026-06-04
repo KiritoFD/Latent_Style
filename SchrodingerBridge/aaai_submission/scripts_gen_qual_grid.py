@@ -3,13 +3,20 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 ROOT = Path(__file__).resolve().parent
-OURS = ROOT.parent / "S-add__K-1_C-0_W-20_Col-0" / "full_eval" / "epoch_0007" / "images"
-SAMST = ROOT.parent.parent / "Related_Works" / "run_511" / "complete_750" / "samst_strict" / "images"
+OURS = ROOT.parent / "exp" / "paper" / "paper_main_750_bundle" / "ours_ec_best"
+SAMST = ROOT.parent / "exp" / "paper" / "paper_main_750_bundle" / "samst"
 OUT = ROOT / "figures"
 FINAL = ROOT / "final"
 OUT.mkdir(exist_ok=True)
 
 DOMAINS = ["photo", "Hayao", "monet", "vangogh", "cezanne"]
+SELECTED_ROWS = {
+    "photo": "2013-11-12 10_29_19",
+    "Hayao": "0",
+    "monet": "00286",
+    "vangogh": "00005",
+    "cezanne": "00204",
+}
 CELL = 128
 LABEL_W = 86
 LABEL_H = 34
@@ -32,12 +39,12 @@ FONT_B = font(16)
 
 
 def pick_image(img_dir: Path, src: str, tgt: str):
-    matches = sorted(img_dir.glob(f"{src}_*_to_{tgt}.jpg"))
-    if not matches:
-        matches = sorted(img_dir.glob(f"{src}_*_to_{tgt}.png"))
-    if not matches:
-        raise FileNotFoundError(f"No image for {src} -> {tgt} under {img_dir}")
-    return matches[0]
+    stem = f"{src}_{SELECTED_ROWS[src]}_to_{tgt}"
+    for ext in (".jpg", ".png"):
+        p = img_dir / f"{stem}{ext}"
+        if p.exists():
+            return p
+    raise FileNotFoundError(f"Missing curated grid image {stem} under {img_dir}")
 
 
 def make_grid(img_dir: Path, title: str, out_path: Path):
@@ -86,4 +93,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
