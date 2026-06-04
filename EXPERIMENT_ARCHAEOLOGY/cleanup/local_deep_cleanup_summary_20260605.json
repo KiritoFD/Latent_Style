@@ -1,0 +1,59 @@
+﻿{
+    "candidate_csv":  "G:\\GitHub\\Latent_Style\\EXPERIMENT_ARCHAEOLOGY\\cleanup\\local_deep_cleanup_candidates_20260605.csv",
+    "deleted_csv":  "G:\\GitHub\\Latent_Style\\EXPERIMENT_ARCHAEOLOGY\\cleanup\\local_deep_cleanup_deleted_20260605.csv",
+    "total_candidates":  16797,
+    "deleted_count":  16797,
+    "missing_before_delete_count":  0,
+    "failed_count":  0,
+    "deleted_mb":  9620.094,
+    "removed_empty_dirs_count":  293,
+    "removed_empty_dirs_sample":  [
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\smoke_n0_windows",
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\sdxl_latent_smoke_run\\src\\utils",
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\sdxl_latent_smoke_run\\src",
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\sdxl_latent_smoke_run\\logs",
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\sdxl_latent_smoke_run",
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\sdxl_latent_smoke\\train\\Ukiyo_e",
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\sdxl_latent_smoke\\train\\Rococo",
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\sdxl_latent_smoke\\train\\Minimalism",
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\sdxl_latent_smoke\\train\\Impressionism",
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\sdxl_latent_smoke\\train\\Early_Renaissance",
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\sdxl_latent_smoke\\train\\.latent_cache\\packed",
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\sdxl_latent_smoke\\train\\.latent_cache",
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\sdxl_latent_smoke\\train",
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\sdxl_latent_smoke",
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\sdxl_fix_latent_smoke_run\\src\\utils",
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\sdxl_fix_latent_smoke_run\\src",
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\sdxl_fix_latent_smoke_run\\logs",
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\sdxl_fix_latent_smoke_run",
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\sdxl_fix_latent_smoke\\train\\Ukiyo_e",
+                                      "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\_codex_tmp\\sdxl_fix_latent_smoke\\train\\Rococo"
+                                  ],
+    "classes":  [
+                    {
+                        "delete_class":  "related_works_stepcalib_checkpoint",
+                        "files":  28,
+                        "mb":  2799.082
+                    },
+                    {
+                        "delete_class":  "schrodingerbridge_local_calib_checkpoint",
+                        "files":  18,
+                        "mb":  1218.315
+                    },
+                    {
+                        "delete_class":  "sdxl_fix_negative_checkpoint",
+                        "files":  8,
+                        "mb":  541.471
+                    },
+                    {
+                        "delete_class":  "sdxl_fix_negative_generated_image",
+                        "files":  6000,
+                        "mb":  592.919
+                    },
+                    {
+                        "delete_class":  "temp_codex_workspace",
+                        "files":  10743,
+                        "mb":  4468.308
+                    }
+                ]
+}
