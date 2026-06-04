@@ -1,0 +1,510 @@
+{
+  "date": "2026-06-04",
+  "scope": "Distinct5-512 baseline evidence packet status from existing artifacts only",
+  "remote_gpu_idle_snapshot": {
+    "timestamp": "2026-06-04 11:37:50",
+    "gpu": "NVIDIA Graphics Device",
+    "utilization_gpu_percent": 6,
+    "memory_used_mib": 613,
+    "memory_total_mib": 12288,
+    "new_training_started": false
+  },
+  "idt": {
+    "metrics_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\idt_eval_20260602\\distinct5_512\\idt_5x5\\metrics.csv",
+    "transfer_clip_style_mean": 0.6399224616587162
+  },
+  "active_manuscript_boundary": {
+    "scope": "active_aaai_lbm_manuscript_path",
+    "valid_samam_max_step": 2250,
+    "manuscript_row": {
+      "label": "SaMAM 2250",
+      "transfer_clip_style": 0.5523,
+      "transfer_content_lpips": 0.3605,
+      "targetwise_artfid": 148.2,
+      "delta_vs_idt_clip_style": -0.0877,
+      "train_minutes": 458.6
+    },
+    "disallow_steps": [
+      2500,
+      2750,
+      3000,
+      3250
+    ],
+    "rule": "Post-2250 SaMAM outputs are reproduction-chain failures unless a clean independent rerun closes a new aligned packet.",
+    "note": "Do not use 2500/3000/3250 as positive-IDT manuscript evidence. Do not use 394.8 or 10.2h in the active manuscript path."
+  },
+  "samst": {
+    "e5": {
+      "status": "closed",
+      "summary_json": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samst_distinct5_512_real_b1_e5_20260603\\eval_bundle\\eval_epoch5\\epoch_0005\\summary.json",
+      "metrics_csv": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samst_distinct5_512_real_b1_e5_20260603\\eval_bundle\\eval_epoch5\\epoch_0005\\metrics.csv",
+      "artfid_json": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samst_distinct5_512_real_b1_e5_20260603\\eval_bundle\\eval_epoch5\\epoch_0005\\aggregate_targetwise_artfid.json",
+      "inference_log": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samst_distinct5_512_real_b1_e5_20260603\\eval_bundle\\eval_epoch5\\generate.log",
+      "full": {
+        "count": 750,
+        "clip_style": 0.7275811868111293,
+        "content_lpips": 0.62706939536,
+        "targetwise_artfid": 432.05110832151115
+      },
+      "transfer": {
+        "count": 600,
+        "clip_style": 0.6989188100397586,
+        "content_lpips": 0.6334999498166667,
+        "targetwise_artfid": 465.68604182547176,
+        "delta_vs_idt_clip_style": 0.05899634838104248
+      },
+      "timing": {
+        "train_wall_seconds": 6958.502907,
+        "eval_wall_seconds": 22.22055460000047,
+        "inference_wall_seconds": 323.071,
+        "inference_ms_per_img": 430.76133333333337,
+        "inference_timing_status": "recovered_from_generate_log"
+      },
+      "alignment": {
+        "aligned_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\distinct5_512_20260602\\baseline_packet_status_20260604\\samst_e5_idt_aligned_rows.csv",
+        "idt_rows": 750,
+        "method_rows": 750,
+        "common_rows": 750,
+        "missing_in_method": 0,
+        "missing_in_idt": 0,
+        "transfer_rows": 600
+      },
+      "missing_fields": []
+    },
+    "e15": {
+      "status": "partial",
+      "summary_json": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samst_distinct5_512_real_b2_e15_20260602\\eval_epoch15\\epoch_0015\\summary.json",
+      "metrics_csv": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samst_distinct5_512_real_b2_e15_20260602\\eval_epoch15\\epoch_0015\\metrics.csv",
+      "artfid_json": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samst_distinct5_512_real_b2_e15_20260602\\eval_epoch15\\epoch_0015\\aggregate_targetwise_artfid.json",
+      "full": {
+        "count": 750,
+        "clip_style": 0.7247245136102041,
+        "content_lpips": 0.6255497488,
+        "targetwise_artfid": 395.71170712852535
+      },
+      "transfer": {
+        "count": 600,
+        "clip_style": 0.69574123164018,
+        "content_lpips": 0.6319495817333334,
+        "targetwise_artfid": 444.4870406090582,
+        "delta_vs_idt_clip_style": 0.05581876998146375
+      },
+      "timing": {
+        "train_wall_seconds": 20835.399642,
+        "eval_wall_seconds": 157.24350110000523,
+        "inference_wall_seconds": null,
+        "inference_ms_per_img": null,
+        "external_timing_note_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-01-main-table-gap-analysis.md",
+        "external_timing_note_seconds": 126.22,
+        "external_timing_note_ms_per_img": 168.0,
+        "inference_timing_status": "not_packet_bound_for_this_run_root"
+      },
+      "alignment": {
+        "aligned_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\distinct5_512_20260602\\baseline_packet_status_20260604\\samst_e15_idt_aligned_rows.csv",
+        "idt_rows": 750,
+        "method_rows": 750,
+        "common_rows": 750,
+        "missing_in_method": 0,
+        "missing_in_idt": 0,
+        "transfer_rows": 600
+      },
+      "missing_fields": [
+        "same-run-root inference wall seconds",
+        "same-run-root inference ms/img"
+      ]
+    }
+  },
+  "samam": {
+    "authoritative_root": "I:\\Github\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samam_distinct5_512_mamba_b6_seg250_remote_wsl_20260601_2130_diag",
+    "visible_checkpoints": [
+      {
+        "label": "step_000250",
+        "location": "remote_authoritative",
+        "full_clip_style": 0.5479905153512955,
+        "full_content_lpips": 0.60062504418691,
+        "transfer_clip_style": 0.5384821421901385,
+        "transfer_content_lpips": 0.6031061978948197,
+        "targetwise_artfid": null,
+        "train_wall_seconds_cumulative": 3191.26,
+        "inference_timing_status": "missing",
+        "row_alignment_status": "not_audited_but_metrics_csv_present",
+        "missing_fields": [
+          "targetwise ArtFID",
+          "same-scope eval wall seconds",
+          "same-scope inference wall seconds",
+          "same-scope inference ms/img",
+          "IDT-aligned row report"
+        ]
+      },
+      {
+        "label": "step_000500",
+        "location": "remote_authoritative",
+        "full_clip_style": 0.5629966173171997,
+        "full_content_lpips": 0.5424447286427021,
+        "transfer_clip_style": 0.5503247191011905,
+        "transfer_content_lpips": 0.5441844119752447,
+        "targetwise_artfid": null,
+        "train_wall_seconds_cumulative": 6285.47,
+        "inference_timing_status": "missing",
+        "row_alignment_status": "not_audited_but_metrics_csv_present",
+        "missing_fields": [
+          "targetwise ArtFID",
+          "same-scope eval wall seconds",
+          "same-scope inference wall seconds",
+          "same-scope inference ms/img",
+          "IDT-aligned row report"
+        ]
+      },
+      {
+        "label": "step_000750",
+        "location": "remote_authoritative",
+        "full_clip_style": 0.5657316401004792,
+        "full_content_lpips": 0.5359654448231062,
+        "transfer_clip_style": 0.5529796651999156,
+        "transfer_content_lpips": 0.539769857575496,
+        "targetwise_artfid": null,
+        "train_wall_seconds_cumulative": 9473.03,
+        "inference_timing_status": "missing",
+        "row_alignment_status": "not_audited_but_metrics_csv_present",
+        "missing_fields": [
+          "targetwise ArtFID",
+          "same-scope eval wall seconds",
+          "same-scope inference wall seconds",
+          "same-scope inference ms/img",
+          "IDT-aligned row report"
+        ]
+      },
+      {
+        "label": "step_001000",
+        "location": "remote_authoritative",
+        "full_clip_style": 0.5659095385869344,
+        "full_content_lpips": 0.460542116244634,
+        "transfer_clip_style": 0.548401187111934,
+        "transfer_content_lpips": 0.4639691362529993,
+        "targetwise_artfid": null,
+        "train_wall_seconds_cumulative": 12523.23,
+        "inference_timing_status": "missing",
+        "row_alignment_status": "not_audited_but_metrics_csv_present",
+        "missing_fields": [
+          "targetwise ArtFID",
+          "same-scope eval wall seconds",
+          "same-scope inference wall seconds",
+          "same-scope inference ms/img",
+          "IDT-aligned row report"
+        ]
+      },
+      {
+        "label": "step_001250",
+        "location": "remote_authoritative",
+        "full_clip_style": 0.5780386782089869,
+        "full_content_lpips": 0.4429448606769244,
+        "transfer_clip_style": 0.5571828408539296,
+        "transfer_content_lpips": 0.44870330243060985,
+        "targetwise_artfid": null,
+        "train_wall_seconds_cumulative": 15544.85,
+        "inference_timing_status": "missing",
+        "row_alignment_status": "not_audited_but_metrics_csv_present",
+        "missing_fields": [
+          "targetwise ArtFID",
+          "same-scope eval wall seconds",
+          "same-scope inference wall seconds",
+          "same-scope inference ms/img",
+          "IDT-aligned row report"
+        ]
+      },
+      {
+        "label": "step_001500",
+        "location": "remote_authoritative",
+        "full_clip_style": 0.5805252346197765,
+        "full_content_lpips": 0.4128264354666074,
+        "transfer_clip_style": 0.5544854444265366,
+        "transfer_content_lpips": 0.4140111594026287,
+        "targetwise_artfid": null,
+        "train_wall_seconds_cumulative": 18570.19,
+        "inference_timing_status": "missing",
+        "row_alignment_status": "not_audited_but_metrics_csv_present",
+        "missing_fields": [
+          "targetwise ArtFID",
+          "same-scope eval wall seconds",
+          "same-scope inference wall seconds",
+          "same-scope inference ms/img",
+          "IDT-aligned row report"
+        ]
+      },
+      {
+        "label": "step_001750",
+        "location": "remote_authoritative",
+        "full_clip_style": 0.5776164135138194,
+        "full_content_lpips": 0.37724381402134893,
+        "transfer_clip_style": 0.5491809284687043,
+        "transfer_content_lpips": 0.3795578622693817,
+        "targetwise_artfid": null,
+        "train_wall_seconds_cumulative": 21618.3,
+        "inference_timing_status": "missing",
+        "row_alignment_status": "not_audited_but_metrics_csv_present",
+        "missing_fields": [
+          "targetwise ArtFID",
+          "same-scope eval wall seconds",
+          "same-scope inference wall seconds",
+          "same-scope inference ms/img",
+          "IDT-aligned row report"
+        ]
+      },
+      {
+        "label": "step_002000",
+        "location": "remote_authoritative",
+        "full_clip_style": 0.5833460243542989,
+        "full_content_lpips": 0.36215300556023916,
+        "transfer_clip_style": 0.5545786788066228,
+        "transfer_content_lpips": 0.3691024965047836,
+        "targetwise_artfid": null,
+        "train_wall_seconds_cumulative": 24574.96,
+        "inference_timing_status": "missing",
+        "row_alignment_status": "not_audited_but_metrics_csv_present",
+        "missing_fields": [
+          "targetwise ArtFID",
+          "same-scope eval wall seconds",
+          "same-scope inference wall seconds",
+          "same-scope inference ms/img",
+          "IDT-aligned row report"
+        ]
+      },
+      {
+        "label": "step_002250",
+        "location": "remote_authoritative",
+        "full_clip_style": 0.5810966821114222,
+        "full_content_lpips": 0.35382040921847024,
+        "transfer_clip_style": 0.5522515382866064,
+        "transfer_content_lpips": 0.3604523678372304,
+        "targetwise_artfid": null,
+        "train_wall_seconds_cumulative": 27513.02,
+        "inference_timing_status": "missing",
+        "row_alignment_status": "not_audited_but_metrics_csv_present",
+        "missing_fields": [
+          "targetwise ArtFID",
+          "same-scope eval wall seconds",
+          "same-scope inference wall seconds",
+          "same-scope inference ms/img",
+          "IDT-aligned row report"
+        ]
+      },
+      {
+        "label": "step_002500",
+        "location": "remote_authoritative",
+        "full_clip_style": 0.6903848778009415,
+        "full_content_lpips": 0.31797249738666655,
+        "transfer_clip_style": 0.6562334450582663,
+        "transfer_content_lpips": 0.32257166754999977,
+        "targetwise_artfid": null,
+        "train_wall_seconds_cumulative": 30454.44,
+        "eval_wall_seconds": 287.27,
+        "inference_timing_status": "missing",
+        "row_alignment_status": "recoverable_from_metrics_csv_present",
+        "artifact_note": "artfid reuse metrics.csv present; summary.json exists but is zero-byte",
+        "missing_fields": [
+          "valid targetwise ArtFID summary",
+          "same-scope inference wall seconds",
+          "same-scope inference ms/img",
+          "IDT-aligned row report"
+        ]
+      },
+      {
+        "label": "step_002750",
+        "location": "remote_authoritative",
+        "full_clip_style": 0.5866430973211925,
+        "full_content_lpips": 0.36325396479666233,
+        "transfer_clip_style": 0.5588583722710609,
+        "transfer_content_lpips": 0.3744176660043498,
+        "targetwise_artfid": null,
+        "train_wall_seconds_cumulative": 33598.82,
+        "eval_wall_seconds": 282.06,
+        "inference_timing_status": "missing",
+        "row_alignment_status": "recoverable_from_metrics_csv_present",
+        "artifact_note": "artfid reuse directory exists but contains images only",
+        "missing_fields": [
+          "targetwise ArtFID",
+          "same-scope inference wall seconds",
+          "same-scope inference ms/img",
+          "IDT-aligned row report"
+        ]
+      },
+      {
+        "label": "step_003000",
+        "location": "remote_authoritative",
+        "full_clip_style": 0.6978010030587514,
+        "full_content_lpips": 0.3220869704133334,
+        "transfer_clip_style": 0.6646182161569595,
+        "transfer_content_lpips": 0.3270938639666667,
+        "targetwise_artfid": 394.76620834787985,
+        "train_wall_seconds_cumulative": 36755.07,
+        "eval_wall_seconds": 289.31,
+        "inference_timing_status": "missing",
+        "row_alignment_status": "closed",
+        "missing_fields": [
+          "same-scope inference wall seconds",
+          "same-scope inference ms/img"
+        ]
+      },
+      {
+        "label": "step_003250",
+        "location": "local_only",
+        "full_clip_style": 0.6970079632600148,
+        "full_content_lpips": 0.309583354,
+        "transfer_clip_style": 0.6626959599057833,
+        "transfer_content_lpips": 0.3145874887666666,
+        "targetwise_artfid": 389.6994417006814,
+        "train_wall_seconds_cumulative": null,
+        "eval_wall_seconds": 32.546313071999975,
+        "inference_timing_status": "missing",
+        "row_alignment_status": "closed",
+        "missing_fields": [
+          "authoritative sync under I: result root",
+          "cumulative train wall seconds",
+          "same-scope inference wall seconds",
+          "same-scope inference ms/img"
+        ]
+      }
+    ],
+    "final_checkpoint": {
+      "label": "step_003000",
+      "status": "closed",
+      "summary_json": "I:\\Github\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samam_distinct5_512_mamba_b6_seg250_remote_wsl_20260601_2130_diag\\eval_curve\\step_003000_artfid_reuse\\summary.json",
+      "metrics_csv": "I:\\Github\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samam_distinct5_512_mamba_b6_seg250_remote_wsl_20260601_2130_diag\\eval_curve\\step_003000_artfid_reuse\\metrics.csv",
+      "timing_log": "I:\\Github\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samam_distinct5_512_mamba_b6_seg250_remote_wsl_20260601_2130_diag\\segmented.log",
+      "full": {
+        "count": 750,
+        "clip_style": 0.6978010030587514,
+        "content_lpips": 0.3220869704133334,
+        "targetwise_artfid": 345.60174531483347
+      },
+      "transfer": {
+        "count": 600,
+        "clip_style": 0.6646182161569595,
+        "content_lpips": 0.3270938639666667,
+        "targetwise_artfid": 394.76620834787985,
+        "delta_vs_idt_clip_style": 0.024695754498243304
+      },
+      "timing": {
+        "train_wall_seconds_cumulative": 36755.07,
+        "eval_wall_seconds": 289.31,
+        "inference_wall_seconds": null,
+        "inference_ms_per_img": null,
+        "inference_timing_status": "missing_from_current_packet"
+      },
+      "alignment": {
+        "idt_rows": 750,
+        "method_rows": 750,
+        "common_rows": 750,
+        "missing_in_method": 0,
+        "missing_in_idt": 0,
+        "alignment_rule": "normalize only the IDT src_image prefix src_style__ before comparing (src_style, tgt_style, src_image)"
+      },
+      "missing_fields": [
+        "same-scope inference wall seconds",
+        "same-scope inference ms/img"
+      ]
+    },
+    "tuned_candidate": {
+      "label": "step_003250",
+      "status": "partial",
+      "summary_json": "/home/xy/samam_eval_local/step_003250_artfid_reuse2/summary.json",
+      "metrics_csv": "/home/xy/samam_eval_local/step_003250_artfid_reuse2/metrics.csv",
+      "curve_json": "/home/xy/samam_eval_local/step_003250_curve_named/curve_metrics.json",
+      "full": {
+        "count": 750,
+        "clip_style": 0.6970079632600148,
+        "content_lpips": 0.309583354,
+        "targetwise_artfid": 338.8172387964906
+      },
+      "transfer": {
+        "count": 600,
+        "clip_style": 0.6626959599057833,
+        "content_lpips": 0.3145874887666666,
+        "targetwise_artfid": 389.6994417006814,
+        "delta_vs_idt_clip_style": 0.02277349824706705
+      },
+      "timing": {
+        "train_wall_seconds_cumulative": null,
+        "eval_wall_seconds": 32.546313071999975,
+        "inference_wall_seconds": null,
+        "inference_ms_per_img": null
+      },
+      "alignment": {
+        "idt_rows": 750,
+        "method_rows": 750,
+        "common_rows": 750,
+        "missing_in_method": 0,
+        "missing_in_idt": 0
+      },
+      "missing_fields": [
+        "authoritative sync under I: result root",
+        "cumulative train wall seconds",
+        "same-scope inference wall seconds",
+        "same-scope inference ms/img"
+      ]
+    }
+  },
+  "paper_wording_upgrade": "No active-manuscript SaMAM upgrade beyond step_002250",
+  "paper_wording_note": "Artifact audit may observe later SaMAM packets, but the active manuscript path is capped at SaMAM 2250 by user boundary. Post-2250 outputs are not manuscript-authoritative unless a clean independent rerun closes a new aligned packet.",
+  "short_job_assessment": {
+    "new_training_allowed_without_approval": false,
+    "safe_short_jobs_without_training": [
+      {
+        "name": "samst_e15_generation_timing_only",
+        "needed_for": [
+          "same-run-root inference wall seconds",
+          "same-run-root inference ms/img"
+        ],
+        "safe_now": true,
+        "why_safe": "uses existing e15 checkpoint and Distinct5 test set only; no training or checkpoint mutation required"
+      },
+      {
+        "name": "samam_3000_generation_timing_only",
+        "needed_for": [
+          "audit history only; not active manuscript evidence"
+        ],
+        "safe_now": false,
+        "why_safe": "post-2250 SaMAM is excluded from the active manuscript path unless a clean independent rerun supersedes the boundary"
+      },
+      {
+        "name": "samam_2500_artfid_packet_repair",
+        "needed_for": [
+          "audit history only; not active manuscript evidence"
+        ],
+        "safe_now": false,
+        "why_safe": "post-2250 SaMAM is excluded from the active manuscript path unless a clean independent rerun supersedes the boundary"
+      },
+      {
+        "name": "samam_2750_targetwise_artfid_eval_only",
+        "needed_for": [
+          "audit history only; not active manuscript evidence"
+        ],
+        "safe_now": false,
+        "why_safe": "post-2250 SaMAM is excluded from the active manuscript path unless a clean independent rerun supersedes the boundary"
+      }
+    ],
+    "remote_gpu_snapshot_latest": {
+      "timestamp": "2026-06-04 13:05:55",
+      "utilization_gpu_percent": 25,
+      "memory_used_mib": 719,
+      "memory_total_mib": 12288,
+      "interpretation": "idle for experiment purposes; only light desktop/background usage visible"
+    }
+  },
+  "remaining_partial_fields": {
+    "samst_e15": [
+      "same-run-root inference wall seconds",
+      "same-run-root inference ms/img"
+    ],
+    "samam_3000": [
+      "same-scope inference wall seconds",
+      "same-scope inference ms/img"
+    ],
+    "samam_3250": [
+      "authoritative sync under I: result root",
+      "cumulative train wall seconds",
+      "same-scope inference wall seconds",
+      "same-scope inference ms/img"
+    ]
+  }
+}

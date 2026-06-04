@@ -118,23 +118,23 @@ FIGURE_CAPTIONS = {
 # Color Schemes
 # ============================================================================
 QUALITY_COLORS = {
-    'Ours e7': '#E74C3C', 
-    'Ours e8': '#E74C3C', 
-    'SaMST': '#F39C12', 
-    'S2WAT': '#8E44AD', 
-    'AdaIN': '#2ECC71', 
-    'StyleID': '#3498DB', 
-    'CAST': '#95A5A6'
+    'Ours e7': '#C44E52', 
+    'Ours e8': '#C44E52', 
+    'SaMST': '#55A868', 
+    'S2WAT': '#8172B2', 
+    'AdaIN': '#4C72B0', 
+    'StyleID': '#64B5CD', 
+    'CAST': '#8C8C8C'
 }
 
 # ============================================================================
 # Plot Configuration
 # ============================================================================
 PLOT_CONFIG = {
-    "font_family": "DejaVu Sans",
-    "font_size": 10,
-    "axes_titlesize": 12,
-    "axes_labelsize": 10,
-    "legend_fontsize": 8,
-    "figure_dpi": 150,
+    "font_family": "serif",
+    "font_size": 11,
+    "axes_titlesize": 13,
+    "axes_labelsize": 11,
+    "legend_fontsize": 9,
+    "figure_dpi": 300,
 }

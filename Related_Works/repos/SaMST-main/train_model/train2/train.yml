@@ -1,4 +1,4 @@
-ae_weight: 1000.0
+﻿ae_weight: 1000.0
 batch_size: 1
 begin_checkpoint: null
 begin_epoch: null

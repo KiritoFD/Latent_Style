@@ -293,3 +293,86 @@ Do not combine these into one commit:
 
 Each slice has a different review burden and should remain independently
 revertible.
+
+## Current live delta after the SaMST Distinct5 `e5` rerun setup
+
+This subsection narrows the *actual* remaining dirty worktree after the
+stabilized local SaMST rerun helpers and inventory pass.
+
+### Slice J: SaMST Distinct5 convergence helper surface
+
+Status:
+
+- commit-safe after the current `e5` run finishes or after a final helper smoke
+  pass
+
+Files:
+
+- `Related_Works/baseline_pipeline/scripts/run_samst_distinct5_local.py`
+- `Related_Works/baseline_pipeline/scripts/generate_samst_distinct5_eval.py`
+- `Related_Works/baseline_pipeline/scripts/run_samst_distinct5_eval_bundle.py`
+- `Related_Works/baseline_pipeline/scripts/compare_samst_distinct5_epochs.py`
+- `Related_Works/baseline_pipeline/scripts/watch_samst_distinct5_run_and_eval.ps1`
+- `docs/experiments/2026-06-03-samst-distinct5-e5-rerun.md`
+
+Observed change:
+
+- local SaMST rerun now defaults to the memory-stable launch path
+  (`batch_size=1`);
+- bundled Distinct5 eval now defaults to a safer eval batch;
+- the watcher contract is standardized around short local polling and automatic
+  post-train comparison against retained `e15`;
+- `train.yml` and `test.yml` restoration remains part of the helper contract so
+  the tracked SaMST repo config is not left dirty after runs.
+
+Policy:
+
+- keep this slice separate from manuscript edits and from `SchrodingerBridge`
+  core code;
+- treat it as a related-works reproducibility / convergence-support slice.
+
+### Slice K: Local inventory and archive-index helper surface
+
+Status:
+
+- docs/tooling safe
+
+Files:
+
+- `SchrodingerBridge/tools/build_local_experiment_inventory.py`
+- `SchrodingerBridge/docs/experiments/inventory_20260603/`
+- `SchrodingerBridge/docs/experiments/README.md`
+
+Observed change:
+
+- creates a centralized local experiment inventory bundle;
+- records paper-facing versus smoke/frozen surfaces;
+- preserves a prune boundary without deleting summaries, checkpoints, logs, or
+  metrics.
+
+Policy:
+
+- commit as a docs/tooling slice;
+- keep it independent from paper wording and baseline helper behavior.
+
+### Slice L: Non-data artifact prune evidence
+
+Status:
+
+- safe if explicitly documented as a prune
+
+Files:
+
+- deleted tracked file:
+  - `Related_Works/baseline_pipeline/results/ours_pareto_probe_4_epoch_0001/protocol_a_800/summary_grid.png`
+
+Reason:
+
+- this path is already classified by the new inventory as `local_smoke`;
+- `summary.json` and `metrics.csv` remain, so the deletion affects only a
+  non-data image artifact rather than numerical evidence.
+
+Policy:
+
+- do not bury this deletion inside a helper or paper commit;
+- land it only with a prune-note or cleanup-index update.

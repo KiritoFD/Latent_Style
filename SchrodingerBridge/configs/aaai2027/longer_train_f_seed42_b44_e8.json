@@ -1,0 +1,35 @@
+{
+  "_base": "../distinct5_512_ema_variant_f_annealed_prototype_ot_queue_e3.json",
+  "training": {
+    "seed": 42,
+    "batch_size": 44,
+    "num_epochs": 8,
+    "save_interval": 1,
+    "test_image_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "full_eval_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache",
+    "full_eval_clip_hf_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache/hf",
+    "full_eval_batch_size": 4,
+    "full_eval_vae_decode_batch_size": 4,
+    "full_eval_each_epoch": true,
+    "full_eval_defer_until_training_end": true,
+    "full_eval_profile_timing": true
+  },
+  "data": {
+    "data_root": "/mnt/i/wikiart_distinct5_samam_512_latents_ema/train",
+    "latent_cache_dir": "/mnt/i/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache",
+    "pairing_cache_path": "/mnt/i/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt"
+  },
+  "full_eval": {
+    "batch_size": 4,
+    "vae_decode_batch_size": 4
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_longer_train_f_seed42_b44_e8"
+  },
+  "ablation": {
+    "name": "aaai2027_longer_train_f_seed42_b44_e8",
+    "axis": "aaai2027_longer_training",
+    "stage": "f_longer_e8",
+    "notes": "Longer-training sweep for the F low-LPIPS Distinct5-512 base. Only extends training from the prior e3 family to eight epochs under the formal remote batch-44 setting; no architecture or loss changes. Use per-epoch CLIP-S/LPIPS to decide whether any checkpoint deserves targetwise ArtFID."
+  }
+}

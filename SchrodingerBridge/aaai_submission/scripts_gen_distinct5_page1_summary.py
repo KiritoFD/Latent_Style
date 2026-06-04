@@ -38,9 +38,9 @@ plt.rcParams.update(
     {
         "font.family": "serif",
         "font.serif": ["Times New Roman", "DejaVu Serif"],
-        "font.size": 8.6,
-        "axes.labelsize": 8.8,
-        "axes.titlesize": 8.8,
+        "font.size": 9.5,
+        "axes.labelsize": 9.5,
+        "axes.titlesize": 10.0,
         "xtick.labelsize": 7.8,
         "ytick.labelsize": 7.8,
         "legend.fontsize": 7.2,
@@ -52,18 +52,19 @@ plt.rcParams.update(
         "axes.spines.top": False,
         "axes.spines.right": False,
         "axes.grid": True,
-        "grid.alpha": 0.15,
-        "grid.linewidth": 0.55,
-        "lines.linewidth": 1.5,
+        "grid.alpha": 0.25,
+        "grid.linewidth": 0.6,
+        "grid.color": "#b0b0b0",
+        "lines.linewidth": 1.75,
     }
 )
 
 COLORS = {
-    "lancet": "#d62728",
-    "samam": "#1f77b4",
-    "samst": "#2ca02c",
-    "idt": "#9467bd",
-    "text": "#222222",
+    "lancet": "#C44E52",  # Muted deep red
+    "samam": "#4C72B0",   # Muted deep blue
+    "samst": "#55A868",   # Muted deep green
+    "idt": "#8172B2",     # Muted purple
+    "text": "#333333",
 }
 
 
@@ -218,11 +219,11 @@ def main() -> None:
         weight="bold",
     )
 
-    annotate(ax, float(samst_e5["x"]), float(samst_e5["clip_style"]), "e5 | 1.9h", 13, 9, COLORS["samst"], 7.0)
-    annotate(ax, float(samst_e15["x"]), float(samst_e15["clip_style"]), "e15 | 5.8h", 13, -10, COLORS["samst"], 7.0)
-    annotate(ax, float(samam_2250["x"]), float(samam_2250["clip_style"]), "2250 | 7.6h", 12, 9, COLORS["samam"], 7.0)
-    annotate(ax, float(lbm_f["x"]), float(lbm_f["clip_style"]), "LBM-F | 1.2m", 14, -11, COLORS["lancet"], 7.1)
-    annotate(ax, float(lbm_k["x"]), float(lbm_k["clip_style"]), "LBM-K | 1.2m", -14, 10, COLORS["lancet"], 7.1)
+    annotate(ax, float(samst_e5["x"]), float(samst_e5["clip_style"]), "e5 | 1.9h", 15, 9, COLORS["samst"], 7.5)
+    annotate(ax, float(samst_e15["x"]), float(samst_e15["clip_style"]), "e15 | 5.8h", 15, -12, COLORS["samst"], 7.5)
+    annotate(ax, float(samam_2250["x"]), float(samam_2250["clip_style"]), "2250 | 7.6h", 14, 9, COLORS["samam"], 7.5)
+    annotate(ax, float(lbm_f["x"]), float(lbm_f["clip_style"]), "LBM-F | 1.2m", 15, -11, COLORS["lancet"], 7.5)
+    annotate(ax, float(lbm_k["x"]), float(lbm_k["clip_style"]), "LBM-K | 1.2m", -15, 12, COLORS["lancet"], 7.5)
 
     ax.set_xlabel(r"$1-\mathrm{LPIPS}$ $\uparrow$")
     ax.set_ylabel(r"Transfer CLIP-S $\uparrow$")
@@ -263,7 +264,7 @@ def main() -> None:
     for bar, value, inside in zip(bars, artfid, inside_labels):
         ax.text(
             bar.get_x() + bar.get_width() / 2.0,
-            bar.get_height() * 0.56,
+            bar.get_height() * 0.50,
             inside,
             ha="center",
             va="center",
@@ -273,7 +274,7 @@ def main() -> None:
         )
         ax.text(
             bar.get_x() + bar.get_width() / 2.0,
-            bar.get_height() + 9.0,
+            bar.get_height() + 12.0,
             f"{value:.1f}",
             ha="center",
             va="bottom",

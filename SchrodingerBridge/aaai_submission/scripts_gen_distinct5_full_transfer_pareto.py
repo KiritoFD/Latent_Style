@@ -43,7 +43,7 @@ plt.rcParams.update(
     }
 )
 
-COLORS = {"lancet": "#E76F51", "samam": "#264653", "noop": "#8C8C8C"}
+COLORS = {"lancet": "#C44E52", "samam": "#4C72B0", "noop": "#8C8C8C"}
 
 
 def read_points() -> list[dict[str, object]]:

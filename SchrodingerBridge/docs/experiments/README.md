@@ -11,6 +11,8 @@ For the current AAAI 2027 push, start here:
   `SchrodingerBridge/docs/experiments/2026-06-02-aaai2027-paper-update-plan.md`
 - unified experiment ledger:
   `SchrodingerBridge/docs/experiments/aaai2027_master_experiment_log.csv`
+- local inventory + prune bundle:
+  `SchrodingerBridge/docs/experiments/inventory_20260603/README.md`
 
 ## Recommended entrypoints
 
@@ -23,6 +25,7 @@ For the current AAAI 2027 push, start here:
 
 - `2026-06-02-distinct5-512-lancet-representation-summary.zh.md`
 - `distinct5_512_20260602/`
+- `2026-06-03-samst-distinct5-e5-rerun.md`
 
 ### No-op / metric-hacking diagnosis
 

@@ -1,0 +1,40 @@
+{
+  "_base": "distinct5_512_ema_variant_e_latent_prototype_ot_queue.json",
+  "training": {
+    "num_epochs": 3,
+    "batch_size": 44,
+    "test_image_dir": "/mnt/i/wikiart_faraday_splits/wikiart_stress2_Abstract_Expressionism__Baroque__Cubism__Northern_Renaissance__Post_Impressionism/classview/test",
+    "full_eval_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache",
+    "full_eval_clip_hf_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache/hf",
+    "full_eval_batch_size": 4,
+    "full_eval_each_epoch": true,
+    "full_eval_defer_until_training_end": true,
+    "full_eval_profile_timing": true
+  },
+  "data": {
+    "pairing_cache_sample_mode": "rank_biased",
+    "pairing_cache_rank_schedule": "easy_to_hard",
+    "pairing_cache_min_topk": 2,
+    "pairing_cache_curriculum_epochs": 3,
+    "pairing_cache_rank_power": 1.5,
+    "data_root": "/mnt/i/wikiart_faraday_splits/wikiart_stress2_Abstract_Expressionism__Baroque__Cubism__Northern_Renaissance__Post_Impressionism/latents_ema/train",
+    "style_subdirs": [
+      "Abstract_Expressionism",
+      "Baroque",
+      "Cubism",
+      "Northern_Renaissance",
+      "Post_Impressionism"
+    ],
+    "latent_cache_dir": "/mnt/i/wikiart_faraday_splits/wikiart_stress2_Abstract_Expressionism__Baroque__Cubism__Northern_Renaissance__Post_Impressionism/latents_ema/train/.latent_cache",
+    "pairing_cache_path": "/mnt/i/wikiart_faraday_splits/wikiart_stress2_Abstract_Expressionism__Baroque__Cubism__Northern_Renaissance__Post_Impressionism/latents_ema/train/.latent_cache/prototype_pairing_top8.pt"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/wikiart_stress2_Abstract_Expressionism__Baroque__Cubism__Northern_Renaissance__Post_Impressionism_variant_f_b44_remote"
+  },
+  "ablation": {
+    "name": "wikiart_stress2_Abstract_Expressionism__Baroque__Cubism__Northern_Renaissance__Post_Impressionism_variant_f_b44_remote",
+    "axis": "faraday_stress_splits",
+    "stage": "wikiart_stress2_Abstract_Expressionism__Baroque__Cubism__Northern_Renaissance__Post_Impressionism",
+    "notes": "Faraday multi-split validation packet generated from selected_splits.json with fixed seed and no manual class cherry-picking."
+  }
+}

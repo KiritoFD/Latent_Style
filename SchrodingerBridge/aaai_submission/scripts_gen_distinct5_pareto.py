@@ -48,11 +48,11 @@ plt.rcParams.update(
 
 
 COLORS = {
-    "ours": "#E76F51",
-    "ours_alt": "#D55E00",
-    "samam": "#264653",
-    "samam_light": "#2A9D8F",
-    "samst": "#7A4FA2",
+    "ours": "#C44E52",
+    "ours_alt": "#D65F5F",
+    "samam": "#4C72B0",
+    "samam_light": "#7497CC",
+    "samst": "#55A868",
     "gray": "#8C8C8C",
 }
 
