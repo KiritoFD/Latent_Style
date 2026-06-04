@@ -1,0 +1,49 @@
+{
+  "_base": "../../distinct5_512_ema_variant_k_content_adaptive_vq_queue_e3.json",
+  "model": {
+    "latent_scale_factor": 0.13025
+  },
+  "training": {
+    "seed": 42,
+    "batch_size": 32,
+    "num_epochs": 8,
+    "save_interval": 1,
+    "num_workers": 0,
+    "persistent_workers": false,
+    "use_tqdm": true,
+    "log_interval": 20,
+    "numeric_debug": false,
+    "fused_adamw": false,
+    "async_checkpoint_save": true,
+    "torch_compile": false,
+    "test_image_dir": "F:/wikiart_distinct5_samam_512_classview/test",
+    "full_eval_cache_dir": "G:/GitHub/Latent_Style/eval_cache",
+    "full_eval_clip_hf_cache_dir": "G:/GitHub/Latent_Style/eval_cache/hf",
+    "full_eval_batch_size": 4,
+    "full_eval_target_chunk_size": 1,
+    "full_eval_vae_decode_batch_size": 2,
+    "full_eval_each_epoch": true,
+    "full_eval_defer_until_training_end": true,
+    "full_eval_profile_timing": true
+  },
+  "data": {
+    "data_root": "F:/wikiart_distinct5_512_latents_sdxl_fix/train",
+    "latent_cache_dir": "F:/wikiart_distinct5_512_latents_sdxl_fix/train/.latent_cache",
+    "pairing_cache_path": "F:/wikiart_distinct5_512_latents_sdxl_fix/train/.latent_cache/prototype_pairing_top8.pt"
+  },
+  "full_eval": {
+    "vae_model": "sdxl-fix",
+    "batch_size": 4,
+    "target_chunk_size": 1,
+    "vae_decode_batch_size": 2
+  },
+  "checkpoint": {
+    "save_dir": "./exp/local_distinct5_512_sdxl_fix_k_b32_e8"
+  },
+  "ablation": {
+    "name": "local_distinct5_512_sdxl_fix_k_b32_e8",
+    "axis": "local_distinct5_sdxl_fix",
+    "stage": "variant_k_e8",
+    "notes": "Local RTX 4070 Laptop Distinct5-512 K-family run using SDXL-fix latents, batch 32, eight epochs, and deferred full eval for all saved checkpoints."
+  }
+}
