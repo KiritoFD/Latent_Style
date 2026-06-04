@@ -250,3 +250,26 @@ Commit checkpoint:
   `stochastic bridge` headline phrasing from the active method path and aligned
   the conclusion with the same OT-coupled latent transport model identity used
   in the body.
+- 2026-06-04: Batch 9 accept-surface pass consolidated the 256 artifact
+  evidence into a matched red-box crop panel so the full-view boxes and zoomed
+  excerpts point to the same failures, inspected but rejected a switch to a
+  `SaMam-256`-led main qualitative surface because it weakened the direct
+  `ours vs SaMST` artifact diagnosis, tightened the Distinct5 / cost /
+  conclusion wording around the compact efficient regime rather than open-ended
+  SOTA language, and confirmed a rebuilt
+  `aaai_submission/paper_aaai2026.pdf` remains available as the current
+  12-page manuscript artifact. Next gate: rerun the hostile figure-and-claims
+  review to decide whether the new crop choices and bounded efficiency story
+  are finally strong enough for the accept pass.
+- 2026-06-04: Batch 10 claim-and-layout pass further tightened claim hygiene
+  around the Distinct5 scope, timing wording, and historical claim bounds,
+  added a compact Distinct5 pair-level sanity table, changed artifact panel
+  crop B to the `Hayao -> van Gogh` line-boundary contamination case, switched
+  the artifact insertion to `figure*`, and verified that the full zoom row is
+  visible on a single page in the rebuilt manuscript. The four review agents
+  are now back in re-review against this tightened figure/table/claim surface.
+- 2026-06-04: Batch 11 final review gate reached `ACCEPT` from Gibbs
+  (layout), Nietzsche (claim hygiene), Boyle (hostile reviewer), and Leibniz
+  (visual artifact inspector) after adding `SaMST e15` to the Distinct5
+  pair-level same-split sanity table and finalizing the artifact `figure*`
+  panel.
