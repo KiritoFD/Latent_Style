@@ -1131,7 +1131,12 @@ def main():
     parser.add_argument('--step_size', type=float, default=float(full_eval_defaults.get("step_size", 1.0)))
     parser.add_argument('--style_strength', type=float, default=full_eval_defaults.get("style_strength", None), help="Global style strength in [0,1]")
     parser.add_argument('--residual_scale', type=float, default=1.0, help="Post-endpoint latent residual scale for inference strengthening. 1.0 keeps default behavior.")
-    parser.add_argument('--vae_model', type=str, default=str(full_eval_defaults.get("vae_model", "ema")), help="VAE preset or HF id for encode/decode. Defaults to ema.")
+    parser.add_argument(
+        '--vae_model',
+        type=str,
+        default=str(full_eval_defaults.get("vae_model", "ema")),
+        help="VAE preset or HF id for encode/decode. Supports ema, mse, sd15, sdxl, sdxl-fp32, sdxl-fp16-fix, or a HF repo id.",
+    )
     parser.add_argument('--vae_decode_scale', type=float, default=None, help="Override VAE scaling factor for decode only; encode/model latent scale stay unchanged.")
     parser.add_argument('--vae_compile_decoder', action='store_true', help="Compile the SD VAE decoder wrapper for eval/generation.")
     parser.add_argument('--vae_compile_method', type=str, default="pt2", choices=["pt2", "jit"])
