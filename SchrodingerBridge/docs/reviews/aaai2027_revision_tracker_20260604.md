@@ -233,3 +233,10 @@ Commit checkpoint:
   path-stability packet as local kinetic/path support, and marked the
   semantic-vs-random SA-SWD control as quality-only rather than positive
   novelty closure.
+- 2026-06-04: Batch 6 writing-tone pass rewrote the core method narrative as
+  `CFM + OT coupling + adaptive-projection terminal matching`, reduced the
+  tokenizer graveyard feel in the method section, upgraded Theorem 1 and timing
+  prose from defensive caveats to principled bounded claims, strengthened the
+  IDT-floor community framing in the introduction and conclusion, and tightened
+  the 256 qualitative captions around muddy grain artifacts versus cleaner
+  brush continuity.
