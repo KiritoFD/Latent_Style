@@ -196,3 +196,11 @@ Commit checkpoint:
   carries rejected `SaMAM 3000` active-manuscript content.
 - 2026-06-04: Active baseline chosen for the next edit pass:
   June 4 writing-cleanup boundary plus recovered pre-restore manuscript text.
+- 2026-06-04: Commit `3e746a1db` fixed the June 4 manuscript boundary, and the
+  multi-lane history gap audit is now running.
+- 2026-06-04: Commit `2bc88d8ef` synced the page-1 Distinct5 summary figure to
+  the active `SaMAM 2250` boundary.
+- 2026-06-04: Wrote `docs/reviews/aaai2027_history_gap_audit_20260604.md` to
+  order the next edit batches: cleanup/checklist regressions first, then the
+  Distinct5 `SaMAM 2250` plus `SaMST e5/e15` claim surface, then structure and
+  mechanism rewrites.
