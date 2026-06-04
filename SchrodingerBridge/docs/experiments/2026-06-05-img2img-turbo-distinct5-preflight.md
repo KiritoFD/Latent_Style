@@ -119,3 +119,23 @@ The next aligned action after the local SDXL run releases the GPU is:
 1. launch a single-target `img2img-turbo` smoke at `batch=1`
 2. capture memory usage, startup success, and first checkpoint/validation output
 3. decide whether to fan out to the full 5-target comparison
+
+## 6. Auto-Handoff Watcher
+
+To avoid waiting for a manual revisit, the following local watcher was launched
+in the background during this preflight phase:
+
+- script:
+  - `G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\scripts\watch_local_sdxl_then_launch_img2img_turbo_smoke.ps1`
+- current pid file:
+  - `G:\GitHub\Latent_Style\SchrodingerBridge\_codex_tmp\watch_local_sdxl_then_launch_img2img_turbo_smoke.pid`
+- current log:
+  - `G:\GitHub\Latent_Style\SchrodingerBridge\_codex_tmp\watch_local_sdxl_then_launch_img2img_turbo_smoke.log`
+
+Current behavior:
+
+- waits for the local `SDXL-fix` wrapper pid from
+  `local_distinct5_sdxl_fix_train.pid` to exit
+- then waits for the local GPU to become visibly quiet
+- then launches the first `Early_Renaissance` `img2img-turbo` smoke run
+  automatically
