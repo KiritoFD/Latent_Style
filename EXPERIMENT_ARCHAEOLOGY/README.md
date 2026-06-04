@@ -122,6 +122,9 @@ Only explicitly non-mainline checkpoint candidates were deleted. Ambiguous `revi
 
 The broad CSVs above are navigation indexes. For checked timing and cleanup evidence, use these manual files first:
 
+- `GRAND_EXPERIMENT_ARCHAEOLOGY_20260605.md`: hand-checked local/remote grand synthesis, lineage, cleanup boundary, and remaining gaps.
+- `manual_top_level_directory_index_20260605.csv`: top-level directory-by-directory manual classification for local G:, remote `I:\Github\Latent_Style`, and remote `I:\Github\Latent_Style_TokenizerClean`.
+- `manual_cleanup_retention_and_next_candidates_20260605.csv`: remaining weight/cache classes, keep reasons, and next deletion candidates.
 - `MANUAL_EXPERIMENT_AUDIT_20260605.md`: current hand-checked audit narrative and gap list.
 - `manual_directory_audit_20260605.csv`: checked directory-level evidence rows.
 - `manual_timing_evidence_20260605.csv`: checked training/inference timing rows with source paths.
