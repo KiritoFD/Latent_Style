@@ -93,6 +93,15 @@
 - timing/generated images：需要逐个检查 docs 引用；
 - old archives：需要 archive policy。
 
+本次 continuation 做了一个安全的空目录清理：
+
+- 删除 `SchrodingerBridge/exp/seedream_distill_adapter`；
+- 删除 `SchrodingerBridge/exp/style_embedding_mainline_calibration`；
+- 删除 `SchrodingerBridge/exp/tmp_genonly_autonogrid_probe`；
+- 删除 `SchrodingerBridge/exp/vae_backend`。
+
+这 4 个目录树删除前递归文件数都是 0，git 跟踪文件数都是 0，因此删除只减少空壳目录，不释放有效字节，也不影响实验证据。记录见 `cleanup/manual_empty_directory_cleanup_20260605.csv`。
+
 ## 当前远程 `I:\Github\Latent_Style` 状态
 
 ### 远程根目录结论
