@@ -1,0 +1,523 @@
+﻿# Remote I Drive Experiment Archaeology
+
+Generated on remote host from I:\ after curated experiment filtering and non-mainline checkpoint cleanup.
+
+## Scope
+
+- Source root: I:\
+- Curated experiment rows: 5495
+- Timeline rows: 2242
+- Deleted non-mainline checkpoints: 246
+- Deleted checkpoint size: 9074.318 MB
+
+## Dataset Row Counts
+
+- unknown: 5187
+- distinct5_512: 112
+- wikiart512_5style: 92
+- run511_5domain: 72
+- photo_monet_5x5: 25
+- legacy256_overfit50: 5
+- strict_protocol_750: 2
+
+## Method Row Counts
+
+- LANCET/LBM: 3057
+- unknown: 2154
+- IDT: 154
+- AdaIN: 37
+- CAST: 18
+- SaMAM: 15
+- StyTr2: 14
+- AesPA-Net: 12
+- AesFA: 9
+- CUT: 9
+- SDEdit: 5
+- CycleGAN: 3
+- S2WAT: 3
+- SaMST: 2
+- StyleID: 2
+- SD-Turbo: 1
+
+## Source Kinds
+
+- remote_summary_json_curated: 3253
+- remote_training_log_curated: 2242
+
+## Period / Timeline Skeleton
+
+- 2026-02-15: 8 rows; datasets {unknown:8}; methods {unknown:8}
+- 2026-02-17: 2 rows; datasets {unknown:2}; methods {unknown:2}
+- 2026-02-18: 16 rows; datasets {unknown:16}; methods {unknown:16}
+- 2026-02-21: 7 rows; datasets {unknown:7}; methods {unknown:7}
+- 2026-02-22: 46 rows; datasets {unknown:46}; methods {unknown:46}
+- 2026-02-23: 57 rows; datasets {unknown:57}; methods {unknown:53, IDT:4}
+- 2026-02-24: 53 rows; datasets {unknown:53}; methods {unknown:53}
+- 2026-02-25: 21 rows; datasets {unknown:21}; methods {unknown:21}
+- 2026-02-26: 17 rows; datasets {unknown:17}; methods {unknown:17}
+- 2026-02-27: 30 rows; datasets {unknown:30}; methods {unknown:30}
+- 2026-02-28: 13 rows; datasets {unknown:13}; methods {unknown:13}
+- 2026-03-01: 8 rows; datasets {unknown:8}; methods {unknown:8}
+- 2026-03-02: 62 rows; datasets {unknown:62}; methods {unknown:62}
+- 2026-03-03: 39 rows; datasets {unknown:39}; methods {unknown:39}
+- 2026-03-04: 30 rows; datasets {unknown:30}; methods {unknown:30}
+- 2026-03-05: 26 rows; datasets {unknown:26}; methods {unknown:26}
+- 2026-03-06: 34 rows; datasets {unknown:34}; methods {unknown:34}
+- 2026-03-07: 28 rows; datasets {unknown:28}; methods {unknown:26, IDT:2}
+- 2026-03-08: 33 rows; datasets {unknown:33}; methods {unknown:33}
+- 2026-03-09: 11 rows; datasets {unknown:11}; methods {unknown:11}
+- 2026-03-11: 3 rows; datasets {unknown:3}; methods {unknown:3}
+- 2026-03-20: 1 rows; datasets {legacy256_overfit50:1}; methods {StyleID:1}
+- 2026-03-23: 2 rows; datasets {unknown:2}; methods {unknown:2}
+- 2026-03-24: 50 rows; datasets {unknown:50}; methods {unknown:50}
+- 2026-03-25: 38 rows; datasets {unknown:38}; methods {unknown:38}
+- 2026-03-26: 29 rows; datasets {unknown:29}; methods {unknown:17, IDT:12}
+- 2026-03-27: 11 rows; datasets {unknown:11}; methods {unknown:11}
+- 2026-03-28: 11 rows; datasets {unknown:11}; methods {unknown:11}
+- 2026-03-29: 24 rows; datasets {unknown:24}; methods {unknown:24}
+- 2026-03-30: 25 rows; datasets {unknown:25}; methods {unknown:25}
+- 2026-03-31: 13 rows; datasets {unknown:13}; methods {unknown:13}
+- 2026-04-01: 22 rows; datasets {unknown:21, legacy256_overfit50:1}; methods {unknown:17, IDT:5}
+- 2026-04-02: 129 rows; datasets {unknown:129}; methods {unknown:129}
+- 2026-04-03: 51 rows; datasets {unknown:51}; methods {unknown:48, IDT:3}
+- 2026-04-04: 53 rows; datasets {unknown:53}; methods {unknown:46, IDT:7}
+- 2026-04-05: 61 rows; datasets {unknown:61}; methods {unknown:46, IDT:10, LANCET/LBM:5}
+- 2026-04-06: 47 rows; datasets {unknown:47}; methods {unknown:42, IDT:5}
+- 2026-04-07: 62 rows; datasets {unknown:61, legacy256_overfit50:1}; methods {unknown:48, IDT:14}
+- 2026-04-08: 145 rows; datasets {unknown:145}; methods {unknown:133, IDT:12}
+- 2026-04-09: 137 rows; datasets {unknown:137}; methods {unknown:123, IDT:14}
+- 2026-04-10: 54 rows; datasets {unknown:54}; methods {unknown:47, IDT:7}
+- 2026-04-12: 47 rows; datasets {unknown:47}; methods {unknown:44, IDT:3}
+- 2026-04-14: 15 rows; datasets {unknown:15}; methods {unknown:15}
+- 2026-05-07: 10 rows; datasets {unknown:10}; methods {unknown:6, LANCET/LBM:4}
+- 2026-05-08: 39 rows; datasets {unknown:39}; methods {LANCET/LBM:39}
+- 2026-05-09: 16 rows; datasets {unknown:16}; methods {LANCET/LBM:16}
+- 2026-05-10: 69 rows; datasets {unknown:69}; methods {LANCET/LBM:69}
+- 2026-05-11: 56 rows; datasets {unknown:56}; methods {LANCET/LBM:56}
+- 2026-05-12: 64 rows; datasets {unknown:64}; methods {LANCET/LBM:64}
+- 2026-05-13: 31 rows; datasets {unknown:31}; methods {LANCET/LBM:31}
+- 2026-05-14: 4 rows; datasets {unknown:4}; methods {LANCET/LBM:4}
+- 2026-05-20: 18 rows; datasets {unknown:18}; methods {LANCET/LBM:18}
+- 2026-05-21: 70 rows; datasets {unknown:70}; methods {LANCET/LBM:70}
+- 2026-05-22: 125 rows; datasets {unknown:125}; methods {LANCET/LBM:125}
+- 2026-05-23: 38 rows; datasets {unknown:38}; methods {LANCET/LBM:38}
+- 2026-05-25: 38 rows; datasets {unknown:38}; methods {LANCET/LBM:38}
+- 2026-05-26: 301 rows; datasets {unknown:301}; methods {LANCET/LBM:301}
+- 2026-05-27: 216 rows; datasets {unknown:216}; methods {LANCET/LBM:216}
+- 2026-05-28: 102 rows; datasets {unknown:102}; methods {LANCET/LBM:102}
+- 2026-05-29: 109 rows; datasets {unknown:109}; methods {LANCET/LBM:109}
+- 2026-05-30: 2080 rows; datasets {unknown:1981, run511_5domain:72, photo_monet_5x5:18, wikiart512_5style:9}; methods {LANCET/LBM:1229, unknown:681, IDT:56, AdaIN:37, CAST:18}
+- 2026-05-31: 265 rows; datasets {unknown:201, wikiart512_5style:64}; methods {LANCET/LBM:265}
+- 2026-06-01: 83 rows; datasets {unknown:32, distinct5_512:25, wikiart512_5style:18, photo_monet_5x5:6, strict_protocol_750:2}; methods {LANCET/LBM:72, SaMAM:11}
+- 2026-06-02: 82 rows; datasets {distinct5_512:82}; methods {LANCET/LBM:82}
+- 2026-06-03: 86 rows; datasets {unknown:79, distinct5_512:3, legacy256_overfit50:2, photo_monet_5x5:1, wikiart512_5style:1}; methods {LANCET/LBM:84, SaMAM:2}
+- 2026-06-04: 18 rows; datasets {unknown:16, distinct5_512:2}; methods {LANCET/LBM:16, SaMAM:2}
+- 2026-06-05: 4 rows; datasets {unknown:4}; methods {LANCET/LBM:4}
+
+## First Timeline Events
+
+- 2026-02-15T09:03:24: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\no-edge\logs\training_20260215_004310.csv elapsed_sec_hint=
+- 2026-02-15T09:04:39: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\no-edge\logs\training_20260215_090439.csv elapsed_sec_hint=
+- 2026-02-17T23:43:49: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\swd-256-5k-6-50-1.5k\logs\training_20260217_233425.csv elapsed_sec_hint=
+- 2026-02-17T23:56:36: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\swd-256-100-6-50-1.5k\logs\training_20260217_235140.csv elapsed_sec_hint=
+- 2026-02-18T08:43:01: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\swd-256-100-6-50-1.5k\logs\training_20260217_235920.csv elapsed_sec_hint=
+- 2026-02-18T08:51:32: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\swd-256-100-6-50-15\logs\training_20260218_084417.csv elapsed_sec_hint=
+- 2026-02-18T08:53:57: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\swd-256-100-6-50-15\logs\training_20260218_085357.csv elapsed_sec_hint=
+- 2026-02-18T09:02:12: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\swd-256-fix-gates\logs\training_20260218_090212.csv elapsed_sec_hint=
+- 2026-02-18T09:05:23: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\swd-256-fix-gates\logs\training_20260218_090523.csv elapsed_sec_hint=
+- 2026-02-18T09:06:49: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\swd-256-fix-gates\logs\training_20260218_090649.csv elapsed_sec_hint=
+- 2026-02-18T09:47:37: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\swd-256-fix-gates\logs\training_20260218_091105.csv elapsed_sec_hint=
+- 2026-02-18T11:55:56: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\swd-256-fix-gates\logs\training_20260218_094851.csv elapsed_sec_hint=
+- 2026-02-18T13:24:17: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\swd-256-fix-gates-20-5-50-20-0.1\logs\training_20260218_124524.csv elapsed_sec_hint=
+- 2026-02-18T13:38:33: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\swd-256-fix-gates-100-5-50-20-0.1\logs\training_20260218_133058.csv elapsed_sec_hint=
+- 2026-02-18T15:35:16: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\swd-256-fix-gates-100-5-50-20-0.1\logs\training_20260218_145345.csv elapsed_sec_hint=
+- 2026-02-21T17:24:22: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-adagn-map16-statloss\logs\training_20260221_165436.csv elapsed_sec_hint=
+- 2026-02-21T17:27:02: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-adagn-map16-statloss\logs\training_20260221_172702.csv elapsed_sec_hint=
+- 2026-02-21T18:11:26: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-adagn-map16-statloss\logs\training_20260221_172937.csv elapsed_sec_hint=
+- 2026-02-21T23:53:38: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-adagn-map16-statloss\logs\training_20260221_181142.csv elapsed_sec_hint=
+- 2026-02-22T00:18:32: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\style8-\logs\training_20260222_001832.csv elapsed_sec_hint=
+- 2026-02-22T00:29:31: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\style8-\logs\training_20260222_002931.csv elapsed_sec_hint=
+- 2026-02-22T00:31:40: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\style8-\logs\training_20260222_003140.csv elapsed_sec_hint=
+- 2026-02-22T00:38:28: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\style8-\logs\training_20260222_003828.csv elapsed_sec_hint=
+- 2026-02-22T00:42:14: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\style8-\logs\training_20260222_003948.csv elapsed_sec_hint=
+- 2026-02-22T00:43:16: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\style8-\logs\training_20260222_004316.csv elapsed_sec_hint=
+- 2026-02-22T00:44:55: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\style8-\logs\training_20260222_004455.csv elapsed_sec_hint=
+- 2026-02-22T09:31:39: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\style8-\logs\training_20260222_004528.csv elapsed_sec_hint=
+- 2026-02-22T09:44:14: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\style8-\logs\training_20260222_094414.csv elapsed_sec_hint=
+- 2026-02-22T09:44:59: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\style8-fixedswd\logs\training_20260222_094459.csv elapsed_sec_hint=
+- 2026-02-22T09:58:25: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\style8-fixedswd\logs\training_20260222_095825.csv elapsed_sec_hint=
+- 2026-02-22T10:12:23: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\style8-fixedswd\logs\training_20260222_100027.csv elapsed_sec_hint=
+- 2026-02-22T10:19:25: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\style8-\logs\training_20260222_101925.csv elapsed_sec_hint=
+- 2026-02-22T10:20:15: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\style8-fixed-swd\logs\training_20260222_102015.csv elapsed_sec_hint=
+- 2026-02-22T11:12:17: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\style8-fixed\logs\training_20260222_111217.csv elapsed_sec_hint=
+- 2026-02-22T11:15:04: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\style8-fixed\logs\training_20260222_111504.csv elapsed_sec_hint=
+- 2026-02-22T11:33:24: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\style8-fixed\logs\training_20260222_111613.csv elapsed_sec_hint=
+- 2026-02-22T12:01:11: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\style8-fixed\logs\training_20260222_113636.csv elapsed_sec_hint=
+- 2026-02-22T12:33:45: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-swd\logs\training_20260222_123058.csv elapsed_sec_hint=
+- 2026-02-22T16:29:29: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-swd\logs\training_20260222_123541.csv elapsed_sec_hint=
+- 2026-02-22T17:06:51: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-adagn-map16-statloss\logs\training_20260222_170651.csv elapsed_sec_hint=
+- 2026-02-22T17:11:05: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-momnet_fixed\logs\training_20260222_171105.csv elapsed_sec_hint=
+- 2026-02-22T17:14:04: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-momnet_fixed\logs\training_20260222_171404.csv elapsed_sec_hint=
+- 2026-02-22T19:33:12: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-momnet_fixed\logs\training_20260222_171508.csv elapsed_sec_hint=
+- 2026-02-22T20:39:08: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-momnet_fixed\logs\training_20260222_203908.csv elapsed_sec_hint=
+- 2026-02-22T20:40:59: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-adagn-map16-skipfix-hires1-lossv2\logs\training_20260222_204059.csv elapsed_sec_hint=
+- 2026-02-22T20:43:47: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-adagn-map16-skipfix-hires1-lossv2\logs\training_20260222_204347.csv elapsed_sec_hint=
+- 2026-02-22T20:49:09: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-adagn-map16-skipfix-hires1-lossv2\logs\training_20260222_204533.csv elapsed_sec_hint=
+- 2026-02-22T20:49:51: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-adagn-map16-skipfix-hires1-lossv2\logs\training_20260222_204951.csv elapsed_sec_hint=
+- 2026-02-22T20:50:29: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-adagn-map16-skipfix-hires1-lossv2\logs\training_20260222_205029.csv elapsed_sec_hint=
+- 2026-02-22T20:51:03: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-adagn-map16-skipfix-hires1-lossv2\logs\training_20260222_205103.csv elapsed_sec_hint=
+- 2026-02-22T21:08:27: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-adagn-map16-skipfix-hires1-lossv2\logs\training_20260222_205216.csv elapsed_sec_hint=
+- 2026-02-22T21:32:28: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-adagn-map16-skipfix-hires1-lossv2\logs\training_20260222_210903.csv elapsed_sec_hint=
+- 2026-02-22T21:39:59: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-v2\logs\training_20260222_213622.csv elapsed_sec_hint=
+- 2026-02-22T22:40:52: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-v2\logs\training_20260222_214309.csv elapsed_sec_hint=
+- 2026-02-22T23:33:31: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-v2-20\logs\training_20260222_224747.csv elapsed_sec_hint=
+- 2026-02-23T00:17:47: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-8-8monet\logs\training_20260223_001747.csv elapsed_sec_hint=
+- 2026-02-23T00:23:52: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-8-8monet\logs\training_20260223_002352.csv elapsed_sec_hint=
+- 2026-02-23T00:30:48: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-8-8monet\logs\training_20260223_003048.csv elapsed_sec_hint=
+- 2026-02-23T00:36:29: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-8-8monet\logs\training_20260223_003629.csv elapsed_sec_hint=
+- 2026-02-23T00:47:20: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-8-8monet\logs\training_20260223_004720.csv elapsed_sec_hint=
+- 2026-02-23T01:03:06: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-8-8monet\logs\training_20260223_004924.csv elapsed_sec_hint=
+- 2026-02-23T01:04:41: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-8-8monet\logs\training_20260223_010441.csv elapsed_sec_hint=
+- 2026-02-23T01:05:42: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-8-8monet\logs\training_20260223_010542.csv elapsed_sec_hint=
+- 2026-02-23T01:16:20: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-8-8monet\logs\training_20260223_010754.csv elapsed_sec_hint=
+- 2026-02-23T07:48:06: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-8-8monet\logs\training_20260223_011716.csv elapsed_sec_hint=
+- 2026-02-23T08:32:26: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-swd_scale-8monet\logs\training_20260223_081340.csv elapsed_sec_hint=
+- 2026-02-23T08:46:15: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-swd_scale-8monet\logs\training_20260223_083533.csv elapsed_sec_hint=
+- 2026-02-23T08:49:26: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\full-swd_scale-8monet\logs\training_20260223_084645.csv elapsed_sec_hint=
+- 2026-02-23T09:13:23: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\2style-8momnet-1_3swd\logs\training_20260223_091323.csv elapsed_sec_hint=
+- 2026-02-23T10:18:57: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\2style-8momnet-1_3swd\logs\training_20260223_091700.csv elapsed_sec_hint=
+- 2026-02-23T10:41:01: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\2style-16dim-1_3swd\logs\training_20260223_103000.csv elapsed_sec_hint=
+- 2026-02-23T11:04:19: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\2style-16dim-512-1_3swd\logs\training_20260223_104140.csv elapsed_sec_hint=
+- 2026-02-23T11:08:28: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\5style-any2any-skipfusion\logs\training_20260223_110828.csv elapsed_sec_hint=
+- 2026-02-23T11:09:44: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\5style-any2any-skipfusion\logs\training_20260223_110944.csv elapsed_sec_hint=
+- 2026-02-23T11:10:37: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\5style-any2any-skipfusion\logs\training_20260223_111037.csv elapsed_sec_hint=
+- 2026-02-23T11:54:35: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\5style-any2any-skipfusion\logs\training_20260223_111134.csv elapsed_sec_hint=
+- 2026-02-23T11:56:28: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\5style-domain-swd\logs\training_20260223_115628.csv elapsed_sec_hint=
+- 2026-02-23T12:23:27: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\5style-domain-swd\logs\training_20260223_115741.csv elapsed_sec_hint=
+- 2026-02-23T12:26:51: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\5style-domain-swd\logs\training_20260223_122651.csv elapsed_sec_hint=
+- 2026-02-23T13:28:31: log_file dataset=unknown method=IDT path=I:\Github\Latent_Style\experiments\experiments-swd8\5style-domain-swd-64-96-128-idt3\logs\training_20260223_122732.csv elapsed_sec_hint=
+- 2026-02-23T14:04:29: log_file dataset=unknown method=IDT path=I:\Github\Latent_Style\experiments\experiments-swd8\5style-patch1-3-idt10\logs\training_20260223_132958.csv elapsed_sec_hint=
+- 2026-02-23T14:38:45: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\5style-any2any-skipfusion\logs\training_20260223_143845.csv elapsed_sec_hint=
+- 2026-02-23T15:23:56: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\5style-1439\logs\training_20260223_144007.csv elapsed_sec_hint=
+- 2026-02-23T15:37:31: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\1swd-dit-2style\logs\training_20260223_153640.csv elapsed_sec_hint=
+- 2026-02-23T15:44:18: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\1swd-dit-2style\logs\training_20260223_153747.csv elapsed_sec_hint=
+- 2026-02-23T17:50:35: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\1swd-dit-2style\logs\training_20260223_171647.csv elapsed_sec_hint=
+- 2026-02-23T18:00:02: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\1swd-dit-5style\logs\training_20260223_175543.csv elapsed_sec_hint=
+- 2026-02-23T18:19:04: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\1swd-dit-5style\logs\training_20260223_181732.csv elapsed_sec_hint=
+- 2026-02-23T18:21:32: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\1swd-dit-5style\logs\training_20260223_181935.csv elapsed_sec_hint=
+- 2026-02-23T22:18:04: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\1swd-dit-5style\logs\training_20260223_182234.csv elapsed_sec_hint=
+- 2026-02-23T23:27:54: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\20260223-micro5style-bs600\runs\exp01-phase1_60e-capacity_floor_bd32_lc32_sd128\artifacts\logs\training_20260223_232754.csv elapsed_sec_hint=
+- 2026-02-23T23:29:56: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\20260223-micro5style-bs600\runs\exp00-phase1_60e-baseline_bs600_lr2e4_bd64_sd256\artifacts\logs\training_20260223_232956.csv elapsed_sec_hint=
+- 2026-02-23T23:31:27: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\20260223-micro5style-bs600\runs\exp00-phase1_60e-baseline_bs600_lr2e4_bd64_sd256\artifacts\logs\training_20260223_233127.csv elapsed_sec_hint=
+- 2026-02-23T23:32:36: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\20260223-micro5style-bs600\runs\exp01-phase1_60e-capacity_floor_bd32_lc32_sd128\artifacts\logs\training_20260223_233236.csv elapsed_sec_hint=
+- 2026-02-23T23:42:56: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\20260223-micro5style-bs600\runs\exp00-phase1_60e-baseline_bs600_lr2e4_bd64_sd256\artifacts\logs\training_20260223_234256.csv elapsed_sec_hint=
+- 2026-02-23T23:45:11: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\20260223-micro5style-bs600\runs\exp00-phase1_60e-baseline_bs600_lr2e4_bd64_sd256\artifacts\logs\training_20260223_234511.csv elapsed_sec_hint=
+- 2026-02-23T23:53:35: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\20260223-micro5style-bs480\runs\exp00-phase1_60e-baseline_bs480_lr2e4_bd64_sd256\artifacts\logs\training_20260223_235335.csv elapsed_sec_hint=
+- 2026-02-24T00:03:26: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\20260223-micro5style-bs384\runs\exp00-phase1_60e-baseline_bs384_lr2e4_bd64_sd256\artifacts\logs\training_20260223_235545.csv elapsed_sec_hint=
+- 2026-02-24T01:06:13: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\20260223-micro5style-bs384\runs\exp00-phase1_60e-baseline_bs384_lr2e4_bd64_sd256\artifacts\logs\training_20260224_000627.csv elapsed_sec_hint=
+- 2026-02-24T02:02:03: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\20260223-micro5style-bs384\runs\exp01-phase1_60e-capacity_floor_bd32_lc32_sd128\artifacts\logs\training_20260224_011910.csv elapsed_sec_hint=
+- 2026-02-24T04:29:31: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\20260223-micro5style-bs384\runs\exp02-phase1_60e-capacity_ceiling_bd128_lc128_sd256_bs256\artifacts\logs\training_20260224_021500.csv elapsed_sec_hint=
+- 2026-02-24T05:52:57: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\20260223-micro5style-bs384\runs\exp03-phase1_60e-style_ctrl_sd512_bs288\artifacts\logs\training_20260224_044230.csv elapsed_sec_hint=
+- 2026-02-24T07:14:49: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\20260223-micro5style-bs384\runs\exp04-phase1_60e-lr4e4_speedup\artifacts\logs\training_20260224_060556.csv elapsed_sec_hint=
+- 2026-02-24T08:36:32: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\20260223-micro5style-bs384\runs\exp05-phase1_60e-lr8e4_stress\artifacts\logs\training_20260224_072747.csv elapsed_sec_hint=
+- 2026-02-24T10:00:00: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\20260223-micro5style-bs384\runs\exp06-phase1_60e-l1_relax_wdl1_0p01\artifacts\logs\training_20260224_084928.csv elapsed_sec_hint=
+- 2026-02-24T11:28:29: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\20260223-micro5style-bs384\runs\exp07-phase1_60e-swd_patch_1_3\artifacts\logs\training_20260224_101317.csv elapsed_sec_hint=
+- 2026-02-24T14:46:19: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\20260223-micro5style-bs384\runs\exp08-phase2_150e-deep_cosine_lr5e4_min1e6\artifacts\logs\training_20260224_114128.csv elapsed_sec_hint=
+- 2026-02-24T16:24:24: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\20260223-micro5style-bs384\runs\exp09-phase2_150e-flat_lr3e4\artifacts\logs\training_20260224_145917.csv elapsed_sec_hint=
+- 2026-02-24T16:25:12: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\r-0.5-1swd-dit-5style\logs\training_20260224_162512.csv elapsed_sec_hint=
+- 2026-02-24T16:26:34: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\r-0.5-1swd-dit-5style\logs\training_20260224_162634.csv elapsed_sec_hint=
+- 2026-02-24T16:30:59: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\strong-128_128_256_0.5_1.0-1swd-dit-5style\logs\training_20260224_163059.csv elapsed_sec_hint=
+- 2026-02-24T16:31:23: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\strong-128_128_256_0.5_1.0-1swd-dit-5style\logs\training_20260224_163123.csv elapsed_sec_hint=
+- 2026-02-24T18:21:31: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\strong-128_128_256_0.5_1.0-1swd-dit-5style\logs\training_20260224_163255.csv elapsed_sec_hint=
+- 2026-02-24T18:50:10: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\experiments-swd8\strong-128_128_256_0.5_1.0-1swd-dit-5style\logs\training_20260224_185010.csv elapsed_sec_hint=
+- 2026-02-24T19:42:55: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\patch-1-3-5\logs\training_20260224_185249.csv elapsed_sec_hint=
+- 2026-02-24T19:55:13: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\spatial-adagn\logs\training_20260224_194859.csv elapsed_sec_hint=
+- 2026-02-24T20:30:23: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\spatial-adagn\logs\training_20260224_200036.csv elapsed_sec_hint=
+- 2026-02-24T22:41:52: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\spatial-adagn\logs\training_20260224_204501.csv elapsed_sec_hint=
+- 2026-02-24T23:09:51: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\spatial-adagn-expA-texture\logs\training_20260224_230951.csv elapsed_sec_hint=
+- 2026-02-24T23:11:09: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\spatial-adagn-expA-texture\logs\training_20260224_231109.csv elapsed_sec_hint=
+- 2026-02-24T23:12:54: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\spatial-adagn-expB-depth\logs\training_20260224_231254.csv elapsed_sec_hint=
+- 2026-02-24T23:14:02: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\spatial-adagn-expB-depth\logs\training_20260224_231402.csv elapsed_sec_hint=
+- 2026-02-24T23:15:56: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\spatial-adagn-expC-reg\logs\training_20260224_231556.csv elapsed_sec_hint=
+- 2026-02-24T23:33:04: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\spatial-adagn-expA-texture\logs\training_20260224_231709.csv elapsed_sec_hint=
+- 2026-02-25T01:14:35: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\spatial-adagn-expA-texture\logs\training_20260224_233522.csv elapsed_sec_hint=
+- 2026-02-25T03:20:23: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\spatial-adagn-expB-depth\logs\training_20260225_012016.csv elapsed_sec_hint=
+- 2026-02-25T06:00:59: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\spatial-adagn-expC-reg\logs\training_20260225_032605.csv elapsed_sec_hint=
+- 2026-02-25T10:11:29: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\adamix\logs\training_20260225_101129.csv elapsed_sec_hint=
+- 2026-02-25T10:24:10: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\adamix\logs\training_20260225_101229.csv elapsed_sec_hint=
+- 2026-02-25T13:12:33: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\adamix\logs\training_20260225_103039.csv elapsed_sec_hint=
+- 2026-02-25T16:19:43: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\spatial-adagn-nuclear\logs\training_20260225_142455.csv elapsed_sec_hint=
+- 2026-02-25T18:48:13: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\coord-spade-50e\logs\training_20260225_171722.csv elapsed_sec_hint=
+- 2026-02-25T20:37:22: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\dict\logs\training_20260225_192025.csv elapsed_sec_hint=
+- 2026-02-25T22:18:43: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\dict-50-0.05\logs\training_20260225_210349.csv elapsed_sec_hint=
+- 2026-02-26T00:31:03: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_A_baseline\logs\training_20260225_230328.csv elapsed_sec_hint=
+- 2026-02-26T02:09:04: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_B_capacity\logs\training_20260226_003702.csv elapsed_sec_hint=
+- 2026-02-26T03:33:01: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_C_macro_texture\logs\training_20260226_021506.csv elapsed_sec_hint=
+- 2026-02-26T04:55:16: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_D_impasto_tv\logs\training_20260226_033902.csv elapsed_sec_hint=
+- 2026-02-26T06:25:47: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_E_safe_anchor\logs\training_20260226_050109.csv elapsed_sec_hint=
+- 2026-02-26T17:58:04: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_D_impasto_tv\logs\training_20260226_164000.csv elapsed_sec_hint=
+- 2026-02-26T19:36:53: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_D_color-1\logs\training_20260226_181836.csv elapsed_sec_hint=
+- 2026-02-26T21:06:56: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_1_control\logs\training_20260226_210517.csv elapsed_sec_hint=
+- 2026-02-26T21:08:10: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_1_control\logs\training_20260226_210810.csv elapsed_sec_hint=
+- 2026-02-26T23:23:54: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_1_control\logs\training_20260226_210925.csv elapsed_sec_hint=
+- 2026-02-27T01:39:11: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_2_zero_id\logs\training_20260226_232954.csv elapsed_sec_hint=
+- 2026-02-27T04:20:28: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_3_macro_strokes\logs\training_20260227_014509.csv elapsed_sec_hint=
+- 2026-02-27T06:35:44: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_4_zero_tv\logs\training_20260227_042623.csv elapsed_sec_hint=
+- 2026-02-27T08:51:59: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_5_signal_overdrive\logs\training_20260227_064228.csv elapsed_sec_hint=
+- 2026-02-27T10:20:24: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_6_nuclear\logs\training_20260227_085754.csv elapsed_sec_hint=
+- 2026-02-27T10:24:20: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_007_patch_oversize\logs\training_20260227_102149.csv elapsed_sec_hint=
+- 2026-02-27T10:53:11: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_01_cap_64\logs\training_20260227_103929.csv elapsed_sec_hint=
+- 2026-02-27T12:34:55: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_01_cap_64\logs\training_20260227_105406.csv elapsed_sec_hint=
+- 2026-02-27T13:07:07: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_02_cap_128\logs\training_20260227_124054.csv elapsed_sec_hint=
+- 2026-02-27T13:08:00: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_02_cap_128\logs\training_20260227_130800.csv elapsed_sec_hint=
+- 2026-02-27T13:09:00: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_02_cap_128\logs\training_20260227_130900.csv elapsed_sec_hint=
+- 2026-02-27T13:10:01: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_02_cap_128\logs\training_20260227_131001.csv elapsed_sec_hint=
+- 2026-02-27T13:11:12: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_04_cap_256\logs\training_20260227_131112.csv elapsed_sec_hint=
+- 2026-02-27T13:15:12: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_07_patch_xmax\logs\training_20260227_131512.csv elapsed_sec_hint=
+- 2026-02-27T13:23:54: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_07_patch_xmax\logs\training_20260227_132150.csv elapsed_sec_hint=
+- 2026-02-27T13:26:07: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_04_cap_256\logs\training_20260227_132607.csv elapsed_sec_hint=
+- 2026-02-27T13:28:28: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_10_wide_xmax\logs\training_20260227_132828.csv elapsed_sec_hint=
+- 2026-02-27T13:29:39: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_18_extreme_overpowered\logs\training_20260227_132939.csv elapsed_sec_hint=
+- 2026-02-27T13:39:17: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_01_cap_64\logs\training_20260227_133917.csv elapsed_sec_hint=
+- 2026-02-27T16:13:54: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_02_cap_128\logs\training_20260227_133928.csv elapsed_sec_hint=
+- 2026-02-27T16:23:26: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_01_cap_64\logs\training_20260227_162326.csv elapsed_sec_hint=
+- 2026-02-27T16:23:38: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_02_cap_128\logs\training_20260227_162338.csv elapsed_sec_hint=
+- 2026-02-27T20:09:46: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_03_cap_192\logs\training_20260227_162351.csv elapsed_sec_hint=
+- 2026-02-28T01:03:41: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_04_cap_256\logs\training_20260227_201557.csv elapsed_sec_hint=
+- 2026-02-28T03:17:34: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_05_patch_micro\logs\training_20260228_010426.csv elapsed_sec_hint=
+- 2026-02-28T05:54:04: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_06_patch_std\logs\training_20260228_032330.csv elapsed_sec_hint=
+- 2026-02-28T09:04:40: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_07_patch_xmax\logs\training_20260228_060002.csv elapsed_sec_hint=
+- 2026-02-28T11:35:21: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_08_lr_fast\logs\training_20260228_091036.csv elapsed_sec_hint=
+- 2026-02-28T14:19:25: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_09_lr_slow\logs\training_20260228_114131.csv elapsed_sec_hint=
+- 2026-02-28T19:51:27: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_10_wide_xmax\logs\training_20260228_142539.csv elapsed_sec_hint=
+- 2026-02-28T20:06:43: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_11_narrow_xmax\logs\training_20260228_195218.csv elapsed_sec_hint=
+- 2026-03-01T00:50:03: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_12_mid_xmax\logs\training_20260228_203411.csv elapsed_sec_hint=
+- 2026-03-01T05:19:45: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_13_wide_micro\logs\training_20260301_005226.csv elapsed_sec_hint=
+- 2026-03-01T06:46:12: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_14_narrow_micro\logs\training_20260301_052031.csv elapsed_sec_hint=
+- 2026-03-01T09:16:05: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_15_split_brain_128\logs\training_20260301_065307.csv elapsed_sec_hint=
+- 2026-03-01T11:04:47: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_16_split_brain_256\logs\training_20260301_092134.csv elapsed_sec_hint=
+- 2026-03-01T11:51:46: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_17_extreme_underpowered\logs\training_20260301_110725.csv elapsed_sec_hint=
+- 2026-03-02T11:59:40: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_01_cap_64\logs\training_20260302_115940.csv elapsed_sec_hint=
+- 2026-03-02T11:59:52: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_02_cap_128\logs\training_20260302_115952.csv elapsed_sec_hint=
+- 2026-03-02T12:00:07: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_03_cap_192\logs\training_20260302_120007.csv elapsed_sec_hint=
+- 2026-03-02T12:00:26: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_04_cap_256\logs\training_20260302_120026.csv elapsed_sec_hint=
+- 2026-03-02T12:00:45: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_05_patch_micro\logs\training_20260302_120045.csv elapsed_sec_hint=
+- 2026-03-02T12:00:58: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_06_patch_std\logs\training_20260302_120058.csv elapsed_sec_hint=
+- 2026-03-02T12:01:10: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_07_patch_xmax\logs\training_20260302_120110.csv elapsed_sec_hint=
+- 2026-03-02T12:01:22: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_08_lr_fast\logs\training_20260302_120122.csv elapsed_sec_hint=
+- 2026-03-02T12:01:35: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_09_lr_slow\logs\training_20260302_120135.csv elapsed_sec_hint=
+- 2026-03-02T12:01:49: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_10_wide_xmax\logs\training_20260302_120149.csv elapsed_sec_hint=
+- 2026-03-02T12:07:01: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_01_cap_64\logs\training_20260302_120701.csv elapsed_sec_hint=
+- 2026-03-02T12:07:26: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_02_cap_128\logs\training_20260302_120726.csv elapsed_sec_hint=
+- 2026-03-02T12:07:46: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_03_cap_192\logs\training_20260302_120746.csv elapsed_sec_hint=
+- 2026-03-02T12:08:10: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_04_cap_256\logs\training_20260302_120810.csv elapsed_sec_hint=
+- 2026-03-02T12:08:33: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_05_patch_micro\logs\training_20260302_120833.csv elapsed_sec_hint=
+- 2026-03-02T12:08:49: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_06_patch_std\logs\training_20260302_120849.csv elapsed_sec_hint=
+- 2026-03-02T12:09:06: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_07_patch_xmax\logs\training_20260302_120906.csv elapsed_sec_hint=
+- 2026-03-02T12:09:21: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_08_lr_fast\logs\training_20260302_120921.csv elapsed_sec_hint=
+- 2026-03-02T12:09:37: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_09_lr_slow\logs\training_20260302_120937.csv elapsed_sec_hint=
+- 2026-03-02T12:09:56: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_10_wide_xmax\logs\training_20260302_120956.csv elapsed_sec_hint=
+- 2026-03-02T12:10:17: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_11_narrow_xmax\logs\training_20260302_121017.csv elapsed_sec_hint=
+- 2026-03-02T12:10:47: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_12_mid_xmax\logs\training_20260302_121047.csv elapsed_sec_hint=
+- 2026-03-02T12:11:08: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_13_wide_micro\logs\training_20260302_121108.csv elapsed_sec_hint=
+- 2026-03-02T12:11:31: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_14_narrow_micro\logs\training_20260302_121131.csv elapsed_sec_hint=
+- 2026-03-02T12:11:46: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_15_split_brain_128\logs\training_20260302_121146.csv elapsed_sec_hint=
+- 2026-03-02T12:12:05: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_16_split_brain_256\logs\training_20260302_121205.csv elapsed_sec_hint=
+- 2026-03-02T12:12:21: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_17_extreme_underpowered\logs\training_20260302_121221.csv elapsed_sec_hint=
+- 2026-03-02T12:12:41: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_18_extreme_overpowered\logs\training_20260302_121241.csv elapsed_sec_hint=
+- 2026-03-02T12:13:14: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_19_the_abyss\logs\training_20260302_121314.csv elapsed_sec_hint=
+- 2026-03-02T12:13:40: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_20_golden_balance\logs\training_20260302_121340.csv elapsed_sec_hint=
+- 2026-03-02T13:22:02: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_11_narrow_xmax\logs\training_20260302_120207.csv elapsed_sec_hint=
+- 2026-03-02T14:01:27: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_16_split_brain_256\logs\training_20260302_140127.csv elapsed_sec_hint=
+- 2026-03-02T14:02:56: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_16_split_brain_256\logs\training_20260302_140256.csv elapsed_sec_hint=
+- 2026-03-02T14:05:36: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_16_split_brain_256\logs\training_20260302_140536.csv elapsed_sec_hint=
+- 2026-03-02T14:06:58: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_17_extreme_underpowered\logs\training_20260302_140658.csv elapsed_sec_hint=
+- 2026-03-02T14:07:36: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_18_extreme_overpowered\logs\training_20260302_140736.csv elapsed_sec_hint=
+- 2026-03-02T14:08:02: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_19_the_abyss\logs\training_20260302_140802.csv elapsed_sec_hint=
+- 2026-03-02T14:10:04: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_19_the_abyss\logs\training_20260302_141004.csv elapsed_sec_hint=
+- 2026-03-02T14:11:26: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_19_the_abyss\logs\training_20260302_141126.csv elapsed_sec_hint=
+- 2026-03-02T14:12:31: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_20_golden_balance\logs\training_20260302_141231.csv elapsed_sec_hint=
+- 2026-03-02T14:13:44: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_20_golden_balance\logs\training_20260302_141344.csv elapsed_sec_hint=
+- 2026-03-02T14:14:35: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_20_golden_balance\logs\training_20260302_141435.csv elapsed_sec_hint=
+- 2026-03-02T14:16:25: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_20_golden_balance\logs\training_20260302_141625.csv elapsed_sec_hint=
+- 2026-03-02T14:18:37: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_20_golden_balance\logs\training_20260302_141837.csv elapsed_sec_hint=
+- 2026-03-02T14:27:23: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_20_golden_balance\logs\training_20260302_142723.csv elapsed_sec_hint=
+- 2026-03-02T16:56:04: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\master_sweep_20_golden_balance\logs\training_20260302_142847.csv elapsed_sec_hint=
+- 2026-03-02T17:58:46: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\no-tv\logs\training_20260302_175846.csv elapsed_sec_hint=
+- 2026-03-02T18:03:25: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\no-tv\logs\training_20260302_180325.csv elapsed_sec_hint=
+- 2026-03-02T18:25:32: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\no-tv\logs\training_20260302_182231.csv elapsed_sec_hint=
+- 2026-03-02T18:33:39: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\no-tv\logs\training_20260302_182849.csv elapsed_sec_hint=
+- 2026-03-02T18:35:25: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\no-tv\logs\training_20260302_183359.csv elapsed_sec_hint=
+- 2026-03-02T19:45:03: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\no-tv\logs\training_20260302_183553.csv elapsed_sec_hint=
+- 2026-03-02T20:12:26: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_G3_macro_impasto\logs\training_20260302_201226.csv elapsed_sec_hint=
+- 2026-03-02T20:13:47: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_G3_macro_impasto\logs\training_20260302_201347.csv elapsed_sec_hint=
+- 2026-03-02T20:15:24: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_G2_dense_pyramid\logs\training_20260302_201524.csv elapsed_sec_hint=
+- 2026-03-02T20:16:32: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_G2_dense_pyramid\logs\training_20260302_201632.csv elapsed_sec_hint=
+- 2026-03-02T20:17:40: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_G1_edge_rush\logs\training_20260302_201740.csv elapsed_sec_hint=
+- 2026-03-02T20:18:33: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_G1_edge_rush\logs\training_20260302_201833.csv elapsed_sec_hint=
+- 2026-03-02T23:24:58: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_G1_edge_rush\logs\training_20260302_201922.csv elapsed_sec_hint=
+- 2026-03-03T02:02:11: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_G2_dense_pyramid\logs\training_20260302_233058.csv elapsed_sec_hint=
+- 2026-03-03T02:10:39: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_G1_edge_rush\logs\training_20260303_021039.csv elapsed_sec_hint=
+- 2026-03-03T02:11:48: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_G2_dense_pyramid\logs\training_20260303_021148.csv elapsed_sec_hint=
+- 2026-03-03T02:12:45: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_G3_macro_impasto\logs\training_20260303_021245.csv elapsed_sec_hint=
+- 2026-03-03T02:14:05: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_S10_the_anarchist\logs\training_20260303_021405.csv elapsed_sec_hint=
+- 2026-03-03T02:15:30: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_S1_zero_id\logs\training_20260303_021530.csv elapsed_sec_hint=
+- 2026-03-03T02:16:29: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_S2_color_blind\logs\training_20260303_021629.csv elapsed_sec_hint=
+- 2026-03-03T02:17:17: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_S3_texture_only\logs\training_20260303_021717.csv elapsed_sec_hint=
+- 2026-03-03T02:18:24: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_S4_macro_tyrant\logs\training_20260303_021824.csv elapsed_sec_hint=
+- 2026-03-03T02:20:53: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_S5_micro_chaos\logs\training_20260303_022053.csv elapsed_sec_hint=
+- 2026-03-03T02:21:37: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_S6_amnesia\logs\training_20260303_022137.csv elapsed_sec_hint=
+- 2026-03-03T02:22:13: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_S7_brush_riot\logs\training_20260303_022213.csv elapsed_sec_hint=
+- 2026-03-03T02:23:25: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_S8_lr_shock\logs\training_20260303_022325.csv elapsed_sec_hint=
+- 2026-03-03T02:24:12: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_S9_dense_pyramid\logs\training_20260303_022412.csv elapsed_sec_hint=
+- 2026-03-03T02:26:14: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_S10_the_anarchist\logs\training_20260303_022614.csv elapsed_sec_hint=
+- 2026-03-03T02:27:23: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_S1_zero_id\logs\training_20260303_022723.csv elapsed_sec_hint=
+- 2026-03-03T02:28:19: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_S2_color_blind\logs\training_20260303_022819.csv elapsed_sec_hint=
+- 2026-03-03T02:29:14: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_S3_texture_only\logs\training_20260303_022914.csv elapsed_sec_hint=
+- 2026-03-03T02:30:14: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_S4_macro_tyrant\logs\training_20260303_023014.csv elapsed_sec_hint=
+- 2026-03-03T02:36:55: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_S1_zero_id\logs\training_20260303_023404.csv elapsed_sec_hint=
+- 2026-03-03T05:27:51: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_S1_zero_id\logs\training_20260303_023803.csv elapsed_sec_hint=
+- 2026-03-03T08:19:04: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_S2_color_blind\logs\training_20260303_053403.csv elapsed_sec_hint=
+- 2026-03-03T10:43:08: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_S3_texture_only\logs\training_20260303_082507.csv elapsed_sec_hint=
+- 2026-03-03T12:30:38: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\no-tv\logs\training_20260303_122823.csv elapsed_sec_hint=
+- 2026-03-03T14:10:31: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\no-tv\logs\training_20260303_123223.csv elapsed_sec_hint=
+- 2026-03-03T15:40:46: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\freq-tv-0.01-patch5-up\logs\training_20260303_154046.csv elapsed_sec_hint=
+- 2026-03-03T15:53:51: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\freq-tv-0.01-patch5-up\logs\training_20260303_155351.csv elapsed_sec_hint=
+- 2026-03-03T15:58:40: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\freq-tv-0.01-patch5-up\logs\training_20260303_155840.csv elapsed_sec_hint=
+- 2026-03-03T17:19:39: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\final_demodulation\logs\training_20260303_171939.csv elapsed_sec_hint=
+- 2026-03-03T17:26:30: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_diag_vram\logs\training_20260303_172630.csv elapsed_sec_hint=
+- 2026-03-03T17:29:01: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\exp_diag_vram\logs\training_20260303_172704.csv elapsed_sec_hint=
+- 2026-03-03T18:21:20: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\final_demodulation\logs\training_20260303_174152.csv elapsed_sec_hint=
+- 2026-03-03T21:23:53: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\final_demodulation\logs\training_20260303_184506.csv elapsed_sec_hint=
+- 2026-03-04T00:21:50: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\freq-tv-0.01-patch5-up\logs\training_20260304_002150.csv elapsed_sec_hint=
+- 2026-03-04T00:26:19: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\freq-tv-0.01-patch5-up\logs\training_20260304_002619.csv elapsed_sec_hint=
+- 2026-03-04T02:24:14: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\ablate_A0_base_p5_id045_tv005\logs\training_20260304_003917.csv elapsed_sec_hint=
+- 2026-03-04T04:07:16: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\ablate_A1_p7_id045_tv005\logs\training_20260304_023114.csv elapsed_sec_hint=
+- 2026-03-04T05:47:40: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\ablate_A2_p11_id045_tv005\logs\training_20260304_041320.csv elapsed_sec_hint=
+- 2026-03-04T07:30:37: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\ablate_A3_p5_id030_tv005\logs\training_20260304_055340.csv elapsed_sec_hint=
+- 2026-03-04T09:14:00: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\ablate_A4_p5_id070_tv005\logs\training_20260304_073644.csv elapsed_sec_hint=
+- 2026-03-04T10:59:11: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\ablate_A5_p5_id045_tv003\logs\training_20260304_092006.csv elapsed_sec_hint=
+- 2026-03-04T12:34:04: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\ablate_A6_p5_id045_tv008\logs\training_20260304_110603.csv elapsed_sec_hint=
+- 2026-03-04T12:38:35: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\delta_A0_base_p5_id045_tv005\logs\training_20260304_123835.csv elapsed_sec_hint=
+- 2026-03-04T12:45:30: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\delta_A0_base_p5_id045_tv005\logs\training_20260304_124023.csv elapsed_sec_hint=
+- 2026-03-04T13:00:20: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\delta_A0_base_p5_id045_tv005\logs\training_20260304_130020.csv elapsed_sec_hint=
+- 2026-03-04T13:04:41: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\delta_A0_base_p5_id045_tv005\logs\training_20260304_130441.csv elapsed_sec_hint=
+- 2026-03-04T15:42:55: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\delta_A0_base_p5_id045_tv005\logs\training_20260304_131227.csv elapsed_sec_hint=
+- 2026-03-04T17:36:28: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\delta_A1_p7_id045_tv005\logs\training_20260304_154945.csv elapsed_sec_hint=
+- 2026-03-04T18:01:47: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\delta_A2_p11_id045_tv005\logs\training_20260304_174250.csv elapsed_sec_hint=
+- 2026-03-04T20:44:23: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\inject_I0_all_open\logs\training_20260304_181238.csv elapsed_sec_hint=
+- 2026-03-04T23:25:55: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\inject_I1_body_only\logs\training_20260304_205127.csv elapsed_sec_hint=
+- 2026-03-05T01:59:04: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\inject_I2_hires_decoder_only\logs\training_20260304_233211.csv elapsed_sec_hint=
+- 2026-03-05T04:31:54: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\inject_I3_progressive_1_05_01\logs\training_20260305_020503.csv elapsed_sec_hint=
+- 2026-03-05T07:04:27: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\inject_I4_body_hires\logs\training_20260305_043804.csv elapsed_sec_hint=
+- 2026-03-05T09:44:55: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\inject_I5_body_decoder\logs\training_20260305_071125.csv elapsed_sec_hint=
+- 2026-03-05T12:28:05: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\inject_I6_hires_only\logs\training_20260305_095309.csv elapsed_sec_hint=
+- 2026-03-05T14:47:38: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\inject_I7_decoder_only\logs\training_20260305_123607.csv elapsed_sec_hint=
+- 2026-03-05T16:48:32: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\decoder-1\logs\training_20260305_145136.csv elapsed_sec_hint=
+- 2026-03-05T20:33:18: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\1-decoder-patch5-15\logs\training_20260305_184252.csv elapsed_sec_hint=
+- 2026-03-05T21:21:10: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\1-decoder-patch5_23-color1.0\logs\training_20260305_210342.csv elapsed_sec_hint=
+- 2026-03-05T22:28:44: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\1-decoder-no_norm-patch5_23-color1.0\logs\training_20260305_212415.csv elapsed_sec_hint=
+- 2026-03-06T01:24:59: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\decoder-A-anchor-nohf\logs\training_20260305_231238.csv elapsed_sec_hint=
+- 2026-03-06T02:12:05: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\decoder-B-hf-strict-id\logs\training_20260306_013104.csv elapsed_sec_hint=
+- 2026-03-06T02:22:36: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\decoder-A-anchor-nohf\logs\training_20260306_022236.csv elapsed_sec_hint=
+- 2026-03-06T02:31:16: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\decoder-B-hf-strict-id\logs\training_20260306_022249.csv elapsed_sec_hint=
+- 2026-03-06T02:58:31: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\decoder-A-anchor-nohf\logs\training_20260306_025831.csv elapsed_sec_hint=
+- 2026-03-06T07:01:35: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\decoder-B-hf-strict-id\logs\training_20260306_025844.csv elapsed_sec_hint=
+- 2026-03-06T10:08:46: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\decoder-C-relaxed-id-nohf\logs\training_20260306_070833.csv elapsed_sec_hint=
+- 2026-03-06T14:12:47: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\decoder-D-sweetspot\logs\training_20260306_101529.csv elapsed_sec_hint=
+- 2026-03-06T18:08:29: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\decoder-E-extreme-brush\logs\training_20260306_142028.csv elapsed_sec_hint=
+- 2026-03-06T18:49:01: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\decoder-F-tv-off\logs\training_20260306_181542.csv elapsed_sec_hint=
+- 2026-03-06T19:51:45: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\G0-Base-Gain0.5\logs\training_20260306_195145.csv elapsed_sec_hint=
+- 2026-03-06T23:46:29: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\G0-Base-Gain0.5\logs\training_20260306_195356.csv elapsed_sec_hint=
+- 2026-03-07T01:59:38: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\G1-Relax-ID\logs\training_20260306_235248.csv elapsed_sec_hint=
+- 2026-03-07T08:03:42: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\ablate_M1-Aggressive-Fine\logs\training_20260307_021951.csv elapsed_sec_hint=
+- 2026-03-07T13:50:57: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\ablate_M2-Smooth-Impasto\logs\training_20260307_080955.csv elapsed_sec_hint=
+- 2026-03-07T13:57:17: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\ablate_M3-Macro-Flowing\logs\training_20260307_135717.csv elapsed_sec_hint=
+- 2026-03-07T15:47:30: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\no-dict-hf-swd\logs\training_20260307_141213.csv elapsed_sec_hint=
+- 2026-03-07T19:04:44: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\decoder-H-MSCTM\logs\training_20260307_155039.csv elapsed_sec_hint=
+- 2026-03-07T21:08:36: log_file dataset=unknown method=IDT path=I:\Github\Latent_Style\experiments\decoder-H-MSCTM-idt_1-tv_0.3\logs\training_20260307_193137.csv elapsed_sec_hint=
+- 2026-03-07T21:28:26: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\decoder-H-MSCTM\logs\training_20260307_212826.csv elapsed_sec_hint=
+- 2026-03-07T22:30:44: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\decoder-H-MSCTM-mult-tv-1\logs\training_20260307_212959.csv elapsed_sec_hint=
+- 2026-03-08T01:08:35: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\decoder-H-MSCTM-no_clamp_mult-tv-2\logs\training_20260307_223306.csv elapsed_sec_hint=
+- 2026-03-08T04:04:30: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\G0_Balanced_Base\logs\training_20260308_010935.csv elapsed_sec_hint=
+- 2026-03-08T06:46:23: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\G0_Balanced_Base\logs\training_20260308_041307.csv elapsed_sec_hint=
+- 2026-03-08T11:58:33: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\G1_High_HF_Test\logs\training_20260308_065228.csv elapsed_sec_hint=
+- 2026-03-08T13:03:44: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\G2_High_TV_Test\logs\training_20260308_120456.csv elapsed_sec_hint=
+- 2026-03-08T13:12:59: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\decoder-H-MSCTM-mult-tv-1\logs\training_20260308_131006.csv elapsed_sec_hint=
+- 2026-03-08T13:16:26: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\nce\logs\training_20260308_131333.csv elapsed_sec_hint=
+- 2026-03-08T16:55:03: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\nce\logs\training_20260308_131829.csv elapsed_sec_hint=
+- 2026-03-08T17:40:59: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\nce\logs\training_20260308_174059.csv elapsed_sec_hint=
+- 2026-03-08T17:56:08: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\nce-gate_norm\logs\training_20260308_175608.csv elapsed_sec_hint=
+- 2026-03-08T18:00:09: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\nce-gate_norm\logs\training_20260308_180009.csv elapsed_sec_hint=
+- 2026-03-08T18:03:00: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\nce-gate_norm\logs\training_20260308_180300.csv elapsed_sec_hint=
+- 2026-03-08T19:32:17: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\nce-gate_norm\logs\training_20260308_180416.csv elapsed_sec_hint=
+- 2026-03-08T19:48:19: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\nce-gate_content\logs\training_20260308_194618.csv elapsed_sec_hint=
+- 2026-03-08T22:46:48: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\nce-gate_content\logs\training_20260308_194857.csv elapsed_sec_hint=
+- 2026-03-08T22:52:43: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\ablate_E1_Baseline_L_Rigid_LR14e4\logs\training_20260308_225243.csv elapsed_sec_hint=
+- 2026-03-08T23:50:15: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\nce-gate_norm\logs\training_20260308_235015.csv elapsed_sec_hint=
+- 2026-03-08T23:51:07: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\nce-gate_norm\logs\training_20260308_235107.csv elapsed_sec_hint=
+- 2026-03-08T23:52:27: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\nce-gate_norm\logs\training_20260308_235227.csv elapsed_sec_hint=
+- 2026-03-09T02:54:44: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\ablate_E2_15Series_Rigid_LR14e4\logs\training_20260309_015720.csv elapsed_sec_hint=
+- 2026-03-09T02:56:38: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\clocor1_E1_Macro19_Rigid_LR14e4\logs\training_20260309_025638.csv elapsed_sec_hint=
+- 2026-03-09T03:06:42: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\clocor1_E1_Macro19_Rigid_LR14e4\logs\training_20260309_030434.csv elapsed_sec_hint=
+- 2026-03-09T05:16:55: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\clocor1_E1_Macro19_Rigid_LR14e4\logs\training_20260309_030733.csv elapsed_sec_hint=
+- 2026-03-09T07:17:29: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\clocor1_E2_15Series_Rigid_LR14e4\logs\training_20260309_051820.csv elapsed_sec_hint=
+- 2026-03-09T09:17:46: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\clocor1_E3_15Series_Soft_LR14e4\logs\training_20260309_071844.csv elapsed_sec_hint=
+- 2026-03-09T11:12:17: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\clocor1_E4_9Series_Rigid_LR14e4\logs\training_20260309_091902.csv elapsed_sec_hint=
+- 2026-03-09T13:07:59: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\clocor1_E5_9Series_Soft_LR14e4\logs\training_20260309_111331.csv elapsed_sec_hint=
+- 2026-03-09T13:40:48: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\clocor1_E6_9Series_Free_LR30e4\logs\training_20260309_130926.csv elapsed_sec_hint=
+- 2026-03-09T16:49:27: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\nce-gate_norm-swd_0.45-cl_0.01\logs\training_20260309_135249.csv elapsed_sec_hint=
+- 2026-03-09T21:05:11: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\nce-swd_0.25-cl_0.01\logs\training_20260309_180722.csv elapsed_sec_hint=
+- 2026-03-11T04:58:07: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\nstyle-proj\logs\training_20260311_045807.csv elapsed_sec_hint=
+- 2026-03-11T04:58:47: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\nstyle-proj\logs\training_20260311_045847.csv elapsed_sec_hint=
+- 2026-03-11T10:05:49: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\nstyle-proj\logs\training_20260311_050022.csv elapsed_sec_hint=
+- 2026-03-23T23:14:08: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0000\experiment\logs\training_20260323_213939.csv elapsed_sec_hint=
+- 2026-03-24T00:45:51: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0001\experiment\logs\training_20260323_231553.csv elapsed_sec_hint=
+- 2026-03-24T02:17:15: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0002\experiment\logs\training_20260324_004731.csv elapsed_sec_hint=
+- 2026-03-24T03:48:42: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0003\experiment\logs\training_20260324_021855.csv elapsed_sec_hint=
+- 2026-03-24T05:20:06: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0004\experiment\logs\training_20260324_035023.csv elapsed_sec_hint=
+- 2026-03-24T06:51:20: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0005\experiment\logs\training_20260324_052147.csv elapsed_sec_hint=
+- 2026-03-24T08:22:33: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0006\experiment\logs\training_20260324_065300.csv elapsed_sec_hint=
+- 2026-03-24T09:53:52: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0007\experiment\logs\training_20260324_082414.csv elapsed_sec_hint=
+- 2026-03-24T11:25:17: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0008\experiment\logs\training_20260324_095533.csv elapsed_sec_hint=
+- 2026-03-24T11:26:58: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0009\experiment\logs\training_20260324_112658.csv elapsed_sec_hint=
+- 2026-03-24T12:57:21: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0010\experiment\logs\training_20260324_112739.csv elapsed_sec_hint=
+- 2026-03-24T14:28:51: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0011\experiment\logs\training_20260324_125901.csv elapsed_sec_hint=
+- 2026-03-24T16:00:12: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0012\experiment\logs\training_20260324_143032.csv elapsed_sec_hint=
+- 2026-03-24T17:31:25: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0013\experiment\logs\training_20260324_160153.csv elapsed_sec_hint=
+- 2026-03-24T17:39:04: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0014\experiment\logs\training_20260324_173305.csv elapsed_sec_hint=
+- 2026-03-24T17:56:06: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0000\experiment\logs\training_20260324_175606.csv elapsed_sec_hint=
+- 2026-03-24T17:56:17: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0001\experiment\logs\training_20260324_175617.csv elapsed_sec_hint=
+- 2026-03-24T17:56:27: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0002\experiment\logs\training_20260324_175627.csv elapsed_sec_hint=
+- 2026-03-24T17:56:38: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0003\experiment\logs\training_20260324_175638.csv elapsed_sec_hint=
+- 2026-03-24T17:56:49: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0004\experiment\logs\training_20260324_175649.csv elapsed_sec_hint=
+- 2026-03-24T17:57:00: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0005\experiment\logs\training_20260324_175700.csv elapsed_sec_hint=
+- 2026-03-24T17:57:11: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0006\experiment\logs\training_20260324_175711.csv elapsed_sec_hint=
+- 2026-03-24T17:57:22: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0007\experiment\logs\training_20260324_175722.csv elapsed_sec_hint=
+- 2026-03-24T17:57:33: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0008\experiment\logs\training_20260324_175733.csv elapsed_sec_hint=
+- 2026-03-24T19:29:36: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0009\experiment\logs\training_20260324_175744.csv elapsed_sec_hint=
+- 2026-03-24T19:31:17: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0010\experiment\logs\training_20260324_193117.csv elapsed_sec_hint=
+- 2026-03-24T19:31:28: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0011\experiment\logs\training_20260324_193128.csv elapsed_sec_hint=
+- 2026-03-24T19:31:39: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0012\experiment\logs\training_20260324_193139.csv elapsed_sec_hint=
+- 2026-03-24T19:31:50: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0013\experiment\logs\training_20260324_193150.csv elapsed_sec_hint=
+- 2026-03-24T19:35:06: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0014\experiment\logs\training_20260324_193201.csv elapsed_sec_hint=
+- 2026-03-24T19:38:50: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0010\experiment\logs\training_20260324_193850.csv elapsed_sec_hint=
+- 2026-03-24T19:39:01: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0011\experiment\logs\training_20260324_193901.csv elapsed_sec_hint=
+- 2026-03-24T19:39:13: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0012\experiment\logs\training_20260324_193913.csv elapsed_sec_hint=
+- 2026-03-24T19:39:25: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0013\experiment\logs\training_20260324_193925.csv elapsed_sec_hint=
+- 2026-03-24T21:10:36: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0014\experiment\logs\training_20260324_193936.csv elapsed_sec_hint=
+- 2026-03-24T22:43:59: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0015\experiment\logs\training_20260324_211222.csv elapsed_sec_hint=
+- 2026-03-25T00:14:45: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0016\experiment\logs\training_20260324_224547.csv elapsed_sec_hint=
+- 2026-03-25T01:43:19: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0017\experiment\logs\training_20260325_001628.csv elapsed_sec_hint=
+- 2026-03-25T03:11:46: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0018\experiment\logs\training_20260325_014502.csv elapsed_sec_hint=
+- 2026-03-25T04:40:42: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0019\experiment\logs\training_20260325_031327.csv elapsed_sec_hint=
+- 2026-03-25T04:42:26: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0020\experiment\logs\training_20260325_044226.csv elapsed_sec_hint=
+- 2026-03-25T06:18:24: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0021\experiment\logs\training_20260325_044828.csv elapsed_sec_hint=
+- 2026-03-25T06:22:18: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0022\experiment\logs\training_20260325_062013.csv elapsed_sec_hint=
+- 2026-03-25T09:07:03: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0037\experiment\logs\training_20260325_084054.csv elapsed_sec_hint=
+- 2026-03-25T10:28:12: log_file dataset=unknown method= path=I:\Github\Latent_Style\experiments\src-no-hf\style_oa\optuna_hpo\trial_0038\experiment\logs\training_20260325_090810.csv elapsed_sec_hint=
+
+## Cleanup Notes
+
+Only rows marked non_mainline_delete_candidate were deleted. likely_mainline_keep and review_delete_candidate were retained.
+The full per-file deletion audit is remote_i_deleted_checkpoints.csv.
