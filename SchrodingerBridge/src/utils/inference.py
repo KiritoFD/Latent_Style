@@ -293,14 +293,23 @@ class LGTInference:
 def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
     from diffusers import AutoencoderKL
 
+    force_dtype = torch.float16
+    model_key = str(model_id).strip().lower()
+    if model_key in {"sdxl-fp32", "sdxl-float32"}:
+        model_id = "stabilityai/sdxl-vae"
+        force_dtype = torch.float32
+    elif model_key in {"sdxl-fp16-fix", "sdxl-fix"}:
+        model_id = "madebyollin/sdxl-vae-fp16-fix"
+
     vae_presets = {
         "sd15": "stabilityai/sd-vae-ft-mse",
         "sdxl": "stabilityai/sdxl-vae",
         "mse": "stabilityai/sd-vae-ft-mse",
         "ema": "stabilityai/sd-vae-ft-ema",
     }
-    if model_id in vae_presets:
-        model_id = vae_presets[model_id]
+    preset = vae_presets.get(str(model_id).strip().lower())
+    if preset:
+        model_id = preset
 
     if cache_dir is None:
         cache_dir = os.path.expanduser("~/.cache/huggingface/hub")
@@ -309,7 +318,7 @@ def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
     try:
         vae = AutoencoderKL.from_pretrained(
             model_id,
-            torch_dtype=torch.float16,
+            torch_dtype=force_dtype,
             cache_dir=cache_dir,
             local_files_only=True,
         ).to(device)
@@ -323,7 +332,7 @@ def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
         found = _find_hf_repo_root(ms_dest)
         if found:
             try:
-                vae = AutoencoderKL.from_pretrained(found, torch_dtype=torch.float16, local_files_only=True).to(
+                vae = AutoencoderKL.from_pretrained(found, torch_dtype=force_dtype, local_files_only=True).to(
                     device
                 )
                 vae.eval()
@@ -341,13 +350,13 @@ def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
             else:
                 root = _find_hf_repo_root(dest)
             if root:
-                vae = AutoencoderKL.from_pretrained(root, torch_dtype=torch.float16).to(device)
+                vae = AutoencoderKL.from_pretrained(root, torch_dtype=force_dtype).to(device)
                 vae.eval()
                 return vae
         except Exception as exc:
             logger.warning("ModelScope VAE load failed: %s", exc)
 
-    vae = AutoencoderKL.from_pretrained(model_id, torch_dtype=torch.float16, cache_dir=cache_dir).to(device)
+    vae = AutoencoderKL.from_pretrained(model_id, torch_dtype=force_dtype, cache_dir=cache_dir).to(device)
     vae.eval()
     return vae
 

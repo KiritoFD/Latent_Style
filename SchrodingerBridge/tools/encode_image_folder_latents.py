@@ -292,7 +292,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input-root", required=True, help="Class-folder image root.")
     parser.add_argument("--output-root", required=True, help="Output latent root with the same class subdirs.")
     parser.add_argument("--test-output-root", default="", help="Optional held-out test latent root.")
-    parser.add_argument("--vae-model", default="ema", help="VAE alias/id. Use ema, mse, sd15, or a HF repo id.")
+    parser.add_argument(
+        "--vae-model",
+        default="ema",
+        help="VAE alias/id. Use ema, mse, sd15, sdxl, sdxl-fp32, sdxl-fp16-fix, or a HF repo id.",
+    )
     parser.add_argument("--vae-cache-dir", default=None, help="Optional HuggingFace/ModelScope cache dir.")
     parser.add_argument("--image-size", type=int, default=512, help="Square image size before VAE encode.")
     parser.add_argument("--batch-size", type=int, default=4, help="VAE encode batch size.")
