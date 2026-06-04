@@ -204,3 +204,8 @@ Commit checkpoint:
   order the next edit batches: cleanup/checklist regressions first, then the
   Distinct5 `SaMAM 2250` plus `SaMST e5/e15` claim surface, then structure and
   mechanism rewrites.
+- 2026-06-04: Batch 1 source cleanup removed the stale
+  `no-op-adjusted`/`Euler steps`/`z_K` strings, dropped the regressed
+  `FloatBarrier` and checklist `\clearpage`, restored the checklist
+  significance item to `Partial`, and rebuilt the paper to a `13`-page PDF
+  without the end-of-paper blank-page regression.
