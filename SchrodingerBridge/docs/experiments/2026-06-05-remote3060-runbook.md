@@ -326,7 +326,7 @@ Current latent-method lessons:
 
 Current resource rule:
 
-- remote `3060` paper runs must stay under `11.2 GiB`
+- remote `3060` paper runs must stay strictly below `11.0 GiB`
 - do not overlap latent baseline probes if combined usage pushes the card above that cap
 - on 2026-06-05, concurrent `SaMam` + `SaMST` pushed usage to about `12.0 / 12.3 GiB`, so the `SaMST` probe was stopped and `SaMam` was kept as the active formal run
 - current verified single-run reference:

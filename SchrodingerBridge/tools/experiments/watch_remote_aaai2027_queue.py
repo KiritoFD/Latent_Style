@@ -269,6 +269,7 @@ def _health_check_run(
     config_rel: str,
     remote_workspace_root: str,
     health_wait_seconds: int,
+    max_runtime_memory_mib: int,
 ) -> int:
     remote_log = _derive_remote_log(config_rel, remote_workspace_root)
     time.sleep(max(0, health_wait_seconds))
@@ -306,6 +307,16 @@ def _health_check_run(
     if not alive:
         print("Queue health check failed: no live process matched the launch config.")
         return 32
+    if (
+        gpu_memory_used_mib is not None
+        and gpu_memory_used_mib >= max(0, int(max_runtime_memory_mib))
+    ):
+        print(
+            "Queue health check failed: remote GPU memory crossed the hard runtime "
+            f"cap {int(max_runtime_memory_mib)} MiB with observed usage "
+            f"{gpu_memory_used_mib} MiB."
+        )
+        return 33
     return 0
 
 
@@ -336,6 +347,7 @@ def main() -> int:
     parser.add_argument("--idle-poll-seconds", type=int, default=10)
     parser.add_argument("--idle-timeout-seconds", type=int, default=300)
     parser.add_argument("--health-wait-seconds", type=int, default=30)
+    parser.add_argument("--max-runtime-memory-mib", type=int, default=11000)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -372,6 +384,7 @@ def main() -> int:
         config_rel=args.a1_config,
         remote_workspace_root=args.remote_workspace_root,
         health_wait_seconds=int(args.health_wait_seconds),
+        max_runtime_memory_mib=int(args.max_runtime_memory_mib),
     )
     if a1_health != 0:
         return a1_health
@@ -419,6 +432,7 @@ def main() -> int:
             config_rel=config_rel,
             remote_workspace_root=args.remote_workspace_root,
             health_wait_seconds=int(args.health_wait_seconds),
+            max_runtime_memory_mib=int(args.max_runtime_memory_mib),
         )
         if health != 0:
             return health
