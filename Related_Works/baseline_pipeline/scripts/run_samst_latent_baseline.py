@@ -56,6 +56,7 @@ def main() -> int:
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--max-steps", type=int, default=0)
     parser.add_argument("--batch-size", type=int, default=2)
+    parser.add_argument("--checkpoint-interval", type=int, default=100)
     parser.add_argument("--max-train-per-style", type=int, default=0)
     parser.add_argument("--vae-model", type=str, default="ema")
     parser.add_argument("--vae-cache-dir", type=str, default="")
@@ -107,7 +108,7 @@ def main() -> int:
         "step_size": 25,
         "save_interval": int(args.epochs),
         "log_interval": 10,
-        "checkpoint_interval": 100,
+        "checkpoint_interval": int(args.checkpoint_interval),
         "checkpoint_model_dir": None,
         "begin_checkpoint": None,
         "begin_epoch": None,

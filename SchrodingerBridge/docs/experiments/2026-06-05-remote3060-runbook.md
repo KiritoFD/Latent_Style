@@ -8,6 +8,7 @@ Purpose:
 - make remote runs reproducible without rereading chat history
 - standardize sync, preflight, launch, monitor, and closure
 - enforce a hard single-run VRAM ceiling of `11.0 GiB`
+- treat the host-owned remote launcher as the default entrypoint for formal paper runs
 
 ## Machine contract
 
@@ -52,6 +53,7 @@ Rule:
 
 - do not build long one-liner launch commands through nested quoting unless there is no alternative
 - prefer one of:
+  - `SchrodingerBridge/tools/experiments/launch_remote_wsl_command.py`
   - packet sync + remote `py_compile`
   - uploaded shell script under `_codex_tmp`
   - reviewed launcher script committed in repo
@@ -131,6 +133,8 @@ Do not assume the remote checkout is current.
 
 Use a reviewed push script, for example:
 
+- [launch_remote_wsl_command.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_wsl_command.py)
+- [launch_remote_distinct5_latent_baseline.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_distinct5_latent_baseline.py)
 - [push_remote_samst_step_packet.py](/G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/scripts/push_remote_samst_step_packet.py)
 - [push_remote_latent_baseline_packet.py](/G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/scripts/push_remote_latent_baseline_packet.py)
 - [handoff_remote_latent_samam_to_a1.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/handoff_remote_latent_samam_to_a1.py)
@@ -150,6 +154,8 @@ After sync:
 
 Use the smallest stable launch surface:
 
+- host-owned remote launcher for any formal paper-facing task:
+  - `SchrodingerBridge/tools/experiments/launch_remote_wsl_command.py`
 - short repo script if possible
 - wrapper `.sh` in `_codex_tmp` if quoting is fragile
 - `schtasks` only when the job must detach and survive SSH disconnect
@@ -205,8 +211,8 @@ Distinct5-512 active roots:
 
 - latent train:
   - `/mnt/i/wikiart_distinct5_samam_512_latents_ema/train`
-- latent test:
-  - `/mnt/i/wikiart_distinct5_samam_512_latents_ema/test`
+- latent held-out:
+  - `/mnt/i/wikiart_distinct5_latents_512_ema_test`
 - classview test:
   - `/mnt/i/wikiart_distinct5_samam_512_classview/test`
 
