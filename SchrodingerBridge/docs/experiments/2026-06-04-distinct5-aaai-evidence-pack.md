@@ -12,6 +12,7 @@ The clarified `same-cost` question is:
 - compare methods by matched training wall time first
 - keep eval wall separate
 - record VRAM as part of cost where available
+- if a true matched-budget rerun is started later for `SaMAM` / `SaMST`, keep it on the same remote `RTX 3060` surface; `SaMAM` stays in `WSL`
 - prioritize transfer-only `CLIP-S`, `delta_idt_transfer`, `LPIPS`, and `targetwise ArtFID`
 - keep `full` metrics as companion evidence, not the headline axis
 
@@ -78,6 +79,13 @@ Remote verification already performed:
   - `epoch_0001 .. epoch_0004` each have `summary.json`
   - `epoch_0005` currently has only `images/` and `metrics.csv`
   - no paper-facing `targetwise ArtFID` has been computed for this run
+- actual launch-path verification on `2026-06-04`:
+  - owner shell + repo root check via `ssh` and `dir`
+  - WSL foreground eval path works:
+    - `wsl -d Ubuntu-26.04 -- bash /mnt/i/Github/Latent_Style/SchrodingerBridge/_codex_tmp/remote_k_longer_eval_5_8_artfid.sh`
+  - tmux launcher works up to image generation start:
+    - `wsl -d Ubuntu-26.04 -- bash /mnt/i/Github/Latent_Style/SchrodingerBridge/_codex_tmp/run_k_longer_eval_5_8_artfid_tmux.sh`
+  - `schtasks` and `Start-Process` were not reliable holders for this eval path on the current owner surface
 
 Current paper-entry reading:
 
@@ -107,6 +115,12 @@ Current result:
 ## Highest-Priority GPU Action
 
 The next GPU action should be eval completion, not new training.
+
+Authoritative launch manifests created for this closure step:
+
+- [remote_k_longer_eval_5_8_artfid.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/remote_k_longer_eval_5_8_artfid.sh)
+- [run_k_longer_eval_5_8_artfid_tmux.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/run_k_longer_eval_5_8_artfid_tmux.sh)
+- [remote_k_longer_reuse_e5_artfid.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/remote_k_longer_reuse_e5_artfid.sh)
 
 Use this as the owner-surface command in WSL:
 
@@ -145,10 +159,20 @@ Durable outputs to expect:
 - log:
   - `I:\Github\Latent_Style\SchrodingerBridge\_codex_tmp\remote_k_longer_eval_5_8_artfid.log`
 
+Current execution status on `2026-06-04`:
+
+- `epoch_0005` clean rerun has already been pushed past image generation and into a valid `metrics.csv` packet under:
+  - `I:\Github\Latent_Style\SchrodingerBridge\exp\aaai2027_longer_train_k_seed42_b44_e8\full_eval_artfid\epoch_0005`
+- `summary.json` and `aggregate_targetwise_artfid.json` are still pending for that packet
+- the most reliable path so far is a two-stage closure:
+  - stage 1: generate packet under `full_eval_artfid/epoch_0005..0008`
+  - stage 2: reuse-only eval from the saved packet, starting with [remote_k_longer_reuse_e5_artfid.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/remote_k_longer_reuse_e5_artfid.sh)
+
 Risk / blocker:
 
 - this is an eval-only closure step, so there is no `remote_train.log` to recover here
 - existing `epoch_0005` partial output should be treated as contaminated and not reused as paper evidence
+- the remaining blocker is not the evaluator contract itself but robust detached holding on the owner surface for long reuse-only / ArtFID completion
 - if `full_eval_artfid/epoch_0005..0008` still fail the gate, write the arm as negative evidence and stop
 
 ## P2 Paper Entry Rule
