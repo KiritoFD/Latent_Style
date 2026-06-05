@@ -26,14 +26,19 @@
 | path | count | size MB | 结论 |
 |---|---:|---:|---|
 | `SchrodingerBridge/exp` | 9 | 363.490 | 8 个 WikiArt512 正式 epoch 权重 + 1 个 ArtFID 依赖 |
+| `SchrodingerBridge/scale` | 11350 | 3179.108 | scale/dataset tensors，不是训练 ckpt |
+| `SchrodingerBridge/datasets/horse2zebra` | 2661 | 336.076 | horse2zebra latent tensors，不是训练 ckpt |
+| `SchrodingerBridge/eval_cache` | 15 | 108.846 | SchrodingerBridge 内部 eval feature cache |
 | `Related_Works` | 31 | 814.913 | VGG/Inception/LPIPS 依赖 + tiny fake eval placeholders |
 | `Cycle-NCE` | 3 | 1.054 | eval_cache/ref_feats，不是训练 ckpt |
 | `final_works` | 0 | 0 | 已无训练权重 |
 | `lambda_grid` | 0 | 0 | dry-run/status，不是实际训练 |
 | `step_count_sweep` | 0 | 0 | dry-run/status，不是实际推理 |
-| `eval_cache` | 30 | 4383.348 | metric/model cache，不能按 ckpt 清理 |
+| root `eval_cache` | 32 | 5279.758 | offline_pairing/DINO/SDXL VAE/CLIP/ArtFID/ref feature cache，不能按 ckpt 清理 |
 | `clip-feats-vitb32` | 10361 | 1303.526 | per-image CLIP features |
+| `Dataset` | 2920 | 188.731 | Distinct5/WikiArt latent tensors |
 | `latent-256` | 10361 | 177.702 | per-image latent tensors |
+| root `inception-2015-12-05.pt` | 1 | 91.179 | metric dependency |
 | `seedream45_api` | 1 | 0.001 | tiny fake eval placeholder |
 
 之前记录的 `SchrodingerBridge/exp/local_wsl_distinct5_512_ema_k_b16_step2min_vramprobe` 3 个 probe 权重在当前扫描中已经不存在，因此已从“可删候选”修正为“过期候选，无当前删除动作”。
