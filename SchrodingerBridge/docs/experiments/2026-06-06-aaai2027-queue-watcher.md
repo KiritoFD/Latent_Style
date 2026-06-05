@@ -42,6 +42,16 @@ For `A1` and every later queued config, the watcher checks:
 4. process exit before launching the next packet
 5. remote total `memory.used <= 1500 MiB` before the next launch
 
+Current note:
+
+- the first live queue watcher instance was started before the later
+  WSL-based `tail` patch landed
+- that old instance still advances the queue correctly
+- only its stdout log tails are noisy because they still use the old non-WSL
+  tail path
+- restart the watcher after the current live lane finishes if clean log tails
+  are needed for the next packet
+
 ## Boundary
 
 - this helper does not overlap runs
