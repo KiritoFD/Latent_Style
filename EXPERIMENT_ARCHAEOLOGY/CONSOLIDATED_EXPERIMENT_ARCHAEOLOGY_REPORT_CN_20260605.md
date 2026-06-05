@@ -93,6 +93,20 @@
 - `MANUAL_LOCAL_ROOT_MISC_POLICY_20260605.md`
 - `cleanup/manual_root_misc_cleanup_20260605.csv`
 
+本轮新增的数据/cache 根目录手工核验结论：
+
+- `Dataset` 已打开 `distinct5_512`、`wikiart512_5style` manifest 和 `wikiart_stress` encode log；代表 `.pt` 只读加载为 VAE latent tensor，不是训练 ckpt。
+- `latent-256` 代表样本 shape 为 `(1,4,32,32)`，`clip-feats-vitb32` 代表样本 shape 为 `(512,)`，分别是 legacy latent 和 CLIP feature cache。
+- `SchrodingerBridge/scale` 已打开 `datasets`、`vae_sdxl`、子目录大小和代表 `wikiart_latent_128` tensor shape `(4,128,128)`；有效部分是高分辨率 WikiArt 图像/latent 数据和 VAE 依赖。
+- `SchrodingerBridge/scale/datasets/wikiart_81k` 只有 HF cache metadata、lock 和 63.947MB `.incomplete`，没有实际数据 payload；已删除，释放 63.948MB。
+- `horse2zebra` 已打开 raw/train/test/latents，并只读加载 latent tensor shape `(4,32,32)`；保留。
+
+详见：
+
+- `manual_local_dataset_cache_policy_20260605.csv`
+- `MANUAL_LOCAL_DATASET_CACHE_POLICY_20260605.md`
+- `cleanup/manual_dataset_cache_cleanup_20260605.csv`
+
 ## 3. 远程主仓状态
 
 远程主仓 `I:\Github\Latent_Style` 当前不是空盘，也不是未清理状态。核心分类：
