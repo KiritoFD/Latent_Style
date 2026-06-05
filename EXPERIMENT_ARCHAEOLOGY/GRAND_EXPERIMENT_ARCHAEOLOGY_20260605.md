@@ -29,6 +29,8 @@ New manual products:
 - `manual_local_eval_cache_policy_20260605.csv`
 - `manual_local_root_misc_policy_20260605.csv`
 - `manual_local_dataset_cache_policy_20260605.csv`
+- `manual_remote_samam_checkpoint_thinning_policy_20260605.csv`
+- `manual_remote_samam_hash_pairs_20260605.csv`
 - `manual_coverage_matrix_20260605.csv`
 - `manual_cleanup_retention_and_next_candidates_20260605.csv`
 - `GRAND_EXPERIMENT_ARCHAEOLOGY_20260605.md`
@@ -38,6 +40,7 @@ New manual products:
 - `MANUAL_LOCAL_EVAL_CACHE_POLICY_20260605.md`
 - `MANUAL_LOCAL_ROOT_MISC_POLICY_20260605.md`
 - `MANUAL_LOCAL_DATASET_CACHE_POLICY_20260605.md`
+- `MANUAL_REMOTE_SAMAM_CHECKPOINT_THINNING_20260605.md`
 
 Existing manual products extended/used as context:
 
@@ -290,7 +293,7 @@ Other files:
 - LPIPS dependency under StarGAN;
 - tiny fake eval placeholders.
 
-Conclusion: remote SaMAM cleanup is clean under the current retention rule. The remaining central step checkpoints are evidence, not random old ckpt files.
+Conclusion: remote SaMAM cleanup is clean under the current retention rule. The remaining central step checkpoints are evidence, not random old ckpt files. A later thinning audit opened `step_checkpoints`, `eval_curve`, `convergence_recovered.md`, `segmented.log`, and ArtFID reuse directories, then SHA256-compared `last*.ckpt` aliases against the natural step checkpoint pairs. All seven alias pairs differed, so no alias could be deleted as a duplicate. No remote SaMAM deletion was performed in that audit; details are in `manual_remote_samam_checkpoint_thinning_policy_20260605.csv`, `manual_remote_samam_hash_pairs_20260605.csv`, and `MANUAL_REMOTE_SAMAM_CHECKPOINT_THINNING_20260605.md`.
 
 ### Remote Cycle-NCE and experiments
 
