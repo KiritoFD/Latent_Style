@@ -161,10 +161,15 @@ Remote main retained evidence:
 
 Remote main remaining gap:
 
-- `Cycle-NCE\45.rar` cannot be deleted yet. The curated extraction policy shows
-  it contains 6096 entries: 4 configs, 8 summaries, 8 metrics CSVs, 5 training
-  CSVs, 42 source/structured files, 9 other files, 6008 generated/eval images,
-  and 12 weights. It is not a weight-only archive.
+- `Cycle-NCE\45.rar` cannot be deleted yet without an owner-approved delete
+  whitelist, but the curated nonweight extraction package now exists at
+  `I:\Github\Latent_Style\Cycle-NCE\_curated_45_nonweight_20260605`. It
+  contains 6084 nonweight payload files, 144.730 MB, and 0 payload files with
+  weight extensions; all nonweight entries matched the archive listing by path
+  and bytes. Four retained `model.py` files were manually opened as source
+  snapshots, not weights.
+  The remaining question is whether the old archived weights and compressed
+  archive copy are disposable.
 - Cache duplicates cannot be deleted from hash equality alone. The current
   policy requires canonical cache-root migration, symlink/junction policy, and
   offline eval verification.
@@ -291,8 +296,9 @@ deleted only two exact duplicate targets; the next slice should again produce a
 CSV/MD policy and delete only if exact whitelist proof exists.
 
 Block 2, 1.0h:
-Create a curated nonweight extraction package plan for `Cycle-NCE\45.rar`.
-Verify entry counts before any archive deletion decision.
+The curated nonweight extraction package for `Cycle-NCE\45.rar` now exists and
+is verified. Next step is owner decision plus a new delete whitelist if the
+original archive/old weights should be removed.
 
 Block 3, 1.0h:
 Remote TokenizerClean no-summary recovery. For the 5 training-log-only payloads,
@@ -323,5 +329,5 @@ Not complete.
 
 The task is substantially advanced, but completion is unproven because the
 remaining gaps are concrete: local nested generated media, `45.rar` curated
-extraction, TokenizerClean summary recovery/owner decisions, retained-media
+archive owner decision, TokenizerClean summary recovery/owner decisions, retained-media
 manifests, docs timing promotion, and final consistency audit.
