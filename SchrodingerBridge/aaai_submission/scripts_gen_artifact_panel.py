@@ -20,12 +20,23 @@ FINAL = ROOT / "final"
 OUT.mkdir(exist_ok=True)
 
 DOMAINS = ["photo", "Hayao", "monet", "vangogh", "cezanne"]
-GRID_CELL = 108
-GRID_LABEL_W = 78
-GRID_LABEL_H = 30
-GRID_PAD = 12
-GRID_GAP = 18
+
+GRID_CELL = 52
+GRID_LABEL_W = 44
+GRID_LABEL_H = 18
+GRID_GAP = 12
+
+CROP_SIZE = 150
+CROP_GAP = 10
+CROP_LABEL_W = 50
+CROP_TITLE_H = 28
+CROP_HEADER_H = 20
+SECTION_GAP = 14
+
 BOX_COLOR = (196, 78, 82)
+TEXT_DARK = (20, 20, 20)
+TEXT_MID = (70, 70, 70)
+BORDER = (48, 48, 48)
 
 CROPS = [
     {
@@ -54,23 +65,25 @@ def font(size=14, bold=False):
         ("C:/Windows/Fonts/arialbd.ttf" if bold else "C:/Windows/Fonts/arial.ttf"),
         ("C:/Windows/Fonts/calibrib.ttf" if bold else "C:/Windows/Fonts/calibri.ttf"),
     ]
-    for c in candidates:
-        if Path(c).exists():
-            return ImageFont.truetype(c, size)
+    for candidate in candidates:
+        path = Path(candidate)
+        if path.exists():
+            return ImageFont.truetype(str(path), size)
     return ImageFont.load_default()
 
 
-FONT = font(14)
-FONT_B = font(18, bold=True)
-FONT_S = font(12)
-FONT_TAG = font(15, bold=True)
+FONT_GRID = font(11)
+FONT_LABEL = font(12)
+FONT_TITLE = font(17, bold=True)
+FONT_ROW = font(15, bold=True)
+FONT_TAG = font(14, bold=True)
 
 
 def open_any(img_dir: Path, stem: str) -> Image.Image:
     for ext in (".jpg", ".png"):
-        p = img_dir / f"{stem}{ext}"
-        if p.exists():
-            return Image.open(p).convert("RGB")
+        path = img_dir / f"{stem}{ext}"
+        if path.exists():
+            return Image.open(path).convert("RGB")
     raise FileNotFoundError(f"Missing {stem} under {img_dir}")
 
 
@@ -90,50 +103,9 @@ def split_src_tgt(stem: str) -> tuple[str, str]:
 
 
 def draw_tag(draw: ImageDraw.ImageDraw, x: int, y: int, tag: str) -> None:
-    r = 12
-    draw.ellipse([x - r, y - r, x + r, y + r], fill=BOX_COLOR, outline="white", width=2)
+    radius = 11
+    draw.ellipse([x - radius, y - radius, x + radius, y + radius], fill=BOX_COLOR, outline="white", width=2)
     draw.text((x, y - 1), tag, font=FONT_TAG, fill="white", anchor="mm")
-
-
-def make_grid(img_dir: Path, title: str) -> tuple[Image.Image, dict[str, tuple[int, int, int, int]]]:
-    w = GRID_LABEL_W + len(DOMAINS) * GRID_CELL
-    h = GRID_LABEL_H + len(DOMAINS) * GRID_CELL
-    canvas = Image.new("RGB", (w, h), "white")
-    draw = ImageDraw.Draw(canvas)
-    draw.rectangle([0, 0, w - 1, h - 1], outline=(40, 40, 40), width=2)
-    draw.text((GRID_LABEL_W // 2, 7), title, fill=(20, 20, 20), font=FONT_B, anchor="ma")
-    for j, tgt in enumerate(DOMAINS):
-        x = GRID_LABEL_W + j * GRID_CELL + GRID_CELL // 2
-        draw.text((x, 8), tgt, fill=(20, 20, 20), font=FONT_S, anchor="ma")
-    for i, src in enumerate(DOMAINS):
-        y = GRID_LABEL_H + i * GRID_CELL + GRID_CELL // 2
-        draw.text((8, y), src, fill=(20, 20, 20), font=FONT_S, anchor="lm")
-        for j, tgt in enumerate(DOMAINS):
-            p = pick_image(img_dir, src, tgt)
-            im = Image.open(p).convert("RGB").resize((GRID_CELL, GRID_CELL), Image.Resampling.LANCZOS)
-            x0 = GRID_LABEL_W + j * GRID_CELL
-            y0 = GRID_LABEL_H + i * GRID_CELL
-            canvas.paste(im, (x0, y0))
-            draw.rectangle([x0, y0, x0 + GRID_CELL, y0 + GRID_CELL], outline=(235, 235, 235), width=1)
-
-    placed_boxes: dict[str, tuple[int, int, int, int]] = {}
-    for crop in CROPS:
-        src, tgt = split_src_tgt(crop["stem"])
-        i = DOMAINS.index(src)
-        j = DOMAINS.index(tgt)
-        cell_x = GRID_LABEL_W + j * GRID_CELL
-        cell_y = GRID_LABEL_H + i * GRID_CELL
-        x, y, bw, bh = crop["box"]
-        scale = GRID_CELL / 256.0
-        sx0 = int(round(x * scale))
-        sy0 = int(round(y * scale))
-        sx1 = int(round((x + bw) * scale))
-        sy1 = int(round((y + bh) * scale))
-        box = (cell_x + sx0, cell_y + sy0, cell_x + sx1, cell_y + sy1)
-        draw.rectangle(box, outline=BOX_COLOR, width=3)
-        draw_tag(draw, box[0] + 13, box[1] + 13, crop["tag"])
-        placed_boxes[crop["tag"]] = box
-    return canvas, placed_boxes
 
 
 def crop_patch(im: Image.Image, box: tuple[int, int, int, int], size: int) -> Image.Image:
@@ -141,56 +113,104 @@ def crop_patch(im: Image.Image, box: tuple[int, int, int, int], size: int) -> Im
     return im.crop((x, y, x + w, y + h)).resize((size, size), Image.Resampling.LANCZOS)
 
 
+def make_grid(img_dir: Path, title: str) -> Image.Image:
+    width = GRID_LABEL_W + len(DOMAINS) * GRID_CELL
+    height = GRID_LABEL_H + len(DOMAINS) * GRID_CELL
+    canvas = Image.new("RGB", (width, height), "white")
+    draw = ImageDraw.Draw(canvas)
+    draw.rectangle([0, 0, width - 1, height - 1], outline=BORDER, width=2)
+    draw.text((6, GRID_LABEL_H // 2 + 1), title, fill=TEXT_DARK, font=FONT_TITLE, anchor="lm")
+
+    for col, tgt in enumerate(DOMAINS):
+        x = GRID_LABEL_W + col * GRID_CELL + GRID_CELL // 2
+        draw.text((x, GRID_LABEL_H // 2 + 1), tgt, fill=TEXT_DARK, font=FONT_GRID, anchor="mm")
+
+    for row, src in enumerate(DOMAINS):
+        y = GRID_LABEL_H + row * GRID_CELL + GRID_CELL // 2
+        draw.text((5, y), src, fill=TEXT_DARK, font=FONT_GRID, anchor="lm")
+        for col, tgt in enumerate(DOMAINS):
+            path = pick_image(img_dir, src, tgt)
+            image = Image.open(path).convert("RGB").resize((GRID_CELL, GRID_CELL), Image.Resampling.LANCZOS)
+            x0 = GRID_LABEL_W + col * GRID_CELL
+            y0 = GRID_LABEL_H + row * GRID_CELL
+            canvas.paste(image, (x0, y0))
+            draw.rectangle([x0, y0, x0 + GRID_CELL, y0 + GRID_CELL], outline=(228, 228, 228), width=1)
+
+    for crop in CROPS:
+        src, tgt = split_src_tgt(crop["stem"])
+        row = DOMAINS.index(src)
+        col = DOMAINS.index(tgt)
+        cell_x = GRID_LABEL_W + col * GRID_CELL
+        cell_y = GRID_LABEL_H + row * GRID_CELL
+        x, y, bw, bh = crop["box"]
+        scale = GRID_CELL / 256.0
+        sx0 = int(round(x * scale))
+        sy0 = int(round(y * scale))
+        sx1 = int(round((x + bw) * scale))
+        sy1 = int(round((y + bh) * scale))
+        box = (cell_x + sx0, cell_y + sy0, cell_x + sx1, cell_y + sy1)
+        draw.rectangle(box, outline=BOX_COLOR, width=2)
+        draw_tag(draw, box[0] + 11, box[1] + 11, crop["tag"])
+
+    return canvas
+
+
 def main():
-    left_grid, _ = make_grid(OURS, "LBM")
-    right_grid, _ = make_grid(SAMST, "SaMST")
+    left_grid = make_grid(OURS, "LBM")
+    right_grid = make_grid(SAMST, "SaMST")
 
-    crop_size = 176
-    crop_gap = 16
-    crop_label_w = 82
-    crop_title_h = 44
-    crop_header_h = 24
-    crop_section_h = crop_title_h + crop_header_h + 2 * crop_size + crop_gap
-    crop_section_w = crop_label_w + len(CROPS) * crop_size + (len(CROPS) - 1) * crop_gap
-
-    grid_w = left_grid.width + GRID_GAP + right_grid.width
-    width = max(grid_w, crop_section_w)
-    height = left_grid.height + GRID_PAD + crop_section_h
+    overview_width = left_grid.width + GRID_GAP + right_grid.width
+    crop_width = CROP_LABEL_W + len(CROPS) * CROP_SIZE + (len(CROPS) - 1) * CROP_GAP
+    width = max(overview_width, crop_width)
+    crop_section_height = CROP_TITLE_H + CROP_HEADER_H + 2 * CROP_SIZE + CROP_GAP
+    height = left_grid.height + SECTION_GAP + crop_section_height
     canvas = Image.new("RGB", (width, height), "white")
     draw = ImageDraw.Draw(canvas)
 
-    grid_x = (width - grid_w) // 2
+    grid_x = (width - overview_width) // 2
     canvas.paste(left_grid, (grid_x, 0))
     canvas.paste(right_grid, (grid_x + left_grid.width + GRID_GAP, 0))
 
-    crop_top = left_grid.height + GRID_PAD
+    crop_top = left_grid.height + SECTION_GAP
     draw.text(
-        (width // 2, crop_top + 4),
+        (width // 2, crop_top + 2),
         "Matched 256 crops from the boxed regions above",
-        fill=(20, 20, 20),
-        font=FONT_B,
+        fill=TEXT_DARK,
+        font=FONT_TITLE,
         anchor="ma",
     )
-    draw.text((8, crop_top + crop_title_h + crop_size // 2), "LBM", anchor="lm", font=FONT_B, fill=BOX_COLOR)
     draw.text(
-        (8, crop_top + crop_title_h + crop_size + crop_gap + crop_size // 2),
+        (8, crop_top + CROP_TITLE_H + CROP_HEADER_H + CROP_SIZE // 2),
+        "LBM",
+        anchor="lm",
+        font=FONT_ROW,
+        fill=BOX_COLOR,
+    )
+    draw.text(
+        (8, crop_top + CROP_TITLE_H + CROP_HEADER_H + CROP_SIZE + CROP_GAP + CROP_SIZE // 2),
         "SaMST",
         anchor="lm",
-        font=FONT_B,
-        fill=(20, 20, 20),
+        font=FONT_ROW,
+        fill=TEXT_DARK,
     )
 
-    row_roots = [("LBM", OURS), ("SaMST", SAMST)]
-    for j, crop in enumerate(CROPS):
-        x = (width - crop_section_w) // 2 + crop_label_w + j * (crop_size + crop_gap)
-        draw.text((x + crop_size // 2, crop_top + crop_title_h), f"{crop['tag']}  {crop['label']}", anchor="ma", font=FONT, fill=(20, 20, 20))
-        for row, (_, root) in enumerate(row_roots):
-            y = crop_top + crop_title_h + crop_header_h + row * (crop_size + crop_gap)
-            im = open_any(root, crop["stem"])
-            patch = crop_patch(im, crop["box"], crop_size)
+    crop_x0 = (width - crop_width) // 2 + CROP_LABEL_W
+    for col, crop in enumerate(CROPS):
+        x = crop_x0 + col * (CROP_SIZE + CROP_GAP)
+        draw.text(
+            (x + CROP_SIZE // 2, crop_top + CROP_TITLE_H),
+            f"{crop['tag']}  {crop['label']}",
+            anchor="ma",
+            font=FONT_LABEL,
+            fill=TEXT_DARK,
+        )
+        for row, root in enumerate((OURS, SAMST)):
+            y = crop_top + CROP_TITLE_H + CROP_HEADER_H + row * (CROP_SIZE + CROP_GAP)
+            image = open_any(root, crop["stem"])
+            patch = crop_patch(image, crop["box"], CROP_SIZE)
             canvas.paste(patch, (x, y))
-            draw.rectangle([x, y, x + crop_size, y + crop_size], outline=(50, 50, 50), width=1)
-            draw.rectangle([x + 1, y + 1, x + crop_size - 1, y + crop_size - 1], outline=BOX_COLOR, width=2)
+            draw.rectangle([x, y, x + CROP_SIZE, y + CROP_SIZE], outline=BORDER, width=1)
+            draw.rectangle([x + 1, y + 1, x + CROP_SIZE - 1, y + CROP_SIZE - 1], outline=BOX_COLOR, width=2)
 
     out = OUT / "fig_artifact_panel_ours_vs_samst.png"
     canvas.save(out)

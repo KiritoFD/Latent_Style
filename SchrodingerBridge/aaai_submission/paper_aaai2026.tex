@@ -341,11 +341,11 @@ Figure~\ref{fig:qualgrid} gives the global visual overview for the standard benc
 Cost matters here as deployment evidence, not as a normalized time-to-parity contest. The only evidence-closed historical row we retain is the preserved LBM record: 5.2 minutes of training to the reported checkpoint and 114\,ms/image over the reviewed 750-output protocol. Other historical baselines are omitted from the timing table because the currently available records are probe-estimated, mixed-protocol, or otherwise incomplete rather than closed operating-point packets. The practical reading is therefore narrower but cleaner: LBM remains in a compact single-image interactive regime at 114\,ms/image while keeping a 3.91M-parameter footprint, and we prefer that bounded statement to a broader cross-method timing slogan built on weaker evidence.
 
 \subsection{Artifact-sensitive diagnosis}
-The full-grid trend in Figure~\ref{fig:qualgrid} becomes clearest at crop level on the historical 256-resolution packet, where SaMST is the closest efficient baseline to LBM on the core metrics and also the closest recovered baseline with locally readable outputs for artifact diagnosis. Table~\ref{tab:artifact} combines whole-image rows with centered matched texture crops from the same packet, so the contrast is visible before and after magnification: SaMST often preserves coarse composition but pays for its stronger raw texture with muddy grain, unstable color spill, and broken local edges. LBM is less aggressive in raw style, but cleaner on the same spatial evidence.
+The full-grid trend in Figure~\ref{fig:qualgrid} becomes clearest at crop level on the historical 256-resolution packet, where SaMST is the closest efficient baseline to LBM on the core metrics and also the closest recovered baseline with locally readable outputs for artifact diagnosis. Table~\ref{tab:artifact} summarizes the artifact-sensitive metrics, while Figure~\ref{fig:artifact} places the same diagnosis on matched whole-image rows and centered texture crops from the same packet. The contrast is visible before and after magnification: SaMST often preserves coarse composition but pays for its stronger raw texture with muddy grain, unstable color spill, and broken local edges. LBM is less aggressive in raw style, but cleaner on the same spatial evidence.
 
 \begin{table}[t]
 \centering
-\caption{Artifact-sensitive diagnosis on the historical standard benchmark packet. Top: artifact-sensitive metrics among the strongest recovered methods. Bottom: a whole-image/crop composite from LBM and SaMST, showing that SaMST's stronger raw texture is accompanied by muddy grain, color spill, and broken local edges, whereas LBM remains cleaner on the same source-target rows.}
+\caption{Artifact-sensitive metrics on the historical standard benchmark packet. Higher is better for MUSIQ and MANIQA; lower is better for DISTS-content, HF-Patch-KID, FFT slope error, and Gram micro.}
 \label{tab:artifact}
 \small
 \begin{tabular}{lrrr}
@@ -360,10 +360,16 @@ FFT slope error $\downarrow$ & 0.5473 & 1.0536 & 0.7017 \\
 Gram micro $\downarrow$ & 0.0798 & 0.0947 & 0.1085 \\
 \bottomrule
 \end{tabular}
-\includegraphics[width=0.98\linewidth]{figures/fig_artifact_panel_ours_vs_samst.png}
 \end{table}
 
-Table~\ref{tab:artifact} shows that LBM is not merely winning by leaving the image unchanged. Relative to SaMST, it improves MUSIQ from 36.10 to 49.21, MANIQA from 0.314 to 0.406, DISTS-content from 0.294 to 0.248, HF-Patch-KID from 6.76 to 4.17, and FFT slope error from 1.054 to 0.547. A paired bootstrap over the 750 per-image scores for Ours gives 95\% intervals of $[0.4467,0.4563]$ for LPIPS and $[0.7091,0.7234]$ for CLIP-S. The photo-to-art subset ($n=120$) yields CLIP-S 0.6716 and LPIPS 0.4882; the non-identity subset ($n=600$) yields CLIP-S 0.6911 and LPIPS 0.4609.
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.98\linewidth]{figures/fig_artifact_panel_ours_vs_samst.png}
+    \caption{Matched artifact inspection on the historical 256-resolution packet. Top: whole-image rows from LBM and SaMST with the same crop locations marked. Bottom: zoomed regions from the boxed locations. SaMST's stronger raw texture is accompanied by muddy grain, green or purple spill, and broken local edges, whereas LBM remains cleaner on the same source-target rows.}
+    \label{fig:artifact}
+\end{figure}
+
+Table~\ref{tab:artifact} and Figure~\ref{fig:artifact} show that LBM is not merely winning by leaving the image unchanged. Relative to SaMST, it improves MUSIQ from 36.10 to 49.21, MANIQA from 0.314 to 0.406, DISTS-content from 0.294 to 0.248, HF-Patch-KID from 6.76 to 4.17, and FFT slope error from 1.054 to 0.547. A paired bootstrap over the 750 per-image scores for Ours gives 95\% intervals of $[0.4467,0.4563]$ for LPIPS and $[0.7091,0.7234]$ for CLIP-S. The photo-to-art subset ($n=120$) yields CLIP-S 0.6716 and LPIPS 0.4882; the non-identity subset ($n=600$) yields CLIP-S 0.6911 and LPIPS 0.4609.
 
 \subsection{Tokenizer and representation ablations}
 \begin{table*}[t]
