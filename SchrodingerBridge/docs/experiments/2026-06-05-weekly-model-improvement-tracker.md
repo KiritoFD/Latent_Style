@@ -148,11 +148,11 @@ Remote latent side quest currently occupying the only allowed GPU lane:
   - safely below the hard stop:
     - `< 11.0 GiB`
 - latest observed training progress:
-  - around `Epoch 0 step 1928`
+  - around `Epoch 0 step 2255`
   - observed train rate:
     - about `0.75 step/s`
 - rough remaining wall to first retained checkpoint:
-  - about `68 min` from the latest heartbeat if throughput stays flat
+  - about `61 min` from the latest heartbeat if throughput stays flat
 - retained checkpoint status:
   - none yet
   - first save still waits for `step 5000`
@@ -232,6 +232,6 @@ Remote handoff helper now prepared:
   - [handoff_remote_latent_samam_to_a1.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/handoff_remote_latent_samam_to_a1.py)
 - current dry-run state:
   - retained checkpoint list is still empty
-  - latent `SaMam` pid is still alive
+  - latent `SaMam` pid is still alive as `pid 414`
   - `A1` remote log does not yet exist
   - helper therefore correctly refuses handoff until the first retained checkpoint appears
