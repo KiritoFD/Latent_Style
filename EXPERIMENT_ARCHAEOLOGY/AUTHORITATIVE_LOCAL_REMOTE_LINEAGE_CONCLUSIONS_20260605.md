@@ -201,11 +201,18 @@ TokenizerClean retained no-summary payloads:
 - 5 payloads have no external evidence and remain training-log-only.
 - 1 payload is retained as a downstream resume source.
 - 1 payload is retained as a diagnostic evaluated payload.
+- Manual deep-open evidence now records config/data/resume/training/time/weight
+  fields for all 7 rows. It also flags one config lineage anomaly:
+  `wikiart512_ema_spectral_stat_full_e2_from_tok_b48` records
+  `resume_checkpoint=./exp/wikiart512_ema_spectral_stat_full_e2_from_tok_b48/epoch_0004.pt`,
+  but that file does not exist remotely.
 
 TokenizerClean remaining gap:
 
 - Recover or generate summaries for the 5 training-log-only payloads, or get an
   explicit owner delete decision.
+- Repair or annotate the missing-resume config lineage anomaly before promoting
+  `wikiart512_ema_spectral_stat_full_e2_from_tok_b48` as a clean lineage row.
 - Build a citation-to-artifact manifest for the 26 retained media dirs before
   any archive migration.
 - Do not delete current/cited media by count or size.
@@ -301,8 +308,11 @@ is verified. Next step is owner decision plus a new delete whitelist if the
 original archive/old weights should be removed.
 
 Block 3, 1.0h:
-Remote TokenizerClean no-summary recovery. For the 5 training-log-only payloads,
-attempt summary recovery or prepare an owner-decision table.
+Remote TokenizerClean no-summary recovery. The 7 retained payloads have now
+been manually reopened one by one; for the 5 training-log-only payloads, attempt
+summary recovery or prepare an owner-decision table. Also repair/annotate the
+missing `epoch_0004.pt` resume anomaly in
+`wikiart512_ema_spectral_stat_full_e2_from_tok_b48`.
 
 Block 4, 1.0h:
 TokenizerClean cited/current media manifest. Map docs/paper references to
