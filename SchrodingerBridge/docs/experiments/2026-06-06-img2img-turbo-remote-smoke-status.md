@@ -11,7 +11,8 @@ Scope:
 
 ## Summary
 
-This lane is no longer blocked on launcher fragility or missing wrapper glue.
+This lane is no longer blocked on launcher fragility, missing wrapper glue, or
+offline model bootstrap.
 
 The current blocker has been narrowed to one specific infrastructure issue:
 
@@ -131,16 +132,29 @@ Observed evidence:
   - LPIPS setup
 - the OOM happens inside the actual generator forward/backward path
 
+Lowest-cost closed smoke packet so far:
+
+- dedicated env:
+  - `/home/xy/venvs/img2img_turbo312`
+- local pretrained root:
+  - `/mnt/i/Github/Latent_Style/Related_Works/runs/hf_snapshots/sd_turbo_snapshot_20260606`
+- `mixed_precision = fp16`
+- `gradient_checkpointing = on`
+- `allow_tf32 = on`
+- `train_batch_size = 1`
+- this packet still OOMs at the first training step
+
 ## Immediate next action
 
 Do next:
 
 1. treat the current `img2img-turbo` line as **runnable but not yet
    machine-safe**
-2. only continue this lane with a concrete memory-reduction move, for example:
+2. only continue this lane with a concrete memory-reduction move that goes
+   beyond the already-tested low-cost smoke, for example:
    - `xformers`
    - smaller validation/reference packet
-   - reduced LoRA rank
+   - an even smaller LoRA footprint than the current smoke
    - smaller train prep if the protocol is explicitly re-scoped
 3. do not promote the current smoke into any paper-facing same-cost row
 
