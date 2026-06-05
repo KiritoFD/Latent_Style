@@ -187,8 +187,10 @@ Current active probe:
   - `16-mixed` was rejected by `mamba_ssm` selective scan, so `SaMam` latent now runs with `32-true`
   - the latent `StyleEmbedder` path needed a small-shape compatibility fix; `4x4` token maps now skip over-aggressive pool blocks
   - after the fix and precision change, sanity check completed and real training steps started
-  - at around `23:36-23:37`, the log had already advanced through dozens of training steps in `Epoch 0`
-  - observed GPU usage during active training reached about `7.6 / 12.3 GiB`
+- at around `23:36-23:37`, the log had already advanced through dozens of training steps in `Epoch 0`
+- observed GPU usage during active training reached about `7.6 / 12.3 GiB`
+- later single-run monitoring showed the lane still healthy at roughly `step 500+` in `Epoch 0`, with GPU usage around `7.46 / 12.29 GiB`
+- no retained step checkpoint exists yet because the first save boundary is still `5000` steps
 
 Interpretation:
 
@@ -236,3 +238,7 @@ Cap adjustment:
 - current active formal latent lane is only:
   - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4`
 - `SaMST` should resume only as a single-run probe or after an explicit lower-VRAM calibration that stays below the cap
+- first cap-safe retry should use:
+  - no overlap with `SaMam`
+  - `batch-size 1`
+  - same `legacy256_overfit50` dataset contract
