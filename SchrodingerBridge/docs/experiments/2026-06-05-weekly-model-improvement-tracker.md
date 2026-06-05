@@ -148,11 +148,11 @@ Remote latent side quest currently occupying the only allowed GPU lane:
   - safely below the hard stop:
     - `< 11.0 GiB`
 - latest observed training progress:
-  - around `Epoch 0 step 2407`
+  - around `Epoch 0 step 2960`
   - observed train rate:
-    - about `0.75 step/s`
+    - about `0.76 step/s`
 - rough remaining wall to first retained checkpoint:
-  - about `57 min` from the latest heartbeat if throughput stays flat
+  - about `45 min` from the latest heartbeat if throughput stays flat
 - retained checkpoint status:
   - none yet
   - first save still waits for `step 5000`
@@ -224,13 +224,25 @@ Additional cheap reviewer control now prepared:
   - reduce only `semantic_swd_num_projections`
   - short two-epoch sensitivity packet
 
+A2 queue is now explicitly prepared as a packet, not just a plan mention:
+
+- queue note:
+  - [2026-06-06-a2-softening-queue.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-06-a2-softening-queue.md)
+- queued arms:
+  - [mainline_h_softterm18_sem010_seed42_b44.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/mainline_h_softterm18_sem010_seed42_b44.json)
+  - [mainline_h_softterm18_sem012_seed42_b44.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/mainline_h_softterm18_sem012_seed42_b44.json)
+  - [mainline_h_softterm16_sem012_seed42_b44.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/mainline_h_softterm16_sem012_seed42_b44.json)
+- preflight status:
+  - all three launcher dry-runs already resolve stable remote task names and
+    remote log paths under the current `1500 MiB` prelaunch gate
+
 Remote handoff helper now prepared:
 
 - helper note:
   - [2026-06-06-samam-a1-handoff-helper.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-06-samam-a1-handoff-helper.md)
 - helper script:
   - [handoff_remote_latent_samam_to_a1.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/handoff_remote_latent_samam_to_a1.py)
-  - current dry-run state:
+- current dry-run state:
   - retained checkpoint list is still empty
   - latent `SaMam` pid is still alive as `pid 414`
   - `A1` remote log does not yet exist
@@ -246,6 +258,7 @@ Auto-handoff watcher now prepared:
     - stop latent `SaMam`
     - wait until remote total `memory.used <= 1500 MiB`
     - launch `A1`
+    - wait `30s` and record the first `A1` health heartbeat
     - wait `30s` and record the first `A1` health heartbeat
 - reason:
   - this removes manual polling while preserving the hard `< 11.0 GiB`
