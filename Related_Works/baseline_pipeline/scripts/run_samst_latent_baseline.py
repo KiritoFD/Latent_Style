@@ -26,9 +26,9 @@ DATASETS = {
         "style_size": 256,
     },
     "distinct5_512": {
-        "latent_root": "F:/wikiart_distinct5_samam_512_latents_ema/train",
+        "latent_root": "/mnt/i/wikiart_distinct5_samam_512_latents_ema/train",
         "style_names": ["Early_Renaissance", "Impressionism", "Minimalism", "Rococo", "Ukiyo_e"],
-        "styles_dir": "F:/wikiart_distinct5_samam_512_classview_real/train",
+        "styles_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
         "image_size": 512,
         "style_size": 512,
     },

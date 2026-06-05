@@ -29,9 +29,9 @@ Latest verified state after the launcher repair:
   - first-health check passed under the repaired queue watcher
   - later exited, allowing the queue to continue
 - current live queue stage:
-  - `A2_softterm16_sem012`
+  - queue idle
 - latest verified remote GPU sample while the repaired launcher was healthy:
-  - about `9006 MiB / 12288 MiB`
+  - about `420 MiB / 12288 MiB`
   - still below the hard cap
 
 ## Root cause audit
@@ -83,7 +83,9 @@ Queue watcher:
   - launched `A2_softterm18_sem010`
   - observed `A2_softterm18_sem010` finish
   - launched `A2_softterm18_sem012`
-  - later advanced again to `A2_softterm16_sem012`
+  - observed `A2_softterm18_sem012` finish
+  - launched `A2_softterm16_sem012`
+  - later observed `A2_softterm16_sem012` finish
 
 Current caveat:
 
@@ -104,9 +106,11 @@ Latent handoff watcher:
 
 ## Remaining follow-through
 
-- `A2_softterm18_sem012` has already finished
-- let the repaired queue watcher carry the current `A2_softterm16_sem012`
-- after `A2_softterm16_sem012` finishes or the queue falls idle, restart the
-  local watcher so the patched WSL-based remote tail path becomes active
+- the bounded `A1 -> A2` queue has now finished without launch-time or
+  first-health failures
+- restart the local watcher before the next queued packet if clean WSL-tail
+  logging is needed
+- use the freed `3060` lane for the next latent baseline or reviewer-control
+  packet under the same hard cap
 - after the queue lands, update the paper-facing experiment logs and promote or
   drop the softening arms based on full eval rather than launch success
