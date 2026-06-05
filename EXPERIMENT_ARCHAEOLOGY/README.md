@@ -23,6 +23,8 @@ This directory contains the curated local G and remote I experiment archaeology 
 - `manual_remote_tokenizerclean_trained_no_summary_third_pass_20260605.csv`: current config/training/weight/summary absence check for those 7 dirs.
 - `MANUAL_REMOTE_TOKENIZERCLEAN_TRAINED_NO_SUMMARY_OWNER_DECISION_20260605.md`: owner-decision table for the 7 retained trained no-summary payload dirs; no deletion whitelisted.
 - `manual_remote_tokenizerclean_trained_no_summary_owner_decision_20260605.csv`: row-level keep/recover decision table for those 7 dirs.
+- `MANUAL_REMOTE_TOKENIZERCLEAN_TRAINED_NO_SUMMARY_DEEP_OPEN_20260605.md`: one-by-one remote deep-open pass for the same 7 trained no-summary dirs; records the 5 training-log-only payloads, 2 external-evidence payloads, and 1 config lineage anomaly.
+- `manual_remote_tokenizerclean_trained_no_summary_deep_open_20260605.csv`: row-level manual-open evidence table with config/data/resume/training/time/weight/eval/decision fields.
 - `cleanup/manual_remote_tokenizerclean_orphan_probe_weight_cleanup_20260605.csv`: deletion ledger for the 3 pure orphan probe dirs, totaling `170.017 MB`.
 - `manual_remote_tokenizerclean_orphan_probe_post_delete_verify_20260605.csv`: post-delete verification for orphan probe cleanup and retained diagnostics/payload evidence.
 - `manual_remote_tokenizerclean_remaining_weight_classes_after_owner_review_cleanup_20260605.csv`: current post-owner-review TokenizerClean remaining weight classes.
@@ -232,6 +234,8 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `manual_remote_tokenizerclean_remaining_media_classes_after_cleanup_20260605.csv`: remaining generated media classes after cleanup.
 - `MANUAL_REMOTE_TOKENIZERCLEAN_CITED_CURRENT_MEDIA_POLICY_20260605.md`: source-open keep/archive policy for the 26 retained cited/current TokenizerClean media directories.
 - `manual_remote_tokenizerclean_cited_current_media_archive_policy_20260605.csv`: row-level keep/no-delete policy for those cited/current media directories.
+- `MANUAL_REMOTE_TOKENIZERCLEAN_TRAINED_NO_SUMMARY_DEEP_OPEN_20260605.md`: manual one-by-one reopen of the 7 retained trained no-summary payloads.
+- `manual_remote_tokenizerclean_trained_no_summary_deep_open_20260605.csv`: exact CSV evidence for those 7 payloads, including the missing `epoch_0004.pt` resume anomaly in `wikiart512_ema_spectral_stat_full_e2_from_tok_b48`.
 - `MANUAL_REMOTE_MAIN_DATA_CACHE_ARCHIVE_POLICY_20260605.md`: narrative manual audit for remote main data/cache/archive surfaces after opening each major root; records residue-only cleanup and retained archive gaps.
 - `manual_remote_main_data_cache_archive_policy_20260605.csv`: per-scope keep/cleanup policy for remote main `data`, `style_data`, latent roots, `eval_cache`, `SchrodingerBridge/scale/datasets`, historical gates, `Cycle-NCE`, `experiments`, `StarGAN`, `seedream45_api`, and `Related_Works`.
 - `manual_remote_main_data_cache_archive_delete_candidates_20260605.csv`: exact whitelist of 11 remote residue/empty-temp deletion targets.
