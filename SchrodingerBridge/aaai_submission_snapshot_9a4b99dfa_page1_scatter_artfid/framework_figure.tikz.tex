@@ -1,0 +1,85 @@
+
+\begin{tikzpicture}[
+    x=1.0cm,
+    y=1.0cm,
+    >=Latex,
+    font=\footnotesize,
+    line/.style={-Latex, line width=0.7pt, draw=blue!72!black},
+    cond/.style={draw=orange!85!black, fill=orange!10, rounded corners=3pt, align=center, line width=0.55pt},
+    trunk/.style={draw=blue!75!black, fill=blue!7, rounded corners=3pt, align=center, line width=0.55pt},
+    mech/.style={draw=orange!85!black, fill=orange!12, rounded corners=3pt, align=center, line width=0.55pt},
+    loss/.style={draw=teal!70!black, fill=teal!10, rounded corners=3pt, align=center, line width=0.55pt},
+    note/.style={draw=gray!65, fill=gray!5, rounded corners=2pt, align=center, line width=0.45pt},
+    dline/.style={-Latex, dashed, line width=0.55pt, draw=orange!85!black},
+    gline/.style={-Latex, line width=0.6pt, draw=teal!70!black}
+]
+
+% ===== Headers =====
+\node[font=\bfseries\LARGE, text=orange!82!black] at (1.9,9.35) {Style branch};
+\node[font=\bfseries\LARGE, text=blue!72!black]   at (6.9,9.35) {Latent trunk};
+
+% ===== Style branch =====
+\node[cond, minimum width=2.05cm, minimum height=0.72cm] (sid)    at (1.9,8.25) {style id $s$};
+\node[cond, minimum width=2.20cm, minimum height=0.98cm] (scode)  at (1.9,6.75) {style code $w$\\time embed};
+\node[cond, minimum width=2.30cm, minimum height=0.98cm] (sprior) at (1.9,5.15) {style spatial prior\\$M_s^{sp}$};
+\node[cond, minimum width=2.30cm, minimum height=0.98cm] (smap)   at (1.9,3.55) {$16{\times}16$ style map\\$M_s$};
+\draw[dline] (sid) -- (scode);
+\draw[dline] (scode) -- (sprior);
+\draw[dline] (sprior) -- (smap);
+
+% ===== Latent trunk =====
+\node[trunk, minimum width=3.05cm, minimum height=0.78cm] (zin)   at (6.9,8.25) {input latent $z_t$};
+\node[trunk, minimum width=3.20cm, minimum height=0.84cm] (lift)  at (6.9,6.75) {lift stem $4\to128$ ch};
+\node[trunk, minimum width=3.20cm, minimum height=1.02cm] (hires) at (6.9,5.10) {hi-res blocks $\times 2$\\$32{\times}32$ feature};
+\node[trunk, minimum width=2.45cm, minimum height=0.78cm] (down)  at (6.9,3.50) {down $32\to16$ ch};
+\node[mech,  minimum width=4.15cm, minimum height=1.08cm] (body)  at (6.9,1.65) {semantic cross-attn $\times 4$\\bottleneck style injection};
+\node[trunk, minimum width=2.45cm, minimum height=0.78cm] (up)    at (6.9,0.00) {up $16\to32$ ch};
+\node[trunk, minimum width=2.95cm, minimum height=0.96cm] (fuse)  at (5.55,-1.55) {skip fuse\\structure retention};
+\node[trunk, minimum width=3.55cm, minimum height=0.96cm] (dec)   at (8.95,-1.55) {decoder + $v_\theta(z_t,t,s)$};
+\node[note,  minimum width=3.40cm, minimum height=0.76cm] (endp)  at (8.95,-2.95) {integrate to endpoint $\hat{z}_1$};
+
+\draw[line] (zin) -- (lift);
+\draw[line] (lift) -- (hires);
+\draw[line] (hires) -- (down);
+\draw[line] (down) -- (body);
+\draw[line] (body) -- (up);
+\draw[line] (up.south) -- ++(0,-0.25) -| (fuse.north);
+\draw[line] (fuse.east) -- (dec.west);
+\draw[line] (dec) -- (endp);
+
+% Skip path
+\draw[line] ($(hires.west)+(-0.10,0)$) -- ++(-0.55,0) |- ($(fuse.west)+(-0.20,0)$) -- (fuse.west);
+\node[text=blue!72!black, font=\scriptsize, anchor=east] at ($(fuse.west)+(-0.18,0.42)$) {skip};
+
+% Style injections
+\draw[dline] (smap.east) -- ++(0.70,0) |- ($(body.west)+(0,0.18)$);
+\node[text=orange!85!black, font=\scriptsize, anchor=west] at (3.35,2.18) {$M_s\rightarrow$ bottleneck};
+\draw[dline] (scode.east) -- ++(0.55,0) |- ($(dec.north)+(0,0.08)$);
+\node[text=orange!85!black, font=\scriptsize, anchor=west] at (7.95,-0.88) {$w\rightarrow$ decoder};
+
+% ===== Cross-attn detail =====
+\draw[draw=gray!60, dashed, rounded corners=4pt, line width=0.45pt] (0.55,-6.45) rectangle (10.95,-4.55);
+\node[font=\bfseries\Large, text=orange!82!black, anchor=west] at (0.75,-4.35) {Cross-attn detail};
+\node[mech, minimum width=2.00cm, minimum height=0.92cm] (qbox)   at (3.10,-5.55) {$Q$\\from bottleneck};
+\node[mech, minimum width=2.10cm, minimum height=0.92cm] (kvbox)  at (5.55,-5.55) {$K,V$\\from style map $M_s$};
+\node[note, minimum width=2.95cm, minimum height=0.92cm] (soft)   at (8.05,-5.55) {$A=\operatorname{softmax}(QK^\top/\tau)$};
+\node[mech, minimum width=1.90cm, minimum height=0.92cm] (paint)  at (10.25,-5.55) {$AV$\\to bottleneck};
+\draw[dline] (qbox.east) -- (soft.west);
+\draw[dline] (kvbox.east) -- (soft.west);
+\draw[dline] (soft.east) -- (paint.west);
+% one clean callout down and one return arrow back up
+\draw[dline] ($(body.south)+(0.15,-0.03)$) -- ++(0,-0.85) -| (qbox.north);
+\draw[dline] (paint.north) -- ++(0,0.55) -| ($(body.south)+(1.45,-0.03)$);
+
+% ===== Training objectives =====
+\node[font=\bfseries\LARGE, text=teal!72!black, anchor=west] at (0.20,-7.35) {Training objectives};
+\node[loss, minimum width=3.20cm, minimum height=1.05cm] (kin) at (2.35,-8.85) {\textbf{kinetic penalty}\\[-0.02cm]\footnotesize\textit{limit trajectory energy}};
+\node[loss, minimum width=3.20cm, minimum height=1.05cm] (swd) at (6.45,-8.85) {\textbf{terminal SWD}\\[-0.02cm]\footnotesize\textit{match endpoint style dist.}};
+\node[loss, minimum width=3.35cm, minimum height=1.05cm] (fm)  at (10.15,-8.85) {\textbf{flow matching}\\[-0.02cm]\footnotesize\textit{supervise velocity field $v_\theta$}};
+
+% objective links
+\draw[gline] (fuse.south) -- ++(0,-0.55) -- (kin.north);
+\draw[gline] (endp.south) -- ++(0,-0.55) -| (swd.north);
+\draw[gline] (dec.south) -- ++(0,-0.55) -- (fm.north);
+
+\end{tikzpicture}
