@@ -229,7 +229,7 @@ def main() -> int:
         dry_run = _run([sys.executable, str(helper_path), "--dry-run"])
         _print_block("dry-run", dry_run.stdout)
 
-        if dry_run.returncode == 0:
+        if dry_run.returncode in (0, 12):
             launch = _run(
                 [
                     sys.executable,

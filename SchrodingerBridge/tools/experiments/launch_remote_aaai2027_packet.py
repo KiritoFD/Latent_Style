@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import argparse
 import io
 import json
@@ -87,6 +88,10 @@ def _relative_to_workspace(path: Path) -> Path:
     return path.resolve().relative_to(WORKSPACE_ROOT.resolve())
 
 
+def _relative_to_sb_root(path: Path) -> Path:
+    return path.resolve().relative_to(SB_ROOT.resolve())
+
+
 def _query_remote_gpu_memory_used_mib(*, host: str, port: int, user: str) -> int | None:
     remote = f"{user}@{host}"
     result = _run(
@@ -136,6 +141,20 @@ def _make_remote_launch_script(*, python_bin: str, remote_sb_root: str, config_r
     )
 
 
+def _make_remote_tmux_payload(*, task_name: str, remote_sb_root: str, remote_launcher_abs: str) -> str:
+    return "\n".join(
+        [
+            "#!/usr/bin/env bash",
+            "set -euo pipefail",
+            f"cd {remote_sb_root}",
+            f"tmux kill-session -t '{task_name}' 2>/dev/null || true",
+            f"tmux new-session -d -s '{task_name}' \"bash '{remote_launcher_abs}'\"",
+            f"tmux list-sessions | grep '{task_name}' || true",
+            "",
+        ]
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Push and launch a reviewed AAAI2027 SchrodingerBridge packet on the remote 3060 WSL host.")
     parser.add_argument("--config", required=True, help="Workspace-relative config path, for example SchrodingerBridge/configs/aaai2027/executor_promotion_h_e1_seed42_b44.json")
@@ -166,14 +185,20 @@ def main() -> int:
     remote_workspace_root = args.remote_workspace_root.rstrip("/")
     remote_sb_root = f"{remote_workspace_root}/SchrodingerBridge"
     remote_log = f"{remote_sb_root}/{save_dir_norm}/remote_train.log"
-    config_rel = _relative_to_workspace(config_path).as_posix()
+    config_rel = _relative_to_sb_root(config_path).as_posix()
     remote_launcher_rel = f"SchrodingerBridge/_codex_tmp/{task_name}.sh"
     remote_launcher_abs = f"{remote_workspace_root}/{remote_launcher_rel}"
+    remote_wrapper_log = f"{remote_sb_root}/_codex_tmp/{task_name}.launcher.log"
     launch_script = _make_remote_launch_script(
         python_bin=args.python_bin,
         remote_sb_root=remote_sb_root,
         config_rel=config_rel,
         remote_log=remote_log,
+    )
+    tmux_payload = _make_remote_tmux_payload(
+        task_name=task_name,
+        remote_sb_root=remote_sb_root,
+        remote_launcher_abs=remote_launcher_abs,
     )
 
     sync_paths = [*DEFAULT_SYNC_PATHS, *[Path(p) for p in args.sync_path]]
@@ -249,13 +274,6 @@ def main() -> int:
         if verify.returncode != 0:
             return verify.returncode
 
-    remote_task_cmd = (
-        f'wsl -d {args.wsl_distro} --cd {remote_sb_root} --exec bash {remote_launcher_abs}'
-    )
-    schtasks_cmd = (
-        f'cmd /c "schtasks /create /tn {task_name} /tr \\"{remote_task_cmd}\\" /sc once /st 00:00 /f '
-        f'&& schtasks /run /tn {task_name} && schtasks /query /tn {task_name}"'
-    )
     launch_cmd = [
         "ssh",
         "-p",
@@ -264,7 +282,11 @@ def main() -> int:
         "-o",
         "LogLevel=ERROR",
         remote,
-        schtasks_cmd,
+        (
+            f"wsl -d {args.wsl_distro} --exec bash -lc "
+            f"\"echo {base64.b64encode(tmux_payload.encode('utf-8')).decode('ascii')} "
+            f"| base64 -d | bash > '{remote_wrapper_log}' 2>&1\""
+        ),
     ]
     launch = _run(launch_cmd)
     sys.stdout.buffer.write(launch.stdout)

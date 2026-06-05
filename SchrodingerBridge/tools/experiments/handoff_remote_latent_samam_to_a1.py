@@ -182,7 +182,7 @@ def _launch_a1(config_rel: str) -> int:
     launcher = WORKSPACE_ROOT / "SchrodingerBridge/tools/experiments/launch_remote_aaai2027_packet.py"
     cmd = [sys.executable, str(launcher), "--config", config_rel]
     result = _run(cmd)
-    sys.stdout.write(result.stdout)
+    sys.stdout.buffer.write(result.stdout.encode("utf-8", errors="replace"))
     return result.returncode
 
 
