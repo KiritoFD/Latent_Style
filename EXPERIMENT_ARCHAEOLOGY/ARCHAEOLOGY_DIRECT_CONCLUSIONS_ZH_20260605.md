@@ -86,9 +86,9 @@
 | no-summary probe/calibration weights | probe 或 calibration 负担 | `MANUAL_REMOTE_TOKENIZERCLEAN_NO_SUMMARY_REVIEW_20260605.md` | 已删 18 个，362.391 MB。 |
 | retained no-summary orphan probes | 纯 orphan probe weights | `MANUAL_REMOTE_TOKENIZERCLEAN_RETAINED_NO_SUMMARY_OWNER_REVIEW_20260605.md` | 已删 14 个 target，170.017 MB。 |
 | uncited generated media | zero-hit summary-backed media | `MANUAL_REMOTE_TOKENIZERCLEAN_GENERATED_MEDIA_PRUNE_20260605.md` | 已删 43008 个，11883.246 MB。 |
-| 7 个 trained no-summary payload | 真训练 payload，不是垃圾 | `MANUAL_REMOTE_TOKENIZERCLEAN_TRAINED_NO_SUMMARY_THIRD_PASS_20260605.md` | 保留，等 summary recovery 或 owner decision。 |
+| 7 个 trained no-summary payload | 真训练 payload，不是垃圾 | `MANUAL_REMOTE_TOKENIZERCLEAN_TRAINED_NO_SUMMARY_THIRD_PASS_20260605.md`, `MANUAL_REMOTE_TOKENIZERCLEAN_NO_SUMMARY_RECOVERY_PASS_20260605.md` | 保留，等 in-dir summary recovery 或 owner decision。 |
 
-7 个 trained no-summary payload 已逐个远程打开。每个都有 `config.json`、`logs/training_*.csv`、`src`、`numeric_debug.jsonl` 和 checkpoint，但 `summary_like_count=0`。正确结论是保留待决策，不能删。
+7 个 trained no-summary payload 已逐个远程打开。每个都有 `config.json`、`logs/training_*.csv`、`src`、`numeric_debug.jsonl` 和 checkpoint，但 `summary_like_count=0`。后续远程受限搜索发现 2 个外部间接证据：`wikiart_distinct5_ema_lancet_spectralstat_e2_b80` 是 downstream resume source，`wikiart512_ema_trueint_stylepush_tsw40_kin025_e1_b48` 有 diagnostics summary；其余 5 个仍是 training-log-only。正确结论仍是保留待决策，不能删。
 
 ## 实验脉络
 
@@ -141,7 +141,7 @@
 ## 当前不能宣布完成的原因
 
 - “每一个目录”仍未完成严格 owner-level 逐目录结论，尤其是 nested generated media。
-- 7 个 TokenizerClean trained no-summary payload 没有 summary recovery 或 owner 决策。
+- 7 个 TokenizerClean trained no-summary payload 仍没有 in-dir summary 或 owner 决策；其中 2 个已有外部间接证据，5 个仍是 training-log-only。
 - cross-cache dedup hash audit 未完成。
 - docs timing master 和 overlay 只做了 sidecar reconciliation，未形成最终 paper-facing timing 表。
 - `Cycle-NCE\45.rar` 保留为唯一历史证据包，如要删除必须先做 curated extraction。
