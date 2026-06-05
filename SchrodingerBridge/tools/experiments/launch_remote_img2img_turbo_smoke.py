@@ -53,6 +53,10 @@ def main() -> int:
     parser.add_argument("--validation-steps", type=int, default=10)
     parser.add_argument("--checkpointing-steps", type=int, default=10)
     parser.add_argument("--train-batch-size", type=int, default=1)
+    parser.add_argument("--mixed-precision", choices=["no", "fp16", "bf16"], default="no")
+    parser.add_argument("--allow-tf32", action="store_true")
+    parser.add_argument("--gradient-checkpointing", action="store_true")
+    parser.add_argument("--enable-xformers", action="store_true")
     parser.add_argument("--max-prelaunch-memory-mib", type=int, default=1500)
     parser.add_argument("--health-wait-seconds", type=int, default=30)
     parser.add_argument("--max-runtime-memory-mib", type=int, default=11000)
@@ -88,7 +92,7 @@ def main() -> int:
         f"--run-root {smoke_run_root} "
         f"--python {args.python_bin} "
         f"--main-process-port 29531 "
-        "--mixed-precision no "
+        f"--mixed-precision {args.mixed_precision} "
         f"--pretrained-model-name-or-path {args.pretrained_model_name_or_path} "
         "--train-img-prep resize_512 "
         "--val-img-prep resize_512 "
@@ -102,6 +106,12 @@ def main() -> int:
         "--report-to none "
         "--run"
     )
+    if args.allow_tf32:
+        smoke_cmd += " --allow-tf32"
+    if args.gradient_checkpointing:
+        smoke_cmd += " --gradient-checkpointing"
+    if args.enable_xformers:
+        smoke_cmd += " --enable-xformers"
 
     launcher_cmd = [
         sys.executable,
