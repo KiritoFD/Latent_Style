@@ -62,7 +62,8 @@ Related_Works 脚本或用户已有脏文件。
 - `I:\Github\Latent_Style` 存在：23 个目录、53 个文件。
 - `I:\Github\Latent_Style\SchrodingerBridge\exp` 存在：123 个目录、1 个文件。
 - `I:\Github\Latent_Style\Cycle-NCE` 存在：26 个目录、79 个文件。
-- `I:\Github\Latent_Style\Cycle-NCE\45.rar` 仍存在，507.452 MB。
+- `I:\Github\Latent_Style\Cycle-NCE\45.rar` 在本轮后续白名单步骤中已删除，
+  释放 507.452 MB。
 - `I:\Github\Latent_Style\experiments.rar` 已不存在。
 - `I:\Github\Latent_Style\Cycle-NCE\experiments.rar` 已不存在。
 - `I:\Github\Latent_Style\Cycle-NCE\_curated_45_nonweight_20260605`
@@ -88,11 +89,11 @@ Related_Works 脚本或用户已有脏文件。
 - duplicate/stale archive：3 个 archive，3290.714 MB。
 - weight-only RAR：6 个 RAR，6553.384 MB。
 - resolved duplicate `experiments.rar`：1 个 archive，8091.026 MB。
+- Cycle-NCE `45.rar` 原 archive：1 个 archive，507.452 MB；非权重证据已
+  保留在 `_curated_45_nonweight_20260605`。
 
 远程主树仍缺：
 
-- `45.rar` 的非权重证据已抽出并验证，但原 archive 还在。下一步可以写
-  45.rar 删除白名单、删除原 archive、post-delete verify curated 包仍在。
 - cache duplicate 不能只靠 SHA256 一致删除；需要 canonical cache root
   migration、symlink/junction policy 和离线 eval 验证。
 
@@ -214,25 +215,23 @@ Timing 不是空白，但还没完全转成最终 paper-facing 表。
 
 下一批最明确的清理方向：
 
-1. `Cycle-NCE\45.rar`：非权重证据已抽出，下一步可以生成删除白名单并删除
-   原 archive，前提是接受不再保留旧 archive 内 12 个老权重。
-2. TokenizerClean 5 个 training-log-only payload：先尝试 summary recovery；
+1. TokenizerClean 5 个 training-log-only payload：先尝试 summary recovery；
    失败再给 owner 删除决策表。
-3. TokenizerClean 26 个 cited/current media dirs：先建 citation-to-artifact
+2. TokenizerClean 26 个 cited/current media dirs：先建 citation-to-artifact
    manifest，再决定是否 archive/migrate。
-4. 本地 `seedream_gap` 和 `inference_param_sweep_t01e8_*`：需要 owner 决策，
+3. 本地 `seedream_gap` 和 `inference_param_sweep_t01e8_*`：需要 owner 决策，
    若删除必须先保留参数清单和代表性样例。
-5. 本地 `archive/tmp/paper scratch`：单独 provenance pass，不动 TeX/PDF。
+4. 本地 `archive/tmp/paper scratch`：单独 provenance pass，不动 TeX/PDF。
 
 ## 6. 8 小时级继续计划
 
-### 第 1 小时：远程 45.rar 删除闭环
+### 第 1 小时：远程 45.rar 删除闭环 - 已执行
 
-- 写 `45.rar` 删除白名单 CSV/MD。
-- 删除远程原 `I:\Github\Latent_Style\Cycle-NCE\45.rar`。
-- post-delete verify：archive absent，curated nonweight package present，
-  manifest present，weight_ext_files=0。
-- 提交。
+- 已写 `45.rar` 删除白名单 CSV/MD。
+- 已删除远程原 `I:\Github\Latent_Style\Cycle-NCE\45.rar`。
+- post-delete verify 已通过：archive absent，curated nonweight package
+  present，manifest present，removed-weight ledger present，weight_ext_files=0。
+- 本块后续只需提交。
 
 ### 第 2 小时：TokenizerClean 5 个 training-log-only payload
 

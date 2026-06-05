@@ -67,6 +67,7 @@ The latest direct status should be read from `AUTHORITATIVE_LOCAL_REMOTE_LINEAGE
 - Remote TokenizerClean remaining weight classes after owner-review cleanup: 29 dirs, 156 files, MB=5643.952
 - Remote RAR weight-only archives deleted: 6 files, MB=6553.384
 - Remote experiments.rar resolved duplicate deleted: 1 file, MB=8091.026
+- Remote Cycle-NCE 45.rar original archive deleted after curated nonweight extraction: 1 file, MB=507.452
 
 ## Dataset Counts
 
@@ -262,7 +263,11 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `manual_remote_cycle_nce_45_rar_curated_extraction_policy_20260605.csv`: entry-class extraction/delete policy for `45.rar`.
 - `manual_remote_cycle_nce_45_rar_run_ledger_20260605.csv`: per-run file/weight/image/config/summary/metrics counts inside `45.rar`.
 - `manual_remote_cycle_nce_45_rar_summary_overview_20260605.csv`: 8-row overview extracted from the archive's full-eval summaries.
-- `MANUAL_REMOTE_CYCLE_NCE_45_RAR_CURATED_EXTRACTION_EXECUTED_20260605.md`: executed remote curated nonweight extraction for `45.rar`; original archive retained.
+- `MANUAL_REMOTE_CYCLE_NCE_45_RAR_CURATED_EXTRACTION_EXECUTED_20260605.md`: executed remote curated nonweight extraction for `45.rar`; original archive was retained at that point and later deleted by the exact whitelist below.
+- `MANUAL_REMOTE_CYCLE_NCE_45_RAR_DELETE_EXECUTED_20260605.md`: exact-path remote deletion of original `Cycle-NCE\45.rar` after curated nonweight extraction; released `507.452 MB`.
+- `manual_remote_cycle_nce_45_rar_delete_whitelist_20260605.csv`: delete whitelist for the original `45.rar` archive.
+- `manual_remote_cycle_nce_45_rar_delete_execution_20260605.csv`: execution ledger for deleting original `45.rar`.
+- `manual_remote_cycle_nce_45_rar_post_delete_verify_20260605.csv`: post-delete verification that `45.rar` is absent and the curated nonweight package remains present with `0` weight-extension files.
 - `manual_remote_cycle_nce_45_rar_curated_extraction_execution_20260605.csv`: one-row execution summary for the remote curated package.
 - `manual_remote_cycle_nce_45_rar_curated_extraction_manifest_20260605.csv`: pulled remote manifest for 6084 extracted nonweight payload files.
 - `manual_remote_cycle_nce_45_rar_curated_extraction_verify_20260605.csv`: path/byte verification against the original archive entry-class table.
