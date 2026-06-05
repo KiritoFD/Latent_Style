@@ -8,6 +8,8 @@ This directory contains the curated local G and remote I experiment archaeology 
 - `authoritative_report_evidence_map_20260605.csv`: conclusion-to-evidence map for the authority report.
 - `MANUAL_REMOTE_TOKENIZERCLEAN_RETAINED_NO_SUMMARY_OWNER_REVIEW_20260605.md`: second-pass owner review for the 10 retained TokenizerClean no-summary directories.
 - `manual_remote_tokenizerclean_retained_no_summary_owner_policy_20260605.csv`: policy table splitting 3 pure orphan probe dirs from 7 trained no-summary payload dirs.
+- `MANUAL_REMOTE_TOKENIZERCLEAN_TRAINED_NO_SUMMARY_THIRD_PASS_20260605.md`: third-pass current-state review for the 7 retained trained no-summary payload dirs.
+- `manual_remote_tokenizerclean_trained_no_summary_third_pass_20260605.csv`: current config/training/weight/summary absence check for those 7 dirs.
 - `cleanup/manual_remote_tokenizerclean_orphan_probe_weight_cleanup_20260605.csv`: deletion ledger for the 3 pure orphan probe dirs, totaling `170.017 MB`.
 - `manual_remote_tokenizerclean_orphan_probe_post_delete_verify_20260605.csv`: post-delete verification for orphan probe cleanup and retained diagnostics/payload evidence.
 - `manual_remote_tokenizerclean_remaining_weight_classes_after_owner_review_cleanup_20260605.csv`: current post-owner-review TokenizerClean remaining weight classes.

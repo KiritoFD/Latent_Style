@@ -279,7 +279,7 @@
 
 不能宣布完成的原因：
 
-- 7 个 retained TokenizerClean trained no-summary payload 权重目录还没有 owner-level 最终决定。
+- 7 个 retained TokenizerClean trained no-summary payload 权重目录已第三遍核对为真实训练 payload；仍缺 summary recovery 或 owner-level 最终删除决定。
 - cited/current TokenizerClean media 还没有迁移/归档策略。
 - RAR provenance 已推进：`Gate.rar`, `Attn_48.part*.rar`, `chess.part*.rar` 已按 weight-only archive policy 删除；`experiments.rar` 已按 symlink-target duplicate policy 删除；`Cycle-NCE\45.rar` 已手检保留，若要删除还缺非权重 evidence extraction / owner decision。
 - cross-cache dedup 还没有 hash audit。
