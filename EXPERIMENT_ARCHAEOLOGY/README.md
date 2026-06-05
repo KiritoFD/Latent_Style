@@ -191,6 +191,12 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `manual_remote_archive_provenance_policy_20260605.csv`: per-archive keep/delete/provenance policy after hash and zip-entry checks.
 - `cleanup/manual_remote_duplicate_archive_cleanup_20260605.csv`: deletion ledger for 3 duplicate/stale remote archives, totaling `3290.714 MB`.
 - `manual_remote_archive_post_delete_verify_20260605.csv`: post-delete verification for deleted archives and retained evidence roots.
+- `manual_local_remaining_surface_probe_20260605.csv`: navigation counts for the local remaining data/cache/dependency/archive surface; used only as a map, not as a deletion decision.
+- `manual_local_remaining_surface_policy_20260605.csv`: path-by-path manual policy for 31 local remaining-surface rows, including duplicated archive proof and explicit keep decisions for WDS tar, checkpoint tar, dependency gzip, `.git` shallow lock, and `uv.lock` files.
+- `MANUAL_LOCAL_REMAINING_SURFACE_POLICY_20260605.md`: narrative local remaining-surface walkthrough and delete whitelist.
+- `delete_local_remaining_surface.ps1`: exact whitelist script for the local remaining-surface cleanup block.
+- `cleanup/manual_local_remaining_surface_cleanup_20260605.csv`: deletion ledger for 5 local remaining-surface whitelist targets, totaling `237.860 MB`.
+- `manual_local_remaining_surface_post_delete_verify_20260605.csv`: post-delete verification for the 5 deleted targets and retained evidence roots; all 15 checks passed.
 - `manual_cleanup_retention_and_next_candidates_20260605.csv`: remaining weight/cache classes, keep reasons, and next deletion candidates.
 - `MANUAL_EXPERIMENT_AUDIT_20260605.md`: current hand-checked audit narrative and gap list.
 - `manual_directory_audit_20260605.csv`: checked directory-level evidence rows.
