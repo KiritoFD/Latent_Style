@@ -411,3 +411,16 @@
 | 8 | 0.5h | 执行已批准删除 + 校验 + commit | deletion CSV, post-delete count, commit |
 
 当前这次 continuation 完成的是 block 1 的修正和归纳入口补齐，还没有执行 block 2-8 的破坏性清理。
+
+## Post-pass update: remote SchrodingerBridge/exp epoch thinning
+
+本文件生成后，远程 `I:\Github\Latent_Style\SchrodingerBridge\exp` 已继续完成一次逐 epoch checkpoint thinning。
+
+当前状态：
+
+- 清理前：101 个 checkpoint，约 `5945 MB`。
+- 已删除：84 个 `.pt`，释放 `4961.604 MB`，详见 `cleanup/manual_remote_schrodingerbridge_epoch_cleanup_20260605.csv`。
+- 剩余：17 个保留 checkpoint，`983.457 MB`，详见 `manual_remote_schrodingerbridge_remaining_weights_after_thinning_20260605.csv`。
+- 叙述和 policy：`MANUAL_REMOTE_SCHRODINGERBRIDGE_EPOCH_THINNING_20260605.md` 与 `manual_remote_schrodingerbridge_epoch_thinning_policy_20260605.csv`。
+
+这条更新覆盖前文 remote main `SchrodingerBridge/exp` “101 weights pending policy”的旧状态。SaMAM 中央曲线和 TokenizerClean 仍是独立缺口。

@@ -8,6 +8,15 @@ Generated top-level inventory:
 
 - `EXPERIMENT_ARCHAEOLOGY/manual_remote_schrodingerbridge_exp_topdir_inventory_20260605.csv`
 
+Post-pass update:
+
+- This document records the initial top-level/manual-sample pass.
+- A later epoch-level pass supersedes the cleanup state here:
+  `MANUAL_REMOTE_SCHRODINGERBRIDGE_EPOCH_THINNING_20260605.md`.
+- That later pass deleted 84 remote `SchrodingerBridge/exp` checkpoint files
+  totaling `4961.604 MB` and verified 17 remaining retained checkpoints
+  totaling `983.457 MB`.
+
 This pass was not treated as proof by counting alone. I opened the remote top-level README, key configs, representative training logs, full-eval summaries, and weight epoch lists for the current weighted families.
 
 ## Top-Level Result
