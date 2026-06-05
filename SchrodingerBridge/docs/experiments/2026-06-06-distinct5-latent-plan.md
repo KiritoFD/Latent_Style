@@ -85,6 +85,11 @@ This keeps the expensive metric confined to the final paper-facing packet.
   - see [2026-06-06-samam-latent-distinct5-11g-gate.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-06-samam-latent-distinct5-11g-gate.md)
   - do not continue spending `Distinct5` GPU budget on this lane until a new
     low-VRAM mechanism is identified
+- latent `SaMST` same-cost now has a closed packet too:
+  - machine-side launch is healthy under the reviewed `3060` contract
+  - quality-side closure is negative because the training packet collapses to
+    `nan` losses and zero-direction outputs
+  - see [2026-06-06-samst-latent-distinct5-samecost-closure.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-06-samst-latent-distinct5-samecost-closure.md)
 - `Distinct5-512` latent presets must use WSL-native paths:
   - train latents:
     - `/mnt/i/wikiart_distinct5_samam_512_latents_ema/train`
@@ -102,12 +107,10 @@ This keeps the expensive metric confined to the final paper-facing packet.
 
 ## Immediate execution order
 
-1. promote the next baseline slot to latent `SaMST` `Distinct5 same-cost`
-2. monitor first-health and checkpoint creation
-3. derive nearest retained checkpoints to `2 min` and `10 min`
-4. fast-eval those retained points with `CLIP-S + LPIPS` only
-5. if `SaMST` closes the same-cost gate, launch latent `SaMST` convergence
-6. only return to latent `SaMAM` if a genuinely new low-VRAM mechanism is
-   available
-7. run `ArtFID` only on final retained points that passed the fast-screen
-8. then return to `LBM` main-model optimization
+1. stop expanding latent `SaMAM / SaMST` on `Distinct5` until a concrete
+   training-stability mechanism exists
+2. shift the next baseline slot to the `SD1.5 LoRA` line on the same
+   `Distinct5-512` surface
+3. keep the same same-cost / convergence reporting contract
+4. return leftover GPU budget to `LBM` main-model optimization once the first
+   LoRA same-cost packet is closed
