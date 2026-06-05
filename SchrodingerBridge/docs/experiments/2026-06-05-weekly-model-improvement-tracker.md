@@ -184,3 +184,14 @@ Additional review-risk reduction landed during this update:
 - this note records the current Distinct5-512 train root, eval root, VAE
   preset, latent-scale contract, style list, and prototype-pairing cache
   contract for the active paper-facing `H` family
+
+Next cheap reviewer control prepared:
+
+- pairing-cache sensitivity packet:
+  - [2026-06-06-pairing-cache-sensitivity-packet.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-06-pairing-cache-sensitivity-packet.md)
+- launch config:
+  - [pairing_cache_h_randompair_seed42_b44.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/pairing_cache_h_randompair_seed42_b44.json)
+- scope:
+  - same paper-facing `H` surface
+  - clear only the offline prototype pairing cache
+  - short two-epoch random-pairing control
