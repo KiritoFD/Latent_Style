@@ -295,3 +295,15 @@
 - `MANUAL_REMOTE_SCHRODINGERBRIDGE_EPOCH_THINNING_20260605.md`：人工逐目录叙述和缺口。
 
 保留集合只包含 cited/probe/anchor epoch。删除集合包括 failed longer-train F/K checkpoint、非保留中间 epoch、rejected A/J ablation checkpoint，以及 SADD e1-e6 中间 checkpoint（SADD e7/e8 保留为 summary anchors）。
+
+## Post-pass update: remote SaMAM alias cleanup
+
+SaMAM 中央 `step_checkpoints` 后续也完成 alias-level cleanup：
+
+- 清理前：19 个 checkpoint，约 `5242 MB`。
+- `manual_remote_samam_hash_pairs_20260605.csv`：whole-file SHA 不同，说明不能只凭文件 hash 当重复副本删。
+- `manual_remote_samam_checkpoint_metadata_20260605.csv` 与 `manual_remote_samam_state_dict_hashes_20260605.csv`：PyTorch metadata/state-dict 复核证明 7 个 `last*.ckpt` alias 与对应 `step-step=000250..001750.ckpt` 的 model state 完全相同，且 step 文件同样保留 optimizer/scheduler。
+- `cleanup/manual_remote_samam_alias_cleanup_20260605.csv`：7 个 `last*.ckpt` alias 已删除，释放 `1931.291 MB`。
+- `manual_remote_samam_remaining_step_checkpoints_after_alias_cleanup_20260605.csv`：剩余 12 个 step checkpoint，`3310.776 MB`。
+
+这不是牺牲 SaMAM 曲线的 aggressive thinning；完整 step 曲线仍保留，删除的只是 redundant alias。

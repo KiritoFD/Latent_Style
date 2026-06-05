@@ -424,3 +424,16 @@
 - 叙述和 policy：`MANUAL_REMOTE_SCHRODINGERBRIDGE_EPOCH_THINNING_20260605.md` 与 `manual_remote_schrodingerbridge_epoch_thinning_policy_20260605.csv`。
 
 这条更新覆盖前文 remote main `SchrodingerBridge/exp` “101 weights pending policy”的旧状态。SaMAM 中央曲线和 TokenizerClean 仍是独立缺口。
+
+## Post-pass update: remote SaMAM alias cleanup
+
+SaMAM 中央 `step_checkpoints` 也继续做了 metadata 级复核：
+
+- 清理前：19 个 checkpoint，约 `5242 MB`。
+- whole-file SHA 显示 `last*.ckpt` 与对应 step 文件不同，不能直接按文件 hash 当重复副本删。
+- PyTorch metadata/state-dict 复核显示 7 个 `last*.ckpt` 的 `state_dict` SHA 与对应 `step-step=000250..001750.ckpt` 完全一致。
+- 对应 step 文件同样是 Lightning full checkpoint，包含 optimizer/scheduler。
+- 已删除：7 个 `last*.ckpt` alias，释放 `1931.291 MB`，详见 `cleanup/manual_remote_samam_alias_cleanup_20260605.csv`。
+- 剩余：12 个 `step-step=*.ckpt`，`3310.776 MB`，详见 `manual_remote_samam_remaining_step_checkpoints_after_alias_cleanup_20260605.csv`。
+
+SaMAM 完整 step 曲线仍保留；本轮只删了冗余 alias。TokenizerClean 仍是独立缺口。

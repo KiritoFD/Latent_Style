@@ -432,3 +432,22 @@ summaries/logs/grids.
 Use `MANUAL_REMOTE_SCHRODINGERBRIDGE_EPOCH_THINNING_20260605.md` as the current
 state for this remote root. The old `remote SchrodingerBridge/exp 101 ckpt`
 entries are now historical pre-thinning snapshots.
+
+## Post-Pass Update: Remote SaMAM Alias Cleanup
+
+Remote SaMAM central `step_checkpoints` also received a deeper metadata pass:
+
+- initial state: 19 checkpoint files, about `5242 MB`;
+- whole-file SHA showed `last*.ckpt` differed from paired step checkpoints;
+- PyTorch metadata/state-dict readout then showed the 7 `last*.ckpt` aliases
+  have identical `state_dict` hashes to paired `step-step=000250..001750.ckpt`
+  files;
+- the paired step files are also Lightning full checkpoints with optimizer and
+  scheduler state;
+- actual deletion ledger: 7 deleted `last*.ckpt` aliases, `1931.291 MB`;
+- post-delete verification: 12 remaining `step-step=*.ckpt` files,
+  `3310.776 MB`.
+
+The complete SaMAM step curve is still retained. Only redundant aliases were
+removed. Use `MANUAL_REMOTE_SAMAM_CHECKPOINT_THINNING_20260605.md` for the
+current state.
