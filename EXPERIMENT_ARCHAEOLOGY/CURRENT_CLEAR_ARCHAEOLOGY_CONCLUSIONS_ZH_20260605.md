@@ -132,14 +132,15 @@ TokenizerClean 当前保留：
 - 7 个 trained no-summary payload dirs：清理后只剩 3 个 weight 文件，
   130.883 MB；其中 5 个 training-log-only 目录已变成 metadata-only，
   2 个外部/下游证据目录继续保留权重。
-- 一个明确异常：
+- 一个明确异常已注释：
   `wikiart512_ema_spectral_stat_full_e2_from_tok_b48` 的 config 指向不存在的
-  `epoch_0004.pt`，需要修复或注释 lineage。
+  `epoch_0004.pt`；该目录只能作为 metadata-only training-log archaeology，
+  不能作为干净 resume lineage 或 evaluated result 推广。
 
 TokenizerClean 仍缺：
 
-- `wikiart512_ema_spectral_stat_full_e2_from_tok_b48` 的缺失 resume
-  checkpoint anomaly 需要修复或注释，不应作为干净 lineage 推广。
+- retained media 的 archive/migration policy 还没 owner 选择；manifest 已有，
+  但不能直接迁移或删除。
 - 26 个 cited/current media dirs 需要 citation-to-artifact manifest，之后才能
   谈迁移/压缩/删冗余媒体。
 
@@ -218,14 +219,11 @@ Timing 不是空白，但还没完全转成最终 paper-facing 表。
 
 下一批最明确的清理方向：
 
-1. TokenizerClean missing-resume anomaly：给
-   `wikiart512_ema_spectral_stat_full_e2_from_tok_b48` 写 lineage 注释或修复
-   `epoch_0004.pt` 引用。
-2. TokenizerClean 26 个 cited/current media dirs：先建 citation-to-artifact
-   manifest，再决定是否 archive/migrate。
-3. 本地 `seedream_gap` 和 `inference_param_sweep_t01e8_*`：需要 owner 决策，
+1. TokenizerClean 26 个 cited/current media dirs：manifest 已建；下一步只做
+   owner 选择和 path-preserving archive/migration policy。
+2. 本地 `seedream_gap` 和 `inference_param_sweep_t01e8_*`：需要 owner 决策，
    若删除必须先保留参数清单和代表性样例。
-4. 本地 `archive/tmp/paper scratch`：单独 provenance pass，不动 TeX/PDF。
+3. 本地 `archive/tmp/paper scratch`：单独 provenance pass，不动 TeX/PDF。
 
 ## 6. 8 小时级继续计划
 
