@@ -32,18 +32,18 @@
 \begin{document}
 \maketitle
 
-\begin{abstract}
-We present \emph{Latent Bridge Matching} (LBM), a 3.9M-parameter latent transport model for domain-level artistic transfer. LBM couples training-side endpoint pairing, a style-conditioned residual field, and terminal distribution matching in VAE space, enabling minute-scale style-specific customization without adapting a large generative prior. We also identify an identical-image prior in separated art-to-art evaluation and build Distinct5-512, a stress benchmark with an explicit unchanged-image floor (IDT). Under matched roughly two-minute training budgets, LBM reaches transfer CLIP-S 0.6629 at LPIPS 0.3377 and exceeds IDT by +0.0230, whereas same-cost SaMST reaches only +0.0166 at much larger displacement and same-cost SaMAM remains below IDT. On the historical standard benchmark, LBM reaches 0.7161 CLIP-S / 0.4514 LPIPS at 114\,ms/image. We therefore make a bounded practical claim: among compact, efficient domain-level style-id models on the reproduced packets studied here, LBM offers a favorable quality-cost frontier while keeping customized stylization trainable on consumer GPUs.
-\end{abstract}
-
 \begin{strip}
 \centering
-\vspace{-4mm}
+\vspace{-9mm}
 \includegraphics[width=0.985\textwidth]{figures/fig_distinct5_page1_summary.pdf}
-\captionof{figure}{Teaser summary of the paper's two practical claims. In (a), two representative art-to-art rows from the historical standard benchmark show the qualitative failure mode of the closest efficient baseline: SaMST can push stronger raw texture, but it does so with muddy grain, color spill, and broken local edges, whereas LBM keeps cleaner target-style movement on the same rows. In (b), the same-cost Distinct5-512 frontier quantifies the matched-budget stress test: higher and further right is better, the dashed line marks the transfer-only IDT floor, and bubble area denotes infer-750 wall time. The LBM bubble corresponds to the explicit step-350 packet used for the matched-budget comparison; the earlier LBM frontier points near 1.2 minutes are discussed later. Under matched roughly two-minute training budgets, LBM still occupies the favorable region, same-cost SaMST stays only slightly above IDT at much larger displacement, and same-cost SaMAM remains below IDT.}
+\captionof{figure}{Page-1 teaser. Left: on representative art-to-art rows from the historical standard benchmark, SaMST pushes raw texture but also introduces muddy grain, color spill, and broken local edges, whereas LBM keeps cleaner target-style movement. Right: under matched roughly two-minute Distinct5-512 budgets, LBM stays in the favorable high-style lower-damage region, same-cost SaMST stays only slightly above the IDT floor at much larger displacement, and same-cost SaMAM remains below IDT. Bubble area denotes infer-750 wall time.}
 \label{fig:distinct5_page1}
 \vspace{-5mm}
 \end{strip}
+
+\begin{abstract}
+We present \emph{Latent Bridge Matching} (LBM), a 3.9M-parameter latent transport model for domain-level artistic transfer. LBM couples training-side endpoint pairing, a style-conditioned residual field, and terminal distribution matching in VAE space, enabling minute-scale style-specific customization without adapting a large generative prior. We also identify an identical-image prior in separated art-to-art evaluation and build Distinct5-512, a stress benchmark with an explicit unchanged-image floor (IDT). Under matched roughly two-minute training budgets, LBM reaches transfer CLIP-S 0.6629 at LPIPS 0.3377 and exceeds IDT by +0.0230, whereas same-cost SaMST reaches only +0.0166 at much larger displacement and same-cost SaMAM remains below IDT. On the historical standard benchmark, LBM reaches 0.7161 CLIP-S / 0.4514 LPIPS at 114\,ms/image. We therefore make a bounded practical claim: among compact, efficient domain-level style-id models on the reproduced packets studied here, LBM offers a favorable quality-cost frontier while keeping customized stylization trainable on consumer GPUs.
+\end{abstract}
 
 \section{Introduction}
 Domain-level artistic transfer asks for a stylized image from a source image and a target style identifier. This is not only an image-generation problem but also a customization problem: the model should not need a reference style image or per-image optimization at inference, and the adaptation path should remain feasible without maintaining a large generative backbone. In practice, three pressures appear together. First, evaluation can fail badly when both source and target domains are artworks: an unchanged source can already obtain a strong target-style score. A method can therefore appear competitive by preserving an art-domain prior, or by making visible but misdirected edits, without moving toward the requested target domain. The first question should be signed target-style movement over the unchanged-image baseline, not raw target-style affinity.
