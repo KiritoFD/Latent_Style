@@ -118,18 +118,22 @@ Local cleanup already performed:
 
 Local generated-media conclusion:
 
-Generated media is not a single delete class. Passes 1, 2, 3, and 4 opened exact
-dirs and kept formal evals, paper bundles, no-op/IDT controls, timing
-benchmarks, protocol baselines, compact-anchor evals, diagnostics, and
-generation-only calibration evidence. Only exact duplicate or frame-only
-whitelist targets were deleted: five CUT video work dirs, one duplicate SaMST
-e15 image zip, and one duplicate highres `samst_same_test` directory. The
-retained peers and evidence packets were post-delete verified.
+Generated media is not a single delete class. Passes 1, 2, 3, 4, and 5 opened
+exact dirs and kept formal evals, paper bundles, no-op/IDT controls, timing
+benchmarks, protocol baselines, compact-anchor evals, diagnostics,
+generation-only calibration evidence, inference preview sweeps, and tracked
+CUT raw web outputs. Only exact duplicate or frame-only whitelist targets were
+deleted: five CUT video work dirs, one duplicate SaMST e15 image zip, and one
+duplicate highres `samst_same_test` directory. The retained peers and evidence
+packets were post-delete verified where cleanup happened. Pass5 added no
+delete whitelist.
 
 Local remaining gap:
 
-- Continue local generated-media owner review below the pass4 candidate
-  cluster.
+- Owner decision is still needed for `seedream_gap` and the
+  `inference_param_sweep_t01e8_*` preview sweeps before any deletion.
+- CUT raw web outputs require an explicit tracked-file migration/untracking
+  policy before cleanup; they cannot be deleted by generated-media heuristics.
 - Build a separate archive/temp/paper-scratch provenance pass without touching
   paper TeX/PDF.
 - Keep dataset mirrors separate from generated-output cleanup.
