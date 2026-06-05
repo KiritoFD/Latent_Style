@@ -181,6 +181,13 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `MANUAL_LOCAL_ROOT_MISC_POLICY_20260605.md`: narrative local root misc walkthrough; records deletion of duplicate `Cycle-NCE.tar` and stale launcher residue, and why paper tmp/tex/pdf/png surfaces were retained.
 - `manual_local_dataset_cache_policy_20260605.csv`: local dataset/latent/feature cache policy for `Dataset`, `style_data`, `latent-256`, `clip-feats-vitb32`, `SchrodingerBridge/scale`, `horse2zebra`, and `wikiart_fewshot`.
 - `MANUAL_LOCAL_DATASET_CACHE_POLICY_20260605.md`: narrative dataset/cache walkthrough; records tensor-shape checks and deletion of failed `wikiart_81k` HF cache residue.
+- `MANUAL_LOCAL_GENERATED_MEDIA_OWNER_REVIEW_20260605.md`: first owner-level local generated-media review; separates dataset mirrors, paper bundles, formal evals, diagnostics, inference sweeps, and frame-only delete whitelist.
+- `manual_local_generated_media_owner_review_20260605.csv`: row-level evidence/decision table for the first local generated-media owner review.
+- `manual_local_generated_media_intermediate_frame_post_delete_verify_20260605.csv`: post-delete verification for the five frame-only local video work directories.
+- `MANUAL_LOCAL_GENERATED_MEDIA_OWNER_REVIEW_PASS2_20260605.md`: second local generated-media owner review covering protocol smoke/eval dirs, curve evals, aggregate baseline image dirs, and Seedream protocol output.
+- `manual_local_generated_media_owner_review_pass2_20260605.csv`: row-level evidence/decision table for local generated-media pass 2.
+- `MANUAL_LOCAL_GENERATED_MEDIA_OWNER_REVIEW_PASS3_20260605.md`: third local generated-media owner review covering no-op/IDT docs controls, timing benchmark outputs, Distinct5 compact anchors, and local ckptsync generation-only evidence.
+- `manual_local_generated_media_owner_review_pass3_20260605.csv`: row-level evidence/decision table for local generated-media pass 3; all rows are retained and no cleanup was performed in this pass.
 - `manual_remote_schrodingerbridge_exp_topdir_inventory_20260605.csv`: remote `I:\Github\Latent_Style\SchrodingerBridge\exp` top-level inventory with file/log/summary/weight counts and sample evidence paths.
 - `MANUAL_REMOTE_SCHRODINGERBRIDGE_EXP_20260605.md`: manual remote `SchrodingerBridge/exp` walkthrough with opened README/config/log/summary evidence, timing examples, weight retention, and cleanup boundary.
 - `manual_remote_samam_checkpoint_thinning_policy_20260605.csv`: remote SaMAM central `step_checkpoints` keep/delete policy for 19 checkpoint files.
