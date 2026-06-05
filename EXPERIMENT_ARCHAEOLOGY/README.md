@@ -4,6 +4,8 @@ This directory contains the curated local G and remote I experiment archaeology 
 
 ## Main Outputs
 
+- `DIRECT_ARCHAEOLOGY_CONCLUSIONS_AND_8H_PLAN_CN_20260605.md`: current direct conclusion layer for local state, remote main, remote TokenizerClean, lineage, dataset distribution, timing, cleanup boundaries, and the next 8-hour exact-path plan.
+- `archaeology_goal_requirement_status_20260605.csv`: requirement-by-requirement status table showing done, partial, proof/owner gaps, and next actions for the full archaeology objective.
 - `AUTHORITATIVE_LOCAL_REMOTE_LINEAGE_CONCLUSIONS_20260605.md`: newest clean entrypoint for local conclusions, remote-main conclusions, TokenizerClean conclusions, dataset lineage, timing state, cleanup ledger policy, and the 8-hour continuation plan.
 - `authoritative_local_remote_lineage_conclusions_20260605.csv`: row-level conclusion index behind the newest clean entrypoint.
 - `GRAND_LOCAL_REMOTE_ARCHAEOLOGY_SYNTHESIS_ZH_20260605.md`: direct Chinese synthesis for local state, remote main, remote TokenizerClean, experiment lineage, timing, cleanup principles, and the remaining 8-hour plan.
@@ -178,6 +180,8 @@ Only explicitly non-mainline checkpoint candidates were deleted. Ambiguous `revi
 
 The broad CSVs above are navigation indexes. For checked timing and cleanup evidence, use these manual files first:
 
+- `DIRECT_ARCHAEOLOGY_CONCLUSIONS_AND_8H_PLAN_CN_20260605.md`: current direct Chinese conclusion layer for local, remote main, remote TokenizerClean, lineage, timing, cleanup boundaries, and the next 8-hour exact-path plan.
+- `archaeology_goal_requirement_status_20260605.csv`: requirement-by-requirement status table showing done, partial, proof/owner gaps, and next actions for the full archaeology objective.
 - `MASTER_ARCHAEOLOGY_CONCLUSIONS_AND_8H_PLAN_CN_20260605.md`: current readable master report for local state, remote main state, remote TokenizerClean state, experiment lineage, cleanup already done, remaining gaps, and the 8-hour execution plan.
 - `ARCHAEOLOGY_EXECUTIVE_CONCLUSIONS_CN_20260605.md`: clean current entry report for local conclusions, remote conclusions, experiment lineage, timing state, cleanup principles, and remaining 8-hour-plan gaps.
 - `manual_conclusion_index_20260605.csv`: one-row-per-area conclusion index for global/local/remote-main/remote-tokenizerclean/timing/lineage status.
