@@ -237,6 +237,8 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `manual_remote_experiments_rar_resolved_duplicate_post_delete_verify_20260605.csv`: post-delete verification for archive absence, expanded evidence presence, and 9 symlink target checks.
 - `MANUAL_REMOTE_CYCLE_NCE_45_RAR_REVIEW_20260605.md`: manual review of retained `Cycle-NCE\45.rar`; records why it is unique nonweight evidence and not a delete target yet.
 - `manual_remote_cycle_nce_45_rar_policy_20260605.csv`: keep policy for `45.rar`.
+- `MANUAL_REMOTE_CYCLE_NCE_45_RAR_CURATED_EXTRACTION_POLICY_20260605.md`: curated extraction policy for `45.rar`; no deletion performed.
+- `manual_remote_cycle_nce_45_rar_curated_extraction_policy_20260605.csv`: entry-class extraction/delete policy for `45.rar`.
 - `manual_remote_cycle_nce_45_rar_run_ledger_20260605.csv`: per-run file/weight/image/config/summary/metrics counts inside `45.rar`.
 - `manual_remote_cycle_nce_45_rar_summary_overview_20260605.csv`: 8-row overview extracted from the archive's full-eval summaries.
 - `manual_local_remaining_surface_probe_20260605.csv`: navigation counts for the local remaining data/cache/dependency/archive surface; used only as a map, not as a deletion decision.
