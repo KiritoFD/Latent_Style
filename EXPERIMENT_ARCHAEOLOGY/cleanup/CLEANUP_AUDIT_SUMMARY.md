@@ -40,3 +40,15 @@ Additional manual cleanup after file-level inspection of `G:\GitHub\Latent_Style
 | local_G | deleted | empty_modelscope_temp_dirs | 0 | 0 | `manual_cache_cleanup_20260605.csv` |
 
 All valid ArtFID, CLIP, VAE, DINO/offline-pairing, ref feature, VAE compile, and VAE ONNX cache artifacts were retained. This cleanup was not checkpoint thinning; it removed only failed/empty cache residue.
+
+## 2026-06-05 manual root misc cleanup
+
+Additional manual cleanup after root-level archive/tmp/exp inspection:
+
+| scope | action | cleanup_class | files | size_mb | ledger |
+| --- | --- | --- | ---: | ---: | --- |
+| local_G | deleted | duplicate_cycle_nce_archive_tar | 1 | 1503.203 | `manual_root_misc_cleanup_20260605.csv` |
+| local_G | deleted | stale_failed_launcher_residue | 7 | 0.000316 | `manual_root_misc_cleanup_20260605.csv` |
+| local_G | deleted | empty_probe_directory | 0 | 0 | `manual_root_misc_cleanup_20260605.csv` |
+
+The current `Cycle-NCE` evidence tree was retained; only the duplicate monolithic archive tar under `archive/2026-05-19_cleanup/root` was deleted. Recent paper/PDF/TEX/PNG scratch under `tmp` was retained.

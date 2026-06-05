@@ -80,6 +80,19 @@
 - `MANUAL_LOCAL_EVAL_CACHE_POLICY_20260605.md`
 - `cleanup/manual_cache_cleanup_20260605.csv`
 
+本轮新增的 root misc/archive/tmp 手工核验结论：
+
+- `archive/2026-05-19_cleanup/root/Cycle-NCE.tar` 已用 `tar -tf` 打开，确认是包含 `Cycle-NCE/.venv`、site-packages 和历史 Cycle-NCE payload 的整目录备份；当前 `Cycle-NCE` 本体仍在，且已由 Cycle-NCE 手工 ledger 覆盖，因此删除该重复 tar，释放 1503.203MB。
+- root `exp` 的两个 PID 对应进程 `37960` / `30604` 均不存在；err log 显示只是从仓库根错误寻找 `src/run.py` 的失败启动残留；已删除这些 stale pid/log 和一个空 probe 目录。
+- `tmp` 已按文件类型和最大文件打开，主要是 2026-06-04 论文/PDF/PNG/TEX 审稿 scratch；按“不碰 tex/pdf/png 论文相关产物”的边界保留。
+- `final_works` 已打开 metrics/summary/log/config，未发现真实剩余 checkpoint；`seedream45_api` 只有 0.001460MB fake placeholder，因无空间收益且可能被 metadata 引用而保留。
+
+详见：
+
+- `manual_local_root_misc_policy_20260605.csv`
+- `MANUAL_LOCAL_ROOT_MISC_POLICY_20260605.md`
+- `cleanup/manual_root_misc_cleanup_20260605.csv`
+
 ## 3. 远程主仓状态
 
 远程主仓 `I:\Github\Latent_Style` 当前不是空盘，也不是未清理状态。核心分类：
