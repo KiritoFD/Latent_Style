@@ -63,7 +63,7 @@
 - `data`, `style_data`, `latents*`, `latent-256*`: 已逐项打开，都是数据/latent backend，无失败残留，保留。
 - `eval_cache`: 删除失败 CLIP `.incomplete` 和 stale ref_feats tmp；完整 manual CLIP/offline pairing/ArtFID/VAE cache 保留。
 - `SchrodingerBridge/scale/datasets`: 删除 `wikiart_81k` 失败下载 residue 和 stale lock；数据集实体保留。
-- `Cycle-NCE`: 删除失败 ArtFID/CLIP `.incomplete` 与 stale locks；`Gate.rar`, `1-decoder...zip`, Attn/chess 分卷、`45.rar` 未证明可弃，保留待 provenance。
+- `Cycle-NCE`: 删除失败 ArtFID/CLIP `.incomplete` 与 stale locks；删除 `1-decoder...zip` 这种非权重输出已存在、只额外保留旧 checkpoint 的 archive；删除 `src\45.rar` 这种 exact duplicate。`Gate.rar`、Attn/chess 分卷仍因 RAR 内容不可列出而保留待 provenance。
 - `experiments`: 删除递归空的 ModelScope `._____temp`；legacy experiments 和完整 eval caches 保留。
 - `Related_Works/repos`: 删除空 `S2WAT-main/pre_trained_models/tmp_timing`；baseline repos 和依赖权重保留。
 - `StarGAN`, `seedream45_api`: 打开过，未发现 bad markers，释放空间收益低，保留。
@@ -73,10 +73,11 @@
 - `cleanup/manual_remote_schrodingerbridge_epoch_cleanup_20260605.csv`: 删除 84 个 checkpoint，释放 `4961.604 MB`。
 - `cleanup/manual_remote_samam_alias_cleanup_20260605.csv`: 删除 7 个 alias checkpoint，释放 `1931.291 MB`。
 - `cleanup/manual_remote_main_data_cache_archive_residue_cleanup_20260605.csv`: 删除 11 个 residue/empty-temp 目标，释放 `381.807 MB`，post-delete 全部 `post_exists=False`。
+- `cleanup/manual_remote_duplicate_archive_cleanup_20260605.csv`: 删除 3 个 duplicate/stale archive，释放 `3290.714 MB`，post-delete 全部 `post_exists=False`。
 
 远程主仓未完成：
 
-- `Cycle-NCE` 大包和 root `experiments.rar` 需要 duplicate/provenance audit，不能按扩展名删。
+- `Cycle-NCE` 中 `eval_cache.zip`、`1-decoder...zip`、`src\45.rar` 已完成 provenance cleanup；`Gate.rar`、Attn/chess 分卷和 root `experiments.rar` 仍需要 RAR-capable provenance，不能按扩展名删。
 - complete model/eval caches 是否跨目录重复，需要 hash audit。
 - legacy `experiments` 的所有 nested family 还未全部 owner-level 归档。
 
@@ -187,6 +188,6 @@
 
 - 10 个 TokenizerClean no-summary 权重目录需要 owner review 或补 summary。
 - cited/current TokenizerClean media 需要 archive/migration policy。
-- Cycle-NCE/root archives、`experiments.rar`、cross-cache dedup 需要 provenance/hash audit。
+- Cycle-NCE RAR 分卷/root `experiments.rar`、cross-cache dedup 需要 provenance/hash audit。
 - docs timing master 仍需与 `timing_quality_master_20260605.csv` 对齐。
 - 本地和远程 legacy generated media 的 nested owner-level review 仍未全覆盖。

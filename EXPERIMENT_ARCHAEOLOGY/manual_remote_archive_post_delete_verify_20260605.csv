@@ -1,0 +1,8 @@
+﻿"remote_root","relative_path","expected","exists","kind","mb","file_count"
+"I:\Github\Latent_Style","eval_cache.zip","deleted","False","","",""
+"I:\Github\Latent_Style","Cycle-NCE\1-decoder-patch5-15_eAzEC.zip","deleted","False","","",""
+"I:\Github\Latent_Style","Cycle-NCE\src\45.rar","deleted","False","","",""
+"I:\Github\Latent_Style","eval_cache","retained_dir","True","directory","7960.233","67"
+"I:\Github\Latent_Style","experiments\1-decoder-patch5-15","retained_dir","True","directory","27.111","1510"
+"I:\Github\Latent_Style","Cycle-NCE\45.rar","retained_file","True","file","507.452",""
+"I:\Github\Latent_Style","Cycle-NCE\src","retained_dir","True","directory","693.638","596"
