@@ -157,3 +157,39 @@ Stop the latent baseline expansion and return to `LBM A1/A2` when:
 1. both `distinct5_512` lanes are closed
 2. both methods fail structurally on `legacy256_overfit50`
 3. only one method is viable and has already produced the first full evaluator packet
+
+## 2026-06-05 live status
+
+Verified repair sequence for remote `SaMam` latent on `legacy256_overfit50`:
+
+- local packet fix:
+  - [inference.py](/G:/GitHub/Latent_Style/SchrodingerBridge/src/utils/inference.py) now prefers a narrower VAE import path before falling back to package-level `diffusers`
+- remote env repair on `/home/xy/venvs/samam312`:
+  - `transformers==4.41.2`
+  - `diffusers==0.29.2`
+  - `modelscope==1.37.1`
+
+Reason:
+
+- `transformers 5.x` broke `mamba_ssm`
+- `diffusers 0.38.0` pulled newer autoencoder families that expected newer `transformers`
+- `huggingface.co` was unreachable from remote WSL, so the VAE download needed `modelscope`
+
+Current active probe:
+
+- output root:
+  - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe2`
+- start time in log:
+  - `2026-06-05T23:22:37`
+- verified observations:
+  - the run no longer dies in the first `10s`
+  - `modelscope` successfully downloaded `stabilityai/sd-vae-ft-ema`
+  - at `23:27`, both wrapper and training processes were alive in WSL:
+    - `run_samam_latent_baseline.py`
+    - `train_SaMam_latent.py`
+  - observed GPU usage during this stage was about `1.3 / 12.3 GiB`
+
+Interpretation:
+
+- this closes the earlier structural import/download blockers
+- the next check should confirm the first actual training-step logs and retained checkpoint creation
