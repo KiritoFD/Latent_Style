@@ -54,10 +54,15 @@ def parse_args() -> argparse.Namespace:
 def resolve_accelerate(python_path: Path, accelerate_path: Path | None) -> Path:
     if accelerate_path is not None:
         return accelerate_path.resolve()
-    scripts_dir = python_path.resolve().parent / "Scripts"
-    candidate = scripts_dir / "accelerate.exe"
-    if candidate.exists():
-        return candidate
+    bin_dir = python_path.resolve().parent
+    candidates = [
+        bin_dir / "accelerate",
+        bin_dir / "accelerate.exe",
+        bin_dir / "Scripts" / "accelerate.exe",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
     return Path("accelerate")
 
 
