@@ -12,6 +12,7 @@ Scope:
   - no local GPU
   - no broad hyperparameter sweep
   - run each lane with one fixed convergence budget unless it fails structurally
+  - hard VRAM ceiling: `11.0 GiB`
 
 ## Fixed dataset contracts
 
@@ -242,3 +243,17 @@ Cap adjustment:
   - no overlap with `SaMam`
   - `batch-size 1`
   - same `legacy256_overfit50` dataset contract
+
+2026-06-05 late update:
+
+- user further tightened the ceiling from `11.2 GiB` to `11.0 GiB`
+- current `SaMam legacy256` single-run lane remains safe under the tighter rule:
+  - observed GPU usage: about `7.46 / 12.29 GiB`
+  - live training progress: about `step 659` in `Epoch 0`
+  - observed throughput: about `0.68 step/s`
+- checkpoint status:
+  - first retained save still waits for `step 5000`
+  - at the current throughput, first checkpoint is still about `1.8h` away
+- consequence for scheduling:
+  - keep `SaMam probe4` as the only active GPU lane
+  - do not relaunch `SaMST` until `SaMam` is paused, closed, or otherwise off GPU
