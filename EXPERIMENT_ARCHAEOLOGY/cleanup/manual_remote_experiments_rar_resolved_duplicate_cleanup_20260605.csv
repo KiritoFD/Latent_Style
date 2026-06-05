@@ -1,0 +1,2 @@
+﻿"cleanup_run","remote_root","relative_path","exists_before","before_bytes","before_mb","last_write_time","status","post_exists","reason"
+"2026-06-05T12:49:41","I:\Github\Latent_Style","experiments.rar","True","8484055618","8091.025942","2026-04-09 05:37:27","deleted","False","Resolved duplicate: all original mismatches are HF snapshot symlinks with same-size blob targets."

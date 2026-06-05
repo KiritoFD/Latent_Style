@@ -121,4 +121,14 @@ Deep RAR provenance used a temporary remote copy of local `UnRAR.exe` to list ar
 | remote_I_main | deleted | weight-only multipart RAR archive | 3 | 1975.113 | `manual_remote_rar_weight_only_archive_cleanup_20260605.csv` |
 | remote_I_main | deleted | weight-only multipart RAR archive | 2 | 1194.239 | `manual_remote_rar_weight_only_archive_cleanup_20260605.csv` |
 
-Total released in this block: `6553.384 MB`. Deleted archives were `Cycle-NCE\Gate.rar`, `Cycle-NCE\Attn_48.part1.rar`, `part2.rar`, `part3.rar`, `Cycle-NCE\chess.part1.rar`, and `part2.rar`. Post-delete verification passed all 11 checks in `manual_remote_rar_weight_only_archive_post_delete_verify_20260605.csv`: the archives are absent, expanded `Gate`, `Attn_48`, and `chess` evidence directories remain, and retained `experiments.rar` plus `Cycle-NCE\45.rar` still exist.
+Total released in this block: `6553.384 MB`. Deleted archives were `Cycle-NCE\Gate.rar`, `Cycle-NCE\Attn_48.part1.rar`, `part2.rar`, `part3.rar`, `Cycle-NCE\chess.part1.rar`, and `part2.rar`. Post-delete verification passed all 11 checks in `manual_remote_rar_weight_only_archive_post_delete_verify_20260605.csv`: the archives are absent, expanded `Gate`, `Attn_48`, and `chess` evidence directories remain, and at that point `experiments.rar` plus `Cycle-NCE\45.rar` were still retained pending follow-up.
+
+## 2026-06-05 remote experiments.rar resolved duplicate cleanup
+
+Follow-up manual audit opened the 9 `experiments.rar` cache mismatches one by one. All 9 were HuggingFace CLIP snapshot `SymbolicLink` entries whose `..\..\blobs\...` targets still exist and match the RAR entry byte sizes.
+
+| scope | action | cleanup_class | archive_files | size_mb | ledger |
+| --- | --- | --- | ---: | ---: | --- |
+| remote_I_main | deleted | resolved duplicate RAR archive | 1 | 8091.026 | `manual_remote_experiments_rar_resolved_duplicate_cleanup_20260605.csv` |
+
+Post-delete verification passed all 11 checks in `manual_remote_experiments_rar_resolved_duplicate_post_delete_verify_20260605.csv`: `experiments.rar` is absent, expanded `experiments` remains, and all 9 CLIP snapshot symlink target blobs remain same-size as the original RAR entries. `Cycle-NCE\45.rar` remains the RAR/archive owner-decision gap.

@@ -36,13 +36,23 @@ Deletion is archive-only: remove the RAR files/parts, not the expanded directori
 
 ## Retain decision
 
-`experiments.rar` is retained because 9 eval-cache payload files differ in size, including CLIP model/tokenizer/cache files. It is not a clean duplicate archive.
+`experiments.rar` was initially retained in this pass because 9 eval-cache payload files differed in size, including CLIP model/tokenizer/cache files. A later fixed-target audit resolved those mismatches as HF snapshot symlink targets and deleted the archive as a resolved duplicate; see the follow-up section below.
 
 `Cycle-NCE\45.rar` is retained because its entries do not match an expanded current directory under the checked roots. It is the primary retained copy after the exact duplicate `Cycle-NCE\src\45.rar` was already deleted.
 
+## Follow-up: experiments.rar resolved
+
+The `experiments.rar` mismatch was reopened after this pass:
+
+- `manual_remote_experiments_rar_cache_mismatch_20260605.csv` fixes the review to the 9 known CLIP cache mismatch rows.
+- `manual_remote_experiments_rar_symlink_targets_20260605.csv` resolves each snapshot `SymbolicLink` to its blob target.
+- All 9 target blobs exist and match the original RAR entry sizes.
+- `experiments.rar` was deleted as a resolved duplicate archive.
+- Cleanup ledger: `cleanup/manual_remote_experiments_rar_resolved_duplicate_cleanup_20260605.csv`.
+- Post-delete verification: `manual_remote_experiments_rar_resolved_duplicate_post_delete_verify_20260605.csv`.
+
 ## Remaining gap
 
-After deleting the three archive groups, remote archive provenance still has two retained gaps:
+After deleting the four archive groups, remote RAR/archive provenance still has one retained RAR gap:
 
-- `experiments.rar`: cache mismatch needs cross-cache/cache-payload audit.
 - `Cycle-NCE\45.rar`: unique historical archive unless extracted or owner confirms disposability.
