@@ -246,6 +246,7 @@ Auto-handoff watcher now prepared:
     - stop latent `SaMam`
     - wait until remote total `memory.used <= 1500 MiB`
     - launch `A1`
+    - wait `30s` and record the first `A1` health heartbeat
 - reason:
   - this removes manual polling while preserving the hard `< 11.0 GiB`
     single-lane rule on the remote `3060`
