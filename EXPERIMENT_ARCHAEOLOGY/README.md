@@ -134,6 +134,8 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `MANUAL_CYCLE_NCE_ARCHAEOLOGY_20260605.md`: narrative manual walkthrough for local `Cycle-NCE`, including timing evidence, metric anchors, cleanup boundary, and remaining gaps.
 - `manual_local_eval_cache_policy_20260605.csv`: file-level local root `eval_cache` retention/cleanup policy for ArtFID, HF/ModelScope, manual CLIP, DINO offline pairing, reference features, VAE compile, and VAE ONNX caches.
 - `MANUAL_LOCAL_EVAL_CACHE_POLICY_20260605.md`: narrative local `eval_cache` manual walkthrough; explains why these files are cache/dependency/speed artifacts rather than training checkpoints.
+- `manual_local_root_misc_policy_20260605.csv`: local root misc/archive/tmp policy for `archive`, `tmp`, root `exp`, `final_works`, `seedream45_api`, root tracked files, and legacy code/data roots.
+- `MANUAL_LOCAL_ROOT_MISC_POLICY_20260605.md`: narrative local root misc walkthrough; records deletion of duplicate `Cycle-NCE.tar` and stale launcher residue, and why paper tmp/tex/pdf/png surfaces were retained.
 - `manual_remote_schrodingerbridge_exp_topdir_inventory_20260605.csv`: remote `I:\Github\Latent_Style\SchrodingerBridge\exp` top-level inventory with file/log/summary/weight counts and sample evidence paths.
 - `MANUAL_REMOTE_SCHRODINGERBRIDGE_EXP_20260605.md`: manual remote `SchrodingerBridge/exp` walkthrough with opened README/config/log/summary evidence, timing examples, weight retention, and cleanup boundary.
 - `manual_cleanup_retention_and_next_candidates_20260605.csv`: remaining weight/cache classes, keep reasons, and next deletion candidates.
@@ -146,4 +148,5 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `cleanup/manual_deleted_checkpoints_20260605.csv`: local manual deletion ledger.
 - `cleanup/manual_empty_directory_cleanup_20260605.csv`: local empty-directory cleanup ledger for non-evidence zero-file probe trees.
 - `cleanup/manual_cache_cleanup_20260605.csv`: local cache cleanup ledger for invalid `.incomplete`/empty cache residue found during manual `eval_cache` audit.
+- `cleanup/manual_root_misc_cleanup_20260605.csv`: local root misc cleanup ledger for duplicate archive tar and stale launcher residue.
 - `cleanup/remote_manual_deleted_checkpoints_20260605.csv`: remote manual deletion ledger.
