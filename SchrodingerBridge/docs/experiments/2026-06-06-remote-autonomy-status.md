@@ -28,11 +28,11 @@ Active training lane:
 - remote run:
   - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4`
 - latest observed progress:
-  - around `Epoch 0 step 4388`
+  - around `Epoch 0 step 4520`
 - current parsed train rate:
   - about `0.77 it/s`
 - rough ETA to the first retained checkpoint:
-  - about `13.3 min` to `step_5000`
+  - about `10.4 min` to `step_5000`
 - current retained checkpoint state:
   - only `step_checkpoints/last.ckpt`
   - first numbered retained checkpoint still waits for `step_5000`
@@ -66,6 +66,8 @@ Latent handoff watcher:
     - `retained_checkpoints=[]`
     - `latent_pid=414`
     - `a1_remote_log_exists=False`
+  - latest poll observed:
+    - `watch poll 8`
 
 Post-A1 queue watcher:
 
