@@ -24,6 +24,7 @@ This directory contains the curated local G and remote I experiment archaeology 
 - Source roots: {'G:/GitHub/Latent_Style': 17134, 'I:\\': 5495}
 - Local deleted checkpoints: 329, MB=11575.67
 - Remote deleted checkpoints: 405, MB=14535.700
+- Remote deleted generated media: 43008, MB=11883.246
 
 ## Dataset Counts
 
@@ -172,6 +173,12 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `cleanup/manual_remote_tokenizerclean_no_summary_probe_checkpoint_cleanup_20260605.csv`: per-file deletion ledger for 18 no-summary probe/calibration checkpoints, totaling `362.391 MB`.
 - `manual_remote_tokenizerclean_exp_internal_evidence_after_no_summary_cleanup_20260605.csv`: post-delete verification table after the no-summary probe cleanup.
 - `manual_remote_tokenizerclean_remaining_weight_classes_after_no_summary_cleanup_20260605.csv`: latest TokenizerClean remaining checkpoint classes after both cleanup passes.
+- `MANUAL_REMOTE_TOKENIZERCLEAN_GENERATED_MEDIA_PRUNE_20260605.md`: narrative audit for remote TokenizerClean generated media cleanup.
+- `manual_remote_tokenizerclean_generated_media_inventory_20260605.csv`: pre-cleanup media inventory for all 145 TokenizerClean `exp` directories.
+- `manual_remote_tokenizerclean_generated_media_cleanup_policy_20260605.csv`: keep/delete policy for generated media based on citation graph and structured evidence.
+- `cleanup/manual_remote_tokenizerclean_uncited_generated_media_cleanup_20260605.csv`: per-file deletion ledger for 43008 uncited generated media files, totaling `11883.246 MB`.
+- `manual_remote_tokenizerclean_generated_media_inventory_after_cleanup_20260605.csv`: post-delete verification media inventory.
+- `manual_remote_tokenizerclean_remaining_media_classes_after_cleanup_20260605.csv`: remaining generated media classes after cleanup.
 - `manual_cleanup_retention_and_next_candidates_20260605.csv`: remaining weight/cache classes, keep reasons, and next deletion candidates.
 - `MANUAL_EXPERIMENT_AUDIT_20260605.md`: current hand-checked audit narrative and gap list.
 - `manual_directory_audit_20260605.csv`: checked directory-level evidence rows.

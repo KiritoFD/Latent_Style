@@ -144,10 +144,18 @@
 - 保留 7 个可能需要补 summary 的 payload 目录和 3 个无 config/summary orphan 目录。
 - 最新 post-check 剩余 TokenizerClean `exp` checkpoint：167 个文件，5813.970 MB。
 
+generated-media pass 也已追加完成：
+
+- 按照远程已有 `2026-06-03-exploratory-image-prune.md` 规则，只删除未引用且有 summary/CSV 结构化证据的 generated media。
+- 删除 50 个零引用 summary-backed 目录中的 `.png/.jpg/.jpeg/.webp/.gif`：43008 个文件，释放 11883.246 MB。
+- 保留 `summary.json`、`metrics.csv`、logs、configs、checkpoints。
+- post-check 证明 50 个删除候选目录媒体文件全部归零。
+- 剩余媒体：cited media 5704.518 MB；current `aaai2027_*` media 1797.000 MB。
+
 TokenzierClean 不能继续直接删的点：
 
-- `diagnostics`：约 2872.709 MB，主要是 generated PNG、summary、metrics，0 权重。
-- `tokenizer_control_probes`：约 1977.872 MB，主要是 generated PNG、summary、metrics，0 权重。
+- `diagnostics`：约 2868.443 MB media，因 docs/paper 命中保留。
+- `tokenizer_control_probes`：已删除未引用 generated media，summary/metrics 保留。
 - `configs`：约 368.559 MB，被 docs/master 命中，含 phase-space sweep 配置和 full_eval。
 - `aaai2027_tokenizer_localization_*`：目前 docs 引用没跟上，但目录结构是新近 formal packet，先保留。
 
@@ -201,7 +209,7 @@ TokenzierClean 不能继续直接删的点：
 ## 不能宣称完成的部分
 
 - TokenizerClean 28 个 no-summary checkpoint dirs 已做第一轮 review 并清理 18 个；仍剩 10 个需要 owner review 或补 summary。
-- 还没有给 generated image 证据目录制定 archive policy。
+- TokenizerClean generated image 已完成零引用 summary-backed media prune；仍需处理 cited/current/paper-facing media 的 archive/migration policy。
 - 还没有 file-level 复核 remote latent backend / eval_cache / Cycle-NCE archive / experiments archive。
 - timing master 还没有合并 TokenizerClean 1024 行和质量标签。
 - 旧 broad summary 与 manual cleanup ledger 的聚合数字还需要 reconciliation，不能继续用单一“清理总量”一句话盖过去。
