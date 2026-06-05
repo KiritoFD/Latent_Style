@@ -38,7 +38,7 @@ Method & Train to point & Infer-750 & ms/img & Grade & Reason \\
 LBM & 5.2 min & 85.4 s & 114 & actual & Preserved standard-benchmark operating-point packet. \\
 SaMST & 67.7 s/epoch probe & -- & -- & estimated & Historical train time is only extrapolated from a one-epoch probe. \\
 S2WAT & $\sim$176.7 min & -- & -- & estimated & Train wall is only a rough $5.3\,\mathrm{s}\times 2000$ estimate; strict infer-750 is not separately measured. \\
-StyleID & -- & 603.3 s / 3016.3 s est. & 804 / 4022 est. & unfair packet & The recorded 603.3 s run is not a fair full-750 packet, while 3016.3 s is only an estimate. \\
+StyleID & -- & 614--622 s/target & -- & cross-regime context & Recorded protocol-A-800 inference on the reproduced StyleID / SD1.5 route, totaling 51.4 min across five targets; retained only as diffusion-cost context rather than a same-interface timing comparison. \\
 Distinct5-256 relabels & -- & -- & -- & mixed-protocol & Repo timing rows labeled \texttt{Distinct5-256} collapse to \texttt{legacy256\_overfit50} rather than a first-class dataset surface. \\
 \bottomrule
 \end{tabular}
