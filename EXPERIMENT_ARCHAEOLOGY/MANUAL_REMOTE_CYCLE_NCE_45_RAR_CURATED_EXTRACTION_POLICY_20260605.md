@@ -84,3 +84,21 @@ net space release depends on whether 6008 images are extracted:
 The safe cleanup value is therefore not the full archive size unless the
 nonweight evidence is moved to a different storage location or represented by
 an owner-approved subset.
+
+## Execution Follow-Up
+
+The curated nonweight package was executed in
+`MANUAL_REMOTE_CYCLE_NCE_45_RAR_CURATED_EXTRACTION_EXECUTED_20260605.md`.
+Remote package:
+
+```text
+I:\Github\Latent_Style\Cycle-NCE\_curated_45_nonweight_20260605
+```
+
+The package contains `6084` nonweight payload files, `144.730 MB`, and `0`
+payload files with weight extensions (`.pt`, `.pth`, `.ckpt`,
+`.safetensors`). A loose filename scan flags four retained `model.py` files;
+those were manually opened and are source snapshots, not model weights.
+Verification matched all `6084` nonweight archive entries by path and byte size
+and matched all `12` weight entries as removed from staging. The original
+`45.rar` still exists and was not deleted.

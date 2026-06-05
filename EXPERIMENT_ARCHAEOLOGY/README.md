@@ -254,6 +254,12 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `manual_remote_cycle_nce_45_rar_curated_extraction_policy_20260605.csv`: entry-class extraction/delete policy for `45.rar`.
 - `manual_remote_cycle_nce_45_rar_run_ledger_20260605.csv`: per-run file/weight/image/config/summary/metrics counts inside `45.rar`.
 - `manual_remote_cycle_nce_45_rar_summary_overview_20260605.csv`: 8-row overview extracted from the archive's full-eval summaries.
+- `MANUAL_REMOTE_CYCLE_NCE_45_RAR_CURATED_EXTRACTION_EXECUTED_20260605.md`: executed remote curated nonweight extraction for `45.rar`; original archive retained.
+- `manual_remote_cycle_nce_45_rar_curated_extraction_execution_20260605.csv`: one-row execution summary for the remote curated package.
+- `manual_remote_cycle_nce_45_rar_curated_extraction_manifest_20260605.csv`: pulled remote manifest for 6084 extracted nonweight payload files.
+- `manual_remote_cycle_nce_45_rar_curated_extraction_verify_20260605.csv`: path/byte verification against the original archive entry-class table.
+- `manual_remote_cycle_nce_45_rar_curated_extraction_class_counts_20260605.csv`: class-level verification counts for the extracted nonweight package.
+- `manual_remote_cycle_nce_45_rar_curated_extraction_removed_weights_20260605.csv`: 12 staged `.pt` files removed from the curated nonweight package.
 - `README_COUNT_CONSISTENCY_AUDIT_20260605.md`: current README/count consistency audit after the latest source-open and policy blocks.
 - `readme_count_consistency_audit_20260605.csv`: row-level count checks for current high-signal archaeology outputs.
 - `manual_local_remaining_surface_probe_20260605.csv`: navigation counts for the local remaining data/cache/dependency/archive surface; used only as a map, not as a deletion decision.
