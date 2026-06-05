@@ -33,6 +33,15 @@ New safety gate:
 - this avoids relaunching `A1` while the old lane still holds memory and keeps
   the remote `3060` safely inside the `< 11.0 GiB` policy
 
+Watcher health behavior:
+
+- after a successful handoff, the watcher waits `30s` and then checks:
+  - `A1` remote log exists and is non-empty
+  - `A1` process still matches the launched config
+  - current remote total `memory.used`
+- this makes the required first-health heartbeat part of the automatic handoff
+  instead of a separate manual revisit
+
 Important boundary:
 
 - this helper does **not** launch `A1` while the latent lane is still active

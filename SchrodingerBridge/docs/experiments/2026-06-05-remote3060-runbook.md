@@ -169,6 +169,8 @@ First monitoring window:
   - Python process exists
   - log file is growing
   - GPU memory moved into the expected band
+- the current `watch_remote_latent_samam_handoff.py` helper can perform this
+  first-health check automatically after it launches `A1`
 
 Formal run policy:
 
