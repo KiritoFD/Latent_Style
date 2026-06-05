@@ -7,6 +7,7 @@ Purpose:
 - reduce repeated launch failures on the remote `RTX 3060`
 - make remote runs reproducible without rereading chat history
 - standardize sync, preflight, launch, monitor, and closure
+- enforce a hard single-run VRAM ceiling of `11.0 GiB`
 
 ## Machine contract
 
@@ -18,6 +19,8 @@ Purpose:
   - `Ubuntu-26.04`
 - authoritative repo root inside WSL:
   - `/mnt/i/Github/Latent_Style`
+- hard VRAM cap for paper-facing runs:
+  - do not exceed `11.0 GiB`
 
 Do not assume:
 
@@ -166,7 +169,14 @@ First monitoring window:
 Formal run policy:
 
 - remote `3060` paper-facing runs should usually sit around the expected formal memory band for that method
+- treat `11.0 GiB` as a hard stop, not a soft target
 - under-cap runs are smoke or calibration, not formal evidence
+
+Concurrency rule:
+
+- do not overlap latent baseline runs on the `3060`
+- only one training lane may hold GPU at a time unless a measured combined peak is still strictly below `11.0 GiB`
+- if a second lane pushes total usage near or above `11.0 GiB`, stop it immediately and relaunch later as a single-run lane
 
 ### Step 5. Closure
 
