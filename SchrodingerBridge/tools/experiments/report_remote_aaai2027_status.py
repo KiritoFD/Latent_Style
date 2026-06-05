@@ -152,6 +152,13 @@ def _parse_latest_step(log_text: str) -> int | None:
     return int(matches[-1])
 
 
+def _parse_latest_rate_it_s(log_text: str) -> float | None:
+    matches = re.findall(r"(\d+\.\d+)it/s", log_text)
+    if not matches:
+        return None
+    return float(matches[-1])
+
+
 def _summarize_gpu_csv(csv_text: str) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     for line in csv_text.splitlines():
@@ -169,6 +176,12 @@ def _summarize_gpu_csv(csv_text: str) -> list[dict[str, str]]:
             }
         )
     return rows
+
+
+def _format_minutes(value: float | None) -> float | None:
+    if value is None:
+        return None
+    return round(value, 2)
 
 
 def main() -> int:
@@ -245,12 +258,21 @@ def main() -> int:
 
     latent_pid = _read_pid(DEFAULT_LATENT_WATCHER_PID)
     queue_pid = _read_pid(DEFAULT_QUEUE_WATCHER_PID)
+    latest_step = _parse_latest_step(latent_tail.stdout)
+    latest_rate_it_s = _parse_latest_rate_it_s(latent_tail.stdout)
+    eta_to_step_5000_min = None
+    if latest_step is not None and latest_rate_it_s and latest_rate_it_s > 0:
+        eta_to_step_5000_min = (5000 - latest_step) / latest_rate_it_s / 60.0
+        if eta_to_step_5000_min < 0:
+            eta_to_step_5000_min = 0.0
 
     report = {
         "remote_gpu": _summarize_gpu_csv(gpu.stdout),
         "latent_samam": {
             "run_root": args.latent_run_root,
-            "latest_step": _parse_latest_step(latent_tail.stdout),
+            "latest_step": latest_step,
+            "latest_rate_it_s": latest_rate_it_s,
+            "eta_to_step_5000_min": _format_minutes(eta_to_step_5000_min),
             "retained_checkpoints": [line.strip() for line in retained.stdout.splitlines() if line.strip()],
             "tail_excerpt": latent_tail.stdout.splitlines()[-12:],
         },

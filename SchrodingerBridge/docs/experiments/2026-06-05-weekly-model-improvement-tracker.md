@@ -148,11 +148,11 @@ Remote latent side quest currently occupying the only allowed GPU lane:
   - safely below the hard stop:
     - `< 11.0 GiB`
 - latest observed training progress:
-  - around `Epoch 0 step 3732`
+  - around `Epoch 0 step 3860`
   - observed train rate:
     - about `0.76 step/s`
 - rough remaining wall to first retained checkpoint:
-  - about `28 min` from the latest heartbeat if throughput stays flat
+  - about `25 min` from the latest heartbeat if throughput stays flat
 - retained checkpoint status:
   - none yet
   - first save still waits for `step 5000`
