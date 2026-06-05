@@ -55,6 +55,7 @@ Transport:
 - `tar` streamed over `ssh`
 - extracted directly inside the remote WSL repo root
 - followed by remote `python3 -m py_compile` verification
+- also carries the current evaluator-side targetwise-ArtFID helper so future remote full-eval packets emit the same artifact contract
 
 ## Step-aligned run contract
 
@@ -145,8 +146,10 @@ Observed full-packet metrics from `step_000040_full`:
   - `0.661342`
 - all-pairs `LPIPS`:
   - `0.743015`
-- targetwise transfer ArtFID derived from `summary.json` matrix:
+- targetwise transfer ArtFID:
   - `543.867`
+- retained targetwise-ArtFID artifact:
+  - `eval_bundle\eval_step_000040_full\step_000040_full\aggregate_targetwise_artfid.json`
 
 Operational reading:
 
@@ -154,11 +157,12 @@ Operational reading:
 - it is **not** the same as the earlier local `2.0m` same-cost row
 - on the unified remote surface, the same `40-step/style` SaMST packet is materially slower and remains in the high-damage regime
 
-Current caveat:
+Current note:
 
-- this evaluator branch did not emit a standalone `aggregate_targetwise_artfid.json`
-- the targetwise transfer ArtFID above was therefore derived from the full `summary.json` matrix by averaging transfer-only per-target means
-- the packet is still usable as evidence because the per-direction `art_fid` entries are present in the retained summary
+- the first full-eval pass did not emit a standalone `aggregate_targetwise_artfid.json`
+- this was repaired in place by the retained backfill helper:
+  - [backfill_targetwise_artfid_summary.py](/G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/scripts/backfill_targetwise_artfid_summary.py)
+- the remote sync packet now also carries the updated evaluator-side helper so future full-eval packets can emit the same artifact directly
 
 ## Immediate next gate
 

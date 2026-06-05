@@ -49,6 +49,7 @@ from utils.artfid_metric import (
     load_artfid_feature_extractor,
     load_artfid_lpips,
 )
+from utils.targetwise_artfid_summary import write_targetwise_artfid_summary
 from config_schema import load_inference_defaults, resolve_full_eval_section
 
 # KID (official implementation via torchmetrics)
@@ -2535,6 +2536,9 @@ def generate_summary_json(
     with open(sum_path, 'w') as f:
         json.dump(summary, f, indent=2)
     print(f"Summary saved: {sum_path}")
+    aggregate_artfid_path = write_targetwise_artfid_summary(sum_path)
+    if aggregate_artfid_path is not None:
+        print(f"Targetwise ArtFID summary saved: {aggregate_artfid_path}")
 
     summary_grid_path = None
     if bool((settings or {}).get("save_summary_grid", True)):
