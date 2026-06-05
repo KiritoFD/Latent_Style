@@ -52,9 +52,10 @@ Remote main live facts:
 
 - `I:\Github\Latent_Style` exists with 23 dirs and 53 files at root.
 - `I:\Github\Latent_Style\SchrodingerBridge\exp` exists with 123 dirs and 1 file.
-- `I:\Github\Latent_Style\Cycle-NCE` exists with 25 dirs and 79 files.
-- `I:\Github\Latent_Style\Cycle-NCE\45.rar` still exists, size 507.452 MB,
-  last write `2026-04-06 00:11:44`.
+- `I:\Github\Latent_Style\Cycle-NCE` exists with 26 dirs and 78 files after
+  deleting the original `45.rar` archive.
+- `I:\Github\Latent_Style\Cycle-NCE\45.rar` is now absent after exact-path
+  whitelist cleanup; the curated nonweight package remains present.
 - `I:\Github\Latent_Style\experiments.rar` and
   `I:\Github\Latent_Style\Cycle-NCE\experiments.rar` are absent after resolved
   duplicate cleanup.
@@ -154,6 +155,8 @@ Remote main cleanup already performed:
 - Duplicate/stale archive cleanup: 3 archives deleted, 3290.714 MB released.
 - Weight-only RAR cleanup: 6 RAR files deleted, 6553.384 MB released.
 - Resolved duplicate `experiments.rar`: deleted, 8091.026 MB released.
+- Cycle-NCE `45.rar`: original archive deleted after curated nonweight
+  extraction, 507.452 MB released.
 
 Remote main retained evidence:
 
@@ -161,19 +164,16 @@ Remote main retained evidence:
 - SaMAM curve checkpoints and non-duplicate step checkpoints.
 - Valid data roots, latent roots, and eval caches.
 - Expanded `experiments` evidence after `experiments.rar` deletion.
-- Cycle-NCE evidence directories and `45.rar`.
+- Cycle-NCE evidence directories and the curated nonweight package for `45.rar`.
 
 Remote main remaining gap:
 
-- `Cycle-NCE\45.rar` cannot be deleted yet without an owner-approved delete
-  whitelist, but the curated nonweight extraction package now exists at
-  `I:\Github\Latent_Style\Cycle-NCE\_curated_45_nonweight_20260605`. It
-  contains 6084 nonweight payload files, 144.730 MB, and 0 payload files with
-  weight extensions; all nonweight entries matched the archive listing by path
-  and bytes. Four retained `model.py` files were manually opened as source
-  snapshots, not weights.
-  The remaining question is whether the old archived weights and compressed
-  archive copy are disposable.
+- `Cycle-NCE\45.rar` has now been deleted after its curated nonweight package
+  was extracted and verified at
+  `I:\Github\Latent_Style\Cycle-NCE\_curated_45_nonweight_20260605`. The
+  package contains the verified nonweight payload and `0` files with weight
+  extensions. The old archive and its 12 staged `.pt` weights are no longer
+  retained.
 - Cache duplicates cannot be deleted from hash equality alone. The current
   policy requires canonical cache-root migration, symlink/junction policy, and
   offline eval verification.
@@ -307,9 +307,8 @@ deleted only two exact duplicate targets; the next slice should again produce a
 CSV/MD policy and delete only if exact whitelist proof exists.
 
 Block 2, 1.0h:
-The curated nonweight extraction package for `Cycle-NCE\45.rar` now exists and
-is verified. Next step is owner decision plus a new delete whitelist if the
-original archive/old weights should be removed.
+`Cycle-NCE\45.rar` delete closure is now executed: curated nonweight package is
+verified, original archive is deleted, and post-delete verification passed.
 
 Block 3, 1.0h:
 Remote TokenizerClean no-summary recovery. The 7 retained payloads have now
@@ -342,6 +341,6 @@ complete with current evidence or leave a precise remaining gap list.
 Not complete.
 
 The task is substantially advanced, but completion is unproven because the
-remaining gaps are concrete: local nested generated media, `45.rar` curated
-archive owner decision, TokenizerClean summary recovery/owner decisions, retained-media
+remaining gaps are concrete: local nested generated media, TokenizerClean
+summary recovery/owner decisions, retained-media
 manifests, docs timing promotion, and final consistency audit.

@@ -173,3 +173,21 @@ the duplicate e15 zip and standalone highres `samst_same_test` directory are
 absent, while retained e15 summary/metrics/grid/images, paired highres
 SaMST/LBM images, non-identical highres v2, and Seedream diagnostic input dirs
 remain present.
+
+## 2026-06-05 remote Cycle-NCE 45.rar original archive cleanup
+
+After the curated nonweight extraction pass verified all `6084` nonweight
+payload entries by relative path and byte size, and recorded/removes the `12`
+staged `.pt` files from the curated package, the original compressed archive was
+deleted as an exact whitelist target.
+
+| scope | action | cleanup_class | archive_files | size_mb | ledger |
+| --- | --- | --- | ---: | ---: | --- |
+| remote_I_main | deleted | curated_nonweight_preserved_original_archive_with_old_weights | 1 | 507.452 | `manual_remote_cycle_nce_45_rar_delete_execution_20260605.csv` |
+
+Post-delete verification passed all 6 checks in
+`manual_remote_cycle_nce_45_rar_post_delete_verify_20260605.csv`: original
+`I:\Github\Latent_Style\Cycle-NCE\45.rar` is absent, the curated nonweight
+package is present with `6086` files / `145.512 MB`, the extracted `45\`
+payload dir is present, package manifest and removed-weight ledger are present,
+and recursive weight-extension count remains `0`.
