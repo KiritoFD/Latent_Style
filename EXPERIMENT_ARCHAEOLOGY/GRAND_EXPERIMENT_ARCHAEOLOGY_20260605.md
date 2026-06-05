@@ -21,8 +21,13 @@ The main correction is that raw `.pt/.pth/.ckpt/.safetensors` counts are mislead
 New manual products:
 
 - `manual_top_level_directory_index_20260605.csv`
+- `manual_family_walkthrough_20260605.csv`
+- `manual_schrodingerbridge_exp_topdir_ledger_20260605.csv`
+- `manual_related_works_directory_ledger_20260605.csv`
+- `manual_cycle_nce_directory_ledger_20260605.csv`
 - `manual_cleanup_retention_and_next_candidates_20260605.csv`
 - `GRAND_EXPERIMENT_ARCHAEOLOGY_20260605.md`
+- `MANUAL_CYCLE_NCE_ARCHAEOLOGY_20260605.md`
 
 Existing manual products extended/used as context:
 
@@ -55,7 +60,7 @@ Interpretation:
 
 - Most `.pt` files in these areas are per-image latents or features, not model checkpoints.
 - Remote `experiments` is a large legacy archive with old ablation names from February to April. It should be archived with a separate historical policy, not cleaned by a checkpoint-only rule.
-- `Cycle-NCE` contains historical reports, zips/rar bundles, eval caches, and dependency weights. Local residual `.pt` files are only `eval_cache/ref_feats_*.pt`.
+- `Cycle-NCE` contains historical reports, summary/metrics/log evidence, source snapshots, eval caches, and visualization outputs. The local manual pass found `500` `summary.json`, `496` `metrics.csv`, and `260` `training_*.csv`; local residual `.pt` files are only `eval_cache/ref_feats_*.pt`, not train checkpoints.
 
 ### March to April: baseline and external method reproduction
 
