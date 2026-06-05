@@ -34,6 +34,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--train-img-prep", default="resize_512")
     parser.add_argument("--val-img-prep", default="resize_512")
     parser.add_argument("--train-batch-size", type=int, default=1)
+    parser.add_argument("--lora-rank-unet", type=int, default=8)
+    parser.add_argument("--lora-rank-vae", type=int, default=4)
     parser.add_argument("--gradient-accumulation-steps", type=int, default=1)
     parser.add_argument("--max-train-steps", type=int, default=20)
     parser.add_argument("--max-train-epochs", type=int, default=100)
@@ -93,6 +95,10 @@ def build_command(args: argparse.Namespace, dataset_dir: Path, output_dir: Path)
         str(args.val_img_prep),
         "--train_batch_size",
         str(args.train_batch_size),
+        "--lora_rank_unet",
+        str(args.lora_rank_unet),
+        "--lora_rank_vae",
+        str(args.lora_rank_vae),
         "--gradient_accumulation_steps",
         str(args.gradient_accumulation_steps),
         "--max_train_steps",
