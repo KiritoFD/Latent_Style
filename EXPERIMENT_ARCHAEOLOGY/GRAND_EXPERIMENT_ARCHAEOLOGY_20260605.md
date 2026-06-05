@@ -412,3 +412,23 @@ The repository is cleaner than before, but "clean" cannot mean "no weight-like f
 - current evidence, baseline evidence, cache/data, and dependencies remain;
 - the remaining disk-heavy areas are mostly current evidence or data/cache, not obvious trash;
 - further deletion should be a second retention-policy pass, not a broad `*.pt` sweep.
+
+## Post-Pass Update: Remote SchrodingerBridge Epoch Thinning
+
+After the initial grand report, remote `I:\Github\Latent_Style\SchrodingerBridge\exp`
+received a manual epoch-level thinning pass:
+
+- pre-cleanup evidence CSV: 101 checkpoint rows, about `5945 MB`;
+- policy CSV: 17 keep rows and 84 delete rows;
+- actual deletion ledger: 84 deleted `.pt` files, `4961.604 MB` released;
+- post-delete verification: 17 remaining checkpoints, `983.457 MB`.
+
+The retained checkpoints are only cited/probe/anchor epochs: path-stability e1
+for base/k000/k025, Distinct5 retained operating points, K/L/M single anchors,
+and SADD e7/e8 lineage anchors. Longer-train F/K checkpoints were removed after
+manual docs and summary checks showed they are negative evidence with retained
+summaries/logs/grids.
+
+Use `MANUAL_REMOTE_SCHRODINGERBRIDGE_EPOCH_THINNING_20260605.md` as the current
+state for this remote root. The old `remote SchrodingerBridge/exp 101 ckpt`
+entries are now historical pre-thinning snapshots.

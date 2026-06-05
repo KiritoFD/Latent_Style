@@ -283,3 +283,15 @@
 | 8 | 0.5h | 只执行已被 policy 证明安全的删除、校验、提交 | cleanup CSV + post-delete counts |
 
 当前状态还不能宣称“全部完成”。已经完成的是：主要证据面被分层，非主线 checkpoint 清理边界变清楚，若要继续释放空间，下一步是 policy-driven thinning，而不是继续猜删。
+
+## Post-pass update: remote SchrodingerBridge/exp epoch thinning
+
+本报告生成后，远程 `I:\Github\Latent_Style\SchrodingerBridge\exp` 已继续完成逐 epoch checkpoint thinning。它不再只是“pending policy”区域：
+
+- `manual_remote_schrodingerbridge_epoch_evidence_20260605.csv`：101 行清理前 checkpoint 证据。
+- `manual_remote_schrodingerbridge_epoch_thinning_policy_20260605.csv`：17 个 keep 决策，84 个 delete 决策。
+- `cleanup/manual_remote_schrodingerbridge_epoch_cleanup_20260605.csv`：84 个 `.pt` 已删除，释放 `4961.604 MB`。
+- `manual_remote_schrodingerbridge_remaining_weights_after_thinning_20260605.csv`：剩余 17 个 checkpoint，`983.457 MB`。
+- `MANUAL_REMOTE_SCHRODINGERBRIDGE_EPOCH_THINNING_20260605.md`：人工逐目录叙述和缺口。
+
+保留集合只包含 cited/probe/anchor epoch。删除集合包括 failed longer-train F/K checkpoint、非保留中间 epoch、rejected A/J ablation checkpoint，以及 SADD e1-e6 中间 checkpoint（SADD e7/e8 保留为 summary anchors）。

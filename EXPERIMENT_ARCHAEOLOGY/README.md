@@ -143,6 +143,11 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `manual_remote_samam_checkpoint_thinning_policy_20260605.csv`: remote SaMAM central `step_checkpoints` keep/delete policy for 19 checkpoint files.
 - `manual_remote_samam_hash_pairs_20260605.csv`: SHA256 comparison of `last*.ckpt` aliases against corresponding `step-step=*.ckpt` files; all differed, so aliases were not deleted as duplicates.
 - `MANUAL_REMOTE_SAMAM_CHECKPOINT_THINNING_20260605.md`: narrative remote SaMAM checkpoint thinning audit with opened `eval_curve`, `convergence_recovered.md`, ArtFID reuse, and timing evidence.
+- `manual_remote_schrodingerbridge_epoch_evidence_20260605.csv`: remote `SchrodingerBridge/exp` epoch-level evidence for the 101 pre-cleanup checkpoint files, with config/log/summary/timing/metric fields.
+- `manual_remote_schrodingerbridge_epoch_thinning_policy_20260605.csv`: per-checkpoint keep/delete policy for remote `SchrodingerBridge/exp` after manual retained-epoch review.
+- `cleanup/manual_remote_schrodingerbridge_epoch_cleanup_20260605.csv`: deletion ledger for 84 remote `SchrodingerBridge/exp` checkpoint files, totaling `4961.604 MB`.
+- `manual_remote_schrodingerbridge_remaining_weights_after_thinning_20260605.csv`: post-delete verification list of the 17 remaining remote `SchrodingerBridge/exp` checkpoints.
+- `MANUAL_REMOTE_SCHRODINGERBRIDGE_EPOCH_THINNING_20260605.md`: narrative manual epoch-thinning walkthrough for remote `SchrodingerBridge/exp`.
 - `manual_cleanup_retention_and_next_candidates_20260605.csv`: remaining weight/cache classes, keep reasons, and next deletion candidates.
 - `MANUAL_EXPERIMENT_AUDIT_20260605.md`: current hand-checked audit narrative and gap list.
 - `manual_directory_audit_20260605.csv`: checked directory-level evidence rows.
