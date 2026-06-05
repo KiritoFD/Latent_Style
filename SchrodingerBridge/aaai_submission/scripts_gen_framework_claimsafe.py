@@ -36,6 +36,7 @@ FONT_LABEL = load_font(24, bold=True)
 FONT_TEXT = load_font(20, bold=False)
 FONT_SMALL = load_font(18, bold=False)
 FONT_CHIP = load_font(17, bold=True)
+FONT_TINY = load_font(15, bold=False)
 
 COLORS = {
     "warm_bg": (255, 249, 240),
@@ -174,41 +175,48 @@ def main() -> None:
         body_fill=(30, 70, 120),
     )
 
+    cache_box = (326, 646, 588, 850)
     rounded_box(
         draw,
-        (336, 646, 572, 850),
+        cache_box,
         fill=(255, 249, 233),
         outline=COLORS["cache_edge"],
         width=3,
         radius=20,
-        title="pairing cache  C(z0, s)",
+        title="offline pairing cache  C(z0, s)",
         body=None,
-        title_font=FONT_LABEL,
+        title_font=FONT_TEXT,
     )
     rounded_box(
         draw,
-        (362, 694, 546, 756),
-        fill=COLORS["cache_fill"],
+        (352, 700, 562, 734),
+        fill=(255, 252, 244),
         outline=COLORS["cache_edge"],
         width=2,
-        radius=14,
-        title="prototype-aware selector",
-        body="coherent target\ncandidates",
-        title_font=FONT_CHIP,
-        body_font=FONT_SMALL,
-        title_fill=(110, 75, 10),
-        body_fill=(70, 56, 24),
+        radius=12,
+        title="prototype-aligned queue",
+        body=None,
+        title_font=FONT_TINY,
+        title_fill=(108, 78, 18),
     )
+    draw.text((456, 748), "content-coherent target candidates", font=FONT_TINY, fill=(120, 95, 42), anchor="ma")
+    # Draw a compact row of candidate tiles to make the cache read visually.
+    tile_y0, tile_y1 = 760, 798
+    tile_xs = [368, 410, 452, 494]
+    tile_fills = [(245, 223, 168), (219, 205, 250), (247, 213, 138), (244, 199, 210)]
+    for x0, fill in zip(tile_xs, tile_fills):
+        draw.rounded_rectangle((x0, tile_y0, x0 + 30, tile_y1), radius=8, fill=fill, outline=COLORS["cache_edge"], width=2)
+    draw.text((535, 779), "...", font=FONT_LABEL, fill=(120, 90, 25), anchor="mm")
     rounded_box(
         draw,
-        (362, 776, 546, 828),
-        fill=COLORS["cache_fill"],
+        (356, 812, 558, 844),
+        fill=(255, 252, 242),
         outline=COLORS["cache_edge"],
         width=2,
-        radius=14,
-        title="schedule: cache draw",
+        radius=12,
+        title="cache draw",
         body=None,
-        title_font=FONT_CHIP,
+        title_font=FONT_TINY,
         title_fill=(110, 75, 10),
     )
 
@@ -250,22 +258,18 @@ def main() -> None:
         title_font=FONT_CHIP,
         title_fill=(55, 95, 55),
     )
-    rounded_box(
-        draw,
-        (344, 804, 544, 854),
-        fill=COLORS["note_fill"],
-        outline=COLORS["note_edge"],
-        width=2,
-        radius=12,
-        title="historical OT selectors: appendix-only",
-        body=None,
-        title_font=FONT_SMALL,
-        title_fill=(92, 92, 92),
+    # OT is kept only as a muted family-background note, not as an active block.
+    draw.text(
+        (456, 861),
+        "historical OT family: supplementary background only",
+        font=FONT_TINY,
+        fill=(118, 118, 118),
+        anchor="ma",
     )
 
-    arrow(draw, (276, 694), (336, 694), width=4)
+    arrow(draw, (276, 694), (326, 724), width=4)
     arrow(draw, (276, 808), (336, 808), width=4)
-    arrow(draw, (572, 742), (628, 742), width=4)
+    arrow(draw, (588, 748), (628, 748), width=4)
     dashed_vertical_arrow(draw, (678, 694), (678, 568))
     dashed_vertical_arrow(draw, (816, 806), (816, 568))
     dashed_vertical_arrow(draw, (662, 806), (662, 568))
