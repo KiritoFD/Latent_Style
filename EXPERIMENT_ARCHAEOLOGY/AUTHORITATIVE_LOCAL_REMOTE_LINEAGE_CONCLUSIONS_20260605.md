@@ -114,19 +114,21 @@ Local cleanup already performed:
 - Failed dataset download cache residue: 63.948 MB.
 - Local remaining-surface whitelist cleanup: 237.860 MB.
 - Five unreferenced CUT video work-frame dirs: 3068.463 MB.
+- Local generated-media pass4 duplicate cleanup: 101.913 MB.
 
 Local generated-media conclusion:
 
-Generated media is not a single delete class. Passes 1, 2, and 3 opened exact
+Generated media is not a single delete class. Passes 1, 2, 3, and 4 opened exact
 dirs and kept formal evals, paper bundles, no-op/IDT controls, timing
 benchmarks, protocol baselines, compact-anchor evals, diagnostics, and
-generation-only calibration evidence. Only the five frame-only video work dirs
-were deleted because they had no mp4/json/csv and final video evidence is
-retained elsewhere.
+generation-only calibration evidence. Only exact duplicate or frame-only
+whitelist targets were deleted: five CUT video work dirs, one duplicate SaMST
+e15 image zip, and one duplicate highres `samst_same_test` directory. The
+retained peers and evidence packets were post-delete verified.
 
 Local remaining gap:
 
-- Continue local generated-media owner review below the current candidate
+- Continue local generated-media owner review below the pass4 candidate
   cluster.
 - Build a separate archive/temp/paper-scratch provenance pass without touching
   paper TeX/PDF.
@@ -269,7 +271,7 @@ Timing gap:
 
 ## Cleanup Ledger Conclusion
 
-The current ledger synthesis reports about 92162.847 MB released. That number
+The current ledger synthesis reports about 92264.760 MB released. That number
 is not a claim that the whole repo is clean. It means every counted deletion
 block has a policy/ledger/post-delete verification path.
 
@@ -284,8 +286,9 @@ Deletion rule:
 ## 8-Hour Continuation Plan
 
 Block 1, 1.0h:
-Continue local generated-media owner review below pass3. Produce pass4 CSV/MD
-and delete only if exact whitelist proof exists.
+Continue local generated-media owner review below pass4. Pass4 is complete and
+deleted only two exact duplicate targets; the next slice should again produce a
+CSV/MD policy and delete only if exact whitelist proof exists.
 
 Block 2, 1.0h:
 Create a curated nonweight extraction package plan for `Cycle-NCE\45.rar`.
