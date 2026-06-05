@@ -77,3 +77,42 @@ Otherwise:
 
 - retain the result as a negative or neutral sweep note
 - do not keep it alive in the paper-facing queue
+
+## Landing checklist
+
+When `A1` or any `A2` arm lands, collect the same evidence set before writing a
+keep/drop conclusion:
+
+1. `remote_train.log`
+2. retained checkpoints for all completed epochs
+3. `full_eval/<epoch>/summary.json`
+4. `full_eval/<epoch>/metrics.csv`
+5. `full_eval/<epoch>/aggregate_targetwise_artfid.json`
+6. first-health GPU memory read from the watcher or reporter
+7. exact queue position and whether the next packet auto-started
+
+Minimum metric fields to copy back into the ledger:
+
+- `clip_style`
+- `content_lpips`
+- `delta_idt_full`
+- `delta_idt_transfer`
+- selected `artfid_target_mean` if present in the summary payload
+
+## Result writeback rule
+
+For every landed `A1/A2` packet:
+
+1. update `docs/experiments/aaai2027_master_experiment_log.csv`
+2. append the latest queue state to:
+   - `docs/experiments/2026-06-06-remote-autonomy-status.md`
+3. update:
+   - `docs/experiments/2026-06-05-weekly-model-improvement-tracker.md`
+4. state one of:
+   - `keep`
+   - `neutral`
+   - `drop`
+
+Do not mark a packet `paper_safe` from launch logs alone. The packet becomes
+paper-safe only after the landed eval artifacts above exist and the summary
+numbers have been copied into the ledger.

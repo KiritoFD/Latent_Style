@@ -28,11 +28,11 @@ Active training lane:
 - remote run:
   - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4`
 - latest observed progress:
-  - around `Epoch 0 step 4251`
+  - around `Epoch 0 step 4388`
 - current parsed train rate:
-  - about `0.76 it/s`
+  - about `0.77 it/s`
 - rough ETA to the first retained checkpoint:
-  - about `16.4 min` to `step_5000`
+  - about `13.3 min` to `step_5000`
 - current retained checkpoint state:
   - only `step_checkpoints/last.ckpt`
   - first numbered retained checkpoint still waits for `step_5000`
@@ -118,3 +118,5 @@ Additional note:
 - the watcher pair was restarted after the runtime-guard patch landed
 - both new watcher instances are now the ones carrying the `< 11.0 GiB`
   first-health gate for `A1` and the later `A2` queue
+- the bounded latent lane is still healthy, so no manual intervention is
+  warranted before the first retained checkpoint appears
