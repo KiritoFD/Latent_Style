@@ -10,18 +10,18 @@
 \centering
 \footnotesize
 \setlength{\tabcolsep}{4pt}
-\caption{Historical strict-750 / 256$\times$256 recorded operating-point cost. Training time is the wall-clock cost to the manuscript operating point; inference is the end-to-end runtime for the 750-image protocol. This is recorded operating-point context, not a normalized time-to-quality comparison.}
+\caption{Historical 256$\times$256 standard-benchmark operating-point cost. Training time is the wall-clock cost to the manuscript operating point; inference is the end-to-end runtime for the 750-image protocol. This is recorded operating-point context, not a normalized time-to-quality comparison.}
 \label{tab:cost}
 \begin{tabular}{@{}lccc@{}}
 \toprule
-Method & Train to point & Infer-750 & ms/img \\
+Method & Train to point & Inference (750 imgs) & ms/img \\
 \midrule
 LBM & \textbf{5.2 min} & 85.4 s & 114 \\
 \bottomrule
 \end{tabular}
 
 \vspace{2pt}
-\parbox{0.98\linewidth}{\raggedright\footnotesize\textit{Note.} The LBM row is a preserved timing record. Other historical rows are intentionally omitted here because the available train/infer evidence is either probe-estimated, mixed-protocol, or incomplete rather than a closed operating-point packet.}
+\parbox{0.98\linewidth}{\raggedright\footnotesize\textit{Note.} The LBM row is a preserved timing record. Other historical rows are intentionally omitted here because the available train/infer evidence is either probe-estimated, mixed-protocol, or incomplete rather than a closed operating-point record.}
 \end{table}%
 }
 
@@ -30,11 +30,11 @@ LBM & \textbf{5.2 min} & 85.4 s & 114 \\
 \centering
 \footnotesize
 \setlength{\tabcolsep}{4pt}
-\caption{Distinct5-512 same-cost records under the reviewed full $5\times5$ / 750-output packet. Train time is cumulative wall-clock to the shown checkpoint, with evaluation excluded; inference is pure 750-image generation wall time. This is recorded operating-point cost, not a normalized time-to-quality comparison.}
+\caption{Distinct5-512 same-cost records under the reviewed full $5\times5$ / 750-output benchmark setting. Train time is cumulative wall-clock to the shown checkpoint, with evaluation excluded; inference is pure 750-image generation wall time. This is recorded operating-point cost, not a normalized time-to-quality comparison.}
 \label{tab:cost_distinct5}
 \begin{tabular}{@{}lcccc@{}}
 \toprule
-Method & Recorded point & Train to point & Infer-750 & ms/img \\
+Method & Recorded point & Train to point & Inference (750 imgs) & ms/img \\
 \midrule
 LBM & step 350 & \textbf{1.9 min} & \textbf{84.4 s} & \textbf{113} \\
 SaMAM & step 16 & 2.2 min & 109.2 s & 146 \\
@@ -43,6 +43,6 @@ SaMST & 40-step/style & 2.0 min & 345.7 s & 461 \\
 \end{tabular}
 
 \vspace{2pt}
-\parbox{0.98\linewidth}{\raggedright\footnotesize\textit{Note.} These are the closed same-cost rows used on page~1: all three methods were trained to roughly the same two-minute budget before evaluation. This table therefore reports the matched-budget packet, not the strongest retained LBM frontier point. The stronger reviewed LBM frontier rows still appear earlier at about 1.2 minutes (for example F/H/K step-1 anchors) and are shown separately in Figure~\ref{fig:timecontext}. Retained local \texttt{nvidia-smi} traces keep the same-cost training packets inside the same 8\,GB laptop envelope, peaking at about 5.0\,GB for LBM, 6.1\,GB for SaMST, and 7.5\,GB for SaMAM. The SaMST row follows the original fast setting with per-style step-40 checkpoints; the table reports its combined Distinct5 packet cost rather than a normalized time-to-quality claim.}
+\parbox{0.98\linewidth}{\raggedright\footnotesize\textit{Note.} These are the closed same-cost rows used on page~1: all three methods were trained to roughly the same two-minute budget before evaluation. This table therefore reports the matched-budget row, not the strongest retained LBM frontier point. The stronger reviewed LBM frontier rows still appear earlier at about 1.2 minutes and are shown separately in Figure~\ref{fig:timecontext}. Measured local GPU traces keep the same-cost training runs inside the same 8\,GB laptop envelope, peaking at about 5.0\,GB for LBM, 6.1\,GB for SaMST, and 7.5\,GB for SaMAM. The SaMST row follows the original fast setting with per-style step-40 checkpoints; the table reports its combined Distinct5 benchmark cost rather than a normalized time-to-quality claim.}
 \end{table}%
 }

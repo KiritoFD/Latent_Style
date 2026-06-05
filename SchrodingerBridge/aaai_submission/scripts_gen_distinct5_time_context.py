@@ -8,7 +8,7 @@ faster operating points appear to the right.
 The key distinction preserved here is:
 
 - the retained reviewed LBM frontier around 1.2 minutes
-- the explicit page-1 matched-budget packet around 2 minutes
+- the explicit page-1 matched-budget row around 2 minutes
 """
 
 from __future__ import annotations
@@ -195,7 +195,7 @@ def main() -> None:
         color=COLORS["samst"],
         alpha=0.78,
         zorder=2.1,
-        label="SaMST long packet",
+        label="SaMST longer-budget",
     )
     ax.scatter(
         [float(row["train_min"]) for row in samst_long],
@@ -227,7 +227,7 @@ def main() -> None:
         edgecolor=COLORS["text"],
         linewidth=0.9,
         zorder=4.6,
-        label="LBM matched-budget packet",
+        label="LBM matched-budget row",
     )
     ax.scatter(
         [float(same_cost["SaMAM"]["train_min"])],
@@ -253,16 +253,16 @@ def main() -> None:
 
     annotate(ax, samam_curve[0], f"250 | {time_label(float(samam_curve[0]['train_min']))}", -10, -14, COLORS["samam"])
     annotate(ax, samam_curve[-1], f"2250 | {time_label(float(samam_curve[-1]['train_min']))}", 10, 12, COLORS["samam"])
-    annotate(ax, samst_long[0], f"SaMST e5 | {time_label(float(samst_long[0]['train_min']))}", 24, 12, COLORS["samst"])
-    annotate(ax, samst_long[1], f"SaMST e15 | {time_label(float(samst_long[1]['train_min']))}", 14, 12, COLORS["samst"])
-    annotate(ax, lbm_frontier[0], f"LBM-F | {time_label(float(lbm_frontier[0]['train_min']))}", -12, -20, COLORS["lbm"])
-    annotate(ax, lbm_frontier[1], f"LBM-H | {time_label(float(lbm_frontier[1]['train_min']))}", -12, 10, COLORS["lbm"])
-    annotate(ax, lbm_frontier[2], f"LBM-K | {time_label(float(lbm_frontier[2]['train_min']))}", -30, -2, COLORS["lbm"])
-    annotate(ax, lbm_frontier[3], f"LBM-H e2 | {time_label(float(lbm_frontier[3]['train_min']))}", -16, 16, COLORS["lbm"])
+    annotate(ax, samst_long[0], f"SaMST | {time_label(float(samst_long[0]['train_min']))}", 24, 12, COLORS["samst"])
+    annotate(ax, samst_long[1], f"SaMST | {time_label(float(samst_long[1]['train_min']))}", 14, 12, COLORS["samst"])
+    annotate(ax, lbm_frontier[0], f"LBM low-LPIPS | {time_label(float(lbm_frontier[0]['train_min']))}", -12, -20, COLORS["lbm"])
+    annotate(ax, lbm_frontier[1], f"LBM base | {time_label(float(lbm_frontier[1]['train_min']))}", -12, 10, COLORS["lbm"])
+    annotate(ax, lbm_frontier[2], f"LBM style | {time_label(float(lbm_frontier[2]['train_min']))}", -30, -2, COLORS["lbm"])
+    annotate(ax, lbm_frontier[3], f"LBM base later | {time_label(float(lbm_frontier[3]['train_min']))}", -16, 16, COLORS["lbm"])
     annotate(
         ax,
         same_cost["LBM"],
-        f"LBM step350 | {time_label(float(same_cost['LBM']['train_min']))}",
+        f"LBM same-cost | {time_label(float(same_cost['LBM']['train_min']))}",
         24,
         -18,
         COLORS["lbm"],
@@ -270,7 +270,7 @@ def main() -> None:
     annotate(
         ax,
         same_cost["SaMAM"],
-        f"SaMAM step16 | {time_label(float(same_cost['SaMAM']['train_min']))}",
+        f"SaMAM same-cost | {time_label(float(same_cost['SaMAM']['train_min']))}",
         16,
         -12,
         COLORS["samam"],
@@ -278,7 +278,7 @@ def main() -> None:
     annotate(
         ax,
         same_cost["SaMST"],
-        f"SaMST step40 | {time_label(float(same_cost['SaMST']['train_min']))}",
+        f"SaMST same-cost | {time_label(float(same_cost['SaMST']['train_min']))}",
         20,
         10,
         COLORS["samst"],

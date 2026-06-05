@@ -3,21 +3,21 @@
 \centering
 \footnotesize
 \setlength{\tabcolsep}{3.5pt}
-\caption{Distinct5-512 timing audit from retained frontier and same-cost artifacts. Train and eval times are cumulative wall-clock minutes to the shown packet, while inference is shown only when a packet-bound pure-generation log is retained. This table is an evidence audit, not a shared normalized efficiency ranking.}
+\caption{Distinct5-512 timing audit from retained frontier and same-cost artifacts. Train and eval times are cumulative wall-clock minutes to the shown operating point, while inference is shown only when a point-specific pure-generation log is retained. This table is an evidence audit, not a shared normalized efficiency ranking.}
 \label{tab:timing_audit_distinct5}
 \begin{tabular}{@{}llcccclp{5.2cm}@{}}
 \toprule
 Method & Point & Train min & Eval min & Infer ms/img & Tr ArtFID & Status & Evidence note \\
 \midrule
-LBM-LPIPS frontier & F step 1 & \textbf{1.2} & 0.59 & -- & 126.8 & closed & Formal remote b44 packet; strongest retained transfer $1-\mathrm{LPIPS}$ anchor. \\
-LBM-Style frontier & K step 1 & \textbf{1.2} & 0.60 & -- & 162.0 & closed & Formal remote b44 packet; strongest retained transfer CLIP-S anchor. \\
-LBM same-cost & step 350 & 1.9 & 0.71 & 112.5 & -- & closed & Exact page-1 matched-budget packet. This row is later than the retained 1.2-minute frontier and is used only because it matches the rerun two-minute baseline packet. \\
-SaMAM same-cost & step 16 & 2.2 & 0.92 & 145.6 & -- & closed & Exact page-1 matched-budget packet; still below the IDT floor on transfer CLIP-S. \\
-SaMST same-cost & step 40/style & 2.0 & 1.00 & 460.9 & -- & closed & Exact page-1 matched-budget packet under the original fast per-style step-40 setting. \\
-LBM-Style longer & step 4 & 4.5 & 1.69 & -- & -- & partial & Eight checkpoints landed, but paper-facing eval is only closed through step 4 and is already worse than the step-1 style anchor on style and LPIPS. \\
-SaMST long packet & e15 & 347.3 & 2.62 & -- & 444.5 & partial & Paper-facing saturated point, but same-run-root inference timing is missing. \\
-SaMAM long packet & 2250 & 458.6 & 0.79 & -- & 148.2 & manuscript-valid & Trusted active-manuscript anchor; still below the IDT floor on transfer CLIP-S. \\
-SaMAM audit-only & 3000 & 612.6 & 4.82 & -- & 394.8 & audit-only & Closed audit packet outside the active manuscript boundary; excluded from paper-safe positive-IDT claims. \\
+LBM low-LPIPS frontier & step 1 & \textbf{1.2} & 0.59 & -- & 126.8 & closed & Closed remote run; strongest retained transfer $1-\mathrm{LPIPS}$ anchor. \\
+LBM style frontier & step 1 & \textbf{1.2} & 0.60 & -- & 162.0 & closed & Closed remote run; strongest retained transfer CLIP-S anchor. \\
+LBM same-cost & step 350 & 1.9 & 0.71 & 112.5 & -- & closed & Exact page-1 matched-budget row. This row is later than the retained 1.2-minute frontier and is used only because it matches the rerun two-minute baseline row. \\
+SaMAM same-cost & step 16 & 2.2 & 0.92 & 145.6 & -- & closed & Exact page-1 matched-budget row; still below the IDT floor on transfer CLIP-S. \\
+SaMST same-cost & step 40/style & 2.0 & 1.00 & 460.9 & -- & closed & Exact page-1 matched-budget row under the original fast per-style step-40 setting. \\
+LBM style later & step 4 & 4.5 & 1.69 & -- & -- & partial & Eight checkpoints landed, but paper-facing eval is only closed through step 4 and is already worse than the step-1 style anchor on style and LPIPS. \\
+SaMST longer-budget & epoch 15 & 347.3 & 2.62 & -- & 444.5 & partial & Paper-facing saturated point, but same-run-root inference timing is missing. \\
+SaMAM manuscript anchor & step 2250 & 458.6 & 0.79 & -- & 148.2 & manuscript-valid & Trusted active-manuscript anchor; still below the IDT floor on transfer CLIP-S. \\
+SaMAM audit-only & step 3000 & 612.6 & 4.82 & -- & 394.8 & audit-only & Closed audit run outside the active manuscript boundary; excluded from paper-safe positive-IDT claims. \\
 \bottomrule
 \end{tabular}
 \end{table*}%
@@ -28,16 +28,16 @@ SaMAM audit-only & 3000 & 612.6 & 4.82 & -- & 394.8 & audit-only & Closed audit 
 \centering
 \scriptsize
 \setlength{\tabcolsep}{4pt}
-\caption{Historical standard benchmark / legacy256 timing evidence quality. Only the LBM row is a fully closed operating-point packet; the remaining rows are retained only to explain why they are excluded from a closed shared timing table.}
+\caption{Historical standard benchmark / legacy256 timing evidence quality. Only the LBM row is a fully closed operating-point record; the remaining rows are retained only to explain why they are excluded from a closed shared timing table.}
 \label{tab:timing_audit_historical}
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{@{}lccclp{4.3cm}@{}}
 \toprule
-Method & Train to point & Infer-750 & ms/img & Grade & Reason \\
+Method & Train to point & Inference (750 imgs) & ms/img & Grade & Reason \\
 \midrule
-LBM & 5.2 min & 85.4 s & 114 & actual & Preserved standard-benchmark operating-point packet. \\
+LBM & 5.2 min & 85.4 s & 114 & actual & Preserved standard-benchmark operating-point record. \\
 SaMST & 67.7 s/epoch probe & -- & -- & estimated & Historical train time is only extrapolated from a one-epoch probe. \\
-S2WAT & $\sim$176.7 min & -- & -- & estimated & Train wall is only a rough $5.3\,\mathrm{s}\times 2000$ estimate; strict infer-750 is not separately measured. \\
+S2WAT & $\sim$176.7 min & -- & -- & estimated & Train wall is only a rough $5.3\,\mathrm{s}\times 2000$ estimate; strict 750-image inference is not separately measured. \\
 StyleID & -- & 614--622 s/target & -- & cross-regime context & Recorded protocol-A-800 inference on the reproduced StyleID / SD1.5 route, totaling 51.4 min across five targets; retained only as diffusion-cost context rather than a same-interface timing comparison. \\
 Distinct5-256 relabels & -- & -- & -- & mixed-protocol & Repo timing rows labeled \texttt{Distinct5-256} collapse to \texttt{legacy256\_overfit50} rather than a first-class dataset surface. \\
 \bottomrule
