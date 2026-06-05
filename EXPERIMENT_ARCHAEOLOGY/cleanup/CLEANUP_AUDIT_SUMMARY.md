@@ -62,3 +62,16 @@ Additional manual cleanup after dataset/latent/feature cache inspection:
 | local_G | deleted | failed_hf_dataset_download_cache | 6 | 63.948 | `manual_dataset_cache_cleanup_20260605.csv` |
 
 Representative `.pt` files in the remaining dataset/cache roots were loaded read-only and confirmed as VAE latent tensors or CLIP feature tensors, not training checkpoints. Valid dataset/cache roots were retained.
+
+## 2026-06-05 remote main data/cache/archive residue cleanup
+
+Additional remote cleanup after manual path-by-path inspection of `I:\Github\Latent_Style` data/cache/archive surfaces:
+
+| scope | action | cleanup_class | files_or_dirs | size_mb | ledger |
+| --- | --- | --- | ---: | ---: | --- |
+| remote_I_main | deleted | failed_hf_incomplete_blobs | 5 | 381.807 | `manual_remote_main_data_cache_archive_residue_cleanup_20260605.csv` |
+| remote_I_main | deleted | stale_cache_locks | 3 | 0 | `manual_remote_main_data_cache_archive_residue_cleanup_20260605.csv` |
+| remote_I_main | deleted | stale_ref_feats_tmp | 1 | 0.000122 | `manual_remote_main_data_cache_archive_residue_cleanup_20260605.csv` |
+| remote_I_main | deleted | recursively_empty_temp_dirs | 2 | 0 | `manual_remote_main_data_cache_archive_residue_cleanup_20260605.csv` |
+
+All 11 whitelist targets were post-delete verified with `post_exists=False`. Valid data roots, latent roots, complete eval caches, SchrodingerBridge historical gate outputs, baseline repos, and large archives without proven duplicate/provenance status were retained.

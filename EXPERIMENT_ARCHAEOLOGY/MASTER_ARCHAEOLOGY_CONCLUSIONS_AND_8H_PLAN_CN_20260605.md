@@ -213,3 +213,24 @@ TokenzierClean 不能继续直接删的点：
 - 还没有 file-level 复核 remote latent backend / eval_cache / Cycle-NCE archive / experiments archive。
 - timing master 还没有合并 TokenizerClean 1024 行和质量标签。
 - 旧 broad summary 与 manual cleanup ledger 的聚合数字还需要 reconciliation，不能继续用单一“清理总量”一句话盖过去。
+
+## 追加：远程主仓 data/cache/archive 人工复核 - 2026-06-05
+
+本轮已完成 `I:\Github\Latent_Style` 的远程主仓数据、latent、eval cache、dataset cache、Cycle-NCE、experiments、StarGAN、seedream、Related_Works results/repos 的逐项打开复核。入口文件：
+
+- `MANUAL_REMOTE_MAIN_DATA_CACHE_ARCHIVE_POLICY_20260605.md`
+- `manual_remote_main_data_cache_archive_policy_20260605.csv`
+- `manual_remote_main_data_cache_archive_delete_candidates_20260605.csv`
+- `cleanup/manual_remote_main_data_cache_archive_residue_cleanup_20260605.csv`
+- `manual_remote_main_data_cache_archive_post_delete_verify_20260605.csv`
+
+结论：
+
+- `data`、`style_data`、`latents*`、`latent-256*` 均为数据/latent backend，无失败残留，保留。
+- `eval_cache` 删除 1 个失败 CLIP `.incomplete` 和 1 个 128-byte stale ref_feats tmp；完整 manual CLIP、offline pairing、ArtFID、VAE cache 保留。
+- `SchrodingerBridge\scale\datasets` 删除 `wikiart_81k` 失败下载 `.incomplete` 和 stale `.lock`；数据集实体保留。
+- `Cycle-NCE` 删除 3 个失败 `.incomplete` 和 2 个 stale lock；大包 `Gate.rar`、`1-decoder...zip`、分卷 rar、`45.rar` 不删，因还未证明重复/可弃。
+- `experiments` 删除递归空的 ModelScope `._____temp`；`uv.lock` 和 torch compile hash 误报保留。
+- `Related_Works\repos` 删除空 `S2WAT-main\pre_trained_models\tmp_timing`；baseline repo 权重保留。
+
+删除结果：11 个精确目标，释放 `381.807389 MB`，post-delete 复验全部 `post_exists=False`，父目录仍存在。现在 remote main 的 data/cache/archive 层已完成 residue-only pass；剩余缺口是 Cycle-NCE/root archives 的所有权与重复性证明、`experiments.rar` 的 provenance、跨 cache dedup hash audit。
