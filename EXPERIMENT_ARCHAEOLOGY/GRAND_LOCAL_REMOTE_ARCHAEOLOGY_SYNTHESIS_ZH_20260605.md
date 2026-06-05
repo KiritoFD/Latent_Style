@@ -21,7 +21,7 @@
 - `timing_quality_master_20260605.csv`：1093 行 timing overlay。
 - `manual_top_level_directory_index_20260605.csv`：67 行顶层目录索引。
 
-当前缺的不是“有没有数据”，而是继续逐目录把剩余 owner choice、tracked-file policy、timing promotion、archive/tmp provenance 和最终一致性审计做完。
+当前缺的不是“有没有数据”，而是继续逐目录把剩余 owner choice、timing promotion、retained-media migration、dataset prose 和最终一致性审计做完。`archive/tmp/paper scratch` provenance 与 CUT raw tracked-boundary policy 已经单独补齐，但二者都没有授权删除。
 
 ## 2. 现场事实
 
@@ -84,7 +84,7 @@
 本地仍缺：
 
 - owner 对 `seedream_gap` 和 inference sweeps 选择 keep/migrate/delete。
-- CUT raw outputs 的 tracked-file migration/untracking policy。
+- CUT raw outputs 已有 tracked-boundary no-delete policy；若未来要删除，仍需 owner-approved migration/untracking whitelist。
 - root `archive/tmp/paper scratch` provenance pass。
 - dataset-by-dataset 中文结论重写，替代旧乱码/粗糙字段。
 
@@ -192,10 +192,11 @@ Timing 已有证据但还没变成最终 paper-facing 表：
 - 分类 duplicate archive、render artifact、paper build output、active dirty file。
 - 不碰 TeX/PDF。
 
-### 第 2 小时：CUT raw tracked-file policy
+### 第 2 小时：CUT raw tracked-file policy - 已补齐 no-delete policy
 
-- 对 `raw_results` 和 `raw_results_val` 的 tracked HTML/media 写迁移/保留/删除策略。
-- 任何删除前必须先有 untracking/migration plan。
+- 已逐个打开 `raw_results` 和 `raw_results_val` 的 5 个 CUT target web outputs。
+- 已记录 tracked HTML/media、训练日志 timing、缺失 inference wall-time 字段。
+- 当前结论是 `delete_whitelist=no`；任何删除前仍必须先有 owner-approved untracking/migration plan。
 
 ### 第 3 小时：retained media archive choices
 

@@ -217,6 +217,9 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `manual_local_generated_media_owner_decision_manifest_20260605.csv`: row-level owner-decision packet for 7 Seedream input sets, 14 quick sweep points, and 8 fine sweep points.
 - `MANUAL_LOCAL_ARCHIVE_TMP_PAPER_SCRATCH_PROVENANCE_20260605.md`: exact-path provenance pass for local `archive`, `tmp`, paper snapshot, config archive, and active paper workspace; no deletion whitelisted.
 - `manual_local_archive_tmp_paper_scratch_provenance_20260605.csv`: row-level archive/tmp/paper scratch provenance table.
+- `MANUAL_LOCAL_CUT_RAW_TRACKED_FILE_POLICY_20260605.md`: fixed-path CUT `raw_results` / `raw_results_val` tracked-file policy; no deletion whitelisted; training-log timing and missing inference-time fields recorded.
+- `manual_local_cut_raw_tracked_file_policy_20260605.csv`: row-level CUT raw tracked-boundary policy with method, dataset, resolution, timing, source path, and no-delete decision fields.
+- `manual_local_cut_raw_timing_required_fields_20260605.csv`: CUT timing rows with the required timing columns (`method`, `dataset_or_setting`, `resolution`, train/infer time, `params_m`, `source_path`, `note`); missing inference time is blank.
 - `manual_remote_schrodingerbridge_exp_topdir_inventory_20260605.csv`: remote `I:\Github\Latent_Style\SchrodingerBridge\exp` top-level inventory with file/log/summary/weight counts and sample evidence paths.
 - `MANUAL_REMOTE_SCHRODINGERBRIDGE_EXP_20260605.md`: manual remote `SchrodingerBridge/exp` walkthrough with opened README/config/log/summary evidence, timing examples, weight retention, and cleanup boundary.
 - `manual_remote_samam_checkpoint_thinning_policy_20260605.csv`: remote SaMAM central `step_checkpoints` keep/delete policy for 19 checkpoint files.
