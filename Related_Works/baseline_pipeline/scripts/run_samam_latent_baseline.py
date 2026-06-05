@@ -44,7 +44,7 @@ def main() -> int:
     parser.add_argument("--iterations", type=int, default=2000)
     parser.add_argument("--val-interval", type=int, default=1000)
     parser.add_argument("--batch-size", type=int, default=2)
-    parser.add_argument("--precision", type=str, default="16-mixed")
+    parser.add_argument("--precision", type=str, default="32-true")
     parser.add_argument("--checkpoint-every-n-steps", type=int, default=500)
     parser.add_argument("--max-train-content-per-style", type=int, default=0)
     parser.add_argument("--max-train-style-per-style", type=int, default=0)

@@ -91,7 +91,7 @@ python3 Related_Works/baseline_pipeline/scripts/run_samam_latent_baseline.py \
   --out-root /mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_remote \
   --iterations 25000 \
   --batch-size 2 \
-  --precision 16-mixed \
+  --precision 32-true \
   --checkpoint-every-n-steps 5000
 ```
 
@@ -116,7 +116,7 @@ python3 Related_Works/baseline_pipeline/scripts/run_samam_latent_baseline.py \
   --out-root /mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_distinct5_remote \
   --iterations 20000 \
   --batch-size 1 \
-  --precision 16-mixed \
+  --precision 32-true \
   --checkpoint-every-n-steps 2500
 ```
 
@@ -178,18 +178,20 @@ Reason:
 Current active probe:
 
 - output root:
-  - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe2`
+  - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4`
 - start time in log:
-  - `2026-06-05T23:22:37`
+  - `2026-06-05T23:34:58`
 - verified observations:
   - the run no longer dies in the first `10s`
   - `modelscope` successfully downloaded `stabilityai/sd-vae-ft-ema`
-  - at `23:27`, both wrapper and training processes were alive in WSL:
-    - `run_samam_latent_baseline.py`
-    - `train_SaMam_latent.py`
-  - observed GPU usage during this stage was about `1.3 / 12.3 GiB`
+  - `16-mixed` was rejected by `mamba_ssm` selective scan, so `SaMam` latent now runs with `32-true`
+  - the latent `StyleEmbedder` path needed a small-shape compatibility fix; `4x4` token maps now skip over-aggressive pool blocks
+  - after the fix and precision change, sanity check completed and real training steps started
+  - at around `23:36-23:37`, the log had already advanced through dozens of training steps in `Epoch 0`
+  - observed GPU usage during active training reached about `7.6 / 12.3 GiB`
 
 Interpretation:
 
 - this closes the earlier structural import/download blockers
-- the next check should confirm the first actual training-step logs and retained checkpoint creation
+- this also closes the latent shape mismatch and AMP incompatibility blockers for `SaMam`
+- the next check should confirm retained checkpoint creation and full convergence progress under the fixed `25000`-step budget
