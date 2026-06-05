@@ -56,6 +56,10 @@ This directory contains the curated local G and remote I experiment archaeology 
 - `manual_remote_experiments_rar_symlink_targets_20260605.csv`: 9-row fixed-target symlink target audit for `experiments.rar`.
 - `cleanup/manual_remote_experiments_rar_resolved_duplicate_cleanup_20260605.csv`: deletion ledger for resolved duplicate `experiments.rar`, totaling `8091.026 MB`.
 - `manual_remote_experiments_rar_resolved_duplicate_post_delete_verify_20260605.csv`: post-delete verification for `experiments.rar`, expanded `experiments`, and all 9 symlink targets.
+- `MANUAL_REMOTE_REVIEW_ADDITIONAL_RAR_RESOLUTION_20260605.md`: exact-path proof and deletion record for `review_additional_experiments.rar`; nonweight evidence was covered by the expanded directory and only archive-unique substantive payloads were 63 non-mainline intermediate `.pt` checkpoints.
+- `manual_remote_review_additional_rar_resolution_policy_20260605.csv`: delete whitelist policy for `review_additional_experiments.rar`.
+- `cleanup/manual_remote_review_additional_rar_delete_execution_20260605.csv`: deletion ledger for `review_additional_experiments.rar`, totaling `2991.423 MB`.
+- `manual_remote_review_additional_rar_post_delete_verify_20260605.csv`: post-delete verification for archive absence and retained expanded evidence.
 - `../EXPERIMENT_ARCHAEOLOGY_MASTER.csv`: final root-level master CSV.
 - `final_master_experiments.csv`: same final master CSV inside this directory.
 - `final_by_dataset/*.csv`: one CSV per dataset/setting family.
@@ -85,6 +89,7 @@ The latest direct status should be read from `AUTHORITATIVE_LOCAL_REMOTE_LINEAGE
 - Remote TokenizerClean trained no-summary payload weights after training-log-only cleanup: 7 dirs, 3 files, MB=130.883
 - Remote RAR weight-only archives deleted: 6 files, MB=6553.384
 - Remote experiments.rar resolved duplicate deleted: 1 file, MB=8091.026
+- Remote review_additional_experiments.rar deleted after expanded-evidence coverage proof: 1 file, MB=2991.423
 - Remote Cycle-NCE 45.rar original archive deleted after curated nonweight extraction: 1 file, MB=507.452
 
 ## Dataset Counts

@@ -210,3 +210,28 @@ the 7 deleted checkpoints are absent, all 5 parent configs are present, all 5
 parent training CSV sets are present, and the 3 external-evidence checkpoints
 remain. A fixed-path live recheck is recorded in
 `manual_remote_tokenizerclean_training_log_only_live_recheck_20260605.csv`.
+
+## 2026-06-05 remote review_additional_experiments.rar cleanup
+
+Follow-up fixed-path proof reopened
+`I:\Github\Latent_Style\SchrodingerBridge\review_additional_experiments.rar`
+with remote Windows `tar.exe`. The archive listed successfully with exit `0`.
+The same-name expanded directory retained all nonweight evidence: `58151`
+files, `1270.619 MB`, `9` weights, `77` `summary.json` files, `9` training CSV
+files, and `183` metric-like CSV/JSON files.
+
+After comparing archive entries with expanded files and directories by
+normalized relative path, the only substantive archive-only payloads were `63`
+non-mainline intermediate `.pt` checkpoints under
+`review_additional_experiments/lambda_grid/runs/*/epoch_0001.pt` through
+`epoch_0007.pt`. The only other unmatched archive entry was the archive root
+directory entry.
+
+| scope | action | cleanup_class | archive_files | size_mb | ledger |
+| --- | --- | --- | ---: | ---: | --- |
+| remote_I_main | deleted | expanded_evidence_preserved_archive_unique_old_checkpoints | 1 | 2991.423 | `manual_remote_review_additional_rar_delete_execution_20260605.csv` |
+
+Post-delete verification passed all 7 checks in
+`manual_remote_review_additional_rar_post_delete_verify_20260605.csv`: the RAR
+is absent, the expanded evidence directory remains, and retained expanded
+file/weight/summary/training/metric-like counts are unchanged.

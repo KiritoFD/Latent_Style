@@ -10,6 +10,14 @@ I:\Github\Latent_Style
 This is a fixed-path recheck block. It is not a one-shot recursive scan and no
 remote deletion was performed.
 
+Superseding note added after a later fixed-path pass: `review_additional_experiments.rar`
+was reopened with remote `tar.exe`, compared against the same-name expanded
+directory, and deleted after proving the only substantive archive-unique
+payloads were 63 non-mainline intermediate `.pt` checkpoints. See
+`MANUAL_REMOTE_REVIEW_ADDITIONAL_RAR_RESOLUTION_20260605.md`,
+`cleanup/manual_remote_review_additional_rar_delete_execution_20260605.csv`,
+and `manual_remote_review_additional_rar_post_delete_verify_20260605.csv`.
+
 ## Paths Opened
 
 | path | current finding | decision |
@@ -17,7 +25,7 @@ remote deletion was performed.
 | `I:\Github\Latent_Style` | exists, 23 top-level dirs, 53 top-level files | keep / continue exact-path review |
 | `SchrodingerBridge` | exists, 32 top-level dirs, 175 top-level files | mixed evidence surface |
 | `SchrodingerBridge\exp` | exists, 123 dirs, 1 file after previous epoch thinning | keep anchors |
-| `SchrodingerBridge\review_additional_experiments.rar` | exists, 3136734074 bytes | keep pending archive provenance |
+| `SchrodingerBridge\review_additional_experiments.rar` | superseded: later pass proved expanded evidence coverage and deleted exact RAR, 3136734074 bytes | deleted in later pass |
 | `SchrodingerBridge\review_additional_experiments` | exists, 58151 files, 1270.619 MB, 9 weights, 77 summaries, 9 training CSVs | keep |
 | `Related_Works` | exists, 5 top-level dirs | baseline/source/dependency surface |
 | `Related_Works\runs\cut_5x5\infer_5x5` | 2427 JPG images and one 1531-byte fake checkpoint; no summary/metrics/meta | retain pending owner |
@@ -33,10 +41,10 @@ Row-level CSV:
 
 - Remote main is not empty. The earlier empty-remote concern is false on live
   check.
-- `review_additional_experiments.rar` is a real cleanup candidate by size, but
-  it cannot be deleted yet. The remote host has no `7z`, `rar`, or `unrar`, so
-  the RAR contents were not listed. The same-name directory exists and contains
-  evidence, but that is not enough proof to delete the archive.
+- Superseded: `review_additional_experiments.rar` was later reopened with
+  remote `tar.exe`, compared against the same-name expanded directory, and
+  deleted after proving the only substantive archive-unique payloads were 63
+  non-mainline intermediate `.pt` checkpoints.
 - `Related_Works\runs` on remote main is cleaner than local: only `cut_5x5`
   remains. Its `infer_5x5` directory lacks summary/metrics/meta and is
   qualitative media only; deletion still needs owner approval and representative
@@ -55,7 +63,8 @@ All rows remain `delete_whitelist=no`.
 
 Next cleanup candidates require separate proof:
 
-- `review_additional_experiments.rar`: needs archive listing/extraction proof.
+- `review_additional_experiments.rar`: resolved in later pass; archive listing
+  proof obtained, exact RAR deleted, expanded evidence retained.
 - Remote CUT qualitative media: needs owner-approved representative-sample
   retention or migration.
 - Tiny/empty SaMAM/Flux/ZImage/SaMST probe dirs: only worth pruning if owner

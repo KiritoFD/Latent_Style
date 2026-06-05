@@ -1,0 +1,2 @@
+deleted_path,bytes,mb,delete_result,target_exists_after,expanded_dir_exists_after,expanded_files_after,expanded_mb_after,expanded_weights_after,expanded_summaries_after,expanded_training_csv_after,expanded_metric_like_after,note
+I:\Github\Latent_Style\SchrodingerBridge\review_additional_experiments.rar,3136734074,2991.423,deleted,false,true,58151,1270.619,9,77,9,183,"Exact-path remote deletion only; same-name expanded directory retained."
