@@ -26,12 +26,14 @@ New manual products:
 - `manual_related_works_directory_ledger_20260605.csv`
 - `manual_cycle_nce_directory_ledger_20260605.csv`
 - `manual_remote_schrodingerbridge_exp_topdir_inventory_20260605.csv`
+- `manual_local_eval_cache_policy_20260605.csv`
 - `manual_coverage_matrix_20260605.csv`
 - `manual_cleanup_retention_and_next_candidates_20260605.csv`
 - `GRAND_EXPERIMENT_ARCHAEOLOGY_20260605.md`
 - `CONSOLIDATED_EXPERIMENT_ARCHAEOLOGY_REPORT_CN_20260605.md`
 - `MANUAL_CYCLE_NCE_ARCHAEOLOGY_20260605.md`
 - `MANUAL_REMOTE_SCHRODINGERBRIDGE_EXP_20260605.md`
+- `MANUAL_LOCAL_EVAL_CACHE_POLICY_20260605.md`
 
 Existing manual products extended/used as context:
 
@@ -40,6 +42,7 @@ Existing manual products extended/used as context:
 - `manual_evidence_log_20260605.csv`
 - `manual_remaining_weight_classes_20260605.csv`
 - cleanup ledgers under `cleanup/`
+- `cleanup/manual_cache_cleanup_20260605.csv`
 
 Broad auto indexes remain useful but are not treated as sufficient proof:
 
@@ -193,6 +196,8 @@ The earlier local model-weight candidate was refreshed in the continuation pass:
 No delete was performed in this continuation because the directory/weights were no longer present when reopened. Current local `SchrodingerBridge/exp` exact extension scan has only 9 weight-like files: 8 formal WikiArt512 epoch weights and 1 ArtFID metric dependency.
 
 Tiny `fake_eval_checkpoint.pt` placeholders exist in baseline result folders. They save almost no disk and may be referenced by result metadata. They belong in a separate placeholder-only cleanup policy, not a disk-recovery pass.
+
+Root `eval_cache` was reopened after the first consolidation and checked at file/log/config level. It is not a training checkpoint target. The manual pass opened ArtFID, HF/ModelScope, manual CLIP, DINO offline-pairing, full-eval reference feature, VAE compile, and VAE ONNX classes. Only one invalid HF `.incomplete` blob and two empty ModelScope temp directories were deleted, releasing 55.994MB. The remaining valid cache files are retained; details are in `manual_local_eval_cache_policy_20260605.csv` and `MANUAL_LOCAL_EVAL_CACHE_POLICY_20260605.md`.
 
 ## Remote `I:\Github\Latent_Style` conclusions
 
