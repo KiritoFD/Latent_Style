@@ -133,9 +133,16 @@
 |---|---:|---:|---:|---|
 | docs/reviews/master/paper 命中 | 34 | 122 | 3813.414 MB | 保留，直到 citation 迁移 |
 | 当前 `aaai2027_*` packet | 9 | 24 | 1451.217 MB | 保留，只能 packet-specific thinning |
-| 无引用但无 summary | 28 | 39 | 911.730 MB | 待 owner review，不直接删 |
+| 无引用但无 summary | 28 | 39 | 911.730 MB | 第一轮后待 review；后续已清理其中 18 个短 probe/calibration checkpoint |
 | 已清理候选 | 44 | 0 | 0 MB | checkpoint 已删，数据证据保留 |
 | 无 checkpoint | 30 | 0 | 0 MB | 本轮不动 |
+
+后续 no-summary pass 已追加完成：
+
+- 审查 28 个 no-summary checkpoint 目录。
+- 删除其中 18 个短 probe/calibration checkpoint，释放 362.391 MB。
+- 保留 7 个可能需要补 summary 的 payload 目录和 3 个无 config/summary orphan 目录。
+- 最新 post-check 剩余 TokenizerClean `exp` checkpoint：167 个文件，5813.970 MB。
 
 TokenzierClean 不能继续直接删的点：
 
@@ -193,7 +200,7 @@ TokenzierClean 不能继续直接删的点：
 
 ## 不能宣称完成的部分
 
-- 还没有逐个打开 TokenizerClean 28 个 no-summary checkpoint dirs。
+- TokenizerClean 28 个 no-summary checkpoint dirs 已做第一轮 review 并清理 18 个；仍剩 10 个需要 owner review 或补 summary。
 - 还没有给 generated image 证据目录制定 archive policy。
 - 还没有 file-level 复核 remote latent backend / eval_cache / Cycle-NCE archive / experiments archive。
 - timing master 还没有合并 TokenizerClean 1024 行和质量标签。

@@ -23,7 +23,7 @@ This directory contains the curated local G and remote I experiment archaeology 
 - Timeline events: 7829
 - Source roots: {'G:/GitHub/Latent_Style': 17134, 'I:\\': 5495}
 - Local deleted checkpoints: 329, MB=11575.67
-- Remote deleted checkpoints: 387, MB=14173.309
+- Remote deleted checkpoints: 405, MB=14535.700
 
 ## Dataset Counts
 
@@ -166,6 +166,12 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `manual_remote_tokenizerclean_exp_internal_evidence_after_cleanup_20260605.csv`: post-delete verification table for all 145 remote TokenizerClean `exp` directories.
 - `manual_remote_tokenizerclean_remaining_weight_classes_after_cleanup_20260605.csv`: remaining TokenizerClean checkpoint classes after deleting the uncited summary-backed exploratory checkpoints.
 - `manual_remote_tokenizerclean_timing_evidence_20260605.csv`: TokenizerClean summary-level full-eval wall-time timing evidence extracted from post-cleanup `summary.json` files; training time is left blank unless explicitly recorded.
+- `MANUAL_REMOTE_TOKENIZERCLEAN_NO_SUMMARY_REVIEW_20260605.md`: narrative review and cleanup audit for the 28 TokenizerClean no-summary checkpoint directories.
+- `manual_remote_tokenizerclean_no_summary_review_20260605.csv`: evidence table for the 28 no-summary checkpoint dirs, including config/log/training CSV tails.
+- `manual_remote_tokenizerclean_no_summary_cleanup_policy_20260605.csv`: keep/delete policy for the no-summary checkpoint dirs.
+- `cleanup/manual_remote_tokenizerclean_no_summary_probe_checkpoint_cleanup_20260605.csv`: per-file deletion ledger for 18 no-summary probe/calibration checkpoints, totaling `362.391 MB`.
+- `manual_remote_tokenizerclean_exp_internal_evidence_after_no_summary_cleanup_20260605.csv`: post-delete verification table after the no-summary probe cleanup.
+- `manual_remote_tokenizerclean_remaining_weight_classes_after_no_summary_cleanup_20260605.csv`: latest TokenizerClean remaining checkpoint classes after both cleanup passes.
 - `manual_cleanup_retention_and_next_candidates_20260605.csv`: remaining weight/cache classes, keep reasons, and next deletion candidates.
 - `MANUAL_EXPERIMENT_AUDIT_20260605.md`: current hand-checked audit narrative and gap list.
 - `manual_directory_audit_20260605.csv`: checked directory-level evidence rows.
