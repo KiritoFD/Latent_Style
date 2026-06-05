@@ -178,12 +178,23 @@ def _check_log_exists(*, host: str, port: int, user: str, remote_log: str, wsl_d
     return "yes" in result.stdout
 
 
-def _tail_log(*, host: str, port: int, user: str, remote_log: str, lines: int = 20) -> str:
+def _tail_log(
+    *,
+    host: str,
+    port: int,
+    user: str,
+    wsl_distro: str,
+    remote_log: str,
+    lines: int = 20,
+) -> str:
     result = _ssh_exec(
         host=host,
         port=port,
         user=user,
-        remote_command=f"tail -n {int(lines)} '{remote_log}'",
+        remote_command=(
+            f"wsl -d {wsl_distro} --exec bash -lc "
+            f"\"tail -n {int(lines)} '{remote_log}'\""
+        ),
     )
     return result.stdout
 
@@ -251,6 +262,7 @@ def _wait_for_run_finish(
             host=host,
             port=port,
             user=user,
+            wsl_distro=wsl_distro,
             remote_log=remote_log,
             lines=10,
         )
@@ -289,6 +301,7 @@ def _health_check_run(
         host=host,
         port=port,
         user=user,
+        wsl_distro=wsl_distro,
         remote_log=remote_log,
     )
     gpu_memory_used_mib = _query_remote_gpu_memory_used_mib(

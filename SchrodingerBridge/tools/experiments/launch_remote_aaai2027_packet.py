@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import argparse
 import io
 import json
@@ -92,6 +91,19 @@ def _relative_to_sb_root(path: Path) -> Path:
     return path.resolve().relative_to(SB_ROOT.resolve())
 
 
+def _wsl_to_windows_path(path: str) -> str:
+    normalized = path.replace("\\", "/")
+    prefix = "/mnt/"
+    if not normalized.startswith(prefix) or len(normalized) < len(prefix) + 2:
+        raise ValueError(f"Cannot map non-/mnt path to Windows drive path: {path}")
+    drive = normalized[len(prefix)]
+    remainder = normalized[len(prefix) + 2 :].strip("/")
+    windows = f"{drive.upper()}:"
+    if remainder:
+        windows += "\\" + remainder.replace("/", "\\")
+    return windows
+
+
 def _query_remote_gpu_memory_used_mib(*, host: str, port: int, user: str) -> int | None:
     remote = f"{user}@{host}"
     result = _run(
@@ -141,15 +153,34 @@ def _make_remote_launch_script(*, python_bin: str, remote_sb_root: str, config_r
     )
 
 
-def _make_remote_tmux_payload(*, task_name: str, remote_sb_root: str, remote_launcher_abs: str) -> str:
+def _make_remote_windows_launcher(
+    *,
+    task_name: str,
+    wsl_distro: str,
+    remote_sb_root: str,
+    remote_launcher_abs: str,
+    remote_wrapper_log: str,
+) -> str:
     return "\n".join(
         [
-            "#!/usr/bin/env bash",
-            "set -euo pipefail",
-            f"cd {remote_sb_root}",
-            f"tmux kill-session -t '{task_name}' 2>/dev/null || true",
-            f"tmux new-session -d -s '{task_name}' \"bash '{remote_launcher_abs}'\"",
-            f"tmux list-sessions | grep '{task_name}' || true",
+            "$ErrorActionPreference = 'Stop'",
+            f"$TaskName = '{task_name}'",
+            f"$WslDistro = '{wsl_distro}'",
+            f"$SbRoot = '{remote_sb_root}'",
+            f"$Launcher = '{remote_launcher_abs}'",
+            f"$WrapperLog = '{_wsl_to_windows_path(remote_wrapper_log)}'",
+            "New-Item -ItemType Directory -Force -Path (Split-Path -Parent $WrapperLog) | Out-Null",
+            "Add-Content -LiteralPath $WrapperLog -Value (\"=== HOST START \" + (Get-Date -Format o) + \" ===\")",
+            "$taskArgs = @('-d', $WslDistro, '--cd', $SbRoot, '--exec', 'bash', $Launcher)",
+            "$taskArgString = ($taskArgs | ForEach-Object { if ($_ -match '\\s') { '\"' + $_ + '\"' } else { $_ } }) -join ' '",
+            "Add-Content -LiteralPath $WrapperLog -Value (\"ARGS=\" + $taskArgString)",
+            "try { Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue | Out-Null } catch {}",
+            "$trigger = New-ScheduledTaskTrigger -Once -At ((Get-Date).AddMinutes(1))",
+            "$action = New-ScheduledTaskAction -Execute 'wsl.exe' -Argument $taskArgString",
+            "Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Force | Out-Null",
+            "Start-ScheduledTask -TaskName $TaskName",
+            "Add-Content -LiteralPath $WrapperLog -Value 'TASK_STARTED=yes'",
+            "Write-Output (\"STARTED TASK=\" + $TaskName)",
             "",
         ]
     )
@@ -188,6 +219,8 @@ def main() -> int:
     config_rel = _relative_to_sb_root(config_path).as_posix()
     remote_launcher_rel = f"SchrodingerBridge/_codex_tmp/{task_name}.sh"
     remote_launcher_abs = f"{remote_workspace_root}/{remote_launcher_rel}"
+    remote_windows_launcher_rel = f"SchrodingerBridge/_codex_tmp/{task_name}.ps1"
+    remote_windows_launcher_abs = f"{remote_workspace_root}/{remote_windows_launcher_rel}"
     remote_wrapper_log = f"{remote_sb_root}/_codex_tmp/{task_name}.launcher.log"
     launch_script = _make_remote_launch_script(
         python_bin=args.python_bin,
@@ -195,10 +228,12 @@ def main() -> int:
         config_rel=config_rel,
         remote_log=remote_log,
     )
-    tmux_payload = _make_remote_tmux_payload(
+    windows_launcher = _make_remote_windows_launcher(
         task_name=task_name,
+        wsl_distro=args.wsl_distro,
         remote_sb_root=remote_sb_root,
         remote_launcher_abs=remote_launcher_abs,
+        remote_wrapper_log=remote_wrapper_log,
     )
 
     sync_paths = [*DEFAULT_SYNC_PATHS, *[Path(p) for p in args.sync_path]]
@@ -207,6 +242,7 @@ def main() -> int:
         print(f"config={config_rel}")
         print(f"remote_log={remote_log}")
         print(f"remote_launcher={remote_launcher_abs}")
+        print(f"remote_windows_launcher={remote_windows_launcher_abs}")
         print(f"max_prelaunch_memory_mib={args.max_prelaunch_memory_mib}")
         for path in sync_paths:
             print(path.as_posix())
@@ -229,7 +265,13 @@ def main() -> int:
         )
         return 13
 
-    archive_bytes = _build_archive_bytes(sync_paths, {remote_launcher_rel: launch_script.encode("utf-8")})
+    archive_bytes = _build_archive_bytes(
+        sync_paths,
+        {
+            remote_launcher_rel: launch_script.encode("utf-8"),
+            remote_windows_launcher_rel: windows_launcher.encode("utf-8"),
+        },
+    )
     remote = f"{args.user}@{args.host}"
     extract_cmd = [
         "ssh",
@@ -282,11 +324,7 @@ def main() -> int:
         "-o",
         "LogLevel=ERROR",
         remote,
-        (
-            f"wsl -d {args.wsl_distro} --exec bash -lc "
-            f"\"echo {base64.b64encode(tmux_payload.encode('utf-8')).decode('ascii')} "
-            f"| base64 -d | bash > '{remote_wrapper_log}' 2>&1\""
-        ),
+        f"powershell -NoProfile -ExecutionPolicy Bypass -File \"{_wsl_to_windows_path(remote_windows_launcher_abs)}\"",
     ]
     launch = _run(launch_cmd)
     sys.stdout.buffer.write(launch.stdout)

@@ -4,123 +4,99 @@ Date: 2026-06-06
 
 Purpose:
 
-- record the current autonomous execution surface in one place
-- avoid reconstructing live state from multiple watcher logs
-- keep the remote `3060` queue auditable while the bounded latent side quest is
-  still occupying the only allowed GPU lane
+- keep the remote `3060` execution state auditable from the repo
+- record the current launcher contract after the WSL-detach failure audit
+- show which queue stage is live without reconstructing it from chat
 
 Quick status command:
 
 - reporter:
   - [report_remote_aaai2027_status.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/report_remote_aaai2027_status.py)
-- note:
-  - [2026-06-06-remote-status-reporter.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-06-remote-status-reporter.md)
-- current use:
-  - it now reports parsed `it/s` and ETA to the first retained `step_5000`
-    checkpoint in the same JSON output
-  - it also reports the hard runtime cap in MiB plus a boolean
-    `within_hard_runtime_cap`
 
-## Current remote lane
+## Current state
 
-Active training lane:
+Latest verified state after the launcher repair:
 
-- remote run:
-  - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4`
-- latest observed progress:
-  - around `Epoch 0 step 4796`
-- current parsed train rate:
-  - about `0.77 it/s`
-- rough ETA to the first retained checkpoint:
-  - about `4.4 min` to `step_5000`
-- current retained checkpoint state:
-  - only `step_checkpoints/last.ckpt`
-  - first numbered retained checkpoint still waits for `step_5000`
-- current remote GPU snapshot:
-  - `7459 MiB / 12288 MiB`
-  - still below the formal hard stop:
-    - `< 11.0 GiB`
+- remote formal cap:
+  - `< 11.0 GiB`
+- latent `SaMam` side quest:
+  - retained checkpoint reached at:
+    - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4/step_checkpoints/step-step=005000.ckpt`
+  - lane already stopped cleanly
+- `A1` mainline packet:
+  - `executor_promotion_h_e1_seed42_b44`
+  - successfully launched on the remote host
+  - first-health check passed under the repaired queue watcher
+  - later exited, allowing the queue to continue
+- current live queue stage:
+  - `A2_softterm18_sem010`
+- latest verified remote GPU sample while the repaired launcher was healthy:
+  - about `9006 MiB / 12288 MiB`
+  - still below the hard cap
+
+## Root cause audit
+
+The previous detached launch path was not stable enough.
+
+Observed failure mode:
+
+- `nohup` / in-WSL `tmux` launches could start training
+- but the remote WSL instance was then shut down by the host
+- `dmesg` showed repeated:
+  - `systemd-shutdow`
+  - filesystem unmount / remount
 
 Interpretation:
 
-- the remote lane is healthy but still blocked on the first retained checkpoint
-- no paper-facing `A1` packet has started yet
+- the failure was not a CUDA OOM
+- it was a host-session-lifetime problem for WSL background launches
 
-## Active local watchers
+## Repaired launch contract
 
-Latent handoff watcher:
+Current launcher behavior:
 
-- script:
-  - [watch_remote_latent_samam_handoff.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_remote_latent_samam_handoff.py)
-- pid:
-  - `39984`
-- start time:
-  - `2026-06-06 01:08:22`
-- stdout:
-  - [watch_remote_latent_samam_handoff.out.log](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/watch_remote_latent_samam_handoff.out.log)
-- stderr:
-  - [watch_remote_latent_samam_handoff.err.log](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/watch_remote_latent_samam_handoff.err.log)
-- current read:
-  - still polling every `60s`
-  - latest dry-run remains:
-    - `retained_checkpoints=[]`
-    - `latent_pid=414`
-    - `a1_remote_log_exists=False`
-  - latest poll observed:
-    - `watch poll 13`
+1. sync reviewed `src/` and `configs/aaai2027/`
+2. write the remote WSL shell launcher
+3. write a remote Windows-side launcher `.ps1`
+4. have the remote Windows host register and start a one-shot scheduled task
+5. let that scheduled task run `wsl.exe ... bash <launcher.sh>` in the foreground
 
-Post-A1 queue watcher:
+Why this is the durable path:
+
+- the training process no longer depends on the SSH session surviving
+- the WSL lifetime is now owned by the remote host scheduler
+- the launcher remains bounded by the same single-run cap checks
+
+## Local orchestrators
+
+Queue watcher:
 
 - script:
   - [watch_remote_aaai2027_queue.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_remote_aaai2027_queue.py)
-- pid:
-  - `14740`
-- start time:
-  - `2026-06-06 01:08:22`
-- stdout:
+- current pid file:
+  - [watch_remote_aaai2027_queue.pid](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/watch_remote_aaai2027_queue.pid)
+- current stdout:
   - [watch_remote_aaai2027_queue.out.log](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/watch_remote_aaai2027_queue.out.log)
-- stderr:
-  - [watch_remote_aaai2027_queue.err.log](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/watch_remote_aaai2027_queue.err.log)
-- current read:
-  - waiting for:
-    - [executor_promotion_h_e1_seed42_b44.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/executor_promotion_h_e1_seed42_b44.json)
-  - latest loop still reports:
-    - `process_alive=False`
-    - `log_exists=False`
+- current role:
+  - attached to `A1`
+  - observed `A1` finish
+  - already launched `A2_softterm18_sem010`
 
-## Next automatic transitions
+Latent handoff watcher:
 
-Expected order:
+- previous pid file remains:
+  - [watch_remote_latent_samam_handoff.pid](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/watch_remote_latent_samam_handoff.pid)
+- current state:
+  - stale / not running
+- note:
+  - this watcher is no longer authoritative for the live queue because the
+    latent handoff has already been completed
 
-1. latent watcher sees the first retained `SaMam` checkpoint
-2. latent watcher stops the side quest
-3. latent watcher waits for remote total `memory.used <= 1500 MiB`
-4. latent watcher launches `A1`
-5. queue watcher sees `A1` process plus remote log
-6. queue watcher performs first-health validation on `A1`
-7. queue watcher waits for `A1` to finish
-8. queue watcher continues:
-   - `A2_softterm18_sem010`
-   - `A2_softterm18_sem012`
-   - `A2_softterm16_sem012`
+## Remaining follow-through
 
-## Current blocker
-
-Nothing is failing at the orchestration layer right now.
-
-The only active blocker is:
-
-- latent `SaMam` still has not produced the first numbered retained checkpoint
-
-That means the queue is delayed by remote runtime, not by missing scripts,
-missing configs, or local GPU dependence.
-
-Additional note:
-
-- the watcher pair was restarted after the runtime-guard patch landed
-- both new watcher instances are now the ones carrying the `< 11.0 GiB`
-  first-health gate for `A1` and the later `A2` queue
-- the bounded latent lane is still healthy, so no manual intervention is
-  warranted before the first retained checkpoint appears
-- if throughput stays flat, the next meaningful state change should now be the
-  retained-checkpoint handoff itself rather than another long wait period
+- let the repaired queue watcher carry `A2_softterm18_sem010`
+- if that arm exits cleanly, the same watcher should continue:
+  - `A2_softterm18_sem012`
+  - `A2_softterm16_sem012`
+- after the queue lands, update the paper-facing experiment logs and promote or
+  drop the softening arms based on full eval rather than launch success

@@ -133,6 +133,7 @@ def _first_health_check(
     max_runtime_memory_mib: int,
 ) -> int:
     remote_log = _derive_a1_remote_log(a1_config_rel, remote_workspace_root)
+    config_name = Path(a1_config_rel).name
     print(f"health_check_remote_log={remote_log}")
     time.sleep(max(0, int(health_wait_seconds)))
 
@@ -140,7 +141,10 @@ def _first_health_check(
         host=host,
         port=port,
         user=user,
-        remote_command=f"test -s '{remote_log}' && echo yes || echo no",
+        remote_command=(
+            f"wsl -d {wsl_distro} --exec bash -lc "
+            f"\"test -s '{remote_log}' && echo yes || echo no\""
+        ),
     )
     _print_block("health-log-exists", log_exists.stdout)
 
@@ -148,7 +152,7 @@ def _first_health_check(
         host=host,
         port=port,
         user=user,
-        remote_command=f"tail -n 20 '{remote_log}'",
+        remote_command=f"wsl -d {wsl_distro} --exec bash -lc \"tail -n 20 '{remote_log}'\"",
     )
     _print_block("health-log-tail", tail.stdout)
 
@@ -164,8 +168,8 @@ def _first_health_check(
         port=port,
         user=user,
         remote_command=(
-            f"wsl -d {wsl_distro} --exec pgrep -af "
-            f"\"src/run.py --config {a1_config_rel}\""
+            f"wsl -d {wsl_distro} --exec bash -lc "
+            f"\"ps -ef | grep -F '{config_name}' | grep -v grep || true\""
         ),
     )
     _print_block("health-process", process_check.stdout)
