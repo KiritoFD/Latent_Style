@@ -162,6 +162,8 @@ def train(opt):
     optimizer = Adam(transformer.parameters(), opt["lr"])
     mse_loss = torch.nn.MSELoss()
     vgg = Vgg16(requires_grad=False).to(device)
+    if int(opt.get("loss_network_half") or 0):
+        vgg = vgg.to(dtype=torch.float16)
 
     vae = load_vae(device=str(device), model_id=str(opt.get("vae_model", "ema")), cache_dir=opt.get("vae_cache_dir") or None, enable_xformers=False)
     vae.requires_grad_(False)
@@ -177,6 +179,7 @@ def train(opt):
         style_batch.append(tensor.float())
     style = torch.stack(style_batch).to(device)
     style_rgb = _decode_latent_train(vae, style, opt.get("latent_scaling_factor", 0.18215)) * 255.0
+    style_rgb = style_rgb.to(dtype=next(vgg.parameters()).dtype)
     features_style = vgg(utils.normalize_batch(style_rgb.clone()))
     gram_style = [utils.gram_matrix(y) for y in features_style]
 
@@ -211,8 +214,9 @@ def train(opt):
 
             y = _decode_latent_train(vae, y_latent, opt.get("latent_scaling_factor", 0.18215)) * 255.0
             x_rgb = _decode_latent_train(vae, x, opt.get("latent_scaling_factor", 0.18215)) * 255.0
-            y = utils.normalize_batch(y)
-            x_rgb = utils.normalize_batch(x_rgb)
+            target_dtype = next(vgg.parameters()).dtype
+            y = utils.normalize_batch(y).to(dtype=target_dtype)
+            x_rgb = utils.normalize_batch(x_rgb).to(dtype=target_dtype)
 
             y = torch.split(y, n_batch, dim=0)
             y1 = y[0]
