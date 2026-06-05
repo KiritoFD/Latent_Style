@@ -1,5 +1,11 @@
 # Latent_Style 实验考古直接结论 - 2026-06-05
 
+## Cross-cache loader/path-reference audit update - 2026-06-05
+
+`CROSS_CACHE_LOADER_PATH_REFERENCE_AUDIT_20260605.md` and `cross_cache_loader_path_reference_audit_20260605.csv` have now been added. This was a source-open/manual path audit after the hash dedup pass. The direct decision is still no cache duplicate deletion whitelist.
+
+Opened evidence shows local and remote consumers still encode different cache roots: root `eval_cache`, `SchrodingerBridge/eval_cache`, and `Cycle-NCE/eval_cache`. Exact SHA256 equality is therefore not sufficient for deletion. Any future dedup cleanup must first prove a canonical cache-root migration, documented symlink/junction policy, and offline eval verification.
+
 这份文件是当前人工考古工作的总入口，直接回答四个问题：本地是什么，远程是什么，实验脉络是什么，还差什么。它不把脚本扫描当最终结论；扫描只用于导航，结论必须能回到打开过的目录、summary、metrics、training log、policy CSV、cleanup ledger 或 post-delete verification。
 
 ## 当前状态
