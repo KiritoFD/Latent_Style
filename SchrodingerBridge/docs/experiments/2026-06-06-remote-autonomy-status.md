@@ -18,6 +18,8 @@ Quick status command:
 - current use:
   - it now reports parsed `it/s` and ETA to the first retained `step_5000`
     checkpoint in the same JSON output
+  - it also reports the hard runtime cap in MiB plus a boolean
+    `within_hard_runtime_cap`
 
 ## Current remote lane
 
@@ -26,11 +28,11 @@ Active training lane:
 - remote run:
   - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4`
 - latest observed progress:
-  - around `Epoch 0 step 3860`
+  - around `Epoch 0 step 4251`
 - current parsed train rate:
   - about `0.76 it/s`
 - rough ETA to the first retained checkpoint:
-  - about `25 min` to `step_5000`
+  - about `16.4 min` to `step_5000`
 - current retained checkpoint state:
   - only `step_checkpoints/last.ckpt`
   - first numbered retained checkpoint still waits for `step_5000`
@@ -51,9 +53,9 @@ Latent handoff watcher:
 - script:
   - [watch_remote_latent_samam_handoff.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_remote_latent_samam_handoff.py)
 - pid:
-  - `36376`
+  - `39984`
 - start time:
-  - `2026-06-06 00:41:06`
+  - `2026-06-06 01:08:22`
 - stdout:
   - [watch_remote_latent_samam_handoff.out.log](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/watch_remote_latent_samam_handoff.out.log)
 - stderr:
@@ -70,9 +72,9 @@ Post-A1 queue watcher:
 - script:
   - [watch_remote_aaai2027_queue.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_remote_aaai2027_queue.py)
 - pid:
-  - `35444`
+  - `14740`
 - start time:
-  - `2026-06-06 00:49:09`
+  - `2026-06-06 01:08:22`
 - stdout:
   - [watch_remote_aaai2027_queue.out.log](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/watch_remote_aaai2027_queue.out.log)
 - stderr:
@@ -110,3 +112,9 @@ The only active blocker is:
 
 That means the queue is delayed by remote runtime, not by missing scripts,
 missing configs, or local GPU dependence.
+
+Additional note:
+
+- the watcher pair was restarted after the runtime-guard patch landed
+- both new watcher instances are now the ones carrying the `< 11.0 GiB`
+  first-health gate for `A1` and the later `A2` queue

@@ -144,15 +144,15 @@ Remote latent side quest currently occupying the only allowed GPU lane:
 - active run:
   - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4`
 - current GPU usage snapshot:
-  - `7458 MiB / 12288 MiB`
+  - `7459 MiB / 12288 MiB`
   - safely below the hard stop:
     - `< 11.0 GiB`
 - latest observed training progress:
-  - around `Epoch 0 step 3860`
+  - around `Epoch 0 step 4251`
   - observed train rate:
     - about `0.76 step/s`
 - rough remaining wall to first retained checkpoint:
-  - about `25 min` from the latest heartbeat if throughput stays flat
+  - about `16.4 min` from the latest heartbeat if throughput stays flat
 - retained checkpoint status:
   - none yet
   - first save still waits for `step 5000`
@@ -259,7 +259,6 @@ Auto-handoff watcher now prepared:
     - wait until remote total `memory.used <= 1500 MiB`
     - launch `A1`
     - wait `30s` and record the first `A1` health heartbeat
-    - wait `30s` and record the first `A1` health heartbeat
 - reason:
   - this removes manual polling while preserving the hard `< 11.0 GiB`
     single-lane rule on the remote `3060`
@@ -296,6 +295,19 @@ Post-A1 queue watcher now prepared:
     - `process_alive=False`
     - `log_exists=False`
   - this is expected until the latent handoff watcher actually starts `A1`
+
+Runtime guard refinement now landed:
+
+- `watch_remote_latent_samam_handoff.py` now rejects the first `A1` health
+  heartbeat if observed GPU usage reaches `>= 11000 MiB`
+- `watch_remote_aaai2027_queue.py` applies the same first-health guard to `A1`
+  and every later queued `A2` arm
+- `report_remote_aaai2027_status.py` now reports:
+  - `hard_runtime_cap_mib`
+  - `cap_status.max_observed_memory_mib`
+  - `cap_status.within_hard_runtime_cap`
+- the active local watcher instances were restarted after this patch so the live
+  queue is already running on the stricter gate
 
 Single-note autonomy snapshot now available:
 
