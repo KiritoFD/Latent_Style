@@ -234,7 +234,7 @@ Interpretation:
 
 Cap adjustment:
 
-- user later tightened the remote VRAM ceiling to `11.2 GiB`
+- user later tightened the remote VRAM ceiling to `11.0 GiB`
 - because concurrent `SaMam` + `SaMST` exceeded that cap, `samst_latent_legacy256_probe3` was stopped
 - current active formal latent lane is only:
   - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4`

@@ -130,6 +130,7 @@ def _first_health_check(
     a1_config_rel: str,
     remote_workspace_root: str,
     health_wait_seconds: int,
+    max_runtime_memory_mib: int,
 ) -> int:
     remote_log = _derive_a1_remote_log(a1_config_rel, remote_workspace_root)
     print(f"health_check_remote_log={remote_log}")
@@ -175,6 +176,16 @@ def _first_health_check(
     if process_check.returncode != 0 or not process_check.stdout.strip():
         print("A1 health check failed: no live process matched the launch config.")
         return 22
+    if (
+        gpu_memory_used_mib is not None
+        and gpu_memory_used_mib >= max(0, int(max_runtime_memory_mib))
+    ):
+        print(
+            "A1 health check failed: remote GPU memory crossed the hard runtime "
+            f"cap {int(max_runtime_memory_mib)} MiB with observed usage "
+            f"{gpu_memory_used_mib} MiB."
+        )
+        return 23
     return 0
 
 
@@ -198,6 +209,7 @@ def main() -> int:
     parser.add_argument("--remote-workspace-root", default=DEFAULT_REMOTE_WORKSPACE_ROOT)
     parser.add_argument("--a1-config", default=DEFAULT_A1_CONFIG)
     parser.add_argument("--health-wait-seconds", type=int, default=30)
+    parser.add_argument("--max-runtime-memory-mib", type=int, default=11000)
     args = parser.parse_args()
 
     helper_path = Path(args.helper).resolve()
@@ -254,6 +266,7 @@ def main() -> int:
                 a1_config_rel=args.a1_config,
                 remote_workspace_root=args.remote_workspace_root,
                 health_wait_seconds=int(args.health_wait_seconds),
+                max_runtime_memory_mib=int(args.max_runtime_memory_mib),
             )
 
         if max_polls and poll_index >= max_polls:

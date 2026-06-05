@@ -15,6 +15,7 @@ DEFAULT_USER = "administrator"
 DEFAULT_WSL_DISTRO = "Ubuntu-26.04"
 DEFAULT_REMOTE_WORKSPACE_ROOT = "/mnt/i/Github/Latent_Style"
 DEFAULT_A1_CONFIG = "SchrodingerBridge/configs/aaai2027/executor_promotion_h_e1_seed42_b44.json"
+DEFAULT_HARD_RUNTIME_CAP_MIB = 11000
 DEFAULT_LATENT_RUN_ROOT = (
     "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/"
     "samam_latent_legacy256_probe4"
@@ -194,6 +195,7 @@ def main() -> int:
     parser.add_argument("--wsl-distro", default=DEFAULT_WSL_DISTRO)
     parser.add_argument("--remote-workspace-root", default=DEFAULT_REMOTE_WORKSPACE_ROOT)
     parser.add_argument("--a1-config", default=DEFAULT_A1_CONFIG)
+    parser.add_argument("--hard-runtime-cap-mib", type=int, default=DEFAULT_HARD_RUNTIME_CAP_MIB)
     parser.add_argument("--latent-run-root", default=DEFAULT_LATENT_RUN_ROOT)
     parser.add_argument("--watcher-tail-lines", type=int, default=8)
     parser.add_argument("--remote-tail-lines", type=int, default=40)
@@ -268,6 +270,7 @@ def main() -> int:
 
     report = {
         "remote_gpu": _summarize_gpu_csv(gpu.stdout),
+        "hard_runtime_cap_mib": int(args.hard_runtime_cap_mib),
         "latent_samam": {
             "run_root": args.latent_run_root,
             "latest_step": latest_step,
@@ -282,6 +285,20 @@ def main() -> int:
             "log_exists": "yes" in a1_log.stdout,
             "process_stdout": a1_process.stdout.strip(),
             "process_alive": bool(a1_process.stdout.strip()) and a1_process.returncode == 0,
+        },
+        "cap_status": {
+            "max_observed_memory_mib": max(
+                [
+                    int(str(row.get("memory_used", "0")).split()[0])
+                    for row in _summarize_gpu_csv(gpu.stdout)
+                    if str(row.get("memory_used", "0")).split()
+                ] or [0]
+            ),
+            "within_hard_runtime_cap": all(
+                int(str(row.get("memory_used", "0")).split()[0]) < int(args.hard_runtime_cap_mib)
+                for row in _summarize_gpu_csv(gpu.stdout)
+                if str(row.get("memory_used", "0")).split()
+            ),
         },
         "watchers": {
             "latent_handoff": {
