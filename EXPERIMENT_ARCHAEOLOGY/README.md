@@ -11,6 +11,10 @@ This directory contains the curated local G and remote I experiment archaeology 
 - `cleanup/manual_remote_tokenizerclean_orphan_probe_weight_cleanup_20260605.csv`: deletion ledger for the 3 pure orphan probe dirs, totaling `170.017 MB`.
 - `manual_remote_tokenizerclean_orphan_probe_post_delete_verify_20260605.csv`: post-delete verification for orphan probe cleanup and retained diagnostics/payload evidence.
 - `manual_remote_tokenizerclean_remaining_weight_classes_after_owner_review_cleanup_20260605.csv`: current post-owner-review TokenizerClean remaining weight classes.
+- `MANUAL_REMOTE_RAR_DEEP_PROVENANCE_20260605.md`: deep RAR provenance pass using temporary UnRAR listing and same-size expanded-file comparison.
+- `manual_remote_rar_deep_provenance_policy_20260605.csv`: per-RAR keep/delete policy for `experiments.rar`, `Gate.rar`, `Attn_48.part*.rar`, `chess.part*.rar`, and `45.rar`.
+- `cleanup/manual_remote_rar_weight_only_archive_cleanup_20260605.csv`: deletion ledger for weight-only RAR archives, totaling `6553.384 MB`.
+- `manual_remote_rar_weight_only_archive_post_delete_verify_20260605.csv`: post-delete verification for RAR cleanup and retained expanded evidence.
 - `../EXPERIMENT_ARCHAEOLOGY_MASTER.csv`: final root-level master CSV.
 - `final_master_experiments.csv`: same final master CSV inside this directory.
 - `final_by_dataset/*.csv`: one CSV per dataset/setting family.
@@ -35,6 +39,7 @@ This directory contains the curated local G and remote I experiment archaeology 
 - Remote main data/cache/archive residue deleted: 11, MB=381.807
 - Remote TokenizerClean checkpoint/probe files deleted across citation/no-summary/owner-review passes: 170, MB=5731.399
 - Remote TokenizerClean remaining weight classes after owner-review cleanup: 29 dirs, 156 files, MB=5643.952
+- Remote RAR weight-only archives deleted: 6 files, MB=6553.384
 
 ## Dataset Counts
 

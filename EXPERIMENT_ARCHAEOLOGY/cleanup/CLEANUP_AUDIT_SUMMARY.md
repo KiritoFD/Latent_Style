@@ -110,3 +110,15 @@ Second-pass owner review of the 10 retained TokenizerClean no-summary directorie
 | remote_tokenizerclean | deleted | empty orphan probe dirs | 3 | 0 | `manual_remote_tokenizerclean_orphan_probe_weight_cleanup_20260605.csv` |
 
 Post-delete verification passed all 11 checks in `manual_remote_tokenizerclean_orphan_probe_post_delete_verify_20260605.csv`: the 3 orphan dirs are absent, diagnostics outputs remain, and representative trained no-summary payload dirs remain. The latest TokenizerClean remaining-weight table is `manual_remote_tokenizerclean_remaining_weight_classes_after_owner_review_cleanup_20260605.csv` with 29 directories, 156 weight-like files, and `5643.952 MB`.
+
+## 2026-06-05 remote RAR weight-only archive cleanup
+
+Deep RAR provenance used a temporary remote copy of local `UnRAR.exe` to list archive contents and compare file entries against expanded directories by same relative path and exact byte size.
+
+| scope | action | cleanup_class | archive_files | size_mb | ledger |
+| --- | --- | --- | ---: | ---: | --- |
+| remote_I_main | deleted | weight-only RAR archive | 1 | 3384.032 | `manual_remote_rar_weight_only_archive_cleanup_20260605.csv` |
+| remote_I_main | deleted | weight-only multipart RAR archive | 3 | 1975.113 | `manual_remote_rar_weight_only_archive_cleanup_20260605.csv` |
+| remote_I_main | deleted | weight-only multipart RAR archive | 2 | 1194.239 | `manual_remote_rar_weight_only_archive_cleanup_20260605.csv` |
+
+Total released in this block: `6553.384 MB`. Deleted archives were `Cycle-NCE\Gate.rar`, `Cycle-NCE\Attn_48.part1.rar`, `part2.rar`, `part3.rar`, `Cycle-NCE\chess.part1.rar`, and `part2.rar`. Post-delete verification passed all 11 checks in `manual_remote_rar_weight_only_archive_post_delete_verify_20260605.csv`: the archives are absent, expanded `Gate`, `Attn_48`, and `chess` evidence directories remain, and retained `experiments.rar` plus `Cycle-NCE\45.rar` still exist.
