@@ -151,6 +151,68 @@ Required paper-safe artifacts:
 - `metrics.csv`
 - `aggregate_targetwise_artfid.json`
 
+### Next closure commands
+
+As of `2026-06-06`, the remote `3060` lane is still occupied by the bounded
+`LBM A2` queue, so the latent baselines are paused at the closure stage rather
+than abandoned. When the queue falls idle, use the exact commands below.
+
+`SaMam` `legacy256_overfit50` retained closure:
+
+```bash
+cd /mnt/i/Github/Latent_Style
+python3 Related_Works/baseline_pipeline/scripts/run_samam_latent_eval_bundle.py \
+  --checkpoint /mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4/step_checkpoints/step-step=005000.ckpt \
+  --label step_005000 \
+  --image-root /mnt/i/Github/Latent_Style/style_data/overfit50 \
+  --output-root /mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4/formal_eval \
+  --style-names photo,monet,vangogh,cezanne,Hayao \
+  --max-src-per-style 30 \
+  --image-size 256 \
+  --eval-batch-size 8 \
+  --eval-target-chunk-size 1 \
+  --eval-image-save-workers 4 \
+  --full-eval
+```
+
+Expected artifacts:
+
+- `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4/formal_eval/step_005000/summary.json`
+- `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4/formal_eval/step_005000/metrics.csv`
+- `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4/formal_eval/step_005000/aggregate_targetwise_artfid.json`
+
+`SaMST` `legacy256_overfit50` first cap-safe retry:
+
+```bash
+cd /mnt/i/Github/Latent_Style
+python3 Related_Works/baseline_pipeline/scripts/run_samst_latent_baseline.py \
+  --dataset legacy256_overfit50 \
+  --out-root /mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samst_latent_legacy256_retry_b1 \
+  --epochs 200 \
+  --max-steps 25000 \
+  --batch-size 1
+```
+
+If that single-run retry lands a retained checkpoint cleanly below the hard
+runtime cap, close it with:
+
+```bash
+cd /mnt/i/Github/Latent_Style
+python3 Related_Works/baseline_pipeline/scripts/run_samst_latent_eval_bundle.py \
+  --checkpoint <retained_samst_checkpoint> \
+  --label <step_or_epoch_label> \
+  --image-root /mnt/i/Github/Latent_Style/style_data/overfit50 \
+  --output-root /mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samst_latent_legacy256_retry_b1/formal_eval \
+  --style-names photo,monet,vangogh,cezanne,Hayao \
+  --max-src-per-style 30 \
+  --image-size 256 \
+  --eval-batch-size 8 \
+  --eval-target-chunk-size 1 \
+  --eval-image-save-workers 4 \
+  --vae-model ema \
+  --full-eval
+```
+
 ## Stop rule
 
 Stop the latent baseline expansion and return to `LBM A1/A2` when:

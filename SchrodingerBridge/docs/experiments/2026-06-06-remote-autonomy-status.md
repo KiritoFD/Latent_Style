@@ -29,7 +29,7 @@ Latest verified state after the launcher repair:
   - first-health check passed under the repaired queue watcher
   - later exited, allowing the queue to continue
 - current live queue stage:
-  - `A2_softterm18_sem010`
+  - `A2_softterm16_sem012`
 - latest verified remote GPU sample while the repaired launcher was healthy:
   - about `9006 MiB / 12288 MiB`
   - still below the hard cap
@@ -80,7 +80,17 @@ Queue watcher:
 - current role:
   - attached to `A1`
   - observed `A1` finish
-  - already launched `A2_softterm18_sem010`
+  - launched `A2_softterm18_sem010`
+  - observed `A2_softterm18_sem010` finish
+  - launched `A2_softterm18_sem012`
+  - later advanced again to `A2_softterm16_sem012`
+
+Current caveat:
+
+- the live queue watcher process was started before the WSL-tail logging patch
+- launch ordering and health checks are still correct
+- only the remote log tail lines inside the watcher stdout remain noisy until
+  the watcher is restarted after the current live lane finishes
 
 Latent handoff watcher:
 
@@ -94,9 +104,9 @@ Latent handoff watcher:
 
 ## Remaining follow-through
 
-- let the repaired queue watcher carry `A2_softterm18_sem010`
-- if that arm exits cleanly, the same watcher should continue:
-  - `A2_softterm18_sem012`
-  - `A2_softterm16_sem012`
+- `A2_softterm18_sem012` has already finished
+- let the repaired queue watcher carry the current `A2_softterm16_sem012`
+- after `A2_softterm16_sem012` finishes or the queue falls idle, restart the
+  local watcher so the patched WSL-based remote tail path becomes active
 - after the queue lands, update the paper-facing experiment logs and promote or
   drop the softening arms based on full eval rather than launch success
