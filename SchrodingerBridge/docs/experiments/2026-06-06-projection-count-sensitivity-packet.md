@@ -87,3 +87,35 @@ python SchrodingerBridge/tools/experiments/launch_remote_aaai2027_packet.py \
   --config SchrodingerBridge/configs/aaai2027/projection_count_h_sem32_seed42_b44.json \
   --dry-run
 ```
+
+## Closure
+
+Current run root:
+
+- `/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_projection_count_h_sem32_seed42_b44`
+
+Closed artifacts:
+
+- `epoch_0001.pt`
+- `epoch_0002.pt`
+- `full_eval/epoch_0001/summary.json`
+- `full_eval/epoch_0002/summary.json`
+
+Key readout:
+
+- epoch 1 transfer:
+  - `clip_style = 0.6654`
+  - `content_lpips = 0.3397`
+- epoch 2 transfer:
+  - `clip_style = 0.6641`
+  - `content_lpips = 0.3336`
+
+Interpretation:
+
+- reducing semantic projections from `64` to `32` does not collapse the packet
+- the sensitivity is mild rather than catastrophic
+- however, the `32`-projection arm does not produce a clean headline gain over
+  the paper-facing `H` family
+- this is therefore a **neutral-to-negative closure**:
+  - projection count matters enough to report explicitly
+  - but halving the budget does not create a stronger frontier
