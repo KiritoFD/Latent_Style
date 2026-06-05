@@ -4,6 +4,13 @@ This directory contains the curated local G and remote I experiment archaeology 
 
 ## Main Outputs
 
+- `AUTHORITATIVE_ARCHAEOLOGY_REPORT_ZH_20260605.md`: current readable Chinese authority report for local state, remote state, TokenizerClean, lineage, timing, cleanup totals, gaps, and the 8-hour continuation plan.
+- `authoritative_report_evidence_map_20260605.csv`: conclusion-to-evidence map for the authority report.
+- `MANUAL_REMOTE_TOKENIZERCLEAN_RETAINED_NO_SUMMARY_OWNER_REVIEW_20260605.md`: second-pass owner review for the 10 retained TokenizerClean no-summary directories.
+- `manual_remote_tokenizerclean_retained_no_summary_owner_policy_20260605.csv`: policy table splitting 3 pure orphan probe dirs from 7 trained no-summary payload dirs.
+- `cleanup/manual_remote_tokenizerclean_orphan_probe_weight_cleanup_20260605.csv`: deletion ledger for the 3 pure orphan probe dirs, totaling `170.017 MB`.
+- `manual_remote_tokenizerclean_orphan_probe_post_delete_verify_20260605.csv`: post-delete verification for orphan probe cleanup and retained diagnostics/payload evidence.
+- `manual_remote_tokenizerclean_remaining_weight_classes_after_owner_review_cleanup_20260605.csv`: current post-owner-review TokenizerClean remaining weight classes.
 - `../EXPERIMENT_ARCHAEOLOGY_MASTER.csv`: final root-level master CSV.
 - `final_master_experiments.csv`: same final master CSV inside this directory.
 - `final_by_dataset/*.csv`: one CSV per dataset/setting family.
@@ -26,6 +33,8 @@ This directory contains the curated local G and remote I experiment archaeology 
 - Remote deleted checkpoints: 405, MB=14535.700
 - Remote deleted generated media: 43008, MB=11883.246
 - Remote main data/cache/archive residue deleted: 11, MB=381.807
+- Remote TokenizerClean checkpoint/probe files deleted across citation/no-summary/owner-review passes: 170, MB=5731.399
+- Remote TokenizerClean remaining weight classes after owner-review cleanup: 29 dirs, 156 files, MB=5643.952
 
 ## Dataset Counts
 

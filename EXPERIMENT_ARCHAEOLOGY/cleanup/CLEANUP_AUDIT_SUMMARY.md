@@ -99,3 +99,14 @@ Additional local cleanup after path-by-path inspection of the remaining data/cac
 | local_G | deleted | fully duplicated output tar archive | 1 | 32.186 | `manual_local_remaining_surface_cleanup_20260605.csv` |
 
 Total released in this block: `237.860 MB`. The policy explicitly retained WebDataset tar shards, `samst_ckpts_epoch50.tar`, CLIP vocabulary gzip, external repo `.git\shallow.lock`, and `uv.lock` dependency files because they were not proven disposable. Post-delete verification passed all 15 absent/present checks in `manual_local_remaining_surface_post_delete_verify_20260605.csv`.
+
+## 2026-06-05 remote TokenizerClean retained no-summary orphan cleanup
+
+Second-pass owner review of the 10 retained TokenizerClean no-summary directories split them into 3 pure orphan probe directories and 7 trained payload directories. Only the 3 pure orphan probe directories were deleted.
+
+| scope | action | cleanup_class | files_or_dirs | size_mb | ledger |
+| --- | --- | --- | ---: | ---: | --- |
+| remote_tokenizerclean | deleted | orphan probe weight files | 11 | 170.017 | `manual_remote_tokenizerclean_orphan_probe_weight_cleanup_20260605.csv` |
+| remote_tokenizerclean | deleted | empty orphan probe dirs | 3 | 0 | `manual_remote_tokenizerclean_orphan_probe_weight_cleanup_20260605.csv` |
+
+Post-delete verification passed all 11 checks in `manual_remote_tokenizerclean_orphan_probe_post_delete_verify_20260605.csv`: the 3 orphan dirs are absent, diagnostics outputs remain, and representative trained no-summary payload dirs remain. The latest TokenizerClean remaining-weight table is `manual_remote_tokenizerclean_remaining_weight_classes_after_owner_review_cleanup_20260605.csv` with 29 directories, 156 weight-like files, and `5643.952 MB`.
