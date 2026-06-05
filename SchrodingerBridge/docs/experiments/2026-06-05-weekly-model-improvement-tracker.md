@@ -148,11 +148,11 @@ Remote latent side quest currently occupying the only allowed GPU lane:
   - safely below the hard stop:
     - `< 11.0 GiB`
 - latest observed training progress:
-  - around `Epoch 0 step 3126`
+  - around `Epoch 0 step 3508`
   - observed train rate:
     - about `0.76 step/s`
 - rough remaining wall to first retained checkpoint:
-  - about `41 min` from the latest heartbeat if throughput stays flat
+  - about `33 min` from the latest heartbeat if throughput stays flat
 - retained checkpoint status:
   - none yet
   - first save still waits for `step 5000`
@@ -296,3 +296,11 @@ Post-A1 queue watcher now prepared:
     - `process_alive=False`
     - `log_exists=False`
   - this is expected until the latent handoff watcher actually starts `A1`
+
+Single-note autonomy snapshot now available:
+
+- status note:
+  - [2026-06-06-remote-autonomy-status.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-06-remote-autonomy-status.md)
+- purpose:
+  - one place for current remote step, watcher PIDs, watcher logs, and the
+    next automatic queue transitions
