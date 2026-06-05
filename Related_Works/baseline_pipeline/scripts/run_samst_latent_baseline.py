@@ -9,6 +9,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+import torch
 import yaml
 
 
@@ -35,19 +36,29 @@ DATASETS = {
 }
 
 
-def _first_style_latent_file(latent_root: Path, style: str) -> Path:
+def _materialize_style_exemplar(latent_root: Path, style: str, dst: Path) -> None:
     manifest_path = latent_root / ".latent_cache" / "manifest.json"
     if manifest_path.exists():
         payload = json.loads(manifest_path.read_text(encoding="utf-8"))
         styles = payload.get("styles") or {}
         style_payload = styles.get(style) or {}
+        packed_rel = style_payload.get("packed")
+        if packed_rel:
+            packed_path = latent_root / ".latent_cache" / str(packed_rel)
+            packed_obj = torch.load(packed_path, map_location="cpu", weights_only=False)
+            latents = packed_obj.get("latents") if isinstance(packed_obj, dict) else None
+            if torch.is_tensor(latents) and latents.shape[0] > 0:
+                torch.save(latents[0].clone(), dst)
+                return
         files = style_payload.get("files") or []
         if files:
-            return latent_root / str(files[0])
+            src = latent_root / str(files[0])
+            dst.write_bytes(src.read_bytes())
+            return
     matches = sorted((latent_root / style).glob("*.pt"))
     if not matches:
         raise FileNotFoundError(f"No latent .pt files found for style={style} under {latent_root}")
-    return matches[0]
+    dst.write_bytes(matches[0].read_bytes())
 
 
 def _read_optional_text(path: Path) -> str | None:
@@ -94,12 +105,11 @@ def main() -> int:
     style_single_root.mkdir(parents=True, exist_ok=True)
     latent_root = Path(preset["latent_root"]).expanduser().resolve()
     for style in preset["style_names"]:
-        first_file = _first_style_latent_file(latent_root, style)
         dst_dir = style_single_root / style
         dst_dir.mkdir(parents=True, exist_ok=True)
-        dst = dst_dir / first_file.name
+        dst = dst_dir / f"{style}__style_exemplar.pt"
         if not dst.exists():
-            dst.write_bytes(first_file.read_bytes())
+            _materialize_style_exemplar(latent_root, style, dst)
 
     train_dir = SAMST_REPO / "train_model" / "train2"
     train_yml = train_dir / "train.yml"
