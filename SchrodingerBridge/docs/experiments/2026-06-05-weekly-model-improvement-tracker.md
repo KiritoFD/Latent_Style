@@ -136,3 +136,39 @@ Immediate next ops task:
 
 - add a small remote launch / preflight wrapper that avoids the current
   PowerShell + SSH + WSL quoting ambiguity before the first formal `A1` launch
+
+## 2026-06-06 live update
+
+Remote latent side quest currently occupying the only allowed GPU lane:
+
+- active run:
+  - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4`
+- current GPU usage snapshot:
+  - `7460 MiB / 12288 MiB`
+- latest observed training progress:
+  - around `Epoch 0 step 863`
+- retained checkpoint status:
+  - none yet
+  - first save still waits for `step 5000`
+
+Interpretation:
+
+- `latent SaMam` is healthy enough to keep running as a bounded side quest
+- but it is currently blocking the main `A1/A2` queue because the remote `3060`
+  must stay below the hard single-run budget
+
+Ops progress landed during this update:
+
+- added reviewed remote launcher helper:
+  - [launch_remote_aaai2027_packet.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_aaai2027_packet.py)
+- launcher purpose:
+  - sync the current `src` plus `configs/aaai2027`
+  - write a remote `_codex_tmp/*.sh` launch script
+  - run targeted remote `py_compile`
+  - start the packet via remote `schtasks`
+
+What this unblocks:
+
+- once the current `SaMam` lane yields a checkpoint or is explicitly paused,
+  `A1` can be launched without reopening the earlier SSH + WSL quoting failure
+  class
