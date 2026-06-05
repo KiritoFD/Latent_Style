@@ -142,3 +142,13 @@ Post-delete verification passed all 11 checks in `manual_remote_experiments_rar_
 | remote_I_main | retained | unique historical RAR archive | 1 | 507.452 | `manual_remote_cycle_nce_45_rar_policy_20260605.csv` |
 
 Reason for retention: the archive has no expanded `Cycle-NCE\45` directory and contains unique nonweight evidence: 4 configs, 8 summaries, 8 metrics CSVs, 6008 generated/eval images, root ma-probe artifacts, and 12 old weight files. Deleting the whole archive would delete more than checkpoints. A future cleanup can extract a curated nonweight evidence package and then delete the archive under a new whitelist policy.
+
+## 2026-06-05 local generated-media intermediate-frame cleanup
+
+Manual owner-level review opened the largest local generated-media candidates. Formal eval directories, paper-facing bundles, dataset mirrors, and baseline protocol outputs were retained. Only five CUT video work directories were deleted because each contained only `_work` intermediate PNG frames, no mp4/json/csv evidence, no text references to the timestamp, and final video evidence plus `summary.json` are retained under `Cycle-NCE\video`.
+
+| scope | action | cleanup_class | dirs | size_mb | ledger |
+| --- | --- | --- | ---: | ---: | --- |
+| local_G | deleted | unreferenced intermediate video frames | 5 | 3068.463 | `manual_local_generated_media_intermediate_frame_cleanup_20260605.csv` |
+
+Post-delete verification passed all 5 checks in `manual_local_generated_media_intermediate_frame_post_delete_verify_20260605.csv`: the deleted `Related_Works\runs\cut_5x5\video\head_20260404_*` work-frame directories are absent.
