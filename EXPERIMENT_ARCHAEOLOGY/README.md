@@ -215,6 +215,8 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `manual_local_generated_media_owner_review_pass5_20260605.csv`: row-level evidence/decision table for local generated-media pass 5, including git tracked/ignored state for each reviewed path.
 - `MANUAL_LOCAL_GENERATED_MEDIA_OWNER_DECISION_MANIFEST_20260605.md`: owner-decision manifest for `seedream_gap` and the quick/fine inference parameter sweeps; includes visual sample confirmation and no-delete boundary.
 - `manual_local_generated_media_owner_decision_manifest_20260605.csv`: row-level owner-decision packet for 7 Seedream input sets, 14 quick sweep points, and 8 fine sweep points.
+- `MANUAL_LOCAL_ARCHIVE_TMP_PAPER_SCRATCH_PROVENANCE_20260605.md`: exact-path provenance pass for local `archive`, `tmp`, paper snapshot, config archive, and active paper workspace; no deletion whitelisted.
+- `manual_local_archive_tmp_paper_scratch_provenance_20260605.csv`: row-level archive/tmp/paper scratch provenance table.
 - `manual_remote_schrodingerbridge_exp_topdir_inventory_20260605.csv`: remote `I:\Github\Latent_Style\SchrodingerBridge\exp` top-level inventory with file/log/summary/weight counts and sample evidence paths.
 - `MANUAL_REMOTE_SCHRODINGERBRIDGE_EXP_20260605.md`: manual remote `SchrodingerBridge/exp` walkthrough with opened README/config/log/summary evidence, timing examples, weight retention, and cleanup boundary.
 - `manual_remote_samam_checkpoint_thinning_policy_20260605.csv`: remote SaMAM central `step_checkpoints` keep/delete policy for 19 checkpoint files.
