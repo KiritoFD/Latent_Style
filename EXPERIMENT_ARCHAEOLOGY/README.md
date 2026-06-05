@@ -6,6 +6,8 @@ This directory contains the curated local G and remote I experiment archaeology 
 
 - `DIRECT_ARCHAEOLOGY_CONCLUSIONS_AND_8H_PLAN_CN_20260605.md`: current direct conclusion layer for local state, remote main, remote TokenizerClean, lineage, dataset distribution, timing, cleanup boundaries, and the next 8-hour exact-path plan.
 - `archaeology_goal_requirement_status_20260605.csv`: requirement-by-requirement status table showing done, partial, proof/owner gaps, and next actions for the full archaeology objective.
+- `DATASET_BY_DATASET_ARCHAEOLOGY_CONCLUSIONS_CN_20260605.md`: one-by-one manual conclusion pass for all 25 `final_by_dataset/*.csv` splits, including claim, timing, cleanup, and gap boundaries.
+- `dataset_by_dataset_archaeology_conclusions_20260605.csv`: machine-readable row-level table behind the dataset-by-dataset manual conclusion pass.
 - `AUTHORITATIVE_LOCAL_REMOTE_LINEAGE_CONCLUSIONS_20260605.md`: newest clean entrypoint for local conclusions, remote-main conclusions, TokenizerClean conclusions, dataset lineage, timing state, cleanup ledger policy, and the 8-hour continuation plan.
 - `authoritative_local_remote_lineage_conclusions_20260605.csv`: row-level conclusion index behind the newest clean entrypoint.
 - `GRAND_LOCAL_REMOTE_ARCHAEOLOGY_SYNTHESIS_ZH_20260605.md`: direct Chinese synthesis for local state, remote main, remote TokenizerClean, experiment lineage, timing, cleanup principles, and the remaining 8-hour plan.
