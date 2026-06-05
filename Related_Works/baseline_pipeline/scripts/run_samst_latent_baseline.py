@@ -144,6 +144,7 @@ def main() -> int:
         "vae_model": str(args.vae_model),
         "vae_cache_dir": str(args.vae_cache_dir),
         "max_train_per_style": int(args.max_train_per_style),
+        "loss_network_half": 1,
     }
     train_yml.write_text(yaml.safe_dump(cfg, sort_keys=False), encoding="utf-8")
     cmd = [sys.executable, str(train_dir / "train_latent.py")]
