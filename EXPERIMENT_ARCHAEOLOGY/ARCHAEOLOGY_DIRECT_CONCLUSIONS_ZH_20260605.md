@@ -69,7 +69,7 @@
 | weight-only RAR archives | 6 files | 6553.384 MB | `cleanup/manual_remote_rar_weight_only_archive_cleanup_20260605.csv` |
 | resolved duplicate `experiments.rar` | 1 file | 8091.026 MB | `cleanup/manual_remote_experiments_rar_resolved_duplicate_cleanup_20260605.csv` |
 
-远程主树当前硬缺口：cross-cache dedup hash audit 还没做；`45.rar` 如果要删，必须先提取/确认非权重证据包。
+远程主树当前硬缺口：cross-cache dedup hash audit 已完成但未删除，下一步是 loader/path-reference audit；`45.rar` 如果要删，必须先提取/确认非权重证据包。
 
 ## 远程 TokenizerClean 结论
 
@@ -132,7 +132,7 @@
 | 1 | 1.0h | 本地 remaining generated-media 继续 owner review | media owner policy CSV/MD，可能的 whitelist cleanup。 |
 | 2 | 1.0h | TokenizerClean cited/current media archive/migration policy | cited/current media policy 和可选迁移/清理清单。 |
 | 3 | 1.0h | 7 个 trained no-summary payload summary recovery 或 owner decision | recovery/decision CSV。 |
-| 4 | 1.0h | local/remote cross-cache dedup hash audit | cache dedup CSV/MD，不先删除。 |
+| 4 | 1.0h | local/remote cache loader/path-reference audit | 基于 `CROSS_CACHE_DEDUP_AUDIT_20260605.md` 判断 exact duplicate cache 是否能白名单删除或改 symlink。 |
 | 5 | 1.0h | 26 个 timing candidate missing docs 的 source-open pass | source-open timing promotion table。 |
 | 6 | 1.0h | dataset split、timeline、README counts consistency pass | consistency audit 和 README 修正。 |
 | 7 | 1.0h | `45.rar` curated nonweight extraction policy | extraction/retention/delete decision policy。 |
@@ -142,6 +142,6 @@
 
 - “每一个目录”仍未完成严格 owner-level 逐目录结论，尤其是 nested generated media。
 - 7 个 TokenizerClean trained no-summary payload 仍没有 in-dir summary 或 owner 决策；其中 2 个已有外部间接证据，5 个仍是 training-log-only。
-- cross-cache dedup hash audit 未完成。
+- cross-cache dedup hash audit 已完成，但 deletion 仍缺 loader/path-reference audit。
 - docs timing master 和 overlay 只做了 sidecar reconciliation，未形成最终 paper-facing timing 表。
 - `Cycle-NCE\45.rar` 保留为唯一历史证据包，如要删除必须先做 curated extraction。
