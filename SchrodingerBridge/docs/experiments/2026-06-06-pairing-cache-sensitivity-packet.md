@@ -96,3 +96,33 @@ python SchrodingerBridge/tools/experiments/launch_remote_aaai2027_packet.py \
   --config SchrodingerBridge/configs/aaai2027/pairing_cache_h_randompair_seed42_b44.json \
   --dry-run
 ```
+
+## Closure
+
+Current run root:
+
+- `/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_pairing_cache_h_randompair_seed42_b44`
+
+Closed artifacts:
+
+- `epoch_0001.pt`
+- `epoch_0002.pt`
+- `full_eval/epoch_0001/summary.json`
+- `full_eval/epoch_0002/summary.json`
+
+Key readout:
+
+- epoch 1 transfer:
+  - `clip_style = 0.6581`
+  - `content_lpips = 0.4388`
+- epoch 2 transfer:
+  - `clip_style = 0.6563`
+  - `content_lpips = 0.4629`
+
+Interpretation:
+
+- the no-cache random-pairing control is materially worse than the paper-facing
+  `H` family on content preservation
+- it does not generate a positive alternative headline
+- this is a **negative closure** in favor of keeping the prototype-aware pairing
+  cache in the compact Distinct5-512 family
