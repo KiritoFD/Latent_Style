@@ -148,11 +148,11 @@ Remote latent side quest currently occupying the only allowed GPU lane:
   - safely below the hard stop:
     - `< 11.0 GiB`
 - latest observed training progress:
-  - around `Epoch 0 step 1743`
+  - around `Epoch 0 step 1928`
   - observed train rate:
-    - about `0.74 step/s`
+    - about `0.75 step/s`
 - rough remaining wall to first retained checkpoint:
-  - about `73 min` from the latest heartbeat if throughput stays flat
+  - about `68 min` from the latest heartbeat if throughput stays flat
 - retained checkpoint status:
   - none yet
   - first save still waits for `step 5000`
@@ -170,6 +170,12 @@ Interpretation:
 - `latent SaMam` is healthy enough to keep running as a bounded side quest
 - but it is currently blocking the main `A1/A2` queue because the remote `3060`
   must stay below the hard `< 11.0 GiB` single-run budget
+- no `A1` launcher output has been created on the remote yet
+  - the handoff order remains:
+    - first retained `latent SaMam` checkpoint
+    - then `A1`
+    - then `C1`
+    - then `C2` if reviewer sensitivity evidence is still needed
 
 Ops progress landed during this update:
 
