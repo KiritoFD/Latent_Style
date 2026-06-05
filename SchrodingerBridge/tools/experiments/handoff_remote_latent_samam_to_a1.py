@@ -56,6 +56,27 @@ def _ssh_wsl_exec(
     return _run(cmd)
 
 
+def _ssh_exec(
+    *,
+    host: str,
+    port: int,
+    user: str,
+    remote_command: str,
+) -> subprocess.CompletedProcess[str]:
+    remote = f"{user}@{host}"
+    cmd = [
+        "ssh",
+        "-p",
+        str(port),
+        "-T",
+        "-o",
+        "LogLevel=ERROR",
+        remote,
+        remote_command,
+    ]
+    return _run(cmd)
+
+
 def _list_retained_checkpoints(
     *,
     host: str,
@@ -165,6 +186,62 @@ def _launch_a1(config_rel: str) -> int:
     return result.returncode
 
 
+def _query_remote_gpu_memory_used_mib(
+    *,
+    host: str,
+    port: int,
+    user: str,
+) -> int | None:
+    result = _ssh_exec(
+        host=host,
+        port=port,
+        user=user,
+        remote_command=(
+            "nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits"
+        ),
+    )
+    if result.returncode != 0:
+        return None
+    values: list[int] = []
+    for line in result.stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            values.append(int(float(line)))
+        except ValueError:
+            continue
+    return max(values) if values else None
+
+
+def _wait_for_gpu_idle(
+    *,
+    host: str,
+    port: int,
+    user: str,
+    max_idle_memory_mib: int,
+    poll_seconds: int,
+    timeout_seconds: int,
+) -> int:
+    deadline = time.monotonic() + max(0, timeout_seconds)
+    sleep_seconds = max(1, poll_seconds)
+    while True:
+        used_mib = _query_remote_gpu_memory_used_mib(
+            host=host,
+            port=port,
+            user=user,
+        )
+        print(f"gpu_memory_used_mib={used_mib}")
+        if used_mib is not None and used_mib <= max_idle_memory_mib:
+            return used_mib
+        if time.monotonic() >= deadline:
+            raise TimeoutError(
+                "remote GPU did not fall back to the required idle band "
+                f"<= {max_idle_memory_mib} MiB before timeout"
+            )
+        time.sleep(sleep_seconds)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
@@ -181,6 +258,9 @@ def main() -> int:
     parser.add_argument("--a1-config", default=DEFAULT_A1_CONFIG)
     parser.add_argument("--stop-latent-on-retained", action="store_true")
     parser.add_argument("--wait-seconds-after-stop", type=int, default=15)
+    parser.add_argument("--max-idle-memory-mib", type=int, default=1500)
+    parser.add_argument("--idle-poll-seconds", type=int, default=10)
+    parser.add_argument("--idle-timeout-seconds", type=int, default=300)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -209,6 +289,7 @@ def main() -> int:
     print(f"retained_checkpoints={retained}")
     print(f"latent_pid={latent_pid}")
     print(f"a1_remote_log_exists={a1_exists}")
+    print(f"max_idle_memory_mib={args.max_idle_memory_mib}")
 
     if not retained:
         print("No retained checkpoint exists yet; handoff is not allowed.")
@@ -235,6 +316,14 @@ def main() -> int:
         wait_seconds = max(0, int(args.wait_seconds_after_stop))
         if wait_seconds:
             time.sleep(wait_seconds)
+        _wait_for_gpu_idle(
+            host=args.host,
+            port=args.port,
+            user=args.user,
+            max_idle_memory_mib=max(0, int(args.max_idle_memory_mib)),
+            poll_seconds=max(1, int(args.idle_poll_seconds)),
+            timeout_seconds=max(1, int(args.idle_timeout_seconds)),
+        )
 
     return _launch_a1(args.a1_config)
 

@@ -230,8 +230,29 @@ Remote handoff helper now prepared:
   - [2026-06-06-samam-a1-handoff-helper.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-06-samam-a1-handoff-helper.md)
 - helper script:
   - [handoff_remote_latent_samam_to_a1.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/handoff_remote_latent_samam_to_a1.py)
-- current dry-run state:
+  - current dry-run state:
   - retained checkpoint list is still empty
   - latent `SaMam` pid is still alive as `pid 414`
   - `A1` remote log does not yet exist
   - helper therefore correctly refuses handoff until the first retained checkpoint appears
+
+Auto-handoff watcher now prepared:
+
+- watcher script:
+  - [watch_remote_latent_samam_handoff.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_remote_latent_samam_handoff.py)
+- watcher role:
+  - poll the handoff helper every `60s`
+  - once the first retained checkpoint appears:
+    - stop latent `SaMam`
+    - wait until remote total `memory.used <= 1500 MiB`
+    - launch `A1`
+- reason:
+  - this removes manual polling while preserving the hard `< 11.0 GiB`
+    single-lane rule on the remote `3060`
+- active local watcher:
+  - pid file:
+    - [watch_remote_latent_samam_handoff.pid](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/watch_remote_latent_samam_handoff.pid)
+  - stdout log:
+    - [watch_remote_latent_samam_handoff.out.log](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/watch_remote_latent_samam_handoff.out.log)
+  - stderr log:
+    - [watch_remote_latent_samam_handoff.err.log](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/watch_remote_latent_samam_handoff.err.log)
