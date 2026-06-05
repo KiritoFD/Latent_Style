@@ -1,4 +1,4 @@
-\begin{thebibliography}{34}
+\begin{thebibliography}{33}
 \providecommand{\natexlab}[1]{#1}
 
 \bibitem[{An et~al.(2021)An, Huang, Song, Dou, Liu, and Luo}]{an2021artflow}
@@ -141,16 +141,6 @@ Park, D.~Y.; and Lee, K.~H. 2019.
 Peyr{\'e}, G.; and Cuturi, M. 2019.
 \newblock Computational Optimal Transport.
 \newblock \emph{Foundations and Trends in Machine Learning}.
-
-\bibitem[{Radford et~al.(2021)Radford, Kim, Hallacy, Ramesh, Goh, Agarwal,
-  Sastry, Askell, Mishkin, Clark, Krueger, and Sutskever}]{radford2021clip}
-Radford, A.; Kim, J.~W.; Hallacy, C.; Ramesh, A.; Goh, G.; Agarwal, S.; Sastry,
-  G.; Askell, A.; Mishkin, P.; Clark, J.; Krueger, G.; and Sutskever, I. 2021.
-\newblock Learning Transferable Visual Models From Natural Language
-  Supervision.
-\newblock In \emph{Proceedings of the 38th International Conference on Machine
-  Learning}, volume 139 of \emph{Proceedings of Machine Learning Research},
-  8748--8763.
 
 \bibitem[{Shang et~al.(2025)Shang, Wang, Wang, and Meng}]{shang2025scsa}
 Shang, C.; Wang, Z.; Wang, H.; and Meng, X. 2025.
