@@ -27,6 +27,14 @@ This directory contains the curated local G and remote I experiment archaeology 
 - `manual_remote_tokenizerclean_trained_no_summary_owner_decision_20260605.csv`: row-level keep/recover decision table for those 7 dirs.
 - `MANUAL_REMOTE_TOKENIZERCLEAN_TRAINED_NO_SUMMARY_DEEP_OPEN_20260605.md`: one-by-one remote deep-open pass for the same 7 trained no-summary dirs; records the 5 training-log-only payloads, 2 external-evidence payloads, and 1 config lineage anomaly.
 - `manual_remote_tokenizerclean_trained_no_summary_deep_open_20260605.csv`: row-level manual-open evidence table with config/data/resume/training/time/weight/eval/decision fields.
+- `MANUAL_REMOTE_TOKENIZERCLEAN_TRAINING_LOG_ONLY_WEIGHT_DELETE_PLAN_20260605.md`: exact-path checkpoint-only delete plan for five training-log-only no-summary payload directories.
+- `MANUAL_REMOTE_TOKENIZERCLEAN_TRAINING_LOG_ONLY_WEIGHT_DELETE_EXECUTED_20260605.md`: execution summary for deleting 7 exact TokenizerClean training-log-only checkpoint weights while retaining metadata.
+- `manual_remote_tokenizerclean_training_log_only_weight_delete_whitelist_20260605.csv`: row-level whitelist for those 7 checkpoint files.
+- `manual_remote_tokenizerclean_training_log_only_weight_delete_execution_20260605.csv`: row-level deletion ledger, totaling `248.429 MB`.
+- `manual_remote_tokenizerclean_training_log_only_weight_post_delete_verify_20260605.csv`: post-delete verification for absent checkpoints, retained metadata, and retained evidence-bearing weights.
+- `MANUAL_REMOTE_TOKENIZERCLEAN_TRAINING_LOG_ONLY_LIVE_RECHECK_20260605.md`: fixed-path live recheck of all 7 trained no-summary payload directories after deletion.
+- `manual_remote_tokenizerclean_training_log_only_live_recheck_20260605.csv`: row-level live recheck with current weight counts, config resume fields, training CSV tails, and summary/full_eval absence.
+- `manual_remote_tokenizerclean_training_log_only_remaining_weights_20260605.csv`: current post-cleanup remaining weight table for the 7 trained no-summary payload dirs.
 - `cleanup/manual_remote_tokenizerclean_orphan_probe_weight_cleanup_20260605.csv`: deletion ledger for the 3 pure orphan probe dirs, totaling `170.017 MB`.
 - `manual_remote_tokenizerclean_orphan_probe_post_delete_verify_20260605.csv`: post-delete verification for orphan probe cleanup and retained diagnostics/payload evidence.
 - `manual_remote_tokenizerclean_remaining_weight_classes_after_owner_review_cleanup_20260605.csv`: current post-owner-review TokenizerClean remaining weight classes.
@@ -63,8 +71,8 @@ The latest direct status should be read from `AUTHORITATIVE_LOCAL_REMOTE_LINEAGE
 - Remote deleted checkpoints: 405, MB=14535.700
 - Remote deleted generated media: 43008, MB=11883.246
 - Remote main data/cache/archive residue deleted: 11, MB=381.807
-- Remote TokenizerClean checkpoint/probe files deleted across citation/no-summary/owner-review passes: 170, MB=5731.399
-- Remote TokenizerClean remaining weight classes after owner-review cleanup: 29 dirs, 156 files, MB=5643.952
+- Remote TokenizerClean checkpoint/probe files deleted across citation/no-summary/owner-review/training-log-only passes: 177, MB=5979.828
+- Remote TokenizerClean trained no-summary payload weights after training-log-only cleanup: 7 dirs, 3 files, MB=130.883
 - Remote RAR weight-only archives deleted: 6 files, MB=6553.384
 - Remote experiments.rar resolved duplicate deleted: 1 file, MB=8091.026
 - Remote Cycle-NCE 45.rar original archive deleted after curated nonweight extraction: 1 file, MB=507.452

@@ -190,6 +190,8 @@ TokenizerClean cleanup already performed:
 - Pure orphan probe targets: 3 dirs and associated weights deleted, 170.017 MB
   released.
 - Uncited generated media: 43008 files deleted, 11883.246 MB released.
+- Training-log-only no-summary payload weights: 7 checkpoint files deleted,
+  248.429 MB released; config and training CSV metadata retained.
 
 TokenizerClean retained media:
 
@@ -201,8 +203,11 @@ TokenizerClean retained media:
 TokenizerClean retained no-summary payloads:
 
 - 7 trained no-summary payload dirs remain retained.
-- Retained no-summary payload weight surface: 10 weight files / 379.322 MB.
-- 5 payloads have no external evidence and remain training-log-only.
+- Retained no-summary payload weight surface after cleanup: 3 weight files /
+  130.883 MB.
+- 5 payloads have no external evidence and now retain metadata only
+  (`config.json` plus `logs\training_*.csv`); their checkpoint weights were
+  deleted by exact whitelist.
 - 1 payload is retained as a downstream resume source.
 - 1 payload is retained as a diagnostic evaluated payload.
 - Manual deep-open evidence now records config/data/resume/training/time/weight
@@ -213,8 +218,9 @@ TokenizerClean retained no-summary payloads:
 
 TokenizerClean remaining gap:
 
-- Recover or generate summaries for the 5 training-log-only payloads, or get an
-  explicit owner delete decision.
+- The 5 training-log-only payload directories no longer hold weights; they
+  remain as metadata-only archaeology rows and do not need summary recovery for
+  cleanup purposes.
 - Repair or annotate the missing-resume config lineage anomaly before promoting
   `wikiart512_ema_spectral_stat_full_e2_from_tok_b48` as a clean lineage row.
 - Build a citation-to-artifact manifest for the 26 retained media dirs before
@@ -311,11 +317,10 @@ Block 2, 1.0h:
 verified, original archive is deleted, and post-delete verification passed.
 
 Block 3, 1.0h:
-Remote TokenizerClean no-summary recovery. The 7 retained payloads have now
-been manually reopened one by one; for the 5 training-log-only payloads, attempt
-summary recovery or prepare an owner-decision table. Also repair/annotate the
-missing `epoch_0004.pt` resume anomaly in
-`wikiart512_ema_spectral_stat_full_e2_from_tok_b48`.
+Remote TokenizerClean no-summary cleanup is partly executed: the 5
+training-log-only payload dirs are now metadata-only after deleting 7 exact
+checkpoint files. Remaining work is to repair/annotate the missing
+`epoch_0004.pt` resume anomaly and keep the two evidence-bearing payloads.
 
 Block 4, 1.0h:
 TokenizerClean cited/current media manifest. Map docs/paper references to
@@ -342,5 +347,5 @@ Not complete.
 
 The task is substantially advanced, but completion is unproven because the
 remaining gaps are concrete: local nested generated media, TokenizerClean
-summary recovery/owner decisions, retained-media
+missing-resume anomaly, retained-media
 manifests, docs timing promotion, and final consistency audit.

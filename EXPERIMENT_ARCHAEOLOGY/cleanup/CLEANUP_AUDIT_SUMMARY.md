@@ -191,3 +191,22 @@ Post-delete verification passed all 6 checks in
 package is present with `6086` files / `145.512 MB`, the extracted `45\`
 payload dir is present, package manifest and removed-weight ledger are present,
 and recursive weight-extension count remains `0`.
+
+## 2026-06-05 remote TokenizerClean training-log-only weight cleanup
+
+Follow-up fixed-path review reopened the 7 trained no-summary payload
+directories. Five had config/training CSV evidence only and no external
+downstream or diagnostic evidence, so only their exact checkpoint weights were
+deleted. Directories, `config.json`, `logs\training_*.csv`, source snapshots,
+and numeric debug logs were retained as archaeology metadata.
+
+| scope | action | cleanup_class | checkpoint_files | size_mb | ledger |
+| --- | --- | --- | ---: | ---: | --- |
+| remote_tokenizerclean | deleted | training-log-only no-summary checkpoint weights | 7 | 248.429 | `manual_remote_tokenizerclean_training_log_only_weight_delete_execution_20260605.csv` |
+
+Post-delete verification passed all 20 checks in
+`manual_remote_tokenizerclean_training_log_only_weight_post_delete_verify_20260605.csv`:
+the 7 deleted checkpoints are absent, all 5 parent configs are present, all 5
+parent training CSV sets are present, and the 3 external-evidence checkpoints
+remain. A fixed-path live recheck is recorded in
+`manual_remote_tokenizerclean_training_log_only_live_recheck_20260605.csv`.
