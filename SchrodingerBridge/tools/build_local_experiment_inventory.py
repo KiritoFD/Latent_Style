@@ -332,6 +332,18 @@ def _parse_artfid_metrics(path: Path) -> ArtFIDMetrics:
     transfer_node = payload.get("transfer")
     if isinstance(transfer_node, dict):
         transfer = _safe_float(transfer_node.get("aggregate_art_fid"))
+    if full is None:
+        full_node = payload.get("all_pairs")
+        if isinstance(full_node, dict):
+            full = _safe_float(full_node.get("mean_art_fid"))
+            if full is None:
+                full = _safe_float(full_node.get("mean_of_target_means"))
+    if transfer is None:
+        transfer_node = payload.get("transfer_only")
+        if isinstance(transfer_node, dict):
+            transfer = _safe_float(transfer_node.get("mean_art_fid"))
+            if transfer is None:
+                transfer = _safe_float(transfer_node.get("mean_of_target_means"))
     return ArtFIDMetrics(full=full, transfer=transfer)
 
 
