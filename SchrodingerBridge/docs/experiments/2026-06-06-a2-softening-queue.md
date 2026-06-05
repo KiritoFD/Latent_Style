@@ -99,3 +99,45 @@ The queue is still waiting on the single-lane remote `3060` contract:
   `5000-step` checkpoint yet
 - automatic handoff to `A1` remains the first transition
 - `A2` must not overlap either the latent side quest or `A1`
+
+## Closure
+
+All three queued `A2` arms are now fully landed with `full_eval` summaries for
+`epoch_0001 .. epoch_0003`.
+
+Transfer-side readout:
+
+- `A2a softterm18 sem010`
+  - best observed transfer packet:
+    - `epoch_0001`
+    - `clip_style = 0.6656`
+    - `content_lpips = 0.3363`
+- `A2b softterm18 sem012`
+  - best observed transfer packet:
+    - `epoch_0001`
+    - `clip_style = 0.6651`
+    - `content_lpips = 0.3385`
+- `A2c softterm16 sem012`
+  - best observed transfer packet:
+    - `epoch_0001`
+    - `clip_style = 0.6645`
+    - `content_lpips = 0.3281`
+
+Comparison target:
+
+- paper-facing `H e1`
+  - `clip_style = 0.6653`
+  - `content_lpips = 0.3281`
+
+Interpretation:
+
+- none of the three softening arms creates a clear new frontier over `H e1`
+- `A2c` matches `H e1` on `content_lpips` but does not improve style movement
+- `A2a` and `A2b` are slightly worse on content preservation without gaining a
+  stronger style packet
+
+Current closure:
+
+- the `A2` sweep is a **neutral-to-negative closure**
+- mild endpoint / routing softening does not presently justify replacing the
+  reviewed `H` packet
