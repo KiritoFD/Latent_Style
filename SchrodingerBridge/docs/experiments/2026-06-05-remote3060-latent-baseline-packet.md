@@ -181,6 +181,41 @@ Expected artifacts:
 - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4/formal_eval/step_005000/metrics.csv`
 - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4/formal_eval/step_005000/aggregate_targetwise_artfid.json`
 
+Fast screening variant when the goal is only checkpoint triage:
+
+```bash
+cd /mnt/i/Github/Latent_Style
+python3 Related_Works/baseline_pipeline/scripts/run_samam_latent_eval_bundle.py \
+  --checkpoint /mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4/step_checkpoints/step-step=005000.ckpt \
+  --label step_005000_fast \
+  --image-root /mnt/i/Github/Latent_Style/style_data/overfit50 \
+  --output-root /mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4/formal_eval \
+  --style-names photo,monet,vangogh,cezanne,Hayao \
+  --max-src-per-style 30 \
+  --image-size 256 \
+  --eval-batch-size 8 \
+  --eval-target-chunk-size 1 \
+  --eval-image-save-workers 4 \
+  --skip-art-fid
+```
+
+2026-06-06 fast-screen result:
+
+- retained point:
+  - `step_005000`
+- output:
+  - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4/formal_eval/step_005000_fast`
+- artifact status:
+  - `summary.json`: yes
+  - `metrics.csv`: yes
+  - `aggregate_targetwise_artfid.json`: intentionally absent
+- headline read:
+  - transfer `clip_style`: about `0.6509`
+  - transfer `content_lpips`: about `0.8092`
+- decision:
+  - negative closure at this retained point; do not promote this checkpoint to
+    paper-facing comparison
+
 `SaMST` `legacy256_overfit50` first cap-safe retry:
 
 ```bash

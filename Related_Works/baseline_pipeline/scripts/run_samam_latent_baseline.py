@@ -26,11 +26,11 @@ DATASETS = {
         "patch_size": 8,
     },
     "distinct5_512": {
-        "latent_content_root": "F:/wikiart_distinct5_samam_512_latents_ema/train",
-        "latent_style_root": "F:/wikiart_distinct5_samam_512_latents_ema/train",
-        "val_content_root": "F:/wikiart_distinct5_samam_512_latents_ema/test",
-        "val_style_root": "F:/wikiart_distinct5_samam_512_latents_ema/test",
-        "eval_root": "F:/wikiart_distinct5_samam_512_classview_real/test",
+        "latent_content_root": "/mnt/i/wikiart_distinct5_samam_512_latents_ema/train",
+        "latent_style_root": "/mnt/i/wikiart_distinct5_samam_512_latents_ema/train",
+        "val_content_root": "/mnt/i/wikiart_distinct5_latents_512_ema_test",
+        "val_style_root": "/mnt/i/wikiart_distinct5_latents_512_ema_test",
+        "eval_root": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
         "styles": ["Early_Renaissance", "Impressionism", "Minimalism", "Rococo", "Ukiyo_e"],
         "patch_size": 8,
     },
@@ -53,6 +53,9 @@ def main() -> int:
     parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--pin-memory", type=int, default=0)
     parser.add_argument("--gradient-checkpointing", type=int, default=0)
+    parser.add_argument("--limit-val-batches", type=float, default=1.0)
+    parser.add_argument("--num-sanity-val-steps", type=int, default=2)
+    parser.add_argument("--accumulate-grad-batches", type=int, default=1)
     parser.add_argument("--vae-model", type=str, default="ema")
     parser.add_argument("--vae-cache-dir", type=str, default="")
     parser.add_argument("--gpus", nargs="+", default=["0"])
@@ -68,6 +71,9 @@ def main() -> int:
         "iterations": args.iterations,
         "batch_size": args.batch_size,
         "precision": args.precision,
+        "limit_val_batches": args.limit_val_batches,
+        "num_sanity_val_steps": args.num_sanity_val_steps,
+        "accumulate_grad_batches": args.accumulate_grad_batches,
         "created_at": datetime.now().isoformat(),
     }
     (out_root / "run_meta.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -109,6 +115,12 @@ def main() -> int:
         str(args.pin_memory),
         "--gradient-checkpointing",
         str(args.gradient_checkpointing),
+        "--limit-val-batches",
+        str(args.limit_val_batches),
+        "--num-sanity-val-steps",
+        str(args.num_sanity_val_steps),
+        "--accumulate-grad-batches",
+        str(args.accumulate_grad_batches),
         "--vae-model",
         str(args.vae_model),
         "--vae-cache-dir",

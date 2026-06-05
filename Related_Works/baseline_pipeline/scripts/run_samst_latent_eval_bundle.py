@@ -46,6 +46,7 @@ def main() -> int:
     parser.add_argument("--eval-image-save-workers", type=int, default=4)
     parser.add_argument("--vae-model", type=str, default="ema")
     parser.add_argument("--vae-cache-dir", type=str, default="")
+    parser.add_argument("--skip-art-fid", action="store_true")
     parser.add_argument("--full-eval", action="store_true")
     args = parser.parse_args()
 
@@ -89,7 +90,6 @@ def main() -> int:
         str(args.style_names),
         "--reuse_generated",
         "--force_regen",
-        "--eval_enable_art_fid",
         "--batch_size",
         str(args.eval_batch_size),
         "--target_chunk_size",
@@ -102,6 +102,8 @@ def main() -> int:
         "pil_png",
         "--save_summary_grid",
     ]
+    if not args.skip_art_fid:
+        eval_cmd.append("--eval_enable_art_fid")
     if not args.full_eval:
         eval_cmd.append("--eval_only_lpips_clip_style")
     _run(eval_cmd, cwd=SB_ROOT, log_path=step_dir / "eval.log", env=env)
