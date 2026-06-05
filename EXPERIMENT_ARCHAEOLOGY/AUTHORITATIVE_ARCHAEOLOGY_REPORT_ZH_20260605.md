@@ -118,6 +118,7 @@
 | --- | --- | ---: | --- |
 | remote data/cache/archive residue | failed `.incomplete`、stale locks/tmp、空 temp dirs | 381.807 MB | `cleanup/manual_remote_main_data_cache_archive_residue_cleanup_20260605.csv` |
 | remote duplicate/stale archives | stale `eval_cache.zip`、legacy checkpoint archive zip、exact duplicate archive | 3290.714 MB | `cleanup/manual_remote_duplicate_archive_cleanup_20260605.csv` |
+| remote RAR weight-only archives | `Gate.rar`, `Attn_48.part*.rar`, `chess.part*.rar`，非权重条目全部已在展开目录同名同大小存在，archive 唯一 payload 是旧 checkpoint/tokenizer 权重 | 6553.384 MB | `cleanup/manual_remote_rar_weight_only_archive_cleanup_20260605.csv` |
 
 保留原则：
 
@@ -129,7 +130,7 @@
 
 仍未完成：
 
-- `experiments.rar`, `Gate.rar`, `Attn_48.part*.rar`, `chess.part*.rar` 缺 RAR-capable provenance。
+- RAR provenance 已完成一轮：`Gate.rar`, `Attn_48.part*.rar`, `chess.part*.rar` 已删除；仍保留 `experiments.rar` 和 `Cycle-NCE\45.rar`。
 - complete cache 是否跨目录重复仍需 hash audit。
 - legacy `experiments` 的全部 nested family 还没 owner-level 完成。
 
@@ -246,6 +247,7 @@
 | remote TokenizerClean generated media cleanup | 43008 个 uncited generated media | 11883.246 MB |
 | remote main data/cache/archive residue | 11 个 failed/stale/empty residue targets | 381.807 MB |
 | remote duplicate/stale archive cleanup | 3 个 archive files | 3290.714 MB |
+| remote RAR weight-only archive cleanup | 6 个 RAR/part files | 6553.384 MB |
 | local remaining surface cleanup | 5 个 exact whitelist targets | 237.860 MB |
 | local cache/root/dataset cleanup | invalid cache、duplicate archive、failed dataset cache 等 | 1623.145 MB |
 
@@ -265,7 +267,7 @@
 | 1 | 0.75h | 产出可读总报告，替代乱码 CN 入口 | 本报告 + evidence map CSV | 本轮推进 |
 | 2 | 1.00h | TokenizerClean 10 个 retained no-summary dirs owner review | owner-review CSV/MD + orphan cleanup ledger | 第二轮完成；7 个 trained payload 仍需 owner/summary |
 | 3 | 1.00h | TokenizerClean cited/current media archive/migration policy | media migration policy | 未完成 |
-| 4 | 1.00h | Remote RAR archive provenance | RAR policy + possible cleanup ledger | 未完成 |
+| 4 | 1.00h | Remote RAR archive provenance | RAR policy + cleanup ledger | 一轮完成；`experiments.rar` cache mismatch 和 `45.rar` unique archive 仍保留 |
 | 5 | 1.00h | Cross-cache dedup hash audit | cache dedup CSV/MD | 未完成 |
 | 6 | 1.00h | Docs timing master reconciliation | reconciled timing master / sidecar | 未完成 |
 | 7 | 1.00h | Dataset split、timeline、README counts consistency pass | consistency audit | 未完成 |
@@ -277,7 +279,7 @@
 
 - 7 个 retained TokenizerClean trained no-summary payload 权重目录还没有 owner-level 最终决定。
 - cited/current TokenizerClean media 还没有迁移/归档策略。
-- `experiments.rar`, `Gate.rar`, `Attn_48.part*.rar`, `chess.part*.rar` 缺 RAR-capable provenance。
+- RAR provenance 已推进：`Gate.rar`, `Attn_48.part*.rar`, `chess.part*.rar` 已按 weight-only archive policy 删除；仍缺 `experiments.rar` cache mismatch audit 和 `Cycle-NCE\45.rar` unique archive owner decision。
 - cross-cache dedup 还没有 hash audit。
 - docs timing master 还没和 timing quality overlay 对齐。
 - 全仓 legacy generated media 的 nested owner-level review 还没全部完成。

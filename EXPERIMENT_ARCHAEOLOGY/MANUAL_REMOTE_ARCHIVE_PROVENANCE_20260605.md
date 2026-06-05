@@ -72,3 +72,21 @@ Retained because content could not be proven disposable:
 - Install/use a RAR-capable tool if owner wants to prove `experiments.rar`, `Gate.rar`, `Attn_48.part*.rar`, and `chess.part*.rar` duplicate existing directories.
 - Do not delete those RAR archives by size alone; this pass intentionally stops at proven duplicates/stale archives.
 - Cross-cache dedup still remains separate from archive provenance.
+
+## Follow-up: Deep RAR Provenance
+
+This earlier gap was partially resolved by `MANUAL_REMOTE_RAR_DEEP_PROVENANCE_20260605.md`.
+
+Follow-up result:
+
+- A temporary remote copy of local `UnRAR.exe` listed `experiments.rar`, `Gate.rar`, `Attn_48.part*.rar`, `chess.part*.rar`, and `45.rar`.
+- `Gate.rar`, `Attn_48.part*.rar`, and `chess.part*.rar` were deleted after proving every nonweight file entry exists same-size in the expanded directories and the only unique archive payload is old checkpoint/tokenizer weights.
+- Cleanup ledger: `cleanup/manual_remote_rar_weight_only_archive_cleanup_20260605.csv`.
+- Post-delete verification: `manual_remote_rar_weight_only_archive_post_delete_verify_20260605.csv`.
+- Freed space: `6553.384 MB`.
+
+Remaining archive gaps after the follow-up:
+
+- `experiments.rar`: retained because 9 eval-cache payload files have size mismatches.
+- `Cycle-NCE\45.rar`: retained as a unique historical archive under current comparison roots.
+- Cross-cache dedup remains a separate block.
