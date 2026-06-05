@@ -8,7 +8,7 @@ faster operating points appear to the right.
 The key distinction preserved here is:
 
 - the retained reviewed LBM frontier around 1.2 minutes
-- the explicit page-1 matched-budget row around 2 minutes
+- the explicit later matched-budget row around 2 minutes
 """
 
 from __future__ import annotations
@@ -255,10 +255,10 @@ def main() -> None:
     annotate(ax, samam_curve[-1], f"2250 | {time_label(float(samam_curve[-1]['train_min']))}", 10, 12, COLORS["samam"])
     annotate(ax, samst_long[0], f"SaMST | {time_label(float(samst_long[0]['train_min']))}", 24, 12, COLORS["samst"])
     annotate(ax, samst_long[1], f"SaMST | {time_label(float(samst_long[1]['train_min']))}", 14, 12, COLORS["samst"])
-    annotate(ax, lbm_frontier[0], f"LBM low-LPIPS | {time_label(float(lbm_frontier[0]['train_min']))}", -12, -20, COLORS["lbm"])
-    annotate(ax, lbm_frontier[1], f"LBM base | {time_label(float(lbm_frontier[1]['train_min']))}", -12, 10, COLORS["lbm"])
-    annotate(ax, lbm_frontier[2], f"LBM style | {time_label(float(lbm_frontier[2]['train_min']))}", -30, -2, COLORS["lbm"])
-    annotate(ax, lbm_frontier[3], f"LBM base later | {time_label(float(lbm_frontier[3]['train_min']))}", -16, 16, COLORS["lbm"])
+    annotate(ax, lbm_frontier[0], f"LBM-F | {time_label(float(lbm_frontier[0]['train_min']))}", -12, -20, COLORS["lbm"])
+    annotate(ax, lbm_frontier[1], f"LBM-H | {time_label(float(lbm_frontier[1]['train_min']))}", -12, 10, COLORS["lbm"])
+    annotate(ax, lbm_frontier[2], f"LBM-K | {time_label(float(lbm_frontier[2]['train_min']))}", -30, -2, COLORS["lbm"])
+    annotate(ax, lbm_frontier[3], f"LBM-H later | {time_label(float(lbm_frontier[3]['train_min']))}", -16, 16, COLORS["lbm"])
     annotate(
         ax,
         same_cost["LBM"],
