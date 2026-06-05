@@ -77,3 +77,12 @@ Suggested next search space:
 - keep the same `Distinct5` protocol and same-cost selection rule unchanged
 - do not yet write a paper-facing row, because no retained checkpoint or metric
   closure exists
+
+Update after closure:
+
+- the lane was later repaired enough to pass the `30s` machine gate, retain
+  checkpoints, and produce fast-screen summaries
+- however, the closed same-cost packet is quality-invalid because training
+  collapsed into `nan` losses and both the early and later retained points map
+  to the same zero-direction outputs
+- see [2026-06-06-samst-latent-distinct5-samecost-closure.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-06-samst-latent-distinct5-samecost-closure.md)
