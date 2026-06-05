@@ -122,21 +122,24 @@ TokenizerClean 已完成的清理：
 - no-summary probe/calibration checkpoints：18 个，362.391 MB。
 - pure orphan probe dirs/weights：3 个目录和相关权重，170.017 MB。
 - uncited generated media：43008 个文件，11883.246 MB。
+- training-log-only no-summary payload weights：7 个 checkpoint 文件，
+  248.429 MB；只删 `.pt`，保留 `config.json` 和 `logs\training_*.csv`。
 
 TokenizerClean 当前保留：
 
 - 26 个 cited/current media dirs：46483 个媒体文件，7501.518 MB，
   均为 `keep_no_delete`，待 archive migration。
-- 7 个 trained no-summary payload dirs：10 个 weight 文件，379.322 MB。
-  其中 5 个仍是 training-log-only，2 个有外部/下游证据。
+- 7 个 trained no-summary payload dirs：清理后只剩 3 个 weight 文件，
+  130.883 MB；其中 5 个 training-log-only 目录已变成 metadata-only，
+  2 个外部/下游证据目录继续保留权重。
 - 一个明确异常：
   `wikiart512_ema_spectral_stat_full_e2_from_tok_b48` 的 config 指向不存在的
   `epoch_0004.pt`，需要修复或注释 lineage。
 
 TokenizerClean 仍缺：
 
-- 5 个 training-log-only payload 需要 summary recovery/eval reuse 或 owner
-  删除决策。
+- `wikiart512_ema_spectral_stat_full_e2_from_tok_b48` 的缺失 resume
+  checkpoint anomaly 需要修复或注释，不应作为干净 lineage 推广。
 - 26 个 cited/current media dirs 需要 citation-to-artifact manifest，之后才能
   谈迁移/压缩/删冗余媒体。
 
@@ -215,8 +218,9 @@ Timing 不是空白，但还没完全转成最终 paper-facing 表。
 
 下一批最明确的清理方向：
 
-1. TokenizerClean 5 个 training-log-only payload：先尝试 summary recovery；
-   失败再给 owner 删除决策表。
+1. TokenizerClean missing-resume anomaly：给
+   `wikiart512_ema_spectral_stat_full_e2_from_tok_b48` 写 lineage 注释或修复
+   `epoch_0004.pt` 引用。
 2. TokenizerClean 26 个 cited/current media dirs：先建 citation-to-artifact
    manifest，再决定是否 archive/migrate。
 3. 本地 `seedream_gap` 和 `inference_param_sweep_t01e8_*`：需要 owner 决策，
@@ -233,12 +237,15 @@ Timing 不是空白，但还没完全转成最终 paper-facing 表。
   present，manifest present，removed-weight ledger present，weight_ext_files=0。
 - 本块后续只需提交。
 
-### 第 2 小时：TokenizerClean 5 个 training-log-only payload
+### 第 2 小时：TokenizerClean trained no-summary payload - 已执行权重清理
 
-- 逐个打开 config/training/weight/log。
-- 查是否可复用已有 eval 或生成 summary。
-- 写 summary recovery/owner decision CSV。
-- 只删 owner 明确允许且无下游证据的 payload。
+- 已逐个打开 7 个 trained no-summary payload 的 config/training/weight/log。
+- 5 个无外部证据的 training-log-only 目录已按 exact whitelist 删除 7 个
+  checkpoint weight，释放 248.429 MB。
+- 未删除任何目录、`config.json`、`logs\training_*.csv` 或 source snapshot。
+- 2 个 evidence-bearing payload 继续保留 3 个 weight，合计 130.883 MB。
+- 新增 live recheck CSV/MD 记录每个目录当前权重数、resume 字段、
+  training CSV 尾行和 summary/full_eval 缺失状态。
 
 ### 第 3 小时：TokenizerClean cited/current media manifest
 
