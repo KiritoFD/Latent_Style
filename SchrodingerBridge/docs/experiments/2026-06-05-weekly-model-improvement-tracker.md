@@ -223,3 +223,15 @@ Additional cheap reviewer control now prepared:
   - keep semantic axis selection fixed
   - reduce only `semantic_swd_num_projections`
   - short two-epoch sensitivity packet
+
+Remote handoff helper now prepared:
+
+- helper note:
+  - [2026-06-06-samam-a1-handoff-helper.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-06-samam-a1-handoff-helper.md)
+- helper script:
+  - [handoff_remote_latent_samam_to_a1.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/handoff_remote_latent_samam_to_a1.py)
+- current dry-run state:
+  - retained checkpoint list is still empty
+  - latent `SaMam` pid is still alive
+  - `A1` remote log does not yet exist
+  - helper therefore correctly refuses handoff until the first retained checkpoint appears
