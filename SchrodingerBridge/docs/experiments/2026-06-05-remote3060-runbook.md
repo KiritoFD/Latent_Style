@@ -242,3 +242,60 @@ For new paper-facing remote work, prefer this order:
 9. evaluator closure
 
 This order is slower than ad hoc launching, but it fails less often.
+
+## 2026-06-05 latent baseline incident log
+
+This is the concrete failure chain that motivated this runbook.
+
+Target:
+
+- task:
+  - latent `SaMam` baseline on `legacy256_overfit50`
+- remote session:
+  - `samam_latent_legacy256`
+- remote output root:
+  - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_remote`
+- log:
+  - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_remote/train.log`
+
+Observed sequence:
+
+1. `/usr/bin/python3` launched, but failed immediately:
+   - `ModuleNotFoundError: No module named 'pytorch_lightning'`
+2. switched to `/home/xy/venvs/samam312/bin/python`
+3. launch then failed on import path setup:
+   - `ModuleNotFoundError: No module named 'TRAIN'`
+4. local fix was required in:
+   - [train_SaMam_latent.py](/G:/GitHub/Latent_Style/Related_Works/repos/SaMam/TRAIN/train_SaMam_latent.py)
+   - the script now derives repo root from `Path(__file__).resolve().parents[1]` instead of the caller cwd
+5. after resync, training reached evaluator-side VAE import and failed again:
+   - `ImportError: cannot import name 'Dinov2WithRegistersConfig' from 'transformers'`
+6. the trigger was not the model itself, but `diffusers` importing extra autoencoder modules through a broad package import path
+7. upgrading `transformers` blindly made the environment worse:
+   - newer `transformers` then broke `mamba-ssm` imports in `samam312`
+
+Operational lesson:
+
+- do not patch remote environments first when the failure originates from a broad local import path
+- prefer narrowing the local import site, resyncing, and retrying with the original env contract
+- for this family, `diffusers` and `transformers` must be treated as a coupled constraint because `mamba-ssm` also depends on that env
+
+## Remote launch pattern that proved structurally stable
+
+For tmux-backed WSL launches, this pattern was reliable:
+
+- call `wsl --exec tmux ...` directly
+- avoid wrapping tmux startup inside nested `bash -lc` quoting
+
+Example shape:
+
+```powershell
+ssh -p 2222 -T -o LogLevel=ERROR administrator@100.115.18.62 ^
+  "wsl -d Ubuntu-26.04 --exec tmux new-session -d -s SESSION -c /mnt/i/Github/Latent_Style PYTHON SCRIPT ..."
+```
+
+The exact command still depends on the run, but the structural rule is durable:
+
+- direct `wsl --exec`
+- direct `tmux`
+- short argument surface
