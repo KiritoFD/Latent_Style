@@ -1,12 +1,14 @@
-"""Generate the Distinct5 page-1 summary figure from the closed same-cost packet.
+"""Generate the page-1 teaser with qualitative rows plus a same-cost bubble chart.
 
-Panel (a) keeps the user's preferred upper-right frontier:
+Left panel:
+- two reviewed art-to-art rows from the historical standard-benchmark packet
+- columns: source / target style / SaMST / LBM
+
+Right panel:
+- same-cost Distinct5 frontier
 - x-axis: 1 - LPIPS
 - y-axis: transfer CLIP-S
-- dashed horizontal line: transfer-only IDT floor
 - bubble area: infer-750 wall time
-
-Panel (b) shows direct inference cost in ms/image.
 """
 
 from __future__ import annotations
@@ -16,6 +18,8 @@ import math
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
 
 
 ROOT = Path(__file__).resolve().parent
@@ -28,15 +32,19 @@ POINTS_CSV = (
     / "distinct5_same_cost_20260605.csv"
 )
 OUT_DIR = ROOT / "figures"
+STYLE_GRID = REPO_ROOT / "style_data" / "grid5"
+LBM_HIST = REPO_ROOT / "SchrodingerBridge" / "exp" / "paper" / "paper_main_750_bundle" / "ours_ec_best"
+SAMST_HIST = REPO_ROOT / "Related_Works" / "run_511" / "complete_750" / "samst_strict" / "images"
 IDT_TRANSFER_CLIP_S = 0.6399208252628644
+
 
 plt.rcParams.update(
     {
         "font.family": "serif",
         "font.serif": ["Times New Roman", "DejaVu Serif"],
-        "font.size": 9.5,
-        "axes.labelsize": 9.8,
-        "axes.titlesize": 10.2,
+        "font.size": 9.3,
+        "axes.labelsize": 9.6,
+        "axes.titlesize": 10.0,
         "xtick.labelsize": 8.1,
         "ytick.labelsize": 8.1,
         "figure.dpi": 300,
@@ -46,11 +54,12 @@ plt.rcParams.update(
         "axes.spines.top": False,
         "axes.spines.right": False,
         "axes.grid": True,
-        "grid.alpha": 0.23,
+        "grid.alpha": 0.22,
         "grid.linewidth": 0.6,
         "grid.color": "#B8B8B8",
     }
 )
+
 
 COLORS = {
     "LBM": "#D94F3D",
@@ -63,9 +72,27 @@ COLORS = {
     "panel_bg": "#FCFBF8",
     "text": "#2F2F2F",
     "muted": "#5F6B74",
+    "frame": "#C9C6BE",
 }
 
 METHOD_ORDER = ["LBM", "SaMAM", "SaMST"]
+
+QUAL_ROWS = [
+    {
+        "label": "Monet -> Hayao",
+        "source": STYLE_GRID / "monet_00018.jpg",
+        "target": STYLE_GRID / "Hayao_0.jpg",
+        "samst": SAMST_HIST / "monet_00018_to_Hayao.jpg",
+        "lbm": LBM_HIST / "monet_00018_to_Hayao.jpg",
+    },
+    {
+        "label": "Hayao -> van Gogh",
+        "source": STYLE_GRID / "Hayao_0.jpg",
+        "target": STYLE_GRID / "vangogh_00090.jpg",
+        "samst": SAMST_HIST / "Hayao_0_to_vangogh.jpg",
+        "lbm": LBM_HIST / "Hayao_0_to_vangogh.jpg",
+    },
+]
 
 
 def read_rows() -> list[dict[str, object]]:
@@ -98,7 +125,7 @@ def pick(rows: list[dict[str, object]], method: str) -> dict[str, object]:
 
 
 def bubble_area(infer_wall_seconds: float) -> float:
-    return 160.0 + 26.0 * math.sqrt(infer_wall_seconds)
+    return 190.0 + 34.0 * math.sqrt(infer_wall_seconds)
 
 
 def annotate_point(ax, row: dict[str, object], dx: float, dy: float) -> None:
@@ -110,14 +137,14 @@ def annotate_point(ax, row: dict[str, object], dx: float, dy: float) -> None:
         textcoords="offset points",
         ha="left" if dx >= 0 else "right",
         va="center",
-        fontsize=7.35,
+        fontsize=7.2,
         color=COLORS[method],
         bbox=dict(
             boxstyle="round,pad=0.2",
             fc="white",
             ec=COLORS[f"{method}_edge"],
             lw=0.55,
-            alpha=0.93,
+            alpha=0.94,
         ),
         arrowprops=dict(
             arrowstyle="-",
@@ -129,6 +156,71 @@ def annotate_point(ax, row: dict[str, object], dx: float, dy: float) -> None:
     )
 
 
+def load_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    candidates = [
+        "C:/Windows/Fonts/arialbd.ttf" if bold else "C:/Windows/Fonts/arial.ttf",
+        "C:/Windows/Fonts/calibrib.ttf" if bold else "C:/Windows/Fonts/calibri.ttf",
+    ]
+    for candidate in candidates:
+        path = Path(candidate)
+        if path.exists():
+            return ImageFont.truetype(str(path), size)
+    return ImageFont.load_default()
+
+
+def load_rgb(path: Path, size: int) -> Image.Image:
+    return Image.open(path).convert("RGB").resize((size, size), Image.Resampling.LANCZOS)
+
+
+def build_qual_panel() -> np.ndarray:
+    label_w = 188
+    cell = 160
+    gap = 18
+    pad = 18
+    header_h = 54
+    row_gap = 22
+    width = label_w + 4 * cell + 3 * gap + pad
+    height = header_h + len(QUAL_ROWS) * cell + (len(QUAL_ROWS) - 1) * row_gap + pad
+    canvas = Image.new("RGB", (width, height), COLORS["panel_bg"])
+    draw = ImageDraw.Draw(canvas)
+    font_h = load_font(23, bold=True)
+    font_l = load_font(20, bold=True)
+    font_s = load_font(18, bold=False)
+
+    headers = ["Source", "Target style", "SaMST", "LBM"]
+    x0 = label_w
+    for idx, header in enumerate(headers):
+        x = x0 + idx * (cell + gap)
+        draw.text((x + cell / 2, 14), header, fill=COLORS["text"], font=font_h, anchor="ma")
+
+    frame_colors = [
+        COLORS["frame"],
+        "#BFA77A",
+        COLORS["SaMST_edge"],
+        COLORS["LBM_edge"],
+    ]
+    for row_idx, row in enumerate(QUAL_ROWS):
+        y = header_h + row_idx * (cell + row_gap)
+        draw.text((10, y + cell / 2 - 12), row["label"], fill=COLORS["text"], font=font_l, anchor="lm")
+        ims = [
+            load_rgb(Path(row["source"]), cell),
+            load_rgb(Path(row["target"]), cell),
+            load_rgb(Path(row["samst"]), cell),
+            load_rgb(Path(row["lbm"]), cell),
+        ]
+        for col_idx, im in enumerate(ims):
+            x = x0 + col_idx * (cell + gap)
+            canvas.paste(im, (x, y))
+            draw.rounded_rectangle(
+                [x, y, x + cell, y + cell],
+                radius=10,
+                outline=frame_colors[col_idx],
+                width=4 if col_idx >= 2 else 3,
+            )
+
+    return np.asarray(canvas)
+
+
 def main() -> None:
     rows = read_rows()
     points = {method: pick(rows, method) for method in METHOD_ORDER}
@@ -137,11 +229,16 @@ def main() -> None:
     fig, axes = plt.subplots(
         1,
         2,
-        figsize=(7.12, 2.48),
-        gridspec_kw={"width_ratios": [1.32, 0.74]},
+        figsize=(7.15, 2.96),
+        gridspec_kw={"width_ratios": [1.14, 0.86]},
     )
 
     ax = axes[0]
+    ax.imshow(build_qual_panel())
+    ax.set_axis_off()
+    ax.set_title("(a) Qualitative gap on reviewed art-to-art rows", pad=6.0)
+
+    ax = axes[1]
     ax.set_facecolor(COLORS["panel_bg"])
     ax.axhline(
         IDT_TRANSFER_CLIP_S,
@@ -176,12 +273,12 @@ def main() -> None:
     annotate_point(ax, points["SaMAM"], 14, -2)
     annotate_point(ax, points["SaMST"], 34, -10)
     ax.text(
-        0.698,
-        0.468,
+        0.705,
+        0.466,
         "bubble area $\\propto$ infer-750 wall",
         ha="right",
         va="bottom",
-        fontsize=7.0,
+        fontsize=6.9,
         style="italic",
         color=COLORS["muted"],
     )
@@ -189,50 +286,9 @@ def main() -> None:
     ax.set_ylim(0.46, 0.69)
     ax.set_xlabel(r"$1-\mathrm{LPIPS}$ $\uparrow$")
     ax.set_ylabel(r"Transfer CLIP-S $\uparrow$")
-    ax.set_title("(a) Same-cost Distinct5 frontier", pad=4.0)
+    ax.set_title("(b) Same-cost Distinct5 frontier", pad=6.0)
 
-    ax = axes[1]
-    ax.set_facecolor(COLORS["panel_bg"])
-    labels = METHOD_ORDER
-    ms_values = [float(points[method]["infer_ms_per_image"]) for method in labels]
-    infer_wall = [float(points[method]["infer_wall_seconds"]) for method in labels]
-    bars = ax.bar(
-        labels,
-        ms_values,
-        color=[COLORS[method] for method in labels],
-        edgecolor=[COLORS[f"{method}_edge"] for method in labels],
-        linewidth=0.9,
-        width=0.62,
-        zorder=3,
-    )
-    for bar, ms_value, wall_value in zip(bars, ms_values, infer_wall):
-        ax.text(
-            bar.get_x() + bar.get_width() / 2.0,
-            bar.get_height() + 10.0,
-            f"{ms_value:.0f}",
-            ha="center",
-            va="bottom",
-            fontsize=8.4,
-            color=COLORS["text"],
-            weight="bold",
-        )
-        ax.text(
-            bar.get_x() + bar.get_width() / 2.0,
-            12.0,
-            f"{wall_value:.0f}s / 750",
-            ha="center",
-            va="bottom",
-            fontsize=7.0,
-            color="white",
-            weight="bold",
-        )
-    ax.set_ylabel("ms / image")
-    ax.set_ylim(0.0, 520.0)
-    ax.grid(axis="y")
-    ax.grid(axis="x", visible=False)
-    ax.set_title("(b) Inference cost", pad=4.0)
-
-    fig.subplots_adjust(left=0.073, right=0.995, top=0.87, bottom=0.20, wspace=0.18)
+    fig.subplots_adjust(left=0.025, right=0.995, top=0.89, bottom=0.14, wspace=0.14)
     fig.savefig(OUT_DIR / "fig_distinct5_page1_summary.pdf")
     fig.savefig(OUT_DIR / "fig_distinct5_page1_summary.png")
     print(OUT_DIR / "fig_distinct5_page1_summary.pdf")

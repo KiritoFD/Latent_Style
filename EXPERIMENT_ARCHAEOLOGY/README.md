@@ -127,6 +127,7 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `manual_top_level_directory_index_20260605.csv`: top-level directory-by-directory manual classification for local G:, remote `I:\Github\Latent_Style`, and remote `I:\Github\Latent_Style_TokenizerClean`.
 - `manual_family_walkthrough_20260605.csv`: family-level walkthrough for local `SchrodingerBridge/exp`, local `Related_Works`, local `Cycle-NCE`, remote main experiment families, and remote TokenizerClean packets.
 - `manual_schrodingerbridge_exp_topdir_ledger_20260605.csv`: every current local `SchrodingerBridge/exp` top-level directory/file opened and classified with weight counts and cleanup decision.
+- `manual_related_works_directory_ledger_20260605.csv`: local `Related_Works` top-level plus `baseline_pipeline/results`, `runs`, `run_511`, `repos`, and `final_works` directory ledger.
 - `manual_cleanup_retention_and_next_candidates_20260605.csv`: remaining weight/cache classes, keep reasons, and next deletion candidates.
 - `MANUAL_EXPERIMENT_AUDIT_20260605.md`: current hand-checked audit narrative and gap list.
 - `manual_directory_audit_20260605.csv`: checked directory-level evidence rows.

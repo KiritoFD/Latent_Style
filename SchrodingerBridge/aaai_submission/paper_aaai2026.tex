@@ -39,8 +39,8 @@ We present \emph{Latent Bridge Matching} (LBM), a 3.9M-parameter latent-transpor
 \begin{strip}
 \centering
 \vspace{-4mm}
-\includegraphics[width=0.965\textwidth]{figures/fig_distinct5_page1_summary.pdf}
-\captionof{figure}{IDT-calibrated same-cost Distinct5-512 summary under the shared full $5\times5$ / 750-output packet. In (a), higher and further right is better: transfer CLIP-S is plotted against $1-\mathrm{LPIPS}$, the dashed line marks the transfer-only IDT floor, and bubble area denotes infer-750 wall time. The LBM point shown here is the explicit matched-budget step-350 packet used for the page-1 comparison, not the strongest retained LBM frontier point. Under matched roughly two-minute training budgets, that packet still occupies the favorable region, same-cost SaMST stays only slightly above IDT at much larger displacement, and same-cost SaMAM remains below IDT. In (b), direct inference cost shows that the same-cost SaMST point is also the slowest executor.}
+\includegraphics[width=0.985\textwidth]{figures/fig_distinct5_page1_summary.pdf}
+\captionof{figure}{Teaser summary of the paper's two practical claims. In (a), two reviewed art-to-art rows from the historical standard-benchmark packet show the qualitative failure mode of the closest efficient baseline: SaMST can push stronger raw texture, but it does so with muddy grain, color spill, and broken local edges, whereas LBM keeps cleaner target-style movement on the same rows. In (b), the same-cost Distinct5-512 frontier quantifies the matched-budget stress test: higher and further right is better, the dashed line marks the transfer-only IDT floor, and bubble area denotes infer-750 wall time. The LBM point shown here is the explicit matched-budget step-350 packet used for the page-1 comparison, not the strongest retained LBM frontier point near 1.2 minutes. Under matched roughly two-minute training budgets, that packet still occupies the favorable region, same-cost SaMST stays only slightly above IDT at much larger displacement, and same-cost SaMAM remains below IDT.}
 \label{fig:distinct5_page1}
 \vspace{-5mm}
 \end{strip}
@@ -96,8 +96,8 @@ where paired target latents for $\mathcal{L}_{\mathrm{term}}$ are selected by th
 
 \begin{figure*}[t!]
     \centering
-    \includegraphics[width=0.98\textwidth]{framework_lbm_main_v5.png}
-    \caption{Overview of Latent Bridge Matching. The top band shows style-side control, where the style tokenizer maps the target style identifier into a compact style code. The middle band is the active inference path: content is encoded into a latent, passed through the LBM time-conditioned residual field with semantic routing, integrated by $K$-step Euler updates, and decoded into the stylized output. The bottom band summarizes the active training constraints used by the headline rows: target-domain latents enter through cache-based endpoint selection with endpoint-mode OMF training, while the active losses are terminal SA-SWD and endpoint kinetic regularization. The SA-SWD inset makes explicit how semantic bins define terminal within-bin SWD matching. Target-domain latents are therefore training-side supervision only, not inference-time conditioning inputs. Historical OT-style selector variants are supplementary background rather than the main training loop.}
+    \includegraphics[width=0.98\textwidth]{figures/fig_framework_claimsafe.png}
+    \caption{Overview of Latent Bridge Matching. The top band shows style-side control, where the style tokenizer maps the target style identifier into a compact style code. The middle band is the active inference path: content is encoded into a latent, passed through the LBM time-conditioned residual field with semantic routing, integrated by $K$-step Euler updates, and decoded into the stylized output. The bottom band summarizes the active training constraints used by the headline rows: content latents and target-domain latent pools meet through a prototype-aware pairing cache and selector schedule, which provide the endpoint targets used by endpoint-mode OMF supervision. The active losses are terminal SA-SWD and endpoint kinetic regularization; historical OT/Sinkhorn selector variants are retained only as appendix-side motivation rather than as the main training loop.}
     \label{fig:framework}
 \end{figure*}
 
@@ -333,24 +333,17 @@ We then place the historical strict-750 packet as contextual support for the sta
 
 Cost matters here as deployment evidence, not as a normalized time-to-parity contest. The only evidence-closed historical row we retain is the preserved LBM record: 5.2 minutes of training to the reported checkpoint and 114\,ms/image over the strict-750 protocol. Other historical baselines are omitted from the timing table because the currently available records are probe-estimated, mixed-protocol, or otherwise incomplete rather than closed operating-point packets. The practical reading is therefore narrower but cleaner: LBM remains in a compact single-image interactive regime at 114\,ms/image while keeping a 3.91M-parameter footprint, and we prefer that bounded statement to a broader cross-method timing slogan built on weaker evidence.
 
-\begin{figure*}[t]
-\centering
-\includegraphics[width=0.98\textwidth]{figures/fig_qual_grid_ours_vs_samst.png}
-\caption{Matched historical 256-resolution qualitative grids for LBM and SaMST. Each row fixes one reviewed source image and sweeps the same five target domains for both methods. SaMST often pushes stronger raw texture but also introduces muddy grain, broken local edges, and unstable color contamination, whereas LBM keeps cleaner local structure while still moving toward the requested target domain.}
-\label{fig:qual_grid}
-\end{figure*}
-
 \subsection{Artifact-sensitive diagnosis}
-The artifact claim is clearest on the historical 256-resolution packet, where SaMST is the closest efficient baseline to LBM on the core metrics and also the closest recovered baseline with locally readable outputs for crop-based diagnosis. Figure~\ref{fig:qual_grid} shows the same five reviewed source images for both methods at whole-image scale, making the contrast visible before any crop magnification: SaMST often preserves coarse composition but pays for its stronger raw texture with muddy grain, unstable color spill, and broken local edges. We then pair that whole-image view with centered matched texture crops from the same reviewed packet and with artifact-sensitive metrics. On these matched crops, SaMST often preserves coarse layout but fills high-frequency regions with muddy grain, line-boundary contamination, and broken local brush continuity; LBM is less aggressive in raw style, but cleaner on the same spatial evidence.
+The artifact claim is clearest on the historical 256-resolution packet, where SaMST is the closest efficient baseline to LBM on the core metrics and also the closest recovered baseline with locally readable outputs for crop-based diagnosis. Table~\ref{tab:artifact} combines whole-image rows with centered matched texture crops from the same reviewed packet, so the contrast is visible before and after magnification: SaMST often preserves coarse composition but pays for its stronger raw texture with muddy grain, unstable color spill, and broken local edges. LBM is less aggressive in raw style, but cleaner on the same spatial evidence.
 
 \begin{table}[t]
 \centering
-\caption{Artifact-sensitive diagnosis on the historical standard benchmark packet. Top: artifact-sensitive metrics among the strongest recovered methods. Bottom: centered matched texture crops from the reviewed LBM epoch-7 packet and SaMST, isolating the local surface-texture failure mode under the same source-target rows shown in Figure~\ref{fig:qual_grid}.}
+\caption{Artifact-sensitive diagnosis on the historical standard benchmark packet. Top: artifact-sensitive metrics among the strongest recovered methods. Bottom: a whole-image/crop composite from the reviewed LBM packet and SaMST, showing that SaMST's stronger raw texture is accompanied by muddy grain, color spill, and broken local edges, whereas LBM remains cleaner on the same source-target rows.}
 \label{tab:artifact}
 \small
 \begin{tabular}{lrrr}
 \toprule
-Metric & Ours e7 & SaMST & S2WAT \\
+Metric & LBM & SaMST & S2WAT \\
 \midrule
 MUSIQ $\uparrow$ & 49.2059 & 36.0950 & 36.5256 \\
 MANIQA $\uparrow$ & 0.4057 & 0.3139 & 0.1754 \\
@@ -360,7 +353,7 @@ FFT slope error $\downarrow$ & 0.5473 & 1.0536 & 0.7017 \\
 Gram micro $\downarrow$ & 0.0798 & 0.0947 & 0.1085 \\
 \bottomrule
 \end{tabular}
-\includegraphics[width=0.94\linewidth]{figures/fig_zoom_ours_vs_samst.png}
+\includegraphics[width=0.98\linewidth]{figures/fig_artifact_panel_ours_vs_samst.png}
 \end{table}
 
 Table~\ref{tab:artifact} shows that LBM is not merely winning by leaving the image unchanged. Relative to SaMST, it improves MUSIQ from 36.10 to 49.21, MANIQA from 0.314 to 0.406, DISTS-content from 0.294 to 0.248, HF-Patch-KID from 6.76 to 4.17, and FFT slope error from 1.054 to 0.547. A paired bootstrap over the 750 per-image scores for Ours gives 95\% intervals of $[0.4467,0.4563]$ for LPIPS and $[0.7091,0.7234]$ for CLIP-S. The photo-to-art subset ($n=120$) yields CLIP-S 0.6716 and LPIPS 0.4882; the non-identity subset ($n=600$) yields CLIP-S 0.6911 and LPIPS 0.4609.

@@ -102,6 +102,28 @@
 
 这 4 个目录树删除前递归文件数都是 0，git 跟踪文件数都是 0，因此删除只减少空壳目录，不释放有效字节，也不影响实验证据。记录见 `cleanup/manual_empty_directory_cleanup_20260605.csv`。
 
+### 本轮补充：Related_Works 逐目录结论
+
+本轮继续打开并登记了本地 `Related_Works`：
+
+- 顶层 `baseline_pipeline / docs / final_works / repos / results / run_511 / runs / scripts / summary`；
+- `baseline_pipeline/results` 下每个一级结果目录；
+- `runs` 下每个一级 baseline run；
+- `run_511` 下每个一级目录；
+- `repos` 下每个外部 baseline repo；
+- `final_works` 下每个结果目录。
+
+结论：
+
+- `baseline_pipeline` 当前递归 72747 个文件，但 weight-like 文件为 0；这是结果/图像/日志/脚本证据面，不是 checkpoint 垃圾。
+- `baseline_pipeline/results` 里 SaMAM/SaMST/Seedream/SDTurbo/timing 等目录均无本地权重；其中 `samam_256_curve` 是 checkpoint 删除后留下的空目录树，本轮已删除。
+- `runs` 当前递归 80396 个文件，weight-like 文件 9 个、约 0.013 MB，均为 tiny `fake_eval_checkpoint.pt` placeholders，不释放有效空间。
+- `repos` 当前递归 35200 个文件，weight-like 文件 13 个、396.775 MB，主要是 VGG/Inception/LPIPS 预训练依赖，不是训练 ckpt。
+- `run_511` 当前递归 27969 个文件，weight-like 文件 5 个、418.12 MB，属于 run511 baseline 的预训练依赖。
+- `final_works` 只剩 4 个 tiny placeholder；`trial_0016/0019/0044` post-delete clean。
+
+本轮 Related_Works 只删除了 `Related_Works/baseline_pipeline/results/samam_256_curve` 这个递归文件数为 0、git tracked 为 0 的空目录树。记录见 `manual_related_works_directory_ledger_20260605.csv` 和 `cleanup/manual_empty_directory_cleanup_20260605.csv`。
+
 ## 当前远程 `I:\Github\Latent_Style` 状态
 
 ### 远程根目录结论
