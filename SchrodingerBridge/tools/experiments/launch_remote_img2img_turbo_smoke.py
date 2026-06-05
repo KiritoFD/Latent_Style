@@ -42,6 +42,7 @@ def main() -> int:
     parser.add_argument("--target", default="Early_Renaissance")
     parser.add_argument("--remote-workspace-root", default="/mnt/i/Github/Latent_Style")
     parser.add_argument("--python-bin", default="/home/xy/venvs/samam312/bin/python")
+    parser.add_argument("--pretrained-model-name-or-path", default="stabilityai/sd-turbo")
     parser.add_argument("--host", default="100.115.18.62")
     parser.add_argument("--port", type=int, default=2222)
     parser.add_argument("--user", default="administrator")
@@ -88,6 +89,7 @@ def main() -> int:
         f"--python {args.python_bin} "
         f"--main-process-port 29531 "
         "--mixed-precision no "
+        f"--pretrained-model-name-or-path {args.pretrained_model_name_or_path} "
         "--train-img-prep resize_512 "
         "--val-img-prep resize_512 "
         f"--train-batch-size {int(args.train_batch_size)} "
