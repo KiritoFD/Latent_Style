@@ -67,6 +67,8 @@ def main() -> int:
     parser.add_argument("--wsl-distro", default="Ubuntu-26.04")
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--checkpoint-interval", type=int, default=50)
+    parser.add_argument("--precision", default="16-mixed", help="SaMAM only. Use a lower-precision train path to stay under the 3060 VRAM cap.")
+    parser.add_argument("--accumulate-grad-batches", type=int, default=1, help="SaMAM only.")
     parser.add_argument("--iterations", type=int, default=0, help="SaMAM only. 0 uses the lane default.")
     parser.add_argument("--max-steps", type=int, default=0, help="SaMST only. 0 uses the lane default.")
     parser.add_argument("--max-prelaunch-memory-mib", type=int, default=1500)
@@ -99,6 +101,8 @@ def main() -> int:
                 str(iterations),
                 "--batch-size",
                 str(int(args.batch_size)),
+                "--precision",
+                str(args.precision),
                 "--checkpoint-every-n-steps",
                 str(int(args.checkpoint_interval)),
                 "--gradient-checkpointing",
@@ -107,6 +111,8 @@ def main() -> int:
                 "0",
                 "--num-sanity-val-steps",
                 "0",
+                "--accumulate-grad-batches",
+                str(int(args.accumulate_grad_batches)),
                 "--val-interval",
                 "1000",
             ]
