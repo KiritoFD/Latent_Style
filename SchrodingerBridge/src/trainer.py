@@ -166,6 +166,12 @@ class SBTrainer:
         self.use_tqdm = bool(train_cfg.get("use_tqdm", True))
         self.num_epochs = int(train_cfg.get("num_epochs", 60))
         self.save_interval = max(1, int(train_cfg.get("save_interval", 10)))
+        self.stop_after_global_steps = max(0, int(train_cfg.get("stop_after_global_steps", 0)))
+        raw_step_milestones = train_cfg.get("save_step_milestones", [])
+        if isinstance(raw_step_milestones, str):
+            raw_step_milestones = [part.strip() for part in raw_step_milestones.split(",") if part.strip()]
+        self.save_step_milestones = sorted({int(v) for v in raw_step_milestones if int(v) > 0})
+        self._saved_step_milestones: set[int] = set()
         self.async_checkpoint_save = bool(train_cfg.get("async_checkpoint_save", False))
         self._checkpoint_threads: list[threading.Thread] = []
         self.numeric_debug = bool(train_cfg.get("numeric_debug", False))
@@ -190,6 +196,7 @@ class SBTrainer:
         initialize_training_log(self.log_file)
 
         self.global_step = 0
+        self.requested_stop = False
         self.start_epoch = 1
         self._maybe_resume(str(train_cfg.get("resume_checkpoint", "")))
         self._configure_freeze_mode()
@@ -832,6 +839,13 @@ class SBTrainer:
                 self.optimizer.zero_grad(set_to_none=True)
                 optimizer_time_total += max(0.0, time.perf_counter() - t0)
                 self.global_step += 1
+                milestone_metrics = {
+                    key: float((value / max(num_batches + 1, 1)).item())
+                    for key, value in metric_accum.items()
+                }
+                milestone_metrics["loss"] = float(loss.detach().item())
+                milestone_metrics["lr"] = float(self.optimizer.param_groups[0]["lr"])
+                self.maybe_save_step_checkpoint(epoch, step_idx, milestone_metrics)
                 if self.numeric_debug and (step_idx == 1 or step_idx % self.numeric_debug_interval == 0):
                     extra = {"clipped_grad_norm": float(total_grad_norm.item()) if total_grad_norm is not None else 0.0}
                     self._write_numeric_debug(
@@ -870,6 +884,16 @@ class SBTrainer:
             del loss
             del loss_dict
             del batch
+
+            if self.stop_after_global_steps > 0 and self.global_step >= self.stop_after_global_steps:
+                self.requested_stop = True
+                logger.info(
+                    "Reached stop_after_global_steps=%d at epoch=%d batch=%d.",
+                    self.stop_after_global_steps,
+                    epoch,
+                    step_idx,
+                )
+                break
 
         progress.close()
 
@@ -927,9 +951,9 @@ class SBTrainer:
     def log_epoch(self, epoch: int, metrics: Dict[str, float]) -> None:
         append_training_log(self.log_file, metrics, epoch)
 
-    def save_checkpoint(self, epoch: int, metrics: Dict[str, float]) -> Path:
+    def save_checkpoint(self, epoch: int, metrics: Dict[str, float], *, tag: str | None = None) -> Path:
         self._prune_checkpoint_threads()
-        path = self.checkpoint_dir / f"epoch_{epoch:04d}.pt"
+        path = self.checkpoint_dir / ((tag or f"epoch_{epoch:04d}") + ".pt")
         model_for_state = unwrap_compiled_model(self.model)
         payload = {
             "epoch": int(epoch),
@@ -949,4 +973,19 @@ class SBTrainer:
         else:
             torch.save(payload, path)
             logger.info("Saved checkpoint: %s", path)
+        return path
+
+    def maybe_save_step_checkpoint(self, epoch: int, step_idx: int, metrics: Dict[str, float]) -> Optional[Path]:
+        if not self.save_step_milestones:
+            return None
+        if self.global_step not in self.save_step_milestones:
+            return None
+        if self.global_step in self._saved_step_milestones:
+            return None
+        payload = dict(metrics)
+        payload["checkpoint_epoch"] = float(epoch)
+        payload["checkpoint_step_in_epoch"] = float(step_idx)
+        path = self.save_checkpoint(epoch, payload, tag=f"step_{self.global_step:06d}")
+        self._saved_step_milestones.add(self.global_step)
+        logger.info("Saved milestone checkpoint at global_step=%d -> %s", self.global_step, path)
         return path
