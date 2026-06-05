@@ -13,10 +13,13 @@ PIPELINE_ROOT = SCRIPT_DIR.parent
 WORKSPACE_ROOT = PIPELINE_ROOT.parent.parent
 
 DEFAULT_FILES = [
+    Path("Related_Works/baseline_pipeline/scripts/backfill_targetwise_artfid_summary.py"),
     Path("Related_Works/baseline_pipeline/scripts/run_samst_distinct5_local.py"),
     Path("Related_Works/baseline_pipeline/scripts/generate_samst_distinct5_eval.py"),
     Path("Related_Works/baseline_pipeline/scripts/run_samst_distinct5_eval_bundle.py"),
     Path("Related_Works/repos/SaMST-main/train_model/train2/train.py"),
+    Path("SchrodingerBridge/src/utils/run_evaluation.py"),
+    Path("SchrodingerBridge/src/utils/targetwise_artfid_summary.py"),
 ]
 
 
