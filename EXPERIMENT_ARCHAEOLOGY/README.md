@@ -222,6 +222,8 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `manual_local_cut_raw_timing_required_fields_20260605.csv`: CUT timing rows with the required timing columns (`method`, `dataset_or_setting`, `resolution`, train/infer time, `params_m`, `source_path`, `note`); missing inference time is blank.
 - `manual_remote_schrodingerbridge_exp_topdir_inventory_20260605.csv`: remote `I:\Github\Latent_Style\SchrodingerBridge\exp` top-level inventory with file/log/summary/weight counts and sample evidence paths.
 - `MANUAL_REMOTE_SCHRODINGERBRIDGE_EXP_20260605.md`: manual remote `SchrodingerBridge/exp` walkthrough with opened README/config/log/summary evidence, timing examples, weight retention, and cleanup boundary.
+- `MANUAL_REMOTE_MAIN_SURFACE_RECHECK_20260605.md`: fixed-path live recheck for remote main `I:\Github\Latent_Style`, covering `SchrodingerBridge`, `Related_Works`, `Cycle-NCE`, review RAR, CUT media, and SaMAM baseline results; no deletion whitelisted.
+- `manual_remote_main_surface_recheck_20260605.csv`: row-level remote main recheck table with decision, no-delete boundary, and next proof required per path.
 - `manual_remote_samam_checkpoint_thinning_policy_20260605.csv`: remote SaMAM central `step_checkpoints` keep/delete policy for 19 checkpoint files.
 - `manual_remote_samam_hash_pairs_20260605.csv`: SHA256 comparison of `last*.ckpt` aliases against corresponding `step-step=*.ckpt` files; all differed, so aliases were not deleted as duplicates.
 - `manual_remote_samam_checkpoint_metadata_20260605.csv`: PyTorch metadata readout for the 19 remote SaMAM checkpoints.
