@@ -165,7 +165,7 @@ def _make_remote_windows_launcher(
             "$taskArgString = ($taskArgs | ForEach-Object { if ($_ -match '\\s') { '\"' + $_ + '\"' } else { $_ } }) -join ' '",
             "Add-Content -LiteralPath $WrapperLog -Value (\"ARGS=\" + $taskArgString)",
             "try { Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue | Out-Null } catch {}",
-            "$trigger = New-ScheduledTaskTrigger -Once -At ((Get-Date).AddMinutes(1))",
+            "$trigger = New-ScheduledTaskTrigger -Once -At ((Get-Date).AddDays(1))",
             "$action = New-ScheduledTaskAction -Execute 'wsl.exe' -Argument $taskArgString",
             "Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Force | Out-Null",
             "Start-ScheduledTask -TaskName $TaskName",
