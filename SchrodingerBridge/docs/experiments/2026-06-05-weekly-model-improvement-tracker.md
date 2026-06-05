@@ -144,9 +144,13 @@ Remote latent side quest currently occupying the only allowed GPU lane:
 - active run:
   - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4`
 - current GPU usage snapshot:
-  - `7460 MiB / 12288 MiB`
+  - `7458 MiB / 12288 MiB`
+  - safely below the hard stop:
+    - `< 11.0 GiB`
 - latest observed training progress:
-  - around `Epoch 0 step 863`
+  - around `Epoch 0 step 1594`
+  - observed train rate:
+    - about `0.74 step/s`
 - retained checkpoint status:
   - none yet
   - first save still waits for `step 5000`
@@ -154,12 +158,16 @@ Remote latent side quest currently occupying the only allowed GPU lane:
   - `step_checkpoints/last.ckpt` now exists
   - retained numbered checkpoints still have not reached the first `5000-step`
     boundary
+- concurrency enforcement:
+  - keep this as the only GPU training lane
+  - do not launch `A1`, `A2`, or `C1` until this lane is paused or closed
+  - do not accept any launch plan whose measured peak could reach `11.0 GiB`
 
 Interpretation:
 
 - `latent SaMam` is healthy enough to keep running as a bounded side quest
 - but it is currently blocking the main `A1/A2` queue because the remote `3060`
-  must stay below the hard single-run budget
+  must stay below the hard `< 11.0 GiB` single-run budget
 
 Ops progress landed during this update:
 
