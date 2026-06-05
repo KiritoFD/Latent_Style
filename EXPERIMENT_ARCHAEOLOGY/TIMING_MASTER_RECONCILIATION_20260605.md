@@ -13,6 +13,8 @@ This pass is read-only against `SchrodingerBridge\docs\timing\training_inference
 - `timing_reconciliation_summary_20260605.csv`
 - `timing_candidate_claim_reconciliation_20260605.csv`
 - `timing_docs_master_overlay_reconciliation_20260605.csv`
+- `timing_candidate_missing_docs_source_open_20260605.csv`
+- `TIMING_CANDIDATE_MISSING_DOCS_SOURCE_OPEN_20260605.md`
 
 ## Main Counts
 
@@ -30,7 +32,9 @@ This pass is read-only against `SchrodingerBridge\docs\timing\training_inference
 
 The docs timing master and the archaeology quality overlay are not equivalent. The overlay is broader and quality-classified, while the docs table has many paper-facing or historical rows not represented by the overlay. Do not treat either file alone as final.
 
-The immediate paper/claim-facing gap is the 26 overlay candidate rows not represented in the docs timing master. They include Distinct5 LANCET/LBM short runs, SaMST e5, WikiArt512 epoch8 generation/eval rows, TokenizerClean audit rows, and remote phase-space ablations. These should only be promoted after source-open verification and owner approval.
+The immediate paper/claim-facing gap was the 26 overlay candidate rows not represented in the docs timing master. They include Distinct5 LANCET/LBM short runs, SaMST e5, WikiArt512 epoch8 generation/eval rows, TokenizerClean audit rows, and remote phase-space ablations.
+
+The follow-up source-open pass is now recorded in `TIMING_CANDIDATE_MISSING_DOCS_SOURCE_OPEN_20260605.md` and `timing_candidate_missing_docs_source_open_20260605.csv`. All 26 rows were opened, but the docs timing master was not edited in this pass. Promotion still requires owner approval and a separate docs-table update.
 
 The 370 docs rows not covered by the overlay should remain in docs, but any row used in prose should be source-opened because it has no archaeology quality label in this overlay.
 
@@ -40,4 +44,4 @@ Original units are preserved. Training time was not converted to seconds. Blank 
 
 ## Next Manual Step
 
-Source-open the 26 missing candidate rows one by one, then decide whether to add them to a future paper-facing timing table. This pass intentionally does not edit `SchrodingerBridge\docs\timing\training_inference_timing_master.csv`.
+Decide which source-opened rows should be promoted into a future paper-facing timing table. This pass intentionally does not edit `SchrodingerBridge\docs\timing\training_inference_timing_master.csv`.

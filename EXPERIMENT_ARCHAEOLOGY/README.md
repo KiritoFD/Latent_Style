@@ -9,6 +9,8 @@ This directory contains the curated local G and remote I experiment archaeology 
 - `CROSS_CACHE_DEDUP_AUDIT_20260605.md`: local/remote cache duplicate hash audit; no deletion performed, exact duplicates retained pending loader/path-reference audit.
 - `CROSS_CACHE_LOADER_PATH_REFERENCE_AUDIT_20260605.md`: manual loader/path-reference audit for local and remote duplicate cache roots; no deletion whitelisted because multiple consumers still encode root, SchrodingerBridge, and Cycle-NCE cache paths.
 - `cross_cache_loader_path_reference_audit_20260605.csv`: row-level source-open evidence for the cache path audit.
+- `TIMING_CANDIDATE_MISSING_DOCS_SOURCE_OPEN_20260605.md`: manual source-open pass for the 26 claim-candidate timing rows missing from the docs timing master.
+- `timing_candidate_missing_docs_source_open_20260605.csv`: row-level source-open table for those 26 timing candidates, including train/infer units, exact sources, verification notes, and promotion decisions.
 - `AUTHORITATIVE_ARCHAEOLOGY_REPORT_ZH_20260605.md`: current readable Chinese authority report for local state, remote state, TokenizerClean, lineage, timing, cleanup totals, gaps, and the 8-hour continuation plan.
 - `authoritative_report_evidence_map_20260605.csv`: conclusion-to-evidence map for the authority report.
 - `MANUAL_REMOTE_TOKENIZERCLEAN_RETAINED_NO_SUMMARY_OWNER_REVIEW_20260605.md`: second-pass owner review for the 10 retained TokenizerClean no-summary directories.
@@ -35,6 +37,7 @@ This directory contains the curated local G and remote I experiment archaeology 
 - `cleanup/local_deleted_checkpoints.csv`: local per-file deletion audit.
 - `remote_i_curated/remote_i_deleted_checkpoints.csv`: remote per-file deletion audit.
 - `SchrodingerBridge/docs/timing/training_inference_timing_master.csv`: timing-focused subset.
+- `timing_candidate_missing_docs_source_open_20260605.csv`: 26/26 source-opened candidates that were missing from the docs timing master; docs master itself was not edited in this pass.
 
 `final_by_dataset/` is the authoritative per-dataset/per-setting split after merging and reclassifying both G: and I: evidence. `remote_i_curated/` is kept as the remote-side audit bundle generated on I: before final local reclassification.
 
