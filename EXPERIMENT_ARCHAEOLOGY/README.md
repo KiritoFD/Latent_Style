@@ -191,6 +191,9 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `MANUAL_EXPERIMENT_AUDIT_20260605.md`: current hand-checked audit narrative and gap list.
 - `manual_directory_audit_20260605.csv`: checked directory-level evidence rows.
 - `manual_timing_evidence_20260605.csv`: checked training/inference timing rows with source paths.
+- `TIMING_EVIDENCE_QUALITY_PASS_20260605.md`: timing quality pass separating claim-candidate full-eval/train+eval rows from quick-eval, smoke, invalidated, anomalous, historical, and audit-only timing rows.
+- `timing_quality_master_20260605.csv`: 1093-row timing quality overlay built from manual timing evidence and TokenizerClean summary timing; keeps original units and missing values.
+- `timing_quality_summary_20260605.csv`: row counts by timing quality class and claim-use status.
 - `manual_remote_phase_space_sweep_20260605.csv`: per-run remote phase-space sweep audit.
 - `manual_remaining_weight_classes_20260605.csv`: post-cleanup remaining weight classes and keep reasons.
 - `MANUAL_REMOTE_PHASE_SPACE_SWEEP_20260605.md`: detailed notes for the remote phase-space sweep cleanup.

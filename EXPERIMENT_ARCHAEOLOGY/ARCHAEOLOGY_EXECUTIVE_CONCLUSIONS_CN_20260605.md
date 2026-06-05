@@ -139,10 +139,25 @@
 - `lambda_grid` / `step_count_sweep` 的 `0.000/0.001s` 属 dry-run，不可作为训练/推理速度。
 - SA-SWD random arm runtime-anomalous，只能作为 quality-only 或异常记录。
 
-缺口：
+本轮追加的 timing quality overlay：
 
-- timing master 还需要把 TokenizerClean 1024 行合并后加 `full_eval/smoke/dry_run/anomalous` 质量标签。
-- 训练时间字段缺失处必须继续留空，不补猜。
+- `timing_quality_master_20260605.csv`: 1093 行，合并 69 行人工 timing 和 1024 行 TokenizerClean summary timing。
+- `timing_quality_summary_20260605.csv`: quality class 汇总。
+- `TIMING_EVIDENCE_QUALITY_PASS_20260605.md`: 解释哪些 rows 可作为 claim candidate，哪些只能 archive/audit。
+
+质量分层结论：
+
+- `candidate_claim_support_with_caveat`: 53 行，其中 51 行 full-eval wall-time，2 行 train+eval wall-time。
+- `audit_full_eval_wall_time_only`: 978 行，主要是 TokenizerClean full_eval/quick_eval summary wall time，不能当训练成本。
+- `historical_context`: 28 行。
+- `audit_only`: 24 行。
+- `exclude_formal_claim`: 7 行。
+- `quality_only_or_anomaly`: 1 行。
+
+剩余缺口：
+
+- 还没有把 quality overlay 回写到 `SchrodingerBridge/docs/timing/training_inference_timing_master.csv`。
+- claim-facing prose 使用前仍需逐条 source-open，训练时间字段缺失处继续留空，不补猜。
 
 ## 清理原则
 
@@ -164,7 +179,7 @@
 当前 `manual_8h_execution_plan_20260605.csv` 中 0-4 已完成或一轮完成，5-8 仍待做：
 
 1. Local remaining data/cache/dependency surfaces: 复核本地剩余 data/cache/dependency 和 placeholder policy。
-2. Timing master quality pass: 合并 TokenizerClean timing，并标注 full_eval/smoke/dry-run/anomalous。
+2. Timing master quality pass: 已完成 archaeology overlay；后续只剩 docs timing master 回写与 claim-facing source-open。
 3. Experiment lineage and dataset split finalization: 修正 dataset split、timeline、README counts 与 master report 一致性。
 4. Completion audit and commit: 每个 block 做 CSV import、`git diff --check`、只 stage `EXPERIMENT_ARCHAEOLOGY`。
 
@@ -173,5 +188,5 @@
 - 10 个 TokenizerClean no-summary 权重目录需要 owner review 或补 summary。
 - cited/current TokenizerClean media 需要 archive/migration policy。
 - Cycle-NCE/root archives、`experiments.rar`、cross-cache dedup 需要 provenance/hash audit。
-- timing master 需要质量分层。
+- docs timing master 仍需与 `timing_quality_master_20260605.csv` 对齐。
 - 本地和远程 legacy generated media 的 nested owner-level review 仍未全覆盖。
