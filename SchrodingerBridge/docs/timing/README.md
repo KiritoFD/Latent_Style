@@ -1,10 +1,10 @@
 # Training And Inference Timing
 
-This timing subset is regenerated from the final curated master table.
+This timing subset is curated for paper-facing cost evidence and refreshed after method/path normalization fixes.
 
-- Timing rows: 416
-- Source roots: {'G:/GitHub/Latent_Style': 293, 'I:\\': 123}
+- Timing rows: 415
+- Source roots: {'G:/GitHub/Latent_Style': 292, 'I:\\': 123}
 
 Training units are preserved from the source where possible. Values such as `1.2m`, `5.8h`, or `training-free` are not silently converted to seconds.
 
-Known gaps: rows without timing remain in `EXPERIMENT_ARCHAEOLOGY_MASTER.csv`; remote-only artifacts not summarized by `summary.json` or logs are not expanded into metric rows.
+Known gaps: rows without timing remain outside this timing subset; remote-only artifacts not copied back into the repository are still excluded.
