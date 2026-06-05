@@ -187,6 +187,10 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `manual_remote_main_data_cache_archive_delete_candidates_20260605.csv`: exact whitelist of 11 remote residue/empty-temp deletion targets.
 - `cleanup/manual_remote_main_data_cache_archive_residue_cleanup_20260605.csv`: deletion ledger for the 11 remote main data/cache/archive residue targets, totaling `381.807 MB`.
 - `manual_remote_main_data_cache_archive_post_delete_verify_20260605.csv`: post-delete verification for the same 11 targets; all `post_exists=False`.
+- `MANUAL_REMOTE_ARCHIVE_PROVENANCE_20260605.md`: remote archive provenance audit for `eval_cache.zip`, `experiments.rar`, and `Cycle-NCE` archives; records duplicate/stale archive cleanup and retained RAR gaps.
+- `manual_remote_archive_provenance_policy_20260605.csv`: per-archive keep/delete/provenance policy after hash and zip-entry checks.
+- `cleanup/manual_remote_duplicate_archive_cleanup_20260605.csv`: deletion ledger for 3 duplicate/stale remote archives, totaling `3290.714 MB`.
+- `manual_remote_archive_post_delete_verify_20260605.csv`: post-delete verification for deleted archives and retained evidence roots.
 - `manual_cleanup_retention_and_next_candidates_20260605.csv`: remaining weight/cache classes, keep reasons, and next deletion candidates.
 - `MANUAL_EXPERIMENT_AUDIT_20260605.md`: current hand-checked audit narrative and gap list.
 - `manual_directory_audit_20260605.csv`: checked directory-level evidence rows.

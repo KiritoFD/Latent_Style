@@ -75,3 +75,15 @@ Additional remote cleanup after manual path-by-path inspection of `I:\Github\Lat
 | remote_I_main | deleted | recursively_empty_temp_dirs | 2 | 0 | `manual_remote_main_data_cache_archive_residue_cleanup_20260605.csv` |
 
 All 11 whitelist targets were post-delete verified with `post_exists=False`. Valid data roots, latent roots, complete eval caches, SchrodingerBridge historical gate outputs, baseline repos, and large archives without proven duplicate/provenance status were retained.
+
+## 2026-06-05 remote duplicate/stale archive cleanup
+
+Additional remote cleanup after archive provenance checks of `I:\Github\Latent_Style`:
+
+| scope | action | cleanup_class | files | size_mb | ledger |
+| --- | --- | --- | ---: | ---: | --- |
+| remote_I_main | deleted | stale_eval_cache_zip | 1 | 704.467 | `manual_remote_duplicate_archive_cleanup_20260605.csv` |
+| remote_I_main | deleted | legacy_checkpoint_archive_zip | 1 | 2078.795 | `manual_remote_duplicate_archive_cleanup_20260605.csv` |
+| remote_I_main | deleted | exact_duplicate_archive | 1 | 507.452 | `manual_remote_duplicate_archive_cleanup_20260605.csv` |
+
+Post-delete verification confirms the three deleted archives are absent and the retained evidence roots still exist: `eval_cache`, `experiments\1-decoder-patch5-15`, root `Cycle-NCE\45.rar`, and `Cycle-NCE\src`.
