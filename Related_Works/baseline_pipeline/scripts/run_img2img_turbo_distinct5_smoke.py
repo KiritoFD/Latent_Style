@@ -51,9 +51,10 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def resolve_accelerate(python_path: Path, accelerate_path: Path | None) -> Path:
+def resolve_accelerate(python_path: Path, accelerate_path: Path | None) -> tuple[list[str], bool]:
     if accelerate_path is not None:
-        return accelerate_path.resolve()
+        resolved = accelerate_path.resolve()
+        return [str(resolved)], True
     bin_dir = python_path.resolve().parent
     candidates = [
         bin_dir / "accelerate",
@@ -62,16 +63,19 @@ def resolve_accelerate(python_path: Path, accelerate_path: Path | None) -> Path:
     ]
     for candidate in candidates:
         if candidate.exists():
-            return candidate
-    return Path("accelerate")
+            resolved = candidate.resolve()
+            return [str(resolved)], True
+    python_resolved = str(python_path.resolve())
+    return [python_resolved, "-m", "accelerate.commands.launch"], False
 
 
 def build_command(args: argparse.Namespace, dataset_dir: Path, output_dir: Path) -> list[str]:
     tracker_project_name = args.tracker_project_name or f"distinct5_turbo_smoke_{args.target}"
-    accelerate_path = resolve_accelerate(args.python, args.accelerate)
-    cmd = [
-        str(accelerate_path),
-        "launch",
+    accelerate_prefix, needs_launch_subcommand = resolve_accelerate(args.python, args.accelerate)
+    cmd = [*accelerate_prefix]
+    if needs_launch_subcommand:
+        cmd.append("launch")
+    cmd.extend([
         "--mixed_precision",
         str(args.mixed_precision),
         "--main_process_port",
@@ -109,7 +113,7 @@ def build_command(args: argparse.Namespace, dataset_dir: Path, output_dir: Path)
         str(args.report_to),
         "--learning_rate",
         str(args.learning_rate),
-    ]
+    ])
     if args.allow_tf32:
         cmd.append("--allow_tf32")
     if args.gradient_checkpointing:
