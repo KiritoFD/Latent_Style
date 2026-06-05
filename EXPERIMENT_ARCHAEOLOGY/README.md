@@ -190,6 +190,10 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `manual_local_generated_media_owner_review_pass2_20260605.csv`: row-level evidence/decision table for local generated-media pass 2.
 - `MANUAL_LOCAL_GENERATED_MEDIA_OWNER_REVIEW_PASS3_20260605.md`: third local generated-media owner review covering no-op/IDT docs controls, timing benchmark outputs, Distinct5 compact anchors, and local ckptsync generation-only evidence.
 - `manual_local_generated_media_owner_review_pass3_20260605.csv`: row-level evidence/decision table for local generated-media pass 3; all rows are retained and no cleanup was performed in this pass.
+- `MANUAL_LOCAL_GENERATED_MEDIA_OWNER_REVIEW_PASS4_20260605.md`: fourth local generated-media owner review covering v350 full-eval, SaMST external-eval, highres paired/variant outputs, and Seedream diagnostic inputs.
+- `manual_local_generated_media_owner_review_pass4_20260605.csv`: row-level evidence/decision table for local generated-media pass 4.
+- `cleanup/manual_local_generated_media_pass4_cleanup_20260605.csv`: deletion ledger for two exact duplicate media targets, totaling `101.913 MB`.
+- `manual_local_generated_media_pass4_post_delete_verify_20260605.csv`: post-delete verification for pass4 duplicate media cleanup.
 - `manual_remote_schrodingerbridge_exp_topdir_inventory_20260605.csv`: remote `I:\Github\Latent_Style\SchrodingerBridge\exp` top-level inventory with file/log/summary/weight counts and sample evidence paths.
 - `MANUAL_REMOTE_SCHRODINGERBRIDGE_EXP_20260605.md`: manual remote `SchrodingerBridge/exp` walkthrough with opened README/config/log/summary evidence, timing examples, weight retention, and cleanup boundary.
 - `manual_remote_samam_checkpoint_thinning_policy_20260605.csv`: remote SaMAM central `step_checkpoints` keep/delete policy for 19 checkpoint files.

@@ -152,3 +152,24 @@ Manual owner-level review opened the largest local generated-media candidates. F
 | local_G | deleted | unreferenced intermediate video frames | 5 | 3068.463 | `manual_local_generated_media_intermediate_frame_cleanup_20260605.csv` |
 
 Post-delete verification passed all 5 checks in `manual_local_generated_media_intermediate_frame_post_delete_verify_20260605.csv`: the deleted `Related_Works\runs\cut_5x5\video\head_20260404_*` work-frame directories are absent.
+
+## 2026-06-05 local generated-media pass4 duplicate cleanup
+
+Fourth-pass local generated-media owner review reopened the next exact candidate
+cluster: Distinct5 v350 full-eval packet, SaMST WikiArt512 external-eval
+packets, highres local qualitative outputs, and Seedream diagnostic inputs.
+Formal metric/timing packets, qualitative paired evidence, non-identical
+variants, and diagnostic inputs were retained. Only two exact duplicate targets
+were deleted.
+
+| scope | action | cleanup_class | files_or_dirs | size_mb | ledger |
+| --- | --- | --- | ---: | ---: | --- |
+| local_G | deleted | duplicate image archive | 1 | 41.253 | `manual_local_generated_media_pass4_cleanup_20260605.csv` |
+| local_G | deleted | duplicate highres image directory | 1 dir / 750 files | 60.660 | `manual_local_generated_media_pass4_cleanup_20260605.csv` |
+
+Total released in this block: `101.913 MB`. Post-delete verification passed all
+11 checks in `manual_local_generated_media_pass4_post_delete_verify_20260605.csv`:
+the duplicate e15 zip and standalone highres `samst_same_test` directory are
+absent, while retained e15 summary/metrics/grid/images, paired highres
+SaMST/LBM images, non-identical highres v2, and Seedream diagnostic input dirs
+remain present.
