@@ -30,7 +30,7 @@ LBM & \textbf{5.2 min} & 85.4 s & 114 \\
 \centering
 \footnotesize
 \setlength{\tabcolsep}{4pt}
-\caption{Distinct5-512 matched same-cost records under the reviewed full $5\times5$ / 750-output protocol. Train time excludes evaluation; inference is pure 750-image generation wall time.}
+\caption{Distinct5-512 matched same-cost records on the reviewed full $5\times5$ / 750-output protocol. Train time excludes evaluation; inference is pure 750-image generation wall time.}
 \label{tab:cost_distinct5}
 \begin{tabular}{@{}lcccc@{}}
 \toprule
@@ -42,7 +42,7 @@ SaMST & 40-step/style & 2.0 min & 345.7 s & 461 \\
 \bottomrule
 \end{tabular}
 
-\vspace{2pt}
-\parbox{0.98\linewidth}{\raggedright\footnotesize\textit{Note.} All three methods were retrained to roughly the same two-minute budget before evaluation. This table reports the matched-budget row, not the strongest retained LBM frontier point. The stronger LBM frontier rows still appear earlier at about 1.2 minutes in the page-1 teaser. Peak local GPU memory is about 5.0\,GB for LBM, 6.1\,GB for SaMST, and 7.5\,GB for SaMAM.}
+\vspace{1pt}
+\parbox{0.98\linewidth}{\raggedright\footnotesize\textit{Note.} All three methods were retrained to roughly the same two-minute budget before evaluation. This is the matched-budget row, not the best retained LBM frontier point; the stronger LBM frontier still appears earlier near 1.2 minutes on page~1. Peak local GPU memory is about 5.0/6.1/7.5\,GB for LBM/SaMST/SaMAM.}
 \end{table}%
 }
