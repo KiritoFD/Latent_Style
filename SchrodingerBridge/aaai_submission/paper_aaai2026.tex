@@ -406,21 +406,24 @@ Non-training probes support the same diagnosis boundary. On the historical e8 ch
 \toprule
 Variant & CLIP-S & CLIP-C & LPIPS & EC \\
 \midrule
-D0 full & 0.7014 & 0.8022 & 0.4593 & 0.3791 \\
-D1 w/o SA-SWD & 0.6708 & 0.8989 & 0.3490 & 0.4368 \\
-D2 w/o kinetic & 0.7159 & 0.6624 & 0.6375 & 0.2596 \\
-D8 strong color loss & 0.6923 & 0.6629 & 0.5675 & 0.2994 \\
+Full LBM (D0) & 0.7014 & 0.8022 & 0.4593 & 0.3791 \\
+w/o SA-SWD (D1) & 0.6708 & 0.8989 & 0.3490 & 0.4368 \\
+w/o kinetic (D2) & 0.7159 & 0.6624 & 0.6375 & 0.2596 \\
+strong color loss (D8) & 0.6923 & 0.6629 & 0.5675 & 0.2994 \\
 \bottomrule
 \end{tabular}
 }
 \end{table}
 
-Removing terminal distribution matching gives excellent content preservation but weak style, showing that terminal distribution alignment is a primary style driver in the current mainline. Removing kinetic regularization preserves style but collapses content, confirming that path-energy regularization is essential. Strong color loss damages the trade-off, so naive color matching is not used in the mainline. Trajectory straightness analysis gives the same reading: the full model has PLR 0.98, while removing SA-SWD produces near-linear transport to its selected endpoint target (PLR 0.9995) and removing kinetic regularization reduces straightness to PLR 0.94 with content collapse. A landed same-family Distinct5 H packet reaches the corresponding bounded path-stability read under matched \texttt{epoch\_0001} checkpoints: weakening kinetic regularization increases endpoint/path/peak motion from 80.24 / 80.28 / 80.41 in \texttt{H\_base} to 111.71 / 111.72 / 111.83 in \texttt{H\_k025} and 122.42 / 122.40 / 122.51 in \texttt{H\_k000}, while CLIP-S / LPIPS shift from 0.6891 / 0.4272 to 0.6825 / 0.4600 and 0.6790 / 0.4862. We use this only as bounded same-family support that kinetic regularization acts as a practical path stabilizer in the current OMF / field regime, not as a broader theorem or cross-family generalization.
+Figure~\ref{fig:ablation} makes the two destructive failure modes visible before looking at the scalar trade-off. Removing terminal distribution matching yields pale near-identity outputs that preserve coarse structure but fail to commit to the requested target domain, so style strength drops even though CLIP-C and LPIPS improve. Removing kinetic regularization moves in the opposite direction: target-style texture becomes stronger, but geometry, color locality, and brush continuity break down quickly. Strong color loss also damages the frontier, so naive color alignment is not used in the full model. Trajectory straightness analysis gives the same reading: the full model has PLR 0.98, while removing SA-SWD produces near-linear transport to its selected endpoint target (PLR 0.9995) and removing kinetic regularization reduces straightness to PLR 0.94 with content collapse. A bounded same-family Distinct5 stability packet reaches the corresponding path-stability conclusion under matched \texttt{epoch\_0001} checkpoints: weakening kinetic regularization increases endpoint/path/peak motion from 80.24 / 80.28 / 80.41 in \texttt{H\_base} to 111.71 / 111.72 / 111.83 in \texttt{H\_k025} and 122.42 / 122.40 / 122.51 in \texttt{H\_k000}, while CLIP-S / LPIPS shift from 0.6891 / 0.4272 to 0.6825 / 0.4600 and 0.6790 / 0.4862. We use this only as bounded same-family support that kinetic regularization acts as a practical path stabilizer in the current OMF / field regime, not as a broader theorem or cross-family generalization.
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.82\linewidth]{fig_ablation_pareto.png}
-    \caption{Destructive ablations. Removing SA-SWD improves content but weakens style, while removing kinetic regularization increases style at the cost of severe content degradation.}
+    \includegraphics[width=\linewidth]{figures/fig_ablation_visual.png}
+    
+    \vspace{4pt}
+    \includegraphics[width=0.76\linewidth]{fig_ablation_pareto.png}
+    \caption{Mechanism ablations on the historical standard benchmark. Top: aligned photo-to-art directions for one shared source image and four target domains. The \emph{Full LBM} row uses the retained standard-benchmark model as a clean reference for that source image, while the lower two rows are the exact archived D1 and D2 destructive packets. Removing SA-SWD leaves pale near-identity outputs with weak target-style commitment, whereas removing kinetic regularization amplifies texture at the cost of broken geometry, color spill, and unstable local structure. Bottom: the corresponding CLIP-S / LPIPS frontier from the destructive-ablation packet.}
     \label{fig:ablation}
 \end{figure}
 
