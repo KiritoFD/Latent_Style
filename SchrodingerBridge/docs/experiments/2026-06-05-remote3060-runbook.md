@@ -280,6 +280,17 @@ Operational lesson:
 - prefer narrowing the local import site, resyncing, and retrying with the original env contract
 - for this family, `diffusers` and `transformers` must be treated as a coupled constraint because `mamba-ssm` also depends on that env
 
+Follow-up fix that actually moved the run forward:
+
+- restore `/home/xy/venvs/samam312` `transformers` to `4.41.2`
+- downgrade `diffusers` in that env to `0.29.2`
+- install `modelscope` so `download_vae_with_fallback()` can fetch `stabilityai/sd-vae-ft-ema` when `huggingface.co` is unreachable from WSL
+
+Observed network fact on this machine:
+
+- `huggingface.co` may be unreachable from remote WSL even when `pip` to the Tsinghua mirror works
+- if VAE cache is missing, `modelscope` fallback is the fastest repair path currently validated on this machine
+
 ## Remote launch pattern that proved structurally stable
 
 For tmux-backed WSL launches, this pattern was reliable:

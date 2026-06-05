@@ -291,7 +291,13 @@ class LGTInference:
 
 
 def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
-    from diffusers import AutoencoderKL
+    try:
+        # Prefer the legacy direct module path first. Some newer diffusers
+        # package-level imports eagerly import optional autoencoder families
+        # that require newer transformers than our remote training env uses.
+        from diffusers.models.autoencoder_kl import AutoencoderKL
+    except Exception:
+        from diffusers import AutoencoderKL
 
     force_dtype = torch.float16
     model_key = str(model_id).strip().lower()
