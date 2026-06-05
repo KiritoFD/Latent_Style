@@ -41,6 +41,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         self.residual_gain = float(cfg.residual_gain)
         self.lift_channels = int(cfg.lift_channels)
         self.body_channels = int(cfg.base_dim * 2)
+        tokenizer_num_atoms = max(2, int(getattr(cfg, "tokenizer_num_atoms", 32)))
         self.num_hires_blocks = max(0, int(cfg.num_hires_blocks))
         self.num_res_blocks = max(0, int(cfg.num_res_blocks))
         self.style_spatial_pre_gain_16 = float(cfg.style_spatial_pre_gain_16)
@@ -54,7 +55,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         self.upsample_blur_kernel = str(cfg.upsample_blur_kernel).lower()
         self.style_attn_num_tokens = max(1, int(cfg.style_attn_num_tokens))
         self.style_attn_num_heads = max(1, int(cfg.style_attn_num_heads))
-        self.num_atoms = max(2, int(cfg.tokenizer_num_atoms))
+        self.num_atoms = tokenizer_num_atoms
         self.tokenizer_content_adaptive = bool(cfg.tokenizer_content_adaptive)
         self.tokenizer_content_gain = float(cfg.tokenizer_content_gain)
         self.tokenizer_content_stopgrad = bool(cfg.tokenizer_content_stopgrad)
@@ -124,7 +125,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             init_std=float(cfg.tokenizer_init_std),
             projection_mode=str(cfg.tokenizer_projection_mode),
             residual_gain=float(cfg.tokenizer_residual_gain),
-            num_atoms=int(cfg.tokenizer_num_atoms),
+            num_atoms=tokenizer_num_atoms,
             num_prototypes=int(cfg.tokenizer_num_prototypes),
             atom_temperature=float(cfg.tokenizer_atom_temperature),
             field_dropout_p=float(cfg.tokenizer_field_dropout_p),
