@@ -41,11 +41,17 @@ Use:
 It pushes:
 
 - reviewed latent baseline scripts
-- the current local `SaMam` nested-repo code required by the latent path
+- only the reviewed `SaMam` files required by the latent path
 - the latent `SaMST` wrapper files
 - evaluator-side `run_evaluation.py` dependencies
 
 The sync source of truth is the local workspace, not the current remote git branch.
+
+Important boundary:
+
+- `Related_Works/repos/SaMam` is a nested git repo with unrelated local dirt
+- the packet is intentionally narrow so remote sync does not overwrite unrelated
+  nested-repo changes
 
 ## Fixed formal training budgets
 
