@@ -114,7 +114,7 @@
 | 远程位置 | count/size | 归类 | 当前决策 |
 |---|---:|---|---|
 | `SchrodingerBridge/exp` | 101 files / 5945.064 MB | current Distinct5/AAAI2027/SADD lineage weights | 保留，需 epoch thinning policy |
-| `Related_Works/.../SaMAM.../step_checkpoints` | 19 files / about 5242 MB | SaMAM Distinct5 中央曲线 baseline evidence | 保留，需 cited-step thinning policy |
+| `Related_Works/.../SaMAM.../step_checkpoints` | 19 files / about 5242 MB | SaMAM Distinct5 中央曲线 baseline evidence | 已做 cited-step/hash audit；暂不删 |
 | `eval_cache` | 29 files / 6077.946 MB | eval deps/cache | 保留，cache policy |
 | `latent-256-*` | 多个 root，各 1310-5195 MB | backend latent cache | 保留，数据/cache policy |
 | `SchrodingerBridge/scale/datasets` | 11349 files / 2859.902 MB | dataset tensors | 保留，数据 |
@@ -253,6 +253,20 @@
 - remote SaMAM 19 个 central checkpoints；
 - TokenizerClean `exp/`。
 
+远程 SaMAM 中央 checkpoint 本轮已经补做 thinning audit：
+
+- 打开 `step_checkpoints`、`eval_curve`、`convergence_recovered.md`、`segmented.log` 和 ArtFID reuse 目录。
+- 19 个 checkpoint 中 7 个 `last*.ckpt` 与自然对应的 `step-step=000250..001750.ckpt` 逐对算 SHA256，全部不同，不能当重复副本删除。
+- step 2000 是 recovered curve best style/best LPIPS；step 2250 是既有比较点；step 3000 有 current curve row、ArtFID reuse summary 和 `TRAIN_STEP_3000_WALL_SECONDS=3156.25` / `EVAL_STEP_3000_WALL_SECONDS=289.31`。
+- step 2500/2750 的 ArtFID reuse evidence 不完整，checkpoint 可能还要用于修复。
+- 因此本轮没有远程 SaMAM 删除；要释放这 5GB 级空间，必须先明确牺牲完整曲线 checkpoint 复跑能力。
+
+详见：
+
+- `manual_remote_samam_checkpoint_thinning_policy_20260605.csv`
+- `manual_remote_samam_hash_pairs_20260605.csv`
+- `MANUAL_REMOTE_SAMAM_CHECKPOINT_THINNING_20260605.md`
+
 ## 7. 8 小时级别执行计划
 
 如果继续推进完整清理，按这个顺序做：
@@ -264,7 +278,7 @@
 | 3 | 1.0h | 本地 `eval_cache` 逐目录判断：offline_pairing/hf/manual_clip/artfid/ref_feats | cache retention policy |
 | 4 | 1.0h | 本地 `SchrodingerBridge/scale` 和 `Dataset` 数据/cache policy | dataset/cache keep/delete table |
 | 5 | 1.0h | 远程 `SchrodingerBridge/exp` epoch thinning policy | family -> keep epochs -> delete candidates |
-| 6 | 1.0h | 远程 SaMAM 19 step checkpoints cited-step audit | SaMAM keep/delete candidate CSV |
+| 6 | 1.0h | 远程 SaMAM 19 step checkpoints cited-step/hash audit | 已完成：policy CSV + hash CSV + MD；无删除 |
 | 7 | 1.0h | TokenizerClean master-log citation graph | referenced path map |
 | 8 | 0.5h | 只执行已被 policy 证明安全的删除、校验、提交 | cleanup CSV + post-delete counts |
 

@@ -140,6 +140,9 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `MANUAL_LOCAL_DATASET_CACHE_POLICY_20260605.md`: narrative dataset/cache walkthrough; records tensor-shape checks and deletion of failed `wikiart_81k` HF cache residue.
 - `manual_remote_schrodingerbridge_exp_topdir_inventory_20260605.csv`: remote `I:\Github\Latent_Style\SchrodingerBridge\exp` top-level inventory with file/log/summary/weight counts and sample evidence paths.
 - `MANUAL_REMOTE_SCHRODINGERBRIDGE_EXP_20260605.md`: manual remote `SchrodingerBridge/exp` walkthrough with opened README/config/log/summary evidence, timing examples, weight retention, and cleanup boundary.
+- `manual_remote_samam_checkpoint_thinning_policy_20260605.csv`: remote SaMAM central `step_checkpoints` keep/delete policy for 19 checkpoint files.
+- `manual_remote_samam_hash_pairs_20260605.csv`: SHA256 comparison of `last*.ckpt` aliases against corresponding `step-step=*.ckpt` files; all differed, so aliases were not deleted as duplicates.
+- `MANUAL_REMOTE_SAMAM_CHECKPOINT_THINNING_20260605.md`: narrative remote SaMAM checkpoint thinning audit with opened `eval_curve`, `convergence_recovered.md`, ArtFID reuse, and timing evidence.
 - `manual_cleanup_retention_and_next_candidates_20260605.csv`: remaining weight/cache classes, keep reasons, and next deletion candidates.
 - `MANUAL_EXPERIMENT_AUDIT_20260605.md`: current hand-checked audit narrative and gap list.
 - `manual_directory_audit_20260605.csv`: checked directory-level evidence rows.
