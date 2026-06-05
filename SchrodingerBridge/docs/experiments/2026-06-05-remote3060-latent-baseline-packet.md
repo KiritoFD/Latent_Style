@@ -1,0 +1,153 @@
+# Remote 3060 WSL Latent Baseline Packet
+
+Date: 2026-06-05
+
+Scope:
+
+- formal remote latent baseline line for `SaMam` and `SaMST`
+- datasets:
+  - `legacy256_overfit50`
+  - `distinct5_512`
+- execution policy:
+  - no local GPU
+  - no broad hyperparameter sweep
+  - run each lane with one fixed convergence budget unless it fails structurally
+
+## Fixed dataset contracts
+
+`legacy256_overfit50`
+
+- latent root:
+  - `G:\GitHub\Latent_Style\latent-256`
+- eval root:
+  - `G:\GitHub\Latent_Style\style_data\overfit50`
+
+`distinct5_512`
+
+- remote latent train root:
+  - `/mnt/i/wikiart_distinct5_samam_512_latents_ema/train`
+- remote latent test root:
+  - `/mnt/i/wikiart_distinct5_samam_512_latents_ema/test`
+- remote eval root:
+  - `/mnt/i/wikiart_distinct5_samam_512_classview/test`
+  - or `/mnt/i/wikiart_distinct5_samam_512_classview_real/test` when the `_real` alias exists
+
+## Packet sync helper
+
+Use:
+
+- [push_remote_latent_baseline_packet.py](/G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/scripts/push_remote_latent_baseline_packet.py)
+
+It pushes:
+
+- reviewed latent baseline scripts
+- the current local `SaMam` nested-repo code required by the latent path
+- the latent `SaMST` wrapper files
+- evaluator-side `run_evaluation.py` dependencies
+
+The sync source of truth is the local workspace, not the current remote git branch.
+
+## Fixed formal training budgets
+
+These are the first non-sweep convergence budgets.
+
+`SaMam`
+
+- `legacy256_overfit50`
+  - `25000` steps
+- `distinct5_512`
+  - `20000` steps
+
+`SaMST`
+
+- `legacy256_overfit50`
+  - `25000` steps
+- `distinct5_512`
+  - `20000` steps
+
+These are intentionally fixed launch budgets for the first pass. If a lane fails, close it as a structural failure instead of drifting into tuning.
+
+## Remote launch commands
+
+Push packet:
+
+```bash
+cd /mnt/i/Github/Latent_Style
+python3 Related_Works/baseline_pipeline/scripts/push_remote_latent_baseline_packet.py
+```
+
+`SaMam` legacy256:
+
+```bash
+cd /mnt/i/Github/Latent_Style
+python3 Related_Works/baseline_pipeline/scripts/run_samam_latent_baseline.py \
+  --dataset legacy256_overfit50 \
+  --out-root /mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_remote \
+  --iterations 25000 \
+  --batch-size 2 \
+  --precision 16-mixed \
+  --checkpoint-every-n-steps 5000
+```
+
+`SaMST` legacy256:
+
+```bash
+cd /mnt/i/Github/Latent_Style
+python3 Related_Works/baseline_pipeline/scripts/run_samst_latent_baseline.py \
+  --dataset legacy256_overfit50 \
+  --out-root /mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samst_latent_legacy256_remote \
+  --epochs 200 \
+  --max-steps 25000 \
+  --batch-size 2
+```
+
+`SaMam` distinct5:
+
+```bash
+cd /mnt/i/Github/Latent_Style
+python3 Related_Works/baseline_pipeline/scripts/run_samam_latent_baseline.py \
+  --dataset distinct5_512 \
+  --out-root /mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_distinct5_remote \
+  --iterations 20000 \
+  --batch-size 1 \
+  --precision 16-mixed \
+  --checkpoint-every-n-steps 2500
+```
+
+`SaMST` distinct5:
+
+```bash
+cd /mnt/i/Github/Latent_Style
+python3 Related_Works/baseline_pipeline/scripts/run_samst_latent_baseline.py \
+  --dataset distinct5_512 \
+  --out-root /mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samst_latent_distinct5_remote \
+  --epochs 200 \
+  --max-steps 20000 \
+  --batch-size 1
+```
+
+## Formal eval closure
+
+After a retained checkpoint exists, close with:
+
+`SaMam`
+
+- [run_samam_latent_eval_bundle.py](/G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/scripts/run_samam_latent_eval_bundle.py)
+
+`SaMST`
+
+- [run_samst_latent_eval_bundle.py](/G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/scripts/run_samst_latent_eval_bundle.py)
+
+Required paper-safe artifacts:
+
+- `summary.json`
+- `metrics.csv`
+- `aggregate_targetwise_artfid.json`
+
+## Stop rule
+
+Stop the latent baseline expansion and return to `LBM A1/A2` when:
+
+1. both `distinct5_512` lanes are closed
+2. both methods fail structurally on `legacy256_overfit50`
+3. only one method is viable and has already produced the first full evaluator packet

@@ -286,13 +286,20 @@ class CA_layer(nn.Module):
 class style_representation(nn.Module):
     def __init__(self):
         super(style_representation, self).__init__()
-        params = torch.ones(32, requires_grad=True).cuda()
+        params = torch.ones(32, requires_grad=True)
         self.params = nn.Parameter(params)
 
 
     def forward(self):
 
-        z = torch.normal(mean=0., std=0.1, size=(32,),requires_grad=False).cuda() # todo:加噪修改
+        z = torch.normal(
+            mean=0.0,
+            std=0.1,
+            size=(32,),
+            requires_grad=False,
+            device=self.params.device,
+            dtype=self.params.dtype,
+        )
         y = self.params + z # todo:加噪修改
         return y
 
@@ -337,7 +344,6 @@ class Style_bank(nn.Module):
             print('add a style in bank, style id:',len(self.style_para_list))
             params_layer = style_representation()
             self.style_para_list.append(params_layer)
-
 
 
 
