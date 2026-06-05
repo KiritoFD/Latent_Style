@@ -45,12 +45,12 @@ This directory contains the curated local G and remote I experiment archaeology 
 
 `final_by_dataset/` is the authoritative per-dataset/per-setting split after merging and reclassifying both G: and I: evidence. `remote_i_curated/` is kept as the remote-side audit bundle generated on I: before final local reclassification.
 
-The latest direct status should be read from `ARCHAEOLOGY_DIRECT_CONCLUSIONS_ZH_20260605.md` first. Some older count lines below predate the later manual generated-media, RAR, TokenizerClean owner-review, and timing reconciliation passes; use the per-pass ledgers and `cleanup/CLEANUP_AUDIT_SUMMARY.md` for cleanup totals.
+The latest direct status should be read from `ARCHAEOLOGY_CURRENT_STATUS_AND_CONCLUSIONS_ZH_20260605.md` first. Some older count lines below predate the later manual generated-media, RAR, TokenizerClean owner-review, timing reconciliation, and source-open passes; use the per-pass ledgers and `cleanup/CLEANUP_AUDIT_SUMMARY.md` for cleanup totals.
 
 ## Counts
 
 - Final experiment rows: 22629
-- Timing rows: 416
+- Timing rows: mixed historical count; current timing counts are docs timing master `419`, archaeology timing overlay `1093`, and missing-docs source-opened candidates `26`.
 - Timeline events: 7829
 - Source roots: {'G:/GitHub/Latent_Style': 17134, 'I:\\': 5495}
 - Local deleted checkpoints: 329, MB=11575.67
@@ -241,6 +241,8 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `manual_remote_cycle_nce_45_rar_curated_extraction_policy_20260605.csv`: entry-class extraction/delete policy for `45.rar`.
 - `manual_remote_cycle_nce_45_rar_run_ledger_20260605.csv`: per-run file/weight/image/config/summary/metrics counts inside `45.rar`.
 - `manual_remote_cycle_nce_45_rar_summary_overview_20260605.csv`: 8-row overview extracted from the archive's full-eval summaries.
+- `README_COUNT_CONSISTENCY_AUDIT_20260605.md`: current README/count consistency audit after the latest source-open and policy blocks.
+- `readme_count_consistency_audit_20260605.csv`: row-level count checks for current high-signal archaeology outputs.
 - `manual_local_remaining_surface_probe_20260605.csv`: navigation counts for the local remaining data/cache/dependency/archive surface; used only as a map, not as a deletion decision.
 - `manual_local_remaining_surface_policy_20260605.csv`: path-by-path manual policy for 31 local remaining-surface rows, including duplicated archive proof and explicit keep decisions for WDS tar, checkpoint tar, dependency gzip, `.git` shallow lock, and `uv.lock` files.
 - `MANUAL_LOCAL_REMAINING_SURFACE_POLICY_20260605.md`: narrative local remaining-surface walkthrough and delete whitelist.
