@@ -270,3 +270,22 @@ Auto-handoff watcher now prepared:
     - [watch_remote_latent_samam_handoff.out.log](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/watch_remote_latent_samam_handoff.out.log)
   - stderr log:
     - [watch_remote_latent_samam_handoff.err.log](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/watch_remote_latent_samam_handoff.err.log)
+
+Post-A1 queue watcher now prepared:
+
+- queue watcher note:
+  - [2026-06-06-aaai2027-queue-watcher.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-06-aaai2027-queue-watcher.md)
+- queue watcher script:
+  - [watch_remote_aaai2027_queue.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_remote_aaai2027_queue.py)
+- default queue:
+  - wait for `A1` to start and pass first health
+  - wait for `A1` to finish
+  - then continue `A2a -> A2b -> A2c` under the same `<= 1500 MiB`
+    prelaunch idle gate
+- active local watcher:
+  - pid file:
+    - [watch_remote_aaai2027_queue.pid](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/watch_remote_aaai2027_queue.pid)
+  - stdout log:
+    - [watch_remote_aaai2027_queue.out.log](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/watch_remote_aaai2027_queue.out.log)
+  - stderr log:
+    - [watch_remote_aaai2027_queue.err.log](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/watch_remote_aaai2027_queue.err.log)
