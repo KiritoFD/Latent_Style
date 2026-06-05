@@ -124,6 +124,29 @@
 
 本轮 Related_Works 只删除了 `Related_Works/baseline_pipeline/results/samam_256_curve` 这个递归文件数为 0、git tracked 为 0 的空目录树。记录见 `manual_related_works_directory_ledger_20260605.csv` 和 `cleanup/manual_empty_directory_cleanup_20260605.csv`。
 
+### 本轮补充：Cycle-NCE 逐目录结论
+
+本轮继续打开并登记了本地 `Cycle-NCE`，不是只跑一次扫描：
+
+- 打开顶层 archaeology 报告、`vram.md`、`config.json` 和历史计划；
+- 打开 `exp.csv / freq.csv / Aline120.csv / hf.csv / cgw.csv / micro.csv / clocor1_full_eval_summary.csv / grid_search_3epoch_scatter.csv`；
+- 打开 `46 / Ablate43 / Aline120 / arch / exp / freq / hf / fewshot_ukiyoe_runs / tmp_* / video / weight_exp4...` 等主要子族；
+- 抽开代表性 `training_*.csv`，确认训练日志有 `epoch_time_sec / compute_time_sec / samples_per_sec` 等 timing 字段；
+- 抽开 `fewshot_ukiyoe_runs` 的 meta/summary，确认本地只剩 fewshot 评估证据，meta 中引用的 `.pt` payload 当前不在本地；
+- 打开 weight-like 列表，确认本地 Cycle-NCE 只有 3 个 `eval_cache/ref_feats_*.pt`，约 1.106 MB，是 reference feature cache，不是训练 ckpt。
+
+关键结论：
+
+- `Cycle-NCE` 当前是历史证据库，不是 checkpoint 垃圾堆；
+- 共有 `500` 个 `summary.json`、`496` 个 `metrics.csv`、`260` 个 `training_*.csv`，证据密度很高；
+- `exp.csv` 当前打开的 best row 是 `style_oa_5_lr5e4_wc2_swd60_id30_e120_interval10`，epoch 100，`transfer_clip_style=0.729723026394844`；
+- `Aline120.csv` 打开的 best row 是 `Aline120_aline_03_ghost_wireframe`，epoch 20，`transfer_clip_style=0.7146436547239621`；
+- `hf.csv` 打开的 best row 是 `p_base_hf_3p0_distill_epochs200_tokenized`，epoch 60，`transfer_clip_style=0.6734027210871381`；
+- `freq.csv` 打开的 best row 是 `freq_04_no_idt_abyss`，epoch 80，`transfer_clip_style=0.6453720057010651`；
+- 训练日志 timing 可信字段存在，但多数旧 summary 缺完整 inference wall time，不能补造。
+
+本轮 Cycle-NCE 只删除了 `Cycle-NCE/eval_cache/hf` 这个递归文件数为 0、git tracked 为 0 的空目录，释放 0 字节。记录见 `manual_cycle_nce_directory_ledger_20260605.csv`、`MANUAL_CYCLE_NCE_ARCHAEOLOGY_20260605.md` 和 `cleanup/manual_empty_directory_cleanup_20260605.csv`。
+
 ## 当前远程 `I:\Github\Latent_Style` 状态
 
 ### 远程根目录结论
