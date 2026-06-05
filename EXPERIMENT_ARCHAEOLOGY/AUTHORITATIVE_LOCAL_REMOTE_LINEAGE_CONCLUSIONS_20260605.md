@@ -198,7 +198,9 @@ TokenizerClean retained media:
 - 26 cited/current media dirs were source-opened.
 - Retained media surface: 46483 media files / 7501.518 MB.
 - Policy split: 8 current AAAI2027 media dirs and 18 cited media dirs.
-- All 26 rows are `keep_no_delete` pending archive migration.
+- A fixed-path manifest now maps all 26 rows to representative summaries, CSVs,
+  grids, generated media buckets, and checkpoints where present.
+- All 26 rows remain `keep_no_delete` pending owner-approved archive migration.
 
 TokenizerClean retained no-summary payloads:
 
@@ -223,8 +225,8 @@ TokenizerClean remaining gap:
   cleanup purposes.
 - Repair or annotate the missing-resume config lineage anomaly before promoting
   `wikiart512_ema_spectral_stat_full_e2_from_tok_b48` as a clean lineage row.
-- Build a citation-to-artifact manifest for the 26 retained media dirs before
-  any archive migration.
+- Owner-select archive/migration candidates for the 26 retained media dirs and
+  preserve old-to-new path mappings before moving any generated media.
 - Do not delete current/cited media by count or size.
 
 ## Dataset And Lineage Conclusions
@@ -323,8 +325,9 @@ checkpoint files. Remaining work is to repair/annotate the missing
 `epoch_0004.pt` resume anomaly and keep the two evidence-bearing payloads.
 
 Block 4, 1.0h:
-TokenizerClean cited/current media manifest. Map docs/paper references to
-summary, metrics, grids, generated images, and retained checkpoints.
+TokenizerClean cited/current media archive selection. The fixed-path manifest
+now maps representative summaries, metrics, grids, generated images, and
+retained checkpoints; remaining work is owner-approved migration policy.
 
 Block 5, 1.0h:
 Timing promotion plan. Select candidate rows for docs timing master update,
@@ -347,5 +350,5 @@ Not complete.
 
 The task is substantially advanced, but completion is unproven because the
 remaining gaps are concrete: local nested generated media, TokenizerClean
-missing-resume anomaly, retained-media
-manifests, docs timing promotion, and final consistency audit.
+missing-resume anomaly, retained-media migration policy, docs timing promotion,
+and final consistency audit.

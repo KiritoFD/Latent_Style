@@ -247,6 +247,8 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `manual_remote_tokenizerclean_remaining_media_classes_after_cleanup_20260605.csv`: remaining generated media classes after cleanup.
 - `MANUAL_REMOTE_TOKENIZERCLEAN_CITED_CURRENT_MEDIA_POLICY_20260605.md`: source-open keep/archive policy for the 26 retained cited/current TokenizerClean media directories.
 - `manual_remote_tokenizerclean_cited_current_media_archive_policy_20260605.csv`: row-level keep/no-delete policy for those cited/current media directories.
+- `MANUAL_REMOTE_TOKENIZERCLEAN_CITED_CURRENT_MEDIA_MANIFEST_20260605.md`: fixed-path live manifest for the same 26 cited/current media directories; maps each directory to representative summaries, CSVs, grids, generated media buckets, and checkpoints.
+- `manual_remote_tokenizerclean_cited_current_media_manifest_20260605.csv`: row-level cited/current media manifest; no deletion whitelisted.
 - `MANUAL_REMOTE_TOKENIZERCLEAN_TRAINED_NO_SUMMARY_DEEP_OPEN_20260605.md`: manual one-by-one reopen of the 7 retained trained no-summary payloads.
 - `manual_remote_tokenizerclean_trained_no_summary_deep_open_20260605.csv`: exact CSV evidence for those 7 payloads, including the missing `epoch_0004.pt` resume anomaly in `wikiart512_ema_spectral_stat_full_e2_from_tok_b48`.
 - `MANUAL_REMOTE_MAIN_DATA_CACHE_ARCHIVE_POLICY_20260605.md`: narrative manual audit for remote main data/cache/archive surfaces after opening each major root; records residue-only cleanup and retained archive gaps.
