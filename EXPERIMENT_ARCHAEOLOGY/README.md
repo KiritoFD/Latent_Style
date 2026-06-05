@@ -142,7 +142,11 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `MANUAL_REMOTE_SCHRODINGERBRIDGE_EXP_20260605.md`: manual remote `SchrodingerBridge/exp` walkthrough with opened README/config/log/summary evidence, timing examples, weight retention, and cleanup boundary.
 - `manual_remote_samam_checkpoint_thinning_policy_20260605.csv`: remote SaMAM central `step_checkpoints` keep/delete policy for 19 checkpoint files.
 - `manual_remote_samam_hash_pairs_20260605.csv`: SHA256 comparison of `last*.ckpt` aliases against corresponding `step-step=*.ckpt` files; all differed, so aliases were not deleted as duplicates.
-- `MANUAL_REMOTE_SAMAM_CHECKPOINT_THINNING_20260605.md`: narrative remote SaMAM checkpoint thinning audit with opened `eval_curve`, `convergence_recovered.md`, ArtFID reuse, and timing evidence.
+- `manual_remote_samam_checkpoint_metadata_20260605.csv`: PyTorch metadata readout for the 19 remote SaMAM checkpoints.
+- `manual_remote_samam_state_dict_hashes_20260605.csv`: state-dict SHA256 comparison showing `last*.ckpt` aliases are model-duplicates of paired step checkpoints.
+- `cleanup/manual_remote_samam_alias_cleanup_20260605.csv`: deletion ledger for 7 redundant SaMAM `last*.ckpt` aliases, totaling `1931.291 MB`.
+- `manual_remote_samam_remaining_step_checkpoints_after_alias_cleanup_20260605.csv`: post-delete verification list of 12 retained SaMAM step checkpoints, totaling `3310.776 MB`.
+- `MANUAL_REMOTE_SAMAM_CHECKPOINT_THINNING_20260605.md`: narrative remote SaMAM checkpoint thinning audit with opened `eval_curve`, `convergence_recovered.md`, ArtFID reuse, checkpoint metadata, state-dict hashes, and alias cleanup.
 - `manual_remote_schrodingerbridge_epoch_evidence_20260605.csv`: remote `SchrodingerBridge/exp` epoch-level evidence for the 101 pre-cleanup checkpoint files, with config/log/summary/timing/metric fields.
 - `manual_remote_schrodingerbridge_epoch_thinning_policy_20260605.csv`: per-checkpoint keep/delete policy for remote `SchrodingerBridge/exp` after manual retained-epoch review.
 - `cleanup/manual_remote_schrodingerbridge_epoch_cleanup_20260605.csv`: deletion ledger for 84 remote `SchrodingerBridge/exp` checkpoint files, totaling `4961.604 MB`.
