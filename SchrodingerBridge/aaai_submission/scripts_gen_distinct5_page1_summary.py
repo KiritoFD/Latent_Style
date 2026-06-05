@@ -79,14 +79,14 @@ METHOD_ORDER = ["LBM", "SaMAM", "SaMST"]
 
 QUAL_ROWS = [
     {
-        "label": "Monet -> Hayao",
+        "label": "Monet\n-> Hayao",
         "source": STYLE_GRID / "monet_00018.jpg",
         "target": STYLE_GRID / "Hayao_0.jpg",
         "samst": SAMST_HIST / "monet_00018_to_Hayao.jpg",
         "lbm": LBM_HIST / "monet_00018_to_Hayao.jpg",
     },
     {
-        "label": "Hayao -> van Gogh",
+        "label": "Hayao\n-> van Gogh",
         "source": STYLE_GRID / "Hayao_0.jpg",
         "target": STYLE_GRID / "vangogh_00090.jpg",
         "samst": SAMST_HIST / "Hayao_0_to_vangogh.jpg",
@@ -173,25 +173,24 @@ def load_rgb(path: Path, size: int) -> Image.Image:
 
 
 def build_qual_panel() -> np.ndarray:
-    label_w = 188
-    cell = 160
-    gap = 18
-    pad = 18
-    header_h = 54
-    row_gap = 22
+    label_w = 136
+    cell = 180
+    gap = 14
+    pad = 14
+    header_h = 52
+    row_gap = 18
     width = label_w + 4 * cell + 3 * gap + pad
     height = header_h + len(QUAL_ROWS) * cell + (len(QUAL_ROWS) - 1) * row_gap + pad
     canvas = Image.new("RGB", (width, height), COLORS["panel_bg"])
     draw = ImageDraw.Draw(canvas)
-    font_h = load_font(23, bold=True)
-    font_l = load_font(20, bold=True)
-    font_s = load_font(18, bold=False)
+    font_h = load_font(21, bold=True)
+    font_l = load_font(18, bold=True)
 
     headers = ["Source", "Target style", "SaMST", "LBM"]
     x0 = label_w
     for idx, header in enumerate(headers):
         x = x0 + idx * (cell + gap)
-        draw.text((x + cell / 2, 14), header, fill=COLORS["text"], font=font_h, anchor="ma")
+        draw.text((x + cell / 2, 12), header, fill=COLORS["text"], font=font_h, anchor="ma")
 
     frame_colors = [
         COLORS["frame"],
@@ -201,7 +200,15 @@ def build_qual_panel() -> np.ndarray:
     ]
     for row_idx, row in enumerate(QUAL_ROWS):
         y = header_h + row_idx * (cell + row_gap)
-        draw.text((10, y + cell / 2 - 12), row["label"], fill=COLORS["text"], font=font_l, anchor="lm")
+        draw.multiline_text(
+            (label_w / 2 - 6, y + cell / 2 - 8),
+            str(row["label"]),
+            fill=COLORS["text"],
+            font=font_l,
+            anchor="mm",
+            align="center",
+            spacing=4,
+        )
         ims = [
             load_rgb(Path(row["source"]), cell),
             load_rgb(Path(row["target"]), cell),
@@ -229,8 +236,8 @@ def main() -> None:
     fig, axes = plt.subplots(
         1,
         2,
-        figsize=(7.15, 2.96),
-        gridspec_kw={"width_ratios": [1.14, 0.86]},
+        figsize=(7.15, 3.08),
+        gridspec_kw={"width_ratios": [1.22, 0.78]},
     )
 
     ax = axes[0]
@@ -269,9 +276,9 @@ def main() -> None:
             zorder=4,
         )
 
-    annotate_point(ax, points["LBM"], -52, -24)
+    annotate_point(ax, points["LBM"], -64, -36)
     annotate_point(ax, points["SaMAM"], 14, -2)
-    annotate_point(ax, points["SaMST"], 34, -10)
+    annotate_point(ax, points["SaMST"], 48, -14)
     ax.text(
         0.705,
         0.466,
@@ -287,6 +294,22 @@ def main() -> None:
     ax.set_xlabel(r"$1-\mathrm{LPIPS}$ $\uparrow$")
     ax.set_ylabel(r"Transfer CLIP-S $\uparrow$")
     ax.set_title("(b) Same-cost Distinct5 frontier", pad=6.0)
+    ax.text(
+        0.695,
+        0.684,
+        "better",
+        ha="right",
+        va="top",
+        fontsize=7.4,
+        weight="bold",
+        color=COLORS["muted"],
+    )
+    ax.annotate(
+        "",
+        xy=(0.655, 0.662),
+        xytext=(0.54, 0.646),
+        arrowprops=dict(arrowstyle="->", lw=0.9, color=COLORS["muted"]),
+    )
 
     fig.subplots_adjust(left=0.025, right=0.995, top=0.89, bottom=0.14, wspace=0.14)
     fig.savefig(OUT_DIR / "fig_distinct5_page1_summary.pdf")
