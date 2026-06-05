@@ -1,5 +1,7 @@
 # Remote 3060 Latent SaMam Two-Day Experiment Implementation Plan
 
+> **Status:** superseded on `2026-06-05` as the primary plan. Keep this file only as a side-quest reference. The active main plan is [`2026-06-05-one-week-model-improvement-plan.md`](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/plans/2026-06-05-one-week-model-improvement-plan.md), where `latent SaMam` is reduced to a short smoke-gate lane instead of the main execution track.
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Land a paper-usable Distinct5-512 remote `RTX 3060` experiment packet for `latent SaMam`, or close the line negatively with enough evidence that we can state why it should not appear in the paper.
