@@ -148,11 +148,11 @@ Remote latent side quest currently occupying the only allowed GPU lane:
   - safely below the hard stop:
     - `< 11.0 GiB`
 - latest observed training progress:
-  - around `Epoch 0 step 2960`
+  - around `Epoch 0 step 3126`
   - observed train rate:
     - about `0.76 step/s`
 - rough remaining wall to first retained checkpoint:
-  - about `45 min` from the latest heartbeat if throughput stays flat
+  - about `41 min` from the latest heartbeat if throughput stays flat
 - retained checkpoint status:
   - none yet
   - first save still waits for `step 5000`
@@ -289,3 +289,10 @@ Post-A1 queue watcher now prepared:
     - [watch_remote_aaai2027_queue.out.log](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/watch_remote_aaai2027_queue.out.log)
   - stderr log:
     - [watch_remote_aaai2027_queue.err.log](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/watch_remote_aaai2027_queue.err.log)
+- current live state:
+  - it is waiting for:
+    - [executor_promotion_h_e1_seed42_b44.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/executor_promotion_h_e1_seed42_b44.json)
+  - current log shows:
+    - `process_alive=False`
+    - `log_exists=False`
+  - this is expected until the latent handoff watcher actually starts `A1`
