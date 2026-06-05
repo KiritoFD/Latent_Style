@@ -9,6 +9,13 @@ Purpose:
 - keep the remote `3060` queue auditable while the bounded latent side quest is
   still occupying the only allowed GPU lane
 
+Quick status command:
+
+- reporter:
+  - [report_remote_aaai2027_status.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/report_remote_aaai2027_status.py)
+- note:
+  - [2026-06-06-remote-status-reporter.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-06-remote-status-reporter.md)
+
 ## Current remote lane
 
 Active training lane:
@@ -16,7 +23,7 @@ Active training lane:
 - remote run:
   - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4`
 - latest observed progress:
-  - around `Epoch 0 step 3508`
+  - around `Epoch 0 step 3732`
 - current retained checkpoint state:
   - only `step_checkpoints/last.ckpt`
   - first numbered retained checkpoint still waits for `step_5000`
