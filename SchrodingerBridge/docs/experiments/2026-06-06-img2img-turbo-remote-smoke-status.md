@@ -78,45 +78,71 @@ Result:
 - the smoke launcher now correctly binds to the dedicated env
 - the training entry progresses beyond import-time dependency failure
 
+## Remote snapshot recovery
+
+Local `sd-turbo` evidence was later promoted into a remote owner-side snapshot:
+
+- local cache source:
+  - `C:\Users\xy\.cache\huggingface\hub\models--stabilityai--sd-turbo`
+- remote tar:
+  - `/mnt/i/Github/Latent_Style/Related_Works/runs/hf_snapshots/sd_turbo_snapshot_20260606.tar`
+- remote extracted snapshot:
+  - `/mnt/i/Github/Latent_Style/Related_Works/runs/hf_snapshots/sd_turbo_snapshot_20260606`
+
+In parallel, the code path was repaired so the training stack can actually use a
+local pretrained root instead of hard-coding `stabilityai/sd-turbo` in:
+
+- `run_img2img_turbo_distinct5_smoke.py`
+- `src/train_cyclegan_turbo.py`
+- `src/cyclegan_turbo.py`
+- `src/model.py`
+
 ## Current active blocker
 
 Latest smoke run:
 
 - run root:
-  - `/mnt/i/Github/Latent_Style/Related_Works/runs/img2img_turbo_distinct5_remote_smoke_20260606_052546`
+  - `/mnt/i/Github/Latent_Style/Related_Works/runs/img2img_turbo_distinct5_remote_smoke_20260606_061608`
 
 Latest hard failure:
 
-- `AutoTokenizer.from_pretrained("stabilityai/sd-turbo", ...)`
-- remote failure:
-  - cannot reach `https://huggingface.co`
-  - cannot find the model in local cache
+- the lane now reaches real training
+- low-VRAM smoke settings used:
+  - `mixed_precision = fp16`
+  - `gradient_checkpointing = on`
+  - `allow_tf32 = on`
+  - `train_batch_size = 1`
+- failure point:
+  - first training step
+  - `torch.OutOfMemoryError`
 
 Interpretation:
 
-- this is now an **offline model-cache blocker**, not a code or wrapper blocker
+- the lane is no longer blocked on missing model files
+- the lane is no longer blocked on Python or dependency incompatibility
+- the current blocker is now a **true runtime memory overflow** on the reviewed
+  `3060`
 
-## Local evidence that can unblock it
+Observed evidence:
 
-Local machine already has a complete `sd-turbo` Hugging Face cache:
-
-- `C:\Users\xy\.cache\huggingface\hub\models--stabilityai--sd-turbo`
-
-Observed size:
-
-- about `5.16 GB`
-
-Observed snapshot:
-
-- `snapshots/b261bac6fd2cf515557d5d0707481eafa0485ec2`
+- by the time of failure, the smoke had already completed:
+  - reference image preparation
+  - FID reference feature preparation
+  - LPIPS setup
+- the OOM happens inside the actual generator forward/backward path
 
 ## Immediate next action
 
 Do next:
 
-1. copy the local `sd-turbo` Hugging Face cache to the remote owner surface
-2. point the remote dedicated env at that cache
-3. rerun the same `img2img-turbo` smoke launcher unchanged
+1. treat the current `img2img-turbo` line as **runnable but not yet
+   machine-safe**
+2. only continue this lane with a concrete memory-reduction move, for example:
+   - `xformers`
+   - smaller validation/reference packet
+   - reduced LoRA rank
+   - smaller train prep if the protocol is explicitly re-scoped
+3. do not promote the current smoke into any paper-facing same-cost row
 
 Do not do next:
 
