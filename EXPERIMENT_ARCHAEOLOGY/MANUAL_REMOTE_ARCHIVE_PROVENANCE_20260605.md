@@ -85,8 +85,16 @@ Follow-up result:
 - Post-delete verification: `manual_remote_rar_weight_only_archive_post_delete_verify_20260605.csv`.
 - Freed space: `6553.384 MB`.
 
-Remaining archive gaps after the follow-up:
+Second follow-up result:
 
-- `experiments.rar`: retained because 9 eval-cache payload files have size mismatches.
+- `experiments.rar`: the 9 eval-cache size mismatches were opened individually and identified as HF CLIP snapshot symlinks.
+- `manual_remote_experiments_rar_symlink_targets_20260605.csv` verifies all 9 symlink targets exist and match the RAR entry byte sizes.
+- `experiments.rar` was deleted as a resolved duplicate archive.
+- Cleanup ledger: `cleanup/manual_remote_experiments_rar_resolved_duplicate_cleanup_20260605.csv`.
+- Post-delete verification: `manual_remote_experiments_rar_resolved_duplicate_post_delete_verify_20260605.csv`.
+- Freed space: `8091.026 MB`.
+
+Remaining archive gaps after the follow-ups:
+
 - `Cycle-NCE\45.rar`: retained as a unique historical archive under current comparison roots.
 - Cross-cache dedup remains a separate block.

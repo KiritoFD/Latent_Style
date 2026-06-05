@@ -88,5 +88,5 @@ Reason: these are large recovery opportunities, but this pass did not prove they
 ## Remaining Gaps
 
 - Cycle-NCE archive ownership is still unresolved. It needs a separate duplicate/provenance audit before deleting root `.rar/.zip/.7z` payloads.
-- Remote root `experiments.rar` remains unclassified beyond being a large archive; do not delete without unpack/provenance comparison.
+- Remote root `experiments.rar` was later classified by deep RAR listing plus 9-row symlink-target audit and deleted as a resolved duplicate archive; see `MANUAL_REMOTE_EXPERIMENTS_RAR_RESOLVED_POLICY_20260605.md`.
 - Complete model/eval caches may be deduplicable across local/remote surfaces, but this requires a cross-cache hash audit, not a cleanup-by-name pass.

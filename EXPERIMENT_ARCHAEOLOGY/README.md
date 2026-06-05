@@ -15,6 +15,10 @@ This directory contains the curated local G and remote I experiment archaeology 
 - `manual_remote_rar_deep_provenance_policy_20260605.csv`: per-RAR keep/delete policy for `experiments.rar`, `Gate.rar`, `Attn_48.part*.rar`, `chess.part*.rar`, and `45.rar`.
 - `cleanup/manual_remote_rar_weight_only_archive_cleanup_20260605.csv`: deletion ledger for weight-only RAR archives, totaling `6553.384 MB`.
 - `manual_remote_rar_weight_only_archive_post_delete_verify_20260605.csv`: post-delete verification for RAR cleanup and retained expanded evidence.
+- `MANUAL_REMOTE_EXPERIMENTS_RAR_RESOLVED_POLICY_20260605.md`: follow-up manual proof that `experiments.rar` cache mismatches are HF snapshot symlink targets with matching blob payloads.
+- `manual_remote_experiments_rar_symlink_targets_20260605.csv`: 9-row fixed-target symlink target audit for `experiments.rar`.
+- `cleanup/manual_remote_experiments_rar_resolved_duplicate_cleanup_20260605.csv`: deletion ledger for resolved duplicate `experiments.rar`, totaling `8091.026 MB`.
+- `manual_remote_experiments_rar_resolved_duplicate_post_delete_verify_20260605.csv`: post-delete verification for `experiments.rar`, expanded `experiments`, and all 9 symlink targets.
 - `../EXPERIMENT_ARCHAEOLOGY_MASTER.csv`: final root-level master CSV.
 - `final_master_experiments.csv`: same final master CSV inside this directory.
 - `final_by_dataset/*.csv`: one CSV per dataset/setting family.
@@ -40,6 +44,7 @@ This directory contains the curated local G and remote I experiment archaeology 
 - Remote TokenizerClean checkpoint/probe files deleted across citation/no-summary/owner-review passes: 170, MB=5731.399
 - Remote TokenizerClean remaining weight classes after owner-review cleanup: 29 dirs, 156 files, MB=5643.952
 - Remote RAR weight-only archives deleted: 6 files, MB=6553.384
+- Remote experiments.rar resolved duplicate deleted: 1 file, MB=8091.026
 
 ## Dataset Counts
 
@@ -201,10 +206,17 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `manual_remote_main_data_cache_archive_delete_candidates_20260605.csv`: exact whitelist of 11 remote residue/empty-temp deletion targets.
 - `cleanup/manual_remote_main_data_cache_archive_residue_cleanup_20260605.csv`: deletion ledger for the 11 remote main data/cache/archive residue targets, totaling `381.807 MB`.
 - `manual_remote_main_data_cache_archive_post_delete_verify_20260605.csv`: post-delete verification for the same 11 targets; all `post_exists=False`.
-- `MANUAL_REMOTE_ARCHIVE_PROVENANCE_20260605.md`: remote archive provenance audit for `eval_cache.zip`, `experiments.rar`, and `Cycle-NCE` archives; records duplicate/stale archive cleanup and retained RAR gaps.
+- `MANUAL_REMOTE_ARCHIVE_PROVENANCE_20260605.md`: remote archive provenance audit for `eval_cache.zip`, `experiments.rar`, and `Cycle-NCE` archives; records duplicate/stale archive cleanup and later RAR follow-up status.
 - `manual_remote_archive_provenance_policy_20260605.csv`: per-archive keep/delete/provenance policy after hash and zip-entry checks.
 - `cleanup/manual_remote_duplicate_archive_cleanup_20260605.csv`: deletion ledger for 3 duplicate/stale remote archives, totaling `3290.714 MB`.
 - `manual_remote_archive_post_delete_verify_20260605.csv`: post-delete verification for deleted archives and retained evidence roots.
+- `MANUAL_REMOTE_EXPERIMENTS_RAR_RESOLVED_POLICY_20260605.md`: follow-up proof that `experiments.rar` is a resolved duplicate after opening all 9 HF snapshot symlink mismatches.
+- `manual_remote_experiments_rar_cache_mismatch_20260605.csv`: fixed-target audit of the 9 known `experiments.rar` CLIP cache mismatch rows.
+- `manual_remote_experiments_rar_symlink_targets_20260605.csv`: symlink target audit proving all 9 blob targets exist and match RAR entry sizes.
+- `manual_remote_experiments_rar_resolved_policy_20260605.csv`: delete whitelist policy for `experiments.rar`.
+- `delete_remote_experiments_rar_resolved_duplicate.ps1`: exact-path deletion script for the resolved duplicate archive.
+- `cleanup/manual_remote_experiments_rar_resolved_duplicate_cleanup_20260605.csv`: deletion ledger for `experiments.rar`, totaling `8091.026 MB`.
+- `manual_remote_experiments_rar_resolved_duplicate_post_delete_verify_20260605.csv`: post-delete verification for archive absence, expanded evidence presence, and 9 symlink target checks.
 - `manual_local_remaining_surface_probe_20260605.csv`: navigation counts for the local remaining data/cache/dependency/archive surface; used only as a map, not as a deletion decision.
 - `manual_local_remaining_surface_policy_20260605.csv`: path-by-path manual policy for 31 local remaining-surface rows, including duplicated archive proof and explicit keep decisions for WDS tar, checkpoint tar, dependency gzip, `.git` shallow lock, and `uv.lock` files.
 - `MANUAL_LOCAL_REMAINING_SURFACE_POLICY_20260605.md`: narrative local remaining-surface walkthrough and delete whitelist.
