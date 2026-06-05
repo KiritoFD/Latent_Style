@@ -53,6 +53,8 @@ def main() -> int:
     parser.add_argument("--validation-steps", type=int, default=10)
     parser.add_argument("--checkpointing-steps", type=int, default=10)
     parser.add_argument("--train-batch-size", type=int, default=1)
+    parser.add_argument("--lora-rank-unet", type=int, default=8)
+    parser.add_argument("--lora-rank-vae", type=int, default=4)
     parser.add_argument("--mixed-precision", choices=["no", "fp16", "bf16"], default="no")
     parser.add_argument("--allow-tf32", action="store_true")
     parser.add_argument("--gradient-checkpointing", action="store_true")
@@ -97,6 +99,8 @@ def main() -> int:
         "--train-img-prep resize_512 "
         "--val-img-prep resize_512 "
         f"--train-batch-size {int(args.train_batch_size)} "
+        f"--lora-rank-unet {int(args.lora_rank_unet)} "
+        f"--lora-rank-vae {int(args.lora_rank_vae)} "
         f"--max-train-steps {int(args.max_train_steps)} "
         "--max-train-epochs 100 "
         f"--validation-steps {int(args.validation_steps)} "
