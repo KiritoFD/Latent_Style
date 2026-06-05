@@ -209,10 +209,10 @@ If $\delta$ and $L M$ are small, the training kinetic loss
 provides a tight proxy for the inference-time path energy.
 
 \emph{Empirical support.}
-On a historical D0 probe consistent with the current few-step regime (128-step integration):
+On a historical full-model probe consistent with the current few-step regime (128-step integration):
 $\mathcal{L}_{\mathrm{kin}}\approx 1017$, $\mathcal{A}(v)\approx 698$,
 yielding $|\varepsilon_t+\varepsilon_z|\approx 319$.
-Removing $\mathcal{L}_{\mathrm{kin}}$ (D2) reduces the path length
+Removing kinetic regularization reduces the path length
 ratio from 0.98 to 0.94, confirming the kinetic term controls
 path regularity.
 
@@ -227,11 +227,11 @@ C=\frac{1}{2}(M L_t+M^2 L)\,\frac{e^L-1}{L},
 where $L_t$ bounds the $t$-derivative of $v_\theta$.
 
 \emph{Empirical support.}
-Measured over 160 content latents (D0 model, 256-step reference):
+Measured over 160 content latents with the historical full-model checkpoint and a 256-step reference:
 $\|z^{(K)} - z^{(256)}\| = \{10.7, 3.80, 1.74, 0.84, 0.40, 0.19, 0.084, 0.027\}$
 for $K=1,2,4,8,16,32,64,128$; the error halves when $K$ doubles,
 confirming the $O(1/K)$ scaling.
-Because VAE latents exhibit non-trivial local curvature, few-step solvers can otherwise accumulate visible drift. Here the measured $O(1/K)$ decay is consistent with the expected solver trend on this historical D0 probe. At $K=12$ in that probe, the error is $<0.6$ relative to the 256-step reference.
+Because VAE latents exhibit non-trivial local curvature, few-step solvers can otherwise accumulate visible drift. Here the measured $O(1/K)$ decay is consistent with the expected solver trend on this historical full-model probe. At $K=12$ in that probe, the error is $<0.6$ relative to the 256-step reference.
 
 A historical OT-style selector result is provided only in the supplement for readers interested in the broader bridge family. We do not rely on that result in the current paper because the active headline rows use cache-based endpoint pairing rather than online OT assignment.
 
@@ -421,10 +421,10 @@ Non-training probes support the same diagnosis boundary. On the retained histori
 \toprule
 Variant & CLIP-S & CLIP-C & LPIPS & EC \\
 \midrule
-Full LBM (D0) & 0.7014 & 0.8022 & 0.4593 & 0.3791 \\
-w/o SA-SWD (D1) & 0.6708 & 0.8989 & 0.3490 & 0.4368 \\
-w/o kinetic (D2) & 0.7159 & 0.6624 & 0.6375 & 0.2596 \\
-strong color loss (D8) & 0.6923 & 0.6629 & 0.5675 & 0.2994 \\
+Full LBM & 0.7014 & 0.8022 & 0.4593 & 0.3791 \\
+w/o SA-SWD & 0.6708 & 0.8989 & 0.3490 & 0.4368 \\
+w/o kinetic regularization & 0.7159 & 0.6624 & 0.6375 & 0.2596 \\
+strong color loss & 0.6923 & 0.6629 & 0.5675 & 0.2994 \\
 \bottomrule
 \end{tabular}
 }
@@ -437,8 +437,8 @@ Figure~\ref{fig:ablation} makes the two destructive failure modes visible before
     \includegraphics[width=\linewidth]{figures/fig_ablation_visual.png}
     
     \vspace{4pt}
-    \includegraphics[width=0.76\linewidth]{fig_ablation_pareto.png}
-    \caption{Mechanism ablations on the historical standard benchmark. Top: aligned photo-to-art directions for one shared source image and four target domains. The \emph{Full LBM} row uses the retained standard-benchmark model as a clean reference for that source image, while the lower two rows are the exact archived D1 and D2 destructive runs. Removing SA-SWD leaves pale near-identity outputs with weak target-style commitment, whereas removing kinetic regularization amplifies texture at the cost of broken geometry, color spill, and unstable local structure. Bottom: the corresponding CLIP-S / LPIPS frontier from the destructive-ablation comparison.}
+    \includegraphics[width=0.76\linewidth]{figures/fig_ablation_pareto.png}
+    \caption{Mechanism ablations on the historical standard benchmark. Top: aligned photo-to-art directions for one shared source image and four target domains. The \emph{Full LBM} row uses the retained standard-benchmark model as a clean reference for that source image, while the lower rows are the exact archived destructive runs without SA-SWD and without kinetic regularization. Removing SA-SWD leaves pale near-identity outputs with weak target-style commitment, whereas removing kinetic regularization amplifies texture at the cost of broken geometry, color spill, and unstable local structure. Bottom: the corresponding CLIP-S / LPIPS frontier for the representative destructive variants.}
     \label{fig:ablation}
 \end{figure}
 
