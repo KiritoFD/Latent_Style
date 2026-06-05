@@ -92,6 +92,7 @@ def main() -> int:
     out_root = (args.out_root or (PIPELINE_ROOT / "results" / f"samst_latent_{args.dataset}_{datetime.now().strftime('%Y%m%d_%H%M%S')}")).resolve()
     out_root.mkdir(parents=True, exist_ok=True)
     (out_root / "logs").mkdir(exist_ok=True)
+    checkpoint_dir = (out_root / "checkpoints").resolve()
     meta = {
         "dataset": args.dataset,
         "preset": preset,
@@ -120,7 +121,7 @@ def main() -> int:
         "dataset": str(preset["latent_root"]),
         "style_image": str(style_single_root / ""),
         "style_latent_root": str(style_single_root),
-        "save_model_dir": str((out_root / "checkpoints").resolve()),
+        "save_model_dir": str(checkpoint_dir),
         "image_size": int(preset["image_size"]),
         "style_size": int(preset["style_size"]),
         "cuda": 1,
@@ -134,7 +135,7 @@ def main() -> int:
         "save_interval": int(args.epochs),
         "log_interval": 10,
         "checkpoint_interval": int(args.checkpoint_interval),
-        "checkpoint_model_dir": None,
+        "checkpoint_model_dir": str((checkpoint_dir / "interval").resolve()),
         "begin_checkpoint": None,
         "begin_epoch": None,
         "max_steps": int(args.max_steps),
