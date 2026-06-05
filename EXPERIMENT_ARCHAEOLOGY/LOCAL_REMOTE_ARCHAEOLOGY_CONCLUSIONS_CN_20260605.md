@@ -195,6 +195,31 @@
 - remote SchrodingerBridge/exp 剩下的是 current/lineage evidence，而不是未分类垃圾；
 - remote 大体积 `.pt` 主要是 latent/cache/data。
 
+### 本轮补充：远程 SchrodingerBridge/exp 逐目录结论
+
+本轮通过 SSH 打开远程 `I:\Github\Latent_Style\SchrodingerBridge\exp`，产出 top-level inventory，并抽开关键 README/config/log/summary：
+
+- top-level inventory 共 `124` 行；
+- 有 weight-like 文件的 top-level 目录共 `17` 个；
+- 权重文件共 `101` 个，合计 `5945.064 MB`；
+- 这些权重集中在 `aaai2027_longer_train_*`、`aaai2027_path_kinetic_*`、`distinct5_512_ema_*`、`sadd_exact_*`、`sadd_repro_*`；
+- 打开过 `exp/README.md`，确认 2026-05-26 已重组，`vae_backend / inference / frontier / diagnostics / diffeomorphic_tangent_sweep` 都是有意保留分类；
+- 打开过 Distinct5 b44、variant A/J、AAAI2027 F/K、SADD exact/repro 的 config、训练日志和 full_eval summary。
+
+远程 timing 例子：
+
+- `distinct5_512_ema_baseline_direct_atom_residual_b44_remote` epoch 8：训练 `epoch_time_sec=62.23699736595154`，full-eval `wall_total=94.8003261089998`；
+- `distinct5_512_ema_variant_a_class_prototypes_b44_remote` epoch 8：训练 `epoch_time_sec=62.34275555610657`，full-eval `wall_total=95.04837335200136`；
+- `distinct5_512_ema_variant_j_aux_hard_swd_queue_e3_b44_remote` epoch 3：训练 `epoch_time_sec=63.49859118461609`，full-eval `wall_total=95.3742954019981`；
+- `aaai2027_longer_train_f_seed42_b44_e8` epoch 8：训练 `epoch_time_sec=67.0106086730957`，full-eval `wall_total=136.38432930499948`；
+- `aaai2027_longer_train_k_seed42_b44_e8` epoch 8：训练 `epoch_time_sec=64.67221856117249`，full-eval-artfid `wall_total=105.18277635000004`；
+- `sadd_exact_e3_saddsrc_8ep_20260528_231954` epoch 8：训练 `epoch_time_sec=42.156864404678345`，full_eval summary 没有同结构 `timings_sec.wall_total`；
+- `sadd_repro_38f_8ep_20260528_225252` epoch 8：训练 `epoch_time_sec=41.12867784500122`，full_eval summary 没有同结构 `timings_sec.wall_total`。
+
+本轮没有远程删除。原因很明确：当前远程 `SchrodingerBridge/exp` 的 101 个权重不是随机垃圾，而是 current Distinct5/AAAI2027 evidence 或 SADD lineage evidence。`vae_backend` 虽然有 251463 个文件，但权重数为 0，主要是 summary/log/image/source 证据；`inference/frontier/tokenizer/representation` 也都是零权重证据面。下一步如果要释放这里的空间，应该做 epoch thinning policy，而不是按扩展名删除。
+
+记录见 `manual_remote_schrodingerbridge_exp_topdir_inventory_20260605.csv` 和 `MANUAL_REMOTE_SCHRODINGERBRIDGE_EXP_20260605.md`。
+
 还没清的是 archive/cache 层面，不是 checkpoint 层面：
 
 - `latent-*` 后端缓存是否保留，需要决定哪些 backend 仍要复现；

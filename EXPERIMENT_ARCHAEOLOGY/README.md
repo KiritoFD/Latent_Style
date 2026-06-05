@@ -130,6 +130,8 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `manual_related_works_directory_ledger_20260605.csv`: local `Related_Works` top-level plus `baseline_pipeline/results`, `runs`, `run_511`, `repos`, and `final_works` directory ledger.
 - `manual_cycle_nce_directory_ledger_20260605.csv`: local `Cycle-NCE` top-level and main family ledger, with checked summaries/logs/CSV evidence, timing fields, weight/cache classification, and cleanup decision.
 - `MANUAL_CYCLE_NCE_ARCHAEOLOGY_20260605.md`: narrative manual walkthrough for local `Cycle-NCE`, including timing evidence, metric anchors, cleanup boundary, and remaining gaps.
+- `manual_remote_schrodingerbridge_exp_topdir_inventory_20260605.csv`: remote `I:\Github\Latent_Style\SchrodingerBridge\exp` top-level inventory with file/log/summary/weight counts and sample evidence paths.
+- `MANUAL_REMOTE_SCHRODINGERBRIDGE_EXP_20260605.md`: manual remote `SchrodingerBridge/exp` walkthrough with opened README/config/log/summary evidence, timing examples, weight retention, and cleanup boundary.
 - `manual_cleanup_retention_and_next_candidates_20260605.csv`: remaining weight/cache classes, keep reasons, and next deletion candidates.
 - `MANUAL_EXPERIMENT_AUDIT_20260605.md`: current hand-checked audit narrative and gap list.
 - `manual_directory_audit_20260605.csv`: checked directory-level evidence rows.

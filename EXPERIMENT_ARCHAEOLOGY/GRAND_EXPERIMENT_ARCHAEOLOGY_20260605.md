@@ -25,9 +25,11 @@ New manual products:
 - `manual_schrodingerbridge_exp_topdir_ledger_20260605.csv`
 - `manual_related_works_directory_ledger_20260605.csv`
 - `manual_cycle_nce_directory_ledger_20260605.csv`
+- `manual_remote_schrodingerbridge_exp_topdir_inventory_20260605.csv`
 - `manual_cleanup_retention_and_next_candidates_20260605.csv`
 - `GRAND_EXPERIMENT_ARCHAEOLOGY_20260605.md`
 - `MANUAL_CYCLE_NCE_ARCHAEOLOGY_20260605.md`
+- `MANUAL_REMOTE_SCHRODINGERBRIDGE_EXP_20260605.md`
 
 Existing manual products extended/used as context:
 
@@ -242,6 +244,17 @@ First-level split:
 | `eval_cache` | 2 | 0.652 | eval cache |
 
 The first row is the true remote experiment-checkpoint surface. The second row is data, not train checkpoint clutter.
+
+The 2026-06-05 remote top-level walkthrough refined `SchrodingerBridge/exp`:
+
+- `124` top-level entries in `manual_remote_schrodingerbridge_exp_topdir_inventory_20260605.csv`.
+- `17` top-level directories contain weights.
+- `101` weight files total, `5945.064 MB`.
+- Weighted directories are current Distinct5/AAAI2027 packets or SADD lineage: `aaai2027_longer_train_*`, `aaai2027_path_kinetic_*`, `distinct5_512_ema_*`, `sadd_exact_*`, and `sadd_repro_*`.
+- Opened timing examples show Distinct5/AAAI2027 training `epoch_time_sec` around `62-67s` for 4972 samples and full-eval `wall_total` around `94.8-136.4s`, depending on variant.
+- `vae_backend`, `inference`, `frontier`, `tokenizer`, and `representation` are zero-weight evidence surfaces with summaries/logs/source/image outputs; they are not checkpoint deletion targets.
+
+No remote `SchrodingerBridge/exp` deletion was performed in this pass. Future cleanup here should be an epoch-thinning policy, not broad extension deletion.
 
 ### Remote Related_Works split
 
