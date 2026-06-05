@@ -148,9 +148,11 @@ Remote latent side quest currently occupying the only allowed GPU lane:
   - safely below the hard stop:
     - `< 11.0 GiB`
 - latest observed training progress:
-  - around `Epoch 0 step 1594`
+  - around `Epoch 0 step 1743`
   - observed train rate:
     - about `0.74 step/s`
+- rough remaining wall to first retained checkpoint:
+  - about `73 min` from the latest heartbeat if throughput stays flat
 - retained checkpoint status:
   - none yet
   - first save still waits for `step 5000`
@@ -203,3 +205,15 @@ Next cheap reviewer control prepared:
   - same paper-facing `H` surface
   - clear only the offline prototype pairing cache
   - short two-epoch random-pairing control
+
+Additional cheap reviewer control now prepared:
+
+- projection-count sensitivity packet:
+  - [2026-06-06-projection-count-sensitivity-packet.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-06-projection-count-sensitivity-packet.md)
+- launch config:
+  - [projection_count_h_sem32_seed42_b44.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/projection_count_h_sem32_seed42_b44.json)
+- scope:
+  - same paper-facing `H` surface
+  - keep semantic axis selection fixed
+  - reduce only `semantic_swd_num_projections`
+  - short two-epoch sensitivity packet

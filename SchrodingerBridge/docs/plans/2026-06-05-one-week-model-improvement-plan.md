@@ -37,6 +37,7 @@ What is still high-value:
 
 - formal GPU runs must use the remote `3060` WSL surface
 - no local GPU usage
+- keep every formal run strictly below `11.0 GiB` VRAM on the remote `3060`
 - every experiment lane must write a dated note under `SchrodingerBridge/docs/experiments/`
 - every meaningful code / config / result milestone gets its own small commit and push
 - `latent SaMam` must not eat more than about half a day unless it becomes obviously cheap and competitive
