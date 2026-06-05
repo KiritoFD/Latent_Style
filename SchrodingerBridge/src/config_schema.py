@@ -31,7 +31,28 @@ INFERENCE_DEFAULTS: dict[str, dict[str, Any]] = {
 
 
 def _section_dict(value: Mapping[str, Any] | None) -> dict[str, Any]:
-    return dict(value or {})
+    if value is None:
+        return {}
+    if isinstance(value, Mapping):
+        return dict(value)
+    if hasattr(value, "to_dict") and callable(getattr(value, "to_dict")):
+        try:
+            return dict(value.to_dict())
+        except Exception:
+            pass
+    if hasattr(value, "__dict__"):
+        try:
+            return {
+                key: item
+                for key, item in vars(value).items()
+                if not str(key).startswith("_")
+            }
+        except Exception:
+            pass
+    try:
+        return dict(value)
+    except Exception:
+        return {}
 
 
 def _split_known_fields(cls: type[Any], payload: Mapping[str, Any] | None) -> tuple[dict[str, Any], dict[str, Any]]:
