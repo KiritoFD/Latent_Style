@@ -195,3 +195,44 @@ Interpretation:
 - this closes the earlier structural import/download blockers
 - this also closes the latent shape mismatch and AMP incompatibility blockers for `SaMam`
 - the next check should confirm retained checkpoint creation and full convergence progress under the fixed `25000`-step budget
+
+## 2026-06-05 SaMST live status
+
+Current active probe:
+
+- output root:
+  - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samst_latent_legacy256_probe3`
+- start time in log:
+  - `2026-06-05T23:44:29`
+
+Verified repair sequence:
+
+- fixed latent style discovery in:
+  - [train_latent.py](/G:/GitHub/Latent_Style/Related_Works/repos/SaMST-main/train_model/train2/train_latent.py)
+  - latent wrapper now enumerates style subdirectories instead of only flat files
+- fixed workspace root derivation for `SchrodingerBridge/src` imports
+- fixed latent VAE decode output dtype to `float32` before VGG features
+
+Observed status:
+
+- the first probe died on `ModuleNotFoundError: No module named 'utils'`
+- the second probe died at VGG input dtype mismatch (`Half` vs `float`)
+- the third probe remained alive beyond the `90s` front-run window
+- at about `23:46`, both wrapper and training processes were alive in WSL:
+  - `run_samst_latent_baseline.py`
+  - `train_latent.py`
+- log had progressed past startup into repeated cuDNN forward/backward warnings, with no immediate Python exception
+- while `SaMam` and `SaMST` were both active, observed GPU usage reached about `12.0 / 12.3 GiB`
+
+Interpretation:
+
+- `SaMST` has crossed the early import/config/dtype blockers and is now in the "watch for first real train log or next structural failure" stage
+- if the run keeps advancing, this becomes the second formal latent baseline lane on `legacy256_overfit50`
+
+Cap adjustment:
+
+- user later tightened the remote VRAM ceiling to `11.2 GiB`
+- because concurrent `SaMam` + `SaMST` exceeded that cap, `samst_latent_legacy256_probe3` was stopped
+- current active formal latent lane is only:
+  - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4`
+- `SaMST` should resume only as a single-run probe or after an explicit lower-VRAM calibration that stays below the cap

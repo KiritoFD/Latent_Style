@@ -22,7 +22,7 @@ from networks.latent_transfer_net import LatentTransformerNet
 from train_model import utils
 
 
-WORKSPACE_ROOT = Path(__file__).resolve().parents[4]
+WORKSPACE_ROOT = Path(__file__).resolve().parents[5]
 SCHRODINGER_SRC = WORKSPACE_ROOT / "SchrodingerBridge" / "src"
 if str(SCHRODINGER_SRC) not in sys.path:
     sys.path.append(str(SCHRODINGER_SRC))
@@ -130,7 +130,7 @@ def _decode_latent_train(vae, latent: torch.Tensor, scaling_factor: float) -> to
     z = latent.to(dtype=dtype) / max(float(scaling_factor), 1e-8)
     decoded = vae.decode(z).sample
     decoded = (decoded + 1.0) / 2.0
-    return torch.clamp(decoded, 0.0, 1.0)
+    return torch.clamp(decoded, 0.0, 1.0).float()
 
 
 def train(opt):
@@ -139,7 +139,11 @@ def train(opt):
     np.random.seed(opt["seed"])
     torch.manual_seed(opt["seed"])
 
-    style_names = [name for name in sorted(os.listdir(opt["style_image"])) if (Path(opt["style_image"]) / name).is_file()]
+    style_names = [
+        name
+        for name in sorted(os.listdir(opt["style_image"]))
+        if (Path(opt["style_image"]) / name).is_dir()
+    ]
     style_num = len(style_names)
     print("total style number:", style_num)
 
