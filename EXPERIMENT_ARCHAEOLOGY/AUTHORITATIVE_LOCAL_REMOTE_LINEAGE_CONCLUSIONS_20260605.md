@@ -217,14 +217,17 @@ TokenizerClean retained no-summary payloads:
   `wikiart512_ema_spectral_stat_full_e2_from_tok_b48` records
   `resume_checkpoint=./exp/wikiart512_ema_spectral_stat_full_e2_from_tok_b48/epoch_0004.pt`,
   but that file does not exist remotely.
+- The missing-resume anomaly is now explicitly annotated: the directory is a
+  metadata-only training-log archaeology row and must not be promoted as a clean
+  resume lineage or evaluated result without external checkpoint proof.
 
 TokenizerClean remaining gap:
 
 - The 5 training-log-only payload directories no longer hold weights; they
   remain as metadata-only archaeology rows and do not need summary recovery for
   cleanup purposes.
-- Repair or annotate the missing-resume config lineage anomaly before promoting
-  `wikiart512_ema_spectral_stat_full_e2_from_tok_b48` as a clean lineage row.
+- Keep the annotated missing-resume row out of clean lineage/evaluated-result
+  claims unless an external owner supplies checkpoint proof.
 - Owner-select archive/migration candidates for the 26 retained media dirs and
   preserve old-to-new path mappings before moving any generated media.
 - Do not delete current/cited media by count or size.
@@ -319,10 +322,10 @@ Block 2, 1.0h:
 verified, original archive is deleted, and post-delete verification passed.
 
 Block 3, 1.0h:
-Remote TokenizerClean no-summary cleanup is partly executed: the 5
-training-log-only payload dirs are now metadata-only after deleting 7 exact
-checkpoint files. Remaining work is to repair/annotate the missing
-`epoch_0004.pt` resume anomaly and keep the two evidence-bearing payloads.
+Remote TokenizerClean no-summary cleanup is executed for the training-log-only
+weights: the 5 no-external-evidence payload dirs are metadata-only after
+deleting 7 exact checkpoint files, and the missing `epoch_0004.pt` resume
+anomaly is annotated as not clean lineage.
 
 Block 4, 1.0h:
 TokenizerClean cited/current media archive selection. The fixed-path manifest
@@ -350,5 +353,5 @@ Not complete.
 
 The task is substantially advanced, but completion is unproven because the
 remaining gaps are concrete: local nested generated media, TokenizerClean
-missing-resume anomaly, retained-media migration policy, docs timing promotion,
-and final consistency audit.
+retained-media migration policy, docs timing promotion, and final consistency
+audit.

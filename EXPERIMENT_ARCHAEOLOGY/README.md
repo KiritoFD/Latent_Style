@@ -35,6 +35,8 @@ This directory contains the curated local G and remote I experiment archaeology 
 - `MANUAL_REMOTE_TOKENIZERCLEAN_TRAINING_LOG_ONLY_LIVE_RECHECK_20260605.md`: fixed-path live recheck of all 7 trained no-summary payload directories after deletion.
 - `manual_remote_tokenizerclean_training_log_only_live_recheck_20260605.csv`: row-level live recheck with current weight counts, config resume fields, training CSV tails, and summary/full_eval absence.
 - `manual_remote_tokenizerclean_training_log_only_remaining_weights_20260605.csv`: current post-cleanup remaining weight table for the 7 trained no-summary payload dirs.
+- `MANUAL_REMOTE_TOKENIZERCLEAN_MISSING_RESUME_ANOMALY_20260605.md`: fixed-path annotation for `wikiart512_ema_spectral_stat_full_e2_from_tok_b48`, whose config points to absent `epoch_0004.pt`.
+- `manual_remote_tokenizerclean_missing_resume_anomaly_20260605.csv`: row-level anomaly record; marks the directory as metadata-only, not clean lineage.
 - `cleanup/manual_remote_tokenizerclean_orphan_probe_weight_cleanup_20260605.csv`: deletion ledger for the 3 pure orphan probe dirs, totaling `170.017 MB`.
 - `manual_remote_tokenizerclean_orphan_probe_post_delete_verify_20260605.csv`: post-delete verification for orphan probe cleanup and retained diagnostics/payload evidence.
 - `manual_remote_tokenizerclean_remaining_weight_classes_after_owner_review_cleanup_20260605.csv`: current post-owner-review TokenizerClean remaining weight classes.
