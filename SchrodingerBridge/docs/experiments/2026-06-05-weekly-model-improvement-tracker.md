@@ -148,11 +148,11 @@ Remote latent side quest currently occupying the only allowed GPU lane:
   - safely below the hard stop:
     - `< 11.0 GiB`
 - latest observed training progress:
-  - around `Epoch 0 step 3508`
+  - around `Epoch 0 step 3732`
   - observed train rate:
     - about `0.76 step/s`
 - rough remaining wall to first retained checkpoint:
-  - about `33 min` from the latest heartbeat if throughput stays flat
+  - about `28 min` from the latest heartbeat if throughput stays flat
 - retained checkpoint status:
   - none yet
   - first save still waits for `step 5000`
@@ -304,3 +304,10 @@ Single-note autonomy snapshot now available:
 - purpose:
   - one place for current remote step, watcher PIDs, watcher logs, and the
     next automatic queue transitions
+
+Single-command live reporter now available:
+
+- reporter:
+  - [report_remote_aaai2027_status.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/report_remote_aaai2027_status.py)
+- note:
+  - [2026-06-06-remote-status-reporter.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-06-remote-status-reporter.md)
