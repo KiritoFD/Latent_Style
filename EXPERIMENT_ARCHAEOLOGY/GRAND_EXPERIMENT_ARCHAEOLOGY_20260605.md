@@ -26,8 +26,10 @@ New manual products:
 - `manual_related_works_directory_ledger_20260605.csv`
 - `manual_cycle_nce_directory_ledger_20260605.csv`
 - `manual_remote_schrodingerbridge_exp_topdir_inventory_20260605.csv`
+- `manual_coverage_matrix_20260605.csv`
 - `manual_cleanup_retention_and_next_candidates_20260605.csv`
 - `GRAND_EXPERIMENT_ARCHAEOLOGY_20260605.md`
+- `CONSOLIDATED_EXPERIMENT_ARCHAEOLOGY_REPORT_CN_20260605.md`
 - `MANUAL_CYCLE_NCE_ARCHAEOLOGY_20260605.md`
 - `MANUAL_REMOTE_SCHRODINGERBRIDGE_EXP_20260605.md`
 

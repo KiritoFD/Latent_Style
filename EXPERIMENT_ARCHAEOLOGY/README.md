@@ -124,6 +124,8 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 
 - `GRAND_EXPERIMENT_ARCHAEOLOGY_20260605.md`: hand-checked local/remote grand synthesis, lineage, cleanup boundary, and remaining gaps.
 - `LOCAL_REMOTE_ARCHAEOLOGY_CONCLUSIONS_CN_20260605.md`: readable Chinese conclusion report for local state, remote state, lineage, timing, cleanup boundary, and 8-hour continuation plan.
+- `CONSOLIDATED_EXPERIMENT_ARCHAEOLOGY_REPORT_CN_20260605.md`: consolidated Chinese executive report answering local state, remote state, experiment lineage, cleanup boundary, and 8-hour policy-driven cleanup plan.
+- `manual_coverage_matrix_20260605.csv`: coverage matrix showing which local/remote roots were deeply opened, top-level counted, or only classified, with next action per root.
 - `manual_top_level_directory_index_20260605.csv`: top-level directory-by-directory manual classification for local G:, remote `I:\Github\Latent_Style`, and remote `I:\Github\Latent_Style_TokenizerClean`.
 - `manual_family_walkthrough_20260605.csv`: family-level walkthrough for local `SchrodingerBridge/exp`, local `Related_Works`, local `Cycle-NCE`, remote main experiment families, and remote TokenizerClean packets.
 - `manual_schrodingerbridge_exp_topdir_ledger_20260605.csv`: every current local `SchrodingerBridge/exp` top-level directory/file opened and classified with weight counts and cleanup decision.
