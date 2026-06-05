@@ -87,3 +87,15 @@ Additional remote cleanup after archive provenance checks of `I:\Github\Latent_S
 | remote_I_main | deleted | exact_duplicate_archive | 1 | 507.452 | `manual_remote_duplicate_archive_cleanup_20260605.csv` |
 
 Post-delete verification confirms the three deleted archives are absent and the retained evidence roots still exist: `eval_cache`, `experiments\1-decoder-patch5-15`, root `Cycle-NCE\45.rar`, and `Cycle-NCE\src`.
+
+## 2026-06-05 local remaining surface cleanup
+
+Additional local cleanup after path-by-path inspection of the remaining data/cache/dependency/archive surface:
+
+| scope | action | cleanup_class | targets | size_mb | ledger |
+| --- | --- | --- | ---: | ---: | --- |
+| local_G | deleted | empty cache/probe directories | 2 | 0 | `manual_local_remaining_surface_cleanup_20260605.csv` |
+| local_G | deleted | fully duplicated zip archives | 2 | 205.674 | `manual_local_remaining_surface_cleanup_20260605.csv` |
+| local_G | deleted | fully duplicated output tar archive | 1 | 32.186 | `manual_local_remaining_surface_cleanup_20260605.csv` |
+
+Total released in this block: `237.860 MB`. The policy explicitly retained WebDataset tar shards, `samst_ckpts_epoch50.tar`, CLIP vocabulary gzip, external repo `.git\shallow.lock`, and `uv.lock` dependency files because they were not proven disposable. Post-delete verification passed all 15 absent/present checks in `manual_local_remaining_surface_post_delete_verify_20260605.csv`.
