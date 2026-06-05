@@ -35,6 +35,21 @@ DATASETS = {
 }
 
 
+def _first_style_latent_file(latent_root: Path, style: str) -> Path:
+    manifest_path = latent_root / ".latent_cache" / "manifest.json"
+    if manifest_path.exists():
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        styles = payload.get("styles") or {}
+        style_payload = styles.get(style) or {}
+        files = style_payload.get("files") or []
+        if files:
+            return latent_root / str(files[0])
+    matches = sorted((latent_root / style).glob("*.pt"))
+    if not matches:
+        raise FileNotFoundError(f"No latent .pt files found for style={style} under {latent_root}")
+    return matches[0]
+
+
 def _read_optional_text(path: Path) -> str | None:
     if not path.exists():
         return None
@@ -77,9 +92,9 @@ def main() -> int:
 
     style_single_root = out_root / "style_single"
     style_single_root.mkdir(parents=True, exist_ok=True)
+    latent_root = Path(preset["latent_root"]).expanduser().resolve()
     for style in preset["style_names"]:
-        src_dir = Path(preset["latent_root"]) / style
-        first_file = sorted(src_dir.glob("*.pt"))[0]
+        first_file = _first_style_latent_file(latent_root, style)
         dst_dir = style_single_root / style
         dst_dir.mkdir(parents=True, exist_ok=True)
         dst = dst_dir / first_file.name
