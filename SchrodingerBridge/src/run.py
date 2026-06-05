@@ -244,7 +244,7 @@ def main() -> None:
             metrics.get("cuda_peak_allocated_gb", 0.0),
             metrics.get("cuda_peak_reserved_gb", 0.0),
         )
-        if epoch % trainer.save_interval == 0 or epoch == trainer.num_epochs:
+        if epoch % trainer.save_interval == 0 or epoch == trainer.num_epochs or trainer.requested_stop:
             ckpt_path = trainer.save_checkpoint(epoch, metrics)
             if bool(train_cfg.full_eval_each_epoch):
                 if hasattr(trainer, "wait_for_pending_checkpoints"):
@@ -253,6 +253,9 @@ def main() -> None:
                     deferred_eval_checkpoints.append(ckpt_path)
                 else:
                     _run_full_eval_for_checkpoint(config, ckpt_path)
+        if trainer.requested_stop:
+            logger.info("Early stop requested by training.stop_after_global_steps; ending training loop after epoch %d.", epoch)
+            break
         epoch += 1
 
     if hasattr(trainer, "wait_for_pending_checkpoints"):
