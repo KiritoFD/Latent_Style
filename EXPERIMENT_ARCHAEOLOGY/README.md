@@ -23,7 +23,7 @@ This directory contains the curated local G and remote I experiment archaeology 
 - Timeline events: 7829
 - Source roots: {'G:/GitHub/Latent_Style': 17134, 'I:\\': 5495}
 - Local deleted checkpoints: 329, MB=11575.67
-- Remote deleted checkpoints: 246, MB=9074.318
+- Remote deleted checkpoints: 387, MB=14173.309
 
 ## Dataset Counts
 
@@ -153,6 +153,16 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `cleanup/manual_remote_schrodingerbridge_epoch_cleanup_20260605.csv`: deletion ledger for 84 remote `SchrodingerBridge/exp` checkpoint files, totaling `4961.604 MB`.
 - `manual_remote_schrodingerbridge_remaining_weights_after_thinning_20260605.csv`: post-delete verification list of the 17 remaining remote `SchrodingerBridge/exp` checkpoints.
 - `MANUAL_REMOTE_SCHRODINGERBRIDGE_EPOCH_THINNING_20260605.md`: narrative manual epoch-thinning walkthrough for remote `SchrodingerBridge/exp`.
+- `MANUAL_REMOTE_TOKENIZERCLEAN_CITATION_GRAPH_20260605.md`: narrative manual citation graph and cleanup audit for remote `I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge\exp`.
+- `manual_tokenizerclean_exp_citation_graph_20260605.csv`: pre-cleanup weighted-only TokenizerClean graph from the earlier pass; superseded for decisions by the all-directory graph below.
+- `manual_remote_tokenizerclean_exp_internal_evidence_20260605.csv`: pre-cleanup internal evidence table for all 145 remote TokenizerClean `exp` top-level directories.
+- `manual_remote_tokenizerclean_exp_citation_graph_all_20260605.csv`: all-directory docs/reviews/master/paper citation graph for remote TokenizerClean `exp`.
+- `manual_remote_tokenizerclean_cleanup_policy_20260605.csv`: all-directory keep/delete policy used for TokenizerClean checkpoint cleanup.
+- `cleanup/manual_remote_tokenizerclean_uncited_checkpoint_cleanup_20260605.csv`: per-file deletion ledger for 141 uncited TokenizerClean exploratory checkpoints, totaling `5198.991 MB`.
+- `cleanup/manual_remote_tokenizerclean_uncited_checkpoint_cleanup_by_dir_20260605.csv`: per-directory summary of the same TokenizerClean checkpoint cleanup.
+- `manual_remote_tokenizerclean_exp_internal_evidence_after_cleanup_20260605.csv`: post-delete verification table for all 145 remote TokenizerClean `exp` directories.
+- `manual_remote_tokenizerclean_remaining_weight_classes_after_cleanup_20260605.csv`: remaining TokenizerClean checkpoint classes after deleting the uncited summary-backed exploratory checkpoints.
+- `manual_remote_tokenizerclean_timing_evidence_20260605.csv`: TokenizerClean summary-level full-eval wall-time timing evidence extracted from post-cleanup `summary.json` files; training time is left blank unless explicitly recorded.
 - `manual_cleanup_retention_and_next_candidates_20260605.csv`: remaining weight/cache classes, keep reasons, and next deletion candidates.
 - `MANUAL_EXPERIMENT_AUDIT_20260605.md`: current hand-checked audit narrative and gap list.
 - `manual_directory_audit_20260605.csv`: checked directory-level evidence rows.

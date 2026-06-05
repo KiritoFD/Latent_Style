@@ -230,3 +230,31 @@
 - 没有把“所有目录每个子目录”都开到同一深度；当前是按 disk/evidence 风险分层推进。
 
 当前下一步应从 TokenizerClean citation graph 开始，因为它是剩余 checkpoint 大头里最可能继续释放空间、同时最容易误删当前引用证据的区域。
+
+## 2026-06-05 TokenizerClean citation graph 与清理更新
+
+已完成 remote TokenizerClean 的 citation graph 和一轮 checkpoint-only 清理：
+
+- 远程根目录：`I:\Github\Latent_Style_TokenizerClean\SchrodingerBridge`。
+- 已覆盖 `exp` 下全部 145 个一级目录，不再只是 94 个带权重目录。
+- 已打开并核对 TokenizerClean policy 文档、tokenizer restart 设计、main-table gap analysis、flow-loss ablation、SA-SWD ablation、tokenizer execution alignment、L-family successor packet、`aaai2027_master_experiment_log.csv`。
+- 已生成 `manual_remote_tokenizerclean_exp_internal_evidence_20260605.csv`、`manual_remote_tokenizerclean_exp_citation_graph_all_20260605.csv`、`manual_remote_tokenizerclean_cleanup_policy_20260605.csv`。
+- 已按 policy 删除 44 个“无引用、非 aaai2027、有 summary/metrics”的探索目录中的 checkpoint 文件：141 个 `.pt/.ckpt/.pth`，释放 `5198.991 MB`。
+- 删除 ledger：`cleanup/manual_remote_tokenizerclean_uncited_checkpoint_cleanup_20260605.csv`。
+- post-delete 复核：`manual_remote_tokenizerclean_exp_internal_evidence_after_cleanup_20260605.csv` 和 `manual_remote_tokenizerclean_remaining_weight_classes_after_cleanup_20260605.csv`。
+
+删除后 TokenizerClean 剩余权重分布：
+
+| 类别 | 目录数 | 剩余权重文件 | 剩余大小 | 处理 |
+|---|---:|---:|---:|---|
+| cited/docs/master/paper 命中 | 34 | 122 | `3813.414 MB` | 保留直到 citation graph 迁移 |
+| 当前 `aaai2027_*` packet | 9 | 24 | `1451.217 MB` | 保留，后续只可做 packet-specific thinning |
+| 无 summary 的 review candidate | 28 | 39 | `911.730 MB` | 未删，需要逐目录 owner review |
+| 已删除候选 | 44 | 0 | `0 MB` | checkpoint 已清理，数据证据保留 |
+| 无 checkpoint | 30 | 0 | `0 MB` | 本轮不动 |
+
+仍未完成：
+
+- 28 个无 summary 的剩余权重目录需要下一轮逐个打开 config/log 后决定是否删除。
+- `diagnostics`、`tokenizer_control_probes` 等约 4.8GB 主要是 generated image/summary/metrics，不是 checkpoint，必须另立图像证据归档策略，不能混入 checkpoint cleanup。
+- `aaai2027_tokenizer_localization_*` 当前 docs 引用未跟上，但内部是新近 formal packet 形态，先保留。
