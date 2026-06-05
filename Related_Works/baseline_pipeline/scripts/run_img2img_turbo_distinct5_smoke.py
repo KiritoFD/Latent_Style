@@ -55,7 +55,8 @@ def resolve_accelerate(python_path: Path, accelerate_path: Path | None) -> tuple
     if accelerate_path is not None:
         resolved = accelerate_path.resolve()
         return [str(resolved)], True
-    bin_dir = python_path.resolve().parent
+    python_path = python_path.expanduser()
+    bin_dir = python_path.parent
     candidates = [
         bin_dir / "accelerate",
         bin_dir / "accelerate.exe",
@@ -65,8 +66,7 @@ def resolve_accelerate(python_path: Path, accelerate_path: Path | None) -> tuple
         if candidate.exists():
             resolved = candidate.resolve()
             return [str(resolved)], True
-    python_resolved = str(python_path.resolve())
-    return [python_resolved, "-m", "accelerate.commands.launch"], False
+    return [str(python_path), "-m", "accelerate.commands.launch"], False
 
 
 def build_command(args: argparse.Namespace, dataset_dir: Path, output_dir: Path) -> list[str]:
