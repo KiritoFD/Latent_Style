@@ -129,10 +129,12 @@ def bubble_area(infer_wall_seconds: float) -> float:
     return 120.0 + 19.0 * math.sqrt(infer_wall_seconds)
 
 
-def annotate_point(ax, row: dict[str, object], dx: float, dy: float) -> None:
+def annotate_point(ax, row: dict[str, object], dx: float, dy: float, *, prefix: str | None = None) -> None:
     method = str(row["method"])
+    delta = float(row["transfer_delta_idt"])
+    lead = prefix if prefix is not None else method
     ax.annotate(
-        f"{method}\n{row['train_label']} train",
+        f"{lead}\n" + r"$\Delta_{\mathrm{idt}}$" + f" {delta:+.3f}  |  {row['train_label']}",
         (float(row["one_minus_lpips"]), float(row["transfer_clip_style"])),
         xytext=(dx, dy),
         textcoords="offset points",
@@ -285,14 +287,16 @@ def main() -> None:
         gridspec_kw={"width_ratios": [1.22, 0.78]},
     )
 
+    qual_panel = build_qual_panel()
     ax = axes[0]
-    ax.imshow(build_qual_panel())
+    ax.imshow(qual_panel)
     ax.set_axis_off()
-    ax.set_title("(a) Representative art-to-art rows from the standard benchmark", pad=6.0)
+    ax.set_title("(a) Standard-benchmark art-to-art rows", pad=6.0)
 
     ax = axes[1]
     ax.set_facecolor(COLORS["panel_bg"])
     ax.axhspan(0.46, IDT_TRANSFER_CLIP_S, color="#EEE8FF", alpha=0.58, zorder=0)
+    ax.axhspan(IDT_TRANSFER_CLIP_S, 0.69, color="#F3FAF5", alpha=0.32, zorder=0)
     ax.axhline(
         IDT_TRANSFER_CLIP_S,
         color=COLORS["idt"],
@@ -316,6 +320,15 @@ def main() -> None:
         fontsize=7.2,
         style="italic",
     )
+    ax.text(
+        0.49,
+        0.684,
+        "positive-IDT transfer region",
+        color="#4C8E61",
+        fontsize=7.0,
+        style="italic",
+        ha="center",
+    )
 
     for method in METHOD_ORDER:
         row = points[method]
@@ -330,9 +343,9 @@ def main() -> None:
             zorder=4,
         )
 
-    annotate_point(ax, points["LBM"], -48, -28)
-    annotate_point(ax, points["SaMAM"], 16, 2)
-    annotate_point(ax, points["SaMST"], 44, -8)
+    annotate_point(ax, points["LBM"], -46, -30, prefix="LBM")
+    annotate_point(ax, points["SaMAM"], 16, 2, prefix="SaMAM")
+    annotate_point(ax, points["SaMST"], 48, -10, prefix="SaMST")
     ax.text(
         0.705,
         0.466,
@@ -345,9 +358,8 @@ def main() -> None:
     )
     ax.set_xlim(0.0, 0.72)
     ax.set_ylim(0.46, 0.69)
-    ax.set_xlabel(r"$1-\mathrm{LPIPS}$ $\uparrow$")
     ax.set_ylabel(r"Transfer CLIP-S $\uparrow$")
-    ax.set_title("(b) Same-cost Distinct5 frontier", pad=6.0)
+    ax.set_title("(b) Same-cost Distinct5 operating points", pad=6.0)
     ax.text(
         0.695,
         0.684,
@@ -364,7 +376,7 @@ def main() -> None:
         xytext=(0.505, 0.642),
         arrowprops=dict(arrowstyle="->", lw=1.1, color=COLORS["muted"]),
     )
-    fig.subplots_adjust(left=0.025, right=0.995, top=0.89, bottom=0.14, wspace=0.14)
+    fig.subplots_adjust(left=0.025, right=0.995, top=0.89, bottom=0.16, wspace=0.14)
     fig.savefig(OUT_DIR / "fig_distinct5_page1_summary.pdf")
     fig.savefig(OUT_DIR / "fig_distinct5_page1_summary.png")
     print(OUT_DIR / "fig_distinct5_page1_summary.pdf")

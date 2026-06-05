@@ -36,7 +36,8 @@
 \centering
 \vspace{-9mm}
 \includegraphics[width=0.985\textwidth]{figures/fig_distinct5_page1_summary.pdf}
-\captionof{figure}{Page-1 teaser. Left: representative art-to-art rows from the historical standard benchmark. SaMST injects generic art-domain texture but drifts off the requested target style, whereas LBM moves more cleanly toward the requested domain. Right: under matched roughly two-minute Distinct5-512 budgets, LBM sits in the favorable upper-right positive-IDT region, same-cost SaMST stays only slightly above the IDT floor at much larger displacement, and same-cost SaMAM remains inside the sub-IDT failure band. Bubble area denotes 750-image inference wall time.}
+\vspace{2.8mm}
+\captionof{figure}{Page-1 teaser. Left: two art-to-art rows from the historical standard benchmark. SaMST drifts toward generic art-domain texture, whereas LBM moves more cleanly toward the requested target domain. Right: transfer CLIP-S versus $1-\mathrm{LPIPS}$ under matched roughly two-minute Distinct5-512 budgets. LBM lands in the favorable upper-right positive-IDT region; same-cost SaMST stays only slightly above the IDT floor at much larger displacement, and same-cost SaMAM remains below IDT. Bubble area denotes 750-image inference wall time.}
 \label{fig:distinct5_page1}
 \vspace{-5mm}
 \end{strip}
