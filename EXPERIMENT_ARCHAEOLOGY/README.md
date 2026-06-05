@@ -122,6 +122,7 @@ Only explicitly non-mainline checkpoint candidates were deleted. Ambiguous `revi
 
 The broad CSVs above are navigation indexes. For checked timing and cleanup evidence, use these manual files first:
 
+- `AUTHORITATIVE_ARCHAEOLOGY_SYNTHESIS_CN_20260605.md`: current authoritative Chinese synthesis for local state, remote state, experiment lineage, cleanup already performed, gaps, and the 8-hour continuation plan.
 - `GRAND_EXPERIMENT_ARCHAEOLOGY_20260605.md`: hand-checked local/remote grand synthesis, lineage, cleanup boundary, and remaining gaps.
 - `LOCAL_REMOTE_ARCHAEOLOGY_CONCLUSIONS_CN_20260605.md`: readable Chinese conclusion report for local state, remote state, lineage, timing, cleanup boundary, and 8-hour continuation plan.
 - `CONSOLIDATED_EXPERIMENT_ARCHAEOLOGY_REPORT_CN_20260605.md`: consolidated Chinese executive report answering local state, remote state, experiment lineage, cleanup boundary, and 8-hour policy-driven cleanup plan.
