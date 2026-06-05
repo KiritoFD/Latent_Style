@@ -20,6 +20,7 @@ DEFAULT_PATHS = [
     Path("Related_Works/baseline_pipeline/scripts/generate_samst_latent_eval.py"),
     Path("Related_Works/baseline_pipeline/scripts/run_samst_latent_eval_bundle.py"),
     Path("Related_Works/repos/SaMam/ARCHI/Decoder.py"),
+    Path("Related_Works/repos/SaMam/ARCHI/StyleEmbedder.py"),
     Path("Related_Works/repos/SaMam/MODEL/SaMam_model.py"),
     Path("Related_Works/repos/SaMam/TRAIN/lightning_module/latent_dataset.py"),
     Path("Related_Works/repos/SaMam/TRAIN/lightning_module/latent_datamodule.py"),

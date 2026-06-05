@@ -285,6 +285,8 @@ Follow-up fix that actually moved the run forward:
 - restore `/home/xy/venvs/samam312` `transformers` to `4.41.2`
 - downgrade `diffusers` in that env to `0.29.2`
 - install `modelscope` so `download_vae_with_fallback()` can fetch `stabilityai/sd-vae-ft-ema` when `huggingface.co` is unreachable from WSL
+- run latent `SaMam` with `32-true` precision on this machine; `16-mixed` hit a `mamba_ssm` selective-scan dtype failure during sanity-check evaluation
+- for latent token grids, `Related_Works/repos/SaMam/ARCHI/StyleEmbedder.py` must avoid blindly downscaling tiny `4x4` maps
 
 Observed network fact on this machine:
 
