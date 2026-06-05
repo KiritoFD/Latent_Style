@@ -96,5 +96,5 @@ Second follow-up result:
 
 Remaining archive gaps after the follow-ups:
 
-- `Cycle-NCE\45.rar`: retained as a unique historical archive under current comparison roots.
+- `Cycle-NCE\45.rar`: manually opened in `MANUAL_REMOTE_CYCLE_NCE_45_RAR_REVIEW_20260605.md`; retained because it is the only current container for 4 historical runs and unique nonweight evidence. Deletion requires a separate curated nonweight extraction / owner-decision block.
 - Cross-cache dedup remains a separate block.

@@ -217,6 +217,10 @@ The broad CSVs above are navigation indexes. For checked timing and cleanup evid
 - `delete_remote_experiments_rar_resolved_duplicate.ps1`: exact-path deletion script for the resolved duplicate archive.
 - `cleanup/manual_remote_experiments_rar_resolved_duplicate_cleanup_20260605.csv`: deletion ledger for `experiments.rar`, totaling `8091.026 MB`.
 - `manual_remote_experiments_rar_resolved_duplicate_post_delete_verify_20260605.csv`: post-delete verification for archive absence, expanded evidence presence, and 9 symlink target checks.
+- `MANUAL_REMOTE_CYCLE_NCE_45_RAR_REVIEW_20260605.md`: manual review of retained `Cycle-NCE\45.rar`; records why it is unique nonweight evidence and not a delete target yet.
+- `manual_remote_cycle_nce_45_rar_policy_20260605.csv`: keep policy for `45.rar`.
+- `manual_remote_cycle_nce_45_rar_run_ledger_20260605.csv`: per-run file/weight/image/config/summary/metrics counts inside `45.rar`.
+- `manual_remote_cycle_nce_45_rar_summary_overview_20260605.csv`: 8-row overview extracted from the archive's full-eval summaries.
 - `manual_local_remaining_surface_probe_20260605.csv`: navigation counts for the local remaining data/cache/dependency/archive surface; used only as a map, not as a deletion decision.
 - `manual_local_remaining_surface_policy_20260605.csv`: path-by-path manual policy for 31 local remaining-surface rows, including duplicated archive proof and explicit keep decisions for WDS tar, checkpoint tar, dependency gzip, `.git` shallow lock, and `uv.lock` files.
 - `MANUAL_LOCAL_REMAINING_SURFACE_POLICY_20260605.md`: narrative local remaining-surface walkthrough and delete whitelist.

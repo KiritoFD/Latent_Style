@@ -53,6 +53,6 @@ The `experiments.rar` mismatch was reopened after this pass:
 
 ## Remaining gap
 
-After deleting the four archive groups, remote RAR/archive provenance still has one retained RAR gap:
+After deleting the four archive groups, the retained RAR is now reviewed rather than unknown:
 
-- `Cycle-NCE\45.rar`: unique historical archive unless extracted or owner confirms disposability.
+- `Cycle-NCE\45.rar`: unique historical archive. Follow-up `MANUAL_REMOTE_CYCLE_NCE_45_RAR_REVIEW_20260605.md` confirms it contains 4 runs, 12 weights, 6008 generated/eval images, 8 summary JSON files, 8 metrics CSV files, 4 configs, and root ma-probe artifacts. It is retained unless a separate nonweight extraction / owner-decision block is approved.
