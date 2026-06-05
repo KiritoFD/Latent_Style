@@ -29,6 +29,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--python", type=Path, default=Path(sys.executable))
     parser.add_argument("--accelerate", type=Path, default=None)
     parser.add_argument("--main-process-port", type=int, default=29531)
+    parser.add_argument("--mixed-precision", choices=["no", "fp16", "bf16"], default="no")
     parser.add_argument("--pretrained-model-name-or-path", default="stabilityai/sd-turbo")
     parser.add_argument("--train-img-prep", default="resize_512")
     parser.add_argument("--val-img-prep", default="resize_512")
@@ -66,6 +67,8 @@ def build_command(args: argparse.Namespace, dataset_dir: Path, output_dir: Path)
     cmd = [
         str(accelerate_path),
         "launch",
+        "--mixed_precision",
+        str(args.mixed_precision),
         "--main_process_port",
         str(args.main_process_port),
         "src/train_cyclegan_turbo.py",
