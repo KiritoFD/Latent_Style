@@ -33,7 +33,7 @@
 
 | 本地位置 | count | size MB | 归类 | 当前决策 |
 |---|---:|---:|---|---|
-| `root eval_cache` | 32 | 5279.758 | DINO/SDXL VAE/CLIP/ArtFID/offline pairing/ref feature cache | 保留，除非另定 cache policy |
+| `root eval_cache` | 3069 cache files | 5747.939 current subtree MB | DINO/SDXL VAE/CLIP/ArtFID/offline pairing/ref feature cache/VAE compile/ONNX | 已打开到文件级；删除 55.994MB 无效 `.incomplete` 缓存，其余保留 |
 | `SchrodingerBridge/scale` | 11350 | 3179.108 | scale dataset tensors | 保留，数据/cache |
 | `clip-feats-vitb32` | 10361 | 1303.526 | per-image CLIP features | 保留，数据/cache |
 | `Related_Works` | 31 | 814.913 | baseline deps + tiny placeholders | 保留依赖；placeholder 另定策略 |
@@ -65,6 +65,20 @@
 - `Cycle-NCE/eval_cache/hf`
 
 这些都是删除前递归文件数 0、git tracked 0 的空壳，释放 0 字节，但能减少假线索。
+
+本轮新增的 `eval_cache` 手工核验结论：
+
+- `eval_cache/offline_pairing` 已打开日志和源码引用，确认是 `style_data/train` + `latent-256` 的 9636 行 DINOv2/offline pairing cache，不是训练 ckpt。
+- `eval_cache/hf` 已打开 HF `refs/main`、VAE configs 和 ModelScope 文件，确认有效部分是 CLIP/VAE 模型依赖；只删除一个失败下载残留 `.incomplete` blob，释放 55.994MB。
+- `eval_cache/manual_clip` 已打开 CLIP config 和 tokenizer/model 文件，确认是完整本地 CLIP 依赖。
+- `eval_cache/ref_feats_*.pt` 已逐个只读加载，确认是 full-eval reference feature cache。
+- `eval_cache/vae_compile` 和 `eval_cache/vae_onnx` 已打开文件类，归类为 VAE speed/export artifact，暂不删。
+
+详见：
+
+- `manual_local_eval_cache_policy_20260605.csv`
+- `MANUAL_LOCAL_EVAL_CACHE_POLICY_20260605.md`
+- `cleanup/manual_cache_cleanup_20260605.csv`
 
 ## 3. 远程主仓状态
 
