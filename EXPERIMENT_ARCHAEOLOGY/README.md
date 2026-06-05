@@ -4,6 +4,8 @@ This directory contains the curated local G and remote I experiment archaeology 
 
 ## Main Outputs
 
+- `ARCHAEOLOGY_DIRECT_CONCLUSIONS_ZH_20260605.md`: direct current answer for local state, remote main state, remote TokenizerClean state, lineage, timing, cleanup ledger totals, gaps, and the 8-hour continuation plan.
+- `archaeology_direct_conclusions_index_20260605.csv`: compact machine-readable index for the direct conclusions report.
 - `AUTHORITATIVE_ARCHAEOLOGY_REPORT_ZH_20260605.md`: current readable Chinese authority report for local state, remote state, TokenizerClean, lineage, timing, cleanup totals, gaps, and the 8-hour continuation plan.
 - `authoritative_report_evidence_map_20260605.csv`: conclusion-to-evidence map for the authority report.
 - `MANUAL_REMOTE_TOKENIZERCLEAN_RETAINED_NO_SUMMARY_OWNER_REVIEW_20260605.md`: second-pass owner review for the 10 retained TokenizerClean no-summary directories.
@@ -32,6 +34,8 @@ This directory contains the curated local G and remote I experiment archaeology 
 - `SchrodingerBridge/docs/timing/training_inference_timing_master.csv`: timing-focused subset.
 
 `final_by_dataset/` is the authoritative per-dataset/per-setting split after merging and reclassifying both G: and I: evidence. `remote_i_curated/` is kept as the remote-side audit bundle generated on I: before final local reclassification.
+
+The latest direct status should be read from `ARCHAEOLOGY_DIRECT_CONCLUSIONS_ZH_20260605.md` first. Some older count lines below predate the later manual generated-media, RAR, TokenizerClean owner-review, and timing reconciliation passes; use the per-pass ledgers and `cleanup/CLEANUP_AUDIT_SUMMARY.md` for cleanup totals.
 
 ## Counts
 
