@@ -52,3 +52,13 @@ Additional manual cleanup after root-level archive/tmp/exp inspection:
 | local_G | deleted | empty_probe_directory | 0 | 0 | `manual_root_misc_cleanup_20260605.csv` |
 
 The current `Cycle-NCE` evidence tree was retained; only the duplicate monolithic archive tar under `archive/2026-05-19_cleanup/root` was deleted. Recent paper/PDF/TEX/PNG scratch under `tmp` was retained.
+
+## 2026-06-05 manual dataset/cache cleanup
+
+Additional manual cleanup after dataset/latent/feature cache inspection:
+
+| scope | action | cleanup_class | files | size_mb | ledger |
+| --- | --- | --- | ---: | ---: | --- |
+| local_G | deleted | failed_hf_dataset_download_cache | 6 | 63.948 | `manual_dataset_cache_cleanup_20260605.csv` |
+
+Representative `.pt` files in the remaining dataset/cache roots were loaded read-only and confirmed as VAE latent tensors or CLIP feature tensors, not training checkpoints. Valid dataset/cache roots were retained.

@@ -28,6 +28,7 @@ New manual products:
 - `manual_remote_schrodingerbridge_exp_topdir_inventory_20260605.csv`
 - `manual_local_eval_cache_policy_20260605.csv`
 - `manual_local_root_misc_policy_20260605.csv`
+- `manual_local_dataset_cache_policy_20260605.csv`
 - `manual_coverage_matrix_20260605.csv`
 - `manual_cleanup_retention_and_next_candidates_20260605.csv`
 - `GRAND_EXPERIMENT_ARCHAEOLOGY_20260605.md`
@@ -36,6 +37,7 @@ New manual products:
 - `MANUAL_REMOTE_SCHRODINGERBRIDGE_EXP_20260605.md`
 - `MANUAL_LOCAL_EVAL_CACHE_POLICY_20260605.md`
 - `MANUAL_LOCAL_ROOT_MISC_POLICY_20260605.md`
+- `MANUAL_LOCAL_DATASET_CACHE_POLICY_20260605.md`
 
 Existing manual products extended/used as context:
 
@@ -46,6 +48,7 @@ Existing manual products extended/used as context:
 - cleanup ledgers under `cleanup/`
 - `cleanup/manual_cache_cleanup_20260605.csv`
 - `cleanup/manual_root_misc_cleanup_20260605.csv`
+- `cleanup/manual_dataset_cache_cleanup_20260605.csv`
 
 Broad auto indexes remain useful but are not treated as sufficient proof:
 
@@ -203,6 +206,8 @@ Tiny `fake_eval_checkpoint.pt` placeholders exist in baseline result folders. Th
 Root `eval_cache` was reopened after the first consolidation and checked at file/log/config level. It is not a training checkpoint target. The manual pass opened ArtFID, HF/ModelScope, manual CLIP, DINO offline-pairing, full-eval reference feature, VAE compile, and VAE ONNX classes. Only one invalid HF `.incomplete` blob and two empty ModelScope temp directories were deleted, releasing 55.994MB. The remaining valid cache files are retained; details are in `manual_local_eval_cache_policy_20260605.csv` and `MANUAL_LOCAL_EVAL_CACHE_POLICY_20260605.md`.
 
 Root misc/archive/tmp was also reopened manually. The large local cleanup item was `archive/2026-05-19_cleanup/root/Cycle-NCE.tar`: `tar -tf` showed a duplicate monolithic Cycle-NCE backup containing `.venv`, site-packages, dependency weights, and historical payloads. The current `Cycle-NCE` tree remains present and separately indexed, so the tar was deleted, releasing 1503.203MB. Stale root `exp` PID/log residue from failed launchers was also deleted; generated highres image evidence and recent paper/PDF/TEX/PNG scratch under `tmp` were retained. Details are in `manual_local_root_misc_policy_20260605.csv` and `MANUAL_LOCAL_ROOT_MISC_POLICY_20260605.md`.
+
+Local dataset/cache roots were reopened manually as well. Representative `.pt` files were loaded read-only and confirmed as VAE latents or CLIP features, not checkpoints: `latent-256` shape `(1,4,32,32)`, `clip-feats-vitb32` shape `(512,)`, `Dataset/wikiart_stress` shape `(1,4,64,64)`, `SchrodingerBridge/scale/wikiart_latent_128` shape `(4,128,128)`, and horse2zebra latent shape `(4,32,32)`. The only cleanup was failed HF download residue `SchrodingerBridge/scale/datasets/wikiart_81k`, releasing 63.948MB. Details are in `manual_local_dataset_cache_policy_20260605.csv` and `MANUAL_LOCAL_DATASET_CACHE_POLICY_20260605.md`.
 
 ## Remote `I:\Github\Latent_Style` conclusions
 
