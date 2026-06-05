@@ -78,8 +78,8 @@ def main() -> int:
     style_single_root = out_root / "style_single"
     style_single_root.mkdir(parents=True, exist_ok=True)
     for style in preset["style_names"]:
-        src_dir = Path(preset["styles_dir"]) / style
-        first_file = sorted(p for p in src_dir.iterdir() if p.is_file())[0]
+        src_dir = Path(preset["latent_root"]) / style
+        first_file = sorted(src_dir.glob("*.pt"))[0]
         dst_dir = style_single_root / style
         dst_dir.mkdir(parents=True, exist_ok=True)
         dst = dst_dir / first_file.name
