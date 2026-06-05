@@ -1,0 +1,31 @@
+{
+  "_base": "mainline_h_seed42_b44_base.json",
+  "training": {
+    "num_epochs": 2
+  },
+  "data": {
+    "pairing_cache_path": "",
+    "pairing_cache_topk": 1,
+    "pairing_cache_active_topk": 0,
+    "pairing_cache_sample_mode": "uniform_topk",
+    "pairing_cache_rank_schedule": "fixed",
+    "pairing_cache_min_topk": 1,
+    "pairing_cache_curriculum_epochs": 0,
+    "pairing_cache_rank_power": 1.0,
+    "pairing_cache_explore_prob": 0.0,
+    "pairing_cache_explore_topk": 0,
+    "pairing_cache_dual_target_mix": 0.0,
+    "pairing_cache_dual_target_topk": 0,
+    "pairing_cache_aux_target_topk": 0,
+    "pairing_cache_cross_only": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_pairing_cache_h_randompair_seed42_b44"
+  },
+  "ablation": {
+    "name": "aaai2027_pairing_cache_h_randompair_seed42_b44",
+    "axis": "aaai2027_pairing_cache_sensitivity",
+    "stage": "h_random_pairing_control",
+    "notes": "Cheap reviewer control for the prototype-aware pairing cache. Keep the paper-facing H-family train/eval contract fixed, but clear the offline pairing cache and fall back to simple cross-style random target sampling for a short two-epoch packet."
+  }
+}
