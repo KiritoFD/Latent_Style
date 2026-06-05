@@ -1,0 +1,23 @@
+{
+  "_base": "mainline_h_seed42_b44_base.json",
+  "training": {
+    "resume_checkpoint": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/distinct5_512_ema_variant_h_hard_explore_queue_e3_b44_remote/epoch_0001.pt",
+    "resume_model_strict": false,
+    "resume_include_prefixes": [
+      "style_tokenizer.",
+      "style_spatial_id_16"
+    ],
+    "resume_ignore_prefixes": [],
+    "freeze_mode": "executor_only",
+    "freeze_reinit_trainable": false
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_executor_promotion_h_e1_seed42_b44"
+  },
+  "ablation": {
+    "name": "aaai2027_executor_promotion_h_e1_seed42_b44",
+    "axis": "aaai2027_executor_promotion",
+    "stage": "h_e1_executor_refresh",
+    "notes": "Port the executor-only localization win onto the current paper-facing H-family surface. Load only the H e1 style-side control branch, leave the executor fresh, and train only the executor on the remote 3060."
+  }
+}

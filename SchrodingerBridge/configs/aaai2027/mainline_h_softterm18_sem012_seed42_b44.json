@@ -1,0 +1,19 @@
+{
+  "_base": "mainline_h_seed42_b44_base.json",
+  "model": {
+    "semantic_attn_temperature": 0.12
+  },
+  "bridge": {
+    "terminal_swd_weight": 18.0,
+    "w_kinetic": 1.0
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_mainline_h_softterm18_sem012_seed42_b44"
+  },
+  "ablation": {
+    "name": "aaai2027_mainline_h_softterm18_sem012_seed42_b44",
+    "axis": "aaai2027_mainline_softening",
+    "stage": "soft_term18_sem012",
+    "notes": "Balanced H-family softening packet. Preserve kinetic strength, hold terminal SWD near the mainline, and test a larger routing-temperature softening to reduce brittle endpoint over-drive."
+  }
+}

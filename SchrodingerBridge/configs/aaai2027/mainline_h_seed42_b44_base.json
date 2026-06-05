@@ -1,0 +1,27 @@
+{
+  "_base": "../distinct5_512_ema_variant_h_hard_explore_queue_e3.json",
+  "training": {
+    "seed": 42,
+    "batch_size": 44,
+    "test_image_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "full_eval_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache",
+    "full_eval_clip_hf_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache/hf",
+    "full_eval_batch_size": 4,
+    "full_eval_vae_decode_batch_size": 4
+  },
+  "data": {
+    "data_root": "/mnt/i/wikiart_distinct5_samam_512_latents_ema/train",
+    "latent_cache_dir": "/mnt/i/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache",
+    "pairing_cache_path": "/mnt/i/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt"
+  },
+  "full_eval": {
+    "batch_size": 4,
+    "vae_decode_batch_size": 4
+  },
+  "ablation": {
+    "name": "aaai2027_mainline_h_seed42_b44_base",
+    "axis": "aaai2027_mainline_h_weekly",
+    "stage": "base",
+    "notes": "Weekly AAAI 2027 mainline base for remote RTX 3060 Distinct5-512 packets. Reuses the current H-family paper-facing surface with formal batch 44 and the reviewed full-eval contract."
+  }
+}
