@@ -53,6 +53,7 @@ def main() -> int:
     parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--pin-memory", type=int, default=0)
     parser.add_argument("--gradient-checkpointing", type=int, default=0)
+    parser.add_argument("--identity-gradient-checkpointing", type=int, default=0)
     parser.add_argument("--limit-val-batches", type=float, default=1.0)
     parser.add_argument("--num-sanity-val-steps", type=int, default=2)
     parser.add_argument("--accumulate-grad-batches", type=int, default=1)
@@ -115,6 +116,8 @@ def main() -> int:
         str(args.pin_memory),
         "--gradient-checkpointing",
         str(args.gradient_checkpointing),
+        "--identity-gradient-checkpointing",
+        str(args.identity_gradient_checkpointing),
         "--limit-val-batches",
         str(args.limit_val_batches),
         "--num-sanity-val-steps",
