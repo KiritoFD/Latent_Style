@@ -4,6 +4,8 @@ This directory contains the curated local G and remote I experiment archaeology 
 
 ## Main Outputs
 
+- `AUTHORITATIVE_LOCAL_REMOTE_LINEAGE_CONCLUSIONS_20260605.md`: newest clean entrypoint for local conclusions, remote-main conclusions, TokenizerClean conclusions, dataset lineage, timing state, cleanup ledger policy, and the 8-hour continuation plan.
+- `authoritative_local_remote_lineage_conclusions_20260605.csv`: row-level conclusion index behind the newest clean entrypoint.
 - `ARCHAEOLOGY_DIRECT_CONCLUSIONS_ZH_20260605.md`: direct current answer for local state, remote main state, remote TokenizerClean state, lineage, timing, cleanup ledger totals, gaps, and the 8-hour continuation plan.
 - `archaeology_direct_conclusions_index_20260605.csv`: compact machine-readable index for the direct conclusions report.
 - `ARCHAEOLOGY_CURRENT_STATUS_AND_CONCLUSIONS_ZH_20260605.md`: current readable status report separating local, remote main, remote TokenizerClean, timing, lineage, cleanup, remaining gaps, and the 8-hour continuation plan.
@@ -45,7 +47,7 @@ This directory contains the curated local G and remote I experiment archaeology 
 
 `final_by_dataset/` is the authoritative per-dataset/per-setting split after merging and reclassifying both G: and I: evidence. `remote_i_curated/` is kept as the remote-side audit bundle generated on I: before final local reclassification.
 
-The latest direct status should be read from `ARCHAEOLOGY_CURRENT_STATUS_AND_CONCLUSIONS_ZH_20260605.md` first. Some older count lines below predate the later manual generated-media, RAR, TokenizerClean owner-review, timing reconciliation, and source-open passes; use the per-pass ledgers and `cleanup/CLEANUP_AUDIT_SUMMARY.md` for cleanup totals.
+The latest direct status should be read from `AUTHORITATIVE_LOCAL_REMOTE_LINEAGE_CONCLUSIONS_20260605.md` first. Some older count lines below predate the later manual generated-media, RAR, TokenizerClean owner-review, timing reconciliation, source-open, and local/remote lineage synthesis passes; use the per-pass ledgers and `cleanup/CLEANUP_AUDIT_SUMMARY.md` for cleanup totals.
 
 ## Counts
 
