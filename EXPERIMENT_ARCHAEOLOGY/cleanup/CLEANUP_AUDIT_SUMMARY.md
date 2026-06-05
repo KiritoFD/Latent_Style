@@ -131,4 +131,14 @@ Follow-up manual audit opened the 9 `experiments.rar` cache mismatches one by on
 | --- | --- | --- | ---: | ---: | --- |
 | remote_I_main | deleted | resolved duplicate RAR archive | 1 | 8091.026 | `manual_remote_experiments_rar_resolved_duplicate_cleanup_20260605.csv` |
 
-Post-delete verification passed all 11 checks in `manual_remote_experiments_rar_resolved_duplicate_post_delete_verify_20260605.csv`: `experiments.rar` is absent, expanded `experiments` remains, and all 9 CLIP snapshot symlink target blobs remain same-size as the original RAR entries. `Cycle-NCE\45.rar` remains the RAR/archive owner-decision gap.
+Post-delete verification passed all 11 checks in `manual_remote_experiments_rar_resolved_duplicate_post_delete_verify_20260605.csv`: `experiments.rar` is absent, expanded `experiments` remains, and all 9 CLIP snapshot symlink target blobs remain same-size as the original RAR entries.
+
+## 2026-06-05 remote Cycle-NCE 45.rar retained review
+
+`Cycle-NCE\45.rar` was opened with temporary remote `UnRAR.exe` after the duplicate archive and RAR cleanup passes. No deletion was performed.
+
+| scope | action | cleanup_class | archive_files | size_mb | ledger |
+| --- | --- | --- | ---: | ---: | --- |
+| remote_I_main | retained | unique historical RAR archive | 1 | 507.452 | `manual_remote_cycle_nce_45_rar_policy_20260605.csv` |
+
+Reason for retention: the archive has no expanded `Cycle-NCE\45` directory and contains unique nonweight evidence: 4 configs, 8 summaries, 8 metrics CSVs, 6008 generated/eval images, root ma-probe artifacts, and 12 old weight files. Deleting the whole archive would delete more than checkpoints. A future cleanup can extract a curated nonweight evidence package and then delete the archive under a new whitelist policy.
