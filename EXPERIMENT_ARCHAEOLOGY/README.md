@@ -6,6 +6,8 @@ This directory contains the curated local G and remote I experiment archaeology 
 
 - `ARCHAEOLOGY_DIRECT_CONCLUSIONS_ZH_20260605.md`: direct current answer for local state, remote main state, remote TokenizerClean state, lineage, timing, cleanup ledger totals, gaps, and the 8-hour continuation plan.
 - `archaeology_direct_conclusions_index_20260605.csv`: compact machine-readable index for the direct conclusions report.
+- `ARCHAEOLOGY_CURRENT_STATUS_AND_CONCLUSIONS_ZH_20260605.md`: current readable status report separating local, remote main, remote TokenizerClean, timing, lineage, cleanup, remaining gaps, and the 8-hour continuation plan.
+- `archaeology_current_status_requirements_20260605.csv`: machine-readable requirement/status/gap index for the current status report.
 - `CROSS_CACHE_DEDUP_AUDIT_20260605.md`: local/remote cache duplicate hash audit; no deletion performed, exact duplicates retained pending loader/path-reference audit.
 - `CROSS_CACHE_LOADER_PATH_REFERENCE_AUDIT_20260605.md`: manual loader/path-reference audit for local and remote duplicate cache roots; no deletion whitelisted because multiple consumers still encode root, SchrodingerBridge, and Cycle-NCE cache paths.
 - `cross_cache_loader_path_reference_audit_20260605.csv`: row-level source-open evidence for the cache path audit.
