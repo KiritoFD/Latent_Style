@@ -311,6 +311,9 @@ Current resource rule:
 - remote `3060` paper runs must stay under `11.2 GiB`
 - do not overlap latent baseline probes if combined usage pushes the card above that cap
 - on 2026-06-05, concurrent `SaMam` + `SaMST` pushed usage to about `12.0 / 12.3 GiB`, so the `SaMST` probe was stopped and `SaMam` was kept as the active formal run
+- current verified single-run reference:
+  - `SaMam legacy256` at `batch=2`, `precision=32-true` used about `7.46 GiB`
+- until `SaMam` yields a retained checkpoint, defer `SaMST` to a non-overlapping retry and start that retry from `batch=1`
 
 ## Remote launch pattern that proved structurally stable
 
