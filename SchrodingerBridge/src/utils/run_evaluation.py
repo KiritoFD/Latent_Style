@@ -1663,6 +1663,7 @@ def main():
         io_pool.shutdown(wait=True)
         _add_timing(timings, "image_save_join", t0)
         if bool(args.save_summary_grid):
+            print("  Saving summary grid... (disable with --no-save_summary_grid for pure throughput timing)")
             grid_rows = []
             for it in generated_buffer:
                 grid_rows.append(
@@ -2519,13 +2520,21 @@ def generate_summary_json(
             'photo_to_art_performance': build_pool_summary(photo_transfer_pool, valid=len(photo_transfer_pool) > 0),
         },
     }
-    
+
+    summary_grid_path = None
+    if bool((settings or {}).get("save_summary_grid", True)):
+        print("  Saving summary grid... (disable with --no-save_summary_grid for pure throughput timing)")
+        t0 = time.perf_counter()
+        summary_grid_path = _save_summary_grid_png(rows, out_dir, style_order=style_order)
+        _add_timing(timings, "summary_grid", t0)
+        summary['timings_sec'] = {str(k): float(v) for k, v in sorted((timings or {}).items())}
+        if summary_grid_path is not None:
+            summary['summary_grid_path'] = str(summary_grid_path)
+
     sum_path = out_dir / 'summary.json'
     with open(sum_path, 'w') as f:
         json.dump(summary, f, indent=2)
-    print(f"闁?Summary saved: {sum_path}")
-    if bool((settings or {}).get("save_summary_grid", True)):
-        _save_summary_grid_png(rows, out_dir, style_order=style_order)
+    print(f"Summary saved: {sum_path}")
     if fid_runner is not None:
         fid_runner.close()
 
