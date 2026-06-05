@@ -89,6 +89,7 @@ def _run_one_target(
     *,
     target_style: str,
     epoch: int,
+    ckpt_name: str | None,
     image_root: Path,
     style_names: list[str],
     max_src_per_style: int,
@@ -96,7 +97,8 @@ def _run_one_target(
     ckpt_root: Path,
     images_out: Path,
 ) -> int:
-    ckpt = ckpt_root / target_style / f"epoch_{epoch}.model"
+    ckpt_filename = ckpt_name or f"epoch_{epoch}.model"
+    ckpt = ckpt_root / target_style / ckpt_filename
     if not ckpt.is_file():
         raise FileNotFoundError(f"missing checkpoint: {ckpt}")
 
@@ -151,6 +153,8 @@ def main() -> int:
     parser.add_argument("--image-root", type=Path, default=DEFAULT_IMAGE_ROOT)
     parser.add_argument("--ckpt-root", type=Path, default=DEFAULT_CKPT_ROOT)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    parser.add_argument("--ckpt-name", type=str, default="", help="Optional explicit checkpoint filename under each target style dir, for example step_000258.model.")
+    parser.add_argument("--label", type=str, default="", help="Optional output subdir label; defaults to epoch_XXXX.")
     parser.add_argument("--max-src-per-style", type=int, default=30)
     parser.add_argument("--resize-content", type=int, default=512)
     args = parser.parse_args()
@@ -162,7 +166,9 @@ def main() -> int:
     image_root = args.image_root.resolve()
     ckpt_root = args.ckpt_root.resolve()
     output_root = args.output_root.resolve()
-    step_dir = output_root / f"epoch_{int(args.epoch):04d}"
+    label = args.label.strip() or f"epoch_{int(args.epoch):04d}"
+    ckpt_name = args.ckpt_name.strip() or None
+    step_dir = output_root / label
     images_out = step_dir / "images"
     shutil.rmtree(images_out, ignore_errors=True)
     images_out.mkdir(parents=True, exist_ok=True)
@@ -172,6 +178,7 @@ def main() -> int:
         rc = _run_one_target(
             target_style=target,
             epoch=int(args.epoch),
+            ckpt_name=ckpt_name,
             image_root=image_root,
             style_names=style_names,
             max_src_per_style=int(args.max_src_per_style),
@@ -184,6 +191,8 @@ def main() -> int:
 
     summary = {
         "epoch": int(args.epoch),
+        "label": label,
+        "checkpoint_name": ckpt_name or f"epoch_{int(args.epoch):04d}.model",
         "images": len(list(images_out.glob("*_to_*.*"))),
         "style_names": style_names,
         "max_src_per_style": int(args.max_src_per_style),

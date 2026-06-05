@@ -48,8 +48,25 @@ def _parse_epochs(text: str) -> list[int]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--run-root", type=Path, required=True, help="SaMST training output root containing checkpoints/<style>/epoch_*.model")
+    parser.add_argument(
+        "--run-root",
+        type=Path,
+        required=True,
+        help="SaMST training output root containing checkpoints/<style>/epoch_*.model or step_*.model",
+    )
     parser.add_argument("--epochs", type=str, required=True, help="Comma-separated epochs, e.g. 5 or 5,10,15")
+    parser.add_argument(
+        "--ckpt-name",
+        type=str,
+        default="",
+        help="Optional explicit checkpoint filename under each target-style checkpoint dir, for example step_000040.model.",
+    )
+    parser.add_argument(
+        "--label",
+        type=str,
+        default="",
+        help="Optional output label for the generated/evaluated packet. Defaults to epoch_XXXX per epoch.",
+    )
     parser.add_argument("--test-root", type=Path, default=DEFAULT_TEST_ROOT)
     parser.add_argument("--style-names", type=str, default=",".join(DEFAULT_STYLE_NAMES))
     parser.add_argument("--max-src-per-style", type=int, default=30)
@@ -59,12 +76,19 @@ def main() -> int:
     parser.add_argument("--eval-vae-decode-batch-size", type=int, default=0)
     parser.add_argument("--eval-image-save-workers", type=int, default=4)
     parser.add_argument("--skip-artfid", action="store_true")
+    parser.add_argument(
+        "--full-eval",
+        action="store_true",
+        help="Run the full evaluator instead of the LPIPS/CLIP-style-only shortcut.",
+    )
     args = parser.parse_args()
 
     run_root = args.run_root.resolve()
     test_root = args.test_root.resolve()
     style_names = [part.strip() for part in str(args.style_names).split(",") if part.strip()]
     epochs = _parse_epochs(args.epochs)
+    ckpt_name = args.ckpt_name.strip() or None
+    label_override = args.label.strip() or None
 
     if not run_root.exists():
         raise FileNotFoundError(run_root)
@@ -86,13 +110,16 @@ def main() -> int:
         "test_root": str(test_root),
         "style_names": style_names,
         "epochs": epochs,
+        "checkpoint_name": ckpt_name,
+        "label": label_override,
         "generated_at": datetime.now().isoformat(),
         "steps": [],
     }
 
     for epoch in epochs:
-        output_root = eval_root / f"eval_epoch{epoch}"
-        step_dir = output_root / f"epoch_{epoch:04d}"
+        label = label_override or f"epoch_{epoch:04d}"
+        output_root = eval_root / (f"eval_{label_override}" if label_override else f"eval_epoch{epoch}")
+        step_dir = output_root / label
 
         generate_cmd = [
             sys.executable,
@@ -107,11 +134,15 @@ def main() -> int:
             str(run_root / "checkpoints"),
             "--output-root",
             str(output_root),
+            "--label",
+            label,
             "--max-src-per-style",
             str(args.max_src_per_style),
             "--resize-content",
             str(args.resize_content),
         ]
+        if ckpt_name is not None:
+            generate_cmd.extend(["--ckpt-name", ckpt_name])
         _run(generate_cmd, cwd=WORKSPACE_ROOT, log_path=output_root / "generate.log")
 
         eval_cmd = [
@@ -125,7 +156,6 @@ def main() -> int:
             ",".join(style_names),
             "--reuse_generated",
             "--force_regen",
-            "--eval_only_lpips_clip_style",
             "--no-eval_enable_kid",
             "--batch_size",
             str(args.eval_batch_size),
@@ -139,6 +169,8 @@ def main() -> int:
             "pil_png",
             "--save_summary_grid",
         ]
+        if not args.full_eval:
+            eval_cmd.append("--eval_only_lpips_clip_style")
         if args.skip_artfid:
             eval_cmd.append("--no-eval_enable_art_fid")
         else:
@@ -148,6 +180,8 @@ def main() -> int:
 
         step_record = {
             "epoch": epoch,
+            "label": label,
+            "checkpoint_name": ckpt_name or f"epoch_{epoch:04d}.model",
             "output_root": str(output_root),
             "step_dir": str(step_dir),
             "summary_json": str(step_dir / "summary.json"),

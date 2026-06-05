@@ -23,6 +23,14 @@ from networks.transfer_net import TransformerNet
 from loss.vgg import Vgg16
 from train_model import utils
 
+
+def _save_named_model(transformer, device, save_dir, filename):
+    transformer.eval().cpu()
+    save_model_path = os.path.join(save_dir, filename)
+    torch.save(transformer.state_dict(), save_model_path)
+    print("\ntrained model saved at", save_model_path)
+    transformer.to(device).train()
+
 def check_paths(opt):
     try:
         if not os.path.exists(opt['save_model_dir']):
@@ -100,6 +108,9 @@ def train(opt):
     ae_weight = float(opt['ae_weight'])
 
     total_epochs = opt['epochs']
+    max_steps = int(opt.get('max_steps') or 0)
+    global_step = 0
+    step_model_template = opt.get('step_model_name_template') or "step_{step:06d}.model"
     for e in range(begin_epoch + 1,total_epochs+1):
 
         transformer.train()
@@ -161,6 +172,7 @@ def train(opt):
             total_loss = content_loss + style_loss + ae_loss
             total_loss.backward()
             optimizer.step()
+            global_step += 1
 
             agg_content_loss += content_loss.item()
             agg_style_loss += style_loss.item()
@@ -183,14 +195,16 @@ def train(opt):
                 torch.save(transformer.state_dict(), ckpt_model_path)
                 transformer.to(device).train()
 
+            if max_steps > 0 and global_step >= max_steps:
+                filename = step_model_template.format(step=global_step, epoch=e, batch_id=batch_id + 1)
+                _save_named_model(transformer, device, opt['save_model_dir'], filename)
+                print("Reached max_steps =", global_step)
+                return
+
         if e % opt['save_interval'] == 0:
             # save model
-            transformer.eval().cpu()
             save_model_filename = "epoch_" + str(e) + ".model"
-            save_model_path = os.path.join(opt['save_model_dir'], save_model_filename)
-            torch.save(transformer.state_dict(), save_model_path)
-            print("\ntrained model saved at", save_model_path)
-            transformer.to(device).train()
+            _save_named_model(transformer, device, opt['save_model_dir'], save_model_filename)
 
 
         if e % opt['step_size'] == 0:
