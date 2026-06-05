@@ -1,14 +1,14 @@
 """Generate the page-1 teaser with qualitative rows plus a same-cost bubble chart.
 
 Left panel:
-- two representative art-to-art rows from the historical standard-benchmark packet
+- two representative art-to-art rows from the historical standard-benchmark slice
 - columns: source / target style / SaMST / LBM
 
 Right panel:
 - same-cost Distinct5 frontier
 - x-axis: 1 - LPIPS
 - y-axis: transfer CLIP-S
-- bubble area: infer-750 wall time
+- bubble area: 750-image inference wall time
 """
 
 from __future__ import annotations
@@ -33,6 +33,7 @@ POINTS_CSV = (
 )
 OUT_DIR = ROOT / "figures"
 STYLE_GRID = REPO_ROOT / "style_data" / "grid5"
+STYLE_TRAIN = REPO_ROOT / "style_data" / "train"
 LBM_HIST = REPO_ROOT / "SchrodingerBridge" / "exp" / "paper" / "paper_main_750_bundle" / "ours_ec_best"
 SAMST_HIST = REPO_ROOT / "Related_Works" / "run_511" / "complete_750" / "samst_strict" / "images"
 IDT_TRANSFER_CLIP_S = 0.6399208252628644
@@ -81,14 +82,14 @@ QUAL_ROWS = [
     {
         "label": "Monet\n-> Hayao",
         "source": STYLE_GRID / "monet_00018.jpg",
-        "target": STYLE_GRID / "Hayao_0.jpg",
+        "target": STYLE_TRAIN / "Hayao" / "1006.jpg",
         "samst": SAMST_HIST / "monet_00018_to_Hayao.jpg",
         "lbm": LBM_HIST / "monet_00018_to_Hayao.jpg",
     },
     {
         "label": "Hayao\n-> van Gogh",
         "source": STYLE_GRID / "Hayao_0.jpg",
-        "target": STYLE_GRID / "vangogh_00090.jpg",
+        "target": STYLE_TRAIN / "vangogh" / "00010.jpg",
         "samst": SAMST_HIST / "Hayao_0_to_vangogh.jpg",
         "lbm": LBM_HIST / "Hayao_0_to_vangogh.jpg",
     },
@@ -125,7 +126,7 @@ def pick(rows: list[dict[str, object]], method: str) -> dict[str, object]:
 
 
 def bubble_area(infer_wall_seconds: float) -> float:
-    return 190.0 + 34.0 * math.sqrt(infer_wall_seconds)
+    return 120.0 + 19.0 * math.sqrt(infer_wall_seconds)
 
 
 def annotate_point(ax, row: dict[str, object], dx: float, dy: float) -> None:
@@ -173,24 +174,41 @@ def load_rgb(path: Path, size: int) -> Image.Image:
 
 
 def build_qual_panel() -> np.ndarray:
-    label_w = 136
-    cell = 180
-    gap = 14
-    pad = 14
-    header_h = 52
+    label_w = 150
+    cell = 176
+    gap = 16
+    pad = 18
+    header_h = 70
     row_gap = 18
     width = label_w + 4 * cell + 3 * gap + pad
     height = header_h + len(QUAL_ROWS) * cell + (len(QUAL_ROWS) - 1) * row_gap + pad
     canvas = Image.new("RGB", (width, height), COLORS["panel_bg"])
     draw = ImageDraw.Draw(canvas)
-    font_h = load_font(21, bold=True)
+    font_h = load_font(22, bold=True)
+    font_h2 = load_font(15, bold=False)
     font_l = load_font(18, bold=True)
+    badge_font = load_font(16, bold=True)
 
-    headers = ["Source", "Target style", "SaMST", "LBM"]
+    headers = [
+        ("Source", None),
+        ("Target style", "requested domain"),
+        ("SaMST", "texture-heavy drift"),
+        ("LBM", "cleaner target move"),
+    ]
     x0 = label_w
-    for idx, header in enumerate(headers):
+    for idx, (header, subheader) in enumerate(headers):
         x = x0 + idx * (cell + gap)
-        draw.text((x + cell / 2, 12), header, fill=COLORS["text"], font=font_h, anchor="ma")
+        if idx >= 2:
+            draw.rounded_rectangle(
+                [x, 8, x + cell, 8 + header_h - 10],
+                radius=14,
+                fill="#F4EFE7" if idx == 2 else "#EEF4F8",
+                outline=COLORS["frame"],
+                width=2,
+            )
+        draw.text((x + cell / 2, 13), header, fill=COLORS["text"], font=font_h, anchor="ma")
+        if subheader:
+            draw.text((x + cell / 2, 42), subheader, fill=COLORS["muted"], font=font_h2, anchor="ma")
 
     frame_colors = [
         COLORS["frame"],
@@ -200,8 +218,15 @@ def build_qual_panel() -> np.ndarray:
     ]
     for row_idx, row in enumerate(QUAL_ROWS):
         y = header_h + row_idx * (cell + row_gap)
+        draw.rounded_rectangle(
+            [8, y + 18, label_w - 20, y + cell - 18],
+            radius=18,
+            fill="#F2F0EA",
+            outline=COLORS["frame"],
+            width=2,
+        )
         draw.multiline_text(
-            (label_w / 2 - 6, y + cell / 2 - 8),
+            (label_w / 2 - 8, y + cell / 2 - 12),
             str(row["label"]),
             fill=COLORS["text"],
             font=font_l,
@@ -224,6 +249,26 @@ def build_qual_panel() -> np.ndarray:
                 outline=frame_colors[col_idx],
                 width=4 if col_idx >= 2 else 3,
             )
+            if col_idx == 2:
+                badge_w = 58
+                draw.rounded_rectangle(
+                    [x + cell - badge_w - 8, y + 10, x + cell - 8, y + 36],
+                    radius=10,
+                    fill="#F2FBF4",
+                    outline=COLORS["SaMST_edge"],
+                    width=2,
+                )
+                draw.text((x + cell - badge_w / 2 - 8, y + 23), "off-target", font=badge_font, fill=COLORS["SaMST_edge"], anchor="mm")
+            if col_idx == 3:
+                badge_w = 46
+                draw.rounded_rectangle(
+                    [x + cell - badge_w - 8, y + 10, x + cell - 8, y + 36],
+                    radius=10,
+                    fill="#FFF3EE",
+                    outline=COLORS["LBM_edge"],
+                    width=2,
+                )
+                draw.text((x + cell - badge_w / 2 - 8, y + 23), "ours", font=badge_font, fill=COLORS["LBM_edge"], anchor="mm")
 
     return np.asarray(canvas)
 
@@ -243,10 +288,11 @@ def main() -> None:
     ax = axes[0]
     ax.imshow(build_qual_panel())
     ax.set_axis_off()
-    ax.set_title("(a) Qualitative gap on representative art-to-art rows", pad=6.0)
+    ax.set_title("(a) Representative art-to-art rows from the standard benchmark", pad=6.0)
 
     ax = axes[1]
     ax.set_facecolor(COLORS["panel_bg"])
+    ax.axhspan(0.46, IDT_TRANSFER_CLIP_S, color="#EEE8FF", alpha=0.58, zorder=0)
     ax.axhline(
         IDT_TRANSFER_CLIP_S,
         color=COLORS["idt"],
@@ -262,6 +308,14 @@ def main() -> None:
         fontsize=8.0,
         weight="bold",
     )
+    ax.text(
+        0.02,
+        0.472,
+        "sub-IDT failure region",
+        color=COLORS["idt"],
+        fontsize=7.2,
+        style="italic",
+    )
 
     for method in METHOD_ORDER:
         row = points[method]
@@ -276,13 +330,13 @@ def main() -> None:
             zorder=4,
         )
 
-    annotate_point(ax, points["LBM"], -64, -36)
-    annotate_point(ax, points["SaMAM"], 14, -2)
-    annotate_point(ax, points["SaMST"], 48, -14)
+    annotate_point(ax, points["LBM"], -48, -28)
+    annotate_point(ax, points["SaMAM"], 16, 2)
+    annotate_point(ax, points["SaMST"], 44, -8)
     ax.text(
         0.705,
         0.466,
-        "bubble area $\\propto$ infer-750 wall",
+        "bubble area $\\propto$ 750-img infer wall",
         ha="right",
         va="bottom",
         fontsize=6.9,
@@ -307,10 +361,9 @@ def main() -> None:
     ax.annotate(
         "",
         xy=(0.655, 0.662),
-        xytext=(0.54, 0.646),
-        arrowprops=dict(arrowstyle="->", lw=0.9, color=COLORS["muted"]),
+        xytext=(0.505, 0.642),
+        arrowprops=dict(arrowstyle="->", lw=1.1, color=COLORS["muted"]),
     )
-
     fig.subplots_adjust(left=0.025, right=0.995, top=0.89, bottom=0.14, wspace=0.14)
     fig.savefig(OUT_DIR / "fig_distinct5_page1_summary.pdf")
     fig.savefig(OUT_DIR / "fig_distinct5_page1_summary.png")
