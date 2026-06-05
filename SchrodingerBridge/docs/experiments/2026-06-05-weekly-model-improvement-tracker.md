@@ -150,6 +150,10 @@ Remote latent side quest currently occupying the only allowed GPU lane:
 - retained checkpoint status:
   - none yet
   - first save still waits for `step 5000`
+- state persistence status:
+  - `step_checkpoints/last.ckpt` now exists
+  - retained numbered checkpoints still have not reached the first `5000-step`
+    boundary
 
 Interpretation:
 
@@ -172,3 +176,11 @@ What this unblocks:
 - once the current `SaMam` lane yields a checkpoint or is explicitly paused,
   `A1` can be launched without reopening the earlier SSH + WSL quoting failure
   class
+
+Additional review-risk reduction landed during this update:
+
+- implementation clarity packet:
+  - [2026-06-06-distinct5-implementation-clarity.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-06-distinct5-implementation-clarity.md)
+- this note records the current Distinct5-512 train root, eval root, VAE
+  preset, latent-scale contract, style list, and prototype-pairing cache
+  contract for the active paper-facing `H` family
