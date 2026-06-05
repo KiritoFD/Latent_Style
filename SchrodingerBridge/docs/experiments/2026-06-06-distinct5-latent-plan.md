@@ -80,6 +80,11 @@ This keeps the expensive metric confined to the final paper-facing packet.
 - remote GPU policy remains:
   - single active lane
   - hard cap `< 11.0 GiB`
+- the first formal Distinct5 latent `SaMAM` same-cost machine audit is now
+  negatively closed under the reviewed `3060` contract:
+  - see [2026-06-06-samam-latent-distinct5-11g-gate.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-06-samam-latent-distinct5-11g-gate.md)
+  - do not continue spending `Distinct5` GPU budget on this lane until a new
+    low-VRAM mechanism is identified
 - `Distinct5-512` latent presets must use WSL-native paths:
   - train latents:
     - `/mnt/i/wikiart_distinct5_samam_512_latents_ema/train`
@@ -97,11 +102,12 @@ This keeps the expensive metric confined to the final paper-facing packet.
 
 ## Immediate execution order
 
-1. relaunch latent `SaMAM` `Distinct5 same-cost`
+1. promote the next baseline slot to latent `SaMST` `Distinct5 same-cost`
 2. monitor first-health and checkpoint creation
 3. derive nearest retained checkpoints to `2 min` and `10 min`
 4. fast-eval those retained points with `CLIP-S + LPIPS` only
-5. launch latent `SaMAM` convergence lane
-6. repeat the same two-lane process for latent `SaMST`
-7. run `ArtFID` only on the final four retained points
+5. if `SaMST` closes the same-cost gate, launch latent `SaMST` convergence
+6. only return to latent `SaMAM` if a genuinely new low-VRAM mechanism is
+   available
+7. run `ArtFID` only on final retained points that passed the fast-screen
 8. then return to `LBM` main-model optimization
