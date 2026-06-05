@@ -293,6 +293,25 @@ Observed network fact on this machine:
 - `huggingface.co` may be unreachable from remote WSL even when `pip` to the Tsinghua mirror works
 - if VAE cache is missing, `modelscope` fallback is the fastest repair path currently validated on this machine
 
+Current latent-method lessons:
+
+- `SaMam` latent on `legacy256_overfit50` is stable only after:
+  - narrow VAE import path
+  - `transformers 4.41.2`
+  - `diffusers 0.29.2`
+  - `modelscope`
+  - `32-true` precision
+- `SaMST` latent on `legacy256_overfit50` needed three separate wrapper fixes before it could stay alive past startup:
+  - correct workspace-root derivation for `SchrodingerBridge/src`
+  - style enumeration from latent style subdirectories instead of flat files
+  - float32 decode output before VGG feature extraction
+
+Current resource rule:
+
+- remote `3060` paper runs must stay under `11.2 GiB`
+- do not overlap latent baseline probes if combined usage pushes the card above that cap
+- on 2026-06-05, concurrent `SaMam` + `SaMST` pushed usage to about `12.0 / 12.3 GiB`, so the `SaMST` probe was stopped and `SaMam` was kept as the active formal run
+
 ## Remote launch pattern that proved structurally stable
 
 For tmux-backed WSL launches, this pattern was reliable:
