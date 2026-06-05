@@ -83,8 +83,8 @@ def combine(left_path: Path, right_path: Path, out_path: Path):
 
 
 def main():
-    ours_grid = make_grid(OURS, "Ours epoch 7", OUT / "fig_qual_grid_ours.png")
-    samst_grid = make_grid(SAMST, "SaMST strict", OUT / "fig_qual_grid_samst.png")
+    ours_grid = make_grid(OURS, "LBM", OUT / "fig_qual_grid_ours.png")
+    samst_grid = make_grid(SAMST, "SaMST", OUT / "fig_qual_grid_samst.png")
     combined = OUT / "fig_qual_grid_ours_vs_samst.png"
     combine(ours_grid, samst_grid, combined)
     for p in [ours_grid, samst_grid, combined]:

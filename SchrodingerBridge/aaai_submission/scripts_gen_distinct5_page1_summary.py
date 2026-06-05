@@ -1,7 +1,7 @@
 """Generate the page-1 teaser with qualitative rows plus a same-cost bubble chart.
 
 Left panel:
-- two reviewed art-to-art rows from the historical standard-benchmark packet
+- two representative art-to-art rows from the historical standard-benchmark packet
 - columns: source / target style / SaMST / LBM
 
 Right panel:
@@ -236,7 +236,7 @@ def main() -> None:
     ax = axes[0]
     ax.imshow(build_qual_panel())
     ax.set_axis_off()
-    ax.set_title("(a) Qualitative gap on reviewed art-to-art rows", pad=6.0)
+    ax.set_title("(a) Qualitative gap on representative art-to-art rows", pad=6.0)
 
     ax = axes[1]
     ax.set_facecolor(COLORS["panel_bg"])

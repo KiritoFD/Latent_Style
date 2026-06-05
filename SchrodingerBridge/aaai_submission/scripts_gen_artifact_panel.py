@@ -142,7 +142,7 @@ def crop_patch(im: Image.Image, box: tuple[int, int, int, int], size: int) -> Im
 
 
 def main():
-    left_grid, _ = make_grid(OURS, "LBM e7")
+    left_grid, _ = make_grid(OURS, "LBM")
     right_grid, _ = make_grid(SAMST, "SaMST")
 
     crop_size = 176
