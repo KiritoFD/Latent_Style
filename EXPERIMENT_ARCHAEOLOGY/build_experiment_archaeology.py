@@ -45,6 +45,10 @@ SKIP_PARSE_SUBSTRINGS = {
     "Related_Works/run_511/repos/",
     "SchrodingerBridge/archives/old_paper_workspaces/",
     "PaperOrchestra-0.2.0/",
+    "EXPERIMENT_ARCHAEOLOGY/",
+    "EXPERIMENT_ARCHAEOLOGY_MASTER.csv",
+    "SchrodingerBridge/docs/timing/training_inference_timing_master.csv",
+    "SchrodingerBridge/docs/timing/README.md",
 }
 
 METRIC_KEYS = {
@@ -204,7 +208,6 @@ def guess_dataset(text: str) -> str:
 def guess_method(text: str) -> str:
     t = text.lower().replace("\\", "/")
     rules = [
-        ("LANCET/LBM", ["lancet", "lbm", "schrodingerbridge", "ours_epoch", "ours_", "s-add__"]),
         ("SaMST", ["samst"]),
         ("SaMAM", ["samam", "samam", "samam-main", "samam_wsl"]),
         ("S2WAT", ["s2wat"]),
@@ -220,6 +223,7 @@ def guess_method(text: str) -> str:
         ("SD-Turbo", ["sdturbo", "sd-turbo"]),
         ("Seedream", ["seedream"]),
         ("IDT", ["idt"]),
+        ("LANCET/LBM", ["lancet", "lbm", "schrodingerbridge", "ours_epoch", "ours_", "s-add__"]),
     ]
     for method, needles in rules:
         if any(n in t for n in needles):
