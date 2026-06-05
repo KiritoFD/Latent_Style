@@ -22,9 +22,10 @@ The JSON output includes:
 
 1. remote GPU rows from `nvidia-smi`
 2. latent `SaMam` latest parsed step
-3. retained checkpoint list excluding `last.ckpt`
-4. `A1` process and remote-log existence state
-5. local watcher PIDs, process info, and recent log tails
+3. latent `SaMam` latest parsed `it/s` and ETA to `step_5000`
+4. retained checkpoint list excluding `last.ckpt`
+5. `A1` process and remote-log existence state
+6. local watcher PIDs, process info, and recent log tails
 
 ## Example
 

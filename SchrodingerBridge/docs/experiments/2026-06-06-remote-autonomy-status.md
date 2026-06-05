@@ -15,6 +15,9 @@ Quick status command:
   - [report_remote_aaai2027_status.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/report_remote_aaai2027_status.py)
 - note:
   - [2026-06-06-remote-status-reporter.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-06-remote-status-reporter.md)
+- current use:
+  - it now reports parsed `it/s` and ETA to the first retained `step_5000`
+    checkpoint in the same JSON output
 
 ## Current remote lane
 
@@ -23,7 +26,11 @@ Active training lane:
 - remote run:
   - `/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4`
 - latest observed progress:
-  - around `Epoch 0 step 3732`
+  - around `Epoch 0 step 3860`
+- current parsed train rate:
+  - about `0.76 it/s`
+- rough ETA to the first retained checkpoint:
+  - about `25 min` to `step_5000`
 - current retained checkpoint state:
   - only `step_checkpoints/last.ckpt`
   - first numbered retained checkpoint still waits for `step_5000`
