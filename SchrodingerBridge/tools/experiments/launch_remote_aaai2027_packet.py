@@ -87,6 +87,35 @@ def _relative_to_workspace(path: Path) -> Path:
     return path.resolve().relative_to(WORKSPACE_ROOT.resolve())
 
 
+def _query_remote_gpu_memory_used_mib(*, host: str, port: int, user: str) -> int | None:
+    remote = f"{user}@{host}"
+    result = _run(
+        [
+            "ssh",
+            "-p",
+            str(port),
+            "-T",
+            "-o",
+            "LogLevel=ERROR",
+            remote,
+            "nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits",
+        ]
+    )
+    if result.returncode != 0:
+        return None
+    values: list[int] = []
+    output = result.stdout.decode("utf-8", errors="replace")
+    for line in output.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            values.append(int(float(line)))
+        except ValueError:
+            continue
+    return max(values) if values else None
+
+
 def _make_remote_launch_script(*, python_bin: str, remote_sb_root: str, config_rel: str, remote_log: str) -> str:
     return "\n".join(
         [
@@ -119,6 +148,7 @@ def main() -> int:
     parser.add_argument("--task-prefix", default="SB-AAAI2027")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--no-verify", action="store_true")
+    parser.add_argument("--max-prelaunch-memory-mib", type=int, default=1500, help="Refuse launch when the remote total GPU memory usage is above this threshold.")
     parser.add_argument("--sync-path", action="append", default=[], help="Additional workspace-relative path to include in the packet.")
     args = parser.parse_args()
 
@@ -152,9 +182,27 @@ def main() -> int:
         print(f"config={config_rel}")
         print(f"remote_log={remote_log}")
         print(f"remote_launcher={remote_launcher_abs}")
+        print(f"max_prelaunch_memory_mib={args.max_prelaunch_memory_mib}")
         for path in sync_paths:
             print(path.as_posix())
         return 0
+
+    prelaunch_memory_used_mib = _query_remote_gpu_memory_used_mib(
+        host=args.host,
+        port=args.port,
+        user=args.user,
+    )
+    print(f"prelaunch_gpu_memory_used_mib={prelaunch_memory_used_mib}")
+    if (
+        prelaunch_memory_used_mib is not None
+        and prelaunch_memory_used_mib > max(0, int(args.max_prelaunch_memory_mib))
+    ):
+        print(
+            "Refusing launch because the remote GPU is not idle enough for the "
+            f"single-lane protocol: {prelaunch_memory_used_mib} MiB > "
+            f"{int(args.max_prelaunch_memory_mib)} MiB."
+        )
+        return 13
 
     archive_bytes = _build_archive_bytes(sync_paths, {remote_launcher_rel: launch_script.encode("utf-8")})
     remote = f"{args.user}@{args.host}"

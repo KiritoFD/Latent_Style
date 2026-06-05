@@ -134,6 +134,7 @@ Use a reviewed push script, for example:
 - [push_remote_samst_step_packet.py](/G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/scripts/push_remote_samst_step_packet.py)
 - [push_remote_latent_baseline_packet.py](/G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/scripts/push_remote_latent_baseline_packet.py)
 - [handoff_remote_latent_samam_to_a1.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/handoff_remote_latent_samam_to_a1.py)
+- [watch_remote_latent_samam_handoff.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_remote_latent_samam_handoff.py)
 
 Important:
 
@@ -156,6 +157,8 @@ Use the smallest stable launch surface:
 Avoid:
 
 - very long `ssh "... wsl ... bash -lc 'python ... --many flags ...'"` strings
+- launching a new packet while remote total `memory.used` is still above:
+  - `1500 MiB`
 
 ### Step 4. Monitor
 
@@ -178,6 +181,8 @@ Concurrency rule:
 - do not overlap latent baseline runs on the `3060`
 - only one training lane may hold GPU at a time unless a measured combined peak is still strictly below `11.0 GiB`
 - if a second lane pushes total usage near or above `11.0 GiB`, stop it immediately and relaunch later as a single-run lane
+- when handing off between lanes, wait for remote total `memory.used <= 1500 MiB`
+  before launching the next packet
 
 ### Step 5. Closure
 
