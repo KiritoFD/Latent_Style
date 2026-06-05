@@ -1662,21 +1662,6 @@ def main():
         t0 = time.perf_counter()
         io_pool.shutdown(wait=True)
         _add_timing(timings, "image_save_join", t0)
-        if bool(args.save_summary_grid):
-            print("  Saving summary grid... (disable with --no-save_summary_grid for pure throughput timing)")
-            grid_rows = []
-            for it in generated_buffer:
-                grid_rows.append(
-                    {
-                        "src_style": it["src_style"],
-                        "tgt_style": it["tgt_style_name"],
-                        "src_image": Path(it["src_path"]).name,
-                        "gen_image": it["gen_name"],
-                    }
-                )
-            t0 = time.perf_counter()
-            _save_summary_grid_png(grid_rows, out_dir, style_order=list(style_subdirs))
-            _add_timing(timings, "summary_grid", t0)
         if device == "cuda":
             torch.cuda.empty_cache()
         gc.collect()
@@ -1704,6 +1689,28 @@ def main():
         with open(sum_path, "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2, ensure_ascii=False)
         print(f"Summary saved: {sum_path}")
+        if bool(args.save_summary_grid):
+            print("  Saving summary grid... (disable with --no-save_summary_grid for pure throughput timing)")
+            grid_rows = []
+            for it in generated_buffer:
+                grid_rows.append(
+                    {
+                        "src_style": it["src_style"],
+                        "tgt_style": it["tgt_style_name"],
+                        "src_image": Path(it["src_path"]).name,
+                        "gen_image": it["gen_name"],
+                    }
+                )
+            t0 = time.perf_counter()
+            summary_grid_path = _save_summary_grid_png(grid_rows, out_dir, style_order=list(style_subdirs))
+            _add_timing(timings, "summary_grid", t0)
+            timings["wall_total"] = float(time.perf_counter() - wall_start)
+            summary["timings_sec"] = {k: float(v) for k, v in sorted(timings.items())}
+            if summary_grid_path is not None:
+                summary["summary_grid_path"] = str(summary_grid_path)
+            with open(sum_path, "w", encoding="utf-8") as f:
+                json.dump(summary, f, indent=2, ensure_ascii=False)
+            print(f"Summary updated: {sum_path}")
         return
 
     # ==========================================
@@ -2521,20 +2528,27 @@ def generate_summary_json(
         },
     }
 
+    if bool((settings or {}).get("save_summary_grid", True)):
+        summary['summary_grid_pending'] = True
+
+    sum_path = out_dir / 'summary.json'
+    with open(sum_path, 'w') as f:
+        json.dump(summary, f, indent=2)
+    print(f"Summary saved: {sum_path}")
+
     summary_grid_path = None
     if bool((settings or {}).get("save_summary_grid", True)):
         print("  Saving summary grid... (disable with --no-save_summary_grid for pure throughput timing)")
         t0 = time.perf_counter()
         summary_grid_path = _save_summary_grid_png(rows, out_dir, style_order=style_order)
         _add_timing(timings, "summary_grid", t0)
+        summary.pop('summary_grid_pending', None)
         summary['timings_sec'] = {str(k): float(v) for k, v in sorted((timings or {}).items())}
         if summary_grid_path is not None:
             summary['summary_grid_path'] = str(summary_grid_path)
-
-    sum_path = out_dir / 'summary.json'
-    with open(sum_path, 'w') as f:
-        json.dump(summary, f, indent=2)
-    print(f"Summary saved: {sum_path}")
+        with open(sum_path, 'w') as f:
+            json.dump(summary, f, indent=2)
+        print(f"Summary updated: {sum_path}")
     if fid_runner is not None:
         fid_runner.close()
 
