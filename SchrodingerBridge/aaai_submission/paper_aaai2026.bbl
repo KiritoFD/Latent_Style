@@ -1,4 +1,4 @@
-\begin{thebibliography}{33}
+\begin{thebibliography}{34}
 \providecommand{\natexlab}[1]{#1}
 
 \bibitem[{An et~al.(2021)An, Huang, Song, Dou, Liu, and Luo}]{an2021artflow}
@@ -103,6 +103,12 @@ Ke, J.; Wang, Q.; Wang, Y.; Milanfar, P.; and Yang, F. 2021.
 \newblock MUSIQ: Multi-scale Image Quality Transformer.
 \newblock \emph{Proceedings of the IEEE/CVF International Conference on
   Computer Vision}.
+
+\bibitem[{L{\'e}onard(2014)}]{leonard2014survey}
+L{\'e}onard, C. 2014.
+\newblock A Survey of the Schr{\"o}dinger Problem and Some of Its Connections
+  with Optimal Transport.
+\newblock \emph{Discrete and Continuous Dynamical Systems - A}.
 
 \bibitem[{Liu et~al.(2025)Liu, Wang, Zhang, Yu, and Guo}]{liu2025samam}
 Liu, H.; Wang, L.; Zhang, Y.; Yu, Z.; and Guo, Y. 2025.
