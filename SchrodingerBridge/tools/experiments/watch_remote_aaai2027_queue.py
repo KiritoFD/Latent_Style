@@ -150,7 +150,11 @@ def _wait_for_gpu_idle(
 
 
 def _config_process_query(config_rel: str, wsl_distro: str) -> str:
-    return f"wsl -d {wsl_distro} --exec pgrep -af \"src/run.py --config {config_rel}\""
+    config_name = Path(config_rel).name
+    return (
+        f"wsl -d {wsl_distro} --exec bash -lc "
+        f"\"ps -ef | grep -F '{config_name}' | grep -v grep || true\""
+    )
 
 
 def _check_process_alive(*, host: str, port: int, user: str, config_rel: str, wsl_distro: str) -> tuple[bool, str]:
@@ -164,12 +168,12 @@ def _check_process_alive(*, host: str, port: int, user: str, config_rel: str, ws
     return alive, result.stdout
 
 
-def _check_log_exists(*, host: str, port: int, user: str, remote_log: str) -> bool:
+def _check_log_exists(*, host: str, port: int, user: str, remote_log: str, wsl_distro: str) -> bool:
     result = _ssh_exec(
         host=host,
         port=port,
         user=user,
-        remote_command=f"test -s '{remote_log}' && echo yes || echo no",
+        remote_command=f"wsl -d {wsl_distro} --exec bash -lc \"test -s '{remote_log}' && echo yes || echo no\"",
     )
     return "yes" in result.stdout
 
@@ -210,6 +214,7 @@ def _wait_for_run_start(
             port=port,
             user=user,
             remote_log=remote_log,
+            wsl_distro=wsl_distro,
         )
         print(f"wait_for_start config={config_rel}")
         print(f"wait_for_start process_alive={alive}")
@@ -278,6 +283,7 @@ def _health_check_run(
         port=port,
         user=user,
         remote_log=remote_log,
+        wsl_distro=wsl_distro,
     )
     log_tail = _tail_log(
         host=host,

@@ -4,6 +4,7 @@ import argparse
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -242,20 +243,24 @@ def main() -> int:
             "%f\n",
         ],
     )
+    config_name = Path(args.a1_config).name
     a1_process = _ssh_exec(
         host=args.host,
         port=int(args.port),
         user=args.user,
         remote_command=(
-            f"wsl -d {args.wsl_distro} --exec pgrep -af "
-            f"\"src/run.py --config {args.a1_config}\""
+            f"wsl -d {args.wsl_distro} --exec bash -lc "
+            f"\"ps -ef | grep -F '{config_name}' | grep -v grep || true\""
         ),
     )
     a1_log = _ssh_exec(
         host=args.host,
         port=int(args.port),
         user=args.user,
-        remote_command=f"test -s '{a1_remote_log}' && echo yes || echo no",
+        remote_command=(
+            f"wsl -d {args.wsl_distro} --exec bash -lc "
+            f"\"test -s '{a1_remote_log}' && echo yes || echo no\""
+        ),
     )
 
     latent_pid = _read_pid(DEFAULT_LATENT_WATCHER_PID)
@@ -314,7 +319,9 @@ def main() -> int:
         },
     }
 
-    print(json.dumps(report, ensure_ascii=False, indent=2))
+    sys.stdout.buffer.write(
+        (json.dumps(report, ensure_ascii=False, indent=2) + "\n").encode("utf-8", errors="replace")
+    )
     return 0
 
 
