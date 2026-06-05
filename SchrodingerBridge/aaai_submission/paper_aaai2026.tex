@@ -308,11 +308,10 @@ SaMAM and SaMST are retrained on the same Distinct5 split with shared preprocess
 \subsection{Distinct5-512 stress benchmark}
 Distinct5-512 is designed so that unchanged output is not a plausible success proxy: the \emph{idt} baseline already reaches CLIP-S 0.6801. Signed gain over idt is therefore the first sanity check. LBM-F reaches 0.6969 / 0.3186 after 1.2 minutes of training, and LBM-K reaches 0.7010 / 0.3623 while staying in the same low-damage region. SaMST-512 pushes raw style to 0.7247, but only at LPIPS 0.6255 and targetwise ArtFID 395.7. SaMAM-2250 stays below the idt floor despite lower ArtFID. This is the failure mode exposed by Distinct5: lower targetwise ArtFID can still coexist with zero or negative target-style gain when a method preserves source structure and remains inside a plausible target-art manifold without moving enough toward the requested domain. Table~\ref{tab:distinct5pairs} shows the same pattern on representative directions. Under this shared packet, useful transfer must exceed idt rather than merely lower ArtFID or raise absolute CLIP-S, and the reproduced rows are compared as operating points rather than as exhaustive ceilings of the original baselines. The paired bootstrap confirms that the sign of transfer-only $\Delta_{\mathrm{idt}}$ is stable on this split, but it does not replace a human study or a rubric-based VLM preference test; we therefore treat positive $\Delta_{\mathrm{idt}}$ as calibrated evidence of target-style movement rather than as a completed perceptual validation.
 
-\begin{strip}
+\begin{table*}[t]
 \centering
-\vspace{-2mm}
 \begin{minipage}[t]{0.485\textwidth}
-\captionof{table}{Distinct5-512 all-pairs results on the shared $5\times5$ / 750-output protocol. `idt' is the unchanged-image control and `tw-ArtFID' is targetwise ArtFID. Rows are reproduced operating points under the shared packet; they are not claimed as exhaustive upper bounds of the original papers. SaMAM is shown only at the trusted 2250-step checkpoint.}
+\captionof{table}{Distinct5-512 all-pairs packet. `idt' is the unchanged-image control and `tw-ArtFID' is targetwise ArtFID. Rows are reproduced operating points under the shared contract.}
 \label{tab:distinct5}
 \centering
 \small
@@ -331,7 +330,7 @@ LBM-K e1 & 0.7010 & 0.3623 & 0.4470 & 157.2 & +0.0209 & +0.0312 \\
 \end{tabular}
 }
 
-\vspace{5pt}
+\vspace{4pt}
 \captionof{table}{Representative Distinct5 transfer pairs (CLIP-S / LPIPS). ER = Early Renaissance, Imp = Impressionism, Min = Minimalism, Roc = Rococo, Ukiyo = Ukiyo-e.}
 \label{tab:distinct5pairs}
 \scriptsize
@@ -347,18 +346,18 @@ Roc$\rightarrow$Ukiyo & 0.515 & 0.539 / 0.542 & 0.582 / 0.604 & 0.599 / 0.295 \\
 \bottomrule
 \end{tabular}
 
-\vspace{5pt}
-\parbox{0.98\linewidth}{\raggedright\footnotesize A paired bootstrap over the 600 transfer rows gives 95\% intervals of $[0.0210, 0.0280]$ for LBM-F and $[0.0273, 0.0352]$ for LBM-K, confirming stable positive transfer-only $\Delta_{\mathrm{idt}}$ on this split. SaMST also stays above IDT, but only in the same high-LPIPS regime.}
+\vspace{4pt}
+\parbox{0.98\linewidth}{\raggedright\footnotesize A paired bootstrap over the 600 transfer rows gives 95\% intervals of $[0.0210, 0.0280]$ for LBM-F and $[0.0273, 0.0352]$ for LBM-K. SaMST also stays above IDT, but only in the same high-LPIPS regime.}
 \end{minipage}\hfill
 \begin{minipage}[t]{0.485\textwidth}
-\captionof{table}{Distinct5-512 matched same-cost records on the reviewed full $5\times5$ / 750-output protocol. Train time excludes evaluation; inference is pure 750-image generation wall time.}
+\captionof{table}{Distinct5-512 matched same-cost records. Train time excludes evaluation; inference is pure 750-image generation wall time.}
 \label{tab:cost_distinct5}
 \centering
-\footnotesize
-\setlength{\tabcolsep}{4pt}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}lcccc@{}}
 \toprule
-Method & Recorded point & Train to point & Inference (750 imgs) & ms/img \\
+Method & Point & Train & Infer. (750) & ms/img \\
 \midrule
 LBM & step 350 & \textbf{1.9 min} & \textbf{84.4 s} & \textbf{113} \\
 SaMAM & step 16 & 2.2 min & 109.2 s & 146 \\
@@ -367,15 +366,14 @@ SaMST & 40-step/style & 2.0 min & 345.7 s & 461 \\
 \end{tabular}
 
 \vspace{1pt}
-\parbox{0.98\linewidth}{\raggedright\footnotesize\textit{Note.} All three methods were retrained to roughly the same two-minute budget before evaluation. This is the matched-budget row, not the best retained LBM frontier point; the stronger LBM frontier still appears earlier near 1.2 minutes on page~1. Peak local GPU memory is about 5.0/6.1/7.5\,GB for LBM/SaMST/SaMAM.}
+\parbox{0.98\linewidth}{\raggedright\footnotesize\textit{Note.} All three methods were retrained to about the same two-minute budget before evaluation. This is not the best retained LBM frontier point; the stronger LBM frontier still appears earlier near 1.2 minutes on page~1. Peak local GPU memory is about 5.0/6.1/7.5\,GB for LBM/SaMST/SaMAM.}
 
-\vspace{4pt}
-\includegraphics[width=0.72\linewidth]{figures/fig_distinct5_same_cost_performance.png}
-\captionof{figure}{Matched same-cost Distinct5-512 view: transfer CLIP-S vs.\ $1-\mathrm{LPIPS}$ with the transfer-only IDT floor.}
+\vspace{3pt}
+\includegraphics[width=0.66\linewidth]{figures/fig_distinct5_same_cost_performance.png}
+\captionof{figure}{Matched same-cost Distinct5-512: transfer CLIP-S vs.\ $1-\mathrm{LPIPS}$ with the transfer-only IDT floor.}
 \label{fig:samecostperf}
 \end{minipage}
-\vspace{-2mm}
-\end{strip}
+\end{table*}
 
 \paragraph{Adaptation cost and accessibility.}
 Table~\ref{tab:cost_distinct5} and Figure~\ref{fig:samecostperf} summarize the matched same-cost rerun. At about two minutes, LBM step-350 reaches CLIP-S 0.6629 at LPIPS 0.3377 and stays +0.0230 above the Distinct5 IDT floor; same-cost SaMST reaches only +0.0166 with far higher damage (LPIPS 0.7487, 461\,ms/image), while same-cost SaMAM remains below IDT at $-0.1383$ after 2.2 minutes. This matched-budget row is weaker than the page-1 LBM-F/K e1 frontier, but it isolates the practical point: useful positive transfer is reachable within the same minute-scale budget without large-prior adaptation.
