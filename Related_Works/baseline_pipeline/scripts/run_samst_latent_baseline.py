@@ -84,6 +84,12 @@ def main() -> int:
     parser.add_argument("--batch-size", type=int, default=2)
     parser.add_argument("--checkpoint-interval", type=int, default=100)
     parser.add_argument("--max-train-per-style", type=int, default=0)
+    parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--weight-decay", type=float, default=0.1)
+    parser.add_argument("--content-weight", type=float, default=1e4)
+    parser.add_argument("--style-weight", type=float, default=1e8)
+    parser.add_argument("--ae-weight", type=float, default=1e2)
+    parser.add_argument("--grad-clip-norm", type=float, default=1.0)
     parser.add_argument("--vae-model", type=str, default="ema")
     parser.add_argument("--vae-cache-dir", type=str, default="")
     args = parser.parse_args()
@@ -126,11 +132,11 @@ def main() -> int:
         "style_size": int(preset["style_size"]),
         "cuda": 1,
         "seed": 7,
-        "content_weight": 1e5,
-        "style_weight": 1e10,
-        "ae_weight": 1e3,
-        "lr": 0.001,
-        "weight_decay": 0.5,
+        "content_weight": float(args.content_weight),
+        "style_weight": float(args.style_weight),
+        "ae_weight": float(args.ae_weight),
+        "lr": float(args.lr),
+        "weight_decay": float(args.weight_decay),
         "step_size": 25,
         "save_interval": int(args.epochs),
         "log_interval": 10,
@@ -146,6 +152,7 @@ def main() -> int:
         "vae_cache_dir": str(args.vae_cache_dir),
         "max_train_per_style": int(args.max_train_per_style),
         "loss_network_half": 1,
+        "grad_clip_norm": float(args.grad_clip_norm),
     }
     train_yml.write_text(yaml.safe_dump(cfg, sort_keys=False), encoding="utf-8")
     cmd = [sys.executable, str(train_dir / "train_latent.py")]
