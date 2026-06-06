@@ -35,3 +35,46 @@ Reflection template:
 - is `base_transfer_clip_style` already useful, or is all quality deferred to later terminal correction?
 - does barycentric target smoothing reduce instability without flattening style?
 - does the EMA teacher help or over-average the target manifold?
+
+## Batch policy
+
+Observed probe behavior:
+
+- `b16` training peak stayed far below the `3060` ceiling
+- therefore `b16` is treated as a mechanism probe, not the final throughput setting
+
+Promoted rerun target:
+
+- [inmortal_xpred_bary_seed42_b40.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/inmortal_xpred_bary_seed42_b40.json)
+
+Intended use:
+
+- if the `b16` result is promising, rerun the line closer to the `~10 GB` target band instead of keeping an under-filled GPU lane
+
+## Early readout
+
+First available retained point:
+
+| epoch | transfer CLIP-style | transfer LPIPS |
+| --- | ---: | ---: |
+| `e1` | `0.6914` | `0.7484` |
+
+Immediate interpretation:
+
+- this is the strongest raw style jump seen so far in the `inmortal` program
+- it already clears the compact `LANCET` style band on transfer style
+- but it does so by collapsing content preservation
+
+Mechanism reading:
+
+- `endpoint prediction + barycentric target` is a real ceiling-raising direction
+- but in its current transport-only form it is too coarse and too destructive
+- the most likely next useful combination is:
+  - `XPred_Barycenter`
+  - plus a stronger structure-preserving kinetic family
+  - or a constrained proximal high-pass refinement branch
+
+Status:
+
+- keep running the full `e1-e8` eval surface
+- treat `e1` as an early positive style-gain checkpoint, not yet a promotable final frontier point
