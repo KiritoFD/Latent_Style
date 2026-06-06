@@ -115,3 +115,36 @@ Still pending:
 Once those land, the next formal GPU action should be:
 
 - `split2 F-family` launch on the reviewed remote `3060`
+
+## Closure
+
+The split2 prep packet is now closed.
+
+Final retained prep state:
+
+- train latent root:
+  - `/mnt/i/wikiart_faraday_splits/wikiart_stress2_Abstract_Expressionism__Baroque__Cubism__Northern_Renaissance__Post_Impressionism/latents_ema/train`
+- packed manifest:
+  - `.latent_cache/manifest.json`
+- pairing cache:
+  - `.latent_cache/prototype_pairing_top8.pt`
+
+Closed style counts after the repaired cache rebuild:
+
+- `Abstract_Expressionism`: `1000`
+- `Baroque`: `1000`
+- `Cubism`: `1000`
+- `Northern_Renaissance`: `1000`
+- `Post_Impressionism`: `1000`
+
+Important repair note:
+
+- an earlier partial owner-side packet left `Post_Impressionism` incomplete on
+  the remote surface
+- after patching that classview folder and rerunning prep with
+  `--skip-packet-sync --rebuild-cache`, the final packed cache and pairing cache
+  were rebuilt against the full `1000/30` split contract
+
+This split is therefore ready for the next formal lane:
+
+- `split2 F-family`
