@@ -39,14 +39,14 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             self.transport_prediction_mode = "velocity"
         self.transport_endpoint_scale = max(1e-3, float(getattr(bridge_config, "transport_endpoint_scale", 4.0)))
         self.bridge_style_dim = int(self.style_tokenizer.embedding_dim)
-        self.execution_budget_mode = str(bridge_config.execution_budget_mode).strip().lower()
+        self.execution_budget_mode = str(getattr(bridge_config, "execution_budget_mode", "none")).strip().lower()
         if self.execution_budget_mode not in {"none", "scalar", "low_high"}:
             self.execution_budget_mode = "none"
-        self.execution_budget_log_span = max(0.0, float(bridge_config.execution_budget_log_span))
+        self.execution_budget_log_span = max(0.0, float(getattr(bridge_config, "execution_budget_log_span", 0.22314355131420976)))
         self.execution_budget_feature_dim = int(bridge_config.latent_channels) * 4 + 1
         self.execution_budget_head: nn.Module | None = None
         if self.execution_budget_mode != "none":
-            hidden = max(4, int(bridge_config.execution_budget_hidden_dim))
+            hidden = max(4, int(getattr(bridge_config, "execution_budget_hidden_dim", 64)))
             out_dim = 1 if self.execution_budget_mode == "scalar" else 2
             self.execution_budget_head = nn.Sequential(
                 nn.LayerNorm(self.bridge_style_dim + self.execution_budget_feature_dim),
@@ -58,14 +58,14 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             if isinstance(last, nn.Linear):
                 nn.init.zeros_(last.weight)
                 nn.init.zeros_(last.bias)
-        self.style_injection_mode = str(bridge_config.style_injection_mode).strip().lower()
+        self.style_injection_mode = str(getattr(bridge_config, "style_injection_mode", "none")).strip().lower()
         if self.style_injection_mode not in {"none", "body", "decoder", "body_decoder"}:
             self.style_injection_mode = "none"
-        self.style_injection_form = str(bridge_config.style_injection_form).strip().lower()
+        self.style_injection_form = str(getattr(bridge_config, "style_injection_form", "mixed")).strip().lower()
         if self.style_injection_form not in {"mixed", "carrier_gate"}:
             self.style_injection_form = "mixed"
-        self.style_injection_scale = max(0.0, float(bridge_config.style_injection_scale))
-        self.style_injection_gate_log_span = max(0.0, float(bridge_config.style_injection_gate_log_span))
+        self.style_injection_scale = max(0.0, float(getattr(bridge_config, "style_injection_scale", 1.0)))
+        self.style_injection_gate_log_span = max(0.0, float(getattr(bridge_config, "style_injection_gate_log_span", 0.4054651081081644)))
         injection_in_dim = self.bridge_style_dim + self.execution_budget_feature_dim
         self.body_style_injector: nn.Module | None = None
         self.decoder_style_injector: nn.Module | None = None
@@ -79,13 +79,13 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                     self.bridge_style_dim,
                     self.execution_budget_feature_dim,
                     int(self.body_channels),
-                    int(bridge_config.style_injection_hidden_dim),
+                    int(getattr(bridge_config, "style_injection_hidden_dim", 64)),
                 )
             else:
                 self.body_style_injector = self._make_style_injector(
                     injection_in_dim,
                     int(self.body_channels),
-                    int(bridge_config.style_injection_hidden_dim),
+                    int(getattr(bridge_config, "style_injection_hidden_dim", 64)),
                 )
         if self.style_injection_mode in {"decoder", "body_decoder"}:
             if self.style_injection_form == "carrier_gate":
@@ -93,13 +93,13 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                     self.bridge_style_dim,
                     self.execution_budget_feature_dim,
                     int(self.lift_channels),
-                    int(bridge_config.style_injection_hidden_dim),
+                    int(getattr(bridge_config, "style_injection_hidden_dim", 64)),
                 )
             else:
                 self.decoder_style_injector = self._make_style_injector(
                     injection_in_dim,
                     int(self.lift_channels),
-                    int(bridge_config.style_injection_hidden_dim),
+                    int(getattr(bridge_config, "style_injection_hidden_dim", 64)),
                 )
         self.time_mlp = nn.Sequential(
             nn.Linear(self.time_dim, self.bridge_style_dim),

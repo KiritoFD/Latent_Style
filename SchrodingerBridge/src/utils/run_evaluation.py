@@ -34,7 +34,6 @@ except ImportError:
 import torchvision.transforms as T
 import torchvision.models as models
 import torch.nn.functional as F
-from torchvision.transforms import ToPILImage
 from torchvision.utils import save_image
 from scipy import linalg
 
@@ -66,6 +65,8 @@ except Exception:
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _WORKSPACE_ROOT = _PROJECT_ROOT
 _DEFAULT_HF_CLIP_REPO = "openai/clip-vit-base-patch32"
+_DEFAULT_CLIP_IMAGE_MEAN = (0.48145466, 0.4578275, 0.40821073)
+_DEFAULT_CLIP_IMAGE_STD = (0.26862954, 0.26130258, 0.27577711)
 
 
 def _resolve_default_local_clip_dir() -> Path:
@@ -116,6 +117,59 @@ def _safe_to_eval_device(batch, device: str):
     if isinstance(batch, dict):
         return {k: (v.to(device) if hasattr(v, "to") else v) for k, v in batch.items()}
     return batch
+
+
+def _clip_image_size_from_runtime(clip_model, clip_processor) -> int:
+    image_size = None
+    image_processor = getattr(clip_processor, "image_processor", None)
+    if image_processor is not None:
+        size_cfg = getattr(image_processor, "size", None)
+        if isinstance(size_cfg, dict):
+            image_size = size_cfg.get("shortest_edge") or size_cfg.get("height") or size_cfg.get("width")
+        elif isinstance(size_cfg, int):
+            image_size = size_cfg
+    if image_size is None:
+        vision_cfg = getattr(getattr(clip_model, "config", None), "vision_config", None)
+        image_size = getattr(vision_cfg, "image_size", None)
+    if image_size is None:
+        visual = getattr(clip_model, "visual", None)
+        image_size = getattr(visual, "input_resolution", None)
+    return int(image_size or 224)
+
+
+def _clip_mean_std_from_runtime(clip_processor) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+    image_processor = getattr(clip_processor, "image_processor", None)
+    mean = getattr(image_processor, "image_mean", None)
+    std = getattr(image_processor, "image_std", None)
+    if mean is None:
+        mean = _DEFAULT_CLIP_IMAGE_MEAN
+    if std is None:
+        std = _DEFAULT_CLIP_IMAGE_STD
+    return tuple(float(x) for x in mean), tuple(float(x) for x in std)
+
+
+def _prepare_clip_pixels(images_01: torch.Tensor, *, image_size: int, mean, std) -> torch.Tensor:
+    if images_01.ndim == 3:
+        images_01 = images_01.unsqueeze(0)
+    imgs = images_01.to(dtype=torch.float32)
+    h, w = imgs.shape[-2:]
+    crop = min(h, w)
+    if h != crop or w != crop:
+        top = max(0, (h - crop) // 2)
+        left = max(0, (w - crop) // 2)
+        imgs = imgs[:, :, top:top + crop, left:left + crop]
+    if imgs.shape[-2:] != (image_size, image_size):
+        imgs = F.interpolate(
+            imgs,
+            size=(image_size, image_size),
+            mode="bicubic",
+            align_corners=False,
+            antialias=True,
+        )
+    mean_t = torch.tensor(mean, device=imgs.device, dtype=imgs.dtype).view(1, 3, 1, 1)
+    std_t = torch.tensor(std, device=imgs.device, dtype=imgs.dtype).view(1, 3, 1, 1)
+    imgs = (imgs - mean_t) / std_t
+    return imgs.contiguous(memory_format=torch.channels_last)
 
 
 def _load_clip_from_source(CLIPModel, CLIPProcessor, src: str, device: str, *, local_only: bool, cache_dir: str):
@@ -1157,6 +1211,8 @@ def _auto_run_missing_full_eval(args) -> None:
             cmd += ["--reuse_generated"]
         if args.generation_only:
             cmd += ["--generation_only"]
+        if not bool(args.save_generated_images):
+            cmd += ["--no-save_generated_images"]
         if not bool(args.save_summary_grid):
             cmd += ["--no-save_summary_grid"]
         if not bool(args.eval_only_lpips_clip_style):
@@ -1218,6 +1274,12 @@ def main():
         default=str(full_eval_defaults.get("image_save_backend", "pil_png")),
         choices=["pil_png", "torchvision_png"],
         help="Generated image save backend.",
+    )
+    parser.add_argument(
+        '--save_generated_images',
+        action=argparse.BooleanOptionalAction,
+        default=bool(full_eval_defaults.get("save_generated_images", True)),
+        help="Persist generated PNGs under output/images. Disable for fast metric-only sweeps.",
     )
     parser.add_argument('--profile_timing', action='store_true', help="Synchronize CUDA around generation stages for accurate timing breakdown.")
     parser.add_argument('--save_summary_grid', action=argparse.BooleanOptionalAction, default=bool(full_eval_defaults.get("save_summary_grid", True)), help="Save visual summary_grid.png. Disable for pure throughput timing.")
@@ -1396,6 +1458,8 @@ def main():
                 args.image_save_workers = int(resolved_full_eval["image_save_workers"])
             if "image_save_backend" in resolved_full_eval and not _cli_provided("image_save_backend"):
                 args.image_save_backend = str(resolved_full_eval["image_save_backend"])
+            if "save_generated_images" in resolved_full_eval and not _cli_provided("save_generated_images"):
+                args.save_generated_images = bool(resolved_full_eval["save_generated_images"])
             if "save_summary_grid" in resolved_full_eval and not _cli_provided("save_summary_grid"):
                 args.save_summary_grid = bool(resolved_full_eval["save_summary_grid"])
     else:
@@ -1406,9 +1470,12 @@ def main():
     # reflects generation rather than post-processing overhead.
     if args.generation_only and not _cli_provided("save_summary_grid"):
         args.save_summary_grid = False
+    if (bool(args.save_summary_grid) or bool(args.eval_enable_art_fid) or bool(args.eval_enable_kid) or bool(args.reuse_generated)) and not bool(args.save_generated_images):
+        print("Enabling --save_generated_images because summary-grid, ArtFID/KID, or reuse_generated needs image files.")
+        args.save_generated_images = True
 
     image_save_workers = max(1, int(args.image_save_workers))
-    io_pool = ThreadPoolExecutor(max_workers=image_save_workers)
+    io_pool = ThreadPoolExecutor(max_workers=image_save_workers) if bool(args.save_generated_images) else None
     
     # Resolve Test Data Path
     test_dir_raw = args.test_dir if args.test_dir else cfg.get('training', {}).get('test_image_dir', '')
@@ -1623,31 +1690,44 @@ def main():
                             )
                             _sync_cuda_if(device, bool(args.profile_timing))
                             _add_timing(timings, "vae_decode", t0)
-                            t0 = time.perf_counter()
-                            imgs_gen_u8_cpu = _images_01_to_uint8_hwc_cpu(imgs_gen)
-                            _sync_cuda_if(device, bool(args.profile_timing))
-                            _add_timing(timings, "uint8_cpu_copy", t0)
+                            save_generated_images = bool(args.save_generated_images)
+                            imgs_gen_cpu = None
+                            imgs_gen_u8_cpu = None
+                            if save_generated_images:
+                                t0 = time.perf_counter()
+                                imgs_gen_u8_cpu = _images_01_to_uint8_hwc_cpu(imgs_gen)
+                                _sync_cuda_if(device, bool(args.profile_timing))
+                                _add_timing(timings, "uint8_cpu_copy", t0)
+                            else:
+                                t0 = time.perf_counter()
+                                imgs_gen_cpu = imgs_gen.detach().cpu().contiguous()
+                                _sync_cuda_if(device, bool(args.profile_timing))
+                                _add_timing(timings, "generated_cpu_copy", t0)
                             t0 = time.perf_counter()
                             for local_i, (src_item, tgt_name, tgt_id, out_name) in enumerate(meta[dec_start:dec_end]):
-                                out_path = images_dir / out_name
-                                out_rel = Path("images") / out_name
-                                gen_img_u8 = imgs_gen_u8_cpu[local_i]
-                                io_pool.submit(
-                                    save_image_task,
-                                    gen_img_u8,
-                                    out_path,
-                                    str(args.image_save_backend),
-                                )
+                                gen_name = out_name
+                                gen_img_payload = imgs_gen_cpu[local_i] if imgs_gen_cpu is not None else imgs_gen_u8_cpu[local_i]
+                                if save_generated_images:
+                                    out_path = images_dir / out_name
+                                    out_rel = Path("images") / out_name
+                                    io_pool.submit(
+                                        save_image_task,
+                                        gen_img_payload,
+                                        out_path,
+                                        str(args.image_save_backend),
+                                    )
+                                    gen_name = out_rel.as_posix()
                                 generated_buffer.append({
                                     'src_path': src_item['path'],
                                     'src_style': src_item['style_name'],
                                     'tgt_style_name': tgt_name,
                                     'tgt_style_id': tgt_id,
-                                    'gen_img': gen_img_u8,
-                                    'gen_name': out_rel.as_posix()
+                                    'gen_img': gen_img_payload,
+                                    'gen_name': gen_name,
                                 })
-                            _add_timing(timings, "image_save_submit", t0)
-                            del imgs_gen, imgs_gen_u8_cpu
+                            if save_generated_images:
+                                _add_timing(timings, "image_save_submit", t0)
+                            del imgs_gen, imgs_gen_cpu, imgs_gen_u8_cpu
                         del repeated_latents, tgt_ids, latents_gen
 
         # Unload Generation Models
@@ -1661,8 +1741,9 @@ def main():
     if args.generation_only:
         print("\nGeneration-only mode enabled: skip Phase 2 metrics/LPIPS/CLIP.")
         t0 = time.perf_counter()
-        io_pool.shutdown(wait=True)
-        _add_timing(timings, "image_save_join", t0)
+        if io_pool is not None:
+            io_pool.shutdown(wait=True)
+            _add_timing(timings, "image_save_join", t0)
         if device == "cuda":
             torch.cuda.empty_cache()
         gc.collect()
@@ -1680,6 +1761,7 @@ def main():
                 "vae_decode_batch_size": int(args.vae_decode_batch_size),
                 "image_save_workers": int(args.image_save_workers),
                 "image_save_backend": str(args.image_save_backend),
+                "save_generated_images": bool(args.save_generated_images),
                 "profile_timing": bool(args.profile_timing),
                 "save_summary_grid": bool(args.save_summary_grid),
             },
@@ -1730,14 +1812,13 @@ def main():
     has_clip = False
     clip_backend = str(getattr(args, "clip_backend", "hf")).strip().lower()
     clip_preprocess = None  # OpenAI CLIP preprocess
-    clip_encode_pils = None  # Callable[[list[PIL.Image]], Tensor[B,D]] on device
+    clip_encode_images_01 = None  # Callable[[Tensor[B,3,H,W]], Tensor[B,D]] on device
     if clip_backend == "openai":
         clip_model_tag = f"openai:{str(getattr(args, 'clip_openai_model', 'ViT-B/32')).strip() or 'ViT-B/32'}"
     elif clip_backend == "hf":
         clip_model_tag = str(args.clip_model_name).strip() or "openai/clip-vit-base-patch32"
     else:
         clip_model_tag = "none"
-    to_pil = ToPILImage()
 
     if run_full_metrics:
         # Initialize LPIPS
@@ -1887,12 +1968,11 @@ def main():
             raise ValueError(f"Invalid --clip_backend: {clip_backend}")
 
         if has_clip and clip_model is not None:
+            clip_image_size = _clip_image_size_from_runtime(clip_model, clip_processor)
+            clip_mean, clip_std = _clip_mean_std_from_runtime(clip_processor)
             if clip_backend == "openai":
-                if clip_preprocess is None:
-                    raise RuntimeError("OpenAI CLIP preprocess missing")
-
-                def clip_encode_pils(pils):  # noqa: ANN001
-                    imgs = torch.stack([clip_preprocess(im) for im in pils], dim=0).to(device)
+                def clip_encode_images_01(images_01):  # noqa: ANN001
+                    imgs = _prepare_clip_pixels(images_01, image_size=clip_image_size, mean=clip_mean, std=clip_std)
                     feats = clip_model.encode_image(imgs)
                     feats = feats.to(dtype=torch.float32)
                     if feats.ndim == 1:
@@ -1901,9 +1981,9 @@ def main():
 
             else:
 
-                def clip_encode_pils(pils):  # noqa: ANN001
-                    inputs = _safe_to_eval_device(clip_processor(images=pils, return_tensors='pt'), device)
-                    out = clip_model.get_image_features(**inputs)
+                def clip_encode_images_01(images_01):  # noqa: ANN001
+                    pixels = _prepare_clip_pixels(images_01, image_size=clip_image_size, mean=clip_mean, std=clip_std)
+                    out = clip_model.get_image_features(pixel_values=pixels)
                     feats = _extract_clip_embeddings(out).to(device, dtype=torch.float32)
                     if feats.ndim == 1:
                         feats = feats.unsqueeze(0)
@@ -1911,7 +1991,7 @@ def main():
 
     # Prepare Reference Features (Cache)
     style_sig = ",".join(style_subdirs)
-    dataset_sig = f"{str(test_dir.resolve())}|{style_sig}|{clip_model_tag}|v2"
+    dataset_sig = f"{str(test_dir.resolve())}|{style_sig}|{clip_model_tag}|tensorclip-v3"
     dataset_hash = hashlib.md5(dataset_sig.encode()).hexdigest()[:10]
     max_ref_cache = int(args.max_ref_cache)
     max_ref_cache_tag = "all" if max_ref_cache <= 0 else str(max_ref_cache)
@@ -1965,18 +2045,18 @@ def main():
                     for b_start in pbar:
                         batch_paths = sampled_refs[b_start:b_start + ref_bs]
                         try:
-                            # Keep raw PILs for CLIP so CLIPProcessor applies its own canonical resize/crop.
-                            batch_pils = [Image.open(img_path).convert('RGB') for img_path in batch_paths]
+                            batch_tensors = torch.stack([_load_eval_image_tensor(img_path) for img_path in batch_paths], dim=0).to(device)
                             with torch.no_grad():
                                 c_emb = None
-                                if has_clip and clip_model is not None:
-                                    c_emb = clip_encode_pils(batch_pils).detach().cpu()
+                                if has_clip and clip_model is not None and clip_encode_images_01 is not None:
+                                    c_emb = clip_encode_images_01(batch_tensors).detach().cpu()
 
                             for i, img_path in enumerate(batch_paths):
                                 ref_features[style_id].append({
                                     'path': str(img_path),
                                     'clip': c_emb[i:i+1] if c_emb is not None else None
                                 })
+                            del batch_tensors
                         except Exception as e:
                             print(f"Skipping batch {b_start}-{b_start + len(batch_paths)} in {style_name}: {e}")
 
@@ -2021,7 +2101,6 @@ def main():
 
     # Cache source images/CLIP embeddings to avoid repeated work across many target styles.
     src_img_cache = {}   # abs src path -> Tensor[3,256,256] on CPU (LPIPS path)
-    src_pil_cache = {}   # abs src path -> PIL.Image (CLIP path)
     src_clip_cache = {}  # abs src path -> Tensor[D] on CPU
 
     csv_path = out_dir / 'metrics.csv'
@@ -2101,23 +2180,13 @@ def main():
             src_clips = None
             c_clip_scores = [0.0] * len(batch_items)
             
-            if has_clip and clip_model is not None:
-                # Gen CLIP
-                pil_gens = [to_pil(img.float()) for img in gen_imgs_cpu]
-                gen_clips = clip_encode_pils(pil_gens)
+            if has_clip and clip_model is not None and clip_encode_images_01 is not None:
+                gen_clips = clip_encode_images_01(gen_imgs)
                 if not only_lpips_clip_style:
                     # Src CLIP (cache by source path; source repeats across many target styles)
                     miss_indices = [i for i, k in enumerate(src_keys) if k not in src_clip_cache]
                     if miss_indices:
-                        pil_srcs_miss = []
-                        for i in miss_indices:
-                            src_path = str(Path(batch_items[i]['src_path']).resolve())
-                            pil_img = src_pil_cache.get(src_path)
-                            if pil_img is None:
-                                pil_img = Image.open(batch_items[i]['src_path']).convert('RGB')
-                                src_pil_cache[src_path] = pil_img
-                            pil_srcs_miss.append(pil_img)
-                        src_miss = clip_encode_pils(pil_srcs_miss)
+                        src_miss = clip_encode_images_01(src_imgs[miss_indices])
                         src_miss_cpu = src_miss.detach().cpu()
                         for j, idx in enumerate(miss_indices):
                             src_clip_cache[src_keys[idx]] = src_miss_cpu[j].clone()
@@ -2170,8 +2239,9 @@ def main():
     _add_timing(timings, "eval_metrics_loop", metric_loop_start)
     csv_file.close()
     t0 = time.perf_counter()
-    io_pool.shutdown(wait=True)
-    _add_timing(timings, "image_save_join", t0)
+    if io_pool is not None:
+        io_pool.shutdown(wait=True)
+        _add_timing(timings, "image_save_join", t0)
     timings["eval_total"] = float(time.perf_counter() - eval_phase_start)
     timings["wall_total"] = float(time.perf_counter() - wall_start)
     
@@ -2205,6 +2275,7 @@ def main():
             "vae_decode_batch_size": int(args.vae_decode_batch_size),
             "image_save_workers": int(args.image_save_workers),
             "image_save_backend": str(args.image_save_backend),
+            "save_generated_images": bool(args.save_generated_images),
             "profile_timing": bool(args.profile_timing),
             "save_summary_grid": bool(args.save_summary_grid),
             "only_lpips_clip_style": bool(args.eval_only_lpips_clip_style),
