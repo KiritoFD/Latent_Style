@@ -243,6 +243,7 @@ def _write_config_from_template(
     remote_root_unix: str,
 ) -> None:
     cfg = _load_json(template_path)
+    cfg["_base"] = "../../distinct5_512_ema_variant_e_latent_prototype_ot_queue.json"
     remote_split_root = f"{remote_root_unix}/{split_name}"
     cfg.setdefault("training", {})
     cfg.setdefault("data", {})
