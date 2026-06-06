@@ -49,6 +49,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--allow-tf32", action="store_true")
     parser.add_argument("--gradient-checkpointing", action="store_true")
     parser.add_argument("--enable-xformers", action="store_true")
+    parser.add_argument("--share-vae-branches", action="store_true")
     parser.add_argument("--run", action="store_true")
     return parser.parse_args()
 
@@ -126,6 +127,8 @@ def build_command(args: argparse.Namespace, dataset_dir: Path, output_dir: Path)
         cmd.append("--gradient_checkpointing")
     if args.enable_xformers:
         cmd.append("--enable_xformers_memory_efficient_attention")
+    if args.share_vae_branches:
+        cmd.append("--share_vae_branches")
     return cmd
 
 

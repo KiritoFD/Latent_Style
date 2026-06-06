@@ -70,6 +70,7 @@ def main() -> int:
     parser.add_argument("--precision", default="32-true", help="SaMAM only.")
     parser.add_argument("--accumulate-grad-batches", type=int, default=1, help="SaMAM only.")
     parser.add_argument("--identity-gradient-checkpointing", type=int, default=1, help="SaMAM only. This is the first low-VRAM lever after batch-size=1.")
+    parser.add_argument("--vae-gradient-checkpointing", type=int, default=0, help="SaMAM only. Checkpoint VAE decode so gradients recompute activations instead of storing them.")
     parser.add_argument("--iterations", type=int, default=0, help="SaMAM only. 0 uses the lane default.")
     parser.add_argument("--max-steps", type=int, default=0, help="SaMST only. 0 uses the lane default.")
     parser.add_argument("--max-prelaunch-memory-mib", type=int, default=1500)
@@ -110,6 +111,8 @@ def main() -> int:
                 "1",
                 "--identity-gradient-checkpointing",
                 str(int(args.identity_gradient_checkpointing)),
+                "--vae-gradient-checkpointing",
+                str(int(args.vae_gradient_checkpointing)),
                 "--limit-val-batches",
                 "0",
                 "--num-sanity-val-steps",

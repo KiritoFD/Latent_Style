@@ -241,6 +241,9 @@ def train(opt):
             ae_loss = ae_weight * mse_loss(y2.to(device), x2.to(device))
             total_loss = content_loss + style_loss + ae_loss
             total_loss.backward()
+            clip_grad = float(opt.get("grad_clip_norm") or 0.0)
+            if clip_grad > 0.0:
+                torch.nn.utils.clip_grad_norm_(transformer.parameters(), clip_grad)
             optimizer.step()
             global_step += 1
 

@@ -51,6 +51,7 @@ def main() -> int:
     parser.add_argument("--smoke-test-images-per-style", type=int, default=30)
     parser.add_argument("--max-train-steps", type=int, default=20)
     parser.add_argument("--validation-steps", type=int, default=10)
+    parser.add_argument("--validation-num-images", type=int, default=8)
     parser.add_argument("--checkpointing-steps", type=int, default=10)
     parser.add_argument("--train-batch-size", type=int, default=1)
     parser.add_argument("--lora-rank-unet", type=int, default=8)
@@ -59,6 +60,7 @@ def main() -> int:
     parser.add_argument("--allow-tf32", action="store_true")
     parser.add_argument("--gradient-checkpointing", action="store_true")
     parser.add_argument("--enable-xformers", action="store_true")
+    parser.add_argument("--share-vae-branches", action="store_true")
     parser.add_argument("--max-prelaunch-memory-mib", type=int, default=1500)
     parser.add_argument("--health-wait-seconds", type=int, default=30)
     parser.add_argument("--max-runtime-memory-mib", type=int, default=11000)
@@ -104,7 +106,7 @@ def main() -> int:
         f"--max-train-steps {int(args.max_train_steps)} "
         "--max-train-epochs 100 "
         f"--validation-steps {int(args.validation_steps)} "
-        "--validation-num-images 8 "
+        f"--validation-num-images {int(args.validation_num_images)} "
         f"--checkpointing-steps {int(args.checkpointing_steps)} "
         "--dataloader-num-workers 0 "
         "--report-to none "
@@ -116,6 +118,8 @@ def main() -> int:
         smoke_cmd += " --gradient-checkpointing"
     if args.enable_xformers:
         smoke_cmd += " --enable-xformers"
+    if args.share_vae_branches:
+        smoke_cmd += " --share-vae-branches"
 
     launcher_cmd = [
         sys.executable,
