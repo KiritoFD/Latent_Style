@@ -71,6 +71,7 @@ def main() -> int:
     parser.add_argument("--health-wait-seconds", type=int, default=30)
     parser.add_argument("--max-prelaunch-memory-mib", type=int, default=1500)
     parser.add_argument("--max-runtime-memory-mib", type=int, default=11000)
+    parser.add_argument("--skip-packet-sync", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -102,7 +103,7 @@ def main() -> int:
     print(f"packet_gib={len(archive_bytes) / (1024 ** 3):.3f}")
     print(f"styles={','.join(styles)}")
 
-    if not args.dry_run:
+    if not args.dry_run and (not args.skip_packet_sync):
         remote = f"{args.user}@{args.host}"
         extract = _run_bytes(
             [
@@ -120,6 +121,8 @@ def main() -> int:
         sys.stdout.buffer.write(extract.stdout)
         if extract.returncode != 0:
             return extract.returncode
+    elif args.skip_packet_sync:
+        print("packet_sync=skipped")
 
     launcher_cmd = [
         sys.executable,
