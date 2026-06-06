@@ -71,6 +71,8 @@ def main() -> int:
     parser.add_argument("--health-wait-seconds", type=int, default=30)
     parser.add_argument("--max-prelaunch-memory-mib", type=int, default=1500)
     parser.add_argument("--max-runtime-memory-mib", type=int, default=11000)
+    parser.add_argument("--overwrite-latents", action="store_true")
+    parser.add_argument("--rebuild-cache", action="store_true")
     parser.add_argument("--skip-packet-sync", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
@@ -195,6 +197,10 @@ def main() -> int:
             "20260603",
         ]
     )
+    if args.overwrite_latents:
+        launcher_cmd.append("--overwrite-latents")
+    if args.rebuild_cache:
+        launcher_cmd.append("--rebuild-cache")
 
     result = _run(launcher_cmd)
     sys.stdout.write(result.stdout)
