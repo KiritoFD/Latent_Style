@@ -73,6 +73,7 @@ def main() -> int:
     parser.add_argument("--vae-gradient-checkpointing", type=int, default=0, help="SaMAM only. Checkpoint VAE decode so gradients recompute activations instead of storing them.")
     parser.add_argument("--iterations", type=int, default=0, help="SaMAM only. 0 uses the lane default.")
     parser.add_argument("--max-steps", type=int, default=0, help="SaMST only. 0 uses the lane default.")
+    parser.add_argument("--loss-network-half", type=int, default=0, help="SaMST only. Keep the perceptual loss network in FP32 by default for stability.")
     parser.add_argument("--max-prelaunch-memory-mib", type=int, default=1500)
     parser.add_argument("--health-wait-seconds", type=int, default=30)
     parser.add_argument("--max-runtime-memory-mib", type=int, default=11000)
@@ -140,6 +141,8 @@ def main() -> int:
                 str(int(args.batch_size)),
                 "--checkpoint-interval",
                 str(int(args.checkpoint_interval)),
+                "--loss-network-half",
+                str(int(args.loss_network_half)),
             ]
         )
 
