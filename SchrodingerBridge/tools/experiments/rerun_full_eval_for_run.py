@@ -17,6 +17,7 @@ def main() -> int:
     parser.add_argument("--vae-decode-batch-size", type=int, default=2)
     parser.add_argument("--target-chunk-size", type=int, default=1)
     parser.add_argument("--profile-timing", action="store_true")
+    parser.add_argument("--save-summary-grid", action=argparse.BooleanOptionalAction, default=False)
     args = parser.parse_args()
 
     run_dir = Path(args.run_dir).resolve()
@@ -50,6 +51,8 @@ def main() -> int:
         ]
         if bool(args.profile_timing):
             cmd.append("--profile_timing")
+        if not bool(args.save_summary_grid):
+            cmd.append("--no-save_summary_grid")
         print(f"[rerun_eval] {ckpt.name} -> {out_dir}")
         subprocess.run(cmd, check=True)
     return 0
