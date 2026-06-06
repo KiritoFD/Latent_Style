@@ -1,0 +1,23 @@
+{
+  "_base": "inmortal_xpred_bary_seed42_b16.json",
+  "training": {
+    "batch_size": 32
+  },
+  "bridge": {
+    "kinetic_penalty_mode": "manifold_adaptive_split",
+    "kinetic_lambda_low": 1.0,
+    "kinetic_lambda_high": 0.02,
+    "kinetic_lowpass_kernel": 5,
+    "kinetic_manifold_gamma": 10.0,
+    "structure_penalty_mode": "off"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_xpred_kmanifold_seed42_b32"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_seed42_b32",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "XPred_plus_Kmanifold",
+    "notes": "First direct repair attempt for the x-prediction ceiling line. Keep endpoint prediction and barycentric target smoothing, but replace the transport regularizer with the manifold-adaptive kinetic split from inmortal.md."
+  }
+}
