@@ -58,103 +58,103 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         self.lift_channels = int(cfg.lift_channels)
         self.body_channels = int(cfg.base_dim * 2)
         tokenizer_num_atoms = max(2, int(getattr(cfg, "tokenizer_num_atoms", 32)))
-        self.num_hires_blocks = max(0, int(cfg.num_hires_blocks))
-        self.num_res_blocks = max(0, int(cfg.num_res_blocks))
-        self.style_spatial_pre_gain_16 = float(cfg.style_spatial_pre_gain_16)
-        self.style_strength_default = max(0.0, min(1.0, float(cfg.style_strength_default)))
-        self.style_strength_step_curve = str(cfg.style_strength_step_curve).lower()
+        self.num_hires_blocks = max(0, int(getattr(cfg, "num_hires_blocks", 2)))
+        self.num_res_blocks = max(0, int(getattr(cfg, "num_res_blocks", 4)))
+        self.style_spatial_pre_gain_16 = float(getattr(cfg, "style_spatial_pre_gain_16", 0.35))
+        self.style_strength_default = max(0.0, min(1.0, float(getattr(cfg, "style_strength_default", 1.0))))
+        self.style_strength_step_curve = str(getattr(cfg, "style_strength_step_curve", "linear")).lower()
         if self.style_strength_step_curve not in {"linear", "smoothstep", "sqrt"}:
             self.style_strength_step_curve = "linear"
-        self.upsample_mode = str(cfg.upsample_mode)
-        self.style_id_spatial_jitter_px = max(0, int(cfg.style_id_spatial_jitter_px))
-        self.upsample_blur = bool(cfg.upsample_blur)
-        self.upsample_blur_kernel = str(cfg.upsample_blur_kernel).lower()
-        self.style_attn_num_tokens = max(1, int(cfg.style_attn_num_tokens))
-        self.style_attn_num_heads = max(1, int(cfg.style_attn_num_heads))
+        self.upsample_mode = str(getattr(cfg, "upsample_mode", "nearest"))
+        self.style_id_spatial_jitter_px = max(0, int(getattr(cfg, "style_id_spatial_jitter_px", 0)))
+        self.upsample_blur = bool(getattr(cfg, "upsample_blur", True))
+        self.upsample_blur_kernel = str(getattr(cfg, "upsample_blur_kernel", "box3")).lower()
+        self.style_attn_num_tokens = max(1, int(getattr(cfg, "style_attn_num_tokens", 128)))
+        self.style_attn_num_heads = max(1, int(getattr(cfg, "style_attn_num_heads", 4)))
         self.num_atoms = tokenizer_num_atoms
-        self.tokenizer_content_adaptive = bool(cfg.tokenizer_content_adaptive)
-        self.tokenizer_content_gain = float(cfg.tokenizer_content_gain)
-        self.tokenizer_content_stopgrad = bool(cfg.tokenizer_content_stopgrad)
-        self.tokenizer_content_style_gate = bool(cfg.tokenizer_content_style_gate)
-        self.tokenizer_content_style_gate_max = max(1e-3, float(cfg.tokenizer_content_style_gate_max))
-        self.style_attn_sharpen_scale = max(0.1, float(cfg.style_attn_sharpen_scale))
-        self.style_attn_temperature = max(1e-3, float(cfg.style_attn_temperature))
-        self.hires_block_type = _normalize_feature_block_type(cfg.hires_block_type)
-        self.body_block_type = _normalize_feature_block_type(cfg.body_block_type)
-        self.decoder_block_type = _normalize_feature_block_type(cfg.decoder_block_type)
-        self.semantic_attn_temperature = max(1e-4, float(cfg.semantic_attn_temperature))
-        self.semantic_attn_routing_mode = str(cfg.semantic_attn_routing_mode).strip().lower()
+        self.tokenizer_content_adaptive = bool(getattr(cfg, "tokenizer_content_adaptive", False))
+        self.tokenizer_content_gain = float(getattr(cfg, "tokenizer_content_gain", 0.5))
+        self.tokenizer_content_stopgrad = bool(getattr(cfg, "tokenizer_content_stopgrad", True))
+        self.tokenizer_content_style_gate = bool(getattr(cfg, "tokenizer_content_style_gate", False))
+        self.tokenizer_content_style_gate_max = max(1e-3, float(getattr(cfg, "tokenizer_content_style_gate_max", 2.0)))
+        self.style_attn_sharpen_scale = max(0.1, float(getattr(cfg, "style_attn_sharpen_scale", 2.5)))
+        self.style_attn_temperature = max(1e-3, float(getattr(cfg, "style_attn_temperature", 0.08)))
+        self.hires_block_type = _normalize_feature_block_type(getattr(cfg, "hires_block_type", "conv"))
+        self.body_block_type = _normalize_feature_block_type(getattr(cfg, "body_block_type", "global_attn"))
+        self.decoder_block_type = _normalize_feature_block_type(getattr(cfg, "decoder_block_type", "conv"))
+        self.semantic_attn_temperature = max(1e-4, float(getattr(cfg, "semantic_attn_temperature", 0.08)))
+        self.semantic_attn_routing_mode = str(getattr(cfg, "semantic_attn_routing_mode", "softmax")).strip().lower()
         if self.semantic_attn_routing_mode not in {"softmax", "sinkhorn", "gumbel_hard"}:
             self.semantic_attn_routing_mode = "softmax"
-        self.semantic_sinkhorn_iters = max(1, int(cfg.semantic_sinkhorn_iters))
-        self.semantic_gumbel_tau = max(1e-3, float(cfg.semantic_gumbel_tau))
-        self.num_decoder_blocks = max(0, int(cfg.num_decoder_blocks))
-        self.feature_attn_num_heads = max(1, int(cfg.feature_attn_num_heads))
-        self.window_attn_window_size = max(1, int(cfg.window_attn_window_size))
-        self.skip_fusion_mode = str(cfg.skip_fusion_mode).strip().lower()
+        self.semantic_sinkhorn_iters = max(1, int(getattr(cfg, "semantic_sinkhorn_iters", 3)))
+        self.semantic_gumbel_tau = max(1e-3, float(getattr(cfg, "semantic_gumbel_tau", 1.0)))
+        self.num_decoder_blocks = max(0, int(getattr(cfg, "num_decoder_blocks", 2)))
+        self.feature_attn_num_heads = max(1, int(getattr(cfg, "feature_attn_num_heads", 4)))
+        self.window_attn_window_size = max(1, int(getattr(cfg, "window_attn_window_size", 8)))
+        self.skip_fusion_mode = str(getattr(cfg, "skip_fusion_mode", "add_proj")).strip().lower()
         if self.skip_fusion_mode not in _SKIP_FUSION_MODES:
             self.skip_fusion_mode = "concat_conv"
-        self.skip_routing_mode = str(cfg.skip_routing_mode).strip().lower()
+        self.skip_routing_mode = str(getattr(cfg, "skip_routing_mode", "none")).strip().lower()
         if self.skip_routing_mode not in {"none", "naive", "adaptive", "normalized"}:
             self.skip_routing_mode = "normalized"
         self.skip_disabled = self.skip_routing_mode == "none"
-        self.skip_naive_gain = max(0.0, float(cfg.skip_naive_gain))
-        self.skip_residual_weight = max(0.0, float(cfg.skip_residual_weight))
-        self.style_skip_content_retention_boost = max(0.0, min(1.0, float(cfg.style_skip_content_retention_boost)))
-        self.input_anchor_noise_std = max(0.0, float(cfg.input_anchor_noise_std))
-        self.input_anchor_noise_eval = bool(cfg.input_anchor_noise_eval)
+        self.skip_naive_gain = max(0.0, float(getattr(cfg, "skip_naive_gain", 1.0)))
+        self.skip_residual_weight = max(0.0, float(getattr(cfg, "skip_residual_weight", 0.1)))
+        self.style_skip_content_retention_boost = max(0.0, min(1.0, float(getattr(cfg, "style_skip_content_retention_boost", 0.0))))
+        self.input_anchor_noise_std = max(0.0, float(getattr(cfg, "input_anchor_noise_std", 0.0)))
+        self.input_anchor_noise_eval = bool(getattr(cfg, "input_anchor_noise_eval", False))
         if self.decoder_block_type == "window_attn" and (self.num_decoder_blocks % 2) != 0:
             warnings.warn(
                 "decoder_block_type=window_attn works best with even num_decoder_blocks for shifted-window pairing.",
                 category=UserWarning,
                 stacklevel=2,
             )
-        self.ablation_no_residual = bool(cfg.ablation_no_residual)
-        self.ablation_no_residual_gain = max(0.0, float(cfg.ablation_no_residual_gain))
-        self.ablation_disable_spatial_prior = bool(cfg.ablation_disable_spatial_prior)
-        self.ablation_direct_delta_blend = bool(cfg.ablation_direct_delta_blend)
-        self.raw_latent_splat_highway = bool(cfg.raw_latent_splat_highway)
-        self.ablation_skip_clean = bool(cfg.ablation_skip_clean)
-        self.ablation_skip_blur = bool(cfg.ablation_skip_blur)
-        self.skip_bottleneck_channels = max(1, int(cfg.skip_bottleneck_channels))
-        self.skip_spatial_dropout_p = max(0.0, min(1.0, float(cfg.skip_spatial_dropout_p)))
-        self.ablation_decoder_highpass = bool(cfg.ablation_decoder_highpass)
-        self.color_highway_gain = float(cfg.color_highway_gain)
-        self.pre_integrate_moment_match = bool(cfg.pre_integrate_moment_match)
-        self.pre_integrate_moment_blend = max(0.0, min(1.0, float(cfg.pre_integrate_moment_blend)))
-        self.output_moment_match = bool(cfg.output_moment_match)
-        self.output_moment_match_eps = max(1e-8, float(cfg.output_moment_match_eps))
-        self.output_moment_match_train_only = bool(cfg.output_moment_match_train_only)
-        self.use_style_blender = bool(cfg.use_style_blender)
+        self.ablation_no_residual = bool(getattr(cfg, "ablation_no_residual", False))
+        self.ablation_no_residual_gain = max(0.0, float(getattr(cfg, "ablation_no_residual_gain", 1.0)))
+        self.ablation_disable_spatial_prior = bool(getattr(cfg, "ablation_disable_spatial_prior", False))
+        self.ablation_direct_delta_blend = bool(getattr(cfg, "ablation_direct_delta_blend", False))
+        self.raw_latent_splat_highway = bool(getattr(cfg, "raw_latent_splat_highway", False))
+        self.ablation_skip_clean = bool(getattr(cfg, "ablation_skip_clean", True))
+        self.ablation_skip_blur = bool(getattr(cfg, "ablation_skip_blur", True))
+        self.skip_bottleneck_channels = max(1, int(getattr(cfg, "skip_bottleneck_channels", 16)))
+        self.skip_spatial_dropout_p = max(0.0, min(1.0, float(getattr(cfg, "skip_spatial_dropout_p", 0.15))))
+        self.ablation_decoder_highpass = bool(getattr(cfg, "ablation_decoder_highpass", True))
+        self.color_highway_gain = float(getattr(cfg, "color_highway_gain", 1.0))
+        self.pre_integrate_moment_match = bool(getattr(cfg, "pre_integrate_moment_match", False))
+        self.pre_integrate_moment_blend = max(0.0, min(1.0, float(getattr(cfg, "pre_integrate_moment_blend", 1.0))))
+        self.output_moment_match = bool(getattr(cfg, "output_moment_match", False))
+        self.output_moment_match_eps = max(1e-8, float(getattr(cfg, "output_moment_match_eps", 1e-6)))
+        self.output_moment_match_train_only = bool(getattr(cfg, "output_moment_match_train_only", False))
+        self.use_style_blender = bool(getattr(cfg, "use_style_blender", False))
         if self.upsample_blur_kernel not in {"box3", "gaussian3"}:
             self.upsample_blur_kernel = "box3"
 
-        tokenizer_kind = str(cfg.style_tokenizer).strip().lower()
+        tokenizer_kind = str(getattr(cfg, "style_tokenizer", "factorized")).strip().lower()
         if tokenizer_kind != "factorized":
-            raise ValueError(f"Unsupported style_tokenizer: {cfg.style_tokenizer}")
+            raise ValueError(f"Unsupported style_tokenizer: {getattr(cfg, 'style_tokenizer', tokenizer_kind)}")
         self.style_tokenizer = FactorizedStyleTokenizer(
             num_styles=self.num_styles,
             style_dim=style_dim,
-            identity_dim=int(cfg.tokenizer_identity_dim),
-            texture_dim=int(cfg.tokenizer_texture_dim),
-            geometry_dim=int(cfg.tokenizer_geometry_dim),
-            init_std=float(cfg.tokenizer_init_std),
-            projection_mode=str(cfg.tokenizer_projection_mode),
-            residual_gain=float(cfg.tokenizer_residual_gain),
+            identity_dim=int(getattr(cfg, "tokenizer_identity_dim", 24)),
+            texture_dim=int(getattr(cfg, "tokenizer_texture_dim", 32)),
+            geometry_dim=int(getattr(cfg, "tokenizer_geometry_dim", 24)),
+            init_std=float(getattr(cfg, "tokenizer_init_std", 0.02)),
+            projection_mode=str(getattr(cfg, "tokenizer_projection_mode", "concat")),
+            residual_gain=float(getattr(cfg, "tokenizer_residual_gain", 0.5)),
             num_atoms=tokenizer_num_atoms,
-            num_prototypes=int(cfg.tokenizer_num_prototypes),
-            atom_temperature=float(cfg.tokenizer_atom_temperature),
-            field_dropout_p=float(cfg.tokenizer_field_dropout_p),
-            code_l2_norm=bool(cfg.tokenizer_code_l2_norm),
-            code_scale=float(cfg.tokenizer_code_scale),
-            atom_topk=int(cfg.tokenizer_atom_topk),
-            atom_hard_eval=bool(cfg.tokenizer_atom_hard_eval),
+            num_prototypes=int(getattr(cfg, "tokenizer_num_prototypes", 4)),
+            atom_temperature=float(getattr(cfg, "tokenizer_atom_temperature", 0.25)),
+            field_dropout_p=float(getattr(cfg, "tokenizer_field_dropout_p", 0.0)),
+            code_l2_norm=bool(getattr(cfg, "tokenizer_code_l2_norm", False)),
+            code_scale=float(getattr(cfg, "tokenizer_code_scale", 1.0)),
+            atom_topk=int(getattr(cfg, "tokenizer_atom_topk", 0)),
+            atom_hard_eval=bool(getattr(cfg, "tokenizer_atom_hard_eval", False)),
         )
         self.style_code_content_router: nn.Module | None = None
         self.style_code_content_style_gate: nn.Embedding | None = None
         if self.tokenizer_content_adaptive:
             router_in = self.body_channels * 4 + 1
-            hidden = max(4, int(cfg.tokenizer_content_hidden_dim))
+            hidden = max(4, int(getattr(cfg, "tokenizer_content_hidden_dim", 64)))
             self.style_code_content_router = nn.Sequential(
                 nn.LayerNorm(router_in),
                 nn.Linear(router_in, hidden),
@@ -167,7 +167,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
                 nn.init.zeros_(last.bias)
             if self.tokenizer_content_style_gate:
                 self.style_code_content_style_gate = nn.Embedding(self.num_styles, 1)
-                init_ratio = float(cfg.tokenizer_content_style_gate_init) / self.tokenizer_content_style_gate_max
+                init_ratio = float(getattr(cfg, "tokenizer_content_style_gate_init", 1.0)) / self.tokenizer_content_style_gate_max
                 init_ratio = max(1e-4, min(1.0 - 1e-4, init_ratio))
                 init_logit = torch.logit(torch.tensor(init_ratio, dtype=torch.float32)).item()
                 nn.init.constant_(self.style_code_content_style_gate.weight, init_logit)
@@ -175,11 +175,11 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         # Learnable style priors for inference without reference image. The
         # default class prior keeps historical behavior; prototype/VQ modes are
         # opt-in representation probes.
-        self.style_spatial_mode = str(cfg.style_spatial_mode).strip().lower()
+        self.style_spatial_mode = str(getattr(cfg, "style_spatial_mode", "class")).strip().lower()
         if self.style_spatial_mode not in {"class", "prototype", "content_guided", "vq", "vq_content_guided"}:
             self.style_spatial_mode = "class"
-        self.style_spatial_num_prototypes = max(1, int(cfg.style_spatial_num_prototypes))
-        self.style_spatial_routing_temperature = max(1e-3, float(cfg.style_spatial_routing_temperature))
+        self.style_spatial_num_prototypes = max(1, int(getattr(cfg, "style_spatial_num_prototypes", 4)))
+        self.style_spatial_routing_temperature = max(1e-3, float(getattr(cfg, "style_spatial_routing_temperature", 0.25)))
         self.style_spatial_id_16 = nn.Parameter(torch.zeros(self.num_styles, self.body_channels, 16, 16))
         nn.init.normal_(self.style_spatial_id_16, mean=0.0, std=0.02)
         self.style_spatial_proto_16: nn.Parameter | None = None
@@ -201,7 +201,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         if self.style_spatial_mode in {"content_guided", "vq_content_guided"}:
             router_out = self.style_spatial_num_prototypes if self.style_spatial_mode == "content_guided" else self.num_atoms
             router_in = self.body_channels * 4 + 1
-            hidden = max(4, int(cfg.style_spatial_content_hidden_dim))
+            hidden = max(4, int(getattr(cfg, "style_spatial_content_hidden_dim", 64)))
             self.style_spatial_content_router = nn.Sequential(
                 nn.LayerNorm(router_in),
                 nn.Linear(router_in, hidden),
