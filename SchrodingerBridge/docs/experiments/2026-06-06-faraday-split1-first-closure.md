@@ -81,17 +81,35 @@ Current retained point:
 
 - `split1 F e1`
 
+## Retained `e1` targetwise ArtFID
+
+The retained `e1` point now has standalone targetwise ArtFID under:
+
+- `/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/wikiart_stress1_Color_Field_Painting__High_Renaissance__Mannerism_Late_Renaissance__Pop_Art__Realism_variant_f_b44_remote/full_eval_artfid/epoch_0001`
+
+Closed aggregate values:
+
+- full targetwise ArtFID:
+  - `365.8655`
+- transfer-only targetwise ArtFID:
+  - `415.0147`
+
+Interpretation:
+
+- this closes the retained-point ArtFID requirement for the first split
+- it does **not** yet produce a split-level claim by itself because the
+  split-local `IDT / no-op` packet is still required
+
 ## Still open
 
-This packet is not yet paper-safe for split-level claim use because two pieces
-are still pending:
+This split is not yet paper-safe for split-level claim use because one key
+comparison packet is still pending:
 
-1. standalone targetwise `ArtFID` for the retained `e1` point
-2. split-local `IDT / no-op` packet on the same `wikiart_stress1` test surface
+1. split-local `IDT / no-op` packet on the same `wikiart_stress1` test surface
 
 Current in-flight lane:
 
-- `full_eval_artfid/epoch_0001` for retained `e1`
+- `wikiart_stress1_*_idt_5x5`
 
 Current prep added for the next open item:
 
@@ -115,5 +133,4 @@ What is safe to say already:
 What is not safe to say yet:
 
 - positive-vs-IDT claim on `wikiart_stress1`
-- targetwise-ArtFID claim on `wikiart_stress1`
 - broader fixed-rule multi-split generalization claim
