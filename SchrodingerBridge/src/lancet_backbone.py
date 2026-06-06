@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import warnings
+from dataclasses import MISSING, fields
 
 import torch
 import torch.nn as nn
 
-from config_schema import ModelConfig, _materialize_missing_dataclass_fields
+from config_schema import ModelConfig
 from lancet_blocks import (
     DecoderTextureBlock,
     NormFreeModulation,
@@ -24,12 +25,26 @@ from style_tokenizer import FactorizedStyleTokenizer
 _SKIP_FUSION_MODES = {"concat_conv", "add_proj"}
 
 
+def _materialize_local_missing_dataclass_fields(obj: object) -> None:
+    for item in fields(obj):
+        name = str(item.name)
+        if hasattr(obj, name):
+            continue
+        if item.default is not MISSING:
+            value = item.default
+        elif item.default_factory is not MISSING:  # type: ignore[attr-defined]
+            value = item.default_factory()  # type: ignore[misc]
+        else:
+            value = None
+        setattr(obj, name, value)
+
+
 class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
 
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         cfg = config.validated()
-        _materialize_missing_dataclass_fields(cfg)
+        _materialize_local_missing_dataclass_fields(cfg)
         self.config = cfg
         latent_channels = int(cfg.latent_channels)
         style_dim = int(cfg.style_dim)
