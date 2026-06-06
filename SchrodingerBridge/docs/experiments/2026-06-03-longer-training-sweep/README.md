@@ -72,3 +72,25 @@ paper-table substitute unless the table explicitly says so.
 - If neither improves over IDT-adjusted frontier, do not tune the same axis
   blindly; return to representation/execution design.
 
+## Closure
+
+Closed in:
+
+- [2026-06-06-distinct5-longer-training-closure.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-06-distinct5-longer-training-closure.md)
+
+Final read:
+
+- `F-longer` is a negative closure:
+  - best retained balance stays at the earliest closed point
+  - later epochs recover only a small amount of style while LPIPS worsens
+- `K-longer` is also a negative closure:
+  - `e5` is the best retained balance point
+  - `e6 .. e8` recover style toward `K e1`, but LPIPS and targetwise ArtFID
+    both worsen
+
+Safe summary:
+
+- the current minute-scale Distinct5 operating points are **not** explained away
+  by a simple "train the same family longer" objection
+- the next GPU slot should return to mechanism or split-validation work, not to
+  more same-family `F/K` longer training

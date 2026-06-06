@@ -60,7 +60,15 @@ Current Faraday/Hypatia status from the latest checkpoint:
 - F-longer has a complete e1-e8 full_eval packet at `/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_longer_train_f_seed42_b44_e8`.
 - F-longer failed the retention gate: best transfer CLIP-S was e8 `0.666298`, below the `+0.006` improvement gate over F base `0.664360`, and all LPIPS values were worse than F base `0.324528`.
 - No F-longer ArtFID was computed by rule; this is not a paper-result improvement.
-- K-longer training completed 8 checkpoints, but the eval packet is incomplete. Recovery eval reached e1-e4 and then stopped because `/mnt/i` was full (`448G / 448G, 0 available`). Do not write any K-longer conclusion until e5-e8 full_eval plus retention/ArtFID decisions complete.
+- K-longer is now also fully closed through `e5 .. e8` with standalone targetwise ArtFID.
+- Best retained K-longer balance point is `e5`:
+  - transfer `CLIP-S = 0.667010`
+  - transfer `LPIPS = 0.358785`
+  - transfer targetwise `ArtFID = 408.309`
+- Later K-longer epochs recover style toward `K e1`, but LPIPS and targetwise ArtFID both worsen; no retained point clears the promotion gate.
+- Safe writing consequence:
+  - treat both `F-longer` and `K-longer` as negative same-family longer-training closures
+  - do not write any "train the compact family longer and it wins" claim
 
 Current extra-split status:
 
