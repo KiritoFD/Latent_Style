@@ -72,8 +72,11 @@ def main() -> int:
     parser.add_argument("--identity-gradient-checkpointing", type=int, default=1, help="SaMAM only. This is the first low-VRAM lever after batch-size=1.")
     parser.add_argument("--vae-gradient-checkpointing", type=int, default=0, help="SaMAM only. Checkpoint VAE decode so gradients recompute activations instead of storing them.")
     parser.add_argument("--iterations", type=int, default=0, help="SaMAM only. 0 uses the lane default.")
+    parser.add_argument("--checkpoint", default="", help="SaMAM only. Resume from a latent Lightning checkpoint.")
     parser.add_argument("--max-steps", type=int, default=0, help="SaMST only. 0 uses the lane default.")
     parser.add_argument("--loss-network-half", type=int, default=0, help="SaMST only. Keep the perceptual loss network in FP32 by default for stability.")
+    parser.add_argument("--begin-checkpoint", default="", help="SaMST only. Resume from an interval checkpoint.")
+    parser.add_argument("--begin-epoch", type=int, default=0, help="SaMST only. Epoch index paired with --begin-checkpoint.")
     parser.add_argument("--max-prelaunch-memory-mib", type=int, default=1500)
     parser.add_argument("--health-wait-seconds", type=int, default=30)
     parser.add_argument("--max-runtime-memory-mib", type=int, default=11000)
@@ -124,6 +127,8 @@ def main() -> int:
                 "1000",
             ]
         )
+        if str(args.checkpoint).strip():
+            command.extend(["--checkpoint", str(args.checkpoint)])
     else:
         max_steps = int(args.max_steps) if int(args.max_steps) > 0 else _default_budget(args.method, args.lane)
         command.extend(
@@ -145,6 +150,15 @@ def main() -> int:
                 str(int(args.loss_network_half)),
             ]
         )
+        if str(args.begin_checkpoint).strip():
+            command.extend(
+                [
+                    "--begin-checkpoint",
+                    str(args.begin_checkpoint),
+                    "--begin-epoch",
+                    str(int(args.begin_epoch)),
+                ]
+            )
 
     launcher_cmd = [
         sys.executable,

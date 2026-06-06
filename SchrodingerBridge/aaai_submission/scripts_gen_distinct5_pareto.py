@@ -110,6 +110,18 @@ def main() -> None:
         "train_min": 5.8 * 60.0,
         "label": "SaMST e15",
     }
+    latent_samam = {
+        "x": 1.0 - 0.7041577109166667,
+        "style": 0.6388333174089590,
+        "label": "Lat SaMAM 110",
+        "train_min": 10.0,
+    }
+    latent_samst = {
+        "x": 1.0 - 0.8381632859666667,
+        "style": 0.6892868704597155,
+        "label": "Lat SaMST 300",
+        "train_min": 9.4,
+    }
 
     fig, axes = plt.subplots(1, 2, figsize=(8.4, 3.35), gridspec_kw={"width_ratios": [1.08, 1.0]})
 
@@ -150,11 +162,35 @@ def main() -> None:
         label="SaMST-512 e15",
         zorder=4,
     )
+    ax.scatter(
+        [latent_samam["x"]],
+        [latent_samam["style"]],
+        facecolor="white",
+        edgecolor=COLORS["samam"],
+        linewidth=1.2,
+        marker="D",
+        s=44,
+        label="Lat SaMAM",
+        zorder=4,
+    )
+    ax.scatter(
+        [latent_samst["x"]],
+        [latent_samst["style"]],
+        facecolor="white",
+        edgecolor=COLORS["samst"],
+        linewidth=1.2,
+        marker="s",
+        s=46,
+        label="Lat SaMST",
+        zorder=4,
+    )
     _annotate(ax, samst, 8, 10, text="SaMST\n5.8h")
     _annotate(ax, samam_2250, 6, 12, text=f"2250\n{_time_label(float(samam_2250['train_min']))}")
+    _annotate(ax, latent_samam, 8, -12, text="Lat SaMAM\n10.0m")
+    _annotate(ax, latent_samst, 8, 10, text="Lat SaMST\n9.4m")
     ax.set_xlabel(r"$1-\mathrm{LPIPS}$ (content preservation) $\uparrow$")
     ax.set_ylabel(r"CLIP-style $\uparrow$")
-    ax.set_xlim(0.38, 0.74)
+    ax.set_xlim(0.12, 0.74)
     ax.set_ylim(0.535, 0.735)
     ax.legend(loc="upper left", bbox_to_anchor=(0.02, 0.84))
     ax.text(0.02, 0.97, "(a) Full reproduced surface", transform=ax.transAxes, ha="left", va="top", fontsize=9.4)

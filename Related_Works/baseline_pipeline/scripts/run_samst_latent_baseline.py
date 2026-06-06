@@ -91,6 +91,8 @@ def main() -> int:
     parser.add_argument("--ae-weight", type=float, default=1e2)
     parser.add_argument("--grad-clip-norm", type=float, default=1.0)
     parser.add_argument("--loss-network-half", type=int, default=0)
+    parser.add_argument("--begin-checkpoint", type=Path, default=None)
+    parser.add_argument("--begin-epoch", type=int, default=0)
     parser.add_argument("--vae-model", type=str, default="ema")
     parser.add_argument("--vae-cache-dir", type=str, default="")
     args = parser.parse_args()
@@ -143,8 +145,8 @@ def main() -> int:
         "log_interval": 10,
         "checkpoint_interval": int(args.checkpoint_interval),
         "checkpoint_model_dir": str((checkpoint_dir / "interval").resolve()),
-        "begin_checkpoint": None,
-        "begin_epoch": None,
+        "begin_checkpoint": str(args.begin_checkpoint.resolve()) if args.begin_checkpoint else None,
+        "begin_epoch": int(args.begin_epoch),
         "max_steps": int(args.max_steps),
         "step_model_name_template": "step_{step:06d}.model",
         "latent_channels": 4,
