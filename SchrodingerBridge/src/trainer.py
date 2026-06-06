@@ -547,6 +547,8 @@ class SBTrainer:
             self.optimizer.load_state_dict(state["optimizer_state_dict"])
         if resume_optimizer and self.scheduler is not None and state.get("scheduler_state_dict") is not None:
             self.scheduler.load_state_dict(state["scheduler_state_dict"])
+        if "loss_state_dict" in state and hasattr(self.loss_fn, "load_state_dict"):
+            self.loss_fn.load_state_dict(state.get("loss_state_dict"))
         if bool(self.train_cfg.get("resume_training_state", True)):
             self.global_step = int(state.get("global_step", 0))
             self.start_epoch = int(state.get("epoch", 0)) + 1
@@ -931,6 +933,17 @@ class SBTrainer:
         metrics.setdefault("endpoint_abs", 0.0)
         metrics.setdefault("velocity_max", 0.0)
         metrics.setdefault("endpoint_max", 0.0)
+        metrics.setdefault("base_endpoint_abs", 0.0)
+        metrics.setdefault("base_endpoint_max", 0.0)
+        metrics.setdefault("final_endpoint_abs", 0.0)
+        metrics.setdefault("final_endpoint_max", 0.0)
+        metrics.setdefault("proximal_residual_abs", 0.0)
+        metrics.setdefault("proximal_residual_energy", 0.0)
+        metrics.setdefault("teacher_alignment", 0.0)
+        metrics.setdefault("teacher_abs", 0.0)
+        metrics.setdefault("barycentric_entropy", 0.0)
+        metrics.setdefault("kinetic_low_band", 0.0)
+        metrics.setdefault("kinetic_high_band", 0.0)
         metrics["lr"] = float(self.optimizer.param_groups[0]["lr"])
         metrics["data_time_sec"] = data_time_total
         metrics["forward_time_sec"] = forward_time_total
@@ -961,6 +974,7 @@ class SBTrainer:
             "model_state_dict": model_for_state.state_dict(),
             "optimizer_state_dict": self.optimizer.state_dict(),
             "scheduler_state_dict": self.scheduler.state_dict() if self.scheduler is not None else None,
+            "loss_state_dict": self.loss_fn.state_dict() if hasattr(self.loss_fn, "state_dict") else None,
             "config": self.serialized_config,
             "metrics": metrics,
         }

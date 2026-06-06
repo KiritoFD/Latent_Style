@@ -1,0 +1,15 @@
+{
+  "_base": "inmortal_k_spatial_seed42_b44.json",
+  "training": {
+    "batch_size": 16
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_k_spatial_seed42_b16"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_k_spatial_seed42_b16",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "K_spatial_probe_b16",
+    "notes": "Batch-disambiguation probe for the inmortal K_spatial packet. Same mechanism and long-run contract as the b32 retry, but reduced to batch 16 to separate batch pressure from implementation or launcher-side VRAM inflation."
+  }
+}
