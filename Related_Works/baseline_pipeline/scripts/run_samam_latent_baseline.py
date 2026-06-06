@@ -23,9 +23,9 @@ DATASETS = {
         "val_style_root": str((WORKSPACE_ROOT / "latent-256").resolve()),
         "eval_root": str((WORKSPACE_ROOT / "style_data" / "overfit50").resolve()),
         "styles": ["photo", "monet", "vangogh", "cezanne", "Hayao"],
-        # RGB SaMam used patch_size=8 on 256/512 images, but latent inputs are already
-        # 8x smaller spatially. Keeping 8 here collapses 32x32 latents down to 4x4 tokens.
-        "patch_size": 4,
+        # RGB SaMam uses patch_size=8 on 256px images, yielding a 32x32 token grid.
+        # The matching latent tensor is already 32x32, so the latent-side equivalent is patch_size=1.
+        "patch_size": 1,
     },
     "distinct5_512": {
         "latent_content_root": "/mnt/i/wikiart_distinct5_samam_512_latents_ema/train",
@@ -34,9 +34,9 @@ DATASETS = {
         "val_style_root": "/mnt/i/wikiart_distinct5_latents_512_ema_test",
         "eval_root": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
         "styles": ["Early_Renaissance", "Impressionism", "Minimalism", "Rococo", "Ukiyo_e"],
-        # 512px EMA latents are 4x64x64. Using patch_size=8 reduces them to an 8x8 token map
-        # and the decoder can only recover coarse color blobs. patch_size=4 preserves a 16x16 grid.
-        "patch_size": 4,
+        # RGB SaMam uses patch_size=8 on 512px inputs, yielding a 64x64 token grid.
+        # The matching latent tensor is already 64x64, so the latent-side equivalent is patch_size=1.
+        "patch_size": 1,
     },
 }
 
