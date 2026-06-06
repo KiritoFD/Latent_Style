@@ -90,6 +90,7 @@ def main() -> int:
     parser.add_argument("--style-weight", type=float, default=1e8)
     parser.add_argument("--ae-weight", type=float, default=1e2)
     parser.add_argument("--grad-clip-norm", type=float, default=1.0)
+    parser.add_argument("--loss-network-half", type=int, default=0)
     parser.add_argument("--vae-model", type=str, default="ema")
     parser.add_argument("--vae-cache-dir", type=str, default="")
     args = parser.parse_args()
@@ -151,7 +152,9 @@ def main() -> int:
         "vae_model": str(args.vae_model),
         "vae_cache_dir": str(args.vae_cache_dir),
         "max_train_per_style": int(args.max_train_per_style),
-        "loss_network_half": 1,
+        # The RGB SaMST code runs the perceptual loss network in FP32.
+        # Keeping it in FP16 on decoded latents is a plausible source of early NaNs.
+        "loss_network_half": int(args.loss_network_half),
         "grad_clip_norm": float(args.grad_clip_norm),
     }
     train_yml.write_text(yaml.safe_dump(cfg, sort_keys=False), encoding="utf-8")
