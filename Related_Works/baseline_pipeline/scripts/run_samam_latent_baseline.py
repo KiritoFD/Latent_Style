@@ -64,6 +64,7 @@ def main() -> int:
     parser.add_argument("--accumulate-grad-batches", type=int, default=1)
     parser.add_argument("--vae-model", type=str, default="ema")
     parser.add_argument("--vae-cache-dir", type=str, default="")
+    parser.add_argument("--checkpoint", type=Path, default=None)
     parser.add_argument("--gpus", nargs="+", default=["0"])
     args = parser.parse_args()
 
@@ -77,6 +78,7 @@ def main() -> int:
         "iterations": args.iterations,
         "batch_size": args.batch_size,
         "precision": args.precision,
+        "checkpoint": str(args.checkpoint.resolve()) if args.checkpoint else "",
         "limit_val_batches": args.limit_val_batches,
         "num_sanity_val_steps": args.num_sanity_val_steps,
         "accumulate_grad_batches": args.accumulate_grad_batches,
@@ -135,6 +137,7 @@ def main() -> int:
         str(args.vae_model),
         "--vae-cache-dir",
         str(args.vae_cache_dir),
+        *(["--checkpoint", str(args.checkpoint.resolve())] if args.checkpoint else []),
         "--patch-size",
         str(preset["patch_size"]),
         "--gpus",
