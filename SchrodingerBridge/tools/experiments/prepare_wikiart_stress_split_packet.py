@@ -71,6 +71,7 @@ def _write_config(
     remote_root_unix: str,
 ) -> None:
     cfg = json.loads(json.dumps(template))
+    cfg["_base"] = "../../distinct5_512_ema_variant_e_latent_prototype_ot_queue.json"
     remote_split_root = f"{remote_root_unix.rstrip('/')}/{split_name}"
     cfg.setdefault("training", {})
     cfg.setdefault("data", {})

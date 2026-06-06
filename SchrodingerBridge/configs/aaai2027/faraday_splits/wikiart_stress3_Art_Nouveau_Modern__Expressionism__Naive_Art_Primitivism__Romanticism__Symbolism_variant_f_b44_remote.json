@@ -1,5 +1,5 @@
 {
-  "_base": "distinct5_512_ema_variant_e_latent_prototype_ot_queue.json",
+  "_base": "../../distinct5_512_ema_variant_e_latent_prototype_ot_queue.json",
   "training": {
     "num_epochs": 3,
     "batch_size": 44,
