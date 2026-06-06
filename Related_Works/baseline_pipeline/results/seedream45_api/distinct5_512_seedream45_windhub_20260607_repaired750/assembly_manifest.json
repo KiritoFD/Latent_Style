@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "base720_root": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\seedream45_api\\distinct5_512_seedream45_windhub_20260607_full_fg",
+  "repair30_root": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\seedream45_api\\distinct5_512_seedream45_windhub_20260607_repair30",
+  "images_count": 750,
+  "repaired_eval_root": "G:\\GitHub\\Latent_Style\\tmp\\distinct5_seedream_repaired_eval_20260607",
+  "mapping_json": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-07-distinct5-seedream45-replacements.json"
+}
