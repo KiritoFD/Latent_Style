@@ -1,0 +1,3 @@
+method,run,selection,train_batch,train_epochs,transfer_clip_style,transfer_content_lpips,full_clip_style,full_content_lpips,reading
+K_spatial,inmortal_k_spatial_seed42_b16,epoch_0006,16,8,0.6614539421101412,0.35037601128333334,0.6923959741195043,0.34151635038666667,"Negative-to-neutral kinetic-only packet. Stable, but did not lift the style ceiling."
+XPred_Barycenter,inmortal_xpred_bary_seed42_b40,epoch_0007,40,8,0.7161263772845268,0.7175771549333334,0.7186682052612305,0.7104419553733333,"Strong style-ceiling packet. Reaches near-target style, but content damage remains catastrophic."
