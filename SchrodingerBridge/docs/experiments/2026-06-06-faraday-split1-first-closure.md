@@ -100,16 +100,18 @@ Interpretation:
 - it does **not** yet produce a split-level claim by itself because the
   split-local `IDT / no-op` packet is still required
 
-## Still open
+## Split-local `IDT / no-op`
 
-This split is not yet paper-safe for split-level claim use because one key
-comparison packet is still pending:
+This open item is now closed under:
 
-1. split-local `IDT / no-op` packet on the same `wikiart_stress1` test surface
+- [2026-06-06-faraday-split1-paper-safe-packet.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-06-faraday-split1-paper-safe-packet.md)
 
-Current in-flight lane:
+Current status:
 
-- `wikiart_stress1_*_idt_5x5`
+- `split1` is now the first follow-up split with:
+  - closed retained `LBM-F e1`
+  - closed split-local `IDT / no-op`
+  - closed targetwise ArtFID for both
 
 Current prep added for the next open item:
 
@@ -132,5 +134,4 @@ What is safe to say already:
 
 What is not safe to say yet:
 
-- positive-vs-IDT claim on `wikiart_stress1`
 - broader fixed-rule multi-split generalization claim
