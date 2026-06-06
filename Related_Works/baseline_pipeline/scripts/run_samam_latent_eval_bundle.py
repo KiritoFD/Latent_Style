@@ -37,7 +37,7 @@ def main() -> int:
     parser.add_argument("--label", type=str, required=True)
     parser.add_argument("--image-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
-    parser.add_argument("--style-names", type=str, required=True)
+    parser.add_argument("--style-names", nargs="+", required=True)
     parser.add_argument("--max-src-per-style", type=int, default=30)
     parser.add_argument("--image-size", type=int, default=256)
     parser.add_argument("--eval-batch-size", type=int, default=8)
@@ -47,6 +47,17 @@ def main() -> int:
     parser.add_argument("--skip-art-fid", action="store_true")
     parser.add_argument("--full-eval", action="store_true")
     args = parser.parse_args()
+
+    def _normalize_style_names(raw: list[str]) -> str:
+        items: list[str] = []
+        for token in raw:
+            for piece in str(token).split(","):
+                piece = piece.strip()
+                if piece:
+                    items.append(piece)
+        if not items:
+            raise ValueError("--style-names resolved to an empty list")
+        return ",".join(items)
 
     output_root = args.output_root.resolve()
     output_root.mkdir(parents=True, exist_ok=True)
@@ -65,7 +76,7 @@ def main() -> int:
         "--output-root",
         str(step_dir / "images"),
         "--style-names",
-        str(args.style_names),
+        _normalize_style_names(args.style_names),
         "--max-src-per-style",
         str(args.max_src_per_style),
         "--image-size",
@@ -81,7 +92,7 @@ def main() -> int:
         "--test_dir",
         str(args.image_root),
         "--style_subdirs",
-        str(args.style_names),
+        _normalize_style_names(args.style_names),
         "--reuse_generated",
         "--force_regen",
         "--batch_size",
