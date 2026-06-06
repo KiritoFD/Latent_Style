@@ -79,3 +79,38 @@ Current status at note time:
 
 This note is launch/status only. It is not yet a paper-facing result packet
 until retained checkpoints and `full_eval/epoch_0001..0003/summary.json` land.
+
+## Live progress snapshot
+
+Re-checked after launch:
+
+- GPU remained in the formal train band:
+  - about `8859 MiB / 12288 MiB`
+  - about `100%` util
+- retained checkpoints now present:
+  - `epoch_0001.pt`
+  - `epoch_0002.pt`
+- current epoch:
+  - `Epoch 3/3`
+
+Latest retained train-side readout from the log:
+
+- `epoch_0001`
+  - `loss = 7.7879`
+  - `tswd = 7.9688`
+  - `|v| = 0.190`
+  - `peak = 7.81 / 8.19 GiB`
+- `epoch_0002`
+  - `loss = 7.2385`
+  - `tswd = 7.4688`
+  - `|v| = 0.210`
+  - `peak = 7.81 / 8.19 GiB`
+
+Operational read:
+
+- the split2 train lane is healthy
+- it is following the same retained-checkpoint pattern as split1
+- the next closure step remains:
+  - wait for `epoch_0003.pt`
+  - then verify whether deferred `full_eval` lands cleanly or needs the same
+    repaired rerun path as split1
