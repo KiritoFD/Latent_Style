@@ -68,3 +68,53 @@ Operational implication:
 
 - future `time-smoothing / curvature` packets should start from a clearly smaller batch than the legacy `H-family` batch-44 surface
 - this is still a mechanism-preserving correction, not a reason to discard the line
+
+## Closed readout
+
+Remote packet:
+
+- run dir:
+  - `/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_inmortal_k_spatial_seed42_b16`
+
+Training surface:
+
+- batch: `16`
+- epochs: `8`
+- peak memory recorded by the trainer at `epoch_0008`:
+  - allocated about `8.04 GB`
+  - reserved about `8.45 GB`
+
+Transfer curve:
+
+| epoch | transfer CLIP-style | transfer LPIPS |
+| --- | ---: | ---: |
+| `e1` | `0.6605` | `0.3425` |
+| `e2` | `0.6570` | `0.3248` |
+| `e3` | `0.6599` | `0.3433` |
+| `e4` | `0.6570` | `0.3485` |
+| `e5` | `0.6594` | `0.3691` |
+| `e6` | `0.6615` | `0.3504` |
+| `e7` | `0.6601` | `0.3468` |
+| `e8` | `0.6606` | `0.3640` |
+
+Reading:
+
+- the line is numerically stable and clearly trainable once the batch is reduced
+- the mechanism does **not** raise the current style ceiling
+- the best raw style point is `e6`, but it remains below the reviewed compact frontier
+- the best LPIPS point is `e2`, but the style trade-off remains weaker than the current best compact frontier
+
+Mechanism interpretation:
+
+- replacing uniform kinetic with the spatial low/high split is **not enough by itself**
+- it does not unlock a stronger style regime on `Distinct5-512`
+- this supports the stronger theory claim that the ceiling problem is not only “wrong kinetic geometry”
+- the next mechanisms should emphasize either:
+  - stronger structure-aware release (`K_manifold`), or
+  - transport-target redesign (`XPred_Barycenter`), or
+  - explicit proximal refinement (`P_highpass`)
+
+Status:
+
+- `K_spatial` is a closed negative-to-neutral mechanism packet
+- keep it as evidence, but do not promote it as the next headline line

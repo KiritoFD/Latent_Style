@@ -5,7 +5,7 @@ import warnings
 import torch
 import torch.nn as nn
 
-from config_schema import ModelConfig
+from config_schema import ModelConfig, _materialize_missing_dataclass_fields
 from lancet_blocks import (
     DecoderTextureBlock,
     NormFreeModulation,
@@ -29,6 +29,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         cfg = config.validated()
+        _materialize_missing_dataclass_fields(cfg)
         self.config = cfg
         latent_channels = int(cfg.latent_channels)
         style_dim = int(cfg.style_dim)
