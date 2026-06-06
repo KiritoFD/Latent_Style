@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
-from dataclasses import asdict, dataclass, field, fields
+from dataclasses import MISSING, asdict, dataclass, field, fields
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Mapping
@@ -61,6 +61,20 @@ def _split_known_fields(cls: type[Any], payload: Mapping[str, Any] | None) -> tu
     known = {key: data[key] for key in known_names if key in data}
     extra = {key: value for key, value in data.items() if key not in known_names}
     return known, extra
+
+
+def _materialize_missing_dataclass_fields(obj: Any) -> None:
+    for item in fields(obj):
+        name = str(item.name)
+        if hasattr(obj, name):
+            continue
+        if item.default is not MISSING:
+            value = copy.deepcopy(item.default)
+        elif item.default_factory is not MISSING:  # type: ignore[attr-defined]
+            value = item.default_factory()  # type: ignore[misc]
+        else:
+            value = None
+        setattr(obj, name, value)
 
 
 _RETIRED_BRIDGE_KEYS = {
@@ -217,6 +231,7 @@ class ModelConfig:
         return cfg
 
     def validated(self, *, use_checkpointing: bool | None = None) -> "ModelConfig":
+        _materialize_missing_dataclass_fields(self)
         cfg = ModelConfig.from_mapping(self.to_dict())
         if use_checkpointing is not None:
             cfg.use_checkpointing = bool(use_checkpointing)
@@ -225,6 +240,7 @@ class ModelConfig:
         return cfg
 
     def to_dict(self) -> dict[str, Any]:
+        _materialize_missing_dataclass_fields(self)
         payload = asdict(self)
         extra = payload.pop("extra", {})
         payload.update(extra)
@@ -348,6 +364,7 @@ class BridgeConfig:
         return cfg
 
     def to_dict(self) -> dict[str, Any]:
+        _materialize_missing_dataclass_fields(self)
         payload = asdict(self)
         extra = payload.pop("extra", {})
         payload.update(extra)
@@ -438,6 +455,7 @@ class TrainingConfig:
         return cfg
 
     def to_dict(self) -> dict[str, Any]:
+        _materialize_missing_dataclass_fields(self)
         payload = asdict(self)
         extra = payload.pop("extra", {})
         payload.update(extra)
@@ -483,6 +501,7 @@ class DataConfig:
         return cfg
 
     def to_dict(self) -> dict[str, Any]:
+        _materialize_missing_dataclass_fields(self)
         payload = asdict(self)
         extra = payload.pop("extra", {})
         payload.update(extra)
@@ -502,6 +521,7 @@ class CheckpointConfig:
         return cfg
 
     def to_dict(self) -> dict[str, Any]:
+        _materialize_missing_dataclass_fields(self)
         payload = asdict(self)
         extra = payload.pop("extra", {})
         payload.update(extra)
