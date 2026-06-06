@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from config_schema import ModelConfig
-from lancet_blocks import StyleMaps
+from lancet_blocks import DecoderTextureBlock, NormFreeModulation, StyleMaps
 from lancet_backbone import LatentAdaCUT, count_parameters
 from utils.diffeomorphic import apply_texture_aligned_diffeomorphic_stroke
 
@@ -34,6 +34,10 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.time_dim = int(bridge_config.time_dim)
         self.velocity_head_mode = str(bridge_config.velocity_head_mode).strip().lower()
         self.velocity_tanh_limit = max(1e-3, float(bridge_config.velocity_tanh_limit))
+        self.transport_prediction_mode = str(getattr(bridge_config, "transport_prediction_mode", "velocity")).strip().lower()
+        if self.transport_prediction_mode not in {"velocity", "endpoint"}:
+            self.transport_prediction_mode = "velocity"
+        self.transport_endpoint_scale = max(1e-3, float(getattr(bridge_config, "transport_endpoint_scale", 4.0)))
         self.bridge_style_dim = int(self.style_tokenizer.embedding_dim)
         self.execution_budget_mode = str(bridge_config.execution_budget_mode).strip().lower()
         if self.execution_budget_mode not in {"none", "scalar", "low_high"}:
@@ -102,9 +106,66 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             nn.SiLU(),
             nn.Linear(self.bridge_style_dim, self.bridge_style_dim),
         )
+        self.proximal_mode = str(getattr(bridge_config, "proximal_mode", "off")).strip().lower()
+        if self.proximal_mode not in {"off", "highpass_residual", "normfree_modulation", "crossattn_texture"}:
+            self.proximal_mode = "off"
+        self.proximal_hidden_channels = max(4, int(getattr(bridge_config, "proximal_hidden_channels", self.latent_channels)))
+        self.proximal_num_blocks = max(1, int(getattr(bridge_config, "proximal_num_blocks", 2)))
+        self.proximal_highpass_kernel = max(1, int(getattr(bridge_config, "proximal_highpass_kernel", 5)))
+        if self.proximal_highpass_kernel % 2 == 0:
+            self.proximal_highpass_kernel += 1
+        self.proximal_residual_energy_weight = max(0.0, float(getattr(bridge_config, "proximal_residual_energy_weight", 0.0)))
+        self.proximal_force_highpass = bool(getattr(bridge_config, "proximal_force_highpass", True))
+        self.proximal_bind_terminal_losses = bool(getattr(bridge_config, "proximal_bind_terminal_losses", True))
+        self.record_base_endpoint_metrics = bool(getattr(bridge_config, "record_base_endpoint_metrics", False))
+        self.proximal_texture_blocks: nn.ModuleList | None = None
+        self.proximal_normfree_mod: NormFreeModulation | None = None
+        self.proximal_normfree_head: nn.Sequential | None = None
+        self.proximal_attn_q: nn.Conv2d | None = None
+        self.proximal_attn_k: nn.Conv2d | None = None
+        self.proximal_attn_v: nn.Conv2d | None = None
+        self.proximal_attn_out: nn.Conv2d | None = None
+        self.proximal_style_tokens: nn.Linear | None = None
+        if self.proximal_mode == "highpass_residual":
+            self.proximal_texture_blocks = nn.ModuleList(
+                [
+                    DecoderTextureBlock(
+                        dim=int(self.latent_channels),
+                        style_dim=int(self.bridge_style_dim),
+                        num_groups=max(1, int(self.config.num_groups)),
+                    )
+                    for _ in range(self.proximal_num_blocks)
+                ]
+            )
+        elif self.proximal_mode == "normfree_modulation":
+            self.proximal_normfree_mod = NormFreeModulation(int(self.latent_channels), int(self.bridge_style_dim))
+            hidden = int(self.proximal_hidden_channels)
+            self.proximal_normfree_head = nn.Sequential(
+                nn.Conv2d(int(self.latent_channels), hidden, kernel_size=3, stride=1, padding=1),
+                nn.SiLU(),
+                nn.Conv2d(hidden, hidden, kernel_size=3, stride=1, padding=1),
+                nn.SiLU(),
+                nn.Conv2d(hidden, int(self.latent_channels), kernel_size=3, stride=1, padding=1),
+            )
+        elif self.proximal_mode == "crossattn_texture":
+            hidden = int(self.proximal_hidden_channels)
+            self.proximal_attn_q = nn.Conv2d(int(self.latent_channels), hidden, kernel_size=1, stride=1, padding=0)
+            self.proximal_attn_k = nn.Conv2d(int(self.latent_channels), hidden, kernel_size=1, stride=1, padding=0)
+            self.proximal_attn_v = nn.Conv2d(int(self.latent_channels), hidden, kernel_size=1, stride=1, padding=0)
+            self.proximal_attn_out = nn.Conv2d(hidden, int(self.latent_channels), kernel_size=1, stride=1, padding=0)
+            self.proximal_style_tokens = nn.Linear(int(self.bridge_style_dim), int(self.latent_channels))
+            for mod in (self.proximal_attn_q, self.proximal_attn_k, self.proximal_attn_v, self.proximal_attn_out):
+                nn.init.normal_(mod.weight, mean=0.0, std=0.02)
+                if mod.bias is not None:
+                    nn.init.zeros_(mod.bias)
+            nn.init.normal_(self.proximal_style_tokens.weight, mean=0.0, std=0.02)
+            nn.init.zeros_(self.proximal_style_tokens.bias)
         self.profile_modules = False
         self.profile_sync_cuda = False
         self.last_profile: dict[str, float] = {}
+        self.last_proximal_residual: torch.Tensor | None = None
+        self.last_base_endpoint: torch.Tensor | None = None
+        self.last_final_endpoint: torch.Tensor | None = None
 
     def _profile_start(self, ref: torch.Tensor) -> float:
         if not bool(getattr(self, "profile_modules", False)):
@@ -231,7 +292,11 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                 normal_leak=float(getattr(self, "diffeomorphic_normal_leak", 0.0)),
             )
             self._profile_end("diffeomorphic_stroke", t_profile, x)
+            if self.transport_prediction_mode == "endpoint":
+                return stroked.float()
             return stroked - x.float()
+        if self.transport_prediction_mode == "endpoint":
+            return torch.tanh(raw_delta / self.transport_endpoint_scale) * self.transport_endpoint_scale
         if self.velocity_head_mode == "tanh":
             raw_delta = torch.tanh(raw_delta) * self.velocity_tanh_limit
         return raw_delta * self.latent_scale_factor * self.residual_gain
@@ -278,6 +343,95 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         horizon = max(0.0, float(step_size)) * strength
         return max(0.0, min(1.0, horizon))
 
+    def _proximal_lowpass(self, x: torch.Tensor) -> torch.Tensor:
+        pad = self.proximal_highpass_kernel // 2
+        return F.avg_pool2d(x.float(), kernel_size=self.proximal_highpass_kernel, stride=1, padding=pad).to(dtype=x.dtype)
+
+    def _apply_proximal_highpass(self, delta: torch.Tensor) -> torch.Tensor:
+        if not self.proximal_force_highpass:
+            return delta
+        return delta - self._proximal_lowpass(delta)
+
+    def _resolve_refine_style_code(
+        self,
+        z_base: torch.Tensor,
+        *,
+        style_id: torch.Tensor | int | None,
+        style_code_override: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        t_fixed = torch.full((z_base.shape[0],), 1.0, device=z_base.device, dtype=z_base.dtype)
+        return self._compute_style_code(
+            x=z_base,
+            style_id=style_id,
+            t=t_fixed,
+            style_code_override=style_code_override,
+        )
+
+    def _style_spatial_tokens(self, z_base: torch.Tensor, style_id: torch.Tensor | int) -> torch.Tensor:
+        style_map = self.encode_style_spatial_id(style_id).get(16)
+        style_map = F.interpolate(style_map.to(device=z_base.device, dtype=z_base.dtype), size=z_base.shape[-2:], mode="bilinear", align_corners=False)
+        if self.proximal_style_tokens is not None:
+            style_code = self.encode_style_id(style_id).to(device=z_base.device, dtype=z_base.dtype)
+            token_bias = self.proximal_style_tokens(style_code).view(style_code.shape[0], self.latent_channels, 1, 1)
+            style_map = style_map + token_bias
+        return style_map
+
+    def refine_endpoint(
+        self,
+        z_base: torch.Tensor,
+        *,
+        style_id: torch.Tensor | int | None,
+        style_code_override: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        self.last_base_endpoint = z_base.detach()
+        if self.proximal_mode == "off":
+            self.last_proximal_residual = torch.zeros_like(z_base)
+            self.last_final_endpoint = z_base.detach()
+            return z_base
+        style_code = self._resolve_refine_style_code(
+            z_base,
+            style_id=style_id,
+            style_code_override=style_code_override,
+        )
+        if self.proximal_mode == "highpass_residual":
+            if self.proximal_texture_blocks is None:
+                raise RuntimeError("proximal_texture_blocks not initialized")
+            h = z_base
+            for block in self.proximal_texture_blocks:
+                h = block(h, style_code, gate=1.0)
+            delta = h - z_base
+        elif self.proximal_mode == "normfree_modulation":
+            if self.proximal_normfree_mod is None or self.proximal_normfree_head is None:
+                raise RuntimeError("normfree proximal modules not initialized")
+            mod = self.proximal_normfree_mod(z_base, style_code, gate=1.0)
+            delta = self.proximal_normfree_head(mod)
+        else:
+            if (
+                self.proximal_attn_q is None
+                or self.proximal_attn_k is None
+                or self.proximal_attn_v is None
+                or self.proximal_attn_out is None
+            ):
+                raise RuntimeError("cross-attention proximal modules not initialized")
+            if style_id is None:
+                raise ValueError("style_id is required for crossattn_texture proximal mode.")
+            q = self.proximal_attn_q(z_base.float())
+            kv_src = self._style_spatial_tokens(z_base, style_id).float()
+            k = self.proximal_attn_k(kv_src)
+            v = self.proximal_attn_v(kv_src)
+            bsz, ch, h_dim, w_dim = q.shape
+            q_flat = q.view(bsz, ch, -1).transpose(1, 2)
+            k_flat = k.view(bsz, ch, -1)
+            attn = torch.softmax(torch.bmm(q_flat, k_flat) / math.sqrt(float(ch)), dim=-1)
+            v_flat = v.view(bsz, ch, -1).transpose(1, 2)
+            mixed = torch.bmm(attn, v_flat).transpose(1, 2).view(bsz, ch, h_dim, w_dim)
+            delta = self.proximal_attn_out(mixed).to(dtype=z_base.dtype)
+        delta = self._apply_proximal_highpass(delta)
+        z_final = z_base + delta
+        self.last_proximal_residual = delta.detach()
+        self.last_final_endpoint = z_final.detach()
+        return z_final
+
     @property
     def last_semantic_attn(self) -> torch.Tensor | None:
         for block in reversed(self.body_blocks):
@@ -309,9 +463,13 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         horizon = self._resolve_integration_horizon(step_size=step_size, style_strength=style_strength)
         if horizon <= 0.0:
             return x
-        t_fixed = torch.full((x.shape[0],), 1.0, device=x.device, dtype=x.dtype)
-        velocity = self.forward(x, t=t_fixed, style_id=style_id, style_code_override=style_code_override)
-        return x + velocity * horizon
+        z_base = self.predict_transport_base(
+            x,
+            t=1.0,
+            style_id=style_id,
+            style_code_override=style_code_override,
+        )
+        return self.refine_endpoint(z_base, style_id=style_id, style_code_override=style_code_override)
 
     def forward(
         self,
@@ -352,9 +510,96 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         )
         self._profile_end("backbone_forward", t_profile, x)
         t_profile = self._profile_start(x)
-        out = self._apply_execution_budget(delta, x, style_code)
+        if self.transport_prediction_mode == "endpoint":
+            endpoint = delta
+            endpoint_delta = endpoint - x.float()
+            out = self._apply_execution_budget(endpoint_delta.to(dtype=x.dtype), x, style_code)
+            denom = (1.0 - t_tensor).clamp_min(1e-3).view(-1, 1, 1, 1)
+            out = out / denom
+        else:
+            out = self._apply_execution_budget(delta, x, style_code)
         self._profile_end("execution_budget", t_profile, x)
         return out
+
+    def predict_transport_base(
+        self,
+        x: torch.Tensor,
+        *,
+        t: torch.Tensor | float | None = None,
+        style_id: torch.Tensor | int | None = None,
+        style_code_override: torch.Tensor | None = None,
+        target_style_latent: torch.Tensor | None = None,
+        override_palette: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        if style_id is None and style_code_override is None:
+            raise ValueError("style_id or style_code_override is required.")
+        self.last_profile = {}
+        t_tensor = self._resolve_t_input(x, t)
+        t_profile = self._profile_start(x)
+        style_code = self._compute_style_code(
+            x=x,
+            style_id=style_id,
+            t=t_tensor,
+            style_code_override=style_code_override,
+        )
+        self._profile_end("tokenizer", t_profile, x)
+        if style_id is None:
+            raise ValueError("style_id is required for bridge spatial conditioning.")
+        t_profile = self._profile_start(x)
+        raw_transport = self._predict_delta_from_context(
+            x,
+            style_id=style_id,
+            style_code=style_code,
+            style_maps=StyleMaps(),
+            override_palette=override_palette,
+            strength=1.0,
+            target_style_latent=target_style_latent,
+        )
+        self._profile_end("backbone_forward", t_profile, x)
+        t_profile = self._profile_start(x)
+        if self.transport_prediction_mode == "endpoint":
+            endpoint_delta = raw_transport.to(dtype=x.dtype) - x.float()
+            budgeted_delta = self._apply_execution_budget(endpoint_delta, x, style_code)
+            z_base = x + budgeted_delta
+        else:
+            delta = self._apply_execution_budget(raw_transport.to(dtype=x.dtype), x, style_code)
+            z_base = x + delta
+        self._profile_end("execution_budget", t_profile, x)
+        return z_base
+
+    @torch.no_grad()
+    def integrate_transport(
+        self,
+        x: torch.Tensor,
+        style_id: torch.Tensor | int | None,
+        num_steps: int = 16,
+        step_size: float = 1.0,
+        style_strength: float | None = None,
+        target_style_latent: torch.Tensor | None = None,
+        style_code_override: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        if style_id is None:
+            raise ValueError("style_id is required for bridge integration.")
+        if self.transport_prediction_mode == "endpoint":
+            return self.predict_transport_base(
+                x,
+                t=1.0,
+                style_id=style_id,
+                style_code_override=style_code_override,
+                target_style_latent=target_style_latent,
+            )
+        steps = max(1, int(num_steps))
+        horizon = self._resolve_integration_horizon(step_size=step_size, style_strength=style_strength)
+        if horizon <= 0.0:
+            return x
+        x = self._apply_pre_integrate_moment_match(x, target_style_latent)
+        dt = horizon / float(steps)
+        h = x
+        for idx in range(steps):
+            t = horizon * ((idx + 0.5) / float(steps))
+            velocity = self.forward(h, t=t, style_id=style_id, style_code_override=style_code_override)
+            h = h + velocity * dt
+        return h
 
     @torch.no_grad()
     def integrate(
@@ -369,20 +614,16 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         override_palette: torch.Tensor | None = None,
     ) -> torch.Tensor:
         del override_palette
-        if style_id is None:
-            raise ValueError("style_id is required for bridge integration.")
-        steps = max(1, int(num_steps))
-        horizon = self._resolve_integration_horizon(step_size=step_size, style_strength=style_strength)
-        if horizon <= 0.0:
-            return x
-        x = self._apply_pre_integrate_moment_match(x, target_style_latent)
-        dt = horizon / float(steps)
-        h = x
-        for idx in range(steps):
-            t = horizon * ((idx + 0.5) / float(steps))
-            velocity = self.forward(h, t=t, style_id=style_id, style_code_override=style_code_override)
-            h = h + velocity * dt
-        return h
+        z_base = self.integrate_transport(
+            x,
+            style_id,
+            num_steps=num_steps,
+            step_size=step_size,
+            style_strength=style_strength,
+            target_style_latent=target_style_latent,
+            style_code_override=style_code_override,
+        )
+        return self.refine_endpoint(z_base, style_id=style_id, style_code_override=style_code_override)
 
     def _apply_pre_integrate_moment_match(
         self,

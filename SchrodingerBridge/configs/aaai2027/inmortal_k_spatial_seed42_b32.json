@@ -1,0 +1,15 @@
+{
+  "_base": "inmortal_k_spatial_seed42_b44.json",
+  "training": {
+    "batch_size": 32
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_k_spatial_seed42_b32"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_k_spatial_seed42_b32",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "K_spatial_retry_b32",
+    "notes": "Formal retry after the batch-44 launch exceeded the remote 3060 11 GiB contract. Same mechanism, reduced formal batch to 32 to restore machine-safe execution."
+  }
+}

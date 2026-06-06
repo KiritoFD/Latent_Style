@@ -1,0 +1,35 @@
+{
+  "_base": "mainline_h_seed42_b44_base.json",
+  "training": {
+    "num_epochs": 8,
+    "num_workers": 0,
+    "persistent_workers": false,
+    "save_interval": 1,
+    "full_eval_each_epoch": true,
+    "full_eval_defer_until_training_end": true,
+    "full_eval_only_lpips_clip_style": true
+  },
+  "model": {
+    "record_base_endpoint_metrics": true
+  },
+  "bridge": {
+    "w_curvature": 1.0,
+    "curvature_dt": 0.15,
+    "kinetic_penalty_mode": "spatial_laplacian_split",
+    "kinetic_lambda_low": 1.0,
+    "kinetic_lambda_high": 0.02,
+    "kinetic_lowpass_kernel": 5,
+    "structure_penalty_mode": "off",
+    "coupling_target_mode": "sample",
+    "target_teacher_mode": "off"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_k_spatial_seed42_b44"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_k_spatial_seed42_b44",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "K_spatial",
+    "notes": "First inmortal mechanism packet. Preserve the H-family executor and target surface, enable curvature smoothing, and replace uniform global kinetic with the spatial low/high-frequency split proposed in inmortal.md."
+  }
+}

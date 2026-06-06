@@ -163,6 +163,8 @@ class ModelConfig:
     semantic_self_topology_blend: float = 1.0
     velocity_head_mode: str = "identity"
     velocity_tanh_limit: float = 20.0
+    transport_prediction_mode: str = "velocity"
+    transport_endpoint_scale: float = 4.0
     feature_attn_num_heads: int = 4
     window_attn_window_size: int = 8
     skip_fusion_mode: str = "add_proj"
@@ -211,6 +213,14 @@ class ModelConfig:
     output_moment_match: bool = False
     output_moment_match_eps: float = 1e-6
     output_moment_match_train_only: bool = False
+    proximal_mode: str = "off"
+    proximal_hidden_channels: int = 64
+    proximal_num_blocks: int = 2
+    proximal_highpass_kernel: int = 5
+    proximal_residual_energy_weight: float = 0.0
+    proximal_force_highpass: bool = True
+    proximal_bind_terminal_losses: bool = True
+    record_base_endpoint_metrics: bool = False
     execution_budget_mode: str = "none"
     execution_budget_hidden_dim: int = 64
     execution_budget_log_span: float = 0.22314355131420976
@@ -260,6 +270,8 @@ class BridgeConfig:
     coupling_feature_mode: str = "latent"
     coupling_lowfreq_kernel: int = 9
     coupling_edge_weight: float = 0.0
+    coupling_target_mode: str = "sample"
+    coupling_barycentric_topk: int = 0
     sinkhorn_epsilon: float = 0.05
     sinkhorn_iters: int = 60
     sinkhorn_stabilize: bool = True
@@ -301,6 +313,13 @@ class BridgeConfig:
     anisotropic_normal_weight: float = 25.0
     anisotropic_tangent_weight: float = 0.25
     w_stokes_viscous: float = 0.0
+    kinetic_penalty_mode: str = "global_l2"
+    kinetic_lambda_low: float = 1.0
+    kinetic_lambda_high: float = 0.02
+    kinetic_lowpass_kernel: int = 5
+    kinetic_spectral_cutoff: float = 12.0
+    kinetic_manifold_gamma: float = 10.0
+    structure_penalty_mode: str = "off"
     w_phase_separation: float = 0.0
     phase_gradient_weight: float = 0.05
     w_fourier_phase_lock: float = 0.0
@@ -347,6 +366,9 @@ class BridgeConfig:
     swd_highpass_kernel_size: int = 5
     swd_use_dilated_projections: bool = False
     swd_projection_dilation: int = 2
+    target_teacher_mode: str = "off"
+    target_teacher_decay: float = 0.99
+    target_teacher_weight: float = 0.0
     normalize_eps: float = 1e-8
     logit_clamp: float = 50.0
     velocity_clamp: float = 20.0

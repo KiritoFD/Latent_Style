@@ -1,0 +1,42 @@
+{
+  "_base": "mainline_h_seed42_b44_base.json",
+  "training": {
+    "seed": 42,
+    "batch_size": 16,
+    "num_workers": 0,
+    "persistent_workers": false,
+    "num_epochs": 8,
+    "save_interval": 1,
+    "full_eval_each_epoch": true,
+    "full_eval_defer_until_training_end": true,
+    "full_eval_only_lpips_clip_style": true
+  },
+  "model": {
+    "transport_prediction_mode": "endpoint",
+    "transport_endpoint_scale": 4.0,
+    "proximal_mode": "off",
+    "record_base_endpoint_metrics": true
+  },
+  "bridge": {
+    "w_flow": 1.0,
+    "w_kinetic": 1.0,
+    "coupling_target_mode": "barycentric_topk",
+    "coupling_barycentric_topk": 8,
+    "coupling_feature_mode": "lowfreq_edge",
+    "coupling_lowfreq_kernel": 9,
+    "coupling_edge_weight": 0.25,
+    "target_teacher_mode": "style_lowfreq_ema",
+    "target_teacher_decay": 0.99,
+    "target_teacher_weight": 0.1,
+    "terminal_swd_weight": 18.0
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_xpred_bary_seed42_b16"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_bary_seed42_b16",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "XPred_Barycenter",
+    "notes": "Endpoint-prediction direction added to the inmortal program. Replace velocity prediction with absolute endpoint prediction, pair it with structure-aware OT cost, barycentric target projection, and a weak low-frequency EMA teacher."
+  }
+}
