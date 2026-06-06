@@ -1,0 +1,37 @@
+{
+  "_base": "mainline_h_seed42_b44_base.json",
+  "training": {
+    "seed": 42,
+    "batch_size": 16,
+    "num_workers": 0,
+    "persistent_workers": false,
+    "num_epochs": 8,
+    "save_interval": 1,
+    "full_eval_each_epoch": true,
+    "full_eval_defer_until_training_end": true,
+    "full_eval_only_lpips_clip_style": true
+  },
+  "model": {
+    "proximal_mode": "highpass_residual",
+    "proximal_hidden_channels": 64,
+    "proximal_num_blocks": 2,
+    "proximal_highpass_kernel": 5,
+    "proximal_residual_energy_weight": 0.02,
+    "proximal_force_highpass": true,
+    "proximal_bind_terminal_losses": true,
+    "record_base_endpoint_metrics": true
+  },
+  "bridge": {
+    "coupling_target_mode": "sample",
+    "target_teacher_mode": "off"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_p_highpass_seed42_b16"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_p_highpass_seed42_b16",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "P_highpass",
+    "notes": "High-pass proximal refinement packet from inmortal.md. Keep transport fixed and attach a constrained high-frequency residual head after the base endpoint."
+  }
+}

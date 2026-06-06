@@ -1,0 +1,38 @@
+{
+  "_base": "mainline_h_seed42_b44_base.json",
+  "training": {
+    "seed": 42,
+    "batch_size": 16,
+    "num_workers": 0,
+    "persistent_workers": false,
+    "num_epochs": 8,
+    "save_interval": 1,
+    "full_eval_each_epoch": true,
+    "full_eval_defer_until_training_end": true,
+    "full_eval_only_lpips_clip_style": true
+  },
+  "model": {
+    "record_base_endpoint_metrics": true
+  },
+  "bridge": {
+    "w_curvature": 1.0,
+    "curvature_dt": 0.15,
+    "kinetic_penalty_mode": "manifold_adaptive_split",
+    "kinetic_lambda_low": 1.0,
+    "kinetic_lambda_high": 0.02,
+    "kinetic_lowpass_kernel": 5,
+    "kinetic_manifold_gamma": 10.0,
+    "structure_penalty_mode": "off",
+    "coupling_target_mode": "sample",
+    "target_teacher_mode": "off"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_k_manifold_seed42_b16"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_k_manifold_seed42_b16",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "K_manifold",
+    "notes": "Manifold-adaptive kinetic packet from inmortal.md. Preserve the H-family executor and enable curvature smoothing, but replace uniform kinetic with edge-aware adaptive high-frequency release."
+  }
+}
