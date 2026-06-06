@@ -376,12 +376,24 @@ Promotion-rule read:
 ## Still pending
 
 - absorb the landed packet into manuscript wording and figure priorities
-- open the next four-lane review cycle only after the current write/update pass
-  is stable
+- keep the wording narrow:
+  - same-family Distinct5 support for kinetic as a practical path stabilizer in
+    the current OMF/field regime
+  - not a broader theorem closure beyond this bounded setting
 
 ## Policy read
 
-This packet is still the highest-value unblocked mechanism closure after the
-latest four-lane review reread (`R20260603L`). The paper should not expand its
-kinetic/path-energy claim until this packet either lands cleanly or fails under
-its own accept/reject rule.
+This packet is now a landed same-family mechanism closure after the earlier
+review rounds that flagged it as the highest-value missing evidence object. The
+paper may use it only for the bounded claim already stated above:
+
+- weakening or removing kinetic increases transfer-direction velocity magnitude
+  and displacement under matched evaluation; and
+- the full kinetic setting keeps the stronger quality frontier among the matched
+  `base / k025 / k000` arms.
+
+Unsafe use remains:
+
+- presenting this packet as a broad proof of global path optimality; or
+- letting the current Distinct5 result read as more than a bounded same-family
+  empirical stabilizer check.

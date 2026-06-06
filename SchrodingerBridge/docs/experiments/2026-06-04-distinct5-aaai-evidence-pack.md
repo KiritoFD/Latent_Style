@@ -87,19 +87,22 @@ Remote verification already performed:
     - `wsl -d Ubuntu-26.04 -- bash /mnt/i/Github/Latent_Style/SchrodingerBridge/_codex_tmp/run_k_longer_eval_5_8_artfid_tmux.sh`
   - `schtasks` and `Start-Process` were not reliable holders for this eval path on the current owner surface
 
-Current paper-entry reading:
+Updated paper-entry reading after full `e5 .. e8` closure:
 
-- by `epoch_0004`, `K-longer` is still negative relative to base `K e1`
+- `K-longer` remains negative relative to base `K e1`
+- best retained balance point is now `K-longer e5`
 - `K e1` transfer:
   - `CLIP-S = 0.671167`
   - `delta_idt_transfer = +0.031244`
   - `LPIPS = 0.372281`
-  - `targetwise ArtFID = 161.958`
-- `K-longer e4` transfer:
-  - `CLIP-S = 0.666856`
-  - `delta_idt_transfer = +0.026933`
-  - `LPIPS = 0.375750`
-  - `targetwise ArtFID = missing`
+  - `targetwise ArtFID = 406.151`
+- `K-longer e5` transfer:
+  - `CLIP-S = 0.667010`
+  - `delta_idt_transfer = +0.027088`
+  - `LPIPS = 0.358785`
+  - `targetwise ArtFID = 408.309`
+- later epochs `e6 .. e8` recover style toward `K e1`, but LPIPS and targetwise
+  `ArtFID` both worsen
 
 Conservative gate for paper entry:
 
@@ -109,12 +112,14 @@ Conservative gate for paper entry:
 
 Current result:
 
-- `K-longer` does not pass the gate through `epoch_0004`
-- it remains worth finishing because `epoch_0005 .. epoch_0008` are trained but not closed
+- `K-longer` does not pass the gate even after the full `epoch_0005 .. epoch_0008`
+  closure
+- this arm is now a closed negative result, not an open recovery task
 
 ## Highest-Priority GPU Action
 
-The next GPU action should be eval completion, not new training.
+This packet is now closed. The next GPU action should **not** be more
+same-family longer training.
 
 Authoritative launch manifests created for this closure step:
 
@@ -159,21 +164,15 @@ Durable outputs to expect:
 - log:
   - `I:\Github\Latent_Style\SchrodingerBridge\_codex_tmp\remote_k_longer_eval_5_8_artfid.log`
 
-Current execution status on `2026-06-04`:
+Closure status:
 
-- `epoch_0005` clean rerun has already been pushed past image generation and into a valid `metrics.csv` packet under:
-  - `I:\Github\Latent_Style\SchrodingerBridge\exp\aaai2027_longer_train_k_seed42_b44_e8\full_eval_artfid\epoch_0005`
-- `summary.json` and `aggregate_targetwise_artfid.json` are still pending for that packet
-- the most reliable path so far is a two-stage closure:
-  - stage 1: generate packet under `full_eval_artfid/epoch_0005..0008`
-  - stage 2: reuse-only eval from the saved packet, starting with [remote_k_longer_reuse_e5_artfid.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/_codex_tmp/remote_k_longer_reuse_e5_artfid.sh)
-
-Risk / blocker:
-
-- this is an eval-only closure step, so there is no `remote_train.log` to recover here
-- existing `epoch_0005` partial output should be treated as contaminated and not reused as paper evidence
-- the remaining blocker is not the evaluator contract itself but robust detached holding on the owner surface for long reuse-only / ArtFID completion
-- if `full_eval_artfid/epoch_0005..0008` still fail the gate, write the arm as negative evidence and stop
+- `full_eval_artfid/epoch_0005 .. epoch_0008` now each retain:
+  - `summary.json`
+  - `metrics.csv`
+  - `aggregate_targetwise_artfid.json`
+- the recovery path is complete and should now be treated as a landed negative
+  evidence packet
+- do not reopen this lane unless the paper objective changes
 
 ## P2 Paper Entry Rule
 
@@ -181,8 +180,10 @@ Use the conservative gate above.
 
 Interpretation rule:
 
-- if `K-longer` does not clear the gate after `e5 .. e8`, write it as:
-  - same-family longer training on `K` did not improve the retained Distinct5 transfer frontier within the current compact family
+- `K-longer` did not clear the gate after `e5 .. e8`
+- safe paper reading:
+  - same-family longer training on `K` did not improve the retained Distinct5
+    transfer frontier within the current compact family
 - do not package that as improvement
 
 ## P3 More-Capacity
