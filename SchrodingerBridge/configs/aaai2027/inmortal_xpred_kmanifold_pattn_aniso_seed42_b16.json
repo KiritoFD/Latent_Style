@@ -1,0 +1,18 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_seed42_b16.json",
+  "bridge": {
+    "structure_penalty_mode": "anisotropic",
+    "w_anisotropic_kinetic": 1.0,
+    "anisotropic_normal_weight": 25.0,
+    "anisotropic_tangent_weight": 0.25
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_xpred_kmanifold_pattn_aniso_seed42_b16"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_pattn_aniso_seed42_b16",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "XPred_plus_Kmanifold_plus_Pattn_plus_Aniso",
+    "notes": "Transport-side repair after the first promoted cross-attention proximal frontier. Keep the best current endpoint-target family and add the anisotropic structure penalty to further suppress normal-direction drift while preserving textured tangential refinement."
+  }
+}
