@@ -26,6 +26,19 @@ RUNS = [
 ]
 
 
+def load_runs_from_manifest(path: Path) -> list[tuple[str, str, Path]]:
+    rows = list(csv.DictReader(path.open("r", encoding="utf-8", newline="")))
+    runs: list[tuple[str, str, Path]] = []
+    for row in rows:
+        method = str(row.get("method", "")).strip()
+        run = str(row.get("run", "")).strip()
+        images_dir_raw = str(row.get("images_dir", "")).strip()
+        if not method or not run or not images_dir_raw:
+            continue
+        runs.append((method, run, Path(images_dir_raw)))
+    return runs
+
+
 def parse_name(path: Path) -> tuple[str, str, str] | None:
     if "_to_" not in path.stem:
         return None
@@ -224,10 +237,12 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, default=ROOT / "content_edge_purity_metrics.csv")
     parser.add_argument("--size", type=int, default=256)
+    parser.add_argument("--manifest", type=Path, default=None)
     args = parser.parse_args()
 
     rows = []
-    for method, run, images_dir in RUNS:
+    runs = load_runs_from_manifest(args.manifest) if args.manifest is not None else RUNS
+    for method, run, images_dir in runs:
         if not images_dir.exists():
             print(f"SKIP missing: {images_dir}")
             continue

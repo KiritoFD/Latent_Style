@@ -41,6 +41,7 @@ class RunSpec:
     method: str
     run: str
     images_dir: Path
+    source_root: Path = STYLE_ROOT
     summary_json: Path | None = None
     protocol_json: Path | None = None
     clip_style: float | None = None
@@ -59,8 +60,8 @@ def parse_name(path: Path) -> tuple[str, str, str] | None:
     return src_style, src_stem, target
 
 
-def source_path(src_style: str, src_stem: str) -> Path | None:
-    folder = STYLE_ROOT / src_style
+def source_path(source_root: Path, src_style: str, src_stem: str) -> Path | None:
+    folder = source_root / src_style
     for ext in IMAGE_EXTS:
         candidate = folder / f"{src_stem}{ext}"
         if candidate.exists():
@@ -69,8 +70,8 @@ def source_path(src_style: str, src_stem: str) -> Path | None:
     return hits[0] if hits else None
 
 
-def collect_generated(images_dir: Path) -> tuple[dict[str, list[Path]], list[tuple[Path, Path]]]:
-    by_target: dict[str, list[Path]] = {style: [] for style in STYLES}
+def collect_generated(images_dir: Path, source_root: Path) -> tuple[dict[str, list[Path]], list[tuple[Path, Path]]]:
+    by_target: dict[str, list[Path]] = {}
     content_pairs: list[tuple[Path, Path]] = []
     for path in sorted(images_dir.glob("*")):
         if path.suffix.lower() not in IMAGE_EXTS:
@@ -79,9 +80,8 @@ def collect_generated(images_dir: Path) -> tuple[dict[str, list[Path]], list[tup
         if parsed is None:
             continue
         src_style, src_stem, target = parsed
-        if target in by_target:
-            by_target[target].append(path)
-        src = source_path(src_style, src_stem)
+        by_target.setdefault(target, []).append(path)
+        src = source_path(source_root, src_style, src_stem)
         if src is not None:
             content_pairs.append((src, path))
     return by_target, content_pairs
@@ -224,9 +224,9 @@ def try_artfid(spec: RunSpec, content_pairs: list[tuple[Path, Path]], by_target:
         art_fids: list[float | None] = []
         art_style_fids: list[float | None] = []
         for target, gen_paths in by_target.items():
-            if target == "photo" or not gen_paths:
+            if not gen_paths:
                 continue
-            ref_paths = [str(p) for p in list_style_images(STYLE_ROOT / target)]
+            ref_paths = [str(p) for p in list_style_images(spec.source_root / target)]
             gen_paths_s = [str(p) for p in gen_paths]
             style_fid = compute_artfid_fid_from_paths(
                 gen_paths_s,
@@ -257,7 +257,7 @@ def try_artfid(spec: RunSpec, content_pairs: list[tuple[Path, Path]], by_target:
 
 
 def evaluate(spec: RunSpec, *, device: str, batch_size: int, enable_artfid: bool) -> dict[str, Any]:
-    by_target, content_pairs = collect_generated(spec.images_dir)
+    by_target, content_pairs = collect_generated(spec.images_dir, spec.source_root)
     all_images = sum(len(v) for v in by_target.values())
     torch_device = torch.device(device)
     inception = InceptionFeat().to(torch_device)
@@ -275,11 +275,11 @@ def evaluate(spec: RunSpec, *, device: str, batch_size: int, enable_artfid: bool
     gram_micro_vals: list[float | None] = []
     gram_macro_vals: list[float | None] = []
 
-    for target in STYLES:
+    for target in sorted(by_target):
         gen_paths = by_target[target]
         if not gen_paths:
             continue
-        ref_paths = list_style_images(STYLE_ROOT / target)
+        ref_paths = list_style_images(spec.source_root / target)
         if not ref_paths:
             continue
         if target not in ref_inception:
@@ -333,14 +333,15 @@ def default_specs() -> list[RunSpec]:
     ours = ROOT / "S-add__K-1_C-0_W-20_Col-0"
     rw = WORKSPACE / "Related_Works" / "run_511" / "complete_750"
     return [
-        RunSpec("Ours", "epoch_0007", ours / "full_eval" / "epoch_0007" / "images", ours / "full_eval" / "epoch_0007" / "summary.json"),
-        RunSpec("Ours", "epoch_0008", ours / "full_eval" / "epoch_0008" / "images", ours / "full_eval" / "epoch_0008" / "summary.json"),
-        RunSpec("Ours", "residual_1p25", ours / "residual_scale_sweep_epoch7" / "residual_1p25" / "images", ours / "residual_scale_sweep_epoch7" / "residual_1p25" / "summary.json"),
-        RunSpec("SaMST", "samst_strict", rw / "samst_strict" / "images", protocol_json=rw / "samst_strict" / "eval_protocol750_sbmatch.json"),
+        RunSpec("Ours", "epoch_0007", ours / "full_eval" / "epoch_0007" / "images", STYLE_ROOT, ours / "full_eval" / "epoch_0007" / "summary.json"),
+        RunSpec("Ours", "epoch_0008", ours / "full_eval" / "epoch_0008" / "images", STYLE_ROOT, ours / "full_eval" / "epoch_0008" / "summary.json"),
+        RunSpec("Ours", "residual_1p25", ours / "residual_scale_sweep_epoch7" / "residual_1p25" / "images", STYLE_ROOT, ours / "residual_scale_sweep_epoch7" / "residual_1p25" / "summary.json"),
+        RunSpec("SaMST", "samst_strict", rw / "samst_strict" / "images", STYLE_ROOT, protocol_json=rw / "samst_strict" / "eval_protocol750_sbmatch.json"),
         RunSpec(
             "StyleID",
             "styleid_strict",
             rw / "styleid_strict" / "images",
+            STYLE_ROOT,
             clip_style=0.7597,
             clip_content=0.5519,
             content_lpips=0.7497,
@@ -350,6 +351,7 @@ def default_specs() -> list[RunSpec]:
             "S2WAT",
             "s2wat_strict",
             rw / "s2wat_strict" / "images",
+            STYLE_ROOT,
             clip_style=0.7139,
             clip_content=0.7465,
             content_lpips=0.5263,
@@ -359,6 +361,7 @@ def default_specs() -> list[RunSpec]:
             "AdaIN",
             "adain_v32k",
             rw / "adain_v32k" / "images",
+            STYLE_ROOT,
             clip_style=0.7130,
             clip_content=0.6990,
             content_lpips=0.6298,
@@ -368,6 +371,7 @@ def default_specs() -> list[RunSpec]:
             "AdaIN",
             "adain_vgg19",
             rw / "adain_vgg19" / "images",
+            STYLE_ROOT,
             clip_style=0.6930,
             clip_content=0.5991,
             content_lpips=0.6870,
@@ -377,12 +381,38 @@ def default_specs() -> list[RunSpec]:
             "AdaIN",
             "adain_bad",
             rw / "adain_bad" / "images",
+            STYLE_ROOT,
             clip_style=0.6308,
             clip_content=0.5297,
             content_lpips=0.8490,
             transfer_clip_style=0.6308,
         ),
     ]
+
+
+def load_specs_from_manifest(path: Path) -> list[RunSpec]:
+    rows = list(csv.DictReader(path.open("r", encoding="utf-8", newline="")))
+    specs: list[RunSpec] = []
+    for row in rows:
+        method = str(row.get("method", "")).strip()
+        run = str(row.get("run", "")).strip()
+        images_dir_raw = str(row.get("images_dir", "")).strip()
+        if not method or not run or not images_dir_raw:
+            continue
+        specs.append(
+            RunSpec(
+                method=method,
+                run=run,
+                images_dir=Path(images_dir_raw),
+                summary_json=Path(row["summary_json"]) if str(row.get("summary_json", "")).strip() else None,
+                protocol_json=Path(row["protocol_json"]) if str(row.get("protocol_json", "")).strip() else None,
+                clip_style=float(row["clip_style"]) if str(row.get("clip_style", "")).strip() else None,
+                clip_content=float(row["clip_content"]) if str(row.get("clip_content", "")).strip() else None,
+                content_lpips=float(row["content_lpips"]) if str(row.get("content_lpips", "")).strip() else None,
+                transfer_clip_style=float(row["transfer_clip_style"]) if str(row.get("transfer_clip_style", "")).strip() else None,
+            )
+        )
+    return specs
 
 
 def fmt(value: Any) -> str:
@@ -416,10 +446,12 @@ def main() -> int:
     parser.add_argument("--batch-size", type=int, default=24)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--enable-artfid", action="store_true")
+    parser.add_argument("--manifest", type=Path, default=None)
     args = parser.parse_args()
 
     rows = []
-    for spec in default_specs():
+    specs = load_specs_from_manifest(args.manifest) if args.manifest is not None else default_specs()
+    for spec in specs:
         if not spec.images_dir.exists():
             print(f"SKIP missing images: {spec.images_dir}")
             continue

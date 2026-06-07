@@ -54,9 +54,21 @@ def _load_run_config(run_dir: Path) -> dict:
         return {}
 
 
-def _load_curve_rows(run_dir: Path, output_subdir: str) -> dict[str, dict[str, object]]:
+def _resolve_output_root(run_dir: Path, preferred_subdir: str) -> tuple[Path, str]:
+    candidates = [preferred_subdir]
+    if preferred_subdir != "full_eval":
+        candidates.append("full_eval")
+    for subdir in candidates:
+        root = run_dir / subdir
+        if (root / "clip_lpips_curve.csv").is_file() or any(root.glob("epoch_*/summary.json")):
+            return root, subdir
+    return run_dir / preferred_subdir, preferred_subdir
+
+
+def _load_curve_rows(run_dir: Path, output_subdir: str) -> tuple[dict[str, dict[str, object]], str]:
     rows_by_epoch: dict[str, dict[str, object]] = {}
-    curve_csv = run_dir / output_subdir / "clip_lpips_curve.csv"
+    output_root, resolved_subdir = _resolve_output_root(run_dir, output_subdir)
+    curve_csv = output_root / "clip_lpips_curve.csv"
     if curve_csv.is_file():
         for row in _read_csv(curve_csv):
             epoch = _norm_text(row.get("epoch"))
@@ -69,9 +81,9 @@ def _load_curve_rows(run_dir: Path, output_subdir: str) -> dict[str, dict[str, o
                 "full_content_lpips": _safe_float(row.get("full_content_lpips")),
                 "summary_path": _norm_text(row.get("summary_path")),
             }
-        return rows_by_epoch
+        return rows_by_epoch, resolved_subdir
 
-    for summary_path in sorted((run_dir / output_subdir).glob("epoch_*/summary.json")):
+    for summary_path in sorted(output_root.glob("epoch_*/summary.json")):
         summary = _read_json(summary_path)
         transfer = (summary.get("analysis") or {}).get("style_transfer_ability") or {}
         full = (summary.get("analysis") or {}).get("all_pairs_overview") or {}
@@ -83,7 +95,7 @@ def _load_curve_rows(run_dir: Path, output_subdir: str) -> dict[str, dict[str, o
             "full_content_lpips": _safe_float(full.get("content_lpips")),
             "summary_path": str(summary_path),
         }
-    return rows_by_epoch
+    return rows_by_epoch, resolved_subdir
 
 
 def _load_training_rows(run_dir: Path) -> dict[int, dict[str, object]]:
@@ -171,7 +183,7 @@ def main() -> int:
                 selected_master = master_by_run[candidate]
                 break
 
-        curve_rows = _load_curve_rows(run_dir, str(args.output_subdir))
+        curve_rows, resolved_subdir = _load_curve_rows(run_dir, str(args.output_subdir))
         training_rows = _load_training_rows(run_dir)
 
         for ckpt in checkpoints:
@@ -203,6 +215,7 @@ def main() -> int:
                     "train_terminal_swd": train.get("train_terminal_swd"),
                     "train_kinetic_energy": train.get("train_kinetic_energy"),
                     "train_curvature": train.get("train_curvature"),
+                    "output_subdir_used": resolved_subdir,
                     "run_dir": str(run_dir),
                     "checkpoint_path": str(ckpt),
                 }
@@ -235,6 +248,7 @@ def main() -> int:
             "train_terminal_swd",
             "train_kinetic_energy",
             "train_curvature",
+            "output_subdir_used",
             "run_dir",
             "checkpoint_path",
         ],

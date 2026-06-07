@@ -42,13 +42,19 @@ def main() -> int:
     parser.add_argument("--target", default="Early_Renaissance")
     parser.add_argument("--remote-workspace-root", default="/mnt/i/Github/Latent_Style")
     parser.add_argument("--python-bin", default="/home/xy/venvs/img2img_turbo312/bin/python")
-    parser.add_argument("--pretrained-model-name-or-path", default="stabilityai/sd-turbo")
+    parser.add_argument(
+        "--pretrained-model-name-or-path",
+        default="/mnt/i/Github/Latent_Style/Related_Works/runs/hf_snapshots/sd_turbo_snapshot_20260606",
+    )
     parser.add_argument("--host", default="100.115.18.62")
     parser.add_argument("--port", type=int, default=2222)
     parser.add_argument("--user", default="administrator")
     parser.add_argument("--wsl-distro", default="Ubuntu-26.04")
     parser.add_argument("--smoke-train-images-per-style", type=int, default=30)
     parser.add_argument("--smoke-test-images-per-style", type=int, default=30)
+    parser.add_argument("--train-root", default="/mnt/i/wikiart_distinct5_samam_512_classview/test")
+    parser.add_argument("--test-root", default="/mnt/i/wikiart_distinct5_samam_512_classview/test")
+    parser.add_argument("--styles", nargs="+", default=None)
     parser.add_argument("--max-train-steps", type=int, default=20)
     parser.add_argument("--validation-steps", type=int, default=10)
     parser.add_argument("--validation-num-images", type=int, default=2)
@@ -61,9 +67,11 @@ def main() -> int:
     parser.add_argument("--gradient-checkpointing", action="store_true")
     parser.add_argument("--enable-xformers", action="store_true")
     parser.add_argument("--share-vae-branches", action="store_true")
+    parser.add_argument("--train-img-prep", default="resize_512")
+    parser.add_argument("--val-img-prep", default="resize_512")
     parser.add_argument("--max-prelaunch-memory-mib", type=int, default=1500)
     parser.add_argument("--health-wait-seconds", type=int, default=30)
-    parser.add_argument("--max-runtime-memory-mib", type=int, default=11000)
+    parser.add_argument("--max-runtime-memory-mib", type=int, default=11500)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -79,16 +87,18 @@ def main() -> int:
     remote_repo_root = (
         f"{args.remote_workspace_root.rstrip('/')}/Related_Works/repos/cyclegan_turbo/img2img-turbo"
     )
-    classview_test = "/mnt/i/wikiart_distinct5_samam_512_classview/test"
+    styles_fragment = ""
+    if args.styles:
+        styles_fragment = " --styles " + " ".join(str(style) for style in args.styles)
 
     smoke_cmd = (
         "set -euo pipefail; "
         f"{args.python_bin} Related_Works/baseline_pipeline/scripts/prepare_distinct5_img2img_turbo_datasets.py "
-        f"--train-root {classview_test} --test-root {classview_test} "
+        f"--train-root {args.train_root} --test-root {args.test_root} "
         f"--output-root {smoke_dataset_root} "
         f"--train-images-per-style {int(args.smoke_train_images_per_style)} "
         f"--test-images-per-style {int(args.smoke_test_images_per_style)} "
-        "--overwrite --copy-mode copy; "
+        f"--overwrite --copy-mode copy{styles_fragment}; "
         f"{args.python_bin} Related_Works/baseline_pipeline/scripts/run_img2img_turbo_distinct5_smoke.py "
         f"--target {args.target} "
         f"--repo-root {remote_repo_root} "
@@ -98,8 +108,8 @@ def main() -> int:
         f"--main-process-port 29531 "
         f"--mixed-precision {args.mixed_precision} "
         f"--pretrained-model-name-or-path {args.pretrained_model_name_or_path} "
-        "--train-img-prep resize_512 "
-        "--val-img-prep resize_512 "
+        f"--train-img-prep {args.train_img_prep} "
+        f"--val-img-prep {args.val_img_prep} "
         f"--train-batch-size {int(args.train_batch_size)} "
         f"--lora-rank-unet {int(args.lora_rank_unet)} "
         f"--lora-rank-vae {int(args.lora_rank_vae)} "
@@ -110,6 +120,7 @@ def main() -> int:
         f"--checkpointing-steps {int(args.checkpointing_steps)} "
         "--dataloader-num-workers 0 "
         "--report-to none "
+        "--skip-initial-validation "
         "--run"
     )
     if args.allow_tf32:

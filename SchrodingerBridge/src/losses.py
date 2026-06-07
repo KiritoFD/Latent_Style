@@ -109,6 +109,7 @@ class OTFlowMatchingObjective:
         self.w_anisotropic_kinetic = max(0.0, float(bridge_cfg.w_anisotropic_kinetic))
         self.anisotropic_normal_weight = max(0.0, float(bridge_cfg.anisotropic_normal_weight))
         self.anisotropic_tangent_weight = max(0.0, float(bridge_cfg.anisotropic_tangent_weight))
+        self.anisotropic_edge_gate_gamma = max(0.0, float(getattr(bridge_cfg, "anisotropic_edge_gate_gamma", 0.0)))
         self.w_stokes_viscous = max(0.0, float(bridge_cfg.w_stokes_viscous))
         self.kinetic_penalty_mode = str(getattr(bridge_cfg, "kinetic_penalty_mode", "global_l2")).strip().lower()
         if self.kinetic_penalty_mode not in {
@@ -126,7 +127,14 @@ class OTFlowMatchingObjective:
         self.kinetic_spectral_cutoff = max(1e-3, float(getattr(bridge_cfg, "kinetic_spectral_cutoff", 12.0)))
         self.kinetic_manifold_gamma = max(0.0, float(getattr(bridge_cfg, "kinetic_manifold_gamma", 10.0)))
         self.structure_penalty_mode = str(getattr(bridge_cfg, "structure_penalty_mode", "off")).strip().lower()
-        if self.structure_penalty_mode not in {"off", "anisotropic", "stokes", "anisotropic_plus_stokes"}:
+        if self.structure_penalty_mode not in {
+            "off",
+            "anisotropic",
+            "stokes",
+            "anisotropic_plus_stokes",
+            "edge_gated_anisotropic",
+            "edge_gated_anisotropic_plus_stokes",
+        }:
             self.structure_penalty_mode = "off"
         self.w_phase_separation = max(0.0, float(bridge_cfg.w_phase_separation))
         self.phase_gradient_weight = max(0.0, float(bridge_cfg.phase_gradient_weight))
@@ -544,8 +552,15 @@ class OTFlowMatchingObjective:
         nx, ny = dx / norm, dy / norm
         tx, ty = -ny, nx
         v = pred_velocity.float()
-        normal = 0.5 * ((v * nx).square().mean() + (v * ny).square().mean())
-        tangent = 0.5 * ((v * tx).square().mean() + (v * ty).square().mean())
+        normal_field = 0.5 * ((v * nx).square() + (v * ny).square())
+        tangent_field = 0.5 * ((v * tx).square() + (v * ty).square())
+        if self.structure_penalty_mode in {"edge_gated_anisotropic", "edge_gated_anisotropic_plus_stokes"} and self.anisotropic_edge_gate_gamma > 0.0:
+            edge_strength = self._gradient_magnitude(self._lowpass(content.float())).mean(dim=1, keepdim=True)
+            edge_gate = 1.0 - torch.exp(-self.anisotropic_edge_gate_gamma * edge_strength)
+            normal = (normal_field * edge_gate).mean()
+        else:
+            normal = normal_field.mean()
+        tangent = tangent_field.mean()
         return (normal * self.anisotropic_normal_weight + tangent * self.anisotropic_tangent_weight) * self.w_anisotropic_kinetic
 
     def _stokes_viscous_loss(self, pred_velocity: torch.Tensor) -> torch.Tensor:
@@ -1098,8 +1113,17 @@ class OTFlowMatchingObjective:
         t_profile = self._profile_start(content)
         zero = content.new_tensor(0.0, dtype=torch.float32)
         kinetic_loss, kinetic_low_band, kinetic_high_band = self._kinetic_penalty_loss(pred_velocity, content)
-        use_anisotropic = self.structure_penalty_mode in {"anisotropic", "anisotropic_plus_stokes"}
-        use_stokes = self.structure_penalty_mode in {"stokes", "anisotropic_plus_stokes"}
+        use_anisotropic = self.structure_penalty_mode in {
+            "anisotropic",
+            "anisotropic_plus_stokes",
+            "edge_gated_anisotropic",
+            "edge_gated_anisotropic_plus_stokes",
+        }
+        use_stokes = self.structure_penalty_mode in {
+            "stokes",
+            "anisotropic_plus_stokes",
+            "edge_gated_anisotropic_plus_stokes",
+        }
         anisotropic_kinetic = self._anisotropic_kinetic_loss(pred_velocity, content) if use_anisotropic and self.w_anisotropic_kinetic > 0.0 else zero
         stokes_viscous = self._stokes_viscous_loss(pred_velocity) if use_stokes and self.w_stokes_viscous > 0.0 else zero
         phase_separation = self._phase_separation_loss(endpoint_for_losses) if self.w_phase_separation > 0.0 else zero
@@ -1160,6 +1184,28 @@ class OTFlowMatchingObjective:
             if torch.is_tensor(proximal_residual) and float(getattr(model, "proximal_residual_energy_weight", 0.0)) > 0.0
             else zero
         )
+        base_endpoint = getattr(model, "last_base_endpoint", None)
+        base_transport_abs = (
+            (base_endpoint - content).abs().mean().detach()
+            if torch.is_tensor(base_endpoint)
+            else zero
+        )
+        proximal_to_transport_ratio = zero
+        proximal_trust_penalty = zero
+        proximal_trust_weight = float(getattr(model, "proximal_trust_weight", 0.0))
+        proximal_trust_ratio = float(getattr(model, "proximal_trust_ratio", 0.0))
+        if (
+            torch.is_tensor(proximal_residual)
+            and torch.is_tensor(base_endpoint)
+            and proximal_trust_weight > 0.0
+            and proximal_trust_ratio > 0.0
+        ):
+            prox_rms = proximal_residual.float().square().mean().sqrt()
+            base_transport = (base_endpoint - content).float()
+            base_rms = base_transport.square().mean().sqrt().detach()
+            proximal_to_transport_ratio = prox_rms.detach() / base_rms.clamp_min(self.eps)
+            allowed_rms = base_rms * proximal_trust_ratio
+            proximal_trust_penalty = F.relu(prox_rms - allowed_rms).square() * proximal_trust_weight
         self._profile_end("aux_loss", t_profile, content)
         total_loss = (
             total_loss
@@ -1182,6 +1228,7 @@ class OTFlowMatchingObjective:
             + fourier_phase_lock
             + head_tax
             + proximal_residual_energy
+            + proximal_trust_penalty
         )
 
         terminal_swd = None
@@ -1236,6 +1283,7 @@ class OTFlowMatchingObjective:
             "fourier_phase_lock": fourier_phase_lock.detach(),
             "head_tax": head_tax.detach(),
             "proximal_residual_energy": proximal_residual_energy.detach() if torch.is_tensor(proximal_residual_energy) else zero,
+            "proximal_trust_penalty": proximal_trust_penalty.detach() if torch.is_tensor(proximal_trust_penalty) else zero,
             "terminal_swd": terminal_loss.detach(),
             "terminal_swd_aux": terminal_aux_loss.detach(),
             "aux_target_ratio": aux_target_ratio.detach(),
@@ -1269,6 +1317,8 @@ class OTFlowMatchingObjective:
             "final_endpoint_abs": pred_endpoint_final.abs().mean().detach(),
             "final_endpoint_max": pred_endpoint_final.abs().amax().detach(),
             "proximal_residual_abs": proximal_residual_abs.detach(),
+            "base_transport_abs": base_transport_abs.detach() if torch.is_tensor(base_transport_abs) else zero,
+            "proximal_to_transport_ratio": proximal_to_transport_ratio.detach() if torch.is_tensor(proximal_to_transport_ratio) else zero,
             "kinetic_penalty_mode_id": content.new_tensor(float(hash(self.kinetic_penalty_mode) % 1000000), dtype=torch.float32),
             "semantic_attn_mean": attn_plan.mean().detach() if attn_plan is not None else content.new_tensor(0.0),
             "semantic_k_abs": semantic_k.abs().mean().detach() if semantic_k is not None else content.new_tensor(0.0),
@@ -1289,6 +1339,7 @@ class OTFlowMatchingObjective:
             "fourier_phase_lock": fourier_phase_lock,
             "head_tax": head_tax,
             "proximal_residual_energy": proximal_residual_energy,
+            "proximal_trust_penalty": proximal_trust_penalty,
             "terminal_swd": terminal_loss,
             "terminal_swd_aux": terminal_aux_loss,
             "content_anchor": content_anchor,

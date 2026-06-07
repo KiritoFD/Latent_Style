@@ -1,0 +1,4 @@
+method,run,images_dir,summary_json,protocol_json,clip_style,clip_content,content_lpips,transfer_clip_style
+LBM,LBM-K_e1,G:\GitHub\Latent_Style\SchrodingerBridge\exp\distinct5_512_ema_variant_k_content_adaptive_vq_queue_e3_b44_remote\full_eval\epoch_0001\images,G:\GitHub\Latent_Style\SchrodingerBridge\exp\distinct5_512_ema_variant_k_content_adaptive_vq_queue_e3_b44_remote\full_eval\epoch_0001\summary.json,,,,,
+SaMST,SaMST_e15,G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samst_distinct5_512_real_b2_e15_20260602\eval_epoch15\epoch_0015\images,G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samst_distinct5_512_real_b2_e15_20260602\eval_epoch15\epoch_0015\summary.json,,,,,
+LBM,LBM-PS-v2_e13,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\local_eval\pattn_stokes002_e13\images,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\local_eval\pattn_stokes002_e13\summary.json,,,,,
