@@ -1,0 +1,22 @@
+{
+  "_base": "inmortal_xpred_kmanifold_seed42_b32.json",
+  "model": {
+    "proximal_mode": "highpass_residual",
+    "proximal_hidden_channels": 64,
+    "proximal_num_blocks": 2,
+    "proximal_highpass_kernel": 5,
+    "proximal_residual_energy_weight": 0.02,
+    "proximal_force_highpass": true,
+    "proximal_bind_terminal_losses": true,
+    "record_base_endpoint_metrics": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_xpred_kmanifold_phighpass_seed42_b32"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_phighpass_seed42_b32",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "XPred_plus_Kmanifold_plus_Phighpass",
+    "notes": "Second-order repair packet. Keep the strongest current endpoint-target family and the positive manifold-adaptive kinetic repair, then add the constrained high-pass proximal residual to test whether proximal refinement only helps once transport is already repaired."
+  }
+}
