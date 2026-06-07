@@ -221,7 +221,8 @@ def main() -> int:
         print(f"up_to_date: {args.output}")
         return 0
 
-    args.output.write_text(rendered, encoding="utf-8")
+    with args.output.open("w", encoding="utf-8", newline="") as f:
+        f.write(rendered)
     print(f"wrote: {args.output}")
     return 0
 
