@@ -85,3 +85,15 @@ This means:
 
 - the best current family is still `P_attn` without extra structure penalty
 - but if we want to chase lower LPIPS, the `Stokes` direction is the cleaner structure-side tradeoff than `Aniso`
+
+## Continuation result
+
+The `12-epoch` continuation is now landed separately at:
+
+- [2026-06-07-inmortal-xpred-kmanifold-pattn-stokes-longer.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-07-inmortal-xpred-kmanifold-pattn-stokes-longer.md)
+
+Key continuation point:
+
+- `e9 = 0.7112 / 0.5653` transfer
+
+So `Stokes` does continue to improve LPIPS with more budget, but it still remains a style-for-content tradeoff rather than becoming the promoted frontier.
