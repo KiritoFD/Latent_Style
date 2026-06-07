@@ -366,7 +366,7 @@ def main() -> int:
     parser.add_argument("--idle-poll-seconds", type=int, default=10)
     parser.add_argument("--idle-timeout-seconds", type=int, default=300)
     parser.add_argument("--health-wait-seconds", type=int, default=30)
-    parser.add_argument("--max-runtime-memory-mib", type=int, default=11000)
+    parser.add_argument("--max-runtime-memory-mib", type=int, default=11500)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 

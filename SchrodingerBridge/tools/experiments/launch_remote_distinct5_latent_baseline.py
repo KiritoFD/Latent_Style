@@ -79,7 +79,7 @@ def main() -> int:
     parser.add_argument("--begin-epoch", type=int, default=0, help="SaMST only. Epoch index paired with --begin-checkpoint.")
     parser.add_argument("--max-prelaunch-memory-mib", type=int, default=1500)
     parser.add_argument("--health-wait-seconds", type=int, default=30)
-    parser.add_argument("--max-runtime-memory-mib", type=int, default=11000)
+    parser.add_argument("--max-runtime-memory-mib", type=int, default=11500)
     parser.add_argument("--no-verify", action="store_true")
     parser.add_argument("--no-health-check", action="store_true")
     parser.add_argument("--dry-run", action="store_true")

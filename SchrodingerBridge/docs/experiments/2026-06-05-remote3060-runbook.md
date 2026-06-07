@@ -7,7 +7,7 @@ Purpose:
 - reduce repeated launch failures on the remote `RTX 3060`
 - make remote runs reproducible without rereading chat history
 - standardize sync, preflight, launch, monitor, and closure
-- enforce a hard single-run VRAM ceiling of `11.0 GiB`
+- enforce a hard single-run explosion boundary of `11.5 GiB`
 - treat the host-owned remote launcher as the default entrypoint for formal paper runs
 
 ## Machine contract
@@ -21,7 +21,7 @@ Purpose:
 - authoritative repo root inside WSL:
   - `/mnt/i/Github/Latent_Style`
 - hard VRAM cap for paper-facing runs:
-  - do not exceed `11.0 GiB`
+  - treat any reading above `11.5 GiB` as exploded
 
 Do not assume:
 
@@ -181,14 +181,14 @@ First monitoring window:
 Formal run policy:
 
 - remote `3060` paper-facing runs should usually sit around the expected formal memory band for that method
-- treat `11.0 GiB` as a hard stop, not a soft target
+- treat `11.5 GiB` as the hard explosion stop, not a soft target
 - under-cap runs are smoke or calibration, not formal evidence
 
 Concurrency rule:
 
 - do not overlap latent baseline runs on the `3060`
-- only one training lane may hold GPU at a time unless a measured combined peak is still strictly below `11.0 GiB`
-- if a second lane pushes total usage near or above `11.0 GiB`, stop it immediately and relaunch later as a single-run lane
+- only one training lane may hold GPU at a time unless a measured combined peak is still strictly below `11.5 GiB`
+- if a second lane pushes total usage near or above `11.5 GiB`, stop it immediately and relaunch later as a single-run lane
 - when handing off between lanes, wait for remote total `memory.used <= 1500 MiB`
   before launching the next packet
 
@@ -332,7 +332,7 @@ Current latent-method lessons:
 
 Current resource rule:
 
-- remote `3060` paper runs must stay strictly below `11.0 GiB`
+- remote `3060` paper runs must stay at or below `11.5 GiB`
 - do not overlap latent baseline probes if combined usage pushes the card above that cap
 - on 2026-06-05, concurrent `SaMam` + `SaMST` pushed usage to about `12.0 / 12.3 GiB`, so the `SaMST` probe was stopped and `SaMam` was kept as the active formal run
 - current verified single-run reference:

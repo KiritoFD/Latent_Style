@@ -213,7 +213,7 @@ def main() -> int:
     parser.add_argument("--remote-workspace-root", default=DEFAULT_REMOTE_WORKSPACE_ROOT)
     parser.add_argument("--a1-config", default=DEFAULT_A1_CONFIG)
     parser.add_argument("--health-wait-seconds", type=int, default=30)
-    parser.add_argument("--max-runtime-memory-mib", type=int, default=11000)
+    parser.add_argument("--max-runtime-memory-mib", type=int, default=11500)
     args = parser.parse_args()
 
     helper_path = Path(args.helper).resolve()
