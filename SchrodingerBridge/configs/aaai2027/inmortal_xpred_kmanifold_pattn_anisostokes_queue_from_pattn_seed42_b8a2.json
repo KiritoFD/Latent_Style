@@ -1,0 +1,34 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_seed42_b16_e12_continue.json",
+  "training": {
+    "batch_size": 8,
+    "accumulation_steps": 2,
+    "num_epochs": 16,
+    "resume_checkpoint": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_inmortal_xpred_kmanifold_pattn_seed42_b16_e12_continue/epoch_0011.pt",
+    "resume_optimizer": true,
+    "resume_model_strict": true,
+    "resume_training_state": true
+  },
+  "bridge": {
+    "structure_penalty_mode": "anisotropic_plus_stokes",
+    "w_anisotropic_kinetic": 1.0,
+    "anisotropic_normal_weight": 25.0,
+    "anisotropic_tangent_weight": 0.25,
+    "w_stokes_viscous": 0.03,
+    "terminal_swd_aux_weight": 0.5
+  },
+  "data": {
+    "pairing_cache_dual_target_mix": 0.5,
+    "pairing_cache_dual_target_topk": 1,
+    "pairing_cache_aux_target_topk": 1
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_from_pattn_seed42_b8a2"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_from_pattn_seed42_b8a2",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "XPred_plus_Kmanifold_plus_Pattn_then_AnisoStokesQueue",
+    "notes": "Ceiling-push combo arm aligned with the corrected C6 spirit. Resume from the promoted Pattn continuation frontier, then add joint anisotropic plus Stokes transport regularization together with the fixed queue-smoothing bundle."
+  }
+}
