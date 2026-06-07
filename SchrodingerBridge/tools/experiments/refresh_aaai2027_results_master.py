@@ -55,6 +55,8 @@ LOG_EXCLUDE_VARIANTS = {
     "inmortal_xpred_kmanifold_pmod_b32",
     "inmortal_xpred_kmanifold_pattn_b16",
     "inmortal_xpred_kmanifold_pattn_b16_e12_continue",
+    "inmortal_xpred_kmanifold_pattn_stokes_from_pattn_b16",
+    "inmortal_xpred_kmanifold_pattn_stokes002_from_pattn_b16",
     "inmortal_xpred_kmanifold_pattn_aniso_b16",
     "inmortal_xpred_kmanifold_pattn_stokes_b16",
     "inmortal_xpred_kmanifold_pattn_stokes_b16_e12_continue",

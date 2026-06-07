@@ -87,10 +87,15 @@ The problem was **when** and **how strongly** it was applied.
 
 ## Conclusion
 
-This packet becomes the new promoted frontier.
+At the time this packet landed, it became the promoted frontier.
 
-It does not solve the long-range LPIPS gap to the `0.30` target band, but it changes the next-round logic:
+After the later `0.02` follow-up, the interpretation is now:
 
-- keep the `P_attn` family as the backbone
-- keep `late / weak structure repair` as an active direction
-- stop treating `Stokes` as only a tradeoff family from the from-scratch evidence
+- `0.05` remains the better **LPIPS-balanced near-frontier** point
+- `0.02` becomes the stronger **raw-style** point
+
+So this packet still matters materially:
+
+- it is the first proof that late `Stokes` is genuinely useful
+- it remains the cleaner balance anchor inside the late-Stokes family
+- and it established the follow-up line that later recovered more style at a known LPIPS cost
