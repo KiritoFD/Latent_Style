@@ -150,10 +150,10 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         elif self.proximal_mode == "crossattn_texture":
             hidden = int(self.proximal_hidden_channels)
             self.proximal_attn_q = nn.Conv2d(int(self.latent_channels), hidden, kernel_size=1, stride=1, padding=0)
-            self.proximal_attn_k = nn.Conv2d(int(self.latent_channels), hidden, kernel_size=1, stride=1, padding=0)
-            self.proximal_attn_v = nn.Conv2d(int(self.latent_channels), hidden, kernel_size=1, stride=1, padding=0)
+            self.proximal_attn_k = nn.Conv2d(int(self.body_channels), hidden, kernel_size=1, stride=1, padding=0)
+            self.proximal_attn_v = nn.Conv2d(int(self.body_channels), hidden, kernel_size=1, stride=1, padding=0)
             self.proximal_attn_out = nn.Conv2d(hidden, int(self.latent_channels), kernel_size=1, stride=1, padding=0)
-            self.proximal_style_tokens = nn.Linear(int(self.bridge_style_dim), int(self.latent_channels))
+            self.proximal_style_tokens = nn.Linear(int(self.bridge_style_dim), int(self.body_channels))
             for mod in (self.proximal_attn_q, self.proximal_attn_k, self.proximal_attn_v, self.proximal_attn_out):
                 nn.init.normal_(mod.weight, mean=0.0, std=0.02)
                 if mod.bias is not None:
@@ -372,7 +372,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         style_map = F.interpolate(style_map.to(device=z_base.device, dtype=z_base.dtype), size=z_base.shape[-2:], mode="bilinear", align_corners=False)
         if self.proximal_style_tokens is not None:
             style_code = self.encode_style_id(style_id).to(device=z_base.device, dtype=z_base.dtype)
-            token_bias = self.proximal_style_tokens(style_code).view(style_code.shape[0], self.latent_channels, 1, 1)
+            token_bias = self.proximal_style_tokens(style_code).view(style_code.shape[0], self.body_channels, 1, 1)
             style_map = style_map + token_bias
         return style_map
 
