@@ -1,0 +1,13 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_seed42_b32.json",
+  "training": {
+    "batch_size": 16
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_xpred_kmanifold_pattn_seed42_b16"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_pattn_seed42_b16",
+    "notes": "Cross-attention proximal escalation under the remote 3060 hard cap. Same mechanism as the b32 packet, reduced to batch 16 to clear the 11 GiB health gate without changing the family."
+  }
+}
