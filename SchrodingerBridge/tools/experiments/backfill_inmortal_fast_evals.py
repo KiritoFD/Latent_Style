@@ -53,6 +53,19 @@ def _replace_code_root(cmd: list[str], replacement: str) -> list[str]:
     raise ValueError("--code-root not found in command")
 
 
+def _summary_cmd(*, python_bin: str, bundle_root: Path, legacy_run_root: Path, output_subdir: str) -> list[str]:
+    return [
+        str(python_bin),
+        str(SCRIPT_DIR / "build_inmortal_stage_summary.py"),
+        "--bundle-root",
+        str(bundle_root),
+        "--legacy-run-root",
+        str(legacy_run_root),
+        "--output-subdir",
+        str(output_subdir),
+    ]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Backfill missing clip/lpips fast eval checkpoints for remote inmortal runs."
@@ -72,12 +85,21 @@ def main() -> int:
     parser.add_argument("--fallback-code-root", default="mainline")
     parser.add_argument("--only-run", action="append", default=[])
     parser.add_argument("--max-runs", type=int, default=0)
+    parser.add_argument("--refresh-summary-each-run", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
     allowed = set(args.only_run)
     launched = 0
-    for run_dir in _iter_run_dirs(args.bundle_root.resolve(), args.legacy_run_root.resolve(), str(args.pattern)):
+    bundle_root = args.bundle_root.resolve()
+    legacy_root = args.legacy_run_root.resolve()
+    summary_cmd = _summary_cmd(
+        python_bin=str(args.python_bin),
+        bundle_root=bundle_root,
+        legacy_run_root=legacy_root,
+        output_subdir=str(args.output_subdir),
+    )
+    for run_dir in _iter_run_dirs(bundle_root, legacy_root, str(args.pattern)):
         if allowed and run_dir.name not in allowed:
             continue
         missing_epochs = _missing_epochs(run_dir, str(args.output_subdir))
@@ -127,20 +149,12 @@ def main() -> int:
                     f"retry with --code-root {fallback_root}"
                 )
                 _run(fallback_cmd)
+            if args.refresh_summary_each_run:
+                _run(summary_cmd)
         launched += 1
         if args.max_runs > 0 and launched >= int(args.max_runs):
             break
 
-    summary_cmd = [
-        str(args.python_bin),
-        str(SCRIPT_DIR / "build_inmortal_stage_summary.py"),
-        "--bundle-root",
-        str(args.bundle_root),
-        "--legacy-run-root",
-        str(args.legacy_run_root),
-        "--output-subdir",
-        str(args.output_subdir),
-    ]
     if args.dry_run:
         print("[backfill_inmortal_fast_evals] dry-run summary -> " + " ".join(summary_cmd))
     else:
