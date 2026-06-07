@@ -68,8 +68,19 @@ def _summary_curve_row(summary_path: Path) -> dict[str, object]:
     }
 
 
-def _load_curve_rows(run_dir: Path, output_subdir: str) -> list[dict[str, object]]:
-    output_root = run_dir / output_subdir
+def _resolve_output_root(run_dir: Path, preferred_subdir: str) -> tuple[Path, str]:
+    candidates = [preferred_subdir]
+    if preferred_subdir != "full_eval":
+        candidates.append("full_eval")
+    for subdir in candidates:
+        root = run_dir / subdir
+        if (root / "clip_lpips_curve.csv").is_file() or any(root.glob("epoch_*/summary.json")):
+            return root, subdir
+    return run_dir / preferred_subdir, preferred_subdir
+
+
+def _load_curve_rows(run_dir: Path, output_subdir: str) -> tuple[list[dict[str, object]], Path, str]:
+    output_root, resolved_subdir = _resolve_output_root(run_dir, output_subdir)
     curve_csv = output_root / "clip_lpips_curve.csv"
     if curve_csv.is_file():
         rows: list[dict[str, object]] = []
@@ -84,9 +95,9 @@ def _load_curve_rows(run_dir: Path, output_subdir: str) -> list[dict[str, object
                     "summary_path": item.get("summary_path", ""),
                 }
             )
-        return sorted(rows, key=lambda row: _epoch_int(str(row["epoch"])))
+        return sorted(rows, key=lambda row: _epoch_int(str(row["epoch"]))), output_root, resolved_subdir
     rows = [_summary_curve_row(path) for path in sorted(output_root.glob("epoch_*/summary.json"))]
-    return sorted(rows, key=lambda row: _epoch_int(str(row["epoch"])))
+    return sorted(rows, key=lambda row: _epoch_int(str(row["epoch"]))), output_root, resolved_subdir
 
 
 def _select_best(rows: list[dict[str, object]]) -> dict[str, object] | None:
@@ -170,8 +181,8 @@ def main() -> int:
         if not checkpoints:
             continue
         checkpoint_epochs = [ckpt.stem for ckpt in checkpoints]
-        summary_paths = sorted((run_dir / args.output_subdir).glob("epoch_*/summary.json"))
-        curve_rows = _load_curve_rows(run_dir, args.output_subdir)
+        curve_rows, output_root, resolved_subdir = _load_curve_rows(run_dir, args.output_subdir)
+        summary_paths = sorted(output_root.glob("epoch_*/summary.json"))
         curve_by_epoch = {str(row["epoch"]): row for row in curve_rows}
         run_config = _load_run_config(run_dir)
         run_training = run_config.get("training") or {}
@@ -193,7 +204,7 @@ def main() -> int:
                     "run_name": run_name,
                     "epoch": epoch,
                     "run_dir": str(run_dir),
-                    "expected_summary": str(run_dir / args.output_subdir / epoch / "summary.json"),
+                    "expected_summary": str(output_root / epoch / "summary.json"),
                 }
             )
 
@@ -218,7 +229,8 @@ def main() -> int:
                 "final_epoch": final_row.get("epoch") if final_row else "",
                 "final_clip_style": final_row.get("transfer_clip_style") if final_row else None,
                 "final_content_lpips": final_row.get("transfer_content_lpips") if final_row else None,
-                "curve_csv": str(run_dir / args.output_subdir / "clip_lpips_curve.csv"),
+                "curve_csv": str(output_root / "clip_lpips_curve.csv"),
+                "output_subdir_used": resolved_subdir,
                 "run_dir": str(run_dir),
                 "note_path": _norm_text(selected_master.get("evidence_path")),
             }
@@ -248,6 +260,7 @@ def main() -> int:
             "final_clip_style",
             "final_content_lpips",
             "curve_csv",
+            "output_subdir_used",
             "run_dir",
             "note_path",
         ],

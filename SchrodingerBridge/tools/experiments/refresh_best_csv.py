@@ -182,10 +182,20 @@ def main() -> int:
                 source_table=INMORTAL_MASTER_CSV,
             )
         )
+    if structot_best is not None:
+        rows.append(
+            (_final_entry if "experiment" in structot_best else _epoch_entry)(
+                rank=4,
+                slot="best_structot_tradeoff",
+                row=structot_best,
+                note="Best current StructOT tradeoff point and strongest lower-LPIPS secondary line.",
+                source_table=INMORTAL_MASTER_CSV,
+            )
+        )
     if kinetic_best is not None:
         rows.append(
             (_final_entry if "experiment" in kinetic_best else _epoch_entry)(
-                rank=4,
+                rank=5,
                 slot="best_kinetic_only_control",
                 row=kinetic_best,
                 note="Best pure kinetic control on the tracked Distinct5-512 epoch surface.",
@@ -195,7 +205,7 @@ def main() -> int:
     if compact_style is not None:
         rows.append(
             _final_entry(
-                rank=5,
+                rank=6,
                 slot="best_compact_mainline_anchor",
                 row=compact_style,
                 note="Best compact earlier-mainline LBM anchor for paper-facing comparison.",

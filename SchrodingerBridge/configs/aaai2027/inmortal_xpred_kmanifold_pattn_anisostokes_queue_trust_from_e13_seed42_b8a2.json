@@ -1,0 +1,23 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_anisostokes_queue_from_pattn_seed42_b8a2.json",
+  "training": {
+    "num_epochs": 24,
+    "resume_checkpoint": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_from_pattn_seed42_b8a2/epoch_0013.pt",
+    "resume_optimizer": true,
+    "resume_model_strict": true,
+    "resume_training_state": true
+  },
+  "model": {
+    "proximal_trust_ratio": 0.55,
+    "proximal_trust_weight": 0.5
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_trust_from_e13_seed42_b8a2"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_trust_from_e13_seed42_b8a2",
+    "axis": "aaai2027_inmortal_next_round_style_rescue",
+    "stage": "XPred_plus_Kmanifold_plus_Pattn_then_AnisoStokesQueueTrust",
+    "notes": "Trust-region continuation from the low-LPIPS e13 anchor. Keep the parent Aniso+Stokes+Queue transport/proximal family fixed, but penalize only the proximal branch when its RMS energy grows too large relative to the detached transport RMS."
+  }
+}

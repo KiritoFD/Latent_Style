@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
 import sys
 import time
 from pathlib import Path
 
 
-def _proc_alive(pattern: str) -> bool:
+def _train_proc_alive(train_pattern: str) -> bool:
     result = subprocess.run(
-        ["pgrep", "-af", pattern],
+        ["ps", "-ef"],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -17,7 +18,32 @@ def _proc_alive(pattern: str) -> bool:
         errors="replace",
         check=False,
     )
-    return result.returncode == 0 and bool(result.stdout.strip())
+    if result.returncode != 0:
+        return False
+    pattern = str(train_pattern).strip()
+    for line in result.stdout.splitlines():
+        row = line.strip()
+        if not row:
+            continue
+        if "run_inmortal_posttrain_eval_when_done.py" in row:
+            continue
+        if pattern in row:
+            return True
+    return False
+
+
+def _log_has_end_marker(log_path: Path, pattern: str) -> bool:
+    if not log_path.is_file():
+        return False
+    regex = re.compile(pattern)
+    try:
+        with log_path.open("r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                if regex.search(line):
+                    return True
+    except OSError:
+        return False
+    return False
 
 
 def _run(cmd: list[str]) -> None:
@@ -40,21 +66,38 @@ def main() -> int:
     parser.add_argument("--target-chunk-size", type=int, default=1)
     parser.add_argument("--code-root", default="mainline")
     parser.add_argument("--output-subdir", default="full_eval_fast_snapshot")
+    parser.add_argument("--refresh-stage-summary", action="store_true")
+    parser.add_argument("--refresh-epoch-table", action="store_true")
+    parser.add_argument("--wait-log-path", default="")
+    parser.add_argument("--wait-log-end-pattern", default=r"^=== END ")
     parser.add_argument("--poll-seconds", type=int, default=30)
     parser.add_argument("--max-wait-seconds", type=int, default=43200)
     args = parser.parse_args()
 
     run_dir = Path(args.run_dir).resolve()
+    wait_log_path = Path(args.wait_log_path).resolve() if str(args.wait_log_path).strip() else None
     deadline = time.monotonic() + max(0, int(args.max_wait_seconds))
     while True:
-        alive = _proc_alive(str(args.train_pattern))
-        print(
-            f"[run_inmortal_posttrain_eval_when_done] train_alive={alive} pattern={args.train_pattern}",
-            flush=True,
-        )
-        if not alive:
-            break
+        if wait_log_path is not None:
+            done = _log_has_end_marker(wait_log_path, str(args.wait_log_end_pattern))
+            print(
+                "[run_inmortal_posttrain_eval_when_done] "
+                f"log_done={done} log_path={wait_log_path} end_pattern={args.wait_log_end_pattern}",
+                flush=True,
+            )
+            if done:
+                break
+        else:
+            alive = _train_proc_alive(str(args.train_pattern))
+            print(
+                f"[run_inmortal_posttrain_eval_when_done] train_alive={alive} pattern={args.train_pattern}",
+                flush=True,
+            )
+            if not alive:
+                break
         if time.monotonic() >= deadline:
+            if wait_log_path is not None:
+                raise TimeoutError(f"timed out waiting for log end marker: {wait_log_path}")
             raise TimeoutError(f"timed out waiting for training to finish: {args.train_pattern}")
         time.sleep(max(1, int(args.poll_seconds)))
 
@@ -84,6 +127,10 @@ def main() -> int:
         str(args.output_subdir),
         "--skip-existing",
     ]
+    if bool(args.refresh_stage_summary):
+        cmd.append("--refresh-stage-summary")
+    if bool(args.refresh_epoch_table):
+        cmd.append("--refresh-epoch-table")
     _run(cmd)
     return 0
 

@@ -1,0 +1,23 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_anisostokes_queue_from_pattn_seed42_b8a2.json",
+  "training": {
+    "num_epochs": 20,
+    "resume_checkpoint": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_from_pattn_seed42_b8a2/epoch_0013.pt",
+    "resume_optimizer": true,
+    "resume_model_strict": true,
+    "resume_training_state": true
+  },
+  "bridge": {
+    "structure_penalty_mode": "edge_gated_anisotropic_plus_stokes",
+    "anisotropic_edge_gate_gamma": 12.0
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_edgegated_anisostokes_queue_from_e13_seed42_b8a2"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_pattn_edgegated_anisostokes_queue_from_e13_seed42_b8a2",
+    "axis": "aaai2027_inmortal_next_round_style_rescue",
+    "stage": "XPred_plus_Kmanifold_plus_Pattn_then_EdgeGatedAnisoStokesQueue",
+    "notes": "Next-round style-rescue continuation. Resume from the low-LPIPS e13 anchor, keep the queue and weak Stokes bundle, but gate anisotropic normal pressure to strong content edges only so flat regions can recover style."
+  }
+}

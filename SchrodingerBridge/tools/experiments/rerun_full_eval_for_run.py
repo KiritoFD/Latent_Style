@@ -85,6 +85,11 @@ def _write_curve_csv(output_root: Path) -> None:
     print(f"[rerun_eval] wrote curve csv -> {out_path}")
 
 
+def _run_optional_refresh(cmd: list[str]) -> None:
+    print(f"[rerun_eval] refresh -> {' '.join(cmd)}")
+    subprocess.run(cmd, check=True)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Rerun clip/lpips full eval for every epoch checkpoint in a run directory.")
     parser.add_argument("--run-dir", required=True)
@@ -102,6 +107,8 @@ def main() -> int:
     parser.add_argument("--output-subdir", default="full_eval")
     parser.add_argument("--epochs", type=int, nargs="*", default=None, help="Optional epoch numbers to rerun, e.g. --epochs 7 8")
     parser.add_argument("--skip-existing", action="store_true", help="Skip checkpoints whose summary.json already exists in the chosen output subdir.")
+    parser.add_argument("--refresh-stage-summary", action="store_true")
+    parser.add_argument("--refresh-epoch-table", action="store_true")
     args = parser.parse_args()
 
     run_dir = Path(args.run_dir).resolve()
@@ -150,6 +157,11 @@ def main() -> int:
         print(f"[rerun_eval] {ckpt.name} -> {out_dir}")
         subprocess.run(cmd, check=True)
     _write_curve_csv(run_dir / str(args.output_subdir))
+    tool_root = Path(__file__).resolve().parent
+    if bool(args.refresh_stage_summary):
+        _run_optional_refresh([str(args.python_bin), str(tool_root / "build_inmortal_stage_summary.py")])
+    if bool(args.refresh_epoch_table):
+        _run_optional_refresh([str(args.python_bin), str(tool_root / "build_inmortal_epoch_eval_table.py")])
     return 0
 
 

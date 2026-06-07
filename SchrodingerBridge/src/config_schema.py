@@ -220,6 +220,8 @@ class ModelConfig:
     proximal_num_blocks: int = 2
     proximal_highpass_kernel: int = 5
     proximal_residual_energy_weight: float = 0.0
+    proximal_trust_ratio: float = 0.0
+    proximal_trust_weight: float = 0.0
     proximal_force_highpass: bool = True
     proximal_bind_terminal_losses: bool = True
     record_base_endpoint_metrics: bool = False
@@ -314,6 +316,7 @@ class BridgeConfig:
     w_anisotropic_kinetic: float = 0.0
     anisotropic_normal_weight: float = 25.0
     anisotropic_tangent_weight: float = 0.25
+    anisotropic_edge_gate_gamma: float = 0.0
     w_stokes_viscous: float = 0.0
     kinetic_penalty_mode: str = "global_l2"
     kinetic_lambda_low: float = 1.0
