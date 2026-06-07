@@ -76,3 +76,62 @@ Status:
 
 - positive interim signal
 - keep running to full retained closure before final paper-facing promotion
+
+Outcome:
+
+- training completed through `epoch_0016`
+- full eval completed through `epoch_0016`
+
+Full readout:
+
+| epoch | transfer CLIP-style | transfer LPIPS | all-pairs CLIP-style | all-pairs LPIPS |
+| --- | ---: | ---: | ---: | ---: |
+| `e1` | `0.7064` | `0.5149` | `0.7207` | `0.5086` |
+| `e2` | `0.7011` | `0.5453` | `0.7128` | `0.5381` |
+| `e3` | `0.7007` | `0.4754` | `0.7183` | `0.4701` |
+| `e4` | `0.6958` | `0.5232` | `0.7097` | `0.5169` |
+| `e5` | `0.6948` | `0.5137` | `0.7095` | `0.5076` |
+| `e6` | `0.6901` | `0.5174` | `0.7063` | `0.5091` |
+| `e7` | `0.6916` | `0.4864` | `0.7098` | `0.4780` |
+| `e8` | `0.6889` | `0.5022` | `0.7056` | `0.4938` |
+| `e9` | `0.6893` | `0.4907` | `0.7069` | `0.4837` |
+| `e10` | `0.6861` | `0.5043` | `0.7029` | `0.4961` |
+| `e11` | `0.6848` | `0.4898` | `0.7023` | `0.4823` |
+| `e12` | `0.6851` | `0.4920` | `0.7029` | `0.4841` |
+| `e13` | `0.6882` | `0.4793` | `0.7067` | `0.4717` |
+| `e14` | `0.6835` | `0.4961` | `0.7010` | `0.4882` |
+| `e15` | `0.6829` | `0.4922` | `0.7007` | `0.4843` |
+| `e16` | `0.6829` | `0.4974` | `0.7002` | `0.4893` |
+
+Best retained points:
+
+- best transfer-style:
+  - `e1 = 0.7064 / 0.5149`
+  - all-pairs `= 0.7207 / 0.5086`
+- best LPIPS under `transfer >= 0.70`:
+  - `e3 = 0.7007 / 0.4754`
+  - all-pairs `= 0.7183 / 0.4701`
+
+Why this packet matters:
+
+- it improves the fixed hard-clamp low-LPIPS point:
+  - fixed clamp `e3 = 0.7022 / 0.4867`
+  - clamp-release `e3 = 0.7007 / 0.4754`
+- that is the intended trade:
+  - only a tiny style giveback
+  - but a real LPIPS gain
+
+Mechanism conclusion:
+
+- fixed hard clamp solved proximal takeover
+- clamp release keeps that protection early, then gives style some room back
+- the resulting family is the strongest current answer to the “how do we keep the e13-like content regime without freezing style completely?” question
+
+Decision:
+
+- positive closure
+- not better than the paper-facing `AnisoStokesQueue e13` low-LPIPS anchor
+- but better than the fixed-clamp recovery packet on the transfer/LPIPS tradeoff
+- retain:
+  - `e1` as strongest style-heavy release point
+  - `e3` as strongest low-LPIPS release point
