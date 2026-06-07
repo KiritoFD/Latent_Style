@@ -82,11 +82,47 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
         str(train_cfg.full_eval_cache_dir),
         "--clip_hf_cache_dir",
         str(train_cfg.full_eval_clip_hf_cache_dir),
+        "--batch_size",
+        str(int(train_cfg.full_eval_batch_size)),
     ]
+    if train_cfg.full_eval_num_steps is not None:
+        cmd += ["--num_steps", str(int(train_cfg.full_eval_num_steps))]
+    if train_cfg.full_eval_step_size is not None:
+        cmd += ["--step_size", str(float(train_cfg.full_eval_step_size))]
+    if train_cfg.full_eval_style_strength is not None:
+        cmd += ["--style_strength", str(float(train_cfg.full_eval_style_strength))]
+    if train_cfg.full_eval_max_src_samples is not None:
+        cmd += ["--max_src_samples", str(int(train_cfg.full_eval_max_src_samples))]
+    if train_cfg.full_eval_max_ref_compare is not None:
+        cmd += ["--max_ref_compare", str(int(train_cfg.full_eval_max_ref_compare))]
+    if train_cfg.full_eval_max_ref_cache is not None:
+        cmd += ["--max_ref_cache", str(int(train_cfg.full_eval_max_ref_cache))]
+    if train_cfg.full_eval_ref_feature_batch_size is not None:
+        cmd += ["--ref_feature_batch_size", str(int(train_cfg.full_eval_ref_feature_batch_size))]
+    if train_cfg.full_eval_target_chunk_size is not None:
+        cmd += ["--target_chunk_size", str(int(train_cfg.full_eval_target_chunk_size))]
+    if train_cfg.full_eval_vae_decode_batch_size is not None:
+        cmd += ["--vae_decode_batch_size", str(int(train_cfg.full_eval_vae_decode_batch_size))]
+    if train_cfg.full_eval_only_lpips_clip_style is not None:
+        cmd += ["--eval_only_lpips_clip_style" if bool(train_cfg.full_eval_only_lpips_clip_style) else "--no-eval_only_lpips_clip_style"]
+    if train_cfg.full_eval_save_generated_images is not None:
+        cmd += ["--save_generated_images" if bool(train_cfg.full_eval_save_generated_images) else "--no-save_generated_images"]
+    if train_cfg.full_eval_save_summary_grid is not None:
+        cmd += ["--save_summary_grid" if bool(train_cfg.full_eval_save_summary_grid) else "--no-save_summary_grid"]
     if bool(train_cfg.full_eval_force_regen):
         cmd.append("--force_regen")
     if bool(train_cfg.full_eval_profile_timing):
         cmd.append("--profile_timing")
+    if bool(train_cfg.full_eval_disable_lpips):
+        cmd.append("--eval_disable_lpips")
+    if bool(train_cfg.full_eval_enable_art_fid):
+        cmd.append("--eval_enable_art_fid")
+    else:
+        cmd.append("--no-eval_enable_art_fid")
+    if bool(train_cfg.full_eval_enable_kid):
+        cmd.append("--eval_enable_kid")
+    else:
+        cmd.append("--no-eval_enable_kid")
 
     logger.info("Running full eval for %s -> %s", checkpoint_path, out_dir)
     start = time.perf_counter()
