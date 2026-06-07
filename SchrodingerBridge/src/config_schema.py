@@ -222,6 +222,7 @@ class ModelConfig:
     proximal_residual_energy_weight: float = 0.0
     proximal_trust_ratio: float = 0.0
     proximal_trust_weight: float = 0.0
+    proximal_clamp_ratio: float = 0.0
     proximal_force_highpass: bool = True
     proximal_bind_terminal_losses: bool = True
     record_base_endpoint_metrics: bool = False

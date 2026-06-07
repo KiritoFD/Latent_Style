@@ -938,6 +938,7 @@ class SBTrainer:
         metrics.setdefault("final_endpoint_abs", 0.0)
         metrics.setdefault("final_endpoint_max", 0.0)
         metrics.setdefault("proximal_residual_abs", 0.0)
+        metrics.setdefault("proximal_clamp_scale", 1.0)
         metrics.setdefault("proximal_residual_energy", 0.0)
         metrics.setdefault("base_transport_abs", 0.0)
         metrics.setdefault("proximal_to_transport_ratio", 0.0)

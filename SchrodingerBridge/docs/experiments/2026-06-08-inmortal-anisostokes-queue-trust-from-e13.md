@@ -63,3 +63,59 @@ Reflection prompt:
 
 - if this works, the remaining ceiling debt is not transport quality but proximal stability
 - if this fails, the family probably needs a stronger architectural split than a soft trust-region can provide
+
+Outcome:
+
+- remote packet completed through `epoch_0024`
+- full eval completed for every retained point from `epoch_0014` to `epoch_0024`
+
+Full readout:
+
+| epoch | transfer CLIP-style | transfer LPIPS | all-pairs CLIP-style | all-pairs LPIPS |
+| --- | ---: | ---: | ---: | ---: |
+| `e14` | `0.6942` | `0.5785` | `0.6996` | `0.5742` |
+| `e15` | `0.6934` | `0.5786` | `0.6987` | `0.5740` |
+| `e16` | `0.6938` | `0.5956` | `0.6987` | `0.5909` |
+| `e17` | `0.7095` | `0.5751` | `0.7168` | `0.5703` |
+| `e18` | `0.6995` | `0.6117` | `0.7043` | `0.6049` |
+| `e19` | `0.6959` | `0.6367` | `0.6999` | `0.6297` |
+| `e20` | `0.6888` | `0.6787` | `0.6924` | `0.6726` |
+| `e21` | `0.6959` | `0.6692` | `0.6991` | `0.6617` |
+| `e22` | `0.6924` | `0.6852` | `0.6943` | `0.6778` |
+| `e23` | `0.6931` | `0.6794` | `0.6960` | `0.6712` |
+| `e24` | `0.6953` | `0.6887` | `0.6978` | `0.6807` |
+
+Best retained point:
+
+- `e17`
+  - transfer `0.7095 / 0.5751`
+  - all-pairs `0.7168 / 0.5703`
+
+Why this is a negative closure:
+
+- the parent anchor stayed:
+  - `e13 = 0.7102 / 0.4603`
+  - all-pairs `= 0.7303 / 0.4559`
+- the trust packet never beat it on either transfer or all-pairs
+- the best trust point only nearly ties style, but loses catastrophically on LPIPS
+
+Mechanism read:
+
+- the trust penalty was definitely active
+  - `proximal_trust_penalty` rose from about `0.027` at `e14` to about `0.106` by `e24`
+- but it failed to keep the proximal branch inside the intended regime
+  - `proximal_to_transport_ratio` still grew from about `1.29` to about `1.85`
+  - `proximal_residual_abs` still grew from about `0.228` to about `0.438`
+- so the problem is not “missing penalty wiring”
+- the stronger interpretation is:
+  - the resumed optimizer/scheduler state was already carrying the run out of the `e13` basin
+  - the soft trust-region penalty was too weak to reverse that inherited drift
+
+Decision:
+
+- negative closure
+- do not promote
+- keep the parent `AnisoStokesQueue e13` as the paper-facing low-LPIPS anchor
+- next recovery line should test:
+  - keep the `e13` model weights
+  - but reset optimizer and training-state momentum

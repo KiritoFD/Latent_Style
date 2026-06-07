@@ -1093,6 +1093,7 @@ class OTFlowMatchingObjective:
             model.refine_endpoint(
                 pred_endpoint_base,
                 style_id=target_style_id,
+                source_latent=content_for_model,
             ),
             clamp_value=self.endpoint_clamp,
         )
@@ -1178,6 +1179,7 @@ class OTFlowMatchingObjective:
         teacher_alignment, teacher_abs = self._teacher_alignment_loss(endpoint_for_losses, matched_target, target_style_id)
         kantorovich = self._kantorovich_generator_loss(endpoint_for_losses, target_for_loss) if self.w_kantorovich > 0.0 else zero
         proximal_residual = getattr(model, "last_proximal_residual", None)
+        proximal_clamp_scale = getattr(model, "last_proximal_clamp_scale", None)
         proximal_residual_abs = proximal_residual.abs().mean().detach() if torch.is_tensor(proximal_residual) else zero
         proximal_residual_energy = (
             proximal_residual.float().square().mean() * float(getattr(model, "proximal_residual_energy_weight", 0.0))
@@ -1317,6 +1319,7 @@ class OTFlowMatchingObjective:
             "final_endpoint_abs": pred_endpoint_final.abs().mean().detach(),
             "final_endpoint_max": pred_endpoint_final.abs().amax().detach(),
             "proximal_residual_abs": proximal_residual_abs.detach(),
+            "proximal_clamp_scale": proximal_clamp_scale.detach() if torch.is_tensor(proximal_clamp_scale) else content.new_tensor(1.0),
             "base_transport_abs": base_transport_abs.detach() if torch.is_tensor(base_transport_abs) else zero,
             "proximal_to_transport_ratio": proximal_to_transport_ratio.detach() if torch.is_tensor(proximal_to_transport_ratio) else zero,
             "kinetic_penalty_mode_id": content.new_tensor(float(hash(self.kinetic_penalty_mode) % 1000000), dtype=torch.float32),
