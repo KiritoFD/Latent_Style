@@ -37,3 +37,16 @@ Interpretation rule:
 
 - the first four packets close single-family explanatory gaps
 - the last two packets are the most plausible direct ceiling-push candidates on top of the current strongest family
+
+Current execution status:
+
+- `K_spectral` is no longer just queued.
+  - the over-cap `b16` launch was invalidated on machine-contract grounds
+  - the safety-corrected rerun now in flight is:
+    - [inmortal_k_spectral_seed42_b12.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/inmortal_k_spectral_seed42_b12.json)
+- remaining not-yet-started queued packets:
+  1. `XPred_StructOT`
+  2. `XPred_EndpointTeacher`
+  3. `XPred_QueueSmoothing`
+  4. `XPred_Kmanifold_Pattn_Queue`
+  5. `XPred_Kmanifold_Pattn_AnisoStokesQueue_from_pattn`
