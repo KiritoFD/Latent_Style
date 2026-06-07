@@ -717,6 +717,8 @@ class SBTrainer:
             self.scheduler.step()
 
     def train_epoch(self, dataloader: DataLoader, epoch: int) -> Dict[str, float]:
+        setattr(self.model, "current_epoch", int(epoch))
+        setattr(self.model, "total_epochs", int(self.num_epochs))
         self.model.train()
         if self.device.type == "cuda":
             torch.cuda.reset_peak_memory_stats(self.device)
