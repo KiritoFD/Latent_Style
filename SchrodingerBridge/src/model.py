@@ -117,6 +117,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.proximal_residual_energy_weight = max(0.0, float(getattr(bridge_config, "proximal_residual_energy_weight", 0.0)))
         self.proximal_trust_ratio = max(0.0, float(getattr(bridge_config, "proximal_trust_ratio", 0.0)))
         self.proximal_trust_weight = max(0.0, float(getattr(bridge_config, "proximal_trust_weight", 0.0)))
+        self.proximal_clamp_ratio = max(0.0, float(getattr(bridge_config, "proximal_clamp_ratio", 0.0)))
         self.proximal_force_highpass = bool(getattr(bridge_config, "proximal_force_highpass", True))
         self.proximal_bind_terminal_losses = bool(getattr(bridge_config, "proximal_bind_terminal_losses", True))
         self.record_base_endpoint_metrics = bool(getattr(bridge_config, "record_base_endpoint_metrics", False))
@@ -168,6 +169,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.last_proximal_residual: torch.Tensor | None = None
         self.last_base_endpoint: torch.Tensor | None = None
         self.last_final_endpoint: torch.Tensor | None = None
+        self.last_proximal_clamp_scale: torch.Tensor | None = None
 
     def _profile_start(self, ref: torch.Tensor) -> float:
         if not bool(getattr(self, "profile_modules", False)):
@@ -383,11 +385,13 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         z_base: torch.Tensor,
         *,
         style_id: torch.Tensor | int | None,
+        source_latent: torch.Tensor | None = None,
         style_code_override: torch.Tensor | None = None,
     ) -> torch.Tensor:
         self.last_base_endpoint = z_base.detach()
         if self.proximal_mode == "off":
             self.last_proximal_residual = torch.zeros_like(z_base)
+            self.last_proximal_clamp_scale = torch.ones((), device=z_base.device, dtype=z_base.dtype)
             self.last_final_endpoint = z_base.detach()
             return z_base
         style_code = self._resolve_refine_style_code(
@@ -429,8 +433,18 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             mixed = torch.bmm(attn, v_flat).transpose(1, 2).view(bsz, ch, h_dim, w_dim)
             delta = self.proximal_attn_out(mixed).to(dtype=z_base.dtype)
         delta = self._apply_proximal_highpass(delta)
+        clamp_scale = torch.ones((), device=z_base.device, dtype=z_base.dtype)
+        if source_latent is not None and self.proximal_clamp_ratio > 0.0:
+            base_transport = (z_base - source_latent).float()
+            base_rms = base_transport.square().mean().sqrt()
+            delta_rms = delta.float().square().mean().sqrt()
+            allowed = base_rms * self.proximal_clamp_ratio
+            if bool((delta_rms > allowed).item()):
+                clamp_scale = (allowed / delta_rms.clamp_min(1e-8)).to(dtype=z_base.dtype)
+                delta = delta * clamp_scale
         z_final = z_base + delta
         self.last_proximal_residual = delta.detach()
+        self.last_proximal_clamp_scale = clamp_scale.detach()
         self.last_final_endpoint = z_final.detach()
         return z_final
 
@@ -471,7 +485,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             style_id=style_id,
             style_code_override=style_code_override,
         )
-        return self.refine_endpoint(z_base, style_id=style_id, style_code_override=style_code_override)
+        return self.refine_endpoint(z_base, style_id=style_id, source_latent=x, style_code_override=style_code_override)
 
     def forward(
         self,
@@ -625,7 +639,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             target_style_latent=target_style_latent,
             style_code_override=style_code_override,
         )
-        return self.refine_endpoint(z_base, style_id=style_id, style_code_override=style_code_override)
+        return self.refine_endpoint(z_base, style_id=style_id, source_latent=x, style_code_override=style_code_override)
 
     def _apply_pre_integrate_moment_match(
         self,
