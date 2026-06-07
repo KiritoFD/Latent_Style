@@ -116,3 +116,21 @@ Queue behavior:
   4. `inmortal_xpred_queue_seed42_b16.json`
   5. `inmortal_xpred_kmanifold_pattn_queue_seed42_b16.json`
   6. `inmortal_xpred_kmanifold_pattn_anisostokes_queue_from_pattn_seed42_b8a2.json`
+
+## State after backfill closure
+
+The historical fast-eval backfill has now closed:
+
+- `2026-06-07-inmortal-missing-fast-eval.csv` is empty
+- `run_inmortal_packet_queue_when_ready.py` has already advanced from wait mode into
+  the first formal queued packet
+
+Current active formal packet:
+
+- safety-corrected `K_spectral` rerun:
+  - [inmortal_k_spectral_seed42_b12.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/inmortal_k_spectral_seed42_b12.json)
+
+Meaning:
+
+- the project is no longer in the legacy backfill closure phase
+- GPU time has returned to the next `inmortal` mechanism family

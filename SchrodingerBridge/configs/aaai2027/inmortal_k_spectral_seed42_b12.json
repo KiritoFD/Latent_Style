@@ -1,0 +1,15 @@
+{
+  "_base": "inmortal_k_spectral_seed42_b16.json",
+  "training": {
+    "batch_size": 12
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_k_spectral_seed42_b12"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_k_spectral_seed42_b12",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "K_spectral_b12",
+    "notes": "Safety-corrected rerun of the spectral kinetic packet after the formal b16 launch crossed the 11.5 GiB remote cap. Keep the same mechanism family and reduce only the batch size."
+  }
+}
