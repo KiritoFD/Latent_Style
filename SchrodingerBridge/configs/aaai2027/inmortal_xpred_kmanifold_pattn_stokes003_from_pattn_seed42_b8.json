@@ -1,0 +1,24 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_seed42_b16_e12_continue.json",
+  "training": {
+    "num_epochs": 16,
+    "batch_size": 8,
+    "resume_checkpoint": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_inmortal_xpred_kmanifold_pattn_seed42_b16_e12_continue/epoch_0011.pt",
+    "resume_optimizer": true,
+    "resume_model_strict": true,
+    "resume_training_state": true
+  },
+  "bridge": {
+    "structure_penalty_mode": "stokes",
+    "w_stokes_viscous": 0.03
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_xpred_kmanifold_pattn_stokes003_from_pattn_seed42_b8"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_pattn_stokes003_from_pattn_seed42_b8",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "XPred_plus_Kmanifold_plus_Pattn_then_Stokes003_b8",
+    "notes": "Late intermediate-Stokes repair packet under the tightened VRAM rule and persistent host-GUI background load. Same midpoint 0.03 probe, reduced to batch 8 so the lane can launch safely even when the remote owner surface does not fall back to the historical near-idle band."
+  }
+}
