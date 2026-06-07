@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import csv
+import json
 import shutil
 import subprocess
 import sys
@@ -23,6 +25,64 @@ def _resolve_eval_script(run_dir: Path, *, code_root: str) -> Path:
         shutil.copyfile(mainline_eval, overlay_eval)
         return overlay_eval
     raise ValueError(f"unsupported code_root={code_root}")
+
+
+def _read_json(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _safe_float(value) -> float | None:
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _metric_block(summary: dict, block_name: str) -> dict:
+    analysis = summary.get("analysis") or {}
+    return analysis.get(block_name) or {}
+
+
+def _summary_curve_row(summary_path: Path) -> dict[str, object]:
+    summary = _read_json(summary_path)
+    epoch_name = summary_path.parent.name
+    full = _metric_block(summary, "all_pairs_overview")
+    transfer = _metric_block(summary, "style_transfer_ability")
+    timings = summary.get("timings_sec") or {}
+    return {
+        "epoch": epoch_name,
+        "full_clip_style": _safe_float(full.get("clip_style")),
+        "full_content_lpips": _safe_float(full.get("content_lpips")),
+        "transfer_clip_style": _safe_float(transfer.get("clip_style")),
+        "transfer_content_lpips": _safe_float(transfer.get("content_lpips")),
+        "wall_total_seconds": _safe_float(timings.get("wall_total")),
+        "summary_path": str(summary_path),
+    }
+
+
+def _write_curve_csv(output_root: Path) -> None:
+    rows = []
+    for summary_path in sorted(output_root.glob("epoch_*/summary.json")):
+        rows.append(_summary_curve_row(summary_path))
+    if not rows:
+        return
+    fieldnames = [
+        "epoch",
+        "full_clip_style",
+        "full_content_lpips",
+        "transfer_clip_style",
+        "transfer_content_lpips",
+        "wall_total_seconds",
+        "summary_path",
+    ]
+    out_path = output_root / "clip_lpips_curve.csv"
+    with out_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    print(f"[rerun_eval] wrote curve csv -> {out_path}")
 
 
 def main() -> int:
@@ -89,6 +149,7 @@ def main() -> int:
             cmd.append("--no-save_summary_grid")
         print(f"[rerun_eval] {ckpt.name} -> {out_dir}")
         subprocess.run(cmd, check=True)
+    _write_curve_csv(run_dir / str(args.output_subdir))
     return 0
 
 
