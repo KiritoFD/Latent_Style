@@ -102,6 +102,7 @@ def main() -> int:
         str(args.primary_code_root),
         "--fallback-code-root",
         str(args.fallback_code_root),
+        "--refresh-summary-each-run",
     ]
     for run_name in args.only_run:
         cmd.extend(["--only-run", str(run_name)])
