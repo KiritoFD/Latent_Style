@@ -16,7 +16,7 @@ DEFAULT_USER = "administrator"
 DEFAULT_WSL_DISTRO = "Ubuntu-26.04"
 DEFAULT_REMOTE_WORKSPACE_ROOT = "/mnt/i/Github/Latent_Style"
 DEFAULT_A1_CONFIG = "SchrodingerBridge/configs/aaai2027/executor_promotion_h_e1_seed42_b44.json"
-DEFAULT_HARD_RUNTIME_CAP_MIB = 11000
+DEFAULT_HARD_RUNTIME_CAP_MIB = 11500
 DEFAULT_LATENT_RUN_ROOT = (
     "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/"
     "samam_latent_legacy256_probe4"
