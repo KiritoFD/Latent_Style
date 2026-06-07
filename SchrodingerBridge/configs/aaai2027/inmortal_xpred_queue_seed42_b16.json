@@ -1,0 +1,25 @@
+{
+  "_base": "inmortal_xpred_bary_seed42_b16.json",
+  "bridge": {
+    "coupling_feature_mode": "latent",
+    "coupling_edge_weight": 0.0,
+    "coupling_target_mode": "sample",
+    "target_teacher_mode": "off",
+    "target_teacher_weight": 0.0,
+    "terminal_swd_aux_weight": 0.5
+  },
+  "data": {
+    "pairing_cache_dual_target_mix": 0.5,
+    "pairing_cache_dual_target_topk": 1,
+    "pairing_cache_aux_target_topk": 1
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_xpred_queue_seed42_b16"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_queue_seed42_b16",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "XPred_plus_QueueSmoothing",
+    "notes": "Single-mechanism control for the queue-side smoothing bundle. Keep endpoint prediction with sampled targets, then enable dual-target mixing, auxiliary harder targets, and auxiliary terminal SWD through the existing prototype-aware pairing cache path."
+  }
+}
