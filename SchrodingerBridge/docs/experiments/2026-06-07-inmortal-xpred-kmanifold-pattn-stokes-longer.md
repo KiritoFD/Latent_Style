@@ -29,3 +29,66 @@ Failure condition:
 
 - the later epochs flatten without material LPIPS gain
 - or style collapses faster than LPIPS improves
+
+## Full continuation readout (`e9-e12`)
+
+| epoch | transfer CLIP-style | transfer LPIPS |
+| --- | ---: | ---: |
+| `e9` | `0.7112` | `0.5653` |
+| `e10` | `0.7117` | `0.5676` |
+| `e11` | `0.7105` | `0.5708` |
+| `e12` | `0.7140` | `0.5696` |
+
+Selected continuation point:
+
+- `e9`
+  - transfer `clip_style = 0.7112`
+  - transfer `content_lpips = 0.5653`
+  - full `clip_style = 0.7219`
+  - full `content_lpips = 0.5554`
+
+## What changed relative to the 8-epoch Stokes packet
+
+Previous selected point from the `8-epoch` Stokes packet:
+
+- `e3`
+  - transfer `0.7193 / 0.6222`
+
+Continuation selected point:
+
+- `e9`
+  - transfer `0.7112 / 0.5653`
+
+So the continuation buys:
+
+- about `-0.0569` LPIPS
+- but also about `-0.0081` style
+
+## Interpretation
+
+This is a real continuation gain, but it remains a tradeoff family rather than a promoted replacement.
+
+Relative to the current promoted `P_attn` continuation point (`0.7289 / 0.6211` transfer):
+
+- style drops by about `-0.0178`
+- LPIPS improves by about `-0.0558`
+
+So the family is useful if the next round wants to explore a style-for-content tradeoff, but it still does not dominate the current frontier.
+
+## Conclusion
+
+Longer training confirms the same structural reading:
+
+- `Stokes` is much better than `Aniso`
+- it can keep driving LPIPS downward
+- but it does so by paying too much style
+
+Most justified next step:
+
+- do **not** keep scaling this from-scratch `Stokes` family indefinitely
+- instead try a fine-tuning packet that starts from the promoted `P_attn` frontier and then enables weak `Stokes` smoothing
+
+Reason:
+
+- the current evidence suggests the family is directionally useful
+- but the from-scratch optimization path loses too much style before settling
