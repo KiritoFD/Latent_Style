@@ -112,3 +112,17 @@ Reason:
 - its curve keeps improving on LPIPS through at least `e8`
 - the next question is no longer "does proximal help at all?"
 - it is now "how much of the remaining LPIPS gap can this stronger proximal family recover with more training?"
+
+## Continuation result
+
+The follow-up `12-epoch` continuation is now landed separately at:
+
+- [2026-06-07-inmortal-xpred-kmanifold-pattn-longer.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-07-inmortal-xpred-kmanifold-pattn-longer.md)
+
+Key takeaway:
+
+- longer training does improve LPIPS further while holding style essentially flat
+- selected continuation point:
+  - `e11 = 0.7289 / 0.6211` transfer
+
+So this family remains the best current `inmortal` frontier, but the continuation also shows diminishing returns from budget alone.
