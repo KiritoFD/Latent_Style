@@ -1,0 +1,18 @@
+{
+  "_base": "inmortal_xpred_kmanifold_seed42_b32.json",
+  "training": {
+    "num_epochs": 12,
+    "resume_checkpoint": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_inmortal_xpred_kmanifold_seed42_b32/epoch_0008.pt",
+    "resume_optimizer": true,
+    "resume_model_strict": true,
+    "resume_training_state": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_xpred_kmanifold_seed42_b32_e12_continue"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_seed42_b32_e12_continue",
+    "stage": "XPred_plus_Kmanifold_longer",
+    "notes": "Longer-training continuation for the strongest pre-proximal x-pred family. Resume from the 8-epoch packet because LPIPS was still improving at the tail and 8 epochs should no longer be treated as proof of convergence."
+  }
+}
