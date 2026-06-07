@@ -191,6 +191,9 @@ Concurrency rule:
 - if a second lane pushes total usage near or above `11.5 GiB`, stop it immediately and relaunch later as a single-run lane
 - when handing off between lanes, wait for remote total `memory.used <= 1500 MiB`
   before launching the next packet
+- treat stale baseline residue as a real conflict, not harmless background noise
+  - explicitly check for leftover `SaMAM / SaMST / img2img / accelerate / other src/run.py` processes before every formal launch
+  - if any are present, either kill them or wait; do not start a new formal lane on top of them
 
 ### Step 5. Closure
 

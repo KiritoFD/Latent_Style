@@ -21,8 +21,12 @@ Queued configs:
   - isolates the fixed queue-smoothing bundle
 - [inmortal_xpred_kmanifold_pattn_queue_seed42_b16.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/inmortal_xpred_kmanifold_pattn_queue_seed42_b16.json)
   - strongest-family queue escalation
+  - packet note:
+    - [2026-06-07-inmortal-xpred-kmanifold-pattn-queue.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-07-inmortal-xpred-kmanifold-pattn-queue.md)
 - [inmortal_xpred_kmanifold_pattn_anisostokes_queue_from_pattn_seed42_b8a2.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/inmortal_xpred_kmanifold_pattn_anisostokes_queue_from_pattn_seed42_b8a2.json)
   - strongest-family combo finetune aligned with the corrected `C6` spirit
+  - packet note:
+    - [2026-06-07-inmortal-xpred-kmanifold-pattn-anisostokes-queue.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-07-inmortal-xpred-kmanifold-pattn-anisostokes-queue.md)
 
 Launch priority once the current backfill is complete and the remote host frees VRAM:
 
@@ -40,13 +44,29 @@ Interpretation rule:
 
 Current execution status:
 
-- `K_spectral` is no longer just queued.
+- `K_spectral`
   - the over-cap `b16` launch was invalidated on machine-contract grounds
-  - the safety-corrected rerun now in flight is:
+  - the safety-corrected rerun closed as:
     - [inmortal_k_spectral_seed42_b12.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/inmortal_k_spectral_seed42_b12.json)
-- remaining not-yet-started queued packets:
-  1. `XPred_StructOT`
-  2. `XPred_EndpointTeacher`
-  3. `XPred_QueueSmoothing`
-  4. `XPred_Kmanifold_Pattn_Queue`
-  5. `XPred_Kmanifold_Pattn_AnisoStokesQueue_from_pattn`
+- `XPred_StructOT`
+  - completed and closed
+- `XPred_EndpointTeacher`
+  - completed and closed
+- `XPred_QueueSmoothing`
+  - completed and closed
+- `XPred_Kmanifold_Pattn_Queue`
+  - completed and closed
+- `XPred_Kmanifold_Pattn_AnisoStokesQueue_from_pattn`
+  - completed and closed
+- remaining queued packets after this lane:
+  - none
+
+Queue state:
+
+- the currently armed `inmortal` queue has been exhausted
+- any next-round continuation should now come from a new round-specific launch decision rather than the original backlog
+
+Operational note:
+
+- a stale remote `latent SaMST` baseline process had to be killed to restore the intended single-lane `inmortal` queue
+- after clearing that stray baseline lane, the active `XPred_QueueSmoothing` packet returned to a safe single-run memory band
