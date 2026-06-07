@@ -118,6 +118,8 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.proximal_trust_ratio = max(0.0, float(getattr(bridge_config, "proximal_trust_ratio", 0.0)))
         self.proximal_trust_weight = max(0.0, float(getattr(bridge_config, "proximal_trust_weight", 0.0)))
         self.proximal_clamp_ratio = max(0.0, float(getattr(bridge_config, "proximal_clamp_ratio", 0.0)))
+        self.proximal_clamp_ratio_end = max(0.0, float(getattr(bridge_config, "proximal_clamp_ratio_end", 0.0)))
+        self.proximal_clamp_release_epochs = max(0, int(getattr(bridge_config, "proximal_clamp_release_epochs", 0)))
         self.proximal_force_highpass = bool(getattr(bridge_config, "proximal_force_highpass", True))
         self.proximal_bind_terminal_losses = bool(getattr(bridge_config, "proximal_bind_terminal_losses", True))
         self.record_base_endpoint_metrics = bool(getattr(bridge_config, "record_base_endpoint_metrics", False))
@@ -170,6 +172,8 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.last_base_endpoint: torch.Tensor | None = None
         self.last_final_endpoint: torch.Tensor | None = None
         self.last_proximal_clamp_scale: torch.Tensor | None = None
+        self.current_epoch: int = 1
+        self.total_epochs: int = 1
 
     def _profile_start(self, ref: torch.Tensor) -> float:
         if not bool(getattr(self, "profile_modules", False)):
@@ -434,11 +438,12 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             delta = self.proximal_attn_out(mixed).to(dtype=z_base.dtype)
         delta = self._apply_proximal_highpass(delta)
         clamp_scale = torch.ones((), device=z_base.device, dtype=z_base.dtype)
-        if source_latent is not None and self.proximal_clamp_ratio > 0.0:
+        clamp_ratio = self._resolve_proximal_clamp_ratio()
+        if source_latent is not None and clamp_ratio > 0.0:
             base_transport = (z_base - source_latent).float()
             base_rms = base_transport.square().mean().sqrt()
             delta_rms = delta.float().square().mean().sqrt()
-            allowed = base_rms * self.proximal_clamp_ratio
+            allowed = base_rms * clamp_ratio
             if bool((delta_rms > allowed).item()):
                 clamp_scale = (allowed / delta_rms.clamp_min(1e-8)).to(dtype=z_base.dtype)
                 delta = delta * clamp_scale
@@ -447,6 +452,20 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.last_proximal_clamp_scale = clamp_scale.detach()
         self.last_final_endpoint = z_final.detach()
         return z_final
+
+    def _resolve_proximal_clamp_ratio(self) -> float:
+        start = float(self.proximal_clamp_ratio)
+        end = float(self.proximal_clamp_ratio_end)
+        release_epochs = int(self.proximal_clamp_release_epochs)
+        if start <= 0.0:
+            return 0.0
+        if end <= 0.0 or release_epochs <= 0:
+            return start
+        epoch_idx = max(0, int(getattr(self, "current_epoch", 1)) - 1)
+        if epoch_idx >= release_epochs:
+            return end
+        alpha = float(epoch_idx) / max(float(release_epochs), 1.0)
+        return start + (end - start) * alpha
 
     @property
     def last_semantic_attn(self) -> torch.Tensor | None:
