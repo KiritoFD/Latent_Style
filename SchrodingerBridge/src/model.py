@@ -119,6 +119,10 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.proximal_trust_weight = max(0.0, float(getattr(bridge_config, "proximal_trust_weight", 0.0)))
         self.proximal_clamp_ratio = max(0.0, float(getattr(bridge_config, "proximal_clamp_ratio", 0.0)))
         self.proximal_clamp_ratio_end = max(0.0, float(getattr(bridge_config, "proximal_clamp_ratio_end", 0.0)))
+        self.proximal_clamp_schedule = str(getattr(bridge_config, "proximal_clamp_schedule", "linear")).strip().lower()
+        if self.proximal_clamp_schedule not in {"linear", "hold_linear"}:
+            self.proximal_clamp_schedule = "linear"
+        self.proximal_clamp_hold_epochs = max(0, int(getattr(bridge_config, "proximal_clamp_hold_epochs", 0)))
         self.proximal_clamp_release_epochs = max(0, int(getattr(bridge_config, "proximal_clamp_release_epochs", 0)))
         self.proximal_force_highpass = bool(getattr(bridge_config, "proximal_force_highpass", True))
         self.proximal_bind_terminal_losses = bool(getattr(bridge_config, "proximal_bind_terminal_losses", True))
@@ -456,12 +460,18 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
     def _resolve_proximal_clamp_ratio(self) -> float:
         start = float(self.proximal_clamp_ratio)
         end = float(self.proximal_clamp_ratio_end)
+        schedule = str(getattr(self, "proximal_clamp_schedule", "linear")).strip().lower()
+        hold_epochs = max(0, int(getattr(self, "proximal_clamp_hold_epochs", 0)))
         release_epochs = int(self.proximal_clamp_release_epochs)
         if start <= 0.0:
             return 0.0
         if end <= 0.0 or release_epochs <= 0:
             return start
         epoch_idx = max(0, int(getattr(self, "current_epoch", 1)) - 1)
+        if schedule == "hold_linear":
+            if epoch_idx < hold_epochs:
+                return start
+            epoch_idx = max(0, epoch_idx - hold_epochs)
         if epoch_idx >= release_epochs:
             return end
         alpha = float(epoch_idx) / max(float(release_epochs), 1.0)
