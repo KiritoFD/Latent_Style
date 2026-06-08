@@ -10,12 +10,42 @@ Date: 2026-06-08
   - break the current style/content ceiling
   - especially toward `0.72 / 0.30` on `transfer CLIP-style / LPIPS`
 - evaluation policy:
-  - fast eval only: `CLIP-S + LPIPS`
-  - no `ArtFID` in the current mechanism loop
+  - fast screening:
+    - `CLIP-S + LPIPS`
+  - paper-facing audit:
+    - non-CLIP style classifier
+    - structure metric
+    - visual / pairwise audit
+  - `ArtFID` remains out of the inner mechanism loop
 - execution policy:
   - single active GPU lane only
   - any materially better point should be committed immediately
   - every experiment must have a reflection / closure note
+
+## Evaluation Axes
+
+Current evaluation is explicitly three-axis:
+
+1. `style axis`
+   - fast screen:
+     - `CLIP-S`
+   - paper-facing:
+     - Distinct5 non-CLIP style classifier
+
+2. `structure axis`
+   - fast screen:
+     - `LPIPS`
+   - next preferred supplement:
+     - DINO-style structure comparison
+
+3. `artifact / visual axis`
+   - qualitative visual audit
+   - direct comparison to `Seedream`
+   - artifact-sensitive diagnostics already in the repo
+
+Reference note:
+
+- [2026-06-08-eval-reliability-and-related-work-brief.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-08-eval-reliability-and-related-work-brief.md)
 
 ## Current Frontier
 
@@ -142,6 +172,14 @@ The following ideas are not currently paying off enough:
 
 Any unusually extreme point, especially very low-LPIPS outliers, should be archived as a dedicated reproducibility zip and committed.
 
+Any point that influences theory, paper wording, or next-round mechanism choice must be classified as a `paper-facing audit point`.
+
+`paper-facing audit points` must save generated images so they can be used in:
+
+- non-CLIP style probes
+- direct Seedream comparisons
+- later qualitative figure generation
+
 Immediate archive target:
 
 - `Hold4Mid e8`
@@ -176,6 +214,24 @@ Current read:
 - it should answer the key science question:
   - can the family keep the geometry anchor and still recover style if reopening is delayed until after a middle stabilization band?
 
+## Immediate Audit Actions
+
+1. Keep `Hold4TwoStage` as the active performance/theory lane.
+
+2. For every surprising low-LPIPS point, save images and run:
+   - non-CLIP style classifier
+   - visual comparison against `Seedream`
+
+3. Add DINO-style structure comparison to the same selected frontier points:
+   - `AnisoStokesQueue e13`
+   - `Pattn + Stokes002 e13`
+   - `Hold4Mid e8`
+   - `Hold4TwoStage best`, once available
+
+4. Treat the hold family scientifically as:
+   - `geometry anchor`
+   - not `style frontier`
+
 ## Next Round Plan
 
 After `Hold4SlowMid` is formally closed, next round should stop spending GPU time on single-stage clamp schedules and move to a different family.
@@ -191,6 +247,9 @@ Recommended next-round direction:
        - early `hold`
        - mid controlled band
        - explicit late re-opening window after geometry has stabilized
+   - paired with:
+     - stronger non-CLIP style auditing
+     - direct visual comparison to `Seedream`
 
 3. If the two-stage schedule still fails, the next move should not be another schedule micro-tweak.
    - after that point, switch to:
@@ -209,3 +268,4 @@ Recommended next-round direction:
 - If a line already has all `summary.json` files but is missing `clip_lpips_curve.csv`, finalize closure with:
   - `rerun_full_eval_for_run.py --skip-existing --output-subdir full_eval`
 - Do not wait on watcher state alone when artifacts already prove completion.
+- If a point needs non-CLIP style audit or visual comparison, it must keep generated images; `metrics.csv + summary.json` alone are not enough.
