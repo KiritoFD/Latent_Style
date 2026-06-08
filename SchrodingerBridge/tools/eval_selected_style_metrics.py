@@ -66,7 +66,13 @@ def source_path(source_root: Path, src_style: str, src_stem: str) -> Path | None
         candidate = folder / f"{src_stem}{ext}"
         if candidate.exists():
             return candidate
+        prefixed = folder / f"{src_style}__{src_stem}{ext}"
+        if prefixed.exists():
+            return prefixed
     hits = list(folder.glob(f"{src_stem}.*"))
+    if hits:
+        return hits[0]
+    hits = list(folder.glob(f"{src_style}__{src_stem}.*"))
     return hits[0] if hits else None
 
 
@@ -404,6 +410,7 @@ def load_specs_from_manifest(path: Path) -> list[RunSpec]:
                 method=method,
                 run=run,
                 images_dir=Path(images_dir_raw),
+                source_root=Path(row["source_root"]) if str(row.get("source_root", "")).strip() else STYLE_ROOT,
                 summary_json=Path(row["summary_json"]) if str(row.get("summary_json", "")).strip() else None,
                 protocol_json=Path(row["protocol_json"]) if str(row.get("protocol_json", "")).strip() else None,
                 clip_style=float(row["clip_style"]) if str(row.get("clip_style", "")).strip() else None,

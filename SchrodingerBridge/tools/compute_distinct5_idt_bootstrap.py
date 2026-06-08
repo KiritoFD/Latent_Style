@@ -27,7 +27,12 @@ def _load_metrics(path: Path) -> list[dict[str, str | float]]:
 
 
 def _row_key(row: dict[str, str | float]) -> tuple[str, str, str]:
-    return str(row["src_style"]), str(row["tgt_style"]), str(row["src_image"])
+    src_style = str(row["src_style"])
+    src_image = str(row["src_image"])
+    prefix = f"{src_style}__"
+    if src_image.startswith(prefix):
+        src_image = src_image[len(prefix) :]
+    return src_style, str(row["tgt_style"]), src_image
 
 
 def _bootstrap_mean_ci(values: list[float], *, samples: int, seed: int) -> tuple[float, float, float, float]:
@@ -62,6 +67,12 @@ def main() -> None:
     )
     parser.add_argument("--samples", type=int, default=10000)
     parser.add_argument("--seed", type=int, default=20260604)
+    parser.add_argument(
+        "--method",
+        action="append",
+        default=[],
+        help="Optional extra method in the form 'Label=relative/or/absolute/path/to/metrics.csv'.",
+    )
     args = parser.parse_args()
 
     repo_root = args.repo_root.resolve()
@@ -74,8 +85,15 @@ def main() -> None:
         if row["src_style"] != row["tgt_style"]
     }
 
+    methods = dict(DEFAULT_METHODS)
+    for raw in args.method:
+        if "=" not in str(raw):
+            raise ValueError(f"Invalid --method value: {raw}")
+        label, rel_path = str(raw).split("=", 1)
+        methods[label.strip()] = rel_path.strip()
+
     results: list[dict[str, str | int | float]] = []
-    for index, (method, rel_path) in enumerate(DEFAULT_METHODS.items()):
+    for index, (method, rel_path) in enumerate(methods.items()):
         path = repo_root / rel_path
         method_rows = {
             _row_key(row): row

@@ -169,10 +169,16 @@ ive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/texlive/2026/texmf-di
 st/fonts/enc/dvips/newtx/ntx-ec-tlf.enc} <./figures/fig_distinct5_page1_summary
 .pdf>] (c:/texlive/2026/texmf-dist/tex/latex/newtx/ts1ntxtlf.fd) [2{c:/texlive/
 2026/texmf-dist/fonts/enc/dvips/tex-gyre/q-ts1.enc}] [3 <./framework_lbm_main_u
-ser.png (PNG copy)>] [4] (./snippets/timing_tables_leibniz.tex)
-(c:/texlive/2026/texmf-dist/tex/latex/psnfss/t1pcr.fd) [5{c:/texlive/2026/texmf
--dist/fonts/enc/dvips/base/8r.enc}] [6] (./paper_aaai2027.bbl) [7] [8]
-(./paper_aaai2027.aux) )
+ser.png (PNG copy)>]
+Underfull \hbox (badness 1622) in paragraph at lines 121--122
+\T1/ntxtlf/m/n/10 Distinct5-WikiArt is an IDT-calibrated operating-point
+[4] (./snippets/timing_tables_leibniz.tex)
+(c:/texlive/2026/texmf-dist/tex/latex/psnfss/t1pcr.fd)
+Underfull \vbox (badness 5119) has occurred while \output is active [5]
+[6{c:/texlive/2026/texmf-dist/fonts/enc/dvips/base/8r.enc} <./figures/fig_disti
+nct5_qualitative_main.png (PNG copy)>] (./paper_aaai2027.bbl
+Underfull \vbox (badness 8132) has occurred while \output is active [7])
+[8] (./paper_aaai2027.aux) )
 (see the transcript file for additional information)<c:/texlive/2026/texmf-dist
 /fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/texlive/2026/texmf-dist/fonts/ty
 pe1/public/amsfonts/cm/cmmi10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/publi
@@ -190,5 +196,5 @@ live/2026/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb><c:/texlive/2026/texmf-
 dist/fonts/type1/public/newtx/ztmb.pfb><c:/texlive/2026/texmf-dist/fonts/type1/
 public/newtx/ztmr.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmr
 i.pfb>
-Output written on paper_aaai2027.pdf (8 pages, 1728568 bytes).
+Output written on paper_aaai2027.pdf (8 pages, 2275551 bytes).
 Transcript written on paper_aaai2027.log.

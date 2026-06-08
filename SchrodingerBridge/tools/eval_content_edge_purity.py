@@ -19,23 +19,24 @@ IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
 
 RUNS = [
-    ("Ours", "epoch_0007", ROOT / "S-add__K-1_C-0_W-20_Col-0" / "full_eval" / "epoch_0007" / "images"),
-    ("Ours", "epoch_0008", ROOT / "S-add__K-1_C-0_W-20_Col-0" / "full_eval" / "epoch_0008" / "images"),
-    ("Ours", "residual_1p25", ROOT / "S-add__K-1_C-0_W-20_Col-0" / "residual_scale_sweep_epoch7" / "residual_1p25" / "images"),
-    ("SaMST", "samst_strict", WORKSPACE / "Related_Works" / "run_511" / "complete_750" / "samst_strict" / "images"),
+    ("Ours", "epoch_0007", ROOT / "S-add__K-1_C-0_W-20_Col-0" / "full_eval" / "epoch_0007" / "images", STYLE_ROOT),
+    ("Ours", "epoch_0008", ROOT / "S-add__K-1_C-0_W-20_Col-0" / "full_eval" / "epoch_0008" / "images", STYLE_ROOT),
+    ("Ours", "residual_1p25", ROOT / "S-add__K-1_C-0_W-20_Col-0" / "residual_scale_sweep_epoch7" / "residual_1p25" / "images", STYLE_ROOT),
+    ("SaMST", "samst_strict", WORKSPACE / "Related_Works" / "run_511" / "complete_750" / "samst_strict" / "images", STYLE_ROOT),
 ]
 
 
-def load_runs_from_manifest(path: Path) -> list[tuple[str, str, Path]]:
+def load_runs_from_manifest(path: Path) -> list[tuple[str, str, Path, Path]]:
     rows = list(csv.DictReader(path.open("r", encoding="utf-8", newline="")))
-    runs: list[tuple[str, str, Path]] = []
+    runs: list[tuple[str, str, Path, Path]] = []
     for row in rows:
         method = str(row.get("method", "")).strip()
         run = str(row.get("run", "")).strip()
         images_dir_raw = str(row.get("images_dir", "")).strip()
         if not method or not run or not images_dir_raw:
             continue
-        runs.append((method, run, Path(images_dir_raw)))
+        source_root_raw = str(row.get("source_root", "")).strip()
+        runs.append((method, run, Path(images_dir_raw), Path(source_root_raw) if source_root_raw else STYLE_ROOT))
     return runs
 
 
@@ -49,13 +50,19 @@ def parse_name(path: Path) -> tuple[str, str, str] | None:
     return src_style, src_stem, target
 
 
-def find_source(src_style: str, stem: str) -> Path | None:
-    folder = STYLE_ROOT / src_style
+def find_source(source_root: Path, src_style: str, stem: str) -> Path | None:
+    folder = source_root / src_style
     for ext in IMAGE_EXTS:
         candidate = folder / f"{stem}{ext}"
         if candidate.exists():
             return candidate
+        prefixed = folder / f"{src_style}__{stem}{ext}"
+        if prefixed.exists():
+            return prefixed
     hits = list(folder.glob(f"{stem}.*"))
+    if hits:
+        return hits[0]
+    hits = list(folder.glob(f"{src_style}__{stem}.*"))
     return hits[0] if hits else None
 
 
@@ -165,7 +172,7 @@ def image_metrics(src_path: Path, gen_path: Path, size: int) -> dict[str, float]
     }
 
 
-def evaluate_run(method: str, run: str, images_dir: Path, size: int) -> dict[str, Any]:
+def evaluate_run(method: str, run: str, images_dir: Path, source_root: Path, size: int) -> dict[str, Any]:
     buckets: dict[str, list[dict[str, float]]] = {}
     all_rows: list[dict[str, float]] = []
     for gen_path in sorted(images_dir.glob("*")):
@@ -175,7 +182,7 @@ def evaluate_run(method: str, run: str, images_dir: Path, size: int) -> dict[str
         if parsed is None:
             continue
         src_style, stem, target = parsed
-        src_path = find_source(src_style, stem)
+        src_path = find_source(source_root, src_style, stem)
         if src_path is None:
             continue
         metrics = image_metrics(src_path, gen_path, size)
@@ -242,12 +249,12 @@ def main() -> int:
 
     rows = []
     runs = load_runs_from_manifest(args.manifest) if args.manifest is not None else RUNS
-    for method, run, images_dir in runs:
+    for method, run, images_dir, source_root in runs:
         if not images_dir.exists():
             print(f"SKIP missing: {images_dir}")
             continue
         print(f"Evaluating {method}/{run}")
-        rows.append(evaluate_run(method, run, images_dir, args.size))
+        rows.append(evaluate_run(method, run, images_dir, source_root, args.size))
 
     fieldnames = sorted({key for row in rows for key in row.keys()})
     front = ["method", "run", "images"]

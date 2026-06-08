@@ -1,0 +1,245 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex)
+ restricted \write18 enabled.
+entering extended mode
+(./supplement_aaai2027.tex
+LaTeX2e <2025-11-01>
+L3 programming layer <2026-01-19>
+(c:/texlive/2026/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2025/01/22 v1.4n Standard LaTeX document class
+(c:/texlive/2026/texmf-dist/tex/latex/base/size10.clo)) (./aaai2027.sty
+Conference Style for AAAI for LaTeX 2e
+(c:/texlive/2026/texmf-dist/tex/generic/iftex/iftex.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/base/fontenc.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/newtx/newtxtext.sty
+`newtxtext' v1.744, 2024/04/01 Text macros taking advantage of TeXGyre Termes a
+nd its extensions (msharpe)
+(c:/texlive/2026/texmf-dist/tex/latex/xpatch/xpatch.sty
+(c:/texlive/2026/texmf-dist/tex/latex/l3kernel/expl3.sty
+(c:/texlive/2026/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def))
+(c:/texlive/2026/texmf-dist/tex/latex/l3packages/xparse/xparse.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/etoolbox/etoolbox.sty))
+(c:/texlive/2026/texmf-dist/tex/latex/xcolor/xcolor.sty
+(c:/texlive/2026/texmf-dist/tex/latex/graphics-cfg/color.cfg)
+(c:/texlive/2026/texmf-dist/tex/latex/graphics-def/pdftex.def)
+(c:/texlive/2026/texmf-dist/tex/latex/graphics/mathcolor.ltx))
+(c:/texlive/2026/texmf-dist/tex/latex/xkeyval/xkeyval.sty
+(c:/texlive/2026/texmf-dist/tex/generic/xkeyval/xkeyval.tex
+(c:/texlive/2026/texmf-dist/tex/generic/xkeyval/xkvutils.tex
+(c:/texlive/2026/texmf-dist/tex/generic/xkeyval/keyval.tex))))
+(c:/texlive/2026/texmf-dist/tex/latex/base/textcomp.sty)
+(c:/texlive/2026/texmf-dist/tex/generic/xstring/xstring.sty
+(c:/texlive/2026/texmf-dist/tex/generic/xstring/xstring.tex))
+(c:/texlive/2026/texmf-dist/tex/latex/base/ifthen.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/carlisle/scalefnt.sty)
+(c:/texlive/2026/texmf-dist/tex/generic/kastrup/binhex.tex)
+(c:/texlive/2026/texmf-dist/tex/latex/fontaxes/fontaxes.sty
+(c:/texlive/2026/texmf-dist/tex/latex/figureversions/figureversions.sty)))
+(c:/texlive/2026/texmf-dist/tex/latex/psnfss/helvet.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/psnfss/courier.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/placeins/placeins.sty))
+(c:/texlive/2026/texmf-dist/tex/latex/url/url.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/graphics/graphicx.sty
+(c:/texlive/2026/texmf-dist/tex/latex/graphics/graphics.sty
+(c:/texlive/2026/texmf-dist/tex/latex/graphics/trig.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/graphics-cfg/graphics.cfg)))
+(c:/texlive/2026/texmf-dist/tex/latex/booktabs/booktabs.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/tools/longtable.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/amsmath/amsmath.sty
+For additional information on amsmath, use the `?' option.
+(c:/texlive/2026/texmf-dist/tex/latex/amsmath/amstext.sty
+(c:/texlive/2026/texmf-dist/tex/latex/amsmath/amsgen.sty))
+(c:/texlive/2026/texmf-dist/tex/latex/amsmath/amsbsy.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/amsmath/amsopn.sty))
+(c:/texlive/2026/texmf-dist/tex/latex/newtx/t1ntxtlf.fd)
+(./supplement_aaai2027.aux)
+(c:/texlive/2026/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+) (c:/texlive/2026/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
+(c:/texlive/2026/texmf-dist/tex/generic/infwarerr/infwarerr.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/grfext/grfext.sty
+(c:/texlive/2026/texmf-dist/tex/generic/kvdefinekeys/kvdefinekeys.sty))
+(c:/texlive/2026/texmf-dist/tex/latex/kvoptions/kvoptions.sty
+(c:/texlive/2026/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/kvsetkeys/kvsetkeys.sty))
+(c:/texlive/2026/texmf-dist/tex/generic/pdftexcmds/pdftexcmds.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg))
+(c:/texlive/2026/texmf-dist/tex/latex/newtx/ts1ntxtlf.fd)
+(c:/texlive/2026/texmf-dist/tex/latex/psnfss/t1pcr.fd)
+Underfull \hbox (badness 10000) in paragraph at lines 29--30
+\T1/ntxtlf/m/n/10 The main split uses five WikiArt do-mains:
+
+Underfull \hbox (badness 10000) in paragraph at lines 29--30
+\T1/pcr/m/n/10 Early_Renaissance\T1/ntxtlf/m/n/10 , \T1/pcr/m/n/10 Impressionis
+m\T1/ntxtlf/m/n/10 ,
+
+Overfull \hbox (7.60562pt too wide) in paragraph at lines 39--40
+[]\T1/pcr/m/n/10 aaai2027/main_point_artifact_ledger.csv 
+
+Overfull \hbox (601.87393pt too wide) in paragraph at lines 47--60
+ [][] 
+
+Overfull \hbox (173.28247pt too wide) in paragraph at lines 70--80
+ [][] 
+
+Overfull \hbox (7.60562pt too wide) in paragraph at lines 85--86
+[]\T1/pcr/m/n/10 tools/compute_targetwise_artfid_fast.py 
+
+Underfull \hbox (badness 7433) in paragraph at lines 92--93
+[]\T1/ntxtlf/m/n/10 form per-target Art-FID as $\OT1/cmr/m/n/10 (1 + [][])(1 +
+
+Overfull \hbox (79.60562pt too wide) in paragraph at lines 104--105
+[]\T1/pcr/m/n/10 aaai2027/local_eval/lbm_k_e1_artfid_fast_repro.json 
+
+Overfull \hbox (271.60562pt too wide) in paragraph at lines 105--106
+[]\T1/pcr/m/n/10 aaai2027/local_eval/lbm_knee_e13_artfid/aggregate_targetwise_a
+rtfid_fast_repro.json 
+
+Overfull \hbox (103.60562pt too wide) in paragraph at lines 106--107
+[]\T1/pcr/m/n/10 aaai2027/local_eval/lbm_psv2_e13_artfid_fast_repro.json 
+
+Overfull \hbox (25.60562pt too wide) in paragraph at lines 107--108
+[]\T1/pcr/m/n/10 aaai2027/tmp_samst_artfid_fast_repro3.json 
+
+Overfull \hbox (319.60562pt too wide) in paragraph at lines 108--109
+[]\T1/pcr/m/n/10 aaai2027/local_eval/seedream_repaired750_artfid/aggregate_targ
+etwise_artfid_fast_repro.json 
+
+Overfull \hbox (151.60562pt too wide) in paragraph at lines 114--115
+[]\T1/pcr/m/n/10 docs/experiments/2026-06-06-faraday-split1-paper-safe-packet.m
+d 
+
+Overfull \hbox (151.60562pt too wide) in paragraph at lines 115--116
+[]\T1/pcr/m/n/10 docs/experiments/2026-06-06-faraday-split2-paper-safe-packet.m
+d 
+[1{c:/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/texlive/202
+6/texmf-dist/fonts/enc/dvips/newtx/ntx-ec-tlf.enc}{c:/texlive/2026/texmf-dist/f
+onts/enc/dvips/tex-gyre/q-ts1.enc}{c:/texlive/2026/texmf-dist/fonts/enc/dvips/b
+ase/8r.enc}]
+Underfull \hbox (badness 1648) in paragraph at lines 128--129
+[]\T1/ntxtlf/m/n/10 they do not sup-port broader base-line or artifact-
+
+Overfull \hbox (421.60562pt too wide) in paragraph at lines 134--135
+[]\T1/pcr/m/n/10 Related_Works/baseline_pipeline/results/seedream45_api/distinc
+t5_512_seedream45_windhub_20260607_repaired750 
+
+Overfull \hbox (243.08554pt too wide) in paragraph at lines 143--144
+[]\T1/ntxtlf/m/n/10 replacement map: \T1/pcr/m/n/10 docs/experiments/2026-06-07
+-distinct5-seedream45-replacements.json 
+
+Overfull \hbox (43.60562pt too wide) in paragraph at lines 144--145
+\T1/pcr/m/n/10 tmp/distinct5_seedream_repaired_eval_20260607 
+
+Overfull \hbox (132.08551pt too wide) in paragraph at lines 157--158
+[]\T1/ntxtlf/m/n/10 output check-point: \T1/pcr/m/n/10 aaai2027/distinct5_convn
+ext_style_classifier.pt 
+
+Overfull \hbox (166.68552pt too wide) in paragraph at lines 158--159
+[]\T1/ntxtlf/m/n/10 output re-port: \T1/pcr/m/n/10 aaai2027/distinct5_convnext_
+style_classifier_report.json 
+
+Overfull \hbox (25.60562pt too wide) in paragraph at lines 184--185
+[]\T1/pcr/m/n/10 aaai2027/distinct5_nonclip_style_probe.csv 
+
+Overfull \hbox (31.60562pt too wide) in paragraph at lines 185--186
+[]\T1/pcr/m/n/10 aaai2027/distinct5_nonclip_style_probe.json 
+
+Overfull \hbox (17.71161pt too wide) in paragraph at lines 192--204
+ [][] 
+
+Overfull \hbox (43.60562pt too wide) in paragraph at lines 209--210
+[]\T1/pcr/m/n/10 aaai2027/distinct5_idt_bootstrap_extended.csv 
+
+Overfull \hbox (37.60562pt too wide) in paragraph at lines 210--211
+[]\T1/pcr/m/n/10 aaai2027/distinct5_idt_bootstrap_extended.md 
+
+Underfull \hbox (badness 5374) in paragraph at lines 215--216
+[]\T1/ntxtlf/m/n/10 LBM-Knee e13: $\OT1/cmr/m/n/10 ^^A[] = 0\OML/cmm/m/it/10 :\
+OT1/cmr/m/n/10 0702$\T1/ntxtlf/m/n/10 , in-ter-val
+
+Underfull \hbox (badness 4429) in paragraph at lines 216--217
+[]\T1/ntxtlf/m/n/10 LBM-PS-v2 e13: $\OT1/cmr/m/n/10 ^^A[] = 0\OML/cmm/m/it/10 :
+\OT1/cmr/m/n/10 0901$\T1/ntxtlf/m/n/10 , in-ter-val
+
+Underfull \hbox (badness 10000) in paragraph at lines 217--218
+[]\T1/ntxtlf/m/n/10 Seedream-4.5: $\OT1/cmr/m/n/10 ^^A[] = 0\OML/cmm/m/it/10 :\
+OT1/cmr/m/n/10 0538$\T1/ntxtlf/m/n/10 , in-ter-val
+[2]
+Overfull \hbox (7.60562pt too wide) in paragraph at lines 233--234
+[]\T1/pcr/m/n/10 tools/compute_targetwise_artfid_fast.py 
+
+Overfull \hbox (13.60562pt too wide) in paragraph at lines 237--238
+[]\T1/pcr/m/n/10 tools/compute_distinct5_idt_bootstrap.py 
+
+Overfull \hbox (55.60562pt too wide) in paragraph at lines 239--240
+[]\T1/pcr/m/n/10 aaai2027/scripts_gen_distinct5_page1_summary.py 
+
+Overfull \hbox (73.60562pt too wide) in paragraph at lines 240--241
+[]\T1/pcr/m/n/10 aaai2027/scripts_gen_distinct5_qualitative_main.py 
+
+Overfull \hbox (27.05559pt too wide) in paragraph at lines 247--248
+[]\T1/ntxtlf/m/n/10 output: \T1/pcr/m/n/10 aaai2027/paper_point_param_counts.cs
+v 
+
+Underfull \hbox (badness 4673) in paragraph at lines 260--261
+\T1/ntxtlf/m/n/10 The cur-rent main-paper qual-i-ta-tive strip uses two
+
+Underfull \hbox (badness 4792) in paragraph at lines 260--261
+\T1/ntxtlf/m/n/10 Dis-tinct5 cases that are avail-able across all cur-
+
+Underfull \hbox (badness 2529) in paragraph at lines 260--261
+\T1/ntxtlf/m/n/10 rent paper-facing fam-i-lies. For the SaMAM col-
+
+Underfull \hbox (badness 2197) in paragraph at lines 260--261
+\T1/ntxtlf/m/n/10 umn, the source im-age is a crop from the ex-ist-
+
+Underfull \hbox (badness 10000) in paragraph at lines 263--266
+\T1/pcr/m/n/10 IDT | SaMAM-2250 | SaMST | Seedream-4.5
+
+Underfull \hbox (badness 10000) in paragraph at lines 263--266
+\T1/pcr/m/n/10 | LBM-K | LBM-Knee | LBM-PS-v2 | target
+
+Overfull \hbox (97.60562pt too wide) in paragraph at lines 290--291
+[]\T1/pcr/m/n/10 aaai2027/blind_pairwise_v1/blind_pairwise_manifest.csv 
+
+Overfull \hbox (79.60562pt too wide) in paragraph at lines 291--292
+[]\T1/pcr/m/n/10 aaai2027/blind_pairwise_v1/blind_pairwise_rubric.md 
+
+Overfull \hbox (97.60562pt too wide) in paragraph at lines 292--293
+[]\T1/pcr/m/n/10 aaai2027/blind_pairwise_v1/exploratory_blind_audit.csv 
+
+Overfull \hbox (91.60562pt too wide) in paragraph at lines 293--294
+[]\T1/pcr/m/n/10 aaai2027/blind_pairwise_v1/exploratory_blind_audit.md 
+
+Overfull \hbox (145.60562pt too wide) in paragraph at lines 294--295
+[]\T1/pcr/m/n/10 aaai2027/blind_pairwise_v1/exploratory_blind_audit_summary.csv
+ 
+
+Underfull \hbox (badness 6380) in paragraph at lines 298--299
+[]\T1/ntxtlf/m/n/10 Each panel shows \T1/pcr/m/n/10 Source | Candidate A |
+
+Underfull \hbox (badness 10000) in paragraph at lines 304--305
+[]\T1/ntxtlf/m/n/10 GPU: \T1/pcr/m/n/10 NVIDIA GeForce RTX 4070 Laptop
+
+Overfull \hbox (88.30553pt too wide) in paragraph at lines 306--307
+[]\T1/ntxtlf/m/n/10 package snap-shot: \T1/pcr/m/n/10 aaai2027/local_analysis_r
+equirements.txt 
+
+Underfull \hbox (badness 10000) in paragraph at lines 307--308
+[]\T1/ntxtlf/m/n/10 environment tem-plate:
+
+Overfull \hbox (7.60562pt too wide) in paragraph at lines 307--308
+\T1/pcr/m/n/10 aaai2027/local_analysis_environment.yml 
+[3] [4 <./figures/fig_distinct5_qualitative_appendix_a.png (PNG copy)> <./figur
+es/fig_distinct5_qualitative_appendix_b.png (PNG copy)>]
+(./supplement_aaai2027.aux) )
+(see the transcript file for additional information)<c:/texlive/2026/texmf-dist
+/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/texlive/2026/texmf-dist/fonts/ty
+pe1/public/amsfonts/cm/cmmi7.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public
+/amsfonts/cm/cmr10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/
+cm/cmr7.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.p
+fb><c:/texlive/2026/texmf-dist/fonts/type1/public/tex-gyre/qtmr.pfb><c:/texlive
+/2026/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb><c:/texlive/2026/texmf-dist
+/fonts/type1/public/newtx/ztmb.pfb><c:/texlive/2026/texmf-dist/fonts/type1/publ
+ic/newtx/ztmr.pfb>
+Output written on supplement_aaai2027.pdf (4 pages, 1113089 bytes).
+Transcript written on supplement_aaai2027.log.

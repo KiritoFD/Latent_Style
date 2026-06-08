@@ -95,3 +95,37 @@ Interim interpretation:
 - the family is therefore still live
 - the decisive question remains the late reopening phase:
   - if style can recover after the mid-band hold without destroying LPIPS, this will be the first real positive beyond the geometry-anchor family
+
+Late-phase train read:
+
+- by `e12-e18`, the line remains stable but still does not show a strong style-side breakout:
+  - `e12 = 8.6430 / 5.1562`
+  - `e13 = 8.7087 / 5.3750`
+  - `e14 = 8.5627 / 4.8750`
+  - `e15 = 8.7966 / 5.0625`
+  - `e16 = 8.7007 / 5.0312`
+  - `e17 = 8.7231 / 5.3125`
+  - `e18 = 8.7107 / 5.2500`
+
+Interpretation update:
+
+- the two-stage schedule is clearly stable through the late reopening window
+- but by `e18` it still looks more like a controlled geometry-preserving family than a true style-recovery win
+- this is stronger evidence for the theory that:
+  - schedule alone is not enough
+  - a distinct late style-recovery mechanism may be required on top of the stabilized geometry basin
+
+Late-train completion read:
+
+- the run completed all `20` epochs
+- the last three epochs continued improving in training loss:
+  - `e18 = 8.7107 / 5.2500`
+  - `e19 = 8.6363 / 5.2812`
+  - `e20 = 8.5020 / 4.7188`
+
+Interpretation update:
+
+- unlike the one-stage schedules, the two-stage packet does not flatten immediately after the geometry anchor forms
+- by training-side evidence it is the most promising schedule-only continuation so far
+- the remaining question is now entirely evaluation-side:
+  - whether this lower training loss and lower terminal SWD actually converts into a better style/content point
