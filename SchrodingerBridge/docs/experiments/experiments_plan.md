@@ -73,6 +73,8 @@ Current geometry anchor:
   - all-pairs: `0.7013853 / 0.2877823`
   - evidence:
     - [2026-06-08-inmortal-anisostokes-queue-clamphold4mid-from-e13.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-08-inmortal-anisostokes-queue-clamphold4mid-from-e13.md)
+  - non-CLIP audit:
+    - [2026-06-08-hold-family-audit-nonclip-v5.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-08-hold-family-audit-nonclip-v5.md)
 
 ## Round 1 Status
 
@@ -154,6 +156,7 @@ The following claims now have real supporting evidence:
 
 6. `Hold + mid release` creates a genuinely strong geometry anchor.
    - `Hold4Mid e8 = 0.6679 / 0.2877` is the current best ultra-low-LPIPS operating point in the mechanism family.
+   - non-CLIP audit now also shows that this family is not style-dead; it exceeds `LBM-Knee` on Distinct5 style-classifier target accuracy.
 
 ## What Is Not Yet Effective
 
@@ -170,6 +173,7 @@ The following ideas are not currently paying off enough:
 
 4. More epochs alone for the hold-based geometry family.
    - the `Hold4Mid` / `Hold4SlowMid` family is flat and stable, but style remains capped
+   - however, CLIP appears to understate their style signal, so this family should not be dismissed only from raw CLIP-S
 
 ## Archive Policy
 
@@ -234,7 +238,7 @@ Current read:
 
 4. Treat the hold family scientifically as:
    - `geometry anchor`
-   - not `style frontier`
+   - plus a classifier-supported hidden style family that CLIP may be under-reading
 
 ## Next Round Plan
 
@@ -243,6 +247,7 @@ After `Hold4SlowMid` is formally closed, next round should stop spending GPU tim
 Recommended next-round direction:
 
 1. Treat `Hold4Mid` as a geometry-control anchor, not as a headline frontier candidate.
+   - but do not treat it as style-dead anymore; use non-CLIP evidence before discarding the family
 
 2. Reopen style with a different late mechanism instead of a single-stage release schedule.
    - current active candidate:
@@ -252,8 +257,11 @@ Recommended next-round direction:
        - mid controlled band
        - explicit late re-opening window after geometry has stabilized
    - paired with:
-     - `IntroStyle`-based style auditing
-     - direct visual comparison to `Seedream`
+      - `IntroStyle`-based style auditing
+      - direct visual comparison to `Seedream`
+   - current hypothesis:
+      - the family may already have real style movement that CLIP misses
+      - the next goal is therefore not just “more style”, but “more visually obvious / style-specific style”
 
 3. If the two-stage schedule still fails, the next move should not be another schedule micro-tweak.
    - after that point, switch to:
