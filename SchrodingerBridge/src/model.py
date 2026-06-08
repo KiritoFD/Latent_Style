@@ -118,12 +118,15 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.proximal_trust_ratio = max(0.0, float(getattr(bridge_config, "proximal_trust_ratio", 0.0)))
         self.proximal_trust_weight = max(0.0, float(getattr(bridge_config, "proximal_trust_weight", 0.0)))
         self.proximal_clamp_ratio = max(0.0, float(getattr(bridge_config, "proximal_clamp_ratio", 0.0)))
+        self.proximal_clamp_ratio_mid = max(0.0, float(getattr(bridge_config, "proximal_clamp_ratio_mid", 0.0)))
         self.proximal_clamp_ratio_end = max(0.0, float(getattr(bridge_config, "proximal_clamp_ratio_end", 0.0)))
         self.proximal_clamp_schedule = str(getattr(bridge_config, "proximal_clamp_schedule", "linear")).strip().lower()
-        if self.proximal_clamp_schedule not in {"linear", "hold_linear"}:
+        if self.proximal_clamp_schedule not in {"linear", "hold_linear", "hold_two_stage"}:
             self.proximal_clamp_schedule = "linear"
         self.proximal_clamp_hold_epochs = max(0, int(getattr(bridge_config, "proximal_clamp_hold_epochs", 0)))
         self.proximal_clamp_release_epochs = max(0, int(getattr(bridge_config, "proximal_clamp_release_epochs", 0)))
+        self.proximal_clamp_mid_hold_epochs = max(0, int(getattr(bridge_config, "proximal_clamp_mid_hold_epochs", 0)))
+        self.proximal_clamp_second_release_epochs = max(0, int(getattr(bridge_config, "proximal_clamp_second_release_epochs", 0)))
         self.proximal_force_highpass = bool(getattr(bridge_config, "proximal_force_highpass", True))
         self.proximal_bind_terminal_losses = bool(getattr(bridge_config, "proximal_bind_terminal_losses", True))
         self.record_base_endpoint_metrics = bool(getattr(bridge_config, "record_base_endpoint_metrics", False))
@@ -459,12 +462,36 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
 
     def _resolve_proximal_clamp_ratio(self) -> float:
         start = float(self.proximal_clamp_ratio)
+        mid = float(getattr(self, "proximal_clamp_ratio_mid", 0.0))
         end = float(self.proximal_clamp_ratio_end)
         schedule = str(getattr(self, "proximal_clamp_schedule", "linear")).strip().lower()
         hold_epochs = max(0, int(getattr(self, "proximal_clamp_hold_epochs", 0)))
         release_epochs = int(self.proximal_clamp_release_epochs)
+        mid_hold_epochs = max(0, int(getattr(self, "proximal_clamp_mid_hold_epochs", 0)))
+        second_release_epochs = max(0, int(getattr(self, "proximal_clamp_second_release_epochs", 0)))
         if start <= 0.0:
             return 0.0
+        if schedule == "hold_two_stage":
+            if mid <= 0.0:
+                mid = end if end > 0.0 else start
+            epoch_idx = max(0, int(getattr(self, "current_epoch", 1)) - 1)
+            if epoch_idx < hold_epochs:
+                return start
+            epoch_idx = max(0, epoch_idx - hold_epochs)
+            if release_epochs > 0 and epoch_idx < release_epochs:
+                alpha = float(epoch_idx) / max(float(release_epochs), 1.0)
+                return start + (mid - start) * alpha
+            if release_epochs > 0:
+                epoch_idx = max(0, epoch_idx - release_epochs)
+            if epoch_idx < mid_hold_epochs:
+                return mid
+            epoch_idx = max(0, epoch_idx - mid_hold_epochs)
+            if end <= 0.0 or second_release_epochs <= 0:
+                return mid
+            if epoch_idx >= second_release_epochs:
+                return end
+            alpha = float(epoch_idx) / max(float(second_release_epochs), 1.0)
+            return mid + (end - mid) * alpha
         if end <= 0.0 or release_epochs <= 0:
             return start
         epoch_idx = max(0, int(getattr(self, "current_epoch", 1)) - 1)

@@ -89,15 +89,16 @@ Completed negative or near-negative closures:
 - `Late wide release`
   - near-tie negative
 
-Still being finalized:
+Recently closed:
 
 - `Hold4SlowMid`
-  - training completed through `epoch_0016`
-  - full eval is effectively complete from synced artifacts
-  - expected read:
-    - near-tie to `Hold4Mid`
-    - no clear headline improvement
-  - closure note and CSV writeback still need to be finalized
+  - near-tie negative closure
+  - best retained point:
+    - `e12 = 0.6673 / 0.2898`
+    - all-pairs `= 0.7009 / 0.2898`
+  - interpretation:
+    - slower single-stage release is not enough
+    - this closes the last coherent same-family single-stage smoothing question
 
 ## What Is Proven Effective
 
@@ -146,6 +147,8 @@ Immediate archive target:
 - `Hold4Mid e8`
   - transfer: `0.6679105 / 0.2877402`
   - all-pairs: `0.7013853 / 0.2877823`
+  - archive note:
+    - [2026-06-08-hold4mid-e8-geometry-archive.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-08-hold4mid-e8-geometry-archive.md)
 
 Expected archive contents:
 
@@ -161,17 +164,17 @@ Expected archive contents:
 
 Current active lane:
 
-- `Hold4SlowMid`
+- `Hold4TwoStage`
   - config:
-    - [inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4slowmid_reseed_from_e13_seed42_b8a2.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4slowmid_reseed_from_e13_seed42_b8a2.json)
+    - [inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4twostage_reseed_from_e13_seed42_b8a2.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4twostage_reseed_from_e13_seed42_b8a2.json)
   - note:
-    - [2026-06-08-inmortal-anisostokes-queue-clamphold4slowmid-from-e13.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-08-inmortal-anisostokes-queue-clamphold4slowmid-from-e13.md)
+    - [2026-06-08-inmortal-anisostokes-queue-clamphold4twostage-from-e13.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-08-inmortal-anisostokes-queue-clamphold4twostage-from-e13.md)
 
 Current read:
 
-- by training-side evidence it is only marginally smoother than `Hold4Mid`
-- it does not currently look like a decisive improvement
-- final closure should be treated as likely `near-tie negative` unless the last eval rows change that read
+- this is the first real post-`Hold4Mid` structural schedule change, not another one-stage smoothing tweak
+- it should answer the key science question:
+  - can the family keep the geometry anchor and still recover style if reopening is delayed until after a middle stabilization band?
 
 ## Next Round Plan
 
@@ -182,17 +185,17 @@ Recommended next-round direction:
 1. Treat `Hold4Mid` as a geometry-control anchor, not as a headline frontier candidate.
 
 2. Reopen style with a different late mechanism instead of a single-stage release schedule.
-   - best candidate:
-     - add a new two-stage late schedule in code
-     - example shape:
+   - current active candidate:
+     - a new two-stage late schedule in code
+     - shape:
        - early `hold`
-       - mid `1.45` controlled band
-       - late re-opening window after geometry has stabilized
+       - mid controlled band
+       - explicit late re-opening window after geometry has stabilized
 
-3. If staying in the same family, prefer a real code/mechanism change over another small schedule tweak.
-   - for example:
-     - a new clamp schedule mode with a second late release phase
-     - or another late style-recovery mechanism attached after the geometry basin is already secured
+3. If the two-stage schedule still fails, the next move should not be another schedule micro-tweak.
+   - after that point, switch to:
+     - a new late style-recovery head or branch
+     - or a new evaluation-guided diagnosis packet that explains what visual style component is still missing relative to `Seedream`
 
 4. Keep the current paper-facing headline anchored to:
    - `AnisoStokesQueue e13` for low-LPIPS frontier
