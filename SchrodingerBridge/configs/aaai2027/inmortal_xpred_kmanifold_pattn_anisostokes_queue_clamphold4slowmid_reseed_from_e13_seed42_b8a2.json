@@ -1,0 +1,19 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4mid_reseed_from_e13_seed42_b8a2.json",
+  "model": {
+    "proximal_clamp_ratio": 1.10,
+    "proximal_clamp_ratio_end": 1.45,
+    "proximal_clamp_schedule": "hold_linear",
+    "proximal_clamp_hold_epochs": 4,
+    "proximal_clamp_release_epochs": 12
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4slowmid_reseed_from_e13_seed42_b8a2"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4slowmid_reseed_from_e13_seed42_b8a2",
+    "axis": "aaai2027_inmortal_next_round_style_rescue",
+    "stage": "XPred_plus_Kmanifold_plus_Pattn_then_AnisoStokesQueueClampHold4SlowMidReseed",
+    "notes": "Followup after the hold4mid packet. Keep the explicit 1.10 hold for four epochs and the narrower 1.45 release endpoint, but stretch the release over 12 epochs so the packet can test whether the real failure mode is release onset sharpness rather than the endpoint width itself."
+  }
+}
