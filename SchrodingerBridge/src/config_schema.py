@@ -224,6 +224,8 @@ class ModelConfig:
     proximal_trust_weight: float = 0.0
     proximal_clamp_ratio: float = 0.0
     proximal_clamp_ratio_end: float = 0.0
+    proximal_clamp_schedule: str = "linear"
+    proximal_clamp_hold_epochs: int = 0
     proximal_clamp_release_epochs: int = 0
     proximal_force_highpass: bool = True
     proximal_bind_terminal_losses: bool = True

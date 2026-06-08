@@ -1,0 +1,19 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamprelease_reseed_from_e13_seed42_b8a2.json",
+  "model": {
+    "proximal_clamp_ratio": 1.10,
+    "proximal_clamp_ratio_end": 1.60,
+    "proximal_clamp_schedule": "hold_linear",
+    "proximal_clamp_hold_epochs": 4,
+    "proximal_clamp_release_epochs": 8
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4wide_reseed_from_e13_seed42_b8a2"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4wide_reseed_from_e13_seed42_b8a2",
+    "axis": "aaai2027_inmortal_next_round_style_rescue",
+    "stage": "XPred_plus_Kmanifold_plus_Pattn_then_AnisoStokesQueueClampHold4WideReseed",
+    "notes": "Hold-then-release followup after the linear release probes. Keep the successful 1.10 early clamp fixed for four full epochs, then release wider to 1.60 over the next eight epochs so later style recovery can be tested without compromising the early low-LPIPS basin."
+  }
+}
