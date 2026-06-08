@@ -1,0 +1,208 @@
+# Experiments Plan
+
+Date: 2026-06-08
+
+## Objective
+
+- dataset: `Distinct5-512`
+- surface: remote `3060 WSL`
+- current target:
+  - break the current style/content ceiling
+  - especially toward `0.72 / 0.30` on `transfer CLIP-style / LPIPS`
+- evaluation policy:
+  - fast eval only: `CLIP-S + LPIPS`
+  - no `ArtFID` in the current mechanism loop
+- execution policy:
+  - single active GPU lane only
+  - any materially better point should be committed immediately
+  - every experiment must have a reflection / closure note
+
+## Current Frontier
+
+Current paper-facing promoted low-LPIPS frontier:
+
+- `AnisoStokesQueue e13`
+  - transfer: `0.7102169 / 0.4603146`
+  - all-pairs: `0.7303320 / 0.4559407`
+  - evidence:
+    - [2026-06-07-inmortal-xpred-kmanifold-pattn-anisostokes-queue.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-07-inmortal-xpred-kmanifold-pattn-anisostokes-queue.md)
+
+Current raw-style frontier:
+
+- `Pattn + Stokes002 e13`
+  - transfer: `0.7306720 / 0.6182822`
+  - all-pairs: `0.7372152 / 0.6069087`
+
+Current geometry anchor:
+
+- `Hold4Mid e8`
+  - transfer: `0.6679105 / 0.2877402`
+  - all-pairs: `0.7013853 / 0.2877823`
+  - evidence:
+    - [2026-06-08-inmortal-anisostokes-queue-clamphold4mid-from-e13.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-08-inmortal-anisostokes-queue-clamphold4mid-from-e13.md)
+
+## Round 1 Status
+
+Round 1 is mostly complete.
+
+Completed mechanism families with closed reads:
+
+- `K_spatial`
+  - stable, not enough style lift
+- `K_manifold`
+  - better than `K_spatial`, useful transport-side control, still not a headline line alone
+- `XPred + StructOT`
+  - positive control, but below promoted frontier
+- `XPred + EndpointTeacher`
+  - positive control, but below promoted frontier
+- `XPred + Queue`
+  - positive control, but below promoted frontier
+- `XPred + Kmanifold`
+  - first strong style-ceiling signal, LPIPS still too weak
+- `XPred + Kmanifold + Pattn`
+  - first strong proximal family that improved the frontier on both axes
+- `Pattn + late weak Stokes`
+  - effective frontier refinement in the style-heavy family
+- `AnisoStokesQueue from Pattn e13`
+  - current promoted low-LPIPS frontier
+- `Clamp reseed`
+  - first successful recovery-family control against proximal takeover
+- `Clamp release reseed`
+  - improved over fixed clamp on LPIPS at nearly unchanged style
+- `Hold4Wide`
+  - slight positive incremental improvement over the first release-family `e3`
+- `Hold4Mid`
+  - strong positive geometry/content anchor
+
+Completed negative or near-negative closures:
+
+- `P_highpass`
+  - clean negative
+- `Kmanifold + Phighpass`
+  - strong negative
+- `P_mod`
+  - better than `P_highpass`, still below `P_attn`
+- `Trust` and `Trust reseed`
+  - negative for preserving the parent `e13` basin
+- `Wide release`
+  - negative
+- `Late wide release`
+  - near-tie negative
+
+Still being finalized:
+
+- `Hold4SlowMid`
+  - training completed through `epoch_0016`
+  - full eval is effectively complete from synced artifacts
+  - expected read:
+    - near-tie to `Hold4Mid`
+    - no clear headline improvement
+  - closure note and CSV writeback still need to be finalized
+
+## What Is Proven Effective
+
+The following claims now have real supporting evidence:
+
+1. `XPred + Kmanifold` is a real style-ceiling family.
+   - It is much stronger than the earlier direct velocity-style packets on style lift.
+
+2. `Cross-attention proximal (P_attn)` is the first proximal family that actually improved the frontier.
+   - `P_highpass` and `P_mod` did not do this cleanly.
+
+3. Late weak structural regularization can refine an already good high-style family.
+   - `Pattn + late weak Stokes` is a real positive family.
+
+4. Hard proximal clamping is an effective recovery mechanism once proximal takeover appears.
+   - `Clamp reseed` and `Clamp release reseed` are both real positives.
+
+5. An explicit early hold is useful.
+   - `Hold4Wide` slightly beat the earlier release-family `e3` point.
+
+6. `Hold + mid release` creates a genuinely strong geometry anchor.
+   - `Hold4Mid e8 = 0.6679 / 0.2877` is the current best ultra-low-LPIPS operating point in the mechanism family.
+
+## What Is Not Yet Effective
+
+The following ideas are not currently paying off enough:
+
+1. High-pass residual proximal as a main solution.
+   - too weak, often outright negative
+
+2. Trust penalty as the recovery-family answer.
+   - fails to preserve the parent low-LPIPS basin
+
+3. A single-stage wider or slower release as the full answer.
+   - `Wide`, `LateWide`, and likely `SlowMid` do not reopen enough style to justify replacing the current promoted point
+
+4. More epochs alone for the hold-based geometry family.
+   - the `Hold4Mid` / `Hold4SlowMid` family is flat and stable, but style remains capped
+
+## Archive Policy
+
+Any unusually extreme point, especially very low-LPIPS outliers, should be archived as a dedicated reproducibility zip and committed.
+
+Immediate archive target:
+
+- `Hold4Mid e8`
+  - transfer: `0.6679105 / 0.2877402`
+  - all-pairs: `0.7013853 / 0.2877823`
+
+Expected archive contents:
+
+- config JSON
+- checkpoint
+- `summary.json`
+- `metrics.csv`
+- `clip_lpips_curve.csv`
+- training CSV
+- closure note / README
+
+## Active Lane
+
+Current active lane:
+
+- `Hold4SlowMid`
+  - config:
+    - [inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4slowmid_reseed_from_e13_seed42_b8a2.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4slowmid_reseed_from_e13_seed42_b8a2.json)
+  - note:
+    - [2026-06-08-inmortal-anisostokes-queue-clamphold4slowmid-from-e13.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-08-inmortal-anisostokes-queue-clamphold4slowmid-from-e13.md)
+
+Current read:
+
+- by training-side evidence it is only marginally smoother than `Hold4Mid`
+- it does not currently look like a decisive improvement
+- final closure should be treated as likely `near-tie negative` unless the last eval rows change that read
+
+## Next Round Plan
+
+After `Hold4SlowMid` is formally closed, next round should stop spending GPU time on single-stage clamp schedules and move to a different family.
+
+Recommended next-round direction:
+
+1. Treat `Hold4Mid` as a geometry-control anchor, not as a headline frontier candidate.
+
+2. Reopen style with a different late mechanism instead of a single-stage release schedule.
+   - best candidate:
+     - add a new two-stage late schedule in code
+     - example shape:
+       - early `hold`
+       - mid `1.45` controlled band
+       - late re-opening window after geometry has stabilized
+
+3. If staying in the same family, prefer a real code/mechanism change over another small schedule tweak.
+   - for example:
+     - a new clamp schedule mode with a second late release phase
+     - or another late style-recovery mechanism attached after the geometry basin is already secured
+
+4. Keep the current paper-facing headline anchored to:
+   - `AnisoStokesQueue e13` for low-LPIPS frontier
+   - `Pattn + Stokes002 e13` for raw style frontier
+   - `Hold4Mid e8` for geometry/content anchor
+
+## Operational Notes
+
+- Formal remote execution must remain single-lane.
+- Stale old runs and eval jobs keep reappearing on the `3060`; always audit and kill them before trusting VRAM readings.
+- If a line already has all `summary.json` files but is missing `clip_lpips_curve.csv`, finalize closure with:
+  - `rerun_full_eval_for_run.py --skip-existing --output-subdir full_eval`
+- Do not wait on watcher state alone when artifacts already prove completion.
