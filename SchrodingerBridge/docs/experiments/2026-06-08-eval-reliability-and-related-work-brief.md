@@ -55,17 +55,25 @@ Project-relevant failure modes:
 
 Primary recommendation:
 
+- `IntroStyle`
+
+Fallback / supporting recommendation:
+
 - `target-style image classifier`
 
 Project fit:
 
 - Distinct5 is already a style-class task
-- the existing ConvNeXt classifier is a much more task-aligned non-CLIP style axis than raw CLIP cosine
+- `IntroStyle` should become the intended paper-facing style axis
+- the existing ConvNeXt classifier remains a useful non-CLIP fallback and sanity check, but not the ideal final style judge
 
 Current assets:
 
-- [distinct5_convnext_style_classifier.pt](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/distinct5_convnext_style_classifier.pt)
-- [2026-06-08-distinct5-nonclip-style-probe.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-08-distinct5-nonclip-style-probe.md)
+- fallback classifier:
+  - [distinct5_convnext_style_classifier.pt](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/distinct5_convnext_style_classifier.pt)
+  - [2026-06-08-distinct5-nonclip-style-probe.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-08-distinct5-nonclip-style-probe.md)
+- style-axis switch note:
+  - [2026-06-08-introstyle-mainline-switch.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-08-introstyle-mainline-switch.md)
 
 Use:
 
@@ -169,6 +177,22 @@ Existing project evidence that this matters:
    - true staged reopening
    - or new late style-recovery branches
    over more one-stage schedule tuning
+
+## IntroStyle switch
+
+Updated style-axis preference:
+
+1. `IntroStyle`
+2. Distinct5 non-CLIP style classifier
+3. `CSD`
+4. `raw CLIP-S`
+5. `raw DINO`
+
+Operational conclusion:
+
+- `CLIP-S` stays as fast screening
+- `IntroStyle` is the intended paper-facing main style judge
+- the Distinct5 classifier stays as a supporting non-CLIP fallback until IntroStyle is wired in
 
 ## Bottom line
 

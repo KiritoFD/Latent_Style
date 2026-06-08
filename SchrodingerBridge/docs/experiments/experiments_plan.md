@@ -13,7 +13,8 @@ Date: 2026-06-08
   - fast screening:
     - `CLIP-S + LPIPS`
   - paper-facing audit:
-    - non-CLIP style classifier
+    - `IntroStyle` as the preferred style axis
+    - non-CLIP style classifier as fallback/support
     - structure metric
     - visual / pairwise audit
   - `ArtFID` remains out of the inner mechanism loop
@@ -30,7 +31,8 @@ Current evaluation is explicitly three-axis:
    - fast screen:
      - `CLIP-S`
    - paper-facing:
-     - Distinct5 non-CLIP style classifier
+     - `IntroStyle` preferred
+     - Distinct5 non-CLIP style classifier as fallback/support
 
 2. `structure axis`
    - fast screen:
@@ -46,6 +48,7 @@ Current evaluation is explicitly three-axis:
 Reference note:
 
 - [2026-06-08-eval-reliability-and-related-work-brief.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-08-eval-reliability-and-related-work-brief.md)
+- [2026-06-08-introstyle-mainline-switch.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-08-introstyle-mainline-switch.md)
 
 ## Current Frontier
 
@@ -219,7 +222,8 @@ Current read:
 1. Keep `Hold4TwoStage` as the active performance/theory lane.
 
 2. For every surprising low-LPIPS point, save images and run:
-   - non-CLIP style classifier
+   - `IntroStyle`, when available
+   - otherwise the Distinct5 non-CLIP style classifier
    - visual comparison against `Seedream`
 
 3. Add DINO-style structure comparison to the same selected frontier points:
@@ -248,7 +252,7 @@ Recommended next-round direction:
        - mid controlled band
        - explicit late re-opening window after geometry has stabilized
    - paired with:
-     - stronger non-CLIP style auditing
+     - `IntroStyle`-based style auditing
      - direct visual comparison to `Seedream`
 
 3. If the two-stage schedule still fails, the next move should not be another schedule micro-tweak.
