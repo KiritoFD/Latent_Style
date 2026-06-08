@@ -150,9 +150,13 @@ def main() -> int:
         ]
         if bool(args.profile_timing):
             cmd.append("--profile_timing")
-        if not bool(args.save_generated_images):
+        if bool(args.save_generated_images):
+            cmd.append("--save_generated_images")
+        else:
             cmd.append("--no-save_generated_images")
-        if not bool(args.save_summary_grid):
+        if bool(args.save_summary_grid):
+            cmd.append("--save_summary_grid")
+        else:
             cmd.append("--no-save_summary_grid")
         print(f"[rerun_eval] {ckpt.name} -> {out_dir}")
         subprocess.run(cmd, check=True)
