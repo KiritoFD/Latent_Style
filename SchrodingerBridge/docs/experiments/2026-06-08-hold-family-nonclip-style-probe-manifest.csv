@@ -1,0 +1,6 @@
+method,run,images_dir,metrics_csv
+LBM,LBM-Knee_e13,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\local_eval\lbm_knee_e13_artfid\images,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\local_eval\lbm_knee_e13_artfid\metrics.csv
+LBM,LBM-PS-v2_e13,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\local_eval\pattn_stokes002_e13\images,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\local_eval\pattn_stokes002_e13\metrics.csv
+LBM,Hold4Mid_e8,G:\GitHub\Latent_Style\tmp\hold4mid_sync\full_eval\epoch_0008\images,G:\GitHub\Latent_Style\tmp\hold4mid_sync\full_eval\epoch_0008\metrics.csv
+LBM,Hold4SlowMid_e12,G:\GitHub\Latent_Style\tmp\hold4slowmid_sync\full_eval\epoch_0012\images,G:\GitHub\Latent_Style\tmp\hold4slowmid_sync\full_eval\epoch_0012\metrics.csv
+Seedream,Seedream_repaired750,G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\seedream45_api\distinct5_512_seedream45_windhub_20260607_repaired750\images,G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\seedream45_api\distinct5_512_seedream45_windhub_20260607_repaired750\metrics.csv
