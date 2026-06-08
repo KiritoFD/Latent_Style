@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.4.11)  8 JUN 2026 00:01
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.4.11)  8 JUN 2026 14:20
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -705,20 +705,18 @@ LaTeX Font Info:    Trying to load font information for U+msb on input line 37.
 (c:/texlive/2026/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-LaTeX Font Info:    Font shape `T1/ntxtlf/m/it' will be
-(Font)              scaled to size 10.0pt on input line 37.
 CUTED [- LAST -]
-Extra skip:9.58601pt
-Left:137.24998pt/1.9485pt
-Right:129.61247pt/0.0pt
-Split: 135.43123pt
-Output:135.43123pt
+Extra skip:0.0pt
+Left:167.24998pt/1.9485pt
+Right:171.44849pt/0.0pt
+Split: 169.34923pt
+Output:169.34923pt
 Pageshrink: 0.0pt
 Pagestretch: 0.0pt
 @colht:487.8225pt
-CUTED [output]: 135.43123pt
-CUTED [leftcolumn badness]: 38
-CUTED [rightcolumn badness]: 5832
+CUTED [output]: 169.34923pt
+CUTED [leftcolumn badness]: 59
+CUTED [rightcolumn badness]: 59
 
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
@@ -728,6 +726,8 @@ Underfull \vbox (badness 10000) has occurred while \output is active []
 
 
  <./figures/fig_distinct5_page1_summary.pdf>]
+LaTeX Font Info:    Font shape `T1/ntxtlf/m/it' will be
+(Font)              scaled to size 10.0pt on input line 47.
 LaTeX Font Info:    Trying to load font information for TS1+ntxtlf on input lin
 e 51.
  (c:/texlive/2026/texmf-dist/tex/latex/newtx/ts1ntxtlf.fd
@@ -739,7 +739,7 @@ LaTeX Font Info:    Font shape `T1/ntxtlf/m/n' will be
 (Font)              scaled to size 10.95pt on input line 62.
 LaTeX Font Info:    Font shape `T1/ntxtlf/b/n' will be
 (Font)              scaled to size 10.95pt on input line 62.
-<framework_lbm_main_user.png, id=110, 1496.59125pt x 1058.95625pt>
+<framework_lbm_main_user.png, id=111, 1496.59125pt x 1058.95625pt>
 File: framework_lbm_main_user.png Graphic file (type png)
 <use framework_lbm_main_user.png>
 Package pdftex.def Info: framework_lbm_main_user.png  used on input line 80.
@@ -750,35 +750,52 @@ LaTeX Font Info:    Font shape `T1/ntxtlf/m/n' will be
 (Font)              scaled to size 7.0pt on input line 116.
 LaTeX Font Info:    Font shape `T1/ntxtlf/m/n' will be
 (Font)              scaled to size 5.0pt on input line 116.
+
+Underfull \hbox (badness 1622) in paragraph at lines 121--122
+\T1/ntxtlf/m/n/10 Distinct5-WikiArt is an IDT-calibrated operating-point
+ []
+
+[4]
 LaTeX Font Info:    Font shape `T1/ntxtlf/b/n' will be
 (Font)              scaled to size 9.0pt on input line 148.
- [4] (./snippets/timing_tables_leibniz.tex)
-LaTeX Font Info:    Trying to load font information for T1+pcr on input line 15
+<figures/fig_distinct5_qualitative_main.png, id=126, 1180.41pt x 365.365pt>
+File: figures/fig_distinct5_qualitative_main.png Graphic file (type png)
+<use figures/fig_distinct5_qualitative_main.png>
+Package pdftex.def Info: figures/fig_distinct5_qualitative_main.png  used on in
+put line 180.
+(pdftex.def)             Requested size: 498.30196pt x 154.23274pt.
+ (./snippets/timing_tables_leibniz.tex)
+LaTeX Font Info:    Trying to load font information for T1+pcr on input line 18
 8.
 
 (c:/texlive/2026/texmf-dist/tex/latex/psnfss/t1pcr.fd
 File: t1pcr.fd 2001/06/04 font definitions for T1/pcr.
-) [5{c:/texlive/2026/texmf-dist/fonts/enc/dvips/base/8r.enc}] [6] (./paper_aaai
-2027.bbl)
-LaTeX Font Info:    Font shape `TS1/ntxtlf/m/n' will be
-(Font)              scaled to size 9.0pt on input line 194.
- [7] [8
+)
+Underfull \vbox (badness 5119) has occurred while \output is active []
 
-]
-(./paper_aaai2027.aux)
+ [5]
+[6{c:/texlive/2026/texmf-dist/fonts/enc/dvips/base/8r.enc} <./figures/fig_disti
+nct5_qualitative_main.png (PNG copy)>] (./paper_aaai2027.bbl
+Underfull \vbox (badness 8132) has occurred while \output is active []
+
+ [7])
+LaTeX Font Info:    Font shape `TS1/ntxtlf/m/n' will be
+(Font)              scaled to size 9.0pt on input line 218.
+
+[8] (./paper_aaai2027.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2020/03/25>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 17855 strings out of 467525
- 348536 string characters out of 5423209
- 747060 words of memory out of 5000000
- 46409 multiletter control sequences out of 15000+600000
+ 17864 strings out of 467525
+ 348921 string characters out of 5423209
+ 751106 words of memory out of 5000000
+ 46418 multiletter control sequences out of 15000+600000
  674804 words of font info for 79 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 89i,12n,117p,1991b,356s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 89i,12n,117p,1894b,356s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/tex
 live/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/texlive/2026
 /texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><c:/texlive/2026/texmf-dis
@@ -795,10 +812,10 @@ lic/tex-gyre/qtmr.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/courier/ucrr8
 a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmb.pfb><c:/texlive
 /2026/texmf-dist/fonts/type1/public/newtx/ztmr.pfb><c:/texlive/2026/texmf-dist/
 fonts/type1/public/newtx/ztmri.pfb>
-Output written on paper_aaai2027.pdf (8 pages, 1728568 bytes).
+Output written on paper_aaai2027.pdf (8 pages, 2275551 bytes).
 PDF statistics:
- 222 PDF objects out of 1000 (max. 8388607)
+ 224 PDF objects out of 1000 (max. 8388607)
  93 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
- 23 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 28 words of extra memory for PDF output out of 10000 (max. 10000000)
 

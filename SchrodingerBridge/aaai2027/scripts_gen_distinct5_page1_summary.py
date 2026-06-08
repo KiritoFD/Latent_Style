@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -24,6 +25,10 @@ ARTFID_CSV = (
 )
 ALL_POINTS_CSV = ROOT / "fig_distinct5_all_points_big.csv"
 OUT_DIR = ROOT / "figures"
+KNEE_ARTFID_JSON = ROOT / "local_eval" / "lbm_knee_e13_artfid" / "aggregate_targetwise_artfid_fast_repro.json"
+SEEDREAM_ARTFID_JSON = (
+    ROOT / "local_eval" / "seedream_repaired750_artfid" / "aggregate_targetwise_artfid_fast_repro.json"
+)
 
 
 plt.rcParams.update(
@@ -54,6 +59,8 @@ COLORS = {
     "idt": "#8E63C0",
     "samam": "#2F7DB7",
     "samst": "#2CA02C",
+    "latent_samam": "#0F766E",
+    "latent_samst": "#7C3AED",
     "compact": "#D64045",
     "structot": "#B45309",
     "ps": "#9A3412",
@@ -109,14 +116,20 @@ def best_row(slot: str) -> dict[str, object]:
     raise KeyError(slot)
 
 
-def artfid_row(method: str, label: str) -> dict[str, object]:
+def artfid_row(method: str, label: str, *, scope: str = "full") -> dict[str, object]:
     for row in read_csv(ARTFID_CSV):
-        if row["dataset"] == "distinct5_512" and row["scope"] == "transfer" and row["method"] == method and row["label"] == label:
+        if row["dataset"] == "distinct5_512" and row["scope"] == scope and row["method"] == method and row["label"] == label:
             return {
                 "label": label,
                 "artfid": float(row["aggregate_art_fid"]),
             }
     raise KeyError((method, label))
+
+
+def json_artfid(path: Path, *, scope: str, key: str = "aggregate_art_fid") -> float:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    node = payload[scope]
+    return float(node[key])
 
 
 def annotate(ax, x: float, y: float, text: str, dx: float, dy: float, color: str) -> None:
@@ -152,6 +165,21 @@ def read_background_points() -> list[dict[str, float]]:
     return rows
 
 
+def latent_curve_row(family: str, label: str) -> dict[str, object]:
+    for row in read_csv(ALL_POINTS_CSV):
+        if row.get("family") == family and row.get("label") == label:
+            lpips = float(row["content_lpips"])
+            clip_style = float(row["clip_style"])
+            return {
+                "label": label,
+                "clip_style": clip_style,
+                "lpips": lpips,
+                "one_minus_lpips": 1.0 - lpips,
+                "delta_idt_tr": clip_style - 0.6399208252628644,
+            }
+    raise KeyError((family, label))
+
+
 def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -171,8 +199,9 @@ def main() -> None:
 
     compact = best_row("best_compact_mainline_anchor")
     knee = best_row("best_promoted_lpips_ge_070")
-    ps = best_row("balanced_best_current")
     psv2 = best_row("style_best_current")
+    latent_samam = latent_curve_row("SaMAM-latent", "Lat SaMAM 1500")
+    latent_samst = latent_curve_row("SaMST-latent", "Lat SaMST 1050")
 
     fig, axes = plt.subplots(1, 2, figsize=(7.35, 2.82), gridspec_kw={"width_ratios": [1.16, 0.84]})
 
@@ -191,7 +220,7 @@ def main() -> None:
         )
 
     ax.axhline(0.0, color=COLORS["idt"], lw=1.2, ls=(0, (7, 4)), zorder=2)
-    ax.text(0.683, 0.004, "IDT floor", color=COLORS["idt"], fontsize=8.8, ha="right", weight="bold")
+    ax.text(0.82, -0.018, "IDT floor", color=COLORS["idt"], fontsize=8.8, ha="center", weight="bold")
 
     selected = [
         ("SaMAM-2250", samam, COLORS["samam"], "o"),
@@ -199,7 +228,8 @@ def main() -> None:
         ("Seedream-4.5", seedream, COLORS["seedream"], "P"),
         ("LBM-K", compact, COLORS["compact"], "D"),
         ("LBM-Knee", knee, COLORS["structot"], "o"),
-        ("LBM-PS", ps, COLORS["ps"], "*"),
+        ("Lat SaMAM", latent_samam, COLORS["latent_samam"], "^"),
+        ("Lat SaMST", latent_samst, COLORS["latent_samst"], "v"),
         ("LBM-PS-v2", psv2, COLORS["psv2"], "*"),
     ]
     for label, row, color, marker in selected:
@@ -215,33 +245,39 @@ def main() -> None:
         )
 
     annotate(ax, samam["one_minus_lpips"], samam["delta_idt_tr"], "SaMAM-2250", 10, 8, COLORS["samam"])
-    annotate(ax, samst["one_minus_lpips"], samst["delta_idt_tr"], "SaMST e15", 8, -12, COLORS["samst"])
-    annotate(ax, seedream["one_minus_lpips"], seedream["delta_idt_tr"], "Seedream-4.5", 8, 10, COLORS["seedream"])
-    annotate(ax, compact["one_minus_lpips"], compact["delta_idt_tr"], "LBM-K", -8, 10, COLORS["compact"])
-    annotate(ax, knee["one_minus_lpips"], knee["delta_idt_tr"], "LBM-Knee", 8, -14, COLORS["structot"])
-    annotate(ax, ps["one_minus_lpips"], ps["delta_idt_tr"], "LBM-PS", 8, 8, COLORS["ps"])
-    annotate(ax, psv2["one_minus_lpips"], psv2["delta_idt_tr"], "LBM-PS-v2", -12, -16, COLORS["psv2"])
+    annotate(ax, samst["one_minus_lpips"], samst["delta_idt_tr"], "SaMST e15", -66, -18, COLORS["samst"])
+    annotate(ax, seedream["one_minus_lpips"], seedream["delta_idt_tr"], "Seedream-4.5", -80, 8, COLORS["seedream"])
+    annotate(ax, compact["one_minus_lpips"], compact["delta_idt_tr"], "LBM-K", 14, 20, COLORS["compact"])
+    annotate(ax, knee["one_minus_lpips"], knee["delta_idt_tr"], "LBM-Knee", 20, 22, COLORS["structot"])
+    annotate(ax, latent_samam["one_minus_lpips"], latent_samam["delta_idt_tr"], "Lat SaMAM", -54, -8, COLORS["latent_samam"])
+    annotate(ax, latent_samst["one_minus_lpips"], latent_samst["delta_idt_tr"], "Lat SaMST", 12, -24, COLORS["latent_samst"])
+    annotate(ax, psv2["one_minus_lpips"], psv2["delta_idt_tr"], "LBM-PS-v2", -32, -2, COLORS["psv2"])
 
     ax.set_title("(a) IDT-calibrated frontier", pad=4)
     ax.set_xlabel(r"$1-\mathrm{LPIPS}$ $\uparrow$")
-    ax.set_ylabel(r"$\Delta_{\mathrm{idt,tr}}$ $\uparrow$")
-    ax.set_xlim(0.35, 0.69)
+    ax.set_ylabel(r"$\Delta_{\mathrm{IDT,tr}}$ (transfer CLIP-S) $\uparrow$")
+    ax.set_xlim(0.14, 0.85)
     ax.set_ylim(-0.11, 0.102)
 
     ax = axes[1]
     ax.set_facecolor("#FCFBF8")
+    idt_artfid = artfid_row("idt", "idt", scope="full")
+    samam_artfid = artfid_row("SaMAM", "SaMAM best-lpips (2250)", scope="full")
+    samst_artfid = artfid_row("SaMST", "SaMST e15", scope="full")
+    knee_artfid = {"label": "LBM-Knee", "artfid": json_artfid(KNEE_ARTFID_JSON, scope="full")}
+    seedream_artfid = {"label": "Seedream-4.5", "artfid": json_artfid(SEEDREAM_ARTFID_JSON, scope="full")}
     art_rows = [
-        ("IDT", {"label": "idt", "artfid": 216.5}, COLORS["idt"]),
-        ("SaMAM", {"label": "SaMAM-2250", "artfid": 146.1}, COLORS["samam"]),
-        ("LBM-Knee", {"label": "LBM-Knee", "artfid": 391.6}, COLORS["structot"]),
-        ("SaMST", {"label": "SaMST e15", "artfid": 395.7}, COLORS["samst"]),
-        ("Seedream", {"label": "Seedream-4.5", "artfid": 350.9}, COLORS["seedream"]),
+        ("IDT", idt_artfid, COLORS["idt"]),
+        ("SaMAM", samam_artfid, COLORS["samam"]),
+        ("LBM-Knee", knee_artfid, COLORS["structot"]),
+        ("SaMST", samst_artfid, COLORS["samst"]),
+        ("Seedream", seedream_artfid, COLORS["seedream"]),
     ]
     xs = np.arange(len(art_rows))
     vals = [row["artfid"] for _, row, _ in art_rows]
     colors = [color for _, _, color in art_rows]
     ax.bar(xs, vals, color=colors, edgecolor="white", linewidth=0.9, zorder=3)
-    ax.set_xticks(xs, [label for label, _, _ in art_rows])
+    ax.set_xticks(xs, ["IDT", "SaMAM", "LBM-\nKnee", "SaMST", "Seedream\n4.5"])
     ax.set_ylabel("tw-ArtFID")
     ax.set_title("(b) All-pairs artifact check", pad=4)
     inside_labels = ["IDT", "7.6h", "6.4m", "5.8h", "API"]
