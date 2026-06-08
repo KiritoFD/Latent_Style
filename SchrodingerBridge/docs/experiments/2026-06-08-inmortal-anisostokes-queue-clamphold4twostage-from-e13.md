@@ -76,3 +76,22 @@ Early interpretation:
 - the real test for this family will be:
   - whether the middle-band hold stabilizes better than `hold4mid`
   - and whether the late reopening can recover style without reopening geometric drift
+
+Mid-band read:
+
+- by `e7-e11`, the packet is starting to look more informative than the earlier one-stage schedules:
+  - `e7 = 9.0819 / 5.4375`
+  - `e8 = 8.8987 / 5.3438`
+  - `e9 = 8.8992 / 5.1875`
+  - `e10 = 8.9727 / 5.5312`
+  - `e11 = 8.7770 / 5.1562`
+
+Interim interpretation:
+
+- this is still not a clean monotone improvement through the first release window
+- but it is slightly more stable than the one-stage lines:
+  - `e8/e9` are in the same good basin as the earlier hold family
+  - `e11` recovers cleanly after the `e10` rebound
+- the family is therefore still live
+- the decisive question remains the late reopening phase:
+  - if style can recover after the mid-band hold without destroying LPIPS, this will be the first real positive beyond the geometry-anchor family
