@@ -159,9 +159,23 @@ def main() -> int:
     _write_curve_csv(run_dir / str(args.output_subdir))
     tool_root = Path(__file__).resolve().parent
     if bool(args.refresh_stage_summary):
-        _run_optional_refresh([str(args.python_bin), str(tool_root / "build_inmortal_stage_summary.py")])
+        _run_optional_refresh(
+            [
+                str(args.python_bin),
+                str(tool_root / "build_inmortal_stage_summary.py"),
+                "--output-subdir",
+                str(args.output_subdir),
+            ]
+        )
     if bool(args.refresh_epoch_table):
-        _run_optional_refresh([str(args.python_bin), str(tool_root / "build_inmortal_epoch_eval_table.py")])
+        _run_optional_refresh(
+            [
+                str(args.python_bin),
+                str(tool_root / "build_inmortal_epoch_eval_table.py"),
+                "--output-subdir",
+                str(args.output_subdir),
+            ]
+        )
     return 0
 
 
