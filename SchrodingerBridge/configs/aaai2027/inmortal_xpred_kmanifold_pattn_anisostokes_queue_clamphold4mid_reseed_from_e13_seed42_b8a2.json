@@ -1,0 +1,19 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamprelease_reseed_from_e13_seed42_b8a2.json",
+  "model": {
+    "proximal_clamp_ratio": 1.10,
+    "proximal_clamp_ratio_end": 1.45,
+    "proximal_clamp_schedule": "hold_linear",
+    "proximal_clamp_hold_epochs": 4,
+    "proximal_clamp_release_epochs": 8
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4mid_reseed_from_e13_seed42_b8a2"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4mid_reseed_from_e13_seed42_b8a2",
+    "axis": "aaai2027_inmortal_next_round_style_rescue",
+    "stage": "XPred_plus_Kmanifold_plus_Pattn_then_AnisoStokesQueueClampHold4MidReseed",
+    "notes": "Followup after the hold-then-wide packet. Preserve the successful explicit 1.10 hold for four epochs, but release only to 1.45 so the later packet can test whether the hold benefit is real without reopening the wide-release LPIPS regression."
+  }
+}
