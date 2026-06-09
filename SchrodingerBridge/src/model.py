@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from config_schema import ModelConfig
-from lancet_blocks import DecoderTextureBlock, NormFreeModulation, StyleMaps
+from lancet_blocks import StyleMaps, _gumbel_hard_attention, _sinkhorn_attention
 from lancet_backbone import LatentAdaCUT, count_parameters
 from utils.diffeomorphic import apply_texture_aligned_diffeomorphic_stroke
 
@@ -62,10 +62,14 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         if self.style_injection_mode not in {"none", "body", "decoder", "body_decoder"}:
             self.style_injection_mode = "none"
         self.style_injection_form = str(getattr(bridge_config, "style_injection_form", "mixed")).strip().lower()
-        if self.style_injection_form not in {"mixed", "carrier_gate"}:
+        if self.style_injection_form not in {"mixed", "carrier_gate", "spatial_carrier_gate"}:
             self.style_injection_form = "mixed"
         self.style_injection_scale = max(0.0, float(getattr(bridge_config, "style_injection_scale", 1.0)))
         self.style_injection_gate_log_span = max(0.0, float(getattr(bridge_config, "style_injection_gate_log_span", 0.4054651081081644)))
+        self.style_injection_spatial_kernel = max(1, int(getattr(bridge_config, "style_injection_spatial_kernel", 5)))
+        if self.style_injection_spatial_kernel % 2 == 0:
+            self.style_injection_spatial_kernel += 1
+        self.style_injection_force_highpass = bool(getattr(bridge_config, "style_injection_force_highpass", True))
         injection_in_dim = self.bridge_style_dim + self.execution_budget_feature_dim
         self.body_style_injector: nn.Module | None = None
         self.decoder_style_injector: nn.Module | None = None
@@ -73,12 +77,24 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.body_content_gate: nn.Module | None = None
         self.decoder_style_carrier: nn.Module | None = None
         self.decoder_content_gate: nn.Module | None = None
+        self.body_style_spatial_proj: nn.Module | None = None
+        self.body_structure_gate: nn.Module | None = None
+        self.decoder_style_spatial_proj: nn.Module | None = None
+        self.decoder_structure_gate: nn.Module | None = None
         if self.style_injection_mode in {"body", "body_decoder"}:
             if self.style_injection_form == "carrier_gate":
                 self.body_style_carrier, self.body_content_gate = self._make_carrier_gate_injector(
                     self.bridge_style_dim,
                     self.execution_budget_feature_dim,
                     int(self.body_channels),
+                    int(getattr(bridge_config, "style_injection_hidden_dim", 64)),
+                )
+            elif self.style_injection_form == "spatial_carrier_gate":
+                self.body_style_spatial_proj, self.body_content_gate, self.body_structure_gate = self._make_spatial_carrier_gate_injector(
+                    int(self.body_channels),
+                    int(self.body_channels),
+                    self.execution_budget_feature_dim,
+                    int(self.latent_channels),
                     int(getattr(bridge_config, "style_injection_hidden_dim", 64)),
                 )
             else:
@@ -95,6 +111,14 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                     int(self.lift_channels),
                     int(getattr(bridge_config, "style_injection_hidden_dim", 64)),
                 )
+            elif self.style_injection_form == "spatial_carrier_gate":
+                self.decoder_style_spatial_proj, self.decoder_content_gate, self.decoder_structure_gate = self._make_spatial_carrier_gate_injector(
+                    int(self.body_channels),
+                    int(self.lift_channels),
+                    self.execution_budget_feature_dim,
+                    int(self.latent_channels),
+                    int(getattr(bridge_config, "style_injection_hidden_dim", 64)),
+                )
             else:
                 self.decoder_style_injector = self._make_style_injector(
                     injection_in_dim,
@@ -107,10 +131,9 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             nn.Linear(self.bridge_style_dim, self.bridge_style_dim),
         )
         self.proximal_mode = str(getattr(bridge_config, "proximal_mode", "off")).strip().lower()
-        if self.proximal_mode not in {"off", "highpass_residual", "normfree_modulation", "crossattn_texture"}:
+        if self.proximal_mode not in {"off", "crossattn_texture"}:
             self.proximal_mode = "off"
         self.proximal_hidden_channels = max(4, int(getattr(bridge_config, "proximal_hidden_channels", self.latent_channels)))
-        self.proximal_num_blocks = max(1, int(getattr(bridge_config, "proximal_num_blocks", 2)))
         self.proximal_highpass_kernel = max(1, int(getattr(bridge_config, "proximal_highpass_kernel", 5)))
         if self.proximal_highpass_kernel % 2 == 0:
             self.proximal_highpass_kernel += 1
@@ -130,36 +153,17 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.proximal_force_highpass = bool(getattr(bridge_config, "proximal_force_highpass", True))
         self.proximal_bind_terminal_losses = bool(getattr(bridge_config, "proximal_bind_terminal_losses", True))
         self.record_base_endpoint_metrics = bool(getattr(bridge_config, "record_base_endpoint_metrics", False))
-        self.proximal_texture_blocks: nn.ModuleList | None = None
-        self.proximal_normfree_mod: NormFreeModulation | None = None
-        self.proximal_normfree_head: nn.Sequential | None = None
+        self.proximal_attn_routing_mode = str(getattr(bridge_config, "proximal_attn_routing_mode", "softmax")).strip().lower()
+        if self.proximal_attn_routing_mode not in {"softmax", "sinkhorn", "gumbel_hard"}:
+            self.proximal_attn_routing_mode = "softmax"
+        self.proximal_attn_sinkhorn_iters = max(1, int(getattr(bridge_config, "proximal_attn_sinkhorn_iters", 3)))
+        self.proximal_attn_gumbel_tau = max(1e-3, float(getattr(bridge_config, "proximal_attn_gumbel_tau", 1.0)))
         self.proximal_attn_q: nn.Conv2d | None = None
         self.proximal_attn_k: nn.Conv2d | None = None
         self.proximal_attn_v: nn.Conv2d | None = None
         self.proximal_attn_out: nn.Conv2d | None = None
         self.proximal_style_tokens: nn.Linear | None = None
-        if self.proximal_mode == "highpass_residual":
-            self.proximal_texture_blocks = nn.ModuleList(
-                [
-                    DecoderTextureBlock(
-                        dim=int(self.latent_channels),
-                        style_dim=int(self.bridge_style_dim),
-                        num_groups=max(1, int(self.config.num_groups)),
-                    )
-                    for _ in range(self.proximal_num_blocks)
-                ]
-            )
-        elif self.proximal_mode == "normfree_modulation":
-            self.proximal_normfree_mod = NormFreeModulation(int(self.latent_channels), int(self.bridge_style_dim))
-            hidden = int(self.proximal_hidden_channels)
-            self.proximal_normfree_head = nn.Sequential(
-                nn.Conv2d(int(self.latent_channels), hidden, kernel_size=3, stride=1, padding=1),
-                nn.SiLU(),
-                nn.Conv2d(hidden, hidden, kernel_size=3, stride=1, padding=1),
-                nn.SiLU(),
-                nn.Conv2d(hidden, int(self.latent_channels), kernel_size=3, stride=1, padding=1),
-            )
-        elif self.proximal_mode == "crossattn_texture":
+        if self.proximal_mode == "crossattn_texture":
             hidden = int(self.proximal_hidden_channels)
             self.proximal_attn_q = nn.Conv2d(int(self.latent_channels), hidden, kernel_size=1, stride=1, padding=0)
             self.proximal_attn_k = nn.Conv2d(int(self.body_channels), hidden, kernel_size=1, stride=1, padding=0)
@@ -238,6 +242,43 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                 nn.init.zeros_(last.bias)
         return carrier, gate
 
+    @staticmethod
+    def _make_spatial_carrier_gate_injector(
+        style_map_channels: int,
+        feat_channels: int,
+        content_dim: int,
+        source_channels: int,
+        hidden_dim: int,
+    ) -> tuple[nn.Module, nn.Module, nn.Module]:
+        hidden = max(4, int(hidden_dim))
+        structure_hidden = max(4, hidden // 4)
+        style_proj = nn.Sequential(
+            nn.Conv2d(int(style_map_channels), int(feat_channels), kernel_size=1, stride=1, padding=0),
+            nn.SiLU(),
+            nn.Conv2d(int(feat_channels), int(feat_channels), kernel_size=1, stride=1, padding=0),
+        )
+        content_gate = nn.Sequential(
+            nn.LayerNorm(int(content_dim)),
+            nn.Linear(int(content_dim), hidden),
+            nn.SiLU(),
+            nn.Linear(hidden, int(feat_channels)),
+        )
+        structure_gate = nn.Sequential(
+            nn.Conv2d(int(source_channels), structure_hidden, kernel_size=3, stride=1, padding=1),
+            nn.SiLU(),
+            nn.Conv2d(structure_hidden, int(feat_channels), kernel_size=3, stride=1, padding=1),
+        )
+        for module in (style_proj, content_gate, structure_gate):
+            last = module[-1]
+            if isinstance(last, nn.Linear):
+                nn.init.zeros_(last.weight)
+                nn.init.zeros_(last.bias)
+            elif isinstance(last, nn.Conv2d):
+                nn.init.zeros_(last.weight)
+                if last.bias is not None:
+                    nn.init.zeros_(last.bias)
+        return style_proj, content_gate, structure_gate
+
     def _content_budget_features(self, x: torch.Tensor) -> torch.Tensor:
         xf = x.float()
         mean = xf.mean(dim=(2, 3))
@@ -264,6 +305,13 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         high_gain = gains[:, 1].view(-1, 1, 1, 1)
         return low * low_gain + high * high_gain
 
+    def _style_injection_highpass(self, x: torch.Tensor) -> torch.Tensor:
+        if not self.style_injection_force_highpass:
+            return x
+        pad = self.style_injection_spatial_kernel // 2
+        low = F.avg_pool2d(x.float(), kernel_size=self.style_injection_spatial_kernel, stride=1, padding=pad)
+        return x - low.to(dtype=x.dtype)
+
     def _apply_style_feature_injection(
         self,
         feat: torch.Tensor,
@@ -271,6 +319,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         style_code: torch.Tensor,
         *,
         site: str,
+        style_map: torch.Tensor | None = None,
     ) -> torch.Tensor:
         if self.style_injection_mode == "none" or self.style_injection_scale <= 0.0:
             return feat
@@ -284,13 +333,37 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             gate_logits = gate_head(content_feat).float()
             gate = torch.exp(torch.tanh(gate_logits) * self.style_injection_gate_log_span)
             bias = (carrier_bias * gate).to(dtype=feat.dtype)
-        else:
+            return feat + bias.view(feat.shape[0], feat.shape[1], 1, 1) * self.style_injection_scale
+        if self.style_injection_form == "mixed":
             injector = self.body_style_injector if site == "body" else self.decoder_style_injector
             if injector is None:
                 return feat
             inject_in = torch.cat([style_code, content_feat], dim=1)
             bias = torch.tanh(injector(inject_in).float()).to(dtype=feat.dtype)
-        return feat + bias.view(feat.shape[0], feat.shape[1], 1, 1) * self.style_injection_scale
+            return feat + bias.view(feat.shape[0], feat.shape[1], 1, 1) * self.style_injection_scale
+        if self.style_injection_form == "spatial_carrier_gate":
+            spatial_proj = self.body_style_spatial_proj if site == "body" else self.decoder_style_spatial_proj
+            content_gate = self.body_content_gate if site == "body" else self.decoder_content_gate
+            structure_gate = self.body_structure_gate if site == "body" else self.decoder_structure_gate
+            if spatial_proj is None or content_gate is None or structure_gate is None or style_map is None:
+                return feat
+            if style_map.shape[-2:] != feat.shape[-2:]:
+                style_map = F.interpolate(style_map, size=feat.shape[-2:], mode="bilinear", align_corners=False)
+            if style_map.device != feat.device:
+                style_map = style_map.to(device=feat.device)
+            if style_map.dtype != feat.dtype:
+                style_map = style_map.to(dtype=feat.dtype)
+            style_field = torch.tanh(spatial_proj(style_map.float())).to(dtype=feat.dtype)
+            style_field = self._style_injection_highpass(style_field)
+            channel_gate = torch.exp(
+                torch.tanh(content_gate(content_feat).float()) * self.style_injection_gate_log_span
+            ).to(dtype=feat.dtype).view(feat.shape[0], feat.shape[1], 1, 1)
+            src_local = x
+            if src_local.shape[-2:] != feat.shape[-2:]:
+                src_local = F.interpolate(src_local.float(), size=feat.shape[-2:], mode="bilinear", align_corners=False).to(dtype=feat.dtype)
+            local_gate = torch.sigmoid(structure_gate(src_local.float())).to(dtype=feat.dtype)
+            return feat + style_field * local_gate * channel_gate * self.style_injection_scale
+        return feat
 
     def _compute_delta(self, h: torch.Tensor, x: torch.Tensor | None = None) -> torch.Tensor:
         raw_delta = self.dec_out(h)
@@ -391,6 +464,13 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             style_map = style_map + token_bias
         return style_map
 
+    def _route_proximal_attention(self, logits: torch.Tensor) -> torch.Tensor:
+        if self.proximal_attn_routing_mode == "sinkhorn":
+            return _sinkhorn_attention(logits, iters=self.proximal_attn_sinkhorn_iters).to(dtype=logits.dtype)
+        if self.proximal_attn_routing_mode == "gumbel_hard":
+            return _gumbel_hard_attention(logits, tau=self.proximal_attn_gumbel_tau).to(dtype=logits.dtype)
+        return torch.softmax(logits, dim=-1)
+
     def refine_endpoint(
         self,
         z_base: torch.Tensor,
@@ -410,19 +490,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             style_id=style_id,
             style_code_override=style_code_override,
         )
-        if self.proximal_mode == "highpass_residual":
-            if self.proximal_texture_blocks is None:
-                raise RuntimeError("proximal_texture_blocks not initialized")
-            h = z_base
-            for block in self.proximal_texture_blocks:
-                h = block(h, style_code, gate=1.0)
-            delta = h - z_base
-        elif self.proximal_mode == "normfree_modulation":
-            if self.proximal_normfree_mod is None or self.proximal_normfree_head is None:
-                raise RuntimeError("normfree proximal modules not initialized")
-            mod = self.proximal_normfree_mod(z_base, style_code, gate=1.0)
-            delta = self.proximal_normfree_head(mod)
-        else:
+        if self.proximal_mode == "crossattn_texture":
             if (
                 self.proximal_attn_q is None
                 or self.proximal_attn_k is None
@@ -439,11 +507,14 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             bsz, ch, h_dim, w_dim = q.shape
             q_flat = q.view(bsz, ch, -1).transpose(1, 2)
             k_flat = k.view(bsz, ch, -1)
-            attn = torch.softmax(torch.bmm(q_flat, k_flat) / math.sqrt(float(ch)), dim=-1)
+            attn_logits = torch.bmm(q_flat, k_flat) / math.sqrt(float(ch))
+            attn = self._route_proximal_attention(attn_logits)
             v_flat = v.view(bsz, ch, -1).transpose(1, 2)
             mixed = torch.bmm(attn, v_flat).transpose(1, 2).view(bsz, ch, h_dim, w_dim)
             delta = self.proximal_attn_out(mixed).to(dtype=z_base.dtype)
-        delta = self._apply_proximal_highpass(delta)
+            delta = self._apply_proximal_highpass(delta)
+        else:
+            raise RuntimeError(f"retired proximal_mode is not supported in the cleaned runtime: {self.proximal_mode}")
         clamp_scale = torch.ones((), device=z_base.device, dtype=z_base.dtype)
         clamp_ratio = self._resolve_proximal_clamp_ratio()
         if source_latent is not None and clamp_ratio > 0.0:
