@@ -41,14 +41,14 @@ Implication:
 
 Current frozen board:
 
-- [vlm_lbmpsv2_vs_seedream_vs_samst_vs_samam_20260610_snapshot5.method_summary.md](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/vlm_lbmpsv2_vs_seedream_vs_samst_vs_samam_20260610_snapshot5.method_summary.md)
+- [vlm_lbmpsv2_vs_seedream_vs_samst_vs_samam_20260610_snapshot6.method_summary.md](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/vlm_lbmpsv2_vs_seedream_vs_samst_vs_samam_20260610_snapshot6.method_summary.md)
 
-Current `160`-case read:
+Current `205`-case read:
 
 - `Seedream`
   - still best overall
 - `SaMAM_2250`
-  - now very close in overall wins
+  - remains the strongest non-Seedream external baseline
   - clearly stronger on:
     - structure
     - artifact control

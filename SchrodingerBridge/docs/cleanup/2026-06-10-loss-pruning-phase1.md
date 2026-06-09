@@ -79,3 +79,14 @@ It is the first low-risk pass that removes:
 - and loss branches that were only increasing conceptual and implementation complexity
 
 without touching the currently evidence-bearing structure/style tradeoff families.
+
+## Archive cleanup done alongside this pass
+
+To reduce root-directory clutter under `aaai2027/`, superseded local `VLM`
+snapshot history and smoke outputs were moved out of the active root into:
+
+- [aaai2027/archive/README.md](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/archive/README.md)
+- `aaai2027/archive/20260610_intermediate_vlm/`
+
+The active root now keeps only the current frozen board, while older frozen
+boards remain available under archive.
