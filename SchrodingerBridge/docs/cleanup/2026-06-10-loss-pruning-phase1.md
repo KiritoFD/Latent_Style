@@ -22,6 +22,16 @@ The following bridge-loss families were removed from active code paths:
   - `w_head_amp_energy`
   - `w_warp_curl_reward`
 
+The cleaned runtime also now keeps only the surviving proximal branch:
+
+- keep:
+  - `proximal_mode = crossattn_texture`
+- retire from active runtime:
+  - `highpass_residual`
+  - `normfree_modulation`
+  - `dualpath_texture`
+  - `dualpath_spatialtexture`
+
 These keys were also added to the retired-bridge-key ignore list in
 [config_schema.py](/G:/GitHub/Latent_Style/SchrodingerBridge/src/config_schema.py), so older configs can still load without crashing, but the retired terms no longer participate in the current training objective.
 
@@ -56,6 +66,7 @@ The following mechanism families remain active because current evidence still sa
 - `w_generated_delta_diversity`
 - `teacher_alignment`
 - current proximal trust / clamp logic
+- `crossattn_texture` late branch
 
 ## Current Interpretation
 

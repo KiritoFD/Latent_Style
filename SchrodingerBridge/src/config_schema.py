@@ -250,12 +250,7 @@ class ModelConfig:
     output_moment_match_train_only: bool = False
     proximal_mode: str = "off"
     proximal_hidden_channels: int = 64
-    proximal_num_blocks: int = 2
     proximal_highpass_kernel: int = 5
-    proximal_coarse_lowpass_kernel: int = 9
-    proximal_coarse_gain: float = 0.35
-    proximal_texture_gain: float = 1.0
-    proximal_coarse_spatial_gain: float = 0.5
     proximal_attn_routing_mode: str = "softmax"
     proximal_attn_sinkhorn_iters: int = 3
     proximal_attn_gumbel_tau: float = 1.0
