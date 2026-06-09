@@ -26,6 +26,18 @@ INFERENCE_DEFAULTS: dict[str, dict[str, Any]] = {
         "target_chunk_size": 2,
         "vae_decode_batch_size": 16,
         "only_lpips_clip_style": True,
+        "enable_introstyle": False,
+        "introstyle_style_bank_root": "",
+        "introstyle_model_id": "",
+        "introstyle_modelscope_id": "stabilityai/stable-diffusion-2-1-base",
+        "introstyle_modelscope_cache_dir": "",
+        "introstyle_allow_network": False,
+        "introstyle_bank_limit_per_style": 64,
+        "introstyle_batch_size": 4,
+        "introstyle_topk": 8,
+        "introstyle_t": 25,
+        "introstyle_up_ft_index": 1,
+        "introstyle_ensemble_size": 1,
         "save_generated_images": False,
         "save_summary_grid": False,
     },
@@ -94,6 +106,27 @@ _RETIRED_BRIDGE_KEYS = {
     "kinetic_entropy_gate_weight",
     "repulsive_pool_size",
     "repulsive_temperature",
+    "w_content_anchor",
+    "w_edge_anchor",
+    "w_semantic_entropy",
+    "semantic_entropy_target",
+    "w_divergence",
+    "divergence_samples",
+    "w_feature_riemannian",
+    "w_kantorovich",
+    "kantorovich_steps",
+    "kantorovich_lr",
+    "kantorovich_channels",
+    "w_nonlocal_structure",
+    "nonlocal_structure_pool",
+    "w_phase_separation",
+    "phase_gradient_weight",
+    "w_fourier_phase_lock",
+    "fourier_phase_lock_highpass",
+    "w_head_color_tv",
+    "w_head_color_energy",
+    "w_head_amp_energy",
+    "w_warp_curl_reward",
 }
 
 
@@ -219,6 +252,13 @@ class ModelConfig:
     proximal_hidden_channels: int = 64
     proximal_num_blocks: int = 2
     proximal_highpass_kernel: int = 5
+    proximal_coarse_lowpass_kernel: int = 9
+    proximal_coarse_gain: float = 0.35
+    proximal_texture_gain: float = 1.0
+    proximal_coarse_spatial_gain: float = 0.5
+    proximal_attn_routing_mode: str = "softmax"
+    proximal_attn_sinkhorn_iters: int = 3
+    proximal_attn_gumbel_tau: float = 1.0
     proximal_residual_energy_weight: float = 0.0
     proximal_trust_ratio: float = 0.0
     proximal_trust_weight: float = 0.0
@@ -241,6 +281,8 @@ class ModelConfig:
     style_injection_hidden_dim: int = 64
     style_injection_scale: float = 1.0
     style_injection_gate_log_span: float = 0.4054651081081644
+    style_injection_spatial_kernel: int = 5
+    style_injection_force_highpass: bool = True
     use_style_blender: bool = False
     use_checkpointing: bool = False
     extra: dict[str, Any] = field(default_factory=dict)
@@ -294,8 +336,6 @@ class BridgeConfig:
     terminal_swd_weight: float = 0.1
     terminal_swd_aux_weight: float = 0.0
     w_variance_penalty: float = 0.0
-    w_content_anchor: float = 0.0
-    w_edge_anchor: float = 0.0
     w_style_energy_floor: float = 0.0
     w_lowfreq_velocity: float = 0.0
     w_style_contrastive: float = 0.0
@@ -304,20 +344,9 @@ class BridgeConfig:
     w_residual_style_direction: float = 0.0
     w_generated_delta_diversity: float = 0.0
     generated_delta_diversity_margin: float = 0.0
-    w_semantic_entropy: float = 0.0
-    semantic_entropy_target: float = 2.2
     w_spectral_amplitude: float = 0.0
     spectral_amplitude_channels: int = 2
     spectral_amplitude_highpass: bool = True
-    w_divergence: float = 0.0
-    divergence_samples: int = 1
-    w_feature_riemannian: float = 0.0
-    w_kantorovich: float = 0.0
-    kantorovich_steps: int = 1
-    kantorovich_lr: float = 1e-4
-    kantorovich_channels: int = 64
-    w_nonlocal_structure: float = 0.0
-    nonlocal_structure_pool: int = 8
     sb_noise_epsilon: float = 0.0
     retinex_target_blend: float = 0.0
     retinex_kernel_size: int = 15
@@ -325,6 +354,8 @@ class BridgeConfig:
     anisotropic_normal_weight: float = 25.0
     anisotropic_tangent_weight: float = 0.25
     anisotropic_edge_gate_gamma: float = 0.0
+    anisotropic_edge_gate_quantile: float = 0.0
+    anisotropic_edge_gate_power: float = 1.0
     w_stokes_viscous: float = 0.0
     kinetic_penalty_mode: str = "global_l2"
     kinetic_lambda_low: float = 1.0
@@ -333,14 +364,6 @@ class BridgeConfig:
     kinetic_spectral_cutoff: float = 12.0
     kinetic_manifold_gamma: float = 10.0
     structure_penalty_mode: str = "off"
-    w_phase_separation: float = 0.0
-    phase_gradient_weight: float = 0.05
-    w_fourier_phase_lock: float = 0.0
-    fourier_phase_lock_highpass: bool = True
-    w_head_color_tv: float = 0.0
-    w_head_color_energy: float = 0.0
-    w_head_amp_energy: float = 0.0
-    w_warp_curl_reward: float = 0.0
     style_energy_floor_ratio: float = 0.6
     anchor_pool_size: int = 9
     terminal_num_steps: int = 4
@@ -464,6 +487,18 @@ class TrainingConfig:
     full_eval_target_chunk_size: int | None = 2
     full_eval_vae_decode_batch_size: int | None = 16
     full_eval_only_lpips_clip_style: bool | None = None
+    full_eval_enable_introstyle: bool = False
+    full_eval_introstyle_style_bank_root: str = ""
+    full_eval_introstyle_model_id: str = ""
+    full_eval_introstyle_modelscope_id: str = "stabilityai/stable-diffusion-2-1-base"
+    full_eval_introstyle_modelscope_cache_dir: str = ""
+    full_eval_introstyle_allow_network: bool = False
+    full_eval_introstyle_bank_limit_per_style: int = 64
+    full_eval_introstyle_batch_size: int = 4
+    full_eval_introstyle_topk: int = 8
+    full_eval_introstyle_t: int = 25
+    full_eval_introstyle_up_ft_index: int = 1
+    full_eval_introstyle_ensemble_size: int = 1
     full_eval_save_generated_images: bool | None = False
     full_eval_save_summary_grid: bool | None = False
     full_eval_each_epoch: bool = False
@@ -692,6 +727,18 @@ def resolve_full_eval_section(config: dict[str, Any] | ExperimentConfig | None) 
             "target_chunk_size": "full_eval_target_chunk_size",
             "vae_decode_batch_size": "full_eval_vae_decode_batch_size",
             "only_lpips_clip_style": "full_eval_only_lpips_clip_style",
+            "enable_introstyle": "full_eval_enable_introstyle",
+            "introstyle_style_bank_root": "full_eval_introstyle_style_bank_root",
+            "introstyle_model_id": "full_eval_introstyle_model_id",
+            "introstyle_modelscope_id": "full_eval_introstyle_modelscope_id",
+            "introstyle_modelscope_cache_dir": "full_eval_introstyle_modelscope_cache_dir",
+            "introstyle_allow_network": "full_eval_introstyle_allow_network",
+            "introstyle_bank_limit_per_style": "full_eval_introstyle_bank_limit_per_style",
+            "introstyle_batch_size": "full_eval_introstyle_batch_size",
+            "introstyle_topk": "full_eval_introstyle_topk",
+            "introstyle_t": "full_eval_introstyle_t",
+            "introstyle_up_ft_index": "full_eval_introstyle_up_ft_index",
+            "introstyle_ensemble_size": "full_eval_introstyle_ensemble_size",
             "save_generated_images": "full_eval_save_generated_images",
             "save_summary_grid": "full_eval_save_summary_grid",
         }
@@ -743,6 +790,18 @@ def compact_runtime_config(config: dict[str, Any] | ExperimentConfig | None) -> 
             "full_eval_target_chunk_size": "target_chunk_size",
             "full_eval_vae_decode_batch_size": "vae_decode_batch_size",
             "full_eval_only_lpips_clip_style": "only_lpips_clip_style",
+            "full_eval_enable_introstyle": "enable_introstyle",
+            "full_eval_introstyle_style_bank_root": "introstyle_style_bank_root",
+            "full_eval_introstyle_model_id": "introstyle_model_id",
+            "full_eval_introstyle_modelscope_id": "introstyle_modelscope_id",
+            "full_eval_introstyle_modelscope_cache_dir": "introstyle_modelscope_cache_dir",
+            "full_eval_introstyle_allow_network": "introstyle_allow_network",
+            "full_eval_introstyle_bank_limit_per_style": "introstyle_bank_limit_per_style",
+            "full_eval_introstyle_batch_size": "introstyle_batch_size",
+            "full_eval_introstyle_topk": "introstyle_topk",
+            "full_eval_introstyle_t": "introstyle_t",
+            "full_eval_introstyle_up_ft_index": "up_ft_index",
+            "full_eval_introstyle_ensemble_size": "ensemble_size",
             "full_eval_save_generated_images": "save_generated_images",
             "full_eval_save_summary_grid": "save_summary_grid",
         }
