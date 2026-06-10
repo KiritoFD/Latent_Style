@@ -57,6 +57,19 @@
     - style recovered slightly from `epoch_0002`
     - LPIPS softened slightly from `epoch_0002`
     - this line now reads as a real style/structure tradeoff frontier
+- Fourth and fifth settled fast-eval points:
+  - `epoch_0004`
+    - transfer `0.6962 / 0.5373`
+    - all-pairs `0.7118 / 0.5296`
+    - wall `177.89s`
+  - `epoch_0005`
+    - transfer `0.6955 / 0.5381`
+    - all-pairs `0.7112 / 0.5287`
+    - wall `176.98s`
+  - immediate read:
+    - `epoch_0004` materially improved LPIPS again and became the best transfer-LPIPS point so far on this family
+    - `epoch_0005` held the same broad trend, with slightly softer transfer style but the best all-pairs LPIPS so far
+    - this confirms the current `solver_pc` line is structure-first and still moving on the Pareto surface
 - Fourth settled fast-eval point:
   - `epoch_0004`
   - transfer `CLIP-S / LPIPS = 0.6962 / 0.5373`

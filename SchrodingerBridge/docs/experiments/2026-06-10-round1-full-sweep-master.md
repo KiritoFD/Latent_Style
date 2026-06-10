@@ -572,6 +572,17 @@ Current `solver_pc` launch note:
     - style recovered slightly
     - LPIPS softened slightly
     - this line is now drawing a real style/structure tradeoff frontier
+- fourth and fifth formal points:
+  - `epoch_0004`
+    - transfer `0.6962 / 0.5373`
+    - full `0.7118 / 0.5296`
+  - `epoch_0005`
+    - transfer `0.6955 / 0.5381`
+    - full `0.7112 / 0.5287`
+  - read:
+    - LPIPS continued to improve through `epoch_0004`
+    - `epoch_0005` kept that structure-favoring trend while style softened slightly again
+    - keep the lane running; `solver_pc` is still actively exploring the style/structure tradeoff, not converging
 - fourth formal point:
   - `epoch_0004`
   - transfer `0.6962 / 0.5373`
