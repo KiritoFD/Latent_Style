@@ -99,6 +99,9 @@ def write_train_config(
     batch_size: int,
     image_size: int,
     style_size: int,
+    save_interval: int,
+    begin_checkpoint: Path | None,
+    begin_epoch: int | None,
 ) -> Path:
     cfg = {
         "epochs": epochs,
@@ -116,12 +119,12 @@ def write_train_config(
         "lr": 0.001,
         "weight_decay": 0.5,
         "step_size": 25,
-        "save_interval": epochs,
+        "save_interval": save_interval,
         "log_interval": 10,
         "checkpoint_interval": 100,
         "checkpoint_model_dir": None,
-        "begin_checkpoint": None,
-        "begin_epoch": None,
+        "begin_checkpoint": None if begin_checkpoint is None else begin_checkpoint.as_posix(),
+        "begin_epoch": begin_epoch,
         "max_steps": max_steps,
         "step_model_name_template": "step_{step:06d}.model",
     }
@@ -144,6 +147,47 @@ def _restore_optional_text(path: Path, content: str | None) -> None:
     path.write_text(content, encoding="utf-8")
 
 
+def _checkpoint_epoch_path(out_root: Path, style: str, epoch: int) -> Path:
+    return out_root / "checkpoints" / style / f"epoch_{int(epoch)}.model"
+
+
+def _style_has_epoch_at_least(out_root: Path, style: str, min_epoch: int) -> bool:
+    if int(min_epoch) <= 0:
+        return False
+    if _checkpoint_epoch_path(out_root, style, int(min_epoch)).is_file():
+        return True
+    style_dir = out_root / "checkpoints" / style
+    if not style_dir.is_dir():
+        return False
+    best = 0
+    for path in style_dir.glob("epoch_*.model"):
+        digits = "".join(ch for ch in path.stem if ch.isdigit())
+        if digits:
+            best = max(best, int(digits))
+    return best >= int(min_epoch)
+
+
+def _latest_epoch_checkpoint(out_root: Path, style: str, *, max_epoch: int) -> tuple[int, Path] | None:
+    style_dir = out_root / "checkpoints" / style
+    if not style_dir.is_dir():
+        return None
+    best_epoch = -1
+    best_path: Path | None = None
+    for path in style_dir.glob("epoch_*.model"):
+        digits = "".join(ch for ch in path.stem if ch.isdigit())
+        if not digits:
+            continue
+        epoch = int(digits)
+        if epoch > int(max_epoch):
+            continue
+        if epoch > best_epoch:
+            best_epoch = epoch
+            best_path = path
+    if best_path is None or best_epoch < 0:
+        return None
+    return best_epoch, best_path
+
+
 def run_target(args: argparse.Namespace, out_root: Path, style: str) -> int:
     train_dir = SAMST_REPO / "train_model" / "train2"
     train_py = train_dir / "train.py"
@@ -155,6 +199,9 @@ def run_target(args: argparse.Namespace, out_root: Path, style: str) -> int:
     train_dataset = prepare_content_view(args.data_root, out_root, int(args.max_train_per_class), selected_styles)
     ckpt_dir = out_root / "checkpoints" / style
     ckpt_dir.mkdir(parents=True, exist_ok=True)
+    resume = _latest_epoch_checkpoint(out_root, style, max_epoch=int(args.epochs))
+    begin_epoch = None if resume is None else int(resume[0])
+    begin_checkpoint = None if resume is None else Path(resume[1])
     train_yml = train_dir / "train.yml"
     original_train_yml = _read_optional_text(train_yml)
     write_train_config(
@@ -167,6 +214,9 @@ def run_target(args: argparse.Namespace, out_root: Path, style: str) -> int:
         batch_size=args.batch_size,
         image_size=args.image_size,
         style_size=args.style_size,
+        save_interval=args.save_interval,
+        begin_checkpoint=begin_checkpoint,
+        begin_epoch=begin_epoch,
     )
 
     log_path = out_root / "logs" / f"train_{style}.log"
@@ -175,7 +225,10 @@ def run_target(args: argparse.Namespace, out_root: Path, style: str) -> int:
     start = time.time()
     try:
         with log_path.open("a", encoding="utf-8", errors="replace") as log:
-            log.write(f"\n=== START {style} {datetime.now().isoformat()} cmd={cmd} ===\n")
+            log.write(
+                f"\n=== START {style} {datetime.now().isoformat()} "
+                f"cmd={cmd} begin_epoch={begin_epoch} begin_checkpoint={begin_checkpoint} target_epochs={args.epochs} ===\n"
+            )
             log.flush()
             proc = subprocess.run(cmd, cwd=str(train_dir), stdout=log, stderr=subprocess.STDOUT)
             elapsed = time.time() - start
@@ -195,7 +248,19 @@ def main() -> int:
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--image-size", type=int, default=256)
     parser.add_argument("--style-size", type=int, default=512)
+    parser.add_argument("--save-interval", type=int, default=5, help="Save epoch checkpoints every N epochs per target style.")
     parser.add_argument("--max-train-per-class", type=int, default=0, help="Use only the first N train images per class; <=0 uses full train split.")
+    parser.add_argument(
+        "--skip-styles-with-epoch-at-least",
+        type=int,
+        default=0,
+        help="Skip any target style whose checkpoint folder already contains at least this epoch.",
+    )
+    parser.add_argument(
+        "--stop-after-one-pending-style",
+        action="store_true",
+        help="Run only the first remaining style after applying the skip rule. Useful for manual epoch alignment.",
+    )
     args = parser.parse_args()
 
     if not args.data_root.exists():
@@ -211,13 +276,31 @@ def main() -> int:
     (out_root / "logs").mkdir(exist_ok=True)
 
     selected = [s.strip() for s in args.styles.split(",") if s.strip()]
+    skipped: list[str] = []
+    if int(args.skip_styles_with_epoch_at_least) > 0:
+        pending: list[str] = []
+        for style in selected:
+            if _style_has_epoch_at_least(out_root, style, int(args.skip_styles_with_epoch_at_least)):
+                skipped.append(style)
+            else:
+                pending.append(style)
+        selected = pending
+    if bool(args.stop_after_one_pending_style) and selected:
+        selected = selected[:1]
     summary = out_root / "run.log"
     with summary.open("a", encoding="utf-8") as f:
         f.write(
             f"started={datetime.now().isoformat()} data_root={args.data_root} "
             f"styles={selected} epochs={args.epochs} max_steps={args.max_steps} batch_size={args.batch_size} "
-            f"max_train_per_class={args.max_train_per_class}\n"
+            f"save_interval={args.save_interval} max_train_per_class={args.max_train_per_class} "
+            f"skip_styles_with_epoch_at_least={args.skip_styles_with_epoch_at_least} "
+            f"stop_after_one_pending_style={bool(args.stop_after_one_pending_style)} "
+            f"skipped={skipped}\n"
         )
+    if not selected:
+        with summary.open("a", encoding="utf-8") as f:
+            f.write(f"no_pending_styles={datetime.now().isoformat()}\n")
+        return 0
 
     for style in selected:
         rc = run_target(args, out_root, style)
