@@ -98,6 +98,16 @@ def _quote_command(tokens: list[str]) -> str:
     return " ".join(shlex.quote(token) for token in tokens)
 
 
+def _effective_max_prelaunch_memory_mib(*, requested_mib: int, min_runtime_mib: int, max_runtime_mib: int) -> int:
+    requested = max(0, int(requested_mib))
+    runtime_min = max(0, int(min_runtime_mib))
+    runtime_max = max(0, int(max_runtime_mib))
+    if runtime_min <= 0 or runtime_max <= 0:
+        return requested
+    spare = max(0, runtime_max - runtime_min)
+    return min(requested, spare)
+
+
 def _make_remote_launch_script(
     *,
     remote_wsl_cwd: str,
@@ -106,6 +116,8 @@ def _make_remote_launch_script(
     env_vars: list[str],
     pythonpath_entries: list[str],
     command_tokens: list[str],
+    runtime_guard_max_memory_mib: int,
+    runtime_guard_poll_seconds: int,
 ) -> str:
     command = _quote_command(command_tokens)
     lines = [
@@ -124,6 +136,8 @@ def _make_remote_launch_script(
     if pythonpath_entries:
         joined = ":".join(shlex.quote(entry) for entry in pythonpath_entries)
         lines.append(f"export PYTHONPATH={joined}:\"${{PYTHONPATH:-}}\"")
+    guard_limit = max(0, int(runtime_guard_max_memory_mib))
+    guard_poll = max(1, int(runtime_guard_poll_seconds))
     lines.extend(
         [
             f"echo $$ > {shlex.quote(remote_pid_path)}",
@@ -131,9 +145,34 @@ def _make_remote_launch_script(
             f"echo \"CWD: {remote_wsl_cwd}\" >> {shlex.quote(remote_log_path)}",
             f"echo \"COMMAND: {command}\" >> {shlex.quote(remote_log_path)}",
             "set +e",
-            f"stdbuf -oL -eL {command} >> {shlex.quote(remote_log_path)} 2>&1",
+            f"stdbuf -oL -eL {command} >> {shlex.quote(remote_log_path)} 2>&1 &",
+            "child_pid=$!",
+            "guard_pid=''",
+        ]
+    )
+    if guard_limit > 0:
+        lines.extend(
+            [
+                "(",
+                "  while kill -0 \"$child_pid\" 2>/dev/null; do",
+                "    used=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits 2>/dev/null | awk 'BEGIN{m=0}{v=int($1+0); if(v>m)m=v}END{print m}')",
+                "    if [ -n \"$used\" ] && [ \"$used\" -ge " + str(guard_limit) + " ]; then",
+                f"      echo \"=== RUNTIME_GUARD $(date -Iseconds) used=${{used}}MiB cap={guard_limit}MiB ===\" >> {shlex.quote(remote_log_path)}",
+                "      kill \"$child_pid\" 2>/dev/null || true",
+                "      break",
+                "    fi",
+                f"    sleep {guard_poll}",
+                "  done",
+                ") &",
+                "guard_pid=$!",
+            ]
+        )
+    lines.extend(
+        [
+            "wait \"$child_pid\"",
             "rc=$?",
             "set -e",
+            "if [ -n \"$guard_pid\" ]; then kill \"$guard_pid\" 2>/dev/null || true; fi",
             f"echo \"=== END $(date -Iseconds) rc=$rc ===\" >> {shlex.quote(remote_log_path)}",
             f"rm -f {shlex.quote(remote_pid_path)}",
             "exit $rc",
@@ -191,6 +230,32 @@ def _ssh_exec(*, host: str, port: int, user: str, remote_command: str) -> subpro
     )
 
 
+def _cleanup_failed_launch(
+    *,
+    host: str,
+    port: int,
+    user: str,
+    task_name: str,
+    wsl_distro: str,
+    remote_pid_path: str,
+) -> None:
+    _ssh_exec(
+        host=host,
+        port=port,
+        user=user,
+        remote_command=(
+            f"wsl -d {wsl_distro} --exec bash -lc "
+            f"\"if test -s '{remote_pid_path}'; then kill $(cat '{remote_pid_path}') || true; fi; rm -f '{remote_pid_path}'\""
+        ),
+    )
+    _ssh_exec(
+        host=host,
+        port=port,
+        user=user,
+        remote_command=f"schtasks /Delete /TN {task_name} /F",
+    )
+
+
 def _health_check(
     *,
     host: str,
@@ -200,7 +265,9 @@ def _health_check(
     remote_log_path: str,
     remote_pid_path: str,
     health_wait_seconds: int,
+    min_runtime_memory_mib: int,
     max_runtime_memory_mib: int,
+    min_runtime_slack_mib: int,
 ) -> int:
     if health_wait_seconds > 0:
         import time
@@ -263,13 +330,22 @@ def _health_check(
 
     gpu_memory_used_mib = _query_remote_gpu_memory_used_mib(host=host, port=port, user=user)
     print(f"health_gpu_memory_used_mib={gpu_memory_used_mib}")
+    effective_min_runtime_memory_mib = max(0, int(min_runtime_memory_mib) - max(0, int(min_runtime_slack_mib)))
+    if gpu_memory_used_mib is not None and gpu_memory_used_mib < effective_min_runtime_memory_mib:
+        print(
+            "Health check failed: remote GPU memory stayed below the expected "
+            f"minimum band {int(min_runtime_memory_mib)} MiB "
+            f"(effective floor {effective_min_runtime_memory_mib} MiB) with observed usage "
+            f"{gpu_memory_used_mib} MiB."
+        )
+        return 24
     if gpu_memory_used_mib is not None and gpu_memory_used_mib >= max(0, int(max_runtime_memory_mib)):
         print(
             "Health check failed: remote GPU memory crossed the hard runtime "
             f"cap {int(max_runtime_memory_mib)} MiB with observed usage "
             f"{gpu_memory_used_mib} MiB."
         )
-        return 24
+        return 25
     return 0
 
 
@@ -292,10 +368,15 @@ def main() -> int:
     parser.add_argument("--pythonpath", action="append", default=[])
     parser.add_argument("--max-prelaunch-memory-mib", type=int, default=1500)
     parser.add_argument("--health-wait-seconds", type=int, default=30)
+    parser.add_argument("--min-runtime-memory-mib", type=int, default=0)
     parser.add_argument("--max-runtime-memory-mib", type=int, default=11500)
+    parser.add_argument("--min-runtime-slack-mib", type=int, default=128)
+    parser.add_argument("--runtime-guard-max-memory-mib", type=int, default=0)
+    parser.add_argument("--runtime-guard-poll-seconds", type=int, default=10)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--no-verify", action="store_true")
     parser.add_argument("--no-health-check", action="store_true")
+    parser.add_argument("--stop-on-health-failure", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args()
 
@@ -322,6 +403,8 @@ def main() -> int:
         env_vars=list(args.env),
         pythonpath_entries=list(args.pythonpath),
         command_tokens=command_tokens,
+        runtime_guard_max_memory_mib=max(0, int(args.runtime_guard_max_memory_mib)),
+        runtime_guard_poll_seconds=max(1, int(args.runtime_guard_poll_seconds)),
     )
     windows_launcher = _make_remote_windows_launcher(
         task_name=task_name,
@@ -335,6 +418,11 @@ def main() -> int:
     verify_files = [Path(item).as_posix() for item in args.verify_python_file]
 
     if args.dry_run:
+        effective_prelaunch_mib = _effective_max_prelaunch_memory_mib(
+            requested_mib=int(args.max_prelaunch_memory_mib),
+            min_runtime_mib=int(args.min_runtime_memory_mib),
+            max_runtime_mib=int(args.max_runtime_memory_mib),
+        )
         print(f"task_name={task_name}")
         print(f"remote_wsl_cwd={remote_wsl_cwd}")
         print(f"remote_log_path={args.remote_log_path}")
@@ -342,21 +430,28 @@ def main() -> int:
         print(f"remote_launcher={remote_launcher_abs}")
         print(f"remote_windows_launcher={remote_windows_launcher_abs}")
         print(f"max_prelaunch_memory_mib={args.max_prelaunch_memory_mib}")
+        print(f"effective_max_prelaunch_memory_mib={effective_prelaunch_mib}")
         print(f"command={command_tokens}")
         for path in sync_paths:
             print(path.as_posix())
         return 0
 
+    effective_prelaunch_mib = _effective_max_prelaunch_memory_mib(
+        requested_mib=int(args.max_prelaunch_memory_mib),
+        min_runtime_mib=int(args.min_runtime_memory_mib),
+        max_runtime_mib=int(args.max_runtime_memory_mib),
+    )
     prelaunch_memory_used_mib = _query_remote_gpu_memory_used_mib(host=args.host, port=args.port, user=args.user)
     print(f"prelaunch_gpu_memory_used_mib={prelaunch_memory_used_mib}")
+    print(f"effective_max_prelaunch_memory_mib={effective_prelaunch_mib}")
     if (
         prelaunch_memory_used_mib is not None
-        and prelaunch_memory_used_mib > max(0, int(args.max_prelaunch_memory_mib))
+        and prelaunch_memory_used_mib > effective_prelaunch_mib
     ):
         print(
             "Refusing launch because the remote GPU is not idle enough for the "
             f"single-lane protocol: {prelaunch_memory_used_mib} MiB > "
-            f"{int(args.max_prelaunch_memory_mib)} MiB."
+            f"{effective_prelaunch_mib} MiB."
         )
         return 13
 
@@ -376,7 +471,10 @@ def main() -> int:
         "-o",
         "LogLevel=ERROR",
         remote,
-        f"wsl -d {args.wsl_distro} --cd {remote_workspace_root} --exec tar -xf -",
+        # On /mnt/* DrvFs mounts, restoring archive mtimes can fail with
+        # "Cannot utime" even when file contents extract correctly. `-m`
+        # disables timestamp restore so host-owned packet sync stays robust.
+        f"wsl -d {args.wsl_distro} --cd {remote_workspace_root} --exec tar -xmf -",
     ]
     extract = _run(extract_cmd, input_bytes=archive_bytes)
     sys.stdout.buffer.write(extract.stdout)
@@ -424,7 +522,7 @@ def main() -> int:
     if args.no_health_check:
         return 0
 
-    return _health_check(
+    health_rc = _health_check(
         host=args.host,
         port=args.port,
         user=args.user,
@@ -432,8 +530,20 @@ def main() -> int:
         remote_log_path=args.remote_log_path,
         remote_pid_path=remote_pid_path,
         health_wait_seconds=max(0, int(args.health_wait_seconds)),
+        min_runtime_memory_mib=max(0, int(args.min_runtime_memory_mib)),
         max_runtime_memory_mib=max(0, int(args.max_runtime_memory_mib)),
+        min_runtime_slack_mib=max(0, int(args.min_runtime_slack_mib)),
     )
+    if health_rc != 0 and bool(args.stop_on_health_failure):
+        _cleanup_failed_launch(
+            host=args.host,
+            port=args.port,
+            user=args.user,
+            task_name=task_name,
+            wsl_distro=args.wsl_distro,
+            remote_pid_path=remote_pid_path,
+        )
+    return health_rc
 
 
 if __name__ == "__main__":
