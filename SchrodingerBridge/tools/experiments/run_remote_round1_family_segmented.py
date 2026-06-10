@@ -100,7 +100,11 @@ for pid in Path("/proc").iterdir():
         or "_fast-eval" in txt
     ):
         payload["fast_eval"].append(item)
-    else:
+    elif (
+        "SchrodingerBridge/src/run.py" in txt
+        or "src/run.py --config" in txt
+        or "/src/run.py --config" in txt
+    ):
         payload["train"].append(item)
 print(json.dumps(payload, ensure_ascii=False))
 """
