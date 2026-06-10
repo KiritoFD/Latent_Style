@@ -48,6 +48,15 @@
     - but style scores backed off on both transfer and all-pairs
     - so the line has active movement, but it is still too early to rank this family beyond “alive”
 
+- Third settled fast-eval point:
+  - `epoch_0003`
+  - transfer `CLIP-S / LPIPS = 0.6987 / 0.5533`
+  - all-pairs `CLIP-S / LPIPS = 0.7119 / 0.5442`
+  - wall `= 179.68s`
+  - immediate read:
+    - style recovered slightly from `epoch_0002`
+    - LPIPS softened slightly from `epoch_0002`
+    - this line now reads as a real style/structure tradeoff frontier
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
 
