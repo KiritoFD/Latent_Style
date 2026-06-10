@@ -186,6 +186,15 @@ Notes:
   - reading:
     - style is already strong enough to beat the wikiarts5 `IDT` floor on transfer
     - content preservation is still much weaker than `SaMAM` / current mainline variants on this split
+- current continuation after the first common packet:
+  - the automatic segmented controller is now active on the same result root
+  - it is pushing the common frontier from `epoch_0005` toward `epoch_0010`
+  - current active stage:
+    - `Early_Renaissance`
+    - live log already advanced into `epoch 7`
+  - read:
+    - the first common `epoch_0005` packet is closed
+    - the baseline is now in the intended `every 5 common epochs -> eval -> continue` loop rather than a one-off midpoint run
 
 <!-- WIKIARTS5_SAMST_AUTO_STATUS:START -->
 ## Auto Status
@@ -194,7 +203,7 @@ Notes:
 - Live JSON: [samst_live_status.json](G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/samst_wikiarts5_wsl_20260610_172206/samst_live_status.json)
 - Active WSL process count: `1`
 - Active WSL process:
-  - `pid=42240` `etime=29:56`
+  - `pid=42240` `etime=35:19`
 - Eval watcher alive: `yes`
   - `pid=299424`
 - Status watcher alive: `yes`
@@ -202,9 +211,9 @@ Notes:
 - Latest train log: [train_Early_Renaissance.log](G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/samst_wikiarts5_wsl_20260610_172206/logs/train_Early_Renaissance.log)
 - Active style: `Early_Renaissance`
 - Latest logged progress:
-  - `epoch=7`
-  - `step=13900 / 18894`
-  - `content/style/ae/total = 158232.01 / 92439.92 / 214.96 / 250671.94`
+  - `epoch=8`
+  - `step=870 / 18894`
+  - `content/style/ae/total = 157113.45 / 90643.16 / 208.63 / 247756.61`
 - Common saved epochs across all 5 styles:
   - `5`
 - Eligible every-5-epoch eval points currently present:
@@ -226,8 +235,11 @@ Notes:
   - `{"event": "poll", "common_epochs": [5], "per_style_epoch_counts": {"Early_Renaissance": 1, "Impressionism": 1, "Minimalism": 1, "Rococo": 1, "Ukiyo_e": 1}}`
 - Local GPU sample:
   - `NVIDIA GeForce RTX 4070 Laptop GPU`
-  - `4325 MiB / 8188 MiB`, `util=22%`
+  - `4328 MiB / 8188 MiB`, `util=64%`
 <!-- WIKIARTS5_SAMST_AUTO_STATUS:END -->
+
+
+
 
 
 
