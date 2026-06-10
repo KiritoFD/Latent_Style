@@ -537,6 +537,12 @@ Current `solver_pc` launch note:
 - decision:
   - raise the canonical opening batch to `14`
   - relaunch `solver_pc` as the next formal remote lane
+- recalibration update:
+  - `batch=14` itself also stayed under-band:
+    - `8226 MiB / 12288 MiB`
+  - next action:
+    - raise the canonical opening batch to `16`
+    - relaunch again
 
 Current solver continuation note:
 
