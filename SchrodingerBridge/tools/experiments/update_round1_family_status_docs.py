@@ -502,6 +502,7 @@ def _render_fast_curve_auto(
                 f"  - `{since_field} = {convergence.get(since_field)}`",
                 f"  - `best_in_newest_2 = {convergence.get('best_in_newest_2')}`",
                 f"  - `tail_flat = {convergence.get('tail_flat')}`",
+                f"  - `closure_band = {_closure_band(convergence)}`",
                 f"  - `criterion = {convergence.get('criterion', 'transfer_only_best')}`",
                 f"  - `converged = {convergence.get('converged')}`",
             ]
@@ -704,7 +705,7 @@ def _render_master_auto(
         )
     if convergence:
         lines.append(
-            f"- Convergence: `row_count={convergence.get('row_count')}, since_best={convergence.get('since_best')}, tail_flat={convergence.get('tail_flat')}, converged={convergence.get('converged')}`"
+            f"- Convergence: `row_count={convergence.get('row_count')}, since_best={convergence.get('since_best')}, tail_flat={convergence.get('tail_flat')}, closure_band={_closure_band(convergence)}, converged={convergence.get('converged')}`"
         )
     return "\n".join(lines)
 
@@ -805,6 +806,27 @@ def _switch_smoke_summary(*, family_id: str, run_name: str) -> tuple[dict | None
     if isinstance(aggregate, dict) and str(aggregate.get("_artifact_path", "")).strip():
         return aggregate, Path(str(aggregate.get("_artifact_path", "")).strip())
     return aggregate, artifact
+
+
+def _closure_band(convergence: dict | None) -> str:
+    if not isinstance(convergence, dict):
+        return "unknown"
+    if bool(convergence.get("converged")):
+        return "converged"
+    patience = int(convergence.get("patience") or 0)
+    since_last_pareto = convergence.get("since_last_pareto")
+    since_best = convergence.get("since_best")
+    best_in_newest_2 = bool(convergence.get("best_in_newest_2"))
+    tail_flat = bool(convergence.get("tail_flat"))
+    distance = None
+    if since_last_pareto is not None:
+        distance = int(since_last_pareto)
+    elif since_best is not None:
+        distance = int(since_best)
+    if patience > 0 and distance is not None:
+        if (not best_in_newest_2) and distance >= max(0, patience - 1):
+            return "closure_ready" if tail_flat else "approaching_closure"
+    return "open"
 
 
 def _merge_family_row_into_manifest(path: Path, *, family_id: str, updated_row: dict[str, str]) -> None:
