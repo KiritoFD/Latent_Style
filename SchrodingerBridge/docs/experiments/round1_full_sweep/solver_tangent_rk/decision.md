@@ -118,3 +118,19 @@
     - continue the same family one short segment farther, from `epoch_0028` to `epoch_0030`
     - keep `batch=17`
     - close immediately after that segment only if the all-ckpt curve finally satisfies the flat-tail condition
+- `epoch_0029-0030` short continuation read:
+  - both retained checkpoints are now settled under the same remote fast-eval contract
+  - transfer `CLIP-S / LPIPS`:
+    - `epoch_0029 = 0.6862 / 0.4963`
+    - `epoch_0030 = 0.6867 / 0.4909`
+  - current convergence state:
+    - `since_last_pareto = 11`
+    - `best_in_newest_2 = false`
+    - `tail_flat = false`
+  - interpretation:
+    - this confirms the line is no longer frontier-seeking
+    - but the last 3 retained checkpoints are still not flat enough on LPIPS to satisfy the current stop rule
+  - next action:
+    - continue one final short segment from `epoch_0030` to `epoch_0032`
+    - keep `batch=17`
+    - if that segment still fails the flat-tail condition, close the family and move to stage-close review rather than keep extending

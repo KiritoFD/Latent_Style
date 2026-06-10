@@ -238,6 +238,25 @@
     - keep the family alive one short segment longer
     - relaunch from `epoch_0028` to `epoch_0030` at the same `batch=17`
     - if the next two retained checkpoints do not flatten the tail enough for formal closure, switch to stage-close review rather than keep stretching the line
+- settled `epoch_0029-0030` read:
+  - the `epoch_0028 -> epoch_0030` short continuation completed cleanly
+  - all retained checkpoints are now settled through:
+    - `epoch_0030`
+  - transfer `CLIP-S / LPIPS`:
+    - `epoch_0029 = 0.6862 / 0.4963`
+    - `epoch_0030 = 0.6867 / 0.4909`
+  - read:
+    - neither point creates a new Pareto frontier
+    - both points stay materially worse than the best late LPIPS point at `epoch_0019`
+    - the tail is still visibly wobbling on LPIPS, so the current flat-tail rule is not yet met
+  - current convergence state:
+    - `since_last_pareto = 11`
+    - `best_in_newest_2 = false`
+    - `tail_flat = false`
+  - decision:
+    - do not promote
+    - do not switch families yet
+    - run one last short continuation to `epoch_0032`, then decide closure vs stage-close on the updated tail
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
