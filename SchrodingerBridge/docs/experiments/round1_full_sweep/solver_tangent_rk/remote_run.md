@@ -175,7 +175,19 @@
 - Prelaunch switch smoke: `ok`
 - Switch smoke artifact: [round1_solver_tangent_rk_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_switch_smoke_latest.json)
 - Switch smoke row count: `1`
+- Remote GPU live sample:
+  - `10102 MiB / 12288 MiB`, `util=96%`
+  - `band_status=in_band`
+  - `formal_status=formal_in_band`
+- Remote train progress:
+  - `epoch 20/24`
+  - `step 474/1180`
+  - `loss=7.7911`
+  - `tswd=4.6875`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
 
 
 
