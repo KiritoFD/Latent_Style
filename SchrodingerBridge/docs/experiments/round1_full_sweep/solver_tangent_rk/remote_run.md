@@ -257,6 +257,21 @@
     - do not promote
     - do not switch families yet
     - run one last short continuation to `epoch_0032`, then decide closure vs stage-close on the updated tail
+- settled `epoch_0031-0032` read:
+  - the `epoch_0030 -> epoch_0032` short continuation completed cleanly
+  - all retained checkpoints are now settled through:
+    - `epoch_0032`
+  - transfer `CLIP-S / LPIPS`:
+    - `epoch_0031 = 0.6907 / 0.4977`
+    - `epoch_0032 = 0.6893 / 0.4807`
+  - current convergence state:
+    - `since_last_pareto = 13`
+    - `best_in_newest_2 = false`
+    - `tail_flat = false`
+  - final training decision:
+    - end the formal remote training phase for this family
+    - move it to stage-close review
+    - release the remote lane for `solver_pc`
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
@@ -265,19 +280,19 @@
 - Run name: `aaai2027_round1_solver_tangent_rk_seed42_b8a2`
 - Remote run dir: `./exp/inmortal-exp/aaai2027_round1_solver_tangent_rk_seed42_b8a2`
 - Config: [aaai2027_round1_solver_tangent_rk_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_solver_tangent_rk_seed42_b8a2.json)
-- Manifest status: `running`
+- Manifest status: `reviewing`
 - Local fast root: [round1_solver_tangent_rk_fast_local](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_fast_local)
 - Local review root: [round1_solver_tangent_rk_localreview](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_localreview)
 - Prelaunch switch smoke: `ok`
 - Switch smoke artifact: [round1_solver_tangent_rk_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_switch_smoke_latest.json)
 - Switch smoke row count: `1`
 - Remote GPU live sample:
-  - `9877 MiB / 12288 MiB`, `util=84%`
+  - `9890 MiB / 12288 MiB`, `util=88%`
   - `band_status=in_band`
   - `formal_status=formal_in_band`
 - Remote train progress:
-  - `epoch 28/28`
-  - `step 803/1111`
-  - `loss=7.8184`
-  - `tswd=2.9844`
+  - `epoch 32/32`
+  - `step 899/1111`
+  - `loss=7.7523`
+  - `tswd=2.7031`
 <!-- ROUND1_AUTO_STATUS:END -->
