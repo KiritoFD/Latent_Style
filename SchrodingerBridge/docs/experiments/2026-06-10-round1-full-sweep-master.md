@@ -555,6 +555,8 @@ Recalibration-needed family:
 
 
 
+
+
 Current solver continuation note:
 
 - `solver_tangent_rk` did not close at the original `24`-epoch budget:
