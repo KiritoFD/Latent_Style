@@ -139,6 +139,28 @@
   - read:
     - remote formal execution is back in-band
     - keep this family alive until the new fast-eval points through `epoch_0024` settle
+- post-recovery newest settled fast point:
+  - `epoch_0018`
+  - transfer `CLIP-S / LPIPS = 0.6900 / 0.4764`
+  - all-pairs `CLIP-S / LPIPS = 0.7113 / 0.4650`
+  - wall `= 179.01s`
+  - read:
+    - this point did not create a new Pareto frontier
+    - but it is only the first later non-improving checkpoint after `epoch_0017`
+    - so the family remains clearly unconverged under `patience=6`
+- latest live continuation after recovery:
+  - remote train has already advanced to:
+    - `epoch 19/24`
+    - `step 124/1180`
+  - latest live sampled state:
+    - `10103 MiB / 12288 MiB`
+    - `band_status=in_band`
+    - `formal_status=formal_in_band`
+    - `loss=7.7529`
+    - `tswd=5.5000`
+  - read:
+    - remote execution remains inside the formal VRAM band
+    - let the segmented continuation finish to `epoch_0024` before deciding whether to close or roll into `solver_pc`
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
@@ -153,17 +175,9 @@
 - Prelaunch switch smoke: `ok`
 - Switch smoke artifact: [round1_solver_tangent_rk_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_switch_smoke_latest.json)
 - Switch smoke row count: `1`
-- Remote GPU live sample:
-  - `9349 MiB / 12288 MiB`, `util=85%`
-  - `band_status=in_band`
-  - `formal_status=formal_in_band`
-- Remote train log: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_tangent_rk_seed42_b8a2_train.log`
-- Remote train progress:
-  - `epoch 19/24`
-  - `step 851/1180`
-  - `loss=7.8795`
-  - `tswd=2.8906`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
 
 
 
