@@ -54,6 +54,15 @@
   - style recovered slightly versus `epoch_0002`
   - LPIPS softened slightly versus `epoch_0002`
   - the line is now tracing a real style/structure tradeoff frontier rather than a one-directional collapse
+- Sixth settled fast-eval point:
+  - `epoch_0006`
+  - transfer `CLIP-S / LPIPS = 0.6923 / 0.5056`
+  - all-pairs `CLIP-S / LPIPS = 0.7118 / 0.4959`
+  - wall `= 177.98s`
+- Interpretation:
+  - LPIPS improved materially again and is now the best point so far on this family
+  - style softened further
+  - the family remains Pareto-active, but the tradeoff is still clearly structure-first
 - Fourth settled fast-eval point:
   - `epoch_0004`
   - transfer `CLIP-S / LPIPS = 0.6962 / 0.5373`

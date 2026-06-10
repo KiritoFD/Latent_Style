@@ -79,6 +79,15 @@
     - LPIPS improved again to the best point so far for this family
     - style softened again on both transfer and all-pairs
     - the line is now clearly structure-first, with style still lagging behind
+- Sixth settled fast-eval point:
+  - `epoch_0006`
+  - transfer `CLIP-S / LPIPS = 0.6923 / 0.5056`
+  - all-pairs `CLIP-S / LPIPS = 0.7118 / 0.4959`
+  - wall `= 177.98s`
+  - immediate read:
+    - LPIPS improved materially again and is now the best point so far on this family
+    - style softened further
+    - the current `solver_pc` line remains structure-first and Pareto-active
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
 
