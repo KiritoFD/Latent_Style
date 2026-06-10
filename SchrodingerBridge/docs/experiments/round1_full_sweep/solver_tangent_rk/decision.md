@@ -69,3 +69,11 @@
     - this point fell back clearly from `epoch_0007`
     - but because `epoch_0007` is still within the newest 2 settled checkpoints, the family still does not satisfy the stop rule
     - keep the line running until the solver-family patience and flat-tail conditions are actually met
+- Current frontier after one more settled point:
+  - `epoch_0009` has now fully settled
+  - transfer `CLIP-S / LPIPS = 0.6933 / 0.5230`
+  - all-pairs `CLIP-S / LPIPS = 0.7099 / 0.5120`
+  - read:
+    - this recovered slightly from `epoch_0008`
+    - but still does not beat the current `epoch_0007` frontier
+    - because the best point remains inside the newest 2 settled checkpoints, and the tail is not flat, the line still stays open

@@ -132,8 +132,8 @@ Current remote lane status:
     - `9516 MiB / 12288 MiB`
     - `band_status=in_band`
     - `formal_status=formal_in_band`
-    - `epoch 9/24`
-    - `step 1031/1180`
+    - `epoch 10/24`
+    - `step 956/1180`
   - settled remote fast-eval points currently pulled:
     - `epoch_0001`
     - `epoch_0002`
@@ -143,6 +143,7 @@ Current remote lane status:
     - `epoch_0006`
     - `epoch_0007`
     - `epoch_0008`
+    - `epoch_0009`
   - current fast read:
     - best transfer style remains `epoch_0001`:
       - `0.6999 / 0.5295`
@@ -150,13 +151,13 @@ Current remote lane status:
       - `0.6951 / 0.4787`
     - best all-pairs style is now also `epoch_0007`:
       - `0.7159 / 0.4675`
-    - latest settled point is now `epoch_0008`:
-      - `0.6901 / 0.5243`
+    - latest settled point is now `epoch_0009`:
+      - `0.6933 / 0.5230`
     - interpretation:
       - `epoch_0005` was a true rollback point
       - `epoch_0007` overtook the old `epoch_0004` frontier
-      - `epoch_0008` then rolled back materially again
-      - so the line remains alive, but is now oscillating around a sharper local optimum
+      - `epoch_0008` rolled back materially and `epoch_0009` only recovered slightly
+      - so the line remains alive, but is now oscillating around a sharper local optimum rather than trending cleanly upward
       - the line is still below external-board promotion level on transfer style
       - and because the best point is still within the newest 2 settled checkpoints, closure is still premature
       - so this family remains alive and unconverged, but is not close to promotion
@@ -461,13 +462,15 @@ Recalibration-needed family:
 - Active family: `solver_tangent_rk`
 - Decision status: `running`
 - Batch / epochs / patience: `16 / 24 / 6`
-- Remote GPU live: `9516 / 12288 MiB`, `util=90%`, `band=in_band`
+- Remote GPU live: `9516 / 12288 MiB`, `util=83%`, `band=in_band`
 - Best transfer `CLIP-S`: `epoch_0001` -> `0.6999 / 0.5295`
 - Best transfer `LPIPS`: `epoch_0007` -> `0.6951 / 0.4787`
 - Best all-pairs `CLIP-S`: `epoch_0007` -> `0.7159 / 0.4675`
 - Latest settled fast point: `epoch_0009` -> transfer `0.6933 / 0.5230`
 - Convergence: `row_count=9, since_best=8, tail_flat=False, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
 
 
 
