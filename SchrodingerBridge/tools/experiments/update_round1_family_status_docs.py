@@ -90,7 +90,11 @@ def _upsert_auto_block(path: Path, body: str) -> None:
         start = text.find(AUTO_START)
         end = text.find(AUTO_END)
         if start >= 0 and end >= 0 and end >= start:
-            new_text = text[:start] + block + text[end + len(AUTO_END) :]
+            before = text[:start].rstrip("\n")
+            after = re.sub(r"^(?:[ \t]*\n)+", "", text[end + len(AUTO_END) :])
+            new_text = before + "\n\n" + block
+            if after:
+                new_text += "\n" + after
         else:
             suffix = "" if text.endswith("\n") else "\n"
             new_text = text + suffix + "\n" + block

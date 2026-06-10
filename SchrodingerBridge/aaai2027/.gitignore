@@ -4,6 +4,12 @@ tmp_*
 _vlm*smoke*
 *_segment*.stdout.log
 *_segment*.stderr.log
+*_runtime_watch_*.stdout.log
+*_runtime_watch_*.stderr.log
+*_fast_sync_*.stdout.log
+*_fast_sync_*.stderr.log
+*status_watch_*.stdout.log
+*status_watch_*.stderr.log
 *.png
 *.pdf
 **/images/**
