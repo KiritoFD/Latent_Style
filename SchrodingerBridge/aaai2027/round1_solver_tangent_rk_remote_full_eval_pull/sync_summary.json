@@ -108,17 +108,60 @@
         "has_metrics": true,
         "has_summary": true,
         "image_count": 0
+      },
+      {
+        "epoch": "epoch_0018",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0019",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0020",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0021",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0022",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
       }
     ],
     "processes": {
-      "train": [],
+      "train": [
+        {
+          "pid": "46680",
+          "cmd": "bash /mnt/i/Github/Latent_Style/SchrodingerBridge/_codex_tmp/round1-aaai2027_round1_solver_tangent_rk_seed42_b8a2-train.sh"
+        },
+        {
+          "pid": "46685",
+          "cmd": "/home/xy/venvs/samam312/bin/python SchrodingerBridge/src/run.py --config /mnt/i/Github/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_solver_tangent_rk_seed42_b8a2.segmented.launch.json"
+        },
+        {
+          "pid": "46686",
+          "cmd": "bash /mnt/i/Github/Latent_Style/SchrodingerBridge/_codex_tmp/round1-aaai2027_round1_solver_tangent_rk_seed42_b8a2-train.sh"
+        }
+      ],
       "fast_eval": [
         {
-          "pid": "28838",
+          "pid": "46881",
           "cmd": "bash /mnt/i/Github/Latent_Style/SchrodingerBridge/_codex_tmp/round1-aaai2027_round1_solver_tangent_rk_seed42_b8a2-fast-eval.sh"
         },
         {
-          "pid": "28843",
+          "pid": "46886",
           "cmd": "/home/xy/venvs/samam312/bin/python SchrodingerBridge/tools/experiments/watch_round1_family_fast_eval.py --python-bin /home/xy/venvs/samam312/bin/python --run-dir /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_tangent_rk_seed42_b8a2 --test-dir /mnt/i/wikiart_distinct5_samam_512_classview/test --cache-dir /mnt/i/Github/Latent_Style/eval_cache --clip-hf-cache-dir /mnt/i/Github/Latent_Style/eval_cache/hf --output-subdir full_eval_fast_snapshot --batch-size 1 --vae-decode-batch-size 4 --target-chunk-size 1 --max-live-memory-mib-to-launch 9800 --poll-seconds 180 --patience 6"
         }
       ],
@@ -137,13 +180,13 @@
     "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_tangent_rk_remote_full_eval_pull\\epoch_0001\\summary.json"
   },
   "best_transfer_lpips": {
-    "epoch": "epoch_0017",
-    "full_clip_style": "0.7072305288314819",
-    "full_content_lpips": "0.45041688216",
-    "transfer_clip_style": "0.6837851852178574",
-    "transfer_content_lpips": "0.46062960538333336",
-    "wall_total_seconds": "178.68941279700084",
-    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_tangent_rk_remote_full_eval_pull\\epoch_0017\\summary.json"
+    "epoch": "epoch_0019",
+    "full_clip_style": "0.7153147599697114",
+    "full_content_lpips": "0.4388716477066667",
+    "transfer_clip_style": "0.6909094178676605",
+    "transfer_content_lpips": "0.4497514594",
+    "wall_total_seconds": "182.61769854600425",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_tangent_rk_remote_full_eval_pull\\epoch_0019\\summary.json"
   },
   "best_full_style": {
     "epoch": "epoch_0007",
@@ -155,36 +198,37 @@
     "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_tangent_rk_remote_full_eval_pull\\epoch_0007\\summary.json"
   },
   "latest": {
-    "epoch": "epoch_0017",
-    "full_clip_style": "0.7072305288314819",
-    "full_content_lpips": "0.45041688216",
-    "transfer_clip_style": "0.6837851852178574",
-    "transfer_content_lpips": "0.46062960538333336",
-    "wall_total_seconds": "178.68941279700084",
-    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_tangent_rk_remote_full_eval_pull\\epoch_0017\\summary.json"
+    "epoch": "epoch_0022",
+    "full_clip_style": "0.7098136570851008",
+    "full_content_lpips": "0.457433320448",
+    "transfer_clip_style": "0.687733829965194",
+    "transfer_content_lpips": "0.46799400106666666",
+    "wall_total_seconds": "184.6196071509985",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_tangent_rk_remote_full_eval_pull\\epoch_0022\\summary.json"
   },
   "convergence": {
     "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_tangent_rk_remote_full_eval_pull\\clip_lpips_curve.csv",
-    "row_count": 17,
+    "row_count": 22,
     "best_epoch": "epoch_0001",
     "best_index": 0,
     "best_transfer_clip_epoch": "epoch_0001",
-    "best_transfer_lpips_epoch": "epoch_0017",
+    "best_transfer_lpips_epoch": "epoch_0019",
     "best_allpairs_clip_epoch": "epoch_0007",
-    "best_allpairs_lpips_epoch": "epoch_0017",
+    "best_allpairs_lpips_epoch": "epoch_0019",
     "pareto_epochs": [
       "epoch_0001",
       "epoch_0002",
       "epoch_0004",
       "epoch_0007",
       "epoch_0013",
-      "epoch_0017"
+      "epoch_0017",
+      "epoch_0019"
     ],
-    "last_pareto_epoch": "epoch_0017",
-    "newest_epoch": "epoch_0017",
-    "since_best": 16,
-    "since_last_pareto": 0,
-    "best_in_newest_2": true,
+    "last_pareto_epoch": "epoch_0019",
+    "newest_epoch": "epoch_0022",
+    "since_best": 21,
+    "since_last_pareto": 3,
+    "best_in_newest_2": false,
     "tail_flat": false,
     "patience": 6,
     "criterion": "joint_transfer_allpairs_pareto",
