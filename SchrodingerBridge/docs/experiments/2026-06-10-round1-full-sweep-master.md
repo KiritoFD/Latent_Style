@@ -36,6 +36,11 @@ Round-1 folders:
 - tokenizer warmstart:
   - [prepare_round1_tokenizer_warmstart_config.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/prepare_round1_tokenizer_warmstart_config.py)
   - [launch_remote_round1_tokenizer_warmstart.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_round1_tokenizer_warmstart.py)
+  - prepared configs currently exist for:
+    - `tok_a_dino_dict`
+    - `tok_b_cross_image`
+    - `tok_c_residual_adapter`
+    - `tok_d_vlm_prompt`
 
 Dataset note:
 
@@ -478,13 +483,16 @@ Recalibration-needed family:
 - Active family: `solver_tangent_rk`
 - Decision status: `running`
 - Batch / epochs / patience: `16 / 24 / 6`
-- Remote GPU live: `10516 / 12288 MiB`, `util=99%`, `band=in_band`
+- Remote GPU live: `9510 / 12288 MiB`, `util=87%`, `band=in_band`
 - Best transfer `CLIP-S`: `epoch_0001` -> `0.6999 / 0.5295`
 - Best transfer `LPIPS`: `epoch_0007` -> `0.6951 / 0.4787`
 - Best all-pairs `CLIP-S`: `epoch_0007` -> `0.7159 / 0.4675`
-- Latest settled fast point: `epoch_0011` -> transfer `0.6892 / 0.5144`
-- Convergence: `row_count=11, since_best=10, tail_flat=False, converged=False`
+- Latest settled fast point: `epoch_0012` -> transfer `0.6896 / 0.5207`
+- Convergence: `row_count=12, since_best=11, tail_flat=False, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
 
 
 
