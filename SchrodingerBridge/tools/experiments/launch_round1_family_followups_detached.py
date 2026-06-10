@@ -158,7 +158,7 @@ def main() -> int:
         )
 
     if not bool(args.skip_queue_watch):
-        _stop_local_python_watchers("watch_launch_round1_queue_when_idle.py", "run_round1_family_queue.py")
+        _stop_local_python_watchers("watch_launch_round1_queue_when_idle.py")
         _spawn_detached(
             args=[
                 str(SCRIPT_DIR / "watch_launch_round1_queue_when_idle.py"),
@@ -246,6 +246,8 @@ def main() -> int:
                 str(Path(args.manifest_csv).resolve()),
                 "--allowed-status",
                 "running",
+                "--allowed-status",
+                "reviewing",
             ],
             stdout_log=SB_ROOT / "aaai2027" / f"round1_{family_id}_stageclose_deferred_20260610.stdout.log",
             stderr_log=SB_ROOT / "aaai2027" / f"round1_{family_id}_stageclose_deferred_20260610.stderr.log",
