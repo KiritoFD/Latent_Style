@@ -11,27 +11,74 @@
   - `epoch_0001`
   - `style / lpips = 0.6999 / 0.5295`
 - Best transfer `LPIPS`:
-  - `epoch_0007`
-  - `style / lpips = 0.6951 / 0.4787`
+  - `epoch_0013`
+  - `style / lpips = 0.6935 / 0.4713`
 - Best all-pairs `CLIP-S`:
   - `epoch_0007`
   - `style / lpips = 0.7159 / 0.4675`
 - Latest settled point:
-  - `epoch_0010`
-  - transfer `style / lpips = 0.6874 / 0.5116`
-  - full `style / lpips = 0.7080 / 0.5001`
-  - wall `= 177.90s`
-- Remote pending eval epochs:
-  - `epoch_0011`
+  - `epoch_0016`
+  - transfer `style / lpips = 0.6872 / 0.4758`
+  - full `style / lpips = 0.7087 / 0.4657`
+  - wall `= 178.34s`
 - Convergence snapshot:
-  - `row_count = 10`
+  - `row_count = 16`
   - `best_epoch = epoch_0001`
   - `since_last_pareto = 3`
   - `best_in_newest_2 = False`
   - `tail_flat = False`
+  - `closure_band = open`
   - `criterion = joint_transfer_allpairs_pareto`
   - `converged = False`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
