@@ -174,6 +174,25 @@
     - the family has entered the first real post-frontier patience window
     - but it is still not closeable yet because `tail_flat=false` and solver patience is `6`
     - therefore keep the lane alive through the remaining `epoch_0022-0024` checkpoints, then reassess closure vs `solver_pc`
+- post-`epoch_0024` continuation decision:
+  - `epoch_0024` still did not satisfy formal closure:
+    - `best_in_newest_2 = false`
+    - `since_last_pareto = 5`
+    - `tail_flat = false`
+  - decision:
+    - extend the same family from `epoch_0024` to `epoch_0028`
+    - do not switch to `solver_pc` until this continuation finishes and the fast curve is re-read
+  - first extension health read:
+    - `epoch 25/28`
+    - `step 39/1180`
+    - `loss=7.2431`
+    - `tswd=5.1562`
+    - `9204 MiB / 12288 MiB`
+    - `band_status=under_band`
+    - `formal_status=nonformal_under_band`
+  - read:
+    - this is close enough to the floor to treat as a warmup-borderline sample rather than an immediate redesign signal
+    - re-evaluate after later runtime samples before changing batch policy again
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
@@ -189,16 +208,22 @@
 - Switch smoke artifact: [round1_solver_tangent_rk_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_switch_smoke_latest.json)
 - Switch smoke row count: `1`
 - Remote GPU live sample:
-  - `9349 MiB / 12288 MiB`, `util=70%`
-  - `band_status=in_band`
-  - `formal_status=formal_in_band`
+  - `9204 MiB / 12288 MiB`, `util=97%`
+  - `band_status=under_band`
+  - `formal_status=nonformal_under_band`
 - Remote train log: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_tangent_rk_seed42_b8a2_train.log`
 - Remote train progress:
-  - `epoch 24/24`
-  - `step 1025/1180`
-  - `loss=7.7850`
-  - `tswd=2.4844`
+  - `epoch 25/28`
+  - `step 39/1180`
+  - `loss=7.2431`
+  - `tswd=5.1562`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
+
+
+
 
 
 

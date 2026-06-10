@@ -203,23 +203,23 @@ Notes:
 - Live JSON: [samst_live_status.json](G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/samst_wikiarts5_wsl_20260610_172206/samst_live_status.json)
 - Active WSL process count: `1`
 - Active WSL process:
-  - `pid=42240` `etime=01:20:27`
+  - `pid=42240` `etime=01:32:38`
 - Eval watcher alive: `yes`
   - `pid=299424`
 - Status watcher alive: `yes`
   - `pid=187052`
-- Latest train log: [train_Early_Renaissance.log](G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/samst_wikiarts5_wsl_20260610_172206/logs/train_Early_Renaissance.log)
-- Active style: `Early_Renaissance`
+- Latest train log: [train_Impressionism.log](G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/samst_wikiarts5_wsl_20260610_172206/logs/train_Impressionism.log)
+- Active style: `Impressionism`
 - Latest logged progress:
-  - `epoch=10`
-  - `step=10810 / 18894`
-  - `content/style/ae/total = 155325.03 / 88743.62 / 199.47 / 244068.65`
+  - `epoch=6`
+  - `step=3950 / 18894`
+  - `content/style/ae/total = 223439.99 / 63955.59 / 217.93 / 287395.58`
 - Common saved epochs across all 5 styles:
   - `5`
 - Eligible every-5-epoch eval points currently present:
   - `5`
 - Per-style saved epoch checkpoints:
-  - `Early_Renaissance: 1`
+  - `Early_Renaissance: 2`
   - `Impressionism: 1`
   - `Minimalism: 1`
   - `Rococo: 1`
@@ -232,11 +232,18 @@ Notes:
   - so `epoch=5` for `Early_Renaissance` still does not imply a common `epoch_0005.model` exists across all 5 style folders
   - even for the current style, `epoch=5` means `the 5th epoch is in progress`; the `epoch_5.model` file is only written after that epoch finishes
 - Last eval-watch event:
-  - `{"event": "poll", "common_epochs": [5], "per_style_epoch_counts": {"Early_Renaissance": 1, "Impressionism": 1, "Minimalism": 1, "Rococo": 1, "Ukiyo_e": 1}}`
+  - `{"event": "poll", "common_epochs": [5], "per_style_epoch_counts": {"Early_Renaissance": 2, "Impressionism": 1, "Minimalism": 1, "Rococo": 1, "Ukiyo_e": 1}}`
 - Local GPU sample:
   - `NVIDIA GeForce RTX 4070 Laptop GPU`
-  - `4293 MiB / 8188 MiB`, `util=59%`
+  - `4303 MiB / 8188 MiB`, `util=39%`
 <!-- WIKIARTS5_SAMST_AUTO_STATUS:END -->
+
+
+
+
+
+
+
 
 
 
