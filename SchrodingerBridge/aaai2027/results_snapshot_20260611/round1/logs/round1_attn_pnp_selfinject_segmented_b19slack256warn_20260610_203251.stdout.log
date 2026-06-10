@@ -1,0 +1,78 @@
+[run_remote_round1_family_segmented] start family_id=attn_pnp_selfinject segment_epochs=1
+[run_remote_round1_family_segmented] latest_epoch=0 latest_ckpt=none
+[run_remote_round1_family_segmented] expected_epoch>=1
+[launch_remote_round1_family_train] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\launch_remote_wsl_command.py --task-name round1-aaai2027_round1_attn_pnp_selfinject_seed42_b8a2-train --remote-log-path /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_pnp_selfinject_seed42_b8a2_train.log --remote-wsl-cwd /mnt/i/Github/Latent_Style --python-bin /home/xy/venvs/samam312/bin/python --sync-path SchrodingerBridge/src --sync-path SchrodingerBridge/tools/experiments/launch_remote_round1_family_train.py --sync-path SchrodingerBridge/docs/experiments/2026-06-10-round1-full-sweep-master.md --sync-path SchrodingerBridge/docs/experiments/round1_full_sweep --sync-path SchrodingerBridge\configs\aaai2027\round1_full_sweep\aaai2027_round1_attn_pnp_selfinject_seed42_b8a2.segmented.launch.json --verify-python-file SchrodingerBridge/src/run.py --verify-python-file SchrodingerBridge/src/losses.py --verify-python-file SchrodingerBridge/src/model.py --max-prelaunch-memory-mib 7000 --health-wait-seconds 30 --min-runtime-memory-mib 9000 --max-runtime-memory-mib 11000 --min-runtime-slack-mib 256 --runtime-guard-max-memory-mib 11000 --runtime-guard-poll-seconds 10 --runtime-guard-min-memory-mib 9000 --runtime-guard-min-warmup-seconds 300 --runtime-guard-min-consecutive-polls 3 --runtime-guard-min-mode warn -- bash -lc set -euo pipefail; export PYTHONPATH=SchrodingerBridge/src; /home/xy/venvs/samam312/bin/python SchrodingerBridge/src/run.py --config /mnt/i/Github/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_attn_pnp_selfinject_seed42_b8a2.segmented.launch.json
+prelaunch_gpu_memory_used_mib=9342
+effective_max_prelaunch_memory_mib=2000
+Refusing launch because the remote GPU is not idle enough for the single-lane protocol: 9342 MiB > 2000 MiB.
+[run_remote_round1_family_segmented] remote GPU not idle enough yet; retrying in 30s
+[launch_remote_round1_family_train] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\launch_remote_wsl_command.py --task-name round1-aaai2027_round1_attn_pnp_selfinject_seed42_b8a2-train --remote-log-path /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_pnp_selfinject_seed42_b8a2_train.log --remote-wsl-cwd /mnt/i/Github/Latent_Style --python-bin /home/xy/venvs/samam312/bin/python --sync-path SchrodingerBridge/src --sync-path SchrodingerBridge/tools/experiments/launch_remote_round1_family_train.py --sync-path SchrodingerBridge/docs/experiments/2026-06-10-round1-full-sweep-master.md --sync-path SchrodingerBridge/docs/experiments/round1_full_sweep --sync-path SchrodingerBridge\configs\aaai2027\round1_full_sweep\aaai2027_round1_attn_pnp_selfinject_seed42_b8a2.segmented.launch.json --verify-python-file SchrodingerBridge/src/run.py --verify-python-file SchrodingerBridge/src/losses.py --verify-python-file SchrodingerBridge/src/model.py --max-prelaunch-memory-mib 7000 --health-wait-seconds 30 --min-runtime-memory-mib 9000 --max-runtime-memory-mib 11000 --min-runtime-slack-mib 256 --runtime-guard-max-memory-mib 11000 --runtime-guard-poll-seconds 10 --runtime-guard-min-memory-mib 9000 --runtime-guard-min-warmup-seconds 300 --runtime-guard-min-consecutive-polls 3 --runtime-guard-min-mode warn -- bash -lc set -euo pipefail; export PYTHONPATH=SchrodingerBridge/src; /home/xy/venvs/samam312/bin/python SchrodingerBridge/src/run.py --config /mnt/i/Github/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_attn_pnp_selfinject_seed42_b8a2.segmented.launch.json
+STARTED TASK=round1-aaai2027_round1_attn_pnp_selfinject_seed42_b8a2-train
+yes
+19648
+  19648 bash
+2026-06-10 20:33:40,923 - INFO - Loading latent dataset from /mnt/i/wikiarts_5_full_notest_latents_ema/train
+2026-06-10 20:33:41,274 - INFO - Loaded packed latent cache: /mnt/i/wikiarts_5_full_notest_latents_ema/train/.latent_cache/packed/00_Early_Renaissance.pt
+2026-06-10 20:33:41,281 - INFO -   style=Early_Renaissance id=0 count=1361
+2026-06-10 20:33:44,790 - INFO - Loaded packed latent cache: /mnt/i/wikiarts_5_full_notest_latents_ema/train/.latent_cache/packed/01_Impressionism.pt
+2026-06-10 20:33:44,850 - INFO -   style=Impressionism id=1 count=13030
+2026-06-10 20:33:45,211 - INFO - Loaded packed latent cache: /mnt/i/wikiarts_5_full_notest_latents_ema/train/.latent_cache/packed/02_Minimalism.pt
+2026-06-10 20:33:45,222 - INFO -   style=Minimalism id=2 count=1307
+2026-06-10 20:33:45,780 - INFO - Loaded packed latent cache: /mnt/i/wikiarts_5_full_notest_latents_ema/train/.latent_cache/packed/03_Rococo.pt
+2026-06-10 20:33:45,789 - INFO -   style=Rococo id=3 count=2059
+2026-06-10 20:33:46,102 - INFO - Loaded packed latent cache: /mnt/i/wikiarts_5_full_notest_latents_ema/train/.latent_cache/packed/04_Ukiyo_e.pt
+2026-06-10 20:33:46,106 - INFO -   style=Ukiyo_e id=4 count=1137
+2026-06-10 20:33:46,478 - INFO - Loaded pairing cache /mnt/i/wikiarts_5_full_notest_latents_ema/train/.latent_cache/prototype_pairing_top8.pt with 75576 source-target routes
+2026-06-10 20:33:46,517 - INFO - DataLoader | batch=19 workers=0 shuffle=False pin_memory=True persistent_workers=False preload_to_gpu=False balanced_target=True pairing_cache=True pairing_mode=rank_biased rank_schedule=fixed active_topk=2 min_topk=2 curriculum_epochs=0 rank_power=1.500 topk=8 explore=0.150/8 dual_mix=0.500/1 aux_topk=1
+2026-06-10 20:33:54,232 - INFO - Initialized global_vq tokenizer from VAE latent statistics.
+2026-06-10 20:33:54,248 - INFO - Model params: 5,596,703
+2026-06-10 20:33:55,897 - INFO - Partially resumed model from /mnt/i/Github/Latent_Style/SchrodingerBridge/exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_from_pattn_seed42_b8a2/epoch_0013.pt | loaded=232 skipped=16 missing=28 unexpected=0 include=[] ignore=[]
+2026-06-10 20:33:55,899 - INFO - Resumed from /mnt/i/Github/Latent_Style/SchrodingerBridge/exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_from_pattn_seed42_b8a2/epoch_0013.pt at epoch=1 global_step=0
+2026-06-10 20:33:55,902 - INFO - Freeze mode=attention_only | trainable_count=36 | trainable=body_blocks.0.log_temp, body_blocks.0.gamma, body_blocks.0.norm_x.weight, body_blocks.0.norm_x.bias, body_blocks.0.norm_s.weight, body_blocks.0.norm_s.bias, body_blocks.0.to_q.weight, body_blocks.0.to_k.weight, body_blocks.0.to_v.weight, body_blocks.1.log_temp, body_blocks.1.gamma, body_blocks.1.norm_x.weight, body_blocks.1.norm_x.bias, body_blocks.1.norm_s.weight, body_blocks.1.norm_s.bias, body_blocks.1.to_q.weight, body_blocks.1.to_k.weight, body_blocks.1.to_v.weight, body_blocks.2.log_temp, body_blocks.2.gamma, body_blocks.2.norm_x.weight, body_blocks.2.norm_x.bias, body_blocks.2.norm_s.weight, body_blocks.2.norm_s.bias
+2026-06-10 20:33:55,937 - INFO - Pairing cache epoch=1 active_topk=2 mode=rank_biased rank_schedule=fixed explore=0.150/8 dual_mix=0.500/1 aux_topk=1
+
+Epoch 1/1:   0%|          | 0/994 [00:00<?, ?it/s]
+Epoch 1/1:   0%|          | 0/994 [00:03<?, ?it/s, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   0%|          | 1/994 [00:03<55:14,  3.34s/it, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   0%|          | 2/994 [00:03<28:30,  1.72s/it, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   0%|          | 3/994 [00:04<18:05,  1.10s/it, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   0%|          | 4/994 [00:04<14:14,  1.16it/s, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   1%|          | 5/994 [00:05<11:07,  1.48it/s, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   1%|          | 6/994 [00:05<10:09,  1.62it/s, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   1%|          | 7/994 [00:05<08:38,  1.90it/s, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   1%|          | 8/994 [00:06<08:31,  1.93it/s, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   1%|          | 9/994 [00:06<07:33,  2.17it/s, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   1%|          | 10/994 [00:07<07:46,  2.11it/s, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   1%|          | 11/994 [00:07<07:04,  2.32it/s, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   1%|          | 12/994 [00:08<07:25,  2.20it/s, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   1%|¨‡         | 13/994 [00:08<06:50,  2.39it/s, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   1%|¨‡         | 14/994 [00:08<07:14,  2.25it/s, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   2%|¨‡         | 15/994 [00:09<06:43,  2.43it/s, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   2%|¨‡         | 16/994 [00:09<07:09,  2.28it/s, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   2%|¨‡         | 17/994 [00:10<06:39,  2.45it/s, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   2%|¨‡         | 18/994 [00:10<07:06,  2.29it/s, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   2%|¨‡         | 19/994 [00:11<06:34,  2.47it/s, curv=0.0000, flow=0.7861, kin=0.0633, loss=10.5875, ot=0.0000, t=1.000, tswd=8.8125]
+Epoch 1/1:   2%|¨‡         | 19/994 [00:11<06:34,  2.47it/s, curv=0.0000, flow=0.7589, kin=0.0690, loss=10.0242, ot=0.0000, t=1.000, tswd=8.3125]
+Epoch 1/1:   2%|¨‡         | 20/994 [00:11<07:26,  2.18it/s, curv=0.0000, flow=0.7589, kin=0.0690, loss=10.0242, ot=0.0000, t=1.000, tswd=8.3125]
+Epoch 1/1:   2%|¨‡         | 21/994 [00:11<06:50,  2.37it/s, curv=0.0000, flow=0.7589, kin=0.0690, loss=10.0242, ot=0.0000, t=1.000, tswd=8.3125]
+Epoch 1/1:   2%|¨‡         | 22/994 [00:12<07:13,  2.24it/s, curv=0.0000, flow=0.7589, kin=0.0690, loss=10.0242, ot=0.0000, t=1.000, tswd=8.3125]
+Epoch 1/1:   2%|¨‡         | 23/994 [00:12<06:41,  2.42it/s, curv=0.0000, flow=0.7589, kin=0.0690, loss=10.0242, ot=0.0000, t=1.000, tswd=8.3125]
+Epoch 1/1:   2%|¨‡         | 24/994 [00:13<07:07,  2.27it/s, curv=0.0000, flow=0.7589, kin=0.0690, loss=10.0242, ot=0.0000, t=1.000, tswd=8.3125]
+Epoch 1/1:   3%|¨†         | 25/994 [00:13<06:38,  2.43it/s, curv=0.0000, flow=0.7589, kin=0.0690, loss=10.0242, ot=0.0000, t=1.000, tswd=8.3125]
+Epoch 1/1:   3%|¨†         | 26/994 [00:14<07:04,  2.28it/s, curv=0.0000, flow=0.7589, kin=0.0690, loss=10.0242, ot=0.0000, t=1.000, tswd=8.3125]
+Epoch 1/1:   3%|¨†         | 27/994 [00:14<06:35,  2.44it/s, curv=0.0000, flow=0.7589, kin=0.0690, loss=10.0242, ot=0.0000, t=1.000, tswd=8.3125]
+Epoch 1/1:   3%|¨†         | 28/994 [00:14<07:03,  2.28it/s, curv=0.0000, flow=0.7589, kin=0.0690, loss=10.0242, ot=0.0000, t=1.000, tswd=8.3125]
+Epoch 1/1:   3%|¨†         | 29/994 [00:15<06:36,  2.43it/s, curv=0.0000, flow=0.7589, kin=0.0690, loss=10.0242, ot=0.0000, t=1.000, tswd=8.3125]prelaunch_gpu_memory_used_mib=545
+effective_max_prelaunch_memory_mib=2000
+health_gpu_memory_used_mib=8752
+[run_remote_round1_family_segmented] train launched; waiting for remote train to finish
+[run_remote_round1_family_segmented] remote train exited; syncing scalar packet
+G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\round1_full_sweep\attn_pnp_selfinject\remote_scalar_read.md
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_pnp_selfinject_remote_scalars\summary.json
+[run_remote_round1_family_segmented] latest_epoch_after_train=1 latest_ckpt_after_train=epoch_0001.pt
+[run_remote_round1_family_segmented] launching remote fast-eval after train exit
+[launch_remote_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\launch_remote_wsl_command.py --task-name round1-aaai2027_round1_attn_pnp_selfinject_seed42_b8a2-fast-eval --remote-log-path /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_pnp_selfinject_seed42_b8a2_fast_eval.log --remote-wsl-cwd /mnt/i/Github/Latent_Style --python-bin /home/xy/venvs/samam312/bin/python --sync-path SchrodingerBridge/src --sync-path SchrodingerBridge/tools/experiments/rerun_full_eval_for_run.py --sync-path SchrodingerBridge/tools/experiments/report_round1_convergence.py --sync-path SchrodingerBridge/tools/experiments/watch_round1_family_fast_eval.py --sync-path SchrodingerBridge/docs/experiments/round1_full_sweep --verify-python-file SchrodingerBridge/src/utils/run_evaluation.py --verify-python-file SchrodingerBridge/tools/experiments/watch_round1_family_fast_eval.py --max-prelaunch-memory-mib 12000 --no-health-check -- bash -lc set -euo pipefail; export PYTHONPATH=SchrodingerBridge/src; /home/xy/venvs/samam312/bin/python SchrodingerBridge/tools/experiments/watch_round1_family_fast_eval.py --python-bin /home/xy/venvs/samam312/bin/python --run-dir /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_pnp_selfinject_seed42_b8a2 --test-dir /mnt/i/wikiart_distinct5_samam_512_classview/test --cache-dir /mnt/i/Github/Latent_Style/eval_cache --clip-hf-cache-dir /mnt/i/Github/Latent_Style/eval_cache/hf --output-subdir full_eval_fast_snapshot --batch-size 1 --vae-decode-batch-size 4 --target-chunk-size 1 --max-live-memory-mib-to-launch 9800 --poll-seconds 180 --patience 4
+STARTED TASK=round1-aaai2027_round1_attn_pnp_selfinject_seed42_b8a2-fast-eval
+prelaunch_gpu_memory_used_mib=547
+effective_max_prelaunch_memory_mib=12000
+[run_remote_round1_family_segmented] remote fast-eval summary reached expected epoch

@@ -1,0 +1,7 @@
+src_style,tgt_style,src_image,gen_image,content_lpips,clip_dir,clip_style,clip_content
+Early_Renaissance,Impressionism,andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece.jpg,images/Early_Renaissance_andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece_to_Impressionism.png,0.46267068,0.0,0.8046024441719055,0.0
+Early_Renaissance,Minimalism,andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece.jpg,images/Early_Renaissance_andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece_to_Minimalism.png,0.5932329,0.0,0.8686452507972717,0.0
+Impressionism,Minimalism,alfred-sisley_riverbank-at-veneux-1881.jpg,images/Impressionism_alfred-sisley_riverbank-at-veneux-1881_to_Minimalism.png,0.58740866,0.0,0.8523082733154297,0.0
+Minimalism,Rococo,agnes-martin_happy-valley-1967.jpg,images/Minimalism_agnes-martin_happy-valley-1967_to_Rococo.png,0.43901518,0.0,0.5845260620117188,0.0
+Rococo,Ukiyo_e,antoine-pesne_carl-heinrich-graun.jpg,images/Rococo_antoine-pesne_carl-heinrich-graun_to_Ukiyo_e.png,0.3959873,0.0,0.6491938233375549,0.0
+Ukiyo_e,Early_Renaissance,hiroshige_hakone-kosuizu.jpg,images/Ukiyo_e_hiroshige_hakone-kosuizu_to_Early_Renaissance.png,0.3892546,0.0,0.6882338523864746,0.0

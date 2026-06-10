@@ -1,0 +1,4 @@
+method,cases_completed,wins_so_far,win_rate_so_far,style_wins_so_far,structure_wins_so_far,artifact_wins_so_far,mean_style_specificity,mean_structure_preservation,mean_artifact_control
+EdgeGated_e12,244,9,0.036885245901639344,4,33,42,2.692622950819672,3.8565573770491803,3.3401639344262297
+LBM-Knee_e13,244,0,0.0,0,3,3,2.0081967213114753,3.2254098360655736,2.4754098360655736
+Seedream_repaired750,244,235,0.9631147540983607,240,208,199,4.942622950819672,4.782786885245901,4.725409836065574

@@ -9,20 +9,27 @@ import torch.nn.functional as F
 from PIL import Image
 from transformers import AutoImageProcessor, AutoModel
 
+from dino_cache_utils import (
+    default_dino_cache_output,
+    image_stem_aliases,
+    infer_image_root_for_latent_root,
+    infer_styles_from_train_root,
+)
 
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
-DEFAULT_STYLES = ["photo", "Hayao", "monet", "vangogh", "cezanne"]
 
 
 def _style_image_index(root: Path, style: str) -> dict[str, Path]:
     style_dir = root / style
     if not style_dir.exists():
         raise FileNotFoundError(f"missing image style dir: {style_dir}")
-    return {
-        p.stem: p
-        for p in sorted(style_dir.iterdir())
-        if p.is_file() and p.suffix.lower() in IMAGE_EXTS
-    }
+    out: dict[str, Path] = {}
+    for p in sorted(style_dir.iterdir()):
+        if not p.is_file() or p.suffix.lower() not in IMAGE_EXTS:
+            continue
+        for alias in image_stem_aliases(style, p.stem):
+            out.setdefault(alias, p)
+    return out
 
 
 def _style_latent_index(root: Path, style: str) -> dict[str, Path]:
@@ -104,19 +111,22 @@ def _embed_rows(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build offline DINO pairing cache from RGB images aligned to latent stems.")
-    parser.add_argument("--image-root", type=Path, default=Path("style_data/train"))
-    parser.add_argument("--latent-root", type=Path, default=Path("latent-256"))
-    parser.add_argument("--output", type=Path, default=Path("eval_cache/offline_pairing/dinov2_small_train_cache.pt"))
-    parser.add_argument("--styles", type=str, default=",".join(DEFAULT_STYLES))
+    parser.add_argument("--image-root", type=Path, default=None)
+    parser.add_argument("--latent-root", type=Path, default=Path(r"F:\wikiart_distinct5_samam_512_latents_ema\train"))
+    parser.add_argument("--output", type=Path, default=None)
+    parser.add_argument("--styles", type=str, default="")
     parser.add_argument("--model-name", type=str, default="facebook/dinov2-small")
     parser.add_argument("--batch-size", type=int, default=24)
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--log-every", type=int, default=240)
     args = parser.parse_args()
 
-    styles = [x.strip() for x in args.styles.split(",") if x.strip()]
+    latent_root = Path(args.latent_root).resolve()
+    image_root = Path(args.image_root).resolve() if args.image_root is not None else infer_image_root_for_latent_root(latent_root)
+    output_path = Path(args.output).resolve() if args.output is not None else default_dino_cache_output(latent_root, workspace_root=Path(__file__).resolve().parents[3])
+    styles = [x.strip() for x in args.styles.split(",") if x.strip()] or infer_styles_from_train_root(latent_root)
     device = torch.device(args.device if args.device == "cpu" or torch.cuda.is_available() else "cpu")
-    rows = _collect_pairs(image_root=args.image_root, latent_root=args.latent_root, styles=styles)
+    rows = _collect_pairs(image_root=image_root, latent_root=latent_root, styles=styles)
 
     per_style_counts: dict[str, int] = {}
     for row in rows:
@@ -125,8 +135,8 @@ def main() -> None:
     print(
         json.dumps(
             {
-                "image_root": str(args.image_root.resolve()),
-                "latent_root": str(args.latent_root.resolve()),
+                "image_root": str(image_root.resolve()),
+                "latent_root": str(latent_root.resolve()),
                 "styles": styles,
                 "n_rows": len(rows),
                 "per_style_counts": per_style_counts,
@@ -147,21 +157,21 @@ def main() -> None:
         log_every=max(1, int(args.log_every)),
     )
 
-    args.output.parent.mkdir(parents=True, exist_ok=True)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     torch.save(
         {
             "model_name": args.model_name,
-            "image_root": str(args.image_root.resolve()),
-            "latent_root": str(args.latent_root.resolve()),
+            "image_root": str(image_root.resolve()),
+            "latent_root": str(latent_root.resolve()),
             "styles": styles,
             "rows": rows,
             "cls_embeddings": cls_embeds,
             "patch_embeddings": patch_embeds,
             "per_style_counts": per_style_counts,
         },
-        args.output,
+        output_path,
     )
-    print(f"[dino-cache] wrote {args.output}", flush=True)
+    print(f"[dino-cache] wrote {output_path}", flush=True)
 
 
 if __name__ == "__main__":

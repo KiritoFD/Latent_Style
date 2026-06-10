@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import csv
 import json
+import argparse
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.patheffects as pe
 
 
 ROOT = Path(__file__).resolve().parent
@@ -24,6 +26,8 @@ ARTFID_CSV = (
     / "artfid_comparison_points.csv"
 )
 ALL_POINTS_CSV = ROOT / "fig_distinct5_all_points_big.csv"
+INTROSTYLE_PAGE1_CSV = ROOT / "introstyle_page1" / "introstyle_page1_summary.csv"
+PAGE1_ARTFID_RERUN_CSV = ROOT / "page1_bundle" / "page1_artfid_rerun_summary.csv"
 OUT_DIR = ROOT / "figures"
 KNEE_ARTFID_JSON = ROOT / "local_eval" / "lbm_knee_e13_artfid" / "aggregate_targetwise_artfid_fast_repro.json"
 SEEDREAM_ARTFID_JSON = (
@@ -57,17 +61,18 @@ plt.rcParams.update(
 
 COLORS = {
     "idt": "#8E63C0",
-    "samam": "#2F7DB7",
-    "samst": "#2CA02C",
-    "latent_samam": "#0F766E",
-    "latent_samst": "#7C3AED",
+    "samam": "#5D8FBF",
+    "samst": "#55A85B",
+    "latent_samam": "#3C8F89",
+    "latent_samst": "#8E66D9",
     "compact": "#D64045",
     "structot": "#B45309",
     "ps": "#9A3412",
     "psv2": "#1D4ED8",
-    "seedream": "#C0840A",
+    "seedream": "#C58A2B",
     "bg": "#CFCFCF",
     "text": "#333333",
+    "lbm_band": "#F3E7D6",
 }
 
 
@@ -132,16 +137,31 @@ def json_artfid(path: Path, *, scope: str, key: str = "aggregate_art_fid") -> fl
     return float(node[key])
 
 
-def annotate(ax, x: float, y: float, text: str, dx: float, dy: float, color: str) -> None:
+def annotate(
+    ax,
+    x: float,
+    y: float,
+    text: str,
+    dx: float,
+    dy: float,
+    color: str,
+    *,
+    fontsize: float = 6.2,
+    arrow: bool = True,
+    weight: str = "semibold",
+    alpha: float = 1.0,
+) -> None:
     ax.annotate(
         text,
         (x, y),
         xytext=(dx, dy),
         textcoords="offset points",
-        fontsize=7.0,
+        fontsize=fontsize,
+        fontweight=weight,
         color=color,
-        bbox=dict(boxstyle="round,pad=0.18", fc="white", ec=color, lw=0.55, alpha=0.92),
-        arrowprops=dict(arrowstyle="-", color=color, lw=0.55, shrinkA=2, shrinkB=3),
+        alpha=alpha,
+        arrowprops=(dict(arrowstyle="-", color=color, lw=0.5, shrinkA=2, shrinkB=3) if arrow else None),
+        path_effects=[pe.withStroke(linewidth=2.4, foreground="white")],
     )
 
 
@@ -180,7 +200,80 @@ def latent_curve_row(family: str, label: str) -> dict[str, object]:
     raise KeyError((family, label))
 
 
+def page1_artfid_row(label: str) -> dict[str, object]:
+    for row in read_csv(PAGE1_ARTFID_RERUN_CSV):
+        if row.get("label") == label:
+            return {
+                "label": label,
+                "artfid": float(row["aggregate_art_fid"]),
+                "train_time_label": row["train_time_label"],
+            }
+    raise KeyError(label)
+
+
+def introstyle_row(run: str) -> dict[str, object]:
+    for row in read_csv(INTROSTYLE_PAGE1_CSV):
+        if row.get("run") == run:
+            return {
+                "label": row.get("plot_label", run),
+                "target_style": float(row["transfer_target_style_score"]),
+                "style_margin": float(row["transfer_style_margin"]),
+                "delta_idt_style": float(row["transfer_delta_idt_style"]),
+            }
+    raise KeyError(run)
+
+
+def y_value_for(metric: str, clip_row: dict[str, object], intro_row: dict[str, object] | None) -> float:
+    if metric == "clip_delta_idt":
+        return float(clip_row["delta_idt_tr"])
+    if intro_row is None:
+        raise KeyError(f"missing IntroStyle row for metric {metric}")
+    if metric == "introstyle_delta_idt":
+        return float(intro_row["delta_idt_style"])
+    if metric == "introstyle_margin":
+        return float(intro_row["style_margin"])
+    raise ValueError(metric)
+
+
+def axis_ylabel(metric: str) -> str:
+    if metric == "clip_delta_idt":
+        return r"$\Delta_{\mathrm{IDT,tr}}$ (transfer CLIP-S) $\uparrow$"
+    if metric == "introstyle_delta_idt":
+        return r"$\Delta_{\mathrm{IDT}}$ (IntroStyle target score) $\uparrow$"
+    if metric == "introstyle_margin":
+        return r"IntroStyle style margin $\uparrow$"
+    raise ValueError(metric)
+
+
+def axis_title(metric: str) -> str:
+    if metric == "clip_delta_idt":
+        return "(a) IDT failure zone and frontier"
+    if metric == "introstyle_delta_idt":
+        return "(a) IntroStyle IDT-calibrated frontier"
+    if metric == "introstyle_margin":
+        return "(a) IntroStyle specificity frontier"
+    raise ValueError(metric)
+
+
+def axis_ylim(metric: str) -> tuple[float, float]:
+    if metric == "clip_delta_idt":
+        return (-0.11, 0.102)
+    if metric == "introstyle_delta_idt":
+        return (-0.24, 0.03)
+    if metric == "introstyle_margin":
+        return (-0.24, 0.02)
+    raise ValueError(metric)
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--y-metric",
+        choices=["clip_delta_idt", "introstyle_delta_idt", "introstyle_margin"],
+        default="clip_delta_idt",
+    )
+    args = parser.parse_args()
+
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     idt = transfer_row("Reference", "No-op transfer")
@@ -203,84 +296,140 @@ def main() -> None:
     latent_samam = latent_curve_row("SaMAM-latent", "Lat SaMAM 1500")
     latent_samst = latent_curve_row("SaMST-latent", "Lat SaMST 1050")
 
-    fig, axes = plt.subplots(1, 2, figsize=(7.35, 2.82), gridspec_kw={"width_ratios": [1.16, 0.84]})
+    intro_rows = {}
+    if args.y_metric != "clip_delta_idt":
+        for run in [
+            "IDT",
+            "SaMAM_2250",
+            "SaMST_e15",
+            "Lat_SaMAM_step1500",
+            "Lat_SaMST_batch1050",
+            "LBM-K_e1",
+            "LBM-Knee_e13",
+            "LBM-PS-v2_e13",
+            "Seedream_repaired750",
+        ]:
+            intro_rows[run] = introstyle_row(run)
+
+    fig, axes = plt.subplots(1, 2, figsize=(7.7, 2.9), gridspec_kw={"width_ratios": [1.08, 1.02]})
 
     ax = axes[0]
     ax.set_facecolor("#FCFBF8")
+    ax.axhspan(-0.11, 0.0, color="#F2E8F7", alpha=0.26, zorder=0)
     bg = read_background_points()
     if bg:
         ax.scatter(
             [row["x"] for row in bg],
             [row["y"] for row in bg],
-            s=11,
+            s=10,
             c=COLORS["bg"],
-            alpha=0.22,
+            alpha=0.15,
             linewidths=0,
             zorder=1,
         )
 
-    ax.axhline(0.0, color=COLORS["idt"], lw=1.2, ls=(0, (7, 4)), zorder=2)
-    ax.text(0.82, -0.018, "IDT floor", color=COLORS["idt"], fontsize=8.8, ha="center", weight="bold")
+    ax.axhline(0.0, color=COLORS["idt"], lw=1.5, ls=(0, (7, 4)), zorder=2)
+    ax.text(0.835, -0.014 if args.y_metric == "clip_delta_idt" else -0.028, "IDT floor", color=COLORS["idt"], fontsize=8.4, ha="right", weight="bold")
+    if args.y_metric == "clip_delta_idt":
+        ax.text(0.17, -0.087, "failure zone", color="#8B6BAF", fontsize=6.6, weight="bold", alpha=0.82)
 
     selected = [
-        ("SaMAM-2250", samam, COLORS["samam"], "o"),
-        ("SaMST e15", samst, COLORS["samst"], "s"),
-        ("Seedream-4.5", seedream, COLORS["seedream"], "P"),
-        ("LBM-K", compact, COLORS["compact"], "D"),
-        ("LBM-Knee", knee, COLORS["structot"], "o"),
-        ("Lat SaMAM", latent_samam, COLORS["latent_samam"], "^"),
-        ("Lat SaMST", latent_samst, COLORS["latent_samst"], "v"),
-        ("LBM-PS-v2", psv2, COLORS["psv2"], "*"),
+        ("SaMAM", samam, intro_rows.get("SaMAM_2250"), COLORS["samam"], "o"),
+        ("SaMST", samst, intro_rows.get("SaMST_e15"), COLORS["samst"], "s"),
+        ("Seedream", seedream, intro_rows.get("Seedream_repaired750"), COLORS["seedream"], "P"),
+        ("K", compact, intro_rows.get("LBM-K_e1"), COLORS["compact"], "D"),
+        ("Knee", knee, intro_rows.get("LBM-Knee_e13"), COLORS["structot"], "o"),
+        ("Lat-MAM", latent_samam, intro_rows.get("Lat_SaMAM_step1500"), COLORS["latent_samam"], "^"),
+        ("Lat-MST", latent_samst, intro_rows.get("Lat_SaMST_batch1050"), COLORS["latent_samst"], "v"),
+        ("PS-v2", psv2, intro_rows.get("LBM-PS-v2_e13"), COLORS["psv2"], "*"),
     ]
-    for label, row, color, marker in selected:
+    lbm_labels = {"K", "Knee", "PS-v2"}
+    for label, row, intro_row, color, marker in selected:
+        is_lbm = label in lbm_labels
         ax.scatter(
             [row["one_minus_lpips"]],
-            [row["delta_idt_tr"]],
-            s=72 if marker != "*" else 110,
+            [y_value_for(args.y_metric, row, intro_row)],
+            s=(82 if marker != "*" else 126) if is_lbm else (58 if marker != "*" else 92),
             c=color,
             marker=marker,
             edgecolors="white",
-            linewidths=0.8,
-            zorder=4,
+            linewidths=1.0 if is_lbm else 0.8,
+            alpha=1.0 if is_lbm else 0.92,
+            zorder=5 if is_lbm else 4,
         )
 
-    annotate(ax, samam["one_minus_lpips"], samam["delta_idt_tr"], "SaMAM-2250", 10, 8, COLORS["samam"])
-    annotate(ax, samst["one_minus_lpips"], samst["delta_idt_tr"], "SaMST e15", -66, -18, COLORS["samst"])
-    annotate(ax, seedream["one_minus_lpips"], seedream["delta_idt_tr"], "Seedream-4.5", -80, 8, COLORS["seedream"])
-    annotate(ax, compact["one_minus_lpips"], compact["delta_idt_tr"], "LBM-K", 14, 20, COLORS["compact"])
-    annotate(ax, knee["one_minus_lpips"], knee["delta_idt_tr"], "LBM-Knee", 20, 22, COLORS["structot"])
-    annotate(ax, latent_samam["one_minus_lpips"], latent_samam["delta_idt_tr"], "Lat SaMAM", -54, -8, COLORS["latent_samam"])
-    annotate(ax, latent_samst["one_minus_lpips"], latent_samst["delta_idt_tr"], "Lat SaMST", 12, -24, COLORS["latent_samst"])
-    annotate(ax, psv2["one_minus_lpips"], psv2["delta_idt_tr"], "LBM-PS-v2", -32, -2, COLORS["psv2"])
+    lbm_frontier_x = [compact["one_minus_lpips"], knee["one_minus_lpips"], psv2["one_minus_lpips"]]
+    lbm_frontier_y = [
+        y_value_for(args.y_metric, compact, intro_rows.get("LBM-K_e1")),
+        y_value_for(args.y_metric, knee, intro_rows.get("LBM-Knee_e13")),
+        y_value_for(args.y_metric, psv2, intro_rows.get("LBM-PS-v2_e13")),
+    ]
+    ax.plot(
+        lbm_frontier_x,
+        lbm_frontier_y,
+        color="#B54708",
+        lw=2.2,
+        alpha=0.82,
+        zorder=3,
+    )
+    ax.text(0.475, 0.083, "LBM frontier", color="#9A3412", fontsize=6.3, weight="bold", alpha=0.95)
 
-    ax.set_title("(a) IDT-calibrated frontier", pad=4)
+    annotate(ax, psv2["one_minus_lpips"], y_value_for(args.y_metric, psv2, intro_rows.get("LBM-PS-v2_e13")), "PS-v2", -60, -4, COLORS["psv2"], fontsize=6.7, weight="bold")
+    annotate(ax, samst["one_minus_lpips"], y_value_for(args.y_metric, samst, intro_rows.get("SaMST_e15")), "SaMST", -10, 12, COLORS["samst"], arrow=False, fontsize=5.9, weight="medium", alpha=0.84)
+    annotate(ax, seedream["one_minus_lpips"], y_value_for(args.y_metric, seedream, intro_rows.get("Seedream_repaired750")), "Seedream-4.5", -86, -4, COLORS["seedream"], arrow=False, fontsize=5.8, weight="medium", alpha=0.78)
+    annotate(ax, latent_samst["one_minus_lpips"], y_value_for(args.y_metric, latent_samst, intro_rows.get("Lat_SaMST_batch1050")), "Lat-MST", 14, -14, COLORS["latent_samst"], arrow=False, fontsize=5.8, weight="medium", alpha=0.78)
+    annotate(ax, knee["one_minus_lpips"], y_value_for(args.y_metric, knee, intro_rows.get("LBM-Knee_e13")), "Knee", 14, 22, COLORS["structot"], fontsize=6.7, weight="bold")
+    annotate(ax, compact["one_minus_lpips"], y_value_for(args.y_metric, compact, intro_rows.get("LBM-K_e1")), "K", 22, 10, COLORS["compact"], fontsize=6.6, weight="bold")
+    annotate(ax, latent_samam["one_minus_lpips"], y_value_for(args.y_metric, latent_samam, intro_rows.get("Lat_SaMAM_step1500")), "Lat-MAM", -52, -2, COLORS["latent_samam"], arrow=False, fontsize=5.8, weight="medium", alpha=0.8)
+    annotate(ax, samam["one_minus_lpips"], y_value_for(args.y_metric, samam, intro_rows.get("SaMAM_2250")), "SaMAM", 6, 8, COLORS["samam"], arrow=False, fontsize=5.9, weight="medium", alpha=0.82)
+
+    ax.set_title(axis_title(args.y_metric), pad=6, fontsize=9.2, fontweight="bold")
     ax.set_xlabel(r"$1-\mathrm{LPIPS}$ $\uparrow$")
-    ax.set_ylabel(r"$\Delta_{\mathrm{IDT,tr}}$ (transfer CLIP-S) $\uparrow$")
+    ax.set_ylabel(axis_ylabel(args.y_metric))
     ax.set_xlim(0.14, 0.85)
-    ax.set_ylim(-0.11, 0.102)
+    ax.set_ylim(*axis_ylim(args.y_metric))
 
     ax = axes[1]
     ax.set_facecolor("#FCFBF8")
-    idt_artfid = artfid_row("idt", "idt", scope="full")
-    samam_artfid = artfid_row("SaMAM", "SaMAM best-lpips (2250)", scope="full")
-    samst_artfid = artfid_row("SaMST", "SaMST e15", scope="full")
-    knee_artfid = {"label": "LBM-Knee", "artfid": json_artfid(KNEE_ARTFID_JSON, scope="full")}
-    seedream_artfid = {"label": "Seedream-4.5", "artfid": json_artfid(SEEDREAM_ARTFID_JSON, scope="full")}
+    idt_artfid = page1_artfid_row("IDT")
+    samam_artfid = page1_artfid_row("SaMAM-2250")
+    latent_samam_artfid = page1_artfid_row("Lat SaMAM")
+    compact_artfid = page1_artfid_row("LBM-K")
+    knee_artfid = page1_artfid_row("LBM-Knee")
+    samst_artfid = page1_artfid_row("SaMST e15")
+    latent_samst_artfid = page1_artfid_row("Lat SaMST")
+    seedream_artfid = page1_artfid_row("Seedream-4.5")
+    psv2_artfid = page1_artfid_row("LBM-PS-v2")
     art_rows = [
         ("IDT", idt_artfid, COLORS["idt"]),
         ("SaMAM", samam_artfid, COLORS["samam"]),
-        ("LBM-Knee", knee_artfid, COLORS["structot"]),
+        ("Lat-\nSaMAM", latent_samam_artfid, COLORS["latent_samam"]),
+        ("LBM-\nK", compact_artfid, COLORS["compact"]),
+        ("LBM-\nKnee", knee_artfid, COLORS["structot"]),
+        ("LBM-\nPS-v2", psv2_artfid, COLORS["psv2"]),
         ("SaMST", samst_artfid, COLORS["samst"]),
-        ("Seedream", seedream_artfid, COLORS["seedream"]),
+        ("Lat-\nSaMST", latent_samst_artfid, COLORS["latent_samst"]),
+        ("Seedream-\n4.5", seedream_artfid, COLORS["seedream"]),
     ]
     xs = np.arange(len(art_rows))
     vals = [row["artfid"] for _, row, _ in art_rows]
     colors = [color for _, _, color in art_rows]
+    ax.axvspan(2.5, 5.5, color=COLORS["lbm_band"], alpha=0.36, zorder=0)
+    ax.text(4.0, max(vals) * 0.92, "LBM family", ha="center", va="center", fontsize=6.4, color="#9A3412", weight="bold")
     ax.bar(xs, vals, color=colors, edgecolor="white", linewidth=0.9, zorder=3)
-    ax.set_xticks(xs, ["IDT", "SaMAM", "LBM-\nKnee", "SaMST", "Seedream\n4.5"])
+    ax.set_xticks(xs, [label for label, _, _ in art_rows])
+    ax.tick_params(axis="x", labelsize=6.2)
     ax.set_ylabel("tw-ArtFID")
-    ax.set_title("(b) All-pairs artifact check", pad=4)
-    inside_labels = ["IDT", "7.6h", "6.4m", "5.8h", "API"]
+    ax.set_title("(b) All-pairs tw-ArtFID", pad=4, fontsize=9.2, fontweight="bold")
+    inside_labels = []
+    for _, row, _ in art_rows:
+        txt = str(row["train_time_label"])
+        txt = {
+            "140.6m": "2.3h",
+            "~35m": "35m",
+            "ref": "ref",
+        }.get(txt, txt)
+        inside_labels.append(txt)
     for x, val, txt in zip(xs, vals, inside_labels):
         ax.text(
             x,
@@ -288,7 +437,7 @@ def main() -> None:
             txt,
             ha="center",
             va="center",
-            fontsize=8.1 if txt == "IDT" else 7.8,
+            fontsize=6.3 if txt != "ref" else 6.6,
             color="white",
             weight="bold",
             zorder=4,
@@ -299,14 +448,22 @@ def main() -> None:
             f"{val:.1f}",
             ha="center",
             va="bottom",
-            fontsize=7.4,
+            fontsize=6.1,
             color=COLORS["text"],
             weight="bold",
             zorder=4,
         )
 
-    fig.savefig(OUT_DIR / "fig_distinct5_page1_summary.pdf")
-    fig.savefig(OUT_DIR / "fig_distinct5_page1_summary.png")
+    metric_suffix = {
+        "clip_delta_idt": "clip_delta_idt",
+        "introstyle_delta_idt": "introstyle_delta_idt",
+        "introstyle_margin": "introstyle_margin",
+    }[args.y_metric]
+    if args.y_metric == "clip_delta_idt":
+        fig.savefig(OUT_DIR / "fig_distinct5_page1_summary.pdf")
+        fig.savefig(OUT_DIR / "fig_distinct5_page1_summary.png")
+    fig.savefig(OUT_DIR / f"fig_distinct5_page1_summary_{metric_suffix}.pdf")
+    fig.savefig(OUT_DIR / f"fig_distinct5_page1_summary_{metric_suffix}.png")
 
 
 if __name__ == "__main__":

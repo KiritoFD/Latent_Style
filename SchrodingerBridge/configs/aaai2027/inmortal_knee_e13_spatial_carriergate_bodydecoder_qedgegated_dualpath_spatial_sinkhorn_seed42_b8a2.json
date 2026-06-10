@@ -1,0 +1,16 @@
+{
+  "_base": "inmortal_knee_e13_spatial_carriergate_bodydecoder_qedgegated_dualpath_spatial_seed42_b8a2.json",
+  "model": {
+    "proximal_attn_routing_mode": "sinkhorn",
+    "proximal_attn_sinkhorn_iters": 4
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_knee_e13_spatial_carriergate_bodydecoder_qedgegated_dualpath_spatial_sinkhorn_seed42_b8a2"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_knee_e13_spatial_carriergate_bodydecoder_qedgegated_dualpath_spatial_sinkhorn_seed42_b8a2",
+    "axis": "aaai2027_inmortal_next_round_target_specific_style_routing",
+    "stage": "KneeE13_plus_SpatialCarrierGateBodyDecoder_plus_QuantileEdgeGatedStructureLeash_plus_DualPathSpatialTextureProximal_plus_SinkhornStyleRouting",
+    "notes": "Follow-up after dualpath_spatialtexture. Keep the late coarse-plus-texture split, but replace diffuse proximal attention with near doubly-stochastic Sinkhorn routing so target-style evidence is forced to spread across multiple localized slots instead of collapsing into a conservative softmax basin."
+  }
+}

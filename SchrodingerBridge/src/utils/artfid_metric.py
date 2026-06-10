@@ -129,19 +129,65 @@ def _collect_features(
     return np.concatenate(feats, axis=0)
 
 
+def collect_artfid_features_from_paths(
+    paths: list[str],
+    *,
+    model: nn.Module,
+    batch_size: int,
+    device: str | torch.device,
+) -> np.ndarray:
+    return _collect_features(paths, model=model, batch_size=batch_size, device=device)
+
+
 def frechet_distance(mu1: np.ndarray, sigma1: np.ndarray, mu2: np.ndarray, sigma2: np.ndarray, eps: float = 1e-6) -> float:
     mu1 = np.atleast_1d(mu1)
     mu2 = np.atleast_1d(mu2)
     sigma1 = np.atleast_2d(sigma1)
     sigma2 = np.atleast_2d(sigma2)
     diff = mu1 - mu2
-    covmean, _ = linalg.sqrtm(sigma1.dot(sigma2), disp=False)
-    if not np.isfinite(covmean).all():
+    prod = sigma1.dot(sigma2)
+    try:
+        covmean, _ = linalg.sqrtm(prod, disp=False)
+        if not np.isfinite(covmean).all():
+            offset = np.eye(sigma1.shape[0]) * eps
+            covmean = linalg.sqrtm((sigma1 + offset).dot(sigma2 + offset))
+        if np.iscomplexobj(covmean):
+            covmean = covmean.real
+        if not np.isfinite(covmean).all():
+            raise ValueError("non-finite sqrtm result")
+        tr_covmean = float(np.trace(covmean))
+    except Exception:
+        # Stable fallback for memory pressure or numerically troublesome
+        # covariance products.
         offset = np.eye(sigma1.shape[0]) * eps
-        covmean = linalg.sqrtm((sigma1 + offset).dot(sigma2 + offset))
-    if np.iscomplexobj(covmean):
-        covmean = covmean.real
-    return float(diff.dot(diff) + np.trace(sigma1) + np.trace(sigma2) - 2.0 * np.trace(covmean))
+        try:
+            eigvals = linalg.eigvals((sigma1 + offset).dot(sigma2 + offset))
+        except Exception:
+            eigvals = linalg.eigvals(prod)
+        eigvals = np.real(eigvals)
+        eigvals = np.clip(eigvals, a_min=0.0, a_max=None)
+        tr_covmean = float(np.sqrt(eigvals).sum())
+    return float(diff.dot(diff) + np.trace(sigma1) + np.trace(sigma2) - 2.0 * tr_covmean)
+
+
+def compute_artfid_fid_from_features(
+    gen_feats: np.ndarray,
+    *,
+    ref_feats: np.ndarray | None = None,
+    ref_stats: tuple[np.ndarray, np.ndarray] | None = None,
+) -> float | None:
+    if gen_feats.shape[0] < 2:
+        return None
+    if ref_stats is None:
+        if ref_feats is None or ref_feats.shape[0] < 2:
+            return None
+        mu_ref = np.mean(ref_feats, axis=0)
+        sigma_ref = np.cov(ref_feats, rowvar=False)
+    else:
+        mu_ref, sigma_ref = ref_stats
+    mu_gen = np.mean(gen_feats, axis=0)
+    sigma_gen = np.cov(gen_feats, rowvar=False)
+    return frechet_distance(mu_gen, sigma_gen, mu_ref, sigma_ref)
 
 
 def compute_artfid_fid_from_paths(
@@ -156,25 +202,23 @@ def compute_artfid_fid_from_paths(
 ) -> float | None:
     if len(gen_paths) < 2 or len(ref_paths) < 2:
         return None
-    gen_feats = _collect_features(gen_paths, model=model, batch_size=batch_size, device=device)
+    gen_feats = collect_artfid_features_from_paths(gen_paths, model=model, batch_size=batch_size, device=device)
     if gen_feats.shape[0] < 2:
         return None
     if ref_cache is not None and ref_cache_key and ref_cache_key in ref_cache:
         mu_ref, sigma_ref = ref_cache[ref_cache_key]
     else:
-        ref_feats = _collect_features(ref_paths, model=model, batch_size=batch_size, device=device)
+        ref_feats = collect_artfid_features_from_paths(ref_paths, model=model, batch_size=batch_size, device=device)
         if ref_feats.shape[0] < 2:
             return None
         mu_ref = np.mean(ref_feats, axis=0)
         sigma_ref = np.cov(ref_feats, rowvar=False)
         if ref_cache is not None and ref_cache_key:
             ref_cache[ref_cache_key] = (mu_ref, sigma_ref)
-    mu_gen = np.mean(gen_feats, axis=0)
-    sigma_gen = np.cov(gen_feats, rowvar=False)
-    return frechet_distance(mu_gen, sigma_gen, mu_ref, sigma_ref)
+    return compute_artfid_fid_from_features(gen_feats, ref_stats=(mu_ref, sigma_ref))
 
 
-def compute_artfid_content_distance_from_paths(
+def compute_artfid_content_distances_from_paths(
     gen_paths: list[str],
     src_paths: list[str],
     *,
@@ -182,7 +226,7 @@ def compute_artfid_content_distance_from_paths(
     batch_size: int,
     device: str | torch.device,
     cpu_fallback: bool = True,
-) -> float | None:
+) -> np.ndarray | None:
     if len(gen_paths) != len(src_paths) or not gen_paths:
         return None
 
@@ -211,4 +255,26 @@ def compute_artfid_content_distance_from_paths(
         dists.append(cur.detach().view(-1).cpu().numpy())
     if not dists:
         return None
-    return float(np.mean(np.concatenate(dists, axis=0)))
+    return np.concatenate(dists, axis=0)
+
+
+def compute_artfid_content_distance_from_paths(
+    gen_paths: list[str],
+    src_paths: list[str],
+    *,
+    loss_fn: nn.Module,
+    batch_size: int,
+    device: str | torch.device,
+    cpu_fallback: bool = True,
+) -> float | None:
+    dists = compute_artfid_content_distances_from_paths(
+        gen_paths,
+        src_paths,
+        loss_fn=loss_fn,
+        batch_size=batch_size,
+        device=device,
+        cpu_fallback=cpu_fallback,
+    )
+    if dists is None or dists.size == 0:
+        return None
+    return float(np.mean(dists))

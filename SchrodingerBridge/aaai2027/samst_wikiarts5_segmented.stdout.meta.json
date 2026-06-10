@@ -1,0 +1,15 @@
+{
+  "dataset": "/mnt/f/wikiarts_5_full_notest",
+  "out_root": "/mnt/y/Latent_Style/Related_Works/baseline_pipeline/results/samst_wikiarts5_wsl_20260610_172206",
+  "styles": "Early_Renaissance,Impressionism,Minimalism,Rococo,Ukiyo_e",
+  "epochs": 10,
+  "max_steps": 0,
+  "batch_size": 1,
+  "image_size": 256,
+  "style_size": 512,
+  "save_interval": 5,
+  "max_train_per_class": 0,
+  "skip_styles_with_epoch_at_least": 10,
+  "stop_after_one_pending_style": false,
+  "created_at": "2026-06-11T02:39:30.628611"
+}

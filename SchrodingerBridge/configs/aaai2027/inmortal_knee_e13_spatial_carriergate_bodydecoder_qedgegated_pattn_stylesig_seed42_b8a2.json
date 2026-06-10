@@ -1,0 +1,23 @@
+{
+  "_base": "inmortal_knee_e13_spatial_carriergate_bodydecoder_qedgegated_pattn_seed42_b8a2.json",
+  "bridge": {
+    "w_style_contrastive": 0.25,
+    "style_contrastive_temperature": 0.10,
+    "style_contrastive_pool_size": 4,
+    "w_residual_style_direction": 0.20,
+    "w_spectral_amplitude": 0.10,
+    "spectral_amplitude_channels": 2,
+    "spectral_amplitude_highpass": true,
+    "w_style_energy_floor": 0.10,
+    "style_energy_floor_ratio": 0.75
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_knee_e13_spatial_carriergate_bodydecoder_qedgegated_pattn_stylesig_seed42_b8a2"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_knee_e13_spatial_carriergate_bodydecoder_qedgegated_pattn_stylesig_seed42_b8a2",
+    "axis": "aaai2027_inmortal_target_specific_style_signature",
+    "stage": "KneeE13_plus_SpatialCarrierGateBodyDecoder_plus_QuantileEdgeGatedStructureLeash_plus_CrossAttnTextureProximal_plus_TargetSpecificStyleSignatureLosses",
+    "notes": "Post-sinkhorn follow-up. Keep the strongest current structure leash plus cross-attention texture head, but add explicit target-specific style pressure through style contrastive alignment, residual style-direction alignment, spectral amplitude matching, and a style-energy floor so the branch is no longer asked to discover target specificity from terminal SWD alone."
+  }
+}

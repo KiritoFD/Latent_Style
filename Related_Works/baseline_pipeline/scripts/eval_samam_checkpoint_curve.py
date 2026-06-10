@@ -55,7 +55,7 @@ def tensor_for_metric(path: Path, size: int, device: torch.device, dtype: torch.
     return tr(load_rgb(path)).unsqueeze(0).to(device=device, dtype=dtype)
 
 
-def clip_features(paths: list[Path], model, processor, device: torch.device, dtype: torch.dtype, batch_size: int) -> torch.Tensor:
+def clip_features_transformers(paths: list[Path], model, processor, device: torch.device, dtype: torch.dtype, batch_size: int) -> torch.Tensor:
     feats: list[torch.Tensor] = []
     for start in range(0, len(paths), batch_size):
         imgs = [load_rgb(p) for p in paths[start : start + batch_size]]
@@ -68,6 +68,21 @@ def clip_features(paths: list[Path], model, processor, device: torch.device, dty
             out = model.get_image_features(**batch)
             feat = out.pooler_output if hasattr(out, "pooler_output") else out
             feats.append(F.normalize(feat.float(), dim=-1).cpu())
+    return torch.cat(feats, dim=0)
+
+
+def clip_features_open_clip(paths: list[Path], model, preprocess, device: torch.device, dtype: torch.dtype, batch_size: int) -> torch.Tensor:
+    feats: list[torch.Tensor] = []
+    for start in range(0, len(paths), batch_size):
+        imgs = [load_rgb(p) for p in paths[start : start + batch_size]]
+        try:
+            batch = torch.stack([preprocess(img) for img in imgs], dim=0).to(device=device, dtype=dtype)
+            with torch.no_grad():
+                feat = model.encode_image(batch)
+                feats.append(F.normalize(feat.float(), dim=-1).cpu())
+        finally:
+            for img in imgs:
+                img.close()
     return torch.cat(feats, dim=0)
 
 
@@ -99,19 +114,31 @@ def generate_for_checkpoint(args, ckpt: Path, sources: list[tuple[str, Path]], s
 
 def evaluate_images(args, image_dir: Path, sources_by_key: dict[tuple[str, str], Path], style_paths: dict[str, list[Path]]) -> dict[str, float]:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    dtype = torch.float16 if device.type == "cuda" else torch.float32
+    clip_dtype = torch.float16 if device.type == "cuda" else torch.float32
+    lpips_dtype = torch.float32
 
     import lpips
-    from transformers import CLIPModel, CLIPProcessor
+    lpips_model = lpips.LPIPS(net="alex").to(device=device, dtype=lpips_dtype).eval()
+    clip_fn = None
+    clip_model = None
+    clip_aux = None
+    if str(args.clip_backend).strip().lower() == "open_clip":
+        import open_clip
 
-    lpips_model = lpips.LPIPS(net="alex").to(device=device, dtype=dtype).eval()
-    clip_src = str(args.clip_cache) if args.clip_cache.exists() else "openai/clip-vit-base-patch32"
-    clip_model = CLIPModel.from_pretrained(clip_src).to(device=device, dtype=dtype).eval()
-    clip_processor = CLIPProcessor.from_pretrained(clip_src)
+        clip_model, _, clip_aux = open_clip.create_model_and_transforms("ViT-B-32", pretrained="openai")
+        clip_model = clip_model.to(device=device, dtype=clip_dtype).eval()
+        clip_fn = clip_features_open_clip
+    else:
+        from transformers import CLIPModel, CLIPProcessor
+
+        clip_src = str(args.clip_cache) if args.clip_cache.exists() else "openai/clip-vit-base-patch32"
+        clip_model = CLIPModel.from_pretrained(clip_src).to(device=device, dtype=clip_dtype).eval()
+        clip_aux = CLIPProcessor.from_pretrained(clip_src)
+        clip_fn = clip_features_transformers
 
     gen_files = sorted(image_dir.glob("*.png"))
     style_feat_cache = {
-        style: clip_features(paths, clip_model, clip_processor, device, dtype, args.metric_batch_size)
+        style: clip_fn(paths, clip_model, clip_aux, device, clip_dtype, args.metric_batch_size)
         for style, paths in style_paths.items()
     }
     src_feat_cache: dict[Path, torch.Tensor] = {}
@@ -135,18 +162,18 @@ def evaluate_images(args, image_dir: Path, sources_by_key: dict[tuple[str, str],
         src_path = sources_by_key[(src_style, src_stem)]
 
         with torch.no_grad():
-            src_t = tensor_for_metric(src_path, args.image_size, device, dtype)
-            gen_t = tensor_for_metric(gen_path, args.image_size, device, dtype)
-            lp = float(lpips_model(src_t, gen_t).squeeze().detach().cpu().item())
+            src_t = tensor_for_metric(src_path, args.image_size, device, lpips_dtype)
+            gen_t = tensor_for_metric(gen_path, args.image_size, device, lpips_dtype)
+            lp = float(torch.nan_to_num(lpips_model(src_t, gen_t), nan=0.0, posinf=0.0, neginf=0.0).squeeze().detach().cpu().item())
         lpips_values.append(lp)
 
-        gen_feat = clip_features([gen_path], clip_model, clip_processor, device, dtype, 1)
+        gen_feat = clip_fn([gen_path], clip_model, clip_aux, device, clip_dtype, 1)
         style_feat = style_feat_cache[tgt_style]
         clip_style = float((gen_feat @ style_feat.T).mean().item())
         clip_style_values.append(clip_style)
 
         if src_path not in src_feat_cache:
-            src_feat_cache[src_path] = clip_features([src_path], clip_model, clip_processor, device, dtype, 1)
+            src_feat_cache[src_path] = clip_fn([src_path], clip_model, clip_aux, device, clip_dtype, 1)
         clip_content = float((gen_feat @ src_feat_cache[src_path].T).mean().item())
         clip_content_values.append(clip_content)
         rows.append(
@@ -203,13 +230,15 @@ def plot_curve(rows: list[dict[str, object]], out_png: Path) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ckpt-dir", type=Path, required=True)
+    parser.add_argument("--ckpt-dir", type=Path, default=None)
+    parser.add_argument("--checkpoint", type=Path, default=None)
     parser.add_argument("--image-root", type=Path, default=REPO_ROOT / "style_data" / "overfit50")
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--image-size", type=int, default=256)
     parser.add_argument("--max-src-per-style", type=int, default=5)
     parser.add_argument("--metric-batch-size", type=int, default=4)
     parser.add_argument("--clip-cache", type=Path, default=REPO_ROOT / "Cycle-NCE" / "eval_cache" / "manual_clip" / "openai-clip-vit-base-patch32")
+    parser.add_argument("--clip-backend", choices=["open_clip", "transformers"], default="open_clip")
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--generate-only", action="store_true", help="Only generate SB-compatible images; do not compute ad-hoc metrics.")
     parser.add_argument(
@@ -225,6 +254,8 @@ def main() -> int:
         help="Comma-separated style folder names used for generation/evaluation.",
     )
     args = parser.parse_args()
+    if args.ckpt_dir is None and args.checkpoint is None:
+        raise ValueError("Provide either --ckpt-dir or --checkpoint")
 
     t0 = time.time()
     args.output_root.mkdir(parents=True, exist_ok=True)
@@ -251,9 +282,13 @@ def main() -> int:
         style_refs[style] = paths[0]
         style_paths[style] = paths
 
-    ckpts = [p for p in sorted(args.ckpt_dir.glob("step-step=*.ckpt"), key=step_from_ckpt)]
-    if not ckpts:
-        raise FileNotFoundError(f"No step checkpoints under {args.ckpt_dir}")
+    if args.checkpoint is not None:
+        ckpts = [args.checkpoint.resolve()]
+    else:
+        ckpt_dir = args.ckpt_dir.resolve()
+        ckpts = [p for p in sorted(ckpt_dir.glob("*.ckpt"), key=step_from_ckpt) if step_from_ckpt(p) >= 0]
+        if not ckpts:
+            raise FileNotFoundError(f"No step checkpoints under {ckpt_dir}")
     if args.steps.strip():
         wanted = {int(s.strip()) for s in args.steps.split(",") if s.strip()}
         ckpts = [p for p in ckpts if step_from_ckpt(p) in wanted]
@@ -264,14 +299,30 @@ def main() -> int:
     for ckpt in ckpts:
         step = step_from_ckpt(ckpt)
         print(f"[ckpt] step={step} path={ckpt}", flush=True)
+        gen_started = time.time()
         image_dir = generate_for_checkpoint(args, ckpt, sources, style_refs)
+        infer_wall = time.time() - gen_started
         if args.generate_only:
-            row = {"step": step, "ckpt": str(ckpt), "image_dir": str(image_dir), "count": float(len(list(image_dir.glob('*.png'))))}
+            row = {
+                "step": step,
+                "ckpt": str(ckpt),
+                "image_dir": str(image_dir),
+                "count": float(len(list(image_dir.glob('*.png')))),
+                "infer_wall_seconds": infer_wall,
+            }
             summary_rows.append(row)
             print(json.dumps(row, ensure_ascii=False), flush=True)
             continue
+        metric_started = time.time()
         metrics = evaluate_images(args, image_dir, sources_by_key, style_paths)
-        row = {"step": step, "ckpt": str(ckpt), "image_dir": str(image_dir), **metrics}
+        row = {
+            "step": step,
+            "ckpt": str(ckpt),
+            "image_dir": str(image_dir),
+            "infer_wall_seconds": infer_wall,
+            "metric_wall_seconds": time.time() - metric_started,
+            **metrics,
+        }
         summary_rows.append(row)
         print(json.dumps(row, ensure_ascii=False), flush=True)
 

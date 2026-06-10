@@ -1,0 +1,16 @@
+{
+  "_base": "inmortal_knee_e13_spatial_carriergate_bodydecoder_seed42_b8a2.json",
+  "bridge": {
+    "structure_penalty_mode": "edge_gated_anisotropic_plus_stokes",
+    "anisotropic_edge_gate_gamma": 12.0
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_knee_e13_spatial_carriergate_bodydecoder_edgegated_seed42_b8a2"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_knee_e13_spatial_carriergate_bodydecoder_edgegated_seed42_b8a2",
+    "axis": "aaai2027_inmortal_next_round_style_rescue",
+    "stage": "KneeE13_plus_SpatialCarrierGateBodyDecoder_plus_EdgeGatedStructureLeash",
+    "notes": "Resume from the current best internal balanced point, keep the stronger spatial carrier-gate body+decoder injection, but gate anisotropic normal pressure to strong content edges only and keep weak Stokes smoothing. This directly tests whether the prior spatial carrier line failed because it added target-style motion without enough explicit structure leash."
+  }
+}

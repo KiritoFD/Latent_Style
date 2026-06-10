@@ -1,0 +1,17 @@
+{
+  "_base": "inmortal_knee_e13_carriergate_injection_seed42_b8a2.json",
+  "model": {
+    "style_injection_form": "spatial_carrier_gate",
+    "style_injection_spatial_kernel": 5,
+    "style_injection_force_highpass": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_knee_e13_spatial_carriergate_bodydecoder_seed42_b8a2"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_knee_e13_spatial_carriergate_bodydecoder_seed42_b8a2",
+    "axis": "aaai2027_inmortal_next_round_style_rescue",
+    "stage": "KneeE13_plus_SpatialCarrierGateBodyDecoder",
+    "notes": "Start from the current best internal balanced point (LBM-Knee e13), but use the stronger spatial carrier-gate injection instead of the plain channel carrier. This tests whether target-specific spatial style statistics help when the anchor already has enough style to avoid the Hold4Mid weak-reopen trap."
+  }
+}

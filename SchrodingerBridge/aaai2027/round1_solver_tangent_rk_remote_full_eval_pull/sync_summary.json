@@ -1,0 +1,193 @@
+{
+  "family_id": "solver_tangent_rk",
+  "run_name": "aaai2027_round1_solver_tangent_rk_seed42_b8a2",
+  "remote_run_dir": "/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_tangent_rk_seed42_b8a2",
+  "eval_subdir": "full_eval_fast_snapshot",
+  "remote_scan": {
+    "run_dir": "/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_tangent_rk_seed42_b8a2",
+    "eval_root": "/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_tangent_rk_seed42_b8a2/full_eval_fast_snapshot",
+    "epochs": [
+      {
+        "epoch": "epoch_0001",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0002",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0003",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0004",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0005",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0006",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0007",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0008",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0009",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0010",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0011",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0012",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0013",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0014",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0015",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0016",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0017",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      }
+    ],
+    "processes": {
+      "train": [],
+      "fast_eval": [
+        {
+          "pid": "28838",
+          "cmd": "bash /mnt/i/Github/Latent_Style/SchrodingerBridge/_codex_tmp/round1-aaai2027_round1_solver_tangent_rk_seed42_b8a2-fast-eval.sh"
+        },
+        {
+          "pid": "28843",
+          "cmd": "/home/xy/venvs/samam312/bin/python SchrodingerBridge/tools/experiments/watch_round1_family_fast_eval.py --python-bin /home/xy/venvs/samam312/bin/python --run-dir /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_tangent_rk_seed42_b8a2 --test-dir /mnt/i/wikiart_distinct5_samam_512_classview/test --cache-dir /mnt/i/Github/Latent_Style/eval_cache --clip-hf-cache-dir /mnt/i/Github/Latent_Style/eval_cache/hf --output-subdir full_eval_fast_snapshot --batch-size 1 --vae-decode-batch-size 4 --target-chunk-size 1 --max-live-memory-mib-to-launch 9800 --poll-seconds 180 --patience 6"
+        }
+      ],
+      "posttrain_eval": []
+    }
+  },
+  "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_tangent_rk_remote_full_eval_pull\\clip_lpips_curve.csv",
+  "convergence_json": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_tangent_rk_remote_full_eval_pull\\round1_convergence.json",
+  "best_transfer_style": {
+    "epoch": "epoch_0001",
+    "full_clip_style": "0.7141978996992111",
+    "full_content_lpips": "0.5221973885333334",
+    "transfer_clip_style": "0.6999164748688539",
+    "transfer_content_lpips": "0.5295412582833333",
+    "wall_total_seconds": "186.7422735020009",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_tangent_rk_remote_full_eval_pull\\epoch_0001\\summary.json"
+  },
+  "best_transfer_lpips": {
+    "epoch": "epoch_0017",
+    "full_clip_style": "0.7072305288314819",
+    "full_content_lpips": "0.45041688216",
+    "transfer_clip_style": "0.6837851852178574",
+    "transfer_content_lpips": "0.46062960538333336",
+    "wall_total_seconds": "178.68941279700084",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_tangent_rk_remote_full_eval_pull\\epoch_0017\\summary.json"
+  },
+  "best_full_style": {
+    "epoch": "epoch_0007",
+    "full_clip_style": "0.7158642205397289",
+    "full_content_lpips": "0.467481856",
+    "transfer_clip_style": "0.6951344779133797",
+    "transfer_content_lpips": "0.4787429868833334",
+    "wall_total_seconds": "177.24907551799697",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_tangent_rk_remote_full_eval_pull\\epoch_0007\\summary.json"
+  },
+  "latest": {
+    "epoch": "epoch_0017",
+    "full_clip_style": "0.7072305288314819",
+    "full_content_lpips": "0.45041688216",
+    "transfer_clip_style": "0.6837851852178574",
+    "transfer_content_lpips": "0.46062960538333336",
+    "wall_total_seconds": "178.68941279700084",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_tangent_rk_remote_full_eval_pull\\epoch_0017\\summary.json"
+  },
+  "convergence": {
+    "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_tangent_rk_remote_full_eval_pull\\clip_lpips_curve.csv",
+    "row_count": 17,
+    "best_epoch": "epoch_0001",
+    "best_index": 0,
+    "best_transfer_clip_epoch": "epoch_0001",
+    "best_transfer_lpips_epoch": "epoch_0017",
+    "best_allpairs_clip_epoch": "epoch_0007",
+    "best_allpairs_lpips_epoch": "epoch_0017",
+    "pareto_epochs": [
+      "epoch_0001",
+      "epoch_0002",
+      "epoch_0004",
+      "epoch_0007",
+      "epoch_0013",
+      "epoch_0017"
+    ],
+    "last_pareto_epoch": "epoch_0017",
+    "newest_epoch": "epoch_0017",
+    "since_best": 16,
+    "since_last_pareto": 0,
+    "best_in_newest_2": true,
+    "tail_flat": false,
+    "patience": 6,
+    "criterion": "joint_transfer_allpairs_pareto",
+    "converged": false
+  }
+}

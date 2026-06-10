@@ -283,12 +283,77 @@
 - Manifest status: `recalibration_needed`
 - Local fast root: [round1_attn_pnp_selfinject_fast_local](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_fast_local)
 - Local review root: [round1_attn_pnp_selfinject_localreview](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_localreview)
-- Prelaunch switch smoke: `ok`
 - Switch smoke artifact: [round1_attn_pnp_selfinject_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_switch_smoke_latest.json)
-- Switch smoke row count: `1`
 - Remote train log: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_pnp_selfinject_seed42_b8a2_train.log`
 - Remote train pid: not alive
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -30,12 +30,149 @@
 - Convergence snapshot:
   - `best_epoch = epoch_0001`
   - `since_last_pareto = 0`
+  - `best_in_newest_2 = True`
   - `tail_flat = False`
+  - `closure_band = open`
   - `criterion = joint_transfer_allpairs_pareto`
   - `converged = False`
 - Sync summary:
   - [sync_summary.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_full_eval_pull/sync_summary.json)
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,0 +1,4 @@
+comparison,method,cases_completed,wins_so_far,win_rate_so_far,style_wins_so_far,structure_wins_so_far,artifact_wins_so_far,mean_style_specificity,mean_structure_preservation,mean_artifact_control
+AttnSA_e24,AttnSA_e24,1,0,0.0,0,0,0,3.0,3.0,3.0
+AttnSA_e24,SaMAM_2250,1,0,0.0,0,0,0,4.0,4.0,4.0
+AttnSA_e24,Seedream_repaired750,1,1,1.0,1,1,1,5.0,5.0,5.0

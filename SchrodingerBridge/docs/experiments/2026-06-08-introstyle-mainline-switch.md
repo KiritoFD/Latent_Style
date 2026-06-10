@@ -5,7 +5,10 @@ Date: 2026-06-08
 Decision:
 
 - `raw CLIP-S` is no longer the paper-facing main style metric
+- `raw CLIP-S` should also not be described as a training-side supervision target for the current LBM line
 - `IntroStyle` becomes the preferred paper-facing style axis for the next round
+- formal remote eval should emit `IntroStyle` sidecars directly from `run_evaluation.py`
+- remote `IntroStyle` backbone resolution should prefer the reviewed `ModelScope` snapshot path
 - the current Distinct5 non-CLIP image classifier remains useful, but only as a fallback / supporting style signal
 - `DINO` remains a structure axis, not a main style axis
 
@@ -29,7 +32,10 @@ Research read:
 
 Operational interpretation:
 
-- `CLIP-S` stays in the inner loop because it is cheap
+- `CLIP-S` may still be used as a cheap auxiliary triage signal
+- but it should not drive the main paper-facing style decision alone
+- and it should not be framed as the supervisory target of the current mechanism round
+- the actual training-side supervision remains endpoint / transport + kinetic / structure + terminal SWD family losses
 - `IntroStyle` should be used for:
   - shortlisted points
   - abnormal points
@@ -97,11 +103,18 @@ Fallback / supporting:
    - `DINO structure`
    - visual comparison to `Seedream`
 
+Runtime note:
+
+- `run_evaluation.py` now owns the official `IntroStyle` sidecar path:
+  - `introstyle_metrics.csv`
+  - `introstyle_summary.json`
+- remote runs should resolve the backbone through `ModelScope` first, not `huggingface.co`
+
 ## Bottom line
 
 From this point forward:
 
-- `CLIP-S` is a fast-screen heuristic
+- `CLIP-S` is at most a fast-screen heuristic
 - `IntroStyle` is the intended main style judge
 - `DINO` is the structure judge
 - geometry-anchor points must be audited with stronger style evidence before they influence paper claims

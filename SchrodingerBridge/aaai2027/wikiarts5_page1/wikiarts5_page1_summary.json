@@ -1,0 +1,64 @@
+{
+  "fixed_test_split": "G:\\GitHub\\Latent_Style\\Dataset\\distinct5_512\\test",
+  "idt": {
+    "label": "IDT",
+    "source": "distinct5_fixed_test",
+    "step": "",
+    "transfer_clip_style": 0.6399224616587162,
+    "transfer_lpips": 0.0,
+    "all_pairs_clip_style": 0.6801251527865728,
+    "all_pairs_lpips": 0.0,
+    "identity_clip_style": 0.8409359172979991,
+    "identity_lpips": 0.0,
+    "delta_idt_transfer": 0.0
+  },
+  "samam_2250": {
+    "label": "SaMAM-2250",
+    "source": "samam_distinct5_old_train",
+    "step": "",
+    "transfer_clip_style": 0.5522515382866064,
+    "transfer_lpips": 0.3604523678372304,
+    "all_pairs_clip_style": 0.5810966821114222,
+    "all_pairs_lpips": 0.35382040921847024,
+    "identity_clip_style": 0.6964772574106852,
+    "identity_lpips": 0.3272925747434298,
+    "delta_idt_transfer": -0.0876709233721098
+  },
+  "wikiarts5_best_clip": {
+    "label": "WikiArts5 best-CLIP",
+    "source": "samam_wikiarts5_segmented",
+    "step": 5750,
+    "transfer_clip_style": 0.617343221505483,
+    "transfer_lpips": 0.35035002425312994,
+    "all_pairs_clip_style": 0.6331388122240702,
+    "all_pairs_lpips": 0.34136862100164095,
+    "identity_clip_style": 0.6963211750984192,
+    "identity_lpips": 0.30544300799568497,
+    "delta_idt_transfer": -0.022579240153233204
+  },
+  "wikiarts5_best_lpips": {
+    "label": "WikiArts5 best-LPIPS",
+    "source": "samam_wikiarts5_segmented",
+    "step": 19500,
+    "transfer_clip_style": 0.5998508524894715,
+    "transfer_lpips": 0.22085246174285808,
+    "all_pairs_clip_style": 0.6225993730227153,
+    "all_pairs_lpips": 0.2124233960757653,
+    "identity_clip_style": 0.7135934551556905,
+    "identity_lpips": 0.17870713340739408,
+    "delta_idt_transfer": -0.04007160916924479
+  },
+  "wikiarts5_latest": {
+    "label": "WikiArts5 latest",
+    "source": "samam_wikiarts5_segmented",
+    "step": 23000,
+    "transfer_clip_style": 0.5953483907878399,
+    "transfer_lpips": 0.2245745631804069,
+    "all_pairs_clip_style": 0.6188204537630081,
+    "all_pairs_lpips": 0.21585312220454217,
+    "identity_clip_style": 0.712708705663681,
+    "identity_lpips": 0.18096735830108324,
+    "delta_idt_transfer": -0.04457407087087639
+  },
+  "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\wikiarts5_page1\\wikiarts5_page1_curve.csv"
+}

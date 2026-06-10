@@ -1,11 +1,11 @@
-\begin{thebibliography}{21}
+\begin{thebibliography}{18}
 \providecommand{\natexlab}[1]{#1}
 
-\bibitem[{An et~al.(2021)An, Huang, Song, Dou, Liu, and Luo}]{an2021artflow}
-An, J.; Huang, S.; Song, Y.; Dou, D.; Liu, W.; and Luo, J. 2021.
-\newblock ArtFlow: Unbiased Image Style Transfer via Reversible Neural Flows.
-\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
-  and Pattern Recognition}.
+\bibitem[{Bi{\'n}kowski et~al.(2018)Bi{\'n}kowski, Sutherland, Arbel, and
+  Gretton}]{binkowski2018kid}
+Bi{\'n}kowski, M.; Sutherland, D.~J.; Arbel, M.; and Gretton, A. 2018.
+\newblock Demystifying MMD GANs.
+\newblock In \emph{International Conference on Learning Representations}.
 
 \bibitem[{Botti et~al.(2025)Botti, Ergasti, Rossi, Fontanini, Ferrari,
   Bertozzi, and Prati}]{botti2025mambast}
@@ -22,18 +22,18 @@ Chung, J.; Hyun, S.; and Heo, J.-P. 2024.
 \newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
   and Pattern Recognition}.
 
-\bibitem[{Deng et~al.(2024)Deng, He, Tang, and Dong}]{deng2024zstar}
-Deng, Y.; He, X.; Tang, F.; and Dong, W. 2024.
-\newblock Z*: Zero-shot Style Transfer via Attention Reweighting.
-\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
-  and Pattern Recognition}, 6934--6944.
-
 \bibitem[{Deng et~al.(2022)Deng, Tang, Dong, Sun, Huang, and
   Xu}]{deng2022stytr2}
 Deng, Y.; Tang, F.; Dong, W.; Sun, W.; Huang, F.; and Xu, C. 2022.
 \newblock StyTr2: Image Style Transfer with Transformers.
 \newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
   and Pattern Recognition}.
+
+\bibitem[{Ding et~al.(2020)Ding, Ma, Wang, and Simoncelli}]{ding2020dists}
+Ding, K.; Ma, K.; Wang, S.; and Simoncelli, E.~P. 2020.
+\newblock Image Quality Assessment: Unifying Structure and Texture Similarity.
+\newblock \emph{IEEE Transactions on Pattern Analysis and Machine
+  Intelligence}.
 
 \bibitem[{Gatys, Ecker, and Bethge(2016)}]{gatys2016image}
 Gatys, L.~A.; Ecker, A.~S.; and Bethge, M. 2016.
@@ -60,6 +60,12 @@ Huang, X.; Zhang, Z.; Zhang, J.; et~al. 2024.
 \newblock In \emph{Proceedings of the AAAI Conference on Artificial
   Intelligence}.
 
+\bibitem[{Ke et~al.(2021)Ke, Wang, Wang, Milanfar, and Yang}]{ke2021musiq}
+Ke, J.; Wang, Q.; Wang, Y.; Milanfar, P.; and Yang, F. 2021.
+\newblock MUSIQ: Multi-scale Image Quality Transformer.
+\newblock \emph{Proceedings of the IEEE/CVF International Conference on
+  Computer Vision}.
+
 \bibitem[{Liu et~al.(2025)Liu, Wang, Zhang, Yu, and Guo}]{liu2025samam}
 Liu, H.; Wang, L.; Zhang, Y.; Yu, Z.; and Guo, Y. 2025.
 \newblock SaMam: Style-aware State Space Model for Arbitrary Image Style
@@ -67,47 +73,29 @@ Liu, H.; Wang, L.; Zhang, Y.; Yu, Z.; and Guo, Y. 2025.
 \newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
   and Pattern Recognition}, 28468--28478.
 
-\bibitem[{Liu et~al.(2021)Liu, Lin, He, Li, Wang, Li, Sun, Li, and
-  Ding}]{liu2021adaattn}
-Liu, S.; Lin, T.; He, D.; Li, F.; Wang, M.; Li, X.; Sun, Z.; Li, Q.; and Ding,
-  E. 2021.
-\newblock AdaAttN: Revisit Attention Mechanism in Arbitrary Neural Style
-  Transfer.
-\newblock In \emph{Proceedings of the IEEE/CVF International Conference on
-  Computer Vision}.
-
 \bibitem[{Liu et~al.(2024)}]{liu2024samst}
 Liu, Y.; et~al. 2024.
 \newblock Pluggable Style Representation Learning for Multi-Style Transfer.
 \newblock In \emph{Proceedings of the Asian Conference on Computer Vision}.
 
-\bibitem[{Park and Lee(2019)}]{park2019sanet}
-Park, D.~Y.; and Lee, K.~H. 2019.
-\newblock Arbitrary Style Transfer with Style-Attentional Networks.
-\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
-  and Pattern Recognition}.
-
-\bibitem[{Radford et~al.(2021)Radford, Kim, Hallacy, Ramesh, Goh, Agarwal,
-  Sastry, Askell, Mishkin, Clark, Krueger, and Sutskever}]{radford2021clip}
-Radford, A.; Kim, J.~W.; Hallacy, C.; Ramesh, A.; Goh, G.; Agarwal, S.; Sastry,
-  G.; Askell, A.; Mishkin, P.; Clark, J.; Krueger, G.; and Sutskever, I. 2021.
-\newblock Learning Transferable Visual Models From Natural Language
-  Supervision.
-\newblock In \emph{Proceedings of the 38th International Conference on Machine
-  Learning}, volume 139 of \emph{Proceedings of Machine Learning Research},
-  8748--8763.
-
-\bibitem[{Shang et~al.(2025)Shang, Wang, Wang, and Meng}]{shang2025scsa}
-Shang, C.; Wang, Z.; Wang, H.; and Meng, X. 2025.
-\newblock SCSA: A Plug-and-Play Semantic Continuous-Sparse Attention for
-  Arbitrary Semantic Style Transfer.
-\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
-  and Pattern Recognition}, 13051--13060.
+\bibitem[{Lu et~al.(2026)Lu, Chen, Guo, Li, Wang, and Shi}]{lu2026chordedit}
+Lu, L.; Chen, X.; Guo, M.; Li, S.; Wang, J.; and Shi, Y. 2026.
+\newblock ChordEdit: One-Step Low-Energy Transport for Image Editing.
+\newblock \emph{arXiv preprint arXiv:2602.19083}.
 
 \bibitem[{Wright and Ommer(2022)}]{wright2022artfid}
 Wright, M.; and Ommer, B. 2022.
 \newblock ArtFID: Quantitative Evaluation of Neural Style Transfer.
 \newblock \emph{arXiv preprint arXiv:2207.12280}.
+
+\bibitem[{Yang et~al.(2022)Yang, Wu, Shi, Lao, Gong, Cao, Wang, and
+  Yang}]{yang2022maniqa}
+Yang, S.; Wu, T.; Shi, S.; Lao, S.; Gong, Y.; Cao, M.; Wang, J.; and Yang, Y.
+  2022.
+\newblock MANIQA: Multi-dimension Attention Network for No-Reference Image
+  Quality Assessment.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition Workshops}.
 
 \bibitem[{Yeh et~al.(2020)Yeh, Tang, Bhattad, Zou, and
   Forsyth}]{yeh2020calibrated}
@@ -116,12 +104,6 @@ Yeh, M.-C.; Tang, S.; Bhattad, A.; Zou, C.; and Forsyth, D. 2020.
 \newblock In \emph{Proceedings of the IEEE/CVF Winter Conference on
   Applications of Computer Vision}, 3160--3168.
 
-\bibitem[{Zhang et~al.(2025)Zhang, Kang, Liu, Mei, and Li}]{zhang2025hsi}
-Zhang, S.; Kang, H.; Liu, Y.; Mei, F.; and Li, H. 2025.
-\newblock HSI: A Holistic Style Injector for Arbitrary Style Transfer.
-\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
-  and Pattern Recognition}, 23433--23442.
-
 \bibitem[{Zhang et~al.(2024)Zhang, Zhang, Xing, Li, Zhao, Sun, Lan, Luan,
   Huang, and Lin}]{zhang2024artbank}
 Zhang, Z.; Zhang, Q.; Xing, W.; Li, G.; Zhao, L.; Sun, J.; Lan, Z.; Luan, J.;
@@ -129,14 +111,7 @@ Zhang, Z.; Zhang, Q.; Xing, W.; Li, G.; Zhao, L.; Sun, J.; Lan, Z.; Luan, J.;
 \newblock ArtBank: Artistic Style Transfer with Pre-trained Diffusion Model and
   Implicit Style Prompt Bank.
 \newblock In \emph{Proceedings of the AAAI Conference on Artificial
-  Intelligence}, volume~38, 7396--7404.
-
-\bibitem[{Zheng et~al.(2024)Zheng, Gao, Zhou, and Qin}]{zheng2024puffnet}
-Zheng, S.; Gao, P.; Zhou, P.; and Qin, J. 2024.
-\newblock Puff-Net: Efficient Style Transfer with Pure Content and Style
-  Feature Fusion Network.
-\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
-  and Pattern Recognition}, 8059--8068.
+  Intelligence}, 7396--7404.
 
 \bibitem[{Zhou et~al.(2024)Zhou, Zeng, Xu, Liu, Zhao, and
   Yao}]{zhou2024comprehensiveeval}

@@ -20,94 +20,84 @@
 }
 \setcounter{secnumdepth}{0}
 
-\title{Latent Bridge Matching: IDT-Calibrated Latent Transport for Domain-Level Artistic Transfer}
+\title{Latent Bridge Matching for IDT-Calibrated Style-ID Transfer}
 \author{Anonymous Submission}
 \affiliations{}
 \begin{document}
 \maketitle
 
 \begin{abstract}
-Domain-level artistic transfer has a systematic no-op evaluation failure: when the source is already art, the unchanged source can obtain high target-style affinity. On the CLIP-separated Distinct5-WikiArt stress split, the reproduced SaMAM run remains below the identical-image transfer-only CLIP-S floor through its last trusted 2250-step checkpoint. We introduce \emph{Latent Bridge Matching} (LBM), a compact latent transport family built from training-side endpoint pairing, a style-conditioned residual field, and terminal distribution matching in VAE latent space, keeping style-specific customization in a small-model learning regime rather than adapting a large generative prior. The current Distinct5-WikiArt LBM family remains below 2M trainable parameters, while the preserved historical CycleGAN-256 strict-750 operating point is 3.91M. On Distinct5-WikiArt, LBM forms a controllable operating-point frontier rather than a single conservative checkpoint: compact anchors clear the IDT floor within 1.2 minutes on an RTX 3060, the closed LBM-Knee point reaches 0.7102 transfer CLIP-S at 0.5397 content preservation, and later Pattern+Stokes successors push style into the 0.72--0.73 band. Artifact-sensitive diagnostics and a held-out non-CLIP ConvNeXt style probe separate the closed Knee point from the style-ceiling row. Two fixed-rule follow-up WikiArt splits preserve the same IDT pathology and keep a compact retained LBM point above the split-local unchanged baseline. On the historical CycleGAN-256 strict-750 packet, LBM reaches 0.7161 CLIP-S / 0.4514 LPIPS at 114\,ms/image. The practical implication is direct: IDT calibration prevents false stylization claims, and compact latent transport keeps customized style modeling in a lightweight consumer-GPU regime instead of a large-prior adaptation workflow.
+Art-to-art transfer is easy to fake: when the source is already artwork, the unchanged image can score highly for many requested target styles. Raw style-affinity therefore overstates target-style control. We make this failure explicit with identical-image transfer (IDT) calibration on Distinct5-WikiArt and evaluate style movement only above the unchanged-image floor. We then introduce \emph{Latent Bridge Matching} (LBM), a compact style-ID latent transport family trained by endpoint pairing, a style-conditioned latent field, and terminal distribution matching in VAE space. Inference receives only the source image and target style identifier. On Distinct5-WikiArt, IDT calibration reveals a broad failure zone that engulfs reproduced compact baselines, while LBM forms a usable frontier above it. LBM-K clears the calibrated floor after 1.2 minutes on an RTX 3060, the promoted LBM-Knee point reaches 0.7102 transfer CLIP-S at 0.5397 content preservation, and Pattern+Stokes successors push style into the 0.72--0.73 band. Artifact-sensitive diagnostics and a held-out non-CLIP probe separate the closed Knee point from the style-ceiling row. IDT calibration is therefore necessary, and compact latent transport is sufficient to produce a practical style-ID frontier on consumer GPUs.
 \end{abstract}
 
 \begin{strip}
 \centering
 \vspace{-4mm}
 \includegraphics[width=0.965\textwidth]{figures/fig_distinct5_page1_summary.pdf}
-\captionof{figure}{IDT-calibrated Distinct5-WikiArt summary under the shared packet. Panel (a) plots selected operating points in transfer-only $\Delta_{\mathrm{idt,tr}}$ versus $1-\mathrm{LPIPS}$ space, with faint gray dots showing the broader recorded development landscape. Conservative compact anchors remain near the low-damage regime, later successors move upward into a stronger style band, and Seedream-4.5 is shown as an external large-prior reference rather than a style-ID model. Panel (b) reports an all-pairs target-pooled ArtFID check for reproduced baselines, the selected LBM-Knee successor, and the Seedream reference.}
+\captionof{figure}{Distinct5-WikiArt is not a single-score benchmark. Panel (a) shows the actual decision surface: a large IDT failure zone below zero style gain, and a usable LBM frontier above it. Gray dots are retained development checkpoints; colored markers are the headline rows, including the latent negatives. Panel (b) keeps the same shortlist under aligned all-pairs target-pooled tw-ArtFID, exposing the artifact cost of that frontier. Train time is printed inside each bar.}
 \label{fig:distinct5_page1}
 \vspace{-5mm}
 \end{strip}
 
 \section{Introduction}
-Domain-level artistic transfer asks a model to render a source image according to a target style identity rather than a target style exemplar. This setting exposes a simple but serious evaluation failure: when the source image is already artwork, the unchanged source can obtain high target-style affinity. A method may therefore appear competitive by preserving an art-domain prior, or by making visible but misdirected edits, without actually moving toward the requested target domain. We use the identical-image transfer (IDT) floor to make this failure explicit and report signed target-style movement above that floor.
+Domain-level artistic transfer asks for a target \emph{style identity}, not a target exemplar. That setting creates an immediate evaluation failure: when the source image is already artwork, the unchanged image can already score highly for the requested target style. A method can therefore look strong simply by staying inside a broad art manifold. We make this failure explicit with identical-image transfer (IDT) calibration and report only style gain above the unchanged-image floor. Figure~\ref{fig:distinct5_page1} shows the result immediately: a large failure zone below IDT and a compact frontier above it.
 
-Our target regime is also narrower and more practical than reference-guided or diffusion-prior stylization. At inference time, the model receives only a source image and a target style identifier; it should not require a style image, per-image optimization, or adaptation of a large generative prior. This makes the problem a low-cost customization problem as much as a stylization problem: the desired model should expose selectable style-content operating points while remaining compact enough to retrain on consumer hardware.
+This regime is stricter than reference-guided stylization and lighter than large-prior editing. Inference receives only a source image and a target style identifier, with no exemplar, per-image optimization, or large-prior adaptation. The question is whether a compact style-ID model can still produce reliable target-style motion under that contract.
 
-We propose \emph{Latent Bridge Matching} (LBM), a compact latent transport family in VAE space. In the current Distinct5 mainline, LBM combines training-side endpoint pairing, a style-conditioned latent field, and terminal SA-SWD with kinetic motion control. The resulting family forms a controllable IDT-calibrated frontier rather than a single conservative checkpoint: compact anchors clear the IDT floor in a low-damage regime, while StructOT and Pattern+Stokes successors move into a stronger high-style band under the same style-ID inference contract. This framing is what distinguishes the paper from both reference-guided stylization and large-prior adaptation lines \cite{gatys2016image,huang2017adain,liu2024samst,liu2025samam,zhang2024artbank,chung2024styleid,zhou2024comprehensiveeval,yeh2020calibrated,wright2022artfid}.
-
-Our contributions are threefold.
-\begin{itemize}
-    \item \textbf{Evaluation diagnostic.} We introduce an IDT-calibrated protocol for domain-level art-to-art transfer, reporting transfer-only $\Delta_{\mathrm{IDT}}$ so that target-style movement is separated from the unchanged art-domain prior.
-    \item \textbf{Method family.} We propose LBM, a compact style-ID latent transport family that separates training-side endpoint pairing, style-conditioned latent execution, kinetic motion control, and terminal SA-SWD matching in VAE space.
-    \item \textbf{Frontier evidence.} We show that LBM is not a single conservative checkpoint but a controllable operating-point frontier on Distinct5-WikiArt: compact anchors clear the IDT floor at minute-scale training cost, the closed LBM-Knee point improves selected artifact/content diagnostics relative to the reproduced SaMST high-style baseline while remaining close on a held-out non-CLIP style probe, and two fixed-rule follow-up splits preserve the same IDT pathology beyond the main split.
-\end{itemize}
+We answer yes with \emph{Latent Bridge Matching} (LBM), a compact VAE-space transport family built from training-side endpoint pairing, a style-conditioned latent field, and terminal distribution matching with kinetic control. On Distinct5-WikiArt, LBM forms a real frontier: minute-scale anchors clear the IDT floor, LBM-Knee closes the strongest style-cleanliness tradeoff, and Pattern+Stokes successors extend the style ceiling. The paper makes three concrete claims: IDT calibration is necessary; compact style-ID transport works without exemplars or large-prior adaptation; and Distinct5-WikiArt exposes a measurable frontier rather than a single winner.
 
 \section{Related Work}
-Arbitrary style transfer began with optimization-based feature reconstruction and Gram statistics \cite{gatys2016image}, then moved toward feed-forward alignment and local correspondence through AdaIN, SANet, ArtFlow, AdaAttN, StyTr2, and related variants \cite{huang2017adain,park2019sanet,an2021artflow,liu2021adaattn,deng2022stytr2}. More recent systems refine style injection through aesthetic guidance, semantic-region control, or stronger pretrained priors \cite{hong2023aespa,huang2024aesfa,zheng2024puffnet,zhang2025hsi,shang2025scsa,zhang2024artbank,chung2024styleid,deng2024zstar}. These methods mainly ask how a style exemplar or large prior should be used at inference. Our setting is different: inference receives only a target style identity, so the main question is whether a compact style-side representation remains executable after passing through a content-conditioned latent renderer.
+Most style-transfer systems solve a different inference contract: they either consume a target exemplar or inherit a strong pretrained generator at test time \cite{gatys2016image,huang2017adain,deng2022stytr2,hong2023aespa,huang2024aesfa,zhang2024artbank,chung2024styleid}. Our setting keeps only the target style identity, placing it closest to compact multi-style baselines such as SaMST, Mamba-ST, and SaMam \cite{liu2024samst,botti2025mambast,liu2025samam}. The nearest transport-side analogy is low-energy one-step editing \cite{lu2026chordedit}, although that line targets prompt-conditioned semantic editing rather than domain-level style-ID transfer.
 
-The closest comparison line is efficient multi-style and compact style-ID transfer. SaMST studies style modeling and transfer through pluggable style representations \cite{liu2024samst}, while Mamba-ST and SaMam revisit global mixing through state-space backbones \cite{botti2025mambast,liu2025samam}. LBM contributes on the training and objective side: pairing-cache endpoint selection, compact latent transport, and terminal distribution matching under a style-ID interface. On the evaluation side, prior work already notes that automatic style-transfer metrics are inconsistent and can misalign with human judgment \cite{zhou2024comprehensiveeval,yeh2020calibrated,wright2022artfid}. This motivates our Distinct5 use of the unchanged-image floor and $\Delta_{\mathrm{idt}}$ as explicit diagnostics for whether a method actually moves toward the requested target style.
+Evaluation is also different. Automatic stylization metrics are unstable and only partially aligned with human judgment \cite{zhou2024comprehensiveeval,yeh2020calibrated,wright2022artfid}, and in art-to-art transfer they reward the unchanged image far too easily. We therefore make the no-op floor explicit and report $\Delta_{\mathrm{idt}}$ before broader plausibility or artifact diagnostics. Full related-work detail is deferred to the supplement.
 
 \section{Method}
-\subsection{Overview}
-LBM is a latent transport family in VAE space for domain-level artistic transfer. For the Distinct5-WikiArt packet, the source latent is $z_0 \in \mathbb{R}^{4 \times 64 \times 64}$; the historical CycleGAN-256 packet uses $4 \times 32 \times 32$ latents. Let $s$ denote a target style identifier. The active Distinct5 line combines four pieces: (i) training-side endpoint pairing that selects candidate target latents without paired supervision; (ii) a style-conditioned latent field that executes the requested motion; (iii) kinetic regularization that discourages unnecessary displacement; and (iv) terminal distribution matching that checks whether the resulting endpoint has target-style patch statistics. At inference, the model receives only the source image and target style identifier; target-domain latents remain training-side supervision only.
+\subsection{Inference contract}
+LBM is an endpoint transport model in VAE latent space for domain-level artistic transfer. Figure~\ref{fig:distinct5_page1} established the target: clear the IDT floor without paying the artifact cost of the strongest high-style baselines. Figure~\ref{fig:framework} shows the contract used to trace that frontier: style-ID control on top, the active latent transport path in the middle, and endpoint construction plus terminal matching only on the training side. For Distinct5-WikiArt, the source latent is $z_0 \in \mathbb{R}^{4 \times 64 \times 64}$; the historical CycleGAN-256 packet uses $4 \times 32 \times 32$ latents. At inference, the model receives only the source image and target style identifier. Target-domain latents remain training-side supervision only.
 
-In the reproduced Distinct5 mainline, the active headline rows use endpoint-mode OMF training rather than the earlier random-time flow residual. Writing
+Our OT view is deliberately limited and practical. As in recent low-energy transport views of one-step editing \cite{lu2026chordedit}, OT is used as supervisory geometry, not as an online solver claim. In the reproduced Distinct5 mainline, the active headline rows use endpoint-mode OMF rather than the earlier random-time flow residual:
 \begin{equation}
     \hat v = v_\theta(z_0,1,s), \qquad \hat z_1 = z_0 + \hat v,
 \end{equation}
-the active objective is
+with active objective
 \begin{equation}
     \mathcal{L}_{\mathrm{active}} =
     \lambda_{\mathrm{term}}\mathcal{L}_{\mathrm{term}}(\hat z_1)
     + \lambda_{\mathrm{kin}}\|\hat v\|_2^2,
     \label{eq:active_distinct5_loss}
 \end{equation}
-where candidate terminal targets are selected by the pairing cache and the parent flow residual is disabled in the headline rows ($w_{\mathrm{flow}}=0$). We therefore describe the paper-facing Distinct5 family as pairing-cache / terminal-SWD / kinetic OMF rather than as an online Sinkhorn or random-time flow-matching result family.
+where the pairing cache selects terminal targets and the parent flow residual is disabled in the headline rows ($w_{\mathrm{flow}}=0$). We therefore describe the headline Distinct5 family as pairing-cache / terminal-SWD / kinetic OMF.
 
-\begin{figure*}[t!]
-    \centering
-    \includegraphics[width=0.86\textwidth]{framework_lbm_main_user.png}
-    \caption{LBM combines a style tokenizer, a content-conditioned latent renderer, and training-side endpoint supervision with terminal SA-SWD.}
-    \label{fig:framework}
-\end{figure*}
+\subsection{Training-side endpoint construction and latent execution}
+We train directly on precomputed VAE latents without paired supervision. For each source latent $z_0$ and target style $s$, the pairing cache exposes a selector-restricted candidate set $\mathcal{C}(z_0,s)$ from the target domain. The terminal target $\tilde z_1$ is drawn from that scheduled set, and the successor family stabilizes it with barycentric targets and queue-side target smoothing. Endpoint pairing therefore decides \emph{where} the model should move; the latent field still learns \emph{how} to execute that move.
 
-\subsection{Endpoint pairing, execution, and terminal matching}
-We train directly on precomputed VAE latents without paired supervision. For each source latent $z_0$ and target style $s$, the pairing cache exposes a selector-restricted candidate set $\mathcal{C}(z_0,s)$ from the target domain. The terminal target $\tilde z_1$ used by the loss is drawn from that scheduled set. This pairing step determines where supervision should pull, but not how much motion is actually executed.
-
-Execution is handled by a time-conditioned latent backbone with sinusoidal time embeddings, style spatial priors, and semantic cross-attention. The style-side interface is separated from the renderer: the tokenizer receives only a target style identifier and produces a compact control code $c_s$, while the renderer decides how much latent motion is needed under the current content. In the current mainline this interface is paired with prototype-aware target queues and content-guided routing, which empirically improve executed style-content tradeoffs more reliably than simply enlarging the style code.
+Execution is handled by a time-conditioned latent backbone with sinusoidal time embeddings, style spatial priors, and semantic cross-attention. The tokenizer receives only the target style identifier and produces a compact control code $c_s$; the style-conditioned latent field then decides how much motion is needed under the current content.
 
 The endpoint is then regularized by semantic-aligned sliced Wasserstein distance. Let $\Phi_\theta(z_0,s)$ denote the Euler-integrated endpoint. The terminal objective is
 \begin{equation}
     \mathcal{L}_{\mathrm{term}} =
     \mathrm{SWD}_1\bigl(\Phi_\theta(z_0,s),\,\tilde z_1\bigr),
 \end{equation}
-where sorted one-dimensional projections compare generated endpoint patches against target-style patches without requiring spatial correspondence. In the current SA-SWD instantiation, projection directions are chosen from the same routing signal that injects style into the backbone. This design keeps target-style pressure distributional rather than pointwise, which is important in compressed VAE latents where direct endpoint MSE encourages mean solutions. Bounded design-grounding analysis for kinetic regularization, Euler discretization, and the historical OT-style parent assignment map is retained as supplementary support rather than consuming main-paper space.
+where sorted one-dimensional projections compare generated endpoint patches against target-style patches without requiring spatial correspondence. In the current SA-SWD instantiation, projection directions are chosen from the same routing signal that injects style into the backbone, keeping target-style pressure distributional rather than pointwise. The supplement gives bounded design-grounding support for the active field/solver regime: a local path-action justification for endpoint kinetic regularization and the expected $O(1/K)$ Euler discretization bound.
 
 \paragraph{Operating-point variants.}
-All reported LBM rows share the same style-ID inference contract: inference receives only the source image and target style identifier. LBM-K is the compact earlier-mainline anchor built from the content-adaptive tokenizer and queue curriculum used in the faster three-epoch packet, with active top-$2$ pairing and a $0.15$ queue-exploration probability over the top-$8$ candidate set, and with no explicit structure penalty. All promoted successor rows switch to an endpoint-prediction successor family with barycentric top-$8$ targets, low-frequency-plus-edge coupling, the manifold-adaptive kinetic split, and a cross-attention texture proximal branch. LBM-Knee adds joint anisotropic and Stokes transport control ($w_{\mathrm{aniso}}=1.0$, normal/tangent weights $25/0.25$, $w_{\mathrm{stokes}}=0.03$), together with queue-side dual-target smoothing (mix weight $0.5$) and auxiliary terminal SWD (weight $0.5$). LBM-PS keeps the same successor family but uses a higher Stokes coefficient, $w_{\mathrm{stokes}}=0.05$. LBM-PS-v2 changes one knob relative to LBM-PS, lowering the Stokes coefficient to $0.02$ to recover more style at the cost of higher LPIPS.
+All reported rows share the same test-time contract. \textbf{LBM-K} is the kinetic-only top-$2$ anchor; \textbf{LBM-Knee} adds top-$8$ barycentric + dual-target supervision, anisotropic + Stokes control, and auxiliary terminal SWD; \textbf{LBM-PS} and \textbf{LBM-PS-v2} keep the same successor family and differ only in the Stokes coefficient ($0.05/0.02$), forming the balanced high-style and style-ceiling rows used later in the frontier analysis.
+
+\begin{figure*}[t!]
+    \centering
+    \includegraphics[width=0.54\textwidth]{framework_lbm_main_user.png}
+    \caption{LBM in three bands. The top band contains style-ID control only. The middle band is the active test-time latent transport path that must move above the Figure~\ref{fig:distinct5_page1} failure zone and into the frontier. The bottom band contains endpoint construction, kinetic control, and SA-SWD, all used only during training.}
+    \label{fig:framework}
+\end{figure*}
 
 \section{Experiments}
-\subsection{Protocol hierarchy and metrics}
-We organize the evidence into two non-interchangeable result families, with Distinct5-WikiArt as the primary stress benchmark and the historical CycleGAN-256 packet as historical support. This separation is necessary because the same scalar pair, CLIP-style and LPIPS, can be misleading when datasets, image resolution, or baseline training protocols change.
+\subsection{Experimental setup}
+We report one main benchmark and one historical secondary packet. Distinct5-WikiArt carries the main claim; the older CycleGAN-256 packet is kept only as secondary support and is never merged into the same leaderboard. Figure~\ref{fig:distinct5_page1} asks whether a compact style-ID family can move above the IDT floor while staying in a usable artifact regime; the rest of this section measures where each row lands on that surface.
 
-\paragraph{Historical CycleGAN-256.}
-The main legacy protocol uses five domains---photo, Hayao, Monet, Van Gogh, and Cezanne---and evaluates all $5\times5$ source-target directions with 30 source images per source domain, for 750 generated outputs. This is the protocol used for comparisons to SaMST, S2WAT, StyleID, AdaIN, StyTr2, CAST, AesFA, and AesPA-Net.
+\paragraph{Dataset and evaluation metrics.}
+Distinct5-WikiArt uses Early Renaissance, Impressionism, Minimalism, Rococo, and Ukiyo-e, with 1000 training images and 30 held-out test images per class. The classes are chosen from WikiArt by a CLIP-style separation screen, and evaluation again uses all $5\times5$ directions over 750 generated images.
 
-\paragraph{Distinct5-WikiArt stress split.}
-The new stress split uses Early Renaissance, Impressionism, Minimalism, Rococo, and Ukiyo-e, with 1000 training images and 30 held-out test images per class. These five classes were chosen as the most strongly separated subset under a CLIP-style screening pass over WikiArt categories, rather than being hand-picked for LBM. Evaluation again uses all $5\times5$ directions over 750 generated images. This split complements the historical table with a stronger domain-separation test and an explicit identical-image baseline.
-
-We report CLIP-style (CLIP-S) and CLIP-content (CLIP-C) using CLIP ViT-B/32 embeddings \cite{radford2021clip}, together with LPIPS-content and
+The main metrics are transfer CLIP-S, LPIPS, and
 \begin{equation}
     \mathrm{EC} = \mathrm{CLIP\mbox{-}style}\cdot(1-\mathrm{LPIPS}).
 \end{equation}
@@ -115,22 +105,29 @@ For Distinct5-WikiArt we additionally report style gain over the unchanged-image
 \begin{equation}
     \Delta_{\mathrm{idt}} = \mathrm{CLIP\mbox{-}S}(\text{method}) - \mathrm{CLIP\mbox{-}S}(\text{idt}),
 \end{equation}
-under both the full 5$\times$5 protocol and the transfer-only off-diagonal subset. We use this quantity to define the metric-stress regime exposed by Distinct5-WikiArt: raw CLIP-style should not be treated as sufficient evidence of successful target-style transfer if a method either fails to exceed the identical-image prior ($\Delta_{\mathrm{idt}}\le 0$) or exceeds it only by moving into a clearly damaged LPIPS region while also deteriorating broad artifact diagnostics. In this paper, CLIP-S is interpreted as target-style affinity, LPIPS as content displacement, and targetwise ArtFID as a target-domain plausibility and artifact diagnostic rather than a direct style-gain score. Aggregate ArtFID is kept only as an auxiliary art-domain/identity diagnostic outside this main Distinct5 comparison. In particular, lower targetwise ArtFID alone does not certify useful stylization on separated art-to-art transfer: its content term rewards source preservation, and its distributional term can reward remaining in a plausible target-domain art manifold even when the requested target-style movement is still below the unchanged-image baseline. EC is used only as a Pareto summary; claims are checked against CLIP-S and LPIPS individually. For artifact-sensitive analysis we also report MUSIQ, MANIQA, DISTS-content, high-frequency patch KID, FFT slope error, shallow Gram micro statistics, and KID where available. All CycleGAN-256 baselines use the same source images, target domains, preprocessing, and identity directions. For arbitrary-style methods, one target-domain reference image is supplied per target style; for style-id LBM, the model receives only the target domain identifier. The `idt' control is introduced here as a split-specific diagnostic baseline for art-to-art transfer: Distinct5-WikiArt makes the unchanged-image prior explicit on this split.
+under both the full $5\times5$ protocol and the transfer-only off-diagonal subset. On Distinct5, $\Delta_{\mathrm{idt}}$ is the first sanity check: any row at or below zero has failed to move reliably toward the requested target style. EC is used only as a Pareto summary. Auxiliary diagnostics are targetwise ArtFID, a held-out non-CLIP style probe, and standard perceptual/frequency checks \cite{ke2021musiq,yang2022maniqa,ding2020dists,binkowski2018kid}. The historical CycleGAN-256 packet follows the same 750-output protocol and is used only as secondary support later in the paper.
 
-\subsection{Distinct5-WikiArt stress benchmark}
-Distinct5-WikiArt is an IDT-calibrated operating-point benchmark, not a single-score leaderboard. All five domains come from standard WikiArt classes and are selected because they are strongly separated under a CLIP-style screening pass. In this regime, unchanged output is no longer a plausible success proxy: the \emph{idt} baseline already reaches CLIP-S 0.6801 while doing no transfer at all. Signed target-style movement is therefore the first sanity check. Under the shared full 5$\times$5 / 750-output protocol, the earlier compact anchors LBM-F/K establish a conservative low-damage regime: LBM-F reaches transfer CLIP-S 0.6644 with LPIPS 0.3245 after 1.2 minutes of checkpoint training, and LBM-K raises style to 0.6712 at LPIPS 0.3723 while remaining well below the SaMST damage band. The more important result is that the family does not stop there. A promoted content-preserving successor now reaches 0.7102 transfer CLIP-S at 0.5397 content preservation $(1-\mathrm{LPIPS})$, while the higher-style successors push the frontier to 0.7274 / 0.3967 and 0.7307 / 0.3817 in transfer CLIP-S / $(1-\mathrm{LPIPS})$. This is a family-level frontier with three practically different regimes: conservative low-damage anchors, a content-preserving successor knee, and a style-ceiling operating point.
+\paragraph{Implementation details.}
+All paper-facing LBM rows are trained and evaluated on the reviewed single-lane RTX 3060 WSL surface, and reported train time is cumulative wall-clock to the shown checkpoint with evaluation excluded. Same-cost comparisons therefore align training wall-clock rather than mixed train+eval runtime. Seedream-4.5 is kept only as an external large-prior reference under a fixed API prompt protocol, not as a same-interface style-ID baseline.
 
-We fix representative rows before qualitative inspection. The manuscript table reports one compact anchor from the earlier mainline, one lower-LPIPS successor tradeoff point, one balanced high-style point, and one style-ceiling point. The broader development landscape is shown only as faint background support in Figure~\ref{fig:distinct5_page1}, not as a second leaderboard.
+\subsection{Main result on Distinct5-WikiArt}
+Figure~\ref{fig:distinct5_page1} and Table~\ref{tab:distinct5} give the paper's main result. Distinct5-WikiArt is an IDT-calibrated failure test, not a single-score leaderboard. The unchanged-image control already reaches CLIP-S 0.6801, so any row with $\Delta_{\mathrm{idt}}\le 0$ fails before tradeoff analysis begins.
 
-The reproduced baselines remain important because they bound those regimes. SaMST e15 reaches 0.6957 / 0.6319 and can produce locally strong target-style jumps, but it does so in a clearly higher-damage region and with targetwise ArtFID 395.7 on the full scope and 444.5 on the transfer-only scope; the retained e5/e15 packet is already near a plateau on transfer CLIP-S and LPIPS, with less than 0.004 / 0.002 difference between the checkpoints. Seedream-4.5 provides a stronger external large-prior reference under a fixed API protocol: we use the source image together with a fixed target-domain prompt template of the form ``convert the image to \textit{<style>} style,'' without retraining or style-ID control. Its transfer row is 0.6920 / 0.4923, which is better than the compact anchor but still below the promoted LBM knee point on both style gain and content preservation. At the same time, Seedream keeps the strongest identity row among the currently compared points, which is why we treat it as a useful outer reference rather than as a same-interface baseline. At the trusted SaMAM 2250 checkpoint, transfer CLIP-S remains below the IDT floor even though targetwise ArtFID improves to 146.1 on the full scope and 148.2 on the transfer-only scope. This is the evaluation failure exposed by Distinct5: lower targetwise ArtFID can still coincide with zero or negative target-style gain when a method preserves source structure and stays inside a plausible target-art manifold without moving toward the requested target style. Distinct5 therefore turns the paper's evaluation claim into an operating-point test within this split: target-style movement should be demonstrated relative to IDT, and a paper-facing result should be reported as a selected Pareto point rather than as one arbitrarily chosen checkpoint.
+\paragraph{Quantitative frontier.}
+LBM occupies three regimes on that surface: minute-scale anchors, a content-preserving Knee point, and a stronger style band. LBM-K reaches 0.6712 / 0.6277 in transfer CLIP-S / $(1-\mathrm{LPIPS})$, the promoted Knee point reaches 0.7102 / 0.5397, and the stronger successors extend the style side to 0.7274 / 0.3967 and 0.7307 / 0.3817. This is a frontier, not a single winner.
 
-\begin{table}[t]
+\paragraph{Baseline bounds.}
+The reproduced baselines bound that frontier from both sides. SaMST e15 reaches 0.6957 / 0.6319, but in a much higher-damage region, and its retained e5/e15 packet is already near a plateau. Seedream-4.5 is a stronger external large-prior reference, but its transfer row, 0.6920 / 0.4923, still stays below LBM-Knee on both style gain and content preservation. SaMAM-2250 never clears the IDT floor. The latent negatives sharpen the same failure mode: Lat SaMAM stays only +0.0148 above IDT, whereas Lat SaMST collapses to the worst all-pairs ArtFID band at 658.8.
+
+\begin{strip}
 \centering
-\caption{Selected Distinct5-WikiArt operating points under the shared transfer-only packet. `idt' is the unchanged-image floor. Rows are chosen to represent distinct roles on the current frontier rather than a single checkpoint family: a compact conservative anchor, a content-preserving successor knee, two higher-style promoted successors, and one external large-prior reference. We report only transfer-scope metrics here so the main table does not mix all-pairs and transfer-only readings.}
+\vspace{-2mm}
+\begin{minipage}[t]{0.49\textwidth}
+\captionof{table}{Selected Distinct5-WikiArt transfer points. `idt' is the unchanged-image floor. The ordering is deliberate: floor, failed compact baseline, reproduced high-style baselines, compact LBM anchor, closed Knee point, and stronger promoted successors.}
 \label{tab:distinct5}
 \small
-\setlength{\tabcolsep}{3.5pt}
-\resizebox{\columnwidth}{!}{%
+\setlength{\tabcolsep}{3.2pt}
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{@{}l l r r r l@{}}
 \toprule
 Point & Role & CLIP-S$_{\mathrm{tr}}\uparrow$ & $1-\mathrm{LPIPS}\uparrow$ & $\Delta_{\mathrm{idt,tr}}\uparrow$ & Closure \\
@@ -146,19 +143,13 @@ LBM-PS-v2 e13 & style ceiling & \textbf{0.7307} & 0.3817 & \textbf{+0.0908} & fr
 \bottomrule
 \end{tabular}
 }
-\end{table}
-
-Table~\ref{tab:cost_distinct5} isolates the recorded operating-point cost under the same Distinct5 packet, but only for rows whose timing provenance is already fully closed. The broader successor family should therefore be read as a quality frontier first, not as a normalized timing leaderboard: the later Pattern+Stokes and structure-aware OT packets strengthen the style side of the frontier, while compact-anchor timing remains the cleanest accessibility evidence. The qualitative interpretation is consistent with the table-level result: SaMST can produce locally strong target-style jumps, but those gains sit in a much higher-damage region, Seedream-4.5 remains an out-of-interface large-prior reference rather than a style-ID baseline, and SaMAM still often edits without producing reliable target-style movement above the no-op floor.
-
-The same reading survives an explicit three-scope check on the promoted content-preserving successor. A local retest of the selected e13 knee point gives transfer 0.7101 / 0.4604, all-pairs 0.7302 / 0.4560, and identity 0.8105 / 0.4384 in CLIP-S / LPIPS. Its all-pairs targetwise ArtFID is 388.2 under the same target-pooled protocol used for the page-1 artifact panel. For context, Seedream-4.5 gives transfer 0.6920 / 0.4923, all-pairs 0.7198 / 0.4767, identity 0.8312 / 0.4145, and all-pairs targetwise ArtFID 311.5 under the same repaired-750 target-pooled recompute. The promoted LBM successor therefore improves target-style movement and content preservation over this large-prior reference on the transfer and all-pairs scopes, while Seedream keeps the strongest identity row and lower all-pairs ArtFID. Seedream is not a same-interface baseline; it is an external large-prior reference.
-
-\begin{table}[t]
-\centering
-\caption{Auxiliary artifact-sensitive and non-CLIP diagnostics on selected Distinct5-WikiArt rows. tw-ArtFID uses the all-pairs target-pooled recompute; Gram-$\mu$ is a shallow VGG Gram distance; EdgePurity is a higher-is-better content-edge diagnostic; NonCLIPAcc is the transfer-only target accuracy from the held-out ConvNeXt style probe.}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.47\textwidth}
+\captionof{table}{Artifact-sensitive and non-CLIP diagnostics on selected Distinct5-WikiArt rows. tw-ArtFID uses the all-pairs target-pooled recompute and separates the closed Knee point from the style-ceiling and large-prior rows.}
 \label{tab:distinct5_artifact_aux}
 \small
-\setlength{\tabcolsep}{3.4pt}
-\resizebox{\columnwidth}{!}{%
+\setlength{\tabcolsep}{3.1pt}
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{@{}l r r r r@{}}
 \toprule
 Point & tw-ArtFID$_{\mathrm{all}}\downarrow$ & Gram-$\mu\downarrow$ & EdgePurity$\uparrow$ & NonCLIPAcc$\uparrow$ \\
@@ -171,47 +162,47 @@ Seedream-4.5 & \textbf{311.5} & 0.189 & 0.389 & \textbf{0.378} \\
 \bottomrule
 \end{tabular}
 }
-\end{table}
+\end{minipage}
+\vspace{-1mm}
+\end{strip}
 
-Table~\ref{tab:distinct5_artifact_aux} sharpens the role split inside the frontier. Relative to SaMST e15, the selected Knee point lowers all-pairs target-pooled ArtFID (388.2 vs.\ 395.7), improves shallow texture statistics (Gram-$\mu$ 0.137 vs.\ 0.147), and more than doubles the edge-purity diagnostic (0.288 vs.\ 0.102). A held-out ConvNeXt-Tiny probe trained on the 5,000-image Distinct5 train split reaches 96\% accuracy on the 150-image test split; on transfer-only outputs it assigns target accuracy 1.0\% to IDT, 16.7\% to LBM-K, 23.7\% to LBM-Knee, 24.8\% to SaMST, 27.2\% to PS-v2, and 37.8\% to Seedream. Knee and SaMST are therefore close on non-CLIP target recognition, but Knee is substantially cleaner on artifact diagnostics. Row-resampled transfer bootstrap also keeps both promoted rows strictly above IDT: Knee $\Delta_{\mathrm{idt,tr}}=0.0702$ with $[0.0635, 0.0769]$, and PS-v2 $\Delta_{\mathrm{idt,tr}}=0.0901$ with $[0.0826, 0.0976]$. We therefore treat LBM-Knee as the main closed Pareto point and keep PS-v2 as the explicit style-ceiling row rather than a universal winner.
+\paragraph{Artifact-sensitive diagnostics.}
+Table~\ref{tab:distinct5_artifact_aux} explains why Knee is the promoted default. Against SaMST e15, Knee lowers all-pairs target-pooled ArtFID (388.2 vs.\ 395.7), improves Gram-$\mu$ (0.137 vs.\ 0.147), and more than doubles edge purity (0.288 vs.\ 0.102). The held-out non-CLIP probe keeps Knee close to SaMST (0.237 vs.\ 0.248), while PS-v2 and Seedream move higher on style. Bootstrap keeps both promoted rows safely above IDT, so Knee remains the main closed point and PS-v2 the explicit style ceiling.
 
 \begin{figure*}[t]
     \centering
     \includegraphics[width=0.985\textwidth]{figures/fig_distinct5_qualitative_main.png}
-    \caption{Main-paper qualitative comparison on Distinct5-WikiArt. Columns show `Source | SaMST | Seedream-4.5 | LBM-K | LBM-Knee | target-domain ref'. Target-domain references are shown only for visualization and are not provided to LBM at inference. The top row highlights the main Pareto tradeoff on a Ukiyo-e $\rightarrow$ Early Renaissance transfer: the reproduced compact baseline moves more aggressively, while LBM-Knee keeps a more conservative structure-preserving rendering than the stronger style references. The bottom row shows the same contrast on a Rococo $\rightarrow$ Ukiyo-e transfer. The stronger style-ceiling PS-v2 row and the aligned SaMAM-2250 negatives are kept in the supplement, where they read more naturally as supporting comparisons than as the main visual headline.}
+    \caption{Qualitative reading of Distinct5-WikiArt. Columns are grouped into controls, reproduced baselines, and frontier rows. Panel A shows the calibrated failure mode on `Impressionism $\rightarrow$ Minimalism': plausible outputs can still miss the requested target-style move. Panel B shows the same frontier tradeoff as Figure~\ref{fig:distinct5_page1}: stronger style movement pulls toward SaMST / Seedream / PS-v2, while Knee keeps more of the source layout. Target-domain references are shown only for visualization.}
     \label{fig:qual_main}
 \end{figure*}
 
-Figure~\ref{fig:qual_main} shows why the frontier interpretation is more informative than a single checkpoint claim. In both cases, SaMST and Seedream move farther toward the target style, but they also pay more heavily in structure preservation. LBM-K remains the most conservative moving point, while LBM-Knee keeps much more of the source layout than the stronger style references and still moves past the compact anchor.
+\paragraph{Qualitative read.}
+Figure~\ref{fig:qual_main} shows the same pattern visually. Panel A makes the calibration point concrete: plausible outputs can still miss the requested style move. Panel B shows the grouped frontier itself: high-style baselines and PS-v2 push harder toward the target domain, while LBM-Knee keeps more of the source layout and still moves beyond the compact anchor.
 
 \input{snippets/timing_tables_leibniz}
 \DistinctFiveTimingTableLeibniz
 
-\paragraph{Adaptation cost and accessibility.}
-Figure~\ref{fig:distinct5_page1} makes the practical gap visible without resorting to a synthetic normalized speedup claim. Conservative LBM anchors cross the Distinct5-WikiArt IDT floor after 1.2 minutes of training on a single RTX 3060, whereas the trusted SaMAM-2250 checkpoint remains below that floor after 7.6 hours and SaMST exceeds it only after 5.8 hours in a much higher-damage region. Within this domain-style setting, compact latent transport shifts customized stylization from a resource-intensive adaptation problem toward a minute-scale small-model learning problem.
+\paragraph{Retest and cost.}
+The same ordering survives direct reevaluation and cost comparison. Under explicit three-scope retest, Knee reaches 0.7101 / 0.4604 on transfer and 0.7302 / 0.4560 on all-pairs in CLIP-S / LPIPS, versus 0.6920 / 0.4923 and 0.7198 / 0.4767 for Seedream-4.5. Table~\ref{tab:cost_distinct5} then shows why that row matters in practice: conservative LBM anchors cross the Distinct5-WikiArt IDT floor after 1.2 minutes on a single RTX 3060, whereas SaMAM-2250 remains below the floor after 7.6 hours and SaMST exceeds it only after 5.8 hours in a much higher-damage region. The family is therefore selectable rather than singular: LBM-K is the conservative anchor, LBM-Knee the default closed point, and PS-v2 the style-ceiling row.
 
 \subsection{Historical support and secondary evidence}
-We keep the historical CycleGAN-256 packet as historical support rather than as a second main benchmark. On that older surface, LBM remains a competitive compact retrainable point with 0.7161 CLIP-S / 0.4514 LPIPS at 114\,ms/image, while the strongest reproduced competing rows either collapse content or enter noisier artifact regimes. Two fixed-rule follow-up WikiArt stress splits also preserve the main evaluator pattern: on split1 and split2, unchanged images still score strongly, and compact LBM-F remains above the split-local IDT floor by `+0.0139` and `+0.0073` transfer CLIP-S respectively. The same policy applies to ablations: content-guided execution and prototype-aware target queues improve the frontier more reliably than larger undifferentiated style codes, and terminal distribution matching remains the primary style driver. All reported evaluations use fixed seeds, stored resolved configurations, source snapshots, checkpoints, and per-epoch logs. Historical timings were measured on an RTX 4070 Laptop GPU unless otherwise noted. The supplement lists the artifact ledger, Seedream protocol, target-pooled ArtFID recompute path, the fixed-rule split packets, and the non-CLIP style probe.
+We keep the historical CycleGAN-256 packet only as secondary support. On that older surface, LBM remains a competitive compact retrainable point at 0.7161 CLIP-S / 0.4514 LPIPS and 114\,ms/image, while the strongest reproduced competitors either collapse content or enter noisier artifact regimes. Two fixed-rule WikiArt follow-up splits preserve the same evaluator pattern: unchanged images still score strongly, and compact LBM-F remains above the split-local IDT floor by `+0.0139` and `+0.0073` transfer CLIP-S. The supplement carries the artifact ledger and protocol details.
 
 
 
 \section{Discussion and Limitations}
-The main lesson is that style transfer quality cannot be inferred from raw CLIP-style alone. Distinct5-WikiArt sharpens this point because the no-op baseline is measured explicitly: some baselines fail even to exceed the identical-image prior, while others exceed it only by moving into severe LPIPS and targetwise ArtFID failure regions. This exposes a practical blind spot in art-to-art evaluation: preserved art-domain priors can masquerade as target-style success unless the unchanged-image floor is reported \cite{zhou2024comprehensiveeval,yeh2020calibrated,wright2022artfid}. These results also change the role of LBM from a single operating point to a selectable style-content family. Conservative anchors occupy the low-damage regime, LBM-Knee becomes the main closed Pareto point, and later Pattern+Stokes successors define the style ceiling. The practical consequence is that meaningful style-id customization can remain a small-model learning problem rather than a large-prior adaptation problem.
+The main lesson is not that one row wins every metric; it is that Distinct5-WikiArt is easy to misread. Raw CLIP-style overstates success in art-to-art transfer. Once the unchanged-image floor is explicit, several reproduced baselines stop counting as evidence of target-style control: some never beat the unchanged image, while others do so only by entering substantially worse LPIPS and artifact regions. The benchmark then exposes a compact frontier: low-damage anchors, a closed Knee point, and a stronger style-ceiling regime.
 
-The tokenizer experiments narrow the remaining mechanism question. Raw code capacity alone is not the bottleneck; the harder issue is whether target-style information survives execution through a content-conditioned vector field strongly enough to yield real style gain beyond the unchanged-image reference. The current evidence therefore favors target-style carriers, prototype-aware queues, and content-aware routing over undifferentiated token expansion.
-
-The study has several limitations. First, the main protocol is domain-level rather than reference-image-specific, so it does not attempt to reproduce a unique style image. Second, Euler integration is deliberately simple; although the step sweep is stable in the reported regime, more aggressive paths or higher resolutions may need better solvers or stronger constraints. Third, SA-SWD is an adaptive-projection distribution loss; current controls show that most of its benefit comes from the distributional term rather than from the specific semantic projection rule. Fourth, artifact-sensitive metrics are still proxies for visual preference; human studies or rubric-based VLM assessment would strengthen the claim further. In particular, the content-preserving successor now has transfer-style, LPIPS, targetwise ArtFID, non-CLIP probe, and qualitative closure, whereas the stronger style-ceiling rows still lack full human-preference closure. Finally, Distinct5-WikiArt is a five-domain stress split rather than a universal art benchmark, so broader domain coverage remains future work even though the current fixed-rule follow-up splits already show that the unchanged-image pathology is not unique to one class set.
+The limitations are direct. The task is domain-level rather than exemplar-level, Euler integration is intentionally simple, and artifact-sensitive diagnostics are still proxies rather than preference judgments. Distinct5-WikiArt is a stress benchmark rather than a universal art benchmark, although the fixed-rule follow-up splits reproduce the same unchanged-image pathology.
 
 \section{Conclusion}
-We presented Latent Bridge Matching, a compact latent transport design for domain-level artistic transfer. The method separates training-side endpoint selection, path-wise field learning, adaptive-projection terminal distribution matching, and style-tokenized execution. Under the reproduced historical CycleGAN-256 protocol, LBM delivers a favorable reproduced balance of style strength, content fidelity, artifact control, and practical footprint within the mixed-family comparison packet considered here. The Distinct5-WikiArt stress benchmark sharpens the paper's main evaluation point: once the identical-image prior is made explicit, target-style movement must be read against IDT rather than from raw CLIP-S or ArtFID alone. On that split, LBM is a controllable family of operating points: conservative compact anchors clear the IDT floor early, LBM-Knee is the main closed Pareto point under artifact-sensitive and non-CLIP checks, and later Pattern+Stokes successors move into a stronger high-style regime.
-
-Just as importantly, the reproduced minute-scale RTX 3060 adaptation path and the 3.91M / 114\,ms historical operating point show that customized stylization can remain a small-model learning problem rather than a large-prior adaptation problem, lowering the barrier for researchers and creators who want low-cost style-specific models on consumer GPUs. The tokenizer study then isolates the remaining mechanism question. Within the tested Distinct5 tokenizer variants, matched localization controls show that executor-side refresh recovers more than style-side refresh alone on the current local surface, while the same-family H path-stability packet indicates that kinetic regularization acts as a practical stabilizer in the current OMF / field regime. The next representation target is therefore to preserve target-style separation through execution itself, via explicit target carriers and tighter content-risk control.
+IDT calibration changes what counts as success in domain-level art transfer. Once the unchanged-image prior is measured explicitly, compact latent transport is enough to produce useful style-ID operating points: minute-scale anchors, a closed Knee point, and a stronger style-ceiling regime. LBM therefore offers a practical small-model alternative to large-prior adaptation on Distinct5-WikiArt.
 
 \bibliography{refs}
 
-\small
-\setlength{\itemsep}{1pt}
-\setlength{\parskip}{2pt}
+\footnotesize
+\setlength{\itemsep}{0pt}
+\setlength{\parskip}{1pt}
 \section*{Reproducibility Checklist}
 \noindent\textbf{This paper}
 \begin{itemize}

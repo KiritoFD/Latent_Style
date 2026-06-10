@@ -1,0 +1,207 @@
+{
+  "metrics_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\local_eval\\carriergate_fresh_e2_localreview\\introstyle_metrics.csv",
+  "style_bank_root": "G:\\GitHub\\Latent_Style\\Dataset\\distinct5_512\\test",
+  "model_id": "G:\\GitHub\\Latent_Style\\eval_cache\\modelscope\\stabilityai\\stable-diffusion-2-1-base",
+  "matrix_breakdown": {
+    "Early_Renaissance": {
+      "Early_Renaissance": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.12167566989858945,
+        "introstyle_source_style_score": 0.12167566989858945,
+        "introstyle_best_non_target_score": 0.15267506018280982,
+        "introstyle_style_margin": -0.030999390284220378
+      },
+      "Impressionism": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.1511877581477165,
+        "introstyle_source_style_score": 0.12127150371670722,
+        "introstyle_best_non_target_score": 0.14945751850803693,
+        "introstyle_style_margin": 0.001730239639679591
+      },
+      "Minimalism": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.09145019724965095,
+        "introstyle_source_style_score": 0.1291600247224172,
+        "introstyle_best_non_target_score": 0.14927250867088634,
+        "introstyle_style_margin": -0.0578223114212354
+      },
+      "Rococo": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.09657416964570681,
+        "introstyle_source_style_score": 0.10266694476207097,
+        "introstyle_best_non_target_score": 0.13082266524434089,
+        "introstyle_style_margin": -0.034248495598634084
+      },
+      "Ukiyo_e": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.11579257721702257,
+        "introstyle_source_style_score": 0.12665828242897986,
+        "introstyle_best_non_target_score": 0.16815407102306684,
+        "introstyle_style_margin": -0.05236149380604426
+      }
+    },
+    "Impressionism": {
+      "Early_Renaissance": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.10048476979136467,
+        "introstyle_source_style_score": 0.18286599715550741,
+        "introstyle_best_non_target_score": 0.18294092416763305,
+        "introstyle_style_margin": -0.08245615437626838
+      },
+      "Impressionism": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.1964621938765049,
+        "introstyle_source_style_score": 0.1964621938765049,
+        "introstyle_best_non_target_score": 0.14828933502237002,
+        "introstyle_style_margin": 0.04817285885413488
+      },
+      "Minimalism": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.10219178423285484,
+        "introstyle_source_style_score": 0.16912239740292231,
+        "introstyle_best_non_target_score": 0.17034795482953388,
+        "introstyle_style_margin": -0.06815617059667906
+      },
+      "Rococo": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.09358936523397764,
+        "introstyle_source_style_score": 0.14409414132436116,
+        "introstyle_best_non_target_score": 0.14753623356421788,
+        "introstyle_style_margin": -0.05394686833024025
+      },
+      "Ukiyo_e": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.10238726263244947,
+        "introstyle_source_style_score": 0.19999773651361466,
+        "introstyle_best_non_target_score": 0.20793791015942892,
+        "introstyle_style_margin": -0.10555064752697944
+      }
+    },
+    "Minimalism": {
+      "Early_Renaissance": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.07525297862788041,
+        "introstyle_source_style_score": 0.10805338670810063,
+        "introstyle_best_non_target_score": 0.11885412161548932,
+        "introstyle_style_margin": -0.04360114298760891
+      },
+      "Impressionism": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.09147026042143504,
+        "introstyle_source_style_score": 0.11988858034213384,
+        "introstyle_best_non_target_score": 0.12970386296510697,
+        "introstyle_style_margin": -0.038233602543671925
+      },
+      "Minimalism": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.15223080515861512,
+        "introstyle_source_style_score": 0.15223080515861512,
+        "introstyle_best_non_target_score": 0.0895223413904508,
+        "introstyle_style_margin": 0.06270846376816432
+      },
+      "Rococo": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.07633188503483931,
+        "introstyle_source_style_score": 0.10464392130573591,
+        "introstyle_best_non_target_score": 0.10745821222662925,
+        "introstyle_style_margin": -0.031126327191789944
+      },
+      "Ukiyo_e": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.0868606603393952,
+        "introstyle_source_style_score": 0.1235353929301103,
+        "introstyle_best_non_target_score": 0.12990291689833006,
+        "introstyle_style_margin": -0.04304225655893485
+      }
+    },
+    "Rococo": {
+      "Early_Renaissance": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.09896965225537618,
+        "introstyle_source_style_score": 0.13661688069502512,
+        "introstyle_best_non_target_score": 0.16578045735756555,
+        "introstyle_style_margin": -0.06681080510218938
+      },
+      "Impressionism": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.14939372514684995,
+        "introstyle_source_style_score": 0.1316484548151493,
+        "introstyle_best_non_target_score": 0.14504585713148116,
+        "introstyle_style_margin": 0.0043478680153687796
+      },
+      "Minimalism": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.09569349785645803,
+        "introstyle_source_style_score": 0.13947381650408108,
+        "introstyle_best_non_target_score": 0.1414323183397452,
+        "introstyle_style_margin": -0.045738820483287174
+      },
+      "Rococo": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.110165619601806,
+        "introstyle_source_style_score": 0.110165619601806,
+        "introstyle_best_non_target_score": 0.12255856444438298,
+        "introstyle_style_margin": -0.01239294484257698
+      },
+      "Ukiyo_e": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.10677597522735596,
+        "introstyle_source_style_score": 0.14752739444375038,
+        "introstyle_best_non_target_score": 0.1753748019536336,
+        "introstyle_style_margin": -0.06859882672627766
+      }
+    },
+    "Ukiyo_e": {
+      "Early_Renaissance": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.09766641333699226,
+        "introstyle_source_style_score": 0.13089886233210563,
+        "introstyle_best_non_target_score": 0.14329359059532484,
+        "introstyle_style_margin": -0.04562717725833257
+      },
+      "Impressionism": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.14305913348992666,
+        "introstyle_source_style_score": 0.1268626314898332,
+        "introstyle_best_non_target_score": 0.1676746649046739,
+        "introstyle_style_margin": -0.02461553141474724
+      },
+      "Minimalism": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.10340295558174452,
+        "introstyle_source_style_score": 0.13587765966852505,
+        "introstyle_best_non_target_score": 0.14637109488248826,
+        "introstyle_style_margin": -0.04296813930074374
+      },
+      "Rococo": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.09633747165401776,
+        "introstyle_source_style_score": 0.10211851422985395,
+        "introstyle_best_non_target_score": 0.12980513349175454,
+        "introstyle_style_margin": -0.033467661837736765
+      },
+      "Ukiyo_e": {
+        "count": 30.0,
+        "introstyle_target_style_score": 0.13625741377472878,
+        "introstyle_source_style_score": 0.13625741377472878,
+        "introstyle_best_non_target_score": 0.1524205006659031,
+        "introstyle_style_margin": -0.016163086891174315
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "introstyle_target_style_score": 0.10374362465615075,
+      "introstyle_style_margin": -0.04661471627031763,
+      "introstyle_delta_idt": -0.03961471580589809
+    },
+    "identity_reconstruction": {
+      "introstyle_target_style_score": 0.14335834046204884
+    },
+    "photo_to_art_performance": {
+      "introstyle_target_style_score": null,
+      "introstyle_style_margin": null,
+      "introstyle_delta_idt": null
+    }
+  }
+}

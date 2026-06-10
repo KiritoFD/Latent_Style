@@ -7,13 +7,19 @@ from typing import Iterable
 import numpy as np
 import torch
 import torch.nn.functional as F
-from diffusers import DDIMScheduler, StableDiffusionPipeline
+from diffusers import AutoencoderKL, DDIMScheduler
 from diffusers.models.unets.unet_2d_condition import UNet2DConditionModel
 from PIL import Image
+from transformers import CLIPTextModel, CLIPTokenizer
 from torchvision import transforms
 
 
 warnings.filterwarnings("ignore")
+
+try:
+    from modelscope.hub.snapshot_download import snapshot_download as ms_snapshot_download  # type: ignore
+except Exception:  # pragma: no cover - optional dependency / remote-only path
+    ms_snapshot_download = None
 
 
 class _IntroStyleUNet(UNet2DConditionModel):
@@ -118,7 +124,63 @@ class _IntroStyleUNet(UNet2DConditionModel):
         return {"up_ft": up_ft}
 
 
-class _IntroStyleOneStep(StableDiffusionPipeline):
+class _IntroStyleOneStep:
+    def __init__(
+        self,
+        *,
+        vae: AutoencoderKL,
+        unet: _IntroStyleUNet,
+        scheduler: DDIMScheduler,
+        tokenizer: CLIPTokenizer,
+        text_encoder: CLIPTextModel,
+        device: str,
+    ) -> None:
+        self.vae = vae
+        self.unet = unet
+        self.scheduler = scheduler
+        self.tokenizer = tokenizer
+        self.text_encoder = text_encoder
+        self.device = str(device)
+
+    def to(self, device: str):
+        self.device = str(device)
+        self.vae = self.vae.to(device)
+        self.unet = self.unet.to(device)
+        self.text_encoder = self.text_encoder.to(device)
+        return self
+
+    def enable_attention_slicing(self) -> None:
+        if hasattr(self.unet, "set_attention_slice"):
+            self.unet.set_attention_slice("auto")
+
+    def enable_xformers_memory_efficient_attention(self) -> None:
+        if hasattr(self.unet, "enable_xformers_memory_efficient_attention"):
+            self.unet.enable_xformers_memory_efficient_attention()
+
+    @torch.no_grad()
+    def encode_prompt(
+        self,
+        *,
+        prompt: list[str],
+        device: str,
+        num_images_per_prompt: int = 1,
+        do_classifier_free_guidance: bool = False,
+    ):
+        del do_classifier_free_guidance
+        tokens = self.tokenizer(
+            prompt,
+            padding="max_length",
+            truncation=True,
+            max_length=self.tokenizer.model_max_length,
+            return_tensors="pt",
+        )
+        input_ids = tokens.input_ids.to(device)
+        attention_mask = tokens.attention_mask.to(device) if getattr(tokens, "attention_mask", None) is not None else None
+        prompt_embeds = self.text_encoder(input_ids=input_ids, attention_mask=attention_mask)[0]
+        if int(num_images_per_prompt) > 1:
+            prompt_embeds = prompt_embeds.repeat_interleave(int(num_images_per_prompt), dim=0)
+        return (prompt_embeds, None)
+
     @torch.no_grad()
     def __call__(
         self,
@@ -129,7 +191,7 @@ class _IntroStyleOneStep(StableDiffusionPipeline):
         prompt_embeds: torch.FloatTensor,
         cross_attention_kwargs=None,
     ):
-        device = self._execution_device
+        device = img_tensor.device
         latents = self.vae.encode(img_tensor).latent_dist.sample() * self.vae.config.scaling_factor
         timestep = torch.tensor(t, dtype=torch.long, device=device)
         noise = torch.randn_like(latents).to(device)
@@ -159,9 +221,18 @@ class IntroStyleFeatureExtractor:
         self.ensemble_size = int(ensemble_size)
 
         unet = _IntroStyleUNet.from_pretrained(model_id, subfolder="unet")
-        pipe = _IntroStyleOneStep.from_pretrained(model_id, unet=unet, safety_checker=None)
-        pipe.vae.decoder = None
-        pipe.scheduler = DDIMScheduler.from_pretrained(model_id, subfolder="scheduler")
+        vae = AutoencoderKL.from_pretrained(model_id, subfolder="vae")
+        tokenizer = CLIPTokenizer.from_pretrained(model_id, subfolder="tokenizer")
+        text_encoder = CLIPTextModel.from_pretrained(model_id, subfolder="text_encoder")
+        scheduler = DDIMScheduler.from_pretrained(model_id, subfolder="scheduler")
+        pipe = _IntroStyleOneStep(
+            vae=vae,
+            unet=unet,
+            scheduler=scheduler,
+            tokenizer=tokenizer,
+            text_encoder=text_encoder,
+            device=self.device,
+        )
         pipe = pipe.to(self.device)
         try:
             pipe.enable_attention_slicing()
@@ -173,6 +244,7 @@ class IntroStyleFeatureExtractor:
             pass
         pipe.unet.eval()
         pipe.vae.eval()
+        pipe.text_encoder.eval()
         self.pipe = pipe
         self.preprocess = transforms.Compose(
             [
@@ -220,6 +292,41 @@ class IntroStyleFeatureExtractor:
             if torch.cuda.is_available() and self.device.startswith("cuda"):
                 torch.cuda.empty_cache()
         return torch.cat(outputs, dim=0) if outputs else torch.empty((0, 1, 1, 1))
+
+
+def resolve_introstyle_model_path(
+    *,
+    model_id: str,
+    modelscope_id: str = "",
+    modelscope_cache_dir: str = "",
+    allow_network: bool = False,
+) -> str:
+    raw_model_id = str(model_id or "").strip()
+    if raw_model_id:
+        candidate = Path(raw_model_id).expanduser()
+        if candidate.exists():
+            return str(candidate.resolve())
+        if "/" in raw_model_id and not Path(raw_model_id).suffix:
+            return raw_model_id
+        return raw_model_id
+
+    ms_id = str(modelscope_id or "").strip()
+    if not ms_id:
+        raise ValueError("IntroStyle requires either model_id or modelscope_id.")
+    if ms_snapshot_download is None:
+        raise RuntimeError("ModelScope is not available for IntroStyle model resolution.")
+
+    cache_dir = Path(str(modelscope_cache_dir or "").strip() or ".").expanduser()
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    kwargs = {"cache_dir": str(cache_dir)}
+    if not bool(allow_network):
+        kwargs["local_files_only"] = True
+    try:
+        local_path = ms_snapshot_download(ms_id, **kwargs)
+    except TypeError:
+        kwargs.pop("local_files_only", None)
+        local_path = ms_snapshot_download(ms_id, **kwargs)
+    return str(Path(str(local_path)).resolve())
 
 
 def introstyle_style_vector(feat: torch.Tensor) -> torch.Tensor:

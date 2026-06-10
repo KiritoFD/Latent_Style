@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -60,18 +61,29 @@ def _list_images(folder: Path, limit: int) -> list[Path]:
     return files[:limit] if limit > 0 else files
 
 
-def _prepare_content_dir(image_root: Path, style_names: list[str], max_src_per_style: int, resize_content: int) -> Path:
-    content_dir = SAMST_REPO / "content"
+def _prepare_content_dir(
+    image_root: Path,
+    style_names: list[str],
+    max_src_per_style: int,
+    resize_content: int,
+    *,
+    content_dir: Path,
+) -> tuple[Path, dict[str, str]]:
     shutil.rmtree(content_dir, ignore_errors=True)
     content_dir.mkdir(parents=True, exist_ok=True)
+    filename_map: dict[str, str] = {}
 
+    counter = 0
     for style in style_names:
         src_dir = image_root / style
         if not src_dir.is_dir():
             raise FileNotFoundError(f"missing source style dir: {src_dir}")
         files = _list_images(src_dir, max_src_per_style)
         for src in files:
-            dst = content_dir / f"{style}_{src.stem}.png"
+            counter += 1
+            short_name = f"img_{counter:06d}.png"
+            filename_map[short_name] = f"{style}_{src.stem}"
+            dst = content_dir / short_name
             with Image.open(src) as image:
                 image = ImageOps.exif_transpose(image).convert("RGB")
                 if resize_content > 0:
@@ -82,7 +94,7 @@ def _prepare_content_dir(image_root: Path, style_names: list[str], max_src_per_s
                         centering=(0.5, 0.5),
                     )
                 image.save(dst)
-    return content_dir
+    return content_dir, filename_map
 
 
 def _run_one_target(
@@ -107,8 +119,15 @@ def _run_one_target(
     if not test_script.is_file():
         raise FileNotFoundError(f"missing SaMST test.py: {test_script}")
 
-    content_dir = _prepare_content_dir(image_root, style_names, max_src_per_style, resize_content)
-    raw_output = SAMST_REPO / "outputs"
+    temp_root = images_out.parent / "_tmp" / target_style
+    content_dir, filename_map = _prepare_content_dir(
+        image_root,
+        style_names,
+        max_src_per_style,
+        resize_content,
+        content_dir=temp_root / "content",
+    )
+    raw_output = temp_root / "outputs"
     shutil.rmtree(raw_output, ignore_errors=True)
     raw_output.mkdir(parents=True, exist_ok=True)
 
@@ -127,7 +146,10 @@ def _run_one_target(
             yaml.dump(test_yml, f, default_flow_style=False, allow_unicode=True)
 
         print(f"[SaMST distinct5] epoch={epoch:04d} target={target_style} ckpt={ckpt.name}", flush=True)
-        rc = subprocess.run([sys.executable, str(test_script)], cwd=str(test_dir)).returncode
+        env = dict(os.environ)
+        env["PYTHONIOENCODING"] = "utf-8"
+        env["PYTHONUTF8"] = "1"
+        rc = subprocess.run([sys.executable, str(test_script)], cwd=str(test_dir), env=env).returncode
         if rc != 0:
             return rc
 
@@ -135,7 +157,8 @@ def _run_one_target(
         raw_files = sorted(p for p in raw_output.iterdir() if p.is_file() and p.name.startswith("style1_"))
         for src in raw_files:
             original = src.name[len("style1_") :]
-            stem = Path(original).stem
+            restored = filename_map.get(original, Path(original).stem)
+            stem = Path(restored).stem
             dst = images_out / f"{stem}_to_{target_style}.png"
             with Image.open(src) as image:
                 ImageOps.exif_transpose(image).convert("RGB").save(dst)

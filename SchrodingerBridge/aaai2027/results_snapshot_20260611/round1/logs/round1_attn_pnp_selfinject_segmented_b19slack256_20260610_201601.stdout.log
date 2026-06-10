@@ -1,0 +1,20 @@
+[run_remote_round1_family_segmented] start family_id=attn_pnp_selfinject segment_epochs=1
+[run_remote_round1_family_segmented] latest_epoch=0 latest_ckpt=none
+[run_remote_round1_family_segmented] expected_epoch>=1
+usage: launch_remote_round1_family_train.py [-h] --config CONFIG
+                                            [--remote-wsl-cwd REMOTE_WSL_CWD]
+                                            [--remote-python REMOTE_PYTHON]
+                                            [--max-prelaunch-memory-mib MAX_PRELAUNCH_MEMORY_MIB]
+                                            [--min-runtime-memory-mib MIN_RUNTIME_MEMORY_MIB]
+                                            [--max-runtime-memory-mib MAX_RUNTIME_MEMORY_MIB]
+                                            [--runtime-guard-max-memory-mib RUNTIME_GUARD_MAX_MEMORY_MIB]
+                                            [--runtime-guard-poll-seconds RUNTIME_GUARD_POLL_SECONDS]
+                                            [--runtime-guard-min-memory-mib RUNTIME_GUARD_MIN_MEMORY_MIB]
+                                            [--runtime-guard-min-warmup-seconds RUNTIME_GUARD_MIN_WARMUP_SECONDS]
+                                            [--runtime-guard-min-consecutive-polls RUNTIME_GUARD_MIN_CONSECUTIVE_POLLS]
+                                            [--runtime-guard-min-mode {ignore,warn,stop}]
+                                            [--dino-cache-override DINO_CACHE_OVERRIDE]
+                                            [--health-wait-seconds HEALTH_WAIT_SECONDS]
+                                            [--manifest-csv MANIFEST_CSV]
+                                            [--allow-other-running]
+launch_remote_round1_family_train.py: error: unrecognized arguments: --min-runtime-slack-mib 256

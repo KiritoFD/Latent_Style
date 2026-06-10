@@ -1,0 +1,13 @@
+{
+  "curve_csv": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samam_wikiarts5_patch8_segmented_20260610_094447\\curve_metrics.csv",
+  "convergence_json": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samam_wikiarts5_patch8_segmented_20260610_094447\\curve_convergence.json",
+  "best_transfer_style_step": 5750,
+  "best_transfer_lpips_step": 19500,
+  "last_pareto_step": 19500,
+  "latest_step": 21250,
+  "since_last_pareto": 7,
+  "tail_flat": false,
+  "converged": false,
+  "output_png": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\figures\\fig_wikiarts5_samam_full_curve.png",
+  "output_pdf": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\figures\\fig_wikiarts5_samam_full_curve.pdf"
+}

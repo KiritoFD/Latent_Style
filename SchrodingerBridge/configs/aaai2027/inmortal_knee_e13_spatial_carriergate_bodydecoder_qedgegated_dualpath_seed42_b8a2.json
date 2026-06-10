@@ -1,0 +1,25 @@
+{
+  "_base": "inmortal_knee_e13_spatial_carriergate_bodydecoder_qedgegated_seed42_b8a2.json",
+  "model": {
+    "proximal_mode": "dualpath_texture",
+    "proximal_hidden_channels": 96,
+    "proximal_num_blocks": 2,
+    "proximal_highpass_kernel": 5,
+    "proximal_coarse_lowpass_kernel": 9,
+    "proximal_coarse_gain": 0.35,
+    "proximal_texture_gain": 1.0,
+    "proximal_residual_energy_weight": 0.02,
+    "proximal_force_highpass": true,
+    "proximal_bind_terminal_losses": true,
+    "record_base_endpoint_metrics": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_knee_e13_spatial_carriergate_bodydecoder_qedgegated_dualpath_seed42_b8a2"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_knee_e13_spatial_carriergate_bodydecoder_qedgegated_dualpath_seed42_b8a2",
+    "axis": "aaai2027_inmortal_next_round_style_rescue",
+    "stage": "KneeE13_plus_SpatialCarrierGateBodyDecoder_plus_QuantileEdgeGatedStructureLeash_plus_DualPathTextureProximal",
+    "notes": "Branch-capacity follow-up after QEdgePattn. Keep the stronger structure leash, but replace the single late branch with an explicit dual-path proximal head: a low-frequency style-statistics branch plus a high-frequency cross-attention texture branch."
+  }
+}

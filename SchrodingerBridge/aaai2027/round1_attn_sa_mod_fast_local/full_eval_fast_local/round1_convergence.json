@@ -1,0 +1,29 @@
+{
+  "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_sa_mod_fast_local\\full_eval_fast_local\\clip_lpips_curve.csv",
+  "row_count": 24,
+  "best_epoch": "epoch_0001",
+  "best_index": 0,
+  "best_transfer_clip_epoch": "epoch_0001",
+  "best_transfer_lpips_epoch": "epoch_0008",
+  "best_allpairs_clip_epoch": "epoch_0003",
+  "best_allpairs_lpips_epoch": "epoch_0008",
+  "pareto_epochs": [
+    "epoch_0001",
+    "epoch_0002",
+    "epoch_0003",
+    "epoch_0004",
+    "epoch_0006",
+    "epoch_0008",
+    "epoch_0010",
+    "epoch_0012"
+  ],
+  "last_pareto_epoch": "epoch_0012",
+  "newest_epoch": "epoch_0024",
+  "since_best": 23,
+  "since_last_pareto": 12,
+  "best_in_newest_2": false,
+  "tail_flat": true,
+  "patience": 4,
+  "criterion": "joint_transfer_allpairs_pareto",
+  "converged": true
+}

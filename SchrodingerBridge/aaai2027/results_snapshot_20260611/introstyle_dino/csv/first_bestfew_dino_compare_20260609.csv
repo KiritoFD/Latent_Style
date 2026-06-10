@@ -1,0 +1,4 @@
+﻿"label","run","n_pairs","dino_structure"
+"LBM-Knee full750","LBM-Knee_e13","750","0.0217118641616154"
+"QEdgePattn e01","epoch_0001","745","0.0263493168824071"
+"DualPath e01","epoch_0001","745","0.0290205025482898"

@@ -1,0 +1,50 @@
+[
+  {
+    "method": "LBM",
+    "run": "epoch_0001",
+    "images": 750,
+    "transfer_target_style_score": 0.10435704405109088,
+    "transfer_source_style_score": 0.13871345592041812,
+    "transfer_best_non_target_score": 0.14742398589849473,
+    "transfer_style_margin": -0.043066941847403846,
+    "identity_target_style_score": 0.1402817589044571,
+    "images_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_sa_mod_localreview\\full_eval_fresh_localreview\\epoch_0001\\images",
+    "metrics_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_sa_mod_localreview\\full_eval_fresh_localreview\\epoch_0001\\metrics.csv"
+  },
+  {
+    "method": "LBM",
+    "run": "epoch_0008",
+    "images": 750,
+    "transfer_target_style_score": 0.10642360574876268,
+    "transfer_source_style_score": 0.14348150399823983,
+    "transfer_best_non_target_score": 0.15284516084939243,
+    "transfer_style_margin": -0.04642155510062973,
+    "identity_target_style_score": 0.14677242239316304,
+    "images_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_sa_mod_localreview\\full_eval_fresh_localreview\\epoch_0008\\images",
+    "metrics_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_sa_mod_localreview\\full_eval_fresh_localreview\\epoch_0008\\metrics.csv"
+  },
+  {
+    "method": "LBM",
+    "run": "epoch_0003",
+    "images": 750,
+    "transfer_target_style_score": 0.10511577108254035,
+    "transfer_source_style_score": 0.1416550675034523,
+    "transfer_best_non_target_score": 0.15009366835157076,
+    "transfer_style_margin": -0.04497789726903041,
+    "identity_target_style_score": 0.14318013012409211,
+    "images_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_sa_mod_localreview\\full_eval_fresh_localreview\\epoch_0003\\images",
+    "metrics_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_sa_mod_localreview\\full_eval_fresh_localreview\\epoch_0003\\metrics.csv"
+  },
+  {
+    "method": "LBM",
+    "run": "epoch_0024",
+    "images": 750,
+    "transfer_target_style_score": 0.10668633975088597,
+    "transfer_source_style_score": 0.14354758607844512,
+    "transfer_best_non_target_score": 0.15216710802167654,
+    "transfer_style_margin": -0.045480768270790575,
+    "identity_target_style_score": 0.14618135263522467,
+    "images_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_sa_mod_localreview\\full_eval_fresh_localreview\\epoch_0024\\images",
+    "metrics_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_sa_mod_localreview\\full_eval_fresh_localreview\\epoch_0024\\metrics.csv"
+  }
+]

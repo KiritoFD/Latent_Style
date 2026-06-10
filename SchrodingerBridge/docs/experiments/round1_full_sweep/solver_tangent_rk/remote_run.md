@@ -129,20 +129,33 @@
 - Manifest status: `running`
 - Local fast root: [round1_solver_tangent_rk_fast_local](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_fast_local)
 - Local review root: [round1_solver_tangent_rk_localreview](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_localreview)
-- Prelaunch switch smoke: `ok`
 - Switch smoke artifact: [round1_solver_tangent_rk_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_switch_smoke_latest.json)
-- Switch smoke row count: `1`
-- Remote GPU live sample:
-  - `10516 MiB / 12288 MiB`, `util=94%`
-  - `band_status=in_band`
-  - `formal_status=formal_in_band`
 - Remote train log: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_tangent_rk_seed42_b8a2_train.log`
-- Remote train progress:
-  - `epoch 18/24`
-  - `step 269/1180`
-  - `loss=7.6876`
-  - `tswd=6.1562`
+- Remote train pid: not alive
+- Remote fast-eval pid count: `2`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

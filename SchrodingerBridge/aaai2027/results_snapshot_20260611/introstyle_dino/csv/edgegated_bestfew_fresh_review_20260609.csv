@@ -1,0 +1,3 @@
+run,introstyle_target_score,introstyle_delta_idt,introstyle_margin,dino_structure,dino_pairs,images_dir,metrics_csv
+epoch_0001,0.10877853894606232,0.009553370351592691,-0.044416359470536314,0.028117319257717405,745,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\edgegated_bestfew_fresh_localreview_20260609\epoch_0001\images,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\edgegated_bestfew_fresh_localreview_20260609\epoch_0001\metrics.csv
+epoch_0003,0.10849343483025829,0.009268266235788664,-0.04417445331191023,0.02826285785026598,745,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\edgegated_bestfew_fresh_localreview_20260609\epoch_0003\images,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\edgegated_bestfew_fresh_localreview_20260609\epoch_0003\metrics.csv
