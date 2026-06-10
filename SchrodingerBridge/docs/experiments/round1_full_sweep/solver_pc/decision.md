@@ -59,6 +59,20 @@
   - transfer `CLIP-S / LPIPS = 0.6962 / 0.5373`
   - all-pairs `CLIP-S / LPIPS = 0.7118 / 0.5296`
   - wall `= 177.89s`
+- Fifth settled fast-eval point:
+  - `epoch_0005`
+  - transfer `CLIP-S / LPIPS = 0.6955 / 0.5381`
+  - all-pairs `CLIP-S / LPIPS = 0.7112 / 0.5287`
+  - wall `= 176.98s`
+- Interpretation:
+  - `epoch_0004` set the best transfer LPIPS so far for this family
+  - `epoch_0005` slightly softened transfer style again, but nudged all-pairs LPIPS to the best point so far
+  - the family is still clearly structure-first, with style trailing, but the line remains alive and Pareto-active
+- Fourth settled fast-eval point:
+  - `epoch_0004`
+  - transfer `CLIP-S / LPIPS = 0.6962 / 0.5373`
+  - all-pairs `CLIP-S / LPIPS = 0.7118 / 0.5296`
+  - wall `= 177.89s`
 - Interpretation:
   - LPIPS improved again to the best point so far for this family
   - style softened again on both transfer and all-pairs

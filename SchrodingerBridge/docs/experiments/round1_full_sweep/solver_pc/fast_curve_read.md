@@ -10,15 +10,15 @@
 - Pulled curve CSV:
   - [clip_lpips_curve.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_pc_remote_full_eval_pull/clip_lpips_curve.csv)
 - Settled pulled rows:
-  - `4`
+  - `5`
 - Settled remote epochs:
-  - `epoch_0001, epoch_0002, epoch_0003, epoch_0004`
+  - `epoch_0001, epoch_0002, epoch_0003, epoch_0004, epoch_0005`
 - Latest remote checkpoint:
-  - `epoch_0005.pt`
+  - `epoch_0006.pt`
 - Latest settled eval epoch:
-  - `epoch_0004`
+  - `epoch_0005`
 - Remote checkpoints not yet settled into local fast curve:
-  - `epoch_0005.pt`
+  - `epoch_0006.pt`
 - Best transfer `CLIP-S`:
   - `epoch_0001`
   - `style / lpips = 0.7074 / 0.5621`
@@ -29,10 +29,10 @@
   - `epoch_0001`
   - `style / lpips = 0.7170 / 0.5552`
 - Latest settled point:
-  - `epoch_0004`
-  - transfer `style / lpips = 0.6962 / 0.5373`
-  - full `style / lpips = 0.7118 / 0.5296`
-  - wall `= 177.89s`
+  - `epoch_0005`
+  - transfer `style / lpips = 0.6955 / 0.5381`
+  - full `style / lpips = 0.7112 / 0.5287`
+  - wall `= 176.98s`
 - Convergence snapshot:
   - `best_epoch = epoch_0001`
   - `since_last_pareto = 0`
