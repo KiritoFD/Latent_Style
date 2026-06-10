@@ -525,16 +525,14 @@ Recalibration-needed family:
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Active Status
 
-- Running families:
-  - `solver_tangent_rk`
-- Active family: `solver_tangent_rk`
-- Decision status: `running`
-- Batch / epochs / patience: `17 / 24 / 6`
+- Running families: none
+- Active family: `none`
+- Decision status: `no_formal_running_lane`
 - Best transfer `CLIP-S`: `epoch_0001` -> `0.6999 / 0.5295`
 - Best transfer `LPIPS`: `epoch_0019` -> `0.6909 / 0.4498`
 - Best all-pairs `CLIP-S`: `epoch_0007` -> `0.7159 / 0.4675`
-- Latest settled fast point: `epoch_0028` -> transfer `0.6858 / 0.4626`
-- Convergence: `row_count=28, since_best=27, tail_flat=False, closure_band=approaching_closure, converged=False`
+- Latest settled fast point: `epoch_0032` -> transfer `0.6893 / 0.4807`
+- Convergence: `row_count=32, since_best=31, tail_flat=False, closure_band=approaching_closure, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
 
 Current solver continuation note:
@@ -594,6 +592,17 @@ Current solver continuation note:
     - run one final short continuation from `epoch_0030` to `epoch_0032`
     - keep `batch=17`
     - then close the family if the tail still fails to recover or flatten
+- settled short continuation read through `epoch_0032`:
+  - `epoch_0031-0032` are now fully settled in the local fast curve
+  - still no new Pareto point appears after `epoch_0019`
+  - current convergence state:
+    - `since_last_pareto = 13`
+    - `best_in_newest_2 = false`
+    - `tail_flat = false`
+  - final training decision:
+    - close `solver_tangent_rk` training
+    - move it to stage-close review
+    - hand the next remote lane to `solver_pc`
 
 
 

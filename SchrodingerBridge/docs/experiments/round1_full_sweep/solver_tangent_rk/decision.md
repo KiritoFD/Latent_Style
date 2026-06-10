@@ -134,3 +134,19 @@
     - continue one final short segment from `epoch_0030` to `epoch_0032`
     - keep `batch=17`
     - if that segment still fails the flat-tail condition, close the family and move to stage-close review rather than keep extending
+- `epoch_0031-0032` final continuation read:
+  - both retained checkpoints are now settled
+  - transfer `CLIP-S / LPIPS`:
+    - `epoch_0031 = 0.6907 / 0.4977`
+    - `epoch_0032 = 0.6893 / 0.4807`
+  - current convergence state:
+    - `since_last_pareto = 13`
+    - `best_in_newest_2 = false`
+    - `tail_flat = false`
+  - interpretation:
+    - the line has been non-Pareto-improving for a long tail after `epoch_0019`
+    - further short continuations are no longer justified by the observed metric trajectory
+  - final training decision:
+    - close the remote training phase for `solver_tangent_rk`
+    - move the family to `reviewing`
+    - hand the remote formal lane to `solver_pc`
