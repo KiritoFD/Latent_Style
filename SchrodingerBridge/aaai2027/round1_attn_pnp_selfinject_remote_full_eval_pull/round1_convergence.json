@@ -1,0 +1,26 @@
+{
+  "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_pnp_selfinject_remote_full_eval_pull\\clip_lpips_curve.csv",
+  "row_count": 5,
+  "best_epoch": "epoch_0001",
+  "best_index": 0,
+  "best_transfer_clip_epoch": "epoch_0001",
+  "best_transfer_lpips_epoch": "epoch_0004",
+  "best_allpairs_clip_epoch": "epoch_0001",
+  "best_allpairs_lpips_epoch": "epoch_0004",
+  "pareto_epochs": [
+    "epoch_0001",
+    "epoch_0002",
+    "epoch_0003",
+    "epoch_0004",
+    "epoch_0005"
+  ],
+  "last_pareto_epoch": "epoch_0005",
+  "newest_epoch": "epoch_0005",
+  "since_best": 4,
+  "since_last_pareto": 0,
+  "best_in_newest_2": true,
+  "tail_flat": false,
+  "patience": 4,
+  "criterion": "joint_transfer_allpairs_pareto",
+  "converged": false
+}

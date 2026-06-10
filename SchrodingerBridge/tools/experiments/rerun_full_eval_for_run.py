@@ -109,6 +109,17 @@ def main() -> int:
     parser.add_argument("--skip-existing", action="store_true", help="Skip checkpoints whose summary.json already exists in the chosen output subdir.")
     parser.add_argument("--refresh-stage-summary", action="store_true")
     parser.add_argument("--refresh-epoch-table", action="store_true")
+    parser.add_argument("--eval-enable-introstyle", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--introstyle-style-bank-root", default="")
+    parser.add_argument("--introstyle-model-id", default="")
+    parser.add_argument("--introstyle-modelscope-id", default="stabilityai/stable-diffusion-2-1-base")
+    parser.add_argument("--introstyle-modelscope-cache-dir", default="")
+    parser.add_argument("--introstyle-bank-limit-per-style", type=int, default=64)
+    parser.add_argument("--introstyle-batch-size", type=int, default=2)
+    parser.add_argument("--introstyle-topk", type=int, default=8)
+    parser.add_argument("--introstyle-t", type=int, default=25)
+    parser.add_argument("--introstyle-up-ft-index", type=int, default=1)
+    parser.add_argument("--introstyle-ensemble-size", type=int, default=1)
     args = parser.parse_args()
 
     run_dir = Path(args.run_dir).resolve()
@@ -148,6 +159,24 @@ def main() -> int:
             str(int(args.target_chunk_size)),
             "--eval_only_lpips_clip_style",
         ]
+        if bool(args.eval_enable_introstyle):
+            cmd.append("--eval_enable_introstyle")
+            if str(args.introstyle_style_bank_root).strip():
+                cmd += ["--introstyle_style_bank_root", str(args.introstyle_style_bank_root)]
+            if str(args.introstyle_model_id).strip():
+                cmd += ["--introstyle_model_id", str(args.introstyle_model_id)]
+            if str(args.introstyle_modelscope_id).strip():
+                cmd += ["--introstyle_modelscope_id", str(args.introstyle_modelscope_id)]
+            if str(args.introstyle_modelscope_cache_dir).strip():
+                cmd += ["--introstyle_modelscope_cache_dir", str(args.introstyle_modelscope_cache_dir)]
+            cmd += ["--introstyle_bank_limit_per_style", str(int(args.introstyle_bank_limit_per_style))]
+            cmd += ["--introstyle_batch_size", str(int(args.introstyle_batch_size))]
+            cmd += ["--introstyle_topk", str(int(args.introstyle_topk))]
+            cmd += ["--introstyle_t", str(int(args.introstyle_t))]
+            cmd += ["--introstyle_up_ft_index", str(int(args.introstyle_up_ft_index))]
+            cmd += ["--introstyle_ensemble_size", str(int(args.introstyle_ensemble_size))]
+        else:
+            cmd.append("--no-eval_enable_introstyle")
         if bool(args.profile_timing):
             cmd.append("--profile_timing")
         if bool(args.save_generated_images):

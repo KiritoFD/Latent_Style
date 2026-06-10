@@ -11,12 +11,17 @@ from __future__ import annotations
 import logging
 import os
 import sys
+from dataclasses import fields
 from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import torch
 from PIL import Image
+
+_SRC_ROOT = Path(__file__).resolve().parents[1]
+if str(_SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SRC_ROOT))
 
 from config_schema import ExperimentConfig, resolve_inference_section
 from model import build_model_from_config
@@ -190,7 +195,17 @@ class LGTInference:
         self.num_steps = int(num_steps)
 
         checkpoint = torch.load(model_path, map_location=device, weights_only=False)
-        config = ExperimentConfig.from_mapping(checkpoint["config"])
+        raw_config = checkpoint.get("config", {}) or {}
+        config = ExperimentConfig.from_mapping(raw_config)
+        if isinstance(raw_config, dict):
+            for section_name in ("model", "bridge", "training", "data", "checkpoint"):
+                raw_section = raw_config.get(section_name, {})
+                section_obj = getattr(config, section_name, None)
+                if not isinstance(raw_section, dict) or section_obj is None:
+                    continue
+                for key, value in raw_section.items():
+                    if hasattr(section_obj, key):
+                        setattr(section_obj, key, value)
         bridge_cfg = config.bridge
         infer_cfg = resolve_inference_section(config)
         self.objective_mode = str(bridge_cfg.objective_mode).strip().lower()
@@ -200,6 +215,48 @@ class LGTInference:
         try:
             self.model.load_state_dict(state_dict, strict=True)
         except RuntimeError as exc:
+            if os.environ.get("SB_DEBUG_INFERENCE_LOAD", "").strip():
+                debug_keys = [
+                    "style_tokenizer",
+                    "tokenizer_projection_mode",
+                    "style_spatial_mode",
+                    "style_injection_mode",
+                    "style_injection_form",
+                    "proximal_mode",
+                ]
+                debug_values = {key: getattr(config.model, key, None) for key in debug_keys}
+                raw_model = raw_config.get("model", {}) if isinstance(raw_config, dict) else {}
+                raw_debug_values = {key: raw_model.get(key) for key in debug_keys} if isinstance(raw_model, dict) else {}
+                available = set(dict(self.model.named_parameters()).keys()) | set(dict(self.model.named_buffers()).keys())
+                model_field_names = [item.name for item in fields(type(config.model))]
+                logger.warning(
+                    "Inference debug schema: module=%s file=%s fields_has=%s",
+                    type(config.model).__module__,
+                    sys.modules.get(type(config.model).__module__).__file__ if sys.modules.get(type(config.model).__module__) is not None else None,
+                    {
+                        "tokenizer_projection_mode": "tokenizer_projection_mode" in model_field_names,
+                        "style_spatial_mode": "style_spatial_mode" in model_field_names,
+                        "style_injection_mode": "style_injection_mode" in model_field_names,
+                        "style_injection_form": "style_injection_form" in model_field_names,
+                        "proximal_mode": "proximal_mode" in model_field_names,
+                    },
+                )
+                logger.warning("Inference debug raw config: %s", raw_debug_values)
+                logger.warning("Inference debug config: %s", debug_values)
+                logger.warning(
+                    "Inference debug presence: %s",
+                    {
+                        "style_tokenizer.concept_atoms": "style_tokenizer.concept_atoms" in available,
+                        "style_tokenizer.atom_logits.weight": "style_tokenizer.atom_logits.weight" in available,
+                        "style_tokenizer.field_gates": "style_tokenizer.field_gates" in available,
+                        "style_tokenizer.identity.weight": "style_tokenizer.identity.weight" in available,
+                        "style_spatial_atoms_16": "style_spatial_atoms_16" in available,
+                        "style_spatial_logits.weight": "style_spatial_logits.weight" in available,
+                        "body_style_spatial_proj.0.weight": "body_style_spatial_proj.0.weight" in available,
+                        "decoder_style_spatial_proj.0.weight": "decoder_style_spatial_proj.0.weight" in available,
+                        "proximal_attn_q.weight": "proximal_attn_q.weight" in available,
+                    },
+                )
             logger.warning("Checkpoint/model key mismatch, falling back to non-strict load: %s", exc)
             self.model.load_state_dict(state_dict, strict=False)
         if style_adapter_path:

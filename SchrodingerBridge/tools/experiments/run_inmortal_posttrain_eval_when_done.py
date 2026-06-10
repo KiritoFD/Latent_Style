@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -8,9 +9,27 @@ import time
 from pathlib import Path
 
 
-def _train_proc_alive(train_pattern: str) -> bool:
+def _iter_proc_cmdlines() -> list[str]:
+    proc_root = Path("/proc")
+    rows: list[str] = []
+    if proc_root.is_dir():
+        for pid_dir in proc_root.iterdir():
+            if not pid_dir.is_dir() or not pid_dir.name.isdigit():
+                continue
+            cmdline_path = pid_dir / "cmdline"
+            try:
+                raw = cmdline_path.read_bytes()
+            except OSError:
+                continue
+            if not raw:
+                continue
+            text = raw.replace(b"\x00", b" ").decode("utf-8", errors="replace").strip()
+            if text:
+                rows.append(text)
+        if rows:
+            return rows
     result = subprocess.run(
-        ["ps", "-ef"],
+        ["ps", "-eo", "args="],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -19,15 +38,32 @@ def _train_proc_alive(train_pattern: str) -> bool:
         check=False,
     )
     if result.returncode != 0:
-        return False
+        return []
+    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+
+
+def _train_proc_alive(train_pattern: str) -> bool:
     pattern = str(train_pattern).strip()
-    for line in result.stdout.splitlines():
-        row = line.strip()
+    if not pattern:
+        return False
+    variants = {pattern}
+    if not pattern.endswith(".json"):
+        variants.add(pattern + ".json")
+    if pattern.startswith("aaai2027_"):
+        tail = pattern[len("aaai2027_") :]
+        variants.add(tail)
+        variants.add(f"configs/aaai2027/{tail}")
+        if not tail.endswith(".json"):
+            variants.add(tail + ".json")
+            variants.add(f"configs/aaai2027/{tail}.json")
+    for row in _iter_proc_cmdlines():
         if not row:
             continue
         if "run_inmortal_posttrain_eval_when_done.py" in row:
             continue
-        if pattern in row:
+        if "run_inmortal_posttrain_eval_latest_epochs_when_done.py" in row:
+            continue
+        if any(variant and variant in row for variant in variants):
             return True
     return False
 
@@ -72,6 +108,18 @@ def main() -> int:
     parser.add_argument("--wait-log-end-pattern", default=r"^=== END ")
     parser.add_argument("--poll-seconds", type=int, default=30)
     parser.add_argument("--max-wait-seconds", type=int, default=43200)
+    parser.add_argument("--epochs", type=int, nargs="*", default=None)
+    parser.add_argument("--eval-enable-introstyle", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--introstyle-style-bank-root", default="")
+    parser.add_argument("--introstyle-model-id", default="")
+    parser.add_argument("--introstyle-modelscope-id", default="stabilityai/stable-diffusion-2-1-base")
+    parser.add_argument("--introstyle-modelscope-cache-dir", default="")
+    parser.add_argument("--introstyle-bank-limit-per-style", type=int, default=64)
+    parser.add_argument("--introstyle-batch-size", type=int, default=2)
+    parser.add_argument("--introstyle-topk", type=int, default=8)
+    parser.add_argument("--introstyle-t", type=int, default=25)
+    parser.add_argument("--introstyle-up-ft-index", type=int, default=1)
+    parser.add_argument("--introstyle-ensemble-size", type=int, default=1)
     args = parser.parse_args()
 
     run_dir = Path(args.run_dir).resolve()
@@ -127,6 +175,26 @@ def main() -> int:
         str(args.output_subdir),
         "--skip-existing",
     ]
+    if args.epochs:
+        cmd += ["--epochs", *[str(int(ep)) for ep in args.epochs]]
+    if bool(args.eval_enable_introstyle):
+        cmd.append("--eval-enable-introstyle")
+        if str(args.introstyle_style_bank_root).strip():
+            cmd += ["--introstyle-style-bank-root", str(args.introstyle_style_bank_root)]
+        if str(args.introstyle_model_id).strip():
+            cmd += ["--introstyle-model-id", str(args.introstyle_model_id)]
+        if str(args.introstyle_modelscope_id).strip():
+            cmd += ["--introstyle-modelscope-id", str(args.introstyle_modelscope_id)]
+        if str(args.introstyle_modelscope_cache_dir).strip():
+            cmd += ["--introstyle-modelscope-cache-dir", str(args.introstyle_modelscope_cache_dir)]
+        cmd += ["--introstyle-bank-limit-per-style", str(int(args.introstyle_bank_limit_per_style))]
+        cmd += ["--introstyle-batch-size", str(int(args.introstyle_batch_size))]
+        cmd += ["--introstyle-topk", str(int(args.introstyle_topk))]
+        cmd += ["--introstyle-t", str(int(args.introstyle_t))]
+        cmd += ["--introstyle-up-ft-index", str(int(args.introstyle_up_ft_index))]
+        cmd += ["--introstyle-ensemble-size", str(int(args.introstyle_ensemble_size))]
+    else:
+        cmd.append("--no-eval-enable-introstyle")
     if bool(args.refresh_stage_summary):
         cmd.append("--refresh-stage-summary")
     if bool(args.refresh_epoch_table):

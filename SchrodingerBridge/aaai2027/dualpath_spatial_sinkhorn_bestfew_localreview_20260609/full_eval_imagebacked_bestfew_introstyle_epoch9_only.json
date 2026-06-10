@@ -1,0 +1,14 @@
+[
+  {
+    "method": "LBM",
+    "run": "epoch_0009",
+    "images": 750,
+    "transfer_target_style_score": 0.1056313175149262,
+    "transfer_source_style_score": 0.140546260625124,
+    "transfer_best_non_target_score": 0.15214217850317557,
+    "transfer_style_margin": -0.04651086098824938,
+    "identity_target_style_score": 0.1382067775229613,
+    "images_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\dualpath_spatial_sinkhorn_bestfew_localreview_20260609\\full_eval_imagebacked_bestfew\\epoch_0009\\images",
+    "metrics_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\dualpath_spatial_sinkhorn_bestfew_localreview_20260609\\full_eval_imagebacked_bestfew\\epoch_0009\\metrics.csv"
+  }
+]

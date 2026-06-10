@@ -1,0 +1,238 @@
+{
+  "source": "metrics.csv + fast target-pooled ArtFID recompute",
+  "generated_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samst_distinct5_512_real_b2_e15_20260602\\eval_epoch15\\epoch_0015\\images",
+  "metrics_path": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\samst_distinct5_512_real_b2_e15_20260602\\eval_epoch15\\epoch_0015\\metrics.csv",
+  "source_root": "G:\\GitHub\\Latent_Style\\Dataset\\distinct5_512\\test",
+  "test_dir": "G:\\GitHub\\Latent_Style\\Dataset\\distinct5_512\\test",
+  "wall_seconds": 184.04471009998815,
+  "full": {
+    "count": 750,
+    "target_count": 5,
+    "valid_target_count": 5,
+    "per_target": [
+      {
+        "target_style": "Early_Renaissance",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 266.99362728665926,
+        "art_fid_content_lpips": 0.5295776128768921,
+        "art_fid": 409.9170526913478,
+        "clip_style": 0.6961888468265534
+      },
+      {
+        "target_style": "Impressionism",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 237.5950072411983,
+        "art_fid_content_lpips": 0.5703610181808472,
+        "art_fid": 374.68029850415473,
+        "clip_style": 0.7225072928269705
+      },
+      {
+        "target_style": "Minimalism",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 178.16730974198435,
+        "art_fid_content_lpips": 0.8462982177734375,
+        "art_fid": 330.79628465988714,
+        "clip_style": 0.8279585707187652
+      },
+      {
+        "target_style": "Rococo",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 312.3813557033394,
+        "art_fid_content_lpips": 0.5507203936576843,
+        "art_fid": 485.9668592812613,
+        "clip_style": 0.694556386868159
+      },
+      {
+        "target_style": "Ukiyo_e",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 244.04648774678174,
+        "art_fid_content_lpips": 0.5395258665084839,
+        "art_fid": 377.25540638322474,
+        "clip_style": 0.6824114708105723
+      }
+    ],
+    "aggregate_art_fid_fid": 247.8367575439926,
+    "aggregate_art_fid_content_lpips": 0.607296621799469,
+    "aggregate_art_fid": 395.72318030397514
+  },
+  "transfer": {
+    "count": 600,
+    "target_count": 5,
+    "valid_target_count": 5,
+    "per_target": [
+      {
+        "target_style": "Early_Renaissance",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 289.481287638882,
+        "art_fid_content_lpips": 0.5389209389686584,
+        "art_fid": 447.02773592605325,
+        "clip_style": 0.6693137029806773
+      },
+      {
+        "target_style": "Impressionism",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 253.18771158328792,
+        "art_fid_content_lpips": 0.5829929113388062,
+        "art_fid": 402.37734558577773,
+        "clip_style": 0.6950384855270386
+      },
+      {
+        "target_style": "Minimalism",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 186.04271370579858,
+        "art_fid_content_lpips": 0.8436744809150696,
+        "art_fid": 344.8458781004842,
+        "clip_style": 0.8151996736725171
+      },
+      {
+        "target_style": "Rococo",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 357.0979802566118,
+        "art_fid_content_lpips": 0.5740384459495544,
+        "art_fid": 563.6599883407914,
+        "clip_style": 0.6662916069229444
+      },
+      {
+        "target_style": "Ukiyo_e",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 298.5838595478886,
+        "art_fid_content_lpips": 0.5507928729057312,
+        "art_fid": 464.59251422445726,
+        "clip_style": 0.6328626890977224
+      }
+    ],
+    "aggregate_art_fid_fid": 276.8787105464938,
+    "aggregate_art_fid_content_lpips": 0.6180839300155639,
+    "aggregate_art_fid": 444.5006924355128
+  },
+  "identity": {
+    "count": 150,
+    "mean_content_lpips": 0.5999504170666666,
+    "mean_clip_style": 0.8406576414903005
+  },
+  "all_pairs": {
+    "count": 750,
+    "target_count": 5,
+    "valid_target_count": 5,
+    "per_target": [
+      {
+        "target_style": "Early_Renaissance",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 266.99362728665926,
+        "art_fid_content_lpips": 0.5295776128768921,
+        "art_fid": 409.9170526913478,
+        "clip_style": 0.6961888468265534
+      },
+      {
+        "target_style": "Impressionism",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 237.5950072411983,
+        "art_fid_content_lpips": 0.5703610181808472,
+        "art_fid": 374.68029850415473,
+        "clip_style": 0.7225072928269705
+      },
+      {
+        "target_style": "Minimalism",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 178.16730974198435,
+        "art_fid_content_lpips": 0.8462982177734375,
+        "art_fid": 330.79628465988714,
+        "clip_style": 0.8279585707187652
+      },
+      {
+        "target_style": "Rococo",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 312.3813557033394,
+        "art_fid_content_lpips": 0.5507203936576843,
+        "art_fid": 485.9668592812613,
+        "clip_style": 0.694556386868159
+      },
+      {
+        "target_style": "Ukiyo_e",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 244.04648774678174,
+        "art_fid_content_lpips": 0.5395258665084839,
+        "art_fid": 377.25540638322474,
+        "clip_style": 0.6824114708105723
+      }
+    ],
+    "aggregate_art_fid_fid": 247.8367575439926,
+    "aggregate_art_fid_content_lpips": 0.607296621799469,
+    "aggregate_art_fid": 395.72318030397514
+  },
+  "transfer_only": {
+    "count": 600,
+    "target_count": 5,
+    "valid_target_count": 5,
+    "per_target": [
+      {
+        "target_style": "Early_Renaissance",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 289.481287638882,
+        "art_fid_content_lpips": 0.5389209389686584,
+        "art_fid": 447.02773592605325,
+        "clip_style": 0.6693137029806773
+      },
+      {
+        "target_style": "Impressionism",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 253.18771158328792,
+        "art_fid_content_lpips": 0.5829929113388062,
+        "art_fid": 402.37734558577773,
+        "clip_style": 0.6950384855270386
+      },
+      {
+        "target_style": "Minimalism",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 186.04271370579858,
+        "art_fid_content_lpips": 0.8436744809150696,
+        "art_fid": 344.8458781004842,
+        "clip_style": 0.8151996736725171
+      },
+      {
+        "target_style": "Rococo",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 357.0979802566118,
+        "art_fid_content_lpips": 0.5740384459495544,
+        "art_fid": 563.6599883407914,
+        "clip_style": 0.6662916069229444
+      },
+      {
+        "target_style": "Ukiyo_e",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 298.5838595478886,
+        "art_fid_content_lpips": 0.5507928729057312,
+        "art_fid": 464.59251422445726,
+        "clip_style": 0.6328626890977224
+      }
+    ],
+    "aggregate_art_fid_fid": 276.8787105464938,
+    "aggregate_art_fid_content_lpips": 0.6180839300155639,
+    "aggregate_art_fid": 444.5006924355128
+  },
+  "identity_only": {
+    "count": 150,
+    "mean_content_lpips": 0.5999504170666666,
+    "mean_clip_style": 0.8406576414903005
+  }
+}

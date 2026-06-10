@@ -1,0 +1,362 @@
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\pull_remote_checkpoint_file.py --host administrator@100.115.18.62 --port 2222 --remote-file /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_sa_mod_seed42_b8a2/epoch_0020.pt --local-file G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0020.pt
+[pull_remote_checkpoint_file] scp -P 2222 administrator@100.115.18.62:/I:/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_sa_mod_seed42_b8a2/epoch_0020.pt G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0020.pt
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0020.pt
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\src\utils\run_evaluation.py --checkpoint G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0020.pt --output G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\epoch_0020 --test_dir F:\wikiart_distinct5_samam_512_classview_real\test --cache_dir G:\GitHub\Latent_Style\eval_cache --clip_hf_cache_dir G:\GitHub\Latent_Style\eval_cache\hf --batch_size 4 --vae_decode_batch_size 16 --target_chunk_size 2 --eval_only_lpips_clip_style --no-save_generated_images --no-save_summary_grid
+HF cache dir: G:\GitHub\Latent_Style\eval_cache\hf
+HF hub cache dir: G:\GitHub\Latent_Style\eval_cache\hf
+[fallback] readable eval image root: F:\wikiart_distinct5_samam_512_classview_real\test -> F:\wikiart_distinct5_512_images\test
+
+Phase 1: Generation (Batch Size 4)
+  Generating Batch 1/38
+  Generating Batch 2/38
+  Generating Batch 3/38
+  Generating Batch 4/38
+  Generating Batch 5/38
+  Generating Batch 6/38
+  Generating Batch 7/38
+  Generating Batch 8/38
+  Generating Batch 9/38
+  Generating Batch 10/38
+  Generating Batch 11/38
+  Generating Batch 12/38
+  Generating Batch 13/38
+  Generating Batch 14/38
+  Generating Batch 15/38
+  Generating Batch 16/38
+  Generating Batch 17/38
+  Generating Batch 18/38
+  Generating Batch 19/38
+  Generating Batch 20/38
+  Generating Batch 21/38
+  Generating Batch 22/38
+  Generating Batch 23/38
+  Generating Batch 24/38
+  Generating Batch 25/38
+  Generating Batch 26/38
+  Generating Batch 27/38
+  Generating Batch 28/38
+  Generating Batch 29/38
+  Generating Batch 30/38
+  Generating Batch 31/38
+  Generating Batch 32/38
+  Generating Batch 33/38
+  Generating Batch 34/38
+  Generating Batch 35/38
+  Generating Batch 36/38
+  Generating Batch 37/38
+  Generating Batch 38/38
+  Generation models unloaded
+
+棣冩�?Phase 2: Evaluation
+  LPIPS Loaded
+  CLIP Loaded (HF) from: G:\GitHub\Latent_Style\eval_cache\manual_clip\openai-clip-vit-base-patch32
+Found global reference cache: G:\GitHub\Latent_Style\eval_cache\ref_feats_809477fce3_m30.pt
+  Reference cache loaded successfully
+  Processing 750 generated images...
+
+棣冩�?Generating Summary...
+Summary saved: G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\epoch_0020\summary.json
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\report_round1_convergence.py --curve-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\clip_lpips_curve.csv --patience 4
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\round1_convergence.json
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\refresh_round1_family_bestfew.py --config SchrodingerBridge\configs\aaai2027\round1_full_sweep\aaai2027_round1_attn_sa_mod_seed42_b8a2.json --fast-local-root G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local --fast-eval-subdir full_eval_fast_local
+[refresh_round1_family_bestfew] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\build_best_few_handoff.py --curve-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\clip_lpips_curve.csv --run-name aaai2027_round1_attn_sa_mod_seed42_b8a2 --eval-root G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local --output-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\update_round1_family_status_docs.py --family-id attn_sa_mod
+G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\round1_full_sweep\attn_sa_mod
+G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\2026-06-10-round1-full-sweep-master.md
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\pull_remote_checkpoint_file.py --host administrator@100.115.18.62 --port 2222 --remote-file /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_sa_mod_seed42_b8a2/epoch_0021.pt --local-file G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0021.pt
+[pull_remote_checkpoint_file] scp -P 2222 administrator@100.115.18.62:/I:/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_sa_mod_seed42_b8a2/epoch_0021.pt G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0021.pt
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0021.pt
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\src\utils\run_evaluation.py --checkpoint G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0021.pt --output G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\epoch_0021 --test_dir F:\wikiart_distinct5_samam_512_classview_real\test --cache_dir G:\GitHub\Latent_Style\eval_cache --clip_hf_cache_dir G:\GitHub\Latent_Style\eval_cache\hf --batch_size 4 --vae_decode_batch_size 16 --target_chunk_size 2 --eval_only_lpips_clip_style --no-save_generated_images --no-save_summary_grid
+HF cache dir: G:\GitHub\Latent_Style\eval_cache\hf
+HF hub cache dir: G:\GitHub\Latent_Style\eval_cache\hf
+[fallback] readable eval image root: F:\wikiart_distinct5_samam_512_classview_real\test -> F:\wikiart_distinct5_512_images\test
+
+Phase 1: Generation (Batch Size 4)
+  Generating Batch 1/38
+  Generating Batch 2/38
+  Generating Batch 3/38
+  Generating Batch 4/38
+  Generating Batch 5/38
+  Generating Batch 6/38
+  Generating Batch 7/38
+  Generating Batch 8/38
+  Generating Batch 9/38
+  Generating Batch 10/38
+  Generating Batch 11/38
+  Generating Batch 12/38
+  Generating Batch 13/38
+  Generating Batch 14/38
+  Generating Batch 15/38
+  Generating Batch 16/38
+  Generating Batch 17/38
+  Generating Batch 18/38
+  Generating Batch 19/38
+  Generating Batch 20/38
+  Generating Batch 21/38
+  Generating Batch 22/38
+  Generating Batch 23/38
+  Generating Batch 24/38
+  Generating Batch 25/38
+  Generating Batch 26/38
+  Generating Batch 27/38
+  Generating Batch 28/38
+  Generating Batch 29/38
+  Generating Batch 30/38
+  Generating Batch 31/38
+  Generating Batch 32/38
+  Generating Batch 33/38
+  Generating Batch 34/38
+  Generating Batch 35/38
+  Generating Batch 36/38
+  Generating Batch 37/38
+  Generating Batch 38/38
+  Generation models unloaded
+
+棣冩�?Phase 2: Evaluation
+  LPIPS Loaded
+  CLIP Loaded (HF) from: G:\GitHub\Latent_Style\eval_cache\manual_clip\openai-clip-vit-base-patch32
+Found global reference cache: G:\GitHub\Latent_Style\eval_cache\ref_feats_809477fce3_m30.pt
+  Reference cache loaded successfully
+  Processing 750 generated images...
+
+棣冩�?Generating Summary...
+Summary saved: G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\epoch_0021\summary.json
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\report_round1_convergence.py --curve-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\clip_lpips_curve.csv --patience 4
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\round1_convergence.json
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\refresh_round1_family_bestfew.py --config SchrodingerBridge\configs\aaai2027\round1_full_sweep\aaai2027_round1_attn_sa_mod_seed42_b8a2.json --fast-local-root G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local --fast-eval-subdir full_eval_fast_local
+[refresh_round1_family_bestfew] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\build_best_few_handoff.py --curve-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\clip_lpips_curve.csv --run-name aaai2027_round1_attn_sa_mod_seed42_b8a2 --eval-root G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local --output-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\update_round1_family_status_docs.py --family-id attn_sa_mod
+G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\round1_full_sweep\attn_sa_mod
+G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\2026-06-10-round1-full-sweep-master.md
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\pull_remote_checkpoint_file.py --host administrator@100.115.18.62 --port 2222 --remote-file /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_sa_mod_seed42_b8a2/epoch_0022.pt --local-file G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0022.pt
+[pull_remote_checkpoint_file] scp -P 2222 administrator@100.115.18.62:/I:/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_sa_mod_seed42_b8a2/epoch_0022.pt G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0022.pt
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0022.pt
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\src\utils\run_evaluation.py --checkpoint G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0022.pt --output G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\epoch_0022 --test_dir F:\wikiart_distinct5_samam_512_classview_real\test --cache_dir G:\GitHub\Latent_Style\eval_cache --clip_hf_cache_dir G:\GitHub\Latent_Style\eval_cache\hf --batch_size 4 --vae_decode_batch_size 16 --target_chunk_size 2 --eval_only_lpips_clip_style --no-save_generated_images --no-save_summary_grid
+HF cache dir: G:\GitHub\Latent_Style\eval_cache\hf
+HF hub cache dir: G:\GitHub\Latent_Style\eval_cache\hf
+[fallback] readable eval image root: F:\wikiart_distinct5_samam_512_classview_real\test -> F:\wikiart_distinct5_512_images\test
+
+Phase 1: Generation (Batch Size 4)
+  Generating Batch 1/38
+  Generating Batch 2/38
+  Generating Batch 3/38
+  Generating Batch 4/38
+  Generating Batch 5/38
+  Generating Batch 6/38
+  Generating Batch 7/38
+  Generating Batch 8/38
+  Generating Batch 9/38
+  Generating Batch 10/38
+  Generating Batch 11/38
+  Generating Batch 12/38
+  Generating Batch 13/38
+  Generating Batch 14/38
+  Generating Batch 15/38
+  Generating Batch 16/38
+  Generating Batch 17/38
+  Generating Batch 18/38
+  Generating Batch 19/38
+  Generating Batch 20/38
+  Generating Batch 21/38
+  Generating Batch 22/38
+  Generating Batch 23/38
+  Generating Batch 24/38
+  Generating Batch 25/38
+  Generating Batch 26/38
+  Generating Batch 27/38
+  Generating Batch 28/38
+  Generating Batch 29/38
+  Generating Batch 30/38
+  Generating Batch 31/38
+  Generating Batch 32/38
+  Generating Batch 33/38
+  Generating Batch 34/38
+  Generating Batch 35/38
+  Generating Batch 36/38
+  Generating Batch 37/38
+  Generating Batch 38/38
+  Generation models unloaded
+
+棣冩�?Phase 2: Evaluation
+  LPIPS Loaded
+  CLIP Loaded (HF) from: G:\GitHub\Latent_Style\eval_cache\manual_clip\openai-clip-vit-base-patch32
+Found global reference cache: G:\GitHub\Latent_Style\eval_cache\ref_feats_809477fce3_m30.pt
+  Reference cache loaded successfully
+  Processing 750 generated images...
+
+棣冩�?Generating Summary...
+Summary saved: G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\epoch_0022\summary.json
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\report_round1_convergence.py --curve-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\clip_lpips_curve.csv --patience 4
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\round1_convergence.json
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\refresh_round1_family_bestfew.py --config SchrodingerBridge\configs\aaai2027\round1_full_sweep\aaai2027_round1_attn_sa_mod_seed42_b8a2.json --fast-local-root G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local --fast-eval-subdir full_eval_fast_local
+[refresh_round1_family_bestfew] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\build_best_few_handoff.py --curve-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\clip_lpips_curve.csv --run-name aaai2027_round1_attn_sa_mod_seed42_b8a2 --eval-root G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local --output-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\update_round1_family_status_docs.py --family-id attn_sa_mod
+G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\round1_full_sweep\attn_sa_mod
+G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\2026-06-10-round1-full-sweep-master.md
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\pull_remote_checkpoint_file.py --host administrator@100.115.18.62 --port 2222 --remote-file /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_sa_mod_seed42_b8a2/epoch_0023.pt --local-file G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0023.pt
+[pull_remote_checkpoint_file] scp -P 2222 administrator@100.115.18.62:/I:/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_sa_mod_seed42_b8a2/epoch_0023.pt G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0023.pt
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0023.pt
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\src\utils\run_evaluation.py --checkpoint G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0023.pt --output G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\epoch_0023 --test_dir F:\wikiart_distinct5_samam_512_classview_real\test --cache_dir G:\GitHub\Latent_Style\eval_cache --clip_hf_cache_dir G:\GitHub\Latent_Style\eval_cache\hf --batch_size 4 --vae_decode_batch_size 16 --target_chunk_size 2 --eval_only_lpips_clip_style --no-save_generated_images --no-save_summary_grid
+HF cache dir: G:\GitHub\Latent_Style\eval_cache\hf
+HF hub cache dir: G:\GitHub\Latent_Style\eval_cache\hf
+[fallback] readable eval image root: F:\wikiart_distinct5_samam_512_classview_real\test -> F:\wikiart_distinct5_512_images\test
+
+Phase 1: Generation (Batch Size 4)
+  Generating Batch 1/38
+  Generating Batch 2/38
+  Generating Batch 3/38
+  Generating Batch 4/38
+  Generating Batch 5/38
+  Generating Batch 6/38
+  Generating Batch 7/38
+  Generating Batch 8/38
+  Generating Batch 9/38
+  Generating Batch 10/38
+  Generating Batch 11/38
+  Generating Batch 12/38
+  Generating Batch 13/38
+  Generating Batch 14/38
+  Generating Batch 15/38
+  Generating Batch 16/38
+  Generating Batch 17/38
+  Generating Batch 18/38
+  Generating Batch 19/38
+  Generating Batch 20/38
+  Generating Batch 21/38
+  Generating Batch 22/38
+  Generating Batch 23/38
+  Generating Batch 24/38
+  Generating Batch 25/38
+  Generating Batch 26/38
+  Generating Batch 27/38
+  Generating Batch 28/38
+  Generating Batch 29/38
+  Generating Batch 30/38
+  Generating Batch 31/38
+  Generating Batch 32/38
+  Generating Batch 33/38
+  Generating Batch 34/38
+  Generating Batch 35/38
+  Generating Batch 36/38
+  Generating Batch 37/38
+  Generating Batch 38/38
+  Generation models unloaded
+
+棣冩�?Phase 2: Evaluation
+  LPIPS Loaded
+  CLIP Loaded (HF) from: G:\GitHub\Latent_Style\eval_cache\manual_clip\openai-clip-vit-base-patch32
+Found global reference cache: G:\GitHub\Latent_Style\eval_cache\ref_feats_809477fce3_m30.pt
+  Reference cache loaded successfully
+  Processing 750 generated images...
+
+棣冩�?Generating Summary...
+Summary saved: G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\epoch_0023\summary.json
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\report_round1_convergence.py --curve-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\clip_lpips_curve.csv --patience 4
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\round1_convergence.json
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\refresh_round1_family_bestfew.py --config SchrodingerBridge\configs\aaai2027\round1_full_sweep\aaai2027_round1_attn_sa_mod_seed42_b8a2.json --fast-local-root G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local --fast-eval-subdir full_eval_fast_local
+[refresh_round1_family_bestfew] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\build_best_few_handoff.py --curve-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\clip_lpips_curve.csv --run-name aaai2027_round1_attn_sa_mod_seed42_b8a2 --eval-root G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local --output-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\update_round1_family_status_docs.py --family-id attn_sa_mod
+G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\round1_full_sweep\attn_sa_mod
+G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\2026-06-10-round1-full-sweep-master.md
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\pull_remote_checkpoint_file.py --host administrator@100.115.18.62 --port 2222 --remote-file /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_sa_mod_seed42_b8a2/epoch_0024.pt --local-file G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0024.pt
+[pull_remote_checkpoint_file] scp -P 2222 administrator@100.115.18.62:/I:/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_sa_mod_seed42_b8a2/epoch_0024.pt G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0024.pt
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0024.pt
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\src\utils\run_evaluation.py --checkpoint G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\checkpoints\epoch_0024.pt --output G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\epoch_0024 --test_dir F:\wikiart_distinct5_samam_512_classview_real\test --cache_dir G:\GitHub\Latent_Style\eval_cache --clip_hf_cache_dir G:\GitHub\Latent_Style\eval_cache\hf --batch_size 4 --vae_decode_batch_size 16 --target_chunk_size 2 --eval_only_lpips_clip_style --no-save_generated_images --no-save_summary_grid
+HF cache dir: G:\GitHub\Latent_Style\eval_cache\hf
+HF hub cache dir: G:\GitHub\Latent_Style\eval_cache\hf
+[fallback] readable eval image root: F:\wikiart_distinct5_samam_512_classview_real\test -> F:\wikiart_distinct5_512_images\test
+
+Phase 1: Generation (Batch Size 4)
+  Generating Batch 1/38
+  Generating Batch 2/38
+  Generating Batch 3/38
+  Generating Batch 4/38
+  Generating Batch 5/38
+  Generating Batch 6/38
+  Generating Batch 7/38
+  Generating Batch 8/38
+  Generating Batch 9/38
+  Generating Batch 10/38
+  Generating Batch 11/38
+  Generating Batch 12/38
+  Generating Batch 13/38
+  Generating Batch 14/38
+  Generating Batch 15/38
+  Generating Batch 16/38
+  Generating Batch 17/38
+  Generating Batch 18/38
+  Generating Batch 19/38
+  Generating Batch 20/38
+  Generating Batch 21/38
+  Generating Batch 22/38
+  Generating Batch 23/38
+  Generating Batch 24/38
+  Generating Batch 25/38
+  Generating Batch 26/38
+  Generating Batch 27/38
+  Generating Batch 28/38
+  Generating Batch 29/38
+  Generating Batch 30/38
+  Generating Batch 31/38
+  Generating Batch 32/38
+  Generating Batch 33/38
+  Generating Batch 34/38
+  Generating Batch 35/38
+  Generating Batch 36/38
+  Generating Batch 37/38
+  Generating Batch 38/38
+  Generation models unloaded
+
+棣冩�?Phase 2: Evaluation
+  LPIPS Loaded
+  CLIP Loaded (HF) from: G:\GitHub\Latent_Style\eval_cache\manual_clip\openai-clip-vit-base-patch32
+Found global reference cache: G:\GitHub\Latent_Style\eval_cache\ref_feats_809477fce3_m30.pt
+  Reference cache loaded successfully
+  Processing 750 generated images...
+
+棣冩�?Generating Summary...
+Summary saved: G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\epoch_0024\summary.json
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\report_round1_convergence.py --curve-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\clip_lpips_curve.csv --patience 4
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\round1_convergence.json
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\refresh_round1_family_bestfew.py --config SchrodingerBridge\configs\aaai2027\round1_full_sweep\aaai2027_round1_attn_sa_mod_seed42_b8a2.json --fast-local-root G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local --fast-eval-subdir full_eval_fast_local
+[refresh_round1_family_bestfew] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\build_best_few_handoff.py --curve-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\clip_lpips_curve.csv --run-name aaai2027_round1_attn_sa_mod_seed42_b8a2 --eval-root G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local --output-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\update_round1_family_status_docs.py --family-id attn_sa_mod
+G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\round1_full_sweep\attn_sa_mod
+G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\2026-06-10-round1-full-sweep-master.md
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\report_round1_convergence.py --curve-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\clip_lpips_curve.csv --patience 4
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\round1_convergence.json
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\refresh_round1_family_bestfew.py --config SchrodingerBridge\configs\aaai2027\round1_full_sweep\aaai2027_round1_attn_sa_mod_seed42_b8a2.json --fast-local-root G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local --fast-eval-subdir full_eval_fast_local
+[refresh_round1_family_bestfew] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\build_best_few_handoff.py --curve-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\clip_lpips_curve.csv --run-name aaai2027_round1_attn_sa_mod_seed42_b8a2 --eval-root G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local --output-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\update_round1_family_status_docs.py --family-id attn_sa_mod
+G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\round1_full_sweep\attn_sa_mod
+G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\2026-06-10-round1-full-sweep-master.md
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\report_round1_convergence.py --curve-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\clip_lpips_curve.csv --patience 4
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\round1_convergence.json
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\refresh_round1_family_bestfew.py --config SchrodingerBridge\configs\aaai2027\round1_full_sweep\aaai2027_round1_attn_sa_mod_seed42_b8a2.json --fast-local-root G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local --fast-eval-subdir full_eval_fast_local
+[refresh_round1_family_bestfew] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\build_best_few_handoff.py --curve-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\clip_lpips_curve.csv --run-name aaai2027_round1_attn_sa_mod_seed42_b8a2 --eval-root G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local --output-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\update_round1_family_status_docs.py --family-id attn_sa_mod
+G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\round1_full_sweep\attn_sa_mod
+G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\2026-06-10-round1-full-sweep-master.md
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\report_round1_convergence.py --curve-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\clip_lpips_curve.csv --patience 4
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\round1_convergence.json
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\refresh_round1_family_bestfew.py --config SchrodingerBridge\configs\aaai2027\round1_full_sweep\aaai2027_round1_attn_sa_mod_seed42_b8a2.json --fast-local-root G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local --fast-eval-subdir full_eval_fast_local
+[refresh_round1_family_bestfew] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\build_best_few_handoff.py --curve-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local\clip_lpips_curve.csv --run-name aaai2027_round1_attn_sa_mod_seed42_b8a2 --eval-root G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local --output-csv G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_fast_local\full_eval_fast_local_bestfew_handoff.csv
+[watch_local_round1_family_fast_eval] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\update_round1_family_status_docs.py --family-id attn_sa_mod
+G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\round1_full_sweep\attn_sa_mod
+G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\2026-06-10-round1-full-sweep-master.md

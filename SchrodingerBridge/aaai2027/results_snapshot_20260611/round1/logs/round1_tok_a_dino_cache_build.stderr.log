@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\build_offline_dino_pairing_cache.py", line 178, in <module>
+    main()
+  File "G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\build_offline_dino_pairing_cache.py", line 129, in main
+    rows = _collect_pairs(image_root=image_root, latent_root=latent_root, styles=styles)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\build_offline_dino_pairing_cache.py", line 54, in _collect_pairs
+    image_index = _style_image_index(image_root, style)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\build_offline_dino_pairing_cache.py", line 28, in _style_image_index
+    if not p.is_file() or p.suffix.lower() not in IMAGE_EXTS:
+           ^^^^^^^^^^^
+  File "C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\pathlib.py", line 893, in is_file
+    return S_ISREG(self.stat().st_mode)
+                   ^^^^^^^^^^^
+  File "C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\pathlib.py", line 841, in stat
+    return os.stat(self, follow_symlinks=follow_symlinks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: [WinError 1920] 系统无法访问此文件。: 'F:\\wikiart_distinct5_samam_512_classview\\train\\Early_Renaissance\\Early_Renaissance__andrea-del-castagno_david-with-the-head-of-goliath.jpg'

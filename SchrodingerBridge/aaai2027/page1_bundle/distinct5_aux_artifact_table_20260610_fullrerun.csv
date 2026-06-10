@@ -1,0 +1,6 @@
+point,role,tw_artfid_all_down,gram_micro_down,edge_purity_up
+LBM-K e1,compact conservative anchor,316.4609,0.1534,0.5402
+LBM-Knee e13,content-preserving successor,388.2233,0.1371,0.2877
+LBM-PS-v2 e13,style ceiling,465.6190,0.1825,0.1152
+SaMST e15,high-style baseline,395.7229,0.1472,0.1015
+Seedream-4.5,external large-prior reference,311.5389,0.1886,0.3885

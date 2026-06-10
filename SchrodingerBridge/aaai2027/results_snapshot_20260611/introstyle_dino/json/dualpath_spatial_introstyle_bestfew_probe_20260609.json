@@ -1,0 +1,26 @@
+[
+  {
+    "method": "LBM",
+    "run": "epoch_0001",
+    "images": 750,
+    "transfer_target_style_score": 0.11197586998343467,
+    "transfer_source_style_score": 0.15243420532594124,
+    "transfer_best_non_target_score": 0.16228435138861338,
+    "transfer_style_margin": -0.050308481405178705,
+    "identity_target_style_score": 0.15266689290603003,
+    "images_dir": "/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_inmortal_knee_e13_spatial_carriergate_bodydecoder_qedgegated_dualpath_spatial_seed42_b8a2/full_eval_fresh_localreview/epoch_0001/images",
+    "metrics_csv": "/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_inmortal_knee_e13_spatial_carriergate_bodydecoder_qedgegated_dualpath_spatial_seed42_b8a2/full_eval_fresh_localreview/epoch_0001/metrics.csv"
+  },
+  {
+    "method": "LBM",
+    "run": "epoch_0012",
+    "images": 750,
+    "transfer_target_style_score": 0.10755438573658466,
+    "transfer_source_style_score": 0.14281884039441745,
+    "transfer_best_non_target_score": 0.15428910532345375,
+    "transfer_style_margin": -0.04673471958686908,
+    "identity_target_style_score": 0.14196846922238668,
+    "images_dir": "/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_inmortal_knee_e13_spatial_carriergate_bodydecoder_qedgegated_dualpath_spatial_seed42_b8a2/full_eval_fresh_localreview/epoch_0012/images",
+    "metrics_csv": "/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_inmortal_knee_e13_spatial_carriergate_bodydecoder_qedgegated_dualpath_spatial_seed42_b8a2/full_eval_fresh_localreview/epoch_0012/metrics.csv"
+  }
+]

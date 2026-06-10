@@ -1,0 +1,4 @@
+method,cases_completed,wins_so_far,win_rate_so_far,style_wins_so_far,structure_wins_so_far,artifact_wins_so_far,mean_style_specificity,mean_structure_preservation,mean_artifact_control
+DualPath_e01,635,13,0.02047244094488189,13,57,48,2.1606299212598423,3.5086614173228345,2.6094488188976377
+QEdgePattn_e01,635,0,0.0,0,98,24,1.9716535433070865,3.351181102362205,2.373228346456693
+Seedream_repaired750,635,622,0.9795275590551181,622,480,563,4.853543307086614,4.618897637795276,4.809448818897637

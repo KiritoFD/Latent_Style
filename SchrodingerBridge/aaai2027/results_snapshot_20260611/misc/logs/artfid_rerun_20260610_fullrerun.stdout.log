@@ -1,0 +1,12 @@
+IDT: all=216.5097 transfer=323.6600 wall=113.38s
+SaMAM-2250: all=315.1830 transfer=380.7693 wall=127.30s
+Lat SaMAM: all=243.3066 transfer=337.6527 wall=124.25s
+LBM-K: all=316.4518 transfer=383.8639 wall=108.74s
+LBM-Knee: all=388.2101 transfer=419.5287 wall=112.37s
+SaMST e15: all=395.7108 transfer=444.4863 wall=123.45s
+Lat SaMST: all=658.8333 transfer=659.9442 wall=119.53s
+Seedream-4.5: all=311.5235 transfer=361.6121 wall=181.83s
+LBM-PS-v2: all=465.6048 transfer=473.8912 wall=125.80s
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\page1_bundle\page1_artfid_rerun_summary_20260610_fullrerun.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\page1_bundle\page1_panel_points_20260610_fullrerun.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\distinct5_aux_artifact_table_20260610_fullrerun.csv

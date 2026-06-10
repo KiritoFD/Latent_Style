@@ -1,0 +1,24 @@
+{
+  "handoff_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_sa_mod_localreview\\full_eval_fresh_localreview_bestfew_handoff.csv",
+  "baseline_manifest": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\vlm_manifest_lbmpsv2_vs_seedream_vs_samst_vs_samam_20260609.csv",
+  "baseline_runs": [
+    "Seedream_repaired750",
+    "SaMAM_2250"
+  ],
+  "family_label_prefix": "AttnSA",
+  "family_method": "AttnSA",
+  "outputs": [
+    {
+      "epoch": "epoch_0008",
+      "reason": "best_transfer_lpips | best_structure_preserving",
+      "candidate_label": "AttnSA_e0008",
+      "manifest_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_sa_mod_external_vlm_manifests_20260610\\AttnSA_epoch_0008_best_transfer_lpips_best_structure_preserving.csv"
+    },
+    {
+      "epoch": "epoch_0024",
+      "reason": "latest",
+      "candidate_label": "AttnSA_e0024",
+      "manifest_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_sa_mod_external_vlm_manifests_20260610\\AttnSA_epoch_0024_latest.csv"
+    }
+  ]
+}

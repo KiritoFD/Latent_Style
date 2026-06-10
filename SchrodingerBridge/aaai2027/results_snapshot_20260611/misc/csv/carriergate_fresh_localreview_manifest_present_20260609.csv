@@ -1,0 +1,5 @@
+method,label,run,images_dir,metrics_csv
+LBM,CarrierGate 01,epoch_0001,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\carriergate_fresh_localreview_20260609\epoch_0001\images,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\carriergate_fresh_localreview_20260609\epoch_0001\metrics.csv
+LBM,CarrierGate 02,epoch_0002,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\carriergate_fresh_localreview_20260609\epoch_0002\images,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\carriergate_fresh_localreview_20260609\epoch_0002\metrics.csv
+LBM,CarrierGate 03,epoch_0003,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\carriergate_fresh_localreview_20260609\epoch_0003\images,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\carriergate_fresh_localreview_20260609\epoch_0003\metrics.csv
+LBM,CarrierGate 04,epoch_0004,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\carriergate_fresh_localreview_20260609\epoch_0004\images,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\carriergate_fresh_localreview_20260609\epoch_0004\metrics.csv

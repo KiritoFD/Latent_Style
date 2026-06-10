@@ -118,6 +118,10 @@ def _make_remote_launch_script(
     command_tokens: list[str],
     runtime_guard_max_memory_mib: int,
     runtime_guard_poll_seconds: int,
+    runtime_guard_min_memory_mib: int,
+    runtime_guard_min_warmup_seconds: int,
+    runtime_guard_min_consecutive_polls: int,
+    runtime_guard_min_mode: str,
 ) -> str:
     command = _quote_command(command_tokens)
     lines = [
@@ -138,6 +142,10 @@ def _make_remote_launch_script(
         lines.append(f"export PYTHONPATH={joined}:\"${{PYTHONPATH:-}}\"")
     guard_limit = max(0, int(runtime_guard_max_memory_mib))
     guard_poll = max(1, int(runtime_guard_poll_seconds))
+    guard_min_limit = max(0, int(runtime_guard_min_memory_mib))
+    guard_min_warmup = max(0, int(runtime_guard_min_warmup_seconds))
+    guard_min_count = max(1, int(runtime_guard_min_consecutive_polls))
+    guard_min_mode = str(runtime_guard_min_mode).strip().lower()
     lines.extend(
         [
             f"echo $$ > {shlex.quote(remote_pid_path)}",
@@ -154,13 +162,58 @@ def _make_remote_launch_script(
         lines.extend(
             [
                 "(",
+                "  started_at=$(date +%s)",
+                "  low_count=0",
+                "  low_reported=0",
                 "  while kill -0 \"$child_pid\" 2>/dev/null; do",
                 "    used=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits 2>/dev/null | awk 'BEGIN{m=0}{v=int($1+0); if(v>m)m=v}END{print m}')",
+                "    now=$(date +%s)",
+                "    elapsed=$((now - started_at))",
                 "    if [ -n \"$used\" ] && [ \"$used\" -ge " + str(guard_limit) + " ]; then",
                 f"      echo \"=== RUNTIME_GUARD $(date -Iseconds) used=${{used}}MiB cap={guard_limit}MiB ===\" >> {shlex.quote(remote_log_path)}",
                 "      kill \"$child_pid\" 2>/dev/null || true",
                 "      break",
                 "    fi",
+            ]
+        )
+        if guard_min_mode != "ignore" and guard_min_limit > 0:
+            lines.extend(
+                [
+                    "    if [ -n \"$used\" ] && [ \"$elapsed\" -ge " + str(guard_min_warmup) + " ]; then",
+                    "      if [ \"$used\" -lt " + str(guard_min_limit) + " ]; then",
+                    "        low_count=$((low_count + 1))",
+                    "        if [ \"$low_count\" -ge " + str(guard_min_count) + " ]; then",
+                ]
+            )
+            if guard_min_mode == "stop":
+                lines.extend(
+                    [
+                        f"          echo \"=== RUNTIME_UNDER_BAND_STOP $(date -Iseconds) used=${{used}}MiB floor={guard_min_limit}MiB elapsed=${{elapsed}}s consecutive=${{low_count}} ===\" >> {shlex.quote(remote_log_path)}",
+                        "          kill \"$child_pid\" 2>/dev/null || true",
+                        "          break",
+                    ]
+                )
+            else:
+                lines.extend(
+                    [
+                        "          if [ \"$low_reported\" -eq 0 ]; then",
+                        f"            echo \"=== RUNTIME_UNDER_BAND_WARN $(date -Iseconds) used=${{used}}MiB floor={guard_min_limit}MiB elapsed=${{elapsed}}s consecutive=${{low_count}} ===\" >> {shlex.quote(remote_log_path)}",
+                        "            low_reported=1",
+                        "          fi",
+                    ]
+                )
+            lines.extend(
+                [
+                    "        fi",
+                    "      else",
+                    "        low_count=0",
+                    "        low_reported=0",
+                    "      fi",
+                    "    fi",
+                ]
+            )
+        lines.extend(
+            [
                 f"    sleep {guard_poll}",
                 "  done",
                 ") &",
@@ -341,8 +394,8 @@ def _health_check(
         return 24
     if gpu_memory_used_mib is not None and gpu_memory_used_mib >= max(0, int(max_runtime_memory_mib)):
         print(
-            "Health check failed: remote GPU memory crossed the hard runtime "
-            f"cap {int(max_runtime_memory_mib)} MiB with observed usage "
+            "Health check failed: remote GPU memory crossed the configured runtime "
+            f"ceiling {int(max_runtime_memory_mib)} MiB with observed usage "
             f"{gpu_memory_used_mib} MiB."
         )
         return 25
@@ -373,6 +426,10 @@ def main() -> int:
     parser.add_argument("--min-runtime-slack-mib", type=int, default=128)
     parser.add_argument("--runtime-guard-max-memory-mib", type=int, default=0)
     parser.add_argument("--runtime-guard-poll-seconds", type=int, default=10)
+    parser.add_argument("--runtime-guard-min-memory-mib", type=int, default=0)
+    parser.add_argument("--runtime-guard-min-warmup-seconds", type=int, default=0)
+    parser.add_argument("--runtime-guard-min-consecutive-polls", type=int, default=1)
+    parser.add_argument("--runtime-guard-min-mode", choices=["ignore", "warn", "stop"], default="ignore")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--no-verify", action="store_true")
     parser.add_argument("--no-health-check", action="store_true")
@@ -405,6 +462,10 @@ def main() -> int:
         command_tokens=command_tokens,
         runtime_guard_max_memory_mib=max(0, int(args.runtime_guard_max_memory_mib)),
         runtime_guard_poll_seconds=max(1, int(args.runtime_guard_poll_seconds)),
+        runtime_guard_min_memory_mib=max(0, int(args.runtime_guard_min_memory_mib)),
+        runtime_guard_min_warmup_seconds=max(0, int(args.runtime_guard_min_warmup_seconds)),
+        runtime_guard_min_consecutive_polls=max(1, int(args.runtime_guard_min_consecutive_polls)),
+        runtime_guard_min_mode=str(args.runtime_guard_min_mode),
     )
     windows_launcher = _make_remote_windows_launcher(
         task_name=task_name,

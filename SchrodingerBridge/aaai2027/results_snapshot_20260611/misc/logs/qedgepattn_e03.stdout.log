@@ -1,0 +1,886 @@
+[2/715] Impressionism__claude-monet_palazzo-contarini-2__to__Early_Renaissance -> Seedream_repaired750
+[3/715] Impressionism__childe-hassam_september-moonrise__to__Early_Renaissance -> Seedream_repaired750
+[4/715] Ukiyo_e__keisai-eisen_yabai-with-two-women-1840__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[4/715] Ukiyo_e__keisai-eisen_yabai-with-two-women-1840__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[4/715] Ukiyo_e__keisai-eisen_yabai-with-two-women-1840__to__Ukiyo_e -> Seedream_repaired750
+[5/715] Minimalism__richard-tuttle_relative-to-our-society-1990__to__Early_Renaissance -> Seedream_repaired750
+[6/715] Rococo__dmitry-levitzky_portrait-of-maria-palovna-narychkina-1773__to__Early_Renaissance -> Seedream_repaired750
+[7/715] Impressionism__claude-monet_rouen-cathedral-the-portal-at-midday__to__Minimalism -> Seedream_repaired750
+[8/715] Ukiyo_e__utagawa-kuniyoshi_woman-seated-under-a-cherry-blossoms__to__Ukiyo_e -> Seedream_repaired750
+[9/715] Ukiyo_e__katsushika-hokusai_woman-looking-at-herself-in-a-mirror__to__Rococo -> Seedream_repaired750
+[10/715] Rococo__thomas-gainsborough_robert-butcher-of-walthamstan__to__Early_Renaissance -> Seedream_repaired750
+[11/715] Impressionism__henri-matisse_brittany-also-known-as-boat-1896__to__Minimalism -> Seedream_repaired750
+[12/715] Ukiyo_e__utagawa-kuniyoshi_high-noon-at-kasumigaseki__to__Early_Renaissance -> Seedream_repaired750
+[13/715] Minimalism__alvaro-lapa_criminals-and-their-properties-1974__to__Minimalism -> Seedream_repaired750
+[14/715] Ukiyo_e__keisai-eisen_yabai-with-two-women-1840__to__Minimalism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[14/715] Ukiyo_e__keisai-eisen_yabai-with-two-women-1840__to__Minimalism attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[14/715] Ukiyo_e__keisai-eisen_yabai-with-two-women-1840__to__Minimalism -> Seedream_repaired750
+[15/715] Minimalism__pino-pinelli_pittura-r-1993__to__Rococo -> Seedream_repaired750
+[16/715] Impressionism__nikolay-bogdanov-belsky_connoisseurs-of-books-knowledge-is-power__to__Minimalism -> Seedream_repaired750
+[17/715] Early_Renaissance__domenico-ghirlandaio_st-jerome__to__Early_Renaissance attempt 1 failed: ConnectionError: ('Connection aborted.', ConnectionAbortedError(10053, '????????????????????', None, 10053, None)) (panel_side=224, jpeg_quality=78)
+[17/715] Early_Renaissance__domenico-ghirlandaio_st-jerome__to__Early_Renaissance attempt 2 failed: ConnectionError: ('Connection aborted.', ConnectionAbortedError(10053, '????????????????????', None, 10053, None)) (panel_side=190, jpeg_quality=70)
+[17/715] Early_Renaissance__domenico-ghirlandaio_st-jerome__to__Early_Renaissance -> Seedream_repaired750
+[18/715] Early_Renaissance__andrea-mantegna_maria-with-the-sleeping-child-1455__to__Impressionism -> Seedream_repaired750
+[19/715] Rococo__louise-elisabeth-vigee-le-brun_the-bather-1792__to__Minimalism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[19/715] Rococo__louise-elisabeth-vigee-le-brun_the-bather-1792__to__Minimalism -> Seedream_repaired750
+[20/715] Impressionism__alfred-sisley_riverbank-at-veneux-1881__to__Early_Renaissance -> Seedream_repaired750
+[21/715] Minimalism__mira-schendel_untitled-1984__to__Early_Renaissance -> Seedream_repaired750
+[22/715] Ukiyo_e__utagawa-kuniyoshi_tsuchigumo__to__Rococo -> Seedream_repaired750
+[23/715] Ukiyo_e__utagawa-kuniyoshi_high-noon-at-kasumigaseki__to__Minimalism -> Seedream_repaired750
+[24/715] Early_Renaissance__fra-angelico_bosco-ai-frati-altarpiece__to__Rococo -> Seedream_repaired750
+[25/715] Minimalism__richard-tuttle_relative-to-our-society-1990__to__Impressionism -> Seedream_repaired750
+[26/715] Minimalism__robert-ryman_conversion-2003__to__Impressionism -> Seedream_repaired750
+[27/715] Ukiyo_e__ogata-gekko_print-from-series-women-s-customs-and-manners-1895-1__to__Impressionism -> Seedream_repaired750
+[28/715] Rococo__antoine-watteau_the-delicate-musician__to__Rococo -> Seedream_repaired750
+[29/715] Early_Renaissance__fra-angelico_coronation-of-the-virgin-detail-1435-1__to__Rococo -> Seedream_repaired750
+[30/715] Rococo__thomas-gainsborough_a-peasant-girl-with-dog-and-jug-1785__to__Impressionism -> Seedream_repaired750
+[31/715] Minimalism__bruce-nauman_la-brea-art-tips-rat-spit-tar-pits-1972__to__Minimalism -> Seedream_repaired750
+[32/715] Minimalism__yves-klein_untitled-yellow-monochrome-1956__to__Rococo -> Seedream_repaired750
+[33/715] Ukiyo_e__katsushika-hokusai_fishing-in-the-river-kinu__to__Early_Renaissance -> Seedream_repaired750
+[34/715] Impressionism__william-merritt-chase_at-the-boat-landing__to__Minimalism -> Seedream_repaired750
+[35/715] Early_Renaissance__andrea-mantegna_scenes-from-the-life-of-st-james-1448-2__to__Ukiyo_e -> Seedream_repaired750
+[36/715] Early_Renaissance__benozzo-gozzoli_the-school-of-tagaste-1465-1__to__Impressionism -> Seedream_repaired750
+[37/715] Minimalism__robert-ryman_surface-veil-1970__to__Minimalism -> Seedream_repaired750
+[38/715] Rococo__thomas-gainsborough_robert-butcher-of-walthamstan__to__Ukiyo_e -> Seedream_repaired750
+[39/715] Rococo__pietro-longhi_the-tooth-extractor__to__Minimalism -> Seedream_repaired750
+[40/715] Rococo__thomas-gainsborough_john-plampin__to__Minimalism -> Seedream_repaired750
+[41/715] Early_Renaissance__benozzo-gozzoli_procession-of-the-magus-caspar-detail-1461-4__to__Rococo attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[41/715] Early_Renaissance__benozzo-gozzoli_procession-of-the-magus-caspar-detail-1461-4__to__Rococo -> Seedream_repaired750
+[42/715] Rococo__joseph-wright_mr-and-mrs-thomas-coltman__to__Ukiyo_e -> Seedream_repaired750
+[43/715] Minimalism__alvaro-lapa_criminals-and-their-properties-1974__to__Impressionism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[43/715] Minimalism__alvaro-lapa_criminals-and-their-properties-1974__to__Impressionism -> Seedream_repaired750
+[44/715] Early_Renaissance__benozzo-gozzoli_procession-of-the-magus-caspar-detail-1461-4__to__Ukiyo_e -> Seedream_repaired750
+[45/715] Ukiyo_e__utagawa-kuniyoshi_a-man-confronted-with-an-apparition-of-the-fox-goddess__to__Minimalism -> Seedream_repaired750
+[46/715] Early_Renaissance__pietro-perugino_giovanni-colombini__to__Early_Renaissance -> Seedream_repaired750
+[47/715] Minimalism__robert-morris_box-with-the-sound-of-its-own-making-1961__to__Rococo -> Seedream_repaired750
+[48/715] Rococo__carl-ludwig-johann-christineck_nikolai-mordvinov-1771__to__Minimalism -> Seedream_repaired750
+[49/715] Ukiyo_e__katsushika-hokusai_fishing-in-the-river-kinu__to__Rococo -> Seedream_repaired750
+[50/715] Early_Renaissance__leonardo-da-vinci_study-of-the-effect-of-light-on-a-profile-head-facsimile__to__Early_Renaissance -> Seedream_repaired750
+[51/715] Minimalism__pino-pinelli_pittura-r-1993__to__Early_Renaissance -> Seedream_repaired750
+[52/715] Rococo__louise-elisabeth-vigee-le-brun_portrait-of-joseph-vernet-1778__to__Rococo attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[52/715] Rococo__louise-elisabeth-vigee-le-brun_portrait-of-joseph-vernet-1778__to__Rococo -> Seedream_repaired750
+[53/715] Ukiyo_e__utagawa-toyokuni_the-heian-courtier__to__Impressionism -> QEdgePattn_e03
+[54/715] Early_Renaissance__pisanello_stork-1430__to__Minimalism -> Seedream_repaired750
+[55/715] Ukiyo_e__katsushika-hokusai_woman-looking-at-herself-in-a-mirror__to__Early_Renaissance -> Seedream_repaired750
+[56/715] Rococo__louise-elisabeth-vigee-le-brun_the-bather-1792__to__Rococo attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[56/715] Rococo__louise-elisabeth-vigee-le-brun_the-bather-1792__to__Rococo -> Seedream_repaired750
+[57/715] Minimalism__ellsworth-kelly_diagonal-1951__to__Ukiyo_e -> Seedream_repaired750
+[58/715] Rococo__thomas-gainsborough_a-coastal-landscape-1782__to__Ukiyo_e -> Seedream_repaired750
+[59/715] Impressionism__claude-monet_rouen-cathedral-the-portal-at-midday__to__Rococo -> Seedream_repaired750
+[60/715] Rococo__maurice-quentin-de-la-tour_study-for-portrait-of-mademoiselle-dangeville-1__to__Early_Renaissance -> Seedream_repaired750
+[61/715] Rococo__canaletto_london-the-thames-and-the-city-of-london-from-the-terrace-of-richmond-house__to__Ukiyo_e -> Seedream_repaired750
+[62/715] Impressionism__edgar-degas_study-of-gentile-bellini-1855__to__Rococo -> Seedream_repaired750
+[63/715] Ukiyo_e__utagawa-kuniyoshi_tsuchigumo__to__Impressionism -> Seedream_repaired750
+[64/715] Early_Renaissance__domenico-ghirlandaio_st-jerome__to__Ukiyo_e -> Seedream_repaired750
+[65/715] Early_Renaissance__paolo-uccello_scene-adoration-of-the-three-kings-1440__to__Early_Renaissance -> Seedream_repaired750
+[66/715] Minimalism__yves-gaucher_traces-2000__to__Impressionism -> Seedream_repaired750
+[67/715] Minimalism__robert-ryman_surface-veil-1970__to__Ukiyo_e -> Seedream_repaired750
+[68/715] Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[68/715] Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[68/715] Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece__to__Ukiyo_e -> Seedream_repaired750
+[69/715] Minimalism__pino-pinelli_pittura-r-1993__to__Minimalism -> Seedream_repaired750
+[70/715] Impressionism__edouard-manet_tarring-the-boat-1873__to__Ukiyo_e -> Seedream_repaired750
+[71/715] Ukiyo_e__utagawa-kunisada_not_detected_240381(1)__to__Early_Renaissance -> Seedream_repaired750
+[72/715] Minimalism__tony-smith_die-1968__to__Ukiyo_e -> Seedream_repaired750
+[73/715] Ukiyo_e__utagawa-kuniyoshi_woman-seated-under-a-cherry-blossoms__to__Minimalism -> Seedream_repaired750
+[74/715] Early_Renaissance__benozzo-gozzoli_madonna-and-child-1485__to__Early_Renaissance -> Seedream_repaired750
+[75/715] Impressionism__edgar-degas_ancer-with-red-stockings__to__Ukiyo_e -> Seedream_repaired750
+[76/715] Rococo__joseph-wright_mr-and-mrs-thomas-coltman__to__Minimalism -> Seedream_repaired750
+[77/715] Impressionism__nicolae-vermont_rotterdam-port-1928__to__Early_Renaissance -> Seedream_repaired750
+[78/715] Rococo__canaletto_london-the-thames-and-the-city-of-london-from-the-terrace-of-richmond-house__to__Impressionism -> Seedream_repaired750
+[79/715] Minimalism__robert-morris_box-with-the-sound-of-its-own-making-1961__to__Ukiyo_e -> Seedream_repaired750
+[80/715] Minimalism__brice-marden_joined-2011__to__Impressionism -> Seedream_repaired750
+[81/715] Ukiyo_e__kitagawa-utamaro_yama-uba-and-kintaro-1__to__Ukiyo_e -> Seedream_repaired750
+[82/715] Early_Renaissance__fra-angelico_coronation-of-the-virgin-detail-1435-1__to__Early_Renaissance -> Seedream_repaired750
+[83/715] Rococo__pietro-longhi_the-tooth-extractor__to__Rococo -> Seedream_repaired750
+[84/715] Minimalism__frank-stella_gezira-from-black-series-ii-1967__to__Minimalism -> Seedream_repaired750
+[85/715] Early_Renaissance__filippo-lippi_adoration-of-the-magi-detail-2__to__Early_Renaissance -> Seedream_repaired750
+[86/715] Early_Renaissance__domenico-ghirlandaio_st-stephen-st-jacobo-st-peter__to__Early_Renaissance -> Seedream_repaired750
+[87/715] Ukiyo_e__utagawa-kunisada_the-actor__to__Impressionism -> Seedream_repaired750
+[88/715] Ukiyo_e__kitagawa-utamaro_yama-uba-and-kintaro-1__to__Early_Renaissance -> Seedream_repaired750
+[89/715] Minimalism__john-mclaughlin_number-4__to__Impressionism -> Seedream_repaired750
+[90/715] Impressionism__winston-churchill_distant-view-of-the-pyramids-1921-1(1)__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[90/715] Impressionism__winston-churchill_distant-view-of-the-pyramids-1921-1(1)__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[90/715] Impressionism__winston-churchill_distant-view-of-the-pyramids-1921-1(1)__to__Ukiyo_e -> Seedream_repaired750
+[91/715] Impressionism__pierre-auguste-renoir_still-life-with-apples-and-pomegranates-1901__to__Minimalism -> Seedream_repaired750
+[92/715] Minimalism__imi-knoebel_weiss-und-schwarz-4-2009__to__Impressionism -> Seedream_repaired750
+[93/715] Early_Renaissance__leonardo-da-vinci_studies-of-a-bewalking__to__Rococo -> Seedream_repaired750
+[94/715] Minimalism__robert-morris_box-with-the-sound-of-its-own-making-1961__to__Minimalism -> Seedream_repaired750
+[95/715] Minimalism__agnes-martin_happy-valley-1967__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[95/715] Minimalism__agnes-martin_happy-valley-1967__to__Early_Renaissance -> Seedream_repaired750
+[96/715] Minimalism__sean-scully_untitled-1973__to__Impressionism -> Seedream_repaired750
+[97/715] Early_Renaissance__benozzo-gozzoli_procession-of-the-magus-caspar-detail-1461-4__to__Minimalism -> Seedream_repaired750
+[98/715] Rococo__antoine-watteau_head-of-a-man__to__Rococo -> Seedream_repaired750
+[99/715] Early_Renaissance__antonello-da-messina_painter-self-portrait__to__Ukiyo_e -> Seedream_repaired750
+[100/715] Minimalism__judy-chicago_morning-fan-1971__to__Ukiyo_e -> Seedream_repaired750
+[101/715] Minimalism__john-mclaughlin_number-4__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[101/715] Minimalism__john-mclaughlin_number-4__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[101/715] Minimalism__john-mclaughlin_number-4__to__Ukiyo_e -> Seedream_repaired750
+[102/715] Rococo__antoine-watteau_head-of-a-man__to__Minimalism -> Seedream_repaired750
+[103/715] Minimalism__imi-knoebel_weiss-und-schwarz-4-2009__to__Minimalism -> Seedream_repaired750
+[104/715] Impressionism__eugene-boudin_trouville-the-fish-market-1884__to__Impressionism -> Seedream_repaired750
+[105/715] Impressionism__alfred-sisley_the-banks-of-the-oise-1878__to__Impressionism -> Seedream_repaired750
+[106/715] Ukiyo_e__tsukioka-yoshitoshi_not_detected_242419__to__Ukiyo_e -> Seedream_repaired750
+[107/715] Rococo__carl-ludwig-johann-christineck_portrait-of-paul-of-russia-dressed-as-chevalier-of-the-order-of-st-andrew-1760__to__Minimalism -> Seedream_repaired750
+[108/715] Ukiyo_e__ogata-gekko_nihon-hana-zue-1896__to__Impressionism -> Seedream_repaired750
+[109/715] Ukiyo_e__utagawa-kuniyoshi_woman-seated-under-a-cherry-blossoms__to__Impressionism -> Seedream_repaired750
+[110/715] Early_Renaissance__pisanello_stork-1430__to__Impressionism -> Seedream_repaired750
+[111/715] Impressionism__rudolf-schweitzer-cumpana_str-du-n-atena__to__Ukiyo_e -> Seedream_repaired750
+[112/715] Minimalism__joan-hernandez-pijuan_nuvol-rosa-2-1990__to__Ukiyo_e -> Seedream_repaired750
+[113/715] Ukiyo_e__utagawa-kunisada_not_detected_240381(1)__to__Minimalism -> Seedream_repaired750
+[114/715] Rococo__giovanni-domenico-tiepolo_the-new-world-1797__to__Ukiyo_e -> Seedream_repaired750
+[115/715] Ukiyo_e__hiroshige_oiso-toraga-ame-shower-1835__to__Ukiyo_e -> Seedream_repaired750
+[116/715] Rococo__dmitry-levitzky_maria-feodorovna__to__Ukiyo_e -> Seedream_repaired750
+[117/715] Minimalism__ronald-davis_zig-zag-times-two-1966__to__Minimalism -> Seedream_repaired750
+[118/715] Impressionism__childe-hassam_evening-champs-elysees-aka-pres-du-louvre__to__Impressionism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[118/715] Impressionism__childe-hassam_evening-champs-elysees-aka-pres-du-louvre__to__Impressionism -> Seedream_repaired750
+[119/715] Impressionism__claude-monet_palazzo-contarini-2__to__Minimalism -> Seedream_repaired750
+[120/715] Rococo__antoine-pesne_carl-heinrich-graun__to__Minimalism -> Seedream_repaired750
+[121/715] Rococo__thomas-gainsborough_a-peasant-girl-with-dog-and-jug-1785__to__Rococo -> Seedream_repaired750
+[122/715] Early_Renaissance__antonello-da-messina_painter-self-portrait__to__Minimalism -> Seedream_repaired750
+[123/715] Minimalism__tony-smith_die-1968__to__Minimalism -> Seedream_repaired750
+[124/715] Early_Renaissance__carlo-crivelli_piet-1__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[124/715] Early_Renaissance__carlo-crivelli_piet-1__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[124/715] Early_Renaissance__carlo-crivelli_piet-1__to__Ukiyo_e -> Seedream_repaired750
+[125/715] Minimalism__richard-tuttle_relative-to-our-society-1990__to__Minimalism -> QEdgePattn_e03
+[126/715] Rococo__giovanni-domenico-tiepolo_christ-s-fall-on-the-way-to-calvary-1772__to__Early_Renaissance -> Seedream_repaired750
+[127/715] Early_Renaissance__fra-angelico_bosco-ai-frati-altarpiece__to__Impressionism -> Seedream_repaired750
+[128/715] Rococo__canaletto_london-the-thames-and-the-city-of-london-from-the-terrace-of-richmond-house__to__Early_Renaissance -> Seedream_repaired750
+[129/715] Minimalism__joan-hernandez-pijuan_nuvol-rosa-2-1990__to__Early_Renaissance -> Seedream_repaired750
+[130/715] Impressionism__claude-monet_palazzo-contarini-2__to__Rococo -> Seedream_repaired750
+[131/715] Impressionism__william-merritt-chase_gray-day-on-the-lagoon-a-passenger-boat-venice__to__Minimalism -> Seedream_repaired750
+[132/715] Ukiyo_e__katsushika-hokusai_woman-looking-at-herself-in-a-mirror__to__Impressionism -> Seedream_repaired750
+[133/715] Minimalism__robert-mangold_ellow-black-zone-painting-iv-1996__to__Rococo -> Seedream_repaired750
+[134/715] Ukiyo_e__ogata-gekko_print-from-series-women-s-customs-and-manners-1895-1__to__Rococo -> Seedream_repaired750
+[135/715] Ukiyo_e__utagawa-kunisada_not_detected_240353__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[135/715] Ukiyo_e__utagawa-kunisada_not_detected_240353__to__Early_Renaissance attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[135/715] Ukiyo_e__utagawa-kunisada_not_detected_240353__to__Early_Renaissance -> Seedream_repaired750
+[136/715] Minimalism__robert-ryman_conversion-2003__to__Rococo attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[136/715] Minimalism__robert-ryman_conversion-2003__to__Rococo attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[136/715] Minimalism__robert-ryman_conversion-2003__to__Rococo -> Seedream_repaired750
+[137/715] Impressionism__john-singer-sargent_lake-in-the-tyrol__to__Ukiyo_e -> Seedream_repaired750
+[138/715] Rococo__william-hogarth_the-countess-s-morning-levee__to__Ukiyo_e -> Seedream_repaired750
+[139/715] Impressionism__mihaly-munkacsy_dusty-country-road-ii-1883__to__Minimalism -> Seedream_repaired750
+[140/715] Impressionism__pierre-auguste-renoir_still-life-with-apples-and-pomegranates-1901__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[140/715] Impressionism__pierre-auguste-renoir_still-life-with-apples-and-pomegranates-1901__to__Ukiyo_e -> QEdgePattn_e03
+[141/715] Ukiyo_e__tsukioka-yoshitoshi_not_detected_242419__to__Rococo attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[141/715] Ukiyo_e__tsukioka-yoshitoshi_not_detected_242419__to__Rococo attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[141/715] Ukiyo_e__tsukioka-yoshitoshi_not_detected_242419__to__Rococo -> Seedream_repaired750
+[142/715] Impressionism__stefan-dimitrescu_cabaret__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[142/715] Impressionism__stefan-dimitrescu_cabaret__to__Early_Renaissance attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[142/715] Impressionism__stefan-dimitrescu_cabaret__to__Early_Renaissance attempt 3 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=162, jpeg_quality=63)
+[142/715] Impressionism__stefan-dimitrescu_cabaret__to__Early_Renaissance attempt 4 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=138, jpeg_quality=57)
+[143/715] Impressionism__claude-monet_rouen-cathedral-the-portal-at-midday__to__Ukiyo_e -> Seedream_repaired750
+[144/715] Rococo__joshua-reynolds_colonel-george-k-h-coussmaker-grenadier-guards__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[144/715] Rococo__joshua-reynolds_colonel-george-k-h-coussmaker-grenadier-guards__to__Early_Renaissance attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[144/715] Rococo__joshua-reynolds_colonel-george-k-h-coussmaker-grenadier-guards__to__Early_Renaissance -> Seedream_repaired750
+[145/715] Early_Renaissance__sandro-botticelli_trinity(1)__to__Ukiyo_e -> Seedream_repaired750
+[146/715] Impressionism__william-merritt-chase_at-the-boat-landing__to__Ukiyo_e -> Seedream_repaired750
+[147/715] Impressionism__william-merritt-chase_at-the-boat-landing__to__Early_Renaissance -> Seedream_repaired750
+[148/715] Minimalism__bruce-nauman_la-brea-art-tips-rat-spit-tar-pits-1972__to__Impressionism -> Seedream_repaired750
+[149/715] Impressionism__childe-hassam_september-moonrise__to__Ukiyo_e -> Seedream_repaired750
+[150/715] Early_Renaissance__sandro-botticelli_trinity(1)__to__Minimalism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[150/715] Early_Renaissance__sandro-botticelli_trinity(1)__to__Minimalism attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[150/715] Early_Renaissance__sandro-botticelli_trinity(1)__to__Minimalism -> Seedream_repaired750
+[151/715] Early_Renaissance__andrea-mantegna_the-circumcision-of-christ-1464__to__Rococo attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[151/715] Early_Renaissance__andrea-mantegna_the-circumcision-of-christ-1464__to__Rococo -> Seedream_repaired750
+[152/715] Minimalism__mira-schendel_untitled-1984__to__Rococo -> Seedream_repaired750
+[153/715] Rococo__william-hogarth_the-countess-s-morning-levee__to__Minimalism -> Seedream_repaired750
+[154/715] Ukiyo_e__utagawa-kuniyoshi_ishiyakushi__to__Early_Renaissance -> Seedream_repaired750
+[155/715] Rococo__joseph-wright_mr-and-mrs-thomas-coltman__to__Rococo attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[155/715] Rococo__joseph-wright_mr-and-mrs-thomas-coltman__to__Rococo -> Seedream_repaired750
+[156/715] Early_Renaissance__piero-della-francesca_portrait-of-a-boy__to__Impressionism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[156/715] Early_Renaissance__piero-della-francesca_portrait-of-a-boy__to__Impressionism -> Seedream_repaired750
+[157/715] Rococo__thomas-gainsborough_a-coastal-landscape-1782__to__Minimalism -> Seedream_repaired750
+[158/715] Early_Renaissance__paolo-uccello_scene-adoration-of-the-three-kings-1440__to__Rococo -> Seedream_repaired750
+[159/715] Early_Renaissance__leonardo-da-vinci_studies-of-a-bewalking__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[159/715] Early_Renaissance__leonardo-da-vinci_studies-of-a-bewalking__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[159/715] Early_Renaissance__leonardo-da-vinci_studies-of-a-bewalking__to__Ukiyo_e -> Seedream_repaired750
+[160/715] Minimalism__fernando-lanhas_o39-68-1968__to__Rococo -> Seedream_repaired750
+[161/715] Rococo__thomas-gainsborough_john-plampin__to__Ukiyo_e -> Seedream_repaired750
+[162/715] Ukiyo_e__kitagawa-utamaro_the-hour-of-the-horse__to__Rococo -> Seedream_repaired750
+[163/715] Impressionism__eugene-boudin_laundresses-on-the-banks-of-the-touques-9__to__Impressionism -> Seedream_repaired750
+[164/715] Rococo__benjamin-west_self-portrait-1770__to__Minimalism -> Seedream_repaired750
+[165/715] Early_Renaissance__fra-angelico_saint-cosmas-and-saint-damian-before-lisius-1440__to__Rococo -> Seedream_repaired750
+[166/715] Early_Renaissance__piero-della-francesca_portrait-of-a-boy__to__Early_Renaissance -> Seedream_repaired750
+[167/715] Ukiyo_e__katsushika-hokusai_cargo-ship-and-wave__to__Impressionism -> Seedream_repaired750
+[168/715] Ukiyo_e__katsushika-hokusai_ono-shindon-in-the-suraga-province__to__Rococo -> Seedream_repaired750
+[169/715] Early_Renaissance__filippo-lippi_adoration-of-the-magi-detail-2__to__Impressionism -> Seedream_repaired750
+[170/715] Minimalism__robert-mangold_untitled-fcpa-1995__to__Ukiyo_e -> Seedream_repaired750
+[171/715] Early_Renaissance__andrea-mantegna_the-circumcision-of-christ-1464__to__Ukiyo_e -> Seedream_repaired750
+[172/715] Early_Renaissance__pisanello_stork-1430__to__Rococo -> Seedream_repaired750
+[173/715] Impressionism__edgar-degas_ancer-with-red-stockings__to__Minimalism -> Seedream_repaired750
+[174/715] Early_Renaissance__andrea-mantegna_maria-with-the-sleeping-child-1455__to__Rococo -> Seedream_repaired750
+[175/715] Ukiyo_e__kitagawa-utamaro_yama-uba-and-kintaro-1__to__Impressionism -> Seedream_repaired750
+[176/715] Early_Renaissance__benozzo-gozzoli_madonna-and-child-1485__to__Rococo -> Seedream_repaired750
+[177/715] Rococo__antoine-pesne_carl-heinrich-graun__to__Impressionism -> Seedream_repaired750
+[178/715] Early_Renaissance__carlo-crivelli_saint-thomas-aquinas-1476__to__Minimalism -> Seedream_repaired750
+[179/715] Impressionism__alfred-sisley_riverbank-at-veneux-1881__to__Rococo -> Seedream_repaired750
+[180/715] Minimalism__ronald-davis_zig-zag-times-two-1966__to__Impressionism -> Seedream_repaired750
+[181/715] Ukiyo_e__katsushika-hokusai_cargo-ship-and-wave__to__Early_Renaissance -> Seedream_repaired750
+[182/715] Rococo__benjamin-west_self-portrait-1770__to__Impressionism -> Seedream_repaired750
+[183/715] Early_Renaissance__benozzo-gozzoli_madonna-and-child-1485__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[183/715] Early_Renaissance__benozzo-gozzoli_madonna-and-child-1485__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[183/715] Early_Renaissance__benozzo-gozzoli_madonna-and-child-1485__to__Ukiyo_e -> Seedream_repaired750
+[184/715] Minimalism__agnes-martin_happy-valley-1967__to__Rococo -> Seedream_repaired750
+[185/715] Early_Renaissance__piero-della-francesca_portrait-of-a-boy__to__Ukiyo_e -> Seedream_repaired750
+[186/715] Rococo__bernardo-bellotto_view-of-dresden-the-dresden-fortifications-moat-with-a-bridge-between-gate-and-post-mile-pillar__to__Early_Renaissance -> Seedream_repaired750
+[187/715] Impressionism__john-singer-sargent_lake-in-the-tyrol__to__Minimalism -> Seedream_repaired750
+[188/715] Early_Renaissance__carlo-crivelli_saint-thomas-aquinas-1476__to__Ukiyo_e -> Seedream_repaired750
+[189/715] Minimalism__joan-hernandez-pijuan_nuvol-rosa-2-1990__to__Impressionism -> Seedream_repaired750
+[190/715] Minimalism__tony-smith_die-1968__to__Early_Renaissance -> Seedream_repaired750
+[191/715] Impressionism__eugene-boudin_trouville-the-fish-market-1884__to__Rococo -> Seedream_repaired750
+[192/715] Rococo__antoine-watteau_the-delicate-musician__to__Impressionism -> Seedream_repaired750
+[193/715] Minimalism__eva-hesse_expanded-expansion-1969__to__Early_Renaissance -> Seedream_repaired750
+[194/715] Rococo__francois-boucher_portrait-of-madame-boucher-1745__to__Rococo -> Seedream_repaired750
+[195/715] Rococo__joshua-reynolds_colonel-george-k-h-coussmaker-grenadier-guards__to__Rococo -> Seedream_repaired750
+[196/715] Impressionism__eugene-boudin_laundresses-on-the-banks-of-the-touques-9__to__Rococo -> Seedream_repaired750
+[197/715] Rococo__giovanni-domenico-tiepolo_the-new-world-1797__to__Rococo -> Seedream_repaired750
+[198/715] Impressionism__konstantin-korovin_arctic-ocean-1913__to__Ukiyo_e -> Seedream_repaired750
+[199/715] Ukiyo_e__kitagawa-utamaro_the-hour-of-the-horse__to__Impressionism -> Seedream_repaired750
+[200/715] Rococo__giovanni-domenico-tiepolo_christ-s-fall-on-the-way-to-calvary-1772__to__Impressionism -> Seedream_repaired750
+[201/715] Impressionism__mihaly-munkacsy_dusty-country-road-ii-1883__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[201/715] Impressionism__mihaly-munkacsy_dusty-country-road-ii-1883__to__Early_Renaissance -> Seedream_repaired750
+[202/715] Rococo__dmitry-levitzky_portrait-of-maria-palovna-narychkina-1773__to__Impressionism -> Seedream_repaired750
+[203/715] Ukiyo_e__katsushika-hokusai_fishing-in-the-bay-uraga__to__Ukiyo_e -> Seedream_repaired750
+[204/715] Rococo__joseph-wright_d-ewes-coke-his-wife-hannah-and-daniel-parker-coke__to__Ukiyo_e -> Seedream_repaired750
+[205/715] Early_Renaissance__jacopo-bellini_view-of-a-fortification-of-jerusalem(1)__to__Rococo -> Seedream_repaired750
+[206/715] Ukiyo_e__katsushika-hokusai_ono-shindon-in-the-suraga-province__to__Ukiyo_e -> Seedream_repaired750
+[207/715] Rococo__dmitry-levitzky_portrait-of-unknown-woman-with-a-rose-1788__to__Rococo -> Seedream_repaired750
+[208/715] Ukiyo_e__ogata-gekko_nihon-hana-zue-1896__to__Rococo attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[208/715] Ukiyo_e__ogata-gekko_nihon-hana-zue-1896__to__Rococo -> Seedream_repaired750
+[209/715] Impressionism__augustus-john_proven-al-landscape__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[209/715] Impressionism__augustus-john_proven-al-landscape__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[209/715] Impressionism__augustus-john_proven-al-landscape__to__Ukiyo_e -> Seedream_repaired750
+[210/715] Minimalism__imi-knoebel_weiss-und-schwarz-4-2009__to__Rococo -> Seedream_repaired750
+[211/715] Rococo__benjamin-west_self-portrait-1770__to__Ukiyo_e -> Seedream_repaired750
+[212/715] Ukiyo_e__utagawa-kuniyoshi_a-man-confronted-with-an-apparition-of-the-fox-goddess__to__Early_Renaissance -> Seedream_repaired750
+[213/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[213/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Early_Renaissance attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[213/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Early_Renaissance attempt 3 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=162, jpeg_quality=63)
+[213/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Early_Renaissance attempt 4 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=138, jpeg_quality=57)
+[214/715] Impressionism__rudolf-schweitzer-cumpana_str-du-n-atena__to__Early_Renaissance -> Seedream_repaired750
+[215/715] Ukiyo_e__utagawa-toyokuni_the-heian-courtier__to__Minimalism -> Seedream_repaired750
+[216/715] Ukiyo_e__keisai-eisen_the-courtesan-kaoru-of-owariya-matched-with-okitsu-1825(1)__to__Impressionism -> Seedream_repaired750
+[217/715] Impressionism__augustus-john_proven-al-landscape__to__Impressionism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[217/715] Impressionism__augustus-john_proven-al-landscape__to__Impressionism -> Seedream_repaired750
+[218/715] Ukiyo_e__keisai-eisen_yabai-with-two-women-1840__to__Rococo attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[218/715] Ukiyo_e__keisai-eisen_yabai-with-two-women-1840__to__Rococo attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[218/715] Ukiyo_e__keisai-eisen_yabai-with-two-women-1840__to__Rococo -> Seedream_repaired750
+[219/715] Minimalism__william-scott_bowl-white-on-grey-1962__to__Impressionism -> Seedream_repaired750
+[220/715] Ukiyo_e__katsushika-hokusai_ono-shindon-in-the-suraga-province__to__Early_Renaissance -> Seedream_repaired750
+[221/715] Minimalism__fernando-lanhas_o39-68-1968__to__Early_Renaissance -> QEdgePattn_e03
+[222/715] Impressionism__edgar-degas_study-of-gentile-bellini-1855__to__Impressionism -> Seedream_repaired750
+[223/715] Ukiyo_e__hiroshige_hakone-kosuizu__to__Rococo -> Seedream_repaired750
+[224/715] Rococo__joseph-wright_d-ewes-coke-his-wife-hannah-and-daniel-parker-coke__to__Rococo -> Seedream_repaired750
+[225/715] Minimalism__robert-ryman_surface-veil-1970__to__Impressionism -> Seedream_repaired750
+[226/715] Minimalism__ruth-vollmer_trimer-monomer-dimer-1965__to__Ukiyo_e -> Seedream_repaired750
+[227/715] Minimalism__robert-mangold_ellow-black-zone-painting-iv-1996__to__Minimalism -> Seedream_repaired750
+[228/715] Impressionism__pierre-auguste-renoir_still-life-with-apples-and-pomegranates-1901__to__Rococo -> Seedream_repaired750
+[229/715] Minimalism__frank-stella_gezira-from-black-series-ii-1967__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[229/715] Minimalism__frank-stella_gezira-from-black-series-ii-1967__to__Early_Renaissance -> Seedream_repaired750
+[230/715] Rococo__maurice-quentin-de-la-tour_study-for-portrait-of-mademoiselle-dangeville-1__to__Rococo -> Seedream_repaired750
+[231/715] Early_Renaissance__fra-angelico_coronation-of-the-virgin-detail-1435-1__to__Ukiyo_e -> Seedream_repaired750
+[232/715] Early_Renaissance__fra-angelico_bosco-ai-frati-altarpiece__to__Minimalism -> Seedream_repaired750
+[233/715] Early_Renaissance__domenico-ghirlandaio_st-stephen-st-jacobo-st-peter__to__Ukiyo_e -> Seedream_repaired750
+[234/715] Minimalism__john-mclaughlin_number-13-1973__to__Ukiyo_e -> Seedream_repaired750
+[235/715] Impressionism__eugene-boudin_the-port-ships-at-dock__to__Minimalism -> Seedream_repaired750
+[236/715] Rococo__thomas-gainsborough_a-peasant-girl-with-dog-and-jug-1785__to__Minimalism -> Seedream_repaired750
+[237/715] Ukiyo_e__utagawa-kuniyoshi_a-man-confronted-with-an-apparition-of-the-fox-goddess__to__Rococo -> Seedream_repaired750
+[238/715] Rococo__pietro-longhi_the-tooth-extractor__to__Ukiyo_e -> Seedream_repaired750
+[239/715] Early_Renaissance__benozzo-gozzoli_procession-of-the-magus-caspar-detail-1461-4__to__Early_Renaissance -> Seedream_repaired750
+[240/715] Impressionism__edgar-degas_study-of-gentile-bellini-1855__to__Minimalism -> Seedream_repaired750
+[241/715] Ukiyo_e__utagawa-kunisada_the-actor__to__Ukiyo_e attempt 1 failed: ConnectionError: ('Connection aborted.', ConnectionResetError(10054, '?????????????????', None, 10054, None)) (panel_side=224, jpeg_quality=78)
+[241/715] Ukiyo_e__utagawa-kunisada_the-actor__to__Ukiyo_e -> Seedream_repaired750
+[242/715] Ukiyo_e__katsushika-hokusai_cargo-ship-and-wave__to__Minimalism -> Seedream_repaired750
+[243/715] Ukiyo_e__katsushika-hokusai_ono-shindon-in-the-suraga-province__to__Minimalism -> Seedream_repaired750
+[244/715] Minimalism__robert-mangold_ellow-black-zone-painting-iv-1996__to__Ukiyo_e -> QEdgePattn_e03
+[245/715] Impressionism__camille-pissarro_the-gardener-afternoon-sun-eragny-1899__to__Minimalism -> Seedream_repaired750
+[246/715] Rococo__joseph-wright_mr-and-mrs-thomas-coltman__to__Impressionism -> Seedream_repaired750
+[247/715] Impressionism__stefan-dimitrescu_cabaret__to__Minimalism -> Seedream_repaired750
+[248/715] Minimalism__alvaro-lapa_criminals-and-their-properties-1974__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[248/715] Minimalism__alvaro-lapa_criminals-and-their-properties-1974__to__Early_Renaissance attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[248/715] Minimalism__alvaro-lapa_criminals-and-their-properties-1974__to__Early_Renaissance attempt 3 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=162, jpeg_quality=63)
+[248/715] Minimalism__alvaro-lapa_criminals-and-their-properties-1974__to__Early_Renaissance attempt 4 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=138, jpeg_quality=57)
+[249/715] Early_Renaissance__fra-angelico_coronation-of-the-virgin-detail-1435-1__to__Impressionism -> Seedream_repaired750
+[250/715] Early_Renaissance__sandro-botticelli_trinity(1)__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[250/715] Early_Renaissance__sandro-botticelli_trinity(1)__to__Early_Renaissance attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[250/715] Early_Renaissance__sandro-botticelli_trinity(1)__to__Early_Renaissance -> Seedream_repaired750
+[251/715] Impressionism__henri-matisse_brittany-also-known-as-boat-1896__to__Ukiyo_e -> Seedream_repaired750
+[252/715] Early_Renaissance__filippo-lippi_confirmation-of-the-carmelite-rule__to__Ukiyo_e -> Seedream_repaired750
+[253/715] Rococo__louise-elisabeth-vigee-le-brun_portrait-of-joseph-vernet-1778__to__Minimalism -> Seedream_repaired750
+[254/715] Minimalism__brice-marden_joined-2011__to__Minimalism -> QEdgePattn_e03
+[255/715] Impressionism__winston-churchill_distant-view-of-the-pyramids-1921-1(1)__to__Rococo -> Seedream_repaired750
+[256/715] Ukiyo_e__utagawa-kunisada_not_detected_240347__to__Impressionism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[256/715] Ukiyo_e__utagawa-kunisada_not_detected_240347__to__Impressionism attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[256/715] Ukiyo_e__utagawa-kunisada_not_detected_240347__to__Impressionism -> QEdgePattn_e03
+[257/715] Rococo__benjamin-west_self-portrait-1770__to__Rococo -> Seedream_repaired750
+[258/715] Rococo__francois-boucher_portrait-of-madame-boucher-1745__to__Ukiyo_e -> Seedream_repaired750
+[259/715] Ukiyo_e__katsushika-hokusai_fishing-in-the-river-kinu__to__Ukiyo_e -> Seedream_repaired750
+[260/715] Impressionism__henri-matisse_brittany-also-known-as-boat-1896__to__Rococo -> Seedream_repaired750
+[261/715] Ukiyo_e__utagawa-kuniyoshi_ishiyakushi__to__Ukiyo_e -> Seedream_repaired750
+[262/715] Early_Renaissance__carlo-crivelli_piet-1__to__Rococo attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[262/715] Early_Renaissance__carlo-crivelli_piet-1__to__Rococo attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[262/715] Early_Renaissance__carlo-crivelli_piet-1__to__Rococo -> Seedream_repaired750
+[263/715] Ukiyo_e__katsushika-hokusai_fishing-in-the-river-kinu__to__Impressionism -> Seedream_repaired750
+[264/715] Impressionism__antoine-blanchard_place-de-la-madeleine-hiver__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[264/715] Impressionism__antoine-blanchard_place-de-la-madeleine-hiver__to__Early_Renaissance -> Seedream_repaired750
+[265/715] Minimalism__dan-flavin_greens-crossing-greens-to-piet-mondrian-who-lacked-green-1966__to__Impressionism -> Seedream_repaired750
+[266/715] Ukiyo_e__utagawa-kuniyoshi_a-record-of-origins-of-the-great-country-of-japan__to__Ukiyo_e -> Seedream_repaired750
+[267/715] Minimalism__joan-hernandez-pijuan_untitled-120-1999__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[267/715] Minimalism__joan-hernandez-pijuan_untitled-120-1999__to__Early_Renaissance attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[267/715] Minimalism__joan-hernandez-pijuan_untitled-120-1999__to__Early_Renaissance -> Seedream_repaired750
+[268/715] Rococo__carl-ludwig-johann-christineck_portrait-of-paul-of-russia-dressed-as-chevalier-of-the-order-of-st-andrew-1760__to__Early_Renaissance -> Seedream_repaired750
+[269/715] Ukiyo_e__kitagawa-utamaro_yama-uba-and-kintaro-1__to__Rococo -> Seedream_repaired750
+[270/715] Minimalism__robert-ryman_surface-veil-1970__to__Early_Renaissance -> Seedream_repaired750
+[271/715] Minimalism__ellsworth-kelly_diagonal-1951__to__Early_Renaissance -> Seedream_repaired750
+[272/715] Ukiyo_e__utagawa-kunisada-ii_oichi-from-the-beauties-of-tokyo-series__to__Minimalism -> Seedream_repaired750
+[273/715] Impressionism__winston-churchill_distant-view-of-the-pyramids-1921-1(1)__to__Minimalism -> Seedream_repaired750
+[274/715] Ukiyo_e__ogata-gekko_print-from-series-women-s-customs-and-manners-1895-1__to__Early_Renaissance -> QEdgePattn_e03
+[275/715] Ukiyo_e__utagawa-kunisada_not_detected_240347__to__Rococo -> Seedream_repaired750
+[276/715] Impressionism__pierre-auguste-renoir_still-life-with-apples-and-pomegranates-1901__to__Impressionism -> Seedream_repaired750
+[277/715] Rococo__maurice-quentin-de-la-tour_study-for-portrait-of-mademoiselle-dangeville-1__to__Minimalism -> Seedream_repaired750
+[278/715] Ukiyo_e__utagawa-kuniyoshi_a-man-confronted-with-an-apparition-of-the-fox-goddess__to__Impressionism -> Seedream_repaired750
+[279/715] Ukiyo_e__utagawa-kuniyoshi_kuzunoha__to__Early_Renaissance -> QEdgePattn_e03
+[280/715] Rococo__bernardo-bellotto_pirna-seen-from-the-right-bank-of-the-elbe__to__Early_Renaissance -> Seedream_repaired750
+[281/715] Ukiyo_e__utagawa-kuniyoshi_ishiyakushi__to__Minimalism -> Seedream_repaired750
+[282/715] Rococo__maurice-quentin-de-la-tour_marie-josephe-of-saxony-1__to__Ukiyo_e -> Seedream_repaired750
+[283/715] Early_Renaissance__piero-della-francesca_portrait-of-a-boy__to__Rococo -> Seedream_repaired750
+[284/715] Minimalism__william-scott_bowl-white-on-grey-1962__to__Early_Renaissance -> Seedream_repaired750
+[285/715] Rococo__louise-elisabeth-vigee-le-brun_the-bather-1792__to__Impressionism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[285/715] Rococo__louise-elisabeth-vigee-le-brun_the-bather-1792__to__Impressionism attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[285/715] Rococo__louise-elisabeth-vigee-le-brun_the-bather-1792__to__Impressionism attempt 3 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=162, jpeg_quality=63)
+[285/715] Rococo__louise-elisabeth-vigee-le-brun_the-bather-1792__to__Impressionism attempt 4 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=138, jpeg_quality=57)
+[286/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Minimalism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[286/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Minimalism attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[286/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Minimalism attempt 3 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=162, jpeg_quality=63)
+[286/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Minimalism -> Seedream_repaired750
+[287/715] Rococo__dmitry-levitzky_maria-feodorovna__to__Rococo -> Seedream_repaired750
+[288/715] Ukiyo_e__ogata-gekko_nihon-hana-zue-1896__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[288/715] Ukiyo_e__ogata-gekko_nihon-hana-zue-1896__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[288/715] Ukiyo_e__ogata-gekko_nihon-hana-zue-1896__to__Ukiyo_e -> Seedream_repaired750
+[289/715] Impressionism__childe-hassam_evening-champs-elysees-aka-pres-du-louvre__to__Early_Renaissance -> Seedream_repaired750
+[290/715] Ukiyo_e__hiroshige_hakone-kosuizu__to__Ukiyo_e -> Seedream_repaired750
+[291/715] Ukiyo_e__utagawa-kunisada_not_detected_240347__to__Minimalism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[291/715] Ukiyo_e__utagawa-kunisada_not_detected_240347__to__Minimalism attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[291/715] Ukiyo_e__utagawa-kunisada_not_detected_240347__to__Minimalism -> QEdgePattn_e03
+[292/715] Impressionism__camille-pissarro_the-gardener-afternoon-sun-eragny-1899__to__Rococo -> Seedream_repaired750
+[293/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[293/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[293/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Ukiyo_e attempt 3 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=162, jpeg_quality=63)
+[293/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Ukiyo_e attempt 4 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=138, jpeg_quality=57)
+[294/715] Minimalism__sean-scully_untitled-1973__to__Rococo -> Seedream_repaired750
+[295/715] Impressionism__armand-guillaumin_valley-in-pontgibaud-1890__to__Minimalism -> Seedream_repaired750
+[296/715] Rococo__william-hogarth_the-countess-s-morning-levee__to__Rococo -> Seedream_repaired750
+[297/715] Impressionism__armand-guillaumin_valley-in-pontgibaud-1890__to__Ukiyo_e -> Seedream_repaired750
+[298/715] Early_Renaissance__andrea-mantegna_maria-with-the-sleeping-child-1455__to__Minimalism -> Seedream_repaired750
+[299/715] Ukiyo_e__utagawa-kuniyoshi_ishiyakushi__to__Impressionism -> Seedream_repaired750
+[300/715] Early_Renaissance__jacopo-bellini_view-of-a-fortification-of-jerusalem(1)__to__Impressionism -> Seedream_repaired750
+[301/715] Minimalism__robert-ryman_conversion-2003__to__Ukiyo_e -> Seedream_repaired750
+[302/715] Impressionism__william-merritt-chase_at-the-boat-landing__to__Rococo attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[302/715] Impressionism__william-merritt-chase_at-the-boat-landing__to__Rococo attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[302/715] Impressionism__william-merritt-chase_at-the-boat-landing__to__Rococo -> Seedream_repaired750
+[303/715] Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[303/715] Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece__to__Early_Renaissance attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[303/715] Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece__to__Early_Renaissance attempt 3 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=162, jpeg_quality=63)
+[303/715] Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece__to__Early_Renaissance attempt 4 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=138, jpeg_quality=57)
+[304/715] Early_Renaissance__filippo-lippi_confirmation-of-the-carmelite-rule__to__Minimalism -> Seedream_repaired750
+[305/715] Early_Renaissance__pietro-perugino_giovanni-colombini__to__Minimalism -> Seedream_repaired750
+[306/715] Rococo__carl-ludwig-johann-christineck_nikolai-mordvinov-1771__to__Impressionism -> Seedream_repaired750
+[307/715] Minimalism__brice-marden_joined-2011__to__Ukiyo_e -> Seedream_repaired750
+[308/715] Impressionism__childe-hassam_september-moonrise__to__Impressionism -> Seedream_repaired750
+[309/715] Early_Renaissance__filippo-lippi_adoration-of-the-magi-detail-2__to__Minimalism -> Seedream_repaired750
+[310/715] Rococo__francois-boucher_portrait-of-madame-boucher-1745__to__Minimalism -> Seedream_repaired750
+[311/715] Impressionism__rudolf-schweitzer-cumpana_str-du-n-atena__to__Minimalism -> Seedream_repaired750
+[312/715] Early_Renaissance__jacopo-bellini_view-of-a-fortification-of-jerusalem(1)__to__Ukiyo_e -> Seedream_repaired750
+[313/715] Early_Renaissance__andrea-mantegna_maria-with-the-sleeping-child-1455__to__Ukiyo_e -> Seedream_repaired750
+[314/715] Ukiyo_e__keisai-eisen_the-courtesan-kaoru-of-owariya-matched-with-okitsu-1825(1)__to__Rococo -> Seedream_repaired750
+[315/715] Impressionism__alfred-sisley_the-banks-of-the-oise-1878__to__Minimalism -> Seedream_repaired750
+[316/715] Minimalism__joan-hernandez-pijuan_nuvol-rosa-2-1990__to__Rococo -> Seedream_repaired750
+[317/715] Impressionism__childe-hassam_evening-champs-elysees-aka-pres-du-louvre__to__Ukiyo_e -> Seedream_repaired750
+[318/715] Early_Renaissance__fra-angelico_saint-cosmas-and-saint-damian-before-lisius-1440__to__Minimalism -> Seedream_repaired750
+[319/715] Minimalism__robert-mangold_untitled-fcpa-1995__to__Early_Renaissance -> Seedream_repaired750
+[320/715] Minimalism__mira-schendel_untitled-1984__to__Impressionism -> Seedream_repaired750
+[321/715] Early_Renaissance__benozzo-gozzoli_the-school-of-tagaste-1465-1__to__Rococo -> Seedream_repaired750
+[322/715] Impressionism__nikolay-bogdanov-belsky_connoisseurs-of-books-knowledge-is-power__to__Rococo -> Seedream_repaired750
+[323/715] Rococo__thomas-gainsborough_john-plampin__to__Early_Renaissance -> Seedream_repaired750
+[324/715] Impressionism__claude-monet_bordighera-the-house-of-gardener__to__Rococo -> Seedream_repaired750
+[325/715] Early_Renaissance__pietro-perugino_giovanni-colombini__to__Rococo -> Seedream_repaired750
+[326/715] Minimalism__robert-ryman_conversion-2003__to__Minimalism -> Seedream_repaired750
+[327/715] Rococo__thomas-gainsborough_a-coastal-landscape-1782__to__Early_Renaissance -> Seedream_repaired750
+[328/715] Early_Renaissance__benozzo-gozzoli_procession-of-the-magus-caspar-detail-1461-4__to__Impressionism -> Seedream_repaired750
+[329/715] Minimalism__yves-gaucher_traces-2000__to__Rococo -> Seedream_repaired750
+[330/715] Minimalism__imi-knoebel_weiss-und-schwarz-4-2009__to__Ukiyo_e -> Seedream_repaired750
+[331/715] Ukiyo_e__kitagawa-utamaro_the-hour-of-the-horse__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[331/715] Ukiyo_e__kitagawa-utamaro_the-hour-of-the-horse__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[331/715] Ukiyo_e__kitagawa-utamaro_the-hour-of-the-horse__to__Ukiyo_e -> Seedream_repaired750
+[332/715] Impressionism__john-singer-sargent_lake-in-the-tyrol__to__Impressionism -> Seedream_repaired750
+[333/715] Minimalism__brice-marden_joined-2011__to__Early_Renaissance attempt 1 failed: ConnectionError: ('Connection aborted.', ConnectionAbortedError(10053, '????????????????????', None, 10053, None)) (panel_side=224, jpeg_quality=78)
+[333/715] Minimalism__brice-marden_joined-2011__to__Early_Renaissance -> Seedream_repaired750
+[334/715] Rococo__thomas-gainsborough_robert-butcher-of-walthamstan__to__Rococo -> Seedream_repaired750
+[335/715] Ukiyo_e__keisai-eisen_yabai-with-two-women-1840__to__Impressionism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[335/715] Ukiyo_e__keisai-eisen_yabai-with-two-women-1840__to__Impressionism attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[335/715] Ukiyo_e__keisai-eisen_yabai-with-two-women-1840__to__Impressionism attempt 3 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=162, jpeg_quality=63)
+[335/715] Ukiyo_e__keisai-eisen_yabai-with-two-women-1840__to__Impressionism -> Seedream_repaired750
+[336/715] Impressionism__rudolf-schweitzer-cumpana_str-du-n-atena__to__Rococo -> Seedream_repaired750
+[337/715] Early_Renaissance__fra-angelico_saint-cosmas-and-saint-damian-before-lisius-1440__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[337/715] Early_Renaissance__fra-angelico_saint-cosmas-and-saint-damian-before-lisius-1440__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[337/715] Early_Renaissance__fra-angelico_saint-cosmas-and-saint-damian-before-lisius-1440__to__Ukiyo_e -> QEdgePattn_e03
+[338/715] Impressionism__edgar-degas_ancer-with-red-stockings__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[338/715] Impressionism__edgar-degas_ancer-with-red-stockings__to__Early_Renaissance attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[338/715] Impressionism__edgar-degas_ancer-with-red-stockings__to__Early_Renaissance attempt 3 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=162, jpeg_quality=63)
+[338/715] Impressionism__edgar-degas_ancer-with-red-stockings__to__Early_Renaissance attempt 4 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=138, jpeg_quality=57)
+[339/715] Minimalism__john-mclaughlin_number-4__to__Minimalism -> Seedream_repaired750
+[340/715] Impressionism__edgar-degas_study-of-gentile-bellini-1855__to__Ukiyo_e -> Seedream_repaired750
+[341/715] Impressionism__camille-pissarro_the-gardener-afternoon-sun-eragny-1899__to__Ukiyo_e -> Seedream_repaired750
+[342/715] Rococo__maurice-quentin-de-la-tour_marie-josephe-of-saxony-1__to__Minimalism -> Seedream_repaired750
+[343/715] Minimalism__joan-hernandez-pijuan_untitled-120-1999__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[343/715] Minimalism__joan-hernandez-pijuan_untitled-120-1999__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[343/715] Minimalism__joan-hernandez-pijuan_untitled-120-1999__to__Ukiyo_e -> Seedream_repaired750
+[344/715] Minimalism__yves-gaucher_traces-2000__to__Minimalism -> Seedream_repaired750
+[345/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Impressionism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[345/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Impressionism attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[345/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Impressionism attempt 3 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=162, jpeg_quality=63)
+[345/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Impressionism attempt 4 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=138, jpeg_quality=57)
+[346/715] Ukiyo_e__utagawa-kunisada_not_detected_240347__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[346/715] Ukiyo_e__utagawa-kunisada_not_detected_240347__to__Early_Renaissance attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[346/715] Ukiyo_e__utagawa-kunisada_not_detected_240347__to__Early_Renaissance attempt 3 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=162, jpeg_quality=63)
+[346/715] Ukiyo_e__utagawa-kunisada_not_detected_240347__to__Early_Renaissance attempt 4 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=138, jpeg_quality=57)
+[347/715] Rococo__joseph-wright_d-ewes-coke-his-wife-hannah-and-daniel-parker-coke__to__Early_Renaissance -> Seedream_repaired750
+[348/715] Impressionism__william-merritt-chase_gray-day-on-the-lagoon-a-passenger-boat-venice__to__Rococo -> Seedream_repaired750
+[349/715] Rococo__jean-marc-nattier_portrait-of-louis-tocqu-1762__to__Rococo -> Seedream_repaired750
+[350/715] Ukiyo_e__utagawa-kuniyoshi_kuzunoha__to__Ukiyo_e -> Seedream_repaired750
+[351/715] Impressionism__edgar-degas_study-of-gentile-bellini-1855__to__Early_Renaissance -> Seedream_repaired750
+[352/715] Ukiyo_e__utagawa-kuniyoshi_ishiyakushi__to__Rococo -> Seedream_repaired750
+[353/715] Minimalism__robert-mangold_untitled-fcpa-1995__to__Minimalism -> Seedream_repaired750
+[354/715] Early_Renaissance__pietro-perugino_giovanni-colombini__to__Impressionism -> Seedream_repaired750
+[355/715] Ukiyo_e__utagawa-kunisada_not_detected_240353__to__Rococo attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[355/715] Ukiyo_e__utagawa-kunisada_not_detected_240353__to__Rococo attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[355/715] Ukiyo_e__utagawa-kunisada_not_detected_240353__to__Rococo -> Seedream_repaired750
+[356/715] Ukiyo_e__utagawa-kunisada_not_detected_240353__to__Impressionism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[356/715] Ukiyo_e__utagawa-kunisada_not_detected_240353__to__Impressionism attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[356/715] Ukiyo_e__utagawa-kunisada_not_detected_240353__to__Impressionism -> Seedream_repaired750
+[357/715] Ukiyo_e__utagawa-kunisada_the-actor__to__Minimalism -> Seedream_repaired750
+[358/715] Rococo__giovanni-domenico-tiepolo_christ-s-fall-on-the-way-to-calvary-1772__to__Rococo -> Seedream_repaired750
+[359/715] Rococo__joshua-reynolds_colonel-george-k-h-coussmaker-grenadier-guards__to__Impressionism -> Seedream_repaired750
+[360/715] Early_Renaissance__pisanello_stork-1430__to__Early_Renaissance -> Seedream_repaired750
+[361/715] Rococo__bernardo-bellotto_view-of-dresden-the-dresden-fortifications-moat-with-a-bridge-between-gate-and-post-mile-pillar__to__Ukiyo_e -> Seedream_repaired750
+[362/715] Ukiyo_e__kitagawa-utamaro_upon-my-oath__to__Early_Renaissance -> Seedream_repaired750
+[363/715] Impressionism__mihaly-munkacsy_dusty-country-road-ii-1883__to__Impressionism -> Seedream_repaired750
+[364/715] Ukiyo_e__utagawa-kuniyoshi_a-record-of-origins-of-the-great-country-of-japan__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[364/715] Ukiyo_e__utagawa-kuniyoshi_a-record-of-origins-of-the-great-country-of-japan__to__Early_Renaissance attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[364/715] Ukiyo_e__utagawa-kuniyoshi_a-record-of-origins-of-the-great-country-of-japan__to__Early_Renaissance -> Seedream_repaired750
+[365/715] Minimalism__dan-flavin_greens-crossing-greens-to-piet-mondrian-who-lacked-green-1966__to__Early_Renaissance -> Seedream_repaired750
+[366/715] Ukiyo_e__utagawa-kunisada_the-actor__to__Rococo -> Seedream_repaired750
+[367/715] Early_Renaissance__bartolome-bermejo_death-of-the-virgin-1462__to__Minimalism -> Seedream_repaired750
+[368/715] Rococo__joseph-wright_mr-and-mrs-thomas-coltman__to__Early_Renaissance -> Seedream_repaired750
+[369/715] Early_Renaissance__leonardo-da-vinci_studies-of-a-bewalking__to__Impressionism -> Seedream_repaired750
+[370/715] Rococo__antoine-watteau_the-delicate-musician__to__Minimalism -> Seedream_repaired750
+[371/715] Rococo__thomas-gainsborough_a-peasant-girl-with-dog-and-jug-1785__to__Ukiyo_e -> Seedream_repaired750
+[372/715] Impressionism__eugene-boudin_the-port-ships-at-dock__to__Ukiyo_e -> Seedream_repaired750
+[373/715] Impressionism__childe-hassam_evening-champs-elysees-aka-pres-du-louvre__to__Minimalism -> Seedream_repaired750
+[374/715] Ukiyo_e__hiroshige_hakone-kosuizu__to__Early_Renaissance -> QEdgePattn_e03
+[375/715] Minimalism__william-scott_bowl-white-on-grey-1962__to__Rococo -> Seedream_repaired750
+[376/715] Rococo__dmitry-levitzky_portrait-of-unknown-woman-with-a-rose-1788__to__Ukiyo_e -> Seedream_repaired750
+[377/715] Rococo__antoine-pesne_carl-heinrich-graun__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[377/715] Rococo__antoine-pesne_carl-heinrich-graun__to__Early_Renaissance -> Seedream_repaired750
+[378/715] Minimalism__joan-hernandez-pijuan_untitled-120-1999__to__Impressionism -> Seedream_repaired750
+[379/715] Rococo__giovanni-domenico-tiepolo_the-new-world-1797__to__Early_Renaissance -> Seedream_repaired750
+[380/715] Early_Renaissance__paolo-uccello_scene-adoration-of-the-three-kings-1440__to__Minimalism -> Seedream_repaired750
+[381/715] Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece__to__Impressionism -> Seedream_repaired750
+[382/715] Impressionism__claude-monet_bordighera-the-house-of-gardener__to__Early_Renaissance -> Seedream_repaired750
+[383/715] Minimalism__mira-schendel_untitled-1984__to__Ukiyo_e -> Seedream_repaired750
+[384/715] Rococo__carl-ludwig-johann-christineck_nikolai-mordvinov-1771__to__Early_Renaissance -> Seedream_repaired750
+[385/715] Early_Renaissance__benozzo-gozzoli_the-school-of-tagaste-1465-1__to__Early_Renaissance -> Seedream_repaired750
+[386/715] Impressionism__eugene-boudin_trouville-the-fish-market-1884__to__Early_Renaissance -> Seedream_repaired750
+[387/715] Early_Renaissance__pietro-perugino_giovanni-colombini__to__Ukiyo_e -> Seedream_repaired750
+[388/715] Ukiyo_e__katsushika-hokusai_fishing-in-the-bay-uraga__to__Early_Renaissance -> Seedream_repaired750
+[389/715] Minimalism__agnes-martin_happy-valley-1967__to__Minimalism -> Seedream_repaired750
+[390/715] Rococo__dmitry-levitzky_portrait-of-unknown-woman-with-a-rose-1788__to__Minimalism -> Seedream_repaired750
+[391/715] Early_Renaissance__filippo-lippi_adoration-of-the-magi-detail-2__to__Ukiyo_e -> Seedream_repaired750
+[392/715] Minimalism__ronald-davis_zig-zag-times-two-1966__to__Rococo -> Seedream_repaired750
+[393/715] Early_Renaissance__andrea-mantegna_maria-with-the-sleeping-child-1455__to__Early_Renaissance -> Seedream_repaired750
+[394/715] Ukiyo_e__utagawa-kunisada_not_detected_240381(1)__to__Impressionism -> QEdgePattn_e03
+[395/715] Minimalism__tony-smith_die-1968__to__Impressionism -> Seedream_repaired750
+[396/715] Impressionism__william-merritt-chase_gray-day-on-the-lagoon-a-passenger-boat-venice__to__Impressionism -> Seedream_repaired750
+[397/715] Minimalism__ruth-vollmer_trimer-monomer-dimer-1965__to__Rococo -> Seedream_repaired750
+[398/715] Minimalism__sean-scully_untitled-1973__to__Ukiyo_e -> Seedream_repaired750
+[399/715] Rococo__jean-marc-nattier_portrait-of-louis-tocqu-1762__to__Early_Renaissance -> Seedream_repaired750
+[400/715] Minimalism__joan-hernandez-pijuan_nuvol-rosa-2-1990__to__Minimalism -> Seedream_repaired750
+[401/715] Minimalism__judy-chicago_morning-fan-1971__to__Minimalism -> QEdgePattn_e03
+[402/715] Early_Renaissance__andrea-mantegna_scenes-from-the-life-of-st-james-1448-2__to__Early_Renaissance -> Seedream_repaired750
+[403/715] Impressionism__childe-hassam_evening-champs-elysees-aka-pres-du-louvre__to__Rococo -> Seedream_repaired750
+[404/715] Ukiyo_e__kitagawa-utamaro_upon-my-oath__to__Impressionism -> Seedream_repaired750
+[405/715] Minimalism__imi-knoebel_weiss-und-schwarz-4-2009__to__Early_Renaissance -> Seedream_repaired750
+[406/715] Ukiyo_e__utagawa-kuniyoshi_a-record-of-origins-of-the-great-country-of-japan__to__Minimalism -> QEdgePattn_e03
+[407/715] Minimalism__robert-mangold_ellow-black-zone-painting-iv-1996__to__Impressionism -> Seedream_repaired750
+[408/715] Rococo__antoine-watteau_head-of-a-man__to__Impressionism -> Seedream_repaired750
+[409/715] Minimalism__william-scott_bowl-white-on-grey-1962__to__Ukiyo_e -> Seedream_repaired750
+[410/715] Impressionism__antoine-blanchard_place-de-la-madeleine-hiver__to__Minimalism -> Seedream_repaired750
+[411/715] Ukiyo_e__kitagawa-utamaro_the-hour-of-the-horse__to__Minimalism -> Seedream_repaired750
+[412/715] Minimalism__ruth-vollmer_trimer-monomer-dimer-1965__to__Impressionism -> Seedream_repaired750
+[413/715] Minimalism__fernando-lanhas_o39-68-1968__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[413/715] Minimalism__fernando-lanhas_o39-68-1968__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[413/715] Minimalism__fernando-lanhas_o39-68-1968__to__Ukiyo_e -> Seedream_repaired750
+[414/715] Early_Renaissance__paolo-uccello_scene-adoration-of-the-three-kings-1440__to__Ukiyo_e -> Seedream_repaired750
+[415/715] Ukiyo_e__ogata-gekko_print-from-series-women-s-customs-and-manners-1895-1__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[415/715] Ukiyo_e__ogata-gekko_print-from-series-women-s-customs-and-manners-1895-1__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[415/715] Ukiyo_e__ogata-gekko_print-from-series-women-s-customs-and-manners-1895-1__to__Ukiyo_e -> Seedream_repaired750
+[416/715] Impressionism__konstantin-korovin_arctic-ocean-1913__to__Impressionism -> Seedream_repaired750
+[417/715] Rococo__carl-ludwig-johann-christineck_portrait-of-paul-of-russia-dressed-as-chevalier-of-the-order-of-st-andrew-1760__to__Rococo -> Seedream_repaired750
+[418/715] Rococo__joshua-reynolds_colonel-george-k-h-coussmaker-grenadier-guards__to__Ukiyo_e -> Seedream_repaired750
+[419/715] Early_Renaissance__sandro-botticelli_trinity(1)__to__Impressionism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[419/715] Early_Renaissance__sandro-botticelli_trinity(1)__to__Impressionism attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[419/715] Early_Renaissance__sandro-botticelli_trinity(1)__to__Impressionism -> Seedream_repaired750
+[420/715] Impressionism__edouard-manet_tarring-the-boat-1873__to__Early_Renaissance -> Seedream_repaired750
+[421/715] Minimalism__yves-klein_untitled-yellow-monochrome-1956__to__Impressionism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[421/715] Minimalism__yves-klein_untitled-yellow-monochrome-1956__to__Impressionism attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[421/715] Minimalism__yves-klein_untitled-yellow-monochrome-1956__to__Impressionism -> Seedream_repaired750
+[422/715] Ukiyo_e__kitagawa-utamaro_upon-my-oath__to__Ukiyo_e -> Seedream_repaired750
+[423/715] Early_Renaissance__jacopo-bellini_view-of-a-fortification-of-jerusalem(1)__to__Early_Renaissance -> Seedream_repaired750
+[424/715] Early_Renaissance__domenico-ghirlandaio_st-jerome__to__Rococo -> Seedream_repaired750
+[425/715] Early_Renaissance__filippo-lippi_confirmation-of-the-carmelite-rule__to__Early_Renaissance -> Seedream_repaired750
+[426/715] Ukiyo_e__utagawa-kunisada_not_detected_240353__to__Minimalism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[426/715] Ukiyo_e__utagawa-kunisada_not_detected_240353__to__Minimalism attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[426/715] Ukiyo_e__utagawa-kunisada_not_detected_240353__to__Minimalism -> Seedream_repaired750
+[427/715] Early_Renaissance__filippo-lippi_confirmation-of-the-carmelite-rule__to__Rococo -> Seedream_repaired750
+[428/715] Rococo__bernardo-bellotto_pirna-seen-from-the-right-bank-of-the-elbe__to__Ukiyo_e -> Seedream_repaired750
+[429/715] Rococo__dmitry-levitzky_portrait-of-unknown-woman-with-a-rose-1788__to__Early_Renaissance -> Seedream_repaired750
+[430/715] Impressionism__winston-churchill_distant-view-of-the-pyramids-1921-1(1)__to__Early_Renaissance -> Seedream_repaired750
+[431/715] Early_Renaissance__benozzo-gozzoli_madonna-and-child-1485__to__Impressionism -> Seedream_repaired750
+[432/715] Rococo__maurice-quentin-de-la-tour_marie-josephe-of-saxony-1__to__Rococo -> Seedream_repaired750
+[433/715] Early_Renaissance__carlo-crivelli_saint-thomas-aquinas-1476__to__Impressionism -> Seedream_repaired750
+[434/715] Early_Renaissance__fra-angelico_bosco-ai-frati-altarpiece__to__Ukiyo_e -> Seedream_repaired750
+[435/715] Ukiyo_e__kitagawa-utamaro_the-hour-of-the-horse__to__Early_Renaissance -> Seedream_repaired750
+[436/715] Minimalism__yves-gaucher_traces-2000__to__Ukiyo_e -> Seedream_repaired750
+[437/715] Rococo__thomas-gainsborough_a-coastal-landscape-1782__to__Impressionism -> Seedream_repaired750
+[438/715] Rococo__giovanni-domenico-tiepolo_the-new-world-1797__to__Impressionism -> Seedream_repaired750
+[439/715] Impressionism__nicolae-vermont_rotterdam-port-1928__to__Ukiyo_e -> Seedream_repaired750
+[440/715] Early_Renaissance__jacopo-bellini_view-of-a-fortification-of-jerusalem(1)__to__Minimalism -> Seedream_repaired750
+[441/715] Early_Renaissance__bartolome-bermejo_death-of-the-virgin-1462__to__Impressionism -> Seedream_repaired750
+[442/715] Impressionism__henri-matisse_brittany-also-known-as-boat-1896__to__Early_Renaissance -> Seedream_repaired750
+[443/715] Ukiyo_e__kitagawa-utamaro_yama-uba-and-kintaro-1__to__Minimalism -> Seedream_repaired750
+[444/715] Early_Renaissance__andrea-mantegna_scenes-from-the-life-of-st-james-1448-2__to__Rococo attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[444/715] Early_Renaissance__andrea-mantegna_scenes-from-the-life-of-st-james-1448-2__to__Rococo attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[444/715] Early_Renaissance__andrea-mantegna_scenes-from-the-life-of-st-james-1448-2__to__Rococo -> Seedream_repaired750
+[445/715] Impressionism__william-merritt-chase_gray-day-on-the-lagoon-a-passenger-boat-venice__to__Early_Renaissance -> QEdgePattn_e03
+[446/715] Ukiyo_e__katsushika-hokusai_ono-shindon-in-the-suraga-province__to__Impressionism -> Seedream_repaired750
+[447/715] Ukiyo_e__katsushika-hokusai_fishing-in-the-bay-uraga__to__Minimalism -> Seedream_repaired750
+[448/715] Rococo__thomas-gainsborough_robert-butcher-of-walthamstan__to__Impressionism -> Seedream_repaired750
+[449/715] Minimalism__ellsworth-kelly_diagonal-1951__to__Minimalism -> Seedream_repaired750
+[450/715] Early_Renaissance__bartolome-bermejo_death-of-the-virgin-1462__to__Rococo -> Seedream_repaired750
+[451/715] Impressionism__edouard-manet_tarring-the-boat-1873__to__Rococo -> Seedream_repaired750
+[452/715] Ukiyo_e__utagawa-toyokuni_the-heian-courtier__to__Ukiyo_e -> Seedream_repaired750
+[453/715] Impressionism__nikolay-bogdanov-belsky_connoisseurs-of-books-knowledge-is-power__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[453/715] Impressionism__nikolay-bogdanov-belsky_connoisseurs-of-books-knowledge-is-power__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[453/715] Impressionism__nikolay-bogdanov-belsky_connoisseurs-of-books-knowledge-is-power__to__Ukiyo_e -> Seedream_repaired750
+[454/715] Ukiyo_e__utagawa-kunisada-ii_oichi-from-the-beauties-of-tokyo-series__to__Impressionism -> Seedream_repaired750
+[455/715] Rococo__giovanni-domenico-tiepolo_christ-s-fall-on-the-way-to-calvary-1772__to__Minimalism -> Seedream_repaired750
+[456/715] Minimalism__frank-stella_gezira-from-black-series-ii-1967__to__Ukiyo_e -> Seedream_repaired750
+[457/715] Early_Renaissance__domenico-ghirlandaio_st-jerome__to__Minimalism -> Seedream_repaired750
+[458/715] Minimalism__john-mclaughlin_number-13-1973__to__Minimalism -> Seedream_repaired750
+[459/715] Impressionism__nicolae-vermont_rotterdam-port-1928__to__Rococo -> Seedream_repaired750
+[460/715] Ukiyo_e__katsushika-hokusai_woman-looking-at-herself-in-a-mirror__to__Ukiyo_e -> Seedream_repaired750
+[461/715] Ukiyo_e__kitagawa-utamaro_upon-my-oath__to__Minimalism -> Seedream_repaired750
+[462/715] Ukiyo_e__keisai-eisen_yabai-with-two-women-1840__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[462/715] Ukiyo_e__keisai-eisen_yabai-with-two-women-1840__to__Early_Renaissance attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[462/715] Ukiyo_e__keisai-eisen_yabai-with-two-women-1840__to__Early_Renaissance attempt 3 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=162, jpeg_quality=63)
+[462/715] Ukiyo_e__keisai-eisen_yabai-with-two-women-1840__to__Early_Renaissance attempt 4 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=138, jpeg_quality=57)
+[463/715] Ukiyo_e__hiroshige_oiso-toraga-ame-shower-1835__to__Early_Renaissance -> Seedream_repaired750
+[464/715] Early_Renaissance__fra-angelico_bosco-ai-frati-altarpiece__to__Early_Renaissance -> Seedream_repaired750
+[465/715] Minimalism__robert-morris_box-with-the-sound-of-its-own-making-1961__to__Early_Renaissance -> Seedream_repaired750
+[466/715] Early_Renaissance__andrea-mantegna_scenes-from-the-life-of-st-james-1448-2__to__Minimalism -> Seedream_repaired750
+[467/715] Minimalism__dan-flavin_greens-crossing-greens-to-piet-mondrian-who-lacked-green-1966__to__Ukiyo_e -> Seedream_repaired750
+[468/715] Ukiyo_e__utagawa-kuniyoshi_a-man-confronted-with-an-apparition-of-the-fox-goddess__to__Ukiyo_e -> Seedream_repaired750
+[469/715] Rococo__maurice-quentin-de-la-tour_study-for-portrait-of-mademoiselle-dangeville-1__to__Ukiyo_e -> Seedream_repaired750
+[470/715] Rococo__giovanni-domenico-tiepolo_the-new-world-1797__to__Minimalism -> Seedream_repaired750
+[471/715] Rococo__dmitry-levitzky_maria-feodorovna__to__Minimalism -> Seedream_repaired750
+[472/715] Minimalism__pino-pinelli_pittura-r-1993__to__Ukiyo_e -> Seedream_repaired750
+[473/715] Minimalism__frank-stella_gezira-from-black-series-ii-1967__to__Rococo -> Seedream_repaired750
+[474/715] Rococo__antoine-watteau_the-delicate-musician__to__Early_Renaissance -> Seedream_repaired750
+[475/715] Ukiyo_e__utagawa-kuniyoshi_kuzunoha__to__Minimalism -> Seedream_repaired750
+[476/715] Minimalism__pino-pinelli_pittura-r-1993__to__Impressionism -> Seedream_repaired750
+[477/715] Rococo__giovanni-domenico-tiepolo_christ-s-fall-on-the-way-to-calvary-1772__to__Ukiyo_e -> Seedream_repaired750
+[478/715] Rococo__dmitry-levitzky_portrait-of-maria-palovna-narychkina-1773__to__Minimalism -> Seedream_repaired750
+[479/715] Minimalism__yves-gaucher_traces-2000__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[479/715] Minimalism__yves-gaucher_traces-2000__to__Early_Renaissance -> Seedream_repaired750
+[480/715] Impressionism__eugene-boudin_the-port-ships-at-dock__to__Early_Renaissance -> Seedream_repaired750
+[481/715] Impressionism__winston-churchill_distant-view-of-the-pyramids-1921-1(1)__to__Impressionism -> Seedream_repaired750
+[482/715] Early_Renaissance__andrea-mantegna_scenes-from-the-life-of-st-james-1448-2__to__Impressionism -> Seedream_repaired750
+[483/715] Impressionism__camille-pissarro_the-gardener-afternoon-sun-eragny-1899__to__Impressionism -> Seedream_repaired750
+[484/715] Ukiyo_e__tsukioka-yoshitoshi_not_detected_242419__to__Impressionism -> Seedream_repaired750
+[485/715] Rococo__jean-marc-nattier_portrait-of-louis-tocqu-1762__to__Impressionism -> Seedream_repaired750
+[486/715] Rococo__bernardo-bellotto_pirna-seen-from-the-right-bank-of-the-elbe__to__Impressionism -> Seedream_repaired750
+[487/715] Minimalism__joan-hernandez-pijuan_untitled-120-1999__to__Minimalism -> Seedream_repaired750
+[488/715] Minimalism__fernando-lanhas_o39-68-1968__to__Impressionism -> QEdgePattn_e03
+[489/715] Minimalism__robert-mangold_ellow-black-zone-painting-iv-1996__to__Early_Renaissance -> Seedream_repaired750
+[490/715] Impressionism__eugene-boudin_laundresses-on-the-banks-of-the-touques-9__to__Minimalism -> Seedream_repaired750
+[491/715] Early_Renaissance__antonello-da-messina_painter-self-portrait__to__Early_Renaissance attempt 1 failed: ConnectionError: ('Connection aborted.', ConnectionAbortedError(10053, '????????????????????', None, 10053, None)) (panel_side=224, jpeg_quality=78)
+[491/715] Early_Renaissance__antonello-da-messina_painter-self-portrait__to__Early_Renaissance -> Seedream_repaired750
+[492/715] Minimalism__ruth-vollmer_trimer-monomer-dimer-1965__to__Minimalism -> Seedream_repaired750
+[493/715] Early_Renaissance__domenico-ghirlandaio_st-stephen-st-jacobo-st-peter__to__Rococo -> Seedream_repaired750
+[494/715] Impressionism__armand-guillaumin_valley-in-pontgibaud-1890__to__Impressionism -> Seedream_repaired750
+[495/715] Rococo__joseph-wright_d-ewes-coke-his-wife-hannah-and-daniel-parker-coke__to__Impressionism -> Seedream_repaired750
+[496/715] Rococo__louise-elisabeth-vigee-le-brun_the-bather-1792__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[496/715] Rococo__louise-elisabeth-vigee-le-brun_the-bather-1792__to__Ukiyo_e -> Seedream_repaired750
+[497/715] Impressionism__stefan-dimitrescu_cabaret__to__Ukiyo_e -> Seedream_repaired750
+[498/715] Minimalism__judy-chicago_morning-fan-1971__to__Impressionism -> Seedream_repaired750
+[499/715] Rococo__thomas-gainsborough_john-plampin__to__Rococo -> Seedream_repaired750
+[500/715] Early_Renaissance__bartolome-bermejo_death-of-the-virgin-1462__to__Early_Renaissance -> Seedream_repaired750
+[501/715] Impressionism__augustus-john_proven-al-landscape__to__Early_Renaissance -> Seedream_repaired750
+[502/715] Ukiyo_e__utagawa-kuniyoshi_woman-seated-under-a-cherry-blossoms__to__Early_Renaissance -> Seedream_repaired750
+[503/715] Minimalism__john-mclaughlin_number-4__to__Early_Renaissance -> Seedream_repaired750
+[504/715] Impressionism__claude-monet_rouen-cathedral-the-portal-at-midday__to__Impressionism -> Seedream_repaired750
+[505/715] Ukiyo_e__hiroshige_oiso-toraga-ame-shower-1835__to__Rococo -> Seedream_repaired750
+[506/715] Minimalism__bruce-nauman_la-brea-art-tips-rat-spit-tar-pits-1972__to__Rococo -> Seedream_repaired750
+[507/715] Minimalism__sean-scully_untitled-1973__to__Minimalism -> Seedream_repaired750
+[508/715] Early_Renaissance__carlo-crivelli_piet-1__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[508/715] Early_Renaissance__carlo-crivelli_piet-1__to__Early_Renaissance attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[508/715] Early_Renaissance__carlo-crivelli_piet-1__to__Early_Renaissance -> Seedream_repaired750
+[509/715] Ukiyo_e__keisai-eisen_the-courtesan-kaoru-of-owariya-matched-with-okitsu-1825(1)__to__Minimalism -> Seedream_repaired750
+[510/715] Rococo__antoine-watteau_head-of-a-man__to__Ukiyo_e -> Seedream_repaired750
+[511/715] Early_Renaissance__andrea-mantegna_the-circumcision-of-christ-1464__to__Impressionism -> Seedream_repaired750
+[512/715] Minimalism__eva-hesse_expanded-expansion-1969__to__Ukiyo_e -> Seedream_repaired750
+[513/715] Ukiyo_e__utagawa-kunisada_the-actor__to__Early_Renaissance -> Seedream_repaired750
+[514/715] Minimalism__dan-flavin_greens-crossing-greens-to-piet-mondrian-who-lacked-green-1966__to__Minimalism -> Seedream_repaired750
+[515/715] Ukiyo_e__utagawa-kuniyoshi_tsuchigumo__to__Ukiyo_e -> Seedream_repaired750
+[516/715] Impressionism__alfred-sisley_riverbank-at-veneux-1881__to__Impressionism -> Seedream_repaired750
+[517/715] Impressionism__childe-hassam_september-moonrise__to__Rococo -> Seedream_repaired750
+[518/715] Rococo__louise-elisabeth-vigee-le-brun_portrait-of-joseph-vernet-1778__to__Impressionism -> Seedream_repaired750
+[519/715] Ukiyo_e__utagawa-kuniyoshi_kuzunoha__to__Rococo -> Seedream_repaired750
+[520/715] Impressionism__stefan-dimitrescu_cabaret__to__Impressionism -> Seedream_repaired750
+[521/715] Rococo__maurice-quentin-de-la-tour_marie-josephe-of-saxony-1__to__Impressionism -> Seedream_repaired750
+[522/715] Minimalism__joan-hernandez-pijuan_untitled-120-1999__to__Rococo -> Seedream_repaired750
+[523/715] Impressionism__edouard-manet_tarring-the-boat-1873__to__Impressionism -> Seedream_repaired750
+[524/715] Early_Renaissance__fra-angelico_saint-cosmas-and-saint-damian-before-lisius-1440__to__Early_Renaissance -> Seedream_repaired750
+[525/715] Impressionism__armand-guillaumin_valley-in-pontgibaud-1890__to__Rococo -> Seedream_repaired750
+[526/715] Early_Renaissance__domenico-ghirlandaio_st-stephen-st-jacobo-st-peter__to__Impressionism -> Seedream_repaired750
+[527/715] Rococo__carl-ludwig-johann-christineck_portrait-of-paul-of-russia-dressed-as-chevalier-of-the-order-of-st-andrew-1760__to__Impressionism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[527/715] Rococo__carl-ludwig-johann-christineck_portrait-of-paul-of-russia-dressed-as-chevalier-of-the-order-of-st-andrew-1760__to__Impressionism attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[527/715] Rococo__carl-ludwig-johann-christineck_portrait-of-paul-of-russia-dressed-as-chevalier-of-the-order-of-st-andrew-1760__to__Impressionism -> Seedream_repaired750
+[528/715] Early_Renaissance__antonello-da-messina_painter-self-portrait__to__Impressionism -> Seedream_repaired750
+[529/715] Minimalism__mira-schendel_untitled-1984__to__Minimalism -> Seedream_repaired750
+[530/715] Minimalism__robert-ryman_conversion-2003__to__Early_Renaissance -> Seedream_repaired750
+[531/715] Minimalism__eva-hesse_expanded-expansion-1969__to__Minimalism -> Seedream_repaired750
+[532/715] Impressionism__claude-monet_bordighera-the-house-of-gardener__to__Ukiyo_e -> Seedream_repaired750
+[533/715] Ukiyo_e__keisai-eisen_the-courtesan-kaoru-of-owariya-matched-with-okitsu-1825(1)__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[533/715] Ukiyo_e__keisai-eisen_the-courtesan-kaoru-of-owariya-matched-with-okitsu-1825(1)__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[533/715] Ukiyo_e__keisai-eisen_the-courtesan-kaoru-of-owariya-matched-with-okitsu-1825(1)__to__Ukiyo_e -> Seedream_repaired750
+[534/715] Minimalism__robert-mangold_untitled-fcpa-1995__to__Rococo -> Seedream_repaired750
+[535/715] Minimalism__yves-klein_untitled-yellow-monochrome-1956__to__Early_Renaissance -> Seedream_repaired750
+[536/715] Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece__to__Minimalism -> Seedream_repaired750
+[537/715] Rococo__bernardo-bellotto_pirna-seen-from-the-right-bank-of-the-elbe__to__Rococo -> Seedream_repaired750
+[538/715] Ukiyo_e__tsukioka-yoshitoshi_not_detected_242419__to__Minimalism -> Seedream_repaired750
+[539/715] Impressionism__eugene-boudin_laundresses-on-the-banks-of-the-touques-9__to__Ukiyo_e -> Seedream_repaired750
+[540/715] Ukiyo_e__utagawa-kunisada-ii_oichi-from-the-beauties-of-tokyo-series__to__Ukiyo_e -> Seedream_repaired750
+[541/715] Rococo__louise-elisabeth-vigee-le-brun_the-bather-1792__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[541/715] Rococo__louise-elisabeth-vigee-le-brun_the-bather-1792__to__Early_Renaissance -> Seedream_repaired750
+[542/715] Impressionism__nikolay-bogdanov-belsky_connoisseurs-of-books-knowledge-is-power__to__Early_Renaissance -> Seedream_repaired750
+[543/715] Rococo__dmitry-levitzky_portrait-of-maria-palovna-narychkina-1773__to__Rococo -> Seedream_repaired750
+[544/715] Ukiyo_e__utagawa-kuniyoshi_high-noon-at-kasumigaseki__to__Ukiyo_e attempt 1 failed: ConnectionError: ('Connection aborted.', ConnectionAbortedError(10053, '????????????????????', None, 10053, None)) (panel_side=224, jpeg_quality=78)
+[544/715] Ukiyo_e__utagawa-kuniyoshi_high-noon-at-kasumigaseki__to__Ukiyo_e -> Seedream_repaired750
+[545/715] Ukiyo_e__hiroshige_hakone-kosuizu__to__Minimalism -> Seedream_repaired750
+[546/715] Minimalism__john-mclaughlin_number-13-1973__to__Rococo -> Seedream_repaired750
+[547/715] Impressionism__mihaly-munkacsy_dusty-country-road-ii-1883__to__Rococo -> Seedream_repaired750
+[548/715] Rococo__william-hogarth_the-countess-s-morning-levee__to__Impressionism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[548/715] Rococo__william-hogarth_the-countess-s-morning-levee__to__Impressionism -> Seedream_repaired750
+[549/715] Rococo__antoine-pesne_carl-heinrich-graun__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[549/715] Rococo__antoine-pesne_carl-heinrich-graun__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[549/715] Rococo__antoine-pesne_carl-heinrich-graun__to__Ukiyo_e -> Seedream_repaired750
+[550/715] Impressionism__pierre-auguste-renoir_still-life-with-apples-and-pomegranates-1901__to__Early_Renaissance -> Seedream_repaired750
+[551/715] Rococo__thomas-gainsborough_robert-butcher-of-walthamstan__to__Minimalism -> Seedream_repaired750
+[552/715] Early_Renaissance__fra-angelico_saint-cosmas-and-saint-damian-before-lisius-1440__to__Impressionism -> Seedream_repaired750
+[553/715] Minimalism__william-scott_bowl-white-on-grey-1962__to__Minimalism -> Seedream_repaired750
+[554/715] Minimalism__bruce-nauman_la-brea-art-tips-rat-spit-tar-pits-1972__to__Ukiyo_e -> Seedream_repaired750
+[555/715] Rococo__carl-ludwig-johann-christineck_nikolai-mordvinov-1771__to__Rococo -> Seedream_repaired750
+[556/715] Impressionism__eugene-boudin_trouville-the-fish-market-1884__to__Ukiyo_e -> Seedream_repaired750
+[557/715] Impressionism__edgar-degas_ancer-with-red-stockings__to__Impressionism -> Seedream_repaired750
+[558/715] Rococo__maurice-quentin-de-la-tour_marie-josephe-of-saxony-1__to__Early_Renaissance -> Seedream_repaired750
+[559/715] Minimalism__agnes-martin_happy-valley-1967__to__Impressionism -> Seedream_repaired750
+[560/715] Impressionism__augustus-john_proven-al-landscape__to__Rococo -> Seedream_repaired750
+[561/715] Ukiyo_e__hiroshige_hakone-kosuizu__to__Impressionism -> Seedream_repaired750
+[562/715] Ukiyo_e__katsushika-hokusai_fishing-in-the-river-kinu__to__Minimalism -> Seedream_repaired750
+[563/715] Ukiyo_e__utagawa-kunisada_not_detected_240347__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[563/715] Ukiyo_e__utagawa-kunisada_not_detected_240347__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[563/715] Ukiyo_e__utagawa-kunisada_not_detected_240347__to__Ukiyo_e -> Seedream_repaired750
+[564/715] Rococo__maurice-quentin-de-la-tour_study-for-portrait-of-mademoiselle-dangeville-1__to__Impressionism -> Seedream_repaired750
+[565/715] Rococo__louise-elisabeth-vigee-le-brun_portrait-of-joseph-vernet-1778__to__Early_Renaissance -> Seedream_repaired750
+[566/715] Minimalism__alvaro-lapa_criminals-and-their-properties-1974__to__Ukiyo_e -> Seedream_repaired750
+[567/715] Impressionism__eugene-boudin_the-port-ships-at-dock__to__Impressionism -> Seedream_repaired750
+[568/715] Minimalism__bruce-nauman_la-brea-art-tips-rat-spit-tar-pits-1972__to__Early_Renaissance -> LBM-Knee_e13
+[569/715] Impressionism__alfred-sisley_riverbank-at-veneux-1881__to__Ukiyo_e -> Seedream_repaired750
+[570/715] Rococo__antoine-watteau_head-of-a-man__to__Early_Renaissance -> Seedream_repaired750
+[571/715] Ukiyo_e__kitagawa-utamaro_upon-my-oath__to__Rococo -> Seedream_repaired750
+[572/715] Rococo__thomas-gainsborough_a-peasant-girl-with-dog-and-jug-1785__to__Early_Renaissance -> Seedream_repaired750
+[573/715] Early_Renaissance__leonardo-da-vinci_study-of-the-effect-of-light-on-a-profile-head-facsimile__to__Minimalism -> Seedream_repaired750
+[574/715] Early_Renaissance__leonardo-da-vinci_studies-of-a-bewalking__to__Minimalism -> Seedream_repaired750
+[575/715] Impressionism__william-merritt-chase_at-the-boat-landing__to__Impressionism -> Seedream_repaired750
+[576/715] Rococo__bernardo-bellotto_view-of-dresden-the-dresden-fortifications-moat-with-a-bridge-between-gate-and-post-mile-pillar__to__Rococo -> Seedream_repaired750
+[577/715] Ukiyo_e__utagawa-kunisada-ii_oichi-from-the-beauties-of-tokyo-series__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[577/715] Ukiyo_e__utagawa-kunisada-ii_oichi-from-the-beauties-of-tokyo-series__to__Early_Renaissance -> Seedream_repaired750
+[578/715] Minimalism__ruth-vollmer_trimer-monomer-dimer-1965__to__Early_Renaissance -> Seedream_repaired750
+[579/715] Early_Renaissance__benozzo-gozzoli_the-school-of-tagaste-1465-1__to__Minimalism -> Seedream_repaired750
+[580/715] Minimalism__richard-tuttle_relative-to-our-society-1990__to__Ukiyo_e -> Seedream_repaired750
+[581/715] Impressionism__john-singer-sargent_lake-in-the-tyrol__to__Early_Renaissance -> Seedream_repaired750
+[582/715] Impressionism__alfred-sisley_the-banks-of-the-oise-1878__to__Rococo -> Seedream_repaired750
+[583/715] Impressionism__antoine-blanchard_place-de-la-madeleine-hiver__to__Impressionism -> Seedream_repaired750
+[584/715] Early_Renaissance__carlo-crivelli_piet-1__to__Minimalism -> Seedream_repaired750
+[585/715] Impressionism__claude-monet_palazzo-contarini-2__to__Ukiyo_e -> Seedream_repaired750
+[586/715] Early_Renaissance__andrea-mantegna_the-circumcision-of-christ-1464__to__Early_Renaissance -> Seedream_repaired750
+[587/715] Impressionism__claude-monet_rouen-cathedral-the-portal-at-midday__to__Early_Renaissance -> Seedream_repaired750
+[588/715] Early_Renaissance__andrea-mantegna_the-circumcision-of-christ-1464__to__Minimalism -> Seedream_repaired750
+[589/715] Rococo__antoine-watteau_the-delicate-musician__to__Ukiyo_e -> Seedream_repaired750
+[590/715] Rococo__thomas-gainsborough_john-plampin__to__Impressionism -> Seedream_repaired750
+[591/715] Impressionism__augustus-john_proven-al-landscape__to__Minimalism -> Seedream_repaired750
+[592/715] Ukiyo_e__utagawa-toyokuni_the-heian-courtier__to__Rococo -> Seedream_repaired750
+[593/715] Impressionism__nicolae-vermont_rotterdam-port-1928__to__Minimalism -> Seedream_repaired750
+[594/715] Ukiyo_e__utagawa-kuniyoshi_woman-seated-under-a-cherry-blossoms__to__Rococo attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[594/715] Ukiyo_e__utagawa-kuniyoshi_woman-seated-under-a-cherry-blossoms__to__Rococo -> Seedream_repaired750
+[595/715] Minimalism__judy-chicago_morning-fan-1971__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[595/715] Minimalism__judy-chicago_morning-fan-1971__to__Early_Renaissance attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[595/715] Minimalism__judy-chicago_morning-fan-1971__to__Early_Renaissance -> Seedream_repaired750
+[596/715] Rococo__pietro-longhi_the-tooth-extractor__to__Impressionism -> Seedream_repaired750
+[597/715] Rococo__canaletto_london-the-thames-and-the-city-of-london-from-the-terrace-of-richmond-house__to__Minimalism -> Seedream_repaired750
+[598/715] Ukiyo_e__ogata-gekko_nihon-hana-zue-1896__to__Minimalism -> Seedream_repaired750
+[599/715] Rococo__dmitry-levitzky_portrait-of-maria-palovna-narychkina-1773__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[599/715] Rococo__dmitry-levitzky_portrait-of-maria-palovna-narychkina-1773__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[599/715] Rococo__dmitry-levitzky_portrait-of-maria-palovna-narychkina-1773__to__Ukiyo_e -> Seedream_repaired750
+[600/715] Impressionism__armand-guillaumin_valley-in-pontgibaud-1890__to__Early_Renaissance -> Seedream_repaired750
+[601/715] Impressionism__konstantin-korovin_arctic-ocean-1913__to__Rococo -> Seedream_repaired750
+[602/715] Minimalism__yves-klein_untitled-yellow-monochrome-1956__to__Ukiyo_e -> Seedream_repaired750
+[603/715] Early_Renaissance__piero-della-francesca_portrait-of-a-boy__to__Minimalism -> Seedream_repaired750
+[604/715] Early_Renaissance__fra-angelico_coronation-of-the-virgin-detail-1435-1__to__Minimalism -> Seedream_repaired750
+[605/715] Minimalism__john-mclaughlin_number-4__to__Rococo -> Seedream_repaired750
+[606/715] Ukiyo_e__keisai-eisen_the-courtesan-kaoru-of-owariya-matched-with-okitsu-1825(1)__to__Early_Renaissance -> QEdgePattn_e03
+[607/715] Rococo__william-hogarth_the-countess-s-morning-levee__to__Early_Renaissance -> Seedream_repaired750
+[608/715] Minimalism__yves-klein_untitled-yellow-monochrome-1956__to__Minimalism -> Seedream_repaired750
+[609/715] Impressionism__eugene-boudin_trouville-the-fish-market-1884__to__Minimalism -> Seedream_repaired750
+[610/715] Impressionism__claude-monet_bordighera-the-house-of-gardener__to__Impressionism -> Seedream_repaired750
+[611/715] Ukiyo_e__utagawa-kuniyoshi_a-record-of-origins-of-the-great-country-of-japan__to__Impressionism -> Seedream_repaired750
+[612/715] Impressionism__antoine-blanchard_place-de-la-madeleine-hiver__to__Rococo -> Seedream_repaired750
+[613/715] Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece__to__Rococo -> Seedream_repaired750
+[614/715] Early_Renaissance__pisanello_stork-1430__to__Ukiyo_e -> Seedream_repaired750
+[615/715] Ukiyo_e__ogata-gekko_nihon-hana-zue-1896__to__Early_Renaissance -> Seedream_repaired750
+[616/715] Impressionism__konstantin-korovin_arctic-ocean-1913__to__Early_Renaissance -> Seedream_repaired750
+[617/715] Rococo__canaletto_london-the-thames-and-the-city-of-london-from-the-terrace-of-richmond-house__to__Rococo -> Seedream_repaired750
+[618/715] Rococo__jean-marc-nattier_portrait-of-louis-tocqu-1762__to__Minimalism -> Seedream_repaired750
+[619/715] Rococo__joseph-wright_d-ewes-coke-his-wife-hannah-and-daniel-parker-coke__to__Minimalism -> Seedream_repaired750
+[620/715] Impressionism__edouard-manet_tarring-the-boat-1873__to__Minimalism -> Seedream_repaired750
+[621/715] Early_Renaissance__filippo-lippi_adoration-of-the-magi-detail-2__to__Rococo -> Seedream_repaired750
+[622/715] Rococo__antoine-pesne_carl-heinrich-graun__to__Rococo -> Seedream_repaired750
+[623/715] Ukiyo_e__katsushika-hokusai_fishing-in-the-bay-uraga__to__Rococo -> Seedream_repaired750
+[624/715] Early_Renaissance__antonello-da-messina_painter-self-portrait__to__Rococo -> Seedream_repaired750
+[625/715] Impressionism__stefan-dimitrescu_cabaret__to__Rococo -> Seedream_repaired750
+[626/715] Ukiyo_e__hiroshige_oiso-toraga-ame-shower-1835__to__Impressionism -> Seedream_repaired750
+[627/715] Rococo__dmitry-levitzky_maria-feodorovna__to__Early_Renaissance -> Seedream_repaired750
+[628/715] Ukiyo_e__utagawa-kunisada_not_detected_240381(1)__to__Rococo -> Seedream_repaired750
+[629/715] Minimalism__robert-ryman_surface-veil-1970__to__Rococo -> Seedream_repaired750
+[630/715] Rococo__bernardo-bellotto_view-of-dresden-the-dresden-fortifications-moat-with-a-bridge-between-gate-and-post-mile-pillar__to__Minimalism attempt 1 failed: ConnectionError: ('Connection aborted.', ConnectionAbortedError(10053, '????????????????????', None, 10053, None)) (panel_side=224, jpeg_quality=78)
+[630/715] Rococo__bernardo-bellotto_view-of-dresden-the-dresden-fortifications-moat-with-a-bridge-between-gate-and-post-mile-pillar__to__Minimalism -> Seedream_repaired750
+[631/715] Rococo__joshua-reynolds_colonel-george-k-h-coussmaker-grenadier-guards__to__Minimalism -> Seedream_repaired750
+[632/715] Rococo__dmitry-levitzky_portrait-of-unknown-woman-with-a-rose-1788__to__Impressionism -> Seedream_repaired750
+[633/715] Impressionism__childe-hassam_september-moonrise__to__Minimalism -> Seedream_repaired750
+[634/715] Ukiyo_e__katsushika-hokusai_cargo-ship-and-wave__to__Ukiyo_e -> Seedream_repaired750
+[635/715] Early_Renaissance__carlo-crivelli_saint-thomas-aquinas-1476__to__Rococo -> Seedream_repaired750
+[636/715] Rococo__bernardo-bellotto_pirna-seen-from-the-right-bank-of-the-elbe__to__Minimalism -> Seedream_repaired750
+[637/715] Impressionism__henri-matisse_brittany-also-known-as-boat-1896__to__Impressionism -> Seedream_repaired750
+[638/715] Minimalism__eva-hesse_expanded-expansion-1969__to__Rococo -> Seedream_repaired750
+[639/715] Early_Renaissance__paolo-uccello_scene-adoration-of-the-three-kings-1440__to__Impressionism -> Seedream_repaired750
+[640/715] Early_Renaissance__carlo-crivelli_piet-1__to__Impressionism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[640/715] Early_Renaissance__carlo-crivelli_piet-1__to__Impressionism attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[640/715] Early_Renaissance__carlo-crivelli_piet-1__to__Impressionism -> Seedream_repaired750
+[641/715] Rococo__dmitry-levitzky_maria-feodorovna__to__Impressionism -> Seedream_repaired750
+[642/715] Impressionism__nicolae-vermont_rotterdam-port-1928__to__Impressionism -> Seedream_repaired750
+[643/715] Ukiyo_e__utagawa-kunisada_not_detected_240353__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[643/715] Ukiyo_e__utagawa-kunisada_not_detected_240353__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[643/715] Ukiyo_e__utagawa-kunisada_not_detected_240353__to__Ukiyo_e -> Seedream_repaired750
+[644/715] Minimalism__frank-stella_gezira-from-black-series-ii-1967__to__Impressionism -> QEdgePattn_e03
+[645/715] Early_Renaissance__bartolome-bermejo_death-of-the-virgin-1462__to__Ukiyo_e -> Seedream_repaired750
+[646/715] Minimalism__ellsworth-kelly_diagonal-1951__to__Rococo -> Seedream_repaired750
+[647/715] Impressionism__alfred-sisley_the-banks-of-the-oise-1878__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[647/715] Impressionism__alfred-sisley_the-banks-of-the-oise-1878__to__Ukiyo_e -> Seedream_repaired750
+[648/715] Impressionism__nikolay-bogdanov-belsky_connoisseurs-of-books-knowledge-is-power__to__Impressionism -> Seedream_repaired750
+[649/715] Ukiyo_e__utagawa-toyokuni_the-heian-courtier__to__Early_Renaissance -> Seedream_repaired750
+[650/715] Impressionism__rudolf-schweitzer-cumpana_str-du-n-atena__to__Impressionism -> Seedream_repaired750
+[651/715] Minimalism__judy-chicago_morning-fan-1971__to__Rococo -> Seedream_repaired750
+[652/715] Rococo__francois-boucher_portrait-of-madame-boucher-1745__to__Impressionism -> Seedream_repaired750
+[653/715] Minimalism__tony-smith_die-1968__to__Rococo -> Seedream_repaired750
+[654/715] Ukiyo_e__tsukioka-yoshitoshi_not_detected_242419__to__Early_Renaissance -> Seedream_repaired750
+[655/715] Ukiyo_e__hiroshige_oiso-toraga-ame-shower-1835__to__Minimalism -> Seedream_repaired750
+[656/715] Minimalism__alvaro-lapa_criminals-and-their-properties-1974__to__Rococo -> Seedream_repaired750
+[657/715] Minimalism__fernando-lanhas_o39-68-1968__to__Minimalism -> Seedream_repaired750
+[658/715] Early_Renaissance__leonardo-da-vinci_study-of-the-effect-of-light-on-a-profile-head-facsimile__to__Impressionism -> Seedream_repaired750
+[659/715] Minimalism__dan-flavin_greens-crossing-greens-to-piet-mondrian-who-lacked-green-1966__to__Rococo -> Seedream_repaired750
+[660/715] Ukiyo_e__utagawa-kuniyoshi_high-noon-at-kasumigaseki__to__Rococo -> Seedream_repaired750
+[661/715] Rococo__francois-boucher_portrait-of-madame-boucher-1745__to__Early_Renaissance attempt 1 failed: ConnectionError: ('Connection aborted.', ConnectionAbortedError(10053, '????????????????????', None, 10053, None)) (panel_side=224, jpeg_quality=78)
+[661/715] Rococo__francois-boucher_portrait-of-madame-boucher-1745__to__Early_Renaissance -> Seedream_repaired750
+[662/715] Impressionism__edgar-degas_ancer-with-red-stockings__to__Rococo -> Seedream_repaired750
+[663/715] Rococo__jean-marc-nattier_portrait-of-louis-tocqu-1762__to__Ukiyo_e -> Seedream_repaired750
+[664/715] Minimalism__ronald-davis_zig-zag-times-two-1966__to__Ukiyo_e -> Seedream_repaired750
+[665/715] Ukiyo_e__utagawa-kunisada-ii_oichi-from-the-beauties-of-tokyo-series__to__Rococo -> Seedream_repaired750
+[666/715] Ukiyo_e__utagawa-kuniyoshi_a-record-of-origins-of-the-great-country-of-japan__to__Rococo -> Seedream_repaired750
+[667/715] Minimalism__brice-marden_joined-2011__to__Rococo -> Seedream_repaired750
+[668/715] Ukiyo_e__utagawa-kuniyoshi_high-noon-at-kasumigaseki__to__Impressionism -> Seedream_repaired750
+[669/715] Rococo__louise-elisabeth-vigee-le-brun_portrait-of-joseph-vernet-1778__to__Ukiyo_e -> Seedream_repaired750
+[670/715] Impressionism__eugene-boudin_the-port-ships-at-dock__to__Rococo attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[670/715] Impressionism__eugene-boudin_the-port-ships-at-dock__to__Rococo -> Seedream_repaired750
+[671/715] Impressionism__john-singer-sargent_lake-in-the-tyrol__to__Rococo -> Seedream_repaired750
+[672/715] Early_Renaissance__leonardo-da-vinci_study-of-the-effect-of-light-on-a-profile-head-facsimile__to__Ukiyo_e -> Seedream_repaired750
+[673/715] Early_Renaissance__carlo-crivelli_saint-thomas-aquinas-1476__to__Early_Renaissance -> Seedream_repaired750
+[674/715] Ukiyo_e__utagawa-kuniyoshi_tsuchigumo__to__Early_Renaissance -> Seedream_repaired750
+[675/715] Impressionism__alfred-sisley_the-banks-of-the-oise-1878__to__Early_Renaissance -> Seedream_repaired750
+[676/715] Impressionism__william-merritt-chase_gray-day-on-the-lagoon-a-passenger-boat-venice__to__Ukiyo_e -> Seedream_repaired750
+[677/715] Rococo__benjamin-west_self-portrait-1770__to__Early_Renaissance -> Seedream_repaired750
+[678/715] Rococo__thomas-gainsborough_a-coastal-landscape-1782__to__Rococo -> Seedream_repaired750
+[679/715] Minimalism__agnes-martin_happy-valley-1967__to__Ukiyo_e -> Seedream_repaired750
+[680/715] Impressionism__claude-monet_bordighera-the-house-of-gardener__to__Minimalism -> Seedream_repaired750
+[681/715] Ukiyo_e__ogata-gekko_print-from-series-women-s-customs-and-manners-1895-1__to__Minimalism -> Seedream_repaired750
+[682/715] Impressionism__camille-pissarro_the-gardener-afternoon-sun-eragny-1899__to__Early_Renaissance -> Seedream_repaired750
+[683/715] Minimalism__sean-scully_untitled-1973__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[683/715] Minimalism__sean-scully_untitled-1973__to__Early_Renaissance attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[683/715] Minimalism__sean-scully_untitled-1973__to__Early_Renaissance -> Seedream_repaired750
+[684/715] Impressionism__konstantin-korovin_arctic-ocean-1913__to__Minimalism -> Seedream_repaired750
+[685/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Rococo attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[685/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Rococo attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[685/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Rococo attempt 3 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=162, jpeg_quality=63)
+[685/715] Ukiyo_e__utagawa-kuniyoshi_tamatori-being-pursued-bya-dragon__to__Rococo -> Seedream_repaired750
+[686/715] Ukiyo_e__katsushika-hokusai_fishing-in-the-bay-uraga__to__Impressionism -> Seedream_repaired750
+[687/715] Rococo__carl-ludwig-johann-christineck_portrait-of-paul-of-russia-dressed-as-chevalier-of-the-order-of-st-andrew-1760__to__Ukiyo_e -> Seedream_repaired750
+[688/715] Early_Renaissance__leonardo-da-vinci_study-of-the-effect-of-light-on-a-profile-head-facsimile__to__Rococo -> Seedream_repaired750
+[689/715] Rococo__pietro-longhi_the-tooth-extractor__to__Early_Renaissance -> Seedream_repaired750
+[690/715] Early_Renaissance__benozzo-gozzoli_madonna-and-child-1485__to__Minimalism -> Seedream_repaired750
+[691/715] Ukiyo_e__katsushika-hokusai_cargo-ship-and-wave__to__Rococo -> Seedream_repaired750
+[692/715] Early_Renaissance__domenico-ghirlandaio_st-stephen-st-jacobo-st-peter__to__Minimalism -> Seedream_repaired750
+[693/715] Early_Renaissance__sandro-botticelli_trinity(1)__to__Rococo attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[693/715] Early_Renaissance__sandro-botticelli_trinity(1)__to__Rococo attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[693/715] Early_Renaissance__sandro-botticelli_trinity(1)__to__Rococo -> Seedream_repaired750
+[694/715] Impressionism__claude-monet_palazzo-contarini-2__to__Impressionism -> Seedream_repaired750
+[695/715] Minimalism__john-mclaughlin_number-13-1973__to__Early_Renaissance -> Seedream_repaired750
+[696/715] Impressionism__mihaly-munkacsy_dusty-country-road-ii-1883__to__Ukiyo_e -> Seedream_repaired750
+[697/715] Ukiyo_e__utagawa-kuniyoshi_tsuchigumo__to__Minimalism -> Seedream_repaired750
+[698/715] Minimalism__eva-hesse_expanded-expansion-1969__to__Impressionism -> Seedream_repaired750
+[699/715] Impressionism__alfred-sisley_riverbank-at-veneux-1881__to__Minimalism -> Seedream_repaired750
+[700/715] Ukiyo_e__utagawa-kunisada_not_detected_240381(1)__to__Ukiyo_e attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[700/715] Ukiyo_e__utagawa-kunisada_not_detected_240381(1)__to__Ukiyo_e attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[700/715] Ukiyo_e__utagawa-kunisada_not_detected_240381(1)__to__Ukiyo_e -> Seedream_repaired750
+[701/715] Early_Renaissance__filippo-lippi_confirmation-of-the-carmelite-rule__to__Impressionism -> Seedream_repaired750
+[702/715] Minimalism__robert-morris_box-with-the-sound-of-its-own-making-1961__to__Impressionism -> Seedream_repaired750
+[703/715] Minimalism__john-mclaughlin_number-13-1973__to__Impressionism -> Seedream_repaired750
+[704/715] Minimalism__richard-tuttle_relative-to-our-society-1990__to__Rococo -> Seedream_repaired750
+[705/715] Minimalism__ronald-davis_zig-zag-times-two-1966__to__Early_Renaissance -> Seedream_repaired750
+[706/715] Rococo__bernardo-bellotto_view-of-dresden-the-dresden-fortifications-moat-with-a-bridge-between-gate-and-post-mile-pillar__to__Impressionism -> Seedream_repaired750
+[707/715] Early_Renaissance__benozzo-gozzoli_the-school-of-tagaste-1465-1__to__Ukiyo_e -> Seedream_repaired750
+[708/715] Early_Renaissance__domenico-ghirlandaio_st-jerome__to__Impressionism -> Seedream_repaired750
+[709/715] Impressionism__antoine-blanchard_place-de-la-madeleine-hiver__to__Ukiyo_e -> Seedream_repaired750
+[710/715] Ukiyo_e__utagawa-kuniyoshi_kuzunoha__to__Impressionism -> Seedream_repaired750
+[711/715] Early_Renaissance__leonardo-da-vinci_studies-of-a-bewalking__to__Early_Renaissance attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[711/715] Early_Renaissance__leonardo-da-vinci_studies-of-a-bewalking__to__Early_Renaissance -> Seedream_repaired750
+[712/715] Ukiyo_e__katsushika-hokusai_woman-looking-at-herself-in-a-mirror__to__Minimalism -> Seedream_repaired750
+[713/715] Minimalism__ellsworth-kelly_diagonal-1951__to__Impressionism -> Seedream_repaired750
+[714/715] Rococo__carl-ludwig-johann-christineck_nikolai-mordvinov-1771__to__Ukiyo_e -> Seedream_repaired750
+[715/715] Minimalism__robert-mangold_untitled-fcpa-1995__to__Impressionism attempt 1 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=224, jpeg_quality=78)
+[715/715] Minimalism__robert-mangold_untitled-fcpa-1995__to__Impressionism attempt 2 failed: HTTPError: 500 Server Error: Internal Server Error for url: https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions (panel_side=190, jpeg_quality=70)
+[715/715] Minimalism__robert-mangold_untitled-fcpa-1995__to__Impressionism -> Seedream_repaired750
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\vlm_qedgepattn_e03_vs_knee_vs_seedream_20260609.jsonl
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\vlm_qedgepattn_e03_vs_knee_vs_seedream_20260609.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\vlm_qedgepattn_e03_vs_knee_vs_seedream_20260609.errors.jsonl

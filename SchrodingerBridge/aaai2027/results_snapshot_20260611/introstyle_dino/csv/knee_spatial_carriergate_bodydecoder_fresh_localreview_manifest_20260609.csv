@@ -1,0 +1,2 @@
+method,label,run,images_dir,metrics_csv,introstyle_summary,source_root
+LBM,KneeSpatialCarrier 01,epoch_0001,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\knee_spatial_carriergate_bodydecoder_fresh_localreview_20260609\epoch_0001\images,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\knee_spatial_carriergate_bodydecoder_fresh_localreview_20260609\epoch_0001\metrics.csv,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\knee_spatial_carriergate_bodydecoder_fresh_localreview_20260609\epoch_0001\summary.json,G:\GitHub\Latent_Style\Dataset\distinct5_512\test

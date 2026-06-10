@@ -1,0 +1,6 @@
+epoch,full_clip_style,full_content_lpips,transfer_clip_style,transfer_content_lpips,wall_total_seconds,summary_path
+epoch_0001,0.717610153079033,0.46499075889333336,0.6953650417427222,0.4685771494,56.13764340002672,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_localreview\full_eval_fresh_localreview\epoch_0001\summary.json
+epoch_0002,0.7171268606583276,0.44557046868000005,0.6934118151168028,0.4490102349333334,92.96936489999644,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_localreview\full_eval_fresh_localreview\epoch_0002\summary.json
+epoch_0003,0.7176507172584534,0.45084795721333326,0.694451467692852,0.45442876381666675,55.90261519997148,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_localreview\full_eval_fresh_localreview\epoch_0003\summary.json
+epoch_0008,0.7158583931922914,0.4378310775466667,0.6919316674272219,0.4415626741333333,58.39615879999974,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_localreview\full_eval_fresh_localreview\epoch_0008\summary.json
+epoch_0024,0.7159099540710449,0.44701447200000005,0.692445257306099,0.45082662828333325,59.09900259999995,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_attn_sa_mod_localreview\full_eval_fresh_localreview\epoch_0024\summary.json
