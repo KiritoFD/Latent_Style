@@ -601,6 +601,7 @@ def _render_remote_run_auto(
         lines.append(f"- Tokenizer warmstart config: {_md_link(warmstart_config.name, warmstart_config)}")
     if reconpretrain_config is not None:
         lines.append(f"- Tokenizer reconstruction-pretrain config: {_md_link(reconpretrain_config.name, reconpretrain_config)}")
+    wrote_live_runtime = False
     if remote_runtime:
         gpu_sample = remote_runtime.get("gpu_sample")
         tail = remote_runtime.get("tail") if isinstance(remote_runtime.get("tail"), dict) else {}
@@ -621,6 +622,7 @@ def _render_remote_run_auto(
                     f"  - `formal_status={'formal_in_band' if band_status == 'in_band' else f'nonformal_{band_status}'}`",
                 ]
             )
+            wrote_live_runtime = True
         if train_log:
             lines.append(f"- Remote train log: `{train_log}`")
         if not bool(remote_runtime.get("train_alive", True)):
@@ -643,6 +645,38 @@ def _render_remote_run_auto(
                 lines.append(f"  - `loss={float(loss):.4f}`")
             if tswd is not None:
                 lines.append(f"  - `tswd={float(tswd):.4f}`")
+            wrote_live_runtime = True
+    if not wrote_live_runtime:
+        row_used = str(row.get("remote_live_memory_used_mib", "")).strip()
+        row_total = str(row.get("remote_live_memory_total_mib", "")).strip()
+        row_util = str(row.get("remote_live_util_pct", "")).strip()
+        row_band = str(row.get("remote_live_band_status", "")).strip()
+        row_formal = str(row.get("remote_live_formal_status", "")).strip()
+        row_epoch = str(row.get("remote_live_epoch", "")).strip()
+        row_epoch_total = str(row.get("remote_live_epoch_total", "")).strip()
+        row_step = str(row.get("remote_live_step", "")).strip()
+        row_step_total = str(row.get("remote_live_step_total", "")).strip()
+        row_loss = str(row.get("remote_live_loss", "")).strip()
+        row_tswd = str(row.get("remote_live_tswd", "")).strip()
+        if row_used:
+            lines.extend(
+                [
+                    "- Remote GPU live sample:",
+                    f"  - `{row_used} MiB / {row_total or '?'} MiB`, `util={row_util or '?'}%`",
+                    f"  - `band_status={row_band or 'unknown'}`",
+                    f"  - `formal_status={row_formal or 'unknown'}`",
+                ]
+            )
+        if row_epoch or row_step:
+            lines.append("- Remote train progress:")
+            if row_epoch and row_epoch_total:
+                lines.append(f"  - `epoch {row_epoch}/{row_epoch_total}`")
+            if row_step and row_step_total:
+                lines.append(f"  - `step {row_step}/{row_step_total}`")
+            if row_loss:
+                lines.append(f"  - `loss={row_loss}`")
+            if row_tswd:
+                lines.append(f"  - `tswd={row_tswd}`")
     if pending:
         lines.extend(["- Pending local fast eval:", *[f"  - `{name}`" for name in pending[-3:]]])
     return "\n".join(lines)

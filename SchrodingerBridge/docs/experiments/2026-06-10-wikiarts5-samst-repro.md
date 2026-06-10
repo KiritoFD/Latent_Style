@@ -203,7 +203,7 @@ Notes:
 - Live JSON: [samst_live_status.json](G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/samst_wikiarts5_wsl_20260610_172206/samst_live_status.json)
 - Active WSL process count: `1`
 - Active WSL process:
-  - `pid=42240` `etime=35:19`
+  - `pid=42240` `etime=37:08`
 - Eval watcher alive: `yes`
   - `pid=299424`
 - Status watcher alive: `yes`
@@ -212,8 +212,8 @@ Notes:
 - Active style: `Early_Renaissance`
 - Latest logged progress:
   - `epoch=8`
-  - `step=870 / 18894`
-  - `content/style/ae/total = 157113.45 / 90643.16 / 208.63 / 247756.61`
+  - `step=2850 / 18894`
+  - `content/style/ae/total = 157090.82 / 90732.07 / 212.65 / 247822.89`
 - Common saved epochs across all 5 styles:
   - `5`
 - Eligible every-5-epoch eval points currently present:
@@ -235,8 +235,10 @@ Notes:
   - `{"event": "poll", "common_epochs": [5], "per_style_epoch_counts": {"Early_Renaissance": 1, "Impressionism": 1, "Minimalism": 1, "Rococo": 1, "Ukiyo_e": 1}}`
 - Local GPU sample:
   - `NVIDIA GeForce RTX 4070 Laptop GPU`
-  - `4328 MiB / 8188 MiB`, `util=64%`
+  - `4327 MiB / 8188 MiB`, `util=59%`
 <!-- WIKIARTS5_SAMST_AUTO_STATUS:END -->
+
+
 
 
 
