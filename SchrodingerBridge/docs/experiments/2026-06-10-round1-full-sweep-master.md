@@ -528,12 +528,15 @@ Recalibration-needed family:
 - Running families: none
 - Active family: `none`
 - Decision status: `no_formal_running_lane`
-- Best transfer `CLIP-S`: `epoch_0001` -> `0.6999 / 0.5295`
-- Best transfer `LPIPS`: `epoch_0019` -> `0.6909 / 0.4498`
-- Best all-pairs `CLIP-S`: `epoch_0007` -> `0.7159 / 0.4675`
-- Latest settled fast point: `epoch_0032` -> transfer `0.6893 / 0.4807`
-- Convergence: `row_count=32, since_best=31, tail_flat=False, closure_band=approaching_closure, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+Current `solver_pc` launch note:
+
+- the first `solver_pc` opening at `batch=8` was under-band:
+  - `5216 MiB / 12288 MiB`
+- decision:
+  - raise the canonical opening batch to `14`
+  - relaunch `solver_pc` as the next formal remote lane
 
 Current solver continuation note:
 
