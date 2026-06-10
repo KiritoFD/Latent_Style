@@ -121,6 +121,7 @@ def main() -> int:
     parser.add_argument("--family-label-prefix", default="")
     parser.add_argument("--family-method", default="")
     parser.add_argument("--skip-runtime-watch", action="store_true")
+    parser.add_argument("--skip-remote-fast-eval-sync", action="store_true")
     parser.add_argument("--skip-fast-eval-deferred", action="store_true")
     parser.add_argument("--skip-stageclose-deferred", action="store_true")
     args = parser.parse_args()
@@ -153,6 +154,20 @@ def main() -> int:
             ],
             stdout_log=SB_ROOT / "aaai2027" / f"round1_{family_id}_runtime_watch_20260610.stdout.log",
             stderr_log=SB_ROOT / "aaai2027" / f"round1_{family_id}_runtime_watch_20260610.stderr.log",
+        )
+
+    if not bool(args.skip_remote_fast_eval_sync):
+        _stop_local_python_watchers("watch_sync_round1_remote_fast_eval_packet.py", family_id)
+        _spawn_detached(
+            args=[
+                str(SCRIPT_DIR / "watch_sync_round1_remote_fast_eval_packet.py"),
+                "--family-id",
+                family_id,
+                "--poll-seconds",
+                "180",
+            ],
+            stdout_log=SB_ROOT / "aaai2027" / f"round1_{family_id}_remote_fast_sync_20260610.stdout.log",
+            stderr_log=SB_ROOT / "aaai2027" / f"round1_{family_id}_remote_fast_sync_20260610.stderr.log",
         )
 
     if not bool(args.skip_fast_eval_deferred):
