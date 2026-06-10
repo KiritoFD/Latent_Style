@@ -18,6 +18,18 @@ DEFAULT_MANIFEST = (
 )
 
 from csv_utils import manifest_fieldnames, read_csv_rows, write_csv_rows
+from update_round1_family_status_docs import (
+    DEFAULT_REMOTE_BAND_MAX_MIB,
+    DEFAULT_REMOTE_BAND_MIN_MIB,
+    DEFAULT_REMOTE_HARD_CAP_MIB,
+    DEFAULT_REMOTE_HOST,
+    DEFAULT_REMOTE_PORT,
+    DEFAULT_REMOTE_USER,
+    DEFAULT_REMOTE_WORKSPACE_ROOT,
+    DEFAULT_REMOTE_WSL_DISTRO,
+    _classify_remote_vram_band,
+    _remote_runtime_snapshot,
+)
 
 
 def _family_tag(family_id: str) -> str:
@@ -193,6 +205,15 @@ def main() -> int:
     parser.add_argument("--summary-tail-count", type=int, default=8)
     parser.add_argument("--allowed-status", action="append", default=[])
     parser.add_argument("--max-cycles", type=int, default=0)
+    parser.add_argument("--remote-host", default=DEFAULT_REMOTE_HOST)
+    parser.add_argument("--remote-port", type=int, default=DEFAULT_REMOTE_PORT)
+    parser.add_argument("--remote-user", default=DEFAULT_REMOTE_USER)
+    parser.add_argument("--remote-wsl-distro", default=DEFAULT_REMOTE_WSL_DISTRO)
+    parser.add_argument("--remote-workspace-root", default=DEFAULT_REMOTE_WORKSPACE_ROOT)
+    parser.add_argument("--remote-log-lines", type=int, default=80)
+    parser.add_argument("--remote-band-min-mib", type=int, default=DEFAULT_REMOTE_BAND_MIN_MIB)
+    parser.add_argument("--remote-band-max-mib", type=int, default=DEFAULT_REMOTE_BAND_MAX_MIB)
+    parser.add_argument("--remote-hard-cap-mib", type=int, default=DEFAULT_REMOTE_HARD_CAP_MIB)
     args = parser.parse_args()
 
     updater = Path(args.updater).expanduser()
@@ -232,44 +253,56 @@ def main() -> int:
                     flush=True,
                 )
                 return 0
-        result = _run_update(
-            [
-                sys.executable,
-                str(updater),
-                "--family-id",
-                str(args.family_id),
-                "--remote-live",
-            ],
-            cwd=refresh_cwd,
-        )
-        if result.stdout.strip():
-            print(result.stdout.rstrip(), flush=True)
-        if result.stderr.strip():
-            print(result.stderr.rstrip(), file=sys.stderr, flush=True)
-        if result.returncode != 0:
-            print(
-                f"runtime_status_refresh_failed returncode={result.returncode} family_id={args.family_id}",
-                file=sys.stderr,
-                flush=True,
-            )
         row = _read_manifest_row(manifest_csv, family_id=str(args.family_id))
         if row is not None:
+            remote_runtime = _remote_runtime_snapshot(
+                row=row,
+                host=str(args.remote_host),
+                port=int(args.remote_port),
+                user=str(args.remote_user),
+                wsl_distro=str(args.remote_wsl_distro),
+                remote_workspace_root=str(args.remote_workspace_root),
+                remote_log_lines=int(args.remote_log_lines),
+            )
             snapshot = {
                 "timestamp": datetime.now().astimezone().isoformat(),
                 "family_id": str(args.family_id),
                 "decision_status": row.get("decision_status", ""),
-                "remote_live_memory_used_mib": row.get("remote_live_memory_used_mib", ""),
-                "remote_live_memory_total_mib": row.get("remote_live_memory_total_mib", ""),
-                "remote_live_util_pct": row.get("remote_live_util_pct", ""),
-                "remote_live_band_status": row.get("remote_live_band_status", ""),
-                "remote_live_formal_status": row.get("remote_live_formal_status", ""),
-                "remote_live_epoch": row.get("remote_live_epoch", ""),
-                "remote_live_epoch_total": row.get("remote_live_epoch_total", ""),
-                "remote_live_step": row.get("remote_live_step", ""),
-                "remote_live_step_total": row.get("remote_live_step_total", ""),
-                "remote_live_loss": row.get("remote_live_loss", ""),
-                "remote_live_tswd": row.get("remote_live_tswd", ""),
+                "remote_live_memory_used_mib": "",
+                "remote_live_memory_total_mib": "",
+                "remote_live_util_pct": "",
+                "remote_live_band_status": "",
+                "remote_live_formal_status": "",
+                "remote_live_epoch": "",
+                "remote_live_epoch_total": "",
+                "remote_live_step": "",
+                "remote_live_step_total": "",
+                "remote_live_loss": "",
+                "remote_live_tswd": "",
             }
+            if remote_runtime and isinstance(remote_runtime.get("gpu_sample"), dict):
+                gpu_sample = remote_runtime["gpu_sample"]
+                tail = remote_runtime.get("tail") if isinstance(remote_runtime.get("tail"), dict) else {}
+                used_mib = int(str(gpu_sample.get("memory_used_mib", "0")).strip() or "0")
+                band_status = _classify_remote_vram_band(
+                    memory_used_mib=used_mib,
+                    band_min_mib=int(args.remote_band_min_mib),
+                    band_max_mib=int(args.remote_band_max_mib),
+                    hard_cap_mib=int(args.remote_hard_cap_mib),
+                )
+                snapshot["remote_live_memory_used_mib"] = str(used_mib)
+                snapshot["remote_live_memory_total_mib"] = str(gpu_sample.get("memory_total_mib", "")).strip()
+                snapshot["remote_live_util_pct"] = str(gpu_sample.get("utilization_gpu_pct", "")).strip()
+                snapshot["remote_live_band_status"] = band_status
+                snapshot["remote_live_formal_status"] = (
+                    "formal_in_band" if band_status == "in_band" else f"nonformal_{band_status}"
+                )
+                snapshot["remote_live_epoch"] = "" if tail.get("epoch") is None else str(tail.get("epoch"))
+                snapshot["remote_live_epoch_total"] = "" if tail.get("epoch_total") is None else str(tail.get("epoch_total"))
+                snapshot["remote_live_step"] = "" if tail.get("step") is None else str(tail.get("step"))
+                snapshot["remote_live_step_total"] = "" if tail.get("step_total") is None else str(tail.get("step_total"))
+                snapshot["remote_live_loss"] = "" if tail.get("loss") is None else f"{float(tail.get('loss')):.4f}"
+                snapshot["remote_live_tswd"] = "" if tail.get("tswd") is None else f"{float(tail.get('tswd')):.4f}"
             last_snapshot = _read_last_jsonl(history_jsonl)
             if _snapshot_signature(last_snapshot or {}) != _snapshot_signature(snapshot):
                 _append_jsonl(history_jsonl, snapshot)
@@ -277,7 +310,7 @@ def main() -> int:
             summary_json.parent.mkdir(parents=True, exist_ok=True)
             summary_json.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
             current_status = str(row.get("decision_status", "")).strip().lower()
-            remote_epoch = str(row.get("remote_live_epoch", "")).strip()
+            remote_epoch = str(snapshot.get("remote_live_epoch", "")).strip()
             if current_status == "running" and (not remote_epoch) and _read_converged(convergence_json):
                 changed = _write_family_status(
                     manifest_csv,
