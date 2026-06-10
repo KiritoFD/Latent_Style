@@ -34,7 +34,10 @@
 - Prelaunch switch smoke: `ok`
 - Switch smoke artifact: [round1_tok_a_dino_dict_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_tok_a_dino_dict_switch_smoke_latest.json)
 - Switch smoke row count: `1`
+- Tokenizer warmstart config: [aaai2027_round1_tok_a_dino_dict_warmstart_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/warmstart/aaai2027_round1_tok_a_dino_dict_warmstart_seed42_b8a2.json)
+- Tokenizer reconstruction-pretrain config: [aaai2027_round1_tok_a_dino_dict_reconpretrain_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/pretrain/aaai2027_round1_tok_a_dino_dict_reconpretrain_seed42_b8a2.json)
 <!-- ROUND1_AUTO_STATUS:END -->
+
 
 
 

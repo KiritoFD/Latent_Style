@@ -47,3 +47,13 @@ def round1_family_doc_dir(*, family_id: str | None, run_name: str = "") -> Path:
 def round1_switch_smoke_artifact(*, family_id: str | None, run_name: str = "") -> Path:
     family_token = str(family_id).strip() or str(run_name).strip()
     return SB_ROOT / "aaai2027" / f"round1_{family_token}_switch_smoke_latest.json"
+
+
+def round1_tokenizer_warmstart_config(*, family_id: str | None) -> Path:
+    family_token = str(family_id).strip()
+    return SB_ROOT / "configs" / "aaai2027" / "round1_full_sweep" / "warmstart" / f"aaai2027_round1_{family_token}_warmstart_seed42_b8a2.json"
+
+
+def round1_tokenizer_reconstruction_pretrain_config(*, family_id: str | None) -> Path:
+    family_token = str(family_id).strip()
+    return SB_ROOT / "configs" / "aaai2027" / "round1_full_sweep" / "pretrain" / f"aaai2027_round1_{family_token}_reconpretrain_seed42_b8a2.json"

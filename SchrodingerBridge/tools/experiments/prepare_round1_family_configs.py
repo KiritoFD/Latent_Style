@@ -116,6 +116,8 @@ def main() -> int:
                 "patience": spec.patience,
                 "notes": spec.notes,
                 "virtual_length_multiplier": cfg["data"].get("virtual_length_multiplier"),
+                "warmstart_config": "",
+                "reconstruction_pretrain_config": "",
                 "decision_status": "planned",
             }
         )
@@ -143,6 +145,8 @@ def main() -> int:
                 "solver_family",
                 "semantic_supervision_family",
                 "virtual_length_multiplier",
+                "warmstart_config",
+                "reconstruction_pretrain_config",
                 "local_fast_root",
                 "local_review_root",
                 "switch_smoke_status",
