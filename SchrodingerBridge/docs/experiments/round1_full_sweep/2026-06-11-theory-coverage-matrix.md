@@ -23,7 +23,8 @@ Purpose:
 | DINO sidecar loading and style-bank caches | dataset `dino_cache_*`, runtime conditioning | implemented | active infra | smoke-tested and used by tokenizer-family path |
 | Tokenizer-only training before backbone reopening | `freeze_mode=style_branch` | implemented | active policy | current DINO families are queued under this rule |
 | Dedicated tokenizer warm-start packet | `prepare_round1_tokenizer_warmstart_config.py`, `launch_remote_round1_tokenizer_warmstart.py` | implemented | configs prepared for `tok_a/b/c/d`, not yet launched | pragmatic teacher/distill-based warm-start path for tokenizer families |
-| Full phased curriculum (`phase1/2/3`) | represented as round-1 operating policy, not separate launcher families | partial | not yet scheduled | current round-1 still runs family-by-family from the common parent |
+| Reconstruction-style tokenizer pretrain packet | `prepare_round1_tokenizer_reconstruction_pretrain_config.py`, `launch_remote_round1_tokenizer_reconstruction_pretrain.py` | implemented | configs prepared for `tok_a/b/c/d`, not yet launched | identity-only reconstruction-flavored packet using existing trainer/objective path |
+| Full phased curriculum (`phase1/2/3`) | represented as round-1 operating policy, not separate launcher families | partial | pretrain packet exists, but full curriculum not automated end-to-end | current round-1 still runs family-by-family from the common parent |
 
 ## Backbone / Solver Coverage
 
@@ -60,6 +61,6 @@ Purpose:
 
 ## Gaps That Still Matter
 
-- A dedicated tokenizer warm-start packet now exists, and warm-start configs/docs are already prepared for `tok_a_dino_dict`, `tok_b_cross_image`, `tok_c_residual_adapter`, and `tok_d_vlm_prompt`, but the stronger self-supervised reconstruction-style pretrain described in `tokenizer.md` is still not implemented as its own trainer.
+- A dedicated tokenizer warm-start packet now exists, and reconstruction-flavored identity-only tokenizer pretrain packets are already prepared for `tok_a_dino_dict`, `tok_b_cross_image`, `tok_c_residual_adapter`, and `tok_d_vlm_prompt`, but the stronger fully custom self-supervised reconstruction trainer described in `tokenizer.md` is still not implemented as a separate trainer.
 - The more radical full Jacobian-based null-space projection described in `attn.md` is only represented approximately by the current tangent solver family, not as a separate explicit implementation.
 - Round-1 is already auditable family-by-family, but not yet fully factorized into an explicit `phase1/phase2/phase3` launcher stack.
