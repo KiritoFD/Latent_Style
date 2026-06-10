@@ -5,8 +5,14 @@
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
 
-- Fast root: [round1_attn_pnp_selfinject_remote_full_eval_pull](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_full_eval_pull)
-- Curve CSV: [clip_lpips_curve.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_full_eval_pull/clip_lpips_curve.csv)
+- Authority root:
+  - [round1_attn_pnp_selfinject_remote_full_eval_pull](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_full_eval_pull)
+- Pulled curve CSV:
+  - [clip_lpips_curve.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_full_eval_pull/clip_lpips_curve.csv)
+- Settled pulled rows:
+  - `5`
+- Settled remote epochs:
+  - `epoch_0001, epoch_0002, epoch_0003, epoch_0004, epoch_0005`
 - Best transfer `CLIP-S`:
   - `epoch_0001`
   - `style / lpips = 0.6980 / 0.4747`
@@ -22,14 +28,36 @@
   - full `style / lpips = 0.7164 / 0.4476`
   - wall `= 201.54s`
 - Convergence snapshot:
-  - `row_count = 5`
   - `best_epoch = epoch_0001`
   - `since_last_pareto = 0`
-  - `best_in_newest_2 = True`
   - `tail_flat = False`
   - `criterion = joint_transfer_allpairs_pareto`
   - `converged = False`
+- Sync summary:
+  - [sync_summary.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_full_eval_pull/sync_summary.json)
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

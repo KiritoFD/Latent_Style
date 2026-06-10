@@ -9,3 +9,4 @@
 - Fast root: [full_eval_fast_local](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_tok_d_vlm_prompt_fast_local/full_eval_fast_local)
 <!-- ROUND1_AUTO_STATUS:END -->
 
+
