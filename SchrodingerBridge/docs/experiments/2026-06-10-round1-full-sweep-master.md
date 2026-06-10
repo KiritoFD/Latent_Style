@@ -572,6 +572,14 @@ Current `solver_pc` launch note:
     - style recovered slightly
     - LPIPS softened slightly
     - this line is now drawing a real style/structure tradeoff frontier
+- latest settled point:
+  - `epoch_0006`
+  - transfer `0.6923 / 0.5056`
+  - full `0.7118 / 0.4959`
+  - read:
+    - LPIPS improved materially again
+    - style softened further
+    - `solver_pc` remains a structure-first active line, not a converged one
 - fourth and fifth formal points:
   - `epoch_0004`
     - transfer `0.6962 / 0.5373`
