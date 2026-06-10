@@ -12,6 +12,8 @@ _vlm*smoke*
 *status_watch_*.stderr.log
 *stageclose*.stdout.log
 *stageclose*.stderr.log
+*_runtime_samples.jsonl
+*_runtime_summary.json
 *.png
 *.pdf
 **/images/**

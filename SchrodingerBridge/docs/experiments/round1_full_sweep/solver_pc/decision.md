@@ -36,3 +36,12 @@
 - Next action:
   - keep the same remote lane running
   - keep settling every retained checkpoint through the remote fast-eval chain before any deeper review or closure decision
+- Second settled fast-eval point:
+  - `epoch_0002`
+  - transfer `CLIP-S / LPIPS = 0.6974 / 0.5426`
+  - all-pairs `CLIP-S / LPIPS = 0.7109 / 0.5368`
+  - wall `= 178.42s`
+- Interpretation:
+  - LPIPS improved materially versus `epoch_0001`
+  - style scores softened on both transfer and all-pairs
+  - the line is now clearly moving on the style/structure frontier, so closure is still far too early

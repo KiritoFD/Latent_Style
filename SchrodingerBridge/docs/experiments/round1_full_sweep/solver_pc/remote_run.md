@@ -38,6 +38,15 @@
     - style score opens slightly above the current internal tangent late tail
     - but LPIPS is clearly worse than the stronger tangent structure points
     - therefore the family stays open, but the first point is not a promote signal
+- Second settled fast-eval point:
+  - `epoch_0002`
+  - transfer `CLIP-S / LPIPS = 0.6974 / 0.5426`
+  - all-pairs `CLIP-S / LPIPS = 0.7109 / 0.5368`
+  - wall `= 178.42s`
+  - immediate read:
+    - LPIPS improved materially from the opening point
+    - but style scores backed off on both transfer and all-pairs
+    - so the line has active movement, but it is still too early to rank this family beyond “alive”
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status

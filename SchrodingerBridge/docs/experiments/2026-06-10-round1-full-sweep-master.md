@@ -556,6 +556,14 @@ Current `solver_pc` launch note:
     - style opens competitively
     - LPIPS opens weakly
     - keep the lane running and wait for more retained checkpoints before any deeper review
+- second formal point:
+  - `epoch_0002`
+  - transfer `0.6974 / 0.5426`
+  - full `0.7109 / 0.5368`
+  - read:
+    - LPIPS improved materially
+    - style softened
+    - keep the lane running; this family is still only at the first real shape-of-curve stage
 
 Current solver continuation note:
 

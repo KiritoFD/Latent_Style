@@ -1,2 +1,3 @@
 epoch,full_clip_style,full_content_lpips,transfer_clip_style,transfer_content_lpips,wall_total_seconds,summary_path
 epoch_0001,0.7170393779675166,0.5552116309066667,0.7073875270783901,0.5621283312833334,177.74970721499994,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_solver_pc_remote_full_eval_pull\epoch_0001\summary.json
+epoch_0002,0.7109127799669903,0.5367959566,0.697352630396684,0.5425514813500001,178.42224498100404,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_solver_pc_remote_full_eval_pull\epoch_0002\summary.json

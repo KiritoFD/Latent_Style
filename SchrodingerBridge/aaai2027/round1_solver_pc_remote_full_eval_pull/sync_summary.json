@@ -12,11 +12,18 @@
         "has_metrics": true,
         "has_summary": true,
         "image_count": 0
+      },
+      {
+        "epoch": "epoch_0002",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
       }
     ],
     "ckpts": [
       "epoch_0001.pt",
-      "epoch_0002.pt"
+      "epoch_0002.pt",
+      "epoch_0003.pt"
     ],
     "processes": {
       "train": [
@@ -58,13 +65,13 @@
     "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0001\\summary.json"
   },
   "best_transfer_lpips": {
-    "epoch": "epoch_0001",
-    "full_clip_style": "0.7170393779675166",
-    "full_content_lpips": "0.5552116309066667",
-    "transfer_clip_style": "0.7073875270783901",
-    "transfer_content_lpips": "0.5621283312833334",
-    "wall_total_seconds": "177.74970721499994",
-    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0001\\summary.json"
+    "epoch": "epoch_0002",
+    "full_clip_style": "0.7109127799669903",
+    "full_content_lpips": "0.5367959566",
+    "transfer_clip_style": "0.697352630396684",
+    "transfer_content_lpips": "0.5425514813500001",
+    "wall_total_seconds": "178.42224498100404",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0002\\summary.json"
   },
   "best_full_style": {
     "epoch": "epoch_0001",
@@ -76,29 +83,30 @@
     "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0001\\summary.json"
   },
   "latest": {
-    "epoch": "epoch_0001",
-    "full_clip_style": "0.7170393779675166",
-    "full_content_lpips": "0.5552116309066667",
-    "transfer_clip_style": "0.7073875270783901",
-    "transfer_content_lpips": "0.5621283312833334",
-    "wall_total_seconds": "177.74970721499994",
-    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0001\\summary.json"
+    "epoch": "epoch_0002",
+    "full_clip_style": "0.7109127799669903",
+    "full_content_lpips": "0.5367959566",
+    "transfer_clip_style": "0.697352630396684",
+    "transfer_content_lpips": "0.5425514813500001",
+    "wall_total_seconds": "178.42224498100404",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0002\\summary.json"
   },
   "convergence": {
     "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\clip_lpips_curve.csv",
-    "row_count": 1,
+    "row_count": 2,
     "best_epoch": "epoch_0001",
     "best_index": 0,
     "best_transfer_clip_epoch": "epoch_0001",
-    "best_transfer_lpips_epoch": "epoch_0001",
+    "best_transfer_lpips_epoch": "epoch_0002",
     "best_allpairs_clip_epoch": "epoch_0001",
-    "best_allpairs_lpips_epoch": "epoch_0001",
+    "best_allpairs_lpips_epoch": "epoch_0002",
     "pareto_epochs": [
-      "epoch_0001"
+      "epoch_0001",
+      "epoch_0002"
     ],
-    "last_pareto_epoch": "epoch_0001",
-    "newest_epoch": "epoch_0001",
-    "since_best": 0,
+    "last_pareto_epoch": "epoch_0002",
+    "newest_epoch": "epoch_0002",
+    "since_best": 1,
     "since_last_pareto": 0,
     "best_in_newest_2": true,
     "tail_flat": false,
@@ -106,9 +114,9 @@
     "criterion": "joint_transfer_allpairs_pareto",
     "converged": false
   },
-  "latest_remote_ckpt": "epoch_0002.pt",
-  "latest_settled_epoch": "epoch_0001",
+  "latest_remote_ckpt": "epoch_0003.pt",
+  "latest_settled_epoch": "epoch_0002",
   "pending_ckpt_epochs": [
-    "epoch_0002.pt"
+    "epoch_0003.pt"
   ]
 }
