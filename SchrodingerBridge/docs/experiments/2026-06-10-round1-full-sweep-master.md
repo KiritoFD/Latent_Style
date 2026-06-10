@@ -564,6 +564,14 @@ Current `solver_pc` launch note:
     - LPIPS improved materially
     - style softened
     - keep the lane running; this family is still only at the first real shape-of-curve stage
+- third formal point:
+  - `epoch_0003`
+  - transfer `0.6987 / 0.5533`
+  - full `0.7119 / 0.5442`
+  - read:
+    - style recovered slightly
+    - LPIPS softened slightly
+    - this line is now drawing a real style/structure tradeoff frontier
 
 Current solver continuation note:
 

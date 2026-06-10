@@ -45,3 +45,12 @@
   - LPIPS improved materially versus `epoch_0001`
   - style scores softened on both transfer and all-pairs
   - the line is now clearly moving on the style/structure frontier, so closure is still far too early
+- Third settled fast-eval point:
+  - `epoch_0003`
+  - transfer `CLIP-S / LPIPS = 0.6987 / 0.5533`
+  - all-pairs `CLIP-S / LPIPS = 0.7119 / 0.5442`
+  - wall `= 179.68s`
+- Interpretation:
+  - style recovered slightly versus `epoch_0002`
+  - LPIPS softened slightly versus `epoch_0002`
+  - the line is now tracing a real style/structure tradeoff frontier rather than a one-directional collapse
