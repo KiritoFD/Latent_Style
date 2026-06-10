@@ -525,9 +525,11 @@ Recalibration-needed family:
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Active Status
 
-- Running families: none
-- Active family: `none`
-- Decision status: `no_formal_running_lane`
+- Running families:
+  - `solver_pc`
+- Active family: `solver_pc`
+- Decision status: `running`
+- Batch / epochs / patience: `16 / 48 / 6`
 <!-- ROUND1_AUTO_STATUS:END -->
 
 Current `solver_pc` launch note:
@@ -543,6 +545,17 @@ Current `solver_pc` launch note:
   - next action:
     - raise the canonical opening batch to `16`
     - relaunch again
+- first formal point:
+  - `batch=16` passed the remote health band at:
+    - `9334 MiB / 12288 MiB`
+  - first settled `solver_pc` fast point:
+    - `epoch_0001`
+    - transfer `0.7074 / 0.5621`
+    - full `0.7170 / 0.5552`
+  - read:
+    - style opens competitively
+    - LPIPS opens weakly
+    - keep the lane running and wait for more retained checkpoints before any deeper review
 
 Current solver continuation note:
 
