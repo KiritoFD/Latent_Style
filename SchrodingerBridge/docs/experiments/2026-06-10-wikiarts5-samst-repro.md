@@ -114,6 +114,18 @@ Notes:
   - live log has now advanced into `epoch 4`
   - but the fourth aligned `epoch_5.model` still has not landed
   - so the every-5-epoch eval gate is still correctly waiting on `Rococo` first, then `Ukiyo_e`
+- newest live read:
+  - the active slot is still `Rococo`
+  - live log has now entered `epoch 5`
+  - but `Rococo epoch_5.model` is still not written at this read
+  - so the first common every-5-epoch eval bundle is still blocked on the current style finishing this epoch
+- newest stage transition:
+  - `Rococo` has now landed `epoch_5.model`
+  - the active sequential slot has advanced to `Ukiyo_e`
+  - current alignment frontier is now:
+    - `4 / 5` styles have landed `epoch_5.model`
+  - remaining blocker before the first common every-5-epoch eval bundle:
+    - `Ukiyo_e epoch_5.model`
 
 <!-- WIKIARTS5_SAMST_AUTO_STATUS:START -->
 ## Auto Status
@@ -122,17 +134,17 @@ Notes:
 - Live JSON: [samst_live_status.json](G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/samst_wikiarts5_wsl_20260610_172206/samst_live_status.json)
 - Active WSL process count: `1`
 - Active WSL process:
-  - `pid=31509` `etime=04:06:12`
+  - `pid=31509` `etime=04:15:19`
 - Eval watcher alive: `yes`
   - `pid=174368`
 - Status watcher alive: `yes`
   - `pid=187052`
-- Latest train log: [train_Rococo.log](G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/samst_wikiarts5_wsl_20260610_172206/logs/train_Rococo.log)
-- Active style: `Rococo`
+- Latest train log: [train_Ukiyo_e.log](G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/samst_wikiarts5_wsl_20260610_172206/logs/train_Ukiyo_e.log)
+- Active style: `Ukiyo_e`
 - Latest logged progress:
-  - `epoch=5`
-  - `step=15200 / 18894`
-  - `content/style/ae/total = 153575.04 / 81542.84 / 279.68 / 235117.87`
+  - `epoch=1`
+  - `step=5840 / 18894`
+  - `content/style/ae/total = 318889.22 / 176142.13 / 774.57 / 495031.35`
 - Common saved epochs across all 5 styles:
   - `none yet`
 - Eligible every-5-epoch eval points currently present:
@@ -141,7 +153,7 @@ Notes:
   - `Early_Renaissance: 1`
   - `Impressionism: 1`
   - `Minimalism: 1`
-  - `Rococo: 0`
+  - `Rococo: 1`
   - `Ukiyo_e: 0`
 - First eval trigger condition:
   - all five styles must each have `epoch_0005.model` before the every-5-epoch eval watcher launches the first full bundle
@@ -151,11 +163,18 @@ Notes:
   - so `epoch=5` for `Early_Renaissance` still does not imply a common `epoch_0005.model` exists across all 5 style folders
   - even for the current style, `epoch=5` means `the 5th epoch is in progress`; the `epoch_5.model` file is only written after that epoch finishes
 - Last eval-watch event:
-  - `{"event": "poll", "common_epochs": [], "per_style_epoch_counts": {"Early_Renaissance": 1, "Impressionism": 1, "Minimalism": 1, "Rococo": 0, "Ukiyo_e": 0}}`
+  - `{"event": "poll", "common_epochs": [], "per_style_epoch_counts": {"Early_Renaissance": 1, "Impressionism": 1, "Minimalism": 1, "Rococo": 1, "Ukiyo_e": 0}}`
 - Local GPU sample:
   - `NVIDIA GeForce RTX 4070 Laptop GPU`
-  - `4326 MiB / 8188 MiB`, `util=67%`
+  - `4333 MiB / 8188 MiB`, `util=60%`
 <!-- WIKIARTS5_SAMST_AUTO_STATUS:END -->
+
+
+
+
+
+
+
 
 
 

@@ -140,21 +140,23 @@ Current remote lane status:
     - `epoch_0003`
     - `epoch_0004`
     - `epoch_0005`
+    - `epoch_0006`
+    - `epoch_0007`
   - current fast read:
     - best transfer style remains `epoch_0001`:
       - `0.6999 / 0.5295`
-    - best transfer LPIPS has now moved to `epoch_0004`:
-      - `0.6944 / 0.4998`
-    - best all-pairs style is now also `epoch_0004`:
-      - `0.7143 / 0.4886`
-    - latest settled point is now `epoch_0005`:
-      - `0.6893 / 0.5371`
+    - best transfer LPIPS has now moved to `epoch_0007`:
+      - `0.6951 / 0.4787`
+    - best all-pairs style is now also `epoch_0007`:
+      - `0.7159 / 0.4675`
+    - latest settled point is now `epoch_0007`:
+      - `0.6951 / 0.4787`
     - interpretation:
-      - `epoch_0004` remains the current best structure-preserving point on the fast board
-      - `epoch_0005` dropped on both transfer style and LPIPS
-      - so the line has now spent one retained checkpoint off the latest Pareto point
+      - `epoch_0005` was a true rollback point
+      - but `epoch_0007` has now overtaken the old `epoch_0004` frontier
+      - so this solver line remains clearly alive and still improving on the fast board
       - the line is still below external-board promotion level on transfer style
-      - but with solver-family patience still at `6`, closure is still premature
+      - and because the newest settled point is again Pareto-active, closure is still premature
       - so this family remains alive and unconverged, but is not close to promotion
   - solver-family next-step policy after the `epoch_0004 -> epoch_0005` rollback:
     - do not interrupt the active in-flight tangent run
@@ -179,6 +181,7 @@ Current remote lane status:
     - a direct successful launcher run now also writes `decision_status=running` back into the manifest immediately and refreshes family docs
     - a direct successful launcher run now also arms the detached runtime watcher automatically
     - a direct successful launcher run now also arms the remote fast-eval watcher automatically by default
+    - family followups now also arm the local remote-fast-eval sync watcher automatically, so settled remote epochs surface into local docs without manual packet pulls
   - queue rule:
     - `run_round1_family_queue.py` now prefers `switch_smoke_status=ok`
     - and skips `switch_smoke_status=failed` by default
@@ -456,13 +459,20 @@ Recalibration-needed family:
 - Active family: `solver_tangent_rk`
 - Decision status: `running`
 - Batch / epochs / patience: `16 / 24 / 6`
-- Remote GPU live: `9516 / 12288 MiB`, `util=78%`, `band=in_band`
+- Remote GPU live: `9516 / 12288 MiB`, `util=87%`, `band=in_band`
 - Best transfer `CLIP-S`: `epoch_0001` -> `0.6999 / 0.5295`
 - Best transfer `LPIPS`: `epoch_0007` -> `0.6951 / 0.4787`
 - Best all-pairs `CLIP-S`: `epoch_0007` -> `0.7159 / 0.4675`
-- Latest settled fast point: `epoch_0007` -> transfer `0.6951 / 0.4787`
-- Convergence: `row_count=7, since_best=6, tail_flat=False, converged=False`
+- Latest settled fast point: `epoch_0008` -> transfer `0.6901 / 0.5243`
+- Convergence: `row_count=8, since_best=7, tail_flat=False, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
+
+
+
+
 
 
 

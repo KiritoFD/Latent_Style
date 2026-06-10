@@ -53,3 +53,11 @@
     - preserve roughly the same total training budget
     - but double retained-checkpoint density in wall-clock terms
     - so the fast curve can catch the true optimum before larger overshoot
+- New frontier update:
+  - `epoch_0007` has now fully settled
+  - transfer `CLIP-S / LPIPS = 0.6951 / 0.4787`
+  - all-pairs `CLIP-S / LPIPS = 0.7159 / 0.4675`
+  - read:
+    - this point overtook `epoch_0004` on both structure and all-pairs style
+    - so the rollback at `epoch_0005` and partial recovery at `epoch_0006` were not closure evidence after all
+    - keep the current formal lane running

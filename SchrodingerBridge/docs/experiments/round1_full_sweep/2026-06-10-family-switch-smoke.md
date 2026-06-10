@@ -59,6 +59,7 @@ Result:
   - after a successful direct remote launch it also marks the family `running` immediately and refreshes round-1 status docs
   - after a successful direct remote launch it also arms the detached runtime watcher automatically
   - after a successful direct remote launch it also arms the remote fast-eval watcher automatically by default
+  - shared family followups now also arm the local remote-fast-eval sync watcher automatically
   - queue-driven launches explicitly disable that default and continue to launch fast-eval through the queue-owned path
 
 Gate validation:
