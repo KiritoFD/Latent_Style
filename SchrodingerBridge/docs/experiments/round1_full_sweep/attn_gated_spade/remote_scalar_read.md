@@ -1,0 +1,51 @@
+# attn_gated_spade Remote Scalar Read
+
+Updated: `2026-06-10T17:58:09.284689`
+
+- Run name: `aaai2027_round1_attn_gated_spade_seed42_b8a2`
+- Remote run dir: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_gated_spade_seed42_b8a2`
+- Retained checkpoints: `22`
+- Latest checkpoint: `epoch_0022.pt`
+- Remote eval files currently visible: `48`
+- Eval files:
+  - `full_eval_fast_snapshot/clip_lpips_curve.csv`
+  - `full_eval_fast_snapshot/epoch_0001/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0001/summary.json`
+  - `full_eval_fast_snapshot/epoch_0002/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0002/summary.json`
+  - `full_eval_fast_snapshot/epoch_0003/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0003/summary.json`
+  - `full_eval_fast_snapshot/epoch_0004/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0004/summary.json`
+  - `full_eval_fast_snapshot/epoch_0005/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0005/summary.json`
+  - `full_eval_fast_snapshot/epoch_0006/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0006/summary.json`
+  - `full_eval_fast_snapshot/epoch_0007/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0007/summary.json`
+  - `full_eval_fast_snapshot/epoch_0008/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0008/summary.json`
+  - `full_eval_fast_snapshot/epoch_0009/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0009/summary.json`
+  - `full_eval_fast_snapshot/epoch_0010/metrics.csv`
+- Pulled remote logs:
+  - [training_20260610_132738.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_remote_scalars/training_20260610_132738.csv)
+  - [training_20260610_133255.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_remote_scalars/training_20260610_133255.csv)
+- Latest remote training CSV row:
+  - `epoch=22`
+  - `loss=7.8574299812316895`
+  - `terminal_swd=2.171875`
+  - `samples_per_sec=42.41270258429721`
+  - `cuda_peak_allocated_gb=6.617212772369385`
+  - `cuda_peak_reserved_gb=8.345703125`
+- Latest runtime watcher sample:
+  - `epoch=23/24`
+  - `step=634/994`
+  - `loss=7.7839`
+  - `tswd=3.4062`
+  - `VRAM=2707/12288 MiB`
+  - `band_status=under_band`
+- Training curve: [training_curve.png](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_remote_scalars/training_curve.png)
+- Runtime curve: [runtime_curve.png](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_remote_scalars/runtime_curve.png)
+- Runtime CSV: [runtime_curve.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_remote_scalars/runtime_curve.csv)
+- Summary JSON: [summary.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_remote_scalars/summary.json)

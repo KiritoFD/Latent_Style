@@ -66,7 +66,7 @@
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
 
-- Fast root: [round1_attn_sa_mod_fast_local](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_sa_mod_fast_local)
+- Fast root: [full_eval_fast_local](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_sa_mod_fast_local/full_eval_fast_local)
 - Curve CSV: [clip_lpips_curve.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_sa_mod_fast_local/full_eval_fast_local/clip_lpips_curve.csv)
 - Best transfer `CLIP-S`:
   - `epoch_0001`
@@ -85,11 +85,17 @@
 - Convergence snapshot:
   - `row_count = 24`
   - `best_epoch = epoch_0001`
-  - `since_best = 23`
+  - `since_last_pareto = 12`
   - `best_in_newest_2 = False`
   - `tail_flat = True`
+  - `criterion = joint_transfer_allpairs_pareto`
   - `converged = True`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
+
+
 
 
 

@@ -544,9 +544,24 @@ class SBTrainer:
             )
         resume_optimizer = bool(self.train_cfg.get("resume_optimizer", True))
         if resume_optimizer and "optimizer_state_dict" in state:
-            self.optimizer.load_state_dict(state["optimizer_state_dict"])
+            try:
+                self.optimizer.load_state_dict(state["optimizer_state_dict"])
+            except ValueError as exc:
+                logger.warning(
+                    "Skipping optimizer resume for %s due to state mismatch: %s",
+                    ckpt_path,
+                    exc,
+                )
+                resume_optimizer = False
         if resume_optimizer and self.scheduler is not None and state.get("scheduler_state_dict") is not None:
-            self.scheduler.load_state_dict(state["scheduler_state_dict"])
+            try:
+                self.scheduler.load_state_dict(state["scheduler_state_dict"])
+            except ValueError as exc:
+                logger.warning(
+                    "Skipping scheduler resume for %s due to state mismatch: %s",
+                    ckpt_path,
+                    exc,
+                )
         if "loss_state_dict" in state and hasattr(self.loss_fn, "load_state_dict"):
             self.loss_fn.load_state_dict(state.get("loss_state_dict"))
         if bool(self.train_cfg.get("resume_training_state", True)):
@@ -574,6 +589,7 @@ class SBTrainer:
             "lancet_only": "backbone_only",
             "consumer_only": "backbone_only",
             "freeze_tokenizer": "backbone_only",
+            "body_attention_only": "attention_only",
             "renderer_only": "executor_only",
             "fresh_executor": "executor_only",
             "freeze_style_branch": "executor_only",
@@ -583,7 +599,7 @@ class SBTrainer:
             "injection_branch": "injection_only",
         }
         mode = aliases.get(mode, mode)
-        if mode not in {"tokenizer_only", "style_branch", "backbone_only", "executor_only", "budget_only", "injection_only"}:
+        if mode not in {"tokenizer_only", "style_branch", "backbone_only", "attention_only", "executor_only", "budget_only", "injection_only"}:
             raise ValueError(f"Unsupported freeze_mode: {mode}")
 
         for _, param in self.model.named_parameters():
@@ -594,9 +610,29 @@ class SBTrainer:
             for name, param in self.model.style_tokenizer.named_parameters():
                 param.requires_grad_(True)
                 trainable_names.append(f"style_tokenizer.{name}")
+            structured = getattr(self.model, "structured_style_tokenizer", None)
+            if structured is not None:
+                for name, param in structured.named_parameters():
+                    param.requires_grad_(True)
+                    trainable_names.append(f"structured_style_tokenizer.{name}")
         if mode == "style_branch":
             self.model.style_spatial_id_16.requires_grad_(True)
             trainable_names.append("style_spatial_id_16")
+            for extra_name in ("style_spatial_proto_16", "style_spatial_atoms_16"):
+                value = getattr(self.model, extra_name, None)
+                if isinstance(value, torch.nn.Parameter):
+                    value.requires_grad_(True)
+                    trainable_names.append(extra_name)
+            logits = getattr(self.model, "style_spatial_logits", None)
+            if logits is not None:
+                for name, param in logits.named_parameters():
+                    param.requires_grad_(True)
+                    trainable_names.append(f"style_spatial_logits.{name}")
+            router = getattr(self.model, "style_spatial_content_router", None)
+            if router is not None:
+                for name, param in router.named_parameters():
+                    param.requires_grad_(True)
+                    trainable_names.append(f"style_spatial_content_router.{name}")
         if mode == "budget_only":
             budget_head = getattr(self.model, "execution_budget_head", None)
             if budget_head is None:
@@ -612,6 +648,10 @@ class SBTrainer:
                 ("body_content_gate", getattr(self.model, "body_content_gate", None)),
                 ("decoder_style_carrier", getattr(self.model, "decoder_style_carrier", None)),
                 ("decoder_content_gate", getattr(self.model, "decoder_content_gate", None)),
+                ("body_style_spatial_proj", getattr(self.model, "body_style_spatial_proj", None)),
+                ("body_structure_gate", getattr(self.model, "body_structure_gate", None)),
+                ("decoder_style_spatial_proj", getattr(self.model, "decoder_style_spatial_proj", None)),
+                ("decoder_structure_gate", getattr(self.model, "decoder_structure_gate", None)),
             ]
             for prefix, module in injectors:
                 if module is None:
@@ -625,11 +665,22 @@ class SBTrainer:
             for name, param in self.model.named_parameters():
                 if name.startswith("style_tokenizer."):
                     continue
+                if name.startswith("structured_style_tokenizer."):
+                    continue
                 param.requires_grad_(True)
                 trainable_names.append(name)
+        if mode == "attention_only":
+            for name, param in self.model.named_parameters():
+                if name.startswith("body_blocks."):
+                    param.requires_grad_(True)
+                    trainable_names.append(name)
+                    continue
+                if name.startswith("blender."):
+                    param.requires_grad_(True)
+                    trainable_names.append(name)
         if mode == "executor_only":
             for name, param in self.model.named_parameters():
-                if name.startswith("style_tokenizer.") or name == "style_spatial_id_16":
+                if name.startswith("style_tokenizer.") or name.startswith("structured_style_tokenizer.") or name == "style_spatial_id_16":
                     continue
                 param.requires_grad_(True)
                 trainable_names.append(name)
@@ -685,6 +736,11 @@ class SBTrainer:
             for name, param in self.model.style_tokenizer.named_parameters():
                 param.requires_grad_(True)
                 trainable_names.append(f"style_tokenizer.{name}")
+            structured = getattr(self.model, "structured_style_tokenizer", None)
+            if structured is not None:
+                for name, param in structured.named_parameters():
+                    param.requires_grad_(True)
+                    trainable_names.append(f"structured_style_tokenizer.{name}")
         if mode == "style_branch":
             self.model.style_spatial_id_16.requires_grad_(True)
             trainable_names.append("style_spatial_id_16")
@@ -774,6 +830,7 @@ class SBTrainer:
                         target_style=target_style,
                         target_style_id=target_style_id,
                         source_style_id=source_style_id,
+                        conditioning=batch,
                     )
                 else:
                     loss_dict = self.loss_fn.compute(
@@ -784,6 +841,7 @@ class SBTrainer:
                         source_style_id=source_style_id,
                         aux_target_style=aux_target_style,
                         aux_target_valid=aux_target_valid,
+                        conditioning=batch,
                     )
                 loss = loss_dict["loss"]
             forward_time_total += max(0.0, time.perf_counter() - t0)
@@ -926,6 +984,7 @@ class SBTrainer:
         metrics.setdefault("ot_cost", 0.0)
         metrics.setdefault("terminal_swd", 0.0)
         metrics.setdefault("terminal_swd_aux", 0.0)
+        metrics.setdefault("cycle_consistency", 0.0)
         metrics.setdefault("aux_target_ratio", 0.0)
         metrics.setdefault("plan_entropy", 0.0)
         metrics.setdefault("bridge_sigma", 0.0)

@@ -136,6 +136,9 @@ class ModelConfig:
     num_styles: int = 5
     style_dim: int = 160
     style_tokenizer: str = "factorized"
+    tokenizer_family: str = "legacy_factorized"
+    backbone_attention_family: str = "legacy_semantic_crossattn"
+    solver_family: str = "euler_legacy"
     tokenizer_identity_dim: int = 24
     tokenizer_texture_dim: int = 32
     tokenizer_geometry_dim: int = 24
@@ -163,6 +166,11 @@ class ModelConfig:
     tokenizer_latent_init_pool_size: int = 4
     tokenizer_latent_init_kmeans_iters: int = 8
     tokenizer_latent_init_sample_limit_per_style: int = 1000
+    tokenizer_dino_dim: int = 384
+    tokenizer_num_clusters: int = 16
+    tokenizer_prompt_dim: int = 256
+    tokenizer_prompt_length: int = 8
+    tokenizer_structured_temperature: float = 0.1
     time_dim: int = 256
     base_dim: int = 64
     lift_channels: int | None = None
@@ -196,6 +204,7 @@ class ModelConfig:
     semantic_gumbel_tau: float = 1.0
     semantic_self_topology_gate: bool = False
     semantic_self_topology_blend: float = 1.0
+    semantic_gw_spatial_lambda: float = 0.25
     velocity_head_mode: str = "identity"
     velocity_tanh_limit: float = 20.0
     transport_prediction_mode: str = "velocity"
@@ -279,6 +288,12 @@ class ModelConfig:
     style_injection_spatial_kernel: int = 5
     style_injection_force_highpass: bool = True
     use_style_blender: bool = False
+    solver_rk_order: int = 4
+    solver_corrector_steps: int = 1
+    solver_corrector_step_size: float = 0.1
+    solver_tangent_projection_strength: float = 1.0
+    solver_stochastic_noise_scale: float = 0.01
+    solver_dual_track_detach: bool = True
     use_checkpointing: bool = False
     extra: dict[str, Any] = field(default_factory=dict)
 
@@ -330,6 +345,8 @@ class BridgeConfig:
     bridge_style_noise_flat_gamma: float = 0.0
     terminal_swd_weight: float = 0.1
     terminal_swd_aux_weight: float = 0.0
+    semantic_supervision_family: str = "legacy_terminal_swd"
+    dino_masked_swd_weight: float = 0.0
     w_variance_penalty: float = 0.0
     w_style_energy_floor: float = 0.0
     w_lowfreq_velocity: float = 0.0
@@ -400,6 +417,8 @@ class BridgeConfig:
     target_teacher_mode: str = "off"
     target_teacher_decay: float = 0.99
     target_teacher_weight: float = 0.0
+    cycle_consistency_weight: float = 0.0
+    cycle_consistency_num_steps: int = 4
     normalize_eps: float = 1e-8
     logit_clamp: float = 50.0
     velocity_clamp: float = 20.0
@@ -558,6 +577,9 @@ class DataConfig:
     pairing_cache_cross_only: bool = True
     latent_cache_mode: str = "off"
     latent_cache_dir: str = ""
+    dino_cache_path: str = ""
+    dino_cache_required: bool = False
+    dino_bank_limit_per_style: int = 8
     extra: dict[str, Any] = field(default_factory=dict)
 
     @classmethod

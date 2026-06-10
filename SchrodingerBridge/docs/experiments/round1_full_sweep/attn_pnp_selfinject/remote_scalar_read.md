@@ -1,0 +1,53 @@
+# attn_pnp_selfinject Remote Scalar Read
+
+Updated: `2026-06-10T22:15:29.629846`
+
+- Run name: `aaai2027_round1_attn_pnp_selfinject_seed42_b8a2`
+- Remote run dir: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_pnp_selfinject_seed42_b8a2`
+- Retained checkpoints: `5`
+- Latest checkpoint: `epoch_0005.pt`
+- Remote eval files currently visible: `10`
+- Eval files:
+  - `full_eval_fast_snapshot/clip_lpips_curve.csv`
+  - `full_eval_fast_snapshot/epoch_0001/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0001/summary.json`
+  - `full_eval_fast_snapshot/epoch_0002/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0002/summary.json`
+  - `full_eval_fast_snapshot/epoch_0003/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0003/summary.json`
+  - `full_eval_fast_snapshot/epoch_0004/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0004/summary.json`
+  - `full_eval_fast_snapshot/round1_convergence.json`
+- Pulled remote logs:
+  - [training_20260610_190805.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_190805.csv)
+  - [training_20260610_191634.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_191634.csv)
+  - [training_20260610_191837.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_191837.csv)
+  - [training_20260610_194744.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_194744.csv)
+  - [training_20260610_195612.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_195612.csv)
+  - [training_20260610_201050.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_201050.csv)
+  - [training_20260610_201426.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_201426.csv)
+  - [training_20260610_201818.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_201818.csv)
+  - [training_20260610_203355.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_203355.csv)
+  - [training_20260610_204929.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_204929.csv)
+  - [training_20260610_210259.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_210259.csv)
+  - [training_20260610_212732.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_212732.csv)
+  - [training_20260610_214417.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_214417.csv)
+  - [training_20260610_220415.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_220415.csv)
+- Latest remote training CSV row:
+  - `epoch=5`
+  - `loss=8.050405502319336`
+  - `terminal_swd=2.265625`
+  - `samples_per_sec=28.83886543248498`
+  - `cuda_peak_allocated_gb=6.2381463050842285`
+  - `cuda_peak_reserved_gb=7.845703125`
+- Latest runtime watcher sample:
+  - `epoch=5/5`
+  - `step=876/994`
+  - `loss=8.0541`
+  - `tswd=2.5938`
+  - `VRAM=10620/12288 MiB`
+  - `band_status=in_band`
+- Training curve: [training_curve.png](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_curve.png)
+- Runtime curve: [runtime_curve.png](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/runtime_curve.png)
+- Runtime CSV: [runtime_curve.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/runtime_curve.csv)
+- Summary JSON: [summary.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/summary.json)

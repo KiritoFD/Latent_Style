@@ -59,6 +59,8 @@ class OTFlowMatchingObjective:
         self.bridge_style_noise_flat_gamma = max(0.0, float(bridge_cfg.bridge_style_noise_flat_gamma))
         self.terminal_swd_weight = max(0.0, float(bridge_cfg.terminal_swd_weight))
         self.terminal_swd_aux_weight = max(0.0, float(bridge_cfg.terminal_swd_aux_weight))
+        self.semantic_supervision_family = str(getattr(bridge_cfg, "semantic_supervision_family", "legacy_terminal_swd")).strip().lower()
+        self.dino_masked_swd_weight = max(0.0, float(getattr(bridge_cfg, "dino_masked_swd_weight", 0.0)))
         self.w_variance_penalty = max(0.0, float(bridge_cfg.w_variance_penalty))
         self.w_style_energy_floor = max(0.0, float(bridge_cfg.w_style_energy_floor))
         self.w_lowfreq_velocity = max(0.0, float(bridge_cfg.w_lowfreq_velocity))
@@ -137,6 +139,8 @@ class OTFlowMatchingObjective:
             self.target_teacher_mode = "off"
         self.target_teacher_decay = min(0.999999, max(0.0, float(getattr(bridge_cfg, "target_teacher_decay", 0.99))))
         self.target_teacher_weight = max(0.0, float(getattr(bridge_cfg, "target_teacher_weight", 0.0)))
+        self.cycle_consistency_weight = max(0.0, float(getattr(bridge_cfg, "cycle_consistency_weight", 0.0)))
+        self.cycle_consistency_num_steps = max(1, int(getattr(bridge_cfg, "cycle_consistency_num_steps", 4)))
 
         self.w_kinetic = max(0.0, float(bridge_cfg.w_kinetic))
         self.w_flow = max(0.0, float(bridge_cfg.w_flow))
@@ -216,6 +220,26 @@ class OTFlowMatchingObjective:
     def _sanitize_tensor(self, x: torch.Tensor, *, clamp_value: float) -> torch.Tensor:
         x = torch.nan_to_num(x.float(), nan=0.0, posinf=clamp_value, neginf=-clamp_value)
         return x.clamp(min=-clamp_value, max=clamp_value)
+
+    @staticmethod
+    def _conditioning_payload(conditioning: dict | None) -> dict | None:
+        if not isinstance(conditioning, dict):
+            return None
+        known = {
+            "content",
+            "target_style",
+            "target_style_id",
+            "source_style_id",
+            "aux_target_style",
+            "aux_target_valid",
+        }
+        payload = {key: value for key, value in conditioning.items() if key not in known}
+        return payload or None
+
+    def _set_model_conditioning(self, model: nn.Module, conditioning: dict | None) -> None:
+        setter = getattr(model, "set_runtime_conditioning", None)
+        if callable(setter):
+            setter(self._conditioning_payload(conditioning))
 
     def _sinkhorn_plan(self, cost: torch.Tensor) -> torch.Tensor:
         n_src, n_tgt = int(cost.shape[0]), int(cost.shape[1])
@@ -759,6 +783,39 @@ class OTFlowMatchingObjective:
         var_loss = (pred_var - target_var).abs().mean()
         return mean_loss + self.w_variance_penalty * var_loss
 
+    def _dino_masked_swd(
+        self,
+        pred: torch.Tensor,
+        target: torch.Tensor,
+        *,
+        dino_patches: torch.Tensor,
+        dino_hw: torch.Tensor | None,
+    ) -> torch.Tensor:
+        if dino_patches.ndim != 3:
+            return self.transport_cost.aligned_cost(pred, target)
+        if torch.is_tensor(dino_hw) and dino_hw.numel() >= 2:
+            h_dim = max(1, int(dino_hw.view(-1)[0].item()))
+            w_dim = max(1, int(dino_hw.view(-1)[1].item()))
+        else:
+            side = int(round(max(1, dino_patches.shape[1]) ** 0.5))
+            h_dim, w_dim = side, side
+        if h_dim * w_dim != dino_patches.shape[1]:
+            h_dim, w_dim = 1, int(dino_patches.shape[1])
+        anchors = min(4, int(dino_patches.shape[1]))
+        idx = torch.linspace(0, dino_patches.shape[1] - 1, steps=anchors, device=dino_patches.device).long()
+        anchor_tokens = F.normalize(dino_patches.index_select(1, idx).float(), dim=-1, eps=self.normalize_eps)
+        patches = F.normalize(dino_patches.float(), dim=-1, eps=self.normalize_eps)
+        masks = torch.softmax(torch.bmm(patches, anchor_tokens.transpose(1, 2)), dim=-1)
+        masks = masks.transpose(1, 2).contiguous().view(pred.shape[0], anchors, h_dim, w_dim)
+        masks = F.interpolate(masks, size=pred.shape[-2:], mode="bilinear", align_corners=False)
+        losses: list[torch.Tensor] = []
+        for chan in range(anchors):
+            weight = masks[:, chan : chan + 1]
+            losses.append(self.transport_cost.aligned_cost(pred * weight, target * weight))
+        if not losses:
+            return self.transport_cost.aligned_cost(pred, target)
+        return torch.stack(losses).mean()
+
     def _calc_terminal_swd_loss(
         self,
         pred_endpoint: torch.Tensor,
@@ -768,6 +825,8 @@ class OTFlowMatchingObjective:
         semantic_k: torch.Tensor | None = None,
         content: torch.Tensor | None = None,
         active_mask: torch.Tensor | None = None,
+        dino_patches: torch.Tensor | None = None,
+        dino_hw: torch.Tensor | None = None,
     ) -> torch.Tensor | None:
         active = self._terminal_active_indices(pred_endpoint, source_style_id, target_style_id)
         if active_mask is not None and active.numel() > 0:
@@ -777,6 +836,14 @@ class OTFlowMatchingObjective:
             return None
         pred_active = pred_endpoint.index_select(0, active)
         target_active = target_style.index_select(0, active)
+        if self.semantic_supervision_family == "dino_masked_swd" and dino_patches is not None and self.dino_masked_swd_weight > 0.0:
+            dino_active = dino_patches.index_select(0, active)
+            return self._dino_masked_swd(
+                pred_active,
+                target_active,
+                dino_patches=dino_active,
+                dino_hw=dino_hw,
+            ) * self.dino_masked_swd_weight
         if (
             self.terminal_swd_mode == "standard"
             and self.terminal_swd_axis_source == "semantic"
@@ -845,6 +912,9 @@ class OTFlowMatchingObjective:
     ) -> tuple[torch.Tensor | None, torch.Tensor]:
         if self.terminal_swd_weight <= 0.0:
             return None, content.new_tensor(0.0, dtype=torch.float32)
+        runtime_payload = getattr(model, "runtime_conditioning", {}) if hasattr(model, "runtime_conditioning") else {}
+        dino_patches = runtime_payload.get("content_dino_patches") if isinstance(runtime_payload, dict) else None
+        dino_hw = runtime_payload.get("content_dino_hw") if isinstance(runtime_payload, dict) else None
 
         endpoint = model.integrate(
             content,
@@ -856,11 +926,41 @@ class OTFlowMatchingObjective:
         active = self._terminal_active_indices(endpoint, source_style_id, target_style_id)
         if active.numel() == 0:
             return None, endpoint.new_tensor(0.0, dtype=torch.float32)
-        term = self.transport_cost.aligned_cost(
-            endpoint.index_select(0, active),
-            matched_target.index_select(0, active),
+        term = self._calc_terminal_swd_loss(
+            endpoint,
+            matched_target,
+            source_style_id,
+            target_style_id,
+            dino_patches=dino_patches if torch.is_tensor(dino_patches) else None,
+            dino_hw=dino_hw if torch.is_tensor(dino_hw) else None,
         )
         return term, endpoint.abs().mean().detach()
+
+    def _cycle_consistency_loss(
+        self,
+        model: TimeConditionedLANCETBridge,
+        *,
+        content: torch.Tensor,
+        target_style_id: torch.Tensor,
+        source_style_id: torch.Tensor | None,
+    ) -> torch.Tensor:
+        if self.cycle_consistency_weight <= 0.0 or source_style_id is None:
+            return content.new_tensor(0.0, dtype=torch.float32)
+        forward = model.integrate(
+            content,
+            style_id=target_style_id,
+            num_steps=self.cycle_consistency_num_steps,
+            step_size=1.0,
+            style_strength=1.0,
+        )
+        recon = model.integrate(
+            forward,
+            style_id=source_style_id,
+            num_steps=self.cycle_consistency_num_steps,
+            step_size=1.0,
+            style_strength=1.0,
+        )
+        return F.l1_loss(recon, content) * self.cycle_consistency_weight
 
     def _compute_omf_details(
         self,
@@ -1031,6 +1131,9 @@ class OTFlowMatchingObjective:
             + proximal_trust_penalty
         )
 
+        runtime_payload = getattr(model, "runtime_conditioning", {}) if hasattr(model, "runtime_conditioning") else {}
+        dino_patches = runtime_payload.get("content_dino_patches") if isinstance(runtime_payload, dict) else None
+        dino_hw = runtime_payload.get("content_dino_hw") if isinstance(runtime_payload, dict) else None
         terminal_swd = None
         if self.terminal_swd_weight > 0.0:
             t_profile = self._profile_start(content)
@@ -1041,6 +1144,8 @@ class OTFlowMatchingObjective:
                 target_style_id,
                 semantic_k=semantic_k,
                 content=content,
+                dino_patches=dino_patches if torch.is_tensor(dino_patches) else None,
+                dino_hw=dino_hw if torch.is_tensor(dino_hw) else None,
             )
             self._profile_end("terminal_swd", t_profile, content)
         terminal_loss = content.new_tensor(0.0, dtype=torch.float32)
@@ -1065,10 +1170,19 @@ class OTFlowMatchingObjective:
                 semantic_k=semantic_k,
                 content=content,
                 active_mask=aux_mask,
+                dino_patches=dino_patches if torch.is_tensor(dino_patches) else None,
+                dino_hw=dino_hw if torch.is_tensor(dino_hw) else None,
             )
             if terminal_aux_swd is not None:
                 terminal_aux_loss = terminal_aux_swd * self.terminal_swd_aux_weight
                 total_loss = total_loss + terminal_aux_loss
+        cycle_consistency = self._cycle_consistency_loss(
+            model,
+            content=content,
+            target_style_id=target_style_id,
+            source_style_id=source_style_id,
+        )
+        total_loss = total_loss + cycle_consistency
 
         metrics: Dict[str, torch.Tensor] = {
             "loss": total_loss,
@@ -1084,6 +1198,7 @@ class OTFlowMatchingObjective:
             "terminal_swd": terminal_loss.detach(),
             "terminal_swd_aux": terminal_aux_loss.detach(),
             "aux_target_ratio": aux_target_ratio.detach(),
+            "cycle_consistency": cycle_consistency.detach(),
             "style_energy_floor": style_energy_floor.detach(),
             "lowfreq_velocity": lowfreq_velocity.detach(),
             "style_contrastive": style_contrastive.detach(),
@@ -1182,7 +1297,9 @@ class OTFlowMatchingObjective:
         source_style_id: torch.Tensor | None = None,
         aux_target_style: torch.Tensor | None = None,
         aux_target_valid: torch.Tensor | None = None,
+        conditioning: dict | None = None,
     ) -> Dict[str, torch.Tensor]:
+        self._set_model_conditioning(model, conditioning)
         if self.objective_mode == "omf":
             return self._compute_omf(
                 model,
@@ -1277,6 +1394,13 @@ class OTFlowMatchingObjective:
             else (zero, zero, zero)
         )
         total_loss = total_loss + generated_delta_diversity
+        cycle_consistency = self._cycle_consistency_loss(
+            model,
+            content=content,
+            target_style_id=target_style_id,
+            source_style_id=source_style_id,
+        )
+        total_loss = total_loss + cycle_consistency
 
         metrics: Dict[str, torch.Tensor] = {
             "loss": total_loss,
@@ -1295,6 +1419,7 @@ class OTFlowMatchingObjective:
             "generated_delta_diversity": generated_delta_diversity.detach(),
             "generated_delta_mean_offdiag_cos": generated_delta_mean_offdiag_cos.detach(),
             "generated_delta_active_styles": generated_delta_active_styles.detach(),
+            "cycle_consistency": cycle_consistency.detach(),
         }
         metrics.update(self._profile_metrics(content))
         metrics.update(self._model_profile_metrics(model, content))
@@ -1336,7 +1461,10 @@ class OTFlowMatchingObjective:
         target_style: torch.Tensor,
         target_style_id: torch.Tensor,
         source_style_id: torch.Tensor | None = None,
+        conditioning: dict | None = None,
     ) -> Dict[str, torch.Tensor]:
+        self._set_model_conditioning(model, conditioning)
+        self._set_model_conditioning(teacher_model, conditioning)
         if content.device.type == "cuda":
             autocast_ctx = torch.amp.autocast("cuda", enabled=False)
         else:

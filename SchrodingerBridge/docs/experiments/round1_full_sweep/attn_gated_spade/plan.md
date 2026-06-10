@@ -1,0 +1,22 @@
+# attn_gated_spade Plan
+
+- Wave: `wave2_backbone`
+- Axis: `backbone`
+- Notes: Locally gated SPADE-like injection balancing structure and style fields.
+- Current launch history:
+  - first formal attempt:
+    - `batch=13`
+    - rejected at health check as `under_band`
+  - current formal attempt:
+    - `batch=19`
+    - active and currently `formal_in_band`
+- Active evidence roots:
+  - remote runtime note:
+    - [remote_run.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/attn_gated_spade/remote_run.md)
+  - runtime sample log:
+    - [round1_attn_gated_spade_runtime_samples.jsonl](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_runtime_samples.jsonl)
+  - runtime summary:
+    - [round1_attn_gated_spade_runtime_summary.json](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_runtime_summary.json)
+- Next trigger:
+  - wait for `SaMAM` convergence and local GPU release
+  - then let the deferred local fast-eval watcher populate the first `clip_lpips_curve.csv`

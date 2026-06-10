@@ -1,0 +1,25 @@
+# attn_pnp_selfinject Closure
+
+- Status: `recalibration_needed`
+- Current read:
+  - first formal launch at `batch_size = 22` passed the 30-second health check in-band
+  - retained `epoch_0001.pt` did land
+  - but the runtime guard later killed training in `epoch 2` with:
+    - `used=11939MiB`
+    - `cap=11000MiB`
+    - end code `rc=143`
+- What is still useful:
+  - remote scalar packet for `epoch_0001`
+  - the in-flight `epoch_0001` fast `CLIP-S / LPIPS` eval, which should be kept as directional evidence
+- Current reopened lane read:
+  - `batch_size = 20`
+  - the train health sample itself entered the formal band
+  - but the combined `train + remote eval` path still proved unsafe on this host
+  - direct evidence now shows:
+    - train pid disappeared again
+    - only remote fast-eval processes remained alive
+    - the train log ended with another runtime-guard stop
+- Updated closure consequence:
+  - this family needs non-concurrent train/eval orchestration on the remote `3060`
+  - do not relaunch again with the current `batch=20` setting
+  - the next segmented retry target should be `batch=18`

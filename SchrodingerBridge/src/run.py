@@ -105,6 +105,26 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
         cmd += ["--vae_decode_batch_size", str(int(train_cfg.full_eval_vae_decode_batch_size))]
     if train_cfg.full_eval_only_lpips_clip_style is not None:
         cmd += ["--eval_only_lpips_clip_style" if bool(train_cfg.full_eval_only_lpips_clip_style) else "--no-eval_only_lpips_clip_style"]
+    if bool(train_cfg.full_eval_enable_introstyle):
+        cmd.append("--eval_enable_introstyle")
+    else:
+        cmd.append("--no-eval_enable_introstyle")
+    if str(train_cfg.full_eval_introstyle_style_bank_root).strip():
+        cmd += ["--introstyle_style_bank_root", str(train_cfg.full_eval_introstyle_style_bank_root)]
+    if str(train_cfg.full_eval_introstyle_model_id).strip():
+        cmd += ["--introstyle_model_id", str(train_cfg.full_eval_introstyle_model_id)]
+    if str(train_cfg.full_eval_introstyle_modelscope_id).strip():
+        cmd += ["--introstyle_modelscope_id", str(train_cfg.full_eval_introstyle_modelscope_id)]
+    if str(train_cfg.full_eval_introstyle_modelscope_cache_dir).strip():
+        cmd += ["--introstyle_modelscope_cache_dir", str(train_cfg.full_eval_introstyle_modelscope_cache_dir)]
+    if bool(train_cfg.full_eval_introstyle_allow_network):
+        cmd.append("--introstyle_allow_network")
+    cmd += ["--introstyle_bank_limit_per_style", str(int(train_cfg.full_eval_introstyle_bank_limit_per_style))]
+    cmd += ["--introstyle_batch_size", str(int(train_cfg.full_eval_introstyle_batch_size))]
+    cmd += ["--introstyle_topk", str(int(train_cfg.full_eval_introstyle_topk))]
+    cmd += ["--introstyle_t", str(int(train_cfg.full_eval_introstyle_t))]
+    cmd += ["--introstyle_up_ft_index", str(int(train_cfg.full_eval_introstyle_up_ft_index))]
+    cmd += ["--introstyle_ensemble_size", str(int(train_cfg.full_eval_introstyle_ensemble_size))]
     if train_cfg.full_eval_save_generated_images is not None:
         cmd += ["--save_generated_images" if bool(train_cfg.full_eval_save_generated_images) else "--no-save_generated_images"]
     if train_cfg.full_eval_save_summary_grid is not None:
@@ -182,6 +202,9 @@ def main() -> None:
         pairing_cache_cross_only=bool(data_cfg.pairing_cache_cross_only),
         latent_cache_mode=str(data_cfg.latent_cache_mode),
         latent_cache_dir=str(data_cfg.latent_cache_dir),
+        dino_cache_path=str(data_cfg.dino_cache_path),
+        dino_cache_required=bool(data_cfg.dino_cache_required),
+        dino_bank_limit_per_style=int(data_cfg.dino_bank_limit_per_style),
         device=str(device),
     )
 

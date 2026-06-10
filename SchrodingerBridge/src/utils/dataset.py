@@ -4,7 +4,7 @@ import json
 import logging
 import re
 from pathlib import Path
-from typing import Dict, Sequence
+from typing import Any, Dict, Sequence
 
 import numpy as np
 import torch
@@ -69,6 +69,9 @@ class AdaCUTLatentDataset(Dataset):
         pairing_cache_cross_only: bool = True,
         latent_cache_mode: str = "off",
         latent_cache_dir: str = "",
+        dino_cache_path: str = "",
+        dino_cache_required: bool = False,
+        dino_bank_limit_per_style: int = 8,
         device: str = "cpu",
     ) -> None:
         self.data_root = Path(data_root)
@@ -86,6 +89,13 @@ class AdaCUTLatentDataset(Dataset):
         self.style_item_stems: Dict[int, list[str]] = {}
         self.style_base_to_indices: Dict[int, dict[str, list[int]]] = {}
         self.offline_pairing_map: dict[tuple[str, str, str], list[str]] = {}
+        self.dino_cache_path = str(dino_cache_path or "").strip()
+        self.dino_cache_required = bool(dino_cache_required)
+        self.dino_bank_limit_per_style = max(1, int(dino_bank_limit_per_style))
+        self.dino_item_sidecars: dict[tuple[str, str], dict[str, torch.Tensor]] = {}
+        self.dino_style_bank_cls: dict[int, torch.Tensor] = {}
+        self.dino_style_bank_patches: dict[int, torch.Tensor] = {}
+        self.dino_patch_hw: dict[int, tuple[int, int]] = {}
         
         # Cache for pre-computed indices to remove CPU overhead in __getitem__
         self._cache_content_style_ids = None
@@ -155,6 +165,10 @@ class AdaCUTLatentDataset(Dataset):
             self._try_preload_to_gpu()
         if self.pairing_cache_path:
             self._load_pairing_cache(self.pairing_cache_path)
+        if self.dino_cache_path:
+            self._load_dino_cache(self.dino_cache_path)
+        elif self.dino_cache_required:
+            raise FileNotFoundError("dino_cache_required=True but no dino_cache_path was provided.")
 
         # Initialize deterministic caches so __getitem__ is always safe.
         self.set_epoch(0)
@@ -410,6 +424,65 @@ class AdaCUTLatentDataset(Dataset):
         self.offline_pairing_map = pair_map
         logger.info("Loaded pairing cache %s with %d source-target routes", path, len(self.offline_pairing_map))
 
+    def _load_dino_cache(self, cache_path: str) -> None:
+        path = Path(cache_path)
+        if not path.is_absolute():
+            path = path.resolve()
+        if not path.exists():
+            if self.dino_cache_required:
+                raise FileNotFoundError(f"DINO cache not found: {path}")
+            logger.warning("DINO cache not found: %s", path)
+            return
+
+        payload = torch.load(path, map_location="cpu", weights_only=False)
+        rows = payload.get("rows", [])
+        cls_embeddings = torch.as_tensor(payload.get("cls_embeddings", torch.empty(0))).to(dtype=torch.float16)
+        patch_embeddings = torch.as_tensor(payload.get("patch_embeddings", torch.empty(0))).to(dtype=torch.float16)
+        if len(rows) == 0 or cls_embeddings.ndim != 2 or patch_embeddings.ndim != 3:
+            if self.dino_cache_required:
+                raise RuntimeError(f"Malformed DINO cache: {path}")
+            logger.warning("Ignoring malformed DINO cache: %s", path)
+            return
+
+        by_style: dict[str, list[int]] = {}
+        for row_idx, row in enumerate(rows):
+            style_name = str(row.get("style", "")).strip()
+            stem = self._normalize_base_stem(str(row.get("stem", "")).strip())
+            if not style_name or not stem:
+                continue
+            self.dino_item_sidecars[(style_name, stem)] = {
+                "cls": cls_embeddings[row_idx].clone(),
+                "patches": patch_embeddings[row_idx].clone(),
+            }
+            by_style.setdefault(style_name, []).append(row_idx)
+
+        for style_id, style_name in enumerate(self.style_subdirs):
+            row_ids = list(by_style.get(style_name, []))
+            if not row_ids:
+                continue
+            keep = row_ids[: self.dino_bank_limit_per_style]
+            while len(keep) < self.dino_bank_limit_per_style:
+                keep.append(keep[-1])
+            patch_bank = patch_embeddings.index_select(0, torch.tensor(keep, dtype=torch.long))
+            cls_bank = cls_embeddings.index_select(0, torch.tensor(keep, dtype=torch.long))
+            self.dino_style_bank_patches[style_id] = patch_bank.contiguous()
+            self.dino_style_bank_cls[style_id] = cls_bank.contiguous()
+            num_patches = int(patch_bank.shape[1])
+            side = int(round(num_patches ** 0.5))
+            if side * side == num_patches:
+                self.dino_patch_hw[style_id] = (side, side)
+            else:
+                self.dino_patch_hw[style_id] = (1, num_patches)
+
+        if self.dino_cache_required and len(self.dino_item_sidecars) == 0:
+            raise RuntimeError(f"DINO cache loaded but produced no aligned rows: {path}")
+        logger.info(
+            "Loaded DINO cache %s with %d aligned items across %d styles",
+            path,
+            len(self.dino_item_sidecars),
+            len(self.dino_style_bank_patches),
+        )
+
     def _active_pairing_topk(self, candidate_count: int) -> int:
         max_topk = max(1, min(int(candidate_count), int(self.pairing_cache_topk)))
         if self.pairing_cache_active_topk > 0:
@@ -649,6 +722,22 @@ class AdaCUTLatentDataset(Dataset):
             "target_style_id": target_style_id,
             "source_style_id": content_style_id,
         }
+        if self.dino_item_sidecars:
+            content_style = self.style_subdirs[content_style_id]
+            content_stem = self._normalize_base_stem(self.style_item_stems[content_style_id][c_idx])
+            sidecar = self.dino_item_sidecars.get((content_style, content_stem))
+            if sidecar is None and self.dino_cache_required:
+                raise KeyError(f"Missing DINO sidecar for {(content_style, content_stem)}")
+            if sidecar is not None:
+                item["content_dino_cls"] = sidecar["cls"].float()
+                item["content_dino_patches"] = sidecar["patches"].float()
+                hw = self.dino_patch_hw.get(target_style_id, self.dino_patch_hw.get(content_style_id, (1, int(sidecar["patches"].shape[0]))))
+                item["content_dino_hw"] = torch.tensor(hw, dtype=torch.long)
+            bank_cls = self.dino_style_bank_cls.get(target_style_id)
+            bank_patches = self.dino_style_bank_patches.get(target_style_id)
+            if bank_cls is not None and bank_patches is not None:
+                item["target_style_dino_bank_cls"] = bank_cls.float()
+                item["target_style_dino_bank_patches"] = bank_patches.float()
         if self.pairing_cache_aux_target_topk > 0:
             item["aux_target_style"] = aux_target_style if aux_target_style is not None else target_style
             item["aux_target_valid"] = torch.tensor(float(aux_target_valid), dtype=torch.float32)

@@ -29,6 +29,8 @@ Round-1 folders:
   - [round1_full_sweep](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep)
 - docs:
   - [round1_full_sweep](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep)
+- switch smoke:
+  - [2026-06-10-family-switch-smoke.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/2026-06-10-family-switch-smoke.md)
 
 Dataset note:
 
@@ -36,6 +38,8 @@ Dataset note:
   - [2026-06-10-wikiarts5-full-notest.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-10-wikiarts5-full-notest.md)
 - local WSL baseline repro:
   - [2026-06-10-wikiarts5-baseline-repro.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-10-wikiarts5-baseline-repro.md)
+- wikiarts5 page-1 read:
+  - [2026-06-10-wikiarts5-page1-read.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-10-wikiarts5-page1-read.md)
 - remote new-data latent prep:
   - `wikiarts5-latent-prep`
   - target latent root:
@@ -48,13 +52,59 @@ Current execution preference:
 
 - remote `3060`:
   - single-lane training only while local baseline repro owns the local GPU
+  - launcher/status gate calibration has now been corrected to match the stated GiB targets exactly:
+    - `9.0 GiB -> 9216 MiB`
+    - `10.8 GiB -> 11059 MiB`
+    - `11.3 GiB -> 11571 MiB`
 - local GPU:
   - WSL `SaMAM patch8` segmented repro with `250-step` `CLIP-S + LPIPS` checkpoints
   - plus a detached convergence watcher that can stop the run once the curve really flattens
+  - live baseline status is now auto-refreshed in:
+    - [2026-06-10-wikiarts5-baseline-repro.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-10-wikiarts5-baseline-repro.md)
+    - [baseline_live_status.json](/G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/samam_wikiarts5_patch8_segmented_20260610_094447/baseline_live_status.json)
+  - baseline segmented control is no longer allowed to die early at the historical fixed cap:
+    - the segmented shell now defaults to `run until converged`
+    - a detached resume watcher is armed on the current result root in case the already-running old controller exits before reading the new logic
+  - baseline convergence authority has also been tightened:
+    - use `transfer_clip_style / transfer_lpips`
+    - not the raw all-pairs mean alone
+  - master note no longer duplicates exact baseline point reads here:
+    - use the live baseline note / json above as the single authoritative read surface
+  - deferred local family wakeups are now safe to leave armed together:
+    - the actual local fast-eval / review execution path is serialized by `local_gpu_lock`
+    - this is to prevent the earlier `two local python jobs at once` failure from coming back when the baseline finally releases the GPU
+  - deferred fast-eval launchers are now also family-status gated:
+    - only families still marked `running` are allowed to auto-start local fast-eval after the baseline releases the GPU
+    - this prevents a paused / recalibration-needed family such as `attn_gw_ot` from preempting the current formal lane
+  - deferred stage-close launchers now use the same family-status gating:
+    - a family that has been downgraded from `running` cannot later auto-enter bestfew review / frozen VLM closure by mistake
+  - runtime status watchers can also be launched with the same gating:
+    - once a family is no longer `running`, its live remote status poller can self-exit instead of continuing to refresh stale state forever
 - generic queue now defaults to:
-  - `remote train + local detached fast watcher`
+  - `remote train + remote fast-eval watcher`
+  - correction after the `attn_gated_spade` miss:
+    - `CLIP-S / LPIPS` convergence authority must exist on the same remote side as training
+    - local GPU is reserved for heavy review, not as the sole authority path for fast `CLIP-S / LPIPS`
+    - when queue uses remote fast-eval, it must not also auto-arm the old local deferred fast-eval / stageclose chain by default
   - current safe override while baseline repro is active:
     - `--skip-fast-eval-launch`
+  - followup launcher:
+    - [launch_round1_family_followups_detached.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_round1_family_followups_detached.py)
+    - future family launches from the queue now auto-arm runtime watch, deferred fast-eval, and deferred stage-close instead of requiring manual followup setup
+    - the helper is now idempotent for a family:
+      - it stops older same-family watcher processes before starting replacements
+      - this avoids silently stacking duplicate runtime/deferred watchers across recalibration or relaunch cycles
+  - direct family launchers now also refuse foreign-running overlap by default:
+    - `launch_remote_round1_family_train.py`
+    - `launch_remote_round1_family_fast_eval.py`
+    - this is a second safety net in case someone bypasses the queue and tries to start another family while a formal lane is already `running`
+- shared fast-eval infra:
+  - `run_evaluation.py` now persists both reference-side and source-side caches under `eval_cache`
+  - the source-side cache stores resized source tensors and, when needed, source CLIP embeddings for reuse across checkpoint sweeps
+  - `summary.json` now also records cache observability:
+    - reference/source cache path
+    - whether the cache was loaded, loaded-after-wait, or rebuilt
+    - how many entries were available in each cache
 - tokenizer + DINO policy for round 1:
   - DINO-supervised families stay in tokenizer-only update mode first
   - backbone remains frozen through `freeze_mode=style_branch`
@@ -72,31 +122,218 @@ Required closure per family:
 5. closure note
 6. decision note
 
-Current active remote lane:
+Current remote lane status:
 
-- `attn_gw_ot`
-  - config:
-    - [aaai2027_round1_attn_gw_ot_seed42_b8a2.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_attn_gw_ot_seed42_b8a2.json)
-  - remote train log:
-    - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_gw_ot_seed42_b8a2_train.log`
-  - data root:
-    - `/mnt/i/wikiarts_5_full_notest_latents_ema/train`
-  - launch notes:
-    - first new-data formal attempt at `batch_size = 13` was correctly rejected as under-band at `7921 MiB`
-    - second attempt at `batch_size = 15` hit `8992 MiB`, only `8 MiB` below the requested floor
-    - host-side launcher now applies `128 MiB` slack only to the minimum-band check to ignore integer-MiB health noise; the `11.0 GiB` hard cap remains strict
-    - the first accepted `batch_size = 15` lane later drifted to `11979 MiB / 12288 MiB`
-    - that over-cap lane was stopped immediately and is not formal evidence
-    - remote launch infra now includes a continuous runtime VRAM guard inside the generated WSL launcher
-    - current authoritative relaunch uses `batch_size = 12`
-    - current authoritative health sample: `10712 MiB / 12288 MiB`
-    - fast-eval watcher launch was intentionally skipped because local GPU is reserved for the WSL baseline repro
-    - a deferred local fast-eval launcher is now armed:
-      - [launch_local_round1_fast_eval_after_wsl_idle.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_local_round1_fast_eval_after_wsl_idle.py)
-      - it waits for `SaMAM` convergence plus WSL process exit, then auto-starts the `attn_gw_ot` local fast watcher
-    - a second deferred stage-close launcher is also armed:
-      - [run_round1_family_stageclose_when_ready.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_round1_family_stageclose_when_ready.py)
-      - it waits for the local `attn_gw_ot` fast curve to converge, then runs bestfew rerun/review and external-baseline `VLM`
+- active formal lane:
+  - `solver_tangent_rk`
+  - current formal launch setting:
+    - `batch=16`
+  - latest remote live sample:
+    - `9516 MiB / 12288 MiB`
+    - `band_status=in_band`
+    - `formal_status=formal_in_band`
+    - `epoch 6/24`
+    - `step 866/1180`
+  - settled remote fast-eval points currently pulled:
+    - `epoch_0001`
+    - `epoch_0002`
+    - `epoch_0003`
+    - `epoch_0004`
+    - `epoch_0005`
+  - current fast read:
+    - best transfer style remains `epoch_0001`:
+      - `0.6999 / 0.5295`
+    - best transfer LPIPS has now moved to `epoch_0004`:
+      - `0.6944 / 0.4998`
+    - best all-pairs style is now also `epoch_0004`:
+      - `0.7143 / 0.4886`
+    - latest settled point is now `epoch_0005`:
+      - `0.6893 / 0.5371`
+    - interpretation:
+      - `epoch_0004` remains the current best structure-preserving point on the fast board
+      - `epoch_0005` dropped on both transfer style and LPIPS
+      - so the line has now spent one retained checkpoint off the latest Pareto point
+      - the line is still below external-board promotion level on transfer style
+      - but with solver-family patience still at `6`, closure is still premature
+      - so this family remains alive and unconverged, but is not close to promotion
+  - solver-family next-step policy after the `epoch_0004 -> epoch_0005` rollback:
+    - do not interrupt the active in-flight tangent run
+    - but future solver-family launches / continuations should use:
+      - `virtual_length_multiplier = 0.5`
+      - `num_epochs = 48`
+    - rationale:
+      - finer epoch granularity for early-knee capture
+      - similar total optimization budget overall
+- implementation audit:
+  - all `11` round-1 family configs now pass one reusable local switch smoke:
+    - model build
+    - direct forward
+    - transport integration
+    - objective compute
+    - backward
+  - artifact:
+    - [round1_family_switch_smoke_20260610.json](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_family_switch_smoke_20260610.json)
+  - execution rule:
+    - `launch_remote_round1_family_train.py` now runs the same smoke gate before formal remote launch
+    - a family that fails smoke cannot consume the remote 3060 lane
+    - a direct successful launcher run now also writes `decision_status=running` back into the manifest immediately and refreshes family docs
+    - a direct successful launcher run now also arms the detached runtime watcher automatically
+    - a direct successful launcher run now also arms the remote fast-eval watcher automatically by default
+  - queue rule:
+    - `run_round1_family_queue.py` now prefers `switch_smoke_status=ok`
+    - and skips `switch_smoke_status=failed` by default
+- `attn_gated_spade` was downgraded on `2026-06-10`:
+  - retained fast-eval evidence through `epoch_0022`
+  - but process-local memory stayed under the requested band
+  - the train pid disappeared mid `epoch 23`
+  - status is now `recalibration_needed`, not `running`
+- `attn_pnp_selfinject` remains `recalibration_needed`, not a restored formal lane:
+  - opening batch is raised to `22` after the `gated_spade batch19` under-band read
+  - update after the first launch:
+    - `batch=22` overshot to `11939MiB` in `epoch 2`
+    - the next relaunch target is now `batch=20`
+  - update after the second launch:
+    - `batch=20` itself is viable for training memory
+    - but concurrent remote fast-eval still pushed the host above the guard cap
+    - this family therefore needs segmented non-concurrent remote train/eval orchestration before the next retry
+  - segmented orchestration entrypoint:
+    - [run_remote_round1_family_segmented.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_remote_round1_family_segmented.py)
+    - intended policy:
+      - launch one bounded train segment
+      - wait for remote train to exit cleanly
+      - run remote fast-eval only after the train segment is no longer resident
+      - then continue to the next segment from the latest retained checkpoint
+    - current detached launch:
+      - [round1_attn_pnp_selfinject_segmented_20260610.stdout.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_segmented_20260610.stdout.log)
+      - [round1_attn_pnp_selfinject_segmented_20260610.stderr.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_segmented_20260610.stderr.log)
+    - current observed behavior:
+      - it already waited through one busy-GPU window
+      - then completed one bounded train segment
+      - but that bounded `batch=20` segment still died before writing a new retained checkpoint
+      - a later segmented launch using the updated canonical `batch=18` config still failed the 30-second health check as under-band at about `8321 MiB`
+      - next retry target is now `batch=19`
+      - and automatically handed off into remote fast-eval
+    - current authoritative read after stale-state cleanup:
+      - remote GPU is idle again
+      - canonical run root currently has no `epoch_*.pt`
+      - synced remote packet now shows `train pid count = 0`, `fast-eval pid count = 0`
+      - so `attn_pnp_selfinject` is currently `recalibration_needed`, not an active formal lane
+    - latest calibration continuation:
+      - segmented controller was extended to pass `min_runtime_slack_mib`
+      - current active retry uses:
+        - `batch=19`
+        - `min_runtime_memory_mib=9000`
+        - `min_runtime_slack_mib=256`
+      - 30-second health read:
+        - `8858 MiB`
+      - current purpose:
+        - determine whether this near-band lane can finish one bounded epoch, write a fresh retained checkpoint, and complete remote fast-eval handoff without crossing the hard cap
+      - latest outcome:
+        - the bounded segment advanced to about `739 / 994` steps, roughly `74%` of the epoch
+        - then still died on persistent under-band:
+          - `used=8858MiB floor=9000MiB elapsed=321s consecutive=3`
+        - no fresh retained checkpoint landed
+        - so this retry also remains `recalibration_needed`
+      - infra follow-up already landed:
+        - segmented control now skips remote fast-eval launch automatically if the bounded train segment exits without producing a new retained checkpoint
+      - current nonformal continuation:
+        - a new `batch=19 + slack256 + warn` detached calibration run is active
+        - first launch was correctly deferred once because the remote host was externally occupied above the single-lane idle threshold
+        - after auto-retry it launched and reached a live sampled state around:
+          - `epoch 1/1`
+          - `step 572 / 994`
+          - `8752 MiB`
+        - keep treating this as calibration evidence only, not a restored formal lane
+        - but this continuation has now produced one real canonical checkpoint and fast-eval point:
+          - `epoch_0001.pt`
+          - transfer `0.6976 / 0.4750`
+          - all-pairs `0.7181 / 0.4712`
+          - wall `111.06s`
+        - current follow-up:
+          - an `epoch_0002` segmented continuation is now alive from canonical `epoch_0001.pt`
+          - 30-second health read on that continuation:
+            - `8903 MiB`
+          - this lets the family build a second real curve point before deciding whether the nonformal line deserves further formal-band rescue
+        - latest read:
+          - the continuation is still alive
+          - canonical run root still only has `epoch_0001.pt`
+          - live memory remains in the narrow `~8.9G` zone
+        - latest confirmed second point:
+          - `epoch_0002.pt` landed and fast-eval completed
+          - transfer moved to `0.6591 / 0.4656`
+          - all-pairs moved to `0.6876 / 0.4585`
+          - read:
+            - LPIPS improved
+            - style scores fell
+          - current interpretation:
+            - the family is still trending toward structure-preserving drift rather than a clean external-board win
+        - third point update:
+          - `epoch_0003.pt` landed and fast-eval completed
+          - transfer moved to `0.6910 / 0.4544`
+          - all-pairs moved to `0.7146 / 0.4491`
+          - read:
+            - style scores recovered strongly
+            - LPIPS improved again
+          - current interpretation:
+            - the line is no longer monotonic style-collapse
+            - it now merits one more canonical point before closure
+        - current third-point continuation:
+          - resumed from canonical `epoch_0002.pt`
+          - now uses the corrected GiB-derived gate values together with `slack=512`
+          - 30-second health read:
+            - `8974 MiB`
+          - current role:
+            - determine whether the line keeps the same “style down / lpips up” drift at a third point or stabilizes
+          - latest live read:
+            - around `epoch 3`, `step 187 / 994`
+            - sampled memory `9956 MiB`
+            - on the corrected GiB-derived thresholds this sampled point is inside the requested formal band
+        - current fourth-point continuation:
+          - resumed from canonical `epoch_0003.pt`
+          - live sampled memory is around `10097 MiB`
+          - still in-band under the corrected GiB-derived thresholds
+          - `epoch_0004.pt` has now landed
+          - fourth fast-eval point is still pending at this read
+        - current fifth-point continuation:
+          - resumed from canonical `epoch_0004.pt`
+          - 30-second health read:
+            - `10016 MiB`
+          - still in-band under the corrected GiB-derived thresholds
+          - current landed-state read:
+            - `epoch_0004.pt` is already present
+            - but the fourth fast-eval point is still pending while the fifth segment is already running
+        - fifth point update:
+          - `epoch_0005.pt` landed and fast-eval completed
+          - transfer moved to `0.6929 / 0.4534`
+          - all-pairs moved to `0.7164 / 0.4476`
+          - read:
+            - style recovered slightly over `epoch_0004`
+            - LPIPS softened slightly
+          - current interpretation:
+            - the line remains Pareto-active, so closure is still premature
+        - current pulled five-point read:
+          - best transfer style remains `epoch_0001`:
+            - `0.6980 / 0.4747`
+          - best transfer LPIPS is `epoch_0004`:
+            - `0.6899 / 0.4504`
+          - best all-pairs style remains `epoch_0001`:
+            - `0.7194 / 0.4689`
+          - current interpretation:
+            - this family improved its low-LPIPS frontier materially
+            - but it still reads as a recalibration line, not a promote-ready round-1 winner
+        - current sixth-point continuation:
+          - the `epoch_0006` controller is alive
+          - initial launch retries are correctly waiting for the same-run fast-eval to release the remote GPU below the one-lane idle threshold
+        - fourth point update:
+          - `epoch_0004.pt` landed and fast-eval completed
+          - transfer moved to `0.6899 / 0.4504`
+          - all-pairs moved to `0.7140 / 0.4453`
+          - read:
+            - LPIPS improved again
+            - style scores dipped only slightly from `epoch_0003`
+          - current interpretation:
+            - the line is still not a promote signal
+            - but it still has active movement on the Pareto surface, so closure is premature
 
 Closed family:
 
@@ -197,15 +434,344 @@ Closed family:
     - the next non-DINO family is now `attn_gw_ot`
     - `tok_a/tok_b/tok_c/tok_d` no longer jump ahead of the mainline backbone / solver sweep
 
+Recalibration-needed family:
+
+- `attn_gw_ot`
+  - current status:
+    - `recalibration_needed`
+  - why:
+    - the stopped lane accumulated repeated `under_band` runtime samples
+    - a stale concurrent remote training/eval lane was also found on the same `3060`
+    - that means the run is useful for directional signal only, not formal paper-facing evidence
+  - retained evidence:
+    - [remote_run.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/attn_gw_ot/remote_run.md)
+    - [closure.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/attn_gw_ot/closure.md)
+    - [decision.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/attn_gw_ot/decision.md)
+
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Active Status
 
 - Running families:
-  - `attn_gw_ot`
-- Active family: `attn_gw_ot`
+  - `solver_tangent_rk`
+- Active family: `solver_tangent_rk`
 - Decision status: `running`
-- Batch / epochs / patience: `12 / 24 / 4`
+- Batch / epochs / patience: `16 / 24 / 6`
+- Remote GPU live: `9516 / 12288 MiB`, `util=78%`, `band=in_band`
+- Best transfer `CLIP-S`: `epoch_0001` -> `0.6999 / 0.5295`
+- Best transfer `LPIPS`: `epoch_0007` -> `0.6951 / 0.4787`
+- Best all-pairs `CLIP-S`: `epoch_0007` -> `0.7159 / 0.4675`
+- Latest settled fast point: `epoch_0007` -> transfer `0.6951 / 0.4787`
+- Convergence: `row_count=7, since_best=6, tail_flat=False, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

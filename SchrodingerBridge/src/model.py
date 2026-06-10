@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 import time
-from typing import Mapping
+from typing import Any, Mapping
 
 import torch
 import torch.nn as nn
@@ -11,6 +11,7 @@ import torch.nn.functional as F
 from config_schema import ModelConfig
 from lancet_blocks import StyleMaps, _gumbel_hard_attention, _sinkhorn_attention
 from lancet_backbone import LatentAdaCUT, count_parameters
+from style_families import SOLVER_FAMILIES, normalize_family
 from utils.diffeomorphic import apply_texture_aligned_diffeomorphic_stroke
 
 
@@ -32,6 +33,11 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         bridge_config = config.validated()
         super().__init__(bridge_config)
         self.time_dim = int(bridge_config.time_dim)
+        self.solver_family = normalize_family(
+            str(getattr(bridge_config, "solver_family", "euler_legacy")),
+            allowed=SOLVER_FAMILIES,
+            default="euler_legacy",
+        )
         self.velocity_head_mode = str(bridge_config.velocity_head_mode).strip().lower()
         self.velocity_tanh_limit = max(1e-3, float(bridge_config.velocity_tanh_limit))
         self.transport_prediction_mode = str(getattr(bridge_config, "transport_prediction_mode", "velocity")).strip().lower()
@@ -185,6 +191,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.last_proximal_clamp_scale: torch.Tensor | None = None
         self.current_epoch: int = 1
         self.total_epochs: int = 1
+        self.runtime_conditioning: dict[str, Any] = {}
 
     def _profile_start(self, ref: torch.Tensor) -> float:
         if not bool(getattr(self, "profile_modules", False)):
@@ -199,6 +206,15 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         if bool(getattr(self, "profile_sync_cuda", False)) and ref.device.type == "cuda":
             torch.cuda.synchronize(ref.device)
         self.last_profile[name] = self.last_profile.get(name, 0.0) + max(0.0, time.perf_counter() - start)
+
+    def set_runtime_conditioning(self, payload: Mapping[str, Any] | None) -> None:
+        if payload is None:
+            self.runtime_conditioning = {}
+            return
+        self.runtime_conditioning = dict(payload)
+
+    def clear_runtime_conditioning(self) -> None:
+        self.runtime_conditioning = {}
 
     @staticmethod
     def _make_style_injector(input_dim: int, channels: int, hidden_dim: int) -> nn.Module:
@@ -430,6 +446,80 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         strength = self._resolve_style_strength(style_strength)
         horizon = max(0.0, float(step_size)) * strength
         return max(0.0, min(1.0, horizon))
+
+    def _runtime_content_dino_gate(self, ref: torch.Tensor) -> torch.Tensor | None:
+        payload = self.runtime_conditioning if isinstance(self.runtime_conditioning, dict) else {}
+        patches = payload.get("content_dino_patches")
+        if not torch.is_tensor(patches):
+            return None
+        patches = patches.to(device=ref.device, dtype=torch.float32)
+        score = patches.std(dim=-1, unbiased=False, keepdim=True)
+        hw = payload.get("content_dino_hw")
+        if torch.is_tensor(hw) and hw.numel() >= 2:
+            h_dim = max(1, int(hw.view(-1)[0].item()))
+            w_dim = max(1, int(hw.view(-1)[1].item()))
+        else:
+            side = int(round(max(1, patches.shape[1]) ** 0.5))
+            h_dim = side
+            w_dim = max(1, patches.shape[1] // max(side, 1))
+        if h_dim * w_dim != patches.shape[1]:
+            h_dim, w_dim = 1, int(patches.shape[1])
+        gate = score.transpose(1, 2).contiguous().view(patches.shape[0], 1, h_dim, w_dim)
+        gate = F.interpolate(gate, size=ref.shape[-2:], mode="bilinear", align_corners=False)
+        gate = gate - gate.amin(dim=(2, 3), keepdim=True)
+        gate = gate / gate.amax(dim=(2, 3), keepdim=True).clamp_min(1e-6)
+        return gate.to(dtype=ref.dtype)
+
+    def _project_velocity_tangent(self, velocity: torch.Tensor, ref: torch.Tensor) -> torch.Tensor:
+        gate = self._runtime_content_dino_gate(ref)
+        if gate is None:
+            return velocity
+        strength = max(0.0, float(getattr(self, "solver_tangent_projection_strength", 1.0)))
+        return velocity * (1.0 - gate * strength)
+
+    def _transport_velocity(
+        self,
+        h: torch.Tensor,
+        *,
+        t: float,
+        style_id: torch.Tensor | int | None,
+        style_code_override: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        velocity = self.forward(h, t=t, style_id=style_id, style_code_override=style_code_override)
+        if self.solver_family == "solver_tangent_rk":
+            return self._project_velocity_tangent(velocity, h)
+        return velocity
+
+    def _rk_transport_step(
+        self,
+        h: torch.Tensor,
+        *,
+        t: float,
+        dt: float,
+        style_id: torch.Tensor | int | None,
+        style_code_override: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        order = max(2, int(getattr(self, "solver_rk_order", 4)))
+        if order <= 2:
+            k1 = self._transport_velocity(h, t=t, style_id=style_id, style_code_override=style_code_override)
+            k2 = self._transport_velocity(h + 0.5 * dt * k1, t=t + 0.5 * dt, style_id=style_id, style_code_override=style_code_override)
+            return h + dt * k2
+        k1 = self._transport_velocity(h, t=t, style_id=style_id, style_code_override=style_code_override)
+        k2 = self._transport_velocity(h + 0.5 * dt * k1, t=t + 0.5 * dt, style_id=style_id, style_code_override=style_code_override)
+        k3 = self._transport_velocity(h + 0.5 * dt * k2, t=t + 0.5 * dt, style_id=style_id, style_code_override=style_code_override)
+        k4 = self._transport_velocity(h + dt * k3, t=t + dt, style_id=style_id, style_code_override=style_code_override)
+        return h + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+
+    def _correct_transport_state(self, h: torch.Tensor, source: torch.Tensor, *, dt: float) -> torch.Tensor:
+        steps = max(1, int(getattr(self, "solver_corrector_steps", 1)))
+        step_size = max(0.0, float(getattr(self, "solver_corrector_step_size", 0.1)))
+        gate = self._runtime_content_dino_gate(h)
+        if gate is None:
+            gate = torch.ones((h.shape[0], 1, h.shape[2], h.shape[3]), device=h.device, dtype=h.dtype)
+        out = h
+        for _ in range(steps):
+            out = torch.lerp(out, source, gate * step_size * dt)
+        return out
 
     def _proximal_lowpass(self, x: torch.Tensor) -> torch.Tensor:
         pad = self.proximal_highpass_kernel // 2
@@ -740,8 +830,29 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         h = x
         for idx in range(steps):
             t = horizon * ((idx + 0.5) / float(steps))
-            velocity = self.forward(h, t=t, style_id=style_id, style_code_override=style_code_override)
-            h = h + velocity * dt
+            if self.solver_family == "solver_tangent_rk":
+                h = self._rk_transport_step(
+                    h,
+                    t=t,
+                    dt=dt,
+                    style_id=style_id,
+                    style_code_override=style_code_override,
+                )
+            elif self.solver_family == "solver_pc":
+                velocity = self.forward(h, t=t, style_id=style_id, style_code_override=style_code_override)
+                h = h + velocity * dt
+                h = self._correct_transport_state(h, x, dt=dt)
+            elif self.solver_family == "solver_unsb_cycle":
+                velocity = self.forward(h, t=t, style_id=style_id, style_code_override=style_code_override)
+                predictor = h + velocity * dt
+                predictor = self._correct_transport_state(predictor, x, dt=dt * 0.5)
+                noise_scale = max(0.0, float(getattr(self, "solver_stochastic_noise_scale", 0.01)))
+                if noise_scale > 0.0:
+                    predictor = predictor + torch.randn_like(predictor) * noise_scale * math.sqrt(max(dt, 1e-8))
+                h = predictor
+            else:
+                velocity = self.forward(h, t=t, style_id=style_id, style_code_override=style_code_override)
+                h = h + velocity * dt
         return h
 
     @torch.no_grad()
