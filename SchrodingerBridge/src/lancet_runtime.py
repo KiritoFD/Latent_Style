@@ -143,7 +143,47 @@ class LatentAdaCUTRuntimeMixin:
         style_id: torch.Tensor | int,
     ) -> tuple[torch.Tensor, StyleMaps]:
         style_code = self.encode_style_id(style_id)
-        return style_code, StyleMaps()
+        return style_code, StyleMaps(family=str(getattr(self, "tokenizer_family", "legacy_factorized")))
+
+    def _runtime_conditioning_payload(self) -> dict:
+        payload = getattr(self, "runtime_conditioning", None)
+        return payload if isinstance(payload, dict) else {}
+
+    def _structured_style_from_sidecar(
+        self,
+        *,
+        style_id: torch.Tensor | int | None,
+        style_code: torch.Tensor,
+        content_feat_16: torch.Tensor,
+    ) -> tuple[torch.Tensor, StyleMaps] | None:
+        tokenizer = getattr(self, "structured_style_tokenizer", None)
+        family = str(getattr(self, "tokenizer_family", "legacy_factorized"))
+        if tokenizer is None or family == "legacy_factorized" or style_id is None:
+            return None
+        payload = self._runtime_conditioning_payload()
+        content_dino_patches = payload.get("content_dino_patches")
+        if not torch.is_tensor(content_dino_patches):
+            return None
+        kwargs = {
+            "style_id": self._normalize_style_id_input(style_id, device=style_code.device),
+            "base_style_code": style_code,
+            "content_dino_patches": content_dino_patches.to(device=style_code.device, dtype=style_code.dtype),
+            "target_hw": tuple(int(v) for v in content_feat_16.shape[-2:]),
+        }
+        if family == "tok_b_cross_image":
+            bank = payload.get("target_style_dino_bank_patches")
+            if not torch.is_tensor(bank):
+                return None
+            kwargs["style_bank_patches"] = bank.to(device=style_code.device, dtype=style_code.dtype)
+        structured = tokenizer(**kwargs)
+        return structured.global_code, StyleMaps(
+            map_16=structured.spatial_map,
+            gate_16=structured.gate_map,
+            mask_16=structured.mask_map,
+            aux_16=structured.aux_map,
+            family=family,
+            debug=dict(structured.debug),
+        )
 
     def _content_spatial_features(self, feat: torch.Tensor) -> torch.Tensor:
         xf = feat.float()
@@ -483,6 +523,13 @@ class LatentAdaCUTRuntimeMixin:
             content_feat_16=content_feat_16,
         )
         style_map_proj: torch.Tensor | None = None
+        structured_ctx = self._structured_style_from_sidecar(
+            style_id=style_id,
+            style_code=style_code,
+            content_feat_16=content_feat_16,
+        )
+        if structured_ctx is not None:
+            style_code, style_maps = structured_ctx
 
         if override_palette is not None:
             style_map_proj = override_palette
@@ -554,12 +601,21 @@ class LatentAdaCUTRuntimeMixin:
             if style_spatial_16 is None:
                 raise ValueError("style spatial prior is required for id-only inference.")
             style_map_proj = style_spatial_16
+            if style_maps.mask_16 is not None:
+                mask_16 = self._prepare_spatial_map(style_maps.mask_16, content_feat_16)
+                if mask_16 is not None:
+                    style_map_proj = style_map_proj * (0.5 + torch.sigmoid(mask_16))
 
         semantic_attn: torch.Tensor | None = None
+        body_gate: float | torch.Tensor = 1.0
+        if style_maps.gate_16 is not None:
+            gate_16 = self._prepare_spatial_map(style_maps.gate_16, content_feat_16)
+            if gate_16 is not None:
+                body_gate = torch.sigmoid(gate_16)
         if self.use_style_blender:
             h_painted = content_feat_16
             for block in self.body_blocks:
-                h_painted = block(h_painted, style_map=style_map_proj, gate=1.0)
+                h_painted = block(h_painted, style_map=style_map_proj, gate=body_gate)
                 semantic_attn = getattr(block, "last_attn", semantic_attn)
             if self.blender is None:
                 raise RuntimeError("Style blender is enabled but not initialized.")
@@ -567,18 +623,18 @@ class LatentAdaCUTRuntimeMixin:
         else:
             h = content_feat_16
             for block in self.body_blocks:
-                h = block(h, style_map=style_map_proj, gate=1.0)
+                h = block(h, style_map=style_map_proj, gate=body_gate)
                 semantic_attn = getattr(block, "last_attn", semantic_attn)
             h_body = h
         style_inject = getattr(self, "_apply_style_feature_injection", None)
         if callable(style_inject):
-            h_body = style_inject(h_body, x, style_code, site="body")
+            h_body = style_inject(h_body, x, style_code, site="body", style_map=style_map_proj)
         h_up = self.dec_up(h_body)
         h_up = self._apply_upsample_blur(h_up)
         h_fused = self._fuse_skip_features(h_up, skip_32, style_code=style_code, gate=1.0)
         h_dec = self._run_decoder(h_fused)
         if callable(style_inject):
-            h_dec = style_inject(h_dec, x, style_code, site="decoder")
+            h_dec = style_inject(h_dec, x, style_code, site="decoder", style_map=style_map_proj)
         h_dec = self.dec_act(self.dec_mod(h_dec, style_code, gate=1.0))
         delta_raw = self._compute_delta(h_dec, x=x)
         return delta_raw

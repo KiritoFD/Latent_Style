@@ -1,0 +1,228 @@
+# attn_pnp_selfinject Decision
+
+- Decision date:
+  - `2026-06-10`
+- Current status:
+  - `recalibration_needed`
+- Decision:
+  - do not treat the archived `batch=22` launch as formal evidence
+  - keep its `epoch_0001` scalar and fast-eval outputs as directional context only
+  - do not treat the current `batch=20` attempt as a stable formal lane either
+  - the new evidence says remote training and remote fast-eval still cannot safely coexist on this `3060` without further orchestration
+- Why:
+  - runtime guard killed the train lane in `epoch 2` after a `11939MiB` spike
+  - that is above both the preferred `10.8G` ceiling and the hard `11.3G` paper-facing cap
+- Important calibration note:
+  - the original infra used conservative round numbers in MiB
+  - round-1 launcher/status defaults are now aligned to the stated binary-unit targets:
+    - `9.0 GiB -> 9216 MiB`
+    - `10.8 GiB -> 11059 MiB`
+    - `11.3 GiB -> 11571 MiB`
+  - so the old `11016MiB` stop should be read as:
+    - above the earlier conservative `11000MiB` code cap
+    - but still below the true `10.8 GiB` soft ceiling
+- Next action:
+  - keep the low-VRAM remote fast-eval watcher logic as the safer default building block
+  - move to a non-concurrent segmented train/eval orchestration for this family before relaunching again
+  - controlling script:
+    - [run_remote_round1_family_segmented.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_remote_round1_family_segmented.py)
+  - current launch:
+    - the earlier detached segmented run proved the orchestration path
+    - but it is no longer active now
+    - the previous intended retry target `18` has now been invalidated by a real segmented health read
+    - next relaunch target batch is now `19`
+    - stdout:
+      - [round1_attn_pnp_selfinject_segmented_20260610.stdout.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_segmented_20260610.stdout.log)
+    - stderr:
+      - [round1_attn_pnp_selfinject_segmented_20260610.stderr.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_segmented_20260610.stderr.log)
+  - latest segmented read:
+    - the controller already completed one bounded train segment and handed off to remote fast-eval once
+    - this confirms the segmented orchestration path itself works end-to-end
+    - but the bounded `batch=20` train segment still died before writing a new retained checkpoint
+    - a later segmented launch using the updated canonical `batch=18` config also failed the 30-second health check as under-band:
+      - `health_gpu_memory_used_mib = 8321`
+    - current authoritative remote state is now:
+      - no train pid
+      - no fast-eval pid
+      - no new retained checkpoint in the canonical run root
+    - the next retry target is therefore `batch=19`, after a fresh relaunch rather than assuming any live segmented controller remains
+  - current calibration continuation:
+    - segmented controller now supports explicit launch-time VRAM slack passthrough
+    - the active retry is:
+      - `batch=19`
+      - `min_runtime_memory_mib=9000`
+      - `min_runtime_slack_mib=256`
+    - 30-second health read:
+      - `health_gpu_memory_used_mib = 8858`
+    - later read:
+      - the bounded segment advanced to about `739 / 994` steps, roughly `74%` of the epoch
+      - then the runtime guard still killed it with:
+        - `RUNTIME_UNDER_BAND_STOP ... used=8858MiB floor=9000MiB elapsed=321s consecutive=3`
+      - train exit code was `143`
+      - no new retained checkpoint landed
+      - remote fast-eval launch after that segment was therefore non-productive and only waited on an empty run root
+    - conclusion:
+      - this is not a promoted formal lane
+      - current status stays `recalibration_needed`
+      - the next retry should not repeat the same `batch=19 + slack256 + stop-under-band` policy unchanged
+  - active nonformal continuation:
+    - current detached controller:
+      - [round1_attn_pnp_selfinject_segmented_b19slack256warn_20260610_203251.stdout.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_segmented_b19slack256warn_20260610_203251.stdout.log)
+    - active launch policy:
+      - `batch=19`
+      - `min_runtime_slack_mib=256`
+      - `runtime_guard_min_mode=warn`
+    - current read:
+      - it first deferred once because the remote GPU was externally occupied above the single-lane idle threshold
+      - then it launched successfully
+      - 30-second health read:
+        - `health_gpu_memory_used_mib = 8752`
+      - mid-run sampled state:
+        - manifest live fields reached about `epoch=1/1`, `step=572/994`, `loss=9.3182`, `tswd=4.8125`
+      - current landed artifact:
+        - the bounded segment has now written `epoch_0001.pt` into the canonical run root
+        - remote fast-eval also completed the first point:
+          - transfer `0.6976 / 0.4750`
+          - all-pairs `0.7181 / 0.4712`
+          - wall `111.06s`
+    - interpretation:
+      - keep this as a nonformal calibration read only
+      - do not promote `decision_status=running` while the family is still being judged against the formal `9.0-10.8 GiB` band
+      - but this family now at least has one real canonical checkpoint and one real remote fast-eval point under the warn-policy calibration path
+  - current continuation after `epoch_0001`:
+    - segmented `epoch_0002` retry is now alive
+    - resume path has been hardened so segmented continuation no longer depends on optimizer-state compatibility
+    - current read:
+      - resumed from canonical `epoch_0001.pt`
+      - resumed training state at `epoch=2`, `global_step=497`
+      - 30-second health read:
+        - `health_gpu_memory_used_mib = 8903`
+      - current role:
+        - keep building a second canonical curve point under the same nonformal calibration policy
+        - still do not treat this as a formal paper-facing lane until the band issue itself is resolved
+    - current live continuation read:
+      - the resumed `epoch_0002` segment remains alive
+      - current sampled memory:
+        - about `8886-8903 MiB`
+      - this is still formally under-band, but materially closer to the requested floor than the earlier `epoch_0001` calibration segment
+      - later read:
+        - `epoch_0002.pt` has now landed
+        - remote fast-eval `epoch_0002` also completed
+        - second point:
+          - transfer `0.6591 / 0.4656`
+          - all-pairs `0.6876 / 0.4585`
+          - wall `171.56s`
+    - current interpretation of the first two-point trend:
+      - `epoch_0002` improves LPIPS versus `epoch_0001`
+      - but both transfer and all-pairs `CLIP-S` drop materially
+      - so the current trajectory reads as:
+        - structure/content-preservation up
+        - style actuation down
+      - this is useful evidence, but still not a promote signal against the current external board
+  - current `epoch_0003` continuation:
+    - launch policy now uses the corrected GiB-derived gate values:
+      - `min_runtime_memory_mib = 9216`
+      - `max_runtime_memory_mib = 11059`
+      - `runtime_guard_max_memory_mib = 11571`
+    - nonformal continuation still uses:
+      - `batch=19`
+      - `min_runtime_slack_mib=512`
+      - `runtime_guard_min_mode=warn`
+    - current read:
+      - resumed from canonical `epoch_0002.pt`
+      - resumed training state at `epoch=3`, `global_step=994`
+      - 30-second health read:
+        - `health_gpu_memory_used_mib = 8974`
+    - interpretation:
+      - this is still calibration only
+      - but the live memory is now closer to the corrected formal floor than the earlier `epoch_0001` and `epoch_0002` continuations
+    - latest live read:
+      - manifest live fields now show about:
+        - `epoch=3`
+        - `step=187 / 994`
+        - `loss=8.1171`
+        - `tswd=5.5312`
+        - `memory_used=9956 MiB`
+      - under the corrected GiB-derived gate, this sampled point is now inside the requested formal band
+    - current landed-state read:
+      - `epoch_0003.pt` has now landed in the canonical run root
+      - but the third remote fast-eval point is still pending at this read
+    - current action:
+      - wait for `epoch_0003` fast-eval completion before deciding whether the line merits a fourth calibration point or should be closed on the visible trend
+    - completed third-point read:
+      - `epoch_0003` fast-eval has now landed
+      - third point:
+        - transfer `0.6910 / 0.4544`
+        - all-pairs `0.7146 / 0.4491`
+        - wall `158.09s`
+    - three-point interpretation:
+      - `epoch_0002` was a structure-up / style-down dip
+      - `epoch_0003` recovered most of the style score while continuing to improve LPIPS
+      - so this family now looks more like:
+        - unstable but potentially recoverable
+        - not yet promotable
+        - worth one more canonical point before closure
+  - current `epoch_0004` continuation:
+    - detached controller:
+      - [round1_attn_pnp_selfinject_segmented_b19slack512warn_e4_20260610_214343.stdout.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_segmented_b19slack512warn_e4_20260610_214343.stdout.log)
+    - current read:
+      - resumed from canonical `epoch_0003.pt`
+      - current remote train is alive
+      - sampled memory is around `10097 MiB`
+      - under the corrected GiB-derived thresholds this remains in-band
+    - completed fourth-point read:
+      - `epoch_0004.pt` has now landed in the canonical run root
+      - remote fast-eval `epoch_0004` also completed
+      - fourth point:
+        - transfer `0.6899 / 0.4504`
+        - all-pairs `0.7140 / 0.4453`
+        - wall `161.98s`
+    - four-point interpretation:
+      - versus `epoch_0003`, style scores softened only slightly
+      - LPIPS improved again
+      - the line still does not beat the original best style point at `epoch_0001`
+      - but it continues to improve the low-LPIPS frontier while holding style materially above the `epoch_0002` collapse
+  - current `epoch_0005` continuation:
+    - detached controller:
+      - [round1_attn_pnp_selfinject_segmented_b19slack512warn_e5_20260610_220341.stdout.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_segmented_b19slack512warn_e5_20260610_220341.stdout.log)
+    - current read:
+      - resumed from canonical `epoch_0004.pt`
+      - resumed training state at `epoch=5`, `global_step=1988`
+      - 30-second health read:
+        - `health_gpu_memory_used_mib = 10016`
+      - this fifth bounded segment is alive and still inside the corrected GiB-derived formal band
+    - current live read:
+      - manifest live fields now show about:
+        - `epoch=5`
+        - `step=876 / 994`
+        - `memory_used=10620 MiB`
+      - this still remains inside the corrected formal band
+  - current landed-state read after `epoch_0005` launch:
+    - `epoch_0004.pt` and its fast-eval point are already settled
+    - fourth point:
+      - transfer `0.6899 / 0.4504`
+      - all-pairs `0.7140 / 0.4453`
+    - the line is now collecting a fifth canonical point before closure
+  - completed fifth-point read:
+    - `epoch_0005.pt` and its fast-eval point are now settled
+    - fifth point:
+      - transfer `0.6929 / 0.4534`
+      - all-pairs `0.7164 / 0.4476`
+      - wall `201.54s`
+    - five-point interpretation:
+      - versus `epoch_0004`, style scores recovered slightly
+      - LPIPS softened slightly
+      - the point is still Pareto-relevant under the joint transfer/all-pairs read
+      - therefore formal closure is still premature under the current patience rule
+  - current `epoch_0006` continuation:
+    - detached controller:
+      - [round1_attn_pnp_selfinject_segmented_b19slack512warn_e6_20260610_222434.stdout.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_segmented_b19slack512warn_e6_20260610_222434.stdout.log)
+    - rationale:
+      - `epoch_0005` is still the newest Pareto point
+      - `best_in_newest_2 = true`
+      - so the family should continue to the next retained checkpoint instead of closing early
+    - current read:
+      - launch is being deferred automatically because the same-run fast-eval still occupies the remote GPU above the single-lane idle threshold
+      - sampled prelaunch memory during the first retries:
+        - about `3042-3050 MiB`
+      - this is expected behavior under the one-lane rule, not a new train failure

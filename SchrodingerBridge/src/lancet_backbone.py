@@ -9,9 +9,13 @@ import torch.nn as nn
 from config_schema import ModelConfig
 from lancet_blocks import (
     DecoderTextureBlock,
+    GatedSpadeAttention,
+    GWOTAttention,
     NormFreeModulation,
+    PnPSelfAttentionInject,
     SemanticCrossAttn,
     SimpleResBlock,
+    SpatialModulatedSelfAttn,
     StyleBlender,
     StyleRoutingSkip,
     _build_feature_block,
@@ -19,6 +23,13 @@ from lancet_blocks import (
     _resolve_group_count,
 )
 from lancet_runtime import LatentAdaCUTRuntimeMixin
+from semantic_tokenizer import (
+    CrossImageRoutingTokenizer,
+    DinoDictionaryTokenizer,
+    ResidualSemanticAdapterTokenizer,
+    VLMPromptStyleTokenizer,
+)
+from style_families import BACKBONE_ATTENTION_FAMILIES, TOKENIZER_FAMILIES, normalize_family
 from style_tokenizer import FactorizedStyleTokenizer
 
 
@@ -82,6 +93,16 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         self.hires_block_type = _normalize_feature_block_type(getattr(cfg, "hires_block_type", "conv"))
         self.body_block_type = _normalize_feature_block_type(getattr(cfg, "body_block_type", "global_attn"))
         self.decoder_block_type = _normalize_feature_block_type(getattr(cfg, "decoder_block_type", "conv"))
+        self.tokenizer_family = normalize_family(
+            str(getattr(cfg, "tokenizer_family", "legacy_factorized")),
+            allowed=TOKENIZER_FAMILIES,
+            default="legacy_factorized",
+        )
+        self.backbone_attention_family = normalize_family(
+            str(getattr(cfg, "backbone_attention_family", "legacy_semantic_crossattn")),
+            allowed=BACKBONE_ATTENTION_FAMILIES,
+            default="legacy_semantic_crossattn",
+        )
         self.semantic_attn_temperature = max(1e-4, float(getattr(cfg, "semantic_attn_temperature", 0.08)))
         self.semantic_attn_routing_mode = str(getattr(cfg, "semantic_attn_routing_mode", "softmax")).strip().lower()
         if self.semantic_attn_routing_mode not in {"softmax", "sinkhorn", "gumbel_hard"}:
@@ -150,6 +171,47 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             atom_topk=int(getattr(cfg, "tokenizer_atom_topk", 0)),
             atom_hard_eval=bool(getattr(cfg, "tokenizer_atom_hard_eval", False)),
         )
+        self.structured_style_tokenizer: nn.Module | None = None
+        structured_dino_dim = max(1, int(getattr(cfg, "tokenizer_dino_dim", 384)))
+        structured_num_clusters = max(1, int(getattr(cfg, "tokenizer_num_clusters", 16)))
+        structured_temperature = max(1e-3, float(getattr(cfg, "tokenizer_structured_temperature", 0.1)))
+        structured_prompt_dim = max(1, int(getattr(cfg, "tokenizer_prompt_dim", 256)))
+        structured_prompt_length = max(1, int(getattr(cfg, "tokenizer_prompt_length", 8)))
+        if self.tokenizer_family == "tok_a_dino_dict":
+            self.structured_style_tokenizer = DinoDictionaryTokenizer(
+                num_styles=self.num_styles,
+                global_dim=style_dim,
+                spatial_dim=self.body_channels,
+                dino_dim=structured_dino_dim,
+                num_clusters=structured_num_clusters,
+                temperature=structured_temperature,
+            )
+        elif self.tokenizer_family == "tok_b_cross_image":
+            self.structured_style_tokenizer = CrossImageRoutingTokenizer(
+                num_styles=self.num_styles,
+                global_dim=style_dim,
+                spatial_dim=self.body_channels,
+                dino_dim=structured_dino_dim,
+                temperature=structured_temperature,
+            )
+        elif self.tokenizer_family == "tok_c_residual_adapter":
+            self.structured_style_tokenizer = ResidualSemanticAdapterTokenizer(
+                num_styles=self.num_styles,
+                global_dim=style_dim,
+                spatial_dim=self.body_channels,
+                dino_dim=structured_dino_dim,
+                num_clusters=structured_num_clusters,
+                temperature=structured_temperature,
+            )
+        elif self.tokenizer_family == "tok_d_vlm_prompt":
+            self.structured_style_tokenizer = VLMPromptStyleTokenizer(
+                num_styles=self.num_styles,
+                global_dim=style_dim,
+                spatial_dim=self.body_channels,
+                dino_dim=structured_dino_dim,
+                prompt_dim=structured_prompt_dim,
+                prompt_length=structured_prompt_length,
+            )
         self.style_code_content_router: nn.Module | None = None
         self.style_code_content_style_gate: nn.Embedding | None = None
         if self.tokenizer_content_adaptive:
@@ -235,20 +297,43 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         )
         self.down = nn.Conv2d(self.lift_channels, self.body_channels, kernel_size=4, stride=2, padding=1)
 
-        self.body_blocks = nn.ModuleList(
-            [
-                SemanticCrossAttn(
+        def _make_body_block() -> nn.Module:
+            if self.backbone_attention_family == "attn_sa_mod":
+                return SpatialModulatedSelfAttn(
                     dim=self.body_channels,
                     num_groups=num_groups,
                     temperature=self.semantic_attn_temperature,
-                    paint_only=self.use_style_blender,
-                    routing_mode=self.semantic_attn_routing_mode,
-                    sinkhorn_iters=self.semantic_sinkhorn_iters,
-                    gumbel_tau=self.semantic_gumbel_tau,
                 )
-                for _ in range(self.num_res_blocks)
-            ]
-        )
+            if self.backbone_attention_family == "attn_gw_ot":
+                return GWOTAttention(
+                    dim=self.body_channels,
+                    num_groups=num_groups,
+                    temperature=self.semantic_attn_temperature,
+                    spatial_lambda=float(getattr(cfg, "semantic_gw_spatial_lambda", 0.25)),
+                    sinkhorn_iters=self.semantic_sinkhorn_iters,
+                )
+            if self.backbone_attention_family == "attn_gated_spade":
+                return GatedSpadeAttention(
+                    dim=self.body_channels,
+                    num_groups=num_groups,
+                    temperature=self.semantic_attn_temperature,
+                )
+            if self.backbone_attention_family == "attn_pnp_selfinject":
+                return PnPSelfAttentionInject(
+                    dim=self.body_channels,
+                    num_groups=num_groups,
+                    temperature=self.semantic_attn_temperature,
+                )
+            return SemanticCrossAttn(
+                dim=self.body_channels,
+                num_groups=num_groups,
+                temperature=self.semantic_attn_temperature,
+                paint_only=self.use_style_blender,
+                routing_mode=self.semantic_attn_routing_mode,
+                sinkhorn_iters=self.semantic_sinkhorn_iters,
+                gumbel_tau=self.semantic_gumbel_tau,
+            )
+        self.body_blocks = nn.ModuleList([_make_body_block() for _ in range(self.num_res_blocks)])
         self.blender = StyleBlender(dim=self.body_channels, num_groups=num_groups) if self.use_style_blender else None
 
         # Decoder: 16 -> 32

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import math
 
 import torch
@@ -443,6 +443,160 @@ class SemanticCrossAttn(nn.Module):
         return x + final_gate * delta
 
 
+def _spatial_distance_bias(
+    h_dim: int,
+    w_dim: int,
+    *,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> torch.Tensor:
+    coords_y, coords_x = torch.meshgrid(
+        torch.linspace(-1.0, 1.0, h_dim, device=device, dtype=dtype),
+        torch.linspace(-1.0, 1.0, w_dim, device=device, dtype=dtype),
+        indexing="ij",
+    )
+    coords = torch.stack([coords_y.reshape(-1), coords_x.reshape(-1)], dim=1)
+    return torch.cdist(coords, coords, p=2)
+
+
+class SpatialModulatedSelfAttn(nn.Module):
+    def __init__(self, dim: int, num_groups: int = 4, temperature: float = 0.08) -> None:
+        super().__init__()
+        groups = _resolve_group_count(dim, num_groups)
+        self.norm_x = nn.GroupNorm(groups, dim)
+        self.norm_s = nn.GroupNorm(groups, dim)
+        self.to_q = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
+        self.to_k = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
+        self.to_v = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
+        self.to_gamma = nn.Conv2d(dim, dim, kernel_size=1)
+        self.to_beta = nn.Conv2d(dim, dim, kernel_size=1)
+        self.log_temp = nn.Parameter(torch.tensor([math.log(max(1e-4, float(temperature)))], dtype=torch.float32))
+        self.gamma = nn.Parameter(torch.zeros(1, dim, 1, 1))
+        self.last_attn: torch.Tensor | None = None
+        self.last_k: torch.Tensor | None = None
+
+    def forward(self, x: torch.Tensor, style_map: torch.Tensor, gate: float | torch.Tensor = 1.0) -> torch.Tensor:
+        bsz, channels, h_dim, w_dim = x.shape
+        nx = self.norm_x(x)
+        ns = self.norm_s(style_map)
+        q = self.to_q(nx).view(bsz, channels, -1).transpose(1, 2)
+        k = self.to_k(nx).view(bsz, channels, -1)
+        gamma = torch.tanh(self.to_gamma(ns))
+        beta = self.to_beta(ns)
+        mixed = nx * (1.0 + gamma) + beta
+        v = self.to_v(mixed).view(bsz, channels, -1).transpose(1, 2)
+        scale = (channels ** -0.5) / torch.exp(self.log_temp).clamp(1e-4, 10.0)
+        attn = F.softmax(torch.bmm(q, k) * scale, dim=-1)
+        self.last_attn = attn
+        self.last_k = F.normalize(k, p=2, dim=1)
+        painted = torch.bmm(attn, v).transpose(1, 2).view(bsz, channels, h_dim, w_dim)
+        gain = gate if isinstance(gate, float) else gate.to(device=x.device, dtype=x.dtype)
+        return x + painted * (1.0 + self.gamma) * gain
+
+
+class GWOTAttention(nn.Module):
+    def __init__(
+        self,
+        dim: int,
+        num_groups: int = 4,
+        temperature: float = 0.08,
+        spatial_lambda: float = 0.25,
+        sinkhorn_iters: int = 3,
+    ) -> None:
+        super().__init__()
+        groups = _resolve_group_count(dim, num_groups)
+        self.norm_x = nn.GroupNorm(groups, dim)
+        self.norm_s = nn.GroupNorm(groups, dim)
+        self.to_q = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
+        self.to_k = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
+        self.to_v = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
+        self.log_temp = nn.Parameter(torch.tensor([math.log(max(1e-4, float(temperature)))], dtype=torch.float32))
+        self.spatial_lambda = float(spatial_lambda)
+        self.sinkhorn_iters = max(1, int(sinkhorn_iters))
+        self.gamma = nn.Parameter(torch.zeros(1, dim, 1, 1))
+        self.last_attn: torch.Tensor | None = None
+        self.last_k: torch.Tensor | None = None
+
+    def forward(self, x: torch.Tensor, style_map: torch.Tensor, gate: float | torch.Tensor = 1.0) -> torch.Tensor:
+        bsz, channels, h_dim, w_dim = x.shape
+        nx = self.norm_x(x)
+        ns = self.norm_s(style_map)
+        q = self.to_q(nx).view(bsz, channels, -1).transpose(1, 2)
+        k = self.to_k(ns).view(bsz, channels, -1)
+        v = self.to_v(ns).view(bsz, channels, -1).transpose(1, 2)
+        scale = (channels ** -0.5) / torch.exp(self.log_temp).clamp(1e-4, 10.0)
+        logits = torch.bmm(q, k) * scale
+        if self.spatial_lambda > 0.0:
+            spatial_bias = _spatial_distance_bias(h_dim, w_dim, device=x.device, dtype=logits.dtype)
+            logits = logits - spatial_bias.unsqueeze(0) * self.spatial_lambda
+        attn = _sinkhorn_attention(logits, iters=self.sinkhorn_iters)
+        self.last_attn = attn
+        self.last_k = F.normalize(k, p=2, dim=1)
+        painted = torch.bmm(attn, v).transpose(1, 2).view(bsz, channels, h_dim, w_dim)
+        gain = gate if isinstance(gate, float) else gate.to(device=x.device, dtype=x.dtype)
+        return x + painted * (1.0 + self.gamma) * gain
+
+
+class GatedSpadeAttention(nn.Module):
+    def __init__(self, dim: int, num_groups: int = 4, temperature: float = 0.08) -> None:
+        super().__init__()
+        groups = _resolve_group_count(dim, num_groups)
+        self.base = SpatialModulatedSelfAttn(dim, num_groups=num_groups, temperature=temperature)
+        self.style_proj = nn.Sequential(
+            nn.GroupNorm(groups, dim),
+            nn.Conv2d(dim, dim, kernel_size=3, padding=1),
+            nn.SiLU(),
+            nn.Conv2d(dim, dim, kernel_size=1),
+        )
+        self.gate_proj = nn.Sequential(
+            nn.GroupNorm(groups, dim),
+            nn.Conv2d(dim, dim // 2 if dim > 1 else 1, kernel_size=3, padding=1),
+            nn.SiLU(),
+            nn.Conv2d(dim // 2 if dim > 1 else 1, 1, kernel_size=1),
+        )
+        self.last_attn: torch.Tensor | None = None
+        self.last_k: torch.Tensor | None = None
+
+    def forward(self, x: torch.Tensor, style_map: torch.Tensor, gate: float | torch.Tensor = 1.0) -> torch.Tensor:
+        base_out = self.base(x, x, gate=1.0)
+        style_delta = self.style_proj(style_map.float()).to(dtype=x.dtype)
+        local_gate = torch.sigmoid(self.gate_proj(style_map.float())).to(dtype=x.dtype)
+        gain = gate if isinstance(gate, float) else gate.to(device=x.device, dtype=x.dtype)
+        self.last_attn = self.base.last_attn
+        self.last_k = self.base.last_k
+        return x + ((base_out - x) * (1.0 - local_gate) + style_delta * local_gate) * gain
+
+
+class PnPSelfAttentionInject(nn.Module):
+    def __init__(self, dim: int, num_groups: int = 4, temperature: float = 0.08) -> None:
+        super().__init__()
+        groups = _resolve_group_count(dim, num_groups)
+        self.norm_x = nn.GroupNorm(groups, dim)
+        self.norm_s = nn.GroupNorm(groups, dim)
+        self.to_q = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
+        self.to_k = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
+        self.to_v = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
+        self.log_temp = nn.Parameter(torch.tensor([math.log(max(1e-4, float(temperature)))], dtype=torch.float32))
+        self.gamma = nn.Parameter(torch.zeros(1, dim, 1, 1))
+        self.last_attn: torch.Tensor | None = None
+        self.last_k: torch.Tensor | None = None
+
+    def forward(self, x: torch.Tensor, style_map: torch.Tensor, gate: float | torch.Tensor = 1.0) -> torch.Tensor:
+        bsz, channels, h_dim, w_dim = x.shape
+        nx = self.norm_x(x)
+        ns = self.norm_s(style_map)
+        q = self.to_q(nx).view(bsz, channels, -1).transpose(1, 2)
+        k = self.to_k(nx).view(bsz, channels, -1)
+        v = self.to_v(ns).view(bsz, channels, -1).transpose(1, 2)
+        scale = (channels ** -0.5) / torch.exp(self.log_temp).clamp(1e-4, 10.0)
+        attn = F.softmax(torch.bmm(q, k) * scale, dim=-1)
+        self.last_attn = attn
+        self.last_k = F.normalize(k, p=2, dim=1)
+        painted = torch.bmm(attn, v).transpose(1, 2).view(bsz, channels, h_dim, w_dim)
+        gain = gate if isinstance(gate, float) else gate.to(device=x.device, dtype=x.dtype)
+        return x + painted * (1.0 + self.gamma) * gain
+
+
 class StyleBlender(nn.Module):
     def __init__(self, dim: int, num_groups: int = 8) -> None:
         super().__init__()
@@ -648,3 +802,8 @@ class StyleRoutingSkip(nn.Module):
 @dataclass
 class StyleMaps:
     map_16: torch.Tensor | None = None
+    gate_16: torch.Tensor | None = None
+    mask_16: torch.Tensor | None = None
+    aux_16: torch.Tensor | None = None
+    family: str = "legacy_factorized"
+    debug: dict[str, object] = field(default_factory=dict)

@@ -1,0 +1,42 @@
+{
+  "device": "cpu",
+  "batch_size": 1,
+  "latent_size": 32,
+  "bank_tokens": 8,
+  "row_count": 1,
+  "failure_count": 0,
+  "results": [
+    {
+      "status": "ok",
+      "family_id": "solver_pc",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\aaai2027\\round1_full_sweep\\aaai2027_round1_solver_pc_seed42_b8a2.json",
+      "tokenizer_family": "legacy_factorized",
+      "backbone_attention_family": "legacy_semantic_crossattn",
+      "solver_family": "solver_pc",
+      "semantic_supervision_family": "legacy_terminal_swd",
+      "direct_velocity_shape": [
+        1,
+        4,
+        32,
+        32
+      ],
+      "base_endpoint_shape": [
+        1,
+        4,
+        32,
+        32
+      ],
+      "integrated_shape": [
+        1,
+        4,
+        32,
+        32
+      ],
+      "loss": 47.3290901184082,
+      "loss_is_finite": true,
+      "terminal_swd": 11.128460884094238,
+      "first_grad_name": "style_spatial_id_16",
+      "first_grad_abs_mean": 1.9492078706662141e-07
+    }
+  ]
+}

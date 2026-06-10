@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import subprocess
 import sys
@@ -17,6 +18,7 @@ if str(SB_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(SB_ROOT / "src"))
 
 from config_schema import load_config  # noqa: E402
+from csv_utils import read_csv_rows  # noqa: E402
 from round1_paths import infer_round1_family_id, round1_fast_local_root, round1_localreview_root  # noqa: E402
 
 
@@ -26,6 +28,16 @@ def _read_converged(path: Path) -> bool:
     except Exception:
         return False
     return bool(payload.get("converged"))
+
+
+def _read_family_status(manifest_csv: Path, *, family_id: str) -> str | None:
+    if not manifest_csv.is_file():
+        return None
+    rows = read_csv_rows(manifest_csv)
+    for row in rows:
+        if str(row.get("family_id", "")).strip() == str(family_id).strip():
+            return str(row.get("decision_status", "")).strip().lower()
+    return None
 
 
 def _run(cmd: list[str]) -> int:
@@ -83,6 +95,8 @@ def main() -> int:
     parser.add_argument("--vlm-timeout", type=int, default=60)
     parser.add_argument("--vlm-sleep-seconds", type=float, default=0.3)
     parser.add_argument("--vlm-resume", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--manifest-csv", default="")
+    parser.add_argument("--allowed-status", action="append", default=[])
     args = parser.parse_args()
 
     fast_root, review_root, family_id, run_name = _default_paths(
@@ -93,9 +107,18 @@ def main() -> int:
     fast_eval_subdir = str(args.fast_eval_subdir).strip() or "full_eval_fast_local"
     review_eval_subdir = str(args.review_eval_subdir).strip() or "full_eval_fresh_localreview"
     convergence_json = fast_root / fast_eval_subdir / "round1_convergence.json"
+    manifest_csv = Path(str(args.manifest_csv)).expanduser()
+    if str(args.manifest_csv).strip() and (not manifest_csv.is_absolute()):
+        manifest_csv = (WORKSPACE / manifest_csv).resolve()
+    allowed_statuses = {str(x).strip().lower() for x in list(args.allowed_status or []) if str(x).strip()}
 
     while not bool(args.skip_wait):
         converged = _read_converged(convergence_json)
+        family_status = None
+        status_ok = True
+        if allowed_statuses:
+            family_status = _read_family_status(manifest_csv, family_id=str(family_id))
+            status_ok = family_status in allowed_statuses
         print(
             json.dumps(
                 {
@@ -103,12 +126,17 @@ def main() -> int:
                     "run_name": run_name,
                     "convergence_json": str(convergence_json),
                     "converged": converged,
+                    "family_status": family_status,
+                    "status_ok": status_ok,
+                    "allowed_status": sorted(allowed_statuses),
                 },
                 ensure_ascii=False,
             ),
             flush=True,
         )
-        if converged:
+        if allowed_statuses and (family_status is not None) and (not status_ok):
+            return 0
+        if converged and status_ok:
             break
         time.sleep(max(1, int(args.wait_poll_seconds)))
 

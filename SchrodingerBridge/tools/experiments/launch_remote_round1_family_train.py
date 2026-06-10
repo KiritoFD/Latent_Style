@@ -12,13 +12,163 @@ WORKSPACE = SB_ROOT.parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
+from csv_utils import manifest_fieldnames, read_csv_rows, write_csv_rows
 from dino_cache_utils import default_dino_cache_output, inspect_dino_cache
+from round1_paths import infer_round1_family_id
+
+
+DEFAULT_MANIFEST = SB_ROOT / "docs" / "experiments" / "round1_full_sweep" / "round1_family_manifest.csv"
 
 
 def _run(cmd: list[str]) -> int:
     print("[launch_remote_round1_family_train] " + " ".join(cmd), flush=True)
     proc = subprocess.run(cmd, check=False)
     return int(proc.returncode)
+
+
+def _run_round1_switch_smoke(
+    *,
+    family_id: str,
+    device: str,
+    latent_size: int,
+    bank_tokens: int,
+) -> int:
+    smoke_script = SCRIPT_DIR / "smoke_round1_family_switches.py"
+    output_path = SB_ROOT / "aaai2027" / f"round1_{family_id}_switch_smoke_latest.json"
+    cmd = [
+        sys.executable,
+        str(smoke_script),
+        "--family-id",
+        str(family_id),
+        "--device",
+        str(device),
+        "--latent-size",
+        str(max(8, int(latent_size))),
+        "--bank-tokens",
+        str(max(1, int(bank_tokens))),
+        "--output",
+        str(output_path),
+    ]
+    print(f"[launch_remote_round1_family_train] prelaunch switch smoke -> {output_path}", flush=True)
+    proc = subprocess.run(cmd, check=False, cwd=str(WORKSPACE))
+    return int(proc.returncode)
+
+
+def _read_json_optional(path: Path) -> dict | None:
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _update_manifest_switch_smoke(
+    *,
+    manifest_csv: Path,
+    family_id: str,
+    artifact_path: Path,
+    payload: dict | None,
+    rc: int,
+) -> None:
+    if not manifest_csv.exists():
+        return
+    rows = read_csv_rows(manifest_csv)
+    if not rows:
+        return
+    target = next((row for row in rows if str(row.get("family_id", "")).strip() == str(family_id).strip()), None)
+    if target is None:
+        return
+    status = "failed" if int(rc) != 0 else "ok"
+    row_count = ""
+    if isinstance(payload, dict):
+        if isinstance(payload.get("results"), list):
+            row_count = str(len(payload.get("results") or []))
+            for result in payload.get("results") or []:
+                if str((result or {}).get("family_id", "")).strip() != str(family_id).strip():
+                    continue
+                payload_status = str((result or {}).get("status", "")).strip().lower()
+                if payload_status:
+                    status = payload_status
+                break
+        elif payload.get("row_count") is not None:
+            row_count = str(payload.get("row_count", "")).strip()
+        payload_status = str(payload.get("status", "")).strip().lower()
+        if payload_status:
+            status = payload_status
+    target["switch_smoke_status"] = status
+    target["switch_smoke_artifact"] = str(artifact_path)
+    target["switch_smoke_row_count"] = row_count
+    write_csv_rows(manifest_csv, rows, fieldnames=manifest_fieldnames(rows))
+
+
+def _update_manifest_decision_status(
+    *,
+    manifest_csv: Path,
+    family_id: str,
+    decision_status: str,
+) -> None:
+    if not manifest_csv.exists():
+        return
+    rows = read_csv_rows(manifest_csv)
+    if not rows:
+        return
+    target = next((row for row in rows if str(row.get("family_id", "")).strip() == str(family_id).strip()), None)
+    if target is None:
+        return
+    target["decision_status"] = str(decision_status).strip()
+    write_csv_rows(manifest_csv, rows, fieldnames=manifest_fieldnames(rows))
+
+
+def _refresh_round1_family_status_docs(*, family_id: str, manifest_csv: Path) -> None:
+    updater = SCRIPT_DIR / "update_round1_family_status_docs.py"
+    if not updater.exists():
+        return
+    cmd = [
+        sys.executable,
+        str(updater),
+        "--family-id",
+        str(family_id),
+        "--manifest-csv",
+        str(manifest_csv),
+    ]
+    print("[launch_remote_round1_family_train] refresh family status docs -> " + " ".join(cmd), flush=True)
+    subprocess.run(cmd, check=False, cwd=str(WORKSPACE))
+
+
+def _arm_runtime_watch_followup(*, config_rel: Path, manifest_csv: Path) -> None:
+    helper = SCRIPT_DIR / "launch_round1_family_followups_detached.py"
+    if not helper.exists():
+        return
+    cmd = [
+        sys.executable,
+        str(helper),
+        "--config",
+        str(config_rel),
+        "--manifest-csv",
+        str(manifest_csv),
+        "--skip-fast-eval-deferred",
+        "--skip-stageclose-deferred",
+    ]
+    print("[launch_remote_round1_family_train] arm runtime followup -> " + " ".join(cmd), flush=True)
+    subprocess.run(cmd, check=False, cwd=str(WORKSPACE))
+
+
+def _arm_remote_fast_eval_followup(*, config_rel: Path, manifest_csv: Path) -> None:
+    helper = SCRIPT_DIR / "launch_remote_round1_family_fast_eval.py"
+    if not helper.exists():
+        return
+    cmd = [
+        sys.executable,
+        str(helper),
+        "--config",
+        str(config_rel),
+        "--manifest-csv",
+        str(manifest_csv),
+    ]
+    print("[launch_remote_round1_family_train] arm remote fast-eval followup -> " + " ".join(cmd), flush=True)
+    subprocess.run(cmd, check=False, cwd=str(WORKSPACE))
 
 
 def _local_path_from_wsl_mount(text: str) -> Path:
@@ -67,17 +217,72 @@ def main() -> int:
     parser.add_argument("--remote-wsl-cwd", default="/mnt/i/Github/Latent_Style")
     parser.add_argument("--remote-python", default="/home/xy/venvs/samam312/bin/python")
     parser.add_argument("--max-prelaunch-memory-mib", type=int, default=7000)
-    parser.add_argument("--min-runtime-memory-mib", type=int, default=9000)
-    parser.add_argument("--max-runtime-memory-mib", type=int, default=11000)
-    parser.add_argument("--runtime-guard-max-memory-mib", type=int, default=11000)
+    parser.add_argument("--min-runtime-memory-mib", type=int, default=9216)
+    parser.add_argument("--max-runtime-memory-mib", type=int, default=11059)
+    parser.add_argument("--min-runtime-slack-mib", type=int, default=128)
+    parser.add_argument("--runtime-guard-max-memory-mib", type=int, default=11571)
     parser.add_argument("--runtime-guard-poll-seconds", type=int, default=10)
+    parser.add_argument("--runtime-guard-min-memory-mib", type=int, default=9216)
+    parser.add_argument("--runtime-guard-min-warmup-seconds", type=int, default=300)
+    parser.add_argument("--runtime-guard-min-consecutive-polls", type=int, default=3)
+    parser.add_argument("--runtime-guard-min-mode", choices=["ignore", "warn", "stop"], default="stop")
     parser.add_argument("--dino-cache-override", default="")
     parser.add_argument("--health-wait-seconds", type=int, default=30)
+    parser.add_argument("--manifest-csv", type=Path, default=DEFAULT_MANIFEST)
+    parser.add_argument("--allow-other-running", action="store_true")
+    parser.add_argument("--skip-switch-smoke", action="store_true")
+    parser.add_argument("--switch-smoke-device", default="cpu")
+    parser.add_argument("--switch-smoke-latent-size", type=int, default=32)
+    parser.add_argument("--switch-smoke-bank-tokens", type=int, default=8)
+    parser.add_argument("--skip-remote-fast-eval-followup", action="store_true")
     args = parser.parse_args()
 
     config_rel = Path(args.config)
     config_abs = (WORKSPACE / config_rel).resolve()
     payload = json.loads(config_abs.read_text(encoding="utf-8"))
+    run_name = str((payload.get("ablation") or {}).get("name", config_abs.stem)).strip() or config_abs.stem
+    family_id = infer_round1_family_id(run_name=run_name, config_stem=config_abs.stem) or config_abs.stem
+    manifest_csv = Path(args.manifest_csv).expanduser()
+    if not manifest_csv.is_absolute():
+        manifest_csv = (WORKSPACE / manifest_csv).resolve()
+    if not bool(args.skip_switch_smoke):
+        smoke_artifact = SB_ROOT / "aaai2027" / f"round1_{family_id}_switch_smoke_latest.json"
+        smoke_rc = _run_round1_switch_smoke(
+            family_id=family_id,
+            device=str(args.switch_smoke_device),
+            latent_size=int(args.switch_smoke_latent_size),
+            bank_tokens=int(args.switch_smoke_bank_tokens),
+        )
+        smoke_payload = _read_json_optional(smoke_artifact)
+        _update_manifest_switch_smoke(
+            manifest_csv=manifest_csv,
+            family_id=family_id,
+            artifact_path=smoke_artifact,
+            payload=smoke_payload,
+            rc=smoke_rc,
+        )
+        _refresh_round1_family_status_docs(
+            family_id=family_id,
+            manifest_csv=manifest_csv,
+        )
+        if smoke_rc != 0:
+            raise RuntimeError(
+                f"Refusing remote launch because prelaunch switch smoke failed for family={family_id} "
+                f"(rc={smoke_rc})."
+            )
+    if manifest_csv.is_file() and not bool(args.allow_other_running):
+        rows = read_csv_rows(manifest_csv)
+        foreign_running = [
+            str(row.get("family_id", "")).strip()
+            for row in rows
+            if str(row.get("decision_status", "")).strip().lower() == "running"
+            and str(row.get("family_id", "")).strip() != str(family_id).strip()
+        ]
+        if foreign_running:
+            raise RuntimeError(
+                "Refusing direct launch because other running round-1 families exist: "
+                + ", ".join(foreign_running)
+            )
     auto_dino_override = str(args.dino_cache_override).strip()
     data_cfg = payload.get("data") or {}
     if (not auto_dino_override) and bool(data_cfg.get("dino_cache_required", False)):
@@ -100,7 +305,6 @@ def main() -> int:
         sync_config = config_rel
         remote_config = f"{args.remote_wsl_cwd.rstrip('/')}/{config_rel.as_posix()}"
 
-    run_name = str((payload.get("ablation") or {}).get("name", config_abs.stem)).strip() or config_abs.stem
     health_wait_seconds = int(args.health_wait_seconds)
     if bool((payload.get("data") or {}).get("dino_cache_required", False)):
         health_wait_seconds = max(health_wait_seconds, 90)
@@ -140,10 +344,20 @@ def main() -> int:
         str(int(args.min_runtime_memory_mib)),
         "--max-runtime-memory-mib",
         str(int(args.max_runtime_memory_mib)),
+        "--min-runtime-slack-mib",
+        str(int(args.min_runtime_slack_mib)),
         "--runtime-guard-max-memory-mib",
         str(int(args.runtime_guard_max_memory_mib)),
         "--runtime-guard-poll-seconds",
         str(int(args.runtime_guard_poll_seconds)),
+        "--runtime-guard-min-memory-mib",
+        str(int(args.runtime_guard_min_memory_mib)),
+        "--runtime-guard-min-warmup-seconds",
+        str(int(args.runtime_guard_min_warmup_seconds)),
+        "--runtime-guard-min-consecutive-polls",
+        str(int(args.runtime_guard_min_consecutive_polls)),
+        "--runtime-guard-min-mode",
+        str(args.runtime_guard_min_mode),
         "--",
         "bash",
         "-lc",
@@ -153,7 +367,27 @@ def main() -> int:
             f"{args.remote_python} SchrodingerBridge/src/run.py --config {remote_config}"
         ),
     ]
-    return _run(command)
+    rc = _run(command)
+    if rc == 0:
+        _update_manifest_decision_status(
+            manifest_csv=manifest_csv,
+            family_id=family_id,
+            decision_status="running",
+        )
+        _refresh_round1_family_status_docs(
+            family_id=family_id,
+            manifest_csv=manifest_csv,
+        )
+        _arm_runtime_watch_followup(
+            config_rel=config_rel,
+            manifest_csv=manifest_csv,
+        )
+        if not bool(args.skip_remote_fast_eval_followup):
+            _arm_remote_fast_eval_followup(
+                config_rel=config_rel,
+                manifest_csv=manifest_csv,
+            )
+    return rc
 
 
 if __name__ == "__main__":

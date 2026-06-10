@@ -49,6 +49,13 @@ from utils.artfid_metric import (
     load_artfid_lpips,
 )
 from utils.targetwise_artfid_summary import write_targetwise_artfid_summary
+from utils.introstyle_eval import (
+    IntroStyleFeatureExtractor,
+    introstyle_style_vector,
+    mean_pool_scores,
+    resolve_introstyle_model_path,
+    style_bank_paths,
+)
 from config_schema import load_inference_defaults, resolve_full_eval_section
 
 # KID (official implementation via torchmetrics)
@@ -315,6 +322,196 @@ def to_lpips_input(img_tensor):
 def _is_cuda_oom(exc: RuntimeError) -> bool:
     msg = str(exc).lower()
     return ("out of memory" in msg) or ("cuda oom" in msg)
+
+
+def _batched_paths(items: list[Path], n: int) -> list[list[Path]]:
+    step = max(1, int(n))
+    return [items[i:i + step] for i in range(0, len(items), step)]
+
+
+def _run_introstyle_sidecar(
+    *,
+    metrics_csv: Path,
+    images_dir: Path,
+    test_dir: Path,
+    cache_dir: Path,
+    device: str,
+    model_id: str,
+    modelscope_id: str,
+    modelscope_cache_dir: str,
+    allow_network: bool,
+    style_bank_root: str,
+    bank_limit_per_style: int,
+    batch_size: int,
+    topk: int,
+    t: int,
+    up_ft_index: int,
+    ensemble_size: int,
+) -> dict[str, object] | None:
+    bank_root = Path(str(style_bank_root).strip()) if str(style_bank_root).strip() else test_dir
+    if not bank_root.exists():
+        print(f"  WARNING: IntroStyle skipped; style bank root missing: {bank_root}")
+        return None
+    if not metrics_csv.exists():
+        print(f"  WARNING: IntroStyle skipped; metrics.csv missing: {metrics_csv}")
+        return None
+
+    with metrics_csv.open("r", encoding="utf-8", newline="") as f:
+        metric_rows = list(csv.DictReader(f))
+    if not metric_rows:
+        print("  WARNING: IntroStyle skipped; metrics.csv has no rows.")
+        return None
+
+    resolved_model_id = resolve_introstyle_model_path(
+        model_id=str(model_id),
+        modelscope_id=str(modelscope_id),
+        modelscope_cache_dir=str(modelscope_cache_dir or (cache_dir / "modelscope")),
+        allow_network=bool(allow_network),
+    )
+    extractor = IntroStyleFeatureExtractor(
+        model_id=resolved_model_id,
+        device=str(device),
+        t=int(t),
+        up_ft_index=int(up_ft_index),
+        ensemble_size=int(ensemble_size),
+    )
+
+    bank_paths = style_bank_paths(bank_root, per_style_limit=max(0, int(bank_limit_per_style)))
+    bank_vectors: dict[str, torch.Tensor] = {}
+    for style_name, paths in bank_paths.items():
+        feats = extractor.encode_paths(paths, batch_size=max(1, int(batch_size)))
+        bank_vectors[style_name] = introstyle_style_vector(feats)
+    if not bank_vectors:
+        print(f"  WARNING: IntroStyle skipped; no bank images found under {bank_root}")
+        return None
+
+    all_paths: list[Path] = []
+    filtered_rows: list[dict[str, str]] = []
+    for row in metric_rows:
+        name = str(row.get("gen_image", "")).strip()
+        if not name:
+            continue
+        path = images_dir / Path(name).name
+        if not path.exists():
+            continue
+        all_paths.append(path)
+        filtered_rows.append(row)
+    if not filtered_rows:
+        print("  WARNING: IntroStyle skipped; generated images not found on disk.")
+        return None
+
+    style_names = sorted(bank_vectors.keys())
+    sidecar_rows: list[dict[str, object]] = []
+    for chunk_idx, chunk_paths in enumerate(_batched_paths(all_paths, max(1, int(batch_size)))):
+        metas = filtered_rows[chunk_idx * max(1, int(batch_size)):(chunk_idx + 1) * max(1, int(batch_size))]
+        feats = extractor.encode_paths(chunk_paths, batch_size=len(chunk_paths))
+        vecs = introstyle_style_vector(feats)
+        scores = mean_pool_scores(vecs, bank_vectors, topk=max(1, int(topk)))
+        for i, row in enumerate(metas):
+            target = str(row["tgt_style"])
+            source = str(row["src_style"])
+            if target not in scores or source not in scores:
+                continue
+            target_score = float(scores[target][i].item())
+            source_score = float(scores[source][i].item())
+            non_target_scores = [(name, float(scores[name][i].item())) for name in style_names if name != target]
+            best_non_target_style, best_non_target_score = max(non_target_scores, key=lambda x: x[1])
+            sidecar_rows.append(
+                {
+                    "src_style": source,
+                    "tgt_style": target,
+                    "src_image": str(row.get("src_image", "")),
+                    "gen_image": str(row.get("gen_image", "")),
+                    "introstyle_target_style_score": target_score,
+                    "introstyle_source_style_score": source_score,
+                    "introstyle_best_non_target_style": best_non_target_style,
+                    "introstyle_best_non_target_score": best_non_target_score,
+                    "introstyle_style_margin": target_score - best_non_target_score,
+                }
+            )
+
+    if not sidecar_rows:
+        print("  WARNING: IntroStyle skipped; no scored rows were produced.")
+        return None
+
+    intro_csv = metrics_csv.parent / "introstyle_metrics.csv"
+    intro_json = metrics_csv.parent / "introstyle_summary.json"
+    with intro_csv.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=[
+                "src_style",
+                "tgt_style",
+                "src_image",
+                "gen_image",
+                "introstyle_target_style_score",
+                "introstyle_source_style_score",
+                "introstyle_best_non_target_style",
+                "introstyle_best_non_target_score",
+                "introstyle_style_margin",
+            ],
+        )
+        writer.writeheader()
+        writer.writerows(sidecar_rows)
+
+    matrix: dict[str, dict[str, dict[str, float]]] = defaultdict(dict)
+    transfer_target_scores: list[float] = []
+    transfer_margins: list[float] = []
+    identity_target_scores: list[float] = []
+    photo_transfer_target_scores: list[float] = []
+    photo_transfer_margins: list[float] = []
+    for src in sorted({str(r["src_style"]) for r in sidecar_rows}):
+        for tgt in sorted({str(r["tgt_style"]) for r in sidecar_rows if str(r["src_style"]) == src}):
+            pair = [r for r in sidecar_rows if str(r["src_style"]) == src and str(r["tgt_style"]) == tgt]
+            if not pair:
+                continue
+            pair_stats = {
+                "count": float(len(pair)),
+                "introstyle_target_style_score": float(np.mean([float(r["introstyle_target_style_score"]) for r in pair])),
+                "introstyle_source_style_score": float(np.mean([float(r["introstyle_source_style_score"]) for r in pair])),
+                "introstyle_best_non_target_score": float(np.mean([float(r["introstyle_best_non_target_score"]) for r in pair])),
+                "introstyle_style_margin": float(np.mean([float(r["introstyle_style_margin"]) for r in pair])),
+            }
+            matrix[src][tgt] = pair_stats
+            if src == tgt:
+                identity_target_scores.append(pair_stats["introstyle_target_style_score"])
+            else:
+                transfer_target_scores.append(pair_stats["introstyle_target_style_score"])
+                transfer_margins.append(pair_stats["introstyle_style_margin"])
+                if src.lower() == "photo":
+                    photo_transfer_target_scores.append(pair_stats["introstyle_target_style_score"])
+                    photo_transfer_margins.append(pair_stats["introstyle_style_margin"])
+
+    identity_mean = float(np.mean(identity_target_scores)) if identity_target_scores else None
+    transfer_mean = float(np.mean(transfer_target_scores)) if transfer_target_scores else None
+    photo_mean = float(np.mean(photo_transfer_target_scores)) if photo_transfer_target_scores else None
+    payload: dict[str, object] = {
+        "metrics_csv": str(intro_csv),
+        "style_bank_root": str(bank_root),
+        "model_id": resolved_model_id,
+        "matrix_breakdown": matrix,
+        "analysis": {
+            "style_transfer_ability": {
+                "introstyle_target_style_score": transfer_mean,
+                "introstyle_style_margin": float(np.mean(transfer_margins)) if transfer_margins else None,
+                "introstyle_delta_idt": (transfer_mean - identity_mean) if transfer_mean is not None and identity_mean is not None else None,
+            },
+            "identity_reconstruction": {
+                "introstyle_target_style_score": identity_mean,
+            },
+            "photo_to_art_performance": {
+                "introstyle_target_style_score": photo_mean,
+                "introstyle_style_margin": float(np.mean(photo_transfer_margins)) if photo_transfer_margins else None,
+                "introstyle_delta_idt": (photo_mean - identity_mean) if photo_mean is not None and identity_mean is not None else None,
+            },
+        },
+    }
+    intro_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return {
+        "metrics_csv": str(intro_csv),
+        "summary_json": str(intro_json),
+        "payload": payload,
+    }
 
 
 def _lpips_forward_safe(
@@ -977,6 +1174,33 @@ def _is_ref_cache_valid(ref_features: dict, need_clip: bool) -> bool:
     return True
 
 
+def _source_path_key(path: str | Path) -> str:
+    return str(Path(path).resolve())
+
+
+def _is_source_cache_valid(source_cache: dict, *, image_size: int, need_clip: bool) -> bool:
+    if not isinstance(source_cache, dict) or not source_cache:
+        return False
+    meta = source_cache.get("meta")
+    items = source_cache.get("items")
+    if not isinstance(meta, dict) or not isinstance(items, dict) or not items:
+        return False
+    if int(meta.get("image_size", -1)) != int(image_size):
+        return False
+    for payload in items.values():
+        if not isinstance(payload, dict):
+            return False
+        img = payload.get("img")
+        if not isinstance(img, torch.Tensor) or img.ndim != 3:
+            return False
+        if tuple(img.shape[-2:]) != (int(image_size), int(image_size)):
+            return False
+        clip = payload.get("clip")
+        if need_clip and (clip is None or not isinstance(clip, torch.Tensor)):
+            return False
+    return True
+
+
 def _acquire_lock(lock_path: Path, timeout_sec: int = 600, poll_sec: float = 1.0) -> bool:
     deadline = time.time() + max(1, int(timeout_sec))
     while time.time() < deadline:
@@ -1179,11 +1403,24 @@ def _auto_run_missing_full_eval(args) -> None:
             "--clip_modelscope_id", str(args.clip_modelscope_id),
             "--clip_modelscope_cache_dir", str(args.clip_modelscope_cache_dir),
             "--clip_hf_cache_dir", str(args.clip_hf_cache_dir),
+            "--introstyle_model_id", str(args.introstyle_model_id),
+            "--introstyle_modelscope_id", str(args.introstyle_modelscope_id),
+            "--introstyle_modelscope_cache_dir", str(args.introstyle_modelscope_cache_dir),
+            "--introstyle_bank_limit_per_style", str(args.introstyle_bank_limit_per_style),
+            "--introstyle_batch_size", str(args.introstyle_batch_size),
+            "--introstyle_topk", str(args.introstyle_topk),
+            "--introstyle_t", str(args.introstyle_t),
+            "--introstyle_up_ft_index", str(args.introstyle_up_ft_index),
+            "--introstyle_ensemble_size", str(args.introstyle_ensemble_size),
         ]
         if args.clip_allow_network:
             cmd += ["--clip_allow_network"]
+        if args.introstyle_allow_network:
+            cmd += ["--introstyle_allow_network"]
         if args.test_dir:
             cmd += ["--test_dir", str(args.test_dir)]
+        if args.introstyle_style_bank_root:
+            cmd += ["--introstyle_style_bank_root", str(args.introstyle_style_bank_root)]
         if args.style_strength is not None:
             cmd += ["--style_strength", str(args.style_strength)]
         if args.force_regen:
@@ -1217,6 +1454,10 @@ def _auto_run_missing_full_eval(args) -> None:
             cmd += ["--no-save_summary_grid"]
         if not bool(args.eval_only_lpips_clip_style):
             cmd += ["--no-eval_only_lpips_clip_style"]
+        if bool(args.eval_enable_introstyle):
+            cmd += ["--eval_enable_introstyle"]
+        else:
+            cmd += ["--no-eval_enable_introstyle"]
 
         print(f"\n[Auto] Running: {ckpt_path}")
         subprocess.run(cmd, check=True)
@@ -1319,6 +1560,48 @@ def main():
             "Use --no-eval_only_lpips_clip_style to also compute clip_dir and clip_content."
         ),
     )
+    parser.add_argument(
+        '--eval_enable_introstyle',
+        action=argparse.BooleanOptionalAction,
+        default=bool(full_eval_defaults.get("enable_introstyle", False)),
+        help="Enable IntroStyle sidecar evaluation and write introstyle_metrics.csv / introstyle_summary.json.",
+    )
+    parser.add_argument(
+        '--introstyle_style_bank_root',
+        type=str,
+        default=str(full_eval_defaults.get("introstyle_style_bank_root", "")),
+        help="Held-out style-bank root for IntroStyle. Defaults to --test_dir when empty.",
+    )
+    parser.add_argument(
+        '--introstyle_model_id',
+        type=str,
+        default=str(full_eval_defaults.get("introstyle_model_id", "")),
+        help="Local path or repo id for IntroStyle backbone. Prefer a local ModelScope snapshot on remote.",
+    )
+    parser.add_argument(
+        '--introstyle_modelscope_id',
+        type=str,
+        default=str(full_eval_defaults.get("introstyle_modelscope_id", "stabilityai/stable-diffusion-2-1-base")),
+        help="ModelScope repo id used when --introstyle_model_id is empty.",
+    )
+    parser.add_argument(
+        '--introstyle_modelscope_cache_dir',
+        type=str,
+        default=str(full_eval_defaults.get("introstyle_modelscope_cache_dir", "")),
+        help="ModelScope cache dir for IntroStyle backbone.",
+    )
+    parser.add_argument(
+        '--introstyle_allow_network',
+        action='store_true',
+        default=bool(full_eval_defaults.get("introstyle_allow_network", False)),
+        help="Allow IntroStyle backbone download if local ModelScope cache is missing.",
+    )
+    parser.add_argument('--introstyle_bank_limit_per_style', type=int, default=int(full_eval_defaults.get("introstyle_bank_limit_per_style", 64)))
+    parser.add_argument('--introstyle_batch_size', type=int, default=int(full_eval_defaults.get("introstyle_batch_size", 4)))
+    parser.add_argument('--introstyle_topk', type=int, default=int(full_eval_defaults.get("introstyle_topk", 8)))
+    parser.add_argument('--introstyle_t', type=int, default=int(full_eval_defaults.get("introstyle_t", 25)))
+    parser.add_argument('--introstyle_up_ft_index', type=int, default=int(full_eval_defaults.get("introstyle_up_ft_index", 1)))
+    parser.add_argument('--introstyle_ensemble_size', type=int, default=int(full_eval_defaults.get("introstyle_ensemble_size", 1)))
     parser.add_argument(
         '--eval_enable_art_fid',
         action=argparse.BooleanOptionalAction,
@@ -1462,6 +1745,30 @@ def main():
                 args.save_generated_images = bool(resolved_full_eval["save_generated_images"])
             if "save_summary_grid" in resolved_full_eval and not _cli_provided("save_summary_grid"):
                 args.save_summary_grid = bool(resolved_full_eval["save_summary_grid"])
+            if "enable_introstyle" in resolved_full_eval and not _cli_provided("eval_enable_introstyle"):
+                args.eval_enable_introstyle = bool(resolved_full_eval["enable_introstyle"])
+            if "introstyle_style_bank_root" in resolved_full_eval and not _cli_provided("introstyle_style_bank_root"):
+                args.introstyle_style_bank_root = str(resolved_full_eval["introstyle_style_bank_root"])
+            if "introstyle_model_id" in resolved_full_eval and not _cli_provided("introstyle_model_id"):
+                args.introstyle_model_id = str(resolved_full_eval["introstyle_model_id"])
+            if "introstyle_modelscope_id" in resolved_full_eval and not _cli_provided("introstyle_modelscope_id"):
+                args.introstyle_modelscope_id = str(resolved_full_eval["introstyle_modelscope_id"])
+            if "introstyle_modelscope_cache_dir" in resolved_full_eval and not _cli_provided("introstyle_modelscope_cache_dir"):
+                args.introstyle_modelscope_cache_dir = str(resolved_full_eval["introstyle_modelscope_cache_dir"])
+            if "introstyle_allow_network" in resolved_full_eval and not _cli_provided("introstyle_allow_network"):
+                args.introstyle_allow_network = bool(resolved_full_eval["introstyle_allow_network"])
+            if "introstyle_bank_limit_per_style" in resolved_full_eval and not _cli_provided("introstyle_bank_limit_per_style"):
+                args.introstyle_bank_limit_per_style = int(resolved_full_eval["introstyle_bank_limit_per_style"])
+            if "introstyle_batch_size" in resolved_full_eval and not _cli_provided("introstyle_batch_size"):
+                args.introstyle_batch_size = int(resolved_full_eval["introstyle_batch_size"])
+            if "introstyle_topk" in resolved_full_eval and not _cli_provided("introstyle_topk"):
+                args.introstyle_topk = int(resolved_full_eval["introstyle_topk"])
+            if "introstyle_t" in resolved_full_eval and not _cli_provided("introstyle_t"):
+                args.introstyle_t = int(resolved_full_eval["introstyle_t"])
+            if "introstyle_up_ft_index" in resolved_full_eval and not _cli_provided("introstyle_up_ft_index"):
+                args.introstyle_up_ft_index = int(resolved_full_eval["introstyle_up_ft_index"])
+            if "introstyle_ensemble_size" in resolved_full_eval and not _cli_provided("introstyle_ensemble_size"):
+                args.introstyle_ensemble_size = int(resolved_full_eval["introstyle_ensemble_size"])
     else:
         print("Single-run eval in reuse-only mode (no checkpoint).")
 
@@ -1470,8 +1777,8 @@ def main():
     # reflects generation rather than post-processing overhead.
     if args.generation_only and not _cli_provided("save_summary_grid"):
         args.save_summary_grid = False
-    if (bool(args.save_summary_grid) or bool(args.eval_enable_art_fid) or bool(args.eval_enable_kid) or bool(args.reuse_generated)) and not bool(args.save_generated_images):
-        print("Enabling --save_generated_images because summary-grid, ArtFID/KID, or reuse_generated needs image files.")
+    if (bool(args.save_summary_grid) or bool(args.eval_enable_art_fid) or bool(args.eval_enable_kid) or bool(args.eval_enable_introstyle) or bool(args.reuse_generated)) and not bool(args.save_generated_images):
+        print("Enabling --save_generated_images because summary-grid, ArtFID/KID, IntroStyle, or reuse_generated needs image files.")
         args.save_generated_images = True
 
     image_save_workers = max(1, int(args.image_save_workers))
@@ -1557,6 +1864,13 @@ def main():
     if args.reuse_generated:
         print(f"\nPhase 1: Reuse generated images from {images_dir}")
         reuse_files = _list_reuse_generated_files(out_dir)
+        fast_metric_half_cpu = (
+            bool(args.eval_only_lpips_clip_style)
+            and (not bool(args.save_generated_images))
+            and (not bool(args.eval_enable_introstyle))
+            and (not bool(args.eval_enable_art_fid))
+            and (not bool(args.eval_enable_kid))
+        )
         for p in reuse_files:
             parsed = _parse_generated_name(p.name, style_subdirs)
             if parsed is None:
@@ -1568,6 +1882,8 @@ def main():
                 continue
             try:
                 gen_img = _load_eval_image_tensor(p)
+                if fast_metric_half_cpu:
+                    gen_img = gen_img.to(dtype=torch.float16)
             except Exception as e:
                 print(f"  WARNING: failed loading generated image {p}: {e}")
                 continue
@@ -1587,6 +1903,13 @@ def main():
         if checkpoint_path is None:
             raise RuntimeError("No reusable images found and no checkpoint provided. Cannot run generation phase.")
         print(f"\nPhase 1: Generation (Batch Size {args.batch_size})")
+        fast_metric_half_cpu = (
+            bool(args.eval_only_lpips_clip_style)
+            and (not bool(args.save_generated_images))
+            and (not bool(args.eval_enable_introstyle))
+            and (not bool(args.eval_enable_art_fid))
+            and (not bool(args.eval_enable_kid))
+        )
 
         t0 = time.perf_counter()
         lgt = LGTInference(
@@ -1700,7 +2023,8 @@ def main():
                                 _add_timing(timings, "uint8_cpu_copy", t0)
                             else:
                                 t0 = time.perf_counter()
-                                imgs_gen_cpu = imgs_gen.detach().cpu().contiguous()
+                                cpu_dtype = torch.float16 if fast_metric_half_cpu else torch.float32
+                                imgs_gen_cpu = imgs_gen.detach().to(device="cpu", dtype=cpu_dtype).contiguous()
                                 _sync_cuda_if(device, bool(args.profile_timing))
                                 _add_timing(timings, "generated_cpu_copy", t0)
                             t0 = time.perf_counter()
@@ -1999,6 +2323,7 @@ def main():
     lock_file = cache_file.with_suffix(cache_file.suffix + ".lock")
 
     ref_features = {}
+    ref_cache_status = "not_used"
     # Keep reference cache independent from output regeneration.
     must_rebuild_ref_cache = bool(args.force_regen_ref_cache)
 
@@ -2008,6 +2333,7 @@ def main():
             ref_features = torch.load(cache_file, map_location='cpu')
             if _is_ref_cache_valid(ref_features, need_clip=has_clip):
                 print("  Reference cache loaded successfully")
+                ref_cache_status = "loaded"
             else:
                 print("  Reference cache invalid for current metrics, rebuilding...")
                 ref_features = {}
@@ -2026,6 +2352,7 @@ def main():
                     ref_features = torch.load(cache_file, map_location='cpu')
                     if _is_ref_cache_valid(ref_features, need_clip=has_clip):
                         print(f"Loaded global reference cache after waiting: {cache_file}")
+                        ref_cache_status = "loaded_after_wait"
                     else:
                         ref_features = {}
                 except Exception:
@@ -2064,6 +2391,7 @@ def main():
                 torch.save(ref_features, tmp_cache)
                 os.replace(tmp_cache, cache_file)
                 print(f"Global reference cache saved: {cache_file}")
+                ref_cache_status = "rebuilt"
         finally:
             try:
                 lock_file.unlink(missing_ok=True)
@@ -2099,9 +2427,13 @@ def main():
                 except Exception as e:
                     print(f"  闁宠法濯寸粭?Failed to prepare CLIP matrix for style {sid}: {e}")
 
-    # Cache source images/CLIP embeddings to avoid repeated work across many target styles.
-    src_img_cache = {}   # abs src path -> Tensor[3,256,256] on CPU (LPIPS path)
-    src_clip_cache = {}  # abs src path -> Tensor[D] on CPU
+    fast_metric_half_cpu = (
+        bool(args.eval_only_lpips_clip_style)
+        and (not bool(args.save_generated_images))
+        and (not bool(args.eval_enable_introstyle))
+        and (not bool(args.eval_enable_art_fid))
+        and (not bool(args.eval_enable_kid))
+    )
 
     csv_path = out_dir / 'metrics.csv'
     # Re-evaluation on reused images should overwrite metrics to avoid mixing old/new outputs.
@@ -2124,6 +2456,96 @@ def main():
     # Process Generated Buffer
     total_gen = len(generated_buffer)
     print(f"  Processing {total_gen} generated images...")
+    src_eval_size = 256
+    need_src_clip_cache = bool(
+        has_clip and clip_model is not None and clip_encode_images_01 is not None and (not only_lpips_clip_style)
+    )
+    unique_src_keys = sorted({_source_path_key(item['src_path']) for item in generated_buffer})
+    src_cache_file = cache_dir / f"src_feats_{dataset_hash}_img{src_eval_size}_clip{1 if need_src_clip_cache else 0}.pt"
+    src_cache_lock = src_cache_file.with_suffix(src_cache_file.suffix + ".lock")
+    src_cache_payload = {}
+    src_cache_status = "not_used"
+    must_rebuild_src_cache = bool(args.force_regen_ref_cache)
+    if src_cache_file.exists() and not must_rebuild_src_cache:
+        print(f"Found global source cache: {src_cache_file}")
+        try:
+            src_cache_payload = torch.load(src_cache_file, map_location='cpu')
+            if _is_source_cache_valid(src_cache_payload, image_size=src_eval_size, need_clip=need_src_clip_cache):
+                print("  Source cache loaded successfully")
+                src_cache_status = "loaded"
+            else:
+                print("  Source cache invalid for current eval settings, rebuilding...")
+                src_cache_payload = {}
+        except Exception as e:
+            print(f"  Source cache load failed ({e}), rebuilding...")
+            src_cache_payload = {}
+    if not src_cache_payload:
+        got_lock = _acquire_lock(src_cache_lock, timeout_sec=int(args.ref_cache_lock_timeout), poll_sec=1.0)
+        if not got_lock:
+            raise TimeoutError(f"Timed out waiting for source-cache lock: {src_cache_lock}")
+        try:
+            if src_cache_file.exists() and not must_rebuild_src_cache:
+                try:
+                    src_cache_payload = torch.load(src_cache_file, map_location='cpu')
+                    if _is_source_cache_valid(src_cache_payload, image_size=src_eval_size, need_clip=need_src_clip_cache):
+                        print(f"Loaded global source cache after waiting: {src_cache_file}")
+                        src_cache_status = "loaded_after_wait"
+                    else:
+                        src_cache_payload = {}
+                except Exception:
+                    src_cache_payload = {}
+            if not src_cache_payload:
+                print(f"\nComputing Source Cache (global miss): {src_cache_file}")
+                src_items: dict[str, dict[str, torch.Tensor | None]] = {}
+                src_bs = max(1, int(args.ref_feature_batch_size))
+                pbar = tqdm(range(0, len(unique_src_keys), src_bs), desc="Caching source images")
+                for b_start in pbar:
+                    batch_keys = unique_src_keys[b_start:b_start + src_bs]
+                    batch_paths = [Path(key) for key in batch_keys]
+                    batch_tensors_cpu = torch.stack(
+                        [_load_eval_image_tensor(src_path, size=src_eval_size) for src_path in batch_paths],
+                        dim=0,
+                    ).contiguous()
+                    clip_cpu = None
+                    if need_src_clip_cache:
+                        batch_tensors_gpu = batch_tensors_cpu.to(device)
+                        clip_cpu = clip_encode_images_01(batch_tensors_gpu).detach().cpu()
+                        del batch_tensors_gpu
+                    for idx, key in enumerate(batch_keys):
+                        src_items[key] = {
+                            "img": batch_tensors_cpu[idx].clone(),
+                            "clip": None if clip_cpu is None else clip_cpu[idx].clone(),
+                        }
+                src_cache_payload = {
+                    "meta": {
+                        "image_size": int(src_eval_size),
+                        "clip_enabled": bool(need_src_clip_cache),
+                        "count": int(len(src_items)),
+                    },
+                    "items": src_items,
+                }
+                tmp_src_cache = src_cache_file.with_suffix(src_cache_file.suffix + f".tmp.{os.getpid()}")
+                torch.save(src_cache_payload, tmp_src_cache)
+                os.replace(tmp_src_cache, src_cache_file)
+                print(f"Global source cache saved: {src_cache_file}")
+                src_cache_status = "rebuilt"
+        finally:
+            try:
+                src_cache_lock.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+    src_cache_items = src_cache_payload.get("items", {}) if isinstance(src_cache_payload, dict) else {}
+    src_img_cache = {
+        str(key): value["img"]
+        for key, value in src_cache_items.items()
+        if isinstance(value, dict) and isinstance(value.get("img"), torch.Tensor)
+    }
+    src_clip_cache = {
+        str(key): value["clip"]
+        for key, value in src_cache_items.items()
+        if isinstance(value, dict) and isinstance(value.get("clip"), torch.Tensor)
+    }
     metric_loop_start = time.perf_counter()
     
     for b_start in range(0, total_gen, args.batch_size):
@@ -2144,11 +2566,13 @@ def main():
         src_tensors = []
         src_keys = []
         for item in batch_items:
-            src_key = str(Path(item['src_path']).resolve())
+            src_key = _source_path_key(item['src_path'])
             src_keys.append(src_key)
             cached = src_img_cache.get(src_key)
             if cached is None:
-                cached = _load_eval_image_tensor(Path(item['src_path']))
+                cached = _load_eval_image_tensor(Path(item['src_path']), size=src_eval_size)
+                if fast_metric_half_cpu:
+                    cached = cached.to(dtype=torch.float16)
                 src_img_cache[src_key] = cached
             src_tensors.append(cached)
         src_imgs_cpu = torch.stack(src_tensors, dim=0).contiguous()
@@ -2238,6 +2662,32 @@ def main():
     _sync_cuda_if(device, bool(args.profile_timing))
     _add_timing(timings, "eval_metrics_loop", metric_loop_start)
     csv_file.close()
+    introstyle_result = None
+    if bool(args.eval_enable_introstyle) and not bool(args.generation_only):
+        t0 = time.perf_counter()
+        try:
+            introstyle_result = _run_introstyle_sidecar(
+                metrics_csv=csv_path,
+                images_dir=images_dir,
+                test_dir=test_dir,
+                cache_dir=cache_dir,
+                device=device,
+                model_id=str(args.introstyle_model_id),
+                modelscope_id=str(args.introstyle_modelscope_id),
+                modelscope_cache_dir=str(args.introstyle_modelscope_cache_dir),
+                allow_network=bool(args.introstyle_allow_network),
+                style_bank_root=str(args.introstyle_style_bank_root),
+                bank_limit_per_style=int(args.introstyle_bank_limit_per_style),
+                batch_size=int(args.introstyle_batch_size),
+                topk=int(args.introstyle_topk),
+                t=int(args.introstyle_t),
+                up_ft_index=int(args.introstyle_up_ft_index),
+                ensemble_size=int(args.introstyle_ensemble_size),
+            )
+        except Exception as exc:
+            print(f"WARNING: IntroStyle sidecar failed: {exc}")
+            introstyle_result = None
+        _add_timing(timings, "eval_introstyle", t0)
     t0 = time.perf_counter()
     if io_pool is not None:
         io_pool.shutdown(wait=True)
@@ -2279,8 +2729,25 @@ def main():
             "profile_timing": bool(args.profile_timing),
             "save_summary_grid": bool(args.save_summary_grid),
             "only_lpips_clip_style": bool(args.eval_only_lpips_clip_style),
+            "enable_introstyle": bool(args.eval_enable_introstyle),
+            "introstyle_style_bank_root": str(args.introstyle_style_bank_root) if str(args.introstyle_style_bank_root).strip() else str(test_dir),
+            "introstyle_model_id": str(args.introstyle_model_id),
+            "introstyle_modelscope_id": str(args.introstyle_modelscope_id),
+            "cache_artifacts": {
+                "reference_cache": {
+                    "path": str(cache_file),
+                    "status": str(ref_cache_status),
+                    "entry_count": int(sum(len(v) for v in ref_features.values())) if isinstance(ref_features, dict) else 0,
+                },
+                "source_cache": {
+                    "path": str(src_cache_file),
+                    "status": str(src_cache_status),
+                    "entry_count": int(len(src_cache_items)),
+                },
+            },
         },
         timings=timings,
+        introstyle_result=introstyle_result,
     )
 
 def generate_summary_json(
@@ -2305,6 +2772,7 @@ def generate_summary_json(
     kid_batch_size: int = 8,
     settings: dict | None = None,
     timings: dict | None = None,
+    introstyle_result: dict[str, object] | None = None,
 ):
     print("\n妫ｅ啯鎯?Generating Summary...")
     rows = []
@@ -2314,6 +2782,9 @@ def generate_summary_json(
             for r in reader: rows.append(r)
             
     if not rows: return
+    introstyle_payload = introstyle_result.get("payload") if isinstance(introstyle_result, dict) else None
+    introstyle_matrix = introstyle_payload.get("matrix_breakdown", {}) if isinstance(introstyle_payload, dict) else {}
+    introstyle_analysis = introstyle_payload.get("analysis", {}) if isinstance(introstyle_payload, dict) else {}
 
     def to_f(x): return float(x) if x else 0.0
 
@@ -2412,6 +2883,19 @@ def generate_summary_json(
                 'content_lpips': mean_content_lpips,
                 'clip_content': np.mean([to_f(x.get('clip_content', 0)) for x in items]),
             }
+            intro_pair = None
+            if isinstance(introstyle_matrix, dict):
+                intro_pair = (introstyle_matrix.get(str(src), {}) or {}).get(str(tgt))
+            if isinstance(intro_pair, dict):
+                stats['introstyle_target_style_score'] = intro_pair.get('introstyle_target_style_score')
+                stats['introstyle_source_style_score'] = intro_pair.get('introstyle_source_style_score')
+                stats['introstyle_best_non_target_score'] = intro_pair.get('introstyle_best_non_target_score')
+                stats['introstyle_style_margin'] = intro_pair.get('introstyle_style_margin')
+            else:
+                stats['introstyle_target_style_score'] = None
+                stats['introstyle_source_style_score'] = None
+                stats['introstyle_best_non_target_score'] = None
+                stats['introstyle_style_margin'] = None
             should_compute_art_fid = bool(enable_art_fid and style_real_paths is not None)
             if should_compute_art_fid and art_fid_photo_only:
                 should_compute_art_fid = (src.lower() == "photo" and src.lower() != tgt.lower())
@@ -2556,6 +3040,10 @@ def generate_summary_json(
             'clip_style': pool_avg(pool, 'clip_style'),
             'clip_content': pool_avg(pool, 'clip_content'),
             'content_lpips': pool_avg(pool, 'content_lpips'),
+            'introstyle_target_style_score': pool_avg([t for t in pool if t.get('introstyle_target_style_score') is not None], 'introstyle_target_style_score', default=None),
+            'introstyle_source_style_score': pool_avg([t for t in pool if t.get('introstyle_source_style_score') is not None], 'introstyle_source_style_score', default=None),
+            'introstyle_best_non_target_score': pool_avg([t for t in pool if t.get('introstyle_best_non_target_score') is not None], 'introstyle_best_non_target_score', default=None),
+            'introstyle_style_margin': pool_avg([t for t in pool if t.get('introstyle_style_margin') is not None], 'introstyle_style_margin', default=None),
             'art_fid_content_lpips': pool_avg([t for t in pool if t.get('art_fid_content_lpips') is not None], 'art_fid_content_lpips', default=None),
             'fid_baseline': pool_avg([t for t in pool if t.get('fid_baseline') is not None], 'fid_baseline', default=None),
             'fid': pool_avg([t for t in pool if t.get('fid_style') is not None], 'fid_style', default=None),
@@ -2570,6 +3058,17 @@ def generate_summary_json(
             **({'valid': bool(valid)} if valid is not None else {}),
         }
 
+    all_pairs_summary = build_pool_summary(all_pool)
+    transfer_summary = build_pool_summary(transfer_pool)
+    identity_summary = build_pool_summary(identity_pool)
+    photo_summary = build_pool_summary(photo_transfer_pool, valid=len(photo_transfer_pool) > 0)
+    identity_intro = identity_summary.get('introstyle_target_style_score')
+    if identity_intro is not None:
+        for bucket in (all_pairs_summary, transfer_summary, photo_summary):
+            target_intro = bucket.get('introstyle_target_style_score')
+            if target_intro is not None:
+                bucket['introstyle_delta_idt'] = float(target_intro) - float(identity_intro)
+
     summary = {
         'checkpoint': str(ckpt_path),
         'timestamp': time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -2577,6 +3076,11 @@ def generate_summary_json(
             'clip_dir': "cos( CLIP(gen)-CLIP(src), CLIP(target_style_proto)-CLIP(src) ) - Measures edit direction.",
             'clip_style': "cos( CLIP(gen), CLIP(target_style_proto) ) - Measures absolute style similarity.",
             'clip_content': "cos( CLIP(gen), CLIP(src) ) - Measures semantic/content preservation.",
+            'introstyle_target_style_score': "IntroStyle similarity to the held-out target-style bank.",
+            'introstyle_source_style_score': "IntroStyle similarity to the held-out source-style bank.",
+            'introstyle_best_non_target_score': "Strongest IntroStyle similarity among non-target banks.",
+            'introstyle_style_margin': "introstyle_target_style_score - introstyle_best_non_target_score.",
+            'introstyle_delta_idt': "Pool-level IntroStyle target score minus the identity pool target score.",
             'fid_baseline': "FID between source-domain images and target-style references.",
             'fid': "FID between generated images and target-style real references (Inception features).",
             'delta_fid': "fid_baseline - fid (higher is better).",
@@ -2593,12 +3097,19 @@ def generate_summary_json(
         'timings_sec': {str(k): float(v) for k, v in sorted((timings or {}).items())},
         'matrix_breakdown': matrix_json,
         'analysis': {
-            'all_pairs_overview': build_pool_summary(all_pool),
-            'style_transfer_ability': build_pool_summary(transfer_pool),
-            'identity_reconstruction': build_pool_summary(identity_pool),
-            'photo_to_art_performance': build_pool_summary(photo_transfer_pool, valid=len(photo_transfer_pool) > 0),
+            'all_pairs_overview': all_pairs_summary,
+            'style_transfer_ability': transfer_summary,
+            'identity_reconstruction': identity_summary,
+            'photo_to_art_performance': photo_summary,
         },
     }
+    if isinstance(introstyle_result, dict):
+        summary['introstyle_sidecar'] = {
+            'metrics_csv': introstyle_result.get('metrics_csv'),
+            'summary_json': introstyle_result.get('summary_json'),
+        }
+    if isinstance(introstyle_analysis, dict):
+        summary['introstyle_analysis_sidecar'] = introstyle_analysis
 
     if bool((settings or {}).get("save_summary_grid", True)):
         summary['summary_grid_pending'] = True

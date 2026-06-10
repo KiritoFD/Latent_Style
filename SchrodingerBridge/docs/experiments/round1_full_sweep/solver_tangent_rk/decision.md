@@ -1,0 +1,55 @@
+# solver_tangent_rk Decision
+
+- Decision date:
+  - `2026-06-10`
+- Current status:
+  - `running`
+- Current read:
+  - the first opening that actually satisfied the remote formal VRAM band was:
+    - `batch=16`
+  - first pulled fast-eval point:
+    - `epoch_0001`
+    - transfer `0.6999 / 0.5295`
+    - all-pairs `0.7142 / 0.5222`
+- Interpretation:
+  - this line is formally alive and producing valid remote `CLIP-S / LPIPS`
+  - but the first point is still too weak on LPIPS to justify any promotion
+  - because this is only the first retained point, it should continue until the convergence rule is actually satisfied
+- Current live continuation:
+  - the remote formal lane is still alive after the first settled point
+  - current sampled read:
+    - `epoch=2`
+    - `step=293`
+    - `9433 MiB`
+  - this means the family is not just a healthy launch anymore; it is now accumulating a real multi-point curve under the formal remote contract
+- First-point interpretation:
+  - `epoch_0001`
+  - transfer `0.6999 / 0.5295`
+  - all-pairs `0.7142 / 0.5222`
+  - this is enough to keep the line running, but LPIPS is still materially weak
+  - do not spend local heavy-review budget yet; wait for a stronger fast-curve point first
+- Current artifact frontier:
+  - `epoch_0002.pt` has already landed in the canonical run root
+  - second pulled fast-eval point:
+    - `epoch_0002`
+    - transfer `0.6969 / 0.5230`
+    - all-pairs `0.7129 / 0.5136`
+    - wall `191.73s`
+  - interpretation of the first two points:
+    - LPIPS improved only slightly
+    - style scores slipped slightly
+    - this line is still alive, but there is no strong upward curve yet
+- Next action:
+  - keep the remote lane running
+  - keep pulling every retained checkpoint through the remote fast-eval watcher
+  - do not spend local heavy-review budget on this family until a stronger fast curve point appears
+- Granularity decision after early peak / rollback read:
+  - because the best fast point so far appeared at `epoch_0004` and `epoch_0005` already rolled back materially, the current epoch granularity is too coarse for solver-family knee finding
+  - do not interrupt the already-running formal lane mid-flight
+  - but the next solver-family continuation policy is now:
+    - reduce `data.virtual_length_multiplier` from `1.0` to `0.5`
+    - increase planned solver-family `num_epochs` from `24` to `48`
+  - purpose:
+    - preserve roughly the same total training budget
+    - but double retained-checkpoint density in wall-clock terms
+    - so the fast curve can catch the true optimum before larger overshoot

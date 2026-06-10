@@ -1,0 +1,24 @@
+# attn_gated_spade Decision
+
+- Decision date:
+  - `2026-06-10`
+- Current status:
+  - `recalibration_needed`
+- Current formal standing:
+  - the `batch=19` retrial is not acceptable formal evidence
+  - reasons:
+    - in-process training CSV stayed below the formal band at about `6.62 / 8.35 GiB allocated / reserved`
+    - host-side live readings later drifted to `under_band`
+    - the train pid disappeared mid `epoch 23` before producing `epoch_0023.pt`
+    - the lane therefore cannot be treated as a clean converged formal run
+  - retained directional evidence:
+    - best transfer `CLIP-S`: `epoch_0001 -> 0.6929 / 0.4501`
+    - best transfer `LPIPS`: `epoch_0022 -> 0.6910 / 0.4252`
+    - best all-pairs `CLIP-S`: `epoch_0011 -> 0.7172 / 0.4220`
+- Decision:
+  - keep the 22 settled checkpoint eval curve as directional evidence
+  - do not promote or reject on paper-facing grounds yet
+  - reopen this family only after explicit VRAM recalibration
+- Next action:
+  - release the lane
+  - move to `attn_pnp_selfinject` as the next non-DINO family, starting from a higher opening batch

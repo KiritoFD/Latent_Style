@@ -3,7 +3,9 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import re
 from pathlib import Path
+import subprocess
 import sys
 
 
@@ -15,7 +17,13 @@ if str(SB_ROOT / "src") not in sys.path:
 
 from config_schema import load_config
 from round1_registry import COMMON_PARENT_CONFIG
-from round1_paths import infer_round1_family_id, round1_family_doc_dir, round1_fast_local_root, round1_localreview_root
+from round1_paths import (
+    infer_round1_family_id,
+    round1_family_doc_dir,
+    round1_fast_local_root,
+    round1_localreview_root,
+    round1_switch_smoke_artifact,
+)
 
 
 AUTO_START = "<!-- ROUND1_AUTO_STATUS:START -->"
@@ -23,18 +31,24 @@ AUTO_END = "<!-- ROUND1_AUTO_STATUS:END -->"
 DEFAULT_MANIFEST = SB_ROOT / "docs" / "experiments" / "round1_full_sweep" / "round1_family_manifest.csv"
 DEFAULT_MASTER = SB_ROOT / "docs" / "experiments" / "2026-06-10-round1-full-sweep-master.md"
 DEFAULT_LOCAL_GPU_LOCK = SB_ROOT / "aaai2027" / ".local_gpu_eval.lock"
+DEFAULT_REMOTE_HOST = "100.115.18.62"
+DEFAULT_REMOTE_PORT = 2222
+DEFAULT_REMOTE_USER = "administrator"
+DEFAULT_REMOTE_WSL_DISTRO = "Ubuntu-26.04"
+DEFAULT_REMOTE_WORKSPACE_ROOT = "/mnt/i/Github/Latent_Style"
+DEFAULT_REMOTE_BAND_MIN_MIB = 9216
+DEFAULT_REMOTE_BAND_MAX_MIB = 11059
+DEFAULT_REMOTE_HARD_CAP_MIB = 11571
+
+from csv_utils import manifest_fieldnames, read_csv_rows, write_csv_rows
 
 
 def _read_rows(path: Path) -> list[dict[str, str]]:
-    with path.open("r", encoding="utf-8", newline="") as f:
-        return list(csv.DictReader(f))
+    return read_csv_rows(path)
 
 
 def _write_rows(path: Path, rows: list[dict[str, str]], *, fieldnames: list[str]) -> None:
-    with path.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(rows)
+    write_csv_rows(path, rows, fieldnames=fieldnames)
 
 
 def _read_json(path: Path) -> dict:
@@ -84,6 +98,236 @@ def _upsert_auto_block(path: Path, body: str) -> None:
     path.write_text(new_text, encoding="utf-8")
 
 
+def _run(cmd: list[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+
+
+def _ssh_exec(*, host: str, port: int, user: str, remote_command: str) -> subprocess.CompletedProcess[str]:
+    return _run(
+        [
+            "ssh",
+            "-p",
+            str(port),
+            "-T",
+            "-o",
+            "LogLevel=ERROR",
+            f"{user}@{host}",
+            remote_command,
+        ]
+    )
+
+
+def _infer_remote_train_log(*, run_dir: str, run_name: str, remote_workspace_root: str) -> str:
+    run_dir_clean = str(run_dir or "").strip()
+    if run_dir_clean.startswith("./"):
+        run_dir_clean = run_dir_clean[2:]
+    run_dir_clean = run_dir_clean.lstrip("/")
+    if run_dir_clean:
+        parent = Path(run_dir_clean).parent.as_posix()
+        if parent == ".":
+            parent = ""
+        prefix = f"{remote_workspace_root.rstrip('/')}/{parent}".rstrip("/")
+        return f"{prefix}/{run_name}_train.log"
+    return f"{remote_workspace_root.rstrip('/')}/exp/inmortal-exp/{run_name}_train.log"
+
+
+def _parse_remote_gpu_sample(text: str) -> dict[str, str] | None:
+    first = next((line.strip() for line in text.splitlines() if line.strip()), "")
+    if not first:
+        return None
+    parts = [part.strip() for part in first.split(",")]
+    if len(parts) < 3:
+        return None
+    return {
+        "memory_used_mib": parts[0],
+        "memory_total_mib": parts[1],
+        "utilization_gpu_pct": parts[2],
+    }
+
+
+def _parse_remote_train_tail(text: str) -> dict[str, object]:
+    payload: dict[str, object] = {"tail_text": text.strip()}
+    epoch_match = re.findall(r"Epoch\s+(\d+)/(\d+):", text)
+    if epoch_match:
+        payload["epoch"] = int(epoch_match[-1][0])
+        payload["epoch_total"] = int(epoch_match[-1][1])
+    step_match = re.findall(r"\|\s+(\d+)/(\d+)\s+\[", text)
+    if step_match:
+        payload["step"] = int(step_match[-1][0])
+        payload["step_total"] = int(step_match[-1][1])
+    loss_match = re.findall(r"loss=([0-9.]+)", text)
+    if loss_match:
+        payload["loss"] = float(loss_match[-1])
+    tswd_match = re.findall(r"tswd=([0-9.]+)", text)
+    if tswd_match:
+        payload["tswd"] = float(tswd_match[-1])
+    return payload
+
+
+def _classify_remote_vram_band(
+    *,
+    memory_used_mib: int | None,
+    band_min_mib: int,
+    band_max_mib: int,
+    hard_cap_mib: int,
+) -> str:
+    if memory_used_mib is None:
+        return "unknown"
+    if memory_used_mib > int(hard_cap_mib):
+        return "above_hard_cap"
+    if memory_used_mib > int(band_max_mib):
+        return "above_soft_band"
+    if memory_used_mib < int(band_min_mib):
+        return "under_band"
+    return "in_band"
+
+
+def _remote_process_scan_via_stdin(
+    *,
+    run_name: str,
+    host: str,
+    port: int,
+    user: str,
+    wsl_distro: str,
+) -> dict[str, list[dict[str, str]]]:
+    if not run_name:
+        return {"train": [], "fast_eval": [], "posttrain_eval": []}
+    scan_py = f"""
+from pathlib import Path
+import json
+
+token = {run_name!r}
+payload = {{"train": [], "fast_eval": [], "posttrain_eval": []}}
+for pid in Path("/proc").iterdir():
+    if not pid.is_dir() or not pid.name.isdigit():
+        continue
+    try:
+        raw = (pid / "cmdline").read_bytes()
+    except Exception:
+        continue
+    if not raw or token.encode() not in raw:
+        continue
+    cmd = raw.replace(b"\\x00", b" ").decode("utf-8", "replace").strip()
+    item = {{"pid": pid.name, "cmd": cmd}}
+    if (
+        "watch_round1_family_fast_eval.py" in cmd
+        or "run_evaluation.py" in cmd
+        or "rerun_full_eval_for_run.py" in cmd
+        or "fast-eval.sh" in cmd
+        or "_fast_eval" in cmd
+        or "_fast-eval" in cmd
+    ):
+        payload["fast_eval"].append(item)
+    elif "run_inmortal_posttrain_eval" in cmd:
+        payload["posttrain_eval"].append(item)
+    else:
+        payload["train"].append(item)
+print(json.dumps(payload, ensure_ascii=False))
+"""
+    proc = subprocess.run(
+        [
+            "ssh",
+            "-p",
+            str(port),
+            "-T",
+            "-o",
+            "LogLevel=ERROR",
+            f"{user}@{host}",
+            "wsl",
+            "-d",
+            str(wsl_distro),
+            "python3",
+            "-",
+        ],
+        input=scan_py,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    if proc.returncode != 0:
+        return {"train": [], "fast_eval": [], "posttrain_eval": []}
+    try:
+        payload = json.loads(proc.stdout.strip() or "{}")
+    except json.JSONDecodeError:
+        return {"train": [], "fast_eval": [], "posttrain_eval": []}
+    if not isinstance(payload, dict):
+        return {"train": [], "fast_eval": [], "posttrain_eval": []}
+    return {
+        "train": list(payload.get("train") or []),
+        "fast_eval": list(payload.get("fast_eval") or []),
+        "posttrain_eval": list(payload.get("posttrain_eval") or []),
+    }
+
+
+def _remote_runtime_snapshot(
+    *,
+    row: dict[str, str],
+    host: str,
+    port: int,
+    user: str,
+    wsl_distro: str,
+    remote_workspace_root: str,
+    remote_log_lines: int,
+) -> dict[str, object] | None:
+    run_name = str(row.get("run_name", "")).strip()
+    if not run_name:
+        return None
+    run_dir = str(row.get("run_dir", "")).strip()
+    train_log = _infer_remote_train_log(run_dir=run_dir, run_name=run_name, remote_workspace_root=remote_workspace_root)
+    processes = _remote_process_scan_via_stdin(
+        run_name=run_name,
+        host=host,
+        port=port,
+        user=user,
+        wsl_distro=wsl_distro,
+    )
+    train_alive = bool(processes.get("train"))
+    if not train_alive:
+        return {
+            "train_log": train_log,
+            "gpu_sample": None,
+            "tail": {},
+            "gpu_returncode": None,
+            "log_returncode": None,
+            "processes": processes,
+            "train_alive": False,
+        }
+    gpu_proc = _ssh_exec(
+        host=host,
+        port=port,
+        user=user,
+        remote_command="nvidia-smi --query-gpu=memory.used,memory.total,utilization.gpu --format=csv,noheader,nounits",
+    )
+    log_proc = _ssh_exec(
+        host=host,
+        port=port,
+        user=user,
+        remote_command=f"wsl -d {wsl_distro} --exec tail -n {int(remote_log_lines)} {train_log}",
+    )
+    gpu_sample = _parse_remote_gpu_sample(gpu_proc.stdout) if gpu_proc.returncode == 0 else None
+    tail_info = _parse_remote_train_tail(log_proc.stdout) if log_proc.returncode == 0 else {"tail_text": ""}
+    return {
+        "train_log": train_log,
+        "gpu_sample": gpu_sample,
+        "tail": tail_info,
+        "gpu_returncode": gpu_proc.returncode,
+        "log_returncode": log_proc.returncode,
+        "processes": processes,
+        "train_alive": True,
+    }
+
+
 def _best_row(rows: list[dict[str, str]], *, style_key: str, lpips_key: str, prefer: str) -> dict[str, str] | None:
     best = None
     best_score = None
@@ -110,6 +354,21 @@ def _latest_row(rows: list[dict[str, str]]) -> dict[str, str] | None:
     return max(rows, key=lambda row: _epoch_int(str(row.get("epoch", ""))))
 
 
+def _remote_fast_pull_root(*, family_id: str) -> Path:
+    return SB_ROOT / "aaai2027" / f"round1_{str(family_id).strip()}_remote_full_eval_pull"
+
+
+def _effective_fast_eval_paths(*, family_id: str, fast_root: Path, fast_eval_subdir: str) -> tuple[Path, Path, Path, dict | None]:
+    remote_root = _remote_fast_pull_root(family_id=family_id)
+    remote_curve = remote_root / "clip_lpips_curve.csv"
+    remote_convergence = remote_root / "round1_convergence.json"
+    remote_sync_summary = _read_json_optional(remote_root / "sync_summary.json")
+    if remote_curve.is_file():
+        return remote_root, remote_curve, remote_convergence, remote_sync_summary
+    local_eval_root = fast_root / str(fast_eval_subdir).strip()
+    return local_eval_root, local_eval_root / "clip_lpips_curve.csv", local_eval_root / "round1_convergence.json", remote_sync_summary
+
+
 def _pending_checkpoints(checkpoint_root: Path, settled_epochs: set[str]) -> list[str]:
     names = []
     for path in checkpoint_root.glob("epoch_*.pt"):
@@ -127,10 +386,54 @@ def _render_fast_curve_auto(
     *,
     family_id: str,
     fast_root: Path,
+    curve_csv: Path,
     curve_rows: list[dict[str, str]],
     convergence: dict | None,
+    remote_sync_summary: dict | None,
 ) -> str:
+    remote_pending_epochs: list[str] = []
+    if isinstance(remote_sync_summary, dict):
+        remote_scan = remote_sync_summary.get("remote_scan") if isinstance(remote_sync_summary.get("remote_scan"), dict) else {}
+        for item in remote_scan.get("epochs", []) if isinstance(remote_scan.get("epochs"), list) else []:
+            epoch = str((item or {}).get("epoch", "")).strip()
+            if not epoch:
+                continue
+            has_metrics = bool((item or {}).get("has_metrics"))
+            has_summary = bool((item or {}).get("has_summary"))
+            if has_metrics and has_summary:
+                continue
+            remote_pending_epochs.append(epoch)
+    remote_pending_epochs = sorted(set(remote_pending_epochs), key=_epoch_int)
+
     if not curve_rows:
+        if isinstance(remote_sync_summary, dict) and str(remote_sync_summary.get("status", "")).strip():
+            remote_scan = remote_sync_summary.get("remote_scan") if isinstance(remote_sync_summary.get("remote_scan"), dict) else {}
+            proc_groups = remote_scan.get("processes") if isinstance(remote_scan.get("processes"), dict) else {}
+            train_count = len(proc_groups.get("train") or [])
+            fast_eval_count = len(proc_groups.get("fast_eval") or [])
+            return "\n".join(
+                [
+                    "## Auto Status",
+                    "",
+                    "- Authority root:",
+                    f"  - {_md_link(fast_root.name, fast_root)}",
+                    "- Remote fast-eval status:",
+                    f"  - `{str(remote_sync_summary.get('status', '')).strip()}`",
+                    "- Run name:",
+                    f"  - `{str(remote_sync_summary.get('run_name', '')).strip()}`",
+                    "- Remote run dir:",
+                    f"  - `{str(remote_sync_summary.get('remote_run_dir', '')).strip()}`",
+                    "- Expected eval subdir:",
+                    f"  - `{str(remote_sync_summary.get('eval_subdir', '')).strip()}`",
+                    "- Remote train pid count:",
+                    f"  - `{train_count}`",
+                    "- Remote fast-eval pid count:",
+                    f"  - `{fast_eval_count}`",
+                ]
+            )
+            if remote_pending_epochs:
+                lines.extend(["- Remote pending eval epochs:", *[f"  - `{name}`" for name in remote_pending_epochs[-3:]]])
+            return "\n".join(lines)
         return "\n".join(
             [
                 "## Auto Status",
@@ -149,7 +452,7 @@ def _render_fast_curve_auto(
         "## Auto Status",
         "",
         f"- Fast root: {_md_link(fast_root.name, fast_root)}",
-        f"- Curve CSV: {_md_link('clip_lpips_curve.csv', fast_root / 'full_eval_fast_local' / 'clip_lpips_curve.csv')}",
+        f"- Curve CSV: {_md_link('clip_lpips_curve.csv', curve_csv)}",
     ]
     if best_transfer_style:
         lines.extend(
@@ -185,17 +488,21 @@ def _render_fast_curve_auto(
                 f"  - wall `= {float(latest['wall_total_seconds']):.2f}s`",
             ]
         )
+    if remote_pending_epochs:
+        lines.extend(["- Remote pending eval epochs:", *[f"  - `{name}`" for name in remote_pending_epochs[-3:]]])
     if pending:
         lines.extend(["- Pending pulled checkpoints:", *[f"  - `{name}`" for name in pending[-3:]]])
     if convergence:
+        since_field = "since_last_pareto" if convergence.get("since_last_pareto") is not None else "since_best"
         lines.extend(
             [
                 "- Convergence snapshot:",
                 f"  - `row_count = {convergence.get('row_count')}`",
                 f"  - `best_epoch = {convergence.get('best_epoch')}`",
-                f"  - `since_best = {convergence.get('since_best')}`",
+                f"  - `{since_field} = {convergence.get(since_field)}`",
                 f"  - `best_in_newest_2 = {convergence.get('best_in_newest_2')}`",
                 f"  - `tail_flat = {convergence.get('tail_flat')}`",
+                f"  - `criterion = {convergence.get('criterion', 'transfer_only_best')}`",
                 f"  - `converged = {convergence.get('converged')}`",
             ]
         )
@@ -261,6 +568,7 @@ def _render_remote_run_auto(
     fast_root: Path,
     localreview_root: Path,
     curve_rows: list[dict[str, str]],
+    remote_runtime: dict[str, object] | None,
 ) -> str:
     run_name = str(row.get("run_name", "")).strip()
     pending = _pending_checkpoints(fast_root / "checkpoints", {str(x.get("epoch", "")).strip() for x in curve_rows})
@@ -275,6 +583,57 @@ def _render_remote_run_auto(
         f"- Local fast root: {_md_link(fast_root.name, fast_root)}",
         f"- Local review root: {_md_link(localreview_root.name, localreview_root)}",
     ]
+    smoke_status = str(row.get("switch_smoke_status", "")).strip()
+    smoke_artifact = Path(str(row.get("switch_smoke_artifact", "")).strip()) if str(row.get("switch_smoke_artifact", "")).strip() else None
+    smoke_row_count = str(row.get("switch_smoke_row_count", "")).strip()
+    if smoke_status:
+        lines.append(f"- Prelaunch switch smoke: `{smoke_status}`")
+    if smoke_artifact is not None:
+        lines.append(f"- Switch smoke artifact: {_md_link(smoke_artifact.name, smoke_artifact)}")
+    if smoke_row_count:
+        lines.append(f"- Switch smoke row count: `{smoke_row_count}`")
+    if remote_runtime:
+        gpu_sample = remote_runtime.get("gpu_sample")
+        tail = remote_runtime.get("tail") if isinstance(remote_runtime.get("tail"), dict) else {}
+        train_log = str(remote_runtime.get("train_log", "")).strip()
+        processes = remote_runtime.get("processes") if isinstance(remote_runtime.get("processes"), dict) else {}
+        if gpu_sample:
+            band_status = _classify_remote_vram_band(
+                memory_used_mib=int(str(gpu_sample.get("memory_used_mib", "0")).strip() or "0"),
+                band_min_mib=DEFAULT_REMOTE_BAND_MIN_MIB,
+                band_max_mib=DEFAULT_REMOTE_BAND_MAX_MIB,
+                hard_cap_mib=DEFAULT_REMOTE_HARD_CAP_MIB,
+            )
+            lines.extend(
+                [
+                    "- Remote GPU live sample:",
+                    f"  - `{gpu_sample['memory_used_mib']} MiB / {gpu_sample['memory_total_mib']} MiB`, `util={gpu_sample['utilization_gpu_pct']}%`",
+                    f"  - `band_status={band_status}`",
+                    f"  - `formal_status={'formal_in_band' if band_status == 'in_band' else f'nonformal_{band_status}'}`",
+                ]
+            )
+        if train_log:
+            lines.append(f"- Remote train log: `{train_log}`")
+        if not bool(remote_runtime.get("train_alive", True)):
+            lines.append("- Remote train pid: not alive")
+            if processes.get("fast_eval"):
+                lines.append(f"- Remote fast-eval pid count: `{len(processes.get('fast_eval') or [])}`")
+        epoch = tail.get("epoch")
+        epoch_total = tail.get("epoch_total")
+        step = tail.get("step")
+        step_total = tail.get("step_total")
+        loss = tail.get("loss")
+        tswd = tail.get("tswd")
+        if epoch is not None or step is not None:
+            lines.append("- Remote train progress:")
+            if epoch is not None and epoch_total is not None:
+                lines.append(f"  - `epoch {epoch}/{epoch_total}`")
+            if step is not None and step_total is not None:
+                lines.append(f"  - `step {step}/{step_total}`")
+            if loss is not None:
+                lines.append(f"  - `loss={float(loss):.4f}`")
+            if tswd is not None:
+                lines.append(f"  - `tswd={float(tswd):.4f}`")
     if pending:
         lines.extend(["- Pending local fast eval:", *[f"  - `{name}`" for name in pending[-3:]]])
     return "\n".join(lines)
@@ -286,6 +645,7 @@ def _render_master_auto(
     family_row: dict[str, str],
     curve_rows: list[dict[str, str]],
     convergence: dict | None,
+    remote_runtime: dict[str, object] | None,
 ) -> str:
     latest = _latest_row(curve_rows)
     best_transfer_style = _best_row(curve_rows, style_key="transfer_clip_style", lpips_key="transfer_content_lpips", prefer="style")
@@ -297,13 +657,35 @@ def _render_master_auto(
         lines.extend([f"  - `{row.get('family_id', '')}`" for row in running_rows])
     else:
         lines.append("- Running families: none")
-    lines.extend(
-        [
-            f"- Active family: `{family_row.get('family_id', '')}`",
-            f"- Decision status: `{family_row.get('decision_status', '')}`",
-            f"- Batch / epochs / patience: `{family_row.get('batch_size', '')} / {family_row.get('num_epochs', '')} / {family_row.get('patience', '')}`",
-        ]
-    )
+    if running_rows:
+        lines.extend(
+            [
+                f"- Active family: `{family_row.get('family_id', '')}`",
+                f"- Decision status: `{family_row.get('decision_status', '')}`",
+                f"- Batch / epochs / patience: `{family_row.get('batch_size', '')} / {family_row.get('num_epochs', '')} / {family_row.get('patience', '')}`",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                "- Active family: `none`",
+                "- Decision status: `no_formal_running_lane`",
+            ]
+        )
+    if remote_runtime and isinstance(remote_runtime.get("gpu_sample"), dict):
+        gpu_sample = remote_runtime["gpu_sample"]
+        band_status = _classify_remote_vram_band(
+            memory_used_mib=int(str(gpu_sample.get("memory_used_mib", "0")).strip() or "0"),
+            band_min_mib=DEFAULT_REMOTE_BAND_MIN_MIB,
+            band_max_mib=DEFAULT_REMOTE_BAND_MAX_MIB,
+            hard_cap_mib=DEFAULT_REMOTE_HARD_CAP_MIB,
+        )
+        lines.append(
+            f"- Remote GPU live: `{gpu_sample['memory_used_mib']} / {gpu_sample['memory_total_mib']} MiB`, `util={gpu_sample['utilization_gpu_pct']}%`, `band={band_status}`"
+        )
+    elif remote_runtime and not bool(remote_runtime.get("train_alive", True)):
+        fast_eval_count = len((remote_runtime.get("processes") or {}).get("fast_eval") or [])
+        lines.append(f"- Remote GPU live: `no active train pid; fast_eval_watchers={fast_eval_count}`")
     if best_transfer_style:
         lines.append(
             f"- Best transfer `CLIP-S`: `{best_transfer_style['epoch']}` -> `{float(best_transfer_style['transfer_clip_style']):.4f} / {float(best_transfer_style['transfer_content_lpips']):.4f}`"
@@ -357,8 +739,12 @@ def _manifest_fieldnames(rows: list[dict[str, str]]) -> list[str]:
         "backbone_attention_family",
         "solver_family",
         "semantic_supervision_family",
+        "virtual_length_multiplier",
         "local_fast_root",
         "local_review_root",
+        "switch_smoke_status",
+        "switch_smoke_artifact",
+        "switch_smoke_row_count",
         "best_ckpt",
         "best_transfer_lpips_ckpt",
         "best_allpairs_clip_style_ckpt",
@@ -366,15 +752,59 @@ def _manifest_fieldnames(rows: list[dict[str, str]]) -> list[str]:
         "fast_converged",
         "convergence_reason",
         "decision_status",
+        "remote_live_memory_used_mib",
+        "remote_live_memory_total_mib",
+        "remote_live_util_pct",
+        "remote_live_band_status",
+        "remote_live_formal_status",
+        "remote_live_epoch",
+        "remote_live_epoch_total",
+        "remote_live_step",
+        "remote_live_step_total",
+        "remote_live_loss",
+        "remote_live_tswd",
     ]
-    extras: list[str] = []
+    all_fields = manifest_fieldnames(rows)
     seen = set(preferred)
-    for row in rows:
-        for key in row.keys():
-            if key not in seen:
-                extras.append(key)
-                seen.add(key)
+    extras = [key for key in all_fields if key not in seen]
     return preferred + extras
+
+
+def _latest_aggregate_smoke_summary(*, family_id: str) -> dict | None:
+    smoke_files = sorted((SB_ROOT / "aaai2027").glob("round1_family_switch_smoke_*.json"))
+    for path in reversed(smoke_files):
+        payload = _read_json_optional(path)
+        if not isinstance(payload, dict):
+            continue
+        for row in payload.get("results", []) if isinstance(payload.get("results"), list) else []:
+            if str((row or {}).get("family_id", "")).strip() == str(family_id).strip():
+                summary = dict(row)
+                summary["_artifact_path"] = str(path)
+                summary["_aggregate_row_count"] = str(payload.get("row_count", ""))
+                return summary
+    return None
+
+
+def _switch_smoke_summary(*, family_id: str, run_name: str) -> tuple[dict | None, Path]:
+    artifact = round1_switch_smoke_artifact(family_id=family_id, run_name=run_name)
+    if artifact.exists():
+        payload = _read_json_optional(artifact)
+        if isinstance(payload, dict):
+            if str(payload.get("family_id", "")).strip() == str(family_id).strip():
+                summary = dict(payload)
+                summary["_artifact_path"] = str(artifact)
+                return summary, artifact
+            if isinstance(payload.get("results"), list):
+                for row in payload.get("results") or []:
+                    if str((row or {}).get("family_id", "")).strip() == str(family_id).strip():
+                        summary = dict(row)
+                        summary["_artifact_path"] = str(artifact)
+                        summary["_aggregate_row_count"] = str(payload.get("row_count", ""))
+                        return summary, artifact
+    aggregate = _latest_aggregate_smoke_summary(family_id=family_id)
+    if isinstance(aggregate, dict) and str(aggregate.get("_artifact_path", "")).strip():
+        return aggregate, Path(str(aggregate.get("_artifact_path", "")).strip())
+    return aggregate, artifact
 
 
 def _merge_family_row_into_manifest(path: Path, *, family_id: str, updated_row: dict[str, str]) -> None:
@@ -399,6 +829,16 @@ def main() -> int:
     parser.add_argument("--master-note", type=Path, default=DEFAULT_MASTER)
     parser.add_argument("--fast-eval-subdir", default="full_eval_fast_local")
     parser.add_argument("--review-eval-subdir", default="full_eval_fresh_localreview")
+    parser.add_argument("--remote-live", action="store_true")
+    parser.add_argument("--remote-host", default=DEFAULT_REMOTE_HOST)
+    parser.add_argument("--remote-port", type=int, default=DEFAULT_REMOTE_PORT)
+    parser.add_argument("--remote-user", default=DEFAULT_REMOTE_USER)
+    parser.add_argument("--remote-wsl-distro", default=DEFAULT_REMOTE_WSL_DISTRO)
+    parser.add_argument("--remote-workspace-root", default=DEFAULT_REMOTE_WORKSPACE_ROOT)
+    parser.add_argument("--remote-log-lines", type=int, default=60)
+    parser.add_argument("--remote-band-min-mib", type=int, default=DEFAULT_REMOTE_BAND_MIN_MIB)
+    parser.add_argument("--remote-band-max-mib", type=int, default=DEFAULT_REMOTE_BAND_MAX_MIB)
+    parser.add_argument("--remote-hard-cap-mib", type=int, default=DEFAULT_REMOTE_HARD_CAP_MIB)
     args = parser.parse_args()
 
     manifest = Path(args.manifest_csv).resolve()
@@ -413,10 +853,12 @@ def main() -> int:
     fast_root = round1_fast_local_root(family_id=family_id, run_name=run_name)
     localreview_root = round1_localreview_root(family_id=family_id, run_name=run_name)
     family_doc_dir = round1_family_doc_dir(family_id=family_id, run_name=run_name)
-    fast_eval_root = fast_root / str(args.fast_eval_subdir).strip()
-
-    curve_csv = fast_eval_root / "clip_lpips_curve.csv"
-    convergence_json = fast_eval_root / "round1_convergence.json"
+    switch_smoke, switch_smoke_artifact = _switch_smoke_summary(family_id=family_id, run_name=run_name)
+    fast_eval_root, curve_csv, convergence_json, remote_sync_summary = _effective_fast_eval_paths(
+        family_id=family_id,
+        fast_root=fast_root,
+        fast_eval_subdir=str(args.fast_eval_subdir).strip(),
+    )
     curve_rows = _read_rows(curve_csv) if curve_csv.exists() else []
     convergence = _read_json(convergence_json) if convergence_json.exists() else None
 
@@ -432,14 +874,44 @@ def main() -> int:
     best_transfer_lpips = _best_row(curve_rows, style_key="transfer_clip_style", lpips_key="transfer_content_lpips", prefer="lpips")
     best_full_style = _best_row(curve_rows, style_key="full_clip_style", lpips_key="full_content_lpips", prefer="style")
     latest = _latest_row(curve_rows)
+    remote_runtime = None
+    if bool(args.remote_live):
+        remote_runtime = _remote_runtime_snapshot(
+            row=family_row,
+            host=str(args.remote_host),
+            port=int(args.remote_port),
+            user=str(args.remote_user),
+            wsl_distro=str(args.remote_wsl_distro),
+            remote_workspace_root=str(args.remote_workspace_root),
+            remote_log_lines=int(args.remote_log_lines),
+        )
 
     family_row["parent_config"] = str(COMMON_PARENT_CONFIG)
+    family_row["freeze_mode"] = str(((cfg.get("training") or {}).get("freeze_mode", family_row.get("freeze_mode", ""))))
+    family_row["batch_size"] = str(((cfg.get("training") or {}).get("batch_size", family_row.get("batch_size", ""))))
+    family_row["accumulation_steps"] = str(((cfg.get("training") or {}).get("accumulation_steps", family_row.get("accumulation_steps", ""))))
+    family_row["num_epochs"] = str(((cfg.get("training") or {}).get("num_epochs", family_row.get("num_epochs", ""))))
     family_row["tokenizer_family"] = str(((cfg.get("model") or {}).get("tokenizer_family", "legacy_factorized")))
     family_row["backbone_attention_family"] = str(((cfg.get("model") or {}).get("backbone_attention_family", "legacy_semantic_crossattn")))
     family_row["solver_family"] = str(((cfg.get("model") or {}).get("solver_family", "euler_legacy")))
     family_row["semantic_supervision_family"] = str(((cfg.get("bridge") or {}).get("semantic_supervision_family", "legacy_terminal_swd")))
+    family_row["virtual_length_multiplier"] = str(((cfg.get("data") or {}).get("virtual_length_multiplier", "")))
     family_row["local_fast_root"] = str(fast_root)
     family_row["local_review_root"] = str(localreview_root)
+    family_row["switch_smoke_artifact"] = str(switch_smoke_artifact)
+    if isinstance(switch_smoke, dict):
+        family_row["switch_smoke_status"] = str(switch_smoke.get("status", "")).strip() or "unknown"
+        smoke_row_count = ""
+        if "results" in switch_smoke and isinstance(switch_smoke.get("results"), list):
+            smoke_row_count = str(len(switch_smoke.get("results") or []))
+        elif switch_smoke.get("_aggregate_row_count") is not None:
+            smoke_row_count = str(switch_smoke.get("_aggregate_row_count", "")).strip()
+        elif switch_smoke.get("row_count") is not None:
+            smoke_row_count = str(switch_smoke.get("row_count", "")).strip()
+        family_row["switch_smoke_row_count"] = smoke_row_count
+    else:
+        family_row["switch_smoke_status"] = ""
+        family_row["switch_smoke_row_count"] = ""
     family_row["best_ckpt"] = "" if convergence is None else str(convergence.get("best_epoch", ""))
     family_row["best_transfer_lpips_ckpt"] = "" if best_transfer_lpips is None else str(best_transfer_lpips.get("epoch", ""))
     family_row["best_allpairs_clip_style_ckpt"] = "" if best_full_style is None else str(best_full_style.get("epoch", ""))
@@ -448,12 +920,49 @@ def main() -> int:
     if convergence is None:
         family_row["convergence_reason"] = ""
     else:
+        since_field = "since_last_pareto" if convergence.get("since_last_pareto") is not None else "since_best"
         family_row["convergence_reason"] = (
             f"best_in_newest_2={convergence.get('best_in_newest_2')}; "
-            f"since_best={convergence.get('since_best')}; "
+            f"{since_field}={convergence.get(since_field)}; "
             f"tail_flat={convergence.get('tail_flat')}; "
             f"patience={convergence.get('patience')}"
         )
+    if remote_runtime and isinstance(remote_runtime.get("gpu_sample"), dict):
+        gpu_sample = remote_runtime["gpu_sample"]
+        used_mib = int(str(gpu_sample.get("memory_used_mib", "0")).strip() or "0")
+        band_status = _classify_remote_vram_band(
+            memory_used_mib=used_mib,
+            band_min_mib=int(args.remote_band_min_mib),
+            band_max_mib=int(args.remote_band_max_mib),
+            hard_cap_mib=int(args.remote_hard_cap_mib),
+        )
+        tail = remote_runtime.get("tail") if isinstance(remote_runtime.get("tail"), dict) else {}
+        family_row["remote_live_memory_used_mib"] = str(used_mib)
+        family_row["remote_live_memory_total_mib"] = str(gpu_sample.get("memory_total_mib", "")).strip()
+        family_row["remote_live_util_pct"] = str(gpu_sample.get("utilization_gpu_pct", "")).strip()
+        family_row["remote_live_band_status"] = band_status
+        family_row["remote_live_formal_status"] = "formal_in_band" if band_status == "in_band" else f"nonformal_{band_status}"
+        family_row["remote_live_epoch"] = "" if tail.get("epoch") is None else str(tail.get("epoch"))
+        family_row["remote_live_epoch_total"] = "" if tail.get("epoch_total") is None else str(tail.get("epoch_total"))
+        family_row["remote_live_step"] = "" if tail.get("step") is None else str(tail.get("step"))
+        family_row["remote_live_step_total"] = "" if tail.get("step_total") is None else str(tail.get("step_total"))
+        family_row["remote_live_loss"] = "" if tail.get("loss") is None else f"{float(tail.get('loss')):.4f}"
+        family_row["remote_live_tswd"] = "" if tail.get("tswd") is None else f"{float(tail.get('tswd')):.4f}"
+    elif remote_runtime and not bool(remote_runtime.get("train_alive", True)):
+        for key in [
+            "remote_live_memory_used_mib",
+            "remote_live_memory_total_mib",
+            "remote_live_util_pct",
+            "remote_live_band_status",
+            "remote_live_formal_status",
+            "remote_live_epoch",
+            "remote_live_epoch_total",
+            "remote_live_step",
+            "remote_live_step_total",
+            "remote_live_loss",
+            "remote_live_tswd",
+        ]:
+            family_row[key] = ""
     _merge_family_row_into_manifest(manifest, family_id=family_id, updated_row=family_row)
     rows = _read_rows(manifest)
 
@@ -461,9 +970,11 @@ def main() -> int:
         family_doc_dir / "fast_curve_read.md",
         _render_fast_curve_auto(
             family_id=family_id,
-            fast_root=fast_root,
+            fast_root=fast_eval_root,
+            curve_csv=curve_csv,
             curve_rows=curve_rows,
             convergence=convergence,
+            remote_sync_summary=remote_sync_summary,
         ),
     )
     _upsert_auto_block(
@@ -485,15 +996,30 @@ def main() -> int:
             fast_root=fast_root,
             localreview_root=localreview_root,
             curve_rows=curve_rows,
+            remote_runtime=remote_runtime,
         ),
     )
     running_rows = [row for row in rows if str(row.get("decision_status", "")).strip().lower() == "running"]
     master_row = running_rows[0] if running_rows else family_row
-    _, master_fast_root, _ = _family_runtime_paths(master_row)
-    master_curve_csv = master_fast_root / str(args.fast_eval_subdir).strip() / "clip_lpips_curve.csv"
-    master_convergence_json = master_fast_root / str(args.fast_eval_subdir).strip() / "round1_convergence.json"
+    master_family_id, master_fast_root, _ = _family_runtime_paths(master_row)
+    _, master_curve_csv, master_convergence_json, _ = _effective_fast_eval_paths(
+        family_id=master_family_id,
+        fast_root=master_fast_root,
+        fast_eval_subdir=str(args.fast_eval_subdir).strip(),
+    )
     master_curve_rows = _read_rows(master_curve_csv) if master_curve_csv.exists() else []
     master_convergence = _read_json(master_convergence_json) if master_convergence_json.exists() else None
+    master_remote_runtime = None
+    if bool(args.remote_live) and str(master_row.get("decision_status", "")).strip().lower() == "running":
+        master_remote_runtime = _remote_runtime_snapshot(
+            row=master_row,
+            host=str(args.remote_host),
+            port=int(args.remote_port),
+            user=str(args.remote_user),
+            wsl_distro=str(args.remote_wsl_distro),
+            remote_workspace_root=str(args.remote_workspace_root),
+            remote_log_lines=int(args.remote_log_lines),
+        )
     _upsert_auto_block(
         Path(args.master_note).resolve(),
         _render_master_auto(
@@ -501,6 +1027,7 @@ def main() -> int:
             family_row=master_row,
             curve_rows=master_curve_rows,
             convergence=master_convergence,
+            remote_runtime=master_remote_runtime,
         ),
     )
     print(family_doc_dir)

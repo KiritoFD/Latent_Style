@@ -1,0 +1,201 @@
+# attn_gated_spade Remote Run Log
+
+- Run dir: `./exp/inmortal-exp/aaai2027_round1_attn_gated_spade_seed42_b8a2`
+- First formal launch attempt on `2026-06-10`:
+  - batch size `13`
+  - health sample `6401 MiB`
+  - result:
+    - correctly rejected by the launcher health check as `under_band`
+    - this did not produce formal evidence
+- Recalibration decision:
+  - raise the next formal attempt to `batch_size = 19`
+  - keep the new runtime min-band guard active so the retrial will fail fast again if it still cannot reach the requested `9.0-10.8 GiB` band
+- Second formal launch on `2026-06-10`:
+  - batch size `19`
+  - health sample entered the requested formal band
+  - remote artifact check at `2026-06-10 15:44-15:47 +08:00`:
+    - retained checkpoints already exist through `epoch_0020.pt`
+    - the remote run directory still contains only:
+      - `config.json`
+      - `epoch_*.pt`
+      - `logs/`
+      - `numeric_debug.jsonl`
+      - `src/`
+    - there is still no remote `full_eval*`, `summary.json`, or eval CSV tree under this run dir
+    - so the lack of paper-facing metric numbers is not because checkpoints are missing
+    - it is because fast eval has not started yet on either side
+  - current pre-eval data packet now available locally:
+    - structured scalar read:
+      - [remote_scalar_read.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/attn_gated_spade/remote_scalar_read.md)
+    - pulled remote train CSVs:
+      - [training_20260610_132738.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_remote_logs_20260610/training_20260610_132738.csv)
+      - [training_20260610_133255.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_remote_logs_20260610/training_20260610_133255.csv)
+    - remote training curve figure:
+      - [round1_attn_gated_spade_training_curve.png](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_training_curve.png)
+    - runtime curve CSV:
+      - [round1_attn_gated_spade_runtime_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_runtime_curve.csv)
+    - runtime curve figure:
+      - [round1_attn_gated_spade_runtime_curve.png](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_runtime_curve.png)
+    - training-curve read:
+      - loss dropped from about `8.1236` at epoch `1` to about `7.8481` at epoch `20`
+      - terminal `swd` moved from about `2.3438` to about `2.2813`
+      - throughput held around `42.2-44.3 samples/sec`
+      - peak allocated / reserved memory stayed about `6.62 / 8.35 GiB` inside the process log, while the outer host-side runtime watcher kept the card itself around `9.15-9.19 GiB`
+  - architecture correction on `2026-06-10 16:13-16:24 +08:00`:
+    - the earlier `local deferred fast-eval only` setup was wrong for this family
+    - remote training was explicitly stopped
+    - remote fast-eval watcher was launched directly on the same remote host
+    - first remote eval artifacts have now landed under:
+      - `full_eval_fast_snapshot/epoch_0001`
+      - `full_eval_fast_snapshot/epoch_0002`
+      - `full_eval_fast_snapshot/epoch_0003`
+      - `full_eval_fast_snapshot/epoch_0004`
+      - `full_eval_fast_snapshot/epoch_0005`
+      - `full_eval_fast_snapshot/epoch_0006`
+    - pulled remote eval curve snapshot:
+      - [clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_remote_full_eval_pull/clip_lpips_curve.csv)
+    - detached remote-fast sync loop now armed locally:
+      - [watch_sync_round1_remote_fast_eval_packet.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_sync_round1_remote_fast_eval_packet.py)
+      - stdout:
+        - [round1_attn_gated_spade_remote_fast_sync_20260610.stdout.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_remote_fast_sync_20260610.stdout.log)
+      - stderr:
+        - [round1_attn_gated_spade_remote_fast_sync_20260610.stderr.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_remote_fast_sync_20260610.stderr.log)
+    - first available paper-facing numbers:
+      - `epoch_0001`
+        - transfer `CLIP-S / LPIPS = 0.6929 / 0.4501`
+        - all-pairs `CLIP-S / LPIPS = 0.7158 / 0.4464`
+      - `epoch_0002`
+        - transfer `CLIP-S / LPIPS = 0.6917 / 0.4354`
+        - all-pairs `CLIP-S / LPIPS = 0.7155 / 0.4319`
+- current automation chain:
+    - runtime watcher:
+      - [watch_round1_family_runtime_status.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_round1_family_runtime_status.py)
+      - [round1_attn_gated_spade_runtime_watch_20260610.stdout.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_runtime_watch_20260610.stdout.log)
+      - [round1_attn_gated_spade_runtime_watch_20260610.stderr.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_runtime_watch_20260610.stderr.log)
+      - [round1_attn_gated_spade_runtime_samples.jsonl](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_runtime_samples.jsonl)
+      - [round1_attn_gated_spade_runtime_summary.json](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_runtime_summary.json)
+    - deferred local fast-eval:
+      - [round1_attn_gated_spade_fast_eval_deferred_20260610.stdout.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_fast_eval_deferred_20260610.stdout.log)
+      - [round1_attn_gated_spade_fast_eval_deferred_20260610.stderr.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_fast_eval_deferred_20260610.stderr.log)
+    - deferred stage-close:
+      - [round1_attn_gated_spade_stageclose_deferred_20260610.stdout.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_stageclose_deferred_20260610.stdout.log)
+      - [round1_attn_gated_spade_stageclose_deferred_20260610.stderr.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_stageclose_deferred_20260610.stderr.log)
+- failure read on `2026-06-10`:
+  - the active train pid disappeared during `epoch 23`
+  - no `epoch_0023.pt` was written
+  - the remote fast-eval watcher was still alive after train death and had to be stopped manually
+  - this exposed an infra bug:
+    - family-status refresh had been trusting stale train-log tail plus generic GPU occupancy as if they were live train state
+    - `update_round1_family_status_docs.py` is now corrected to require a real matching remote train pid before reporting live progress
+  - final standing of this lane:
+    - directional evidence kept
+    - paper-facing status downgraded to `recalibration_needed`
+
+<!-- ROUND1_AUTO_STATUS:START -->
+## Auto Status
+
+- Family id: `attn_gated_spade`
+- Run name: `aaai2027_round1_attn_gated_spade_seed42_b8a2`
+- Remote run dir: `./exp/inmortal-exp/aaai2027_round1_attn_gated_spade_seed42_b8a2`
+- Config: [aaai2027_round1_attn_gated_spade_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_attn_gated_spade_seed42_b8a2.json)
+- Manifest status: `recalibration_needed`
+- Local fast root: [round1_attn_gated_spade_fast_local](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_fast_local)
+- Local review root: [round1_attn_gated_spade_localreview](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_localreview)
+- Prelaunch switch smoke: `ok`
+- Switch smoke artifact: [round1_family_switch_smoke_20260610.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_family_switch_smoke_20260610.json)
+- Switch smoke row count: `11`
+<!-- ROUND1_AUTO_STATUS:END -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
