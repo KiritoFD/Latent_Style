@@ -1,11 +1,11 @@
 # solver_tangent_rk Remote Scalar Read
 
-Updated: `2026-06-11T04:20:01.984403`
+Updated: `2026-06-11T05:28:47.222791`
 
 - Run name: `aaai2027_round1_solver_tangent_rk_seed42_b8a2`
 - Remote run dir: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_tangent_rk_seed42_b8a2`
-- Retained checkpoints: `24`
-- Latest checkpoint: `epoch_0024.pt`
+- Retained checkpoints: `28`
+- Latest checkpoint: `epoch_0028.pt`
 - Remote eval files currently visible: `50`
 - Eval files:
   - `full_eval_fast_snapshot/clip_lpips_curve.csv`
@@ -35,15 +35,21 @@ Updated: `2026-06-11T04:20:01.984403`
   - [training_20260610_225201.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_remote_scalars/training_20260610_225201.csv)
   - [training_20260611_025644.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_remote_scalars/training_20260611_025644.csv)
   - [training_20260611_041449.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_remote_scalars/training_20260611_041449.csv)
+  - [training_20260611_045350.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_remote_scalars/training_20260611_045350.csv)
 - Latest remote training CSV row:
-  - `waiting for first completed training row`
+  - `epoch=28`
+  - `loss=7.812830924987793`
+  - `terminal_swd=2.296875`
+  - `samples_per_sec=36.67683247766031`
+  - `cuda_peak_allocated_gb=7.4953155517578125`
+  - `cuda_peak_reserved_gb=8.8359375`
 - Latest runtime watcher sample:
-  - `epoch=25/28`
-  - `step=471/1180`
-  - `loss=7.7921`
-  - `tswd=4.6562`
-  - `VRAM=9209/12288 MiB`
-  - `band_status=under_band`
+  - `epoch=28/28`
+  - `step=803/1111`
+  - `loss=7.8184`
+  - `tswd=2.9844`
+  - `VRAM=9877/12288 MiB`
+  - `band_status=in_band`
 - Training curve: [training_curve.png](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_remote_scalars/training_curve.png)
 - Runtime curve: [runtime_curve.png](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_remote_scalars/runtime_curve.png)
 - Runtime CSV: [runtime_curve.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_remote_scalars/runtime_curve.csv)

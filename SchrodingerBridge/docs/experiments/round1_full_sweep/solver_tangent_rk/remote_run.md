@@ -217,6 +217,27 @@
     - do not treat this as convergence
     - do not switch to `solver_pc`
     - relaunch the same continuation from `epoch_0024` with `batch=17`
+- settled `epoch_0025-0028` read:
+  - the `batch=17` continuation completed through:
+    - `epoch_0028.pt`
+  - all four new retained checkpoints are now settled in the local fast packet
+  - transfer `CLIP-S / LPIPS`:
+    - `epoch_0025 = 0.6812 / 0.4746`
+    - `epoch_0026 = 0.6903 / 0.4708`
+    - `epoch_0027 = 0.6844 / 0.4875`
+    - `epoch_0028 = 0.6858 / 0.4626`
+  - read:
+    - `epoch_0026` briefly recovered style versus `epoch_0025`
+    - but none of `epoch_0025-0028` created a new Pareto point
+    - the best late structure point remains `epoch_0019`
+  - current convergence state:
+    - `since_last_pareto = 9`
+    - `best_in_newest_2 = false`
+    - `tail_flat = false`
+  - decision:
+    - keep the family alive one short segment longer
+    - relaunch from `epoch_0028` to `epoch_0030` at the same `batch=17`
+    - if the next two retained checkpoints do not flatten the tail enough for formal closure, switch to stage-close review rather than keep stretching the line
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
@@ -232,177 +253,12 @@
 - Switch smoke artifact: [round1_solver_tangent_rk_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_switch_smoke_latest.json)
 - Switch smoke row count: `1`
 - Remote GPU live sample:
-  - `9878 MiB / 12288 MiB`, `util=99%`
+  - `9877 MiB / 12288 MiB`, `util=84%`
   - `band_status=in_band`
   - `formal_status=formal_in_band`
-- Remote train log: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_tangent_rk_seed42_b8a2_train.log`
 - Remote train progress:
-  - `epoch 25/28`
-  - `step 841/1111`
-  - `loss=7.7813`
-  - `tswd=2.7969`
+  - `epoch 28/28`
+  - `step 803/1111`
+  - `loss=7.8184`
+  - `tswd=2.9844`
 <!-- ROUND1_AUTO_STATUS:END -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

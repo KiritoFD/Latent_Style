@@ -530,60 +530,12 @@ Recalibration-needed family:
 - Active family: `solver_tangent_rk`
 - Decision status: `running`
 - Batch / epochs / patience: `17 / 24 / 6`
-- Remote GPU live: `9878 / 12288 MiB`, `util=64%`, `band=in_band`
 - Best transfer `CLIP-S`: `epoch_0001` -> `0.6999 / 0.5295`
 - Best transfer `LPIPS`: `epoch_0019` -> `0.6909 / 0.4498`
 - Best all-pairs `CLIP-S`: `epoch_0007` -> `0.7159 / 0.4675`
-- Latest settled fast point: `epoch_0024` -> transfer `0.6860 / 0.4572`
-- Convergence: `row_count=24, since_best=23, tail_flat=False, closure_band=approaching_closure, converged=False`
+- Latest settled fast point: `epoch_0028` -> transfer `0.6858 / 0.4626`
+- Convergence: `row_count=28, since_best=27, tail_flat=False, closure_band=approaching_closure, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 Current solver continuation note:
 
@@ -614,6 +566,20 @@ Current solver continuation note:
     - keep the same family active
     - relaunch the continuation from `epoch_0024` with `batch=17`
     - keep the same `epoch_0028` target and same fast-eval / convergence contract
+- settled extension read through `epoch_0028`:
+  - `epoch_0025-0028` are now fully settled in the local fast curve
+  - none of those four checkpoints created a new Pareto point after `epoch_0019`
+  - current state after the full `28`-epoch packet:
+    - `since_last_pareto = 9`
+    - `best_in_newest_2 = false`
+    - `tail_flat = false`
+  - read:
+    - the line is now strongly in a post-frontier drift regime
+    - but still not formally closeable because the flat-tail condition has not triggered
+  - next action:
+    - relaunch one short continuation from `epoch_0028` to `epoch_0030`
+    - keep `batch=17`
+    - use that last short segment to decide final closure vs handoff to `solver_pc`
 
 
 
