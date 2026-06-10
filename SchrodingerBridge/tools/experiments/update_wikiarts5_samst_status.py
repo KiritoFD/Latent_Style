@@ -23,6 +23,15 @@ STYLE_NAMES = [
 ]
 
 
+def _to_wsl_mount(path: Path) -> str:
+    text = str(path)
+    if len(text) >= 2 and text[1] == ":":
+        drive = text[0].lower()
+        remainder = text[2:].replace("\\", "/").lstrip("/")
+        return f"/mnt/{drive}/{remainder}" if remainder else f"/mnt/{drive}"
+    return text.replace("\\", "/")
+
+
 def _md_link(label: str, path: Path) -> str:
     return f"[{label}]({str(path).replace(chr(92), '/')})"
 
@@ -58,12 +67,7 @@ def _upsert_auto_block(path: Path, body: str) -> None:
 
 
 def _query_wsl_processes(*, distro: str, result_root: Path) -> list[dict[str, str]]:
-    match_text = str(result_root).replace("\\", "/").replace("G:/", "/mnt/g/").replace("F:/", "/mnt/f/")
-    cmd = (
-        "ps -eo pid,etime,args | grep -F -- "
-        + subprocess.list2cmdline([match_text])
-        + " | grep -F 'run_samst_distinct5_local.py' | grep -v grep || true"
-    )
+    cmd = "ps -eo pid,etime,args | grep -F 'run_samst_distinct5_local.py' | grep -v grep || true"
     proc = subprocess.run(
         ["wsl", "-d", distro, "bash", "-lc", cmd],
         stdout=subprocess.PIPE,
@@ -77,11 +81,16 @@ def _query_wsl_processes(*, distro: str, result_root: Path) -> list[dict[str, st
         text = line.strip()
         if not text:
             continue
-        match = re.match(r"^\s*(\d+)\s+(\S+)\s+(.*)$", text)
-        if not match:
+        parts = text.split(None, 2)
+        if len(parts) < 3 or not parts[0].isdigit():
             continue
-        pid, etime, command = match.groups()
-        rows.append({"pid": pid, "etime": etime, "command": command})
+        pid, etime, command = parts[0], parts[1], parts[2]
+        out_root_match = re.search(r"--out-root\s+(\S+)", command)
+        out_root = out_root_match.group(1).strip() if out_root_match else ""
+        out_root_name = Path(out_root.replace("\\", "/")).name if out_root else ""
+        if out_root_name and out_root_name != result_root.name:
+            continue
+        rows.append({"pid": pid, "etime": etime, "command": command, "out_root": out_root})
     return rows
 
 
