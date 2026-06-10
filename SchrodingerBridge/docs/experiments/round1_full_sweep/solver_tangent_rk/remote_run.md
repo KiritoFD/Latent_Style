@@ -161,6 +161,19 @@
   - read:
     - remote execution remains inside the formal VRAM band
     - let the segmented continuation finish to `epoch_0024` before deciding whether to close or roll into `solver_pc`
+- newest settled continuation read:
+  - `epoch_0019` created a new late Pareto point with the best transfer-LPIPS so far
+  - `epoch_0020` and `epoch_0021` did not beat that frontier:
+    - `epoch_0020 transfer = 0.6884 / 0.4533`
+    - `epoch_0021 transfer = 0.6885 / 0.4729`
+  - current convergence read:
+    - `best_in_newest_2 = false`
+    - `since_last_pareto = 2`
+    - `tail_flat = false`
+  - interpretation:
+    - the family has entered the first real post-frontier patience window
+    - but it is still not closeable yet because `tail_flat=false` and solver patience is `6`
+    - therefore keep the lane alive through the remaining `epoch_0022-0024` checkpoints, then reassess closure vs `solver_pc`
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
@@ -176,16 +189,22 @@
 - Switch smoke artifact: [round1_solver_tangent_rk_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_switch_smoke_latest.json)
 - Switch smoke row count: `1`
 - Remote GPU live sample:
-  - `9349 MiB / 12288 MiB`, `util=84%`
+  - `9349 MiB / 12288 MiB`, `util=82%`
   - `band_status=in_band`
   - `formal_status=formal_in_band`
-- Remote train log: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_tangent_rk_seed42_b8a2_train.log`
 - Remote train progress:
-  - `epoch 21/24`
-  - `step 33/1180`
-  - `loss=7.7844`
-  - `tswd=5.6562`
+  - `epoch 22/24`
+  - `step 660/1180`
+  - `loss=7.8908`
+  - `tswd=3.3906`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
+
+
+
+
 
 
 
