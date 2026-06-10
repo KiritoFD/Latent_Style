@@ -39,5 +39,10 @@ Generic round-1 helpers:
 - bestfew pipeline:
   - [run_round1_family_bestfew_pipeline.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_round1_family_bestfew_pipeline.py)
   - [launch_local_round1_family_review_detached.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_local_round1_family_review_detached.py)
+- external-baseline `VLM` snapshots:
+  - [build_round1_family_external_vlm_manifests.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/build_round1_family_external_vlm_manifests.py)
+  - [run_round1_family_external_vlm_packet.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_round1_family_external_vlm_packet.py)
+  - [launch_round1_family_external_vlm_detached.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_round1_family_external_vlm_detached.py)
+  - [watch_vlm_snapshot_summaries.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_vlm_snapshot_summaries.py)
 - next-family launcher:
   - [run_round1_family_queue.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_round1_family_queue.py)
