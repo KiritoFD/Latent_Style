@@ -147,7 +147,7 @@ Notes:
 - Live JSON: [samst_live_status.json](G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/samst_wikiarts5_wsl_20260610_172206/samst_live_status.json)
 - Active WSL process count: `1`
 - Active WSL process:
-  - `pid=31509` `etime=04:39:03`
+  - `pid=31509` `etime=05:15:39`
 - Eval watcher alive: `yes`
   - `pid=174368`
 - Status watcher alive: `yes`
@@ -155,9 +155,9 @@ Notes:
 - Latest train log: [train_Ukiyo_e.log](G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/samst_wikiarts5_wsl_20260610_172206/logs/train_Ukiyo_e.log)
 - Active style: `Ukiyo_e`
 - Latest logged progress:
-  - `epoch=2`
-  - `step=14060 / 18894`
-  - `content/style/ae/total = 205401.36 / 119766.16 / 558.50 / 325167.52`
+  - `epoch=4`
+  - `step=18230 / 18894`
+  - `content/style/ae/total = 189955.94 / 108570.36 / 382.13 / 298526.30`
 - Common saved epochs across all 5 styles:
   - `none yet`
 - Eligible every-5-epoch eval points currently present:
@@ -179,8 +179,30 @@ Notes:
   - `{"event": "poll", "common_epochs": [], "per_style_epoch_counts": {"Early_Renaissance": 1, "Impressionism": 1, "Minimalism": 1, "Rococo": 1, "Ukiyo_e": 0}}`
 - Local GPU sample:
   - `NVIDIA GeForce RTX 4070 Laptop GPU`
-  - `4339 MiB / 8188 MiB`, `util=66%`
+  - `4334 MiB / 8188 MiB`, `util=1%`
 <!-- WIKIARTS5_SAMST_AUTO_STATUS:END -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
