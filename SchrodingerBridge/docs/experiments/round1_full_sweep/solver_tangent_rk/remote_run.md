@@ -193,6 +193,14 @@
   - read:
     - this is close enough to the floor to treat as a warmup-borderline sample rather than an immediate redesign signal
     - re-evaluate after later runtime samples before changing batch policy again
+  - follow-up launch policy if another continuation is needed after `epoch_0028`:
+    - use the same segmented continuation path
+    - but consider raising `batch` from `16` to `17`
+    - rationale:
+      - the first two extension samples stayed slightly under the formal floor:
+        - `9204 MiB`
+        - `9209 MiB`
+      - so the next continuation, if it exists, should try to restore a cleaner in-band margin
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
@@ -210,7 +218,23 @@
 - Remote train log: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_tangent_rk_seed42_b8a2_train.log`
 - Remote train pid: not alive
 - Remote fast-eval pid count: `2`
+- Remote GPU live sample:
+  - `9209 MiB / 12288 MiB`, `util=85%`
+  - `band_status=under_band`
+  - `formal_status=nonformal_under_band`
+- Remote train progress:
+  - `epoch 25/28`
+  - `step 471/1180`
+  - `loss=7.7921`
+  - `tswd=4.6562`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
+
+
+
+
 
 
 

@@ -530,13 +530,26 @@ Recalibration-needed family:
 - Active family: `solver_tangent_rk`
 - Decision status: `running`
 - Batch / epochs / patience: `16 / 24 / 6`
-- Remote GPU live: `no active train pid; fast_eval_watchers=2`
+- Remote GPU live (latest nonempty): `9209 / 12288 MiB`, `util=85%`, `band=under_band`
+- Remote train pid: `not alive`; remote fast-eval pid count = `2`
 - Best transfer `CLIP-S`: `epoch_0001` -> `0.6999 / 0.5295`
 - Best transfer `LPIPS`: `epoch_0019` -> `0.6909 / 0.4498`
 - Best all-pairs `CLIP-S`: `epoch_0007` -> `0.7159 / 0.4675`
 - Latest settled fast point: `epoch_0024` -> transfer `0.6860 / 0.4572`
 - Convergence: `row_count=24, since_best=23, tail_flat=False, closure_band=approaching_closure, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -561,6 +574,10 @@ Current solver continuation note:
   - read:
     - this is only marginally below the formal floor and likely a warmup-borderline sample
     - keep the lane alive and watch later runtime samples before touching batch policy again
+  - current recalibration thought:
+    - if another continuation beyond `epoch_0028` is required,
+    - prefer testing `batch=17` first,
+    - because the first two extension samples (`9204`, `9209 MiB`) both sat just below the formal `9216 MiB` floor
 
 
 
