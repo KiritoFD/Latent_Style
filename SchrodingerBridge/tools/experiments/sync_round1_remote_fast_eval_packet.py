@@ -140,6 +140,27 @@ def _latest(rows: list[dict[str, str]]) -> dict[str, str]:
     return max(rows, key=lambda r: int("".join(ch for ch in str(r["epoch"]) if ch.isdigit()) or "-1"))
 
 
+def _closure_band(convergence: dict | None) -> str:
+    if not isinstance(convergence, dict):
+        return "unknown"
+    if bool(convergence.get("converged")):
+        return "converged"
+    patience = int(convergence.get("patience") or 0)
+    since_last_pareto = convergence.get("since_last_pareto")
+    since_best = convergence.get("since_best")
+    best_in_newest_2 = bool(convergence.get("best_in_newest_2"))
+    tail_flat = bool(convergence.get("tail_flat"))
+    distance = None
+    if since_last_pareto is not None:
+        distance = int(since_last_pareto)
+    elif since_best is not None:
+        distance = int(since_best)
+    if patience > 0 and distance is not None:
+        if (not best_in_newest_2) and distance >= max(0, patience - 1):
+            return "closure_ready" if tail_flat else "approaching_closure"
+    return "open"
+
+
 def _upsert_auto_block(path: Path, body: str) -> None:
     block = f"{AUTO_START}\n{body.rstrip()}\n{AUTO_END}\n"
     if path.exists():
@@ -415,7 +436,9 @@ def main() -> int:
             "- Convergence snapshot:",
             f"  - `best_epoch = {convergence.get('best_epoch')}`",
             f"  - `since_last_pareto = {convergence.get('since_last_pareto')}`",
+            f"  - `best_in_newest_2 = {convergence.get('best_in_newest_2')}`",
             f"  - `tail_flat = {convergence.get('tail_flat')}`",
+            f"  - `closure_band = {_closure_band(convergence)}`",
             f"  - `criterion = {convergence.get('criterion')}`",
             f"  - `converged = {convergence.get('converged')}`",
             f"- Sync summary:",
