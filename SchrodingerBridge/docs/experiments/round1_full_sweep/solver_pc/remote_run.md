@@ -57,6 +57,15 @@
     - style recovered slightly from `epoch_0002`
     - LPIPS softened slightly from `epoch_0002`
     - this line now reads as a real style/structure tradeoff frontier
+- Fourth settled fast-eval point:
+  - `epoch_0004`
+  - transfer `CLIP-S / LPIPS = 0.6962 / 0.5373`
+  - all-pairs `CLIP-S / LPIPS = 0.7118 / 0.5296`
+  - wall `= 177.89s`
+  - immediate read:
+    - LPIPS improved again to the best point so far for this family
+    - style softened again on both transfer and all-pairs
+    - the line is now clearly structure-first, with style still lagging behind
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
 
