@@ -2,8 +2,9 @@ xelatex_*.log
 archive/**
 tmp_*
 _vlm*smoke*
-*.stderr.log
-*.stdout.log
+*.png
+*.pdf
+**/images/**
 paper_aaai2027_preview.*
 paper_aaai2027.fdb_latexmk
 paper_aaai2027.fls

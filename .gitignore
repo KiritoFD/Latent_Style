@@ -79,6 +79,8 @@ SchrodingerBridge/external_eval/**
 SchrodingerBridge/archives/code_backups/**
 SchrodingerBridge/docs/experiments/history_audit_local_*.json
 SchrodingerBridge/datasets/**
+SchrodingerBridge/stabilityai/**
+stabilityai/**
 
 # Top-level runtime dumps
 archive/**
