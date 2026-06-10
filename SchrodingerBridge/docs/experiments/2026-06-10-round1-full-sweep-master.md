@@ -94,6 +94,9 @@ Current active remote lane:
     - a deferred local fast-eval launcher is now armed:
       - [launch_local_round1_fast_eval_after_wsl_idle.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_local_round1_fast_eval_after_wsl_idle.py)
       - it waits for `SaMAM` convergence plus WSL process exit, then auto-starts the `attn_gw_ot` local fast watcher
+    - a second deferred stage-close launcher is also armed:
+      - [run_round1_family_stageclose_when_ready.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_round1_family_stageclose_when_ready.py)
+      - it waits for the local `attn_gw_ot` fast curve to converge, then runs bestfew rerun/review and external-baseline `VLM`
 
 Closed family:
 
@@ -203,6 +206,7 @@ Closed family:
 - Decision status: `running`
 - Batch / epochs / patience: `12 / 24 / 4`
 <!-- ROUND1_AUTO_STATUS:END -->
+
 
 
 
