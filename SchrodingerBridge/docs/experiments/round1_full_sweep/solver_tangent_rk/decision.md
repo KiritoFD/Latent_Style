@@ -61,3 +61,11 @@
     - this point overtook `epoch_0004` on both structure and all-pairs style
     - so the rollback at `epoch_0005` and partial recovery at `epoch_0006` were not closure evidence after all
     - keep the current formal lane running
+- Latest rollback after the new frontier:
+  - `epoch_0008` has now fully settled
+  - transfer `CLIP-S / LPIPS = 0.6901 / 0.5243`
+  - all-pairs `CLIP-S / LPIPS = 0.7082 / 0.5130`
+  - read:
+    - this point fell back clearly from `epoch_0007`
+    - but because `epoch_0007` is still within the newest 2 settled checkpoints, the family still does not satisfy the stop rule
+    - keep the line running until the solver-family patience and flat-tail conditions are actually met
