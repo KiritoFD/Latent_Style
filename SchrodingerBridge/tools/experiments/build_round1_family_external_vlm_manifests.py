@@ -46,6 +46,14 @@ def _safe_tag(text: str) -> str:
     return cleaned.strip("_") or "item"
 
 
+def _epoch_short_tag(epoch: str) -> str:
+    raw = str(epoch).strip()
+    digits = "".join(ch for ch in raw if ch.isdigit())
+    if not digits:
+        return _safe_tag(raw)
+    return f"e{int(digits)}"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build one or more round-1 external-baseline VLM manifests directly from a family bestfew handoff table.")
     parser.add_argument("--handoff-csv", type=Path, required=True)
@@ -75,7 +83,7 @@ def main() -> int:
     outputs: list[dict[str, str]] = []
     for row in selected:
         epoch = str(row.get("epoch", "")).strip()
-        candidate_label = f"{args.family_label_prefix}_{epoch.replace('epoch_', 'e')}"
+        candidate_label = f"{args.family_label_prefix}_{_epoch_short_tag(epoch)}"
         reason_tag = _safe_tag(str(row.get("reason", "")).strip())
         out_csv = output_dir / f"{_safe_tag(args.family_label_prefix)}_{epoch}_{reason_tag}.csv"
         manifest_rows = [
