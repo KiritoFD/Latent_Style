@@ -530,13 +530,44 @@ Recalibration-needed family:
 - Active family: `solver_tangent_rk`
 - Decision status: `running`
 - Batch / epochs / patience: `16 / 24 / 6`
-- Remote GPU live: `9349 / 12288 MiB`, `util=99%`, `band=in_band`
+- Remote GPU live: `9209 / 12288 MiB`, `util=80%`, `band=under_band`
 - Best transfer `CLIP-S`: `epoch_0001` -> `0.6999 / 0.5295`
 - Best transfer `LPIPS`: `epoch_0019` -> `0.6909 / 0.4498`
 - Best all-pairs `CLIP-S`: `epoch_0007` -> `0.7159 / 0.4675`
-- Latest settled fast point: `epoch_0023` -> transfer `0.6906 / 0.5189`
-- Convergence: `row_count=23, since_best=22, tail_flat=False, closure_band=open, converged=False`
+- Latest settled fast point: `epoch_0024` -> transfer `0.6860 / 0.4572`
+- Convergence: `row_count=24, since_best=23, tail_flat=False, closure_band=approaching_closure, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+Current solver continuation note:
+
+- `solver_tangent_rk` did not close at the original `24`-epoch budget:
+  - latest settled point under that budget:
+    - `epoch_0024`
+  - fast-curve state at that point:
+    - `best_in_newest_2 = false`
+    - `since_last_pareto = 5`
+    - `tail_flat = false`
+- decision:
+  - do **not** promote, reject, or switch to `solver_pc` yet
+  - first extend the same family to `epoch_0028` and let the solver-specific patience rule finish cleanly
+- current resumed extension:
+  - `epoch 25/28`
+  - first health sample:
+    - `9204 MiB / 12288 MiB`
+  - read:
+    - this is only marginally below the formal floor and likely a warmup-borderline sample
+    - keep the lane alive and watch later runtime samples before touching batch policy again
+
+
+
+
+
+
+
+
+
+
+
 
 
 
