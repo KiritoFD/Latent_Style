@@ -11,6 +11,16 @@
     - so `batch=8` is only a calibration starting point
   - next recalibration target:
     - `batch=14`
+- Second calibration read on `2026-06-11`:
+  - opening batch:
+    - `14`
+  - 30-second health sample:
+    - `8226 MiB / 12288 MiB`
+  - interpretation:
+    - still below the effective formal floor
+    - so `batch=14` remains a calibration-only opening
+  - next recalibration target:
+    - `batch=16`
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status

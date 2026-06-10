@@ -15,3 +15,12 @@
 - Next action:
   - raise the canonical opening batch to `14`
   - relaunch the same family under the existing single-lane remote fast-eval contract
+- Recalibration update:
+  - `batch=14` remained under-band on the 30-second health check:
+    - `8226 MiB / 12288 MiB`
+  - interpretation:
+    - this is still calibration evidence only
+    - but the gap is now small enough that the next single-step increase is more appropriate than a bigger jump
+  - next action:
+    - raise the canonical opening batch to `16`
+    - relaunch again under the same contract
