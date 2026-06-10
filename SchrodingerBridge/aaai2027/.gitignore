@@ -10,6 +10,8 @@ _vlm*smoke*
 *_fast_sync_*.stderr.log
 *status_watch_*.stdout.log
 *status_watch_*.stderr.log
+*stageclose*.stdout.log
+*stageclose*.stderr.log
 *.png
 *.pdf
 **/images/**

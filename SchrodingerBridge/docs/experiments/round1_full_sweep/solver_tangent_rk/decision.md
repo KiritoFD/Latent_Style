@@ -99,3 +99,22 @@
     - keep `solver_tangent_rk` active
     - relaunch the same continuation from `epoch_0024` with `batch=17`
     - do not switch to `solver_pc` until a real post-`epoch_0024` fast curve exists
+- `epoch_0025-0028` extension read:
+  - all retained checkpoints through `epoch_0028` are now settled under the remote fast-eval contract
+  - latest four transfer points:
+    - `epoch_0025 = 0.6812 / 0.4746`
+    - `epoch_0026 = 0.6903 / 0.4708`
+    - `epoch_0027 = 0.6844 / 0.4875`
+    - `epoch_0028 = 0.6858 / 0.4626`
+  - convergence state after the full `28`-epoch read:
+    - `since_last_pareto = 9`
+    - `best_in_newest_2 = false`
+    - `tail_flat = false`
+  - interpretation:
+    - this extension did not produce any new Pareto point beyond `epoch_0019`
+    - the line now reads as a long late-tail drift rather than a renewed frontier candidate
+    - but it is still not formally closeable under the current rule because `tail_flat=false`
+  - next action:
+    - continue the same family one short segment farther, from `epoch_0028` to `epoch_0030`
+    - keep `batch=17`
+    - close immediately after that segment only if the all-ckpt curve finally satisfies the flat-tail condition
