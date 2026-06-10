@@ -201,6 +201,22 @@
         - `9204 MiB`
         - `9209 MiB`
       - so the next continuation, if it exists, should try to restore a cleaner in-band margin
+- extension stop read on `2026-06-11`:
+  - the bounded `batch=16` continuation exited with:
+    - no new retained checkpoint after `epoch_0024`
+    - no new fast-eval packet beyond the settled `24`-point curve
+  - last nonempty runtime sample before exit:
+    - `epoch 25/28`
+    - `step 471/1180`
+    - `loss=7.7921`
+    - `tswd=4.6562`
+    - `9209 MiB / 12288 MiB`
+    - `band_status=under_band`
+    - `formal_status=nonformal_under_band`
+  - follow-up decision:
+    - do not treat this as convergence
+    - do not switch to `solver_pc`
+    - relaunch the same continuation from `epoch_0024` with `batch=17`
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
@@ -215,9 +231,6 @@
 - Prelaunch switch smoke: `ok`
 - Switch smoke artifact: [round1_solver_tangent_rk_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_switch_smoke_latest.json)
 - Switch smoke row count: `1`
-- Remote train log: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_tangent_rk_seed42_b8a2_train.log`
-- Remote train pid: not alive
-- Remote fast-eval pid count: `2`
 - Remote GPU live sample:
   - `9209 MiB / 12288 MiB`, `util=85%`
   - `band_status=under_band`
@@ -228,6 +241,14 @@
   - `loss=7.7921`
   - `tswd=4.6562`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
+
+
+
+
+
 
 
 

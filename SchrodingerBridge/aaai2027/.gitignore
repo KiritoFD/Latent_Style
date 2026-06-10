@@ -2,6 +2,8 @@ xelatex_*.log
 archive/**
 tmp_*
 _vlm*smoke*
+*_segment*.stdout.log
+*_segment*.stderr.log
 *.png
 *.pdf
 **/images/**
