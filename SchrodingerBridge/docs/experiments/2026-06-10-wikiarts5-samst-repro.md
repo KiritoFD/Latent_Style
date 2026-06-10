@@ -145,9 +145,7 @@ Notes:
 
 - Result root: [samst_wikiarts5_wsl_20260610_172206](G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/samst_wikiarts5_wsl_20260610_172206)
 - Live JSON: [samst_live_status.json](G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/samst_wikiarts5_wsl_20260610_172206/samst_live_status.json)
-- Active WSL process count: `1`
-- Active WSL process:
-  - `pid=31509` `etime=05:30:18`
+- Active WSL process count: `0`
 - Eval watcher alive: `yes`
   - `pid=174368`
 - Status watcher alive: `yes`
@@ -156,18 +154,18 @@ Notes:
 - Active style: `Ukiyo_e`
 - Latest logged progress:
   - `epoch=5`
-  - `step=16150 / 18894`
-  - `content/style/ae/total = 187111.77 / 105957.63 / 335.09 / 293069.40`
+  - `step=18890 / 18894`
+  - `content/style/ae/total = 186576.04 / 105825.44 / 332.42 / 292401.48`
 - Common saved epochs across all 5 styles:
-  - `none yet`
+  - `5`
 - Eligible every-5-epoch eval points currently present:
-  - `none yet`
+  - `5`
 - Per-style saved epoch checkpoints:
   - `Early_Renaissance: 1`
   - `Impressionism: 1`
   - `Minimalism: 1`
   - `Rococo: 1`
-  - `Ukiyo_e: 0`
+  - `Ukiyo_e: 1`
 - First eval trigger condition:
   - all five styles must each have `epoch_0005.model` before the every-5-epoch eval watcher launches the first full bundle
 - Important interpretation:
@@ -176,11 +174,13 @@ Notes:
   - so `epoch=5` for `Early_Renaissance` still does not imply a common `epoch_0005.model` exists across all 5 style folders
   - even for the current style, `epoch=5` means `the 5th epoch is in progress`; the `epoch_5.model` file is only written after that epoch finishes
 - Last eval-watch event:
-  - `{"event": "poll", "common_epochs": [], "per_style_epoch_counts": {"Early_Renaissance": 1, "Impressionism": 1, "Minimalism": 1, "Rococo": 1, "Ukiyo_e": 0}}`
+  - `{"event": "eval_failed", "epoch": 5, "rc": 1}`
 - Local GPU sample:
   - `NVIDIA GeForce RTX 4070 Laptop GPU`
-  - `4358 MiB / 8188 MiB`, `util=59%`
+  - `3071 MiB / 8188 MiB`, `util=2%`
 <!-- WIKIARTS5_SAMST_AUTO_STATUS:END -->
+
+
 
 
 
