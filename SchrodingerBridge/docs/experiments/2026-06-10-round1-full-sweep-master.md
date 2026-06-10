@@ -461,13 +461,15 @@ Recalibration-needed family:
 - Active family: `solver_tangent_rk`
 - Decision status: `running`
 - Batch / epochs / patience: `16 / 24 / 6`
-- Remote GPU live: `9516 / 12288 MiB`, `util=81%`, `band=in_band`
+- Remote GPU live: `9516 / 12288 MiB`, `util=97%`, `band=in_band`
 - Best transfer `CLIP-S`: `epoch_0001` -> `0.6999 / 0.5295`
 - Best transfer `LPIPS`: `epoch_0007` -> `0.6951 / 0.4787`
 - Best all-pairs `CLIP-S`: `epoch_0007` -> `0.7159 / 0.4675`
 - Latest settled fast point: `epoch_0008` -> transfer `0.6901 / 0.5243`
 - Convergence: `row_count=8, since_best=7, tail_flat=False, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
 
 
 

@@ -99,6 +99,25 @@
     - all-pairs style also fell back materially
     - so `epoch_0004` remains the current best structure-preserving fast point
     - but this is only one later non-improving checkpoint under `patience=6`, so closure is still too early
+- Sixth and seventh-point recovery:
+  - `epoch_0006`
+    - transfer `0.6929 / 0.5121`
+    - all-pairs `0.7114 / 0.5017`
+  - `epoch_0007`
+    - transfer `0.6951 / 0.4787`
+    - all-pairs `0.7159 / 0.4675`
+  - read:
+    - `epoch_0007` overtook the old `epoch_0004` frontier
+    - so the mid-run rollback was not closure evidence
+- Eighth pulled fast-eval point:
+  - `epoch_0008`
+  - transfer `CLIP-S / LPIPS = 0.6901 / 0.5243`
+  - all-pairs `CLIP-S / LPIPS = 0.7082 / 0.5130`
+  - wall `= 178.39s`
+  - immediate read:
+    - this point rolled back materially from `epoch_0007`
+    - but `epoch_0007` still sits inside the newest 2 settled checkpoints
+    - therefore the solver-family stop rule is still not satisfied
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
@@ -114,16 +133,18 @@
 - Switch smoke artifact: [round1_family_switch_smoke_20260610.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_family_switch_smoke_20260610.json)
 - Switch smoke row count: `11`
 - Remote GPU live sample:
-  - `9516 MiB / 12288 MiB`, `util=90%`
+  - `9516 MiB / 12288 MiB`, `util=86%`
   - `band_status=in_band`
   - `formal_status=formal_in_band`
 - Remote train log: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_tangent_rk_seed42_b8a2_train.log`
 - Remote train progress:
-  - `epoch 9/24`
-  - `step 605/1180`
-  - `loss=7.7801`
-  - `tswd=3.8594`
+  - `epoch 10/24`
+  - `step 279/1180`
+  - `loss=7.6947`
+  - `tswd=5.9688`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
 
 
 
