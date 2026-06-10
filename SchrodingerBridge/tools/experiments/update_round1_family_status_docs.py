@@ -727,8 +727,18 @@ def _render_master_auto(
             f"- Remote GPU live: `{gpu_sample['memory_used_mib']} / {gpu_sample['memory_total_mib']} MiB`, `util={gpu_sample['utilization_gpu_pct']}%`, `band={band_status}`"
         )
     elif remote_runtime and not bool(remote_runtime.get("train_alive", True)):
+        row_used = str(family_row.get("remote_live_memory_used_mib", "")).strip()
+        row_total = str(family_row.get("remote_live_memory_total_mib", "")).strip()
+        row_util = str(family_row.get("remote_live_util_pct", "")).strip()
+        row_band = str(family_row.get("remote_live_band_status", "")).strip()
         fast_eval_count = len((remote_runtime.get("processes") or {}).get("fast_eval") or [])
-        lines.append(f"- Remote GPU live: `no active train pid; fast_eval_watchers={fast_eval_count}`")
+        if row_used:
+            lines.append(
+                f"- Remote GPU live (latest nonempty): `{row_used} / {row_total or '?'} MiB`, `util={row_util or '?'}%`, `band={row_band or 'unknown'}`"
+            )
+            lines.append(f"- Remote train pid: `not alive`; remote fast-eval pid count = `{fast_eval_count}`")
+        else:
+            lines.append(f"- Remote GPU live: `no active train pid; fast_eval_watchers={fast_eval_count}`")
     if best_transfer_style:
         lines.append(
             f"- Best transfer `CLIP-S`: `{best_transfer_style['epoch']}` -> `{float(best_transfer_style['transfer_clip_style']):.4f} / {float(best_transfer_style['transfer_content_lpips']):.4f}`"
@@ -761,6 +771,40 @@ def _family_runtime_paths(row: dict[str, str]) -> tuple[str, Path, Path]:
         round1_fast_local_root(family_id=family_id, run_name=run_name),
         round1_localreview_root(family_id=family_id, run_name=run_name),
     )
+
+
+def _apply_runtime_sample_to_family_row(*, family_row: dict[str, str], sample: dict[str, object], band_min_mib: int, band_max_mib: int, hard_cap_mib: int) -> None:
+    if not isinstance(sample, dict):
+        return
+    used_raw = str(sample.get("remote_live_memory_used_mib", "")).strip()
+    total_raw = str(sample.get("remote_live_memory_total_mib", "")).strip()
+    util_raw = str(sample.get("remote_live_util_pct", "")).strip()
+    epoch_raw = str(sample.get("remote_live_epoch", "")).strip()
+    epoch_total_raw = str(sample.get("remote_live_epoch_total", "")).strip()
+    step_raw = str(sample.get("remote_live_step", "")).strip()
+    step_total_raw = str(sample.get("remote_live_step_total", "")).strip()
+    loss_raw = str(sample.get("remote_live_loss", "")).strip()
+    tswd_raw = str(sample.get("remote_live_tswd", "")).strip()
+    if not used_raw:
+        return
+    used_mib = int(float(used_raw))
+    band_status = _classify_remote_vram_band(
+        memory_used_mib=used_mib,
+        band_min_mib=int(band_min_mib),
+        band_max_mib=int(band_max_mib),
+        hard_cap_mib=int(hard_cap_mib),
+    )
+    family_row["remote_live_memory_used_mib"] = used_raw
+    family_row["remote_live_memory_total_mib"] = total_raw
+    family_row["remote_live_util_pct"] = util_raw
+    family_row["remote_live_band_status"] = band_status
+    family_row["remote_live_formal_status"] = "formal_in_band" if band_status == "in_band" else f"nonformal_{band_status}"
+    family_row["remote_live_epoch"] = epoch_raw
+    family_row["remote_live_epoch_total"] = epoch_total_raw
+    family_row["remote_live_step"] = step_raw
+    family_row["remote_live_step_total"] = step_total_raw
+    family_row["remote_live_loss"] = loss_raw
+    family_row["remote_live_tswd"] = tswd_raw
 
 
 def _manifest_fieldnames(rows: list[dict[str, str]]) -> list[str]:
@@ -951,6 +995,8 @@ def main() -> int:
             remote_workspace_root=str(args.remote_workspace_root),
             remote_log_lines=int(args.remote_log_lines),
         )
+    runtime_summary_path = SB_ROOT / "aaai2027" / f"round1_{family_id}_runtime_summary.json"
+    runtime_summary_payload = _read_json_optional(runtime_summary_path)
 
     family_row["parent_config"] = str(COMMON_PARENT_CONFIG)
     family_row["freeze_mode"] = str(((cfg.get("training") or {}).get("freeze_mode", family_row.get("freeze_mode", ""))))
@@ -1018,21 +1064,15 @@ def main() -> int:
         family_row["remote_live_step_total"] = "" if tail.get("step_total") is None else str(tail.get("step_total"))
         family_row["remote_live_loss"] = "" if tail.get("loss") is None else f"{float(tail.get('loss')):.4f}"
         family_row["remote_live_tswd"] = "" if tail.get("tswd") is None else f"{float(tail.get('tswd')):.4f}"
-    elif remote_runtime and not bool(remote_runtime.get("train_alive", True)):
-        for key in [
-            "remote_live_memory_used_mib",
-            "remote_live_memory_total_mib",
-            "remote_live_util_pct",
-            "remote_live_band_status",
-            "remote_live_formal_status",
-            "remote_live_epoch",
-            "remote_live_epoch_total",
-            "remote_live_step",
-            "remote_live_step_total",
-            "remote_live_loss",
-            "remote_live_tswd",
-        ]:
-            family_row[key] = ""
+    elif isinstance(runtime_summary_payload, dict):
+        latest_nonempty = runtime_summary_payload.get("latest_nonempty_sample") or runtime_summary_payload.get("latest_sample") or {}
+        _apply_runtime_sample_to_family_row(
+            family_row=family_row,
+            sample=latest_nonempty if isinstance(latest_nonempty, dict) else {},
+            band_min_mib=int(args.remote_band_min_mib),
+            band_max_mib=int(args.remote_band_max_mib),
+            hard_cap_mib=int(args.remote_hard_cap_mib),
+        )
     _merge_family_row_into_manifest(manifest, family_id=family_id, updated_row=family_row)
     rows = _read_rows(manifest)
 

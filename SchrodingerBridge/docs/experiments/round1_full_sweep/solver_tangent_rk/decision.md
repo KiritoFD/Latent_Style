@@ -86,3 +86,16 @@
     - and re-entered the Pareto frontier after the recent oscillation
     - so the line is no longer in a near-closure band
     - keep the active formal lane running
+- Extension recovery update:
+  - the first `epoch_0024 -> epoch_0028` continuation at `batch=16` did not land any new retained checkpoint
+  - latest nonempty runtime evidence before the lane disappeared:
+    - `epoch 25/28`
+    - `step 471/1180`
+    - `9209 MiB`
+  - interpretation:
+    - this was not an OOM event
+    - it was a slightly under-floor formal lane, so the segment is not valid closure evidence
+  - next action:
+    - keep `solver_tangent_rk` active
+    - relaunch the same continuation from `epoch_0024` with `batch=17`
+    - do not switch to `solver_pc` until a real post-`epoch_0024` fast curve exists

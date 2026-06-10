@@ -1,6 +1,6 @@
 {
   "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_tangent_rk_remote_full_eval_pull\\clip_lpips_curve.csv",
-  "row_count": 23,
+  "row_count": 24,
   "best_epoch": "epoch_0001",
   "best_index": 0,
   "best_transfer_clip_epoch": "epoch_0001",
@@ -17,9 +17,9 @@
     "epoch_0019"
   ],
   "last_pareto_epoch": "epoch_0019",
-  "newest_epoch": "epoch_0023",
-  "since_best": 22,
-  "since_last_pareto": 4,
+  "newest_epoch": "epoch_0024",
+  "since_best": 23,
+  "since_last_pareto": 5,
   "best_in_newest_2": false,
   "tail_flat": false,
   "patience": 6,
