@@ -22,6 +22,8 @@ from round1_paths import (
     round1_family_doc_dir,
     round1_fast_local_root,
     round1_localreview_root,
+    round1_tokenizer_reconstruction_pretrain_config,
+    round1_tokenizer_warmstart_config,
     round1_switch_smoke_artifact,
 )
 
@@ -587,12 +589,18 @@ def _render_remote_run_auto(
     smoke_status = str(row.get("switch_smoke_status", "")).strip()
     smoke_artifact = Path(str(row.get("switch_smoke_artifact", "")).strip()) if str(row.get("switch_smoke_artifact", "")).strip() else None
     smoke_row_count = str(row.get("switch_smoke_row_count", "")).strip()
+    warmstart_config = Path(str(row.get("warmstart_config", "")).strip()) if str(row.get("warmstart_config", "")).strip() else None
+    reconpretrain_config = Path(str(row.get("reconstruction_pretrain_config", "")).strip()) if str(row.get("reconstruction_pretrain_config", "")).strip() else None
     if smoke_status:
         lines.append(f"- Prelaunch switch smoke: `{smoke_status}`")
     if smoke_artifact is not None:
         lines.append(f"- Switch smoke artifact: {_md_link(smoke_artifact.name, smoke_artifact)}")
     if smoke_row_count:
         lines.append(f"- Switch smoke row count: `{smoke_row_count}`")
+    if warmstart_config is not None:
+        lines.append(f"- Tokenizer warmstart config: {_md_link(warmstart_config.name, warmstart_config)}")
+    if reconpretrain_config is not None:
+        lines.append(f"- Tokenizer reconstruction-pretrain config: {_md_link(reconpretrain_config.name, reconpretrain_config)}")
     if remote_runtime:
         gpu_sample = remote_runtime.get("gpu_sample")
         tail = remote_runtime.get("tail") if isinstance(remote_runtime.get("tail"), dict) else {}
@@ -741,6 +749,8 @@ def _manifest_fieldnames(rows: list[dict[str, str]]) -> list[str]:
         "solver_family",
         "semantic_supervision_family",
         "virtual_length_multiplier",
+        "warmstart_config",
+        "reconstruction_pretrain_config",
         "local_fast_root",
         "local_review_root",
         "switch_smoke_status",
@@ -918,6 +928,10 @@ def main() -> int:
     family_row["solver_family"] = str(((cfg.get("model") or {}).get("solver_family", "euler_legacy")))
     family_row["semantic_supervision_family"] = str(((cfg.get("bridge") or {}).get("semantic_supervision_family", "legacy_terminal_swd")))
     family_row["virtual_length_multiplier"] = str(((cfg.get("data") or {}).get("virtual_length_multiplier", "")))
+    warmstart_cfg = round1_tokenizer_warmstart_config(family_id=family_id)
+    recon_cfg = round1_tokenizer_reconstruction_pretrain_config(family_id=family_id)
+    family_row["warmstart_config"] = str(warmstart_cfg) if warmstart_cfg.exists() else ""
+    family_row["reconstruction_pretrain_config"] = str(recon_cfg) if recon_cfg.exists() else ""
     family_row["local_fast_root"] = str(fast_root)
     family_row["local_review_root"] = str(localreview_root)
     family_row["switch_smoke_artifact"] = str(switch_smoke_artifact)
