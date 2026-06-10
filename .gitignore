@@ -85,6 +85,7 @@ stabilityai/**
 # Top-level runtime dumps
 archive/**
 exp/**
+tmp_*
 
 # Paper build artifacts
 SchrodingerBridge/aaai_submission/*.aux
