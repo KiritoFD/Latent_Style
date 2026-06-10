@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -39,8 +40,10 @@ payload = {
     "run_dir": str(run_dir),
     "eval_root": str(root),
     "epochs": [],
+    "ckpts": [],
     "processes": {"train": [], "fast_eval": [], "posttrain_eval": []},
 }
+payload["ckpts"] = [p.name for p in sorted(run_dir.glob("epoch_*.pt"))]
 if root.exists():
     for epoch_dir in sorted(root.glob("epoch_*")):
         payload["epochs"].append(
@@ -140,6 +143,11 @@ def _latest(rows: list[dict[str, str]]) -> dict[str, str]:
     return max(rows, key=lambda r: int("".join(ch for ch in str(r["epoch"]) if ch.isdigit()) or "-1"))
 
 
+def _epoch_int(name: str) -> int:
+    digits = "".join(ch for ch in str(name) if ch.isdigit())
+    return int(digits) if digits else -1
+
+
 def _closure_band(convergence: dict | None) -> str:
     if not isinstance(convergence, dict):
         return "unknown"
@@ -168,7 +176,12 @@ def _upsert_auto_block(path: Path, body: str) -> None:
         start = text.find(AUTO_START)
         end = text.find(AUTO_END)
         if start >= 0 and end >= 0 and end >= start:
-            new_text = text[:start] + block + text[end + len(AUTO_END) :]
+            before = text[:start].rstrip("\n")
+            after = text[end + len(AUTO_END) :]
+            after = re.sub(r"^(?:[ \t]*\n)+", "", after)
+            new_text = before + "\n\n" + block
+            if after:
+                new_text += "\n" + after
         else:
             suffix = "" if text.endswith("\n") else "\n"
             new_text = text + suffix + "\n" + block
@@ -379,6 +392,12 @@ def main() -> int:
     best_full_style = _best(curve_rows, style_key="full_clip_style", lpips_key="full_content_lpips", mode="style")
     latest = _latest(curve_rows)
     convergence = json.loads(convergence_json.read_text(encoding="utf-8"))
+    remote_ckpts = [str(x) for x in (remote_scan.get("ckpts") or [])]
+    settled_epoch_names = [str(item.get("epoch", "")).strip() for item in remote_scan.get("epochs", []) if item.get("has_summary")]
+    latest_remote_ckpt = max(remote_ckpts, key=_epoch_int) if remote_ckpts else ""
+    latest_settled_epoch = max(settled_epoch_names, key=_epoch_int) if settled_epoch_names else ""
+    settled_epoch_set = set(settled_epoch_names)
+    pending_ckpt_epochs = [name for name in remote_ckpts if name.replace(".pt", "") not in settled_epoch_set]
 
     summary = {
         "family_id": family_id,
@@ -393,6 +412,9 @@ def main() -> int:
         "best_full_style": best_full_style,
         "latest": latest,
         "convergence": convergence,
+        "latest_remote_ckpt": latest_remote_ckpt,
+        "latest_settled_epoch": latest_settled_epoch,
+        "pending_ckpt_epochs": pending_ckpt_epochs,
     }
     summary_json.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
@@ -410,6 +432,22 @@ def main() -> int:
         f"- Settled remote epochs:",
         f"  - `{', '.join(item['epoch'] for item in settled_epochs)}`",
     ]
+    if latest_remote_ckpt:
+        auto_lines.extend(
+            [
+                "- Latest remote checkpoint:",
+                f"  - `{latest_remote_ckpt}`",
+                "- Latest settled eval epoch:",
+                f"  - `{latest_settled_epoch or 'none'}`",
+            ]
+        )
+    if pending_ckpt_epochs:
+        auto_lines.extend(
+            [
+                "- Remote checkpoints not yet settled into local fast curve:",
+                *[f"  - `{item}`" for item in pending_ckpt_epochs],
+            ]
+        )
     if pending_epochs:
         auto_lines.extend(
             [
