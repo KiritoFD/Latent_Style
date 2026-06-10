@@ -1,0 +1,4 @@
+method,cases_completed,wins_so_far,win_rate_so_far,style_wins_so_far,structure_wins_so_far,artifact_wins_so_far,mean_style_specificity,mean_structure_preservation,mean_artifact_control
+AttnSA_e24,169,0,0.0,0,0,0,2.497041420118343,2.9467455621301775,2.6923076923076925
+SaMAM_2250,169,97,0.5739644970414202,85,60,79,4.284023668639053,4.331360946745562,4.289940828402367
+Seedream_repaired750,169,72,0.4260355029585799,84,109,90,3.893491124260355,4.384615384615385,4.088757396449704
