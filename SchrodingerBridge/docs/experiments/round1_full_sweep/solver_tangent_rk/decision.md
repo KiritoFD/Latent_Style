@@ -77,3 +77,12 @@
     - this recovered slightly from `epoch_0008`
     - but still does not beat the current `epoch_0007` frontier
     - because the best point remains inside the newest 2 settled checkpoints, and the tail is not flat, the line still stays open
+- New frontier recovery:
+  - `epoch_0013` has now fully settled
+  - transfer `CLIP-S / LPIPS = 0.6935 / 0.4713`
+  - all-pairs `CLIP-S / LPIPS = 0.7152 / 0.4604`
+  - read:
+    - this point improved LPIPS sharply versus the `epoch_0008-0012` tail
+    - and re-entered the Pareto frontier after the recent oscillation
+    - so the line is no longer in a near-closure band
+    - keep the active formal lane running

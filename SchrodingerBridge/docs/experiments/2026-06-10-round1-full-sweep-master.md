@@ -152,11 +152,11 @@ Current remote lane status:
   - current formal launch setting:
     - `batch=16`
   - latest remote live sample:
-    - `9516 MiB / 12288 MiB`
+    - `9510 MiB / 12288 MiB`
     - `band_status=in_band`
     - `formal_status=formal_in_band`
-    - `epoch 10/24`
-    - `step 956/1180`
+    - `epoch 13/24`
+    - `step 1075/1180`
   - settled remote fast-eval points currently pulled:
     - `epoch_0001`
     - `epoch_0002`
@@ -167,22 +167,28 @@ Current remote lane status:
     - `epoch_0007`
     - `epoch_0008`
     - `epoch_0009`
+    - `epoch_0010`
+    - `epoch_0011`
+    - `epoch_0012`
+    - `epoch_0013`
   - current fast read:
     - best transfer style remains `epoch_0001`:
       - `0.6999 / 0.5295`
-    - best transfer LPIPS has now moved to `epoch_0007`:
-      - `0.6951 / 0.4787`
-    - best all-pairs style is now also `epoch_0007`:
-      - `0.7159 / 0.4675`
-    - latest settled point is now `epoch_0009`:
-      - `0.6933 / 0.5230`
+    - best transfer LPIPS has now moved to `epoch_0013`:
+      - `0.6935 / 0.4713`
+    - best all-pairs style remains on the same high frontier and the newest best point is now:
+      - `epoch_0013`
+      - `0.7152 / 0.4604`
+    - latest settled point is now `epoch_0013`:
+      - `0.6935 / 0.4713`
     - interpretation:
       - `epoch_0005` was a true rollback point
-      - `epoch_0007` overtook the old `epoch_0004` frontier
-      - `epoch_0008` rolled back materially and `epoch_0009` only recovered slightly
-      - so the line remains alive, but is now oscillating around a sharper local optimum rather than trending cleanly upward
+      - `epoch_0007` first overtook the old `epoch_0004` frontier
+      - `epoch_0008-0012` oscillated below that frontier
+      - `epoch_0013` has now re-entered the Pareto frontier with the best transfer LPIPS so far
+      - so the line remains alive and is still capable of late frontier updates
       - the line is still below external-board promotion level on transfer style
-      - and because the best point is still within the newest 2 settled checkpoints, closure is still premature
+      - and because the newest settled point is again Pareto-active, closure is still premature
       - so this family remains alive and unconverged, but is not close to promotion
   - solver-family next-step policy after the `epoch_0004 -> epoch_0005` rollback:
     - do not interrupt the active in-flight tangent run
@@ -491,13 +497,20 @@ Recalibration-needed family:
 - Active family: `solver_tangent_rk`
 - Decision status: `running`
 - Batch / epochs / patience: `16 / 24 / 6`
-- Remote GPU live: `10516 / 12288 MiB`, `util=98%`, `band=in_band`
+- Remote GPU live: `10264 / 12288 MiB`, `util=95%`, `band=in_band`
 - Best transfer `CLIP-S`: `epoch_0001` -> `0.6999 / 0.5295`
-- Best transfer `LPIPS`: `epoch_0007` -> `0.6951 / 0.4787`
+- Best transfer `LPIPS`: `epoch_0013` -> `0.6935 / 0.4713`
 - Best all-pairs `CLIP-S`: `epoch_0007` -> `0.7159 / 0.4675`
-- Latest settled fast point: `epoch_0012` -> transfer `0.6896 / 0.5207`
-- Convergence: `row_count=12, since_best=11, tail_flat=False, converged=False`
+- Latest settled fast point: `epoch_0013` -> transfer `0.6935 / 0.4713`
+- Convergence: `row_count=13, since_best=12, tail_flat=False, closure_band=open, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
+
+
+
+
 
 
 
