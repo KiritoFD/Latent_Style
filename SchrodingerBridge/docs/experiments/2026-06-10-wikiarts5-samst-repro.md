@@ -139,6 +139,53 @@ Notes:
   - it is now deeper into `epoch 2`
   - no common `epoch_0005.model` frontier exists yet across all 5 styles
   - so the every-5-epoch eval watcher is still correctly waiting, not stalled
+- first common epoch-5 eval repair:
+  - the watcher did trigger the first common epoch-`5` eval bundle immediately after `Ukiyo_e epoch_5.model` landed
+  - but the first several attempts failed for two concrete engineering reasons:
+    - Windows console encoding inside the upstream `SaMST` test script
+    - shared `content/` and `outputs/` directories being reused across retries
+  - repair actions:
+    - force UTF-8 for the `SaMST` test subprocess
+    - route each target-style eval pass through its own temporary `content/` and `outputs/` subtree
+  - repaired result:
+    - `eval_bundle/eval_epoch5/epoch_0005/summary.json` now exists
+    - `metrics.csv` now exists
+    - generated image count:
+      - `750`
+  - current interpretation:
+    - the first common every-5-epoch eval gate is now proven healthy
+    - later common epochs can reuse the same repaired bundle path
+- current closure read as of `2026-06-11`:
+  - this run is **not converged**
+  - the current closed packet is only the first common frontier:
+    - `epoch_0005`
+  - why it stops at `5` right now:
+    - `SaMST` trains the five target styles sequentially
+    - the watcher only evaluates epochs that exist in **all five** style checkpoint folders
+    - at this stage, the only common saved epoch is still `5`
+    - therefore `epoch_0005` is a valid first synchronized eval point, not a convergence claim
+- wall-clock to the first common frontier:
+  - run root created at:
+    - `2026-06-10 17:22:06`
+  - final aligned `Ukiyo_e/epoch_5.model` saved at about:
+    - `2026-06-11 01:45:53`
+  - train wall time to common `epoch_5`:
+    - about `8h 23m 47s`
+  - first successful full generation bundle after the repair:
+    - `212.67s`
+  - evaluator wall time on the retained `750` outputs:
+    - `21.33s`
+- `epoch_0005` metric summary:
+  - transfer:
+    - `CLIP-S = 0.68893`
+    - `LPIPS = 0.62059`
+    - `delta over IDT = +0.04901`
+  - all-pairs:
+    - `CLIP-S = 0.71815`
+    - `LPIPS = 0.61283`
+  - reading:
+    - style is already strong enough to beat the wikiarts5 `IDT` floor on transfer
+    - content preservation is still much weaker than `SaMAM` / current mainline variants on this split
 
 <!-- WIKIARTS5_SAMST_AUTO_STATUS:START -->
 ## Auto Status
@@ -147,7 +194,7 @@ Notes:
 - Live JSON: [samst_live_status.json](G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/samst_wikiarts5_wsl_20260610_172206/samst_live_status.json)
 - Active WSL process count: `0`
 - Eval watcher alive: `yes`
-  - `pid=174368`
+  - `pid=290092`
 - Status watcher alive: `yes`
   - `pid=187052`
 - Latest train log: [train_Ukiyo_e.log](G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/samst_wikiarts5_wsl_20260610_172206/logs/train_Ukiyo_e.log)
@@ -174,11 +221,34 @@ Notes:
   - so `epoch=5` for `Early_Renaissance` still does not imply a common `epoch_0005.model` exists across all 5 style folders
   - even for the current style, `epoch=5` means `the 5th epoch is in progress`; the `epoch_5.model` file is only written after that epoch finishes
 - Last eval-watch event:
-  - `{"event": "eval_failed", "epoch": 5, "rc": 1}`
+  - `{"event": "poll", "common_epochs": [5], "per_style_epoch_counts": {"Early_Renaissance": 1, "Impressionism": 1, "Minimalism": 1, "Rococo": 1, "Ukiyo_e": 1}}`
 - Local GPU sample:
   - `NVIDIA GeForce RTX 4070 Laptop GPU`
-  - `3071 MiB / 8188 MiB`, `util=2%`
+  - `3067 MiB / 8188 MiB`, `util=2%`
 <!-- WIKIARTS5_SAMST_AUTO_STATUS:END -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
