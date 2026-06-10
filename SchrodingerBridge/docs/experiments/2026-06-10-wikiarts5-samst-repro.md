@@ -130,6 +130,10 @@ Notes:
   - the active slot remains `Ukiyo_e`
   - live log is now in `epoch 1`
   - so the final blocker before the first common every-5-epoch eval bundle is no longer checkpoint writing on `Rococo`, but simply advancing `Ukiyo_e` to its own `epoch_5.model`
+- newest continuation read:
+  - the active slot remains `Ukiyo_e`
+  - live log has now advanced into `epoch 2`
+  - the first common every-5-epoch eval bundle is still blocked only by `Ukiyo_e epoch_5.model`
 
 <!-- WIKIARTS5_SAMST_AUTO_STATUS:START -->
 ## Auto Status
@@ -138,7 +142,7 @@ Notes:
 - Live JSON: [samst_live_status.json](G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/samst_wikiarts5_wsl_20260610_172206/samst_live_status.json)
 - Active WSL process count: `1`
 - Active WSL process:
-  - `pid=31509` `etime=04:26:16`
+  - `pid=31509` `etime=04:28:07`
 - Eval watcher alive: `yes`
   - `pid=174368`
 - Status watcher alive: `yes`
@@ -146,9 +150,9 @@ Notes:
 - Latest train log: [train_Ukiyo_e.log](G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/samst_wikiarts5_wsl_20260610_172206/logs/train_Ukiyo_e.log)
 - Active style: `Ukiyo_e`
 - Latest logged progress:
-  - `epoch=1`
-  - `step=18710 / 18894`
-  - `content/style/ae/total = 257534.40 / 146905.70 / 685.28 / 404440.10`
+  - `epoch=2`
+  - `step=1770 / 18894`
+  - `content/style/ae/total = 211778.85 / 124999.18 / 615.52 / 336778.03`
 - Common saved epochs across all 5 styles:
   - `none yet`
 - Eligible every-5-epoch eval points currently present:
@@ -170,8 +174,10 @@ Notes:
   - `{"event": "poll", "common_epochs": [], "per_style_epoch_counts": {"Early_Renaissance": 1, "Impressionism": 1, "Minimalism": 1, "Rococo": 1, "Ukiyo_e": 0}}`
 - Local GPU sample:
   - `NVIDIA GeForce RTX 4070 Laptop GPU`
-  - `4348 MiB / 8188 MiB`, `util=70%`
+  - `4329 MiB / 8188 MiB`, `util=63%`
 <!-- WIKIARTS5_SAMST_AUTO_STATUS:END -->
+
+
 
 
 
