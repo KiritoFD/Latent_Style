@@ -200,9 +200,9 @@ Notes:
 - Latest train log: [train_Early_Renaissance.log](G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/samst_wikiarts5_wsl_20260610_172206/logs/train_Early_Renaissance.log)
 - Active style: `Early_Renaissance`
 - Latest logged progress:
-  - `epoch=6`
-  - `step=11840 / 18894`
-  - `content/style/ae/total = 160330.58 / 94227.26 / 224.16 / 254557.84`
+  - `epoch=7`
+  - `step=5380 / 18894`
+  - `content/style/ae/total = 158413.39 / 92596.52 / 216.70 / 251009.90`
 - Common saved epochs across all 5 styles:
   - `5`
 - Eligible every-5-epoch eval points currently present:
@@ -224,8 +224,15 @@ Notes:
   - `{"event": "poll", "common_epochs": [5], "per_style_epoch_counts": {"Early_Renaissance": 1, "Impressionism": 1, "Minimalism": 1, "Rococo": 1, "Ukiyo_e": 1}}`
 - Local GPU sample:
   - `NVIDIA GeForce RTX 4070 Laptop GPU`
-  - `4278 MiB / 8188 MiB`, `util=50%`
+  - `4308 MiB / 8188 MiB`, `util=46%`
 <!-- WIKIARTS5_SAMST_AUTO_STATUS:END -->
+
+
+
+
+
+
+
 
 
 
