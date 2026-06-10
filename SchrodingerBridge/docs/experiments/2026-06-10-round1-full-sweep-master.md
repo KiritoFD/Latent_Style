@@ -572,6 +572,14 @@ Current `solver_pc` launch note:
     - style recovered slightly
     - LPIPS softened slightly
     - this line is now drawing a real style/structure tradeoff frontier
+- fourth formal point:
+  - `epoch_0004`
+  - transfer `0.6962 / 0.5373`
+  - full `0.7118 / 0.5296`
+  - read:
+    - LPIPS improved again to the best point so far on this family
+    - style softened again
+    - keep the lane running; the line is still structure-first rather than style-complete
 
 Current solver continuation note:
 

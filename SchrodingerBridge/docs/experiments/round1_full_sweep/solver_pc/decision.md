@@ -54,3 +54,12 @@
   - style recovered slightly versus `epoch_0002`
   - LPIPS softened slightly versus `epoch_0002`
   - the line is now tracing a real style/structure tradeoff frontier rather than a one-directional collapse
+- Fourth settled fast-eval point:
+  - `epoch_0004`
+  - transfer `CLIP-S / LPIPS = 0.6962 / 0.5373`
+  - all-pairs `CLIP-S / LPIPS = 0.7118 / 0.5296`
+  - wall `= 177.89s`
+- Interpretation:
+  - LPIPS improved again to the best point so far for this family
+  - style softened again on both transfer and all-pairs
+  - the curve now clearly favors structure recovery first, with style still lagging behind
