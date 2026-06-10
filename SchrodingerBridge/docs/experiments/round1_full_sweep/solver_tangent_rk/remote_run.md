@@ -232,15 +232,24 @@
 - Switch smoke artifact: [round1_solver_tangent_rk_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_switch_smoke_latest.json)
 - Switch smoke row count: `1`
 - Remote GPU live sample:
-  - `9209 MiB / 12288 MiB`, `util=85%`
-  - `band_status=under_band`
-  - `formal_status=nonformal_under_band`
+  - `9878 MiB / 12288 MiB`, `util=99%`
+  - `band_status=in_band`
+  - `formal_status=formal_in_band`
+- Remote train log: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_tangent_rk_seed42_b8a2_train.log`
 - Remote train progress:
   - `epoch 25/28`
-  - `step 471/1180`
-  - `loss=7.7921`
-  - `tswd=4.6562`
+  - `step 841/1111`
+  - `loss=7.7813`
+  - `tswd=2.7969`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
+
+
+
+
+
 
 
 

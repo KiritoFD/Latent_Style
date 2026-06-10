@@ -66,6 +66,42 @@ def _append_jsonl(path: Path, payload: dict) -> None:
         f.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
+def _read_last_jsonl(path: Path) -> dict | None:
+    if not path.is_file():
+        return None
+    last = None
+    with path.open("r", encoding="utf-8") as f:
+        for line in f:
+            text = line.strip()
+            if not text:
+                continue
+            last = text
+    if not last:
+        return None
+    try:
+        payload = json.loads(last)
+    except json.JSONDecodeError:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _snapshot_signature(payload: dict) -> tuple:
+    return (
+        str(payload.get("decision_status", "")).strip(),
+        str(payload.get("remote_live_memory_used_mib", "")).strip(),
+        str(payload.get("remote_live_memory_total_mib", "")).strip(),
+        str(payload.get("remote_live_util_pct", "")).strip(),
+        str(payload.get("remote_live_band_status", "")).strip(),
+        str(payload.get("remote_live_formal_status", "")).strip(),
+        str(payload.get("remote_live_epoch", "")).strip(),
+        str(payload.get("remote_live_epoch_total", "")).strip(),
+        str(payload.get("remote_live_step", "")).strip(),
+        str(payload.get("remote_live_step_total", "")).strip(),
+        str(payload.get("remote_live_loss", "")).strip(),
+        str(payload.get("remote_live_tswd", "")).strip(),
+    )
+
+
 def _summarize_history(path: Path, *, tail_count: int) -> dict:
     if not path.is_file():
         return {"sample_count": 0, "recent_samples": []}
@@ -234,7 +270,9 @@ def main() -> int:
                 "remote_live_loss": row.get("remote_live_loss", ""),
                 "remote_live_tswd": row.get("remote_live_tswd", ""),
             }
-            _append_jsonl(history_jsonl, snapshot)
+            last_snapshot = _read_last_jsonl(history_jsonl)
+            if _snapshot_signature(last_snapshot or {}) != _snapshot_signature(snapshot):
+                _append_jsonl(history_jsonl, snapshot)
             summary = _summarize_history(history_jsonl, tail_count=int(args.summary_tail_count))
             summary_json.parent.mkdir(parents=True, exist_ok=True)
             summary_json.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

@@ -230,7 +230,11 @@ for pid in Path("/proc").iterdir():
         payload["fast_eval"].append(item)
     elif "run_inmortal_posttrain_eval" in cmd:
         payload["posttrain_eval"].append(item)
-    else:
+    elif (
+        "SchrodingerBridge/src/run.py" in cmd
+        or "src/run.py --config" in cmd
+        or "/src/run.py --config" in cmd
+    ):
         payload["train"].append(item)
 print(json.dumps(payload, ensure_ascii=False))
 """
