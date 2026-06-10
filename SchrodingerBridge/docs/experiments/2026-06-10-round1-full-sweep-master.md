@@ -580,6 +580,20 @@ Current solver continuation note:
     - relaunch one short continuation from `epoch_0028` to `epoch_0030`
     - keep `batch=17`
     - use that last short segment to decide final closure vs handoff to `solver_pc`
+- settled short continuation read through `epoch_0030`:
+  - `epoch_0029-0030` are now fully settled in the local fast curve
+  - neither point creates a new Pareto update after `epoch_0019`
+  - current convergence state:
+    - `since_last_pareto = 11`
+    - `best_in_newest_2 = false`
+    - `tail_flat = false`
+  - read:
+    - this line is clearly in long-tail drift
+    - but the last three retained checkpoints still are not flat enough to satisfy the current formal stop rule
+  - next action:
+    - run one final short continuation from `epoch_0030` to `epoch_0032`
+    - keep `batch=17`
+    - then close the family if the tail still fails to recover or flatten
 
 
 
