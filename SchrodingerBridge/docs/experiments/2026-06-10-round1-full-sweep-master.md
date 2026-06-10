@@ -136,6 +136,20 @@ Current execution preference:
     - non-DINO families first
     - DINO-related tokenizer families explicitly moved to the tail of the round-1 queue
 
+Idle-time local work rule:
+
+- when the remote formal lane is healthy, use local idle time for:
+  - file/result organization
+  - directory simplification
+  - code cleanup / decoupling
+  - doc summary refresh
+  - short-horizon plan updates
+  - theory notes for the next mechanism decision
+- do not let local cleanup block:
+  - remote train continuity
+  - remote fast `CLIP-S / LPIPS` convergence authority
+  - local heavy review already queued for shortlisted checkpoints
+
 Required closure per family:
 
 1. converged remote training
@@ -198,6 +212,22 @@ Current remote lane status:
     - rationale:
       - finer epoch granularity for early-knee capture
       - similar total optimization budget overall
+  - resumed continuation on `2026-06-11`:
+    - the remote train process had died while manifest status still remained `running`
+    - direct segmented recovery was used instead of waiting for the queue:
+      - resume checkpoint:
+        - `epoch_0017.pt`
+      - resumed target:
+        - `epoch_0024`
+    - first recovered health sample:
+      - `9342 MiB / 12288 MiB`
+      - `band_status=in_band`
+      - `formal_status=formal_in_band`
+      - `epoch 18/24`
+      - `step 25/1180`
+    - read:
+      - the active remote lane is healthy again
+      - so local time can shift back to cleanup/doc work until the next fast-eval packet lands
 - implementation audit:
   - all `11` round-1 family configs now pass one reusable local switch smoke:
     - model build
@@ -500,13 +530,22 @@ Recalibration-needed family:
 - Active family: `solver_tangent_rk`
 - Decision status: `running`
 - Batch / epochs / patience: `16 / 24 / 6`
-- Remote GPU live: `no active train pid; fast_eval_watchers=2`
+- Remote GPU live: `9349 / 12288 MiB`, `util=43%`, `band=in_band`
 - Best transfer `CLIP-S`: `epoch_0001` -> `0.6999 / 0.5295`
 - Best transfer `LPIPS`: `epoch_0017` -> `0.6838 / 0.4606`
 - Best all-pairs `CLIP-S`: `epoch_0007` -> `0.7159 / 0.4675`
 - Latest settled fast point: `epoch_0017` -> transfer `0.6838 / 0.4606`
 - Convergence: `row_count=17, since_best=16, tail_flat=False, closure_band=open, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
+
+
+
+
+
+
 
 
 

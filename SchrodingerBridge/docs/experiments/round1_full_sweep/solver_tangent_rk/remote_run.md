@@ -118,6 +118,27 @@
     - this point rolled back materially from `epoch_0007`
     - but `epoch_0007` still sits inside the newest 2 settled checkpoints
     - therefore the solver-family stop rule is still not satisfied
+- `2026-06-11` recovery note:
+  - the manifest still showed `running`, but the remote train process itself was gone
+  - latest settled fast packet before recovery:
+    - `epoch_0017`
+  - recovery action:
+    - relaunch the same family through `run_remote_round1_family_segmented.py`
+    - resume from:
+      - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_tangent_rk_seed42_b8a2/epoch_0017.pt`
+    - continue target:
+      - `epoch_0024`
+  - first recovered health read:
+    - `9342 MiB / 12288 MiB`
+    - `band_status=in_band`
+    - `formal_status=formal_in_band`
+    - `epoch 18/24`
+    - `step 25/1180`
+    - `loss=7.9867`
+    - `tswd=5.8438`
+  - read:
+    - remote formal execution is back in-band
+    - keep this family alive until the new fast-eval points through `epoch_0024` settle
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
@@ -129,11 +150,25 @@
 - Manifest status: `running`
 - Local fast root: [round1_solver_tangent_rk_fast_local](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_fast_local)
 - Local review root: [round1_solver_tangent_rk_localreview](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_localreview)
+- Prelaunch switch smoke: `ok`
 - Switch smoke artifact: [round1_solver_tangent_rk_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_tangent_rk_switch_smoke_latest.json)
+- Switch smoke row count: `1`
+- Remote GPU live sample:
+  - `9349 MiB / 12288 MiB`, `util=84%`
+  - `band_status=in_band`
+  - `formal_status=formal_in_band`
 - Remote train log: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_tangent_rk_seed42_b8a2_train.log`
-- Remote train pid: not alive
-- Remote fast-eval pid count: `2`
+- Remote train progress:
+  - `epoch 18/24`
+  - `step 459/1180`
+  - `loss=7.8519`
+  - `tswd=4.9062`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
+
+
 
 
 
