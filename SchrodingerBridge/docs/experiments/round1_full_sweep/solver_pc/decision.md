@@ -24,3 +24,15 @@
   - next action:
     - raise the canonical opening batch to `16`
     - relaunch again under the same contract
+- First settled fast-eval point:
+  - `epoch_0001`
+  - transfer `CLIP-S / LPIPS = 0.7074 / 0.5621`
+  - all-pairs `CLIP-S / LPIPS = 0.7170 / 0.5552`
+  - wall `= 177.75s`
+- Interpretation:
+  - the `batch=16` relaunch is now a valid formal run because it sits inside the requested remote VRAM band
+  - but the first settled point is materially weak on LPIPS
+  - so this line remains alive, yet there is no promotion signal at the opening point
+- Next action:
+  - keep the same remote lane running
+  - keep settling every retained checkpoint through the remote fast-eval chain before any deeper review or closure decision
