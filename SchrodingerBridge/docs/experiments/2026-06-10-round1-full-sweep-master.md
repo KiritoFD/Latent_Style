@@ -189,6 +189,11 @@ Current remote lane status:
   - queue rule:
     - `run_round1_family_queue.py` now prefers `switch_smoke_status=ok`
     - and skips `switch_smoke_status=failed` by default
+  - current auto-handoff state:
+    - the local `watch_launch_round1_queue_when_idle.py` watcher is now armed against the round1 manifest
+    - so once no family remains `running`, the next `planned` family will be launched through the existing queue path automatically
+    - current next queue candidate:
+      - `solver_pc`
 - `attn_gated_spade` was downgraded on `2026-06-10`:
   - retained fast-eval evidence through `epoch_0022`
   - but process-local memory stayed under the requested band
@@ -463,13 +468,17 @@ Recalibration-needed family:
 - Active family: `solver_tangent_rk`
 - Decision status: `running`
 - Batch / epochs / patience: `16 / 24 / 6`
-- Remote GPU live: `9516 / 12288 MiB`, `util=92%`, `band=in_band`
+- Remote GPU live: `9511 / 12288 MiB`, `util=88%`, `band=in_band`
 - Best transfer `CLIP-S`: `epoch_0001` -> `0.6999 / 0.5295`
 - Best transfer `LPIPS`: `epoch_0007` -> `0.6951 / 0.4787`
 - Best all-pairs `CLIP-S`: `epoch_0007` -> `0.7159 / 0.4675`
-- Latest settled fast point: `epoch_0009` -> transfer `0.6933 / 0.5230`
-- Convergence: `row_count=9, since_best=8, tail_flat=False, converged=False`
+- Latest settled fast point: `epoch_0010` -> transfer `0.6874 / 0.5116`
+- Convergence: `row_count=10, since_best=9, tail_flat=False, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
+
+
+
+
 
 
 
