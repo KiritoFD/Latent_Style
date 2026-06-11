@@ -402,7 +402,25 @@ def _render_fast_curve_auto(
     remote_sync_summary: dict | None,
 ) -> str:
     remote_pending_epochs: list[str] = []
+    latest_remote_ckpt = ""
+    latest_remote_settled_epoch = ""
+    latest_local_settled_epoch = ""
+    pending_ckpt_epochs: list[str] = []
+    remote_unconfirmed_local_settled_epochs: list[str] = []
     if isinstance(remote_sync_summary, dict):
+        latest_remote_ckpt = str(remote_sync_summary.get("latest_remote_ckpt", "")).strip()
+        latest_remote_settled_epoch = str(remote_sync_summary.get("latest_remote_settled_epoch", "")).strip()
+        latest_local_settled_epoch = str(remote_sync_summary.get("latest_local_settled_epoch", "")).strip()
+        pending_ckpt_epochs = [
+            str(item).strip()
+            for item in (remote_sync_summary.get("pending_ckpt_epochs") or [])
+            if str(item).strip()
+        ]
+        remote_unconfirmed_local_settled_epochs = [
+            str(item).strip()
+            for item in (remote_sync_summary.get("remote_unconfirmed_local_settled_epochs") or [])
+            if str(item).strip()
+        ]
         explicit_pending = remote_sync_summary.get("remote_pending_metric_epochs")
         if isinstance(explicit_pending, list):
             remote_pending_epochs = [str(item).strip() for item in explicit_pending if str(item).strip()]
@@ -473,6 +491,27 @@ def _render_fast_curve_auto(
         f"- Fast root: {_md_link(fast_root.name, fast_root)}",
         f"- Curve CSV: {_md_link('clip_lpips_curve.csv', curve_csv)}",
     ]
+    if latest_remote_ckpt:
+        lines.extend(
+            [
+                "- Latest remote checkpoint:",
+                f"  - `{latest_remote_ckpt}`",
+            ]
+        )
+    if latest_local_settled_epoch:
+        lines.extend(
+            [
+                "- Latest pulled local eval epoch:",
+                f"  - `{latest_local_settled_epoch}`",
+            ]
+        )
+    if latest_remote_settled_epoch:
+        lines.extend(
+            [
+                "- Latest remote confirmed eval epoch:",
+                f"  - `{latest_remote_settled_epoch}`",
+            ]
+        )
     if best_transfer_style:
         lines.extend(
             [
@@ -507,8 +546,17 @@ def _render_fast_curve_auto(
                 f"  - wall `= {float(latest['wall_total_seconds']):.2f}s`",
             ]
         )
+    if pending_ckpt_epochs:
+        lines.extend(["- Remote checkpoints not yet pulled into local fast curve:", *[f"  - `{name}`" for name in pending_ckpt_epochs[-3:]]])
     if remote_pending_epochs:
         lines.extend(["- Remote pending eval epochs:", *[f"  - `{name}`" for name in remote_pending_epochs[-3:]]])
+    if remote_unconfirmed_local_settled_epochs:
+        lines.extend(
+            [
+                "- Local settled epochs waiting on remote summary confirmation:",
+                *[f"  - `{name}`" for name in remote_unconfirmed_local_settled_epochs[-3:]],
+            ]
+        )
     if pending:
         lines.extend(["- Pending pulled checkpoints:", *[f"  - `{name}`" for name in pending[-3:]]])
     if convergence:
