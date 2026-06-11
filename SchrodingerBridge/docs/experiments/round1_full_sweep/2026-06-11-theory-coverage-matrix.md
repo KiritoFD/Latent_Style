@@ -34,8 +34,8 @@ Purpose:
 | GW-OT attention | `attn_gw_ot` | implemented | `recalibration_needed` | formal curve exists, but lane still needs better VRAM/useful frontier behavior |
 | Gated SPADE attention | `attn_gated_spade` | implemented | `recalibration_needed` | under-band / stalled formal behavior |
 | PnP / self-injection attention | `attn_pnp_selfinject` | implemented | `recalibration_needed` | real curve exists; segmented non-concurrent train/eval path built |
-| Tangent RK solver | `solver_tangent_rk` | implemented | `running` | current formal active lane |
-| Predictor-corrector solver | `solver_pc` | implemented | `planned` | next solver-family queue candidate |
+| Tangent RK solver | `solver_tangent_rk` | implemented | `reviewing` | formal training closed through `epoch_0032`; waiting on deep review / stage-close packet |
+| Predictor-corrector solver | `solver_pc` | implemented | `running` | current formal active lane; all-ckpt authority settled through `epoch_0020` |
 | UNSB / cycle solver | `solver_unsb_cycle` | implemented | `planned` | finer-epoch policy already applied |
 | DINO-masked semantic SWD | `semantic_supervision_family=dino_masked_swd` | implemented | active for tokenizer families | loaded through runtime conditioning sidecars |
 | Remote segmented train/eval alternation | `run_remote_round1_family_segmented.py` | implemented | used on `attn_pnp_selfinject` | avoids concurrent train+eval VRAM spikes |
@@ -55,8 +55,9 @@ Purpose:
 
 | Slot | Family | Status | Reason |
 |---|---|---|---|
-| Active formal lane | `solver_tangent_rk` | `running` | best fast point remains `epoch_0007`, newest settled point `epoch_0010`, not converged |
-| Next queue candidate | `solver_pc` | `planned` | smoke `ok`, finer epoch policy applied, waits for no `running` families |
+| Active formal lane | `solver_pc` | `running` | best transfer style still `epoch_0001`, best LPIPS still `epoch_0009`, newest settled point `epoch_0020`, not converged |
+| Reviewing solver family | `solver_tangent_rk` | `reviewing` | formal training closed through `epoch_0032`; bestfew handoff exists, deep review still pending |
+| Next queue candidate | `solver_unsb_cycle` | `planned` | waits for `solver_pc` closure under the solver-family patience rule |
 | Auto handoff | `watch_launch_round1_queue_when_idle.py` | armed | once manifest has zero `running` families, invoke round-1 queue automatically |
 
 ## Gaps That Still Matter

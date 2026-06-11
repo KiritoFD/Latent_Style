@@ -1,152 +1,57 @@
 # solver_tangent_rk Decision
 
 - Decision date:
-  - `2026-06-10`
+  - `2026-06-11`
 - Current status:
-  - `running`
-- Current read:
-  - the first opening that actually satisfied the remote formal VRAM band was:
-    - `batch=16`
-  - first pulled fast-eval point:
-    - `epoch_0001`
-    - transfer `0.6999 / 0.5295`
-    - all-pairs `0.7142 / 0.5222`
-- Interpretation:
-  - this line is formally alive and producing valid remote `CLIP-S / LPIPS`
-  - but the first point is still too weak on LPIPS to justify any promotion
-  - because this is only the first retained point, it should continue until the convergence rule is actually satisfied
-- Current live continuation:
-  - the remote formal lane is still alive after the first settled point
-  - current sampled read:
-    - `epoch=2`
-    - `step=293`
-    - `9433 MiB`
-  - this means the family is not just a healthy launch anymore; it is now accumulating a real multi-point curve under the formal remote contract
-- First-point interpretation:
+  - `reviewing`
+- Current gate:
+  - remote training is closed
+  - next required work is shortlisted local deep review plus frozen `VLM`
+
+## Formal Setting
+
+- Canonical family:
+  - `solver_tangent_rk`
+- Final training policy:
+  - `batch=17`
+  - `virtual_length_multiplier=0.5`
+  - short continuation segments after the first long tail was observed
+- Final settled authority span:
+  - `epoch_0001` through `epoch_0032`
+
+## Curve Summary
+
+- Best transfer `CLIP-S`:
   - `epoch_0001`
   - transfer `0.6999 / 0.5295`
-  - all-pairs `0.7142 / 0.5222`
-  - this is enough to keep the line running, but LPIPS is still materially weak
-  - do not spend local heavy-review budget yet; wait for a stronger fast-curve point first
-- Current artifact frontier:
-  - `epoch_0002.pt` has already landed in the canonical run root
-  - second pulled fast-eval point:
-    - `epoch_0002`
-    - transfer `0.6969 / 0.5230`
-    - all-pairs `0.7129 / 0.5136`
-    - wall `191.73s`
-  - interpretation of the first two points:
-    - LPIPS improved only slightly
-    - style scores slipped slightly
-    - this line is still alive, but there is no strong upward curve yet
-- Next action:
-  - keep the remote lane running
-  - keep pulling every retained checkpoint through the remote fast-eval watcher
-  - do not spend local heavy-review budget on this family until a stronger fast curve point appears
-- Granularity decision after early peak / rollback read:
-  - because the best fast point so far appeared at `epoch_0004` and `epoch_0005` already rolled back materially, the current epoch granularity is too coarse for solver-family knee finding
-  - do not interrupt the already-running formal lane mid-flight
-  - but the next solver-family continuation policy is now:
-    - reduce `data.virtual_length_multiplier` from `1.0` to `0.5`
-    - increase planned solver-family `num_epochs` from `24` to `48`
-  - purpose:
-    - preserve roughly the same total training budget
-    - but double retained-checkpoint density in wall-clock terms
-    - so the fast curve can catch the true optimum before larger overshoot
-- New frontier update:
-  - `epoch_0007` has now fully settled
-  - transfer `CLIP-S / LPIPS = 0.6951 / 0.4787`
-  - all-pairs `CLIP-S / LPIPS = 0.7159 / 0.4675`
-  - read:
-    - this point overtook `epoch_0004` on both structure and all-pairs style
-    - so the rollback at `epoch_0005` and partial recovery at `epoch_0006` were not closure evidence after all
-    - keep the current formal lane running
-- Latest rollback after the new frontier:
-  - `epoch_0008` has now fully settled
-  - transfer `CLIP-S / LPIPS = 0.6901 / 0.5243`
-  - all-pairs `CLIP-S / LPIPS = 0.7082 / 0.5130`
-  - read:
-    - this point fell back clearly from `epoch_0007`
-    - but because `epoch_0007` is still within the newest 2 settled checkpoints, the family still does not satisfy the stop rule
-    - keep the line running until the solver-family patience and flat-tail conditions are actually met
-- Current frontier after one more settled point:
-  - `epoch_0009` has now fully settled
-  - transfer `CLIP-S / LPIPS = 0.6933 / 0.5230`
-  - all-pairs `CLIP-S / LPIPS = 0.7099 / 0.5120`
-  - read:
-    - this recovered slightly from `epoch_0008`
-    - but still does not beat the current `epoch_0007` frontier
-    - because the best point remains inside the newest 2 settled checkpoints, and the tail is not flat, the line still stays open
-- New frontier recovery:
-  - `epoch_0013` has now fully settled
-  - transfer `CLIP-S / LPIPS = 0.6935 / 0.4713`
-  - all-pairs `CLIP-S / LPIPS = 0.7152 / 0.4604`
-  - read:
-    - this point improved LPIPS sharply versus the `epoch_0008-0012` tail
-    - and re-entered the Pareto frontier after the recent oscillation
-    - so the line is no longer in a near-closure band
-    - keep the active formal lane running
-- Extension recovery update:
-  - the first `epoch_0024 -> epoch_0028` continuation at `batch=16` did not land any new retained checkpoint
-  - latest nonempty runtime evidence before the lane disappeared:
-    - `epoch 25/28`
-    - `step 471/1180`
-    - `9209 MiB`
-  - interpretation:
-    - this was not an OOM event
-    - it was a slightly under-floor formal lane, so the segment is not valid closure evidence
-  - next action:
-    - keep `solver_tangent_rk` active
-    - relaunch the same continuation from `epoch_0024` with `batch=17`
-    - do not switch to `solver_pc` until a real post-`epoch_0024` fast curve exists
-- `epoch_0025-0028` extension read:
-  - all retained checkpoints through `epoch_0028` are now settled under the remote fast-eval contract
-  - latest four transfer points:
-    - `epoch_0025 = 0.6812 / 0.4746`
-    - `epoch_0026 = 0.6903 / 0.4708`
-    - `epoch_0027 = 0.6844 / 0.4875`
-    - `epoch_0028 = 0.6858 / 0.4626`
-  - convergence state after the full `28`-epoch read:
-    - `since_last_pareto = 9`
-    - `best_in_newest_2 = false`
-    - `tail_flat = false`
-  - interpretation:
-    - this extension did not produce any new Pareto point beyond `epoch_0019`
-    - the line now reads as a long late-tail drift rather than a renewed frontier candidate
-    - but it is still not formally closeable under the current rule because `tail_flat=false`
-  - next action:
-    - continue the same family one short segment farther, from `epoch_0028` to `epoch_0030`
-    - keep `batch=17`
-    - close immediately after that segment only if the all-ckpt curve finally satisfies the flat-tail condition
-- `epoch_0029-0030` short continuation read:
-  - both retained checkpoints are now settled under the same remote fast-eval contract
-  - transfer `CLIP-S / LPIPS`:
-    - `epoch_0029 = 0.6862 / 0.4963`
-    - `epoch_0030 = 0.6867 / 0.4909`
-  - current convergence state:
-    - `since_last_pareto = 11`
-    - `best_in_newest_2 = false`
-    - `tail_flat = false`
-  - interpretation:
-    - this confirms the line is no longer frontier-seeking
-    - but the last 3 retained checkpoints are still not flat enough on LPIPS to satisfy the current stop rule
-  - next action:
-    - continue one final short segment from `epoch_0030` to `epoch_0032`
-    - keep `batch=17`
-    - if that segment still fails the flat-tail condition, close the family and move to stage-close review rather than keep extending
-- `epoch_0031-0032` final continuation read:
-  - both retained checkpoints are now settled
-  - transfer `CLIP-S / LPIPS`:
-    - `epoch_0031 = 0.6907 / 0.4977`
-    - `epoch_0032 = 0.6893 / 0.4807`
-  - current convergence state:
-    - `since_last_pareto = 13`
-    - `best_in_newest_2 = false`
-    - `tail_flat = false`
-  - interpretation:
-    - the line has been non-Pareto-improving for a long tail after `epoch_0019`
-    - further short continuations are no longer justified by the observed metric trajectory
-  - final training decision:
-    - close the remote training phase for `solver_tangent_rk`
-    - move the family to `reviewing`
-    - hand the remote formal lane to `solver_pc`
+- Best transfer `LPIPS`:
+  - `epoch_0019`
+  - transfer `0.6909 / 0.4498`
+- Strongest all-pairs late frontier:
+  - `epoch_0007`
+  - full `0.7159 / 0.4675`
+- Final settled point:
+  - `epoch_0032`
+  - transfer `0.6893 / 0.4807`
+  - read: clearly below the late best frontier
+
+## Closure Read
+
+- The line produced a meaningful late solver frontier at `epoch_0019`.
+- Every short continuation after that failed to create a new Pareto point.
+- The tail through `epoch_0025-0032` behaved like long oscillatory drift rather than renewed frontier search.
+- Training was therefore closed on trajectory evidence, not because the family became externally promotable.
+
+## Decision
+
+- Keep as `reviewing`, not `running`.
+- Do not reopen training unless deep review exposes a contradiction large enough to justify another bounded continuation.
+- Do not promote on fast-curve evidence alone:
+  - this family still needs `IntroStyle`, `DINO`, and frozen `VLM` review before any keep/reject conclusion
+  - even its best internal point is not enough by itself to claim it beats the current external board
+
+## Next Action
+
+- Use the existing bestfew handoff for local deep review.
+- Freeze the stage-close board after `IntroStyle + DINO + VLM` are written.
+- Keep the remote formal lane on `solver_pc` while this family remains in review only.
