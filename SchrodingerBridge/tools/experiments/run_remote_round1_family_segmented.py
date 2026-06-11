@@ -255,6 +255,7 @@ def _launch_train_with_retry(
     segmented_config: Path,
     poll_seconds: int,
     max_wait_seconds: int,
+    health_wait_seconds: int,
     max_prelaunch_memory_mib: int,
     min_runtime_memory_mib: int,
     max_runtime_memory_mib: int,
@@ -270,6 +271,8 @@ def _launch_train_with_retry(
                 "--config",
                 str(segmented_config.relative_to(WORKSPACE)),
                 "--skip-remote-fast-eval-followup",
+                "--health-wait-seconds",
+                str(int(health_wait_seconds)),
                 "--max-prelaunch-memory-mib",
                 str(int(max_prelaunch_memory_mib)),
                 "--min-runtime-memory-mib",
@@ -329,6 +332,7 @@ def main() -> int:
     parser.add_argument("--poll-seconds", type=int, default=30)
     parser.add_argument("--max-train-wait-seconds", type=int, default=10800)
     parser.add_argument("--max-eval-wait-seconds", type=int, default=7200)
+    parser.add_argument("--health-wait-seconds", type=int, default=120)
     parser.add_argument("--max-prelaunch-memory-mib", type=int, default=7000)
     parser.add_argument("--min-runtime-memory-mib", type=int, default=9216)
     parser.add_argument("--max-runtime-memory-mib", type=int, default=11059)
@@ -338,6 +342,11 @@ def main() -> int:
         "--manifest-decision-status-on-start",
         default="running",
         help="Decision status to write into the round1 manifest when this segmented controller starts.",
+    )
+    parser.add_argument(
+        "--manifest-decision-status-on-exit",
+        default="recalibration_needed",
+        help="Decision status to write back when this bounded segmented controller exits.",
     )
     parser.add_argument("--skip-fast-eval", action="store_true")
     args = parser.parse_args()
@@ -375,6 +384,8 @@ def main() -> int:
         segment_epochs=int(args.segment_epochs),
     )
     expected_epoch = max(int(latest_epoch) + int(args.segment_epochs), 1)
+    previous_status = str(row.get("decision_status", "")).strip() or "recalibration_needed"
+    exit_status = str(args.manifest_decision_status_on_exit).strip() or previous_status
     _write_manifest_status(
         manifest_csv,
         family_id=str(args.family_id),
@@ -402,6 +413,7 @@ def main() -> int:
         segmented_config=segmented_config,
         poll_seconds=int(args.poll_seconds),
         max_wait_seconds=int(args.max_train_wait_seconds),
+        health_wait_seconds=int(args.health_wait_seconds),
         max_prelaunch_memory_mib=int(args.max_prelaunch_memory_mib),
         min_runtime_memory_mib=int(args.min_runtime_memory_mib),
         max_runtime_memory_mib=int(args.max_runtime_memory_mib),
@@ -409,6 +421,11 @@ def main() -> int:
         runtime_guard_min_mode=str(args.runtime_guard_min_mode),
     )
     if launch_train.returncode != 0:
+        _write_manifest_status(
+            manifest_csv,
+            family_id=str(args.family_id),
+            decision_status=exit_status,
+        )
         return int(launch_train.returncode)
 
     print("[run_remote_round1_family_segmented] train launched; waiting for remote train to finish", flush=True)
@@ -429,6 +446,11 @@ def main() -> int:
     sys.stdout.write(sync_scalar.stdout)
     sys.stdout.flush()
     if sync_scalar.returncode != 0:
+        _write_manifest_status(
+            manifest_csv,
+            family_id=str(args.family_id),
+            decision_status=exit_status,
+        )
         return int(sync_scalar.returncode)
 
     latest_epoch_after, latest_name_after = _scan_latest_epoch(
@@ -446,6 +468,11 @@ def main() -> int:
             "[run_remote_round1_family_segmented] no new retained checkpoint landed during the bounded segment; "
             "skip remote fast-eval launch for this cycle",
             flush=True,
+        )
+        _write_manifest_status(
+            manifest_csv,
+            family_id=str(args.family_id),
+            decision_status=exit_status,
         )
         return 26
 
@@ -465,6 +492,11 @@ def main() -> int:
         sys.stdout.write(launch_fast.stdout)
         sys.stdout.flush()
         if launch_fast.returncode != 0:
+            _write_manifest_status(
+                manifest_csv,
+                family_id=str(args.family_id),
+                decision_status=exit_status,
+            )
             return int(launch_fast.returncode)
         _wait_for_eval_summary(
             family_id=str(args.family_id),
@@ -473,6 +505,11 @@ def main() -> int:
             max_wait_seconds=int(args.max_eval_wait_seconds),
         )
         print("[run_remote_round1_family_segmented] remote fast-eval summary reached expected epoch", flush=True)
+    _write_manifest_status(
+        manifest_csv,
+        family_id=str(args.family_id),
+        decision_status=exit_status,
+    )
     return 0
 
 
