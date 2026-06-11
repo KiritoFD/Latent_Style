@@ -215,6 +215,27 @@
   - keep `solver_unsb_cycle` open for at least one more bounded continuation check
   - the next segment should decide whether the tail finally flattens or recovers
 
+## Fifth Post-Reset Followup Read
+
+- the previous `batch=17` setting eventually hit a late-train CUDA OOM beyond `epoch_0026`
+- the family was therefore recalibrated downward to:
+  - `batch=16`
+- bounded continuation from `epoch_0026` through `epoch_0028` is now settled at the safer batch
+- new points:
+  - `epoch_0027`
+    - transfer `0.6906 / 0.5038`
+    - full `0.7090 / 0.4929`
+  - `epoch_0028`
+    - transfer `0.6851 / 0.4951`
+    - full `0.7041 / 0.4866`
+- interpretation:
+  - `epoch_0027-0028` still do not beat the `epoch_0018` Pareto point
+  - `since_last_pareto` is now `10`
+  - even after the safe-batch recalibration, the tail still is not flat enough to close
+- current decision:
+  - keep `solver_unsb_cycle` open for one more bounded continuation check
+  - `batch=16` is the current canonical paper-safe UNSB batch
+
 ## Promotion Rule
 
 - No early promotion from the first in-band health sample alone.

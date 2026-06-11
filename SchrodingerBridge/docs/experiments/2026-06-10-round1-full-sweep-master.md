@@ -511,12 +511,12 @@ Recalibration-needed family:
   - `solver_unsb_cycle`
 - Active family: `solver_unsb_cycle`
 - Decision status: `running`
-- Batch / epochs / patience: `17 / 48 / 6`
+- Batch / epochs / patience: `16 / 48 / 6`
 - Best transfer `CLIP-S`: `epoch_0001` -> `0.7057 / 0.5669`
 - Best transfer `LPIPS`: `epoch_0009` -> `0.6996 / 0.4421`
 - Best all-pairs `CLIP-S`: `epoch_0009` -> `0.7245 / 0.4311`
-- Latest settled fast point: `epoch_0024` -> transfer `0.6927 / 0.5197`
-- Convergence: `row_count=24, since_best=23, tail_flat=False, closure_band=approaching_closure, converged=False`
+- Latest settled fast point: `epoch_0026` -> transfer `0.6915 / 0.5290`
+- Convergence: `row_count=26, since_best=25, tail_flat=False, closure_band=approaching_closure, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
 
 Current `solver_pc` launch note:

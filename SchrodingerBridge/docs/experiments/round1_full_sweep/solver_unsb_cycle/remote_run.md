@@ -49,17 +49,17 @@
 
 ## Next Action
 
-- Keep the retained fast-eval packet authoritative through `epoch_0022`.
-- Treat `batch=17` as the current canonical UNSB setting.
-- Continue via further bounded segmented continuation rather than handing off to a different family yet:
-  - `epoch_0018` created a new Pareto point and reset patience
+- Keep the retained fast-eval packet authoritative through `epoch_0028`.
+- Treat `batch=16` as the current canonical UNSB setting.
+- Continue via one more bounded segmented continuation rather than handing off to a different family yet:
+  - `epoch_0018` remains the last Pareto point
 - Do not spend local heavy review budget yet:
   - this family is still in convergence-shaping mode rather than closure mode
 - latest bounded followup:
-  - `epoch_0019-0026` are now settled
-  - neither displaced `epoch_0018`
-  - so the family remains open, with `since_last_pareto = 8`
-  - the remaining open question is now tail flatness, not whether the bounded resume path works
+  - `epoch_0019-0028` are now settled
+  - none displaced `epoch_0018`
+  - so the family remains open, with `since_last_pareto = 10`
+  - the remaining open question is now whether one last segment finally yields a flat tail
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
@@ -75,12 +75,12 @@
 - Switch smoke artifact: [round1_solver_unsb_cycle_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_switch_smoke_latest.json)
 - Switch smoke row count: `1`
 - Remote GPU live sample:
-  - `10764 MiB / 12288 MiB`, `util=100%`
+  - `10624 MiB / 12288 MiB`, `util=58%`
   - `band_status=in_band`
   - `formal_status=formal_in_band`
 - Remote train progress:
-  - `epoch 24/24`
-  - `step 319/555`
-  - `loss=7.7903`
-  - `tswd=6.3125`
+  - `epoch 26/26`
+  - `step 492/555`
+  - `loss=7.8519`
+  - `tswd=4.6250`
 <!-- ROUND1_AUTO_STATUS:END -->
