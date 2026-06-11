@@ -91,6 +91,14 @@
   - this point improves both style and LPIPS versus `epoch_0011`
   - but it still does not beat the stronger `epoch_0009` LPIPS frontier
   - the line remains alive and structurally strong, but is still oscillating around the post-`0009` region
+- `epoch_0013` update:
+  - transfer `0.6968 / 0.5101`
+  - full `0.7142 / 0.4996`
+  - wall `180.65s`
+- Interpretation:
+  - LPIPS softened versus `epoch_0012`
+  - but style recovered materially on both transfer and all-pairs
+  - so this point is a real tradeoff frontier update, even though it does not beat the `epoch_0009` LPIPS best
 - `epoch_0010` update:
   - transfer `0.6988 / 0.5270`
   - full `0.7138 / 0.5185`
