@@ -1,63 +1,29 @@
 # solver_pc Remote Run Log
 
 - Run dir: `./exp/inmortal-exp/aaai2027_round1_solver_pc_seed42_b8a2`
-- First formal launch read on `2026-06-11`:
-  - opening batch:
-    - `8`
-  - 30-second health sample:
-    - `5216 MiB / 12288 MiB`
-  - interpretation:
-    - this is far below the requested `9.0-10.8 GiB` formal band
-    - so `batch=8` is only a calibration starting point
-  - next recalibration target:
-    - `batch=14`
-- Second calibration read on `2026-06-11`:
-  - opening batch:
-    - `14`
-  - 30-second health sample:
-    - `8226 MiB / 12288 MiB`
-  - interpretation:
-    - still below the effective formal floor
-    - so `batch=14` remains a calibration-only opening
-  - next recalibration target:
-    - `batch=16`
-- First formal in-band relaunch on `2026-06-11`:
-  - opening batch:
-    - `16`
-  - 30-second health sample:
-    - `9334 MiB / 12288 MiB`
-  - interpretation:
-    - this is inside the requested `9.0-10.8 GiB` formal band
-    - so `batch=16` is the first authoritative `solver_pc` launch setting
-- First settled fast-eval point:
+- Calibration reads on `2026-06-11`:
+  - `batch=8`
+    - 30-second health sample: `5216 MiB / 12288 MiB`
+    - read: far below the requested formal band
+  - `batch=14`
+    - 30-second health sample: `8226 MiB / 12288 MiB`
+    - read: still below the effective formal floor
+  - `batch=16`
+    - 30-second health sample: `9334 MiB / 12288 MiB`
+    - read: first authoritative in-band launch setting for `solver_pc`
+- Settled fast-eval points `epoch_0001-0008`:
   - `epoch_0001`
-  - transfer `CLIP-S / LPIPS = 0.7074 / 0.5621`
-  - all-pairs `CLIP-S / LPIPS = 0.7170 / 0.5552`
-  - wall `= 177.75s`
-  - immediate read:
-    - style score opens slightly above the current internal tangent late tail
-    - but LPIPS is clearly worse than the stronger tangent structure points
-    - therefore the family stays open, but the first point is not a promote signal
-- Second settled fast-eval point:
+    - transfer `0.7074 / 0.5621`
+    - all-pairs `0.7170 / 0.5552`
+    - wall `177.75s`
   - `epoch_0002`
-  - transfer `CLIP-S / LPIPS = 0.6974 / 0.5426`
-  - all-pairs `CLIP-S / LPIPS = 0.7109 / 0.5368`
-  - wall `= 178.42s`
-  - immediate read:
-    - LPIPS improved materially from the opening point
-    - but style scores backed off on both transfer and all-pairs
-    - so the line has active movement, but it is still too early to rank this family beyond “alive”
-
-- Third settled fast-eval point:
+    - transfer `0.6974 / 0.5426`
+    - all-pairs `0.7109 / 0.5368`
+    - wall `178.42s`
   - `epoch_0003`
-  - transfer `CLIP-S / LPIPS = 0.6987 / 0.5533`
-  - all-pairs `CLIP-S / LPIPS = 0.7119 / 0.5442`
-  - wall `= 179.68s`
-  - immediate read:
-    - style recovered slightly from `epoch_0002`
-    - LPIPS softened slightly from `epoch_0002`
-    - this line now reads as a real style/structure tradeoff frontier
-- Fourth and fifth settled fast-eval points:
+    - transfer `0.6987 / 0.5533`
+    - all-pairs `0.7119 / 0.5442`
+    - wall `179.68s`
   - `epoch_0004`
     - transfer `0.6962 / 0.5373`
     - all-pairs `0.7118 / 0.5296`
@@ -66,28 +32,27 @@
     - transfer `0.6955 / 0.5381`
     - all-pairs `0.7112 / 0.5287`
     - wall `176.98s`
-  - immediate read:
-    - `epoch_0004` materially improved LPIPS again and became the best transfer-LPIPS point so far on this family
-    - `epoch_0005` held the same broad trend, with slightly softer transfer style but the best all-pairs LPIPS so far
-    - this confirms the current `solver_pc` line is structure-first and still moving on the Pareto surface
-- Fourth settled fast-eval point:
-  - `epoch_0004`
-  - transfer `CLIP-S / LPIPS = 0.6962 / 0.5373`
-  - all-pairs `CLIP-S / LPIPS = 0.7118 / 0.5296`
-  - wall `= 177.89s`
-  - immediate read:
-    - LPIPS improved again to the best point so far for this family
-    - style softened again on both transfer and all-pairs
-    - the line is now clearly structure-first, with style still lagging behind
-- Sixth settled fast-eval point:
   - `epoch_0006`
-  - transfer `CLIP-S / LPIPS = 0.6923 / 0.5056`
-  - all-pairs `CLIP-S / LPIPS = 0.7118 / 0.4959`
-  - wall `= 177.98s`
-  - immediate read:
-    - LPIPS improved materially again and is now the best point so far on this family
-    - style softened further
-    - the current `solver_pc` line remains structure-first and Pareto-active
+    - transfer `0.6923 / 0.5056`
+    - all-pairs `0.7118 / 0.4959`
+    - wall `177.98s`
+  - `epoch_0007`
+    - transfer `0.6873 / 0.5510`
+    - all-pairs `0.7003 / 0.5418`
+    - wall `178.13s`
+  - `epoch_0008`
+    - transfer `0.6908 / 0.4693`
+    - all-pairs `0.7127 / 0.4596`
+    - wall `179.90s`
+- Immediate read:
+  - the opening point was style-competitive but structurally weak
+  - `epoch_0002` improved LPIPS materially while style backed off
+  - `epoch_0003` recovered some style at the cost of LPIPS
+  - `epoch_0004-0006` resumed the structure-favoring trend, with `epoch_0006` becoming the best LPIPS point so far
+  - `epoch_0007` was the first clear rollback after that improvement streak
+  - `epoch_0008` recovered strongly on both style and LPIPS, and is the first compelling post-rollback recovery signal
+  - the line remains structure-first, but is still actively moving on the Pareto surface
+
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
 

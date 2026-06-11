@@ -3,86 +3,62 @@
 - Decision date:
   - `2026-06-11`
 - Current status:
-  - `planned`
-- First launch read:
-  - opening batch:
-    - `8`
-  - 30-second health sample:
-    - `5216 MiB / 12288 MiB`
+  - `running`
+- Calibration summary:
+  - `batch=8`
+    - 30-second health sample: `5216 MiB / 12288 MiB`
+    - read: far below the requested formal band
+  - `batch=14`
+    - 30-second health sample: `8226 MiB / 12288 MiB`
+    - read: still below the effective formal floor
+  - final canonical opening:
+    - `batch=16`
+  - first in-band 30-second sample:
+    - `9334 MiB / 12288 MiB`
 - Interpretation:
-  - this is materially below the requested formal band
-  - so the first `solver_pc` opening is calibration evidence only, not a formal paper-facing run
-- Next action:
-  - raise the canonical opening batch to `14`
-  - relaunch the same family under the existing single-lane remote fast-eval contract
-- Recalibration update:
-  - `batch=14` remained under-band on the 30-second health check:
-    - `8226 MiB / 12288 MiB`
-  - interpretation:
-    - this is still calibration evidence only
-    - but the gap is now small enough that the next single-step increase is more appropriate than a bigger jump
-  - next action:
-    - raise the canonical opening batch to `16`
-    - relaunch again under the same contract
-- First settled fast-eval point:
+  - `batch=8` and `batch=14` were calibration-only under-band openings
+  - `batch=16` is the first authoritative formal setting for this family
+- Settled fast-eval points `epoch_0001-0008`:
   - `epoch_0001`
-  - transfer `CLIP-S / LPIPS = 0.7074 / 0.5621`
-  - all-pairs `CLIP-S / LPIPS = 0.7170 / 0.5552`
-  - wall `= 177.75s`
+    - transfer `0.7074 / 0.5621`
+    - all-pairs `0.7170 / 0.5552`
+    - wall `177.75s`
+  - `epoch_0002`
+    - transfer `0.6974 / 0.5426`
+    - all-pairs `0.7109 / 0.5368`
+    - wall `178.42s`
+  - `epoch_0003`
+    - transfer `0.6987 / 0.5533`
+    - all-pairs `0.7119 / 0.5442`
+    - wall `179.68s`
+  - `epoch_0004`
+    - transfer `0.6962 / 0.5373`
+    - all-pairs `0.7118 / 0.5296`
+    - wall `177.89s`
+  - `epoch_0005`
+    - transfer `0.6955 / 0.5381`
+    - all-pairs `0.7112 / 0.5287`
+    - wall `176.98s`
+  - `epoch_0006`
+    - transfer `0.6923 / 0.5056`
+    - all-pairs `0.7118 / 0.4959`
+    - wall `177.98s`
+  - `epoch_0007`
+    - transfer `0.6873 / 0.5510`
+    - all-pairs `0.7003 / 0.5418`
+    - wall `178.13s`
+  - `epoch_0008`
+    - transfer `0.6908 / 0.4693`
+    - all-pairs `0.7127 / 0.4596`
+    - wall `179.90s`
 - Interpretation:
-  - the `batch=16` relaunch is now a valid formal run because it sits inside the requested remote VRAM band
-  - but the first settled point is materially weak on LPIPS
-  - so this line remains alive, yet there is no promotion signal at the opening point
+  - the opening point was style-competitive but structurally weak
+  - `epoch_0002` improved LPIPS materially while style backed off
+  - `epoch_0003` recovered some style at the cost of LPIPS
+  - `epoch_0004-0006` resumed the structure-favoring trend, with `epoch_0006` becoming the best LPIPS point so far
+  - `epoch_0007` was the first clear rollback after that improvement streak
+  - `epoch_0008` recovered strongly on both style and LPIPS, and is the first compelling post-rollback recovery signal
+  - this family remains clearly alive and Pareto-active, but its behavior is still `structure-first, style-second`
 - Next action:
   - keep the same remote lane running
-  - keep settling every retained checkpoint through the remote fast-eval chain before any deeper review or closure decision
-- Second settled fast-eval point:
-  - `epoch_0002`
-  - transfer `CLIP-S / LPIPS = 0.6974 / 0.5426`
-  - all-pairs `CLIP-S / LPIPS = 0.7109 / 0.5368`
-  - wall `= 178.42s`
-- Interpretation:
-  - LPIPS improved materially versus `epoch_0001`
-  - style scores softened on both transfer and all-pairs
-  - the line is now clearly moving on the style/structure frontier, so closure is still far too early
-- Third settled fast-eval point:
-  - `epoch_0003`
-  - transfer `CLIP-S / LPIPS = 0.6987 / 0.5533`
-  - all-pairs `CLIP-S / LPIPS = 0.7119 / 0.5442`
-  - wall `= 179.68s`
-- Interpretation:
-  - style recovered slightly versus `epoch_0002`
-  - LPIPS softened slightly versus `epoch_0002`
-  - the line is now tracing a real style/structure tradeoff frontier rather than a one-directional collapse
-- Sixth settled fast-eval point:
-  - `epoch_0006`
-  - transfer `CLIP-S / LPIPS = 0.6923 / 0.5056`
-  - all-pairs `CLIP-S / LPIPS = 0.7118 / 0.4959`
-  - wall `= 177.98s`
-- Interpretation:
-  - LPIPS improved materially again and is now the best point so far on this family
-  - style softened further
-  - the family remains Pareto-active, but the tradeoff is still clearly structure-first
-- Fourth settled fast-eval point:
-  - `epoch_0004`
-  - transfer `CLIP-S / LPIPS = 0.6962 / 0.5373`
-  - all-pairs `CLIP-S / LPIPS = 0.7118 / 0.5296`
-  - wall `= 177.89s`
-- Fifth settled fast-eval point:
-  - `epoch_0005`
-  - transfer `CLIP-S / LPIPS = 0.6955 / 0.5381`
-  - all-pairs `CLIP-S / LPIPS = 0.7112 / 0.5287`
-  - wall `= 176.98s`
-- Interpretation:
-  - `epoch_0004` set the best transfer LPIPS so far for this family
-  - `epoch_0005` slightly softened transfer style again, but nudged all-pairs LPIPS to the best point so far
-  - the family is still clearly structure-first, with style trailing, but the line remains alive and Pareto-active
-- Fourth settled fast-eval point:
-  - `epoch_0004`
-  - transfer `CLIP-S / LPIPS = 0.6962 / 0.5373`
-  - all-pairs `CLIP-S / LPIPS = 0.7118 / 0.5296`
-  - wall `= 177.89s`
-- Interpretation:
-  - LPIPS improved again to the best point so far for this family
-  - style softened again on both transfer and all-pairs
-  - the curve now clearly favors structure recovery first, with style still lagging behind
+  - keep settling retained checkpoints under the remote fast-eval contract before any deeper review or closure decision
