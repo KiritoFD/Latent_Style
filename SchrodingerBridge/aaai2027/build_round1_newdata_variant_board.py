@@ -18,6 +18,7 @@ WIKIARTS5_SUMMARY_CSV = ROOT / "wikiarts5_page1" / "wikiarts5_page1_summary.csv"
 WIKIARTS5_CURVE_CSV = WORKSPACE / "Related_Works" / "baseline_pipeline" / "results" / "samam_wikiarts5_patch8_segmented_20260610_094447" / "curve_metrics.csv"
 ATTNSA_CURVE_CSV = ROOT / "round1_attn_sa_mod_fast_local" / "full_eval_fast_local" / "clip_lpips_curve.csv"
 GATED_CURVE_CSV = ROOT / "round1_attn_gated_spade_remote_full_eval_pull" / "clip_lpips_curve.csv"
+UNSB_CURVE_CSV = ROOT / "round1_solver_unsb_cycle_remote_full_eval_pull" / "clip_lpips_curve.csv"
 POINTS_CSV = ROOT / "round1_newdata_variant_board.csv"
 
 OUT_PNG = OUT_DIR / "fig_round1_newdata_variant_board.png"
@@ -88,6 +89,7 @@ def main() -> int:
     wikiarts5_curve_rows = _read_csv(WIKIARTS5_CURVE_CSV)
     attnsa_rows = _read_csv(ATTNSA_CURVE_CSV)
     gated_rows = _read_csv(GATED_CURVE_CSV)
+    unsb_rows = _read_csv(UNSB_CURVE_CSV)
     point_rows = _read_csv(POINTS_CSV)
 
     # Keep this sanity check so the fixed point CSV cannot silently drift away
@@ -101,6 +103,9 @@ def main() -> int:
     _best(gated_rows, style_key="transfer_clip_style", lpips_key="transfer_content_lpips", mode="style")
     _best(gated_rows, style_key="transfer_clip_style", lpips_key="transfer_content_lpips", mode="lpips")
     _latest(gated_rows, epoch_key="epoch")
+    _best(unsb_rows, style_key="transfer_clip_style", lpips_key="transfer_content_lpips", mode="style")
+    _best(unsb_rows, style_key="transfer_clip_style", lpips_key="transfer_content_lpips", mode="lpips")
+    _latest(unsb_rows, epoch_key="epoch")
 
     fig, left = plt.subplots(1, 1, figsize=(6.2, 4.9), dpi=300)
     left.set_facecolor("#FCFBF8")
@@ -122,6 +127,11 @@ def main() -> int:
     gated_curve_y = [float(row["transfer_clip_style"]) - IDT_TRANSFER for row in gated_rows]
     left.plot(gated_curve_x, gated_curve_y, color="#16A085", linewidth=1.25, alpha=0.78, zorder=2, label="GatedSPADE trajectory")
     left.scatter(gated_curve_x, gated_curve_y, s=14, color="#52C7B0", alpha=0.40, linewidths=0, zorder=2)
+
+    unsb_curve_x = [1.0 - float(row["transfer_content_lpips"]) for row in unsb_rows]
+    unsb_curve_y = [float(row["transfer_clip_style"]) - IDT_TRANSFER for row in unsb_rows]
+    left.plot(unsb_curve_x, unsb_curve_y, color="#7C3AED", linewidth=1.25, alpha=0.82, zorder=2, label="UNSB trajectory")
+    left.scatter(unsb_curve_x, unsb_curve_y, s=14, color="#B79CFF", alpha=0.42, linewidths=0, zorder=2)
 
     def add_point(row: dict[str, str]) -> None:
         clip = float(row["transfer_clip_style"])

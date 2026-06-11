@@ -639,6 +639,7 @@ def _render_remote_run_auto(
     remote_runtime: dict[str, object] | None,
 ) -> str:
     run_name = str(row.get("run_name", "")).strip()
+    current_status = str(row.get("decision_status", "")).strip().lower()
     pending = _pending_checkpoints(fast_root / "checkpoints", {str(x.get("epoch", "")).strip() for x in curve_rows})
     lines = [
         "## Auto Status",
@@ -672,7 +673,7 @@ def _render_remote_run_auto(
         tail = remote_runtime.get("tail") if isinstance(remote_runtime.get("tail"), dict) else {}
         train_log = str(remote_runtime.get("train_log", "")).strip()
         processes = remote_runtime.get("processes") if isinstance(remote_runtime.get("processes"), dict) else {}
-        if gpu_sample:
+        if gpu_sample and current_status == "running":
             band_status = _classify_remote_vram_band(
                 memory_used_mib=int(str(gpu_sample.get("memory_used_mib", "0")).strip() or "0"),
                 band_min_mib=DEFAULT_REMOTE_BAND_MIN_MIB,
@@ -700,7 +701,7 @@ def _render_remote_run_auto(
         step_total = tail.get("step_total")
         loss = tail.get("loss")
         tswd = tail.get("tswd")
-        if epoch is not None or step is not None:
+        if current_status == "running" and (epoch is not None or step is not None):
             lines.append("- Remote train progress:")
             if epoch is not None and epoch_total is not None:
                 lines.append(f"  - `epoch {epoch}/{epoch_total}`")
@@ -711,7 +712,7 @@ def _render_remote_run_auto(
             if tswd is not None:
                 lines.append(f"  - `tswd={float(tswd):.4f}`")
             wrote_live_runtime = True
-    if not wrote_live_runtime:
+    if not wrote_live_runtime and current_status == "running":
         row_used = str(row.get("remote_live_memory_used_mib", "")).strip()
         row_total = str(row.get("remote_live_memory_total_mib", "")).strip()
         row_util = str(row.get("remote_live_util_pct", "")).strip()
@@ -1150,6 +1151,18 @@ def main() -> int:
             band_max_mib=int(args.remote_band_max_mib),
             hard_cap_mib=int(args.remote_hard_cap_mib),
         )
+    if str(family_row.get("decision_status", "")).strip().lower() != "running":
+        family_row["remote_live_memory_used_mib"] = ""
+        family_row["remote_live_memory_total_mib"] = ""
+        family_row["remote_live_util_pct"] = ""
+        family_row["remote_live_band_status"] = ""
+        family_row["remote_live_formal_status"] = ""
+        family_row["remote_live_epoch"] = ""
+        family_row["remote_live_epoch_total"] = ""
+        family_row["remote_live_step"] = ""
+        family_row["remote_live_step_total"] = ""
+        family_row["remote_live_loss"] = ""
+        family_row["remote_live_tswd"] = ""
     _merge_family_row_into_manifest(manifest, family_id=family_id, updated_row=family_row)
     rows = _read_rows(manifest)
 
