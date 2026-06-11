@@ -161,36 +161,21 @@ Required closure per family:
 
 Current remote lane status:
 
-- active formal lane:
+- no family currently holds the formal training lane
+- latest closed training family:
   - `solver_pc`
-  - current formal launch setting:
-    - `batch=16`
-  - latest remote live sample:
-    - `10344 MiB / 12288 MiB`
-    - `band_status=in_band`
-    - `formal_status=formal_in_band`
-    - `epoch 18/48`
-    - `step 403/590`
-  - latest locally pulled fast-eval point:
-    - `epoch_0030`
-  - current fast read:
-    - best transfer style remains `epoch_0001`:
-      - `0.7074 / 0.5621`
-    - best transfer LPIPS remains `epoch_0009`:
-      - `0.6911 / 0.4548`
-    - strongest late tradeoff recovery remains `epoch_0015`:
-      - `0.6962 / 0.4854`
-      - full `0.7165 / 0.4746`
-    - latest locally pulled point `epoch_0033`:
-      - transfer `0.6904 / 0.5026`
-      - full `0.7092 / 0.4913`
-    - interpretation:
-      - `epoch_0029-0033` still failed to re-enter the frontier
-      - the line is extremely deep past solver-family patience with `since_last_pareto=16`, but no closure condition is met yet because `tail_flat` is still false
-      - current local cleanup/doc work should not interrupt this lane
-  - queue rule during this stage:
-    - keep `solver_pc` as the only formal lane
-    - do not hand off to the next family until its all-ckpt fast curve reaches a true closure state
+  - current training read:
+    - settled through `epoch_0036`
+    - no new Pareto point after `epoch_0017`
+    - moved to `reviewing`
+- immediate next candidate:
+  - `solver_unsb_cycle`
+  - first direct launch read:
+    - `5223 MiB / 12288 MiB`
+    - `epoch 1/48`
+    - read: under-band calibration only
+  - current status:
+    - `recalibration_needed`
 - implementation audit:
   - all `11` round-1 family configs now pass one reusable local switch smoke:
     - model build
@@ -492,16 +477,9 @@ Recalibration-needed family:
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Active Status
 
-- Running families:
-  - `solver_pc`
-- Active family: `solver_pc`
-- Decision status: `running`
-- Batch / epochs / patience: `16 / 48 / 6`
-- Best transfer `CLIP-S`: `epoch_0001` -> `0.7074 / 0.5621`
-- Best transfer `LPIPS`: `epoch_0009` -> `0.6911 / 0.4548`
-- Best all-pairs `CLIP-S`: `epoch_0001` -> `0.7170 / 0.5552`
-- Latest settled fast point: `epoch_0031` -> transfer `0.6867 / 0.4941`
-- Convergence: `row_count=31, since_best=30, tail_flat=False, closure_band=approaching_closure, converged=False`
+- Running families: none
+- Active family: `none`
+- Decision status: `no_formal_running_lane`
 <!-- ROUND1_AUTO_STATUS:END -->
 
 Current `solver_pc` launch note:
