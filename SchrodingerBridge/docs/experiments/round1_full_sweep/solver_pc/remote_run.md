@@ -85,19 +85,19 @@
 - Run name: `aaai2027_round1_solver_pc_seed42_b8a2`
 - Remote run dir: `./exp/inmortal-exp/aaai2027_round1_solver_pc_seed42_b8a2`
 - Config: [aaai2027_round1_solver_pc_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_solver_pc_seed42_b8a2.json)
-- Manifest status: `running`
+- Manifest status: `reviewing`
 - Local fast root: [round1_solver_pc_fast_local](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_pc_fast_local)
 - Local review root: [round1_solver_pc_localreview](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_pc_localreview)
 - Prelaunch switch smoke: `ok`
 - Switch smoke artifact: [round1_solver_pc_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_pc_switch_smoke_latest.json)
 - Switch smoke row count: `1`
 - Remote GPU live sample:
-  - `10344 MiB / 12288 MiB`, `util=92%`
+  - `10344 MiB / 12288 MiB`, `util=98%`
   - `band_status=in_band`
   - `formal_status=formal_in_band`
 - Remote train progress:
-  - `epoch 33/48`
-  - `step 149/590`
-  - `loss=7.8960`
-  - `tswd=5.6562`
+  - `epoch 36/36`
+  - `step 509/590`
+  - `loss=7.7953`
+  - `tswd=4.3438`
 <!-- ROUND1_AUTO_STATUS:END -->

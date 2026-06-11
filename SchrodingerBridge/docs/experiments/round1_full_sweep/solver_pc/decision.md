@@ -3,66 +3,57 @@
 - Decision date:
   - `2026-06-11`
 - Current status:
-  - `running`
+  - `reviewing`
 - Current round read:
-  - `solver_pc` is still an active formal lane, not a closure candidate
-  - the authority remains the remote all-ckpt `CLIP-S + LPIPS` curve
-  - local deep review stays blocked until a bestfew handoff exists
+  - remote training is closed
+  - the authority remains the all-ckpt remote `CLIP-S + LPIPS` curve
+  - the family now moves to bestfew review rather than more open-ended training
 
 ## Formal Setting
 
 - Canonical config:
   - [aaai2027_round1_solver_pc_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_solver_pc_seed42_b8a2.json)
-- Formal batch setting:
+- Final formal batch setting:
   - `batch=16`
   - `accumulation_steps=2`
-- VRAM calibration:
-  - `batch=8 -> 5216 MiB`
-  - `batch=14 -> 8226 MiB`
-  - `batch=16 -> 9334 MiB` at first formal health check
-- Current live band check:
-  - `10344 MiB / 12288 MiB`
-  - read: safely inside the requested formal band
+- Final remote segment reached:
+  - settled through `epoch_0036`
 
 ## Curve Read
 
-- Best transfer `CLIP-S` remains:
+- Best transfer `CLIP-S` remained:
   - `epoch_0001`
   - transfer `0.7074 / 0.5621`
-- Best transfer `LPIPS` remains:
+- Best transfer `LPIPS` remained:
   - `epoch_0009`
   - transfer `0.6911 / 0.4548`
-- Strong late tradeoff frontier points after the `0009` LPIPS knee:
-  - `epoch_0013`
-    - transfer `0.6968 / 0.5101`
-    - full `0.7142 / 0.4996`
+- Strongest late tradeoff frontier remained:
   - `epoch_0015`
-    - transfer `0.6962 / 0.4854`
-    - full `0.7165 / 0.4746`
-  - `epoch_0017`
-    - transfer `0.6982 / 0.5075`
-    - full `0.7159 / 0.4964`
-- Latest locally pulled point:
-  - `epoch_0033`
-  - transfer `0.6904 / 0.5026`
-  - full `0.7092 / 0.4913`
-  - read: `epoch_0033` repaired part of the `0032` LPIPS collapse, but still remained a non-frontier tail point
+  - transfer `0.6962 / 0.4854`
+  - full `0.7165 / 0.4746`
+- Final settled point:
+  - `epoch_0036`
+  - transfer `0.6834 / 0.4964`
+  - full `0.7028 / 0.4875`
+  - read: non-frontier tail point
 
 ## Decision
 
-- Keep running.
+- Stop training and move to review.
 - Rationale:
-  - `patience=6` for solver families
-  - `since_last_pareto=16`, so the line is now deeper again into the post-patience tail
-  - `tail_flat=false`, so the family still does not satisfy true closure
-  - `epoch_0021-0033` reads more like noisy tail drift than renewed frontier search
-  - best style and best LPIPS are still split across different checkpoints, so the family is still exploring the tradeoff surface
-- Promotion rule:
-  - do not promote this family on internal oscillation alone
-  - require a full family closure packet plus deep review before any keep/reject decision
+  - `since_last_pareto` is far beyond solver-family patience
+  - bounded continuation through `epoch_0036` still failed to create a new Pareto point
+  - the tail remains noisy rather than frontier-seeking
+  - further continuation is no longer justified by the observed metric trajectory
+
+## Promotion Rule
+
+- Do not promote on internal oscillation alone.
+- Require the same deep-review package as every other round-1 family before any keep/reject conclusion.
 
 ## Next Action
 
-- Let the remote lane continue.
-- Keep syncing every retained checkpoint into the local fast-curve packet.
-- Open deep review only after the training lane truly closes and a bestfew shortlist is frozen.
+- Freeze the current training packet.
+- Build the bestfew handoff.
+- Open local `IntroStyle + DINO + frozen VLM` review.
+- Hand the remote formal lane to `solver_unsb_cycle`.

@@ -3,30 +3,34 @@
 - Decision date:
   - `2026-06-11`
 - Current status:
-  - `planned`
+  - `recalibration_needed`
 - Current read:
-  - this family has switch-smoke evidence only
-  - it has not yet consumed the formal remote lane
-  - the next decision boundary is launch readiness, not keep/reject
+  - the first formal launch attempt was made
+  - it opened far below the required formal VRAM band
+  - so the next decision boundary is calibration, not keep/reject
 
 ## Launch Decision
 
 - Keep as the next solver-family handoff candidate.
 - Rationale:
-  - `solver_pc` is still the active formal lane
+  - `solver_pc` training phase is already closed
   - `solver_unsb_cycle` already has:
     - canonical config
     - queue slot
     - smoke artifact
     - local/remote doc roots
-  - so there is no reason to block on more setup before handoff
+  - but the first `batch=8` opening only used about `5223 MiB`
+  - so it cannot yet count as a formal paper-facing lane
 
 ## Expected First Judgment
 
-- The first real decision is whether `batch=8` lands in the formal VRAM band.
-- If under-band:
-  - treat it as calibration only
-  - keep the family `planned` or move to `recalibration_needed` depending on the launch outcome
+- The first real decision is now the next calibration target above `batch=8`.
+- First measured read:
+  - `5223 MiB / 12288 MiB`
+  - `epoch 1/48`
+  - read: strongly under-band
+- Current rule:
+  - increase the effective batch until the lane enters the formal `9.0-10.8 GiB` band
 - If in-band:
   - promote to `running`
   - let the all-ckpt remote fast curve become the authority
