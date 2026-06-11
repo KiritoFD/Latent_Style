@@ -88,6 +88,19 @@
     - `epoch_0012` continued the structure recovery from the `epoch_0010` rollback
     - `epoch_0013` traded back some LPIPS for materially stronger style
     - this is another real tradeoff frontier update, not a simple regression
+- `epoch_0014-0015` settled points:
+  - `epoch_0014`
+    - transfer `0.6922 / 0.5067`
+    - all-pairs `0.7109 / 0.4960`
+    - wall `177.68s`
+  - `epoch_0015`
+    - transfer `0.6962 / 0.4854`
+    - all-pairs `0.7165 / 0.4746`
+    - wall `177.82s`
+  - immediate read:
+    - `epoch_0014` was a mild pullback after the `epoch_0013` style-recovery point
+    - `epoch_0015` recovered style strongly again while also improving LPIPS versus `epoch_0013/0014`
+    - this is a real new tradeoff frontier point, though it still does not beat the stronger `epoch_0009` LPIPS best
 - `epoch_0014` settled point:
   - transfer `0.6922 / 0.5067`
   - all-pairs `0.7109 / 0.4960`
