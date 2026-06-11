@@ -52,6 +52,14 @@
   - `epoch_0007` was the first clear rollback after that improvement streak
   - `epoch_0008` recovered strongly on both style and LPIPS, and is the first compelling post-rollback recovery signal
   - the line remains structure-first, but is still actively moving on the Pareto surface
+- `epoch_0009` settled point:
+  - transfer `0.6911 / 0.4548`
+  - all-pairs `0.7155 / 0.4429`
+  - wall `177.78s`
+  - immediate read:
+    - style recovered again from `epoch_0008`
+    - LPIPS improved materially again from `epoch_0008`
+    - this is a genuine new Pareto frontier update on both transfer-LPIPS and all-pairs LPIPS
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
