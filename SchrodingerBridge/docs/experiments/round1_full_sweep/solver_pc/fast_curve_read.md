@@ -7,6 +7,12 @@
 
 - Fast root: [round1_solver_pc_remote_full_eval_pull](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_pc_remote_full_eval_pull)
 - Curve CSV: [clip_lpips_curve.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_pc_remote_full_eval_pull/clip_lpips_curve.csv)
+- Latest remote checkpoint:
+  - `epoch_0036.pt`
+- Latest pulled local eval epoch:
+  - `epoch_0036`
+- Latest remote confirmed eval epoch:
+  - `epoch_0036`
 - Best transfer `CLIP-S`:
   - `epoch_0001`
   - `style / lpips = 0.7074 / 0.5621`
