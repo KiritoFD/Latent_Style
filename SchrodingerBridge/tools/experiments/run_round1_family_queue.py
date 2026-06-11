@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import csv
-import json
 import os
 import subprocess
 import sys
@@ -10,11 +8,16 @@ from pathlib import Path
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-SB_ROOT = SCRIPT_DIR.parent.parent
-WORKSPACE = SB_ROOT.parent
-DEFAULT_MANIFEST = SB_ROOT / "docs" / "experiments" / "round1_full_sweep" / "round1_family_manifest.csv"
 
 from csv_utils import read_csv_rows, write_csv_rows
+from round1_manifest_utils import (
+    DEFAULT_MANIFEST,
+    WORKSPACE,
+    is_dino_tail,
+    relaunchable_non_dino,
+    rows_by_status,
+    smoke_status_of,
+)
 from round1_paths import infer_round1_family_id, round1_fast_local_root
 from round1_registry import ROUND1_FAMILY_SPECS
 
@@ -64,56 +67,8 @@ def _family_patience(family_id: str | None) -> int:
 
 
 def _first_row(rows: list[dict[str, str]], *, status: str) -> dict[str, str] | None:
-    for row in rows:
-        if str(row.get("decision_status", "")).strip().lower() == status:
-            return row
-    return None
-
-
-def _rows_by_status(rows: list[dict[str, str]], *, status: str) -> list[dict[str, str]]:
-    wanted = str(status).strip().lower()
-    return [row for row in rows if str(row.get("decision_status", "")).strip().lower() == wanted]
-
-
-def _switch_smoke_status(row: dict[str, str]) -> str:
-    return str(row.get("switch_smoke_status", "")).strip().lower()
-
-
-def _is_dino_tail(row: dict[str, str]) -> bool:
-    tokenizer_family = str(row.get("tokenizer_family", "")).strip().lower()
-    semantic_supervision_family = str(row.get("semantic_supervision_family", "")).strip().lower()
-    family_id = str(row.get("family_id", "")).strip().lower()
-    if not tokenizer_family or not semantic_supervision_family:
-        config_path = Path(str(row.get("config_path", "")).strip())
-        if config_path:
-            config_abs = config_path if config_path.is_absolute() else (WORKSPACE / config_path).resolve()
-            if config_abs.exists():
-                try:
-                    payload = json.loads(config_abs.read_text(encoding="utf-8"))
-                    model_cfg = payload.get("model") or {}
-                    bridge_cfg = payload.get("bridge") or {}
-                    tokenizer_family = tokenizer_family or str(model_cfg.get("tokenizer_family", "")).strip().lower()
-                    semantic_supervision_family = semantic_supervision_family or str(bridge_cfg.get("semantic_supervision_family", "")).strip().lower()
-                except Exception:
-                    pass
-    return (
-        "dino" in tokenizer_family
-        or "dino" in semantic_supervision_family
-        or family_id in {"tok_a_dino_dict", "tok_b_cross_image"}
-    )
-
-
-def _relaunchable_non_dino(rows: list[dict[str, str]]) -> list[dict[str, str]]:
-    relaunchable: list[dict[str, str]] = []
-    for row in rows:
-        if _is_dino_tail(row):
-            continue
-        if str(row.get("decision_status", "")).strip().lower() != "recalibration_needed":
-            continue
-        if _switch_smoke_status(row) != "ok":
-            continue
-        relaunchable.append(row)
-    return relaunchable
+    matches = rows_by_status(rows, status=status)
+    return matches[0] if matches else None
 
 
 def main() -> int:
@@ -136,7 +91,7 @@ def main() -> int:
     if not rows:
         raise RuntimeError(f"Empty manifest: {manifest}")
 
-    running_rows = _rows_by_status(rows, status="running")
+    running_rows = rows_by_status(rows, status="running")
     if running_rows and not bool(args.launch_running_too):
         active = ", ".join(str(row.get("family_id", "")).strip() for row in running_rows)
         if bool(args.dry_run):
@@ -145,22 +100,22 @@ def main() -> int:
             print(f"Refusing to launch a new family while running families exist: {active}")
             return 0
 
-    planned_rows = _rows_by_status(rows, status="planned")
-    relaunchable_non_dino = _relaunchable_non_dino(rows)
+    planned_rows = rows_by_status(rows, status="planned")
+    relaunchable = relaunchable_non_dino(rows)
     smoke_failed_rows = [
-        row for row in planned_rows if _switch_smoke_status(row) == "failed"
+        row for row in planned_rows if smoke_status_of(row) == "failed"
     ]
     if not bool(args.allow_switch_smoke_failed):
         planned_rows = [
-            row for row in planned_rows if _switch_smoke_status(row) != "failed"
+            row for row in planned_rows if smoke_status_of(row) != "failed"
         ]
 
-    non_dino_rows = [row for row in planned_rows if not _is_dino_tail(row)]
-    dino_rows = [row for row in planned_rows if _is_dino_tail(row)]
+    non_dino_rows = [row for row in planned_rows if not is_dino_tail(row)]
+    dino_rows = [row for row in planned_rows if is_dino_tail(row)]
 
     def _prefer_smoke_ok(seq: list[dict[str, str]]) -> list[dict[str, str]]:
-        smoke_ok = [row for row in seq if _switch_smoke_status(row) == "ok"]
-        smoke_unknown = [row for row in seq if _switch_smoke_status(row) != "ok"]
+        smoke_ok = [row for row in seq if smoke_status_of(row) == "ok"]
+        smoke_unknown = [row for row in seq if smoke_status_of(row) != "ok"]
         return smoke_ok + smoke_unknown
 
     non_dino_rows = _prefer_smoke_ok(non_dino_rows)
@@ -181,11 +136,11 @@ def main() -> int:
             return 0
         if dino_blocked:
             blocked = ", ".join(str(row.get("family_id", "")).strip() for row in dino_rows)
-            relaunchable = ", ".join(str(row.get("family_id", "")).strip() for row in relaunchable_non_dino)
+            relaunchable_text = ", ".join(str(row.get("family_id", "")).strip() for row in relaunchable)
             print(
                 "No launchable non-DINO round-1 family remains. "
                 f"DINO-tail families are blocked by default: {blocked}. "
-                + ("Re-promote one of these non-DINO candidates into planned first: " + relaunchable + ". " if relaunchable else "")
+                + ("Re-promote one of these non-DINO candidates into planned first: " + relaunchable_text + ". " if relaunchable_text else "")
                 + "Re-run with --allow-dino-tail to launch tokenizer-tail families."
             )
             return 0
@@ -235,9 +190,9 @@ def main() -> int:
         if dino_blocked:
             blocked = ", ".join(str(row.get("family_id", "")).strip() for row in dino_rows)
             print(f"DINO_TAIL_BLOCKED={blocked}")
-            if relaunchable_non_dino:
-                relaunchable = ", ".join(str(row.get("family_id", "")).strip() for row in relaunchable_non_dino)
-                print(f"RELAUNCHABLE_NON_DINO={relaunchable}")
+            if relaunchable:
+                relaunchable_text = ", ".join(str(row.get("family_id", "")).strip() for row in relaunchable)
+                print(f"RELAUNCHABLE_NON_DINO={relaunchable_text}")
         print(" ".join(str(x) for x in train))
         if bool(args.skip_fast_eval_launch):
             print("FAST_EVAL_LAUNCH=SKIPPED")
