@@ -99,6 +99,14 @@
   - LPIPS softened versus `epoch_0012`
   - but style recovered materially on both transfer and all-pairs
   - so this point is a real tradeoff frontier update, even though it does not beat the `epoch_0009` LPIPS best
+- `epoch_0014` update:
+  - transfer `0.6922 / 0.5067`
+  - full `0.7109 / 0.4960`
+  - wall `177.68s`
+- Interpretation:
+  - LPIPS recovered slightly from `epoch_0013`
+  - style softened again from `epoch_0013`
+  - this looks like a small post-frontier pullback, not a new best point
 - `epoch_0010` update:
   - transfer `0.6988 / 0.5270`
   - full `0.7138 / 0.5185`
