@@ -100,8 +100,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Summarize round-1 fast-eval convergence from clip_lpips_curve.csv.")
     parser.add_argument("--curve-csv", required=True)
     parser.add_argument("--patience", type=int, required=True)
-    parser.add_argument("--flat-eps-style", type=float, default=0.002)
-    parser.add_argument("--flat-eps-lpips", type=float, default=0.002)
+    parser.add_argument("--flat-tail-window", type=int, default=4)
+    parser.add_argument("--flat-eps-style", type=float, default=0.005)
+    parser.add_argument("--flat-eps-lpips", type=float, default=0.018)
     parser.add_argument("--output-json", default="")
     args = parser.parse_args()
 
@@ -141,7 +142,8 @@ def main() -> int:
     pareto_idx = _pareto_indices(rows)
     last_pareto_idx = pareto_idx[-1]
     since_last_pareto = newest_idx - last_pareto_idx
-    tail = rows[max(0, newest_idx - 2) : newest_idx + 1]
+    tail_window = max(2, int(args.flat_tail_window))
+    tail = rows[max(0, newest_idx - (tail_window - 1)) : newest_idx + 1]
     tail_transfer_style = [_metric(r, "transfer_clip_style") for r in tail]
     tail_transfer_lpips = [_metric(r, "transfer_content_lpips", "transfer_lpips") for r in tail]
     tail_full_style = [_metric(r, "full_clip_style", "allpairs_clip_style") for r in tail]
@@ -176,6 +178,9 @@ def main() -> int:
         "since_last_pareto": since_last_pareto,
         "best_in_newest_2": best_in_newest_2,
         "tail_flat": tail_flat,
+        "tail_window": tail_window,
+        "flat_eps_style": float(args.flat_eps_style),
+        "flat_eps_lpips": float(args.flat_eps_lpips),
         "patience": int(args.patience),
         "criterion": "joint_transfer_allpairs_pareto",
         "converged": converged,
