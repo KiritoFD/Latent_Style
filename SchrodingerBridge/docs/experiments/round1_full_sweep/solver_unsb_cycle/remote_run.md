@@ -56,9 +56,10 @@
 - Do not spend local heavy review budget yet:
   - this family is still in convergence-shaping mode rather than closure mode
 - latest bounded followup:
-  - `epoch_0019-0024` are now settled
+  - `epoch_0019-0026` are now settled
   - neither displaced `epoch_0018`
-  - so the family remains open, with `since_last_pareto = 6`
+  - so the family remains open, with `since_last_pareto = 8`
+  - the remaining open question is now tail flatness, not whether the bounded resume path works
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
@@ -74,12 +75,12 @@
 - Switch smoke artifact: [round1_solver_unsb_cycle_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_switch_smoke_latest.json)
 - Switch smoke row count: `1`
 - Remote GPU live sample:
-  - `10624 MiB / 12288 MiB`, `util=96%`
+  - `10764 MiB / 12288 MiB`, `util=100%`
   - `band_status=in_band`
   - `formal_status=formal_in_band`
 - Remote train progress:
-  - `epoch 22/22`
-  - `step 326/555`
-  - `loss=7.9858`
-  - `tswd=6.4375`
+  - `epoch 24/24`
+  - `step 319/555`
+  - `loss=7.7903`
+  - `tswd=6.3125`
 <!-- ROUND1_AUTO_STATUS:END -->

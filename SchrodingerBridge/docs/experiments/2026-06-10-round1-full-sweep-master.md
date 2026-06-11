@@ -170,12 +170,12 @@ Current remote lane status:
   - `solver_unsb_cycle` is the active logical family even though no train pid is currently resident
   - latest successful bounded continuation:
     - `batch=17`
-    - retained/eval extended through `epoch_0024`
+    - retained/eval extended through `epoch_0026`
   - latest curve consequence:
     - `epoch_0018` is a new Pareto point inside the UNSB family
-    - `epoch_0019-0024` do not beat it, but the tail is still not flat enough to close
+    - `epoch_0019-0026` do not beat it, and the tail still is not flat enough to close
   - next safe continuation for that family:
-    - another bounded segmented resume from `epoch_0024`
+    - another bounded segmented resume from `epoch_0026`
     - see [solver_unsb_cycle relaunch prep](G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/solver_unsb_cycle/relaunch_prep.md)
 - latest closed training family:
   - `solver_pc`
@@ -515,8 +515,8 @@ Recalibration-needed family:
 - Best transfer `CLIP-S`: `epoch_0001` -> `0.7057 / 0.5669`
 - Best transfer `LPIPS`: `epoch_0009` -> `0.6996 / 0.4421`
 - Best all-pairs `CLIP-S`: `epoch_0009` -> `0.7245 / 0.4311`
-- Latest settled fast point: `epoch_0022` -> transfer `0.6923 / 0.5101`
-- Convergence: `row_count=22, since_best=21, tail_flat=False, closure_band=open, converged=False`
+- Latest settled fast point: `epoch_0024` -> transfer `0.6927 / 0.5197`
+- Convergence: `row_count=24, since_best=23, tail_flat=False, closure_band=approaching_closure, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
 
 Current `solver_pc` launch note:
