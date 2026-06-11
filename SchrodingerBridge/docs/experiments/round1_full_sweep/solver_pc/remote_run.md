@@ -19,8 +19,8 @@
     - `9334 MiB / 12288 MiB`
     - first authoritative formal opening
 - Current live health sample:
-  - `9338 MiB / 12288 MiB`
-  - `util=91%`
+  - `10344 MiB / 12288 MiB`
+  - `util=96%`
   - read: lane is healthy and in-band
 
 ## Settled Curve Milestones
@@ -42,10 +42,10 @@
   - transfer `0.6962 / 0.4854`
   - full `0.7165 / 0.4746`
 - Latest locally pulled point:
-  - `epoch_0024`
-  - transfer `0.6874 / 0.4989`
-  - full `0.7069 / 0.4885`
-  - wall `186.38s`
+  - `epoch_0026`
+  - transfer `0.6901 / 0.4934`
+  - full `0.7111 / 0.4810`
+  - wall `176.66s`
 
 ## Operational Read
 
@@ -55,7 +55,8 @@
 - `epoch_0022` repaired most of that LPIPS damage, but still stayed below the frontier anchored by `epoch_0017`.
 - `epoch_0023` improved LPIPS slightly again, but style softened and the point still remained below the frontier.
 - `epoch_0024` then rolled back clearly on both style and LPIPS.
-- `epoch_0018-0024` are now seven consecutive non-frontier points, so the lane is beyond the solver-family patience threshold.
+- `epoch_0025` and `epoch_0026` then repaired part of that rollback, but still stayed below the frontier anchored by `epoch_0017`.
+- `epoch_0018-0026` are now nine consecutive non-frontier points, so the lane is well beyond the solver-family patience threshold.
 - The remote fast-eval contract is working, but local docs must distinguish:
   - locally pulled curve points
   - remote scan points still mid-write
