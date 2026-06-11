@@ -169,6 +169,20 @@ Current remote lane status:
 
 - active formal lane:
   - none at the current moment
+  - tokenizer-tail reconstruction-pretrain interruption just confirmed:
+    - `tok_b_cross_image` reconstruction-pretrain reached late `epoch_0002`
+    - retained `epoch_0001.pt` and `epoch_0002.pt`
+    - then the remote process died with a Python fatal tail (`lost sys.stderr`)
+    - root-cause audit found remote workspace drive `I:` at `0` free bytes
+    - remote workspace manifest on `I:` was also observed as zero-length
+    - recovery followup:
+      - freed `34G` by dropping the pure cache path `eval_cache/modelscope/stabilityai/stable-diffusion-2-1-base`
+      - restored the remote manifest from the intact `C:` copy
+      - recovered one authoritative fast-eval point for `epoch_0001`
+      - `epoch_0002.pt` is now confirmed corrupted (`64` bytes, unreadable zip archive)
+    - result:
+      - there is now a one-point authoritative remote fast packet for the reconstruction-pretrain line
+      - but the newest retained checkpoint is unusable, so the family still cannot progress to a clean continuation / closure node
   - tokenizer-tail first-pass direct family reads now look like:
     - `tok_a_dino_dict`
       - strict `7/8` bracket
@@ -532,9 +546,11 @@ Recalibration-needed family:
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Active Status
 
-- Running families: none
-- Active family: `none`
-- Decision status: `no_formal_running_lane`
+- Running families:
+  - `tok_b_cross_image`
+- Active family: `tok_b_cross_image`
+- Decision status: `running`
+- Batch / epochs / patience: `10 / 24 / 4`
 <!-- ROUND1_AUTO_STATUS:END -->
 
 Current `solver_pc` launch note:
