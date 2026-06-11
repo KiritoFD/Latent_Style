@@ -140,6 +140,25 @@
   - solver patience is reset again at `epoch_0018`
   - this family should continue as the next bounded continuation candidate, not hand off to the DINO tail or the next non-DINO family yet
 
+## Post-Reset Followup Read
+
+- bounded continuation from `epoch_0018` through `epoch_0020` is now settled
+- new points:
+  - `epoch_0019`
+    - transfer `0.6916 / 0.5202`
+    - full `0.7097 / 0.5083`
+  - `epoch_0020`
+    - transfer `0.6894 / 0.4574`
+    - full `0.7133 / 0.4465`
+- interpretation:
+  - neither `epoch_0019` nor `epoch_0020` beats the `epoch_0018` Pareto point
+  - `epoch_0020` does recover LPIPS relative to `epoch_0019`
+  - the tail is therefore still live and non-flat rather than closure-grade
+- current decision:
+  - keep `solver_unsb_cycle` as the active logical family
+  - continue bounded segmented continuation from `epoch_0020`
+  - do not hand off the formal program to another family yet
+
 ## Promotion Rule
 
 - No early promotion from the first in-band health sample alone.
