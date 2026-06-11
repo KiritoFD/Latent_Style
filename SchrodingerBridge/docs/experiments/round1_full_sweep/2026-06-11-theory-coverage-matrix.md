@@ -106,6 +106,7 @@ Purpose:
   - because the remaining non-DINO families are currently `reviewing` or `recalibration_needed` rather than `planned`, the queue now stops with a non-launchable notice after UNSB closure unless:
     - a non-DINO family is explicitly re-promoted into `planned`, or
     - the operator explicitly opts back into tokenizer tails with `--allow-dino-tail`
+  - the queue helper now also prints the relaunchable non-DINO candidates directly when that block triggers
   - the current relaunchable non-DINO candidates surfaced by the queue audit helper are:
     - `attn_gw_ot`
     - `attn_gated_spade`

@@ -215,6 +215,7 @@ Current remote lane status:
     - it now also blocks DINO-tail tokenizer families by default
     - if the manifest contains only DINO tokenizer families in `planned`, the queue prints a non-launchable notice instead of auto-launching them
     - reopening DINO tokenizer families through the generic queue now requires an explicit `--allow-dino-tail`
+    - when that block triggers, the queue helper now also prints the currently relaunchable non-DINO candidates
     - explicit manifest retag helper for post-UNSB queue prep:
       - [retag_round1_manifest_family.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/retag_round1_manifest_family.py)
     - queue-state audit helper:
