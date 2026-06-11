@@ -10,19 +10,19 @@
 - Pulled curve CSV:
   - [clip_lpips_curve.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_pc_remote_full_eval_pull/clip_lpips_curve.csv)
 - Pulled local curve rows:
-  - `20`
+  - `22`
 - Pulled local curve epochs:
-  - `epoch_0001, epoch_0002, epoch_0003, epoch_0004, epoch_0005, epoch_0006, epoch_0007, epoch_0008, epoch_0009, epoch_0010, epoch_0011, epoch_0012, epoch_0013, epoch_0014, epoch_0015, epoch_0016, epoch_0017, epoch_0018, epoch_0019, epoch_0020`
+  - `epoch_0001, epoch_0002, epoch_0003, epoch_0004, epoch_0005, epoch_0006, epoch_0007, epoch_0008, epoch_0009, epoch_0010, epoch_0011, epoch_0012, epoch_0013, epoch_0014, epoch_0015, epoch_0016, epoch_0017, epoch_0018, epoch_0019, epoch_0020, epoch_0021, epoch_0022`
 - Latest remote checkpoint:
-  - `epoch_0021.pt`
+  - `epoch_0023.pt`
 - Latest pulled local eval epoch:
-  - `epoch_0020`
+  - `epoch_0022`
 - Remote scan confirmed summary epochs:
-  - `epoch_0001, epoch_0002, epoch_0003, epoch_0004, epoch_0005, epoch_0006, epoch_0007, epoch_0008, epoch_0009, epoch_0010, epoch_0011, epoch_0012, epoch_0013, epoch_0014, epoch_0015, epoch_0016, epoch_0017, epoch_0018, epoch_0019, epoch_0020`
+  - `epoch_0001, epoch_0002, epoch_0003, epoch_0004, epoch_0005, epoch_0006, epoch_0007, epoch_0008, epoch_0009, epoch_0010, epoch_0011, epoch_0012, epoch_0013, epoch_0014, epoch_0015, epoch_0016, epoch_0017, epoch_0018, epoch_0019, epoch_0020, epoch_0021, epoch_0022`
 - Latest remote confirmed eval epoch:
-  - `epoch_0020`
+  - `epoch_0022`
 - Remote checkpoints not yet pulled into local fast curve:
-  - `epoch_0021.pt`
+  - `epoch_0023.pt`
 - Best transfer `CLIP-S`:
   - `epoch_0001`
   - `style / lpips = 0.7074 / 0.5621`
@@ -33,16 +33,16 @@
   - `epoch_0001`
   - `style / lpips = 0.7170 / 0.5552`
 - Latest settled point:
-  - `epoch_0020`
-  - transfer `style / lpips = 0.6930 / 0.4931`
-  - full `style / lpips = 0.7116 / 0.4831`
-  - wall `= 176.96s`
+  - `epoch_0022`
+  - transfer `style / lpips = 0.6888 / 0.4866`
+  - full `style / lpips = 0.7087 / 0.4774`
+  - wall `= 177.18s`
 - Convergence snapshot:
   - `best_epoch = epoch_0001`
-  - `since_last_pareto = 3`
+  - `since_last_pareto = 5`
   - `best_in_newest_2 = False`
   - `tail_flat = False`
-  - `closure_band = open`
+  - `closure_band = approaching_closure`
   - `criterion = joint_transfer_allpairs_pareto`
   - `converged = False`
 - Sync summary:

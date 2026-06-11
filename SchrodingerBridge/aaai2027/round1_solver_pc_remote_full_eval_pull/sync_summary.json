@@ -126,6 +126,18 @@
         "has_metrics": true,
         "has_summary": true,
         "image_count": 0
+      },
+      {
+        "epoch": "epoch_0021",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0022",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
       }
     ],
     "ckpts": [
@@ -149,7 +161,9 @@
       "epoch_0018.pt",
       "epoch_0019.pt",
       "epoch_0020.pt",
-      "epoch_0021.pt"
+      "epoch_0021.pt",
+      "epoch_0022.pt",
+      "epoch_0023.pt"
     ],
     "processes": {
       "train": [
@@ -209,17 +223,17 @@
     "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0001\\summary.json"
   },
   "latest": {
-    "epoch": "epoch_0020",
-    "full_clip_style": "0.7116488453944524",
-    "full_content_lpips": "0.4831386993333333",
-    "transfer_clip_style": "0.6930232476691406",
-    "transfer_content_lpips": "0.49307008429999993",
-    "wall_total_seconds": "176.95996813599777",
-    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0020\\summary.json"
+    "epoch": "epoch_0022",
+    "full_clip_style": "0.708689708272616",
+    "full_content_lpips": "0.4773672635866667",
+    "transfer_clip_style": "0.6888307036459446",
+    "transfer_content_lpips": "0.48656489808333336",
+    "wall_total_seconds": "177.1822014220088",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0022\\summary.json"
   },
   "convergence": {
     "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\clip_lpips_curve.csv",
-    "row_count": 20,
+    "row_count": 22,
     "best_epoch": "epoch_0001",
     "best_index": 0,
     "best_transfer_clip_epoch": "epoch_0001",
@@ -243,16 +257,16 @@
       "epoch_0017"
     ],
     "last_pareto_epoch": "epoch_0017",
-    "newest_epoch": "epoch_0020",
-    "since_best": 19,
-    "since_last_pareto": 3,
+    "newest_epoch": "epoch_0022",
+    "since_best": 21,
+    "since_last_pareto": 5,
     "best_in_newest_2": false,
     "tail_flat": false,
     "patience": 6,
     "criterion": "joint_transfer_allpairs_pareto",
     "converged": false
   },
-  "latest_remote_ckpt": "epoch_0021.pt",
+  "latest_remote_ckpt": "epoch_0023.pt",
   "remote_confirmed_settled_epochs": [
     "epoch_0001",
     "epoch_0002",
@@ -273,9 +287,11 @@
     "epoch_0017",
     "epoch_0018",
     "epoch_0019",
-    "epoch_0020"
+    "epoch_0020",
+    "epoch_0021",
+    "epoch_0022"
   ],
-  "latest_remote_settled_epoch": "epoch_0020",
+  "latest_remote_settled_epoch": "epoch_0022",
   "local_curve_epochs": [
     "epoch_0001",
     "epoch_0002",
@@ -296,10 +312,12 @@
     "epoch_0017",
     "epoch_0018",
     "epoch_0019",
-    "epoch_0020"
+    "epoch_0020",
+    "epoch_0021",
+    "epoch_0022"
   ],
-  "latest_local_settled_epoch": "epoch_0020",
+  "latest_local_settled_epoch": "epoch_0022",
   "pending_ckpt_epochs": [
-    "epoch_0021.pt"
+    "epoch_0023.pt"
   ]
 }
