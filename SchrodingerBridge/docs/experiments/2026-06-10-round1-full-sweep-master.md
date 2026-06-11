@@ -161,21 +161,25 @@ Required closure per family:
 
 Current remote lane status:
 
-- no family currently holds the formal training lane
+- active formal lane:
+  - `solver_unsb_cycle`
+  - current formal launch setting:
+    - `batch=15`
+  - first authoritative 30-second read:
+    - `9677 MiB / 12288 MiB`
+    - `band_status=in_band`
+    - `formal_status=formal_in_band`
+    - `epoch 1/48`
+    - `step 187/629`
+  - current interpretation:
+    - the first `batch=8` launch was calibration-only under-band
+    - `batch=15` is the first valid formal opening for this family
 - latest closed training family:
   - `solver_pc`
   - current training read:
     - settled through `epoch_0036`
     - no new Pareto point after `epoch_0017`
     - moved to `reviewing`
-- immediate next candidate:
-  - `solver_unsb_cycle`
-  - first direct launch read:
-    - `5223 MiB / 12288 MiB`
-    - `epoch 1/48`
-    - read: under-band calibration only
-  - current status:
-    - `recalibration_needed`
 - implementation audit:
   - all `11` round-1 family configs now pass one reusable local switch smoke:
     - model build
@@ -477,9 +481,12 @@ Recalibration-needed family:
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Active Status
 
-- Running families: none
-- Active family: `none`
-- Decision status: `no_formal_running_lane`
+- Running families:
+  - `solver_unsb_cycle`
+- Active family: `solver_unsb_cycle`
+- Decision status: `running`
+- Batch / epochs / patience: `15 / 48 / 6`
+- Remote GPU live: `9677 / 12288 MiB`, `util=75%`, `band=in_band`
 <!-- ROUND1_AUTO_STATUS:END -->
 
 Current `solver_pc` launch note:
