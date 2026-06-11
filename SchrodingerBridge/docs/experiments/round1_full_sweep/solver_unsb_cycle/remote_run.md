@@ -33,9 +33,16 @@
   - `epoch_0002`
     - transfer `0.6975 / 0.5372`
     - full `0.7101 / 0.5312`
+  - `epoch_0003`
+    - transfer `0.7027 / 0.5117`
+    - full `0.7195 / 0.5024`
+  - `epoch_0004`
+    - transfer `0.7001 / 0.5181`
+    - full `0.7164 / 0.5097`
   - interpretation:
-    - the first move is structure-favoring rather than style-favoring
-    - that is a valid early solver-family shape, not yet a decision
+    - `epoch_0001 -> 0002` was structure-favoring
+    - `epoch_0003` then became the first clear best point on both structure and all-pairs style
+    - `epoch_0004` is the first mild rollback after that improvement
 
 ## Next Action
 
