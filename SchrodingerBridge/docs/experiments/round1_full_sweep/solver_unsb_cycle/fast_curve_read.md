@@ -14,13 +14,15 @@
 - Pulled local curve epochs:
   - `epoch_0001, epoch_0002, epoch_0003`
 - Latest remote checkpoint:
-  - `epoch_0003.pt`
+  - `epoch_0004.pt`
 - Latest pulled local eval epoch:
   - `epoch_0003`
 - Remote scan confirmed summary epochs:
   - `epoch_0001, epoch_0002, epoch_0003`
 - Latest remote confirmed eval epoch:
   - `epoch_0003`
+- Remote checkpoints not yet pulled into local fast curve:
+  - `epoch_0004.pt`
 - Best transfer `CLIP-S`:
   - `epoch_0001`
   - `style / lpips = 0.7057 / 0.5669`
