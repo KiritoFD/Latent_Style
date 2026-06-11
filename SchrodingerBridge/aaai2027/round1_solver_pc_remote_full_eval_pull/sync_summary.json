@@ -96,6 +96,12 @@
         "has_metrics": true,
         "has_summary": true,
         "image_count": 0
+      },
+      {
+        "epoch": "epoch_0016",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
       }
     ],
     "ckpts": [
@@ -114,7 +120,8 @@
       "epoch_0013.pt",
       "epoch_0014.pt",
       "epoch_0015.pt",
-      "epoch_0016.pt"
+      "epoch_0016.pt",
+      "epoch_0017.pt"
     ],
     "processes": {
       "train": [
@@ -174,17 +181,17 @@
     "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0001\\summary.json"
   },
   "latest": {
-    "epoch": "epoch_0015",
-    "full_clip_style": "0.7164552204211553",
-    "full_content_lpips": "0.4745778724933333",
-    "transfer_clip_style": "0.6962002651393414",
-    "transfer_content_lpips": "0.4854449483833333",
-    "wall_total_seconds": "177.81591694599774",
-    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0015\\summary.json"
+    "epoch": "epoch_0016",
+    "full_clip_style": "0.7103996985753379",
+    "full_content_lpips": "0.49874028169333334",
+    "transfer_clip_style": "0.6916327848037084",
+    "transfer_content_lpips": "0.5095460807500001",
+    "wall_total_seconds": "177.0166023040074",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0016\\summary.json"
   },
   "convergence": {
     "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\clip_lpips_curve.csv",
-    "row_count": 15,
+    "row_count": 16,
     "best_epoch": "epoch_0001",
     "best_index": 0,
     "best_transfer_clip_epoch": "epoch_0001",
@@ -207,18 +214,18 @@
       "epoch_0015"
     ],
     "last_pareto_epoch": "epoch_0015",
-    "newest_epoch": "epoch_0015",
-    "since_best": 14,
-    "since_last_pareto": 0,
+    "newest_epoch": "epoch_0016",
+    "since_best": 15,
+    "since_last_pareto": 1,
     "best_in_newest_2": false,
     "tail_flat": false,
     "patience": 6,
     "criterion": "joint_transfer_allpairs_pareto",
     "converged": false
   },
-  "latest_remote_ckpt": "epoch_0016.pt",
-  "latest_settled_epoch": "epoch_0015",
+  "latest_remote_ckpt": "epoch_0017.pt",
+  "latest_settled_epoch": "epoch_0016",
   "pending_ckpt_epochs": [
-    "epoch_0016.pt"
+    "epoch_0017.pt"
   ]
 }

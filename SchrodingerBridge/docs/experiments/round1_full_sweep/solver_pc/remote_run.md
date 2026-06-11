@@ -101,6 +101,13 @@
     - `epoch_0014` was a mild pullback after the `epoch_0013` style-recovery point
     - `epoch_0015` recovered style strongly again while also improving LPIPS versus `epoch_0013/0014`
     - this is a real new tradeoff frontier point, though it still does not beat the stronger `epoch_0009` LPIPS best
+- `epoch_0016` settled point:
+  - transfer `0.6916 / 0.5095`
+  - all-pairs `0.7104 / 0.4987`
+  - wall `177.02s`
+  - immediate read:
+    - both style and LPIPS softened again from `epoch_0015`
+    - this is a mild rollback after the latest tradeoff frontier update
 - `epoch_0014` settled point:
   - transfer `0.6922 / 0.5067`
   - all-pairs `0.7109 / 0.4960`
