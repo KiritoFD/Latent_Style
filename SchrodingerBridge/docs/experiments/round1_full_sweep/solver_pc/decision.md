@@ -59,6 +59,14 @@
   - `epoch_0007` was the first clear rollback after that improvement streak
   - `epoch_0008` recovered strongly on both style and LPIPS, and is the first compelling post-rollback recovery signal
   - this family remains clearly alive and Pareto-active, but its behavior is still `structure-first, style-second`
+- `epoch_0009` update:
+  - transfer `0.6911 / 0.4548`
+  - full `0.7155 / 0.4429`
+  - wall `177.78s`
+- Interpretation:
+  - this point improves LPIPS materially again versus `epoch_0008`
+  - style also recovers slightly on both transfer and all-pairs
+  - so `epoch_0009` is a genuine new Pareto frontier update, not just a recovery to the old line
 - Next action:
   - keep the same remote lane running
   - keep settling retained checkpoints under the remote fast-eval contract before any deeper review or closure decision
