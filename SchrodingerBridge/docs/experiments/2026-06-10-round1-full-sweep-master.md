@@ -35,6 +35,8 @@ Round-1 folders:
   - [2026-06-11-theory-coverage-matrix.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/2026-06-11-theory-coverage-matrix.md)
 - current node summary:
   - [2026-06-11-round1-node-summary-and-idle-cleanup.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-11-round1-node-summary-and-idle-cleanup.md)
+- post-UNSB queue handoff:
+  - [2026-06-11-post-unsb-queue-handoff-plan.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-11-post-unsb-queue-handoff-plan.md)
 - tokenizer warmstart:
   - [prepare_round1_tokenizer_warmstart_config.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/prepare_round1_tokenizer_warmstart_config.py)
   - [launch_remote_round1_tokenizer_warmstart.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_round1_tokenizer_warmstart.py)
