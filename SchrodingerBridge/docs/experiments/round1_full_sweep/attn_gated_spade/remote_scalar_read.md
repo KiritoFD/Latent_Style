@@ -1,12 +1,12 @@
 # attn_gated_spade Remote Scalar Read
 
-Updated: `2026-06-11T20:58:02.209088`
+Updated: `2026-06-11T22:13:28.036964`
 
 - Run name: `aaai2027_round1_attn_gated_spade_seed42_b8a2`
 - Remote run dir: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_gated_spade_seed42_b8a2`
-- Retained checkpoints: `26`
-- Latest checkpoint: `epoch_0026.pt`
-- Remote eval files currently visible: `50`
+- Retained checkpoints: `30`
+- Latest checkpoint: `epoch_0030.pt`
+- Remote eval files currently visible: `58`
 - Eval files:
   - `full_eval_fast_snapshot/clip_lpips_curve.csv`
   - `full_eval_fast_snapshot/epoch_0001/metrics.csv`
@@ -36,19 +36,21 @@ Updated: `2026-06-11T20:58:02.209088`
   - [training_20260611_195812.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_remote_scalars/training_20260611_195812.csv)
   - [training_20260611_200549.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_remote_scalars/training_20260611_200549.csv)
   - [training_20260611_204247.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_remote_scalars/training_20260611_204247.csv)
+  - [training_20260611_213209.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_remote_scalars/training_20260611_213209.csv)
+  - [training_20260611_215809.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_remote_scalars/training_20260611_215809.csv)
 - Latest remote training CSV row:
-  - `epoch=26`
-  - `loss=7.75562047958374`
-  - `terminal_swd=2.28125`
-  - `samples_per_sec=42.607111024765814`
-  - `cuda_peak_allocated_gb=6.940517902374268`
-  - `cuda_peak_reserved_gb=8.734375`
+  - `epoch=30`
+  - `loss=7.800415992736816`
+  - `terminal_swd=2.3125`
+  - `samples_per_sec=42.66057399830175`
+  - `cuda_peak_allocated_gb=6.939297199249268`
+  - `cuda_peak_reserved_gb=8.619140625`
 - Latest runtime watcher sample:
-  - `epoch=26/26`
-  - `step=931/944`
-  - `loss=7.7504`
-  - `tswd=2.3438`
-  - `VRAM=9578/12288 MiB`
+  - `epoch=30/30`
+  - `step=835/944`
+  - `loss=7.8146`
+  - `tswd=2.6406`
+  - `VRAM=9466/12288 MiB`
   - `band_status=in_band`
 - Training curve: [training_curve.png](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_remote_scalars/training_curve.png)
 - Runtime curve: [runtime_curve.png](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_remote_scalars/runtime_curve.png)
