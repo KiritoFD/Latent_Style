@@ -36,7 +36,7 @@ Purpose:
 | PnP / self-injection attention | `attn_pnp_selfinject` | implemented | `recalibration_needed` | real curve exists; segmented non-concurrent train/eval path built |
 | Tangent RK solver | `solver_tangent_rk` | implemented | `reviewing` | formal training closed through `epoch_0032`; waiting on deep review / stage-close packet |
 | Predictor-corrector solver | `solver_pc` | implemented | `reviewing` | training closed through `epoch_0036`; no new Pareto point after the long bounded tail |
-| UNSB / cycle solver | `solver_unsb_cycle` | implemented | `running` | `batch=15` has now landed the first formal in-band opening at about `9677 MiB` |
+| UNSB / cycle solver | `solver_unsb_cycle` | implemented | `running` | formal lane remains active; `epoch_0009` reopened the Pareto frontier and `epoch_0010` is the first post-frontier follow-up read |
 | DINO-masked semantic SWD | `semantic_supervision_family=dino_masked_swd` | implemented | active for tokenizer families | loaded through runtime conditioning sidecars |
 | Remote segmented train/eval alternation | `run_remote_round1_family_segmented.py` | implemented | used on `attn_pnp_selfinject` | avoids concurrent train+eval VRAM spikes |
 | Remote all-ckpt fast-eval authority | remote fast-eval watcher + local sync watcher | implemented | active | current authority path for convergence reads |
@@ -55,10 +55,45 @@ Purpose:
 
 | Slot | Family | Status | Reason |
 |---|---|---|---|
-| Active formal lane | `solver_unsb_cycle` | `running` | first formal in-band opening landed at `batch=15`; all-ckpt remote fast-eval is now the authority |
+| Active formal lane | `solver_unsb_cycle` | `running` | `epoch_0009` became a new Pareto point, so the solver patience clock reset; `epoch_0010` is weaker but not enough to close the line |
 | Reviewing solver family | `solver_pc`, `solver_tangent_rk` | `reviewing` | both earlier solver-family training phases are now closed; deep review still pending |
 | Next queue candidate | `defer until unsb closure` | `planned` | tokenizer families remain tail items; exact next lane should be resolved only after the current solver family is formally closed and the DINO-last rule is re-applied |
 | Auto handoff | `watch_launch_round1_queue_when_idle.py` | armed | once manifest has zero `running` families, invoke the queue automatically, but do not bypass the DINO-last and stage-summary policy |
+
+## Current UNSB Read
+
+- latest settled point:
+  - `epoch_0011`
+  - transfer `0.6888 / 0.4889`
+  - all-pairs `0.7103 / 0.4783`
+- current family-best points:
+  - best transfer `CLIP-S`:
+    - `epoch_0001`
+    - `0.7057 / 0.5669`
+  - best transfer `LPIPS`:
+    - `epoch_0009`
+    - `0.6996 / 0.4421`
+  - best all-pairs `CLIP-S`:
+    - `epoch_0009`
+    - `0.7245 / 0.4311`
+- interpretation:
+  - `epoch_0009` is the first genuinely new late-stage Pareto point after the earlier `epoch_0003` frontier
+  - `epoch_0010-0011` both soften from `epoch_0009`, so the frontier reactivation is real but not yet stable
+  - the current question is no longer "is UNSB near closure"
+  - it is now "does the post-epoch_0009 tail stabilize near the new frontier or collapse back toward the earlier mid-curve regime"
+  - `epoch_0011` also raises a secondary efficiency question because its fast-eval wall time is much higher than the surrounding checkpoints
+
+## Current Shortlist Surface
+
+- canonical fast shortlist handoff now exists for `solver_unsb_cycle`:
+  - [full_eval_fast_snapshot_bestfew_handoff.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_fast_local/full_eval_fast_snapshot_bestfew_handoff.csv)
+- current canonical picks are:
+  - `epoch_0001` for best transfer `CLIP-S`
+  - `epoch_0009` for best transfer `LPIPS`
+  - `epoch_0009` for best all-pairs `CLIP-S`
+  - `epoch_0009` for best structure-preserving point inside the current fast contract
+- implication:
+  - once local heavy review budget is reopened, `epoch_0001` and `epoch_0009` are the first mandatory UNSB checkpoints for `IntroStyle / DINO / VLM`
 
 ## Gaps That Still Matter
 

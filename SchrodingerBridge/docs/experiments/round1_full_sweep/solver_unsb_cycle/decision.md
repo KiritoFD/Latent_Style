@@ -48,20 +48,22 @@
 ## Current Direction Read
 
 - Latest settled authority point:
-  - `epoch_0010`
-  - transfer `0.6949 / 0.5085`
-  - full `0.7132 / 0.4977`
+  - `epoch_0011`
+  - transfer `0.6888 / 0.4889`
+  - full `0.7103 / 0.4783`
 - Current interpretation:
   - `epoch_0006-0007` had made the line look like a continuing rollback from `epoch_0003`
   - `epoch_0008` first recovered materially on both style and LPIPS relative to `epoch_0007`
   - `epoch_0009` then converts that rebound into a true new Pareto point
   - it now owns the best all-pairs `CLIP-S` and the best LPIPS point in this family
   - `epoch_0010` softens from that new frontier, but does not erase it
+  - `epoch_0011` softens again, so the post-`epoch_0009` tail currently looks like follow-up drift rather than stable frontier occupancy
+  - `epoch_0011` also carries a much slower eval wall time than the surrounding checkpoints
 - Operational consequence:
   - fully reset the solver patience read
   - do not treat this family as approaching closure any more
   - keep the formal lane open until the post-`epoch_0009` tail is actually observed
-  - the immediate decision hinge is whether `epoch_0011+` recover toward `epoch_0009` or confirm it as a one-off spike
+  - the immediate decision hinge is whether `epoch_0012+` recover toward `epoch_0009` or confirm it as a one-off spike
 
 ## Promotion Rule
 
