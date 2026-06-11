@@ -67,6 +67,14 @@
   - immediate read:
     - both style and LPIPS regressed materially from `epoch_0009`
     - this is a clean rollback point rather than a new frontier update
+- `epoch_0011` settled point:
+  - transfer `0.6925 / 0.5002`
+  - all-pairs `0.7110 / 0.4914`
+  - wall `176.21s`
+  - immediate read:
+    - LPIPS recovered materially from the `epoch_0010` rollback
+    - transfer style is slightly stronger than `epoch_0009`, while all-pairs style remains weaker
+    - this makes `epoch_0011` a new tradeoff frontier point even though it does not beat the best LPIPS point from `epoch_0009`
 - `epoch_0010` settled point:
   - transfer `0.6988 / 0.5270`
   - all-pairs `0.7138 / 0.5185`
