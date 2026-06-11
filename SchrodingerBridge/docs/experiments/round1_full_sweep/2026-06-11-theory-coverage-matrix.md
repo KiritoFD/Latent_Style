@@ -57,11 +57,12 @@ Purpose:
 |---|---|---|---|
 | Active formal lane | `solver_unsb_cycle` | `running` | first formal in-band opening landed at `batch=15`; all-ckpt remote fast-eval is now the authority |
 | Reviewing solver family | `solver_pc`, `solver_tangent_rk` | `reviewing` | both earlier solver-family training phases are now closed; deep review still pending |
-| Next queue candidate | `tok_c_residual_adapter` | `planned` | becomes relevant only after the current unsb lane closes, subject to the non-DINO-first rule |
-| Auto handoff | `watch_launch_round1_queue_when_idle.py` | armed | once manifest has zero `running` families, invoke round-1 queue automatically |
+| Next queue candidate | `defer until unsb closure` | `planned` | tokenizer families remain tail items; exact next lane should be resolved only after the current solver family is formally closed and the DINO-last rule is re-applied |
+| Auto handoff | `watch_launch_round1_queue_when_idle.py` | armed | once manifest has zero `running` families, invoke the queue automatically, but do not bypass the DINO-last and stage-summary policy |
 
 ## Gaps That Still Matter
 
 - A dedicated tokenizer warm-start packet now exists, and reconstruction-flavored identity-only tokenizer pretrain packets are already prepared for `tok_a_dino_dict`, `tok_b_cross_image`, `tok_c_residual_adapter`, and `tok_d_vlm_prompt`, but the stronger fully custom self-supervised reconstruction trainer described in `tokenizer.md` is still not implemented as a separate trainer.
 - The more radical full Jacobian-based null-space projection described in `attn.md` is only represented approximately by the current tangent solver family, not as a separate explicit implementation.
 - Round-1 is already auditable family-by-family, but not yet fully factorized into an explicit `phase1/phase2/phase3` launcher stack.
+- The queue policy is now intentionally asymmetric: non-DINO solver/backbone closure work stays ahead of DINO-heavy tokenizer launches, even though those tokenizer families are already implemented and smoke-passing.

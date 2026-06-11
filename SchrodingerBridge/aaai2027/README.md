@@ -22,6 +22,16 @@ Strongest-point ledger:
 
 - `G:\GitHub\Latent_Style\best.csv`
 
+Runtime artifact policy:
+
+- authoritative round-1 fast-eval evidence lives under
+  `round1_*_remote_full_eval_pull/`
+- authoritative closure notes and plan logs live under
+  `docs/experiments/round1_full_sweep/`
+- detached watcher logs, remote packet tar wrappers, and loose root-level
+  checkpoint drops are scratch and should stay ignored or be moved into
+  snapshot/archive buckets instead of accumulating in the active root
+
 The goal of this directory is no longer archival reproduction. It is the live
 paper-facing surface for the AAAI-27 rewrite, figure updates, and later review
 passes.

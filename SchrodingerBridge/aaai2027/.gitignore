@@ -2,6 +2,9 @@ xelatex_*.log
 archive/**
 tmp_*
 _vlm*smoke*
+*_full_eval_fast_snapshot_*.tar
+*_epoch_*.pt
+epoch_*.pt
 *_segment*.stdout.log
 *_segment*.stderr.log
 *_runtime_watch_*.stdout.log
