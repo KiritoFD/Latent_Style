@@ -15,9 +15,9 @@ Purpose:
 - authority root:
   - [round1_solver_unsb_cycle_remote_full_eval_pull](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull)
 - latest settled fast-eval point:
-  - `epoch_0007`
-  - transfer `0.6904 / 0.5549`
-  - all-pairs `0.7037 / 0.5453`
+  - `epoch_0008`
+  - transfer `0.6955 / 0.5184`
+  - all-pairs `0.7121 / 0.5088`
 - current best reads inside the lane:
   - best transfer `CLIP-S`:
     - `epoch_0001`
@@ -29,16 +29,16 @@ Purpose:
     - `epoch_0003`
     - `0.7195 / 0.5024`
 - convergence read:
-  - `row_count = 7`
-  - `since_last_pareto = 4`
+  - `row_count = 8`
+  - `since_last_pareto = 5`
   - `tail_flat = false`
   - `converged = false`
 - remote live read after doc refresh:
-  - `9514 MiB / 12288 MiB`
-  - `epoch 8/48`
-  - `step 468/629`
-  - `loss=8.0018`
-  - `tswd=4.7500`
+  - `10267 MiB / 12288 MiB`
+  - `epoch 9/48`
+  - `step 286/629`
+  - `loss=7.8823`
+  - `tswd=6.2812`
 
 ## Cleanup Decisions
 
@@ -71,7 +71,12 @@ Purpose:
 - the early `solver_unsb_cycle` curve looks like a trajectory-shaping solver rather than an immediate board winner:
   - `epoch_0001 -> epoch_0003` improves LPIPS materially
   - style peaks do not keep rising after the opening
-  - `epoch_0004 -> epoch_0007` currently reads as rollback rather than a second frontier expansion
+  - `epoch_0004 -> epoch_0007` read as rollback
+  - `epoch_0008` then rebounds materially on both style and LPIPS relative to `epoch_0007`
+- the current sharper read:
+  - `epoch_0008` is still not a new Pareto point over `epoch_0003`
+  - but it is strong enough to invalidate any premature "the tail is just monotonic decay" story
+  - this family still needs at least one more settled point before the solver patience rule can close cleanly
 - if that pattern persists, the solver should be treated as:
   - a structure-preserving component that may still help in a later composite
   - not a standalone promotion candidate on the external board
