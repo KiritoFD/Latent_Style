@@ -14,6 +14,7 @@ _vlm*smoke*
 *stageclose*.stderr.log
 *_runtime_samples.jsonl
 *_runtime_summary.json
+samst_wikiarts5_eval_watch*.log
 *.png
 *.pdf
 **/images/**
