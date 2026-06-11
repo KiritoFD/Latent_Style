@@ -5,20 +5,12 @@
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
 
-- Authority root:
-  - [round1_solver_unsb_cycle_remote_full_eval_pull](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull)
-- Pulled curve CSV:
-  - [clip_lpips_curve.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull/clip_lpips_curve.csv)
-- Pulled local curve rows:
-  - `30`
-- Pulled local curve epochs:
-  - `epoch_0001, epoch_0002, epoch_0003, epoch_0004, epoch_0005, epoch_0006, epoch_0007, epoch_0008, epoch_0009, epoch_0010, epoch_0011, epoch_0012, epoch_0013, epoch_0014, epoch_0015, epoch_0016, epoch_0017, epoch_0018, epoch_0019, epoch_0020, epoch_0021, epoch_0022, epoch_0023, epoch_0024, epoch_0025, epoch_0026, epoch_0027, epoch_0028, epoch_0029, epoch_0030`
+- Fast root: [round1_solver_unsb_cycle_remote_full_eval_pull](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull)
+- Curve CSV: [clip_lpips_curve.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull/clip_lpips_curve.csv)
 - Latest remote checkpoint:
   - `epoch_0030.pt`
 - Latest pulled local eval epoch:
   - `epoch_0030`
-- Remote scan confirmed summary epochs:
-  - `epoch_0001, epoch_0002, epoch_0003, epoch_0004, epoch_0005, epoch_0006, epoch_0007, epoch_0008, epoch_0009, epoch_0010, epoch_0011, epoch_0012, epoch_0013, epoch_0014, epoch_0015, epoch_0016, epoch_0017, epoch_0018, epoch_0019, epoch_0020, epoch_0021, epoch_0022, epoch_0023, epoch_0024, epoch_0025, epoch_0026, epoch_0027, epoch_0028, epoch_0029, epoch_0030`
 - Latest remote confirmed eval epoch:
   - `epoch_0030`
 - Best transfer `CLIP-S`:
@@ -36,6 +28,7 @@
   - full `style / lpips = 0.7040 / 0.4975`
   - wall `= 114.21s`
 - Convergence snapshot:
+  - `row_count = 30`
   - `best_epoch = epoch_0001`
   - `since_last_pareto = 12`
   - `best_in_newest_2 = False`
@@ -43,6 +36,4 @@
   - `closure_band = approaching_closure`
   - `criterion = joint_transfer_allpairs_pareto`
   - `converged = False`
-- Sync summary:
-  - [sync_summary.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull/sync_summary.json)
 <!-- ROUND1_AUTO_STATUS:END -->

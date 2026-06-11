@@ -91,6 +91,21 @@
     - directional evidence kept
     - paper-facing status downgraded to `recalibration_needed`
 
+## Reopen Read On 2026-06-11
+
+- fresh from-parent restarts were not used as the final reopening path
+- instead, the family was resumed from the retained `epoch_0022.pt` checkpoint
+  under segmented continuation
+- canonical reopening batch:
+  - `20`
+- first formal health read of the resumed lane:
+  - about `9580 MiB / 12288 MiB`
+  - inside the requested formal band
+- current meaning:
+  - the family is again eligible for paper-facing evidence
+  - but the authority surface now continues from the existing `epoch_0022`
+    curve rather than replacing it
+
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
 
@@ -105,98 +120,3 @@
 - Switch smoke artifact: [round1_attn_gated_spade_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_switch_smoke_latest.json)
 - Switch smoke row count: `1`
 <!-- ROUND1_AUTO_STATUS:END -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

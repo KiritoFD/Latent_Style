@@ -1,12 +1,12 @@
 # solver_unsb_cycle Remote Scalar Read
 
-Updated: `2026-06-11T19:25:12.683353`
+Updated: `2026-06-11T19:42:13.133984`
 
 - Run name: `aaai2027_round1_solver_unsb_cycle_seed42_b8a2`
 - Remote run dir: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_unsb_cycle_seed42_b8a2`
 - Retained checkpoints: `30`
 - Latest checkpoint: `epoch_0030.pt`
-- Remote eval files currently visible: `58`
+- Remote eval files currently visible: `62`
 - Eval files:
   - `full_eval_fast_snapshot/clip_lpips_curve.csv`
   - `full_eval_fast_snapshot/epoch_0001/metrics.csv`
@@ -43,20 +43,16 @@ Updated: `2026-06-11T19:25:12.683353`
   - [training_20260611_184036.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_184036.csv)
   - [training_20260611_184530.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_184530.csv)
   - [training_20260611_191053.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_191053.csv)
+  - [training_20260611_193633.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_193633.csv)
 - Latest remote training CSV row:
-  - `epoch=30`
-  - `loss=7.903621673583984`
-  - `terminal_swd=3.828125`
-  - `samples_per_sec=22.688751219829186`
-  - `cuda_peak_allocated_gb=7.439935207366943`
-  - `cuda_peak_reserved_gb=9.1875`
+  - `waiting for first completed training row`
 - Latest runtime watcher sample:
-  - `epoch=30/30`
-  - `step=590/590`
-  - `loss=7.9036`
-  - `tswd=3.8281`
-  - `VRAM=10051/12288 MiB`
-  - `band_status=in_band`
+  - `epoch=31/32`
+  - `step=411/590`
+  - `loss=7.8286`
+  - `tswd=5.1875`
+  - `VRAM=9159/12288 MiB`
+  - `band_status=under_band`
 - Training curve: [training_curve.png](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_curve.png)
 - Runtime curve: [runtime_curve.png](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/runtime_curve.png)
 - Runtime CSV: [runtime_curve.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/runtime_curve.csv)

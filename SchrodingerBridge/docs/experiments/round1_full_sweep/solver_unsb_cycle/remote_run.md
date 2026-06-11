@@ -59,7 +59,9 @@
   - `epoch_0019-0030` are now settled
   - none displaced `epoch_0018`
   - so the family remains open, with `since_last_pareto = 12`
-  - the remaining open question is now whether one final segment finally yields a flat tail
+  - the attempted next segment from `epoch_0030` did not land any new retained checkpoint
+  - the stop reason was a late-train `under_band` runtime guard hit at `9159 MiB`
+  - so the remaining question is no longer "one more segment or not", but whether this family should now be treated as a bounded keep-vs-hold decision
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
@@ -68,19 +70,10 @@
 - Run name: `aaai2027_round1_solver_unsb_cycle_seed42_b8a2`
 - Remote run dir: `./exp/inmortal-exp/aaai2027_round1_solver_unsb_cycle_seed42_b8a2`
 - Config: [aaai2027_round1_solver_unsb_cycle_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_solver_unsb_cycle_seed42_b8a2.json)
-- Manifest status: `running`
+- Manifest status: `recalibration_needed`
 - Local fast root: [round1_solver_unsb_cycle_fast_local](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_fast_local)
 - Local review root: [round1_solver_unsb_cycle_localreview](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_localreview)
 - Prelaunch switch smoke: `ok`
 - Switch smoke artifact: [round1_solver_unsb_cycle_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_switch_smoke_latest.json)
 - Switch smoke row count: `1`
-- Remote GPU live sample:
-  - `454 MiB / 12288 MiB`, `util=1%`
-  - `band_status=under_band`
-  - `formal_status=nonformal_under_band`
-- Remote train progress:
-  - `epoch 28/28`
-  - `step 590/590`
-  - `loss=7.8458`
-  - `tswd=3.7656`
 <!-- ROUND1_AUTO_STATUS:END -->
