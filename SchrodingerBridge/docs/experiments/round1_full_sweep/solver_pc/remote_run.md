@@ -20,7 +20,7 @@
     - first authoritative formal opening
 - Current live health sample:
   - `10344 MiB / 12288 MiB`
-  - `util=96%`
+  - `util=76%`
   - read: lane is healthy and in-band
 
 ## Settled Curve Milestones
@@ -42,10 +42,10 @@
   - transfer `0.6962 / 0.4854`
   - full `0.7165 / 0.4746`
 - Latest locally pulled point:
-  - `epoch_0026`
-  - transfer `0.6901 / 0.4934`
-  - full `0.7111 / 0.4810`
-  - wall `176.66s`
+  - `epoch_0028`
+  - transfer `0.6861 / 0.4987`
+  - full `0.7043 / 0.4896`
+  - wall `179.40s`
 
 ## Operational Read
 
@@ -56,7 +56,9 @@
 - `epoch_0023` improved LPIPS slightly again, but style softened and the point still remained below the frontier.
 - `epoch_0024` then rolled back clearly on both style and LPIPS.
 - `epoch_0025` and `epoch_0026` then repaired part of that rollback, but still stayed below the frontier anchored by `epoch_0017`.
-- `epoch_0018-0026` are now nine consecutive non-frontier points, so the lane is well beyond the solver-family patience threshold.
+- `epoch_0027` then rolled back again on LPIPS while style recovered only slightly.
+- `epoch_0028` remained another non-frontier tail point.
+- `epoch_0018-0028` are now eleven consecutive non-frontier points, so the lane is deep into the post-patience tail.
 - The remote fast-eval contract is working, but local docs must distinguish:
   - locally pulled curve points
   - remote scan points still mid-write
@@ -85,4 +87,13 @@
 - Prelaunch switch smoke: `ok`
 - Switch smoke artifact: [round1_solver_pc_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_pc_switch_smoke_latest.json)
 - Switch smoke row count: `1`
+- Remote GPU live sample:
+  - `10344 MiB / 12288 MiB`, `util=76%`
+  - `band_status=in_band`
+  - `formal_status=formal_in_band`
+- Remote train progress:
+  - `epoch 30/48`
+  - `step 353/590`
+  - `loss=7.7043`
+  - `tswd=6.0625`
 <!-- ROUND1_AUTO_STATUS:END -->
