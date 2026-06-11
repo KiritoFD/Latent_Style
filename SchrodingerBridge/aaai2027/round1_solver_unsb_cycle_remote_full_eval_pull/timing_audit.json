@@ -1,0 +1,22 @@
+{
+  "row_count": 14,
+  "anomaly_ratio": 1.5,
+  "anomaly_count": 3,
+  "anomalies": [
+    {
+      "epoch": "epoch_0001",
+      "anomaly_keys": "lancet_generation|vae_decode|encode_inversion|source_load_to_device",
+      "wall_total": 269.68519170699994
+    },
+    {
+      "epoch": "epoch_0002",
+      "anomaly_keys": "wall_total|lancet_generation|vae_decode|encode_inversion|source_load_to_device",
+      "wall_total": 308.2506629239999
+    },
+    {
+      "epoch": "epoch_0011",
+      "anomaly_keys": "wall_total|eval_total|lancet_generation|vae_decode|eval_metrics_loop|encode_inversion|source_load_to_device",
+      "wall_total": 325.3696240270001
+    }
+  ]
+}

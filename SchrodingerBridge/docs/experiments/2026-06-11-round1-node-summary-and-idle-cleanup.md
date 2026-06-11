@@ -53,6 +53,25 @@ Purpose:
   - runtime watcher `json/jsonl/log` files remain operational artifacts
   - summary/decision docs remain the git-facing read surface
 
+## Eval Timing Audit
+
+- helper:
+  - [audit_round1_eval_timings.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/audit_round1_eval_timings.py)
+- current machine-readable audit:
+  - [timing_audit.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull/timing_audit.csv)
+  - [timing_audit.json](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull/timing_audit.json)
+- current read:
+  - `epoch_0011` is the clearest anomaly
+  - it is flagged on:
+    - `wall_total`
+    - `eval_total`
+    - `lancet_generation`
+    - `vae_decode`
+    - `eval_metrics_loop`
+    - `encode_inversion`
+    - `source_load_to_device`
+  - `epoch_0012-0014` returned near the median timing band, so the spike currently reads as localized rather than a permanent new baseline
+
 ## Plan Update
 
 1. Keep `solver_unsb_cycle` on the remote lane until the solver-family `6`-checkpoint patience rule is actually satisfied or a new Pareto point appears and resets the tail.
