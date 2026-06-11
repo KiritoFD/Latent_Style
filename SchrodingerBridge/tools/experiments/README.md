@@ -22,6 +22,8 @@ Use this file as the stable entrypoint instead of guessing from filenames.
 
 - launch one family train lane:
   - [launch_remote_round1_family_train.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_round1_family_train.py)
+- one-shot live runtime read:
+  - [report_round1_family_runtime_status.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/report_round1_family_runtime_status.py)
 - launch remote fast eval on retained checkpoints:
   - [launch_remote_round1_family_fast_eval.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_round1_family_fast_eval.py)
 - segmented train/eval for memory-sensitive families:

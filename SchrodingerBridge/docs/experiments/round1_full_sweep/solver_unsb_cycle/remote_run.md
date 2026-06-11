@@ -16,16 +16,16 @@
 
 ## Current Read
 
-- Current live sample:
-  - `10420 MiB / 12288 MiB`
-  - `util=93%`
-  - `epoch 4/48`
-  - `step 361/629`
-  - `loss=8.0556`
-  - `tswd=5.7188`
+- Current interrupted state:
+  - retained checkpoints stop at `epoch_0014`
+  - the train log ends at:
+    - `2026-06-11 13:33:06 +08:00`
+    - `rc=143`
+  - no remote train pid is currently alive for this family
 - Read:
-  - the lane is formally alive
-  - this family has now moved beyond calibration
+  - the lane was formally valid
+  - but it is not currently active
+  - the family therefore needs resume logic, not passive waiting
 - First settled authority curve:
   - `epoch_0001`
     - transfer `0.7057 / 0.5669`
@@ -49,9 +49,13 @@
 
 ## Next Action
 
-- Let the lane continue.
-- Keep remote fast-eval as the convergence authority.
-- Do not spend local heavy review budget until the family has enough settled curve points to justify a shortlist.
+- Keep the retained fast-eval packet authoritative through `epoch_0014`.
+- Do not treat the lane as currently alive.
+- Resume via bounded segmented continuation when the remote lane is actually free:
+  - see [relaunch_prep.md](G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/solver_unsb_cycle/relaunch_prep.md)
+- Do not spend local heavy review budget until either:
+  - a resumed run produces new retained checkpoints, or
+  - the family is explicitly closed without resume
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
@@ -60,7 +64,7 @@
 - Run name: `aaai2027_round1_solver_unsb_cycle_seed42_b8a2`
 - Remote run dir: `./exp/inmortal-exp/aaai2027_round1_solver_unsb_cycle_seed42_b8a2`
 - Config: [aaai2027_round1_solver_unsb_cycle_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_solver_unsb_cycle_seed42_b8a2.json)
-- Manifest status: `running`
+- Manifest status: `recalibration_needed`
 - Local fast root: [round1_solver_unsb_cycle_fast_local](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_fast_local)
 - Local review root: [round1_solver_unsb_cycle_localreview](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_localreview)
 - Prelaunch switch smoke: `ok`
@@ -69,13 +73,4 @@
 - Remote train log: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_unsb_cycle_seed42_b8a2_train.log`
 - Remote train pid: not alive
 - Remote fast-eval pid count: `2`
-- Remote GPU live sample:
-  - `9515 MiB / 12288 MiB`, `util=94%`
-  - `band_status=in_band`
-  - `formal_status=formal_in_band`
-- Remote train progress:
-  - `epoch 15/48`
-  - `step 315/629`
-  - `loss=7.8997`
-  - `tswd=6.4375`
 <!-- ROUND1_AUTO_STATUS:END -->

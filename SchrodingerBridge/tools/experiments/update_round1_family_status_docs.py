@@ -1129,6 +1129,18 @@ def main() -> int:
         family_row["remote_live_step_total"] = "" if tail.get("step_total") is None else str(tail.get("step_total"))
         family_row["remote_live_loss"] = "" if tail.get("loss") is None else f"{float(tail.get('loss')):.4f}"
         family_row["remote_live_tswd"] = "" if tail.get("tswd") is None else f"{float(tail.get('tswd')):.4f}"
+    elif remote_runtime and not bool(remote_runtime.get("train_alive", True)):
+        family_row["remote_live_memory_used_mib"] = ""
+        family_row["remote_live_memory_total_mib"] = ""
+        family_row["remote_live_util_pct"] = ""
+        family_row["remote_live_band_status"] = ""
+        family_row["remote_live_formal_status"] = ""
+        family_row["remote_live_epoch"] = ""
+        family_row["remote_live_epoch_total"] = ""
+        family_row["remote_live_step"] = ""
+        family_row["remote_live_step_total"] = ""
+        family_row["remote_live_loss"] = ""
+        family_row["remote_live_tswd"] = ""
     elif isinstance(runtime_summary_payload, dict):
         latest_nonempty = runtime_summary_payload.get("latest_nonempty_sample") or runtime_summary_payload.get("latest_sample") or {}
         _apply_runtime_sample_to_family_row(

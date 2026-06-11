@@ -3,11 +3,11 @@
 - Decision date:
   - `2026-06-11`
 - Current status:
-  - `running`
+  - `recalibration_needed`
 - Current read:
   - the first under-band `batch=8` opening has been superseded
   - the current canonical launch is `batch=15`
-  - this family now holds the remote formal lane
+  - the formal lane was real, but it is no longer live
 
 ## Launch Decision
 
@@ -67,7 +67,28 @@
   - keep the formal lane open until the post-`epoch_0009` tail is actually observed
   - the immediate decision hinge is whether `epoch_0015+` continue climbing back toward `epoch_0009` or whether `epoch_0012-0014` were only a weak recovery shelf
 
+## Interruption Audit
+
+- Audit timestamp:
+  - `2026-06-11`
+- Current machine read:
+  - no remote train process remains for `aaai2027_round1_solver_unsb_cycle_seed42_b8a2`
+  - fast-eval watcher still exists
+  - retained checkpoints stop at `epoch_0014`
+  - latest train log exit line is:
+    - `2026-06-11 13:33:06 +08:00`
+    - `=== END 2026-06-11T13:33:06+08:00 rc=143 ===`
+- Interpretation:
+  - the family did not close by convergence
+  - it also did not produce any retained checkpoint after `epoch_0014`
+  - therefore the previous `running` state had become stale and had to be cleared
+- Decision:
+  - downgrade the family from `running` to `recalibration_needed`
+  - do not treat the post-UNSB queue handoff plan as active closure logic yet
+  - the next valid step for this family is resume, not replacement-by-default
+
 ## Promotion Rule
 
 - No early promotion from the first in-band health sample alone.
 - Require the same family closure package as every other round-1 family before any keep/reject claim.
+- If this family is resumed, prefer bounded segmented continuation from `epoch_0014` rather than a fresh from-parent restart.
