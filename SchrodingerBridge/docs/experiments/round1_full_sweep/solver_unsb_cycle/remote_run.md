@@ -16,16 +16,16 @@
 
 ## Current Read
 
-- Current interrupted state:
-  - retained checkpoints stop at `epoch_0014`
-  - the train log ends at:
-    - `2026-06-11 13:33:06 +08:00`
-    - `rc=143`
-  - no remote train pid is currently alive for this family
+- Current resumed state:
+  - bounded continuation is now validated at `batch=17`
+  - retained checkpoints extend through `epoch_0018`
+  - all retained checkpoints through `epoch_0018` have remote `CLIP-S + LPIPS`
+  - the lane is not left resident between segments:
+    - no train pid is currently alive
+    - no active fast-eval pid is required once the packet settles
 - Read:
-  - the lane was formally valid
-  - but it is not currently active
-  - the family therefore needs resume logic, not passive waiting
+  - the lane has moved past pure interruption recovery
+  - the remaining question is convergence shape, not resume viability
 - First settled authority curve:
   - `epoch_0001`
     - transfer `0.7057 / 0.5669`
@@ -49,13 +49,12 @@
 
 ## Next Action
 
-- Keep the retained fast-eval packet authoritative through `epoch_0014`.
-- Do not treat the lane as currently alive.
-- Resume via bounded segmented continuation when the remote lane is actually free:
-  - see [relaunch_prep.md](G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/solver_unsb_cycle/relaunch_prep.md)
-- Do not spend local heavy review budget until either:
-  - a resumed run produces new retained checkpoints, or
-  - the family is explicitly closed without resume
+- Keep the retained fast-eval packet authoritative through `epoch_0018`.
+- Treat `batch=17` as the current canonical UNSB setting.
+- Continue via further bounded segmented continuation rather than handing off to a different family yet:
+  - `epoch_0018` created a new Pareto point and reset patience
+- Do not spend local heavy review budget yet:
+  - this family is still in convergence-shaping mode rather than closure mode
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
@@ -70,7 +69,13 @@
 - Prelaunch switch smoke: `ok`
 - Switch smoke artifact: [round1_solver_unsb_cycle_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_switch_smoke_latest.json)
 - Switch smoke row count: `1`
-- Remote train log: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_unsb_cycle_seed42_b8a2_train.log`
-- Remote train pid: not alive
-- Remote fast-eval pid count: `2`
+- Remote GPU live sample:
+  - `9660 MiB / 12288 MiB`, `util=91%`
+  - `band_status=in_band`
+  - `formal_status=formal_in_band`
+- Remote train progress:
+  - `epoch 18/18`
+  - `step 322/555`
+  - `loss=7.8752`
+  - `tswd=6.3125`
 <!-- ROUND1_AUTO_STATUS:END -->

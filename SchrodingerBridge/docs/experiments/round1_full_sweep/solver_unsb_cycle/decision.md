@@ -6,8 +6,8 @@
   - `recalibration_needed`
 - Current read:
   - the first under-band `batch=8` opening has been superseded
-  - the current canonical launch is `batch=15`
-  - the formal lane was real, but it is no longer live
+  - the current canonical launch is now `batch=17`
+  - the family has resumed successfully through bounded continuation, but it is not left as a continuously live lane between segments
 
 ## Launch Decision
 
@@ -86,6 +86,59 @@
   - downgrade the family from `running` to `recalibration_needed`
   - do not treat the post-UNSB queue handoff plan as active closure logic yet
   - the next valid step for this family is resume, not replacement-by-default
+
+## Resume Recalibration Audit
+
+- first segmented continuation attempt from `epoch_0014`:
+  - launcher path succeeded
+  - checkpoint resume succeeded
+  - but formal health gate failed before the lane could continue
+- observed read:
+  - `batch=15`
+  - health memory `7734 MiB`
+  - below the formal floor
+- decision:
+  - keep the family at `recalibration_needed`
+  - first raise the canonical UNSB batch from `15` to `19`
+  - then retry the segmented continuation
+
+## Second Recalibration Read
+
+- the `batch=19` retry started cleanly and resumed from `epoch_0014`
+- but runtime guard then recorded:
+  - `used=11811 MiB`
+  - `cap=11571 MiB`
+  - process end `rc=143`
+- decision:
+  - `batch=19` is above the hard paper-facing cap
+  - move the next formal UNSB retry to the midpoint:
+    - `batch=17`
+
+## Third Recalibration Read
+
+- the `batch=17` retry passed the formal launch gate cleanly
+- two bounded continuation segments then completed:
+  - `epoch_0015 -> epoch_0016`
+  - `epoch_0017 -> epoch_0018`
+- all retained checkpoints through `epoch_0018` now have remote `CLIP-S + LPIPS`
+- curve read:
+  - `epoch_0015`
+    - transfer `0.6901 / 0.4824`
+    - full `0.7113 / 0.4718`
+  - `epoch_0016`
+    - transfer `0.6954 / 0.5000`
+    - full `0.7156 / 0.4876`
+  - `epoch_0017`
+    - transfer `0.6964 / 0.5277`
+    - full `0.7139 / 0.5156`
+  - `epoch_0018`
+    - transfer `0.7012 / 0.5041`
+    - full `0.7208 / 0.4901`
+- decision:
+  - `batch=17` is the current paper-safe UNSB batch
+  - `epoch_0018` is a real new Pareto point inside this family
+  - solver patience is reset again at `epoch_0018`
+  - this family should continue as the next bounded continuation candidate, not hand off to the DINO tail or the next non-DINO family yet
 
 ## Promotion Rule
 

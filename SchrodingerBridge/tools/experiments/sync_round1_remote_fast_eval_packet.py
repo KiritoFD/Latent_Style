@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -201,6 +202,14 @@ def _load_json_if_exists(path: Path) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
+def _is_retryable_pull_error(text: str) -> bool:
+    lowered = str(text).lower()
+    return (
+        "file changed as we read it" in lowered
+        or "tar:" in lowered and "changed as we read it" in lowered
+    )
+
+
 def _prune_incomplete_epoch_dirs(local_root: Path) -> None:
     for epoch_dir in local_root.glob("epoch_*"):
         if not epoch_dir.is_dir():
@@ -301,6 +310,8 @@ def main() -> int:
     parser.add_argument("--remote-workspace-root", default="/mnt/i/Github/Latent_Style")
     parser.add_argument("--eval-subdir", default="full_eval_fast_snapshot")
     parser.add_argument("--local-root", type=Path, default=None)
+    parser.add_argument("--pull-retries", type=int, default=4)
+    parser.add_argument("--pull-retry-sleep-seconds", type=int, default=8)
     args = parser.parse_args()
 
     manifest_csv = Path(args.manifest_csv).expanduser()
@@ -373,8 +384,12 @@ def main() -> int:
         "--tar-name",
         tar_name,
     ]
-    pull_proc = _run(pull_cmd, timeout_ms=120000)
-    if pull_proc.returncode != 0:
+    pull_proc = None
+    combined = ""
+    for attempt in range(1, max(1, int(args.pull_retries)) + 1):
+        pull_proc = _run(pull_cmd, timeout_ms=120000)
+        if pull_proc.returncode == 0:
+            break
         combined = (pull_proc.stderr or "") + (pull_proc.stdout or "")
         if "No such file or directory" in combined:
             _write_waiting_fast_eval_doc(
@@ -389,6 +404,9 @@ def main() -> int:
             print(docs_dir / "fast_curve_read.md")
             print(summary_json)
             return 0
+        if attempt < max(1, int(args.pull_retries)) and _is_retryable_pull_error(combined):
+            time.sleep(max(1, int(args.pull_retry_sleep_seconds)))
+            continue
         raise RuntimeError(combined or "remote eval pull failed")
 
     _prune_incomplete_epoch_dirs(local_root)
