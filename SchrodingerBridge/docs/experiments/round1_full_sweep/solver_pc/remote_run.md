@@ -19,8 +19,8 @@
     - `9334 MiB / 12288 MiB`
     - first authoritative formal opening
 - Current live health sample:
-  - `9518 MiB / 12288 MiB`
-  - `util=91%`
+  - `9343 MiB / 12288 MiB`
+  - `util=89%`
   - read: lane is healthy and in-band
 
 ## Settled Curve Milestones
@@ -42,21 +42,24 @@
   - transfer `0.6962 / 0.4854`
   - full `0.7165 / 0.4746`
 - Latest locally pulled point:
-  - `epoch_0020`
-  - transfer `0.6930 / 0.4931`
-  - full `0.7116 / 0.4831`
-  - wall `176.96s`
+  - `epoch_0022`
+  - transfer `0.6888 / 0.4866`
+  - full `0.7087 / 0.4774`
+  - wall `177.18s`
 
 ## Operational Read
 
 - `solver_pc` is not monotone; it is cycling between structure repair and style recovery.
 - The family is still alive because real Pareto updates kept reappearing after apparent rollbacks.
-- `epoch_0018-0020` are now three consecutive non-frontier points, so the lane is moving closer to a meaningful closure test, but not there yet.
+- `epoch_0021` was a sharp rollback on both style and LPIPS versus `epoch_0020`.
+- `epoch_0022` repaired most of that LPIPS damage, but still stayed below the frontier anchored by `epoch_0017`.
+- `epoch_0018-0022` are now five consecutive non-frontier points, so the lane is firmly in the late patience band.
 - The remote fast-eval contract is working, but local docs must distinguish:
   - locally pulled curve points
   - remote scan points still mid-write
 - That distinction is now part of the sync tooling to avoid false closure reads.
 - Pending-only remote epochs no longer dirty tracked docs during active runs.
+- Remote fast-eval watchers and local packet-sync watchers now also self-exit once a family leaves `running` and no backlog remains.
 
 ## Next Action
 

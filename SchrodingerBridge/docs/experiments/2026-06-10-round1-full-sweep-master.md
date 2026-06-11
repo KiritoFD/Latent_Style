@@ -166,13 +166,13 @@ Current remote lane status:
   - current formal launch setting:
     - `batch=16`
   - latest remote live sample:
-    - `9518 MiB / 12288 MiB`
+    - `9343 MiB / 12288 MiB`
     - `band_status=in_band`
     - `formal_status=formal_in_band`
     - `epoch 18/48`
     - `step 403/590`
   - latest locally pulled fast-eval point:
-    - `epoch_0020`
+    - `epoch_0022`
   - current fast read:
     - best transfer style remains `epoch_0001`:
       - `0.7074 / 0.5621`
@@ -181,12 +181,12 @@ Current remote lane status:
     - strongest late tradeoff recovery remains `epoch_0015`:
       - `0.6962 / 0.4854`
       - full `0.7165 / 0.4746`
-    - latest locally pulled point `epoch_0020`:
-      - transfer `0.6930 / 0.4931`
-      - full `0.7116 / 0.4831`
+    - latest locally pulled point `epoch_0022`:
+      - transfer `0.6888 / 0.4866`
+      - full `0.7087 / 0.4774`
     - interpretation:
-      - `solver_pc` is still cycling between structure repair and style recovery
-      - no closure condition is met yet because solver-family patience is `6` and `since_last_pareto=3`
+      - `epoch_0021` was a strong rollback and `epoch_0022` only partly repaired it
+      - no closure condition is met yet because solver-family patience is `6`, `since_last_pareto=5`, and `tail_flat` is still false
       - current local cleanup/doc work should not interrupt this lane
   - queue rule during this stage:
     - keep `solver_pc` as the only formal lane
@@ -209,6 +209,9 @@ Current remote lane status:
     - family followups now also arm the local remote-fast-eval sync watcher automatically, so settled remote epochs surface into local docs without manual packet pulls
     - pending-only remote eval directories no longer cause tracked doc churn:
       - the sync packet path now only rewrites tracked status docs when a settled local curve point or convergence state actually advances
+    - remote fast-eval watchers and local packet-sync watchers can now self-exit once:
+      - the family leaves `running`
+      - and no pending checkpoint backlog remains
     - family followups now also arm a queue-idle watcher automatically, so once no family remains `running`, the next `planned` family can be launched through the existing round1 queue path without manual polling
     - the runtime watcher can now auto-transition a family from `running` to `reviewing` once:
       - its fast curve is marked `converged=true`

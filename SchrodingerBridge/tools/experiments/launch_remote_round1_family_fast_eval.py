@@ -193,7 +193,10 @@ def main() -> int:
             f"--target-chunk-size {int(args.target_chunk_size)} "
             f"--max-live-memory-mib-to-launch {int(args.max_live_memory_mib_to_launch)} "
             f"--poll-seconds {int(args.poll_seconds)} "
-            f"--patience {int(family_patience)}"
+            f"--patience {int(family_patience)} "
+            "--manifest-csv SchrodingerBridge/docs/experiments/round1_full_sweep/round1_family_manifest.csv "
+            f"--family-id {family_id} "
+            "--allowed-status running"
         ),
     ]
     return _run(command)
