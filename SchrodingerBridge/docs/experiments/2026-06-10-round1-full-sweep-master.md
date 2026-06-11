@@ -488,7 +488,7 @@ Recalibration-needed family:
 - Active family: `solver_unsb_cycle`
 - Decision status: `running`
 - Batch / epochs / patience: `15 / 48 / 6`
-- Remote GPU live: `9514 / 12288 MiB`, `util=87%`, `band=in_band`
+- Remote GPU live: `10267 / 12288 MiB`, `util=94%`, `band=in_band`
 - Best transfer `CLIP-S`: `epoch_0001` -> `0.7057 / 0.5669`
 - Best transfer `LPIPS`: `epoch_0003` -> `0.7027 / 0.5117`
 - Best all-pairs `CLIP-S`: `epoch_0003` -> `0.7195 / 0.5024`

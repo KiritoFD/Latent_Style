@@ -21,8 +21,6 @@
   - transfer `style / lpips = 0.6904 / 0.5549`
   - full `style / lpips = 0.7037 / 0.5453`
   - wall `= 185.46s`
-- Remote pending eval epochs:
-  - `epoch_0007`
 - Convergence snapshot:
   - `row_count = 7`
   - `best_epoch = epoch_0001`

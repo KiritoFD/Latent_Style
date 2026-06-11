@@ -215,6 +215,10 @@ def _tracked_packet_advanced(
     *,
     local_curve_epochs: list[str],
     convergence: dict[str, Any],
+    latest_remote_settled_epoch: str,
+    pending_ckpt_epochs: list[str],
+    remote_pending_metric_epochs: list[str],
+    remote_unconfirmed_local_settled_epochs: list[str],
 ) -> bool:
     if not previous_summary:
         return True
@@ -236,6 +240,14 @@ def _tracked_packet_advanced(
     for key in stable_keys:
         if previous_convergence.get(key) != convergence.get(key):
             return True
+    if str(previous_summary.get("latest_remote_settled_epoch", "")).strip() != str(latest_remote_settled_epoch).strip():
+        return True
+    if [str(x).strip() for x in (previous_summary.get("pending_ckpt_epochs") or []) if str(x).strip()] != pending_ckpt_epochs:
+        return True
+    if [str(x).strip() for x in (previous_summary.get("remote_pending_metric_epochs") or []) if str(x).strip()] != remote_pending_metric_epochs:
+        return True
+    if [str(x).strip() for x in (previous_summary.get("remote_unconfirmed_local_settled_epochs") or []) if str(x).strip()] != remote_unconfirmed_local_settled_epochs:
+        return True
     return False
 
 
@@ -451,6 +463,22 @@ def main() -> int:
     latest_local_settled_epoch = max(local_settled_epoch_names, key=_epoch_int) if local_settled_epoch_names else ""
     local_settled_epoch_set = set(local_settled_epoch_names)
     pending_ckpt_epochs = [name for name in remote_ckpts if name.replace(".pt", "") not in local_settled_epoch_set]
+    remote_pending_metric_epochs = [
+        str(item.get("epoch", "")).strip()
+        for item in (remote_scan.get("epochs") or [])
+        if item.get("has_metrics")
+        and not item.get("has_summary")
+        and str(item.get("epoch", "")).strip()
+        and str(item.get("epoch", "")).strip() not in local_settled_epoch_set
+    ]
+    remote_unconfirmed_local_settled_epochs = [
+        str(item.get("epoch", "")).strip()
+        for item in (remote_scan.get("epochs") or [])
+        if item.get("has_metrics")
+        and not item.get("has_summary")
+        and str(item.get("epoch", "")).strip()
+        and str(item.get("epoch", "")).strip() in local_settled_epoch_set
+    ]
 
     summary = {
         "family_id": family_id,
@@ -471,18 +499,23 @@ def main() -> int:
         "local_curve_epochs": local_settled_epoch_names,
         "latest_local_settled_epoch": latest_local_settled_epoch,
         "pending_ckpt_epochs": pending_ckpt_epochs,
+        "remote_pending_metric_epochs": remote_pending_metric_epochs,
+        "remote_unconfirmed_local_settled_epochs": remote_unconfirmed_local_settled_epochs,
     }
     previous_summary = _load_json_if_exists(summary_json)
     should_write_tracked = _tracked_packet_advanced(
         previous_summary,
         local_curve_epochs=local_settled_epoch_names,
         convergence=convergence,
+        latest_remote_settled_epoch=latest_remote_settled_epoch,
+        pending_ckpt_epochs=pending_ckpt_epochs,
+        remote_pending_metric_epochs=remote_pending_metric_epochs,
+        remote_unconfirmed_local_settled_epochs=remote_unconfirmed_local_settled_epochs,
     )
     if should_write_tracked:
         summary_json.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
     settled_epochs = [item for item in remote_scan.get("epochs", []) if item.get("has_summary")]
-    pending_epochs = [item for item in remote_scan.get("epochs", []) if item.get("has_metrics") and not item.get("has_summary")]
     auto_lines = [
         "## Auto Status",
         "",
@@ -520,11 +553,18 @@ def main() -> int:
                 *[f"  - `{item}`" for item in pending_ckpt_epochs],
             ]
         )
-    if pending_epochs:
+    if remote_pending_metric_epochs:
         auto_lines.extend(
             [
                 "- Pending remote epochs with metrics but no summary yet:",
-                *[f"  - `{item['epoch']}`" for item in pending_epochs],
+                *[f"  - `{item}`" for item in remote_pending_metric_epochs],
+            ]
+        )
+    if remote_unconfirmed_local_settled_epochs:
+        auto_lines.extend(
+            [
+                "- Local settled epochs waiting on remote summary confirmation:",
+                *[f"  - `{item}`" for item in remote_unconfirmed_local_settled_epochs],
             ]
         )
     auto_lines.extend(
