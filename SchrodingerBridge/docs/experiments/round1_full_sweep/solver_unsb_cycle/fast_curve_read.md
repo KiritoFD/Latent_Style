@@ -8,11 +8,11 @@
 - Fast root: [round1_solver_unsb_cycle_remote_full_eval_pull](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull)
 - Curve CSV: [clip_lpips_curve.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull/clip_lpips_curve.csv)
 - Latest remote checkpoint:
-  - `epoch_0013.pt`
+  - `epoch_0014.pt`
 - Latest pulled local eval epoch:
-  - `epoch_0013`
+  - `epoch_0014`
 - Latest remote confirmed eval epoch:
-  - `epoch_0013`
+  - `epoch_0014`
 - Best transfer `CLIP-S`:
   - `epoch_0001`
   - `style / lpips = 0.7057 / 0.5669`
@@ -23,17 +23,17 @@
   - `epoch_0009`
   - `style / lpips = 0.7245 / 0.4311`
 - Latest settled point:
-  - `epoch_0013`
-  - transfer `style / lpips = 0.6963 / 0.5094`
-  - full `style / lpips = 0.7158 / 0.4977`
-  - wall `= 181.20s`
+  - `epoch_0014`
+  - transfer `style / lpips = 0.6929 / 0.5097`
+  - full `style / lpips = 0.7097 / 0.5009`
+  - wall `= 182.00s`
 - Convergence snapshot:
-  - `row_count = 13`
+  - `row_count = 14`
   - `best_epoch = epoch_0001`
-  - `since_last_pareto = 4`
+  - `since_last_pareto = 5`
   - `best_in_newest_2 = False`
   - `tail_flat = False`
-  - `closure_band = open`
+  - `closure_band = approaching_closure`
   - `criterion = joint_transfer_allpairs_pareto`
   - `converged = False`
 <!-- ROUND1_AUTO_STATUS:END -->

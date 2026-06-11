@@ -55,7 +55,7 @@ Purpose:
 
 | Slot | Family | Status | Reason |
 |---|---|---|---|
-| Active formal lane | `solver_unsb_cycle` | `running` | `epoch_0009` became a new Pareto point; `epoch_0010-0011` softened, and `epoch_0012-0013` recovered only partially without reclaiming the frontier |
+| Active formal lane | `solver_unsb_cycle` | `running` | `epoch_0009` became a new Pareto point; `epoch_0010-0011` softened, and `epoch_0012-0014` recovered only partially without reclaiming the frontier |
 | Reviewing solver family | `solver_pc`, `solver_tangent_rk` | `reviewing` | both earlier solver-family training phases are now closed; deep review still pending |
 | Next queue candidate | `defer until unsb closure` | `planned` | queue should remain dormant while a formal lane is active; after closure, the current code-level first planned candidate is `tok_a_dino_dict` because no non-DINO family remains in `planned` status |
 | Auto handoff | `watch_launch_round1_queue_when_idle.py` | armed | once manifest has zero `running` families, invoke the queue automatically, but do not bypass the DINO-last and stage-summary policy |
@@ -63,9 +63,9 @@ Purpose:
 ## Current UNSB Read
 
 - latest settled point:
-  - `epoch_0013`
-  - transfer `0.6963 / 0.5094`
-  - all-pairs `0.7158 / 0.4977`
+  - `epoch_0014`
+  - transfer `0.6929 / 0.5097`
+  - all-pairs `0.7097 / 0.5009`
 - current family-best points:
   - best transfer `CLIP-S`:
     - `epoch_0001`
@@ -79,7 +79,7 @@ Purpose:
 - interpretation:
   - `epoch_0009` is the first genuinely new late-stage Pareto point after the earlier `epoch_0003` frontier
   - `epoch_0010-0011` both soften from `epoch_0009`
-  - `epoch_0012-0013` then recover over `epoch_0011`, but both still stay below the `epoch_0009` frontier
+  - `epoch_0012-0014` then recover over `epoch_0011`, but all three still stay below the `epoch_0009` frontier
   - the current question is no longer "is UNSB near closure"
   - it is now "does the post-epoch_0009 tail stabilize near the new frontier or collapse back toward the earlier mid-curve regime"
   - `epoch_0011` also raises a secondary efficiency question because its fast-eval wall time is much higher than the surrounding checkpoints
