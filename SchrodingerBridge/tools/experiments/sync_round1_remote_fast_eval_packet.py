@@ -216,9 +216,6 @@ def _tracked_packet_advanced(
     local_curve_epochs: list[str],
     convergence: dict[str, Any],
     latest_remote_settled_epoch: str,
-    pending_ckpt_epochs: list[str],
-    remote_pending_metric_epochs: list[str],
-    remote_unconfirmed_local_settled_epochs: list[str],
 ) -> bool:
     if not previous_summary:
         return True
@@ -241,12 +238,6 @@ def _tracked_packet_advanced(
         if previous_convergence.get(key) != convergence.get(key):
             return True
     if str(previous_summary.get("latest_remote_settled_epoch", "")).strip() != str(latest_remote_settled_epoch).strip():
-        return True
-    if [str(x).strip() for x in (previous_summary.get("pending_ckpt_epochs") or []) if str(x).strip()] != pending_ckpt_epochs:
-        return True
-    if [str(x).strip() for x in (previous_summary.get("remote_pending_metric_epochs") or []) if str(x).strip()] != remote_pending_metric_epochs:
-        return True
-    if [str(x).strip() for x in (previous_summary.get("remote_unconfirmed_local_settled_epochs") or []) if str(x).strip()] != remote_unconfirmed_local_settled_epochs:
         return True
     return False
 
@@ -508,9 +499,6 @@ def main() -> int:
         local_curve_epochs=local_settled_epoch_names,
         convergence=convergence,
         latest_remote_settled_epoch=latest_remote_settled_epoch,
-        pending_ckpt_epochs=pending_ckpt_epochs,
-        remote_pending_metric_epochs=remote_pending_metric_epochs,
-        remote_unconfirmed_local_settled_epochs=remote_unconfirmed_local_settled_epochs,
     )
     if should_write_tracked:
         summary_json.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
