@@ -33,6 +33,8 @@ Round-1 folders:
   - [2026-06-10-family-switch-smoke.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/2026-06-10-family-switch-smoke.md)
 - theory coverage:
   - [2026-06-11-theory-coverage-matrix.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/2026-06-11-theory-coverage-matrix.md)
+- current node summary:
+  - [2026-06-11-round1-node-summary-and-idle-cleanup.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-11-round1-node-summary-and-idle-cleanup.md)
 - tokenizer warmstart:
   - [prepare_round1_tokenizer_warmstart_config.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/prepare_round1_tokenizer_warmstart_config.py)
   - [launch_remote_round1_tokenizer_warmstart.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_round1_tokenizer_warmstart.py)
@@ -486,12 +488,12 @@ Recalibration-needed family:
 - Active family: `solver_unsb_cycle`
 - Decision status: `running`
 - Batch / epochs / patience: `15 / 48 / 6`
-- Remote GPU live: `10420 / 12288 MiB`, `util=96%`, `band=in_band`
+- Remote GPU live: `9514 / 12288 MiB`, `util=87%`, `band=in_band`
 - Best transfer `CLIP-S`: `epoch_0001` -> `0.7057 / 0.5669`
-- Best transfer `LPIPS`: `epoch_0002` -> `0.6975 / 0.5372`
-- Best all-pairs `CLIP-S`: `epoch_0001` -> `0.7150 / 0.5608`
-- Latest settled fast point: `epoch_0002` -> transfer `0.6975 / 0.5372`
-- Convergence: `row_count=2, since_best=1, tail_flat=False, closure_band=open, converged=False`
+- Best transfer `LPIPS`: `epoch_0003` -> `0.7027 / 0.5117`
+- Best all-pairs `CLIP-S`: `epoch_0003` -> `0.7195 / 0.5024`
+- Latest settled fast point: `epoch_0007` -> transfer `0.6904 / 0.5549`
+- Convergence: `row_count=7, since_best=6, tail_flat=False, closure_band=open, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
 
 Current `solver_pc` launch note:
