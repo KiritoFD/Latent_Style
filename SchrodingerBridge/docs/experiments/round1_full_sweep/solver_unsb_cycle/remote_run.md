@@ -55,6 +55,10 @@
   - `epoch_0018` created a new Pareto point and reset patience
 - Do not spend local heavy review budget yet:
   - this family is still in convergence-shaping mode rather than closure mode
+- latest bounded followup:
+  - `epoch_0019-0020` are now settled
+  - neither displaced `epoch_0018`
+  - so the family remains open, with `since_last_pareto = 2`
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
@@ -63,7 +67,7 @@
 - Run name: `aaai2027_round1_solver_unsb_cycle_seed42_b8a2`
 - Remote run dir: `./exp/inmortal-exp/aaai2027_round1_solver_unsb_cycle_seed42_b8a2`
 - Config: [aaai2027_round1_solver_unsb_cycle_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_solver_unsb_cycle_seed42_b8a2.json)
-- Manifest status: `recalibration_needed`
+- Manifest status: `running`
 - Local fast root: [round1_solver_unsb_cycle_fast_local](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_fast_local)
 - Local review root: [round1_solver_unsb_cycle_localreview](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_localreview)
 - Prelaunch switch smoke: `ok`
