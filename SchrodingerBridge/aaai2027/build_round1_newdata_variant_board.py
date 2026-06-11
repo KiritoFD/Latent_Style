@@ -16,6 +16,7 @@ IDT_TRANSFER = 0.6399224616587162
 
 WIKIARTS5_SUMMARY_CSV = ROOT / "wikiarts5_page1" / "wikiarts5_page1_summary.csv"
 WIKIARTS5_CURVE_CSV = WORKSPACE / "Related_Works" / "baseline_pipeline" / "results" / "samam_wikiarts5_patch8_segmented_20260610_094447" / "curve_metrics.csv"
+SAMST_CURVE_CSV = WORKSPACE / "Related_Works" / "baseline_pipeline" / "results" / "samst_wikiarts5_wsl_20260610_172206" / "eval_bundle" / "clip_lpips_curve.csv"
 ATTNSA_CURVE_CSV = ROOT / "round1_attn_sa_mod_fast_local" / "full_eval_fast_local" / "clip_lpips_curve.csv"
 GATED_CURVE_CSV = ROOT / "round1_attn_gated_spade_remote_full_eval_pull" / "clip_lpips_curve.csv"
 UNSB_CURVE_CSV = ROOT / "round1_solver_unsb_cycle_remote_full_eval_pull" / "clip_lpips_curve.csv"
@@ -87,6 +88,7 @@ def main() -> int:
 
     wikiarts5_rows = _read_csv(WIKIARTS5_SUMMARY_CSV)
     wikiarts5_curve_rows = _read_csv(WIKIARTS5_CURVE_CSV)
+    samst_rows = _read_csv(SAMST_CURVE_CSV)
     attnsa_rows = _read_csv(ATTNSA_CURVE_CSV)
     gated_rows = _read_csv(GATED_CURVE_CSV)
     unsb_rows = _read_csv(UNSB_CURVE_CSV)
@@ -97,6 +99,7 @@ def main() -> int:
     _find_row(wikiarts5_rows, "WikiArts5 best-CLIP")
     _find_row(wikiarts5_rows, "WikiArts5 best-LPIPS")
     _find_row(wikiarts5_rows, "WikiArts5 latest")
+    _latest(samst_rows, epoch_key="epoch")
     _best(attnsa_rows, style_key="transfer_clip_style", lpips_key="transfer_content_lpips", mode="style")
     _best(attnsa_rows, style_key="transfer_clip_style", lpips_key="transfer_content_lpips", mode="lpips")
     _latest(attnsa_rows, epoch_key="epoch")
@@ -117,6 +120,11 @@ def main() -> int:
     samam_curve_y = [float(row["transfer_clip_style"]) - IDT_TRANSFER for row in wikiarts5_curve_rows]
     left.plot(samam_curve_x, samam_curve_y, color="#F07F5A", linewidth=1.6, alpha=0.9, zorder=2, label="W5 SaMAM trajectory")
     left.scatter(samam_curve_x, samam_curve_y, s=18, color="#F0A085", alpha=0.60, linewidths=0, zorder=2)
+
+    samst_curve_x = [1.0 - float(row["transfer_content_lpips"]) for row in samst_rows]
+    samst_curve_y = [float(row["transfer_clip_style"]) - IDT_TRANSFER for row in samst_rows]
+    left.plot(samst_curve_x, samst_curve_y, color="#B76E12", linewidth=1.4, alpha=0.82, zorder=2, label="SaMST trajectory")
+    left.scatter(samst_curve_x, samst_curve_y, s=18, color="#D59A3A", alpha=0.58, linewidths=0, zorder=2)
 
     attnsa_curve_x = [1.0 - float(row["transfer_content_lpips"]) for row in attnsa_rows]
     attnsa_curve_y = [float(row["transfer_clip_style"]) - IDT_TRANSFER for row in attnsa_rows]

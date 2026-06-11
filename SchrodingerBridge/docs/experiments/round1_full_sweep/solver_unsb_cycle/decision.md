@@ -178,6 +178,25 @@
   - continue bounded segmented continuation from `epoch_0022`
   - do not hand off to tokenizer `DINO` or the next non-DINO family yet
 
+## Third Post-Reset Followup Read
+
+- bounded continuation from `epoch_0022` through `epoch_0024` is now settled
+- new points:
+  - `epoch_0023`
+    - transfer `0.6903 / 0.4866`
+    - full `0.7108 / 0.4749`
+  - `epoch_0024`
+    - transfer `0.6927 / 0.5197`
+    - full `0.7102 / 0.5083`
+- interpretation:
+  - `epoch_0023-0024` still do not beat the `epoch_0018` Pareto point
+  - `since_last_pareto` has now reached `6`
+  - but the tail is still not flat enough for closure because the post-`epoch_0018` band remains visibly non-monotone
+- current decision:
+  - keep `solver_unsb_cycle` open
+  - the next bounded continuation should test whether the tail finally flattens after `epoch_0024`
+  - do not hand off to a different family yet
+
 ## Promotion Rule
 
 - No early promotion from the first in-band health sample alone.
