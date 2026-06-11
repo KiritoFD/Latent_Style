@@ -15,30 +15,30 @@ Purpose:
 - authority root:
   - [round1_solver_unsb_cycle_remote_full_eval_pull](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull)
 - latest settled fast-eval point:
-  - `epoch_0008`
-  - transfer `0.6955 / 0.5184`
-  - all-pairs `0.7121 / 0.5088`
+  - `epoch_0009`
+  - transfer `0.6996 / 0.4421`
+  - all-pairs `0.7245 / 0.4311`
 - current best reads inside the lane:
   - best transfer `CLIP-S`:
     - `epoch_0001`
     - `0.7057 / 0.5669`
   - best transfer `LPIPS`:
-    - `epoch_0003`
-    - `0.7027 / 0.5117`
+    - `epoch_0009`
+    - `0.6996 / 0.4421`
   - best all-pairs `CLIP-S`:
-    - `epoch_0003`
-    - `0.7195 / 0.5024`
+    - `epoch_0009`
+    - `0.7245 / 0.4311`
 - convergence read:
-  - `row_count = 8`
-  - `since_last_pareto = 5`
+  - `row_count = 9`
+  - `since_last_pareto = 0`
   - `tail_flat = false`
   - `converged = false`
 - remote live read after doc refresh:
-  - `10267 MiB / 12288 MiB`
-  - `epoch 9/48`
-  - `step 286/629`
-  - `loss=7.8823`
-  - `tswd=6.2812`
+  - `9515 MiB / 12288 MiB`
+  - `epoch 10/48`
+  - `step 625/629`
+  - `loss=7.9883`
+  - `tswd=3.5312`
 
 ## Cleanup Decisions
 
@@ -74,12 +74,12 @@ Purpose:
   - `epoch_0004 -> epoch_0007` read as rollback
   - `epoch_0008` then rebounds materially on both style and LPIPS relative to `epoch_0007`
 - the current sharper read:
-  - `epoch_0008` is still not a new Pareto point over `epoch_0003`
-  - but it is strong enough to invalidate any premature "the tail is just monotonic decay" story
-  - this family still needs at least one more settled point before the solver patience rule can close cleanly
+  - `epoch_0009` is a real new Pareto point
+  - it becomes the best all-pairs style point and the best LPIPS point inside this family
+  - it resets the solver patience clock and invalidates the earlier near-closure interpretation
 - if that pattern persists, the solver should be treated as:
   - a structure-preserving component that may still help in a later composite
-  - not a standalone promotion candidate on the external board
+  - but it now also deserves renewed attention as a possible standalone keep candidate
 - the practical consequence for round 1:
   - do not promote UNSB on internal curve motion alone
-  - only keep it for integration if later closure shows a real structure benefit that survives composition with a stronger tokenizer or backbone family
+  - but do reopen the possibility that this solver family could survive round-1 closure on its own curve, not only as a later composite ingredient
