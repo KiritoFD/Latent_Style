@@ -51,7 +51,7 @@
       },
       {
         "epoch": "epoch_0008",
-        "has_metrics": false,
+        "has_metrics": true,
         "has_summary": false,
         "image_count": 0
       }
@@ -191,6 +191,8 @@
   "pending_ckpt_epochs": [
     "epoch_0008.pt"
   ],
-  "remote_pending_metric_epochs": [],
+  "remote_pending_metric_epochs": [
+    "epoch_0008"
+  ],
   "remote_unconfirmed_local_settled_epochs": []
 }
