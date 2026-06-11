@@ -1,12 +1,12 @@
 # solver_unsb_cycle Remote Scalar Read
 
-Updated: `2026-06-11T17:27:28.188508`
+Updated: `2026-06-11T17:57:56.890715`
 
 - Run name: `aaai2027_round1_solver_unsb_cycle_seed42_b8a2`
 - Remote run dir: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_unsb_cycle_seed42_b8a2`
-- Retained checkpoints: `22`
-- Latest checkpoint: `epoch_0022.pt`
-- Remote eval files currently visible: `42`
+- Retained checkpoints: `24`
+- Latest checkpoint: `epoch_0024.pt`
+- Remote eval files currently visible: `46`
 - Eval files:
   - `full_eval_fast_snapshot/clip_lpips_curve.csv`
   - `full_eval_fast_snapshot/epoch_0001/metrics.csv`
@@ -38,19 +38,20 @@ Updated: `2026-06-11T17:27:28.188508`
   - [training_20260611_161804.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_161804.csv)
   - [training_20260611_164609.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_164609.csv)
   - [training_20260611_171036.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_171036.csv)
+  - [training_20260611_174345.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_174345.csv)
 - Latest remote training CSV row:
-  - `epoch=22`
-  - `loss=7.878371715545654`
-  - `terminal_swd=3.890625`
-  - `samples_per_sec=22.768456622061507`
-  - `cuda_peak_allocated_gb=7.917089462280273`
-  - `cuda_peak_reserved_gb=9.748046875`
+  - `epoch=24`
+  - `loss=7.730778694152832`
+  - `terminal_swd=3.953125`
+  - `samples_per_sec=22.953716586949497`
+  - `cuda_peak_allocated_gb=7.914403915405273`
+  - `cuda_peak_reserved_gb=9.884765625`
 - Latest runtime watcher sample:
-  - `epoch=22/22`
-  - `step=326/555`
-  - `loss=7.9858`
-  - `tswd=6.4375`
-  - `VRAM=10624/12288 MiB`
+  - `epoch=24/24`
+  - `step=319/555`
+  - `loss=7.7903`
+  - `tswd=6.3125`
+  - `VRAM=10764/12288 MiB`
   - `band_status=in_band`
 - Training curve: [training_curve.png](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_curve.png)
 - Runtime curve: [runtime_curve.png](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/runtime_curve.png)
