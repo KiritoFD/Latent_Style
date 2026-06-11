@@ -4,6 +4,7 @@ import argparse
 import csv
 import json
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -190,6 +191,54 @@ def _upsert_auto_block(path: Path, body: str) -> None:
     path.write_text(new_text, encoding="utf-8")
 
 
+def _load_json_if_exists(path: Path) -> dict[str, Any]:
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _prune_incomplete_epoch_dirs(local_root: Path) -> None:
+    for epoch_dir in local_root.glob("epoch_*"):
+        if not epoch_dir.is_dir():
+            continue
+        if (epoch_dir / "summary.json").is_file():
+            continue
+        shutil.rmtree(epoch_dir, ignore_errors=True)
+
+
+def _tracked_packet_advanced(
+    previous_summary: dict[str, Any],
+    *,
+    local_curve_epochs: list[str],
+    convergence: dict[str, Any],
+) -> bool:
+    if not previous_summary:
+        return True
+    previous_epochs = [str(x).strip() for x in (previous_summary.get("local_curve_epochs") or []) if str(x).strip()]
+    if previous_epochs != local_curve_epochs:
+        return True
+    previous_convergence = previous_summary.get("convergence") or {}
+    stable_keys = (
+        "row_count",
+        "newest_epoch",
+        "last_pareto_epoch",
+        "since_last_pareto",
+        "best_transfer_clip_epoch",
+        "best_transfer_lpips_epoch",
+        "best_allpairs_clip_epoch",
+        "best_allpairs_lpips_epoch",
+        "converged",
+    )
+    for key in stable_keys:
+        if previous_convergence.get(key) != convergence.get(key):
+            return True
+    return False
+
+
 def _write_waiting_fast_eval_doc(
     *,
     docs_dir: Path,
@@ -339,6 +388,8 @@ def main() -> int:
             return 0
         raise RuntimeError(combined or "remote eval pull failed")
 
+    _prune_incomplete_epoch_dirs(local_root)
+
     curve_csv = local_root / "clip_lpips_curve.csv"
     build_proc = _run(
         [
@@ -421,7 +472,14 @@ def main() -> int:
         "latest_local_settled_epoch": latest_local_settled_epoch,
         "pending_ckpt_epochs": pending_ckpt_epochs,
     }
-    summary_json.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    previous_summary = _load_json_if_exists(summary_json)
+    should_write_tracked = _tracked_packet_advanced(
+        previous_summary,
+        local_curve_epochs=local_settled_epoch_names,
+        convergence=convergence,
+    )
+    if should_write_tracked:
+        summary_json.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
     settled_epochs = [item for item in remote_scan.get("epochs", []) if item.get("has_summary")]
     pending_epochs = [item for item in remote_scan.get("epochs", []) if item.get("has_metrics") and not item.get("has_summary")]
@@ -499,7 +557,8 @@ def main() -> int:
     )
 
     fast_curve_doc = docs_dir / "fast_curve_read.md"
-    _upsert_auto_block(fast_curve_doc, "\n".join(auto_lines))
+    if should_write_tracked:
+        _upsert_auto_block(fast_curve_doc, "\n".join(auto_lines))
 
     print(fast_curve_doc)
     print(summary_json)
