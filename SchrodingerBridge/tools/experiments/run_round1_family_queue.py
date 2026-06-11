@@ -110,6 +110,11 @@ def main() -> int:
     parser.add_argument("--use-remote-fast-eval", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--skip-fast-eval-launch", action="store_true", help="Launch only the remote training lane; defer fast-eval watcher launch.")
     parser.add_argument("--allow-switch-smoke-failed", action="store_true")
+    parser.add_argument(
+        "--allow-dino-tail",
+        action="store_true",
+        help="Allow DINO-tokenizer tail families to launch automatically when no non-DINO planned family remains.",
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -146,13 +151,27 @@ def main() -> int:
 
     non_dino_rows = _prefer_smoke_ok(non_dino_rows)
     dino_rows = _prefer_smoke_ok(dino_rows)
-    target = non_dino_rows[0] if non_dino_rows else (dino_rows[0] if dino_rows else None)
+    target = non_dino_rows[0] if non_dino_rows else None
+    dino_blocked = False
+    if target is None and dino_rows:
+        if bool(args.allow_dino_tail):
+            target = dino_rows[0]
+        else:
+            dino_blocked = True
     if target is None and bool(args.launch_running_too):
         target = _first_row(rows, status="running")
     if target is None:
         if smoke_failed_rows and not bool(args.allow_switch_smoke_failed):
             failed = ", ".join(str(row.get("family_id", "")).strip() for row in smoke_failed_rows)
             print(f"No launchable round-1 family found because switch smoke failed for: {failed}")
+            return 0
+        if dino_blocked:
+            blocked = ", ".join(str(row.get("family_id", "")).strip() for row in dino_rows)
+            print(
+                "No launchable non-DINO round-1 family remains. "
+                f"DINO-tail families are blocked by default: {blocked}. "
+                "Re-run with --allow-dino-tail to launch them."
+            )
             return 0
         print("No launchable round-1 family found.")
         return 0
@@ -197,6 +216,9 @@ def main() -> int:
         if smoke_failed_rows and not bool(args.allow_switch_smoke_failed):
             skipped = ", ".join(str(row.get("family_id", "")).strip() for row in smoke_failed_rows)
             print(f"SKIPPED_SMOKE_FAILED={skipped}")
+        if dino_blocked:
+            blocked = ", ".join(str(row.get("family_id", "")).strip() for row in dino_rows)
+            print(f"DINO_TAIL_BLOCKED={blocked}")
         print(" ".join(str(x) for x in train))
         if bool(args.skip_fast_eval_launch):
             print("FAST_EVAL_LAUNCH=SKIPPED")

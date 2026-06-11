@@ -210,6 +210,9 @@ Current remote lane status:
   - queue rule:
     - `run_round1_family_queue.py` now prefers `switch_smoke_status=ok`
     - and skips `switch_smoke_status=failed` by default
+    - it now also blocks DINO-tail tokenizer families by default
+    - if the manifest contains only DINO tokenizer families in `planned`, the queue prints a non-launchable notice instead of auto-launching them
+    - reopening DINO tokenizer families through the generic queue now requires an explicit `--allow-dino-tail`
   - current auto-handoff state:
     - the local `watch_launch_round1_queue_when_idle.py` watcher is now armed against the round1 manifest
     - so once no family remains `running`, the next `planned` family will be launched through the existing queue path automatically
