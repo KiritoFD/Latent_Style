@@ -43,19 +43,19 @@
     - transfer `0.6982 / 0.5075`
     - full `0.7159 / 0.4964`
 - Latest locally pulled point:
-  - `epoch_0032`
-  - transfer `0.6881 / 0.5161`
-  - full `0.7055 / 0.5059`
-  - read: `epoch_0032` is another clear tail regression, with a large LPIPS setback and no frontier recovery
+  - `epoch_0033`
+  - transfer `0.6904 / 0.5026`
+  - full `0.7092 / 0.4913`
+  - read: `epoch_0033` repaired part of the `0032` LPIPS collapse, but still remained a non-frontier tail point
 
 ## Decision
 
 - Keep running.
 - Rationale:
   - `patience=6` for solver families
-  - `since_last_pareto=15`, so the line is now even deeper into the post-patience tail
+  - `since_last_pareto=16`, so the line is now deeper again into the post-patience tail
   - `tail_flat=false`, so the family still does not satisfy true closure
-  - `epoch_0021-0032` reads more like noisy tail drift than renewed frontier search
+  - `epoch_0021-0033` reads more like noisy tail drift than renewed frontier search
   - best style and best LPIPS are still split across different checkpoints, so the family is still exploring the tradeoff surface
 - Promotion rule:
   - do not promote this family on internal oscillation alone

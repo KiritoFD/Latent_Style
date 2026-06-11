@@ -42,10 +42,10 @@
   - transfer `0.6962 / 0.4854`
   - full `0.7165 / 0.4746`
 - Latest locally pulled point:
-  - `epoch_0032`
-  - transfer `0.6881 / 0.5161`
-  - full `0.7055 / 0.5059`
-  - wall `265.17s`
+  - `epoch_0033`
+  - transfer `0.6904 / 0.5026`
+  - full `0.7092 / 0.4913`
+  - wall `255.84s`
 
 ## Operational Read
 
@@ -61,7 +61,8 @@
 - `epoch_0029` repaired a little, but `epoch_0030` still remained non-frontier.
 - `epoch_0031` still remained non-frontier after that small repair.
 - `epoch_0032` then regressed sharply on LPIPS and also took a large eval wall-time spike.
-- `epoch_0018-0032` are now fifteen consecutive non-frontier points, so the lane is extremely deep into the post-patience tail.
+- `epoch_0033` repaired part of that LPIPS collapse, but still remained non-frontier.
+- `epoch_0018-0033` are now sixteen consecutive non-frontier points, so the lane is extremely deep into the post-patience tail.
 - The remote fast-eval contract is working, but local docs must distinguish:
   - locally pulled curve points
   - remote scan points still mid-write

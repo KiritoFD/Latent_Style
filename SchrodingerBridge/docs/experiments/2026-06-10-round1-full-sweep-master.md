@@ -181,12 +181,12 @@ Current remote lane status:
     - strongest late tradeoff recovery remains `epoch_0015`:
       - `0.6962 / 0.4854`
       - full `0.7165 / 0.4746`
-    - latest locally pulled point `epoch_0032`:
-      - transfer `0.6881 / 0.5161`
-      - full `0.7055 / 0.5059`
+    - latest locally pulled point `epoch_0033`:
+      - transfer `0.6904 / 0.5026`
+      - full `0.7092 / 0.4913`
     - interpretation:
-      - `epoch_0029-0032` still failed to re-enter the frontier
-      - the line is extremely deep past solver-family patience with `since_last_pareto=15`, but no closure condition is met yet because `tail_flat` is still false
+      - `epoch_0029-0033` still failed to re-enter the frontier
+      - the line is extremely deep past solver-family patience with `since_last_pareto=16`, but no closure condition is met yet because `tail_flat` is still false
       - current local cleanup/doc work should not interrupt this lane
   - queue rule during this stage:
     - keep `solver_pc` as the only formal lane
