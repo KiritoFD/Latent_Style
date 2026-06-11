@@ -269,6 +269,7 @@ def _launch_train_with_retry(
                 str(SCRIPT_DIR / "launch_remote_round1_family_train.py"),
                 "--config",
                 str(segmented_config.relative_to(WORKSPACE)),
+                "--skip-remote-fast-eval-followup",
                 "--max-prelaunch-memory-mib",
                 str(int(max_prelaunch_memory_mib)),
                 "--min-runtime-memory-mib",
