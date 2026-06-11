@@ -29,15 +29,34 @@ def main() -> int:
     parser.add_argument("--config", required=True)
     parser.add_argument("--fast-local-root", type=Path, default=None)
     parser.add_argument("--fast-eval-subdir", default="full_eval_fast_local")
+    parser.add_argument("--output-stem", default="")
     args = parser.parse_args()
 
     cfg = load_config((WORKSPACE / Path(args.config)).resolve())
     run_name = str((cfg.get("ablation") or {}).get("name", Path(args.config).stem)).strip() or Path(args.config).stem
     family_id = infer_round1_family_id(run_name=run_name, config_stem=Path(args.config).stem)
     fast_local_root = Path(args.fast_local_root).resolve() if args.fast_local_root is not None else round1_fast_local_root(family_id=family_id, run_name=run_name)
-    eval_subdir = str(args.fast_eval_subdir).strip() or "full_eval_fast_local"
-    curve_csv = fast_local_root / eval_subdir / "clip_lpips_curve.csv"
-    output_csv = fast_local_root / f"{eval_subdir}_bestfew_handoff.csv"
+    raw_eval_subdir = str(args.fast_eval_subdir).strip()
+    eval_subdir = "" if raw_eval_subdir in ("", ".", "./") else raw_eval_subdir
+    output_stem = str(args.output_stem).strip()
+    if eval_subdir:
+        eval_root = fast_local_root / eval_subdir
+        curve_csv = eval_root / "clip_lpips_curve.csv"
+        if not output_stem:
+            output_stem = eval_subdir
+    else:
+        eval_root = fast_local_root
+        curve_csv = eval_root / "clip_lpips_curve.csv"
+        if not output_stem:
+            output_stem = "full_eval_fast_snapshot"
+    if not curve_csv.is_file():
+        authority_curve = fast_local_root / "clip_lpips_curve.csv"
+        if authority_curve.is_file():
+            eval_root = fast_local_root
+            curve_csv = authority_curve
+            if not output_stem:
+                output_stem = "full_eval_fast_snapshot"
+    output_csv = fast_local_root / f"{output_stem}_bestfew_handoff.csv"
     if not curve_csv.is_file():
         raise FileNotFoundError(f"Fast curve csv not found: {curve_csv}")
     rc = _run(
@@ -49,7 +68,7 @@ def main() -> int:
             "--run-name",
             run_name,
             "--eval-root",
-            str(fast_local_root / eval_subdir),
+            str(eval_root),
             "--output-csv",
             str(output_csv),
         ]
