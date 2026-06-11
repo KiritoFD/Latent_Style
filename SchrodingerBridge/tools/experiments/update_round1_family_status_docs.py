@@ -403,16 +403,25 @@ def _render_fast_curve_auto(
 ) -> str:
     remote_pending_epochs: list[str] = []
     if isinstance(remote_sync_summary, dict):
-        remote_scan = remote_sync_summary.get("remote_scan") if isinstance(remote_sync_summary.get("remote_scan"), dict) else {}
-        for item in remote_scan.get("epochs", []) if isinstance(remote_scan.get("epochs"), list) else []:
-            epoch = str((item or {}).get("epoch", "")).strip()
-            if not epoch:
-                continue
-            has_metrics = bool((item or {}).get("has_metrics"))
-            has_summary = bool((item or {}).get("has_summary"))
-            if has_metrics and has_summary:
-                continue
-            remote_pending_epochs.append(epoch)
+        explicit_pending = remote_sync_summary.get("remote_pending_metric_epochs")
+        if isinstance(explicit_pending, list):
+            remote_pending_epochs = [str(item).strip() for item in explicit_pending if str(item).strip()]
+        else:
+            remote_scan = remote_sync_summary.get("remote_scan") if isinstance(remote_sync_summary.get("remote_scan"), dict) else {}
+            local_curve_epochs = {
+                str(item).strip()
+                for item in (remote_sync_summary.get("local_curve_epochs") or [])
+                if str(item).strip()
+            }
+            for item in remote_scan.get("epochs", []) if isinstance(remote_scan.get("epochs"), list) else []:
+                epoch = str((item or {}).get("epoch", "")).strip()
+                if not epoch or epoch in local_curve_epochs:
+                    continue
+                has_metrics = bool((item or {}).get("has_metrics"))
+                has_summary = bool((item or {}).get("has_summary"))
+                if has_metrics and has_summary:
+                    continue
+                remote_pending_epochs.append(epoch)
     remote_pending_epochs = sorted(set(remote_pending_epochs), key=_epoch_int)
 
     if not curve_rows:
