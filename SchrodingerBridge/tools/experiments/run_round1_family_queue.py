@@ -103,6 +103,19 @@ def _is_dino_tail(row: dict[str, str]) -> bool:
     )
 
 
+def _relaunchable_non_dino(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    relaunchable: list[dict[str, str]] = []
+    for row in rows:
+        if _is_dino_tail(row):
+            continue
+        if str(row.get("decision_status", "")).strip().lower() != "recalibration_needed":
+            continue
+        if _switch_smoke_status(row) != "ok":
+            continue
+        relaunchable.append(row)
+    return relaunchable
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Launch the next planned round-1 family using the generic family launchers.")
     parser.add_argument("--manifest-csv", type=Path, default=DEFAULT_MANIFEST)
@@ -133,6 +146,7 @@ def main() -> int:
             return 0
 
     planned_rows = _rows_by_status(rows, status="planned")
+    relaunchable_non_dino = _relaunchable_non_dino(rows)
     smoke_failed_rows = [
         row for row in planned_rows if _switch_smoke_status(row) == "failed"
     ]
@@ -167,10 +181,12 @@ def main() -> int:
             return 0
         if dino_blocked:
             blocked = ", ".join(str(row.get("family_id", "")).strip() for row in dino_rows)
+            relaunchable = ", ".join(str(row.get("family_id", "")).strip() for row in relaunchable_non_dino)
             print(
                 "No launchable non-DINO round-1 family remains. "
                 f"DINO-tail families are blocked by default: {blocked}. "
-                "Re-run with --allow-dino-tail to launch them."
+                + ("Re-promote one of these non-DINO candidates into planned first: " + relaunchable + ". " if relaunchable else "")
+                + "Re-run with --allow-dino-tail to launch tokenizer-tail families."
             )
             return 0
         print("No launchable round-1 family found.")
@@ -219,6 +235,9 @@ def main() -> int:
         if dino_blocked:
             blocked = ", ".join(str(row.get("family_id", "")).strip() for row in dino_rows)
             print(f"DINO_TAIL_BLOCKED={blocked}")
+            if relaunchable_non_dino:
+                relaunchable = ", ".join(str(row.get("family_id", "")).strip() for row in relaunchable_non_dino)
+                print(f"RELAUNCHABLE_NON_DINO={relaunchable}")
         print(" ".join(str(x) for x in train))
         if bool(args.skip_fast_eval_launch):
             print("FAST_EVAL_LAUNCH=SKIPPED")
