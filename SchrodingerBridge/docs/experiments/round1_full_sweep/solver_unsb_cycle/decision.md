@@ -254,6 +254,28 @@
   - keep `solver_unsb_cycle` open
   - if the next bounded continuation still fails to flatten the tail, this family should become a closure-stage decision even without a new Pareto point
 
+## Calibration Bracket Closure Read
+
+- the next bounded continuation attempt from `epoch_0030` did **not** produce `epoch_0031/0032`
+- the actual stop reason was not a random crash:
+  - `RUNTIME_UNDER_BAND_STOP`
+  - observed:
+    - `used=9159 MiB`
+    - `floor=9216 MiB`
+    - `elapsed=321s`
+    - `consecutive=3`
+  - train log ended with:
+    - `rc=143`
+- combined read across the last two calibrations:
+  - `batch=17`
+    - late-train CUDA OOM
+  - `batch=16`
+    - late-train under-band stop
+- conclusion:
+  - `solver_unsb_cycle` is no longer a clean continuous formal lane candidate under the current strict `9.0-10.8 GiB` contract
+  - its useful round-1 evidence is the retained curve through `epoch_0030`, especially the `epoch_0018` Pareto point
+  - but the family should now move into a closure-stage / hold state rather than consuming more remote lane time immediately
+
 ## Promotion Rule
 
 - No early promotion from the first in-band health sample alone.

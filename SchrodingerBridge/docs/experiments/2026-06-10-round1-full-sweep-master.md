@@ -167,16 +167,22 @@ Current remote lane status:
 
 - active formal lane:
   - none at the current moment
-  - `solver_unsb_cycle` is the active logical family even though no train pid is currently resident
-  - latest successful bounded continuation:
-    - `batch=16`
-    - retained/eval extended through `epoch_0030`
+  - active logical family is now `attn_gated_spade`
+  - canonical reopening path:
+    - segmented continuation from `epoch_0022`
+    - `batch=20`
+  - first formal health read:
+    - about `9580 MiB / 12288 MiB`
+    - in-band
   - latest curve consequence:
-    - `epoch_0018` is a new Pareto point inside the UNSB family
-    - `epoch_0019-0030` do not beat it, and the tail still is not flat enough to close
-  - next safe continuation for that family:
-    - another bounded segmented resume from `epoch_0030`
-    - see [solver_unsb_cycle relaunch prep](G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/solver_unsb_cycle/relaunch_prep.md)
+    - `epoch_0026` extends the family Pareto set
+    - the line remains open for further bounded continuation
+  - `solver_unsb_cycle` is now a closure-stage hold family:
+    - retained/eval extended through `epoch_0030`
+    - last Pareto point remains `epoch_0018`
+    - current bracket still reads:
+      - `batch=17` late-train OOM
+      - `batch=16` late-train under-band stop
 - latest closed training family:
   - `solver_pc`
   - current training read:
@@ -507,16 +513,14 @@ Recalibration-needed family:
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Active Status
 
-- Running families:
-  - `solver_unsb_cycle`
-- Active family: `solver_unsb_cycle`
-- Decision status: `running`
-- Batch / epochs / patience: `16 / 48 / 6`
-- Best transfer `CLIP-S`: `epoch_0001` -> `0.7057 / 0.5669`
-- Best transfer `LPIPS`: `epoch_0009` -> `0.6996 / 0.4421`
-- Best all-pairs `CLIP-S`: `epoch_0009` -> `0.7245 / 0.4311`
-- Latest settled fast point: `epoch_0028` -> transfer `0.6851 / 0.4951`
-- Convergence: `row_count=28, since_best=27, tail_flat=False, closure_band=approaching_closure, converged=False`
+- Running families: none
+- Active family: `none`
+- Decision status: `no_formal_running_lane`
+- Best transfer `CLIP-S`: `epoch_0001` -> `0.6929 / 0.4501`
+- Best transfer `LPIPS`: `epoch_0022` -> `0.6910 / 0.4252`
+- Best all-pairs `CLIP-S`: `epoch_0011` -> `0.7172 / 0.4220`
+- Latest settled fast point: `epoch_0026` -> transfer `0.6887 / 0.4265`
+- Convergence: `row_count=26, since_best=25, tail_flat=True, closure_band=open, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
 
 Current `solver_pc` launch note:
@@ -655,6 +659,191 @@ Current solver continuation note:
     - close `solver_tangent_rk` training
     - move it to stage-close review
     - hand the next remote lane to `solver_pc`
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

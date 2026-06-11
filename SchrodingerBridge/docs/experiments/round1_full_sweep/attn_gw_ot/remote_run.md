@@ -79,6 +79,28 @@ Launch sequence on `2026-06-10`:
     - forward guardrail:
       - the remote launcher stack now supports a runtime min-band guard in addition to the hard-cap guard
       - future round-1 family launches default that under-band guard to `stop` after warmup, so they should fail fast instead of drifting into nonformal evidence
+- latest fresh retry after the UNSB hold:
+  - batch size still `11`
+  - strict health gate restored
+  - 30-second health sample:
+    - `698 MiB`
+  - read:
+    - the process had not yet reached a meaningful resident training state by the fixed health window
+    - so this retry does **not** rescue `attn_gw_ot` into a formal lane
+  - practical meaning:
+    - under the current strict `9.0-10.8 GiB` contract, `attn_gw_ot` still lacks a clean launch setting
+    - with the older evidence already showing `11` can drift under-band and `12` can overshoot the cap, this family should stay `recalibration_needed` for now rather than consuming the next full formal slot
+- second fresh retry on `2026-06-11`:
+  - batch size still `11`
+  - strict health gate restored
+  - 30-second health sample:
+    - `6662 MiB`
+  - interpretation:
+    - this is not a borderline read
+    - it is a clearly under-band opening under the current host state
+  - decision:
+    - keep `attn_gw_ot` out of the immediate formal slot
+    - move the next non-DINO attempt to `attn_gated_spade`
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
@@ -94,27 +116,3 @@ Launch sequence on `2026-06-10`:
 - Switch smoke artifact: [round1_attn_gw_ot_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gw_ot_switch_smoke_latest.json)
 - Switch smoke row count: `1`
 <!-- ROUND1_AUTO_STATUS:END -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
