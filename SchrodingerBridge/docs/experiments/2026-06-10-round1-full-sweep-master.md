@@ -162,72 +162,35 @@ Required closure per family:
 Current remote lane status:
 
 - active formal lane:
-  - `solver_tangent_rk`
+  - `solver_pc`
   - current formal launch setting:
     - `batch=16`
   - latest remote live sample:
-    - `9510 MiB / 12288 MiB`
+    - `10348 MiB / 12288 MiB`
     - `band_status=in_band`
     - `formal_status=formal_in_band`
-    - `epoch 13/24`
-    - `step 1075/1180`
-  - settled remote fast-eval points currently pulled:
-    - `epoch_0001`
-    - `epoch_0002`
-    - `epoch_0003`
-    - `epoch_0004`
-    - `epoch_0005`
-    - `epoch_0006`
-    - `epoch_0007`
-    - `epoch_0008`
-    - `epoch_0009`
-    - `epoch_0010`
-    - `epoch_0011`
-    - `epoch_0012`
-    - `epoch_0013`
+    - `epoch 18/48`
+    - `step 403/590`
+  - latest locally pulled fast-eval point:
+    - `epoch_0019`
   - current fast read:
     - best transfer style remains `epoch_0001`:
-      - `0.6999 / 0.5295`
-    - best transfer LPIPS has now moved to `epoch_0013`:
-      - `0.6935 / 0.4713`
-    - best all-pairs style remains on the same high frontier and the newest best point is now:
-      - `epoch_0013`
-      - `0.7152 / 0.4604`
-    - latest settled point is now `epoch_0013`:
-      - `0.6935 / 0.4713`
+      - `0.7074 / 0.5621`
+    - best transfer LPIPS remains `epoch_0009`:
+      - `0.6911 / 0.4548`
+    - strongest late tradeoff recovery remains `epoch_0015`:
+      - `0.6962 / 0.4854`
+      - full `0.7165 / 0.4746`
+    - latest locally pulled point `epoch_0019`:
+      - transfer `0.6927 / 0.4941`
+      - full `0.7124 / 0.4834`
     - interpretation:
-      - `epoch_0005` was a true rollback point
-      - `epoch_0007` first overtook the old `epoch_0004` frontier
-      - `epoch_0008-0012` oscillated below that frontier
-      - `epoch_0013` has now re-entered the Pareto frontier with the best transfer LPIPS so far
-      - so the line remains alive and is still capable of late frontier updates
-      - the line is still below external-board promotion level on transfer style
-      - and because the newest settled point is again Pareto-active, closure is still premature
-      - so this family remains alive and unconverged, but is not close to promotion
-  - solver-family next-step policy after the `epoch_0004 -> epoch_0005` rollback:
-    - do not interrupt the active in-flight tangent run
-    - but future solver-family launches / continuations should use:
-      - `virtual_length_multiplier = 0.5`
-      - `num_epochs = 48`
-    - rationale:
-      - finer epoch granularity for early-knee capture
-      - similar total optimization budget overall
-  - resumed continuation on `2026-06-11`:
-    - the remote train process had died while manifest status still remained `running`
-    - direct segmented recovery was used instead of waiting for the queue:
-      - resume checkpoint:
-        - `epoch_0017.pt`
-      - resumed target:
-        - `epoch_0024`
-    - first recovered health sample:
-      - `9342 MiB / 12288 MiB`
-      - `band_status=in_band`
-      - `formal_status=formal_in_band`
-      - `epoch 18/24`
-      - `step 25/1180`
-    - read:
-      - the active remote lane is healthy again
-      - so local time can shift back to cleanup/doc work until the next fast-eval packet lands
+      - `solver_pc` is still cycling between structure repair and style recovery
+      - no closure condition is met yet because solver-family patience is `6` and `since_last_pareto=1`
+      - current local cleanup/doc work should not interrupt this lane
+  - queue rule during this stage:
+    - keep `solver_pc` as the only formal lane
+    - do not hand off to the next family until its all-ckpt fast curve reaches a true closure state
 - implementation audit:
   - all `11` round-1 family configs now pass one reusable local switch smoke:
     - model build
@@ -254,8 +217,7 @@ Current remote lane status:
   - current auto-handoff state:
     - the local `watch_launch_round1_queue_when_idle.py` watcher is now armed against the round1 manifest
     - so once no family remains `running`, the next `planned` family will be launched through the existing queue path automatically
-    - current next queue candidate:
-      - `solver_pc`
+    - the exact next candidate should be resolved at handoff time from the manifest plus the current `DINO-last` rule
 - `attn_gated_spade` was downgraded on `2026-06-10`:
   - retained fast-eval evidence through `epoch_0022`
   - but process-local memory stayed under the requested band
