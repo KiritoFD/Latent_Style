@@ -75,6 +75,14 @@
     - LPIPS recovered materially from the `epoch_0010` rollback
     - transfer style is slightly stronger than `epoch_0009`, while all-pairs style remains weaker
     - this makes `epoch_0011` a new tradeoff frontier point even though it does not beat the best LPIPS point from `epoch_0009`
+- `epoch_0012` settled point:
+  - transfer `0.6928 / 0.4906`
+  - all-pairs `0.7129 / 0.4812`
+  - wall `177.10s`
+  - immediate read:
+    - this point improves both style and LPIPS versus `epoch_0011`
+    - but it still does not beat the stronger `epoch_0009` LPIPS frontier
+    - the line remains in a post-frontier oscillation regime rather than a fresh monotone climb
 - `epoch_0010` settled point:
   - transfer `0.6988 / 0.5270`
   - all-pairs `0.7138 / 0.5185`
