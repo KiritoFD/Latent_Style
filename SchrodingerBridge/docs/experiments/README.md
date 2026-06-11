@@ -7,6 +7,12 @@ For the current AAAI 2027 push, start here:
 
 - project-wide working index:
   `SchrodingerBridge/docs/aaai2027_working_index_20260602.md`
+- round-1 sweep master:
+  `SchrodingerBridge/docs/experiments/2026-06-10-round1-full-sweep-master.md`
+- round-1 folder index:
+  `SchrodingerBridge/docs/experiments/round1_full_sweep/README.md`
+- experiments tooling index:
+  `SchrodingerBridge/tools/experiments/README.md`
 - current paper/experiment plan:
   `SchrodingerBridge/docs/experiments/2026-06-02-aaai2027-paper-update-plan.md`
 - unified experiment ledger:
@@ -20,6 +26,14 @@ For the current AAAI 2027 push, start here:
 
 - `comparison_20260602/README.md`
 - `comparison_20260602/comparison_report.md`
+
+### Round-1 tokenizer/backbone/solver sweep
+
+- `2026-06-10-round1-full-sweep-master.md`
+- `2026-06-11-round1-node-summary-and-idle-cleanup.md`
+- `2026-06-11-post-unsb-queue-handoff-plan.md`
+- `round1_full_sweep/README.md`
+- `round1_full_sweep/2026-06-11-theory-coverage-matrix.md`
 
 ### Distinct5-512 stress benchmark
 

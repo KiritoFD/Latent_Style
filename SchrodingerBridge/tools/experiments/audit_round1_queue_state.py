@@ -7,66 +7,29 @@ import sys
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-SB_ROOT = SCRIPT_DIR.parent.parent
-WORKSPACE = SB_ROOT.parent
-DEFAULT_MANIFEST = SB_ROOT / "docs" / "experiments" / "round1_full_sweep" / "round1_family_manifest.csv"
 
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from csv_utils import read_csv_rows
-
-
-def _config_families(row: dict[str, str]) -> tuple[str, str]:
-    tokenizer_family = str(row.get("tokenizer_family", "")).strip().lower()
-    semantic_supervision_family = str(row.get("semantic_supervision_family", "")).strip().lower()
-    if tokenizer_family or semantic_supervision_family:
-        return tokenizer_family, semantic_supervision_family
-    config_path = Path(str(row.get("config_path", "")).strip())
-    if not config_path.is_absolute():
-        config_path = (WORKSPACE / config_path).resolve()
-    if not config_path.is_file():
-        return tokenizer_family, semantic_supervision_family
-    try:
-        payload = json.loads(config_path.read_text(encoding="utf-8"))
-    except Exception:
-        return tokenizer_family, semantic_supervision_family
-    model_cfg = payload.get("model") or {}
-    bridge_cfg = payload.get("bridge") or {}
-    tokenizer_family = tokenizer_family or str(model_cfg.get("tokenizer_family", "")).strip().lower()
-    semantic_supervision_family = semantic_supervision_family or str(bridge_cfg.get("semantic_supervision_family", "")).strip().lower()
-    return tokenizer_family, semantic_supervision_family
-
-
-def _is_dino_tail(row: dict[str, str]) -> bool:
-    tokenizer_family, semantic_supervision_family = _config_families(row)
-    family_id = str(row.get("family_id", "")).strip().lower()
-    return (
-        "dino" in tokenizer_family
-        or "dino" in semantic_supervision_family
-        or family_id in {"tok_a_dino_dict", "tok_b_cross_image"}
-    )
-
-
-def _status(row: dict[str, str]) -> str:
-    return str(row.get("decision_status", "")).strip().lower()
-
-
-def _smoke(row: dict[str, str]) -> str:
-    return str(row.get("switch_smoke_status", "")).strip().lower()
+from round1_manifest_utils import (
+    DEFAULT_MANIFEST,
+    candidate_ids,
+    is_dino_tail,
+    relaunchable_non_dino,
+    resolve_manifest_csv,
+    rows_by_status,
+    smoke_status_of,
+)
 
 
 def _fmt_row(row: dict[str, str]) -> str:
     family_id = str(row.get("family_id", "")).strip()
     axis = str(row.get("axis", "")).strip()
-    smoke = _smoke(row) or "unknown"
+    smoke = smoke_status_of(row) or "unknown"
     batch = str(row.get("batch_size", "")).strip() or "?"
-    note = "dino-tail" if _is_dino_tail(row) else "non-dino"
+    note = "dino-tail" if is_dino_tail(row) else "non-dino"
     return f"{family_id} [{axis}] smoke={smoke} batch={batch} {note}"
-
-
-def _candidate_ids(rows: list[dict[str, str]]) -> list[str]:
-    return [str(row.get("family_id", "")).strip() for row in rows if str(row.get("family_id", "")).strip()]
 
 
 def main() -> int:
@@ -75,36 +38,34 @@ def main() -> int:
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
-    manifest_csv = Path(args.manifest_csv).expanduser()
-    if not manifest_csv.is_absolute():
-        manifest_csv = (WORKSPACE / manifest_csv).resolve()
+    manifest_csv = resolve_manifest_csv(args.manifest_csv)
     rows = read_csv_rows(manifest_csv)
     if not rows:
         raise RuntimeError(f"Empty manifest: {manifest_csv}")
 
-    running = [row for row in rows if _status(row) == "running"]
-    planned = [row for row in rows if _status(row) == "planned"]
-    reviewing = [row for row in rows if _status(row) == "reviewing"]
-    recal = [row for row in rows if _status(row) == "recalibration_needed"]
+    running = rows_by_status(rows, status="running")
+    planned = rows_by_status(rows, status="planned")
+    reviewing = rows_by_status(rows, status="reviewing")
+    recal = rows_by_status(rows, status="recalibration_needed")
 
-    planned_non_dino = [row for row in planned if not _is_dino_tail(row)]
-    planned_dino = [row for row in planned if _is_dino_tail(row)]
-    planned_smoke_ok_non_dino = [row for row in planned_non_dino if _smoke(row) == "ok"]
-    planned_smoke_ok_dino = [row for row in planned_dino if _smoke(row) == "ok"]
-    reviewing_non_dino = [row for row in reviewing if not _is_dino_tail(row)]
-    recal_non_dino = [row for row in recal if not _is_dino_tail(row)]
-    relaunchable_non_dino = [row for row in recal_non_dino if _smoke(row) == "ok"]
+    planned_non_dino = [row for row in planned if not is_dino_tail(row)]
+    planned_dino = [row for row in planned if is_dino_tail(row)]
+    planned_smoke_ok_non_dino = [row for row in planned_non_dino if smoke_status_of(row) == "ok"]
+    planned_smoke_ok_dino = [row for row in planned_dino if smoke_status_of(row) == "ok"]
+    reviewing_non_dino = [row for row in reviewing if not is_dino_tail(row)]
+    recal_non_dino = [row for row in recal if not is_dino_tail(row)]
+    relaunchable = relaunchable_non_dino(rows)
 
     payload = {
         "manifest_csv": str(manifest_csv),
-        "running": _candidate_ids(running),
-        "planned_non_dino": _candidate_ids(planned_non_dino),
-        "planned_dino": _candidate_ids(planned_dino),
-        "reviewing": _candidate_ids(reviewing),
-        "recalibration_needed": _candidate_ids(recal),
-        "reviewing_non_dino": _candidate_ids(reviewing_non_dino),
-        "recalibration_needed_non_dino": _candidate_ids(recal_non_dino),
-        "relaunchable_non_dino": _candidate_ids(relaunchable_non_dino),
+        "running": candidate_ids(running),
+        "planned_non_dino": candidate_ids(planned_non_dino),
+        "planned_dino": candidate_ids(planned_dino),
+        "reviewing": candidate_ids(reviewing),
+        "recalibration_needed": candidate_ids(recal),
+        "reviewing_non_dino": candidate_ids(reviewing_non_dino),
+        "recalibration_needed_non_dino": candidate_ids(recal_non_dino),
+        "relaunchable_non_dino": candidate_ids(relaunchable),
         "next_queue_candidate_if_running_clears": (
             str(planned_smoke_ok_non_dino[0].get("family_id", "")).strip()
             if planned_smoke_ok_non_dino
@@ -158,8 +119,8 @@ def main() -> int:
         print("  - none")
 
     print("relaunchable non-dino (if you want to keep queue non-dino-first):")
-    if relaunchable_non_dino:
-        for row in relaunchable_non_dino:
+    if relaunchable:
+        for row in relaunchable:
             print(f"  - {_fmt_row(row)}")
     else:
         print("  - none")

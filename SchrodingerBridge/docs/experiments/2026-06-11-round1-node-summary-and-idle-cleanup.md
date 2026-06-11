@@ -45,6 +45,12 @@ Purpose:
 - keep the authoritative family evidence surface narrow:
   - per-epoch `metrics.csv` + `summary.json` under `round1_*_remote_full_eval_pull/`
   - family notes under `docs/experiments/round1_full_sweep/<family>/`
+- add one stable tooling index for local idle-time maintenance:
+  - [tools/experiments/README.md](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/README.md)
+  - use it as the first routing layer before opening ad hoc scripts by filename
+- add one clearer round-1 folder index:
+  - [round1_full_sweep/README.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/README.md)
+  - keep live narrative state in the master/node notes, and keep the folder README focused on structure plus entrypoints
 - do not let remote packet wrappers accumulate in the active root:
   - future `*_full_eval_fast_snapshot_*.tar` files are now ignored at `aaai2027/`
 - do not let loose checkpoint drops accumulate in the active root:
@@ -52,6 +58,13 @@ Purpose:
 - keep packet telemetry distinct from evidence:
   - runtime watcher `json/jsonl/log` files remain operational artifacts
   - summary/decision docs remain the git-facing read surface
+- reduce manifest/queue logic drift:
+  - DINO-tail detection and manifest status helpers now live in one shared module:
+    - [round1_manifest_utils.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/round1_manifest_utils.py)
+  - first adopters:
+    - [run_round1_family_queue.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_round1_family_queue.py)
+    - [audit_round1_queue_state.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/audit_round1_queue_state.py)
+    - [promote_next_round1_non_dino_candidate.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/promote_next_round1_non_dino_candidate.py)
 
 ## Eval Timing Audit
 
@@ -81,6 +94,7 @@ Purpose:
    - directory/index simplification
    - ignore-rule tightening
    - infra/code cleanup that does not perturb the live training/eval contract
+   - shared-helper consolidation where multiple queue/manifest scripts have started to fork logic
 4. Keep tokenizer DINO families at the tail of the queue:
    - if they are opened next, prefer warm-start or reconstruction-pretrain entry before a full formal lane
    - do not preempt the current solver closure work with a DINO-heavy launch
@@ -104,6 +118,9 @@ Purpose:
 - if that pattern persists, the solver should be treated as:
   - a structure-preserving component that may still help in a later composite
   - but it now also deserves renewed attention as a possible standalone keep candidate
+- local theory work should therefore bias toward:
+  - solver/backbone combinations that preserve the `epoch_0009` kind of structure gain without requiring a long unstable tail
+  - queue policy that keeps non-DINO architectural ideas moving before reopening the more expensive tokenizer-DINO branch
 - the practical consequence for round 1:
   - do not promote UNSB on internal curve motion alone
   - but do reopen the possibility that this solver family could survive round-1 closure on its own curve, not only as a later composite ingredient
