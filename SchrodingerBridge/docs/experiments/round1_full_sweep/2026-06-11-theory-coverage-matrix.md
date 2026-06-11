@@ -102,8 +102,10 @@ Purpose:
   - while `solver_unsb_cycle` is still `running`, dry-run prints the active-lane guard and then shows the first launchable planned family
   - under the current manifest, that first launchable planned family is `tok_a_dino_dict`
 - practical implication:
-  - the documented `DINO-last` policy is only as strong as the manifest statuses
-  - because the remaining non-DINO families are currently `reviewing` or `recalibration_needed` rather than `planned`, the queue would naturally fall through to the tokenizer lane after UNSB closure unless a non-DINO family is explicitly re-promoted into `planned`
+  - the documented `DINO-last` policy is now enforced at the queue helper level by default
+  - because the remaining non-DINO families are currently `reviewing` or `recalibration_needed` rather than `planned`, the queue now stops with a non-launchable notice after UNSB closure unless:
+    - a non-DINO family is explicitly re-promoted into `planned`, or
+    - the operator explicitly opts back into tokenizer tails with `--allow-dino-tail`
 
 ## Gaps That Still Matter
 
