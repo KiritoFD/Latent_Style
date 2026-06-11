@@ -51,14 +51,34 @@
     - keep `tok_b_cross_image` at `recalibration_needed`
     - the blocker is now `corrupted newest retained ckpt after disk-full incident`, not unresolved DINO-cache alignment
 
+- clean restart on `2026-06-12`:
+  - new active run:
+    - `aaai2027_round1_tok_b_cross_image_reconpretrain_seed42_b8a2_r2`
+  - launch contract:
+    - matched `wikiarts_5_full_notest` DINO cache override
+    - health wait extended to `240s` so DINO-cache load is not mistaken for under-band failure
+  - current live read after restart:
+    - first formal health sample about `10489 MiB / 12288 MiB`
+    - `band_status=in_band`
+    - `formal_status=formal_in_band`
+    - observed train progress about `epoch 1/8`, `step 313/1889`
+    - `loss=16.3870`
+    - `tswd=0.1476`
+  - fast-eval:
+    - remote watcher had to be relaunched once with `--sync-remote-scripts --sync-manifest`
+    - watcher is now alive again and waiting for the first retained checkpoint
+  - current node:
+    - the reconstruction-pretrain program is back to `running`
+    - closure authority is still pending first valid `r2` checkpoint eval
+
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
 
 - Family id: `tok_b_cross_image`
-- Run name: `aaai2027_round1_tok_b_cross_image_reconpretrain_seed42_b8a2`
-- Remote run dir: `./exp/inmortal-exp/aaai2027_round1_tok_b_cross_image_reconpretrain_seed42_b8a2`
+- Run name: `aaai2027_round1_tok_b_cross_image_seed42_b8a2`
+- Remote run dir: `./exp/inmortal-exp/aaai2027_round1_tok_b_cross_image_seed42_b8a2`
 - Config: [aaai2027_round1_tok_b_cross_image_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_tok_b_cross_image_seed42_b8a2.json)
-- Manifest status: `recalibration_needed`
+- Manifest status: `running`
 - Local fast root: [round1_tok_b_cross_image_fast_local](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_tok_b_cross_image_fast_local)
 - Local review root: [round1_tok_b_cross_image_localreview](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_tok_b_cross_image_localreview)
 - Prelaunch switch smoke: `ok`
@@ -66,11 +86,13 @@
 - Switch smoke row count: `1`
 - Tokenizer warmstart config: [aaai2027_round1_tok_b_cross_image_warmstart_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/warmstart/aaai2027_round1_tok_b_cross_image_warmstart_seed42_b8a2.json)
 - Tokenizer reconstruction-pretrain config: [aaai2027_round1_tok_b_cross_image_reconpretrain_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/pretrain/aaai2027_round1_tok_b_cross_image_reconpretrain_seed42_b8a2.json)
-- Latest retained checkpoints:
-  - `epoch_0001.pt` (`valid + evaluated`)
-  - `epoch_0002.pt` (`corrupted`)
-- Remote live state:
-  - `train pid = 0`
-  - `fast_eval pid = 0`
-  - `workspace I: free space recovered after cache cleanup`
+- Remote GPU live sample:
+  - `10877 MiB / 12288 MiB`, `util=89%`
+  - `band_status=in_band`
+  - `formal_status=formal_in_band`
+- Remote train progress:
+  - `epoch 1/24`
+  - `step 868/2361`
+  - `loss=1.9812`
+  - `tswd=0.2916`
 <!-- ROUND1_AUTO_STATUS:END -->

@@ -24,6 +24,7 @@ def main() -> int:
     parser.add_argument("--num-epochs", type=int, default=8)
     parser.add_argument("--save-interval", type=int, default=1)
     parser.add_argument("--freeze-mode", choices=["tokenizer_only", "style_branch"], default="style_branch")
+    parser.add_argument("--run-suffix", default="")
     parser.add_argument("--prepare-only", action="store_true")
     parser.add_argument("--skip-switch-smoke", action="store_true")
     args, passthrough = parser.parse_known_args()
@@ -42,6 +43,8 @@ def main() -> int:
         "--freeze-mode",
         str(args.freeze_mode),
     ]
+    if str(args.run_suffix).strip():
+        prepare.extend(["--run-suffix", str(args.run_suffix).strip()])
 
     prep_proc = subprocess.run(prepare, cwd=str(WORKSPACE), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace", check=False)
     print(prep_proc.stdout, end="")

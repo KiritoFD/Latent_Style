@@ -26,6 +26,10 @@
   - implication:
     - the reconstruction-pretrain line now has a one-point authoritative fast curve
     - but it still cannot be judged as converged or promotable because the newest retained checkpoint is corrupted and the run died before a clean continuation point
+- current live continuation:
+  - clean restart `aaai2027_round1_tok_b_cross_image_reconpretrain_seed42_b8a2_r2` is now running
+  - remote fast-eval watcher has been relaunched and is waiting for the first retained `r2` checkpoint
+  - until that first `r2` point lands, the only authoritative curve data remains the recovered `epoch_0001` point from the disk-full run
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
@@ -33,17 +37,13 @@
 - Authority root:
   - [round1_tok_b_cross_image_remote_full_eval_pull](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_tok_b_cross_image_remote_full_eval_pull)
 - Remote fast-eval status:
-  - `manual_recovery_partial_fast_eval`
+  - `waiting_for_first_remote_fast_eval_epoch`
 - Run name:
-  - `aaai2027_round1_tok_b_cross_image_reconpretrain_seed42_b8a2`
+  - `aaai2027_round1_tok_b_cross_image_seed42_b8a2`
 - Remote run dir:
-  - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_tok_b_cross_image_reconpretrain_seed42_b8a2`
+  - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_tok_b_cross_image_seed42_b8a2`
 - Expected eval subdir:
   - `full_eval_fast_snapshot`
-- Latest settled epoch:
-  - `epoch_0001`
-- Pending retained checkpoint:
-  - `epoch_0002` (`corrupted`)
 - Remote train pid count:
   - `0`
 - Remote fast-eval pid count:
