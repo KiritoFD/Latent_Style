@@ -57,7 +57,7 @@ Purpose:
 |---|---|---|---|
 | Active formal lane | `solver_unsb_cycle` | `running` | `epoch_0009` became a new Pareto point; `epoch_0010-0011` softened, and `epoch_0012` partially recovered without reclaiming the frontier |
 | Reviewing solver family | `solver_pc`, `solver_tangent_rk` | `reviewing` | both earlier solver-family training phases are now closed; deep review still pending |
-| Next queue candidate | `defer until unsb closure` | `planned` | tokenizer families remain tail items; exact next lane should be resolved only after the current solver family is formally closed and the DINO-last rule is re-applied |
+| Next queue candidate | `defer until unsb closure` | `planned` | queue should remain dormant while a formal lane is active; after closure, the current code-level first planned candidate is `tok_a_dino_dict` because no non-DINO family remains in `planned` status |
 | Auto handoff | `watch_launch_round1_queue_when_idle.py` | armed | once manifest has zero `running` families, invoke the queue automatically, but do not bypass the DINO-last and stage-summary policy |
 
 ## Current UNSB Read
@@ -95,6 +95,15 @@ Purpose:
   - `epoch_0009` for best structure-preserving point inside the current fast contract
 - implication:
   - once local heavy review budget is reopened, `epoch_0001` and `epoch_0009` are the first mandatory UNSB checkpoints for `IntroStyle / DINO / VLM`
+
+## Queue Audit
+
+- current `run_round1_family_queue.py --dry-run` behavior:
+  - while `solver_unsb_cycle` is still `running`, dry-run prints the active-lane guard and then shows the first launchable planned family
+  - under the current manifest, that first launchable planned family is `tok_a_dino_dict`
+- practical implication:
+  - the documented `DINO-last` policy is only as strong as the manifest statuses
+  - because the remaining non-DINO families are currently `reviewing` or `recalibration_needed` rather than `planned`, the queue would naturally fall through to the tokenizer lane after UNSB closure unless a non-DINO family is explicitly re-promoted into `planned`
 
 ## Gaps That Still Matter
 
