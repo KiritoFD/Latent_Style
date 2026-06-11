@@ -60,6 +60,12 @@ python SchrodingerBridge\tools\experiments\retag_round1_manifest_family.py `
   --if-current-status recalibration_needed
 ```
 
+If we just want the first smoke-ok non-DINO relaunch candidate promoted automatically:
+
+```powershell
+python SchrodingerBridge\tools\experiments\promote_next_round1_non_dino_candidate.py
+```
+
 Only if we intentionally want tokenizer `DINO` tail through the generic queue:
 
 ```powershell

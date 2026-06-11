@@ -218,6 +218,8 @@ Current remote lane status:
     - when that block triggers, the queue helper now also prints the currently relaunchable non-DINO candidates
     - explicit manifest retag helper for post-UNSB queue prep:
       - [retag_round1_manifest_family.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/retag_round1_manifest_family.py)
+    - one-step promote-next helper for the same flow:
+      - [promote_next_round1_non_dino_candidate.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/promote_next_round1_non_dino_candidate.py)
     - queue-state audit helper:
       - [audit_round1_queue_state.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/audit_round1_queue_state.py)
       - the current non-DINO relaunchable candidates reported by that helper are:
