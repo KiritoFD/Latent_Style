@@ -42,10 +42,10 @@
   - transfer `0.6962 / 0.4854`
   - full `0.7165 / 0.4746`
 - Latest locally pulled point:
-  - `epoch_0030`
-  - transfer `0.6860 / 0.4851`
-  - full `0.7067 / 0.4758`
-  - wall `178.02s`
+  - `epoch_0031`
+  - transfer `0.6867 / 0.4941`
+  - full `0.7066 / 0.4836`
+  - wall `176.75s`
 
 ## Operational Read
 
@@ -59,7 +59,8 @@
 - `epoch_0027` then rolled back again on LPIPS while style recovered only slightly.
 - `epoch_0028` remained another non-frontier tail point.
 - `epoch_0029` repaired a little, but `epoch_0030` still remained non-frontier.
-- `epoch_0018-0030` are now thirteen consecutive non-frontier points, so the lane is very deep into the post-patience tail.
+- `epoch_0031` still remained non-frontier after that small repair.
+- `epoch_0018-0031` are now fourteen consecutive non-frontier points, so the lane is extremely deep into the post-patience tail.
 - The remote fast-eval contract is working, but local docs must distinguish:
   - locally pulled curve points
   - remote scan points still mid-write
@@ -89,12 +90,12 @@
 - Switch smoke artifact: [round1_solver_pc_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_pc_switch_smoke_latest.json)
 - Switch smoke row count: `1`
 - Remote GPU live sample:
-  - `10344 MiB / 12288 MiB`, `util=94%`
+  - `10344 MiB / 12288 MiB`, `util=92%`
   - `band_status=in_band`
   - `formal_status=formal_in_band`
 - Remote train progress:
-  - `epoch 32/48`
-  - `step 77/590`
-  - `loss=7.9135`
-  - `tswd=5.9062`
+  - `epoch 33/48`
+  - `step 149/590`
+  - `loss=7.8960`
+  - `tswd=5.6562`
 <!-- ROUND1_AUTO_STATUS:END -->
