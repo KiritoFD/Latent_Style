@@ -113,7 +113,7 @@
 - Run name: `aaai2027_round1_attn_gated_spade_seed42_b8a2`
 - Remote run dir: `./exp/inmortal-exp/aaai2027_round1_attn_gated_spade_seed42_b8a2`
 - Config: [aaai2027_round1_attn_gated_spade_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_attn_gated_spade_seed42_b8a2.json)
-- Manifest status: `recalibration_needed`
+- Manifest status: `reviewing`
 - Local fast root: [round1_attn_gated_spade_fast_local](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_fast_local)
 - Local review root: [round1_attn_gated_spade_localreview](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_gated_spade_localreview)
 - Prelaunch switch smoke: `ok`

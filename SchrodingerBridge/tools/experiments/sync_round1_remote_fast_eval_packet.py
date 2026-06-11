@@ -93,17 +93,28 @@ def _md_link(label: str, path: Path) -> str:
 
 
 def _run(cmd: list[str], *, input_text: str | None = None, timeout_ms: int = 120000) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        cmd,
-        input=input_text,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=timeout_ms / 1000,
-        check=False,
-    )
+    try:
+        return subprocess.run(
+            cmd,
+            input=input_text,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout_ms / 1000,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        stdout = exc.stdout if isinstance(exc.stdout, str) else (exc.stdout.decode("utf-8", errors="replace") if exc.stdout else "")
+        stderr = exc.stderr if isinstance(exc.stderr, str) else (exc.stderr.decode("utf-8", errors="replace") if exc.stderr else "")
+        stderr = (stderr + f"\nTIMEOUT_EXPIRED after {timeout_ms} ms").strip()
+        return subprocess.CompletedProcess(
+            args=cmd,
+            returncode=124,
+            stdout=stdout,
+            stderr=stderr,
+        )
 
 
 def _load_manifest_row(manifest_csv: Path, *, family_id: str) -> dict[str, str]:
@@ -207,6 +218,8 @@ def _is_retryable_pull_error(text: str) -> bool:
     return (
         "file changed as we read it" in lowered
         or "tar:" in lowered and "changed as we read it" in lowered
+        or "timeout_expired" in lowered
+        or "timed out" in lowered
     )
 
 
@@ -312,6 +325,7 @@ def main() -> int:
     parser.add_argument("--local-root", type=Path, default=None)
     parser.add_argument("--pull-retries", type=int, default=4)
     parser.add_argument("--pull-retry-sleep-seconds", type=int, default=8)
+    parser.add_argument("--pull-timeout-ms", type=int, default=420000)
     args = parser.parse_args()
 
     manifest_csv = Path(args.manifest_csv).expanduser()
@@ -387,7 +401,7 @@ def main() -> int:
     pull_proc = None
     combined = ""
     for attempt in range(1, max(1, int(args.pull_retries)) + 1):
-        pull_proc = _run(pull_cmd, timeout_ms=120000)
+        pull_proc = _run(pull_cmd, timeout_ms=int(args.pull_timeout_ms))
         if pull_proc.returncode == 0:
             break
         combined = (pull_proc.stderr or "") + (pull_proc.stdout or "")

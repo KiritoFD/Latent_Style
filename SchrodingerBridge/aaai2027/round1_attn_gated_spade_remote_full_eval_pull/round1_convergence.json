@@ -1,6 +1,6 @@
 {
   "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_gated_spade_remote_full_eval_pull\\clip_lpips_curve.csv",
-  "row_count": 26,
+  "row_count": 30,
   "best_epoch": "epoch_0001",
   "best_index": 0,
   "best_transfer_clip_epoch": "epoch_0001",
@@ -19,15 +19,15 @@
     "epoch_0026"
   ],
   "last_pareto_epoch": "epoch_0026",
-  "newest_epoch": "epoch_0026",
-  "since_best": 25,
-  "since_last_pareto": 0,
-  "best_in_newest_2": true,
+  "newest_epoch": "epoch_0030",
+  "since_best": 29,
+  "since_last_pareto": 4,
+  "best_in_newest_2": false,
   "tail_flat": true,
   "tail_window": 4,
   "flat_eps_style": 0.005,
   "flat_eps_lpips": 0.018,
   "patience": 4,
   "criterion": "joint_transfer_allpairs_pareto",
-  "converged": false
+  "converged": true
 }

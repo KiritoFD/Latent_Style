@@ -167,16 +167,18 @@ Current remote lane status:
 
 - active formal lane:
   - none at the current moment
-  - active logical family is now `attn_gated_spade`
-  - canonical reopening path:
+  - latest just-closed non-DINO line is `attn_gated_spade`
+  - canonical formal path for that family:
     - segmented continuation from `epoch_0022`
     - `batch=20`
-  - first formal health read:
-    - about `9580 MiB / 12288 MiB`
-    - in-band
-  - latest curve consequence:
-    - `epoch_0026` extends the family Pareto set
-    - the line remains open for further bounded continuation
+  - final settled read:
+    - retained / eval through `epoch_0030`
+    - converged by the round-1 fast-curve rule
+    - last Pareto point remains `epoch_0026`
+  - next remote-train priority:
+    - `attn_pnp_selfinject`
+    - reopen only through segmented non-concurrent train/eval orchestration
+    - keep non-DINO-first policy; do not fall through to tokenizer DINO tail
   - `solver_unsb_cycle` is now a closure-stage hold family:
     - retained/eval extended through `epoch_0030`
     - last Pareto point remains `epoch_0018`
@@ -184,10 +186,10 @@ Current remote lane status:
       - `batch=17` late-train OOM
       - `batch=16` late-train under-band stop
 - latest closed training family:
-  - `solver_pc`
+  - `attn_gated_spade`
   - current training read:
-    - settled through `epoch_0036`
-    - no new Pareto point after `epoch_0017`
+    - settled through `epoch_0030`
+    - no new Pareto point after `epoch_0026`
     - moved to `reviewing`
 - implementation audit:
   - all `11` round-1 family configs now pass one reusable local switch smoke:
@@ -519,8 +521,8 @@ Recalibration-needed family:
 - Best transfer `CLIP-S`: `epoch_0001` -> `0.6929 / 0.4501`
 - Best transfer `LPIPS`: `epoch_0022` -> `0.6910 / 0.4252`
 - Best all-pairs `CLIP-S`: `epoch_0011` -> `0.7172 / 0.4220`
-- Latest settled fast point: `epoch_0026` -> transfer `0.6887 / 0.4265`
-- Convergence: `row_count=26, since_best=25, tail_flat=True, closure_band=open, converged=False`
+- Latest settled fast point: `epoch_0030` -> transfer `0.6889 / 0.4282`
+- Convergence: `row_count=30, since_best=29, tail_flat=True, closure_band=converged, converged=True`
 <!-- ROUND1_AUTO_STATUS:END -->
 
 Current `solver_pc` launch note:

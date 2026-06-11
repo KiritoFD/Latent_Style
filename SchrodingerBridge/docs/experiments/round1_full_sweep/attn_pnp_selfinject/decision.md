@@ -3,7 +3,7 @@
 - Decision date:
   - `2026-06-10`
 - Current status:
-  - `recalibration_needed`
+  - `planned`
 - Decision:
   - do not treat the archived `batch=22` launch as formal evidence
   - keep its `epoch_0001` scalar and fast-eval outputs as directional context only
@@ -46,6 +46,10 @@
       - no fast-eval pid
       - no new retained checkpoint in the canonical run root
     - the next retry target is therefore `batch=19`, after a fresh relaunch rather than assuming any live segmented controller remains
+  - queue promotion after `attn_gated_spade` closure:
+    - this family is now the next `planned` non-DINO lane in the manifest
+    - relaunch should still use segmented non-concurrent train/eval orchestration
+    - do not reinterpret the `planned` tag as "already formal-safe"; it only means this is the next prioritized calibration-to-formal candidate
   - current calibration continuation:
     - segmented controller now supports explicit launch-time VRAM slack passthrough
     - the active retry is:
