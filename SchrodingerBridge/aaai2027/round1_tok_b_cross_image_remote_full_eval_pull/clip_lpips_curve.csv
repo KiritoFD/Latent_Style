@@ -1,0 +1,2 @@
+epoch,full_clip_style,full_content_lpips,transfer_clip_style,transfer_content_lpips,wall_total_seconds,summary_path
+epoch_0001,0.6784914267460507,0.7922010926066666,0.6770996375878652,0.7927238516916667,210.58406620999995,/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_tok_b_cross_image_reconpretrain_seed42_b8a2/full_eval_fast_snapshot/epoch_0001/summary.json

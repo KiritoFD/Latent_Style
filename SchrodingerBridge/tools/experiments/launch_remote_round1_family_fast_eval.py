@@ -87,6 +87,13 @@ def _family_patience(family_id: str | None) -> int:
     return 4
 
 
+def _default_allowed_statuses(*, config_stem: str) -> list[str]:
+    stem = str(config_stem).strip().lower()
+    if "reconpretrain" in stem:
+        return ["running", "recalibration_needed"]
+    return ["running"]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Launch the remote fast-eval watcher for a round-1 family run.")
     parser.add_argument("--config", required=True, help="Workspace-relative config path.")
@@ -105,6 +112,10 @@ def main() -> int:
     parser.add_argument("--wsl-distro", default="Ubuntu-26.04")
     parser.add_argument("--manifest-csv", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--allow-other-running", action="store_true")
+    parser.add_argument("--allowed-status", action="append", default=[])
+    parser.add_argument("--sync-src", action="store_true")
+    parser.add_argument("--sync-remote-scripts", action="store_true")
+    parser.add_argument("--sync-manifest", action="store_true")
     args = parser.parse_args()
 
     config_rel = Path(args.config)
@@ -113,6 +124,9 @@ def main() -> int:
     run_name = str((payload.get("ablation") or {}).get("name", config_abs.stem)).strip() or config_abs.stem
     family_id = infer_round1_family_id(run_name=run_name, config_stem=config_abs.stem)
     family_patience = _family_patience(family_id)
+    allowed_statuses = [str(x).strip().lower() for x in list(args.allowed_status or []) if str(x).strip()]
+    if not allowed_statuses:
+        allowed_statuses = _default_allowed_statuses(config_stem=config_abs.stem)
     existing_fast_eval = _remote_fast_eval_processes(
         run_name=run_name,
         host=str(args.host),
@@ -147,6 +161,27 @@ def main() -> int:
     if run_dir.startswith("./"):
         run_dir = f"{args.remote_wsl_cwd.rstrip('/')}/{run_dir[2:]}"
     launch = WORKSPACE / "SchrodingerBridge" / "tools" / "experiments" / "launch_remote_wsl_command.py"
+    sync_pairs: list[str] = []
+    if bool(args.sync_src):
+        sync_pairs.extend(["--sync-path", "SchrodingerBridge/src"])
+    if bool(args.sync_remote_scripts):
+        sync_pairs.extend(
+            [
+                "--sync-path",
+                "SchrodingerBridge/tools/experiments/rerun_full_eval_for_run.py",
+                "--sync-path",
+                "SchrodingerBridge/tools/experiments/report_round1_convergence.py",
+                "--sync-path",
+                "SchrodingerBridge/tools/experiments/watch_round1_family_fast_eval.py",
+            ]
+        )
+    if bool(args.sync_manifest):
+        sync_pairs.extend(
+            [
+            "--sync-path",
+            str(manifest_csv.resolve().relative_to(WORKSPACE.resolve())),
+            ]
+        )
     command = [
         sys.executable,
         str(launch),
@@ -158,14 +193,7 @@ def main() -> int:
         str(args.remote_wsl_cwd),
         "--python-bin",
         str(args.remote_python),
-        "--sync-path",
-        "SchrodingerBridge/src",
-        "--sync-path",
-        "SchrodingerBridge/tools/experiments/rerun_full_eval_for_run.py",
-        "--sync-path",
-        "SchrodingerBridge/tools/experiments/report_round1_convergence.py",
-        "--sync-path",
-        "SchrodingerBridge/tools/experiments/watch_round1_family_fast_eval.py",
+        *sync_pairs,
         "--verify-python-file",
         "SchrodingerBridge/src/utils/run_evaluation.py",
         "--verify-python-file",
@@ -194,7 +222,7 @@ def main() -> int:
             f"--patience {int(family_patience)} "
             "--manifest-csv SchrodingerBridge/docs/experiments/round1_full_sweep/round1_family_manifest.csv "
             f"--family-id {family_id} "
-            "--allowed-status running"
+            + " ".join(f"--allowed-status {status}" for status in allowed_statuses)
         ),
     ]
     return _run(command)
