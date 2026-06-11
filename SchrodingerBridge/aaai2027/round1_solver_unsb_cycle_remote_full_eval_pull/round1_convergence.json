@@ -1,6 +1,6 @@
 {
   "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_unsb_cycle_remote_full_eval_pull\\clip_lpips_curve.csv",
-  "row_count": 7,
+  "row_count": 8,
   "best_epoch": "epoch_0001",
   "best_index": 0,
   "best_transfer_clip_epoch": "epoch_0001",
@@ -13,9 +13,9 @@
     "epoch_0003"
   ],
   "last_pareto_epoch": "epoch_0003",
-  "newest_epoch": "epoch_0007",
-  "since_best": 6,
-  "since_last_pareto": 4,
+  "newest_epoch": "epoch_0008",
+  "since_best": 7,
+  "since_last_pareto": 5,
   "best_in_newest_2": false,
   "tail_flat": false,
   "tail_window": 4,
