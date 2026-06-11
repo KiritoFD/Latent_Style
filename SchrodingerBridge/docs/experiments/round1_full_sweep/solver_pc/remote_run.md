@@ -66,6 +66,13 @@
   - wall `178.33s`
   - immediate read:
     - both style and LPIPS regressed materially from `epoch_0009`
+    - this is a clean rollback point rather than a new frontier update
+- `epoch_0010` settled point:
+  - transfer `0.6988 / 0.5270`
+  - all-pairs `0.7138 / 0.5185`
+  - wall `178.33s`
+  - immediate read:
+    - both style and LPIPS regressed materially from `epoch_0009`
     - so this point is a clear rollback, not a new frontier update
 
 <!-- ROUND1_AUTO_STATUS:START -->

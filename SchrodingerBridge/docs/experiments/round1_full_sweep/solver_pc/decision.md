@@ -72,6 +72,14 @@
   - full `0.7138 / 0.5185`
   - wall `178.33s`
 - Interpretation:
+  - this point rolled back materially from the `epoch_0009` frontier on both style and LPIPS
+  - so `epoch_0009` remains the current best point
+  - the line is still active, but now clearly oscillatory rather than monotone
+- `epoch_0010` update:
+  - transfer `0.6988 / 0.5270`
+  - full `0.7138 / 0.5185`
+  - wall `178.33s`
+- Interpretation:
   - this point rolls back materially from `epoch_0009` on both style and LPIPS
   - so it is not a new Pareto point
   - the family remains alive because the best point is still in the newest 2 settled checkpoints
