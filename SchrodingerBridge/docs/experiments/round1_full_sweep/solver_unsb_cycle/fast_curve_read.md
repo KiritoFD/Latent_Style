@@ -5,22 +5,14 @@
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
 
-- Authority root:
-  - [round1_solver_unsb_cycle_remote_full_eval_pull](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull)
-- Pulled curve CSV:
-  - [clip_lpips_curve.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull/clip_lpips_curve.csv)
-- Pulled local curve rows:
-  - `11`
-- Pulled local curve epochs:
-  - `epoch_0001, epoch_0002, epoch_0003, epoch_0004, epoch_0005, epoch_0006, epoch_0007, epoch_0008, epoch_0009, epoch_0010, epoch_0011`
+- Fast root: [round1_solver_unsb_cycle_remote_full_eval_pull](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull)
+- Curve CSV: [clip_lpips_curve.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull/clip_lpips_curve.csv)
 - Latest remote checkpoint:
-  - `epoch_0011.pt`
+  - `epoch_0012.pt`
 - Latest pulled local eval epoch:
-  - `epoch_0011`
-- Remote scan confirmed summary epochs:
-  - `epoch_0001, epoch_0002, epoch_0003, epoch_0004, epoch_0005, epoch_0006, epoch_0007, epoch_0008, epoch_0009, epoch_0010, epoch_0011`
+  - `epoch_0012`
 - Latest remote confirmed eval epoch:
-  - `epoch_0011`
+  - `epoch_0012`
 - Best transfer `CLIP-S`:
   - `epoch_0001`
   - `style / lpips = 0.7057 / 0.5669`
@@ -31,18 +23,17 @@
   - `epoch_0009`
   - `style / lpips = 0.7245 / 0.4311`
 - Latest settled point:
-  - `epoch_0011`
-  - transfer `style / lpips = 0.6888 / 0.4889`
-  - full `style / lpips = 0.7103 / 0.4783`
-  - wall `= 325.37s`
+  - `epoch_0012`
+  - transfer `style / lpips = 0.6985 / 0.5078`
+  - full `style / lpips = 0.7168 / 0.4966`
+  - wall `= 188.13s`
 - Convergence snapshot:
+  - `row_count = 12`
   - `best_epoch = epoch_0001`
-  - `since_last_pareto = 2`
+  - `since_last_pareto = 3`
   - `best_in_newest_2 = False`
   - `tail_flat = False`
   - `closure_band = open`
   - `criterion = joint_transfer_allpairs_pareto`
   - `converged = False`
-- Sync summary:
-  - [sync_summary.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull/sync_summary.json)
 <!-- ROUND1_AUTO_STATUS:END -->

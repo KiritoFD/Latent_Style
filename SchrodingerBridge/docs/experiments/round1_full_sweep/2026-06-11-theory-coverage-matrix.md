@@ -55,7 +55,7 @@ Purpose:
 
 | Slot | Family | Status | Reason |
 |---|---|---|---|
-| Active formal lane | `solver_unsb_cycle` | `running` | `epoch_0009` became a new Pareto point, so the solver patience clock reset; `epoch_0010` is weaker but not enough to close the line |
+| Active formal lane | `solver_unsb_cycle` | `running` | `epoch_0009` became a new Pareto point; `epoch_0010-0011` softened, and `epoch_0012` partially recovered without reclaiming the frontier |
 | Reviewing solver family | `solver_pc`, `solver_tangent_rk` | `reviewing` | both earlier solver-family training phases are now closed; deep review still pending |
 | Next queue candidate | `defer until unsb closure` | `planned` | tokenizer families remain tail items; exact next lane should be resolved only after the current solver family is formally closed and the DINO-last rule is re-applied |
 | Auto handoff | `watch_launch_round1_queue_when_idle.py` | armed | once manifest has zero `running` families, invoke the queue automatically, but do not bypass the DINO-last and stage-summary policy |
@@ -63,9 +63,9 @@ Purpose:
 ## Current UNSB Read
 
 - latest settled point:
-  - `epoch_0011`
-  - transfer `0.6888 / 0.4889`
-  - all-pairs `0.7103 / 0.4783`
+  - `epoch_0012`
+  - transfer `0.6985 / 0.5078`
+  - all-pairs `0.7168 / 0.4966`
 - current family-best points:
   - best transfer `CLIP-S`:
     - `epoch_0001`
@@ -78,7 +78,8 @@ Purpose:
     - `0.7245 / 0.4311`
 - interpretation:
   - `epoch_0009` is the first genuinely new late-stage Pareto point after the earlier `epoch_0003` frontier
-  - `epoch_0010-0011` both soften from `epoch_0009`, so the frontier reactivation is real but not yet stable
+  - `epoch_0010-0011` both soften from `epoch_0009`
+  - `epoch_0012` then recovers over `epoch_0011`, but still stays below the `epoch_0009` frontier
   - the current question is no longer "is UNSB near closure"
   - it is now "does the post-epoch_0009 tail stabilize near the new frontier or collapse back toward the earlier mid-curve regime"
   - `epoch_0011` also raises a secondary efficiency question because its fast-eval wall time is much higher than the surrounding checkpoints
