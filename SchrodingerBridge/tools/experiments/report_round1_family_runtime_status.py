@@ -40,6 +40,9 @@ def _find_family_row(rows: list[dict[str, str]], *, family_id: str) -> dict[str,
 def _build_payload(
     *,
     row: dict[str, str],
+    run_name_override: str | None,
+    run_dir_override: str | None,
+    process_token_override: str | None,
     host: str,
     port: int,
     user: str,
@@ -51,6 +54,9 @@ def _build_payload(
     hard_cap_mib: int,
 ) -> dict[str, object]:
     family_id = str(row.get("family_id", "")).strip()
+    run_name = str(run_name_override or row.get("run_name", "")).strip()
+    run_dir = str(run_dir_override or row.get("run_dir", "")).strip()
+    process_token = str(process_token_override or run_name or family_id).strip()
     fast_root, curve_csv, convergence_json, sync_summary = _effective_fast_eval_paths(
         family_id=family_id,
         fast_root=Path(str(row.get("local_fast_root", "")).strip() or "."),
@@ -58,7 +64,7 @@ def _build_payload(
     )
     convergence = _read_json_optional(convergence_json)
     runtime = _remote_runtime_snapshot(
-        row=row,
+        row={**row, "run_name": run_name, "run_dir": run_dir, "process_token": process_token},
         host=host,
         port=port,
         user=user,
@@ -85,11 +91,12 @@ def _build_payload(
         formal_status = "formal_in_band" if band_status == "in_band" else f"nonformal_{band_status}"
     return {
         "family_id": family_id,
-        "run_name": str(row.get("run_name", "")).strip(),
+        "run_name": run_name,
+        "process_token": process_token,
         "manifest_status": str(row.get("decision_status", "")).strip(),
         "switch_smoke_status": str(row.get("switch_smoke_status", "")).strip(),
         "config_path": str(row.get("config_path", "")).strip(),
-        "run_dir": str(row.get("run_dir", "")).strip(),
+        "run_dir": run_dir,
         "fast_eval_root": str(fast_root),
         "curve_csv": str(curve_csv),
         "convergence_json": str(convergence_json),
@@ -116,6 +123,7 @@ def _print_text(payload: dict[str, object]) -> None:
     processes = runtime.get("processes") if isinstance(runtime.get("processes"), dict) else {}
     print(f"family_id: {payload.get('family_id', '')}")
     print(f"run_name: {payload.get('run_name', '')}")
+    print(f"process_token: {payload.get('process_token', '')}")
     print(f"manifest_status: {payload.get('manifest_status', '')}")
     print(f"switch_smoke_status: {payload.get('switch_smoke_status', '')}")
     print(f"config_path: {payload.get('config_path', '')}")
@@ -171,6 +179,9 @@ def main() -> int:
     parser.add_argument("--remote-user", default=DEFAULT_REMOTE_USER)
     parser.add_argument("--remote-wsl-distro", default=DEFAULT_REMOTE_WSL_DISTRO)
     parser.add_argument("--remote-workspace-root", default=DEFAULT_REMOTE_WORKSPACE_ROOT)
+    parser.add_argument("--run-name-override", default="")
+    parser.add_argument("--run-dir-override", default="")
+    parser.add_argument("--process-token-override", default="")
     parser.add_argument("--remote-log-lines", type=int, default=80)
     parser.add_argument("--remote-band-min-mib", type=int, default=DEFAULT_REMOTE_BAND_MIN_MIB)
     parser.add_argument("--remote-band-max-mib", type=int, default=DEFAULT_REMOTE_BAND_MAX_MIB)
@@ -182,6 +193,9 @@ def main() -> int:
     row = _find_family_row(rows, family_id=str(args.family_id))
     payload = _build_payload(
         row=row,
+        run_name_override=str(args.run_name_override).strip() or None,
+        run_dir_override=str(args.run_dir_override).strip() or None,
+        process_token_override=str(args.process_token_override).strip() or None,
         host=str(args.remote_host),
         port=int(args.remote_port),
         user=str(args.remote_user),

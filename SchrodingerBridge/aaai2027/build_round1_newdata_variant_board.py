@@ -27,7 +27,7 @@ OUT_PNG = OUT_DIR / "fig_round1_newdata_variant_board.png"
 OUT_PDF = OUT_DIR / "fig_round1_newdata_variant_board.pdf"
 
 WIDTH = 1600
-HEIGHT = 1120
+HEIGHT = 1160
 
 
 def _read_csv(path: Path) -> list[dict[str, str]]:
@@ -55,6 +55,7 @@ def _point_rows(rows: list[dict[str, str]]) -> list[dict[str, object]]:
     for row in rows:
         clip = float(row["transfer_clip_style"])
         lpips = float(row["transfer_lpips"])
+        display_label = row.get("display_label", "").strip() or row["label"]
         out.append(
             {
                 "method": row["method"],
@@ -68,6 +69,7 @@ def _point_rows(rows: list[dict[str, str]]) -> list[dict[str, object]]:
                 "all_pairs_clip_style": float(row["all_pairs_clip_style"]) if row["all_pairs_clip_style"] else None,
                 "all_pairs_lpips": float(row["all_pairs_lpips"]) if row["all_pairs_lpips"] else None,
                 "label": row["label"],
+                "displayLabel": display_label,
                 "marker": row["marker"],
                 "color": row["color"],
                 "hint_dx": float(row["dx"]),
@@ -157,7 +159,7 @@ def _build_html(*, trajectories: list[dict[str, object]], points: list[dict[str,
       font-size: 26px;
     }}
     .label-text {{
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 600;
       paint-order: stroke;
       stroke: rgba(255,255,255,0.95);
@@ -251,6 +253,32 @@ function appendMarker(parent, markerDef, fill, stroke) {{
       c.setAttribute("fill", "none");
       c.setAttribute("stroke", fill);
     }}
+  }}
+}}
+
+function wrapLabel(text) {{
+  if (text.includes("\\n")) return text.split("\\n").filter(Boolean);
+  if (text.length <= 17 || !text.includes(" ")) return [text];
+  const parts = text.split(" ");
+  let best = null;
+  for (let i = 1; i < parts.length; i++) {{
+    const left = parts.slice(0, i).join(" ");
+    const right = parts.slice(i).join(" ");
+    const score = Math.abs(left.length - right.length);
+    if (!best || score < best.score) best = {{ left, right, score }};
+  }}
+  if (!best) return [text];
+  return [best.left, best.right];
+}}
+
+function renderLabelText(textEl, label) {{
+  const lines = wrapLabel(label);
+  for (const [idx, line] of lines.entries()) {{
+    const tspan = createSvgEl("tspan", {{
+      x: 0,
+      dy: idx === 0 ? 0 : 23,
+    }}, textEl);
+    tspan.textContent = line;
   }}
 }}
 
@@ -357,6 +385,13 @@ for (const traj of DATA.trajectories) {{
   }}
 }}
 
+const obstaclePoints = [];
+for (const traj of DATA.trajectories) {{
+  for (const p of traj.points) {{
+    obstaclePoints.push({{ x: sx(p.x), y: sy(p.y), r: traj.pointRadius + 4 }});
+  }}
+}}
+
 const labelNodes = [];
 for (const point of DATA.points) {{
   const x = sx(point.x);
@@ -366,7 +401,7 @@ for (const point of DATA.points) {{
   const g = createSvgEl("g", {{}}, svg);
   const rect = createSvgEl("rect", {{ class: "label-pill", rx: 12, ry: 12 }}, g);
   const text = createSvgEl("text", {{ class: "label-text", fill: point.color, x: 0, y: 0 }}, g);
-  text.textContent = point.label;
+  renderLabelText(text, point.displayLabel || point.label);
   const textBox = text.getBBox();
   const hint = unitHint(point.hint_dx, point.hint_dy);
   const pointRadius = Math.sqrt(point.size) * 0.9;
@@ -385,12 +420,12 @@ for (const point of DATA.points) {{
     leader,
     home: null,
     box: null,
-    priority: point.size + point.label.length * 0.45,
+    priority: point.size + String(point.label || "").length * 0.45,
   }});
 }}
 
-const PAD_X = 12;
-const PAD_Y = 8;
+const PAD_X = 11;
+const PAD_Y = 7;
 const PLOT_PAD = 12;
 
 function candidateBox(node, textX, textY) {{
@@ -433,6 +468,15 @@ function boxCost(node, box, placed) {{
     const near = intersectArea(box, other.box, 22);
     if (near > 0) cost += near * 1.1;
   }}
+  for (const obstacle of obstaclePoints) {{
+    if (Math.abs(obstacle.x - node.anchorX) < 0.5 && Math.abs(obstacle.y - node.anchorY) < 0.5) continue;
+    const nearestX = Math.max(box.x, Math.min(obstacle.x, box.x + box.w));
+    const nearestY = Math.max(box.y, Math.min(obstacle.y, box.y + box.h));
+    const dist = Math.hypot(obstacle.x - nearestX, obstacle.y - nearestY);
+    if (dist < obstacle.r + 8) {{
+      cost += (obstacle.r + 8 - dist) * 55;
+    }}
+  }}
   const cx = box.x + box.w * 0.5;
   const cy = box.y + box.h * 0.5;
   const leader = Math.hypot(cx - node.anchorX, cy - node.anchorY);
@@ -449,8 +493,7 @@ function applyBox(node, box) {{
   node.x = box.textX;
   node.y = box.textY;
   node.box = box;
-  node.text.setAttribute("x", node.x);
-  node.text.setAttribute("y", node.y);
+  node.text.setAttribute("transform", `translate(${{node.x}} ${{node.y}})`);
   node.rect.setAttribute("x", box.x);
   node.rect.setAttribute("y", box.y);
   node.rect.setAttribute("width", box.w);
@@ -466,7 +509,7 @@ function applyBox(node, box) {{
 function buildCandidates(node) {{
   const dirs = primaryDirections(node.hint.x, node.hint.y);
   const d0 = node.pointRadius + 12;
-  const distances = [d0, d0 + 12, d0 + 24, d0 + 38];
+  const distances = [d0, d0 + 12, d0 + 24, d0 + 38, d0 + 58];
   const out = [];
   for (const [vx0, vy0] of dirs) {{
     const dir = normalizeDir(vx0, vy0);
@@ -483,6 +526,8 @@ function buildCandidates(node) {{
       out.push(clampBox(candidateBox(node, textX, textY)));
     }}
   }}
+  out.push(clampBox(candidateBox(node, node.anchorX - node.textBox0.w * 0.5, node.anchorY - d0 - node.textBox0.h * 0.35)));
+  out.push(clampBox(candidateBox(node, node.anchorX - node.textBox0.w * 0.5, node.anchorY + d0 + node.textBox0.h * 0.9)));
   return out;
 }}
 
