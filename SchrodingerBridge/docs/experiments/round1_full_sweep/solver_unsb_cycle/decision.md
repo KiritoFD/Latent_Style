@@ -34,12 +34,15 @@
   - `epoch_0004`
     - transfer `0.7001 / 0.5181`
     - full `0.7164 / 0.5097`
+  - `epoch_0005`
+    - transfer `0.6951 / 0.5144`
+    - full `0.7119 / 0.5054`
 - Read:
   - the family is no longer in calibration mode
   - `epoch_0003` is the first clear solver-style best point so far:
     - LPIPS improved materially from the opening
     - all-pairs style also improved
-  - `epoch_0004` then gave a mild rollback from that point
+  - `epoch_0004-0005` then gave two consecutive mild rollbacks from that point
   - all future keep/reject decisions should now be made from the all-ckpt remote fast curve
 
 ## Promotion Rule

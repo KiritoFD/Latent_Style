@@ -39,10 +39,13 @@
   - `epoch_0004`
     - transfer `0.7001 / 0.5181`
     - full `0.7164 / 0.5097`
+  - `epoch_0005`
+    - transfer `0.6951 / 0.5144`
+    - full `0.7119 / 0.5054`
   - interpretation:
     - `epoch_0001 -> 0002` was structure-favoring
     - `epoch_0003` then became the first clear best point on both structure and all-pairs style
-    - `epoch_0004` is the first mild rollback after that improvement
+    - `epoch_0004-0005` are two mild rollbacks after that improvement
 
 ## Next Action
 
