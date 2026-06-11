@@ -138,6 +138,18 @@
         "has_metrics": true,
         "has_summary": true,
         "image_count": 0
+      },
+      {
+        "epoch": "epoch_0023",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0024",
+        "has_metrics": false,
+        "has_summary": false,
+        "image_count": 0
       }
     ],
     "ckpts": [
@@ -163,7 +175,8 @@
       "epoch_0020.pt",
       "epoch_0021.pt",
       "epoch_0022.pt",
-      "epoch_0023.pt"
+      "epoch_0023.pt",
+      "epoch_0024.pt"
     ],
     "processes": {
       "train": [
@@ -182,12 +195,20 @@
       ],
       "fast_eval": [
         {
-          "pid": "65245",
+          "pid": "73366",
           "cmd": "bash /mnt/i/Github/Latent_Style/SchrodingerBridge/_codex_tmp/round1-aaai2027_round1_solver_pc_seed42_b8a2-fast-eval.sh"
         },
         {
-          "pid": "65250",
-          "cmd": "/home/xy/venvs/samam312/bin/python SchrodingerBridge/tools/experiments/watch_round1_family_fast_eval.py --python-bin /home/xy/venvs/samam312/bin/python --run-dir /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_pc_seed42_b8a2 --test-dir /mnt/i/wikiart_distinct5_samam_512_classview/test --cache-dir /mnt/i/Github/Latent_Style/eval_cache --clip-hf-cache-dir /mnt/i/Github/Latent_Style/eval_cache/hf --output-subdir full_eval_fast_snapshot --batch-size 1 --vae-decode-batch-size 4 --target-chunk-size 1 --max-live-memory-mib-to-launch 9800 --poll-seconds 180 --patience 6"
+          "pid": "73377",
+          "cmd": "/home/xy/venvs/samam312/bin/python SchrodingerBridge/tools/experiments/watch_round1_family_fast_eval.py --python-bin /home/xy/venvs/samam312/bin/python --run-dir /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_pc_seed42_b8a2 --test-dir /mnt/i/wikiart_distinct5_samam_512_classview/test --cache-dir /mnt/i/Github/Latent_Style/eval_cache --clip-hf-cache-dir /mnt/i/Github/Latent_Style/eval_cache/hf --output-subdir full_eval_fast_snapshot --batch-size 1 --vae-decode-batch-size 4 --target-chunk-size 1 --max-live-memory-mib-to-launch 9800 --poll-seconds 180 --patience 6 --manifest-csv SchrodingerBridge/docs/experiments/round1_full_sweep/round1_family_manifest.csv --family-id solver_pc --allowed-status running"
+        },
+        {
+          "pid": "73387",
+          "cmd": "/home/xy/venvs/samam312/bin/python /mnt/i/Github/Latent_Style/SchrodingerBridge/tools/experiments/rerun_full_eval_for_run.py --run-dir /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_pc_seed42_b8a2 --test-dir /mnt/i/wikiart_distinct5_samam_512_classview/test --cache-dir /mnt/i/Github/Latent_Style/eval_cache --clip-hf-cache-dir /mnt/i/Github/Latent_Style/eval_cache/hf --batch-size 1 --vae-decode-batch-size 4 --target-chunk-size 1 --output-subdir full_eval_fast_snapshot --skip-existing"
+        },
+        {
+          "pid": "73763",
+          "cmd": "/home/xy/venvs/samam312/bin/python /mnt/i/Github/Latent_Style/SchrodingerBridge/src/utils/run_evaluation.py --checkpoint /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_pc_seed42_b8a2/epoch_0024.pt --output /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_pc_seed42_b8a2/full_eval_fast_snapshot/epoch_0024 --test_dir /mnt/i/wikiart_distinct5_samam_512_classview/test --cache_dir /mnt/i/Github/Latent_Style/eval_cache --clip_hf_cache_dir /mnt/i/Github/Latent_Style/eval_cache/hf --batch_size 1 --vae_decode_batch_size 4 --target_chunk_size 1 --eval_only_lpips_clip_style --no-eval_enable_introstyle --no-save_generated_images --no-save_summary_grid"
         }
       ],
       "posttrain_eval": []
@@ -223,17 +244,17 @@
     "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0001\\summary.json"
   },
   "latest": {
-    "epoch": "epoch_0022",
-    "full_clip_style": "0.708689708272616",
-    "full_content_lpips": "0.4773672635866667",
-    "transfer_clip_style": "0.6888307036459446",
-    "transfer_content_lpips": "0.48656489808333336",
-    "wall_total_seconds": "177.1822014220088",
-    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0022\\summary.json"
+    "epoch": "epoch_0023",
+    "full_clip_style": "0.7095392194986344",
+    "full_content_lpips": "0.47458348056000005",
+    "transfer_clip_style": "0.6885620672007401",
+    "transfer_content_lpips": "0.48583989866666666",
+    "wall_total_seconds": "182.52031632298895",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0023\\summary.json"
   },
   "convergence": {
     "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\clip_lpips_curve.csv",
-    "row_count": 22,
+    "row_count": 23,
     "best_epoch": "epoch_0001",
     "best_index": 0,
     "best_transfer_clip_epoch": "epoch_0001",
@@ -257,16 +278,16 @@
       "epoch_0017"
     ],
     "last_pareto_epoch": "epoch_0017",
-    "newest_epoch": "epoch_0022",
-    "since_best": 21,
-    "since_last_pareto": 5,
+    "newest_epoch": "epoch_0023",
+    "since_best": 22,
+    "since_last_pareto": 6,
     "best_in_newest_2": false,
     "tail_flat": false,
     "patience": 6,
     "criterion": "joint_transfer_allpairs_pareto",
     "converged": false
   },
-  "latest_remote_ckpt": "epoch_0023.pt",
+  "latest_remote_ckpt": "epoch_0024.pt",
   "remote_confirmed_settled_epochs": [
     "epoch_0001",
     "epoch_0002",
@@ -289,9 +310,10 @@
     "epoch_0019",
     "epoch_0020",
     "epoch_0021",
-    "epoch_0022"
+    "epoch_0022",
+    "epoch_0023"
   ],
-  "latest_remote_settled_epoch": "epoch_0022",
+  "latest_remote_settled_epoch": "epoch_0023",
   "local_curve_epochs": [
     "epoch_0001",
     "epoch_0002",
@@ -314,10 +336,11 @@
     "epoch_0019",
     "epoch_0020",
     "epoch_0021",
-    "epoch_0022"
+    "epoch_0022",
+    "epoch_0023"
   ],
-  "latest_local_settled_epoch": "epoch_0022",
+  "latest_local_settled_epoch": "epoch_0023",
   "pending_ckpt_epochs": [
-    "epoch_0023.pt"
+    "epoch_0024.pt"
   ]
 }
