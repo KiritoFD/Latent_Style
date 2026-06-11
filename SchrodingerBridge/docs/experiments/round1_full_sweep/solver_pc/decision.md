@@ -67,6 +67,14 @@
   - this point improves LPIPS materially again versus `epoch_0008`
   - style also recovers slightly on both transfer and all-pairs
   - so `epoch_0009` is a genuine new Pareto frontier update, not just a recovery to the old line
+- `epoch_0010` update:
+  - transfer `0.6988 / 0.5270`
+  - full `0.7138 / 0.5185`
+  - wall `178.33s`
+- Interpretation:
+  - this point rolls back materially from `epoch_0009` on both style and LPIPS
+  - so it is not a new Pareto point
+  - the family remains alive because the best point is still in the newest 2 settled checkpoints
 - Next action:
   - keep the same remote lane running
   - keep settling retained checkpoints under the remote fast-eval contract before any deeper review or closure decision
