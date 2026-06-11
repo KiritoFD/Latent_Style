@@ -197,6 +197,24 @@
   - the next bounded continuation should test whether the tail finally flattens after `epoch_0024`
   - do not hand off to a different family yet
 
+## Fourth Post-Reset Followup Read
+
+- bounded continuation from `epoch_0024` through `epoch_0026` is now settled
+- new points:
+  - `epoch_0025`
+    - transfer `0.6866 / 0.4675`
+    - full `0.7095 / 0.4578`
+  - `epoch_0026`
+    - transfer `0.6915 / 0.5290`
+    - full `0.7078 / 0.5188`
+- interpretation:
+  - `epoch_0025-0026` still do not beat the `epoch_0018` Pareto point
+  - `since_last_pareto` is now `8`, which is beyond the solver patience target
+  - but the tail is still not flat enough to justify closure
+- current decision:
+  - keep `solver_unsb_cycle` open for at least one more bounded continuation check
+  - the next segment should decide whether the tail finally flattens or recovers
+
 ## Promotion Rule
 
 - No early promotion from the first in-band health sample alone.
