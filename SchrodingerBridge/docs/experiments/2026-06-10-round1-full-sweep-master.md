@@ -217,6 +217,9 @@ Current remote lane status:
       - [retag_round1_manifest_family.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/retag_round1_manifest_family.py)
     - queue-state audit helper:
       - [audit_round1_queue_state.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/audit_round1_queue_state.py)
+      - the current non-DINO relaunchable candidates reported by that helper are:
+        - `attn_gw_ot`
+        - `attn_gated_spade`
   - current auto-handoff state:
     - the local `watch_launch_round1_queue_when_idle.py` watcher is now armed against the round1 manifest
     - so once no family remains `running`, the next `planned` family will be launched through the existing queue path automatically

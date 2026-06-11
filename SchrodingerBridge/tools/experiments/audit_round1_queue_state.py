@@ -65,6 +65,10 @@ def _fmt_row(row: dict[str, str]) -> str:
     return f"{family_id} [{axis}] smoke={smoke} batch={batch} {note}"
 
 
+def _candidate_ids(rows: list[dict[str, str]]) -> list[str]:
+    return [str(row.get("family_id", "")).strip() for row in rows if str(row.get("family_id", "")).strip()]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Audit the current round1 manifest and report safe queue state.")
     parser.add_argument("--manifest-csv", type=Path, default=DEFAULT_MANIFEST)
@@ -87,14 +91,20 @@ def main() -> int:
     planned_dino = [row for row in planned if _is_dino_tail(row)]
     planned_smoke_ok_non_dino = [row for row in planned_non_dino if _smoke(row) == "ok"]
     planned_smoke_ok_dino = [row for row in planned_dino if _smoke(row) == "ok"]
+    reviewing_non_dino = [row for row in reviewing if not _is_dino_tail(row)]
+    recal_non_dino = [row for row in recal if not _is_dino_tail(row)]
+    relaunchable_non_dino = [row for row in recal_non_dino if _smoke(row) == "ok"]
 
     payload = {
         "manifest_csv": str(manifest_csv),
-        "running": [str(row.get("family_id", "")).strip() for row in running],
-        "planned_non_dino": [str(row.get("family_id", "")).strip() for row in planned_non_dino],
-        "planned_dino": [str(row.get("family_id", "")).strip() for row in planned_dino],
-        "reviewing": [str(row.get("family_id", "")).strip() for row in reviewing],
-        "recalibration_needed": [str(row.get("family_id", "")).strip() for row in recal],
+        "running": _candidate_ids(running),
+        "planned_non_dino": _candidate_ids(planned_non_dino),
+        "planned_dino": _candidate_ids(planned_dino),
+        "reviewing": _candidate_ids(reviewing),
+        "recalibration_needed": _candidate_ids(recal),
+        "reviewing_non_dino": _candidate_ids(reviewing_non_dino),
+        "recalibration_needed_non_dino": _candidate_ids(recal_non_dino),
+        "relaunchable_non_dino": _candidate_ids(relaunchable_non_dino),
         "next_queue_candidate_if_running_clears": (
             str(planned_smoke_ok_non_dino[0].get("family_id", "")).strip()
             if planned_smoke_ok_non_dino
@@ -143,6 +153,13 @@ def main() -> int:
     print("recalibration_needed:")
     if recal:
         for row in recal:
+            print(f"  - {_fmt_row(row)}")
+    else:
+        print("  - none")
+
+    print("relaunchable non-dino (if you want to keep queue non-dino-first):")
+    if relaunchable_non_dino:
+        for row in relaunchable_non_dino:
             print(f"  - {_fmt_row(row)}")
     else:
         print("  - none")
