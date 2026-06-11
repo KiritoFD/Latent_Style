@@ -19,8 +19,8 @@
     - `9334 MiB / 12288 MiB`
     - first authoritative formal opening
 - Current live health sample:
-  - `10348 MiB / 12288 MiB`
-  - `util=89%`
+  - `9518 MiB / 12288 MiB`
+  - `util=91%`
   - read: lane is healthy and in-band
 
 ## Settled Curve Milestones
@@ -42,19 +42,21 @@
   - transfer `0.6962 / 0.4854`
   - full `0.7165 / 0.4746`
 - Latest locally pulled point:
-  - `epoch_0019`
-  - transfer `0.6927 / 0.4941`
-  - full `0.7124 / 0.4834`
-  - wall `178.66s`
+  - `epoch_0020`
+  - transfer `0.6930 / 0.4931`
+  - full `0.7116 / 0.4831`
+  - wall `176.96s`
 
 ## Operational Read
 
 - `solver_pc` is not monotone; it is cycling between structure repair and style recovery.
 - The family is still alive because real Pareto updates kept reappearing after apparent rollbacks.
+- `epoch_0018-0020` are now three consecutive non-frontier points, so the lane is moving closer to a meaningful closure test, but not there yet.
 - The remote fast-eval contract is working, but local docs must distinguish:
   - locally pulled curve points
   - remote scan points still mid-write
 - That distinction is now part of the sync tooling to avoid false closure reads.
+- Pending-only remote epochs no longer dirty tracked docs during active runs.
 
 ## Next Action
 

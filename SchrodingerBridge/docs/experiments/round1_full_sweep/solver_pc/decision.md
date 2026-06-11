@@ -21,7 +21,7 @@
   - `batch=14 -> 8226 MiB`
   - `batch=16 -> 9334 MiB` at first formal health check
 - Current live band check:
-  - `10348 MiB / 12288 MiB`
+  - `9518 MiB / 12288 MiB`
   - read: safely inside the requested formal band
 
 ## Curve Read
@@ -43,18 +43,18 @@
     - transfer `0.6982 / 0.5075`
     - full `0.7159 / 0.4964`
 - Latest locally pulled point:
-  - `epoch_0019`
-  - transfer `0.6927 / 0.4941`
-  - full `0.7124 / 0.4834`
-  - read: this is another non-frontier oscillation point, not a new Pareto best
+  - `epoch_0020`
+  - transfer `0.6930 / 0.4931`
+  - full `0.7116 / 0.4831`
+  - read: LPIPS changed only marginally from `epoch_0019`, and this is still not a new Pareto best
 
 ## Decision
 
 - Keep running.
 - Rationale:
   - `patience=6` for solver families
-  - `since_last_pareto=1`, so the line is nowhere near closure
-  - `epoch_0008-0018` shows repeated frontier re-entry rather than terminal flattening
+  - `since_last_pareto=3`, so the line is approaching the late-stage patience band but is not there yet
+  - `epoch_0008-0020` still shows repeated frontier re-entry rather than terminal flattening
   - best style and best LPIPS are still split across different checkpoints, so the family is still exploring the tradeoff surface
 - Promotion rule:
   - do not promote this family on internal oscillation alone

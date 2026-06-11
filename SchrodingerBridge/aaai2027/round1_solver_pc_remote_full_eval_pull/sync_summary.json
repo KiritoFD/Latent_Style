@@ -120,6 +120,12 @@
         "has_metrics": true,
         "has_summary": true,
         "image_count": 0
+      },
+      {
+        "epoch": "epoch_0020",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
       }
     ],
     "ckpts": [
@@ -142,7 +148,8 @@
       "epoch_0017.pt",
       "epoch_0018.pt",
       "epoch_0019.pt",
-      "epoch_0020.pt"
+      "epoch_0020.pt",
+      "epoch_0021.pt"
     ],
     "processes": {
       "train": [
@@ -202,17 +209,17 @@
     "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0001\\summary.json"
   },
   "latest": {
-    "epoch": "epoch_0019",
-    "full_clip_style": "0.712379179875056",
-    "full_content_lpips": "0.48335662524",
-    "transfer_clip_style": "0.6927117126186688",
-    "transfer_content_lpips": "0.4941218734666667",
-    "wall_total_seconds": "178.66392182200798",
-    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0019\\summary.json"
+    "epoch": "epoch_0020",
+    "full_clip_style": "0.7116488453944524",
+    "full_content_lpips": "0.4831386993333333",
+    "transfer_clip_style": "0.6930232476691406",
+    "transfer_content_lpips": "0.49307008429999993",
+    "wall_total_seconds": "176.95996813599777",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0020\\summary.json"
   },
   "convergence": {
     "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\clip_lpips_curve.csv",
-    "row_count": 19,
+    "row_count": 20,
     "best_epoch": "epoch_0001",
     "best_index": 0,
     "best_transfer_clip_epoch": "epoch_0001",
@@ -236,16 +243,16 @@
       "epoch_0017"
     ],
     "last_pareto_epoch": "epoch_0017",
-    "newest_epoch": "epoch_0019",
-    "since_best": 18,
-    "since_last_pareto": 2,
+    "newest_epoch": "epoch_0020",
+    "since_best": 19,
+    "since_last_pareto": 3,
     "best_in_newest_2": false,
     "tail_flat": false,
     "patience": 6,
     "criterion": "joint_transfer_allpairs_pareto",
     "converged": false
   },
-  "latest_remote_ckpt": "epoch_0020.pt",
+  "latest_remote_ckpt": "epoch_0021.pt",
   "remote_confirmed_settled_epochs": [
     "epoch_0001",
     "epoch_0002",
@@ -265,9 +272,10 @@
     "epoch_0016",
     "epoch_0017",
     "epoch_0018",
-    "epoch_0019"
+    "epoch_0019",
+    "epoch_0020"
   ],
-  "latest_remote_settled_epoch": "epoch_0019",
+  "latest_remote_settled_epoch": "epoch_0020",
   "local_curve_epochs": [
     "epoch_0001",
     "epoch_0002",
@@ -287,10 +295,11 @@
     "epoch_0016",
     "epoch_0017",
     "epoch_0018",
-    "epoch_0019"
+    "epoch_0019",
+    "epoch_0020"
   ],
-  "latest_local_settled_epoch": "epoch_0019",
+  "latest_local_settled_epoch": "epoch_0020",
   "pending_ckpt_epochs": [
-    "epoch_0020.pt"
+    "epoch_0021.pt"
   ]
 }
