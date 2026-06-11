@@ -60,6 +60,13 @@
     - style recovered again from `epoch_0008`
     - LPIPS improved materially again from `epoch_0008`
     - this is a genuine new Pareto frontier update on both transfer-LPIPS and all-pairs LPIPS
+- `epoch_0010` settled point:
+  - transfer `0.6988 / 0.5270`
+  - all-pairs `0.7138 / 0.5185`
+  - wall `178.33s`
+  - immediate read:
+    - both style and LPIPS regressed materially from `epoch_0009`
+    - so this point is a clear rollback, not a new frontier update
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
