@@ -5,34 +5,31 @@ Date: 2026-06-11
 Purpose:
 
 - keep the next `attn_pnp_selfinject` decision path explicit
-- make clear that this family is now the immediate next non-DINO relaunch candidate after `attn_gated_spade` closure
+- keep the successful relaunch recipe and the reasons it mattered after the family has now moved to `reviewing`
 
 ## Current Read
 
 - current manifest status:
-  - `planned`
+  - `reviewing`
 - why this family is still worth keeping around:
   - it has a real canonical curve with image-backed deep-review candidates
   - it showed a recoverable style/LPIPS tradeoff rather than immediate collapse
-- why it is now the immediate next relaunch:
-  - `attn_gated_spade` is formally converged and moved to `reviewing`
-  - `attn_gw_ot` remains a weak strict-band fit under the current host state
-  - `attn_pnp_selfinject` now has:
-    - explicit `switch_smoke_status=ok`
-    - a real canonical calibration curve
-    - a clear next segmented launch recipe
+- why this note still matters:
+  - this family only became a real formal lane after a multi-step calibration path
+  - future reopen decisions should not forget that:
+    - `batch=20` strict stayed just under the floor
+    - `batch=20` warn-path recovered the Pareto surface
+    - `batch=21` strict finally produced the formal in-band converged lane
 
-## Recommended Order
+## Historical Outcome
 
-1. `attn_pnp_selfinject`
-2. if it fails to become a clean formal lane again, reconsider `attn_gw_ot`
-3. keep tokenizer `DINO` tail blocked until the remaining non-DINO structure families are intentionally exhausted
-
-Rationale:
-
-- `attn_pnp_selfinject` still requires segmented non-concurrent train/eval orchestration.
-- But it now has better empirical upside than restarting `attn_gw_ot` blindly under the same strict contract.
-- The remaining risk is operational rather than conceptual, so it is the best next family to push.
+- `attn_pnp_selfinject` no longer needs an immediate relaunch decision:
+  - the family is already closed for round-1 training
+  - current status is `reviewing`
+- the useful preserved lesson is the recipe:
+  - segmented non-concurrent train/eval
+  - detached local controller
+  - final formal batch `= 21`
 
 ## Prelaunch Checks
 
@@ -44,26 +41,32 @@ python SchrodingerBridge\tools\experiments\audit_round1_queue_state.py
 
 2. Confirm `attn_pnp_selfinject` now appears in:
 
-- `planned`
+- `reviewing`
 
-3. If the manifest ever drifts away from that state and we intentionally want to reopen it again:
+3. If the family ever needs to be reopened in a later round:
 
 ```powershell
 python SchrodingerBridge\tools\experiments\retag_round1_manifest_family.py `
   --family-id attn_pnp_selfinject `
   --decision-status planned `
-  --if-current-status recalibration_needed
+  --if-current-status reviewing
 ```
 
 ## Launch Caution
 
 - do not treat this as a normal direct relaunch candidate by default
 - if reopened, prefer the segmented orchestration entrypoint and keep train/eval non-concurrent:
+- historical successful formal attempt:
+  - canonical batch `= 21`
+  - strict `runtime_guard_min_mode=stop`
+  - `health_wait_seconds = 60`
 
 ```powershell
 python SchrodingerBridge\tools\experiments\run_remote_round1_family_segmented.py `
   --family-id attn_pnp_selfinject `
-  --segment-epochs 1
+  --segment-epochs 1 `
+  --health-wait-seconds 60 `
+  --min-runtime-slack-mib 512
 ```
 
 ## Guardrails
@@ -73,4 +76,4 @@ python SchrodingerBridge\tools\experiments\run_remote_round1_family_segmented.py
 - keep strict paper-facing thresholds for any new formal claim:
   - preferred band `9.0-10.8 GiB`
   - hard cap `11.3 GiB`
-- if the next segmented retry still needs `runtime_guard_min_mode=warn` to survive, keep it as calibration evidence only rather than silently promoting it as a formal lane
+- if a future reopen ever again needs `runtime_guard_min_mode=warn` to survive, keep that path as calibration evidence only rather than silently promoting it as a formal lane

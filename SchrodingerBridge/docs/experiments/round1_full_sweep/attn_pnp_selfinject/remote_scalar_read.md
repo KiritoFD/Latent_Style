@@ -1,12 +1,12 @@
 # attn_pnp_selfinject Remote Scalar Read
 
-Updated: `2026-06-10T22:15:29.629846`
+Updated: `2026-06-12T00:23:14.272933`
 
 - Run name: `aaai2027_round1_attn_pnp_selfinject_seed42_b8a2`
 - Remote run dir: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_pnp_selfinject_seed42_b8a2`
-- Retained checkpoints: `5`
-- Latest checkpoint: `epoch_0005.pt`
-- Remote eval files currently visible: `10`
+- Retained checkpoints: `11`
+- Latest checkpoint: `epoch_0011.pt`
+- Remote eval files currently visible: `22`
 - Eval files:
   - `full_eval_fast_snapshot/clip_lpips_curve.csv`
   - `full_eval_fast_snapshot/epoch_0001/metrics.csv`
@@ -17,7 +17,17 @@ Updated: `2026-06-10T22:15:29.629846`
   - `full_eval_fast_snapshot/epoch_0003/summary.json`
   - `full_eval_fast_snapshot/epoch_0004/metrics.csv`
   - `full_eval_fast_snapshot/epoch_0004/summary.json`
-  - `full_eval_fast_snapshot/round1_convergence.json`
+  - `full_eval_fast_snapshot/epoch_0005/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0005/summary.json`
+  - `full_eval_fast_snapshot/epoch_0006/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0006/summary.json`
+  - `full_eval_fast_snapshot/epoch_0007/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0007/summary.json`
+  - `full_eval_fast_snapshot/epoch_0008/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0008/summary.json`
+  - `full_eval_fast_snapshot/epoch_0009/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0009/summary.json`
+  - `full_eval_fast_snapshot/epoch_0010/metrics.csv`
 - Pulled remote logs:
   - [training_20260610_190805.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_190805.csv)
   - [training_20260610_191634.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_191634.csv)
@@ -33,19 +43,28 @@ Updated: `2026-06-10T22:15:29.629846`
   - [training_20260610_212732.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_212732.csv)
   - [training_20260610_214417.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_214417.csv)
   - [training_20260610_220415.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_220415.csv)
+  - [training_20260610_223531.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260610_223531.csv)
+  - [training_20260611_223714.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260611_223714.csv)
+  - [training_20260611_224813.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260611_224813.csv)
+  - [training_20260611_225721.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260611_225721.csv)
+  - [training_20260611_231232.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260611_231232.csv)
+  - [training_20260611_233139.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260611_233139.csv)
+  - [training_20260611_234622.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260611_234622.csv)
+  - [training_20260612_000032.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260612_000032.csv)
+  - [training_20260612_001556.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_20260612_001556.csv)
 - Latest remote training CSV row:
-  - `epoch=5`
-  - `loss=8.050405502319336`
-  - `terminal_swd=2.265625`
-  - `samples_per_sec=28.83886543248498`
-  - `cuda_peak_allocated_gb=6.2381463050842285`
-  - `cuda_peak_reserved_gb=7.845703125`
+  - `epoch=11`
+  - `loss=7.9801836013793945`
+  - `terminal_swd=2.46875`
+  - `samples_per_sec=47.32379508138391`
+  - `cuda_peak_allocated_gb=6.885058403015137`
+  - `cuda_peak_reserved_gb=8.640625`
 - Latest runtime watcher sample:
-  - `epoch=5/5`
-  - `step=876/994`
-  - `loss=8.0541`
-  - `tswd=2.5938`
-  - `VRAM=10620/12288 MiB`
+  - `epoch=11/11`
+  - `step=513/899`
+  - `loss=7.9418`
+  - `tswd=4.1562`
+  - `VRAM=9639/12288 MiB`
   - `band_status=in_band`
 - Training curve: [training_curve.png](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/training_curve.png)
 - Runtime curve: [runtime_curve.png](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_attn_pnp_selfinject_remote_scalars/runtime_curve.png)

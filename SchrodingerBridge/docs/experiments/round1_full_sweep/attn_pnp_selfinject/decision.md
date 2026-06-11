@@ -1,14 +1,13 @@
 # attn_pnp_selfinject Decision
 
 - Decision date:
-  - `2026-06-10`
+  - `2026-06-12`
 - Current status:
-  - `planned`
+  - `reviewing`
 - Decision:
-  - do not treat the archived `batch=22` launch as formal evidence
-  - keep its `epoch_0001` scalar and fast-eval outputs as directional context only
-  - do not treat the current `batch=20` attempt as a stable formal lane either
-  - the new evidence says remote training and remote fast-eval still cannot safely coexist on this `3060` without further orchestration
+  - the archived `batch=22` direct lane remains non-authoritative
+  - the canonical authority surface is now the segmented non-concurrent path through `epoch_0011`
+  - this family is closed for round-1 training and moved to `reviewing`
 - Why:
   - runtime guard killed the train lane in `epoch 2` after a `11939MiB` spike
   - that is above both the preferred `10.8G` ceiling and the hard `11.3G` paper-facing cap
@@ -230,3 +229,73 @@
       - sampled prelaunch memory during the first retries:
         - about `3042-3050 MiB`
       - this is expected behavior under the one-lane rule, not a new train failure
+  - current `batch=20` calibration upgrade:
+    - first strict segmented retry at `batch=20` improved the floor gap materially:
+      - under-band stop at `used=9173MiB`
+      - formal floor `= 9216MiB`
+      - gap `= 43MiB`
+    - followup `batch=20` retry under `runtime_guard_min_mode=warn` then produced:
+      - `epoch_0006`
+        - transfer `0.6894 / 0.4560`
+        - full `0.7133 / 0.4509`
+      - `epoch_0007`
+        - transfer `0.6903 / 0.4528`
+        - full `0.7142 / 0.4475`
+    - interpretation:
+      - `epoch_0006` temporarily fell off the Pareto set
+      - `epoch_0007` re-entered the Pareto set
+      - so the family still has live upside under the segmented non-concurrent path
+  - next formal attempt:
+    - raise canonical batch to `21`
+    - switch back to strict `runtime_guard_min_mode=stop`
+    - keep segmented non-concurrent orchestration
+    - rationale:
+      - `batch=20` is very close to the `9.0GiB` floor already
+      - `batch=21` is the cleanest next attempt to convert this family from calibration-only evidence into a true paper-facing formal lane
+
+## Formal Conversion Read
+
+- `batch=21` did convert this family into a real formal lane:
+  - 60-second health read entered the requested band
+  - representative runtime samples stayed around `9631-9647MiB`
+  - the segmented strict path successfully produced:
+    - `epoch_0008`
+    - `epoch_0009`
+    - `epoch_0010`
+    - `epoch_0011`
+- this also validated the detached segmented-controller path:
+  - local controller can now survive longer than the interactive shell timeout
+  - train exit and remote fast-eval handoff completed end-to-end
+
+## Convergence Closure Read
+
+- settled canonical curve now extends through `epoch_0011`
+- latest settled points after the last Pareto point:
+  - `epoch_0008`
+    - transfer `0.6900 / 0.4578`
+    - full `0.7139 / 0.4524`
+  - `epoch_0009`
+    - transfer `0.6901 / 0.4587`
+    - full `0.7139 / 0.4532`
+  - `epoch_0010`
+    - transfer `0.6890 / 0.4569`
+    - full `0.7129 / 0.4516`
+  - `epoch_0011`
+    - transfer `0.6908 / 0.4552`
+    - full `0.7144 / 0.4495`
+- convergence rule read:
+  - `last_pareto_epoch = epoch_0007`
+  - `since_last_pareto = 4`
+  - `best_in_newest_2 = false`
+  - `tail_flat = true`
+  - `patience = 4`
+  - `converged = true`
+- final family read:
+  - best transfer `CLIP-S` remains `epoch_0001`
+  - best transfer `LPIPS` remains `epoch_0004`
+  - best all-pairs `CLIP-S` remains `epoch_0001`
+  - best all-pairs `LPIPS` remains `epoch_0004`
+- decision:
+  - close `attn_pnp_selfinject` for round-1 training
+  - keep the family in `reviewing` for stage-close deep evaluation
+  - do not allocate another formal remote train segment to this family unless deep review overturns the current fast-curve conclusion

@@ -1,25 +1,54 @@
 # attn_pnp_selfinject Closure
 
-- Status: `recalibration_needed`
-- Current read:
-  - first formal launch at `batch_size = 22` passed the 30-second health check in-band
-  - retained `epoch_0001.pt` did land
-  - but the runtime guard later killed training in `epoch 2` with:
-    - `used=11939MiB`
-    - `cap=11000MiB`
-    - end code `rc=143`
-- What is still useful:
-  - remote scalar packet for `epoch_0001`
-  - the in-flight `epoch_0001` fast `CLIP-S / LPIPS` eval, which should be kept as directional evidence
-- Current reopened lane read:
-  - `batch_size = 20`
-  - the train health sample itself entered the formal band
-  - but the combined `train + remote eval` path still proved unsafe on this host
-  - direct evidence now shows:
-    - train pid disappeared again
-    - only remote fast-eval processes remained alive
-    - the train log ended with another runtime-guard stop
-- Updated closure consequence:
-  - this family needs non-concurrent train/eval orchestration on the remote `3060`
-  - do not relaunch again with the current `batch=20` setting
-  - the next segmented retry target should be `batch=18`
+- Status: `reviewing`
+- Formal closure read:
+  - the early `batch=22` direct lane remains only historical calibration evidence:
+    - it passed the first health check
+    - then overshot later and was killed above the requested paper-facing band
+  - the first usable canonical evidence came from segmented non-concurrent train/eval
+  - the important calibration sequence was:
+    - `batch=19`
+      - strict floor still too low
+    - `batch=20`
+      - strict floor came within `43MiB` of the `9.0GiB` target
+      - warn-mode continuation produced real `epoch_0006` and `epoch_0007`
+    - `batch=21`
+      - strict segmented lane entered and held the formal band
+      - this produced the final canonical settled run through `epoch_0011`
+- Retained/eval closure surface:
+  - retained checkpoints and settled fast-eval now exist through:
+    - `epoch_0011`
+  - convergence authority read at closure:
+    - `row_count = 11`
+    - `last_pareto_epoch = epoch_0007`
+    - `since_last_pareto = 4`
+    - `tail_flat = True`
+    - `patience = 4`
+    - `converged = True`
+- Best settled reads:
+  - best transfer `CLIP-S`:
+    - `epoch_0001`
+    - transfer `0.6980 / 0.4747`
+  - best transfer `LPIPS`:
+    - `epoch_0004`
+    - transfer `0.6899 / 0.4504`
+  - best all-pairs `CLIP-S`:
+    - `epoch_0001`
+    - full `0.7194 / 0.4689`
+  - best all-pairs `LPIPS`:
+    - `epoch_0004`
+    - full `0.7140 / 0.4453`
+- Tail read after the last Pareto point:
+  - `epoch_0008`
+    - transfer `0.6900 / 0.4578`
+  - `epoch_0009`
+    - transfer `0.6901 / 0.4587`
+  - `epoch_0010`
+    - transfer `0.6890 / 0.4569`
+  - `epoch_0011`
+    - transfer `0.6908 / 0.4552`
+- Closure decision:
+  - this family is now formally closed for round-1 training
+  - it proved that segmented non-concurrent orchestration can rescue a family from pure under-band calibration into a real paper-facing formal lane
+  - but its best surface still remains materially behind the stronger internal anchors on the same transfer/all-pairs board
+  - move the family to `reviewing` for stage-close deep evaluation only

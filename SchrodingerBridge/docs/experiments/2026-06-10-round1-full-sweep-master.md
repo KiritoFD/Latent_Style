@@ -167,18 +167,19 @@ Current remote lane status:
 
 - active formal lane:
   - none at the current moment
-  - latest just-closed non-DINO line is `attn_gated_spade`
+  - latest just-closed non-DINO line is `attn_pnp_selfinject`
   - canonical formal path for that family:
-    - segmented continuation from `epoch_0022`
-    - `batch=20`
+    - segmented non-concurrent train/eval
+    - final formal batch `= 21`
   - final settled read:
-    - retained / eval through `epoch_0030`
+    - retained / eval through `epoch_0011`
     - converged by the round-1 fast-curve rule
-    - last Pareto point remains `epoch_0026`
+    - last Pareto point remains `epoch_0007`
   - next remote-train priority:
-    - `attn_pnp_selfinject`
-    - reopen only through segmented non-concurrent train/eval orchestration
-    - keep non-DINO-first policy; do not fall through to tokenizer DINO tail
+    - unresolved between the remaining non-DINO hold / recalibration families
+    - `attn_gw_ot`
+    - `solver_unsb_cycle`
+    - do not fall through to tokenizer DINO tail by default
   - `solver_unsb_cycle` is now a closure-stage hold family:
     - retained/eval extended through `epoch_0030`
     - last Pareto point remains `epoch_0018`
@@ -186,10 +187,10 @@ Current remote lane status:
       - `batch=17` late-train OOM
       - `batch=16` late-train under-band stop
 - latest closed training family:
-  - `attn_gated_spade`
+  - `attn_pnp_selfinject`
   - current training read:
-    - settled through `epoch_0030`
-    - no new Pareto point after `epoch_0026`
+    - settled through `epoch_0011`
+    - no new Pareto point after `epoch_0007`
     - moved to `reviewing`
 - implementation audit:
   - all `11` round-1 family configs now pass one reusable local switch smoke:
@@ -518,11 +519,11 @@ Recalibration-needed family:
 - Running families: none
 - Active family: `none`
 - Decision status: `no_formal_running_lane`
-- Best transfer `CLIP-S`: `epoch_0001` -> `0.6929 / 0.4501`
-- Best transfer `LPIPS`: `epoch_0022` -> `0.6910 / 0.4252`
-- Best all-pairs `CLIP-S`: `epoch_0011` -> `0.7172 / 0.4220`
-- Latest settled fast point: `epoch_0030` -> transfer `0.6889 / 0.4282`
-- Convergence: `row_count=30, since_best=29, tail_flat=True, closure_band=converged, converged=True`
+- Best transfer `CLIP-S`: `epoch_0001` -> `0.6980 / 0.4747`
+- Best transfer `LPIPS`: `epoch_0004` -> `0.6899 / 0.4504`
+- Best all-pairs `CLIP-S`: `epoch_0001` -> `0.7194 / 0.4689`
+- Latest settled fast point: `epoch_0011` -> transfer `0.6908 / 0.4552`
+- Convergence: `row_count=11, since_best=10, tail_flat=True, closure_band=converged, converged=True`
 <!-- ROUND1_AUTO_STATUS:END -->
 
 Current `solver_pc` launch note:
