@@ -24,12 +24,17 @@ Generic round-1 helpers:
   - [launch_remote_round1_family_train.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_round1_family_train.py)
 - remote fast eval watcher:
   - [launch_remote_round1_family_fast_eval.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_round1_family_fast_eval.py)
-  - fallback only; the preferred path is now local fast eval
+  - preferred authority path for all-ckpt `CLIP-S + LPIPS` during formal remote training
+- remote packet sync:
+  - [sync_round1_remote_fast_eval_packet.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/sync_round1_remote_fast_eval_packet.py)
+  - [watch_sync_round1_remote_fast_eval_packet.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_sync_round1_remote_fast_eval_packet.py)
+  - refreshes tracked local authority packets only when a settled point or convergence state actually advances
 - local fast eval watcher:
   - [watch_local_round1_family_fast_eval.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_local_round1_family_fast_eval.py)
   - [launch_local_round1_family_fast_eval_detached.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_local_round1_family_fast_eval_detached.py)
   - protected by:
     - [local_gpu_lock.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/local_gpu_lock.py)
+  - intended for delayed local heavy review / backfill, not as the primary formal convergence authority
 - remote bestfew image-backed rerun:
   - [launch_remote_round1_family_bestfew_rerun.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_round1_family_bestfew_rerun.py)
 - local pull:
@@ -47,3 +52,4 @@ Generic round-1 helpers:
   - [watch_vlm_snapshot_summaries.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_vlm_snapshot_summaries.py)
 - next-family launcher:
   - [run_round1_family_queue.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_round1_family_queue.py)
+  - [watch_launch_round1_queue_when_idle.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_launch_round1_queue_when_idle.py)
