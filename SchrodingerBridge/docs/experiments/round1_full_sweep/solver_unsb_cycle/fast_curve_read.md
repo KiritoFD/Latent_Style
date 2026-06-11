@@ -5,6 +5,20 @@
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
 
-- No settled `clip_lpips_curve.csv` rows yet.
-- Fast root: [full_eval_fast_snapshot](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_fast_local/full_eval_fast_snapshot)
+- Authority root:
+  - [round1_solver_unsb_cycle_remote_full_eval_pull](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull)
+- Remote fast-eval status:
+  - `waiting_for_first_remote_fast_eval_epoch`
+- Run name:
+  - `aaai2027_round1_solver_unsb_cycle_seed42_b8a2`
+- Remote run dir:
+  - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_unsb_cycle_seed42_b8a2`
+- Expected eval subdir:
+  - `full_eval_fast_snapshot`
+- Remote train pid count:
+  - `3`
+- Remote fast-eval pid count:
+  - `2`
+- Sync summary:
+  - [sync_summary.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull/sync_summary.json)
 <!-- ROUND1_AUTO_STATUS:END -->

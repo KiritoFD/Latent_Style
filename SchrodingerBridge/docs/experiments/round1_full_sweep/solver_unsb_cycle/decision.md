@@ -3,39 +3,34 @@
 - Decision date:
   - `2026-06-11`
 - Current status:
-  - `recalibration_needed`
+  - `running`
 - Current read:
-  - the first formal launch attempt was made
-  - it opened far below the required formal VRAM band
-  - so the next decision boundary is calibration, not keep/reject
+  - the first under-band `batch=8` opening has been superseded
+  - the current canonical launch is `batch=15`
+  - this family now holds the remote formal lane
 
 ## Launch Decision
 
-- Keep as the next solver-family handoff candidate.
+- Promote to `running`.
 - Rationale:
-  - `solver_pc` training phase is already closed
-  - `solver_unsb_cycle` already has:
-    - canonical config
-    - queue slot
-    - smoke artifact
-    - local/remote doc roots
-  - but the first `batch=8` opening only used about `5223 MiB`
-  - so it cannot yet count as a formal paper-facing lane
+  - `batch=15`
+  - `accumulation_steps=2`
+  - 30-second health sample:
+    - `9677 MiB / 12288 MiB`
+  - this sits cleanly inside the formal `9.0-10.8 GiB` band
 
-## Expected First Judgment
+## First Formal Read
 
-- The first real decision is now the next calibration target above `batch=8`.
-- First measured read:
-  - `5223 MiB / 12288 MiB`
+- Current remote sample:
   - `epoch 1/48`
-  - read: strongly under-band
-- Current rule:
-  - increase the effective batch until the lane enters the formal `9.0-10.8 GiB` band
-- If in-band:
-  - promote to `running`
-  - let the all-ckpt remote fast curve become the authority
+  - `step 187/629`
+  - `loss=8.4092`
+  - `tswd=5.7812`
+- Read:
+  - the family is no longer in calibration mode
+  - all future keep/reject decisions should now be made from the all-ckpt remote fast curve
 
 ## Promotion Rule
 
-- No early promotion from smoke or first-point optimism.
+- No early promotion from the first in-band health sample alone.
 - Require the same family closure package as every other round-1 family before any keep/reject claim.

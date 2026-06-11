@@ -36,7 +36,7 @@ Purpose:
 | PnP / self-injection attention | `attn_pnp_selfinject` | implemented | `recalibration_needed` | real curve exists; segmented non-concurrent train/eval path built |
 | Tangent RK solver | `solver_tangent_rk` | implemented | `reviewing` | formal training closed through `epoch_0032`; waiting on deep review / stage-close packet |
 | Predictor-corrector solver | `solver_pc` | implemented | `reviewing` | training closed through `epoch_0036`; no new Pareto point after the long bounded tail |
-| UNSB / cycle solver | `solver_unsb_cycle` | implemented | `recalibration_needed` | first direct launch was under-band at about `5223 MiB`; next retry needs a higher effective batch |
+| UNSB / cycle solver | `solver_unsb_cycle` | implemented | `running` | `batch=15` has now landed the first formal in-band opening at about `9677 MiB` |
 | DINO-masked semantic SWD | `semantic_supervision_family=dino_masked_swd` | implemented | active for tokenizer families | loaded through runtime conditioning sidecars |
 | Remote segmented train/eval alternation | `run_remote_round1_family_segmented.py` | implemented | used on `attn_pnp_selfinject` | avoids concurrent train+eval VRAM spikes |
 | Remote all-ckpt fast-eval authority | remote fast-eval watcher + local sync watcher | implemented | active | current authority path for convergence reads |
@@ -55,9 +55,9 @@ Purpose:
 
 | Slot | Family | Status | Reason |
 |---|---|---|---|
-| Active formal lane | `none` | `idle` | `solver_pc` training is closed and `solver_unsb_cycle` still needs recalibration before the next formal launch |
-| Reviewing solver family | `solver_pc`, `solver_tangent_rk` | `reviewing` | both solver-family training phases are now closed; deep review still pending |
-| Next queue candidate | `solver_unsb_cycle` | `recalibration_needed` | first launch was under-band; next retry should raise the effective batch before formal relaunch |
+| Active formal lane | `solver_unsb_cycle` | `running` | first formal in-band opening landed at `batch=15`; all-ckpt remote fast-eval is now the authority |
+| Reviewing solver family | `solver_pc`, `solver_tangent_rk` | `reviewing` | both earlier solver-family training phases are now closed; deep review still pending |
+| Next queue candidate | `tok_c_residual_adapter` | `planned` | becomes relevant only after the current unsb lane closes, subject to the non-DINO-first rule |
 | Auto handoff | `watch_launch_round1_queue_when_idle.py` | armed | once manifest has zero `running` families, invoke round-1 queue automatically |
 
 ## Gaps That Still Matter
