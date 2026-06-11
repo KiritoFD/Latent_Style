@@ -67,13 +67,13 @@
 - Switch smoke artifact: [round1_solver_unsb_cycle_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_switch_smoke_latest.json)
 - Switch smoke row count: `1`
 - Remote GPU live sample:
-  - `9515 MiB / 12288 MiB`, `util=96%`
+  - `10269 MiB / 12288 MiB`, `util=98%`
   - `band_status=in_band`
   - `formal_status=formal_in_band`
 - Remote train log: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_unsb_cycle_seed42_b8a2_train.log`
 - Remote train progress:
-  - `epoch 14/48`
-  - `step 25/629`
-  - `loss=7.9068`
-  - `tswd=5.5625`
+  - `epoch 15/48`
+  - `step 69/629`
+  - `loss=7.8800`
+  - `tswd=5.7188`
 <!-- ROUND1_AUTO_STATUS:END -->
