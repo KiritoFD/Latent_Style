@@ -198,19 +198,19 @@ def _classify_remote_vram_band(
 
 def _remote_process_scan_via_stdin(
     *,
-    run_name: str,
+    process_token: str,
     host: str,
     port: int,
     user: str,
     wsl_distro: str,
 ) -> dict[str, list[dict[str, str]]]:
-    if not run_name:
+    if not process_token:
         return {"train": [], "fast_eval": [], "posttrain_eval": []}
     scan_py = f"""
 from pathlib import Path
 import json
 
-token = {run_name!r}
+token = {process_token!r}
 payload = {{"train": [], "fast_eval": [], "posttrain_eval": []}}
 for pid in Path("/proc").iterdir():
     if not pid.is_dir() or not pid.name.isdigit():
@@ -293,10 +293,11 @@ def _remote_runtime_snapshot(
     run_name = str(row.get("run_name", "")).strip()
     if not run_name:
         return None
+    process_token = str(row.get("process_token", "")).strip() or run_name
     run_dir = str(row.get("run_dir", "")).strip()
     train_log = _infer_remote_train_log(run_dir=run_dir, run_name=run_name, remote_workspace_root=remote_workspace_root)
     processes = _remote_process_scan_via_stdin(
-        run_name=run_name,
+        process_token=process_token,
         host=host,
         port=port,
         user=user,
