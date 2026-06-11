@@ -945,7 +945,7 @@ def main() -> int:
     parser.add_argument("--family-id", required=True)
     parser.add_argument("--manifest-csv", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--master-note", type=Path, default=DEFAULT_MASTER)
-    parser.add_argument("--fast-eval-subdir", default="full_eval_fast_local")
+    parser.add_argument("--fast-eval-subdir", default="full_eval_fast_snapshot")
     parser.add_argument("--review-eval-subdir", default="full_eval_fresh_localreview")
     parser.add_argument("--remote-live", action="store_true")
     parser.add_argument("--remote-host", default=DEFAULT_REMOTE_HOST)

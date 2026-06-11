@@ -43,19 +43,19 @@
     - transfer `0.6982 / 0.5075`
     - full `0.7159 / 0.4964`
 - Latest locally pulled point:
-  - `epoch_0026`
-  - transfer `0.6901 / 0.4934`
-  - full `0.7111 / 0.4810`
-  - read: `epoch_0025` and `epoch_0026` repaired part of the late rollback, but neither point re-entered the Pareto frontier
+  - `epoch_0028`
+  - transfer `0.6861 / 0.4987`
+  - full `0.7043 / 0.4896`
+  - read: this is another weak tail point, with style and LPIPS both still below the frontier region
 
 ## Decision
 
 - Keep running.
 - Rationale:
   - `patience=6` for solver families
-  - `since_last_pareto=9`, so the line is well past the formal patience threshold
+  - `since_last_pareto=11`, so the line is now deeper into the post-patience tail
   - `tail_flat=false`, so the family still does not satisfy true closure
-  - `epoch_0021-0026` reads more like noisy tail drift than renewed frontier search
+  - `epoch_0021-0028` reads more like noisy tail drift than renewed frontier search
   - best style and best LPIPS are still split across different checkpoints, so the family is still exploring the tradeoff surface
 - Promotion rule:
   - do not promote this family on internal oscillation alone

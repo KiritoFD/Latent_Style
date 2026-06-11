@@ -10,19 +10,19 @@
 - Pulled curve CSV:
   - [clip_lpips_curve.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_pc_remote_full_eval_pull/clip_lpips_curve.csv)
 - Pulled local curve rows:
-  - `26`
+  - `29`
 - Pulled local curve epochs:
-  - `epoch_0001, epoch_0002, epoch_0003, epoch_0004, epoch_0005, epoch_0006, epoch_0007, epoch_0008, epoch_0009, epoch_0010, epoch_0011, epoch_0012, epoch_0013, epoch_0014, epoch_0015, epoch_0016, epoch_0017, epoch_0018, epoch_0019, epoch_0020, epoch_0021, epoch_0022, epoch_0023, epoch_0024, epoch_0025, epoch_0026`
+  - `epoch_0001, epoch_0002, epoch_0003, epoch_0004, epoch_0005, epoch_0006, epoch_0007, epoch_0008, epoch_0009, epoch_0010, epoch_0011, epoch_0012, epoch_0013, epoch_0014, epoch_0015, epoch_0016, epoch_0017, epoch_0018, epoch_0019, epoch_0020, epoch_0021, epoch_0022, epoch_0023, epoch_0024, epoch_0025, epoch_0026, epoch_0027, epoch_0028, epoch_0029`
 - Latest remote checkpoint:
-  - `epoch_0027.pt`
+  - `epoch_0030.pt`
 - Latest pulled local eval epoch:
-  - `epoch_0026`
+  - `epoch_0029`
 - Remote scan confirmed summary epochs:
-  - `epoch_0001, epoch_0002, epoch_0003, epoch_0004, epoch_0005, epoch_0006, epoch_0007, epoch_0008, epoch_0009, epoch_0010, epoch_0011, epoch_0012, epoch_0013, epoch_0014, epoch_0015, epoch_0016, epoch_0017, epoch_0018, epoch_0019, epoch_0020, epoch_0021, epoch_0022, epoch_0023, epoch_0024, epoch_0025, epoch_0026`
+  - `epoch_0001, epoch_0002, epoch_0003, epoch_0004, epoch_0005, epoch_0006, epoch_0007, epoch_0008, epoch_0009, epoch_0010, epoch_0011, epoch_0012, epoch_0013, epoch_0014, epoch_0015, epoch_0016, epoch_0017, epoch_0018, epoch_0019, epoch_0020, epoch_0021, epoch_0022, epoch_0023, epoch_0024, epoch_0025, epoch_0026, epoch_0027, epoch_0028, epoch_0029`
 - Latest remote confirmed eval epoch:
-  - `epoch_0026`
+  - `epoch_0029`
 - Remote checkpoints not yet pulled into local fast curve:
-  - `epoch_0027.pt`
+  - `epoch_0030.pt`
 - Best transfer `CLIP-S`:
   - `epoch_0001`
   - `style / lpips = 0.7074 / 0.5621`
@@ -33,13 +33,13 @@
   - `epoch_0001`
   - `style / lpips = 0.7170 / 0.5552`
 - Latest settled point:
-  - `epoch_0026`
-  - transfer `style / lpips = 0.6901 / 0.4934`
-  - full `style / lpips = 0.7111 / 0.4810`
-  - wall `= 176.66s`
+  - `epoch_0029`
+  - transfer `style / lpips = 0.6895 / 0.5082`
+  - full `style / lpips = 0.7080 / 0.4970`
+  - wall `= 180.89s`
 - Convergence snapshot:
   - `best_epoch = epoch_0001`
-  - `since_last_pareto = 9`
+  - `since_last_pareto = 12`
   - `best_in_newest_2 = False`
   - `tail_flat = False`
   - `closure_band = approaching_closure`
