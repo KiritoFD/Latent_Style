@@ -14,11 +14,12 @@
 - Settled remote epochs:
   - `epoch_0001, epoch_0002, epoch_0003, epoch_0004, epoch_0005, epoch_0006, epoch_0007, epoch_0008, epoch_0009, epoch_0010, epoch_0011, epoch_0012, epoch_0013, epoch_0014, epoch_0015, epoch_0016, epoch_0017`
 - Latest remote checkpoint:
-  - `epoch_0018.pt`
+  - `epoch_0019.pt`
 - Latest settled eval epoch:
   - `epoch_0017`
 - Remote checkpoints not yet settled into local fast curve:
   - `epoch_0018.pt`
+  - `epoch_0019.pt`
 - Best transfer `CLIP-S`:
   - `epoch_0001`
   - `style / lpips = 0.7074 / 0.5621`

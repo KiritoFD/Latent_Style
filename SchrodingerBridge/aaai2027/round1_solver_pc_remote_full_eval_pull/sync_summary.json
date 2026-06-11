@@ -108,6 +108,12 @@
         "has_metrics": true,
         "has_summary": true,
         "image_count": 0
+      },
+      {
+        "epoch": "epoch_0018",
+        "has_metrics": false,
+        "has_summary": false,
+        "image_count": 0
       }
     ],
     "ckpts": [
@@ -128,7 +134,8 @@
       "epoch_0015.pt",
       "epoch_0016.pt",
       "epoch_0017.pt",
-      "epoch_0018.pt"
+      "epoch_0018.pt",
+      "epoch_0019.pt"
     ],
     "processes": {
       "train": [
@@ -153,6 +160,14 @@
         {
           "pid": "65250",
           "cmd": "/home/xy/venvs/samam312/bin/python SchrodingerBridge/tools/experiments/watch_round1_family_fast_eval.py --python-bin /home/xy/venvs/samam312/bin/python --run-dir /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_pc_seed42_b8a2 --test-dir /mnt/i/wikiart_distinct5_samam_512_classview/test --cache-dir /mnt/i/Github/Latent_Style/eval_cache --clip-hf-cache-dir /mnt/i/Github/Latent_Style/eval_cache/hf --output-subdir full_eval_fast_snapshot --batch-size 1 --vae-decode-batch-size 4 --target-chunk-size 1 --max-live-memory-mib-to-launch 9800 --poll-seconds 180 --patience 6"
+        },
+        {
+          "pid": "71385",
+          "cmd": "/home/xy/venvs/samam312/bin/python /mnt/i/Github/Latent_Style/SchrodingerBridge/tools/experiments/rerun_full_eval_for_run.py --run-dir /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_pc_seed42_b8a2 --test-dir /mnt/i/wikiart_distinct5_samam_512_classview/test --cache-dir /mnt/i/Github/Latent_Style/eval_cache --clip-hf-cache-dir /mnt/i/Github/Latent_Style/eval_cache/hf --batch-size 1 --vae-decode-batch-size 4 --target-chunk-size 1 --output-subdir full_eval_fast_snapshot --skip-existing"
+        },
+        {
+          "pid": "71386",
+          "cmd": "/home/xy/venvs/samam312/bin/python /mnt/i/Github/Latent_Style/SchrodingerBridge/src/utils/run_evaluation.py --checkpoint /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_pc_seed42_b8a2/epoch_0018.pt --output /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_pc_seed42_b8a2/full_eval_fast_snapshot/epoch_0018 --test_dir /mnt/i/wikiart_distinct5_samam_512_classview/test --cache_dir /mnt/i/Github/Latent_Style/eval_cache --clip_hf_cache_dir /mnt/i/Github/Latent_Style/eval_cache/hf --batch_size 1 --vae_decode_batch_size 4 --target_chunk_size 1 --eval_only_lpips_clip_style --no-eval_enable_introstyle --no-save_generated_images --no-save_summary_grid"
         }
       ],
       "posttrain_eval": []
@@ -231,9 +246,10 @@
     "criterion": "joint_transfer_allpairs_pareto",
     "converged": false
   },
-  "latest_remote_ckpt": "epoch_0018.pt",
+  "latest_remote_ckpt": "epoch_0019.pt",
   "latest_settled_epoch": "epoch_0017",
   "pending_ckpt_epochs": [
-    "epoch_0018.pt"
+    "epoch_0018.pt",
+    "epoch_0019.pt"
   ]
 }
