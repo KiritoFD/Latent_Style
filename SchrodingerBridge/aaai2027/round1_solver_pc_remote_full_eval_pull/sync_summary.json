@@ -150,6 +150,18 @@
         "has_metrics": true,
         "has_summary": true,
         "image_count": 0
+      },
+      {
+        "epoch": "epoch_0025",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0026",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
       }
     ],
     "ckpts": [
@@ -177,7 +189,9 @@
       "epoch_0022.pt",
       "epoch_0023.pt",
       "epoch_0024.pt",
-      "epoch_0025.pt"
+      "epoch_0025.pt",
+      "epoch_0026.pt",
+      "epoch_0027.pt"
     ],
     "processes": {
       "train": [
@@ -237,17 +251,17 @@
     "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0001\\summary.json"
   },
   "latest": {
-    "epoch": "epoch_0024",
-    "full_clip_style": "0.7068678211768469",
-    "full_content_lpips": "0.48849489448",
-    "transfer_clip_style": "0.6873708626131216",
-    "transfer_content_lpips": "0.4989487981833333",
-    "wall_total_seconds": "186.37758985700202",
-    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0024\\summary.json"
+    "epoch": "epoch_0026",
+    "full_clip_style": "0.7111003001928329",
+    "full_content_lpips": "0.4810192504133334",
+    "transfer_clip_style": "0.6900514435271423",
+    "transfer_content_lpips": "0.4933502897166667",
+    "wall_total_seconds": "176.65570245400886",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\epoch_0026\\summary.json"
   },
   "convergence": {
     "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_pc_remote_full_eval_pull\\clip_lpips_curve.csv",
-    "row_count": 24,
+    "row_count": 26,
     "best_epoch": "epoch_0001",
     "best_index": 0,
     "best_transfer_clip_epoch": "epoch_0001",
@@ -271,16 +285,16 @@
       "epoch_0017"
     ],
     "last_pareto_epoch": "epoch_0017",
-    "newest_epoch": "epoch_0024",
-    "since_best": 23,
-    "since_last_pareto": 7,
+    "newest_epoch": "epoch_0026",
+    "since_best": 25,
+    "since_last_pareto": 9,
     "best_in_newest_2": false,
     "tail_flat": false,
     "patience": 6,
     "criterion": "joint_transfer_allpairs_pareto",
     "converged": false
   },
-  "latest_remote_ckpt": "epoch_0025.pt",
+  "latest_remote_ckpt": "epoch_0027.pt",
   "remote_confirmed_settled_epochs": [
     "epoch_0001",
     "epoch_0002",
@@ -305,9 +319,11 @@
     "epoch_0021",
     "epoch_0022",
     "epoch_0023",
-    "epoch_0024"
+    "epoch_0024",
+    "epoch_0025",
+    "epoch_0026"
   ],
-  "latest_remote_settled_epoch": "epoch_0024",
+  "latest_remote_settled_epoch": "epoch_0026",
   "local_curve_epochs": [
     "epoch_0001",
     "epoch_0002",
@@ -332,10 +348,12 @@
     "epoch_0021",
     "epoch_0022",
     "epoch_0023",
-    "epoch_0024"
+    "epoch_0024",
+    "epoch_0025",
+    "epoch_0026"
   ],
-  "latest_local_settled_epoch": "epoch_0024",
+  "latest_local_settled_epoch": "epoch_0026",
   "pending_ckpt_epochs": [
-    "epoch_0025.pt"
+    "epoch_0027.pt"
   ]
 }
