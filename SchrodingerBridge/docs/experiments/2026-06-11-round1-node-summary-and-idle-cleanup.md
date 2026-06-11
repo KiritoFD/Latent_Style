@@ -15,9 +15,9 @@ Purpose:
 - authority root:
   - [round1_solver_unsb_cycle_remote_full_eval_pull](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull)
 - latest settled fast-eval point:
-  - `epoch_0013`
-  - transfer `0.6963 / 0.5094`
-  - all-pairs `0.7158 / 0.4977`
+  - `epoch_0014`
+  - transfer `0.6929 / 0.5097`
+  - all-pairs `0.7097 / 0.5009`
 - current best reads inside the lane:
   - best transfer `CLIP-S`:
     - `epoch_0001`
@@ -29,16 +29,16 @@ Purpose:
     - `epoch_0009`
     - `0.7245 / 0.4311`
 - convergence read:
-  - `row_count = 13`
-  - `since_last_pareto = 4`
+  - `row_count = 14`
+  - `since_last_pareto = 5`
   - `tail_flat = false`
   - `converged = false`
 - remote live read after doc refresh:
-  - `10269 MiB / 12288 MiB`
-  - `epoch 15/48`
-  - `step 69/629`
-  - `loss=7.8800`
-  - `tswd=5.7188`
+  - `9515 MiB / 12288 MiB`
+  - `epoch 14/48`
+  - `step 25/629`
+  - `loss=7.9068`
+  - `tswd=5.5625`
 
 ## Cleanup Decisions
 
@@ -81,11 +81,11 @@ Purpose:
   - `epoch_0011` continues that softening, which makes the near-term read more like "frontier spike followed by weaker confirmations" than "stable new plateau"
   - `epoch_0011` also shows a large eval wall-time jump to about `325s`, which is an efficiency anomaly worth watching if it repeats
   - `epoch_0012` recovers materially over `epoch_0011`, but it still remains clearly below the `epoch_0009` frontier on both style and LPIPS
-  - `epoch_0013` stays in the same regime as `epoch_0012`: better than the `epoch_0011` trough, but still below `epoch_0009` on both style and LPIPS
+  - `epoch_0013-0014` stay in the same regime as `epoch_0012`: better than the `epoch_0011` trough, but still below `epoch_0009` on both style and LPIPS
 - if that pattern persists, the solver should be treated as:
   - a structure-preserving component that may still help in a later composite
   - but it now also deserves renewed attention as a possible standalone keep candidate
 - the practical consequence for round 1:
   - do not promote UNSB on internal curve motion alone
   - but do reopen the possibility that this solver family could survive round-1 closure on its own curve, not only as a later composite ingredient
-  - the next key test is whether `epoch_0014+` keep climbing back toward `epoch_0009` or whether `epoch_0012-0013` were only a weak recovery shelf inside a broader post-frontier fade
+  - the next key test is whether `epoch_0015+` keep climbing back toward `epoch_0009` or whether `epoch_0012-0014` were only a weak recovery shelf inside a broader post-frontier fade
