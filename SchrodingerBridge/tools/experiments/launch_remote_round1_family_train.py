@@ -211,6 +211,15 @@ def _validate_dino_cache_for_config(*, cache_path: Path, payload: dict, workspac
     return cache_path
 
 
+def _launch_mode_suffix(*, config_stem: str) -> str:
+    stem = str(config_stem).strip().lower()
+    if "reconpretrain" in stem:
+        return "recon"
+    if "warmstart" in stem:
+        return "warm"
+    return "main"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Launch a round-1 family training run on the remote 3060 WSL host.")
     parser.add_argument("--config", required=True, help="Workspace-relative config path.")
@@ -242,6 +251,8 @@ def main() -> int:
     payload = json.loads(config_abs.read_text(encoding="utf-8"))
     run_name = str((payload.get("ablation") or {}).get("name", config_abs.stem)).strip() or config_abs.stem
     family_id = infer_round1_family_id(run_name=run_name, config_stem=config_abs.stem) or config_abs.stem
+    launch_suffix = _launch_mode_suffix(config_stem=config_abs.stem)
+    launch_token = f"{family_id}_{launch_suffix}"
     manifest_csv = Path(args.manifest_csv).expanduser()
     if not manifest_csv.is_absolute():
         manifest_csv = (WORKSPACE / manifest_csv).resolve()
@@ -296,8 +307,9 @@ def main() -> int:
         payload.setdefault("data", {})
         payload["data"]["dino_cache_path"] = auto_dino_override
         payload["data"]["dino_cache_required"] = True
-        rewritten_rel = config_rel.parent / f"{config_abs.stem}.remote.launch.json"
+        rewritten_rel = Path("SchrodingerBridge") / "_codex_rt" / f"{launch_token}.remote.launch.json"
         rewritten_abs = (WORKSPACE / rewritten_rel).resolve()
+        rewritten_abs.parent.mkdir(parents=True, exist_ok=True)
         rewritten_abs.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         sync_config = rewritten_rel
         remote_config = f"{args.remote_wsl_cwd.rstrip('/')}/{rewritten_rel.as_posix()}"
@@ -313,7 +325,7 @@ def main() -> int:
         sys.executable,
         str(launch),
         "--task-name",
-        f"round1-{run_name}-train",
+        f"round1-{launch_token}-train",
         "--remote-log-path",
         f"{args.remote_wsl_cwd.rstrip('/')}/exp/inmortal-exp/{run_name}_train.log",
         "--remote-wsl-cwd",
@@ -324,10 +336,6 @@ def main() -> int:
         "SchrodingerBridge/src",
         "--sync-path",
         "SchrodingerBridge/tools/experiments/launch_remote_round1_family_train.py",
-        "--sync-path",
-        "SchrodingerBridge/docs/experiments/2026-06-10-round1-full-sweep-master.md",
-        "--sync-path",
-        "SchrodingerBridge/docs/experiments/round1_full_sweep",
         "--sync-path",
         str(sync_config),
         "--verify-python-file",

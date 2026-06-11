@@ -12,6 +12,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 SB_ROOT = SCRIPT_DIR.parent.parent
 WORKSPACE_ROOT = SB_ROOT.parent
+REMOTE_TMP_DIR = "SchrodingerBridge/_codex_rt"
 
 
 def _iter_files(rel_path: Path):
@@ -309,6 +310,35 @@ def _cleanup_failed_launch(
     )
 
 
+def _cleanup_preexisting_launch_artifacts(
+    *,
+    host: str,
+    port: int,
+    user: str,
+    task_name: str,
+    wsl_distro: str,
+    remote_pid_path: str,
+    remote_launcher_abs: str,
+    remote_windows_launcher_abs: str,
+    remote_wrapper_log: str,
+) -> None:
+    _ssh_exec(
+        host=host,
+        port=port,
+        user=user,
+        remote_command=f"schtasks /Delete /TN {task_name} /F",
+    )
+    _ssh_exec(
+        host=host,
+        port=port,
+        user=user,
+        remote_command=(
+            f"wsl -d {wsl_distro} --exec bash -lc "
+            f"\"rm -f '{remote_pid_path}' '{remote_launcher_abs}' '{remote_windows_launcher_abs}' '{remote_wrapper_log}' || true\""
+        ),
+    )
+
+
 def _health_check(
     *,
     host: str,
@@ -446,12 +476,12 @@ def main() -> int:
     task_name = _sanitize_task_name(args.task_name)
     remote_workspace_root = args.remote_workspace_root.rstrip("/")
     remote_wsl_cwd = args.remote_wsl_cwd.rstrip("/")
-    remote_launcher_rel = f"SchrodingerBridge/_codex_tmp/{task_name}.sh"
-    remote_windows_launcher_rel = f"SchrodingerBridge/_codex_tmp/{task_name}.ps1"
+    remote_launcher_rel = f"{REMOTE_TMP_DIR}/{task_name}.sh"
+    remote_windows_launcher_rel = f"{REMOTE_TMP_DIR}/{task_name}.ps1"
     remote_launcher_abs = f"{remote_workspace_root}/{remote_launcher_rel}"
     remote_windows_launcher_abs = f"{remote_workspace_root}/{remote_windows_launcher_rel}"
-    remote_pid_path = f"{remote_workspace_root}/SchrodingerBridge/_codex_tmp/{task_name}.pid"
-    remote_wrapper_log = f"{remote_workspace_root}/SchrodingerBridge/_codex_tmp/{task_name}.launcher.log"
+    remote_pid_path = f"{remote_workspace_root}/{REMOTE_TMP_DIR}/{task_name}.pid"
+    remote_wrapper_log = f"{remote_workspace_root}/{REMOTE_TMP_DIR}/{task_name}.launcher.log"
 
     launch_script = _make_remote_launch_script(
         remote_wsl_cwd=remote_wsl_cwd,
@@ -524,6 +554,17 @@ def main() -> int:
         },
     )
     remote = f"{args.user}@{args.host}"
+    _cleanup_preexisting_launch_artifacts(
+        host=args.host,
+        port=args.port,
+        user=args.user,
+        task_name=task_name,
+        wsl_distro=args.wsl_distro,
+        remote_pid_path=remote_pid_path,
+        remote_launcher_abs=remote_launcher_abs,
+        remote_windows_launcher_abs=remote_windows_launcher_abs,
+        remote_wrapper_log=remote_wrapper_log,
+    )
     extract_cmd = [
         "ssh",
         "-p",
