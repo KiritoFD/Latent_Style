@@ -8,6 +8,18 @@ Purpose:
 - prevent the generic queue from silently falling into the tokenizer `DINO` tail
 - keep the next round-1 launch aligned with the current paper-facing non-DINO-first rule
 
+## Suspension Note
+
+- this handoff plan was written under the assumption that `solver_unsb_cycle`
+  would actually close
+- the later interruption audit showed the train log ending at:
+  - `2026-06-11 13:33:06 +08:00`
+  - `rc=143`
+- with the latest retained checkpoint still at `epoch_0014`
+- until `solver_unsb_cycle` is either resumed to closure or explicitly dropped,
+  this file should be read as queued contingency only, not as the current next
+  action
+
 ## Current Queue Fact Pattern
 
 - active formal lane:

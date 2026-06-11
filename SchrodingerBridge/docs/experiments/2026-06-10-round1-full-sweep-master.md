@@ -166,18 +166,15 @@ Required closure per family:
 Current remote lane status:
 
 - active formal lane:
-  - `solver_unsb_cycle`
-  - current formal launch setting:
-    - `batch=15`
-  - first authoritative 30-second read:
-    - `9677 MiB / 12288 MiB`
-    - `band_status=in_band`
-    - `formal_status=formal_in_band`
-    - `epoch 1/48`
-    - `step 187/629`
-  - current interpretation:
-    - the first `batch=8` launch was calibration-only under-band
-    - `batch=15` is the first valid formal opening for this family
+  - none at the current moment
+  - `solver_unsb_cycle` no longer has a live train pid
+  - the interrupted family is now tracked as `recalibration_needed`, not `running`
+  - latest interruption fact:
+    - train log end `2026-06-11 13:33:06 +08:00`
+    - `rc=143`
+  - next safe continuation for that family:
+    - bounded segmented resume from `epoch_0014`
+    - see [solver_unsb_cycle relaunch prep](G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/solver_unsb_cycle/relaunch_prep.md)
 - latest closed training family:
   - `solver_pc`
   - current training read:
@@ -225,12 +222,18 @@ Current remote lane status:
       - the current non-DINO relaunchable candidates reported by that helper are:
         - `attn_gw_ot`
         - `attn_gated_spade`
+        - `solver_unsb_cycle`
   - current auto-handoff state:
     - the local `watch_launch_round1_queue_when_idle.py` watcher is now armed against the round1 manifest
-    - so once no family remains `running`, the next `planned` family will be launched through the existing queue path automatically
-    - the exact next candidate should be resolved at handoff time from the manifest plus the current `DINO-last` rule
+    - because no family remains `running`, the queue is no longer held open by a live formal lane
+    - however, the current state is not a true post-closure handoff:
+      - `solver_unsb_cycle` was interrupted, not closed
+      - tokenizer `DINO` tail is still blocked by default
+    - the exact next candidate should therefore be resolved only after:
+      - `solver_unsb_cycle` is resumed or explicitly dropped
+      - and the manifest is intentionally re-promoted for the next formal lane
     - current dry-run audit result:
-      - under the present manifest, once `solver_unsb_cycle` leaves `running`, the first launchable `planned` family would be `tok_a_dino_dict`
+      - under the present manifest, the first launchable `planned` family would still be `tok_a_dino_dict`
       - this is because the remaining non-DINO families are currently `reviewing` or `recalibration_needed`, not `planned`
       - so maintaining a practical `non-DINO-first` policy from this point forward requires an explicit manifest re-promotion, not just relying on the generic queue helper
 - `attn_gated_spade` was downgraded on `2026-06-10`:
@@ -502,13 +505,9 @@ Recalibration-needed family:
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Active Status
 
-- Running families:
-  - `solver_unsb_cycle`
-- Active family: `solver_unsb_cycle`
-- Decision status: `running`
-- Batch / epochs / patience: `15 / 48 / 6`
-- Remote GPU live (latest nonempty): `9515 / 12288 MiB`, `util=94%`, `band=in_band`
-- Remote train pid: `not alive`; remote fast-eval pid count = `2`
+- Running families: none
+- Active family: `none`
+- Decision status: `no_formal_running_lane`
 - Best transfer `CLIP-S`: `epoch_0001` -> `0.7057 / 0.5669`
 - Best transfer `LPIPS`: `epoch_0009` -> `0.6996 / 0.4421`
 - Best all-pairs `CLIP-S`: `epoch_0009` -> `0.7245 / 0.4311`
