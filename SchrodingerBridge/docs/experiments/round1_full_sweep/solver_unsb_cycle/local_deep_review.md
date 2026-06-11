@@ -1,6 +1,8 @@
 # solver_unsb_cycle Local Deep Review
 
 - Expected: `IntroStyle + DINO + frozen VLM`
+- Prep note:
+  - [localreview_prep.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/solver_unsb_cycle/localreview_prep.md)
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
