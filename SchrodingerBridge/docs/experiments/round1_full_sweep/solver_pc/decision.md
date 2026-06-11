@@ -75,6 +75,14 @@
   - this point rolled back materially from the `epoch_0009` frontier on both style and LPIPS
   - so `epoch_0009` remains the current best point
   - the line is still active, but now clearly oscillatory rather than monotone
+- `epoch_0011` update:
+  - transfer `0.6925 / 0.5002`
+  - full `0.7110 / 0.4914`
+  - wall `176.21s`
+- Interpretation:
+  - LPIPS recovered meaningfully from the `epoch_0010` rollback
+  - transfer style is slightly stronger than `epoch_0009`, while all-pairs style remains weaker
+  - so this point is not the best LPIPS point, but it is still a legitimate new tradeoff frontier update
 - `epoch_0010` update:
   - transfer `0.6988 / 0.5270`
   - full `0.7138 / 0.5185`
