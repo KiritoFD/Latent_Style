@@ -159,6 +159,25 @@
   - continue bounded segmented continuation from `epoch_0020`
   - do not hand off the formal program to another family yet
 
+## Second Post-Reset Followup Read
+
+- bounded continuation from `epoch_0020` through `epoch_0022` is now settled
+- new points:
+  - `epoch_0021`
+    - transfer `0.6937 / 0.5124`
+    - full `0.7129 / 0.4997`
+  - `epoch_0022`
+    - transfer `0.6923 / 0.5101`
+    - full `0.7105 / 0.4992`
+- interpretation:
+  - neither `epoch_0021` nor `epoch_0022` beats the `epoch_0018` Pareto point
+  - the post-`epoch_0018` tail now has two further non-winning confirmations
+  - but the tail is still not flat enough for closure and the solver patience has not been exhausted
+- current decision:
+  - keep `solver_unsb_cycle` as the active logical family
+  - continue bounded segmented continuation from `epoch_0022`
+  - do not hand off to tokenizer `DINO` or the next non-DINO family yet
+
 ## Promotion Rule
 
 - No early promotion from the first in-band health sample alone.

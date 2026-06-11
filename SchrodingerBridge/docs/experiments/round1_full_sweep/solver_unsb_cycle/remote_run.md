@@ -49,16 +49,16 @@
 
 ## Next Action
 
-- Keep the retained fast-eval packet authoritative through `epoch_0018`.
+- Keep the retained fast-eval packet authoritative through `epoch_0022`.
 - Treat `batch=17` as the current canonical UNSB setting.
 - Continue via further bounded segmented continuation rather than handing off to a different family yet:
   - `epoch_0018` created a new Pareto point and reset patience
 - Do not spend local heavy review budget yet:
   - this family is still in convergence-shaping mode rather than closure mode
 - latest bounded followup:
-  - `epoch_0019-0020` are now settled
+  - `epoch_0019-0022` are now settled
   - neither displaced `epoch_0018`
-  - so the family remains open, with `since_last_pareto = 2`
+  - so the family remains open, with `since_last_pareto = 4`
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
@@ -67,19 +67,10 @@
 - Run name: `aaai2027_round1_solver_unsb_cycle_seed42_b8a2`
 - Remote run dir: `./exp/inmortal-exp/aaai2027_round1_solver_unsb_cycle_seed42_b8a2`
 - Config: [aaai2027_round1_solver_unsb_cycle_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_solver_unsb_cycle_seed42_b8a2.json)
-- Manifest status: `running`
+- Manifest status: `recalibration_needed`
 - Local fast root: [round1_solver_unsb_cycle_fast_local](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_fast_local)
 - Local review root: [round1_solver_unsb_cycle_localreview](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_localreview)
 - Prelaunch switch smoke: `ok`
 - Switch smoke artifact: [round1_solver_unsb_cycle_switch_smoke_latest.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_switch_smoke_latest.json)
 - Switch smoke row count: `1`
-- Remote GPU live sample:
-  - `9660 MiB / 12288 MiB`, `util=91%`
-  - `band_status=in_band`
-  - `formal_status=formal_in_band`
-- Remote train progress:
-  - `epoch 18/18`
-  - `step 322/555`
-  - `loss=7.8752`
-  - `tswd=6.3125`
 <!-- ROUND1_AUTO_STATUS:END -->

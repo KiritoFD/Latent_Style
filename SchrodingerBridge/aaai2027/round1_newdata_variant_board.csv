@@ -8,5 +8,6 @@ AttnSA latest,attn_sa_mod,epoch,epoch_0024,,remote_train_wall_not_backfilled,0.6
 GatedSPADE best-style,attn_gated_spade,epoch,epoch_0001,,runtime_curve_missing_epoch1_wall,0.6928889000912506,0.4500801226499999,0.7158449338674545,0.44641429182666664,GatedSPADE best-style,P,#16A085,8,8,76
 GatedSPADE best-LPIPS,attn_gated_spade,epoch,epoch_0022,,runtime_curve_not_complete_after_e20,0.6909810468554497,0.4252276106833334,0.7155702382723491,0.42199304124000003,GatedSPADE best-LPIPS,X,#16A085,8,-16,76
 GatedSPADE latest,attn_gated_spade,epoch,epoch_0022,,runtime_curve_not_complete_after_e20,0.6909810468554497,0.4252276106833334,0.7155702382723491,0.42199304124000003,GatedSPADE latest,>,#16A085,8,6,76
-SaMST e5,samst,epoch,epoch_0005,8.396,local_wsl_public_common_frontier,0.688928875029087,0.6205859732833333,0.7181546307404836,0.6128266786266667,SaMST e5,o,#B76E12,8,10,76
+SaMST e10,samst,epoch,epoch_0010,8.396,local_wsl_public_common_frontier_latest_common_eval,0.6861710677544277,0.62034543985,0.7162767504056294,0.6125028583733334,SaMST e10,o,#B76E12,8,10,76
+UNSB e18 frontier,solver_unsb_cycle,epoch,epoch_0018,,remote_segmented_recovery_frontier,0.701165763537089,0.5041099872666666,0.7207965766588846,0.4901232141333333,UNSB e18,h,#7C3AED,28,-26,82
 Seedream-4.5,seedream,training_free,training_free,0.0,external_no_training,0.6920,0.4923,,,Seedream-4.5,*,#C58A2B,-66,10,82
