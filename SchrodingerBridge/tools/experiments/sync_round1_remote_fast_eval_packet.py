@@ -393,11 +393,13 @@ def main() -> int:
     latest = _latest(curve_rows)
     convergence = json.loads(convergence_json.read_text(encoding="utf-8"))
     remote_ckpts = [str(x) for x in (remote_scan.get("ckpts") or [])]
-    settled_epoch_names = [str(item.get("epoch", "")).strip() for item in remote_scan.get("epochs", []) if item.get("has_summary")]
+    remote_settled_epoch_names = [str(item.get("epoch", "")).strip() for item in remote_scan.get("epochs", []) if item.get("has_summary")]
+    local_settled_epoch_names = [str(row.get("epoch", "")).strip() for row in curve_rows if str(row.get("epoch", "")).strip()]
     latest_remote_ckpt = max(remote_ckpts, key=_epoch_int) if remote_ckpts else ""
-    latest_settled_epoch = max(settled_epoch_names, key=_epoch_int) if settled_epoch_names else ""
-    settled_epoch_set = set(settled_epoch_names)
-    pending_ckpt_epochs = [name for name in remote_ckpts if name.replace(".pt", "") not in settled_epoch_set]
+    latest_remote_settled_epoch = max(remote_settled_epoch_names, key=_epoch_int) if remote_settled_epoch_names else ""
+    latest_local_settled_epoch = max(local_settled_epoch_names, key=_epoch_int) if local_settled_epoch_names else ""
+    local_settled_epoch_set = set(local_settled_epoch_names)
+    pending_ckpt_epochs = [name for name in remote_ckpts if name.replace(".pt", "") not in local_settled_epoch_set]
 
     summary = {
         "family_id": family_id,
@@ -413,7 +415,10 @@ def main() -> int:
         "latest": latest,
         "convergence": convergence,
         "latest_remote_ckpt": latest_remote_ckpt,
-        "latest_settled_epoch": latest_settled_epoch,
+        "remote_confirmed_settled_epochs": remote_settled_epoch_names,
+        "latest_remote_settled_epoch": latest_remote_settled_epoch,
+        "local_curve_epochs": local_settled_epoch_names,
+        "latest_local_settled_epoch": latest_local_settled_epoch,
         "pending_ckpt_epochs": pending_ckpt_epochs,
     }
     summary_json.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -427,24 +432,33 @@ def main() -> int:
         f"  - {_md_link(local_root.name, local_root)}",
         f"- Pulled curve CSV:",
         f"  - {_md_link(curve_csv.name, curve_csv)}",
-        f"- Settled pulled rows:",
+        f"- Pulled local curve rows:",
         f"  - `{len(curve_rows)}`",
-        f"- Settled remote epochs:",
-        f"  - `{', '.join(item['epoch'] for item in settled_epochs)}`",
+        f"- Pulled local curve epochs:",
+        f"  - `{', '.join(local_settled_epoch_names)}`",
     ]
     if latest_remote_ckpt:
         auto_lines.extend(
             [
                 "- Latest remote checkpoint:",
                 f"  - `{latest_remote_ckpt}`",
-                "- Latest settled eval epoch:",
-                f"  - `{latest_settled_epoch or 'none'}`",
+                "- Latest pulled local eval epoch:",
+                f"  - `{latest_local_settled_epoch or 'none'}`",
+            ]
+        )
+    if settled_epochs:
+        auto_lines.extend(
+            [
+                "- Remote scan confirmed summary epochs:",
+                f"  - `{', '.join(item['epoch'] for item in settled_epochs)}`",
+                "- Latest remote confirmed eval epoch:",
+                f"  - `{latest_remote_settled_epoch or 'none'}`",
             ]
         )
     if pending_ckpt_epochs:
         auto_lines.extend(
             [
-                "- Remote checkpoints not yet settled into local fast curve:",
+                "- Remote checkpoints not yet pulled into local fast curve:",
                 *[f"  - `{item}`" for item in pending_ckpt_epochs],
             ]
         )

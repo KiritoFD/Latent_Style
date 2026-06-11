@@ -1,136 +1,66 @@
 # solver_pc Remote Run Log
 
 - Run dir: `./exp/inmortal-exp/aaai2027_round1_solver_pc_seed42_b8a2`
-- Calibration reads on `2026-06-11`:
+- Authority packet root:
+  - [round1_solver_pc_remote_full_eval_pull](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_pc_remote_full_eval_pull)
+- Fast curve note:
+  - [fast_curve_read.md](G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/solver_pc/fast_curve_read.md)
+
+## Launch and Calibration
+
+- `2026-06-11` calibration sequence:
   - `batch=8`
-    - 30-second health sample: `5216 MiB / 12288 MiB`
-    - read: far below the requested formal band
+    - `5216 MiB / 12288 MiB`
+    - below formal band
   - `batch=14`
-    - 30-second health sample: `8226 MiB / 12288 MiB`
-    - read: still below the effective formal floor
+    - `8226 MiB / 12288 MiB`
+    - still below formal band
   - `batch=16`
-    - 30-second health sample: `9334 MiB / 12288 MiB`
-    - read: first authoritative in-band launch setting for `solver_pc`
-- Settled fast-eval points `epoch_0001-0008`:
+    - `9334 MiB / 12288 MiB`
+    - first authoritative formal opening
+- Current live health sample:
+  - `10348 MiB / 12288 MiB`
+  - `util=89%`
+  - read: lane is healthy and in-band
+
+## Settled Curve Milestones
+
+- Opening style peak:
   - `epoch_0001`
-    - transfer `0.7074 / 0.5621`
-    - all-pairs `0.7170 / 0.5552`
-    - wall `177.75s`
-  - `epoch_0002`
-    - transfer `0.6974 / 0.5426`
-    - all-pairs `0.7109 / 0.5368`
-    - wall `178.42s`
-  - `epoch_0003`
-    - transfer `0.6987 / 0.5533`
-    - all-pairs `0.7119 / 0.5442`
-    - wall `179.68s`
-  - `epoch_0004`
-    - transfer `0.6962 / 0.5373`
-    - all-pairs `0.7118 / 0.5296`
-    - wall `177.89s`
-  - `epoch_0005`
-    - transfer `0.6955 / 0.5381`
-    - all-pairs `0.7112 / 0.5287`
-    - wall `176.98s`
-  - `epoch_0006`
-    - transfer `0.6923 / 0.5056`
-    - all-pairs `0.7118 / 0.4959`
-    - wall `177.98s`
-  - `epoch_0007`
-    - transfer `0.6873 / 0.5510`
-    - all-pairs `0.7003 / 0.5418`
-    - wall `178.13s`
-  - `epoch_0008`
-    - transfer `0.6908 / 0.4693`
-    - all-pairs `0.7127 / 0.4596`
-    - wall `179.90s`
-- Immediate read:
-  - the opening point was style-competitive but structurally weak
-  - `epoch_0002` improved LPIPS materially while style backed off
-  - `epoch_0003` recovered some style at the cost of LPIPS
-  - `epoch_0004-0006` resumed the structure-favoring trend, with `epoch_0006` becoming the best LPIPS point so far
-  - `epoch_0007` was the first clear rollback after that improvement streak
-  - `epoch_0008` recovered strongly on both style and LPIPS, and is the first compelling post-rollback recovery signal
-  - the line remains structure-first, but is still actively moving on the Pareto surface
-- `epoch_0009` settled point:
+  - transfer `0.7074 / 0.5621`
+  - full `0.7170 / 0.5552`
+- Early structure knee:
+  - `epoch_0009`
   - transfer `0.6911 / 0.4548`
-  - all-pairs `0.7155 / 0.4429`
-  - wall `177.78s`
-  - immediate read:
-    - style recovered again from `epoch_0008`
-    - LPIPS improved materially again from `epoch_0008`
-    - this is a genuine new Pareto frontier update on both transfer-LPIPS and all-pairs LPIPS
-- `epoch_0010` settled point:
-  - transfer `0.6988 / 0.5270`
-  - all-pairs `0.7138 / 0.5185`
-  - wall `178.33s`
-  - immediate read:
-    - both style and LPIPS regressed materially from `epoch_0009`
-    - this is a clean rollback point rather than a new frontier update
-- `epoch_0011` settled point:
-  - transfer `0.6925 / 0.5002`
-  - all-pairs `0.7110 / 0.4914`
-  - wall `176.21s`
-  - immediate read:
-    - LPIPS recovered materially from the `epoch_0010` rollback
-    - transfer style is slightly stronger than `epoch_0009`, while all-pairs style remains weaker
-    - this makes `epoch_0011` a new tradeoff frontier point even though it does not beat the best LPIPS point from `epoch_0009`
-- `epoch_0012-0013` settled points:
-  - `epoch_0012`
-    - transfer `0.6928 / 0.4906`
-    - all-pairs `0.7129 / 0.4812`
-    - wall `177.10s`
+  - full `0.7155 / 0.4429`
+- Post-knee style recovery frontier:
   - `epoch_0013`
-    - transfer `0.6968 / 0.5101`
-    - all-pairs `0.7142 / 0.4996`
-    - wall `180.65s`
-  - immediate read:
-    - `epoch_0012` continued the structure recovery from the `epoch_0010` rollback
-    - `epoch_0013` traded back some LPIPS for materially stronger style
-    - this is another real tradeoff frontier update, not a simple regression
-- `epoch_0014-0015` settled points:
-  - `epoch_0014`
-    - transfer `0.6922 / 0.5067`
-    - all-pairs `0.7109 / 0.4960`
-    - wall `177.68s`
+  - transfer `0.6968 / 0.5101`
+  - full `0.7142 / 0.4996`
+- Strongest late balanced tradeoff so far:
   - `epoch_0015`
-    - transfer `0.6962 / 0.4854`
-    - all-pairs `0.7165 / 0.4746`
-    - wall `177.82s`
-  - immediate read:
-    - `epoch_0014` was a mild pullback after the `epoch_0013` style-recovery point
-    - `epoch_0015` recovered style strongly again while also improving LPIPS versus `epoch_0013/0014`
-    - this is a real new tradeoff frontier point, though it still does not beat the stronger `epoch_0009` LPIPS best
-- `epoch_0016` settled point:
-  - transfer `0.6916 / 0.5095`
-  - all-pairs `0.7104 / 0.4987`
-  - wall `177.02s`
-  - immediate read:
-    - both style and LPIPS softened again from `epoch_0015`
-    - this is a mild rollback after the latest tradeoff frontier update
-- `epoch_0014` settled point:
-  - transfer `0.6922 / 0.5067`
-  - all-pairs `0.7109 / 0.4960`
-  - wall `177.68s`
-  - immediate read:
-    - LPIPS recovered slightly from `epoch_0013`
-    - style softened again from `epoch_0013`
-    - this is a mild pullback after the style-recovery frontier, not a new best point
-- `epoch_0012` settled point:
-  - transfer `0.6928 / 0.4906`
-  - all-pairs `0.7129 / 0.4812`
-  - wall `177.10s`
-  - immediate read:
-    - this point improves both style and LPIPS versus `epoch_0011`
-    - but it still does not beat the stronger `epoch_0009` LPIPS frontier
-    - the line remains in a post-frontier oscillation regime rather than a fresh monotone climb
-- `epoch_0010` settled point:
-  - transfer `0.6988 / 0.5270`
-  - all-pairs `0.7138 / 0.5185`
-  - wall `178.33s`
-  - immediate read:
-    - both style and LPIPS regressed materially from `epoch_0009`
-    - so this point is a clear rollback, not a new frontier update
+  - transfer `0.6962 / 0.4854`
+  - full `0.7165 / 0.4746`
+- Latest locally pulled point:
+  - `epoch_0019`
+  - transfer `0.6927 / 0.4941`
+  - full `0.7124 / 0.4834`
+  - wall `178.66s`
+
+## Operational Read
+
+- `solver_pc` is not monotone; it is cycling between structure repair and style recovery.
+- The family is still alive because real Pareto updates kept reappearing after apparent rollbacks.
+- The remote fast-eval contract is working, but local docs must distinguish:
+  - locally pulled curve points
+  - remote scan points still mid-write
+- That distinction is now part of the sync tooling to avoid false closure reads.
+
+## Next Action
+
+- Continue the same lane with no batch change.
+- Keep syncing each retained checkpoint.
+- Do not hand the queue to the next family until `solver_pc` satisfies the solver-family closure rule.
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status

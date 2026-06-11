@@ -4,137 +4,64 @@
   - `2026-06-11`
 - Current status:
   - `running`
-- Calibration summary:
-  - `batch=8`
-    - 30-second health sample: `5216 MiB / 12288 MiB`
-    - read: far below the requested formal band
-  - `batch=14`
-    - 30-second health sample: `8226 MiB / 12288 MiB`
-    - read: still below the effective formal floor
-  - final canonical opening:
-    - `batch=16`
-  - first in-band 30-second sample:
-    - `9334 MiB / 12288 MiB`
-- Interpretation:
-  - `batch=8` and `batch=14` were calibration-only under-band openings
-  - `batch=16` is the first authoritative formal setting for this family
-- Settled fast-eval points `epoch_0001-0008`:
+- Current round read:
+  - `solver_pc` is still an active formal lane, not a closure candidate
+  - the authority remains the remote all-ckpt `CLIP-S + LPIPS` curve
+  - local deep review stays blocked until a bestfew handoff exists
+
+## Formal Setting
+
+- Canonical config:
+  - [aaai2027_round1_solver_pc_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_solver_pc_seed42_b8a2.json)
+- Formal batch setting:
+  - `batch=16`
+  - `accumulation_steps=2`
+- VRAM calibration:
+  - `batch=8 -> 5216 MiB`
+  - `batch=14 -> 8226 MiB`
+  - `batch=16 -> 9334 MiB` at first formal health check
+- Current live band check:
+  - `10348 MiB / 12288 MiB`
+  - read: safely inside the requested formal band
+
+## Curve Read
+
+- Best transfer `CLIP-S` remains:
   - `epoch_0001`
-    - transfer `0.7074 / 0.5621`
-    - all-pairs `0.7170 / 0.5552`
-    - wall `177.75s`
-  - `epoch_0002`
-    - transfer `0.6974 / 0.5426`
-    - all-pairs `0.7109 / 0.5368`
-    - wall `178.42s`
-  - `epoch_0003`
-    - transfer `0.6987 / 0.5533`
-    - all-pairs `0.7119 / 0.5442`
-    - wall `179.68s`
-  - `epoch_0004`
-    - transfer `0.6962 / 0.5373`
-    - all-pairs `0.7118 / 0.5296`
-    - wall `177.89s`
-  - `epoch_0005`
-    - transfer `0.6955 / 0.5381`
-    - all-pairs `0.7112 / 0.5287`
-    - wall `176.98s`
-  - `epoch_0006`
-    - transfer `0.6923 / 0.5056`
-    - all-pairs `0.7118 / 0.4959`
-    - wall `177.98s`
-  - `epoch_0007`
-    - transfer `0.6873 / 0.5510`
-    - all-pairs `0.7003 / 0.5418`
-    - wall `178.13s`
-  - `epoch_0008`
-    - transfer `0.6908 / 0.4693`
-    - all-pairs `0.7127 / 0.4596`
-    - wall `179.90s`
-- Interpretation:
-  - the opening point was style-competitive but structurally weak
-  - `epoch_0002` improved LPIPS materially while style backed off
-  - `epoch_0003` recovered some style at the cost of LPIPS
-  - `epoch_0004-0006` resumed the structure-favoring trend, with `epoch_0006` becoming the best LPIPS point so far
-  - `epoch_0007` was the first clear rollback after that improvement streak
-  - `epoch_0008` recovered strongly on both style and LPIPS, and is the first compelling post-rollback recovery signal
-  - this family remains clearly alive and Pareto-active, but its behavior is still `structure-first, style-second`
-- `epoch_0009` update:
+  - transfer `0.7074 / 0.5621`
+- Best transfer `LPIPS` remains:
+  - `epoch_0009`
   - transfer `0.6911 / 0.4548`
-  - full `0.7155 / 0.4429`
-  - wall `177.78s`
-- Interpretation:
-  - this point improves LPIPS materially again versus `epoch_0008`
-  - style also recovers slightly on both transfer and all-pairs
-  - so `epoch_0009` is a genuine new Pareto frontier update, not just a recovery to the old line
-- `epoch_0010` update:
-  - transfer `0.6988 / 0.5270`
-  - full `0.7138 / 0.5185`
-  - wall `178.33s`
-- Interpretation:
-  - this point rolled back materially from the `epoch_0009` frontier on both style and LPIPS
-  - so `epoch_0009` remains the current best point
-  - the line is still active, but now clearly oscillatory rather than monotone
-- `epoch_0011` update:
-  - transfer `0.6925 / 0.5002`
-  - full `0.7110 / 0.4914`
-  - wall `176.21s`
-- Interpretation:
-  - LPIPS recovered meaningfully from the `epoch_0010` rollback
-  - transfer style is slightly stronger than `epoch_0009`, while all-pairs style remains weaker
-  - so this point is not the best LPIPS point, but it is still a legitimate new tradeoff frontier update
-- `epoch_0012` update:
-  - transfer `0.6928 / 0.4906`
-  - full `0.7129 / 0.4812`
-  - wall `177.10s`
-- Interpretation:
-  - this point improves both style and LPIPS versus `epoch_0011`
-  - but it still does not beat the stronger `epoch_0009` LPIPS frontier
-  - the line remains alive and structurally strong, but is still oscillating around the post-`0009` region
-- `epoch_0013` update:
-  - transfer `0.6968 / 0.5101`
-  - full `0.7142 / 0.4996`
-- wall `180.65s`
-- Interpretation:
-  - LPIPS softened versus `epoch_0012`
-  - but style recovered materially on both transfer and all-pairs
-  - so this point is a real tradeoff frontier update, even though it does not beat the `epoch_0009` LPIPS best
-- `epoch_0014-0015` update:
-  - `epoch_0014`
-    - transfer `0.6922 / 0.5067`
-    - full `0.7109 / 0.4960`
-    - wall `177.68s`
+- Strong late tradeoff frontier points after the `0009` LPIPS knee:
+  - `epoch_0013`
+    - transfer `0.6968 / 0.5101`
+    - full `0.7142 / 0.4996`
   - `epoch_0015`
     - transfer `0.6962 / 0.4854`
     - full `0.7165 / 0.4746`
-    - wall `177.82s`
-- Interpretation:
-  - `epoch_0014` was a mild pullback after the `epoch_0013` style-recovery point
-  - `epoch_0015` then recovered style strongly again while also improving LPIPS versus `epoch_0013/0014`
-  - it still does not beat the stronger `epoch_0009` LPIPS frontier, but it is a real new tradeoff frontier point
-- `epoch_0016` update:
-  - transfer `0.6916 / 0.5095`
-  - full `0.7104 / 0.4987`
-  - wall `177.02s`
-- Interpretation:
-  - this point softened both style and LPIPS versus `epoch_0015`
-  - so it is a mild rollback from the latest tradeoff frontier, not a new best point
-- `epoch_0014` update:
-  - transfer `0.6922 / 0.5067`
-  - full `0.7109 / 0.4960`
-  - wall `177.68s`
-- Interpretation:
-  - LPIPS recovered slightly from `epoch_0013`
-  - style softened again from `epoch_0013`
-  - this looks like a small post-frontier pullback, not a new best point
-- `epoch_0010` update:
-  - transfer `0.6988 / 0.5270`
-  - full `0.7138 / 0.5185`
-  - wall `178.33s`
-- Interpretation:
-  - this point rolls back materially from `epoch_0009` on both style and LPIPS
-  - so it is not a new Pareto point
-  - the family remains alive because the best point is still in the newest 2 settled checkpoints
-- Next action:
-  - keep the same remote lane running
-  - keep settling retained checkpoints under the remote fast-eval contract before any deeper review or closure decision
+  - `epoch_0017`
+    - transfer `0.6982 / 0.5075`
+    - full `0.7159 / 0.4964`
+- Latest locally pulled point:
+  - `epoch_0019`
+  - transfer `0.6927 / 0.4941`
+  - full `0.7124 / 0.4834`
+  - read: this is another non-frontier oscillation point, not a new Pareto best
+
+## Decision
+
+- Keep running.
+- Rationale:
+  - `patience=6` for solver families
+  - `since_last_pareto=1`, so the line is nowhere near closure
+  - `epoch_0008-0018` shows repeated frontier re-entry rather than terminal flattening
+  - best style and best LPIPS are still split across different checkpoints, so the family is still exploring the tradeoff surface
+- Promotion rule:
+  - do not promote this family on internal oscillation alone
+  - require a full family closure packet plus deep review before any keep/reject decision
+
+## Next Action
+
+- Let the remote lane continue.
+- Keep syncing every retained checkpoint into the local fast-curve packet.
+- Open deep review only after the training lane truly closes and a bestfew shortlist is frozen.
