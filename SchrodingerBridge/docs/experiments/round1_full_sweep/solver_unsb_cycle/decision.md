@@ -48,9 +48,9 @@
 ## Current Direction Read
 
 - Latest settled authority point:
-  - `epoch_0012`
-  - transfer `0.6985 / 0.5078`
-  - full `0.7168 / 0.4966`
+  - `epoch_0013`
+  - transfer `0.6963 / 0.5094`
+  - full `0.7158 / 0.4977`
 - Current interpretation:
   - `epoch_0006-0007` had made the line look like a continuing rollback from `epoch_0003`
   - `epoch_0008` first recovered materially on both style and LPIPS relative to `epoch_0007`
@@ -60,11 +60,12 @@
   - `epoch_0011` softens again, so the post-`epoch_0009` tail currently looks like follow-up drift rather than stable frontier occupancy
   - `epoch_0011` also carries a much slower eval wall time than the surrounding checkpoints
   - `epoch_0012` rebounds from `epoch_0011`, but it still does not reclaim the `epoch_0009` frontier
+  - `epoch_0013` remains in the same partial-recovery band as `epoch_0012`, rather than extending into a real frontier recapture
 - Operational consequence:
   - fully reset the solver patience read
   - do not treat this family as approaching closure any more
   - keep the formal lane open until the post-`epoch_0009` tail is actually observed
-  - the immediate decision hinge is whether `epoch_0013+` continue climbing back toward `epoch_0009` or whether `epoch_0012` was only a partial bounce
+  - the immediate decision hinge is whether `epoch_0014+` continue climbing back toward `epoch_0009` or whether `epoch_0012-0013` were only a weak recovery shelf
 
 ## Promotion Rule
 

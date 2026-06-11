@@ -78,6 +78,12 @@
         "has_metrics": true,
         "has_summary": true,
         "image_count": 0
+      },
+      {
+        "epoch": "epoch_0013",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
       }
     ],
     "ckpts": [
@@ -92,7 +98,8 @@
       "epoch_0009.pt",
       "epoch_0010.pt",
       "epoch_0011.pt",
-      "epoch_0012.pt"
+      "epoch_0012.pt",
+      "epoch_0013.pt"
     ],
     "processes": {
       "train": [
@@ -152,17 +159,17 @@
     "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_unsb_cycle_remote_full_eval_pull\\epoch_0009\\summary.json"
   },
   "latest": {
-    "epoch": "epoch_0012",
-    "full_clip_style": "0.7167710419893264",
-    "full_content_lpips": "0.49659650241333325",
-    "transfer_clip_style": "0.6985162808994452",
-    "transfer_content_lpips": "0.5077918551833334",
-    "wall_total_seconds": "188.13308095899993",
-    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_unsb_cycle_remote_full_eval_pull\\epoch_0012\\summary.json"
+    "epoch": "epoch_0013",
+    "full_clip_style": "0.7157921944061915",
+    "full_content_lpips": "0.4977237558933333",
+    "transfer_clip_style": "0.6963390315075715",
+    "transfer_content_lpips": "0.5094329324666667",
+    "wall_total_seconds": "181.1952628250001",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_unsb_cycle_remote_full_eval_pull\\epoch_0013\\summary.json"
   },
   "convergence": {
     "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_unsb_cycle_remote_full_eval_pull\\clip_lpips_curve.csv",
-    "row_count": 12,
+    "row_count": 13,
     "best_epoch": "epoch_0001",
     "best_index": 0,
     "best_transfer_clip_epoch": "epoch_0001",
@@ -176,9 +183,9 @@
       "epoch_0009"
     ],
     "last_pareto_epoch": "epoch_0009",
-    "newest_epoch": "epoch_0012",
-    "since_best": 11,
-    "since_last_pareto": 3,
+    "newest_epoch": "epoch_0013",
+    "since_best": 12,
+    "since_last_pareto": 4,
     "best_in_newest_2": false,
     "tail_flat": false,
     "tail_window": 4,
@@ -188,7 +195,7 @@
     "criterion": "joint_transfer_allpairs_pareto",
     "converged": false
   },
-  "latest_remote_ckpt": "epoch_0012.pt",
+  "latest_remote_ckpt": "epoch_0013.pt",
   "remote_confirmed_settled_epochs": [
     "epoch_0001",
     "epoch_0002",
@@ -201,9 +208,10 @@
     "epoch_0009",
     "epoch_0010",
     "epoch_0011",
-    "epoch_0012"
+    "epoch_0012",
+    "epoch_0013"
   ],
-  "latest_remote_settled_epoch": "epoch_0012",
+  "latest_remote_settled_epoch": "epoch_0013",
   "local_curve_epochs": [
     "epoch_0001",
     "epoch_0002",
@@ -216,9 +224,10 @@
     "epoch_0009",
     "epoch_0010",
     "epoch_0011",
-    "epoch_0012"
+    "epoch_0012",
+    "epoch_0013"
   ],
-  "latest_local_settled_epoch": "epoch_0012",
+  "latest_local_settled_epoch": "epoch_0013",
   "pending_ckpt_epochs": [],
   "remote_pending_metric_epochs": [],
   "remote_unconfirmed_local_settled_epochs": []
