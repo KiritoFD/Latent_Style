@@ -10,19 +10,17 @@
 - Pulled curve CSV:
   - [clip_lpips_curve.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull/clip_lpips_curve.csv)
 - Pulled local curve rows:
-  - `3`
+  - `4`
 - Pulled local curve epochs:
-  - `epoch_0001, epoch_0002, epoch_0003`
+  - `epoch_0001, epoch_0002, epoch_0003, epoch_0004`
 - Latest remote checkpoint:
   - `epoch_0004.pt`
 - Latest pulled local eval epoch:
-  - `epoch_0003`
+  - `epoch_0004`
 - Remote scan confirmed summary epochs:
-  - `epoch_0001, epoch_0002, epoch_0003`
+  - `epoch_0001, epoch_0002, epoch_0003, epoch_0004`
 - Latest remote confirmed eval epoch:
-  - `epoch_0003`
-- Remote checkpoints not yet pulled into local fast curve:
-  - `epoch_0004.pt`
+  - `epoch_0004`
 - Best transfer `CLIP-S`:
   - `epoch_0001`
   - `style / lpips = 0.7057 / 0.5669`
@@ -33,13 +31,13 @@
   - `epoch_0003`
   - `style / lpips = 0.7195 / 0.5024`
 - Latest settled point:
-  - `epoch_0003`
-  - transfer `style / lpips = 0.7027 / 0.5117`
-  - full `style / lpips = 0.7195 / 0.5024`
-  - wall `= 185.59s`
+  - `epoch_0004`
+  - transfer `style / lpips = 0.7001 / 0.5181`
+  - full `style / lpips = 0.7164 / 0.5097`
+  - wall `= 181.34s`
 - Convergence snapshot:
   - `best_epoch = epoch_0001`
-  - `since_last_pareto = 0`
+  - `since_last_pareto = 1`
   - `best_in_newest_2 = True`
   - `tail_flat = False`
   - `closure_band = open`
