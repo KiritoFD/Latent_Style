@@ -15,9 +15,9 @@ Purpose:
 - authority root:
   - [round1_solver_unsb_cycle_remote_full_eval_pull](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull)
 - latest settled fast-eval point:
-  - `epoch_0011`
-  - transfer `0.6888 / 0.4889`
-  - all-pairs `0.7103 / 0.4783`
+  - `epoch_0012`
+  - transfer `0.6985 / 0.5078`
+  - all-pairs `0.7168 / 0.4966`
 - current best reads inside the lane:
   - best transfer `CLIP-S`:
     - `epoch_0001`
@@ -29,16 +29,16 @@ Purpose:
     - `epoch_0009`
     - `0.7245 / 0.4311`
 - convergence read:
-  - `row_count = 11`
-  - `since_last_pareto = 2`
+  - `row_count = 12`
+  - `since_last_pareto = 3`
   - `tail_flat = false`
   - `converged = false`
 - remote live read after doc refresh:
   - `9515 MiB / 12288 MiB`
-  - `epoch 12/48`
-  - `step 593/629`
-  - `loss=8.0245`
-  - `tswd=3.8594`
+  - `epoch 13/48`
+  - `step 281/629`
+  - `loss=7.7364`
+  - `tswd=5.5625`
 
 ## Cleanup Decisions
 
@@ -80,10 +80,11 @@ Purpose:
   - `epoch_0010` then softens from `epoch_0009`, so the frontier reactivation is real but not yet stable
   - `epoch_0011` continues that softening, which makes the near-term read more like "frontier spike followed by weaker confirmations" than "stable new plateau"
   - `epoch_0011` also shows a large eval wall-time jump to about `325s`, which is an efficiency anomaly worth watching if it repeats
+  - `epoch_0012` recovers materially over `epoch_0011`, but it still remains clearly below the `epoch_0009` frontier on both style and LPIPS
 - if that pattern persists, the solver should be treated as:
   - a structure-preserving component that may still help in a later composite
   - but it now also deserves renewed attention as a possible standalone keep candidate
 - the practical consequence for round 1:
   - do not promote UNSB on internal curve motion alone
   - but do reopen the possibility that this solver family could survive round-1 closure on its own curve, not only as a later composite ingredient
-  - the next key test is whether `epoch_0012+` recover toward `epoch_0009` or confirm `epoch_0009` as an isolated spike
+  - the next key test is whether `epoch_0013+` keep climbing back toward `epoch_0009` or whether `epoch_0012` was only a partial bounce inside a broader post-frontier fade
