@@ -172,7 +172,7 @@ Current remote lane status:
     - `epoch 18/48`
     - `step 403/590`
   - latest locally pulled fast-eval point:
-    - `epoch_0028`
+    - `epoch_0030`
   - current fast read:
     - best transfer style remains `epoch_0001`:
       - `0.7074 / 0.5621`
@@ -181,12 +181,12 @@ Current remote lane status:
     - strongest late tradeoff recovery remains `epoch_0015`:
       - `0.6962 / 0.4854`
       - full `0.7165 / 0.4746`
-    - latest locally pulled point `epoch_0028`:
-      - transfer `0.6861 / 0.4987`
-      - full `0.7043 / 0.4896`
+    - latest locally pulled point `epoch_0030`:
+      - transfer `0.6860 / 0.4851`
+      - full `0.7067 / 0.4758`
     - interpretation:
-      - `epoch_0025-0028` still reads like noisy tail churn rather than renewed frontier search
-      - the line is deep past solver-family patience with `since_last_pareto=11`, but no closure condition is met yet because `tail_flat` is still false
+      - `epoch_0029-0030` still failed to re-enter the frontier
+      - the line is very deep past solver-family patience with `since_last_pareto=13`, but no closure condition is met yet because `tail_flat` is still false
       - current local cleanup/doc work should not interrupt this lane
   - queue rule during this stage:
     - keep `solver_pc` as the only formal lane
@@ -500,8 +500,8 @@ Recalibration-needed family:
 - Best transfer `CLIP-S`: `epoch_0001` -> `0.7074 / 0.5621`
 - Best transfer `LPIPS`: `epoch_0009` -> `0.6911 / 0.4548`
 - Best all-pairs `CLIP-S`: `epoch_0001` -> `0.7170 / 0.5552`
-- Latest settled fast point: `epoch_0028` -> transfer `0.6861 / 0.4987`
-- Convergence: `row_count=28, since_best=27, tail_flat=False, closure_band=approaching_closure, converged=False`
+- Latest settled fast point: `epoch_0030` -> transfer `0.6860 / 0.4851`
+- Convergence: `row_count=30, since_best=29, tail_flat=False, closure_band=approaching_closure, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
 
 Current `solver_pc` launch note:
