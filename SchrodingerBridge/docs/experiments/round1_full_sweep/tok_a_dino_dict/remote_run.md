@@ -21,6 +21,25 @@
   - decision update:
     - do not retry `tok_a_dino_dict` until remote baseline occupancy is well below `2300 MiB`
 
+- new-data retry on `2026-06-12`:
+  - first blocker removed:
+    - tokenizer launch now uses a matching `wikiarts_5_full_notest` DINO cache
+  - second blocker removed:
+    - `semantic_tokenizer.py` now reconstructs the real DINO patch grid first, then interpolates to the latent target grid
+  - first strict retry with the corrected path:
+    - `batch=8`
+    - did enter training
+    - but runtime guard later recorded about `11651MiB`
+    - above the hard `11.3GiB` cap
+  - second strict retry:
+    - `batch=7`
+    - 180-second health read about `8546MiB`
+    - clearly under the requested floor
+  - current conclusion:
+    - the family now has a real strict-band bracket
+    - it is no longer blocked on DINO cache alignment or the patch-map shape bug
+    - but it remains `recalibration_needed`
+
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
 
@@ -28,7 +47,7 @@
 - Run name: `aaai2027_round1_tok_a_dino_dict_seed42_b8a2`
 - Remote run dir: `./exp/inmortal-exp/aaai2027_round1_tok_a_dino_dict_seed42_b8a2`
 - Config: [aaai2027_round1_tok_a_dino_dict_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_tok_a_dino_dict_seed42_b8a2.json)
-- Manifest status: `planned`
+- Manifest status: `recalibration_needed`
 - Local fast root: [round1_tok_a_dino_dict_fast_local](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_tok_a_dino_dict_fast_local)
 - Local review root: [round1_tok_a_dino_dict_localreview](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_tok_a_dino_dict_localreview)
 - Prelaunch switch smoke: `ok`
@@ -37,8 +56,3 @@
 - Tokenizer warmstart config: [aaai2027_round1_tok_a_dino_dict_warmstart_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/warmstart/aaai2027_round1_tok_a_dino_dict_warmstart_seed42_b8a2.json)
 - Tokenizer reconstruction-pretrain config: [aaai2027_round1_tok_a_dino_dict_reconpretrain_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/pretrain/aaai2027_round1_tok_a_dino_dict_reconpretrain_seed42_b8a2.json)
 <!-- ROUND1_AUTO_STATUS:END -->
-
-
-
-
-

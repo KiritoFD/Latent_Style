@@ -25,11 +25,7 @@ def _normalize_last_dim(x: torch.Tensor) -> torch.Tensor:
 
 def _resolve_patch_grid(
     patch_tokens: torch.Tensor,
-    *,
-    target_hw: tuple[int, int] | None = None,
 ) -> tuple[int, int]:
-    if target_hw is not None:
-        return max(1, int(target_hw[0])), max(1, int(target_hw[1]))
     num_patches = int(patch_tokens.shape[1])
     side = int(round(math.sqrt(max(1, num_patches))))
     if side * side == num_patches:
@@ -43,10 +39,14 @@ def _patch_to_map(
     target_hw: tuple[int, int] | None = None,
 ) -> torch.Tensor:
     bsz, n_tok, channels = patch_tokens.shape
-    h_dim, w_dim = _resolve_patch_grid(patch_tokens, target_hw=target_hw)
+    h_dim, w_dim = _resolve_patch_grid(patch_tokens)
     if h_dim * w_dim != n_tok:
         patch_tokens = patch_tokens[:, : h_dim * w_dim, :]
-    return patch_tokens.transpose(1, 2).contiguous().view(bsz, channels, h_dim, w_dim)
+    mapped = patch_tokens.transpose(1, 2).contiguous().view(bsz, channels, h_dim, w_dim)
+    if target_hw is not None and tuple(int(v) for v in target_hw) != (h_dim, w_dim):
+        mapped = F.interpolate(mapped.float(), size=tuple(int(v) for v in target_hw), mode="bilinear", align_corners=False)
+        mapped = mapped.to(dtype=patch_tokens.dtype)
+    return mapped
 
 
 class _BaseStructuredTokenizer(nn.Module):

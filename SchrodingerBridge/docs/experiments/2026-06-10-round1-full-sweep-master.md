@@ -35,6 +35,8 @@ Round-1 folders:
   - [2026-06-11-theory-coverage-matrix.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/2026-06-11-theory-coverage-matrix.md)
 - current node summary:
   - [2026-06-11-round1-node-summary-and-idle-cleanup.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-11-round1-node-summary-and-idle-cleanup.md)
+- tokenizer tail first-pass summary:
+  - [2026-06-12-tokenizer-tail-first-pass-summary.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-12-tokenizer-tail-first-pass-summary.md)
 - post-UNSB queue handoff:
   - [2026-06-11-post-unsb-queue-handoff-plan.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-11-post-unsb-queue-handoff-plan.md)
 - tokenizer warmstart:
@@ -167,19 +169,23 @@ Current remote lane status:
 
 - active formal lane:
   - none at the current moment
-  - latest just-closed non-DINO line is `attn_pnp_selfinject`
-  - canonical formal path for that family:
-    - segmented non-concurrent train/eval
-    - final formal batch `= 21`
-  - final settled read:
-    - retained / eval through `epoch_0011`
-    - converged by the round-1 fast-curve rule
-    - last Pareto point remains `epoch_0007`
-  - next remote-train priority:
-    - unresolved between the remaining non-DINO hold / recalibration families
-    - `attn_gw_ot`
-    - `solver_unsb_cycle`
-    - do not fall through to tokenizer DINO tail by default
+  - tokenizer-tail first-pass direct family reads now look like:
+    - `tok_a_dino_dict`
+      - strict `7/8` bracket
+      - now `recalibration_needed`
+    - `tok_b_cross_image`
+      - `batch=8` enters band then drifts under-band late
+      - `batch=9/10` are currently confounded by reproducible run-root I/O failures
+      - now `recalibration_needed`
+    - `tok_c_residual_adapter`
+      - strict `8/9` bracket
+      - now `recalibration_needed`
+    - `tok_d_vlm_prompt`
+      - strict `7/8` bracket
+      - now `recalibration_needed`
+  - immediate next tokenizer action:
+    - `tok_b_cross_image` warmstart / reconstruction-pretrain packet
+    - use the already-built `wikiarts_5_full_notest` DINO cache instead of further direct family brute-force retries first
   - `solver_unsb_cycle` is now a closure-stage hold family:
     - retained/eval extended through `epoch_0030`
     - last Pareto point remains `epoch_0018`
@@ -192,6 +198,16 @@ Current remote lane status:
     - settled through `epoch_0011`
     - no new Pareto point after `epoch_0007`
     - moved to `reviewing`
+- latest tokenizer-tail direct attempt family:
+  - tokenizer tail first-pass node is now complete across:
+    - `tok_a_dino_dict`
+    - `tok_b_cross_image`
+    - `tok_c_residual_adapter`
+    - `tok_d_vlm_prompt`
+  - current read:
+    - all four tokenizer families now have real new-data DINO-path evidence
+    - but none has yet closed as a promotable formal training family
+    - the program therefore moves next to tokenizer warmstart / pretrain rather than more direct brute-force retries first
 - implementation audit:
   - all `11` round-1 family configs now pass one reusable local switch smoke:
     - model build
@@ -519,11 +535,6 @@ Recalibration-needed family:
 - Running families: none
 - Active family: `none`
 - Decision status: `no_formal_running_lane`
-- Best transfer `CLIP-S`: `epoch_0001` -> `0.6980 / 0.4747`
-- Best transfer `LPIPS`: `epoch_0004` -> `0.6899 / 0.4504`
-- Best all-pairs `CLIP-S`: `epoch_0001` -> `0.7194 / 0.4689`
-- Latest settled fast point: `epoch_0011` -> transfer `0.6908 / 0.4552`
-- Convergence: `row_count=11, since_best=10, tail_flat=True, closure_band=converged, converged=True`
 <!-- ROUND1_AUTO_STATUS:END -->
 
 Current `solver_pc` launch note:

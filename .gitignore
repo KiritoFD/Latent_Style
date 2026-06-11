@@ -81,6 +81,7 @@ SchrodingerBridge/docs/experiments/history_audit_local_*.json
 SchrodingerBridge/datasets/**
 SchrodingerBridge/stabilityai/**
 SchrodingerBridge/configs/aaai2027/**/*.segmented.launch.json
+SchrodingerBridge/configs/aaai2027/**/*.remote.launch.json
 stabilityai/**
 
 # Top-level runtime dumps

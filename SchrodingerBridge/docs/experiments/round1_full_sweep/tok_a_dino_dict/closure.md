@@ -1,3 +1,23 @@
 # tok_a_dino_dict Closure
 
-- Status: pending
+- Status: `recalibration_needed`
+- Current read:
+  - the old `distinct5` DINO cache mismatch is now fixed:
+    - family launch now uses a matching `wikiarts_5_full_notest` DINO cache
+  - the first real new-data launch then exposed a tokenizer runtime bug:
+    - DINO patch tokens were being reshaped to the target latent grid directly
+    - this failed before useful training progress
+  - after the patch-grid fix landed, the family produced a clean memory bracket:
+    - `batch=8`
+      - entered training
+      - later hit runtime guard at about `11651MiB`
+      - above the `11.3GiB` hard cap
+    - `batch=7`
+      - entered training
+      - but 180-second health read stayed about `8546MiB`
+      - below the formal floor
+- Closure consequence:
+  - this family is no longer blocked on DINO cache or patch-map correctness
+  - but it still lacks a formal in-band batch under the current strict contract
+  - keep it in `recalibration_needed`
+  - next useful retry should search a different memory tradeoff, not just rerun the same `7/8` bracket blindly
