@@ -174,6 +174,18 @@
         "has_metrics": true,
         "has_summary": true,
         "image_count": 0
+      },
+      {
+        "epoch": "epoch_0029",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0030",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
       }
     ],
     "ckpts": [
@@ -204,17 +216,19 @@
       "epoch_0025.pt",
       "epoch_0026.pt",
       "epoch_0027.pt",
-      "epoch_0028.pt"
+      "epoch_0028.pt",
+      "epoch_0029.pt",
+      "epoch_0030.pt"
     ],
     "processes": {
       "train": [],
       "fast_eval": [
         {
-          "pid": "12261",
+          "pid": "13927",
           "cmd": "bash /mnt/i/Github/Latent_Style/SchrodingerBridge/_codex_tmp/round1-aaai2027_round1_solver_unsb_cycle_seed42_b8a2-fast-eval.sh"
         },
         {
-          "pid": "12266",
+          "pid": "13932",
           "cmd": "/home/xy/venvs/samam312/bin/python SchrodingerBridge/tools/experiments/watch_round1_family_fast_eval.py --python-bin /home/xy/venvs/samam312/bin/python --run-dir /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_unsb_cycle_seed42_b8a2 --test-dir /mnt/i/wikiart_distinct5_samam_512_classview/test --cache-dir /mnt/i/Github/Latent_Style/eval_cache --clip-hf-cache-dir /mnt/i/Github/Latent_Style/eval_cache/hf --output-subdir full_eval_fast_snapshot --batch-size 1 --vae-decode-batch-size 4 --target-chunk-size 1 --max-live-memory-mib-to-launch 9800 --poll-seconds 180 --patience 6 --manifest-csv SchrodingerBridge/docs/experiments/round1_full_sweep/round1_family_manifest.csv --family-id solver_unsb_cycle --allowed-status running"
         }
       ],
@@ -251,17 +265,17 @@
     "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_unsb_cycle_remote_full_eval_pull\\epoch_0009\\summary.json"
   },
   "latest": {
-    "epoch": "epoch_0028",
-    "full_clip_style": "0.7040943094491959",
-    "full_content_lpips": "0.48656632747333334",
-    "transfer_clip_style": "0.6851250890394052",
-    "transfer_content_lpips": "0.4950577381",
-    "wall_total_seconds": "114.46895393600062",
-    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_unsb_cycle_remote_full_eval_pull\\epoch_0028\\summary.json"
+    "epoch": "epoch_0030",
+    "full_clip_style": "0.7039780010779698",
+    "full_content_lpips": "0.49745044807999994",
+    "transfer_clip_style": "0.6849562623600165",
+    "transfer_content_lpips": "0.50720786635",
+    "wall_total_seconds": "114.21072327600086",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_unsb_cycle_remote_full_eval_pull\\epoch_0030\\summary.json"
   },
   "convergence": {
     "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_unsb_cycle_remote_full_eval_pull\\clip_lpips_curve.csv",
-    "row_count": 28,
+    "row_count": 30,
     "best_epoch": "epoch_0001",
     "best_index": 0,
     "best_transfer_clip_epoch": "epoch_0001",
@@ -276,9 +290,9 @@
       "epoch_0018"
     ],
     "last_pareto_epoch": "epoch_0018",
-    "newest_epoch": "epoch_0028",
-    "since_best": 27,
-    "since_last_pareto": 10,
+    "newest_epoch": "epoch_0030",
+    "since_best": 29,
+    "since_last_pareto": 12,
     "best_in_newest_2": false,
     "tail_flat": false,
     "tail_window": 4,
@@ -288,7 +302,7 @@
     "criterion": "joint_transfer_allpairs_pareto",
     "converged": false
   },
-  "latest_remote_ckpt": "epoch_0028.pt",
+  "latest_remote_ckpt": "epoch_0030.pt",
   "remote_confirmed_settled_epochs": [
     "epoch_0001",
     "epoch_0002",
@@ -317,9 +331,11 @@
     "epoch_0025",
     "epoch_0026",
     "epoch_0027",
-    "epoch_0028"
+    "epoch_0028",
+    "epoch_0029",
+    "epoch_0030"
   ],
-  "latest_remote_settled_epoch": "epoch_0028",
+  "latest_remote_settled_epoch": "epoch_0030",
   "local_curve_epochs": [
     "epoch_0001",
     "epoch_0002",
@@ -348,9 +364,11 @@
     "epoch_0025",
     "epoch_0026",
     "epoch_0027",
-    "epoch_0028"
+    "epoch_0028",
+    "epoch_0029",
+    "epoch_0030"
   ],
-  "latest_local_settled_epoch": "epoch_0028",
+  "latest_local_settled_epoch": "epoch_0030",
   "pending_ckpt_epochs": [],
   "remote_pending_metric_epochs": [],
   "remote_unconfirmed_local_settled_epochs": []

@@ -236,6 +236,24 @@
   - keep `solver_unsb_cycle` open for one more bounded continuation check
   - `batch=16` is the current canonical paper-safe UNSB batch
 
+## Sixth Post-Reset Followup Read
+
+- bounded continuation from `epoch_0028` through `epoch_0030` is now settled at `batch=16`
+- new points:
+  - `epoch_0029`
+    - transfer `0.6897 / 0.5077`
+    - full `0.7080 / 0.4974`
+  - `epoch_0030`
+    - transfer `0.6850 / 0.5072`
+    - full `0.7040 / 0.4975`
+- interpretation:
+  - `epoch_0029-0030` still do not beat the `epoch_0018` Pareto point
+  - `since_last_pareto` is now `12`
+  - even after the safe-batch recalibration, the tail still is not flat enough to close
+- current decision:
+  - keep `solver_unsb_cycle` open
+  - if the next bounded continuation still fails to flatten the tail, this family should become a closure-stage decision even without a new Pareto point
+
 ## Promotion Rule
 
 - No early promotion from the first in-band health sample alone.
