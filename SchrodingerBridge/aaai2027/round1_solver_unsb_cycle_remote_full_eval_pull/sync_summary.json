@@ -30,13 +30,20 @@
         "has_metrics": true,
         "has_summary": true,
         "image_count": 0
+      },
+      {
+        "epoch": "epoch_0005",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
       }
     ],
     "ckpts": [
       "epoch_0001.pt",
       "epoch_0002.pt",
       "epoch_0003.pt",
-      "epoch_0004.pt"
+      "epoch_0004.pt",
+      "epoch_0005.pt"
     ],
     "processes": {
       "train": [
@@ -51,6 +58,10 @@
         {
           "pid": "436",
           "cmd": "bash /mnt/i/Github/Latent_Style/SchrodingerBridge/_codex_tmp/round1-aaai2027_round1_solver_unsb_cycle_seed42_b8a2-train.sh"
+        },
+        {
+          "pid": "3458",
+          "cmd": "/home/xy/venvs/samam312/bin/python /mnt/i/Github/Latent_Style/SchrodingerBridge/tools/experiments/report_round1_convergence.py --curve-csv /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_unsb_cycle_seed42_b8a2/full_eval_fast_snapshot/clip_lpips_curve.csv --patience 6"
         }
       ],
       "fast_eval": [
@@ -96,17 +107,17 @@
     "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_unsb_cycle_remote_full_eval_pull\\epoch_0003\\summary.json"
   },
   "latest": {
-    "epoch": "epoch_0004",
-    "full_clip_style": "0.7164222008387249",
-    "full_content_lpips": "0.5097305819333333",
-    "transfer_clip_style": "0.7001110037167868",
-    "transfer_content_lpips": "0.5180781329333334",
-    "wall_total_seconds": "181.34193848099994",
-    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_unsb_cycle_remote_full_eval_pull\\epoch_0004\\summary.json"
+    "epoch": "epoch_0005",
+    "full_clip_style": "0.7119089019298553",
+    "full_content_lpips": "0.5054498775599999",
+    "transfer_clip_style": "0.6951028273502986",
+    "transfer_content_lpips": "0.5143894108666667",
+    "wall_total_seconds": "180.85211979399992",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_unsb_cycle_remote_full_eval_pull\\epoch_0005\\summary.json"
   },
   "convergence": {
     "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_solver_unsb_cycle_remote_full_eval_pull\\clip_lpips_curve.csv",
-    "row_count": 4,
+    "row_count": 5,
     "best_epoch": "epoch_0001",
     "best_index": 0,
     "best_transfer_clip_epoch": "epoch_0001",
@@ -119,10 +130,10 @@
       "epoch_0003"
     ],
     "last_pareto_epoch": "epoch_0003",
-    "newest_epoch": "epoch_0004",
-    "since_best": 3,
-    "since_last_pareto": 1,
-    "best_in_newest_2": true,
+    "newest_epoch": "epoch_0005",
+    "since_best": 4,
+    "since_last_pareto": 2,
+    "best_in_newest_2": false,
     "tail_flat": false,
     "tail_window": 4,
     "flat_eps_style": 0.005,
@@ -131,20 +142,22 @@
     "criterion": "joint_transfer_allpairs_pareto",
     "converged": false
   },
-  "latest_remote_ckpt": "epoch_0004.pt",
+  "latest_remote_ckpt": "epoch_0005.pt",
   "remote_confirmed_settled_epochs": [
     "epoch_0001",
     "epoch_0002",
     "epoch_0003",
-    "epoch_0004"
+    "epoch_0004",
+    "epoch_0005"
   ],
-  "latest_remote_settled_epoch": "epoch_0004",
+  "latest_remote_settled_epoch": "epoch_0005",
   "local_curve_epochs": [
     "epoch_0001",
     "epoch_0002",
     "epoch_0003",
-    "epoch_0004"
+    "epoch_0004",
+    "epoch_0005"
   ],
-  "latest_local_settled_epoch": "epoch_0004",
+  "latest_local_settled_epoch": "epoch_0005",
   "pending_ckpt_epochs": []
 }
