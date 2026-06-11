@@ -18,6 +18,7 @@ epoch_*.pt
 *_runtime_samples.jsonl
 *_runtime_summary.json
 samst_wikiarts5_eval_watch*.log
+samst_wikiarts5_convergence_watch*.log
 *.png
 *.pdf
 **/images/**

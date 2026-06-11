@@ -15,9 +15,9 @@ Purpose:
 - authority root:
   - [round1_solver_unsb_cycle_remote_full_eval_pull](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_full_eval_pull)
 - latest settled fast-eval point:
-  - `epoch_0009`
-  - transfer `0.6996 / 0.4421`
-  - all-pairs `0.7245 / 0.4311`
+  - `epoch_0010`
+  - transfer `0.6949 / 0.5085`
+  - all-pairs `0.7132 / 0.4977`
 - current best reads inside the lane:
   - best transfer `CLIP-S`:
     - `epoch_0001`
@@ -29,16 +29,16 @@ Purpose:
     - `epoch_0009`
     - `0.7245 / 0.4311`
 - convergence read:
-  - `row_count = 9`
-  - `since_last_pareto = 0`
+  - `row_count = 10`
+  - `since_last_pareto = 1`
   - `tail_flat = false`
   - `converged = false`
 - remote live read after doc refresh:
-  - `9515 MiB / 12288 MiB`
-  - `epoch 10/48`
-  - `step 625/629`
-  - `loss=7.9883`
-  - `tswd=3.5312`
+  - `9516 MiB / 12288 MiB`
+  - `epoch 11/48`
+  - `step 576/629`
+  - `loss=7.9689`
+  - `tswd=4.0312`
 
 ## Cleanup Decisions
 
@@ -77,9 +77,11 @@ Purpose:
   - `epoch_0009` is a real new Pareto point
   - it becomes the best all-pairs style point and the best LPIPS point inside this family
   - it resets the solver patience clock and invalidates the earlier near-closure interpretation
+  - `epoch_0010` then softens from `epoch_0009`, so the frontier reactivation is real but not yet stable
 - if that pattern persists, the solver should be treated as:
   - a structure-preserving component that may still help in a later composite
   - but it now also deserves renewed attention as a possible standalone keep candidate
 - the practical consequence for round 1:
   - do not promote UNSB on internal curve motion alone
   - but do reopen the possibility that this solver family could survive round-1 closure on its own curve, not only as a later composite ingredient
+  - the next key test is whether `epoch_0011+` recover toward `epoch_0009` or confirm `epoch_0009` as an isolated spike
