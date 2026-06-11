@@ -166,13 +166,13 @@ Current remote lane status:
   - current formal launch setting:
     - `batch=16`
   - latest remote live sample:
-    - `10097 MiB / 12288 MiB`
+    - `9338 MiB / 12288 MiB`
     - `band_status=in_band`
     - `formal_status=formal_in_band`
     - `epoch 18/48`
     - `step 403/590`
   - latest locally pulled fast-eval point:
-    - `epoch_0023`
+    - `epoch_0024`
   - current fast read:
     - best transfer style remains `epoch_0001`:
       - `0.7074 / 0.5621`
@@ -181,12 +181,12 @@ Current remote lane status:
     - strongest late tradeoff recovery remains `epoch_0015`:
       - `0.6962 / 0.4854`
       - full `0.7165 / 0.4746`
-    - latest locally pulled point `epoch_0023`:
-      - transfer `0.6886 / 0.4858`
-      - full `0.7095 / 0.4746`
+    - latest locally pulled point `epoch_0024`:
+      - transfer `0.6874 / 0.4989`
+      - full `0.7069 / 0.4885`
     - interpretation:
-      - `epoch_0021` was a strong rollback, `epoch_0022` repaired part of it, and `epoch_0023` improved LPIPS slightly again without re-entering the frontier
-      - the line has now reached solver-family patience with `since_last_pareto=6`, but no closure condition is met yet because `tail_flat` is still false
+      - `epoch_0021-0024` now reads like long noisy tail drift rather than real frontier recovery
+      - the line is already past solver-family patience with `since_last_pareto=7`, but no closure condition is met yet because `tail_flat` is still false
       - current local cleanup/doc work should not interrupt this lane
   - queue rule during this stage:
     - keep `solver_pc` as the only formal lane

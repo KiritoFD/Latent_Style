@@ -21,7 +21,7 @@
   - `batch=14 -> 8226 MiB`
   - `batch=16 -> 9334 MiB` at first formal health check
 - Current live band check:
-  - `10097 MiB / 12288 MiB`
+  - `9338 MiB / 12288 MiB`
   - read: safely inside the requested formal band
 
 ## Curve Read
@@ -43,19 +43,19 @@
     - transfer `0.6982 / 0.5075`
     - full `0.7159 / 0.4964`
 - Latest locally pulled point:
-  - `epoch_0023`
-  - transfer `0.6886 / 0.4858`
-  - full `0.7095 / 0.4746`
-  - read: LPIPS improved slightly versus `epoch_0022`, but style softened again and the point still did not re-enter the Pareto frontier
+  - `epoch_0024`
+  - transfer `0.6874 / 0.4989`
+  - full `0.7069 / 0.4885`
+  - read: this is a clean rollback from `epoch_0023`, not a frontier repair
 
 ## Decision
 
 - Keep running.
 - Rationale:
   - `patience=6` for solver families
-  - `since_last_pareto=6`, so the line has now reached the formal patience threshold
+  - `since_last_pareto=7`, so the line has now passed the formal patience threshold
   - `tail_flat=false`, so the family still does not satisfy true closure
-  - `epoch_0021-0023` reads more like noisy tail repair than renewed frontier search
+  - `epoch_0021-0024` reads more like noisy tail drift than renewed frontier search
   - best style and best LPIPS are still split across different checkpoints, so the family is still exploring the tradeoff surface
 - Promotion rule:
   - do not promote this family on internal oscillation alone

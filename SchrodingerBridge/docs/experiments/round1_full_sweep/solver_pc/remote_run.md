@@ -19,8 +19,8 @@
     - `9334 MiB / 12288 MiB`
     - first authoritative formal opening
 - Current live health sample:
-  - `10097 MiB / 12288 MiB`
-  - `util=93%`
+  - `9338 MiB / 12288 MiB`
+  - `util=91%`
   - read: lane is healthy and in-band
 
 ## Settled Curve Milestones
@@ -42,10 +42,10 @@
   - transfer `0.6962 / 0.4854`
   - full `0.7165 / 0.4746`
 - Latest locally pulled point:
-  - `epoch_0023`
-  - transfer `0.6886 / 0.4858`
-  - full `0.7095 / 0.4746`
-  - wall `182.52s`
+  - `epoch_0024`
+  - transfer `0.6874 / 0.4989`
+  - full `0.7069 / 0.4885`
+  - wall `186.38s`
 
 ## Operational Read
 
@@ -54,7 +54,8 @@
 - `epoch_0021` was a sharp rollback on both style and LPIPS versus `epoch_0020`.
 - `epoch_0022` repaired most of that LPIPS damage, but still stayed below the frontier anchored by `epoch_0017`.
 - `epoch_0023` improved LPIPS slightly again, but style softened and the point still remained below the frontier.
-- `epoch_0018-0023` are now six consecutive non-frontier points, so the lane has reached the solver-family patience threshold.
+- `epoch_0024` then rolled back clearly on both style and LPIPS.
+- `epoch_0018-0024` are now seven consecutive non-frontier points, so the lane is beyond the solver-family patience threshold.
 - The remote fast-eval contract is working, but local docs must distinguish:
   - locally pulled curve points
   - remote scan points still mid-write
@@ -66,7 +67,9 @@
 
 - Continue the same lane with no batch change.
 - Keep syncing each retained checkpoint.
-- If the next settled point still fails to create a new Pareto point, treat it as a likely closure candidate and judge the stop decision from the flat-tail read.
+- The next settled point should be judged almost entirely through the flat-tail condition:
+  - if it still fails to create a new Pareto point and the tail finally flattens, close the family
+  - if the tail is still not flat, keep the lane open despite the long non-frontier streak
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
