@@ -486,7 +486,12 @@ Recalibration-needed family:
 - Active family: `solver_unsb_cycle`
 - Decision status: `running`
 - Batch / epochs / patience: `15 / 48 / 6`
-- Remote GPU live: `9677 / 12288 MiB`, `util=75%`, `band=in_band`
+- Remote GPU live: `9670 / 12288 MiB`, `util=99%`, `band=in_band`
+- Best transfer `CLIP-S`: `epoch_0001` -> `0.7057 / 0.5669`
+- Best transfer `LPIPS`: `epoch_0001` -> `0.7057 / 0.5669`
+- Best all-pairs `CLIP-S`: `epoch_0001` -> `0.7150 / 0.5608`
+- Latest settled fast point: `epoch_0001` -> transfer `0.7057 / 0.5669`
+- Convergence: `row_count=1, since_best=0, tail_flat=False, closure_band=open, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
 
 Current `solver_pc` launch note:
