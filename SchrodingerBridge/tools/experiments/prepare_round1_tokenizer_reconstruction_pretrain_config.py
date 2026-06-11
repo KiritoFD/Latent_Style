@@ -45,6 +45,7 @@ def main() -> int:
     parser.add_argument("--freeze-mode", choices=["tokenizer_only", "style_branch"], default="style_branch")
     parser.add_argument("--terminal-swd-weight", type=float, default=12.0)
     parser.add_argument("--target-teacher-weight", type=float, default=0.0)
+    parser.add_argument("--run-suffix", default="")
     args = parser.parse_args()
 
     manifest_csv = Path(args.manifest_csv).expanduser()
@@ -82,7 +83,9 @@ def main() -> int:
     data_cfg["pairing_cache_dual_target_mix"] = 0.0
     data_cfg["pairing_cache_aux_target_topk"] = 0
 
-    run_name = f"aaai2027_round1_{str(args.family_id).strip()}_reconpretrain_seed42_b8a2"
+    run_suffix = str(args.run_suffix).strip()
+    suffix = f"_{run_suffix}" if run_suffix else ""
+    run_name = f"aaai2027_round1_{str(args.family_id).strip()}_reconpretrain_seed42_b8a2{suffix}"
     payload.setdefault("checkpoint", {})
     payload["checkpoint"]["save_dir"] = f"./exp/inmortal-exp/{run_name}"
     payload.setdefault("ablation", {})
@@ -118,6 +121,7 @@ def main() -> int:
                 f"- terminal_swd_weight: `{float(args.terminal_swd_weight)}`",
                 f"- Num epochs: `{int(args.num_epochs)}`",
                 f"- Save interval: `{int(args.save_interval)}`",
+                f"- Run suffix: `{run_suffix or 'none'}`",
             ]
         )
         + "\n",

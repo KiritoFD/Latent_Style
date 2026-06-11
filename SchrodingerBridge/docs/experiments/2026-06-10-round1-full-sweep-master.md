@@ -183,6 +183,18 @@ Current remote lane status:
     - result:
       - there is now a one-point authoritative remote fast packet for the reconstruction-pretrain line
       - but the newest retained checkpoint is unusable, so the family still cannot progress to a clean continuation / closure node
+  - tokenizer-tail active lane has now been restored:
+    - `tok_b_cross_image` reconstruction-pretrain clean restart
+    - run:
+      - `aaai2027_round1_tok_b_cross_image_reconpretrain_seed42_b8a2_r2`
+    - first passing formal health sample:
+      - `10489 MiB / 12288 MiB`
+    - current live read:
+      - `epoch 1/8`
+      - `step 313/1889`
+      - `loss=16.3870`
+      - `tswd=0.1476`
+    - remote fast-eval watcher has been rearmed and is waiting for the first retained `r2` checkpoint
   - tokenizer-tail first-pass direct family reads now look like:
     - `tok_a_dino_dict`
       - strict `7/8` bracket
@@ -551,6 +563,11 @@ Recalibration-needed family:
 - Active family: `tok_b_cross_image`
 - Decision status: `running`
 - Batch / epochs / patience: `10 / 24 / 4`
+- Best transfer `CLIP-S`: `epoch_0001` -> `0.6771 / 0.7927`
+- Best transfer `LPIPS`: `epoch_0001` -> `0.6771 / 0.7927`
+- Best all-pairs `CLIP-S`: `epoch_0001` -> `0.6785 / 0.7922`
+- Latest settled fast point: `epoch_0001` -> transfer `0.6771 / 0.7927`
+- Convergence: `row_count=1, since_best=0, tail_flat=False, closure_band=open, converged=False`
 <!-- ROUND1_AUTO_STATUS:END -->
 
 Current `solver_pc` launch note:
