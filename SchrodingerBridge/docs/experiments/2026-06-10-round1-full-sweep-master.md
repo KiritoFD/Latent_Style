@@ -214,6 +214,10 @@ Current remote lane status:
     - the local `watch_launch_round1_queue_when_idle.py` watcher is now armed against the round1 manifest
     - so once no family remains `running`, the next `planned` family will be launched through the existing queue path automatically
     - the exact next candidate should be resolved at handoff time from the manifest plus the current `DINO-last` rule
+    - current dry-run audit result:
+      - under the present manifest, once `solver_unsb_cycle` leaves `running`, the first launchable `planned` family would be `tok_a_dino_dict`
+      - this is because the remaining non-DINO families are currently `reviewing` or `recalibration_needed`, not `planned`
+      - so maintaining a practical `non-DINO-first` policy from this point forward requires an explicit manifest re-promotion, not just relying on the generic queue helper
 - `attn_gated_spade` was downgraded on `2026-06-10`:
   - retained fast-eval evidence through `epoch_0022`
   - but process-local memory stayed under the requested band
