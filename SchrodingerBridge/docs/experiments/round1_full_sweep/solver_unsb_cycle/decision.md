@@ -21,13 +21,18 @@
 
 ## First Formal Read
 
-- Current remote sample:
-  - `epoch 1/48`
-  - `step 187/629`
-  - `loss=8.4092`
-  - `tswd=5.7812`
+- First settled authority points:
+  - `epoch_0001`
+    - transfer `0.7057 / 0.5669`
+    - full `0.7150 / 0.5608`
+  - `epoch_0002`
+    - transfer `0.6975 / 0.5372`
+    - full `0.7101 / 0.5312`
 - Read:
   - the family is no longer in calibration mode
+  - the first curve move is structure-favoring:
+    - LPIPS improved materially
+    - style softened on both transfer and all-pairs
   - all future keep/reject decisions should now be made from the all-ckpt remote fast curve
 
 ## Promotion Rule
