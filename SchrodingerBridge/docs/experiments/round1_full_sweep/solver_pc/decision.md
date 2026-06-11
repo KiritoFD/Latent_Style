@@ -83,6 +83,14 @@
   - LPIPS recovered meaningfully from the `epoch_0010` rollback
   - transfer style is slightly stronger than `epoch_0009`, while all-pairs style remains weaker
   - so this point is not the best LPIPS point, but it is still a legitimate new tradeoff frontier update
+- `epoch_0012` update:
+  - transfer `0.6928 / 0.4906`
+  - full `0.7129 / 0.4812`
+  - wall `177.10s`
+- Interpretation:
+  - this point improves both style and LPIPS versus `epoch_0011`
+  - but it still does not beat the stronger `epoch_0009` LPIPS frontier
+  - the line remains alive and structurally strong, but is still oscillating around the post-`0009` region
 - `epoch_0010` update:
   - transfer `0.6988 / 0.5270`
   - full `0.7138 / 0.5185`
