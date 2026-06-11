@@ -72,6 +72,23 @@ def _load_rgb(path: Path) -> Image.Image:
     return Image.open(path).convert("RGB")
 
 
+def _resolve_local_hf_snapshot(*, model_name: str, hf_cache_dir: str) -> str:
+    cache_root = Path(str(hf_cache_dir).strip())
+    if not str(model_name).strip() or not cache_root.exists():
+        return str(model_name)
+    name = str(model_name).strip()
+    if "/" not in name:
+        return name
+    org, repo = name.split("/", 1)
+    snapshot_root = cache_root / "hub" / f"models--{org}--{repo}" / "snapshots"
+    if not snapshot_root.exists():
+        return name
+    snapshots = sorted(path for path in snapshot_root.iterdir() if path.is_dir())
+    if not snapshots:
+        return name
+    return str(snapshots[-1])
+
+
 @torch.inference_mode()
 def _embed_rows(
     rows: list[dict[str, str]],
@@ -80,9 +97,20 @@ def _embed_rows(
     batch_size: int,
     device: torch.device,
     log_every: int,
+    hf_cache_dir: str,
+    local_files_only: bool,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    processor = AutoImageProcessor.from_pretrained(model_name)
-    model = AutoModel.from_pretrained(model_name).to(device).eval()
+    load_kwargs = {}
+    cache_dir = str(hf_cache_dir).strip()
+    resolved_model_name = str(model_name).strip()
+    if bool(local_files_only) and cache_dir:
+        resolved_model_name = _resolve_local_hf_snapshot(model_name=resolved_model_name, hf_cache_dir=cache_dir)
+    if cache_dir:
+        load_kwargs["cache_dir"] = cache_dir
+    if bool(local_files_only):
+        load_kwargs["local_files_only"] = True
+    processor = AutoImageProcessor.from_pretrained(resolved_model_name, **load_kwargs)
+    model = AutoModel.from_pretrained(resolved_model_name, **load_kwargs).to(device).eval()
 
     cls_chunks: list[torch.Tensor] = []
     patch_chunks: list[torch.Tensor] = []
@@ -119,6 +147,8 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=24)
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--log-every", type=int, default=240)
+    parser.add_argument("--hf-cache-dir", type=str, default="")
+    parser.add_argument("--allow-network", action="store_true")
     args = parser.parse_args()
 
     latent_root = Path(args.latent_root).resolve()
@@ -155,6 +185,8 @@ def main() -> None:
         batch_size=max(1, int(args.batch_size)),
         device=device,
         log_every=max(1, int(args.log_every)),
+        hf_cache_dir=str(args.hf_cache_dir).strip(),
+        local_files_only=(not bool(args.allow_network)),
     )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)

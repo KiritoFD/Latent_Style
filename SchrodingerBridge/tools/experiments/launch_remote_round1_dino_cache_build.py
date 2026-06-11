@@ -31,6 +31,8 @@ def main() -> int:
     parser.add_argument("--output-override", default="")
     parser.add_argument("--batch-size", type=int, default=24)
     parser.add_argument("--max-prelaunch-memory-mib", type=int, default=10000)
+    parser.add_argument("--hf-cache-dir", default="/mnt/i/Github/Latent_Style/eval_cache/hf")
+    parser.add_argument("--allow-network", action="store_true")
     args = parser.parse_args()
 
     config_rel = Path(args.config)
@@ -49,6 +51,18 @@ def main() -> int:
     launch = WORKSPACE / "SchrodingerBridge" / "tools" / "experiments" / "launch_remote_wsl_command.py"
     build_script_rel = Path("SchrodingerBridge/tools/experiments/build_offline_dino_pairing_cache.py")
     utils_script_rel = Path("SchrodingerBridge/tools/experiments/dino_cache_utils.py")
+    build_cmd = (
+        "set -euo pipefail; "
+        f"{args.remote_python} {build_script_rel.as_posix()} "
+        f"--image-root {image_root_arg} "
+        f"--latent-root {latent_root_arg} "
+        f"--output {output_arg} "
+        f"--styles {','.join(styles)} "
+        f"--batch-size {int(args.batch_size)} "
+        f"--hf-cache-dir {str(args.hf_cache_dir).strip()} "
+        + ("--allow-network " if bool(args.allow_network) else "")
+        + "--device cuda"
+    )
     cmd = [
         sys.executable,
         str(launch),
@@ -70,16 +84,7 @@ def main() -> int:
         "--",
         "bash",
         "-lc",
-        (
-            "set -euo pipefail; "
-            f"{args.remote_python} {build_script_rel.as_posix()} "
-            f"--image-root {image_root_arg} "
-            f"--latent-root {latent_root_arg} "
-            f"--output {output_arg} "
-            f"--styles {','.join(styles)} "
-            f"--batch-size {int(args.batch_size)} "
-            "--device cuda"
-        ),
+        build_cmd,
     ]
     return _run(cmd)
 

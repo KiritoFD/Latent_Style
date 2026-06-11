@@ -1,0 +1,21 @@
+# tok_a_dino_dict Decision
+
+- Decision date:
+  - `2026-06-12`
+- Current status:
+  - `recalibration_needed`
+- Decision:
+  - keep `tok_a_dino_dict` out of the active formal lane for now
+  - the family has cleared two real implementation blockers:
+    - correct new-data DINO cache
+    - correct patch-token to spatial-map reshape
+  - but it now has a clear strict-band batch bracket:
+    - `batch=8` overshoots
+    - `batch=7` under-fills
+- Why:
+  - this is no longer a vague tokenizer-family instability
+  - it is a concrete VRAM calibration problem under the current `9.0-10.8GiB` contract
+- Next action:
+  - leave the family in `recalibration_needed`
+  - continue with the cleaner tokenizer candidate that already achieved a formal lane
+  - only revisit `tok_a_dino_dict` after the current tokenizer lead line is closed or if a new memory-saving change materially alters the bracket

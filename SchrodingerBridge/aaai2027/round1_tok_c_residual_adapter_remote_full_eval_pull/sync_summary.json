@@ -1,0 +1,39 @@
+{
+  "status": "waiting_for_first_remote_fast_eval_epoch",
+  "run_name": "aaai2027_round1_tok_c_residual_adapter_seed42_b8a2",
+  "remote_run_dir": "/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_tok_c_residual_adapter_seed42_b8a2",
+  "eval_subdir": "full_eval_fast_snapshot",
+  "remote_scan": {
+    "run_dir": "/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_tok_c_residual_adapter_seed42_b8a2",
+    "eval_root": "/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_tok_c_residual_adapter_seed42_b8a2/full_eval_fast_snapshot",
+    "epochs": [],
+    "ckpts": [],
+    "processes": {
+      "train": [
+        {
+          "pid": "1233",
+          "cmd": "bash /mnt/i/Github/Latent_Style/SchrodingerBridge/_codex_tmp/round1-aaai2027_round1_tok_c_residual_adapter_seed42_b8a2-train.sh"
+        },
+        {
+          "pid": "1244",
+          "cmd": "/home/xy/venvs/samam312/bin/python SchrodingerBridge/src/run.py --config /mnt/i/Github/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_tok_c_residual_adapter_seed42_b8a2.remote.launch.json"
+        },
+        {
+          "pid": "1245",
+          "cmd": "bash /mnt/i/Github/Latent_Style/SchrodingerBridge/_codex_tmp/round1-aaai2027_round1_tok_c_residual_adapter_seed42_b8a2-train.sh"
+        }
+      ],
+      "fast_eval": [
+        {
+          "pid": "684",
+          "cmd": "bash /mnt/i/Github/Latent_Style/SchrodingerBridge/_codex_tmp/round1-aaai2027_round1_tok_c_residual_adapter_seed42_b8a2-fast-eval.sh"
+        },
+        {
+          "pid": "689",
+          "cmd": "/home/xy/venvs/samam312/bin/python SchrodingerBridge/tools/experiments/watch_round1_family_fast_eval.py --python-bin /home/xy/venvs/samam312/bin/python --run-dir /mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_tok_c_residual_adapter_seed42_b8a2 --test-dir /mnt/i/wikiart_distinct5_samam_512_classview/test --cache-dir /mnt/i/Github/Latent_Style/eval_cache --clip-hf-cache-dir /mnt/i/Github/Latent_Style/eval_cache/hf --output-subdir full_eval_fast_snapshot --batch-size 1 --vae-decode-batch-size 4 --target-chunk-size 1 --max-live-memory-mib-to-launch 9800 --poll-seconds 180 --patience 4 --manifest-csv SchrodingerBridge/docs/experiments/round1_full_sweep/round1_family_manifest.csv --family-id tok_c_residual_adapter --allowed-status running"
+        }
+      ],
+      "posttrain_eval": []
+    }
+  }
+}

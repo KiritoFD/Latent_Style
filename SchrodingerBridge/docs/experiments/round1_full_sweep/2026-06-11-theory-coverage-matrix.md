@@ -15,11 +15,11 @@ Purpose:
 | Theory item | Round-1 switch / infra | Code status | Experiment status | Notes |
 |---|---|---|---|---|
 | `global_code + spatial_map` dual-field output | `StructuredStyleOutput`, `StyleMaps`, `tokenizer_family=*` | implemented | active round-1 base contract | legacy path remains backward-compatible |
-| Scheme A: semantic codebook router | `tok_a_dino_dict` | implemented | `planned` | universal keys + style-specific values + DINO-masked SWD |
-| Scheme B: dual-stream / exemplar matcher | `tok_b_cross_image` | implemented | `planned` | content DINO query over style-bank patches |
-| Scheme C: residual semantic adapter | `tok_c_residual_adapter` | implemented | `planned` | retains global code, routes high-frequency residual map only |
-| Prompt-token style prior / VLM-style prior | `tok_d_vlm_prompt` | implemented | `planned` | closed-set wrapper through learned prompt tokens |
-| Closed-set `style_id` surface with open-set-compatible internals | `tok_b_cross_image`, `tok_d_vlm_prompt` | implemented | `planned` | round-1 benchmark surface remains `style_id` |
+| Scheme A: semantic codebook router | `tok_a_dino_dict` | implemented | `recalibration_needed` | matching DINO cache + patch-map fix landed; strict `batch 7/8` bracket still unresolved |
+| Scheme B: dual-stream / exemplar matcher | `tok_b_cross_image` | implemented | `recalibration_needed` | direct strict run reached band at `batch=8`, but later retries are currently polluted by run-root I/O instability |
+| Scheme C: residual semantic adapter | `tok_c_residual_adapter` | implemented | `recalibration_needed` | direct strict run now has a clean `8/9` bracket |
+| Prompt-token style prior / VLM-style prior | `tok_d_vlm_prompt` | implemented | `recalibration_needed` | matching DINO cache + patch-map fix landed; strict `batch 7/8` bracket still unresolved |
+| Closed-set `style_id` surface with open-set-compatible internals | `tok_b_cross_image`, `tok_d_vlm_prompt` | implemented | `recalibration_needed` | round-1 benchmark surface remains `style_id` |
 | DINO sidecar loading and style-bank caches | dataset `dino_cache_*`, runtime conditioning | implemented | active infra | smoke-tested and used by tokenizer-family path |
 | Tokenizer-only training before backbone reopening | `freeze_mode=style_branch` | implemented | active policy | current DINO families are queued under this rule |
 | Dedicated tokenizer warm-start packet | `prepare_round1_tokenizer_warmstart_config.py`, `launch_remote_round1_tokenizer_warmstart.py` | implemented | configs prepared for `tok_a/b/c/d`, not yet launched | pragmatic teacher/distill-based warm-start path for tokenizer families |
@@ -32,8 +32,8 @@ Purpose:
 |---|---|---|---|---|
 | SA-Mod self-attention | `attn_sa_mod` | implemented | `rejected` | formal convergence done; not promotable |
 | GW-OT attention | `attn_gw_ot` | implemented | `recalibration_needed` | formal curve exists, but lane still needs better VRAM/useful frontier behavior |
-| Gated SPADE attention | `attn_gated_spade` | implemented | `recalibration_needed` | under-band / stalled formal behavior |
-| PnP / self-injection attention | `attn_pnp_selfinject` | implemented | `recalibration_needed` | real curve exists; segmented non-concurrent train/eval path built |
+| Gated SPADE attention | `attn_gated_spade` | implemented | `reviewing` | formal convergence closed through `epoch_0030` |
+| PnP / self-injection attention | `attn_pnp_selfinject` | implemented | `reviewing` | formal convergence closed through `epoch_0011`; segmented non-concurrent path proved viable |
 | Tangent RK solver | `solver_tangent_rk` | implemented | `reviewing` | formal training closed through `epoch_0032`; waiting on deep review / stage-close packet |
 | Predictor-corrector solver | `solver_pc` | implemented | `reviewing` | training closed through `epoch_0036`; no new Pareto point after the long bounded tail |
 | UNSB / cycle solver | `solver_unsb_cycle` | implemented | `running` | formal lane remains active; `epoch_0009` reopened the Pareto frontier and `epoch_0010` is the first post-frontier follow-up read |
@@ -55,34 +55,22 @@ Purpose:
 
 | Slot | Family | Status | Reason |
 |---|---|---|---|
-| Active formal lane | `solver_unsb_cycle` | `running` | `epoch_0009` became a new Pareto point; `epoch_0010-0011` softened, and `epoch_0012-0014` recovered only partially without reclaiming the frontier |
-| Reviewing solver family | `solver_pc`, `solver_tangent_rk` | `reviewing` | both earlier solver-family training phases are now closed; deep review still pending |
-| Next queue candidate | `defer until unsb closure` | `planned` | queue should remain dormant while a formal lane is active; after closure, the current code-level first planned candidate is `tok_a_dino_dict` because no non-DINO family remains in `planned` status |
-| Auto handoff | `watch_launch_round1_queue_when_idle.py` | armed | once manifest has zero `running` families, invoke the queue automatically, but do not bypass the DINO-last and stage-summary policy |
+| Active formal lane | `none` | `idle_between_nodes` | tokenizer-tail first-pass direct family reads are now complete; next move is warmstart / pretrain |
+| Reviewing family set | `attn_gated_spade`, `attn_pnp_selfinject`, `solver_pc`, `solver_tangent_rk` | `reviewing` | these earlier non-DINO lines are now training-closed and waiting on deeper review / stage-close packets |
+| Next queue candidate | `tokenizer warmstart / pretrain` | `prepare relaunch` | `tok_a/c/d` now have explicit strict brackets; `tok_b` has in-band partial signal but later I/O-confounded retries |
+| Auto handoff | `watch_launch_round1_queue_when_idle.py` | armed | once manifest has zero `running` families, invoke the queue automatically, but still prefer explicit relaunch decisions for non-DINO hold families if policy changes again |
 
-## Current UNSB Read
+## Current Hold Read
 
-- latest settled point:
-  - `epoch_0014`
-  - transfer `0.6929 / 0.5097`
-  - all-pairs `0.7097 / 0.5009`
-- current family-best points:
-  - best transfer `CLIP-S`:
-    - `epoch_0001`
-    - `0.7057 / 0.5669`
-  - best transfer `LPIPS`:
-    - `epoch_0009`
-    - `0.6996 / 0.4421`
-  - best all-pairs `CLIP-S`:
-    - `epoch_0009`
-    - `0.7245 / 0.4311`
-- interpretation:
-  - `epoch_0009` is the first genuinely new late-stage Pareto point after the earlier `epoch_0003` frontier
-  - `epoch_0010-0011` both soften from `epoch_0009`
-  - `epoch_0012-0014` then recover over `epoch_0011`, but all three still stay below the `epoch_0009` frontier
-  - the current question is no longer "is UNSB near closure"
-  - it is now "does the post-epoch_0009 tail stabilize near the new frontier or collapse back toward the earlier mid-curve regime"
-  - `epoch_0011` also raises a secondary efficiency question because its fast-eval wall time is much higher than the surrounding checkpoints
+- `solver_unsb_cycle`
+  - retained/eval through `epoch_0030`
+  - canonical hold point remains `epoch_0018`
+  - reason for hold:
+    - late-train OOM at `batch=17`
+    - late-train under-band stop at `batch=16`
+- practical implication:
+  - this family still has useful paper-facing evidence
+  - but it is no longer the automatic next lane while tokenizer-tail families are being exercised
 
 ## Current Shortlist Surface
 
@@ -99,17 +87,13 @@ Purpose:
 ## Queue Audit
 
 - current `run_round1_family_queue.py --dry-run` behavior:
-  - while `solver_unsb_cycle` is still `running`, dry-run prints the active-lane guard and then shows the first launchable planned family
-  - under the current manifest, that first launchable planned family is `tok_a_dino_dict`
+  - with `tok_c_residual_adapter` now `running`, dry-run prints the active-lane guard and then shows the first launchable planned family
+  - under the current manifest, that first launchable planned family is `tok_b_cross_image`
 - practical implication:
-  - the documented `DINO-last` policy is now enforced at the queue helper level by default
-  - because the remaining non-DINO families are currently `reviewing` or `recalibration_needed` rather than `planned`, the queue now stops with a non-launchable notice after UNSB closure unless:
-    - a non-DINO family is explicitly re-promoted into `planned`, or
-    - the operator explicitly opts back into tokenizer tails with `--allow-dino-tail`
-  - the queue helper now also prints the relaunchable non-DINO candidates directly when that block triggers
-  - the current relaunchable non-DINO candidates surfaced by the queue audit helper are:
+  - the program has now intentionally crossed into the tokenizer DINO tail because the remaining non-DINO relaunchable families do not currently offer a cleaner paper-facing path
+  - the current relaunchable non-DINO hold candidates surfaced by the queue audit helper are:
     - `attn_gw_ot`
-    - `attn_gated_spade`
+    - `solver_unsb_cycle`
 
 ## Gaps That Still Matter
 
