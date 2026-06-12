@@ -87,6 +87,13 @@ Date: 2026-06-13
     - `aaai2027_phase2_i2sb_topo_anchor_sigma0p25_seed42_b30a1`
     - the `b22` version was only a calibration miss
     - the `b30` relaunch hit the formal band at `9198 MiB`
+    - but its first settled point was immediate `fail_stop`
+  - current active replacement after that failure:
+    - `aaai2027_phase2_i2sb_pattn_topo_anchor_sigma0p10_warm_vel2_seed42_b22a1`
+    - exact Brownian endpoint path
+    - warm-started from the best in-band velocity parent
+    - internal `crossattn_texture` proximal rescue turned back on
+    - current health read `10419 MiB`
 
 ## New Priority Order
 
