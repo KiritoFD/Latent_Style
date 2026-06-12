@@ -99,6 +99,10 @@ Date: 2026-06-13
     - same warm-start and internal proximal rescue
     - smaller `bridge_sigma = 0.02`
     - health read `10419 MiB`
+  - prepared next exact-Brownian architecture step if that still fails:
+    - `aaai2027_phase2_i2sb_pattn_topo_anchor_sigma0p02_residual_warm_vel2_seed42_b22a1`
+    - same exact posterior and same tokenizer
+    - only the endpoint parameterization changes from absolute to residual
 
 ## New Priority Order
 

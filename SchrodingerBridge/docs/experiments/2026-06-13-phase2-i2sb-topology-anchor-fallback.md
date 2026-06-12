@@ -122,6 +122,22 @@ Interpretation:
   - current live state `training_before_first_settled_eval`
   - this is the current active formal phase2 lane
 
+### D. residual-endpoint exact-Brownian candidate
+
+- rationale:
+  - repeated endpoint failures suggest the issue is not only `sigma`
+  - the current endpoint head still predicts an absolute destination too aggressively
+  - a cleaner next move is to keep the true-I2SB contract unchanged while reparameterizing the network output as a residual around the source latent
+- code switch:
+  - `model.endpoint_parameterization = residual`
+- candidate config:
+  - [phase2_i2sb_pattn_topo_anchor_sigma0p02_residual_warm_vel2_seed42_b22a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_pattn_topo_anchor_sigma0p02_residual_warm_vel2_seed42_b22a1.json)
+- smoke:
+  - [phase2_i2sb_pattn_topo_anchor_sigma0p02_residual_warm_vel2_seed42_b22a1_smoke.json](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/phase2_i2sb_pattn_topo_anchor_sigma0p02_residual_warm_vel2_seed42_b22a1_smoke.json)
+- status:
+  - prepared locally
+  - not launched yet because `sigma=0.02` absolute-endpoint lane is still the active formal read
+
 ## Resource Read
 
 - conservative first launch:
