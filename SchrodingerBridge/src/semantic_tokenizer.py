@@ -49,6 +49,47 @@ def _patch_to_map(
     return mapped
 
 
+def _build_1d_sincos_embedding(
+    length: int,
+    dim: int,
+    *,
+    device: torch.device,
+) -> torch.Tensor:
+    embed = torch.zeros(length, dim, device=device, dtype=torch.float32)
+    if length <= 0 or dim <= 0:
+        return embed
+    half = dim // 2
+    if half <= 0:
+        return embed
+    position = torch.arange(length, device=device, dtype=torch.float32).unsqueeze(1)
+    omega = torch.arange(half, device=device, dtype=torch.float32)
+    omega = torch.exp(-math.log(10000.0) * omega / max(float(half), 1.0))
+    angles = position * omega.unsqueeze(0)
+    embed[:, 0 : 2 * half : 2] = torch.sin(angles)
+    embed[:, 1 : 2 * half : 2] = torch.cos(angles)
+    return embed
+
+
+def _build_2d_sincos_embedding(
+    channels: int,
+    height: int,
+    width: int,
+    *,
+    device: torch.device,
+) -> torch.Tensor:
+    y_dim = channels // 2
+    x_dim = channels - y_dim
+    y_embed = _build_1d_sincos_embedding(height, y_dim, device=device)
+    x_embed = _build_1d_sincos_embedding(width, x_dim, device=device)
+    pe_y = y_embed.transpose(0, 1).unsqueeze(0).unsqueeze(-1).expand(1, y_dim, height, width)
+    pe_x = x_embed.transpose(0, 1).unsqueeze(0).unsqueeze(2).expand(1, x_dim, height, width)
+    pe = torch.cat([pe_y, pe_x], dim=1)
+    if pe.shape[1] < channels:
+        pad = channels - pe.shape[1]
+        pe = F.pad(pe, (0, 0, 0, 0, 0, pad))
+    return pe[:, :channels, :, :]
+
+
 class _BaseStructuredTokenizer(nn.Module):
     def __init__(
         self,
@@ -97,7 +138,10 @@ class PureLatentSpatialTokenizer(_BaseStructuredTokenizer):
         num_clusters: int = 32,
         temperature: float = 0.1,
         query_dim: int = 64,
+        query_num_blocks: int = 4,
         pe_temperature: float = 1.0,
+        global_gate_hidden_dim: int | None = None,
+        global_gate_scale: float = 1.0,
     ) -> None:
         super().__init__(
             num_styles=num_styles,
@@ -109,23 +153,24 @@ class PureLatentSpatialTokenizer(_BaseStructuredTokenizer):
         self.num_clusters = max(1, int(num_clusters))
         self.temperature = max(1e-3, float(temperature))
         self.query_dim = max(8, int(query_dim))
+        self.query_num_blocks = max(1, int(query_num_blocks))
         self.pe_temperature = max(0.0, float(pe_temperature))
+        self.global_gate_hidden_dim = max(1, int(global_gate_hidden_dim or global_dim))
+        self.global_gate_scale = max(0.0, float(global_gate_scale))
 
-        # --- Phase-2: 4 ResBlock query_extractor with growing receptive fields ---
-        self.query_extractor = nn.ModuleList([
-            _LatentResBlock(self.latent_channels, self.query_dim, stride=1),
-            _LatentResBlock(self.query_dim, self.query_dim, stride=1),
-            _LatentResBlock(self.query_dim, self.query_dim, stride=1),
-            _LatentResBlock(self.query_dim, self.query_dim, stride=1),
-        ])
+        # Phase-2 tokenizer path: configurable ResBlock query extractor.
+        query_blocks: list[nn.Module] = [_LatentResBlock(self.latent_channels, self.query_dim, stride=1)]
+        for _ in range(self.query_num_blocks - 1):
+            query_blocks.append(_LatentResBlock(self.query_dim, self.query_dim, stride=1))
+        self.query_extractor = nn.ModuleList(query_blocks)
 
         # --- Phase-2: Global-Spatial coupling ---
         self.style_global_raw = nn.Embedding(self.num_styles, self.global_dim)
         nn.init.normal_(self.style_global_raw.weight, mean=0.0, std=0.02)
         self.global_pool_to_gate = nn.Sequential(
-            nn.Linear(self.spatial_dim, self.global_dim),
+            nn.Linear(self.spatial_dim, self.global_gate_hidden_dim),
             nn.SiLU(),
-            nn.Linear(self.global_dim, self.global_dim),
+            nn.Linear(self.global_gate_hidden_dim, self.global_dim),
         )
 
         self.universal_keys = nn.Parameter(torch.randn(self.num_clusters, self.query_dim) * 0.02)
@@ -144,16 +189,8 @@ class PureLatentSpatialTokenizer(_BaseStructuredTokenizer):
         device = x.device
         dtype = x.dtype
         cached = getattr(self, "_pe_cache", None)
-        if cached is None or cached.shape[-2:] != (h, w) or cached.device != device:
-            y_coord = torch.arange(h, device=device, dtype=torch.float32).view(1, 1, h, 1)
-            x_coord = torch.arange(w, device=device, dtype=torch.float32).view(1, 1, 1, w)
-            div = (torch.arange(0, c, 2, device=device, dtype=torch.float32) + 1) + torch.log(torch.tensor(1e4, device=device))
-            div_term = torch.exp(-div * 2.0 * math.log(10.0) / float(c))
-            pe = torch.zeros(1, c, h, w, device=device, dtype=torch.float32)
-            for i in range(0, c, 2):
-                pe[:, i, :, :] = torch.sin(y_coord * div_term[i // 2]) if i // 2 < div_term.shape[0] else 0
-                if i + 1 < c:
-                    pe[:, i + 1, :, :] = torch.cos(x_coord * div_term[i // 2]) if i // 2 < div_term.shape[0] else 0
+        if cached is None or cached.shape[-2:] != (h, w) or cached.shape[1] != c or cached.device != device:
+            pe = _build_2d_sincos_embedding(c, h, w, device=device)
             self._pe_cache = pe.to(dtype=dtype)
             cached = self._pe_cache
         return x + self.pe_temperature * cached.expand(bsz, -1, -1, -1)
@@ -189,7 +226,7 @@ class PureLatentSpatialTokenizer(_BaseStructuredTokenizer):
         spatial_gap = spatial_map.mean(dim=(2, 3), keepdim=False)
         global_gate = self.global_pool_to_gate(spatial_gap.to(dtype=content_latent.dtype))
         raw_code = self.style_global_raw(style_id).to(device=content_latent.device, dtype=content_latent.dtype)
-        global_full = base_style_code + raw_code + global_gate
+        global_full = base_style_code + raw_code + self.global_gate_scale * global_gate
 
         entropy = -(attn * attn.clamp_min(1e-8).log()).sum(dim=-1, keepdim=True)
         max_entropy = max(math.log(float(self.num_clusters)), 1e-8)
@@ -208,6 +245,9 @@ class PureLatentSpatialTokenizer(_BaseStructuredTokenizer):
                 "attn_max": float(attn.max().detach().cpu().item()),
                 "num_clusters": self.num_clusters,
                 "pe_temp": self.pe_temperature,
+                "query_dim": self.query_dim,
+                "query_num_blocks": self.query_num_blocks,
+                "global_gate_scale": self.global_gate_scale,
             },
         )
 

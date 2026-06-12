@@ -15,6 +15,7 @@ Date: 2026-06-13
 ## Immediate Decision
 
 - stop the corrected `rtfix` I2SB lane after the first settled point
+- stop the residual exact-Brownian retry after its first settled point
 - retire endpoint / I2SB from the active Distinct5 remote training queue
 - keep true I2SB in code as implementation capability and theory evidence only
 - downgrade any older round2 wording like “frontier”, “compromise”, or “mainline” when it refers to `LPIPS >= 0.40`
@@ -62,7 +63,7 @@ Date: 2026-06-13
     - solver-only correction did not rescue structure
     - this probe becomes archival evidence, not a promotion path
 - next formal candidate, if we keep pushing Phase 2, returns to training-side structure control rather than more solver-only recycling
-  - the first concrete follow-up packet is now the topology-anchor velocity retry:
+  - the first concrete follow-up packet was the topology-anchor velocity retry:
     - [2026-06-13-phase2-topology-anchor-followup.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-topology-anchor-followup.md)
   - first settled read on that packet:
     - `epoch_0001`
@@ -80,49 +81,59 @@ Date: 2026-06-13
     - style moved upward
     - but the line crossed into `archival only`
     - so the velocity topology-anchor retry is closed
-  - prepared fallback if that short check fails:
+  - the exact-I2SB fallback ladder was then executed and fully closed:
     - [2026-06-13-phase2-i2sb-topology-anchor-fallback.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-topology-anchor-fallback.md)
-    - this keeps the `true I2SB` contract alive, but pairs it with the new endpoint topology anchors instead of more solver-only rescue
-  - active replacement:
-    - `aaai2027_phase2_i2sb_topo_anchor_sigma0p25_seed42_b30a1`
-    - the `b22` version was only a calibration miss
-    - the `b30` relaunch hit the formal band at `9198 MiB`
-    - but its first settled point was immediate `fail_stop`
-  - current active replacement after that failure:
-    - `aaai2027_phase2_i2sb_pattn_topo_anchor_sigma0p10_warm_vel2_seed42_b22a1`
-    - exact Brownian endpoint path
-    - warm-started from the best in-band velocity parent
-    - internal `crossattn_texture` proximal rescue turned back on
-    - first settled point was still `fail_stop`
-  - current active retry after that:
-    - `aaai2027_phase2_i2sb_pattn_topo_anchor_sigma0p02_warm_vel2_seed42_b22a1`
-    - same warm-start and internal proximal rescue
-    - smaller `bridge_sigma = 0.02`
-    - health read `10419 MiB`
-  - prepared next exact-Brownian architecture step if that still fails:
-    - `aaai2027_phase2_i2sb_pattn_topo_anchor_sigma0p02_residual_warm_vel2_seed42_b22a1`
-    - same exact posterior and same tokenizer
-    - only the endpoint parameterization changes from absolute to residual
+    - `sigma=0.25, b30`
+      - all-pairs `0.719743 / 0.725755`
+      - immediate `fail_stop`
+    - `sigma=0.10, warm_vel2, b30`
+      - all-pairs `0.702178 / 0.711280`
+      - immediate `fail_stop`
+    - `sigma=0.10 + pattn + topology anchor, b22`
+      - all-pairs `0.713362 / 0.684586`
+      - immediate `fail_stop`
+    - `sigma=0.02 + pattn + topology anchor, b22`
+      - all-pairs `0.709801 / 0.675418`
+      - archival only
+    - `sigma=0.02 + residual endpoint, b22`
+      - transfer `0.688376 / 0.571735`
+      - all-pairs `0.697686 / 0.569086`
+      - archival only
+  - interpretation:
+    - residual endpoint parameterization materially improved LPIPS relative to the absolute `sigma=0.02` lane
+    - but it still failed the formal `< 0.40` structure gate by a wide margin
+    - so the exact-I2SB queue is now closed for Distinct5 promotion work
+  - execution result:
+    - the residual lane was stopped immediately after the first settled point at `2026-06-13 07:30`
+    - there is no active formal remote training lane right now
 
 ## New Priority Order
 
-1. `vel_pattn_enhanced_tok`
-   - velocity
-   - enhanced `PureLatentSpatialTokenizer`
-   - `manifold_adaptive_split`
-   - `crossattn_texture`
-   - config anchors:
+1. `vel_tok32_pos_refresh`
+   - return to `velocity`
+   - tokenizer-only strengthening from the 612 lookback:
+     - deeper query extractor
+     - 2D positional encoding
+     - `num_clusters = 32`
+     - tighter global-spatial coupling
+   - start from the existing safe velocity parents:
      - [inmortal_k_manifold_seed42_b16.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/inmortal_k_manifold_seed42_b16.json)
      - [inmortal_xpred_kmanifold_pattn_seed42_b16.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/inmortal_xpred_kmanifold_pattn_seed42_b16.json)
-2. `eval_only_pc_solver`
-  - reuse strong style ckpts
-  - test whether `solver_pc` can recover structure at inference time
-  - config anchor:
-    - [aaai2027_round1_solver_pc_seed42_b8a2.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_solver_pc_seed42_b8a2.json)
-3. `vel_kman_pattn_kin_sweep`
-  - scan `w_kinetic`
-  - queue 2 has now answered that inference-time correction alone is not enough
-  - this is therefore the next formal candidate if we stay on the velocity mainline
+   - prepared packet:
+     - [phase2_vel_tok32_pos_refresh_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_pos_refresh_seed42_b20a1.json)
+     - [2026-06-13-phase2-vel-tok32-pos-refresh.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-pos-refresh.md)
+2. `vel_structure_control_reentry`
+   - keep `velocity`, not endpoint
+   - move structure control back into training:
+     - lighter kinetic + topology anchor
+     - latent lowpass / edge content correction
+     - adaptive skip or PnP-style self-inject only as structure tools
+3. `vel_kinetic_anchor_rescan`
+   - only if queue 1 yields a stronger in-band parent
+   - retune the balance between style lift and structure guard on the safe velocity line
+4. `i2sb_eval_only_diagnostics`
+   - keep exact-I2SB for theory and implementation checks only
+   - no formal training lane unless a cheap diagnostic first shows sub-`0.40` evidence
 
 ## Hard Gates
 
@@ -137,7 +148,8 @@ Date: 2026-06-13
 
 - remote `rtfix` lane has been stopped and archived as a structural failure line
 - the first Phase 2 velocity queue is now also closed after `epoch_0006`
+- the exact-I2SB fallback ladder is now also closed at the residual-endpoint `epoch_0001` archival readout
 - current planning authority is the Phase 2 structure-first queue:
   - `eval_only_pc_solver` has finished as a negative read
   - the velocity topology-anchor retry has now also been closed as archival only
-  - the current active formal lane is the true-I2SB topology-anchor relaunch
+  - there is no active formal lane until the next velocity-side packet is prepared

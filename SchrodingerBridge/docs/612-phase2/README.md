@@ -33,9 +33,12 @@
 - 但修正后的 `rtfix epoch_0001` 是:
   - transfer `0.724444 / 0.712723`
   - all-pairs `0.724472 / 0.707551`
+- residual endpoint 重参数化后的首个 settled 点是:
+  - transfer `0.688376 / 0.571735`
+  - all-pairs `0.697686 / 0.569086`
 - 结论非常明确:
   - style 强
-  - 结构完全失败
+  - exact-I2SB 的结构仍然长期处在失败或 archival-only 区间
   - 因此 endpoint / I2SB 不再是 Distinct5 的远程主训练线
 - 进一步收紧解释:
   - 旧 round2 中所有 `LPIPS 0.40-0.70` 的点，也不再叫“可推进 compromise”
@@ -51,7 +54,7 @@
 - 不允许再用“后面也许会掉下来”作为继续烧正式训练资源的理由
 - `eval_only` 型 solver 实验可以做，但不能阻塞唯一正式训练 lane
 
-## 当前 Phase 节点（2026-06-13 04:10）
+## 当前 Phase 节点（2026-06-13 07:30）
 
 - `vel_pattn_enhanced_tok` 已经在 `epoch_0006` 关闭
   - best `epoch_0002`
@@ -64,30 +67,39 @@
   - 这条线始终留在 `LPIPS < 0.40` 安全带内
   - 但 `epoch_0002 -> epoch_0006` 没有继续抬 style，已经进入平台震荡
   - 因此它不是失败线，但也不是值得继续占用正式训练 lane 的突破线
-- 当前动作:
-  - 正式训练 lane 已释放
 - `eval_only_pc_solver` 读取已经完成
-    - transfer `0.729014 / 0.621056`
-    - all-pairs `0.735295 / 0.611310`
+  - transfer `0.729014 / 0.621056`
+  - all-pairs `0.735295 / 0.611310`
   - 这说明 `solver_pc` 没能把 style-strong `xpred + pattn` 父本拉回结构安全带
   - 因而 queue2 只保留为 archival evidence，下一条正式候选重新回到 training-side 结构改造
-  - 当前新的训练侧假设:
-    - 不再只靠 `w_kinetic` 压住结构
-    - 改为 `lighter kinetic + latent topology anchor`
-    - 直接约束 endpoint 的低频拓扑和边缘骨架
-  - 当前运行态:
-    - `aaai2027_phase2_vel_pattn_topo_anchor_k075_seed42_b22a1` 已关闭
-    - closure point:
-      - `epoch_0002`
-      - transfer `0.680803 / 0.417910`
-      - all-pairs `0.706132 / 0.413976`
-    - 解释:
-      - style 有抬升
-      - 但 LPIPS 越过 `0.40`
-      - 因而只能归档，不能继续占 formal lane
-    - 当前 active lane:
-      - `aaai2027_phase2_i2sb_pattn_topo_anchor_sigma0p02_warm_vel2_seed42_b22a1`
-      - `true I2SB + pure_latent_spatial + topology anchor + internal proximal rescue + very small sigma`
+- `vel_pattn_topology_anchor` 已关闭
+  - closure point:
+    - `epoch_0002`
+    - transfer `0.680803 / 0.417910`
+    - all-pairs `0.706132 / 0.413976`
+  - 解释:
+    - style 有抬升
+    - 但 LPIPS 越过 `0.40`
+    - 因而只能归档，不能继续占 formal lane
+- `true I2SB` fallback ladder 已全部闭环并退出主线
+  - `sigma=0.25`
+    - all-pairs `0.719743 / 0.725755`
+  - `sigma=0.10 warm_vel2`
+    - all-pairs `0.702178 / 0.711280`
+  - `sigma=0.10 + pattn + topo anchor`
+    - all-pairs `0.713362 / 0.684586`
+  - `sigma=0.02 + pattn + topo anchor`
+    - all-pairs `0.709801 / 0.675418`
+  - `sigma=0.02 + residual endpoint`
+    - transfer `0.688376 / 0.571735`
+    - all-pairs `0.697686 / 0.569086`
+  - 结论:
+    - residual reparameterization 只把 LPIPS 从 `~0.67` 拉到 `~0.57`
+    - 仍然远高于 `LPIPS < 0.40` 的 paper gate
+    - 因而 exact-I2SB 在 Distinct5 上只保留实现与理论价值，不再占用正式训练 lane
+- 当前动作:
+  - 远程正式训练 lane 当前为空
+  - 下一条正式候选只允许来自 `velocity + true tokenizer + training-side structure control`
 
 ## 三刀手术
 
@@ -95,7 +107,7 @@
 
 | 项 | 处理 | 原因 |
 |---|---|---|
-| Endpoint / I2SB 作为 Distinct5 主线 | 退出主队列 | `LPIPS 0.7+` 已经证明是完全失败 |
+| Endpoint / I2SB 作为 Distinct5 主线 | 退出主队列 | `LPIPS 0.7+` 是 complete failure，`0.4-0.7` 也只剩 archival evidence |
 | DINO 依赖 | 保留归档，不在主线继续投入 | 纯潜空间路线已足够成立，且 DINO 工程复杂度不值得 |
 | 旧 heuristic structure 补丁 | 只做对照，不做主路径 | 大多是给 endpoint 擦屁股，不能解决主矛盾 |
 
@@ -149,34 +161,50 @@
     - style 仍高，但结构仍处于 archival only 区间
     - inference-time corrector 不足以拯救 style-strong endpoint 父本
 
-### 队列3: `vel_pattn_topology_anchor`（当前下一正式候选）
+### 队列3: `vel_tok32_pos_refresh`（下一条正式候选）
 
-- 以前一条 velocity packet 为父本
-- 第一条候选 config:
-  - [phase2_vel_pattn_topo_anchor_k075_seed42_b22a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_pattn_topo_anchor_k075_seed42_b22a1.json)
+- 父本:
+  - `vel_pattn_enhanced_tok` 的安全带 best 点 `epoch_0002`
+  - config anchor:
+    - [inmortal_k_manifold_seed42_b16.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/inmortal_k_manifold_seed42_b16.json)
+    - [inmortal_xpred_kmanifold_pattn_seed42_b16.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/inmortal_xpred_kmanifold_pattn_seed42_b16.json)
+- packet note:
+  - [2026-06-13-phase2-vel-tok32-pos-refresh.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-pos-refresh.md)
+- formal config:
+  - [phase2_vel_tok32_pos_refresh_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_pos_refresh_seed42_b20a1.json)
+- 改动:
+  - deeper `query_extractor`
+  - 2D positional encoding
+  - `num_clusters = 32`
+  - stronger global-spatial coupling
 - 目标:
-  - 用更轻的 kinetic 换取 style 抬升
-  - 用 topology anchor 而不是 solver-only 修补来守住结构
-- 前提:
-  - 队列2 已经给出否定答案:
-    - 仅靠 inference corrector 不足以把结构拉回安全带
-  - 因而若继续推进，就必须回到训练时结构约束，而不是继续复用同一 style-heavy 父本做 solver-only 修补
+  - 在不越过 `LPIPS 0.40` 的前提下突破 `all-pairs 0.701666 / 0.381724`
+- 退出条件:
+  - 第一批 settled 点进入 `0.40+`
+  - 或仍停在 `0.70x / 0.38x` 平台
 
-### 队列4: `true_i2sb_topology_anchor`（若队列3仍平则切换）
+### 队列4: `vel_structure_control_reentry`（仅在队列3拿到更强安全带父本后启动）
 
-- config:
-  - [phase2_i2sb_topo_anchor_sigma0p25_seed42_b22a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_topo_anchor_sigma0p25_seed42_b22a1.json)
+- 仍坚持 `velocity`，不回到 endpoint
+- 在训练侧引入结构控制，而不是 solver-only 或 I2SB rescue:
+  - lighter kinetic + topology anchor
+  - latent lowpass / edge content correction
+  - adaptive skip / PnP self-inject 仅作为结构工具，而非 style 放大器
 - 目标:
-  - 保留 `true I2SB` 的 style headroom
-  - 用训练期 endpoint topology anchor 直接救结构
-- 解释:
-  - 如果 velocity 仍然无法突破 `0.70x / 0.39x` 这个棚顶，那么更合理的下一步不是更复杂的 velocity 补丁
-  - 而是让 `true I2SB` 重新上场，但只带最干净的一层结构锚
+  - 把结构约束直接作用在安全带 velocity 父本上
+  - 验证真正有价值的是 training-side structure control，而不是 stochastic endpoint
+
+### 队列5: `i2sb_diagnostic_only`（非正式 lane）
+
+- `true I2SB` 只保留为实现/理论验证
+- 允许做 NFE / noise schedule / endpoint parameterization 对照
+- 但任何 `LPIPS >= 0.40` 的 I2SB 结果都不回正式训练队列
 
 ## 代码与文档策略
 
 - DINO 继续退休，除非后续出现压倒性 board 优势
 - true I2SB 代码保留，作为实现能力和理论资产
+- true I2SB 只允许 `diagnostic-only` 运行；除非先出现廉价读数证明 `LPIPS < 0.40`，否则不再进入 Distinct5 formal queue
 - 但 paper-facing Distinct5 主计划已经切换到:
   - `velocity + tokenizer enhancement + structure-first solver`
 - 所有 round2 endpoint / I2SB 文档都应按这个门槛重读:
