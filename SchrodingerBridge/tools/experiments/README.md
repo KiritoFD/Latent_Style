@@ -28,6 +28,26 @@ Use this file as the stable entrypoint instead of guessing from filenames.
   - [launch_remote_round1_family_fast_eval.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_round1_family_fast_eval.py)
 - segmented train/eval for memory-sensitive families:
   - [run_remote_round1_family_segmented.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_remote_round1_family_segmented.py)
+
+### Round-2 remote lane
+
+- default policy:
+  - round-2 pure-SDE launchers reject DINO-conditioned configs unless `--allow-dino` is supplied explicitly
+- one-shot status read for a single active remote lane:
+  - [report_remote_experiment_status.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/report_remote_experiment_status.py)
+- launch one family train lane:
+  - [launch_remote_round2_family_train.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_round2_family_train.py)
+- audit round-2 pure-latent / I2SB contract compliance:
+  - [audit_round2_contracts.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/audit_round2_contracts.py)
+- tokenizer-winner follow-on launch:
+  - [launch_remote_round2_followon_train.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_round2_followon_train.py)
+- one-shot eval-curve watcher:
+  - [watch_round2_eval_curve.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_round2_eval_curve.py)
+- compare an active round-2 curve against a chosen reference point:
+  - [report_round2_reference_gap.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/report_round2_reference_gap.py)
+- segmented train/eval fallback for resume-time VRAM spikes:
+  - [run_remote_round2_family_segmented.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_remote_round2_family_segmented.py)
+  - [launch_round2_family_segmented_detached.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_round2_family_segmented_detached.py)
 - detached follow-up chain:
   - [launch_round1_family_followups_detached.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_round1_family_followups_detached.py)
   - [watch_round1_family_runtime_status.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_round1_family_runtime_status.py)
@@ -80,6 +100,10 @@ Use this file as the stable entrypoint instead of guessing from filenames.
   - [compare_distinct5_eval_curve.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/compare_distinct5_eval_curve.py)
 
 ### DINO and auxiliary precompute
+
+- scope:
+  - historical round-1 support only
+  - not part of the active round-2 pure-latent / true-I2SB mainline unless a later board result justifies reviving it
 
 - local cache build:
   - [run_local_round1_dino_cache_build.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_local_round1_dino_cache_build.py)
