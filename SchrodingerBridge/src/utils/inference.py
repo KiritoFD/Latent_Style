@@ -23,7 +23,7 @@ _SRC_ROOT = Path(__file__).resolve().parents[1]
 if str(_SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(_SRC_ROOT))
 
-from config_schema import ExperimentConfig, resolve_inference_section
+from config_schema import ExperimentConfig, load_config, merge_config_dicts, resolve_inference_section
 from model import build_model_from_config
 from style_families import prune_state_dict_for_tokenizer_family, validate_i2sb_contract, validate_pure_latent_contract
 from utils.training import strip_compile_prefix
@@ -191,12 +191,15 @@ class LGTInference:
         style_strength=None,
         style_adapter_path=None,
         residual_scale=1.0,
+        config_override_path=None,
     ):
         self.device = device
         self.num_steps = int(num_steps)
 
         checkpoint = torch.load(model_path, map_location=device, weights_only=False)
         raw_config = checkpoint.get("config", {}) or {}
+        if config_override_path:
+            raw_config = merge_config_dicts(raw_config, load_config(config_override_path))
         config = ExperimentConfig.from_mapping(raw_config)
         if isinstance(raw_config, dict):
             for section_name in ("model", "bridge", "training", "data", "checkpoint"):
@@ -240,6 +243,20 @@ class LGTInference:
             )
 
         self.model = build_model_from_config(config.model, bridge_cfg=config.bridge, use_checkpointing=False).to(device)
+        # Eval-only override paths may need solver attributes that older
+        # checkpoints/backbone constructors never materialized as runtime attrs.
+        for key in (
+            "solver_rk_order",
+            "solver_corrector_steps",
+            "solver_corrector_step_size",
+            "solver_corrector_mode",
+            "solver_corrector_lowpass_kernel",
+            "solver_corrector_clamp",
+            "solver_tangent_projection_strength",
+            "solver_stochastic_noise_scale",
+        ):
+            if hasattr(config.model, key):
+                setattr(self.model, key, getattr(config.model, key))
         try:
             self.model.load_state_dict(state_dict, strict=True)
         except RuntimeError as exc:

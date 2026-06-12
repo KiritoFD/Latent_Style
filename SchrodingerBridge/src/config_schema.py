@@ -317,6 +317,9 @@ class ModelConfig:
     solver_rk_order: int = 4
     solver_corrector_steps: int = 1
     solver_corrector_step_size: float = 0.1
+    solver_corrector_mode: str = "latent_lowpass"
+    solver_corrector_lowpass_kernel: int = 5
+    solver_corrector_clamp: float = 0.0
     solver_tangent_projection_strength: float = 1.0
     solver_stochastic_noise_scale: float = 0.01
     solver_dual_track_detach: bool = True
@@ -720,6 +723,10 @@ def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any
         else:
             merged[key] = copy.deepcopy(value)
     return merged
+
+
+def merge_config_dicts(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    return _deep_merge(base, override)
 
 
 def load_config(config_path: str | Path, *, _seen: set[Path] | None = None) -> dict[str, Any]:

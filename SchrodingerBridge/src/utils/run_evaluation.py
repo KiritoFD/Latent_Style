@@ -56,7 +56,7 @@ from utils.introstyle_eval import (
     resolve_introstyle_model_path,
     style_bank_paths,
 )
-from config_schema import load_inference_defaults, resolve_full_eval_section
+from config_schema import load_config, load_inference_defaults, merge_config_dicts, resolve_full_eval_section
 
 # KID (official implementation via torchmetrics)
 try:
@@ -1470,6 +1470,7 @@ def main():
     parser.add_argument('eval_dir', nargs='?', default=None, help="One-shot mode: target full_eval directory (reuse existing images).")
     parser.add_argument('--checkpoint', type=str, default=None, help="Single-checkpoint mode: path to checkpoint")
     parser.add_argument('--output', type=str, default=None, help="Single-checkpoint mode: output directory")
+    parser.add_argument('--config_override', type=str, default="", help="Optional config json merged on top of the checkpoint config for eval-only inference overrides.")
     parser.add_argument('--style_subdirs', type=str, default="", help="Optional comma-separated style names for reuse-only eval without checkpoint")
     parser.add_argument('--config', type=str, default="../config.json", help="Auto mode config path")
     parser.add_argument('--test_dir', type=str, default=None)
@@ -1490,7 +1491,7 @@ def main():
     parser.add_argument('--vae_compile_mode', type=str, default="reduce-overhead", choices=["default", "reduce-overhead", "max-autotune", "max-autotune-no-cudagraphs"])
     parser.add_argument('--vae_compile_fullgraph', action='store_true', help="Use fullgraph=True for compiled VAE decoder.")
     parser.add_argument('--vae_compile_cache_dir', type=str, default="", help="Persistent torch.compile cache directory for the VAE decoder.")
-    parser.add_argument('--style_adapter', type=str, default="", help="Optional external style adapter (.pt) to override style_tokenizer/style_spatial_id_16")
+    parser.add_argument('--style_adapter', type=str, default="", help="Optional external style adapter (.pt) to override tokenizer state and, on legacy families only, style_spatial_id_16")
     parser.add_argument('--max_src_samples', type=int, default=int(full_eval_defaults.get("max_src_samples", 30)), help="Max source images per style; <=0 means all")
     parser.add_argument('--max_ref_compare', type=int, default=int(full_eval_defaults.get("max_ref_compare", 50)), help="Max refs for LPIPS style compare; <=0 means all cached refs")
     parser.add_argument('--max_ref_cache', type=int, default=int(full_eval_defaults.get("max_ref_cache", 256)), help="Max reference images per style used for cache/features; <=0 means all")
@@ -1713,6 +1714,8 @@ def main():
             raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
         ckpt = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
         cfg = ckpt.get('config', {})
+        if str(args.config_override).strip():
+            cfg = merge_config_dicts(cfg, load_config(str(args.config_override).strip()))
         resolved_full_eval = resolve_full_eval_section(cfg)
         if resolved_full_eval:
             if "num_steps" in resolved_full_eval and not _cli_provided("num_steps"):
@@ -1920,6 +1923,7 @@ def main():
             style_strength=args.style_strength,
             residual_scale=args.residual_scale,
             style_adapter_path=(args.style_adapter or None),
+            config_override_path=(args.config_override or None),
         )
         _sync_cuda_if(device, bool(args.profile_timing))
         _add_timing(timings, "load_lancet", t0)

@@ -1,5 +1,5 @@
 {
-  "_comment": "Eval-only: use existing xpred+pattn ckpt with solver_pc + Latent Content Correction. No training needed.",
+  "_comment": "Eval-only override: merge on top of an existing xpred+pattn checkpoint config to test solver_pc structure recovery without retraining.",
   "model": {
     "solver_family": "solver_pc",
     "solver_corrector_steps": 2,
@@ -8,12 +8,11 @@
     "solver_corrector_lowpass_kernel": 5,
     "solver_corrector_clamp": 0.0
   },
-  "training": {
-    "num_epochs": 0,
-    "full_eval_each_epoch": true,
-    "full_eval_only_lpips_clip_style": true,
-    "resume_checkpoint": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_seed42_b16_e12_continue/epoch_0011.pt",
-    "resume_model_strict": false,
-    "resume_training_state": false
+  "full_eval": {
+    "only_lpips_clip_style": true,
+    "save_generated_images": false,
+    "save_summary_grid": false,
+    "batch_size": 1,
+    "vae_decode_batch_size": 4
   }
 }
