@@ -116,7 +116,7 @@
     "tokenizer_content_adaptive": false
   },
   "bridge": {
-    "objective_mode": "omf",
+    "objective_mode": "bridge_velocity",
     "loss_type": "mse",
     "ot_cost_mode": "swd",
     "t_min": 0.0,
@@ -223,7 +223,7 @@
   },
   "training": {
     "seed": 42,
-    "batch_size": 16,
+    "batch_size": 22,
     "accumulation_steps": 1,
     "num_workers": 0,
     "shuffle": false,
@@ -331,7 +331,7 @@
   "ablation": {
     "name": "phase2_vel_pattn_enhanced_tok",
     "axis": "phase2_velocity_breakthrough",
-    "notes": "Phase2: velocity mode + enhanced PureLatentSpatialTokenizer (ResBlock+PE+32clusters+GlobalCoupling) + k-manifold kinetic + pattn proximal. Effective batch kept at 16 while raising per-step VRAM into the formal 3060 band.",
+    "notes": "Phase2: velocity mode + enhanced PureLatentSpatialTokenizer (ResBlock+PE+32clusters+GlobalCoupling) + k-manifold kinetic + pattn proximal. Batch raised to 22 after the objective fix so the packet can land inside the formal 3060 band.",
     "stage": "phase2_mainline"
   },
   "full_eval": {
