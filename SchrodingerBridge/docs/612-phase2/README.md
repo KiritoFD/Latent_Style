@@ -51,6 +51,34 @@
 - 不允许再用“后面也许会掉下来”作为继续烧正式训练资源的理由
 - `eval_only` 型 solver 实验可以做，但不能阻塞唯一正式训练 lane
 
+## 当前 Phase 节点（2026-06-13 04:10）
+
+- `vel_pattn_enhanced_tok` 已经在 `epoch_0006` 关闭
+  - best `epoch_0002`
+    - transfer `0.673934 / 0.384340`
+    - all-pairs `0.701666 / 0.381724`
+  - latest `epoch_0006`
+    - transfer `0.668831 / 0.370651`
+    - all-pairs `0.698086 / 0.367844`
+- 解释:
+  - 这条线始终留在 `LPIPS < 0.40` 安全带内
+  - 但 `epoch_0002 -> epoch_0006` 没有继续抬 style，已经进入平台震荡
+  - 因此它不是失败线，但也不是值得继续占用正式训练 lane 的突破线
+- 当前动作:
+  - 正式训练 lane 已释放
+- `eval_only_pc_solver` 读取已经完成
+    - transfer `0.729014 / 0.621056`
+    - all-pairs `0.735295 / 0.611310`
+  - 这说明 `solver_pc` 没能把 style-strong `xpred + pattn` 父本拉回结构安全带
+  - 因而 queue2 只保留为 archival evidence，下一条正式候选重新回到 training-side 结构改造
+  - 当前新的训练侧假设:
+    - 不再只靠 `w_kinetic` 压住结构
+    - 改为 `lighter kinetic + latent topology anchor`
+    - 直接约束 endpoint 的低频拓扑和边缘骨架
+  - 当前运行态:
+    - `aaai2027_phase2_vel_pattn_topo_anchor_k075_seed42_b22a1`
+    - 已启动，等待第一个 settled checkpoint
+
 ## 三刀手术
 
 ### 第一刀：退出主线的东西
@@ -80,7 +108,7 @@
 
 ## 实验队列
 
-### 队列1: `vel_pattn_enhanced_tok`（唯一正式训练 lane）
+### 队列1: `vel_pattn_enhanced_tok`（已于 `epoch_0006` 关闭）
 
 - 组合:
   - velocity
@@ -96,7 +124,7 @@
   - 第一批或后续 settled 点落到 `0.40+`
   - 或 style 在安全带内明显停滞
 
-### 队列2: `eval_only_pc_solver`
+### 队列2: `eval_only_pc_solver`（已完成，negative readout）
 
 - 复用已有 style 强 ckpt
 - 不重新训练，只测 `solver_pc` / content correction 能否把结构拉回
@@ -104,15 +132,25 @@
   - 验证 “training for style, inference for structure” 是否成立
 - 注意:
   - 这是辅助判断，不替代主训练队列
+  - 当前结果:
+    - transfer `0.729014 / 0.621056`
+    - all-pairs `0.735295 / 0.611310`
+  - 结论:
+    - style 仍高，但结构仍处于 archival only 区间
+    - inference-time corrector 不足以拯救 style-strong endpoint 父本
 
-### 队列3: `vel_kman_pattn_kin_sweep`
+### 队列3: `vel_pattn_topology_anchor`（当前下一正式候选）
 
-- 以前一队列的可用点为父本
-- 扫描 `w_kinetic = 0.5 / 1.0 / 2.0`
+- 以前一条 velocity packet 为父本
+- 第一条候选 config:
+  - [phase2_vel_pattn_topo_anchor_k075_seed42_b22a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_pattn_topo_anchor_k075_seed42_b22a1.json)
 - 目标:
-  - 找到 style 抬升与 LPIPS 控制之间的最好平衡点
+  - 用更轻的 kinetic 换取 style 抬升
+  - 用 topology anchor 而不是 solver-only 修补来守住结构
 - 前提:
-  - 队列1 先证明 velocity 主路线上确实还能继续推进
+  - 队列2 已经给出否定答案:
+    - 仅靠 inference corrector 不足以把结构拉回安全带
+  - 因而若继续推进，就必须回到训练时结构约束，而不是继续复用同一 style-heavy 父本做 solver-only 修补
 
 ## 代码与文档策略
 

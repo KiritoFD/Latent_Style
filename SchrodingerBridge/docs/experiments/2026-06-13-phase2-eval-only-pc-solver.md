@@ -58,11 +58,14 @@ Date: 2026-06-13
 - dry-run watcher:
   - `python SchrodingerBridge/tools/experiments/watch_phase2_velocity_handoff.py`
 - default closure rule encoded there:
-  - wait until `latest_settled_epoch >= 6`
-  - require `best_in_newest_2 = false`
-  - require no style-side recovery:
-    - `latest_all_pairs_clip_style < 0.7005`
-    - `latest_transfer_clip_style < 0.6725`
+  - if either latest transfer/all-pairs `LPIPS >= 0.70`, immediate `fail_stop`
+  - if either latest transfer/all-pairs `LPIPS >= 0.40`, immediate `archival_stop`
+  - otherwise require:
+    - `latest_settled_epoch >= 6`
+    - `best_in_newest_2 = false`
+    - no style-side recovery:
+      - `latest_all_pairs_clip_style < 0.7005`
+      - `latest_transfer_clip_style < 0.6725`
 - execution mode:
   - `python SchrodingerBridge/tools/experiments/watch_phase2_velocity_handoff.py --execute --force-regen`
 - execution behavior:
@@ -92,6 +95,21 @@ Date: 2026-06-13
 
 - local plumbing complete
 - remote launcher complete
-- not launched yet because the formal remote lane is still occupied by:
-  - `aaai2027_phase2_vel_pattn_enhanced_tok_seed42_b22a1`
-- once the current lane closes or clearly stalls, this is the first auxiliary queue item that can be run immediately
+- first execution note:
+  - the first handoff launch failed because the wrapper forwarded `--device` into `run_evaluation.py`
+  - that wrapper bug has been fixed locally
+- current remote state:
+  - the formal velocity lane has already been released
+  - `eval_only_pc_solver` was relaunched at `2026-06-13 04:10`
+  - health read passed with GPU memory around `1033 MiB`
+  - the eval finished at `2026-06-13 04:12`
+  - output:
+    - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/phase2_eval_only_pc_solver/epoch_0011/summary.json`
+  - result:
+    - transfer `0.729014 / 0.621056`
+    - all-pairs `0.735295 / 0.611310`
+    - eval wall `115.15s`
+- queue meaning:
+  - this read has now been interpreted as negative evidence
+  - solver-only correction does not recover structure enough to pass the Phase 2 gate
+  - the branch closes as archival evidence and hands the decision back to the next training-side queue

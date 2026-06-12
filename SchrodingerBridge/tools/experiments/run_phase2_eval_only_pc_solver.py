@@ -53,8 +53,6 @@ def main() -> int:
         str(output),
         "--config_override",
         str(override),
-        "--device",
-        str(args.device),
     ]
     if str(args.test_dir).strip():
         cmd += ["--test_dir", str(args.test_dir).strip()]
