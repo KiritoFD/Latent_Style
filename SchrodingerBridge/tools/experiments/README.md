@@ -39,6 +39,8 @@ Use this file as the stable entrypoint instead of guessing from filenames.
   - [run_phase2_eval_only_pc_solver.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_phase2_eval_only_pc_solver.py)
 - launch the same eval-only phase2 solver_pc review on the remote host when the formal lane is idle:
   - [launch_remote_phase2_eval_only_pc_solver.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_phase2_eval_only_pc_solver.py)
+- watch the formal phase2 velocity lane and hand off to eval-only solver_pc when the documented closure rule is met:
+  - [watch_phase2_velocity_handoff.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_phase2_velocity_handoff.py)
 - launch one family train lane:
   - [launch_remote_round2_family_train.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_round2_family_train.py)
 - audit round-2 pure-latent / I2SB contract compliance:

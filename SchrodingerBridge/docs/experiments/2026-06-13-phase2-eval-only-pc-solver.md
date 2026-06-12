@@ -20,6 +20,8 @@ Date: 2026-06-13
   - [run_phase2_eval_only_pc_solver.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_phase2_eval_only_pc_solver.py)
 - remote launcher:
   - [launch_remote_phase2_eval_only_pc_solver.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_phase2_eval_only_pc_solver.py)
+- handoff watcher:
+  - [watch_phase2_velocity_handoff.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_phase2_velocity_handoff.py)
 - merged-runtime support:
   - `run_evaluation.py` now accepts `--config_override`
   - `LGTInference` now merges checkpoint config with an override config before building the inference model
@@ -50,6 +52,23 @@ Date: 2026-06-13
 
 - when the current formal lane is released, the intended first remote call is:
   - `python SchrodingerBridge/tools/experiments/launch_remote_phase2_eval_only_pc_solver.py --checkpoint /mnt/i/Github/Latent_Style/SchrodingerBridge/exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_seed42_b16_e12_continue/epoch_0011.pt --force-regen`
+
+## Automated Handoff Gate
+
+- dry-run watcher:
+  - `python SchrodingerBridge/tools/experiments/watch_phase2_velocity_handoff.py`
+- default closure rule encoded there:
+  - wait until `latest_settled_epoch >= 6`
+  - require `best_in_newest_2 = false`
+  - require no style-side recovery:
+    - `latest_all_pairs_clip_style < 0.7005`
+    - `latest_transfer_clip_style < 0.6725`
+- execution mode:
+  - `python SchrodingerBridge/tools/experiments/watch_phase2_velocity_handoff.py --execute --force-regen`
+- execution behavior:
+  - stop the remote velocity lane
+  - wait for GPU idle
+  - launch `eval_only_pc_solver`
 
 ## Local Wiring Proof
 
