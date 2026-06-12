@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import io
+import json
 import shlex
 import subprocess
 import sys
@@ -40,6 +42,26 @@ def _build_archive_bytes(paths: list[Path], extra_members: dict[str, bytes] | No
             info.mode = 0o755 if arcname.endswith(".sh") else 0o644
             tar.addfile(info, io.BytesIO(payload))
     return buffer.getvalue()
+
+
+def _is_remote_temp_rel(rel_path: Path) -> bool:
+    text = rel_path.as_posix()
+    return text.startswith("SchrodingerBridge/_codex_tmp/") or text.startswith("SchrodingerBridge/_codex_rt/")
+
+
+def _collect_temp_file_payloads(paths: list[Path], extra_members: dict[str, bytes] | None = None) -> dict[str, bytes]:
+    payloads: dict[str, bytes] = {}
+    for rel_path in paths:
+        if not _is_remote_temp_rel(rel_path):
+            continue
+        abs_path = WORKSPACE_ROOT / rel_path
+        if not abs_path.is_file():
+            raise FileNotFoundError(abs_path)
+        payloads[rel_path.as_posix()] = abs_path.read_bytes()
+    for arcname, payload in (extra_members or {}).items():
+        if _is_remote_temp_rel(Path(arcname)):
+            payloads[arcname] = payload
+    return payloads
 
 
 def _run(cmd: list[str], *, input_bytes: bytes | None = None) -> subprocess.CompletedProcess[bytes]:
@@ -339,6 +361,62 @@ def _cleanup_preexisting_launch_artifacts(
     )
 
 
+def _write_remote_temp_files(
+    *,
+    host: str,
+    port: int,
+    user: str,
+    wsl_distro: str,
+    remote_workspace_root: str,
+    file_payloads: dict[str, bytes],
+) -> int:
+    if not file_payloads:
+        return 0
+    payload = {
+        "workspace_root": remote_workspace_root,
+        "files": [
+            {
+                "rel_path": rel_path,
+                "payload_b64": base64.b64encode(content).decode("ascii"),
+            }
+            for rel_path, content in file_payloads.items()
+        ],
+    }
+    payload_json = json.dumps(payload, ensure_ascii=False)
+    remote_py = r"""
+import base64
+import json
+from pathlib import Path
+
+payload = json.loads(r'''__PAYLOAD_JSON__''')
+workspace_root = Path(payload["workspace_root"])
+for item in payload["files"]:
+    rel_path = str(item["rel_path"]).replace("\\", "/")
+    target = workspace_root / rel_path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(base64.b64decode(item["payload_b64"]))
+""".replace("__PAYLOAD_JSON__", payload_json.replace("\\", "\\\\").replace("'''", "\\'\\'\\'"))
+    proc = _run(
+        [
+            "ssh",
+            "-p",
+            str(port),
+            "-T",
+            "-o",
+            "LogLevel=ERROR",
+            f"{user}@{host}",
+            "wsl",
+            "-d",
+            str(wsl_distro),
+            "python3",
+            "-",
+        ],
+        input_bytes=remote_py.encode("utf-8"),
+    )
+    sys.stdout.buffer.write(proc.stdout)
+    return int(proc.returncode)
+
+
 def _health_check(
     *,
     host: str,
@@ -383,6 +461,20 @@ def _health_check(
     sys.stdout.buffer.write(pid_result.stdout)
     pid_text = pid_result.stdout.decode("utf-8", errors="replace").strip()
     if not pid_text.isdigit():
+        tail_result = _ssh_exec(
+            host=host,
+            port=port,
+            user=user,
+            remote_command=(
+                f"wsl -d {wsl_distro} --exec bash -lc "
+                f"\"tail -n 40 '{remote_log_path}' 2>/dev/null || true\""
+            ),
+        )
+        sys.stdout.buffer.write(tail_result.stdout)
+        tail_text = tail_result.stdout.decode("utf-8", errors="replace")
+        if "Device: cuda" in tail_text or "DataLoader |" in tail_text or "Epoch " in tail_text:
+            print("Health check warning: launcher pid missing, but training log is already progressing; accepting launch.")
+            return 0
         print("Health check failed: remote pid file was missing or invalid.")
         return 22
 
@@ -397,6 +489,20 @@ def _health_check(
     )
     sys.stdout.buffer.write(process_result.stdout)
     if not process_result.stdout.strip():
+        tail_result = _ssh_exec(
+            host=host,
+            port=port,
+            user=user,
+            remote_command=(
+                f"wsl -d {wsl_distro} --exec bash -lc "
+                f"\"tail -n 40 '{remote_log_path}' 2>/dev/null || true\""
+            ),
+        )
+        sys.stdout.buffer.write(tail_result.stdout)
+        tail_text = tail_result.stdout.decode("utf-8", errors="replace")
+        if "Device: cuda" in tail_text or "DataLoader |" in tail_text or "Epoch " in tail_text:
+            print("Health check warning: launcher pid exited, but training log is already progressing; accepting launch.")
+            return 0
         print("Health check failed: remote launcher pid is no longer alive.")
         return 23
 
@@ -546,12 +652,16 @@ def main() -> int:
         )
         return 13
 
+    extra_members = {
+        remote_launcher_rel: launch_script.encode("utf-8"),
+        remote_windows_launcher_rel: windows_launcher.encode("utf-8"),
+    }
+    temp_sync_payloads = _collect_temp_file_payloads(sync_paths, extra_members=extra_members)
+    archive_sync_paths = [path for path in sync_paths if not _is_remote_temp_rel(path)]
+    archive_extra_members = {k: v for k, v in extra_members.items() if not _is_remote_temp_rel(Path(k))}
     archive_bytes = _build_archive_bytes(
-        sync_paths,
-        {
-            remote_launcher_rel: launch_script.encode("utf-8"),
-            remote_windows_launcher_rel: windows_launcher.encode("utf-8"),
-        },
+        archive_sync_paths,
+        archive_extra_members,
     )
     remote = f"{args.user}@{args.host}"
     _cleanup_preexisting_launch_artifacts(
@@ -582,6 +692,17 @@ def main() -> int:
     sys.stdout.buffer.write(extract.stdout)
     if extract.returncode != 0:
         return extract.returncode
+
+    temp_write_rc = _write_remote_temp_files(
+        host=args.host,
+        port=args.port,
+        user=args.user,
+        wsl_distro=args.wsl_distro,
+        remote_workspace_root=remote_workspace_root,
+        file_payloads=temp_sync_payloads,
+    )
+    if temp_write_rc != 0:
+        return temp_write_rc
 
     if not args.no_verify and verify_files:
         verify_cmd = [

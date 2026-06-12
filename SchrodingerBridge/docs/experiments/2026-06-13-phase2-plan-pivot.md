@@ -8,14 +8,16 @@ Date: 2026-06-13
   - [612-lookback/action_plan.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/612-lookback/action_plan.md)
   - [612-lookback/analysis.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/612-lookback/analysis.md)
   - [612-phase2/README.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/612-phase2/README.md)
-- new hard rule:
-  - `LPIPS 0.7` is a complete failure
+- governing interpretation:
+  - `content_lpips >= 0.70` is a complete failure
+  - `0.40 <= content_lpips < 0.70` is archival only, not a promotable compromise
 
 ## Immediate Decision
 
 - stop the corrected `rtfix` I2SB lane after the first settled point
-- do not continue any Distinct5 endpoint / I2SB line whose `content_lpips >= 0.70`
-- keep the true-I2SB implementation in code, but remove it from the active remote training lane
+- retire endpoint / I2SB from the active Distinct5 remote training queue
+- keep true I2SB in code as implementation capability and theory evidence only
+- downgrade any older round2 wording like “frontier”, “compromise”, or “mainline” when it refers to `LPIPS >= 0.40`
 
 ## Why
 
@@ -25,8 +27,15 @@ Date: 2026-06-13
   - all-pairs `0.724472 / 0.707551`
 - interpretation:
   - style is strong
-  - structure is completely outside the acceptable band
-  - this is not a “tradeoff” worth extending under the current paper gate
+  - structure is fully outside the acceptable band
+  - this is not a tradeoff worth extending under the current paper gate
+
+## Operational Consequences
+
+1. The single formal 3060 training lane moves to `vel_pattn_enhanced_tok`.
+2. `eval_only_pc_solver` becomes the first reuse-style auxiliary probe, but it cannot preempt the main training lane.
+3. Endpoint / I2SB docs stay as historical implementation logs, not as the live Distinct5 promotion plan.
+4. A first settled checkpoint is now sufficient to kill a lane if LPIPS is already out of band.
 
 ## New Priority Order
 
@@ -45,16 +54,18 @@ Date: 2026-06-13
      - [aaai2027_round1_solver_pc_seed42_b8a2.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_solver_pc_seed42_b8a2.json)
 3. `vel_kman_pattn_kin_sweep`
    - scan `w_kinetic`
+   - only after queue 1 proves the velocity mainline stays inside the structure-safe band
 
 ## Hard Gates
 
-- `LPIPS >= 0.70`:
+- `LPIPS >= 0.70`
   - immediate fail-stop
-- `0.40 <= LPIPS < 0.70`:
+- `0.40 <= LPIPS < 0.70`
   - non-promotable, archival only
+  - not allowed to continue occupying the only formal remote training lane
 - only `LPIPS < 0.40` lines remain eligible for the remote main lane
 
 ## Status
 
-- remote `rtfix` lane has been stopped
-- next launch should come from the Phase 2 queue, not from the endpoint / I2SB queue
+- remote `rtfix` lane has been stopped and archived as a structural failure line
+- current planning authority is the Phase 2 velocity queue, not the endpoint / I2SB queue
