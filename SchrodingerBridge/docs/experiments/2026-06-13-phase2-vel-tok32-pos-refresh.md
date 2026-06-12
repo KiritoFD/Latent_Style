@@ -121,6 +121,8 @@ Date: 2026-06-13
     - `launch_remote_experiment_train.py`
   - task:
     - `exp-phase2_vel_tok32_pos_refresh_seed42_b20a1-train`
+  - launch time:
+    - `2026-06-13 07:49`
   - remote log:
     - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_phase2_vel_tok32_pos_refresh_seed42_b20a1_train.log`
 - first health check:
@@ -132,9 +134,12 @@ Date: 2026-06-13
   - live state:
     - `training_before_first_settled_eval`
   - runtime memory:
-    - `10257 / 12288 MiB`
+    - latest read `9870 / 12288 MiB`
   - live process:
     - `/home/xy/venvs/samam312/bin/python SchrodingerBridge/src/run.py --config /mnt/i/Github/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_pos_refresh_seed42_b20a1.json`
+  - eval state:
+    - no checkpoint has settled yet
+    - first `CLIP-S + LPIPS` authority point is still pending
 - warm-start read:
   - partial resume from:
     - `/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_pattn_enhanced_tok_seed42_b22a1/epoch_0002.pt`
