@@ -20,6 +20,7 @@
     - all-pairs LPIPS `+0.036014`
   - this makes `rtfix epoch_0001` a style-heavy Pareto point rather than a clean replacement for the older low-LPIPS frontier
   - under the new Phase 2 gate, this point is archived as a failure line because `LPIPS 0.7+` is not promotable
+  - all points listed below should now be read as historical diagnostics only; none qualifies as an active mainline point under the current Phase 2 gate
 
 ## Current State
 
