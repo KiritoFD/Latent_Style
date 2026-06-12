@@ -116,8 +116,18 @@ Date: 2026-06-13
     - if this packet keeps plateauing, the cleaner next move is not “even more velocity regularization”
     - it is to move the same topology anchors onto `true I2SB`, where endpoint style capacity is already higher
 - current decision:
-  - keep the lane alive through the next early checkpoints
-  - if `epoch_0002` and `epoch_0003` still fail to reclaim the old style shelf or improve LPIPS materially, close this packet rather than letting it drift into another long flat line
+  - the lane is now closed as `archival only`
+  - reason:
+    - `epoch_0002` improved style to all-pairs `0.706132`
+    - but LPIPS also rose to `0.413976`
+    - that crosses the Phase 2 continuation ceiling `LPIPS < 0.40`
+  - final read for this packet:
+    - `epoch_0001`: all-pairs `0.700842 / 0.390843`
+    - `epoch_0002`: all-pairs `0.706132 / 0.413976`
+  - interpretation:
+    - the topology anchor did buy some style
+    - but not enough to keep the line promotable
+    - so this packet is evidence that velocity + lighter kinetic still leaks structure before reaching the paper target
   - parallel preparation:
     - if this packet stalls, the next cleaner candidate should be a `true I2SB + pure_latent_spatial + topology anchor` retry
     - reason:

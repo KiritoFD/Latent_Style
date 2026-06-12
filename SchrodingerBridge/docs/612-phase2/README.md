@@ -76,11 +76,18 @@
     - 改为 `lighter kinetic + latent topology anchor`
     - 直接约束 endpoint 的低频拓扑和边缘骨架
   - 当前运行态:
-    - `aaai2027_phase2_vel_pattn_topo_anchor_k075_seed42_b22a1`
-    - `epoch_0001` 已 settle
-      - transfer `0.674077 / 0.393103`
-      - all-pairs `0.700842 / 0.390843`
-    - 仍在带内，但还没有超过上一条 velocity 峰值
+    - `aaai2027_phase2_vel_pattn_topo_anchor_k075_seed42_b22a1` 已关闭
+    - closure point:
+      - `epoch_0002`
+      - transfer `0.680803 / 0.417910`
+      - all-pairs `0.706132 / 0.413976`
+    - 解释:
+      - style 有抬升
+      - 但 LPIPS 越过 `0.40`
+      - 因而只能归档，不能继续占 formal lane
+    - 当前 active lane:
+      - `aaai2027_phase2_i2sb_topo_anchor_sigma0p25_seed42_b30a1`
+      - `true I2SB + pure_latent_spatial + topology anchor`
 
 ## 三刀手术
 
