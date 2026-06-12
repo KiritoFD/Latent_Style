@@ -86,8 +86,8 @@
       - 但 LPIPS 越过 `0.40`
       - 因而只能归档，不能继续占 formal lane
     - 当前 active lane:
-      - `aaai2027_phase2_i2sb_pattn_topo_anchor_sigma0p10_warm_vel2_seed42_b22a1`
-      - `true I2SB + pure_latent_spatial + topology anchor + internal proximal rescue`
+      - `aaai2027_phase2_i2sb_pattn_topo_anchor_sigma0p02_warm_vel2_seed42_b22a1`
+      - `true I2SB + pure_latent_spatial + topology anchor + internal proximal rescue + very small sigma`
 
 ## 三刀手术
 
