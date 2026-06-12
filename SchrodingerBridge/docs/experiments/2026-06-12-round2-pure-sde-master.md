@@ -2,6 +2,18 @@
 
 Date: 2026-06-12
 
+## 2026-06-13 Override
+
+- this note remains as the implementation and audit log for the pure-latent + true-I2SB branch
+- it is no longer the active Distinct5 promotion plan
+- governing policy now lives in:
+  - [612-phase2/README.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/612-phase2/README.md)
+  - [2026-06-13-phase2-plan-pivot.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-plan-pivot.md)
+- reinterpretation rule:
+  - any point with `content_lpips >= 0.40` is archival only
+  - any point with `content_lpips >= 0.70` is a complete failure
+- any wording below like `frontier`, `compromise`, `mainline`, or `active lane` should therefore be read as historical context unless the section explicitly says otherwise
+
 Status:
 
 - foundation code implemented
@@ -23,10 +35,14 @@ Status:
 - bridge-runtime contract fix landed locally:
   - model runtime now receives `bridge.bridge_sigma`, `bridge.objective_mode`, and `bridge.loss_type` instead of silently falling back to the model-only subset
   - synthetic proof now shows `solver_i2sb` is stochastic when `bridge_sigma > 0` and deterministic only when `bridge_sigma = 0`
+- true-I2SB training contract tightened locally:
+  - `bridge_noise_schedule` was split from `bridge_noise_mode`
+  - `objective_mode = i2sb_endpoint` now defaults to exact Brownian bridge noise under `bridge_noise_schedule = auto`
+  - the old delayed noise window survives only as an explicit heuristic branch, not as the default true-I2SB path
 - pre-fix `c25clean` evidence is now downgraded:
   - its curve remains useful as a historical style/LPIPS trace
   - but it is no longer the authoritative paper-facing true-I2SB runtime line because it was launched before the bridge-runtime sigma fix
-- active remote lane is now the runtime-fix rerun:
+- runtime-fix rerun is now archived evidence, not the active remote lane:
   - `aaai2027_round2_sde_i2sb_sigma_0p25_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002_rtfix`
   - warm-started again from `tok_pure_latent_spatial epoch_0002`
   - first health check `6821 MiB`
@@ -34,9 +50,6 @@ Status:
     - `7105 MiB`
     - `8617 MiB`
     - `9285 MiB`
-  - current role:
-    - corrected active lane with the first retained checkpoint now settled
-    - no immediate batch bump needed because the lane eventually warmed into the formal `9.x GiB` band
   - `rtfix epoch_0001` settled eval:
     - transfer `0.724444 / 0.712723`
     - all-pairs `0.724472 / 0.707551`
@@ -46,15 +59,15 @@ Status:
       - `generation = 154.83s`
       - `vae_decode = 54.81s`
   - current read:
-    - this is the first paper-facing point from the corrected true-I2SB runtime lane
+    - this is the first corrected-runtime point from the true-I2SB lane
     - it beats legacy `b24c3 epoch_0001` on style:
       - transfer style gap `+0.006983`
       - all-pairs style gap `+0.003011`
     - but LPIPS is materially worse:
       - transfer LPIPS gap `+0.033389`
       - all-pairs LPIPS gap `+0.036014`
-    - so the corrected line currently forms a new style-heavy Pareto point rather than a clean domination
-    - post-eval restore has already resumed into `Epoch 2`
+    - under the Phase 2 gate, `LPIPS 0.7+` is a complete failure
+    - the lane was therefore stopped after `epoch_0001`
 - phase-2 pivot:
   - `612-lookback` and `612-phase2` are now the planning authority for Distinct5 promotion
   - concrete pivot note:
@@ -66,7 +79,7 @@ Status:
     - `velocity + enhanced pure_latent_spatial tokenizer + k-manifold + pattn`
     - then `solver_pc` evaluation-only structure recovery
 
-## Mainline Decision
+## Historical Mainline Decision
 
 - mainline path:
   - `tokenizer_family = pure_latent_spatial`
@@ -109,12 +122,15 @@ Status:
   - it is materially weaker than the audited `sigma=0.25` clean points
   - the line is not promotable
 
-## Active Remote Lane
+## Historical Clean-Lane Read
 
-- active family:
+- historical family:
   - `sde_i2sb_sigma_0p25`
-- active follow-on run:
+- historical follow-on run:
   - `aaai2027_round2_sde_i2sb_sigma_0p25_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002_c25clean`
+- current status:
+  - archived under the 2026-06-13 Phase 2 gate
+  - not eligible for the active Distinct5 remote lane
 - warm-start parent:
   - `tok_pure_latent_spatial` best-all-pairs `epoch_0002`
 - launch contract:
