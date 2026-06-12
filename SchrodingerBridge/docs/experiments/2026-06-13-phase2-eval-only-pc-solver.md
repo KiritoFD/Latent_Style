@@ -37,12 +37,19 @@ Date: 2026-06-13
 
 - source checkpoint:
   - the style-heavy `xpred + pattn` line named by the Phase 2 pivot docs
+  - confirmed remote path exists:
+    - `/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_seed42_b16_e12_continue/epoch_0011.pt`
 - first read target:
   - can `solver_pc` pull LPIPS down materially while keeping enough style to beat the current velocity line on the same transfer/all-pairs surface?
 - remote launch policy:
   - use a single-shot eval-only launcher
   - refuse launch while the formal 3060 lane is still occupied
   - hand off only after the current velocity line closes or is explicitly stopped
+
+## Handoff Command
+
+- when the current formal lane is released, the intended first remote call is:
+  - `python SchrodingerBridge/tools/experiments/launch_remote_phase2_eval_only_pc_solver.py --checkpoint /mnt/i/Github/Latent_Style/SchrodingerBridge/exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_seed42_b16_e12_continue/epoch_0011.pt --force-regen`
 
 ## Local Wiring Proof
 
