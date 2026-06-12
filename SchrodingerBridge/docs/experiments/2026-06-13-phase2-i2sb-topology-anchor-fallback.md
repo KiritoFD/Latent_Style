@@ -101,8 +101,26 @@ Interpretation:
     - runtime guard killed the packet at about `11.11 GiB`
     - still over cap
   - `b22`:
-    - this is the current active formal lane
-    - health read `10419 MiB`
+    - first settled point:
+      - transfer `0.711451 / 0.685837`
+      - all-pairs `0.713362 / 0.684586`
+    - decision:
+      - still `fail_stop`
+
+### C. tiny-sigma pattn-proximal retry
+
+- rationale:
+  - the proximal path is necessary
+  - but `sigma=0.10` still injects too much stochasticity for Distinct5 structure
+- active config:
+  - [phase2_i2sb_pattn_topo_anchor_sigma0p02_warm_vel2_seed42_b22a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_pattn_topo_anchor_sigma0p02_warm_vel2_seed42_b22a1.json)
+- smoke:
+  - [phase2_i2sb_pattn_topo_anchor_sigma0p02_warm_vel2_seed42_b22a1_smoke.json](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/phase2_i2sb_pattn_topo_anchor_sigma0p02_warm_vel2_seed42_b22a1_smoke.json)
+- current remote state:
+  - run name `aaai2027_phase2_i2sb_pattn_topo_anchor_sigma0p02_warm_vel2_seed42_b22a1`
+  - health read `10419 MiB`
+  - current live state `training_before_first_settled_eval`
+  - this is the current active formal phase2 lane
 
 ## Resource Read
 
@@ -157,7 +175,8 @@ Interpretation:
     - over-cap runtime calibration miss
     - lane closed before settle
   - `sigma=0.10 warm_vel2 b22`:
-    - run name `aaai2027_phase2_i2sb_pattn_topo_anchor_sigma0p10_warm_vel2_seed42_b22a1`
-    - health read `10419 MiB`
-    - current live state `training_before_first_settled_eval`
-    - this is the current active formal phase2 lane
+    - first settled point was also `fail_stop`
+    - lane closed
+  - `sigma=0.02 warm_vel2 b22`:
+    - current active formal lane
+    - waiting for first settled checkpoint

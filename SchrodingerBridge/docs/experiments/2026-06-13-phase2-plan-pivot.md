@@ -93,7 +93,12 @@ Date: 2026-06-13
     - exact Brownian endpoint path
     - warm-started from the best in-band velocity parent
     - internal `crossattn_texture` proximal rescue turned back on
-    - current health read `10419 MiB`
+    - first settled point was still `fail_stop`
+  - current active retry after that:
+    - `aaai2027_phase2_i2sb_pattn_topo_anchor_sigma0p02_warm_vel2_seed42_b22a1`
+    - same warm-start and internal proximal rescue
+    - smaller `bridge_sigma = 0.02`
+    - health read `10419 MiB`
 
 ## New Priority Order
 
