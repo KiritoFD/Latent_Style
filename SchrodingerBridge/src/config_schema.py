@@ -370,6 +370,7 @@ class BridgeConfig:
     sinkhorn_stabilize: bool = True
     bridge_sigma: float = 0.05
     bridge_noise_mode: str = "gaussian"
+    bridge_noise_schedule: str = "auto"
     bridge_noise_window_start: float = 0.18
     bridge_noise_window_end: float = 0.82
     bridge_style_noise_kernel: int = 5

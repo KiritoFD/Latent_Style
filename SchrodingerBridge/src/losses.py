@@ -72,6 +72,9 @@ class OTFlowMatchingObjective:
 
         self.bridge_sigma = max(0.0, float(bridge_cfg.bridge_sigma))
         self.bridge_noise_mode = str(bridge_cfg.bridge_noise_mode).strip().lower()
+        self.bridge_noise_schedule = str(getattr(bridge_cfg, "bridge_noise_schedule", "auto")).strip().lower()
+        if self.bridge_noise_schedule not in {"auto", "exact_brownian", "delayed_window"}:
+            self.bridge_noise_schedule = "auto"
         self.bridge_noise_window_start = float(getattr(bridge_cfg, "bridge_noise_window_start", 0.18))
         self.bridge_noise_window_end = float(getattr(bridge_cfg, "bridge_noise_window_end", 0.82))
         self.bridge_style_noise_kernel = max(1, int(bridge_cfg.bridge_style_noise_kernel))
@@ -431,18 +434,28 @@ class OTFlowMatchingObjective:
         if self.bridge_sigma <= 0.0:
             return base, (matched_target if endpoint_mode else velocity)
 
-        # Phase-2: Delayed noise schedule — only inject noise in [t_start, t_end]
-        # Fixes training-inference distribution mismatch at t≈0 and t≈1.
-        t_start = max(0.0, float(getattr(self, "bridge_noise_window_start", 0.18)))
-        t_end = min(1.0, float(getattr(self, "bridge_noise_window_end", 0.82)))
-        t_flat = t.float()
-        noise_gate = torch.zeros_like(t_flat)
-        mid_mask = (t_flat >= t_start) & (t_flat <= t_end)
-        t_mid = t_flat[mid_mask]
-        if t_mid.numel() > 0:
-            t_norm = (t_mid - t_start) / max(1e-6, t_end - t_start)
-            noise_gate[mid_mask] = torch.sin(t_norm * math.pi) ** 2  # smooth window
-        noise_gate = noise_gate.view(-1, 1, 1, 1)
+        noise_schedule = self.bridge_noise_schedule
+        if noise_schedule == "auto":
+            # True I2SB should use the exact Brownian bridge by default.
+            # Keep the old delayed window only for non-I2SB objectives so
+            # existing velocity/heuristic lanes do not silently change.
+            noise_schedule = "exact_brownian" if self.objective_mode == "i2sb_endpoint" else "delayed_window"
+
+        if noise_schedule == "exact_brownian":
+            noise_gate = torch.ones_like(t4)
+        else:
+            # Historical heuristic variant: only inject noise in [t_start, t_end]
+            # to reduce instability near t≈0 and t≈1.
+            t_start = max(0.0, float(getattr(self, "bridge_noise_window_start", 0.18)))
+            t_end = min(1.0, float(getattr(self, "bridge_noise_window_end", 0.82)))
+            t_flat = t.float()
+            gate_flat = torch.zeros_like(t_flat)
+            mid_mask = (t_flat >= t_start) & (t_flat <= t_end)
+            t_mid = t_flat[mid_mask]
+            if t_mid.numel() > 0:
+                t_norm = (t_mid - t_start) / max(1e-6, t_end - t_start)
+                gate_flat[mid_mask] = torch.sin(t_norm * math.pi) ** 2
+            noise_gate = gate_flat.view(-1, 1, 1, 1)
 
         bridge_var = (t * (1.0 - t)).clamp_min(self.eps)
         bridge_std = torch.sqrt(bridge_var).view(-1, 1, 1, 1)
@@ -1464,6 +1477,10 @@ class OTFlowMatchingObjective:
             "ot_cost": ot_cost.detach(),
             "plan_entropy": plan_entropy.detach(),
             "bridge_sigma": content.new_tensor(self.bridge_sigma, dtype=torch.float32),
+            "bridge_noise_schedule_exact": content.new_tensor(
+                1.0 if (self.bridge_noise_schedule == "exact_brownian" or (self.bridge_noise_schedule == "auto" and self.objective_mode == "i2sb_endpoint")) else 0.0,
+                dtype=torch.float32,
+            ),
             "t_mean": t.mean().detach(),
             "velocity_abs": target_velocity.abs().mean().detach(),
             "endpoint_abs": endpoint_abs.detach(),
