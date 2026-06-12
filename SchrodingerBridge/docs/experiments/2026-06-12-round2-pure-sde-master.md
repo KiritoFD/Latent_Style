@@ -1,0 +1,834 @@
+# Round2 Pure SDE Master
+
+Date: 2026-06-12
+
+Status:
+
+- foundation code implemented
+- round-2 sweep configs materialized
+- local smoke revalidated after the latent-tokenizer correction
+- training objective corrected from inherited `omf` to explicit `i2sb_endpoint`
+- pure I2SB config contract now also uses explicit `bridge.loss_type = mse`
+- generated round-2 configs synthetic-smoke status: `all_ok`
+- pre-correction remote curves archived as runtime/tokenizer smoke only
+- DINO removed from the paper-facing mainline
+- corrected tokenizer calibration produced a first settled `c9` eval point, then exploded above the VRAM cap, and has now been relaunched as safer `c10`
+- wave-2 `solver_i2sb sigma=0.5` has now produced the first true solver retained-checkpoint evidence that survived `epoch_0001` remote eval and resumed back into training as `b28c4`
+- heuristic recovery follow-on `h18fix` has now been frozen as an ablation-only reference after `epoch_0001`
+- active remote lane is now the clean `sigma_0p25` follow-on `... c25clean`
+- clean mainline `c26main` has now produced its first retained point and failed on the `epoch_1 -> eval -> epoch_2` resume path
+- clean `sigma_0p25 c26clean` has now produced the strongest audited true-clean retained point so far, then failed after eval+resume by a narrow VRAM margin
+- clean `sigma_0p25 c25clean` has now traded off some first-point quality for better resume survival, settled through `epoch_0011`, and is currently alive in `Epoch 12`
+- round-2 segmented remote train/eval fallback is now implemented for process-restart execution if the plain lane later repeats the same failure mode
+- bridge-runtime contract fix landed locally:
+  - model runtime now receives `bridge.bridge_sigma`, `bridge.objective_mode`, and `bridge.loss_type` instead of silently falling back to the model-only subset
+  - synthetic proof now shows `solver_i2sb` is stochastic when `bridge_sigma > 0` and deterministic only when `bridge_sigma = 0`
+- pre-fix `c25clean` evidence is now downgraded:
+  - its curve remains useful as a historical style/LPIPS trace
+  - but it is no longer the authoritative paper-facing true-I2SB runtime line because it was launched before the bridge-runtime sigma fix
+- active remote lane is now the runtime-fix rerun:
+  - `aaai2027_round2_sde_i2sb_sigma_0p25_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002_rtfix`
+  - warm-started again from `tok_pure_latent_spatial epoch_0002`
+  - first health check `6821 MiB`
+  - later live samples:
+    - `7105 MiB`
+    - `8617 MiB`
+    - `9285 MiB`
+  - current role:
+    - corrected active lane with the first retained checkpoint now settled
+    - no immediate batch bump needed because the lane eventually warmed into the formal `9.x GiB` band
+  - `rtfix epoch_0001` settled eval:
+    - transfer `0.724444 / 0.712723`
+    - all-pairs `0.724472 / 0.707551`
+    - eval timing:
+      - `wall_total = 259.72s`
+      - `eval_total = 36.06s`
+      - `generation = 154.83s`
+      - `vae_decode = 54.81s`
+  - current read:
+    - this is the first paper-facing point from the corrected true-I2SB runtime lane
+    - it beats legacy `b24c3 epoch_0001` on style:
+      - transfer style gap `+0.006983`
+      - all-pairs style gap `+0.003011`
+    - but LPIPS is materially worse:
+      - transfer LPIPS gap `+0.033389`
+      - all-pairs LPIPS gap `+0.036014`
+    - so the corrected line currently forms a new style-heavy Pareto point rather than a clean domination
+    - post-eval restore has already resumed into `Epoch 2`
+- phase-2 pivot:
+  - `612-lookback` and `612-phase2` are now the planning authority for Distinct5 promotion
+  - concrete pivot note:
+    - [2026-06-13-phase2-plan-pivot.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-plan-pivot.md)
+  - `LPIPS >= 0.70` is treated as immediate failure, not as a tolerable style-heavy tradeoff
+  - the corrected `rtfix` line has therefore been stopped after `epoch_0001`
+  - next remote training priority is no longer endpoint / I2SB
+  - next remote training priority is:
+    - `velocity + enhanced pure_latent_spatial tokenizer + k-manifold + pattn`
+    - then `solver_pc` evaluation-only structure recovery
+
+## Mainline Decision
+
+- mainline path:
+  - `tokenizer_family = pure_latent_spatial`
+  - `transport_prediction_mode = endpoint`
+  - `solver_family = solver_i2sb`
+  - `bridge.objective_mode = i2sb_endpoint`
+  - `semantic_supervision_family = legacy_terminal_swd`
+- DINO policy:
+  - archived comparison only
+  - not eligible for the active lane unless it shows an overwhelming board advantage
+- active-lane priority:
+  - phase-2 structure-first queue first
+  - endpoint / I2SB kept as implemented capability, not as the active Distinct5 remote lane
+  - heuristic recovery only as a scoped ablation
+  - post-fix runtime evidence remains valid as theory/implementation proof, but not as the current paper-facing promotion path
+
+## Clean Mainline Read
+
+- family:
+  - `sde_optimal_clean`
+- follow-on:
+  - `aaai2027_round2_sde_optimal_clean_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002_c26main`
+- `epoch_0001` settled eval:
+  - transfer `0.681721 / 0.741877`
+  - all-pairs `0.685036 / 0.735789`
+  - eval timing:
+    - `wall_total = 198.86s`
+    - `eval_total = 31.91s`
+    - `generation = 101.09s`
+    - `vae_decode = 54.47s`
+- training read before eval:
+  - epoch summary `loss = 0.4212`
+  - `curv = 0.0000`
+  - peak memory `5.67 / 7.59 GiB`
+- post-eval failure:
+  - resumed into `Epoch 2`
+  - later hit `RUNTIME_GUARD used=11048 MiB cap=11000 MiB`
+- interpretation:
+  - this is the first true clean `sigma=0.5` retained point
+  - it is materially weaker than the audited `sigma=0.25` clean points
+  - the line is not promotable
+
+## Active Remote Lane
+
+- active family:
+  - `sde_i2sb_sigma_0p25`
+- active follow-on run:
+  - `aaai2027_round2_sde_i2sb_sigma_0p25_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002_c25clean`
+- warm-start parent:
+  - `tok_pure_latent_spatial` best-all-pairs `epoch_0002`
+- launch contract:
+  - `style_tokenizer = null`
+  - `tokenizer_family = pure_latent_spatial`
+  - `style_spatial_mode = disabled`
+  - `solver_family = solver_i2sb`
+  - `bridge.objective_mode = i2sb_endpoint`
+  - `bridge.loss_type = mse`
+  - `use_diffeomorphic_stroke = false`
+  - `style_injection_mode = none`
+- early health:
+  - `c25clean 30s` check: `7324 MiB`
+  - `c25clean` later samples: about `8.1-9.9 GiB`
+- current interpretation:
+  - `c26clean` established the best true-clean point but still failed on resume at `11048 MiB`
+  - `c25clean` is currently the active survival-focused retry
+  - `c25clean epoch_0006` remains the best active transfer-style point inside the surviving lane
+  - `c25clean epoch_0010` is now the strongest active all-pairs / LPIPS-side compromise point
+  - `c25clean epoch_0007`, `epoch_0008`, and `epoch_0009` now fill in intermediate Pareto compromises between the `epoch_0010` LPIPS side and the `epoch_0006` transfer-style side
+  - `epoch_0011` settled as a regression versus both active frontier ends, so the clean frontier is unchanged after the newest eval
+  - even with that broader clean frontier, no active clean point has yet beaten legacy `b24c3 epoch_0001`
+  - latest remote tail check shows the line restored cleanly after `epoch_0011` and is now alive in `Epoch 12`
+
+## Clean `Sigma=0.25` Read
+
+- family:
+  - `sde_i2sb_sigma_0p25`
+- strongest true-clean point so far:
+  - `c26clean epoch_0001`
+  - transfer `0.707839 / 0.700847`
+  - all-pairs `0.710743 / 0.694716`
+  - eval timing:
+    - `wall_total = 196.97s`
+    - `eval_total = 31.36s`
+    - `generation = 99.38s`
+    - `vae_decode = 54.45s`
+- comparison:
+  - dominates the earlier clean `b26c2 epoch_0001`
+  - dominates `b28c1 epoch_0001` on `all_pairs`
+  - still loses to legacy-snapshot `b24c3 epoch_0001`
+- post-eval failure:
+  - resumed into `Epoch 2`
+  - later hit `RUNTIME_GUARD used=11048 MiB cap=11000 MiB`
+- interpretation:
+  - this is the current clean-family frontier
+  - it is not yet promotable over the best legacy frontier
+  - the optimization target is now resume survival, not first-point quality
+
+## Active `C25` Read
+
+- family:
+  - `sde_i2sb_sigma_0p25`
+- active follow-on:
+  - `aaai2027_round2_sde_i2sb_sigma_0p25_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002_c25clean`
+- `epoch_0001` settled eval:
+  - transfer `0.695893 / 0.692449`
+  - all-pairs `0.698727 / 0.687063`
+  - eval timing:
+    - `wall_total = 213.36s`
+    - `eval_total = 35.35s`
+    - `generation = 107.55s`
+    - `vae_decode = 58.12s`
+- trade-off:
+  - weaker than `c26clean` on style
+  - slightly stronger than `c26clean` on LPIPS
+- survival read:
+  - the lane survived `epoch_1 -> eval -> epoch_2`
+  - `epoch_0002` has now also settled
+  - sampled runtime is now repeatedly staying inside about `8.4-10.0 GiB`
+  - this is the first clean `sigma_0p25` retry clearly surviving far past the previous resume-failure window
+- `epoch_0002` settled eval:
+  - transfer `0.695618 / 0.713485`
+  - all-pairs `0.697447 / 0.707836`
+- `epoch_0003` settled eval:
+  - transfer `0.702414 / 0.688288`
+  - all-pairs `0.706047 / 0.681563`
+- `epoch_0004` settled eval:
+  - transfer `0.685473 / 0.691670`
+  - all-pairs `0.689208 / 0.684116`
+- `epoch_0005` settled eval:
+  - transfer `0.687858 / 0.677851`
+  - all-pairs `0.691396 / 0.672367`
+- `epoch_0006` settled eval:
+  - transfer `0.706113 / 0.703783`
+  - all-pairs `0.708914 / 0.695658`
+- `epoch_0007` settled eval:
+  - transfer `0.701821 / 0.683235`
+  - all-pairs `0.704904 / 0.675067`
+- `epoch_0008` settled eval:
+  - transfer `0.702774 / 0.696028`
+  - all-pairs `0.705178 / 0.687747`
+- `epoch_0009` settled eval:
+  - transfer `0.699348 / 0.671750`
+  - all-pairs `0.702985 / 0.664514`
+- `epoch_0010` settled eval:
+  - transfer `0.704837 / 0.642300`
+  - all-pairs `0.709871 / 0.634044`
+- `epoch_0011` settled eval:
+  - transfer `0.700018 / 0.673689`
+  - all-pairs `0.703090 / 0.665864`
+- trend:
+  - `epoch_0002` regresses versus `epoch_0001`
+  - `epoch_0003` reverses that regression and becomes the new best active clean point
+  - `epoch_0004` regresses again versus `epoch_0003`
+  - `epoch_0005` does not recover style, but it does create a new lower-LPIPS Pareto compromise point
+  - `epoch_0006` restores the style side strongly enough to become the best active-lane style / all-pairs point, but with a clear LPIPS regression versus `epoch_0003` and `epoch_0005`
+  - `epoch_0007` gives back some style versus `epoch_0006`, but regains enough LPIPS to become another Pareto point instead of a flat regression
+  - `epoch_0008` shifts back toward the style side from `epoch_0007`, improves style slightly over `epoch_0003`, and remains a fresh Pareto point without replacing the `epoch_0006` peak
+  - `epoch_0009` gives back some style again, but materially improves LPIPS enough to dominate the old `epoch_0005` LPIPS endpoint and become the new low-LPIPS extreme of the active frontier
+  - `epoch_0010` restores much of the style lost at `epoch_0009` while pushing LPIPS much lower again, so it becomes the strongest all-pairs compromise point seen so far on the active line
+  - `epoch_0011` then gives back both style and LPIPS versus `epoch_0010`, so it does not add a new Pareto point
+- interpretation:
+  - `c25clean` is now the best survival candidate
+  - `c26clean` remains the best first-point clean candidate
+  - `c25clean epoch_0006` is now the current best active transfer-style checkpoint
+  - `c25clean epoch_0010` is the current best active all-pairs / LPIPS-side compromise checkpoint
+  - `c25clean epoch_0007`, `epoch_0008`, and `epoch_0009` now populate the middle of the active clean frontier
+  - gap-to-legacy read versus `b24c3 epoch_0001`:
+    - `c25clean epoch_0011` latest raw point
+      - transfer style gap `-0.017443`
+      - transfer LPIPS gap `-0.005645`
+      - all-pairs style gap `-0.018371`
+      - all-pairs LPIPS gap `-0.005673`
+    - `c25clean epoch_0006`
+      - transfer style gap `-0.011348`
+      - transfer LPIPS gap `+0.024449`
+      - all-pairs style gap `-0.012547`
+      - all-pairs LPIPS gap `+0.024121`
+    - `c25clean epoch_0010`
+      - transfer style gap `-0.012624`
+      - transfer LPIPS gap `-0.037034`
+      - all-pairs style gap `-0.011590`
+      - all-pairs LPIPS gap `-0.037493`
+  - if `c25clean` later fails in the same pattern, the next switch should be to segmented process-restart execution instead of another manual batch drop
+  - `c26clean epoch_0001` is no longer a single dominating clean-family point versus the newest active compromises; the clean frontier is now a broader Pareto band spanning `c26clean epoch_0001`, `c25clean epoch_0006`, `epoch_0007`, `epoch_0008`, `epoch_0009`, and `epoch_0010`
+  - but none of those clean Pareto points has yet displaced legacy `b24c3 epoch_0001` from the overall `sigma_0p25` reference position
+  - the line has already survived eleven retained `train -> eval -> resume` cycles and is currently live in `Epoch 12`
+  - current live tail:
+    - `Epoch 12` is already underway after a clean post-eval restore
+
+## Objective Correction
+
+- issue found on `2026-06-12`:
+  - generated round-2 configs were still inheriting `bridge.objective_mode = omf` from the parent line
+  - that meant training stayed on the old fixed `t=1` endpoint-map objective instead of sampled Brownian-bridge regression
+  - it also meant the eval inference wrapper would route to `endpoint_map` instead of the integrated `solver_i2sb` path
+- fix applied:
+  - round-2 registry now hard-sets `bridge.objective_mode = i2sb_endpoint`
+  - round-2 registry now hard-sets `bridge.loss_type = mse` for the pure I2SB line
+  - round-2 configs now explicitly zero inherited kinetic / target-teacher / structure penalties on the clean line
+  - the legacy tokenizer baseline now disables spatial priors so it is a real global-only tokenizer control
+- validation after the fix:
+  - synthetic smokes for the foundation config plus all round-2 families pass
+  - corrected mainline smoke reports `objective_mode = i2sb_endpoint`
+  - corrected mainline smoke reports `t_mean = 0.5020`, which confirms sampled bridge states rather than the old `t=1` shortcut
+  - refreshed targeted smokes prove the active pure-latent path does not require runtime DINO sidecars:
+    - `tok_pure_latent_spatial`: `dino_runtime_required = false`
+    - `sde_optimal_clean`: `dino_runtime_required = false`
+  - later contract hardening also removed legacy spatial-prior instantiation from the pure-latent mainline while preserving checkpoint compatibility:
+    - pure-latent models now instantiate no `style_spatial_*` parameters
+    - legacy `style_spatial_*` keys are pruned during resume/inference load for `tokenizer_family = pure_latent_spatial`
+    - synthetic strict-load compatibility checks pass after pruning
+      - direct `SBTrainer._maybe_resume` verification also passes with `resume_model_strict = true` on a checkpoint that still contains legacy `style_spatial_*` keys
+    - pure-latent misconfiguration guardrails now hard-fail if someone tries to reintroduce the old route:
+      - `tokenizer_family = pure_latent_spatial` + `semantic_supervision_family = dino_masked_swd`
+      - `tokenizer_family = pure_latent_spatial` + `dino_masked_swd_weight > 0`
+      - `tokenizer_family = pure_latent_spatial` + `style_spatial_mode != disabled`
+      - `tokenizer_family = pure_latent_spatial` + `tokenizer_content_adaptive = true`
+    - these guardrails now trigger at experiment-config load time as well, not only after the training/inference runtime has already started
+    - round-2 launch surfaces now also validate configs locally before remote launch:
+      - [launch_remote_round2_family_train.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_round2_family_train.py)
+      - [launch_remote_round2_followon_train.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_round2_followon_train.py)
+      - [run_remote_round2_family_segmented.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_remote_round2_family_segmented.py)
+    - materialized `round2_pure_sde` configs and follow-on launch packets now set:
+      - `training.resume_model_strict = true`
+      - `training.resume_ignore_prefixes = []`
+      - `training.resume_include_prefixes = []`
+    - repository check:
+      - `configs/aaai2027/round2_pure_sde/**/*.json` no longer contains `\"resume_model_strict\": false`
+    - config-tree audit:
+      - [contract_audit.json](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round2_pure_sde/contract_audit.json)
+      - `row_count = 40`
+      - `failure_count = 0`
+      - `pure_latent_contract_count = 39`
+      - `true_i2sb_contract_count = 38`
+      - `pure_round2_mainline_count = 17`
+    - manifest now also carries reference-gap deltas when a family gap report exists:
+      - `active_gap_reference_name`
+      - `active_latest_transfer_style_gap`
+      - `active_latest_transfer_lpips_gap`
+      - `active_latest_all_pairs_style_gap`
+      - `active_latest_all_pairs_lpips_gap`
+- decision:
+  - all earlier round-2 remote curves gathered under inherited `omf` are downgraded to pre-correction runtime smoke
+  - they are not valid paper-facing evidence for the true I2SB training objective
+
+## Evidence Pack
+
+- design:
+  - [2026-06-12-pure-latent-i2sb-design.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/plans/2026-06-12-pure-latent-i2sb-design.md)
+- smoke:
+  - [2026-06-12-pure-latent-i2sb-foundation-smoke.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-12-pure-latent-i2sb-foundation-smoke.md)
+- sweep smoke summary:
+  - [round2_pure_sde_smoke_summary.json](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round2_pure_sde_smokes/round2_pure_sde_smoke_summary.json)
+- active family gap report:
+  - [gap_vs_b24c3_epoch_0001.json](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round2_pure_sde/sde_i2sb_sigma_0p25/gap_vs_b24c3_epoch_0001.json)
+- first remote curve artifacts:
+  - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round2_sde_i2sb_sigma_0p5_seed42_b8a2/full_eval/clip_lpips_curve.csv`
+  - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round2_sde_i2sb_sigma_0p5_seed42_b8a2/full_eval/curve_summary.json`
+  - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round2_sde_i2sb_sigma_0p5_seed42_b8a2/full_eval/round2_convergence.json`
+- remote curve watcher:
+  - [watch_round2_eval_curve.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_round2_eval_curve.py)
+- post-eval auto-refresh:
+  - round-2 retained checkpoints now refresh:
+    - `curve_summary.json`
+    - `round2_convergence.json`
+    - `round2_family_manifest.csv`
+    - `gap_vs_b24c3_epoch_0001.json`
+  - entrypoint:
+    - [run.py](/G:/GitHub/Latent_Style/SchrodingerBridge/src/run.py)
+- round-2 registry:
+  - [round2_registry.py](/G:/GitHub/Latent_Style/SchrodingerBridge/src/round2_registry.py)
+- round-2 manifest:
+  - [round2_family_manifest.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round2_pure_sde/round2_family_manifest.csv)
+- config generator:
+  - [prepare_round2_pure_sde_configs.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/prepare_round2_pure_sde_configs.py)
+- solver follow-on generator:
+  - [prepare_round2_followon_configs.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/prepare_round2_followon_configs.py)
+
+## Current Validation Snapshot
+
+- smoke status:
+  - `ok`
+- corrected foundation smoke:
+  - `objective_mode = i2sb_endpoint`
+  - `flow = 2.6355`
+  - `terminal_swd = 0.0386`
+  - `t_mean = 0.5020`
+- direct/integrated tensor shape:
+  - `[1, 4, 32, 32]`
+- gradient routing:
+  - pure mainline first gradient parameter:
+    - `structured_style_tokenizer.universal_keys`
+  - pure mainline first gradient abs-mean:
+    - `0.0861`
+  - legacy tokenizer control first gradient parameter:
+    - `style_tokenizer.concept_atoms`
+- corrected synthetic sweep:
+  - `10 / 10` configs pass build + forward + backward smoke
+  - all corrected configs report `objective_mode = i2sb_endpoint`
+- targeted no-DINO smoke refresh:
+  - `tok_pure_latent_spatial`
+    - `solver_family = euler_legacy`
+    - `dino_runtime_required = false`
+    - first gradient parameter = `structured_style_tokenizer.universal_keys`
+  - `sde_optimal_clean`
+    - `solver_family = solver_i2sb`
+    - `dino_runtime_required = false`
+    - first gradient parameter = `structured_style_tokenizer.universal_keys`
+- refresh in this pass:
+  - `py_compile` passed for the active pure-latent / I2SB codepath and round-2 launch-manifest scripts
+  - pure-latent runtime decoupling:
+    - active path now uses a zero-style placeholder instead of constructing a live legacy factorized tokenizer branch
+    - legacy tokenizer content-adaptive routing is disabled on the pure-latent mainline
+    - pure-latent id-only inference now hard-fails if it would otherwise fall back to `style_spatial_id_16`
+    - pure-latent configs now also mark `style_spatial_mode = disabled` explicitly instead of inheriting legacy `vq_content_guided` semantics
+  - clean round-2 config contract is now explicit at the file level:
+    - `style_tokenizer = null`
+    - `use_diffeomorphic_stroke = false`
+    - `style_injection_mode = none`
+    - `record_base_endpoint_metrics = false`
+  - `tok_pure_latent_spatial` smoke:
+    - `objective_mode = i2sb_endpoint`
+    - `first_grad_abs_mean = 0.1450`
+    - `t_mean = 0.3453`
+  - `sde_optimal_clean` smoke:
+    - `objective_mode = i2sb_endpoint`
+    - `solver_family = solver_i2sb`
+    - `first_grad_abs_mean = 0.1266`
+    - `t_mean = 0.3453`
+  - clean follow-on launch packets re-materialized from the tokenizer winner:
+    - [aaai2027_round2_sde_i2sb_sigma_0p25_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round2_pure_sde/followon/tok_pure_latent_spatial/aaai2027_round2_sde_i2sb_sigma_0p25_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002.json)
+    - [aaai2027_round2_sde_optimal_clean_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round2_pure_sde/followon/tok_pure_latent_spatial/aaai2027_round2_sde_optimal_clean_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002.json)
+  - clean follow-on smoke:
+    - `sigma_0p25` follow-on:
+      - `dino_runtime_required = false`
+      - `first_grad_abs_mean = 0.1290`
+    - `sde_optimal_clean` follow-on:
+      - `dino_runtime_required = false`
+      - `first_grad_abs_mean = 0.1155`
+- debug-contract upgrade:
+  - `objective_mode = i2sb_endpoint` now supports `compute_debug`
+  - sampled-bridge debug state now exposes:
+    - `matched_target`
+    - `x_t`
+    - `t`
+    - `target_velocity`
+    - `pred_velocity`
+    - `pred_endpoint`
+- follow-on prep:
+  - wave-2 solver configs have been materialized as warm-start follow-ons from the current tokenizer reference checkpoint:
+    - [wave2_sde_noise_from_tok_pure_latent_spatial_epoch_0001.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round2_pure_sde/followon/tok_pure_latent_spatial/wave2_sde_noise_from_tok_pure_latent_spatial_epoch_0001.md)
+    - [wave2_sde_noise_from_tok_pure_latent_spatial_epoch_0002.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round2_pure_sde/followon/tok_pure_latent_spatial/wave2_sde_noise_from_tok_pure_latent_spatial_epoch_0002.md)
+    - [wave2_sde_noise_from_tok_pure_latent_spatial_epoch_0003.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round2_pure_sde/followon/tok_pure_latent_spatial/wave2_sde_noise_from_tok_pure_latent_spatial_epoch_0003.md)
+  - generated launch-ready configs:
+    - `sde_i2sb_sigma_0p25_from_tok_pure_latent_spatial_epoch_0001`
+    - `sde_i2sb_sigma_0p5_from_tok_pure_latent_spatial_epoch_0001`
+    - `sde_i2sb_sigma_1p0_from_tok_pure_latent_spatial_epoch_0001`
+  - generator now supports winner checkpoint selection by manifest mode:
+    - `latest`
+    - `best_transfer`
+    - `best_all_pairs`
+- wave-2 solver calibration update:
+  - `sigma=0.5` first reference lane:
+    - run:
+      - `aaai2027_round2_sde_i2sb_sigma_0p5_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002_b28c4`
+    - warm-start parent:
+      - `tok_pure_latent_spatial c11 epoch_0002`
+      - selected by `best_all_pairs`
+    - launch health:
+      - `7644 MiB`
+    - first settled solver eval:
+      - `epoch_0001`
+      - transfer `0.689155 / 0.751470`
+      - all-pairs `0.691801 / 0.744453`
+    - result:
+      - this is the first wave-2 solver reference point
+      - the point is weaker than the tokenizer handoff frontier
+      - `b28c4` is no longer the active remote lane
+  - sigma-0.25 calibration history:
+    - `b28c1`:
+      - launch time:
+        - `2026-06-12 14:10:37 +08:00`
+      - batch:
+        - `28`
+      - first settled eval:
+        - completed at `2026-06-12 14:31:00 +08:00`
+        - transfer `0.708330 / 0.726471`
+        - all-pairs `0.709705 / 0.719245`
+      - post-eval failure:
+        - `2026-06-12 14:36:23 +08:00`
+        - `used = 11540 MiB`
+        - `cap = 11000 MiB`
+    - `b26c2`:
+      - batch:
+        - `26`
+      - health check:
+        - `7263 MiB`
+      - first settled eval:
+        - completed at `2026-06-12 14:57:42 +08:00`
+        - transfer `0.706973 / 0.707056`
+        - all-pairs `0.709407 / 0.700522`
+      - within-family read:
+        - `b28c1 epoch_0001` is the style-heavier point
+        - `b26c2 epoch_0001` is the structure-friendlier point
+        - `b26c2` is the first `sigma_0p25` lane that completed `epoch_0001 eval + resume` while remaining under the hard cap during the immediate resume window
+      - later failure:
+        - `2026-06-12 15:00:30 +08:00`
+        - `used = 11193 MiB`
+        - `cap = 11000 MiB`
+  - current active lane:
+    - legacy-snapshot lane closure:
+      - run:
+        - `aaai2027_round2_sde_i2sb_sigma_0p25_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002_b24c3`
+      - `epoch_0001` remained the best point:
+        - transfer `0.717461 / 0.679334`
+        - all-pairs `0.721461 / 0.671537`
+      - `epoch_0002` regressed materially:
+        - transfer `0.705420 / 0.728524`
+        - all-pairs `0.707059 / 0.721498`
+      - decision:
+        - stop `b24c3` after `epoch_0002`
+        - treat it as legacy-snapshot calibration evidence only
+        - do not use it as the final clean-mainline solver proof
+    - clean rerun progression:
+      - `clean24`:
+        - launch time:
+          - `2026-06-12 16:05:32 +08:00`
+        - batch:
+          - `24`
+        - health:
+          - `6827 MiB`
+          - later sample `6763 MiB`
+        - decision:
+          - stop before first retained checkpoint
+          - reason:
+            - true clean packet verified
+            - still too far below the preferred formal band
+      - `clean32`:
+        - run:
+          - `aaai2027_round2_sde_i2sb_sigma_0p25_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002_clean32`
+      - active config:
+        - `style_tokenizer = null`
+        - `tokenizer_content_adaptive = false`
+        - `use_diffeomorphic_stroke = false`
+        - `style_injection_mode = none`
+        - launch time:
+          - `2026-06-12 16:12:13 +08:00`
+        - batch:
+          - `32`
+        - launch health:
+          - `8724 MiB`
+        - later runtime evidence:
+          - sampled `9316 MiB`, briefly inside the preferred formal band
+          - later `RUNTIME_UNDER_BAND_WARN used=8391 MiB`
+          - then `RUNTIME_GUARD used=11031 MiB cap=11000 MiB`
+        - decision:
+          - stop `clean32` before `epoch_0001`
+          - treat it as the upper calibration bracket for the true clean packet
+      - `clean30`:
+        - first settled eval:
+          - `epoch_0001`
+          - transfer `0.713563 / 0.682533`
+          - all-pairs `0.717004 / 0.674513`
+          - eval timing:
+            - `wall_total = 211.97s`
+            - `eval_total = 33.76s`
+            - `generation = 107.07s`
+            - `vae_decode = 58.71s`
+        - legacy comparison:
+          - weaker than legacy `b24c3 epoch_0001` on both `transfer` and `all_pairs`
+        - post-eval failure:
+          - `2026-06-12 16:43:36 +08:00`
+          - `RUNTIME_GUARD used=11473 MiB cap=11000 MiB`
+        - decision:
+          - preserve `clean30 epoch_0001` as the first true clean solver point
+          - do not promote it
+          - use it as the middle calibration anchor between `clean24` and `clean32`
+      - `clean28`:
+        - run:
+          - `aaai2027_round2_sde_i2sb_sigma_0p25_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002_clean28`
+        - launch time:
+          - `2026-06-12 16:48:13 +08:00`
+        - batch:
+          - `28`
+        - launch health:
+          - `7422 MiB`
+        - first settled eval:
+          - `epoch_0001`
+          - transfer `0.710131 / 0.720336`
+          - all-pairs `0.711888 / 0.712437`
+        - post-eval failure:
+          - `2026-06-12 17:13:26 +08:00`
+          - `RUNTIME_GUARD used=11029 MiB cap=11000 MiB`
+        - interpretation:
+          - weaker than both `clean30 epoch_0001` and legacy `b24c3 epoch_0001`
+      - `clean27`:
+        - no retained checkpoint
+        - failed during `epoch_1`
+      - wave-2 clean-family read:
+        - the true-clean `sigma_0p25` line is now fully audited through `clean24/27/28/30/32`
+        - no clean batch has yet beaten legacy `b24c3 epoch_0001`
+        - no clean batch from `27` to `32` has survived the `11.0 GiB` hard cap after warm-up or eval-resume
+    - wave-3 heuristic continuation:
+      - `h20`:
+        - run:
+          - `aaai2027_round2_sde_optimal_with_heuristics_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002_h20`
+        - launch time:
+          - `2026-06-12 17:27:50 +08:00`
+        - batch:
+          - `20`
+        - health:
+          - first health check `10677 MiB`
+          - later sampled GPU `9631 MiB`
+        - read:
+          - the non-DINO heuristic branch immediately recovered the formal memory band
+          - but still hit `RUNTIME_GUARD used=11107 MiB cap=11000 MiB` before the first retained checkpoint
+      - `h18` now active:
+        - run:
+          - `aaai2027_round2_sde_optimal_with_heuristics_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002_h18`
+      - contract:
+        - still `style_tokenizer = null`
+        - still `tokenizer_family = pure_latent_spatial`
+        - still `solver_family = solver_i2sb`
+        - DINO remains retired
+      - difference vs clean line:
+        - `use_diffeomorphic_stroke = true`
+        - `style_injection_mode = body_decoder`
+      - launch time:
+        - `2026-06-12 17:36:55 +08:00`
+      - batch:
+        - `18`
+      - health:
+        - first health check `9101 MiB`
+        - later sampled GPU `9631 MiB`
+      - first settled eval:
+        - `epoch_0001`
+        - transfer `0.707659 / 0.665060`
+        - all-pairs `0.713311 / 0.664216`
+        - eval timing:
+          - `wall_total = 224.61s`
+          - `eval_total = 33.57s`
+          - `generation = 120.38s`
+          - `vae_decode = 58.31s`
+      - comparison:
+        - style is still below the best clean and legacy first points
+        - LPIPS is the strongest point so far among all measured `sigma_0p25` / heuristic recovery lines
+      - interpretation:
+        - this is still the first non-DINO heuristic recovery branch on top of the true tokenizer + true I2SB stack
+        - `h18` is the first branch to preserve the true tokenizer + true I2SB contract while improving the structure side materially
+        - it is still alive in `Epoch 2`, with sampled GPU holding near `10590 MiB`
+  - contract hardening after the correction:
+    - active training and inference loaders now reject:
+      - `solver_i2sb + objective_mode=omf`
+      - `solver_i2sb + transport_prediction_mode=velocity`
+    - purpose:
+      - prevent false “I2SB” launches that silently route back to the old endpoint-map path
+- pre-correction remote observations kept for runtime context only:
+  - family: `sde_i2sb_sigma_0p5`
+  - date: `2026-06-12`
+  - remote dataset root: `/mnt/i/wikiarts_5_full_notest_latents_ema/train`
+  - first healthy VRAM read: `9279 MiB`
+  - first settled eval:
+    - `epoch_0001`
+    - `all_pairs clip_style = 0.725451`
+    - `all_pairs content_lpips = 0.618360`
+    - `transfer clip_style = 0.716829`
+    - `transfer content_lpips = 0.625029`
+  - second settled eval:
+    - `epoch_0002`
+    - `all_pairs clip_style = 0.731142`
+    - `all_pairs content_lpips = 0.661747`
+    - `transfer clip_style = 0.725987`
+    - `transfer content_lpips = 0.668517`
+  - third settled eval:
+    - `epoch_0003`
+    - `all_pairs clip_style = 0.725165`
+    - `all_pairs content_lpips = 0.630066`
+    - `transfer clip_style = 0.716204`
+    - `transfer content_lpips = 0.636642`
+  - fourth settled eval:
+    - `epoch_0004`
+    - `all_pairs clip_style = 0.730245`
+    - `all_pairs content_lpips = 0.630827`
+    - `transfer clip_style = 0.721974`
+    - `transfer content_lpips = 0.637776`
+  - fifth settled eval:
+    - `epoch_0005`
+    - `all_pairs clip_style = 0.727828`
+    - `all_pairs content_lpips = 0.652942`
+    - `transfer clip_style = 0.721480`
+    - `transfer content_lpips = 0.660889`
+  - sixth settled eval:
+    - `epoch_0006`
+    - `all_pairs clip_style = 0.732097`
+    - `all_pairs content_lpips = 0.634470`
+    - `transfer clip_style = 0.724322`
+    - `transfer content_lpips = 0.642347`
+  - early direction:
+    - `epoch_0002` is still the style peak
+    - `epoch_0003` is not a new Pareto point
+    - `epoch_0004` is a new Pareto compromise point
+    - `epoch_0005` fell back off the Pareto front
+    - `epoch_0006` restored the front and is the current best all-pairs style point
+    - the line currently looks non-monotone, compromise-capable, and still improving on at least one axis
+  - convergence snapshot:
+    - `pareto_epochs = [epoch_0001, epoch_0002, epoch_0004, epoch_0006]`
+    - `since_last_pareto = 0`
+    - `converged = false`
+  - execution status:
+    - archived as `pre_correction_runtime_smoke`
+- tokenizer handoff validation on corrected configs:
+  - `tok_baseline_global`
+    - `ablation_disable_spatial_prior = true`
+    - first gradient now lands on `style_tokenizer.concept_atoms`
+  - `tok_pure_latent_spatial`
+    - legacy tokenizer trainable count remains `0`
+    - active trainable tokenizer parameters live under `structured_style_tokenizer.*`
+    - corrected remote calibration status:
+      - `c1` at `batch=54` proved true sampled-bridge training but exploded to `12082 MiB`
+      - `c2` at `batch=44` kept the corrected objective healthy but the final authoritative retry still exploded:
+        - health GPU at `30s`: `7156 MiB`
+        - later runtime-guard stop: `11655 MiB`
+      - `c3` at `batch=40` also exploded:
+        - health GPU at `30s`: `6639 MiB`
+        - later runtime-guard stop: `11185 MiB`
+      - `c4` at `batch=36` is the first corrected under-band calibration:
+        - health GPU at `20s`: `6360 MiB`
+        - post-warmup runtime sample: `7889 MiB`
+        - runtime guard emitted `RUNTIME_UNDER_BAND_WARN`
+        - numeric-debug evidence stayed healthy
+      - `c5` helped expose the launcher supervision issue:
+        - under-band health failures were triggering misleading fallback behavior
+      - `c6` confirmed the same launcher issue in another fresh lane
+      - `c7` at `batch=38` is the first corrected near-formal line but still explodes after warmup:
+        - post-warmup runtime sample: `11124 MiB`
+      - `c8` at `batch=37` is the last in-band warmup-stable tokenizer reference lane:
+        - health GPU at `20s`: `6916 MiB`
+        - post-warmup GPU at `331s`: `10431 MiB`
+        - no under-band warning
+        - no explosion stop
+        - first corrected eval at `epoch_0001`:
+          - transfer `0.702593 / 0.535566`
+          - all-pairs `0.718218 / 0.531715`
+        - numeric-debug evidence remains finite
+      - `c9` at `batch=37` is the latest evaluated tokenizer calibration after the lean 8-param pure style-branch tightening:
+        - run dir:
+          - `./exp/inmortal-exp/aaai2027_round2_tok_pure_latent_spatial_seed42_b8a2_c9`
+        - config contract:
+          - `tokenizer_family = pure_latent_spatial`
+          - `transport_prediction_mode = endpoint`
+          - `solver_family = euler_legacy`
+          - `objective_mode = i2sb_endpoint`
+        - settled eval at `epoch_0001`:
+          - transfer:
+            - `clip_style = 0.702607`
+            - `content_lpips = 0.535564`
+          - all-pairs:
+            - `clip_style = 0.718214`
+            - `content_lpips = 0.531710`
+          - eval timing:
+            - `wall_total = 110.14s`
+            - `eval_total = 31.08s`
+            - `generation = 10.45s`
+            - `vae_decode = 57.08s`
+        - runtime-band history:
+          - launcher log emitted `RUNTIME_UNDER_BAND_WARN` at `7570 MiB`
+          - after eval and resume into `epoch_2`, runtime guard killed the lane:
+            - `2026-06-12 11:57:21 +08:00`
+            - `used = 11776 MiB`
+            - `cap = 11000 MiB`
+        - interpretation:
+          - good first tokenizer-wave evidence
+          - not a promotable formal lane because it crossed the hard cap after resume
+      - future pure-tokenizer relaunches are now leaner in `freeze_mode=style_branch`:
+        - legacy `style_spatial_*` priors are no longer marked trainable on `pure_latent_spatial`
+        - local verification shows the pure style branch trainable set is back down to `8` structured-tokenizer parameters
+      - current decision:
+        - `c4` remains the under-band anchor
+        - `c8` remains the last in-band warmup-stable reference
+        - `c9` is a settled tokenizer-wave point
+        - `c9` status is `recalibration_needed`
+        - `c10` remains a useful but non-promotable point because it failed after eval+resume:
+          - transfer `0.699601 / 0.515420`
+          - all-pairs `0.716285 / 0.513291`
+          - `used = 11508 MiB`
+          - `cap = 11000 MiB`
+        - `c11` is the new active safer relaunch at `batch=34`
+        - `c11` settled `epoch_0001` and resumed into `epoch_2` without a hard-cap event:
+          - transfer `0.699700 / 0.530487`
+          - all-pairs `0.715840 / 0.526602`
+          - post-resume GPU sample `9236 MiB`
+        - later `c11 epoch_0002` became the newest style-favored tokenizer point:
+          - transfer `0.704938 / 0.587250`
+          - all-pairs `0.716840 / 0.582709`
+        - later runtime sample:
+          - `8556 MiB`
+          - under-band warning only
+          - still no hard-cap event
+        - `c11` remained alive into `epoch_4`
+        - the tokenizer frontier is now:
+          - `c10 epoch_0001` as the structure-friendlier point
+          - `c11 epoch_0002` as the best all-pairs style point
+          - `c11 epoch_0003` as the best transfer-style point
+        - tokenizer family status:
+          - `solver_handoff_running`
+        - next gate is continued below-cap survival through later retained checkpoints before final tokenizer-wave promotion
+
+## Eval Policy
+
+- round-2 no longer defaults to the old concurrent remote fast-eval watcher
+  - reason:
+    - training already occupies around `9 GiB`
+    - launching a second eval python on the same `3060` risks crossing the `11.0 GiB` hard stop
+- instead, the training path now supports:
+  - checkpoint save
+  - temporary trainer offload from CUDA to CPU
+  - same-machine remote eval subprocess
+  - restore to CUDA and continue training
+- curve refresh policy:
+  - future launches:
+    - `run.py` refreshes the compact round-2 curve right after each full eval completes
+  - `c9` proved the in-train offload eval path works:
+    - `epoch_0001` eval completed on remote and refreshed curve/convergence artifacts
+    - the later failure came from resumed training VRAM growth, not from a missing eval path
+- target effect:
+  - keep per-ckpt remote `CLIP-S + LPIPS`
+  - avoid the old no-eval drift
+  - avoid the old concurrent-process VRAM explosion
+
+## Generated Round2 Families
+
+- tokenizer:
+  - `tok_baseline_global`
+  - `tok_pure_latent_spatial`
+- solver noise sweep:
+  - `sde_i2sb_sigma_0p25`
+  - `sde_i2sb_sigma_0p5`
+  - `sde_i2sb_sigma_1p0`
+- clean-loss ablation:
+  - `sde_optimal_with_heuristics`
+  - `sde_optimal_clean`
+- efficiency sweep:
+  - `sde_clean_nfe_4`
+  - `sde_clean_nfe_8`
+
+## Next Execution Step
+
+1. keep `c11` as the tokenizer winner reference:
+   - best all-pairs: `epoch_0002`
+   - best transfer: `epoch_0003`
+2. treat `b28c4` as the first `sigma=0.5` solver reference point, not as the active lane.
+3. `b26c2` established a stronger operational reference than `b28c1`, but it still failed after resume growth.
+4. the current active retry is now `b24c3`:
+   - batch `24`
+   - health check `6368 MiB`
+   - first settled eval:
+     - `transfer = 0.717461 / 0.679334`
+     - `all_pairs = 0.721461 / 0.671537`
+   - current GPU samples around `6957-9552 MiB`
+   - `RUNTIME_UNDER_BAND_WARN` has appeared
+   - training restored to CUDA and resumed into `Epoch 2/24`
+5. treat `sigma_0p25` as the current early leader over the recorded `sigma_0p5` reference, with `b24c3 epoch_0001` as the strongest first retained point so far, but not as a promoted winner yet.
+6. keep `b24c3` as the only active remote lane and let training-time remote `CLIP-S + LPIPS` decide whether this stronger first-point lead survives.
+7. keep remote VRAM inside `9.0-10.8 GiB`; abort above `11.0 GiB`.
+8. use training-time remote `CLIP-S + LPIPS` as the convergence authority from the first retained checkpoint onward.

@@ -6,6 +6,7 @@ import os
 import re
 import threading
 import time
+import gc
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
@@ -18,6 +19,7 @@ from tqdm.auto import tqdm
 from config_schema import ExperimentConfig, compact_runtime_config
 from losses import OTFlowMatchingObjective
 from model import build_model_from_config, count_parameters
+from style_families import prune_state_dict_for_tokenizer_family
 from utils.training import (
     append_training_log,
     build_adamw,
@@ -54,6 +56,37 @@ def _gradient_stats(x: torch.Tensor) -> torch.Tensor:
     dy = F.pad(x[..., 1:, :] - x[..., :-1, :], (0, 0, 0, 1))
     mag = torch.sqrt(dx.square() + dy.square() + 1e-8)
     return torch.cat([mag.mean(dim=(2, 3)), mag.std(dim=(2, 3), unbiased=False)], dim=1)
+
+
+def _host_can_resolve_path(path: Path) -> bool:
+    try:
+        text = str(path)
+    except Exception:
+        return False
+    if os.name == "nt" and (
+        text.startswith("/mnt/")
+        or text.startswith("\\mnt\\")
+        or text.startswith("/mnt\\")
+        or text.startswith("\\mnt/")
+    ):
+        return False
+    return True
+
+
+def _move_tensor_tree(value, device: torch.device):
+    if torch.is_tensor(value):
+        return value.to(device=device, non_blocking=False)
+    if isinstance(value, dict):
+        for key, item in list(value.items()):
+            value[key] = _move_tensor_tree(item, device)
+        return value
+    if isinstance(value, list):
+        for idx, item in enumerate(list(value)):
+            value[idx] = _move_tensor_tree(item, device)
+        return value
+    if isinstance(value, tuple):
+        return tuple(_move_tensor_tree(item, device) for item in value)
+    return value
 
 
 def _latent_style_features(latents: torch.Tensor, *, dim: int, pool_size: int) -> torch.Tensor:
@@ -133,8 +166,10 @@ class SBTrainer:
 
         self.model = build_model_from_config(
             model_cfg,
+            bridge_cfg=config.bridge,
             use_checkpointing=bool(train_cfg.get("use_gradient_checkpointing", False)),
         ).to(device)
+        self._disable_compat_only_style_tokenizer_grads()
         self._maybe_initialize_tokenizer_from_latents()
         if self.channels_last:
             self.model = _convert_4d_tensors_to_channels_last(self.model)
@@ -143,7 +178,7 @@ class SBTrainer:
 
         logger.info("Model params: %s", f"{count_parameters(self.model):,}")
 
-        self.optimizer = self._build_optimizer(self.model.parameters())
+        self.optimizer = self._build_optimizer([p for p in self.model.parameters() if p.requires_grad])
 
         self.scheduler = None
         self.scheduler_name = str(train_cfg.get("scheduler", "cosine")).lower()
@@ -179,6 +214,7 @@ class SBTrainer:
         self.numeric_debug_halt_on_nonfinite = bool(train_cfg.get("numeric_debug_halt_on_nonfinite", True))
         self.numeric_debug_dump_limit = max(1, int(train_cfg.get("numeric_debug_dump_limit", 200)))
         self.numeric_debug_events = 0
+        self._offloaded_for_full_eval = False
 
         self.checkpoint_dir = Path(ckpt_cfg.save_dir)
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
@@ -203,10 +239,82 @@ class SBTrainer:
         self._configure_distillation()
         self._configure_compile()
 
+    def _move_optimizer_state(self, device: torch.device) -> None:
+        for state in self.optimizer.state.values():
+            _move_tensor_tree(state, device)
+
+    def _legacy_style_tokenizer_is_compat_only(self) -> bool:
+        return str(getattr(self.config.model, "tokenizer_family", "legacy_factorized")).strip().lower() == "pure_latent_spatial"
+
+    def _style_branch_uses_legacy_spatial_priors(self) -> bool:
+        if self._legacy_style_tokenizer_is_compat_only():
+            return False
+        return not bool(getattr(self.config.model, "ablation_disable_spatial_prior", False))
+
+    def _disable_compat_only_style_tokenizer_grads(self) -> None:
+        if not self._legacy_style_tokenizer_is_compat_only():
+            return
+        tokenizer = getattr(self.model, "style_tokenizer", None)
+        if tokenizer is not None:
+            for _, param in tokenizer.named_parameters():
+                param.requires_grad_(False)
+        legacy_spatial = getattr(self.model, "style_spatial_id_16", None)
+        if isinstance(legacy_spatial, torch.nn.Parameter):
+            legacy_spatial.requires_grad_(False)
+        for extra_name in ("style_spatial_proto_16", "style_spatial_atoms_16"):
+            value = getattr(self.model, extra_name, None)
+            if isinstance(value, torch.nn.Parameter):
+                value.requires_grad_(False)
+        logits = getattr(self.model, "style_spatial_logits", None)
+        if logits is not None:
+            for _, param in logits.named_parameters():
+                param.requires_grad_(False)
+        router = getattr(self.model, "style_spatial_content_router", None)
+        if router is not None:
+            for _, param in router.named_parameters():
+                param.requires_grad_(False)
+
+    def offload_for_full_eval(self) -> None:
+        if self.device.type != "cuda" or self._offloaded_for_full_eval:
+            return
+        logger.info("Offloading training state to CPU before remote full eval.")
+        clear_model = getattr(self.model, "clear_runtime_caches", None)
+        if callable(clear_model):
+            clear_model()
+        clear_teacher = getattr(self.teacher_model, "clear_runtime_caches", None)
+        if callable(clear_teacher):
+            clear_teacher()
+        if self.teacher_model is not None:
+            self.teacher_model.to("cpu")
+        self.model.to("cpu")
+        self._move_optimizer_state(torch.device("cpu"))
+        gc.collect()
+        torch.cuda.empty_cache()
+        self._offloaded_for_full_eval = True
+
+    def restore_after_full_eval(self) -> None:
+        if self.device.type != "cuda" or not self._offloaded_for_full_eval:
+            return
+        logger.info("Restoring training state to CUDA after remote full eval.")
+        self.model.to(self.device)
+        if self.channels_last:
+            self.model = _convert_4d_tensors_to_channels_last(self.model)
+        self._move_optimizer_state(self.device)
+        if self.teacher_model is not None:
+            self.teacher_model.to(self.device)
+            if self.channels_last:
+                self.teacher_model = _convert_4d_tensors_to_channels_last(self.teacher_model)
+        gc.collect()
+        torch.cuda.empty_cache()
+        self._offloaded_for_full_eval = False
+
     def _maybe_initialize_tokenizer_from_latents(self) -> None:
         model_cfg = self.config.model
         mode = str(getattr(model_cfg, "tokenizer_latent_init_mode", "none") or "none").strip().lower()
         if mode in {"", "none", "off", "false", "0"}:
+            return
+        if self._legacy_style_tokenizer_is_compat_only():
+            logger.info("Skipping legacy tokenizer latent init because tokenizer_family=pure_latent_spatial uses structured_style_tokenizer as the active path.")
             return
         tokenizer = getattr(self.model, "style_tokenizer", None)
         if tokenizer is None:
@@ -220,6 +328,12 @@ class SBTrainer:
             latent_cache_dir = (Path(data_cfg.data_root) / ".latent_cache" / "packed") if not data_cfg.latent_cache_dir else (Path(data_cfg.latent_cache_dir) / "packed")
         elif (latent_cache_dir / "packed").exists():
             latent_cache_dir = latent_cache_dir / "packed"
+        if not _host_can_resolve_path(latent_cache_dir):
+            logger.info(
+                "Skipping tokenizer latent init on this host because packed cache path is WSL-only: %s",
+                latent_cache_dir,
+            )
+            return
         if not latent_cache_dir.exists():
             logger.warning("Skipping tokenizer latent init: packed cache missing at %s", latent_cache_dir)
             return
@@ -423,17 +537,25 @@ class SBTrainer:
         }
 
     def _tokenizer_debug_stats(self) -> Dict[str, float]:
-        tokenizer = getattr(self.model, "style_tokenizer", None)
-        raw = getattr(tokenizer, "last_debug", {}) if tokenizer is not None else {}
         stats: Dict[str, float] = {}
-        for key, value in raw.items():
-            if torch.is_tensor(value):
-                stats[f"tokenizer_{key}"] = float(torch.nan_to_num(value.detach().float()).item())
-        if tokenizer is not None:
-            for name, param in tokenizer.named_parameters():
+        modules = [
+            ("style_tokenizer", getattr(self.model, "style_tokenizer", None)),
+            ("structured_style_tokenizer", getattr(self.model, "structured_style_tokenizer", None)),
+        ]
+        for prefix, module in modules:
+            if module is None:
+                continue
+            raw = getattr(module, "last_debug", {})
+            if isinstance(raw, dict):
+                for key, value in raw.items():
+                    if torch.is_tensor(value):
+                        stats[f"{prefix}_{key}"] = float(torch.nan_to_num(value.detach().float()).item())
+                    elif isinstance(value, (int, float, bool)):
+                        stats[f"{prefix}_{key}"] = float(value)
+            for name, param in module.named_parameters():
                 grad = param.grad
                 if grad is not None:
-                    stats[f"tokenizer_grad_{name.replace('.', '_')}"] = float(
+                    stats[f"{prefix}_grad_{name.replace('.', '_')}"] = float(
                         torch.nan_to_num(grad.detach().float().abs().mean()).item()
                     )
         return stats
@@ -500,17 +622,43 @@ class SBTrainer:
         return ckpts[-1] if ckpts else None
 
     def _maybe_resume(self, resume_checkpoint: str) -> None:
+        explicit_ckpt = None
         if resume_checkpoint:
-            ckpt_path = Path(resume_checkpoint)
-            if not ckpt_path.is_absolute():
-                ckpt_path = (Path.cwd() / ckpt_path).resolve()
+            explicit_ckpt = Path(resume_checkpoint)
+            if not explicit_ckpt.is_absolute():
+                explicit_ckpt = (Path.cwd() / explicit_ckpt).resolve()
+        local_latest = self._find_latest_checkpoint()
+        prefer_local_latest = bool(self.train_cfg.get("resume_prefer_local_checkpoint", True))
+        using_local_latest = False
+        if prefer_local_latest and local_latest is not None:
+            ckpt_path = local_latest
+            using_local_latest = True
+            if explicit_ckpt is not None and explicit_ckpt != local_latest:
+                logger.info(
+                    "Preferring local run checkpoint over configured resume target: local=%s configured=%s",
+                    local_latest,
+                    explicit_ckpt,
+                )
         else:
-            ckpt_path = self._find_latest_checkpoint()
+            ckpt_path = explicit_ckpt
         if ckpt_path is None or not ckpt_path.exists():
             logger.info("No checkpoint found, start from scratch.")
             return
         state = torch.load(ckpt_path, map_location=self.device, weights_only=False)
         model_state = strip_compile_prefix(state["model_state_dict"])
+        model_state, removed_contract_keys = prune_state_dict_for_tokenizer_family(
+            model_state,
+            tokenizer_family=str(getattr(self.config.model, "tokenizer_family", "legacy_factorized")),
+            style_injection_mode=str(getattr(self.config.model, "style_injection_mode", "none")),
+            proximal_mode=str(getattr(self.config.model, "proximal_mode", "off")),
+        )
+        if removed_contract_keys:
+            logger.info(
+                "Pruned %d legacy contract keys while resuming %s for tokenizer_family=%s",
+                len(removed_contract_keys),
+                ckpt_path,
+                str(getattr(self.config.model, "tokenizer_family", "legacy_factorized")),
+            )
         resume_model_strict = bool(self.train_cfg.get("resume_model_strict", True))
         ignore_prefixes = tuple(str(v) for v in self.train_cfg.get("resume_ignore_prefixes", []) if str(v))
         include_prefixes = tuple(str(v) for v in self.train_cfg.get("resume_include_prefixes", []) if str(v))
@@ -542,7 +690,7 @@ class SBTrainer:
                 list(include_prefixes),
                 list(ignore_prefixes),
             )
-        resume_optimizer = bool(self.train_cfg.get("resume_optimizer", True))
+        resume_optimizer = bool(self.train_cfg.get("resume_optimizer", True) or using_local_latest)
         if resume_optimizer and "optimizer_state_dict" in state:
             try:
                 self.optimizer.load_state_dict(state["optimizer_state_dict"])
@@ -564,17 +712,18 @@ class SBTrainer:
                 )
         if "loss_state_dict" in state and hasattr(self.loss_fn, "load_state_dict"):
             self.loss_fn.load_state_dict(state.get("loss_state_dict"))
-        if bool(self.train_cfg.get("resume_training_state", True)):
+        if bool(self.train_cfg.get("resume_training_state", True) or using_local_latest):
             self.global_step = int(state.get("global_step", 0))
             self.start_epoch = int(state.get("epoch", 0)) + 1
         logger.info("Resumed from %s at epoch=%d global_step=%d", ckpt_path, self.start_epoch, self.global_step)
 
     def _reset_trainable_style_params(self, mode: str) -> None:
         with torch.no_grad():
-            if mode in {"tokenizer_only", "style_branch"} and hasattr(self.model, "style_tokenizer"):
+            if mode in {"tokenizer_only", "style_branch"} and hasattr(self.model, "style_tokenizer") and not self._legacy_style_tokenizer_is_compat_only():
                 self.model.style_tokenizer.reset_parameters()
-            if mode == "style_branch" and hasattr(self.model, "style_spatial_id_16"):
-                torch.nn.init.normal_(self.model.style_spatial_id_16, mean=0.0, std=0.02)
+            legacy_spatial = getattr(self.model, "style_spatial_id_16", None)
+            if mode == "style_branch" and isinstance(legacy_spatial, torch.nn.Parameter):
+                torch.nn.init.normal_(legacy_spatial, mean=0.0, std=0.02)
 
     def _configure_freeze_mode(self) -> None:
         if self.distill_enabled:
@@ -607,15 +756,16 @@ class SBTrainer:
 
         trainable_names: list[str] = []
         if mode in {"tokenizer_only", "style_branch"}:
-            for name, param in self.model.style_tokenizer.named_parameters():
-                param.requires_grad_(True)
-                trainable_names.append(f"style_tokenizer.{name}")
+            if not self._legacy_style_tokenizer_is_compat_only():
+                for name, param in self.model.style_tokenizer.named_parameters():
+                    param.requires_grad_(True)
+                    trainable_names.append(f"style_tokenizer.{name}")
             structured = getattr(self.model, "structured_style_tokenizer", None)
             if structured is not None:
                 for name, param in structured.named_parameters():
                     param.requires_grad_(True)
                     trainable_names.append(f"structured_style_tokenizer.{name}")
-        if mode == "style_branch":
+        if mode == "style_branch" and self._style_branch_uses_legacy_spatial_priors():
             self.model.style_spatial_id_16.requires_grad_(True)
             trainable_names.append("style_spatial_id_16")
             for extra_name in ("style_spatial_proto_16", "style_spatial_atoms_16"):
@@ -709,11 +859,25 @@ class SBTrainer:
 
         state = torch.load(teacher_ckpt, map_location=self.device, weights_only=False)
         teacher_state = strip_compile_prefix(state["model_state_dict"])
+        teacher_state, removed_contract_keys = prune_state_dict_for_tokenizer_family(
+            teacher_state,
+            tokenizer_family=str(getattr(self.config.model, "tokenizer_family", "legacy_factorized")),
+            style_injection_mode=str(getattr(self.config.model, "style_injection_mode", "none")),
+            proximal_mode=str(getattr(self.config.model, "proximal_mode", "off")),
+        )
+        if removed_contract_keys:
+            logger.info(
+                "Pruned %d legacy contract keys from distillation teacher %s for tokenizer_family=%s",
+                len(removed_contract_keys),
+                teacher_ckpt,
+                str(getattr(self.config.model, "tokenizer_family", "legacy_factorized")),
+            )
         if not str(self.train_cfg.get("resume_checkpoint", "")).strip():
             self.model.load_state_dict(teacher_state, strict=True)
 
         teacher = build_model_from_config(
             self.config.model,
+            bridge_cfg=self.config.bridge,
             use_checkpointing=False,
         ).to(self.device)
         if self.channels_last:
@@ -733,15 +897,16 @@ class SBTrainer:
 
         trainable_names: list[str] = []
         if mode in {"tokenizer_only", "style_branch"}:
-            for name, param in self.model.style_tokenizer.named_parameters():
-                param.requires_grad_(True)
-                trainable_names.append(f"style_tokenizer.{name}")
+            if not self._legacy_style_tokenizer_is_compat_only():
+                for name, param in self.model.style_tokenizer.named_parameters():
+                    param.requires_grad_(True)
+                    trainable_names.append(f"style_tokenizer.{name}")
             structured = getattr(self.model, "structured_style_tokenizer", None)
             if structured is not None:
                 for name, param in structured.named_parameters():
                     param.requires_grad_(True)
                     trainable_names.append(f"structured_style_tokenizer.{name}")
-        if mode == "style_branch":
+        if mode == "style_branch" and self._style_branch_uses_legacy_spatial_priors():
             self.model.style_spatial_id_16.requires_grad_(True)
             trainable_names.append("style_spatial_id_16")
 
@@ -942,6 +1107,14 @@ class SBTrainer:
                 )
 
             data_wait_start = time.perf_counter()
+
+            clear_model = getattr(self.model, "clear_runtime_caches", None)
+            if callable(clear_model):
+                clear_model()
+            if self.teacher_model is not None:
+                clear_teacher = getattr(self.teacher_model, "clear_runtime_caches", None)
+                if callable(clear_teacher):
+                    clear_teacher()
 
             del loss
             del loss_dict

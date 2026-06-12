@@ -11,6 +11,7 @@ from scipy.optimize import linear_sum_assignment
 from config_schema import BridgeConfig, ExperimentConfig, TrainingConfig
 from model import TimeConditionedLANCETBridge
 from ot_cost import SWDTransportCost
+from style_families import validate_i2sb_contract, validate_pure_latent_contract
 
 
 class OTFlowMatchingObjective:
@@ -26,14 +27,32 @@ class OTFlowMatchingObjective:
         if isinstance(config, ExperimentConfig):
             bridge_cfg = config.bridge
             train_cfg = config.training
+            model_cfg = config.model
         else:
             bridge_cfg = BridgeConfig.from_mapping(config.get("bridge", {}))
             train_cfg = TrainingConfig.from_mapping(config.get("training", {}))
+            model_cfg = config.get("model", {})
 
         self.objective_mode = str(bridge_cfg.objective_mode).strip().lower()
+        if self.objective_mode in {"i2sb", "i2sb_endpoint", "bridge_endpoint"}:
+            self.objective_mode = "i2sb_endpoint"
         self.t_min = float(bridge_cfg.t_min)
         self.t_max = float(bridge_cfg.t_max)
         self.loss_type = str(bridge_cfg.loss_type).strip().lower()
+        self.transport_prediction_mode = str(getattr(model_cfg, "transport_prediction_mode", "velocity")).strip().lower()
+        validate_i2sb_contract(
+            solver_family=str(getattr(model_cfg, "solver_family", "euler_legacy")),
+            transport_prediction_mode=self.transport_prediction_mode,
+            objective_mode=self.objective_mode,
+            loss_type=str(getattr(bridge_cfg, "loss_type", "")),
+        )
+        validate_pure_latent_contract(
+            tokenizer_family=str(getattr(model_cfg, "tokenizer_family", "legacy_factorized")),
+            semantic_supervision_family=str(getattr(bridge_cfg, "semantic_supervision_family", "legacy_terminal_swd")),
+            dino_masked_swd_weight=float(getattr(bridge_cfg, "dino_masked_swd_weight", 0.0)),
+            style_spatial_mode=str(getattr(model_cfg, "style_spatial_mode", "")),
+            tokenizer_content_adaptive=bool(getattr(model_cfg, "tokenizer_content_adaptive", False)),
+        )
         self.identity_endpoint = bool(bridge_cfg.identity_endpoint)
         self.eps = float(bridge_cfg.eps)
 
@@ -406,15 +425,31 @@ class OTFlowMatchingObjective:
         t4 = t.view(-1, 1, 1, 1)
         base = (1.0 - t4) * content + t4 * matched_target
         velocity = matched_target - content
+        endpoint_mode = str(getattr(self, "transport_prediction_mode", "velocity")).strip().lower() == "endpoint"
         if self.bridge_sigma <= 0.0:
-            return base, velocity
+            return base, (matched_target if endpoint_mode else velocity)
+
+        # Phase-2: Delayed noise schedule — only inject noise in [t_start, t_end]
+        # Fixes training-inference distribution mismatch at t≈0 and t≈1.
+        t_start = max(0.0, float(getattr(self, "bridge_noise_window_start", 0.18)))
+        t_end = min(1.0, float(getattr(self, "bridge_noise_window_end", 0.82)))
+        t_flat = t.float()
+        noise_gate = torch.zeros_like(t_flat)
+        mid_mask = (t_flat >= t_start) & (t_flat <= t_end)
+        t_mid = t_flat[mid_mask]
+        if t_mid.numel() > 0:
+            t_norm = (t_mid - t_start) / max(1e-6, t_end - t_start)
+            noise_gate[mid_mask] = torch.sin(t_norm * math.pi) ** 2  # smooth window
+        noise_gate = noise_gate.view(-1, 1, 1, 1)
 
         bridge_var = (t * (1.0 - t)).clamp_min(self.eps)
         bridge_std = torch.sqrt(bridge_var).view(-1, 1, 1, 1)
         noise = self._style_bridge_noise(content, matched_target)
-        x_t = base + (self.bridge_sigma * bridge_std) * noise
+        x_t = base + (self.bridge_sigma * bridge_std * noise_gate) * noise
+        if endpoint_mode:
+            return x_t, matched_target
         d_std_dt = ((1.0 - 2.0 * t) / (2.0 * torch.sqrt(bridge_var))).view(-1, 1, 1, 1)
-        return x_t, velocity + (self.bridge_sigma * d_std_dt) * noise
+        return x_t, velocity + (self.bridge_sigma * d_std_dt * noise_gate) * noise
 
     def _loss(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         if self.loss_type == "huber":
@@ -1287,7 +1322,7 @@ class OTFlowMatchingObjective:
         )
         return metrics
 
-    def compute(
+    def _compute_sampled_bridge_details(
         self,
         model: TimeConditionedLANCETBridge,
         *,
@@ -1295,22 +1330,13 @@ class OTFlowMatchingObjective:
         target_style: torch.Tensor,
         target_style_id: torch.Tensor,
         source_style_id: torch.Tensor | None = None,
-        aux_target_style: torch.Tensor | None = None,
-        aux_target_valid: torch.Tensor | None = None,
-        conditioning: dict | None = None,
-    ) -> Dict[str, torch.Tensor]:
-        self._set_model_conditioning(model, conditioning)
-        if self.objective_mode == "omf":
-            return self._compute_omf(
-                model,
-                content=content,
-                target_style=target_style,
-                target_style_id=target_style_id,
-                source_style_id=source_style_id,
-                aux_target_style=aux_target_style,
-                aux_target_valid=aux_target_valid,
-            )
-
+        enforce_endpoint: bool = False,
+        require_flow_weight: bool = False,
+    ) -> tuple[
+        Dict[str, torch.Tensor],
+        Dict[str, torch.Tensor],
+        Dict[str, torch.Tensor | None],
+    ]:
         self.last_profile = {}
         t_profile = self._profile_start(content)
         if content.device.type == "cuda":
@@ -1335,7 +1361,11 @@ class OTFlowMatchingObjective:
             bridge_gate = torch.sqrt((t.float() * (1.0 - t.float())).clamp_min(0.0)).view(-1, 1, 1, 1)
             x_t = x_t + torch.randn_like(x_t) * (self.sb_noise_epsilon ** 0.5) * bridge_gate
         t_profile = self._profile_start(content)
-        if str(getattr(model, "transport_prediction_mode", "velocity")).strip().lower() == "endpoint":
+        transport_mode = str(getattr(model, "transport_prediction_mode", "velocity")).strip().lower()
+        pred_endpoint: torch.Tensor | None = None
+        if enforce_endpoint and transport_mode != "endpoint":
+            raise ValueError("objective_mode='i2sb_endpoint' requires transport_prediction_mode='endpoint'.")
+        if transport_mode == "endpoint":
             pred_endpoint = self._sanitize_tensor(
                 model.predict_transport_base(
                     x_t,
@@ -1346,11 +1376,17 @@ class OTFlowMatchingObjective:
             )
             denom = (1.0 - t).clamp_min(self.eps).view(-1, 1, 1, 1)
             pred_velocity = self._sanitize_tensor((pred_endpoint - x_t) / denom, clamp_value=self.velocity_clamp)
-            flow_loss = self._loss(pred_endpoint, matched_target)
+            raw_flow_loss = self._loss(pred_endpoint, matched_target)
         else:
             pred_velocity = model(x_t, t=t, style_id=target_style_id)
-            flow_loss = self._loss(pred_velocity, target_velocity)
+            raw_flow_loss = self._loss(pred_velocity, target_velocity)
         self._profile_end("model_forward", t_profile, content)
+        if self.w_flow > 0.0:
+            flow_loss = raw_flow_loss * self.w_flow
+        elif require_flow_weight:
+            raise ValueError("objective_mode='i2sb_endpoint' requires bridge.w_flow > 0.")
+        else:
+            flow_loss = raw_flow_loss
         total_loss = flow_loss
 
         t_profile = self._profile_start(content)
@@ -1364,8 +1400,22 @@ class OTFlowMatchingObjective:
             else:
                 kinetic_loss = v_sq.mean()
             total_loss = total_loss + kinetic_loss * self.w_kinetic
-        anisotropic_kinetic = self._anisotropic_kinetic_loss(pred_velocity, content) if self.w_anisotropic_kinetic > 0.0 else zero
-        stokes_viscous = self._stokes_viscous_loss(pred_velocity) if self.w_stokes_viscous > 0.0 else zero
+        use_anisotropic = self.structure_penalty_mode in {
+            "anisotropic",
+            "anisotropic_plus_stokes",
+            "edge_gated_anisotropic",
+            "edge_gated_anisotropic_plus_stokes",
+            "quantile_edge_gated_anisotropic",
+            "quantile_edge_gated_anisotropic_plus_stokes",
+        }
+        use_stokes = self.structure_penalty_mode in {
+            "stokes",
+            "anisotropic_plus_stokes",
+            "edge_gated_anisotropic_plus_stokes",
+            "quantile_edge_gated_anisotropic_plus_stokes",
+        }
+        anisotropic_kinetic = self._anisotropic_kinetic_loss(pred_velocity, content) if use_anisotropic and self.w_anisotropic_kinetic > 0.0 else zero
+        stokes_viscous = self._stokes_viscous_loss(pred_velocity) if use_stokes and self.w_stokes_viscous > 0.0 else zero
         total_loss = total_loss + anisotropic_kinetic + stokes_viscous
         self._profile_end("aux_loss", t_profile, content)
 
@@ -1426,7 +1476,93 @@ class OTFlowMatchingObjective:
         if source_style_id is not None:
             id_mask = source_style_id.long() == target_style_id.long()
             metrics["identity_ratio"] = id_mask.float().mean().detach()
+        components = {
+            "flow": flow_loss,
+            "kinetic_energy": kinetic_loss * self.w_kinetic,
+            "anisotropic_kinetic": anisotropic_kinetic,
+            "stokes_viscous": stokes_viscous,
+            "curvature": curvature_loss * self.w_curvature,
+            "terminal_swd": terminal_swd * self.terminal_swd_weight if terminal_swd is not None else zero,
+            "generated_delta_diversity": generated_delta_diversity,
+            "cycle_consistency": cycle_consistency,
+        }
+        debug_state: Dict[str, torch.Tensor | None] = {
+            "content": content.detach(),
+            "target_style": target_style.detach(),
+            "matched_target": matched_target.detach(),
+            "x_t": x_t.detach(),
+            "t": t.detach(),
+            "target_velocity": target_velocity.detach(),
+            "pred_velocity": pred_velocity.detach(),
+            "pred_endpoint": pred_endpoint.detach() if pred_endpoint is not None else None,
+            "semantic_attn": getattr(model, "last_semantic_attn", None).detach() if getattr(model, "last_semantic_attn", None) is not None else None,
+            "semantic_k": getattr(model, "last_semantic_k", None).detach() if getattr(model, "last_semantic_k", None) is not None else None,
+        }
+        return metrics, components, debug_state
+
+    def _compute_sampled_bridge(
+        self,
+        model: TimeConditionedLANCETBridge,
+        *,
+        content: torch.Tensor,
+        target_style: torch.Tensor,
+        target_style_id: torch.Tensor,
+        source_style_id: torch.Tensor | None = None,
+        enforce_endpoint: bool = False,
+        require_flow_weight: bool = False,
+    ) -> Dict[str, torch.Tensor]:
+        metrics, _, _ = self._compute_sampled_bridge_details(
+            model,
+            content=content,
+            target_style=target_style,
+            target_style_id=target_style_id,
+            source_style_id=source_style_id,
+            enforce_endpoint=enforce_endpoint,
+            require_flow_weight=require_flow_weight,
+        )
         return metrics
+
+    def compute(
+        self,
+        model: TimeConditionedLANCETBridge,
+        *,
+        content: torch.Tensor,
+        target_style: torch.Tensor,
+        target_style_id: torch.Tensor,
+        source_style_id: torch.Tensor | None = None,
+        aux_target_style: torch.Tensor | None = None,
+        aux_target_valid: torch.Tensor | None = None,
+        conditioning: dict | None = None,
+    ) -> Dict[str, torch.Tensor]:
+        self._set_model_conditioning(model, conditioning)
+        if self.objective_mode == "omf":
+            return self._compute_omf(
+                model,
+                content=content,
+                target_style=target_style,
+                target_style_id=target_style_id,
+                source_style_id=source_style_id,
+                aux_target_style=aux_target_style,
+                aux_target_valid=aux_target_valid,
+            )
+        if self.objective_mode == "i2sb_endpoint":
+            return self._compute_sampled_bridge(
+                model,
+                content=content,
+                target_style=target_style,
+                target_style_id=target_style_id,
+                source_style_id=source_style_id,
+                enforce_endpoint=True,
+                require_flow_weight=True,
+            )
+
+        return self._compute_sampled_bridge(
+            model,
+            content=content,
+            target_style=target_style,
+            target_style_id=target_style_id,
+            source_style_id=source_style_id,
+        )
 
     def compute_debug(
         self,
@@ -1439,16 +1575,25 @@ class OTFlowMatchingObjective:
         aux_target_style: torch.Tensor | None = None,
         aux_target_valid: torch.Tensor | None = None,
     ) -> Dict[str, Dict[str, torch.Tensor] | Dict[str, torch.Tensor | None]]:
-        if self.objective_mode != "omf":
-            raise NotImplementedError("compute_debug currently supports objective_mode='omf' only.")
-        metrics, components, state = self._compute_omf_details(
+        if self.objective_mode == "omf":
+            metrics, components, state = self._compute_omf_details(
+                model,
+                content=content,
+                target_style=target_style,
+                target_style_id=target_style_id,
+                source_style_id=source_style_id,
+                aux_target_style=aux_target_style,
+                aux_target_valid=aux_target_valid,
+            )
+            return {"metrics": metrics, "components": components, "state": state}
+        metrics, components, state = self._compute_sampled_bridge_details(
             model,
             content=content,
             target_style=target_style,
             target_style_id=target_style_id,
             source_style_id=source_style_id,
-            aux_target_style=aux_target_style,
-            aux_target_valid=aux_target_valid,
+            enforce_endpoint=self.objective_mode == "i2sb_endpoint",
+            require_flow_weight=self.objective_mode == "i2sb_endpoint",
         )
         return {"metrics": metrics, "components": components, "state": state}
 
