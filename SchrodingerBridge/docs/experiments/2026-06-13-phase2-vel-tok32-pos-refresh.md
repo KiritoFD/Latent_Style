@@ -113,3 +113,33 @@ Date: 2026-06-13
   - first grad:
     - `structured_style_tokenizer.universal_keys`
     - abs mean `0.005062`
+
+## Run Log
+
+- remote launch:
+  - launcher:
+    - `launch_remote_experiment_train.py`
+  - task:
+    - `exp-phase2_vel_tok32_pos_refresh_seed42_b20a1-train`
+  - remote log:
+    - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_phase2_vel_tok32_pos_refresh_seed42_b20a1_train.log`
+- first health check:
+  - `30s health = 10073 MiB`
+  - accepted into the formal `9.0-10.8 GiB` band
+- current remote status:
+  - run name:
+    - `aaai2027_phase2_vel_tok32_pos_refresh_seed42_b20a1`
+  - live state:
+    - `training_before_first_settled_eval`
+  - runtime memory:
+    - `10257 / 12288 MiB`
+  - live process:
+    - `/home/xy/venvs/samam312/bin/python SchrodingerBridge/src/run.py --config /mnt/i/Github/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_pos_refresh_seed42_b20a1.json`
+- warm-start read:
+  - partial resume from:
+    - `/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_pattn_enhanced_tok_seed42_b22a1/epoch_0002.pt`
+  - loader summary:
+    - `loaded=241`
+    - `skipped=29`
+    - `missing=35`
+    - `unexpected=0`
