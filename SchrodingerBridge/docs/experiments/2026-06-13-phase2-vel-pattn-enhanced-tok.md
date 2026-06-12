@@ -174,6 +174,11 @@ Date: 2026-06-13
   - `best_in_newest_2 = true`
   - `tail_flat = true`
   - `converged = false`
+- live runtime read after `epoch_0003` settle:
+  - remote training resumed into `Epoch 4/24`
+  - `latest_checkpoint_epoch = epoch_0003`
+  - `latest_settled_epoch = epoch_0003`
+  - `pending_checkpoint_epochs = []`
 - current decision:
   - keep the formal remote lane alive
   - do not promote any checkpoint yet
