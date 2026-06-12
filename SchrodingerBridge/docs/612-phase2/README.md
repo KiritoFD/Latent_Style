@@ -100,10 +100,12 @@
 - 当前动作:
   - 远程正式训练 lane 已切到:
     - `aaai2027_phase2_vel_tok32_pos_refresh_seed42_b20a1`
+    - launch time `2026-06-13 07:49`
   - 首轮健康检查:
     - `30s health = 10073 MiB`
-    - live runtime read `10257 / 12288 MiB`
+    - latest runtime read `9870 / 12288 MiB`
     - 状态 `training_before_first_settled_eval`
+    - first settled eval still pending
   - 当前正式候选仍然只允许来自 `velocity + true tokenizer + training-side structure control`
 
 ## 三刀手术

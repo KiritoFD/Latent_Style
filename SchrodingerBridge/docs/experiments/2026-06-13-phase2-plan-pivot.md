@@ -154,6 +154,8 @@ Date: 2026-06-13
   - the velocity topology-anchor retry has now also been closed as archival only
   - the active formal lane is now:
     - `aaai2027_phase2_vel_tok32_pos_refresh_seed42_b20a1`
+    - launch time `2026-06-13 07:49`
     - 30s launch health `10073 MiB`
-    - current runtime read `10257 MiB`
+    - latest runtime read `9870 MiB`
     - state `training_before_first_settled_eval`
+    - first settled eval still pending
