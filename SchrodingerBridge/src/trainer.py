@@ -1096,15 +1096,22 @@ class SBTrainer:
             if self.use_tqdm and (
                 step_idx == 1 or step_idx % progress_interval == 0 or step_idx == len(dataloader)
             ):
-                progress.set_postfix(
-                    loss=f"{_avg('loss'):.4f}",
-                    flow=f"{_avg('flow'):.4f}" if not self.distill_enabled else f"{_avg('distill_velocity'):.4f}",
-                    kin=f"{_avg('kinetic_energy'):.4f}",
-                    curv=f"{_avg('curvature'):.4f}",
-                    ot=f"{_avg('ot_cost'):.4f}",
-                    tswd=f"{_avg('terminal_swd'):.4f}" if not self.distill_enabled else f"{_avg('distill_endpoint'):.4f}",
-                    t=f"{_avg('t_mean'):.3f}",
-                )
+                postfix = {
+                    "loss": f"{_avg('loss'):.4f}",
+                    "flow": f"{_avg('flow'):.4f}" if not self.distill_enabled else f"{_avg('distill_velocity'):.4f}",
+                    "kin": f"{_avg('kinetic_energy'):.4f}",
+                    "curv": f"{_avg('curvature'):.4f}",
+                    "ot": f"{_avg('ot_cost'):.4f}",
+                    "tswd": f"{_avg('terminal_swd'):.4f}" if not self.distill_enabled else f"{_avg('distill_endpoint'):.4f}",
+                    "t": f"{_avg('t_mean'):.3f}",
+                }
+                if "content_lowpass_anchor" in metric_accum or "content_edge_anchor" in metric_accum:
+                    lowpass_anchor = _avg("content_lowpass_anchor")
+                    edge_anchor = _avg("content_edge_anchor")
+                    if lowpass_anchor > 0.0 or edge_anchor > 0.0:
+                        postfix["cla"] = f"{lowpass_anchor:.4f}"
+                        postfix["cea"] = f"{edge_anchor:.4f}"
+                progress.set_postfix(**postfix)
 
             data_wait_start = time.perf_counter()
 
@@ -1158,6 +1165,8 @@ class SBTrainer:
         metrics.setdefault("terminal_swd", 0.0)
         metrics.setdefault("terminal_swd_aux", 0.0)
         metrics.setdefault("cycle_consistency", 0.0)
+        metrics.setdefault("content_lowpass_anchor", 0.0)
+        metrics.setdefault("content_edge_anchor", 0.0)
         metrics.setdefault("aux_target_ratio", 0.0)
         metrics.setdefault("plan_entropy", 0.0)
         metrics.setdefault("bridge_sigma", 0.0)

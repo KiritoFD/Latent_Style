@@ -64,6 +64,14 @@ Date: 2026-06-13
 - next formal candidate, if we keep pushing Phase 2, returns to training-side structure control rather than more solver-only recycling
   - the first concrete follow-up packet is now the topology-anchor velocity retry:
     - [2026-06-13-phase2-topology-anchor-followup.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-topology-anchor-followup.md)
+  - first settled read on that packet:
+    - `epoch_0001`
+    - transfer `0.674077 / 0.393103`
+    - all-pairs `0.700842 / 0.390843`
+  - interpretation:
+    - still in-band
+    - not yet better than the previous velocity shelf
+    - continue only as a short early check, not as an open-ended promotion
 
 ## New Priority Order
 

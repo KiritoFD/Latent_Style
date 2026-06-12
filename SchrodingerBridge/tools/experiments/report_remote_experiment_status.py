@@ -186,7 +186,17 @@ def _remote_list_via_find(
             "-print",
         ],
     )
-    return sorted([Path(line.strip()).name for line in result.stdout.splitlines() if line.strip()])
+    rows: list[str] = []
+    for raw in result.stdout.splitlines():
+        line = str(raw).strip()
+        if not line:
+            continue
+        if "No such file or directory" in line:
+            continue
+        if line.startswith("find:"):
+            continue
+        rows.append(Path(line).name)
+    return sorted(rows)
 
 
 def _derive_default_paths(*, remote_workspace_root: str, run_name: str) -> tuple[str, str]:

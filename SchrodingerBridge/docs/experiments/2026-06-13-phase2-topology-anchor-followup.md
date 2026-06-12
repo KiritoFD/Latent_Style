@@ -85,7 +85,23 @@ Date: 2026-06-13
 - remote launch:
   - run name `aaai2027_phase2_vel_pattn_topo_anchor_k075_seed42_b22a1`
   - PID `53058`
-  - live state `training_before_first_settled_eval`
+  - live state `training_after_settled_eval`
   - `30s` health read `10211 MiB`
   - follow-up status read `10347 MiB`
   - this is inside the paper-facing `< 11 GiB` rule
+- first settled checkpoint:
+  - `epoch_0001` at `2026-06-13 04:46:35`
+  - transfer `0.674077 / 0.393103`
+  - all-pairs `0.700842 / 0.390843`
+  - eval wall `210.28s`
+  - generation `114.78s`
+  - VAE decode `54.18s`
+- read:
+  - this is still in-band because both transfer and all-pairs remain below `0.40`
+  - but it does **not** beat the closed velocity shelf:
+    - prior best all-pairs `0.701666 / 0.381724`
+    - current `epoch_0001` all-pairs `0.700842 / 0.390843`
+  - so the topology anchor is not yet a win, only a live candidate
+- current decision:
+  - keep the lane alive through the next early checkpoints
+  - if `epoch_0002` and `epoch_0003` still fail to reclaim the old style shelf or improve LPIPS materially, close this packet rather than letting it drift into another long flat line

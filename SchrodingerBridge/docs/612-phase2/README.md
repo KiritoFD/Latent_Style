@@ -77,7 +77,10 @@
     - 直接约束 endpoint 的低频拓扑和边缘骨架
   - 当前运行态:
     - `aaai2027_phase2_vel_pattn_topo_anchor_k075_seed42_b22a1`
-    - 已启动，等待第一个 settled checkpoint
+    - `epoch_0001` 已 settle
+      - transfer `0.674077 / 0.393103`
+      - all-pairs `0.700842 / 0.390843`
+    - 仍在带内，但还没有超过上一条 velocity 峰值
 
 ## 三刀手术
 
