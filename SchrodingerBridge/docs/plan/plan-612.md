@@ -1,3 +1,21 @@
+> 2026-06-13 execution note:
+> 本文保留的是“纯潜空间 tokenizer + 精确 I2SB”这条理论母线。
+> 其中：
+> - DINO 继续退休，不再回主计划
+> - `true I2SB` 已经在代码中实现为 `exact_brownian + endpoint prediction + solver_i2sb`
+> - 但 Distinct5 的当前 formal queue 已经按 `612-phase2` 收紧到 `LPIPS < 0.40`
+> - 因而真正的执行主线暂时切回 `velocity + pure_latent_spatial + training-side structure control`
+> - 未来若要重新启用 I2SB，必须先出现廉价证据证明它能重新回到 `< 0.40` 安全带
+>
+> 2026-06-13 tokenizer note:
+> 下文最早的 `PureLatentSpatialTokenizer` 伪代码是概念草图。
+> 当前工程实现已经升级为：
+> - configurable ResBlock query extractor
+> - 2D sine/cosine positional encoding
+> - configurable cluster count
+> - global-spatial coupling through pooled spatial context
+> 因而阅读本文时，应把早期 2-layer Conv 版本视为理论出发点，而不是当前实现的最终形态。
+
 太棒了！我完全理解并且**极度赞同你的审美直觉**。
 
 引入 DINO 确实是一种“工程妥协（Engineering Hack）”。在潜空间（Latent Space）大一统的流匹配架构里，强行塞入一个基于 RGB 的庞大外部 ViT 先验，虽然能走捷径，但破坏了整个模型**“纯粹、自洽、完全基于 Latent OT 演化”**的数学美感。

@@ -1,12 +1,21 @@
 抛开 Paper 的包装，我们直接深入到**生成模型底层的数学与工程实现**。
 
 > 2026-06-12 execution note:
-> 当前执行主线已经固定为 `pure_latent_spatial + endpoint prediction + solver_i2sb`。
+> 当前代码库已经具备 `pure_latent_spatial + endpoint prediction + solver_i2sb` 的真实实现能力。
 > 本文中出现的 DINO tokenizer / DINO semantic routing 方案仅保留为历史备选或归档对照，不再进入默认实验队列，除非后续出现压倒性的 board 优势。
 >
 > 2026-06-13 contract note:
 > `true I2SB` 的训练态现在要求 `bridge_noise_schedule = exact_brownian`（或 `auto` 且 `objective_mode = i2sb_endpoint`）。
 > 旧的 `delayed_window` 仅保留为启发式历史变体，不再冒充精确布朗桥。
+>
+> 2026-06-13 phase-2 pivot note:
+> Distinct5 的 paper-facing formal lane 已不再默认押注 endpoint / I2SB。
+> 当前主线判据是：
+> - 只有 `content_lpips < 0.40` 的线才允许占用正式远程训练资源
+> - `0.40 <= content_lpips < 0.70` 只保留为 archival evidence
+> - `content_lpips >= 0.70` 视为 complete failure
+> 因而当前推进顺序已经切回 `velocity + pure_latent_spatial + training-side structure control`；
+> `true I2SB` 继续保留为理论资产和 diagnostic-only 分支，而不是默认 promotion lane。
 
 近年来（2023-2025），在无配对图像翻译（Unpaired I2I）领域，真正成功让 SDE 和 Schrödinger Bridge（SB）落地的标杆工作主要有两类派系：
 

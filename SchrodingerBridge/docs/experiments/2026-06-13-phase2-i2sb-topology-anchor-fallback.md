@@ -1,4 +1,4 @@
-# Phase 2: true-I2SB topology-anchor fallback
+# Phase 2: true-I2SB topology-anchor fallback (closed)
 
 Date: 2026-06-13
 
@@ -22,12 +22,13 @@ Date: 2026-06-13
   - [phase2_i2sb_topo_anchor_sigma0p25_seed42_b22a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_topo_anchor_sigma0p25_seed42_b22a1.json)
 - formal relaunch config:
   - [phase2_i2sb_topo_anchor_sigma0p25_seed42_b30a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_topo_anchor_sigma0p25_seed42_b30a1.json)
-- current active subfamily:
-  - [phase2_i2sb_pattn_topo_anchor_sigma0p10_warm_vel2_seed42_b22a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_pattn_topo_anchor_sigma0p10_warm_vel2_seed42_b22a1.json)
+- final launched subfamily:
+  - [phase2_i2sb_pattn_topo_anchor_sigma0p02_residual_warm_vel2_seed42_b22a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_pattn_topo_anchor_sigma0p02_residual_warm_vel2_seed42_b22a1.json)
 - smokes:
   - [phase2_i2sb_topo_anchor_sigma0p25_seed42_b22a1_smoke.json](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/phase2_i2sb_topo_anchor_sigma0p25_seed42_b22a1_smoke.json)
   - [phase2_i2sb_topo_anchor_sigma0p25_seed42_b30a1_smoke.json](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/phase2_i2sb_topo_anchor_sigma0p25_seed42_b30a1_smoke.json)
   - [phase2_i2sb_pattn_topo_anchor_sigma0p10_warm_vel2_seed42_b22a1_smoke.json](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/phase2_i2sb_pattn_topo_anchor_sigma0p10_warm_vel2_seed42_b22a1_smoke.json)
+  - [phase2_i2sb_pattn_topo_anchor_sigma0p02_residual_warm_vel2_seed42_b22a1_smoke.json](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/phase2_i2sb_pattn_topo_anchor_sigma0p02_residual_warm_vel2_seed42_b22a1_smoke.json)
 
 ## Contract
 
@@ -112,15 +113,16 @@ Interpretation:
 - rationale:
   - the proximal path is necessary
   - but `sigma=0.10` still injects too much stochasticity for Distinct5 structure
-- active config:
+- config:
   - [phase2_i2sb_pattn_topo_anchor_sigma0p02_warm_vel2_seed42_b22a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_pattn_topo_anchor_sigma0p02_warm_vel2_seed42_b22a1.json)
 - smoke:
   - [phase2_i2sb_pattn_topo_anchor_sigma0p02_warm_vel2_seed42_b22a1_smoke.json](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/phase2_i2sb_pattn_topo_anchor_sigma0p02_warm_vel2_seed42_b22a1_smoke.json)
-- current remote state:
-  - run name `aaai2027_phase2_i2sb_pattn_topo_anchor_sigma0p02_warm_vel2_seed42_b22a1`
-  - health read `10419 MiB`
-  - current live state `training_before_first_settled_eval`
-  - this is the current active formal phase2 lane
+- first settled point:
+  - transfer `0.707575 / 0.676720`
+  - all-pairs `0.709801 / 0.675418`
+- decision:
+  - archival only
+  - lane stopped after `epoch_0001`
 
 ### D. residual-endpoint exact-Brownian candidate
 
@@ -135,8 +137,16 @@ Interpretation:
 - smoke:
   - [phase2_i2sb_pattn_topo_anchor_sigma0p02_residual_warm_vel2_seed42_b22a1_smoke.json](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/phase2_i2sb_pattn_topo_anchor_sigma0p02_residual_warm_vel2_seed42_b22a1_smoke.json)
 - status:
-  - prepared locally
-  - not launched yet because `sigma=0.02` absolute-endpoint lane is still the active formal read
+  - launched on remote
+  - first settled point:
+    - transfer `0.688376 / 0.571735`
+    - all-pairs `0.697686 / 0.569086`
+  - decision:
+    - archival only
+    - remote process stopped after the first settled checkpoint at `2026-06-13 07:30`
+- interpretation:
+  - residual endpoint parameterization did help relative to the absolute `sigma=0.02` lane
+  - but the gain is still far too small to justify another formal Distinct5 training lane
 
 ## Resource Read
 
@@ -194,5 +204,11 @@ Interpretation:
     - first settled point was also `fail_stop`
     - lane closed
   - `sigma=0.02 warm_vel2 b22`:
-    - current active formal lane
-    - waiting for first settled checkpoint
+    - first settled point landed in archival-only band
+    - lane closed
+  - `sigma=0.02 residual warm_vel2 b22`:
+    - first settled point improved LPIPS but still landed in archival-only band
+    - lane closed
+- final decision:
+  - the full exact-I2SB topology-anchor fallback ladder is now closed
+  - any future I2SB work is diagnostic-only until a cheap read shows `LPIPS < 0.40`

@@ -183,6 +183,11 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         self.structured_style_tokenizer: nn.Module | None = None
         structured_dino_dim = max(1, int(getattr(cfg, "tokenizer_dino_dim", 384)))
         structured_num_clusters = max(1, int(getattr(cfg, "tokenizer_num_clusters", 16)))
+        structured_query_dim = max(8, int(getattr(cfg, "tokenizer_query_dim", 64)))
+        structured_query_num_blocks = max(1, int(getattr(cfg, "tokenizer_query_num_blocks", 4)))
+        structured_pe_temperature = max(0.0, float(getattr(cfg, "tokenizer_pe_temperature", 1.0)))
+        structured_global_gate_hidden_dim = max(1, int(getattr(cfg, "tokenizer_global_gate_hidden_dim", style_dim)))
+        structured_global_gate_scale = max(0.0, float(getattr(cfg, "tokenizer_global_gate_scale", 1.0)))
         structured_temperature = max(1e-3, float(getattr(cfg, "tokenizer_structured_temperature", 0.1)))
         structured_prompt_dim = max(1, int(getattr(cfg, "tokenizer_prompt_dim", 256)))
         structured_prompt_length = max(1, int(getattr(cfg, "tokenizer_prompt_length", 8)))
@@ -194,6 +199,11 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
                 latent_channels=self.latent_channels,
                 num_clusters=structured_num_clusters,
                 temperature=structured_temperature,
+                query_dim=structured_query_dim,
+                query_num_blocks=structured_query_num_blocks,
+                pe_temperature=structured_pe_temperature,
+                global_gate_hidden_dim=structured_global_gate_hidden_dim,
+                global_gate_scale=structured_global_gate_scale,
             )
         elif self.tokenizer_family == "tok_a_dino_dict":
             self.structured_style_tokenizer = DinoDictionaryTokenizer(

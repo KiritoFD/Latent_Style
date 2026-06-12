@@ -1,0 +1,28 @@
+{
+  "_base": "./phase2_vel_pattn_enhanced_tok_seed42_b22a1.json",
+  "model": {
+    "tokenizer_query_dim": 96,
+    "tokenizer_query_num_blocks": 5,
+    "tokenizer_pe_temperature": 0.75,
+    "tokenizer_global_gate_hidden_dim": 192,
+    "tokenizer_global_gate_scale": 1.1,
+    "tokenizer_structured_temperature": 0.08
+  },
+  "training": {
+    "batch_size": 20,
+    "resume_checkpoint": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_pattn_enhanced_tok_seed42_b22a1/epoch_0002.pt",
+    "resume_model_strict": false,
+    "resume_optimizer": false,
+    "resume_training_state": false,
+    "resume_prefer_local_checkpoint": false
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_vel_tok32_pos_refresh_seed42_b20a1"
+  },
+  "ablation": {
+    "name": "phase2_vel_tok32_pos_refresh_b20a1",
+    "axis": "phase2_velocity_breakthrough",
+    "notes": "Phase2 tokenizer-refresh packet on the safe velocity parent: wider/deeper pure latent query stack, proper 2D position encoding, stronger global-spatial coupling, and sharper routing while staying on the velocity mainline.",
+    "stage": "phase2_mainline"
+  }
+}
