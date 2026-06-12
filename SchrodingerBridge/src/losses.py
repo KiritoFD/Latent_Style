@@ -92,6 +92,11 @@ class OTFlowMatchingObjective:
         self.w_variance_penalty = max(0.0, float(bridge_cfg.w_variance_penalty))
         self.w_style_energy_floor = max(0.0, float(bridge_cfg.w_style_energy_floor))
         self.w_lowfreq_velocity = max(0.0, float(bridge_cfg.w_lowfreq_velocity))
+        self.w_content_lowpass_anchor = max(0.0, float(getattr(bridge_cfg, "w_content_lowpass_anchor", 0.0)))
+        self.w_content_edge_anchor = max(0.0, float(getattr(bridge_cfg, "w_content_edge_anchor", 0.0)))
+        self.content_anchor_lowpass_kernel = max(1, int(getattr(bridge_cfg, "content_anchor_lowpass_kernel", 9)))
+        if self.content_anchor_lowpass_kernel % 2 == 0:
+            self.content_anchor_lowpass_kernel += 1
         self.w_style_contrastive = max(0.0, float(bridge_cfg.w_style_contrastive))
         self.style_contrastive_temperature = max(1e-4, float(bridge_cfg.style_contrastive_temperature))
         self.style_contrastive_pool_size = max(1, int(bridge_cfg.style_contrastive_pool_size))
@@ -643,6 +648,23 @@ class OTFlowMatchingObjective:
             return pred_velocity.new_tensor(0.0, dtype=torch.float32)
         return self._lowpass(pred_velocity).square().mean() * self.w_lowfreq_velocity
 
+    def _content_topology_anchor_loss(self, pred_endpoint: torch.Tensor, content: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        zero = pred_endpoint.new_tensor(0.0, dtype=torch.float32)
+        if self.w_content_lowpass_anchor <= 0.0 and self.w_content_edge_anchor <= 0.0:
+            return zero, zero
+        pad = self.content_anchor_lowpass_kernel // 2
+        pred_low = F.avg_pool2d(pred_endpoint.float(), kernel_size=self.content_anchor_lowpass_kernel, stride=1, padding=pad)
+        content_low = F.avg_pool2d(content.float(), kernel_size=self.content_anchor_lowpass_kernel, stride=1, padding=pad)
+        lowpass_loss = zero
+        edge_loss = zero
+        if self.w_content_lowpass_anchor > 0.0:
+            lowpass_loss = F.l1_loss(pred_low, content_low) * self.w_content_lowpass_anchor
+        if self.w_content_edge_anchor > 0.0:
+            pred_edge = self._gradient_magnitude(pred_low)
+            content_edge = self._gradient_magnitude(content_low).detach()
+            edge_loss = F.l1_loss(pred_edge, content_edge) * self.w_content_edge_anchor
+        return lowpass_loss, edge_loss
+
     def _spectral_split_kinetic_loss(self, pred_velocity: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         v_fft = torch.fft.rfft2(pred_velocity.float(), norm="ortho")
         _, _, h_dim, w_dim = pred_velocity.shape
@@ -1118,6 +1140,7 @@ class OTFlowMatchingObjective:
 
         style_energy_floor = self._style_energy_floor_loss(endpoint_for_losses, target_for_loss) if self.w_style_energy_floor > 0.0 else zero
         lowfreq_velocity = self._lowfreq_velocity_loss(pred_velocity) if self.w_lowfreq_velocity > 0.0 else zero
+        content_lowpass_anchor, content_edge_anchor = self._content_topology_anchor_loss(endpoint_for_losses, content)
         style_contrastive = (
             self._style_contrastive_loss(endpoint_for_losses, target_for_loss, target_style_id)
             if self.w_style_contrastive > 0.0
@@ -1174,6 +1197,8 @@ class OTFlowMatchingObjective:
             total_loss
             + style_energy_floor
             + lowfreq_velocity
+            + content_lowpass_anchor
+            + content_edge_anchor
             + style_contrastive
             + residual_style_direction
             + generated_delta_diversity
@@ -1255,6 +1280,8 @@ class OTFlowMatchingObjective:
             "cycle_consistency": cycle_consistency.detach(),
             "style_energy_floor": style_energy_floor.detach(),
             "lowfreq_velocity": lowfreq_velocity.detach(),
+            "content_lowpass_anchor": content_lowpass_anchor.detach(),
+            "content_edge_anchor": content_edge_anchor.detach(),
             "style_contrastive": style_contrastive.detach(),
             "residual_style_direction": residual_style_direction.detach(),
             "generated_delta_diversity": generated_delta_diversity.detach(),
@@ -1302,6 +1329,8 @@ class OTFlowMatchingObjective:
             "terminal_swd_aux": terminal_aux_loss,
             "style_energy_floor": style_energy_floor,
             "lowfreq_velocity": lowfreq_velocity,
+            "content_lowpass_anchor": content_lowpass_anchor,
+            "content_edge_anchor": content_edge_anchor,
             "style_contrastive": style_contrastive,
             "residual_style_direction": residual_style_direction,
             "generated_delta_diversity": generated_delta_diversity,
@@ -1445,6 +1474,7 @@ class OTFlowMatchingObjective:
             pred_v2 = model(x_t + pred_velocity * dt, t=t2, style_id=target_style_id)
             curvature_loss = self._loss(pred_v2, pred_velocity)
             total_loss = total_loss + curvature_loss * self.w_curvature
+        content_lowpass_anchor, content_edge_anchor = self._content_topology_anchor_loss(pred_endpoint if pred_endpoint is not None else x_t, content)
 
         t_profile = self._profile_start(content)
         terminal_swd, endpoint_abs = self._terminal_swd(
@@ -1469,7 +1499,7 @@ class OTFlowMatchingObjective:
             target_style_id=target_style_id,
             source_style_id=source_style_id,
         )
-        total_loss = total_loss + cycle_consistency
+        total_loss = total_loss + content_lowpass_anchor + content_edge_anchor + cycle_consistency
 
         metrics: Dict[str, torch.Tensor] = {
             "loss": total_loss,
@@ -1491,6 +1521,8 @@ class OTFlowMatchingObjective:
             "t_mean": t.mean().detach(),
             "velocity_abs": target_velocity.abs().mean().detach(),
             "endpoint_abs": endpoint_abs.detach(),
+            "content_lowpass_anchor": content_lowpass_anchor.detach(),
+            "content_edge_anchor": content_edge_anchor.detach(),
             "terminal_swd": terminal_swd.detach() if terminal_swd is not None else content.new_tensor(0.0),
             "generated_delta_diversity": generated_delta_diversity.detach(),
             "generated_delta_mean_offdiag_cos": generated_delta_mean_offdiag_cos.detach(),
@@ -1508,6 +1540,8 @@ class OTFlowMatchingObjective:
             "anisotropic_kinetic": anisotropic_kinetic,
             "stokes_viscous": stokes_viscous,
             "curvature": curvature_loss * self.w_curvature,
+            "content_lowpass_anchor": content_lowpass_anchor,
+            "content_edge_anchor": content_edge_anchor,
             "terminal_swd": terminal_swd * self.terminal_swd_weight if terminal_swd is not None else zero,
             "generated_delta_diversity": generated_delta_diversity,
             "cycle_consistency": cycle_consistency,

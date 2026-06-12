@@ -385,6 +385,9 @@ class BridgeConfig:
     w_variance_penalty: float = 0.0
     w_style_energy_floor: float = 0.0
     w_lowfreq_velocity: float = 0.0
+    w_content_lowpass_anchor: float = 0.0
+    w_content_edge_anchor: float = 0.0
+    content_anchor_lowpass_kernel: int = 9
     w_style_contrastive: float = 0.0
     style_contrastive_temperature: float = 0.08
     style_contrastive_pool_size: int = 4
