@@ -8,10 +8,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from config_schema import ModelConfig
+from config_schema import BridgeConfig, ModelConfig
 from lancet_blocks import StyleMaps, _gumbel_hard_attention, _sinkhorn_attention
 from lancet_backbone import LatentAdaCUT, count_parameters
-from style_families import SOLVER_FAMILIES, normalize_family
+from style_families import SOLVER_FAMILIES, normalize_family, validate_i2sb_contract
 from utils.diffeomorphic import apply_texture_aligned_diffeomorphic_stroke
 
 
@@ -43,7 +43,16 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.transport_prediction_mode = str(getattr(bridge_config, "transport_prediction_mode", "velocity")).strip().lower()
         if self.transport_prediction_mode not in {"velocity", "endpoint"}:
             self.transport_prediction_mode = "velocity"
+        validate_i2sb_contract(
+            solver_family=self.solver_family,
+            transport_prediction_mode=self.transport_prediction_mode,
+            objective_mode=str(getattr(bridge_config, "objective_mode", "")),
+            loss_type=str(getattr(bridge_config, "loss_type", "")),
+        )
         self.transport_endpoint_scale = max(1e-3, float(getattr(bridge_config, "transport_endpoint_scale", 4.0)))
+        self.objective_mode = str(getattr(bridge_config, "objective_mode", "")).strip().lower()
+        self.loss_type = str(getattr(bridge_config, "loss_type", "")).strip().lower()
+        self.bridge_sigma = max(0.0, float(getattr(bridge_config, "bridge_sigma", 0.0)))
         self.bridge_style_dim = int(self.style_tokenizer.embedding_dim)
         self.execution_budget_mode = str(getattr(bridge_config, "execution_budget_mode", "none")).strip().lower()
         if self.execution_budget_mode not in {"none", "scalar", "low_high"}:
@@ -215,6 +224,20 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
 
     def clear_runtime_conditioning(self) -> None:
         self.runtime_conditioning = {}
+
+    def clear_runtime_caches(self, *, clear_conditioning: bool = True) -> None:
+        if clear_conditioning:
+            self.runtime_conditioning = {}
+        self.last_profile = {}
+        self.last_proximal_residual = None
+        self.last_base_endpoint = None
+        self.last_final_endpoint = None
+        self.last_proximal_clamp_scale = None
+        for module in self.modules():
+            if hasattr(module, "last_attn"):
+                setattr(module, "last_attn", None)
+            if hasattr(module, "last_k"):
+                setattr(module, "last_k", None)
 
     @staticmethod
     def _make_style_injector(input_dim: int, channels: int, hidden_dim: int) -> nn.Module:
@@ -428,7 +451,10 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         style_code_override: torch.Tensor | None = None,
     ) -> torch.Tensor:
         if style_code_override is None:
-            style_code = self.encode_style_id(style_id, t=t)
+            if str(getattr(self, "tokenizer_family", "legacy_factorized")) == "pure_latent_spatial":
+                style_code = x.new_zeros((x.shape[0], int(self.bridge_style_dim)))
+            else:
+                style_code = self.encode_style_id(style_id, t=t)
         else:
             style_code = style_code_override
             if style_code.ndim == 1:
@@ -490,6 +516,34 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             return self._project_velocity_tangent(velocity, h)
         return velocity
 
+    def _i2sb_transport_step(
+        self,
+        h: torch.Tensor,
+        *,
+        t_curr: float,
+        t_next: float,
+        style_id: torch.Tensor | int | None,
+        style_code_override: torch.Tensor | None = None,
+        target_style_latent: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        x_1_pred = self.predict_transport_base(
+            h,
+            t=t_curr,
+            style_id=style_id,
+            style_code_override=style_code_override,
+            target_style_latent=target_style_latent,
+        )
+        denom = max(1.0 - float(t_curr), 1e-6)
+        c_curr = (1.0 - float(t_next)) / denom
+        c_target = (float(t_next) - float(t_curr)) / denom
+        mu = c_curr * h + c_target * x_1_pred
+        if float(t_next) >= 1.0 - 1e-4 or self.bridge_sigma <= 0.0:
+            return mu
+        var = (self.bridge_sigma ** 2) * (float(t_next) - float(t_curr)) * (1.0 - float(t_next)) / denom
+        if var <= 0.0:
+            return mu
+        return mu + math.sqrt(var) * torch.randn_like(h)
+
     def _rk_transport_step(
         self,
         h: torch.Tensor,
@@ -511,14 +565,39 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         return h + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
 
     def _correct_transport_state(self, h: torch.Tensor, source: torch.Tensor, *, dt: float) -> torch.Tensor:
-        steps = max(1, int(getattr(self, "solver_corrector_steps", 1)))
-        step_size = max(0.0, float(getattr(self, "solver_corrector_step_size", 0.1)))
-        gate = self._runtime_content_dino_gate(h)
-        if gate is None:
-            gate = torch.ones((h.shape[0], 1, h.shape[2], h.shape[3]), device=h.device, dtype=h.dtype)
+        steps = max(1, int(getattr(self, "solver_corrector_steps", 2)))
+        step_size = max(0.0, float(getattr(self, "solver_corrector_step_size", 0.08)))
+        refine_mode = str(getattr(self, "solver_corrector_mode", "latent_lowpass")).strip().lower()
+        if refine_mode == "legacy_dino_lerp":
+            gate = self._runtime_content_dino_gate(h)
+            if gate is None:
+                gate = torch.ones((h.shape[0], 1, h.shape[2], h.shape[3]), device=h.device, dtype=h.dtype)
+            out = h
+            for _ in range(steps):
+                out = torch.lerp(out, source, gate * step_size * dt)
+            return out
+
+        # Phase-2: Latent Content Correction — anchor low-frequency structure only
+        # Preserves high-frequency style detail while pulling macro-structure back to source.
+        kernel = max(3, int(getattr(self, "solver_corrector_lowpass_kernel", 5)))
+        if kernel % 2 == 0:
+            kernel += 1
         out = h
+        pad = kernel // 2
+        source_float = source.float()
         for _ in range(steps):
-            out = torch.lerp(out, source, gate * step_size * dt)
+            out_low = F.avg_pool2d(out.float(), kernel_size=kernel, stride=1, padding=pad)
+            src_low = F.avg_pool2d(source_float, kernel_size=kernel, stride=1, padding=pad)
+
+            # Gradient: push low-freq toward source, leave high-freq intact
+            correction = out_low - src_low
+            out = out - step_size * dt * correction.to(dtype=out.dtype)
+
+            # Optional: clamp correction magnitude to avoid over-correction
+            clamp = float(getattr(self, "solver_corrector_clamp", 0.0))
+            if clamp > 0:
+                out = torch.clamp(out, source_float.to(dtype=out.dtype) - clamp, source_float.to(dtype=out.dtype) + clamp)
+
         return out
 
     def _proximal_lowpass(self, x: torch.Tensor) -> torch.Tensor:
@@ -554,6 +633,59 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             style_map = style_map + token_bias
         return style_map
 
+    def _structured_proximal_style_tokens(
+        self,
+        z_base: torch.Tensor,
+        *,
+        style_id: torch.Tensor | int,
+        style_code_override: torch.Tensor | None = None,
+        source_latent: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        content_latent = source_latent if source_latent is not None else z_base
+        if content_latent.device != z_base.device:
+            content_latent = content_latent.to(device=z_base.device)
+        if content_latent.dtype != z_base.dtype:
+            content_latent = content_latent.to(dtype=z_base.dtype)
+        style_code = self._resolve_refine_style_code(
+            z_base,
+            style_id=style_id,
+            style_code_override=style_code_override,
+        )
+        feat_c = content_latent / max(self.latent_scale_factor, 1e-8)
+        h_c = self.enc_in_act(self.enc_in(feat_c))
+        for block in self.hires_body:
+            h_c = block(h_c, style_code, gate=0.0)
+        content_feat_16 = self.down(h_c)
+        style_code = self._adapt_style_code_from_content(
+            style_id=style_id,
+            style_code=style_code,
+            content_feat_16=content_feat_16,
+        )
+        structured_ctx = self._structured_style_from_sidecar(
+            style_id=style_id,
+            style_code=style_code,
+            content_latent=content_latent,
+            content_feat_16=content_feat_16,
+        )
+        if structured_ctx is None:
+            raise RuntimeError(
+                "pure_latent_spatial + crossattn_texture requires structured tokenizer output for proximal refinement."
+            )
+        style_code, style_maps = structured_ctx
+        style_map = self._prepare_spatial_map(style_maps.map_16, content_feat_16)
+        if style_map is None:
+            raise RuntimeError("structured tokenizer did not produce a usable spatial map for proximal refinement.")
+        style_map = F.interpolate(
+            style_map.to(device=z_base.device, dtype=z_base.dtype),
+            size=z_base.shape[-2:],
+            mode="bilinear",
+            align_corners=False,
+        )
+        if self.proximal_style_tokens is not None:
+            token_bias = self.proximal_style_tokens(style_code).view(style_code.shape[0], self.body_channels, 1, 1)
+            style_map = style_map + token_bias.to(device=style_map.device, dtype=style_map.dtype)
+        return style_code, style_map
+
     def _route_proximal_attention(self, logits: torch.Tensor) -> torch.Tensor:
         if self.proximal_attn_routing_mode == "sinkhorn":
             return _sinkhorn_attention(logits, iters=self.proximal_attn_sinkhorn_iters).to(dtype=logits.dtype)
@@ -575,11 +707,6 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             self.last_proximal_clamp_scale = torch.ones((), device=z_base.device, dtype=z_base.dtype)
             self.last_final_endpoint = z_base.detach()
             return z_base
-        style_code = self._resolve_refine_style_code(
-            z_base,
-            style_id=style_id,
-            style_code_override=style_code_override,
-        )
         if self.proximal_mode == "crossattn_texture":
             if (
                 self.proximal_attn_q is None
@@ -590,8 +717,21 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                 raise RuntimeError("cross-attention proximal modules not initialized")
             if style_id is None:
                 raise ValueError("style_id is required for crossattn_texture proximal mode.")
+            if str(getattr(self, "tokenizer_family", "legacy_factorized")) == "pure_latent_spatial":
+                style_code, kv_src = self._structured_proximal_style_tokens(
+                    z_base,
+                    style_id=style_id,
+                    style_code_override=style_code_override,
+                    source_latent=source_latent,
+                )
+            else:
+                style_code = self._resolve_refine_style_code(
+                    z_base,
+                    style_id=style_id,
+                    style_code_override=style_code_override,
+                )
+                kv_src = self._style_spatial_tokens(z_base, style_id).float()
             q = self.proximal_attn_q(z_base.float())
-            kv_src = self._style_spatial_tokens(z_base, style_id).float()
             k = self.proximal_attn_k(kv_src)
             v = self.proximal_attn_v(kv_src)
             bsz, ch, h_dim, w_dim = q.shape
@@ -813,7 +953,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
     ) -> torch.Tensor:
         if style_id is None:
             raise ValueError("style_id is required for bridge integration.")
-        if self.transport_prediction_mode == "endpoint":
+        if self.transport_prediction_mode == "endpoint" and self.solver_family != "solver_i2sb":
             return self.predict_transport_base(
                 x,
                 t=1.0,
@@ -830,7 +970,18 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         h = x
         for idx in range(steps):
             t = horizon * ((idx + 0.5) / float(steps))
-            if self.solver_family == "solver_tangent_rk":
+            t_curr = horizon * (idx / float(steps))
+            t_next = horizon * ((idx + 1) / float(steps))
+            if self.solver_family == "solver_i2sb" and self.transport_prediction_mode == "endpoint":
+                h = self._i2sb_transport_step(
+                    h,
+                    t_curr=t_curr,
+                    t_next=t_next,
+                    style_id=style_id,
+                    style_code_override=style_code_override,
+                    target_style_latent=target_style_latent,
+                )
+            elif self.solver_family == "solver_tangent_rk":
                 h = self._rk_transport_step(
                     h,
                     t=t,
@@ -914,12 +1065,33 @@ def _normalize_skip_routing_mode(config: ModelConfig) -> ModelConfig:
     return model_cfg
 
 
+def _attach_bridge_runtime_fields(
+    model_cfg: ModelConfig,
+    bridge_cfg: BridgeConfig | Mapping[str, object] | None,
+) -> ModelConfig:
+    if bridge_cfg is None:
+        return model_cfg
+    bridge = bridge_cfg if isinstance(bridge_cfg, BridgeConfig) else BridgeConfig.from_mapping(bridge_cfg)
+    bridge_fields = {
+        "objective_mode": str(getattr(bridge, "objective_mode", "")),
+        "loss_type": str(getattr(bridge, "loss_type", "")),
+        "bridge_sigma": float(getattr(bridge, "bridge_sigma", 0.0)),
+    }
+    model_cfg.extra = dict(getattr(model_cfg, "extra", {}) or {})
+    for key, value in bridge_fields.items():
+        setattr(model_cfg, key, value)
+        model_cfg.extra[key] = value
+    return model_cfg
+
+
 def build_model_from_config(
     model_cfg: ModelConfig | Mapping[str, object],
     *,
+    bridge_cfg: BridgeConfig | Mapping[str, object] | None = None,
     use_checkpointing: bool = False,
 ) -> TimeConditionedLANCETBridge:
     config = model_cfg if isinstance(model_cfg, ModelConfig) else ModelConfig.from_mapping(model_cfg)
+    config = _attach_bridge_runtime_fields(config, bridge_cfg)
     config = _normalize_skip_routing_mode(config)
     config.use_checkpointing = bool(use_checkpointing)
     return TimeConditionedLANCETBridge(config)

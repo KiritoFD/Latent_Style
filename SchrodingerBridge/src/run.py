@@ -15,6 +15,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from config_schema import ExperimentConfig, load_experiment_config
+from style_families import runtime_conditioning_requires_dino, validate_i2sb_contract, validate_pure_latent_contract
 from trainer import SBTrainer
 from utils.dataset import AdaCUTLatentDataset
 
@@ -23,6 +24,18 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+ROUND2_REFERENCE_GAP_SPECS: dict[str, dict[str, object]] = {
+    "sde_i2sb_sigma_0p25": {
+        "reference_name": "b24c3_epoch_0001",
+        "reference_transfer_style": 0.717461,
+        "reference_transfer_lpips": 0.679334,
+        "reference_allpairs_style": 0.721461,
+        "reference_allpairs_lpips": 0.671537,
+        "json_out_rel": "docs/experiments/round2_pure_sde/sde_i2sb_sigma_0p25/gap_vs_b24c3_epoch_0001.json",
+    },
+}
 
 
 def _set_seed(seed: int) -> None:
@@ -149,6 +162,78 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
     subprocess.run(cmd, check=True)
     wall = time.perf_counter() - start
     logger.info("Full eval completed for %s in %.1fs", checkpoint_path.name, wall)
+    collector = Path(__file__).resolve().parents[1] / "tools" / "experiments" / "collect_round2_eval_curve.py"
+    convergence = Path(__file__).resolve().parents[1] / "tools" / "experiments" / "report_round2_convergence.py"
+    manifest = Path(__file__).resolve().parents[1] / "tools" / "experiments" / "update_round2_family_manifest.py"
+    gap_report = Path(__file__).resolve().parents[1] / "tools" / "experiments" / "report_round2_reference_gap.py"
+    curve_csv = checkpoint_path.parent / "full_eval" / "clip_lpips_curve.csv"
+    curve_summary_json = checkpoint_path.parent / "full_eval" / "curve_summary.json"
+    try:
+        if collector.is_file():
+            curve_cmd = [
+                sys.executable,
+                str(collector),
+                "--run-dir",
+                str(checkpoint_path.parent),
+                "--eval-subdir",
+                "full_eval",
+            ]
+            logger.info("Refreshing eval curve for %s", checkpoint_path.parent)
+            subprocess.run(curve_cmd, check=True)
+        if convergence.is_file() and curve_csv.is_file():
+            conv_cmd = [
+                sys.executable,
+                str(convergence),
+                "--curve-csv",
+                str(curve_csv),
+                "--patience",
+                "4",
+            ]
+            logger.info("Refreshing eval convergence for %s", checkpoint_path.parent)
+            subprocess.run(conv_cmd, check=True)
+        manifest_csv = Path(__file__).resolve().parents[1] / "docs" / "experiments" / "round2_pure_sde" / "round2_family_manifest.csv"
+        ablation_cfg = getattr(config, "ablation", {}) or {}
+        family_name = ""
+        if isinstance(ablation_cfg, dict):
+            family_name = str(ablation_cfg.get("name", "")).strip()
+        else:
+            family_name = str(getattr(ablation_cfg, "name", "") or "").strip()
+        if manifest.is_file() and manifest_csv.is_file() and family_name.startswith("aaai2027_round2_") and family_name.endswith("_seed42_b8a2"):
+            compact_family_id = family_name.removeprefix("aaai2027_round2_").removesuffix("_seed42_b8a2")
+            manifest_cmd = [
+                sys.executable,
+                str(manifest),
+                "--manifest-csv",
+                str(manifest_csv),
+                "--family-id",
+                compact_family_id,
+            ]
+            logger.info("Refreshing round2 manifest row for %s", compact_family_id)
+            subprocess.run(manifest_cmd, check=True)
+            gap_spec = ROUND2_REFERENCE_GAP_SPECS.get(compact_family_id)
+            if gap_spec is not None and gap_report.is_file() and curve_summary_json.is_file():
+                gap_cmd = [
+                    sys.executable,
+                    str(gap_report),
+                    "--curve-summary-json",
+                    str(curve_summary_json),
+                    "--reference-name",
+                    str(gap_spec["reference_name"]),
+                    "--reference-transfer-style",
+                    str(gap_spec["reference_transfer_style"]),
+                    "--reference-transfer-lpips",
+                    str(gap_spec["reference_transfer_lpips"]),
+                    "--reference-allpairs-style",
+                    str(gap_spec["reference_allpairs_style"]),
+                    "--reference-allpairs-lpips",
+                    str(gap_spec["reference_allpairs_lpips"]),
+                    "--json-out",
+                    str(Path(__file__).resolve().parents[2] / str(gap_spec["json_out_rel"])),
+                ]
+                logger.info("Refreshing round2 reference-gap report for %s", compact_family_id)
+                subprocess.run(gap_cmd, check=True)
+    except Exception:
+        logger.exception("Post-eval round2 metadata refresh failed for %s; training will continue.", checkpoint_path.name)
 
 
 def main() -> None:
@@ -172,7 +257,33 @@ def main() -> None:
     logger.info("Device: %s", device)
     logger.info("Seed: %d", seed)
 
+    validate_i2sb_contract(
+        solver_family=str(getattr(config.model, "solver_family", "euler_legacy")),
+        transport_prediction_mode=str(getattr(config.model, "transport_prediction_mode", "velocity")),
+        objective_mode=str(getattr(config.bridge, "objective_mode", "")),
+        loss_type=str(getattr(config.bridge, "loss_type", "")),
+    )
+    validate_pure_latent_contract(
+        tokenizer_family=str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
+        semantic_supervision_family=str(getattr(config.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
+        dino_masked_swd_weight=float(getattr(config.bridge, "dino_masked_swd_weight", 0.0)),
+        style_spatial_mode=str(getattr(config.model, "style_spatial_mode", "")),
+        tokenizer_content_adaptive=bool(getattr(config.model, "tokenizer_content_adaptive", False)),
+    )
+
     data_cfg = config.data
+    needs_dino_runtime = runtime_conditioning_requires_dino(
+        tokenizer_family=str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
+        semantic_supervision_family=str(getattr(config.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
+    )
+    dino_cache_path = str(data_cfg.dino_cache_path) if needs_dino_runtime else ""
+    dino_cache_required = bool(data_cfg.dino_cache_required) if needs_dino_runtime else False
+    if (not needs_dino_runtime) and (str(data_cfg.dino_cache_path).strip() or bool(data_cfg.dino_cache_required)):
+        logger.info(
+            "Ignoring DINO sidecar config for tokenizer_family=%s semantic_supervision_family=%s; pure-latent mainline does not require runtime DINO conditioning.",
+            str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
+            str(getattr(config.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
+        )
     dataset = AdaCUTLatentDataset(
         data_root=data_cfg.data_root,
         style_subdirs=data_cfg.style_subdirs,
@@ -202,8 +313,8 @@ def main() -> None:
         pairing_cache_cross_only=bool(data_cfg.pairing_cache_cross_only),
         latent_cache_mode=str(data_cfg.latent_cache_mode),
         latent_cache_dir=str(data_cfg.latent_cache_dir),
-        dino_cache_path=str(data_cfg.dino_cache_path),
-        dino_cache_required=bool(data_cfg.dino_cache_required),
+        dino_cache_path=dino_cache_path,
+        dino_cache_required=dino_cache_required,
         dino_bank_limit_per_style=int(data_cfg.dino_bank_limit_per_style),
         device=str(device),
     )
@@ -311,7 +422,15 @@ def main() -> None:
                 if bool(getattr(train_cfg, "full_eval_defer_until_training_end", False)):
                     deferred_eval_checkpoints.append(ckpt_path)
                 else:
-                    _run_full_eval_for_checkpoint(config, ckpt_path)
+                    eval_offloaded = False
+                    if hasattr(trainer, "offload_for_full_eval"):
+                        trainer.offload_for_full_eval()
+                        eval_offloaded = True
+                    try:
+                        _run_full_eval_for_checkpoint(config, ckpt_path)
+                    finally:
+                        if eval_offloaded and hasattr(trainer, "restore_after_full_eval"):
+                            trainer.restore_after_full_eval()
         if trainer.requested_stop:
             logger.info("Early stop requested by training.stop_after_global_steps; ending training loop after epoch %d.", epoch)
             break

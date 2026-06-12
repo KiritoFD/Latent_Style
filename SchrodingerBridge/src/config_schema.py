@@ -7,6 +7,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Mapping
 
+from style_families import validate_i2sb_contract, validate_pure_latent_contract
+
 
 INFERENCE_DEFAULTS: dict[str, dict[str, Any]] = {
     "inference": {
@@ -89,6 +91,30 @@ def _materialize_missing_dataclass_fields(obj: Any) -> None:
         else:
             value = None
         setattr(obj, name, value)
+
+
+def _rehydrate_extra_attributes(obj: Any) -> None:
+    extra = getattr(obj, "extra", None)
+    if not isinstance(extra, Mapping):
+        return
+    for key, value in extra.items():
+        name = str(key)
+        if hasattr(obj, name):
+            continue
+        setattr(obj, name, value)
+
+
+def _normalize_model_contract_defaults(cfg: "ModelConfig") -> "ModelConfig":
+    family = str(getattr(cfg, "tokenizer_family", "legacy_factorized") or "legacy_factorized").strip().lower()
+    if family == "pure_latent_spatial":
+        cfg.style_tokenizer = "null"
+        cfg.tokenizer_content_adaptive = False
+        cfg.style_spatial_mode = "disabled"
+        cfg.style_id_spatial_jitter_px = 0
+    if bool(getattr(cfg, "ablation_disable_spatial_prior", False)):
+        cfg.style_spatial_mode = "disabled"
+        cfg.style_id_spatial_jitter_px = 0
+    return cfg
 
 
 _RETIRED_BRIDGE_KEYS = {
@@ -302,6 +328,8 @@ class ModelConfig:
         known, extra = _split_known_fields(cls, payload)
         cfg = cls(**known)
         cfg.extra = extra
+        cfg = _normalize_model_contract_defaults(cfg)
+        _rehydrate_extra_attributes(cfg)
         return cfg
 
     def validated(self, *, use_checkpointing: bool | None = None) -> "ModelConfig":
@@ -311,6 +339,7 @@ class ModelConfig:
             cfg.use_checkpointing = bool(use_checkpointing)
         if cfg.lift_channels is None:
             cfg.lift_channels = int(cfg.base_dim)
+        _rehydrate_extra_attributes(cfg)
         return cfg
 
     def to_dict(self) -> dict[str, Any]:
@@ -488,6 +517,7 @@ class TrainingConfig:
     resume_ignore_prefixes: list[str] = field(default_factory=list)
     resume_include_prefixes: list[str] = field(default_factory=list)
     resume_training_state: bool = True
+    resume_prefer_local_checkpoint: bool = True
     freeze_mode: str = "none"
     freeze_reinit_trainable: bool = False
     full_eval_batch_size: int = 8
@@ -633,7 +663,7 @@ class ExperimentConfig:
     def from_mapping(cls, payload: Mapping[str, Any] | None) -> "ExperimentConfig":
         data = _section_dict(payload)
         known_sections = {"model", "bridge", "training", "data", "checkpoint", "inference", "full_eval", "ablation"}
-        return cls(
+        cfg = cls(
             model=ModelConfig.from_mapping(data.get("model")),
             bridge=BridgeConfig.from_mapping(data.get("bridge")),
             training=TrainingConfig.from_mapping(data.get("training")),
@@ -644,6 +674,20 @@ class ExperimentConfig:
             ablation=_section_dict(data.get("ablation")),
             extra_sections={key: value for key, value in data.items() if key not in known_sections},
         )
+        validate_i2sb_contract(
+            solver_family=str(getattr(cfg.model, "solver_family", "euler_legacy")),
+            transport_prediction_mode=str(getattr(cfg.model, "transport_prediction_mode", "velocity")),
+            objective_mode=str(getattr(cfg.bridge, "objective_mode", "")),
+            loss_type=str(getattr(cfg.bridge, "loss_type", "")),
+        )
+        validate_pure_latent_contract(
+            tokenizer_family=str(getattr(cfg.model, "tokenizer_family", "legacy_factorized")),
+            semantic_supervision_family=str(getattr(cfg.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
+            dino_masked_swd_weight=float(getattr(cfg.bridge, "dino_masked_swd_weight", 0.0)),
+            style_spatial_mode=str(getattr(cfg.model, "style_spatial_mode", "")),
+            tokenizer_content_adaptive=bool(getattr(cfg.model, "tokenizer_content_adaptive", False)),
+        )
+        return cfg
 
     def to_dict(self) -> dict[str, Any]:
         payload = {

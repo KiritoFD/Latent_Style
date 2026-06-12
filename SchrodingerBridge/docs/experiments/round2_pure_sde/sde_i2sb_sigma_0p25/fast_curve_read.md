@@ -1,0 +1,283 @@
+# sde_i2sb_sigma_0p25 Fast Curve Read
+
+- Historical reference curve:
+  - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round2_sde_i2sb_sigma_0p25_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002_b28c1/full_eval/clip_lpips_curve.csv`
+- Active lane curve:
+  - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round2_sde_i2sb_sigma_0p25_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002_c25clean/full_eval/clip_lpips_curve.csv`
+- Machine-readable gap report vs legacy reference:
+  - [gap_vs_b24c3_epoch_0001.json](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round2_pure_sde/sde_i2sb_sigma_0p25/gap_vs_b24c3_epoch_0001.json)
+- Runtime note:
+  - the `c25clean` curve below is now historical pre-runtime-fix evidence
+  - the corrected true-I2SB runtime lane is `..._rtfix`
+  - it has now warmed into the formal `9.x GiB` band
+  - `rtfix epoch_0001` is the first retained corrected-runtime point:
+    - transfer `0.724444 / 0.712723`
+    - all-pairs `0.724472 / 0.707551`
+  - versus legacy `b24c3 epoch_0001`:
+    - transfer style `+0.006983`
+    - transfer LPIPS `+0.033389`
+    - all-pairs style `+0.003011`
+    - all-pairs LPIPS `+0.036014`
+  - this makes `rtfix epoch_0001` a style-heavy Pareto point rather than a clean replacement for the older low-LPIPS frontier
+  - under the new Phase 2 gate, this point is archived as a failure line because `LPIPS 0.7+` is not promotable
+
+## Current State
+
+- `b28c1 epoch_0001`:
+  - transfer `0.708330 / 0.726471`
+  - all-pairs `0.709705 / 0.719245`
+- `b26c2 epoch_0001`:
+  - transfer `0.706973 / 0.707056`
+  - all-pairs `0.709407 / 0.700522`
+  - eval timing:
+    - `wall_total = 212.27s`
+    - `eval_total = 32.32s`
+    - `generation = 114.00s`
+    - `vae_decode = 54.40s`
+- `b24c3 epoch_0001`:
+  - transfer `0.717461 / 0.679334`
+  - all-pairs `0.721461 / 0.671537`
+  - eval timing:
+    - `wall_total = 217.91s`
+    - `eval_total = 30.80s`
+    - `generation = 117.74s`
+    - `vae_decode = 56.92s`
+- `b24c3 epoch_0002`:
+  - transfer `0.705420 / 0.728524`
+  - all-pairs `0.707059 / 0.721498`
+  - eval timing:
+    - `wall_total = 223.08s`
+    - `eval_total = 33.37s`
+    - `generation = 120.19s`
+    - `vae_decode = 56.89s`
+- `clean30 epoch_0001`:
+  - transfer `0.713563 / 0.682533`
+  - all-pairs `0.717004 / 0.674513`
+  - eval timing:
+    - `wall_total = 211.97s`
+    - `eval_total = 33.76s`
+    - `generation = 107.07s`
+    - `vae_decode = 58.71s`
+- `clean28 epoch_0001`:
+  - transfer `0.710131 / 0.720336`
+  - all-pairs `0.711888 / 0.712437`
+  - eval timing:
+    - `wall_total = 208.18s`
+    - `eval_total = 32.38s`
+    - `generation = 105.19s`
+    - `vae_decode = 58.57s`
+- `c26clean epoch_0001`:
+  - transfer `0.707839 / 0.700847`
+  - all-pairs `0.710743 / 0.694716`
+  - eval timing:
+    - `wall_total = 196.97s`
+    - `eval_total = 31.36s`
+    - `generation = 99.38s`
+    - `vae_decode = 54.45s`
+- `c25clean epoch_0001`:
+  - transfer `0.695893 / 0.692449`
+  - all-pairs `0.698727 / 0.687063`
+  - eval timing:
+    - `wall_total = 213.36s`
+    - `eval_total = 35.35s`
+    - `generation = 107.55s`
+    - `vae_decode = 58.12s`
+- `c25clean epoch_0002`:
+  - transfer `0.695618 / 0.713485`
+  - all-pairs `0.697447 / 0.707836`
+  - eval timing:
+    - `wall_total = 205.75s`
+    - `eval_total = 31.01s`
+    - `generation = 105.49s`
+    - `vae_decode = 57.40s`
+- `c25clean epoch_0003`:
+  - transfer `0.702414 / 0.688288`
+  - all-pairs `0.706047 / 0.681563`
+  - eval timing:
+    - `wall_total = 210.22s`
+    - `eval_total = 33.44s`
+    - `generation = 106.95s`
+    - `vae_decode = 57.59s`
+- `c25clean epoch_0004`:
+  - transfer `0.685473 / 0.691670`
+  - all-pairs `0.689208 / 0.684116`
+  - eval timing:
+    - `wall_total = 202.02s`
+    - `eval_total = 31.93s`
+    - `generation = 102.65s`
+    - `vae_decode = 55.54s`
+- `c25clean epoch_0005`:
+  - transfer `0.687858 / 0.677851`
+  - all-pairs `0.691396 / 0.672367`
+  - eval timing:
+    - `wall_total = 199.81s`
+    - `eval_total = 30.08s`
+    - `generation = 102.63s`
+    - `vae_decode = 55.57s`
+- `c25clean epoch_0006`:
+  - transfer `0.706113 / 0.703783`
+  - all-pairs `0.708914 / 0.695658`
+  - eval timing:
+    - `wall_total = 201.64s`
+    - `eval_total = 32.07s`
+    - `generation = 102.21s`
+    - `vae_decode = 55.53s`
+- `c25clean epoch_0007`:
+  - transfer `0.701821 / 0.683235`
+  - all-pairs `0.704904 / 0.675067`
+  - eval timing:
+    - `wall_total = 201.73s`
+    - `eval_total = 31.88s`
+    - `generation = 102.45s`
+    - `vae_decode = 55.51s`
+- `c25clean epoch_0008`:
+  - transfer `0.702774 / 0.696028`
+  - all-pairs `0.705178 / 0.687747`
+  - eval timing:
+    - `wall_total = 205.01s`
+    - `eval_total = 30.75s`
+    - `generation = 105.01s`
+    - `vae_decode = 57.38s`
+- `c25clean epoch_0009`:
+  - transfer `0.699348 / 0.671750`
+  - all-pairs `0.702985 / 0.664514`
+  - eval timing:
+    - `wall_total = 206.55s`
+    - `eval_total = 32.87s`
+    - `generation = 104.17s`
+    - `vae_decode = 57.42s`
+- `c25clean epoch_0010`:
+  - transfer `0.704837 / 0.642300`
+  - all-pairs `0.709871 / 0.634044`
+  - eval timing:
+    - `wall_total = 303.70s`
+    - `eval_total = 38.74s`
+    - `generation = 189.98s`
+    - `vae_decode = 58.03s`
+- `c25clean epoch_0011`:
+  - transfer `0.700018 / 0.673689`
+  - all-pairs `0.703090 / 0.665864`
+  - eval timing:
+    - `wall_total = 310.15s`
+    - `eval_total = 37.18s`
+    - `generation = 198.92s`
+    - `vae_decode = 58.09s`
+
+## Immediate Read
+
+- `b24c3 epoch_0001` is still the strongest settled legacy-snapshot point inside `sigma=0.25`
+- `b28c1 epoch_0001`, `b26c2 epoch_0001`, and `b24c3 epoch_0001` all dominate the recorded `sigma=0.5 / b28c4 epoch_0001` reference on both `transfer` and `all_pairs`
+- within `sigma=0.25`:
+  - `b28c1` is the style-heavier point
+  - `b26c2` is the earlier structure-friendlier point
+  - `b24c3` dominated both on the first retained checkpoint, but failed to hold that lead at `epoch_0002`
+- clean comparison:
+  - `clean30 epoch_0001` is the first true clean retained point
+  - it is slightly weaker than legacy `b24c3 epoch_0001` on both `transfer` and `all_pairs`
+- `clean28 epoch_0001` is weaker than `clean30 epoch_0001`
+- `c26clean epoch_0001`:
+  - is now the strongest true-clean point in this family
+  - dominates `b26c2 epoch_0001`
+  - dominates `b28c1 epoch_0001` on `all_pairs`
+  - still trails `b24c3 epoch_0001`
+- `c25clean epoch_0001`:
+  - gives up style versus `c26clean`
+  - slightly improves LPIPS
+  - is still weaker than the best clean style point
+  - but is currently the first clean retry that has clearly survived well into `epoch_2`
+  - this makes it the current operational lane even though `c26clean` remains the clean-family first-point frontier
+- `c25clean epoch_0002`:
+  - confirms the line can survive post-eval continuation
+  - but regresses on both style and LPIPS versus `epoch_0001`
+  - so it does not create a new Pareto point
+- `c25clean epoch_0003`:
+  - reverses the epoch-2 regression
+  - becomes the best active clean point in this family
+  - still trails `c26clean epoch_0001` on style, but narrows the gap while keeping the stronger LPIPS side of the tradeoff
+- `c25clean epoch_0004`:
+  - confirms the lane can keep surviving repeated eval+resume cycles
+  - but regresses materially versus `epoch_0003`
+  - so it does not replace the current active best checkpoint
+- `c25clean epoch_0005`:
+  - keeps the lane alive through another retained `train -> eval -> resume` cycle
+  - still trails `epoch_0003` on style
+  - but improves LPIPS materially enough to form a new Pareto compromise point
+- `c25clean epoch_0006`:
+  - recovers style strongly enough to become the best active-lane style / all-pairs point
+  - but LPIPS regresses versus both `epoch_0003` and `epoch_0005`
+  - so it adds a new high-style Pareto point rather than replacing the LPIPS-side compromise
+- `c25clean epoch_0007`:
+  - trades some of the `epoch_0006` style spike back for a material LPIPS recovery
+  - does not beat `epoch_0005` on LPIPS or `epoch_0006` on style
+  - but it is still a new middle Pareto point on the active frontier
+- `c25clean epoch_0008`:
+  - shifts back toward the style side from `epoch_0007`
+  - does not beat `epoch_0006` on style or `epoch_0005` on LPIPS
+  - but still lands as a fresh Pareto point between those two ends
+- `c25clean epoch_0009`:
+  - gives back some style from `epoch_0008`
+  - but improves LPIPS enough to dominate the old `epoch_0005` endpoint
+  - this makes it the new low-LPIPS extreme of the active frontier
+- `c25clean epoch_0010`:
+  - recovers most of the style lost at `epoch_0009`
+  - improves LPIPS again instead of giving it back
+  - this makes it the strongest all-pairs compromise point on the active frontier
+- `c25clean epoch_0011`:
+  - gives back style versus `epoch_0010`
+  - also loses part of the LPIPS gain from `epoch_0010`
+  - so it does not extend the Pareto frontier
+- clean calibration:
+  - `clean24`
+  - batch `24`
+  - health check `6827 MiB`
+  - later sample `6763 MiB`
+  - intentionally stopped before the first retained checkpoint because it stayed too far under-band
+- clean calibration:
+  - `clean32`
+  - batch `32`
+  - health check `8724 MiB`
+  - later sample `9316 MiB`
+  - then `RUNTIME_GUARD used=11031 MiB cap=11000 MiB`
+  - stopped before the first retained checkpoint
+- clean calibration:
+  - `clean30`
+  - batch `30`
+  - health check `7764 MiB`
+  - later sample `9451 MiB`
+  - produced `epoch_0001`, then failed at `used=11473 MiB`
+- clean calibration:
+  - `clean28`
+  - batch `28`
+  - health check `7422 MiB`
+  - produced `epoch_0001`, then failed at `used=11029 MiB`
+- clean calibration:
+  - `clean27`
+  - batch `27`
+  - no retained checkpoint
+- current active clean rerun:
+  - `c25clean`
+- next gate:
+  - `c25clean` has now proven survival through `epoch_0011`
+  - `epoch_0006` is the active-lane transfer-style peak while `epoch_0010` is the all-pairs / LPIPS-side compromise
+  - `epoch_0007`, `epoch_0008`, and `epoch_0009` now fill the middle of the Pareto frontier
+  - `c26clean epoch_0001` still remains the strongest first-point clean reference, but it no longer singularly dominates the latest active compromises
+  - no active clean point has yet beaten legacy `b24c3 epoch_0001`
+  - concrete gap-to-legacy:
+    - `epoch_0011` latest raw point vs `b24c3 epoch_0001`
+      - transfer style `-0.017443`
+      - transfer LPIPS `-0.005645`
+      - all-pairs style `-0.018371`
+      - all-pairs LPIPS `-0.005673`
+    - `epoch_0006` vs `b24c3 epoch_0001`
+      - transfer style `-0.011348`
+      - transfer LPIPS `+0.024449`
+      - all-pairs style `-0.012547`
+      - all-pairs LPIPS `+0.024121`
+    - `epoch_0010` vs `b24c3 epoch_0001`
+      - transfer style `-0.012624`
+      - transfer LPIPS `-0.037034`
+      - all-pairs style `-0.011590`
+      - all-pairs LPIPS `-0.037493`
+  - latest remote tail check shows the run already resumed into `Epoch 12`
+  - check whether later checkpoints can recover style after the `epoch_0011` setback or whether the curve has begun to flatten out
+  - if it later repeats the same failure mode, switch to the new segmented runner instead of another blind batch drop

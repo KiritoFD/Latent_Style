@@ -25,6 +25,7 @@ if str(_SRC_ROOT) not in sys.path:
 
 from config_schema import ExperimentConfig, resolve_inference_section
 from model import build_model_from_config
+from style_families import prune_state_dict_for_tokenizer_family, validate_i2sb_contract, validate_pure_latent_contract
 from utils.training import strip_compile_prefix
 
 logger = logging.getLogger(__name__)
@@ -209,9 +210,36 @@ class LGTInference:
         bridge_cfg = config.bridge
         infer_cfg = resolve_inference_section(config)
         self.objective_mode = str(bridge_cfg.objective_mode).strip().lower()
+        if self.objective_mode in {"i2sb", "i2sb_endpoint", "bridge_endpoint"}:
+            self.objective_mode = "i2sb_endpoint"
+        validate_i2sb_contract(
+            solver_family=str(getattr(config.model, "solver_family", "euler_legacy")),
+            transport_prediction_mode=str(getattr(config.model, "transport_prediction_mode", "velocity")),
+            objective_mode=self.objective_mode,
+            loss_type=str(getattr(config.bridge, "loss_type", "")),
+        )
+        validate_pure_latent_contract(
+            tokenizer_family=str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
+            semantic_supervision_family=str(getattr(config.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
+            dino_masked_swd_weight=float(getattr(config.bridge, "dino_masked_swd_weight", 0.0)),
+            style_spatial_mode=str(getattr(config.model, "style_spatial_mode", "")),
+            tokenizer_content_adaptive=bool(getattr(config.model, "tokenizer_content_adaptive", False)),
+        )
         state_dict = strip_compile_prefix(checkpoint["model_state_dict"])
+        state_dict, removed_contract_keys = prune_state_dict_for_tokenizer_family(
+            state_dict,
+            tokenizer_family=str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
+            style_injection_mode=str(getattr(config.model, "style_injection_mode", "none")),
+            proximal_mode=str(getattr(config.model, "proximal_mode", "off")),
+        )
+        if removed_contract_keys:
+            logger.info(
+                "Pruned %d legacy contract keys while loading inference checkpoint for tokenizer_family=%s",
+                len(removed_contract_keys),
+                str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
+            )
 
-        self.model = build_model_from_config(config.model, use_checkpointing=False).to(device)
+        self.model = build_model_from_config(config.model, bridge_cfg=config.bridge, use_checkpointing=False).to(device)
         try:
             self.model.load_state_dict(state_dict, strict=True)
         except RuntimeError as exc:
@@ -286,12 +314,17 @@ class LGTInference:
             if tokenizer_state and hasattr(self.model, "style_tokenizer"):
                 self.model.style_tokenizer.load_state_dict(tokenizer_state, strict=False)
             style_spatial = adapter.get("style_spatial_id_16")
-            if style_spatial is not None and hasattr(self.model, "style_spatial_id_16"):
+            if style_spatial is not None and getattr(self.model, "style_spatial_id_16", None) is not None:
                 self.model.style_spatial_id_16.copy_(
                     style_spatial.to(
                         device=self.model.style_spatial_id_16.device,
                         dtype=self.model.style_spatial_id_16.dtype,
                     )
+                )
+            elif style_spatial is not None:
+                logger.warning(
+                    "Ignoring legacy style_spatial_id_16 adapter payload because tokenizer_family=%s does not instantiate legacy spatial priors.",
+                    str(getattr(self.model, "tokenizer_family", "legacy_factorized")),
                 )
         logger.info("Loaded style adapter: %s", adapter_path)
 
