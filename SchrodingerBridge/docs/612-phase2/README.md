@@ -1,95 +1,125 @@
-# Phase 2 — 基于 612 回顾的手术级重构计划
+# Phase 2 — 基于 612 回顾的结构优先重构计划
 
-## 诊断总结
+## 核心判断
 
-**核心矛盾**: Style vs Structure Trade-off
-- Velocity 模式: LPIPS 好 (0.32) 但 style 天花板低 (0.70)
-- Endpoint 模式: style 可达 0.73 但 LPIPS 崩溃 (0.60+)
-- 根因: Endpoint 预测 x_1 是"重绘"，Velocity 预测 delta 才是"编辑"
+**真正的问题不再是“如何把 style 硬推高”**，而是:
+- 如何在 `content_lpips < 0.40` 的结构安全带内，把 Distinct5 的 style 从 `0.70` 推到 `0.72+`
+- Velocity 线目前大致停在 `0.70 / 0.32`
+- Endpoint / I2SB 线虽然能到 `0.72-0.73` style，但已经反复落在 `0.60-0.70+` LPIPS
+- 因而这些高 style 点不能再被当成 paper-facing frontier
 
-**关键发现**: WikiArt512 上 LBM 可达 0.79/0.31，说明模型能力足够，瓶颈在 Distinct5 更难区分
+**关键发现**:
+- WikiArt512 上 LBM 已经证明模型能力够强，可到 `0.79 / 0.31`
+- Distinct5 的难点不是模型完全不会生成，而是更难在结构不崩的前提下把五类风格拉开
 
-## 硬门槛
+## 晋升门槛
 
-- `content_lpips >= 0.70`:
-  - 直接判定为失败
-  - 立即停掉远程训练，不再等待“后续也许会掉下来”
-- `0.40 <= content_lpips < 0.70`:
-  - 不可晋升
-  - 仅保留为风格上限或结构崩溃对照
-- 只有 `content_lpips < 0.40` 的线才有资格继续占用正式远程训练资源
+- `content_lpips >= 0.70`
+  - 完全失败
+  - 立刻停掉远程正式训练
+  - 结项状态记为 `stopped_lpips_fail`
+- `0.40 <= content_lpips < 0.70`
+  - 仅可归档，不可晋升
+  - 可以保留为理论 / 实现 / 对照证据，但必须退出唯一正式远程训练 lane
+- `content_lpips < 0.40`
+  - 才有资格继续占用正式远程训练资源
+- `style >= 0.72`
+  - 是必要条件，但不是充分条件
+  - 只要 LPIPS 出带，这个点就不算成功
 
 ## 当前结论
 
-- `true I2SB + pure_latent_spatial` 代码路径现在已经被修正成真正的随机桥 runtime
-- 但修正后的 `rtfix epoch_0001` 结果是:
+- `true I2SB + pure_latent_spatial` 代码路径已经被修正成真正的随机桥 runtime
+- 但修正后的 `rtfix epoch_0001` 是:
   - transfer `0.724444 / 0.712723`
   - all-pairs `0.724472 / 0.707551`
-- 这说明:
-  - style 很强
-  - 但 `LPIPS 0.7+` 仍然是完全失败
-  - 因此 I2SB / endpoint 路线当前不再作为远程主训练线推进
-- 处理原则:
-  - I2SB 代码保留, 作为理论和实现分支
-  - 但 Distinct5 训练计划切到结构优先的 Phase 2 路线
+- 结论非常明确:
+  - style 强
+  - 结构完全失败
+  - 因此 endpoint / I2SB 不再是 Distinct5 的远程主训练线
+- 进一步收紧解释:
+  - 旧 round2 中所有 `LPIPS 0.40-0.70` 的点，也不再叫“可推进 compromise”
+  - 它们只是历史诊断证据
+
+## 远程主线执行规则
+
+- 3060 上同一时间只保留一条正式训练 lane
+- 训练中的远程 `CLIP-S + LPIPS` 仍然是收敛与停训依据
+- 第一批 settled checkpoint 就是硬闸门:
+  - 若 `LPIPS >= 0.70`，立即 fail-stop
+  - 若 `0.40 <= LPIPS < 0.70`，归档并让出主线，除非该 run 明确只是 infra / theory validation
+- 不允许再用“后面也许会掉下来”作为继续烧正式训练资源的理由
+- `eval_only` 型 solver 实验可以做，但不能阻塞唯一正式训练 lane
 
 ## 三刀手术
 
-### 第一刀：删除 (Day 1)
+### 第一刀：退出主线的东西
 
-| 删除项 | 文件 | 原因 |
-|--------|------|------|
-| Endpoint 作为主线 | configs, losses.py 模式选择 | 预测 x_1 = 重绘，不可接受；当前 Distinct5 上已被 `LPIPS >= 0.70` 判死 |
-| DINO 依赖 | tok_a/b/c/d tokenizer 入口 | 已有纯潜空间能力证明 |
-| Heuristic Losses | anisotropic, stokes 等 | Endpoint 模式下保结构的缝补，换 Velocity 后有害 |
+| 项 | 处理 | 原因 |
+|---|---|---|
+| Endpoint / I2SB 作为 Distinct5 主线 | 退出主队列 | `LPIPS 0.7+` 已经证明是完全失败 |
+| DINO 依赖 | 保留归档，不在主线继续投入 | 纯潜空间路线已足够成立，且 DINO 工程复杂度不值得 |
+| 旧 heuristic structure 补丁 | 只做对照，不做主路径 | 大多是给 endpoint 擦屁股，不能解决主矛盾 |
 
-### 第二刀：Tokenizer 升级 (Day 1-2)
-
-| 改动 | 文件 | 内容 |
-|------|------|------|
-| query_extractor 加深 | semantic_tokenizer.py | 2层Conv → 4 ResBlock |
-| 位置编码 | semantic_tokenizer.py | 2D Sinusoidal PE on queries |
-| 扩大聚类 | semantic_tokenizer.py | clusters: 16 → 32 |
-| Global-Spatial 关联 | semantic_tokenizer.py | global_code = GAP(spatial_map) + bias |
-
-### 第三刀：PC Solver 破局 (Day 1-2)
+### 第二刀：Tokenizer 升级
 
 | 改动 | 文件 | 内容 |
-|------|------|------|
-| Latent Content Correction | model.py | 低频 MSE 校正替代 DINO Gate |
-| SDE 延迟加噪 | losses.py | t 在 [0.2,0.8] 才加噪声 |
+|---|---|---|
+| query_extractor 加深 | `semantic_tokenizer.py` | 2层 Conv → 4 个残差块 |
+| 位置编码 | `semantic_tokenizer.py` | query 加 2D sinusoidal positional encoding |
+| 扩大聚类 | `semantic_tokenizer.py` | `num_clusters: 16 -> 32` |
+| Global-Spatial 关联 | `semantic_tokenizer.py` | `global_code` 从 `spatial_map` 聚合得到偏置关联 |
+
+### 第三刀：Structure-First Solver
+
+| 改动 | 文件 | 内容 |
+|---|---|---|
+| Latent Content Correction | `model.py` | 用潜空间低频内容校正替代 DINO gate |
+| PC / Corrector 路径 | `model.py` | 先拿 style，再把结果往内容原点拉回 |
+| 延迟或约束式加噪 | `losses.py` | 只在结构可控的时间段尝试噪声，不再把 SDE 当主训练假设 |
 
 ## 实验队列
 
-### 队列1: vel_pattn_enhanced_tok (训练)
-- Velocity + enhanced PureLatentSpatialTokenizer (32 clusters, ResBlock, PE)
-- k-manifold kinetic + pattn proximal
-- 目标: 把 style 天花板从 0.70 推到 0.72+ (Distinct5)
-- promotion gate:
-  - 必须保持 `LPIPS < 0.40`
-- historical config anchors:
-  - `G:\GitHub\Latent_Style\SchrodingerBridge\configs\aaai2027\inmortal_k_manifold_seed42_b16.json`
-  - `G:\GitHub\Latent_Style\SchrodingerBridge\configs\aaai2027\inmortal_xpred_kmanifold_pattn_seed42_b16.json`
+### 队列1: `vel_pattn_enhanced_tok`（唯一正式训练 lane）
 
-### 队列2: eval_only_pc_solver (仅评估)
-- 使用现有 xpred+pattn ckpt (style=0.73)
-- solver=solver_pc + Latent Content Correction
-- 不重新训练
-- 目标: 证明 "Training for Style, Inference for Structure"
-- reference config anchor:
-  - `G:\GitHub\Latent_Style\SchrodingerBridge\configs\aaai2027\round1_full_sweep\aaai2027_round1_solver_pc_seed42_b8a2.json`
+- 组合:
+  - velocity
+  - enhanced `PureLatentSpatialTokenizer`
+  - `manifold_adaptive_split`
+  - `crossattn_texture`
+- 目标:
+  - 在 `LPIPS < 0.40` 内把 style 顶到 `0.72+`
+- 继续条件:
+  - 新 settled 点仍然留在 `< 0.40`
+  - 且 style 或 Pareto 面仍然在变好
+- 退出条件:
+  - 第一批或后续 settled 点落到 `0.40+`
+  - 或 style 在安全带内明显停滞
 
-### 队列3: vel_kman_pattn_kin_sweep (训练)
-- 基于队列1
+### 队列2: `eval_only_pc_solver`
+
+- 复用已有 style 强 ckpt
+- 不重新训练，只测 `solver_pc` / content correction 能否把结构拉回
+- 目标:
+  - 验证 “training for style, inference for structure” 是否成立
+- 注意:
+  - 这是辅助判断，不替代主训练队列
+
+### 队列3: `vel_kman_pattn_kin_sweep`
+
+- 以前一队列的可用点为父本
 - 扫描 `w_kinetic = 0.5 / 1.0 / 2.0`
 - 目标:
-  - 找到 style 提升与 LPIPS 保持之间的最佳点
+  - 找到 style 抬升与 LPIPS 控制之间的最好平衡点
+- 前提:
+  - 队列1 先证明 velocity 主路线上确实还能继续推进
 
-## 资源规则
+## 代码与文档策略
 
-- 当前远程主线:
-  - 不再给 `LPIPS >= 0.70` 的 endpoint / I2SB 线继续训练时间
-- 当前代码策略:
-  - DINO 继续退休
-  - I2SB 保留为实现能力
-  - 远程实验优先级切到 `velocity + tokenizer enhancement + solver_pc`
+- DINO 继续退休，除非后续出现压倒性 board 优势
+- true I2SB 代码保留，作为实现能力和理论资产
+- 但 paper-facing Distinct5 主计划已经切换到:
+  - `velocity + tokenizer enhancement + structure-first solver`
+- 所有 round2 endpoint / I2SB 文档都应按这个门槛重读:
+  - `0.40-0.70` 是 archival only
+  - `0.70+` 是 complete failure
