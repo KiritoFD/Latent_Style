@@ -5,6 +5,7 @@ Date: 2026-06-13
 ## Goal
 
 - follow the `612-phase2` structure-first pivot
+- this is the only formal Distinct5 remote training lane after the endpoint / I2SB fail-stop
 - keep the pure-latent tokenizer path
 - return to `velocity` as the transport target
 - combine:
@@ -31,10 +32,12 @@ Date: 2026-06-13
   - endpoint mainline training
   - SDE / I2SB as the active Distinct5 training lane
 
-## Config
+## Active Configs
 
-- config:
+- calibration configs:
   - [phase2_vel_pattn_enhanced_tok_seed42_b8a2.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_pattn_enhanced_tok_seed42_b8a2.json)
+- formal in-band config:
+  - [phase2_vel_pattn_enhanced_tok_seed42_b22a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_pattn_enhanced_tok_seed42_b22a1.json)
 - key settings:
   - `tokenizer_family = pure_latent_spatial`
   - `tokenizer_num_clusters = 32`
@@ -60,15 +63,19 @@ Date: 2026-06-13
 - important compatibility check:
   - pure-latent tokenizer now supports `crossattn_texture` proximal refinement without falling back to legacy `style_spatial_id_16`
 
-## Gates
+## Promotion Contract
 
-- fail-stop:
-  - `content_lpips >= 0.70`
-- non-promotable:
+- paper-facing success target:
+  - style `>= 0.72`
+  - `content_lpips <= 0.30`
+- continue-to-train gate:
+  - settled checkpoints must remain in `content_lpips < 0.40`
+- archival gate:
   - `0.40 <= content_lpips < 0.70`
-- only lines with:
-  - `content_lpips < 0.40`
-  - remain eligible for the remote main lane
+- fail-stop gate:
+  - `content_lpips >= 0.70`
+- rule:
+  - if the first settled point already lands in archival or fail-stop territory, the lane does not keep the formal 3060 slot
 
 ## Run Log
 
@@ -108,3 +115,53 @@ Date: 2026-06-13
     - current status:
       - accepted as formal in-band lane
       - remote training is live
+      - first settled checkpoint will decide whether this packet remains the formal lane or gets archived immediately
+
+## Settled Curve
+
+- live remote owner:
+  - PID `45964`
+  - command:
+    - `/home/xy/venvs/samam312/bin/python SchrodingerBridge/src/run.py --config /mnt/i/Github/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_pattn_enhanced_tok_seed42_b22a1.json`
+- current phase:
+  - after `epoch_0002` full eval, training resumed into `Epoch 3/24`
+- settled checkpoints so far:
+  - `epoch_0001` at `2026-06-13 02:13:00`
+    - transfer `0.670199 / 0.368480`
+    - all-pairs `0.698346 / 0.367345`
+    - eval wall `207.72s`
+    - generation `111.69s`
+    - VAE decode `54.50s`
+  - `epoch_0002` at `2026-06-13 02:34:26`
+    - transfer `0.673934 / 0.384340`
+    - all-pairs `0.701666 / 0.381724`
+    - eval wall `209.12s`
+    - generation `113.48s`
+    - VAE decode `54.52s`
+- short-horizon trend from `epoch_0001 -> epoch_0002`:
+  - transfer style `+0.003735`
+  - transfer LPIPS `+0.015860`
+  - all-pairs style `+0.003320`
+  - all-pairs LPIPS `+0.014380`
+
+## Read
+
+- this line is still eligible:
+  - both settled points remain inside the Phase 2 continuation band `LPIPS < 0.40`
+- but it is not yet promotable:
+  - best current point is still only `all-pairs 0.701666 / 0.381724`
+  - the paper target `0.72 / 0.30` remains far away
+- current shape:
+  - style is rising slowly
+  - LPIPS is also drifting upward
+  - the line is not yet showing a clean style-up-without-structure-loss regime
+- convergence authority:
+  - `curve_summary.json` currently has `row_count = 2`
+  - `pareto_epochs = [epoch_0001, epoch_0002]`
+  - `best_in_newest_2 = true`
+  - `tail_flat = true`
+  - `converged = false`
+- current decision:
+  - keep the formal remote lane alive
+  - do not promote any checkpoint yet
+  - if the next settled points continue pushing LPIPS toward `0.40` without a sharper style gain, this packet should be closed as a structure-safe but underpowered velocity line
