@@ -313,11 +313,18 @@ Status:
       - `configs/aaai2027/round2_pure_sde/**/*.json` no longer contains `\"resume_model_strict\": false`
     - config-tree audit:
       - [contract_audit.json](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round2_pure_sde/contract_audit.json)
-      - `row_count = 40`
+      - `row_count = 41`
       - `failure_count = 0`
-      - `pure_latent_contract_count = 39`
-      - `true_i2sb_contract_count = 38`
-      - `pure_round2_mainline_count = 17`
+      - `pure_latent_contract_count = 40`
+      - `exact_brownian_schedule_count = 41`
+      - `true_i2sb_contract_count = 39`
+      - `pure_round2_mainline_count = 18`
+      - `true_i2sb_contract` now means:
+        - `solver_family = solver_i2sb`
+        - `transport_prediction_mode = endpoint`
+        - `objective_mode = i2sb_endpoint`
+        - `loss_type = mse`
+        - resolved exact Brownian schedule, not the old delayed-window heuristic
     - manifest now also carries reference-gap deltas when a family gap report exists:
       - `active_gap_reference_name`
       - `active_latest_transfer_style_gap`
