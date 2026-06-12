@@ -11,7 +11,11 @@ from scipy.optimize import linear_sum_assignment
 from config_schema import BridgeConfig, ExperimentConfig, TrainingConfig
 from model import TimeConditionedLANCETBridge
 from ot_cost import SWDTransportCost
-from style_families import validate_i2sb_contract, validate_pure_latent_contract
+from style_families import (
+    resolves_exact_brownian_schedule,
+    validate_i2sb_contract,
+    validate_pure_latent_contract,
+)
 
 
 class OTFlowMatchingObjective:
@@ -1478,7 +1482,10 @@ class OTFlowMatchingObjective:
             "plan_entropy": plan_entropy.detach(),
             "bridge_sigma": content.new_tensor(self.bridge_sigma, dtype=torch.float32),
             "bridge_noise_schedule_exact": content.new_tensor(
-                1.0 if (self.bridge_noise_schedule == "exact_brownian" or (self.bridge_noise_schedule == "auto" and self.objective_mode == "i2sb_endpoint")) else 0.0,
+                1.0 if resolves_exact_brownian_schedule(
+                    bridge_noise_schedule=self.bridge_noise_schedule,
+                    objective_mode=self.objective_mode,
+                ) else 0.0,
                 dtype=torch.float32,
             ),
             "t_mean": t.mean().detach(),

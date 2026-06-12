@@ -68,6 +68,12 @@ TRANSPORT_PREDICTION_MODES = {
     "endpoint",
 }
 
+BRIDGE_NOISE_SCHEDULES = {
+    "auto",
+    "exact_brownian",
+    "delayed_window",
+}
+
 I2SB_OBJECTIVE_MODES = {
     "i2sb",
     "i2sb_endpoint",
@@ -226,8 +232,54 @@ def normalize_transport_prediction_mode(value: str, *, default: str = "velocity"
     return default
 
 
+def normalize_bridge_noise_schedule(value: str, *, default: str = "auto") -> str:
+    candidate = str(value or "").strip().lower()
+    if candidate in BRIDGE_NOISE_SCHEDULES:
+        return candidate
+    return default
+
+
 def is_i2sb_objective_mode(value: str) -> bool:
     return str(value or "").strip().lower() in I2SB_OBJECTIVE_MODES
+
+
+def resolves_exact_brownian_schedule(
+    *,
+    bridge_noise_schedule: str,
+    objective_mode: str = "",
+) -> bool:
+    schedule = normalize_bridge_noise_schedule(bridge_noise_schedule)
+    if schedule == "exact_brownian":
+        return True
+    if schedule == "delayed_window":
+        return False
+    return is_i2sb_objective_mode(objective_mode)
+
+
+def is_true_i2sb_training_contract(
+    *,
+    solver_family: str,
+    transport_prediction_mode: str,
+    objective_mode: str = "",
+    loss_type: str = "",
+    bridge_noise_schedule: str = "auto",
+) -> bool:
+    solver = normalize_family(solver_family, allowed=SOLVER_FAMILIES, default="euler_legacy")
+    transport = normalize_transport_prediction_mode(transport_prediction_mode)
+    objective = str(objective_mode or "").strip().lower()
+    loss = str(loss_type or "").strip().lower()
+    if solver != "solver_i2sb":
+        return False
+    if transport != "endpoint":
+        return False
+    if not is_i2sb_objective_mode(objective):
+        return False
+    if loss and loss != "mse":
+        return False
+    return resolves_exact_brownian_schedule(
+        bridge_noise_schedule=bridge_noise_schedule,
+        objective_mode=objective,
+    )
 
 
 def validate_i2sb_contract(
