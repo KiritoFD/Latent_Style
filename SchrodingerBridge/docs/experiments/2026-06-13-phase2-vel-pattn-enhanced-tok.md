@@ -124,7 +124,7 @@ Date: 2026-06-13
   - command:
     - `/home/xy/venvs/samam312/bin/python SchrodingerBridge/src/run.py --config /mnt/i/Github/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_pattn_enhanced_tok_seed42_b22a1.json`
 - current phase:
-  - after `epoch_0003` full eval, training resumed into `Epoch 4/24`
+  - after `epoch_0004` full eval, training resumed into `Epoch 5/24`
 - settled checkpoints so far:
   - `epoch_0001` at `2026-06-13 02:13:00`
     - transfer `0.670199 / 0.368480`
@@ -144,6 +144,12 @@ Date: 2026-06-13
     - eval wall `214.00s`
     - generation `115.27s`
     - VAE decode `54.52s`
+  - `epoch_0004` at `2026-06-13 03:17:29`
+    - transfer `0.670364 / 0.373813`
+    - all-pairs `0.699071 / 0.370858`
+    - eval wall `211.87s`
+    - generation `113.73s`
+    - VAE decode `54.52s`
 - short-horizon trend:
   - `epoch_0001 -> epoch_0002`
     - transfer style `+0.003735`
@@ -155,32 +161,38 @@ Date: 2026-06-13
     - transfer LPIPS `-0.002575`
     - all-pairs style `-0.003347`
     - all-pairs LPIPS `-0.002688`
+  - `epoch_0003 -> epoch_0004`
+    - transfer style `+0.000098`
+    - transfer LPIPS `-0.007952`
+    - all-pairs style `+0.000752`
+    - all-pairs LPIPS `-0.008179`
 
 ## Read
 
 - this line is still eligible:
-  - all three settled points remain inside the Phase 2 continuation band `LPIPS < 0.40`
+  - all four settled points remain inside the Phase 2 continuation band `LPIPS < 0.40`
 - but it is not yet promotable:
   - best current point is still only `all-pairs 0.701666 / 0.381724`
   - the paper target `0.72 / 0.30` remains far away
 - current shape:
   - `epoch_0002` was the local style peak so far
   - `epoch_0003` gave back that style gain while recovering a small amount of LPIPS
-  - this is a mild style/structure oscillation, not a breakout
+  - `epoch_0004` improves LPIPS again while recovering only a negligible amount of style
+  - this is a mild LPIPS-side drift / oscillation, not a breakout
   - the line is not yet showing a clean path toward `0.72 / 0.30`
 - convergence authority:
-  - `curve_summary.json` currently has `row_count = 3`
-  - `pareto_epochs = [epoch_0001, epoch_0002, epoch_0003]`
-  - `best_in_newest_2 = true`
+  - `curve_summary.json` currently has `row_count = 4`
+  - `pareto_epochs = [epoch_0001, epoch_0002, epoch_0003, epoch_0004]`
+  - `best_in_newest_2 = false`
   - `tail_flat = true`
   - `converged = false`
-- live runtime read after `epoch_0003` settle:
-  - remote training resumed into `Epoch 4/24`
-  - `latest_checkpoint_epoch = epoch_0003`
-  - `latest_settled_epoch = epoch_0003`
+- live runtime read after `epoch_0004` settle:
+  - remote training resumed into `Epoch 5/24`
+  - `latest_checkpoint_epoch = epoch_0004`
+  - `latest_settled_epoch = epoch_0004`
   - `pending_checkpoint_epochs = []`
 - current decision:
   - keep the formal remote lane alive
   - do not promote any checkpoint yet
-  - `epoch_0003` is a compromise point, not a promotion point
-  - if the next settled points still fail to push style past `0.70x` while LPIPS hovers near `0.38`, this packet should be closed as a structure-safe but underpowered velocity line
+  - `epoch_0004` is a slightly stronger LPIPS-side compromise point than `epoch_0003`, but still not a promotion point
+  - because `best_in_newest_2 = false`, the line now needs a clearer style-side recovery soon; otherwise it should be closed as a structure-safe but underpowered velocity line
