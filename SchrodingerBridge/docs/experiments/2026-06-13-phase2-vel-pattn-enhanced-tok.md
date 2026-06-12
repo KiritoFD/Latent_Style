@@ -53,6 +53,10 @@ Date: 2026-06-13
   - transport mode `velocity`
   - solver `euler_legacy`
   - no DINO runtime required
+  - corrected objective:
+    - `objective_mode = bridge_velocity`
+    - `t_mean = 0.6106`
+    - no longer the old fixed-`t=1` OMF path
 - important compatibility check:
   - pure-latent tokenizer now supports `crossattn_texture` proximal refinement without falling back to legacy `style_spatial_id_16`
 
@@ -83,11 +87,24 @@ Date: 2026-06-13
     - keep effective batch at `16`
     - target the formal `9.x-10.x GiB` band directly
   - corrected `b16/a1` relaunch:
+    - first attempt exposed a theory mismatch:
+      - `objective_mode = omf` was still forcing the old fixed-`t=1` endpoint-style path
+      - this contradicted the Phase 2 velocity plan
+    - config has now been corrected to:
+      - `objective_mode = bridge_velocity`
+    - valid relaunch result:
+      - 20s health check `7497 MiB`
+      - after another 150s only `7947 MiB`
+      - the theory was fixed, but VRAM was still under-band
+  - next calibration:
+    - raise batch to `22`
+    - keep accumulation at `1`
+    - target the formal `9.x-10.x GiB` band directly
+  - formal `b22/a1` launch:
+    - config:
+      - [phase2_vel_pattn_enhanced_tok_seed42_b22a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_pattn_enhanced_tok_seed42_b22a1.json)
     - 20s health check:
-      - `10639 MiB`
-    - current state:
-      - remote lane accepted as formal in-band training
-      - live log is in `Epoch 1/24`
-    - watchpoint:
-      - current velocity objective still reports `t=1.000`
-      - if early eval shows the same old style ceiling or no LPIPS benefit, the next adjustment is the delayed-noise / sampled-time variant from `612-phase2`
+      - `9423 MiB`
+    - current status:
+      - accepted as formal in-band lane
+      - remote training is live

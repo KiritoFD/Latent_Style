@@ -72,6 +72,8 @@ class OTFlowMatchingObjective:
 
         self.bridge_sigma = max(0.0, float(bridge_cfg.bridge_sigma))
         self.bridge_noise_mode = str(bridge_cfg.bridge_noise_mode).strip().lower()
+        self.bridge_noise_window_start = float(getattr(bridge_cfg, "bridge_noise_window_start", 0.18))
+        self.bridge_noise_window_end = float(getattr(bridge_cfg, "bridge_noise_window_end", 0.82))
         self.bridge_style_noise_kernel = max(1, int(bridge_cfg.bridge_style_noise_kernel))
         if self.bridge_style_noise_kernel % 2 == 0:
             self.bridge_style_noise_kernel += 1
