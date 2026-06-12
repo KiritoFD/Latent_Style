@@ -154,12 +154,29 @@ class LatentAdaCUTRuntimeMixin:
         *,
         style_id: torch.Tensor | int | None,
         style_code: torch.Tensor,
+        content_latent: torch.Tensor,
         content_feat_16: torch.Tensor,
     ) -> tuple[torch.Tensor, StyleMaps] | None:
         tokenizer = getattr(self, "structured_style_tokenizer", None)
         family = str(getattr(self, "tokenizer_family", "legacy_factorized"))
         if tokenizer is None or family == "legacy_factorized" or style_id is None:
             return None
+        if family == "pure_latent_spatial":
+            structured = tokenizer(
+                style_id=self._normalize_style_id_input(style_id, device=style_code.device),
+                base_style_code=style_code,
+                content_latent=content_latent,
+                target_hw=tuple(int(v) for v in content_feat_16.shape[-2:]),
+            )
+            setattr(tokenizer, "last_debug", dict(structured.debug))
+            return structured.global_code, StyleMaps(
+                map_16=structured.spatial_map,
+                gate_16=structured.gate_map,
+                mask_16=structured.mask_map,
+                aux_16=structured.aux_map,
+                family=family,
+                debug=dict(structured.debug),
+            )
         payload = self._runtime_conditioning_payload()
         content_dino_patches = payload.get("content_dino_patches")
         if not torch.is_tensor(content_dino_patches):
@@ -176,6 +193,7 @@ class LatentAdaCUTRuntimeMixin:
                 return None
             kwargs["style_bank_patches"] = bank.to(device=style_code.device, dtype=style_code.dtype)
         structured = tokenizer(**kwargs)
+        setattr(tokenizer, "last_debug", dict(structured.debug))
         return structured.global_code, StyleMaps(
             map_16=structured.spatial_map,
             gate_16=structured.gate_map,
@@ -250,6 +268,8 @@ class LatentAdaCUTRuntimeMixin:
         style_code: torch.Tensor,
         content_feat_16: torch.Tensor,
     ) -> torch.Tensor:
+        if str(getattr(self, "tokenizer_family", "legacy_factorized")) == "pure_latent_spatial":
+            return style_code
         router = getattr(self, "style_code_content_router", None)
         if router is None or style_id is None:
             return style_code
@@ -316,6 +336,10 @@ class LatentAdaCUTRuntimeMixin:
         style_code: torch.Tensor,
     ) -> torch.Tensor:
         del style_code
+        if getattr(self, "style_spatial_id_16", None) is None:
+            raise RuntimeError(
+                "Legacy style_spatial priors are not instantiated for tokenizer_family='pure_latent_spatial'."
+            )
         spatial_device = self.style_spatial_id_16.device
         style_id_t = self._normalize_style_id_input(style_id, device=spatial_device)
         mode = str(getattr(self, "style_spatial_mode", "class")).lower()
@@ -423,6 +447,18 @@ class LatentAdaCUTRuntimeMixin:
     def encode_style_id(self, style_id: torch.Tensor | int | None, t: torch.Tensor | None = None) -> torch.Tensor:
         if style_id is None:
             raise ValueError("style_id is required.")
+        if str(getattr(self, "tokenizer_family", "legacy_factorized")) == "pure_latent_spatial":
+            if t is not None and torch.is_tensor(t):
+                batch = int(t.view(-1).shape[0])
+                device = t.device
+                dtype = t.dtype
+            else:
+                token_device = self.style_tokenizer.weight.device
+                style_id_t = self._normalize_style_id_input(style_id, device=token_device)
+                batch = int(style_id_t.shape[0])
+                device = token_device
+                dtype = self.style_tokenizer.weight.dtype
+            return torch.zeros(batch, int(self.style_tokenizer.embedding_dim), device=device, dtype=dtype)
         token_device = self.style_tokenizer.weight.device
         style_id = self._normalize_style_id_input(style_id, device=token_device)
         if t is not None and t.device != token_device:
@@ -435,6 +471,10 @@ class LatentAdaCUTRuntimeMixin:
         return feat / (feat.std(dim=(2, 3), keepdim=True, unbiased=False) + 1e-6)
 
     def encode_style_spatial_id(self, style_id: torch.Tensor | int) -> dict[int, torch.Tensor]:
+        if getattr(self, "style_spatial_id_16", None) is None:
+            raise RuntimeError(
+                "Legacy style_spatial priors are unavailable for tokenizer_family='pure_latent_spatial'."
+            )
         spatial_device = self.style_spatial_id_16.device
         style_id = self._normalize_style_id_input(style_id, device=spatial_device)
         maps = {16: self.style_spatial_id_16.index_select(0, style_id)}
@@ -526,10 +566,12 @@ class LatentAdaCUTRuntimeMixin:
         structured_ctx = self._structured_style_from_sidecar(
             style_id=style_id,
             style_code=style_code,
+            content_latent=x,
             content_feat_16=content_feat_16,
         )
         if structured_ctx is not None:
             style_code, style_maps = structured_ctx
+        pure_latent_family = str(getattr(self, "tokenizer_family", "legacy_factorized")) == "pure_latent_spatial"
 
         if override_palette is not None:
             style_map_proj = override_palette
@@ -587,24 +629,32 @@ class LatentAdaCUTRuntimeMixin:
             )
             style_map_proj = self.down(h_s)
         else:
-            if style_maps.map_16 is None:
-                if style_id is None:
-                    raise ValueError("style_id is required for id-only spatial prior.")
-                style_maps = StyleMaps(
-                    map_16=self._build_style_spatial_map(
-                        style_id=style_id,
-                        content_feat_16=content_feat_16,
-                        style_code=style_code,
-                    )
+            if pure_latent_family and structured_ctx is None:
+                raise RuntimeError(
+                    "tokenizer_family='pure_latent_spatial' requires structured_style_tokenizer output; "
+                    "legacy style_spatial fallback is disabled on the pure-latent mainline."
                 )
-            style_spatial_16 = self._prepare_spatial_map(style_maps.map_16, content_feat_16)
-            if style_spatial_16 is None:
-                raise ValueError("style spatial prior is required for id-only inference.")
-            style_map_proj = style_spatial_16
-            if style_maps.mask_16 is not None:
-                mask_16 = self._prepare_spatial_map(style_maps.mask_16, content_feat_16)
-                if mask_16 is not None:
-                    style_map_proj = style_map_proj * (0.5 + torch.sigmoid(mask_16))
+            if self.ablation_disable_spatial_prior:
+                style_map_proj = torch.zeros_like(content_feat_16)
+            else:
+                if style_maps.map_16 is None:
+                    if style_id is None:
+                        raise ValueError("style_id is required for id-only spatial prior.")
+                    style_maps = StyleMaps(
+                        map_16=self._build_style_spatial_map(
+                            style_id=style_id,
+                            content_feat_16=content_feat_16,
+                            style_code=style_code,
+                        )
+                    )
+                style_spatial_16 = self._prepare_spatial_map(style_maps.map_16, content_feat_16)
+                if style_spatial_16 is None:
+                    raise ValueError("style spatial prior is required for id-only inference.")
+                style_map_proj = style_spatial_16
+                if style_maps.mask_16 is not None:
+                    mask_16 = self._prepare_spatial_map(style_maps.mask_16, content_feat_16)
+                    if mask_16 is not None:
+                        style_map_proj = style_map_proj * (0.5 + torch.sigmoid(mask_16))
 
         semantic_attn: torch.Tensor | None = None
         body_gate: float | torch.Tensor = 1.0
