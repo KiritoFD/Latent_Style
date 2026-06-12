@@ -72,6 +72,9 @@ Date: 2026-06-13
     - still in-band
     - not yet better than the previous velocity shelf
     - continue only as a short early check, not as an open-ended promotion
+  - prepared fallback if that short check fails:
+    - [2026-06-13-phase2-i2sb-topology-anchor-fallback.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-topology-anchor-fallback.md)
+    - this keeps the `true I2SB` contract alive, but pairs it with the new endpoint topology anchors instead of more solver-only rescue
 
 ## New Priority Order
 

@@ -155,6 +155,17 @@
     - 仅靠 inference corrector 不足以把结构拉回安全带
   - 因而若继续推进，就必须回到训练时结构约束，而不是继续复用同一 style-heavy 父本做 solver-only 修补
 
+### 队列4: `true_i2sb_topology_anchor`（若队列3仍平则切换）
+
+- config:
+  - [phase2_i2sb_topo_anchor_sigma0p25_seed42_b22a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_topo_anchor_sigma0p25_seed42_b22a1.json)
+- 目标:
+  - 保留 `true I2SB` 的 style headroom
+  - 用训练期 endpoint topology anchor 直接救结构
+- 解释:
+  - 如果 velocity 仍然无法突破 `0.70x / 0.39x` 这个棚顶，那么更合理的下一步不是更复杂的 velocity 补丁
+  - 而是让 `true I2SB` 重新上场，但只带最干净的一层结构锚
+
 ## 代码与文档策略
 
 - DINO 继续退休，除非后续出现压倒性 board 优势

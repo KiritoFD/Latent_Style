@@ -102,6 +102,24 @@ Date: 2026-06-13
     - prior best all-pairs `0.701666 / 0.381724`
     - current `epoch_0001` all-pairs `0.700842 / 0.390843`
   - so the topology anchor is not yet a win, only a live candidate
+- training-side read:
+  - epoch-level CSV after `epoch_0001`:
+    - `kinetic_energy = 0.0790`
+    - `loss = 1.0504`
+  - numeric debug during `epoch_0002`:
+    - `content_lowpass_anchor ≈ 0.051-0.059`
+    - `content_edge_anchor ≈ 0.019-0.024`
+    - `kinetic_energy ≈ 0.083-0.089`
+  - interpretation:
+    - the topology anchors are active
+    - but kinetic is still the larger structure-side force
+    - if this packet keeps plateauing, the cleaner next move is not “even more velocity regularization”
+    - it is to move the same topology anchors onto `true I2SB`, where endpoint style capacity is already higher
 - current decision:
   - keep the lane alive through the next early checkpoints
   - if `epoch_0002` and `epoch_0003` still fail to reclaim the old style shelf or improve LPIPS materially, close this packet rather than letting it drift into another long flat line
+  - parallel preparation:
+    - if this packet stalls, the next cleaner candidate should be a `true I2SB + pure_latent_spatial + topology anchor` retry
+    - reason:
+      - velocity still under-expresses style
+      - endpoint/I2SB already has style headroom, but needs structure rescue more than more solver hacks
