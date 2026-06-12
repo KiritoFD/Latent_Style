@@ -102,6 +102,26 @@ def _gpu_rows(text: str) -> list[dict[str, Any]]:
     return rows
 
 
+def _compact_summary(summary: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not summary:
+        return None
+    analysis = summary.get("analysis") or {}
+    timings = summary.get("timings_sec") or {}
+    return {
+        "checkpoint": summary.get("checkpoint"),
+        "timestamp": summary.get("timestamp"),
+        "all_pairs_overview": analysis.get("all_pairs_overview"),
+        "style_transfer_ability": analysis.get("style_transfer_ability"),
+        "identity_reconstruction": analysis.get("identity_reconstruction"),
+        "timings_sec": {
+            "wall_total": timings.get("wall_total"),
+            "eval_total": timings.get("eval_total"),
+            "generation": timings.get("lancet_generation"),
+            "vae_decode": timings.get("vae_decode"),
+        },
+    }
+
+
 def _remote_read_text(
     *,
     host: str,
@@ -194,6 +214,7 @@ def main() -> int:
     parser.add_argument("--remote-train-log", default="")
     parser.add_argument("--process-pattern", default="src/run.py")
     parser.add_argument("--tail-lines", type=int, default=60)
+    parser.add_argument("--include-full-latest-summary", action="store_true")
     args = parser.parse_args()
 
     run_name = str(args.run_name).strip()
@@ -301,7 +322,7 @@ def main() -> int:
         "full_eval_entries": full_eval_entries[-20:],
         "curve_summary": curve_summary,
         "convergence": convergence,
-        "latest_summary": latest_summary,
+        "latest_summary": latest_summary if bool(args.include_full_latest_summary) else _compact_summary(latest_summary),
         "train_log_tail": tail.stdout.splitlines(),
     }
     print(json.dumps(report, indent=2, ensure_ascii=False))
