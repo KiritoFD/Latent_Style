@@ -43,6 +43,9 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.transport_prediction_mode = str(getattr(bridge_config, "transport_prediction_mode", "velocity")).strip().lower()
         if self.transport_prediction_mode not in {"velocity", "endpoint"}:
             self.transport_prediction_mode = "velocity"
+        self.endpoint_parameterization = str(getattr(bridge_config, "endpoint_parameterization", "absolute")).strip().lower()
+        if self.endpoint_parameterization not in {"absolute", "residual"}:
+            self.endpoint_parameterization = "absolute"
         validate_i2sb_contract(
             solver_family=self.solver_family,
             transport_prediction_mode=self.transport_prediction_mode,
@@ -420,10 +423,15 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             )
             self._profile_end("diffeomorphic_stroke", t_profile, x)
             if self.transport_prediction_mode == "endpoint":
+                if self.endpoint_parameterization == "residual":
+                    return stroked - x.float()
                 return stroked.float()
             return stroked - x.float()
         if self.transport_prediction_mode == "endpoint":
-            return torch.tanh(raw_delta / self.transport_endpoint_scale) * self.transport_endpoint_scale
+            bounded = torch.tanh(raw_delta / self.transport_endpoint_scale) * self.transport_endpoint_scale
+            if self.endpoint_parameterization == "residual":
+                return bounded
+            return bounded
         if self.velocity_head_mode == "tanh":
             raw_delta = torch.tanh(raw_delta) * self.velocity_tanh_limit
         return raw_delta * self.latent_scale_factor * self.residual_gain
@@ -884,8 +892,11 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self._profile_end("backbone_forward", t_profile, x)
         t_profile = self._profile_start(x)
         if self.transport_prediction_mode == "endpoint":
-            endpoint = delta
-            endpoint_delta = endpoint - x.float()
+            if self.endpoint_parameterization == "residual":
+                endpoint_delta = delta.to(dtype=x.dtype)
+            else:
+                endpoint = delta
+                endpoint_delta = endpoint - x.float()
             out = self._apply_execution_budget(endpoint_delta.to(dtype=x.dtype), x, style_code)
             denom = (1.0 - t_tensor).clamp_min(1e-3).view(-1, 1, 1, 1)
             out = out / denom
@@ -931,7 +942,10 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self._profile_end("backbone_forward", t_profile, x)
         t_profile = self._profile_start(x)
         if self.transport_prediction_mode == "endpoint":
-            endpoint_delta = raw_transport.to(dtype=x.dtype) - x.float()
+            if self.endpoint_parameterization == "residual":
+                endpoint_delta = raw_transport.to(dtype=x.dtype)
+            else:
+                endpoint_delta = raw_transport.to(dtype=x.dtype) - x.float()
             budgeted_delta = self._apply_execution_budget(endpoint_delta, x, style_code)
             z_base = x + budgeted_delta
         else:

@@ -235,6 +235,7 @@ class ModelConfig:
     velocity_tanh_limit: float = 20.0
     transport_prediction_mode: str = "velocity"
     transport_endpoint_scale: float = 4.0
+    endpoint_parameterization: str = "absolute"
     feature_attn_num_heads: int = 4
     window_attn_window_size: int = 8
     skip_fusion_mode: str = "add_proj"
