@@ -98,8 +98,13 @@
     - 仍然远高于 `LPIPS < 0.40` 的 paper gate
     - 因而 exact-I2SB 在 Distinct5 上只保留实现与理论价值，不再占用正式训练 lane
 - 当前动作:
-  - 远程正式训练 lane 当前为空
-  - 下一条正式候选只允许来自 `velocity + true tokenizer + training-side structure control`
+  - 远程正式训练 lane 已切到:
+    - `aaai2027_phase2_vel_tok32_pos_refresh_seed42_b20a1`
+  - 首轮健康检查:
+    - `30s health = 10073 MiB`
+    - live runtime read `10257 / 12288 MiB`
+    - 状态 `training_before_first_settled_eval`
+  - 当前正式候选仍然只允许来自 `velocity + true tokenizer + training-side structure control`
 
 ## 三刀手术
 

@@ -152,4 +152,8 @@ Date: 2026-06-13
 - current planning authority is the Phase 2 structure-first queue:
   - `eval_only_pc_solver` has finished as a negative read
   - the velocity topology-anchor retry has now also been closed as archival only
-  - there is no active formal lane until the next velocity-side packet is prepared
+  - the active formal lane is now:
+    - `aaai2027_phase2_vel_tok32_pos_refresh_seed42_b20a1`
+    - 30s launch health `10073 MiB`
+    - current runtime read `10257 MiB`
+    - state `training_before_first_settled_eval`
