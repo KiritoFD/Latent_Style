@@ -72,9 +72,21 @@ Date: 2026-06-13
     - still in-band
     - not yet better than the previous velocity shelf
     - continue only as a short early check, not as an open-ended promotion
+  - final closure read:
+    - `epoch_0002`
+    - transfer `0.680803 / 0.417910`
+    - all-pairs `0.706132 / 0.413976`
+  - interpretation:
+    - style moved upward
+    - but the line crossed into `archival only`
+    - so the velocity topology-anchor retry is closed
   - prepared fallback if that short check fails:
     - [2026-06-13-phase2-i2sb-topology-anchor-fallback.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-topology-anchor-fallback.md)
     - this keeps the `true I2SB` contract alive, but pairs it with the new endpoint topology anchors instead of more solver-only rescue
+  - active replacement:
+    - `aaai2027_phase2_i2sb_topo_anchor_sigma0p25_seed42_b30a1`
+    - the `b22` version was only a calibration miss
+    - the `b30` relaunch hit the formal band at `9198 MiB`
 
 ## New Priority Order
 
@@ -111,4 +123,5 @@ Date: 2026-06-13
 - the first Phase 2 velocity queue is now also closed after `epoch_0006`
 - current planning authority is the Phase 2 structure-first queue:
   - `eval_only_pc_solver` has finished as a negative read
-  - the next formal candidate is the training-side velocity follow-up, not another solver-only patch
+  - the velocity topology-anchor retry has now also been closed as archival only
+  - the current active formal lane is the true-I2SB topology-anchor relaunch
