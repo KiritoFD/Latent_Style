@@ -93,6 +93,18 @@ Date: 2026-06-13
     - packet is prepared
     - smoke is done
     - no active remote process owns this packet yet
+- health recheck at `2026-06-13 12:40:35 +08:00`:
+  - `ssh_ok = true`
+  - `wsl_exec_ok = false`
+  - `remote_wsl_hcs_failure = true`
+  - `reboot_required_for_wsl2 = true`
+  - remote GPU idle-ish:
+    - `552-556 MiB / 12288 MiB`
+  - `live_state = remote_wsl_unavailable`
+  - watcher status:
+    - local recovery watcher PID `313620` is still alive
+    - log path:
+      - [phase2_vel_tok32_safe_rescan_r2_seed42_b20a1_recover_watcher.out.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/phase2_vel_tok32_safe_rescan_r2_seed42_b20a1_recover_watcher.out.log)
 
 ## Ops Note
 
