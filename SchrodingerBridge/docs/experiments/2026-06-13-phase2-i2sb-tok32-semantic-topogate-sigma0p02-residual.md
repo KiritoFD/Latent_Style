@@ -2,6 +2,12 @@
 
 Date: 2026-06-13
 
+> 2026-06-13 supersession note:
+> This packet remains the first refreshed-tokenizer exact-I2SB theory check.
+> But the preferred current successor is now:
+> [2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual.md)
+> because it upgrades the tokenizer profile from `tok32_refresh` to the current `tok32_safe_rescan` settings and uses the cleaner in-band `epoch_0004` parent.
+
 ## Role
 
 - diagnostic-only exact-I2SB candidate
