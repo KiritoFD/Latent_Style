@@ -110,11 +110,15 @@
       - 当前第一个有效 settled authority 点是 `epoch_0002`
         - transfer `0.673024 / 0.390256`
         - all-pairs `0.700342 / 0.387609`
+      - 第二个有效 settled authority 点是 `epoch_0003`
+        - transfer `0.668702 / 0.364875`
+        - all-pairs `0.698072 / 0.361798`
       - launcher guard 已修复
       - 同一 run 已从本地 `epoch_0001` 续跑
       - relaunch 30s health `10151 MiB`
-      - 该点仍在 continuation band 内，因此 formal lane 继续保留
-      - 但它还没有超过上一条安全父本 `0.701666 / 0.381724`
+      - 两个 authority 点都还在 continuation band 内，因此 formal lane 继续保留
+      - 但它仍然没有超过上一条安全父本 `0.701666 / 0.381724`
+      - `epoch_0003` 只是用更低的 style 换来更低的 LPIPS，说明这条线仍在演化，但尚未突破
       - `epoch_0001` 现在只记为 `stale_pending`，不再把 live state 错报成 eval-pending
     - 本地 watcher 已挂起:
       - `watch_phase2_velocity_handoff.py --run-name aaai2027_phase2_vel_tok32_pos_refresh_seed42_b20a1 --wait --execute --handoff-mode stop_only`

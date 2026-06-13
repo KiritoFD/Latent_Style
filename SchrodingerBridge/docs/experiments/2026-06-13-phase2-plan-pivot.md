@@ -175,3 +175,11 @@ Date: 2026-06-13
         - but it is not yet better than the previous safe parent shelf `0.701666 / 0.381724`
         - the stale `epoch_0001` half-eval is now classified as ops residue rather than a real pending authority point
         - the live read is back to `training_after_settled_eval` while `epoch_3` trains
+      - second settled authority point:
+        - `epoch_0003`
+        - transfer `0.668702 / 0.364875`
+        - all-pairs `0.698072 / 0.361798`
+      - updated interpretation:
+        - still in-band
+        - no breakout on style
+        - but the line is still producing new in-band Pareto points, so the formal lane remains justified for now
