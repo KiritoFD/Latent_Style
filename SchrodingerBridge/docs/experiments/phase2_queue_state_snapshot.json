@@ -1,0 +1,161 @@
+{
+  "manifest_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\phase2_queue_manifest.csv",
+  "manifest_row_count": 5,
+  "validation_json": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\phase2_queue_manifest_validation.json",
+  "validation_ok": true,
+  "resolved_packets": {
+    "formal_lane": {
+      "packet_id": "vel_tok32_safe_rescan_r2",
+      "lane_class": "formal_lane",
+      "priority_in_class": 1,
+      "preferred": true,
+      "status": "blocked_remote_wsl2",
+      "formal_eligible": true,
+      "tokenizer_profile": "tok32_safe_rescan",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\aaai2027\\phase2_vel_tok32_safe_rescan_r2_seed42_b20a1.json",
+      "note_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-13-phase2-vel-tok32-safe-rescan-r2.md",
+      "run_name": "aaai2027_phase2_vel_tok32_safe_rescan_r2_seed42_b20a1",
+      "current_read": "prepared and smoke-complete; remote host still reports WSL2 HCS failure and reboot_required_for_wsl2=true",
+      "watch_min_settled_epoch": "3",
+      "watch_min_allpairs_style_recovery": "0.701666",
+      "watch_max_allpairs_lpips_for_recovery": "0.381724",
+      "watch_min_transfer_style_recovery": "0.673934",
+      "watch_max_transfer_lpips_for_recovery": "0.384340",
+      "watch_handoff_mode": "stop_only",
+      "validation_snapshot_ok": true,
+      "validation_row_ok": true
+    },
+    "structure_reentry": {
+      "packet_id": "vel_tok32_semantic_topogate_k085",
+      "lane_class": "structure_reentry",
+      "priority_in_class": 1,
+      "preferred": true,
+      "status": "queued",
+      "formal_eligible": false,
+      "tokenizer_profile": "tok32_refresh",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\aaai2027\\phase2_vel_tok32_semantic_topogate_k085_seed42_b20a1.json",
+      "note_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-13-phase2-vel-tok32-semantic-topogate-k085.md",
+      "run_name": "aaai2027_phase2_vel_tok32_semantic_topogate_k085_seed42_b20a1",
+      "current_read": "preferred structure-side velocity candidate; smoke proves topology gate and tokenizer observability are active",
+      "watch_min_settled_epoch": "",
+      "watch_min_allpairs_style_recovery": "",
+      "watch_max_allpairs_lpips_for_recovery": "",
+      "watch_min_transfer_style_recovery": "",
+      "watch_max_transfer_lpips_for_recovery": "",
+      "watch_handoff_mode": "",
+      "validation_snapshot_ok": true,
+      "validation_row_ok": true
+    },
+    "i2sb_diagnostic_only": {
+      "packet_id": "i2sb_tok32_semantic_topogate_sigma0p02_residual",
+      "lane_class": "i2sb_diagnostic_only",
+      "priority_in_class": 1,
+      "preferred": true,
+      "status": "queued",
+      "formal_eligible": false,
+      "tokenizer_profile": "tok32_refresh",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\aaai2027\\phase2_i2sb_tok32_semantic_topogate_sigma0p02_residual_seed42_b20a1.json",
+      "note_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-13-phase2-i2sb-tok32-semantic-topogate-sigma0p02-residual.md",
+      "run_name": "aaai2027_phase2_i2sb_tok32_semantic_topogate_sigma0p02_residual_seed42_b20a1",
+      "current_read": "preferred current exact-Brownian theory-check packet; combines residual I2SB, topology gate, and refreshed tok32 tokenizer",
+      "watch_min_settled_epoch": "",
+      "watch_min_allpairs_style_recovery": "",
+      "watch_max_allpairs_lpips_for_recovery": "",
+      "watch_min_transfer_style_recovery": "",
+      "watch_max_transfer_lpips_for_recovery": "",
+      "watch_handoff_mode": "",
+      "validation_snapshot_ok": true,
+      "validation_row_ok": true
+    }
+  },
+  "remote_health": {
+    "host": "100.115.18.62",
+    "port": 2222,
+    "user": "administrator",
+    "wsl_distro": "Ubuntu-26.04",
+    "ssh_ok": true,
+    "lxssmanager_state": "RUNNING",
+    "hypervisorlaunchtype": "Auto",
+    "feature_states": {
+      "Microsoft-Windows-Subsystem-Linux": "Enabled",
+      "VirtualMachinePlatform": "Enabled",
+      "Microsoft-Hyper-V-Hypervisor": "Disabled"
+    },
+    "wsl_distros": [
+      {
+        "active": true,
+        "name": "Ubuntu-26.04",
+        "state": "Stopped",
+        "version": "2"
+      }
+    ],
+    "wsl_exec_ok": false,
+    "remote_wsl_hcs_failure": true,
+    "reboot_required_for_wsl2": true,
+    "raw": {
+      "lxssmanager": "SERVICE_NAME: LxssManager \n        TYPE               : 30  WIN32  \n        STATE              : 4  RUNNING \n                                (STOPPABLE, NOT_PAUSABLE, IGNORES_SHUTDOWN)\n        WIN32_EXIT_CODE    : 0  (0x0)\n        SERVICE_EXIT_CODE  : 0  (0x0)\n        CHECKPOINT         : 0x0\n        WAIT_HINT          : 0x0",
+      "hypervisor": "Windows ����������\n-------------------\n��ʶ��                  {current}\ndevice                  partition=C:\npath                    \\WINDOWS\\system32\\winload.efi\ndescription             Windows 10\nlocale                  zh-CN\ninherit                 {bootloadersettings}\nrecoverysequence        {db277fb3-4545-11f1-aeb4-b40da786e980}\ndisplaymessageoverride  Recovery\nrecoveryenabled         Yes\nisolatedcontext         Yes\nflightsigning           No\nallowedinmemorysettings 0x15000075\nosdevice                partition=C:\nsystemroot              \\WINDOWS\nresumeobject            {d93aa2a7-54e2-11f0-8a07-00e04c58f990}\nnx                      OptIn\nbootmenupolicy          Standard\nhypervisorlaunchtype    Auto",
+      "features": "{\"Microsoft-Windows-Subsystem-Linux\":\"Enabled\",\"VirtualMachinePlatform\":\"Enabled\",\"Microsoft-Hyper-V-Hypervisor\":\"Disabled\"}",
+      "wsl_list": "NAME            STATE           VERSION\n\n* Ubuntu-26.04    Stopped         2",
+      "wsl_exec": "1u�N*g�[ň@b��vyr'`\f��e�l/T�R�d\\O\u00020 \n\n\u0019���N\u0001x: Wsl/Service/CreateInstance/CreateVm/HCS/HCS_E_SERVICE_NOT_AVAILABLE"
+    }
+  },
+  "remote_formal_status": {
+    "run_name": "aaai2027_phase2_vel_tok32_safe_rescan_r2_seed42_b20a1",
+    "remote_run_dir": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_tok32_safe_rescan_r2_seed42_b20a1",
+    "remote_train_log": "/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_phase2_vel_tok32_safe_rescan_r2_seed42_b20a1_train.log",
+    "remote_gpu": [
+      {
+        "name": "NVIDIA Graphics Device",
+        "memory_used_mib": 554,
+        "memory_total_mib": 12288
+      }
+    ],
+    "processes": [],
+    "remote_wsl_hcs_failure": true,
+    "live_state": "remote_wsl_unavailable",
+    "latest_checkpoint_epoch": "",
+    "latest_settled_epoch": "",
+    "pending_checkpoint_epochs": [],
+    "stale_pending_checkpoint_epochs": [],
+    "checkpoint_files": [],
+    "full_eval_entries": [],
+    "curve_summary": null,
+    "convergence": null,
+    "latest_summary": null,
+    "train_log_tail": []
+  },
+  "local_manifest_watchers": [
+    {
+      "ProcessId": 322404,
+      "CommandLine": "\"C:\\Users\\xy\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" SchrodingerBridge\\tools\\experiments\\watch_phase2_wsl_recover_and_launch.py --manifest-csv SchrodingerBridge\\docs\\experiments\\phase2_queue_manifest.csv --validation-json SchrodingerBridge\\docs\\experiments\\phase2_queue_manifest_validation.json --lane-class formal_lane --poll-seconds 60 --max-wait-seconds 172800 --max-idle-memory-mib 1500 "
+    }
+  ],
+  "local_formal_watcher_logs": {
+    "out_log": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\phase2_formal_lane_recover_from_manifest.out.log",
+    "err_log": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\phase2_formal_lane_recover_from_manifest.err.log",
+    "out_tail": [
+      "  \"gpu_memory_used_mib\": 546",
+      "}",
+      "{",
+      "  \"run_name\": \"aaai2027_phase2_vel_tok32_safe_rescan_r2_seed42_b20a1\",",
+      "  \"ssh_ok\": true,",
+      "  \"wsl_exec_ok\": false,",
+      "  \"reboot_required_for_wsl2\": true,",
+      "  \"remote_wsl_hcs_failure\": true,",
+      "  \"lxssmanager_state\": \"RUNNING\",",
+      "  \"hypervisorlaunchtype\": \"Auto\",",
+      "  \"feature_states\": {",
+      "    \"Microsoft-Windows-Subsystem-Linux\": \"Enabled\",",
+      "    \"VirtualMachinePlatform\": \"Enabled\",",
+      "    \"Microsoft-Hyper-V-Hypervisor\": \"Disabled\"",
+      "  },",
+      "  \"live_state\": \"remote_wsl_unavailable\",",
+      "  \"latest_checkpoint_epoch\": \"\",",
+      "  \"latest_settled_epoch\": \"\",",
+      "  \"gpu_memory_used_mib\": 554",
+      "}"
+    ],
+    "err_tail": []
+  }
+}
