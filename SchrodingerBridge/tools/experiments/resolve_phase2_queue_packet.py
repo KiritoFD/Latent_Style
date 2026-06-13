@@ -117,6 +117,7 @@ def _packet_payload_from_row(
         "watch_min_transfer_style_recovery": str(selected.get("watch_min_transfer_style_recovery", "")).strip(),
         "watch_max_transfer_lpips_for_recovery": str(selected.get("watch_max_transfer_lpips_for_recovery", "")).strip(),
         "watch_handoff_mode": str(selected.get("watch_handoff_mode", "")).strip(),
+        "watch_next_lane_class": str(selected.get("watch_next_lane_class", "")).strip(),
         "validation_snapshot_ok": validation_ok,
         "validation_row_ok": bool(validation_row.get("ok")) if isinstance(validation_row, dict) else None,
     }

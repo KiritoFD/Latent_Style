@@ -75,7 +75,7 @@ Date: 2026-06-13
   - it is the cleanest attribution test after the first structure-side breakout
   - and it costs much less architectural disturbance than changing the attention family
 - guide-aligned close rule:
-  - if this line is still style-limited when the close gate is reached, stop it instead of auto-launching another structure-family packet
+  - if this line is still style-limited when the close gate is reached, stop the structure lane and auto-launch the queued `i2sb_diagnostic_only` packet
   - the next preferred read should be:
     - [2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual-tfloor005.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual-tfloor005.md)
     - then the existing eval-only `solver_pc` check

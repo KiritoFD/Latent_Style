@@ -44,8 +44,8 @@ Date: 2026-06-13
 - Structure config: [structure config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1.json)
 - Structure note: [structure note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085-appalign.md)
 - Structure read: epoch_0002 settled at transfer 0.671361/0.314290 and all-pairs 0.703097/0.311966; all-pairs safe-shelf recovery is already achieved, while transfer style still trails the formal shelf
-- Structure live state: `training_after_settled_eval`
-- Structure GPU: 6817 / 12288 MiB
+- Structure live state: `eval_in_progress_or_pending`
+- Structure GPU: 2446 / 12288 MiB
 - Structure latest settled epoch: `epoch_0002`
 - Structure latest settled `CLIP-S / LPIPS`: `0.671361 / 0.314290`, `0.703097 / 0.311966`
 - Structure latest `style - IDT`: transfer `+0.031439`, all-pairs `+0.022972`
