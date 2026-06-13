@@ -1,4 +1,0 @@
-method,cases_completed,wins_so_far,win_rate_so_far,style_wins_so_far,structure_wins_so_far,artifact_wins_so_far,mean_style_specificity,mean_structure_preservation,mean_artifact_control
-Hold4TwoStage_e12,616,20,0.032467532467532464,23,10,35,2.574675324675325,3.0535714285714284,2.357142857142857
-LBM-Knee_e13,616,0,0.0,0,41,38,2.0454545454545454,3.3214285714285716,2.542207792207792
-Seedream_repaired750,616,596,0.9675324675324676,593,565,543,4.9188311688311686,4.871753246753247,4.824675324675325

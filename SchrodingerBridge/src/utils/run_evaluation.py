@@ -350,6 +350,8 @@ def _runtime_observability_from_model(model: torch.nn.Module | None) -> dict[str
         stats[str(key)] = value
     for key, value in _runtime_debug_scalars(getattr(model, "last_i2sb_transport_debug", {})).items():
         stats[f"i2sb_{key}"] = value
+    for key, value in _runtime_debug_scalars(getattr(model, "last_solver_noise_debug", {})).items():
+        stats[f"solver_{key}"] = value
     topology_attn = getattr(model, "last_semantic_topology_attn", None)
     stats["semantic_topology_attn_entropy"] = _attention_entropy_scalar(topology_attn)
     stats["semantic_topology_attn_active"] = 1.0 if topology_attn is not None else 0.0

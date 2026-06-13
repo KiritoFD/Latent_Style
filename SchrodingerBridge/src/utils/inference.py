@@ -256,6 +256,7 @@ class LGTInference:
             "solver_corrector_clamp",
             "solver_tangent_projection_strength",
             "solver_stochastic_noise_scale",
+            "solver_fiber_aligned",
         ):
             if hasattr(config.model, key):
                 setattr(self.model, key, getattr(config.model, key))

@@ -1,5 +1,0 @@
-variant,transport_target,proximal_branch,structure_penalty,queue_smoothing,transfer_clip_style,one_minus_lpips,target_pooled_artfid_all,role
-LBM-K,basic pairing-cache OMF,content-adaptive tokenizer,off,queue curriculum top2 + explore top8,0.6712,0.6277,316.5,compact conservative anchor
-LBM-Knee,endpoint x-pred + barycentric top8,cross-attention texture,anisotropic plus stokes (0.03),dual-target mix 0.5 + aux terminal SWD,0.7102,0.5397,388.2,main closed Pareto point
-LBM-PS,endpoint x-pred + barycentric top8,cross-attention texture,stokes (0.05),off,0.7274,0.3967,,balanced high-style successor
-LBM-PS-v2,endpoint x-pred + barycentric top8,cross-attention texture,stokes (0.02),off,0.7307,0.3817,465.6,style ceiling

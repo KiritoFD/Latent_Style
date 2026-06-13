@@ -276,11 +276,13 @@ class PureLatentSpatialTokenizer(_BaseStructuredTokenizer):
         gate = 1.0 - entropy / max_entropy
         gate_map = _patch_to_map(gate.expand(-1, -1, self.spatial_dim), target_hw=target_hw or (h_dim, w_dim)).mean(dim=1, keepdim=True)
         mask_map = _patch_to_map(attn.amax(dim=-1, keepdim=True), target_hw=target_hw or (h_dim, w_dim))
+        aux_map = _patch_to_map(attn, target_hw=target_hw or (h_dim, w_dim))
         return self._finalize_output(StructuredStyleOutput(
             global_code=global_full,
             spatial_map=spatial_map,
             gate_map=gate_map,
             mask_map=mask_map,
+            aux_map=aux_map,
             debug=self._common_debug(
                 attn=attn,
                 spatial_map=spatial_map,
@@ -299,6 +301,178 @@ class PureLatentSpatialTokenizer(_BaseStructuredTokenizer):
                     "global_raw_abs": float(raw_code.detach().float().abs().mean().cpu().item()),
                     "global_full_abs": float(global_full.detach().float().abs().mean().cpu().item()),
                     "spatial_gap_abs": float(spatial_gap.detach().float().abs().mean().cpu().item()),
+                },
+            ),
+        ))
+
+
+class SMoETranslatorTokenizer(_BaseStructuredTokenizer):
+    """Style-conditioned mixture translator over latent content tokens.
+
+    This intentionally matches PureLatentSpatialTokenizer's parser, PE, routing,
+    cluster count, query dim, spatial dim, and temperature. The only changed
+    mechanism is replacing style-value lookup with a per-style translation
+    matrix initialized to identity.
+    """
+
+    def __init__(
+        self,
+        *,
+        num_styles: int,
+        global_dim: int,
+        spatial_dim: int,
+        latent_channels: int,
+        num_clusters: int = 32,
+        temperature: float = 0.1,
+        query_dim: int = 64,
+        query_num_blocks: int = 4,
+        pe_temperature: float = 1.0,
+        global_gate_hidden_dim: int | None = None,
+        global_gate_scale: float = 1.0,
+        translation_rank: int = 0,
+    ) -> None:
+        super().__init__(
+            num_styles=num_styles,
+            global_dim=global_dim,
+            spatial_dim=spatial_dim,
+            dino_dim=latent_channels,
+        )
+        self.latent_channels = max(1, int(latent_channels))
+        self.num_clusters = max(1, int(num_clusters))
+        self.temperature = max(1e-3, float(temperature))
+        self.query_dim = max(8, int(query_dim))
+        self.query_num_blocks = max(1, int(query_num_blocks))
+        self.pe_temperature = max(0.0, float(pe_temperature))
+        self.global_gate_hidden_dim = max(1, int(global_gate_hidden_dim or global_dim))
+        self.global_gate_scale = max(0.0, float(global_gate_scale))
+        self.translation_rank = max(0, int(translation_rank))
+
+        query_blocks: list[nn.Module] = [_LatentResBlock(self.latent_channels, self.query_dim, stride=1)]
+        for _ in range(self.query_num_blocks - 1):
+            query_blocks.append(_LatentResBlock(self.query_dim, self.query_dim, stride=1))
+        self.query_extractor = nn.ModuleList(query_blocks)
+        self.content_to_spatial = nn.Conv2d(self.query_dim, self.spatial_dim, kernel_size=1, bias=True)
+        self._init_content_projection_identity()
+
+        self.style_global_raw = nn.Embedding(self.num_styles, self.global_dim)
+        nn.init.normal_(self.style_global_raw.weight, mean=0.0, std=0.02)
+        self.global_pool_to_gate = nn.Sequential(
+            nn.Linear(self.spatial_dim, self.global_gate_hidden_dim),
+            nn.SiLU(),
+            nn.Linear(self.global_gate_hidden_dim, self.global_dim),
+        )
+
+        self.universal_keys = nn.Parameter(torch.randn(self.num_clusters, self.query_dim) * 0.02)
+        if self.translation_rank > 0:
+            self.translation_delta_a = nn.Parameter(torch.zeros(self.num_styles, self.num_clusters, self.spatial_dim, self.translation_rank))
+            self.translation_delta_b = nn.Parameter(torch.zeros(self.num_styles, self.num_clusters, self.translation_rank, self.spatial_dim))
+            self.translation_delta = None
+        else:
+            self.translation_delta = nn.Parameter(torch.zeros(self.num_styles, self.num_clusters, self.spatial_dim, self.spatial_dim))
+            self.translation_delta_a = None
+            self.translation_delta_b = None
+
+    def _init_content_projection_identity(self) -> None:
+        nn.init.zeros_(self.content_to_spatial.weight)
+        nn.init.zeros_(self.content_to_spatial.bias)
+        shared = min(self.query_dim, self.spatial_dim)
+        with torch.no_grad():
+            for idx in range(shared):
+                self.content_to_spatial.weight[idx, idx, 0, 0] = 1.0
+
+    def _add_position_embedding(self, x: torch.Tensor) -> torch.Tensor:
+        if self.pe_temperature <= 0.0:
+            return x
+        bsz, channels, h_dim, w_dim = x.shape
+        device = x.device
+        dtype = x.dtype
+        cached = getattr(self, "_pe_cache", None)
+        if cached is None or cached.shape[-2:] != (h_dim, w_dim) or cached.shape[1] != channels or cached.device != device:
+            pe = _build_2d_sincos_embedding(channels, h_dim, w_dim, device=device)
+            self._pe_cache = pe.to(dtype=dtype)
+            cached = self._pe_cache
+        return x + self.pe_temperature * cached.expand(bsz, -1, -1, -1)
+
+    def _translation_matrices(self, style_id: torch.Tensor, *, dtype: torch.dtype, device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
+        eye = torch.eye(self.spatial_dim, device=device, dtype=dtype).view(1, 1, self.spatial_dim, self.spatial_dim)
+        if self.translation_rank > 0:
+            a_mat = self.translation_delta_a[style_id].to(device=device, dtype=dtype)
+            b_mat = self.translation_delta_b[style_id].to(device=device, dtype=dtype)
+            delta = torch.matmul(a_mat, b_mat)
+        else:
+            delta = self.translation_delta[style_id].to(device=device, dtype=dtype)
+        return eye + delta, delta
+
+    def forward(
+        self,
+        *,
+        style_id: torch.Tensor,
+        base_style_code: torch.Tensor,
+        content_latent: torch.Tensor,
+        target_hw: tuple[int, int] | None = None,
+    ) -> StructuredStyleOutput:
+        style_id = style_id.long().view(-1)
+        feat = content_latent.float()
+        for block in self.query_extractor:
+            feat = block(feat)
+        queries = self._add_position_embedding(feat)
+        if target_hw is not None and tuple(int(v) for v in target_hw) != tuple(int(v) for v in queries.shape[-2:]):
+            queries = F.interpolate(queries, size=tuple(int(v) for v in target_hw), mode="bilinear", align_corners=False)
+        queries = queries.to(dtype=content_latent.dtype)
+        content_tokens = self.content_to_spatial(queries.float()).to(dtype=content_latent.dtype)
+        bsz, _, h_dim, w_dim = queries.shape
+        q_flat = queries.flatten(2).transpose(1, 2).contiguous()
+        q_flat = _normalize_last_dim(q_flat)
+        keys = _normalize_last_dim(self.universal_keys).unsqueeze(0).expand(bsz, -1, -1)
+        sim = torch.bmm(q_flat, keys.transpose(1, 2)) / self.temperature
+        attn = F.softmax(sim, dim=-1)
+
+        tokens = content_tokens.flatten(2).transpose(1, 2).contiguous()
+        matrices, delta = self._translation_matrices(style_id, dtype=tokens.dtype, device=tokens.device)
+        translated = torch.einsum("bnk,bnd,bkde->bnke", attn, tokens, matrices).sum(dim=2)
+        spatial_map = _patch_to_map(translated, target_hw=target_hw or (h_dim, w_dim))
+
+        spatial_gap = spatial_map.mean(dim=(2, 3), keepdim=False)
+        global_gate = self.global_pool_to_gate(spatial_gap.to(dtype=content_latent.dtype))
+        raw_code = self.style_global_raw(style_id).to(device=content_latent.device, dtype=content_latent.dtype)
+        global_full = base_style_code + raw_code + self.global_gate_scale * global_gate
+
+        entropy = -(attn * attn.clamp_min(1e-8).log()).sum(dim=-1, keepdim=True)
+        max_entropy = max(math.log(float(self.num_clusters)), 1e-8)
+        gate = 1.0 - entropy / max_entropy
+        gate_map = _patch_to_map(gate.expand(-1, -1, self.spatial_dim), target_hw=target_hw or (h_dim, w_dim)).mean(dim=1, keepdim=True)
+        mask_map = _patch_to_map(attn.amax(dim=-1, keepdim=True), target_hw=target_hw or (h_dim, w_dim))
+        aux_map = _patch_to_map(attn, target_hw=target_hw or (h_dim, w_dim))
+        effective = torch.exp(entropy.detach().float().mean())
+        return self._finalize_output(StructuredStyleOutput(
+            global_code=global_full,
+            spatial_map=spatial_map,
+            gate_map=gate_map,
+            mask_map=mask_map,
+            aux_map=aux_map,
+            debug=self._common_debug(
+                attn=attn,
+                spatial_map=spatial_map,
+                gate_map=gate_map,
+                mask_map=mask_map,
+                extra={
+                    "family": "smoe_translator",
+                    "source": "content_latent",
+                    "num_clusters": self.num_clusters,
+                    "spatial_dim": self.spatial_dim,
+                    "pe_temp": self.pe_temperature,
+                    "query_dim": self.query_dim,
+                    "query_num_blocks": self.query_num_blocks,
+                    "global_gate_scale": self.global_gate_scale,
+                    "translation_rank": self.translation_rank,
+                    "translation_delta_from_identity": float(delta.detach().float().abs().mean().cpu().item()),
+                    "routing_entropy": _scalar_mean(entropy),
+                    "effective_experts": float(effective.cpu().item()),
+                    "spatial_abs": float(spatial_map.detach().float().abs().mean().cpu().item()),
+                    "content_spatial_abs": float(content_tokens.detach().float().abs().mean().cpu().item()),
+                    "global_gate_abs": float(global_gate.detach().float().abs().mean().cpu().item()),
+                    "global_raw_abs": float(raw_code.detach().float().abs().mean().cpu().item()),
+                    "global_full_abs": float(global_full.detach().float().abs().mean().cpu().item()),
                 },
             ),
         ))

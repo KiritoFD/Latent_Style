@@ -294,7 +294,7 @@ class LatentAdaCUTRuntimeMixin:
         family = str(getattr(self, "tokenizer_family", "legacy_factorized"))
         if tokenizer is None or family == "legacy_factorized" or style_id is None:
             return None
-        if family == "pure_latent_spatial":
+        if family in {"pure_latent_spatial", "smoe_translator"}:
             structured = tokenizer(
                 style_id=self._normalize_style_id_input(style_id, device=style_code.device),
                 base_style_code=style_code,
@@ -419,7 +419,7 @@ class LatentAdaCUTRuntimeMixin:
         style_code: torch.Tensor,
         content_feat_16: torch.Tensor,
     ) -> torch.Tensor:
-        if str(getattr(self, "tokenizer_family", "legacy_factorized")) == "pure_latent_spatial":
+        if str(getattr(self, "tokenizer_family", "legacy_factorized")) in {"pure_latent_spatial", "smoe_translator"}:
             return style_code
         router = getattr(self, "style_code_content_router", None)
         if router is None or style_id is None:
@@ -489,7 +489,7 @@ class LatentAdaCUTRuntimeMixin:
         del style_code
         if getattr(self, "style_spatial_id_16", None) is None:
             raise RuntimeError(
-                "Legacy style_spatial priors are not instantiated for tokenizer_family='pure_latent_spatial'."
+                "Legacy style_spatial priors are not instantiated for latent-only structured tokenizers."
             )
         spatial_device = self.style_spatial_id_16.device
         style_id_t = self._normalize_style_id_input(style_id, device=spatial_device)
@@ -598,7 +598,7 @@ class LatentAdaCUTRuntimeMixin:
     def encode_style_id(self, style_id: torch.Tensor | int | None, t: torch.Tensor | None = None) -> torch.Tensor:
         if style_id is None:
             raise ValueError("style_id is required.")
-        if str(getattr(self, "tokenizer_family", "legacy_factorized")) == "pure_latent_spatial":
+        if str(getattr(self, "tokenizer_family", "legacy_factorized")) in {"pure_latent_spatial", "smoe_translator"}:
             if t is not None and torch.is_tensor(t):
                 batch = int(t.view(-1).shape[0])
                 device = t.device
@@ -625,7 +625,7 @@ class LatentAdaCUTRuntimeMixin:
     def encode_style_spatial_id(self, style_id: torch.Tensor | int) -> dict[int, torch.Tensor]:
         if getattr(self, "style_spatial_id_16", None) is None:
             raise RuntimeError(
-                "Legacy style_spatial priors are unavailable for tokenizer_family='pure_latent_spatial'."
+                "Legacy style_spatial priors are unavailable for latent-only structured tokenizers."
             )
         spatial_device = self.style_spatial_id_16.device
         style_id = self._normalize_style_id_input(style_id, device=spatial_device)
@@ -723,7 +723,11 @@ class LatentAdaCUTRuntimeMixin:
         )
         if structured_ctx is not None:
             style_code, style_maps = structured_ctx
-        if self.output_appearance_alignment_mode != "none":
+        if (
+            self.output_appearance_alignment_mode != "none"
+            or bool(getattr(self, "solver_fiber_aligned", False))
+            or bool(getattr(self, "force_output_style_context_cache", False))
+        ):
             self._cache_output_style_context(
                 source_latent=x,
                 style_code=style_code,
@@ -731,7 +735,7 @@ class LatentAdaCUTRuntimeMixin:
             )
         else:
             self.last_output_style_context = None
-        pure_latent_family = str(getattr(self, "tokenizer_family", "legacy_factorized")) == "pure_latent_spatial"
+        latent_spatial_family = str(getattr(self, "tokenizer_family", "legacy_factorized")) in {"pure_latent_spatial", "smoe_translator"}
 
         if override_palette is not None:
             style_map_proj = override_palette
@@ -789,10 +793,10 @@ class LatentAdaCUTRuntimeMixin:
             )
             style_map_proj = self.down(h_s)
         else:
-            if pure_latent_family and structured_ctx is None:
+            if latent_spatial_family and structured_ctx is None:
                 raise RuntimeError(
-                    "tokenizer_family='pure_latent_spatial' requires structured_style_tokenizer output; "
-                    "legacy style_spatial fallback is disabled on the pure-latent mainline."
+                    f"tokenizer_family={getattr(self, 'tokenizer_family', 'legacy_factorized')!r} "
+                    "requires structured_style_tokenizer output; legacy style_spatial fallback is disabled."
                 )
             if self.ablation_disable_spatial_prior:
                 style_map_proj = torch.zeros_like(content_feat_16)
