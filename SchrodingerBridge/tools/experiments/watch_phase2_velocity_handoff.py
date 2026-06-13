@@ -77,12 +77,30 @@ def _lpips_gate_state(
     return "in_band", worst_lpips
 
 
+def _meets_joint_recovery(
+    *,
+    style_value: float,
+    style_threshold: float,
+    lpips_value: float | None,
+    lpips_ceiling: float | None,
+) -> bool:
+    if style_value < float(style_threshold):
+        return False
+    if lpips_ceiling is None:
+        return True
+    if lpips_value is None:
+        return False
+    return float(lpips_value) <= float(lpips_ceiling)
+
+
 def _should_handoff(
     status: dict,
     *,
     min_settled_epoch: int,
     min_allpairs_style_recovery: float,
     min_transfer_style_recovery: float,
+    max_allpairs_lpips_for_recovery: float | None,
+    max_transfer_lpips_for_recovery: float | None,
     continue_lpips_threshold: float,
     fail_stop_lpips_threshold: float,
 ) -> tuple[bool, dict[str, object]]:
@@ -95,9 +113,21 @@ def _should_handoff(
     latest_allpairs_lpips = _safe_float(latest.get("all_pairs_content_lpips"))
     latest_transfer_lpips = _safe_float(latest.get("transfer_content_lpips"))
     best_in_newest_2 = bool(convergence.get("best_in_newest_2"))
+    allpairs_recovered = _meets_joint_recovery(
+        style_value=latest_allpairs,
+        style_threshold=float(min_allpairs_style_recovery),
+        lpips_value=latest_allpairs_lpips,
+        lpips_ceiling=max_allpairs_lpips_for_recovery,
+    )
+    transfer_recovered = _meets_joint_recovery(
+        style_value=latest_transfer,
+        style_threshold=float(min_transfer_style_recovery),
+        lpips_value=latest_transfer_lpips,
+        lpips_ceiling=max_transfer_lpips_for_recovery,
+    )
     style_recovered = (
-        latest_allpairs >= float(min_allpairs_style_recovery)
-        or latest_transfer >= float(min_transfer_style_recovery)
+        allpairs_recovered
+        or transfer_recovered
     )
     lpips_gate_state, worst_lpips = _lpips_gate_state(
         transfer_lpips=latest_transfer_lpips,
@@ -127,8 +157,12 @@ def _should_handoff(
         "fail_stop_lpips_threshold": float(fail_stop_lpips_threshold),
         "best_in_newest_2": best_in_newest_2,
         "style_recovered": style_recovered,
+        "allpairs_recovered": allpairs_recovered,
+        "transfer_recovered": transfer_recovered,
         "min_allpairs_style_recovery": float(min_allpairs_style_recovery),
         "min_transfer_style_recovery": float(min_transfer_style_recovery),
+        "max_allpairs_lpips_for_recovery": None if max_allpairs_lpips_for_recovery is None else float(max_allpairs_lpips_for_recovery),
+        "max_transfer_lpips_for_recovery": None if max_transfer_lpips_for_recovery is None else float(max_transfer_lpips_for_recovery),
         "plateau_rule_met": plateau_rule_met,
         "handoff_reason": handoff_reason,
     }
@@ -214,6 +248,8 @@ def main() -> int:
     parser.add_argument("--min-settled-epoch", type=int, default=6)
     parser.add_argument("--min-allpairs-style-recovery", type=float, default=0.7005)
     parser.add_argument("--min-transfer-style-recovery", type=float, default=0.6725)
+    parser.add_argument("--max-allpairs-lpips-for-recovery", type=float, default=None)
+    parser.add_argument("--max-transfer-lpips-for-recovery", type=float, default=None)
     parser.add_argument("--continue-lpips-threshold", type=float, default=0.40)
     parser.add_argument("--fail-stop-lpips-threshold", type=float, default=0.70)
     parser.add_argument("--idle-memory-mib", type=int, default=1500)
@@ -241,6 +277,8 @@ def main() -> int:
             min_settled_epoch=int(args.min_settled_epoch),
             min_allpairs_style_recovery=float(args.min_allpairs_style_recovery),
             min_transfer_style_recovery=float(args.min_transfer_style_recovery),
+            max_allpairs_lpips_for_recovery=_safe_float(args.max_allpairs_lpips_for_recovery),
+            max_transfer_lpips_for_recovery=_safe_float(args.max_transfer_lpips_for_recovery),
             continue_lpips_threshold=float(args.continue_lpips_threshold),
             fail_stop_lpips_threshold=float(args.fail_stop_lpips_threshold),
         )
@@ -266,6 +304,8 @@ def main() -> int:
         min_settled_epoch=int(args.min_settled_epoch),
         min_allpairs_style_recovery=float(args.min_allpairs_style_recovery),
         min_transfer_style_recovery=float(args.min_transfer_style_recovery),
+        max_allpairs_lpips_for_recovery=_safe_float(args.max_allpairs_lpips_for_recovery),
+        max_transfer_lpips_for_recovery=_safe_float(args.max_transfer_lpips_for_recovery),
         continue_lpips_threshold=float(args.continue_lpips_threshold),
         fail_stop_lpips_threshold=float(args.fail_stop_lpips_threshold),
     )
