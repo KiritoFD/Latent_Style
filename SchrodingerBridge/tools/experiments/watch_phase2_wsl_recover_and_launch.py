@@ -102,6 +102,7 @@ def _phase2_watch(
     handoff_mode: str,
     manifest_csv: str = "",
     validation_json: str = "",
+    current_lane_class: str = "formal_lane",
     next_lane_class: str = "structure_reentry",
 ) -> int:
     watcher = SCRIPT_DIR / "watch_phase2_velocity_handoff.py"
@@ -141,6 +142,8 @@ def _phase2_watch(
         cmd.extend(["--manifest-csv", str(manifest_csv).strip()])
     if str(validation_json).strip():
         cmd.extend(["--validation-json", str(validation_json).strip()])
+    if str(current_lane_class).strip():
+        cmd.extend(["--current-lane-class", str(current_lane_class).strip()])
     if str(next_lane_class).strip():
         cmd.extend(["--next-lane-class", str(next_lane_class).strip()])
     proc = _run(cmd)
@@ -173,7 +176,8 @@ def main() -> int:
     parser.add_argument("--max-allpairs-lpips-for-recovery", type=float, default=None)
     parser.add_argument("--min-transfer-style-recovery", type=float, default=None)
     parser.add_argument("--max-transfer-lpips-for-recovery", type=float, default=None)
-    parser.add_argument("--handoff-mode", choices=("launch_pc_eval", "stop_only", "launch_structure_reentry"), default="stop_only")
+    parser.add_argument("--next-lane-class", default="structure_reentry")
+    parser.add_argument("--handoff-mode", choices=("launch_pc_eval", "stop_only", "launch_structure_reentry", "launch_same_lane_successor"), default="stop_only")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -287,7 +291,8 @@ def main() -> int:
         handoff_mode=str(args.handoff_mode),
         manifest_csv=str(args.manifest_csv),
         validation_json=str(args.validation_json),
-        next_lane_class="structure_reentry",
+        current_lane_class=str(args.lane_class),
+        next_lane_class=str(args.next_lane_class),
     )
 
 

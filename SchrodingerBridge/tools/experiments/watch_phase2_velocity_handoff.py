@@ -8,7 +8,12 @@ import time
 from pathlib import Path
 
 from csv_utils import manifest_fieldnames, read_csv_rows, write_csv_rows
-from resolve_phase2_queue_packet import DEFAULT_MANIFEST, DEFAULT_VALIDATION, resolve_packet
+from resolve_phase2_queue_packet import (
+    DEFAULT_MANIFEST,
+    DEFAULT_VALIDATION,
+    resolve_packet,
+    resolve_successor_packet,
+)
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -272,6 +277,19 @@ def _launch_next_lane_from_manifest(
         validation_json=validation_json,
         require_valid=False,
     )
+    return _launch_resolved_packet(
+        resolved=resolved,
+        lane_class=str(lane_class),
+        skip_smoke=skip_smoke,
+    )
+
+
+def _launch_resolved_packet(
+    *,
+    resolved: dict[str, object],
+    lane_class: str,
+    skip_smoke: bool,
+) -> int:
     config_path = str(resolved.get("config_path", "")).strip()
     if not config_path:
         raise ValueError(f"resolved packet for lane_class={lane_class!r} has no config_path")
@@ -330,6 +348,43 @@ def _update_manifest_status(
     write_csv_rows(manifest_csv, rows, fieldnames=fieldnames)
 
 
+def _promote_manifest_successor(
+    *,
+    manifest_csv: Path,
+    lane_class: str,
+    current_packet_id: str,
+    next_packet_id: str,
+    close_reason: str,
+    next_status: str | None,
+) -> None:
+    rows = read_csv_rows(manifest_csv)
+    fieldnames = manifest_fieldnames(rows)
+    lane = str(lane_class).strip().lower()
+    current_id = str(current_packet_id).strip()
+    next_id = str(next_packet_id).strip()
+    for row in rows:
+        if str(row.get("lane_class", "")).strip().lower() != lane:
+            continue
+        packet_id = str(row.get("packet_id", "")).strip()
+        if packet_id == current_id:
+            row["preferred"] = "no"
+            if "lpips_fail_stop" in str(close_reason):
+                row["status"] = "closed_fail_stop"
+            elif "lpips_archival_stop" in str(close_reason):
+                row["status"] = "closed_archival_stop"
+            elif "plateau" in str(close_reason):
+                row["status"] = "closed_plateau"
+            else:
+                row["status"] = "closed"
+        elif packet_id == next_id:
+            row["preferred"] = "yes"
+            if next_status:
+                row["status"] = str(next_status)
+        elif str(row.get("preferred", "")).strip().lower() == "yes":
+            row["preferred"] = "no"
+    write_csv_rows(manifest_csv, rows, fieldnames=fieldnames)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Watch the phase2 velocity lane and hand off to eval-only solver_pc when the documented closure rule is met.")
     parser.add_argument("--run-name", default="aaai2027_phase2_vel_pattn_enhanced_tok_seed42_b22a1")
@@ -354,13 +409,14 @@ def main() -> int:
     parser.add_argument("--force-regen", action="store_true")
     parser.add_argument("--manifest-csv", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--validation-json", type=Path, default=DEFAULT_VALIDATION)
+    parser.add_argument("--current-lane-class", default="formal_lane")
     parser.add_argument("--next-lane-class", default="structure_reentry")
     parser.add_argument("--skip-next-smoke", action="store_true")
     parser.add_argument(
         "--handoff-mode",
-        choices=("launch_pc_eval", "stop_only", "launch_structure_reentry"),
+        choices=("launch_pc_eval", "stop_only", "launch_structure_reentry", "launch_same_lane_successor"),
         default="launch_pc_eval",
-        help="What to do after the remote lane is closed. 'launch_pc_eval' preserves the old behavior; 'stop_only' just frees the formal lane; 'launch_structure_reentry' resolves and launches the preferred next lane from the phase2 manifest.",
+        help="What to do after the remote lane is closed. 'launch_pc_eval' preserves the old behavior; 'stop_only' just frees the formal lane; 'launch_structure_reentry' resolves and launches the preferred next packet from another lane_class; 'launch_same_lane_successor' resolves the next queued packet within the same lane_class and promotes it.",
     )
     args = parser.parse_args()
 
@@ -448,7 +504,7 @@ def main() -> int:
         if str(args.manifest_csv).strip():
             current_packet_id = _resolve_manifest_packet_id(
                 manifest_csv=Path(args.manifest_csv).expanduser().resolve(),
-                lane_class="formal_lane",
+                lane_class=str(args.current_lane_class),
                 validation_json=Path(args.validation_json).expanduser().resolve(),
             )
             _update_manifest_status(
@@ -465,7 +521,7 @@ def main() -> int:
         validation_json = Path(args.validation_json).expanduser().resolve()
         current_packet_id = _resolve_manifest_packet_id(
             manifest_csv=manifest_csv,
-            lane_class="formal_lane",
+            lane_class=str(args.current_lane_class),
             validation_json=validation_json,
         )
         next_packet_id = _resolve_manifest_packet_id(
@@ -499,6 +555,53 @@ def main() -> int:
             pass
         _update_manifest_status(
             manifest_csv=manifest_csv,
+            current_packet_id=current_packet_id,
+            next_packet_id=next_packet_id,
+            close_reason=str(reason.get("handoff_reason", "")),
+            next_status=next_status,
+        )
+        return 0
+    if str(args.handoff_mode) == "launch_same_lane_successor":
+        manifest_csv = Path(args.manifest_csv).expanduser().resolve()
+        validation_json = Path(args.validation_json).expanduser().resolve()
+        current_lane_class = str(args.current_lane_class).strip()
+        current_resolved = resolve_packet(
+            manifest_csv=manifest_csv,
+            lane_class=current_lane_class,
+            preferred_only=True,
+            validation_json=validation_json,
+            require_valid=False,
+        )
+        current_packet_id = str(current_resolved.get("packet_id", "")).strip()
+        if not current_packet_id:
+            raise ValueError(f"could not resolve current packet for lane_class={current_lane_class!r}")
+        successor = resolve_successor_packet(
+            manifest_csv=manifest_csv,
+            lane_class=current_lane_class,
+            current_packet_id=current_packet_id,
+            validation_json=validation_json,
+            require_valid=False,
+        )
+        next_packet_id = str(successor.get("packet_id", "")).strip()
+        rc = _launch_resolved_packet(
+            resolved=successor,
+            lane_class=current_lane_class,
+            skip_smoke=bool(args.skip_next_smoke),
+        )
+        if rc != 0:
+            raise RuntimeError(f"phase2 same-lane successor launch failed rc={rc}")
+        next_status = "launch_requested"
+        try:
+            next_run_name = str(successor.get("run_name", "")).strip()
+            if next_run_name:
+                next_remote = _status_payload(next_run_name)
+                if next_remote.get("processes") or next_remote.get("latest_checkpoint_epoch") or next_remote.get("latest_settled_epoch"):
+                    next_status = "running"
+        except Exception:
+            pass
+        _promote_manifest_successor(
+            manifest_csv=manifest_csv,
+            lane_class=current_lane_class,
             current_packet_id=current_packet_id,
             next_packet_id=next_packet_id,
             close_reason=str(reason.get("handoff_reason", "")),
