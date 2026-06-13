@@ -7,7 +7,7 @@ Purpose:
 - reduce repeated launch failures on the remote `RTX 3060`
 - make remote runs reproducible without rereading chat history
 - standardize sync, preflight, launch, monitor, and closure
-- enforce a hard single-run explosion boundary of `11.5 GiB`
+- enforce a hard single-run explosion boundary of `11.0 GiB`
 - treat the host-owned remote launcher as the default entrypoint for formal paper runs
 
 ## Machine contract
@@ -21,7 +21,7 @@ Purpose:
 - authoritative repo root inside WSL:
   - `/mnt/i/Github/Latent_Style`
 - hard VRAM cap for paper-facing runs:
-  - treat any reading above `11.5 GiB` as exploded
+  - treat any reading above `11.0 GiB` as exploded
 
 Do not assume:
 
@@ -120,6 +120,21 @@ ssh -p 2222 -T -o LogLevel=ERROR administrator@100.115.18.62 "nvidia-smi --query
 ssh -p 2222 -T -o LogLevel=ERROR administrator@100.115.18.62 "wsl -d Ubuntu-26.04 --cd /mnt/i/Github/Latent_Style --exec pwd"
 ```
 
+If the second command fails or returns garbled `HCS_E_SERVICE_NOT_AVAILABLE`, run:
+
+```powershell
+python SchrodingerBridge/tools/experiments/check_remote_wsl_host_health.py
+```
+
+Interpretation:
+
+- if `ssh_ok=true` but `wsl_exec_ok=false` and `reboot_required_for_wsl2=true`
+  - the Windows host has the right WSL2 features configured
+  - but the host still needs a reboot before formal launches can work again
+- if `VirtualMachinePlatform` is disabled
+  - enable it before retrying any formal WSL2 launch
+- do not keep retrying formal packets while this health check still says WSL2 is unavailable
+
 For formal training, record:
 
 - GPU memory used / total
@@ -166,6 +181,12 @@ Avoid:
 - launching a new packet while remote total `memory.used` is still above:
   - `1500 MiB`
 
+Current host-specific note:
+
+- on this machine, `LxssManager` running is not sufficient by itself
+- `VirtualMachinePlatform` must be enabled and the host may still require a Windows reboot before `wsl -d Ubuntu-26.04 --exec ...` succeeds
+- the launcher now surfaces this as a host-side WSL/HCS failure instead of misreporting it as a model launch error
+
 ### Step 4. Monitor
 
 First monitoring window:
@@ -181,14 +202,16 @@ First monitoring window:
 Formal run policy:
 
 - remote `3060` paper-facing runs should usually sit around the expected formal memory band for that method
-- treat `11.5 GiB` as the hard explosion stop, not a soft target
+- treat `11.0 GiB` as the hard explosion stop, not a soft target
+- the preferred formal band is:
+  - `9.0-10.8 GiB`
 - under-cap runs are smoke or calibration, not formal evidence
 
 Concurrency rule:
 
 - do not overlap latent baseline runs on the `3060`
-- only one training lane may hold GPU at a time unless a measured combined peak is still strictly below `11.5 GiB`
-- if a second lane pushes total usage near or above `11.5 GiB`, stop it immediately and relaunch later as a single-run lane
+- only one training lane may hold GPU at a time unless a measured combined peak is still strictly below `11.0 GiB`
+- if a second lane pushes total usage near or above `11.0 GiB`, stop it immediately and relaunch later as a single-run lane
 - when handing off between lanes, wait for remote total `memory.used <= 1500 MiB`
   before launching the next packet
 - treat stale baseline residue as a real conflict, not harmless background noise
