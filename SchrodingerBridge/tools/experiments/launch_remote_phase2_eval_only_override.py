@@ -107,6 +107,8 @@ def main() -> int:
         str(int(args.min_runtime_memory_mib)),
         "--max-runtime-memory-mib",
         str(int(args.max_runtime_memory_mib)),
+        "--runtime-guard-max-memory-mib",
+        str(int(args.max_runtime_memory_mib)),
         "--health-wait-seconds",
         str(int(args.health_wait_seconds)),
     ]

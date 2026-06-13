@@ -81,6 +81,9 @@ COLORS = {
 PHASE2_TRACE_STYLES = {
     "k070_e1_e5": ("#E08E00", "P"),
     "pattn_enhanced_tok_e1_e9": ("#0F766E", "X"),
+    "pattn_enhanced_tok_e1_e10": ("#0F766E", "X"),
+    "fiber_sde_iso_scan": ("#2563EB", "o"),
+    "fiber_sde_fiber_scan": ("#DC2626", "D"),
 }
 
 

@@ -19,11 +19,12 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 
 ## Next Queue
 
-1. Close or explicitly stage-node the current `k070` parent.
+1. Use `k070 epoch_0003` as the deterministic topogate parent for Fiber-SDE because it is the current in-band structure point (`transfer LPIPS = 0.314618`).
 2. Run Fiber-SDE eval-only matched scan from the same parent checkpoint:
    - deterministic parent
    - isotropic sigma `0.01, 0.02, 0.03, 0.05`
    - fiber-aligned sigma `0.01, 0.02, 0.03, 0.05`
+   - optional low-noise health pair `0.005` is allowed only as a pre-scan check and is not the formal decision basis
 3. After each eval output, update `plot_points.csv`, regenerate the homepage figures, and append matched deltas to `control_delta.csv`.
 4. Launch SMoE-only training only after the Fiber-SDE scan decision note is written.
 
@@ -38,8 +39,8 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Added the remote `k070` epoch `1-5` all-checkpoint curve to:
   - `curves/k070_epoch1_5_remote_clip_lpips_curve.csv`
   - `plot_points.csv`
-- Added the active remote `pattn_enhanced_tok` epoch `1-9` all-checkpoint curve to:
-  - `curves/pattn_enhanced_tok_epoch1_9_remote_clip_lpips_curve.csv`
+- Added the active remote `pattn_enhanced_tok` epoch `1-10` all-checkpoint curve to:
+  - `curves/pattn_enhanced_tok_epoch1_10_remote_clip_lpips_curve.csv`
   - `plot_points.csv`
 - Regenerated the AAAI2027 page-1 summary figure:
   - `aaai2027/figures/fig_distinct5_page1_summary.png`
@@ -51,8 +52,62 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Current plotted `pattn_enhanced_tok` read:
   - best transfer/all-pairs: `epoch_0002`, `0.673934 / 0.384340`, `style - IDT = +0.034013`
   - best all-pairs LPIPS: `epoch_0008`, `0.697299 / 0.358929` all-pairs and transfer `0.667859 / 0.361483`
-  - latest settled: `epoch_0009`, `0.673337 / 0.384972`, `style - IDT = +0.033416`
-  - convergence: not closed; `last_pareto = epoch_0008`, `tail_flat = false`
+  - latest settled before stop: `epoch_0010`, `0.670516 / 0.364172`, `style - IDT = +0.030595`
+  - convergence read: e10 did not beat e2 style or e8 LPIPS; this line is held as non-promoted evidence while Fiber-SDE starts from the stronger `k070 epoch_0003` structure parent
 - Label decision:
   - draw and connect every retained checkpoint
   - label only sparse key nodes on the page-1 panel to avoid collisions with the existing `K` and Lat-MAM labels
+
+## 2026-06-14 Fiber-SDE Sigma 0.01 Matched Eval
+
+- Parent: `k070 epoch_0003`, transfer `0.671820 / 0.314618`, all-pairs `0.703234 / 0.312550`.
+- Isotropic control: transfer `0.671501 / 0.313795`, all-pairs `0.703024 / 0.311868`.
+- Fiber-aligned candidate: transfer `0.671581 / 0.313762`, all-pairs `0.702954 / 0.311888`.
+- Runtime observability:
+  - isotropic: `solver_noise_scale=0.01`, `solver_fiber_gate_active=0.0`
+  - fiber-aligned: `solver_noise_scale=0.01`, `solver_fiber_gate_active=1.0`, `solver_fiber_gate_mean≈0.652`
+- Decision for this sigma: `inconclusive_tie`.
+  - Transfer delta is slightly favorable: `+0.000080` style and `-0.000033` LPIPS.
+  - All-pairs delta is slightly unfavorable: `-0.000070` style and `+0.000020` LPIPS.
+  - The effect size is below a material threshold, so no promotion or rejection; continue the formal sigma sweep.
+
+## 2026-06-14 Fiber-SDE Sigma 0.02 Matched Eval
+
+- Isotropic control: transfer `0.672031 / 0.314990`, all-pairs `0.703432 / 0.313025`.
+- Fiber-aligned candidate: transfer `0.671818 / 0.314936`, all-pairs `0.703320 / 0.313015`.
+- Runtime observability:
+  - isotropic: `solver_noise_scale=0.02`, `solver_fiber_gate_active=0.0`
+  - fiber-aligned: `solver_noise_scale=0.02`, `solver_fiber_gate_active=1.0`, `solver_fiber_gate_mean≈0.652`
+- Decision for this sigma: `conservative_not_promoted`.
+  - Fiber-aligned reduces transfer LPIPS by `0.000054` and all-pairs LPIPS by `0.000010`.
+  - It also lowers style by `0.000213` transfer and `0.000112` all-pairs, so the matched delta does not support gate-aligned noise as the style-injection mechanism at this sigma.
+
+## 2026-06-14 Fiber-SDE Sigma 0.03 Matched Eval
+
+- Isotropic control: transfer `0.673391 / 0.316894`, all-pairs `0.704514 / 0.314930`.
+- Fiber-aligned candidate: transfer `0.673405 / 0.316883`, all-pairs `0.704633 / 0.314862`.
+- Runtime observability:
+  - isotropic: `solver_noise_scale=0.03`, `solver_fiber_gate_active=0.0`
+  - fiber-aligned: `solver_noise_scale=0.03`, `solver_fiber_gate_active=1.0`, `solver_fiber_gate_mean≈0.652`
+- Decision for this sigma: `marginal_positive_continue`.
+  - Transfer delta favors fiber-aligned by `+0.000013` style and `-0.000010` LPIPS.
+  - All-pairs delta favors fiber-aligned by `+0.000119` style and `-0.000068` LPIPS.
+  - The best style in the Fiber-SDE scan so far is `sigma=0.03`, but LPIPS has risen to `0.3169`; continue `sigma=0.05` before closing the mechanism.
+
+## 2026-06-14 Fiber-SDE Sigma 0.05 Matched Eval
+
+- Isotropic control: transfer `0.675927 / 0.322953`, all-pairs `0.706639 / 0.320868`.
+- Fiber-aligned candidate: transfer `0.675948 / 0.323189`, all-pairs `0.706763 / 0.321093`.
+- Runtime observability:
+  - isotropic: `solver_noise_scale=0.05`, `solver_fiber_gate_active=0.0`
+  - fiber-aligned: `solver_noise_scale=0.05`, `solver_fiber_gate_active=1.0`, `solver_fiber_gate_mean≈0.652`
+- Decision for this sigma: `style_upper_not_promoted`.
+  - Style is the best in the scan, but transfer LPIPS rises to `0.323189`, and fiber-aligned adds `+0.000237` LPIPS versus isotropic.
+  - Keep `sigma=0.05` as style-upper evidence only; it does not solve the `0.74 / 0.30` target.
+
+## Fiber-SDE Closure
+
+- Mechanism read: stochastic solver noise helps style more than deterministic parent, but the gain is small (`+0.0041` transfer style at `sigma=0.05`) and trades away structure.
+- Gate-aligned noise read: not a strong positive mechanism. It is marginally favorable at `sigma=0.03`, but the effect is too small; at `sigma=0.05` it adds LPIPS cost.
+- Stage decision: close Fiber-SDE eval-only scan as `not promoted as core`; retain `sigma=0.03` as balanced eval option and `sigma=0.05` as style-first diagnostic option.
+- Next stage: start SMoE tokenizer training from the same `k070 epoch_0003` parent; keep solver/loss/topogate unchanged so tokenizer is the only core variable.
