@@ -85,14 +85,24 @@ Date: 2026-06-13
     - forward `[1, 4, 32, 32]`
     - endpoint `[1, 4, 32, 32]`
     - integrated `[1, 4, 32, 32]`
+    - `semantic_attn_shape = [1, 256, 256]`
+    - `semantic_topology_attn_shape = [1, 256, 256]`
   - loss read:
     - `loss = 2.298454`
     - `flow = 2.069974`
     - `terminal_swd = 0.009923`
     - `t_mean = 0.456406`
+    - `semantic_topology_attn_entropy_metric = 2.805402`
+    - `semantic_topology_attn_active_metric = 1.0`
   - first grad:
     - `structured_style_tokenizer.universal_keys`
     - abs mean `0.004326`
+  - tokenizer debug snapshot:
+    - `attn_entropy = 2.914052`
+    - `attn_max = 0.514943`
+    - `num_clusters = 32`
+    - `query_dim = 96`
+    - `query_num_blocks = 5`
 - local gate-off/on probe:
   - mean absolute output delta `0.0189447`
   - topology attention entropy `2.755764`

@@ -53,6 +53,14 @@ Date: 2026-06-13
   - `integrate_transport(num_steps=2) -> [1, 4, 32, 32]`
   - `body_blocks[0].last_attn -> [1, 256, 256]`
   - `body_blocks[0].last_topology_attn -> [1, 256, 256]`
+- smoke contract note:
+  - `tools/experiments/smoke_experiment_config.py` now auto-records:
+    - `semantic_attn_shape`
+    - `semantic_topology_attn_shape`
+    - `semantic_topology_attn_entropy_runtime`
+    - `semantic_topology_attn_entropy_metric`
+    - `semantic_topology_attn_active_metric`
+    - `structured_style_tokenizer_debug`
 
 ## Queue Impact
 
