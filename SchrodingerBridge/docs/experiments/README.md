@@ -15,6 +15,8 @@ For the current AAAI 2027 push, start here:
   `SchrodingerBridge/tools/experiments/README.md`
 - current paper/experiment plan:
   `SchrodingerBridge/docs/experiments/2026-06-02-aaai2027-paper-update-plan.md`
+- current phase-2 queue manifest:
+  `SchrodingerBridge/docs/experiments/phase2_queue_manifest.csv`
 - unified experiment ledger:
   `SchrodingerBridge/docs/experiments/aaai2027_master_experiment_log.csv`
 - local inventory + prune bundle:
