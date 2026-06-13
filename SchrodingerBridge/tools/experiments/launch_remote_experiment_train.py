@@ -312,14 +312,14 @@ def main() -> int:
             flush=True,
         )
         return 0
-    if rc not in {22, 23}:
+    if rc not in {1, 22, 23}:
         return rc
 
     remote_launcher_abs = f"{args.remote_wsl_cwd.rstrip('/')}/SchrodingerBridge/_codex_rt/{task_name}.sh"
     wrapper_log_path = f"{args.remote_wsl_cwd.rstrip('/')}/exp/inmortal-exp/{run_name}_wrapper_nohup.log"
     print(
-        "[launch_remote_experiment_train] host-owned health check failed; trying direct WSL nohup fallback "
-        f"for {task_name}",
+        "[launch_remote_experiment_train] host-owned launch/health path failed; trying direct WSL nohup fallback "
+        f"for {task_name} (rc={rc})",
         flush=True,
     )
     fallback_rc = _fallback_direct_nohup(

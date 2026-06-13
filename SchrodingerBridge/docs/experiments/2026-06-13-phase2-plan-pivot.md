@@ -142,6 +142,9 @@ Date: 2026-06-13
    - first concrete packet:
      - [phase2_vel_tok32_safe_rescan_r1_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_rescan_r1_seed42_b20a1.json)
      - [2026-06-13-phase2-vel-tok32-safe-rescan-r1.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-rescan-r1.md)
+   - narrowed rollback follow-up:
+     - [phase2_vel_tok32_safe_rescan_r2_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_rescan_r2_seed42_b20a1.json)
+     - [2026-06-13-phase2-vel-tok32-safe-rescan-r2.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-rescan-r2.md)
 3. `vel_structure_control_reentry`
    - keep `velocity`, not endpoint
    - only after queue 1 or 2 creates a stronger in-band parent
@@ -195,28 +198,25 @@ Date: 2026-06-13
       - but it never beat the old safe shelf `0.701666 / 0.381724`
       - the newest two settled points did not recover a style breakout
       - so the formal slot should move to queue-2 safe-family rescan
-  - the active formal lane is now:
-    - [phase2_vel_tok32_safe_rescan_r1_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_rescan_r1_seed42_b20a1.json)
-    - [2026-06-13-phase2-vel-tok32-safe-rescan-r1.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-rescan-r1.md)
-    - initial launch time `2026-06-13 10:24`
-    - early diagnostic relaunch `2026-06-13 10:35`
-    - current 30s launch health `10140 MiB`
-    - current live read:
-      - `live_state = training_after_settled_eval`
-      - `remote_gpu ~= 9792 MiB`
-      - `latest_checkpoint_epoch = epoch_0001`
-      - `latest_settled_epoch = epoch_0001`
-    - first settled authority point:
+  - `vel_tok32_safe_rescan_r1` is now closed:
+    - `epoch_0001`
       - transfer `0.672934 / 0.384740`
       - all-pairs `0.700686 / 0.383351`
+      - in-band but jointly dominated by both the old shelf and the direct parent
+    - `epoch_0002`
+      - transfer `0.676378 / 0.400694`
+      - all-pairs `0.702543 / 0.397891`
+      - style lift is real
+      - but worst authority LPIPS crosses `0.40`
+    - watcher reason:
+      - `lpips_archival_stop`
     - interpretation:
-      - still in-band
-      - not better than the old safe shelf
-      - not better than `tok32_pos_refresh epoch_0004`
-      - in fact, it is jointly dominated by both references on style and LPIPS
-      - but also not bad enough to give up the slot after one point
-      - the packet is therefore switched into a short-screen audit:
-        - if no shelf break appears by `epoch_0003`, close early
-        - and the watcher now interprets “recovery” as joint style+LPIPS recovery against the old shelf, not style-only recovery
-    - watcher:
-      - `watch_phase2_velocity_handoff.py --run-name aaai2027_phase2_vel_tok32_safe_rescan_r1_seed42_b20a1 --wait --execute --handoff-mode stop_only --min-settled-epoch 3 --min-allpairs-style-recovery 0.701666 --max-allpairs-lpips-for-recovery 0.381724 --min-transfer-style-recovery 0.673934 --max-transfer-lpips-for-recovery 0.384340`
+      - the first safe-family rollback almost worked
+      - but it is still archival-stop, not promotable
+  - there is no live formal remote training lane right now
+  - next formal candidate:
+    - [phase2_vel_tok32_safe_rescan_r2_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_rescan_r2_seed42_b20a1.json)
+    - [2026-06-13-phase2-vel-tok32-safe-rescan-r2.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-rescan-r2.md)
+    - current relaunch state:
+      - packet is prepared and smoke-complete
+      - remote host-side WSL / HCS state is currently blocking formal launch
