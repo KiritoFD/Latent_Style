@@ -108,6 +108,11 @@ class _BaseStructuredTokenizer(nn.Module):
         self.last_debug: dict[str, Any] = {}
         nn.init.normal_(self.global_residual.weight, mean=0.0, std=0.02)
 
+    def _finalize_output(self, output: StructuredStyleOutput) -> StructuredStyleOutput:
+        raw = output.debug if isinstance(output.debug, dict) else {}
+        self.last_debug = dict(raw)
+        return output
+
     def _style_global(
         self,
         *,
@@ -233,7 +238,7 @@ class PureLatentSpatialTokenizer(_BaseStructuredTokenizer):
         gate = 1.0 - entropy / max_entropy
         gate_map = _patch_to_map(gate.expand(-1, -1, self.spatial_dim), target_hw=target_hw or (h_dim, w_dim)).mean(dim=1, keepdim=True)
         mask_map = _patch_to_map(attn.amax(dim=-1, keepdim=True), target_hw=target_hw or (h_dim, w_dim))
-        return StructuredStyleOutput(
+        return self._finalize_output(StructuredStyleOutput(
             global_code=global_full,
             spatial_map=spatial_map,
             gate_map=gate_map,
@@ -249,7 +254,7 @@ class PureLatentSpatialTokenizer(_BaseStructuredTokenizer):
                 "query_num_blocks": self.query_num_blocks,
                 "global_gate_scale": self.global_gate_scale,
             },
-        )
+        ))
 
 
 class _LatentResBlock(nn.Module):
@@ -316,7 +321,7 @@ class DinoDictionaryTokenizer(_BaseStructuredTokenizer):
         gate = 1.0 - entropy / math.log(float(self.num_clusters) + 1e-8)
         gate_map = _patch_to_map(gate.expand(-1, -1, self.spatial_dim), target_hw=target_hw).mean(dim=1, keepdim=True)
         mask_map = _patch_to_map(attn.amax(dim=-1, keepdim=True), target_hw=target_hw)
-        return StructuredStyleOutput(
+        return self._finalize_output(StructuredStyleOutput(
             global_code=self._style_global(style_id=style_id, base_style_code=base_style_code),
             spatial_map=spatial_map,
             gate_map=gate_map,
@@ -326,7 +331,7 @@ class DinoDictionaryTokenizer(_BaseStructuredTokenizer):
                 "attn_entropy": float(entropy.mean().detach().cpu().item()),
                 "attn_max": float(attn.max().detach().cpu().item()),
             },
-        )
+        ))
 
 
 class CrossImageRoutingTokenizer(_BaseStructuredTokenizer):
@@ -371,7 +376,7 @@ class CrossImageRoutingTokenizer(_BaseStructuredTokenizer):
         dense = torch.bmm(attn, values)
         spatial_map = _patch_to_map(dense, target_hw=target_hw)
         gate_map = _patch_to_map(attn.amax(dim=-1, keepdim=True), target_hw=target_hw)
-        return StructuredStyleOutput(
+        return self._finalize_output(StructuredStyleOutput(
             global_code=base_style_code,
             spatial_map=spatial_map,
             gate_map=gate_map,
@@ -379,7 +384,7 @@ class CrossImageRoutingTokenizer(_BaseStructuredTokenizer):
                 "family": "tok_b_cross_image",
                 "bank_tokens": int(bank.shape[1]),
             },
-        )
+        ))
 
 
 class ResidualSemanticAdapterTokenizer(DinoDictionaryTokenizer):
@@ -430,7 +435,7 @@ class ResidualSemanticAdapterTokenizer(DinoDictionaryTokenizer):
             base.aux_map = low.to(dtype=base.spatial_map.dtype)
         base.debug["family"] = "tok_c_residual_adapter"
         base.debug["residual_gain"] = float(gain.detach().cpu().item())
-        return base
+        return self._finalize_output(base)
 
 
 class VLMPromptStyleTokenizer(_BaseStructuredTokenizer):
@@ -476,7 +481,7 @@ class VLMPromptStyleTokenizer(_BaseStructuredTokenizer):
         dense = torch.bmm(attn, values)
         spatial_map = _patch_to_map(dense, target_hw=target_hw)
         gate_map = _patch_to_map(attn.amax(dim=-1, keepdim=True), target_hw=target_hw)
-        return StructuredStyleOutput(
+        return self._finalize_output(StructuredStyleOutput(
             global_code=base_style_code + global_prompt.to(device=base_style_code.device, dtype=base_style_code.dtype),
             spatial_map=spatial_map,
             gate_map=gate_map,
@@ -484,4 +489,4 @@ class VLMPromptStyleTokenizer(_BaseStructuredTokenizer):
                 "family": "tok_d_vlm_prompt",
                 "prompt_length": self.prompt_length,
             },
-        )
+        ))
