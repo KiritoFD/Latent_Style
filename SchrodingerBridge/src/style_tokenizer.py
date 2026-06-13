@@ -5,51 +5,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class NullStyleTokenizer(nn.Module):
-    """Zero style-code placeholder for pure-latent tokenizer families.
-
-    The active style signal is carried by the structured tokenizer. This module
-    only preserves the historical callable/shape interface for residual
-    compatibility. Runtime anchoring now lives on the main model via
-    `style_code_anchor`, so this module is no longer the canonical source of
-    style-code device or width.
-    """
-
-    def __init__(self, *, style_dim: int) -> None:
-        super().__init__()
-        self.style_dim = max(1, int(style_dim))
-        self.register_buffer("_anchor", torch.zeros(1, self.style_dim), persistent=False)
-        self.last_debug: dict[str, torch.Tensor] = {}
-
-    @property
-    def embedding_dim(self) -> int:
-        return self.style_dim
-
-    @property
-    def weight(self) -> torch.Tensor:
-        return self._anchor
-
-    def reset_parameters(self) -> None:
-        return None
-
-    def forward(self, style_id: torch.Tensor, t: torch.Tensor | None = None) -> torch.Tensor:
-        if torch.is_tensor(style_id):
-            batch = int(style_id.view(-1).shape[0])
-            device = style_id.device
-        else:
-            batch = 1
-            device = self._anchor.device
-        dtype = t.dtype if torch.is_tensor(t) else self._anchor.dtype
-        with torch.no_grad():
-            zero = torch.zeros((), device=device, dtype=torch.float32)
-            self.last_debug = {
-                "style_code_norm": zero,
-                "style_code_abs_mean": zero,
-                "style_code_abs_max": zero,
-            }
-        return torch.zeros(batch, self.style_dim, device=device, dtype=dtype)
-
-
 class FactorizedStyleTokenizer(nn.Module):
     """Small, measurable style tokenizer for LANCET conditioning.
 
