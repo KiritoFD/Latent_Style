@@ -7,6 +7,7 @@ import sys
 import time
 from pathlib import Path
 
+from csv_utils import manifest_fieldnames, read_csv_rows, write_csv_rows
 from resolve_phase2_queue_packet import DEFAULT_MANIFEST, DEFAULT_VALIDATION, resolve_packet
 
 
@@ -26,6 +27,15 @@ def _run(cmd: list[str]) -> subprocess.CompletedProcess[str]:
         errors="replace",
         check=False,
     )
+
+
+def _safe_write_stdout(text: str) -> None:
+    payload = str(text or "")
+    try:
+        sys.stdout.write(payload)
+    except UnicodeEncodeError:
+        encoding = sys.stdout.encoding or "utf-8"
+        sys.stdout.buffer.write(payload.encode(encoding, errors="replace"))
 
 
 def _status_payload(run_name: str) -> dict:
@@ -109,6 +119,8 @@ def _should_handoff(
     curve = status.get("curve_summary") or {}
     latest = curve.get("latest") or {}
     convergence = status.get("convergence") or {}
+    pending_epochs = status.get("pending_checkpoint_epochs") or []
+    pending_count = len(pending_epochs) if isinstance(pending_epochs, list) else 0
     latest_epoch = _epoch_int(status.get("latest_settled_epoch", ""))
     latest_allpairs = float(latest.get("all_pairs_clip_style") or 0.0)
     latest_transfer = float(latest.get("transfer_clip_style") or 0.0)
@@ -138,7 +150,9 @@ def _should_handoff(
         fail_stop_lpips_threshold=float(fail_stop_lpips_threshold),
     )
     plateau_rule_met = latest_epoch >= int(min_settled_epoch) and (not best_in_newest_2) and (not style_recovered)
-    should = lpips_gate_state in {"archival_stop", "fail_stop"} or plateau_rule_met
+    pending_blocking = pending_count > 0
+    raw_should = lpips_gate_state in {"archival_stop", "fail_stop"} or plateau_rule_met
+    should = bool(raw_should and not pending_blocking)
     if lpips_gate_state == "fail_stop":
         handoff_reason = "lpips_fail_stop"
     elif lpips_gate_state == "archival_stop":
@@ -147,8 +161,12 @@ def _should_handoff(
         handoff_reason = "in_band_style_plateau"
     else:
         handoff_reason = "keep_running"
+    if pending_blocking and raw_should:
+        handoff_reason = f"{handoff_reason}_waiting_for_pending_eval"
     reason = {
         "latest_settled_epoch": latest_epoch,
+        "pending_checkpoint_epochs": pending_epochs,
+        "pending_checkpoint_count": pending_count,
         "latest_transfer_clip_style": latest_transfer,
         "latest_all_pairs_clip_style": latest_allpairs,
         "latest_transfer_content_lpips": latest_transfer_lpips,
@@ -166,6 +184,7 @@ def _should_handoff(
         "max_allpairs_lpips_for_recovery": None if max_allpairs_lpips_for_recovery is None else float(max_allpairs_lpips_for_recovery),
         "max_transfer_lpips_for_recovery": None if max_transfer_lpips_for_recovery is None else float(max_transfer_lpips_for_recovery),
         "plateau_rule_met": plateau_rule_met,
+        "pending_blocking": pending_blocking,
         "handoff_reason": handoff_reason,
     }
     return should, reason
@@ -267,8 +286,48 @@ def _launch_next_lane_from_manifest(
     if bool(skip_smoke):
         cmd.append("--skip-smoke")
     proc = _run(cmd)
-    sys.stdout.write(proc.stdout)
+    _safe_write_stdout(proc.stdout)
     return int(proc.returncode)
+
+
+def _resolve_manifest_packet_id(*, manifest_csv: Path, lane_class: str, validation_json: Path) -> str:
+    resolved = resolve_packet(
+        manifest_csv=manifest_csv,
+        lane_class=str(lane_class),
+        preferred_only=True,
+        validation_json=validation_json,
+        require_valid=False,
+    )
+    packet_id = str(resolved.get("packet_id", "")).strip()
+    if not packet_id:
+        raise ValueError(f"Could not resolve packet_id for lane_class={lane_class!r}")
+    return packet_id
+
+
+def _update_manifest_status(
+    *,
+    manifest_csv: Path,
+    current_packet_id: str,
+    next_packet_id: str | None,
+    close_reason: str,
+    next_status: str | None,
+) -> None:
+    rows = read_csv_rows(manifest_csv)
+    fieldnames = manifest_fieldnames(rows)
+    for row in rows:
+        packet_id = str(row.get("packet_id", "")).strip()
+        if packet_id == str(current_packet_id).strip():
+            if "lpips_fail_stop" in str(close_reason):
+                row["status"] = "closed_fail_stop"
+            elif "lpips_archival_stop" in str(close_reason):
+                row["status"] = "closed_archival_stop"
+            elif "plateau" in str(close_reason):
+                row["status"] = "closed_plateau"
+            else:
+                row["status"] = "closed"
+        if next_packet_id and packet_id == str(next_packet_id).strip() and next_status:
+            row["status"] = str(next_status)
+    write_csv_rows(manifest_csv, rows, fieldnames=fieldnames)
 
 
 def main() -> int:
@@ -386,17 +445,65 @@ def main() -> int:
         poll_seconds=int(args.poll_seconds),
     )
     if str(args.handoff_mode) == "stop_only":
+        if str(args.manifest_csv).strip():
+            current_packet_id = _resolve_manifest_packet_id(
+                manifest_csv=Path(args.manifest_csv).expanduser().resolve(),
+                lane_class="formal_lane",
+                validation_json=Path(args.validation_json).expanduser().resolve(),
+            )
+            _update_manifest_status(
+                manifest_csv=Path(args.manifest_csv).expanduser().resolve(),
+                current_packet_id=current_packet_id,
+                next_packet_id=None,
+                close_reason=str(reason.get("handoff_reason", "")),
+                next_status=None,
+            )
         print("Remote lane stopped and GPU returned to idle. Handoff mode is stop_only, so no follow-on eval was launched.", flush=True)
         return 0
     if str(args.handoff_mode) == "launch_structure_reentry":
+        manifest_csv = Path(args.manifest_csv).expanduser().resolve()
+        validation_json = Path(args.validation_json).expanduser().resolve()
+        current_packet_id = _resolve_manifest_packet_id(
+            manifest_csv=manifest_csv,
+            lane_class="formal_lane",
+            validation_json=validation_json,
+        )
+        next_packet_id = _resolve_manifest_packet_id(
+            manifest_csv=manifest_csv,
+            lane_class=str(args.next_lane_class),
+            validation_json=validation_json,
+        )
         rc = _launch_next_lane_from_manifest(
-            manifest_csv=Path(args.manifest_csv).expanduser().resolve(),
-            validation_json=Path(args.validation_json).expanduser().resolve(),
+            manifest_csv=manifest_csv,
+            validation_json=validation_json,
             lane_class=str(args.next_lane_class),
             skip_smoke=bool(args.skip_next_smoke),
         )
         if rc != 0:
             raise RuntimeError(f"phase2 next-lane launch failed rc={rc}")
+        next_status = "launch_requested"
+        try:
+            next_resolved = resolve_packet(
+                manifest_csv=manifest_csv,
+                lane_class=str(args.next_lane_class),
+                preferred_only=True,
+                validation_json=validation_json,
+                require_valid=False,
+            )
+            next_run_name = str(next_resolved.get("run_name", "")).strip()
+            if next_run_name:
+                next_remote = _status_payload(next_run_name)
+                if next_remote.get("processes") or next_remote.get("latest_checkpoint_epoch") or next_remote.get("latest_settled_epoch"):
+                    next_status = "running"
+        except Exception:
+            pass
+        _update_manifest_status(
+            manifest_csv=manifest_csv,
+            current_packet_id=current_packet_id,
+            next_packet_id=next_packet_id,
+            close_reason=str(reason.get("handoff_reason", "")),
+            next_status=next_status,
+        )
         return 0
     rc = _launch_pc_eval(checkpoint=str(args.pc_checkpoint), force_regen=bool(args.force_regen))
     if rc != 0:

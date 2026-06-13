@@ -261,6 +261,22 @@ Date: 2026-06-13
       - there is a style-leaning in-band frontier point at `epoch_0002`
       - there is a structure-leaning in-band frontier point at `epoch_0004`
     - from here the run should be judged by regular Pareto patience, not by the original `epoch_0003` short-screen
+- latest settled authority point at `2026-06-13 17:31:41 +08:00`:
+  - `epoch_0008`
+  - transfer `0.672774 / 0.389067`
+  - all-pairs `0.700669 / 0.384913`
+  - identity `0.812248 / 0.368297`
+  - interpretation:
+    - still in-band
+    - still below the safe recovery shelf on style
+    - LPIPS drifted back toward the ceiling
+    - closure rule is now satisfied as an in-band style plateau
+- formal-lane closure at `2026-06-13 17:33 +08:00`:
+  - closure reason:
+    - `in_band_style_plateau`
+  - retained authority evidence is complete through `epoch_0008`
+  - next queued move:
+    - `vel_tok32_safe_semantic_topogate_k085`
 
 ## Ops Note
 

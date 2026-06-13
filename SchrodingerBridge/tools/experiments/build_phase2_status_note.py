@@ -110,6 +110,8 @@ def build_note(snapshot: dict, *, report_date: str) -> str:
     structure = resolved.get("structure_reentry", {}) if isinstance(resolved.get("structure_reentry"), dict) else {}
     i2sb = resolved.get("i2sb_diagnostic_only", {}) if isinstance(resolved.get("i2sb_diagnostic_only"), dict) else {}
     remote = snapshot.get("remote_formal_status", {}) if isinstance(snapshot.get("remote_formal_status"), dict) else {}
+    remote_structure = snapshot.get("remote_structure_status", {}) if isinstance(snapshot.get("remote_structure_status"), dict) else {}
+    remote_i2sb = snapshot.get("remote_i2sb_status", {}) if isinstance(snapshot.get("remote_i2sb_status"), dict) else {}
     health = snapshot.get("remote_health", {}) if isinstance(snapshot.get("remote_health"), dict) else {}
     curve = remote.get("curve_summary", {}) if isinstance(remote.get("curve_summary"), dict) else {}
     latest = curve.get("latest", {}) if isinstance(curve.get("latest"), dict) else {}
@@ -117,6 +119,20 @@ def build_note(snapshot: dict, *, report_date: str) -> str:
     best_all_pairs = curve.get("best_all_pairs", {}) if isinstance(curve.get("best_all_pairs"), dict) else {}
     gpus = remote.get("remote_gpu", []) if isinstance(remote.get("remote_gpu"), list) else []
     gpu0 = gpus[0] if gpus and isinstance(gpus[0], dict) else {}
+    formal_status_text = str(formal.get("status", "n/a"))
+    formal_live_state = str(remote.get("live_state", "n/a"))
+    formal_processes = remote.get("processes", []) if isinstance(remote.get("processes"), list) else []
+    if formal_status_text.startswith("closed"):
+        formal_live_state = "settled_no_live_process"
+        gpu0 = {}
+    structure_status_text = str(structure.get("status", "n/a"))
+    structure_live_state = str(remote_structure.get("live_state", "n/a"))
+    if structure_status_text not in {"running", "launch_requested"}:
+        structure_live_state = "n/a"
+    i2sb_status_text = str(i2sb.get("status", "n/a"))
+    i2sb_live_state = str(remote_i2sb.get("live_state", "n/a"))
+    if i2sb_status_text not in {"running", "launch_requested"}:
+        i2sb_live_state = "n/a"
 
     snapshot_link = _path_link(str(snapshot.get("manifest_csv", "")), "phase2_queue_manifest.csv")
     validation_link = _path_link(str(snapshot.get("validation_json", "")), "phase2_queue_manifest_validation.json")
@@ -190,12 +206,12 @@ def build_note(snapshot: dict, *, report_date: str) -> str:
         "",
         "## Formal Lane",
         f"- Preferred packet: `{formal.get('packet_id', 'n/a')}`",
-        f"- Status: `{formal.get('status', 'n/a')}`",
+        f"- Status: `{formal_status_text}`",
         f"- Run: `{formal.get('run_name', 'n/a')}`",
         f"- Config: {formal_cfg}" if formal_cfg else "- Config: n/a",
         f"- Note: {formal_note}" if formal_note else "- Note: n/a",
-        f"- Live state: `{remote.get('live_state', 'n/a')}`",
-        f"- Remote GPU: {_fmt_mib(gpu0.get('memory_used_mib'), gpu0.get('memory_total_mib'))}",
+        f"- Live state: `{formal_live_state}`",
+        f"- Remote GPU: {_fmt_mib(gpu0.get('memory_used_mib'), gpu0.get('memory_total_mib')) if gpu0 else 'n/a'}",
         f"- Current read: {formal.get('current_read', 'n/a')}",
         "",
         "### Latest Settled Point",
@@ -237,10 +253,18 @@ def build_note(snapshot: dict, *, report_date: str) -> str:
         f"- Structure config: {structure_cfg}" if structure_cfg else "- Structure config: n/a",
         f"- Structure note: {structure_note}" if structure_note else "- Structure note: n/a",
         f"- Structure read: {structure.get('current_read', 'n/a')}",
+        f"- Structure live state: `{structure_live_state}`",
+        (
+            f"- Structure GPU: {_fmt_mib((remote_structure.get('remote_gpu') or [{}])[0].get('memory_used_mib'), (remote_structure.get('remote_gpu') or [{}])[0].get('memory_total_mib'))}"
+            if isinstance(remote_structure.get("remote_gpu"), list) and remote_structure.get("remote_gpu")
+            else "- Structure GPU: n/a"
+        ),
+        f"- Structure latest settled epoch: `{remote_structure.get('latest_settled_epoch', '') or 'n/a'}`",
         f"- I2SB diagnostic preferred packet: `{i2sb.get('packet_id', 'n/a')}`",
         f"- I2SB config: {i2sb_cfg}" if i2sb_cfg else "- I2SB config: n/a",
         f"- I2SB note: {i2sb_note}" if i2sb_note else "- I2SB note: n/a",
         f"- I2SB read: {i2sb.get('current_read', 'n/a')}",
+        f"- I2SB live state: `{i2sb_live_state}`",
         "",
         "## Contract Read",
         "- `true I2SB` is already implemented as exact-Brownian endpoint transport with `solver_i2sb`.",

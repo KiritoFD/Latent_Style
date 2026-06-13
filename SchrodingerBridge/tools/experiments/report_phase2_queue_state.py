@@ -233,6 +233,8 @@ def main() -> int:
         wsl_distro=str(args.wsl_distro),
     )
     remote_formal_status = _query_remote_status(run_name=str(resolved_formal.get("run_name", "")))
+    remote_structure_status = _query_remote_status(run_name=str(resolved_structure.get("run_name", "")))
+    remote_i2sb_status = _query_remote_status(run_name=str(resolved_i2sb.get("run_name", "")))
     local_watchers = _query_local_watchers()
 
     resolved_formal = _refresh_formal_current_read(resolved_formal, remote_formal_status)
@@ -249,6 +251,8 @@ def main() -> int:
         },
         "remote_health": remote_health,
         "remote_formal_status": remote_formal_status,
+        "remote_structure_status": remote_structure_status,
+        "remote_i2sb_status": remote_i2sb_status,
         "local_manifest_watchers": local_watchers,
         "local_formal_watcher_logs": {
             "out_log": str(Path(args.formal_watcher_out_log).expanduser().resolve()),

@@ -22,7 +22,9 @@ Date: 2026-06-13
 
 ## Config
 
-- config:
+- preferred relaunch config:
+  - [phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1.json)
+- first launch config:
   - [phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b20a1.json)
 - parent packet:
   - [phase2_vel_tok32_safe_rescan_r2_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_rescan_r2_seed42_b20a1.json)
@@ -45,6 +47,25 @@ Date: 2026-06-13
   - `w_kinetic: 0.95 -> 0.85`
 - provisional warm start:
   - `/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_tok32_safe_rescan_r2_seed42_b20a1/epoch_0004.pt`
+
+## Launch Read
+
+- first `b20a1` launch did start correctly on the remote host
+- but the runtime guard stopped it before the first epoch closed:
+  - observed memory `11093 MiB`
+  - guard cap `11000 MiB`
+- preferred relaunch:
+  - switch to the `b16a1` packet above on the same safe parent
+  - keep the model family unchanged
+  - change only the remote memory fit
+- `b16a1` relaunch at `2026-06-13 17:41 +08:00`:
+  - remote live state:
+    - `training_before_first_settled_eval`
+  - first remote health read:
+    - roughly `9001 MiB / 12288 MiB`
+  - interpretation:
+    - the relaunch is back inside the formal memory band
+    - now the scientific question returns to board behavior rather than infrastructure failure
 
 ## Intended Read
 

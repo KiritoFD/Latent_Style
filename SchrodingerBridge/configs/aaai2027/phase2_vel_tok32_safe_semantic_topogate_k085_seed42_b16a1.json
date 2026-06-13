@@ -1,0 +1,14 @@
+{
+  "_base": "./phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b20a1.json",
+  "training": {
+    "batch_size": 16,
+    "accumulation_steps": 1
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1"
+  },
+  "ablation": {
+    "name": "phase2_vel_tok32_safe_semantic_topogate_k085_b16a1",
+    "notes": "Safe-parent structure-side successor after the first b20a1 launch hit the runtime guard at 11.093 GiB; relaunch on b16a1 to stay inside the remote 3060 formal memory policy."
+  }
+}
