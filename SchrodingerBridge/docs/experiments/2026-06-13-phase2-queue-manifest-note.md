@@ -43,19 +43,22 @@ Date: 2026-06-13
 
 - current formal packet:
   - `vel_tok32_safe_rescan_r2`
-  - remote host reboot has already occurred
-  - manifest-driven watcher has already relaunched it
   - latest settled authority point is now:
-    - `epoch_0007`
-    - transfer `0.672700 / 0.384116`
-    - all-pairs `0.700060 / 0.381072`
+    - `epoch_0008`
+    - transfer `0.672774 / 0.389067`
+    - all-pairs `0.700669 / 0.384913`
   - current read:
     - still in-band
     - still below the old safe shelf on style
-    - LPIPS has stayed narrowly inside the formal recovery ceilings
-    - so the formal lane remains alive, but it still has not created a promotable safe-shelf break
+    - LPIPS drifted back toward the ceiling
+    - the lane is now closed as an in-band style plateau
 - current preferred structure-side packet:
   - `vel_tok32_safe_semantic_topogate_k085`
+  - first `b20a1` launch hit the runtime guard at `11093 MiB`
+  - preferred relaunch now uses the `b16a1` packet
+  - current live read:
+    - `training_before_first_settled_eval`
+    - roughly `9001 / 12288 MiB`
 - current preferred exact-I2SB theory-check packet:
   - `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual`
 - current validation state:

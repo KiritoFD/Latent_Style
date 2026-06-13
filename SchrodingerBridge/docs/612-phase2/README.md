@@ -194,27 +194,23 @@
 
 ## 当前状态
 
-- 当前 live formal remote lane:
+- 当前 formal lane 已关闭:
   - `vel_tok32_safe_rescan_r2`
-  - manifest-driven recovery watcher relaunched it after the remote Windows reboot on `2026-06-13`
-  - latest live read shows:
-    - latest settled authority point is now `epoch_0007`
-    - transfer `0.672700 / 0.384116`
-    - all-pairs `0.700060 / 0.381072`
-    - `live_state = training_after_settled_eval`
-  - remote GPU health is back inside the preferred formal band at roughly:
-    - `10.38 GiB / 12.29 GiB`
-    - later `9.91 GiB / 12.29 GiB`
-  - current read:
-    - still in-band
-    - the line has now shown both:
-      - a style-strong but high-LPIPS in-band point at `epoch_0002`
-      - cleaner LPIPS-recovery points at later epochs
-    - the latest point is still not a promotable safe-shelf break because style remains below the old shelf
-    - LPIPS has also crept back near the formal ceiling rather than opening new clean margin
-    - therefore the line remains alive only as a still-unclosed safe-family read, not as evidence of a breakout
-- 当前正式候选仍然是 `vel_tok32_safe_rescan_r2`，但它仍只是一条 kill-on-first-slip 的短筛线。
-- 若 `safe_rescan_r2` 仍越过 `0.40`，则 Phase 2 立即结束 tokenizer-safe sweep，切到 structure-side reentry 设计。
+  - latest settled authority point is now `epoch_0008`
+  - transfer `0.672774 / 0.389067`
+  - all-pairs `0.700669 / 0.384913`
+  - closure reason:
+    - `in_band_style_plateau`
+  - interpretation:
+    - safe-family 证明了 true tokenizer 可以稳定维持 in-band
+    - 但它没有做出 promotable safe-shelf break
+- 当前 active next step:
+  - `vel_tok32_safe_semantic_topogate_k085`
+  - first `b20a1` launch hit the runtime guard at `11093 MiB`
+  - the preferred relaunch packet is now `b16a1`
+  - current live read:
+    - `training_before_first_settled_eval`
+    - roughly `9001 / 12288 MiB`
 - 所有 round2 endpoint / I2SB 文档都应按以下标准重读:
   - `0.40-0.70` = archival only
   - `0.70+` = complete failure
