@@ -212,12 +212,18 @@ Date: 2026-06-13
     - [2026-06-13-phase2-vel-tok32-safe-rescan-r2.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-rescan-r2.md)
   - current live read:
     - remote process active on the 3060 lane
-    - latest settled point is now `epoch_0002`
+    - latest settled point is now `epoch_0003`
+      - transfer `0.675325 / 0.398119`
+      - all-pairs `0.701712 / 0.395315`
+    - best settled point remains `epoch_0002`
       - transfer `0.675645 / 0.395898`
       - all-pairs `0.702225 / 0.393204`
     - GPU stays around `9.9 GiB / 12.29 GiB`
   - execution interpretation:
-    - `r2` remains a strict short-screen, not a style-first rescue line
-    - `epoch_0002` is a new in-family Pareto point, but it still misses the safe-shelf recovery gate because LPIPS rose above `0.381724 / 0.384340`
-    - if any settled point crosses `0.40`, queue ownership moves away from safe-family tokenizer rescan
+    - `r2` has survived the short-screen because it did produce a new in-family Pareto point by `epoch_0002`
+    - `epoch_0003` did not improve on that point and did not recover LPIPS back under the safe-shelf ceilings
+    - the line therefore stays non-promotable for now, but remains alive because:
+      - the best point is still within the newest-2 window
+      - all settled LPIPS values are still `< 0.40`
+    - if any later settled point crosses `0.40`, queue ownership moves away from safe-family tokenizer rescan
     - if any settled point crosses `0.70`, the corresponding family is considered off the Distinct5 paper path
