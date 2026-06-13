@@ -84,6 +84,7 @@ Date: 2026-06-13
   - but it hit runtime guard before the first settled authority point:
     - observed guard event: `11449 MiB > 11000 MiB`
   - preferred relaunch now switches to `b12a1`
+  - the active remote mainline is now `b12a1`
   - current board state should be read as `training_before_first_settled_eval` until the first settled eval lands
 ## Parent Refresh
 

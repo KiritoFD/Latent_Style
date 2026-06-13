@@ -20,9 +20,9 @@ Date: 2026-06-13
 ### Latest Settled Point
 - Epoch: `epoch_0008`
 - Transfer `CLIP-S / LPIPS`: `0.672774 / 0.389067`
-- Transfer `ΔIDT style`: `+0.032852`
+- Transfer `style - IDT`: `+0.032852`
 - All-pairs `CLIP-S / LPIPS`: `0.700669 / 0.384913`
-- All-pairs `ΔIDT style`: `+0.020544`
+- All-pairs `style - IDT`: `+0.020544`
 - Identity `CLIP-S / LPIPS`: `0.812248 / 0.368297`
 - Eval timing: wall `238.05s`, eval `34.01s`, generation `132.55s`, decode `58.61s`
 
@@ -41,14 +41,14 @@ Date: 2026-06-13
 
 ## Next Packets
 - Structure-side preferred packet: `vel_tok32_safe_semantic_topogate_k085_appalign`
-- Structure config: [structure config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b16a1.json)
+- Structure config: [structure config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1.json)
 - Structure note: [structure note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085-appalign.md)
-- Structure read: launched from promoted topogate epoch_0003 parent; training is active before the first settled authority eval
+- Structure read: active b12a1 relaunch is training before the first settled authority eval; promoted topogate epoch_0003 remains the parent
 - Structure live state: `training_before_first_settled_eval`
-- Structure GPU: 9271 / 12288 MiB
+- Structure GPU: 6822 / 12288 MiB
 - Structure latest settled epoch: `n/a`
 - Structure latest settled `CLIP-S / LPIPS`: n/a
-- Structure latest `ΔIDT style`: n/a
+- Structure latest `style - IDT`: n/a
 - I2SB diagnostic preferred packet: `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual`
 - I2SB config: [I2SB config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)
 - I2SB note: [I2SB note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual.md)
