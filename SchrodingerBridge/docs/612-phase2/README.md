@@ -139,6 +139,8 @@
   - NFE 对照
   - noise schedule 对照
   - endpoint parameterization 对照
+  - refreshed-tokenizer diagnostic packets such as:
+    - [phase2_i2sb_tok32_semantic_topogate_sigma0p02_residual_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)
 - 不允许做:
   - 未经廉价预读就直接占用正式远程训练 lane
   - 任何 `LPIPS >= 0.40` 结果回流正式晋升队列
