@@ -331,13 +331,14 @@ class LGTInference:
                 for key, value in adapter.items()
                 if key.startswith("style_tokenizer.")
             }
+            tokenizer_module = getattr(self.model, "style_tokenizer", None)
             if tokenizer_state and pure_latent_family:
                 logger.warning(
                     "Ignoring legacy style_tokenizer adapter payload because tokenizer_family=%s uses structured_style_tokenizer as the active path.",
                     str(getattr(self.model, "tokenizer_family", "legacy_factorized")),
                 )
-            elif tokenizer_state and hasattr(self.model, "style_tokenizer"):
-                self.model.style_tokenizer.load_state_dict(tokenizer_state, strict=False)
+            elif tokenizer_state and tokenizer_module is not None:
+                tokenizer_module.load_state_dict(tokenizer_state, strict=False)
             style_spatial = adapter.get("style_spatial_id_16")
             if style_spatial is not None and getattr(self.model, "style_spatial_id_16", None) is not None:
                 self.model.style_spatial_id_16.copy_(
