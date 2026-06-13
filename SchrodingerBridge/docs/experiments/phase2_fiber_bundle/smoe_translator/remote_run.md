@@ -101,3 +101,22 @@
   - `spatial_abs=0.877825` on transfer.
 - Convergence state from `round2_convergence.json`: `converged=false`, best transfer/all-pairs remains `epoch_0001`, and `epoch_0003` is a new lower-LPIPS Pareto point on the candidate curve.
 - Read: e3 is still dominated by the matched parent. The tokenizer keeps moving toward structure recovery while shedding style, so the mechanism read is negative unless later epochs recover style without losing LPIPS.
+
+## Epoch 4 Full Eval
+
+- Full eval completed at `2026-06-14 07:16:31 Asia/Shanghai`; training resumed into epoch 5.
+- Checkpoint: `epoch_0004.pt`.
+- Training time: `1477.0s` (`24.62min`) from epoch log `data+comp`; eval wall time from curve: `259.9s`.
+- Transfer: `CLIP-S=0.669259`, `LPIPS=0.322103`, `style - IDT=+0.029339`.
+- All-pairs: `CLIP-S=0.700884`, `LPIPS=0.317942`, `style - IDT=+0.020762`.
+- Identity: `CLIP-S=0.827383`, `LPIPS=0.301297`.
+- Matched delta vs `k070 epoch_0003`:
+  - transfer: `-0.002561` style, `+0.007485` LPIPS.
+  - all-pairs: `-0.002349` style, `+0.005392` LPIPS.
+- Runtime observability from summary:
+  - `translation_delta_from_identity=0.010881`.
+  - `routing_entropy=1.752495`.
+  - `effective_experts=5.804411`.
+  - `spatial_abs=0.871335` on transfer.
+- Convergence state from `round2_convergence.json`: `converged=false`, best transfer/all-pairs remains `epoch_0001`, and `epoch_0004` extends the low-LPIPS Pareto tail.
+- Read: e4 slightly recovers style from e3 and improves LPIPS, but it remains dominated by `k070 epoch_0003`. Continue only under the formal curve rule; do not promote SMoE-only unless style reverses without structure loss.
