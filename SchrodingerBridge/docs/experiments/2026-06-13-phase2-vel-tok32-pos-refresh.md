@@ -160,7 +160,7 @@ Date: 2026-06-13
       - `10151 MiB`
     - current state after relaunch:
       - live training resumed successfully
-      - first settled eval is still pending
+      - first settled eval landed at `epoch_0002`
 - watcher:
   - `watch_phase2_velocity_handoff.py`
   - mode:
@@ -170,6 +170,43 @@ Date: 2026-06-13
     - but it should not auto-handoff into the old `solver_pc` review path
   - runtime note:
     - local watcher output now flushes poll JSON into the watcher log during the wait window
+
+## Settled Curve
+
+- current settled authority point:
+  - `epoch_0002`
+  - transfer `0.673024 / 0.390256`
+  - all-pairs `0.700342 / 0.387609`
+  - identity `0.809617 / 0.377019`
+  - eval wall `217.09s`
+  - generation `119.21s`
+  - VAE decode `54.55s`
+- convergence read:
+  - `row_count = 1`
+  - `best_epoch = epoch_0002`
+  - `best_in_newest_2 = true`
+  - `tail_flat = false`
+  - `converged = false`
+- unresolved backlog:
+  - `epoch_0001` still appears as pending because the earlier guard bug interrupted that eval mid-run
+  - the first valid authority point is therefore `epoch_0002`, not `epoch_0001`
+
+## Read
+
+- gate decision:
+  - continue running
+  - this point remains inside the formal continuation band `LPIPS < 0.40`
+- promotion read:
+  - not promoted
+  - compared with the previous safe velocity parent best `all-pairs 0.701666 / 0.381724`, this packet is currently:
+    - lower on style
+    - worse on LPIPS
+- interpretation:
+  - the tokenizer refresh has not shown an immediate breakout
+  - but one settled point is too early to close an in-band line
+  - keep the formal lane alive until either:
+    - a better in-band point appears
+    - or the same plateau logic closes it later
 - warm-start read:
   - partial resume from:
     - `/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_pattn_enhanced_tok_seed42_b22a1/epoch_0002.pt`
