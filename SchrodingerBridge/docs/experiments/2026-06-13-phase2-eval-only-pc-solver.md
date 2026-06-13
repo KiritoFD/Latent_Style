@@ -113,3 +113,33 @@ Date: 2026-06-13
   - this read has now been interpreted as negative evidence
   - solver-only correction does not recover structure enough to pass the Phase 2 gate
   - the branch closes as archival evidence and hands the decision back to the next training-side queue
+
+## Guide-Aligned Local Appalign Probe
+
+- reason:
+  - once `topogate/appalign` proved that structure could be held near `LPIPS ≈ 0.31`,
+  - the guide suggested a second low-risk check:
+    - keep the same checkpoint family
+    - switch only inference to `solver_pc + latent_lowpass`
+    - see whether "training for style, inference for structure" can squeeze out extra style without reopening the structure problem
+- override config:
+  - [phase2_eval_pc_lowpass_appalign_e3.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_eval_pc_lowpass_appalign_e3.json)
+- checkpoint:
+  - local pull of remote `appalign epoch_0003`
+- output:
+  - [summary.json](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/phase2_pc_eval_appalign_e3/summary.json)
+  - [metrics.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/phase2_pc_eval_appalign_e3/metrics.csv)
+- result:
+  - transfer `0.671365 / 0.312865`
+  - all-pairs `0.702790 / 0.311180`
+  - eval wall `107.97s`
+- comparison against `appalign epoch_0003` baseline:
+  - transfer style `-0.000445`
+  - transfer LPIPS `-0.001851`
+  - all-pairs style `-0.000340`
+  - all-pairs LPIPS `-0.001478`
+- read:
+  - `solver_pc` does slightly smooth structure again
+  - but the effect size is tiny
+  - and style gets marginally worse instead of better
+  - therefore this guide-aligned PC side probe is negative evidence, not a new promotable branch
