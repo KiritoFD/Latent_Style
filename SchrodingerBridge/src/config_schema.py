@@ -694,6 +694,7 @@ class ExperimentConfig:
             transport_prediction_mode=str(getattr(cfg.model, "transport_prediction_mode", "velocity")),
             objective_mode=str(getattr(cfg.bridge, "objective_mode", "")),
             loss_type=str(getattr(cfg.bridge, "loss_type", "")),
+            bridge_noise_schedule=str(getattr(cfg.bridge, "bridge_noise_schedule", "auto")),
         )
         validate_pure_latent_contract(
             tokenizer_family=str(getattr(cfg.model, "tokenizer_family", "legacy_factorized")),

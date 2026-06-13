@@ -51,6 +51,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             transport_prediction_mode=self.transport_prediction_mode,
             objective_mode=str(getattr(bridge_config, "objective_mode", "")),
             loss_type=str(getattr(bridge_config, "loss_type", "")),
+            bridge_noise_schedule=str(getattr(bridge_config, "bridge_noise_schedule", "auto")),
         )
         self.transport_endpoint_scale = max(1e-3, float(getattr(bridge_config, "transport_endpoint_scale", 4.0)))
         self.objective_mode = str(getattr(bridge_config, "objective_mode", "")).strip().lower()
