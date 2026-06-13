@@ -176,6 +176,8 @@
   - this follows the guide read:
     - once the recovered structure line remains below `transfer style = 0.68`,
     - use the highest-style settled point inside that recovered band as the next exact-I2SB parent
+  - infra correction:
+    - the remote launcher now syncs the full config `_base` chain, so this packet should no longer fail on a missing inherited config when the structure watcher pivots into it
 - 允许做:
   - NFE 对照
   - noise schedule 对照

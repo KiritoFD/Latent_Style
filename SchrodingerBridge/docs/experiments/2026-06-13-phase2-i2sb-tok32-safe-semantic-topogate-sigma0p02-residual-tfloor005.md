@@ -70,6 +70,18 @@ Date: 2026-06-13
   - the next exact-I2SB probe should inherit the stronger style-side settled point from the recovered line
 - it remains diagnostic-only and must not preempt the active structure-side velocity lane
 
+## Launch Read
+
+- the first auto-pivot attempt from `appalign` exposed one infra bug:
+  - the remote launcher synced only the top-level config and not the `_base` chain
+  - that made the first remote load fail before training started
+- this has now been repaired in the launcher:
+  - future remote launches sync the full config dependency chain
+  - the required safe-I2SB base configs have also already been synced to the remote workspace
+- current meaning:
+  - the queued `i2sb_diagnostic_only` packet is still pending on the `appalign` close gate
+  - but the earlier missing-config failure is no longer the expected blocker
+
 ## Parent Refresh
 
 - Source packet: `vel_tok32_safe_semantic_topogate_k085_appalign`
