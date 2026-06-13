@@ -153,3 +153,14 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Verification: GPU returned to `364MiB / 12288MiB`; no Python process remained; no `i2sb` task had a future trigger time.
 - Relaunch: `2026-06-14 05:47 Asia/Shanghai`, same SMoE config, resumed from `epoch_0001.pt` at epoch 2/global step `1574`; health memory `6828MiB`.
 - Decision: this remains an orchestration fault. Keep all I2SB tasks quarantined until SMoE closes; do not change SMoE mechanism or batch because no clean single-lane e2 has been observed yet.
+
+## SMoE Epoch 2 Read
+
+- Full eval completed at `2026-06-14 06:17:22 Asia/Shanghai`; training resumed into epoch 3.
+- Training time: `1468.3s`; full-eval wall time: `240.4s`.
+- Transfer: `0.670478 / 0.331323`; all-pairs: `0.701436 / 0.327738`; identity: `0.825270 / 0.313400`.
+- Style above IDT: transfer `+0.030557`; all-pairs `+0.021314`.
+- Matched delta against `k070 epoch_0003`: transfer `-0.001343` style and `+0.016705` LPIPS; all-pairs `-0.001797` style and `+0.015189` LPIPS.
+- Runtime observability: `translation_delta_from_identity=0.007511`, `routing_entropy=1.663507`, `effective_experts=5.321320`, `spatial_abs=0.896592`.
+- Plot update: added `SMoE e2` to `plot_points.csv` and regenerated the AAAI2027 page-1 figure.
+- Decision: continue to e3. e2 is not a promotion candidate; it improves LPIPS relative to e1 but is still dominated by the parent and now has lower style than parent.
