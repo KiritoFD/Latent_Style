@@ -10,6 +10,7 @@ Date: 2026-06-13
   - the refreshed `tok32` pure-latent tokenizer stack
   - exact-Brownian residual I2SB
   - attention-side topology gating
+- this is now the preferred current I2SB theory-check packet
 
 ## Why This Exists
 
@@ -141,4 +142,4 @@ Date: 2026-06-13
   - `safe_rescan_r2`
   - then structure-side velocity reentry
   - then diagnostic-only I2SB
-- this packet is only the cleaner next I2SB theory check after remote recovery
+- this packet is the preferred next I2SB theory check after remote recovery

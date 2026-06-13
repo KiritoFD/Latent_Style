@@ -135,6 +135,8 @@
 ### 队列3: `i2sb_diagnostic_only`
 
 - `true I2SB` 只保留为实现 / 理论验证。
+- current preferred packet:
+  - [phase2_i2sb_tok32_semantic_topogate_sigma0p02_residual_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)
 - 允许做:
   - NFE 对照
   - noise schedule 对照
