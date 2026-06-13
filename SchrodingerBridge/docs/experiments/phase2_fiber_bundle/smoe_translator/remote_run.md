@@ -27,3 +27,29 @@
 - The run is accepted as the SMoE matched-control lane despite using less than the preferred `9.0-10.8 GiB` formal band.
 - Reason: increasing batch size would alter the tokenizer-only control schedule and contaminate the mechanism comparison.
 - If the lower memory footprint persists, record it as an efficiency observation, not as a reason to change this lane.
+
+## Epoch 1 Full Eval
+
+- Checkpoint: `epoch_0001.pt`.
+- Training time: `1450.6s` (`24.18min`).
+- Eval wall time: `242.7s`; trainer log reports full eval completed in `265.1s`.
+- Transfer: `CLIP-S=0.672379`, `LPIPS=0.333173`, `style - IDT=+0.032458`.
+- All-pairs: `CLIP-S=0.703540`, `LPIPS=0.329736`, `style - IDT=+0.023417`.
+- Matched delta vs `k070 epoch_0003`:
+  - transfer: `+0.000558` style, `+0.018555` LPIPS.
+  - all-pairs: `+0.000306` style, `+0.017186` LPIPS.
+- Runtime observability from summary:
+  - `translation_delta_from_identity=0.005202`.
+  - `routing_entropy=1.676048`.
+  - `effective_experts=5.401902`.
+  - `spatial_abs=0.852155` on transfer.
+- Read: early point gives only tiny style lift and a clear LPIPS regression. Keep running; this is not a closure point.
+
+## Runtime Guard Incident And Relaunch
+
+- At `2026-06-14 05:13:32 Asia/Shanghai`, the SMoE launcher guard stopped the first process with `used=11694MiB cap=11000MiB`, `rc=143`.
+- Root cause: an older off-plan `phase2_i2sb_topo_anchor_sigma0p25_seed42_b30a1` task restarted at the same time and held about `8.8GiB`, so the two lanes overlapped.
+- Action: stopped the I2SB PID `2221`; confirmed remote GPU returned to `388MiB / 12288MiB` and no Python training process remained.
+- Relaunch: restarted the same SMoE config at `2026-06-14 05:21 Asia/Shanghai`; it resumed from local `epoch_0001.pt` at epoch 2, global step `1574`.
+- Relaunch health: `6776MiB / 12288MiB`, utilization about `95%`; accepted as the same matched-control lane. No batch, loss, solver, tokenizer, or schedule parameter was changed.
+- Interpretation: the guard stop is an orchestration/concurrency fault, not SMoE single-lane VRAM evidence. The run remains valid from `epoch_0001.pt` onward after the single-lane relaunch.
