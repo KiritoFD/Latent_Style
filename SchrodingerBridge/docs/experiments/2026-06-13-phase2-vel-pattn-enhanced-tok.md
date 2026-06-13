@@ -223,3 +223,40 @@ Date: 2026-06-13
     - remote PID `45964` stopped
     - GPU reached idle at `277 MiB`
     - `eval_only_pc_solver` was launched immediately afterward
+
+## 2026-06-14 Resumed Active Read
+
+- the same remote run was active again under:
+  - `aaai2027_phase2_vel_pattn_enhanced_tok_seed42_b22a1`
+  - PID `11774`
+  - GPU memory at status time: `10406 MiB / 12288 MiB`
+- retained checkpoints with full eval now extend to `epoch_0009`
+- current best transfer/all-pairs remains `epoch_0002`:
+  - transfer `0.673934 / 0.384340`
+  - all-pairs `0.701666 / 0.381724`
+  - `style - IDT = +0.034013`
+- lowest transfer LPIPS point is `epoch_0007`:
+  - transfer `0.668986 / 0.361138`
+  - all-pairs `0.698245 / 0.359038`
+- lowest all-pairs LPIPS point is `epoch_0008`:
+  - transfer `0.667859 / 0.361483`
+  - all-pairs `0.697299 / 0.358929`
+- latest settled point is `epoch_0009`:
+  - transfer `0.673337 / 0.384972`
+  - all-pairs `0.700507 / 0.383106`
+- convergence state from remote summary:
+  - `row_count = 9`
+  - `best_epoch = epoch_0002`
+  - `last_pareto_epoch = epoch_0008`
+  - `since_best = 7`
+  - `since_last_pareto = 1`
+  - `tail_flat = false`
+  - `converged = false`
+- plot outputs:
+  - raw curve: [pattn_enhanced_tok_epoch1_9_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/pattn_enhanced_tok_epoch1_9_remote_clip_lpips_curve.csv)
+  - page-1 plot table: [plot_points.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/plot_points.csv)
+  - AAAI2027 page-1 figure: [fig_distinct5_page1_summary.png](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/figures/fig_distinct5_page1_summary.png)
+- decision:
+  - do not promote this packet
+  - keep running only if the queue controller still requires formal convergence; otherwise this remains negative evidence for the high-LPIPS style-release route
+  - next controlled mechanism should still be eval-only stochasticity / Fiber-SDE, not more unconstrained p-attn training
