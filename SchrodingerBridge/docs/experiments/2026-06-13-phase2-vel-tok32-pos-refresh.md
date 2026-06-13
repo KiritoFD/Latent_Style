@@ -7,9 +7,10 @@ Date: 2026-06-13
 - keep the Distinct5 formal lane on the `velocity` side
 - reuse the last safe parent instead of reopening endpoint / I2SB
 - strengthen the pure-latent tokenizer before adding another structure-side training patch
-- target board:
-  - style `>= 0.72`
-  - `content_lpips <= 0.30`
+- stage targets:
+  - first beat the safe shelf `all-pairs 0.701666 / 0.381724`
+  - then reach `all-pairs style >= 0.705` with `content_lpips <= 0.380`
+  - long-horizon target remains `style >= 0.72` with `content_lpips <= 0.35`
 
 ## Why This Packet Exists
 
@@ -64,19 +65,27 @@ Date: 2026-06-13
   - sharpen routing with lower tokenizer temperature
   - increase semantic query capacity without moving back to endpoint prediction
   - let the global style code read more from the pooled spatial evidence instead of staying near the static embedding
-- if the first settled checkpoint still lands near `0.70x / 0.38x`, the next move should be training-side structure control on top of this same velocity family, not another tokenizer-only retry
+- if this packet closes while still sitting near `0.70x / 0.38x`, the next move is a safe-family rescan inside the same velocity tokenizer line
+- topology-anchor or other structure-side reentry is now deferred until we first prove a stronger in-band parent
 
 ## Promotion Contract
 
-- paper-facing success target:
+- stage-A success:
+  - exceed `all-pairs 0.701666 / 0.381724`
+- stage-B success:
+  - `all-pairs style >= 0.705`
+  - `content_lpips <= 0.380`
+- paper-facing long success:
   - style `>= 0.72`
-  - `content_lpips <= 0.30`
+  - `content_lpips <= 0.35`
 - continue-to-train gate:
   - settled checkpoints must remain in `content_lpips < 0.40`
 - archival gate:
   - `0.40 <= content_lpips < 0.70`
 - fail-stop gate:
   - `content_lpips >= 0.70`
+- closure preference:
+  - if later checkpoints only trade tiny LPIPS reductions for flat-or-lower style, close the lane and hand off to a safe-family rescan
 
 ## Local Prep
 
@@ -160,7 +169,8 @@ Date: 2026-06-13
       - `10151 MiB`
     - current state after relaunch:
       - live training resumed successfully
-      - first settled eval landed at `epoch_0002`
+      - the packet later trained through `epoch_0006`
+      - the watcher then closed the lane on the first confirmed below-shelf plateau
 - watcher:
   - `watch_phase2_velocity_handoff.py`
   - mode:
@@ -205,27 +215,44 @@ Date: 2026-06-13
   - eval wall `232.11s`
   - generation `127.19s`
   - VAE decode `57.15s`
+- fifth settled authority point:
+  - `epoch_0006`
+  - transfer `0.671522 / 0.385051`
+  - all-pairs `0.699725 / 0.381878`
+  - identity `0.812538 / 0.369186`
+  - eval wall `226.56s`
+  - generation `126.01s`
+  - VAE decode `54.94s`
 - convergence read:
-  - `row_count = 4`
+  - `row_count = 5`
   - `best_epoch = epoch_0004`
-  - `best_in_newest_2 = true`
+  - `best_in_newest_2 = false`
   - `tail_flat = false`
+  - `since_best = 2`
+  - `since_last_pareto = 1`
   - `converged = false`
+- current interpretation:
+  - the packet stayed valid in the LPIPS sense because every settled point remained in-band
+  - but it never achieved the Stage-A shelf break
+  - `epoch_0006` confirmed that style was still below the old shelf while LPIPS drifted back upward
+  - this is therefore a formal closure into safe-family rescan, not a topology-anchor escalation
 - unresolved backlog:
   - `epoch_0001` is now treated as `stale_pending`
     - the earlier guard bug interrupted that eval mid-run
     - it no longer masks the live lane as an active eval-pending run in the status reporter
   - the first valid authority point is therefore `epoch_0002`, not `epoch_0001`
   - current runtime read:
-    - `live_state = training_after_settled_eval`
+    - `live_state = settled_no_live_process`
+    - `latest_checkpoint_epoch = epoch_0006`
+    - `latest_settled_epoch = epoch_0006`
     - `pending_checkpoint_epochs = []`
     - `stale_pending_checkpoint_epochs = [epoch_0001]`
 
 ## Read
 
 - gate decision:
-  - continue running
-  - both settled points remain inside the formal continuation band `LPIPS < 0.40`
+  - close the formal lane
+  - all settled points remained inside the formal continuation band `LPIPS < 0.40`, but the line failed the style-breakout test
 - promotion read:
   - not promoted
   - compared with the previous safe velocity parent best `all-pairs 0.701666 / 0.381724`, this packet is currently:
@@ -233,19 +260,19 @@ Date: 2026-06-13
     - `epoch_0003` is lower on style but better on LPIPS
     - `epoch_0004` is still slightly lower on style, but now also better on LPIPS
     - `epoch_0005` is lower on style than `epoch_0004`, but improves LPIPS again
+    - `epoch_0006` is still below the old shelf and also gives back part of the LPIPS gain
 - interpretation:
-  - the tokenizer refresh still has not produced the desired breakout above the old shelf
-  - but `epoch_0004` does create a strictly stronger in-band point than `epoch_0003`
-  - it is also the current best point of this packet on both transfer and all-pairs Pareto authority
-  - `epoch_0005` adds another in-band Pareto point rather than a domination update
-  - the line is therefore still alive as a real improvement path rather than a flat plateau
-  - but the last two settled points already show the emerging risk:
-    - no new style breakout above `epoch_0004`
-    - only small LPIPS-side motion
-  - the packet is currently training in `epoch_6`, with the next meaningful decision deferred to the next settled authority point
-  - keep the formal lane alive until either:
-    - a better in-band point appears
-    - or the same plateau logic closes it later
+  - the tokenizer refresh still did not produce the desired breakout above the old shelf
+  - `epoch_0004` remains the best point of this packet on both transfer and all-pairs authority
+  - `epoch_0005` added only another small LPIPS-side Pareto point
+  - `epoch_0006` then failed to recover style and also moved LPIPS back toward the old shelf
+  - this is enough evidence to stop burning the only formal lane on this packet
+  - next formal candidate:
+    - [2026-06-13-phase2-vel-tok32-safe-rescan-r1.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-rescan-r1.md)
+    - [phase2_vel_tok32_safe_rescan_r1_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_rescan_r1_seed42_b20a1.json)
+    - launch status:
+      - launched at `2026-06-13 10:24`
+      - 30s health `10142 MiB`
 - warm-start read:
   - partial resume from:
     - `/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_pattn_enhanced_tok_seed42_b22a1/epoch_0002.pt`

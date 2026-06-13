@@ -38,6 +38,7 @@ Date: 2026-06-13
 3. Endpoint / I2SB docs stay as historical implementation logs, not as the live Distinct5 promotion plan.
 4. A first settled checkpoint is now sufficient to kill a lane if LPIPS is already out of band.
 5. Even an in-band line loses the formal slot once it shows a flat style plateau with no new joint point.
+6. A `0.60-0.70+` LPIPS line is no longer allowed to influence queue ordering just because it carries higher style.
 
 ## Current Phase Node
 
@@ -105,35 +106,49 @@ Date: 2026-06-13
     - so the exact-I2SB queue is now closed for Distinct5 promotion work
   - execution result:
     - the residual lane was stopped immediately after the first settled point at `2026-06-13 07:30`
-    - there is no active formal remote training lane right now
+    - at that decision instant there was no active formal remote training lane
+    - the later `vel_tok32_pos_refresh` launch is recorded below in the Status section
 
-## New Priority Order
+## Tightened Priority Order
+
+- governing change after the 612 reread:
+  - `LPIPS >= 0.70` is not just fail-stop at the run level; it is evidence that the family is off the Distinct5 paper path
+  - `0.40 <= LPIPS < 0.70` is archival evidence only and cannot be used to justify a more aggressive next packet
+  - the queue must therefore optimize for in-band improvement first, not style-first rescue
 
 1. `vel_tok32_pos_refresh`
    - return to `velocity`
    - tokenizer-only strengthening from the 612 lookback:
-     - deeper query extractor
-     - 2D positional encoding
-     - `num_clusters = 32`
-     - tighter global-spatial coupling
+      - deeper query extractor
+      - 2D positional encoding
+      - `num_clusters = 32`
+      - tighter global-spatial coupling
    - start from the existing safe velocity parents:
-     - [inmortal_k_manifold_seed42_b16.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/inmortal_k_manifold_seed42_b16.json)
-     - [inmortal_xpred_kmanifold_pattn_seed42_b16.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/inmortal_xpred_kmanifold_pattn_seed42_b16.json)
+      - [inmortal_k_manifold_seed42_b16.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/inmortal_k_manifold_seed42_b16.json)
+      - [inmortal_xpred_kmanifold_pattn_seed42_b16.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/inmortal_xpred_kmanifold_pattn_seed42_b16.json)
    - prepared packet:
      - [phase2_vel_tok32_pos_refresh_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_pos_refresh_seed42_b20a1.json)
      - [2026-06-13-phase2-vel-tok32-pos-refresh.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-pos-refresh.md)
-2. `vel_structure_control_reentry`
+   - stage target:
+     - first beat `all-pairs 0.701666 / 0.381724`
+     - then reach `style >= 0.705` with `LPIPS <= 0.380`
+2. `vel_safe_family_rescan`
+   - stay inside the same `velocity + tokenizer` family
+   - scan only safe knobs first:
+     - tokenizer temperature / structured temperature
+     - global-spatial coupling
+     - `w_kinetic` around the safe shelf
+   - do this before reopening topology-anchor style structure patches
+   - first concrete packet:
+     - [phase2_vel_tok32_safe_rescan_r1_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_rescan_r1_seed42_b20a1.json)
+     - [2026-06-13-phase2-vel-tok32-safe-rescan-r1.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-rescan-r1.md)
+3. `vel_structure_control_reentry`
    - keep `velocity`, not endpoint
-   - move structure control back into training:
-     - lighter kinetic + topology anchor
-     - latent lowpass / edge content correction
-     - adaptive skip or PnP-style self-inject only as structure tools
-   - queued concrete packet:
+   - only after queue 1 or 2 creates a stronger in-band parent
+   - structure control is still training-side, but is now explicitly third priority because the first topology-anchor retry already crossed `0.40`
+   - queued reference packet:
      - [phase2_vel_tok32_topo_anchor_k075_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_topo_anchor_k075_seed42_b20a1.json)
      - [2026-06-13-phase2-vel-tok32-topo-anchor-reentry.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-topo-anchor-reentry.md)
-3. `vel_kinetic_anchor_rescan`
-   - only if queue 1 yields a stronger in-band parent
-   - retune the balance between style lift and structure guard on the safe velocity line
 4. `i2sb_eval_only_diagnostics`
    - keep exact-I2SB for theory and implementation checks only
    - no formal training lane unless a cheap diagnostic first shows sub-`0.40` evidence
@@ -142,67 +157,53 @@ Date: 2026-06-13
 
 - `LPIPS >= 0.70`
   - immediate fail-stop
+  - family leaves the Distinct5 formal promotion path until redesigned from a safe parent
 - `0.40 <= LPIPS < 0.70`
   - non-promotable, archival only
   - not allowed to continue occupying the only formal remote training lane
+  - not allowed to define the next formal queue item
 - only `LPIPS < 0.40` lines remain eligible for the remote main lane
+
+## In-Band Milestones
+
+1. shelf break
+   - exceed `all-pairs 0.701666 / 0.381724`
+2. stage-B break
+   - exceed `all-pairs style 0.705` while staying at `LPIPS <= 0.380`
+3. stage-C break
+   - exceed `all-pairs style 0.710` while staying at `LPIPS <= 0.370`
+4. long-horizon paper target
+   - exceed `style 0.72` while staying at `LPIPS <= 0.35`
 
 ## Status
 
 - remote `rtfix` lane has been stopped and archived as a structural failure line
 - the first Phase 2 velocity queue is now also closed after `epoch_0006`
 - the exact-I2SB fallback ladder is now also closed at the residual-endpoint `epoch_0001` archival readout
-- current planning authority is the Phase 2 structure-first queue:
+- current planning authority is the Phase 2 safe-band queue:
   - `eval_only_pc_solver` has finished as a negative read
   - the velocity topology-anchor retry has now also been closed as archival only
+  - `vel_tok32_pos_refresh` is now closed:
+    - best `epoch_0004`
+      - transfer `0.673399 / 0.376463`
+      - all-pairs `0.701161 / 0.374695`
+    - closure `epoch_0006`
+      - transfer `0.671522 / 0.385051`
+      - all-pairs `0.699725 / 0.381878`
+    - interpretation:
+      - the line stayed fully in-band
+      - but it never beat the old safe shelf `0.701666 / 0.381724`
+      - the newest two settled points did not recover a style breakout
+      - so the formal slot should move to queue-2 safe-family rescan
   - the active formal lane is now:
-    - `aaai2027_phase2_vel_tok32_pos_refresh_seed42_b20a1`
-    - launch time `2026-06-13 07:49`
-    - 30s launch health `10073 MiB`
-    - the packet reached `epoch_0001` and saved its first checkpoint
-    - but the first settled eval is still pending because the launcher runtime guard killed the process during epoch-end eval offload:
-      - `RUNTIME_UNDER_BAND_STOP used=2101MiB floor=9216MiB`
-    - next action is not a model-side decision:
-      - fix the launcher guard, relaunch, and recover from local `epoch_0001`
-    - a local `watch_phase2_velocity_handoff.py --handoff-mode stop_only --wait --execute` watcher is now attached to enforce the same LPIPS / plateau close rule without auto-launching the old solver_pc follow-up
-    - relaunch status:
-      - the launcher fix is now in place
-      - the same run resumed from local `epoch_0001`
-      - the post-fix 30s health read is `10151 MiB`
-      - first settled authority point is now:
-        - `epoch_0002`
-        - transfer `0.673024 / 0.390256`
-        - all-pairs `0.700342 / 0.387609`
-      - interpretation:
-        - still in-band, so the lane stays alive
-        - but it is not yet better than the previous safe parent shelf `0.701666 / 0.381724`
-        - the stale `epoch_0001` half-eval is now classified as ops residue rather than a real pending authority point
-        - the live read is back to `training_after_settled_eval` while `epoch_3` trains
-      - second settled authority point:
-        - `epoch_0003`
-        - transfer `0.668702 / 0.364875`
-        - all-pairs `0.698072 / 0.361798`
-      - updated interpretation:
-        - still in-band
-        - no breakout on style
-        - but the line is still producing new in-band Pareto points, so the formal lane remains justified for now
-      - third settled authority point:
-        - `epoch_0004`
-        - transfer `0.673399 / 0.376463`
-        - all-pairs `0.701161 / 0.374695`
-      - updated interpretation:
-        - still in-band
-        - still below the old style shelf `0.701666`
-        - but now better on LPIPS than the old safe parent
-        - and strictly stronger than this packet's earlier `epoch_0003` point
-        - so the line is still alive and should keep the formal slot for now
-      - fourth settled authority point:
-        - `epoch_0005`
-        - transfer `0.670604 / 0.375912`
-        - all-pairs `0.699187 / 0.373331`
-      - updated interpretation:
-        - still in-band
-        - still not a style breakout
-        - but it adds another Pareto-valid point rather than flattening
-        - so the lane still does not satisfy the current closure rule
-        - however, the line is now close to a real plateau audit if later checkpoints keep trading tiny LPIPS gains for flat-or-lower style
+    - [phase2_vel_tok32_safe_rescan_r1_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_rescan_r1_seed42_b20a1.json)
+    - [2026-06-13-phase2-vel-tok32-safe-rescan-r1.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-rescan-r1.md)
+    - launch time `2026-06-13 10:24`
+    - 30s launch health `10142 MiB`
+    - current live read:
+      - `live_state = training_before_first_settled_eval`
+      - `remote_gpu ~= 9966 MiB`
+      - `latest_checkpoint_epoch = none`
+      - `latest_settled_epoch = none`
+    - watcher:
+      - `watch_phase2_velocity_handoff.py --run-name aaai2027_phase2_vel_tok32_safe_rescan_r1_seed42_b20a1 --wait --execute --handoff-mode stop_only`

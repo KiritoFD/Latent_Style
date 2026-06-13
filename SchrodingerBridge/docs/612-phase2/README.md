@@ -3,10 +3,10 @@
 ## 核心判断
 
 **真正的问题不再是“如何把 style 硬推高”**，而是:
-- 如何在 `content_lpips < 0.40` 的结构安全带内，把 Distinct5 的 style 从 `0.70` 推到 `0.72+`
+- 如何在 `content_lpips < 0.40` 的结构安全带内，持续抬高 Distinct5 的 style，而不是复读 `0.70x / 0.60+`
 - Velocity 线目前大致停在 `0.70 / 0.32`
 - Endpoint / I2SB 线虽然能到 `0.72-0.73` style，但已经反复落在 `0.60-0.70+` LPIPS
-- 因而这些高 style 点不能再被当成 paper-facing frontier
+- 因而这些高 style 点不能再被当成 paper-facing frontier，连“高风险可追”都不算
 
 **关键发现**:
 - WikiArt512 上 LBM 已经证明模型能力够强，可到 `0.79 / 0.31`
@@ -18,14 +18,30 @@
   - 完全失败
   - 立刻停掉远程正式训练
   - 结项状态记为 `stopped_lpips_fail`
+  - 对应 family 退出 Distinct5 正式晋升队列，除非后续从安全父本重新设计
 - `0.40 <= content_lpips < 0.70`
   - 仅可归档，不可晋升
   - 可以保留为理论 / 实现 / 对照证据，但必须退出唯一正式远程训练 lane
+  - 不再允许用“style 够高”来包装成 compromise、frontier 或 next-step candidate
 - `content_lpips < 0.40`
   - 才有资格继续占用正式远程训练资源
 - `style >= 0.72`
   - 是必要条件，但不是充分条件
   - 只要 LPIPS 出带，这个点就不算成功
+
+## Phase 2 成功阶梯
+
+- Stage A
+  - 先在 `LPIPS < 0.40` 内稳定超过当前安全 shelf `all-pairs 0.701666 / 0.381724`
+- Stage B
+  - 把 in-band best 推到 `all-pairs style >= 0.705` 且 `LPIPS <= 0.380`
+- Stage C
+  - 再把 in-band best 推到 `all-pairs style >= 0.710` 且 `LPIPS <= 0.370`
+- Paper-facing long target
+  - `style >= 0.72` 且 `LPIPS <= 0.35`
+- 解释
+  - Phase 2 不再接受“先到 0.72，再想办法救结构”的执行逻辑
+  - 所有正式 lane 都必须沿着上述安全阶梯前进
 
 ## 当前结论
 
@@ -81,6 +97,7 @@
     - style 有抬升
     - 但 LPIPS 越过 `0.40`
     - 因而只能归档，不能继续占 formal lane
+    - 这也意味着 topology-anchor 类补丁暂时不能排在 tokenizer-safe sweep 之前
 - `true I2SB` fallback ladder 已全部闭环并退出主线
   - `sigma=0.25`
     - all-pairs `0.719743 / 0.725755`
@@ -130,8 +147,10 @@
         - LPIPS 明显优于旧 shelf
       - 同时它也严格优于本 packet 的 `epoch_0003` 点
       - `epoch_0005` 则继续往更低 LPIPS 方向推了一步，但 style 没有继续抬升
-      - 说明这条线仍在演化，暂时还不该按 plateau 关闭
-      - 但如果后续继续只是做这种“小幅降 LPIPS、不抬 style”的点，就会进入真正的 plateau 审核
+      - 它目前仍在安全带内，所以不该因为追求过高远期目标而误杀
+      - 但 Phase 2 现在只认安全带内 breakout:
+        - 如果后续继续只是做这种“小幅降 LPIPS、不抬 style”的点，就进入 plateau 审核
+        - 如果 `epoch_0006+` 仍不能越过 `0.701666 / 0.381724`，则下一步优先做 safe-family rescan，而不是立刻上更激进结构补丁
       - `epoch_0001` 现在只记为 `stale_pending`，不再把 live state 错报成 eval-pending
     - 本地 watcher 已挂起:
       - `watch_phase2_velocity_handoff.py --run-name aaai2027_phase2_vel_tok32_pos_refresh_seed42_b20a1 --wait --execute --handoff-mode stop_only`
@@ -197,7 +216,7 @@
     - style 仍高，但结构仍处于 archival only 区间
     - inference-time corrector 不足以拯救 style-strong endpoint 父本
 
-### 队列3: `vel_tok32_pos_refresh`（下一条正式候选）
+### 队列3: `vel_tok32_pos_refresh`（已于 `epoch_0006` 关闭）
 
 - 父本:
   - `vel_pattn_enhanced_tok` 的安全带 best 点 `epoch_0002`
@@ -215,25 +234,61 @@
   - stronger global-spatial coupling
 - 目标:
   - 在不越过 `LPIPS 0.40` 的前提下突破 `all-pairs 0.701666 / 0.381724`
+  - 若能做到 `style >= 0.705` 且 `LPIPS <= 0.380`，才算进入下一阶段
 - 退出条件:
   - 第一批 settled 点进入 `0.40+`
   - 或仍停在 `0.70x / 0.38x` 平台
+- 当前结论:
+  - best `epoch_0004`
+    - transfer `0.673399 / 0.376463`
+    - all-pairs `0.701161 / 0.374695`
+  - closure `epoch_0006`
+    - transfer `0.671522 / 0.385051`
+    - all-pairs `0.699725 / 0.381878`
+  - 解释:
+    - 线始终留在 `LPIPS < 0.40` 带内
+    - 但没有突破旧 shelf `0.701666 / 0.381724`
+    - 因而正式 lane 交给 safe-family rescan
 
-### 队列4: `vel_structure_control_reentry`（仅在队列3拿到更强安全带父本后启动）
+### 队列4: `vel_safe_family_rescan`（tok32 若平盘时的第一后续）
+
+- 原则:
+  - 不离开 `velocity + tokenizer + in-band` 主族
+  - 不重新打开 endpoint / I2SB，不先上 topology-anchor
+- 允许的第一批扫描:
+  - tokenizer temperature / structured temperature
+  - global-spatial coupling scale
+  - `w_kinetic` 的安全带内小范围 rescan
+  - 必要时补一个更高 cluster 数，但仍从安全父本 warm-start
+- 启动条件:
+  - `vel_tok32_pos_refresh` 收敛但未突破 Stage B
+  - 且所有 settled 点都保持在 `LPIPS < 0.40`
+- 当前具体 packet:
+  - [2026-06-13-phase2-vel-tok32-safe-rescan-r1.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-rescan-r1.md)
+  - [phase2_vel_tok32_safe_rescan_r1_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_rescan_r1_seed42_b20a1.json)
+  - 当前状态:
+    - 已启动为正式远程 lane
+    - 30s health `10142 MiB`
+    - 当前处于 `training_before_first_settled_eval`
+
+### 队列5: `vel_structure_control_reentry`（降级为第三顺位）
 
 - 仍坚持 `velocity`，不回到 endpoint
-- 在训练侧引入结构控制，而不是 solver-only 或 I2SB rescue:
-  - lighter kinetic + topology anchor
+- 前提:
+  - 必须先有更强的 in-band 父本
+  - structure patch 不能再直接拿当前 shelf 当跳板去冒 `0.40+` 风险
+- 允许的结构工具:
   - latent lowpass / edge content correction
   - adaptive skip / PnP self-inject 仅作为结构工具，而非 style 放大器
-- queued packet:
+  - 更轻的 kinetic / topology 约束，但只作为后续候选而非默认下一步
+- queued reference packet:
   - [2026-06-13-phase2-vel-tok32-topo-anchor-reentry.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-topo-anchor-reentry.md)
   - [phase2_vel_tok32_topo_anchor_k075_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_topo_anchor_k075_seed42_b20a1.json)
-- 目标:
-  - 把结构约束直接作用在安全带 velocity 父本上
-  - 验证真正有价值的是 training-side structure control，而不是 stochastic endpoint
+- 当前判断:
+  - `topology_anchor` 已经证明这类补丁很容易把 line 推出安全带
+  - 因此只在 tokenizer-safe sweep 用尽后再进入
 
-### 队列5: `i2sb_diagnostic_only`（非正式 lane）
+### 队列6: `i2sb_diagnostic_only`（非正式 lane）
 
 - `true I2SB` 只保留为实现/理论验证
 - 允许做 NFE / noise schedule / endpoint parameterization 对照
@@ -245,7 +300,7 @@
 - true I2SB 代码保留，作为实现能力和理论资产
 - true I2SB 只允许 `diagnostic-only` 运行；除非先出现廉价读数证明 `LPIPS < 0.40`，否则不再进入 Distinct5 formal queue
 - 但 paper-facing Distinct5 主计划已经切换到:
-  - `velocity + tokenizer enhancement + structure-first solver`
+  - `velocity + tokenizer-safe sweep + deferred training-side structure control`
 - 所有 round2 endpoint / I2SB 文档都应按这个门槛重读:
   - `0.40-0.70` 是 archival only
   - `0.70+` 是 complete failure

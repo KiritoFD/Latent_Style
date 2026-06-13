@@ -4,9 +4,10 @@ Date: 2026-06-13
 
 ## Role
 
-- queued next formal candidate after `vel_tok32_pos_refresh`
+- queued structure-side candidate after the safe-family tokenizer rescan
 - not launched yet
-- only becomes eligible if the active tokenizer-refresh line closes without reaching the paper target
+- no longer the immediate next formal packet
+- only becomes eligible if the safe-band tokenizer family still cannot break the shelf
 
 ## Why This Exists
 
@@ -47,7 +48,7 @@ Date: 2026-06-13
 
 ## Intended Read
 
-- if the active `tok32_pos_refresh` line closes because style never reaches the paper target while remaining safe, this is the first queued packet to try next
+- if the safe-family rescan still fails to break the shelf while remaining safe, this becomes the next structure-side packet to try
 - success condition:
   - style rises meaningfully above the current `0.701161 / 0.374695` shelf
   - without crossing into `LPIPS >= 0.40`
