@@ -38,17 +38,17 @@ Date: 2026-06-13
 - Best all-pairs gate read: not eligible before settled epoch 3
 
 ## Next Packets
-- Structure-side preferred packet: `vel_tok32_safe_semantic_topogate_k085`
-- Structure config: [structure config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1.json)
-- Structure note: [structure note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085.md)
-- Structure read: epoch_0003 settled at transfer 0.675388/0.375598 and all-pairs 0.702936/0.371762; this lane already beats both formal recovery gates
-- Structure live state: `training_after_settled_eval`
-- Structure GPU: 8936 / 12288 MiB
-- Structure latest settled epoch: `epoch_0003`
+- Structure-side preferred packet: `vel_tok32_safe_semantic_topogate_k085_appalign`
+- Structure config: [structure config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b16a1.json)
+- Structure note: [structure note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085-appalign.md)
+- Structure read: successor refreshed from vel_tok32_safe_semantic_topogate_k085 epoch_0003 via latest; parent checkpoint now exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1/epoch_0003.pt
+- Structure live state: `training_before_first_settled_eval`
+- Structure GPU: 8963 / 12288 MiB
+- Structure latest settled epoch: `n/a`
 - I2SB diagnostic preferred packet: `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual`
 - I2SB config: [I2SB config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)
 - I2SB note: [I2SB note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual.md)
-- I2SB read: safe-parent successor refreshed from vel_tok32_safe_rescan_r2 epoch_0004 via best_clean_allpairs; parent checkpoint now exp/aaai2027_phase2_vel_tok32_safe_rescan_r2_seed42_b20a1/epoch_0004.pt
+- I2SB read: successor refreshed from vel_tok32_safe_semantic_topogate_k085 epoch_0003 via latest; parent checkpoint now exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1/epoch_0003.pt
 - I2SB live state: `n/a`
 
 ## Contract Read
@@ -61,7 +61,3 @@ Date: 2026-06-13
 - WSL exec ok: `True`
 - HCS failure: `False`
 - Hypervisor launch type: `Auto`
-
-## Local Watchers
-- Active phase2 handoff watchers: `1`
-- Structure watcher stdout: [phase2_structure_reentry_watch.stdout.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/phase2_structure_reentry_watch.stdout.log)

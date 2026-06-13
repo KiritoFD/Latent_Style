@@ -4,8 +4,8 @@ Date: 2026-06-13
 
 ## Role
 
-- low-intrusion structure-side follow-on behind the active `safe_semantic_topogate` run
-- same promoted structure parent, same `velocity + pure_latent_spatial + semantic_topology_gate` family
+- current preferred structure-side mainline packet
+- inherits the promoted `topogate epoch_0003` parent while keeping the same `velocity + pure_latent_spatial + semantic_topology_gate` family
 - adds only a conservative tokenizer-guided output appearance head
 
 ## Why This Exists
@@ -66,13 +66,21 @@ Date: 2026-06-13
 
 ## Queue Position
 
-- this packet is queued directly behind the active `vel_tok32_safe_semantic_topogate_k085` run
-- it should be tried before `safe_pnp_selfinject`
+- this packet is now the active preferred `structure_reentry` packet
+- it was promoted after `vel_tok32_safe_semantic_topogate_k085` closed on runtime guard while preserving `epoch_0003` as the promoted best point
+- it still stays ahead of `safe_pnp_selfinject`
 - reason:
-  - it is a cleaner attribution test
+  - it is the cleanest attribution test after the first structure-side breakout
   - and it costs much less architectural disturbance than changing the attention family
 - if it also closes without a formal shelf break, the next same-lane successor is:
   - [2026-06-13-phase2-vel-tok32-safe-pnp-selfinject.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-pnp-selfinject.md)
+
+## Launch Read
+
+- launch status:
+  - resumed from `vel_tok32_safe_semantic_topogate_k085 epoch_0003`
+  - current board state is still `training_before_first_settled_eval`
+  - so this packet is not yet judged by settled authority points
 ## Parent Refresh
 
 - Source packet: `vel_tok32_safe_semantic_topogate_k085`

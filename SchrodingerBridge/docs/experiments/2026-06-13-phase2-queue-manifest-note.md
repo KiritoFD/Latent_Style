@@ -52,28 +52,27 @@ Date: 2026-06-13
     - still below the old safe shelf on style
     - LPIPS drifted back toward the ceiling
     - the lane is now closed as an in-band style plateau
-- current preferred structure-side packet:
+- closed structure-side breakout packet:
   - `vel_tok32_safe_semantic_topogate_k085`
   - first `b20a1` launch hit the runtime guard at `11093 MiB`
-  - preferred relaunch now uses the `b16a1` packet
-  - current live read:
-    - `epoch_0003` is now the latest settled point
+  - the `b16a1` relaunch later produced the first phase2 structure-side shelf break on `epoch_0003`
+  - but the lane then hit runtime guard again during epoch 5 after `epoch_0004` settled
+  - best retained point remains:
     - transfer `0.675388 / 0.375598`
     - all-pairs `0.702936 / 0.371762`
-    - this now beats both formal recovery gates while staying comfortably in-band
-  - important read:
-    - this is the first structure-side packet in phase2 to clear both formal safe-shelf gates
-    - the watcher remains armed because the lane is still newest-best and should be allowed to prove whether the breakout is stable
-- next queued structure-side probe:
+- current preferred structure-side packet:
   - `vel_tok32_safe_semantic_topogate_k085_appalign`
-  - same safe parent and same topology-gate family
-  - only adds the conservative tokenizer-guided output appearance head
-  - intended to test whether the remaining transfer shortfall is low-order brightness / contrast mismatch
-  - queued successors have now been refreshed to inherit `vel_tok32_safe_semantic_topogate_k085 epoch_0003`
+  - launched from the promoted `topogate epoch_0003` parent
+  - role:
+    - keep the same tokenizer and topology-gated family
+    - test whether low-order brightness / contrast mismatch is the remaining bottleneck
+  - current live read:
+    - `training_before_first_settled_eval`
+    - no settled authority point yet
 - next structural family fallback after that:
   - `vel_tok32_safe_pnp_selfinject`
   - queue contract:
-    - active `structure_reentry` rows now carry same-lane watch fields
+    - active `structure_reentry` rows carry same-lane watch fields
     - the automatic sequence is `topogate -> appalign -> pnp -> topo_anchor`
     - `queued_reference` rows remain documentation-only and are skipped by successor handoff
 - current preferred exact-I2SB theory-check packet:
