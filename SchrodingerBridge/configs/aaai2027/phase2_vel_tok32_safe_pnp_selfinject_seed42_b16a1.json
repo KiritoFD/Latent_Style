@@ -1,0 +1,26 @@
+{
+  "_base": "./phase2_vel_tok32_safe_rescan_r2_seed42_b20a1.json",
+  "model": {
+    "backbone_attention_family": "attn_pnp_selfinject"
+  },
+  "bridge": {
+    "w_kinetic": 0.90
+  },
+  "training": {
+    "batch_size": 16,
+    "accumulation_steps": 1,
+    "resume_checkpoint": "exp/aaai2027_phase2_vel_tok32_safe_rescan_r2_seed42_b20a1/epoch_0004.pt",
+    "resume_model_strict": false,
+    "resume_optimizer": false,
+    "resume_training_state": false,
+    "resume_prefer_local_checkpoint": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_vel_tok32_safe_pnp_selfinject_seed42_b16a1"
+  },
+  "ablation": {
+    "name": "phase2_vel_tok32_safe_pnp_selfinject_b16a1",
+    "axis": "phase2_velocity_structure_reentry",
+    "notes": "Safe-parent structure fallback candidate that replaces legacy semantic cross-attention with attn_pnp_selfinject while keeping the tok32 safe tokenizer profile and a modest kinetic rollback."
+  }
+}

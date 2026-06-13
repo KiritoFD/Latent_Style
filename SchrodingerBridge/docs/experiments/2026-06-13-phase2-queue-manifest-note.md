@@ -59,6 +59,8 @@ Date: 2026-06-13
   - current live read:
     - `training_before_first_settled_eval`
     - roughly `9001 / 12288 MiB`
+- next queued structure-side fallback:
+  - `vel_tok32_safe_pnp_selfinject`
 - current preferred exact-I2SB theory-check packet:
   - `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual`
 - current validation state:
