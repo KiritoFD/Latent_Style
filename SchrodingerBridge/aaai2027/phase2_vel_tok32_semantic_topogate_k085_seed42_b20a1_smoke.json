@@ -43,8 +43,8 @@
   "semantic_topology_attn_entropy_runtime": 2.8054022789001465,
   "semantic_topology_attn_entropy_metric": 2.8054022789001465,
   "semantic_topology_attn_active_metric": 1.0,
-  "semantic_attn_mean_metric": 0.0,
-  "semantic_k_abs_metric": 0.0,
+  "semantic_attn_mean_metric": 0.00390625,
+  "semantic_k_abs_metric": 0.0706840232014656,
   "structured_style_tokenizer_debug": {
     "attn_entropy": 2.9140520095825195,
     "attn_max": 0.5149425268173218,

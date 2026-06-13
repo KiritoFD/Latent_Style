@@ -603,6 +603,7 @@ class SBTrainer:
             "source_style_ids": [int(v) for v in source_style_id.detach().cpu().tolist()] if source_style_id is not None else None,
             "semantic_attn": self._tensor_stats(getattr(self.model, "last_semantic_attn", None)),
             "semantic_k": self._tensor_stats(getattr(self.model, "last_semantic_k", None)),
+            "semantic_topology_attn": self._tensor_stats(getattr(self.model, "last_semantic_topology_attn", None)),
         }
         if extra:
             payload["extra"] = extra
@@ -1188,6 +1189,8 @@ class SBTrainer:
         metrics.setdefault("content_edge_anchor", 0.0)
         metrics.setdefault("aux_target_ratio", 0.0)
         metrics.setdefault("plan_entropy", 0.0)
+        metrics.setdefault("semantic_attn_mean", 0.0)
+        metrics.setdefault("semantic_k_abs", 0.0)
         metrics.setdefault("bridge_sigma", 0.0)
         metrics.setdefault("bridge_noise_schedule_exact", 0.0)
         metrics.setdefault("semantic_topology_attn_entropy", 0.0)
