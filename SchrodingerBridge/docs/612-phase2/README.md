@@ -142,7 +142,8 @@
   - but only as a conservative same-family probe after a clean in-band structure point
   - not as a replacement for tokenizer or solver quality
 - structure-side queue policy:
-  - `topogate -> appalign -> pnp -> topo_anchor`
+  - `topogate -> appalign -> k070 -> k070_kin070 -> k070_sp256`
+  - `pnp -> topo_anchor` now stays as the later structure-backup branch, not the immediate post-appalign mainline
   - `queued_reference` rows are documentation-only and must not become automatic launch targets
   - active structure rows now carry their own watch fields and close into the next same-lane successor after plateau / LPIPS stop
 - 允许的结构工具:
@@ -237,14 +238,20 @@
   - `vel_tok32_safe_semantic_topogate_k070`
   - this packet inherits `appalign epoch_0001` as the highest-style recovered parent inside the safe band
   - current live read:
-    - launch is now active on the remote 3060
-    - latest state is `training_before_first_settled_eval`
-    - current training batch is still in `epoch_0001`
+    - `epoch_0001` has now settled
+    - transfer `0.672664 / 0.336344`
+    - all-pairs `0.703589 / 0.333097`
+    - latest state is `training_after_settled_eval`
+    - the run is currently mid-`epoch_0002`
   - interpretation:
     - `appalign` has already closed as a structure-clean but style-limited plateau
     - `i2sb_sigma0.02_tfloor005` produced a first settled archival-only point
     - the current active hypothesis is therefore no longer stochasticity-first but style-release under the same true-tokenizer + velocity family
     - `k070` is the cleanest guide-aligned next step because it changes only `semantic_self_topology_blend`
+    - its first settled point is already a clean in-band recovery point on all-pairs, but transfer style is still below the formal shelf
+    - the next two queued same-family follow-ons are:
+      - `k070_kin070`: reduce `w_kinetic`
+      - `k070_sp256`: widen `tokenizer_spatial_dim` to `256`
 
 ## Guide-Adopted Read
 
@@ -253,6 +260,13 @@
   - `query_num_blocks=5`
   - `num_clusters=32`
   - 2D position encoding + pooled global-spatial coupling
+- consequence for the updated guide:
+  - the suggested `Query Extractor + Positional Encoding` upgrade is already largely present in the live tokenizer path
+  - the still-untried residual tokenizer idea is wider spatial value capacity, so `tokenizer_spatial_dim=256` is now queued as a low-risk follow-on
+  - the new `k070_sp256` packet has already passed a remote WSL CPU smoke:
+    - tokenizer `spatial_dim=256`
+    - projected output `128`
+    - `structured_style_map_proj` is active and receives gradients
 - therefore the current `appalign` / `topogate` line should be read primarily as:
   - structure is already materially improved
   - the remaining bottleneck is style height under that structure protection
@@ -261,7 +275,7 @@
   - prioritize style-lift mechanisms that preserve the recovered structure band
   - after `appalign` closed, the first guide-aligned I2SB attempt is now already logged as archival-only negative evidence
   - the local `solver_pc + latent_lowpass` appalign-e3 probe is also negative
-  - therefore the current structure-side mainline should now test a lighter topology blend before reopening another stochastic or inference-only branch
+  - therefore the current structure-side mainline should now keep testing lighter style-release and tokenizer-capacity changes before reopening another stochastic or inference-only branch
 
 ## Guide Watcher
 

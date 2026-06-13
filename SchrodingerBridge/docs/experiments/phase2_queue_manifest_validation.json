@@ -1,6 +1,6 @@
 {
   "manifest_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\phase2_queue_manifest.csv",
-  "row_count": 11,
+  "row_count": 13,
   "global_issues": [],
   "rows": [
     {
@@ -100,6 +100,54 @@
       }
     },
     {
+      "packet_id": "vel_tok32_safe_semantic_topogate_k070_kin070",
+      "ok": true,
+      "issues": [],
+      "derived": {
+        "tokenizer_profile": "tok32_safe_rescan",
+        "transport_prediction_mode": "velocity",
+        "solver_family": "euler_legacy",
+        "bridge_sigma": 0.0,
+        "endpoint_parameterization": "absolute",
+        "semantic_topology_gate": "true",
+        "proximal_mode": "crossattn_texture",
+        "resolved_exact_brownian": false
+      },
+      "watch_fields": {
+        "watch_min_settled_epoch": "4",
+        "watch_min_allpairs_style_recovery": "0.701666",
+        "watch_max_allpairs_lpips_for_recovery": "0.381724",
+        "watch_min_transfer_style_recovery": "0.673934",
+        "watch_max_transfer_lpips_for_recovery": "0.384340",
+        "watch_handoff_mode": "stop_only",
+        "watch_next_lane_class": ""
+      }
+    },
+    {
+      "packet_id": "vel_tok32_safe_semantic_topogate_k070_sp256",
+      "ok": true,
+      "issues": [],
+      "derived": {
+        "tokenizer_profile": "tok32_safe_rescan",
+        "transport_prediction_mode": "velocity",
+        "solver_family": "euler_legacy",
+        "bridge_sigma": 0.0,
+        "endpoint_parameterization": "absolute",
+        "semantic_topology_gate": "true",
+        "proximal_mode": "crossattn_texture",
+        "resolved_exact_brownian": false
+      },
+      "watch_fields": {
+        "watch_min_settled_epoch": "4",
+        "watch_min_allpairs_style_recovery": "0.701666",
+        "watch_max_allpairs_lpips_for_recovery": "0.381724",
+        "watch_min_transfer_style_recovery": "0.673934",
+        "watch_max_transfer_lpips_for_recovery": "0.384340",
+        "watch_handoff_mode": "stop_only",
+        "watch_next_lane_class": ""
+      }
+    },
+    {
       "packet_id": "vel_tok32_safe_pnp_selfinject",
       "ok": true,
       "issues": [],
@@ -168,7 +216,7 @@
         "watch_min_transfer_style_recovery": "0.673934",
         "watch_max_transfer_lpips_for_recovery": "0.384340",
         "watch_handoff_mode": "stop_only",
-        "watch_next_lane_class": "heavier loss-side topology-anchor alternative; kept behind topology-gate"
+        "watch_next_lane_class": ""
       }
     },
     {
@@ -264,7 +312,7 @@
         "watch_min_transfer_style_recovery": "",
         "watch_max_transfer_lpips_for_recovery": "",
         "watch_handoff_mode": "",
-        "watch_next_lane_class": "first clean residual exact-Brownian topology-gate diagnostic; now superseded by both tok32 successors"
+        "watch_next_lane_class": "first clean residual exact-Brownian topology-gate diagnostic now superseded by both tok32 successors"
       }
     }
   ],

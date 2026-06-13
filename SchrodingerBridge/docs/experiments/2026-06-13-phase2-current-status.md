@@ -43,13 +43,13 @@ Date: 2026-06-13
 - Structure-side preferred packet: `vel_tok32_safe_semantic_topogate_k070`
 - Structure config: [structure config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k070_seed42_b12a1.json)
 - Structure note: [structure note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k070.md)
-- Structure read: guide-aligned style-release follow-on launched from appalign epoch_0001; relax semantic_self_topology_blend from 1.0 to 0.7 while keeping the current tokenizer, velocity, and appearance stack
-- Structure live state: `training_before_first_settled_eval`
-- Structure GPU: 6987 / 12288 MiB
-- Structure latest settled epoch: `n/a`
-- Structure latest settled `CLIP-S / LPIPS`: n/a
-- Structure latest `style - IDT`: n/a
-- Structure runtime observability: n/a
+- Structure read: epoch_0001 settled at transfer 0.672664/0.336344 and all-pairs 0.703589/0.333097; all-pairs safe-shelf recovery is already achieved, while transfer style still trails the formal shelf
+- Structure live state: `training_after_settled_eval`
+- Structure GPU: 7074 / 12288 MiB
+- Structure latest settled epoch: `epoch_0001`
+- Structure latest settled `CLIP-S / LPIPS`: `0.672664 / 0.336344`, `0.703589 / 0.333097`
+- Structure latest `style - IDT`: transfer `+0.032742`, all-pairs `+0.023464`
+- Structure runtime observability: tok_eff=3.7, gate=0.626, mask=0.676, topo_ent=0.924, app_on=1.0, app_s=1.000, app_d=0.000
 - I2SB diagnostic preferred packet: `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005`
 - I2SB config: [I2SB config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005_seed42_b20a1.json)
 - I2SB note: [I2SB note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual-tfloor005.md)
@@ -67,3 +67,7 @@ Date: 2026-06-13
 - WSL exec ok: `True`
 - HCS failure: `False`
 - Hypervisor launch type: `Auto`
+
+## Local Watchers
+- Active phase2 handoff watchers: `1`
+- Structure watcher stdout: [phase2_structure_reentry_watch.stdout.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/phase2_structure_reentry_watch.stdout.log)

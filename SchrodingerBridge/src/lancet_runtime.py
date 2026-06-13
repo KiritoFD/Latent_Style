@@ -159,6 +159,16 @@ class LatentAdaCUTRuntimeMixin:
     def _prepare_spatial_map(self, style_map: torch.Tensor | None, target: torch.Tensor) -> torch.Tensor | None:
         return self._match_style_map(style_map, target)
 
+    def _project_structured_style_map(self, style_map: torch.Tensor | None) -> torch.Tensor | None:
+        if style_map is None:
+            return None
+        proj = getattr(self, "structured_style_map_proj", None)
+        if proj is None:
+            return style_map
+        if int(style_map.shape[1]) == int(getattr(self, "body_channels", style_map.shape[1])):
+            return style_map
+        return proj(style_map)
+
     def _cache_output_style_context(
         self,
         *,
@@ -291,14 +301,23 @@ class LatentAdaCUTRuntimeMixin:
                 content_latent=content_latent,
                 target_hw=tuple(int(v) for v in content_feat_16.shape[-2:]),
             )
-            setattr(tokenizer, "last_debug", dict(structured.debug))
+            projected_map = self._project_structured_style_map(structured.spatial_map)
+            debug = dict(structured.debug)
+            debug.update(
+                {
+                    "spatial_map_channels_raw": int(structured.spatial_map.shape[1]),
+                    "spatial_map_channels_out": int(projected_map.shape[1]) if torch.is_tensor(projected_map) else 0,
+                    "spatial_map_proj_active": 1.0 if int(structured.spatial_map.shape[1]) != int(projected_map.shape[1]) else 0.0,
+                }
+            )
+            setattr(tokenizer, "last_debug", debug)
             return structured.global_code, StyleMaps(
-                map_16=structured.spatial_map,
+                map_16=projected_map,
                 gate_16=structured.gate_map,
                 mask_16=structured.mask_map,
                 aux_16=structured.aux_map,
                 family=family,
-                debug=dict(structured.debug),
+                debug=debug,
             )
         payload = self._runtime_conditioning_payload()
         content_dino_patches = payload.get("content_dino_patches")
@@ -316,14 +335,23 @@ class LatentAdaCUTRuntimeMixin:
                 return None
             kwargs["style_bank_patches"] = bank.to(device=style_code.device, dtype=style_code.dtype)
         structured = tokenizer(**kwargs)
-        setattr(tokenizer, "last_debug", dict(structured.debug))
+        projected_map = self._project_structured_style_map(structured.spatial_map)
+        debug = dict(structured.debug)
+        debug.update(
+            {
+                "spatial_map_channels_raw": int(structured.spatial_map.shape[1]),
+                "spatial_map_channels_out": int(projected_map.shape[1]) if torch.is_tensor(projected_map) else 0,
+                "spatial_map_proj_active": 1.0 if int(structured.spatial_map.shape[1]) != int(projected_map.shape[1]) else 0.0,
+            }
+        )
+        setattr(tokenizer, "last_debug", debug)
         return structured.global_code, StyleMaps(
-            map_16=structured.spatial_map,
+            map_16=projected_map,
             gate_16=structured.gate_map,
             mask_16=structured.mask_map,
             aux_16=structured.aux_map,
             family=family,
-            debug=dict(structured.debug),
+            debug=debug,
         )
 
     def _content_spatial_features(self, feat: torch.Tensor) -> torch.Tensor:
