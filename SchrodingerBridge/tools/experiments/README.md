@@ -43,10 +43,12 @@ Use this file as the stable entrypoint instead of guessing from filenames.
   - [validate_phase2_queue_manifest.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/validate_phase2_queue_manifest.py)
   - [resolve_phase2_queue_packet.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/resolve_phase2_queue_packet.py)
   - [promote_phase2_queue_successor.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/promote_phase2_queue_successor.py)
+  - [launch_phase2_lane_handoff_watcher_detached.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_phase2_lane_handoff_watcher_detached.py)
   - [report_phase2_queue_state.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/report_phase2_queue_state.py)
   - [build_phase2_status_note.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/build_phase2_status_note.py)
   - [refresh_phase2_safe_successors.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/refresh_phase2_safe_successors.py)
   - `promote_phase2_queue_successor.py` is the lane-local handoff helper when a closed structure or diagnostic packet should yield `preferred=yes` to its next queued successor without hand-editing the CSV
+  - `launch_phase2_lane_handoff_watcher_detached.py` arms the local detached watcher that monitors the current preferred lane and executes manifest-driven handoff when its close rule trips
 - one-shot status read for a single active remote lane:
   - [report_remote_experiment_status.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/report_remote_experiment_status.py)
 - run inference-only phase2 solver_pc review on an existing checkpoint:

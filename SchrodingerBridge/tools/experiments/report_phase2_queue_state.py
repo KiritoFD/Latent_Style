@@ -21,6 +21,8 @@ from resolve_phase2_queue_packet import DEFAULT_MANIFEST, DEFAULT_VALIDATION, re
 DEFAULT_OUTPUT = SB_ROOT / "docs" / "experiments" / "phase2_queue_state_snapshot.json"
 DEFAULT_FORMAL_WATCHER_OUT = SB_ROOT / "aaai2027" / "phase2_formal_lane_recover_from_manifest.out.log"
 DEFAULT_FORMAL_WATCHER_ERR = SB_ROOT / "aaai2027" / "phase2_formal_lane_recover_from_manifest.err.log"
+DEFAULT_STRUCTURE_WATCHER_OUT = SB_ROOT / "aaai2027" / "phase2_structure_reentry_watch.stdout.log"
+DEFAULT_STRUCTURE_WATCHER_ERR = SB_ROOT / "aaai2027" / "phase2_structure_reentry_watch.stderr.log"
 
 
 def _run(cmd: list[str]) -> subprocess.CompletedProcess[str]:
@@ -255,6 +257,31 @@ def _query_local_watchers() -> list[dict[str, object]]:
     return []
 
 
+def _query_local_velocity_handoff_watchers() -> list[dict[str, object]]:
+    if sys.platform != "win32":
+        return []
+    proc = _run(
+        [
+            "powershell",
+            "-NoProfile",
+            "-Command",
+            "Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'python.exe' -and $_.CommandLine -like '*watch_phase2_velocity_handoff.py*' } | Select-Object ProcessId,CommandLine | ConvertTo-Json -Depth 3",
+        ]
+    )
+    text = proc.stdout.strip()
+    if proc.returncode != 0 or not text:
+        return []
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        return []
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, dict)]
+    if isinstance(payload, dict):
+        return [payload]
+    return []
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build one JSON snapshot for the current phase2 queue, validation, remote health, and local watcher state.")
     parser.add_argument("--manifest-csv", type=Path, default=DEFAULT_MANIFEST)
@@ -266,6 +293,8 @@ def main() -> int:
     parser.add_argument("--wsl-distro", default="Ubuntu-26.04")
     parser.add_argument("--formal-watcher-out-log", type=Path, default=DEFAULT_FORMAL_WATCHER_OUT)
     parser.add_argument("--formal-watcher-err-log", type=Path, default=DEFAULT_FORMAL_WATCHER_ERR)
+    parser.add_argument("--structure-watcher-out-log", type=Path, default=DEFAULT_STRUCTURE_WATCHER_OUT)
+    parser.add_argument("--structure-watcher-err-log", type=Path, default=DEFAULT_STRUCTURE_WATCHER_ERR)
     args = parser.parse_args()
 
     manifest = Path(args.manifest_csv).expanduser().resolve()
@@ -303,6 +332,7 @@ def main() -> int:
     remote_structure_status = _query_remote_status(run_name=str(resolved_structure.get("run_name", "")))
     remote_i2sb_status = _query_remote_status(run_name=str(resolved_i2sb.get("run_name", "")))
     local_watchers = _query_local_watchers()
+    local_velocity_watchers = _query_local_velocity_handoff_watchers()
 
     resolved_formal = _refresh_formal_current_read(resolved_formal, remote_formal_status)
 
@@ -332,11 +362,18 @@ def main() -> int:
         "remote_structure_status": remote_structure_status,
         "remote_i2sb_status": remote_i2sb_status,
         "local_manifest_watchers": local_watchers,
+        "local_velocity_handoff_watchers": local_velocity_watchers,
         "local_formal_watcher_logs": {
             "out_log": str(Path(args.formal_watcher_out_log).expanduser().resolve()),
             "err_log": str(Path(args.formal_watcher_err_log).expanduser().resolve()),
             "out_tail": _tail_lines(Path(args.formal_watcher_out_log).expanduser().resolve(), limit=20),
             "err_tail": _tail_lines(Path(args.formal_watcher_err_log).expanduser().resolve(), limit=20),
+        },
+        "local_structure_watcher_logs": {
+            "out_log": str(Path(args.structure_watcher_out_log).expanduser().resolve()),
+            "err_log": str(Path(args.structure_watcher_err_log).expanduser().resolve()),
+            "out_tail": _tail_lines(Path(args.structure_watcher_out_log).expanduser().resolve(), limit=20),
+            "err_tail": _tail_lines(Path(args.structure_watcher_err_log).expanduser().resolve(), limit=20),
         },
     }
 

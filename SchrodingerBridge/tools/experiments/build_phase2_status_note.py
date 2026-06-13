@@ -113,6 +113,8 @@ def build_note(snapshot: dict, *, report_date: str) -> str:
     remote_structure = snapshot.get("remote_structure_status", {}) if isinstance(snapshot.get("remote_structure_status"), dict) else {}
     remote_i2sb = snapshot.get("remote_i2sb_status", {}) if isinstance(snapshot.get("remote_i2sb_status"), dict) else {}
     health = snapshot.get("remote_health", {}) if isinstance(snapshot.get("remote_health"), dict) else {}
+    local_velocity_watchers = snapshot.get("local_velocity_handoff_watchers", []) if isinstance(snapshot.get("local_velocity_handoff_watchers"), list) else []
+    local_structure_logs = snapshot.get("local_structure_watcher_logs", {}) if isinstance(snapshot.get("local_structure_watcher_logs"), dict) else {}
     curve = remote.get("curve_summary", {}) if isinstance(remote.get("curve_summary"), dict) else {}
     latest = curve.get("latest", {}) if isinstance(curve.get("latest"), dict) else {}
     best_transfer = curve.get("best_transfer", {}) if isinstance(curve.get("best_transfer"), dict) else {}
@@ -277,6 +279,20 @@ def build_note(snapshot: dict, *, report_date: str) -> str:
         f"- HCS failure: `{health.get('remote_wsl_hcs_failure', 'n/a')}`",
         f"- Hypervisor launch type: `{health.get('hypervisorlaunchtype', 'n/a')}`",
     ]
+    if local_velocity_watchers:
+        structure_stdout = str(local_structure_logs.get("out_log", "")).strip()
+        lines.extend(
+            [
+                "",
+                "## Local Watchers",
+                f"- Active phase2 handoff watchers: `{len(local_velocity_watchers)}`",
+                (
+                    f"- Structure watcher stdout: {_path_link(structure_stdout, 'phase2_structure_reentry_watch.stdout.log')}"
+                    if structure_stdout
+                    else "- Structure watcher stdout: n/a"
+                ),
+            ]
+        )
     return "\n".join(lines).rstrip() + "\n"
 
 
