@@ -23,7 +23,9 @@ Date: 2026-06-13
 
 ## Config
 
-- config:
+- preferred relaunch config:
+  - [phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1.json)
+- first launch config:
   - [phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b16a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b16a1.json)
 - comparison parent:
   - `vel_tok32_safe_semantic_topogate_k085 epoch_0003`
@@ -78,9 +80,11 @@ Date: 2026-06-13
 ## Launch Read
 
 - launch status:
-  - resumed from `vel_tok32_safe_semantic_topogate_k085 epoch_0003`
-  - current board state is still `training_before_first_settled_eval`
-  - so this packet is not yet judged by settled authority points
+  - first `b16a1` launch resumed from `vel_tok32_safe_semantic_topogate_k085 epoch_0003`
+  - but it hit runtime guard before the first settled authority point:
+    - observed guard event: `11449 MiB > 11000 MiB`
+  - preferred relaunch now switches to `b12a1`
+  - current board state should be read as `training_before_first_settled_eval` until the first settled eval lands
 ## Parent Refresh
 
 - Source packet: `vel_tok32_safe_semantic_topogate_k085`

@@ -244,12 +244,17 @@ def _process_matches_run(
     text = str(process_row or "").strip()
     if not text:
         return False
+    run_name_clean = str(run_name).strip()
+    run_name_suffix = run_name_clean.removeprefix("aaai2027_") if run_name_clean.startswith("aaai2027_") else run_name_clean
     needles = [
-        str(run_name).strip(),
+        run_name_clean,
+        run_name_suffix,
         str(remote_run_dir).strip(),
         str(remote_train_log).strip(),
-        f"/{str(run_name).strip()}.json",
-        f"\\{str(run_name).strip()}.json",
+        f"/{run_name_clean}.json",
+        f"\\{run_name_clean}.json",
+        f"/{run_name_suffix}.json",
+        f"\\{run_name_suffix}.json",
     ]
     for needle in needles:
         if needle and needle in text:
@@ -347,17 +352,6 @@ def main() -> int:
             stale_pending_checkpoint_epochs.append(epoch)
         else:
             pending_checkpoint_epochs.append(epoch)
-    live_state = "idle"
-    wsl_hcs_failure = _looks_like_wsl_hcs_failure(py.stdout)
-    if pending_checkpoint_epochs:
-        live_state = "eval_in_progress_or_pending"
-    elif latest_settled_epoch:
-        live_state = "training_after_settled_eval" if py.stdout.strip() else "settled_no_live_process"
-    elif py.stdout.strip():
-        live_state = "training_before_first_settled_eval"
-    if wsl_hcs_failure and not pending_checkpoint_epochs and not latest_settled_epoch:
-        live_state = "remote_wsl_unavailable"
-
     curve_summary = _remote_json_via_cat(
         host=str(args.host),
         port=int(args.port),
@@ -381,6 +375,7 @@ def main() -> int:
     )
     tail_lines = [] if _looks_like_wsl_hcs_failure(tail.stdout) else tail.stdout.splitlines()
 
+    wsl_hcs_failure = _looks_like_wsl_hcs_failure(py.stdout)
     process_rows_all = [] if wsl_hcs_failure else [line.strip() for line in py.stdout.splitlines() if line.strip()]
     process_rows = [
         row
@@ -392,6 +387,17 @@ def main() -> int:
             remote_train_log=remote_train_log,
         )
     ]
+    matched_process_count = len(process_rows)
+    live_state = "idle"
+    if pending_checkpoint_epochs:
+        live_state = "eval_in_progress_or_pending"
+    elif latest_settled_epoch:
+        live_state = "training_after_settled_eval" if matched_process_count > 0 else "settled_no_live_process"
+    elif matched_process_count > 0:
+        live_state = "training_before_first_settled_eval"
+    if wsl_hcs_failure and not pending_checkpoint_epochs and not latest_settled_epoch:
+        live_state = "remote_wsl_unavailable"
+
     report = {
         "run_name": run_name,
         "remote_run_dir": remote_run_dir,

@@ -1,0 +1,14 @@
+{
+  "_base": "./phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b16a1.json",
+  "training": {
+    "batch_size": 12,
+    "accumulation_steps": 1
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1"
+  },
+  "ablation": {
+    "name": "phase2_vel_tok32_safe_semantic_topogate_k085_appalign_b12a1",
+    "notes": "Relaunch of the tokenizer-guided appearance-alignment packet after the b16a1 launch hit runtime guard at 11.449 GiB before first settled eval; keep the promoted topogate epoch_0003 parent and the same appearance head, but reduce batch size to 12 to stay inside the remote 3060 hard cap."
+  }
+}

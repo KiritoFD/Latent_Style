@@ -67,8 +67,9 @@ Date: 2026-06-13
     - keep the same tokenizer and topology-gated family
     - test whether low-order brightness / contrast mismatch is the remaining bottleneck
   - current live read:
-    - `training_before_first_settled_eval`
-    - no settled authority point yet
+    - first `b16a1` launch hit runtime guard at `11.449 GiB` before first settled eval
+    - preferred relaunch now uses `b12a1`
+    - still no settled authority point yet
 - next structural family fallback after that:
   - `vel_tok32_safe_pnp_selfinject`
   - queue contract:

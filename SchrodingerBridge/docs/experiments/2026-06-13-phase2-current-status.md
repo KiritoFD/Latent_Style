@@ -45,7 +45,7 @@ Date: 2026-06-13
 - Structure note: [structure note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085-appalign.md)
 - Structure read: launched from promoted topogate epoch_0003 parent; training is active before the first settled authority eval
 - Structure live state: `training_before_first_settled_eval`
-- Structure GPU: 8771 / 12288 MiB
+- Structure GPU: 9271 / 12288 MiB
 - Structure latest settled epoch: `n/a`
 - Structure latest settled `CLIP-S / LPIPS`: n/a
 - Structure latest `ΔIDT style`: n/a

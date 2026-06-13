@@ -126,7 +126,7 @@ def _query_remote_wsl_src_run_processes(*, host: str, port: int, user: str, wsl_
             "-o",
             "LogLevel=ERROR",
             remote,
-            f"wsl -d {wsl_distro} --exec bash -lc \"pgrep -af 'src/run.py' || true\"",
+            f"wsl -d {wsl_distro} --exec bash -lc \"ps -eo pid,args | grep '[s]rc/run.py' || true\"",
         ]
     )
     output = result.stdout.decode("utf-8", errors="replace")

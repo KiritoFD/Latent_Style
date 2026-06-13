@@ -244,7 +244,7 @@ def _wait_until_idle(*, host: str, port: int, user: str, wsl_distro: str, idle_m
                 "-o",
                 "LogLevel=ERROR",
                 f"{user}@{host}",
-                f"wsl -d {wsl_distro} --exec bash -lc \"pgrep -af 'src/run.py' || true\"",
+                f"wsl -d {wsl_distro} --exec bash -lc \"ps -eo pid,args | grep '[s]rc/run.py' || true\"",
             ]
         )
         live_wsl = [line.strip() for line in proc_wsl.stdout.splitlines() if line.strip()]
