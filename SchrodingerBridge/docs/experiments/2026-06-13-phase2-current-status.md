@@ -61,3 +61,7 @@ Date: 2026-06-13
 - WSL exec ok: `True`
 - HCS failure: `False`
 - Hypervisor launch type: `Auto`
+
+## Local Watchers
+- Active phase2 handoff watchers: `1`
+- Structure watcher stdout: [phase2_structure_reentry_watch.stdout.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/phase2_structure_reentry_watch.stdout.log)
