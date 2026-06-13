@@ -99,6 +99,9 @@ Date: 2026-06-13
 - this is not a model-side rejection
 - it is a remote host / WSL2 availability issue
 - once the remote Windows host is rebooted and WSL2 becomes runnable again, `r2` should be the next formal lane to relaunch
+- preferred local recovery hook:
+  - [watch_phase2_wsl_recover_and_launch.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_phase2_wsl_recover_and_launch.py)
+  - this watcher can sit locally, wait for `wsl_exec_ok=true`, then auto-launch `r2` and hand off to the phase-2 close-rule watcher
 
 ## Intended Read
 

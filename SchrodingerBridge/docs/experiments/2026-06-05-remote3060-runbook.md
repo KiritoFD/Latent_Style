@@ -134,6 +134,9 @@ Interpretation:
 - if `VirtualMachinePlatform` is disabled
   - enable it before retrying any formal WSL2 launch
 - do not keep retrying formal packets while this health check still says WSL2 is unavailable
+- if a packet is already prepared and waiting on host recovery
+  - prefer arming a local recovery watcher instead of manually polling:
+    - [watch_phase2_wsl_recover_and_launch.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_phase2_wsl_recover_and_launch.py)
 
 For formal training, record:
 
