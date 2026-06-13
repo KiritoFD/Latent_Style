@@ -55,6 +55,15 @@ Date: 2026-06-13
 - failure condition:
   - repeats the older velocity-topology behavior and leaks into archival-only territory
 
+## Required Observability
+
+- epoch CSV and epoch log must persist:
+  - `content_lowpass_anchor`
+  - `content_edge_anchor`
+- reason:
+  - this packet is explicitly about moving safety budget from pure kinetic suppression into direct topology anchors
+  - so the anchor terms cannot remain hidden inside loss internals
+
 ## Launch Rule
 
 - do not launch while `vel_tok32_pos_refresh` still owns the only formal lane
