@@ -49,6 +49,7 @@ class OTFlowMatchingObjective:
             transport_prediction_mode=self.transport_prediction_mode,
             objective_mode=self.objective_mode,
             loss_type=str(getattr(bridge_cfg, "loss_type", "")),
+            bridge_noise_schedule=str(getattr(bridge_cfg, "bridge_noise_schedule", "auto")),
         )
         validate_pure_latent_contract(
             tokenizer_family=str(getattr(model_cfg, "tokenizer_family", "legacy_factorized")),

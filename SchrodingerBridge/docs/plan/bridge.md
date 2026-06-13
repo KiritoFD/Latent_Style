@@ -7,6 +7,14 @@
 > 2026-06-13 contract note:
 > `true I2SB` 的训练态现在要求 `bridge_noise_schedule = exact_brownian`（或 `auto` 且 `objective_mode = i2sb_endpoint`）。
 > 旧的 `delayed_window` 仅保留为启发式历史变体，不再冒充精确布朗桥。
+> 这条约束现已在工程入口统一强制：
+> - `config_schema`
+> - `run.py`
+> - `losses.py`
+> - `model.py`
+> - `utils/inference.py`
+> 都通过 `style_families.validate_i2sb_contract()` 校验。
+> 因而 `delayed_window + i2sb_endpoint/solver_i2sb` 现在会被直接拒绝，而不是事后靠文档解释。
 >
 > 2026-06-13 phase-2 pivot note:
 > Distinct5 的 paper-facing formal lane 已不再默认押注 endpoint / I2SB。

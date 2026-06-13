@@ -214,6 +214,8 @@ class PureLatentSpatialTokenizer(nn.Module):
 - 旧的 `delayed_window` 只作为历史启发式变体保留：
   - 可用于复盘 training/inference mismatch 修补思路
   - 但不应再被记录为“true I2SB”证据
+  - 工程上也已经被主入口拒绝：如果 `solver_i2sb` 或 `objective_mode = i2sb_endpoint` 仍显式指定 `delayed_window`，配置会直接报错
+  - 后续实验命名也应避免再把这类包记成 `true_i2sb_*`，应明确标成 heuristic / diagnostic 线
 
 ---
 

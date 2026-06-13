@@ -288,11 +288,16 @@ def validate_i2sb_contract(
     transport_prediction_mode: str,
     objective_mode: str = "",
     loss_type: str = "",
+    bridge_noise_schedule: str = "auto",
 ) -> None:
     solver = normalize_family(solver_family, allowed=SOLVER_FAMILIES, default="euler_legacy")
     transport = normalize_transport_prediction_mode(transport_prediction_mode)
     objective = str(objective_mode or "").strip().lower()
     loss = str(loss_type or "").strip().lower()
+    exact_schedule = resolves_exact_brownian_schedule(
+        bridge_noise_schedule=bridge_noise_schedule,
+        objective_mode=objective,
+    )
     if solver == "solver_i2sb" and transport != "endpoint":
         raise ValueError("solver_i2sb requires model.transport_prediction_mode='endpoint'.")
     if solver == "solver_i2sb" and not is_i2sb_objective_mode(objective):
@@ -301,3 +306,10 @@ def validate_i2sb_contract(
         raise ValueError("bridge.objective_mode='i2sb_endpoint' requires model.transport_prediction_mode='endpoint'.")
     if (solver == "solver_i2sb" or is_i2sb_objective_mode(objective)) and loss and loss != "mse":
         raise ValueError("true I2SB requires bridge.loss_type='mse'.")
+    if (solver == "solver_i2sb" or is_i2sb_objective_mode(objective)) and not exact_schedule:
+        schedule = normalize_bridge_noise_schedule(bridge_noise_schedule)
+        raise ValueError(
+            "true I2SB requires bridge.bridge_noise_schedule='exact_brownian' "
+            "or 'auto' resolving to the exact Brownian bridge; "
+            f"got bridge_noise_schedule={schedule!r} objective_mode={objective!r}."
+        )

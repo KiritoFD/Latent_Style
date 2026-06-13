@@ -220,6 +220,7 @@ class LGTInference:
             transport_prediction_mode=str(getattr(config.model, "transport_prediction_mode", "velocity")),
             objective_mode=self.objective_mode,
             loss_type=str(getattr(config.bridge, "loss_type", "")),
+            bridge_noise_schedule=str(getattr(config.bridge, "bridge_noise_schedule", "auto")),
         )
         validate_pure_latent_contract(
             tokenizer_family=str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
