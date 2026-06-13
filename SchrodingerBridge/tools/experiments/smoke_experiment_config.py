@@ -201,6 +201,7 @@ def main() -> int:
             "flow": float(torch.nan_to_num(loss_dict["flow"].detach().float()).item()),
             "terminal_swd": float(torch.nan_to_num(loss_dict["terminal_swd"].detach().float()).item()),
             "t_mean": float(torch.nan_to_num(loss_dict["t_mean"].detach().float()).item()),
+            "bridge_noise_schedule_exact_metric": _safe_float(loss_dict.get("bridge_noise_schedule_exact", 0.0)),
             "semantic_attn_shape": _maybe_tensor_shape(semantic_attn),
             "semantic_topology_attn_shape": _maybe_tensor_shape(semantic_topology_attn),
             "semantic_topology_attn_entropy_runtime": _attention_entropy(semantic_topology_attn),

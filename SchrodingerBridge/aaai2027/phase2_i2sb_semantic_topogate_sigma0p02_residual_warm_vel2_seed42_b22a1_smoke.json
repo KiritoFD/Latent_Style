@@ -1,0 +1,61 @@
+{
+  "status": "ok",
+  "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\aaai2027\\phase2_i2sb_semantic_topogate_sigma0p02_residual_warm_vel2_seed42_b22a1.json",
+  "objective_mode": "i2sb_endpoint",
+  "tokenizer_family": "pure_latent_spatial",
+  "solver_family": "solver_i2sb",
+  "transport_prediction_mode": "endpoint",
+  "semantic_supervision_family": "legacy_terminal_swd",
+  "dino_runtime_required": false,
+  "bridge_sigma": 0.02,
+  "forward_shape": [
+    1,
+    4,
+    32,
+    32
+  ],
+  "endpoint_shape": [
+    1,
+    4,
+    32,
+    32
+  ],
+  "integrated_shape": [
+    1,
+    4,
+    32,
+    32
+  ],
+  "loss": 4.301777362823486,
+  "flow": 2.999269962310791,
+  "terminal_swd": 0.037306271493434906,
+  "t_mean": 0.10011166334152222,
+  "bridge_noise_schedule_exact_metric": 1.0,
+  "semantic_attn_shape": [
+    1,
+    256,
+    256
+  ],
+  "semantic_topology_attn_shape": [
+    1,
+    256,
+    256
+  ],
+  "semantic_topology_attn_entropy_runtime": 2.966968536376953,
+  "semantic_topology_attn_entropy_metric": 2.966968536376953,
+  "semantic_topology_attn_active_metric": 1.0,
+  "semantic_attn_mean_metric": 0.00390625,
+  "semantic_k_abs_metric": 0.07086515426635742,
+  "structured_style_tokenizer_debug": {
+    "attn_entropy": 2.9411253929138184,
+    "attn_max": 0.4186210334300995,
+    "num_clusters": 32.0,
+    "pe_temp": 1.0,
+    "query_dim": 64.0,
+    "query_num_blocks": 4.0,
+    "global_gate_scale": 1.0
+  },
+  "body_block_type": "SemanticCrossAttn",
+  "first_grad_name": "structured_style_tokenizer.universal_keys",
+  "first_grad_abs_mean": 0.09891696274280548
+}

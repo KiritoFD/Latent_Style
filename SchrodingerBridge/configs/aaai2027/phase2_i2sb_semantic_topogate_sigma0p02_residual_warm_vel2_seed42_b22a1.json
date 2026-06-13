@@ -1,0 +1,16 @@
+{
+  "_base": "./phase2_i2sb_pattn_topo_anchor_sigma0p02_residual_warm_vel2_seed42_b22a1.json",
+  "model": {
+    "semantic_self_topology_gate": true,
+    "semantic_self_topology_blend": 1.0
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_i2sb_semantic_topogate_sigma0p02_residual_warm_vel2_seed42_b22a1"
+  },
+  "ablation": {
+    "name": "phase2_i2sb_semantic_topogate_sigma0p02_residual_warm_vel2_b22a1",
+    "axis": "phase2_i2sb_semantic_topology_gate",
+    "notes": "Diagnostic-only exact-Brownian retry: residual endpoint + crossattn_texture proximal rescue + semantic topology gate, with all prior structure terms otherwise unchanged.",
+    "stage": "phase2_i2sb_diagnostic"
+  }
+}
