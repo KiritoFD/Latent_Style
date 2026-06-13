@@ -74,8 +74,12 @@ Date: 2026-06-13
 - reason:
   - it is the cleanest attribution test after the first structure-side breakout
   - and it costs much less architectural disturbance than changing the attention family
-- if it also closes without a formal shelf break, the next same-lane successor is:
-  - [2026-06-13-phase2-vel-tok32-safe-pnp-selfinject.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-pnp-selfinject.md)
+- guide-aligned close rule:
+  - if this line is still style-limited when the close gate is reached, stop it instead of auto-launching another structure-family packet
+  - the next preferred read should be:
+    - [2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual-tfloor005.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual-tfloor005.md)
+    - then the existing eval-only `solver_pc` check
+  - [2026-06-13-phase2-vel-tok32-safe-pnp-selfinject.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-pnp-selfinject.md) remains queued, but no longer as the automatic next hop behind `appalign`
 
 ## Launch Read
 

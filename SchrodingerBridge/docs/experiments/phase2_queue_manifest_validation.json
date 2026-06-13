@@ -69,7 +69,7 @@
         "watch_max_allpairs_lpips_for_recovery": "0.381724",
         "watch_min_transfer_style_recovery": "0.673934",
         "watch_max_transfer_lpips_for_recovery": "0.384340",
-        "watch_handoff_mode": "launch_same_lane_successor"
+        "watch_handoff_mode": "stop_only"
       }
     },
     {
