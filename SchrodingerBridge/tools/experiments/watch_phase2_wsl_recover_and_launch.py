@@ -207,6 +207,8 @@ def main() -> int:
             args.max_transfer_lpips_for_recovery = float(str(resolved.get("watch_max_transfer_lpips_for_recovery", "")).strip())
         if str(args.handoff_mode).strip() == "stop_only" and str(resolved.get("watch_handoff_mode", "")).strip():
             args.handoff_mode = str(resolved.get("watch_handoff_mode", "")).strip()
+        if str(args.next_lane_class).strip() == "structure_reentry" and str(resolved.get("watch_next_lane_class", "")).strip():
+            args.next_lane_class = str(resolved.get("watch_next_lane_class", "")).strip()
     if not config_path:
         raise ValueError("config is required unless it can be resolved from --manifest-csv")
     if not run_name:

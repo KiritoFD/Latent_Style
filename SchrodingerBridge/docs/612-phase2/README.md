@@ -243,7 +243,7 @@
     - transfer style is still below the formal shelf, and it slipped relative to `epoch_0001`, so this is still a structure-clean but style-limited line rather than a full recovery
     - remote eval has been packet-synced with checkpoint-level `runtime_observability`, so later settled checkpoints from this lane should start preserving tokenizer / appearance reads in `summary.json`
     - the guide-for-running-codex read is consistent with this: the active bottleneck is style lift under preserved structure, not another tokenizer-capacity rollback
-    - therefore this packet should now close as `stop_only` once its gate is met, so the next decision can pivot to the guide-aligned `I2SB σ=0.02 / PC` branch instead of auto-rolling into another structure-family packet
+    - therefore this packet should now close by auto-pivoting into the guide-aligned `I2SB σ=0.02 / PC` branch instead of auto-rolling into another structure-family packet
 
 ## Guide-Adopted Read
 
@@ -258,7 +258,7 @@
 - consequence:
   - do not regress to weaker tokenizer sketches while this line is still producing in-band Pareto points
   - prioritize style-lift mechanisms that preserve the recovered structure band
-  - once `appalign` is still style-limited at its close gate, do not auto-launch `pnp`; stop and hand the next choice to:
+  - once `appalign` is still style-limited at its close gate, do not auto-launch `pnp`; auto-pivot the next choice to:
     - `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005`
     - then the existing eval-only `solver_pc` check
 

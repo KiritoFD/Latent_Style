@@ -100,7 +100,11 @@ def main() -> int:
     if not min_settled_epoch or not min_allpairs_style_recovery or not min_transfer_style_recovery:
         raise ValueError(f"lane {lane_class!r} is missing required watch fields in the manifest")
 
-    next_lane_class = str(args.next_lane_class).strip() or lane_class
+    next_lane_class = (
+        str(args.next_lane_class).strip()
+        or str(resolved.get("watch_next_lane_class", "")).strip()
+        or lane_class
+    )
     log_prefix = Path(args.log_prefix).expanduser()
     if not log_prefix.is_absolute():
         log_prefix = (WORKSPACE / log_prefix).resolve()

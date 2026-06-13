@@ -118,6 +118,7 @@ def _validate_row(row: dict[str, str]) -> dict[str, object]:
             "watch_min_transfer_style_recovery",
             "watch_max_transfer_lpips_for_recovery",
             "watch_handoff_mode",
+            "watch_next_lane_class",
         ):
             if not _present(key):
                 issues.append(f"formal_lane row missing {key}")
@@ -142,8 +143,10 @@ def _validate_row(row: dict[str, str]) -> dict[str, object]:
                 if not _present(key):
                     issues.append(f"preferred structure_reentry row missing {key}")
         if handoff:
-            if handoff not in {"launch_same_lane_successor", "stop_only"}:
+            if handoff not in {"launch_same_lane_successor", "launch_structure_reentry", "stop_only"}:
                 issues.append(f"invalid structure_reentry watch_handoff_mode={handoff}")
+            if handoff == "launch_structure_reentry" and not _present("watch_next_lane_class"):
+                issues.append("structure_reentry launch_structure_reentry row missing watch_next_lane_class")
     elif lane_class == "i2sb_diagnostic_only":
         if formal_eligible != "no":
             issues.append("i2sb_diagnostic_only row must have formal_eligible=no")
@@ -172,6 +175,7 @@ def _validate_row(row: dict[str, str]) -> dict[str, object]:
                 "watch_min_transfer_style_recovery",
                 "watch_max_transfer_lpips_for_recovery",
                 "watch_handoff_mode",
+                "watch_next_lane_class",
             )
         },
     }
