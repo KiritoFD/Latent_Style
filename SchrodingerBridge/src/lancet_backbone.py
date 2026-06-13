@@ -67,6 +67,8 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         self.use_checkpointing = bool(cfg.use_checkpointing)
         self.latent_scale_factor = float(cfg.latent_scale_factor)
         self.residual_gain = float(cfg.residual_gain)
+        self.style_code_dim = style_dim
+        self.register_buffer("_style_code_anchor", torch.zeros(1, style_dim), persistent=False)
         self.lift_channels = int(cfg.lift_channels)
         self.body_channels = int(cfg.base_dim * 2)
         tokenizer_num_atoms = max(2, int(getattr(cfg, "tokenizer_num_atoms", 32)))

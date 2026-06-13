@@ -13,6 +13,28 @@ from utils.diffeomorphic import apply_texture_aligned_diffeomorphic_stroke
 
 
 class LatentAdaCUTRuntimeMixin:
+    def _style_code_anchor_tensor(self) -> torch.Tensor:
+        anchor = getattr(self, "_style_code_anchor", None)
+        if torch.is_tensor(anchor):
+            return anchor
+        tokenizer = getattr(self, "style_tokenizer", None)
+        weight = getattr(tokenizer, "weight", None)
+        if torch.is_tensor(weight):
+            return weight
+        raise RuntimeError("Style-code anchor tensor is unavailable.")
+
+    def _style_code_width(self) -> int:
+        width = getattr(self, "style_code_dim", None)
+        if width is not None:
+            return int(width)
+        tokenizer = getattr(self, "style_tokenizer", None)
+        embedding_dim = getattr(tokenizer, "embedding_dim", None)
+        if embedding_dim is not None:
+            return int(embedding_dim)
+        bridge_style_dim = getattr(self, "bridge_style_dim", None)
+        if bridge_style_dim is not None:
+            return int(bridge_style_dim)
+        raise RuntimeError("Style-code width is unavailable.")
 
     def _normalize_style_id_input(
         self,
@@ -217,7 +239,7 @@ class LatentAdaCUTRuntimeMixin:
         mixture = getattr(self.style_tokenizer, "mixture_weights", None)
         if not callable(mixture):
             return None
-        weights = mixture(style_id.to(device=self.style_tokenizer.weight.device))
+        weights = mixture(style_id.to(device=self._style_code_anchor_tensor().device))
         if weights is None:
             return None
         return weights.to(device=style_id.device)
@@ -453,13 +475,14 @@ class LatentAdaCUTRuntimeMixin:
                 device = t.device
                 dtype = t.dtype
             else:
-                token_device = self.style_tokenizer.weight.device
+                anchor = self._style_code_anchor_tensor()
+                token_device = anchor.device
                 style_id_t = self._normalize_style_id_input(style_id, device=token_device)
                 batch = int(style_id_t.shape[0])
                 device = token_device
-                dtype = self.style_tokenizer.weight.dtype
-            return torch.zeros(batch, int(self.style_tokenizer.embedding_dim), device=device, dtype=dtype)
-        token_device = self.style_tokenizer.weight.device
+                dtype = anchor.dtype
+            return torch.zeros(batch, self._style_code_width(), device=device, dtype=dtype)
+        token_device = self._style_code_anchor_tensor().device
         style_id = self._normalize_style_id_input(style_id, device=token_device)
         if t is not None and t.device != token_device:
             t = t.to(device=token_device)

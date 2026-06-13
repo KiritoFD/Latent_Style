@@ -15,6 +15,7 @@
 > - configurable cluster count
 > - global-spatial coupling through pooled spatial context
 > - explicit `style_tokenizer = null` contract on the pure-latent path
+> - runtime/device anchoring now comes from an explicit `style_code_anchor`, not by borrowing `NullStyleTokenizer.weight`
 > 因而阅读本文时，应把早期 2-layer Conv 版本视为理论出发点，而不是当前实现的最终形态。
 >
 > 2026-06-13 observability note:

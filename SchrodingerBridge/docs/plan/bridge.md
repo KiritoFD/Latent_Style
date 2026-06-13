@@ -19,6 +19,9 @@
 > 2026-06-13 tokenizer contract note:
 > `tokenizer_family = pure_latent_spatial` 现在也要求显式使用 `style_tokenizer = null/none`。
 > 旧的 `style_tokenizer = factorized` 兼容占位已被主入口拒绝，避免“名义上是真 tokenizer，配置上还挂着旧分词器”的歧义。
+> 运行时也已进一步解耦：
+> - `pure_latent_spatial` 的 style-code width/device 现在来自显式 `style_code_anchor`
+> - `NullStyleTokenizer` 只保留 consumer compatibility，不再承担实际运行时锚点语义
 >
 > 2026-06-13 phase-2 pivot note:
 > Distinct5 的 paper-facing formal lane 已不再默认押注 endpoint / I2SB。
