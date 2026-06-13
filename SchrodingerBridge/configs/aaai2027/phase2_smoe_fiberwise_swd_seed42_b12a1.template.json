@@ -1,0 +1,22 @@
+{
+  "_base": "./phase2_smoe_translator_k070_seed42_b12a1.json",
+  "_comment": "Template only. Replace the sentinel resume_checkpoint with the closed in-band SMoE best checkpoint before launch.",
+  "bridge": {
+    "semantic_supervision_family": "fiberwise_swd"
+  },
+  "training": {
+    "resume_checkpoint": "__SET_AFTER_SMOE_CLOSE__",
+    "resume_model_strict": true,
+    "resume_optimizer": false,
+    "resume_training_state": false,
+    "resume_prefer_local_checkpoint": false
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_smoe_fiberwise_swd_seed42_b12a1"
+  },
+  "ablation": {
+    "name": "phase2_smoe_fiberwise_swd_b12a1",
+    "axis": "phase2_fiber_bundle_loss_only",
+    "notes": "Round 3 controlled-variable loss test: keep the closed SMoE tokenizer parent and replace only terminal semantic supervision with fiberwise_swd using tokenizer routing attention as the fixed mask source."
+  }
+}
