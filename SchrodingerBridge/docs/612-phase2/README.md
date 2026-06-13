@@ -137,6 +137,10 @@
 - 仍坚持:
   - `velocity`，不回到 endpoint。
   - structure control 必须是 training-side 工具，不是 style 放大器。
+- 允许的低阶校正:
+  - tokenizer-guided output appearance alignment
+  - but only as a conservative same-family probe after a clean in-band structure point
+  - not as a replacement for tokenizer or solver quality
 - 允许的结构工具:
   - latent lowpass / edge-aware content correction
   - adaptive skip / PnP self-inject
@@ -145,6 +149,8 @@
 - queued reference:
   - [phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b20a1.json)
   - [2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085.md)
+  - [phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b16a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b16a1.json)
+  - [2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085-appalign.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085-appalign.md)
   - [phase2_vel_tok32_safe_pnp_selfinject_seed42_b16a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_pnp_selfinject_seed42_b16a1.json)
   - [2026-06-13-phase2-vel-tok32-safe-pnp-selfinject.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-pnp-selfinject.md)
   - [phase2_vel_tok32_semantic_topogate_k085_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_semantic_topogate_k085_seed42_b20a1.json)
@@ -211,8 +217,17 @@
   - first `b20a1` launch hit the runtime guard at `11093 MiB`
   - the preferred relaunch packet is now `b16a1`
   - current live read:
-    - `training_before_first_settled_eval`
-    - roughly `9001 / 12288 MiB`
+    - `epoch_0002` is now the latest settled point
+    - transfer `0.671915 / 0.361009`
+    - all-pairs `0.700605 / 0.357866`
+  - interpretation:
+    - `epoch_0001` was the first real in-band structure-side recovery candidate after the safe-family plateau close
+    - but the latest settled point has slipped back below the formal safe shelf while staying very clean on LPIPS
+    - so the lane remains scientifically alive, but it is not yet a promoted shelf break
+  - next low-intrusion follow-on if qualitative review still points to tone mismatch:
+    - `vel_tok32_safe_semantic_topogate_k085_appalign`
+    - same parent and same topology-gate family
+    - only adds tokenizer-guided latent appearance alignment before trying a different attention family
 - 所有 round2 endpoint / I2SB 文档都应按以下标准重读:
   - `0.40-0.70` = archival only
   - `0.70+` = complete failure

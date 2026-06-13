@@ -1,0 +1,20 @@
+{
+  "_base": "./phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1.json",
+  "model": {
+    "output_appearance_alignment_mode": "tokenizer_latent_affine",
+    "output_appearance_hidden_dim": 96,
+    "output_appearance_log_scale_span": 0.1823215567939546,
+    "output_appearance_shift_span": 0.2,
+    "output_appearance_blend": 0.75,
+    "output_appearance_use_spatial_stats": true,
+    "output_appearance_use_gate_mask_stats": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b16a1"
+  },
+  "ablation": {
+    "name": "phase2_vel_tok32_safe_semantic_topogate_k085_appalign_b16a1",
+    "axis": "phase2_velocity_structure_reentry",
+    "notes": "Low-intrusion follow-on behind the active safe semantic-topology-gate packet: keep the same safe parent, same topology-gated structure family, and same b16a1 memory fit, then add a conservative tokenizer-guided latent affine appearance head to test whether remaining style shortfall is low-order brightness/contrast mismatch rather than missing structure."
+  }
+}

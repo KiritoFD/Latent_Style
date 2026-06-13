@@ -13,6 +13,11 @@
 > - expanded runtime observability including tokenizer effective-count / gate / mask / spatial-energy reads
 > Therefore any remaining tokenizer diagnosis in this file should be read as a hypothesis about board behavior, not as a statement that the runtime is still on the old `2-layer conv + 16 clusters + no PE` path.
 
+> 2026-06-13 appearance-side hypothesis:
+> the first safe semantic-topology-gate recovery point has now shown a cleaner LPIPS band and an all-pairs shelf break without yet clearing the transfer shelf.
+> That suggests at least part of the remaining gap may be low-order appearance mismatch rather than missing structure routing alone.
+> A conservative tokenizer-guided output appearance head is now available in code so this hypothesis can be tested directly in phase2 without reverting to endpoint-style style amplification.
+
 ---
 
 ## 〇、远程机器环境 (100.115.18.62)

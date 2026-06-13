@@ -41,10 +41,10 @@ Date: 2026-06-13
 - Structure-side preferred packet: `vel_tok32_safe_semantic_topogate_k085`
 - Structure config: [structure config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1.json)
 - Structure note: [structure note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085.md)
-- Structure read: b16a1 relaunch is now active; remote first health read shows training_before_first_settled_eval at roughly 9001 / 12288 MiB
-- Structure live state: `training_before_first_settled_eval`
-- Structure GPU: 9183 / 12288 MiB
-- Structure latest settled epoch: `n/a`
+- Structure read: epoch_0002 settled at transfer 0.671915/0.361009 and all-pairs 0.700605/0.357866; the lane is active but has not yet recovered the formal safe shelf
+- Structure live state: `training_after_settled_eval`
+- Structure GPU: 9291 / 12288 MiB
+- Structure latest settled epoch: `epoch_0002`
 - I2SB diagnostic preferred packet: `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual`
 - I2SB config: [I2SB config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)
 - I2SB note: [I2SB note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual.md)
