@@ -254,7 +254,7 @@ def main() -> int:
             "live_state": status.get("live_state"),
             "process_count": len(status.get("processes") or []),
         }
-        print(json.dumps(poll_payload, indent=2, ensure_ascii=False))
+        print(json.dumps(poll_payload, indent=2, ensure_ascii=False), flush=True)
         if time.monotonic() >= deadline:
             raise TimeoutError(
                 f"waited {int(args.max_wait_seconds)}s without reaching settled epoch >= {int(args.min_settled_epoch)}"
@@ -280,7 +280,7 @@ def main() -> int:
         "latest_settled_epoch": status.get("latest_settled_epoch"),
         "pending_checkpoint_epochs": status.get("pending_checkpoint_epochs"),
     }
-    print(json.dumps(payload, indent=2, ensure_ascii=False))
+    print(json.dumps(payload, indent=2, ensure_ascii=False), flush=True)
     if not bool(args.execute):
         return 0
     if not should_handoff:
