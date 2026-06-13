@@ -43,7 +43,7 @@ Date: 2026-06-13
 - Structure note: [structure note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085.md)
 - Structure read: b16a1 relaunch is now active; remote first health read shows training_before_first_settled_eval at roughly 9001 / 12288 MiB
 - Structure live state: `training_before_first_settled_eval`
-- Structure GPU: 8875 / 12288 MiB
+- Structure GPU: 9183 / 12288 MiB
 - Structure latest settled epoch: `n/a`
 - I2SB diagnostic preferred packet: `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual`
 - I2SB config: [I2SB config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)

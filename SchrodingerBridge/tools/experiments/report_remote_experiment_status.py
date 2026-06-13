@@ -234,6 +234,29 @@ def _epoch_int(name: str) -> int:
     return int(digits) if digits else -1
 
 
+def _process_matches_run(
+    process_row: str,
+    *,
+    run_name: str,
+    remote_run_dir: str,
+    remote_train_log: str,
+) -> bool:
+    text = str(process_row or "").strip()
+    if not text:
+        return False
+    needles = [
+        str(run_name).strip(),
+        str(remote_run_dir).strip(),
+        str(remote_train_log).strip(),
+        f"/{str(run_name).strip()}.json",
+        f"\\{str(run_name).strip()}.json",
+    ]
+    for needle in needles:
+        if needle and needle in text:
+            return True
+    return False
+
+
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         try:
@@ -358,7 +381,17 @@ def main() -> int:
     )
     tail_lines = [] if _looks_like_wsl_hcs_failure(tail.stdout) else tail.stdout.splitlines()
 
-    process_rows = [] if wsl_hcs_failure else [line.strip() for line in py.stdout.splitlines() if line.strip()]
+    process_rows_all = [] if wsl_hcs_failure else [line.strip() for line in py.stdout.splitlines() if line.strip()]
+    process_rows = [
+        row
+        for row in process_rows_all
+        if _process_matches_run(
+            row,
+            run_name=run_name,
+            remote_run_dir=remote_run_dir,
+            remote_train_log=remote_train_log,
+        )
+    ]
     report = {
         "run_name": run_name,
         "remote_run_dir": remote_run_dir,
