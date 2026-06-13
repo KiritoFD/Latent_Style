@@ -212,6 +212,11 @@ def _epoch_token(name: str) -> str:
     return stem if stem.startswith("epoch_") else text
 
 
+def _epoch_int(name: str) -> int:
+    digits = "".join(ch for ch in str(name or "") if ch.isdigit())
+    return int(digits) if digits else -1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="One-shot status report for a single remote experiment lane.")
     parser.add_argument("--host", default=DEFAULT_HOST)
@@ -287,7 +292,16 @@ def main() -> int:
             latest_summary = epoch_summaries[-1][1]
     latest_settled_epoch = settled_epochs[-1] if settled_epochs else ""
     checkpoint_epochs = [_epoch_token(name) for name in ckpts]
-    pending_checkpoint_epochs = [epoch for epoch in checkpoint_epochs if epoch and epoch not in set(settled_epochs)]
+    pending_checkpoint_epochs_all = [epoch for epoch in checkpoint_epochs if epoch and epoch not in set(settled_epochs)]
+    latest_settled_idx = _epoch_int(latest_settled_epoch) if latest_settled_epoch else -1
+    pending_checkpoint_epochs: list[str] = []
+    stale_pending_checkpoint_epochs: list[str] = []
+    for epoch in pending_checkpoint_epochs_all:
+        epoch_idx = _epoch_int(epoch)
+        if latest_settled_idx >= 0 and epoch_idx >= 0 and epoch_idx <= latest_settled_idx:
+            stale_pending_checkpoint_epochs.append(epoch)
+        else:
+            pending_checkpoint_epochs.append(epoch)
     live_state = "idle"
     if pending_checkpoint_epochs:
         live_state = "eval_in_progress_or_pending"
@@ -328,6 +342,7 @@ def main() -> int:
         "latest_checkpoint_epoch": latest_checkpoint_epoch,
         "latest_settled_epoch": latest_settled_epoch,
         "pending_checkpoint_epochs": pending_checkpoint_epochs,
+        "stale_pending_checkpoint_epochs": stale_pending_checkpoint_epochs,
         "checkpoint_files": ckpts[-12:],
         "full_eval_entries": full_eval_entries[-20:],
         "curve_summary": curve_summary,

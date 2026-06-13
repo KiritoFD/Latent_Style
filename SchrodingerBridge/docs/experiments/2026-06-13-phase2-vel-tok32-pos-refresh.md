@@ -54,7 +54,7 @@ Date: 2026-06-13
   - `resume_model_strict = false`
   - `resume_optimizer = false`
   - `resume_training_state = false`
-  - `resume_prefer_local_checkpoint = false`
+  - `resume_prefer_local_checkpoint = true`
 
 ## Hypothesis
 
@@ -188,7 +188,9 @@ Date: 2026-06-13
   - `tail_flat = false`
   - `converged = false`
 - unresolved backlog:
-  - `epoch_0001` still appears as pending because the earlier guard bug interrupted that eval mid-run
+  - `epoch_0001` is now treated as `stale_pending`
+    - the earlier guard bug interrupted that eval mid-run
+    - it no longer masks the live lane as an active eval-pending run in the status reporter
   - the first valid authority point is therefore `epoch_0002`, not `epoch_0001`
 
 ## Read
