@@ -213,6 +213,7 @@ Date: 2026-06-13
       - still in-band
       - not better than the old safe shelf
       - not better than `tok32_pos_refresh epoch_0004`
+      - in fact, it is jointly dominated by both references on style and LPIPS
       - but also not bad enough to give up the slot after one point
       - the packet is therefore switched into a short-screen audit:
         - if no shelf break appears by `epoch_0003`, close early
