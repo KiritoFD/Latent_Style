@@ -166,4 +166,10 @@ Date: 2026-06-13
       - the launcher fix is now in place
       - the same run resumed from local `epoch_0001`
       - the post-fix 30s health read is `10151 MiB`
-      - current live training is back in `epoch 2`
+      - first settled authority point is now:
+        - `epoch_0002`
+        - transfer `0.673024 / 0.390256`
+        - all-pairs `0.700342 / 0.387609`
+      - interpretation:
+        - still in-band, so the lane stays alive
+        - but it is not yet better than the previous safe parent shelf `0.701666 / 0.381724`
