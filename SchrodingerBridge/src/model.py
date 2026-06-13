@@ -829,6 +829,14 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                 return k_matrix
         return None
 
+    @property
+    def last_semantic_topology_attn(self) -> torch.Tensor | None:
+        for block in reversed(self.body_blocks):
+            topo_attn = getattr(block, "last_topology_attn", None)
+            if topo_attn is not None:
+                return topo_attn
+        return None
+
     @torch.no_grad()
     def endpoint_map(
         self,

@@ -393,7 +393,7 @@ def main() -> None:
         trainer.step_scheduler()
         trainer.log_epoch(epoch, metrics)
         logger.info(
-            "Epoch %d/%d | loss=%.4f flow=%.4f kin=%.4f ot=%.4f tswd=%.4f cla=%.4f cea=%.4f sem_attn=%.3f sem_k=%.3f plan_ent=%.3f tok_ent=%.3f tok_max=%.3f sigma=%.3f bex=%.0f idr=%.2f t=%.3f |v|=%.3f lr=%.2e data=%.1fs comp=%.1fs peak=%.2f/%.2fGB",
+            "Epoch %d/%d | loss=%.4f flow=%.4f kin=%.4f ot=%.4f tswd=%.4f cla=%.4f cea=%.4f sem_attn=%.3f sem_k=%.3f topo_ent=%.3f topo_on=%.0f plan_ent=%.3f tok_ent=%.3f tok_max=%.3f sigma=%.3f bex=%.0f idr=%.2f t=%.3f |v|=%.3f lr=%.2e data=%.1fs comp=%.1fs peak=%.2f/%.2fGB",
             epoch,
             trainer.num_epochs,
             metrics.get("loss", 0.0),
@@ -405,6 +405,8 @@ def main() -> None:
             metrics.get("content_edge_anchor", 0.0),
             metrics.get("semantic_attn_mean", 0.0),
             metrics.get("semantic_k_abs", 0.0),
+            metrics.get("semantic_topology_attn_entropy", 0.0),
+            metrics.get("semantic_topology_attn_active", 0.0),
             metrics.get("plan_entropy", 0.0),
             metrics.get("structured_style_tokenizer_attn_entropy", 0.0),
             metrics.get("structured_style_tokenizer_attn_max", 0.0),
