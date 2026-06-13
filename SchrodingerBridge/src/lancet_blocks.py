@@ -36,6 +36,21 @@ def _gumbel_hard_attention(logits: torch.Tensor, *, tau: float = 1.0) -> torch.T
     return attn.view_as(logits).to(dtype=logits.dtype)
 
 
+def _route_attention_logits(
+    logits: torch.Tensor,
+    *,
+    routing_mode: str,
+    sinkhorn_iters: int = 3,
+    gumbel_tau: float = 1.0,
+) -> torch.Tensor:
+    mode = str(routing_mode).strip().lower()
+    if mode == "sinkhorn":
+        return _sinkhorn_attention(logits, iters=sinkhorn_iters)
+    if mode == "gumbel_hard":
+        return _gumbel_hard_attention(logits, tau=gumbel_tau)
+    return F.softmax(logits, dim=-1)
+
+
 class CrossAttnAdaGN(nn.Module):
     """
     Cross-attention style modulation with learnable style tokens.
@@ -365,6 +380,8 @@ class SemanticCrossAttn(nn.Module):
         routing_mode: str = "softmax",
         sinkhorn_iters: int = 3,
         gumbel_tau: float = 1.0,
+        self_topology_gate: bool = False,
+        self_topology_blend: float = 1.0,
     ) -> None:
         super().__init__()
         self.paint_only = bool(paint_only)
@@ -373,6 +390,8 @@ class SemanticCrossAttn(nn.Module):
             self.routing_mode = "softmax"
         self.sinkhorn_iters = max(1, int(sinkhorn_iters))
         self.gumbel_tau = max(1e-3, float(gumbel_tau))
+        self.self_topology_gate = bool(self_topology_gate)
+        self.self_topology_blend = max(0.0, min(1.0, float(self_topology_blend)))
         self.norm_x = nn.GroupNorm(_resolve_group_count(dim, num_groups), dim)
         self.norm_s = nn.GroupNorm(_resolve_group_count(dim, num_groups), dim)
         self.to_q = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
@@ -382,6 +401,7 @@ class SemanticCrossAttn(nn.Module):
         self.gamma = nn.Parameter(torch.zeros(1, dim, 1, 1))
         self.last_attn: torch.Tensor | None = None
         self.last_k: torch.Tensor | None = None
+        self.last_topology_attn: torch.Tensor | None = None
         self.gate_conv = nn.Sequential(
             nn.Conv2d(dim, dim, kernel_size=3, padding=1),
             nn.SiLU(),
@@ -418,20 +438,28 @@ class SemanticCrossAttn(nn.Module):
         q_dehydrated = F.instance_norm(nx, eps=1e-3)
         k_dehydrated = F.instance_norm(ns, eps=1e-3)
         q = self.to_q(q_dehydrated).view(b, c, -1).transpose(1, 2)
-        k = self.to_k(k_dehydrated).view(b, c, -1)
+        k_style = self.to_k(k_dehydrated).view(b, c, -1)
         v = self.to_v(ns).view(b, c, -1).transpose(1, 2)
 
         temp = torch.exp(self.log_temp).clamp(1e-4, 10.0)
         scale = (c ** -0.5) / temp
-        attn = torch.bmm(q, k) * scale
-        if self.routing_mode == "sinkhorn":
-            attn = _sinkhorn_attention(attn, iters=self.sinkhorn_iters)
-        elif self.routing_mode == "gumbel_hard":
-            attn = _gumbel_hard_attention(attn, tau=self.gumbel_tau)
-        else:
-            attn = F.softmax(attn, dim=-1)
+        attn_logits = torch.bmm(q, k_style) * scale
+        self.last_topology_attn = None
+        k_debug = k_style
+        if self.self_topology_gate and self.self_topology_blend > 0.0:
+            k_content = self.to_k(q_dehydrated).view(b, c, -1)
+            topology_logits = torch.bmm(q, k_content) * scale
+            self.last_topology_attn = F.softmax(topology_logits, dim=-1)
+            attn_logits = torch.lerp(attn_logits, topology_logits, self.self_topology_blend)
+            k_debug = torch.lerp(k_style, k_content, self.self_topology_blend)
+        attn = _route_attention_logits(
+            attn_logits,
+            routing_mode=self.routing_mode,
+            sinkhorn_iters=self.sinkhorn_iters,
+            gumbel_tau=self.gumbel_tau,
+        )
         self.last_attn = attn
-        self.last_k = F.normalize(k, p=2, dim=1)
+        self.last_k = F.normalize(k_debug, p=2, dim=1)
         painted = torch.bmm(attn, v).transpose(1, 2).view(b, c, h_dim, w_dim)
 
         if self.paint_only:
