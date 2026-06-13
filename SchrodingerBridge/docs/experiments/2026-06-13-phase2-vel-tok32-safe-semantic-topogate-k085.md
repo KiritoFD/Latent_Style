@@ -64,3 +64,10 @@ Date: 2026-06-13
 
 - this packet should be the first structure-side successor if `safe_rescan_r2` fails to produce a promotable shelf break
 - it supersedes the older `vel_tok32_semantic_topogate_k085` packet as the preferred structure-reentry packet
+## Parent Refresh
+
+- Source formal packet: `vel_tok32_safe_rescan_r2`
+- Selection policy: `best_clean_allpairs`
+- Selected parent epoch: `epoch_0004`
+- Selected parent checkpoint: `exp/aaai2027_phase2_vel_tok32_safe_rescan_r2_seed42_b20a1/epoch_0004.pt`
+- Selected parent metrics: transfer `0.672377 / 0.369065`, all-pairs `0.700490 / 0.367229`
