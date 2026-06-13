@@ -128,3 +128,19 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - First GPU read: `6969 MiB / 12288 MiB`, `94%` utilization.
 - The run is intentionally kept at inherited `b12a1` even though memory is below the preferred formal band, because changing batch would contaminate the tokenizer-only comparison.
 - Smoke fix before launch: model/trainer structured-tokenizer routing now treats `smoe_translator` like `pure_latent_spatial` for legacy spatial-prior bypass and proximal structured-token selection.
+
+## SMoE Epoch 1 Read
+
+- Full eval completed at `2026-06-14 05:10:55 Asia/Shanghai`; training resumed into epoch 2.
+- Training time: `1450.6s`; full-eval wall time: `242.7s` from the curve, `265.1s` from trainer log.
+- Transfer: `0.672379 / 0.333173`; all-pairs: `0.703540 / 0.329736`; identity: `0.828184 / 0.315987`.
+- Matched delta against `k070 epoch_0003`: transfer `+0.000558` style and `+0.018555` LPIPS; all-pairs `+0.000306` style and `+0.017186` LPIPS.
+- Decision: continue. This is early negative-LPIPS evidence, not convergence; the best point is the newest checkpoint and cannot close the family.
+
+## SMoE Runtime Guard Incident
+
+- At `2026-06-14 05:13:32 Asia/Shanghai`, the first SMoE process was stopped by the runtime guard with `used=11694MiB cap=11000MiB`.
+- Diagnosis: this was caused by an older off-plan `phase2_i2sb_topo_anchor_sigma0p25_seed42_b30a1` task that restarted concurrently and held about `8.8GiB`.
+- Action: stopped I2SB PID `2221`, verified GPU idle at `388MiB / 12288MiB`, then relaunched the same SMoE config.
+- Relaunch: `2026-06-14 05:21 Asia/Shanghai`, resumed from `epoch_0001.pt` at epoch 2/global step `1574`; health memory `6776MiB`.
+- Decision: treat the incident as an orchestration fault. Do not change SMoE mechanism or batch for this lane; keep convergence reads tied to the recovered single-lane run.
