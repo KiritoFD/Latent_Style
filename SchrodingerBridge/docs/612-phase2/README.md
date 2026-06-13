@@ -221,8 +221,8 @@
   - `vel_tok32_safe_semantic_topogate_k085_appalign`
   - this packet now inherits the promoted `vel_tok32_safe_semantic_topogate_k085 epoch_0003` parent
   - current live read:
-    - `training_before_first_settled_eval`
-    - launch packet has resumed cleanly from `topogate epoch_0003`
+    - first `b16a1` launch hit runtime guard at `11.449 GiB` before first settled eval
+    - preferred relaunch now uses `b12a1`
     - no settled authority point yet
   - interpretation:
     - `topogate` already proved that structure-side recovery is possible
