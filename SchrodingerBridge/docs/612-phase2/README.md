@@ -254,6 +254,24 @@
 - consequence:
   - do not regress to weaker tokenizer sketches while this line is still producing in-band Pareto points
   - prioritize style-lift mechanisms that preserve the recovered structure band
+
+## Guide Watcher
+
+- local periodic guide watcher:
+  - task name: `SB-Phase2-GuideWatch`
+  - register script:
+    - [register_phase2_guide_watch_task.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/register_phase2_guide_watch_task.py)
+  - refresh script:
+    - [refresh_phase2_guide_watch.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/refresh_phase2_guide_watch.py)
+  - launcher:
+    - [run_phase2_guide_watch.ps1](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_phase2_guide_watch.ps1)
+- live digest paths:
+  - `SchrodingerBridge/_codex_tmp/phase2_guide_watch/guide_watch_status.md`
+  - `SchrodingerBridge/_codex_tmp/phase2_guide_watch/guide_watch_state.json`
+  - `SchrodingerBridge/_codex_tmp/phase2_guide_watch/guide_watch_history.jsonl`
+- intent:
+  - keep the other model's `guide_for_running_codex.md` visible between sessions
+  - surface reusable guidance without polluting the tracked worktree
 - promoted predecessor just closed:
   - `vel_tok32_safe_semantic_topogate_k085`
   - best retained point:
