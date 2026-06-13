@@ -1,6 +1,6 @@
 {
   "manifest_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\phase2_queue_manifest.csv",
-  "row_count": 9,
+  "row_count": 10,
   "global_issues": [],
   "rows": [
     {
@@ -139,6 +139,29 @@
         "watch_min_transfer_style_recovery": "0.673934",
         "watch_max_transfer_lpips_for_recovery": "0.384340",
         "watch_handoff_mode": "stop_only"
+      }
+    },
+    {
+      "packet_id": "i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005",
+      "ok": true,
+      "issues": [],
+      "derived": {
+        "tokenizer_profile": "tok32_safe_rescan",
+        "transport_prediction_mode": "endpoint",
+        "solver_family": "solver_i2sb",
+        "bridge_sigma": 0.02,
+        "endpoint_parameterization": "residual",
+        "semantic_topology_gate": "true",
+        "proximal_mode": "crossattn_texture",
+        "resolved_exact_brownian": true
+      },
+      "watch_fields": {
+        "watch_min_settled_epoch": "",
+        "watch_min_allpairs_style_recovery": "",
+        "watch_max_allpairs_lpips_for_recovery": "",
+        "watch_min_transfer_style_recovery": "",
+        "watch_max_transfer_lpips_for_recovery": "",
+        "watch_handoff_mode": ""
       }
     },
     {

@@ -17,6 +17,10 @@
 > the first safe semantic-topology-gate recovery point has now shown a cleaner LPIPS band and an all-pairs shelf break without yet clearing the transfer shelf.
 > That suggests at least part of the remaining gap may be low-order appearance mismatch rather than missing structure routing alone.
 > A conservative tokenizer-guided output appearance head is now available in code so this hypothesis can be tested directly in phase2 without reverting to endpoint-style style amplification.
+>
+> 2026-06-13 exact-I2SB follow-on note:
+> the next exact-I2SB diagnostic should not add another heuristic noise window.
+> the cleaner follow-on is to keep the exact posterior coefficients unchanged and only floor the predictor time on the earliest step, so the `x_1` estimator is no longer queried at exact `t=0` even though training samples `t` inside `(eps, 1-eps)`.
 
 ---
 

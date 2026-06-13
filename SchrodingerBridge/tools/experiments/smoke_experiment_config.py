@@ -184,6 +184,7 @@ def main() -> int:
         semantic_attn = getattr(model, "last_semantic_attn", None)
         semantic_topology_attn = getattr(model, "last_semantic_topology_attn", None)
         tokenizer_debug = _numeric_debug_dict(getattr(getattr(model, "structured_style_tokenizer", None), "last_debug", {}))
+        i2sb_debug = _numeric_debug_dict(getattr(model, "last_i2sb_transport_debug", {}))
         result = {
             "status": "ok",
             "config": str(config_path),
@@ -210,6 +211,7 @@ def main() -> int:
             "semantic_attn_mean_metric": _safe_float(loss_dict.get("semantic_attn_mean", 0.0)),
             "semantic_k_abs_metric": _safe_float(loss_dict.get("semantic_k_abs", 0.0)),
             "structured_style_tokenizer_debug": tokenizer_debug,
+            "i2sb_transport_debug": i2sb_debug,
             "body_block_type": type(first_block).__name__ if first_block is not None else "",
             "first_grad_name": grad_name,
             "first_grad_abs_mean": grad_abs,

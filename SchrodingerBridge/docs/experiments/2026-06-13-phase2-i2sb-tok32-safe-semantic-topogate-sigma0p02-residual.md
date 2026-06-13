@@ -4,7 +4,7 @@ Date: 2026-06-13
 
 ## Role
 
-- preferred current exact-Brownian diagnostic successor
+- no-floor control for the current exact-Brownian diagnostic family
 - same residual `sigma=0.02` theory check as the earlier `tok32_refresh` packet
 - upgraded to the current `tok32_safe_rescan` tokenizer profile and now refreshed to the first promoted structure-side parent
 
@@ -55,7 +55,9 @@ Date: 2026-06-13
 
 ## Queue Position
 
-- this packet supersedes the older `i2sb_tok32_semantic_topogate_sigma0p02_residual` packet as the preferred exact-I2SB theory check
+- this packet still supersedes the older `i2sb_tok32_semantic_topogate_sigma0p02_residual` packet on tokenizer cleanliness
+- but it is now the immediate no-floor control behind:
+  - [2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual-tfloor005.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual-tfloor005.md)
 - it remains diagnostic-only and must not preempt the formal velocity lane
 
 ## Parent Refresh
