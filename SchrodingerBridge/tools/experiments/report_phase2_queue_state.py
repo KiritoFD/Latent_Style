@@ -143,6 +143,73 @@ def _refresh_formal_current_read(resolved_formal: dict[str, object], remote_form
     return out
 
 
+def _refresh_lane_current_read_against_formal(
+    lane_payload: dict[str, object],
+    remote_lane_status: dict[str, object],
+    *,
+    formal_reference: dict[str, object],
+) -> dict[str, object]:
+    out = dict(lane_payload)
+    if not isinstance(remote_lane_status, dict):
+        return out
+    curve = remote_lane_status.get("curve_summary")
+    if not isinstance(curve, dict):
+        return out
+    latest = curve.get("latest")
+    if not isinstance(latest, dict):
+        return out
+    transfer_style = _float_or_none(latest.get("transfer_clip_style"))
+    transfer_lpips = _float_or_none(latest.get("transfer_content_lpips"))
+    allpairs_style = _float_or_none(latest.get("all_pairs_clip_style"))
+    allpairs_lpips = _float_or_none(latest.get("all_pairs_content_lpips"))
+    epoch = str(latest.get("epoch", "")).strip() or "latest"
+    if None in {transfer_style, transfer_lpips, allpairs_style, allpairs_lpips}:
+        return out
+    transfer_style_target = _float_or_none(formal_reference.get("watch_min_transfer_style_recovery"))
+    transfer_lpips_target = _float_or_none(formal_reference.get("watch_max_transfer_lpips_for_recovery"))
+    allpairs_style_target = _float_or_none(formal_reference.get("watch_min_allpairs_style_recovery"))
+    allpairs_lpips_target = _float_or_none(formal_reference.get("watch_max_allpairs_lpips_for_recovery"))
+    transfer_recovered = (
+        transfer_style_target is not None
+        and transfer_lpips_target is not None
+        and float(transfer_style) >= float(transfer_style_target)
+        and float(transfer_lpips) <= float(transfer_lpips_target)
+    )
+    allpairs_recovered = (
+        allpairs_style_target is not None
+        and allpairs_lpips_target is not None
+        and float(allpairs_style) >= float(allpairs_style_target)
+        and float(allpairs_lpips) <= float(allpairs_lpips_target)
+    )
+    if allpairs_recovered and transfer_recovered:
+        out["current_read"] = (
+            f"{epoch} settled at transfer {transfer_style:.6f}/{transfer_lpips:.6f} and "
+            f"all-pairs {allpairs_style:.6f}/{allpairs_lpips:.6f}; "
+            "this lane already beats both formal recovery gates"
+        )
+        return out
+    if allpairs_recovered:
+        out["current_read"] = (
+            f"{epoch} settled at transfer {transfer_style:.6f}/{transfer_lpips:.6f} and "
+            f"all-pairs {allpairs_style:.6f}/{allpairs_lpips:.6f}; "
+            "all-pairs safe-shelf recovery is already achieved, while transfer style still trails the formal shelf"
+        )
+        return out
+    if transfer_recovered:
+        out["current_read"] = (
+            f"{epoch} settled at transfer {transfer_style:.6f}/{transfer_lpips:.6f} and "
+            f"all-pairs {allpairs_style:.6f}/{allpairs_lpips:.6f}; "
+            "transfer safe-shelf recovery is already achieved, while all-pairs still trails the formal shelf"
+        )
+        return out
+    out["current_read"] = (
+        f"{epoch} settled at transfer {transfer_style:.6f}/{transfer_lpips:.6f} and "
+        f"all-pairs {allpairs_style:.6f}/{allpairs_lpips:.6f}; "
+        "the lane is active but has not yet recovered the formal safe shelf"
+    )
+    return out
+
+
 def _query_remote_health(*, host: str, port: int, user: str, wsl_distro: str) -> dict:
     checker = SCRIPT_DIR / "check_remote_wsl_host_health.py"
     return _json_tool(
@@ -238,6 +305,17 @@ def main() -> int:
     local_watchers = _query_local_watchers()
 
     resolved_formal = _refresh_formal_current_read(resolved_formal, remote_formal_status)
+
+    resolved_structure = _refresh_lane_current_read_against_formal(
+        resolved_structure,
+        remote_structure_status,
+        formal_reference=resolved_formal,
+    )
+    resolved_i2sb = _refresh_lane_current_read_against_formal(
+        resolved_i2sb,
+        remote_i2sb_status,
+        formal_reference=resolved_formal,
+    )
 
     output = {
         "manifest_csv": str(manifest),

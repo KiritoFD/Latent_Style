@@ -66,6 +66,29 @@ Date: 2026-06-13
   - interpretation:
     - the relaunch is back inside the formal memory band
     - now the scientific question returns to board behavior rather than infrastructure failure
+- first settled authority point at `2026-06-13 18:08:07 +08:00`:
+  - `epoch_0001`
+  - transfer `0.672300 / 0.361248`
+  - all-pairs `0.701787 / 0.357462`
+  - identity `0.819733 / 0.342317`
+  - interpretation:
+    - this already beats the old all-pairs safe shelf `0.701666 / 0.381724`
+    - transfer style is still slightly below the transfer shelf `0.673934`, but LPIPS is much cleaner
+    - so the packet is already a real in-band structure-side recovery candidate on its first retained checkpoint
+- latest settled authority point:
+  - `epoch_0002`
+  - transfer `0.671915 / 0.361009`
+  - all-pairs `0.700605 / 0.357866`
+  - interpretation:
+    - LPIPS remains comfortably clean
+    - but the board has slipped back below the formal safe shelf on both transfer and all-pairs style
+    - therefore the lane stays open as an active structure-side candidate, not yet as a promoted recovery
+- queued low-intrusion follow-on:
+  - [phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b16a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b16a1.json)
+  - [2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085-appalign.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085-appalign.md)
+  - rationale:
+    - if qualitative review still shows brightness / contrast mismatch, the next clean question is low-order appearance alignment
+    - not another large structure-family jump yet
 
 ## Intended Read
 

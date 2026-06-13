@@ -7,6 +7,12 @@
 > The current runtime already has deeper residual query extraction, larger cluster support, 2D position encoding, and pooled global-spatial coupling.
 > The remaining question is no longer “has tokenizer depth/PE been implemented?” but “do the current safe-band runs show that the stronger tokenizer is actually creating useful routing on the board?”
 
+> 2026-06-13 appearance follow-on note:
+> the first safe topology-gate reentry point already recovered the old all-pairs shelf while still trailing transfer style slightly.
+> That weakens the "pure structure failure" reading and raises a narrower hypothesis:
+> some of the remaining board gap may be low-order appearance mismatch such as brightness / contrast / exposure statistics.
+> The current codebase now has a conservative tokenizer-guided output appearance head so this hypothesis can be tested as a same-family phase2 follow-on instead of jumping immediately to a new structure family.
+
 ## 当前状态速览
 
 ```
