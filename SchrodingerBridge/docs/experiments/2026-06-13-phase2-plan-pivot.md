@@ -159,3 +159,4 @@ Date: 2026-06-13
     - latest runtime read `9870 MiB`
     - state `training_before_first_settled_eval`
     - first settled eval still pending
+    - a local `watch_phase2_velocity_handoff.py --handoff-mode stop_only --wait --execute` watcher is now attached to enforce the same LPIPS / plateau close rule without auto-launching the old solver_pc follow-up

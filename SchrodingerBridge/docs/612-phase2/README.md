@@ -106,6 +106,8 @@
     - latest runtime read `9870 / 12288 MiB`
     - 状态 `training_before_first_settled_eval`
     - first settled eval still pending
+    - 本地 watcher 已挂起:
+      - `watch_phase2_velocity_handoff.py --run-name aaai2027_phase2_vel_tok32_pos_refresh_seed42_b20a1 --wait --execute --handoff-mode stop_only`
   - 当前正式候选仍然只允许来自 `velocity + true tokenizer + training-side structure control`
 
 ## 三刀手术
