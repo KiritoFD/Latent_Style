@@ -169,7 +169,7 @@ class SBTrainer:
             bridge_cfg=config.bridge,
             use_checkpointing=bool(train_cfg.get("use_gradient_checkpointing", False)),
         ).to(device)
-        self._disable_compat_only_style_tokenizer_grads()
+        self._disable_legacy_style_components_for_pure_latent()
         self._maybe_initialize_tokenizer_from_latents()
         if self.channels_last:
             self.model = _convert_4d_tensors_to_channels_last(self.model)
@@ -243,16 +243,16 @@ class SBTrainer:
         for state in self.optimizer.state.values():
             _move_tensor_tree(state, device)
 
-    def _legacy_style_tokenizer_is_compat_only(self) -> bool:
+    def _pure_latent_uses_structured_tokenizer(self) -> bool:
         return str(getattr(self.config.model, "tokenizer_family", "legacy_factorized")).strip().lower() == "pure_latent_spatial"
 
     def _style_branch_uses_legacy_spatial_priors(self) -> bool:
-        if self._legacy_style_tokenizer_is_compat_only():
+        if self._pure_latent_uses_structured_tokenizer():
             return False
         return not bool(getattr(self.config.model, "ablation_disable_spatial_prior", False))
 
-    def _disable_compat_only_style_tokenizer_grads(self) -> None:
-        if not self._legacy_style_tokenizer_is_compat_only():
+    def _disable_legacy_style_components_for_pure_latent(self) -> None:
+        if not self._pure_latent_uses_structured_tokenizer():
             return
         tokenizer = getattr(self.model, "style_tokenizer", None)
         if tokenizer is not None:
@@ -313,7 +313,7 @@ class SBTrainer:
         mode = str(getattr(model_cfg, "tokenizer_latent_init_mode", "none") or "none").strip().lower()
         if mode in {"", "none", "off", "false", "0"}:
             return
-        if self._legacy_style_tokenizer_is_compat_only():
+        if self._pure_latent_uses_structured_tokenizer():
             logger.info("Skipping legacy tokenizer latent init because tokenizer_family=pure_latent_spatial uses structured_style_tokenizer as the active path.")
             return
         tokenizer = getattr(self.model, "style_tokenizer", None)
@@ -734,8 +734,9 @@ class SBTrainer:
 
     def _reset_trainable_style_params(self, mode: str) -> None:
         with torch.no_grad():
-            if mode in {"tokenizer_only", "style_branch"} and hasattr(self.model, "style_tokenizer") and not self._legacy_style_tokenizer_is_compat_only():
-                self.model.style_tokenizer.reset_parameters()
+            tokenizer = getattr(self.model, "style_tokenizer", None)
+            if mode in {"tokenizer_only", "style_branch"} and tokenizer is not None and not self._pure_latent_uses_structured_tokenizer():
+                tokenizer.reset_parameters()
             legacy_spatial = getattr(self.model, "style_spatial_id_16", None)
             if mode == "style_branch" and isinstance(legacy_spatial, torch.nn.Parameter):
                 torch.nn.init.normal_(legacy_spatial, mean=0.0, std=0.02)
@@ -771,8 +772,9 @@ class SBTrainer:
 
         trainable_names: list[str] = []
         if mode in {"tokenizer_only", "style_branch"}:
-            if not self._legacy_style_tokenizer_is_compat_only():
-                for name, param in self.model.style_tokenizer.named_parameters():
+            tokenizer = getattr(self.model, "style_tokenizer", None)
+            if tokenizer is not None and not self._pure_latent_uses_structured_tokenizer():
+                for name, param in tokenizer.named_parameters():
                     param.requires_grad_(True)
                     trainable_names.append(f"style_tokenizer.{name}")
             structured = getattr(self.model, "structured_style_tokenizer", None)
@@ -912,8 +914,9 @@ class SBTrainer:
 
         trainable_names: list[str] = []
         if mode in {"tokenizer_only", "style_branch"}:
-            if not self._legacy_style_tokenizer_is_compat_only():
-                for name, param in self.model.style_tokenizer.named_parameters():
+            tokenizer = getattr(self.model, "style_tokenizer", None)
+            if tokenizer is not None and not self._pure_latent_uses_structured_tokenizer():
+                for name, param in tokenizer.named_parameters():
                     param.requires_grad_(True)
                     trainable_names.append(f"style_tokenizer.{name}")
             structured = getattr(self.model, "structured_style_tokenizer", None)
