@@ -30,6 +30,38 @@ def _looks_like_wsl_hcs_failure(text: str) -> bool:
     return "HCS_E_SERVICE_NOT_AVAILABLE" in normalized or "WSL/SERVICE/CREATEINSTANCE/CREATEVM/HCS/" in normalized
 
 
+def _remote_wsl_health_report(*, host: str, port: int, user: str, wsl_distro: str) -> dict | None:
+    checker = SCRIPT_DIR / "check_remote_wsl_host_health.py"
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(checker),
+            "--host",
+            str(host),
+            "--port",
+            str(int(port)),
+            "--user",
+            str(user),
+            "--wsl-distro",
+            str(wsl_distro),
+        ],
+        cwd=str(WORKSPACE),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    raw = str(proc.stdout or "").strip()
+    if proc.returncode != 0 or not raw:
+        return None
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+
+
 def _run_smoke(
     *,
     config_path: Path,
@@ -208,6 +240,7 @@ def main() -> int:
     parser.add_argument("--smoke-latent-size", type=int, default=32)
     parser.add_argument("--smoke-bank-tokens", type=int, default=8)
     parser.add_argument("--fallback-direct-nohup-on-health-failure", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--skip-wsl-host-health-preflight", action="store_true")
     args = parser.parse_args()
 
     config_arg = Path(args.config)
@@ -233,6 +266,28 @@ def main() -> int:
             flush=True,
         )
         runtime_guard_min_mode = "warn"
+
+    if not bool(args.skip_wsl_host_health_preflight):
+        health = _remote_wsl_health_report(
+            host="100.115.18.62",
+            port=2222,
+            user="administrator",
+            wsl_distro="Ubuntu-26.04",
+        )
+        if isinstance(health, dict):
+            if bool(health.get("reboot_required_for_wsl2")):
+                print(
+                    "[launch_remote_experiment_train] refusing launch because remote WSL2 is configured "
+                    "but not runnable yet; host reboot is still required.",
+                    flush=True,
+                )
+                return 32
+            if health.get("ssh_ok") is True and health.get("wsl_exec_ok") is False:
+                print(
+                    "[launch_remote_experiment_train] refusing launch because remote WSL exec is currently unavailable.",
+                    flush=True,
+                )
+                return 33
 
     if not bool(args.skip_smoke):
         smoke_rc = _run_smoke(
