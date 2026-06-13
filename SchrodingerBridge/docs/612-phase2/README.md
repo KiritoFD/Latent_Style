@@ -231,14 +231,29 @@
   - current live read:
     - first `b16a1` launch hit runtime guard at `11.449 GiB` before first settled eval
     - preferred relaunch now uses `b12a1`
-    - first settled point is now `epoch_0001`
-    - transfer `0.672604 / 0.336357`
-    - all-pairs `0.703506 / 0.332992`
+    - latest settled point is now `epoch_0002`
+    - transfer `0.671361 / 0.314290`
+    - all-pairs `0.703097 / 0.311966`
   - interpretation:
     - `topogate` already proved that structure-side recovery is possible
-    - `appalign` has now produced a cleaner all-pairs recovery point than the promoted parent
-    - but transfer style still trails the formal shelf slightly, so the lane stays active
+    - `appalign` now has two settled Pareto points, and `epoch_0002` keeps all-pairs safely above the old shelf while pushing LPIPS materially lower
+    - transfer style is still below the formal shelf, and it slipped relative to `epoch_0001`, so this is still a structure-clean but style-limited line rather than a full recovery
     - remote eval has been packet-synced with checkpoint-level `runtime_observability`, so later settled checkpoints from this lane should start preserving tokenizer / appearance reads in `summary.json`
+    - the guide-for-running-codex read is consistent with this: the active bottleneck is style lift under preserved structure, not another tokenizer-capacity rollback
+
+## Guide-Adopted Read
+
+- the current `pure_latent_spatial` stack should be treated as the stronger tokenizer baseline for this phase:
+  - `query_dim=96`
+  - `query_num_blocks=5`
+  - `num_clusters=32`
+  - 2D position encoding + pooled global-spatial coupling
+- therefore the current `appalign` / `topogate` line should be read primarily as:
+  - structure is already materially improved
+  - the remaining bottleneck is style height under that structure protection
+- consequence:
+  - do not regress to weaker tokenizer sketches while this line is still producing in-band Pareto points
+  - prioritize style-lift mechanisms that preserve the recovered structure band
 - promoted predecessor just closed:
   - `vel_tok32_safe_semantic_topogate_k085`
   - best retained point:

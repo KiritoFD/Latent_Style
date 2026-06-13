@@ -43,13 +43,13 @@ Date: 2026-06-13
 - Structure-side preferred packet: `vel_tok32_safe_semantic_topogate_k085_appalign`
 - Structure config: [structure config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1.json)
 - Structure note: [structure note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085-appalign.md)
-- Structure read: epoch_0001 settled at transfer 0.672604/0.336357 and all-pairs 0.703506/0.332992; all-pairs safe-shelf recovery is already achieved, while transfer style still trails the formal shelf
-- Structure live state: `eval_in_progress_or_pending`
-- Structure GPU: 2444 / 12288 MiB
-- Structure latest settled epoch: `epoch_0001`
-- Structure latest settled `CLIP-S / LPIPS`: `0.672604 / 0.336357`, `0.703506 / 0.332992`
-- Structure latest `style - IDT`: transfer `+0.032681`, all-pairs `+0.023381`
-- Structure runtime observability: train_ep=2, tok_eff=3.6, gate=0.633, mask=0.696, topo_ent=1.013, app_on=1.0, app_s=1.000, app_d=0.000, bex=0, sigma=0.000
+- Structure read: epoch_0002 settled at transfer 0.671361/0.314290 and all-pairs 0.703097/0.311966; all-pairs safe-shelf recovery is already achieved, while transfer style still trails the formal shelf
+- Structure live state: `training_after_settled_eval`
+- Structure GPU: 6817 / 12288 MiB
+- Structure latest settled epoch: `epoch_0002`
+- Structure latest settled `CLIP-S / LPIPS`: `0.671361 / 0.314290`, `0.703097 / 0.311966`
+- Structure latest `style - IDT`: transfer `+0.031439`, all-pairs `+0.022972`
+- Structure runtime observability: tok_eff=3.7, gate=0.626, mask=0.649, topo_ent=0.973, app_on=1.0, app_s=1.000, app_d=0.000
 - I2SB diagnostic preferred packet: `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005`
 - I2SB config: [I2SB config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005_seed42_b20a1.json)
 - I2SB note: [I2SB note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual-tfloor005.md)

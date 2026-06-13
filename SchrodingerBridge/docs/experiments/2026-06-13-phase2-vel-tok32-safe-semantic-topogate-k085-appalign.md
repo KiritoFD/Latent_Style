@@ -88,18 +88,36 @@ Date: 2026-06-13
   - first settled authority point is now `epoch_0001`
   - current board state should be read as `training_after_settled_eval`
 
-## First Settled Read
+## Settled Reads
 
 - `epoch_0001`
   - transfer `0.672604 / 0.336357`
   - all-pairs `0.703506 / 0.332992`
   - identity `0.827117 / 0.319531`
+  - read:
+    - first clean all-pairs shelf recovery
+    - transfer still short of the formal shelf by about `0.00133`
+
+- `epoch_0002`
+  - transfer `0.671361 / 0.314290`
+  - all-pairs `0.703097 / 0.311966`
+  - identity `0.830038 / 0.302673`
+  - `style - IDT`:
+    - transfer `+0.031439`
+    - all-pairs `+0.022972`
+  - runtime observability from checkpoint summary:
+    - transfer-side `tok_eff=3.7, gate=0.626, mask=0.649, topo_ent=0.973, app_on=1.0, app_s=1.000, app_d=0.000`
+  - read:
+    - all-pairs remains above the safe shelf
+    - LPIPS improves materially again versus both `epoch_0001` and the promoted `topogate epoch_0003`
+    - transfer style slips further below the formal shelf
+    - so the lane is still active as a structure-clean Pareto frontier, but it has not yet converted into a full transfer recovery
+
 - interpretation:
-  - all-pairs safe-shelf recovery is already achieved
-  - LPIPS is substantially cleaner than the promoted `topogate epoch_0003`
-  - transfer style still trails the formal shelf slightly by about `0.00133`
-  - so `appalign` is not yet a full recovery, but it is already a cleaner all-pairs point than the promoted parent
-  - the remote eval script has now been synced with runtime-observability support, so later settled checkpoints should start writing tokenizer / appearance observability into `summary.json`
+  - `appalign` is no longer just a one-point anomaly; it already has two settled Pareto points
+  - the current behavior is "keep structure and LPIPS improving while style saturates below the transfer gate"
+  - the remote eval script is now writing checkpoint-level `runtime_observability`, so later settled checkpoints can be judged on both board metrics and tokenizer / appearance activity
+  - the guide read agrees with the current evidence: this lane should be treated as style-limited, not tokenizer-capacity-limited
 ## Parent Refresh
 
 - Source packet: `vel_tok32_safe_semantic_topogate_k085`
