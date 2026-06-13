@@ -1511,6 +1511,8 @@ class OTFlowMatchingObjective:
             source_style_id=source_style_id,
         )
         total_loss = total_loss + content_lowpass_anchor + content_edge_anchor + cycle_consistency
+        attn_plan = model.last_semantic_attn
+        semantic_k = model.last_semantic_k
         topology_attn = getattr(model, "last_semantic_topology_attn", None)
 
         metrics: Dict[str, torch.Tensor] = {
@@ -1540,6 +1542,8 @@ class OTFlowMatchingObjective:
             "generated_delta_mean_offdiag_cos": generated_delta_mean_offdiag_cos.detach(),
             "generated_delta_active_styles": generated_delta_active_styles.detach(),
             "cycle_consistency": cycle_consistency.detach(),
+            "semantic_attn_mean": attn_plan.mean().detach() if attn_plan is not None else content.new_tensor(0.0),
+            "semantic_k_abs": semantic_k.abs().mean().detach() if semantic_k is not None else content.new_tensor(0.0),
             "semantic_topology_attn_entropy": self._attention_entropy(topology_attn, content).detach(),
             "semantic_topology_attn_active": content.new_tensor(1.0 if topology_attn is not None else 0.0, dtype=torch.float32),
         }

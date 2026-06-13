@@ -92,6 +92,8 @@ Date: 2026-06-13
     - `flow = 2.069974`
     - `terminal_swd = 0.009923`
     - `t_mean = 0.456406`
+    - `semantic_attn_mean_metric = 0.003906`
+    - `semantic_k_abs_metric = 0.070684`
     - `semantic_topology_attn_entropy_metric = 2.805402`
     - `semantic_topology_attn_active_metric = 1.0`
   - first grad:
