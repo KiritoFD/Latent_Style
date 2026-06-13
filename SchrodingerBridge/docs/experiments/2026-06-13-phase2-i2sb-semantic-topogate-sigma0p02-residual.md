@@ -2,6 +2,12 @@
 
 Date: 2026-06-13
 
+> 2026-06-13 supersession note:
+> This packet remains valid as the first clean residual exact-Brownian topology-gate diagnostic.
+> But once the refreshed tokenizer variant became available, the preferred future I2SB theory check moved to:
+> [2026-06-13-phase2-i2sb-tok32-semantic-topogate-sigma0p02-residual.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-tok32-semantic-topogate-sigma0p02-residual.md)
+> because that packet matches the current `tok32` tokenizer mainline rather than the older `64/4` tokenizer stack.
+
 ## Role
 
 - diagnostic-only exact-I2SB candidate
@@ -119,3 +125,4 @@ Date: 2026-06-13
   - then structure-side velocity reentry
   - then diagnostic-only I2SB
 - this packet only becomes relevant after the remote host is healthy again and there is idle room for a diagnostic I2SB read
+- when choosing only one current I2SB diagnostic packet to run first, prefer the refreshed-tokenizer `tok32` successor
