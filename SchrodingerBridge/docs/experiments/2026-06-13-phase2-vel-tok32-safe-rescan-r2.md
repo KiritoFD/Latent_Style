@@ -144,6 +144,19 @@ Date: 2026-06-13
   - interpretation:
     - the lane is back in the preferred formal band
     - training has resumed before the first settled checkpoint
+- authority-progress read at `2026-06-13 14:40 +08:00`:
+  - latest checkpoint:
+    - `epoch_0001`
+  - current live state:
+    - `eval_in_progress_or_pending`
+  - pending checkpoint epochs:
+    - `epoch_0001`
+  - current GPU read during eval/offload window:
+    - `2066 MiB / 12288 MiB`
+  - interpretation:
+    - the first retained checkpoint now exists
+    - the packet has entered the first checkpoint-level authority window
+    - final keep/stop judgment still waits on the first settled summary
 
 ## Ops Note
 

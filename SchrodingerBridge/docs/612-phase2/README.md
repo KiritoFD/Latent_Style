@@ -167,7 +167,10 @@
 - 当前 live formal remote lane:
   - `vel_tok32_safe_rescan_r2`
   - manifest-driven recovery watcher relaunched it after the remote Windows reboot on `2026-06-13`
-  - latest live read shows `training_before_first_settled_eval`
+  - latest live read shows:
+    - `epoch_0001` checkpoint saved
+    - `live_state = eval_in_progress_or_pending`
+    - first settled summary still pending
   - remote GPU health is back inside the preferred formal band at roughly:
     - `10.38 GiB / 12.29 GiB`
     - later `9.91 GiB / 12.29 GiB`
