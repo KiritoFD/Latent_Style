@@ -16,6 +16,10 @@ Date: 2026-06-13
   - [validate_phase2_queue_manifest.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/validate_phase2_queue_manifest.py)
 - latest validation snapshot:
   - [phase2_queue_manifest_validation.json](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_queue_manifest_validation.json)
+- current state snapshot:
+  - [phase2_queue_state_snapshot.json](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_queue_state_snapshot.json)
+- state snapshot builder:
+  - [report_phase2_queue_state.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/report_phase2_queue_state.py)
 
 ## Interpretation
 
@@ -64,6 +68,8 @@ Date: 2026-06-13
 
 - validate the manifest before trusting it:
   - [validate_phase2_queue_manifest.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/validate_phase2_queue_manifest.py)
+- generate a one-shot combined queue/health/watcher snapshot:
+  - [report_phase2_queue_state.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/report_phase2_queue_state.py)
 - resolve the current preferred formal packet:
   - [resolve_phase2_queue_packet.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/resolve_phase2_queue_packet.py)
 - manifest-driven recovery watcher example:

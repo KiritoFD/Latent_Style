@@ -36,10 +36,12 @@ Use this file as the stable entrypoint instead of guessing from filenames.
 - phase-2 queue source of truth:
   - [phase2_queue_manifest.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_queue_manifest.csv)
   - [phase2_queue_manifest_validation.json](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_queue_manifest_validation.json)
+  - [phase2_queue_state_snapshot.json](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_queue_state_snapshot.json)
   - [2026-06-13-phase2-queue-manifest-note.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-queue-manifest-note.md)
 - validate and resolve the current preferred phase-2 packet:
   - [validate_phase2_queue_manifest.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/validate_phase2_queue_manifest.py)
   - [resolve_phase2_queue_packet.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/resolve_phase2_queue_packet.py)
+  - [report_phase2_queue_state.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/report_phase2_queue_state.py)
 - one-shot status read for a single active remote lane:
   - [report_remote_experiment_status.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/report_remote_experiment_status.py)
 - run inference-only phase2 solver_pc review on an existing checkpoint:
