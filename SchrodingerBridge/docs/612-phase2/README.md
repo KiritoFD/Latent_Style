@@ -174,6 +174,15 @@
 - `>= 0.70` 的点不仅停当前包，还要被视为该 family 失去 Distinct5 正式晋升资格的直接证据。
 - structure-side packet 的训练日志必须保留 `content_lowpass_anchor` 与 `content_edge_anchor`。
 - exact-I2SB diagnostic packet 的训练日志必须保留 `bridge_noise_schedule_exact`，避免把历史 heuristic 噪声误记成 true I2SB。
+- true-tokenizer packets should now also be read through tokenizer observability, not only board metrics.
+  - minimum structured-tokenizer reads to keep:
+    - `structured_style_tokenizer_attn_entropy`
+    - `structured_style_tokenizer_attn_effective_count`
+    - `structured_style_tokenizer_attn_max`
+    - `structured_style_tokenizer_gate_mean`
+    - `structured_style_tokenizer_mask_mean`
+    - `structured_style_tokenizer_spatial_map_abs`
+    - `structured_style_tokenizer_global_gate_abs`
 - 不允许再用“后面也许会掉下来”来继续烧正式训练资源。
 - 首轮健康检查在 `30s` 内完成。
 - 目标显存带保持在 `9.0-10.8 GiB`，硬上限按 `< 11.0 GiB` 执行。

@@ -49,6 +49,14 @@ def _patch_to_map(
     return mapped
 
 
+def _scalar_mean(x: torch.Tensor) -> float:
+    return float(x.detach().float().mean().cpu().item())
+
+
+def _scalar_std(x: torch.Tensor) -> float:
+    return float(x.detach().float().std(unbiased=False).cpu().item())
+
+
 def _build_1d_sincos_embedding(
     length: int,
     dim: int,
@@ -124,6 +132,36 @@ class _BaseStructuredTokenizer(nn.Module):
             dtype=base_style_code.dtype,
         )
         return base_style_code + residual
+
+    def _common_debug(
+        self,
+        *,
+        attn: torch.Tensor,
+        spatial_map: torch.Tensor,
+        gate_map: torch.Tensor | None = None,
+        mask_map: torch.Tensor | None = None,
+        extra: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        probs = attn.detach().float().clamp_min(1e-8)
+        entropy = -(probs * probs.log()).sum(dim=-1)
+        debug: dict[str, Any] = {
+            "attn_entropy": _scalar_mean(entropy),
+            "attn_effective_count": float(torch.exp(entropy.mean()).detach().cpu().item()),
+            "attn_max": float(probs.max().detach().cpu().item()),
+            "attn_top1_mean": _scalar_mean(probs.amax(dim=-1)),
+            "spatial_map_abs": float(spatial_map.detach().float().abs().mean().cpu().item()),
+        }
+        if gate_map is not None:
+            gate = gate_map.detach().float()
+            debug["gate_mean"] = _scalar_mean(gate)
+            debug["gate_std"] = _scalar_std(gate)
+        if mask_map is not None:
+            mask = mask_map.detach().float()
+            debug["mask_mean"] = _scalar_mean(mask)
+            debug["mask_std"] = _scalar_std(mask)
+        if extra:
+            debug.update(extra)
+        return debug
 
 
 class PureLatentSpatialTokenizer(_BaseStructuredTokenizer):
@@ -243,17 +281,25 @@ class PureLatentSpatialTokenizer(_BaseStructuredTokenizer):
             spatial_map=spatial_map,
             gate_map=gate_map,
             mask_map=mask_map,
-            debug={
-                "family": "pure_latent_spatial",
-                "source": "content_latent",
-                "attn_entropy": float(entropy.mean().detach().cpu().item()),
-                "attn_max": float(attn.max().detach().cpu().item()),
-                "num_clusters": self.num_clusters,
-                "pe_temp": self.pe_temperature,
-                "query_dim": self.query_dim,
-                "query_num_blocks": self.query_num_blocks,
-                "global_gate_scale": self.global_gate_scale,
-            },
+            debug=self._common_debug(
+                attn=attn,
+                spatial_map=spatial_map,
+                gate_map=gate_map,
+                mask_map=mask_map,
+                extra={
+                    "family": "pure_latent_spatial",
+                    "source": "content_latent",
+                    "num_clusters": self.num_clusters,
+                    "pe_temp": self.pe_temperature,
+                    "query_dim": self.query_dim,
+                    "query_num_blocks": self.query_num_blocks,
+                    "global_gate_scale": self.global_gate_scale,
+                    "global_gate_abs": float(global_gate.detach().float().abs().mean().cpu().item()),
+                    "global_raw_abs": float(raw_code.detach().float().abs().mean().cpu().item()),
+                    "global_full_abs": float(global_full.detach().float().abs().mean().cpu().item()),
+                    "spatial_gap_abs": float(spatial_gap.detach().float().abs().mean().cpu().item()),
+                },
+            ),
         ))
 
 
@@ -326,11 +372,13 @@ class DinoDictionaryTokenizer(_BaseStructuredTokenizer):
             spatial_map=spatial_map,
             gate_map=gate_map,
             mask_map=mask_map,
-            debug={
-                "family": "tok_a_dino_dict",
-                "attn_entropy": float(entropy.mean().detach().cpu().item()),
-                "attn_max": float(attn.max().detach().cpu().item()),
-            },
+            debug=self._common_debug(
+                attn=attn,
+                spatial_map=spatial_map,
+                gate_map=gate_map,
+                mask_map=mask_map,
+                extra={"family": "tok_a_dino_dict"},
+            ),
         ))
 
 
@@ -380,10 +428,15 @@ class CrossImageRoutingTokenizer(_BaseStructuredTokenizer):
             global_code=base_style_code,
             spatial_map=spatial_map,
             gate_map=gate_map,
-            debug={
-                "family": "tok_b_cross_image",
-                "bank_tokens": int(bank.shape[1]),
-            },
+            debug=self._common_debug(
+                attn=attn,
+                spatial_map=spatial_map,
+                gate_map=gate_map,
+                extra={
+                    "family": "tok_b_cross_image",
+                    "bank_tokens": int(bank.shape[1]),
+                },
+            ),
         ))
 
 
@@ -435,6 +488,8 @@ class ResidualSemanticAdapterTokenizer(DinoDictionaryTokenizer):
             base.aux_map = low.to(dtype=base.spatial_map.dtype)
         base.debug["family"] = "tok_c_residual_adapter"
         base.debug["residual_gain"] = float(gain.detach().cpu().item())
+        if base.aux_map is not None:
+            base.debug["aux_map_abs"] = float(base.aux_map.detach().float().abs().mean().cpu().item())
         return self._finalize_output(base)
 
 
@@ -485,8 +540,14 @@ class VLMPromptStyleTokenizer(_BaseStructuredTokenizer):
             global_code=base_style_code + global_prompt.to(device=base_style_code.device, dtype=base_style_code.dtype),
             spatial_map=spatial_map,
             gate_map=gate_map,
-            debug={
-                "family": "tok_d_vlm_prompt",
-                "prompt_length": self.prompt_length,
-            },
+            debug=self._common_debug(
+                attn=attn,
+                spatial_map=spatial_map,
+                gate_map=gate_map,
+                extra={
+                    "family": "tok_d_vlm_prompt",
+                    "prompt_length": self.prompt_length,
+                    "global_prompt_abs": float(global_prompt.detach().float().abs().mean().cpu().item()),
+                },
+            ),
         ))
