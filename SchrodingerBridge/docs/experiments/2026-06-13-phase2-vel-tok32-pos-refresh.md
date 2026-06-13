@@ -239,6 +239,9 @@ Date: 2026-06-13
   - it is also the current best point of this packet on both transfer and all-pairs Pareto authority
   - `epoch_0005` adds another in-band Pareto point rather than a domination update
   - the line is therefore still alive as a real improvement path rather than a flat plateau
+  - but the last two settled points already show the emerging risk:
+    - no new style breakout above `epoch_0004`
+    - only small LPIPS-side motion
   - the packet is currently training in `epoch_6`, with the next meaningful decision deferred to the next settled authority point
   - keep the formal lane alive until either:
     - a better in-band point appears

@@ -205,3 +205,4 @@ Date: 2026-06-13
         - still not a style breakout
         - but it adds another Pareto-valid point rather than flattening
         - so the lane still does not satisfy the current closure rule
+        - however, the line is now close to a real plateau audit if later checkpoints keep trading tiny LPIPS gains for flat-or-lower style

@@ -131,6 +131,7 @@
       - 同时它也严格优于本 packet 的 `epoch_0003` 点
       - `epoch_0005` 则继续往更低 LPIPS 方向推了一步，但 style 没有继续抬升
       - 说明这条线仍在演化，暂时还不该按 plateau 关闭
+      - 但如果后续继续只是做这种“小幅降 LPIPS、不抬 style”的点，就会进入真正的 plateau 审核
       - `epoch_0001` 现在只记为 `stale_pending`，不再把 live state 错报成 eval-pending
     - 本地 watcher 已挂起:
       - `watch_phase2_velocity_handoff.py --run-name aaai2027_phase2_vel_tok32_pos_refresh_seed42_b20a1 --wait --execute --handoff-mode stop_only`
