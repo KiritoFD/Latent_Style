@@ -131,15 +131,36 @@ Date: 2026-06-13
 - current remote status:
   - run name:
     - `aaai2027_phase2_vel_tok32_pos_refresh_seed42_b20a1`
-  - live state:
-    - `training_before_first_settled_eval`
-  - runtime memory:
-    - latest read `9870 / 12288 MiB`
-  - live process:
-    - `/home/xy/venvs/samam312/bin/python SchrodingerBridge/src/run.py --config /mnt/i/Github/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_pos_refresh_seed42_b20a1.json`
-  - eval state:
-    - no checkpoint has settled yet
-    - first `CLIP-S + LPIPS` authority point is still pending
+  - latest observed failure:
+    - `epoch_0001` trained and checkpointed successfully
+    - training then offloaded to CPU for remote full eval
+    - the launcher runtime guard misread eval/offload as an under-band training failure and killed the process:
+      - `=== RUNTIME_UNDER_BAND_STOP ... used=2101MiB floor=9216MiB elapsed=1165s consecutive=3 ===`
+  - consequence:
+    - `epoch_0001.pt` exists
+    - `full_eval/epoch_0001/` was created
+    - but the first settled summary never finished, so there is still no authority point
+  - fix decision:
+    - patch the launcher so `_base` configs are resolved before deciding whether `full_eval_each_epoch` requires `runtime_guard_min_mode=warn`
+    - relaunch this same run and prefer the local latest checkpoint
+  - relaunch result:
+    - launcher now prints:
+      - `switch runtime_guard_min_mode stop -> warn because config uses epoch-end remote full eval with trainer offload`
+    - local checkpoint recovery now works:
+      - local latest `epoch_0001.pt` was preferred over the original parent warm-start
+      - partial resume read:
+        - `loaded=276`
+        - `skipped=0`
+        - `missing=0`
+        - `unexpected=0`
+      - resumed at:
+        - `epoch=2`
+        - `global_step=944`
+    - relaunch 30s health:
+      - `10151 MiB`
+    - current state after relaunch:
+      - live training resumed successfully
+      - first settled eval is still pending
 - watcher:
   - `watch_phase2_velocity_handoff.py`
   - mode:

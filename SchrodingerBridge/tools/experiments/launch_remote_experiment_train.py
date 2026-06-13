@@ -11,6 +11,12 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 SB_ROOT = SCRIPT_DIR.parent.parent
 WORKSPACE = SB_ROOT.parent
+SRC_DIR = SB_ROOT / "src"
+
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+from config_schema import load_config
 
 
 def _run(cmd: list[str]) -> int:
@@ -202,7 +208,7 @@ def main() -> int:
     config_arg = Path(args.config)
     config_abs = config_arg if config_arg.is_absolute() else (WORKSPACE / config_arg).resolve()
     config_rel = config_abs.resolve().relative_to(WORKSPACE.resolve())
-    payload = json.loads(config_abs.read_text(encoding="utf-8"))
+    payload = load_config(config_abs)
     train_cfg = payload.get("training") or {}
     checkpoint_cfg = payload.get("checkpoint") or {}
     checkpoint_save_dir = str(checkpoint_cfg.get("save_dir", "")).strip()
