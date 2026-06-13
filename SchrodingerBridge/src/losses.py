@@ -250,6 +250,13 @@ class OTFlowMatchingObjective:
             if isinstance(value, (int, float))
         }
 
+    @staticmethod
+    def _attention_entropy(attn: torch.Tensor | None, ref: torch.Tensor) -> torch.Tensor:
+        if attn is None:
+            return ref.new_tensor(0.0, dtype=torch.float32)
+        probs = attn.float().clamp_min(1e-8)
+        return (-(probs * probs.log()).sum(dim=-1).mean()).to(device=ref.device, dtype=torch.float32)
+
     def _sanitize_tensor(self, x: torch.Tensor, *, clamp_value: float) -> torch.Tensor:
         x = torch.nan_to_num(x.float(), nan=0.0, posinf=clamp_value, neginf=-clamp_value)
         return x.clamp(min=-clamp_value, max=clamp_value)
@@ -1097,6 +1104,7 @@ class OTFlowMatchingObjective:
         endpoint_for_losses = pred_endpoint_final if bool(getattr(model, "proximal_bind_terminal_losses", True)) else pred_endpoint_base
         attn_plan = model.last_semantic_attn
         semantic_k = model.last_semantic_k
+        topology_attn = getattr(model, "last_semantic_topology_attn", None)
 
         total_loss = content.new_tensor(0.0, dtype=torch.float32)
         flow_loss = content.new_tensor(0.0, dtype=torch.float32)
@@ -1310,6 +1318,8 @@ class OTFlowMatchingObjective:
             "kinetic_penalty_mode_id": content.new_tensor(float(hash(self.kinetic_penalty_mode) % 1000000), dtype=torch.float32),
             "semantic_attn_mean": attn_plan.mean().detach() if attn_plan is not None else content.new_tensor(0.0),
             "semantic_k_abs": semantic_k.abs().mean().detach() if semantic_k is not None else content.new_tensor(0.0),
+            "semantic_topology_attn_entropy": self._attention_entropy(topology_attn, content).detach(),
+            "semantic_topology_attn_active": content.new_tensor(1.0 if topology_attn is not None else 0.0, dtype=torch.float32),
         }
         metrics.update(self._profile_metrics(content))
         metrics.update(self._model_profile_metrics(model, content))
@@ -1343,6 +1353,7 @@ class OTFlowMatchingObjective:
             "pred_endpoint_final": pred_endpoint_final.detach(),
             "semantic_attn": attn_plan.detach() if attn_plan is not None else None,
             "semantic_k": semantic_k.detach() if semantic_k is not None else None,
+            "semantic_topology_attn": topology_attn.detach() if topology_attn is not None else None,
             "content": content.detach(),
             "target_style": target_for_loss.detach(),
         }
@@ -1500,6 +1511,7 @@ class OTFlowMatchingObjective:
             source_style_id=source_style_id,
         )
         total_loss = total_loss + content_lowpass_anchor + content_edge_anchor + cycle_consistency
+        topology_attn = getattr(model, "last_semantic_topology_attn", None)
 
         metrics: Dict[str, torch.Tensor] = {
             "loss": total_loss,
@@ -1528,6 +1540,8 @@ class OTFlowMatchingObjective:
             "generated_delta_mean_offdiag_cos": generated_delta_mean_offdiag_cos.detach(),
             "generated_delta_active_styles": generated_delta_active_styles.detach(),
             "cycle_consistency": cycle_consistency.detach(),
+            "semantic_topology_attn_entropy": self._attention_entropy(topology_attn, content).detach(),
+            "semantic_topology_attn_active": content.new_tensor(1.0 if topology_attn is not None else 0.0, dtype=torch.float32),
         }
         metrics.update(self._profile_metrics(content))
         metrics.update(self._model_profile_metrics(model, content))
@@ -1557,6 +1571,7 @@ class OTFlowMatchingObjective:
             "pred_endpoint": pred_endpoint.detach() if pred_endpoint is not None else None,
             "semantic_attn": getattr(model, "last_semantic_attn", None).detach() if getattr(model, "last_semantic_attn", None) is not None else None,
             "semantic_k": getattr(model, "last_semantic_k", None).detach() if getattr(model, "last_semantic_k", None) is not None else None,
+            "semantic_topology_attn": topology_attn.detach() if topology_attn is not None else None,
         }
         return metrics, components, debug_state
 

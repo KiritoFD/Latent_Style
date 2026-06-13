@@ -1190,6 +1190,8 @@ class SBTrainer:
         metrics.setdefault("plan_entropy", 0.0)
         metrics.setdefault("bridge_sigma", 0.0)
         metrics.setdefault("bridge_noise_schedule_exact", 0.0)
+        metrics.setdefault("semantic_topology_attn_entropy", 0.0)
+        metrics.setdefault("semantic_topology_attn_active", 0.0)
         metrics.setdefault("identity_ratio", 0.0)
         metrics.setdefault("t_mean", 0.0)
         metrics.setdefault("velocity_abs", 0.0)

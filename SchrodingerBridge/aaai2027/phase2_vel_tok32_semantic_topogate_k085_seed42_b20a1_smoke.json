@@ -1,0 +1,35 @@
+{
+  "status": "ok",
+  "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\aaai2027\\phase2_vel_tok32_semantic_topogate_k085_seed42_b20a1.json",
+  "objective_mode": "bridge_velocity",
+  "tokenizer_family": "pure_latent_spatial",
+  "solver_family": "euler_legacy",
+  "transport_prediction_mode": "velocity",
+  "semantic_supervision_family": "legacy_terminal_swd",
+  "dino_runtime_required": false,
+  "bridge_sigma": 0.0,
+  "forward_shape": [
+    1,
+    4,
+    32,
+    32
+  ],
+  "endpoint_shape": [
+    1,
+    4,
+    32,
+    32
+  ],
+  "integrated_shape": [
+    1,
+    4,
+    32,
+    32
+  ],
+  "loss": 2.2984535694122314,
+  "flow": 2.069973945617676,
+  "terminal_swd": 0.009923242963850498,
+  "t_mean": 0.4564061760902405,
+  "first_grad_name": "structured_style_tokenizer.universal_keys",
+  "first_grad_abs_mean": 0.004325902555137873
+}
