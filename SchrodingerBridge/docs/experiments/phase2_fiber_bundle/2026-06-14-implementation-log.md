@@ -111,3 +111,20 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Gate-aligned noise read: not a strong positive mechanism. It is marginally favorable at `sigma=0.03`, but the effect is too small; at `sigma=0.05` it adds LPIPS cost.
 - Stage decision: close Fiber-SDE eval-only scan as `not promoted as core`; retain `sigma=0.03` as balanced eval option and `sigma=0.05` as style-first diagnostic option.
 - Next stage: start SMoE tokenizer training from the same `k070 epoch_0003` parent; keep solver/loss/topogate unchanged so tokenizer is the only core variable.
+
+## SMoE Round Opened
+
+- Config: `configs/aaai2027/phase2_smoe_translator_k070_e3_seed42_b12a1.json`.
+- Parent: `exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k070_seed42_b12a1/epoch_0003.pt`.
+- Candidate switch: `model.tokenizer_family=smoe_translator`, `model.smoe_translation_rank=0`.
+- Control discipline: no solver noise, no Fiberwise SWD, no DINO/VLM, no schedule changes.
+- Remote eval discipline: full `CLIP-S + LPIPS` each epoch; use all-checkpoint curve for convergence and update the AAAI2027 page-1 plot before closure.
+
+## SMoE Launch Health
+
+- Launch time: `2026-06-14 04:42 Asia/Shanghai`.
+- Task: `phase2-phase2_smoe_translator_k070_e3_seed42_b12a1-train`.
+- Train PID: `456`.
+- First GPU read: `6969 MiB / 12288 MiB`, `94%` utilization.
+- The run is intentionally kept at inherited `b12a1` even though memory is below the preferred formal band, because changing batch would contaminate the tokenizer-only comparison.
+- Smoke fix before launch: model/trainer structured-tokenizer routing now treats `smoe_translator` like `pure_latent_spatial` for legacy spatial-prior bypass and proximal structured-token selection.

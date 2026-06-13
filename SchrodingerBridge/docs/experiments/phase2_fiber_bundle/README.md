@@ -6,6 +6,7 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 
 - `plot_points.csv`: fixed input table for the homepage CLIP-style / LPIPS progress plots. Every closed experiment must append or update its full/all-pairs and transfer rows here before the closure note is final.
 - `curves/`: raw per-run all-checkpoint CLIP-S / LPIPS curves copied from remote eval artifacts before they are normalized into `plot_points.csv`.
+- `smoe_training_manifest.csv`: Round-2 SMoE-only launch and closure status.
 
 ## Current Homepage Overlay
 
@@ -43,6 +44,13 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 - `sigma=0.05` isotropic: transfer `0.675927 / 0.322953`, all-pairs `0.706639 / 0.320868`.
 - `sigma=0.05` fiber-aligned: transfer `0.675948 / 0.323189`, all-pairs `0.706763 / 0.321093`.
 - Decision: `style_upper_not_promoted`; this is the style-first upper point of the scan, but it pays clear LPIPS cost and does not reach the `0.74 / 0.30` target.
+
+## Active Queue
+
+- Round 2 is now `smoe_translator_k070_e3`.
+- This run starts from the same `k070 epoch_0003` parent used by Fiber-SDE.
+- Only `tokenizer_family` changes from `pure_latent_spatial` to `smoe_translator`; solver/loss/topogate/appearance/schedule stay inherited from the parent line.
+- Remote full eval must run every epoch and update the homepage page-1 CLIP-style / LPIPS figure before closure.
 
 ## Plot Update Contract
 

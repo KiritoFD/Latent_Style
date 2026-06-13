@@ -242,11 +242,17 @@ class SBTrainer:
         for state in self.optimizer.state.values():
             _move_tensor_tree(state, device)
 
+    def _uses_structured_latent_tokenizer(self) -> bool:
+        return str(getattr(self.config.model, "tokenizer_family", "legacy_factorized")).strip().lower() in {
+            "pure_latent_spatial",
+            "smoe_translator",
+        }
+
     def _pure_latent_uses_structured_tokenizer(self) -> bool:
-        return str(getattr(self.config.model, "tokenizer_family", "legacy_factorized")).strip().lower() == "pure_latent_spatial"
+        return self._uses_structured_latent_tokenizer()
 
     def _style_branch_uses_legacy_spatial_priors(self) -> bool:
-        if self._pure_latent_uses_structured_tokenizer():
+        if self._uses_structured_latent_tokenizer():
             return False
         return not bool(getattr(self.config.model, "ablation_disable_spatial_prior", False))
 
@@ -289,8 +295,11 @@ class SBTrainer:
         mode = str(getattr(model_cfg, "tokenizer_latent_init_mode", "none") or "none").strip().lower()
         if mode in {"", "none", "off", "false", "0"}:
             return
-        if self._pure_latent_uses_structured_tokenizer():
-            logger.info("Skipping legacy tokenizer latent init because tokenizer_family=pure_latent_spatial uses structured_style_tokenizer as the active path.")
+        if self._uses_structured_latent_tokenizer():
+            logger.info(
+                "Skipping legacy tokenizer latent init because tokenizer_family=%s uses structured_style_tokenizer as the active path.",
+                str(getattr(self.config.model, "tokenizer_family", "legacy_factorized")),
+            )
             return
         tokenizer = getattr(self.model, "style_tokenizer", None)
         if tokenizer is None:

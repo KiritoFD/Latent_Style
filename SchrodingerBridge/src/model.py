@@ -514,7 +514,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         style_code_override: torch.Tensor | None = None,
     ) -> torch.Tensor:
         if style_code_override is None:
-            if str(getattr(self, "tokenizer_family", "legacy_factorized")) == "pure_latent_spatial":
+            if str(getattr(self, "tokenizer_family", "legacy_factorized")) in {"pure_latent_spatial", "smoe_translator"}:
                 style_code = x.new_zeros((x.shape[0], int(self.bridge_style_dim)))
             else:
                 style_code = self.encode_style_id(style_id, t=t)
@@ -794,7 +794,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         )
         if structured_ctx is None:
             raise RuntimeError(
-                "pure_latent_spatial + crossattn_texture requires structured tokenizer output for proximal refinement."
+                "latent structured tokenizer + crossattn_texture requires structured tokenizer output for proximal refinement."
             )
         style_code, style_maps = structured_ctx
         style_map = self._prepare_spatial_map(style_maps.map_16, content_feat_16)
@@ -855,7 +855,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                 raise RuntimeError("cross-attention proximal modules not initialized")
             if style_id is None:
                 raise ValueError("style_id is required for crossattn_texture proximal mode.")
-            if str(getattr(self, "tokenizer_family", "legacy_factorized")) == "pure_latent_spatial":
+            if str(getattr(self, "tokenizer_family", "legacy_factorized")) in {"pure_latent_spatial", "smoe_translator"}:
                 style_code, kv_src = self._structured_proximal_style_tokens(
                     z_base,
                     style_id=style_id,
