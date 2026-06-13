@@ -7,6 +7,7 @@ $WorkspaceRoot = Split-Path -Parent $SbRoot
 Set-Location $WorkspaceRoot
 
 $Guide = Join-Path $SbRoot "docs\612-phase2\guide_for_running_codex.md"
+$Phase2Snapshot = Join-Path $SbRoot "docs\experiments\phase2_queue_state_snapshot.json"
 $OutputRoot = Join-Path $SbRoot "_codex_tmp\phase2_guide_watch"
 $StatusMd = Join-Path $OutputRoot "guide_watch_status.md"
 $StateJson = Join-Path $OutputRoot "guide_watch_state.json"
@@ -22,6 +23,7 @@ $Script = Join-Path $ScriptRoot "refresh_phase2_guide_watch.py"
 Add-Content -LiteralPath $LogPath -Value ("=== GUIDE WATCH START " + (Get-Date -Format o) + " ===")
 & $Python $Script `
   --guide $Guide `
+  --phase2-snapshot $Phase2Snapshot `
   --status-md $StatusMd `
   --state-json $StateJson `
   --history-jsonl $HistoryJsonl *>> $LogPath
