@@ -9,6 +9,9 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 SB_ROOT = SCRIPT_DIR.parent.parent
 DEFAULT_SNAPSHOT = SB_ROOT / "docs" / "experiments" / "phase2_queue_state_snapshot.json"
 DEFAULT_OUTPUT = SB_ROOT / "docs" / "experiments" / "phase2_current_status.md"
+DEFAULT_DISTINCT5_IDT_SUMMARY = (
+    SB_ROOT / "docs" / "experiments" / "idt_eval_20260602" / "distinct5_512" / "idt_5x5" / "summary.json"
+)
 
 
 def _load_json(path: Path) -> dict:
@@ -104,6 +107,33 @@ def _recovery_read(
     return ", ".join(parts)
 
 
+def _load_distinct5_idt_style_refs() -> dict[str, float]:
+    path = DEFAULT_DISTINCT5_IDT_SUMMARY
+    if not path.is_file():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    analysis = payload.get("analysis") if isinstance(payload, dict) else None
+    if not isinstance(analysis, dict):
+        return {}
+    refs: dict[str, float] = {}
+    try:
+        refs["all_pairs_clip_style"] = float(analysis["all_pairs_overview"]["clip_style"])
+        refs["transfer_clip_style"] = float(analysis["style_transfer_ability"]["clip_style"])
+    except Exception:
+        return {}
+    return refs
+
+
+def _style_delta_vs_idt(value: object, ref: float | None) -> str:
+    metric = _float_or_none(value)
+    if metric is None or ref is None:
+        return "n/a"
+    return f"{metric - ref:+.6f}"
+
+
 def build_note(snapshot: dict, *, report_date: str) -> str:
     resolved = snapshot.get("resolved_packets", {}) if isinstance(snapshot.get("resolved_packets"), dict) else {}
     formal = resolved.get("formal_lane", {}) if isinstance(resolved.get("formal_lane"), dict) else {}
@@ -115,10 +145,13 @@ def build_note(snapshot: dict, *, report_date: str) -> str:
     health = snapshot.get("remote_health", {}) if isinstance(snapshot.get("remote_health"), dict) else {}
     local_velocity_watchers = snapshot.get("local_velocity_handoff_watchers", []) if isinstance(snapshot.get("local_velocity_handoff_watchers"), list) else []
     local_structure_logs = snapshot.get("local_structure_watcher_logs", {}) if isinstance(snapshot.get("local_structure_watcher_logs"), dict) else {}
+    idt_refs = _load_distinct5_idt_style_refs()
     curve = remote.get("curve_summary", {}) if isinstance(remote.get("curve_summary"), dict) else {}
     latest = curve.get("latest", {}) if isinstance(curve.get("latest"), dict) else {}
     best_transfer = curve.get("best_transfer", {}) if isinstance(curve.get("best_transfer"), dict) else {}
     best_all_pairs = curve.get("best_all_pairs", {}) if isinstance(curve.get("best_all_pairs"), dict) else {}
+    structure_curve = remote_structure.get("curve_summary", {}) if isinstance(remote_structure.get("curve_summary"), dict) else {}
+    structure_latest = structure_curve.get("latest", {}) if isinstance(structure_curve.get("latest"), dict) else {}
     gpus = remote.get("remote_gpu", []) if isinstance(remote.get("remote_gpu"), list) else []
     gpu0 = gpus[0] if gpus and isinstance(gpus[0], dict) else {}
     formal_status_text = str(formal.get("status", "n/a"))
@@ -219,7 +252,9 @@ def build_note(snapshot: dict, *, report_date: str) -> str:
         "### Latest Settled Point",
         f"- Epoch: `{latest.get('epoch', 'n/a')}`",
         f"- Transfer `CLIP-S / LPIPS`: `{latest_transfer}`",
+        f"- Transfer `ΔIDT style`: `{_style_delta_vs_idt(latest.get('transfer_clip_style'), idt_refs.get('transfer_clip_style'))}`",
         f"- All-pairs `CLIP-S / LPIPS`: `{latest_all_pairs}`",
+        f"- All-pairs `ΔIDT style`: `{_style_delta_vs_idt(latest.get('all_pairs_clip_style'), idt_refs.get('all_pairs_clip_style'))}`",
         (
             f"- Identity `CLIP-S / LPIPS`: "
             f"`{_fmt_float(latest.get('identity_clip_style'))} / {_fmt_float(latest.get('identity_content_lpips'))}`"
@@ -262,6 +297,19 @@ def build_note(snapshot: dict, *, report_date: str) -> str:
             else "- Structure GPU: n/a"
         ),
         f"- Structure latest settled epoch: `{remote_structure.get('latest_settled_epoch', '') or 'n/a'}`",
+        (
+            f"- Structure latest settled `CLIP-S / LPIPS`: "
+            f"`{_fmt_float(structure_latest.get('transfer_clip_style'))} / {_fmt_float(structure_latest.get('transfer_content_lpips'))}`, "
+            f"`{_fmt_float(structure_latest.get('all_pairs_clip_style'))} / {_fmt_float(structure_latest.get('all_pairs_content_lpips'))}`"
+            if structure_latest
+            else "- Structure latest settled `CLIP-S / LPIPS`: n/a"
+        ),
+        (
+            f"- Structure latest `ΔIDT style`: transfer `{_style_delta_vs_idt(structure_latest.get('transfer_clip_style'), idt_refs.get('transfer_clip_style'))}`, "
+            f"all-pairs `{_style_delta_vs_idt(structure_latest.get('all_pairs_clip_style'), idt_refs.get('all_pairs_clip_style'))}`"
+            if structure_latest
+            else "- Structure latest `ΔIDT style`: n/a"
+        ),
         f"- I2SB diagnostic preferred packet: `{i2sb.get('packet_id', 'n/a')}`",
         f"- I2SB config: {i2sb_cfg}" if i2sb_cfg else "- I2SB config: n/a",
         f"- I2SB note: {i2sb_note}" if i2sb_note else "- I2SB note: n/a",
