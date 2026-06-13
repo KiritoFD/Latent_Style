@@ -76,14 +76,27 @@ Date: 2026-06-13
     - transfer style is still slightly below the transfer shelf `0.673934`, but LPIPS is much cleaner
     - so the packet is already a real in-band structure-side recovery candidate on its first retained checkpoint
 - latest settled authority point:
+  - `epoch_0004`
+  - transfer `0.672439 / 0.363475`
+  - all-pairs `0.700310 / 0.361612`
+  - interpretation:
+    - LPIPS remained comfortably inside the formal band
+    - but style slipped back below both formal recovery gates
+    - so the promoted breakout is no longer the latest point
+- promoted best point:
   - `epoch_0003`
   - transfer `0.675388 / 0.375598`
   - all-pairs `0.702936 / 0.371762`
   - interpretation:
-    - LPIPS remains comfortably inside the formal band
-    - both transfer and all-pairs now beat the formal safe shelf
-    - therefore this has become the first structure-side promotable recovery candidate in phase2
-    - the packet should keep running because the newest settled point is also the current best point
+    - this remains the first structure-side promotable recovery candidate in phase2
+- closure:
+  - the lane later hit runtime guard during epoch 5
+  - observed guard event:
+    - `used=11868 MiB`
+    - `cap=11000 MiB`
+  - queue consequence:
+    - this packet is now closed as `closed_runtime_guard`
+    - queued successors inherit `epoch_0003` as their warm start
 - queued low-intrusion follow-on:
   - [phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b16a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b16a1.json)
   - [2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085-appalign.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085-appalign.md)

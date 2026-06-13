@@ -168,6 +168,7 @@
 - current preferred packet:
   - [phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)
   - [phase2_i2sb_tok32_semantic_topogate_sigma0p02_residual_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)
+  - the preferred diagnostic packet now inherits `vel_tok32_safe_semantic_topogate_k085 epoch_0003`
 - 允许做:
   - NFE 对照
   - noise schedule 对照
@@ -217,22 +218,23 @@
     - safe-family 证明了 true tokenizer 可以稳定维持 in-band
     - 但它没有做出 promotable safe-shelf break
 - 当前 active next step:
-  - `vel_tok32_safe_semantic_topogate_k085`
-  - first `b20a1` launch hit the runtime guard at `11093 MiB`
-  - the preferred relaunch packet is now `b16a1`
+  - `vel_tok32_safe_semantic_topogate_k085_appalign`
+  - this packet now inherits the promoted `vel_tok32_safe_semantic_topogate_k085 epoch_0003` parent
   - current live read:
-    - `epoch_0003` is now the latest settled point
+    - `training_before_first_settled_eval`
+    - launch packet has resumed cleanly from `topogate epoch_0003`
+    - no settled authority point yet
+  - interpretation:
+    - `topogate` already proved that structure-side recovery is possible
+    - `appalign` is now the clean next question: can low-order appearance alignment push farther without changing the structure family again
+- promoted predecessor just closed:
+  - `vel_tok32_safe_semantic_topogate_k085`
+  - best retained point:
     - transfer `0.675388 / 0.375598`
     - all-pairs `0.702936 / 0.371762`
-  - interpretation:
-    - this is now the first structure-side phase2 packet that beats both formal recovery gates while staying clean on LPIPS
-    - so the lane has become a real promotable recovery candidate, not just a near-miss
-    - keep it running because the newest settled point is also the current best point
-  - next low-intrusion follow-on if qualitative review still points to tone mismatch:
-    - `vel_tok32_safe_semantic_topogate_k085_appalign`
-    - same parent and same topology-gate family
-    - only adds tokenizer-guided latent appearance alignment before trying a different attention family
-    - queued successors have now been refreshed to inherit `vel_tok32_safe_semantic_topogate_k085 epoch_0003`
+  - closure:
+    - later runtime guard during epoch 5 after `epoch_0004` settled below the shelf
+    - so the family keeps a promotable best point, but the active lane has moved on
   - structure-side close rule:
     - after `4` settled checkpoints, if the active packet is still below the formal safe shelf and no new best lands in the newest-2 window, hand off to the next same-lane successor
 - 所有 round2 endpoint / I2SB 文档都应按以下标准重读:

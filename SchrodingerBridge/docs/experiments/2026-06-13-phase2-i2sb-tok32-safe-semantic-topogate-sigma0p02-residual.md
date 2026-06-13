@@ -6,16 +6,17 @@ Date: 2026-06-13
 
 - preferred current exact-Brownian diagnostic successor
 - same residual `sigma=0.02` theory check as the earlier `tok32_refresh` packet
-- upgraded to the current `tok32_safe_rescan` tokenizer profile and the cleaner `epoch_0004` in-band parent
+- upgraded to the current `tok32_safe_rescan` tokenizer profile and now refreshed to the first promoted structure-side parent
 
 ## Why This Exists
 
 - the older `i2sb_tok32_semantic_topogate_sigma0p02_residual` packet already answered:
   - refreshed tokenizer is better than legacy64
 - but it still inherited the older `tok32_refresh` tokenizer settings
-- now that `safe_rescan_r2` has produced a lower-LPIPS in-band tokenizer state, the clean theory question becomes:
-  - if exact-I2SB still fails even after inheriting the safer tokenizer profile,
-  - then the remaining weakness is even less likely to be “tokenizer still not clean enough”
+- now that `vel_tok32_safe_semantic_topogate_k085 epoch_0003` has produced the first real structure-side shelf recovery,
+  the cleaner theory question becomes:
+  - if exact-I2SB still fails even after inheriting both the safer tokenizer profile and the promoted structure-side parent,
+  - then the remaining weakness is even less likely to be “tokenizer still not clean enough” or “the structure parent was still too weak”
 
 ## Config
 
@@ -23,7 +24,7 @@ Date: 2026-06-13
   - [phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)
 - parent packets:
   - [phase2_i2sb_tok32_semantic_topogate_sigma0p02_residual_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)
-  - [phase2_vel_tok32_safe_rescan_r2_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_rescan_r2_seed42_b20a1.json)
+  - [phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1.json)
 
 ## Deltas
 
@@ -41,7 +42,7 @@ Date: 2026-06-13
   - `tokenizer_structured_temperature: 0.08 -> 0.075`
   - `tokenizer_global_gate_scale: 1.10 -> 1.15`
 - provisional warm start:
-  - `/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_tok32_safe_rescan_r2_seed42_b20a1/epoch_0004.pt`
+  - `/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1/epoch_0003.pt`
 
 ## Intended Read
 
@@ -56,10 +57,11 @@ Date: 2026-06-13
 
 - this packet supersedes the older `i2sb_tok32_semantic_topogate_sigma0p02_residual` packet as the preferred exact-I2SB theory check
 - it remains diagnostic-only and must not preempt the formal velocity lane
+
 ## Parent Refresh
 
-- Source formal packet: `vel_tok32_safe_rescan_r2`
-- Selection policy: `best_clean_allpairs`
-- Selected parent epoch: `epoch_0004`
-- Selected parent checkpoint: `exp/aaai2027_phase2_vel_tok32_safe_rescan_r2_seed42_b20a1/epoch_0004.pt`
-- Selected parent metrics: transfer `0.672377 / 0.369065`, all-pairs `0.700490 / 0.367229`
+- Source packet: `vel_tok32_safe_semantic_topogate_k085`
+- Selection policy: `latest`
+- Selected parent epoch: `epoch_0003`
+- Selected parent checkpoint: `exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1/epoch_0003.pt`
+- Selected parent metrics: transfer `0.675388 / 0.375598`, all-pairs `0.702936 / 0.371762`

@@ -120,6 +120,7 @@ def _should_handoff(
     max_transfer_lpips_for_recovery: float | None,
     continue_lpips_threshold: float,
     fail_stop_lpips_threshold: float,
+    allow_inactive_handoff: bool = False,
 ) -> tuple[bool, dict[str, object]]:
     curve = status.get("curve_summary") or {}
     latest = curve.get("latest") or {}
@@ -127,11 +128,14 @@ def _should_handoff(
     pending_epochs = status.get("pending_checkpoint_epochs") or []
     pending_count = len(pending_epochs) if isinstance(pending_epochs, list) else 0
     latest_epoch = _epoch_int(status.get("latest_settled_epoch", ""))
+    latest_checkpoint_epoch = _epoch_int(status.get("latest_checkpoint_epoch", ""))
     latest_allpairs = float(latest.get("all_pairs_clip_style") or 0.0)
     latest_transfer = float(latest.get("transfer_clip_style") or 0.0)
     latest_allpairs_lpips = _safe_float(latest.get("all_pairs_content_lpips"))
     latest_transfer_lpips = _safe_float(latest.get("transfer_content_lpips"))
     best_in_newest_2 = bool(convergence.get("best_in_newest_2"))
+    processes = status.get("processes") or []
+    process_count = len(processes) if isinstance(processes, list) else 0
     allpairs_recovered = _meets_joint_recovery(
         style_value=latest_allpairs,
         style_threshold=float(min_allpairs_style_recovery),
@@ -155,13 +159,22 @@ def _should_handoff(
         fail_stop_lpips_threshold=float(fail_stop_lpips_threshold),
     )
     plateau_rule_met = latest_epoch >= int(min_settled_epoch) and (not best_in_newest_2) and (not style_recovered)
+    inactive_after_settled_eval = bool(
+        allow_inactive_handoff
+        and latest_epoch >= int(min_settled_epoch)
+        and pending_count == 0
+        and process_count == 0
+        and latest_checkpoint_epoch == latest_epoch
+    )
     pending_blocking = pending_count > 0
-    raw_should = lpips_gate_state in {"archival_stop", "fail_stop"} or plateau_rule_met
+    raw_should = lpips_gate_state in {"archival_stop", "fail_stop"} or plateau_rule_met or inactive_after_settled_eval
     should = bool(raw_should and not pending_blocking)
     if lpips_gate_state == "fail_stop":
         handoff_reason = "lpips_fail_stop"
     elif lpips_gate_state == "archival_stop":
         handoff_reason = "lpips_archival_stop"
+    elif inactive_after_settled_eval:
+        handoff_reason = "run_inactive_after_settled_eval"
     elif plateau_rule_met:
         handoff_reason = "in_band_style_plateau"
     else:
@@ -170,8 +183,10 @@ def _should_handoff(
         handoff_reason = f"{handoff_reason}_waiting_for_pending_eval"
     reason = {
         "latest_settled_epoch": latest_epoch,
+        "latest_checkpoint_epoch": latest_checkpoint_epoch,
         "pending_checkpoint_epochs": pending_epochs,
         "pending_checkpoint_count": pending_count,
+        "process_count": process_count,
         "latest_transfer_clip_style": latest_transfer,
         "latest_all_pairs_clip_style": latest_allpairs,
         "latest_transfer_content_lpips": latest_transfer_lpips,
@@ -189,6 +204,7 @@ def _should_handoff(
         "max_allpairs_lpips_for_recovery": None if max_allpairs_lpips_for_recovery is None else float(max_allpairs_lpips_for_recovery),
         "max_transfer_lpips_for_recovery": None if max_transfer_lpips_for_recovery is None else float(max_transfer_lpips_for_recovery),
         "plateau_rule_met": plateau_rule_met,
+        "inactive_after_settled_eval": inactive_after_settled_eval,
         "pending_blocking": pending_blocking,
         "handoff_reason": handoff_reason,
     }
@@ -216,9 +232,25 @@ def _stop_remote_pid(*, host: str, port: int, user: str, wsl_distro: str, pid: i
     return int(proc.returncode)
 
 
-def _wait_until_idle(*, host: str, port: int, user: str, idle_memory_mib: int, timeout_seconds: int, poll_seconds: int) -> None:
+def _wait_until_idle(*, host: str, port: int, user: str, wsl_distro: str, idle_memory_mib: int, timeout_seconds: int, poll_seconds: int) -> None:
     deadline = time.monotonic() + max(1, int(timeout_seconds))
     while True:
+        proc_wsl = _run(
+            [
+                "ssh",
+                "-p",
+                str(port),
+                "-T",
+                "-o",
+                "LogLevel=ERROR",
+                f"{user}@{host}",
+                f"wsl -d {wsl_distro} --exec bash -lc \"pgrep -af 'src/run.py' || true\"",
+            ]
+        )
+        live_wsl = [line.strip() for line in proc_wsl.stdout.splitlines() if line.strip()]
+        print(json.dumps({"wait_idle_wsl_src_run_processes": live_wsl}, ensure_ascii=False), flush=True)
+        if not live_wsl:
+            return
         proc = _run(
             [
                 "ssh",
@@ -404,6 +436,7 @@ def main() -> int:
     parser.add_argument("--idle-timeout-seconds", type=int, default=1800)
     parser.add_argument("--poll-seconds", type=int, default=30)
     parser.add_argument("--wait", action="store_true", help="Poll until the minimum settled epoch is reached before evaluating the handoff rule.")
+    parser.add_argument("--persistent-wait", action="store_true", help="When combined with --wait, keep polling after the first eligible settled epoch until handoff criteria are actually met.")
     parser.add_argument("--max-wait-seconds", type=int, default=21600)
     parser.add_argument("--execute", action="store_true", help="Actually stop the remote lane and launch solver_pc eval. Default is dry-run.")
     parser.add_argument("--force-regen", action="store_true")
@@ -434,8 +467,9 @@ def main() -> int:
             max_transfer_lpips_for_recovery=_safe_float(args.max_transfer_lpips_for_recovery),
             continue_lpips_threshold=float(args.continue_lpips_threshold),
             fail_stop_lpips_threshold=float(args.fail_stop_lpips_threshold),
+            allow_inactive_handoff=str(args.handoff_mode) == "launch_same_lane_successor",
         )
-        if (not bool(args.wait)) or should_handoff_now or (settled_epoch >= int(args.min_settled_epoch) and not pending):
+        if (not bool(args.wait)) or should_handoff_now or (not bool(args.persistent_wait) and settled_epoch >= int(args.min_settled_epoch) and not pending):
             break
         poll_payload = {
             "run_name": str(args.run_name),
@@ -461,6 +495,7 @@ def main() -> int:
         max_transfer_lpips_for_recovery=_safe_float(args.max_transfer_lpips_for_recovery),
         continue_lpips_threshold=float(args.continue_lpips_threshold),
         fail_stop_lpips_threshold=float(args.fail_stop_lpips_threshold),
+        allow_inactive_handoff=str(args.handoff_mode) == "launch_same_lane_successor",
     )
     payload = {
         "run_name": str(args.run_name),
@@ -496,6 +531,7 @@ def main() -> int:
         host=str(args.host),
         port=int(args.port),
         user=str(args.user),
+        wsl_distro=str(args.wsl_distro),
         idle_memory_mib=int(args.idle_memory_mib),
         timeout_seconds=int(args.idle_timeout_seconds),
         poll_seconds=int(args.poll_seconds),

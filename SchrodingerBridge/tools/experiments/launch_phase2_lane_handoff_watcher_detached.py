@@ -114,6 +114,7 @@ def main() -> int:
         "--run-name",
         run_name,
         "--wait",
+        "--persistent-wait",
         "--execute",
         "--current-lane-class",
         lane_class,

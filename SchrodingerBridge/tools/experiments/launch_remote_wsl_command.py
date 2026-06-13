@@ -115,6 +115,24 @@ def _query_remote_gpu_memory_used_mib(*, host: str, port: int, user: str) -> int
     return max(values) if values else None
 
 
+def _query_remote_wsl_src_run_processes(*, host: str, port: int, user: str, wsl_distro: str) -> list[str]:
+    remote = f"{user}@{host}"
+    result = _run(
+        [
+            "ssh",
+            "-p",
+            str(port),
+            "-T",
+            "-o",
+            "LogLevel=ERROR",
+            remote,
+            f"wsl -d {wsl_distro} --exec bash -lc \"pgrep -af 'src/run.py' || true\"",
+        ]
+    )
+    output = result.stdout.decode("utf-8", errors="replace")
+    return [line.strip() for line in output.splitlines() if line.strip()]
+
+
 def _quote_command(tokens: list[str]) -> str:
     if not tokens:
         raise ValueError("remote command must not be empty")
@@ -639,18 +657,30 @@ def main() -> int:
         max_runtime_mib=int(args.max_runtime_memory_mib),
     )
     prelaunch_memory_used_mib = _query_remote_gpu_memory_used_mib(host=args.host, port=args.port, user=args.user)
+    prelaunch_wsl_run_processes = _query_remote_wsl_src_run_processes(
+        host=args.host,
+        port=args.port,
+        user=args.user,
+        wsl_distro=args.wsl_distro,
+    )
     print(f"prelaunch_gpu_memory_used_mib={prelaunch_memory_used_mib}")
+    print(f"prelaunch_wsl_src_run_processes={prelaunch_wsl_run_processes}")
     print(f"effective_max_prelaunch_memory_mib={effective_prelaunch_mib}")
     if (
         prelaunch_memory_used_mib is not None
         and prelaunch_memory_used_mib > effective_prelaunch_mib
     ):
+        if prelaunch_wsl_run_processes:
+            print(
+                "Refusing launch because the remote GPU is not idle enough for the "
+                f"single-lane protocol and active WSL training processes still exist: {prelaunch_memory_used_mib} MiB > "
+                f"{effective_prelaunch_mib} MiB."
+            )
+            return 13
         print(
-            "Refusing launch because the remote GPU is not idle enough for the "
-            f"single-lane protocol: {prelaunch_memory_used_mib} MiB > "
-            f"{effective_prelaunch_mib} MiB."
+            "Prelaunch GPU memory is above the nominal idle gate, but no active WSL src/run.py process was found. "
+            "Treating this as desktop / graphics residency and continuing with the single-lane launch."
         )
-        return 13
 
     extra_members = {
         remote_launcher_rel: launch_script.encode("utf-8"),
