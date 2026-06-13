@@ -129,6 +129,21 @@ def _validate_row(row: dict[str, str]) -> dict[str, object]:
             issues.append("structure_reentry row must have formal_eligible=no")
         if str(cfg.model.transport_prediction_mode) != "velocity":
             issues.append("structure_reentry packet must stay on velocity transport")
+        handoff = str(row.get("watch_handoff_mode", "")).strip().lower()
+        if str(row.get("preferred", "")).strip().lower() == "yes":
+            for key in (
+                "watch_min_settled_epoch",
+                "watch_min_allpairs_style_recovery",
+                "watch_max_allpairs_lpips_for_recovery",
+                "watch_min_transfer_style_recovery",
+                "watch_max_transfer_lpips_for_recovery",
+                "watch_handoff_mode",
+            ):
+                if not _present(key):
+                    issues.append(f"preferred structure_reentry row missing {key}")
+        if handoff:
+            if handoff not in {"launch_same_lane_successor", "stop_only"}:
+                issues.append(f"invalid structure_reentry watch_handoff_mode={handoff}")
     elif lane_class == "i2sb_diagnostic_only":
         if formal_eligible != "no":
             issues.append("i2sb_diagnostic_only row must have formal_eligible=no")

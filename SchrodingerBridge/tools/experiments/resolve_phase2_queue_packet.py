@@ -32,6 +32,15 @@ def _is_closed_or_retired_status(value: object) -> bool:
     return status.startswith("closed") or status in {"superseded", "retired", "archived"}
 
 
+def _is_launchable_successor_status(value: object) -> bool:
+    status = str(value or "").strip().lower()
+    if not status:
+        return True
+    if _is_closed_or_retired_status(status):
+        return False
+    return status not in {"queued_reference", "reference_only"}
+
+
 def _load_validation_map(path: Path) -> tuple[bool, dict[str, dict[str, object]]]:
     if not path.is_file():
         return False, {}
@@ -174,7 +183,7 @@ def resolve_successor_packet(
         raise ValueError(f"current packet_id {current_packet_id!r} not found for lane_class={lane_class!r}")
     successor = None
     for row in candidates[current_index + 1 :]:
-        if _is_closed_or_retired_status(row.get("status")):
+        if not _is_launchable_successor_status(row.get("status")):
             continue
         successor = row
         break

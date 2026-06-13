@@ -71,3 +71,5 @@ Date: 2026-06-13
 - reason:
   - it is a cleaner attribution test
   - and it costs much less architectural disturbance than changing the attention family
+- if it also closes without a formal shelf break, the next same-lane successor is:
+  - [2026-06-13-phase2-vel-tok32-safe-pnp-selfinject.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-pnp-selfinject.md)
