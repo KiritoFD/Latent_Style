@@ -1,0 +1,2 @@
+epoch,full_clip_style,full_content_lpips,transfer_clip_style,transfer_content_lpips,wall_total_seconds,summary_path
+epoch_0001,0.6782382997671763,0.7922340329466667,0.67683327794075,0.7927113668500001,188.81216264399973,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\round1_tok_b_cross_image_remote_full_eval_pull\r2_epoch_0001.summary.json
