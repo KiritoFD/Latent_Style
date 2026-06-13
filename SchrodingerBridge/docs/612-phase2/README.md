@@ -238,17 +238,21 @@
   - `vel_tok32_safe_semantic_topogate_k070`
   - this packet inherits `appalign epoch_0001` as the highest-style recovered parent inside the safe band
   - current live read:
-    - `epoch_0001` has now settled
-    - transfer `0.672664 / 0.336344`
-    - all-pairs `0.703589 / 0.333097`
+    - `epoch_0002` has now settled
+    - transfer `0.671814 / 0.315878`
+    - all-pairs `0.703409 / 0.313567`
     - latest state is `training_after_settled_eval`
-    - the run is currently mid-`epoch_0002`
+    - the run is currently early in `epoch_0003`
   - interpretation:
     - `appalign` has already closed as a structure-clean but style-limited plateau
     - `i2sb_sigma0.02_tfloor005` produced a first settled archival-only point
     - the current active hypothesis is therefore no longer stochasticity-first but style-release under the same true-tokenizer + velocity family
     - `k070` is the cleanest guide-aligned next step because it changes only `semantic_self_topology_blend`
-    - its first settled point is already a clean in-band recovery point on all-pairs, but transfer style is still below the formal shelf
+    - `epoch_0002` confirms the same qualitative read more strongly:
+      - LPIPS keeps dropping toward the IDT band
+      - all-pairs remains safely recovered
+      - transfer style is still below the formal shelf and slipped slightly versus `epoch_0001`
+    - this means the current line is becoming cleaner, but also more clearly style-limited
     - the next two queued same-family follow-ons are:
       - `k070_kin070`: reduce `w_kinetic`
       - `k070_sp256`: widen `tokenizer_spatial_dim` to `256`

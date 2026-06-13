@@ -65,7 +65,7 @@ Date: 2026-06-13
 ## Launch Read
 
 - current remote state:
-  - `training_before_first_settled_eval`
+  - `training_after_settled_eval`
   - remote run name:
     - `aaai2027_phase2_vel_tok32_safe_semantic_topogate_k070_seed42_b12a1`
   - warm start:
@@ -73,3 +73,22 @@ Date: 2026-06-13
 - first expectation:
   - if style can move upward while LPIPS stays close to the `0.31-0.34` band,
     this branch becomes the first post-appalign style-release proof without abandoning the true-tokenizer + velocity family
+
+## Current Read
+
+- latest settled checkpoint:
+  - `epoch_0002`
+  - transfer `0.671814 / 0.315878`
+  - all-pairs `0.703409 / 0.313567`
+- read:
+  - the branch is still clearly in-band
+  - LPIPS continued to improve materially from `epoch_0001`
+  - all-pairs remains above the safe recovery shelf
+  - transfer style drifted down slightly instead of up
+- interpretation:
+  - this is stronger evidence that `k070` is buying structure cleanliness rather than a style breakout
+  - the line should keep running until the close gate is actually met
+  - if later checkpoints keep the same pattern, the next style-facing reads are:
+    - `k070_kin070`
+    - then the velocity-native stochastic eval-only `k070 e1` SDE probe
+    - then `k070_sp256`

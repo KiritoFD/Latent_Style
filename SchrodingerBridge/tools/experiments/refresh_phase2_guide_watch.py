@@ -155,6 +155,7 @@ def _derive_live_overlay(snapshot: dict) -> dict[str, object]:
         "eval_in_progress_or_pending",
     }
 
+    structure_packet = str(structure.get("packet_id", "")).strip()
     if i2sb_is_active:
         recommendation = "monitor_running_i2sb_sigma0p02_tfloor005"
         secondary = "after_first_i2sb_settled_read_reassess_pc_solver_need"
@@ -162,8 +163,12 @@ def _derive_live_overlay(snapshot: dict) -> dict[str, object]:
         recommendation = "launch_i2sb_sigma0p02_tfloor005_now"
         secondary = "after_i2sb_read_if_still_needed_run_eval_only_pc_solver"
     elif recovered_structure and style_limited:
-        recommendation = "continue_appalign_until_close_gate"
-        secondary = "keep_i2sb_sigma0p02_tfloor005_as_next_diagnostic"
+        if structure_packet == "vel_tok32_safe_semantic_topogate_k085_appalign":
+            recommendation = "continue_appalign_until_close_gate"
+            secondary = "keep_i2sb_sigma0p02_tfloor005_as_next_diagnostic"
+        else:
+            recommendation = "continue_current_structure_lane"
+            secondary = "keep_velocity_sde_em_k070_e1_as_next_idle_probe"
     else:
         recommendation = "continue_current_structure_lane"
         secondary = "do_not_queue_style_lift_branch_yet"
@@ -209,6 +214,9 @@ def _derive_reconciliation(snapshot: dict) -> list[str]:
         if str(row.get("packet_id", "")).strip() == "vel_tok32_safe_semantic_topogate_k070_sp256":
             lines.append("The remaining low-risk tokenizer suggestion has been absorbed as queued follow-on `k070_sp256` via `tokenizer_spatial_dim=256`.")
             break
+    sde_note = Path(r"G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\2026-06-13-phase2-eval-only-sde-em-k070-e1.md")
+    if sde_note.is_file():
+        lines.append("A velocity-native stochastic follow-up is now prepared separately as eval-only `solver_unsb_cycle` on `k070 epoch_0001`, instead of reusing the older `topogate e2` parent.")
     return lines
 
 
