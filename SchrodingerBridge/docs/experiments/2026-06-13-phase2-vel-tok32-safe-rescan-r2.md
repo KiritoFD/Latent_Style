@@ -105,6 +105,22 @@ Date: 2026-06-13
     - local recovery watcher PID `313620` is still alive
     - log path:
       - [phase2_vel_tok32_safe_rescan_r2_seed42_b20a1_recover_watcher.out.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/phase2_vel_tok32_safe_rescan_r2_seed42_b20a1_recover_watcher.out.log)
+- watcher refresh at `2026-06-13 13:55:29 +08:00`:
+  - the older explicit-args recovery watcher was replaced locally
+  - current watcher now resolves the formal lane from the validated phase2 manifest
+  - new local watcher PID:
+    - `322404`
+  - new logs:
+    - [phase2_formal_lane_recover_from_manifest.out.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/phase2_formal_lane_recover_from_manifest.out.log)
+    - [phase2_formal_lane_recover_from_manifest.err.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/phase2_formal_lane_recover_from_manifest.err.log)
+  - first resolved packet read:
+    - `packet_id = vel_tok32_safe_rescan_r2`
+    - `watch_min_settled_epoch = 3`
+    - `watch_min_allpairs_style_recovery = 0.701666`
+    - `watch_max_allpairs_lpips_for_recovery = 0.381724`
+    - `watch_min_transfer_style_recovery = 0.673934`
+    - `watch_max_transfer_lpips_for_recovery = 0.384340`
+    - `watch_handoff_mode = stop_only`
 
 ## Ops Note
 
