@@ -202,3 +202,225 @@ done
 1. 创建完整训练 config: K=64 tokenizer + fiber_aligned SDE + fiberwise SWD
 2. 从 topogate e1 warmstart，训练 8-12 epochs
 3. 目标: style 0.73+, LPIPS 0.35-
+
+---
+
+# 附录: Tokenizer 的"翻译级"重构 — 从查表到算子
+
+> Tokenizer 的本质是**空间翻译**：把 VAE 潜空间中的内容结构，翻译为目标流派的笔触语言。
+> "查表" (lookup) 是零阶近似——不论内容如何，$V_k$ 是固定的。
+> "翻译" 是一阶变换——输出的是对内容特征的**操作**，内容的一切连续变化都被保留。
+
+---
+
+## 方案 A: 空间混合专家翻译器 (SMoE Translator) — 推荐
+
+### 对比
+
+```
+查表法:   Output = Σ α_k · V_k                    (丢弃内容)
+SMoE法:   Output = Σ α_k · (W_k × F_content)     (变换内容)
+```
+
+### 为什么更好
+
+- $F_{\text{content}}$ 保留了原图的边缘、渐变、纹理等一切连续几何信息
+- $W_k$ 不是静态向量，而是**线性变换算子**——对 $F_{\text{content}}$ 做旋转、缩放、投影
+- 恒等初始化 (`W_k ≈ I`) 保证训练初期 spatial_map ≈ 内容特征 → LPIPS 从 step 1 就极低
+- Loss 驱动下，$W_k$ 逐渐旋转——"普通线条"被翻译成"浮世绘线条"
+
+### 代码
+
+```python
+class SMoETranslatorTokenizer(nn.Module):
+    """K 个风格专家，每个专家是一个变换矩阵 W_k，对内容特征做线性翻译"""
+    def __init__(self, num_styles, latent_dim=4, feat_dim=64, num_experts=32):
+        super().__init__()
+        self.num_experts = num_experts
+
+        # 1. 内容解析器: 保留丰富连续信息
+        self.content_parser = nn.Sequential(
+            nn.Conv2d(latent_dim, feat_dim, 3, padding=1),
+            nn.GroupNorm(8, feat_dim),
+            nn.SiLU(),
+            nn.Conv2d(feat_dim, feat_dim, 3, padding=1),
+        )
+
+        # 2. 路由键 (与当前 tokenizer 相同)
+        self.routing_keys = nn.Parameter(torch.randn(num_experts, feat_dim) * 0.02)
+
+        # 3. 翻译矩阵字典: [num_styles, num_experts, D, D]
+        self.translation_experts = nn.Parameter(
+            torch.randn(num_styles, num_experts, feat_dim, feat_dim) * 0.02
+        )
+        with torch.no_grad():
+            self.translation_experts.data += torch.eye(feat_dim).view(1, 1, feat_dim, feat_dim)
+
+    def forward(self, style_id, base_code, content_latent, target_hw):
+        B, _, H, W = content_latent.shape
+
+        # 解析内容
+        F_content = self.content_parser(content_latent.float()).to(dtype=content_latent.dtype)
+        T = F_content.flatten(2).transpose(1, 2)  # [B, HW, D]
+
+        # 路由: T @ keys^T → softmax
+        keys = F.normalize(self.routing_keys, dim=-1).unsqueeze(0).expand(B, -1, -1)
+        sim = torch.bmm(F.normalize(T, dim=-1), keys.transpose(1, 2)) / 0.1
+        routing = F.softmax(sim, dim=-1)  # [B, HW, K]
+
+        # 每个专家变换: T @ W_k^T
+        W = self.translation_experts[style_id.long()]  # [B, K, D, D]
+        translated_all = torch.einsum('bmd,bkcd->bmkc', T, W)  # [B, HW, K, D]
+
+        # 加权融合
+        fused = (translated_all * routing.unsqueeze(-1)).sum(dim=2)  # [B, HW, D]
+        spatial_map = fused.transpose(1, 2).view(B, -1, H, W)
+        return StructuredStyleOutput(
+            global_code=base_code,
+            spatial_map=spatial_map,
+            debug={"family": "smoe_translator", "init_eye": True},
+        )
+```
+
+### 与纤维丛的对应
+
+$W_k$ 是纤维 $\mathcal{F}_c$ 上的局部变换算子。对于不同底空间点 $c$（由 routing 决定），不同的 $W_k$ 被激活——这就是**纤维丛上的局部标架变换 (local gauge transformation)**。
+
+---
+
+## 方案 B: 超网络动态滤波器 (HyperNet Dynamic Filter)
+
+### 理论
+
+绘画的本质是笔触 = 卷积核。让 Tokenizer 成为超网络：输入 style_id，输出一组动态卷积核 $W_{\text{conv}}(s)$，直接在 $F_{\text{content}}$ 上做动态滤波。
+
+### 代码
+
+```python
+class HypernetFilterTokenizer(nn.Module):
+    """Style-ID → 动态卷积核 → 对内容特征做滤波"""
+    def __init__(self, num_styles, feat_dim=64, kernel_size=3, num_filters=16):
+        super().__init__()
+        self.num_filters = num_filters
+        self.kernel_size = kernel_size
+        self.content_parser = nn.Conv2d(4, feat_dim, 3, padding=1)
+
+        # 超网络: style_id → 卷积核参数 [num_filters, feat_dim, K, K]
+        num_params = num_filters * feat_dim * kernel_size * kernel_size
+        self.hyper = nn.Sequential(
+            nn.Embedding(num_styles, 256),
+            nn.Linear(256, 512),
+            nn.SiLU(),
+            nn.Linear(512, num_params),
+        )
+
+    def forward(self, style_id, base_code, content_latent, target_hw):
+        F = self.content_parser(content_latent.float())
+        B, D, H, W = F.shape
+
+        # 生成动态卷积核
+        kernels = self.hyper(style_id.long()).view(
+            B, self.num_filters, D, self.kernel_size, self.kernel_size
+        )
+
+        # 分组动态卷积: 每种风格的 conv 核不同
+        outputs = []
+        for b in range(B):
+            out_b = F[b:b+1].expand(self.num_filters, -1, -1, -1)
+            out_b = F.conv2d(
+                out_b.reshape(1, -1, H, W),
+                kernels[b].reshape(self.num_filters * D, D, self.kernel_size, self.kernel_size),
+                padding=self.kernel_size // 2,
+                groups=self.num_filters * D
+            )
+            outputs.append(out_b.sum(dim=0, keepdim=True))
+        spatial_map = torch.cat(outputs, dim=0)
+        return StructuredStyleOutput(global_code=base_code, spatial_map=spatial_map)
+```
+
+### 优势
+
+局部滤波 = 感受野锁定 → 结构天然保持。适合"笔触"类风格（印象派、点彩派——局部小范围内的高频滤波）。
+
+---
+
+## 方案 C: 切空间雅可比映射 (Tangent-Space Jacobian)
+
+### 理论
+
+将内容分解为 **0 阶(均值/色彩)** + **1 阶(梯度/几何)**。
+
+不同的风格 = 对同一个切空间向量场 $\nabla z_0$ 做不同的旋转。
+
+- 评估内容梯度场: $\nabla_x z_0, \nabla_y z_0$
+- 风格旋转矩阵 $R_s$ 旋转梯度方向
+- 用旋转后的梯度重建 spatial_map
+
+**解耦保证**: 0 阶和 1 阶被独立处理——无论怎么扭曲高频纹理，梯度连续性锁死底层轮廓。
+
+### 代码
+
+```python
+class JacobianTokenizer(nn.Module):
+    """将风格表征为梯度场的旋转变换"""
+    def __init__(self, num_styles, feat_dim=64):
+        super().__init__()
+        self.content_proj = nn.Conv2d(4, feat_dim, 3, padding=1)
+        # 每个风格的 SO(N) 旋转矩阵 (via exponential map)
+        self.style_skew = nn.Embedding(num_styles, feat_dim * (feat_dim - 1) // 2)
+        self.style_scale = nn.Embedding(num_styles, feat_dim)
+
+    def _so_rotation(self, skew_params):
+        """用 skew-symmetric 参数构建正交旋转矩阵 (Cayley transform)"""
+        B = skew_params.shape[0]; D = self.feat_dim
+        S = torch.zeros(B, D, D, device=skew_params.device)
+        idx = torch.triu_indices(D, D, 1)
+        S[:, idx[0], idx[1]] = skew_params
+        S = S - S.transpose(1, 2)         # skew-symmetric
+        I = torch.eye(D, device=S.device).unsqueeze(0).expand(B, -1, -1)
+        return (I - S) @ torch.linalg.inv(I + S)  # Cayley: (I-S)(I+S)^{-1}
+
+    def forward(self, style_id, base_code, content_latent, target_hw):
+        F = self.content_proj(content_latent.float())
+
+        # 计算梯度场
+        gx = F[..., 1:] - F[..., :-1]  # [B, D, H, W-1]
+        gy = F[..., 1:, :] - F[..., :-1, :]  # [B, D, H-1, W]
+        grad_field = torch.cat([
+            F.pad(gx, (0, 1)), F.pad(gy, (0, 0, 0, 1))
+        ], dim=1)  # [B, 2D, H, W]
+
+        # 风格旋转矩阵
+        R = self._so_rotation(self.style_skew(style_id.long()))  # [B, D, D]
+        scale = self.style_scale(style_id.long()).diag_embed()    # [B, D, D]
+        transform = scale @ R  # 缩放 + 旋转
+
+        # 应用旋转变换到梯度场
+        gx_rot = torch.einsum('bdhw,bdk->bkhw', gx, transform)
+        gy_rot = torch.einsum('bdhw,bdk->bkhw', gy, transform)
+
+        # 从旋转后的梯度重建 spatial_map (Poisson solver 简化版)
+        spatial_map = F + gx_rot + gy_rot
+        return StructuredStyleOutput(global_code=base_code, spatial_map=spatial_map)
+```
+
+### 与纤维丛的对应
+
+$\nabla z_0$ 是底空间 $\mathcal{B}$ 上的向量场的纤维分量。$R_s \cdot \nabla z_0$ 是沿着纤维 $\mathcal{F}_c$ 的旋转——**0 阶不变 (内容结构)，1 阶旋转 (风格方向)** = 纤维丛上的截面变换。
+
+---
+
+## 三种 Tokenizer 对比
+
+| 维度 | SMoE Translator | HyperNet Filter | Jacobian Mapping |
+|------|:---:|:---:|:---:|
+| 数学对应 | 纤维上的线性变换 (GL(N)) | 纤维上的局部卷积自同构 | 纤维切空间的 SO(N) 旋转 |
+| 内容保留 | 恒等初始化保证 | 局部感受野保证 | 0/1阶解耦保证 |
+| 风格特异性 | ★★★★★ 每个专家独立矩阵 | ★★★★ 动态卷积核 | ★★★★ 旋转矩阵 |
+| 计算开销 | 中等 (einsum) | 高 (分组卷积) | 中等 (Cayley) |
+| 论文价值 | ★★★★ | ★★★★ | ★★★★★ |
+| 实现难度 | 低 | 中 | 中 |
+
+### 推荐
+
+**SMoE Translator (方案 A)** — 用恒等初始化保证 LPIPS 从 step 1 就极低，$W_k$ 在训练中学会"翻译"。三个方案中实现最丝滑、效果最立竿见影。完美呼应纤维丛理论——$W_k$ 即是纤维上的局部标架变换。
