@@ -31,7 +31,7 @@ from semantic_tokenizer import (
     VLMPromptStyleTokenizer,
 )
 from style_families import BACKBONE_ATTENTION_FAMILIES, TOKENIZER_FAMILIES, normalize_family
-from style_tokenizer import FactorizedStyleTokenizer, NullStyleTokenizer
+from style_tokenizer import FactorizedStyleTokenizer
 
 
 _SKIP_FUSION_MODES = {"concat_conv", "add_proj"}
@@ -162,7 +162,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
                     "tokenizer_family='pure_latent_spatial' only supports a null compatibility tokenizer, "
                     f"got style_tokenizer={getattr(cfg, 'style_tokenizer', tokenizer_kind)!r}"
                 )
-            self.style_tokenizer = NullStyleTokenizer(style_dim=style_dim)
+            self.style_tokenizer = None
         else:
             if tokenizer_kind != "factorized":
                 raise ValueError(f"Unsupported style_tokenizer: {getattr(cfg, 'style_tokenizer', tokenizer_kind)}")

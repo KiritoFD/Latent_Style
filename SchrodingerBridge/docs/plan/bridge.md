@@ -22,6 +22,7 @@
 > 运行时也已进一步解耦：
 > - `pure_latent_spatial` 的 style-code width/device 现在来自显式 `style_code_anchor`
 > - `NullStyleTokenizer` 只保留 consumer compatibility，不再承担实际运行时锚点语义
+> - 当前纯潜主线在模型构造时直接令 `style_tokenizer = None`，只保留 `style_tokenizer = null` 这一配置兼容位
 >
 > 2026-06-13 phase-2 pivot note:
 > Distinct5 的 paper-facing formal lane 已不再默认押注 endpoint / I2SB。
