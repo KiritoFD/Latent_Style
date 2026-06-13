@@ -140,15 +140,15 @@ Date: 2026-06-13
     - run name:
       - `aaai2027_phase2_vel_tok32_safe_rescan_r1_seed42_b20a1`
     - live state:
-      - `training_after_settled_eval`
+      - `settled_no_live_process`
     - remote PID:
-      - `23197`
+      - stopped
     - current GPU read:
-      - `9792 MiB`
+      - idle after closure
     - checkpoint / eval state:
-      - `epoch_0001.pt` has been saved
-      - `epoch_0001` full eval has settled
-      - the run has already resumed into `epoch_2`
+      - `epoch_0001.pt` and `epoch_0002.pt` have been saved
+      - both epoch-end evals settled
+      - the lane has now been closed
     - latest epoch-end train read before eval:
       - `loss=0.9618`
       - `flow=0.6029`
@@ -162,8 +162,8 @@ Date: 2026-06-13
   - mode:
     - `stop_only`
   - current wait state:
-    - waiting for settled epoch `>= 6`
-    - latest settled epoch `epoch_0001`
+    - final short-screen decision reached
+    - latest settled epoch `epoch_0002`
     - current pending checkpoint list:
       - none
 
@@ -202,6 +202,35 @@ Date: 2026-06-13
     - the watcher now requires joint recovery against the old shelf:
       - `all-pairs style >= 0.701666` and `LPIPS <= 0.381724`
       - or `transfer style >= 0.673934` and `LPIPS <= 0.384340`
+- second settled authority point:
+  - `epoch_0002`
+  - transfer `0.676378 / 0.400694`
+  - all-pairs `0.702543 / 0.397891`
+  - identity `0.807203 / 0.386680`
+  - eval wall `222.76s`
+  - generation `121.74s`
+  - VAE decode `55.97s`
+- closure read:
+  - `epoch_0002` does beat the old shelf on style
+  - but worst authority LPIPS is `0.400694`, which crosses the formal `0.40` gate
+  - therefore the packet is an in-family near-miss, not a promotable line
+  - watcher reason:
+    - `lpips_archival_stop`
+  - execution result:
+    - remote lane stopped
+    - GPU returned to idle
+
+## Decision
+
+- final status:
+  - `archival_stop`
+- result class:
+  - near-miss evidence
+- decision:
+  - do one narrower rollback packet inside the same family before giving up on safe-family tuning
+  - next packet:
+    - [2026-06-13-phase2-vel-tok32-safe-rescan-r2.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-rescan-r2.md)
+    - [phase2_vel_tok32_safe_rescan_r2_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_rescan_r2_seed42_b20a1.json)
 
 ## Intended Read
 

@@ -14,6 +14,7 @@
 - Velocity 线已经证明可以稳定守住结构，但 style 仍停在 `0.70x / 0.38x` 一带。
 - Endpoint / exact-I2SB 线已经反复证明能把 style 拉到 `0.72-0.73`，但也会把 LPIPS 推到 `0.57-0.71+`。
 - 因而 Distinct5 的 paper-facing 主问题不是“如何接受高损伤换高风格”，而是“如何在安全带内做出真正 breakout”。
+- 本轮执行上，`LPIPS >= 0.70` 也不再只是 run-level 停止条件，而是 family-level 失格证据: 该家族退出 Distinct5 正式晋升路径，除非换安全父本重做。
 
 ## 硬门槛
 
@@ -59,6 +60,20 @@
 | true tokenizer | 正式主线核心 | 继续在 `velocity + pure latent` 家族内做安全带扫描 |
 | training-side structure control | 延后到第二顺位 | 只能建立在更强的 in-band 父本之上 |
 | true I2SB 代码 | 保留实现能力 | 仅允许 diagnostic-only，不再直接抢正式 lane |
+
+## Phase 2 执行顺序
+
+1. `vel_tok32_safe_rescan_r2`
+   - 继续压榨 `velocity + true tokenizer + safe-band` 家族。
+   - 目标不是做 style-first rescue，而是验证 safe-family 是否还能产出新的 in-band 非支配点。
+2. `vel_structure_control_reentry`
+   - 只有当 safe-family 明确用尽，或先拿到更强的 in-band 父本，才允许进入。
+   - 结构控制只能作为 training-side 保结构工具，不能再被当成 endpoint 风格放大后的补救。
+3. `i2sb_diagnostic_only`
+   - 只保留理论和实现价值。
+   - 仅允许廉价 diagnostic / smoke / NFE 对照，不允许挤占唯一正式远程训练 lane。
+4. `DINO`
+   - 保持退休，不进入当前主线计划。
 
 ## 当前板面
 
@@ -111,6 +126,7 @@
 - 停止规则:
   - 第一批 settled authority 点只要进入 `0.40+`，立即 archival stop。
   - 只要读到 `0.70+`，直接判 complete failure。
+  - 一旦出现 `0.70+`，结论同时回写到 family 级别: 该路数不再作为 Distinct5 正式主线候选。
   - 如果它仍然不能打破 `0.701666 / 0.381724`，则 safe-family sweep 视为用尽。
 
 ### 队列2: `vel_structure_control_reentry`
@@ -155,6 +171,7 @@
 - 第一批 settled checkpoint 就是 authority:
   - `>= 0.70` 直接 fail-stop；
   - `0.40-0.70` 直接 archival stop。
+- `>= 0.70` 的点不仅停当前包，还要被视为该 family 失去 Distinct5 正式晋升资格的直接证据。
 - structure-side packet 的训练日志必须保留 `content_lowpass_anchor` 与 `content_edge_anchor`。
 - exact-I2SB diagnostic packet 的训练日志必须保留 `bridge_noise_schedule_exact`，避免把历史 heuristic 噪声误记成 true I2SB。
 - 不允许再用“后面也许会掉下来”来继续烧正式训练资源。
@@ -168,16 +185,17 @@
   - `vel_tok32_safe_rescan_r2`
   - manifest-driven recovery watcher relaunched it after the remote Windows reboot on `2026-06-13`
   - latest live read shows:
-    - first settled authority point is now available at `epoch_0001`
-    - transfer `0.672065 / 0.379086`
-    - all-pairs `0.700117 / 0.377982`
+    - latest settled authority point is now `epoch_0002`
+    - transfer `0.675645 / 0.395898`
+    - all-pairs `0.702225 / 0.393204`
     - `live_state = training_after_settled_eval`
   - remote GPU health is back inside the preferred formal band at roughly:
     - `10.38 GiB / 12.29 GiB`
     - later `9.91 GiB / 12.29 GiB`
   - current read:
     - still in-band
-    - still below the old safe shelf `0.701666 / 0.381724`
+    - style is now above the old safe shelf, but LPIPS is also above the old shelf recovery ceiling
+    - this is an in-family Pareto improvement, not yet a promotable safe-shelf break
     - therefore the formal lane remains alive pending the short-screen through `epoch_0003`
 - 当前正式候选仍然是 `vel_tok32_safe_rescan_r2`，但它仍只是一条 kill-on-first-slip 的短筛线。
 - 若 `safe_rescan_r2` 仍越过 `0.40`，则 Phase 2 立即结束 tokenizer-safe sweep，切到 structure-side reentry 设计。
