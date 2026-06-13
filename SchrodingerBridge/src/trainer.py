@@ -542,6 +542,26 @@ class SBTrainer:
             ("style_tokenizer", getattr(self.model, "style_tokenizer", None)),
             ("structured_style_tokenizer", getattr(self.model, "structured_style_tokenizer", None)),
         ]
+        scalar_stats = self._tokenizer_scalar_metrics()
+        if scalar_stats:
+            stats.update(scalar_stats)
+        for prefix, module in modules:
+            if module is None:
+                continue
+            for name, param in module.named_parameters():
+                grad = param.grad
+                if grad is not None:
+                    stats[f"{prefix}_grad_{name.replace('.', '_')}"] = float(
+                        torch.nan_to_num(grad.detach().float().abs().mean()).item()
+                    )
+        return stats
+
+    def _tokenizer_scalar_metrics(self) -> Dict[str, float]:
+        stats: Dict[str, float] = {}
+        modules = [
+            ("style_tokenizer", getattr(self.model, "style_tokenizer", None)),
+            ("structured_style_tokenizer", getattr(self.model, "structured_style_tokenizer", None)),
+        ]
         for prefix, module in modules:
             if module is None:
                 continue
@@ -552,12 +572,6 @@ class SBTrainer:
                         stats[f"{prefix}_{key}"] = float(torch.nan_to_num(value.detach().float()).item())
                     elif isinstance(value, (int, float, bool)):
                         stats[f"{prefix}_{key}"] = float(value)
-            for name, param in module.named_parameters():
-                grad = param.grad
-                if grad is not None:
-                    stats[f"{prefix}_grad_{name.replace('.', '_')}"] = float(
-                        torch.nan_to_num(grad.detach().float().abs().mean()).item()
-                    )
         return stats
 
     def _write_numeric_debug(
@@ -1089,6 +1103,11 @@ class SBTrainer:
                 if value is None:
                     continue
                 metric_accum[key] = metric_accum.get(key, 0) + value.detach()
+            token_scalar_metrics = self._tokenizer_scalar_metrics()
+            if token_scalar_metrics:
+                for key, value in token_scalar_metrics.items():
+                    scalar = content.new_tensor(float(value), dtype=torch.float32)
+                    metric_accum[key] = metric_accum.get(key, 0) + scalar
             num_batches += 1
 
             compute_time_total = forward_time_total + backward_time_total + optimizer_time_total

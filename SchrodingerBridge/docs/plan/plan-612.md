@@ -15,6 +15,12 @@
 > - configurable cluster count
 > - global-spatial coupling through pooled spatial context
 > 因而阅读本文时，应把早期 2-layer Conv 版本视为理论出发点，而不是当前实现的最终形态。
+>
+> 2026-06-13 observability note:
+> 为了让“自组织 tokenizer”不只停留在理论叙事，当前工程还要求：
+> - structured tokenizer 在 forward 后持久化 `last_debug`
+> - trainer 将 tokenizer 的数值型 debug 项写入 numeric debug 与 epoch metrics
+> 这样后续判断是否真的出现了 semantic routing，而不是只看到 style / LPIPS 的黑箱结果。
 
 太棒了！我完全理解并且**极度赞同你的审美直觉**。
 

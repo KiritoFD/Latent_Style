@@ -198,11 +198,12 @@ Date: 2026-06-13
   - the active formal lane is now:
     - [phase2_vel_tok32_safe_rescan_r1_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_rescan_r1_seed42_b20a1.json)
     - [2026-06-13-phase2-vel-tok32-safe-rescan-r1.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-rescan-r1.md)
-    - launch time `2026-06-13 10:24`
-    - 30s launch health `10142 MiB`
+    - initial launch time `2026-06-13 10:24`
+    - early diagnostic relaunch `2026-06-13 10:35`
+    - current 30s launch health `10140 MiB`
     - current live read:
       - `live_state = training_before_first_settled_eval`
-      - `remote_gpu ~= 9966 MiB`
+      - `remote_gpu ~= 9806 MiB`
       - `latest_checkpoint_epoch = none`
       - `latest_settled_epoch = none`
     - watcher:

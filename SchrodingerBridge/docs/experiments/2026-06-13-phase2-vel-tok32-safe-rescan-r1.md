@@ -101,25 +101,35 @@ Date: 2026-06-13
     - `launch_remote_experiment_train.py`
   - task:
     - `exp-phase2_vel_tok32_safe_rescan_r1_seed42_b20a1-train`
-  - launch time:
+  - initial launch time:
     - `2026-06-13 10:24`
   - remote log:
     - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_phase2_vel_tok32_safe_rescan_r1_seed42_b20a1_train.log`
-  - 30s health:
+  - initial 30s health:
     - `10142 MiB`
     - accepted into the formal `9.0-10.8 GiB` band
   - resume read:
     - partial model resume from `tok32_pos_refresh epoch_0004`
     - `loaded=276 skipped=0 missing=0 unexpected=0`
+  - early relaunch:
+    - before the first checkpoint settled, the packet was intentionally restarted once
+    - reason:
+      - enable tokenizer observability on the live formal lane
+      - `semantic_tokenizer.last_debug` now really persists
+      - scalar tokenizer diagnostics now enter trainer-side numeric debug and epoch metrics
+    - relaunch time:
+      - `2026-06-13 10:35`
+    - relaunch 30s health:
+      - `10140 MiB`
   - current remote status:
     - run name:
       - `aaai2027_phase2_vel_tok32_safe_rescan_r1_seed42_b20a1`
     - live state:
       - `training_before_first_settled_eval`
     - remote PID:
-      - `22074`
+      - `23197`
     - current GPU read:
-      - `9966 MiB`
+      - `9806 MiB`
 - watcher:
   - `watch_phase2_velocity_handoff.py`
   - mode:
