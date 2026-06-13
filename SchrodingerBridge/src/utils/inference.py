@@ -324,13 +324,19 @@ class LGTInference:
         adapter = torch.load(adapter_path, map_location=self.device, weights_only=False)
         if not isinstance(adapter, dict):
             raise ValueError(f"Unsupported style adapter format: {adapter_path}")
+        pure_latent_family = str(getattr(self.model, "tokenizer_family", "legacy_factorized")).strip().lower() == "pure_latent_spatial"
         with torch.no_grad():
             tokenizer_state = {
                 key.removeprefix("style_tokenizer."): value
                 for key, value in adapter.items()
                 if key.startswith("style_tokenizer.")
             }
-            if tokenizer_state and hasattr(self.model, "style_tokenizer"):
+            if tokenizer_state and pure_latent_family:
+                logger.warning(
+                    "Ignoring legacy style_tokenizer adapter payload because tokenizer_family=%s uses structured_style_tokenizer as the active path.",
+                    str(getattr(self.model, "tokenizer_family", "legacy_factorized")),
+                )
+            elif tokenizer_state and hasattr(self.model, "style_tokenizer"):
                 self.model.style_tokenizer.load_state_dict(tokenizer_state, strict=False)
             style_spatial = adapter.get("style_spatial_id_16")
             if style_spatial is not None and getattr(self.model, "style_spatial_id_16", None) is not None:

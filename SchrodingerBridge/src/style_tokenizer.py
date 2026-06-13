@@ -9,9 +9,10 @@ class NullStyleTokenizer(nn.Module):
     """Zero style-code placeholder for pure-latent tokenizer families.
 
     The active style signal is carried by the structured tokenizer. This module
-    only preserves the historical consumer interface for code paths that expect
-    `style_tokenizer.embedding_dim`, `style_tokenizer.weight`, and a callable
-    tokenizer returning a `[B, style_dim]` tensor.
+    only preserves the historical callable/shape interface for residual
+    compatibility. Runtime anchoring now lives on the main model via
+    `style_code_anchor`, so this module is no longer the canonical source of
+    style-code device or width.
     """
 
     def __init__(self, *, style_dim: int) -> None:
