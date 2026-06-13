@@ -82,6 +82,9 @@ SchrodingerBridge/datasets/**
 SchrodingerBridge/stabilityai/**
 SchrodingerBridge/configs/aaai2027/**/*.segmented.launch.json
 SchrodingerBridge/configs/aaai2027/**/*.remote.launch.json
+SchrodingerBridge/aaai2027/*_watcher.out.log
+SchrodingerBridge/aaai2027/*_watcher.err.log
+SchrodingerBridge/aaai2027/*_watcher.log
 stabilityai/**
 
 # Top-level runtime dumps
