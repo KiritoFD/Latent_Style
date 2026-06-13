@@ -14,8 +14,8 @@ Date: 2026-06-13
 - Config: [formal config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_rescan_r2_seed42_b20a1.json)
 - Note: [formal note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-rescan-r2.md)
 - Live state: `training_after_settled_eval`
-- Remote GPU: 10167 / 12288 MiB
-- Current read: latest settled authority point is now epoch_0007 at transfer 0.672700/0.384116 and all-pairs 0.700060/0.381072; the line is still formally in-band and still below the old safe shelf on style, so the family remains alive but has not yet produced a promotable shelf break
+- Remote GPU: 10166 / 12288 MiB
+- Current read: latest settled authority point is now epoch_0007 at transfer 0.672700/0.384116 and all-pairs 0.700060/0.381072; still in-band, but transfer style is short by 0.001234 and all-pairs style is short by 0.001606 against the formal recovery shelf
 
 ### Latest Settled Point
 - Epoch: `epoch_0007`
@@ -41,11 +41,11 @@ Date: 2026-06-13
 - Structure-side preferred packet: `vel_tok32_safe_semantic_topogate_k085`
 - Structure config: [structure config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b20a1.json)
 - Structure note: [structure note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085.md)
-- Structure read: preferred structure-side successor on the current safe tokenizer profile and the cleaner in-band epoch_0004 parent
+- Structure read: safe-parent successor refreshed from vel_tok32_safe_rescan_r2 epoch_0004 via best_clean_allpairs; parent checkpoint now exp/aaai2027_phase2_vel_tok32_safe_rescan_r2_seed42_b20a1/epoch_0004.pt
 - I2SB diagnostic preferred packet: `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual`
 - I2SB config: [I2SB config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)
 - I2SB note: [I2SB note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual.md)
-- I2SB read: preferred current exact-Brownian theory-check successor on the safe tokenizer profile and the cleaner epoch_0004 parent
+- I2SB read: safe-parent successor refreshed from vel_tok32_safe_rescan_r2 epoch_0004 via best_clean_allpairs; parent checkpoint now exp/aaai2027_phase2_vel_tok32_safe_rescan_r2_seed42_b20a1/epoch_0004.pt
 
 ## Contract Read
 - `true I2SB` is already implemented as exact-Brownian endpoint transport with `solver_i2sb`.

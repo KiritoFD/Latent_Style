@@ -44,6 +44,7 @@ Use this file as the stable entrypoint instead of guessing from filenames.
   - [resolve_phase2_queue_packet.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/resolve_phase2_queue_packet.py)
   - [report_phase2_queue_state.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/report_phase2_queue_state.py)
   - [build_phase2_status_note.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/build_phase2_status_note.py)
+  - [refresh_phase2_safe_successors.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/refresh_phase2_safe_successors.py)
 - one-shot status read for a single active remote lane:
   - [report_remote_experiment_status.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/report_remote_experiment_status.py)
 - run inference-only phase2 solver_pc review on an existing checkpoint:
