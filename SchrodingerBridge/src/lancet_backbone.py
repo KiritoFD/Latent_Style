@@ -155,7 +155,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
 
         tokenizer_kind = str(getattr(cfg, "style_tokenizer", "factorized")).strip().lower()
         if self.tokenizer_family == "pure_latent_spatial":
-            if tokenizer_kind not in {"", "factorized", "null", "none", "pure_placeholder"}:
+            if tokenizer_kind not in {"", "null", "none", "pure_placeholder"}:
                 raise ValueError(
                     "tokenizer_family='pure_latent_spatial' only supports a null compatibility tokenizer, "
                     f"got style_tokenizer={getattr(cfg, 'style_tokenizer', tokenizer_kind)!r}"

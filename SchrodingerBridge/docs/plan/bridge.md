@@ -16,6 +16,10 @@
 > 都通过 `style_families.validate_i2sb_contract()` 校验。
 > 因而 `delayed_window + i2sb_endpoint/solver_i2sb` 现在会被直接拒绝，而不是事后靠文档解释。
 >
+> 2026-06-13 tokenizer contract note:
+> `tokenizer_family = pure_latent_spatial` 现在也要求显式使用 `style_tokenizer = null/none`。
+> 旧的 `style_tokenizer = factorized` 兼容占位已被主入口拒绝，避免“名义上是真 tokenizer，配置上还挂着旧分词器”的歧义。
+>
 > 2026-06-13 phase-2 pivot note:
 > Distinct5 的 paper-facing formal lane 已不再默认押注 endpoint / I2SB。
 > 当前主线判据是：
