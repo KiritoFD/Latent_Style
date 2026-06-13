@@ -22,6 +22,7 @@ LEGACY_TRANSFER_CSV = (
 )
 INMORTAL_EPOCH_CSV = DOC_ROOT / "2026-06-07-inmortal-epoch-eval-table.csv"
 RESULTS_MASTER_CSV = DOC_ROOT / "aaai2027_results_master.csv"
+PHASE2_POINTS_CSV = DOC_ROOT / "phase2_fiber_bundle" / "plot_points.csv"
 
 OUT_CSV = ROOT / "fig_distinct5_all_points_big.csv"
 OUT_PNG = ROOT / "fig_distinct5_all_points_big.png"
@@ -62,6 +63,7 @@ GROUP_STYLE = {
     "XPred core": {"color": "#2563EB", "marker": "o", "size": 26, "alpha": 0.60, "zorder": 3},
     "XPred proximal": {"color": "#7C3AED", "marker": "o", "size": 26, "alpha": 0.60, "zorder": 3},
     "XPred pattn/stokes": {"color": "#C2410C", "marker": "o", "size": 28, "alpha": 0.65, "zorder": 4},
+    "Fiber Bundle": {"color": "#E08E00", "marker": "P", "size": 66, "alpha": 0.95, "zorder": 8},
 }
 
 
@@ -103,6 +105,8 @@ def _superfamily(family: str, variant: str = "") -> str:
         return "XPred proximal"
     if family == "LBM":
         return "LBM misc"
+    if family in {"FiberBundle", "Phase2", "LBM-Phase2"}:
+        return "Fiber Bundle"
     if variant.startswith("XPred_"):
         if "Pattn" in variant or "Stokes" in variant:
             return "XPred pattn/stokes"
@@ -283,12 +287,42 @@ def load_latent_manual_curves(rows: list[dict[str, object]]) -> None:
         )
 
 
+def load_phase2_plot_points(rows: list[dict[str, object]]) -> None:
+    if not PHASE2_POINTS_CSV.exists():
+        return
+    with PHASE2_POINTS_CSV.open("r", encoding="utf-8", newline="") as f:
+        for raw in csv.DictReader(f):
+            if raw.get("scope") != "transfer":
+                continue
+            point_id = raw.get("point_id") or f"phase2::{raw.get('variant', '')}::{raw.get('step_or_epoch', '')}"
+            _add_row(
+                rows,
+                point_id=point_id,
+                source="phase2_fiber_bundle_plot",
+                family=raw.get("family", "FiberBundle"),
+                variant=raw.get("variant", ""),
+                label=raw.get("label", ""),
+                trace_id=raw.get("trace_id", ""),
+                clip_style=raw.get("clip_style"),
+                content_lpips=raw.get("content_lpips"),
+                train_min=raw.get("train_min"),
+                train_time_sec=raw.get("train_time_sec"),
+                order=raw.get("step_or_epoch"),
+                note=raw.get("note", ""),
+                label_dx=raw.get("label_dx", ""),
+                label_dy=raw.get("label_dy", ""),
+                source_summary=raw.get("source_summary", ""),
+                style_minus_idt=raw.get("style_minus_idt", ""),
+            )
+
+
 def collect_rows() -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
     load_legacy_transfer(rows)
     load_inmortal_epochs(rows)
     load_results_master_extras(rows)
     load_latent_manual_curves(rows)
+    load_phase2_plot_points(rows)
     return rows
 
 
@@ -344,6 +378,10 @@ def write_unified_csv(rows: list[dict[str, object]]) -> None:
         "train_time_sec",
         "order",
         "note",
+        "label_dx",
+        "label_dy",
+        "source_summary",
+        "style_minus_idt",
     ]
     with OUT_CSV.open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fields)
@@ -471,6 +509,25 @@ def plot(rows: list[dict[str, object]]) -> None:
             bbox=dict(boxstyle="round,pad=0.18", fc="white", ec=color, lw=0.6, alpha=0.92),
             arrowprops=dict(arrowstyle="-", color=color, lw=0.6, shrinkA=2, shrinkB=2),
             zorder=11,
+        )
+    for row in rows:
+        if row.get("source") != "phase2_fiber_bundle_plot":
+            continue
+        text = str(row.get("label") or "").strip()
+        if not text:
+            continue
+        dx = _safe_float(row.get("label_dx"))
+        dy = _safe_float(row.get("label_dy"))
+        ax.annotate(
+            text,
+            (float(row["one_minus_lpips"]), float(row["clip_style"])),
+            xytext=(dx if dx is not None else 8.0, dy if dy is not None else 10.0),
+            textcoords="offset points",
+            fontsize=9.0,
+            color="#9A5B00",
+            bbox=dict(boxstyle="round,pad=0.16", fc="white", ec="#E08E00", lw=0.6, alpha=0.90),
+            arrowprops=dict(arrowstyle="-", color="#E08E00", lw=0.55, shrinkA=2, shrinkB=2),
+            zorder=12,
         )
 
     x_vals = [float(row["one_minus_lpips"]) for row in rows]

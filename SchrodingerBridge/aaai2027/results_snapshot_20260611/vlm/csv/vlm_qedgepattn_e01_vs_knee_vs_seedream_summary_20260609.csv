@@ -1,4 +1,0 @@
-method,cases_completed,wins_so_far,win_rate_so_far,style_wins_so_far,structure_wins_so_far,artifact_wins_so_far,mean_style_specificity,mean_structure_preservation,mean_artifact_control
-LBM-Knee_e13,584,0,0.0,0,25,18,2.0428082191780823,3.2996575342465753,2.5547945205479454
-QEdgePattn_e01,584,23,0.039383561643835614,21,45,61,2.6986301369863015,3.73972602739726,3.219178082191781
-Seedream_repaired750,584,561,0.9606164383561644,563,514,505,4.912671232876712,4.809931506849315,4.751712328767123

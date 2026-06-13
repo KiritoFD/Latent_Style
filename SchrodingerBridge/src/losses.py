@@ -198,6 +198,7 @@ class OTFlowMatchingObjective:
         self.profile_sync_cuda = bool(train_cfg.profile_sync_cuda)
         self.last_profile: dict[str, float] = {}
         self.target_teacher_state: dict[int, torch.Tensor] = {}
+        self.last_fiberwise_swd_debug: dict[str, float] = {}
 
     def state_dict(self) -> dict[str, object]:
         return {
@@ -901,6 +902,56 @@ class OTFlowMatchingObjective:
             return self.transport_cost.aligned_cost(pred, target)
         return torch.stack(losses).mean()
 
+    def _fiber_routing_attention_from_model(self, model: TimeConditionedLANCETBridge) -> torch.Tensor | None:
+        cached = getattr(model, "last_output_style_context", None)
+        if not isinstance(cached, dict):
+            return None
+        style_maps = cached.get("style_maps")
+        masks = getattr(style_maps, "aux_16", None)
+        return masks if torch.is_tensor(masks) else None
+
+    def _fiberwise_swd(
+        self,
+        pred: torch.Tensor,
+        target: torch.Tensor,
+        *,
+        fiber_attn: torch.Tensor,
+    ) -> torch.Tensor:
+        if fiber_attn.ndim != 4:
+            raise ValueError(
+                "semantic_supervision_family='fiberwise_swd' requires tokenizer routing attention "
+                f"as a 4D aux_16 map, got shape={tuple(fiber_attn.shape)}."
+            )
+        masks = fiber_attn.to(device=pred.device).float().clamp(0.0, 1.0)
+        if masks.shape[-2:] != pred.shape[-2:]:
+            masks = F.interpolate(masks, size=pred.shape[-2:], mode="bilinear", align_corners=False)
+        if masks.shape[0] != pred.shape[0]:
+            raise ValueError(
+                "fiberwise_swd mask batch mismatch: "
+                f"pred batch={pred.shape[0]} mask batch={masks.shape[0]}."
+            )
+        masses = masks.mean(dim=(0, 2, 3))
+        active = torch.nonzero(masses > 1e-4, as_tuple=False).flatten()
+        cluster_mass = masks.mean(dim=(2, 3))
+        prob = cluster_mass / cluster_mass.sum(dim=1, keepdim=True).clamp_min(1e-8)
+        mask_entropy = -(prob.clamp_min(1e-8) * prob.clamp_min(1e-8).log()).sum(dim=1).mean()
+        losses: list[torch.Tensor] = []
+        for idx in active.tolist():
+            weight = masks[:, idx : idx + 1]
+            losses.append(self.transport_cost.aligned_cost(pred * weight, target * weight))
+        if not losses:
+            loss = self.transport_cost.aligned_cost(pred, target)
+            active_count = 0.0
+        else:
+            loss = torch.stack(losses).mean()
+            active_count = float(active.numel())
+        self.last_fiberwise_swd_debug = {
+            "active_clusters": active_count,
+            "loss_mean": float(loss.detach().float().mean().cpu().item()),
+            "mask_entropy": float(mask_entropy.detach().float().cpu().item()),
+        }
+        return loss
+
     def _calc_terminal_swd_loss(
         self,
         pred_endpoint: torch.Tensor,
@@ -912,15 +963,28 @@ class OTFlowMatchingObjective:
         active_mask: torch.Tensor | None = None,
         dino_patches: torch.Tensor | None = None,
         dino_hw: torch.Tensor | None = None,
+        fiber_attn: torch.Tensor | None = None,
     ) -> torch.Tensor | None:
         active = self._terminal_active_indices(pred_endpoint, source_style_id, target_style_id)
         if active_mask is not None and active.numel() > 0:
             mask = active_mask.to(device=pred_endpoint.device).view(-1).bool()
             active = active.index_select(0, torch.nonzero(mask.index_select(0, active), as_tuple=False).flatten())
         if active.numel() == 0:
+            self.last_fiberwise_swd_debug = {
+                "active_clusters": 0.0,
+                "loss_mean": 0.0,
+                "mask_entropy": 0.0,
+            }
             return None
         pred_active = pred_endpoint.index_select(0, active)
         target_active = target_style.index_select(0, active)
+        if self.semantic_supervision_family == "fiberwise_swd":
+            if fiber_attn is None:
+                raise ValueError(
+                    "semantic_supervision_family='fiberwise_swd' requires structured tokenizer routing aux_16."
+                )
+            fiber_active = fiber_attn.index_select(0, active)
+            return self._fiberwise_swd(pred_active, target_active, fiber_attn=fiber_active)
         if self.semantic_supervision_family == "dino_masked_swd" and dino_patches is not None and self.dino_masked_swd_weight > 0.0:
             dino_active = dino_patches.index_select(0, active)
             return self._dino_masked_swd(
@@ -1000,6 +1064,8 @@ class OTFlowMatchingObjective:
         runtime_payload = getattr(model, "runtime_conditioning", {}) if hasattr(model, "runtime_conditioning") else {}
         dino_patches = runtime_payload.get("content_dino_patches") if isinstance(runtime_payload, dict) else None
         dino_hw = runtime_payload.get("content_dino_hw") if isinstance(runtime_payload, dict) else None
+        if self.semantic_supervision_family == "fiberwise_swd":
+            setattr(model, "force_output_style_context_cache", True)
 
         endpoint = model.integrate(
             content,
@@ -1011,6 +1077,11 @@ class OTFlowMatchingObjective:
         active = self._terminal_active_indices(endpoint, source_style_id, target_style_id)
         if active.numel() == 0:
             return None, endpoint.new_tensor(0.0, dtype=torch.float32)
+        fiber_attn = (
+            self._fiber_routing_attention_from_model(model)
+            if self.semantic_supervision_family == "fiberwise_swd"
+            else None
+        )
         term = self._calc_terminal_swd_loss(
             endpoint,
             matched_target,
@@ -1018,6 +1089,7 @@ class OTFlowMatchingObjective:
             target_style_id,
             dino_patches=dino_patches if torch.is_tensor(dino_patches) else None,
             dino_hw=dino_hw if torch.is_tensor(dino_hw) else None,
+            fiber_attn=fiber_attn,
         )
         return term, endpoint.abs().mean().detach()
 
@@ -1059,6 +1131,8 @@ class OTFlowMatchingObjective:
         aux_target_valid: torch.Tensor | None = None,
     ) -> tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor], Dict[str, torch.Tensor | None]]:
         self.last_profile = {}
+        if self.semantic_supervision_family == "fiberwise_swd":
+            setattr(model, "force_output_style_context_cache", True)
         t_fixed = content.new_ones(content.shape[0])
         content_for_model = content
         target_for_loss = self._retinex_target(content, target_style)
@@ -1223,6 +1297,11 @@ class OTFlowMatchingObjective:
         runtime_payload = getattr(model, "runtime_conditioning", {}) if hasattr(model, "runtime_conditioning") else {}
         dino_patches = runtime_payload.get("content_dino_patches") if isinstance(runtime_payload, dict) else None
         dino_hw = runtime_payload.get("content_dino_hw") if isinstance(runtime_payload, dict) else None
+        fiber_attn = (
+            self._fiber_routing_attention_from_model(model)
+            if self.semantic_supervision_family == "fiberwise_swd"
+            else None
+        )
         terminal_swd = None
         if self.terminal_swd_weight > 0.0:
             t_profile = self._profile_start(content)
@@ -1235,6 +1314,7 @@ class OTFlowMatchingObjective:
                 content=content,
                 dino_patches=dino_patches if torch.is_tensor(dino_patches) else None,
                 dino_hw=dino_hw if torch.is_tensor(dino_hw) else None,
+                fiber_attn=fiber_attn,
             )
             self._profile_end("terminal_swd", t_profile, content)
         terminal_loss = content.new_tensor(0.0, dtype=torch.float32)
@@ -1261,6 +1341,7 @@ class OTFlowMatchingObjective:
                 active_mask=aux_mask,
                 dino_patches=dino_patches if torch.is_tensor(dino_patches) else None,
                 dino_hw=dino_hw if torch.is_tensor(dino_hw) else None,
+                fiber_attn=fiber_attn,
             )
             if terminal_aux_swd is not None:
                 terminal_aux_loss = terminal_aux_swd * self.terminal_swd_aux_weight

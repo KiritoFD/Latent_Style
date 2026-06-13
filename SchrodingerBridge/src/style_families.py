@@ -7,6 +7,7 @@ TOKENIZER_FAMILIES = {
     "tok_b_cross_image",
     "tok_c_residual_adapter",
     "tok_d_vlm_prompt",
+    "smoe_translator",
 }
 
 PURE_LATENT_COMPAT_STRIP_PREFIXES = (
@@ -61,6 +62,7 @@ SOLVER_FAMILIES = {
 SEMANTIC_SUPERVISION_FAMILIES = {
     "legacy_terminal_swd",
     "dino_masked_swd",
+    "fiberwise_swd",
 }
 
 TRANSPORT_PREDICTION_MODES = {

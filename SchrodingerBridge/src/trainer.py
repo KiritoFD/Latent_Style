@@ -555,6 +555,20 @@ class SBTrainer:
                     stats[str(key)] = float(torch.nan_to_num(value.detach().float()).item())
                 elif isinstance(value, (int, float, bool)):
                     stats[str(key)] = float(value)
+        solver_debug = getattr(self.model, "last_solver_noise_debug", {})
+        if isinstance(solver_debug, dict):
+            for key, value in solver_debug.items():
+                if torch.is_tensor(value):
+                    stats[f"solver_{key}"] = float(torch.nan_to_num(value.detach().float()).item())
+                elif isinstance(value, (int, float, bool)):
+                    stats[f"solver_{key}"] = float(value)
+        fiberwise_debug = getattr(self.loss_fn, "last_fiberwise_swd_debug", {})
+        if isinstance(fiberwise_debug, dict):
+            for key, value in fiberwise_debug.items():
+                if torch.is_tensor(value):
+                    stats[f"fiberwise_{key}"] = float(torch.nan_to_num(value.detach().float()).item())
+                elif isinstance(value, (int, float, bool)):
+                    stats[f"fiberwise_{key}"] = float(value)
         return stats
 
     def _write_numeric_debug(

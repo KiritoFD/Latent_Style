@@ -28,6 +28,7 @@ from semantic_tokenizer import (
     DinoDictionaryTokenizer,
     PureLatentSpatialTokenizer,
     ResidualSemanticAdapterTokenizer,
+    SMoETranslatorTokenizer,
     VLMPromptStyleTokenizer,
 )
 from style_families import BACKBONE_ATTENTION_FAMILIES, TOKENIZER_FAMILIES, normalize_family
@@ -184,10 +185,11 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             self.upsample_blur_kernel = "box3"
 
         tokenizer_kind = str(getattr(cfg, "style_tokenizer", "factorized")).strip().lower()
-        if self.tokenizer_family == "pure_latent_spatial":
+        latent_spatial_tokenizer_family = self.tokenizer_family in {"pure_latent_spatial", "smoe_translator"}
+        if latent_spatial_tokenizer_family:
             if tokenizer_kind not in {"", "null", "none", "pure_placeholder"}:
                 raise ValueError(
-                    "tokenizer_family='pure_latent_spatial' only supports a null compatibility tokenizer, "
+                    f"tokenizer_family={self.tokenizer_family!r} only supports a null compatibility tokenizer, "
                     f"got style_tokenizer={getattr(cfg, 'style_tokenizer', tokenizer_kind)!r}"
                 )
             self.style_tokenizer = None
@@ -224,6 +226,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         structured_temperature = max(1e-3, float(getattr(cfg, "tokenizer_structured_temperature", 0.1)))
         structured_prompt_dim = max(1, int(getattr(cfg, "tokenizer_prompt_dim", 256)))
         structured_prompt_length = max(1, int(getattr(cfg, "tokenizer_prompt_length", 8)))
+        smoe_translation_rank = max(0, int(getattr(cfg, "smoe_translation_rank", 0)))
         self.tokenizer_spatial_dim = structured_spatial_dim
         self.structured_style_map_proj: nn.Module | None = None
         if structured_spatial_dim != self.body_channels:
@@ -246,6 +249,21 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
                 pe_temperature=structured_pe_temperature,
                 global_gate_hidden_dim=structured_global_gate_hidden_dim,
                 global_gate_scale=structured_global_gate_scale,
+            )
+        elif self.tokenizer_family == "smoe_translator":
+            self.structured_style_tokenizer = SMoETranslatorTokenizer(
+                num_styles=self.num_styles,
+                global_dim=style_dim,
+                spatial_dim=structured_spatial_dim,
+                latent_channels=self.latent_channels,
+                num_clusters=structured_num_clusters,
+                temperature=structured_temperature,
+                query_dim=structured_query_dim,
+                query_num_blocks=structured_query_num_blocks,
+                pe_temperature=structured_pe_temperature,
+                global_gate_hidden_dim=structured_global_gate_hidden_dim,
+                global_gate_scale=structured_global_gate_scale,
+                translation_rank=smoe_translation_rank,
             )
         elif self.tokenizer_family == "tok_a_dino_dict":
             self.structured_style_tokenizer = DinoDictionaryTokenizer(
@@ -284,7 +302,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             )
         self.style_code_content_router: nn.Module | None = None
         self.style_code_content_style_gate: nn.Embedding | None = None
-        if self.tokenizer_content_adaptive and self.tokenizer_family != "pure_latent_spatial":
+        if self.tokenizer_content_adaptive and not latent_spatial_tokenizer_family:
             router_in = self.body_channels * 4 + 1
             hidden = max(4, int(getattr(cfg, "tokenizer_content_hidden_dim", 64)))
             self.style_code_content_router = nn.Sequential(
@@ -317,7 +335,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         self.style_spatial_atoms_16: nn.Parameter | None = None
         self.style_spatial_logits: nn.Embedding | None = None
         self.style_spatial_content_router: nn.Module | None = None
-        if self.tokenizer_family != "pure_latent_spatial" and self.style_spatial_mode != "disabled":
+        if not latent_spatial_tokenizer_family and self.style_spatial_mode != "disabled":
             self.style_spatial_id_16 = nn.Parameter(torch.zeros(self.num_styles, self.body_channels, 16, 16))
             nn.init.normal_(self.style_spatial_id_16, mean=0.0, std=0.02)
             if self.style_spatial_mode in {"prototype", "content_guided"}:

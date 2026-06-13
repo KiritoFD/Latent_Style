@@ -1,4 +1,0 @@
-method,cases_completed,wins_so_far,win_rate_so_far,style_wins_so_far,structure_wins_so_far,artifact_wins_so_far,mean_style_specificity,mean_structure_preservation,mean_artifact_control
-DualPathFresh_e09,130,6,0.046153846153846156,5,2,4,2.9,3.6384615384615384,2.746153846153846
-LBM-Knee_e13,130,0,0.0,0,7,5,2.0153846153846153,3.3153846153846156,2.453846153846154
-Seedream_repaired750,130,124,0.9538461538461539,125,121,121,4.923076923076923,4.892307692307693,4.892307692307693

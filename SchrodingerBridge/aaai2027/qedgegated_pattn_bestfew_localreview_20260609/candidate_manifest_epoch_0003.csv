@@ -1,2 +1,0 @@
-method,run,images_dir,source_root,metrics_csv
-LBM,QEdgePattn_epoch_0003,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\qedgegated_pattn_bestfew_localreview_20260609\full_eval_fresh_localreview\epoch_0003\images,G:\GitHub\Latent_Style\Dataset\distinct5_512\test,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\qedgegated_pattn_bestfew_localreview_20260609\full_eval_fresh_localreview\epoch_0003\metrics.csv

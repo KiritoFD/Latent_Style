@@ -197,6 +197,7 @@ class ModelConfig:
     tokenizer_query_dim: int = 64
     tokenizer_query_num_blocks: int = 4
     tokenizer_spatial_dim: int = 0
+    smoe_translation_rank: int = 0
     tokenizer_pe_temperature: float = 1.0
     tokenizer_global_gate_hidden_dim: int = 160
     tokenizer_global_gate_scale: float = 1.0
@@ -336,6 +337,7 @@ class ModelConfig:
     solver_corrector_clamp: float = 0.0
     solver_tangent_projection_strength: float = 1.0
     solver_stochastic_noise_scale: float = 0.01
+    solver_fiber_aligned: bool = False
     solver_dual_track_detach: bool = True
     use_checkpointing: bool = False
     extra: dict[str, Any] = field(default_factory=dict)

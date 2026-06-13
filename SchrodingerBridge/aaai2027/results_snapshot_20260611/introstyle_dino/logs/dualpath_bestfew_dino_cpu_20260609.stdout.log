@@ -1,1 +1,0 @@
-[run_local_dualpath_bestfew_review] C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\pull_remote_dualpath_bestfew_localreview.py --eval-subdir full_eval_fresh_localreview --local-root G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\dualpath_bestfew_localreview_20260609

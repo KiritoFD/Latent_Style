@@ -1,4 +1,0 @@
-candidate,intro_dino_review_csv,vlm_jsonl
-e02,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\hold4twostage_bestfew_review_20260609.csv,vlm_hold4twostage_e02_vs_knee_vs_seedream_20260609.jsonl
-e12,G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\hold4twostage_bestfew_review_20260609.csv,vlm_hold4twostage_e12_vs_knee_vs_seedream_20260609.jsonl
-e20,,vlm_hold4twostage_e20_vs_knee_vs_seedream_20260609.jsonl

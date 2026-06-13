@@ -1,4 +1,0 @@
-label,source_path,parameter_count,parameter_count_millions
-LBM-K,G:\GitHub\Latent_Style\SchrodingerBridge\configs\distinct5_512_ema_variant_k_content_adaptive_vq_queue_e3.json,1982250,1.98225
-LBM-Knee,G:\GitHub\Latent_Style\SchrodingerBridge\configs\aaai2027\inmortal_xpred_kmanifold_pattn_anisostokes_queue_from_pattn_seed42_b8a2.json,1946248,1.946248
-LBM-PS-v2,G:\GitHub\Latent_Style\SchrodingerBridge\configs\aaai2027\inmortal_xpred_kmanifold_pattn_stokes002_from_pattn_seed42_b16.json,1946248,1.946248

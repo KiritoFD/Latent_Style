@@ -17,7 +17,7 @@ $LogPath = Join-Path $SbRoot "aaai2027\phase2_guide_watcher.log"
 New-Item -ItemType Directory -Force -Path $OutputRoot | Out-Null
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $LogPath) | Out-Null
 
-$Python = (Get-Command python -ErrorAction Stop).Source
+$Python = (Get-Command python -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
 $Script = Join-Path $ScriptRoot "refresh_phase2_guide_watch.py"
 
 Add-Content -LiteralPath $LogPath -Value ("=== GUIDE WATCH START " + (Get-Date -Format o) + " ===")

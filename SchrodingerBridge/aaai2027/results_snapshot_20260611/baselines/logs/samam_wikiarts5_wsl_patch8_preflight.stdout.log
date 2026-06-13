@@ -1,4 +1,0 @@
------------init SaMam model-----------
-inference by mamba-ssm, quick
-upsample: 8
-Training: |          | 0/? [00:00<?, ?it/s]Training: |          | 0/? [00:00<?, ?it/s]Epoch 0: |          | 0/? [00:00<?, ?it/s] Epoch 0: |          | 1/? [00:03<00:00,  0.31it/s]Epoch 0: |          | 1/? [00:03<00:00,  0.31it/s, v_num=0, id_loss1=44.00, id_loss2=9.150, loss_style=39.40, loss_content=13.40]Epoch 0: |          | 1/? [00:03<00:00,  0.31it/s, v_num=0, id_loss1=44.00, id_loss2=9.150, loss_style=39.40, loss_content=13.40]Epoch 0: |          | 1/? [00:13<00:00,  0.08it/s, v_num=0, id_loss1=44.00, id_loss2=9.150, loss_style=39.40, loss_content=13.40]

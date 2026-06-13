@@ -59,6 +59,9 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.bridge_sigma = max(0.0, float(getattr(bridge_config, "bridge_sigma", 0.0)))
         self.i2sb_predictor_time_floor = max(0.0, float(getattr(bridge_config, "i2sb_predictor_time_floor", 0.0)))
         self.last_i2sb_transport_debug: dict[str, float] = {}
+        self.solver_stochastic_noise_scale = max(0.0, float(getattr(bridge_config, "solver_stochastic_noise_scale", 0.0)))
+        self.solver_fiber_aligned = bool(getattr(bridge_config, "solver_fiber_aligned", False))
+        self.last_solver_noise_debug: dict[str, float] = {}
         self.bridge_style_dim = int(getattr(self, "style_code_dim", getattr(self.style_tokenizer, "embedding_dim", 0)))
         self.execution_budget_mode = str(getattr(bridge_config, "execution_budget_mode", "none")).strip().lower()
         if self.execution_budget_mode not in {"none", "scalar", "low_high"}:
@@ -204,6 +207,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.last_base_endpoint: torch.Tensor | None = None
         self.last_final_endpoint: torch.Tensor | None = None
         self.last_proximal_clamp_scale: torch.Tensor | None = None
+        self.last_solver_noise_debug = {}
         self.current_epoch: int = 1
         self.total_epochs: int = 1
         self.runtime_conditioning: dict[str, Any] = {}
@@ -241,11 +245,57 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.last_proximal_clamp_scale = None
         self.last_output_appearance_debug = {}
         self.last_output_style_context = None
+        self.last_solver_noise_debug = {}
         for module in self.modules():
             if hasattr(module, "last_attn"):
                 setattr(module, "last_attn", None)
             if hasattr(module, "last_k"):
                 setattr(module, "last_k", None)
+
+    def _fiber_aligned_solver_noise(
+        self,
+        reference: torch.Tensor,
+        noise: torch.Tensor,
+        *,
+        noise_scale: float,
+    ) -> torch.Tensor:
+        debug: dict[str, float] = {
+            "fiber_gate_active": 0.0,
+            "fiber_gate_mean": 0.0,
+            "fiber_gate_rms": 0.0,
+            "noise_scale": float(noise_scale),
+            "isotropic_or_fiber": 1.0 if bool(getattr(self, "solver_fiber_aligned", False)) else 0.0,
+        }
+        if not bool(getattr(self, "solver_fiber_aligned", False)):
+            self.last_solver_noise_debug = debug
+            return noise
+        cached = getattr(self, "last_output_style_context", None)
+        style_maps = cached.get("style_maps") if isinstance(cached, dict) else None
+        gate = getattr(style_maps, "gate_16", None)
+        if not torch.is_tensor(gate):
+            self.last_solver_noise_debug = debug
+            return noise
+        gate = gate.to(device=reference.device).float()
+        gate = torch.sigmoid(gate).clamp(0.0, 1.0)
+        if gate.shape[-2:] != reference.shape[-2:]:
+            gate = F.interpolate(gate, size=reference.shape[-2:], mode="bilinear", align_corners=False)
+        if gate.shape[1] != reference.shape[1]:
+            if gate.shape[1] == 1:
+                gate = gate.expand(reference.shape[0], reference.shape[1], reference.shape[2], reference.shape[3])
+            else:
+                gate = gate.mean(dim=1, keepdim=True).expand(reference.shape[0], reference.shape[1], reference.shape[2], reference.shape[3])
+        gate_mean = gate.detach().float().mean()
+        gate_rms = gate.detach().float().square().mean(dim=(1, 2, 3), keepdim=True).sqrt().clamp_min(1e-6)
+        gate_weight = (gate / gate_rms).to(dtype=noise.dtype)
+        debug.update(
+            {
+                "fiber_gate_active": 1.0,
+                "fiber_gate_mean": float(gate_mean.cpu().item()),
+                "fiber_gate_rms": float(gate_rms.mean().cpu().item()),
+            }
+        )
+        self.last_solver_noise_debug = debug
+        return noise * gate_weight
 
     @staticmethod
     def _make_style_injector(input_dim: int, channels: int, hidden_dim: int) -> nn.Module:
@@ -1105,9 +1155,22 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                 velocity = self.forward(h, t=t, style_id=style_id, style_code_override=style_code_override)
                 predictor = h + velocity * dt
                 predictor = self._correct_transport_state(predictor, x, dt=dt * 0.5)
-                noise_scale = max(0.0, float(getattr(self, "solver_stochastic_noise_scale", 0.01)))
+                noise_scale = max(0.0, float(getattr(self, "solver_stochastic_noise_scale", 0.0)))
                 if noise_scale > 0.0:
-                    predictor = predictor + torch.randn_like(predictor) * noise_scale * math.sqrt(max(dt, 1e-8))
+                    noise = self._fiber_aligned_solver_noise(
+                        predictor,
+                        torch.randn_like(predictor),
+                        noise_scale=noise_scale,
+                    )
+                    predictor = predictor + noise * noise_scale * math.sqrt(max(dt, 1e-8))
+                else:
+                    self.last_solver_noise_debug = {
+                        "fiber_gate_active": 0.0,
+                        "fiber_gate_mean": 0.0,
+                        "fiber_gate_rms": 0.0,
+                        "noise_scale": 0.0,
+                        "isotropic_or_fiber": 1.0 if bool(getattr(self, "solver_fiber_aligned", False)) else 0.0,
+                    }
                 h = predictor
             else:
                 velocity = self.forward(h, t=t, style_id=style_id, style_code_override=style_code_override)
