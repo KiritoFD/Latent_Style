@@ -7,6 +7,8 @@ import sys
 import time
 from pathlib import Path
 
+from resolve_phase2_queue_packet import DEFAULT_MANIFEST, DEFAULT_VALIDATION, resolve_packet
+
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SB_ROOT = SCRIPT_DIR.parent.parent
@@ -237,6 +239,38 @@ def _launch_pc_eval(*, checkpoint: str, force_regen: bool) -> int:
     return int(proc.returncode)
 
 
+def _launch_next_lane_from_manifest(
+    *,
+    manifest_csv: Path,
+    validation_json: Path,
+    lane_class: str,
+    skip_smoke: bool,
+) -> int:
+    resolved = resolve_packet(
+        manifest_csv=manifest_csv,
+        lane_class=str(lane_class),
+        preferred_only=True,
+        validation_json=validation_json,
+        require_valid=False,
+    )
+    config_path = str(resolved.get("config_path", "")).strip()
+    if not config_path:
+        raise ValueError(f"resolved packet for lane_class={lane_class!r} has no config_path")
+    cmd = [
+        sys.executable,
+        str(SCRIPT_DIR / "launch_remote_experiment_train.py"),
+        "--config",
+        config_path,
+        "--task-prefix",
+        str(lane_class),
+    ]
+    if bool(skip_smoke):
+        cmd.append("--skip-smoke")
+    proc = _run(cmd)
+    sys.stdout.write(proc.stdout)
+    return int(proc.returncode)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Watch the phase2 velocity lane and hand off to eval-only solver_pc when the documented closure rule is met.")
     parser.add_argument("--run-name", default="aaai2027_phase2_vel_pattn_enhanced_tok_seed42_b22a1")
@@ -259,11 +293,15 @@ def main() -> int:
     parser.add_argument("--max-wait-seconds", type=int, default=21600)
     parser.add_argument("--execute", action="store_true", help="Actually stop the remote lane and launch solver_pc eval. Default is dry-run.")
     parser.add_argument("--force-regen", action="store_true")
+    parser.add_argument("--manifest-csv", type=Path, default=DEFAULT_MANIFEST)
+    parser.add_argument("--validation-json", type=Path, default=DEFAULT_VALIDATION)
+    parser.add_argument("--next-lane-class", default="structure_reentry")
+    parser.add_argument("--skip-next-smoke", action="store_true")
     parser.add_argument(
         "--handoff-mode",
-        choices=("launch_pc_eval", "stop_only"),
+        choices=("launch_pc_eval", "stop_only", "launch_structure_reentry"),
         default="launch_pc_eval",
-        help="What to do after the remote lane is closed. 'launch_pc_eval' preserves the old behavior; 'stop_only' just frees the formal lane.",
+        help="What to do after the remote lane is closed. 'launch_pc_eval' preserves the old behavior; 'stop_only' just frees the formal lane; 'launch_structure_reentry' resolves and launches the preferred next lane from the phase2 manifest.",
     )
     args = parser.parse_args()
 
@@ -349,6 +387,16 @@ def main() -> int:
     )
     if str(args.handoff_mode) == "stop_only":
         print("Remote lane stopped and GPU returned to idle. Handoff mode is stop_only, so no follow-on eval was launched.", flush=True)
+        return 0
+    if str(args.handoff_mode) == "launch_structure_reentry":
+        rc = _launch_next_lane_from_manifest(
+            manifest_csv=Path(args.manifest_csv).expanduser().resolve(),
+            validation_json=Path(args.validation_json).expanduser().resolve(),
+            lane_class=str(args.next_lane_class),
+            skip_smoke=bool(args.skip_next_smoke),
+        )
+        if rc != 0:
+            raise RuntimeError(f"phase2 next-lane launch failed rc={rc}")
         return 0
     rc = _launch_pc_eval(checkpoint=str(args.pc_checkpoint), force_regen=bool(args.force_regen))
     if rc != 0:

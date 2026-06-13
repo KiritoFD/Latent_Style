@@ -100,6 +100,9 @@ def _phase2_watch(
     max_transfer_lpips_for_recovery: float | None,
     poll_seconds: int,
     handoff_mode: str,
+    manifest_csv: str = "",
+    validation_json: str = "",
+    next_lane_class: str = "structure_reentry",
 ) -> int:
     watcher = SCRIPT_DIR / "watch_phase2_velocity_handoff.py"
     cmd = [
@@ -134,6 +137,12 @@ def _phase2_watch(
                 str(float(max_transfer_lpips_for_recovery)),
             ]
         )
+    if str(manifest_csv).strip():
+        cmd.extend(["--manifest-csv", str(manifest_csv).strip()])
+    if str(validation_json).strip():
+        cmd.extend(["--validation-json", str(validation_json).strip()])
+    if str(next_lane_class).strip():
+        cmd.extend(["--next-lane-class", str(next_lane_class).strip()])
     proc = _run(cmd)
     print(proc.stdout, end="" if proc.stdout.endswith("\n") else "\n", flush=True)
     return int(proc.returncode)
@@ -164,7 +173,7 @@ def main() -> int:
     parser.add_argument("--max-allpairs-lpips-for-recovery", type=float, default=None)
     parser.add_argument("--min-transfer-style-recovery", type=float, default=None)
     parser.add_argument("--max-transfer-lpips-for-recovery", type=float, default=None)
-    parser.add_argument("--handoff-mode", choices=("launch_pc_eval", "stop_only"), default="stop_only")
+    parser.add_argument("--handoff-mode", choices=("launch_pc_eval", "stop_only", "launch_structure_reentry"), default="stop_only")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -276,6 +285,9 @@ def main() -> int:
         max_transfer_lpips_for_recovery=args.max_transfer_lpips_for_recovery,
         poll_seconds=max(1, int(args.poll_seconds)),
         handoff_mode=str(args.handoff_mode),
+        manifest_csv=str(args.manifest_csv),
+        validation_json=str(args.validation_json),
+        next_lane_class="structure_reentry",
     )
 
 

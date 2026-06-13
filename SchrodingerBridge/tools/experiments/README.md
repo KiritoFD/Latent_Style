@@ -54,6 +54,7 @@ Use this file as the stable entrypoint instead of guessing from filenames.
 - watch the formal phase2 velocity lane and hand off to eval-only solver_pc when the documented closure rule is met:
   - [watch_phase2_velocity_handoff.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_phase2_velocity_handoff.py)
   - supports `--handoff-mode stop_only` when the active phase2 packet should close on LPIPS / plateau without automatically launching the legacy solver_pc follow-up
+  - also supports `--handoff-mode launch_structure_reentry` to stop the formal lane and immediately launch the preferred next packet from the phase2 manifest
 - manifest-driven WSL2 recovery watcher:
   - [watch_phase2_wsl_recover_and_launch.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_phase2_wsl_recover_and_launch.py)
   - now supports:
@@ -61,6 +62,7 @@ Use this file as the stable entrypoint instead of guessing from filenames.
     - `--validation-json`
     - `--lane-class`
     - `--resolve-only`
+    - `--handoff-mode launch_structure_reentry`
   - the preferred phase-2 usage is to resolve the formal lane from the manifest instead of hard-coding config / run-name / watcher thresholds
 - launch one family train lane:
   - [launch_remote_round2_family_train.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_round2_family_train.py)
