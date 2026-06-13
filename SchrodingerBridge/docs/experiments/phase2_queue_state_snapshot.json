@@ -1,6 +1,6 @@
 {
   "manifest_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\phase2_queue_manifest.csv",
-  "manifest_row_count": 9,
+  "manifest_row_count": 10,
   "validation_json": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\phase2_queue_manifest_validation.json",
   "validation_ok": true,
   "resolved_packets": {
@@ -47,17 +47,17 @@
       "validation_row_ok": true
     },
     "i2sb_diagnostic_only": {
-      "packet_id": "i2sb_tok32_safe_semantic_topogate_sigma0p02_residual",
+      "packet_id": "i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005",
       "lane_class": "i2sb_diagnostic_only",
       "priority_in_class": 1,
       "preferred": true,
       "status": "queued",
       "formal_eligible": false,
       "tokenizer_profile": "tok32_safe_rescan",
-      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\aaai2027\\phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json",
-      "note_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual.md",
-      "run_name": "aaai2027_phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1",
-      "current_read": "successor refreshed from vel_tok32_safe_semantic_topogate_k085 epoch_0003 via latest; parent checkpoint now exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1/epoch_0003.pt",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\aaai2027\\phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005_seed42_b20a1.json",
+      "note_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual-tfloor005.md",
+      "run_name": "aaai2027_phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005_seed42_b20a1",
+      "current_read": "early-time aligned exact-I2SB follow-on: keep the same safe parent and residual sigma0.02 Brownian bridge",
       "watch_min_settled_epoch": "",
       "watch_min_allpairs_style_recovery": "",
       "watch_max_allpairs_lpips_for_recovery": "",
@@ -65,7 +65,7 @@
       "watch_max_transfer_lpips_for_recovery": "",
       "watch_handoff_mode": "",
       "validation_snapshot_ok": true,
-      "validation_row_ok": true
+      "validation_row_ok": null
     }
   },
   "remote_health": {
@@ -107,7 +107,7 @@
     "remote_gpu": [
       {
         "name": "NVIDIA Graphics Device",
-        "memory_used_mib": 6822,
+        "memory_used_mib": 2524,
         "memory_total_mib": 12288
       }
     ],
@@ -465,7 +465,7 @@
     "remote_gpu": [
       {
         "name": "NVIDIA Graphics Device",
-        "memory_used_mib": 6822,
+        "memory_used_mib": 2524,
         "memory_total_mib": 12288
       }
     ],
@@ -473,47 +473,53 @@
       "11958 /home/xy/venvs/samam312/bin/python SchrodingerBridge/src/run.py --config /mnt/i/Github/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1.json"
     ],
     "remote_wsl_hcs_failure": false,
-    "live_state": "training_before_first_settled_eval",
-    "latest_checkpoint_epoch": "",
+    "live_state": "eval_in_progress_or_pending",
+    "latest_checkpoint_epoch": "epoch_0001",
     "latest_settled_epoch": "",
-    "pending_checkpoint_epochs": [],
+    "pending_checkpoint_epochs": [
+      "epoch_0001"
+    ],
     "stale_pending_checkpoint_epochs": [],
-    "checkpoint_files": [],
-    "full_eval_entries": [],
+    "checkpoint_files": [
+      "epoch_0001.pt"
+    ],
+    "full_eval_entries": [
+      "epoch_0001"
+    ],
     "curve_summary": null,
     "convergence": null,
     "latest_summary": null,
     "train_log_tail": [
-      "Epoch 1/24:  68%|██████▊   | 1065/1574 [17:09<08:15,  1.03it/s, curv=0.0000, flow=0.7147, kin=0.0807, loss=1.0731, ot=0.0656, t=0.503, tswd=0.0154]",
-      "Epoch 1/24:  68%|██████▊   | 1066/1574 [17:10<08:11,  1.03it/s, curv=0.0000, flow=0.7147, kin=0.0807, loss=1.0731, ot=0.0656, t=0.503, tswd=0.0154]",
-      "Epoch 1/24:  68%|██████▊   | 1067/1574 [17:11<08:11,  1.03it/s, curv=0.0000, flow=0.7147, kin=0.0807, loss=1.0731, ot=0.0656, t=0.503, tswd=0.0154]",
-      "Epoch 1/24:  68%|██████▊   | 1068/1574 [17:12<08:11,  1.03it/s, curv=0.0000, flow=0.7147, kin=0.0807, loss=1.0731, ot=0.0656, t=0.503, tswd=0.0154]",
-      "Epoch 1/24:  68%|██████▊   | 1069/1574 [17:13<08:09,  1.03it/s, curv=0.0000, flow=0.7147, kin=0.0807, loss=1.0731, ot=0.0656, t=0.503, tswd=0.0154]",
-      "Epoch 1/24:  68%|██████▊   | 1070/1574 [17:14<08:10,  1.03it/s, curv=0.0000, flow=0.7147, kin=0.0807, loss=1.0731, ot=0.0656, t=0.503, tswd=0.0154]",
-      "Epoch 1/24:  68%|██████▊   | 1071/1574 [17:15<08:09,  1.03it/s, curv=0.0000, flow=0.7147, kin=0.0807, loss=1.0731, ot=0.0656, t=0.503, tswd=0.0154]",
-      "Epoch 1/24:  68%|██████▊   | 1072/1574 [17:16<08:10,  1.02it/s, curv=0.0000, flow=0.7147, kin=0.0807, loss=1.0731, ot=0.0656, t=0.503, tswd=0.0154]",
-      "Epoch 1/24:  68%|██████▊   | 1073/1574 [17:17<08:07,  1.03it/s, curv=0.0000, flow=0.7147, kin=0.0807, loss=1.0731, ot=0.0656, t=0.503, tswd=0.0154]",
-      "Epoch 1/24:  68%|██████▊   | 1074/1574 [17:18<08:07,  1.03it/s, curv=0.0000, flow=0.7147, kin=0.0807, loss=1.0731, ot=0.0656, t=0.503, tswd=0.0154]",
-      "Epoch 1/24:  68%|██████▊   | 1075/1574 [17:19<08:07,  1.02it/s, curv=0.0000, flow=0.7147, kin=0.0807, loss=1.0731, ot=0.0656, t=0.503, tswd=0.0154]",
-      "Epoch 1/24:  68%|██████▊   | 1076/1574 [17:20<08:02,  1.03it/s, curv=0.0000, flow=0.7147, kin=0.0807, loss=1.0731, ot=0.0656, t=0.503, tswd=0.0154]",
-      "Epoch 1/24:  68%|██████▊   | 1077/1574 [17:21<08:02,  1.03it/s, curv=0.0000, flow=0.7147, kin=0.0807, loss=1.0731, ot=0.0656, t=0.503, tswd=0.0154]",
-      "Epoch 1/24:  68%|██████▊   | 1078/1574 [17:21<07:59,  1.03it/s, curv=0.0000, flow=0.7147, kin=0.0807, loss=1.0731, ot=0.0656, t=0.503, tswd=0.0154]",
-      "Epoch 1/24:  69%|██████▊   | 1079/1574 [17:22<07:59,  1.03it/s, curv=0.0000, flow=0.7147, kin=0.0807, loss=1.0731, ot=0.0656, t=0.503, tswd=0.0154]",
-      "Epoch 1/24:  69%|██████▊   | 1079/1574 [17:24<07:59,  1.03it/s, curv=0.0000, flow=0.7145, kin=0.0806, loss=1.0728, ot=0.0656, t=0.504, tswd=0.0154]",
-      "Epoch 1/24:  69%|██████▊   | 1080/1574 [17:24<08:23,  1.02s/it, curv=0.0000, flow=0.7145, kin=0.0806, loss=1.0728, ot=0.0656, t=0.504, tswd=0.0154]",
-      "Epoch 1/24:  69%|██████▊   | 1081/1574 [17:25<08:17,  1.01s/it, curv=0.0000, flow=0.7145, kin=0.0806, loss=1.0728, ot=0.0656, t=0.504, tswd=0.0154]",
-      "Epoch 1/24:  69%|██████▊   | 1082/1574 [17:26<08:10,  1.00it/s, curv=0.0000, flow=0.7145, kin=0.0806, loss=1.0728, ot=0.0656, t=0.504, tswd=0.0154]",
-      "Epoch 1/24:  69%|██████▉   | 1083/1574 [17:27<08:06,  1.01it/s, curv=0.0000, flow=0.7145, kin=0.0806, loss=1.0728, ot=0.0656, t=0.504, tswd=0.0154]"
+      "Epoch 1/24:  99%|█████████▉| 1561/1574 [25:01<00:12,  1.02it/s, curv=0.0000, flow=0.7143, kin=0.0808, loss=1.0726, ot=0.0656, t=0.506, tswd=0.0154]",
+      "Epoch 1/24:  99%|█████████▉| 1562/1574 [25:02<00:11,  1.03it/s, curv=0.0000, flow=0.7143, kin=0.0808, loss=1.0726, ot=0.0656, t=0.506, tswd=0.0154]",
+      "Epoch 1/24:  99%|█████████▉| 1563/1574 [25:02<00:10,  1.04it/s, curv=0.0000, flow=0.7143, kin=0.0808, loss=1.0726, ot=0.0656, t=0.506, tswd=0.0154]",
+      "Epoch 1/24:  99%|█████████▉| 1564/1574 [25:03<00:09,  1.05it/s, curv=0.0000, flow=0.7143, kin=0.0808, loss=1.0726, ot=0.0656, t=0.506, tswd=0.0154]",
+      "Epoch 1/24:  99%|█████████▉| 1565/1574 [25:04<00:08,  1.05it/s, curv=0.0000, flow=0.7143, kin=0.0808, loss=1.0726, ot=0.0656, t=0.506, tswd=0.0154]",
+      "Epoch 1/24:  99%|█████████▉| 1566/1574 [25:05<00:07,  1.04it/s, curv=0.0000, flow=0.7143, kin=0.0808, loss=1.0726, ot=0.0656, t=0.506, tswd=0.0154]",
+      "Epoch 1/24: 100%|█████████▉| 1567/1574 [25:06<00:06,  1.06it/s, curv=0.0000, flow=0.7143, kin=0.0808, loss=1.0726, ot=0.0656, t=0.506, tswd=0.0154]",
+      "Epoch 1/24: 100%|█████████▉| 1568/1574 [25:07<00:05,  1.06it/s, curv=0.0000, flow=0.7143, kin=0.0808, loss=1.0726, ot=0.0656, t=0.506, tswd=0.0154]",
+      "Epoch 1/24: 100%|█████████▉| 1569/1574 [25:08<00:04,  1.05it/s, curv=0.0000, flow=0.7143, kin=0.0808, loss=1.0726, ot=0.0656, t=0.506, tswd=0.0154]",
+      "Epoch 1/24: 100%|█████████▉| 1570/1574 [25:09<00:03,  1.05it/s, curv=0.0000, flow=0.7143, kin=0.0808, loss=1.0726, ot=0.0656, t=0.506, tswd=0.0154]",
+      "Epoch 1/24: 100%|█████████▉| 1571/1574 [25:10<00:02,  1.05it/s, curv=0.0000, flow=0.7143, kin=0.0808, loss=1.0726, ot=0.0656, t=0.506, tswd=0.0154]",
+      "Epoch 1/24: 100%|█████████▉| 1572/1574 [25:11<00:01,  1.05it/s, curv=0.0000, flow=0.7143, kin=0.0808, loss=1.0726, ot=0.0656, t=0.506, tswd=0.0154]",
+      "Epoch 1/24: 100%|█████████▉| 1573/1574 [25:12<00:00,  1.04it/s, curv=0.0000, flow=0.7143, kin=0.0808, loss=1.0726, ot=0.0656, t=0.506, tswd=0.0154]",
+      "Epoch 1/24: 100%|█████████▉| 1573/1574 [25:13<00:00,  1.04it/s, curv=0.0000, flow=0.7142, kin=0.0808, loss=1.0725, ot=0.0656, t=0.506, tswd=0.0154]",
+      "Epoch 1/24: 100%|██████████| 1574/1574 [25:13<00:00,  1.04it/s, curv=0.0000, flow=0.7142, kin=0.0808, loss=1.0725, ot=0.0656, t=0.506, tswd=0.0154]",
+      "Epoch 1/24: 100%|██████████| 1574/1574 [25:13<00:00,  1.04it/s, curv=0.0000, flow=0.7142, kin=0.0808, loss=1.0725, ot=0.0656, t=0.506, tswd=0.0154]",
+      "2026-06-13 20:38:05,619 - INFO - Epoch 1/24 | loss=1.0725 flow=0.7142 kin=0.0808 ot=0.0656 tswd=0.0154 cla=0.0000 cea=0.0000 sem_attn=0.001 sem_k=0.071 topo_ent=1.189 topo_on=1 plan_ent=0.894 tok_ent=1.173 tok_eff=3.3 tok_max=0.999 app_s=1.000 app_d=0.000 sigma=0.000 bex=0 idr=0.20 t=0.506 |v|=0.771 lr=2.00e-04 data=11.2s comp=1378.7s peak=4.91/5.87GB",
+      "2026-06-13 20:38:05,989 - INFO - Saved checkpoint: exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/epoch_0001.pt",
+      "2026-06-13 20:38:05,992 - INFO - Offloading training state to CPU before remote full eval.",
+      "2026-06-13 20:38:06,810 - INFO - Running full eval for exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/epoch_0001.pt -> exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/full_eval/epoch_0001"
     ]
   },
   "remote_i2sb_status": {
-    "run_name": "aaai2027_phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1",
-    "remote_run_dir": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1",
-    "remote_train_log": "/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1_train.log",
+    "run_name": "aaai2027_phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005_seed42_b20a1",
+    "remote_run_dir": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005_seed42_b20a1",
+    "remote_train_log": "/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005_seed42_b20a1_train.log",
     "remote_gpu": [
       {
         "name": "NVIDIA Graphics Device",
-        "memory_used_mib": 6822,
+        "memory_used_mib": 2520,
         "memory_total_mib": 12288
       }
     ],
@@ -530,7 +536,7 @@
     "convergence": null,
     "latest_summary": null,
     "train_log_tail": [
-      "tail: cannot open '/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1_train.log' for reading: No such file or directory"
+      "tail: cannot open '/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005_seed42_b20a1_train.log' for reading: No such file or directory"
     ]
   },
   "local_manifest_watchers": [],
@@ -571,24 +577,24 @@
     "out_log": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\phase2_structure_reentry_watch.stdout.log",
     "err_log": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\phase2_structure_reentry_watch.stderr.log",
     "out_tail": [
-      "  \"pending_checkpoint_epochs\": [],",
-      "  \"live_state\": \"training_before_first_settled_eval\",",
+      "{",
+      "  \"run_name\": \"aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1\",",
+      "  \"waiting_for_settled_epoch\": 4,",
+      "  \"latest_settled_epoch\": -1,",
+      "  \"pending_checkpoint_epochs\": [",
+      "    \"epoch_0001\"",
+      "  ],",
+      "  \"live_state\": \"eval_in_progress_or_pending\",",
       "  \"process_count\": 1",
       "}",
       "{",
       "  \"run_name\": \"aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1\",",
       "  \"waiting_for_settled_epoch\": 4,",
       "  \"latest_settled_epoch\": -1,",
-      "  \"pending_checkpoint_epochs\": [],",
-      "  \"live_state\": \"training_before_first_settled_eval\",",
-      "  \"process_count\": 1",
-      "}",
-      "{",
-      "  \"run_name\": \"aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1\",",
-      "  \"waiting_for_settled_epoch\": 4,",
-      "  \"latest_settled_epoch\": -1,",
-      "  \"pending_checkpoint_epochs\": [],",
-      "  \"live_state\": \"training_before_first_settled_eval\",",
+      "  \"pending_checkpoint_epochs\": [",
+      "    \"epoch_0001\"",
+      "  ],",
+      "  \"live_state\": \"eval_in_progress_or_pending\",",
       "  \"process_count\": 1",
       "}"
     ],

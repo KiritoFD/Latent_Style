@@ -44,15 +44,15 @@ Date: 2026-06-13
 - Structure config: [structure config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1.json)
 - Structure note: [structure note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085-appalign.md)
 - Structure read: active b12a1 relaunch is training before the first settled authority eval; promoted topogate epoch_0003 remains the parent
-- Structure live state: `training_before_first_settled_eval`
-- Structure GPU: 6822 / 12288 MiB
+- Structure live state: `eval_in_progress_or_pending`
+- Structure GPU: 2524 / 12288 MiB
 - Structure latest settled epoch: `n/a`
 - Structure latest settled `CLIP-S / LPIPS`: n/a
 - Structure latest `style - IDT`: n/a
-- I2SB diagnostic preferred packet: `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual`
-- I2SB config: [I2SB config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)
-- I2SB note: [I2SB note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual.md)
-- I2SB read: successor refreshed from vel_tok32_safe_semantic_topogate_k085 epoch_0003 via latest; parent checkpoint now exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1/epoch_0003.pt
+- I2SB diagnostic preferred packet: `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005`
+- I2SB config: [I2SB config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005_seed42_b20a1.json)
+- I2SB note: [I2SB note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual-tfloor005.md)
+- I2SB read: early-time aligned exact-I2SB follow-on: keep the same safe parent and residual sigma0.02 Brownian bridge
 - I2SB live state: `n/a`
 
 ## Contract Read

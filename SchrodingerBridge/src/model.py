@@ -57,6 +57,8 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.objective_mode = str(getattr(bridge_config, "objective_mode", "")).strip().lower()
         self.loss_type = str(getattr(bridge_config, "loss_type", "")).strip().lower()
         self.bridge_sigma = max(0.0, float(getattr(bridge_config, "bridge_sigma", 0.0)))
+        self.i2sb_predictor_time_floor = max(0.0, float(getattr(bridge_config, "i2sb_predictor_time_floor", 0.0)))
+        self.last_i2sb_transport_debug: dict[str, float] = {}
         self.bridge_style_dim = int(getattr(self, "style_code_dim", getattr(self.style_tokenizer, "embedding_dim", 0)))
         self.execution_budget_mode = str(getattr(bridge_config, "execution_budget_mode", "none")).strip().lower()
         if self.execution_budget_mode not in {"none", "scalar", "low_high"}:
@@ -537,9 +539,20 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         style_code_override: torch.Tensor | None = None,
         target_style_latent: torch.Tensor | None = None,
     ) -> torch.Tensor:
+        predict_t = float(t_curr)
+        if self.i2sb_predictor_time_floor > 0.0 and predict_t < self.i2sb_predictor_time_floor:
+            predict_t = min(max(predict_t, self.i2sb_predictor_time_floor), float(t_next))
+        predict_t = min(max(predict_t, 0.0), 1.0 - 1e-6)
+        self.last_i2sb_transport_debug = {
+            "t_curr": float(t_curr),
+            "predict_t": float(predict_t),
+            "t_next": float(t_next),
+            "time_floor": float(self.i2sb_predictor_time_floor),
+            "time_floor_active": float(abs(predict_t - float(t_curr)) > 1e-9),
+        }
         x_1_pred = self.predict_transport_base(
             h,
-            t=t_curr,
+            t=predict_t,
             style_id=style_id,
             style_code_override=style_code_override,
             target_style_latent=target_style_latent,
@@ -1171,6 +1184,7 @@ def _attach_bridge_runtime_fields(
         "objective_mode": str(getattr(bridge, "objective_mode", "")),
         "loss_type": str(getattr(bridge, "loss_type", "")),
         "bridge_sigma": float(getattr(bridge, "bridge_sigma", 0.0)),
+        "i2sb_predictor_time_floor": float(getattr(bridge, "i2sb_predictor_time_floor", 0.0)),
     }
     model_cfg.extra = dict(getattr(model_cfg, "extra", {}) or {})
     for key, value in bridge_fields.items():
