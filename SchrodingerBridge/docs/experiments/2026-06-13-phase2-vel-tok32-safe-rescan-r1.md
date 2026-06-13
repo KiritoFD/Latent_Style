@@ -140,11 +140,21 @@ Date: 2026-06-13
     - run name:
       - `aaai2027_phase2_vel_tok32_safe_rescan_r1_seed42_b20a1`
     - live state:
-      - `training_before_first_settled_eval`
+      - `eval_in_progress_or_pending`
     - remote PID:
       - `23197`
     - current GPU read:
-      - `9806 MiB`
+      - `1923 MiB` during eval offload
+    - checkpoint / eval state:
+      - `epoch_0001.pt` has been saved
+      - `full_eval/epoch_0001/` exists
+      - the first settled summary is still pending
+    - latest epoch-end train read before eval:
+      - `loss=0.9618`
+      - `flow=0.6029`
+      - `kin=0.0931`
+      - `ot=0.0979`
+      - `tswd=0.0148`
 - watcher:
   - `watch_phase2_velocity_handoff.py`
   - mode:
@@ -152,6 +162,8 @@ Date: 2026-06-13
   - current wait state:
     - waiting for settled epoch `>= 6`
     - latest settled epoch `none`
+    - current pending checkpoint list:
+      - `epoch_0001`
 
 ## Intended Read
 
