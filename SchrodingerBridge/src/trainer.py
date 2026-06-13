@@ -619,6 +619,82 @@ class SBTrainer:
         ckpts = sorted(self.checkpoint_dir.glob("epoch_*.pt"))
         return ckpts[-1] if ckpts else None
 
+    @staticmethod
+    def _optional_state_prefixes(module: torch.nn.Module) -> tuple[str, ...]:
+        prefixes: list[str] = []
+        if getattr(module, "output_appearance_head", None) is not None:
+            prefixes.append("output_appearance_head.")
+        return tuple(prefixes)
+
+    def _load_state_dict_with_policy(
+        self,
+        module: torch.nn.Module,
+        model_state: dict[str, torch.Tensor],
+        *,
+        strict: bool,
+        include_prefixes: tuple[str, ...] = (),
+        ignore_prefixes: tuple[str, ...] = (),
+        context_label: str,
+    ) -> None:
+        current = module.state_dict()
+        optional_prefixes = self._optional_state_prefixes(module)
+        if strict and not include_prefixes and not ignore_prefixes:
+            missing_keys = [key for key in current.keys() if key not in model_state]
+            unexpected_keys = [key for key in model_state.keys() if key not in current]
+            shape_mismatch_keys = [
+                key for key, value in model_state.items()
+                if key in current and current[key].shape != value.shape
+            ]
+            if not missing_keys and not unexpected_keys and not shape_mismatch_keys:
+                module.load_state_dict(model_state, strict=True)
+                return
+            if optional_prefixes and all(
+                any(str(key).startswith(prefix) for prefix in optional_prefixes)
+                for key in [*missing_keys, *unexpected_keys, *shape_mismatch_keys]
+            ):
+                compatible = {
+                    key: value
+                    for key, value in model_state.items()
+                    if key in current and current[key].shape == value.shape
+                }
+                missing, unexpected = module.load_state_dict(compatible, strict=False)
+                logger.info(
+                    "Loaded %s with optional compatibility skip | loaded=%d missing=%d unexpected=%d optional=%s",
+                    context_label,
+                    len(compatible),
+                    len(missing),
+                    len(unexpected),
+                    list(optional_prefixes),
+                )
+                return
+            module.load_state_dict(model_state, strict=True)
+            return
+
+        compatible = {}
+        skipped = []
+        for key, value in model_state.items():
+            if include_prefixes and not key.startswith(include_prefixes):
+                skipped.append(key)
+                continue
+            if ignore_prefixes and key.startswith(ignore_prefixes):
+                skipped.append(key)
+                continue
+            if key not in current or current[key].shape != value.shape:
+                skipped.append(key)
+                continue
+            compatible[key] = value
+        missing, unexpected = module.load_state_dict(compatible, strict=False)
+        logger.info(
+            "Partially loaded %s | loaded=%d skipped=%d missing=%d unexpected=%d include=%s ignore=%s",
+            context_label,
+            len(compatible),
+            len(skipped),
+            len(missing),
+            len(unexpected),
+            list(include_prefixes),
+            list(ignore_prefixes),
+        )
+
     def _maybe_resume(self, resume_checkpoint: str) -> None:
         explicit_ckpt = None
         if resume_checkpoint:
@@ -660,34 +736,14 @@ class SBTrainer:
         resume_model_strict = bool(self.train_cfg.get("resume_model_strict", True))
         ignore_prefixes = tuple(str(v) for v in self.train_cfg.get("resume_ignore_prefixes", []) if str(v))
         include_prefixes = tuple(str(v) for v in self.train_cfg.get("resume_include_prefixes", []) if str(v))
-        if resume_model_strict and not ignore_prefixes and not include_prefixes:
-            self.model.load_state_dict(model_state, strict=True)
-        else:
-            current = self.model.state_dict()
-            compatible = {}
-            skipped = []
-            for key, value in model_state.items():
-                if include_prefixes and not key.startswith(include_prefixes):
-                    skipped.append(key)
-                    continue
-                if ignore_prefixes and key.startswith(ignore_prefixes):
-                    skipped.append(key)
-                    continue
-                if key not in current or current[key].shape != value.shape:
-                    skipped.append(key)
-                    continue
-                compatible[key] = value
-            missing, unexpected = self.model.load_state_dict(compatible, strict=False)
-            logger.info(
-                "Partially resumed model from %s | loaded=%d skipped=%d missing=%d unexpected=%d include=%s ignore=%s",
-                ckpt_path,
-                len(compatible),
-                len(skipped),
-                len(missing),
-                len(unexpected),
-                list(include_prefixes),
-                list(ignore_prefixes),
-            )
+        self._load_state_dict_with_policy(
+            self.model,
+            model_state,
+            strict=resume_model_strict,
+            include_prefixes=include_prefixes,
+            ignore_prefixes=ignore_prefixes,
+            context_label=f"resume {ckpt_path}",
+        )
         resume_optimizer = bool(self.train_cfg.get("resume_optimizer", True) or using_local_latest)
         if resume_optimizer and "optimizer_state_dict" in state:
             try:
@@ -873,7 +929,12 @@ class SBTrainer:
                 str(getattr(self.config.model, "tokenizer_family", "legacy_factorized")),
             )
         if not str(self.train_cfg.get("resume_checkpoint", "")).strip():
-            self.model.load_state_dict(teacher_state, strict=True)
+            self._load_state_dict_with_policy(
+                self.model,
+                teacher_state,
+                strict=True,
+                context_label=f"teacher bootstrap {teacher_ckpt}",
+            )
 
         teacher = build_model_from_config(
             self.config.model,
@@ -882,7 +943,12 @@ class SBTrainer:
         ).to(self.device)
         if self.channels_last:
             teacher = _convert_4d_tensors_to_channels_last(teacher)
-        teacher.load_state_dict(teacher_state, strict=True)
+        self._load_state_dict_with_policy(
+            teacher,
+            teacher_state,
+            strict=True,
+            context_label=f"teacher model {teacher_ckpt}",
+        )
         teacher.eval()
         for param in teacher.parameters():
             param.requires_grad_(False)
