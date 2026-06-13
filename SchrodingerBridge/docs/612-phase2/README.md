@@ -125,6 +125,7 @@
       - 但 `epoch_0004` 已经做到:
         - style 只略低于旧 shelf
         - LPIPS 明显优于旧 shelf
+      - 同时它也严格优于本 packet 的 `epoch_0003` 点
       - 说明这条线仍在演化，暂时还不该按 plateau 关闭
       - `epoch_0001` 现在只记为 `stale_pending`，不再把 live state 错报成 eval-pending
     - 本地 watcher 已挂起:

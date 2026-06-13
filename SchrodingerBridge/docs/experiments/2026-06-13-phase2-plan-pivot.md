@@ -191,4 +191,5 @@ Date: 2026-06-13
         - still in-band
         - still below the old style shelf `0.701666`
         - but now better on LPIPS than the old safe parent
+        - and strictly stronger than this packet's earlier `epoch_0003` point
         - so the line is still alive and should keep the formal slot for now
