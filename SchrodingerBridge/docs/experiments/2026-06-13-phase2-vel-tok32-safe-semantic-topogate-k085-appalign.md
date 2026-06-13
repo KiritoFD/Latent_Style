@@ -5,7 +5,7 @@ Date: 2026-06-13
 ## Role
 
 - low-intrusion structure-side follow-on behind the active `safe_semantic_topogate` run
-- same safe parent, same `velocity + pure_latent_spatial + semantic_topology_gate` family
+- same promoted structure parent, same `velocity + pure_latent_spatial + semantic_topology_gate` family
 - adds only a conservative tokenizer-guided output appearance head
 
 ## Why This Exists
@@ -26,9 +26,9 @@ Date: 2026-06-13
 - config:
   - [phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b16a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b16a1.json)
 - comparison parent:
-  - `vel_tok32_safe_rescan_r2 epoch_0004`
-  - transfer `0.672377 / 0.369065`
-  - all-pairs `0.700490 / 0.367229`
+  - `vel_tok32_safe_semantic_topogate_k085 epoch_0003`
+  - transfer `0.675388 / 0.375598`
+  - all-pairs `0.702936 / 0.371762`
 - active sibling reference:
   - [2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085.md)
 
@@ -73,3 +73,10 @@ Date: 2026-06-13
   - and it costs much less architectural disturbance than changing the attention family
 - if it also closes without a formal shelf break, the next same-lane successor is:
   - [2026-06-13-phase2-vel-tok32-safe-pnp-selfinject.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-pnp-selfinject.md)
+## Parent Refresh
+
+- Source packet: `vel_tok32_safe_semantic_topogate_k085`
+- Selection policy: `latest`
+- Selected parent epoch: `epoch_0003`
+- Selected parent checkpoint: `exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1/epoch_0003.pt`
+- Selected parent metrics: transfer `0.675388 / 0.375598`, all-pairs `0.702936 / 0.371762`

@@ -232,6 +232,7 @@
     - `vel_tok32_safe_semantic_topogate_k085_appalign`
     - same parent and same topology-gate family
     - only adds tokenizer-guided latent appearance alignment before trying a different attention family
+    - queued successors have now been refreshed to inherit `vel_tok32_safe_semantic_topogate_k085 epoch_0003`
   - structure-side close rule:
     - after `4` settled checkpoints, if the active packet is still below the formal safe shelf and no new best lands in the newest-2 window, hand off to the next same-lane successor
 - 所有 round2 endpoint / I2SB 文档都应按以下标准重读:

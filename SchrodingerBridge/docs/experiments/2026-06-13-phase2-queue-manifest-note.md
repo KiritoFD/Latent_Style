@@ -69,6 +69,7 @@ Date: 2026-06-13
   - same safe parent and same topology-gate family
   - only adds the conservative tokenizer-guided output appearance head
   - intended to test whether the remaining transfer shortfall is low-order brightness / contrast mismatch
+  - queued successors have now been refreshed to inherit `vel_tok32_safe_semantic_topogate_k085 epoch_0003`
 - next structural family fallback after that:
   - `vel_tok32_safe_pnp_selfinject`
   - queue contract:

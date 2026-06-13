@@ -5,7 +5,7 @@ Date: 2026-06-13
 ## Role
 
 - structure-side fallback candidate behind the active `safe_semantic_topogate` run
-- same safe tokenizer parent and same clean `epoch_0004` warm start
+- same safe tokenizer profile but now refreshed to the promoted `topogate epoch_0003` parent
 - changes the structure mechanism from topology-blended semantic cross-attention to explicit `attn_pnp_selfinject`
 
 ## Why This Exists
@@ -21,9 +21,9 @@ Date: 2026-06-13
 - config:
   - [phase2_vel_tok32_safe_pnp_selfinject_seed42_b16a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_pnp_selfinject_seed42_b16a1.json)
 - safe parent:
-  - `vel_tok32_safe_rescan_r2 epoch_0004`
-  - transfer `0.672377 / 0.369065`
-  - all-pairs `0.700490 / 0.367229`
+  - `vel_tok32_safe_semantic_topogate_k085 epoch_0003`
+  - transfer `0.675388 / 0.375598`
+  - all-pairs `0.702936 / 0.371762`
 
 ## Deltas
 
@@ -61,3 +61,10 @@ Date: 2026-06-13
 - it should be evaluated before the heavier `topo_anchor` loss-side fallback
 - if it also closes without a formal shelf break, the next same-lane successor is:
   - [2026-06-13-phase2-vel-tok32-topo-anchor-reentry.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-topo-anchor-reentry.md)
+## Parent Refresh
+
+- Source packet: `vel_tok32_safe_semantic_topogate_k085`
+- Selection policy: `latest`
+- Selected parent epoch: `epoch_0003`
+- Selected parent checkpoint: `exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1/epoch_0003.pt`
+- Selected parent metrics: transfer `0.675388 / 0.375598`, all-pairs `0.702936 / 0.371762`
