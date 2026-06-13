@@ -294,6 +294,7 @@
 - intent:
   - keep the other model's `guide_for_running_codex.md` visible between sessions
   - surface reusable guidance without polluting the tracked worktree
+  - reconcile guide suggestions against the current phase2 queue and settled evidence so stale `I2SB / PC / topology` advice is not re-read as unexplored work
 - promoted predecessor just closed:
   - `vel_tok32_safe_semantic_topogate_k085`
   - best retained point:
