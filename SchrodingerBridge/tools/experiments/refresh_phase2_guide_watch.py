@@ -25,6 +25,18 @@ def _sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def _load_json_dict(path: Path) -> dict:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return payload if isinstance(payload, dict) else {}
+
+
+def _float_or_none(value: object) -> float | None:
+    try:
+        return float(value)
+    except Exception:
+        return None
+
+
 def _extract_grouped_hits(text: str) -> dict[str, list[dict[str, str]]]:
     lines = text.splitlines()
     groups: dict[str, list[dict[str, str]]] = {name: [] for name, _ in KEYWORD_GROUPS}
@@ -54,12 +66,73 @@ def _extract_grouped_hits(text: str) -> dict[str, list[dict[str, str]]]:
     return groups
 
 
+def _derive_live_overlay(snapshot: dict) -> dict[str, object]:
+    resolved = snapshot.get("resolved_packets") if isinstance(snapshot.get("resolved_packets"), dict) else {}
+    structure = resolved.get("structure_reentry") if isinstance(resolved, dict) and isinstance(resolved.get("structure_reentry"), dict) else {}
+    i2sb = resolved.get("i2sb_diagnostic_only") if isinstance(resolved, dict) and isinstance(resolved.get("i2sb_diagnostic_only"), dict) else {}
+    remote_structure = snapshot.get("remote_structure_status") if isinstance(snapshot.get("remote_structure_status"), dict) else {}
+    curve = remote_structure.get("curve_summary") if isinstance(remote_structure.get("curve_summary"), dict) else {}
+    latest = curve.get("latest") if isinstance(curve.get("latest"), dict) else {}
+
+    transfer_style = _float_or_none(latest.get("transfer_clip_style"))
+    transfer_lpips = _float_or_none(latest.get("transfer_content_lpips"))
+    allpairs_style = _float_or_none(latest.get("all_pairs_clip_style"))
+    allpairs_lpips = _float_or_none(latest.get("all_pairs_content_lpips"))
+    latest_epoch_int = int(latest.get("epoch_int", -1)) if str(latest.get("epoch_int", "")).strip() else -1
+
+    style_limited = bool(
+        transfer_style is not None
+        and transfer_style <= 0.68
+        and allpairs_lpips is not None
+        and allpairs_lpips <= 0.32
+    )
+    recovered_structure = bool(
+        allpairs_style is not None
+        and allpairs_style >= 0.701666
+        and allpairs_lpips is not None
+        and allpairs_lpips <= 0.381724
+    )
+    ready_for_guide_pivot = bool(
+        str(structure.get("packet_id", "")).strip() == "vel_tok32_safe_semantic_topogate_k085_appalign"
+        and latest_epoch_int >= 2
+        and recovered_structure
+        and style_limited
+    )
+
+    if ready_for_guide_pivot:
+        recommendation = "let_appalign_finish_current_close_gate_then_launch_i2sb_sigma0p02_tfloor005"
+        secondary = "after_i2sb_read_if_still_needed_run_eval_only_pc_solver"
+    elif recovered_structure:
+        recommendation = "continue_appalign_until_close_gate"
+        secondary = "keep_i2sb_sigma0p02_tfloor005_as_next_diagnostic"
+    else:
+        recommendation = "continue_current_structure_lane"
+        secondary = "do_not_queue_style_lift_branch_yet"
+
+    return {
+        "structure_packet": str(structure.get("packet_id", "")).strip(),
+        "structure_watch_handoff_mode": str(structure.get("watch_handoff_mode", "")).strip(),
+        "latest_settled_epoch": str(latest.get("epoch", "")).strip(),
+        "latest_transfer_clip_style": transfer_style,
+        "latest_transfer_content_lpips": transfer_lpips,
+        "latest_all_pairs_clip_style": allpairs_style,
+        "latest_all_pairs_content_lpips": allpairs_lpips,
+        "style_limited_under_recovered_structure": style_limited,
+        "recovered_structure_band": recovered_structure,
+        "ready_for_guide_pivot": ready_for_guide_pivot,
+        "recommended_next_action": recommendation,
+        "recommended_followup_after_next_action": secondary,
+        "preferred_i2sb_packet": str(i2sb.get("packet_id", "")).strip(),
+    }
+
+
 def _render_status_md(
     *,
     guide_path: Path,
     guide_hash: str,
     last_hash: str,
     grouped_hits: dict[str, list[dict[str, str]]],
+    live_overlay: dict[str, object] | None,
 ) -> str:
     changed = guide_hash != last_hash and bool(last_hash)
     lines: list[str] = [
@@ -75,6 +148,21 @@ def _render_status_md(
         "- It does not replace `docs/612-phase2/README.md`; it keeps the other model's actionable hints visible between Codex sessions.",
         "",
     ]
+    if isinstance(live_overlay, dict) and live_overlay:
+        lines.extend(
+            [
+                "## Live Decision Overlay",
+                f"- Structure packet: `{str(live_overlay.get('structure_packet', 'n/a'))}`",
+                f"- Latest settled epoch: `{str(live_overlay.get('latest_settled_epoch', 'n/a'))}`",
+                f"- Transfer `CLIP-S / LPIPS`: `{_float_or_none(live_overlay.get('latest_transfer_clip_style')) or 0.0:.6f} / {(_float_or_none(live_overlay.get('latest_transfer_content_lpips')) or 0.0):.6f}`" if _float_or_none(live_overlay.get("latest_transfer_clip_style")) is not None and _float_or_none(live_overlay.get("latest_transfer_content_lpips")) is not None else "- Transfer `CLIP-S / LPIPS`: n/a",
+                f"- All-pairs `CLIP-S / LPIPS`: `{_float_or_none(live_overlay.get('latest_all_pairs_clip_style')) or 0.0:.6f} / {(_float_or_none(live_overlay.get('latest_all_pairs_content_lpips')) or 0.0):.6f}`" if _float_or_none(live_overlay.get("latest_all_pairs_clip_style")) is not None and _float_or_none(live_overlay.get("latest_all_pairs_content_lpips")) is not None else "- All-pairs `CLIP-S / LPIPS`: n/a",
+                f"- Style-limited under recovered structure: `{bool(live_overlay.get('style_limited_under_recovered_structure', False))}`",
+                f"- Ready for guide pivot: `{bool(live_overlay.get('ready_for_guide_pivot', False))}`",
+                f"- Recommended next action: `{str(live_overlay.get('recommended_next_action', 'n/a'))}`",
+                f"- Recommended follow-up: `{str(live_overlay.get('recommended_followup_after_next_action', 'n/a'))}`",
+                "",
+            ]
+        )
     for group_name, hits in grouped_hits.items():
         title = group_name.replace("_", " ").title()
         lines.append(f"## {title}")
@@ -107,12 +195,14 @@ def main() -> int:
     parser.add_argument("--status-md", type=Path, required=True)
     parser.add_argument("--state-json", type=Path, required=True)
     parser.add_argument("--history-jsonl", type=Path, required=True)
+    parser.add_argument("--phase2-snapshot", type=Path, default=None)
     args = parser.parse_args()
 
     guide_path = Path(args.guide).expanduser().resolve()
     status_md = Path(args.status_md).expanduser().resolve()
     state_json = Path(args.state_json).expanduser().resolve()
     history_jsonl = Path(args.history_jsonl).expanduser().resolve()
+    phase2_snapshot = Path(args.phase2_snapshot).expanduser().resolve() if args.phase2_snapshot else None
 
     text = guide_path.read_text(encoding="utf-8", errors="replace")
     guide_hash = _sha256_text(text)
@@ -126,6 +216,12 @@ def main() -> int:
             last_hash = ""
 
     grouped_hits = _extract_grouped_hits(text)
+    live_overlay = {}
+    if phase2_snapshot is not None and phase2_snapshot.is_file():
+        try:
+            live_overlay = _derive_live_overlay(_load_json_dict(phase2_snapshot))
+        except Exception:
+            live_overlay = {}
     status_md.parent.mkdir(parents=True, exist_ok=True)
     state_json.parent.mkdir(parents=True, exist_ok=True)
     history_jsonl.parent.mkdir(parents=True, exist_ok=True)
@@ -135,6 +231,7 @@ def main() -> int:
             guide_hash=guide_hash,
             last_hash=last_hash,
             grouped_hits=grouped_hits,
+            live_overlay=live_overlay,
         ),
         encoding="utf-8",
     )
@@ -146,6 +243,8 @@ def main() -> int:
         "guide_changed": bool(last_hash and last_hash != guide_hash),
         "group_counts": {name: len(items) for name, items in grouped_hits.items()},
         "status_md": str(status_md),
+        "phase2_snapshot": str(phase2_snapshot) if phase2_snapshot is not None else "",
+        "live_overlay": live_overlay,
     }
     state_json.write_text(json.dumps(state_payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
