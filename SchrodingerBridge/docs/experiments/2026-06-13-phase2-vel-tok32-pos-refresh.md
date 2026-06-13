@@ -227,6 +227,7 @@ Date: 2026-06-13
 - interpretation:
   - the tokenizer refresh still has not produced the desired breakout above the old shelf
   - but `epoch_0004` does create a strictly stronger in-band point than `epoch_0003`
+  - it is also the current best point of this packet on both transfer and all-pairs Pareto authority
   - the line is therefore still alive as a real improvement path rather than a flat plateau
   - the packet is currently training in `epoch_5`, with the next meaningful decision deferred to the next settled authority point
   - keep the formal lane alive until either:
