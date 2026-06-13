@@ -237,6 +237,8 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.last_base_endpoint = None
         self.last_final_endpoint = None
         self.last_proximal_clamp_scale = None
+        self.last_output_appearance_debug = {}
+        self.last_output_style_context = None
         for module in self.modules():
             if hasattr(module, "last_attn"):
                 setattr(module, "last_attn", None)
@@ -633,6 +635,57 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             style_code_override=style_code_override,
         )
 
+    def _resolve_output_appearance_context(
+        self,
+        z_base: torch.Tensor,
+        *,
+        style_id: torch.Tensor | int | None,
+        style_code_override: torch.Tensor | None = None,
+        source_latent: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor | None, StyleMaps]:
+        if self.output_appearance_alignment_mode == "none" or self.output_appearance_head is None:
+            return None, StyleMaps(family=str(getattr(self, "tokenizer_family", "legacy_factorized")))
+        if self._cached_output_style_context_matches(source_latent):
+            cached = getattr(self, "last_output_style_context", None)
+            if isinstance(cached, dict):
+                cached_code = cached.get("style_code")
+                cached_maps = cached.get("style_maps")
+                if torch.is_tensor(cached_code) and isinstance(cached_maps, StyleMaps):
+                    return cached_code, cached_maps
+
+        style_code = self._resolve_refine_style_code(
+            z_base,
+            style_id=style_id,
+            style_code_override=style_code_override,
+        )
+        if style_id is None:
+            return style_code, StyleMaps(family=str(getattr(self, "tokenizer_family", "legacy_factorized")))
+
+        content_latent = source_latent if source_latent is not None else z_base
+        if content_latent.device != z_base.device:
+            content_latent = content_latent.to(device=z_base.device)
+        if content_latent.dtype != z_base.dtype:
+            content_latent = content_latent.to(dtype=z_base.dtype)
+        feat_c = content_latent / max(self.latent_scale_factor, 1e-8)
+        h_c = self.enc_in_act(self.enc_in(feat_c))
+        for block in self.hires_body:
+            h_c = block(h_c, style_code, gate=0.0)
+        content_feat_16 = self.down(h_c)
+        style_code = self._adapt_style_code_from_content(
+            style_id=style_id,
+            style_code=style_code,
+            content_feat_16=content_feat_16,
+        )
+        structured_ctx = self._structured_style_from_sidecar(
+            style_id=style_id,
+            style_code=style_code,
+            content_latent=content_latent,
+            content_feat_16=content_feat_16,
+        )
+        if structured_ctx is not None:
+            return structured_ctx
+        return style_code, self._prepare_style_maps(style_id)
+
     def _style_spatial_tokens(self, z_base: torch.Tensor, style_id: torch.Tensor | int) -> torch.Tensor:
         style_map = self.encode_style_spatial_id(style_id).get(16)
         style_map = F.interpolate(style_map.to(device=z_base.device, dtype=z_base.dtype), size=z_base.shape[-2:], mode="bilinear", align_corners=False)
@@ -711,11 +764,24 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         style_code_override: torch.Tensor | None = None,
     ) -> torch.Tensor:
         self.last_base_endpoint = z_base.detach()
+        appearance_style_code, appearance_style_maps = self._resolve_output_appearance_context(
+            z_base,
+            style_id=style_id,
+            style_code_override=style_code_override,
+            source_latent=source_latent,
+        )
         if self.proximal_mode == "off":
             self.last_proximal_residual = torch.zeros_like(z_base)
             self.last_proximal_clamp_scale = torch.ones((), device=z_base.device, dtype=z_base.dtype)
-            self.last_final_endpoint = z_base.detach()
-            return z_base
+            z_final = z_base
+            if appearance_style_code is not None:
+                z_final = self._apply_output_appearance_alignment(
+                    z_final,
+                    style_code=appearance_style_code,
+                    style_maps=appearance_style_maps,
+                )
+            self.last_final_endpoint = z_final.detach()
+            return z_final
         if self.proximal_mode == "crossattn_texture":
             if (
                 self.proximal_attn_q is None
@@ -765,6 +831,12 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                 clamp_scale = (allowed / delta_rms.clamp_min(1e-8)).to(dtype=z_base.dtype)
                 delta = delta * clamp_scale
         z_final = z_base + delta
+        if appearance_style_code is not None:
+            z_final = self._apply_output_appearance_alignment(
+                z_final,
+                style_code=appearance_style_code,
+                style_maps=appearance_style_maps,
+            )
         self.last_proximal_residual = delta.detach()
         self.last_proximal_clamp_scale = clamp_scale.detach()
         self.last_final_endpoint = z_final.detach()

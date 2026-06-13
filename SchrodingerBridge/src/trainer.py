@@ -548,6 +548,13 @@ class SBTrainer:
                         stats[f"{prefix}_{key}"] = float(torch.nan_to_num(value.detach().float()).item())
                     elif isinstance(value, (int, float, bool)):
                         stats[f"{prefix}_{key}"] = float(value)
+        appearance_debug = getattr(self.model, "last_output_appearance_debug", {})
+        if isinstance(appearance_debug, dict):
+            for key, value in appearance_debug.items():
+                if torch.is_tensor(value):
+                    stats[str(key)] = float(torch.nan_to_num(value.detach().float()).item())
+                elif isinstance(value, (int, float, bool)):
+                    stats[str(key)] = float(value)
         return stats
 
     def _write_numeric_debug(
