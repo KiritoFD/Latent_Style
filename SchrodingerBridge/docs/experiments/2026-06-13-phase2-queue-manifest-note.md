@@ -45,10 +45,13 @@ Date: 2026-06-13
   - `vel_tok32_safe_rescan_r2`
   - remote host reboot has already occurred
   - manifest-driven watcher has already relaunched it
-  - current live state is `training_before_first_settled_eval`
-  - recent live GPU reads are inside the preferred formal band:
-    - about `10.38 GiB / 12.29 GiB`
-    - later about `9.91 GiB / 12.29 GiB`
+  - first settled authority point is now available:
+    - transfer `0.672065 / 0.379086`
+    - all-pairs `0.700117 / 0.377982`
+  - current read:
+    - still in-band
+    - still below the old safe shelf
+    - so the formal lane remains alive pending the short-screen through `epoch_0003`
 - current preferred structure-side packet:
   - `vel_tok32_semantic_topogate_k085`
 - current preferred exact-I2SB theory-check packet:

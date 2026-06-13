@@ -157,6 +157,26 @@ Date: 2026-06-13
     - the first retained checkpoint now exists
     - the packet has entered the first checkpoint-level authority window
     - final keep/stop judgment still waits on the first settled summary
+- first settled authority point at `2026-06-13 14:39:53 +08:00`:
+  - `epoch_0001`
+  - transfer `0.672065 / 0.379086`
+  - all-pairs `0.700117 / 0.377982`
+  - identity `0.812324 / 0.373565`
+  - eval wall `218.42s`
+  - generation `117.35s`
+  - VAE decode `56.62s`
+  - convergence read:
+    - `row_count = 1`
+    - `best_in_newest_2 = true`
+    - `since_last_pareto = 0`
+    - `converged = false`
+  - interpretation:
+    - the lane is still in-band because both transfer and all-pairs LPIPS remain `< 0.40`
+    - but it does not yet beat the old safe shelf `0.701666 / 0.381724`
+    - so this is a keep-running point, not a promotion point
+    - the current short-screen remains:
+      - do not close before `epoch_0003`
+      - but expect closure if the next authority points still fail to form a new in-band non-dominated point
 
 ## Ops Note
 

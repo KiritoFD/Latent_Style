@@ -168,12 +168,17 @@
   - `vel_tok32_safe_rescan_r2`
   - manifest-driven recovery watcher relaunched it after the remote Windows reboot on `2026-06-13`
   - latest live read shows:
-    - `epoch_0001` checkpoint saved
-    - `live_state = eval_in_progress_or_pending`
-    - first settled summary still pending
+    - first settled authority point is now available at `epoch_0001`
+    - transfer `0.672065 / 0.379086`
+    - all-pairs `0.700117 / 0.377982`
+    - `live_state = training_after_settled_eval`
   - remote GPU health is back inside the preferred formal band at roughly:
     - `10.38 GiB / 12.29 GiB`
     - later `9.91 GiB / 12.29 GiB`
+  - current read:
+    - still in-band
+    - still below the old safe shelf `0.701666 / 0.381724`
+    - therefore the formal lane remains alive pending the short-screen through `epoch_0003`
 - 当前正式候选仍然是 `vel_tok32_safe_rescan_r2`，但它仍只是一条 kill-on-first-slip 的短筛线。
 - 若 `safe_rescan_r2` 仍越过 `0.40`，则 Phase 2 立即结束 tokenizer-safe sweep，切到 structure-side reentry 设计。
 - 所有 round2 endpoint / I2SB 文档都应按以下标准重读:
