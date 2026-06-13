@@ -169,7 +169,6 @@ class SBTrainer:
             bridge_cfg=config.bridge,
             use_checkpointing=bool(train_cfg.get("use_gradient_checkpointing", False)),
         ).to(device)
-        self._disable_legacy_style_components_for_pure_latent()
         self._maybe_initialize_tokenizer_from_latents()
         if self.channels_last:
             self.model = _convert_4d_tensors_to_channels_last(self.model)
@@ -250,29 +249,6 @@ class SBTrainer:
         if self._pure_latent_uses_structured_tokenizer():
             return False
         return not bool(getattr(self.config.model, "ablation_disable_spatial_prior", False))
-
-    def _disable_legacy_style_components_for_pure_latent(self) -> None:
-        if not self._pure_latent_uses_structured_tokenizer():
-            return
-        tokenizer = getattr(self.model, "style_tokenizer", None)
-        if tokenizer is not None:
-            for _, param in tokenizer.named_parameters():
-                param.requires_grad_(False)
-        legacy_spatial = getattr(self.model, "style_spatial_id_16", None)
-        if isinstance(legacy_spatial, torch.nn.Parameter):
-            legacy_spatial.requires_grad_(False)
-        for extra_name in ("style_spatial_proto_16", "style_spatial_atoms_16"):
-            value = getattr(self.model, extra_name, None)
-            if isinstance(value, torch.nn.Parameter):
-                value.requires_grad_(False)
-        logits = getattr(self.model, "style_spatial_logits", None)
-        if logits is not None:
-            for _, param in logits.named_parameters():
-                param.requires_grad_(False)
-        router = getattr(self.model, "style_spatial_content_router", None)
-        if router is not None:
-            for _, param in router.named_parameters():
-                param.requires_grad_(False)
 
     def offload_for_full_eval(self) -> None:
         if self.device.type != "cuda" or self._offloaded_for_full_eval:
