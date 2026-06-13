@@ -121,6 +121,29 @@ Date: 2026-06-13
     - `watch_min_transfer_style_recovery = 0.673934`
     - `watch_max_transfer_lpips_for_recovery = 0.384340`
     - `watch_handoff_mode = stop_only`
+- reboot + relaunch at `2026-06-13 14:06:00 +08:00`:
+  - remote Windows host reboot command was issued locally
+  - post-reboot health now reads:
+    - `wsl_exec_ok = true`
+    - `remote_wsl_hcs_failure = false`
+    - `reboot_required_for_wsl2 = false`
+  - the older recovery watcher died during reboot and was replaced again
+  - current manifest-driven watcher PID:
+    - `138004`
+  - formal lane relaunch:
+    - remote launch start:
+      - `2026-06-13T14:16:08+08:00`
+    - remote process:
+      - `458 /home/xy/venvs/samam312/bin/python SchrodingerBridge/src/run.py --config /mnt/i/Github/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_rescan_r2_seed42_b20a1.json`
+    - current live state:
+      - `training_before_first_settled_eval`
+  - first post-recovery health read:
+    - remote GPU `10380 MiB / 12288 MiB`
+  - later live read:
+    - remote GPU `9910 MiB / 12288 MiB`
+  - interpretation:
+    - the lane is back in the preferred formal band
+    - training has resumed before the first settled checkpoint
 
 ## Ops Note
 
