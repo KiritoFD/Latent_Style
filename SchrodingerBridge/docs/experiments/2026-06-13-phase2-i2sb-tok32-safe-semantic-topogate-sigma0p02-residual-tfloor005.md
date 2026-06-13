@@ -5,7 +5,8 @@ Date: 2026-06-13
 ## Role
 
 - current preferred exact-I2SB diagnostic follow-on
-- keeps the same safe-tokenizer profile, residual `sigma=0.02`, and promoted structure-side parent as the plain safe I2SB packet
+- keeps the same safe-tokenizer profile and residual `sigma=0.02`
+- now inherits the highest-style recovered `appalign epoch_0001` parent instead of the older promoted `topogate epoch_0003`
 - changes only one theory-facing detail:
   - floor the predictor time passed into the `x_1` estimator to `0.05` on the earliest step
 
@@ -28,7 +29,7 @@ Date: 2026-06-13
 - control packet:
   - [phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)
 - parent packet:
-  - [phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1.json)
+  - [phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1.json)
 
 ## Deltas
 
@@ -58,17 +59,21 @@ Date: 2026-06-13
 - negative diagnostic:
   - the packet still exits the safe band quickly
   - then the remaining weakness is less likely to be caused by the trivial `t=0` predictor mismatch
+  - and less likely to be caused by "the parent still was not style-strong enough inside the recovered structure band"
 
 ## Queue Position
 
 - this packet is now the preferred `i2sb_diagnostic_only` successor
 - the plain safe residual exact-I2SB packet remains as the immediate no-floor control
+- current parent choice follows the guide read:
+  - once `appalign` stayed below `transfer style = 0.68` while keeping LPIPS near `0.31`,
+  - the next exact-I2SB probe should inherit the stronger style-side settled point from the recovered line
 - it remains diagnostic-only and must not preempt the active structure-side velocity lane
 
 ## Parent Refresh
 
-- Source packet: `vel_tok32_safe_semantic_topogate_k085`
-- Selection policy: `latest`
-- Selected parent epoch: `epoch_0003`
-- Selected parent checkpoint: `exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1/epoch_0003.pt`
-- Selected parent metrics: transfer `0.675388 / 0.375598`, all-pairs `0.702936 / 0.371762`
+- Source packet: `vel_tok32_safe_semantic_topogate_k085_appalign`
+- Selection policy: `best_transfer_style_within_recovered_structure_band`
+- Selected parent epoch: `epoch_0001`
+- Selected parent checkpoint: `exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/epoch_0001.pt`
+- Selected parent metrics: transfer `0.672604 / 0.336357`, all-pairs `0.703506 / 0.332992`

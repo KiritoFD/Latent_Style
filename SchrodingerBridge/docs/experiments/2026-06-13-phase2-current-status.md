@@ -53,7 +53,7 @@ Date: 2026-06-13
 - I2SB diagnostic preferred packet: `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005`
 - I2SB config: [I2SB config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005_seed42_b20a1.json)
 - I2SB note: [I2SB note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual-tfloor005.md)
-- I2SB read: early-time aligned exact-I2SB follow-on: keep the same safe parent and residual sigma0.02 Brownian bridge
+- I2SB read: guide-aligned exact-I2SB follow-on: inherit appalign epoch_0001 as the highest-style recovered parent
 - I2SB live state: `n/a`
 - I2SB runtime observability: n/a
 
