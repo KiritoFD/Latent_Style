@@ -185,19 +185,21 @@
   - `vel_tok32_safe_rescan_r2`
   - manifest-driven recovery watcher relaunched it after the remote Windows reboot on `2026-06-13`
   - latest live read shows:
-    - latest settled authority point is now `epoch_0003`
-    - transfer `0.675325 / 0.398119`
-    - all-pairs `0.701712 / 0.395315`
+    - latest settled authority point is now `epoch_0004`
+    - transfer `0.672377 / 0.369065`
+    - all-pairs `0.700490 / 0.367229`
     - `live_state = training_after_settled_eval`
   - remote GPU health is back inside the preferred formal band at roughly:
     - `10.38 GiB / 12.29 GiB`
     - later `9.91 GiB / 12.29 GiB`
   - current read:
     - still in-band
-    - best settled point remains `epoch_0002`, which is still inside the newest-2 window
-    - style did briefly exceed the old safe shelf, but LPIPS stayed above the old shelf recovery ceilings
-    - `epoch_0003` regressed slightly versus `epoch_0002`, so the line is still not a promotable safe-shelf break
-    - because the best point is still recent and the line remains `< 0.40`, the formal lane stays alive under the kill-on-0.40 rule
+    - the line now has two distinct in-band frontier points:
+      - `epoch_0002`: stronger style, weaker LPIPS
+      - `epoch_0004`: weaker style, much better LPIPS
+    - `epoch_0004` is a real new Pareto point and recovers LPIPS materially below the old shelf, but its style is still slightly below the old shelf style
+    - therefore the line is still not a promotable safe-shelf break
+    - however, the short-screen has now been survived and the lane stays alive under regular Pareto patience rather than the original `epoch_0003` gate
 - 当前正式候选仍然是 `vel_tok32_safe_rescan_r2`，但它仍只是一条 kill-on-first-slip 的短筛线。
 - 若 `safe_rescan_r2` 仍越过 `0.40`，则 Phase 2 立即结束 tokenizer-safe sweep，切到 structure-side reentry 设计。
 - 所有 round2 endpoint / I2SB 文档都应按以下标准重读:
