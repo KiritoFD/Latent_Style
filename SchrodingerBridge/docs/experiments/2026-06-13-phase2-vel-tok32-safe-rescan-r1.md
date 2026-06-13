@@ -93,6 +93,21 @@ Date: 2026-06-13
   - first grad:
     - `structured_style_tokenizer.universal_keys`
     - abs mean `0.005186`
+- local observability verification:
+  - a direct random forward/backward confirms `structured_style_tokenizer.last_debug` is now populated
+  - current keys include:
+    - `attn_entropy`
+    - `attn_max`
+    - `num_clusters`
+    - `pe_temp`
+    - `query_dim`
+    - `query_num_blocks`
+    - `global_gate_scale`
+  - trainer-side scalar extraction also returns:
+    - `structured_style_tokenizer_attn_entropy`
+    - `structured_style_tokenizer_attn_max`
+    - `structured_style_tokenizer_global_gate_scale`
+  - this is the diagnostic channel that will be used to judge whether the tokenizer is actually self-organizing rather than only improving LPIPS by accident
 
 ## Run Log
 
