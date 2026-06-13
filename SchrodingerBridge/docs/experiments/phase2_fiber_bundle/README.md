@@ -10,7 +10,7 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 
 ## Current Homepage Overlay
 
-- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05`, and SMoE epoch `1-4` are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
+- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05`, and SMoE epoch `1-5` are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
 - The trace uses transfer `CLIP-S - IDT` on the y-axis and `1 - LPIPS` on the x-axis.
 - All retained checkpoints are drawn and connected.
 - Labels are sparse by design:
@@ -53,7 +53,7 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 - This run starts from the same `k070 epoch_0003` parent used by Fiber-SDE.
 - Only `tokenizer_family` changes from `pure_latent_spatial` to `smoe_translator`; solver/loss/topogate/appearance/schedule stay inherited from the parent line.
 - Remote full eval must run every epoch and update the homepage page-1 CLIP-style / LPIPS figure before closure.
-- Current read through epoch 4: e1 is best for style, e2/e3/e4 recover LPIPS while losing style, and all four remain dominated by `k070 epoch_0003`; continue only under the formal curve rule before closing SMoE-only.
+- Current read through epoch 5: e1 is best for style, e4 is the closest structural point, e5 recovers style while giving back LPIPS, and all five remain dominated by `k070 epoch_0003`; continue only under the formal curve rule before closing SMoE-only.
 
 ## Plot Update Contract
 
