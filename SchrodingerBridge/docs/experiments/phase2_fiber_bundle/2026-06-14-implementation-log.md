@@ -144,3 +144,12 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Action: stopped I2SB PID `2221`, verified GPU idle at `388MiB / 12288MiB`, then relaunched the same SMoE config.
 - Relaunch: `2026-06-14 05:21 Asia/Shanghai`, resumed from `epoch_0001.pt` at epoch 2/global step `1574`; health memory `6776MiB`.
 - Decision: treat the incident as an orchestration fault. Do not change SMoE mechanism or batch for this lane; keep convergence reads tied to the recovered single-lane run.
+
+## SMoE Second Guard And Task Quarantine
+
+- At `2026-06-14 05:39:01 Asia/Shanghai`, the second SMoE attempt was stopped by the runtime guard with `used=11772MiB cap=11000MiB`.
+- Diagnosis: another historical I2SB one-shot task, `phase2_i2sb_topo_anchor_sigma0p10_warm_vel2_seed42_b30a1`, started at `05:38:47` and held about `8.6GiB`.
+- Action: stopped the I2SB run and disabled every scheduled task containing `i2sb`, including historical train tasks and stale curve/watch helpers.
+- Verification: GPU returned to `364MiB / 12288MiB`; no Python process remained; no `i2sb` task had a future trigger time.
+- Relaunch: `2026-06-14 05:47 Asia/Shanghai`, same SMoE config, resumed from `epoch_0001.pt` at epoch 2/global step `1574`; health memory `6828MiB`.
+- Decision: this remains an orchestration fault. Keep all I2SB tasks quarantined until SMoE closes; do not change SMoE mechanism or batch because no clean single-lane e2 has been observed yet.
