@@ -1,0 +1,21 @@
+{
+  "_base": "./phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1.json",
+  "model": {
+    "semantic_self_topology_blend": 0.7
+  },
+  "training": {
+    "resume_checkpoint": "exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/epoch_0001.pt",
+    "resume_model_strict": false,
+    "resume_optimizer": false,
+    "resume_training_state": false,
+    "resume_prefer_local_checkpoint": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k070_seed42_b12a1"
+  },
+  "ablation": {
+    "name": "phase2_vel_tok32_safe_semantic_topogate_k070_b12a1",
+    "axis": "phase2_velocity_style_release",
+    "notes": "Guide-aligned style-lift follow-on after appalign plateau: keep the same safe tokenizer, velocity transport, and appearance head, but reduce semantic_self_topology_blend from 1.0 to 0.7 so the recovered structure line keeps most of its LPIPS protection while releasing more room for style."
+  }
+}
