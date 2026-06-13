@@ -57,7 +57,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.objective_mode = str(getattr(bridge_config, "objective_mode", "")).strip().lower()
         self.loss_type = str(getattr(bridge_config, "loss_type", "")).strip().lower()
         self.bridge_sigma = max(0.0, float(getattr(bridge_config, "bridge_sigma", 0.0)))
-        self.bridge_style_dim = int(self.style_tokenizer.embedding_dim)
+        self.bridge_style_dim = int(getattr(self, "style_code_dim", getattr(self.style_tokenizer, "embedding_dim", 0)))
         self.execution_budget_mode = str(getattr(bridge_config, "execution_budget_mode", "none")).strip().lower()
         if self.execution_budget_mode not in {"none", "scalar", "low_high"}:
             self.execution_budget_mode = "none"
