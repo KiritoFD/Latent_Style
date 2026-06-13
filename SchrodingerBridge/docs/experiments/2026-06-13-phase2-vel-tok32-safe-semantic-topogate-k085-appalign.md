@@ -89,8 +89,9 @@ Date: 2026-06-13
     - observed guard event: `11449 MiB > 11000 MiB`
   - preferred relaunch now switches to `b12a1`
   - the active remote mainline is now `b12a1`
-  - first settled authority point is now `epoch_0001`
-  - current board state should be read as `training_after_settled_eval`
+  - latest settled authority point is now `epoch_0003`
+  - `epoch_0004` has already been checkpointed and is currently in full eval
+  - current board state should be read as `eval_in_progress_or_pending`
 
 ## Settled Reads
 
@@ -117,11 +118,30 @@ Date: 2026-06-13
     - transfer style slips further below the formal shelf
     - so the lane is still active as a structure-clean Pareto frontier, but it has not yet converted into a full transfer recovery
 
+- `epoch_0003`
+  - transfer `0.671810 / 0.314716`
+  - all-pairs `0.703130 / 0.312658`
+  - identity `0.828410 / 0.304422`
+  - `style - IDT`:
+    - transfer `+0.031888`
+    - all-pairs `+0.023005`
+  - runtime observability from checkpoint summary:
+    - transfer-side `tok_eff=4.1, gate=0.594, mask=0.634, topo_ent=0.873, app_on=1.0, app_s=1.000, app_d=0.000`
+  - read:
+    - all-pairs still stays above the safe shelf
+    - LPIPS remains near the `0.31` floor instead of rebounding
+    - transfer style recovers a little versus `epoch_0002`, but is still below the formal shelf
+    - so this point extends the same structure-clean Pareto frontier instead of creating a real style breakout
+
 - interpretation:
-  - `appalign` is no longer just a one-point anomaly; it already has two settled Pareto points
-  - the current behavior is "keep structure and LPIPS improving while style saturates below the transfer gate"
+  - `appalign` is no longer just a one-point anomaly; it already has three settled Pareto points
+  - the current behavior is "keep structure and LPIPS pinned near the floor while style saturates below the transfer gate"
   - the remote eval script is now writing checkpoint-level `runtime_observability`, so later settled checkpoints can be judged on both board metrics and tokenizer / appearance activity
   - the guide read agrees with the current evidence: this lane should be treated as style-limited, not tokenizer-capacity-limited
+  - current close-gate blocker is still simple:
+    - latest settled epoch is only `3`
+    - the tail is not yet flat
+    - so the watcher should keep this lane alive until `epoch_0004` settles
 ## Parent Refresh
 
 - Source packet: `vel_tok32_safe_semantic_topogate_k085`
