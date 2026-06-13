@@ -373,7 +373,10 @@ def main() -> int:
         wsl_distro=str(args.wsl_distro),
         exec_args=["tail", "-n", str(int(args.tail_lines)), remote_train_log],
     )
-    tail_lines = [] if _looks_like_wsl_hcs_failure(tail.stdout) else tail.stdout.splitlines()
+    if _looks_like_wsl_hcs_failure(tail.stdout):
+        tail_lines: list[str] = []
+    else:
+        tail_lines = tail.stdout.splitlines()[-max(1, int(args.tail_lines)) :]
 
     wsl_hcs_failure = _looks_like_wsl_hcs_failure(py.stdout)
     process_rows_all = [] if wsl_hcs_failure else [line.strip() for line in py.stdout.splitlines() if line.strip()]

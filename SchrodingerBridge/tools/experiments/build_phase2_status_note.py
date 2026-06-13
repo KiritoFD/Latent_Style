@@ -252,9 +252,9 @@ def build_note(snapshot: dict, *, report_date: str) -> str:
         "### Latest Settled Point",
         f"- Epoch: `{latest.get('epoch', 'n/a')}`",
         f"- Transfer `CLIP-S / LPIPS`: `{latest_transfer}`",
-        f"- Transfer `ΔIDT style`: `{_style_delta_vs_idt(latest.get('transfer_clip_style'), idt_refs.get('transfer_clip_style'))}`",
+        f"- Transfer `style - IDT`: `{_style_delta_vs_idt(latest.get('transfer_clip_style'), idt_refs.get('transfer_clip_style'))}`",
         f"- All-pairs `CLIP-S / LPIPS`: `{latest_all_pairs}`",
-        f"- All-pairs `ΔIDT style`: `{_style_delta_vs_idt(latest.get('all_pairs_clip_style'), idt_refs.get('all_pairs_clip_style'))}`",
+        f"- All-pairs `style - IDT`: `{_style_delta_vs_idt(latest.get('all_pairs_clip_style'), idt_refs.get('all_pairs_clip_style'))}`",
         (
             f"- Identity `CLIP-S / LPIPS`: "
             f"`{_fmt_float(latest.get('identity_clip_style'))} / {_fmt_float(latest.get('identity_content_lpips'))}`"
@@ -305,10 +305,10 @@ def build_note(snapshot: dict, *, report_date: str) -> str:
             else "- Structure latest settled `CLIP-S / LPIPS`: n/a"
         ),
         (
-            f"- Structure latest `ΔIDT style`: transfer `{_style_delta_vs_idt(structure_latest.get('transfer_clip_style'), idt_refs.get('transfer_clip_style'))}`, "
+            f"- Structure latest `style - IDT`: transfer `{_style_delta_vs_idt(structure_latest.get('transfer_clip_style'), idt_refs.get('transfer_clip_style'))}`, "
             f"all-pairs `{_style_delta_vs_idt(structure_latest.get('all_pairs_clip_style'), idt_refs.get('all_pairs_clip_style'))}`"
             if structure_latest
-            else "- Structure latest `ΔIDT style`: n/a"
+            else "- Structure latest `style - IDT`: n/a"
         ),
         f"- I2SB diagnostic preferred packet: `{i2sb.get('packet_id', 'n/a')}`",
         f"- I2SB config: {i2sb_cfg}" if i2sb_cfg else "- I2SB config: n/a",

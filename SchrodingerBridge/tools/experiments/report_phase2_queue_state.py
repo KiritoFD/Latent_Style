@@ -23,6 +23,7 @@ DEFAULT_FORMAL_WATCHER_OUT = SB_ROOT / "aaai2027" / "phase2_formal_lane_recover_
 DEFAULT_FORMAL_WATCHER_ERR = SB_ROOT / "aaai2027" / "phase2_formal_lane_recover_from_manifest.err.log"
 DEFAULT_STRUCTURE_WATCHER_OUT = SB_ROOT / "aaai2027" / "phase2_structure_reentry_watch.stdout.log"
 DEFAULT_STRUCTURE_WATCHER_ERR = SB_ROOT / "aaai2027" / "phase2_structure_reentry_watch.stderr.log"
+DEFAULT_REMOTE_TRAIN_TAIL_LINES = 20
 
 
 def _run(cmd: list[str]) -> subprocess.CompletedProcess[str]:
@@ -229,7 +230,13 @@ def _query_remote_health(*, host: str, port: int, user: str, wsl_distro: str) ->
 
 def _query_remote_status(*, run_name: str) -> dict:
     reporter = SCRIPT_DIR / "report_remote_experiment_status.py"
-    return _json_tool(reporter, "--run-name", str(run_name))
+    return _json_tool(
+        reporter,
+        "--run-name",
+        str(run_name),
+        "--tail-lines",
+        str(DEFAULT_REMOTE_TRAIN_TAIL_LINES),
+    )
 
 
 def _query_local_watchers() -> list[dict[str, object]]:
