@@ -235,6 +235,32 @@ Date: 2026-06-13
     - next decision rule from here:
       - first `0.40+` settled point => immediate archival stop
       - if later retained checkpoints fail to improve beyond `epoch_0002`, safe-family sweep should be declared exhausted
+- fourth settled authority point at `2026-06-13 15:51:50 +08:00`:
+  - `epoch_0004`
+  - transfer `0.672377 / 0.369065`
+  - all-pairs `0.700490 / 0.367229`
+  - identity `0.812943 / 0.359885`
+  - eval wall `222.26s`
+  - generation `118.32s`
+  - VAE decode `58.00s`
+  - convergence read:
+    - `row_count = 4`
+    - `best_epoch = epoch_0002`
+    - `best_in_newest_2 = false`
+    - `since_last_pareto = 0`
+    - `tail_flat = false`
+    - `converged = false`
+  - interpretation:
+    - `epoch_0004` is a genuine new in-band Pareto point
+    - compared with `epoch_0002`, it trades a small amount of style for a large LPIPS recovery:
+      - transfer LPIPS `0.3959 -> 0.3691`
+      - all-pairs LPIPS `0.3932 -> 0.3672`
+    - compared with the old safe shelf `0.701666 / 0.381724`, it now wins clearly on LPIPS but still loses narrowly on style
+    - so this point is still not a promotable shelf-break
+    - however, the lane has now survived the short-screen in a stronger sense:
+      - there is a style-leaning in-band frontier point at `epoch_0002`
+      - there is a structure-leaning in-band frontier point at `epoch_0004`
+    - from here the run should be judged by regular Pareto patience, not by the original `epoch_0003` short-screen
 
 ## Ops Note
 
