@@ -104,11 +104,26 @@ def _validate_row(row: dict[str, str]) -> dict[str, object]:
 
     lane_class = str(row.get("lane_class", "")).strip().lower()
     formal_eligible = str(row.get("formal_eligible", "")).strip().lower()
+    def _present(key: str) -> bool:
+        return bool(str(row.get(key, "")).strip())
     if lane_class == "formal_lane":
         if formal_eligible != "yes":
             issues.append("formal_lane row must have formal_eligible=yes")
         if str(cfg.model.transport_prediction_mode) != "velocity":
             issues.append("formal_lane packet must stay on velocity transport")
+        for key in (
+            "watch_min_settled_epoch",
+            "watch_min_allpairs_style_recovery",
+            "watch_max_allpairs_lpips_for_recovery",
+            "watch_min_transfer_style_recovery",
+            "watch_max_transfer_lpips_for_recovery",
+            "watch_handoff_mode",
+        ):
+            if not _present(key):
+                issues.append(f"formal_lane row missing {key}")
+        handoff = str(row.get("watch_handoff_mode", "")).strip().lower()
+        if handoff and handoff not in {"launch_pc_eval", "stop_only"}:
+            issues.append(f"invalid watch_handoff_mode={handoff}")
     elif lane_class == "structure_reentry":
         if formal_eligible != "no":
             issues.append("structure_reentry row must have formal_eligible=no")
@@ -133,6 +148,17 @@ def _validate_row(row: dict[str, str]) -> dict[str, object]:
         "ok": not issues,
         "issues": issues,
         "derived": derived,
+        "watch_fields": {
+            key: str(row.get(key, "")).strip()
+            for key in (
+                "watch_min_settled_epoch",
+                "watch_min_allpairs_style_recovery",
+                "watch_max_allpairs_lpips_for_recovery",
+                "watch_min_transfer_style_recovery",
+                "watch_max_transfer_lpips_for_recovery",
+                "watch_handoff_mode",
+            )
+        },
     }
 
 

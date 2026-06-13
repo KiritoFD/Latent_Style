@@ -16,6 +16,14 @@
         "semantic_topology_gate": "false",
         "proximal_mode": "crossattn_texture",
         "resolved_exact_brownian": false
+      },
+      "watch_fields": {
+        "watch_min_settled_epoch": "3",
+        "watch_min_allpairs_style_recovery": "0.701666",
+        "watch_max_allpairs_lpips_for_recovery": "0.381724",
+        "watch_min_transfer_style_recovery": "0.673934",
+        "watch_max_transfer_lpips_for_recovery": "0.384340",
+        "watch_handoff_mode": "stop_only"
       }
     },
     {
@@ -31,6 +39,14 @@
         "semantic_topology_gate": "true",
         "proximal_mode": "crossattn_texture",
         "resolved_exact_brownian": false
+      },
+      "watch_fields": {
+        "watch_min_settled_epoch": "",
+        "watch_min_allpairs_style_recovery": "",
+        "watch_max_allpairs_lpips_for_recovery": "",
+        "watch_min_transfer_style_recovery": "",
+        "watch_max_transfer_lpips_for_recovery": "",
+        "watch_handoff_mode": ""
       }
     },
     {
@@ -46,6 +62,14 @@
         "semantic_topology_gate": "false",
         "proximal_mode": "crossattn_texture",
         "resolved_exact_brownian": false
+      },
+      "watch_fields": {
+        "watch_min_settled_epoch": "",
+        "watch_min_allpairs_style_recovery": "",
+        "watch_max_allpairs_lpips_for_recovery": "",
+        "watch_min_transfer_style_recovery": "",
+        "watch_max_transfer_lpips_for_recovery": "",
+        "watch_handoff_mode": ""
       }
     },
     {
@@ -61,6 +85,14 @@
         "semantic_topology_gate": "true",
         "proximal_mode": "crossattn_texture",
         "resolved_exact_brownian": true
+      },
+      "watch_fields": {
+        "watch_min_settled_epoch": "",
+        "watch_min_allpairs_style_recovery": "",
+        "watch_max_allpairs_lpips_for_recovery": "",
+        "watch_min_transfer_style_recovery": "",
+        "watch_max_transfer_lpips_for_recovery": "",
+        "watch_handoff_mode": ""
       }
     },
     {
@@ -76,6 +108,14 @@
         "semantic_topology_gate": "true",
         "proximal_mode": "crossattn_texture",
         "resolved_exact_brownian": true
+      },
+      "watch_fields": {
+        "watch_min_settled_epoch": "",
+        "watch_min_allpairs_style_recovery": "",
+        "watch_max_allpairs_lpips_for_recovery": "",
+        "watch_min_transfer_style_recovery": "",
+        "watch_max_transfer_lpips_for_recovery": "",
+        "watch_handoff_mode": ""
       }
     }
   ],
