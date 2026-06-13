@@ -234,23 +234,17 @@
     - safe-family 证明了 true tokenizer 可以稳定维持 in-band
     - 但它没有做出 promotable safe-shelf break
 - 当前 active next step:
-  - `vel_tok32_safe_semantic_topogate_k085_appalign`
-  - this packet now inherits the promoted `vel_tok32_safe_semantic_topogate_k085 epoch_0003` parent
+  - `vel_tok32_safe_semantic_topogate_k070`
+  - this packet inherits `appalign epoch_0001` as the highest-style recovered parent inside the safe band
   - current live read:
-    - first `b16a1` launch hit runtime guard at `11.449 GiB` before first settled eval
-    - preferred relaunch now uses `b12a1`
-    - latest settled point is now `epoch_0003`
-    - transfer `0.671810 / 0.314716`
-    - all-pairs `0.703130 / 0.312658`
+    - launch is now active on the remote 3060
+    - latest state is `training_before_first_settled_eval`
+    - current training batch is still in `epoch_0001`
   - interpretation:
-    - `topogate` already proved that structure-side recovery is possible
-    - `appalign` now has three settled Pareto points, and `epoch_0003` still keeps all-pairs safely above the old shelf while LPIPS stays near `0.31`
-    - transfer style remains below the formal shelf, so this is still a structure-clean but style-limited line rather than a full recovery
-    - remote eval has been packet-synced with checkpoint-level `runtime_observability`, so later settled checkpoints from this lane should start preserving tokenizer / appearance reads in `summary.json`
-    - the guide-for-running-codex read is consistent with this: the active bottleneck is style lift under preserved structure, not another tokenizer-capacity rollback
-    - the guide watcher now also gates this pivot on the real close rule:
-      - current blockers are `latest_settled_epoch<4` and `tail_flat=false`
-    - therefore this packet should continue until the close gate is actually met, then auto-pivot into the guide-aligned `I2SB σ=0.02 / PC` branch instead of auto-rolling into another structure-family packet
+    - `appalign` has already closed as a structure-clean but style-limited plateau
+    - `i2sb_sigma0.02_tfloor005` produced a first settled archival-only point
+    - the current active hypothesis is therefore no longer stochasticity-first but style-release under the same true-tokenizer + velocity family
+    - `k070` is the cleanest guide-aligned next step because it changes only `semantic_self_topology_blend`
 
 ## Guide-Adopted Read
 
@@ -265,9 +259,9 @@
 - consequence:
   - do not regress to weaker tokenizer sketches while this line is still producing in-band Pareto points
   - prioritize style-lift mechanisms that preserve the recovered structure band
-  - once `appalign` is still style-limited at its close gate, do not auto-launch `pnp`; auto-pivot the next choice to:
-    - `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005`
-    - then the existing eval-only `solver_pc` check
+  - after `appalign` closed, the first guide-aligned I2SB attempt is now already logged as archival-only negative evidence
+  - the local `solver_pc + latent_lowpass` appalign-e3 probe is also negative
+  - therefore the current structure-side mainline should now test a lighter topology blend before reopening another stochastic or inference-only branch
 
 ## Guide Watcher
 

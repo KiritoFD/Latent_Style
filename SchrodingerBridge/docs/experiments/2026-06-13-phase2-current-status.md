@@ -40,22 +40,22 @@ Date: 2026-06-13
 - Best all-pairs gate read: not eligible before settled epoch 3
 
 ## Next Packets
-- Structure-side preferred packet: `vel_tok32_safe_semantic_topogate_k085_appalign`
-- Structure config: [structure config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1.json)
-- Structure note: [structure note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085-appalign.md)
-- Structure read: epoch_0004 settled at transfer 0.669351/0.325617 and all-pairs 0.700798/0.321730; the line stayed in-band but lost the recovered shelf and closed on in-band style plateau, so the queue pivoted to I2SB
-- Structure live state: `n/a`
-- Structure GPU: n/a
-- Structure latest settled epoch: `epoch_0004`
-- Structure latest settled `CLIP-S / LPIPS`: `0.669351 / 0.325617`, `0.700798 / 0.321730`
-- Structure latest `style - IDT`: transfer `+0.029429`, all-pairs `+0.020673`
-- Structure runtime observability: tok_eff=4.9, gate=0.546, mask=0.590, topo_ent=0.856, app_on=1.0, app_s=1.000, app_d=0.000
+- Structure-side preferred packet: `vel_tok32_safe_semantic_topogate_k070`
+- Structure config: [structure config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k070_seed42_b12a1.json)
+- Structure note: [structure note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k070.md)
+- Structure read: guide-aligned style-release follow-on launched from appalign epoch_0001; relax semantic_self_topology_blend from 1.0 to 0.7 while keeping the current tokenizer, velocity, and appearance stack
+- Structure live state: `training_before_first_settled_eval`
+- Structure GPU: 6987 / 12288 MiB
+- Structure latest settled epoch: `n/a`
+- Structure latest settled `CLIP-S / LPIPS`: n/a
+- Structure latest `style - IDT`: n/a
+- Structure runtime observability: n/a
 - I2SB diagnostic preferred packet: `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005`
 - I2SB config: [I2SB config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005_seed42_b20a1.json)
 - I2SB note: [I2SB note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual-tfloor005.md)
-- I2SB read: running from appalign epoch_0001 on the guide-aligned residual sigma0.02 Brownian bridge with predictor time floor 0.05
-- I2SB live state: `training_before_first_settled_eval`
-- I2SB runtime observability: n/a
+- I2SB read: epoch_0001 settled at transfer 0.695478/0.568845 and all-pairs 0.703864/0.566081; style rose but LPIPS left the paper band immediately, so this guide-aligned I2SB probe closes as archival-only negative evidence
+- I2SB live state: `n/a`
+- I2SB runtime observability: tok_eff=3.3, gate=0.658, mask=0.730, topo_ent=1.226, t_floor=0.050, t_floor_on=0.0, pred_t=0.917
 
 ## Contract Read
 - `true I2SB` is already implemented as exact-Brownian endpoint transport with `solver_i2sb`.
