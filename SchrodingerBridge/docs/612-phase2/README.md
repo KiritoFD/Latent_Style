@@ -269,7 +269,14 @@
   - 当前状态:
     - 已启动为正式远程 lane
     - 30s health `10142 MiB`
-    - 当前处于 `training_before_first_settled_eval`
+    - 首个 settled 点:
+      - `epoch_0001`
+      - transfer `0.672934 / 0.384740`
+      - all-pairs `0.700686 / 0.383351`
+    - 解释:
+      - 仍在 `LPIPS < 0.40` 带内
+      - 但暂未超过旧 shelf
+      - 因而继续跑，但暂不视为 breakout
 
 ### 队列5: `vel_structure_control_reentry`（降级为第三顺位）
 
