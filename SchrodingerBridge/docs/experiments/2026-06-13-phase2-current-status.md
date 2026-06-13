@@ -45,15 +45,17 @@ Date: 2026-06-13
 - Structure note: [structure note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085-appalign.md)
 - Structure read: epoch_0001 settled at transfer 0.672604/0.336357 and all-pairs 0.703506/0.332992; all-pairs safe-shelf recovery is already achieved, while transfer style still trails the formal shelf
 - Structure live state: `training_after_settled_eval`
-- Structure GPU: 6842 / 12288 MiB
+- Structure GPU: 6852 / 12288 MiB
 - Structure latest settled epoch: `epoch_0001`
 - Structure latest settled `CLIP-S / LPIPS`: `0.672604 / 0.336357`, `0.703506 / 0.332992`
 - Structure latest `style - IDT`: transfer `+0.032681`, all-pairs `+0.023381`
+- Structure runtime observability: n/a
 - I2SB diagnostic preferred packet: `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005`
 - I2SB config: [I2SB config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005_seed42_b20a1.json)
 - I2SB note: [I2SB note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual-tfloor005.md)
 - I2SB read: early-time aligned exact-I2SB follow-on: keep the same safe parent and residual sigma0.02 Brownian bridge
 - I2SB live state: `n/a`
+- I2SB runtime observability: n/a
 
 ## Contract Read
 - `true I2SB` is already implemented as exact-Brownian endpoint transport with `solver_i2sb`.

@@ -120,12 +120,14 @@ def _compact_summary(summary: dict[str, Any] | None) -> dict[str, Any] | None:
         return None
     analysis = summary.get("analysis") or {}
     timings = summary.get("timings_sec") or {}
+    runtime_observability = summary.get("runtime_observability") or {}
     return {
         "checkpoint": summary.get("checkpoint"),
         "timestamp": summary.get("timestamp"),
         "all_pairs_overview": analysis.get("all_pairs_overview"),
         "style_transfer_ability": analysis.get("style_transfer_ability"),
         "identity_reconstruction": analysis.get("identity_reconstruction"),
+        "runtime_observability": runtime_observability,
         "timings_sec": {
             "wall_total": timings.get("wall_total"),
             "eval_total": timings.get("eval_total"),
