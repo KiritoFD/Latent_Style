@@ -164,8 +164,14 @@
 
 ## 当前状态
 
-- 当前没有 live formal remote lane。
-- 下一条正式候选仍然是 `vel_tok32_safe_rescan_r2`，但它只是一条 kill-on-first-slip 的短筛线。
+- 当前 live formal remote lane:
+  - `vel_tok32_safe_rescan_r2`
+  - manifest-driven recovery watcher relaunched it after the remote Windows reboot on `2026-06-13`
+  - latest live read shows `training_before_first_settled_eval`
+  - remote GPU health is back inside the preferred formal band at roughly:
+    - `10.38 GiB / 12.29 GiB`
+    - later `9.91 GiB / 12.29 GiB`
+- 当前正式候选仍然是 `vel_tok32_safe_rescan_r2`，但它仍只是一条 kill-on-first-slip 的短筛线。
 - 若 `safe_rescan_r2` 仍越过 `0.40`，则 Phase 2 立即结束 tokenizer-safe sweep，切到 structure-side reentry 设计。
 - 所有 round2 endpoint / I2SB 文档都应按以下标准重读:
   - `0.40-0.70` = archival only

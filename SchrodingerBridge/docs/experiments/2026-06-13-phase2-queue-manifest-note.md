@@ -43,7 +43,12 @@ Date: 2026-06-13
 
 - current formal packet:
   - `vel_tok32_safe_rescan_r2`
-  - still blocked by remote WSL2 host state, not by model-side rejection
+  - remote host reboot has already occurred
+  - manifest-driven watcher has already relaunched it
+  - current live state is `training_before_first_settled_eval`
+  - recent live GPU reads are inside the preferred formal band:
+    - about `10.38 GiB / 12.29 GiB`
+    - later about `9.91 GiB / 12.29 GiB`
 - current preferred structure-side packet:
   - `vel_tok32_semantic_topogate_k085`
 - current preferred exact-I2SB theory-check packet:
