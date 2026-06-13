@@ -33,6 +33,13 @@ Use this file as the stable entrypoint instead of guessing from filenames.
 
 - default policy:
   - round-2 pure-SDE launchers reject DINO-conditioned configs unless `--allow-dino` is supplied explicitly
+- phase-2 queue source of truth:
+  - [phase2_queue_manifest.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_queue_manifest.csv)
+  - [phase2_queue_manifest_validation.json](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_queue_manifest_validation.json)
+  - [2026-06-13-phase2-queue-manifest-note.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-queue-manifest-note.md)
+- validate and resolve the current preferred phase-2 packet:
+  - [validate_phase2_queue_manifest.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/validate_phase2_queue_manifest.py)
+  - [resolve_phase2_queue_packet.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/resolve_phase2_queue_packet.py)
 - one-shot status read for a single active remote lane:
   - [report_remote_experiment_status.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/report_remote_experiment_status.py)
 - run inference-only phase2 solver_pc review on an existing checkpoint:
@@ -42,6 +49,14 @@ Use this file as the stable entrypoint instead of guessing from filenames.
 - watch the formal phase2 velocity lane and hand off to eval-only solver_pc when the documented closure rule is met:
   - [watch_phase2_velocity_handoff.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_phase2_velocity_handoff.py)
   - supports `--handoff-mode stop_only` when the active phase2 packet should close on LPIPS / plateau without automatically launching the legacy solver_pc follow-up
+- manifest-driven WSL2 recovery watcher:
+  - [watch_phase2_wsl_recover_and_launch.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_phase2_wsl_recover_and_launch.py)
+  - now supports:
+    - `--manifest-csv`
+    - `--validation-json`
+    - `--lane-class`
+    - `--resolve-only`
+  - the preferred phase-2 usage is to resolve the formal lane from the manifest instead of hard-coding config / run-name / watcher thresholds
 - launch one family train lane:
   - [launch_remote_round2_family_train.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_round2_family_train.py)
 - audit round-2 pure-latent / I2SB contract compliance:
