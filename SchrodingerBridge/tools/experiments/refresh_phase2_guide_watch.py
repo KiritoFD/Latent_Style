@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
 from datetime import datetime, timezone
@@ -16,18 +17,46 @@ KEYWORD_GROUPS: list[tuple[str, tuple[str, ...]]] = [
     ("cleanup", ("cleanup", "ckpt", "formal lane", "immortal")),
 ]
 
+GUIDE_TEXT_ENCODINGS: tuple[str, ...] = (
+    "utf-8-sig",
+    "utf-8",
+    "gb18030",
+    "gbk",
+    "utf-16",
+    "utf-16-le",
+    "utf-16-be",
+)
+
 
 def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def _sha256_text(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+def _sha256_bytes(payload: bytes) -> str:
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _load_guide_text(path: Path) -> tuple[str, str, bytes]:
+    raw = path.read_bytes()
+    for encoding in GUIDE_TEXT_ENCODINGS:
+        try:
+            return raw.decode(encoding), encoding, raw
+        except Exception:
+            continue
+    return raw.decode("utf-8", errors="replace"), "utf-8-replace", raw
 
 
 def _load_json_dict(path: Path) -> dict:
     payload = json.loads(path.read_text(encoding="utf-8"))
     return payload if isinstance(payload, dict) else {}
+
+
+def _load_manifest_rows(path: Path) -> list[dict[str, str]]:
+    if not path.is_file():
+        return []
+    with path.open("r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        return [{str(k): str(v) for k, v in row.items()} for row in reader]
 
 
 def _float_or_none(value: object) -> float | None:
@@ -158,13 +187,40 @@ def _derive_live_overlay(snapshot: dict) -> dict[str, object]:
     }
 
 
+def _derive_reconciliation(snapshot: dict) -> list[str]:
+    lines: list[str] = []
+    resolved = snapshot.get("resolved_packets") if isinstance(snapshot.get("resolved_packets"), dict) else {}
+    structure = resolved.get("structure_reentry") if isinstance(resolved.get("structure_reentry"), dict) else {}
+    i2sb = resolved.get("i2sb_diagnostic_only") if isinstance(resolved.get("i2sb_diagnostic_only"), dict) else {}
+    structure_packet = str(structure.get("packet_id", "")).strip()
+    i2sb_status = str(i2sb.get("status", "")).strip().lower()
+
+    if structure_packet == "vel_tok32_safe_semantic_topogate_k070":
+        lines.append("Guide proposal `semantic_self_topology_blend=0.7` has already been adopted as the current live structure lane (`k070`).")
+    if i2sb_status.startswith("closed"):
+        lines.append("Guide proposal `I2SB σ=0.02` has already been executed and is currently classified as archival-only negative evidence.")
+
+    pc_summary = Path(r"G:\GitHub\Latent_Style\SchrodingerBridge\aaai2027\phase2_pc_eval_appalign_e3\summary.json")
+    if pc_summary.is_file():
+        lines.append("Guide proposal `solver_pc + latent_lowpass` has already been run as a side probe and is currently treated as negative evidence.")
+
+    manifest_rows = _load_manifest_rows(Path(str(snapshot.get("manifest_csv", "")).strip()))
+    for row in manifest_rows:
+        if str(row.get("packet_id", "")).strip() == "vel_tok32_safe_semantic_topogate_k070_sp256":
+            lines.append("The remaining low-risk tokenizer suggestion has been absorbed as queued follow-on `k070_sp256` via `tokenizer_spatial_dim=256`.")
+            break
+    return lines
+
+
 def _render_status_md(
     *,
     guide_path: Path,
     guide_hash: str,
+    guide_encoding: str,
     last_hash: str,
     grouped_hits: dict[str, list[dict[str, str]]],
     live_overlay: dict[str, object] | None,
+    reconciliation: list[str] | None,
 ) -> str:
     changed = guide_hash != last_hash and bool(last_hash)
     lines: list[str] = [
@@ -173,6 +229,7 @@ def _render_status_md(
         f"- Refreshed at: `{_utc_now_iso()}`",
         f"- Guide path: `{guide_path}`",
         f"- Guide sha256: `{guide_hash}`",
+        f"- Guide decoding: `{guide_encoding}`",
         f"- Guide changed since last run: `{changed}`",
         "",
         "## Current Read",
@@ -198,6 +255,14 @@ def _render_status_md(
                 f"- Recommended next action: `{str(live_overlay.get('recommended_next_action', 'n/a'))}`",
                 f"- Recommended follow-up: `{str(live_overlay.get('recommended_followup_after_next_action', 'n/a'))}`",
                 f"- I2SB live state: `{str(live_overlay.get('i2sb_live_state', 'n/a'))}`",
+                "",
+            ]
+        )
+    if reconciliation:
+        lines.extend(
+            [
+                "## Evidence Reconciliation",
+                *[f"- {line}" for line in reconciliation],
                 "",
             ]
         )
@@ -242,8 +307,8 @@ def main() -> int:
     history_jsonl = Path(args.history_jsonl).expanduser().resolve()
     phase2_snapshot = Path(args.phase2_snapshot).expanduser().resolve() if args.phase2_snapshot else None
 
-    text = guide_path.read_text(encoding="utf-8", errors="replace")
-    guide_hash = _sha256_text(text)
+    text, guide_encoding, guide_bytes = _load_guide_text(guide_path)
+    guide_hash = _sha256_bytes(guide_bytes)
     last_hash = ""
     if state_json.is_file():
         try:
@@ -255,11 +320,15 @@ def main() -> int:
 
     grouped_hits = _extract_grouped_hits(text)
     live_overlay = {}
+    reconciliation: list[str] = []
     if phase2_snapshot is not None and phase2_snapshot.is_file():
         try:
-            live_overlay = _derive_live_overlay(_load_json_dict(phase2_snapshot))
+            snapshot = _load_json_dict(phase2_snapshot)
+            live_overlay = _derive_live_overlay(snapshot)
+            reconciliation = _derive_reconciliation(snapshot)
         except Exception:
             live_overlay = {}
+            reconciliation = []
     status_md.parent.mkdir(parents=True, exist_ok=True)
     state_json.parent.mkdir(parents=True, exist_ok=True)
     history_jsonl.parent.mkdir(parents=True, exist_ok=True)
@@ -267,17 +336,20 @@ def main() -> int:
         _render_status_md(
             guide_path=guide_path,
             guide_hash=guide_hash,
+            guide_encoding=guide_encoding,
             last_hash=last_hash,
             grouped_hits=grouped_hits,
             live_overlay=live_overlay,
+            reconciliation=reconciliation,
         ),
-        encoding="utf-8",
+        encoding="utf-8-sig",
     )
 
     state_payload = {
         "refreshed_at": _utc_now_iso(),
         "guide_path": str(guide_path),
         "guide_hash": guide_hash,
+        "guide_encoding": guide_encoding,
         "guide_changed": bool(last_hash and last_hash != guide_hash),
         "group_counts": {name: len(items) for name, items in grouped_hits.items()},
         "status_md": str(status_md),
