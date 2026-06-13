@@ -210,7 +210,7 @@ def _rows_from_curve(args: argparse.Namespace, refs: dict[str, float]) -> list[d
             if train_time_sec is None:
                 train_time_sec = args.train_time_sec
             source_summary = str(raw.get("summary_path") or args.source_summary or args.curve_csv)
-            label = args.label or f"{args.label_prefix} {_short_epoch(step)}".strip()
+            label = "" if args.no_label else args.label or f"{args.label_prefix} {_short_epoch(step)}".strip()
             base_id = args.point_id_prefix or args.variant or args.trace_id or args.family
             for scope, clip_keys, lpips_keys in (
                 (
@@ -255,7 +255,7 @@ def _rows_from_summary(args: argparse.Namespace, refs: dict[str, float]) -> list
     summary_path = Path(args.summary_json)
     payload = json.loads(summary_path.read_text(encoding="utf-8"))
     step = args.step_or_epoch or str(payload.get("epoch") or summary_path.parent.name)
-    label = args.label or f"{args.label_prefix} {_short_epoch(step)}".strip()
+    label = "" if args.no_label else args.label or f"{args.label_prefix} {_short_epoch(step)}".strip()
     train_min = args.train_min
     train_time_sec = args.train_time_sec
     rows: list[dict[str, str]] = []
@@ -321,6 +321,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--variant", default="")
     parser.add_argument("--trace-id", default="")
     parser.add_argument("--label", default="")
+    parser.add_argument("--no-label", action="store_true", help="Write an unlabeled point while preserving all metrics.")
     parser.add_argument("--label-prefix", default="")
     parser.add_argument("--point-id-prefix", default="")
     parser.add_argument("--step-or-epoch", default="")
