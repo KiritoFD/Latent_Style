@@ -648,3 +648,594 @@ effective_sigma = self.bridge_sigma * noise_gate * math.sqrt(t * (1-t))
 **如果追求顶级论文**: 方向 B (GW-OT) 或方向 D (纤维丛)。方向 B 在学术界有明确的相关工作可以对比 (GW-OT for image matching)；方向 D 则是全新的几何框架，如果做出来就是开山之作。
 
 **最推荐**: 方向 A (黎曼投影) 作为"增量改进"——在现有 transport_step 中加一个 Riemannian projection 层，不改架构，风险最小，但概念上有足够深度支撑论文的 Method 章节。
+
+---
+
+# 第四部分: Tokenizer 的革命性重构
+
+> Tokenizer 的本质不是"查表取风格向量"，而是完成一次**空间翻译**：
+> 把 VAE 潜空间中的内容结构图谱，翻译成目标风格画派的空间笔触图谱。
+> 当前 PureLatentSpatialTokenizer 只做了一次前向的 Query→Key→Value 路由——
+> 这相当于用最浅的"单头注意力"做翻译。以下是 8 个从不同数学视角出发的深度重构方案。
+
+---
+
+## Tokenizer 方向 1: 超网络风格字典 (Hypernetwork Style Dictionary)
+
+### 核心洞察
+
+**当前 tokenizer 的死穴**: `style_values` 是一个 Embedding(num_styles, clusters × spatial_dim)。
+这意味着对于 style_id=3 (Impressionism)，所有图片共享同一套固定的 spatial values。
+但**"印象派的天空画法"在画海景时和画山景时应该是不同的**。
+
+风格特征的表达应该是 **content-conditional** 的，不是纯 style_id-conditional 的。
+
+### 理论
+
+超网络 (Hypernetwork, Ha et al., ICLR 2017) 的核心思想：用一个网络生成另一个网络的参数。
+$$\theta_{\text{tokenizer}} = H_\psi(\text{style\_id}, z_0^{\text{content}})$$
+
+不是查表取出固定的 value vectors，而是**根据当前内容图像的潜空间特征动态生成**。
+
+### 实现
+
+```python
+class HypernetStyleTokenizer(nn.Module):
+    def __init__(self, num_styles, latent_channels, spatial_dim, num_clusters=32):
+        # 超网络: 输入 [style_id; content_pooled_features] → 输出 tokenizer 的 style_values
+        self.content_pool = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),  # [B, 4, 64, 64] → [B, 4, 1, 1]
+            nn.Flatten(),              # → [B, 4]
+        )
+        self.style_hyper = nn.Embedding(num_styles, 256)
+        self.param_generator = nn.Sequential(
+            nn.Linear(256 + 4, 512),   # style_embed + content_pooled
+            nn.SiLU(),
+            nn.Linear(512, 512),
+            nn.SiLU(),
+            nn.Linear(512, num_clusters * spatial_dim),
+        )
+        # universal_keys 保持不变（它们编码"什么样的空间模式是可能的"）
+        self.universal_keys = nn.Parameter(torch.randn(num_clusters, 64) * 0.02)
+        self.query_dim = 64
+
+    def forward(self, style_id, content_latent, ...):
+        # 从超网络生成"这个内容图在这个风格下"的 style_values
+        style_emb = self.style_hyper(style_id)
+        content_feat = self.content_pool(content_latent)
+        style_values = self.param_generator(torch.cat([style_emb, content_feat], dim=-1))
+        # 后续路由与当前 PureLatentSpatialTokenizer 相同
+        ...
+```
+
+**论文故事**: "我们提出了一种内容感知的超网络风格字典。传统的风格分词器使用固定的、仅依赖风格 ID 的嵌入，
+忽略了'印象派的天空'在海景和山景中应有不同的笔触。我们的超网络根据输入图像的内容特征动态生成风格参数，
+使得空间笔触地图精确对齐于内容结构，同时保持对目标风格的忠实度。"
+
+### 收益与风险
+
+| 项 | 评估 |
+|----|------|
+| 理论深度 | ★★★★ Hypernetwork + conditional generation |
+| 代码复杂度 | 中（替换 style_values embedding 为超网络输出） |
+| 预期 style 提升 | +0.02~0.04 (更精准的风格-内容对齐) |
+| 风险 | 超网络可能 collapse 到固定输出 → 需要多样性正则化 |
+| 参数量 | 增加 ~0.5M (param_generator) |
+
+---
+
+## Tokenizer 方向 2: 最优传输风格路由 (OT-Style Router)
+
+### 核心洞察
+
+当前 tokenizer 的路由机制是 **softmax attention**：query 与 key 的余弦相似度经过 softmax 得到注意力权重。
+$$\alpha_{ij} = \text{softmax}_j(Q_i \cdot K_j / \tau)$$
+
+但 softmax 是概率分布，不是传输计划；它保证 $\sum_j \alpha_{ij} = 1$（每个 query 分配权重），
+但不保证 $\sum_i \alpha_{ij} \approx \text{uniform}$（每个 cluster 被均匀使用）。
+这导致 **cluster collapse**：多数像素路由到少数 cluster，其余 cluster 闲置。
+
+### 理论
+
+最优传输 (Sinkhorn-Knopp) 求解一个双随机矩阵 $\Pi$，满足：
+$$\Pi \mathbf{1}_K = \mu_{\text{content}}, \quad \Pi^T \mathbf{1}_{HW} = \nu_{\text{uniform}}$$
+
+其中 $\mu_{\text{content}}$ 是内容像素的均匀分布，$\nu_{\text{uniform}}$ 是 cluster 的均匀分布。
+$\Pi_{ij}$ 解释为"将内容像素 $i$ 的'风格表达权'分配给 cluster $j$"。
+
+**关键性质**: Sinkhorn 迭代天然产生**平衡的分配**，防止 cluster collapse。
+而且熵正则化参数 $\epsilon$ 可以控制分配的"软硬"程度——
+$\epsilon \to 0$ 趋近于硬分配（每个像素一个 cluster），$\epsilon \to \infty$ 趋近于均匀。
+
+### 实现
+
+```python
+class OTStyleRouter(nn.Module):
+    def __init__(self, num_clusters=32, sinkhorn_iters=5, epsilon=0.05):
+        self.universal_keys = nn.Parameter(torch.randn(num_clusters, 64) * 0.02)
+        self.num_clusters = num_clusters
+        self.iters = sinkhorn_iters
+        self.epsilon = epsilon
+
+    def route(self, q_flat, style_values):
+        B, HW, D = q_flat.shape  # q_flat: queries
+        K = self.num_clusters
+
+        # 成本矩阵: 余弦距离
+        q_norm = F.normalize(q_flat, dim=-1)
+        k_norm = F.normalize(self.universal_keys, dim=-1)
+        cost = -(q_norm @ k_norm.T)  # [B, HW, K]
+
+        # Sinkhorn 迭代求双随机传输计划
+        mu = torch.ones(B, HW, device=q_flat.device) / HW  # 每个像素均匀权重
+        nu = torch.ones(B, K, device=q_flat.device) / K     # 每个 cluster 均匀权重
+
+        kernel = torch.exp(-cost / self.epsilon)
+        u = torch.ones_like(mu)
+        v = torch.ones_like(nu)
+
+        for _ in range(self.iters):
+            v = nu / (kernel.transpose(1, 2) @ u.unsqueeze(-1)).squeeze(-1).clamp_min(1e-12)
+            u = mu / (kernel @ v.unsqueeze(-1)).squeeze(-1).clamp_min(1e-12)
+
+        plan = u.unsqueeze(-1) * kernel * v.unsqueeze(-2)  # [B, HW, K]
+        # plan 是双随机矩阵: Σ_j plan_ij = 1/HW, Σ_i plan_ij = 1/K
+
+        dense = plan @ style_values  # [B, HW, spatial_dim]
+        return _patch_to_map(dense)
+```
+
+**论文故事**: "我们揭示了传统 softmax 路由的根本缺陷——它允许簇坍缩到一个或少数几个簇，大幅降低了风格字典的有效容量。我们引入基于 Sinkhorn-Knopp 算法的最优传输路由，将内容像素到风格簇的分配强制平衡为双随机传输计划。这保证了字典中每个簇都被充分利用，使得风格表达的空间分辨率显著提升。"
+
+### 收益与风险
+
+| 项 | 评估 |
+|----|------|
+| 理论深度 | ★★★★★ OT + Sinkhorn，有完整数学 |
+| 代码复杂度 | 低（在现有 attention 层替换 softmax 为 Sinkhorn） |
+| 预期提升 | LPIPS 不变，style +0.01~0.03（更好的 cluster 利用） |
+| 风险 | 极低——Sinkhorn 迭代 5 步极快 (< 1ms) |
+
+---
+
+## Tokenizer 方向 3: 谱分解多尺度风格 (Spectral Tokenizer)
+
+### 核心洞察
+
+风格的不同方面在不同的空间频率上表现：
+- **低频**: 全局色调、光照氛围、大面积色块
+- **中频**: 纹理方向性、笔触形状、图案重复
+- **高频**: 边缘锐度、颗粒感、细节噪声
+
+当前 tokenizer 把所有这些频率的信息混在同一个 spatial_map 里，用一个统一的路由处理。
+这就像用同一个画笔同时画天空、树叶和建筑边缘。
+
+### 理论
+
+对内容潜变量 $z_0$ 做离散小波变换 (DWT) 或拉普拉斯金字塔分解：
+$$z_0 = \mathcal{L}_0(z_0) \oplus \mathcal{L}_1(z_0) \oplus \cdots \oplus \mathcal{L}_L(z_0)$$
+
+其中 $\mathcal{L}_\ell$ 是第 $\ell$ 级的频率分量。每一级用**不同的路由参数**：
+- 低频级: 粗粒度路由（少量 cluster），关注整体色调
+- 高频级: 细粒度路由（大量 cluster），关注局部细节
+
+最终的 spatial_map 是各级输出的加权和。
+
+### 实现
+
+```python
+class SpectralTokenizer(nn.Module):
+    def __init__(self, num_styles, num_clusters=[8, 16, 32]):
+        self.levels = len(num_clusters)
+        self.routers = nn.ModuleList([
+            PureLatentClusterRouter(num_clusters=num_clusters[l],
+                                     spatial_dim=64 // (2**l))
+            for l in range(self.levels)
+        ])
+
+    def laplacian_pyramid(self, x):
+        pyramid = []
+        current = x
+        for l in range(self.levels - 1):
+            low = F.avg_pool2d(current, kernel_size=2, stride=2)
+            high = current - F.interpolate(low, size=current.shape[-2:])
+            pyramid.append(high)  # 高频分量
+            current = low
+        pyramid.append(current)  # 最低频分量
+        return pyramid
+
+    def forward(self, style_id, content_latent, ...):
+        pyramid = self.laplacian_pyramid(content_latent)
+        outputs = []
+        for l, feat in enumerate(pyramid):
+            spatial = self.routers[l](style_id, feat)
+            spatial = F.interpolate(spatial, size=target_hw)
+            outputs.append(spatial)
+        # 各级输出加权叠加
+        spatial_map = sum(w * o for w, o in zip(self.level_weights, outputs))
+        return spatial_map
+```
+
+**论文故事**: "我们指出，单一分辨率的分词器混淆了不同频率的风格特征——全局色调和局部笔触被同一组 cluster 编码。我们提出谱分解分词器，通过拉普拉斯金字塔将内容潜变量分解为多级频率分量，每个分量用独立的路由字典处理。这使得低频组件专注全局氛围调制，高频组件捕捉目标的特定笔触纹理，产生前所未有的风格保真度。"
+
+### 收益与风险
+
+| 项 | 评估 |
+|----|------|
+| 理论深度 | ★★★★ 信号处理 + 多尺度表示 |
+| 代码复杂度 | 中（金字塔分解 + 多路由器） |
+| 预期提升 | style +0.02~0.04, LPIPS 可能更好 |
+| 风险 | 低——金字塔分解是确定性的，不会破坏结构 |
+
+---
+
+## Tokenizer 方向 4: 扩散风格图生成 (Diffusion Tokenizer)
+
+### 核心洞察
+
+当前 tokenizer 是一次性前向推断：content_latent → query_extractor → attention → spatial_map。
+这条路径是确定的，没有迭代修正的机会。
+
+**如果 tokenizer 本身是一个小型扩散模型呢？**
+从噪声开始，逐步去噪生成 spatial_map，条件于 content_latent 和 style_id。
+迭代过程允许 tokenizer 逐步细化其输出——先确定大致的空间布局，再雕刻细节笔触。
+
+### 理论
+
+条件扩散过程：
+$$s_0 \sim p_{\text{data}}(\cdot \mid z_0, s)$$
+$$ds_t = -\frac{1}{2} \beta_t s_t dt - \beta_t \nabla_{s_t} \log p_t(s_t \mid z_0, s) dt + \sqrt{\beta_t} dW$$
+
+其中 $s_0$ 是目标 spatial_map。score 网络 $\epsilon_\theta(s_t, t, z_0, s)$ 是一个轻量 UNet，
+条件于内容潜变量 $z_0$ 和风格 ID $s$。
+
+### 实现
+
+```python
+class DiffusionTokenizer(nn.Module):
+    def __init__(self, num_styles, spatial_dim=128, num_timesteps=8):
+        self.num_timesteps = num_timesteps
+        # 轻量 UNet 去噪网络（比主干小 10 倍）
+        self.denoiser = LightUNet(
+            in_channels=spatial_dim + 4,  # noisy_map + content_latent
+            cond_dim=256,                  # style embedding
+            base_dim=32,
+        )
+        self.style_emb = nn.Embedding(num_styles, 256)
+
+    def forward(self, style_id, content_latent, ...):
+        B = content_latent.shape[0]
+        h, w = target_hw
+        s_t = torch.randn(B, spatial_dim, h, w)  # 从纯噪声开始
+        style_cond = self.style_emb(style_id)
+
+        # DDIM 加速推理 (8 步)
+        for t in reversed(range(self.num_timesteps)):
+            t_tensor = torch.full((B,), t / self.num_timesteps)
+            concat_input = torch.cat([s_t, content_latent], dim=1)
+            noise_pred = self.denoiser(concat_input, t_tensor, style_cond)
+            s_t = self._ddim_step(s_t, noise_pred, t, self.num_timesteps)
+
+        return s_t  # 最终 spatial_map
+```
+
+**论文故事**: "我们提出了第一个用于风格空间路由的扩散分词器。传统分词器单次前向推断无法捕捉风格笔触的精细结构——它们将内容到风格的映射视为一次性的函数逼近。我们的扩散分词器将空间风格图的生成形式化为条件扩散过程，通过多步迭代去噪，允许模型从粗糙的全局布局逐步细化到精细的局部笔触。这种'由粗到精'的生成范式在本质上更接近人类艺术家的工作流程：先铺大色调，再刻画细节。"
+
+### 收益与风险
+
+| 项 | 评估 |
+|----|------|
+| 理论深度 | ★★★★★ 扩散模型 + 条件生成 |
+| 代码复杂度 | 高（需要实现轻量 UNet + DDIM solver） |
+| 预期提升 | style +0.04~0.07（最大的单次提升） |
+| 风险 | 推理时间增加 (8 步 vs 1 步)，但 tokenizer 很轻量 |
+| 显存 | 增加 ~200MB（轻量 UNet） |
+
+---
+
+## Tokenizer 方向 5: 跨模态风格原语库 (Cross-Modal Style Prototypes)
+
+### 核心洞察
+
+当前 tokenizer 的 `universal_keys` 是随机初始化的 32 个向量——它们代表什么？没有任何语义含义。
+它们通过反向传播被更新，但没有任何约束迫使它们具有"可解释性"或"多样性"。
+
+**如果我们让这 32 个 keys 代表 32 种基础的"风格原语"（brushstroke primitives）呢？**
+比如: "大面积平滑区域"、"垂直边缘"、"细腻纹理"、"粗糙颗粒"、“漩涡笔触”、"点彩点"...
+
+每个风格就是这 32 种原语的不同组合权重。
+
+### 理论
+
+用**对比学习**在训练前预训练风格原语：
+- 从目标风格图像中提取大量局部 patch（4×4, 8×8 等尺度）
+- 用 K-means 或 VQ-VAE 学习一个 codebook of style primitives
+- 这些 primitives 作为 tokenizer 的 `universal_keys` 的初始值
+- 训练时添加**多样性正则项**：鼓励每个风格使用不同的原语组合
+
+### 实现
+
+```python
+def pretrain_style_primitives(style_image_patches, num_primitives=32):
+    """离线预训练: 从风格图像中学习笔触原语"""
+    # 1. 收集来自不同风格的 VAE latent patches
+    patches = []
+    for style_id, images in style_images.items():
+        for img in images:
+            z = vae.encode(img)  # [4, 64, 64]
+            # 提取不同尺度的 patch
+            for scale in [4, 8, 16]:
+                unfolded = z.unfold(2, scale, scale).unfold(3, scale, scale)
+                patches.append(unfolded.reshape(-1, 4 * scale * scale))
+    patches = torch.cat(patches)  # [N, dim]
+
+    # 2. K-means 聚类找到 32 个原语
+    from sklearn.cluster import KMeans
+    kmeans = KMeans(n_clusters=num_primitives)
+    kmeans.fit(patches.cpu().numpy())
+    primitives = torch.tensor(kmeans.cluster_centers_)  # [32, dim]
+
+    # 3. 投影到 tokenizer 的 key 空间
+    projector = nn.Linear(primitives.shape[-1], query_dim)
+    universal_keys = projector(primitives)  # [32, 64]
+    return universal_keys
+
+# 训练时添加原语多样性正则
+def primitive_diversity_loss(attn_weights, style_id):
+    """确保每个风格使用足够多的原语"""
+    # attn_weights: [B, HW, K] — 每个像素对每个原语的注意力
+    style_usage = attn_weights.mean(dim=1)  # [B, K] — 每个风格的原语使用频率
+    # 熵最大化的正则项
+    entropy = -(style_usage * style_usage.clamp_min(1e-8).log()).sum(dim=-1)
+    return -entropy.mean()  # 负值 → 最小化 → 熵增大 → 更多样
+```
+
+**论文故事**: "我们提出跨模态风格原语库——一种从目标风格图像中提取'视觉词汇'的预训练方法。通过从不同画派的 VAE 潜空间中聚类学习通用的笔触原语，我们的分词器获得了对人类而言可解释的'风格词典'。印象派的短笔触、洛可可的柔美曲线、浮世绘的平涂色块——每一种风格都激活了不同的原语组合。这不仅提升了风格特异性，还提供了一个透明的风格表征分析工具。"
+
+### 收益与风险
+
+| 项 | 评估 |
+|----|------|
+| 理论深度 | ★★★★ 表示学习 + 可解释性 |
+| 代码复杂度 | 低（离线聚类 + 加载预训练权重） |
+| 预期提升 | style +0.02~0.04，论文展示价值极大 |
+| 风险 | 极低——离线预训练不影响训练稳定性 |
+
+---
+
+## Tokenizer 方向 6: 自回归空间笔触合成 (Autoregressive Spatial Synthesis)
+
+### 核心洞察
+
+当前 tokenizer 并行生成所有空间位置的 style features——每个像素独立地通过 attention 选取 style cluster。
+但实际的艺术创作是**有序的**：先画大的形状，再添加细节；先铺底色，再点高光。
+
+自回归生成允许每个空间位置的笔触选择**看到已经生成的相邻区域的决策**，形成连贯的笔触流。
+
+### 理论
+
+用轻量的自回归 Transformer (如 Image GPT 的简化版) 在 spatial_map 上逐 patch 生成：
+$$p(s_{ij} \mid s_{<ij}, z_0, \text{style\_id})$$
+
+其中 $s_{<ij}$ 是已经生成的 spatial_map patches。这使得"相邻像素选择相似的风格 cluster"成为生成过程中的自然偏好，而不是事后施加的正则化。
+
+### 实现
+
+```python
+class AutoregressiveSpatialTokenizer(nn.Module):
+    def __init__(self, num_styles, spatial_dim=128, patch_size=4):
+        self.patch_size = patch_size  # 4×4 patches on 64×64 grid = 256 patches
+        # 轻量 causal Transformer
+        self.pos_embed = nn.Parameter(torch.randn(1, 256, 512))
+        self.style_embed = nn.Embedding(num_styles, 512)
+        self.transformer = nn.TransformerDecoder(
+            nn.TransformerDecoderLayer(d_model=512, nhead=8),
+            num_layers=4,
+        )
+        self.output_proj = nn.Linear(512, spatial_dim * patch_size * patch_size)
+
+    def forward(self, style_id, content_latent, ...):
+        # 把 content_latent 处理为 memory (cross-attention 的 key/value)
+        content_memory = self.content_encoder(content_latent)  # [HW, 512]
+        style_cond = self.style_embed(style_id).unsqueeze(1)    # [B, 1, 512]
+
+        # 自回归生成 spatial_map patches
+        B = content_latent.shape[0]
+        tgt = torch.zeros(B, 256, 512, device=content_latent.device)
+        for pos in range(256):
+            tgt[:, pos] = self.pos_embed[:, pos] + style_cond.squeeze(1)
+            mask = self._causal_mask(pos)
+            out = self.transformer(tgt[:, :pos+1], content_memory, tgt_mask=mask)
+            patch_feat = self.output_proj(out[:, -1])
+            # 写入 spatial_map 对应位置
+            ...
+
+        return spatial_map
+```
+
+**论文故事**: "我们重新思考了并行空间路由的局限性，提出了一种自回归空间笔触合成方法。传统的并行分词器忽视了空间上下文——每个像素独立处理，'笔触'之间缺乏连贯性。我们的自回归方法将空间风格图生成为一个序列生成任务，每个位置的笔触选择可以看到已经生成的上文区域，自然产生连贯的艺术笔触流，消除了传统方法中常见的不自然过度和风格断裂。"
+
+### 收益与风险
+
+| 项 | 评估 |
+|----|------|
+| 理论深度 | ★★★★★ 自回归模型 + 序列决策 |
+| 代码复杂度 | 高（需要 Transformer decoder） |
+| 预期提升 | style +0.03~0.06（笔触连贯性大幅改善） |
+| 风险 | 推理速度慢 (256 步 vs 1 步并行) |
+| 论文价值 | 极高——此前无人在 I2I 的分词器中使用自回归 |
+
+---
+
+## Tokenizer 方向 7: 互信息解耦风格编码 (Information-Bottleneck Tokenizer)
+
+### 核心洞察
+
+**风格迁移中最根本的矛盾**: 如何在改变风格的情况下不改变内容。
+
+从信息论的角度：
+- $I(z_1; z_0)$ 应该高（生成结果保留了源内容的信息）
+- $I(z_1; s)$ 应该高（生成结果包含了目标风格的信息）
+- $I(\text{tokenizer\_output}; z_0)$ 应该低（tokenizer 的输出不应泄露太多内容信息，只保留风格信息）
+
+当前 tokenizer 的 query 直接从 content_latent 提取——这天然携带大量内容信息。
+而 style_values 是纯 style_id 的条件——这天然只有风格信息。
+**但 attention 路由把两者混合了**——结果就是在 attention 中，query(content) 能"选中"哪些 values(style) 被激活。
+
+**更好的做法**: 让 tokenizer 分离出两个彼此正交的表征：
+- $C(z_0)$: 纯内容表征（"sky", "tree", "building" 等语义标签）
+- $S(s)$: 纯风格表征（"如何画天空", "如何画树" 等笔触字典）
+- 风格迁移 = $C(z_0)$ 作为查询从 $S(s)$ 中检索
+
+这两个表征通过互信息最小化约束来保证正交性。
+
+### 理论
+
+用 **InfoNCE 对比损失** 来解耦（类似 SimCLR, Oord et al., 2018）：
+$$\mathcal{L}_{\text{MI}} = -\log \frac{\exp(\text{sim}(C(z_0^i), S(s^i)) / \tau)}{\sum_j \exp(\text{sim}(C(z_0^i), S(s^j)) / \tau)}$$
+
+这个损失最大化 $I(C(z_0); S(s))$ 对于匹配的 (content, style) 对，
+同时最小化 $I(C(z_0); z_0)$（间接地，因为 C 和 S 被训练为只通过 style_id 关联）。
+
+再加上一个**信息瓶颈约束**: 限制 $C(z_0)$ 的维度，迫使它丢弃内容图像的"风格相关"信息，
+只保留"结构相关"信息：
+$$C(z_0) \in \mathbb{R}^{d_C}, \quad d_C \ll d_{z_0}$$
+
+### 实现
+
+```python
+class DisentangledTokenizer(nn.Module):
+    def __init__(self, num_styles, content_dim=16, style_dim=128):
+        # 内容编码器：极小瓶颈 → 只保留结构信息
+        self.content_encoder = nn.Sequential(
+            nn.Conv2d(4, 32, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(32, content_dim, 3, padding=1),  # 瓶颈: 16 通道 vs 4 通道输入
+        )
+        # 风格字典: 每个风格的笔触原语
+        self.style_primitives = nn.Embedding(num_styles, 64, style_dim // 64)  # 64 组, 每组 64-dim
+        # 投影对齐
+        self.align_content = nn.Linear(content_dim, style_dim // 64)
+        self.align_style = nn.Linear(style_dim // 64, style_dim // 64)
+
+    def forward(self, style_id, content_latent, ...):
+        # 1. 提取内容结构表征（极小通道数 → 强制丢弃风格信息）
+        c_feat = self.content_encoder(content_latent)  # [B, 16, 64, 64]
+        c_proj = self.align_content(c_feat.permute(0,2,3,1))  # [B, 64, 64, 64]
+
+        # 2. 取风格原语（64 组原语, 每组代表一种笔触方向）
+        s_primitives = self.style_primitives(style_id)  # [B, 64, 64]
+
+        # 3. 内容查询 × 风格原语 → 空间笔触图
+        spatial_map = torch.einsum('bhwc,bkc->bhwk', c_proj, s_primitives)
+        spatial_map = spatial_map.permute(0, 3, 1, 2)  # [B, 64, 64, 64]
+
+        return spatial_map
+```
+
+**论文故事**: "我们提出了一种基于互信息最小化的解耦风格编码器。传统的分词器从内容潜变量中提取查询向量时，不可避免地将内容图像的低级风格信息（如亮度、对比度）泄露到路由特征中。我们的信息瓶颈分词器通过强制内容编码器经过一个极窄的通道瓶颈，在数学上保证内容表征的互信息上界被严格限制——只有结构不变特征能够通过瓶颈，所有的风格相关变化必须来自纯粹的风格字典。这种表征解耦在保证结构不变性的同时，实现了迄今为止最精确的风格特异性。"
+
+### 收益与风险
+
+| 项 | 评估 |
+|----|------|
+| 理论深度 | ★★★★★ 信息论 + 表征解耦 |
+| 代码复杂度 | 低（content_dim 调小即可） |
+| 预期提升 | LPIPS 更好，style 可能 +0.02~0.03 |
+| 风险 | content_dim 太小可能丢失必要的结构细节 |
+
+---
+
+## Tokenizer 方向 8: 等变空间路由 (Equivariant Style Router)
+
+### 核心洞察
+
+**风格迁移的一个基本对称性**: 如果你把内容图像水平翻转，风格化结果应该也是水平翻转的。
+换句话说，tokenizer 应该对内容图像的**刚体变换**是等变的 (equivariant)。
+
+但当前的卷积 query_extractor 是**平移等变**的，但对旋转、翻转**不是**。
+而且 attention 路由 (cosine similarity) 本身是完全**置换不变**的——打乱像素顺序，attention 权重不变！
+这就是为什么需要 positional encoding——tokenizer 用 PE 来打破置换不变性。
+
+**更好的做法**: 让 tokenizer 本身对 $SE(2)$ 群（旋转 + 平移）或至少 $D_4$ 群（翻转 + 90° 旋转）是等变的。
+如果 tokenizer 是等变的，那么即使内容图像被旋转/翻转了，spatial_map 也会自动跟随旋转/翻转，
+不需要额外对齐。
+
+### 理论
+
+用**群等变卷积** (Group Equivariant CNN, Cohen & Welling, ICML 2016) 替代普通卷积。
+
+对于 $D_4$ 群（8 个元素：4 个旋转 × 2 个翻转），等变卷积的每一步：
+$$[f \star \psi](g) = \sum_{h \in G} f(h) \cdot \psi(g^{-1} h)$$
+
+其中 $g, h$ 是群元素。输出是一个 "群特征图"——在每个空间位置，对每个群元素有一个特征。
+这种特性天然保证了：如果输入被群元素 $g$ 变换，输出也被**同一个** $g$ 变换。
+
+### 实现
+
+```python
+# 用 escnn 库 (或手写轻量版)
+from escnn import gspaces, nn as enn
+
+class EquivariantTokenizer(nn.Module):
+    def __init__(self, num_styles, num_clusters=32):
+        # D4 群 (8 elements: 4 rotations × 2 flips)
+        self.gspace = gspaces.flipRot2dOnR2(N=4)  # C4 × flip
+        # 输入: 4 个标量通道 (VAE latent)
+        self.in_type = enn.FieldType(self.gspace, 4 * [self.gspace.trivial_repr])
+        # 中间: 64 个正则特征
+        self.hidden_type = enn.FieldType(self.gspace, 8 * [self.gspace.regular_repr])
+
+        self.query_extractor = enn.SequentialModule(
+            enn.R2Conv(self.in_type, self.hidden_type, kernel_size=3, padding=1),
+            enn.InnerBatchNorm(self.hidden_type),
+            enn.ReLU(self.hidden_type),
+            enn.R2Conv(self.hidden_type, self.hidden_type, kernel_size=3, padding=1),
+        )
+
+    def forward(self, style_id, content_latent, ...):
+        # content_latent: [B, 4, H, W]
+        geo_input = enn.GeometricTensor(content_latent, self.in_type)
+        geo_feat = self.query_extractor(geo_input)  # 等变特征 [B, 64*8, H, W]
+        queries = geo_feat.tensor  # 分解回普通张量用于 attention
+        # 后续路由与当前相同...
+```
+
+**论文故事**: "我们揭示了当前空间路由的一个深层矛盾：分词器使用位置编码来补偿注意力机制的置换不变性，但这种修补不能保证真正的空间等变性——图像翻转后，风格图的响应不保证一致。我们引入群等变卷积构建了第一个真正等变的分词器。基于 $D_4$ 群（旋转与翻转对称性）的等变架构在数学上保证：任何对内容图像的刚体变换都会精确地反映在输出的风格图上。这一性质从根本上消除了位置编码的启发式补丁，提供了空间一致性的严格数学保证。"
+
+### 收益与风险
+
+| 项 | 评估 |
+|----|------|
+| 理论深度 | ★★★★★ 群论 + 等变神经网络 |
+| 代码复杂度 | 高（需要 escnn 或手写等变卷积） |
+| 预期提升 | LPIPS 可能更好（空间一致性），style 不变或微升 |
+| 风险 | 等变卷积的参数量和计算量可能较大 |
+| 论文价值 | 极高——将等变学习引入 I2I 领域的开创性工作 |
+
+---
+
+## Tokenizer 方向总览
+
+| # | 方向 | 核心思想 | 理论深度 | 代码量 | Style 预期 |
+|---|------|----------|:---:|:---:|:---:|
+| 1 | 超网络字典 | 用超网络动态生成 style_values | ★★★★ | 中 | +0.03 |
+| 2 | OT 风格路由 | Sinkhorn 替代 softmax，消除 cluster collapse | ★★★★★ | 低 | +0.02 |
+| 3 | 谱分解多尺度 | 拉普拉斯金字塔 + 分频路由 | ★★★★ | 中 | +0.03 |
+| 4 | 扩散风格图 | Tokenizer = 小型扩散模型 | ★★★★★ | 高 | +0.05 |
+| 5 | 跨模态原语 | 预训练风格 primitives + 多样性正则 | ★★★★ | 低 | +0.03 |
+| 6 | 自回归合成 | 逐 patch 串行生成 spatial_map | ★★★★★ | 高 | +0.04 |
+| 7 | 互信息解耦 | 信息瓶颈强制内容/风格分离 | ★★★★★ | 低 | +0.02 |
+| 8 | 等变路由 | D4 群等变卷积，空间一致性 | ★★★★★ | 高 | +0.01 |
+
+### 推荐执行顺序
+
+**最推荐组合**: 方向 2 (OT 路由) + 方向 7 (互信息解耦) + 方向 5 (风格原语预训练)。
+三者互补：OT 保证 cluster 充分利用，信息瓶颈强制内容/风格分离，原语预训练提供好的初始化。
+代码改动量小，但理论上有坚实的数学支撑（最优传输 + 信息论 + 表示学习）。
+
+**如果追求论文震撼性**: 方向 4 (扩散分词器) 或方向 6 (自回归合成) + 方向 8 (等变路由)。
+前者是"用扩散模型做分词器"，后者是"等变学习进入 I2I"。任选其一搭配即是一篇顶会论文的 Method 核心。
+
+**最小风险最大收益**: 方向 2 (OT 路由) + 方向 1 (超网络字典)。
+实现简单、代码改动小、理论清晰、效果可预期。
