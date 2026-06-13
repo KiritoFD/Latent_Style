@@ -99,6 +99,7 @@ Date: 2026-06-13
   - LPIPS is substantially cleaner than the promoted `topogate epoch_0003`
   - transfer style still trails the formal shelf slightly by about `0.00133`
   - so `appalign` is not yet a full recovery, but it is already a cleaner all-pairs point than the promoted parent
+  - the remote eval script has now been synced with runtime-observability support, so later settled checkpoints should start writing tokenizer / appearance observability into `summary.json`
 ## Parent Refresh
 
 - Source packet: `vel_tok32_safe_semantic_topogate_k085`

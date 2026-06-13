@@ -319,6 +319,43 @@ def to_lpips_input(img_tensor):
     return img_tensor * 2.0 - 1.0
 
 
+def _runtime_debug_scalars(raw: object) -> dict[str, float]:
+    out: dict[str, float] = {}
+    if not isinstance(raw, dict):
+        return out
+    for key, value in raw.items():
+        if torch.is_tensor(value):
+            if value.numel() == 1:
+                out[str(key)] = float(torch.nan_to_num(value.detach().float()).item())
+        elif isinstance(value, (int, float, bool)):
+            out[str(key)] = float(value)
+    return out
+
+
+def _attention_entropy_scalar(attn: torch.Tensor | None) -> float:
+    if attn is None:
+        return 0.0
+    probs = attn.detach().float().clamp_min(1e-8)
+    return float((-(probs * probs.log()).sum(dim=-1).mean()).item())
+
+
+def _runtime_observability_from_model(model: torch.nn.Module | None) -> dict[str, float]:
+    if model is None:
+        return {}
+    stats: dict[str, float] = {}
+    structured = getattr(model, "structured_style_tokenizer", None)
+    for key, value in _runtime_debug_scalars(getattr(structured, "last_debug", {})).items():
+        stats[f"structured_style_tokenizer_{key}"] = value
+    for key, value in _runtime_debug_scalars(getattr(model, "last_output_appearance_debug", {})).items():
+        stats[str(key)] = value
+    for key, value in _runtime_debug_scalars(getattr(model, "last_i2sb_transport_debug", {})).items():
+        stats[f"i2sb_{key}"] = value
+    topology_attn = getattr(model, "last_semantic_topology_attn", None)
+    stats["semantic_topology_attn_entropy"] = _attention_entropy_scalar(topology_attn)
+    stats["semantic_topology_attn_active"] = 1.0 if topology_attn is not None else 0.0
+    return stats
+
+
 def _is_cuda_oom(exc: RuntimeError) -> bool:
     msg = str(exc).lower()
     return ("out of memory" in msg) or ("cuda oom" in msg)
@@ -1838,6 +1875,7 @@ def main():
 
     # Buffer to pass data from Phase 1 to Phase 2
     generated_buffer = []
+    runtime_observability_rows = []
     style_name_to_id = {name: idx for idx, name in enumerate(style_subdirs)}
     src_lookup = {(x["style_name"], x["path"].stem): x["path"] for x in all_src_info}
     num_src_total = len(all_src_info)
@@ -1898,6 +1936,7 @@ def main():
                     "tgt_style_id": int(tgt_id),
                     "gen_img": gen_img,
                     "gen_name": p.name,
+                    "runtime_observability": None,
                 }
             )
         print(f"  Reused {len(generated_buffer)} generated images")
@@ -1994,6 +2033,7 @@ def main():
                         )
                         t0 = time.perf_counter()
                         latents_gen = lgt.generation(repeated_latents, tgt_ids)
+                        chunk_runtime_observability = _runtime_observability_from_model(getattr(lgt, "model", None))
                         if abs(scale_out - 1.0) > 1e-4:
                             latents_gen = latents_gen * scale_out
                         _sync_cuda_if(device, bool(args.profile_timing))
@@ -2052,6 +2092,7 @@ def main():
                                     'tgt_style_id': tgt_id,
                                     'gen_img': gen_img_payload,
                                     'gen_name': gen_name,
+                                    'runtime_observability': dict(chunk_runtime_observability) if chunk_runtime_observability else None,
                                 })
                             if save_generated_images:
                                 _add_timing(timings, "image_save_submit", t0)
@@ -2660,6 +2701,15 @@ def main():
                     'clip_style': s_clip_style,
                     'clip_content': c_clip_scores[i],
                 })
+                observability = item.get("runtime_observability")
+                if isinstance(observability, dict) and observability:
+                    runtime_observability_rows.append(
+                        {
+                            "src_style": str(item["src_style"]),
+                            "tgt_style": str(item["tgt_style_name"]),
+                            **{str(k): float(v) for k, v in observability.items()},
+                        }
+                    )
             
             csv_file.flush()
 
@@ -2752,6 +2802,7 @@ def main():
         },
         timings=timings,
         introstyle_result=introstyle_result,
+        runtime_observability_rows=runtime_observability_rows,
     )
 
 def generate_summary_json(
@@ -2777,6 +2828,7 @@ def generate_summary_json(
     settings: dict | None = None,
     timings: dict | None = None,
     introstyle_result: dict[str, object] | None = None,
+    runtime_observability_rows: list[dict[str, object]] | None = None,
 ):
     print("\n妫ｅ啯鎯?Generating Summary...")
     rows = []
@@ -3062,10 +3114,43 @@ def generate_summary_json(
             **({'valid': bool(valid)} if valid is not None else {}),
         }
 
+    def build_runtime_observability_summary(pool):
+        if not pool:
+            return None
+        metric_keys = sorted(
+            {
+                str(key)
+                for row in pool
+                for key, value in row.items()
+                if key not in {"src_style", "tgt_style"} and isinstance(value, (int, float))
+            }
+        )
+        summary = {}
+        for key in metric_keys:
+            values = [float(row[key]) for row in pool if isinstance(row.get(key), (int, float))]
+            if values:
+                summary[key] = float(np.mean(values))
+        return summary or None
+
     all_pairs_summary = build_pool_summary(all_pool)
     transfer_summary = build_pool_summary(transfer_pool)
     identity_summary = build_pool_summary(identity_pool)
     photo_summary = build_pool_summary(photo_transfer_pool, valid=len(photo_transfer_pool) > 0)
+    runtime_all_pairs_summary = build_runtime_observability_summary(runtime_observability_rows or [])
+    runtime_transfer_summary = build_runtime_observability_summary(
+        [row for row in (runtime_observability_rows or []) if str(row.get("src_style", "")) != str(row.get("tgt_style", ""))]
+    )
+    runtime_identity_summary = build_runtime_observability_summary(
+        [row for row in (runtime_observability_rows or []) if str(row.get("src_style", "")) == str(row.get("tgt_style", ""))]
+    )
+    runtime_photo_summary = build_runtime_observability_summary(
+        [
+            row
+            for row in (runtime_observability_rows or [])
+            if str(row.get("src_style", "")).lower() == "photo"
+            and str(row.get("src_style", "")) != str(row.get("tgt_style", ""))
+        ]
+    )
     identity_intro = identity_summary.get('introstyle_target_style_score')
     if identity_intro is not None:
         for bucket in (all_pairs_summary, transfer_summary, photo_summary):
@@ -3105,6 +3190,13 @@ def generate_summary_json(
             'style_transfer_ability': transfer_summary,
             'identity_reconstruction': identity_summary,
             'photo_to_art_performance': photo_summary,
+        },
+        'runtime_observability': {
+            'available': bool(runtime_observability_rows),
+            'all_pairs_overview': runtime_all_pairs_summary,
+            'style_transfer_ability': runtime_transfer_summary,
+            'identity_reconstruction': runtime_identity_summary,
+            'photo_to_art_performance': runtime_photo_summary,
         },
     }
     if isinstance(introstyle_result, dict):

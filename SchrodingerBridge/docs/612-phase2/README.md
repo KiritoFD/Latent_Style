@@ -206,6 +206,8 @@
     - `structured_style_tokenizer_mask_mean`
     - `structured_style_tokenizer_spatial_map_abs`
     - `structured_style_tokenizer_global_gate_abs`
+  - the local full-eval writer now also emits a machine-readable `runtime_observability` block in each checkpoint `summary.json`
+    so these reads can be preserved at checkpoint level instead of only in the train log
 - 不允许再用“后面也许会掉下来”来继续烧正式训练资源。
 - 首轮健康检查在 `30s` 内完成。
 - 目标显存带保持在 `9.0-10.8 GiB`，硬上限按 `< 11.0 GiB` 执行。
@@ -236,6 +238,7 @@
     - `topogate` already proved that structure-side recovery is possible
     - `appalign` has now produced a cleaner all-pairs recovery point than the promoted parent
     - but transfer style still trails the formal shelf slightly, so the lane stays active
+    - remote eval has been packet-synced with checkpoint-level `runtime_observability`, so later settled checkpoints from this lane should start preserving tokenizer / appearance reads in `summary.json`
 - promoted predecessor just closed:
   - `vel_tok32_safe_semantic_topogate_k085`
   - best retained point:
