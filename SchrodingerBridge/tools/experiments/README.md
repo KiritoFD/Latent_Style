@@ -57,6 +57,10 @@ Use this file as the stable entrypoint instead of guessing from filenames.
   - [run_phase2_eval_only_pc_solver.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_phase2_eval_only_pc_solver.py)
 - launch the same eval-only phase2 solver_pc review on the remote host when the formal lane is idle:
   - [launch_remote_phase2_eval_only_pc_solver.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_phase2_eval_only_pc_solver.py)
+- run a generic eval-only phase2 override probe on an existing checkpoint:
+  - [run_phase2_eval_only_override.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_phase2_eval_only_override.py)
+- launch the same generic eval-only override probe on the remote host:
+  - [launch_remote_phase2_eval_only_override.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_remote_phase2_eval_only_override.py)
 - watch the formal phase2 velocity lane and hand off to eval-only solver_pc when the documented closure rule is met:
   - [watch_phase2_velocity_handoff.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_phase2_velocity_handoff.py)
   - supports `--handoff-mode stop_only` when the active phase2 packet should close on LPIPS / plateau without automatically launching the legacy solver_pc follow-up

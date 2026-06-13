@@ -276,6 +276,7 @@
   - after `appalign` closed, the first guide-aligned I2SB attempt is now already logged as archival-only negative evidence
   - the local `solver_pc + latent_lowpass` appalign-e3 probe is also negative
   - therefore the current structure-side mainline should now keep testing lighter style-release and tokenizer-capacity changes before reopening another stochastic or inference-only branch
+  - the first velocity-native stochastic follow-up is now prepared as eval-only `solver_unsb_cycle` on `k070 epoch_0001`, not on the older `topogate e2` parent
 
 ## Guide Watcher
 
