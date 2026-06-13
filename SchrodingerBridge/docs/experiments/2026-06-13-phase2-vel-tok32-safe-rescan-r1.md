@@ -140,30 +140,51 @@ Date: 2026-06-13
     - run name:
       - `aaai2027_phase2_vel_tok32_safe_rescan_r1_seed42_b20a1`
     - live state:
-      - `eval_in_progress_or_pending`
+      - `training_after_settled_eval`
     - remote PID:
       - `23197`
     - current GPU read:
-      - `1923 MiB` during eval offload
+      - `9792 MiB`
     - checkpoint / eval state:
       - `epoch_0001.pt` has been saved
-      - `full_eval/epoch_0001/` exists
-      - the first settled summary is still pending
+      - `epoch_0001` full eval has settled
+      - the run has already resumed into `epoch_2`
     - latest epoch-end train read before eval:
       - `loss=0.9618`
       - `flow=0.6029`
       - `kin=0.0931`
       - `ot=0.0979`
       - `tswd=0.0148`
+      - remote log also emitted tokenizer-side aggregate `ent=1.384`
+      - this is the first formal-lane proof that tokenizer observability is landing in runtime logs
 - watcher:
   - `watch_phase2_velocity_handoff.py`
   - mode:
     - `stop_only`
   - current wait state:
     - waiting for settled epoch `>= 6`
-    - latest settled epoch `none`
+    - latest settled epoch `epoch_0001`
     - current pending checkpoint list:
-      - `epoch_0001`
+      - none
+
+## Settled Curve
+
+- first settled authority point:
+  - `epoch_0001`
+  - transfer `0.672934 / 0.384740`
+  - all-pairs `0.700686 / 0.383351`
+  - identity `0.811691 / 0.377796`
+  - eval wall `224.17s`
+  - generation `122.75s`
+  - VAE decode `55.88s`
+- current interpretation:
+  - still safely in-band
+  - slightly stronger than the earlier `tok32_pos_refresh epoch_0002` warm-start region on LPIPS
+  - but still below both:
+    - the old shelf `0.701666 / 0.381724`
+    - the direct parent best `epoch_0004 = 0.701161 / 0.374695`
+  - so this is not a breakout point
+  - but it is also not an early fail-stop or archival read, so the lane should keep running
 
 ## Intended Read
 
