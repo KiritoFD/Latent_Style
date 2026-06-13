@@ -186,3 +186,14 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Runtime observability: `translation_delta_from_identity=0.010881`, `routing_entropy=1.752495`, `effective_experts=5.804411`, `spatial_abs=0.871335`.
 - Plot update: added the e4 point to `plot_points.csv` and regenerated the AAAI2027 page-1 figure; the point is unlabeled to keep the panel readable.
 - Decision: continue only under the formal curve rule. e4 is the closest SMoE structural point so far but is still lower-style and higher-LPIPS than the matched parent.
+
+## SMoE Epoch 5 Read
+
+- Full eval completed at `2026-06-14 07:47:53 Asia/Shanghai`; training resumed into epoch 6.
+- Training time: `1564.0s`; full-eval wall time: `261.0s`.
+- Transfer: `0.670998 / 0.326648`; all-pairs: `0.702158 / 0.323817`; identity: `0.826800 / 0.312494`.
+- Style above IDT: transfer `+0.031077`; all-pairs `+0.022036`.
+- Matched delta against `k070 epoch_0003`: transfer `-0.000822` style and `+0.012030` LPIPS; all-pairs `-0.001075` style and `+0.011268` LPIPS.
+- Runtime observability: `translation_delta_from_identity=0.012272`, `routing_entropy=1.802536`, `effective_experts=6.149995`, `spatial_abs=0.903199`.
+- Plot update: added the e5 point to `plot_points.csv` and regenerated the AAAI2027 page-1 figure; the point is unlabeled to keep the panel readable.
+- Decision: continue only under the formal curve rule. e5 recovers style from e4 but gives back LPIPS and still does not beat the matched parent.
