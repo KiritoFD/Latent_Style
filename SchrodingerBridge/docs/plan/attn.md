@@ -1,5 +1,12 @@
 要让主干网络（Backbone UNet/Bridge）的 Attention 真正具备“空间与结构感知”能力，并在 Semantic-SWD 的基础上进一步突破，我们必须从**底层数学逻辑**上审视当前 `SemanticCrossAttn` 的缺陷。
 
+> 2026-06-13 execution note:
+> `Spatially-Modulated Self-Attention (SA-Mod)` 作为独立 round-1 family 已经实现并完成过正式收敛，但未能直接成为 promotion line。
+> 当前 phase-2 的更务实做法，不是重新把 `attn_sa_mod` 当作单独 family 拉起来，而是把它的核心思想下沉为一个主线可复用的开关：
+> - `semantic_self_topology_gate`
+> - `semantic_self_topology_blend`
+> 其含义是：在 `legacy_semantic_crossattn` 中保留 style-map 的 value 聚合，但把 attention logits 向 content self-attention affinity 混合，作为 training-side structure control 的候选工具，而不是新的默认 family。
+
 ### 理论痛点：为什么传统的 Cross-Attention 会摧毁结构？
 
 在当前的图像生成和流匹配（Flow Matching/Diffusion）模型中，标准的 Cross-Attention 公式为：

@@ -124,6 +124,7 @@
 - 允许的结构工具:
   - latent lowpass / edge-aware content correction
   - adaptive skip / PnP self-inject
+  - `semantic_self_topology_gate / semantic_self_topology_blend` on `legacy_semantic_crossattn`
   - 轻量 kinetic / topology 约束
 - queued reference:
   - [phase2_vel_tok32_topo_anchor_k075_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_topo_anchor_k075_seed42_b20a1.json)

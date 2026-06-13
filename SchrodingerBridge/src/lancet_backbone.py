@@ -108,6 +108,8 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         self.semantic_attn_routing_mode = str(getattr(cfg, "semantic_attn_routing_mode", "softmax")).strip().lower()
         if self.semantic_attn_routing_mode not in {"softmax", "sinkhorn", "gumbel_hard"}:
             self.semantic_attn_routing_mode = "softmax"
+        self.semantic_self_topology_gate = bool(getattr(cfg, "semantic_self_topology_gate", False))
+        self.semantic_self_topology_blend = max(0.0, min(1.0, float(getattr(cfg, "semantic_self_topology_blend", 1.0))))
         self.semantic_sinkhorn_iters = max(1, int(getattr(cfg, "semantic_sinkhorn_iters", 3)))
         self.semantic_gumbel_tau = max(1e-3, float(getattr(cfg, "semantic_gumbel_tau", 1.0)))
         self.num_decoder_blocks = max(0, int(getattr(cfg, "num_decoder_blocks", 2)))
@@ -362,6 +364,8 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
                 routing_mode=self.semantic_attn_routing_mode,
                 sinkhorn_iters=self.semantic_sinkhorn_iters,
                 gumbel_tau=self.semantic_gumbel_tau,
+                self_topology_gate=self.semantic_self_topology_gate,
+                self_topology_blend=self.semantic_self_topology_blend,
             )
         self.body_blocks = nn.ModuleList([_make_body_block() for _ in range(self.num_res_blocks)])
         self.blender = StyleBlender(dim=self.body_channels, num_groups=num_groups) if self.use_style_blender else None
