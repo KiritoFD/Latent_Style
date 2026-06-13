@@ -71,6 +71,7 @@ def _derive_live_overlay(snapshot: dict) -> dict[str, object]:
     structure = resolved.get("structure_reentry") if isinstance(resolved, dict) and isinstance(resolved.get("structure_reentry"), dict) else {}
     i2sb = resolved.get("i2sb_diagnostic_only") if isinstance(resolved, dict) and isinstance(resolved.get("i2sb_diagnostic_only"), dict) else {}
     remote_structure = snapshot.get("remote_structure_status") if isinstance(snapshot.get("remote_structure_status"), dict) else {}
+    remote_i2sb = snapshot.get("remote_i2sb_status") if isinstance(snapshot.get("remote_i2sb_status"), dict) else {}
     curve = remote_structure.get("curve_summary") if isinstance(remote_structure.get("curve_summary"), dict) else {}
     latest = curve.get("latest") if isinstance(curve.get("latest"), dict) else {}
     convergence = remote_structure.get("convergence") if isinstance(remote_structure.get("convergence"), dict) else {}
@@ -117,7 +118,18 @@ def _derive_live_overlay(snapshot: dict) -> dict[str, object]:
     if pending_epochs:
         close_gate_blockers.append("pending_checkpoint_epochs")
 
-    if close_gate_ready:
+    i2sb_status = str(i2sb.get("status", "")).strip().lower()
+    i2sb_live_state = str(remote_i2sb.get("live_state", "")).strip().lower()
+    i2sb_is_active = i2sb_status in {"running", "launch_requested"} or i2sb_live_state in {
+        "training_before_first_settled_eval",
+        "training_after_settled_eval",
+        "eval_in_progress_or_pending",
+    }
+
+    if i2sb_is_active:
+        recommendation = "monitor_running_i2sb_sigma0p02_tfloor005"
+        secondary = "after_first_i2sb_settled_read_reassess_pc_solver_need"
+    elif close_gate_ready:
         recommendation = "launch_i2sb_sigma0p02_tfloor005_now"
         secondary = "after_i2sb_read_if_still_needed_run_eval_only_pc_solver"
     elif recovered_structure and style_limited:
@@ -142,6 +154,7 @@ def _derive_live_overlay(snapshot: dict) -> dict[str, object]:
         "recommended_next_action": recommendation,
         "recommended_followup_after_next_action": secondary,
         "preferred_i2sb_packet": str(i2sb.get("packet_id", "")).strip(),
+        "i2sb_live_state": i2sb_live_state,
     }
 
 
@@ -184,6 +197,7 @@ def _render_status_md(
                 ),
                 f"- Recommended next action: `{str(live_overlay.get('recommended_next_action', 'n/a'))}`",
                 f"- Recommended follow-up: `{str(live_overlay.get('recommended_followup_after_next_action', 'n/a'))}`",
+                f"- I2SB live state: `{str(live_overlay.get('i2sb_live_state', 'n/a'))}`",
                 "",
             ]
         )

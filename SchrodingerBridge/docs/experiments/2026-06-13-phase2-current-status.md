@@ -43,18 +43,18 @@ Date: 2026-06-13
 - Structure-side preferred packet: `vel_tok32_safe_semantic_topogate_k085_appalign`
 - Structure config: [structure config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1.json)
 - Structure note: [structure note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085-appalign.md)
-- Structure read: epoch_0002 settled at transfer 0.671361/0.314290 and all-pairs 0.703097/0.311966; all-pairs safe-shelf recovery is already achieved, while transfer style still trails the formal shelf
-- Structure live state: `eval_in_progress_or_pending`
-- Structure GPU: 2446 / 12288 MiB
-- Structure latest settled epoch: `epoch_0002`
-- Structure latest settled `CLIP-S / LPIPS`: `0.671361 / 0.314290`, `0.703097 / 0.311966`
-- Structure latest `style - IDT`: transfer `+0.031439`, all-pairs `+0.022972`
-- Structure runtime observability: tok_eff=3.7, gate=0.626, mask=0.649, topo_ent=0.973, app_on=1.0, app_s=1.000, app_d=0.000
+- Structure read: epoch_0004 settled at transfer 0.669351/0.325617 and all-pairs 0.700798/0.321730; the line stayed in-band but lost the recovered shelf and closed on in-band style plateau, so the queue pivoted to I2SB
+- Structure live state: `n/a`
+- Structure GPU: n/a
+- Structure latest settled epoch: `epoch_0004`
+- Structure latest settled `CLIP-S / LPIPS`: `0.669351 / 0.325617`, `0.700798 / 0.321730`
+- Structure latest `style - IDT`: transfer `+0.029429`, all-pairs `+0.020673`
+- Structure runtime observability: tok_eff=4.9, gate=0.546, mask=0.590, topo_ent=0.856, app_on=1.0, app_s=1.000, app_d=0.000
 - I2SB diagnostic preferred packet: `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005`
 - I2SB config: [I2SB config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005_seed42_b20a1.json)
 - I2SB note: [I2SB note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-i2sb-tok32-safe-semantic-topogate-sigma0p02-residual-tfloor005.md)
-- I2SB read: guide-aligned exact-I2SB follow-on: inherit appalign epoch_0001 as the highest-style recovered parent
-- I2SB live state: `n/a`
+- I2SB read: running from appalign epoch_0001 on the guide-aligned residual sigma0.02 Brownian bridge with predictor time floor 0.05
+- I2SB live state: `training_before_first_settled_eval`
 - I2SB runtime observability: n/a
 
 ## Contract Read
@@ -67,7 +67,3 @@ Date: 2026-06-13
 - WSL exec ok: `True`
 - HCS failure: `False`
 - Hypervisor launch type: `Auto`
-
-## Local Watchers
-- Active phase2 handoff watchers: `1`
-- Structure watcher stdout: [phase2_structure_reentry_watch.stdout.log](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/phase2_structure_reentry_watch.stdout.log)

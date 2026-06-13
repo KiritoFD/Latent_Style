@@ -5,10 +5,8 @@
   "rows": [
     {
       "packet_id": "vel_tok32_safe_rescan_r2",
-      "ok": false,
-      "issues": [
-        "formal_lane row missing watch_next_lane_class"
-      ],
+      "ok": true,
+      "issues": [],
       "derived": {
         "tokenizer_profile": "tok32_safe_rescan",
         "transport_prediction_mode": "velocity",
@@ -170,7 +168,7 @@
         "watch_min_transfer_style_recovery": "",
         "watch_max_transfer_lpips_for_recovery": "",
         "watch_handoff_mode": "",
-        "watch_next_lane_class": "guide-aligned exact-I2SB follow-on: inherit appalign epoch_0001 as the highest-style recovered parent"
+        "watch_next_lane_class": ""
       }
     },
     {
@@ -246,5 +244,5 @@
       }
     }
   ],
-  "ok": false
+  "ok": true
 }
