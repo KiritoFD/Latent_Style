@@ -46,6 +46,13 @@ Date: 2026-06-13
   - `i2sb_tok32_semantic_topogate_sigma0p02_residual`
 - current validation state:
   - `phase2_queue_manifest_validation.json -> ok = true`
+- formal-lane recovery thresholds now also live in the manifest:
+  - `watch_min_settled_epoch`
+  - `watch_min_allpairs_style_recovery`
+  - `watch_max_allpairs_lpips_for_recovery`
+  - `watch_min_transfer_style_recovery`
+  - `watch_max_transfer_lpips_for_recovery`
+  - `watch_handoff_mode`
 
 ## Update Rule
 

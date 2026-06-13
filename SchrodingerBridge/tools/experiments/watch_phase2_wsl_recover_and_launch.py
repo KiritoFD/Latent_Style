@@ -182,6 +182,18 @@ def main() -> int:
         if not run_name:
             run_name = str(resolved.get("run_name", "")).strip()
         print(json.dumps({"resolved_packet": resolved}, indent=2, ensure_ascii=False), flush=True)
+        if args.min_settled_epoch == 3 and str(resolved.get("watch_min_settled_epoch", "")).strip():
+            args.min_settled_epoch = int(str(resolved.get("watch_min_settled_epoch", "")).strip())
+        if args.min_allpairs_style_recovery is None and str(resolved.get("watch_min_allpairs_style_recovery", "")).strip():
+            args.min_allpairs_style_recovery = float(str(resolved.get("watch_min_allpairs_style_recovery", "")).strip())
+        if args.max_allpairs_lpips_for_recovery is None and str(resolved.get("watch_max_allpairs_lpips_for_recovery", "")).strip():
+            args.max_allpairs_lpips_for_recovery = float(str(resolved.get("watch_max_allpairs_lpips_for_recovery", "")).strip())
+        if args.min_transfer_style_recovery is None and str(resolved.get("watch_min_transfer_style_recovery", "")).strip():
+            args.min_transfer_style_recovery = float(str(resolved.get("watch_min_transfer_style_recovery", "")).strip())
+        if args.max_transfer_lpips_for_recovery is None and str(resolved.get("watch_max_transfer_lpips_for_recovery", "")).strip():
+            args.max_transfer_lpips_for_recovery = float(str(resolved.get("watch_max_transfer_lpips_for_recovery", "")).strip())
+        if str(args.handoff_mode).strip() == "stop_only" and str(resolved.get("watch_handoff_mode", "")).strip():
+            args.handoff_mode = str(resolved.get("watch_handoff_mode", "")).strip()
     if not config_path:
         raise ValueError("config is required unless it can be resolved from --manifest-csv")
     if not run_name:

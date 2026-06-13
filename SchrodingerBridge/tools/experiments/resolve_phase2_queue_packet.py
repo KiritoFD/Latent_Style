@@ -104,6 +104,12 @@ def resolve_packet(
         "note_path": str(note_path),
         "run_name": save_dir,
         "current_read": str(selected.get("current_read", "")).strip(),
+        "watch_min_settled_epoch": str(selected.get("watch_min_settled_epoch", "")).strip(),
+        "watch_min_allpairs_style_recovery": str(selected.get("watch_min_allpairs_style_recovery", "")).strip(),
+        "watch_max_allpairs_lpips_for_recovery": str(selected.get("watch_max_allpairs_lpips_for_recovery", "")).strip(),
+        "watch_min_transfer_style_recovery": str(selected.get("watch_min_transfer_style_recovery", "")).strip(),
+        "watch_max_transfer_lpips_for_recovery": str(selected.get("watch_max_transfer_lpips_for_recovery", "")).strip(),
+        "watch_handoff_mode": str(selected.get("watch_handoff_mode", "")).strip(),
         "validation_snapshot_ok": validation_ok,
         "validation_row_ok": bool(validation_row.get("ok")) if isinstance(validation_row, dict) else None,
     }
