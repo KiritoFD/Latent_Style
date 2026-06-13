@@ -143,6 +143,8 @@
   - `semantic_self_topology_gate / semantic_self_topology_blend` on `legacy_semantic_crossattn`
   - 轻量 kinetic / topology 约束
 - queued reference:
+  - [phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b20a1.json)
+  - [2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085.md)
   - [phase2_vel_tok32_semantic_topogate_k085_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_semantic_topogate_k085_seed42_b20a1.json)
   - [2026-06-13-phase2-vel-tok32-semantic-topogate-k085.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-semantic-topogate-k085.md)
   - [phase2_vel_tok32_topo_anchor_k075_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_topo_anchor_k075_seed42_b20a1.json)
@@ -152,12 +154,14 @@
 
 - `true I2SB` 只保留为实现 / 理论验证。
 - current preferred packet:
+  - [phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)
   - [phase2_i2sb_tok32_semantic_topogate_sigma0p02_residual_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)
 - 允许做:
   - NFE 对照
   - noise schedule 对照
   - endpoint parameterization 对照
   - refreshed-tokenizer diagnostic packets such as:
+    - [phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)
     - [phase2_i2sb_tok32_semantic_topogate_sigma0p02_residual_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)
 - 不允许做:
   - 未经廉价预读就直接占用正式远程训练 lane
@@ -194,21 +198,21 @@
   - `vel_tok32_safe_rescan_r2`
   - manifest-driven recovery watcher relaunched it after the remote Windows reboot on `2026-06-13`
   - latest live read shows:
-    - latest settled authority point is now `epoch_0004`
-    - transfer `0.672377 / 0.369065`
-    - all-pairs `0.700490 / 0.367229`
+    - latest settled authority point is now `epoch_0007`
+    - transfer `0.672700 / 0.384116`
+    - all-pairs `0.700060 / 0.381072`
     - `live_state = training_after_settled_eval`
   - remote GPU health is back inside the preferred formal band at roughly:
     - `10.38 GiB / 12.29 GiB`
     - later `9.91 GiB / 12.29 GiB`
   - current read:
     - still in-band
-    - the line now has two distinct in-band frontier points:
-      - `epoch_0002`: stronger style, weaker LPIPS
-      - `epoch_0004`: weaker style, much better LPIPS
-    - `epoch_0004` is a real new Pareto point and recovers LPIPS materially below the old shelf, but its style is still slightly below the old shelf style
-    - therefore the line is still not a promotable safe-shelf break
-    - however, the short-screen has now been survived and the lane stays alive under regular Pareto patience rather than the original `epoch_0003` gate
+    - the line has now shown both:
+      - a style-strong but high-LPIPS in-band point at `epoch_0002`
+      - cleaner LPIPS-recovery points at later epochs
+    - the latest point is still not a promotable safe-shelf break because style remains below the old shelf
+    - LPIPS has also crept back near the formal ceiling rather than opening new clean margin
+    - therefore the line remains alive only as a still-unclosed safe-family read, not as evidence of a breakout
 - 当前正式候选仍然是 `vel_tok32_safe_rescan_r2`，但它仍只是一条 kill-on-first-slip 的短筛线。
 - 若 `safe_rescan_r2` 仍越过 `0.40`，则 Phase 2 立即结束 tokenizer-safe sweep，切到 structure-side reentry 设计。
 - 所有 round2 endpoint / I2SB 文档都应按以下标准重读:

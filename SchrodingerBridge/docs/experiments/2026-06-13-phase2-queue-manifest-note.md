@@ -45,17 +45,19 @@ Date: 2026-06-13
   - `vel_tok32_safe_rescan_r2`
   - remote host reboot has already occurred
   - manifest-driven watcher has already relaunched it
-  - first settled authority point is now available:
-    - transfer `0.672065 / 0.379086`
-    - all-pairs `0.700117 / 0.377982`
+  - latest settled authority point is now:
+    - `epoch_0007`
+    - transfer `0.672700 / 0.384116`
+    - all-pairs `0.700060 / 0.381072`
   - current read:
     - still in-band
-    - still below the old safe shelf
-    - so the formal lane remains alive pending the short-screen through `epoch_0003`
+    - still below the old safe shelf on style
+    - LPIPS has stayed narrowly inside the formal recovery ceilings
+    - so the formal lane remains alive, but it still has not created a promotable safe-shelf break
 - current preferred structure-side packet:
-  - `vel_tok32_semantic_topogate_k085`
+  - `vel_tok32_safe_semantic_topogate_k085`
 - current preferred exact-I2SB theory-check packet:
-  - `i2sb_tok32_semantic_topogate_sigma0p02_residual`
+  - `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual`
 - current validation state:
   - `phase2_queue_manifest_validation.json -> ok = true`
 - formal-lane recovery thresholds now also live in the manifest:

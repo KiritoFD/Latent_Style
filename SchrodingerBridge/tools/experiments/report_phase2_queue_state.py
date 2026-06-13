@@ -63,6 +63,86 @@ def _tail_lines(path: Path, *, limit: int = 20) -> list[str]:
     return lines[-max(1, int(limit)) :]
 
 
+def _float_or_none(value: object) -> float | None:
+    try:
+        return float(value)
+    except Exception:
+        return None
+
+
+def _refresh_formal_current_read(resolved_formal: dict[str, object], remote_formal_status: dict[str, object]) -> dict[str, object]:
+    out = dict(resolved_formal)
+    if not isinstance(remote_formal_status, dict):
+        return out
+    curve = remote_formal_status.get("curve_summary")
+    if not isinstance(curve, dict):
+        return out
+    latest = curve.get("latest")
+    if not isinstance(latest, dict):
+        return out
+    transfer_style = _float_or_none(latest.get("transfer_clip_style"))
+    transfer_lpips = _float_or_none(latest.get("transfer_content_lpips"))
+    allpairs_style = _float_or_none(latest.get("all_pairs_clip_style"))
+    allpairs_lpips = _float_or_none(latest.get("all_pairs_content_lpips"))
+    epoch = str(latest.get("epoch", "")).strip() or "latest"
+    if None in {transfer_style, transfer_lpips, allpairs_style, allpairs_lpips}:
+        return out
+    if max(float(transfer_lpips), float(allpairs_lpips)) >= 0.70:
+        out["current_read"] = (
+            f"latest settled authority point is now {epoch} at "
+            f"transfer {transfer_style:.6f}/{transfer_lpips:.6f} and "
+            f"all-pairs {allpairs_style:.6f}/{allpairs_lpips:.6f}; "
+            "this is complete-failure territory because LPIPS has crossed 0.70"
+        )
+        return out
+    if max(float(transfer_lpips), float(allpairs_lpips)) >= 0.40:
+        out["current_read"] = (
+            f"latest settled authority point is now {epoch} at "
+            f"transfer {transfer_style:.6f}/{transfer_lpips:.6f} and "
+            f"all-pairs {allpairs_style:.6f}/{allpairs_lpips:.6f}; "
+            "the line has left the formal in-band region because LPIPS crossed 0.40"
+        )
+        return out
+    transfer_style_target = _float_or_none(out.get("watch_min_transfer_style_recovery"))
+    transfer_lpips_target = _float_or_none(out.get("watch_max_transfer_lpips_for_recovery"))
+    allpairs_style_target = _float_or_none(out.get("watch_min_allpairs_style_recovery"))
+    allpairs_lpips_target = _float_or_none(out.get("watch_max_allpairs_lpips_for_recovery"))
+    if None not in {transfer_style_target, transfer_lpips_target, allpairs_style_target, allpairs_lpips_target}:
+        transfer_style_gap = float(transfer_style) - float(transfer_style_target)
+        transfer_lpips_margin = float(transfer_lpips_target) - float(transfer_lpips)
+        allpairs_style_gap = float(allpairs_style) - float(allpairs_style_target)
+        allpairs_lpips_margin = float(allpairs_lpips_target) - float(allpairs_lpips)
+        if (
+            transfer_style_gap >= 0.0
+            and transfer_lpips_margin >= 0.0
+            and allpairs_style_gap >= 0.0
+            and allpairs_lpips_margin >= 0.0
+        ):
+            out["current_read"] = (
+                f"latest settled authority point is now {epoch} at "
+                f"transfer {transfer_style:.6f}/{transfer_lpips:.6f} and "
+                f"all-pairs {allpairs_style:.6f}/{allpairs_lpips:.6f}; "
+                "this is a promotable safe-shelf recovery because both transfer and all-pairs beat the formal recovery gates"
+            )
+            return out
+        out["current_read"] = (
+            f"latest settled authority point is now {epoch} at "
+            f"transfer {transfer_style:.6f}/{transfer_lpips:.6f} and "
+            f"all-pairs {allpairs_style:.6f}/{allpairs_lpips:.6f}; "
+            f"still in-band, but transfer style is short by {abs(min(transfer_style_gap, 0.0)):.6f} "
+            f"and all-pairs style is short by {abs(min(allpairs_style_gap, 0.0)):.6f} "
+            "against the formal recovery shelf"
+        )
+        return out
+    out["current_read"] = (
+        f"latest settled authority point is now {epoch} at "
+        f"transfer {transfer_style:.6f}/{transfer_lpips:.6f} and "
+        f"all-pairs {allpairs_style:.6f}/{allpairs_lpips:.6f}; "
+        "the line remains in-band but formal recovery targets are not available in the snapshot"
+    )
+    return out
+
+
 def _query_remote_health(*, host: str, port: int, user: str, wsl_distro: str) -> dict:
     checker = SCRIPT_DIR / "check_remote_wsl_host_health.py"
     return _json_tool(
@@ -154,6 +234,8 @@ def main() -> int:
     )
     remote_formal_status = _query_remote_status(run_name=str(resolved_formal.get("run_name", "")))
     local_watchers = _query_local_watchers()
+
+    resolved_formal = _refresh_formal_current_read(resolved_formal, remote_formal_status)
 
     output = {
         "manifest_csv": str(manifest),

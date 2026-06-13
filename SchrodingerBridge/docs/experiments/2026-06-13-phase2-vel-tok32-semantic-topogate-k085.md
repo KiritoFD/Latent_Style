@@ -2,6 +2,12 @@
 
 Date: 2026-06-13
 
+> 2026-06-13 supersession note:
+> This packet remains a valid `tok32_refresh`-parent structure-side reference.
+> But the preferred successor is now:
+> [2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085.md)
+> because it inherits the current `tok32_safe_rescan` tokenizer profile and the cleaner in-band `epoch_0004` parent instead of the older `pos_refresh` parent.
+
 ## Role
 
 - queued structure-side candidate after the safe-family tokenizer sweep
