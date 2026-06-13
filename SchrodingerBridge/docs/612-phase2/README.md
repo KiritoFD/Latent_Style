@@ -277,6 +277,8 @@
       - 仍在 `LPIPS < 0.40` 带内
       - 但暂未超过旧 shelf
       - 因而继续跑，但暂不视为 breakout
+      - 同时切入 short-screen 审核：
+        - 若到 `epoch_0003` 仍未破 shelf，则提前关线
 
 ### 队列5: `vel_structure_control_reentry`（降级为第三顺位）
 

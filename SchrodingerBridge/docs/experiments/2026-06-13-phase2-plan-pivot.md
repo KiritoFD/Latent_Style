@@ -214,5 +214,7 @@ Date: 2026-06-13
       - not better than the old safe shelf
       - not better than `tok32_pos_refresh epoch_0004`
       - but also not bad enough to give up the slot after one point
+      - the packet is therefore switched into a short-screen audit:
+        - if no shelf break appears by `epoch_0003`, close early
     - watcher:
-      - `watch_phase2_velocity_handoff.py --run-name aaai2027_phase2_vel_tok32_safe_rescan_r1_seed42_b20a1 --wait --execute --handoff-mode stop_only`
+      - `watch_phase2_velocity_handoff.py --run-name aaai2027_phase2_vel_tok32_safe_rescan_r1_seed42_b20a1 --wait --execute --handoff-mode stop_only --min-settled-epoch 3`

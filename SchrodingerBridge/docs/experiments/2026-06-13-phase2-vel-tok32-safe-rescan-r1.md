@@ -185,6 +185,10 @@ Date: 2026-06-13
     - the direct parent best `epoch_0004 = 0.701161 / 0.374695`
   - so this is not a breakout point
   - but it is also not an early fail-stop or archival read, so the lane should keep running
+  - because this first point is jointly weaker than both the old shelf and the direct parent, the packet now enters a short-screen mode:
+    - if by `epoch_0003` it still has no shelf break
+    - and the newest settled points do not recover style
+    - close the lane early instead of waiting for the longer generic patience
 
 ## Intended Read
 
