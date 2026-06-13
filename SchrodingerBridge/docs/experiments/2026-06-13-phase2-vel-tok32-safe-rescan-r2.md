@@ -83,7 +83,12 @@ Date: 2026-06-13
   - attempted after `safe_rescan_r1` closed
   - host-owned launcher path failed on the remote Windows side with:
     - `HCS_E_SERVICE_NOT_AVAILABLE`
-  - direct relaunch attempt also did not establish a valid live lane
+  - diagnosis:
+    - `Microsoft-Windows-Subsystem-Linux` was enabled
+    - `VirtualMachinePlatform` was disabled and has now been enabled
+    - `hypervisorlaunchtype` is now explicitly set to `Auto`
+  - current blocker:
+    - the remote Windows host still needs a reboot before WSL2 can actually start again
   - current status:
     - packet is prepared
     - smoke is done
@@ -92,8 +97,8 @@ Date: 2026-06-13
 ## Ops Note
 
 - this is not a model-side rejection
-- it is a remote host / WSL availability issue
-- once the remote host returns to a normal WSL state, `r2` should be the next formal lane to relaunch
+- it is a remote host / WSL2 availability issue
+- once the remote Windows host is rebooted and WSL2 becomes runnable again, `r2` should be the next formal lane to relaunch
 
 ## Intended Read
 

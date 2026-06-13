@@ -31,6 +31,16 @@ def _run(cmd: list[str]) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _normalized_remote_text(text: str) -> str:
+    return str(text or "").replace("\x00", "").strip()
+
+
+def _looks_like_wsl_hcs_failure(text: str) -> bool:
+    normalized = _normalized_remote_text(text)
+    upper = normalized.upper()
+    return "HCS_E_SERVICE_NOT_AVAILABLE" in upper or "WSL/SERVICE/CREATEINSTANCE/CREATEVM/HCS/" in upper
+
+
 def _ssh_exec(*, host: str, port: int, user: str, remote_command: str) -> subprocess.CompletedProcess[str]:
     return _run(
         [
@@ -84,6 +94,8 @@ def _load_json_text(text: str) -> dict[str, Any] | None:
 
 def _gpu_rows(text: str) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
+    if _looks_like_wsl_hcs_failure(text):
+        return rows
     for line in str(text or "").splitlines():
         parts = [p.strip() for p in line.split(",")]
         if len(parts) < 3:
@@ -138,6 +150,8 @@ def _remote_read_text(
         wsl_distro=wsl_distro,
         exec_args=["cat", path],
     )
+    if result.returncode != 0 or _looks_like_wsl_hcs_failure(result.stdout):
+        return ""
     return str(result.stdout or "")
 
 
@@ -187,6 +201,8 @@ def _remote_list_via_find(
             "-print",
         ],
     )
+    if result.returncode != 0 or _looks_like_wsl_hcs_failure(result.stdout):
+        return []
     rows: list[str] = []
     for raw in result.stdout.splitlines():
         line = str(raw).strip()
@@ -309,12 +325,15 @@ def main() -> int:
         else:
             pending_checkpoint_epochs.append(epoch)
     live_state = "idle"
+    wsl_hcs_failure = _looks_like_wsl_hcs_failure(py.stdout)
     if pending_checkpoint_epochs:
         live_state = "eval_in_progress_or_pending"
     elif latest_settled_epoch:
         live_state = "training_after_settled_eval" if py.stdout.strip() else "settled_no_live_process"
     elif py.stdout.strip():
         live_state = "training_before_first_settled_eval"
+    if wsl_hcs_failure and not pending_checkpoint_epochs and not latest_settled_epoch:
+        live_state = "remote_wsl_unavailable"
 
     curve_summary = _remote_json_via_cat(
         host=str(args.host),
@@ -338,12 +357,14 @@ def main() -> int:
         exec_args=["tail", "-n", str(int(args.tail_lines)), remote_train_log],
     )
 
+    process_rows = [] if wsl_hcs_failure else [line.strip() for line in py.stdout.splitlines() if line.strip()]
     report = {
         "run_name": run_name,
         "remote_run_dir": remote_run_dir,
         "remote_train_log": remote_train_log,
         "remote_gpu": _gpu_rows(gpu.stdout),
-        "processes": [line.strip() for line in py.stdout.splitlines() if line.strip()],
+        "processes": process_rows,
+        "remote_wsl_hcs_failure": wsl_hcs_failure,
         "live_state": live_state,
         "latest_checkpoint_epoch": latest_checkpoint_epoch,
         "latest_settled_epoch": latest_settled_epoch,

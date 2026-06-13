@@ -219,4 +219,6 @@ Date: 2026-06-13
     - [2026-06-13-phase2-vel-tok32-safe-rescan-r2.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-rescan-r2.md)
     - current relaunch state:
       - packet is prepared and smoke-complete
-      - remote host-side WSL / HCS state is currently blocking formal launch
+      - `VirtualMachinePlatform` has now been enabled
+      - `hypervisorlaunchtype` is now `Auto`
+      - remote host reboot is still required before formal launch can succeed
