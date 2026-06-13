@@ -169,6 +169,7 @@ def compat_state_strip_prefixes_for_model_contract(
 def validate_pure_latent_contract(
     *,
     tokenizer_family: str,
+    style_tokenizer: str = "",
     semantic_supervision_family: str = "",
     dino_masked_swd_weight: float = 0.0,
     style_spatial_mode: str = "",
@@ -177,6 +178,13 @@ def validate_pure_latent_contract(
     family = normalize_tokenizer_family(tokenizer_family)
     if family != "pure_latent_spatial":
         return
+    tokenizer_kind = str(style_tokenizer or "").strip().lower()
+    if tokenizer_kind not in {"", "null", "none", "pure_placeholder"}:
+        raise ValueError(
+            "tokenizer_family='pure_latent_spatial' requires model.style_tokenizer "
+            "to be an explicit null compatibility placeholder ('null'/'none'), "
+            f"got style_tokenizer={style_tokenizer!r}."
+        )
     semantic = normalize_family(
         semantic_supervision_family,
         allowed=SEMANTIC_SUPERVISION_FAMILIES,

@@ -266,6 +266,7 @@ def main() -> None:
     )
     validate_pure_latent_contract(
         tokenizer_family=str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
+        style_tokenizer=str(getattr(config.model, "style_tokenizer", "")),
         semantic_supervision_family=str(getattr(config.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
         dino_masked_swd_weight=float(getattr(config.bridge, "dino_masked_swd_weight", 0.0)),
         style_spatial_mode=str(getattr(config.model, "style_spatial_mode", "")),

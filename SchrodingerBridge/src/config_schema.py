@@ -698,6 +698,7 @@ class ExperimentConfig:
         )
         validate_pure_latent_contract(
             tokenizer_family=str(getattr(cfg.model, "tokenizer_family", "legacy_factorized")),
+            style_tokenizer=str(getattr(cfg.model, "style_tokenizer", "")),
             semantic_supervision_family=str(getattr(cfg.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
             dino_masked_swd_weight=float(getattr(cfg.bridge, "dino_masked_swd_weight", 0.0)),
             style_spatial_mode=str(getattr(cfg.model, "style_spatial_mode", "")),
