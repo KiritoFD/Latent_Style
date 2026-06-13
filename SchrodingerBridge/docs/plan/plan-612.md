@@ -20,6 +20,7 @@
 > 为了让“自组织 tokenizer”不只停留在理论叙事，当前工程还要求：
 > - structured tokenizer 在 forward 后持久化 `last_debug`
 > - trainer 将 tokenizer 的数值型 debug 项写入 numeric debug 与 epoch metrics
+> - training CSV / epoch summary 也暴露 tokenizer entropy / max-attention 等核心量
 > 这样后续判断是否真的出现了 semantic routing，而不是只看到 style / LPIPS 的黑箱结果。
 
 太棒了！我完全理解并且**极度赞同你的审美直觉**。
