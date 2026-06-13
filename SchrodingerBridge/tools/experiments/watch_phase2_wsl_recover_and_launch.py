@@ -56,6 +56,25 @@ def _query_remote_status(*, run_name: str) -> dict:
     return _json_tool(reporter, "--run-name", str(run_name))
 
 
+def _resolve_phase2_packet(
+    *,
+    manifest_csv: str,
+    lane_class: str,
+    validation_json: str,
+) -> dict:
+    resolver = SCRIPT_DIR / "resolve_phase2_queue_packet.py"
+    cmd = [
+        str(resolver),
+        "--manifest-csv",
+        str(manifest_csv),
+        "--lane-class",
+        str(lane_class),
+    ]
+    if str(validation_json).strip():
+        cmd.extend(["--validation-json", str(validation_json)])
+    return _json_tool(resolver, *cmd[1:])
+
+
 def _launch_config(*, config: str) -> int:
     launcher = SCRIPT_DIR / "launch_remote_experiment_train.py"
     proc = _run(
@@ -127,8 +146,12 @@ def main() -> int:
             "immediately hand off to the phase2 close-rule watcher."
         )
     )
-    parser.add_argument("--config", required=True, help="Workspace-relative config path to launch once WSL2 is healthy.")
-    parser.add_argument("--run-name", required=True, help="Expected remote run name for status and watcher attachment.")
+    parser.add_argument("--config", default="", help="Workspace-relative config path to launch once WSL2 is healthy.")
+    parser.add_argument("--run-name", default="", help="Expected remote run name for status and watcher attachment.")
+    parser.add_argument("--manifest-csv", default="", help="Optional phase2 queue manifest CSV. If set, config/run-name can be resolved automatically.")
+    parser.add_argument("--lane-class", default="formal_lane", help="Lane class to resolve from the phase2 queue manifest.")
+    parser.add_argument("--validation-json", default="", help="Optional phase2 manifest validation snapshot used during manifest resolution.")
+    parser.add_argument("--resolve-only", action="store_true", help="Resolve the packet selection and exit without waiting on remote health.")
     parser.add_argument("--host", default="100.115.18.62")
     parser.add_argument("--port", type=int, default=2222)
     parser.add_argument("--user", default="administrator")
@@ -137,13 +160,38 @@ def main() -> int:
     parser.add_argument("--max-wait-seconds", type=int, default=172800)
     parser.add_argument("--max-idle-memory-mib", type=int, default=1500)
     parser.add_argument("--min-settled-epoch", type=int, default=3)
-    parser.add_argument("--min-allpairs-style-recovery", type=float, required=True)
+    parser.add_argument("--min-allpairs-style-recovery", type=float, default=None)
     parser.add_argument("--max-allpairs-lpips-for-recovery", type=float, default=None)
-    parser.add_argument("--min-transfer-style-recovery", type=float, required=True)
+    parser.add_argument("--min-transfer-style-recovery", type=float, default=None)
     parser.add_argument("--max-transfer-lpips-for-recovery", type=float, default=None)
     parser.add_argument("--handoff-mode", choices=("launch_pc_eval", "stop_only"), default="stop_only")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
+
+    config_path = str(args.config).strip()
+    run_name = str(args.run_name).strip()
+    manifest_csv = str(args.manifest_csv).strip()
+    if manifest_csv and (not config_path or not run_name):
+        resolved = _resolve_phase2_packet(
+            manifest_csv=manifest_csv,
+            lane_class=str(args.lane_class),
+            validation_json=str(args.validation_json),
+        )
+        if not config_path:
+            config_path = str(resolved.get("config_path", "")).strip()
+        if not run_name:
+            run_name = str(resolved.get("run_name", "")).strip()
+        print(json.dumps({"resolved_packet": resolved}, indent=2, ensure_ascii=False), flush=True)
+    if not config_path:
+        raise ValueError("config is required unless it can be resolved from --manifest-csv")
+    if not run_name:
+        raise ValueError("run-name is required unless it can be resolved from --manifest-csv")
+    if bool(args.resolve_only):
+        return 0
+    if args.min_allpairs_style_recovery is None:
+        raise ValueError("--min-allpairs-style-recovery is required unless --resolve-only is used")
+    if args.min_transfer_style_recovery is None:
+        raise ValueError("--min-transfer-style-recovery is required unless --resolve-only is used")
 
     deadline = time.monotonic() + max(1, int(args.max_wait_seconds))
     while True:
@@ -153,7 +201,7 @@ def main() -> int:
             user=str(args.user),
             wsl_distro=str(args.wsl_distro),
         )
-        status = _query_remote_status(run_name=str(args.run_name))
+        status = _query_remote_status(run_name=str(run_name))
         gpu_rows = health.get("raw") or {}
         remote_gpu = status.get("remote_gpu") or []
         used_mib = None
@@ -163,7 +211,7 @@ def main() -> int:
             except Exception:
                 used_mib = None
         payload = {
-            "run_name": str(args.run_name),
+            "run_name": str(run_name),
             "ssh_ok": bool(health.get("ssh_ok")),
             "wsl_exec_ok": bool(health.get("wsl_exec_ok")),
             "reboot_required_for_wsl2": bool(health.get("reboot_required_for_wsl2")),
@@ -203,12 +251,12 @@ def main() -> int:
         print("[watch_phase2_wsl_recover_and_launch] DRY_RUN ready-to-launch reached", flush=True)
         return 0
 
-    launch_rc = _launch_config(config=str(args.config))
+    launch_rc = _launch_config(config=str(config_path))
     if launch_rc != 0:
         return launch_rc
 
     return _phase2_watch(
-        run_name=str(args.run_name),
+        run_name=str(run_name),
         min_settled_epoch=int(args.min_settled_epoch),
         min_allpairs_style_recovery=float(args.min_allpairs_style_recovery),
         max_allpairs_lpips_for_recovery=args.max_allpairs_lpips_for_recovery,

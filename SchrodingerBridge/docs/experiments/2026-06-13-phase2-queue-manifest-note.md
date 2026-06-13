@@ -52,3 +52,14 @@ Date: 2026-06-13
 - whenever a phase-2 packet changes queue priority, status, or preferredness:
   - update this CSV
   - then update [README.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/612-phase2/README.md) only if the policy text itself changed
+
+## Operator Flow
+
+- validate the manifest before trusting it:
+  - [validate_phase2_queue_manifest.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/validate_phase2_queue_manifest.py)
+- resolve the current preferred formal packet:
+  - [resolve_phase2_queue_packet.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/resolve_phase2_queue_packet.py)
+- manifest-driven recovery watcher example:
+  - [watch_phase2_wsl_recover_and_launch.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_phase2_wsl_recover_and_launch.py)
+  - local resolve-only dry path:
+    - `python ...\\watch_phase2_wsl_recover_and_launch.py --manifest-csv ...\\phase2_queue_manifest.csv --validation-json ...\\phase2_queue_manifest_validation.json --lane-class formal_lane --resolve-only`
