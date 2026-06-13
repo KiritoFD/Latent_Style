@@ -164,3 +164,14 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Runtime observability: `translation_delta_from_identity=0.007511`, `routing_entropy=1.663507`, `effective_experts=5.321320`, `spatial_abs=0.896592`.
 - Plot update: added `SMoE e2` to `plot_points.csv` and regenerated the AAAI2027 page-1 figure.
 - Decision: continue to e3. e2 is not a promotion candidate; it improves LPIPS relative to e1 but is still dominated by the parent and now has lower style than parent.
+
+## SMoE Epoch 3 Read
+
+- Full eval completed at `2026-06-14 06:46:41 Asia/Shanghai`; training resumed into epoch 4.
+- Training time: `1461.7s`; full-eval wall time: `244.4s`.
+- Transfer: `0.668568 / 0.323320`; all-pairs: `0.699963 / 0.321329`; identity: `0.825543 / 0.313364`.
+- Style above IDT: transfer `+0.028647`; all-pairs `+0.019840`.
+- Matched delta against `k070 epoch_0003`: transfer `-0.003253` style and `+0.008702` LPIPS; all-pairs `-0.003271` style and `+0.008779` LPIPS.
+- Runtime observability: `translation_delta_from_identity=0.009242`, `routing_entropy=1.579277`, `effective_experts=4.887480`, `spatial_abs=0.877825`.
+- Plot update: added the e3 point to `plot_points.csv` and regenerated the AAAI2027 page-1 figure; the point is unlabeled to keep the panel readable.
+- Decision: continue only under the formal curve rule. e3 is a lower-LPIPS candidate Pareto point but remains dominated by the matched parent and shows a continuing style bleed.
