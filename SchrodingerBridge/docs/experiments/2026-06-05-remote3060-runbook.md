@@ -137,6 +137,22 @@ Interpretation:
 - if a packet is already prepared and waiting on host recovery
   - prefer arming a local recovery watcher instead of manually polling:
     - [watch_phase2_wsl_recover_and_launch.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_phase2_wsl_recover_and_launch.py)
+  - preferred phase-2 flow now is:
+    1. validate [phase2_queue_manifest.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_queue_manifest.csv) with
+       [validate_phase2_queue_manifest.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/validate_phase2_queue_manifest.py)
+    2. resolve the current formal packet with
+       [resolve_phase2_queue_packet.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/resolve_phase2_queue_packet.py)
+    3. let
+       [watch_phase2_wsl_recover_and_launch.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_phase2_wsl_recover_and_launch.py)
+       consume the manifest instead of hand-entering config / run-name / close-rule thresholds
+  - local preflight example:
+    ```powershell
+    python SchrodingerBridge/tools/experiments/watch_phase2_wsl_recover_and_launch.py `
+      --manifest-csv SchrodingerBridge/docs/experiments/phase2_queue_manifest.csv `
+      --validation-json SchrodingerBridge/docs/experiments/phase2_queue_manifest_validation.json `
+      --lane-class formal_lane `
+      --resolve-only
+    ```
 
 For formal training, record:
 
@@ -220,6 +236,14 @@ Concurrency rule:
 - treat stale baseline residue as a real conflict, not harmless background noise
   - explicitly check for leftover `SaMAM / SaMST / img2img / accelerate / other src/run.py` processes before every formal launch
   - if any are present, either kill them or wait; do not start a new formal lane on top of them
+- for phase-2 formal relaunches, do not hand-write watcher thresholds if the manifest already provides them
+  - the current formal-lane row carries:
+    - `watch_min_settled_epoch`
+    - `watch_min_allpairs_style_recovery`
+    - `watch_max_allpairs_lpips_for_recovery`
+    - `watch_min_transfer_style_recovery`
+    - `watch_max_transfer_lpips_for_recovery`
+    - `watch_handoff_mode`
 
 ### Step 5. Closure
 
