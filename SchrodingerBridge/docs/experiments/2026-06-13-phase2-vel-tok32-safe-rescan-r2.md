@@ -53,6 +53,8 @@ Date: 2026-06-13
   - if the packet does not produce a non-dominated in-band point by `epoch_0003`, close early
 - archival gate:
   - any settled point with worst authority LPIPS `>= 0.40` is immediate closure
+- complete-failure gate:
+  - any settled point with LPIPS `>= 0.70` is not only an immediate stop for this packet, but direct evidence that this family is off the Distinct5 promotion path until redesigned from a safe parent
 
 ## Smoke
 
@@ -177,6 +179,31 @@ Date: 2026-06-13
     - the current short-screen remains:
       - do not close before `epoch_0003`
       - but expect closure if the next authority points still fail to form a new in-band non-dominated point
+- second settled authority point at `2026-06-13 15:03:52 +08:00`:
+  - `epoch_0002`
+  - transfer `0.675645 / 0.395898`
+  - all-pairs `0.702225 / 0.393204`
+  - identity `0.808543 / 0.382426`
+  - eval wall `217.94s`
+  - generation `116.71s`
+  - VAE decode `56.62s`
+  - convergence read:
+    - `row_count = 2`
+    - `best_in_newest_2 = true`
+    - `since_last_pareto = 0`
+    - `tail_flat = true`
+    - `converged = false`
+  - interpretation:
+    - the lane is still formally in-band because both transfer and all-pairs LPIPS remain `< 0.40`
+    - this is a real in-family Pareto point over `epoch_0001`
+    - style now exceeds the old shelf, but LPIPS also rose above the old shelf recovery ceilings:
+      - all-pairs safe-shelf gate was `0.701666 / 0.381724`
+      - transfer safe-shelf gate was `0.673934 / 0.384340`
+    - so the packet is still not a promotable shelf-break
+    - the short-screen therefore stays alive through `epoch_0003`
+    - the next settled point now carries the main decision weight:
+      - another LPIPS rise into `0.40+` means archival stop
+      - a style plateau without LPIPS recovery likely means safe-family exhaustion
 
 ## Ops Note
 
