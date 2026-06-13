@@ -204,6 +204,37 @@ Date: 2026-06-13
     - the next settled point now carries the main decision weight:
       - another LPIPS rise into `0.40+` means archival stop
       - a style plateau without LPIPS recovery likely means safe-family exhaustion
+- third settled authority point at `2026-06-13 15:27:49 +08:00`:
+  - `epoch_0003`
+  - transfer `0.675325 / 0.398119`
+  - all-pairs `0.701712 / 0.395315`
+  - identity `0.807258 / 0.384102`
+  - eval wall `218.02s`
+  - generation `116.76s`
+  - VAE decode `56.47s`
+  - convergence read:
+    - `row_count = 3`
+    - `best_epoch = epoch_0002`
+    - `best_in_newest_2 = true`
+    - `since_last_pareto = 1`
+    - `tail_flat = false`
+    - `converged = false`
+  - interpretation:
+    - the packet did survive the short-screen because it already created a real in-family Pareto point at `epoch_0002`
+    - `epoch_0003` regressed slightly on both style and LPIPS relative to `epoch_0002`
+    - best settled point therefore remains:
+      - `epoch_0002`
+      - transfer `0.675645 / 0.395898`
+      - all-pairs `0.702225 / 0.393204`
+    - the line still fails the promotable safe-shelf break because LPIPS remains above:
+      - all-pairs `0.381724`
+      - transfer `0.384340`
+    - however, the lane remains formally alive because:
+      - all settled points are still `< 0.40`
+      - the best point remains within the newest-2 window
+    - next decision rule from here:
+      - first `0.40+` settled point => immediate archival stop
+      - if later retained checkpoints fail to improve beyond `epoch_0002`, safe-family sweep should be declared exhausted
 
 ## Ops Note
 
