@@ -221,6 +221,9 @@
   - lighter kinetic + topology anchor
   - latent lowpass / edge content correction
   - adaptive skip / PnP self-inject 仅作为结构工具，而非 style 放大器
+- queued packet:
+  - [2026-06-13-phase2-vel-tok32-topo-anchor-reentry.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-topo-anchor-reentry.md)
+  - [phase2_vel_tok32_topo_anchor_k075_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_topo_anchor_k075_seed42_b20a1.json)
 - 目标:
   - 把结构约束直接作用在安全带 velocity 父本上
   - 验证真正有价值的是 training-side structure control，而不是 stochastic endpoint
