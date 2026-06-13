@@ -128,6 +128,9 @@ Date: 2026-06-13
      - lighter kinetic + topology anchor
      - latent lowpass / edge content correction
      - adaptive skip or PnP-style self-inject only as structure tools
+   - queued concrete packet:
+     - [phase2_vel_tok32_topo_anchor_k075_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_vel_tok32_topo_anchor_k075_seed42_b20a1.json)
+     - [2026-06-13-phase2-vel-tok32-topo-anchor-reentry.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-topo-anchor-reentry.md)
 3. `vel_kinetic_anchor_rescan`
    - only if queue 1 yields a stronger in-band parent
    - retune the balance between style lift and structure guard on the safe velocity line
