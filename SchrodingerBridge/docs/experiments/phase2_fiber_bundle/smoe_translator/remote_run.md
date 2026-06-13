@@ -63,3 +63,22 @@
 - Relaunch: restarted the same SMoE config at `2026-06-14 05:47 Asia/Shanghai`; it resumed again from local `epoch_0001.pt` at epoch 2, global step `1574`.
 - Relaunch health: `6828MiB / 12288MiB`; accepted as the same matched-control lane. Still no batch, loss, solver, tokenizer, or schedule parameter change.
 - Current operational rule: keep all I2SB tasks disabled until SMoE is closed or explicitly preempted; only the SMoE task may hold the remote GPU lane.
+
+## Epoch 2 Full Eval
+
+- Full eval completed at `2026-06-14 06:17:22 Asia/Shanghai`; training resumed into epoch 3.
+- Checkpoint: `epoch_0002.pt`.
+- Training time: `1468.3s` (`24.47min`) from epoch log `data+comp`; eval wall time from curve: `240.4s`.
+- Transfer: `CLIP-S=0.670478`, `LPIPS=0.331323`, `style - IDT=+0.030557`.
+- All-pairs: `CLIP-S=0.701436`, `LPIPS=0.327738`, `style - IDT=+0.021314`.
+- Identity: `CLIP-S=0.825270`, `LPIPS=0.313400`.
+- Matched delta vs `k070 epoch_0003`:
+  - transfer: `-0.001343` style, `+0.016705` LPIPS.
+  - all-pairs: `-0.001797` style, `+0.015189` LPIPS.
+- Runtime observability from summary:
+  - `translation_delta_from_identity=0.007511`.
+  - `routing_entropy=1.663507`.
+  - `effective_experts=5.321320`.
+  - `spatial_abs=0.896592` on transfer.
+- Convergence state from `round2_convergence.json`: `converged=false`, best transfer/all-pairs remains `epoch_0001`, newest checkpoint remains within the newest-2 patience window.
+- Read: e2 recovers some LPIPS from e1 but gives up style and remains dominated by the matched parent. Continue to e3 before deciding whether to close SMoE-only as negative evidence or inspect identity scale/init.

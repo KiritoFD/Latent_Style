@@ -10,12 +10,13 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 
 ## Current Homepage Overlay
 
-- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, and Fiber-SDE `sigma=0.01/0.02/0.03/0.05` matched eval-only points are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
+- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05`, and SMoE epoch `1-2` are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
 - The trace uses transfer `CLIP-S - IDT` on the y-axis and `1 - LPIPS` on the x-axis.
 - All retained checkpoints are drawn and connected.
 - Labels are sparse by design:
   - `k070`: `e1` and `e3 best LPIPS`
   - `pattn_enhanced_tok`: `e2 best style` and `e8 low LPIPS`
+  - `smoe_translator_k070_e3`: `SMoE e1` and `SMoE e2`
 - Source curve:
   - [k070_epoch1_5_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/k070_epoch1_5_remote_clip_lpips_curve.csv)
   - [pattn_enhanced_tok_epoch1_10_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/pattn_enhanced_tok_epoch1_10_remote_clip_lpips_curve.csv)
@@ -27,6 +28,7 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
   - [eval/fiber_sde_sigma0p03/fiber_aligned/summary.json](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/eval/fiber_sde_sigma0p03/fiber_aligned/summary.json)
   - [eval/fiber_sde_sigma0p05/isotropic/summary.json](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/eval/fiber_sde_sigma0p05/isotropic/summary.json)
   - [eval/fiber_sde_sigma0p05/fiber_aligned/summary.json](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/eval/fiber_sde_sigma0p05/fiber_aligned/summary.json)
+  - [smoe_translator_k070_e3_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/smoe_translator_k070_e3_remote_clip_lpips_curve.csv)
 - Rendered page-1 figure:
   - [fig_distinct5_page1_summary.png](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/figures/fig_distinct5_page1_summary.png)
 
@@ -51,6 +53,7 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 - This run starts from the same `k070 epoch_0003` parent used by Fiber-SDE.
 - Only `tokenizer_family` changes from `pure_latent_spatial` to `smoe_translator`; solver/loss/topogate/appearance/schedule stay inherited from the parent line.
 - Remote full eval must run every epoch and update the homepage page-1 CLIP-style / LPIPS figure before closure.
+- Current read through epoch 2: e1 is best for style, e2 recovers some LPIPS, and both remain dominated by `k070 epoch_0003`; continue to e3 before closing SMoE-only.
 
 ## Plot Update Contract
 
