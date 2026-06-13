@@ -192,6 +192,10 @@ Date: 2026-06-13
     - the earlier guard bug interrupted that eval mid-run
     - it no longer masks the live lane as an active eval-pending run in the status reporter
   - the first valid authority point is therefore `epoch_0002`, not `epoch_0001`
+  - current runtime read:
+    - `live_state = training_after_settled_eval`
+    - `pending_checkpoint_epochs = []`
+    - `stale_pending_checkpoint_epochs = [epoch_0001]`
 
 ## Read
 
@@ -206,6 +210,7 @@ Date: 2026-06-13
 - interpretation:
   - the tokenizer refresh has not shown an immediate breakout
   - but one settled point is too early to close an in-band line
+  - the packet is currently training in `epoch_3`, with the next meaningful decision deferred to the next settled authority point
   - keep the formal lane alive until either:
     - a better in-band point appears
     - or the same plateau logic closes it later
