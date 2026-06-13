@@ -66,19 +66,34 @@
     - `tswd=0.1476`
   - fast-eval:
     - remote watcher had to be relaunched once with `--sync-remote-scripts --sync-manifest`
-    - watcher is now alive again and waiting for the first retained checkpoint
+    - first retained `r2` checkpoint now exists:
+      - `epoch_0001.pt`
+    - first `r2` fast-eval point has now been recovered:
+      - `transfer_clip_style = 0.6768`
+      - `transfer_lpips = 0.7927`
+      - `all_pairs_clip_style = 0.6782`
+      - `all_pairs_lpips = 0.7922`
+    - watcher remains alive for later checkpoints, but this first point was recovered manually
   - current node:
     - the reconstruction-pretrain program is back to `running`
-    - closure authority is still pending first valid `r2` checkpoint eval
+    - the line now has one valid `r2` authority point
+    - closure authority is still pending later retained checkpoints and convergence behavior
+
+- pivot note:
+  - after the `bridge.md / plan-612.md` review, the DINO route was demoted from the main line
+  - `tok_b_cross_image` reconstruction-pretrain `r2` was intentionally stopped after the first valid `r2` checkpoint + fast-eval point
+  - reason:
+    - current priority is now the pure-latent tokenizer plus true I2SB bridge path
+    - DINO remains archived comparison evidence only unless it later shows overwhelming advantage
 
 <!-- ROUND1_AUTO_STATUS:START -->
 ## Auto Status
 
 - Family id: `tok_b_cross_image`
-- Run name: `aaai2027_round1_tok_b_cross_image_seed42_b8a2`
-- Remote run dir: `./exp/inmortal-exp/aaai2027_round1_tok_b_cross_image_seed42_b8a2`
+- Run name: `aaai2027_round1_tok_b_cross_image_reconpretrain_seed42_b8a2_r2`
+- Remote run dir: `./exp/inmortal-exp/aaai2027_round1_tok_b_cross_image_reconpretrain_seed42_b8a2_r2`
 - Config: [aaai2027_round1_tok_b_cross_image_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/aaai2027_round1_tok_b_cross_image_seed42_b8a2.json)
-- Manifest status: `running`
+- Manifest status: `recalibration_needed`
 - Local fast root: [round1_tok_b_cross_image_fast_local](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_tok_b_cross_image_fast_local)
 - Local review root: [round1_tok_b_cross_image_localreview](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_tok_b_cross_image_localreview)
 - Prelaunch switch smoke: `ok`
@@ -86,13 +101,9 @@
 - Switch smoke row count: `1`
 - Tokenizer warmstart config: [aaai2027_round1_tok_b_cross_image_warmstart_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/warmstart/aaai2027_round1_tok_b_cross_image_warmstart_seed42_b8a2.json)
 - Tokenizer reconstruction-pretrain config: [aaai2027_round1_tok_b_cross_image_reconpretrain_seed42_b8a2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/pretrain/aaai2027_round1_tok_b_cross_image_reconpretrain_seed42_b8a2.json)
-- Remote GPU live sample:
-  - `10877 MiB / 12288 MiB`, `util=89%`
-  - `band_status=in_band`
-  - `formal_status=formal_in_band`
-- Remote train progress:
-  - `epoch 1/24`
-  - `step 868/2361`
-  - `loss=1.9812`
-  - `tswd=0.2916`
+- Active reconstruction-pretrain restart config: [aaai2027_round1_tok_b_cross_image_reconpretrain_seed42_b8a2_r2.json](G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/round1_full_sweep/pretrain/aaai2027_round1_tok_b_cross_image_reconpretrain_seed42_b8a2_r2.json)
+- Remote live state:
+  - `train pid = 0`
+  - `fast_eval pid = 0`
+  - first `r2` point already recovered before stop
 <!-- ROUND1_AUTO_STATUS:END -->
