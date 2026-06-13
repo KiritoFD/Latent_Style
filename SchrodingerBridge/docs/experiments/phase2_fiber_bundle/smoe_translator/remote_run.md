@@ -53,3 +53,13 @@
 - Relaunch: restarted the same SMoE config at `2026-06-14 05:21 Asia/Shanghai`; it resumed from local `epoch_0001.pt` at epoch 2, global step `1574`.
 - Relaunch health: `6776MiB / 12288MiB`, utilization about `95%`; accepted as the same matched-control lane. No batch, loss, solver, tokenizer, or schedule parameter was changed.
 - Interpretation: the guard stop is an orchestration/concurrency fault, not SMoE single-lane VRAM evidence. The run remains valid from `epoch_0001.pt` onward after the single-lane relaunch.
+
+## Second Guard Incident And I2SB Task Quarantine
+
+- At `2026-06-14 05:39:01 Asia/Shanghai`, the second SMoE attempt was also stopped by the runtime guard with `used=11772MiB cap=11000MiB`, `rc=143`.
+- Root cause: another historical I2SB one-shot task, `phase2_i2sb_topo_anchor_sigma0p10_warm_vel2_seed42_b30a1`, started at `05:38:47` and occupied about `8.6GiB`.
+- Action: stopped the I2SB process and disabled every scheduled task whose name contains `i2sb`, including old train tasks and old curve/watch helpers.
+- Verification: after quarantine, remote GPU returned to `364MiB / 12288MiB`, no Python process remained, and no `i2sb` task had a future run time.
+- Relaunch: restarted the same SMoE config at `2026-06-14 05:47 Asia/Shanghai`; it resumed again from local `epoch_0001.pt` at epoch 2, global step `1574`.
+- Relaunch health: `6828MiB / 12288MiB`; accepted as the same matched-control lane. Still no batch, loss, solver, tokenizer, or schedule parameter change.
+- Current operational rule: keep all I2SB tasks disabled until SMoE is closed or explicitly preempted; only the SMoE task may hold the remote GPU lane.
