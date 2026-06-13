@@ -12,6 +12,10 @@ Date: 2026-06-13
 
 - CSV:
   - [phase2_queue_manifest.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_queue_manifest.csv)
+- validator:
+  - [validate_phase2_queue_manifest.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/validate_phase2_queue_manifest.py)
+- latest validation snapshot:
+  - [phase2_queue_manifest_validation.json](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_queue_manifest_validation.json)
 
 ## Interpretation
 
@@ -26,7 +30,10 @@ Date: 2026-06-13
 - `formal_eligible`
   - whether the packet is allowed to occupy the only remote formal lane under the current `612-phase2` policy
 - `tokenizer_profile`
-  - distinguishes refreshed `tok32` packets from older `64/4` tokenizer diagnostics
+  - distinguishes:
+    - `tok32_safe_rescan`
+    - `tok32_refresh`
+    - `legacy64_endpoint`
 
 ## Current Read
 
@@ -37,6 +44,8 @@ Date: 2026-06-13
   - `vel_tok32_semantic_topogate_k085`
 - current preferred exact-I2SB theory-check packet:
   - `i2sb_tok32_semantic_topogate_sigma0p02_residual`
+- current validation state:
+  - `phase2_queue_manifest_validation.json -> ok = true`
 
 ## Update Rule
 
