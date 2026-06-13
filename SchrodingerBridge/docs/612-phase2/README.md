@@ -116,6 +116,9 @@
       - 第三个有效 settled authority 点是 `epoch_0004`
         - transfer `0.673399 / 0.376463`
         - all-pairs `0.701161 / 0.374695`
+      - 第四个有效 settled authority 点是 `epoch_0005`
+        - transfer `0.670604 / 0.375912`
+        - all-pairs `0.699187 / 0.373331`
       - launcher guard 已修复
       - 同一 run 已从本地 `epoch_0001` 续跑
       - relaunch 30s health `10151 MiB`
@@ -126,6 +129,7 @@
         - style 只略低于旧 shelf
         - LPIPS 明显优于旧 shelf
       - 同时它也严格优于本 packet 的 `epoch_0003` 点
+      - `epoch_0005` 则继续往更低 LPIPS 方向推了一步，但 style 没有继续抬升
       - 说明这条线仍在演化，暂时还不该按 plateau 关闭
       - `epoch_0001` 现在只记为 `stale_pending`，不再把 live state 错报成 eval-pending
     - 本地 watcher 已挂起:

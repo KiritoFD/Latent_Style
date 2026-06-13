@@ -196,3 +196,12 @@ Date: 2026-06-13
         - but now better on LPIPS than the old safe parent
         - and strictly stronger than this packet's earlier `epoch_0003` point
         - so the line is still alive and should keep the formal slot for now
+      - fourth settled authority point:
+        - `epoch_0005`
+        - transfer `0.670604 / 0.375912`
+        - all-pairs `0.699187 / 0.373331`
+      - updated interpretation:
+        - still in-band
+        - still not a style breakout
+        - but it adds another Pareto-valid point rather than flattening
+        - so the lane still does not satisfy the current closure rule
