@@ -183,6 +183,14 @@ Date: 2026-06-13
   - but still below both:
     - the old shelf `0.701666 / 0.381724`
     - the direct parent best `epoch_0004 = 0.701161 / 0.374695`
+  - concretely:
+    - vs old shelf:
+      - style `-0.000980`
+      - LPIPS `+0.001627`
+    - vs direct parent best:
+      - style `-0.000475`
+      - LPIPS `+0.008656`
+  - so `epoch_0001` is jointly dominated by both references, not merely “still below target”
   - so this is not a breakout point
   - but it is also not an early fail-stop or archival read, so the lane should keep running
   - because this first point is jointly weaker than both the old shelf and the direct parent, the packet now enters a short-screen mode:

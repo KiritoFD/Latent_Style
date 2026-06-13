@@ -276,6 +276,7 @@
     - 解释:
       - 仍在 `LPIPS < 0.40` 带内
       - 但暂未超过旧 shelf
+      - 而且首点对旧 shelf 与直接父本都是 joint domination
       - 因而继续跑，但暂不视为 breakout
       - 同时切入 short-screen 审核：
         - 若到 `epoch_0003` 仍未破 shelf，则提前关线
