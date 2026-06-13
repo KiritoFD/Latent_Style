@@ -103,9 +103,14 @@
     - launch time `2026-06-13 07:49`
   - 首轮健康检查:
     - `30s health = 10073 MiB`
-    - latest runtime read `9870 / 12288 MiB`
-    - 状态 `training_before_first_settled_eval`
-    - first settled eval still pending
+    - later runtime guard mis杀 occurred during epoch-end eval offload:
+      - `RUNTIME_UNDER_BAND_STOP used=2101MiB floor=9216MiB`
+    - 当前状态:
+      - `epoch_0001.pt` 已保存
+      - `first settled eval` 仍 pending
+      - launcher guard 已修复
+      - 同一 run 已从本地 `epoch_0001` 续跑
+      - relaunch 30s health `10151 MiB`
     - 本地 watcher 已挂起:
       - `watch_phase2_velocity_handoff.py --run-name aaai2027_phase2_vel_tok32_pos_refresh_seed42_b20a1 --wait --execute --handoff-mode stop_only`
   - 当前正式候选仍然只允许来自 `velocity + true tokenizer + training-side structure control`

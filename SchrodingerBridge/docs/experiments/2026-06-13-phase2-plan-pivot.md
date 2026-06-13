@@ -156,7 +156,14 @@ Date: 2026-06-13
     - `aaai2027_phase2_vel_tok32_pos_refresh_seed42_b20a1`
     - launch time `2026-06-13 07:49`
     - 30s launch health `10073 MiB`
-    - latest runtime read `9870 MiB`
-    - state `training_before_first_settled_eval`
-    - first settled eval still pending
+    - the packet reached `epoch_0001` and saved its first checkpoint
+    - but the first settled eval is still pending because the launcher runtime guard killed the process during epoch-end eval offload:
+      - `RUNTIME_UNDER_BAND_STOP used=2101MiB floor=9216MiB`
+    - next action is not a model-side decision:
+      - fix the launcher guard, relaunch, and recover from local `epoch_0001`
     - a local `watch_phase2_velocity_handoff.py --handoff-mode stop_only --wait --execute` watcher is now attached to enforce the same LPIPS / plateau close rule without auto-launching the old solver_pc follow-up
+    - relaunch status:
+      - the launcher fix is now in place
+      - the same run resumed from local `epoch_0001`
+      - the post-fix 30s health read is `10151 MiB`
+      - current live training is back in `epoch 2`

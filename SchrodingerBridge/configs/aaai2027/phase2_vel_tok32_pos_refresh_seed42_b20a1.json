@@ -14,7 +14,7 @@
     "resume_model_strict": false,
     "resume_optimizer": false,
     "resume_training_state": false,
-    "resume_prefer_local_checkpoint": false
+    "resume_prefer_local_checkpoint": true
   },
   "checkpoint": {
     "save_dir": "./exp/aaai2027_phase2_vel_tok32_pos_refresh_seed42_b20a1"
