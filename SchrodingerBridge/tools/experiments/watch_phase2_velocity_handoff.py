@@ -223,6 +223,12 @@ def main() -> int:
     parser.add_argument("--max-wait-seconds", type=int, default=21600)
     parser.add_argument("--execute", action="store_true", help="Actually stop the remote lane and launch solver_pc eval. Default is dry-run.")
     parser.add_argument("--force-regen", action="store_true")
+    parser.add_argument(
+        "--handoff-mode",
+        choices=("launch_pc_eval", "stop_only"),
+        default="launch_pc_eval",
+        help="What to do after the remote lane is closed. 'launch_pc_eval' preserves the old behavior; 'stop_only' just frees the formal lane.",
+    )
     args = parser.parse_args()
 
     deadline = time.monotonic() + max(1, int(args.max_wait_seconds))
@@ -268,6 +274,7 @@ def main() -> int:
         "would_close_and_handoff": should_handoff,
         "execute": bool(args.execute),
         "wait": bool(args.wait),
+        "handoff_mode": str(args.handoff_mode),
         "reason": reason,
         "latest_checkpoint_epoch": status.get("latest_checkpoint_epoch"),
         "latest_settled_epoch": status.get("latest_settled_epoch"),
@@ -300,6 +307,9 @@ def main() -> int:
         timeout_seconds=int(args.idle_timeout_seconds),
         poll_seconds=int(args.poll_seconds),
     )
+    if str(args.handoff_mode) == "stop_only":
+        print("Remote lane stopped and GPU returned to idle. Handoff mode is stop_only, so no follow-on eval was launched.", flush=True)
+        return 0
     rc = _launch_pc_eval(checkpoint=str(args.pc_checkpoint), force_regen=bool(args.force_regen))
     if rc != 0:
         raise RuntimeError(f"phase2 pc eval launch failed rc={rc}")

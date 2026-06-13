@@ -140,6 +140,15 @@ Date: 2026-06-13
   - eval state:
     - no checkpoint has settled yet
     - first `CLIP-S + LPIPS` authority point is still pending
+- watcher:
+  - `watch_phase2_velocity_handoff.py`
+  - local PID:
+    - `164884`
+  - mode:
+    - `stop_only`
+  - rationale:
+    - this packet should obey the same LPIPS hard gates and plateau rule
+    - but it should not auto-handoff into the old `solver_pc` review path
 - warm-start read:
   - partial resume from:
     - `/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_pattn_enhanced_tok_seed42_b22a1/epoch_0002.pt`
