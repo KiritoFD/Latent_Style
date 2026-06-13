@@ -173,3 +173,5 @@ Date: 2026-06-13
       - interpretation:
         - still in-band, so the lane stays alive
         - but it is not yet better than the previous safe parent shelf `0.701666 / 0.381724`
+        - the stale `epoch_0001` half-eval is now classified as ops residue rather than a real pending authority point
+        - the live read is back to `training_after_settled_eval` while `epoch_3` trains
