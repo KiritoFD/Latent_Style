@@ -92,3 +92,30 @@ Date: 2026-06-13
     - `k070_kin070`
     - then the velocity-native stochastic eval-only `k070 e1` SDE probe
     - then `k070_sp256`
+
+## 2026-06-14 All-Ckpt Read
+
+- retained checkpoints with remote full eval:
+  - `epoch_0001`: transfer `0.672664 / 0.336344`, all-pairs `0.703589 / 0.333097`, train `25.39 min`
+  - `epoch_0002`: transfer `0.671814 / 0.315878`, all-pairs `0.703409 / 0.313567`, train `23.96 min`
+  - `epoch_0003`: transfer `0.671820 / 0.314618`, all-pairs `0.703234 / 0.312550`, train `23.86 min`
+  - `epoch_0004`: transfer `0.669782 / 0.323409`, all-pairs `0.701260 / 0.319439`, train `23.82 min`
+  - `epoch_0005`: transfer `0.671104 / 0.325637`, all-pairs `0.702300 / 0.322536`, train `23.84 min`
+- best transfer style remains `epoch_0001`
+- best structure-preserving point is `epoch_0003` by transfer LPIPS and all-pairs LPIPS
+- convergence state:
+  - best checkpoint is not in the newest two retained checkpoints
+  - last Pareto point is `epoch_0003`
+  - tail is near-flat, but the formal close gate was not completed because `epoch_0006` was stopped by the runtime VRAM guard
+- guard event:
+  - `2026-06-14T01:39:29+08:00`
+  - observed `11760 MiB` against cap `11000 MiB`
+  - process exited with `rc=143`
+- plot outputs:
+  - raw curve: [k070_epoch1_5_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/k070_epoch1_5_remote_clip_lpips_curve.csv)
+  - page-1 plot table: [plot_points.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/plot_points.csv)
+  - AAAI2027 page-1 figure: [fig_distinct5_page1_summary.png](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/figures/fig_distinct5_page1_summary.png)
+- decision:
+  - do not treat `k070` as a style breakthrough
+  - use it as an in-band structure/LPIPS parent or matched deterministic control
+  - next style-facing mechanism should be eval-only stochasticity before more training-side capacity changes
