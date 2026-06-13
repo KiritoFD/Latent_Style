@@ -141,6 +141,10 @@
   - tokenizer-guided output appearance alignment
   - but only as a conservative same-family probe after a clean in-band structure point
   - not as a replacement for tokenizer or solver quality
+- structure-side queue policy:
+  - `topogate -> appalign -> pnp -> topo_anchor`
+  - `queued_reference` rows are documentation-only and must not become automatic launch targets
+  - active structure rows now carry their own watch fields and close into the next same-lane successor after plateau / LPIPS stop
 - 允许的结构工具:
   - latent lowpass / edge-aware content correction
   - adaptive skip / PnP self-inject
@@ -228,6 +232,8 @@
     - `vel_tok32_safe_semantic_topogate_k085_appalign`
     - same parent and same topology-gate family
     - only adds tokenizer-guided latent appearance alignment before trying a different attention family
+  - structure-side close rule:
+    - after `4` settled checkpoints, if the active packet is still below the formal safe shelf and no new best lands in the newest-2 window, hand off to the next same-lane successor
 - 所有 round2 endpoint / I2SB 文档都应按以下标准重读:
   - `0.40-0.70` = archival only
   - `0.70+` = complete failure

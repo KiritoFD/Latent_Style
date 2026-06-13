@@ -1,6 +1,6 @@
 {
   "manifest_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\phase2_queue_manifest.csv",
-  "row_count": 8,
+  "row_count": 9,
   "global_issues": [],
   "rows": [
     {
@@ -41,12 +41,35 @@
         "resolved_exact_brownian": false
       },
       "watch_fields": {
-        "watch_min_settled_epoch": "",
-        "watch_min_allpairs_style_recovery": "",
-        "watch_max_allpairs_lpips_for_recovery": "",
-        "watch_min_transfer_style_recovery": "",
-        "watch_max_transfer_lpips_for_recovery": "",
-        "watch_handoff_mode": ""
+        "watch_min_settled_epoch": "4",
+        "watch_min_allpairs_style_recovery": "0.701666",
+        "watch_max_allpairs_lpips_for_recovery": "0.381724",
+        "watch_min_transfer_style_recovery": "0.673934",
+        "watch_max_transfer_lpips_for_recovery": "0.384340",
+        "watch_handoff_mode": "launch_same_lane_successor"
+      }
+    },
+    {
+      "packet_id": "vel_tok32_safe_semantic_topogate_k085_appalign",
+      "ok": true,
+      "issues": [],
+      "derived": {
+        "tokenizer_profile": "tok32_safe_rescan",
+        "transport_prediction_mode": "velocity",
+        "solver_family": "euler_legacy",
+        "bridge_sigma": 0.0,
+        "endpoint_parameterization": "absolute",
+        "semantic_topology_gate": "true",
+        "proximal_mode": "crossattn_texture",
+        "resolved_exact_brownian": false
+      },
+      "watch_fields": {
+        "watch_min_settled_epoch": "4",
+        "watch_min_allpairs_style_recovery": "0.701666",
+        "watch_max_allpairs_lpips_for_recovery": "0.381724",
+        "watch_min_transfer_style_recovery": "0.673934",
+        "watch_max_transfer_lpips_for_recovery": "0.384340",
+        "watch_handoff_mode": "launch_same_lane_successor"
       }
     },
     {
@@ -64,12 +87,12 @@
         "resolved_exact_brownian": false
       },
       "watch_fields": {
-        "watch_min_settled_epoch": "",
-        "watch_min_allpairs_style_recovery": "",
-        "watch_max_allpairs_lpips_for_recovery": "",
-        "watch_min_transfer_style_recovery": "",
-        "watch_max_transfer_lpips_for_recovery": "",
-        "watch_handoff_mode": ""
+        "watch_min_settled_epoch": "4",
+        "watch_min_allpairs_style_recovery": "0.701666",
+        "watch_max_allpairs_lpips_for_recovery": "0.381724",
+        "watch_min_transfer_style_recovery": "0.673934",
+        "watch_max_transfer_lpips_for_recovery": "0.384340",
+        "watch_handoff_mode": "launch_same_lane_successor"
       }
     },
     {
@@ -110,12 +133,12 @@
         "resolved_exact_brownian": false
       },
       "watch_fields": {
-        "watch_min_settled_epoch": "",
-        "watch_min_allpairs_style_recovery": "",
-        "watch_max_allpairs_lpips_for_recovery": "",
-        "watch_min_transfer_style_recovery": "",
-        "watch_max_transfer_lpips_for_recovery": "",
-        "watch_handoff_mode": ""
+        "watch_min_settled_epoch": "4",
+        "watch_min_allpairs_style_recovery": "0.701666",
+        "watch_max_allpairs_lpips_for_recovery": "0.381724",
+        "watch_min_transfer_style_recovery": "0.673934",
+        "watch_max_transfer_lpips_for_recovery": "0.384340",
+        "watch_handoff_mode": "stop_only"
       }
     },
     {

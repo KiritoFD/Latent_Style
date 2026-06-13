@@ -89,6 +89,11 @@ Date: 2026-06-13
   - rationale:
     - if qualitative review still shows brightness / contrast mismatch, the next clean question is low-order appearance alignment
     - not another large structure-family jump yet
+- close / handoff rule:
+  - after `4` settled checkpoints
+  - if the packet is still below the formal safe shelf
+  - and no new best point sits in the newest-2 retained window
+  - hand off to the same-lane successor `vel_tok32_safe_semantic_topogate_k085_appalign`
 
 ## Intended Read
 

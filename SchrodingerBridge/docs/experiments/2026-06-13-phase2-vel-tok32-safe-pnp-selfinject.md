@@ -59,3 +59,5 @@ Date: 2026-06-13
 
 - this is the next structure-side fallback after the active `vel_tok32_safe_semantic_topogate_k085` run
 - it should be evaluated before the heavier `topo_anchor` loss-side fallback
+- if it also closes without a formal shelf break, the next same-lane successor is:
+  - [2026-06-13-phase2-vel-tok32-topo-anchor-reentry.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-topo-anchor-reentry.md)

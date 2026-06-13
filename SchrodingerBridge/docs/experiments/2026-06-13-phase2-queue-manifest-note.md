@@ -71,6 +71,10 @@ Date: 2026-06-13
   - intended to test whether the remaining transfer shortfall is low-order brightness / contrast mismatch
 - next structural family fallback after that:
   - `vel_tok32_safe_pnp_selfinject`
+  - queue contract:
+    - active `structure_reentry` rows now carry same-lane watch fields
+    - the automatic sequence is `topogate -> appalign -> pnp -> topo_anchor`
+    - `queued_reference` rows remain documentation-only and are skipped by successor handoff
 - current preferred exact-I2SB theory-check packet:
   - `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual`
 - current validation state:
