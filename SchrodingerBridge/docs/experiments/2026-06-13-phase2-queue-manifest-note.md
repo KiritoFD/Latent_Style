@@ -57,13 +57,13 @@ Date: 2026-06-13
   - first `b20a1` launch hit the runtime guard at `11093 MiB`
   - preferred relaunch now uses the `b16a1` packet
   - current live read:
-    - `epoch_0002` is now the latest settled point
-    - transfer `0.671915 / 0.361009`
-    - all-pairs `0.700605 / 0.357866`
-    - the lane is still clean, but the latest point has slipped back below the formal safe shelf
+    - `epoch_0003` is now the latest settled point
+    - transfer `0.675388 / 0.375598`
+    - all-pairs `0.702936 / 0.371762`
+    - this now beats both formal recovery gates while staying comfortably in-band
   - important read:
-    - `epoch_0001` was a real first recovery candidate
-    - but the queue should now be judged from the latest settled point, not from the earlier peak
+    - this is the first structure-side packet in phase2 to clear both formal safe-shelf gates
+    - the watcher remains armed because the lane is still newest-best and should be allowed to prove whether the breakout is stable
 - next queued structure-side probe:
   - `vel_tok32_safe_semantic_topogate_k085_appalign`
   - same safe parent and same topology-gate family
