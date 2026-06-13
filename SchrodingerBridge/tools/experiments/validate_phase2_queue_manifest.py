@@ -118,7 +118,6 @@ def _validate_row(row: dict[str, str]) -> dict[str, object]:
             "watch_min_transfer_style_recovery",
             "watch_max_transfer_lpips_for_recovery",
             "watch_handoff_mode",
-            "watch_next_lane_class",
         ):
             if not _present(key):
                 issues.append(f"formal_lane row missing {key}")

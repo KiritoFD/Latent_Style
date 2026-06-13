@@ -1,0 +1,18 @@
+{
+  "_comment": "Eval-only: merge onto a recovered appalign checkpoint and test solver_pc + latent_lowpass correction without retraining.",
+  "model": {
+    "solver_family": "solver_pc",
+    "solver_corrector_steps": 2,
+    "solver_corrector_step_size": 0.06,
+    "solver_corrector_mode": "latent_lowpass",
+    "solver_corrector_lowpass_kernel": 5,
+    "solver_corrector_clamp": 0.0
+  },
+  "training": {
+    "num_epochs": 0,
+    "full_eval_each_epoch": true,
+    "full_eval_only_lpips_clip_style": true,
+    "resume_model_strict": false,
+    "resume_training_state": false
+  }
+}

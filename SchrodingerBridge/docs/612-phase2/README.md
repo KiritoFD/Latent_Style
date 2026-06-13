@@ -178,6 +178,9 @@
     - use the highest-style settled point inside that recovered band as the next exact-I2SB parent
   - infra correction:
     - the remote launcher now syncs the full config `_base` chain, so this packet should no longer fail on a missing inherited config when the structure watcher pivots into it
+  - parallel side evidence:
+    - the local `solver_pc + latent_lowpass` appalign-e3 probe was negative
+    - it reduced LPIPS by only about `0.0015-0.0019` while also lowering style slightly
 - 允许做:
   - NFE 对照
   - noise schedule 对照
