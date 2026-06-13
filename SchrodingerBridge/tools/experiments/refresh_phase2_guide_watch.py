@@ -27,6 +27,11 @@ GUIDE_TEXT_ENCODINGS: tuple[str, ...] = (
     "utf-16-be",
 )
 
+COMPANION_GUIDE_FILENAMES: tuple[str, ...] = (
+    "STATUS_AND_NEXT.md",
+    "NEXT_ACTIONS_FOR_CODEX.md",
+)
+
 
 def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -44,6 +49,26 @@ def _load_guide_text(path: Path) -> tuple[str, str, bytes]:
         except Exception:
             continue
     return raw.decode("utf-8", errors="replace"), "utf-8-replace", raw
+
+
+def _combined_hash(items: list[tuple[Path, bytes]]) -> str:
+    h = hashlib.sha256()
+    for path, payload in items:
+        h.update(str(path).encode("utf-8", errors="replace"))
+        h.update(b"\0")
+        h.update(payload)
+        h.update(b"\0")
+    return h.hexdigest()
+
+
+def _discover_companion_guides(primary: Path) -> list[Path]:
+    out: list[Path] = []
+    parent = primary.parent
+    for name in COMPANION_GUIDE_FILENAMES:
+        candidate = parent / name
+        if candidate.is_file() and candidate.resolve() != primary.resolve():
+            out.append(candidate.resolve())
+    return out
 
 
 def _load_json_dict(path: Path) -> dict:
@@ -66,11 +91,11 @@ def _float_or_none(value: object) -> float | None:
         return None
 
 
-def _extract_grouped_hits(text: str) -> dict[str, list[dict[str, str]]]:
+def _extract_grouped_hits(text: str, *, source_label: str) -> dict[str, list[dict[str, str]]]:
     lines = text.splitlines()
     groups: dict[str, list[dict[str, str]]] = {name: [] for name, _ in KEYWORD_GROUPS}
     heading = ""
-    seen: set[tuple[str, str]] = set()
+    seen: set[tuple[str, str, str]] = set()
     for raw in lines:
         line = raw.strip()
         if not line:
@@ -81,18 +106,36 @@ def _extract_grouped_hits(text: str) -> dict[str, list[dict[str, str]]]:
         lower = line.lower()
         for group_name, keywords in KEYWORD_GROUPS:
             if any(keyword in lower for keyword in keywords):
-                key = (group_name, line)
+                key = (group_name, source_label, line)
                 if key in seen:
                     continue
                 seen.add(key)
                 groups[group_name].append(
                     {
+                        "source": source_label,
                         "heading": heading,
                         "line": line,
                     }
                 )
                 break
     return groups
+
+
+def _merge_grouped_hits(grouped_items: list[dict[str, list[dict[str, str]]]]) -> dict[str, list[dict[str, str]]]:
+    merged: dict[str, list[dict[str, str]]] = {name: [] for name, _ in KEYWORD_GROUPS}
+    seen: set[tuple[str, str, str]] = set()
+    for groups in grouped_items:
+        for group_name, entries in groups.items():
+            bucket = merged.setdefault(group_name, [])
+            for item in entries:
+                source = str(item.get("source", "")).strip()
+                line = str(item.get("line", "")).strip()
+                key = (group_name, source, line)
+                if key in seen:
+                    continue
+                seen.add(key)
+                bucket.append(item)
+    return merged
 
 
 def _derive_live_overlay(snapshot: dict) -> dict[str, object]:
@@ -222,9 +265,9 @@ def _derive_reconciliation(snapshot: dict) -> list[str]:
 
 def _render_status_md(
     *,
-    guide_path: Path,
+    primary_guide_path: Path,
     guide_hash: str,
-    guide_encoding: str,
+    guide_sources: list[dict[str, str]],
     last_hash: str,
     grouped_hits: dict[str, list[dict[str, str]]],
     live_overlay: dict[str, object] | None,
@@ -235,9 +278,8 @@ def _render_status_md(
         "# Phase2 Guide Watch Status",
         "",
         f"- Refreshed at: `{_utc_now_iso()}`",
-        f"- Guide path: `{guide_path}`",
-        f"- Guide sha256: `{guide_hash}`",
-        f"- Guide decoding: `{guide_encoding}`",
+        f"- Primary guide path: `{primary_guide_path}`",
+        f"- Combined guide sha256: `{guide_hash}`",
         f"- Guide changed since last run: `{changed}`",
         "",
         "## Current Read",
@@ -245,6 +287,14 @@ def _render_status_md(
         "- It does not replace `docs/612-phase2/README.md`; it keeps the other model's actionable hints visible between Codex sessions.",
         "",
     ]
+    if guide_sources:
+        lines.extend(["## Guide Sources"])
+        for item in guide_sources:
+            lines.append(
+                f"- `{item.get('label', 'unknown')}`: `{item.get('path', '')}` "
+                f"(encoding `{item.get('encoding', 'n/a')}`, sha `{item.get('sha256', '')}`)"
+            )
+        lines.append("")
     if isinstance(live_overlay, dict) and live_overlay:
         lines.extend(
             [
@@ -282,12 +332,14 @@ def _render_status_md(
             lines.append("")
             continue
         for item in hits[:8]:
+            source = item.get("source", "").strip()
             heading = item.get("heading", "").strip()
             line = item.get("line", "").strip()
+            prefix = f"[{source}] " if source else ""
             if heading:
-                lines.append(f"- {heading}: {line}")
+                lines.append(f"- {prefix}{heading}: {line}")
             else:
-                lines.append(f"- {line}")
+                lines.append(f"- {prefix}{line}")
         lines.append("")
     lines.extend(
         [
@@ -307,6 +359,7 @@ def main() -> int:
     parser.add_argument("--state-json", type=Path, required=True)
     parser.add_argument("--history-jsonl", type=Path, required=True)
     parser.add_argument("--phase2-snapshot", type=Path, default=None)
+    parser.add_argument("--companion-guide", action="append", default=[])
     args = parser.parse_args()
 
     guide_path = Path(args.guide).expanduser().resolve()
@@ -315,8 +368,22 @@ def main() -> int:
     history_jsonl = Path(args.history_jsonl).expanduser().resolve()
     phase2_snapshot = Path(args.phase2_snapshot).expanduser().resolve() if args.phase2_snapshot else None
 
-    text, guide_encoding, guide_bytes = _load_guide_text(guide_path)
-    guide_hash = _sha256_bytes(guide_bytes)
+    companion_paths: list[Path] = []
+    for raw in args.companion_guide or []:
+        candidate = Path(str(raw)).expanduser().resolve()
+        if candidate.is_file() and candidate not in companion_paths and candidate != guide_path:
+            companion_paths.append(candidate)
+    for candidate in _discover_companion_guides(guide_path):
+        if candidate not in companion_paths:
+            companion_paths.append(candidate)
+
+    guide_docs: list[tuple[Path, str, str, bytes]] = []
+    primary_text, primary_encoding, primary_bytes = _load_guide_text(guide_path)
+    guide_docs.append((guide_path, primary_text, primary_encoding, primary_bytes))
+    for extra_path in companion_paths:
+        text, encoding, raw = _load_guide_text(extra_path)
+        guide_docs.append((extra_path, text, encoding, raw))
+    guide_hash = _combined_hash([(path, raw) for path, _, _, raw in guide_docs])
     last_hash = ""
     if state_json.is_file():
         try:
@@ -326,7 +393,21 @@ def main() -> int:
         except Exception:
             last_hash = ""
 
-    grouped_hits = _extract_grouped_hits(text)
+    grouped_hits = _merge_grouped_hits(
+        [
+            _extract_grouped_hits(text, source_label=path.name)
+            for path, text, _, _ in guide_docs
+        ]
+    )
+    guide_sources = [
+        {
+            "label": path.name,
+            "path": str(path),
+            "encoding": encoding,
+            "sha256": _sha256_bytes(raw),
+        }
+        for path, _, encoding, raw in guide_docs
+    ]
     live_overlay = {}
     reconciliation: list[str] = []
     if phase2_snapshot is not None and phase2_snapshot.is_file():
@@ -342,9 +423,9 @@ def main() -> int:
     history_jsonl.parent.mkdir(parents=True, exist_ok=True)
     status_md.write_text(
         _render_status_md(
-            guide_path=guide_path,
+            primary_guide_path=guide_path,
             guide_hash=guide_hash,
-            guide_encoding=guide_encoding,
+            guide_sources=guide_sources,
             last_hash=last_hash,
             grouped_hits=grouped_hits,
             live_overlay=live_overlay,
@@ -357,7 +438,7 @@ def main() -> int:
         "refreshed_at": _utc_now_iso(),
         "guide_path": str(guide_path),
         "guide_hash": guide_hash,
-        "guide_encoding": guide_encoding,
+        "guide_sources": guide_sources,
         "guide_changed": bool(last_hash and last_hash != guide_hash),
         "group_counts": {name: len(items) for name, items in grouped_hits.items()},
         "status_md": str(status_md),
