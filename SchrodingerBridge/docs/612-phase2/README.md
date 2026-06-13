@@ -169,10 +169,13 @@
   - [phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_tfloor005_seed42_b20a1.json)
   - [phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)
   - [phase2_i2sb_tok32_semantic_topogate_sigma0p02_residual_seed42_b20a1.json](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)
-  - the preferred diagnostic packet now inherits `vel_tok32_safe_semantic_topogate_k085 epoch_0003`
+  - the preferred diagnostic packet now inherits `vel_tok32_safe_semantic_topogate_k085_appalign epoch_0001`
   - and adds only one runtime-alignment probe:
     - `i2sb_predictor_time_floor = 0.05`
     - keep the exact posterior coefficients unchanged, but stop querying the `x_1` predictor at exact `t=0`
+  - this follows the guide read:
+    - once the recovered structure line remains below `transfer style = 0.68`,
+    - use the highest-style settled point inside that recovered band as the next exact-I2SB parent
 - 允许做:
   - NFE 对照
   - noise schedule 对照
