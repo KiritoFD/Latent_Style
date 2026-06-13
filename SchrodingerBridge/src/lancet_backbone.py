@@ -217,17 +217,27 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         structured_num_clusters = max(1, int(getattr(cfg, "tokenizer_num_clusters", 16)))
         structured_query_dim = max(8, int(getattr(cfg, "tokenizer_query_dim", 64)))
         structured_query_num_blocks = max(1, int(getattr(cfg, "tokenizer_query_num_blocks", 4)))
+        structured_spatial_dim = max(1, int(getattr(cfg, "tokenizer_spatial_dim", 0) or self.body_channels))
         structured_pe_temperature = max(0.0, float(getattr(cfg, "tokenizer_pe_temperature", 1.0)))
         structured_global_gate_hidden_dim = max(1, int(getattr(cfg, "tokenizer_global_gate_hidden_dim", style_dim)))
         structured_global_gate_scale = max(0.0, float(getattr(cfg, "tokenizer_global_gate_scale", 1.0)))
         structured_temperature = max(1e-3, float(getattr(cfg, "tokenizer_structured_temperature", 0.1)))
         structured_prompt_dim = max(1, int(getattr(cfg, "tokenizer_prompt_dim", 256)))
         structured_prompt_length = max(1, int(getattr(cfg, "tokenizer_prompt_length", 8)))
+        self.tokenizer_spatial_dim = structured_spatial_dim
+        self.structured_style_map_proj: nn.Module | None = None
+        if structured_spatial_dim != self.body_channels:
+            self.structured_style_map_proj = nn.Conv2d(structured_spatial_dim, self.body_channels, kernel_size=1, bias=False)
+            with torch.no_grad():
+                self.structured_style_map_proj.weight.zero_()
+                diag = min(int(self.body_channels), int(structured_spatial_dim))
+                for idx in range(diag):
+                    self.structured_style_map_proj.weight[idx, idx, 0, 0] = 1.0
         if self.tokenizer_family == "pure_latent_spatial":
             self.structured_style_tokenizer = PureLatentSpatialTokenizer(
                 num_styles=self.num_styles,
                 global_dim=style_dim,
-                spatial_dim=self.body_channels,
+                spatial_dim=structured_spatial_dim,
                 latent_channels=self.latent_channels,
                 num_clusters=structured_num_clusters,
                 temperature=structured_temperature,
@@ -241,7 +251,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             self.structured_style_tokenizer = DinoDictionaryTokenizer(
                 num_styles=self.num_styles,
                 global_dim=style_dim,
-                spatial_dim=self.body_channels,
+                spatial_dim=structured_spatial_dim,
                 dino_dim=structured_dino_dim,
                 num_clusters=structured_num_clusters,
                 temperature=structured_temperature,
@@ -250,7 +260,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             self.structured_style_tokenizer = CrossImageRoutingTokenizer(
                 num_styles=self.num_styles,
                 global_dim=style_dim,
-                spatial_dim=self.body_channels,
+                spatial_dim=structured_spatial_dim,
                 dino_dim=structured_dino_dim,
                 temperature=structured_temperature,
             )
@@ -258,7 +268,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             self.structured_style_tokenizer = ResidualSemanticAdapterTokenizer(
                 num_styles=self.num_styles,
                 global_dim=style_dim,
-                spatial_dim=self.body_channels,
+                spatial_dim=structured_spatial_dim,
                 dino_dim=structured_dino_dim,
                 num_clusters=structured_num_clusters,
                 temperature=structured_temperature,
@@ -267,7 +277,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             self.structured_style_tokenizer = VLMPromptStyleTokenizer(
                 num_styles=self.num_styles,
                 global_dim=style_dim,
-                spatial_dim=self.body_channels,
+                spatial_dim=structured_spatial_dim,
                 dino_dim=structured_dino_dim,
                 prompt_dim=structured_prompt_dim,
                 prompt_length=structured_prompt_length,

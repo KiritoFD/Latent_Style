@@ -290,6 +290,7 @@ class PureLatentSpatialTokenizer(_BaseStructuredTokenizer):
                     "family": "pure_latent_spatial",
                     "source": "content_latent",
                     "num_clusters": self.num_clusters,
+                    "spatial_dim": self.spatial_dim,
                     "pe_temp": self.pe_temperature,
                     "query_dim": self.query_dim,
                     "query_num_blocks": self.query_num_blocks,

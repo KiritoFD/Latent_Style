@@ -196,6 +196,7 @@ class ModelConfig:
     tokenizer_num_clusters: int = 16
     tokenizer_query_dim: int = 64
     tokenizer_query_num_blocks: int = 4
+    tokenizer_spatial_dim: int = 0
     tokenizer_pe_temperature: float = 1.0
     tokenizer_global_gate_hidden_dim: int = 160
     tokenizer_global_gate_scale: float = 1.0

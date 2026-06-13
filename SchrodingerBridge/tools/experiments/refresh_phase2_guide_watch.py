@@ -9,10 +9,10 @@ from pathlib import Path
 
 KEYWORD_GROUPS: list[tuple[str, tuple[str, ...]]] = [
     ("structure_breakthrough", ("topogate", "appalign", "lpips", "tradeoff")),
-    ("style_lift_options", ("w_kinetic", "residual_gain", "style_spatial_pre_gain_16", "proximal_residual_energy_weight")),
-    ("i2sb_path", ("i2sb", "sigma0.02", "sde", "brownian")),
-    ("structure_backups", ("pnp", "self-inject", "pc solver", "solver_pc")),
-    ("tokenizer_read", ("tokenizer", "query_dim", "query_num_blocks", "num_clusters", "attn_entropy", "attn_max", "revert")),
+    ("style_lift_options", ("w_kinetic", "residual_gain", "style_spatial_pre_gain_16", "proximal_residual_energy_weight", "semantic_self_topology_blend", "topology_blend")),
+    ("i2sb_path", ("i2sb", "sigma0.02", "sde", "sde-em", "stochastic flow matching", "brownian", "endpoint", "schrödinger bridge")),
+    ("structure_backups", ("pnp", "self-inject", "pc solver", "solver_pc", "predictor-corrector", "langevin", "euler-maruyama", "solver_unsb_cycle")),
+    ("tokenizer_read", ("tokenizer", "query_dim", "query_num_blocks", "num_clusters", "spatial_dim", "attn_entropy", "attn_max", "positional encoding", "sinusoidal", "revert")),
     ("cleanup", ("cleanup", "ckpt", "formal lane", "immortal")),
 ]
 

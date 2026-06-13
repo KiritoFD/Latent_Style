@@ -376,17 +376,21 @@ def main() -> int:
         str(int(args.runtime_guard_min_consecutive_polls)),
         "--runtime-guard-min-mode",
         runtime_guard_min_mode,
-        "--",
-        "bash",
-        "-lc",
-        (
-            "set -euo pipefail; "
-            "export PYTHONPATH=SchrodingerBridge/src; "
-            f"{args.remote_python} SchrodingerBridge/src/run.py --config {args.remote_wsl_cwd.rstrip('/')}/{config_rel.as_posix()}"
-        ),
     ]
     for sync_path in sync_paths:
         cmd.extend(["--sync-path", sync_path])
+    cmd.extend(
+        [
+            "--",
+            "bash",
+            "-lc",
+            (
+                "set -euo pipefail; "
+                "export PYTHONPATH=SchrodingerBridge/src; "
+                f"{args.remote_python} SchrodingerBridge/src/run.py --config {args.remote_wsl_cwd.rstrip('/')}/{config_rel.as_posix()}"
+            ),
+        ]
+    )
     proc = subprocess.run(cmd, cwd=str(WORKSPACE), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace", check=False)
     print(proc.stdout, end="" if proc.stdout.endswith("\n") else "\n")
     rc = int(proc.returncode)
