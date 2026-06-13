@@ -183,3 +183,12 @@ Date: 2026-06-13
         - still in-band
         - no breakout on style
         - but the line is still producing new in-band Pareto points, so the formal lane remains justified for now
+      - third settled authority point:
+        - `epoch_0004`
+        - transfer `0.673399 / 0.376463`
+        - all-pairs `0.701161 / 0.374695`
+      - updated interpretation:
+        - still in-band
+        - still below the old style shelf `0.701666`
+        - but now better on LPIPS than the old safe parent
+        - so the line is still alive and should keep the formal slot for now

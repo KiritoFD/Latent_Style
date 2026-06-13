@@ -189,9 +189,17 @@ Date: 2026-06-13
   - eval wall `220.31s`
   - generation `121.90s`
   - VAE decode `55.88s`
+- third settled authority point:
+  - `epoch_0004`
+  - transfer `0.673399 / 0.376463`
+  - all-pairs `0.701161 / 0.374695`
+  - identity `0.812208 / 0.367622`
+  - eval wall `234.73s`
+  - generation `129.62s`
+  - VAE decode `57.91s`
 - convergence read:
-  - `row_count = 2`
-  - `best_epoch = epoch_0002`
+  - `row_count = 3`
+  - `best_epoch = epoch_0004`
   - `best_in_newest_2 = true`
   - `tail_flat = false`
   - `converged = false`
@@ -215,11 +223,12 @@ Date: 2026-06-13
   - compared with the previous safe velocity parent best `all-pairs 0.701666 / 0.381724`, this packet is currently:
     - `epoch_0002` is lower on style and worse on LPIPS
     - `epoch_0003` is lower on style but better on LPIPS
+    - `epoch_0004` is still slightly lower on style, but now also better on LPIPS
 - interpretation:
-  - the tokenizer refresh has still not shown a breakout above the old `0.701666 / 0.381724` shelf
-  - `epoch_0003` created a new in-band Pareto point by trading style for better LPIPS
-  - that means the line is still evolving rather than flat-closing
-  - the packet is currently training in `epoch_4`, with the next meaningful decision deferred to the next settled authority point
+  - the tokenizer refresh still has not produced the desired breakout above the old shelf
+  - but `epoch_0004` does create a strictly stronger in-band point than `epoch_0003`
+  - the line is therefore still alive as a real improvement path rather than a flat plateau
+  - the packet is currently training in `epoch_5`, with the next meaningful decision deferred to the next settled authority point
   - keep the formal lane alive until either:
     - a better in-band point appears
     - or the same plateau logic closes it later
