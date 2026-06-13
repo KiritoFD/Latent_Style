@@ -197,6 +197,11 @@ Date: 2026-06-13
     - if by `epoch_0003` it still has no shelf break
     - and the newest settled points do not recover style
     - close the lane early instead of waiting for the longer generic patience
+  - watcher contract for this packet now matches that read exactly:
+    - style recovery alone is not enough
+    - the watcher now requires joint recovery against the old shelf:
+      - `all-pairs style >= 0.701666` and `LPIPS <= 0.381724`
+      - or `transfer style >= 0.673934` and `LPIPS <= 0.384340`
 
 ## Intended Read
 
