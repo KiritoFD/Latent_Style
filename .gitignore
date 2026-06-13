@@ -111,3 +111,9 @@ SchrodingerBridge/aaai_submission/**/*.log
 SchrodingerBridge/aaai_submission/**/*.out
 SchrodingerBridge/aaai_submission/**/*.xdv
 SchrodingerBridge/aaai_submission/**/*.synctex.gz
+node_modules/
+.opencode/
+*.stdout.log
+*.stderr.log
+package-lock.json
+package.json
