@@ -151,6 +151,34 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         self.output_moment_match = bool(getattr(cfg, "output_moment_match", False))
         self.output_moment_match_eps = max(1e-8, float(getattr(cfg, "output_moment_match_eps", 1e-6)))
         self.output_moment_match_train_only = bool(getattr(cfg, "output_moment_match_train_only", False))
+        self.output_appearance_alignment_mode = str(getattr(cfg, "output_appearance_alignment_mode", "none")).strip().lower()
+        if self.output_appearance_alignment_mode not in {"none", "tokenizer_latent_affine"}:
+            self.output_appearance_alignment_mode = "none"
+        self.output_appearance_hidden_dim = max(4, int(getattr(cfg, "output_appearance_hidden_dim", 96)))
+        self.output_appearance_log_scale_span = max(0.0, float(getattr(cfg, "output_appearance_log_scale_span", 0.22314355131420976)))
+        self.output_appearance_shift_span = max(0.0, float(getattr(cfg, "output_appearance_shift_span", 0.35)))
+        self.output_appearance_blend = max(0.0, min(1.0, float(getattr(cfg, "output_appearance_blend", 1.0))))
+        self.output_appearance_use_spatial_stats = bool(getattr(cfg, "output_appearance_use_spatial_stats", True))
+        self.output_appearance_use_gate_mask_stats = bool(getattr(cfg, "output_appearance_use_gate_mask_stats", True))
+        self.output_appearance_head: nn.Module | None = None
+        self.last_output_appearance_debug: dict[str, float] = {}
+        self.last_output_style_context: dict[str, object] | None = None
+        if self.output_appearance_alignment_mode != "none":
+            appearance_feature_dim = style_dim
+            if self.output_appearance_use_spatial_stats:
+                appearance_feature_dim += int(self.body_channels) * 2
+            if self.output_appearance_use_gate_mask_stats:
+                appearance_feature_dim += 4
+            self.output_appearance_head = nn.Sequential(
+                nn.LayerNorm(appearance_feature_dim),
+                nn.Linear(appearance_feature_dim, self.output_appearance_hidden_dim),
+                nn.SiLU(),
+                nn.Linear(self.output_appearance_hidden_dim, int(self.latent_channels) * 2),
+            )
+            last = self.output_appearance_head[-1]
+            if isinstance(last, nn.Linear):
+                nn.init.zeros_(last.weight)
+                nn.init.zeros_(last.bias)
         self.use_style_blender = bool(getattr(cfg, "use_style_blender", False))
         if self.upsample_blur_kernel not in {"box3", "gaussian3"}:
             self.upsample_blur_kernel = "box3"

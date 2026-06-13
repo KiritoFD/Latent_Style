@@ -159,6 +159,107 @@ class LatentAdaCUTRuntimeMixin:
     def _prepare_spatial_map(self, style_map: torch.Tensor | None, target: torch.Tensor) -> torch.Tensor | None:
         return self._match_style_map(style_map, target)
 
+    def _cache_output_style_context(
+        self,
+        *,
+        source_latent: torch.Tensor,
+        style_code: torch.Tensor,
+        style_maps: StyleMaps,
+    ) -> None:
+        self.last_output_style_context = {
+            "source_ptr": int(source_latent.data_ptr()),
+            "source_shape": tuple(int(v) for v in source_latent.shape),
+            "style_code": style_code,
+            "style_maps": StyleMaps(
+                map_16=style_maps.map_16,
+                gate_16=style_maps.gate_16,
+                mask_16=style_maps.mask_16,
+                aux_16=style_maps.aux_16,
+                family=str(getattr(style_maps, "family", getattr(self, "tokenizer_family", "legacy_factorized"))),
+                debug=dict(getattr(style_maps, "debug", {}) or {}),
+            ),
+        }
+
+    def _cached_output_style_context_matches(self, source_latent: torch.Tensor | None) -> bool:
+        cached = getattr(self, "last_output_style_context", None)
+        if not isinstance(cached, dict) or not torch.is_tensor(source_latent):
+            return False
+        return (
+            int(cached.get("source_ptr", -1)) == int(source_latent.data_ptr())
+            and tuple(cached.get("source_shape", ())) == tuple(int(v) for v in source_latent.shape)
+        )
+
+    def _output_appearance_condition_features(
+        self,
+        *,
+        pred: torch.Tensor,
+        style_code: torch.Tensor,
+        style_maps: StyleMaps,
+    ) -> torch.Tensor:
+        batch = int(pred.shape[0])
+        device = pred.device
+        dtype = pred.dtype
+        code = style_code.to(device=device, dtype=dtype)
+        if code.shape[0] == 1 and batch > 1:
+            code = code.expand(batch, -1)
+        feats: list[torch.Tensor] = [code]
+        if self.output_appearance_use_spatial_stats:
+            map_16 = style_maps.map_16
+            if torch.is_tensor(map_16):
+                spatial = map_16.to(device=device, dtype=dtype)
+                if spatial.shape[0] == 1 and batch > 1:
+                    spatial = spatial.expand(batch, -1, -1, -1)
+                feats.append(spatial.mean(dim=(2, 3)))
+                feats.append(spatial.std(dim=(2, 3), unbiased=False))
+            else:
+                zeros = pred.new_zeros((batch, int(self.body_channels)))
+                feats.extend((zeros, zeros))
+        if self.output_appearance_use_gate_mask_stats:
+            for tensor in (style_maps.gate_16, style_maps.mask_16):
+                if torch.is_tensor(tensor):
+                    stat = tensor.to(device=device, dtype=dtype)
+                    if stat.shape[0] == 1 and batch > 1:
+                        stat = stat.expand(batch, -1, -1, -1)
+                    feats.append(stat.mean(dim=(2, 3)))
+                    feats.append(stat.std(dim=(2, 3), unbiased=False))
+                else:
+                    zeros = pred.new_zeros((batch, 1))
+                    feats.extend((zeros, zeros))
+        return torch.cat(feats, dim=1)
+
+    def _apply_output_appearance_alignment(
+        self,
+        pred: torch.Tensor,
+        *,
+        style_code: torch.Tensor,
+        style_maps: StyleMaps,
+    ) -> torch.Tensor:
+        if self.output_appearance_alignment_mode != "tokenizer_latent_affine" or self.output_appearance_head is None:
+            self.last_output_appearance_debug = {}
+            return pred
+        features = self._output_appearance_condition_features(
+            pred=pred,
+            style_code=style_code,
+            style_maps=style_maps,
+        )
+        raw = self.output_appearance_head(features)
+        scale_raw, shift_raw = raw.chunk(2, dim=1)
+        pred_mean = pred.mean(dim=(2, 3), keepdim=True)
+        pred_std = pred.std(dim=(2, 3), keepdim=True, unbiased=False).clamp_min(self.output_moment_match_eps)
+        log_scale = torch.tanh(scale_raw).view(pred.shape[0], pred.shape[1], 1, 1) * self.output_appearance_log_scale_span
+        scale = torch.exp(log_scale)
+        shift = torch.tanh(shift_raw).view(pred.shape[0], pred.shape[1], 1, 1) * self.output_appearance_shift_span * pred_std
+        adjusted = (pred - pred_mean) * scale + pred_mean + shift
+        out = pred.lerp(adjusted, self.output_appearance_blend)
+        self.last_output_appearance_debug = {
+            "output_appearance_active": 1.0,
+            "output_appearance_scale_mean": float(scale.detach().float().mean().cpu().item()),
+            "output_appearance_scale_std": float(scale.detach().float().std(unbiased=False).cpu().item()),
+            "output_appearance_shift_abs": float(shift.detach().float().abs().mean().cpu().item()),
+            "output_appearance_blend": float(self.output_appearance_blend),
+        }
+        return out
+
     def _prepare_style_context(
         self,
         *,
@@ -594,6 +695,14 @@ class LatentAdaCUTRuntimeMixin:
         )
         if structured_ctx is not None:
             style_code, style_maps = structured_ctx
+        if self.output_appearance_alignment_mode != "none":
+            self._cache_output_style_context(
+                source_latent=x,
+                style_code=style_code,
+                style_maps=style_maps,
+            )
+        else:
+            self.last_output_style_context = None
         pure_latent_family = str(getattr(self, "tokenizer_family", "legacy_factorized")) == "pure_latent_spatial"
 
         if override_palette is not None:

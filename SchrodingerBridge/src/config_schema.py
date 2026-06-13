@@ -289,6 +289,13 @@ class ModelConfig:
     output_moment_match: bool = False
     output_moment_match_eps: float = 1e-6
     output_moment_match_train_only: bool = False
+    output_appearance_alignment_mode: str = "none"
+    output_appearance_hidden_dim: int = 96
+    output_appearance_log_scale_span: float = 0.22314355131420976
+    output_appearance_shift_span: float = 0.35
+    output_appearance_blend: float = 1.0
+    output_appearance_use_spatial_stats: bool = True
+    output_appearance_use_gate_mask_stats: bool = True
     proximal_mode: str = "off"
     proximal_hidden_channels: int = 64
     proximal_highpass_kernel: int = 5
