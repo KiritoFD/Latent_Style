@@ -25,6 +25,23 @@ def _run(cmd: list[str]) -> int:
     return int(proc.returncode)
 
 
+def _collect_config_dependency_paths(config_path: Path, *, workspace_root: Path, seen: set[Path] | None = None) -> list[Path]:
+    seen = seen or set()
+    path = config_path.expanduser().resolve()
+    if path in seen:
+        return []
+    seen.add(path)
+    with path.open("r", encoding="utf-8") as f:
+        payload = json.load(f)
+    deps: list[Path] = []
+    base_raw = payload.get("_base")
+    if base_raw:
+        base_path = (path.parent / str(base_raw)).resolve()
+        deps.extend(_collect_config_dependency_paths(base_path, workspace_root=workspace_root, seen=seen))
+    deps.append(path.relative_to(workspace_root.resolve()))
+    return deps
+
+
 def _looks_like_wsl_hcs_failure(text: str) -> bool:
     normalized = str(text or "").replace("\x00", "").upper()
     return "HCS_E_SERVICE_NOT_AVAILABLE" in normalized or "WSL/SERVICE/CREATEINSTANCE/CREATEVM/HCS/" in normalized
@@ -299,6 +316,22 @@ def main() -> int:
         if smoke_rc != 0:
             raise RuntimeError(f"Refusing remote launch because smoke failed for config={config_abs}")
 
+    config_dependency_paths = _collect_config_dependency_paths(config_abs, workspace_root=WORKSPACE)
+    sync_paths: list[str] = []
+    seen_sync: set[str] = set()
+    for rel in [
+        Path("SchrodingerBridge/src"),
+        Path("SchrodingerBridge/tools/experiments/collect_round2_eval_curve.py"),
+        Path("SchrodingerBridge/tools/experiments/report_round2_convergence.py"),
+        Path("SchrodingerBridge/tools/experiments/update_round2_family_manifest.py"),
+        *config_dependency_paths,
+    ]:
+        item = str(rel.as_posix())
+        if item in seen_sync:
+            continue
+        seen_sync.add(item)
+        sync_paths.append(item)
+
     launch = SB_ROOT / "tools" / "experiments" / "launch_remote_wsl_command.py"
     task_name = f"{str(args.task_prefix).strip()}-{config_abs.stem}-train"
     cmd = [
@@ -312,16 +345,6 @@ def main() -> int:
         str(args.remote_wsl_cwd),
         "--python-bin",
         str(args.remote_python),
-        "--sync-path",
-        "SchrodingerBridge/src",
-        "--sync-path",
-        "SchrodingerBridge/tools/experiments/collect_round2_eval_curve.py",
-        "--sync-path",
-        "SchrodingerBridge/tools/experiments/report_round2_convergence.py",
-        "--sync-path",
-        "SchrodingerBridge/tools/experiments/update_round2_family_manifest.py",
-        "--sync-path",
-        str(config_rel),
         "--verify-python-file",
         "SchrodingerBridge/src/run.py",
         "--verify-python-file",
@@ -362,6 +385,8 @@ def main() -> int:
             f"{args.remote_python} SchrodingerBridge/src/run.py --config {args.remote_wsl_cwd.rstrip('/')}/{config_rel.as_posix()}"
         ),
     ]
+    for sync_path in sync_paths:
+        cmd.extend(["--sync-path", sync_path])
     proc = subprocess.run(cmd, cwd=str(WORKSPACE), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace", check=False)
     print(proc.stdout, end="" if proc.stdout.endswith("\n") else "\n")
     rc = int(proc.returncode)
