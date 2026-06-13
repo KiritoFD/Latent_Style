@@ -73,6 +73,8 @@ def _derive_live_overlay(snapshot: dict) -> dict[str, object]:
     remote_structure = snapshot.get("remote_structure_status") if isinstance(snapshot.get("remote_structure_status"), dict) else {}
     curve = remote_structure.get("curve_summary") if isinstance(remote_structure.get("curve_summary"), dict) else {}
     latest = curve.get("latest") if isinstance(curve.get("latest"), dict) else {}
+    convergence = remote_structure.get("convergence") if isinstance(remote_structure.get("convergence"), dict) else {}
+    pending_epochs = remote_structure.get("pending_checkpoint_epochs") if isinstance(remote_structure.get("pending_checkpoint_epochs"), list) else []
 
     transfer_style = _float_or_none(latest.get("transfer_clip_style"))
     transfer_lpips = _float_or_none(latest.get("transfer_content_lpips"))
@@ -92,17 +94,33 @@ def _derive_live_overlay(snapshot: dict) -> dict[str, object]:
         and allpairs_lpips is not None
         and allpairs_lpips <= 0.381724
     )
-    ready_for_guide_pivot = bool(
+    min_settled_epoch = int(str(structure.get("watch_min_settled_epoch", "")).strip() or 0)
+    min_epoch_met = latest_epoch_int >= min_settled_epoch if min_settled_epoch > 0 else True
+    best_in_newest_2 = bool(convergence.get("best_in_newest_2")) if isinstance(convergence, dict) else False
+    tail_flat = bool(convergence.get("tail_flat")) if isinstance(convergence, dict) else False
+    close_gate_ready = bool(
         str(structure.get("packet_id", "")).strip() == "vel_tok32_safe_semantic_topogate_k085_appalign"
-        and latest_epoch_int >= 2
         and recovered_structure
         and style_limited
+        and min_epoch_met
+        and (not best_in_newest_2)
+        and tail_flat
+        and not pending_epochs
     )
+    close_gate_blockers: list[str] = []
+    if not min_epoch_met:
+        close_gate_blockers.append(f"latest_settled_epoch<{min_settled_epoch}")
+    if best_in_newest_2:
+        close_gate_blockers.append("best_in_newest_2=true")
+    if not tail_flat:
+        close_gate_blockers.append("tail_flat=false")
+    if pending_epochs:
+        close_gate_blockers.append("pending_checkpoint_epochs")
 
-    if ready_for_guide_pivot:
-        recommendation = "let_appalign_finish_current_close_gate_then_launch_i2sb_sigma0p02_tfloor005"
+    if close_gate_ready:
+        recommendation = "launch_i2sb_sigma0p02_tfloor005_now"
         secondary = "after_i2sb_read_if_still_needed_run_eval_only_pc_solver"
-    elif recovered_structure:
+    elif recovered_structure and style_limited:
         recommendation = "continue_appalign_until_close_gate"
         secondary = "keep_i2sb_sigma0p02_tfloor005_as_next_diagnostic"
     else:
@@ -119,7 +137,8 @@ def _derive_live_overlay(snapshot: dict) -> dict[str, object]:
         "latest_all_pairs_content_lpips": allpairs_lpips,
         "style_limited_under_recovered_structure": style_limited,
         "recovered_structure_band": recovered_structure,
-        "ready_for_guide_pivot": ready_for_guide_pivot,
+        "close_gate_ready": close_gate_ready,
+        "close_gate_blockers": close_gate_blockers,
         "recommended_next_action": recommendation,
         "recommended_followup_after_next_action": secondary,
         "preferred_i2sb_packet": str(i2sb.get("packet_id", "")).strip(),
@@ -157,7 +176,12 @@ def _render_status_md(
                 f"- Transfer `CLIP-S / LPIPS`: `{_float_or_none(live_overlay.get('latest_transfer_clip_style')) or 0.0:.6f} / {(_float_or_none(live_overlay.get('latest_transfer_content_lpips')) or 0.0):.6f}`" if _float_or_none(live_overlay.get("latest_transfer_clip_style")) is not None and _float_or_none(live_overlay.get("latest_transfer_content_lpips")) is not None else "- Transfer `CLIP-S / LPIPS`: n/a",
                 f"- All-pairs `CLIP-S / LPIPS`: `{_float_or_none(live_overlay.get('latest_all_pairs_clip_style')) or 0.0:.6f} / {(_float_or_none(live_overlay.get('latest_all_pairs_content_lpips')) or 0.0):.6f}`" if _float_or_none(live_overlay.get("latest_all_pairs_clip_style")) is not None and _float_or_none(live_overlay.get("latest_all_pairs_content_lpips")) is not None else "- All-pairs `CLIP-S / LPIPS`: n/a",
                 f"- Style-limited under recovered structure: `{bool(live_overlay.get('style_limited_under_recovered_structure', False))}`",
-                f"- Ready for guide pivot: `{bool(live_overlay.get('ready_for_guide_pivot', False))}`",
+                f"- Close gate ready: `{bool(live_overlay.get('close_gate_ready', False))}`",
+                (
+                    f"- Close gate blockers: `{', '.join(str(x) for x in (live_overlay.get('close_gate_blockers') or []))}`"
+                    if live_overlay.get("close_gate_blockers")
+                    else "- Close gate blockers: `none`"
+                ),
                 f"- Recommended next action: `{str(live_overlay.get('recommended_next_action', 'n/a'))}`",
                 f"- Recommended follow-up: `{str(live_overlay.get('recommended_followup_after_next_action', 'n/a'))}`",
                 "",
