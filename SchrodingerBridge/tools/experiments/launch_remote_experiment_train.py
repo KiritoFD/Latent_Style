@@ -25,6 +25,11 @@ def _run(cmd: list[str]) -> int:
     return int(proc.returncode)
 
 
+def _looks_like_wsl_hcs_failure(text: str) -> bool:
+    normalized = str(text or "").replace("\x00", "").upper()
+    return "HCS_E_SERVICE_NOT_AVAILABLE" in normalized or "WSL/SERVICE/CREATEINSTANCE/CREATEVM/HCS/" in normalized
+
+
 def _run_smoke(
     *,
     config_path: Path,
@@ -302,7 +307,15 @@ def main() -> int:
             f"{args.remote_python} SchrodingerBridge/src/run.py --config {args.remote_wsl_cwd.rstrip('/')}/{config_rel.as_posix()}"
         ),
     ]
-    rc = _run(cmd)
+    proc = subprocess.run(cmd, cwd=str(WORKSPACE), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace", check=False)
+    print(proc.stdout, end="" if proc.stdout.endswith("\n") else "\n")
+    rc = int(proc.returncode)
+    if _looks_like_wsl_hcs_failure(proc.stdout):
+        print(
+            "[launch_remote_experiment_train] remote host reports WSL HCS service unavailable. "
+            "This usually means VirtualMachinePlatform / hypervisor changes need a Windows reboot before WSL2 can start.",
+            flush=True,
+        )
     if rc == 0 or not bool(args.fallback_direct_nohup_on_health_failure):
         return rc
     if rc == 24:
