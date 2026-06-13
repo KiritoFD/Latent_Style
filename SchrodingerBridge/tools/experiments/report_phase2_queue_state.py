@@ -153,6 +153,9 @@ def _refresh_lane_current_read_against_formal(
     formal_reference: dict[str, object],
 ) -> dict[str, object]:
     out = dict(lane_payload)
+    lane_status = str(out.get("status", "")).strip().lower()
+    if lane_status.startswith("closed"):
+        return out
     if not isinstance(remote_lane_status, dict):
         return out
     curve = remote_lane_status.get("curve_summary")

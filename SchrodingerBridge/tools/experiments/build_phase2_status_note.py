@@ -356,7 +356,9 @@ def build_note(snapshot: dict, *, report_date: str) -> str:
         f"- Structure live state: `{structure_live_state}`",
         (
             f"- Structure GPU: {_fmt_mib((remote_structure.get('remote_gpu') or [{}])[0].get('memory_used_mib'), (remote_structure.get('remote_gpu') or [{}])[0].get('memory_total_mib'))}"
-            if isinstance(remote_structure.get("remote_gpu"), list) and remote_structure.get("remote_gpu")
+            if structure_status_text in {"running", "launch_requested"}
+            and isinstance(remote_structure.get("remote_gpu"), list)
+            and remote_structure.get("remote_gpu")
             else "- Structure GPU: n/a"
         ),
         f"- Structure latest settled epoch: `{remote_structure.get('latest_settled_epoch', '') or 'n/a'}`",
