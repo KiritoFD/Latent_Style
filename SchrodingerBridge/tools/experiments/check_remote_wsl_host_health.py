@@ -151,7 +151,7 @@ def main() -> int:
         args.host,
         args.port,
         args.user,
-        f"wsl -d {args.wsl_distro} --exec bash -lc 'echo WSL_OK'",
+        f"wsl -d {args.wsl_distro} --exec /bin/echo WSL_OK",
     )
 
     feature_states = _feature_state_map(features.stdout)
