@@ -166,6 +166,37 @@ def _runtime_observability_brief(summary_like: object) -> str:
     return ", ".join(parts) if parts else "n/a"
 
 
+def _train_metrics_observability_brief(metrics_like: object) -> str:
+    if not isinstance(metrics_like, dict):
+        return "n/a"
+    parts: list[str] = []
+    display_keys = [
+        ("epoch", "train_ep", 0),
+        ("structured_style_tokenizer_attn_effective_count", "tok_eff", 1),
+        ("structured_style_tokenizer_gate_mean", "gate", 3),
+        ("structured_style_tokenizer_mask_mean", "mask", 3),
+        ("semantic_topology_attn_entropy", "topo_ent", 3),
+        ("output_appearance_active", "app_on", 1),
+        ("output_appearance_scale_mean", "app_s", 3),
+        ("output_appearance_shift_abs", "app_d", 3),
+        ("bridge_noise_schedule_exact", "bex", 0),
+        ("bridge_sigma", "sigma", 3),
+    ]
+    for key, label, digits in display_keys:
+        value = _float_or_none(metrics_like.get(key))
+        if value is None:
+            continue
+        parts.append(f"{label}={value:.{digits}f}")
+    return ", ".join(parts) if parts else "n/a"
+
+
+def _best_observability_brief(summary_like: object, train_metrics_like: object) -> str:
+    summary_brief = _runtime_observability_brief(summary_like)
+    if summary_brief != "n/a":
+        return summary_brief
+    return _train_metrics_observability_brief(train_metrics_like)
+
+
 def build_note(snapshot: dict, *, report_date: str) -> str:
     resolved = snapshot.get("resolved_packets", {}) if isinstance(snapshot.get("resolved_packets"), dict) else {}
     formal = resolved.get("formal_lane", {}) if isinstance(resolved.get("formal_lane"), dict) else {}
@@ -342,13 +373,13 @@ def build_note(snapshot: dict, *, report_date: str) -> str:
             if structure_latest
             else "- Structure latest `style - IDT`: n/a"
         ),
-        f"- Structure runtime observability: {_runtime_observability_brief(remote_structure.get('latest_summary'))}",
+        f"- Structure runtime observability: {_best_observability_brief(remote_structure.get('latest_summary'), remote_structure.get('latest_train_metrics'))}",
         f"- I2SB diagnostic preferred packet: `{i2sb.get('packet_id', 'n/a')}`",
         f"- I2SB config: {i2sb_cfg}" if i2sb_cfg else "- I2SB config: n/a",
         f"- I2SB note: {i2sb_note}" if i2sb_note else "- I2SB note: n/a",
         f"- I2SB read: {i2sb.get('current_read', 'n/a')}",
         f"- I2SB live state: `{i2sb_live_state}`",
-        f"- I2SB runtime observability: {_runtime_observability_brief(remote_i2sb.get('latest_summary'))}",
+        f"- I2SB runtime observability: {_best_observability_brief(remote_i2sb.get('latest_summary'), remote_i2sb.get('latest_train_metrics'))}",
         "",
         "## Contract Read",
         "- `true I2SB` is already implemented as exact-Brownian endpoint transport with `solver_i2sb`.",
