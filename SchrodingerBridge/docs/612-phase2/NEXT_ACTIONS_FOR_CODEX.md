@@ -356,3 +356,295 @@ done
 **推荐执行策略**: 先做完 1→2→3（推理，不做重训）。如果三者加起来 style 从 0.70 推到 0.71-0.72 → 成功了。
 如果不到 0.72 → 选方向 1+6+2 组合训练（kinetic 衰减 + topogate 解锁 + I2SB σ=0.02）。
 如果还不够 → 方向 4+5（多尺度 topogate + mixed prediction）。
+
+---
+
+# 第三部分: 从第一性原理出发的革命性方向
+
+> 以下方向不从"调参"出发，而是从风格迁移的数学本质、
+> 最优传输的几何结构、薛定谔桥的随机过程含义、以及潜空间的微分几何性质出发。
+> 每个方向附有理论论证和具体的代码落地路径。
+
+---
+
+## 革命方向 A: 潜空间黎曼流匹配 (Riemannian Latent Flow Matching)
+
+### 理论
+
+当前框架的核心假设——VAE 潜空间是平坦欧氏空间——是错的。
+
+SDXL VAE 将 512×512×3 的图像压缩到 4×64×64 的潜变量。这个压缩映射不是等距的：
+两个在像素空间距离为 d 的图像，在潜空间的距离不是 d 的线性函数。
+潜空间本身是一个弯曲的流形 $\mathcal{M} \subset \mathbb{R}^{4 \times 64 \times 64}$，带有诱导度量 $g_{ij}$。
+
+**当前做法**: 在欧氏空间中沿直线 $z_t = (1-t)z_0 + t z_1$ 插值。这条直线大概率**穿出数据流形**——
+中间状态对应的图像不是"半风格化"的照片，而是无意义的噪声。这就是为什么中间 state 的预测质量差，也是为什么 Euler 多步积分有时比单步还差。
+
+**正确做法**: 在流形上沿测地线 (geodesic) 传输。测地线同样是 $z_t = (1-t)z_0 + t z_1$，但是**速度场被投影到切空间**：
+$$v_{\text{geo}}(z, t) = \Pi_{\mathcal{T}_z\mathcal{M}} \left[ v_{\text{raw}}(z, t) \right]$$
+
+其中 $\Pi$ 是到流形切空间的投影算子。
+
+### 为什么这能推高 style
+
+当前 style 卡在 0.70 的根本原因可能是：模型在 t≈0.8-1.0 的关键区间，由于预测的中间状态已经 off-manifold，
+无法产生高质量的"收尾"笔触。测地线传输保证每一步都在流形上，每一步的预测都是"有效的图像状态"，
+收尾阶段自然更锐利。
+
+### 实现路径
+
+**不需要精确计算黎曼度量**。可以用廉价代理：
+
+```python
+# 在 lancet_runtime.py 的 transport_step 中:
+# 计算 VAE decoder 对当前状态的 Jacobian 的近似
+# 用这个近似构造切空间投影
+def _riemannian_projection(self, v_raw, z):
+    # 用 VAE decoder 的前几层作为"流形探测器"
+    # 如果 v_raw 会导致 decoder 输出"不自然"的图像 → 抑制该分量
+    z_next = z + v_raw * dt
+    # 用 decoder 浅层特征的一致性作为 on-manifold 判断
+    feat_z = self.vae_encoder_shallow(z)
+    feat_next = self.vae_encoder_shallow(z_next)
+    # 特征差异大的方向 = off-manifold 方向 → 抑制
+    gate = torch.sigmoid(-10.0 * (feat_next - feat_z).abs().mean(dim=1, keepdim=True))
+    return v_raw * gate
+```
+
+**更简单的方式**: 用 `diffeomorphic_stroke` 作为 Riemannian retraction。
+每次 transport step 后，用微小的 diffeomorphic warping 把状态拉回流形（已有代码，只需改调用位置）。
+
+### 收益与风险
+
+- **预期**: style +0.03~0.05, LPIPS 不变或略好
+- **难度**: 中高（需要理解流形投影的数学）
+- **风险**: 如果流形投影太强→风格被压制；太弱→无效果
+
+---
+
+## 革命方向 B: Gromov-Wasserstein 风格匹配 (拓扑同构传输)
+
+### 理论
+
+当前的最优传输（OT）匹配是通过 SWD/Sinkhorn 在潜空间做**逐点匹配**：
+$$C_{ij} = \|z_i^{\text{content}} - z_j^{\text{style}}\|_2^2$$
+
+这个成本矩阵只比较了单个潜变量的值，没有比较**内部结构**。
+如果内容图的一棵树在潜空间由一组特定空间关系的向量编码，
+那么 OT 应该保证树在目标风格的潜变量中仍然是一棵树——即保持内部的 pairwise distance 结构。
+
+**Gromov-Wasserstein 距离**不比较点与点，而是比较"距离的距离"：
+$$C_{ijkl}^{\text{GW}} = \left| d_{\text{content}}(z_i, z_j) - d_{\text{style}}(z_k', z_l') \right|^2$$
+
+在最优传输计划 $\Pi$ 下：
+$$\text{GW}(\mu, \nu) = \min_{\Pi} \sum_{i,j,k,l} C_{ijkl}^{\text{GW}} \Pi_{ik} \Pi_{jl}$$
+
+### 为什么这能解决 style-structure tradeoff
+
+GW-OT 的内在性质是：如果找到一个使 GW 距离最小的传输计划，
+那么该计划**自然地保持度量空间的拓扑结构**。
+不需要额外加 kinetic loss、anisotropic penalty 或 topogate——GW 匹配本身就是结构保持的。
+
+**当前状态**: 代码中已有 `coupling_solver="sinkhorn"` 和 `coupling_feature_mode="lowfreq_edge"`。
+这些都在用欧氏空间的 Sinkhorn。GW-OT 需要一个不同的 solver。
+
+### 实现路径
+
+用 `geomloss` 库（已安装在远程 WSL？需确认）或者手写轻量版 GW solver：
+
+```python
+# 在 losses.py 的 _solve_group_coupling 中添加 GW 模式
+if self.coupling_solver == "gromov_wasserstein":
+    # 计算 content 内部距离矩阵
+    D_content = pairwise_euclidean(content_group.flatten(1), content_group.flatten(1))
+    # 计算 target 内部距离矩阵
+    D_target = pairwise_euclidean(target_group.flatten(1), target_group.flatten(1))
+    # 用 Sinkhorn-like 迭代求解 GW plan
+    plan = gromov_wasserstein_sinkhorn(D_content, D_target, epsilon=self.sinkhorn_epsilon)
+    matched = plan @ target_group
+```
+
+如果 `geomloss` 不可用，可以用 **Fused Gromov-Wasserstein** 的简化版：
+$$C_{\text{fused}} = \alpha \cdot C_{\text{Euclidean}} + (1-\alpha) \cdot C_{\text{GW}}$$
+
+即把欧氏距离和 GW 距离按比例混合——$\alpha=0.7$ 时既有点对点的语义匹配，又有结构保持。
+
+### 收益与风险
+
+- **预期**: 结构保持天然优于当前 OT，可能不再需要 topogate 或只需要弱 topogate
+- **难度**: 高（GW solver 实现复杂，计算开销大 $O(n^2 m^2)$）
+- **风险**: 显存和时间开销可能难以承受 (batch 从 12 降到 4)
+
+---
+
+## 革命方向 C: 分布条件薛定谔桥 (Distribution-Conditioned SB)
+
+### 理论
+
+当前 I2SB 公式：
+$$x_t = (1-t)x_0 + t x_1 + \sigma \sqrt{t(1-t)} \epsilon$$
+
+这条桥连接的是**两个具体的点** $(x_0, x_1)$。但在无配对风格迁移中，我们不知道 $x_1$ 应该是哪个具体的风格图像——
+我们只知道 $x_1$ 应该来自目标风格分布 $\nu_{\text{style}}$。
+
+真正的 Schrödinger Bridge 问题（静态形式）是在已知边缘分布 $\mu_0$ (内容) 和 $\mu_1=\nu_{\text{style}}$ (目标风格) 的条件下，
+寻找一个满足布朗运动先验的随机过程，使得其边缘分布恰好在 $t=0$ 为 $\mu_0$，在 $t=1$ 为 $\mu_1$。
+
+**我们目前在做的**: 用 OT 采样一个"伪配对" $(x_0, x_1^{\text{OT}})$，然后在这对之间建桥。
+这不是真正的 SB——这是"用 OT 近似 SB"。
+
+**真正的 SB** 要求在训练时，模型不仅学会"从 $x_0$ 到 $x_1^{\text{OT}}$"，还学会
+"从 $x_0$ 出发，最终落在风格分布中的**任何合理位置**"。
+这意味着训练目标应该包含**分布级别的匹配**，而非单点匹配。
+
+### 为什么这能突破
+
+当前瓶颈是每个 content image 只有一个 OT 配对的目标 $x_1^{\text{OT}}$。
+如果 OT 配对选得不够"风格化"（比如把一个噪点很多的 Impressionism 图像匹配给了 Minimalism 的内容图），
+模型学到的目标就是不正确的。分布条件 SB 允许模型从多个可能的目标中选择最合适的。
+
+### 实现路径
+
+**简化版（可立即实验）**: 对每个 content image，采样 k 个目标候选（来自同 style 的 k 张不同图像），
+计算 k 个 loss，取 min：
+```python
+# 在 losses.py 的 compute 中:
+targets = [matched_target_1, matched_target_2, matched_target_3]  # 3 个不同的 OT 结果
+losses = [compute_bridge_loss(content, tgt) for tgt in targets]
+loss = min(losses)  # 或者 softmin
+```
+
+这等价于说"模型可以选择最容易风格化的那个目标"——降低了"坏配对"的惩罚。
+
+**完整版**: 实现真正的 Neural SB 训练循环：
+1. Forward: 从 content 出发，用当前模型积分到 t=1，得到生成的"伪目标"
+2. 计算生成的分布与真实目标风格的分布之间的 SWD
+3. Backward: 梯度同时更新模型参数
+4. 这需要**多步积分在训练循环中**——计算开销极大
+
+### 收益与风险
+
+- **简化版预期**: style +0.01~0.03，实现成本低
+- **完整版预期**: 理论上的最优解，但计算开销可能增长 5-10 倍
+- **风险**: 简化版的 min-loss 可能导致 mode collapse（模型只学一种风格的"捷径"）
+
+---
+
+## 革命方向 D: 潜空间风格纤维丛 (Style Foliation / Fiber Bundle)
+
+### 理论
+
+考虑潜空间 $\mathcal{Z} \subset \mathbb{R}^{4 \times 64 \times 64}$。
+定义等价关系：$z \sim z'$ 当且仅当它们对应"相同内容但不同风格"的图像。
+每个等价类是一条"风格轨道"（style orbit）。
+
+**风格迁移的几何本质**: 给定 $z_0$（内容），找到它所在轨道的方向，
+沿着该方向移动到目标风格在轨道上的交点。
+
+在纤维丛的语言中：
+- **底空间 (Base)**: 内容结构的不变特征（边缘、形状、空间布局）
+- **纤维 (Fiber)**: 给定内容结构下的所有可能风格外观
+- **联络 (Connection)**: 一个向量场，告诉你"在不改变内容结构的情况下，如何改变风格"
+
+当前 topogate 的做法是在 Attention 层锁定了底空间的方向（$A_{\text{self-content}}$），
+允许纤维方向自由变化（$V_{\text{style}}$）。这实际上是一个**离散的、手动的联络**。
+
+**改进方向**: 让网络**学习这个联络**，而不是用 topogate 强制锁定。
+
+### 实现路径
+
+```python
+# 在 model.py 中新增 StyleConnection 模块
+class StyleConnection(nn.Module):
+    """Learns a content-dependent but style-directional vector field."""
+    def __init__(self):
+        # 用于提取"内容不变特征"的网络
+        self.content_invariant = nn.Sequential(...)
+        # 用于生成"风格方向"的网络
+        self.style_direction = nn.Sequential(...)
+
+    def forward(self, z, content_feat, style_code):
+        # 提取内容不变特征（底空间）
+        base_feat = self.content_invariant(content_feat)
+        # 生成风格方向（纤维上的向量）
+        style_vec = self.style_direction(torch.cat([base_feat, style_code], dim=1))
+        # 强制 style_vec 与 base_feat 正交（在纤维上移动，不在底空间移动）
+        style_vec = style_vec - project_onto(style_vec, base_feat)
+        return style_vec
+```
+
+训练时：底空间特征通过 reconstruction loss 约束（z_0 → z_1 → back to z_0 必须一致）。
+风格方向通过 SWD 约束（沿风格方向的终点必须匹配目标风格分布）。
+
+### 为什么这能突破
+
+这个方向从根本上**重新定义了问题**。不再把风格迁移视为"两个分布间的传输"，
+而是视为"在内容不变流形上的风格方向移动"。结构保持不是通过 loss 或 topogate 强制实现的，
+而是**网络架构的几何性质**保证的——因为风格方向被显式约束为与内容方向正交。
+
+### 收益与风险
+
+- **预期**: 结构保持理论上完美，style 可自由调节
+- **难度**: 极高（需要重新设计整个 transport 模块）
+- **风险**: 要在当前 codebase 中实现这个，等于重写半个 model.py。但论文价值极大。
+
+---
+
+## 革命方向 E: 随机插值器的自适应噪声调度 (Learned Stochastic Interpolants)
+
+### 理论
+
+I2SB 使用固定的布朗桥：$\sigma_t = \sigma \sqrt{t(1-t)}$。但"最佳噪声水平"可能是**内容相关、时间相关、空间相关**的。
+
+考虑更一般的随机插值器：
+$$dx = v_\theta(x, t) dt + g_\phi(x, t) dW$$
+
+其中 $g_\phi$ 是**可学习的扩散系数**，由一个轻量网络参数化。
+
+**核心洞察**: 
+- 在图像的平坦区域（天空、水面），确定性传输就够了
+- 在纹理丰富区域（树叶、草丛、笔触），需要更多随机性来打破模式坍缩
+- 在边缘区域（建筑轮廓），需要零随机性来保证结构锐利
+
+当前 topogate 已经锁定了结构（解决了边缘区域的问题）。现在需要的是**在纹理区域注入更强的随机性**。
+
+### 实现路径
+
+用一个轻量的"噪声门控网络"，输入当前状态 $x_t$ 的内容特征和 tokenizer 的 spatial map，
+输出一个空间可变的噪声尺度：
+
+```python
+# g_phi: [B, 1, H, W] -> [B, 1, H, W] 噪声门控
+noise_gate = self.noise_scheduler(x_t, spatial_map, t)
+# 在纹理区域门控接近 1（加噪声），在边缘区域门控接近 0
+effective_sigma = self.bridge_sigma * noise_gate * math.sqrt(t * (1-t))
+```
+
+训练：$g_\phi$ 的损失是"加噪声后对 LPIPS 的影响"和"加噪声后对 style 的提升"之间的 tradeoff。
+可以用 RL 风格的 reward 或者直接端到端训练。
+
+### 收益与风险
+
+- **预期**: 在 topogate 保护下，专注在纹理区域注入噪声，style 提升可能很大
+- **难度**: 中
+- **风险**: 学习 $g_\phi$ 需要小心平衡——太激进会破坏结构
+
+---
+
+## 革命方向总览
+
+| # | 方向 | 理论来源 | 解决的核心问题 | 难度 | 论文价值 |
+|---|------|----------|----------------|------|:---:|
+| A | 黎曼潜流匹配 | Riemannian Geometry / RFM | 中间状态 off-manifold | 中高 | ★★★★ |
+| B | GW 风格匹配 | Gromov-Wasserstein OT | 结构保持的数学保证 | 高 | ★★★★★ |
+| C | 分布条件 SB | Schrödinger Bridge 原义 | 配对质量/分布匹配 | 中 | ★★★★ |
+| D | 风格纤维丛 | Fiber Bundle / Connection | 结构-风格解耦的几何保证 | 极高 | ★★★★★ |
+| E | 自适应噪声调度 | Learned Stochastic Interpolants | 区域自适应的随机性 | 中 | ★★★ |
+
+### 给 KiritoFD 的建议
+
+**如果追求快速出结果**: 方向 E (自适应噪声) + 方向 C 简化版 (多目标 min-loss) 可以在 1-2 天内实现。
+
+**如果追求顶级论文**: 方向 B (GW-OT) 或方向 D (纤维丛)。方向 B 在学术界有明确的相关工作可以对比 (GW-OT for image matching)；方向 D 则是全新的几何框架，如果做出来就是开山之作。
+
+**最推荐**: 方向 A (黎曼投影) 作为"增量改进"——在现有 transport_step 中加一个 Riemannian projection 层，不改架构，风险最小，但概念上有足够深度支撑论文的 Method 章节。
