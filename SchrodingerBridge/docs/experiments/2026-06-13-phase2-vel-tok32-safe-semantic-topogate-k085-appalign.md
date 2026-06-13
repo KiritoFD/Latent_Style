@@ -85,7 +85,20 @@ Date: 2026-06-13
     - observed guard event: `11449 MiB > 11000 MiB`
   - preferred relaunch now switches to `b12a1`
   - the active remote mainline is now `b12a1`
-  - current board state should be read as `training_before_first_settled_eval` until the first settled eval lands
+  - first settled authority point is now `epoch_0001`
+  - current board state should be read as `training_after_settled_eval`
+
+## First Settled Read
+
+- `epoch_0001`
+  - transfer `0.672604 / 0.336357`
+  - all-pairs `0.703506 / 0.332992`
+  - identity `0.827117 / 0.319531`
+- interpretation:
+  - all-pairs safe-shelf recovery is already achieved
+  - LPIPS is substantially cleaner than the promoted `topogate epoch_0003`
+  - transfer style still trails the formal shelf slightly by about `0.00133`
+  - so `appalign` is not yet a full recovery, but it is already a cleaner all-pairs point than the promoted parent
 ## Parent Refresh
 
 - Source packet: `vel_tok32_safe_semantic_topogate_k085`

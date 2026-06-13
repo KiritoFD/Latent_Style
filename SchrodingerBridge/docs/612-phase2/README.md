@@ -229,10 +229,13 @@
   - current live read:
     - first `b16a1` launch hit runtime guard at `11.449 GiB` before first settled eval
     - preferred relaunch now uses `b12a1`
-    - no settled authority point yet
+    - first settled point is now `epoch_0001`
+    - transfer `0.672604 / 0.336357`
+    - all-pairs `0.703506 / 0.332992`
   - interpretation:
     - `topogate` already proved that structure-side recovery is possible
-    - `appalign` is now the clean next question: can low-order appearance alignment push farther without changing the structure family again
+    - `appalign` has now produced a cleaner all-pairs recovery point than the promoted parent
+    - but transfer style still trails the formal shelf slightly, so the lane stays active
 - promoted predecessor just closed:
   - `vel_tok32_safe_semantic_topogate_k085`
   - best retained point:
