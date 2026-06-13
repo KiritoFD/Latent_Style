@@ -356,6 +356,7 @@ def main() -> int:
         wsl_distro=str(args.wsl_distro),
         exec_args=["tail", "-n", str(int(args.tail_lines)), remote_train_log],
     )
+    tail_lines = [] if _looks_like_wsl_hcs_failure(tail.stdout) else tail.stdout.splitlines()
 
     process_rows = [] if wsl_hcs_failure else [line.strip() for line in py.stdout.splitlines() if line.strip()]
     report = {
@@ -375,7 +376,7 @@ def main() -> int:
         "curve_summary": curve_summary,
         "convergence": convergence,
         "latest_summary": latest_summary if bool(args.include_full_latest_summary) else _compact_summary(latest_summary),
-        "train_log_tail": tail.stdout.splitlines(),
+        "train_log_tail": tail_lines,
     }
     print(json.dumps(report, indent=2, ensure_ascii=False))
     return 0
