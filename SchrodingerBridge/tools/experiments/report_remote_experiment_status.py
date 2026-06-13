@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import subprocess
 import sys
+import io
 from pathlib import Path
 from typing import Any
 
@@ -135,6 +137,33 @@ def _compact_summary(summary: dict[str, Any] | None) -> dict[str, Any] | None:
             "vae_decode": timings.get("vae_decode"),
         },
     }
+
+
+def _parse_last_csv_row(text: str) -> dict[str, Any] | None:
+    raw = str(text or "").strip()
+    if not raw:
+        return None
+    try:
+        reader = csv.DictReader(io.StringIO(raw))
+        rows = [row for row in reader if isinstance(row, dict)]
+    except Exception:
+        return None
+    if not rows:
+        return None
+    row = rows[-1]
+    parsed: dict[str, Any] = {}
+    for key, value in row.items():
+        if value is None:
+            continue
+        cell = str(value).strip()
+        if cell == "":
+            continue
+        try:
+            parsed[str(key)] = float(cell)
+            continue
+        except ValueError:
+            parsed[str(key)] = cell
+    return parsed or None
 
 
 def _remote_read_text(
@@ -323,6 +352,26 @@ def main() -> int:
         run_dir=f"{remote_run_dir}/full_eval",
         pattern="*",
     )
+    latest_train_metrics = None
+    train_log_entries = _remote_list_via_find(
+        host=str(args.host),
+        port=int(args.port),
+        user=str(args.user),
+        wsl_distro=str(args.wsl_distro),
+        run_dir=f"{remote_run_dir}/logs",
+        pattern="training_*.csv",
+    )
+    if train_log_entries:
+        latest_train_csv = train_log_entries[-1]
+        latest_train_metrics = _parse_last_csv_row(
+            _remote_read_text(
+                host=str(args.host),
+                port=int(args.port),
+                user=str(args.user),
+                wsl_distro=str(args.wsl_distro),
+                path=f"{remote_run_dir}/logs/{latest_train_csv}",
+            )
+        )
     latest_summary = None
     latest_checkpoint_epoch = _epoch_token(ckpts[-1]) if ckpts else ""
     settled_epochs: list[str] = []
@@ -417,6 +466,8 @@ def main() -> int:
         "stale_pending_checkpoint_epochs": stale_pending_checkpoint_epochs,
         "checkpoint_files": ckpts[-12:],
         "full_eval_entries": full_eval_entries[-20:],
+        "train_log_entries": train_log_entries[-12:],
+        "latest_train_metrics": latest_train_metrics,
         "curve_summary": curve_summary,
         "convergence": convergence,
         "latest_summary": latest_summary if bool(args.include_full_latest_summary) else _compact_summary(latest_summary),
