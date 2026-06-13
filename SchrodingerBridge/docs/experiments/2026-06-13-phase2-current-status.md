@@ -43,7 +43,7 @@ Date: 2026-06-13
 - Structure note: [structure note](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k085.md)
 - Structure read: epoch_0003 settled at transfer 0.675388/0.375598 and all-pairs 0.702936/0.371762; this lane already beats both formal recovery gates
 - Structure live state: `training_after_settled_eval`
-- Structure GPU: 9313 / 12288 MiB
+- Structure GPU: 8936 / 12288 MiB
 - Structure latest settled epoch: `epoch_0003`
 - I2SB diagnostic preferred packet: `i2sb_tok32_safe_semantic_topogate_sigma0p02_residual`
 - I2SB config: [I2SB config](/G:/GitHub/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_i2sb_tok32_safe_semantic_topogate_sigma0p02_residual_seed42_b20a1.json)
