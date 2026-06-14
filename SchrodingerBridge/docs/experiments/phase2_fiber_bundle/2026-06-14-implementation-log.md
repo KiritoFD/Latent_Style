@@ -208,3 +208,15 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Runtime observability: `translation_delta_from_identity=0.013472`, `routing_entropy=1.453477`, `effective_experts=4.380065`, `spatial_abs=0.885638`.
 - Plot update: added the e6 point to `plot_points.csv` and regenerated the AAAI2027 page-1 figure; the point is unlabeled to keep the panel readable.
 - Decision: continue under the formal curve rule. e6 is the first non-Pareto tail point; if the next retained checkpoints also fail to create a Pareto point, SMoE-only can close as negative evidence.
+
+## SMoE Epoch 7 Read
+
+- Full eval completed at `2026-06-14 08:49:20 Asia/Shanghai`; training resumed into epoch 8.
+- Training time: `1511.5s`; full-eval wall time: `249.8s`.
+- Transfer: `0.670730 / 0.333296`; all-pairs: `0.701995 / 0.328815`; identity: `0.827052 / 0.310890`.
+- Style above IDT: transfer `+0.030809`; all-pairs `+0.021872`.
+- Matched delta against `k070 epoch_0003`: transfer `-0.001090` style and `+0.018678` LPIPS; all-pairs `-0.001239` style and `+0.016266` LPIPS.
+- Runtime observability: `translation_delta_from_identity=0.014656`, `routing_entropy=1.694707`, `effective_experts=5.537481`, `spatial_abs=0.854391`.
+- Plot update: added the e7 point to `plot_points.csv` and regenerated the AAAI2027 page-1 figure; the point is unlabeled to keep the panel readable.
+- Convergence read: `converged=false`, `since_last_pareto=2`, `tail_flat=true`.
+- Decision: continue. e7 is the second tail point after the e5 Pareto point, so SMoE-only cannot close until at least two more retained checkpoints fail to create a new Pareto point.
