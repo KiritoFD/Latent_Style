@@ -7,10 +7,11 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 - `plot_points.csv`: fixed input table for the homepage CLIP-style / LPIPS progress plots. Every closed experiment must append or update its full/all-pairs and transfer rows here before the closure note is final.
 - `curves/`: raw per-run all-checkpoint CLIP-S / LPIPS curves copied from remote eval artifacts before they are normalized into `plot_points.csv`.
 - `smoe_training_manifest.csv`: Round-2 SMoE-only launch and closure status.
+- `short_probe_manifest.csv`: cost-controlled short virtual-length probes used to screen style-release ideas before any full-data relaunch.
 
 ## Current Homepage Overlay
 
-- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05`, and SMoE epoch `1-15` are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
+- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05`, SMoE epoch `1-15`, and the short `k070_kin070_vlen010` kinetic-release probe epoch `1-3` are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
 - The trace uses transfer `CLIP-S - IDT` on the y-axis and `1 - LPIPS` on the x-axis.
 - All retained checkpoints are drawn and connected.
 - Labels are sparse by design:
@@ -29,6 +30,7 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
   - [eval/fiber_sde_sigma0p05/isotropic/summary.json](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/eval/fiber_sde_sigma0p05/isotropic/summary.json)
   - [eval/fiber_sde_sigma0p05/fiber_aligned/summary.json](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/eval/fiber_sde_sigma0p05/fiber_aligned/summary.json)
   - [smoe_translator_k070_e3_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/smoe_translator_k070_e3_remote_clip_lpips_curve.csv)
+  - [k070_kin070_vlen010_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/k070_kin070_vlen010_remote_clip_lpips_curve.csv)
 - Rendered page-1 figure:
   - [fig_distinct5_page1_summary.png](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/figures/fig_distinct5_page1_summary.png)
 
@@ -63,6 +65,23 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 - VRAM was healthy at about `6.9 GiB`, so the stop does not indicate a memory failure.
 - No checkpoint or `CLIP-S + LPIPS` point exists; it is intentionally not plotted on the homepage figure.
 - `k070_sp256` is deferred for the same cost reason, because increasing tokenizer spatial capacity is expected to be slower and less isolated than the kinetic probe.
+
+## Current Short-Probe Policy
+
+- Full-data retraining is no longer the default for single-knob style-release ideas.
+- The first short probe is `k070_kin070_vlen010`: same `w_kinetic: 0.85 -> 0.70` mechanism, same parent/eval contract, but `virtual_length_multiplier=0.10` and `num_epochs=6`.
+- Promotion rule: only consider a full-data follow-up if the short probe shows a clear positive transfer/all-pairs style delta without reopening the LPIPS cost seen in SMoE.
+- Plot rule: append short-probe eval points to `plot_points.csv` only after remote `CLIP-S + LPIPS` artifacts exist; no synthetic or partial-training points are plotted.
+
+## Current Short-Probe Closure
+
+- `k070_kin070_vlen010` was stopped after epoch `0003` eval because the curve was already cost-negative.
+- Per-epoch train time was `148.3s`, `148.9s`, and `147.3s`; each full eval was about `248-250s`, so each plotted point costs roughly `6.6min` even at `virtual_length_multiplier=0.10`.
+- Best point was `epoch_0002`: transfer `0.674131 / 0.340593`, all-pairs `0.704226 / 0.337494`.
+- Matched against `k070 epoch_0003`, best e2 delta was transfer `+0.002310` style with `+0.025975` LPIPS and all-pairs `+0.000993` style with `+0.024944` LPIPS.
+- `epoch_0003` worsened to transfer `0.673330 / 0.352338` and all-pairs `0.703133 / 0.347736`.
+- Decision: `cost_stopped_negative`. Do not run the full-data `k070_kin070` follow-up; the kinetic-release knob is not worth more remote training under this parent/eval contract.
+- Next style-release work should prefer eval-only solvers or post-decode calibration first. Any new training-side knob must pass a short-probe threshold before a full lane is launched.
 
 ## Plot Update Contract
 
