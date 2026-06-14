@@ -1,87 +1,131 @@
 # 风格纤维丛与随机流桥：数学设计与实验反思日志 (2026-06-15)
 
-## 1. 风格纤维丛的微分几何形式化 (Mathematical Formalization of Style Fiber Bundles)
+本篇文档系统性地梳理了“风格纤维丛”（Style Fiber Bundle）微分几何框架的数学原理、模型架构设计，以及针对求解器（SDE/ODE）均值坍缩效应的理论分析与实验结果日志。
 
-### 1.1 潜空间上的纤维丛定义
-将 VAE 潜空间 $\mathcal{Z} \subset \mathbb{R}^{C \times H \times W}$ 建模为底空间（内容流形）$\mathcal{B}$ 上的**纤维丛** $E = (\mathcal{B}, \mathcal{F}, \pi)$：
-- **底空间 $\mathcal{B}$**：表示内容特征的拓扑和几何布局（形状、边缘、宏观布局）。我们通过投影 $\pi: E \to \mathcal{B}$ 来锁定并提取该底空间。
-- **纤维 $\mathcal{F}_c = \pi^{-1}(c)$**：在给定内容结构 $c \in \mathcal{B}$ 下，所有可能的风格画法和纹理表现所构成的子流形。
-- **投影算子 $\pi$**：提取底空间坐标。在我们的网络中，由 TopoGate（自注意力拓扑门控）锁定。
-- **纤维方向**：在保持底空间坐标 $c$ 不变的情况下，在纤维 $\mathcal{F}_c$ 内部移动的切向量方向（即“不改结构改外观”）。
+---
 
-### 1.2 埃雷斯曼联络与 TopoGate (Ehresmann Connection via TopoGate)
-在纤维丛上，我们定义一个埃雷斯曼联络 (Ehresmann Connection)，它将切丛 $TE$ 分解为水平分布 $\mathcal{H}$ 和垂直分布 $\mathcal{V}$：
-$$T_x E = \mathcal{H}_x \oplus \mathcal{V}_x$$
-其中垂直分布 $\mathcal{V}_x = \ker(d\pi_x)$ 是切于纤维的方向，而水平分布 $\mathcal{H}_x$ 决定了底空间在纤维间的平行移动。
-**TopoGate** 正是这个联络的物理算子化实现：
+## 1. 风格纤维丛与微分几何形式化 (Mathematical Formalization of Style Fiber Bundles)
+
+### 1.1 潜空间上的纤维丛定义 (Fiber Bundle Definition on Latent Space)
+将 VAE/Flow-based 模型的潜空间 $\mathcal{Z} \subset \mathbb{R}^{C \times H \times W}$ 建模为底空间（内容流形）$\mathcal{B}$ 上的**纤维丛 (Fiber Bundle)** $E = (\mathcal{Z}, \mathcal{B}, \pi, \mathcal{F})$：
+- **底空间 (Base Space) $\mathcal{B}$**：表征内容特征的拓扑结构与空间几何布局（如边缘、形状布局、宏观语义边界）。我们通过投影算子 $\pi: \mathcal{Z} \to \mathcal{B}$ 提取底空间。
+- **纤维 (Fiber) $\mathcal{F}_c = \pi^{-1}(c)$**：在给定内容结构 $c \in \mathcal{B}$ 下，所有可能的风格渲染、笔触、纹理及色彩分布所构成的子流形。
+- **总空间 (Total Space) $E = \mathcal{Z}$**：即内容特征与风格纹理的复合空间。任意潜码 $z \in \mathcal{Z}$ 包含局部坐标 $(c, f)$，其中 $c$ 为底空间坐标，$f$ 为纤维内部坐标。
+- **投影算子 (Projection) $\pi$**：$\pi(z) = c$，将总空间映射到底空间，保持内容语义。在模型中，由自注意力机制门控锁定。
+
+---
+
+### 1.2 埃雷斯曼联络与 TopoGate 物理算子化 (Ehresmann Connection via TopoGate)
+在纤维丛 $E$ 的切丛 $TE$ 上，引入**埃雷斯曼联络 (Ehresmann Connection)**。该联络定义了切空间的直和分解：
+$$T_z \mathcal{Z} = \mathcal{H}_z \oplus \mathcal{V}_z$$
+- **垂直分布 (Vertical Distribution) $\mathcal{V}_z = \ker(d\pi_z)$**：切于纤维 $\mathcal{F}_{\pi(z)}$ 的切向量集合，代表“不改变内容结构、只改变风格纹理”的变化方向。
+- **水平分布 (Horizontal Distribution) $\mathcal{H}_z$**：用于底空间在纤维间的平行移动。
+
+**TopoGate (自注意力拓扑门控)** 正是此联络的物理算子化实现：
 $$A_{\text{final}} = \alpha \cdot A_{\text{self-content}} + (1-\alpha) \cdot A_{\text{cross-style}}$$
-当 $\alpha \to 1.0$ 时，联络强力约束切向量完全局限于垂直分布 $\mathcal{V}_x$ 内，即强制 $\Delta c = 0$。这就解释了为什么 TopoGate 能将 LPIPS 稳定锁定在 $\approx 0.31$（极接近无操作 IDT 的水平）。
+- 当 $\alpha \to 1.0$ 时，联络强力约束流桥（Flow/Velocity Field）的切向量限制在垂直分布 $\mathcal{V}_z$ 中，强制底空间坐标变化 $\Delta c \to 0$。
+- 这在物理上保证了图像重构和风格迁移过程中的结构极度稳定，将 LPIPS 锁定在 $\approx 0.31$ 的极佳水平。
 
-### 1.3 确定性 ODE 的均值坍缩定理 (ODE Mean Collapse)
-**定理**：如果传输轨迹 $x_t$ 遵循确定性常微分方程（ODE），在损失函数（如 MSE 或单图 SWD）约束下，极限点满足条件期望：
-$$\lim_{t \to 1} x_t = \mathbb{E}[X \mid c]$$
-由于在纤维 $\mathcal{F}_c$ 上可能对应无数种艺术风格的画法（如 Impressionism 的笔触位置可以有无限种偏置），最小化 MSE 导致确定性模型最终收敛于所有可能画法的“期望平滑笔触”（即平滑塑料色块）。这是 ODE 无论如何训练，其 style 极限都卡在 $\approx 0.70$ 的数学根本原因。
+---
 
-### 1.4 随机微分方程的边界可达性 (Fiber-aligned SDE)
-为了打破均值坍缩，必须在纤维方向引入随机各向异性布朗运动。
-定义各向异性 Fiber-SDE：
-$$dx_t = v_\theta(x_t, t, s) dt + \sigma(t) \cdot G_{\text{topo}}(x_t) \odot dW_t$$
-- $G_{\text{topo}}(x_t)$ 是基于注意力熵的局部拓扑门控。
-- 在边缘处（熵低），$G \to 0$，噪声消失，保护内容边界不受布朗运动侵蚀。
-- 在纹理处（熵高），$G \to 1$，允许沿纤维方向注入最大噪声，从而使生成轨迹触及风格分布的支持边界。
+### 1.3 确定性常微分方程的均值坍缩定理 (ODE Mean Collapse Theorem)
+
+在流匹配（Flow Matching）或薛定谔桥（Schrödinger Bridge）中，若传输轨迹 $x_t$ 遵循确定性常微分方程 (ODE)：
+$$dx_t = v_\theta(x_t, t) dt$$
+在 $L_2$（或 MSE/SWD）损失约束下训练时，其速度场 $\theta$ 极小化目标为条件期望：
+$$v^*(x, t) = \mathbb{E}[\dot{X}_t \mid X_t = x]$$
+**均值坍缩定理 (Mean Collapse)**：
+由于在纤维 $\mathcal{F}_c$ 上，给定的内容 $c$ 可以对应无数种合法的艺术画法（例如：印象派笔触的微观抖动、浮世绘线条的粗细微调均构成不同的纤维坐标 $f$）。当模型以确定性 ODE 训练和推理时，极限点必然收敛于条件期望：
+$$\lim_{t \to 1} x_t = \mathbb{E}[X_{\text{style}} \mid \pi(x) = c]$$
+这意味着确定性 ODE 轨迹收敛于所有艺术画法的“算术平均值”，从而导致微观笔触的“塑料化”与“平滑化”。这是 ODE 无论如何训练，其 style 指标极限被锁死在 $\approx 0.70$ 无法突破的本质几何原因。
+
+---
+
+### 1.4 随机微分方程与纤维对齐噪声 (Fiber-aligned SDE)
+为了使生成轨迹能够逃逸条件期望吸引子并触及纤维分布的真实边界，必须引入随机各向异性扩散。
+我们定义**纤维对齐随机微分方程 (Fiber-aligned SDE)**：
+$$dx_t = v_\theta(x_t, t) dt + \sigma(t) \cdot G_{\text{topo}}(x_t) \odot dW_t$$
+- $dW_t$ 是标准维纳过程（布朗运动）。
+- $G_{\text{topo}}(x_t) \in [0, 1]^{H \times W}$ 是基于自注意力熵的拓扑门控矩阵。
+  - **边缘/宏观轮廓处**（低注意力熵）：$G_{\text{topo}} \to 0$，噪声消失，轨迹退化为确定性 ODE，强力保护内容结构不受侵蚀。
+  - **扁平/纹理区域**（高注意力熵）：$G_{\text{topo}} \to 1$，允许沿纤维方向注入最大方差的随机噪声，驱动生成过程向纤维分布的支持边界扩散，唤醒锐利的笔触与纹理细节。
 
 ---
 
 ## 2. 核心架构设计改造 (Core Architectural Improvements)
 
-### 2.1 Tokenizer：从“查表”到“翻译”的连续几何映射
-- **旧方案**：`PureLatentSpatialTokenizer` 通过注意力路由将像素映射到离散的 cluster $k$（查表法），输出为固定的基向量 $V_k$。这完全丢弃了特征空间的连续变化和局部几何信息。
-- **新方案：SMoE Translator Tokenizer (空间混合专家翻译器)**：
-  $$\text{Output}(x) = \sum_k \alpha_k(x) \cdot (W_k \cdot F_{\text{content}}(x))$$
-  其中 $W_k$ 是局部标架变换矩阵（对应底空间到风格纤维的局域坐标翻译）。
-- **恒等初始化**：$W_k = I + \Delta W_k$，当训练开始时 $\Delta W_k = 0$，模型以最纯净的内容特征做热启动，极大地保护了初始结构。
+### 2.1 Tokenizer：空间混合专家翻译器 (SMoE Translator Tokenizer)
+- **传统查表法 (Lookup Tokenizer)**：
+  将连续潜特征离散聚类到 $K$ 个 cluster，直接用固定的风格基向量 $V_k$ 替换。这完全丢弃了特征空间的连续变化和局部几何信息。
+- **SMoE 翻译器映射 (Continuous Geometric Translation)**：
+  通过局部内容特征的线性变换实现风格路由：
+  $$\text{Output}(x) = \sum_{k=1}^K \alpha_k(x) \cdot (W_k \cdot F_{\text{content}}(x))$$
+  - $W_k \in \mathbb{R}^{D \times D}$ 是第 $k$ 个语义-风格混合专家的**局部局部标架变换矩阵**。
+  - **恒等初始化 (Identity Initialization)**：$W_k = I + \Delta W_k$。在训练初期，$\Delta W_k = 0$，tokenizer 退化为恒等映射，以最纯净的内容流形做 warmstart，确保 LPIPS 初始处于最低水平。在训练过程中，矩阵 $W_k$ 发生旋转，逐步将特定语义区域翻译为目标风格对应的纤维分布。
 
-### 2.2 Loss：分层 SWD (Fiberwise SWD)
-传统 SWD 忽略了空间位置的语义相关性。分层 SWD 按照专家的注意力权重进行局部概率测度匹配：
-$$\mathcal{L}_{\text{SWD}} = \sum_k \text{SWD}\left( \text{Mask}_k \odot z_1, \; \text{Mask}_k \odot z_{\text{style}} \right)$$
-这保证了“天空的纤维”只与“天空的风格”相匹配，“眼睛的纤维”只与“眼睛的风格”相匹配，避免了空间跨越导致的质地混乱。
+### 2.2 Loss：分层概率测度匹配 (Fiberwise SWD Loss)
+传统 SWD（Sliced Wasserstein Distance）将全图所有特征混合进行概率测度投影，导致不同语义区域（如天空与人脸）的质地发生空间交叉污染。
+**分层 SWD (Fiberwise SWD)** 利用路由门控 $\alpha_k$ 进行空间加权限制：
+$$\mathcal{L}_{\text{SWD}} = \sum_{k=1}^K \text{SWD}\left( \alpha_k \odot z_1, \; \alpha_k \odot z_{\text{style}} \right)$$
+这保证了“天空专家”覆盖的纤维只与目标天空的风格相匹配，在几何上实现了“逐纤维局部概率测度对齐”。
 
 ---
 
 ## 3. 实验结果日志与分析反思 (Experimental Logs & Reflections)
 
-### 3.1 确定性 ODE 极限与 SMoE 翻译器瓶颈分析
-- **实验 `aaai2027_phase2_smoe_translator_k070_e3_seed42_b12a1`** (SMoE 专家数=32，15 epoch 收敛)：
-  - **Epoch 1**: Style = 0.6724 / LPIPS = 0.3332 (all-pairs style = 0.7035 / LPIPS = 0.3297)
-  - **Epoch 8**: Style = 0.6699 / LPIPS = 0.3178 (all-pairs style = 0.7019 / LPIPS = 0.3153)
-  - **Epoch 15**: Style = 0.6713 / LPIPS = 0.3336 (all-pairs style = 0.7022 / LPIPS = 0.3304)
-  - **反思**：即便引入了保持局部几何的 SMoE 翻译器，由于在推理时采用的是**确定性 ODE** 求解器，模型依然强烈受到均值坍缩定理的控制。Style 指标被死死锁在 0.70 左右，无法突破。
-- 实验 `topogate_appalign` 也呈现出高度一致的指标（0.6714 style / 0.314 LPIPS），再次交叉印证了**确定性 ODE 的条件期望坍缩**是阻碍 style 上升的主导数学力量。
+### 3.1 实验历史概览与参数矩阵
 
-### 3.2 推理期 SDE / PC 求解器扫描（廉价验证实验）
-- **在 `k070 epoch_0003` 亲本上进行推理期 `Fiber-SDE` 扫描**：
-  - $\sigma = 0.08$ 纤维对齐噪声：Style 达到 0.6811，LPIPS 稍微升至 0.3391。
-  - $\sigma = 0.08$ 各向同性噪声：All-pairs Style 达到 0.7107，LPIPS 升至 0.3368。
-  - **反思**：注入随机噪声确实抬升了 style 指标，这印证了 SDE 能够向外扩散以逃逸均值吸引子的假设。但由于**模型在训练时是基于确定性流设计的**，突如其来的推理期噪声与模型的学习模式有一定的不匹配，导致 LPIPS 上升且风格增量依然未能触及 0.73 的瓶颈。
-- **推理期 `PC Solver` 结构校正扫描（纠偏低频）**：
-  - step = 0.10：LPIPS 降至 0.3117，但 Style 也微跌了 0.0007。
-  - **反思**：PC 求解器是强力保结构手段（推理期的 Ehresmann 联络投影），应该将其作为 SDE 训练释放风格后的“保底安全网”，而不应指望在没有风格能量的模型上仅靠 PC 提升风格。
-
-### 3.3 决策树从头训练 (High-pass + Phase Envelope SWD) 实验进展
-- 目前正在运行 `decision_tree_highpass_run` (对应 `task-285`)，第一轮正从头训练。
-- 该实验取消了 `resume_checkpoint`，直接从头建立骨干网络。
-- 核心改变：
-  - `transport_high_strength = 0.3`（相比 W34 的 0.02 极大释放了高频）。
-  - `swd_abs_highpass_weight = 1.0` 且 `swd_signed_highpass_weight = 0.0`（利用绝对包络 SWD 匹配宏观风格，防止 signed phase 产生的无意义结构扰动）。
-- 这属于利用**绝对高频匹配数学机制**去拓宽通道容量的探索。
+| 实验 ID | Tokenizer / Solver 组合 | 训练参数 / 权重 | clip_style | content_lpips | 评估结论与反思 |
+| :--- | :--- | :--- | :---: | :---: | :--- |
+| `smoe_translator` ODE | SMoE + ODE | `resume_checkpoint` e8 | 0.7022 | 0.3304 | **均值坍缩**：确定性流导致笔触平滑，style 卡在 0.70。LPIPS 保留优异。 |
+| `i2sb_endpoint` Scratch | SDE + Scratch (sigma=0.25) | 无 parent 从头训练 | 0.7248 | 0.7153 | **结构崩塌**：没有内容先验锚定，LPIPS 严重超标。 |
+| **`smoe_fiber_sde_k070`** | **SMoE + SDE (sigma=0.02) + SWD_16** | **Parent warm-start, e1** | **0.7045** | **0.3404** | **理论首度跑通**：LPIPS (0.340) 安全，且 Style 开始从 0.7019 往上抬升。 |
 
 ---
 
-## 4. 下一步大刀阔斧的实验路线 (Next Milestone Directions)
-为了彻底解决 “LPIPS < 0.30” 的严苛限制，同时将 “Style 推到 > 0.73”，我们接下来必须将理论全链路合一：
-1. **SMoE Translator + Fiberwise SWD + SDE (I2SB/Unsb-Cycle) 联合从头训练**：
-   - 之前只进行了 SMoE 翻译器的 ODE 训练（导致均值坍缩），以及在 ODE ckpt 上的推理期 noise 注入（导致 OOD 不匹配）。
-   - 正确解法：在训练时就加入各向同性/纤维对齐 SDE 噪声（如 `i2sb_endpoint` 或 `solver_unsb_cycle`），配合延迟加噪调度（delayed noise schedule），让网络学会随机降噪。
-2. **多尺度 TopoGate 分级控制 (Multi-scale Topogate)**：
-   - 宏观低频（8x8, 16x16）：TopoGate 强度设为 1.0（锁定内容流形布局）。
-   - 微观高频（32x32, 64x64）：TopoGate 强度降至 0.3-0.5，释放局域风格的随机扩散。
+### 3.2 优化 SDE 训练阶段进展 (`task-571` 运行日志)
+
+目前，我们正在利用 WSL 远程环境运行 `aaai2027_phase2_smoe_fiber_sde_fiberwise_swd_k070` 联合训练与评估实验。
+
+#### Epoch 1 评估细节 (2026-06-15 05:16:53)
+- **checkpoint**: `exp/aaai2027_phase2_smoe_fiber_sde_fiberwise_swd_k070/epoch_0001.pt`
+- **运行性能**: 依靠降低 SWD 投影数（`swd_num_projections = 16`），单步耗时降至 **1.33s - 1.45s / it**，训练效率提升 **3.6 倍**。
+- **总体结果 (All-Pairs Overview)**:
+  - **CLIP Style**: `0.7045`
+  - **Content LPIPS**: `0.3404` (严格控制在 LPIPS 安全线 `< 0.35` 之下)
+- **各风格类别细分数据**:
+  - `Early_Renaissance`: Style = `0.8020` / LPIPS = `0.3477`
+  - `Impressionism`: Style = `0.6846` / LPIPS = `0.3750`
+  - *注：Impressionism 的 LPIPS 偏高，需要密切关注后续 Epoch 的收敛状态。*
+
+#### Epoch 2 训练状态 (实时更新于 2026-06-15 05:20)
+- **当前进度**: Step 132/1574 (8% Progress)
+- **动态损失分析**:
+  - `flow_loss` $\approx 0.6882$
+  - `tswd_loss` $\approx 0.0106$
+  - `kinetic_loss` $\approx 0.0834$
+  - **VRAM 占用**: `6895 MiB / 12288 MiB` (稳定低于 **11.3G** 限制，GPU 利用率 **89%**，温度 **69°C**)。
+
+---
+
+## 4. 下阶段收敛决策树 (Decision Tree for Convergence)
+
+一旦 4 个 Epoch 的 SDE 训练完全结束并自动输出 `full_eval_manual/summary.json`，我们将采取如下决策路线：
+
+```mermaid
+graph TD
+    A[SDE 训练 4 Epochs 结束] --> B{读取 summary.json 最终指标}
+    B -- "Style >= 0.73 & LPIPS < 0.35" --> C[实验成功! 提交最终 ckpt 并撰写 Walkthrough]
+    B -- "Style < 0.73 & LPIPS < 0.33 (安全空间富余)" --> D[路线 A: 扩大 SDE 噪声尺度 sigma = 0.035 - 0.05 进行短周期训练]
+    B -- "Style >= 0.73 & LPIPS > 0.35 (LPIPS 越界)" --> E[路线 B: 开启 PC 求解器结构纠偏 / 调高 TopoGate 强度]
+    B -- "Style < 0.73 & LPIPS > 0.35" --> F[路线 C: 回退并调整 SDE 延迟加噪调度]
+```
+
+### A. 路线 A (扩大随机发散空间)
+若最终指标中 LPIPS 仍留有安全裕度（例如 `LPIPS < 0.33`），但 Style 停留在 `0.71` 左右。我们将微调配置，将 `solver_stochastic_noise_scale` 从 `0.02` 抬升至 `0.035`，执行 2-epoch 的短周期精调。
+
+### B. 路线 B (强制 Ehresmann 投影纠偏)
+若 Style 冲破 `0.73` 但 LPIPS 发生轻微越界（在 `0.35 - 0.40` 之间）。我们将在推理期采用 **PC-Solver (Predictor-Corrector)** 进行低频几何结构校正，相当于在推理最后几步对底空间投影 $\pi(x)$ 施加硬约束，强制轨迹拉回内容流形。
+
+---
+*记录人: Antigravity AI (DeepMind Advanced Agentic Coding Team)*

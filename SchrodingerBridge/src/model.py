@@ -534,7 +534,16 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
     def _resolve_integration_horizon(self, *, step_size: float, style_strength: float | None) -> float:
         strength = self._resolve_style_strength(style_strength)
         horizon = max(0.0, float(step_size)) * strength
-        return max(0.0, min(1.0, horizon))
+        max_horizon = max(1e-6, float(getattr(self, "style_strength_max", 1.0)))
+        resolved = max(0.0, min(max_horizon, horizon))
+        self.last_style_strength_debug.update(
+            {
+                "style_step_scale": float(strength),
+                "integration_horizon": float(resolved),
+                "integration_horizon_requested": float(horizon),
+            }
+        )
+        return resolved
 
     def _runtime_content_dino_gate(self, ref: torch.Tensor) -> torch.Tensor | None:
         payload = self.runtime_conditioning if isinstance(self.runtime_conditioning, dict) else {}

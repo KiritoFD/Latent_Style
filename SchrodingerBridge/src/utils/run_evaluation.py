@@ -352,6 +352,8 @@ def _runtime_observability_from_model(model: torch.nn.Module | None) -> dict[str
         stats[f"i2sb_{key}"] = value
     for key, value in _runtime_debug_scalars(getattr(model, "last_solver_noise_debug", {})).items():
         stats[f"solver_{key}"] = value
+    for key, value in _runtime_debug_scalars(getattr(model, "last_style_strength_debug", {})).items():
+        stats[str(key)] = value
     topology_attn = getattr(model, "last_semantic_topology_attn", None)
     stats["semantic_topology_attn_entropy"] = _attention_entropy_scalar(topology_attn)
     stats["semantic_topology_attn_active"] = 1.0 if topology_attn is not None else 0.0
@@ -1686,7 +1688,7 @@ def main():
     parser.add_argument('--cache_dir', type=str, default="../eval_cache", help="Directory to store shared feature caches")
     parser.add_argument('--num_steps', type=int, default=int(full_eval_defaults.get("num_steps", 12)))
     parser.add_argument('--step_size', type=float, default=float(full_eval_defaults.get("step_size", 1.0)))
-    parser.add_argument('--style_strength', type=float, default=full_eval_defaults.get("style_strength", None), help="Global style strength in [0,1]")
+    parser.add_argument('--style_strength', type=float, default=full_eval_defaults.get("style_strength", None), help="Global style strength. Values above 1 require model.style_strength_max > 1.")
     parser.add_argument('--residual_scale', type=float, default=1.0, help="Post-endpoint latent residual scale for inference strengthening. 1.0 keeps default behavior.")
     parser.add_argument(
         '--vae_model',

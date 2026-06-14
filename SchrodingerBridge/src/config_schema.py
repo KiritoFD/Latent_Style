@@ -229,6 +229,7 @@ class ModelConfig:
     style_spatial_routing_temperature: float = 0.25
     style_spatial_content_hidden_dim: int = 64
     style_strength_default: float = 1.0
+    style_strength_max: float = 1.0
     style_strength_step_curve: str = "linear"
     upsample_mode: str = "nearest"
     style_id_spatial_jitter_px: int = 0
