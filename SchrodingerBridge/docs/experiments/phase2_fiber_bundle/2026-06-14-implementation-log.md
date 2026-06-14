@@ -334,3 +334,28 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Stop: process terminated before the first checkpoint/eval because the full-data training cost is not justified for this single knob.
 - Eval/plot status: no `CLIP-S + LPIPS` point exists, so nothing is appended to `plot_points.csv` and the AAAI2027 page-1 figure is unchanged.
 - Decision: `cost_stopped_no_eval`. This is a cost/value stop, not a model-quality conclusion. Future style-release training should use shorter virtual-length probes or be skipped in favor of eval-only tests unless there is stronger prior evidence.
+
+## Short-Probe Replan
+
+- Added `phase2_vel_tok32_safe_semantic_topogate_k070_kin070_vlen010_seed42_b12a1.json`.
+- Probe contract:
+  - mechanism stays fixed to `w_kinetic=0.70` behind the existing `k070` topology-release setting;
+  - parent/eval surface stays inherited from the full-data `k070_kin070` config;
+  - only `data.virtual_length_multiplier=0.10`, `training.num_epochs=6`, and the output root change.
+- Rationale: screen the kinetic-release direction with retained per-epoch `CLIP-S + LPIPS` points before spending another full-data remote run.
+- Manifest: `short_probe_manifest.csv` records the prepared probe and launch/eval roots.
+
+## K070_KIN070_VLEN010 Short Probe And Stop
+
+- Launch: `phase2-k070-kin070-vlen010-probe` on the remote 3060 with `virtual_length_multiplier=0.10`, `num_epochs=6`, `save_interval=1`, and full eval after every retained epoch.
+- Parent/control: `k070 epoch_0003`; only the kinetic-release knob stayed changed through inherited `w_kinetic=0.70`.
+- Smoke: local config smoke passed and wrote `eval/k070_kin070_vlen010_smoke.json`; DINO runtime was not required.
+- Runtime: GPU stayed under cap; train peak was about `4.91 / 5.70-5.89 GiB`, so this was not a memory failure.
+- Epoch 1: train `148.3s`, eval wall `250.0s`; transfer `0.672150 / 0.336911`, all-pairs `0.702885 / 0.332846`.
+- Epoch 2: train `148.9s`, eval wall `248.8s`; transfer `0.674131 / 0.340593`, all-pairs `0.704226 / 0.337494`.
+- Epoch 3: train `147.3s`, eval wall `248.0s`; transfer `0.673330 / 0.352338`, all-pairs `0.703133 / 0.347736`.
+- Matched best read: e2 beats `k070 epoch_0003` by only `+0.002310` transfer style and `+0.000993` all-pairs style, while worsening LPIPS by `+0.025975` and `+0.024944`.
+- Stop: after e3 eval settled, the remote process was terminated before continuing epoch 4; final status was `settled_no_live_process` and GPU returned to idle.
+- Pullback: copied remote `clip_lpips_curve.csv`, per-epoch `summary.json`/`metrics.csv`, and training CSV into this round folder; no ckpts were pulled.
+- Plot update: appended unlabeled e1-e3 full/transfer points to `plot_points.csv` with exact train seconds and regenerated the AAAI2027 page-1 figure.
+- Decision: `cost_stopped_negative`. Do not spend a full-data lane on this kinetic-release setting; the style gain is too small for the LPIPS and wall-clock cost.

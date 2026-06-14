@@ -1,0 +1,19 @@
+{
+  "_base": "./phase2_vel_tok32_safe_semantic_topogate_k070_kin070_seed42_b12a1.json",
+  "training": {
+    "num_epochs": 6,
+    "save_interval": 1,
+    "full_eval_each_epoch": true
+  },
+  "data": {
+    "virtual_length_multiplier": 0.1
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k070_kin070_vlen010_seed42_b12a1"
+  },
+  "ablation": {
+    "name": "phase2_vel_tok32_safe_semantic_topogate_k070_kin070_vlen010_b12a1",
+    "axis": "phase2_velocity_style_release_short_probe",
+    "notes": "Cost-controlled short probe after full-data k070_kin070 was stopped as too slow. Keep the same mechanism delta w_kinetic=0.70 and the same parent/eval contract, but set virtual_length_multiplier=0.10 and num_epochs=6 so each retained checkpoint can be CLIP-S/LPIPS evaluated quickly before deciding whether a full-data run is justified."
+  }
+}
