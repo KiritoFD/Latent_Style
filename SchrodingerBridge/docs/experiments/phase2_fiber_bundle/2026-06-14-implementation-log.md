@@ -300,3 +300,15 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Plot update: added the e13 point to `plot_points.csv` and regenerated the AAAI2027 page-1 figure; the point is unlabeled to keep the panel readable.
 - Convergence read: `converged=false`, `best_epoch=epoch_0009`, `last_pareto_epoch=epoch_0010`, `since_last_pareto=3`, `tail_flat=true`.
 - Decision: continue to e14. e13 style is close to parent, but the LPIPS cost is too high and it is still non-Pareto.
+
+## SMoE Epoch 14 Read
+
+- Full eval completed at `2026-06-14 12:51:38 Asia/Shanghai`; training resumed into epoch 15.
+- Training time: `1603.7s`; full-eval wall time: `266.5s`.
+- Transfer: `0.672185 / 0.324834`; all-pairs: `0.703218 / 0.322686`; identity: `0.827351 / 0.314091`.
+- Style above IDT: transfer `+0.032264`; all-pairs `+0.023095`.
+- Matched delta against `k070 epoch_0003`: transfer `+0.000365` style and `+0.010216` LPIPS; all-pairs `-0.000015` style and `+0.010136` LPIPS.
+- Runtime observability: `translation_delta_from_identity=0.018548`, `routing_entropy=1.495014`, `effective_experts=4.496835`, `spatial_abs=0.819658`.
+- Plot update: added the e14 point to `plot_points.csv`, labeled it `e14 pareto`, and regenerated the AAAI2027 page-1 figure.
+- Convergence read: `converged=false`, `best_epoch=epoch_0009`, `last_pareto_epoch=epoch_0014`, `since_last_pareto=0`, `tail_flat=true`.
+- Decision: continue. e14 resets formal patience because it is a new candidate-curve Pareto point, but it is still not promotable against the matched parent because the LPIPS cost is about `+0.010`.
