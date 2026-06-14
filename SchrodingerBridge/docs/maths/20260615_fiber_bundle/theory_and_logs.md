@@ -81,6 +81,7 @@ $$\mathcal{L}_{\text{SWD}} = \sum_{k=1}^K \text{SWD}\left( \alpha_k \odot z_1, \
 | `i2sb_endpoint` Scratch | SDE + Scratch (sigma=0.25) | 无 parent 从头训练 | 0.7248 | 0.7153 | **结构崩塌**：没有内容先验锚定，LPIPS 严重超标。 |
 | **`smoe_fiber_sde_k070` (e1)** | **SMoE + SDE (sigma=0.02) + SWD_16** | **Parent warm-start, e1** | **0.7045** | **0.3404** | **理论首度跑通**：LPIPS (0.340) 安全，且 Style 开始从 0.7019 往上抬升。 |
 | **`smoe_fiber_sde_k070` (e2)** | **SMoE + SDE (sigma=0.02) + SWD_16** | **Parent warm-start, e2** | **0.7038** | **0.3224** | **结构强力收拢**：LPIPS 大幅下降到 0.322，内容保真度极佳，Style 稳定在 0.704。 |
+| **`smoe_fiber_sde_k070` (e3)** | **SMoE + SDE (sigma=0.02) + SWD_16** | **Parent warm-start, e3** | **0.7035** | **0.3259** | **收敛稳定状态**：LPIPS 稳定在 0.326，Style 稳定在 0.7035，已完全进入稳定收敛区间。 |
 
 ---
 
@@ -101,12 +102,18 @@ $$\mathcal{L}_{\text{SWD}} = \sum_{k=1}^K \text{SWD}\left( \alpha_k \odot z_1, \
   - **CLIP Style**: `0.7038`
   - **Content LPIPS**: `0.3224` (内容结构保真度进一步大幅改善，在 SDE 各向同性扩散下，LPIPS 从 0.3404 下降到 0.3224，表现优异)
 
-#### Epoch 3 训练状态 (实时更新于 2026-06-15 06:00)
-- **当前进度**: Step 18/1574 (1% Progress)
+#### Epoch 3 评估细节 (2026-06-15 06:41:22)
+- **checkpoint**: `exp/aaai2027_phase2_smoe_fiber_sde_fiberwise_swd_k070/epoch_0003.pt`
+- **总体结果 (All-Pairs Overview)**:
+  - **CLIP Style**: `0.7035`
+  - **Content LPIPS**: `0.3259` (LPIPS 保持在 0.326 的极低水平，相比 Epoch 1 有显著改善，但由于噪声尺度限制在 0.02，Style 稳定维持在 0.703 附近)
+
+#### Epoch 4 训练状态 (实时更新于 2026-06-15 06:42)
+- **当前进度**: Step 40/1574 (2% Progress)
 - **动态损失分析**:
-  - `flow_loss` $\approx 0.6795$
-  - `tswd_loss` $\approx 0.0111$
-  - `kinetic_loss` $\approx 0.0888$
+  - `flow_loss` $\approx 0.6729$
+  - `tswd_loss` $\approx 0.0102$
+  - `kinetic_loss` $\approx 0.0818$
   - **VRAM 占用**: `6895 MiB / 12288 MiB` (稳定低于 **11.3G** 限制，GPU 利用率 **89%**，温度 **69°C**)。
 
 ---
