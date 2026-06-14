@@ -271,3 +271,22 @@
   - `spatial_abs=0.896498` on transfer.
 - Convergence state from `round2_convergence.json`: `converged=false`, best transfer/all-pairs remains `epoch_0009`, last Pareto remains `epoch_0010`, `since_last_pareto=1`, and `tail_flat=true`.
 - Read: e11 is a non-Pareto tail point and worsens both style and LPIPS from e10. Continue because formal closure requires more post-Pareto failures after e10.
+
+## Epoch 12 Full Eval
+
+- Full eval completed at `2026-06-14 11:48:03 Asia/Shanghai`; training resumed into epoch 13.
+- Checkpoint: `epoch_0012.pt`.
+- Training time: `1535.2s` (`25.59min`) from epoch log `data+comp`; eval wall time from curve: `254.0s`.
+- Transfer: `CLIP-S=0.670048`, `LPIPS=0.331773`, `style - IDT=+0.030127`.
+- All-pairs: `CLIP-S=0.701154`, `LPIPS=0.328471`, `style - IDT=+0.021031`.
+- Identity: `CLIP-S=0.825575`, `LPIPS=0.315265`.
+- Matched delta vs `k070 epoch_0003`:
+  - transfer: `-0.001772` style, `+0.017155` LPIPS.
+  - all-pairs: `-0.002080` style, `+0.015922` LPIPS.
+- Runtime observability from summary:
+  - `translation_delta_from_identity=0.017843`.
+  - `routing_entropy=1.635242`.
+  - `effective_experts=5.161444`.
+  - `spatial_abs=0.850654` on transfer.
+- Convergence state from `round2_convergence.json`: `converged=false`, best transfer/all-pairs remains `epoch_0009`, last Pareto remains `epoch_0010`, `since_last_pareto=2`, and `tail_flat=true`.
+- Read: e12 is the second post-e10 non-Pareto tail point and worsens LPIPS further. Continue until the formal patience rule can close or a new Pareto point appears.

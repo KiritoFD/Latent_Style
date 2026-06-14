@@ -276,3 +276,15 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Plot update: added the e11 point to `plot_points.csv` and regenerated the AAAI2027 page-1 figure; the point is unlabeled to keep the panel readable.
 - Convergence read: `converged=false`, `best_epoch=epoch_0009`, `last_pareto_epoch=epoch_0010`, `since_last_pareto=1`, `tail_flat=true`.
 - Decision: continue. e11 is a clear non-Pareto tail point, but e10 reset the Pareto patience, so the SMoE-only family cannot close yet.
+
+## SMoE Epoch 12 Read
+
+- Full eval completed at `2026-06-14 11:48:03 Asia/Shanghai`; training resumed into epoch 13.
+- Training time: `1535.2s`; full-eval wall time: `254.0s`.
+- Transfer: `0.670048 / 0.331773`; all-pairs: `0.701154 / 0.328471`; identity: `0.825575 / 0.315265`.
+- Style above IDT: transfer `+0.030127`; all-pairs `+0.021031`.
+- Matched delta against `k070 epoch_0003`: transfer `-0.001772` style and `+0.017155` LPIPS; all-pairs `-0.002080` style and `+0.015922` LPIPS.
+- Runtime observability: `translation_delta_from_identity=0.017843`, `routing_entropy=1.635242`, `effective_experts=5.161444`, `spatial_abs=0.850654`.
+- Plot update: added the e12 point to `plot_points.csv` and regenerated the AAAI2027 page-1 figure; the point is unlabeled to keep the panel readable.
+- Convergence read: `converged=false`, `best_epoch=epoch_0009`, `last_pareto_epoch=epoch_0010`, `since_last_pareto=2`, `tail_flat=true`.
+- Decision: continue. e12 is the second post-e10 non-Pareto tail point and does not improve either the e9 style or the e8/e10 structure tradeoff.
