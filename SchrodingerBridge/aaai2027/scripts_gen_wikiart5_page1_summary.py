@@ -60,6 +60,8 @@ TRACE_STYLES = {
     "smoe_translator_k070_e3": ("#64748B", "^", 36, 0.72),
     "k070_kin070_vlen010": ("#EF4444", "x", 44, 0.78),
     "latent_affine_k070_e3": ("#BE123C", "^", 72, 0.98),
+    "latent_affine_refine_k070_e3": ("#E11D48", "D", 48, 0.92),
+    "latent_affine_pc_k070_e3": ("#DB2777", "v", 52, 0.90),
 }
 
 LABEL_ALLOWLIST = {
@@ -71,7 +73,7 @@ LABEL_ALLOWLIST = {
     "SaMST e15",
     "e3 best LPIPS",
     "SDE s0.08 ceiling",
-    "LatAff s0.50",
+    "LatAff s0.45",
     "LatAff s0.75",
 }
 
@@ -84,7 +86,7 @@ LABEL_OFFSETS = {
     "SaMST e15": (-66.0, 14.0),
     "e3 best LPIPS": (18.0, -18.0),
     "SDE s0.08 ceiling": (14.0, 24.0),
-    "LatAff s0.50": (18.0, 18.0),
+    "LatAff s0.45": (38.0, 8.0),
     "LatAff s0.75": (18.0, -18.0),
 }
 
@@ -379,6 +381,8 @@ def plot(points: list[dict[str, str]]) -> None:
         "k070_e1_e5": "Ours k070",
         "fiber_sde_fine_k070_e3": "Fiber/SDE",
         "latent_affine_k070_e3": "Latent affine",
+        "latent_affine_refine_k070_e3": "LatAff refine",
+        "latent_affine_pc_k070_e3": "LatAff+PC",
     }
 
     for trace_id, rows in sorted(by_trace.items()):
@@ -387,7 +391,7 @@ def plot(points: list[dict[str, str]]) -> None:
         ys = [float(row["style_minus_idt"]) for row in rows]
         color, marker, size, alpha = _style_for(trace_id)
         if len(rows) > 1 and trace_id not in {"idt", "seedream_test_only"}:
-            lw = 1.7 if trace_id in {"samam_wikiarts5_patch8", "samst_wikiarts5", "latent_affine_k070_e3"} else 1.15
+            lw = 1.7 if trace_id in {"samam_wikiarts5_patch8", "samst_wikiarts5", "latent_affine_k070_e3", "latent_affine_refine_k070_e3"} else 1.15
             ax.plot(xs, ys, color=color, lw=lw, alpha=min(0.72, alpha), zorder=2)
         scatter_kwargs = {
             "s": size,
@@ -395,7 +399,7 @@ def plot(points: list[dict[str, str]]) -> None:
             "marker": marker,
             "linewidths": 0.85,
             "alpha": alpha,
-            "zorder": 6 if trace_id in {"latent_affine_k070_e3", "idt", "seedream_test_only"} else 4,
+            "zorder": 6 if trace_id in {"latent_affine_k070_e3", "latent_affine_refine_k070_e3", "latent_affine_pc_k070_e3", "idt", "seedream_test_only"} else 4,
         }
         if marker != "x":
             scatter_kwargs["edgecolors"] = "white"

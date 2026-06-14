@@ -1,0 +1,21 @@
+{
+  "_comment": "Eval-only combination screen from k070 epoch_0003. Latent style affine supplies style; PC latent_lowpass tests structure repair. No training.",
+  "model": {
+    "solver_family": "solver_pc",
+    "solver_corrector_steps": 2,
+    "solver_corrector_step_size": 0.10,
+    "solver_corrector_mode": "latent_lowpass",
+    "solver_corrector_lowpass_kernel": 5,
+    "solver_corrector_clamp": 0.0
+  },
+  "full_eval": {
+    "latent_postprocess_mode": "style_latent_affine",
+    "latent_postprocess_strength": 0.75,
+    "latent_postprocess_mean_strength": 1.0,
+    "latent_postprocess_std_strength": 1.0,
+    "latent_postprocess_ref_limit": 64,
+    "only_lpips_clip_style": true,
+    "save_generated_images": false,
+    "save_summary_grid": false
+  }
+}
