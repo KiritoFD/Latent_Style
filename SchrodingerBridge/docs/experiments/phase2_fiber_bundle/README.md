@@ -11,7 +11,7 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 
 ## Current Homepage Overlay
 
-- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05` plus the fine `0.04/0.06/0.08` style-ceiling extension, SMoE epoch `1-15`, the short `k070_kin070_vlen010` kinetic-release probe epoch `1-3`, the eval-only `rgbcal_k070_e3` scan, the eval-only `topology_release_k070_e3` blend scan, and the eval-only `appearance_blend_k070_e3` output-affine scan are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
+- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05` plus the fine `0.04/0.06/0.08` style-ceiling extension, SMoE epoch `1-15`, the short `k070_kin070_vlen010` kinetic-release probe epoch `1-3`, the eval-only `rgbcal_k070_e3` scan, the eval-only `topology_release_k070_e3` blend scan, the eval-only `appearance_blend_k070_e3` output-affine scan, and the eval-only `pc_lowpass_k070_e3` solver scan are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
 - The trace uses transfer `CLIP-S - IDT` on the y-axis and `1 - LPIPS` on the x-axis.
 - All retained checkpoints are drawn and connected.
 - Labels are sparse by design:
@@ -36,6 +36,7 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
   - [fiber_sde_fine_k070_e3_eval_only_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/fiber_sde_fine_k070_e3_eval_only_curve.csv)
   - [topology_release_k070_e3_eval_only_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/topology_release_k070_e3_eval_only_curve.csv)
   - [appearance_blend_k070_e3_eval_only_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/appearance_blend_k070_e3_eval_only_curve.csv)
+  - [pc_lowpass_k070_e3_eval_only_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/pc_lowpass_k070_e3_eval_only_curve.csv)
 - Rendered page-1 figure:
   - [fig_distinct5_page1_summary.png](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/figures/fig_distinct5_page1_summary.png)
 
@@ -124,6 +125,15 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 - `blend=0.5`: transfer `0.671748 / 0.314596`, all-pairs `0.703189 / 0.312540`.
 - `blend=1.0`: transfer `0.671744 / 0.314595`, all-pairs `0.703187 / 0.312539`.
 - Decision: `flat_no_training_value`. The output appearance affine path is not the style bottleneck under this parent; do not spend a long training lane on this isolated knob.
+
+## Current PC-Lowpass Eval-Only Closure
+
+- `pc_lowpass_k070_e3` tested `solver_pc + latent_lowpass` correction step sizes `0.03`, `0.06`, and `0.10` from the matched `k070 epoch_0003` parent.
+- Parent/control: transfer `0.671820 / 0.314618`, all-pairs `0.703234 / 0.312550`.
+- `step=0.03`: transfer `0.671606 / 0.313594`, all-pairs `0.703035 / 0.311723`.
+- `step=0.06`: transfer `0.671214 / 0.312733`, all-pairs `0.702729 / 0.311048`.
+- `step=0.10`: transfer `0.671096 / 0.311748`, all-pairs `0.702628 / 0.310271`.
+- Decision: `structure_repair_not_style_path`. PC improves LPIPS but lowers style, so keep it only as a possible safety correction after a future style-strong mechanism, not as the primary style route.
 
 ## Plot Update Contract
 

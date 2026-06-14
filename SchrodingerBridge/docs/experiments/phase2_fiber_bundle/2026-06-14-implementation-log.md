@@ -414,3 +414,17 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Matched delta: every point is noise-level and slightly below the parent in CLIP-style; the best LPIPS change is only about `-0.000023`.
 - Plot update: appended the three-point `appearance_blend_k070_e3` trace to `plot_points.csv`, regenerated the AAAI2027 page-1 figure, and wrote `curves/appearance_blend_k070_e3_eval_only_curve.csv`.
 - Decision: `flat_no_training_value`. Do not train this isolated output appearance blend knob; the next candidate must be either eval-only or a much cheaper probe with a visible style response before full-data training.
+
+## PC-Lowpass Eval-Only Scan
+
+- Trigger: PC solver remained the cheapest unclosed recommendation in `FIBER_BUNDLE_DESIGN.md` and `guide_for_running_codex.md`, while training-side probes are too slow for the observed returns.
+- Parent/control: `k070 epoch_0003`; parent transfer `0.671820 / 0.314618`, all-pairs `0.703234 / 0.312550`.
+- Configs added: `phase2_eval_pc_lowpass_step0p03_k070_e3.json`, `phase2_eval_pc_lowpass_step0p06_k070_e3.json`, and `phase2_eval_pc_lowpass_step0p10_k070_e3.json`.
+- Remote execution: three sequential eval-only runs under `exp/inmortal-exp/phase2_pc_lowpass_k070_e3`; seed fixed to `42`; generated grids disabled; no ckpts were pulled.
+- Runtime: each point took about `149-152s`; health-window GPU memory was about `2.4 GiB` and the remote GPU returned to idle after completion.
+- `step=0.03`: transfer `0.671606 / 0.313594`, all-pairs `0.703035 / 0.311723`.
+- `step=0.06`: transfer `0.671214 / 0.312733`, all-pairs `0.702729 / 0.311048`.
+- `step=0.10`: transfer `0.671096 / 0.311748`, all-pairs `0.702628 / 0.310271`.
+- Matched delta: increasing PC correction monotonically improves LPIPS but lowers style; the strongest correction gains `-0.002870` transfer LPIPS but loses `-0.000725` transfer style.
+- Plot update: appended the three-point `pc_lowpass_k070_e3` trace to `plot_points.csv`, regenerated the AAAI2027 page-1 figure, and wrote `curves/pc_lowpass_k070_e3_eval_only_curve.csv`.
+- Decision: `structure_repair_not_style_path`. Do not train this isolated PC path; keep it as a future safety correction if a style-strong mechanism needs LPIPS repair.
