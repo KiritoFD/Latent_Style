@@ -290,3 +290,22 @@
   - `spatial_abs=0.850654` on transfer.
 - Convergence state from `round2_convergence.json`: `converged=false`, best transfer/all-pairs remains `epoch_0009`, last Pareto remains `epoch_0010`, `since_last_pareto=2`, and `tail_flat=true`.
 - Read: e12 is the second post-e10 non-Pareto tail point and worsens LPIPS further. Continue until the formal patience rule can close or a new Pareto point appears.
+
+## Epoch 13 Full Eval
+
+- Full eval completed at `2026-06-14 12:19:26 Asia/Shanghai`; training resumed into epoch 14.
+- Checkpoint: `epoch_0013.pt`.
+- Training time: `1556.4s` (`25.94min`) from epoch log `data+comp`; eval wall time from curve: `268.5s`.
+- Transfer: `CLIP-S=0.671565`, `LPIPS=0.336139`, `style - IDT=+0.031644`.
+- All-pairs: `CLIP-S=0.702369`, `LPIPS=0.332186`, `style - IDT=+0.022246`.
+- Identity: `CLIP-S=0.825586`, `LPIPS=0.316374`.
+- Matched delta vs `k070 epoch_0003`:
+  - transfer: `-0.000256` style, `+0.021521` LPIPS.
+  - all-pairs: `-0.000865` style, `+0.019636` LPIPS.
+- Runtime observability from summary:
+  - `translation_delta_from_identity=0.018194`.
+  - `routing_entropy=1.585930`.
+  - `effective_experts=4.921388`.
+  - `spatial_abs=0.836015` on transfer.
+- Convergence state from `round2_convergence.json`: `converged=false`, best transfer/all-pairs remains `epoch_0009`, last Pareto remains `epoch_0010`, `since_last_pareto=3`, and `tail_flat=true`.
+- Read: e13 nearly recovers parent transfer style but at the worst LPIPS cost in the post-e10 tail. One more non-Pareto retained checkpoint should satisfy the regular-family patience condition if the deep review contract is not contradicted.
