@@ -11,7 +11,7 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 
 ## Current Homepage Overlay
 
-- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05`, SMoE epoch `1-15`, and the short `k070_kin070_vlen010` kinetic-release probe epoch `1-3` are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
+- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05`, SMoE epoch `1-15`, the short `k070_kin070_vlen010` kinetic-release probe epoch `1-3`, and the eval-only `rgbcal_k070_e3` scan are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
 - The trace uses transfer `CLIP-S - IDT` on the y-axis and `1 - LPIPS` on the x-axis.
 - All retained checkpoints are drawn and connected.
 - Labels are sparse by design:
@@ -31,6 +31,7 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
   - [eval/fiber_sde_sigma0p05/fiber_aligned/summary.json](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/eval/fiber_sde_sigma0p05/fiber_aligned/summary.json)
   - [smoe_translator_k070_e3_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/smoe_translator_k070_e3_remote_clip_lpips_curve.csv)
   - [k070_kin070_vlen010_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/k070_kin070_vlen010_remote_clip_lpips_curve.csv)
+  - [rgbcal_k070_e3_eval_only_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/rgbcal_k070_e3_eval_only_curve.csv)
 - Rendered page-1 figure:
   - [fig_distinct5_page1_summary.png](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/figures/fig_distinct5_page1_summary.png)
 
@@ -82,6 +83,15 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 - `epoch_0003` worsened to transfer `0.673330 / 0.352338` and all-pairs `0.703133 / 0.347736`.
 - Decision: `cost_stopped_negative`. Do not run the full-data `k070_kin070` follow-up; the kinetic-release knob is not worth more remote training under this parent/eval contract.
 - Next style-release work should prefer eval-only solvers or post-decode calibration first. Any new training-side knob must pass a short-probe threshold before a full lane is launched.
+
+## Current RGB Calibration Eval-Only Closure
+
+- `rgbcal_k070_e3` tested decoded RGB style-affine calibration from the matched `k070 epoch_0003` parent with strengths `0.25`, `0.50`, and `0.75`.
+- Runtime was cheap enough for screening: each full `CLIP-S + LPIPS` pass took about `154-155s` and remote VRAM stayed in eval-only territory.
+- Best structure point was `s025`: transfer `0.654740 / 0.308625`, all-pairs `0.688668 / 0.305492`.
+- Matched against `k070 epoch_0003`, `s025` improved transfer LPIPS by `-0.005993` and all-pairs LPIPS by `-0.007058`, but lost `-0.017080` transfer style and `-0.014566` all-pairs style.
+- Stronger calibration worsened the tradeoff: `s050` fell to transfer `0.645430 / 0.328338`; `s075` fell to transfer `0.641211 / 0.352983`.
+- Decision: `cost_positive_quality_negative`. Keep the post-decode switch for reproducible negative evidence, but do not promote it or spend training budget on brightness/contrast-only alignment under this parent.
 
 ## Plot Update Contract
 

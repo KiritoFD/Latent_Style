@@ -359,3 +359,16 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Pullback: copied remote `clip_lpips_curve.csv`, per-epoch `summary.json`/`metrics.csv`, and training CSV into this round folder; no ckpts were pulled.
 - Plot update: appended unlabeled e1-e3 full/transfer points to `plot_points.csv` with exact train seconds and regenerated the AAAI2027 page-1 figure.
 - Decision: `cost_stopped_negative`. Do not spend a full-data lane on this kinetic-release setting; the style gain is too small for the LPIPS and wall-clock cost.
+
+## RGB Calibration Eval-Only Sweep And Stop
+
+- Motivation: because full training probes were too slow for the observed returns, pivot to an eval-only decoded RGB style-affine calibration switch before spending more remote training budget.
+- Implementation: added default-off `full_eval.postprocess_mode=style_rgb_affine` with strength, mean strength, std strength, and reference-limit controls. The transform is applied after VAE decode and before metric computation, so legacy checkpoints and training remain unchanged unless the eval config enables it.
+- Parent/control: `k070 epoch_0003`, transfer `0.671820 / 0.314618`, all-pairs `0.703234 / 0.312550`.
+- Remote runs: `phase2_eval_rgbcal_s025_k070_e3`, `phase2_eval_rgbcal_s050_k070_e3`, and `phase2_eval_rgbcal_s075_k070_e3`; all were eval-only on the remote 3060, with no ckpt pullback.
+- Runtime: each pass took about `154-155s`; GPU returned to idle after the sweep, and no Python training/eval process remained active.
+- `s025`: transfer `0.654740 / 0.308625`, all-pairs `0.688668 / 0.305492`; delta versus parent was transfer `-0.017080` style and `-0.005993` LPIPS, all-pairs `-0.014566` style and `-0.007058` LPIPS.
+- `s050`: transfer `0.645430 / 0.328338`, all-pairs `0.679670 / 0.324097`; this loses more style and also loses structure versus the parent.
+- `s075`: transfer `0.641211 / 0.352983`, all-pairs `0.675231 / 0.347546`; this is dominated by both parent and `s025`.
+- Plot update: appended the three-point `rgbcal_k070_e3` trace to `plot_points.csv`, added `RGBCal` to the AAAI2027 page-1 panel, and wrote the fixed curve CSV at `curves/rgbcal_k070_e3_eval_only_curve.csv`.
+- Decision: `cost_positive_quality_negative`. The cheap screen is useful negative evidence, but simple exposure/contrast/stat matching suppresses CLIP-style and should not be promoted or used as a training target without a stronger style-specific objective.

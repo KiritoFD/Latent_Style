@@ -641,6 +641,81 @@ def _uint8_hwc_to_float_chw(image: torch.Tensor) -> torch.Tensor:
     return image.permute(2, 0, 1).contiguous().to(torch.float32).div_(255.0)
 
 
+def _compute_style_rgb_stats(
+    test_images: dict[int, tuple[str, list[Path]]],
+    *,
+    image_size: int,
+    ref_limit: int,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    num_styles = max(test_images.keys(), default=-1) + 1
+    means = torch.full((num_styles, 3, 1, 1), 0.5, dtype=torch.float32)
+    stds = torch.full((num_styles, 3, 1, 1), 0.25, dtype=torch.float32)
+    limit = int(ref_limit)
+    for style_id, (_, paths) in test_images.items():
+        selected = list(paths)
+        if limit > 0:
+            selected = selected[:limit]
+        if not selected:
+            continue
+        sum_rgb = torch.zeros(3, dtype=torch.float64)
+        sumsq_rgb = torch.zeros(3, dtype=torch.float64)
+        pixel_count = 0
+        for path in selected:
+            try:
+                img = _load_eval_image_tensor(path, size=image_size).to(dtype=torch.float64)
+            except Exception:
+                continue
+            flat = img.view(3, -1)
+            sum_rgb += flat.sum(dim=1)
+            sumsq_rgb += flat.square().sum(dim=1)
+            pixel_count += int(flat.shape[1])
+        if pixel_count <= 0:
+            continue
+        mean = sum_rgb / float(pixel_count)
+        var = (sumsq_rgb / float(pixel_count) - mean.square()).clamp_min(1e-6)
+        means[int(style_id), :, 0, 0] = mean.to(dtype=torch.float32)
+        stds[int(style_id), :, 0, 0] = var.sqrt().to(dtype=torch.float32)
+    return means, stds
+
+
+def _apply_postdecode_style_rgb_affine(
+    images: torch.Tensor,
+    target_ids: torch.Tensor,
+    target_means: torch.Tensor | None,
+    target_stds: torch.Tensor | None,
+    *,
+    strength: float,
+    mean_strength: float,
+    std_strength: float,
+    eps: float = 1e-5,
+) -> tuple[torch.Tensor, dict[str, float]]:
+    if target_means is None or target_stds is None or images.numel() == 0:
+        return images, {"postdecode_rgbcal_active": 0.0}
+    strength = max(0.0, min(1.0, float(strength)))
+    mean_strength = max(0.0, min(1.0, float(mean_strength)))
+    std_strength = max(0.0, min(1.0, float(std_strength)))
+    if strength <= 0.0 or (mean_strength <= 0.0 and std_strength <= 0.0):
+        return images, {"postdecode_rgbcal_active": 0.0}
+
+    target_ids = target_ids.to(device=images.device, dtype=torch.long).clamp(0, target_means.shape[0] - 1)
+    tgt_mean = target_means.to(device=images.device, dtype=images.dtype)[target_ids]
+    tgt_std = target_stds.to(device=images.device, dtype=images.dtype)[target_ids].clamp_min(eps)
+    img_mean = images.mean(dim=(-2, -1), keepdim=True)
+    img_std = images.std(dim=(-2, -1), keepdim=True, unbiased=False).clamp_min(eps)
+    out_mean = img_mean.lerp(tgt_mean, mean_strength)
+    out_std = img_std.lerp(tgt_std, std_strength).clamp_min(eps)
+    affine = (images - img_mean) / img_std * out_std + out_mean
+    adjusted = images.lerp(affine, strength).clamp(0.0, 1.0)
+    return adjusted, {
+        "postdecode_rgbcal_active": 1.0,
+        "postdecode_rgbcal_strength": float(strength),
+        "postdecode_rgbcal_mean_strength": float(mean_strength),
+        "postdecode_rgbcal_std_strength": float(std_strength),
+        "postdecode_rgbcal_mean_delta": float((tgt_mean - img_mean).detach().abs().mean().cpu().item()),
+        "postdecode_rgbcal_std_delta": float((tgt_std - img_std).detach().abs().mean().cpu().item()),
+    }
+
+
 def save_image_task(image_cpu, path, backend: str = "pil_png"):
     """Async save task to avoid blocking GPU loop."""
     try:
@@ -1438,6 +1513,11 @@ def _auto_run_missing_full_eval(args) -> None:
             "--vae_decode_batch_size", str(args.vae_decode_batch_size),
             "--image_save_workers", str(args.image_save_workers),
             "--image_save_backend", str(args.image_save_backend),
+            "--postprocess_mode", str(args.postprocess_mode),
+            "--postprocess_strength", str(args.postprocess_strength),
+            "--postprocess_mean_strength", str(args.postprocess_mean_strength),
+            "--postprocess_std_strength", str(args.postprocess_std_strength),
+            "--postprocess_ref_limit", str(args.postprocess_ref_limit),
             "--clip_model_name", str(args.clip_model_name),
             "--clip_modelscope_id", str(args.clip_modelscope_id),
             "--clip_modelscope_cache_dir", str(args.clip_modelscope_cache_dir),
@@ -1664,6 +1744,17 @@ def main():
     parser.add_argument('--eval_kid_batch_size', type=int, default=8, help="Batch size for KID image loading/inception")
     parser.add_argument('--eval_lpips_chunk_size', type=int, default=2, help="LPIPS chunk size for conservative VRAM usage")
     parser.add_argument('--eval_lpips_no_cpu_fallback', action='store_true', help="Disable CPU fallback when LPIPS CUDA OOM occurs")
+    parser.add_argument(
+        '--postprocess_mode',
+        type=str,
+        default=str(full_eval_defaults.get("postprocess_mode", "none")),
+        choices=["none", "style_rgb_affine"],
+        help="Optional decoded-RGB postprocess before image save and metrics.",
+    )
+    parser.add_argument('--postprocess_strength', type=float, default=float(full_eval_defaults.get("postprocess_strength", 0.0)))
+    parser.add_argument('--postprocess_mean_strength', type=float, default=float(full_eval_defaults.get("postprocess_mean_strength", 1.0)))
+    parser.add_argument('--postprocess_std_strength', type=float, default=float(full_eval_defaults.get("postprocess_std_strength", 1.0)))
+    parser.add_argument('--postprocess_ref_limit', type=int, default=int(full_eval_defaults.get("postprocess_ref_limit", 64)))
     parser.add_argument('--reuse_generated', action='store_true', help="Reuse existing generated images in output dir/images (or legacy output dir) and skip generation")
     parser.add_argument('--generation_only', action='store_true', help="Only generate translated images, skip all evaluation metrics")
     parser.add_argument('--seed', type=int, default=-1, help="Seed RNGs for reproducible VAE latent sampling/generation; <0 leaves RNG state untouched.")
@@ -1811,6 +1902,16 @@ def main():
                 args.introstyle_up_ft_index = int(resolved_full_eval["introstyle_up_ft_index"])
             if "introstyle_ensemble_size" in resolved_full_eval and not _cli_provided("introstyle_ensemble_size"):
                 args.introstyle_ensemble_size = int(resolved_full_eval["introstyle_ensemble_size"])
+            if "postprocess_mode" in resolved_full_eval and not _cli_provided("postprocess_mode"):
+                args.postprocess_mode = str(resolved_full_eval["postprocess_mode"])
+            if "postprocess_strength" in resolved_full_eval and not _cli_provided("postprocess_strength"):
+                args.postprocess_strength = float(resolved_full_eval["postprocess_strength"])
+            if "postprocess_mean_strength" in resolved_full_eval and not _cli_provided("postprocess_mean_strength"):
+                args.postprocess_mean_strength = float(resolved_full_eval["postprocess_mean_strength"])
+            if "postprocess_std_strength" in resolved_full_eval and not _cli_provided("postprocess_std_strength"):
+                args.postprocess_std_strength = float(resolved_full_eval["postprocess_std_strength"])
+            if "postprocess_ref_limit" in resolved_full_eval and not _cli_provided("postprocess_ref_limit"):
+                args.postprocess_ref_limit = int(resolved_full_eval["postprocess_ref_limit"])
     else:
         print("Single-run eval in reuse-only mode (no checkpoint).")
 
@@ -1862,6 +1963,25 @@ def main():
         # Only take valid images
         images = sorted([p for p in s_dir.iterdir() if p.suffix.lower() in ['.jpg', '.png', '.jpeg', '.webp']])
         test_images[style_id] = (style_name, images)
+
+    postprocess_mode = str(args.postprocess_mode).strip().lower()
+    if postprocess_mode not in {"none", "style_rgb_affine"}:
+        raise ValueError(f"Unsupported postprocess_mode: {args.postprocess_mode}")
+    post_rgb_means = None
+    post_rgb_stds = None
+    if postprocess_mode == "style_rgb_affine" and float(args.postprocess_strength) > 0.0:
+        post_rgb_means, post_rgb_stds = _compute_style_rgb_stats(
+            test_images,
+            image_size=256,
+            ref_limit=int(args.postprocess_ref_limit),
+        )
+        print(
+            "Post-decode RGB calibration enabled: "
+            f"strength={float(args.postprocess_strength):.3f}, "
+            f"mean={float(args.postprocess_mean_strength):.3f}, "
+            f"std={float(args.postprocess_std_strength):.3f}, "
+            f"ref_limit={int(args.postprocess_ref_limit)}"
+        )
 
     # Prepare Source List
     all_src_info = []
@@ -2057,6 +2177,23 @@ def main():
                                 device,
                                 scaling_factor=args.vae_decode_scale,
                             )
+                            post_debug = None
+                            if postprocess_mode == "style_rgb_affine":
+                                dec_meta = meta[dec_start:dec_end]
+                                dec_tgt_ids = torch.tensor(
+                                    [int(x[2]) for x in dec_meta],
+                                    device=imgs_gen.device,
+                                    dtype=torch.long,
+                                )
+                                imgs_gen, post_debug = _apply_postdecode_style_rgb_affine(
+                                    imgs_gen,
+                                    dec_tgt_ids,
+                                    post_rgb_means,
+                                    post_rgb_stds,
+                                    strength=float(args.postprocess_strength),
+                                    mean_strength=float(args.postprocess_mean_strength),
+                                    std_strength=float(args.postprocess_std_strength),
+                                )
                             _sync_cuda_if(device, bool(args.profile_timing))
                             _add_timing(timings, "vae_decode", t0)
                             save_generated_images = bool(args.save_generated_images)
@@ -2075,6 +2212,9 @@ def main():
                                 _add_timing(timings, "generated_cpu_copy", t0)
                             t0 = time.perf_counter()
                             for local_i, (src_item, tgt_name, tgt_id, out_name) in enumerate(meta[dec_start:dec_end]):
+                                runtime_observability = dict(chunk_runtime_observability) if chunk_runtime_observability else {}
+                                if isinstance(post_debug, dict):
+                                    runtime_observability.update(post_debug)
                                 gen_name = out_name
                                 gen_img_payload = imgs_gen_cpu[local_i] if imgs_gen_cpu is not None else imgs_gen_u8_cpu[local_i]
                                 if save_generated_images:
@@ -2094,7 +2234,7 @@ def main():
                                     'tgt_style_id': tgt_id,
                                     'gen_img': gen_img_payload,
                                     'gen_name': gen_name,
-                                    'runtime_observability': dict(chunk_runtime_observability) if chunk_runtime_observability else None,
+                                    'runtime_observability': runtime_observability or None,
                                 })
                             if save_generated_images:
                                 _add_timing(timings, "image_save_submit", t0)
@@ -2135,6 +2275,11 @@ def main():
                 "save_generated_images": bool(args.save_generated_images),
                 "profile_timing": bool(args.profile_timing),
                 "save_summary_grid": bool(args.save_summary_grid),
+                "postprocess_mode": str(args.postprocess_mode),
+                "postprocess_strength": float(args.postprocess_strength),
+                "postprocess_mean_strength": float(args.postprocess_mean_strength),
+                "postprocess_std_strength": float(args.postprocess_std_strength),
+                "postprocess_ref_limit": int(args.postprocess_ref_limit),
             },
             "timings_sec": {k: float(v) for k, v in sorted(timings.items())},
             "note": "Metrics are intentionally skipped. Run evaluation later with --reuse_generated.",
@@ -2785,6 +2930,11 @@ def main():
             "profile_timing": bool(args.profile_timing),
             "save_summary_grid": bool(args.save_summary_grid),
             "only_lpips_clip_style": bool(args.eval_only_lpips_clip_style),
+            "postprocess_mode": str(args.postprocess_mode),
+            "postprocess_strength": float(args.postprocess_strength),
+            "postprocess_mean_strength": float(args.postprocess_mean_strength),
+            "postprocess_std_strength": float(args.postprocess_std_strength),
+            "postprocess_ref_limit": int(args.postprocess_ref_limit),
             "enable_introstyle": bool(args.eval_enable_introstyle),
             "introstyle_style_bank_root": str(args.introstyle_style_bank_root) if str(args.introstyle_style_bank_root).strip() else str(test_dir),
             "introstyle_model_id": str(args.introstyle_model_id),
