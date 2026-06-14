@@ -450,3 +450,16 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - The rebuilt figure contains `159` points: `1` IDT test-only reference, `1` Seedream test-only reference, `92` SaMAM WikiArt-5 points, `3` SaMST WikiArt-5 points, and `62` phase2 full-notest points.
 - The plot uses transfer `CLIP-S - IDT` on the y-axis and `1 - LPIPS` on the x-axis. Old mixed-source points are excluded by construction.
 - The legend is placed in the lower right as requested. The compatibility filenames `fig_distinct5_page1_summary.*` and `fig_distinct5_page1_summary_clip_delta_idt.*` now contain the same filtered WikiArt-5 panel.
+
+## Latent-Affine Refinement And PC Safety Check
+
+- Trigger: `s0.50` was a balanced candidate but the style/LPIPS slope around `0.25-0.75` was still undersampled. The follow-up stayed eval-only and tested `s0.35`, `s0.45`, `s0.60`, plus `s0.50+PC0.10` and `s0.75+PC0.10`.
+- Remote execution: five sequential eval-only runs under `exp/inmortal-exp/phase2_latent_affine_refine_k070_e3`; seed fixed to `42`; generated grids disabled; no ckpts were pulled.
+- Runtime: health-window GPU memory stayed around `2.8 GiB`, and the remote GPU returned to idle after the sweep.
+- `s0.35`: transfer `0.676781 / 0.313606`, all-pairs `0.709329 / 0.308847`; improves both style and LPIPS versus parent.
+- `s0.45`: transfer `0.679110 / 0.318818`, all-pairs `0.711609 / 0.313230`; current balanced frontier.
+- `s0.60`: transfer `0.682390 / 0.330056`, all-pairs `0.714810 / 0.323339`; style rises but LPIPS cost starts to dominate.
+- `s0.50+PC0.10`: transfer `0.680160 / 0.320104`, all-pairs `0.712667 / 0.314519`; PC repairs LPIPS slightly versus pure `s0.50`.
+- `s0.75+PC0.10`: transfer `0.685304 / 0.343517`, all-pairs `0.717560 / 0.336053`; PC does not rescue high-strength LPIPS cost.
+- Plot update: appended the five-point refine/PC traces to `plot_points.csv`, labeled only `LatAff s0.45`, regenerated the filtered WikiArt-5 AAAI2027 page-1 figure, and wrote `curves/latent_affine_refine_k070_e3_eval_only_curve.csv`.
+- Decision: `balanced_frontier`. The affine path is useful as eval-time amplification but is not enough to reach `0.74`; next cheap screen should modify the style generation path rather than increasing affine strength.

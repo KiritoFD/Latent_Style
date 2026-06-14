@@ -12,7 +12,7 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 
 ## Current Homepage Overlay
 
-- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05` plus the fine `0.04/0.06/0.08` style-ceiling extension, SMoE epoch `1-15`, the short `k070_kin070_vlen010` kinetic-release probe epoch `1-3`, the eval-only `rgbcal_k070_e3` scan, the eval-only `topology_release_k070_e3` blend scan, the eval-only `appearance_blend_k070_e3` output-affine scan, the eval-only `pc_lowpass_k070_e3` solver scan, and the eval-only `latent_affine_k070_e3` latent postprocess scan are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
+- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05` plus the fine `0.04/0.06/0.08` style-ceiling extension, SMoE epoch `1-15`, the short `k070_kin070_vlen010` kinetic-release probe epoch `1-3`, the eval-only `rgbcal_k070_e3` scan, the eval-only `topology_release_k070_e3` blend scan, the eval-only `appearance_blend_k070_e3` output-affine scan, the eval-only `pc_lowpass_k070_e3` solver scan, the eval-only `latent_affine_k070_e3` latent postprocess scan, and the `latent_affine_refine_k070_e3` narrow/PC follow-up are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
 - The current page-1 panel is rendered from `aaai2027/page1_bundle/wikiart5_page1_clip_lpips_points.csv`, not from the older mixed-source `distinct5` aggregate tables.
 - The trace uses transfer `CLIP-S - IDT` on the y-axis and `1 - LPIPS` on the x-axis.
 - All retained checkpoints are drawn and connected.
@@ -22,6 +22,7 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
   - `smoe_translator_k070_e3`: `SMoE e1`, `SMoE e2`, `e9 style`, `e14 pareto`, and `stop e15`; other points are plotted but unlabeled to avoid collisions.
   - `fiber_sde_fine_k070_e3`: only `SDE s0.08 ceiling` is labeled; the full `0.04/0.06/0.08` trace is still plotted.
   - `latent_affine_k070_e3`: `LatAff s0.50` and `LatAff s0.75` are labeled; `s0.25` remains plotted as the balanced positive but unlabeled.
+  - `latent_affine_refine_k070_e3`: `LatAff s0.45` is labeled as the current balanced frontier; PC combo points are plotted as a separate trace but unlabeled.
 - Source curve:
   - [k070_epoch1_5_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/k070_epoch1_5_remote_clip_lpips_curve.csv)
   - [pattn_enhanced_tok_epoch1_10_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/pattn_enhanced_tok_epoch1_10_remote_clip_lpips_curve.csv)
@@ -41,6 +42,7 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
   - [appearance_blend_k070_e3_eval_only_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/appearance_blend_k070_e3_eval_only_curve.csv)
   - [pc_lowpass_k070_e3_eval_only_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/pc_lowpass_k070_e3_eval_only_curve.csv)
   - [latent_affine_k070_e3_eval_only_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/latent_affine_k070_e3_eval_only_curve.csv)
+  - [latent_affine_refine_k070_e3_eval_only_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/latent_affine_refine_k070_e3_eval_only_curve.csv)
 - Fixed page-1 CSV:
   - [wikiart5_page1_clip_lpips_points.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/page1_bundle/wikiart5_page1_clip_lpips_points.csv)
 - Rendered page-1 figure:
@@ -150,6 +152,16 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 - `s0.50`: transfer `0.680303 / 0.322202`, all-pairs `0.712764 / 0.316212`; this is the balanced style candidate with transfer style `+0.008483` and all-pairs style `+0.009530` versus the parent.
 - `s0.75`: transfer `0.685444 / 0.344580`, all-pairs `0.717593 / 0.336945`; this is the current phase2 style ceiling but pays too much LPIPS to be a balanced promotion.
 - Decision: `balanced_style_candidate`. Keep the switch default-off and run a narrower cheap screen around the `0.25-0.60` band before any training-side follow-up.
+
+## Current Latent-Affine Refine Closure
+
+- `latent_affine_refine_k070_e3` refined the positive band with `s0.35`, `s0.45`, and `s0.60`, then tested `s0.50+PC0.10` and `s0.75+PC0.10`.
+- `s0.35`: transfer `0.676781 / 0.313606`, all-pairs `0.709329 / 0.308847`; this is structure-positive versus the parent.
+- `s0.45`: transfer `0.679110 / 0.318818`, all-pairs `0.711609 / 0.313230`; this is the current balanced frontier.
+- `s0.60`: transfer `0.682390 / 0.330056`, all-pairs `0.714810 / 0.323339`; style improves but LPIPS cost starts to dominate.
+- `s0.50+PC0.10`: transfer `0.680160 / 0.320104`, all-pairs `0.712667 / 0.314519`; PC repairs LPIPS slightly versus pure `s0.50`, but not enough to be a new direction.
+- `s0.75+PC0.10`: transfer `0.685304 / 0.343517`, all-pairs `0.717560 / 0.336053`; PC does not rescue the style-ceiling LPIPS cost.
+- Decision: `balanced_frontier`. Keep `s0.45` as the clean eval-time style amplifier and use `s0.35` as the safe structure anchor; the next route to `0.74` needs a new style-generation mechanism, not more affine strength.
 
 ## Plot Update Contract
 

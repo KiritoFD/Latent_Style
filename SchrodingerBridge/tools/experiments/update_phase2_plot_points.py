@@ -21,8 +21,6 @@ LEGACY_POINTS_CSV = (
     / "clip_style_vs_1lpips_full_transfer_points.csv"
 )
 PLOT_SCRIPTS = [
-    ROOT / "aaai2027" / "scripts_gen_distinct5_full_transfer_pareto.py",
-    ROOT / "aaai2027" / "scripts_gen_distinct5_all_points_big.py",
     ROOT / "aaai2027" / "scripts_gen_wikiart5_page1_summary.py",
 ]
 

@@ -162,3 +162,11 @@ $$A_{\text{final}} = \alpha A_{\text{self}} + (1-\alpha) A_{\text{cross}}$$
 - `s0.75` is the current style ceiling: transfer `0.685444 / 0.344580`, all-pairs `0.717593 / 0.336945`; style gains further, but LPIPS cost is too high for a balanced promotion.
 - Decision: `balanced_style_candidate`. Keep the switch default-off, refine `0.25-0.60`, and test PC-lowpass as a safety correction only after selecting a style-strong point.
 - The AAAI2027 page-1 figure is now rendered from the filtered WikiArt-5 full-train CSV; old `distinct5-512` / `1000-per-style` training points are excluded.
+
+## 2026-06-14 Latent-Affine Refine Update
+
+- Completed the narrow eval-only follow-up: `s0.35`, `s0.45`, `s0.60`, `s0.50+PC0.10`, and `s0.75+PC0.10`.
+- Best safe point: `s0.35`, transfer `0.676781 / 0.313606`, all-pairs `0.709329 / 0.308847`; it improves both style and LPIPS versus parent.
+- Current balanced frontier: `s0.45`, transfer `0.679110 / 0.318818`, all-pairs `0.711609 / 0.313230`.
+- Current style ceiling after PC check: `s0.75+PC0.10`, transfer `0.685304 / 0.343517`, all-pairs `0.717560 / 0.336053`; PC lowers LPIPS slightly but not enough.
+- Decision: latent affine is a useful eval-time amplifier and diagnostic, but not the route to `0.74` by itself. Next step should alter style generation, not just postprocess strength.
