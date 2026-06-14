@@ -76,10 +76,12 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         self.num_hires_blocks = max(0, int(getattr(cfg, "num_hires_blocks", 2)))
         self.num_res_blocks = max(0, int(getattr(cfg, "num_res_blocks", 4)))
         self.style_spatial_pre_gain_16 = float(getattr(cfg, "style_spatial_pre_gain_16", 0.35))
-        self.style_strength_default = max(0.0, min(1.0, float(getattr(cfg, "style_strength_default", 1.0))))
+        self.style_strength_max = max(1e-6, float(getattr(cfg, "style_strength_max", 1.0)))
+        self.style_strength_default = max(0.0, min(self.style_strength_max, float(getattr(cfg, "style_strength_default", 1.0))))
         self.style_strength_step_curve = str(getattr(cfg, "style_strength_step_curve", "linear")).lower()
         if self.style_strength_step_curve not in {"linear", "smoothstep", "sqrt"}:
             self.style_strength_step_curve = "linear"
+        self.last_style_strength_debug: dict[str, float] = {}
         self.upsample_mode = str(getattr(cfg, "upsample_mode", "nearest"))
         self.style_id_spatial_jitter_px = max(0, int(getattr(cfg, "style_id_spatial_jitter_px", 0)))
         self.upsample_blur = bool(getattr(cfg, "upsample_blur", True))

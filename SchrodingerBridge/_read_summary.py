@@ -1,7 +1,7 @@
 import json
 import sys
 
-path = "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/inmortal-exp/decision_tree_highpass_run/full_eval/epoch_0001/summary.json"
+path = "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_phase2_smoe_fiber_sde_fiberwise_swd_k070/full_eval/epoch_0001/summary.json"
 try:
     with open(path) as f:
         data = json.load(f)

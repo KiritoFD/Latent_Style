@@ -128,11 +128,23 @@ class LatentAdaCUTRuntimeMixin:
 
     def _resolve_style_strength(self, style_strength: float | None) -> float:
         if style_strength is None:
-            return self.style_strength_default
-        return max(0.0, min(1.0, float(style_strength)))
+            requested = float(self.style_strength_default)
+        else:
+            requested = float(style_strength)
+        max_strength = max(1e-6, float(getattr(self, "style_strength_max", 1.0)))
+        resolved = max(0.0, min(max_strength, requested))
+        self.last_style_strength_debug = {
+            "style_strength_requested": float(requested),
+            "style_strength_effective": float(resolved),
+            "style_strength_max": float(max_strength),
+        }
+        return resolved
 
     def _style_strength_step_scale(self, style_strength: float) -> float:
-        s = max(0.0, min(1.0, float(style_strength)))
+        max_strength = max(1e-6, float(getattr(self, "style_strength_max", 1.0)))
+        s = max(0.0, min(max_strength, float(style_strength)))
+        if s > 1.0:
+            return s
         if self.style_strength_step_curve == "sqrt":
             return math.sqrt(s)
         if self.style_strength_step_curve == "smoothstep":
@@ -867,6 +879,7 @@ class LatentAdaCUTRuntimeMixin:
         steps = max(1, int(num_steps))
         strength = self._resolve_style_strength(style_strength)
         step_scale = self._style_strength_step_scale(strength)
+        self.last_style_strength_debug.update({"style_step_scale": float(step_scale), "integration_horizon": float(step_size) * float(step_scale)})
         per_step = 1.0 / float(steps)
         x = self._apply_pre_integrate_moment_match(x, target_style_latent)
         if style_code_override is not None:
@@ -969,6 +982,7 @@ class LatentAdaCUTRuntimeMixin:
     ) -> torch.Tensor:
         strength = self._resolve_style_strength(style_strength)
         step_scale = self._style_strength_step_scale(strength)
+        self.last_style_strength_debug.update({"style_step_scale": float(step_scale), "integration_horizon": float(step_size) * float(step_scale)})
         if style_code_override is not None:
             style_code = style_code_override
             if style_code.ndim == 1:
