@@ -10,13 +10,13 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 
 ## Current Homepage Overlay
 
-- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05`, and SMoE epoch `1-8` are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
+- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05`, and SMoE epoch `1-9` are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
 - The trace uses transfer `CLIP-S - IDT` on the y-axis and `1 - LPIPS` on the x-axis.
 - All retained checkpoints are drawn and connected.
 - Labels are sparse by design:
   - `k070`: `e1` and `e3 best LPIPS`
   - `pattn_enhanced_tok`: `e2 best style` and `e8 low LPIPS`
-  - `smoe_translator_k070_e3`: `SMoE e1` and `SMoE e2`; later points are plotted but unlabeled to avoid collisions.
+  - `smoe_translator_k070_e3`: `SMoE e1`, `SMoE e2`, and `e9 style`; other points are plotted but unlabeled to avoid collisions.
 - Source curve:
   - [k070_epoch1_5_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/k070_epoch1_5_remote_clip_lpips_curve.csv)
   - [pattn_enhanced_tok_epoch1_10_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/pattn_enhanced_tok_epoch1_10_remote_clip_lpips_curve.csv)
@@ -53,7 +53,7 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 - This run starts from the same `k070 epoch_0003` parent used by Fiber-SDE.
 - Only `tokenizer_family` changes from `pure_latent_spatial` to `smoe_translator`; solver/loss/topogate/appearance/schedule stay inherited from the parent line.
 - Remote full eval must run every epoch and update the homepage page-1 CLIP-style / LPIPS figure before closure.
-- Current read through epoch 8: e1 is best for style, e8 is the closest structural point and a new candidate-curve Pareto point, and all eight remain dominated by `k070 epoch_0003`; continue only under the formal curve rule before closing SMoE-only.
+- Current read through epoch 9: e8 is the closest structural point, e9 is the first point with positive style delta versus `k070 epoch_0003`, but e9 pays material LPIPS cost; continue only under the formal curve rule before closing or promoting SMoE-only.
 
 ## Plot Update Contract
 
