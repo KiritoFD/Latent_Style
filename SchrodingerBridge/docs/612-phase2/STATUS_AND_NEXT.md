@@ -109,3 +109,13 @@ $$A_{\text{final}} = \alpha A_{\text{self}} + (1-\alpha) A_{\text{cross}}$$
 1. I2SB σ=0.02 用 topogate e1 做 warmstart
 2. PC solver eval on topogate e2 (仅推理, 不训练)
 3. 如果以上都失败, 切到 PnP self-inject, 同时保留 topogate
+
+---
+
+## 2026-06-14 Cost-Stop Update
+
+- Full-data training probes are too slow for the current marginal gains and should no longer be the default next action.
+- `k070_kin070_vlen010` was stopped after three short-probe checkpoints: best transfer style gained only `+0.002310` while LPIPS worsened by `+0.025975` versus `k070 epoch_0003`.
+- `rgbcal_k070_e3` eval-only decoded RGB calibration is also negative: best structure point `s025` improves transfer LPIPS by `-0.005993` but loses `-0.017080` transfer style.
+- Current decision: do not spend a full remote lane on brightness/contrast-only alignment or the `w_kinetic=0.70` full-data follow-up under this parent.
+- Next actions should be cheap first: eval-only solver scans, stochastic/fiber-aligned inference, or very short probes only when there is a clear prior that the mechanism can move style without reopening the LPIPS cost.

@@ -28,6 +28,11 @@ INFERENCE_DEFAULTS: dict[str, dict[str, Any]] = {
         "target_chunk_size": 2,
         "vae_decode_batch_size": 16,
         "only_lpips_clip_style": True,
+        "postprocess_mode": "none",
+        "postprocess_strength": 0.0,
+        "postprocess_mean_strength": 1.0,
+        "postprocess_std_strength": 1.0,
+        "postprocess_ref_limit": 64,
         "enable_introstyle": False,
         "introstyle_style_bank_root": "",
         "introstyle_model_id": "",
@@ -557,6 +562,11 @@ class TrainingConfig:
     full_eval_target_chunk_size: int | None = 2
     full_eval_vae_decode_batch_size: int | None = 16
     full_eval_only_lpips_clip_style: bool | None = None
+    full_eval_postprocess_mode: str = "none"
+    full_eval_postprocess_strength: float = 0.0
+    full_eval_postprocess_mean_strength: float = 1.0
+    full_eval_postprocess_std_strength: float = 1.0
+    full_eval_postprocess_ref_limit: int = 64
     full_eval_enable_introstyle: bool = False
     full_eval_introstyle_style_bank_root: str = ""
     full_eval_introstyle_model_id: str = ""
@@ -820,6 +830,11 @@ def resolve_full_eval_section(config: dict[str, Any] | ExperimentConfig | None) 
             "target_chunk_size": "full_eval_target_chunk_size",
             "vae_decode_batch_size": "full_eval_vae_decode_batch_size",
             "only_lpips_clip_style": "full_eval_only_lpips_clip_style",
+            "postprocess_mode": "full_eval_postprocess_mode",
+            "postprocess_strength": "full_eval_postprocess_strength",
+            "postprocess_mean_strength": "full_eval_postprocess_mean_strength",
+            "postprocess_std_strength": "full_eval_postprocess_std_strength",
+            "postprocess_ref_limit": "full_eval_postprocess_ref_limit",
             "enable_introstyle": "full_eval_enable_introstyle",
             "introstyle_style_bank_root": "full_eval_introstyle_style_bank_root",
             "introstyle_model_id": "full_eval_introstyle_model_id",
@@ -883,6 +898,11 @@ def compact_runtime_config(config: dict[str, Any] | ExperimentConfig | None) -> 
             "full_eval_target_chunk_size": "target_chunk_size",
             "full_eval_vae_decode_batch_size": "vae_decode_batch_size",
             "full_eval_only_lpips_clip_style": "only_lpips_clip_style",
+            "full_eval_postprocess_mode": "postprocess_mode",
+            "full_eval_postprocess_strength": "postprocess_strength",
+            "full_eval_postprocess_mean_strength": "postprocess_mean_strength",
+            "full_eval_postprocess_std_strength": "postprocess_std_strength",
+            "full_eval_postprocess_ref_limit": "postprocess_ref_limit",
             "full_eval_enable_introstyle": "enable_introstyle",
             "full_eval_introstyle_style_bank_root": "introstyle_style_bank_root",
             "full_eval_introstyle_model_id": "introstyle_model_id",
