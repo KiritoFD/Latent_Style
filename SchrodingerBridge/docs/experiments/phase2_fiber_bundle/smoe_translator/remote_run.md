@@ -252,3 +252,22 @@
 - Relaunch: restarted the same SMoE scheduled task at `2026-06-14 10:46 Asia/Shanghai`.
 - Relaunch health: PID `414`, resumed from `exp/aaai2027_phase2_smoe_translator_k070_e3_seed42_b12a1/epoch_0010.pt` at epoch 11/global step `15740`, initial GPU read `4549MiB / 12288MiB`.
 - Decision: keep the SMoE lane valid after relaunch because no model, optimizer, batch, solver, tokenizer, loss, or schedule parameter changed. Treat the stop as orchestration/concurrency fault only.
+
+## Epoch 11 Full Eval
+
+- Full eval completed at `2026-06-14 11:17:19 Asia/Shanghai`; training resumed into epoch 12.
+- Checkpoint: `epoch_0011.pt`.
+- Training time: `1557.8s` (`25.96min`) from epoch log `data+comp`; eval wall time from curve: `253.4s`.
+- Transfer: `CLIP-S=0.669667`, `LPIPS=0.327548`, `style - IDT=+0.029747`.
+- All-pairs: `CLIP-S=0.701142`, `LPIPS=0.324272`, `style - IDT=+0.021019`.
+- Identity: `CLIP-S=0.827041`, `LPIPS=0.311168`.
+- Matched delta vs `k070 epoch_0003`:
+  - transfer: `-0.002153` style, `+0.012929` LPIPS.
+  - all-pairs: `-0.002091` style, `+0.011722` LPIPS.
+- Runtime observability from summary:
+  - `translation_delta_from_identity=0.017423`.
+  - `routing_entropy=1.627435`.
+  - `effective_experts=5.111550`.
+  - `spatial_abs=0.896498` on transfer.
+- Convergence state from `round2_convergence.json`: `converged=false`, best transfer/all-pairs remains `epoch_0009`, last Pareto remains `epoch_0010`, `since_last_pareto=1`, and `tail_flat=true`.
+- Read: e11 is a non-Pareto tail point and worsens both style and LPIPS from e10. Continue because formal closure requires more post-Pareto failures after e10.
