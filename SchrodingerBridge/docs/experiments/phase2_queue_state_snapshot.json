@@ -31,13 +31,13 @@
       "lane_class": "structure_reentry",
       "priority_in_class": 2,
       "preferred": true,
-      "status": "running",
+      "status": "closed_inband_no_style",
       "formal_eligible": false,
       "tokenizer_profile": "tok32_safe_rescan",
       "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\aaai2027\\phase2_vel_tok32_safe_semantic_topogate_k070_seed42_b12a1.json",
       "note_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-13-phase2-vel-tok32-safe-semantic-topogate-k070.md",
       "run_name": "aaai2027_phase2_vel_tok32_safe_semantic_topogate_k070_seed42_b12a1",
-      "current_read": "epoch_0005 settled at transfer 0.671104/0.325637 and all-pairs 0.702300/0.322536; all-pairs safe-shelf recovery is already achieved, while transfer style still trails the formal shelf",
+      "current_read": "closed after epoch_0001 through epoch_0005 all-ckpt CLIP-LPIPS read; best structure point is epoch_0003 at transfer 0.671820/0.314618 and all-pairs 0.703234/0.312550, so it is an in-band control/parent rather than a style breakthrough",
       "watch_min_settled_epoch": "4",
       "watch_min_allpairs_style_recovery": "0.701666",
       "watch_max_allpairs_lpips_for_recovery": "0.381724",
@@ -88,7 +88,7 @@
       {
         "active": true,
         "name": "Ubuntu-26.04",
-        "state": "Running",
+        "state": "Stopped",
         "version": "2"
       }
     ],
@@ -99,7 +99,7 @@
       "lxssmanager": "SERVICE_NAME: LxssManager \n        TYPE               : 20  WIN32_SHARE_PROCESS  \n        STATE              : 1  STOPPED \n        WIN32_EXIT_CODE    : 1077  (0x435)\n        SERVICE_EXIT_CODE  : 0  (0x0)\n        CHECKPOINT         : 0x0\n        WAIT_HINT          : 0x0",
       "hypervisor": "Windows ����������\n-------------------\n��ʶ��                  {current}\ndevice                  partition=C:\npath                    \\WINDOWS\\system32\\winload.efi\ndescription             Windows 10\nlocale                  zh-CN\ninherit                 {bootloadersettings}\nrecoverysequence        {db277fb3-4545-11f1-aeb4-b40da786e980}\ndisplaymessageoverride  Recovery\nrecoveryenabled         Yes\nisolatedcontext         Yes\nflightsigning           No\nallowedinmemorysettings 0x15000075\nosdevice                partition=C:\nsystemroot              \\WINDOWS\nresumeobject            {d93aa2a7-54e2-11f0-8a07-00e04c58f990}\nnx                      OptIn\nbootmenupolicy          Standard\nhypervisorlaunchtype    Auto",
       "features": "{\"Microsoft-Windows-Subsystem-Linux\":\"Enabled\",\"VirtualMachinePlatform\":\"Enabled\",\"Microsoft-Hyper-V-Hypervisor\":\"Disabled\"}",
-      "wsl_list": "NAME            STATE           VERSION\n\n* Ubuntu-26.04    Running         2",
+      "wsl_list": "NAME            STATE           VERSION\n\n* Ubuntu-26.04    Stopped         2",
       "wsl_exec": "WSL_OK"
     }
   },
@@ -110,7 +110,7 @@
     "remote_gpu": [
       {
         "name": "NVIDIA Graphics Device",
-        "memory_used_mib": 10406,
+        "memory_used_mib": 545,
         "memory_total_mib": 12288
       }
     ],
@@ -526,7 +526,7 @@
     "remote_gpu": [
       {
         "name": "NVIDIA Graphics Device",
-        "memory_used_mib": 10406,
+        "memory_used_mib": 545,
         "memory_total_mib": 12288
       }
     ],
@@ -990,7 +990,7 @@
     "remote_gpu": [
       {
         "name": "NVIDIA Graphics Device",
-        "memory_used_mib": 10406,
+        "memory_used_mib": 545,
         "memory_total_mib": 12288
       }
     ],
@@ -1358,12 +1358,7 @@
     ]
   },
   "local_manifest_watchers": [],
-  "local_velocity_handoff_watchers": [
-    {
-      "ProcessId": 38132,
-      "CommandLine": "C:\\Users\\xy\\AppData\\Local\\Programs\\Python\\Python312\\python.exe G:\\GitHub\\Latent_Style\\SchrodingerBridge\\tools\\experiments\\watch_phase2_velocity_handoff.py --run-name aaai2027_phase2_vel_tok32_safe_semantic_topogate_k070_seed42_b12a1 --wait --persistent-wait --execute --current-lane-class structure_reentry --handoff-mode stop_only --manifest-csv G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\phase2_queue_manifest.csv --validation-json G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\phase2_queue_manifest_validation.json --next-lane-class structure_reentry --poll-seconds 60 --min-settled-epoch 4 --min-allpairs-style-recovery 0.701666 --min-transfer-style-recovery 0.673934 --max-allpairs-lpips-for-recovery 0.381724 --max-transfer-lpips-for-recovery 0.38434"
-    }
-  ],
+  "local_velocity_handoff_watchers": [],
   "local_formal_watcher_logs": {
     "out_log": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\phase2_formal_lane_recover_from_manifest.out.log",
     "err_log": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\phase2_formal_lane_recover_from_manifest.err.log",
@@ -1416,6 +1411,17 @@
       "  \"process_count\": 0",
       "}"
     ],
-    "err_tail": []
+    "err_tail": [
+      "Traceback (most recent call last):",
+      "  File \"G:\\GitHub\\Latent_Style\\SchrodingerBridge\\tools\\experiments\\watch_phase2_velocity_handoff.py\", line 654, in <module>",
+      "    raise SystemExit(main())",
+      "                     ^^^^^^",
+      "  File \"G:\\GitHub\\Latent_Style\\SchrodingerBridge\\tools\\experiments\\watch_phase2_velocity_handoff.py\", line 458, in main",
+      "    status = _status_payload(str(args.run_name))",
+      "             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "  File \"G:\\GitHub\\Latent_Style\\SchrodingerBridge\\tools\\experiments\\watch_phase2_velocity_handoff.py\", line 55, in _status_payload",
+      "    raise RuntimeError(f\"status reporter failed rc={proc.returncode}: {proc.stdout}\")",
+      "RuntimeError: status reporter failed rc=3221225786: "
+    ]
   }
 }

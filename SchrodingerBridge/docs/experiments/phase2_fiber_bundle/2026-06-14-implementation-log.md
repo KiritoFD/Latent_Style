@@ -324,3 +324,13 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Plot update: added the e15 point to `plot_points.csv`, labeled it `stop e15`, and regenerated the AAAI2027 page-1 figure.
 - Convergence read: `converged=false`, `best_epoch=epoch_0009`, `last_pareto_epoch=epoch_0014`, `since_last_pareto=1`, `tail_flat=true`.
 - Decision: close as `cost_stopped_not_promoted`. The line is not automatically converged because e14 reset patience, but additional epochs are not worth the cost; do not launch `SMoE + fiberwise_swd` on this parent.
+
+## K070_KIN070 Launch And Cost Stop
+
+- Launch: `phase2-structure-k070-kin070-train` on the remote 3060 after local smoke passed.
+- Mechanism delta: only `w_kinetic: 0.85 -> 0.70`; tokenizer, solver, topogate, appearance path, and dataset stayed unchanged.
+- Runtime read: epoch `1/24` reached about `9%` after roughly `2.2min`, with throughput around `1.1 it/s`; projected full epoch time remained about `24-25min` before full eval.
+- VRAM read: about `6.9 GiB / 12 GiB`, under the `<11.0 GiB` formal cap.
+- Stop: process terminated before the first checkpoint/eval because the full-data training cost is not justified for this single knob.
+- Eval/plot status: no `CLIP-S + LPIPS` point exists, so nothing is appended to `plot_points.csv` and the AAAI2027 page-1 figure is unchanged.
+- Decision: `cost_stopped_no_eval`. This is a cost/value stop, not a model-quality conclusion. Future style-release training should use shorter virtual-length probes or be skipped in favor of eval-only tests unless there is stronger prior evidence.
