@@ -309,3 +309,22 @@
   - `spatial_abs=0.836015` on transfer.
 - Convergence state from `round2_convergence.json`: `converged=false`, best transfer/all-pairs remains `epoch_0009`, last Pareto remains `epoch_0010`, `since_last_pareto=3`, and `tail_flat=true`.
 - Read: e13 nearly recovers parent transfer style but at the worst LPIPS cost in the post-e10 tail. One more non-Pareto retained checkpoint should satisfy the regular-family patience condition if the deep review contract is not contradicted.
+
+## Epoch 14 Full Eval
+
+- Full eval completed at `2026-06-14 12:51:38 Asia/Shanghai`; training resumed into epoch 15.
+- Checkpoint: `epoch_0014.pt`.
+- Training time: `1603.7s` (`26.73min`) from epoch log `data+comp`; eval wall time from curve: `266.5s`.
+- Transfer: `CLIP-S=0.672185`, `LPIPS=0.324834`, `style - IDT=+0.032264`.
+- All-pairs: `CLIP-S=0.703218`, `LPIPS=0.322686`, `style - IDT=+0.023095`.
+- Identity: `CLIP-S=0.827351`, `LPIPS=0.314091`.
+- Matched delta vs `k070 epoch_0003`:
+  - transfer: `+0.000365` style, `+0.010216` LPIPS.
+  - all-pairs: `-0.000015` style, `+0.010136` LPIPS.
+- Runtime observability from summary:
+  - `translation_delta_from_identity=0.018548`.
+  - `routing_entropy=1.495014`.
+  - `effective_experts=4.496835`.
+  - `spatial_abs=0.819658` on transfer.
+- Convergence state from `round2_convergence.json`: `converged=false`, best transfer/all-pairs remains `epoch_0009`, `epoch_0014` is a new candidate-curve Pareto point, and `since_last_pareto=0`.
+- Read: e14 is useful evidence that SMoE can recover style after the tail, but it is still LPIPS-costly and not a promotion candidate. Continue because the new Pareto point resets the formal patience rule.
