@@ -177,3 +177,22 @@
   - `spatial_abs=0.854391` on transfer.
 - Convergence state from `round2_convergence.json`: `converged=false`, best transfer/all-pairs remains `epoch_0001`, last Pareto remains `epoch_0005`, and `since_last_pareto=2`.
 - Read: e7 rebounds from e6 but is still a non-Pareto tail point and remains dominated by the matched parent. Continue until either a new Pareto point appears or the patience threshold closes the family.
+
+## Epoch 8 Full Eval
+
+- Full eval completed at `2026-06-14 09:19:29 Asia/Shanghai`; training resumed into epoch 9.
+- Checkpoint: `epoch_0008.pt`.
+- Training time: `1514.0s` (`25.23min`) from epoch log `data+comp`; eval wall time from curve: `241.0s`.
+- Transfer: `CLIP-S=0.669985`, `LPIPS=0.317808`, `style - IDT=+0.030065`.
+- All-pairs: `CLIP-S=0.701901`, `LPIPS=0.315335`, `style - IDT=+0.021779`.
+- Identity: `CLIP-S=0.829565`, `LPIPS=0.305445`.
+- Matched delta vs `k070 epoch_0003`:
+  - transfer: `-0.001835` style, `+0.003189` LPIPS.
+  - all-pairs: `-0.001332` style, `+0.002785` LPIPS.
+- Runtime observability from summary:
+  - `translation_delta_from_identity=0.015515`.
+  - `routing_entropy=1.681098`.
+  - `effective_experts=5.435514`.
+  - `spatial_abs=0.806139` on transfer.
+- Convergence state from `round2_convergence.json`: `converged=false`, `epoch_0008` is a new candidate-curve Pareto point, and `since_last_pareto=0`.
+- Read: e8 is the closest SMoE structural point so far but still loses both style and LPIPS against the matched parent. Because it is a new candidate-curve Pareto point, the formal closure patience resets.

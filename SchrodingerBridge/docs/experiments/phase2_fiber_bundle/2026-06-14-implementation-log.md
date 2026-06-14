@@ -220,3 +220,15 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Plot update: added the e7 point to `plot_points.csv` and regenerated the AAAI2027 page-1 figure; the point is unlabeled to keep the panel readable.
 - Convergence read: `converged=false`, `since_last_pareto=2`, `tail_flat=true`.
 - Decision: continue. e7 is the second tail point after the e5 Pareto point, so SMoE-only cannot close until at least two more retained checkpoints fail to create a new Pareto point.
+
+## SMoE Epoch 8 Read
+
+- Full eval completed at `2026-06-14 09:19:29 Asia/Shanghai`; training resumed into epoch 9.
+- Training time: `1514.0s`; full-eval wall time: `241.0s`.
+- Transfer: `0.669985 / 0.317808`; all-pairs: `0.701901 / 0.315335`; identity: `0.829565 / 0.305445`.
+- Style above IDT: transfer `+0.030065`; all-pairs `+0.021779`.
+- Matched delta against `k070 epoch_0003`: transfer `-0.001835` style and `+0.003189` LPIPS; all-pairs `-0.001332` style and `+0.002785` LPIPS.
+- Runtime observability: `translation_delta_from_identity=0.015515`, `routing_entropy=1.681098`, `effective_experts=5.435514`, `spatial_abs=0.806139`.
+- Plot update: added the e8 point to `plot_points.csv` and regenerated the AAAI2027 page-1 figure; the point is unlabeled to keep the panel readable.
+- Convergence read: `converged=false`, `since_last_pareto=0`, `tail_flat=true`, and `epoch_0008` is a new candidate-curve Pareto point.
+- Decision: continue. e8 materially improves structure versus e6/e7, but it is still lower-style and slightly higher-LPIPS than the parent, so SMoE-only remains unpromoted unless later epochs recover style at this structure level.
