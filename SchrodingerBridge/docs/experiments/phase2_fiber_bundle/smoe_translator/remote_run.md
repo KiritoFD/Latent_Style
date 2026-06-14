@@ -328,3 +328,30 @@
   - `spatial_abs=0.819658` on transfer.
 - Convergence state from `round2_convergence.json`: `converged=false`, best transfer/all-pairs remains `epoch_0009`, `epoch_0014` is a new candidate-curve Pareto point, and `since_last_pareto=0`.
 - Read: e14 is useful evidence that SMoE can recover style after the tail, but it is still LPIPS-costly and not a promotion candidate. Continue because the new Pareto point resets the formal patience rule.
+
+## Epoch 15 Full Eval And Cost Stop
+
+- Full eval completed at `2026-06-14 13:23:45 Asia/Shanghai`; the run was stopped immediately after the e15 eval was salvaged.
+- Checkpoint: `epoch_0015.pt`.
+- Training time: `1597.6s` (`26.63min`) from epoch log `data+comp`; eval wall time from curve: `268.7s`; trainer log reports full eval completed in `294.9s`.
+- Transfer: `CLIP-S=0.671284`, `LPIPS=0.333647`, `style - IDT=+0.031364`.
+- All-pairs: `CLIP-S=0.702173`, `LPIPS=0.330398`, `style - IDT=+0.022050`.
+- Identity: `CLIP-S=0.825728`, `LPIPS=0.317400`.
+- Matched delta vs `k070 epoch_0003`:
+  - transfer: `-0.000536` style, `+0.019029` LPIPS.
+  - all-pairs: `-0.001061` style, `+0.017848` LPIPS.
+- Runtime observability from summary:
+  - `translation_delta_from_identity=0.018724`.
+  - `routing_entropy=1.541963`.
+  - `effective_experts=4.716263`.
+  - `spatial_abs=0.813047` on transfer.
+- Convergence state from `round2_convergence.json`: `converged=false`, best transfer/all-pairs remains `epoch_0009`, last Pareto remains `epoch_0014`, `since_last_pareto=1`, and `tail_flat=true`.
+- Cost decision: stop as `cost_stopped_not_promoted`. The automatic patience rule did not close because e14 reset the candidate-curve Pareto counter, but e15 regresses and the line is too slow for the observed style gain.
+
+## Closure
+
+- Best style evidence: `epoch_0009`, transfer `0.672774 / 0.327155`, all-pairs `0.704251 / 0.322688`.
+- Best late Pareto evidence: `epoch_0014`, transfer `0.672185 / 0.324834`, all-pairs `0.703218 / 0.322686`.
+- Final retained eval: `epoch_0015`, transfer `0.671284 / 0.333647`, all-pairs `0.702173 / 0.330398`.
+- Decision: do not promote SMoE-only, and do not launch `SMoE + fiberwise_swd` from this parent.
+- Rationale: the tokenizer translator can create small style recoveries, but it has not found a parent-beating structure/style point after about 15 retained epoch evals, and each extra epoch costs roughly 26-27 minutes of remote train time plus 4-5 minutes of eval.

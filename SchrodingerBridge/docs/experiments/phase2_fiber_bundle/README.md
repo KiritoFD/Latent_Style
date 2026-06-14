@@ -10,13 +10,13 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 
 ## Current Homepage Overlay
 
-- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05`, and SMoE epoch `1-10` are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
+- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05`, and SMoE epoch `1-15` are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
 - The trace uses transfer `CLIP-S - IDT` on the y-axis and `1 - LPIPS` on the x-axis.
 - All retained checkpoints are drawn and connected.
 - Labels are sparse by design:
   - `k070`: `e1` and `e3 best LPIPS`
   - `pattn_enhanced_tok`: `e2 best style` and `e8 low LPIPS`
-  - `smoe_translator_k070_e3`: `SMoE e1`, `SMoE e2`, and `e9 style`; other points are plotted but unlabeled to avoid collisions.
+  - `smoe_translator_k070_e3`: `SMoE e1`, `SMoE e2`, `e9 style`, `e14 pareto`, and `stop e15`; other points are plotted but unlabeled to avoid collisions.
 - Source curve:
   - [k070_epoch1_5_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/k070_epoch1_5_remote_clip_lpips_curve.csv)
   - [pattn_enhanced_tok_epoch1_10_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/pattn_enhanced_tok_epoch1_10_remote_clip_lpips_curve.csv)
@@ -47,13 +47,14 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 - `sigma=0.05` fiber-aligned: transfer `0.675948 / 0.323189`, all-pairs `0.706763 / 0.321093`.
 - Decision: `style_upper_not_promoted`; this is the style-first upper point of the scan, but it pays clear LPIPS cost and does not reach the `0.74 / 0.30` target.
 
-## Active Queue
+## Current SMoE Closure
 
-- Round 2 is now `smoe_translator_k070_e3`.
-- This run starts from the same `k070 epoch_0003` parent used by Fiber-SDE.
-- Only `tokenizer_family` changes from `pure_latent_spatial` to `smoe_translator`; solver/loss/topogate/appearance/schedule stay inherited from the parent line.
-- Remote full eval must run every epoch and update the homepage page-1 CLIP-style / LPIPS figure before closure.
-- Current read through epoch 10: e8 is the closest structural point, e9 is the first point with positive style delta versus `k070 epoch_0003`, and e10 partly recovers LPIPS while losing that style lift; continue only under the formal curve rule before closing or promoting SMoE-only.
+- Round 2 `smoe_translator_k070_e3` is closed as `cost_stopped_not_promoted`.
+- Best SMoE style point was `epoch_0009`: transfer `0.672774 / 0.327155`, all-pairs `0.704251 / 0.322688`.
+- Best late candidate-curve Pareto point was `epoch_0014`: transfer `0.672185 / 0.324834`, all-pairs `0.703218 / 0.322686`.
+- Stop point was `epoch_0015`: transfer `0.671284 / 0.333647`, all-pairs `0.702173 / 0.330398`.
+- Matched-control read at e15: transfer style `-0.000536` and LPIPS `+0.019029` versus `k070 epoch_0003`; all-pairs style `-0.001061` and LPIPS `+0.017848`.
+- Decision: do not launch `SMoE + fiberwise_swd` on this parent. The tokenizer-only mechanism has not produced enough style gain for its training cost.
 
 ## Plot Update Contract
 
