@@ -128,3 +128,11 @@ $$A_{\text{final}} = \alpha A_{\text{self}} + (1-\alpha) A_{\text{cross}}$$
 - Compared with the parent `0.671820 / 0.314618` transfer and `0.703234 / 0.312550` all-pairs, noise does raise style, but the LPIPS cost rises quickly and the result is still far from the `0.74` style target.
 - Fiber-aligned noise is not materially better than isotropic noise. It is worse at `sigma=0.04/0.06` and only a mixed tie at `0.08`.
 - Current decision: `style_ceiling_not_promoted`. Do not launch another long training lane unless the proposed mechanism has a cheap screen showing at least a clear `+0.005` transfer/all-pairs style delta without an SMoE-like LPIPS reopen.
+
+## 2026-06-14 Topology-Release Eval Update
+
+- Completed an inference-only topology-release scan on `k070 epoch_0003`: `semantic_self_topology_blend=0.5, 0.3, 0.0`.
+- Best transfer result was only `0.671899 / 0.314675` at `blend=0.3`, versus parent `0.671820 / 0.314618`.
+- Best all-pairs result was only `0.703265 / 0.312592` at `blend=0.3`, versus parent `0.703234 / 0.312550`.
+- Decision: `flat_no_training_value`. The trained `k070` parent is not style-limited by the inference-time topology blend value; do not spend a training lane on isolated blend reduction.
+- Next cheap screen should target the style signal path directly, not just release structure constraints.

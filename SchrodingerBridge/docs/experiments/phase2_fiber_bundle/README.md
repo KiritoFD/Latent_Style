@@ -11,7 +11,7 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 
 ## Current Homepage Overlay
 
-- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05` plus the fine `0.04/0.06/0.08` style-ceiling extension, SMoE epoch `1-15`, the short `k070_kin070_vlen010` kinetic-release probe epoch `1-3`, and the eval-only `rgbcal_k070_e3` scan are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
+- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05` plus the fine `0.04/0.06/0.08` style-ceiling extension, SMoE epoch `1-15`, the short `k070_kin070_vlen010` kinetic-release probe epoch `1-3`, the eval-only `rgbcal_k070_e3` scan, and the eval-only `topology_release_k070_e3` blend scan are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
 - The trace uses transfer `CLIP-S - IDT` on the y-axis and `1 - LPIPS` on the x-axis.
 - All retained checkpoints are drawn and connected.
 - Labels are sparse by design:
@@ -34,6 +34,7 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
   - [k070_kin070_vlen010_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/k070_kin070_vlen010_remote_clip_lpips_curve.csv)
   - [rgbcal_k070_e3_eval_only_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/rgbcal_k070_e3_eval_only_curve.csv)
   - [fiber_sde_fine_k070_e3_eval_only_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/fiber_sde_fine_k070_e3_eval_only_curve.csv)
+  - [topology_release_k070_e3_eval_only_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/topology_release_k070_e3_eval_only_curve.csv)
 - Rendered page-1 figure:
   - [fig_distinct5_page1_summary.png](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/figures/fig_distinct5_page1_summary.png)
 
@@ -104,6 +105,15 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 - Matched against `k070 epoch_0003`, `s025` improved transfer LPIPS by `-0.005993` and all-pairs LPIPS by `-0.007058`, but lost `-0.017080` transfer style and `-0.014566` all-pairs style.
 - Stronger calibration worsened the tradeoff: `s050` fell to transfer `0.645430 / 0.328338`; `s075` fell to transfer `0.641211 / 0.352983`.
 - Decision: `cost_positive_quality_negative`. Keep the post-decode switch for reproducible negative evidence, but do not promote it or spend training budget on brightness/contrast-only alignment under this parent.
+
+## Current Topology-Release Eval-Only Closure
+
+- `topology_release_k070_e3` tested inference-only `semantic_self_topology_blend = 0.5, 0.3, 0.0` from the matched `k070 epoch_0003` parent.
+- Parent/control: transfer `0.671820 / 0.314618`, all-pairs `0.703234 / 0.312550`.
+- `blend=0.5`: transfer `0.671887 / 0.314608`, all-pairs `0.703252 / 0.312524`.
+- `blend=0.3`: transfer `0.671899 / 0.314675`, all-pairs `0.703265 / 0.312592`.
+- `blend=0.0`: transfer `0.671696 / 0.314660`, all-pairs `0.703089 / 0.312572`.
+- Decision: `flat_no_training_value`. Lowering the topology blend at inference does not move style materially; do not spend a training lane on further isolated topology-blend reduction under this parent.
 
 ## Plot Update Contract
 

@@ -387,3 +387,16 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Matched delta: fiber-aligned is worse than isotropic at `0.04` and `0.06`; at `0.08` it gains only `+0.000068` transfer style for `+0.000027` LPIPS and is still slightly worse on all-pairs.
 - Plot update: appended the full fine SDE trace to `plot_points.csv`, labeled only `SDE s0.08 ceiling`, regenerated the AAAI2027 page-1 figure, and wrote `curves/fiber_sde_fine_k070_e3_eval_only_curve.csv`.
 - Decision: `style_ceiling_not_promoted`. More inference noise buys style, but the style/LPIPS slope is too poor and remains far from `0.74`; do not launch a long training lane from this evidence alone.
+
+## Topology-Release Eval-Only Scan
+
+- Trigger: after SDE and training probes were cost-negative, test the other guide-aligned cheap knob: reduce semantic topology blending at inference only.
+- Parent/control: `k070 epoch_0003`, trained with `semantic_self_topology_blend=0.7`; parent transfer `0.671820 / 0.314618`, all-pairs `0.703234 / 0.312550`.
+- Configs added: `phase2_eval_topology_release_blend0p5_k070_e3.json`, `phase2_eval_topology_release_blend0p3_k070_e3.json`, and `phase2_eval_topology_release_blend0p0_k070_e3.json`.
+- Remote execution: three sequential eval-only runs under `exp/inmortal-exp/phase2_topology_release_k070_e3`; seed fixed to `42`; generated PNG grids were not saved; no ckpts were pulled.
+- Runtime: eval-only memory stayed around `2.7 GiB` and returned to idle after each point.
+- `blend=0.5`: transfer `0.671887 / 0.314608`, all-pairs `0.703252 / 0.312524`.
+- `blend=0.3`: transfer `0.671899 / 0.314675`, all-pairs `0.703265 / 0.312592`.
+- `blend=0.0`: transfer `0.671696 / 0.314660`, all-pairs `0.703089 / 0.312572`.
+- Plot update: appended the three-point `topology_release_k070_e3` trace to `plot_points.csv`, regenerated the AAAI2027 page-1 figure, and wrote `curves/topology_release_k070_e3_eval_only_curve.csv`.
+- Decision: `flat_no_training_value`. This knob is not the bottleneck; lowering topology blend at inference has no material style response and should not receive a long training lane by itself.
