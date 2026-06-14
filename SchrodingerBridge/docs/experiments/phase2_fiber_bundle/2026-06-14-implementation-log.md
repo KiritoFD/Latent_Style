@@ -400,3 +400,17 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - `blend=0.0`: transfer `0.671696 / 0.314660`, all-pairs `0.703089 / 0.312572`.
 - Plot update: appended the three-point `topology_release_k070_e3` trace to `plot_points.csv`, regenerated the AAAI2027 page-1 figure, and wrote `curves/topology_release_k070_e3_eval_only_curve.csv`.
 - Decision: `flat_no_training_value`. This knob is not the bottleneck; lowering topology blend at inference has no material style response and should not receive a long training lane by itself.
+
+## Appearance-Blend Eval-Only Scan
+
+- Trigger: the user called out that training is too slow and not worth it. The next action stayed eval-only and targeted the style signal path rather than launching another training probe.
+- Parent/control: `k070 epoch_0003`; parent transfer `0.671820 / 0.314618`, all-pairs `0.703234 / 0.312550`.
+- Configs added: `phase2_eval_appearance_blend0p0_k070_e3.json`, `phase2_eval_appearance_blend0p5_k070_e3.json`, and `phase2_eval_appearance_blend1p0_k070_e3.json`.
+- Remote execution: three sequential eval-only runs under `exp/inmortal-exp/phase2_appearance_blend_k070_e3`; seed fixed to `42`; generated grids disabled; no ckpts were pulled.
+- Runtime: each point took about `151s`; health-window GPU memory was about `2.4 GiB` and the remote GPU returned to idle after completion.
+- `blend=0.0`: transfer `0.671748 / 0.314596`, all-pairs `0.703189 / 0.312540`.
+- `blend=0.5`: transfer `0.671748 / 0.314596`, all-pairs `0.703189 / 0.312540`.
+- `blend=1.0`: transfer `0.671744 / 0.314595`, all-pairs `0.703187 / 0.312539`.
+- Matched delta: every point is noise-level and slightly below the parent in CLIP-style; the best LPIPS change is only about `-0.000023`.
+- Plot update: appended the three-point `appearance_blend_k070_e3` trace to `plot_points.csv`, regenerated the AAAI2027 page-1 figure, and wrote `curves/appearance_blend_k070_e3_eval_only_curve.csv`.
+- Decision: `flat_no_training_value`. Do not train this isolated output appearance blend knob; the next candidate must be either eval-only or a much cheaper probe with a visible style response before full-data training.
