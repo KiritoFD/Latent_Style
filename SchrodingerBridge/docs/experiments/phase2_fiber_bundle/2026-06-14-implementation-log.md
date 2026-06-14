@@ -264,3 +264,15 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Action: killed the safe-rescan process, verified GPU idle at `533MiB / 12288MiB`, and disabled old safe-rescan plus structure/topogate scheduled tasks that can restart without explicit approval.
 - Relaunch: `2026-06-14 10:46 Asia/Shanghai`, same SMoE task and config, resumed from `epoch_0010.pt` at epoch 11/global step `15740`; health memory `4549MiB`.
 - Decision: the partial e11 before the guard has no eval/checkpoint and is invalid. Continue from e10 under the same matched-control contract; do not change mechanism parameters or batch.
+
+## SMoE Epoch 11 Read
+
+- Full eval completed at `2026-06-14 11:17:19 Asia/Shanghai`; training resumed into epoch 12.
+- Training time: `1557.8s`; full-eval wall time: `253.4s`.
+- Transfer: `0.669667 / 0.327548`; all-pairs: `0.701142 / 0.324272`; identity: `0.827041 / 0.311168`.
+- Style above IDT: transfer `+0.029747`; all-pairs `+0.021019`.
+- Matched delta against `k070 epoch_0003`: transfer `-0.002153` style and `+0.012929` LPIPS; all-pairs `-0.002091` style and `+0.011722` LPIPS.
+- Runtime observability: `translation_delta_from_identity=0.017423`, `routing_entropy=1.627435`, `effective_experts=5.111550`, `spatial_abs=0.896498`.
+- Plot update: added the e11 point to `plot_points.csv` and regenerated the AAAI2027 page-1 figure; the point is unlabeled to keep the panel readable.
+- Convergence read: `converged=false`, `best_epoch=epoch_0009`, `last_pareto_epoch=epoch_0010`, `since_last_pareto=1`, `tail_flat=true`.
+- Decision: continue. e11 is a clear non-Pareto tail point, but e10 reset the Pareto patience, so the SMoE-only family cannot close yet.
