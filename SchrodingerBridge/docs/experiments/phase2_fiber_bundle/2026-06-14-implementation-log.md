@@ -312,3 +312,15 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Plot update: added the e14 point to `plot_points.csv`, labeled it `e14 pareto`, and regenerated the AAAI2027 page-1 figure.
 - Convergence read: `converged=false`, `best_epoch=epoch_0009`, `last_pareto_epoch=epoch_0014`, `since_last_pareto=0`, `tail_flat=true`.
 - Decision: continue. e14 resets formal patience because it is a new candidate-curve Pareto point, but it is still not promotable against the matched parent because the LPIPS cost is about `+0.010`.
+
+## SMoE Epoch 15 Read And Stop
+
+- Full eval completed at `2026-06-14 13:23:45 Asia/Shanghai`; the remote training process was stopped after e15 eval artifacts were confirmed.
+- Training time: `1597.6s`; full-eval wall time: `268.7s` from summary, `294.9s` from trainer log.
+- Transfer: `0.671284 / 0.333647`; all-pairs: `0.702173 / 0.330398`; identity: `0.825728 / 0.317400`.
+- Style above IDT: transfer `+0.031364`; all-pairs `+0.022050`.
+- Matched delta against `k070 epoch_0003`: transfer `-0.000536` style and `+0.019029` LPIPS; all-pairs `-0.001061` style and `+0.017848` LPIPS.
+- Runtime observability: `translation_delta_from_identity=0.018724`, `routing_entropy=1.541963`, `effective_experts=4.716263`, `spatial_abs=0.813047`.
+- Plot update: added the e15 point to `plot_points.csv`, labeled it `stop e15`, and regenerated the AAAI2027 page-1 figure.
+- Convergence read: `converged=false`, `best_epoch=epoch_0009`, `last_pareto_epoch=epoch_0014`, `since_last_pareto=1`, `tail_flat=true`.
+- Decision: close as `cost_stopped_not_promoted`. The line is not automatically converged because e14 reset patience, but additional epochs are not worth the cost; do not launch `SMoE + fiberwise_swd` on this parent.
