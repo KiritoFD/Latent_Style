@@ -119,3 +119,12 @@ $$A_{\text{final}} = \alpha A_{\text{self}} + (1-\alpha) A_{\text{cross}}$$
 - `rgbcal_k070_e3` eval-only decoded RGB calibration is also negative: best structure point `s025` improves transfer LPIPS by `-0.005993` but loses `-0.017080` transfer style.
 - Current decision: do not spend a full remote lane on brightness/contrast-only alignment or the `w_kinetic=0.70` full-data follow-up under this parent.
 - Next actions should be cheap first: eval-only solver scans, stochastic/fiber-aligned inference, or very short probes only when there is a clear prior that the mechanism can move style without reopening the LPIPS cost.
+
+## 2026-06-14 Cheap-First SDE Update
+
+- Long training is currently not cost-effective. SMoE and kinetic-release probes showed that each additional training point is too expensive for the observed style deltas.
+- Completed an eval-only Fiber-SDE fine scan on `k070 epoch_0003` with fixed seed `42`: matched isotropic vs fiber-aligned `sigma=0.04, 0.06, 0.08`.
+- Best transfer style reached `0.681075 / 0.339063` at `sigma=0.08 fiber`; best all-pairs style reached `0.710653 / 0.336767` at `sigma=0.08 isotropic`.
+- Compared with the parent `0.671820 / 0.314618` transfer and `0.703234 / 0.312550` all-pairs, noise does raise style, but the LPIPS cost rises quickly and the result is still far from the `0.74` style target.
+- Fiber-aligned noise is not materially better than isotropic noise. It is worse at `sigma=0.04/0.06` and only a mixed tie at `0.08`.
+- Current decision: `style_ceiling_not_promoted`. Do not launch another long training lane unless the proposed mechanism has a cheap screen showing at least a clear `+0.005` transfer/all-pairs style delta without an SMoE-like LPIPS reopen.

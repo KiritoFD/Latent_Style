@@ -27,3 +27,18 @@ Date: 2026-06-14
 - Fiber-aligned noise is not a strong positive result. It is marginally favorable at `sigma=0.03`, but the delta is too small; at `sigma=0.05` it improves style by only `+0.000021` transfer while worsening LPIPS by `+0.000237`.
 - Keep `sigma=0.03 fiber` as the balanced eval-only option and `sigma=0.05 fiber` as the style-first diagnostic upper point.
 - Next action: SMoE tokenizer training, changing only tokenizer mechanics.
+
+## 2026-06-14 Fine Style-Ceiling Addendum
+
+After SMoE and the kinetic short probe showed poor training cost/benefit, the SDE branch was reopened only as an eval-only style-ceiling scan. The parent, tokenizer, backbone, loss, topogate, appearance path, and checkpoint stayed fixed at `k070 epoch_0003`; only the solver noise scale changed. All runs used seed `42`.
+
+| sigma | mode | transfer CLIP-S | transfer LPIPS | all-pairs CLIP-S | all-pairs LPIPS | decision |
+|---:|---|---:|---:|---:|---:|---|
+| 0.04 | isotropic | 0.674624 | 0.319512 | 0.705757 | 0.317374 | control |
+| 0.04 | fiber | 0.674520 | 0.319587 | 0.705680 | 0.317446 | fiber worse |
+| 0.06 | isotropic | 0.677688 | 0.327456 | 0.708146 | 0.325220 | control |
+| 0.06 | fiber | 0.677541 | 0.327567 | 0.708073 | 0.325322 | fiber worse |
+| 0.08 | isotropic | 0.681007 | 0.339036 | 0.710653 | 0.336767 | style ceiling |
+| 0.08 | fiber | 0.681075 | 0.339063 | 0.710641 | 0.336797 | mixed tie |
+
+Decision: the fine scan raises the reachable eval-only style ceiling, but the slope is not good enough. `sigma=0.08` is still far below the desired `0.74` style region and has already moved LPIPS from the parent `0.314618/0.312550` to about `0.339/0.337`. Fiber-aligned noise is not materially better than isotropic noise. Do not spend a long training lane on this direction without a stronger mechanism than noise amplitude.

@@ -71,7 +71,7 @@ def _first_float(row: dict[str, Any], keys: tuple[str, ...]) -> float | None:
 def _load_rows(path: Path) -> list[dict[str, str]]:
     if not path.exists():
         return []
-    with path.open("r", encoding="utf-8", newline="") as f:
+    with path.open("r", encoding="utf-8-sig", newline="") as f:
         return [dict(row) for row in csv.DictReader(f)]
 
 
@@ -88,7 +88,7 @@ def _reference_clip_by_scope() -> dict[str, float]:
     refs: dict[str, float] = {}
     if not LEGACY_POINTS_CSV.exists():
         return refs
-    with LEGACY_POINTS_CSV.open("r", encoding="utf-8", newline="") as f:
+    with LEGACY_POINTS_CSV.open("r", encoding="utf-8-sig", newline="") as f:
         for row in csv.DictReader(f):
             if row.get("family") not in {"Reference", "IDT"}:
                 continue
@@ -193,7 +193,7 @@ def _rows_from_curve(args: argparse.Namespace, refs: dict[str, float]) -> list[d
     rows: list[dict[str, str]] = []
     if args.curve_csv is None:
         return rows
-    with Path(args.curve_csv).open("r", encoding="utf-8", newline="") as f:
+    with Path(args.curve_csv).open("r", encoding="utf-8-sig", newline="") as f:
         for raw in csv.DictReader(f):
             step = str(raw.get("epoch") or raw.get("step_or_epoch") or raw.get("step") or "").strip()
             if not step:
@@ -253,7 +253,7 @@ def _rows_from_summary(args: argparse.Namespace, refs: dict[str, float]) -> list
     if args.summary_json is None:
         return []
     summary_path = Path(args.summary_json)
-    payload = json.loads(summary_path.read_text(encoding="utf-8"))
+    payload = json.loads(summary_path.read_text(encoding="utf-8-sig"))
     step = args.step_or_epoch or str(payload.get("epoch") or summary_path.parent.name)
     label = "" if args.no_label else args.label or f"{args.label_prefix} {_short_epoch(step)}".strip()
     train_min = args.train_min

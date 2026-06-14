@@ -26,6 +26,7 @@ def main() -> int:
     parser.add_argument("--cache-dir", default="")
     parser.add_argument("--clip-hf-cache-dir", default="")
     parser.add_argument("--device", default="cuda")
+    parser.add_argument("--seed", type=int, default=-1)
     parser.add_argument("--force-regen", action="store_true")
     args = parser.parse_args()
 
@@ -59,6 +60,8 @@ def main() -> int:
         cmd += ["--cache_dir", str(args.cache_dir).strip()]
     if str(args.clip_hf_cache_dir).strip():
         cmd += ["--clip_hf_cache_dir", str(args.clip_hf_cache_dir).strip()]
+    if int(args.seed) >= 0:
+        cmd += ["--seed", str(int(args.seed))]
     if bool(args.force_regen):
         cmd.append("--force_regen")
     return _run(cmd)
