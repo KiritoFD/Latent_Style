@@ -153,3 +153,12 @@ $$A_{\text{final}} = \alpha A_{\text{self}} + (1-\alpha) A_{\text{cross}}$$
 - Compared with parent `0.671820 / 0.314618` transfer and `0.703234 / 0.312550` all-pairs, PC improves LPIPS by up to `-0.002870` transfer and `-0.002279` all-pairs, but style falls by `-0.000725` and `-0.000606`.
 - Decision: `structure_repair_not_style_path`. PC is useful as a safety correction after a future style-strong candidate, but it is not the next primary route to `0.74` style.
 - Next cheap screen should target style injection directly, not more structure repair.
+
+## 2026-06-14 Latent-Affine Eval Update
+
+- Completed an eval-only latent-space style affine scan on `k070 epoch_0003`: strengths `0.25`, `0.50`, and `0.75`, seed `42`.
+- `s0.25` is strictly positive versus parent: transfer `0.674868 / 0.310584`, all-pairs `0.707268 / 0.306689`; it improves both style and LPIPS.
+- `s0.50` is the current balanced style candidate: transfer `0.680303 / 0.322202`, all-pairs `0.712764 / 0.316212`; style gains are `+0.008483` transfer and `+0.009530` all-pairs versus parent.
+- `s0.75` is the current style ceiling: transfer `0.685444 / 0.344580`, all-pairs `0.717593 / 0.336945`; style gains further, but LPIPS cost is too high for a balanced promotion.
+- Decision: `balanced_style_candidate`. Keep the switch default-off, refine `0.25-0.60`, and test PC-lowpass as a safety correction only after selecting a style-strong point.
+- The AAAI2027 page-1 figure is now rendered from the filtered WikiArt-5 full-train CSV; old `distinct5-512` / `1000-per-style` training points are excluded.
