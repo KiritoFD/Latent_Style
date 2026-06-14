@@ -136,3 +136,12 @@ $$A_{\text{final}} = \alpha A_{\text{self}} + (1-\alpha) A_{\text{cross}}$$
 - Best all-pairs result was only `0.703265 / 0.312592` at `blend=0.3`, versus parent `0.703234 / 0.312550`.
 - Decision: `flat_no_training_value`. The trained `k070` parent is not style-limited by the inference-time topology blend value; do not spend a training lane on isolated blend reduction.
 - Next cheap screen should target the style signal path directly, not just release structure constraints.
+
+## 2026-06-14 Appearance-Blend Eval Update
+
+- Full-data training remains too slow for the current marginal returns; the lane stays cheap-first.
+- Completed an eval-only output appearance blend scan on `k070 epoch_0003`: `output_appearance_blend=0.0, 0.5, 1.0`.
+- Results were flat: `blend=0.0/0.5` both transfer `0.671748 / 0.314596`, all-pairs `0.703189 / 0.312540`; `blend=1.0` transfer `0.671744 / 0.314595`, all-pairs `0.703187 / 0.312539`.
+- Compared with parent `0.671820 / 0.314618` transfer and `0.703234 / 0.312550` all-pairs, style deltas are about `-0.00007` transfer and `-0.00005` all-pairs.
+- Decision: `flat_no_training_value`. The output appearance affine blend is not the bottleneck; do not allocate long training to this knob.
+- Next action should avoid full training unless a cheap screen shows a material style response. Prefer eval-only solver/path tests or very short probes with an explicit promote threshold.
