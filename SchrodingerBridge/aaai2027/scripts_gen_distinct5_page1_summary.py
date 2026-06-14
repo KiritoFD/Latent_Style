@@ -86,6 +86,7 @@ PHASE2_TRACE_STYLES = {
     "fiber_sde_fiber_scan": ("#DC2626", "D"),
     "rgbcal_k070_e3": ("#6B7280", "h"),
     "appearance_blend_k070_e3": ("#7C3AED", "v"),
+    "pc_lowpass_k070_e3": ("#0891B2", "d"),
 }
 
 

@@ -145,3 +145,11 @@ $$A_{\text{final}} = \alpha A_{\text{self}} + (1-\alpha) A_{\text{cross}}$$
 - Compared with parent `0.671820 / 0.314618` transfer and `0.703234 / 0.312550` all-pairs, style deltas are about `-0.00007` transfer and `-0.00005` all-pairs.
 - Decision: `flat_no_training_value`. The output appearance affine blend is not the bottleneck; do not allocate long training to this knob.
 - Next action should avoid full training unless a cheap screen shows a material style response. Prefer eval-only solver/path tests or very short probes with an explicit promote threshold.
+
+## 2026-06-14 PC-Lowpass Eval Update
+
+- Completed an eval-only `solver_pc + latent_lowpass` scan on `k070 epoch_0003`: corrector step sizes `0.03`, `0.06`, and `0.10`, seed `42`.
+- Results follow the expected structure-repair direction: `step=0.10` reaches transfer `0.671096 / 0.311748`, all-pairs `0.702628 / 0.310271`.
+- Compared with parent `0.671820 / 0.314618` transfer and `0.703234 / 0.312550` all-pairs, PC improves LPIPS by up to `-0.002870` transfer and `-0.002279` all-pairs, but style falls by `-0.000725` and `-0.000606`.
+- Decision: `structure_repair_not_style_path`. PC is useful as a safety correction after a future style-strong candidate, but it is not the next primary route to `0.74` style.
+- Next cheap screen should target style injection directly, not more structure repair.
