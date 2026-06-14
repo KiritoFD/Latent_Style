@@ -196,3 +196,22 @@
   - `spatial_abs=0.806139` on transfer.
 - Convergence state from `round2_convergence.json`: `converged=false`, `epoch_0008` is a new candidate-curve Pareto point, and `since_last_pareto=0`.
 - Read: e8 is the closest SMoE structural point so far but still loses both style and LPIPS against the matched parent. Because it is a new candidate-curve Pareto point, the formal closure patience resets.
+
+## Epoch 9 Full Eval
+
+- Full eval completed at `2026-06-14 09:48:45 Asia/Shanghai`; training resumed into epoch 10.
+- Checkpoint: `epoch_0009.pt`.
+- Training time: `1465.7s` (`24.43min`) from epoch log `data+comp`; eval wall time from curve: `242.5s`.
+- Transfer: `CLIP-S=0.672774`, `LPIPS=0.327155`, `style - IDT=+0.032853`.
+- All-pairs: `CLIP-S=0.704251`, `LPIPS=0.322688`, `style - IDT=+0.024128`.
+- Identity: `CLIP-S=0.830159`, `LPIPS=0.304821`.
+- Matched delta vs `k070 epoch_0003`:
+  - transfer: `+0.000953` style, `+0.012536` LPIPS.
+  - all-pairs: `+0.001017` style, `+0.010138` LPIPS.
+- Runtime observability from summary:
+  - `translation_delta_from_identity=0.016185`.
+  - `routing_entropy=1.583672`.
+  - `effective_experts=4.917878`.
+  - `spatial_abs=0.826611` on transfer.
+- Convergence state from `round2_convergence.json`: `converged=false`, `epoch_0009` is the new best transfer/all-pairs style point, and `best_in_newest_2=true`.
+- Read: e9 is the first SMoE point with positive style delta against the parent, but the structure cost is still too large for promotion. Continue to see whether the line can keep the e9 style while moving back toward the e8/parent LPIPS band.
