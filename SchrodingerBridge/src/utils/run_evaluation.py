@@ -716,6 +716,91 @@ def _apply_postdecode_style_rgb_affine(
     }
 
 
+@torch.no_grad()
+def _compute_style_latent_stats(
+    test_images: dict[int, tuple[str, list[Path]]],
+    *,
+    vae,
+    device: str,
+    ref_limit: int,
+    scale_in: float,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    num_styles = max(test_images.keys(), default=-1) + 1
+    means = torch.zeros((num_styles, 4, 1, 1), dtype=torch.float32)
+    stds = torch.ones((num_styles, 4, 1, 1), dtype=torch.float32)
+    limit = int(ref_limit)
+    for style_id, (_, paths) in test_images.items():
+        selected = list(paths)
+        if limit > 0:
+            selected = selected[:limit]
+        if not selected:
+            continue
+        sum_lat = None
+        sumsq_lat = None
+        value_count = 0
+        for path in selected:
+            try:
+                img = _load_eval_image_tensor(path).unsqueeze(0).to(device)
+                latent = encode_image(vae, img, device)
+                if abs(scale_in - 1.0) > 1e-4:
+                    latent = latent * scale_in
+                latent = latent.detach().float()
+            except Exception:
+                continue
+            flat = latent[0].view(latent.shape[1], -1).to(dtype=torch.float64, device="cpu")
+            if sum_lat is None:
+                sum_lat = torch.zeros(flat.shape[0], dtype=torch.float64)
+                sumsq_lat = torch.zeros(flat.shape[0], dtype=torch.float64)
+            sum_lat += flat.sum(dim=1)
+            sumsq_lat += flat.square().sum(dim=1)
+            value_count += int(flat.shape[1])
+        if value_count <= 0 or sum_lat is None or sumsq_lat is None:
+            continue
+        mean = sum_lat / float(value_count)
+        var = (sumsq_lat / float(value_count) - mean.square()).clamp_min(1e-6)
+        means[int(style_id), :, 0, 0] = mean.to(dtype=torch.float32)
+        stds[int(style_id), :, 0, 0] = var.sqrt().to(dtype=torch.float32)
+    return means, stds
+
+
+def _apply_latent_style_affine(
+    latents: torch.Tensor,
+    target_ids: torch.Tensor,
+    target_means: torch.Tensor | None,
+    target_stds: torch.Tensor | None,
+    *,
+    strength: float,
+    mean_strength: float,
+    std_strength: float,
+    eps: float = 1e-5,
+) -> tuple[torch.Tensor, dict[str, float]]:
+    if target_means is None or target_stds is None or latents.numel() == 0:
+        return latents, {"latent_style_affine_active": 0.0}
+    strength = max(0.0, min(1.0, float(strength)))
+    mean_strength = max(0.0, min(1.0, float(mean_strength)))
+    std_strength = max(0.0, min(1.0, float(std_strength)))
+    if strength <= 0.0 or (mean_strength <= 0.0 and std_strength <= 0.0):
+        return latents, {"latent_style_affine_active": 0.0}
+
+    target_ids = target_ids.to(device=latents.device, dtype=torch.long).clamp(0, target_means.shape[0] - 1)
+    tgt_mean = target_means.to(device=latents.device, dtype=latents.dtype)[target_ids]
+    tgt_std = target_stds.to(device=latents.device, dtype=latents.dtype)[target_ids].clamp_min(eps)
+    lat_mean = latents.mean(dim=(-2, -1), keepdim=True)
+    lat_std = latents.std(dim=(-2, -1), keepdim=True, unbiased=False).clamp_min(eps)
+    out_mean = lat_mean.lerp(tgt_mean, mean_strength)
+    out_std = lat_std.lerp(tgt_std, std_strength).clamp_min(eps)
+    affine = (latents - lat_mean) / lat_std * out_std + out_mean
+    adjusted = latents.lerp(affine, strength)
+    return adjusted, {
+        "latent_style_affine_active": 1.0,
+        "latent_style_affine_strength": float(strength),
+        "latent_style_affine_mean_strength": float(mean_strength),
+        "latent_style_affine_std_strength": float(std_strength),
+        "latent_style_affine_mean_delta": float((tgt_mean - lat_mean).detach().abs().mean().cpu().item()),
+        "latent_style_affine_std_delta": float((tgt_std - lat_std).detach().abs().mean().cpu().item()),
+    }
+
+
 def save_image_task(image_cpu, path, backend: str = "pil_png"):
     """Async save task to avoid blocking GPU loop."""
     try:
@@ -1518,6 +1603,11 @@ def _auto_run_missing_full_eval(args) -> None:
             "--postprocess_mean_strength", str(args.postprocess_mean_strength),
             "--postprocess_std_strength", str(args.postprocess_std_strength),
             "--postprocess_ref_limit", str(args.postprocess_ref_limit),
+            "--latent_postprocess_mode", str(args.latent_postprocess_mode),
+            "--latent_postprocess_strength", str(args.latent_postprocess_strength),
+            "--latent_postprocess_mean_strength", str(args.latent_postprocess_mean_strength),
+            "--latent_postprocess_std_strength", str(args.latent_postprocess_std_strength),
+            "--latent_postprocess_ref_limit", str(args.latent_postprocess_ref_limit),
             "--clip_model_name", str(args.clip_model_name),
             "--clip_modelscope_id", str(args.clip_modelscope_id),
             "--clip_modelscope_cache_dir", str(args.clip_modelscope_cache_dir),
@@ -1755,6 +1845,17 @@ def main():
     parser.add_argument('--postprocess_mean_strength', type=float, default=float(full_eval_defaults.get("postprocess_mean_strength", 1.0)))
     parser.add_argument('--postprocess_std_strength', type=float, default=float(full_eval_defaults.get("postprocess_std_strength", 1.0)))
     parser.add_argument('--postprocess_ref_limit', type=int, default=int(full_eval_defaults.get("postprocess_ref_limit", 64)))
+    parser.add_argument(
+        '--latent_postprocess_mode',
+        type=str,
+        default=str(full_eval_defaults.get("latent_postprocess_mode", "none")),
+        choices=["none", "style_latent_affine"],
+        help="Optional latent-space postprocess before VAE decode and metrics.",
+    )
+    parser.add_argument('--latent_postprocess_strength', type=float, default=float(full_eval_defaults.get("latent_postprocess_strength", 0.0)))
+    parser.add_argument('--latent_postprocess_mean_strength', type=float, default=float(full_eval_defaults.get("latent_postprocess_mean_strength", 1.0)))
+    parser.add_argument('--latent_postprocess_std_strength', type=float, default=float(full_eval_defaults.get("latent_postprocess_std_strength", 1.0)))
+    parser.add_argument('--latent_postprocess_ref_limit', type=int, default=int(full_eval_defaults.get("latent_postprocess_ref_limit", 64)))
     parser.add_argument('--reuse_generated', action='store_true', help="Reuse existing generated images in output dir/images (or legacy output dir) and skip generation")
     parser.add_argument('--generation_only', action='store_true', help="Only generate translated images, skip all evaluation metrics")
     parser.add_argument('--seed', type=int, default=-1, help="Seed RNGs for reproducible VAE latent sampling/generation; <0 leaves RNG state untouched.")
@@ -1912,6 +2013,16 @@ def main():
                 args.postprocess_std_strength = float(resolved_full_eval["postprocess_std_strength"])
             if "postprocess_ref_limit" in resolved_full_eval and not _cli_provided("postprocess_ref_limit"):
                 args.postprocess_ref_limit = int(resolved_full_eval["postprocess_ref_limit"])
+            if "latent_postprocess_mode" in resolved_full_eval and not _cli_provided("latent_postprocess_mode"):
+                args.latent_postprocess_mode = str(resolved_full_eval["latent_postprocess_mode"])
+            if "latent_postprocess_strength" in resolved_full_eval and not _cli_provided("latent_postprocess_strength"):
+                args.latent_postprocess_strength = float(resolved_full_eval["latent_postprocess_strength"])
+            if "latent_postprocess_mean_strength" in resolved_full_eval and not _cli_provided("latent_postprocess_mean_strength"):
+                args.latent_postprocess_mean_strength = float(resolved_full_eval["latent_postprocess_mean_strength"])
+            if "latent_postprocess_std_strength" in resolved_full_eval and not _cli_provided("latent_postprocess_std_strength"):
+                args.latent_postprocess_std_strength = float(resolved_full_eval["latent_postprocess_std_strength"])
+            if "latent_postprocess_ref_limit" in resolved_full_eval and not _cli_provided("latent_postprocess_ref_limit"):
+                args.latent_postprocess_ref_limit = int(resolved_full_eval["latent_postprocess_ref_limit"])
     else:
         print("Single-run eval in reuse-only mode (no checkpoint).")
 
@@ -1982,6 +2093,11 @@ def main():
             f"std={float(args.postprocess_std_strength):.3f}, "
             f"ref_limit={int(args.postprocess_ref_limit)}"
         )
+    latent_postprocess_mode = str(args.latent_postprocess_mode).strip().lower()
+    if latent_postprocess_mode not in {"none", "style_latent_affine"}:
+        raise ValueError(f"Unsupported latent_postprocess_mode: {args.latent_postprocess_mode}")
+    latent_post_means = None
+    latent_post_stds = None
 
     # Prepare Source List
     all_src_info = []
@@ -2107,6 +2223,21 @@ def main():
         scale_out = vae_scale / max(model_scale, 1e-8)
         if abs(scale_in - 1.0) > 1e-4:
             print(f"WARNING: latent scale mismatch (model={model_scale:.6f}, vae={vae_scale:.6f}). Applying rescale.")
+        if latent_postprocess_mode == "style_latent_affine" and float(args.latent_postprocess_strength) > 0.0:
+            latent_post_means, latent_post_stds = _compute_style_latent_stats(
+                test_images,
+                vae=vae,
+                device=device,
+                ref_limit=int(args.latent_postprocess_ref_limit),
+                scale_in=scale_in,
+            )
+            print(
+                "Latent style-affine calibration enabled: "
+                f"strength={float(args.latent_postprocess_strength):.3f}, "
+                f"mean={float(args.latent_postprocess_mean_strength):.3f}, "
+                f"std={float(args.latent_postprocess_std_strength):.3f}, "
+                f"ref_limit={int(args.latent_postprocess_ref_limit)}"
+            )
 
         # Process in batches
         for b_start in range(0, num_src_total, args.batch_size):
@@ -2156,6 +2287,17 @@ def main():
                         t0 = time.perf_counter()
                         latents_gen = lgt.generation(repeated_latents, tgt_ids)
                         chunk_runtime_observability = _runtime_observability_from_model(getattr(lgt, "model", None))
+                        latent_post_debug = None
+                        if latent_postprocess_mode == "style_latent_affine":
+                            latents_gen, latent_post_debug = _apply_latent_style_affine(
+                                latents_gen,
+                                tgt_ids,
+                                latent_post_means,
+                                latent_post_stds,
+                                strength=float(args.latent_postprocess_strength),
+                                mean_strength=float(args.latent_postprocess_mean_strength),
+                                std_strength=float(args.latent_postprocess_std_strength),
+                            )
                         if abs(scale_out - 1.0) > 1e-4:
                             latents_gen = latents_gen * scale_out
                         _sync_cuda_if(device, bool(args.profile_timing))
@@ -2213,6 +2355,8 @@ def main():
                             t0 = time.perf_counter()
                             for local_i, (src_item, tgt_name, tgt_id, out_name) in enumerate(meta[dec_start:dec_end]):
                                 runtime_observability = dict(chunk_runtime_observability) if chunk_runtime_observability else {}
+                                if isinstance(latent_post_debug, dict):
+                                    runtime_observability.update(latent_post_debug)
                                 if isinstance(post_debug, dict):
                                     runtime_observability.update(post_debug)
                                 gen_name = out_name
@@ -2280,6 +2424,11 @@ def main():
                 "postprocess_mean_strength": float(args.postprocess_mean_strength),
                 "postprocess_std_strength": float(args.postprocess_std_strength),
                 "postprocess_ref_limit": int(args.postprocess_ref_limit),
+                "latent_postprocess_mode": str(args.latent_postprocess_mode),
+                "latent_postprocess_strength": float(args.latent_postprocess_strength),
+                "latent_postprocess_mean_strength": float(args.latent_postprocess_mean_strength),
+                "latent_postprocess_std_strength": float(args.latent_postprocess_std_strength),
+                "latent_postprocess_ref_limit": int(args.latent_postprocess_ref_limit),
             },
             "timings_sec": {k: float(v) for k, v in sorted(timings.items())},
             "note": "Metrics are intentionally skipped. Run evaluation later with --reuse_generated.",
@@ -2935,6 +3084,11 @@ def main():
             "postprocess_mean_strength": float(args.postprocess_mean_strength),
             "postprocess_std_strength": float(args.postprocess_std_strength),
             "postprocess_ref_limit": int(args.postprocess_ref_limit),
+            "latent_postprocess_mode": str(args.latent_postprocess_mode),
+            "latent_postprocess_strength": float(args.latent_postprocess_strength),
+            "latent_postprocess_mean_strength": float(args.latent_postprocess_mean_strength),
+            "latent_postprocess_std_strength": float(args.latent_postprocess_std_strength),
+            "latent_postprocess_ref_limit": int(args.latent_postprocess_ref_limit),
             "enable_introstyle": bool(args.eval_enable_introstyle),
             "introstyle_style_bank_root": str(args.introstyle_style_bank_root) if str(args.introstyle_style_bank_root).strip() else str(test_dir),
             "introstyle_model_id": str(args.introstyle_model_id),

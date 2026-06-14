@@ -428,3 +428,25 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Matched delta: increasing PC correction monotonically improves LPIPS but lowers style; the strongest correction gains `-0.002870` transfer LPIPS but loses `-0.000725` transfer style.
 - Plot update: appended the three-point `pc_lowpass_k070_e3` trace to `plot_points.csv`, regenerated the AAAI2027 page-1 figure, and wrote `curves/pc_lowpass_k070_e3_eval_only_curve.csv`.
 - Decision: `structure_repair_not_style_path`. Do not train this isolated PC path; keep it as a future safety correction if a style-strong mechanism needs LPIPS repair.
+
+## Latent-Affine Eval-Only Scan
+
+- Trigger: decoded RGB calibration was style-negative, but the user's brightness/contrast concern remained valid. The next screen moved the same idea into VAE latent space before decode, where style statistics can shift without post-decoded RGB clipping artifacts.
+- Implementation: added default-off `full_eval.latent_postprocess_mode=style_latent_affine` with strength, mean strength, std strength, and reference-limit controls. The transform is applied after `lgt.generation(...)` and before VAE decode; legacy eval and training are unchanged unless the config enables it.
+- Parent/control: `k070 epoch_0003`; parent transfer `0.671820 / 0.314618`, all-pairs `0.703234 / 0.312550`.
+- Configs added: `phase2_eval_latent_affine_s025_k070_e3.json`, `phase2_eval_latent_affine_s050_k070_e3.json`, and `phase2_eval_latent_affine_s075_k070_e3.json`.
+- Remote execution: three sequential eval-only runs under `exp/inmortal-exp/phase2_latent_affine_k070_e3`; seed fixed to `42`; generated image grids disabled; no ckpts were pulled.
+- Runtime: each point took about `158-161s`; health-window GPU memory stayed around `2.7 GiB` and the remote GPU returned to idle after the sweep.
+- `s0.25`: transfer `0.674868 / 0.310584`, all-pairs `0.707268 / 0.306689`; delta versus parent was transfer `+0.003047` style and `-0.004034` LPIPS, all-pairs `+0.004034` style and `-0.005861` LPIPS.
+- `s0.50`: transfer `0.680303 / 0.322202`, all-pairs `0.712764 / 0.316212`; delta versus parent was transfer `+0.008483` style and `+0.007584` LPIPS, all-pairs `+0.009530` style and `+0.003662` LPIPS.
+- `s0.75`: transfer `0.685444 / 0.344580`, all-pairs `0.717593 / 0.336945`; this is the current phase2 style ceiling but LPIPS cost rises quickly.
+- Plot update: appended the three-point `latent_affine_k070_e3` trace to `plot_points.csv`, labeled `LatAff s0.50` and `LatAff s0.75`, regenerated the filtered WikiArt-5 AAAI2027 page-1 figure, and wrote `curves/latent_affine_k070_e3_eval_only_curve.csv`.
+- Decision: `balanced_style_candidate`. This is the first cheap screen in this phase that gives a material style response without training. Next run should refine the `0.25-0.60` band and optionally pair the best latent-affine point with PC-lowpass as a structure safety check before any new long training lane.
+
+## Filtered WikiArt-5 Homepage Figure
+
+- Trigger: the existing page-1 figure mixed old `distinct5-512` / `1000-per-style` training points with the new WikiArt-5 full-train surface, making visual comparison invalid.
+- Added `aaai2027/scripts_gen_wikiart5_page1_summary.py` and fixed table `aaai2027/page1_bundle/wikiart5_page1_clip_lpips_points.csv`.
+- The rebuilt figure contains `159` points: `1` IDT test-only reference, `1` Seedream test-only reference, `92` SaMAM WikiArt-5 points, `3` SaMST WikiArt-5 points, and `62` phase2 full-notest points.
+- The plot uses transfer `CLIP-S - IDT` on the y-axis and `1 - LPIPS` on the x-axis. Old mixed-source points are excluded by construction.
+- The legend is placed in the lower right as requested. The compatibility filenames `fig_distinct5_page1_summary.*` and `fig_distinct5_page1_summary_clip_delta_idt.*` now contain the same filtered WikiArt-5 panel.

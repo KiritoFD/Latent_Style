@@ -23,7 +23,7 @@ LEGACY_POINTS_CSV = (
 PLOT_SCRIPTS = [
     ROOT / "aaai2027" / "scripts_gen_distinct5_full_transfer_pareto.py",
     ROOT / "aaai2027" / "scripts_gen_distinct5_all_points_big.py",
-    ROOT / "aaai2027" / "scripts_gen_distinct5_page1_summary.py",
+    ROOT / "aaai2027" / "scripts_gen_wikiart5_page1_summary.py",
 ]
 
 FIELDNAMES = [
