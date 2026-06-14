@@ -234,3 +234,21 @@
   - `spatial_abs=0.841168` on transfer.
 - Convergence state from `round2_convergence.json`: `converged=false`, `epoch_0010` is a candidate-curve Pareto point, and `since_last_pareto=0`.
 - Read: e10 recovers some LPIPS from e9 but loses the positive style delta, so it does not answer the promotion question. Continue while the curve is still creating Pareto points.
+
+## Third Guard Incident: Safe-Rescan Task Overlap
+
+- At `2026-06-14 10:36:08 Asia/Shanghai`, the SMoE launcher guard stopped the epoch-11 process with `used=11925MiB cap=11000MiB`, `rc=143`.
+- Root cause: an old off-plan `phase2_vel_tok32_safe_rescan_r1_seed42_b20a1` scheduled task started at `10:35:51` and occupied the remote GPU concurrently with SMoE.
+- Invalidated work: the interrupted epoch-11 partial has no checkpoint/eval and must not be counted as a retained point.
+- Action: killed the safe-rescan process, confirmed the GPU returned to `533MiB / 12288MiB` with no Python process, then disabled old safe-rescan and structure/topogate scheduled tasks that can steal the formal lane.
+- Disabled task set:
+  - `exp-phase2_vel_tok32_safe_rescan_r1_seed42_b20a1-train`
+  - `exp-phase2_vel_tok32_safe_rescan_r2_seed42_b20a1-train`
+  - `exp-phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1-train`
+  - `exp-phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b16a1-train`
+  - `phase2-structure-phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1-train`
+  - `structure_reentry-phase2_vel_tok32_safe_semantic_topogate_k070_seed42_b12a1-train`
+  - `structure_reentry-phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b20a1-train`
+- Relaunch: restarted the same SMoE scheduled task at `2026-06-14 10:46 Asia/Shanghai`.
+- Relaunch health: PID `414`, resumed from `exp/aaai2027_phase2_smoe_translator_k070_e3_seed42_b12a1/epoch_0010.pt` at epoch 11/global step `15740`, initial GPU read `4549MiB / 12288MiB`.
+- Decision: keep the SMoE lane valid after relaunch because no model, optimizer, batch, solver, tokenizer, loss, or schedule parameter changed. Treat the stop as orchestration/concurrency fault only.

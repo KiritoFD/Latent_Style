@@ -256,3 +256,11 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Plot update: added the e10 point to `plot_points.csv` and regenerated the AAAI2027 page-1 figure; the point is unlabeled to keep the panel readable.
 - Convergence read: `converged=false`, `since_last_pareto=0`, and `epoch_0010` is a new candidate-curve Pareto point.
 - Decision: continue. e10 shows structure recovery from e9 but gives up the style lift; SMoE-only still needs a point that combines e9 style with e8/e10 structure before it can be promoted.
+
+## SMoE Third Guard: Safe-Rescan Quarantine
+
+- At `2026-06-14 10:36:08 Asia/Shanghai`, epoch 11 was stopped by the runtime guard with `used=11925MiB cap=11000MiB`.
+- Diagnosis: old scheduled task `phase2_vel_tok32_safe_rescan_r1_seed42_b20a1` started at `10:35:51` and overlapped the SMoE lane.
+- Action: killed the safe-rescan process, verified GPU idle at `533MiB / 12288MiB`, and disabled old safe-rescan plus structure/topogate scheduled tasks that can restart without explicit approval.
+- Relaunch: `2026-06-14 10:46 Asia/Shanghai`, same SMoE task and config, resumed from `epoch_0010.pt` at epoch 11/global step `15740`; health memory `4549MiB`.
+- Decision: the partial e11 before the guard has no eval/checkpoint and is invalid. Continue from e10 under the same matched-control contract; do not change mechanism parameters or batch.
