@@ -139,3 +139,22 @@
   - `spatial_abs=0.903199` on transfer.
 - Convergence state from `round2_convergence.json`: `converged=false`, best transfer/all-pairs remains `epoch_0001`, and `epoch_0005` is another curve-level Pareto point.
 - Read: e5 recovers style toward the parent but gives back structure. It is still dominated by `k070 epoch_0003`, so the mechanism remains negative pending formal closure.
+
+## Epoch 6 Full Eval
+
+- Full eval completed at `2026-06-14 08:19:03 Asia/Shanghai`; training resumed into epoch 7.
+- Checkpoint: `epoch_0006.pt`.
+- Training time: `1558.2s` (`25.97min`) from epoch log `data+comp`; eval wall time from curve: `256.6s`.
+- Transfer: `CLIP-S=0.669504`, `LPIPS=0.335022`, `style - IDT=+0.029583`.
+- All-pairs: `CLIP-S=0.700534`, `LPIPS=0.330586`, `style - IDT=+0.020411`.
+- Identity: `CLIP-S=0.824652`, `LPIPS=0.312843`.
+- Matched delta vs `k070 epoch_0003`:
+  - transfer: `-0.002316` style, `+0.020404` LPIPS.
+  - all-pairs: `-0.002700` style, `+0.018037` LPIPS.
+- Runtime observability from summary:
+  - `translation_delta_from_identity=0.013472`.
+  - `routing_entropy=1.453477`.
+  - `effective_experts=4.380065`.
+  - `spatial_abs=0.885638` on transfer.
+- Convergence state from `round2_convergence.json`: `converged=false`, best transfer/all-pairs remains `epoch_0001`, last Pareto remains `epoch_0005`, and `since_last_pareto=1`.
+- Read: e6 is the first non-Pareto regression point and remains strongly dominated by `k070 epoch_0003`. Continue to collect tail evidence before formal closure.

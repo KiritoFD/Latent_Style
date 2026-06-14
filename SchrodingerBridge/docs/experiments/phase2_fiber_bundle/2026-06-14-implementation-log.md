@@ -197,3 +197,14 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Runtime observability: `translation_delta_from_identity=0.012272`, `routing_entropy=1.802536`, `effective_experts=6.149995`, `spatial_abs=0.903199`.
 - Plot update: added the e5 point to `plot_points.csv` and regenerated the AAAI2027 page-1 figure; the point is unlabeled to keep the panel readable.
 - Decision: continue only under the formal curve rule. e5 recovers style from e4 but gives back LPIPS and still does not beat the matched parent.
+
+## SMoE Epoch 6 Read
+
+- Full eval completed at `2026-06-14 08:19:03 Asia/Shanghai`; training resumed into epoch 7.
+- Training time: `1558.2s`; full-eval wall time: `256.6s`.
+- Transfer: `0.669504 / 0.335022`; all-pairs: `0.700534 / 0.330586`; identity: `0.824652 / 0.312843`.
+- Style above IDT: transfer `+0.029583`; all-pairs `+0.020411`.
+- Matched delta against `k070 epoch_0003`: transfer `-0.002316` style and `+0.020404` LPIPS; all-pairs `-0.002700` style and `+0.018037` LPIPS.
+- Runtime observability: `translation_delta_from_identity=0.013472`, `routing_entropy=1.453477`, `effective_experts=4.380065`, `spatial_abs=0.885638`.
+- Plot update: added the e6 point to `plot_points.csv` and regenerated the AAAI2027 page-1 figure; the point is unlabeled to keep the panel readable.
+- Decision: continue under the formal curve rule. e6 is the first non-Pareto tail point; if the next retained checkpoints also fail to create a Pareto point, SMoE-only can close as negative evidence.
