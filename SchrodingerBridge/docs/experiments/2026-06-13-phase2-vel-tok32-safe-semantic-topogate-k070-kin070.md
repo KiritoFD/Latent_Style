@@ -41,3 +41,12 @@ Date: 2026-06-13
 - failure:
   - LPIPS rises with no meaningful style gain
   - or the line simply repeats the same plateau at weaker structure control
+
+## 2026-06-14 Cost Stop
+
+- Remote launch: `phase2-structure-k070-kin070-train`.
+- Runtime read: epoch `1/24` reached only about `9%` after roughly `2.2min`; projected epoch time was still about `24-25min` before full eval.
+- VRAM read: about `6.9 GiB / 12 GiB`, inside the formal cap; the stop was cost/value driven, not OOM driven.
+- Eval status: no checkpoint and no `CLIP-S + LPIPS` point were produced.
+- Decision: `cost_stopped_no_eval`. Do not treat this as a negative model-quality result. It only says a full-data, full-length retrain for a single `w_kinetic` delta is not worth the remote 3060 time under the current evidence.
+- Follow-up rule: revisit kinetic release only through a shorter virtual-length probe, an eval-only surrogate, or a scheduled kinetic decay that can be judged quickly against matched controls.

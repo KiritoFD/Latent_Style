@@ -119,3 +119,9 @@ Date: 2026-06-13
   - do not treat `k070` as a style breakthrough
   - use it as an in-band structure/LPIPS parent or matched deterministic control
   - next style-facing mechanism should be eval-only stochasticity before more training-side capacity changes
+
+## 2026-06-14 Queue Closure
+
+- Queue status updated to `closed_inband_no_style`.
+- Reason: the run already has all-ckpt `CLIP-S + LPIPS` coverage for epochs `1-5`; `epoch_0006` was stopped by the runtime guard and should not be resumed just to complete a slow long-training tail.
+- Operational decision: do not auto-relaunch this lane. Use `epoch_0003` as the deterministic in-band control/parent for eval-only probes, and only revisit training-side style release with a shorter virtual-length schedule.

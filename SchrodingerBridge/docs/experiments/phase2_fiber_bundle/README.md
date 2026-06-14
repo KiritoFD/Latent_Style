@@ -56,6 +56,14 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 - Matched-control read at e15: transfer style `-0.000536` and LPIPS `+0.019029` versus `k070 epoch_0003`; all-pairs style `-0.001061` and LPIPS `+0.017848`.
 - Decision: do not launch `SMoE + fiberwise_swd` on this parent. The tokenizer-only mechanism has not produced enough style gain for its training cost.
 
+## Current Style-Release Cost Stop
+
+- `k070_kin070` was launched as the next least-invasive training-side style-release probe after SMoE closure.
+- It was stopped during epoch `1/24` at about `9%` progress because the projected full-data/full-length retrain cost was not justified for a single `w_kinetic: 0.85 -> 0.70` change.
+- VRAM was healthy at about `6.9 GiB`, so the stop does not indicate a memory failure.
+- No checkpoint or `CLIP-S + LPIPS` point exists; it is intentionally not plotted on the homepage figure.
+- `k070_sp256` is deferred for the same cost reason, because increasing tokenizer spatial capacity is expected to be slower and less isolated than the kinetic probe.
+
 ## Plot Update Contract
 
 Use `tools/experiments/update_phase2_plot_points.py` after each completed eval:
