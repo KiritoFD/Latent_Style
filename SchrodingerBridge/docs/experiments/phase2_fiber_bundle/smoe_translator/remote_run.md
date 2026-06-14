@@ -215,3 +215,22 @@
   - `spatial_abs=0.826611` on transfer.
 - Convergence state from `round2_convergence.json`: `converged=false`, `epoch_0009` is the new best transfer/all-pairs style point, and `best_in_newest_2=true`.
 - Read: e9 is the first SMoE point with positive style delta against the parent, but the structure cost is still too large for promotion. Continue to see whether the line can keep the e9 style while moving back toward the e8/parent LPIPS band.
+
+## Epoch 10 Full Eval
+
+- Full eval completed at `2026-06-14 10:19:29 Asia/Shanghai`; training resumed into epoch 11.
+- Checkpoint: `epoch_0010.pt`.
+- Training time: `1528.6s` (`25.48min`) from epoch log `data+comp`; eval wall time from curve: `257.4s`.
+- Transfer: `CLIP-S=0.670014`, `LPIPS=0.323925`, `style - IDT=+0.030093`.
+- All-pairs: `CLIP-S=0.701628`, `LPIPS=0.320149`, `style - IDT=+0.021506`.
+- Identity: `CLIP-S=0.828084`, `LPIPS=0.305047`.
+- Matched delta vs `k070 epoch_0003`:
+  - transfer: `-0.001806` style, `+0.009307` LPIPS.
+  - all-pairs: `-0.001605` style, `+0.007600` LPIPS.
+- Runtime observability from summary:
+  - `translation_delta_from_identity=0.016836`.
+  - `routing_entropy=1.671797`.
+  - `effective_experts=5.370153`.
+  - `spatial_abs=0.841168` on transfer.
+- Convergence state from `round2_convergence.json`: `converged=false`, `epoch_0010` is a candidate-curve Pareto point, and `since_last_pareto=0`.
+- Read: e10 recovers some LPIPS from e9 but loses the positive style delta, so it does not answer the promotion question. Continue while the curve is still creating Pareto points.

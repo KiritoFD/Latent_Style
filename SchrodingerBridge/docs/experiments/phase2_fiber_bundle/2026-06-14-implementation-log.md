@@ -244,3 +244,15 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Plot update: added the e9 point to `plot_points.csv`, labeled it `e9 style`, and regenerated the AAAI2027 page-1 figure.
 - Convergence read: `converged=false`, `best_epoch=epoch_0009`, `best_in_newest_2=true`.
 - Decision: continue. e9 is useful positive tokenizer evidence because it beats parent style under the matched control, but it is not promotable until a later checkpoint recovers LPIPS toward the e8/parent band.
+
+## SMoE Epoch 10 Read
+
+- Full eval completed at `2026-06-14 10:19:29 Asia/Shanghai`; training resumed into epoch 11.
+- Training time: `1528.6s`; full-eval wall time: `257.4s`.
+- Transfer: `0.670014 / 0.323925`; all-pairs: `0.701628 / 0.320149`; identity: `0.828084 / 0.305047`.
+- Style above IDT: transfer `+0.030093`; all-pairs `+0.021506`.
+- Matched delta against `k070 epoch_0003`: transfer `-0.001806` style and `+0.009307` LPIPS; all-pairs `-0.001605` style and `+0.007600` LPIPS.
+- Runtime observability: `translation_delta_from_identity=0.016836`, `routing_entropy=1.671797`, `effective_experts=5.370153`, `spatial_abs=0.841168`.
+- Plot update: added the e10 point to `plot_points.csv` and regenerated the AAAI2027 page-1 figure; the point is unlabeled to keep the panel readable.
+- Convergence read: `converged=false`, `since_last_pareto=0`, and `epoch_0010` is a new candidate-curve Pareto point.
+- Decision: continue. e10 shows structure recovery from e9 but gives up the style lift; SMoE-only still needs a point that combines e9 style with e8/e10 structure before it can be promoted.
