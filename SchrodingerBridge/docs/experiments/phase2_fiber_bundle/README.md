@@ -11,13 +11,14 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 
 ## Current Homepage Overlay
 
-- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05`, SMoE epoch `1-15`, the short `k070_kin070_vlen010` kinetic-release probe epoch `1-3`, and the eval-only `rgbcal_k070_e3` scan are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
+- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05` plus the fine `0.04/0.06/0.08` style-ceiling extension, SMoE epoch `1-15`, the short `k070_kin070_vlen010` kinetic-release probe epoch `1-3`, and the eval-only `rgbcal_k070_e3` scan are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
 - The trace uses transfer `CLIP-S - IDT` on the y-axis and `1 - LPIPS` on the x-axis.
 - All retained checkpoints are drawn and connected.
 - Labels are sparse by design:
   - `k070`: `e1` and `e3 best LPIPS`
   - `pattn_enhanced_tok`: `e2 best style` and `e8 low LPIPS`
   - `smoe_translator_k070_e3`: `SMoE e1`, `SMoE e2`, `e9 style`, `e14 pareto`, and `stop e15`; other points are plotted but unlabeled to avoid collisions.
+  - `fiber_sde_fine_k070_e3`: only `SDE s0.08 ceiling` is labeled; the full `0.04/0.06/0.08` trace is still plotted.
 - Source curve:
   - [k070_epoch1_5_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/k070_epoch1_5_remote_clip_lpips_curve.csv)
   - [pattn_enhanced_tok_epoch1_10_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/pattn_enhanced_tok_epoch1_10_remote_clip_lpips_curve.csv)
@@ -32,6 +33,7 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
   - [smoe_translator_k070_e3_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/smoe_translator_k070_e3_remote_clip_lpips_curve.csv)
   - [k070_kin070_vlen010_remote_clip_lpips_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/k070_kin070_vlen010_remote_clip_lpips_curve.csv)
   - [rgbcal_k070_e3_eval_only_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/rgbcal_k070_e3_eval_only_curve.csv)
+  - [fiber_sde_fine_k070_e3_eval_only_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/fiber_sde_fine_k070_e3_eval_only_curve.csv)
 - Rendered page-1 figure:
   - [fig_distinct5_page1_summary.png](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/figures/fig_distinct5_page1_summary.png)
 
@@ -49,6 +51,16 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 - `sigma=0.05` isotropic: transfer `0.675927 / 0.322953`, all-pairs `0.706639 / 0.320868`.
 - `sigma=0.05` fiber-aligned: transfer `0.675948 / 0.323189`, all-pairs `0.706763 / 0.321093`.
 - Decision: `style_upper_not_promoted`; this is the style-first upper point of the scan, but it pays clear LPIPS cost and does not reach the `0.74 / 0.30` target.
+
+## Current Fiber-SDE Fine Style-Ceiling Extension
+
+- Trigger: full-data training probes were too slow for the observed marginal gains, so the next action was restricted to eval-only SDE inference on the existing `k070 epoch_0003` parent.
+- Scope: matched isotropic vs fiber-aligned SDE at `sigma=0.04, 0.06, 0.08`, fixed seed `42`, fixed `solver_corrector_steps=2`, fixed `solver_corrector_step_size=0.06`, and no training.
+- Best transfer style point: `sigma=0.08 fiber`, transfer `0.681075 / 0.339063`; matched isotropic was `0.681007 / 0.339036`.
+- Best all-pairs style point: `sigma=0.08 isotropic`, all-pairs `0.710653 / 0.336767`; matched fiber was `0.710641 / 0.336797`.
+- Matched fiber-aligned read: fiber is worse than isotropic at `0.04` and `0.06`; at `0.08` it gains only `+0.000068` transfer style while worsening LPIPS by `+0.000027`, and all-pairs is still slightly worse.
+- Decision: `style_ceiling_not_promoted`. More SDE noise can buy style, but the slope is poor and LPIPS cost rises quickly; this does not justify any long training lane by itself.
+- Operational decision: full-data training is no longer the default next action. New training mechanisms must first pass a cheap eval-only screen or a short virtual-length probe with a clear style delta and no SMoE-like LPIPS reopen.
 
 ## Current SMoE Closure
 

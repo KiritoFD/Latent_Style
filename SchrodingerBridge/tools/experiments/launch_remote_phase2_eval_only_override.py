@@ -33,6 +33,7 @@ def main() -> int:
     parser.add_argument("--cache-dir", default=DEFAULT_CACHE_DIR)
     parser.add_argument("--clip-hf-cache-dir", default=DEFAULT_CLIP_HF_CACHE_DIR)
     parser.add_argument("--device", default="cuda")
+    parser.add_argument("--seed", type=int, default=-1)
     parser.add_argument("--task-prefix", default="phase2-eval-only")
     parser.add_argument("--max-prelaunch-memory-mib", type=int, default=1500)
     parser.add_argument("--min-runtime-memory-mib", type=int, default=0)
@@ -74,6 +75,8 @@ def main() -> int:
         "--device",
         str(args.device),
     ]
+    if int(args.seed) >= 0:
+        remote_cmd += ["--seed", str(int(args.seed))]
     if bool(args.force_regen):
         remote_cmd.append("--force-regen")
 

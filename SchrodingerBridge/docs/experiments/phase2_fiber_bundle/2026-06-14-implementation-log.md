@@ -372,3 +372,18 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - `s075`: transfer `0.641211 / 0.352983`, all-pairs `0.675231 / 0.347546`; this is dominated by both parent and `s025`.
 - Plot update: appended the three-point `rgbcal_k070_e3` trace to `plot_points.csv`, added `RGBCal` to the AAAI2027 page-1 panel, and wrote the fixed curve CSV at `curves/rgbcal_k070_e3_eval_only_curve.csv`.
 - Decision: `cost_positive_quality_negative`. The cheap screen is useful negative evidence, but simple exposure/contrast/stat matching suppresses CLIP-style and should not be promoted or used as a training target without a stronger style-specific objective.
+
+## Fiber-SDE Fine Style-Ceiling Eval-Only Scan
+
+- Trigger: the user called out that training was too slow and not worth the observed marginal gains. The lane was switched to cheap-first execution: no long training, no local GPU deep eval, and only remote eval-only matched controls.
+- Infra fix: `run_phase2_eval_only_override.py` and `launch_remote_phase2_eval_only_override.py` now accept `--seed`; default remains `-1`, so legacy calls are unchanged. `update_phase2_plot_points.py` now reads CSV/JSON via `utf-8-sig` so PowerShell-pulled artifacts with BOM do not silently drop rows.
+- Configs added: `phase2_fiber_sde_{iso,fiber}_sigma0p04.json`, `phase2_fiber_sde_{iso,fiber}_sigma0p06.json`, and `phase2_fiber_sde_{iso,fiber}_sigma0p08.json`.
+- Parent/control: `k070 epoch_0003`; parent transfer `0.671820 / 0.314618`, all-pairs `0.703234 / 0.312550`.
+- Remote execution: six sequential eval-only tasks under `exp/inmortal-exp/phase2_fiber_sde_fine_k070_e3`; seed fixed to `42`; no ckpts were pulled; PNG grids were left on remote.
+- Runtime: each eval stayed around `2.6 GiB` during generation/eval and returned to idle after completion, well under the `<11 GiB` formal cap.
+- `sigma=0.04`: isotropic transfer `0.674624 / 0.319512`, all-pairs `0.705757 / 0.317374`; fiber transfer `0.674520 / 0.319587`, all-pairs `0.705680 / 0.317446`.
+- `sigma=0.06`: isotropic transfer `0.677688 / 0.327456`, all-pairs `0.708146 / 0.325220`; fiber transfer `0.677541 / 0.327567`, all-pairs `0.708073 / 0.325322`.
+- `sigma=0.08`: isotropic transfer `0.681007 / 0.339036`, all-pairs `0.710653 / 0.336767`; fiber transfer `0.681075 / 0.339063`, all-pairs `0.710641 / 0.336797`.
+- Matched delta: fiber-aligned is worse than isotropic at `0.04` and `0.06`; at `0.08` it gains only `+0.000068` transfer style for `+0.000027` LPIPS and is still slightly worse on all-pairs.
+- Plot update: appended the full fine SDE trace to `plot_points.csv`, labeled only `SDE s0.08 ceiling`, regenerated the AAAI2027 page-1 figure, and wrote `curves/fiber_sde_fine_k070_e3_eval_only_curve.csv`.
+- Decision: `style_ceiling_not_promoted`. More inference noise buys style, but the style/LPIPS slope is too poor and remains far from `0.74`; do not launch a long training lane from this evidence alone.
