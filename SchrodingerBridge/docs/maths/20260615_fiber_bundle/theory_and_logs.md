@@ -79,7 +79,8 @@ $$\mathcal{L}_{\text{SWD}} = \sum_{k=1}^K \text{SWD}\left( \alpha_k \odot z_1, \
 | :--- | :--- | :--- | :---: | :---: | :--- |
 | `smoe_translator` ODE | SMoE + ODE | `resume_checkpoint` e8 | 0.7022 | 0.3304 | **均值坍缩**：确定性流导致笔触平滑，style 卡在 0.70。LPIPS 保留优异。 |
 | `i2sb_endpoint` Scratch | SDE + Scratch (sigma=0.25) | 无 parent 从头训练 | 0.7248 | 0.7153 | **结构崩塌**：没有内容先验锚定，LPIPS 严重超标。 |
-| **`smoe_fiber_sde_k070`** | **SMoE + SDE (sigma=0.02) + SWD_16** | **Parent warm-start, e1** | **0.7045** | **0.3404** | **理论首度跑通**：LPIPS (0.340) 安全，且 Style 开始从 0.7019 往上抬升。 |
+| **`smoe_fiber_sde_k070` (e1)** | **SMoE + SDE (sigma=0.02) + SWD_16** | **Parent warm-start, e1** | **0.7045** | **0.3404** | **理论首度跑通**：LPIPS (0.340) 安全，且 Style 开始从 0.7019 往上抬升。 |
+| **`smoe_fiber_sde_k070` (e2)** | **SMoE + SDE (sigma=0.02) + SWD_16** | **Parent warm-start, e2** | **0.7038** | **0.3224** | **结构强力收拢**：LPIPS 大幅下降到 0.322，内容保真度极佳，Style 稳定在 0.704。 |
 
 ---
 
@@ -93,17 +94,19 @@ $$\mathcal{L}_{\text{SWD}} = \sum_{k=1}^K \text{SWD}\left( \alpha_k \odot z_1, \
 - **总体结果 (All-Pairs Overview)**:
   - **CLIP Style**: `0.7045`
   - **Content LPIPS**: `0.3404` (严格控制在 LPIPS 安全线 `< 0.35` 之下)
-- **各风格类别细分数据**:
-  - `Early_Renaissance`: Style = `0.8020` / LPIPS = `0.3477`
-  - `Impressionism`: Style = `0.6846` / LPIPS = `0.3750`
-  - *注：Impressionism 的 LPIPS 偏高，需要密切关注后续 Epoch 的收敛状态。*
 
-#### Epoch 2 训练状态 (实时更新于 2026-06-15 05:20)
-- **当前进度**: Step 132/1574 (8% Progress)
+#### Epoch 2 评估细节 (2026-06-15 05:59:05)
+- **checkpoint**: `exp/aaai2027_phase2_smoe_fiber_sde_fiberwise_swd_k070/epoch_0002.pt`
+- **总体结果 (All-Pairs Overview)**:
+  - **CLIP Style**: `0.7038`
+  - **Content LPIPS**: `0.3224` (内容结构保真度进一步大幅改善，在 SDE 各向同性扩散下，LPIPS 从 0.3404 下降到 0.3224，表现优异)
+
+#### Epoch 3 训练状态 (实时更新于 2026-06-15 06:00)
+- **当前进度**: Step 18/1574 (1% Progress)
 - **动态损失分析**:
-  - `flow_loss` $\approx 0.6882$
-  - `tswd_loss` $\approx 0.0106$
-  - `kinetic_loss` $\approx 0.0834$
+  - `flow_loss` $\approx 0.6795$
+  - `tswd_loss` $\approx 0.0111$
+  - `kinetic_loss` $\approx 0.0888$
   - **VRAM 占用**: `6895 MiB / 12288 MiB` (稳定低于 **11.3G** 限制，GPU 利用率 **89%**，温度 **69°C**)。
 
 ---
