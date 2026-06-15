@@ -28,6 +28,7 @@ INFERENCE_DEFAULTS: dict[str, dict[str, Any]] = {
         "target_chunk_size": 2,
         "vae_decode_batch_size": 16,
         "only_lpips_clip_style": True,
+        "transfer_only": False,
         "postprocess_mode": "none",
         "postprocess_strength": 0.0,
         "postprocess_mean_strength": 1.0,
@@ -578,6 +579,7 @@ class TrainingConfig:
     full_eval_target_chunk_size: int | None = 2
     full_eval_vae_decode_batch_size: int | None = 16
     full_eval_only_lpips_clip_style: bool | None = None
+    full_eval_transfer_only: bool = False
     full_eval_postprocess_mode: str = "none"
     full_eval_postprocess_strength: float = 0.0
     full_eval_postprocess_mean_strength: float = 1.0
@@ -852,6 +854,7 @@ def resolve_full_eval_section(config: dict[str, Any] | ExperimentConfig | None) 
             "target_chunk_size": "full_eval_target_chunk_size",
             "vae_decode_batch_size": "full_eval_vae_decode_batch_size",
             "only_lpips_clip_style": "full_eval_only_lpips_clip_style",
+            "transfer_only": "full_eval_transfer_only",
             "postprocess_mode": "full_eval_postprocess_mode",
             "postprocess_strength": "full_eval_postprocess_strength",
             "postprocess_mean_strength": "full_eval_postprocess_mean_strength",
@@ -926,6 +929,7 @@ def compact_runtime_config(config: dict[str, Any] | ExperimentConfig | None) -> 
             "full_eval_target_chunk_size": "target_chunk_size",
             "full_eval_vae_decode_batch_size": "vae_decode_batch_size",
             "full_eval_only_lpips_clip_style": "only_lpips_clip_style",
+            "full_eval_transfer_only": "transfer_only",
             "full_eval_postprocess_mode": "postprocess_mode",
             "full_eval_postprocess_strength": "postprocess_strength",
             "full_eval_postprocess_mean_strength": "postprocess_mean_strength",

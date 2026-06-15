@@ -241,8 +241,11 @@ class SBTrainer:
         self.global_step = 0
         self.requested_stop = False
         self.start_epoch = 1
-        self._maybe_resume(str(train_cfg.get("resume_checkpoint", "")))
         self._configure_freeze_mode()
+        # Optimizer state in checkpoints is keyed to the active trainable scope.
+        # Apply freeze/rebuild first so local-latest resume does not compare an
+        # injection-only optimizer state against the temporary all-param optimizer.
+        self._maybe_resume(str(train_cfg.get("resume_checkpoint", "")))
         self._configure_distillation()
         self._configure_compile()
 

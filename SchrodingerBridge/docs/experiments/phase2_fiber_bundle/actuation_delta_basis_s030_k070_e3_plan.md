@@ -53,20 +53,51 @@ This lane keeps the same mechanism and parent, then changes only
   `style_delta_basis_rank`, `style_delta_basis_abs`,
   `style_delta_weight_abs`, `style_delta_side_abs`,
   `style_delta_side_rms`, and `style_delta_scale` are present.
+- 2026-06-15 eval speed audit: old formal eval used
+  `batch=1,target_chunk=2,decode=4` and spent about `200-230s` per checkpoint.
+  Timing breakdown showed generation and VAE decode dominate:
+  `lancet_generation ~=105-109s`, `vae_decode ~=54s`, metrics loop only
+  `~=21s`.
+- Fast eval smoke on `epoch_0009.pt`:
+  `batch=4,target_chunk=5,decode=20` completed in `102.09s`
+  (`lancet_generation=16.60s`, `vae_decode=51.14s`) with the same
+  LPIPS+CLIP-S metric surface.
+- Larger smoke `batch=8,target_chunk=5,decode=40` was slower (`108.46s`) due
+  to VAE decode cost, so the formal continuation uses the `batch=4` profile.
+- From the continuation after `epoch_0009`, full eval is switched to
+  `full_eval_batch_size=4`, `full_eval_target_chunk_size=5`,
+  `full_eval_vae_decode_batch_size=20`.
+- 2026-06-15 eval optimization follow-up: added
+  `full_eval_transfer_only=true` for training-time convergence eval. This skips
+  identity pairs only; per-transfer generated samples and CLIP-S/LPIPS formulas
+  are unchanged. Final closure must still run a full-board eval if
+  `style minus IDT` is needed.
+- After restart from `epoch_0013.pt`, `epoch_0014` transfer-only eval completed
+  in `86.66s` (`lancet_generation=15.11s`, `vae_decode=41.07s`), versus
+  `~102s` for the prior batched full-board profile and `~203-207s` for the
+  original profile.
 
 ## Running Eval Curve
 
 Curve CSV:
 `docs/experiments/phase2_fiber_bundle/eval/actuation_delta_basis_s030_k070_e3_b32bf16_vlen010/clip_lpips_curve.csv`
 
-| epoch | transfer CLIP-S | transfer LPIPS | style minus IDT | eval wall |
-|---|---:|---:|---:|---:|
-| 1 | 0.672659 | 0.333805 | -0.150195 | 203.04s |
-| 2 | 0.674053 | 0.346618 | -0.145910 | 206.40s |
-| 3 | 0.673827 | 0.346089 | -0.145851 | 206.16s |
-| 4 | 0.674136 | 0.350179 | -0.144175 | 206.17s |
-| 5 | 0.673752 | 0.348534 | -0.145378 | 203.60s |
-| 6 | 0.673968 | 0.349402 | -0.145191 | 205.58s |
+| epoch | transfer CLIP-S | transfer LPIPS | style minus IDT | eval wall | transfer-only |
+|---|---:|---:|---:|---:|---:|
+| 1 | 0.672659 | 0.333805 | -0.150195 | 203.04s | no |
+| 2 | 0.674053 | 0.346618 | -0.145910 | 206.40s | no |
+| 3 | 0.673827 | 0.346089 | -0.145851 | 206.72s | no |
+| 4 | 0.674136 | 0.350179 | -0.144175 | 207.28s | no |
+| 5 | 0.673752 | 0.348534 | -0.145378 | 201.79s | no |
+| 6 | 0.673968 | 0.349402 | -0.144596 | 204.28s | no |
+| 7 | 0.674119 | 0.350776 | -0.144325 | 200.35s | no |
+| 8 | 0.673917 | 0.350305 | -0.144514 | 204.18s | no |
+| 9 | 0.673790 | 0.349841 | -0.144800 | 207.17s | no |
+| 10 | 0.674079 | 0.351139 | -0.144023 | 103.13s | no |
+| 11 | 0.673980 | 0.351319 | -0.143997 | 102.23s | no |
+| 12 | 0.674017 | 0.352630 | -0.143231 | 101.81s | no |
+| 13 | 0.674097 | 0.353023 | -0.143039 | 102.31s | no |
+| 14 | 0.673868 | 0.353363 | n/a | 86.66s | yes |
 
 Training observability:
 
@@ -78,12 +109,13 @@ Training observability:
 
 Interim read: e1 is not better than S015 e1, but the actuator magnitude grows
 substantially by the e2 training row. e2 transfer CLIP-S surpasses the best S015
-point (`0.674053` vs `0.673966`). e3 slightly regresses, then e4 reaches a new
-best `0.674136 / 0.350179`. e5 regresses to `0.673752 / 0.348534`; e6 recovers
-partly to `0.673968 / 0.349402`, but the current best remains e4. This supports
-the scale direction, but the absolute style gain is still far from the Seedream
-target. Continue to full convergence under the style-first rule and watch
-whether later epochs produce a real style breakout or only LPIPS drift.
+point (`0.674053` vs `0.673966`). e4 remains the current best
+full-board point at `0.674136 / 0.350179`; e7 is nearly tied, and e10-e13 stay
+flat near `0.6740` while LPIPS drifts upward to `0.353`. e14 transfer-only eval
+is faster but also regresses to `0.673868 / 0.353363`. This supports the
+conclusion that increasing output-side delta scale alone is platforming rather
+than breaking the style bottleneck. Continue only until the convergence rule is
+satisfied, then close S030 and move to a stronger actuation mechanism.
 
 ## Closure Decision
 
