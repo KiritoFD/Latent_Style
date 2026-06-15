@@ -76,13 +76,30 @@ Curve CSV:
 
 | epoch | transfer CLIP-S | transfer LPIPS | eval wall | read |
 |---:|---:|---:|---:|---|
-| 1 | `0.713162` | `0.590598` | `26.78s` | stronger style than sigma0p02 e1/e2, but LPIPS worse |
+| 1 | `0.713162` | `0.590598` | `26.78s` | new style-high, LPIPS worse |
+| 2 | `0.709784` | `0.524506` | `29.16s` | LPIPS falling, style already reversing |
+| 3 | `0.701776` | `0.482099` | `26.23s` | continued style reversal, LPIPS still out of band |
 
 ## Interim Read
 
-`sigma=0.01` did not reduce first-checkpoint latent drift; it amplified the
-style/destruction tradeoff. Because style is the priority and e1 is a new
-style-high point, the lane should continue at least through e2/e3 to see
-whether LPIPS falls as quickly as the sigma0p02 lane. If style reverses while
-LPIPS remains above `0.42`, close as a lower-sigma negative and move to an
-anchored/blended absolute endpoint rather than residual-only.
+`sigma=0.01` did not reduce latent drift; it amplified the style/destruction
+tradeoff. The e1 style point is the strongest fast10 style read so far, but
+style then reverses for e2/e3 while LPIPS remains far above the accepted band.
+
+## Closure
+
+- Remote process stopped after e3 on 2026-06-16.
+- Stop reason:
+  style peak reversed for two later checkpoints and LPIPS remained above
+  `0.42`, matching the documented negative rule.
+- Decision:
+  `closed_negative_lower_sigma_high_lpips_style_reversal`.
+- Interpretation:
+  decreasing I2SB sigma from `0.02` to `0.01` does not fix the absolute
+  endpoint coordinate drift. It can push CLIP-S higher (`0.713162`), but the
+  price is too destructive (`0.590598` LPIPS at peak) and the advantage decays.
+- Next decision:
+  do not continue pure absolute sigma scans downward as the immediate path.
+  The clean next mechanism should preserve absolute endpoint actuation while
+  adding a content anchor, such as an explicit absolute/residual endpoint blend
+  switch or a bounded endpoint delta, tested as one new controlled mechanism.
