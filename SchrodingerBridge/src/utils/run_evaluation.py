@@ -1387,6 +1387,37 @@ def _load_eval_image_tensor(path: Path, size: int = 256) -> torch.Tensor:
     return T.ToTensor()(img)
 
 
+def _stack_eval_tensors_for_device(
+    tensors: list[torch.Tensor],
+    *,
+    device: str,
+) -> torch.Tensor:
+    """Stack eval images without forcing a CPU roundtrip when tensors already live on GPU."""
+
+    if not tensors:
+        return torch.empty((0, 3, 256, 256), device=device)
+    target = torch.device(device)
+
+    def _on_target(x: torch.Tensor) -> bool:
+        if x.device.type != target.type:
+            return False
+        if target.type != "cuda":
+            return True
+        target_index = target.index
+        if target_index is None and torch.cuda.is_available():
+            target_index = torch.cuda.current_device()
+        return int(x.device.index or 0) == int(target_index or 0)
+
+    converted = [
+        _uint8_hwc_to_float_chw(x) if torch.is_tensor(x) and x.dtype == torch.uint8 else x
+        for x in tensors
+    ]
+    if all(torch.is_tensor(x) and _on_target(x) for x in converted):
+        return torch.stack(converted, dim=0).contiguous()
+    cpu_items = [x.detach().cpu() if torch.is_tensor(x) and x.device.type != "cpu" else x for x in converted]
+    return torch.stack(cpu_items, dim=0).contiguous().to(device, non_blocking=True)
+
+
 def _parse_generated_name(filename: str, style_names: list[str]) -> tuple[str, str, str] | None:
     """
     Parse generated image names from both the native evaluator layout and the
@@ -3581,42 +3612,56 @@ def main(argv: list[str] | None = None):
         if isinstance(value, dict) and isinstance(value.get("clip"), torch.Tensor)
     }
     metric_loop_start = time.perf_counter()
+    source_device_cache_enabled = (
+        str(device).startswith("cuda")
+        and bool(args.eval_only_lpips_clip_style)
+        and not bool(args.eval_enable_introstyle)
+        and not bool(args.eval_enable_art_fid)
+        and not bool(args.eval_enable_kid)
+    )
+    src_img_device_cache: dict[str, torch.Tensor] = {}
+    if source_device_cache_enabled:
+        print("  Fast metric path: source image device cache enabled.")
     
     metric_batch_size = max(1, int(args.metric_batch_size) if int(args.metric_batch_size) > 0 else int(args.batch_size))
     for b_start in range(0, total_gen, metric_batch_size):
         b_end = min(b_start + metric_batch_size, total_gen)
         batch_items = generated_buffer[b_start:b_end]
-        
-        gen_imgs_cpu = torch.stack(
-            [
-                _uint8_hwc_to_float_chw(item['gen_img'])
-                if torch.is_tensor(item['gen_img']) and item['gen_img'].dtype == torch.uint8
-                else item['gen_img']
-                for item in batch_items
-            ],
-            dim=0,
-        ).contiguous()
-        gen_imgs = gen_imgs_cpu.to(device, non_blocking=True)
+
+        t0 = time.perf_counter()
+        gen_imgs = _stack_eval_tensors_for_device(
+            [item["gen_img"] for item in batch_items],
+            device=device,
+        )
 
         src_tensors = []
         src_keys = []
         for item in batch_items:
             src_key = _source_path_key(item['src_path'])
             src_keys.append(src_key)
-            cached = src_img_cache.get(src_key)
+            cached = src_img_device_cache.get(src_key) if source_device_cache_enabled else None
             if cached is None:
-                cached = _load_eval_image_tensor(Path(item['src_path']), size=src_eval_size)
-                if fast_metric_half_cpu:
-                    cached = cached.to(dtype=torch.float16)
-                src_img_cache[src_key] = cached
+                cached_cpu = src_img_cache.get(src_key)
+                if cached_cpu is None:
+                    cached_cpu = _load_eval_image_tensor(Path(item['src_path']), size=src_eval_size)
+                    if fast_metric_half_cpu:
+                        cached_cpu = cached_cpu.to(dtype=torch.float16)
+                    src_img_cache[src_key] = cached_cpu
+                if source_device_cache_enabled:
+                    cached = cached_cpu.to(device, non_blocking=True)
+                    src_img_device_cache[src_key] = cached
+                else:
+                    cached = cached_cpu
             src_tensors.append(cached)
-        src_imgs_cpu = torch.stack(src_tensors, dim=0).contiguous()
-        src_imgs = src_imgs_cpu.to(device, non_blocking=True)
+        src_imgs = _stack_eval_tensors_for_device(src_tensors, device=device)
+        _sync_cuda_if(device, bool(args.profile_timing))
+        _add_timing(timings, "metric_tensor_prepare", t0)
         
-        with torch.no_grad():
+        with torch.inference_mode():
             # 1. Content LPIPS
             c_lpips_vals = []
             if loss_fn:
+                t0 = time.perf_counter()
                 gen_f32 = gen_imgs.float()
                 src_f32 = src_imgs.float()
                 requested_lpips_chunk = int(args.eval_lpips_chunk_size)
@@ -3632,6 +3677,8 @@ def main(argv: list[str] | None = None):
                     tag="content_lpips",
                 )
                 c_lpips_vals = dists.numpy()
+                _sync_cuda_if(device, bool(args.profile_timing))
+                _add_timing(timings, "metric_lpips", t0)
             else:
                 c_lpips_vals = [0.0] * len(batch_items)
 
@@ -3643,6 +3690,7 @@ def main(argv: list[str] | None = None):
             batch_clip_dir_scores = None
             
             if has_clip and clip_model is not None and clip_encode_images_01 is not None:
+                t0 = time.perf_counter()
                 gen_clips = clip_encode_images_01(gen_imgs)
                 if not only_lpips_clip_style:
                     # Src CLIP (cache by source path; source repeats across many target styles)
@@ -3679,8 +3727,11 @@ def main(argv: list[str] | None = None):
                         for j, ok in enumerate(proto_valid):
                             if not ok:
                                 batch_clip_dir_scores[j] = 0.0
+                _sync_cuda_if(device, bool(args.profile_timing))
+                _add_timing(timings, "metric_clip", t0)
 
             # 3. Style Metrics & Row Writing
+            t0 = time.perf_counter()
             for i, item in enumerate(batch_items):
                 # --- CLIP metrics ---
                 # clip_dir: directional similarity in edit space.
@@ -3714,6 +3765,7 @@ def main(argv: list[str] | None = None):
                     )
             
             csv_file.flush()
+            _add_timing(timings, "metric_csv_write", t0)
 
     _sync_cuda_if(device, bool(args.profile_timing))
     _add_timing(timings, "eval_metrics_loop", metric_loop_start)
