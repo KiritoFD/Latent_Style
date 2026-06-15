@@ -138,18 +138,34 @@ against the earlier full curve; compare trends within each contract.
 | 4 | 0.680348 | 0.326056 | 28.94s | 8.42s | yes |
 | 5 | 0.678679 | 0.332862 | 28.97s | 8.42s | yes |
 | 6 | 0.680404 | 0.331394 | 28.76s | 8.45s | yes |
+| 7 | 0.680526 | 0.332695 | 29.29s | 8.49s | yes |
+| 8 | 0.680202 | 0.334218 | 29.12s | 8.47s | yes |
+| 9 | 0.680954 | 0.334124 | 29.01s | 8.48s | yes |
+| 10 | 0.680468 | 0.334741 | 28.97s | 8.46s | yes |
+| 11 | 0.680411 | 0.334782 | 33.81s | 8.87s | yes |
+| 12 | 0.680278 | 0.335167 | 29.66s | 8.51s | yes |
+| 13 | 0.680467 | 0.335323 | 29.01s | 8.47s | yes |
+| 14 | 0.680484 | 0.335496 | 28.70s | 8.49s | yes |
 
 Speed decision:
 
 - Full e1-e6 wall: `66.38-71.50s`.
-- Fast10 e1-e6 wall: `28.76-29.10s`.
+- Fast10 e1-e14 wall: usually `28.70-29.66s`, with e11 at `33.81s`.
 - Practical speedup: about `2.3x` per retained checkpoint while keeping a
   fixed transfer-only convergence surface.
 
 ## Closure Decision
 
-Pending. Full e1-e6 are structure-safe but weak style-positive versus the
-parent/frontier. Fast10 e1-e6 shows the same trend shape with a higher absolute
-subset offset; continue to convergence using `full_eval_fast10`, then run a
-full transfer confirmation for the selected best/final checkpoints before any
-stage decision.
+Closed as `converged_not_promoted`.
+
+- Fast10 convergence at `epoch_0014`: best and last Pareto remained
+  `epoch_0009`; `since_best=5`, `tail_flat=true`, `converged=true`.
+- Full transfer confirmation:
+  - best fast checkpoint `epoch_0009`: `0.674190 / 0.329931`
+  - final checkpoint `epoch_0014`: `0.673760 / 0.331171`
+- Matched read: the confirmed best gains about `+0.002370` CLIP-S against the
+  parent but costs `+0.015313` LPIPS, and it does not beat the R16 style
+  frontier.
+
+Decision note:
+`docs/experiments/phase2_fiber_bundle/actuation_proximal_texture_k070_e3_closure.md`
