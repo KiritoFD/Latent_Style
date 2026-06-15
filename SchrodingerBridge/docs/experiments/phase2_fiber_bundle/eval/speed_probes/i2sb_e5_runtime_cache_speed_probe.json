@@ -1,0 +1,26 @@
+[
+  {
+    "name": "baseline_subprocess",
+    "outer_wall": 43.990595569004654,
+    "summary_wall_total": 29.06077226599882,
+    "summary_eval_total": 11.654252828004246,
+    "summary_generation": 5.728741708000598,
+    "summary_vae_decode": 8.502508687990485
+  },
+  {
+    "name": "cache_warmup",
+    "outer_wall": 31.449986152998463,
+    "summary_wall_total": 27.402126451001095,
+    "summary_eval_total": 10.865121679998992,
+    "summary_generation": 5.417116016993532,
+    "summary_vae_decode": 8.445217675005551
+  },
+  {
+    "name": "cache_hot",
+    "outer_wall": 28.40775057599967,
+    "summary_wall_total": 24.37336324899661,
+    "summary_eval_total": 8.371919269004138,
+    "summary_generation": 5.771030759999121,
+    "summary_vae_decode": 8.59265555300226
+  }
+]

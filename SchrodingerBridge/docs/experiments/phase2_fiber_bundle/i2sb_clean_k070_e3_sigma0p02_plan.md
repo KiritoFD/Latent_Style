@@ -77,3 +77,30 @@ modules.
   e1 transfer `0.684073 / 0.394578`.
 - This clean run exists to separate endpoint/I2SB path effects from PnP,
   fiberwise SWD, and SMoE confounders.
+
+## Live Result And Closure
+
+- Remote run was stopped after e5 because style peaked at e2 and then declined
+  for three retained checkpoints while LPIPS remained out of the accepted
+  Seedream-like band.
+- Curve CSV:
+  `docs/experiments/phase2_fiber_bundle/curves/i2sb_clean_k070_e3_sigma0p02_fast10_curve.csv`.
+
+| epoch | transfer CLIP-S | transfer LPIPS | eval wall |
+|---:|---:|---:|---:|
+| 1 | `0.700250` | `0.543142` | `27.54s` |
+| 2 | `0.709094` | `0.490233` | `26.36s` |
+| 3 | `0.708411` | `0.496648` | `26.36s` |
+| 4 | `0.705868` | `0.442701` | `26.13s` |
+| 5 | `0.704671` | `0.408530` | `26.37s` |
+
+- Decision: `closed_negative_style_reversal_high_lpips`.
+- Interpretation:
+  endpoint I2SB is a real style actuator compared with the k070/predec
+  frontier, but the absolute endpoint target is too destructive under
+  `sigma=0.02` and current anchoring. Continue from this evidence with a
+  lower-cost endpoint/residual variant, not by extending this exact lane.
+- Eval infra note:
+  the same e5 checkpoint was used for runtime-cache eval A/B. The hot cached
+  path reduced exact fast10 outer wall from `43.99s` to `28.41s`; see
+  `docs/experiments/phase2_fiber_bundle/eval/speed_probes/i2sb_e5_runtime_cache_speed_probe.json`.
