@@ -1,0 +1,21 @@
+{
+  "_base": "./phase2_i2sb_clean_k070_e3_sigma0p02_b8a2_vlen010.json",
+  "model": {
+    "endpoint_parameterization": "orthogonal_lowhigh",
+    "endpoint_orthogonal_kernel": 5,
+    "endpoint_orthogonal_high_scale": 1.0
+  },
+  "training": {
+    "full_eval_in_process": false,
+    "full_eval_runtime_model_cache": false
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_i2sb_orthogonal_lowhigh_k070_e3_sigma0p02_b8a2_vlen010"
+  },
+  "ablation": {
+    "name": "phase2_i2sb_orthogonal_lowhigh_k070_e3_sigma0p02_b8a2_vlen010",
+    "axis": "phase2_geometry_aware_i2sb",
+    "stage": "orthogonal_lowhigh_endpoint_projection",
+    "notes": "Controlled Geometry-Aware I2SB follow-up: keep parent, solver_i2sb, absolute endpoint objective, sigma0p02, tokenizer, TopoGate, attention, terminal SWD, schedule, and fast10 transfer eval fixed. Change only endpoint reconstruction from raw absolute endpoint to content lowpass plus raw highpass using kernel=5. No content-anchor loss and no gated SDE noise in this first pass."
+  }
+}

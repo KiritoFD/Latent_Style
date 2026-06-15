@@ -96,3 +96,22 @@ topology anchor.
   `docs/experiments/phase2_fiber_bundle/eval/i2sb_abs_content_anchor_k070_e3_sigma0p02_b8a2_vlen010/`.
 - Plot update: appended the e1 transfer point to `plot_points.csv` and
   regenerated the AAAI2027 WikiArt-5 page-1 figure.
+- 2026-06-16 07:34 CST e1-e4 curve pulled and plotted:
+
+| epoch | transfer CLIP-S | transfer LPIPS | read |
+|---:|---:|---:|---|
+| 1 | `0.691647` | `0.517638` | style suppressed, LPIPS still high |
+| 2 | `0.701186` | `0.528431` | style recovers, LPIPS worsens |
+| 3 | `0.696943` | `0.500977` | style retreats, LPIPS improves slightly |
+| 4 | `0.703953` | `0.458607` | current best, still out of band |
+
+- Current decision:
+  continue instead of stopping, because e4 is the current best and the best
+  point is among the newest two retained checkpoints. The mechanism remains
+  weak/negative so far: it does not provide an orthogonal correction; it mostly
+  trades style and LPIPS along the same coupled direction.
+- Next prepared mechanism:
+  `orthogonal_lowhigh` endpoint projection, which keeps the absolute endpoint
+  highpass and replaces only the lowpass component with content lowpass. This
+  is implemented as a separate default-off switch and must not be mixed with
+  the content-anchor loss in the first pass.

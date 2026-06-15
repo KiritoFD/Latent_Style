@@ -270,6 +270,8 @@ class ModelConfig:
     transport_endpoint_scale: float = 4.0
     endpoint_parameterization: str = "absolute"
     endpoint_residual_blend: float = 0.0
+    endpoint_orthogonal_kernel: int = 5
+    endpoint_orthogonal_high_scale: float = 1.0
     feature_attn_num_heads: int = 4
     window_attn_window_size: int = 8
     skip_fusion_mode: str = "add_proj"
