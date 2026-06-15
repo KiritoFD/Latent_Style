@@ -192,6 +192,8 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
         if bool(getattr(train_cfg, "full_eval_keep_generated_on_device", True))
         else "--no-keep_generated_on_device"
     ]
+    if bool(getattr(train_cfg, "full_eval_delta_observability", False)):
+        cmd.append("--eval_delta_observability")
     if bool(train_cfg.full_eval_force_regen):
         cmd.append("--force_regen")
     if bool(train_cfg.full_eval_profile_timing):

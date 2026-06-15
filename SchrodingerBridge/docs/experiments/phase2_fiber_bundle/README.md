@@ -209,6 +209,18 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
   bottleneck directly and log generated-delta rank plus off-diagonal cosine for
   every retained checkpoint.
 
+## Current Delta-Rank Observability
+
+- Added default-off eval switch `full_eval.delta_observability` /
+  `training.full_eval_delta_observability`.
+- When enabled, eval records generated latent deltas per source image across
+  target styles and writes effective rank plus off-diagonal cosine into
+  `summary.json -> settings.generated_delta_observability`.
+- Remote smoke on proximal e9 with `max_src_samples=1` produced
+  `effective_rank_mean=1.60` and `offdiag_cosine_mean=0.356` over five source
+  groups, confirming the instrumentation is active and cheap enough for the
+  next actuation probe.
+
 ## Plot Update Contract
 
 Use `tools/experiments/update_phase2_plot_points.py` after each completed eval:
