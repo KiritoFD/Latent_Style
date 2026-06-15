@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 import torch
+import torch.nn as nn
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -83,3 +84,35 @@ def test_lowpass_corrector_is_opt_in() -> None:
     bridge.solver_corrector_mode = "lowpass_source_anchor"
     corrected = bridge._correct_transport_state(h, source, dt=1.0)
     assert corrected.abs().mean().item() < h.abs().mean().item()
+
+
+def test_style_delta_basis_is_zero_init_compatible() -> None:
+    bridge = TimeConditionedLANCETBridge.__new__(TimeConditionedLANCETBridge)
+    nn.Module.__init__(bridge)
+    bridge.style_delta_mode = "basis"
+    bridge.style_delta_scale = 0.25
+    bridge.style_delta_rank = 2
+    bridge.latent_channels = 1
+    bridge.style_delta_force_highpass = False
+    bridge.style_delta_highpass_kernel = 3
+    bridge.style_delta_basis_proj = nn.Conv2d(3, 2, kernel_size=1)
+    bridge.style_delta_weight_head = nn.Linear(4, 2)
+    bridge.last_style_delta_debug = {}
+    nn.init.ones_(bridge.style_delta_basis_proj.weight)
+    nn.init.zeros_(bridge.style_delta_basis_proj.bias)
+    nn.init.zeros_(bridge.style_delta_weight_head.weight)
+    nn.init.zeros_(bridge.style_delta_weight_head.bias)
+
+    delta = torch.zeros(1, 1, 4, 4)
+    h = torch.ones(1, 3, 4, 4)
+    style_code = torch.ones(1, 4)
+
+    out = bridge._apply_style_delta_basis(delta, h, style_code)
+    assert torch.equal(out, delta)
+    assert bridge.last_style_delta_debug["style_delta_basis_active"] == 1.0
+    assert bridge.last_style_delta_debug["style_delta_side_abs"] == 0.0
+
+    with torch.no_grad():
+        bridge.style_delta_weight_head.bias.fill_(0.5)
+    moved = bridge._apply_style_delta_basis(delta, h, style_code)
+    assert moved.abs().mean().item() > 0.0
