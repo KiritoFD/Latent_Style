@@ -217,7 +217,16 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
 
     logger.info("Running full eval for %s -> %s", checkpoint_path, out_dir)
     start = time.perf_counter()
-    subprocess.run(cmd, check=True)
+    if bool(getattr(train_cfg, "full_eval_in_process", False)):
+        from utils.run_evaluation import main as run_evaluation_main
+
+        logger.info("Full eval in-process mode enabled for %s", checkpoint_path.name)
+        run_evaluation_main(cmd[2:])
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    else:
+        subprocess.run(cmd, check=True)
     wall = time.perf_counter() - start
     logger.info("Full eval completed for %s in %.1fs", checkpoint_path.name, wall)
     collector = Path(__file__).resolve().parents[1] / "tools" / "experiments" / "collect_round2_eval_curve.py"

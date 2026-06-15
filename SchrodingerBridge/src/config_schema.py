@@ -65,6 +65,7 @@ INFERENCE_DEFAULTS: dict[str, dict[str, Any]] = {
         "delta_observability": False,
         "source_latent_cache": False,
         "lpips_chunk_size": 4,
+        "in_process": False,
     },
 }
 
@@ -636,6 +637,7 @@ class TrainingConfig:
     full_eval_delta_observability: bool = False
     full_eval_source_latent_cache: bool = False
     full_eval_lpips_chunk_size: int = 4
+    full_eval_in_process: bool = False
     full_eval_each_epoch: bool = False
     full_eval_defer_until_training_end: bool = False
     full_eval_force_regen: bool = False
@@ -927,6 +929,7 @@ def resolve_full_eval_section(config: dict[str, Any] | ExperimentConfig | None) 
             "delta_observability": "full_eval_delta_observability",
             "source_latent_cache": "full_eval_source_latent_cache",
             "lpips_chunk_size": "full_eval_lpips_chunk_size",
+            "in_process": "full_eval_in_process",
         }
         for dst_key, src_key in mapping.items():
             if src_key in training and training.get(src_key) is not None:
