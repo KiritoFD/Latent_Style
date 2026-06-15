@@ -34,7 +34,8 @@
     "full_eval_keep_generated_on_device": true,
     "full_eval_source_latent_cache": true,
     "full_eval_delta_observability": true,
-    "full_eval_lpips_chunk_size": 0
+    "full_eval_lpips_chunk_size": 0,
+    "full_eval_in_process": true
   },
   "checkpoint": {
     "save_dir": "./exp/aaai2027_phase2_actuation_predec_section_k070_e3_b32bf16_vlen010"

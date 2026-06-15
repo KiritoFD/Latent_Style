@@ -1802,7 +1802,7 @@ def _auto_run_missing_full_eval(args) -> None:
         subprocess.run(cmd, check=True)
 
 
-def main():
+def main(argv: list[str] | None = None):
     runtime_defaults = load_inference_defaults()
     full_eval_defaults = runtime_defaults.get("full_eval", {}) or {}
     parser = argparse.ArgumentParser()
@@ -2053,8 +2053,9 @@ def main():
     parser.add_argument('--reuse_generated', action='store_true', help="Reuse existing generated images in output dir/images (or legacy output dir) and skip generation")
     parser.add_argument('--generation_only', action='store_true', help="Only generate translated images, skip all evaluation metrics")
     parser.add_argument('--seed', type=int, default=-1, help="Seed RNGs for reproducible VAE latent sampling/generation; <0 leaves RNG state untouched.")
-    args = parser.parse_args()
-    raw_cli_flags = {token.split("=", 1)[0] for token in sys.argv[1:] if token.startswith("--")}
+    args = parser.parse_args(argv)
+    cli_tokens = list(sys.argv[1:] if argv is None else argv)
+    raw_cli_flags = {token.split("=", 1)[0] for token in cli_tokens if token.startswith("--")}
 
     def _cli_provided(name: str) -> bool:
         underscore = f"--{name}"
