@@ -16,7 +16,19 @@ def _f(value: str | None) -> float | None:
 
 
 def _metric(row: dict[str, str], key: str) -> float | None:
-    return _f(row.get(key))
+    value = _f(row.get(key))
+    if value is not None:
+        return value
+    # Transfer-only curves intentionally leave all-pairs/identity columns empty.
+    # Use the transfer surface as the convergence authority in that mode rather
+    # than failing metadata refresh after every checkpoint.
+    fallback = {
+        "all_pairs_clip_style": "transfer_clip_style",
+        "all_pairs_content_lpips": "transfer_content_lpips",
+    }.get(key)
+    if fallback is not None:
+        return _f(row.get(fallback))
+    return None
 
 
 def _epoch_idx_map(rows: list[dict[str, str]]) -> dict[str, int]:

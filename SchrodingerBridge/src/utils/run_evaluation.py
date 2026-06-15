@@ -1713,7 +1713,19 @@ def main():
     parser.add_argument('--max_ref_compare', type=int, default=int(full_eval_defaults.get("max_ref_compare", 50)), help="Max refs for LPIPS style compare; <=0 means all cached refs")
     parser.add_argument('--max_ref_cache', type=int, default=int(full_eval_defaults.get("max_ref_cache", 256)), help="Max reference images per style used for cache/features; <=0 means all")
     parser.add_argument('--ref_feature_batch_size', type=int, default=int(full_eval_defaults.get("ref_feature_batch_size", 64)), help="Batch size for reference feature extraction")
-    parser.add_argument('--batch_size', type=int, default=int(full_eval_defaults.get("batch_size", 8)), help="Generation batch size for evaluation. Lower this if VRAM is tight.")
+    parser.add_argument('--batch_size', type=int, default=int(full_eval_defaults.get("batch_size", 8)), help="Legacy shared eval batch size. Used for generation/metrics unless the split batch args are set.")
+    parser.add_argument(
+        '--generation_batch_size',
+        type=int,
+        default=int(full_eval_defaults.get("generation_batch_size", 0)),
+        help="Source-image batch size for generation. <=0 falls back to --batch_size.",
+    )
+    parser.add_argument(
+        '--metric_batch_size',
+        type=int,
+        default=int(full_eval_defaults.get("metric_batch_size", 0)),
+        help="Generated-image batch size for CLIP/LPIPS metrics. <=0 falls back to --batch_size.",
+    )
     parser.add_argument(
         '--target_chunk_size',
         type=int,
@@ -1993,6 +2005,10 @@ def main():
                 args.vae_model = str(resolved_full_eval["vae_model"])
             if "batch_size" in resolved_full_eval and not _cli_provided("batch_size"):
                 args.batch_size = int(resolved_full_eval["batch_size"])
+            if "generation_batch_size" in resolved_full_eval and not _cli_provided("generation_batch_size"):
+                args.generation_batch_size = int(resolved_full_eval["generation_batch_size"])
+            if "metric_batch_size" in resolved_full_eval and not _cli_provided("metric_batch_size"):
+                args.metric_batch_size = int(resolved_full_eval["metric_batch_size"])
             if "max_src_samples" in resolved_full_eval and not _cli_provided("max_src_samples"):
                 args.max_src_samples = int(resolved_full_eval["max_src_samples"])
             if "max_ref_compare" in resolved_full_eval and not _cli_provided("max_ref_compare"):
@@ -2246,7 +2262,8 @@ def main():
     if not generated_buffer:
         if checkpoint_path is None:
             raise RuntimeError("No reusable images found and no checkpoint provided. Cannot run generation phase.")
-        print(f"\nPhase 1: Generation (Batch Size {args.batch_size})")
+        generation_batch_size = max(1, int(args.generation_batch_size) if int(args.generation_batch_size) > 0 else int(args.batch_size))
+        print(f"\nPhase 1: Generation (Batch Size {generation_batch_size})")
         fast_metric_half_cpu = (
             bool(args.eval_only_lpips_clip_style)
             and (not bool(args.save_generated_images))
@@ -2311,10 +2328,10 @@ def main():
             )
 
         # Process in batches
-        for b_start in range(0, num_src_total, args.batch_size):
-            b_end = min(b_start + args.batch_size, num_src_total)
+        for b_start in range(0, num_src_total, generation_batch_size):
+            b_end = min(b_start + generation_batch_size, num_src_total)
             batch_info = all_src_info[b_start:b_end]
-            print(f"  Generating Batch {b_start//args.batch_size + 1}/{(num_src_total-1)//args.batch_size + 1}")
+            print(f"  Generating Batch {b_start//generation_batch_size + 1}/{(num_src_total-1)//generation_batch_size + 1}")
 
             # Load Source Images
             t0 = time.perf_counter()
@@ -2489,6 +2506,8 @@ def main():
             "settings": {
                 "vae_model": str(args.vae_model),
                 "batch_size": int(args.batch_size),
+                "generation_batch_size": int(generation_batch_size),
+                "metric_batch_size": int(args.metric_batch_size) if int(args.metric_batch_size) > 0 else int(args.batch_size),
                 "target_chunk_size": int(args.target_chunk_size),
                 "vae_decode_batch_size": int(args.vae_decode_batch_size),
                 "transfer_only": bool(getattr(args, "transfer_only", False)),
@@ -2969,8 +2988,9 @@ def main():
     }
     metric_loop_start = time.perf_counter()
     
-    for b_start in range(0, total_gen, args.batch_size):
-        b_end = min(b_start + args.batch_size, total_gen)
+    metric_batch_size = max(1, int(args.metric_batch_size) if int(args.metric_batch_size) > 0 else int(args.batch_size))
+    for b_start in range(0, total_gen, metric_batch_size):
+        b_end = min(b_start + metric_batch_size, total_gen)
         batch_items = generated_buffer[b_start:b_end]
         
         gen_imgs_cpu = torch.stack(
@@ -3162,6 +3182,8 @@ def main():
         settings={
             "vae_model": str(args.vae_model),
             "batch_size": int(args.batch_size),
+            "generation_batch_size": int(max(1, int(args.generation_batch_size) if int(args.generation_batch_size) > 0 else int(args.batch_size))),
+            "metric_batch_size": int(metric_batch_size),
             "target_chunk_size": int(args.target_chunk_size),
             "vae_decode_batch_size": int(args.vae_decode_batch_size),
             "transfer_only": bool(getattr(args, "transfer_only", False)),

@@ -21,6 +21,8 @@ INFERENCE_DEFAULTS: dict[str, dict[str, Any]] = {
         "step_size": 1.0,
         "style_strength": 1.0,
         "batch_size": 8,
+        "generation_batch_size": 0,
+        "metric_batch_size": 0,
         "max_src_samples": 30,
         "max_ref_compare": 24,
         "max_ref_cache": 80,
@@ -571,6 +573,8 @@ class TrainingConfig:
     freeze_mode: str = "none"
     freeze_reinit_trainable: bool = False
     full_eval_batch_size: int = 8
+    full_eval_generation_batch_size: int | None = None
+    full_eval_metric_batch_size: int | None = None
     full_eval_num_steps: int | None = None
     full_eval_step_size: float | None = None
     full_eval_style_strength: float | None = None
@@ -851,6 +855,8 @@ def resolve_full_eval_section(config: dict[str, Any] | ExperimentConfig | None) 
             "step_size": "full_eval_step_size",
             "style_strength": "full_eval_style_strength",
             "batch_size": "full_eval_batch_size",
+            "generation_batch_size": "full_eval_generation_batch_size",
+            "metric_batch_size": "full_eval_metric_batch_size",
             "max_src_samples": "full_eval_max_src_samples",
             "max_ref_compare": "full_eval_max_ref_compare",
             "max_ref_cache": "full_eval_max_ref_cache",
@@ -928,6 +934,8 @@ def compact_runtime_config(config: dict[str, Any] | ExperimentConfig | None) -> 
             "full_eval_step_size": "step_size",
             "full_eval_style_strength": "style_strength",
             "full_eval_batch_size": "batch_size",
+            "full_eval_generation_batch_size": "generation_batch_size",
+            "full_eval_metric_batch_size": "metric_batch_size",
             "full_eval_max_src_samples": "max_src_samples",
             "full_eval_max_ref_compare": "max_ref_compare",
             "full_eval_max_ref_cache": "max_ref_cache",

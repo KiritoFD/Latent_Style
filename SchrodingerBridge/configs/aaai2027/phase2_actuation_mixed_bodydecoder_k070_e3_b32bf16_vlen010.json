@@ -11,12 +11,14 @@
   "training": {
     "num_epochs": 20,
     "full_eval_batch_size": 4,
+    "full_eval_generation_batch_size": 8,
+    "full_eval_metric_batch_size": 16,
     "full_eval_target_chunk_size": 5,
     "full_eval_vae_decode_batch_size": 20,
     "full_eval_transfer_only": true,
     "full_eval_profile_timing": true,
     "full_eval_keep_generated_on_device": true,
-    "full_eval_lpips_chunk_size": 4
+    "full_eval_lpips_chunk_size": 8
   },
   "checkpoint": {
     "save_dir": "./exp/aaai2027_phase2_actuation_mixed_bodydecoder_k070_e3_b32bf16_vlen010"

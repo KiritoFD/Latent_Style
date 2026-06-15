@@ -98,6 +98,10 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
         "--batch_size",
         str(int(train_cfg.full_eval_batch_size)),
     ]
+    if getattr(train_cfg, "full_eval_generation_batch_size", None) is not None:
+        cmd += ["--generation_batch_size", str(int(train_cfg.full_eval_generation_batch_size))]
+    if getattr(train_cfg, "full_eval_metric_batch_size", None) is not None:
+        cmd += ["--metric_batch_size", str(int(train_cfg.full_eval_metric_batch_size))]
     if train_cfg.full_eval_num_steps is not None:
         cmd += ["--num_steps", str(int(train_cfg.full_eval_num_steps))]
     if train_cfg.full_eval_step_size is not None:
