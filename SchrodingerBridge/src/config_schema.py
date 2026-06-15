@@ -638,6 +638,7 @@ class TrainingConfig:
     full_eval_source_latent_cache: bool = False
     full_eval_lpips_chunk_size: int = 4
     full_eval_in_process: bool = False
+    full_eval_runtime_model_cache: bool = False
     full_eval_each_epoch: bool = False
     full_eval_defer_until_training_end: bool = False
     full_eval_force_regen: bool = False
@@ -932,6 +933,7 @@ def resolve_full_eval_section(config: dict[str, Any] | ExperimentConfig | None) 
             "source_latent_cache": "full_eval_source_latent_cache",
             "lpips_chunk_size": "full_eval_lpips_chunk_size",
             "in_process": "full_eval_in_process",
+            "runtime_model_cache": "full_eval_runtime_model_cache",
         }
         for dst_key, src_key in mapping.items():
             if src_key in training and training.get(src_key) is not None:
@@ -1023,6 +1025,7 @@ def compact_runtime_config(config: dict[str, Any] | ExperimentConfig | None) -> 
             "full_eval_delta_observability": "delta_observability",
             "full_eval_source_latent_cache": "source_latent_cache",
             "full_eval_lpips_chunk_size": "lpips_chunk_size",
+            "full_eval_runtime_model_cache": "runtime_model_cache",
         }
         for train_key, default_key in mapping.items():
             if train_key in training and full_eval_defaults.get(default_key) == training.get(train_key):

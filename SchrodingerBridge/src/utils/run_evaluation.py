@@ -93,6 +93,16 @@ def _resolve_default_local_clip_dir() -> Path:
 
 
 _DEFAULT_LOCAL_CLIP_DIR = _resolve_default_local_clip_dir()
+_RUNTIME_MODEL_CACHE: dict[tuple, object] = {}
+
+
+def _runtime_cache_get(key: tuple) -> object | None:
+    return _RUNTIME_MODEL_CACHE.get(key)
+
+
+def _runtime_cache_put(key: tuple, value: object) -> object:
+    _RUNTIME_MODEL_CACHE[key] = value
+    return value
 
 
 def _manual_clip_candidates(cache_dir: Path | None = None) -> list[Path]:
@@ -1906,6 +1916,15 @@ def main(argv: list[str] | None = None):
         ),
     )
     parser.add_argument(
+        '--runtime_model_cache',
+        action='store_true',
+        default=bool(full_eval_defaults.get("runtime_model_cache", False)),
+        help=(
+            "Cache CLIP/LPIPS/ORT decoder objects across in-process eval calls. "
+            "This has no effect when each eval is launched as a fresh subprocess."
+        ),
+    )
+    parser.add_argument(
         '--eval_delta_observability',
         action='store_true',
         default=bool(full_eval_defaults.get("delta_observability", False)),
@@ -2528,13 +2547,27 @@ def main(argv: list[str] | None = None):
                 if not vae_onnx_decoder_path.exists():
                     raise FileNotFoundError(str(vae_onnx_decoder_path))
                 device_id = int(torch.cuda.current_device()) if str(device).startswith("cuda") else 0
-                ort_vae = ORTVAEDecoder(
-                    vae_onnx_decoder_path,
-                    device_id=device_id,
-                    use_tensorrt=bool(args.vae_onnx_tensorrt),
-                    trt_cache_dir=vae_onnx_trt_cache_dir,
+                cache_key = (
+                    "ort_vae_decoder",
+                    str(vae_onnx_decoder_path.resolve()),
+                    int(device_id),
+                    bool(args.vae_onnx_tensorrt),
+                    str(vae_onnx_trt_cache_dir or ""),
                 )
-                print("  VAE ONNX decoder enabled: " + ",".join(ort_vae.providers))
+                cached = _runtime_cache_get(cache_key) if bool(args.runtime_model_cache) else None
+                if cached is not None:
+                    ort_vae = cached
+                    print("  VAE ONNX decoder enabled from runtime cache: " + ",".join(ort_vae.providers))
+                else:
+                    ort_vae = ORTVAEDecoder(
+                        vae_onnx_decoder_path,
+                        device_id=device_id,
+                        use_tensorrt=bool(args.vae_onnx_tensorrt),
+                        trt_cache_dir=vae_onnx_trt_cache_dir,
+                    )
+                    if bool(args.runtime_model_cache):
+                        _runtime_cache_put(cache_key, ort_vae)
+                    print("  VAE ONNX decoder enabled: " + ",".join(ort_vae.providers))
                 _add_timing(timings, "load_vae_onnx_decoder", t_ort)
             except Exception as exc:
                 print(f"  WARNING: VAE ONNX decoder unavailable ({exc}); falling back to diffusers decode.")
@@ -2972,8 +3005,17 @@ def main(argv: list[str] | None = None):
             print("  WARNING: lpips module not available. Install with: pip install lpips")
         else:
             try:
-                loss_fn = lpips.LPIPS(net='vgg', verbose=False).to(device)
-                print("  LPIPS Loaded")
+                cache_key = ("lpips", "vgg", str(device))
+                cached = _runtime_cache_get(cache_key) if bool(args.runtime_model_cache) else None
+                if cached is not None:
+                    loss_fn = cached
+                    print("  LPIPS Loaded (runtime cache)")
+                else:
+                    loss_fn = lpips.LPIPS(net='vgg', verbose=False).to(device)
+                    loss_fn.eval()
+                    if bool(args.runtime_model_cache):
+                        _runtime_cache_put(cache_key, loss_fn)
+                    print("  LPIPS Loaded")
             except Exception as e:
                 print(f"  WARNING: Failed to load LPIPS: {e}")
 
@@ -2987,26 +3029,34 @@ def main(argv: list[str] | None = None):
                 clip_cache_root.mkdir(parents=True, exist_ok=True)
                 model_name = str(getattr(args, "clip_openai_model", "ViT-B/32")).strip() or "ViT-B/32"
 
-                if not bool(args.clip_allow_network):
-                    # Fail fast (avoid hanging downloads) if weights are missing.
-                    url = getattr(openai_clip, "_MODELS", {}).get(model_name)
-                    if url:
-                        expected = clip_cache_root / Path(str(url)).name
-                        if not expected.exists():
-                            raise FileNotFoundError(
-                                f"OpenAI CLIP weights not found in cache: {expected}. "
-                                f"Run once with --clip_allow_network to download, or pre-download into {clip_cache_root}."
-                            )
+                cache_key = ("clip_openai", model_name, str(clip_cache_root), str(device))
+                cached = _runtime_cache_get(cache_key) if bool(args.runtime_model_cache) else None
+                if cached is not None:
+                    clip_model, clip_preprocess = cached
+                    print(f"  CLIP Loaded (OpenAI runtime cache): {model_name} (cache={clip_cache_root})")
+                else:
+                    if not bool(args.clip_allow_network):
+                        # Fail fast (avoid hanging downloads) if weights are missing.
+                        url = getattr(openai_clip, "_MODELS", {}).get(model_name)
+                        if url:
+                            expected = clip_cache_root / Path(str(url)).name
+                            if not expected.exists():
+                                raise FileNotFoundError(
+                                    f"OpenAI CLIP weights not found in cache: {expected}. "
+                                    f"Run once with --clip_allow_network to download, or pre-download into {clip_cache_root}."
+                                )
 
-                clip_model, clip_preprocess = openai_clip.load(
-                    model_name,
-                    device=device,
-                    download_root=str(clip_cache_root),
-                )
-                clip_model.eval()
+                    clip_model, clip_preprocess = openai_clip.load(
+                        model_name,
+                        device=device,
+                        download_root=str(clip_cache_root),
+                    )
+                    clip_model.eval()
+                    if bool(args.runtime_model_cache):
+                        _runtime_cache_put(cache_key, (clip_model, clip_preprocess))
+                    print(f"  CLIP Loaded (OpenAI): {model_name} (cache={clip_cache_root})")
                 has_clip = True
                 clip_model_tag = f"openai:{model_name}"
-                print(f"  CLIP Loaded (OpenAI): {model_name} (cache={clip_cache_root})")
             except Exception as e:
                 if bool(getattr(args, "clip_optional", False)):
                     print(f"  WARNING: OpenAI CLIP unavailable, continue without CLIP metrics: {e}")
@@ -3077,20 +3127,35 @@ def main(argv: list[str] | None = None):
                 last_err = None
                 for src in clip_sources:
                     try:
-                        clip_model, clip_processor = _load_clip_from_source(
-                            CLIPModel,
-                            CLIPProcessor,
-                            src,
-                            device,
-                            local_only=(not bool(args.clip_allow_network)),
-                            cache_dir=str(hf_cache_dir),
-                            load_processor=(not bool(args.clip_hf_skip_processor)),
+                        cache_key = (
+                            "clip_hf",
+                            str(src),
+                            str(device),
+                            str(hf_cache_dir),
+                            bool(args.clip_allow_network),
+                            bool(args.clip_hf_skip_processor),
                         )
-                        clip_model.eval()
+                        cached = _runtime_cache_get(cache_key) if bool(args.runtime_model_cache) else None
+                        if cached is not None:
+                            clip_model, clip_processor = cached
+                        else:
+                            clip_model, clip_processor = _load_clip_from_source(
+                                CLIPModel,
+                                CLIPProcessor,
+                                src,
+                                device,
+                                local_only=(not bool(args.clip_allow_network)),
+                                cache_dir=str(hf_cache_dir),
+                                load_processor=(not bool(args.clip_hf_skip_processor)),
+                            )
+                            clip_model.eval()
+                            if bool(args.runtime_model_cache):
+                                _runtime_cache_put(cache_key, (clip_model, clip_processor))
                         has_clip = True
                         clip_model_tag = str(src)
                         processor_note = "processor=skipped" if bool(args.clip_hf_skip_processor) else "processor=loaded"
-                        print(f"  CLIP Loaded (HF) from: {src} ({processor_note})")
+                        cache_note = "runtime cache" if cached is not None else "HF"
+                        print(f"  CLIP Loaded ({cache_note}) from: {src} ({processor_note})")
                         break
                     except Exception as load_exc:
                         last_err = load_exc

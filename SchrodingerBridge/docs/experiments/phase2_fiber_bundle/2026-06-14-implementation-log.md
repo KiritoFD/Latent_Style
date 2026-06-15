@@ -717,3 +717,48 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
     task should be either a b32/b40 ONNX decoder export matched to the live
     eval shape, or a true persistent evaluator process that keeps CLIP/LPIPS
     loaded across checkpoints without sharing CUDA state with training.
+
+## Fast Eval Runtime Model Cache Switch
+
+- Trigger: clean I2SB fast10 live eval remains about `26s/ckpt` internally:
+  `generation ~=5.4s`, `vae_decode ~=8.5s`, and `eval_total ~=9.5s`.
+  The remaining cost includes repeated CLIP, LPIPS, and ONNX Runtime decoder
+  construction for every checkpoint.
+- Implementation:
+  - Added default-off `training.full_eval_runtime_model_cache`.
+  - `run.py` passes `--runtime_model_cache` to `run_evaluation.py` when the
+    switch is enabled.
+  - `run_evaluation.py` now has a process-local cache for:
+    - `LPIPS(net=vgg)` keyed by device.
+    - HF/OpenAI CLIP keyed by source, device, cache dir, network flag, and HF
+      processor-skip flag.
+    - `ORTVAEDecoder` keyed by ONNX path, device id, TensorRT flag, and TRT
+      cache dir.
+- Guardrail:
+  - The cache is only useful when eval is in-process or inside a future
+    persistent evaluator. It intentionally does not change metrics, generated
+    samples, CLIP preprocessing, LPIPS inputs, or VAE decode math.
+  - A previous in-process-only probe was negative on the 3060 lane, so this
+    switch must only be promoted with runtime-cache evidence, not by
+    in-process mode alone.
+- Validation:
+  - Local `py_compile` passed for `config_schema.py`, `run.py`, and
+    `run_evaluation.py`.
+  - Remote WSL target files were copied and `py_compile` passed with
+    `/usr/bin/python`.
+- Remote speed A/B on clean I2SB e5, exact fast10 contract:
+  - Baseline subprocess: outer wall `43.99s`, summary wall `29.06s`,
+    `eval_total=11.65s`.
+  - In-process cache warmup: outer wall `31.45s`, summary wall `27.40s`,
+    `eval_total=10.87s`.
+  - In-process cache hot: outer wall `28.41s`, summary wall `24.37s`,
+    `eval_total=8.37s`.
+  - The hot run logs confirmed runtime-cache hits for `ORTVAEDecoder`,
+    `LPIPS`, and HF `CLIP`.
+- Decision:
+  - Enable `full_eval_in_process=true` and
+    `full_eval_runtime_model_cache=true` for the current fast10 contract and
+    future matched training-time evals.
+  - Keep the switches default-off for untested eval contracts, especially any
+    setup that saves PNGs, enables IntroStyle/ArtFID/KID, or changes decoder
+    batch shape.
