@@ -1,0 +1,40 @@
+{
+  "_base": "./phase2_smoe_translator_k070_seed42_b12a1.json",
+  "model": {
+    "solver_family": "solver_i2sb",
+    "transport_prediction_mode": "endpoint",
+    "solver_fiber_aligned": true,
+    "backbone_attention_family": "attn_pnp_selfinject"
+  },
+  "bridge": {
+    "objective_mode": "i2sb_endpoint",
+    "bridge_sigma": 0.02,
+    "semantic_supervision_family": "fiberwise_swd",
+    "terminal_swd_weight": 12.0,
+    "w_kinetic": 1.0,
+    "swd_num_projections": 16,
+    "swd_projection_chunk_size": 16
+  },
+  "training": {
+    "resume_checkpoint": "../exp/aaai2027_phase2_smoe_translator_k070_e3_seed42_b12a1/epoch_0008.pt",
+    "resume_model_strict": false,
+    "resume_optimizer": false,
+    "resume_training_state": false,
+    "resume_prefer_local_checkpoint": true,
+    "freeze_mode": "none",
+    "torch_compile": true,
+    "torch_compile_mode": "reduce-overhead",
+    "batch_size": 8,
+    "num_workers": 0,
+    "accumulation_steps": 2,
+    "num_epochs": 15
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_i2sb_pnp_fiber_sde_k070"
+  },
+  "ablation": {
+    "name": "phase2_i2sb_pnp_fiber_sde_k070",
+    "axis": "phase2_math_redesign",
+    "notes": "Archived mixed-mechanism screen, not controlled evidence: endpoint/I2SB objective + PnP SelfInject + fiberwise SWD from SMoE parent. The current code no longer applies fiber-aligned solver noise inside solver_i2sb; this config is retained only as provenance for the 2026-06-15 cost-stop result."
+  }
+}

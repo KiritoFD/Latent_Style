@@ -1624,6 +1624,8 @@ def _auto_run_missing_full_eval(args) -> None:
             "--introstyle_up_ft_index", str(args.introstyle_up_ft_index),
             "--introstyle_ensemble_size", str(args.introstyle_ensemble_size),
         ]
+        if bool(args.allow_metric_postprocess):
+            cmd.append("--allow_metric_postprocess")
         if args.clip_allow_network:
             cmd += ["--clip_allow_network"]
         if args.introstyle_allow_network:
@@ -1858,6 +1860,12 @@ def main():
     parser.add_argument('--latent_postprocess_mean_strength', type=float, default=float(full_eval_defaults.get("latent_postprocess_mean_strength", 1.0)))
     parser.add_argument('--latent_postprocess_std_strength', type=float, default=float(full_eval_defaults.get("latent_postprocess_std_strength", 1.0)))
     parser.add_argument('--latent_postprocess_ref_limit', type=int, default=int(full_eval_defaults.get("latent_postprocess_ref_limit", 64)))
+    parser.add_argument(
+        '--allow_metric_postprocess',
+        action='store_true',
+        default=bool(full_eval_defaults.get("allow_metric_postprocess", False)),
+        help="Allow RGB/latent style affine postprocess in metric-producing runs. Off by default because it is not model capacity.",
+    )
     parser.add_argument('--reuse_generated', action='store_true', help="Reuse existing generated images in output dir/images (or legacy output dir) and skip generation")
     parser.add_argument('--generation_only', action='store_true', help="Only generate translated images, skip all evaluation metrics")
     parser.add_argument('--seed', type=int, default=-1, help="Seed RNGs for reproducible VAE latent sampling/generation; <0 leaves RNG state untouched.")
@@ -2025,6 +2033,8 @@ def main():
                 args.latent_postprocess_std_strength = float(resolved_full_eval["latent_postprocess_std_strength"])
             if "latent_postprocess_ref_limit" in resolved_full_eval and not _cli_provided("latent_postprocess_ref_limit"):
                 args.latent_postprocess_ref_limit = int(resolved_full_eval["latent_postprocess_ref_limit"])
+            if "allow_metric_postprocess" in resolved_full_eval and not _cli_provided("allow_metric_postprocess"):
+                args.allow_metric_postprocess = bool(resolved_full_eval["allow_metric_postprocess"])
     else:
         print("Single-run eval in reuse-only mode (no checkpoint).")
 
@@ -2080,6 +2090,19 @@ def main():
     postprocess_mode = str(args.postprocess_mode).strip().lower()
     if postprocess_mode not in {"none", "style_rgb_affine"}:
         raise ValueError(f"Unsupported postprocess_mode: {args.postprocess_mode}")
+    metric_postprocess_requested = (
+        (postprocess_mode != "none" and float(args.postprocess_strength) > 0.0)
+        or (
+            str(args.latent_postprocess_mode).strip().lower() != "none"
+            and float(args.latent_postprocess_strength) > 0.0
+        )
+    )
+    if metric_postprocess_requested and not bool(args.allow_metric_postprocess):
+        raise ValueError(
+            "Metric-affecting RGB/latent affine postprocess is disabled by default. "
+            "Pass --allow_metric_postprocess, or set full_eval.allow_metric_postprocess=true / "
+            "training.full_eval_allow_metric_postprocess=true, only for diagnostic calibration runs."
+        )
     post_rgb_means = None
     post_rgb_stds = None
     if postprocess_mode == "style_rgb_affine" and float(args.postprocess_strength) > 0.0:
@@ -3086,6 +3109,7 @@ def main():
             "postprocess_mean_strength": float(args.postprocess_mean_strength),
             "postprocess_std_strength": float(args.postprocess_std_strength),
             "postprocess_ref_limit": int(args.postprocess_ref_limit),
+            "allow_metric_postprocess": bool(args.allow_metric_postprocess),
             "latent_postprocess_mode": str(args.latent_postprocess_mode),
             "latent_postprocess_strength": float(args.latent_postprocess_strength),
             "latent_postprocess_mean_strength": float(args.latent_postprocess_mean_strength),

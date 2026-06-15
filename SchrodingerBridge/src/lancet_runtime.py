@@ -711,15 +711,10 @@ class LatentAdaCUTRuntimeMixin:
     ) -> torch.Tensor:
         feat_c = x / max(self.latent_scale_factor, 1e-8)
         h_c = self.enc_in_act(self.enc_in(feat_c))
-        with torch.no_grad():
-            h_c_no_grad = h_c.clone()
-            for block in self.hires_body:
-                h_c_no_grad = block(h_c_no_grad, style_code, gate=0.0)
-        skip_32 = h_c_no_grad
-
         h_c_grad = h_c
         for block in self.hires_body:
             h_c_grad = block(h_c_grad, style_code, gate=0.0)
+        skip_32 = h_c_grad.detach()
         content_feat_16 = self.down(h_c_grad)
         style_code = self._adapt_style_code_from_content(
             style_id=style_id,

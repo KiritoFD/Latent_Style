@@ -33,6 +33,7 @@ INFERENCE_DEFAULTS: dict[str, dict[str, Any]] = {
         "postprocess_mean_strength": 1.0,
         "postprocess_std_strength": 1.0,
         "postprocess_ref_limit": 64,
+        "allow_metric_postprocess": False,
         "latent_postprocess_mode": "none",
         "latent_postprocess_strength": 0.0,
         "latent_postprocess_mean_strength": 1.0,
@@ -230,6 +231,7 @@ class ModelConfig:
     style_spatial_content_hidden_dim: int = 64
     style_strength_default: float = 1.0
     style_strength_max: float = 1.0
+    allow_style_overdrive: bool = False
     style_strength_step_curve: str = "linear"
     upsample_mode: str = "nearest"
     style_id_spatial_jitter_px: int = 0
@@ -329,6 +331,7 @@ class ModelConfig:
     proximal_force_highpass: bool = True
     proximal_bind_terminal_losses: bool = True
     record_base_endpoint_metrics: bool = False
+    endpoint_velocity_time_floor: float = 0.05
     execution_budget_mode: str = "none"
     execution_budget_hidden_dim: int = 64
     execution_budget_log_span: float = 0.22314355131420976
@@ -343,7 +346,7 @@ class ModelConfig:
     solver_rk_order: int = 4
     solver_corrector_steps: int = 1
     solver_corrector_step_size: float = 0.1
-    solver_corrector_mode: str = "latent_lowpass"
+    solver_corrector_mode: str = "none"
     solver_corrector_lowpass_kernel: int = 5
     solver_corrector_clamp: float = 0.0
     solver_tangent_projection_strength: float = 1.0
@@ -390,6 +393,7 @@ class BridgeConfig:
     identity_endpoint: bool = False
     eps: float = 1e-4
     coupling_solver: str = "sinkhorn"
+    allow_cpu_hungarian: bool = False
     coupling_feature_mode: str = "latent"
     coupling_lowfreq_kernel: int = 9
     coupling_edge_weight: float = 0.0
@@ -573,6 +577,7 @@ class TrainingConfig:
     full_eval_postprocess_mean_strength: float = 1.0
     full_eval_postprocess_std_strength: float = 1.0
     full_eval_postprocess_ref_limit: int = 64
+    full_eval_allow_metric_postprocess: bool = False
     full_eval_latent_postprocess_mode: str = "none"
     full_eval_latent_postprocess_strength: float = 0.0
     full_eval_latent_postprocess_mean_strength: float = 1.0
@@ -846,6 +851,7 @@ def resolve_full_eval_section(config: dict[str, Any] | ExperimentConfig | None) 
             "postprocess_mean_strength": "full_eval_postprocess_mean_strength",
             "postprocess_std_strength": "full_eval_postprocess_std_strength",
             "postprocess_ref_limit": "full_eval_postprocess_ref_limit",
+            "allow_metric_postprocess": "full_eval_allow_metric_postprocess",
             "latent_postprocess_mode": "full_eval_latent_postprocess_mode",
             "latent_postprocess_strength": "full_eval_latent_postprocess_strength",
             "latent_postprocess_mean_strength": "full_eval_latent_postprocess_mean_strength",
@@ -919,6 +925,7 @@ def compact_runtime_config(config: dict[str, Any] | ExperimentConfig | None) -> 
             "full_eval_postprocess_mean_strength": "postprocess_mean_strength",
             "full_eval_postprocess_std_strength": "postprocess_std_strength",
             "full_eval_postprocess_ref_limit": "postprocess_ref_limit",
+            "full_eval_allow_metric_postprocess": "allow_metric_postprocess",
             "full_eval_latent_postprocess_mode": "latent_postprocess_mode",
             "full_eval_latent_postprocess_strength": "latent_postprocess_strength",
             "full_eval_latent_postprocess_mean_strength": "latent_postprocess_mean_strength",

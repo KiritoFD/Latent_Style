@@ -58,6 +58,8 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.loss_type = str(getattr(bridge_config, "loss_type", "")).strip().lower()
         self.bridge_sigma = max(0.0, float(getattr(bridge_config, "bridge_sigma", 0.0)))
         self.i2sb_predictor_time_floor = max(0.0, float(getattr(bridge_config, "i2sb_predictor_time_floor", 0.0)))
+        self.endpoint_velocity_time_floor = max(1e-6, float(getattr(bridge_config, "endpoint_velocity_time_floor", 0.05)))
+        self.allow_style_overdrive = bool(getattr(bridge_config, "allow_style_overdrive", False))
         self.last_i2sb_transport_debug: dict[str, float] = {}
         self.solver_stochastic_noise_scale = max(0.0, float(getattr(bridge_config, "solver_stochastic_noise_scale", 0.0)))
         self.solver_fiber_aligned = bool(getattr(bridge_config, "solver_fiber_aligned", False))
@@ -285,17 +287,15 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             else:
                 gate = gate.mean(dim=1, keepdim=True).expand(reference.shape[0], reference.shape[1], reference.shape[2], reference.shape[3])
         gate_mean = gate.detach().float().mean()
-        gate_rms = gate.detach().float().square().mean(dim=(1, 2, 3), keepdim=True).sqrt().clamp_min(1e-6)
-        gate_weight = (gate / gate_rms).to(dtype=noise.dtype)
         debug.update(
             {
                 "fiber_gate_active": 1.0,
                 "fiber_gate_mean": float(gate_mean.cpu().item()),
-                "fiber_gate_rms": float(gate_rms.mean().cpu().item()),
+                "fiber_gate_rms": float(gate.detach().float().square().mean().sqrt().cpu().item()),
             }
         )
         self.last_solver_noise_debug = debug
-        return noise * gate_weight
+        return noise * gate.to(dtype=noise.dtype)
 
     @staticmethod
     def _make_style_injector(input_dim: int, channels: int, hidden_dim: int) -> nn.Module:
@@ -535,12 +535,16 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         strength = self._resolve_style_strength(style_strength)
         horizon = max(0.0, float(step_size)) * strength
         max_horizon = max(1e-6, float(getattr(self, "style_strength_max", 1.0)))
+        if not self.allow_style_overdrive:
+            max_horizon = min(max_horizon, 1.0)
         resolved = max(0.0, min(max_horizon, horizon))
         self.last_style_strength_debug.update(
             {
                 "style_step_scale": float(strength),
                 "integration_horizon": float(resolved),
                 "integration_horizon_requested": float(horizon),
+                "style_overdrive_allowed": float(self.allow_style_overdrive),
+                "style_overdrive_clamped": float(horizon > resolved and horizon > 1.0),
             }
         )
         return resolved
@@ -650,7 +654,9 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
     def _correct_transport_state(self, h: torch.Tensor, source: torch.Tensor, *, dt: float) -> torch.Tensor:
         steps = max(1, int(getattr(self, "solver_corrector_steps", 2)))
         step_size = max(0.0, float(getattr(self, "solver_corrector_step_size", 0.08)))
-        refine_mode = str(getattr(self, "solver_corrector_mode", "latent_lowpass")).strip().lower()
+        refine_mode = str(getattr(self, "solver_corrector_mode", "none")).strip().lower()
+        if refine_mode in {"", "none", "off", "disabled"}:
+            return h
         if refine_mode == "legacy_dino_lerp":
             gate = self._runtime_content_dino_gate(h)
             if gate is None:
@@ -1051,7 +1057,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                 endpoint = delta
                 endpoint_delta = endpoint - x.float()
             out = self._apply_execution_budget(endpoint_delta.to(dtype=x.dtype), x, style_code)
-            denom = (1.0 - t_tensor).clamp_min(1e-3).view(-1, 1, 1, 1)
+            denom = (1.0 - t_tensor).clamp_min(self.endpoint_velocity_time_floor).view(-1, 1, 1, 1)
             out = out / denom
         else:
             out = self._apply_execution_budget(delta, x, style_code)

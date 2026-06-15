@@ -6,7 +6,6 @@ from typing import Dict
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from scipy.optimize import linear_sum_assignment
 
 from config_schema import BridgeConfig, ExperimentConfig, TrainingConfig
 from model import TimeConditionedLANCETBridge
@@ -63,6 +62,16 @@ class OTFlowMatchingObjective:
         self.eps = float(bridge_cfg.eps)
 
         self.coupling_solver = str(bridge_cfg.coupling_solver).strip().lower()
+        if self.coupling_solver == "hungarian" and not bool(getattr(bridge_cfg, "allow_cpu_hungarian", False)):
+            raise ValueError(
+                "bridge.coupling_solver='hungarian' offloads OT matching to CPU via scipy.linear_sum_assignment. "
+                "Use bridge.coupling_solver='sinkhorn' for GPU training, or set bridge.allow_cpu_hungarian=true "
+                "only for explicit small diagnostic runs."
+            )
+        if self.coupling_solver not in {"sinkhorn", "hungarian"}:
+            raise ValueError(
+                f"Unsupported bridge.coupling_solver={self.coupling_solver!r}; expected 'sinkhorn' or 'hungarian'."
+            )
         self.coupling_feature_mode = str(bridge_cfg.coupling_feature_mode).strip().lower()
         self.coupling_lowfreq_kernel = max(1, int(bridge_cfg.coupling_lowfreq_kernel))
         if self.coupling_lowfreq_kernel % 2 == 0:
@@ -367,6 +376,8 @@ class OTFlowMatchingObjective:
             self._coupling_feature_tensor(target_group),
         )
         if self.coupling_solver == "hungarian":
+            from scipy.optimize import linear_sum_assignment
+
             row_ind, col_ind = linear_sum_assignment(cost.detach().cpu().numpy())
             row_t = torch.from_numpy(row_ind).to(device=cost.device, dtype=torch.long)
             col_t = torch.from_numpy(col_ind).to(device=cost.device, dtype=torch.long)
