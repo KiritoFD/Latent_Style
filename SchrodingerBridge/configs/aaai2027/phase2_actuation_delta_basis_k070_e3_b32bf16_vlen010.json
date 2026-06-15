@@ -1,0 +1,22 @@
+{
+  "_base": "./phase2_actuation_delta_basis_k070_e3_vlen010.json",
+  "training": {
+    "batch_size": 32,
+    "accumulation_steps": 1,
+    "use_amp": true,
+    "amp_dtype": "bf16",
+    "allow_tf32": true,
+    "cudnn_benchmark": true,
+    "channels_last": true,
+    "torch_compile": false
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_actuation_delta_basis_k070_e3_b32bf16_vlen010"
+  },
+  "ablation": {
+    "name": "phase2_actuation_delta_basis_k070_e3_b32bf16_vlen010",
+    "axis": "phase2_fiber_actuation_bottleneck",
+    "stage": "actuation_delta_basis_short_probe_b32bf16",
+    "notes": "Same output-side delta-basis mechanism as phase2_actuation_delta_basis_k070_e3_vlen010, but using the remote WSL throughput lane selected by short benchmark: batch=32, AMP bf16, channels_last, TF32 allowed, cudnn benchmark enabled, torch_compile disabled because it is intentionally mutually exclusive with channels_last."
+  }
+}
