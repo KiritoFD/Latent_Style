@@ -90,6 +90,8 @@ Local mirror:
 | epoch | transfer CLIP-S | transfer LPIPS | eval wall | transfer-only |
 |---|---:|---:|---:|---:|
 | 1 | 0.672447 | 0.312461 | 70.07s | yes |
+| 2 | 0.671846 | 0.313756 | 71.50s | yes |
+| 3 | 0.672420 | 0.314827 | 67.21s | yes |
 
 Timing breakdown for e1:
 
@@ -102,5 +104,7 @@ Timing breakdown for e1:
 
 ## Closure Decision
 
-Pending. e1 is structure-safe but not style-positive versus the parent/frontier;
-continue to convergence and judge by the all-ckpt transfer curve.
+Pending. e1-e3 are structure-safe but not style-positive versus the
+parent/frontier; continue to convergence and judge by the all-ckpt transfer
+curve. If the next retained points remain below the matched parent/style
+frontier, close as negative and return to a cheaper style-actuation screen.
