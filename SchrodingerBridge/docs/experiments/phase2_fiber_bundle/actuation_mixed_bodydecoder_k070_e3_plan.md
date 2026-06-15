@@ -41,7 +41,28 @@ path while keeping the rest of the experiment fixed.
 
 ## Launch Log
 
-Pending remote WSL launch.
+- 2026-06-15 21:41 remote WSL formal run started.
+- PID: `4786`.
+- Remote output root:
+  `exp/aaai2027_phase2_actuation_mixed_bodydecoder_k070_e3_b32bf16_vlen010`.
+- Remote log:
+  `logs/phase2_actuation_mixed_bodydecoder_k070_e3_b32bf16_vlen010.launch.log`.
+- Remote sync note: remote git worktree is dirty, so launch used targeted file
+  sync for `src/config_schema.py`, `src/run.py`, `src/model.py`,
+  `src/trainer.py`, `src/utils/run_evaluation.py`,
+  `src/utils/inference.py`, and the new config.
+- Pre-launch remote smoke: `status=ok`; tokenizer `pure_latent_spatial`,
+  solver `euler_legacy`, transport `velocity`, no DINO runtime required.
+- 35s health check:
+  - active `python src/run.py --config ...mixed_bodydecoder...`
+  - GPU sample `10891 / 12288 MiB`, util `1%`, power `116 W`
+  - dataset `wikiarts_5_full_notest_latents_ema/train`
+  - formal freeze log:
+    `Freeze mode=injection_only | trainable_count=12`
+  - trainable tensors are only `body_style_injector.*` and
+    `decoder_style_injector.*`
+  - parent load: `loaded=282`, `missing=12`; missing keys are the new
+    zero-init mixed injector parameters and are expected.
 
 ## Running Eval Curve
 
