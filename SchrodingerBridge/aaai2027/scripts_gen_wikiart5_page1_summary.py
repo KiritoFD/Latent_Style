@@ -59,6 +59,7 @@ TRACE_STYLES = {
     "pc_lowpass_k070_e3": ("#0891B2", "d", 42, 0.82),
     "smoe_translator_k070_e3": ("#64748B", "^", 36, 0.72),
     "k070_kin070_vlen010": ("#EF4444", "x", 44, 0.78),
+    "actuation_spatial_carriergate_k070_e3": ("#F97316", ">", 44, 0.82),
     "latent_affine_k070_e3": ("#BE123C", "^", 72, 0.98),
     "latent_affine_refine_k070_e3": ("#E11D48", "D", 48, 0.92),
     "latent_affine_pc_k070_e3": ("#DB2777", "v", 52, 0.90),
@@ -78,6 +79,7 @@ LABEL_ALLOWLIST = {
     "LatAff s0.75",
     "I2SB e1",
     "I2SB e2",
+    "Carrier stop",
 }
 
 LABEL_OFFSETS = {
@@ -93,6 +95,7 @@ LABEL_OFFSETS = {
     "LatAff s0.75": (18.0, -18.0),
     "I2SB e1": (-52.0, 12.0),
     "I2SB e2": (-52.0, -16.0),
+    "Carrier stop": (24.0, -34.0),
 }
 
 
@@ -392,6 +395,7 @@ def plot(points: list[dict[str, str]]) -> None:
         "seedream_test_only": "Seedream",
         "k070_e1_e5": "Ours k070",
         "fiber_sde_fine_k070_e3": "Fiber/SDE",
+        "actuation_spatial_carriergate_k070_e3": "Carrier gate",
         "latent_affine_k070_e3": "Latent affine",
         "latent_affine_refine_k070_e3": "LatAff refine",
         "latent_affine_pc_k070_e3": "LatAff+PC",
