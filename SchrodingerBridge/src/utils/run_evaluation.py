@@ -1780,7 +1780,7 @@ def main():
     )
     parser.add_argument(
         '--transfer_only',
-        action='store_true',
+        action=argparse.BooleanOptionalAction,
         default=bool(full_eval_defaults.get("transfer_only", False)),
         help="Skip identity src_style==tgt_style pairs for fast convergence eval. Default off for full board comparability.",
     )

@@ -98,6 +98,19 @@ Curve CSV:
 | 12 | 0.674017 | 0.352630 | -0.143231 | 101.81s | no |
 | 13 | 0.674097 | 0.353023 | -0.143039 | 102.31s | no |
 | 14 | 0.673868 | 0.353363 | n/a | 86.66s | yes |
+| 15 | 0.673968 | 0.351537 | n/a | 86.62s | yes |
+| 16 | 0.674081 | 0.353087 | n/a | 86.92s | yes |
+| 17 | 0.674263 | 0.353245 | n/a | 86.54s | yes |
+| 18 | 0.674194 | 0.352582 | n/a | 86.74s | yes |
+| 19 | 0.674306 | 0.353175 | n/a | 86.65s | yes |
+| 20 | 0.674338 | 0.353857 | n/a | 86.57s | yes |
+
+Closure full-board e20 eval:
+`docs/experiments/phase2_fiber_bundle/eval/actuation_delta_basis_s030_k070_e3_b32bf16_vlen010/fullboard_epoch_0020/summary.json`
+
+| checkpoint | transfer CLIP-S | transfer LPIPS | IDT CLIP-S | IDT LPIPS | style minus IDT | eval wall |
+|---|---:|---:|---:|---:|---:|---:|
+| e20 full-board | 0.674200 | 0.353881 | 0.816896 | 0.342996 | -0.142696 | 110.46s |
 
 Training observability:
 
@@ -109,14 +122,17 @@ Training observability:
 
 Interim read: e1 is not better than S015 e1, but the actuator magnitude grows
 substantially by the e2 training row. e2 transfer CLIP-S surpasses the best S015
-point (`0.674053` vs `0.673966`). e4 remains the current best
-full-board point at `0.674136 / 0.350179`; e7 is nearly tied, and e10-e13 stay
-flat near `0.6740` while LPIPS drifts upward to `0.353`. e14 transfer-only eval
-is faster but also regresses to `0.673868 / 0.353363`. This supports the
-conclusion that increasing output-side delta scale alone is platforming rather
-than breaking the style bottleneck. Continue only until the convergence rule is
-satisfied, then close S030 and move to a stronger actuation mechanism.
+point (`0.674053` vs `0.673966`). e4 remains the current best full-board point at
+`0.674136 / 0.350179`; e17-e20 produce tiny transfer-only style gains, ending at
+`0.674338 / 0.353857`, but the closure full-board e20 read is only
+`0.674200 / 0.353881` with `style_minus_idt=-0.142696`. This confirms that
+raising style_delta_scale from `0.15` to `0.30` mostly increases structure cost
+and does not break the style actuation bottleneck.
 
 ## Closure Decision
 
-Pending.
+Closed negative/weak-positive. Keep the implementation switch because it is
+clean and observable, but do not promote S030. Next controlled test should
+change fiber actuation capacity, not just scale: increase `style_delta_rank`
+while keeping parent, scale, highpass, tokenizer, solver, loss, eval, and
+freeze mode fixed.
