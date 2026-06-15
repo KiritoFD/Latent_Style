@@ -1742,6 +1742,15 @@ def main():
     )
     parser.add_argument('--profile_timing', action='store_true', help="Synchronize CUDA around generation stages for accurate timing breakdown.")
     parser.add_argument('--save_summary_grid', action=argparse.BooleanOptionalAction, default=bool(full_eval_defaults.get("save_summary_grid", True)), help="Save visual summary_grid.png. Disable for pure throughput timing.")
+    parser.add_argument(
+        '--keep_generated_on_device',
+        action=argparse.BooleanOptionalAction,
+        default=bool(full_eval_defaults.get("keep_generated_on_device", True)),
+        help=(
+            "Keep decoded images on GPU for metric-only eval to avoid GPU->CPU->GPU copies. "
+            "Automatically disabled when generated images or sidecar metrics require host/image files."
+        ),
+    )
     parser.add_argument('--force_regen', action='store_true', help="Force regenerate evaluation outputs/metrics (does not rebuild global ref cache)")
     parser.add_argument('--force_regen_ref_cache', action='store_true', help="Force rebuild global reference-feature cache only")
     parser.add_argument('--ref_cache_lock_timeout', type=int, default=900, help="Seconds to wait for another process building reference cache")
@@ -1846,7 +1855,12 @@ def main():
     parser.add_argument('--eval_kid_max_ref', type=int, default=200, help="Max target-style reference images per pair for KID")
     parser.add_argument('--eval_kid_subset_size', type=int, default=50, help="Subset size for KID (torchmetrics)")
     parser.add_argument('--eval_kid_batch_size', type=int, default=8, help="Batch size for KID image loading/inception")
-    parser.add_argument('--eval_lpips_chunk_size', type=int, default=2, help="LPIPS chunk size for conservative VRAM usage")
+    parser.add_argument(
+        '--eval_lpips_chunk_size',
+        type=int,
+        default=int(full_eval_defaults.get("lpips_chunk_size", 4)),
+        help="LPIPS chunk size. CUDA OOM automatically retries with smaller chunks unless CPU fallback is disabled.",
+    )
     parser.add_argument('--eval_lpips_no_cpu_fallback', action='store_true', help="Disable CPU fallback when LPIPS CUDA OOM occurs")
     parser.add_argument(
         '--postprocess_mode',
@@ -2001,6 +2015,10 @@ def main():
                 args.save_generated_images = bool(resolved_full_eval["save_generated_images"])
             if "save_summary_grid" in resolved_full_eval and not _cli_provided("save_summary_grid"):
                 args.save_summary_grid = bool(resolved_full_eval["save_summary_grid"])
+            if "keep_generated_on_device" in resolved_full_eval and not _cli_provided("keep_generated_on_device"):
+                args.keep_generated_on_device = bool(resolved_full_eval["keep_generated_on_device"])
+            if "lpips_chunk_size" in resolved_full_eval and not _cli_provided("eval_lpips_chunk_size"):
+                args.eval_lpips_chunk_size = int(resolved_full_eval["lpips_chunk_size"])
             if "enable_introstyle" in resolved_full_eval and not _cli_provided("eval_enable_introstyle"):
                 args.eval_enable_introstyle = bool(resolved_full_eval["enable_introstyle"])
             if "introstyle_style_bank_root" in resolved_full_eval and not _cli_provided("introstyle_style_bank_root"):
@@ -2236,6 +2254,13 @@ def main():
             and (not bool(args.eval_enable_art_fid))
             and (not bool(args.eval_enable_kid))
         )
+        keep_generated_on_device = (
+            bool(getattr(args, "keep_generated_on_device", True))
+            and fast_metric_half_cpu
+            and (not bool(args.generation_only))
+        )
+        if keep_generated_on_device:
+            print("  Fast metric path: keep decoded generated tensors on GPU (no PNG/sidecar host roundtrip).")
 
         t0 = time.perf_counter()
         lgt = LGTInference(
@@ -2393,6 +2418,11 @@ def main():
                                 imgs_gen_u8_cpu = _images_01_to_uint8_hwc_cpu(imgs_gen)
                                 _sync_cuda_if(device, bool(args.profile_timing))
                                 _add_timing(timings, "uint8_cpu_copy", t0)
+                            elif keep_generated_on_device:
+                                t0 = time.perf_counter()
+                                imgs_gen_cpu = imgs_gen.detach().to(dtype=torch.float16).contiguous()
+                                _sync_cuda_if(device, bool(args.profile_timing))
+                                _add_timing(timings, "generated_gpu_keep", t0)
                             else:
                                 t0 = time.perf_counter()
                                 cpu_dtype = torch.float16 if fast_metric_half_cpu else torch.float32
@@ -2465,6 +2495,8 @@ def main():
                 "image_save_workers": int(args.image_save_workers),
                 "image_save_backend": str(args.image_save_backend),
                 "save_generated_images": bool(args.save_generated_images),
+                "keep_generated_on_device": bool(getattr(args, "keep_generated_on_device", True)),
+                "lpips_chunk_size": int(args.eval_lpips_chunk_size),
                 "profile_timing": bool(args.profile_timing),
                 "save_summary_grid": bool(args.save_summary_grid),
                 "postprocess_mode": str(args.postprocess_mode),
@@ -2992,6 +3024,8 @@ def main():
             gen_clips = None
             src_clips = None
             c_clip_scores = [0.0] * len(batch_items)
+            batch_clip_style_scores = None
+            batch_clip_dir_scores = None
             
             if has_clip and clip_model is not None and clip_encode_images_01 is not None:
                 gen_clips = clip_encode_images_01(gen_imgs)
@@ -3005,34 +3039,43 @@ def main():
                             src_clip_cache[src_keys[idx]] = src_miss_cpu[j].clone()
                     src_clips = torch.stack([src_clip_cache[k] for k in src_keys], dim=0).to(device, dtype=torch.float32)
                     c_clip_scores = F.cosine_similarity(gen_clips, src_clips).cpu().float().numpy()
+                proto_items = []
+                proto_valid = []
+                for item in batch_items:
+                    proto = ref_clip_prototypes.get(item["tgt_style_id"])
+                    if proto is not None and proto.shape[-1] == gen_clips.shape[-1]:
+                        proto_items.append(proto.view(-1))
+                        proto_valid.append(True)
+                    else:
+                        proto_items.append(torch.zeros((gen_clips.shape[-1],), device=device, dtype=torch.float32))
+                        proto_valid.append(False)
+                if proto_items:
+                    proto_batch = torch.stack(proto_items, dim=0).to(device=device, dtype=torch.float32)
+                    batch_clip_style_scores = F.cosine_similarity(gen_clips.float(), proto_batch, dim=-1).detach().cpu().float().numpy()
+                    for j, ok in enumerate(proto_valid):
+                        if not ok:
+                            batch_clip_style_scores[j] = 0.0
+                    if (not only_lpips_clip_style) and src_clips is not None:
+                        dir_gen = gen_clips.float() - src_clips.float()
+                        dir_tgt = proto_batch - src_clips.float()
+                        dir_gen = dir_gen / (dir_gen.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+                        dir_tgt = dir_tgt / (dir_tgt.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+                        batch_clip_dir_scores = F.cosine_similarity(dir_gen, dir_tgt, dim=-1).detach().cpu().float().numpy()
+                        for j, ok in enumerate(proto_valid):
+                            if not ok:
+                                batch_clip_dir_scores[j] = 0.0
 
             # 3. Style Metrics & Row Writing
             for i, item in enumerate(batch_items):
-                tgt_id = item['tgt_style_id']
-                tgt_name = item['tgt_style_name']
-
                 # --- CLIP metrics ---
                 # clip_dir: directional similarity in edit space.
                 # clip_style: absolute similarity to target style prototype.
                 s_clip_dir = 0.0
                 s_clip_style = 0.0
-                if only_lpips_clip_style:
-                    if has_clip and gen_clips is not None and tgt_id in ref_clip_prototypes:
-                        tgt_proto = ref_clip_prototypes[tgt_id]  # [1, D]
-                        gen_emb = gen_clips[i:i+1]              # [1, D]
-                        if gen_emb.shape[-1] == tgt_proto.shape[-1]:
-                            s_clip_style = F.cosine_similarity(gen_emb, tgt_proto).item()
-                elif has_clip and gen_clips is not None and src_clips is not None and tgt_id in ref_clip_prototypes:
-                    tgt_proto = ref_clip_prototypes[tgt_id]  # [1, D]
-                    gen_emb = gen_clips[i:i+1]              # [1, D]
-                    src_emb = src_clips[i:i+1]              # [1, D]
-                    if gen_emb.shape[-1] == tgt_proto.shape[-1] == src_emb.shape[-1]:
-                        dir_gen = gen_emb - src_emb
-                        dir_tgt = tgt_proto - src_emb
-                        dir_gen = dir_gen / (dir_gen.norm(p=2, dim=-1, keepdim=True) + 1e-8)
-                        dir_tgt = dir_tgt / (dir_tgt.norm(p=2, dim=-1, keepdim=True) + 1e-8)
-                        s_clip_dir = F.cosine_similarity(dir_gen, dir_tgt).item()
-                        s_clip_style = F.cosine_similarity(gen_emb, tgt_proto).item()
+                if batch_clip_style_scores is not None:
+                    s_clip_style = float(batch_clip_style_scores[i])
+                if batch_clip_dir_scores is not None:
+                    s_clip_dir = float(batch_clip_dir_scores[i])
 
                 writer.writerow({
                     'src_style': item['src_style'],
@@ -3125,6 +3168,8 @@ def main():
             "image_save_workers": int(args.image_save_workers),
             "image_save_backend": str(args.image_save_backend),
             "save_generated_images": bool(args.save_generated_images),
+            "keep_generated_on_device": bool(getattr(args, "keep_generated_on_device", True)),
+            "lpips_chunk_size": int(args.eval_lpips_chunk_size),
             "profile_timing": bool(args.profile_timing),
             "save_summary_grid": bool(args.save_summary_grid),
             "only_lpips_clip_style": bool(args.eval_only_lpips_clip_style),
