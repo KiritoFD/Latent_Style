@@ -678,3 +678,42 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
   - Active pre-decoder config was reverted to subprocess eval and resumed from
     e16. The next clean speed target is a true persistent evaluator or faster
     VAE decode backend, not in-process eval inside the training process.
+
+## Fast Eval HF CLIP Processor-Skip Probe
+
+- Trigger: e18 fast10 eval still spent about `26.6s` internal wall per retained
+  checkpoint. The live curve needs cheaper checkpoint-by-checkpoint reads, but
+  the previous in-process and batch-size probes were negative.
+- Implementation:
+  - Added default-off `training.full_eval_hf_clip_skip_processor`.
+  - Added `run_evaluation.py --clip_hf_skip_processor`.
+  - When enabled for HF CLIP, the evaluator skips loading `CLIPProcessor` and
+    keeps using tensor-native preprocessing from the CLIP model config plus the
+    standard CLIP mean/std. This evaluator never uses tokenizer/PIL processor
+    paths for image metrics, so the metric definition is unchanged for the
+    current `openai/clip-vit-base-patch32` setup.
+  - Summary settings now record `clip_backend` and
+    `clip_hf_skip_processor`.
+- Validation on remote WSL, pre-decoder e18, exact fast10 contract
+  (`200` transfer generated images, no image save, ONNX decoder b16):
+  - Baseline official e18: `wall_total=26.60s`, `eval_total=9.78s`,
+    `generation=5.94s`, `vae_decode=8.47s`.
+  - Skip-processor probe: `wall_total=26.10s`, `eval_total=9.39s`,
+    `generation=5.90s`, `vae_decode=8.41s`,
+    `eval_metrics_loop=3.61s`.
+  - `generation_batch_size=10` probe was negative:
+    `wall_total=27.22s`; fewer generation chunks were offset by slower ONNX
+    decode scheduling.
+  - `metric_batch_size=32` probe was negative:
+    `wall_total=26.35s`, `eval_metrics_loop=3.68s`.
+  - `vae_decode_batch_size=32` is invalid for the current ONNX decoder because
+    it was exported for fixed batch `16`; it falls back to diffusers VAE and
+    must not be used as a speed path.
+- Decision:
+  - Enable `full_eval_hf_clip_skip_processor=true` for the current fast10
+    pre-decoder config.
+  - Keep generation batch `8`, metric batch `16`, and ONNX decode batch `16`.
+  - For material speedup beyond this small `~0.5s/ckpt` gain, the next infra
+    task should be either a b32/b40 ONNX decoder export matched to the live
+    eval shape, or a true persistent evaluator process that keeps CLIP/LPIPS
+    loaded across checkpoints without sharing CUDA state with training.

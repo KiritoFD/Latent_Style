@@ -646,6 +646,7 @@ class TrainingConfig:
     full_eval_cache_dir: str = "../eval_cache"
     full_eval_clip_hf_cache_dir: str = "../eval_cache/hf"
     full_eval_clip_backend: str = "hf"
+    full_eval_hf_clip_skip_processor: bool = False
     full_eval_disable_lpips: bool = False
     full_eval_enable_art_fid: bool = False
     full_eval_enable_kid: bool = False
@@ -900,6 +901,7 @@ def resolve_full_eval_section(config: dict[str, Any] | ExperimentConfig | None) 
             "skip_diffusers_vae_when_onnx": "full_eval_skip_diffusers_vae_when_onnx",
             "only_lpips_clip_style": "full_eval_only_lpips_clip_style",
             "transfer_only": "full_eval_transfer_only",
+            "hf_clip_skip_processor": "full_eval_hf_clip_skip_processor",
             "postprocess_mode": "full_eval_postprocess_mode",
             "postprocess_strength": "full_eval_postprocess_strength",
             "postprocess_mean_strength": "full_eval_postprocess_mean_strength",

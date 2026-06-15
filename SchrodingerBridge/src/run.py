@@ -154,6 +154,8 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
         cmd += ["--eval_only_lpips_clip_style" if bool(train_cfg.full_eval_only_lpips_clip_style) else "--no-eval_only_lpips_clip_style"]
     if bool(getattr(train_cfg, "full_eval_transfer_only", False)):
         cmd.append("--transfer_only")
+    if bool(getattr(train_cfg, "full_eval_hf_clip_skip_processor", False)):
+        cmd.append("--clip_hf_skip_processor")
     cmd += ["--eval_lpips_chunk_size", str(int(getattr(train_cfg, "full_eval_lpips_chunk_size", 4)))]
     cmd += ["--postprocess_mode", str(train_cfg.full_eval_postprocess_mode)]
     cmd += ["--postprocess_strength", str(float(train_cfg.full_eval_postprocess_strength))]
