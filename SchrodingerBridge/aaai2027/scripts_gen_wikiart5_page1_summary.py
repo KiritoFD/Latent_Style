@@ -62,6 +62,7 @@ TRACE_STYLES = {
     "latent_affine_k070_e3": ("#BE123C", "^", 72, 0.98),
     "latent_affine_refine_k070_e3": ("#E11D48", "D", 48, 0.92),
     "latent_affine_pc_k070_e3": ("#DB2777", "v", 52, 0.90),
+    "i2sb_pnp_fiber_sde_k070": ("#111827", "*", 78, 0.92),
 }
 
 LABEL_ALLOWLIST = {
@@ -75,6 +76,8 @@ LABEL_ALLOWLIST = {
     "SDE s0.08 ceiling",
     "LatAff s0.45",
     "LatAff s0.75",
+    "I2SB e1",
+    "I2SB e2",
 }
 
 LABEL_OFFSETS = {
@@ -88,6 +91,8 @@ LABEL_OFFSETS = {
     "SDE s0.08 ceiling": (14.0, 24.0),
     "LatAff s0.45": (38.0, 8.0),
     "LatAff s0.75": (18.0, -18.0),
+    "I2SB e1": (-52.0, 12.0),
+    "I2SB e2": (-52.0, -16.0),
 }
 
 
@@ -132,6 +137,13 @@ def _safe_float(value: object) -> float | None:
         return float(text)
     except ValueError:
         return None
+
+
+def _safe_savefig(fig: plt.Figure, path: Path) -> None:
+    try:
+        fig.savefig(path)
+    except PermissionError as exc:
+        print(f"skip locked figure output: {path} ({exc})")
 
 
 def _fmt(value: float | int | str | None) -> str:
@@ -383,6 +395,7 @@ def plot(points: list[dict[str, str]]) -> None:
         "latent_affine_k070_e3": "Latent affine",
         "latent_affine_refine_k070_e3": "LatAff refine",
         "latent_affine_pc_k070_e3": "LatAff+PC",
+        "i2sb_pnp_fiber_sde_k070": "I2SB combo",
     }
 
     for trace_id, rows in sorted(by_trace.items()):
@@ -435,12 +448,12 @@ def plot(points: list[dict[str, str]]) -> None:
         columnspacing=0.9,
         handletextpad=0.3,
     )
-    fig.savefig(OUT_DIR / "fig_wikiart5_page1_summary.pdf")
-    fig.savefig(OUT_DIR / "fig_wikiart5_page1_summary.png")
-    fig.savefig(OUT_DIR / "fig_distinct5_page1_summary.pdf")
-    fig.savefig(OUT_DIR / "fig_distinct5_page1_summary.png")
-    fig.savefig(OUT_DIR / "fig_distinct5_page1_summary_clip_delta_idt.pdf")
-    fig.savefig(OUT_DIR / "fig_distinct5_page1_summary_clip_delta_idt.png")
+    _safe_savefig(fig, OUT_DIR / "fig_wikiart5_page1_summary.pdf")
+    _safe_savefig(fig, OUT_DIR / "fig_wikiart5_page1_summary.png")
+    _safe_savefig(fig, OUT_DIR / "fig_distinct5_page1_summary.pdf")
+    _safe_savefig(fig, OUT_DIR / "fig_distinct5_page1_summary.png")
+    _safe_savefig(fig, OUT_DIR / "fig_distinct5_page1_summary_clip_delta_idt.pdf")
+    _safe_savefig(fig, OUT_DIR / "fig_distinct5_page1_summary_clip_delta_idt.png")
     plt.close(fig)
 
 
