@@ -463,3 +463,33 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - `s0.75+PC0.10`: transfer `0.685304 / 0.343517`, all-pairs `0.717560 / 0.336053`; PC does not rescue high-strength LPIPS cost.
 - Plot update: appended the five-point refine/PC traces to `plot_points.csv`, labeled only `LatAff s0.45`, regenerated the filtered WikiArt-5 AAAI2027 page-1 figure, and wrote `curves/latent_affine_refine_k070_e3_eval_only_curve.csv`.
 - Decision: `balanced_frontier`. The affine path is useful as eval-time amplification but is not enough to reach `0.74`; next cheap screen should modify the style generation path rather than increasing affine strength.
+
+## Proximal Texture Probe And Eval-Speed Fix
+
+- Trigger: after mixed body+decoder actuation stayed flat, the next controlled
+  training probe moved style actuation into a spatial proximal texture residual
+  path while keeping tokenizer, solver, TopoGate, and parent fixed.
+- Implementation: added/validated `proximal_mode=crossattn_texture` training
+  support under `freeze_mode=injection_only`, including explicit
+  `proximal_target` loss binding for the sampled bridge path.
+- Infra fix: `append_training_log()` now writes `proximal_target` and defaults
+  future unknown log columns to `0.0`, preventing a metric-column addition from
+  crashing an epoch after the expensive training pass.
+- Eval optimization: exposed the existing ONNX VAE decoder infrastructure to
+  the formal `run_evaluation.py` path through default-off switches
+  `full_eval_vae_onnx_decoder`, `full_eval_vae_onnx_tensorrt`, and
+  `full_eval_vae_onnx_trt_cache_dir`.
+- Robustness: ONNX decode now pads fixed-batch tail batches and falls back to
+  diffusers decode if provider/shape execution fails, so accelerator mismatch
+  cannot invalidate training.
+- Remote setup: installed user-site `onnxruntime-gpu`, `onnx`, and
+  `onnxscript` in the existing WSL Python and exported a matched
+  `ema_b2_32` decoder for the current `32x32 -> 256` latent eval path.
+- Remote probe: ONNXRuntime used `CUDAExecutionProvider,CPUExecutionProvider`;
+  matched decoder averaged about `80 ms / batch2`.
+- e1 replay after the fix: transfer `0.672447 / 0.312461`, wall `70.07s`,
+  VAE decode `24.62s`, LANCET generation `12.06s`, metric loop `11.20s`.
+- Resume: the active run
+  `aaai2027_phase2_actuation_proximal_texture_k070_e3_b16a2bf16_vlen010`
+  resumed from local `epoch_0001.pt` into epoch 2, with health-window VRAM
+  around `7.5 GiB`.

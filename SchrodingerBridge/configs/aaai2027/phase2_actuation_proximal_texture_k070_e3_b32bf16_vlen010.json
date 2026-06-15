@@ -1,0 +1,45 @@
+{
+  "_base": "./phase2_actuation_delta_basis_k070_e3_b32bf16_vlen010.json",
+  "model": {
+    "style_injection_mode": "none",
+    "style_delta_mode": "none",
+    "style_delta_scale": 0.0,
+    "proximal_mode": "crossattn_texture",
+    "proximal_hidden_channels": 16,
+    "proximal_force_highpass": true,
+    "proximal_residual_energy_weight": 0.02,
+    "proximal_trust_ratio": 0.0,
+    "proximal_trust_weight": 0.0,
+    "proximal_clamp_ratio": 0.85,
+    "proximal_clamp_ratio_end": 1.20,
+    "proximal_clamp_release_epochs": 8,
+    "proximal_clamp_schedule": "hold_linear",
+    "proximal_clamp_hold_epochs": 2,
+    "proximal_attn_routing_mode": "softmax"
+  },
+  "bridge": {
+    "proximal_target_weight": 0.35
+  },
+  "training": {
+    "num_epochs": 16,
+    "full_eval_batch_size": 4,
+    "full_eval_generation_batch_size": 8,
+    "full_eval_metric_batch_size": 16,
+    "full_eval_target_chunk_size": 5,
+    "full_eval_vae_decode_batch_size": 2,
+    "full_eval_vae_onnx_decoder": "../eval_cache/vae_onnx/ema_b2_32/decoder.onnx",
+    "full_eval_transfer_only": true,
+    "full_eval_profile_timing": false,
+    "full_eval_keep_generated_on_device": true,
+    "full_eval_lpips_chunk_size": 8
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_actuation_proximal_texture_k070_e3_b32bf16_vlen010"
+  },
+  "ablation": {
+    "name": "phase2_actuation_proximal_texture_k070_e3_b32bf16_vlen010",
+    "axis": "phase2_fiber_actuation_bottleneck",
+    "stage": "actuation_proximal_texture_residual",
+    "notes": "Controlled follow-up after output delta-basis and mixed body+decoder injection plateau. Keep k070 e3 parent, tokenizer, solver, losses, TopoGate, b32 bf16 throughput lane, virtual_length=0.10, and transfer-only training eval fixed. Disable output delta and body/decoder injection; train only zero-init proximal cross-attention texture residual modules under freeze_mode=injection_only to test whether a structured style-map residual path opens stronger fiber sections."
+  }
+}

@@ -74,6 +74,7 @@ TRAIN_LOG_COLUMNS = [
     "proximal_residual_abs",
     "proximal_clamp_scale",
     "proximal_residual_energy",
+    "proximal_target",
     "base_transport_abs",
     "proximal_to_transport_ratio",
     "proximal_trust_penalty",
@@ -233,6 +234,7 @@ def append_training_log(log_file: Path, metrics: dict[str, float], epoch: int) -
         "proximal_residual_abs": float(metrics.get("proximal_residual_abs", 0.0)),
         "proximal_clamp_scale": float(metrics.get("proximal_clamp_scale", 1.0)),
         "proximal_residual_energy": float(metrics.get("proximal_residual_energy", 0.0)),
+        "proximal_target": float(metrics.get("proximal_target", 0.0)),
         "base_transport_abs": float(metrics.get("base_transport_abs", 0.0)),
         "proximal_to_transport_ratio": float(metrics.get("proximal_to_transport_ratio", 0.0)),
         "proximal_trust_penalty": float(metrics.get("proximal_trust_penalty", 0.0)),
@@ -252,7 +254,7 @@ def append_training_log(log_file: Path, metrics: dict[str, float], epoch: int) -
         "cuda_peak_allocated_gb": float(metrics.get("cuda_peak_allocated_gb", 0.0)),
         "cuda_peak_reserved_gb": float(metrics.get("cuda_peak_reserved_gb", 0.0)),
     }
-    row = [row_map[col] for col in TRAIN_LOG_COLUMNS]
+    row = [row_map.get(col, 0.0) for col in TRAIN_LOG_COLUMNS]
     log_file.parent.mkdir(parents=True, exist_ok=True)
     with open(log_file, "a", encoding="utf-8", newline="") as f:
         csv.writer(f).writerow(row)

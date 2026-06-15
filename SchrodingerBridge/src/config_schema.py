@@ -509,6 +509,7 @@ class BridgeConfig:
     logit_clamp: float = 50.0
     velocity_clamp: float = 20.0
     endpoint_clamp: float = 24.0
+    proximal_target_weight: float = 0.0
     similarity_clamp: float = 50.0
     extra: dict[str, Any] = field(default_factory=dict)
 
@@ -594,6 +595,9 @@ class TrainingConfig:
     full_eval_vae_compile_mode: str = "reduce-overhead"
     full_eval_vae_compile_fullgraph: bool = False
     full_eval_vae_compile_cache_dir: str = ""
+    full_eval_vae_onnx_decoder: str = ""
+    full_eval_vae_onnx_tensorrt: bool = False
+    full_eval_vae_onnx_trt_cache_dir: str = ""
     full_eval_only_lpips_clip_style: bool | None = None
     full_eval_transfer_only: bool = False
     full_eval_postprocess_mode: str = "none"
@@ -878,6 +882,9 @@ def resolve_full_eval_section(config: dict[str, Any] | ExperimentConfig | None) 
             "vae_compile_mode": "full_eval_vae_compile_mode",
             "vae_compile_fullgraph": "full_eval_vae_compile_fullgraph",
             "vae_compile_cache_dir": "full_eval_vae_compile_cache_dir",
+            "vae_onnx_decoder": "full_eval_vae_onnx_decoder",
+            "vae_onnx_tensorrt": "full_eval_vae_onnx_tensorrt",
+            "vae_onnx_trt_cache_dir": "full_eval_vae_onnx_trt_cache_dir",
             "only_lpips_clip_style": "full_eval_only_lpips_clip_style",
             "transfer_only": "full_eval_transfer_only",
             "postprocess_mode": "full_eval_postprocess_mode",
@@ -962,6 +969,9 @@ def compact_runtime_config(config: dict[str, Any] | ExperimentConfig | None) -> 
             "full_eval_vae_compile_mode": "vae_compile_mode",
             "full_eval_vae_compile_fullgraph": "vae_compile_fullgraph",
             "full_eval_vae_compile_cache_dir": "vae_compile_cache_dir",
+            "full_eval_vae_onnx_decoder": "vae_onnx_decoder",
+            "full_eval_vae_onnx_tensorrt": "vae_onnx_tensorrt",
+            "full_eval_vae_onnx_trt_cache_dir": "vae_onnx_trt_cache_dir",
             "full_eval_only_lpips_clip_style": "only_lpips_clip_style",
             "full_eval_transfer_only": "transfer_only",
             "full_eval_postprocess_mode": "postprocess_mode",

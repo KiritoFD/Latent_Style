@@ -238,10 +238,16 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             self.proximal_attn_v = nn.Conv2d(int(self.body_channels), hidden, kernel_size=1, stride=1, padding=0)
             self.proximal_attn_out = nn.Conv2d(hidden, int(self.latent_channels), kernel_size=1, stride=1, padding=0)
             self.proximal_style_tokens = nn.Linear(int(self.bridge_style_dim), int(self.body_channels))
-            for mod in (self.proximal_attn_q, self.proximal_attn_k, self.proximal_attn_v, self.proximal_attn_out):
+            for mod in (self.proximal_attn_q, self.proximal_attn_k, self.proximal_attn_v):
                 nn.init.normal_(mod.weight, mean=0.0, std=0.02)
                 if mod.bias is not None:
                     nn.init.zeros_(mod.bias)
+            # The proximal texture branch is a controlled residual mechanism.
+            # Start from exact identity so early metrics measure learned texture,
+            # not random endpoint perturbation.
+            nn.init.zeros_(self.proximal_attn_out.weight)
+            if self.proximal_attn_out.bias is not None:
+                nn.init.zeros_(self.proximal_attn_out.bias)
             nn.init.normal_(self.proximal_style_tokens.weight, mean=0.0, std=0.02)
             nn.init.zeros_(self.proximal_style_tokens.bias)
         self.profile_modules = False
