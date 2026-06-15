@@ -790,3 +790,42 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
     eval.
 - Probe artifact:
   `docs/experiments/phase2_fiber_bundle/eval/speed_probes/20260616_eval_decode_inprocess_probe.json`.
+
+## 2026-06-16 LANCET Runtime Cache For Training-Time Eval
+
+- Trigger: user reported eval still too slow after the decoder recheck.
+- Diagnosis:
+  - `full_eval_runtime_model_cache` cached CLIP, LPIPS, and ORT decoder, but
+    in-process eval still constructed a fresh `LGTInference` model for every
+    retained checkpoint.
+  - This does not dominate the packed fast10 decode path, but it is pure fixed
+    overhead and becomes expensive when every checkpoint is evaluated during
+    training.
+- Implementation:
+  - Added an architecture/solver signature to `LGTInference`.
+  - Added `LGTInference.reload_checkpoint(...)` so same-run checkpoints reuse
+    the constructed model and only reload weights.
+  - Added a guarded `lgt_inference` entry to `run_evaluation.py`'s existing
+    process-local runtime cache. If the signature changes, it falls back to a
+    full rebuild instead of unsafe reuse.
+  - Updated
+    `configs/aaai2027/phase2_actuation_mixed_bodydecoder_k070_e3_b32bf16_vlen010.json`
+    to the fast10 eval contract: b16 ONNX decoder, in-process runtime cache,
+    source latent cache, CLIP processor skip, transfer-only, and no PNG/grid.
+- Remote WSL smoke:
+  - Pair:
+    `aaai2027_phase2_i2sb_clean_k070_e3_sigma0p02_b8a2_vlen010/epoch_0001.pt`
+    then `epoch_0002.pt`.
+  - Small transfer-only probe used `max_src_samples=1` per style, producing 20
+    transfer images.
+  - Cold first ckpt: wall `20.57s`, `load_lancet=1.09s`,
+    `load_vae_onnx_decoder=1.18s`, `eval_total=12.58s`.
+  - Warm second ckpt: wall `4.66s`, `reload_lancet=0.56s`,
+    `load_vae_onnx_decoder=0.006s`, `eval_total=1.03s`.
+  - Logs confirmed cache hits for LANCET reload, ORT decoder, LPIPS, and CLIP.
+- Decision:
+  - Promote LANCET runtime reuse for in-process training-time fast eval.
+  - Keep all runtime caches default-off outside explicit configs; metric math
+    and eval sample contract are unchanged.
+- Probe artifact:
+  `docs/experiments/phase2_fiber_bundle/eval/speed_probes/20260616_lgt_runtime_cache_probe.json`.

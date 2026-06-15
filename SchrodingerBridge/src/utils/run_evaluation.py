@@ -855,6 +855,56 @@ def _add_timing(timings: dict[str, float], key: str, start: float) -> None:
     timings[key] = float(timings.get(key, 0.0) + (time.perf_counter() - start))
 
 
+def _load_lgt_inference(
+    *,
+    checkpoint_path: Path,
+    args,
+    device: str,
+    timings: dict[str, float],
+) -> LGTInference:
+    t0 = time.perf_counter()
+    cache_key = (
+        "lgt_inference",
+        str(checkpoint_path.parent.resolve()),
+        str(getattr(args, "config_override", "") or ""),
+        str(getattr(args, "style_adapter", "") or ""),
+        str(device),
+        int(args.num_steps),
+        float(args.step_size),
+        None if args.style_strength is None else float(args.style_strength),
+        float(args.residual_scale),
+    )
+    if bool(args.runtime_model_cache):
+        cached = _runtime_cache_get(cache_key)
+        if isinstance(cached, LGTInference):
+            try:
+                cached.reload_checkpoint(
+                    str(checkpoint_path),
+                    config_override_path=(args.config_override or None),
+                )
+                _sync_cuda_if(device, bool(args.profile_timing))
+                _add_timing(timings, "reload_lancet", t0)
+                print("  LANCET inference model reloaded from runtime cache")
+                return cached
+            except Exception as exc:
+                print(f"  WARNING: LANCET runtime cache reuse failed ({exc}); rebuilding model.")
+    lgt = LGTInference(
+        str(checkpoint_path),
+        device=device,
+        num_steps=args.num_steps,
+        step_size=args.step_size,
+        style_strength=args.style_strength,
+        residual_scale=args.residual_scale,
+        style_adapter_path=(args.style_adapter or None),
+        config_override_path=(args.config_override or None),
+    )
+    if bool(args.runtime_model_cache):
+        _runtime_cache_put(cache_key, lgt)
+    _sync_cuda_if(device, bool(args.profile_timing))
+    _add_timing(timings, "load_lancet", t0)
+    return lgt
+
+
 def _list_reuse_generated_files(out_dir: Path) -> list[Path]:
     # Prefer new layout: out_dir/images/*.jpg, keep backward compatibility.
     candidates = []
@@ -2492,19 +2542,12 @@ def main(argv: list[str] | None = None):
         if keep_generated_on_device:
             print("  Fast metric path: keep decoded generated tensors on GPU (no PNG/sidecar host roundtrip).")
 
-        t0 = time.perf_counter()
-        lgt = LGTInference(
-            str(checkpoint_path),
+        lgt = _load_lgt_inference(
+            checkpoint_path=checkpoint_path,
+            args=args,
             device=device,
-            num_steps=args.num_steps,
-            step_size=args.step_size,
-            style_strength=args.style_strength,
-            residual_scale=args.residual_scale,
-            style_adapter_path=(args.style_adapter or None),
-            config_override_path=(args.config_override or None),
+            timings=timings,
         )
-        _sync_cuda_if(device, bool(args.profile_timing))
-        _add_timing(timings, "load_lancet", t0)
         latent_postprocess_needs_vae = (
             latent_postprocess_mode == "style_latent_affine"
             and float(args.latent_postprocess_strength) > 0.0

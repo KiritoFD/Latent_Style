@@ -11,6 +11,8 @@ from __future__ import annotations
 import logging
 import os
 import sys
+import json
+import hashlib
 from dataclasses import fields
 from pathlib import Path
 from typing import Optional
@@ -219,11 +221,13 @@ class LGTInference:
     ):
         self.device = device
         self.num_steps = int(num_steps)
+        self._style_adapter_path = style_adapter_path
 
         checkpoint = torch.load(model_path, map_location=device, weights_only=False)
         raw_config = checkpoint.get("config", {}) or {}
         if config_override_path:
             raw_config = merge_config_dicts(raw_config, load_config(config_override_path))
+        self._runtime_config_signature = self._config_signature(raw_config)
         config = ExperimentConfig.from_mapping(raw_config)
         if isinstance(raw_config, dict):
             for section_name in ("model", "bridge", "training", "data", "checkpoint"):
@@ -343,6 +347,53 @@ class LGTInference:
         else:
             self.style_strength = float(style_strength if style_strength is not None else cfg_strength)
         self.residual_scale = max(0.0, float(residual_scale))
+
+    @staticmethod
+    def _config_signature(raw_config: dict) -> str:
+        """Hash the architecture/solver contract that determines module layout."""
+
+        if not isinstance(raw_config, dict):
+            raw_config = {}
+        payload = {
+            "model": raw_config.get("model", {}) or {},
+            "bridge": raw_config.get("bridge", {}) or {},
+            "inference": raw_config.get("inference", {}) or {},
+        }
+        encoded = json.dumps(payload, sort_keys=True, default=str, separators=(",", ":")).encode("utf-8")
+        return hashlib.sha1(encoded).hexdigest()
+
+    def reload_checkpoint(self, model_path, *, config_override_path=None) -> None:
+        """Reuse the constructed inference module for another checkpoint from the same run."""
+
+        checkpoint = torch.load(model_path, map_location=self.device, weights_only=False)
+        raw_config = checkpoint.get("config", {}) or {}
+        if config_override_path:
+            raw_config = merge_config_dicts(raw_config, load_config(config_override_path))
+        signature = self._config_signature(raw_config)
+        if signature != self._runtime_config_signature:
+            raise RuntimeError("checkpoint architecture signature changed; cannot reuse LGTInference")
+        config = ExperimentConfig.from_mapping(raw_config)
+        state_dict = strip_compile_prefix(checkpoint["model_state_dict"])
+        state_dict, removed_contract_keys = prune_state_dict_for_tokenizer_family(
+            state_dict,
+            tokenizer_family=str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
+            style_injection_mode=str(getattr(config.model, "style_injection_mode", "none")),
+            proximal_mode=str(getattr(config.model, "proximal_mode", "off")),
+        )
+        if removed_contract_keys:
+            logger.info(
+                "Pruned %d legacy contract keys while reloading inference checkpoint for tokenizer_family=%s",
+                len(removed_contract_keys),
+                str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
+            )
+        try:
+            self.model.load_state_dict(state_dict, strict=True)
+        except RuntimeError as exc:
+            logger.warning("Checkpoint/model key mismatch during reload, falling back to non-strict load: %s", exc)
+            self.model.load_state_dict(state_dict, strict=False)
+        if self._style_adapter_path:
+            self._load_style_adapter(self._style_adapter_path)
+        self.model.eval()
 
     def _load_style_adapter(self, style_adapter_path) -> None:
         adapter_path = os.path.expanduser(str(style_adapter_path))

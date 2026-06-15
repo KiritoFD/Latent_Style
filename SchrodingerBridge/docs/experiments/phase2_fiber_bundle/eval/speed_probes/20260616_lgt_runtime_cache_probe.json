@@ -1,0 +1,46 @@
+{
+  "timestamp": "2026-06-16 06:20 Asia/Shanghai",
+  "scope": "remote WSL in-process transfer eval cache smoke",
+  "remote_repo": "/mnt/i/Github/Latent_Style/SchrodingerBridge",
+  "checkpoint_pair": [
+    "exp/aaai2027_phase2_i2sb_clean_k070_e3_sigma0p02_b8a2_vlen010/epoch_0001.pt",
+    "exp/aaai2027_phase2_i2sb_clean_k070_e3_sigma0p02_b8a2_vlen010/epoch_0002.pt"
+  ],
+  "eval_contract": {
+    "transfer_only": true,
+    "max_src_samples_per_style": 1,
+    "generated_transfer_images": 20,
+    "vae_onnx_decoder": "../eval_cache/vae_onnx/ema_b16_32/decoder.onnx",
+    "save_generated_images": false,
+    "save_summary_grid": false,
+    "source_latent_cache": true,
+    "runtime_model_cache": true,
+    "hf_clip_skip_processor": true
+  },
+  "cold_first_ckpt": {
+    "wall_total_sec": 20.57366050499695,
+    "eval_total_sec": 12.582636754996201,
+    "load_lancet_sec": 1.092584607002209,
+    "load_vae_onnx_decoder_sec": 1.176703509001527,
+    "lancet_generation_sec": 2.834367517993087,
+    "vae_decode_sec": 2.5911597149970476,
+    "eval_metrics_loop_sec": 1.1844610049956827
+  },
+  "warm_second_ckpt": {
+    "wall_total_sec": 4.656085824994079,
+    "eval_total_sec": 1.0313545059980243,
+    "reload_lancet_sec": 0.5586261030039168,
+    "load_vae_onnx_decoder_sec": 0.00590830000146525,
+    "lancet_generation_sec": 1.042527906000032,
+    "vae_decode_sec": 1.7706918089970713,
+    "eval_metrics_loop_sec": 0.3712768019977375
+  },
+  "observed_cache_hits": [
+    "LANCET inference model reloaded from runtime cache",
+    "VAE ONNX decoder enabled from runtime cache",
+    "LPIPS Loaded (runtime cache)",
+    "CLIP Loaded (runtime cache)"
+  ],
+  "decision": "promoted",
+  "reason": "The implementation preserves the same metric contract and only avoids repeated evaluator/model construction for later checkpoints in the same in-process training run."
+}
