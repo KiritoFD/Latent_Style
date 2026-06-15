@@ -1,0 +1,46 @@
+{
+  "timestamp": "2026-06-16 05:05 Asia/Shanghai",
+  "scope": "phase2 fast10 transfer eval",
+  "checkpoint": "exp/aaai2027_phase2_i2sb_blend025_k070_e3_sigma0p02_b8a2_vlen010/epoch_0002.pt",
+  "baseline_b16_training_eval": {
+    "source": "full_eval_fast10/epoch_0002/summary.json",
+    "wall_total_sec": 27.25284653899871,
+    "eval_total_sec": 10.719008282001596,
+    "lancet_generation_sec": 5.425455953001801,
+    "vae_decode_sec": 8.36219687799894,
+    "eval_metrics_loop_sec": 3.784282715001609,
+    "transfer_clip_style": 0.6945667538046838,
+    "transfer_content_lpips": 0.41525812800000006
+  },
+  "deferred_decode_b16_probe": {
+    "output": "exp/aaai2027_phase2_i2sb_blend025_k070_e3_sigma0p02_b8a2_vlen010/defer_decode_probe_e2",
+    "wall_total_sec": 26.338163710002846,
+    "eval_total_sec": 9.571433407996665,
+    "lancet_generation_sec": 5.354801934990974,
+    "vae_decode_sec": 8.369914615010202,
+    "eval_metrics_loop_sec": 3.714646394997544,
+    "transfer_clip_style": 0.6951324748992919,
+    "transfer_content_lpips": 0.41537076300000003,
+    "decision": "not_promoted",
+    "reason": "target_chunk=5 and generation_batch_size=8 already produce near-packed fixed-b16 ONNX decode calls; deferred scheduling does not materially reduce decode time."
+  },
+  "onnx_b32_probe": {
+    "output": "exp/aaai2027_phase2_i2sb_blend025_k070_e3_sigma0p02_b8a2_vlen010/onnx_b32_probe_e2_ok",
+    "decoder": "../eval_cache/vae_onnx/ema_b32_32/decoder.onnx",
+    "wall_total_sec": 84.36343000900524,
+    "eval_total_sec": 9.845969800000603,
+    "lancet_generation_sec": 5.410360371999559,
+    "vae_decode_sec": 65.30085078199045,
+    "eval_metrics_loop_sec": 3.7598413489977247,
+    "transfer_clip_style": 0.6946192979812622,
+    "transfer_content_lpips": 0.41544118720000006,
+    "decision": "rejected",
+    "reason": "batch-32 fixed-shape ONNX decoder is much slower than the existing batch-16 CUDAExecutionProvider decoder on the remote RTX 3060."
+  },
+  "selected_change": {
+    "full_eval_in_process": true,
+    "full_eval_runtime_model_cache": true,
+    "vae_onnx_decoder": "../eval_cache/vae_onnx/ema_b16_32/decoder.onnx",
+    "expected_effect": "Use the previously validated hot in-process runtime cache path to avoid repeated evaluator subprocess/import and CLIP/LPIPS/ORT construction overhead; monitor remote VRAM after the first cached eval."
+  }
+}
