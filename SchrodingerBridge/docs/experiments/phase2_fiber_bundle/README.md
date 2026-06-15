@@ -51,6 +51,8 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 
 ## Current Fiber-SDE Matched Delta
 
+- 2026-06-15 implementation audit: the existing Fiber-SDE rows below were produced before the gate definition was tightened. That implementation used `gate / gate_rms`, which changes the noise energy and makes the matched-control read less clean. The code now follows the controlled-variable spec exactly: `sigmoid/clamp -> bilinear resize -> channel broadcast -> noise * gate`, with no RMS renormalization and no learnable parameters.
+- Decision status for the rows below is therefore `archived_rms_gate_evidence`. They remain useful as negative/weak evidence that stochastic inference alone has a poor style/LPIPS slope, but a new `gate_fixed` matched scan is required before making any final claim about fiber-aligned noise.
 - `sigma=0.01` isotropic: transfer `0.671501 / 0.313795`, all-pairs `0.703024 / 0.311868`.
 - `sigma=0.01` fiber-aligned: transfer `0.671581 / 0.313762`, all-pairs `0.702954 / 0.311888`.
 - Decision: `inconclusive_tie`; transfer improves by `+0.000080` style and `-0.000033` LPIPS, while all-pairs is slightly worse by `-0.000070` style and `+0.000020` LPIPS.
@@ -82,6 +84,24 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 - Stop point was `epoch_0015`: transfer `0.671284 / 0.333647`, all-pairs `0.702173 / 0.330398`.
 - Matched-control read at e15: transfer style `-0.000536` and LPIPS `+0.019029` versus `k070 epoch_0003`; all-pairs style `-0.001061` and LPIPS `+0.017848`.
 - Decision: do not launch `SMoE + fiberwise_swd` on this parent. The tokenizer-only mechanism has not produced enough style gain for its training cost.
+- 2026-06-15 diagnosis update: this closure is consistent with the actuation-bottleneck critique. SMoE increases tokenizer-side geometric freedom, but the current backbone/output path can still compress generated deltas into a low-rank residual direction. Any future SMoE relaunch must record generated-delta rank/off-diagonal cosine in addition to tokenizer observability, otherwise a tokenizer-only positive or negative result is under-explained.
+
+## 2026-06-15 Theory/Implementation Guardrail
+
+- The Fiber Bundle language is retained as an organizing hypothesis, not as a proof that the current `TopoGate` is a true Ehresmann connection. Current code constrains attention routing and solver noise heuristically; it does not prove a tangent-space direct-sum decomposition.
+- Formal conclusions must use matched deltas only: same parent, same dataset, same eval seed, same inference steps, same sigma or same single changed switch.
+- Do not combine I2SB, PnP, Fiber-SDE, SMoE, kinetic schedules, or fiberwise SWD in a first-pass mechanism test. Combination configs may exist for later integration, but they are not valid first-round evidence.
+- PC lowpass is a structure repair tool after a style-strong candidate, not the primary style path, because its low-frequency projection can suppress style-bearing low-frequency statistics.
+- Latent/RGB affine calibration is diagnostic and default-off. It can expose style-statistics gaps but should not be overclaimed as a local fiber operation unless region-wise behavior is measured.
+- Infra cleanup note: `infra_cleanup_2026-06-15.md`.
+
+## Current I2SB/PnP/Fiberwise Mixed Screen
+
+- Run: `phase2_i2sb_pnp_fiber_sde_k070`.
+- Closure note: `i2sb_pnp_fiber_sde_k070_closure.md`.
+- Best transfer point: e1 `0.684073 / 0.394578`.
+- Latest point: e2 `0.683612 / 0.407860`.
+- Decision: `cost_stopped_mixed_negative`. The run is useful negative evidence that the mixed endpoint/PnP/fiberwise route is too structure-expensive, but it is not a valid single-mechanism conclusion.
 
 ## Current Style-Release Cost Stop
 

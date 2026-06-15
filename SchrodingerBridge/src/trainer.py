@@ -159,7 +159,15 @@ class SBTrainer:
             torch.backends.cudnn.allow_tf32 = self.allow_tf32
             torch.backends.cudnn.benchmark = bool(train_cfg.get("cudnn_benchmark", True))
 
-        self.channels_last = bool(train_cfg.get("channels_last", False) and device.type == "cuda")
+        requested_channels_last = bool(train_cfg.get("channels_last", False) and device.type == "cuda")
+        requested_compile = bool(train_cfg.get("torch_compile", False))
+        if requested_channels_last and requested_compile:
+            raise ValueError(
+                "training.channels_last and training.torch_compile are intentionally mutually exclusive. "
+                "Optimizer state remains contiguous while compiled kernels may assume channels_last strides; "
+                "disable one of them for a clean run."
+            )
+        self.channels_last = requested_channels_last
         self.use_amp = bool(train_cfg.get("use_amp", False) and device.type == "cuda")
         amp_dtype_cfg = str(train_cfg.get("amp_dtype", "bf16")).lower()
         self.amp_dtype = torch.bfloat16 if amp_dtype_cfg in {"bf16", "bfloat16"} else torch.float16

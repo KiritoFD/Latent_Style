@@ -43,7 +43,7 @@ class SWDTransportCost:
         self.swd_macro_weight = max(0.0, float(bridge_cfg.swd_macro_weight))
         self.swd_use_dilated_projections = bool(bridge_cfg.swd_use_dilated_projections)
         self.swd_projection_dilation = max(1, int(bridge_cfg.swd_projection_dilation))
-        self._projection_cache: Dict[tuple[int, int, int, str, str], torch.Tensor] = {}
+        self._projection_cache: Dict[tuple[int, int, int, str, str, tuple[int, int]], torch.Tensor] = {}
         self._sobel_kernel_cache: Dict[tuple[int, str], tuple[torch.Tensor, torch.Tensor]] = {}
 
     def _get_projection_bank(
@@ -52,11 +52,13 @@ class SWDTransportCost:
         *,
         device: torch.device,
         mask_mode: str = "none",
+        spatial_hw: tuple[int, int] | None = None,
     ) -> Dict[int, torch.Tensor]:
         bank: Dict[int, torch.Tensor] = {}
         mode = str(mask_mode).strip().lower()
+        hw_key = tuple(int(v) for v in (spatial_hw or (0, 0)))
         for patch_size in self.swd_patch_sizes:
-            key = (int(channels), int(patch_size), int(self.swd_num_projections), str(device), mode)
+            key = (int(channels), int(patch_size), int(self.swd_num_projections), str(device), mode, hw_key)
             weights = self._projection_cache.get(key)
             if weights is None:
                 with torch.no_grad():
@@ -183,7 +185,12 @@ class SWDTransportCost:
     ) -> torch.Tensor:
         if not patch_sizes:
             return torch.zeros((x_feat.shape[0], y_feat.shape[0]), device=x_feat.device, dtype=torch.float32)
-        bank = self._get_projection_bank(int(x_feat.shape[1]), device=x_feat.device, mask_mode=mask_mode)
+        bank = self._get_projection_bank(
+            int(x_feat.shape[1]),
+            device=x_feat.device,
+            mask_mode=mask_mode,
+            spatial_hw=tuple(int(v) for v in x_feat.shape[-2:]),
+        )
         total = torch.zeros((x_feat.shape[0], y_feat.shape[0]), device=x_feat.device, dtype=torch.float32)
         denom = max(1, len(patch_sizes))
         chunk = int(self.swd_projection_chunk_size)
@@ -218,7 +225,12 @@ class SWDTransportCost:
             return torch.tensor(0.0, device=x_feat.device, dtype=torch.float32)
         if x_feat.shape[0] != y_feat.shape[0]:
             raise ValueError(f"aligned SWD expects equal batch size, got {x_feat.shape[0]} vs {y_feat.shape[0]}")
-        bank = self._get_projection_bank(int(x_feat.shape[1]), device=x_feat.device, mask_mode=mask_mode)
+        bank = self._get_projection_bank(
+            int(x_feat.shape[1]),
+            device=x_feat.device,
+            mask_mode=mask_mode,
+            spatial_hw=tuple(int(v) for v in x_feat.shape[-2:]),
+        )
         total = torch.tensor(0.0, device=x_feat.device, dtype=torch.float32)
         denom = max(1, len(patch_sizes))
         chunk = int(self.swd_projection_chunk_size)

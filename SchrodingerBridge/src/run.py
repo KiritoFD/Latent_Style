@@ -123,6 +123,13 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
     cmd += ["--postprocess_mean_strength", str(float(train_cfg.full_eval_postprocess_mean_strength))]
     cmd += ["--postprocess_std_strength", str(float(train_cfg.full_eval_postprocess_std_strength))]
     cmd += ["--postprocess_ref_limit", str(int(train_cfg.full_eval_postprocess_ref_limit))]
+    cmd += ["--latent_postprocess_mode", str(train_cfg.full_eval_latent_postprocess_mode)]
+    cmd += ["--latent_postprocess_strength", str(float(train_cfg.full_eval_latent_postprocess_strength))]
+    cmd += ["--latent_postprocess_mean_strength", str(float(train_cfg.full_eval_latent_postprocess_mean_strength))]
+    cmd += ["--latent_postprocess_std_strength", str(float(train_cfg.full_eval_latent_postprocess_std_strength))]
+    cmd += ["--latent_postprocess_ref_limit", str(int(train_cfg.full_eval_latent_postprocess_ref_limit))]
+    if bool(getattr(train_cfg, "full_eval_allow_metric_postprocess", False)):
+        cmd.append("--allow_metric_postprocess")
     if bool(train_cfg.full_eval_enable_introstyle):
         cmd.append("--eval_enable_introstyle")
     else:
