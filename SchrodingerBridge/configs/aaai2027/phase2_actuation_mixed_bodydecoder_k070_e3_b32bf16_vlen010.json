@@ -13,12 +13,19 @@
     "full_eval_batch_size": 4,
     "full_eval_generation_batch_size": 8,
     "full_eval_metric_batch_size": 16,
+    "full_eval_max_src_samples": 10,
     "full_eval_target_chunk_size": 5,
-    "full_eval_vae_decode_batch_size": 20,
+    "full_eval_vae_decode_batch_size": 16,
+    "full_eval_vae_onnx_decoder": "../eval_cache/vae_onnx/ema_b16_32/decoder.onnx",
     "full_eval_transfer_only": true,
     "full_eval_profile_timing": false,
+    "full_eval_in_process": true,
+    "full_eval_runtime_model_cache": true,
     "full_eval_keep_generated_on_device": true,
-    "full_eval_lpips_chunk_size": 8
+    "full_eval_source_latent_cache": true,
+    "full_eval_delta_observability": true,
+    "full_eval_lpips_chunk_size": 0,
+    "full_eval_hf_clip_skip_processor": true
   },
   "checkpoint": {
     "save_dir": "./exp/aaai2027_phase2_actuation_mixed_bodydecoder_k070_e3_b32bf16_vlen010"
