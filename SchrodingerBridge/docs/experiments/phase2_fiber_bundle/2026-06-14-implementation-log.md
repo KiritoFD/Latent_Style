@@ -646,9 +646,35 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
     generation phase had deleted it; the flag is now cached before releasing
     generation models.
   - Manually re-ran e6 eval and refreshed the curve.
-  - e9 eval was interrupted during the negative batch-probe rollback and must
-    be re-run before family closure so the all-checkpoint curve is complete.
+  - e9 was later confirmed present after curve refresh; the pre-decoder live
+    curve is complete through the current retained checkpoint.
 - Decision: keep the safe ONNX decode-only VAE skip. Do not increase live eval
   batch on the 3060 lane. For a material speedup, use a separate fixed fast5
   live contract or implement a persistent evaluator that avoids per-checkpoint
   process/model cold starts.
+
+## Fast Eval In-Process Probe
+
+- Trigger: trainer wall time for fast10 eval was about `39.6-39.9s`, while
+  `run_evaluation.py` reported internal `wall_total` around `26.5-26.8s`.
+  The suspected gap was Python subprocess/import cold start.
+- Implementation:
+  - Added default-off `training.full_eval_in_process`.
+  - `run.py` can now call `utils.run_evaluation.main(argv)` directly with the
+    exact same CLI argument list, while preserving the legacy subprocess path.
+  - `run_evaluation.main` now accepts an optional argv list and derives
+    explicit CLI flags from that list, so in-process calls do not accidentally
+    let checkpoint config override passed eval arguments.
+- Validation:
+  - Local compile smoke passed for `run.py`, `run_evaluation.py`, and
+    `config_schema.py`.
+  - Remote compile smoke passed after applying the minimal patch on the dirty
+    WSL worktree.
+  - Negative live probe on pre-decoder e16: in-process mode was activated, but
+    trainer eval wall worsened from `39.9s` at e15 to `74.1s` at e16.
+- Decision:
+  - Keep the code path as a default-off diagnostic switch.
+  - Do not enable it for live training on the remote 3060 lane.
+  - Active pre-decoder config was reverted to subprocess eval and resumed from
+    e16. The next clean speed target is a true persistent evaluator or faster
+    VAE decode backend, not in-process eval inside the training process.
