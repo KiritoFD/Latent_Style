@@ -80,7 +80,12 @@ def _resolve_num_workers(requested: int) -> int:
 
 def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Path) -> None:
     train_cfg = config.training
-    out_dir = checkpoint_path.parent / "full_eval" / checkpoint_path.stem
+    eval_subdir = str(getattr(train_cfg, "full_eval_output_subdir", "full_eval") or "full_eval").strip()
+    if not eval_subdir:
+        eval_subdir = "full_eval"
+    if Path(eval_subdir).is_absolute() or ".." in Path(eval_subdir).parts:
+        raise ValueError(f"full_eval_output_subdir must be a relative child directory, got: {eval_subdir!r}")
+    out_dir = checkpoint_path.parent / eval_subdir / checkpoint_path.stem
     eval_script = Path(__file__).resolve().parent / "utils" / "run_evaluation.py"
     cmd = [
         sys.executable,
@@ -211,8 +216,8 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
     convergence = Path(__file__).resolve().parents[1] / "tools" / "experiments" / "report_round2_convergence.py"
     manifest = Path(__file__).resolve().parents[1] / "tools" / "experiments" / "update_round2_family_manifest.py"
     gap_report = Path(__file__).resolve().parents[1] / "tools" / "experiments" / "report_round2_reference_gap.py"
-    curve_csv = checkpoint_path.parent / "full_eval" / "clip_lpips_curve.csv"
-    curve_summary_json = checkpoint_path.parent / "full_eval" / "curve_summary.json"
+    curve_csv = checkpoint_path.parent / eval_subdir / "clip_lpips_curve.csv"
+    curve_summary_json = checkpoint_path.parent / eval_subdir / "curve_summary.json"
     try:
         if collector.is_file():
             curve_cmd = [
@@ -221,7 +226,7 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
                 "--run-dir",
                 str(checkpoint_path.parent),
                 "--eval-subdir",
-                "full_eval",
+                eval_subdir,
             ]
             logger.info("Refreshing eval curve for %s", checkpoint_path.parent)
             subprocess.run(curve_cmd, check=True)

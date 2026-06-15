@@ -493,3 +493,24 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
   `aaai2027_phase2_actuation_proximal_texture_k070_e3_b16a2bf16_vlen010`
   resumed from local `epoch_0001.pt` into epoch 2, with health-window VRAM
   around `7.5 GiB`.
+- 2026-06-16 eval-speed follow-up: full transfer eval through `epoch_0006`
+  remained stable but slow, `66.38-71.50s` per checkpoint for `600` transfer
+  pairs. Best full-transfer point so far is `epoch_0006` at
+  `0.673384 / 0.327238`.
+- Added default-compatible `training.full_eval_output_subdir` so training-time
+  fast curves can be stored separately from full curves. This avoids mixing eval
+  contracts in `clip_lpips_curve.csv`.
+- Exported a matched `ema_b16_32` ONNX VAE decoder and switched the active
+  training-time eval contract to `full_eval_fast10`: transfer-only,
+  deterministic `10` source samples per style (`200` transfer pairs),
+  `target_chunk_size=5`, `vae_decode_batch_size=16`, no PNG/grid, and
+  GPU-kept generated tensors.
+- Backfilled `epoch_0001` through `epoch_0006` under `full_eval_fast10`.
+  Runtime dropped to `28.76-29.10s` per checkpoint, about `2.3x` faster than
+  the full transfer curve. Best fast10 point is `epoch_0006` at
+  `0.680404 / 0.331394`.
+- Restarted the remote WSL lane from local `epoch_0006.pt`; resume log confirms
+  epoch 7 and `global_step=354`. Health-window VRAM is about `7.36 GiB`.
+- Decision constraint: use `full_eval_fast10` for live convergence and early
+  stop decisions, but run full transfer confirmation for the selected best and
+  final checkpoints before closing or promoting the family.
