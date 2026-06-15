@@ -120,6 +120,7 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
         cmd += ["--eval_only_lpips_clip_style" if bool(train_cfg.full_eval_only_lpips_clip_style) else "--no-eval_only_lpips_clip_style"]
     if bool(getattr(train_cfg, "full_eval_transfer_only", False)):
         cmd.append("--transfer_only")
+    cmd += ["--eval_lpips_chunk_size", str(max(1, int(getattr(train_cfg, "full_eval_lpips_chunk_size", 4))))]
     cmd += ["--postprocess_mode", str(train_cfg.full_eval_postprocess_mode)]
     cmd += ["--postprocess_strength", str(float(train_cfg.full_eval_postprocess_strength))]
     cmd += ["--postprocess_mean_strength", str(float(train_cfg.full_eval_postprocess_mean_strength))]
@@ -156,6 +157,11 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
         cmd += ["--save_generated_images" if bool(train_cfg.full_eval_save_generated_images) else "--no-save_generated_images"]
     if train_cfg.full_eval_save_summary_grid is not None:
         cmd += ["--save_summary_grid" if bool(train_cfg.full_eval_save_summary_grid) else "--no-save_summary_grid"]
+    cmd += [
+        "--keep_generated_on_device"
+        if bool(getattr(train_cfg, "full_eval_keep_generated_on_device", True))
+        else "--no-keep_generated_on_device"
+    ]
     if bool(train_cfg.full_eval_force_regen):
         cmd.append("--force_regen")
     if bool(train_cfg.full_eval_profile_timing):
