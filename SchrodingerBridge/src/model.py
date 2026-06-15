@@ -44,10 +44,17 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         if self.transport_prediction_mode not in {"velocity", "endpoint"}:
             self.transport_prediction_mode = "velocity"
         self.endpoint_parameterization = str(getattr(bridge_config, "endpoint_parameterization", "absolute")).strip().lower()
-        if self.endpoint_parameterization not in {"absolute", "residual", "blend"}:
+        if self.endpoint_parameterization not in {"absolute", "residual", "blend", "orthogonal_lowhigh"}:
             self.endpoint_parameterization = "absolute"
         self.endpoint_residual_blend = float(getattr(bridge_config, "endpoint_residual_blend", 0.0))
         self.endpoint_residual_blend = min(1.0, max(0.0, self.endpoint_residual_blend))
+        self.endpoint_orthogonal_kernel = max(1, int(getattr(bridge_config, "endpoint_orthogonal_kernel", 5)))
+        if self.endpoint_orthogonal_kernel % 2 == 0:
+            self.endpoint_orthogonal_kernel += 1
+        self.endpoint_orthogonal_high_scale = max(
+            0.0,
+            float(getattr(bridge_config, "endpoint_orthogonal_high_scale", 1.0)),
+        )
         validate_i2sb_contract(
             solver_family=self.solver_family,
             transport_prediction_mode=self.transport_prediction_mode,
@@ -783,6 +790,18 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             if blend >= 1.0:
                 return raw
             return torch.lerp(absolute_delta, raw, blend)
+        if self.endpoint_parameterization == "orthogonal_lowhigh":
+            kernel = max(1, int(getattr(self, "endpoint_orthogonal_kernel", 5)))
+            if kernel <= 1:
+                return absolute_delta
+            pad = kernel // 2
+            raw_f = raw.float()
+            x_f = x.float()
+            raw_low = F.avg_pool2d(raw_f, kernel_size=kernel, stride=1, padding=pad)
+            x_low = F.avg_pool2d(x_f, kernel_size=kernel, stride=1, padding=pad)
+            raw_high = (raw_f - raw_low) * float(getattr(self, "endpoint_orthogonal_high_scale", 1.0))
+            endpoint = x_low + raw_high
+            return (endpoint - x_f).to(dtype=raw.dtype)
         return absolute_delta
 
     def _resolve_t_input(self, x: torch.Tensor, t: torch.Tensor | float | None) -> torch.Tensor:
@@ -906,6 +925,9 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             "t_next": float(t_next),
             "time_floor": float(self.i2sb_predictor_time_floor),
             "time_floor_active": float(abs(predict_t - float(t_curr)) > 1e-9),
+            "endpoint_orthogonal_active": float(self.endpoint_parameterization == "orthogonal_lowhigh"),
+            "endpoint_orthogonal_kernel": float(getattr(self, "endpoint_orthogonal_kernel", 1)),
+            "endpoint_orthogonal_high_scale": float(getattr(self, "endpoint_orthogonal_high_scale", 1.0)),
         }
         x_1_pred = self.predict_transport_base(
             h,
