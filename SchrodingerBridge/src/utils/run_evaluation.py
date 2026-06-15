@@ -41,7 +41,7 @@ _SRC_ROOT = Path(__file__).resolve().parents[1]
 if str(_SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(_SRC_ROOT))
 
-from utils.inference import LGTInference, load_vae, encode_image, decode_latent
+from utils.inference import LGTInference, ORTVAEDecoder, load_vae, encode_image, decode_latent
 from utils.artfid_metric import (
     compute_artfid_content_distance_from_paths,
     compute_artfid_fid_from_paths,
@@ -1600,6 +1600,8 @@ def _auto_run_missing_full_eval(args) -> None:
             "--batch_size", str(args.batch_size),
             "--target_chunk_size", str(args.target_chunk_size),
             "--vae_decode_batch_size", str(args.vae_decode_batch_size),
+            "--vae_onnx_decoder", str(args.vae_onnx_decoder),
+            "--vae_onnx_trt_cache_dir", str(args.vae_onnx_trt_cache_dir),
             "--image_save_workers", str(args.image_save_workers),
             "--image_save_backend", str(args.image_save_backend),
             "--postprocess_mode", str(args.postprocess_mode),
@@ -1630,6 +1632,8 @@ def _auto_run_missing_full_eval(args) -> None:
             cmd.append("--allow_metric_postprocess")
         if args.clip_allow_network:
             cmd += ["--clip_allow_network"]
+        if bool(args.vae_onnx_tensorrt):
+            cmd += ["--vae_onnx_tensorrt"]
         if args.introstyle_allow_network:
             cmd += ["--introstyle_allow_network"]
         if args.test_dir:
@@ -1708,6 +1712,9 @@ def main():
     parser.add_argument('--vae_compile_mode', type=str, default="reduce-overhead", choices=["default", "reduce-overhead", "max-autotune", "max-autotune-no-cudagraphs"])
     parser.add_argument('--vae_compile_fullgraph', action='store_true', help="Use fullgraph=True for compiled VAE decoder.")
     parser.add_argument('--vae_compile_cache_dir', type=str, default="", help="Persistent torch.compile cache directory for the VAE decoder.")
+    parser.add_argument('--vae_onnx_decoder', type=str, default="", help="Optional fixed-shape ONNX VAE decoder for faster eval decode.")
+    parser.add_argument('--vae_onnx_tensorrt', action='store_true', help="Use TensorRT EP for --vae_onnx_decoder when available.")
+    parser.add_argument('--vae_onnx_trt_cache_dir', type=str, default="", help="TensorRT engine cache directory for --vae_onnx_decoder.")
     parser.add_argument('--style_adapter', type=str, default="", help="Optional external style adapter (.pt) to override tokenizer state and, on legacy families only, style_spatial_id_16")
     parser.add_argument('--max_src_samples', type=int, default=int(full_eval_defaults.get("max_src_samples", 30)), help="Max source images per style; <=0 means all")
     parser.add_argument('--max_ref_compare', type=int, default=int(full_eval_defaults.get("max_ref_compare", 50)), help="Max refs for LPIPS style compare; <=0 means all cached refs")
@@ -1963,6 +1970,12 @@ def main():
         else (cache_dir / "hf").resolve()
     )
     hf_cache_dir.mkdir(parents=True, exist_ok=True)
+    vae_onnx_decoder_path = None
+    if str(getattr(args, "vae_onnx_decoder", "")).strip():
+        vae_onnx_decoder_path = _resolve_dir_path(str(args.vae_onnx_decoder), path_bases)
+    vae_onnx_trt_cache_dir = None
+    if str(getattr(args, "vae_onnx_trt_cache_dir", "")).strip():
+        vae_onnx_trt_cache_dir = _resolve_dir_path(str(args.vae_onnx_trt_cache_dir), path_bases)
     # Handle both HF cache layouts:
     # - modern: <hf_cache>/hub/models--*
     # - legacy/manual: <hf_cache>/models--*
@@ -2021,6 +2034,12 @@ def main():
                 args.target_chunk_size = int(resolved_full_eval["target_chunk_size"])
             if "vae_decode_batch_size" in resolved_full_eval and not _cli_provided("vae_decode_batch_size"):
                 args.vae_decode_batch_size = int(resolved_full_eval["vae_decode_batch_size"])
+            if "vae_onnx_decoder" in resolved_full_eval and not _cli_provided("vae_onnx_decoder"):
+                args.vae_onnx_decoder = str(resolved_full_eval["vae_onnx_decoder"])
+            if "vae_onnx_tensorrt" in resolved_full_eval and not _cli_provided("vae_onnx_tensorrt"):
+                args.vae_onnx_tensorrt = bool(resolved_full_eval["vae_onnx_tensorrt"])
+            if "vae_onnx_trt_cache_dir" in resolved_full_eval and not _cli_provided("vae_onnx_trt_cache_dir"):
+                args.vae_onnx_trt_cache_dir = str(resolved_full_eval["vae_onnx_trt_cache_dir"])
             if "transfer_only" in resolved_full_eval and not _cli_provided("transfer_only"):
                 args.transfer_only = bool(resolved_full_eval["transfer_only"])
             if "image_save_workers" in resolved_full_eval and not _cli_provided("image_save_workers"):
@@ -2303,6 +2322,24 @@ def main():
             compile_fullgraph=bool(args.vae_compile_fullgraph),
             compile_cache_dir=str(args.vae_compile_cache_dir),
         )
+        ort_vae = None
+        if vae_onnx_decoder_path is not None:
+            t_ort = time.perf_counter()
+            try:
+                if not vae_onnx_decoder_path.exists():
+                    raise FileNotFoundError(str(vae_onnx_decoder_path))
+                device_id = int(torch.cuda.current_device()) if str(device).startswith("cuda") else 0
+                ort_vae = ORTVAEDecoder(
+                    vae_onnx_decoder_path,
+                    device_id=device_id,
+                    use_tensorrt=bool(args.vae_onnx_tensorrt),
+                    trt_cache_dir=vae_onnx_trt_cache_dir,
+                )
+                print("  VAE ONNX decoder enabled: " + ",".join(ort_vae.providers))
+                _add_timing(timings, "load_vae_onnx_decoder", t_ort)
+            except Exception as exc:
+                print(f"  WARNING: VAE ONNX decoder unavailable ({exc}); falling back to diffusers decode.")
+                ort_vae = None
         _sync_cuda_if(device, bool(args.profile_timing))
         _add_timing(timings, "load_vae", t0)
         model_scale = float(getattr(lgt.model, "latent_scale_factor", 0.18215))
@@ -2402,12 +2439,30 @@ def main():
                         for dec_start in range(0, latents_gen.shape[0], vae_decode_bs):
                             dec_end = min(latents_gen.shape[0], dec_start + vae_decode_bs)
                             t0 = time.perf_counter()
-                            imgs_gen = decode_latent(
-                                vae,
-                                latents_gen[dec_start:dec_end],
-                                device,
-                                scaling_factor=args.vae_decode_scale,
-                            )
+                            if ort_vae is not None:
+                                decode_scale = float(
+                                    getattr(getattr(vae, "config", None), "scaling_factor", model_scale)
+                                    if args.vae_decode_scale is None
+                                    else args.vae_decode_scale
+                                )
+                                try:
+                                    imgs_gen = ort_vae.decode(latents_gen[dec_start:dec_end], scaling_factor=decode_scale)
+                                except Exception as exc:
+                                    print(f"  WARNING: VAE ONNX decode failed ({exc}); disabling ONNX decoder for this eval.")
+                                    ort_vae = None
+                                    imgs_gen = decode_latent(
+                                        vae,
+                                        latents_gen[dec_start:dec_end],
+                                        device,
+                                        scaling_factor=args.vae_decode_scale,
+                                    )
+                            else:
+                                imgs_gen = decode_latent(
+                                    vae,
+                                    latents_gen[dec_start:dec_end],
+                                    device,
+                                    scaling_factor=args.vae_decode_scale,
+                                )
                             post_debug = None
                             if postprocess_mode == "style_rgb_affine":
                                 dec_meta = meta[dec_start:dec_end]
@@ -2481,6 +2536,8 @@ def main():
 
         # Unload Generation Models
         del lgt, vae
+        if ort_vae is not None:
+            del ort_vae
         torch.cuda.empty_cache()
         gc.collect()
         print("  Generation models unloaded")
@@ -2515,6 +2572,9 @@ def main():
                 "vae_compile_mode": str(args.vae_compile_mode),
                 "vae_compile_fullgraph": bool(args.vae_compile_fullgraph),
                 "vae_compile_cache_dir": str(args.vae_compile_cache_dir),
+                "vae_onnx_decoder": str(vae_onnx_decoder_path or ""),
+                "vae_onnx_tensorrt": bool(args.vae_onnx_tensorrt),
+                "vae_onnx_trt_cache_dir": str(vae_onnx_trt_cache_dir or ""),
                 "transfer_only": bool(getattr(args, "transfer_only", False)),
                 "image_save_workers": int(args.image_save_workers),
                 "image_save_backend": str(args.image_save_backend),
@@ -3196,6 +3256,9 @@ def main():
             "vae_compile_mode": str(args.vae_compile_mode),
             "vae_compile_fullgraph": bool(args.vae_compile_fullgraph),
             "vae_compile_cache_dir": str(args.vae_compile_cache_dir),
+            "vae_onnx_decoder": str(vae_onnx_decoder_path or ""),
+            "vae_onnx_tensorrt": bool(args.vae_onnx_tensorrt),
+            "vae_onnx_trt_cache_dir": str(vae_onnx_trt_cache_dir or ""),
             "transfer_only": bool(getattr(args, "transfer_only", False)),
             "image_save_workers": int(args.image_save_workers),
             "image_save_backend": str(args.image_save_backend),

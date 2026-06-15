@@ -901,6 +901,11 @@ class SBTrainer:
                 ("decoder_structure_gate", getattr(self.model, "decoder_structure_gate", None)),
                 ("style_delta_basis_proj", getattr(self.model, "style_delta_basis_proj", None)),
                 ("style_delta_weight_head", getattr(self.model, "style_delta_weight_head", None)),
+                ("proximal_attn_q", getattr(self.model, "proximal_attn_q", None)),
+                ("proximal_attn_k", getattr(self.model, "proximal_attn_k", None)),
+                ("proximal_attn_v", getattr(self.model, "proximal_attn_v", None)),
+                ("proximal_attn_out", getattr(self.model, "proximal_attn_out", None)),
+                ("proximal_style_tokens", getattr(self.model, "proximal_style_tokens", None)),
             ]
             for prefix, module in injectors:
                 if module is None:
@@ -911,7 +916,7 @@ class SBTrainer:
             if not trainable_names:
                 raise RuntimeError(
                     "freeze_mode=injection_only requires model.style_injection_mode != 'none' "
-                    "or model.style_delta_mode != 'none'."
+                    "or model.style_delta_mode != 'none' or model.proximal_mode != 'off'."
                 )
         if mode == "backbone_only":
             for name, param in self.model.named_parameters():

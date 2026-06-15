@@ -1,0 +1,16 @@
+{
+  "_base": "./phase2_actuation_proximal_texture_k070_e3_b32bf16_vlen010.json",
+  "training": {
+    "batch_size": 16,
+    "accumulation_steps": 2
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_actuation_proximal_texture_k070_e3_b16a2bf16_vlen010"
+  },
+  "ablation": {
+    "name": "phase2_actuation_proximal_texture_k070_e3_b16a2bf16_vlen010",
+    "axis": "phase2_fiber_actuation_bottleneck",
+    "stage": "actuation_proximal_texture_residual_vram_safe",
+    "notes": "Same controlled proximal texture residual probe as the b32 config, but launched with batch=16 and accumulation_steps=2 after the first b32 health check reached 11838/12288 MiB. This changes only throughput/optimizer accumulation, not the core mechanism."
+  }
+}

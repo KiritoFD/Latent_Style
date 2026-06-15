@@ -198,6 +198,7 @@ class OTFlowMatchingObjective:
         self.normalize_eps = max(1e-8, float(bridge_cfg.normalize_eps))
         self.velocity_clamp = max(1.0, float(bridge_cfg.velocity_clamp))
         self.endpoint_clamp = max(self.velocity_clamp, float(bridge_cfg.endpoint_clamp))
+        self.proximal_target_weight = max(0.0, float(getattr(bridge_cfg, "proximal_target_weight", 0.0)))
         self.transport_cost = SWDTransportCost(config)
 
         distill_cfg = train_cfg.distill
@@ -1265,6 +1266,11 @@ class OTFlowMatchingObjective:
             if torch.is_tensor(proximal_residual) and float(getattr(model, "proximal_residual_energy_weight", 0.0)) > 0.0
             else zero
         )
+        proximal_target = (
+            self._loss(pred_endpoint_final, target_for_loss) * self.proximal_target_weight
+            if self.proximal_target_weight > 0.0
+            else zero
+        )
         base_endpoint = getattr(model, "last_base_endpoint", None)
         base_transport_abs = (
             (base_endpoint - content).abs().mean().detach()
@@ -1303,6 +1309,7 @@ class OTFlowMatchingObjective:
             + stokes_viscous
             + proximal_residual_energy
             + proximal_trust_penalty
+            + proximal_target
         )
 
         runtime_payload = getattr(model, "runtime_conditioning", {}) if hasattr(model, "runtime_conditioning") else {}
@@ -1376,6 +1383,7 @@ class OTFlowMatchingObjective:
             "stokes_viscous": stokes_viscous.detach(),
             "proximal_residual_energy": proximal_residual_energy.detach() if torch.is_tensor(proximal_residual_energy) else zero,
             "proximal_trust_penalty": proximal_trust_penalty.detach() if torch.is_tensor(proximal_trust_penalty) else zero,
+            "proximal_target": proximal_target.detach() if torch.is_tensor(proximal_target) else zero,
             "terminal_swd": terminal_loss.detach(),
             "terminal_swd_aux": terminal_aux_loss.detach(),
             "aux_target_ratio": aux_target_ratio.detach(),
@@ -1429,6 +1437,7 @@ class OTFlowMatchingObjective:
             "stokes_viscous": stokes_viscous,
             "proximal_residual_energy": proximal_residual_energy,
             "proximal_trust_penalty": proximal_trust_penalty,
+            "proximal_target": proximal_target,
             "terminal_swd": terminal_loss,
             "terminal_swd_aux": terminal_aux_loss,
             "style_energy_floor": style_energy_floor,
@@ -1592,6 +1601,38 @@ class OTFlowMatchingObjective:
         self._profile_end("terminal_swd", t_profile, content)
         if terminal_swd is not None:
             total_loss = total_loss + terminal_swd * self.terminal_swd_weight
+        proximal_target = zero
+        pred_endpoint_base = None
+        pred_endpoint_final = None
+        if self.proximal_target_weight > 0.0:
+            pred_endpoint_base = self._sanitize_tensor(
+                model.predict_transport_base(
+                    content,
+                    t=content.new_ones(content.shape[0]),
+                    style_id=target_style_id,
+                ),
+                clamp_value=self.endpoint_clamp,
+            )
+            pred_endpoint_final = self._sanitize_tensor(
+                model.refine_endpoint(
+                    pred_endpoint_base,
+                    style_id=target_style_id,
+                    source_latent=content,
+                ),
+                clamp_value=self.endpoint_clamp,
+            )
+            proximal_target = self._loss(pred_endpoint_final, matched_target) * self.proximal_target_weight
+            total_loss = total_loss + proximal_target
+        proximal_residual = getattr(model, "last_proximal_residual", None)
+        proximal_clamp_scale = getattr(model, "last_proximal_clamp_scale", None)
+        proximal_residual_abs = proximal_residual.abs().mean().detach() if torch.is_tensor(proximal_residual) else zero
+        proximal_residual_energy = (
+            proximal_residual.float().square().mean() * float(getattr(model, "proximal_residual_energy_weight", 0.0))
+            if torch.is_tensor(proximal_residual) and float(getattr(model, "proximal_residual_energy_weight", 0.0)) > 0.0
+            else zero
+        )
+        if torch.is_tensor(proximal_residual_energy) and self.proximal_target_weight > 0.0:
+            total_loss = total_loss + proximal_residual_energy
         generated_delta_diversity, generated_delta_mean_offdiag_cos, generated_delta_active_styles = (
             self._generated_delta_diversity_loss(pred_velocity, target_style_id, source_style_id)
             if self.w_generated_delta_diversity > 0.0
@@ -1632,6 +1673,12 @@ class OTFlowMatchingObjective:
             "content_lowpass_anchor": content_lowpass_anchor.detach(),
             "content_edge_anchor": content_edge_anchor.detach(),
             "terminal_swd": terminal_swd.detach() if terminal_swd is not None else content.new_tensor(0.0),
+            "proximal_target": proximal_target.detach() if torch.is_tensor(proximal_target) else zero,
+            "proximal_residual_abs": proximal_residual_abs.detach() if torch.is_tensor(proximal_residual_abs) else zero,
+            "proximal_clamp_scale": proximal_clamp_scale.detach() if torch.is_tensor(proximal_clamp_scale) else content.new_tensor(1.0),
+            "proximal_residual_energy": proximal_residual_energy.detach() if torch.is_tensor(proximal_residual_energy) else zero,
+            "base_endpoint_abs": pred_endpoint_base.abs().mean().detach() if torch.is_tensor(pred_endpoint_base) else content.new_tensor(0.0),
+            "final_endpoint_abs": pred_endpoint_final.abs().mean().detach() if torch.is_tensor(pred_endpoint_final) else content.new_tensor(0.0),
             "generated_delta_diversity": generated_delta_diversity.detach(),
             "generated_delta_mean_offdiag_cos": generated_delta_mean_offdiag_cos.detach(),
             "generated_delta_active_styles": generated_delta_active_styles.detach(),
@@ -1655,6 +1702,8 @@ class OTFlowMatchingObjective:
             "content_lowpass_anchor": content_lowpass_anchor,
             "content_edge_anchor": content_edge_anchor,
             "terminal_swd": terminal_swd * self.terminal_swd_weight if terminal_swd is not None else zero,
+            "proximal_target": proximal_target,
+            "proximal_residual_energy": proximal_residual_energy,
             "generated_delta_diversity": generated_delta_diversity,
             "cycle_consistency": cycle_consistency,
         }
@@ -1667,6 +1716,8 @@ class OTFlowMatchingObjective:
             "target_velocity": target_velocity.detach(),
             "pred_velocity": pred_velocity.detach(),
             "pred_endpoint": pred_endpoint.detach() if pred_endpoint is not None else None,
+            "pred_endpoint_base": pred_endpoint_base.detach() if torch.is_tensor(pred_endpoint_base) else None,
+            "pred_endpoint_final": pred_endpoint_final.detach() if torch.is_tensor(pred_endpoint_final) else None,
             "semantic_attn": getattr(model, "last_semantic_attn", None).detach() if getattr(model, "last_semantic_attn", None) is not None else None,
             "semantic_k": getattr(model, "last_semantic_k", None).detach() if getattr(model, "last_semantic_k", None) is not None else None,
             "semantic_topology_attn": topology_attn.detach() if topology_attn is not None else None,

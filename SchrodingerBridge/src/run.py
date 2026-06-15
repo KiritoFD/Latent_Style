@@ -133,6 +133,14 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
     compile_cache_dir = str(getattr(train_cfg, "full_eval_vae_compile_cache_dir", "") or "").strip()
     if compile_cache_dir:
         cmd += ["--vae_compile_cache_dir", compile_cache_dir]
+    onnx_decoder = str(getattr(train_cfg, "full_eval_vae_onnx_decoder", "") or "").strip()
+    if onnx_decoder:
+        cmd += ["--vae_onnx_decoder", onnx_decoder]
+    if bool(getattr(train_cfg, "full_eval_vae_onnx_tensorrt", False)):
+        cmd.append("--vae_onnx_tensorrt")
+    onnx_trt_cache_dir = str(getattr(train_cfg, "full_eval_vae_onnx_trt_cache_dir", "") or "").strip()
+    if onnx_trt_cache_dir:
+        cmd += ["--vae_onnx_trt_cache_dir", onnx_trt_cache_dir]
     if train_cfg.full_eval_only_lpips_clip_style is not None:
         cmd += ["--eval_only_lpips_clip_style" if bool(train_cfg.full_eval_only_lpips_clip_style) else "--no-eval_only_lpips_clip_style"]
     if bool(getattr(train_cfg, "full_eval_transfer_only", False)):

@@ -114,31 +114,55 @@ class ORTVAEDecoder:
         self.input_name = self.session.get_inputs()[0].name
         self.output_name = self.session.get_outputs()[0].name
         self.providers = self.session.get_providers()
+        input_shape = list(self.session.get_inputs()[0].shape)
+        self.fixed_batch = int(input_shape[0]) if input_shape and isinstance(input_shape[0], int) else None
 
     @torch.no_grad()
     def decode(self, latent: torch.Tensor, *, scaling_factor: float) -> torch.Tensor:
         latent = latent.to(device=f"cuda:{self.device_id}", dtype=torch.float16).contiguous()
         latent = (latent / max(float(scaling_factor), 1e-8)).contiguous()
         b, _, h, w = latent.shape
+        run_latent = latent
+        if self.fixed_batch is not None and b != self.fixed_batch:
+            if b > self.fixed_batch:
+                raise ValueError(
+                    f"ORT VAE decoder was exported for batch={self.fixed_batch}, got batch={b}. "
+                    "Lower --vae_decode_batch_size or export a matching decoder."
+                )
+            pad = torch.zeros(
+                (self.fixed_batch - b, latent.shape[1], h, w),
+                device=latent.device,
+                dtype=latent.dtype,
+            )
+            run_latent = torch.cat([latent, pad], dim=0).contiguous()
         output = torch.empty((b, 3, h * 8, w * 8), device=latent.device, dtype=torch.float16).contiguous()
+        run_output = output
+        if run_latent.shape[0] != b:
+            run_output = torch.empty(
+                (run_latent.shape[0], 3, h * 8, w * 8),
+                device=latent.device,
+                dtype=torch.float16,
+            ).contiguous()
         binding = self.session.io_binding()
         binding.bind_input(
             name=self.input_name,
             device_type="cuda",
             device_id=self.device_id,
             element_type=np.float16,
-            shape=tuple(latent.shape),
-            buffer_ptr=latent.data_ptr(),
+            shape=tuple(run_latent.shape),
+            buffer_ptr=run_latent.data_ptr(),
         )
         binding.bind_output(
             name=self.output_name,
             device_type="cuda",
             device_id=self.device_id,
             element_type=np.float16,
-            shape=tuple(output.shape),
-            buffer_ptr=output.data_ptr(),
+            shape=tuple(run_output.shape),
+            buffer_ptr=run_output.data_ptr(),
         )
         self.session.run_with_iobinding(binding)
+        if run_output.shape[0] != b:
+            output = run_output[:b]
         image = (output + 1.0) / 2.0
         return torch.clamp(image, 0.0, 1.0)
 
