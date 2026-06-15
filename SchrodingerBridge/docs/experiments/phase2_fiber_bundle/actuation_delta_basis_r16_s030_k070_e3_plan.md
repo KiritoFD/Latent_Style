@@ -48,7 +48,18 @@ lane increases only the output-side style delta basis rank.
 
 ## Running Eval Curve
 
-Pending.
+Curve CSV:
+`docs/experiments/phase2_fiber_bundle/eval/actuation_delta_basis_r16_s030_k070_e3_b32bf16_vlen010/clip_lpips_curve.csv`
+
+| epoch | transfer CLIP-S | transfer LPIPS | eval wall | transfer-only |
+|---|---:|---:|---:|---:|
+| 1 | 0.674387 | 0.344712 | 93.92s | yes |
+
+Interim read: e1 is already above the S030 full-board closure point
+(`0.674200 / 0.353881`) and above S030 e20 transfer-only style
+(`0.674338`) while keeping LPIPS much lower (`0.344712`). This is a useful
+early positive for the "fiber section capacity" hypothesis. Continue to
+formal convergence; do not promote on a single epoch.
 
 ## Closure Decision
 
