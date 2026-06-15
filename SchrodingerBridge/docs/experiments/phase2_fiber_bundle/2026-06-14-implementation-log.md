@@ -762,3 +762,31 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
   - Keep the switches default-off for untested eval contracts, especially any
     setup that saves PNGs, enables IntroStyle/ArtFID/KID, or changes decoder
     batch shape.
+
+## 2026-06-16 Fast Eval Decode Recheck
+
+- Trigger: user reported training-time eval was still too slow.
+- Current blend0p25 fast10 profile through e6:
+  - typical wall `26-29s/ckpt`, VAE decode `8.3-8.5s`, generation `5.3-5.7s`,
+    metric loop about `3.8s`.
+  - e4 was a slow outlier (`34.62s` wall), but the metric definition and
+    sample contract were unchanged.
+- Additional probes on blend0p25 e2:
+  - deferred decode with existing b16 ONNX: wall `26.34s`, VAE decode `8.37s`.
+    Not promoted because the current `generation_batch_size=8`,
+    `target_chunk_size=5`, and fixed batch-16 decoder already create nearly
+    packed decode calls.
+  - newly exported fixed b32 ONNX decoder for latent `32x32`: wall `84.36s`,
+    VAE decode `65.30s`. Rejected.
+- Decision:
+  - Keep `ema_b16_32/decoder.onnx`.
+  - Do not keep a deferred-decode switch in the main config/code path because
+    the probe showed no material speedup under the current packed b16 contract.
+  - Use the earlier validated hot path for live eval:
+    `full_eval_in_process=true` and `full_eval_runtime_model_cache=true`.
+  - Required guardrail for the next run: after the first cached eval, check
+    remote VRAM. If eval-model cache pushes the restored training process near
+    the 11GB band, turn runtime cache off again and fall back to subprocess
+    eval.
+- Probe artifact:
+  `docs/experiments/phase2_fiber_bundle/eval/speed_probes/20260616_eval_decode_inprocess_probe.json`.

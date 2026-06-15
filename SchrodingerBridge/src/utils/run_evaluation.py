@@ -1400,7 +1400,7 @@ def _source_path_key(path: str | Path) -> str:
     return str(Path(path).resolve())
 
 
-def _is_source_cache_valid(source_cache: dict, *, image_size: int, need_clip: bool) -> bool:
+def _is_source_cache_valid(source_cache: dict, *, image_size: int, need_clip: bool, keys: set[str] | None = None) -> bool:
     if not isinstance(source_cache, dict) or not source_cache:
         return False
     meta = source_cache.get("meta")
@@ -1409,6 +1409,10 @@ def _is_source_cache_valid(source_cache: dict, *, image_size: int, need_clip: bo
         return False
     if int(meta.get("image_size", -1)) != int(image_size):
         return False
+    if keys is not None:
+        missing = [key for key in keys if key not in items]
+        if missing:
+            return False
     for payload in items.values():
         if not isinstance(payload, dict):
             return False
@@ -2667,6 +2671,114 @@ def main(argv: list[str] | None = None):
                 f"ref_limit={int(args.latent_postprocess_ref_limit)}"
             )
 
+        def _decode_generated_jobs(jobs: list[tuple[torch.Tensor, list[tuple], dict | None, dict | None]]) -> None:
+            nonlocal ort_vae
+            for latents_job, meta_job, chunk_runtime_observability, latent_post_debug in jobs:
+                if abs(scale_out - 1.0) > 1e-4:
+                    latents_job = latents_job * scale_out
+                for dec_start in range(0, latents_job.shape[0], vae_decode_bs):
+                    dec_end = min(latents_job.shape[0], dec_start + vae_decode_bs)
+                    t0 = time.perf_counter()
+                    if ort_vae is not None:
+                        decode_scale = float(
+                            (
+                                getattr(getattr(vae, "config", None), "scaling_factor", model_scale)
+                                if vae is not None
+                                else vae_scale
+                            )
+                            if args.vae_decode_scale is None
+                            else args.vae_decode_scale
+                        )
+                        try:
+                            imgs_gen = ort_vae.decode(latents_job[dec_start:dec_end], scaling_factor=decode_scale)
+                        except Exception as exc:
+                            print(f"  WARNING: VAE ONNX decode failed ({exc}); disabling ONNX decoder for this eval.")
+                            ort_vae = None
+                            _load_diffusers_vae("ONNX decoder failure fallback")
+                            imgs_gen = decode_latent(
+                                vae,
+                                latents_job[dec_start:dec_end],
+                                device,
+                                scaling_factor=args.vae_decode_scale,
+                            )
+                    else:
+                        _load_diffusers_vae("ONNX decoder unavailable for latent decode")
+                        imgs_gen = decode_latent(
+                            vae,
+                            latents_job[dec_start:dec_end],
+                            device,
+                            scaling_factor=args.vae_decode_scale,
+                        )
+                    post_debug = None
+                    if postprocess_mode == "style_rgb_affine":
+                        dec_meta = meta_job[dec_start:dec_end]
+                        dec_tgt_ids = torch.tensor(
+                            [int(x[2]) for x in dec_meta],
+                            device=imgs_gen.device,
+                            dtype=torch.long,
+                        )
+                        imgs_gen, post_debug = _apply_postdecode_style_rgb_affine(
+                            imgs_gen,
+                            dec_tgt_ids,
+                            post_rgb_means,
+                            post_rgb_stds,
+                            strength=float(args.postprocess_strength),
+                            mean_strength=float(args.postprocess_mean_strength),
+                            std_strength=float(args.postprocess_std_strength),
+                        )
+                    _sync_cuda_if(device, bool(args.profile_timing))
+                    _add_timing(timings, "vae_decode", t0)
+                    save_generated_images = bool(args.save_generated_images)
+                    imgs_gen_cpu = None
+                    imgs_gen_u8_cpu = None
+                    if save_generated_images:
+                        t0 = time.perf_counter()
+                        imgs_gen_u8_cpu = _images_01_to_uint8_hwc_cpu(imgs_gen)
+                        _sync_cuda_if(device, bool(args.profile_timing))
+                        _add_timing(timings, "uint8_cpu_copy", t0)
+                    elif keep_generated_on_device:
+                        t0 = time.perf_counter()
+                        imgs_gen_cpu = imgs_gen.detach().to(dtype=torch.float16).contiguous()
+                        _sync_cuda_if(device, bool(args.profile_timing))
+                        _add_timing(timings, "generated_gpu_keep", t0)
+                    else:
+                        t0 = time.perf_counter()
+                        cpu_dtype = torch.float16 if fast_metric_half_cpu else torch.float32
+                        imgs_gen_cpu = imgs_gen.detach().to(device="cpu", dtype=cpu_dtype).contiguous()
+                        _sync_cuda_if(device, bool(args.profile_timing))
+                        _add_timing(timings, "generated_cpu_copy", t0)
+                    t0 = time.perf_counter()
+                    for local_i, (src_item, tgt_name, tgt_id, out_name) in enumerate(meta_job[dec_start:dec_end]):
+                        runtime_observability = dict(chunk_runtime_observability) if chunk_runtime_observability else {}
+                        if isinstance(latent_post_debug, dict):
+                            runtime_observability.update(latent_post_debug)
+                        if isinstance(post_debug, dict):
+                            runtime_observability.update(post_debug)
+                        gen_name = out_name
+                        gen_img_payload = imgs_gen_cpu[local_i] if imgs_gen_cpu is not None else imgs_gen_u8_cpu[local_i]
+                        if save_generated_images:
+                            out_path = images_dir / out_name
+                            out_rel = Path("images") / out_name
+                            io_pool.submit(
+                                save_image_task,
+                                gen_img_payload,
+                                out_path,
+                                str(args.image_save_backend),
+                            )
+                            gen_name = out_rel.as_posix()
+                        generated_buffer.append({
+                            'src_path': src_item['path'],
+                            'src_style': src_item['style_name'],
+                            'tgt_style_name': tgt_name,
+                            'tgt_style_id': tgt_id,
+                            'gen_img': gen_img_payload,
+                            'gen_name': gen_name,
+                            'runtime_observability': runtime_observability or None,
+                        })
+                    if save_generated_images:
+                        _add_timing(timings, "image_save_submit", t0)
+                    del imgs_gen, imgs_gen_cpu, imgs_gen_u8_cpu
+
         # Process in batches
         for b_start in range(0, num_src_total, generation_batch_size):
             b_end = min(b_start + generation_batch_size, num_src_total)
@@ -2764,113 +2876,10 @@ def main(argv: list[str] | None = None):
                                     )
                             except Exception as exc:
                                 print(f"  WARNING: generated-delta observability failed for chunk: {exc}")
-                        if abs(scale_out - 1.0) > 1e-4:
-                            latents_gen = latents_gen * scale_out
                         _sync_cuda_if(device, bool(args.profile_timing))
                         _add_timing(timings, "lancet_generation", t0)
 
-                        for dec_start in range(0, latents_gen.shape[0], vae_decode_bs):
-                            dec_end = min(latents_gen.shape[0], dec_start + vae_decode_bs)
-                            t0 = time.perf_counter()
-                            if ort_vae is not None:
-                                decode_scale = float(
-                                    (
-                                        getattr(getattr(vae, "config", None), "scaling_factor", model_scale)
-                                        if vae is not None
-                                        else vae_scale
-                                    )
-                                    if args.vae_decode_scale is None
-                                    else args.vae_decode_scale
-                                )
-                                try:
-                                    imgs_gen = ort_vae.decode(latents_gen[dec_start:dec_end], scaling_factor=decode_scale)
-                                except Exception as exc:
-                                    print(f"  WARNING: VAE ONNX decode failed ({exc}); disabling ONNX decoder for this eval.")
-                                    ort_vae = None
-                                    _load_diffusers_vae("ONNX decoder failure fallback")
-                                    imgs_gen = decode_latent(
-                                        vae,
-                                        latents_gen[dec_start:dec_end],
-                                        device,
-                                        scaling_factor=args.vae_decode_scale,
-                                    )
-                            else:
-                                _load_diffusers_vae("ONNX decoder unavailable for latent decode")
-                                imgs_gen = decode_latent(
-                                    vae,
-                                    latents_gen[dec_start:dec_end],
-                                    device,
-                                    scaling_factor=args.vae_decode_scale,
-                                )
-                            post_debug = None
-                            if postprocess_mode == "style_rgb_affine":
-                                dec_meta = meta[dec_start:dec_end]
-                                dec_tgt_ids = torch.tensor(
-                                    [int(x[2]) for x in dec_meta],
-                                    device=imgs_gen.device,
-                                    dtype=torch.long,
-                                )
-                                imgs_gen, post_debug = _apply_postdecode_style_rgb_affine(
-                                    imgs_gen,
-                                    dec_tgt_ids,
-                                    post_rgb_means,
-                                    post_rgb_stds,
-                                    strength=float(args.postprocess_strength),
-                                    mean_strength=float(args.postprocess_mean_strength),
-                                    std_strength=float(args.postprocess_std_strength),
-                                )
-                            _sync_cuda_if(device, bool(args.profile_timing))
-                            _add_timing(timings, "vae_decode", t0)
-                            save_generated_images = bool(args.save_generated_images)
-                            imgs_gen_cpu = None
-                            imgs_gen_u8_cpu = None
-                            if save_generated_images:
-                                t0 = time.perf_counter()
-                                imgs_gen_u8_cpu = _images_01_to_uint8_hwc_cpu(imgs_gen)
-                                _sync_cuda_if(device, bool(args.profile_timing))
-                                _add_timing(timings, "uint8_cpu_copy", t0)
-                            elif keep_generated_on_device:
-                                t0 = time.perf_counter()
-                                imgs_gen_cpu = imgs_gen.detach().to(dtype=torch.float16).contiguous()
-                                _sync_cuda_if(device, bool(args.profile_timing))
-                                _add_timing(timings, "generated_gpu_keep", t0)
-                            else:
-                                t0 = time.perf_counter()
-                                cpu_dtype = torch.float16 if fast_metric_half_cpu else torch.float32
-                                imgs_gen_cpu = imgs_gen.detach().to(device="cpu", dtype=cpu_dtype).contiguous()
-                                _sync_cuda_if(device, bool(args.profile_timing))
-                                _add_timing(timings, "generated_cpu_copy", t0)
-                            t0 = time.perf_counter()
-                            for local_i, (src_item, tgt_name, tgt_id, out_name) in enumerate(meta[dec_start:dec_end]):
-                                runtime_observability = dict(chunk_runtime_observability) if chunk_runtime_observability else {}
-                                if isinstance(latent_post_debug, dict):
-                                    runtime_observability.update(latent_post_debug)
-                                if isinstance(post_debug, dict):
-                                    runtime_observability.update(post_debug)
-                                gen_name = out_name
-                                gen_img_payload = imgs_gen_cpu[local_i] if imgs_gen_cpu is not None else imgs_gen_u8_cpu[local_i]
-                                if save_generated_images:
-                                    out_path = images_dir / out_name
-                                    out_rel = Path("images") / out_name
-                                    io_pool.submit(
-                                        save_image_task,
-                                        gen_img_payload,
-                                        out_path,
-                                        str(args.image_save_backend),
-                                    )
-                                    gen_name = out_rel.as_posix()
-                                generated_buffer.append({
-                                    'src_path': src_item['path'],
-                                    'src_style': src_item['style_name'],
-                                    'tgt_style_name': tgt_name,
-                                    'tgt_style_id': tgt_id,
-                                    'gen_img': gen_img_payload,
-                                    'gen_name': gen_name,
-                                    'runtime_observability': runtime_observability or None,
-                                })
-                            if save_generated_images:
-                                _add_timing(timings, "image_save_submit", t0)
-                            del imgs_gen, imgs_gen_cpu, imgs_gen_u8_cpu
+                        _decode_generated_jobs([(latents_gen, meta, chunk_runtime_observability, latent_post_debug)])
                         del repeated_latents, tgt_ids, latents_gen, pair_latents, pair_tgt_ids
 
         diffusers_vae_loaded_for_generation = bool(vae is not None)
@@ -3357,7 +3366,12 @@ def main(argv: list[str] | None = None):
         print(f"Found global source cache: {src_cache_file}")
         try:
             src_cache_payload = torch.load(src_cache_file, map_location='cpu')
-            if _is_source_cache_valid(src_cache_payload, image_size=src_eval_size, need_clip=need_src_clip_cache):
+            if _is_source_cache_valid(
+                src_cache_payload,
+                image_size=src_eval_size,
+                need_clip=need_src_clip_cache,
+                keys=set(unique_src_keys),
+            ):
                 print("  Source cache loaded successfully")
                 src_cache_status = "loaded"
             else:
@@ -3374,7 +3388,12 @@ def main(argv: list[str] | None = None):
             if src_cache_file.exists() and not must_rebuild_src_cache:
                 try:
                     src_cache_payload = torch.load(src_cache_file, map_location='cpu')
-                    if _is_source_cache_valid(src_cache_payload, image_size=src_eval_size, need_clip=need_src_clip_cache):
+                    if _is_source_cache_valid(
+                        src_cache_payload,
+                        image_size=src_eval_size,
+                        need_clip=need_src_clip_cache,
+                        keys=set(unique_src_keys),
+                    ):
                         print(f"Loaded global source cache after waiting: {src_cache_file}")
                         src_cache_status = "loaded_after_wait"
                     else:
