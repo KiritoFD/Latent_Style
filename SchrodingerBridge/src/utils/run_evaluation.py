@@ -179,7 +179,16 @@ def _prepare_clip_pixels(images_01: torch.Tensor, *, image_size: int, mean, std)
     return imgs.contiguous(memory_format=torch.channels_last)
 
 
-def _load_clip_from_source(CLIPModel, CLIPProcessor, src: str, device: str, *, local_only: bool, cache_dir: str):
+def _load_clip_from_source(
+    CLIPModel,
+    CLIPProcessor,
+    src: str,
+    device: str,
+    *,
+    local_only: bool,
+    cache_dir: str,
+    load_processor: bool = True,
+):
     model_kwargs = {}
     proc_kwargs = {}
     if cache_dir:
@@ -190,7 +199,7 @@ def _load_clip_from_source(CLIPModel, CLIPProcessor, src: str, device: str, *, l
         proc_kwargs["local_files_only"] = True
     try:
         model = CLIPModel.from_pretrained(src, **model_kwargs).to(device)
-        processor = CLIPProcessor.from_pretrained(src, **proc_kwargs)
+        processor = CLIPProcessor.from_pretrained(src, **proc_kwargs) if load_processor else None
         return model, processor
     except TypeError:
         # Compatibility with older transformers signatures.
@@ -206,7 +215,7 @@ def _load_clip_from_source(CLIPModel, CLIPProcessor, src: str, device: str, *, l
         model_kwargs.pop("local_files_only", None)
         proc_kwargs.pop("local_files_only", None)
         model = CLIPModel.from_pretrained(src, **model_kwargs).to(device)
-        processor = CLIPProcessor.from_pretrained(src, **proc_kwargs)
+        processor = CLIPProcessor.from_pretrained(src, **proc_kwargs) if load_processor else None
         return model, processor
 
 
@@ -1915,6 +1924,14 @@ def main(argv: list[str] | None = None):
     parser.add_argument('--clip_modelscope_id', type=str, default="", help="Optional ModelScope model id for CLIP fallback")
     parser.add_argument('--clip_modelscope_cache_dir', type=str, default="", help="Optional ModelScope cache directory")
     parser.add_argument('--clip_hf_cache_dir', type=str, default="", help="HuggingFace cache dir for CLIP; default uses <cache_dir>/hf")
+    parser.add_argument(
+        '--clip_hf_skip_processor',
+        action='store_true',
+        help=(
+            "Skip loading HF CLIPProcessor and use tensor-native preprocessing from model config plus "
+            "standard CLIP mean/std. Faster for live eval because this evaluator never uses tokenizer/PIL processing."
+        ),
+    )
     parser.add_argument('--clip_allow_network', action='store_true', help="Allow online model fetch if local cache is missing (default off)")
     parser.add_argument(
         '--clip_backend',
@@ -2186,6 +2203,8 @@ def main(argv: list[str] | None = None):
                 args.skip_diffusers_vae_when_onnx = bool(resolved_full_eval["skip_diffusers_vae_when_onnx"])
             if "transfer_only" in resolved_full_eval and not _cli_provided("transfer_only"):
                 args.transfer_only = bool(resolved_full_eval["transfer_only"])
+            if "hf_clip_skip_processor" in resolved_full_eval and not _cli_provided("clip_hf_skip_processor"):
+                args.clip_hf_skip_processor = bool(resolved_full_eval["hf_clip_skip_processor"])
             if "image_save_workers" in resolved_full_eval and not _cli_provided("image_save_workers"):
                 args.image_save_workers = int(resolved_full_eval["image_save_workers"])
             if "image_save_backend" in resolved_full_eval and not _cli_provided("image_save_backend"):
@@ -3065,11 +3084,13 @@ def main(argv: list[str] | None = None):
                             device,
                             local_only=(not bool(args.clip_allow_network)),
                             cache_dir=str(hf_cache_dir),
+                            load_processor=(not bool(args.clip_hf_skip_processor)),
                         )
                         clip_model.eval()
                         has_clip = True
                         clip_model_tag = str(src)
-                        print(f"  CLIP Loaded (HF) from: {src}")
+                        processor_note = "processor=skipped" if bool(args.clip_hf_skip_processor) else "processor=loaded"
+                        print(f"  CLIP Loaded (HF) from: {src} ({processor_note})")
                         break
                     except Exception as load_exc:
                         last_err = load_exc
@@ -3559,6 +3580,8 @@ def main(argv: list[str] | None = None):
             "skip_diffusers_vae_when_onnx": bool(getattr(args, "skip_diffusers_vae_when_onnx", True)),
             "diffusers_vae_loaded": bool(diffusers_vae_loaded_for_generation),
             "transfer_only": bool(getattr(args, "transfer_only", False)),
+            "clip_backend": str(getattr(args, "clip_backend", "")),
+            "clip_hf_skip_processor": bool(getattr(args, "clip_hf_skip_processor", False)),
             "image_save_workers": int(args.image_save_workers),
             "image_save_backend": str(args.image_save_backend),
             "save_generated_images": bool(args.save_generated_images),
