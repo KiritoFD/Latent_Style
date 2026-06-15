@@ -58,7 +58,15 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.loss_type = str(getattr(bridge_config, "loss_type", "")).strip().lower()
         self.bridge_sigma = max(0.0, float(getattr(bridge_config, "bridge_sigma", 0.0)))
         self.i2sb_predictor_time_floor = max(0.0, float(getattr(bridge_config, "i2sb_predictor_time_floor", 0.0)))
-        self.endpoint_velocity_time_floor = max(1e-6, float(getattr(bridge_config, "endpoint_velocity_time_floor", 0.05)))
+        self.endpoint_velocity_time_floor = float(getattr(bridge_config, "endpoint_velocity_time_floor", 0.05))
+        if self.endpoint_velocity_time_floor < 0.01:
+            raise ValueError(
+                "model.endpoint_velocity_time_floor must be >= 0.01 for endpoint velocity mode. "
+                "Lower floors amplify endpoint deltas near t=1 and can silently destabilize training."
+            )
+        self.solver_corrector_mode = self._normalize_solver_corrector_mode(
+            str(getattr(bridge_config, "solver_corrector_mode", "none"))
+        )
         self.allow_style_overdrive = bool(getattr(bridge_config, "allow_style_overdrive", False))
         self.last_i2sb_transport_debug: dict[str, float] = {}
         self.solver_stochastic_noise_scale = max(0.0, float(getattr(bridge_config, "solver_stochastic_noise_scale", 0.0)))
@@ -651,11 +659,31 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         k4 = self._transport_velocity(h + dt * k3, t=t + dt, style_id=style_id, style_code_override=style_code_override)
         return h + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
 
+    @staticmethod
+    def _normalize_solver_corrector_mode(mode: str) -> str:
+        normalized = str(mode).strip().lower()
+        aliases = {
+            "": "none",
+            "off": "none",
+            "disabled": "none",
+            "lowpass": "lowpass_source_anchor",
+            "lowpass_anchor": "lowpass_source_anchor",
+            "source_lowpass": "lowpass_source_anchor",
+        }
+        normalized = aliases.get(normalized, normalized)
+        valid = {"none", "legacy_dino_lerp", "lowpass_source_anchor"}
+        if normalized not in valid:
+            raise ValueError(
+                f"Unsupported model.solver_corrector_mode={mode!r}; "
+                "expected one of 'none', 'legacy_dino_lerp', or 'lowpass_source_anchor'."
+            )
+        return normalized
+
     def _correct_transport_state(self, h: torch.Tensor, source: torch.Tensor, *, dt: float) -> torch.Tensor:
         steps = max(1, int(getattr(self, "solver_corrector_steps", 2)))
         step_size = max(0.0, float(getattr(self, "solver_corrector_step_size", 0.08)))
-        refine_mode = str(getattr(self, "solver_corrector_mode", "none")).strip().lower()
-        if refine_mode in {"", "none", "off", "disabled"}:
+        refine_mode = self._normalize_solver_corrector_mode(getattr(self, "solver_corrector_mode", "none"))
+        if refine_mode == "none":
             return h
         if refine_mode == "legacy_dino_lerp":
             gate = self._runtime_content_dino_gate(h)
@@ -666,8 +694,8 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                 out = torch.lerp(out, source, gate * step_size * dt)
             return out
 
-        # Phase-2: Latent Content Correction — anchor low-frequency structure only
-        # Preserves high-frequency style detail while pulling macro-structure back to source.
+        # Explicit diagnostic corrector: anchor low-frequency structure only.
+        # Keep it opt-in because low frequency is not a reliable content proxy for all styles.
         kernel = max(3, int(getattr(self, "solver_corrector_lowpass_kernel", 5)))
         if kernel % 2 == 0:
             kernel += 1
