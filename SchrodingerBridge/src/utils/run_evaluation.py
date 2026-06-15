@@ -105,6 +105,16 @@ def _runtime_cache_put(key: tuple, value: object) -> object:
     return value
 
 
+def _file_cache_signature(path: Path) -> tuple[str, int, int] | tuple[str, str]:
+    """Stable runtime-cache key for artifacts that are also persisted on disk."""
+
+    try:
+        stat = path.stat()
+        return (str(path.resolve()), int(stat.st_mtime_ns), int(stat.st_size))
+    except FileNotFoundError:
+        return (str(path.resolve()), "missing")
+
+
 def _manual_clip_candidates(cache_dir: Path | None = None) -> list[Path]:
     candidates: list[Path] = []
     if cache_dir is not None:
@@ -3266,13 +3276,29 @@ def main(argv: list[str] | None = None):
     # Keep reference cache independent from output regeneration.
     must_rebuild_ref_cache = bool(args.force_regen_ref_cache)
 
-    if run_full_metrics and cache_file.exists() and not must_rebuild_ref_cache:
+    ref_disk_sig = _file_cache_signature(cache_file)
+    ref_runtime_key = ("ref_features", ref_disk_sig, bool(has_clip), str(device))
+    if (
+        run_full_metrics
+        and bool(args.runtime_model_cache)
+        and not must_rebuild_ref_cache
+        and cache_file.exists()
+    ):
+        cached_ref_features = _runtime_cache_get(ref_runtime_key)
+        if isinstance(cached_ref_features, dict) and _is_ref_cache_valid(cached_ref_features, need_clip=has_clip):
+            ref_features = cached_ref_features
+            ref_cache_status = "memory_loaded"
+            print(f"Found in-process reference cache: {cache_file}")
+
+    if run_full_metrics and not ref_features and cache_file.exists() and not must_rebuild_ref_cache:
         print(f"Found global reference cache: {cache_file}")
         try:
             ref_features = torch.load(cache_file, map_location='cpu')
             if _is_ref_cache_valid(ref_features, need_clip=has_clip):
                 print("  Reference cache loaded successfully")
                 ref_cache_status = "loaded"
+                if bool(args.runtime_model_cache):
+                    _runtime_cache_put(ref_runtime_key, ref_features)
             else:
                 print("  Reference cache invalid for current metrics, rebuilding...")
                 ref_features = {}
@@ -3292,6 +3318,8 @@ def main(argv: list[str] | None = None):
                     if _is_ref_cache_valid(ref_features, need_clip=has_clip):
                         print(f"Loaded global reference cache after waiting: {cache_file}")
                         ref_cache_status = "loaded_after_wait"
+                        if bool(args.runtime_model_cache):
+                            _runtime_cache_put(("ref_features", _file_cache_signature(cache_file), bool(has_clip), str(device)), ref_features)
                     else:
                         ref_features = {}
                 except Exception:
@@ -3331,6 +3359,8 @@ def main(argv: list[str] | None = None):
                 os.replace(tmp_cache, cache_file)
                 print(f"Global reference cache saved: {cache_file}")
                 ref_cache_status = "rebuilt"
+                if bool(args.runtime_model_cache):
+                    _runtime_cache_put(("ref_features", _file_cache_signature(cache_file), bool(has_clip), str(device)), ref_features)
         finally:
             try:
                 lock_file.unlink(missing_ok=True)
@@ -3342,29 +3372,41 @@ def main(argv: list[str] | None = None):
     ref_clip_prototypes = {}  # style_id -> Tensor[1, D] (GPU)
     
     if run_full_metrics and has_clip and clip_model is not None:
-        for sid, feats in ref_features.items():
-            clips = [f['clip'] for f in feats if f['clip'] is not None]
-            if clips:
-                try:
-                    # Detect dimension dynamically from the first clip
-                    current_dim = clips[0].shape[-1]
-                    
-                    valid_clips = []
-                    for c in clips:
-                        if c.ndim == 1: c = c.unsqueeze(0)
-                        if c.shape[-1] == current_dim: valid_clips.append(c)
-                    
-                    if valid_clips:
-                        # Stack: [N, D]
-                        stacked = torch.cat(valid_clips, dim=0)
-                        # Double check norm
-                        stacked = stacked / (stacked.norm(p=2, dim=-1, keepdim=True) + 1e-8)
-                        ref_clip_matrices[sid] = stacked.to(device, dtype=torch.float32)
-                        proto = stacked.mean(dim=0, keepdim=True)
-                        proto = proto / (proto.norm(p=2, dim=-1, keepdim=True) + 1e-8)
-                        ref_clip_prototypes[sid] = proto.to(device, dtype=torch.float32)
-                except Exception as e:
-                    print(f"  闁宠法濯寸粭?Failed to prepare CLIP matrix for style {sid}: {e}")
+        proto_runtime_key = ("ref_clip_prototypes", _file_cache_signature(cache_file), str(clip_model_tag), str(device))
+        cached_proto_payload = _runtime_cache_get(proto_runtime_key) if bool(args.runtime_model_cache) else None
+        if isinstance(cached_proto_payload, dict):
+            ref_clip_matrices = cached_proto_payload.get("matrices", {}) or {}
+            ref_clip_prototypes = cached_proto_payload.get("prototypes", {}) or {}
+            print("  Reference CLIP prototypes loaded from in-process cache")
+        else:
+            for sid, feats in ref_features.items():
+                clips = [f['clip'] for f in feats if f['clip'] is not None]
+                if clips:
+                    try:
+                        # Detect dimension dynamically from the first clip
+                        current_dim = clips[0].shape[-1]
+
+                        valid_clips = []
+                        for c in clips:
+                            if c.ndim == 1: c = c.unsqueeze(0)
+                            if c.shape[-1] == current_dim: valid_clips.append(c)
+
+                        if valid_clips:
+                            # Stack: [N, D]
+                            stacked = torch.cat(valid_clips, dim=0)
+                            # Double check norm
+                            stacked = stacked / (stacked.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+                            ref_clip_matrices[sid] = stacked.to(device, dtype=torch.float32)
+                            proto = stacked.mean(dim=0, keepdim=True)
+                            proto = proto / (proto.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+                            ref_clip_prototypes[sid] = proto.to(device, dtype=torch.float32)
+                    except Exception as e:
+                        print(f"  闁宠法濯寸粭?Failed to prepare CLIP matrix for style {sid}: {e}")
+            if bool(args.runtime_model_cache):
+                _runtime_cache_put(
+                    proto_runtime_key,
+                    {"matrices": ref_clip_matrices, "prototypes": ref_clip_prototypes},
+                )
 
     fast_metric_half_cpu = (
         bool(args.eval_only_lpips_clip_style)
@@ -3405,7 +3447,26 @@ def main(argv: list[str] | None = None):
     src_cache_payload = {}
     src_cache_status = "not_used"
     must_rebuild_src_cache = bool(args.force_regen_ref_cache)
-    if src_cache_file.exists() and not must_rebuild_src_cache:
+    src_runtime_key = (
+        "src_cache_payload",
+        _file_cache_signature(src_cache_file),
+        int(src_eval_size),
+        bool(need_src_clip_cache),
+        tuple(unique_src_keys),
+    )
+    if bool(args.runtime_model_cache) and src_cache_file.exists() and not must_rebuild_src_cache:
+        cached_src_payload = _runtime_cache_get(src_runtime_key)
+        if isinstance(cached_src_payload, dict) and _is_source_cache_valid(
+            cached_src_payload,
+            image_size=src_eval_size,
+            need_clip=need_src_clip_cache,
+            keys=set(unique_src_keys),
+        ):
+            src_cache_payload = cached_src_payload
+            src_cache_status = "memory_loaded"
+            print(f"Found in-process source cache: {src_cache_file}")
+
+    if not src_cache_payload and src_cache_file.exists() and not must_rebuild_src_cache:
         print(f"Found global source cache: {src_cache_file}")
         try:
             src_cache_payload = torch.load(src_cache_file, map_location='cpu')
@@ -3417,6 +3478,8 @@ def main(argv: list[str] | None = None):
             ):
                 print("  Source cache loaded successfully")
                 src_cache_status = "loaded"
+                if bool(args.runtime_model_cache):
+                    _runtime_cache_put(src_runtime_key, src_cache_payload)
             else:
                 print("  Source cache invalid for current eval settings, rebuilding...")
                 src_cache_payload = {}
@@ -3439,6 +3502,17 @@ def main(argv: list[str] | None = None):
                     ):
                         print(f"Loaded global source cache after waiting: {src_cache_file}")
                         src_cache_status = "loaded_after_wait"
+                        if bool(args.runtime_model_cache):
+                            _runtime_cache_put(
+                                (
+                                    "src_cache_payload",
+                                    _file_cache_signature(src_cache_file),
+                                    int(src_eval_size),
+                                    bool(need_src_clip_cache),
+                                    tuple(unique_src_keys),
+                                ),
+                                src_cache_payload,
+                            )
                     else:
                         src_cache_payload = {}
                 except Exception:
@@ -3478,6 +3552,17 @@ def main(argv: list[str] | None = None):
                 os.replace(tmp_src_cache, src_cache_file)
                 print(f"Global source cache saved: {src_cache_file}")
                 src_cache_status = "rebuilt"
+                if bool(args.runtime_model_cache):
+                    _runtime_cache_put(
+                        (
+                            "src_cache_payload",
+                            _file_cache_signature(src_cache_file),
+                            int(src_eval_size),
+                            bool(need_src_clip_cache),
+                            tuple(unique_src_keys),
+                        ),
+                        src_cache_payload,
+                    )
         finally:
             try:
                 src_cache_lock.unlink(missing_ok=True)

@@ -66,12 +66,39 @@ path while keeping the rest of the experiment fixed.
 
 ## Running Eval Curve
 
-Pending. Expected local mirror:
+Local mirror:
 `docs/experiments/phase2_fiber_bundle/eval/actuation_mixed_bodydecoder_k070_e3_b32bf16_vlen010/clip_lpips_curve.csv`
 
 | epoch | transfer CLIP-S | transfer LPIPS | eval wall | transfer-only |
 |---|---:|---:|---:|---:|
+| e1 | 0.672607 | 0.334239 | 90.19s | yes |
+| e2 | 0.673771 | 0.350758 | 87.27s | yes |
+| e3 | 0.673342 | 0.352926 | 87.43s | yes |
+| e4 | 0.673095 | 0.352603 | 91.26s | yes |
+| e5 | 0.673355 | 0.352523 | 86.89s | yes |
+| e6 | 0.672937 | 0.350028 | 85.20s | yes |
+| e7 | 0.672841 | 0.350166 | 85.18s | yes |
+| e8 | 0.672608 | 0.350489 | 89.68s | yes |
+| e9 | 0.672805 | 0.351310 | 85.69s | yes |
+| e10 | 0.673065 | 0.352618 | 85.15s | yes |
+| e11 | 0.672882 | 0.350660 | 82.15s | yes |
+| e12 | 0.672977 | 0.352374 | 82.63s | yes |
+| e13 | 0.672790 | 0.350746 | 83.34s | yes |
+| e14 | 0.672662 | 0.351001 | 83.56s | yes |
+| e15 | 0.672634 | 0.350382 | 83.55s | yes |
 
 ## Closure Decision
 
-Pending.
+Closed as `converged_not_promoted`.
+
+- Best style point: `epoch_0002`, transfer `0.673771 / 0.350758`.
+- Formal convergence: `true`, `since_best=13`, `since_last_pareto=9`,
+  `tail_flat=true`.
+- Matched read: the best point does not beat the R16 full-board frontier
+  (`0.674395 / 0.352223`) and is far below the style-priority Seedream target.
+- Interpretation: moving style actuation into body+decoder feature injection
+  was safe but did not break generated-delta collinearity. Archive as negative
+  evidence and do not continue this lane.
+
+Closure note:
+`docs/experiments/phase2_fiber_bundle/actuation_mixed_bodydecoder_k070_e3_closure.md`
