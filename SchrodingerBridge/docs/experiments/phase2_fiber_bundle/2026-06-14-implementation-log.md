@@ -547,3 +547,33 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
     source groups.
 - Decision: enable this switch for the next generated-style-section experiment
   and include it in closure criteria.
+
+## Fast Eval Source-Latent Cache
+
+- Trigger: live `CLIP-S + LPIPS` eval was still too slow for per-checkpoint
+  convergence reads. The fast10 path already avoided PNG roundtrips and used a
+  fixed-batch ONNX VAE decoder, but every checkpoint still re-encoded the same
+  source images through the VAE and ran LPIPS in small chunks.
+- Implementation:
+  - Added default-off `full_eval.source_latent_cache` /
+    `training.full_eval_source_latent_cache`.
+  - Cache key includes source path, file size, mtime, VAE id, image size, and
+    latent scale, so dataset or VAE changes do not silently reuse stale latents.
+  - Cached latents are still passed through `LGTInference.inversion()` to keep
+    future non-identity inversion compatible.
+  - `eval_lpips_chunk_size <= 0` now means “use the current metric batch size”;
+    this reduces fragmented LPIPS/VGG calls in fast live eval while allowing an
+    explicit smaller chunk if VRAM requires it.
+- Remote validation on WSL, proximal `epoch_0009`, transfer-only
+  `max_src_samples=1` (`20` generated pairs):
+  - Pass 1 rebuilt source-latent cache: outer wall `33.35s`, evaluator wall
+    `20.20s`, cache build `1.67s`, metric loop `0.90s`.
+  - Pass 2 loaded source-latent cache: outer wall `22.29s`, evaluator wall
+    `12.41s`, cache load `0.06s`, metric loop `0.64s`.
+  - Effective speedup after cache warmup: about `33%` by process wall and
+    about `39%` by evaluator-internal wall on the small smoke.
+- Active fast/live contract update: the phase2 proximal fast config now enables
+  `full_eval_source_latent_cache=true` and uses
+  `full_eval_lpips_chunk_size=0`. Keep full-transfer confirmation for closure;
+  use this path only for live convergence curves unless explicitly promoted to
+  the formal full-board eval contract.
