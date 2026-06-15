@@ -146,6 +146,10 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
     onnx_trt_cache_dir = str(getattr(train_cfg, "full_eval_vae_onnx_trt_cache_dir", "") or "").strip()
     if onnx_trt_cache_dir:
         cmd += ["--vae_onnx_trt_cache_dir", onnx_trt_cache_dir]
+    if bool(getattr(train_cfg, "full_eval_skip_diffusers_vae_when_onnx", True)):
+        cmd.append("--skip_diffusers_vae_when_onnx")
+    else:
+        cmd.append("--no-skip_diffusers_vae_when_onnx")
     if train_cfg.full_eval_only_lpips_clip_style is not None:
         cmd += ["--eval_only_lpips_clip_style" if bool(train_cfg.full_eval_only_lpips_clip_style) else "--no-eval_only_lpips_clip_style"]
     if bool(getattr(train_cfg, "full_eval_transfer_only", False)):

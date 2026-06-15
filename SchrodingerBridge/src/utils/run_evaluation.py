@@ -1833,6 +1833,14 @@ def main():
     parser.add_argument('--vae_onnx_decoder', type=str, default="", help="Optional fixed-shape ONNX VAE decoder for faster eval decode.")
     parser.add_argument('--vae_onnx_tensorrt', action='store_true', help="Use TensorRT EP for --vae_onnx_decoder when available.")
     parser.add_argument('--vae_onnx_trt_cache_dir', type=str, default="", help="TensorRT engine cache directory for --vae_onnx_decoder.")
+    parser.add_argument(
+        "--skip_diffusers_vae_when_onnx",
+        dest="skip_diffusers_vae_when_onnx",
+        action="store_true",
+        default=bool(full_eval_defaults.get("skip_diffusers_vae_when_onnx", True)),
+        help="When source latents are cached and ONNX decode is enabled, skip loading the diffusers VAE.",
+    )
+    parser.add_argument("--no-skip_diffusers_vae_when_onnx", dest="skip_diffusers_vae_when_onnx", action="store_false")
     parser.add_argument('--style_adapter', type=str, default="", help="Optional external style adapter (.pt) to override tokenizer state and, on legacy families only, style_spatial_id_16")
     parser.add_argument('--max_src_samples', type=int, default=int(full_eval_defaults.get("max_src_samples", 30)), help="Max source images per style; <=0 means all")
     parser.add_argument('--max_ref_compare', type=int, default=int(full_eval_defaults.get("max_ref_compare", 50)), help="Max refs for LPIPS style compare; <=0 means all cached refs")
@@ -2173,6 +2181,8 @@ def main():
                 args.vae_onnx_tensorrt = bool(resolved_full_eval["vae_onnx_tensorrt"])
             if "vae_onnx_trt_cache_dir" in resolved_full_eval and not _cli_provided("vae_onnx_trt_cache_dir"):
                 args.vae_onnx_trt_cache_dir = str(resolved_full_eval["vae_onnx_trt_cache_dir"])
+            if "skip_diffusers_vae_when_onnx" in resolved_full_eval and not _cli_provided("skip_diffusers_vae_when_onnx"):
+                args.skip_diffusers_vae_when_onnx = bool(resolved_full_eval["skip_diffusers_vae_when_onnx"])
             if "transfer_only" in resolved_full_eval and not _cli_provided("transfer_only"):
                 args.transfer_only = bool(resolved_full_eval["transfer_only"])
             if "image_save_workers" in resolved_full_eval and not _cli_provided("image_save_workers"):
@@ -2358,6 +2368,7 @@ def main():
     wall_start = time.perf_counter()
     source_latent_cache_status = "not_used"
     source_latent_cache_path = ""
+    diffusers_vae_loaded_for_generation = False
 
     auto_reuse, found_generated = _should_auto_reuse_generated(
         out_dir=out_dir,
@@ -2451,17 +2462,45 @@ def main():
         )
         _sync_cuda_if(device, bool(args.profile_timing))
         _add_timing(timings, "load_lancet", t0)
-        t0 = time.perf_counter()
-        vae = load_vae(
-            device,
-            model_id=str(args.vae_model),
-            cache_dir=str(hf_cache_dir),
-            compile_decoder=bool(args.vae_compile_decoder),
-            compile_method=str(args.vae_compile_method),
-            compile_mode=str(args.vae_compile_mode),
-            compile_fullgraph=bool(args.vae_compile_fullgraph),
-            compile_cache_dir=str(args.vae_compile_cache_dir),
+        latent_postprocess_needs_vae = (
+            latent_postprocess_mode == "style_latent_affine"
+            and float(args.latent_postprocess_strength) > 0.0
         )
+        can_try_onnx_decode_only = (
+            bool(getattr(args, "skip_diffusers_vae_when_onnx", True))
+            and vae_onnx_decoder_path is not None
+            and bool(getattr(args, "source_latent_cache", False))
+            and not latent_postprocess_needs_vae
+        )
+
+        vae = None
+        vae_scale_hint = float(args.vae_decode_scale) if args.vae_decode_scale is not None else 0.18215
+
+        def _load_diffusers_vae(reason: str):
+            nonlocal vae
+            if vae is not None:
+                return vae
+            t_load = time.perf_counter()
+            vae = load_vae(
+                device,
+                model_id=str(args.vae_model),
+                cache_dir=str(hf_cache_dir),
+                compile_decoder=bool(args.vae_compile_decoder),
+                compile_method=str(args.vae_compile_method),
+                compile_mode=str(args.vae_compile_mode),
+                compile_fullgraph=bool(args.vae_compile_fullgraph),
+                compile_cache_dir=str(args.vae_compile_cache_dir),
+            )
+            _sync_cuda_if(device, bool(args.profile_timing))
+            _add_timing(timings, "load_vae", t_load)
+            if reason:
+                print(f"  Diffusers VAE loaded: {reason}")
+            return vae
+
+        if can_try_onnx_decode_only:
+            print("  ONNX decode-only fast path: defer diffusers VAE load until source-cache miss.")
+        else:
+            _load_diffusers_vae("required by eval settings")
         ort_vae = None
         if vae_onnx_decoder_path is not None:
             t_ort = time.perf_counter()
@@ -2480,10 +2519,12 @@ def main():
             except Exception as exc:
                 print(f"  WARNING: VAE ONNX decoder unavailable ({exc}); falling back to diffusers decode.")
                 ort_vae = None
-        _sync_cuda_if(device, bool(args.profile_timing))
-        _add_timing(timings, "load_vae", t0)
         model_scale = float(getattr(lgt.model, "latent_scale_factor", 0.18215))
-        vae_scale = float(getattr(getattr(vae, "config", None), "scaling_factor", model_scale))
+        vae_scale = (
+            float(getattr(getattr(vae, "config", None), "scaling_factor", model_scale))
+            if vae is not None
+            else float(vae_scale_hint)
+        )
         scale_in = model_scale / max(vae_scale, 1e-8)
         scale_out = vae_scale / max(model_scale, 1e-8)
         if abs(scale_in - 1.0) > 1e-4:
@@ -2519,6 +2560,7 @@ def main():
                     payload = {}
             missing_keys = [k for k in sorted(source_keys) if k not in source_latent_cache]
             if missing_keys:
+                _load_diffusers_vae("source latent cache miss")
                 print(f"  Building source latent cache: {source_latent_cache_file} ({len(missing_keys)} missing)")
                 cache_items = dict(source_latent_cache)
                 src_bs = max(1, int(args.generation_batch_size) if int(args.generation_batch_size) > 0 else int(args.batch_size))
@@ -2556,6 +2598,7 @@ def main():
             _sync_cuda_if(device, bool(args.profile_timing))
             _add_timing(timings, "source_latent_cache", t_cache)
         if latent_postprocess_mode == "style_latent_affine" and float(args.latent_postprocess_strength) > 0.0:
+            _load_diffusers_vae("latent postprocess reference statistics")
             latent_post_means, latent_post_stds = _compute_style_latent_stats(
                 test_images,
                 vae=vae,
@@ -2678,7 +2721,11 @@ def main():
                             t0 = time.perf_counter()
                             if ort_vae is not None:
                                 decode_scale = float(
-                                    getattr(getattr(vae, "config", None), "scaling_factor", model_scale)
+                                    (
+                                        getattr(getattr(vae, "config", None), "scaling_factor", model_scale)
+                                        if vae is not None
+                                        else vae_scale
+                                    )
                                     if args.vae_decode_scale is None
                                     else args.vae_decode_scale
                                 )
@@ -2687,6 +2734,7 @@ def main():
                                 except Exception as exc:
                                     print(f"  WARNING: VAE ONNX decode failed ({exc}); disabling ONNX decoder for this eval.")
                                     ort_vae = None
+                                    _load_diffusers_vae("ONNX decoder failure fallback")
                                     imgs_gen = decode_latent(
                                         vae,
                                         latents_gen[dec_start:dec_end],
@@ -2694,6 +2742,7 @@ def main():
                                         scaling_factor=args.vae_decode_scale,
                                     )
                             else:
+                                _load_diffusers_vae("ONNX decoder unavailable for latent decode")
                                 imgs_gen = decode_latent(
                                     vae,
                                     latents_gen[dec_start:dec_end],
@@ -2771,6 +2820,8 @@ def main():
                             del imgs_gen, imgs_gen_cpu, imgs_gen_u8_cpu
                         del repeated_latents, tgt_ids, latents_gen, pair_latents, pair_tgt_ids
 
+        diffusers_vae_loaded_for_generation = bool(vae is not None)
+
         # Unload Generation Models
         del lgt, vae
         if ort_vae is not None:
@@ -2812,6 +2863,8 @@ def main():
                 "vae_onnx_decoder": str(vae_onnx_decoder_path or ""),
                 "vae_onnx_tensorrt": bool(args.vae_onnx_tensorrt),
                 "vae_onnx_trt_cache_dir": str(vae_onnx_trt_cache_dir or ""),
+                "skip_diffusers_vae_when_onnx": bool(getattr(args, "skip_diffusers_vae_when_onnx", True)),
+                "diffusers_vae_loaded": bool(diffusers_vae_loaded_for_generation),
                 "transfer_only": bool(getattr(args, "transfer_only", False)),
                 "image_save_workers": int(args.image_save_workers),
                 "image_save_backend": str(args.image_save_backend),
@@ -3502,6 +3555,8 @@ def main():
             "vae_onnx_decoder": str(vae_onnx_decoder_path or ""),
             "vae_onnx_tensorrt": bool(args.vae_onnx_tensorrt),
             "vae_onnx_trt_cache_dir": str(vae_onnx_trt_cache_dir or ""),
+            "skip_diffusers_vae_when_onnx": bool(getattr(args, "skip_diffusers_vae_when_onnx", True)),
+            "diffusers_vae_loaded": bool(diffusers_vae_loaded_for_generation),
             "transfer_only": bool(getattr(args, "transfer_only", False)),
             "image_save_workers": int(args.image_save_workers),
             "image_save_backend": str(args.image_save_backend),

@@ -577,3 +577,78 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
   `full_eval_lpips_chunk_size=0`. Keep full-transfer confirmation for closure;
   use this path only for live convergence curves unless explicitly promoted to
   the formal full-board eval contract.
+
+## Pre-Decoder Style Section Probe
+
+- Trigger: output-side delta-basis and proximal texture residual both produced
+  only mild style lift. The current diagnosis is that style freedom is being
+  compressed near `dec_out`, so the next controlled mechanism must act before
+  the final output head rather than after it.
+- Implementation:
+  - Added default-off `model.style_delta_mode=predec_section`.
+  - The module builds a style-conditioned low-rank feature section from decoder
+    features `h` and injects it before `dec_out`.
+  - `style_section_out` and the final style-weight layer are zero initialized,
+    making the new path an initial no-op.
+  - Existing `freeze_mode=injection_only` now includes only the new
+    `style_section_*` modules when this mode is enabled.
+  - Runtime/training observability reuses `last_style_delta_debug` and records
+    `style_predec_section_abs`, RMS, relative RMS, rank, basis magnitude, and
+    weight magnitude.
+- Local validation:
+  - compile smoke passed for `model.py`, `trainer.py`, `config_schema.py`,
+    `run.py`, and `run_evaluation.py`.
+  - random forward smoke produced finite output and
+    `style_predec_section_active=1`, while initial `section_abs/rms=0`.
+- Remote validation:
+  - 2-step WSL training smoke resumed the `k070 epoch_0003` parent with
+    `missing=10`, exactly matching the new zero-init section tensors.
+  - `freeze_mode=injection_only` selected only the ten `style_section_*`
+    parameter tensors.
+  - smoke peak memory was about `2.05GB`.
+- Formal launch:
+  - run id
+    `aaai2027_phase2_actuation_predec_section_k070_e3_b16a2bf16_vlen010`.
+  - remote log `logs/predec_section_20260616_012934.log`.
+  - first health check: `3041 / 12288 MiB`, util `89%`, power `137.73W`.
+  - low VRAM is expected for this injection-only mechanism and is not treated
+    as a failure.
+
+## Fast Eval VAE-Skip And Batch Probe
+
+- Trigger: the live fast10 `CLIP-S + LPIPS` path was still too slow for tight
+  per-checkpoint convergence reads.
+- Implementation:
+  - Added default-on `full_eval.skip_diffusers_vae_when_onnx` /
+    `training.full_eval_skip_diffusers_vae_when_onnx`.
+  - When ONNX VAE decode is enabled, source latent cache is enabled, and no
+    latent postprocess needs VAE encoding, `run_evaluation.py` defers and can
+    fully skip loading the diffusers VAE.
+  - Summary settings now record `skip_diffusers_vae_when_onnx` and
+    `diffusers_vae_loaded`.
+- Validation:
+  - e6 pre-decoder fast10 eval confirmed
+    `skip_diffusers_vae_when_onnx=true`,
+    `diffusers_vae_loaded=false`, and
+    `source_latent_cache_status=loaded`.
+  - e6 timing: `wall_total=26.85s`, `lancet_generation=5.93s`,
+    `vae_decode=8.41s`, `eval_metrics_loop=3.62s`.
+  - The gain versus warmed e2-e5 was only about `0.3-0.5s`, so diffusers VAE
+    cold load was not the main bottleneck.
+- Negative batch probe:
+  - Temporarily increased live eval generation batch from `8` to `10` and
+    metric batch from `16` to `32` for e8.
+  - It reduced generation chunks from `7` to `5`, but internal wall worsened to
+    `30.12s` and trainer wall to `44.5s`.
+  - Reverted to generation `8` and metric `16`.
+- Operational fixes:
+  - Fixed an e6 crash where summary observability referenced `vae` after the
+    generation phase had deleted it; the flag is now cached before releasing
+    generation models.
+  - Manually re-ran e6 eval and refreshed the curve.
+  - e9 eval was interrupted during the negative batch-probe rollback and must
+    be re-run before family closure so the all-checkpoint curve is complete.
+- Decision: keep the safe ONNX decode-only VAE skip. Do not increase live eval
+  batch on the 3060 lane. For a material speedup, use a separate fixed fast5
+  live contract or implement a persistent evaluator that avoids per-checkpoint
+  process/model cold starts.

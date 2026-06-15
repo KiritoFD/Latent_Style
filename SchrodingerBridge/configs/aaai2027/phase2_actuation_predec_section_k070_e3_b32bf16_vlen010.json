@@ -1,0 +1,48 @@
+{
+  "_base": "./phase2_actuation_delta_basis_k070_e3_b32bf16_vlen010.json",
+  "model": {
+    "style_injection_mode": "none",
+    "style_delta_mode": "predec_section",
+    "style_delta_rank": 8,
+    "style_delta_hidden_dim": 64,
+    "style_delta_scale": 0.0,
+    "style_delta_highpass_kernel": 5,
+    "style_delta_force_highpass": true,
+    "style_section_hidden_dim": 96,
+    "style_section_scale": 0.10,
+    "style_section_force_highpass": true,
+    "proximal_mode": "off",
+    "proximal_residual_energy_weight": 0.0,
+    "allow_style_overdrive": false,
+    "solver_corrector_mode": "none"
+  },
+  "bridge": {
+    "proximal_target_weight": 0.0
+  },
+  "training": {
+    "num_epochs": 18,
+    "full_eval_output_subdir": "full_eval_fast10",
+    "full_eval_batch_size": 4,
+    "full_eval_generation_batch_size": 8,
+    "full_eval_metric_batch_size": 16,
+    "full_eval_max_src_samples": 10,
+    "full_eval_target_chunk_size": 5,
+    "full_eval_vae_decode_batch_size": 16,
+    "full_eval_vae_onnx_decoder": "../eval_cache/vae_onnx/ema_b16_32/decoder.onnx",
+    "full_eval_transfer_only": true,
+    "full_eval_profile_timing": false,
+    "full_eval_keep_generated_on_device": true,
+    "full_eval_source_latent_cache": true,
+    "full_eval_delta_observability": true,
+    "full_eval_lpips_chunk_size": 0
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_actuation_predec_section_k070_e3_b32bf16_vlen010"
+  },
+  "ablation": {
+    "name": "phase2_actuation_predec_section_k070_e3_b32bf16_vlen010",
+    "axis": "phase2_fiber_actuation_bottleneck",
+    "stage": "actuation_predec_style_section",
+    "notes": "Controlled generated-delta rank probe after output delta-basis/proximal texture plateau. Keep k070 epoch_0003 parent, tokenizer, solver, losses, TopoGate, appearance, virtual_length=0.10, and fast10 transfer eval fixed. Replace only the output-side delta basis with a zero-init style-conditioned pre-decoder feature section before dec_out, train only that section under freeze_mode=injection_only, and record generated-delta rank/offdiag every retained checkpoint."
+  }
+}

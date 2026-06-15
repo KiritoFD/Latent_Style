@@ -160,7 +160,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                     int(getattr(bridge_config, "style_injection_hidden_dim", 64)),
                 )
         self.style_delta_mode = str(getattr(bridge_config, "style_delta_mode", "none")).strip().lower()
-        if self.style_delta_mode not in {"none", "basis"}:
+        if self.style_delta_mode not in {"none", "basis", "predec_section"}:
             self.style_delta_mode = "none"
         self.style_delta_rank = max(1, int(getattr(bridge_config, "style_delta_rank", 4)))
         self.style_delta_scale = max(0.0, float(getattr(bridge_config, "style_delta_scale", 0.15)))
@@ -170,6 +170,11 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.style_delta_force_highpass = bool(getattr(bridge_config, "style_delta_force_highpass", True))
         self.style_delta_basis_proj: nn.Conv2d | None = None
         self.style_delta_weight_head: nn.Module | None = None
+        self.style_section_basis_proj: nn.Conv2d | None = None
+        self.style_section_weight_head: nn.Module | None = None
+        self.style_section_out: nn.Conv2d | None = None
+        self.style_section_scale = max(0.0, float(getattr(bridge_config, "style_section_scale", 0.10)))
+        self.style_section_force_highpass = bool(getattr(bridge_config, "style_section_force_highpass", True))
         self.last_style_delta_debug: dict[str, float] = {}
         if self.style_delta_mode == "basis" and self.style_delta_scale > 0.0:
             self.style_delta_basis_proj = nn.Conv2d(
@@ -193,6 +198,39 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             if isinstance(last, nn.Linear):
                 nn.init.zeros_(last.weight)
                 nn.init.zeros_(last.bias)
+        if self.style_delta_mode == "predec_section" and self.style_section_scale > 0.0:
+            rank = int(self.style_delta_rank)
+            hidden = max(4, int(getattr(bridge_config, "style_section_hidden_dim", 64)))
+            self.style_section_basis_proj = nn.Conv2d(
+                int(self.lift_channels),
+                int(self.lift_channels) * rank,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+            )
+            self.style_section_weight_head = nn.Sequential(
+                nn.LayerNorm(int(self.bridge_style_dim)),
+                nn.Linear(int(self.bridge_style_dim), hidden),
+                nn.SiLU(),
+                nn.Linear(hidden, rank),
+            )
+            self.style_section_out = nn.Conv2d(
+                int(self.lift_channels),
+                int(self.lift_channels),
+                kernel_size=1,
+                stride=1,
+                padding=0,
+            )
+            nn.init.normal_(self.style_section_basis_proj.weight, mean=0.0, std=0.02)
+            if self.style_section_basis_proj.bias is not None:
+                nn.init.zeros_(self.style_section_basis_proj.bias)
+            last = self.style_section_weight_head[-1]
+            if isinstance(last, nn.Linear):
+                nn.init.zeros_(last.weight)
+                nn.init.zeros_(last.bias)
+            nn.init.zeros_(self.style_section_out.weight)
+            if self.style_section_out.bias is not None:
+                nn.init.zeros_(self.style_section_out.bias)
         self.time_mlp = nn.Sequential(
             nn.Linear(self.time_dim, self.bridge_style_dim),
             nn.SiLU(),
@@ -465,6 +503,52 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         low = F.avg_pool2d(x.float(), kernel_size=self.style_delta_highpass_kernel, stride=1, padding=pad)
         return x - low.to(dtype=x.dtype)
 
+    def _style_section_highpass(self, x: torch.Tensor) -> torch.Tensor:
+        if not self.style_section_force_highpass:
+            return x
+        pad = self.style_delta_highpass_kernel // 2
+        low = F.avg_pool2d(x.float(), kernel_size=self.style_delta_highpass_kernel, stride=1, padding=pad)
+        return x - low.to(dtype=x.dtype)
+
+    def _apply_predec_style_section(
+        self,
+        h: torch.Tensor,
+        style_code: torch.Tensor | None,
+    ) -> torch.Tensor:
+        if (
+            self.style_delta_mode != "predec_section"
+            or self.style_section_scale <= 0.0
+            or self.style_section_basis_proj is None
+            or self.style_section_weight_head is None
+            or self.style_section_out is None
+            or style_code is None
+        ):
+            if self.style_delta_mode == "predec_section":
+                self.last_style_delta_debug = {"style_predec_section_active": 0.0}
+            return h
+        bsz, ch, h_dim, w_dim = h.shape
+        rank = int(self.style_delta_rank)
+        basis = self.style_section_basis_proj(h.float()).view(bsz, rank, ch, h_dim, w_dim)
+        weights = torch.tanh(self.style_section_weight_head(style_code).float())
+        section = torch.einsum("br,brchw->bchw", weights, basis)
+        section = self._style_section_highpass(section.to(dtype=h.dtype))
+        section = self.style_section_out(section.float()).to(dtype=h.dtype)
+        section = torch.tanh(section.float()).to(dtype=h.dtype) * float(self.style_section_scale)
+        with torch.no_grad():
+            base_rms = h.detach().float().square().mean().sqrt().clamp_min(1e-8)
+            section_rms = section.detach().float().square().mean().sqrt()
+            self.last_style_delta_debug = {
+                "style_predec_section_active": 1.0,
+                "style_predec_section_rank": float(rank),
+                "style_predec_section_basis_abs": float(basis.detach().float().abs().mean().cpu().item()),
+                "style_predec_section_weight_abs": float(weights.detach().float().abs().mean().cpu().item()),
+                "style_predec_section_abs": float(section.detach().float().abs().mean().cpu().item()),
+                "style_predec_section_rms": float(section_rms.cpu().item()),
+                "style_predec_section_rel_rms": float((section_rms / base_rms).cpu().item()),
+                "style_predec_section_scale": float(self.style_section_scale),
+            }
+        return h + section
+
     def _apply_style_delta_basis(
         self,
         delta: torch.Tensor,
@@ -478,7 +562,8 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             or self.style_delta_weight_head is None
             or style_code is None
         ):
-            self.last_style_delta_debug = {"style_delta_basis_active": 0.0}
+            if self.style_delta_mode != "predec_section":
+                self.last_style_delta_debug = {"style_delta_basis_active": 0.0}
             return delta
         bsz, _, h_dim, w_dim = delta.shape
         rank = int(self.style_delta_rank)
@@ -564,6 +649,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         x: torch.Tensor | None = None,
         style_code: torch.Tensor | None = None,
     ) -> torch.Tensor:
+        h = self._apply_predec_style_section(h, style_code)
         raw_delta = self.dec_out(h)
         if bool(getattr(self, "use_diffeomorphic_stroke", False)):
             if x is None:
