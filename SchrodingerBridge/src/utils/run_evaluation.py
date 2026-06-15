@@ -1404,6 +1404,40 @@ def _is_source_cache_valid(source_cache: dict, *, image_size: int, need_clip: bo
     return True
 
 
+def _source_latent_cache_hash(
+    paths: list[str | Path],
+    *,
+    vae_model: str,
+    scale_in: float,
+    image_size: int,
+) -> str:
+    h = hashlib.md5()
+    h.update(str(vae_model).encode("utf-8"))
+    h.update(f"|scale={float(scale_in):.8f}|size={int(image_size)}|".encode("utf-8"))
+    for path_like in sorted({_source_path_key(p) for p in paths}):
+        p = Path(path_like)
+        h.update(path_like.encode("utf-8"))
+        try:
+            stat = p.stat()
+            h.update(f"|{int(stat.st_size)}:{int(stat.st_mtime_ns)}".encode("utf-8"))
+        except OSError:
+            h.update(b"|missing")
+    return h.hexdigest()[:12]
+
+
+def _is_source_latent_cache_valid(payload: dict, *, keys: set[str]) -> bool:
+    if not isinstance(payload, dict) or not keys:
+        return False
+    items = payload.get("items")
+    if not isinstance(items, dict):
+        return False
+    for key in keys:
+        latent = items.get(key)
+        if not isinstance(latent, torch.Tensor) or latent.ndim != 3:
+            return False
+    return True
+
+
 def _participation_effective_rank(mat: torch.Tensor) -> float:
     if mat.ndim != 2 or mat.shape[0] < 2:
         return 0.0
@@ -1675,6 +1709,8 @@ def _auto_run_missing_full_eval(args) -> None:
             "--max_ref_cache", str(args.max_ref_cache),
             "--ref_feature_batch_size", str(args.ref_feature_batch_size),
             "--batch_size", str(args.batch_size),
+            "--generation_batch_size", str(args.generation_batch_size),
+            "--metric_batch_size", str(args.metric_batch_size),
             "--target_chunk_size", str(args.target_chunk_size),
             "--vae_decode_batch_size", str(args.vae_decode_batch_size),
             "--vae_onnx_decoder", str(args.vae_onnx_decoder),
@@ -1704,6 +1740,7 @@ def _auto_run_missing_full_eval(args) -> None:
             "--introstyle_t", str(args.introstyle_t),
             "--introstyle_up_ft_index", str(args.introstyle_up_ft_index),
             "--introstyle_ensemble_size", str(args.introstyle_ensemble_size),
+            "--eval_lpips_chunk_size", str(args.eval_lpips_chunk_size),
         ]
         if bool(args.allow_metric_postprocess):
             cmd.append("--allow_metric_postprocess")
@@ -1750,6 +1787,8 @@ def _auto_run_missing_full_eval(args) -> None:
             cmd += ["--no-save_summary_grid"]
         if bool(getattr(args, "eval_delta_observability", False)):
             cmd += ["--eval_delta_observability"]
+        if bool(getattr(args, "source_latent_cache", False)):
+            cmd += ["--source_latent_cache"]
         if not bool(args.eval_only_lpips_clip_style):
             cmd += ["--no-eval_only_lpips_clip_style"]
         if bool(getattr(args, "transfer_only", False)):
@@ -1854,6 +1893,12 @@ def main():
         action='store_true',
         default=bool(full_eval_defaults.get("delta_observability", False)),
         help="Record generated latent-delta effective rank and off-diagonal cosine observability.",
+    )
+    parser.add_argument(
+        '--source_latent_cache',
+        action='store_true',
+        default=bool(full_eval_defaults.get("source_latent_cache", False)),
+        help="Cache VAE-encoded source latents across checkpoint evals for faster live convergence reads.",
     )
     parser.add_argument('--force_regen', action='store_true', help="Force regenerate evaluation outputs/metrics (does not rebuild global ref cache)")
     parser.add_argument('--force_regen_ref_cache', action='store_true', help="Force rebuild global reference-feature cache only")
@@ -1963,7 +2008,10 @@ def main():
         '--eval_lpips_chunk_size',
         type=int,
         default=int(full_eval_defaults.get("lpips_chunk_size", 4)),
-        help="LPIPS chunk size. CUDA OOM automatically retries with smaller chunks unless CPU fallback is disabled.",
+        help=(
+            "LPIPS chunk size; <=0 uses the current metric batch size. "
+            "CUDA OOM automatically retries with smaller chunks unless CPU fallback is disabled."
+        ),
     )
     parser.add_argument('--eval_lpips_no_cpu_fallback', action='store_true', help="Disable CPU fallback when LPIPS CUDA OOM occurs")
     parser.add_argument(
@@ -2139,6 +2187,8 @@ def main():
                 args.keep_generated_on_device = bool(resolved_full_eval["keep_generated_on_device"])
             if "delta_observability" in resolved_full_eval and not _cli_provided("eval_delta_observability"):
                 args.eval_delta_observability = bool(resolved_full_eval["delta_observability"])
+            if "source_latent_cache" in resolved_full_eval and not _cli_provided("source_latent_cache"):
+                args.source_latent_cache = bool(resolved_full_eval["source_latent_cache"])
             if "lpips_chunk_size" in resolved_full_eval and not _cli_provided("eval_lpips_chunk_size"):
                 args.eval_lpips_chunk_size = int(resolved_full_eval["lpips_chunk_size"])
             if "enable_introstyle" in resolved_full_eval and not _cli_provided("eval_enable_introstyle"):
@@ -2306,6 +2356,8 @@ def main():
     )
     timings: dict[str, float] = {}
     wall_start = time.perf_counter()
+    source_latent_cache_status = "not_used"
+    source_latent_cache_path = ""
 
     auto_reuse, found_generated = _should_auto_reuse_generated(
         out_dir=out_dir,
@@ -2436,6 +2488,73 @@ def main():
         scale_out = vae_scale / max(model_scale, 1e-8)
         if abs(scale_in - 1.0) > 1e-4:
             print(f"WARNING: latent scale mismatch (model={model_scale:.6f}, vae={vae_scale:.6f}). Applying rescale.")
+        source_latent_cache: dict[str, torch.Tensor] = {}
+        source_latent_cache_status = "disabled"
+        if bool(getattr(args, "source_latent_cache", False)):
+            t_cache = time.perf_counter()
+            source_keys = {_source_path_key(item["path"]) for item in all_src_info}
+            cache_hash = _source_latent_cache_hash(
+                [item["path"] for item in all_src_info],
+                vae_model=str(args.vae_model),
+                scale_in=scale_in,
+                image_size=256,
+            )
+            source_latent_cache_file = cache_dir / f"source_latents_{cache_hash}.pt"
+            source_latent_cache_path = str(source_latent_cache_file)
+            payload = {}
+            if source_latent_cache_file.exists():
+                try:
+                    payload = torch.load(source_latent_cache_file, map_location="cpu")
+                    if _is_source_latent_cache_valid(payload, keys=source_keys):
+                        source_latent_cache = {
+                            str(k): v
+                            for k, v in payload.get("items", {}).items()
+                            if isinstance(v, torch.Tensor)
+                        }
+                        source_latent_cache_status = "loaded"
+                    else:
+                        payload = {}
+                except Exception as exc:
+                    print(f"  WARNING: source latent cache load failed ({exc}); rebuilding.")
+                    payload = {}
+            missing_keys = [k for k in sorted(source_keys) if k not in source_latent_cache]
+            if missing_keys:
+                print(f"  Building source latent cache: {source_latent_cache_file} ({len(missing_keys)} missing)")
+                cache_items = dict(source_latent_cache)
+                src_bs = max(1, int(args.generation_batch_size) if int(args.generation_batch_size) > 0 else int(args.batch_size))
+                for b_start in tqdm(range(0, len(missing_keys), src_bs), desc="Encoding source latents"):
+                    batch_keys = missing_keys[b_start:b_start + src_bs]
+                    batch_imgs = torch.stack(
+                        [_load_eval_image_tensor(Path(key), size=256) for key in batch_keys],
+                        dim=0,
+                    ).to(device)
+                    with torch.no_grad():
+                        lat = encode_image(vae, batch_imgs, device)
+                        if abs(scale_in - 1.0) > 1e-4:
+                            lat = lat * scale_in
+                    lat_cpu = lat.detach().to(device="cpu", dtype=torch.float16).contiguous()
+                    for idx, key in enumerate(batch_keys):
+                        cache_items[key] = lat_cpu[idx].clone()
+                    del batch_imgs, lat, lat_cpu
+                payload = {
+                    "meta": {
+                        "vae_model": str(args.vae_model),
+                        "scale_in": float(scale_in),
+                        "image_size": 256,
+                        "count": int(len(cache_items)),
+                    },
+                    "items": cache_items,
+                }
+                tmp_latent_cache = source_latent_cache_file.with_suffix(
+                    source_latent_cache_file.suffix + f".tmp.{os.getpid()}"
+                )
+                torch.save(payload, tmp_latent_cache)
+                os.replace(tmp_latent_cache, source_latent_cache_file)
+                source_latent_cache = cache_items
+                source_latent_cache_status = "rebuilt"
+            print(f"  Source latent cache {source_latent_cache_status}: {source_latent_cache_file}")
+            _sync_cuda_if(device, bool(args.profile_timing))
+            _add_timing(timings, "source_latent_cache", t_cache)
         if latent_postprocess_mode == "style_latent_affine" and float(args.latent_postprocess_strength) > 0.0:
             latent_post_means, latent_post_stds = _compute_style_latent_stats(
                 test_images,
@@ -2458,26 +2577,42 @@ def main():
             batch_info = all_src_info[b_start:b_end]
             print(f"  Generating Batch {b_start//generation_batch_size + 1}/{(num_src_total-1)//generation_batch_size + 1}")
 
-            # Load Source Images
             t0 = time.perf_counter()
-            src_tensors = []
-            for item in batch_info:
-                src_tensors.append(_load_eval_image_tensor(item['path']))
+            cached_latents = []
+            if bool(getattr(args, "source_latent_cache", False)) and source_latent_cache:
+                for item in batch_info:
+                    cached_latents.append(source_latent_cache.get(_source_path_key(item["path"])))
+            use_cached_latents = bool(cached_latents) and all(isinstance(x, torch.Tensor) for x in cached_latents)
+            if use_cached_latents:
+                latents_x0 = torch.stack([x for x in cached_latents if isinstance(x, torch.Tensor)], dim=0).to(
+                    device=device,
+                    dtype=torch.float16,
+                    non_blocking=True,
+                )
+                with torch.no_grad():
+                    latents_x0 = lgt.inversion(latents_x0)
+                _sync_cuda_if(device, bool(args.profile_timing))
+                _add_timing(timings, "source_latent_cache_load", t0)
+            else:
+                src_tensors = []
+                for item in batch_info:
+                    src_tensors.append(_load_eval_image_tensor(item['path']))
 
-            src_batch = torch.stack(src_tensors).to(device)
-            _sync_cuda_if(device, bool(args.profile_timing))
-            _add_timing(timings, "source_load_to_device", t0)
+                src_batch = torch.stack(src_tensors).to(device)
+                _sync_cuda_if(device, bool(args.profile_timing))
+                _add_timing(timings, "source_load_to_device", t0)
 
             with torch.autocast('cuda', dtype=torch.bfloat16):
                 with torch.no_grad():
-                    # Inversion
-                    t0 = time.perf_counter()
-                    latents_src = encode_image(vae, src_batch, device)
-                    if abs(scale_in - 1.0) > 1e-4:
-                        latents_src = latents_src * scale_in
-                    latents_x0 = lgt.inversion(latents_src)
-                    _sync_cuda_if(device, bool(args.profile_timing))
-                    _add_timing(timings, "encode_inversion", t0)
+                    if not use_cached_latents:
+                        # Inversion is identity today, but keep the call for compatibility.
+                        t0 = time.perf_counter()
+                        latents_src = encode_image(vae, src_batch, device)
+                        if abs(scale_in - 1.0) > 1e-4:
+                            latents_src = latents_src * scale_in
+                        latents_x0 = lgt.inversion(latents_src)
+                        _sync_cuda_if(device, bool(args.profile_timing))
+                        _add_timing(timings, "encode_inversion", t0)
 
                     target_chunk = max(1, min(num_styles, int(args.target_chunk_size)))
                     default_decode_bs = max(1, len(batch_info) * target_chunk)
@@ -2683,6 +2818,9 @@ def main():
                 "save_generated_images": bool(args.save_generated_images),
                 "keep_generated_on_device": bool(getattr(args, "keep_generated_on_device", True)),
                 "delta_observability": bool(getattr(args, "eval_delta_observability", False)),
+                "source_latent_cache": bool(getattr(args, "source_latent_cache", False)),
+                "source_latent_cache_status": str(source_latent_cache_status),
+                "source_latent_cache_path": str(source_latent_cache_path),
                 "generated_delta_observability": _summarize_generated_delta_observability(generated_delta_observability_records),
                 "lpips_chunk_size": int(args.eval_lpips_chunk_size),
                 "profile_timing": bool(args.profile_timing),
@@ -3194,7 +3332,8 @@ def main():
             if loss_fn:
                 gen_f32 = gen_imgs.float()
                 src_f32 = src_imgs.float()
-                lpips_chunk = max(1, int(args.eval_lpips_chunk_size))
+                requested_lpips_chunk = int(args.eval_lpips_chunk_size)
+                lpips_chunk = len(batch_items) if requested_lpips_chunk <= 0 else max(1, requested_lpips_chunk)
                 lpips_cpu_fallback = not bool(args.eval_lpips_no_cpu_fallback)
                 dists = _lpips_forward_safe(
                     loss_fn,
@@ -3369,6 +3508,9 @@ def main():
             "save_generated_images": bool(args.save_generated_images),
             "keep_generated_on_device": bool(getattr(args, "keep_generated_on_device", True)),
             "delta_observability": bool(getattr(args, "eval_delta_observability", False)),
+            "source_latent_cache": bool(getattr(args, "source_latent_cache", False)),
+            "source_latent_cache_status": str(source_latent_cache_status),
+            "source_latent_cache_path": str(source_latent_cache_path),
             "generated_delta_observability": _summarize_generated_delta_observability(generated_delta_observability_records),
             "lpips_chunk_size": int(args.eval_lpips_chunk_size),
             "profile_timing": bool(args.profile_timing),

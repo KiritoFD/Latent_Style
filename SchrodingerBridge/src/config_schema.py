@@ -63,6 +63,7 @@ INFERENCE_DEFAULTS: dict[str, dict[str, Any]] = {
         "save_summary_grid": False,
         "keep_generated_on_device": True,
         "delta_observability": False,
+        "source_latent_cache": False,
         "lpips_chunk_size": 4,
     },
 }
@@ -629,6 +630,7 @@ class TrainingConfig:
     full_eval_save_summary_grid: bool | None = False
     full_eval_keep_generated_on_device: bool = True
     full_eval_delta_observability: bool = False
+    full_eval_source_latent_cache: bool = False
     full_eval_lpips_chunk_size: int = 4
     full_eval_each_epoch: bool = False
     full_eval_defer_until_training_end: bool = False
@@ -918,6 +920,7 @@ def resolve_full_eval_section(config: dict[str, Any] | ExperimentConfig | None) 
             "save_summary_grid": "full_eval_save_summary_grid",
             "keep_generated_on_device": "full_eval_keep_generated_on_device",
             "delta_observability": "full_eval_delta_observability",
+            "source_latent_cache": "full_eval_source_latent_cache",
             "lpips_chunk_size": "full_eval_lpips_chunk_size",
         }
         for dst_key, src_key in mapping.items():
@@ -1007,6 +1010,7 @@ def compact_runtime_config(config: dict[str, Any] | ExperimentConfig | None) -> 
             "full_eval_save_summary_grid": "save_summary_grid",
             "full_eval_keep_generated_on_device": "keep_generated_on_device",
             "full_eval_delta_observability": "delta_observability",
+            "full_eval_source_latent_cache": "source_latent_cache",
             "full_eval_lpips_chunk_size": "lpips_chunk_size",
         }
         for train_key, default_key in mapping.items():

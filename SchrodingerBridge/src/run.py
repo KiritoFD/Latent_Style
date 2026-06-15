@@ -150,7 +150,7 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
         cmd += ["--eval_only_lpips_clip_style" if bool(train_cfg.full_eval_only_lpips_clip_style) else "--no-eval_only_lpips_clip_style"]
     if bool(getattr(train_cfg, "full_eval_transfer_only", False)):
         cmd.append("--transfer_only")
-    cmd += ["--eval_lpips_chunk_size", str(max(1, int(getattr(train_cfg, "full_eval_lpips_chunk_size", 4))))]
+    cmd += ["--eval_lpips_chunk_size", str(int(getattr(train_cfg, "full_eval_lpips_chunk_size", 4)))]
     cmd += ["--postprocess_mode", str(train_cfg.full_eval_postprocess_mode)]
     cmd += ["--postprocess_strength", str(float(train_cfg.full_eval_postprocess_strength))]
     cmd += ["--postprocess_mean_strength", str(float(train_cfg.full_eval_postprocess_mean_strength))]
@@ -194,6 +194,8 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
     ]
     if bool(getattr(train_cfg, "full_eval_delta_observability", False)):
         cmd.append("--eval_delta_observability")
+    if bool(getattr(train_cfg, "full_eval_source_latent_cache", False)):
+        cmd.append("--source_latent_cache")
     if bool(train_cfg.full_eval_force_regen):
         cmd.append("--force_regen")
     if bool(train_cfg.full_eval_profile_timing):
