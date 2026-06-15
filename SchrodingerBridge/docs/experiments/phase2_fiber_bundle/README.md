@@ -103,6 +103,15 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 - Latest point: e2 `0.683612 / 0.407860`.
 - Decision: `cost_stopped_mixed_negative`. The run is useful negative evidence that the mixed endpoint/PnP/fiberwise route is too structure-expensive, but it is not a valid single-mechanism conclusion.
 
+## Current Style Overdrive Diagnostic
+
+- Run: `style_overdrive_k070_e3`.
+- Closure note: `style_overdrive_k070_e3_closure.md`.
+- Best pure-overdrive transfer point: `s160` `0.683721 / 0.295983`.
+- Best pure-overdrive balanced point: `s135` `0.678224 / 0.288947`.
+- Best style-stat diagnostic with latent affine: `s160_lataff045` `0.686336 / 0.315394`.
+- Decision: `diagnostic_only_not_promoted`. These points expose style headroom but rely on out-of-domain integration and/or metric-affecting calibration.
+
 ## Current Style-Release Cost Stop
 
 - `k070_kin070` was launched as the next least-invasive training-side style-release probe after SMoE closure.
