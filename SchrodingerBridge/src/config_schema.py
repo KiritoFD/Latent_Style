@@ -365,6 +365,9 @@ class ModelConfig:
     style_section_hidden_dim: int = 64
     style_section_scale: float = 0.10
     style_section_force_highpass: bool = True
+    style_head_adapter_hidden_dim: int = 32
+    style_head_adapter_scale: float = 0.10
+    style_head_adapter_force_highpass: bool = False
     use_style_blender: bool = False
     solver_rk_order: int = 4
     solver_corrector_steps: int = 1
