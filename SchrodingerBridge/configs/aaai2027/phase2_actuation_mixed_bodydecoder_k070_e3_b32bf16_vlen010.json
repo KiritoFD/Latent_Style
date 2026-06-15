@@ -16,7 +16,7 @@
     "full_eval_target_chunk_size": 5,
     "full_eval_vae_decode_batch_size": 20,
     "full_eval_transfer_only": true,
-    "full_eval_profile_timing": true,
+    "full_eval_profile_timing": false,
     "full_eval_keep_generated_on_device": true,
     "full_eval_lpips_chunk_size": 8
   },

@@ -120,6 +120,19 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
         cmd += ["--target_chunk_size", str(int(train_cfg.full_eval_target_chunk_size))]
     if train_cfg.full_eval_vae_decode_batch_size is not None:
         cmd += ["--vae_decode_batch_size", str(int(train_cfg.full_eval_vae_decode_batch_size))]
+    if bool(getattr(train_cfg, "full_eval_vae_compile_decoder", False)):
+        cmd.append("--vae_compile_decoder")
+    compile_method = str(getattr(train_cfg, "full_eval_vae_compile_method", "") or "").strip()
+    if compile_method:
+        cmd += ["--vae_compile_method", compile_method]
+    compile_mode = str(getattr(train_cfg, "full_eval_vae_compile_mode", "") or "").strip()
+    if compile_mode:
+        cmd += ["--vae_compile_mode", compile_mode]
+    if bool(getattr(train_cfg, "full_eval_vae_compile_fullgraph", False)):
+        cmd.append("--vae_compile_fullgraph")
+    compile_cache_dir = str(getattr(train_cfg, "full_eval_vae_compile_cache_dir", "") or "").strip()
+    if compile_cache_dir:
+        cmd += ["--vae_compile_cache_dir", compile_cache_dir]
     if train_cfg.full_eval_only_lpips_clip_style is not None:
         cmd += ["--eval_only_lpips_clip_style" if bool(train_cfg.full_eval_only_lpips_clip_style) else "--no-eval_only_lpips_clip_style"]
     if bool(getattr(train_cfg, "full_eval_transfer_only", False)):

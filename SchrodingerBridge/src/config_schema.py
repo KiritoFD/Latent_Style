@@ -29,6 +29,11 @@ INFERENCE_DEFAULTS: dict[str, dict[str, Any]] = {
         "ref_feature_batch_size": 8,
         "target_chunk_size": 2,
         "vae_decode_batch_size": 16,
+        "vae_compile_decoder": False,
+        "vae_compile_method": "pt2",
+        "vae_compile_mode": "reduce-overhead",
+        "vae_compile_fullgraph": False,
+        "vae_compile_cache_dir": "",
         "only_lpips_clip_style": True,
         "transfer_only": False,
         "postprocess_mode": "none",
@@ -584,6 +589,11 @@ class TrainingConfig:
     full_eval_ref_feature_batch_size: int | None = None
     full_eval_target_chunk_size: int | None = 2
     full_eval_vae_decode_batch_size: int | None = 16
+    full_eval_vae_compile_decoder: bool = False
+    full_eval_vae_compile_method: str = "pt2"
+    full_eval_vae_compile_mode: str = "reduce-overhead"
+    full_eval_vae_compile_fullgraph: bool = False
+    full_eval_vae_compile_cache_dir: str = ""
     full_eval_only_lpips_clip_style: bool | None = None
     full_eval_transfer_only: bool = False
     full_eval_postprocess_mode: str = "none"
@@ -863,6 +873,11 @@ def resolve_full_eval_section(config: dict[str, Any] | ExperimentConfig | None) 
             "ref_feature_batch_size": "full_eval_ref_feature_batch_size",
             "target_chunk_size": "full_eval_target_chunk_size",
             "vae_decode_batch_size": "full_eval_vae_decode_batch_size",
+            "vae_compile_decoder": "full_eval_vae_compile_decoder",
+            "vae_compile_method": "full_eval_vae_compile_method",
+            "vae_compile_mode": "full_eval_vae_compile_mode",
+            "vae_compile_fullgraph": "full_eval_vae_compile_fullgraph",
+            "vae_compile_cache_dir": "full_eval_vae_compile_cache_dir",
             "only_lpips_clip_style": "full_eval_only_lpips_clip_style",
             "transfer_only": "full_eval_transfer_only",
             "postprocess_mode": "full_eval_postprocess_mode",
@@ -942,6 +957,11 @@ def compact_runtime_config(config: dict[str, Any] | ExperimentConfig | None) -> 
             "full_eval_ref_feature_batch_size": "ref_feature_batch_size",
             "full_eval_target_chunk_size": "target_chunk_size",
             "full_eval_vae_decode_batch_size": "vae_decode_batch_size",
+            "full_eval_vae_compile_decoder": "vae_compile_decoder",
+            "full_eval_vae_compile_method": "vae_compile_method",
+            "full_eval_vae_compile_mode": "vae_compile_mode",
+            "full_eval_vae_compile_fullgraph": "vae_compile_fullgraph",
+            "full_eval_vae_compile_cache_dir": "vae_compile_cache_dir",
             "full_eval_only_lpips_clip_style": "only_lpips_clip_style",
             "full_eval_transfer_only": "transfer_only",
             "full_eval_postprocess_mode": "postprocess_mode",
