@@ -54,12 +54,16 @@ Curve CSV:
 | epoch | transfer CLIP-S | transfer LPIPS | eval wall | transfer-only |
 |---|---:|---:|---:|---:|
 | 1 | 0.674387 | 0.344712 | 93.92s | yes |
+| 2 | 0.674525 | 0.352222 | 93.44s | yes |
+| 3 | 0.673936 | 0.349550 | 93.56s | yes |
 
 Interim read: e1 is already above the S030 full-board closure point
 (`0.674200 / 0.353881`) and above S030 e20 transfer-only style
 (`0.674338`) while keeping LPIPS much lower (`0.344712`). This is a useful
-early positive for the "fiber section capacity" hypothesis. Continue to
-formal convergence; do not promote on a single epoch.
+early positive for the "fiber section capacity" hypothesis. e2 improves style
+again to `0.674525` but with LPIPS rising to `0.352222`; e3 then regresses to
+`0.673936 / 0.349550`. Continue to formal convergence; the rank16 signal is
+not yet stable enough for promotion or closure.
 
 ## Closure Decision
 
