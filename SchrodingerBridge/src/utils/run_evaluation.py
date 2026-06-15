@@ -1669,6 +1669,8 @@ def _auto_run_missing_full_eval(args) -> None:
             cmd += ["--no-save_summary_grid"]
         if not bool(args.eval_only_lpips_clip_style):
             cmd += ["--no-eval_only_lpips_clip_style"]
+        if bool(getattr(args, "transfer_only", False)):
+            cmd += ["--transfer_only"]
         if bool(args.eval_enable_introstyle):
             cmd += ["--eval_enable_introstyle"]
         else:
@@ -1775,6 +1777,12 @@ def main():
             "Compute only content LPIPS and CLIP style similarity by default. "
             "Use --no-eval_only_lpips_clip_style to also compute clip_dir and clip_content."
         ),
+    )
+    parser.add_argument(
+        '--transfer_only',
+        action='store_true',
+        default=bool(full_eval_defaults.get("transfer_only", False)),
+        help="Skip identity src_style==tgt_style pairs for fast convergence eval. Default off for full board comparability.",
     )
     parser.add_argument(
         '--eval_enable_introstyle',
@@ -1983,6 +1991,8 @@ def main():
                 args.target_chunk_size = int(resolved_full_eval["target_chunk_size"])
             if "vae_decode_batch_size" in resolved_full_eval and not _cli_provided("vae_decode_batch_size"):
                 args.vae_decode_batch_size = int(resolved_full_eval["vae_decode_batch_size"])
+            if "transfer_only" in resolved_full_eval and not _cli_provided("transfer_only"):
+                args.transfer_only = bool(resolved_full_eval["transfer_only"])
             if "image_save_workers" in resolved_full_eval and not _cli_provided("image_save_workers"):
                 args.image_save_workers = int(resolved_full_eval["image_save_workers"])
             if "image_save_backend" in resolved_full_eval and not _cli_provided("image_save_backend"):
@@ -2145,7 +2155,14 @@ def main():
     src_lookup = {(x["style_name"], x["path"].stem): x["path"] for x in all_src_info}
     num_src_total = len(all_src_info)
     num_styles = len(style_subdirs)
-    expected_generated = num_src_total * num_styles
+    transfer_only = bool(getattr(args, "transfer_only", False))
+    if transfer_only:
+        print("Transfer-only eval enabled: skipping identity src_style==tgt_style pairs.")
+    expected_generated = (
+        sum(max(0, num_styles - 1) for _ in all_src_info)
+        if transfer_only
+        else num_src_total * num_styles
+    )
     timings: dict[str, float] = {}
     wall_start = time.perf_counter()
 
@@ -2182,6 +2199,8 @@ def main():
             if parsed is None:
                 continue
             src_style, src_stem, tgt_style = parsed
+            if transfer_only and src_style == tgt_style:
+                continue
             src_path = src_lookup.get((src_style, src_stem))
             tgt_id = style_name_to_id.get(tgt_style)
             if src_path is None or tgt_id is None:
@@ -2303,14 +2322,22 @@ def main():
                     for tgt_start in range(0, num_styles, target_chunk):
                         tgt_end = min(num_styles, tgt_start + target_chunk)
                         chunk_style_ids = list(range(tgt_start, tgt_end))
-                        repeated_latents = latents_x0.repeat(len(chunk_style_ids), 1, 1, 1)
-                        tgt_ids = torch.cat(
-                            [
-                                torch.full((len(batch_info),), tgt_id, device=device, dtype=torch.long)
-                                for tgt_id in chunk_style_ids
-                            ],
-                            dim=0,
-                        )
+                        pair_latents = []
+                        pair_tgt_ids = []
+                        meta = []
+                        for tgt_id in chunk_style_ids:
+                            tgt_name = style_subdirs[tgt_id]
+                            for src_idx, src_item in enumerate(batch_info):
+                                if transfer_only and int(src_item["style_id"]) == int(tgt_id):
+                                    continue
+                                out_name = f"{src_item['style_name']}_{src_item['path'].stem}_to_{tgt_name}.png"
+                                pair_latents.append(latents_x0[src_idx:src_idx + 1])
+                                pair_tgt_ids.append(int(tgt_id))
+                                meta.append((src_item, tgt_name, tgt_id, out_name))
+                        if not pair_latents:
+                            continue
+                        repeated_latents = torch.cat(pair_latents, dim=0)
+                        tgt_ids = torch.tensor(pair_tgt_ids, device=device, dtype=torch.long)
                         t0 = time.perf_counter()
                         latents_gen = lgt.generation(repeated_latents, tgt_ids)
                         chunk_runtime_observability = _runtime_observability_from_model(getattr(lgt, "model", None))
@@ -2329,13 +2356,6 @@ def main():
                             latents_gen = latents_gen * scale_out
                         _sync_cuda_if(device, bool(args.profile_timing))
                         _add_timing(timings, "lancet_generation", t0)
-
-                        meta = []
-                        for tgt_id in chunk_style_ids:
-                            tgt_name = style_subdirs[tgt_id]
-                            for src_item in batch_info:
-                                out_name = f"{src_item['style_name']}_{src_item['path'].stem}_to_{tgt_name}.png"
-                                meta.append((src_item, tgt_name, tgt_id, out_name))
 
                         for dec_start in range(0, latents_gen.shape[0], vae_decode_bs):
                             dec_end = min(latents_gen.shape[0], dec_start + vae_decode_bs)
@@ -2410,7 +2430,7 @@ def main():
                             if save_generated_images:
                                 _add_timing(timings, "image_save_submit", t0)
                             del imgs_gen, imgs_gen_cpu, imgs_gen_u8_cpu
-                        del repeated_latents, tgt_ids, latents_gen
+                        del repeated_latents, tgt_ids, latents_gen, pair_latents, pair_tgt_ids
 
         # Unload Generation Models
         del lgt, vae
@@ -2441,6 +2461,7 @@ def main():
                 "batch_size": int(args.batch_size),
                 "target_chunk_size": int(args.target_chunk_size),
                 "vae_decode_batch_size": int(args.vae_decode_batch_size),
+                "transfer_only": bool(getattr(args, "transfer_only", False)),
                 "image_save_workers": int(args.image_save_workers),
                 "image_save_backend": str(args.image_save_backend),
                 "save_generated_images": bool(args.save_generated_images),
@@ -3100,6 +3121,7 @@ def main():
             "batch_size": int(args.batch_size),
             "target_chunk_size": int(args.target_chunk_size),
             "vae_decode_batch_size": int(args.vae_decode_batch_size),
+            "transfer_only": bool(getattr(args, "transfer_only", False)),
             "image_save_workers": int(args.image_save_workers),
             "image_save_backend": str(args.image_save_backend),
             "save_generated_images": bool(args.save_generated_images),

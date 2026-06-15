@@ -118,6 +118,8 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
         cmd += ["--vae_decode_batch_size", str(int(train_cfg.full_eval_vae_decode_batch_size))]
     if train_cfg.full_eval_only_lpips_clip_style is not None:
         cmd += ["--eval_only_lpips_clip_style" if bool(train_cfg.full_eval_only_lpips_clip_style) else "--no-eval_only_lpips_clip_style"]
+    if bool(getattr(train_cfg, "full_eval_transfer_only", False)):
+        cmd.append("--transfer_only")
     cmd += ["--postprocess_mode", str(train_cfg.full_eval_postprocess_mode)]
     cmd += ["--postprocess_strength", str(float(train_cfg.full_eval_postprocess_strength))]
     cmd += ["--postprocess_mean_strength", str(float(train_cfg.full_eval_postprocess_mean_strength))]
