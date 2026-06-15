@@ -72,10 +72,9 @@ def _single_eval(root: Path, argv: list[str]) -> int:
     src_dir = root / "src"
     if str(src_dir) not in sys.path:
         sys.path.insert(0, str(src_dir))
-    sys.argv = [sys.argv[0], *argv]
-    import runpy
+    from utils.run_evaluation import main as eval_main
 
-    runpy.run_module("utils.run_evaluation", run_name="__main__")
+    eval_main(argv)
     return 0
 
 
@@ -224,13 +223,22 @@ def _write_batch_summary(out_root: Path, rows: list[dict[str, object]]) -> None:
             writer.writerow({key: row.get(key) for key in viewer_fieldnames})
 
 
-def _collect_batch_rows(root: Path, ckpt_dir: Path, output_root: Path, passthrough: list[str]) -> tuple[list[dict[str, object]], int]:
+def _collect_batch_rows(
+    root: Path,
+    ckpt_dir: Path,
+    output_root: Path,
+    passthrough: list[str],
+    *,
+    batch_in_process: bool = False,
+) -> tuple[list[dict[str, object]], int]:
     ckpts = _find_ckpts(ckpt_dir)
     rows: list[dict[str, object]] = []
     fail_count = 0
     experiment_id = ckpt_dir.name
     force_rerun = _has_flag(passthrough, "--force")
     passthrough = _strip_flag(passthrough, "--force")
+    passthrough = _strip_flag(passthrough, "--batch_in_process")
+    passthrough = _strip_flag(passthrough, "--batch-in-process")
     for ckpt in ckpts:
         epoch_name = ckpt.stem
         out_dir = output_root / epoch_name
@@ -250,21 +258,33 @@ def _collect_batch_rows(root: Path, ckpt_dir: Path, output_root: Path, passthrou
             rows.append(row)
             continue
 
-        cmd = [sys.executable, str(root / "run_evaluation.py"), str(ckpt), "--output", str(out_dir), *passthrough]
         print(f"\n[{epoch_name}] eval -> {out_dir}")
-        result = subprocess.run(cmd, cwd=root)
+        returncode = 0
+        if batch_in_process:
+            argv = ["--checkpoint", str(ckpt), "--output", str(out_dir), *passthrough]
+            try:
+                _single_eval(root, argv)
+            except SystemExit as exc:
+                returncode = int(exc.code or 0) if isinstance(exc.code, int) else 1
+            except Exception as exc:
+                returncode = 1
+                print(f"[{epoch_name}] in-process eval failed: {exc}")
+        else:
+            cmd = [sys.executable, str(root / "run_evaluation.py"), str(ckpt), "--output", str(out_dir), *passthrough]
+            result = subprocess.run(cmd, cwd=root)
+            returncode = int(result.returncode)
         row: dict[str, object] = {
             "experiment_id": experiment_id,
             "epoch": epoch_name,
             "checkpoint_path": str(ckpt),
             "output_dir": str(out_dir),
-            "status": "ok" if result.returncode == 0 else "fail",
-            "returncode": result.returncode,
+            "status": "ok" if returncode == 0 else "fail",
+            "returncode": returncode,
             "summary_exists": summary_path.exists(),
         }
         if summary_path.exists():
             row.update(_summary_metrics(summary_path))
-        if result.returncode != 0:
+        if returncode != 0:
             fail_count += 1
         rows.append(row)
     return rows, fail_count
@@ -279,12 +299,14 @@ def _batch_eval(root: Path, ckpt_dir: Path, argv: list[str]) -> int:
     output_flag = _flag_value(argv, "--output")
     output_root = Path(output_flag).resolve() if output_flag else (ckpt_dir / "full_eval")
     passthrough = _strip_flag(argv, "--output")
+    batch_in_process = _has_flag(passthrough, "--batch_in_process") or _has_flag(passthrough, "--batch-in-process")
 
     print(f"Batch eval | ckpt dir: {ckpt_dir}")
     print(f"Batch eval | output root: {output_root}")
     print(f"Batch eval | checkpoints: {len(ckpts)}")
+    print(f"Batch eval | in-process reuse: {batch_in_process}")
 
-    rows, fail_count = _collect_batch_rows(root, ckpt_dir, output_root, passthrough)
+    rows, fail_count = _collect_batch_rows(root, ckpt_dir, output_root, passthrough, batch_in_process=batch_in_process)
 
     _write_batch_summary(output_root, rows)
     print(f"\nBatch eval finished | failures: {fail_count} | summary: {output_root / 'batch_summary.csv'}")
@@ -300,17 +322,25 @@ def _multi_experiment_eval(root: Path, parent_dir: Path, argv: list[str]) -> int
     output_flag = _flag_value(argv, "--output")
     output_root = Path(output_flag).resolve() if output_flag else (parent_dir / "full_eval")
     passthrough = _strip_flag(argv, "--output")
+    batch_in_process = _has_flag(passthrough, "--batch_in_process") or _has_flag(passthrough, "--batch-in-process")
 
     print(f"Multi-experiment eval | parent dir: {parent_dir}")
     print(f"Multi-experiment eval | output root: {output_root}")
     print(f"Multi-experiment eval | experiments: {len(exp_dirs)}")
+    print(f"Multi-experiment eval | in-process reuse: {batch_in_process}")
 
     all_rows: list[dict[str, object]] = []
     fail_count = 0
     for exp_dir in exp_dirs:
         exp_output_root = output_root / exp_dir.name
         print(f"\n== Experiment: {exp_dir.name} ==")
-        rows, exp_fail = _collect_batch_rows(root, exp_dir, exp_output_root, passthrough)
+        rows, exp_fail = _collect_batch_rows(
+            root,
+            exp_dir,
+            exp_output_root,
+            passthrough,
+            batch_in_process=batch_in_process,
+        )
         _write_batch_summary(exp_output_root, rows)
         all_rows.extend(rows)
         fail_count += exp_fail
