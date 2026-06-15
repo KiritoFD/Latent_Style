@@ -11,6 +11,8 @@
 | [THEORY_RESET_2026-05-16.md](THEORY_RESET_2026-05-16.md) | 理论重置：围绕最小可验证声明重建 |
 | [DECISION_TREE_AND_EXPERIMENT_PLAN.md](DECISION_TREE_AND_EXPERIMENT_PLAN.md) | 数学决策树和实验计划 |
 | [REFLECTIONS.md](REFLECTIONS.md) | 实验反思与理论修正（中文） |
+| [20260615_fiber_bundle/theory_and_logs.md](20260615_fiber_bundle/theory_and_logs.md) | 风格纤维丛与随机流桥：数学设计与实验反思日志 (2026-06-15) |
+| [20260615_fiber_bundle/style_overdrive_latent_affine.md](20260615_fiber_bundle/style_overdrive_latent_affine.md) | 风格超驱动与潜空间仿射校准：纤维丛几何外推理论与实验日志 (2026-06-15) |
 
 ## 实验证据
 

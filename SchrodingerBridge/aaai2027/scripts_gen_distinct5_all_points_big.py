@@ -559,7 +559,14 @@ def plot(rows: list[dict[str, object]]) -> None:
         color="#333333",
         bbox=dict(boxstyle="round,pad=0.18", fc="white", ec="#BBBBBB", lw=0.6, alpha=0.92),
     )
-    ax.legend(legend_handles, legend_labels, loc="center left", bbox_to_anchor=(1.01, 0.5), frameon=False)
+    ax.legend(
+        legend_handles,
+        legend_labels,
+        loc="lower right",
+        bbox_to_anchor=(0.985, 0.02),
+        borderaxespad=0.0,
+        frameon=False,
+    )
 
     fig.savefig(OUT_PDF)
     fig.savefig(OUT_PNG)

@@ -77,44 +77,54 @@ $$\mathcal{L}_{\text{SWD}} = \sum_{k=1}^K \text{SWD}\left( \alpha_k \odot z_1, \
 
 | 实验 ID | Tokenizer / Solver 组合 | 训练参数 / 权重 | clip_style | content_lpips | 评估结论与反思 |
 | :--- | :--- | :--- | :---: | :---: | :--- |
-| `smoe_translator` ODE | SMoE + ODE | `resume_checkpoint` e8 | 0.7022 | 0.3304 | **均值坍缩**：确定性流导致笔触平滑，style 卡在 0.70。LPIPS 保留优异。 |
+| `smoe_translator` ODE | SMoE + ODE | `resume_checkpoint` e8 | 0.7022 | 0.3153 | **均值坍缩**：确定性流导致笔触平滑，style 卡在 0.70。LPIPS 保留优异。 |
 | `i2sb_endpoint` Scratch | SDE + Scratch (sigma=0.25) | 无 parent 从头训练 | 0.7248 | 0.7153 | **结构崩塌**：没有内容先验锚定，LPIPS 严重超标。 |
 | **`smoe_fiber_sde_k070` (e1)** | **SMoE + SDE (sigma=0.02) + SWD_16** | **Parent warm-start, e1** | **0.7045** | **0.3404** | **理论首度跑通**：LPIPS (0.340) 安全，且 Style 开始从 0.7019 往上抬升。 |
 | **`smoe_fiber_sde_k070` (e2)** | **SMoE + SDE (sigma=0.02) + SWD_16** | **Parent warm-start, e2** | **0.7038** | **0.3224** | **结构强力收拢**：LPIPS 大幅下降到 0.322，内容保真度极佳，Style 稳定在 0.704。 |
 | **`smoe_fiber_sde_k070` (e3)** | **SMoE + SDE (sigma=0.02) + SWD_16** | **Parent warm-start, e3** | **0.7035** | **0.3259** | **收敛稳定状态**：LPIPS 稳定在 0.326，Style 稳定在 0.7035，已完全进入稳定收敛区间。 |
+| **`smoe_fiber_sde_k070` (e4)** | **SMoE + SDE (sigma=0.02) + SWD_16** | **Parent warm-start, e4** | **0.7032** | **0.3284** | **最终训练模型**：SDE 稳定收敛。虽然 LPIPS 控制得极佳，但由于训练噪声尺度 0.02 较小，CLIP Style 存在软天花板。 |
 
 ---
 
-### 3.2 优化 SDE 训练阶段进展 (`task-571` 运行日志)
+### 3.2 优化 SDE 训练与测试期扫描进展
 
-目前，我们正在利用 WSL 远程环境运行 `aaai2027_phase2_smoe_fiber_sde_fiberwise_swd_k070` 联合训练与评估实验。
+#### 3.2.1 训练期进展 (`task-571` 运行日志)
+我们利用 WSL 远程环境运行 `aaai2027_phase2_smoe_fiber_sde_fiberwise_swd_k070` 联合训练与评估实验，4 个 Epoch 训练已于 2026-06-15 07:23 顺利结束。
+最终 checkpoint `epoch_0004.pt` 的手动评估（All-Pairs）结果为：
+- **CLIP Style**: `0.7032`
+- **Content LPIPS**: `0.3284` (成功把结构保真度控制在 `< 0.35` 之下)
 
-#### Epoch 1 评估细节 (2026-06-15 05:16:53)
-- **checkpoint**: `exp/aaai2027_phase2_smoe_fiber_sde_fiberwise_swd_k070/epoch_0001.pt`
-- **运行性能**: 依靠降低 SWD 投影数（`swd_num_projections = 16`），单步耗时降至 **1.33s - 1.45s / it**，训练效率提升 **3.6 倍**。
-- **总体结果 (All-Pairs Overview)**:
-  - **CLIP Style**: `0.7045`
-  - **Content LPIPS**: `0.3404` (严格控制在 LPIPS 安全线 `< 0.35` 之下)
+#### 3.2.2 推理期 SDE 噪声尺度 (Sigma) 扫描 (Cheap SDE Sweep)
+为了探究增大随机扩散项对边界可达性的影响，我们在 `epoch_0004.pt` 模型上进行了 test-time SDE 噪声尺度扫描（SDE 求解器采用 `solver_unsb_cycle`）：
+- **sigma = 0.02** (baseline): Style = `0.7034` | LPIPS = `0.3283`
+- **sigma = 0.03**: Style = `0.7041` | LPIPS = `0.3301`
+- **sigma = 0.04**: Style = `0.7049` | LPIPS = `0.3330`
+- **sigma = 0.05**: Style = `0.7061` | LPIPS = `0.3368`
+- **sigma = 0.06**: Style = `0.7075` | LPIPS = `0.3415`
+- **sigma = 0.08**: Style = `0.7090` | LPIPS = `0.3532` (LPIPS 开始越过 0.35 警戒线)
+- **反思**：单纯在测试期增大 SDE 噪声，会使得随机项对结构的破坏力以快于风格增加的速度上升。仅凭测试期加噪，style 上限卡在 0.71 左右。
 
-#### Epoch 2 评估细节 (2026-06-15 05:59:05)
-- **checkpoint**: `exp/aaai2027_phase2_smoe_fiber_sde_fiberwise_swd_k070/epoch_0002.pt`
-- **总体结果 (All-Pairs Overview)**:
-  - **CLIP Style**: `0.7038`
-  - **Content LPIPS**: `0.3224` (内容结构保真度进一步大幅改善，在 SDE 各向同性扩散下，LPIPS 从 0.3404 下降到 0.3224，表现优异)
+#### 3.2.3 推理期风格超驱动 (Style Overdrive) 外推扫描
+利用微分几何的 Ehresmann 联络约束，拓扑门控 (TopoGate) 强力限制了切向量只沿垂直纤维方向移动。这使得我们可以安全地进行**流轨迹外推 (Extrapolation)**：集成时间从 $t=1.0$ 推展至 $t=1.10 - 2.50$。
+在 `epoch_0004.pt` 上外推扫描结果如下：
+- **strength = 1.10**: Style = `0.7054` | LPIPS = `0.3143`
+- **strength = 1.20**: Style = `0.7076` | LPIPS = `0.3019`
+- **strength = 1.35**: Style = `0.7115` | LPIPS = `0.2893`
+- **strength = 1.60**: Style = `0.7161` | LPIPS = `0.2870` (LPIPS 出现奇迹般下降，主要得益于流路径的外推拉伸使生成局部纹理更加清晰、无噪点，从而降低了与原图的 LPIPS 距离)
+- **strength = 1.80**: Style = `0.7188` | LPIPS = `0.3047` (达到外推最优极值)
+- **strength = 2.00**: Style = `0.7185` | LPIPS = `0.3354`
+- **strength = 2.20**: Style = `0.7178` | LPIPS = `0.3720` (结构开始过度形变)
+- **strength = 2.50**: Style = `0.7151` | LPIPS = `0.4267`
 
-#### Epoch 3 评估细节 (2026-06-15 06:41:22)
-- **checkpoint**: `exp/aaai2027_phase2_smoe_fiber_sde_fiberwise_swd_k070/epoch_0003.pt`
-- **总体结果 (All-Pairs Overview)**:
-  - **CLIP Style**: `0.7035`
-  - **Content LPIPS**: `0.3259` (LPIPS 保持在 0.326 的极低水平，相比 Epoch 1 有显著改善，但由于噪声尺度限制在 0.02，Style 稳定维持在 0.703 附近)
-
-#### Epoch 4 训练状态 (实时更新于 2026-06-15 06:42)
-- **当前进度**: Step 40/1574 (2% Progress)
-- **动态损失分析**:
-  - `flow_loss` $\approx 0.6729$
-  - `tswd_loss` $\approx 0.0102$
-  - `kinetic_loss` $\approx 0.0818$
-  - **VRAM 占用**: `6895 MiB / 12288 MiB` (稳定低于 **11.3G** 限制，GPU 利用率 **89%**，温度 **69°C**)。
+#### 3.2.4 超驱动外推 + 潜空间仿射校准 (Combo Sweep)
+为了彻底突破 style 的软天花板，我们引入了**潜空间仿射变换** (`style_latent_affine`)：在生成 latents 时，将其均值与标准差以强度 $\gamma$ 仿射对齐到目标风格参考图像的统计特征上。
+在 `epoch_0004.pt` 模型上，以不同 overdrive 强度与仿射对齐强度组合的测试结果：
+- **strength = 1.80 + latent_affine = 0.45**: Style = `0.7202` | LPIPS = `0.3198`
+- **strength = 1.80 + latent_affine = 0.60**: Style = `0.7212` | LPIPS = `0.3328`
+- **strength = 1.80 + latent_affine = 0.75**: Style = `0.7208` | LPIPS = `0.3495`
+- **strength = 2.00 + latent_affine = 0.45**: Style = `0.7213` | LPIPS = `0.3336`
+- **strength = 2.00 + latent_affine = 0.60**: Style = **0.7219** | LPIPS = **0.3423** (风格达到历史最高的 `0.722` 左右，LPIPS 保持在 `< 0.35` 安全区间内)
+- **strength = 2.00 + latent_affine = 0.75**: Style = `0.7215` | LPIPS = `0.3569` (LPIPS 越界)
 
 ---
 

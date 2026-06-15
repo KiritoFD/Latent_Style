@@ -429,6 +429,8 @@ def plot(points: list[dict[str, str]]) -> None:
         legend_handles,
         legend_labels,
         loc="lower right",
+        bbox_to_anchor=(0.985, 0.02),
+        borderaxespad=0.0,
         ncol=2,
         columnspacing=0.9,
         handletextpad=0.3,
