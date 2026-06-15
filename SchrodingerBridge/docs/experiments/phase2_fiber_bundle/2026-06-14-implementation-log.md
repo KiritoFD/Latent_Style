@@ -528,3 +528,22 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Decision: `converged_not_promoted`. Proximal texture gives a small style
   response but does not beat the R16 style frontier; use it as negative/weak
   evidence for local endpoint residuals, not as a promoted route.
+
+## Generated-Delta Observability
+
+- Trigger: the `fiber.md` diagnosis specifically points at generated-delta rank
+  collapse and high off-diagonal cosine as the actuation bottleneck; later
+  actuation experiments need this recorded, not inferred after the fact.
+- Implementation: added default-off `full_eval.delta_observability` /
+  `training.full_eval_delta_observability`. The evaluator groups generated
+  latent deltas by source image across target styles and writes effective rank,
+  off-diagonal cosine, delta RMS, and delta absolute mean to
+  `summary.json -> settings.generated_delta_observability`.
+- Validation:
+  - local helper smoke on orthogonal toy deltas returned effective rank `4.0`
+    and off-diagonal cosine `0.0`.
+  - remote small eval smoke on proximal `epoch_0009` with `max_src_samples=1`
+    wrote `effective_rank_mean=1.60` and `offdiag_cosine_mean=0.356` over five
+    source groups.
+- Decision: enable this switch for the next generated-style-section experiment
+  and include it in closure criteria.

@@ -1404,6 +1404,83 @@ def _is_source_cache_valid(source_cache: dict, *, image_size: int, need_clip: bo
     return True
 
 
+def _participation_effective_rank(mat: torch.Tensor) -> float:
+    if mat.ndim != 2 or mat.shape[0] < 2:
+        return 0.0
+    try:
+        singular_values = torch.linalg.svdvals(mat.float())
+    except Exception:
+        return 0.0
+    energy = singular_values.square()
+    denom = energy.square().sum().clamp_min(1e-12)
+    return float((energy.sum().square() / denom).detach().cpu().item())
+
+
+def _summarize_generated_delta_observability(records: list[dict[str, object]]) -> dict[str, object]:
+    if not records:
+        return {"available": False, "sample_count": 0}
+    grouped: dict[str, list[torch.Tensor]] = defaultdict(list)
+    vector_dim = 0
+    for record in records:
+        src_key = str(record.get("src_key", ""))
+        vec = record.get("delta")
+        if not src_key or not isinstance(vec, torch.Tensor):
+            continue
+        flat = vec.float().flatten()
+        if flat.numel() <= 0:
+            continue
+        vector_dim = int(flat.numel())
+        grouped[src_key].append(flat)
+
+    ranks = []
+    offdiag_cosines = []
+    rms_values = []
+    abs_values = []
+    usable_groups = 0
+    for vectors in grouped.values():
+        if len(vectors) < 2:
+            continue
+        mat = torch.stack(vectors, dim=0).float()
+        usable_groups += 1
+        ranks.append(_participation_effective_rank(mat))
+        normed = F.normalize(mat, p=2, dim=1, eps=1e-8)
+        sim = normed @ normed.t()
+        n = int(sim.shape[0])
+        offdiag = (sim.sum() - sim.diag().sum()) / max(1, n * (n - 1))
+        offdiag_cosines.append(float(offdiag.detach().cpu().item()))
+        rms_values.append(float(mat.square().mean().sqrt().detach().cpu().item()))
+        abs_values.append(float(mat.abs().mean().detach().cpu().item()))
+
+    def _mean(values: list[float]) -> float | None:
+        return None if not values else float(np.mean(values))
+
+    def _max(values: list[float]) -> float | None:
+        return None if not values else float(np.max(values))
+
+    def _min(values: list[float]) -> float | None:
+        return None if not values else float(np.min(values))
+
+    return {
+        "available": bool(usable_groups),
+        "sample_count": int(len(records)),
+        "group_count": int(usable_groups),
+        "vector_dim": int(vector_dim),
+        "effective_rank_mean": _mean(ranks),
+        "effective_rank_min": _min(ranks),
+        "effective_rank_max": _max(ranks),
+        "offdiag_cosine_mean": _mean(offdiag_cosines),
+        "offdiag_cosine_min": _min(offdiag_cosines),
+        "offdiag_cosine_max": _max(offdiag_cosines),
+        "delta_rms_mean": _mean(rms_values),
+        "delta_abs_mean": _mean(abs_values),
+        "definition": (
+            "Per source image, stack generated latent deltas across target styles; "
+            "effective rank uses participation ratio of singular-value energy, "
+            "and offdiag cosine averages pairwise delta-direction cosine."
+        ),
+    }
+
+
 def _acquire_lock(lock_path: Path, timeout_sec: int = 600, poll_sec: float = 1.0) -> bool:
     deadline = time.time() + max(1, int(timeout_sec))
     while time.time() < deadline:
@@ -1671,6 +1748,8 @@ def _auto_run_missing_full_eval(args) -> None:
             cmd += ["--no-save_generated_images"]
         if not bool(args.save_summary_grid):
             cmd += ["--no-save_summary_grid"]
+        if bool(getattr(args, "eval_delta_observability", False)):
+            cmd += ["--eval_delta_observability"]
         if not bool(args.eval_only_lpips_clip_style):
             cmd += ["--no-eval_only_lpips_clip_style"]
         if bool(getattr(args, "transfer_only", False)):
@@ -1769,6 +1848,12 @@ def main():
             "Keep decoded images on GPU for metric-only eval to avoid GPU->CPU->GPU copies. "
             "Automatically disabled when generated images or sidecar metrics require host/image files."
         ),
+    )
+    parser.add_argument(
+        '--eval_delta_observability',
+        action='store_true',
+        default=bool(full_eval_defaults.get("delta_observability", False)),
+        help="Record generated latent-delta effective rank and off-diagonal cosine observability.",
     )
     parser.add_argument('--force_regen', action='store_true', help="Force regenerate evaluation outputs/metrics (does not rebuild global ref cache)")
     parser.add_argument('--force_regen_ref_cache', action='store_true', help="Force rebuild global reference-feature cache only")
@@ -2052,6 +2137,8 @@ def main():
                 args.save_summary_grid = bool(resolved_full_eval["save_summary_grid"])
             if "keep_generated_on_device" in resolved_full_eval and not _cli_provided("keep_generated_on_device"):
                 args.keep_generated_on_device = bool(resolved_full_eval["keep_generated_on_device"])
+            if "delta_observability" in resolved_full_eval and not _cli_provided("eval_delta_observability"):
+                args.eval_delta_observability = bool(resolved_full_eval["delta_observability"])
             if "lpips_chunk_size" in resolved_full_eval and not _cli_provided("eval_lpips_chunk_size"):
                 args.eval_lpips_chunk_size = int(resolved_full_eval["lpips_chunk_size"])
             if "enable_introstyle" in resolved_full_eval and not _cli_provided("eval_enable_introstyle"):
@@ -2203,6 +2290,7 @@ def main():
 
     # Buffer to pass data from Phase 1 to Phase 2
     generated_buffer = []
+    generated_delta_observability_records = []
     runtime_observability_rows = []
     style_name_to_id = {name: idx for idx, name in enumerate(style_subdirs)}
     src_lookup = {(x["style_name"], x["path"].stem): x["path"] for x in all_src_info}
@@ -2431,6 +2519,20 @@ def main():
                                 mean_strength=float(args.latent_postprocess_mean_strength),
                                 std_strength=float(args.latent_postprocess_std_strength),
                             )
+                        if bool(getattr(args, "eval_delta_observability", False)):
+                            try:
+                                delta_flat = (latents_gen.detach().float() - repeated_latents.detach().float()).flatten(1).cpu()
+                                for delta_i, (src_item, _tgt_name, tgt_id, _out_name) in enumerate(meta):
+                                    generated_delta_observability_records.append(
+                                        {
+                                            "src_key": _source_path_key(src_item["path"]),
+                                            "src_style": str(src_item["style_name"]),
+                                            "tgt_style_id": int(tgt_id),
+                                            "delta": delta_flat[delta_i].clone(),
+                                        }
+                                    )
+                            except Exception as exc:
+                                print(f"  WARNING: generated-delta observability failed for chunk: {exc}")
                         if abs(scale_out - 1.0) > 1e-4:
                             latents_gen = latents_gen * scale_out
                         _sync_cuda_if(device, bool(args.profile_timing))
@@ -2580,6 +2682,8 @@ def main():
                 "image_save_backend": str(args.image_save_backend),
                 "save_generated_images": bool(args.save_generated_images),
                 "keep_generated_on_device": bool(getattr(args, "keep_generated_on_device", True)),
+                "delta_observability": bool(getattr(args, "eval_delta_observability", False)),
+                "generated_delta_observability": _summarize_generated_delta_observability(generated_delta_observability_records),
                 "lpips_chunk_size": int(args.eval_lpips_chunk_size),
                 "profile_timing": bool(args.profile_timing),
                 "save_summary_grid": bool(args.save_summary_grid),
@@ -3264,6 +3368,8 @@ def main():
             "image_save_backend": str(args.image_save_backend),
             "save_generated_images": bool(args.save_generated_images),
             "keep_generated_on_device": bool(getattr(args, "keep_generated_on_device", True)),
+            "delta_observability": bool(getattr(args, "eval_delta_observability", False)),
+            "generated_delta_observability": _summarize_generated_delta_observability(generated_delta_observability_records),
             "lpips_chunk_size": int(args.eval_lpips_chunk_size),
             "profile_timing": bool(args.profile_timing),
             "save_summary_grid": bool(args.save_summary_grid),
