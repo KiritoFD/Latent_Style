@@ -1,0 +1,12 @@
+{
+  "_comment": "Eval-only style-strength overdrive extension allowing up to 2.50 extrapolation.",
+  "model": {
+    "style_strength_max": 2.50
+  },
+  "full_eval": {
+    "style_strength": 2.50,
+    "only_lpips_clip_style": true,
+    "save_generated_images": false,
+    "save_summary_grid": false
+  }
+}
