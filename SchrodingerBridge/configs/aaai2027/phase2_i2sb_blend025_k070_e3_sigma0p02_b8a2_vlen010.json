@@ -1,0 +1,16 @@
+{
+  "_base": "./phase2_i2sb_clean_k070_e3_sigma0p02_b8a2_vlen010.json",
+  "model": {
+    "endpoint_parameterization": "blend",
+    "endpoint_residual_blend": 0.25
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_i2sb_blend025_k070_e3_sigma0p02_b8a2_vlen010"
+  },
+  "ablation": {
+    "name": "phase2_i2sb_blend025_k070_e3_sigma0p02_b8a2_vlen010",
+    "axis": "phase2_fiber_path_objective",
+    "stage": "anchored_i2sb_endpoint_blend",
+    "notes": "Controlled follow-up after absolute sigma0p02, residual sigma0p02, and absolute sigma0p01: keep sigma0p02, parent, tokenizer, TopoGate, loss, schedule, and fast10 eval fixed; change only endpoint_parameterization to blend with endpoint_residual_blend=0.25. This preserves most absolute endpoint actuation while injecting a content residual anchor to reduce coordinate drift."
+  }
+}
