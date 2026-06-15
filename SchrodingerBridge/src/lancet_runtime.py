@@ -272,6 +272,7 @@ class LatentAdaCUTRuntimeMixin:
         scale = torch.exp(log_scale)
         shift = torch.tanh(shift_raw).view(pred.shape[0], pred.shape[1], 1, 1) * self.output_appearance_shift_span * pred_std
         adjusted = (pred - pred_mean) * scale + pred_mean + shift
+        adjusted = adjusted.to(dtype=pred.dtype)
         out = pred.lerp(adjusted, self.output_appearance_blend)
         self.last_output_appearance_debug = {
             "output_appearance_active": 1.0,
