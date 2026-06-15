@@ -1,0 +1,47 @@
+{
+  "_base": "./phase2_vel_tok32_safe_semantic_topogate_k070_seed42_b12a1.json",
+  "model": {
+    "style_injection_mode": "body_decoder",
+    "style_injection_form": "spatial_carrier_gate",
+    "style_injection_scale": 1.0,
+    "style_injection_gate_log_span": 0.4054651081081644,
+    "style_injection_hidden_dim": 64,
+    "style_injection_spatial_kernel": 5,
+    "style_injection_force_highpass": true,
+    "allow_style_overdrive": false,
+    "solver_corrector_mode": "none"
+  },
+  "training": {
+    "resume_checkpoint": "exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k070_seed42_b12a1/epoch_0003.pt",
+    "resume_model_strict": false,
+    "resume_optimizer": false,
+    "resume_training_state": false,
+    "resume_prefer_local_checkpoint": true,
+    "freeze_mode": "injection_only",
+    "batch_size": 12,
+    "accumulation_steps": 1,
+    "num_epochs": 8,
+    "save_interval": 1,
+    "full_eval_each_epoch": true,
+    "full_eval_defer_until_training_end": false,
+    "full_eval_batch_size": 1,
+    "full_eval_only_lpips_clip_style": true,
+    "full_eval_save_generated_images": false,
+    "full_eval_save_summary_grid": false,
+    "full_eval_allow_metric_postprocess": false,
+    "torch_compile": false,
+    "channels_last": true
+  },
+  "data": {
+    "virtual_length_multiplier": 0.1
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_actuation_spatial_carriergate_k070_e3_vlen010"
+  },
+  "ablation": {
+    "name": "phase2_actuation_spatial_carriergate_k070_e3_vlen010",
+    "axis": "phase2_fiber_actuation_bottleneck",
+    "stage": "actuation_spatial_carriergate_short_probe",
+    "notes": "Controlled in-domain actuation probe after fiber.md diagnosis and style-overdrive diagnostic. Keep tokenizer, solver, losses, TopoGate, appearance head, schedule surface, and eval contract fixed from k070 epoch_0003; add only the body+decoder spatial carrier gate path and train only its parameters on virtual_length=0.10 with per-epoch CLIP-S/LPIPS eval."
+  }
+}
