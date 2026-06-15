@@ -81,17 +81,35 @@ directly at the endpoint.
 - 2026-06-15 23:37 manual e1 eval replay succeeded with the 32x32 ORT decoder.
 - 2026-06-15 23:38 training resumed from local `epoch_0001.pt` and entered
   epoch 2; health check showed about `7.5 GiB` VRAM and live GPU load.
+- 2026-06-16 00:10 eval-speed fix:
+  - Paused after `epoch_0006` finished full transfer eval.
+  - Added default-compatible `training.full_eval_output_subdir` so training
+    can keep a fast convergence curve separate from the earlier full curve.
+  - Exported `../eval_cache/vae_onnx/ema_b16_32/decoder.onnx` and switched the
+    active training-time eval contract to `full_eval_fast10`.
+  - `full_eval_fast10` uses transfer-only, deterministic `10` source samples
+    per style (`200` transfer pairs total), `target_chunk_size=5`,
+    `vae_decode_batch_size=16`, no generated PNG/grid, and GPU-kept decoded
+    tensors.
+  - Backfilled `epoch_0001` through `epoch_0006` under the same fast10 contract
+    before resuming training from local `epoch_0006.pt` to epoch 7.
 
-## Running Eval Curve
+## Running Full Eval Curve
 
 Local mirror:
 `docs/experiments/phase2_fiber_bundle/eval/actuation_proximal_texture_k070_e3_b16a2bf16_vlen010/clip_lpips_curve.csv`
+
+Contract: transfer-only, default `30` source samples per style (`600` transfer
+pairs), ONNX VAE `batch=2`.
 
 | epoch | transfer CLIP-S | transfer LPIPS | eval wall | transfer-only |
 |---|---:|---:|---:|---:|
 | 1 | 0.672447 | 0.312461 | 70.07s | yes |
 | 2 | 0.671846 | 0.313756 | 71.50s | yes |
 | 3 | 0.672420 | 0.314827 | 67.21s | yes |
+| 4 | 0.672949 | 0.322180 | 66.58s | yes |
+| 5 | 0.671740 | 0.328618 | 66.38s | yes |
+| 6 | 0.673384 | 0.327238 | 69.65s | yes |
 
 Timing breakdown for e1:
 
@@ -102,9 +120,36 @@ Timing breakdown for e1:
 - ONNX decoder:
   `/mnt/i/Github/Latent_Style/eval_cache/vae_onnx/ema_b2_32/decoder.onnx`
 
+## Running Fast10 Eval Curve
+
+Local mirror:
+`docs/experiments/phase2_fiber_bundle/eval/actuation_proximal_texture_k070_e3_b16a2bf16_vlen010/clip_lpips_curve_fast10.csv`
+
+Contract: transfer-only, deterministic `10` source samples per style (`200`
+transfer pairs), ONNX VAE `batch=16`. This is the active training-time
+convergence curve from epoch 7 onward. Do not compare absolute values directly
+against the earlier full curve; compare trends within each contract.
+
+| epoch | transfer CLIP-S | transfer LPIPS | eval wall | decode | transfer-only |
+|---|---:|---:|---:|---:|---:|
+| 1 | 0.679886 | 0.315508 | 28.88s | 8.41s | yes |
+| 2 | 0.679237 | 0.317352 | 28.91s | 8.41s | yes |
+| 3 | 0.679731 | 0.318296 | 29.10s | 8.42s | yes |
+| 4 | 0.680348 | 0.326056 | 28.94s | 8.42s | yes |
+| 5 | 0.678679 | 0.332862 | 28.97s | 8.42s | yes |
+| 6 | 0.680404 | 0.331394 | 28.76s | 8.45s | yes |
+
+Speed decision:
+
+- Full e1-e6 wall: `66.38-71.50s`.
+- Fast10 e1-e6 wall: `28.76-29.10s`.
+- Practical speedup: about `2.3x` per retained checkpoint while keeping a
+  fixed transfer-only convergence surface.
+
 ## Closure Decision
 
-Pending. e1-e3 are structure-safe but not style-positive versus the
-parent/frontier; continue to convergence and judge by the all-ckpt transfer
-curve. If the next retained points remain below the matched parent/style
-frontier, close as negative and return to a cheaper style-actuation screen.
+Pending. Full e1-e6 are structure-safe but weak style-positive versus the
+parent/frontier. Fast10 e1-e6 shows the same trend shape with a higher absolute
+subset offset; continue to convergence using `full_eval_fast10`, then run a
+full transfer confirmation for the selected best/final checkpoints before any
+stage decision.
