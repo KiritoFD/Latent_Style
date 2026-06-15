@@ -514,3 +514,17 @@ Implemented the controlled-variable Fiber Bundle switches and the plot-update co
 - Decision constraint: use `full_eval_fast10` for live convergence and early
   stop decisions, but run full transfer confirmation for the selected best and
   final checkpoints before closing or promoting the family.
+- Live status at `epoch_0009`: fast10 transfer `0.680954 / 0.334124`,
+  `29.01s` eval wall, convergence still false because the best/Pareto point is
+  newest. Do not stop yet; continue while style improves within the accepted
+  LPIPS budget.
+- Live status at `epoch_0011`: fast10 transfer `0.680411 / 0.334782`; best
+  remains `epoch_0009`, `since_best=2`, `converged=false`. The family is likely
+  plateauing, but it must reach patience before closure.
+- Closure: stopped after `epoch_0014` because the fast10 curve reached
+  `converged=true` with `since_best=5`; best remained `epoch_0009`.
+- Full-transfer confirmation: `epoch_0009` scored `0.674190 / 0.329931`, and
+  final `epoch_0014` scored `0.673760 / 0.331171`.
+- Decision: `converged_not_promoted`. Proximal texture gives a small style
+  response but does not beat the R16 style frontier; use it as negative/weak
+  evidence for local endpoint residuals, not as a promoted route.

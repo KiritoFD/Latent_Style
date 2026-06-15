@@ -192,6 +192,23 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 - `s0.75+PC0.10`: transfer `0.685304 / 0.343517`, all-pairs `0.717560 / 0.336053`; PC does not rescue the style-ceiling LPIPS cost.
 - Decision: `balanced_frontier`. Keep `s0.45` as the clean eval-time style amplifier and use `s0.35` as the safe structure anchor; the next route to `0.74` needs a new style-generation mechanism, not more affine strength.
 
+## Current Proximal Texture Closure
+
+- `actuation_proximal_texture_k070_e3_b16a2bf16_vlen010` tested an isolated
+  endpoint cross-attention texture residual from the matched `k070 epoch_0003`
+  parent.
+- Fast10 live convergence closed at `epoch_0014`: best and last Pareto remained
+  `epoch_0009`, `since_best=5`, `tail_flat=true`, `converged=true`.
+- Full-transfer confirmation best was `epoch_0009`: transfer
+  `0.674190 / 0.329931`.
+- Final `epoch_0014` confirmed at transfer `0.673760 / 0.331171`.
+- Decision: `converged_not_promoted`. The mechanism is structure-safe and
+  mildly style-positive versus parent, but it does not beat the R16 style
+  frontier and is not enough for the Seedream/`0.74` style target.
+- Next controlled direction: attack the generated-delta / `dec_out` rank
+  bottleneck directly and log generated-delta rank plus off-diagonal cosine for
+  every retained checkpoint.
+
 ## Plot Update Contract
 
 Use `tools/experiments/update_phase2_plot_points.py` after each completed eval:
