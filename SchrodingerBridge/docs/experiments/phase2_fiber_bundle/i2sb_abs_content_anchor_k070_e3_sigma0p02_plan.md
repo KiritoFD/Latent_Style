@@ -78,3 +78,21 @@ topology anchor.
   `epoch_0001`, append transfer rows to `plot_points.csv`, regenerate the
   AAAI2027 page-1 figure, and decide whether to continue from the matched
   delta.
+- 2026-06-16 07:28 CST e1 eval:
+  transfer `0.691647 / 0.517638`, eval wall `29.30s`, metric eval `11.71s`,
+  generation `5.62s`, VAE decode `8.61s`.
+- e1 matched read:
+  compared with clean absolute I2SB e1 `0.700250 / 0.543142`, the anchor loses
+  `-0.008603` style and improves LPIPS by only `-0.025504`. Compared with
+  blend0p25 e1 `0.690046 / 0.447480`, style is `+0.001601` but LPIPS is
+  `+0.070158` worse. This is an early negative/weak signal: the anchor is not
+  yet restoring structure enough to justify the style loss.
+- The run is not stopped at e1 because the formal rule forbids stopping while
+  the current best is among the newest two retained checkpoints. Continue to
+  at least e2/e3 and close only from the curve.
+- Local artifacts:
+  `docs/experiments/phase2_fiber_bundle/curves/i2sb_abs_content_anchor_k070_e3_sigma0p02_fast10_curve.csv`
+  and
+  `docs/experiments/phase2_fiber_bundle/eval/i2sb_abs_content_anchor_k070_e3_sigma0p02_b8a2_vlen010/`.
+- Plot update: appended the e1 transfer point to `plot_points.csv` and
+  regenerated the AAAI2027 WikiArt-5 page-1 figure.
