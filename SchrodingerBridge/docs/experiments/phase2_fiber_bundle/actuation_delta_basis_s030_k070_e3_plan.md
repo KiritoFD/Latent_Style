@@ -66,6 +66,7 @@ Curve CSV:
 | 3 | 0.673827 | 0.346089 | -0.145851 | 206.16s |
 | 4 | 0.674136 | 0.350179 | -0.144175 | 206.17s |
 | 5 | 0.673752 | 0.348534 | -0.145378 | 203.60s |
+| 6 | 0.673968 | 0.349402 | -0.145191 | 205.58s |
 
 Training observability:
 
@@ -78,11 +79,11 @@ Training observability:
 Interim read: e1 is not better than S015 e1, but the actuator magnitude grows
 substantially by the e2 training row. e2 transfer CLIP-S surpasses the best S015
 point (`0.674053` vs `0.673966`). e3 slightly regresses, then e4 reaches a new
-best `0.674136 / 0.350179`. e5 regresses to `0.673752 / 0.348534`, so the
-current best remains e4. This supports the scale direction, but the absolute
-style gain is still far from the Seedream target. Continue to full convergence
-under the style-first rule and watch whether later epochs produce a real style
-breakout or only LPIPS drift.
+best `0.674136 / 0.350179`. e5 regresses to `0.673752 / 0.348534`; e6 recovers
+partly to `0.673968 / 0.349402`, but the current best remains e4. This supports
+the scale direction, but the absolute style gain is still far from the Seedream
+target. Continue to full convergence under the style-first rule and watch
+whether later epochs produce a real style breakout or only LPIPS drift.
 
 ## Closure Decision
 
