@@ -92,11 +92,21 @@ curve.
 | e6 | 0.680070 | 0.315573 | 26.85s | ONNX decode-only VAE skip active |
 | e7 | 0.680062 | 0.315583 | 26.68s | ONNX decode-only VAE skip active |
 | e8 | 0.680074 | 0.315569 | 30.12s | temporary 10/32 eval batch, reverted |
+| e9 | 0.680074 | 0.315562 | 27.72s | re-run/backfilled |
+| e10 | 0.680037 | 0.315541 | 26.59s | flat |
+| e11 | 0.680068 | 0.315533 | 26.53s | LPIPS-only drift |
+| e12 | 0.680066 | 0.315524 | 26.66s | LPIPS-only drift |
+| e13 | 0.680054 | 0.315530 | 26.58s | flat |
+| e14 | 0.680065 | 0.315539 | 26.64s | flat |
+| e15 | 0.680064 | 0.315538 | 26.92s | flat |
+| e16 | 0.680046 | 0.315544 | 63.30s | negative in-process eval probe; timing polluted |
+| e17 | 0.680083 | 0.315537 | 30.22s | subprocess restored |
+| e18 | 0.680047 | 0.315528 | 26.60s | final; no style recovery |
 
-Read so far: the pre-decoder section has not produced style lift by e8. The
-curve is effectively flat around `0.6801 / 0.3156`; continue only under the
-formal patience rule while watching whether the section magnitude and generated
-delta rank start moving.
+Closure read: all retained checkpoints through e18 have fast10 `CLIP-S + LPIPS`.
+Best style is e3 at `0.680121 / 0.315600`; final e18 is
+`0.680047 / 0.315528`. The style delta from best to final is only
+`-0.000074`, so this mechanism is style-flat despite tiny LPIPS drift.
 
 ## Eval Infra Notes
 
@@ -122,5 +132,16 @@ delta rank start moving.
   `diffusers_vae_loaded_for_generation` before releasing generation models, then
   manually re-ran e6 eval and refreshed the curve.
 - Incident: e9 eval was interrupted while reverting the negative batch probe.
-  It must be manually re-run before closure so every retained checkpoint has
-  `CLIP-S + LPIPS`.
+  It was later manually re-run/backfilled; the curve now covers e1-e18.
+
+## Closure
+
+- Decision: `converged_not_promoted_style_flat`.
+- Closure note:
+  `docs/experiments/phase2_fiber_bundle/actuation_predec_section_k070_e3_closure.md`.
+- Curve artifact:
+  `docs/experiments/phase2_fiber_bundle/curves/actuation_predec_section_k070_e3_remote_fast10_curve.csv`.
+- Rationale: the pre-decoder style section preserves structure but does not
+  increase transfer style. Do not continue this exact branch; use the result as
+  negative evidence that a shallow pre-`dec_out` feature section is still
+  swallowed by the output bottleneck.
