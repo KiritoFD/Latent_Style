@@ -4,6 +4,10 @@
     "endpoint_parameterization": "blend",
     "endpoint_residual_blend": 0.25
   },
+  "training": {
+    "full_eval_in_process": false,
+    "full_eval_runtime_model_cache": false
+  },
   "checkpoint": {
     "save_dir": "./exp/aaai2027_phase2_i2sb_blend025_k070_e3_sigma0p02_b8a2_vlen010"
   },
