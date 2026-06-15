@@ -1,23 +1,23 @@
 {
   "run_dir": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_phase2_actuation_delta_basis_r16_s030_k070_e3_b32bf16_vlen010",
   "eval_subdir": "full_eval",
-  "row_count": 3,
+  "row_count": 5,
   "latest": {
-    "epoch": "epoch_0003",
-    "epoch_int": 3,
-    "checkpoint": "exp/aaai2027_phase2_actuation_delta_basis_r16_s030_k070_e3_b32bf16_vlen010/epoch_0003.pt",
-    "timestamp": "2026-06-15 20:49:19",
-    "transfer_clip_style": 0.6739357288181782,
-    "transfer_content_lpips": 0.3495501181333333,
-    "all_pairs_clip_style": 0.6739357288181782,
-    "all_pairs_content_lpips": 0.3495501181333333,
+    "epoch": "epoch_0005",
+    "epoch_int": 5,
+    "checkpoint": "exp/aaai2027_phase2_actuation_delta_basis_r16_s030_k070_e3_b32bf16_vlen010/epoch_0005.pt",
+    "timestamp": "2026-06-15 20:56:35",
+    "transfer_clip_style": 0.674214600721995,
+    "transfer_content_lpips": 0.35364017095,
+    "all_pairs_clip_style": 0.674214600721995,
+    "all_pairs_content_lpips": 0.35364017095,
     "identity_clip_style": 0.0,
     "identity_content_lpips": 0.0,
-    "eval_wall_total_sec": 93.56094131200007,
-    "eval_total_sec": 21.54610231100014,
-    "generation_sec": 16.379405157011206,
-    "vae_decode_sec": 44.70517468000253,
-    "summary_path": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_phase2_actuation_delta_basis_r16_s030_k070_e3_b32bf16_vlen010/full_eval/epoch_0003/summary.json"
+    "eval_wall_total_sec": 97.07827192100012,
+    "eval_total_sec": 24.072425776001182,
+    "generation_sec": 16.677760513990506,
+    "vae_decode_sec": 44.70424513898615,
+    "summary_path": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_phase2_actuation_delta_basis_r16_s030_k070_e3_b32bf16_vlen010/full_eval/epoch_0005/summary.json"
   },
   "best_transfer": {
     "epoch": "epoch_0002",
@@ -104,6 +104,40 @@
       "generation_sec": 16.379405157011206,
       "vae_decode_sec": 44.70517468000253,
       "summary_path": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_phase2_actuation_delta_basis_r16_s030_k070_e3_b32bf16_vlen010/full_eval/epoch_0003/summary.json"
+    },
+    {
+      "epoch": "epoch_0004",
+      "epoch_int": 4,
+      "checkpoint": "exp/aaai2027_phase2_actuation_delta_basis_r16_s030_k070_e3_b32bf16_vlen010/epoch_0004.pt",
+      "timestamp": "2026-06-15 20:52:52",
+      "transfer_clip_style": 0.6740408224364122,
+      "transfer_content_lpips": 0.3523571017833333,
+      "all_pairs_clip_style": 0.6740408224364122,
+      "all_pairs_content_lpips": 0.3523571017833333,
+      "identity_clip_style": 0.0,
+      "identity_content_lpips": 0.0,
+      "eval_wall_total_sec": 93.45989441199708,
+      "eval_total_sec": 21.424863105999975,
+      "generation_sec": 16.37819997000406,
+      "vae_decode_sec": 44.705596088017046,
+      "summary_path": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_phase2_actuation_delta_basis_r16_s030_k070_e3_b32bf16_vlen010/full_eval/epoch_0004/summary.json"
+    },
+    {
+      "epoch": "epoch_0005",
+      "epoch_int": 5,
+      "checkpoint": "exp/aaai2027_phase2_actuation_delta_basis_r16_s030_k070_e3_b32bf16_vlen010/epoch_0005.pt",
+      "timestamp": "2026-06-15 20:56:35",
+      "transfer_clip_style": 0.674214600721995,
+      "transfer_content_lpips": 0.35364017095,
+      "all_pairs_clip_style": 0.674214600721995,
+      "all_pairs_content_lpips": 0.35364017095,
+      "identity_clip_style": 0.0,
+      "identity_content_lpips": 0.0,
+      "eval_wall_total_sec": 97.07827192100012,
+      "eval_total_sec": 24.072425776001182,
+      "generation_sec": 16.677760513990506,
+      "vae_decode_sec": 44.70424513898615,
+      "summary_path": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_phase2_actuation_delta_basis_r16_s030_k070_e3_b32bf16_vlen010/full_eval/epoch_0005/summary.json"
     }
   ]
 }

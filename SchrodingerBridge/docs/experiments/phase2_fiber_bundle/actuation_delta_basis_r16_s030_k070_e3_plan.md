@@ -56,14 +56,18 @@ Curve CSV:
 | 1 | 0.674387 | 0.344712 | 93.92s | yes |
 | 2 | 0.674525 | 0.352222 | 93.44s | yes |
 | 3 | 0.673936 | 0.349550 | 93.56s | yes |
+| 4 | 0.674041 | 0.352357 | 93.46s | yes |
+| 5 | 0.674215 | 0.353640 | 97.08s | yes |
 
 Interim read: e1 is already above the S030 full-board closure point
 (`0.674200 / 0.353881`) and above S030 e20 transfer-only style
 (`0.674338`) while keeping LPIPS much lower (`0.344712`). This is a useful
 early positive for the "fiber section capacity" hypothesis. e2 improves style
 again to `0.674525` but with LPIPS rising to `0.352222`; e3 then regresses to
-`0.673936 / 0.349550`. Continue to formal convergence; the rank16 signal is
-not yet stable enough for promotion or closure.
+`0.673936 / 0.349550`. e4/e5 do not recover the e2 style peak, and e5 pays
+more LPIPS (`0.353640`). Continue to formal convergence; the rank16 signal is
+not yet stable enough for promotion, and if later checkpoints do not exceed e2
+by a meaningful margin this should close as another weak actuation-only result.
 
 ## Closure Decision
 
