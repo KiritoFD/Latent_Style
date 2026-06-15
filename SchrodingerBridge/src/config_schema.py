@@ -360,6 +360,9 @@ class ModelConfig:
     style_delta_scale: float = 0.15
     style_delta_highpass_kernel: int = 5
     style_delta_force_highpass: bool = True
+    style_section_hidden_dim: int = 64
+    style_section_scale: float = 0.10
+    style_section_force_highpass: bool = True
     use_style_blender: bool = False
     solver_rk_order: int = 4
     solver_corrector_steps: int = 1
@@ -601,6 +604,7 @@ class TrainingConfig:
     full_eval_vae_onnx_decoder: str = ""
     full_eval_vae_onnx_tensorrt: bool = False
     full_eval_vae_onnx_trt_cache_dir: str = ""
+    full_eval_skip_diffusers_vae_when_onnx: bool = True
     full_eval_only_lpips_clip_style: bool | None = None
     full_eval_transfer_only: bool = False
     full_eval_postprocess_mode: str = "none"
@@ -891,6 +895,7 @@ def resolve_full_eval_section(config: dict[str, Any] | ExperimentConfig | None) 
             "vae_onnx_decoder": "full_eval_vae_onnx_decoder",
             "vae_onnx_tensorrt": "full_eval_vae_onnx_tensorrt",
             "vae_onnx_trt_cache_dir": "full_eval_vae_onnx_trt_cache_dir",
+            "skip_diffusers_vae_when_onnx": "full_eval_skip_diffusers_vae_when_onnx",
             "only_lpips_clip_style": "full_eval_only_lpips_clip_style",
             "transfer_only": "full_eval_transfer_only",
             "postprocess_mode": "full_eval_postprocess_mode",
@@ -981,6 +986,7 @@ def compact_runtime_config(config: dict[str, Any] | ExperimentConfig | None) -> 
             "full_eval_vae_onnx_decoder": "vae_onnx_decoder",
             "full_eval_vae_onnx_tensorrt": "vae_onnx_tensorrt",
             "full_eval_vae_onnx_trt_cache_dir": "vae_onnx_trt_cache_dir",
+            "full_eval_skip_diffusers_vae_when_onnx": "skip_diffusers_vae_when_onnx",
             "full_eval_only_lpips_clip_style": "only_lpips_clip_style",
             "full_eval_transfer_only": "transfer_only",
             "full_eval_postprocess_mode": "postprocess_mode",
