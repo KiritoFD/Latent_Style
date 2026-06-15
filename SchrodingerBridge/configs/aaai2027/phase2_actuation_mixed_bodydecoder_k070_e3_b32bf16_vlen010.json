@@ -1,0 +1,30 @@
+{
+  "_base": "./phase2_actuation_delta_basis_k070_e3_b32bf16_vlen010.json",
+  "model": {
+    "style_injection_mode": "body_decoder",
+    "style_injection_form": "mixed",
+    "style_injection_hidden_dim": 64,
+    "style_injection_scale": 1.0,
+    "style_delta_mode": "none",
+    "style_delta_scale": 0.0
+  },
+  "training": {
+    "num_epochs": 20,
+    "full_eval_batch_size": 4,
+    "full_eval_target_chunk_size": 5,
+    "full_eval_vae_decode_batch_size": 20,
+    "full_eval_transfer_only": true,
+    "full_eval_profile_timing": true,
+    "full_eval_keep_generated_on_device": true,
+    "full_eval_lpips_chunk_size": 4
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_actuation_mixed_bodydecoder_k070_e3_b32bf16_vlen010"
+  },
+  "ablation": {
+    "name": "phase2_actuation_mixed_bodydecoder_k070_e3_b32bf16_vlen010",
+    "axis": "phase2_fiber_actuation_bottleneck",
+    "stage": "actuation_internal_mixed_bodydecoder",
+    "notes": "Controlled follow-up after spatial carrier and output delta-basis probes. Keep the k070 e3 parent, tokenizer, solver, losses, TopoGate, appearance head, b32 bf16 throughput lane, virtual_length=0.10, freeze_mode=injection_only, and transfer-only training eval fixed. Disable output style_delta and train only zero-init mixed body+decoder injection so the first-order question is whether internal actuation location opens non-collinear style sections before dec_out."
+  }
+}
