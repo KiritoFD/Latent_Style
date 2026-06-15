@@ -579,6 +579,13 @@ class SBTrainer:
                     stats[f"solver_{key}"] = float(torch.nan_to_num(value.detach().float()).item())
                 elif isinstance(value, (int, float, bool)):
                     stats[f"solver_{key}"] = float(value)
+        style_delta_debug = getattr(self.model, "last_style_delta_debug", {})
+        if isinstance(style_delta_debug, dict):
+            for key, value in style_delta_debug.items():
+                if torch.is_tensor(value):
+                    stats[str(key)] = float(torch.nan_to_num(value.detach().float()).item())
+                elif isinstance(value, (int, float, bool)):
+                    stats[str(key)] = float(value)
         fiberwise_debug = getattr(self.loss_fn, "last_fiberwise_swd_debug", {})
         if isinstance(fiberwise_debug, dict):
             for key, value in fiberwise_debug.items():
@@ -889,6 +896,8 @@ class SBTrainer:
                 ("body_structure_gate", getattr(self.model, "body_structure_gate", None)),
                 ("decoder_style_spatial_proj", getattr(self.model, "decoder_style_spatial_proj", None)),
                 ("decoder_structure_gate", getattr(self.model, "decoder_structure_gate", None)),
+                ("style_delta_basis_proj", getattr(self.model, "style_delta_basis_proj", None)),
+                ("style_delta_weight_head", getattr(self.model, "style_delta_weight_head", None)),
             ]
             for prefix, module in injectors:
                 if module is None:
@@ -897,7 +906,10 @@ class SBTrainer:
                     param.requires_grad_(True)
                     trainable_names.append(f"{prefix}.{name}")
             if not trainable_names:
-                raise RuntimeError("freeze_mode=injection_only requires model.style_injection_mode != 'none'.")
+                raise RuntimeError(
+                    "freeze_mode=injection_only requires model.style_injection_mode != 'none' "
+                    "or model.style_delta_mode != 'none'."
+                )
         if mode == "backbone_only":
             for name, param in self.model.named_parameters():
                 if name.startswith("style_tokenizer."):

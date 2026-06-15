@@ -352,6 +352,8 @@ def _runtime_observability_from_model(model: torch.nn.Module | None) -> dict[str
         stats[f"i2sb_{key}"] = value
     for key, value in _runtime_debug_scalars(getattr(model, "last_solver_noise_debug", {})).items():
         stats[f"solver_{key}"] = value
+    for key, value in _runtime_debug_scalars(getattr(model, "last_style_delta_debug", {})).items():
+        stats[str(key)] = value
     for key, value in _runtime_debug_scalars(getattr(model, "last_style_strength_debug", {})).items():
         stats[str(key)] = value
     topology_attn = getattr(model, "last_semantic_topology_attn", None)

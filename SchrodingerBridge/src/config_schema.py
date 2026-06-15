@@ -342,6 +342,12 @@ class ModelConfig:
     style_injection_gate_log_span: float = 0.4054651081081644
     style_injection_spatial_kernel: int = 5
     style_injection_force_highpass: bool = True
+    style_delta_mode: str = "none"
+    style_delta_rank: int = 4
+    style_delta_hidden_dim: int = 64
+    style_delta_scale: float = 0.15
+    style_delta_highpass_kernel: int = 5
+    style_delta_force_highpass: bool = True
     use_style_blender: bool = False
     solver_rk_order: int = 4
     solver_corrector_steps: int = 1
