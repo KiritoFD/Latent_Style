@@ -80,13 +80,16 @@ Local mirror:
 | e7 | 0.680078 | 0.315580 | 20.42s | 100.32s | 0.000653 | -0.073730 | 4.97 |
 | e8 | 0.680046 | 0.315578 | 26.17s | 96.88s | 0.000517 | -0.063477 | 4.94 |
 | e9 | 0.680054 | 0.315589 | 38.13s | 98.00s | 0.000525 | -0.066406 | 4.98 |
+| e10 | 0.680078 | 0.315564 | 20.65s | 96.86s | 0.000457 | -0.066406 | 4.95 |
+| e11 | 0.680060 | 0.315555 | 25.88s | 97.07s | 0.000486 | -0.077148 | 4.96 |
+| e12 | 0.680076 | 0.315551 | 26.37s | 97.00s | 0.000440 | -0.065918 | 4.97 |
 
-Read at e9: the loss is active and the generated deltas are not collapsing
+Read at e12: the loss is active and the generated deltas are not collapsing
 into a positive shared direction, but the style surface remains essentially
-flat. e4 is the current best style point; e5-e9 mainly improve LPIPS by tiny
+flat. e4 is the best style point; e5-e12 mainly improve LPIPS by tiny
 amounts while style recedes. Continue under the formal rule until the non-Pareto
-tail is long enough; the line is currently trending toward a negative closure
-unless style reappears.
+tail is long enough; because the objective is explicitly style-first and the
+last eight checkpoints do not create a new style point, this lane is closed.
 
 ## Eval Infra Optimization
 
@@ -113,7 +116,7 @@ unless style reappears.
 
 ## Plot Update
 
-- Added e1-e9 transfer points to:
+- Added e1-e12 transfer points to:
   `docs/experiments/phase2_fiber_bundle/plot_points.csv`.
 - Wrote the normalized curve with per-epoch train time and delta observability:
   `docs/experiments/phase2_fiber_bundle/curves/actuation_predec_diversity_k070_e3_fast10_curve.csv`.
@@ -122,4 +125,17 @@ unless style reappears.
 
 ## Closure Decision
 
-Pending.
+Closed as `style_flat_not_promoted`.
+
+- Best style point: e4, transfer `0.680133 / 0.315616`.
+- Final pulled point: e12, transfer `0.680076 / 0.315551`.
+- Style tail: e5-e12 never beat e4; final is `-0.000056` below e4.
+- LPIPS tail: final is `-0.000065` below e4, but this is LPIPS-only drift and
+  not aligned with the style-first target.
+- Mechanism read: generated-delta offdiag cosine is negative, so the auxiliary
+  loss changed the measured delta geometry, but this did not translate into
+  target-style CLIP lift. The remaining bottleneck is likely the final shared
+  output head / actuator, not just cross-style delta cosine.
+- Next action: archive this as negative evidence and run
+  `style_delta_mode=head_adapter`, a zero-init style-conditioned residual head
+  parallel to `dec_out`.

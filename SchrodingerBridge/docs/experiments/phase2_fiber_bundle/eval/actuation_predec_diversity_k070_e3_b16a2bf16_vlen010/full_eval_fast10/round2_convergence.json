@@ -1,6 +1,6 @@
 {
   "curve_csv": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_phase2_actuation_predec_diversity_k070_e3_b16a2bf16_vlen010/full_eval_fast10/clip_lpips_curve.csv",
-  "row_count": 9,
+  "row_count": 12,
   "best_epoch": "epoch_0004",
   "best_index": 3,
   "best_transfer_epoch": "epoch_0004",
@@ -12,12 +12,15 @@
     "epoch_0005",
     "epoch_0006",
     "epoch_0007",
-    "epoch_0008"
+    "epoch_0008",
+    "epoch_0010",
+    "epoch_0011",
+    "epoch_0012"
   ],
-  "last_pareto_epoch": "epoch_0008",
-  "newest_epoch": "epoch_0009",
-  "since_best": 5,
-  "since_last_pareto": 1,
+  "last_pareto_epoch": "epoch_0012",
+  "newest_epoch": "epoch_0012",
+  "since_best": 8,
+  "since_last_pareto": 0,
   "best_in_newest_2": false,
   "tail_flat": true,
   "tail_window": 4,

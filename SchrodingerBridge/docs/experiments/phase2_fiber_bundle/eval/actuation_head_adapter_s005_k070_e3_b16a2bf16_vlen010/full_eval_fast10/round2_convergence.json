@@ -1,0 +1,24 @@
+{
+  "curve_csv": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_phase2_actuation_head_adapter_s005_k070_e3_b16a2bf16_vlen010/full_eval_fast10/clip_lpips_curve.csv",
+  "row_count": 3,
+  "best_epoch": "epoch_0002",
+  "best_index": 1,
+  "best_transfer_epoch": "epoch_0002",
+  "best_all_pairs_epoch": "epoch_0002",
+  "pareto_epochs": [
+    "epoch_0001",
+    "epoch_0002"
+  ],
+  "last_pareto_epoch": "epoch_0002",
+  "newest_epoch": "epoch_0003",
+  "since_best": 1,
+  "since_last_pareto": 1,
+  "best_in_newest_2": true,
+  "tail_flat": true,
+  "tail_window": 4,
+  "flat_eps_style": 0.005,
+  "flat_eps_lpips": 0.018,
+  "patience": 4,
+  "criterion": "joint_transfer_allpairs_pareto",
+  "converged": false
+}

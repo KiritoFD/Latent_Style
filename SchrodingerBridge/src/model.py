@@ -162,7 +162,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                     int(getattr(bridge_config, "style_injection_hidden_dim", 64)),
                 )
         self.style_delta_mode = str(getattr(bridge_config, "style_delta_mode", "none")).strip().lower()
-        if self.style_delta_mode not in {"none", "basis", "predec_section"}:
+        if self.style_delta_mode not in {"none", "basis", "predec_section", "head_adapter"}:
             self.style_delta_mode = "none"
         self.style_delta_rank = max(1, int(getattr(bridge_config, "style_delta_rank", 4)))
         self.style_delta_scale = max(0.0, float(getattr(bridge_config, "style_delta_scale", 0.15)))
@@ -177,6 +177,11 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.style_section_out: nn.Conv2d | None = None
         self.style_section_scale = max(0.0, float(getattr(bridge_config, "style_section_scale", 0.10)))
         self.style_section_force_highpass = bool(getattr(bridge_config, "style_section_force_highpass", True))
+        self.style_head_adapter_in: nn.Conv2d | None = None
+        self.style_head_adapter_film: nn.Module | None = None
+        self.style_head_adapter_out: nn.Conv2d | None = None
+        self.style_head_adapter_scale = max(0.0, float(getattr(bridge_config, "style_head_adapter_scale", 0.10)))
+        self.style_head_adapter_force_highpass = bool(getattr(bridge_config, "style_head_adapter_force_highpass", False))
         self.last_style_delta_debug: dict[str, float] = {}
         if self.style_delta_mode == "basis" and self.style_delta_scale > 0.0:
             self.style_delta_basis_proj = nn.Conv2d(
@@ -233,6 +238,36 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             nn.init.zeros_(self.style_section_out.weight)
             if self.style_section_out.bias is not None:
                 nn.init.zeros_(self.style_section_out.bias)
+        if self.style_delta_mode == "head_adapter" and self.style_head_adapter_scale > 0.0:
+            hidden = max(4, int(getattr(bridge_config, "style_head_adapter_hidden_dim", 32)))
+            self.style_head_adapter_in = nn.Conv2d(
+                int(self.lift_channels),
+                hidden,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+            )
+            self.style_head_adapter_film = nn.Sequential(
+                nn.LayerNorm(int(self.bridge_style_dim)),
+                nn.Linear(int(self.bridge_style_dim), hidden * 2),
+            )
+            self.style_head_adapter_out = nn.Conv2d(
+                hidden,
+                int(self.latent_channels),
+                kernel_size=3,
+                stride=1,
+                padding=1,
+            )
+            nn.init.kaiming_normal_(self.style_head_adapter_in.weight, nonlinearity="linear")
+            if self.style_head_adapter_in.bias is not None:
+                nn.init.zeros_(self.style_head_adapter_in.bias)
+            film_last = self.style_head_adapter_film[-1]
+            if isinstance(film_last, nn.Linear):
+                nn.init.zeros_(film_last.weight)
+                nn.init.zeros_(film_last.bias)
+            nn.init.zeros_(self.style_head_adapter_out.weight)
+            if self.style_head_adapter_out.bias is not None:
+                nn.init.zeros_(self.style_head_adapter_out.bias)
         self.time_mlp = nn.Sequential(
             nn.Linear(self.time_dim, self.bridge_style_dim),
             nn.SiLU(),
@@ -512,6 +547,13 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         low = F.avg_pool2d(x.float(), kernel_size=self.style_delta_highpass_kernel, stride=1, padding=pad)
         return x - low.to(dtype=x.dtype)
 
+    def _style_head_adapter_highpass(self, x: torch.Tensor) -> torch.Tensor:
+        if not self.style_head_adapter_force_highpass:
+            return x
+        pad = self.style_delta_highpass_kernel // 2
+        low = F.avg_pool2d(x.float(), kernel_size=self.style_delta_highpass_kernel, stride=1, padding=pad)
+        return x - low.to(dtype=x.dtype)
+
     def _apply_predec_style_section(
         self,
         h: torch.Tensor,
@@ -550,6 +592,46 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                 "style_predec_section_scale": float(self.style_section_scale),
             }
         return h + section
+
+    def _apply_style_head_adapter(
+        self,
+        delta: torch.Tensor,
+        h: torch.Tensor,
+        style_code: torch.Tensor | None,
+    ) -> torch.Tensor:
+        if (
+            self.style_delta_mode != "head_adapter"
+            or self.style_head_adapter_scale <= 0.0
+            or self.style_head_adapter_in is None
+            or self.style_head_adapter_film is None
+            or self.style_head_adapter_out is None
+            or style_code is None
+        ):
+            if self.style_delta_mode == "head_adapter":
+                self.last_style_delta_debug = {"style_head_adapter_active": 0.0}
+            return delta
+        hidden = self.style_head_adapter_in(h.float())
+        gamma_beta = self.style_head_adapter_film(style_code).float()
+        gamma, beta = gamma_beta.chunk(2, dim=1)
+        hidden = hidden * (1.0 + torch.tanh(gamma).view(gamma.shape[0], -1, 1, 1))
+        hidden = hidden + torch.tanh(beta).view(beta.shape[0], -1, 1, 1)
+        hidden = F.silu(hidden)
+        side = self.style_head_adapter_out(hidden).to(dtype=delta.dtype)
+        side = self._style_head_adapter_highpass(side)
+        side = torch.tanh(side.float()).to(dtype=delta.dtype) * float(self.style_head_adapter_scale)
+        with torch.no_grad():
+            delta_rms = delta.detach().float().square().mean().sqrt().clamp_min(1e-8)
+            side_rms = side.detach().float().square().mean().sqrt()
+            self.last_style_delta_debug = {
+                "style_head_adapter_active": 1.0,
+                "style_head_adapter_abs": float(side.detach().float().abs().mean().cpu().item()),
+                "style_head_adapter_rms": float(side_rms.cpu().item()),
+                "style_head_adapter_rel_rms": float((side_rms / delta_rms).cpu().item()),
+                "style_head_adapter_gamma_abs": float(gamma.detach().float().abs().mean().cpu().item()),
+                "style_head_adapter_beta_abs": float(beta.detach().float().abs().mean().cpu().item()),
+                "style_head_adapter_scale": float(self.style_head_adapter_scale),
+            }
+        return delta + side
 
     def _apply_style_delta_basis(
         self,
@@ -669,20 +751,25 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             if self.transport_prediction_mode == "endpoint":
                 if self.endpoint_parameterization == "residual":
                     delta = stroked - x.float()
-                    return self._apply_style_delta_basis(delta, h, style_code)
+                    delta = self._apply_style_delta_basis(delta, h, style_code)
+                    return self._apply_style_head_adapter(delta, h, style_code)
                 endpoint = self._apply_style_delta_basis(stroked.float(), h, style_code)
-                return endpoint
+                return self._apply_style_head_adapter(endpoint, h, style_code)
             delta = stroked - x.float()
-            return self._apply_style_delta_basis(delta, h, style_code)
+            delta = self._apply_style_delta_basis(delta, h, style_code)
+            return self._apply_style_head_adapter(delta, h, style_code)
         if self.transport_prediction_mode == "endpoint":
             bounded = torch.tanh(raw_delta / self.transport_endpoint_scale) * self.transport_endpoint_scale
             if self.endpoint_parameterization == "residual":
-                return self._apply_style_delta_basis(bounded, h, style_code)
-            return self._apply_style_delta_basis(bounded, h, style_code)
+                bounded = self._apply_style_delta_basis(bounded, h, style_code)
+                return self._apply_style_head_adapter(bounded, h, style_code)
+            bounded = self._apply_style_delta_basis(bounded, h, style_code)
+            return self._apply_style_head_adapter(bounded, h, style_code)
         if self.velocity_head_mode == "tanh":
             raw_delta = torch.tanh(raw_delta) * self.velocity_tanh_limit
         delta = raw_delta * self.latent_scale_factor * self.residual_gain
-        return self._apply_style_delta_basis(delta, h, style_code)
+        delta = self._apply_style_delta_basis(delta, h, style_code)
+        return self._apply_style_head_adapter(delta, h, style_code)
 
     def _endpoint_delta_from_raw(self, raw_transport: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
         raw = raw_transport.to(dtype=x.dtype)
