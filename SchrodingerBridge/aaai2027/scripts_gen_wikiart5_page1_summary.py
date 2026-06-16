@@ -69,8 +69,23 @@ TRACE_STYLES = {
     "i2sb_orthogonal_lowanchor065_k070_e3": ("#D97706", "p", 46, 0.84),
 }
 
+LEGEND_MAP = {
+    "samam_wikiarts5_patch8": "SaMAM (WikiArt-5)",
+    "samst_wikiarts5": "SaMST (WikiArt-5)",
+    "seedream_test_only": "Seedream",
+    "k070_e1_e5": "Ours k070",
+    "fiber_sde_fine_k070_e3": "Fiber/SDE",
+    "actuation_spatial_carriergate_k070_e3": "Carrier gate",
+    "latent_affine_k070_e3": "Latent affine",
+    "latent_affine_refine_k070_e3": "LatAff refine",
+    "latent_affine_pc_k070_e3": "LatAff+PC",
+    "i2sb_pnp_fiber_sde_k070": "I2SB combo",
+    "i2sb_slerp_orthogonal_lowhigh_k070_e3": "I2SB slerp+orth",
+    "i2sb_orthogonal_lowanchor050_k070_e3": "I2SB low-anchor",
+    "i2sb_orthogonal_lowanchor065_k070_e3": "I2SB low-anchor .65",
+}
+
 LABEL_ALLOWLIST = {
-    "IDT",
     "Seedream",
     "SaMAM style",
     "SaMAM LPIPS",
@@ -355,12 +370,100 @@ def _sort_key(row: dict[str, str]) -> tuple[str, float]:
     return row.get("trace_id") or "", number if number is not None else 0.0
 
 
+def _xy(row: dict[str, str]) -> tuple[float, float]:
+    return float(row["one_minus_lpips"]), float(row["style_minus_idt"])
+
+
+def _dominates(a: dict[str, str], b: dict[str, str]) -> bool:
+    ax, ay = _xy(a)
+    bx, by = _xy(b)
+    return ax >= bx and ay >= by and (ax > bx or ay > by)
+
+
+def _pareto_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    frontier: list[dict[str, str]] = []
+    for row in rows:
+        if any(_dominates(other, row) for other in rows if other is not row):
+            continue
+        frontier.append(row)
+    return sorted(frontier, key=lambda item: _xy(item))
+
+
+def _normalized(value: float, lo: float, hi: float) -> float:
+    span = max(hi - lo, 1e-8)
+    return (value - lo) / span
+
+
+def _distance_to_frontier(
+    row: dict[str, str],
+    frontier: list[dict[str, str]],
+    *,
+    x_lo: float,
+    x_hi: float,
+    y_lo: float,
+    y_hi: float,
+) -> float:
+    if not frontier:
+        return 0.0
+    x, y = _xy(row)
+    x_n = _normalized(x, x_lo, x_hi)
+    y_n = _normalized(y, y_lo, y_hi)
+    return min(
+        ((_normalized(fx, x_lo, x_hi) - x_n) ** 2 + (_normalized(fy, y_lo, y_hi) - y_n) ** 2) ** 0.5
+        for fx, fy in (_xy(item) for item in frontier)
+    )
+
+
+def _series_representative(
+    rows: list[dict[str, str]],
+    global_frontier: list[dict[str, str]],
+    *,
+    x_lo: float,
+    x_hi: float,
+    y_lo: float,
+    y_hi: float,
+) -> dict[str, str]:
+    pareto = _pareto_rows(rows)
+    if len(pareto) == 1:
+        return pareto[0]
+    if len(pareto) >= 3:
+        ordered = sorted(pareto, key=lambda item: _xy(item))
+        start_x, start_y = _xy(ordered[0])
+        end_x, end_y = _xy(ordered[-1])
+        sx = _normalized(start_x, x_lo, x_hi)
+        sy = _normalized(start_y, y_lo, y_hi)
+        ex = _normalized(end_x, x_lo, x_hi)
+        ey = _normalized(end_y, y_lo, y_hi)
+        line_dx = ex - sx
+        line_dy = ey - sy
+        denom = max((line_dx * line_dx + line_dy * line_dy) ** 0.5, 1e-8)
+        scored = []
+        for row in ordered[1:-1]:
+            x, y = _xy(row)
+            xn = _normalized(x, x_lo, x_hi)
+            yn = _normalized(y, y_lo, y_hi)
+            knee = abs(line_dx * (sy - yn) - (sx - xn) * line_dy) / denom
+            frontier_dist = _distance_to_frontier(row, global_frontier, x_lo=x_lo, x_hi=x_hi, y_lo=y_lo, y_hi=y_hi)
+            balance = _normalized(x, x_lo, x_hi) + _normalized(y, y_lo, y_hi)
+            scored.append((knee, -frontier_dist, balance, row))
+        if scored:
+            scored.sort(reverse=True, key=lambda item: (item[0], item[1], item[2]))
+            if scored[0][0] > 0.015:
+                return scored[0][3]
+    candidates = []
+    for row in pareto:
+        frontier_dist = _distance_to_frontier(row, global_frontier, x_lo=x_lo, x_hi=x_hi, y_lo=y_lo, y_hi=y_hi)
+        balance = _normalized(_xy(row)[0], x_lo, x_hi) + _normalized(_xy(row)[1], y_lo, y_hi)
+        candidates.append((frontier_dist, -balance, row))
+    candidates.sort(key=lambda item: (item[0], item[1]))
+    return candidates[0][2]
+
+
 def annotate(ax, row: dict[str, str]) -> None:
     text = (row.get("label") or "").strip()
     if not text or text not in LABEL_ALLOWLIST:
         return
-    x = float(row["one_minus_lpips"])
-    y = float(row["style_minus_idt"])
+    x, y = _xy(row)
     default_dx = _safe_float(row.get("label_dx")) or 8.0
     default_dy = _safe_float(row.get("label_dy")) or 10.0
     dx, dy = LABEL_OFFSETS.get(text, (default_dx, default_dy))
@@ -382,58 +485,109 @@ def annotate(ax, row: dict[str, str]) -> None:
 def plot(points: list[dict[str, str]]) -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     fig, ax = plt.subplots(figsize=(5.9, 3.55))
+    fig.subplots_adjust(left=0.12, right=0.985, bottom=0.14, top=0.89)
     ax.set_facecolor("#FCFBF8")
     ax.axhspan(-0.08, 0.0, color="#F2E8F7", alpha=0.28, zorder=0)
     ax.axhline(0.0, color="#8E63C0", lw=1.4, ls=(0, (7, 4)), zorder=1)
-    ax.text(0.985, -0.008, "IDT floor", color="#8E63C0", fontsize=8.2, ha="right", weight="bold")
+    plotted_points = [row for row in points if (row.get("trace_id") or "") != "idt"]
+    x_vals = [_xy(row)[0] for row in plotted_points]
+    y_vals = [_xy(row)[1] for row in plotted_points]
+    x_left = max(0.32, min(x_vals) - 0.025) if x_vals else 0.48
+    x_right = 0.80
+    y_low = min(-0.082, min(y_vals) - 0.014) if y_vals else -0.082
+    y_span = max(max(y_vals) - min(y_vals), 0.03) if y_vals else 0.03
+    y_high = max(0.074, max(y_vals) + max(0.012, 0.16 * y_span)) if y_vals else 0.074
+    ax.text(x_right - 0.006, -0.008, "IDT floor", color="#8E63C0", fontsize=8.2, ha="right", weight="bold")
 
     by_trace: dict[str, list[dict[str, str]]] = {}
-    for row in points:
+    for row in plotted_points:
         by_trace.setdefault(row.get("trace_id") or "unknown", []).append(row)
+
+    global_frontier = _pareto_rows(plotted_points)
+    frontier_ids = {row["point_id"] for row in global_frontier}
+    representatives: dict[str, dict[str, str]] = {}
+    for trace_id, rows in by_trace.items():
+        representatives[trace_id] = _series_representative(
+            rows,
+            global_frontier,
+            x_lo=x_left,
+            x_hi=x_right,
+            y_lo=y_low,
+            y_hi=y_high,
+        )
+
+    frontier_xs = [_xy(row)[0] for row in global_frontier]
+    frontier_ys = [_xy(row)[1] for row in global_frontier]
+    frontier_line, = ax.plot(
+        frontier_xs,
+        frontier_ys,
+        color="#111827",
+        lw=1.25,
+        alpha=0.82,
+        zorder=3,
+        label="Current Pareto frontier",
+    )
 
     legend_handles = []
     legend_labels = []
-    legend_map = {
-        "samam_wikiarts5_patch8": "SaMAM (WikiArt-5)",
-        "samst_wikiarts5": "SaMST (WikiArt-5)",
-        "seedream_test_only": "Seedream",
-        "k070_e1_e5": "Ours k070",
-        "fiber_sde_fine_k070_e3": "Fiber/SDE",
-        "actuation_spatial_carriergate_k070_e3": "Carrier gate",
-        "latent_affine_k070_e3": "Latent affine",
-        "latent_affine_refine_k070_e3": "LatAff refine",
-        "latent_affine_pc_k070_e3": "LatAff+PC",
-        "i2sb_pnp_fiber_sde_k070": "I2SB combo",
-        "i2sb_slerp_orthogonal_lowhigh_k070_e3": "I2SB slerp+orth",
-        "i2sb_orthogonal_lowanchor050_k070_e3": "I2SB low-anchor",
-        "i2sb_orthogonal_lowanchor065_k070_e3": "I2SB low-anchor .65",
-    }
+    legend_handles.append(frontier_line)
+    legend_labels.append("Current Pareto frontier")
 
     for trace_id, rows in sorted(by_trace.items()):
         rows = sorted(rows, key=_sort_key)
-        xs = [float(row["one_minus_lpips"]) for row in rows]
-        ys = [float(row["style_minus_idt"]) for row in rows]
+        xs = [_xy(row)[0] for row in rows]
+        ys = [_xy(row)[1] for row in rows]
         color, marker, size, alpha = _style_for(trace_id)
+        rep = representatives[trace_id]
+        rep_x, rep_y = _xy(rep)
         if len(rows) > 1 and trace_id not in {"idt", "seedream_test_only"}:
-            lw = 1.7 if trace_id in {"samam_wikiarts5_patch8", "samst_wikiarts5", "latent_affine_k070_e3", "latent_affine_refine_k070_e3"} else 1.15
-            ax.plot(xs, ys, color=color, lw=lw, alpha=min(0.72, alpha), zorder=2)
-        scatter_kwargs = {
-            "s": size,
+            ax.plot(xs, ys, color=color, lw=0.8, alpha=min(0.26, alpha * 0.38), zorder=2)
+        bg_scatter_kwargs = {
+            "s": max(size * 0.55, 18),
             "c": color,
             "marker": marker,
-            "linewidths": 0.85,
-            "alpha": alpha,
-            "zorder": 6 if trace_id in {"latent_affine_k070_e3", "latent_affine_refine_k070_e3", "latent_affine_pc_k070_e3", "idt", "seedream_test_only"} else 4,
+            "linewidths": 0.4,
+            "alpha": min(0.22, alpha * 0.28),
+            "zorder": 3,
         }
         if marker != "x":
-            scatter_kwargs["edgecolors"] = "white"
-        scatter = ax.scatter(xs, ys, **scatter_kwargs)
-        if trace_id in legend_map:
-            legend_handles.append(scatter)
-            legend_labels.append(legend_map[trace_id])
+            bg_scatter_kwargs["edgecolors"] = "white"
+        ax.scatter(xs, ys, **bg_scatter_kwargs)
 
-    for row in points:
-        annotate(ax, row)
+        rep_scatter_kwargs = {
+            "s": max(size * 1.2, 54),
+            "c": color,
+            "marker": marker,
+            "linewidths": 1.0,
+            "alpha": min(1.0, max(0.88, alpha)),
+            "zorder": 7,
+        }
+        if marker != "x":
+            rep_scatter_kwargs["edgecolors"] = "white"
+        rep_scatter = ax.scatter([rep_x], [rep_y], **rep_scatter_kwargs)
+
+        if rep["point_id"] in frontier_ids:
+            ax.scatter(
+                [rep_x],
+                [rep_y],
+                s=max(size * 1.32, 62),
+                facecolors="none",
+                edgecolors="#111827",
+                linewidths=0.8,
+                alpha=0.72,
+                zorder=8,
+            )
+
+        if trace_id in LEGEND_MAP:
+            legend_handles.append(rep_scatter)
+            legend_labels.append(LEGEND_MAP[trace_id])
+
+    for row in plotted_points:
+        is_rep = representatives[row.get("trace_id") or "unknown"]["point_id"] == row["point_id"]
+        is_frontier = row["point_id"] in frontier_ids
+        keep_key_baseline_label = (row.get("label") or "") in {"Seedream", "SaMAM style", "SaMAM LPIPS"}
+        if keep_key_baseline_label or is_rep or is_frontier:
+            annotate(ax, row)
 
     ax.text(
         0.505,
@@ -447,8 +601,8 @@ def plot(points: list[dict[str, str]]) -> None:
     ax.set_title("WikiArt-5 Full-Train Surface: CLIP-S vs. LPIPS", pad=7, fontsize=10.2, fontweight="bold")
     ax.set_xlabel(r"$1-\mathrm{LPIPS}$ $\uparrow$")
     ax.set_ylabel(r"$\Delta_{\mathrm{IDT,tr}}$ (transfer CLIP-S) $\uparrow$")
-    ax.set_xlim(0.48, 1.02)
-    ax.set_ylim(-0.082, 0.068)
+    ax.set_xlim(x_left, x_right)
+    ax.set_ylim(y_low, y_high)
     ax.legend(
         legend_handles,
         legend_labels,

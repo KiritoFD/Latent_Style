@@ -13,6 +13,19 @@
 - Per-run eval records:
   `docs/experiments/phase2_fiber_bundle/eval/`.
 
+## Current Retained Frontier
+
+| role | point | transfer CLIP-S | LPIPS | decision |
+|---|---|---:|---:|---|
+| style-first train-time retained | `I2SB low-anchor e9` | `0.701429` | `0.372203` | retained |
+| balanced eval-time retained | `LatAff s0.45` | `0.679110` | `0.318818` | retained |
+| structure-first eval-time retained | `LatAff s0.35` | `0.676781` | `0.313606` | retained |
+| path-geometry diagnostic | `Slerp e2 peak` | `0.712038` | `0.476511` | diagnostic-only |
+| style-ceiling diagnostic | `LatAff s0.75` | `0.685444` | `0.344580` | diagnostic-only |
+
+Machine-readable copy:
+`docs/experiments/phase2_fiber_bundle/retained_frontier.csv`.
+
 ## Current Transfer Frontier Read
 
 | line | best transfer CLIP-S | LPIPS | status |
