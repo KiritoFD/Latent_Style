@@ -576,8 +576,9 @@ class LatentAdaCUTRuntimeMixin:
         h: torch.Tensor,
         x: torch.Tensor | None = None,
         style_code: torch.Tensor | None = None,
+        style_maps: StyleMaps | None = None,
     ) -> torch.Tensor:
-        del style_code
+        del style_code, style_maps
         raw = self.dec_out(h)
         if bool(getattr(self, "use_diffeomorphic_stroke", False)):
             if x is None:
@@ -862,7 +863,7 @@ class LatentAdaCUTRuntimeMixin:
         if callable(style_inject):
             h_dec = style_inject(h_dec, x, style_code, site="decoder", style_map=style_map_proj)
         h_dec = self.dec_act(self.dec_mod(h_dec, style_code, gate=1.0))
-        delta_raw = self._compute_delta(h_dec, x=x, style_code=style_code)
+        delta_raw = self._compute_delta(h_dec, x=x, style_code=style_code, style_maps=style_maps)
         return delta_raw
 
     def integrate(
