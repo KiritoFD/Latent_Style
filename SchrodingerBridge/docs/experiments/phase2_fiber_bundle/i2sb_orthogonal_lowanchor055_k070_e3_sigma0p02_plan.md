@@ -95,10 +95,23 @@ band while moving LPIPS below the low-anchor0.50 e9 value.
   style band and LPIPS worsens, so it is not a usable cooling step.
 - 2026-06-16 13:46 e6 eval:
   transfer `0.696947 / 0.423814`, eval wall `24.91s`.
+- 2026-06-16 13:49 e7 eval:
+  transfer `0.690097 / 0.391744`, eval wall `24.94s`.
+- 2026-06-16 13:52 e8 eval:
+  transfer `0.697144 / 0.379475`, eval wall `24.93s`.
+- 2026-06-16 13:54 e9 eval:
+  transfer `0.695546 / 0.382781`, eval wall `24.95s`.
+- 2026-06-16 13:57 e10 eval:
+  transfer `0.694382 / 0.397952`, eval wall `25.83s`.
+- 2026-06-16 14:00 e11 eval:
+  transfer `0.688107 / 0.353115`, eval wall `24.97s`.
+- 2026-06-16 14:03 e12 eval:
+  transfer `0.689145 / 0.365202`, eval wall `24.94s`.
+- 2026-06-16 14:04 remote run stopped. GPU returned to idle.
 
 ## Interim Read
 
-- `running_risky_after_e6`.
+- `closed_negative_lpips_only_tail`.
 - e1 supports the bracket hypothesis: `0.55` preserves the style impulse better
   than `0.65` and anchors structure more than `0.50`.
 - The decision point remains the cooling tail. e4 is a useful target-facing
@@ -109,3 +122,7 @@ band while moving LPIPS below the low-anchor0.50 e9 value.
 - e5/e6 are negative evidence: style falls below `0.700` before LPIPS improves
   into the low-anchor0.50 e9 band. Continue a few more retained checkpoints for
   formal closure rather than stopping on the first bad tail.
+- e7-e12 close the run: LPIPS reaches `0.353115` at e11, but only with
+  transfer style `0.688107`. The best target-facing point remains e4
+  (`0.704881 / 0.405001`), which does not replace low-anchor0.50 e9
+  (`0.701429 / 0.372203`).
