@@ -23,6 +23,7 @@
 | content-anchor I2SB | `0.703953` | `0.458607` | closed negative; anchor remains coupled |
 | orthogonal low/high I2SB | `0.705847` | `0.451386` | closed partial positive; e4 improves structure to `0.698245 / 0.390826` but style retreats |
 | I2SB fiber-directed noise | `0.706816` | `0.489969` | closed negative; active gate but no matched Pareto gain |
+| I2SB latent slerp path | `0.712038` | `0.476511` | running early positive; e2 beats clean I2SB e2 by `+0.002944` style and `-0.013722` LPIPS, but e3/e4 style retreats |
 | latent affine s0.75 | `0.685444` | `0.344580` | in-band diagnostic, not enough style |
 | SMoE tokenizer | `0.672774` | `0.327155` | stable structure, style bottleneck unchanged |
 
@@ -37,6 +38,11 @@
   e1 gives better style and better LPIPS than content-anchor e1, and e4 moves
   LPIPS near `0.39`. Runtime observability proves the endpoint projection
   switch is active.
+- `latent_slerp` is the first path-geometry intervention with a clean matched
+  I2SB Pareto gain: e2 reaches `0.712038 / 0.476511`, improving both style and
+  LPIPS versus clean I2SB e2. It is not closed or promoted yet because LPIPS is
+  still high, e3/e4 show style retreat, and e5 only creates a lower-LPIPS
+  tradeoff point (`0.697559 / 0.425856`) without recovering style.
 
 ## What Failed Or Is Not Promoted
 
@@ -56,7 +62,10 @@
 ## Next Queue
 
 - Do not spend a training lane on topogated Brownian noise alone.
-- Next candidate should directly change style actuation capacity after the
-  body bottleneck, not just noise direction.
+- Let `latent_slerp` run to the formal tail rule before deciding whether to
+  use its e2 checkpoint as an integration parent.
+- If `latent_slerp` closes positive-but-high-LPIPS, next intervention should
+  combine path geometry with an explicit structure restraint rather than add
+  more actuator capacity.
 - Keep all DINO/VLM-heavy work after the clean geometry/SDE probes unless a
   matched control specifically requires it.
