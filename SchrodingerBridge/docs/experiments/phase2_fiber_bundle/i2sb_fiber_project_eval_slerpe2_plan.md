@@ -30,6 +30,21 @@ only two diagnostic sigmas.
   be useful on stronger-style parents.
 - If both fail, close the raw latent avg-pool projector family more broadly.
 
+## Results
+
+| sigma | transfer CLIP-S | transfer LPIPS | read |
+|---:|---:|---:|---|
+| `0.0` | `0.693441` | `0.435260` | LPIPS improves versus slerp e2 but style falls below `0.700` |
+| `0.5` | `0.719065` | `0.568915` | strong style, catastrophic structure |
+
+## Decision Read
+
+`closed_negative_structure_unsafe`
+
+This confirms the low-anchor0.50 e9 result was not checkpoint-specific. The
+raw latent avg-pool highpass projector can release style on a stronger-style
+checkpoint, but it is not a structure-safe fiber projector.
+
 ## Artifact Targets
 
 - Eval mirrors:

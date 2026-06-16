@@ -1,0 +1,29 @@
+HF cache dir: /mnt/i/Github/Latent_Style/SchrodingerBridge/eval_cache/hf
+HF hub cache dir: /mnt/i/Github/Latent_Style/SchrodingerBridge/eval_cache/hf/hub
+Transfer-only eval enabled: skipping identity src_style==tgt_style pairs.
+
+Phase 1: Generation (Batch Size 8)
+  Fast metric path: keep decoded generated tensors on GPU (no PNG/sidecar host roundtrip).
+  Diffusers VAE loaded: required by eval settings
+  Source latent cache loaded: /mnt/i/Github/Latent_Style/SchrodingerBridge/eval_cache/source_latents_408fa88bb717.pt
+  Generating Batch 1/7
+  Generating Batch 2/7
+  Generating Batch 3/7
+  Generating Batch 4/7
+  Generating Batch 5/7
+  Generating Batch 6/7
+  Generating Batch 7/7
+  Generation models unloaded
+
+妫ｅ啯鐣?Phase 2: Evaluation
+  LPIPS Loaded
+  CLIP Loaded (HF) from: /mnt/i/Github/Latent_Style/eval_cache/manual_clip/openai-clip-vit-base-patch32 (processor=skipped)
+Found global reference cache: /mnt/i/Github/Latent_Style/SchrodingerBridge/eval_cache/ref_feats_06b1376662_m30.pt
+  Reference cache loaded successfully
+  Processing 200 generated images...
+Found global source cache: /mnt/i/Github/Latent_Style/SchrodingerBridge/eval_cache/src_feats_06b1376662_img256_clip0.pt
+  Source cache loaded successfully
+  Fast metric path: source image device cache enabled.
+
+妫ｅ啯鎯?Generating Summary...
+Summary saved: /mnt/i/Github/Latent_Style/exp/aaai2027_eval_fiber_project_slerpe2_sigma0p5/summary.json
