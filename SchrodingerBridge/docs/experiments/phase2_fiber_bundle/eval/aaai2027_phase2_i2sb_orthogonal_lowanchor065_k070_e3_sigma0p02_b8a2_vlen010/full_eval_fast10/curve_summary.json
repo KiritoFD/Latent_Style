@@ -1,23 +1,23 @@
 {
   "run_dir": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_i2sb_orthogonal_lowanchor065_k070_e3_sigma0p02_b8a2_vlen010",
   "eval_subdir": "full_eval_fast10",
-  "row_count": 10,
+  "row_count": 11,
   "latest": {
-    "epoch": "epoch_0010",
-    "epoch_int": 10,
-    "checkpoint": "exp/aaai2027_phase2_i2sb_orthogonal_lowanchor065_k070_e3_sigma0p02_b8a2_vlen010/epoch_0010.pt",
-    "timestamp": "2026-06-16 13:16:51",
-    "transfer_clip_style": 0.6900430762767792,
-    "transfer_content_lpips": 0.3629551851,
-    "all_pairs_clip_style": 0.6900430762767792,
-    "all_pairs_content_lpips": 0.3629551851,
+    "epoch": "epoch_0011",
+    "epoch_int": 11,
+    "checkpoint": "exp/aaai2027_phase2_i2sb_orthogonal_lowanchor065_k070_e3_sigma0p02_b8a2_vlen010/epoch_0011.pt",
+    "timestamp": "2026-06-16 13:19:33",
+    "transfer_clip_style": 0.6873321872949602,
+    "transfer_content_lpips": 0.35979933215000004,
+    "all_pairs_clip_style": 0.6873321872949602,
+    "all_pairs_content_lpips": 0.35979933215000004,
     "identity_clip_style": 0.0,
     "identity_content_lpips": 0.0,
-    "eval_wall_total_sec": 24.914515847005532,
-    "eval_total_sec": 4.136395227003959,
-    "generation_sec": 4.743750631023431,
-    "vae_decode_sec": 1.0526460289838724,
-    "summary_path": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_i2sb_orthogonal_lowanchor065_k070_e3_sigma0p02_b8a2_vlen010/full_eval_fast10/epoch_0010/summary.json"
+    "eval_wall_total_sec": 25.005350120991352,
+    "eval_total_sec": 4.149863836006261,
+    "generation_sec": 4.738019971002359,
+    "vae_decode_sec": 1.0651162340072915,
+    "summary_path": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_i2sb_orthogonal_lowanchor065_k070_e3_sigma0p02_b8a2_vlen010/full_eval_fast10/epoch_0011/summary.json"
   },
   "best_transfer": {
     "epoch": "epoch_0001",
@@ -223,6 +223,23 @@
       "generation_sec": 4.743750631023431,
       "vae_decode_sec": 1.0526460289838724,
       "summary_path": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_i2sb_orthogonal_lowanchor065_k070_e3_sigma0p02_b8a2_vlen010/full_eval_fast10/epoch_0010/summary.json"
+    },
+    {
+      "epoch": "epoch_0011",
+      "epoch_int": 11,
+      "checkpoint": "exp/aaai2027_phase2_i2sb_orthogonal_lowanchor065_k070_e3_sigma0p02_b8a2_vlen010/epoch_0011.pt",
+      "timestamp": "2026-06-16 13:19:33",
+      "transfer_clip_style": 0.6873321872949602,
+      "transfer_content_lpips": 0.35979933215000004,
+      "all_pairs_clip_style": 0.6873321872949602,
+      "all_pairs_content_lpips": 0.35979933215000004,
+      "identity_clip_style": 0.0,
+      "identity_content_lpips": 0.0,
+      "eval_wall_total_sec": 25.005350120991352,
+      "eval_total_sec": 4.149863836006261,
+      "generation_sec": 4.738019971002359,
+      "vae_decode_sec": 1.0651162340072915,
+      "summary_path": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_i2sb_orthogonal_lowanchor065_k070_e3_sigma0p02_b8a2_vlen010/full_eval_fast10/epoch_0011/summary.json"
     }
   ]
 }
