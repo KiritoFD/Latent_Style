@@ -1,0 +1,170 @@
+# 2026-06-16 Performance Status
+
+## Canonical CSV And Figure
+
+- Plot data:
+  `docs/experiments/phase2_fiber_bundle/plot_points.csv`.
+- Page-1 figure data:
+  `aaai2027/page1_bundle/wikiart5_page1_clip_lpips_points.csv`.
+- Current rendered figure:
+  `aaai2027/figures/fig_wikiart5_page1_summary.pdf`.
+- Per-run curves:
+  `docs/experiments/phase2_fiber_bundle/curves/`.
+- Per-run eval records:
+  `docs/experiments/phase2_fiber_bundle/eval/`.
+
+## Current Retained Frontier
+
+| role | point | transfer CLIP-S | LPIPS | decision |
+|---|---|---:|---:|---|
+| style-first train-time retained | `I2SB low-anchor e9` | `0.701429` | `0.372203` | retained |
+| balanced eval-time retained | `LatAff s0.45` | `0.679110` | `0.318818` | retained |
+| structure-first eval-time retained | `LatAff s0.35` | `0.676781` | `0.313606` | retained |
+| path-geometry diagnostic | `Slerp e2 peak` | `0.712038` | `0.476511` | diagnostic-only |
+| style-ceiling diagnostic | `LatAff s0.75` | `0.685444` | `0.344580` | diagnostic-only |
+
+Machine-readable copy:
+`docs/experiments/phase2_fiber_bundle/retained_frontier.csv`.
+
+## Current Transfer Frontier Read
+
+| line | best transfer CLIP-S | LPIPS | status |
+|---|---:|---:|---|
+| clean absolute I2SB sigma0p02 | `0.709094` | `0.490233` | style-positive, structure too damaged |
+| clean absolute I2SB sigma0p01 | `0.713162` | `0.590598` | strongest style, unacceptable LPIPS |
+| I2SB blend0p25 | `0.694567` | `0.415258` | closed negative; scalar shrink suppresses style |
+| content-anchor I2SB | `0.703953` | `0.458607` | closed negative; anchor remains coupled |
+| orthogonal low/high I2SB | `0.705847` | `0.451386` | closed partial positive; e4 improves structure to `0.698245 / 0.390826` but style retreats |
+| I2SB fiber-directed noise | `0.706816` | `0.489969` | closed negative; active gate but no matched Pareto gain |
+| I2SB latent slerp path | `0.712038` | `0.476511` | closed partial positive; e2 beats clean I2SB e2 by `+0.002944` style and `-0.013722` LPIPS; e28 gives LPIPS floor `0.682638 / 0.352726`, but style decays |
+| I2SB slerp + orthogonal low/high | `0.704828` | `0.446676` | closed negative; e15 reaches `0.678109 / 0.350421` but only as LPIPS-only style collapse |
+| I2SB low-anchor0.50 | `0.711470` | `0.472991` | closed partial positive; e9 reaches `0.701429 / 0.372203`, first in-band style-first point for this probe |
+| I2SB low-anchor0.65 | `0.709417` | `0.449507` | closed negative over-anchor; best balanced e4 is `0.706564 / 0.395071`; e9/e11 improve LPIPS to about `0.36` only after style falls below `0.700` |
+| I2SB low-anchor0.55 | `0.711863` | `0.457232` | closed negative LPIPS-only tail; e4 is `0.704881 / 0.405001`, e11 reaches `0.688107 / 0.353115` after style collapse |
+| I2SB channel-mean lowpass | `0.702899` | `0.513291` | closed negative structure-unstable; e5 reaches `0.701429 / 0.410212` but does not replace low-anchor0.50 e9 |
+| Orthogonal Fiber-SDE hard projection | `0.703560` | `0.592224` | closed negative on low-anchor0.50 e9; sigma0 gives LPIPS-only `0.687711 / 0.358167`, sigma0.5 gives tiny style gain but structure explodes |
+| Orthogonal Fiber-SDE on slerp e2 | `0.719065` | `0.568915` | closed negative diagnostic; stronger style parent confirms highpass noise can lift style but is not structure-safe |
+| Mask-aware Fiber-SDE projection | `0.719342` | `0.482121` | partial positive, not promoted; gate support beats raw global projection, but style gains still require too much LPIPS |
+| Residual-envelope Fiber noise | `0.716145` | `0.452353` | weak positive, not promoted; improves LPIPS by `0.029768` versus gated highpass sigma0.4 while losing only `0.003197` CLIP-S |
+| Gate-local head adapter + residual-envelope Fiber-SDE | `0.716935` | `0.473270` | closed negative diagnostic; frozen-backbone local head adds style but amplifies unsafe high-LPIPS fiber directions |
+| latent affine s0.75 | `0.685444` | `0.344580` | in-band diagnostic, not enough style |
+| SMoE tokenizer | `0.672774` | `0.327155` | stable structure, style bottleneck unchanged |
+
+## What Worked
+
+- SDE/I2SB consistently breaks the ODE style ceiling: style enters the
+  `0.70+` band, unlike the ODE/tokenizer-only lines around `0.67-0.68`.
+- Training-time eval is now fast enough for every retained checkpoint on
+  remote WSL: recent fast10 runs complete in roughly `26-29s` wall with cached
+  CLIP/source/reference features.
+- `orthogonal_lowhigh` is a cleaner intervention than content-anchor:
+  e1 gives better style and better LPIPS than content-anchor e1, and e4 moves
+  LPIPS near `0.39`. Runtime observability proves the endpoint projection
+  switch is active.
+- `latent_slerp` is the first path-geometry intervention with a clean matched
+  I2SB Pareto gain: e2 reaches `0.712038 / 0.476511`, improving both style and
+  LPIPS versus clean I2SB e2. The full e1-e28 curve confirms the mechanism is
+  not promotable alone: e28 reaches the best LPIPS `0.352726`, but only at
+  `0.682638` style. Current read: slerp separates the style peak and structure
+  cooling tail instead of solving both at once.
+- Mask-aware Fiber-SDE projection is a real improvement over the raw global
+  latent highpass projector. On the same low-anchor0.50 e9 parent, sigma0.5
+  improves from raw `0.703560 / 0.592224` to gated
+  `0.718477 / 0.521621`; sigma0.4 gives the best style
+  `0.719342 / 0.482121`. The support mask helps, but the latent noise basis
+  is still not structure-aligned enough.
+- Residual-envelope Fiber noise improves the matched sigma slope versus
+  gated highpass noise: at sigma0.4 it moves from `0.719342 / 0.482121` to
+  `0.716145 / 0.452353`. This is the first evidence that the fiber noise
+  basis should follow the endpoint residual envelope rather than naked latent
+  highpass noise.
+- Gate-local head adapter verifies the implementation path for a frozen
+  backbone local actuator: every checkpoint has `style_head_adapter_gate_active=1`.
+  It is not useful as a model, but it is clean evidence that merely adding a
+  small local head does not create a true orthogonal fiber basis.
+
+## What Failed Or Is Not Promoted
+
+- `blend0p25` failed because scalar interpolation suppresses style and
+  structure together.
+- `content_anchor` failed because lowpass/edge anchor losses did not create a
+  true orthogonal split; the best style points still stayed at LPIPS
+  `0.445-0.459`, and e7 collapsed to `0.683597`.
+- SMoE and topology release are not enough by themselves: they preserve
+  structure but do not solve style actuation.
+- `orthogonal_lowhigh` is not promoted because its best style point remains
+  high-LPIPS and its best structure point loses too much style. It is a useful
+  partial positive, not the target frontier.
+- I2SB fiber-directed noise is not promoted. Runtime observability proves the
+  gate was active, but the matched e2/e5 controls show no useful Pareto delta.
+- I2SB latent-slerp is not promoted as a standalone model. It has a real e2
+  matched gain, but after that 26 later checkpoints fail to recover or exceed
+  the style frontier. The automatic joint Pareto tracker is misleading here
+  because late checkpoints keep making low-style LPIPS-only improvements.
+- I2SB slerp+orthogonal-lowhigh is not promoted. It confirms hard lowpass
+  endpoint anchoring suppresses the low-frequency/color component of style:
+  e1 loses `0.007210` CLIP-S versus latent-slerp e2 while improving LPIPS, and
+  e15 improves LPIPS only by falling to `0.678109` style.
+- Mask-aware Fiber-SDE projection is not promoted. It validates the gate as a
+  better support mask than global projection, but the best style point
+  `0.719342` still has LPIPS `0.482121`, and the in-band-ish sigma0.2 point
+  only improves style by `+0.000957`.
+- Residual-direction Fiber noise is not promoted. It lowers LPIPS versus
+  gated highpass but gives back too much style: sigma0.4 is only
+  `0.705169 / 0.418271`.
+- Residual-envelope Fiber noise is not promoted. It improves the matched
+  slope, but the best residual point `0.716145 / 0.452353` is still too far
+  from the style-first target and below the gated-highpass style ceiling.
+- Gate-local head adapter is not promoted. It reaches `0.716935` style at e3,
+  only `+0.000790` over the residual-envelope eval-only control, while LPIPS
+  worsens from `0.452353` to `0.473270`. The adapter RMS keeps growing after
+  style plateaus, so the branch is closed at e6.
+
+## Completed / Effective / Pending
+
+| lane | done | effect | next read |
+|---|---|---|---|
+| Infra cleanup | yes | eval steady-state is about `25s` per fast10 checkpoint; cold restart eval is about `40s` | keep cached in-process eval, avoid unnecessary restarts |
+| Fiber / SDE noise scan | yes | isotropic/fiber noise did not create target-facing Pareto gain | do not spend more lanes on noise-only scans |
+| SMoE tokenizer | yes | preserves structure but stays near ODE style ceiling | not the current bottleneck |
+| I2SB clean absolute | yes | proves SDE style shock, but LPIPS too high | use as style-force reference, not as promoted model |
+| I2SB blend/content-anchor | yes | scalar/lowpass anchors suppress or couple style | closed negative |
+| I2SB orthogonal low/high | yes | partial structure restraint, style still retreats | useful ingredient for combo |
+| I2SB latent-slerp | yes, e1-e28 | small matched style+LPIPS gain at e2; later structure cooling only | combine with explicit structure projection |
+| I2SB slerp+orthogonal | yes, e1-e16 | closes the structure gap to `0.350421` LPIPS but suppresses style to low `0.68` | closed negative; use as evidence against hard lowpass endpoint replacement |
+| I2SB low-anchor0.50 | yes, e1-e15 | restores style relative to hard lowpass anchor; e9 is `0.701429 / 0.372203` | close and scan low-anchor0.65 from same parent |
+| I2SB low-anchor0.65 | closed, e1-e11 | stronger anchor improves early LPIPS, but over-anchors by e5 and drops style below `0.700`; e9/e11 are LPIPS-good/style-bad | negative control; scan milder `0.55-0.58` anchor |
+| I2SB low-anchor0.55 | closed, e1-e12 | e1 improves style/LPIPS versus `0.50` e1; e4 remains `0.700+` style with LPIPS `0.405001`; e11 is LPIPS-only `0.688107 / 0.353115` | negative control; stop scalar low-anchor sweep |
+| I2SB channel-mean lowpass | closed, e1-e6 | preserves low-frequency style/color too aggressively; e2 is `0.702899 / 0.513291`, e5 improves to `0.701429 / 0.410212` but remains worse than low-anchor0.50 e9 | negative control; move to eval-only hard Fiber-SDE projection |
+| Orthogonal Fiber-SDE hard projection | closed eval-only | switch active, but naive latent avg-pool highpass projector is not decoder-safe; sigma0.5 is `0.703560 / 0.592224` | negative control; keep switch default off |
+| Orthogonal Fiber-SDE on slerp e2 | closed eval-only | sigma0 lowers LPIPS but kills style; sigma0.5 reaches `0.719065` style with LPIPS `0.568915` | closes raw latent avg-pool projector family for now |
+| Mask-aware Fiber-SDE projection | closed eval-only | gate support improves raw projector at matched sigma; best style is `0.719342 / 0.482121`, in-band-ish sigma0.2 is only `0.702386 / 0.396835` | keep gate support, replace raw latent noise/projector direction |
+| Residual-aligned Fiber noise | closed eval-only | envelope improves LPIPS at small style cost; direction is too conservative | use envelope as ingredient, stop scalar sigma scans |
+| Gate-local head adapter | closed e1-e6 | best style `0.716935 / 0.473270`; no style improvement after e3 and LPIPS remains about `0.473` | do not continue small output-head-only fixes |
+
+## Next Queue
+
+- Do not spend a training lane on topogated Brownian noise alone.
+- Do not continue latent-slerp alone. It is closed as
+  `partial_positive_not_promoted`.
+- The eval-only Orthogonal Fiber-SDE hard projection scan is negative for the
+  naive latent avg-pool projector. The slerp e2 diagnostic confirms this is
+  not just a low-anchor0.50 checkpoint artifact. Next hard-projection work must
+  be decoder-aware or mask-aware; do not continue raw latent highpass sigma
+  scans.
+- Mask-aware Fiber-SDE projection closes the first mask-aware diagnostic:
+  support masking is useful, but not enough. Next step should preserve the
+  gate support while moving the fiber direction to a decoder-aware or learned
+  local basis; do not spend more scans on the same raw latent highpass noise.
+- Residual-envelope noise closes the first residual-aligned diagnostic:
+  the endpoint residual envelope is a better fiber noise basis, but scalar
+  eval-only noise is still not enough. Next step should train a small local
+  fiber basis / decoder-aware residual head with the main backbone frozen,
+  then evaluate with the same gate+envelope solver.
+- Gate-local head adapter closes that frozen-head follow-up as negative. The
+  next hard-projection experiment should move the constraint into a decoded/RGB
+  or decoder-Jacobian-aware metric, or learn a fiber basis with an explicit
+  structure-null objective; do not keep adding scalar losses, scalar blends, or
+  small output-side heads.
+- Keep all DINO/VLM-heavy work after the clean geometry/SDE probes unless a
+  matched control specifically requires it.
