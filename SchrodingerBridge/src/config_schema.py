@@ -384,6 +384,9 @@ class ModelConfig:
     solver_fiber_aligned: bool = False
     i2sb_fiber_aligned_noise: bool = False
     i2sb_fiber_noise_rms_normalize: bool = True
+    i2sb_fiber_project_endpoint: bool = False
+    i2sb_fiber_project_noise: bool = False
+    i2sb_fiber_project_kernel: int = 5
     solver_dual_track_detach: bool = True
     use_checkpointing: bool = False
     extra: dict[str, Any] = field(default_factory=dict)

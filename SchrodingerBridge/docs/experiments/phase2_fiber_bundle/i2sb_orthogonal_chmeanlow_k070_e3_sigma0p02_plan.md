@@ -88,14 +88,24 @@ style/color actuation to survive.
   transfer `0.697062 / 0.482289`, eval wall `42.34s`.
 - 2026-06-16 14:25 e2 eval:
   transfer `0.702899 / 0.513291`, eval wall `24.96s`.
+- 2026-06-16 14:28 e3 eval:
+  transfer `0.697016 / 0.487425`, eval wall `25.48s`.
+- 2026-06-16 14:31 e4 eval:
+  transfer `0.690897 / 0.482702`, eval wall `25.01s`.
+- 2026-06-16 14:34 e5 eval:
+  transfer `0.701429 / 0.410212`, eval wall `25.03s`.
+- 2026-06-16 14:36 e6 eval:
+  transfer `0.690869 / 0.448003`, eval wall `24.96s`.
+- 2026-06-16 14:37 remote run stopped. GPU returned to idle.
 
 ## Interim Read
 
-- `running_negative_structure_unstable`.
+- `closed_negative_structure_unstable`.
 - Channel-mean lowpass anchoring preserves too much low-frequency freedom in
   the first two checkpoints: e2 recovers style above `0.700`, but LPIPS rises
   to `0.513291`, worse than clean absolute I2SB sigma0p02 and far outside the
   target structure band.
-- Continue to e4 before closure because this family may cool later, but it must
-  show a sharp LPIPS correction while preserving `0.700+` style to remain
-  viable.
+- e5 briefly recovers target-facing style (`0.701429`) while reducing LPIPS to
+  `0.410212`, but this is still worse than low-anchor0.50 e9
+  (`0.701429 / 0.372203`) and the next checkpoint collapses again. The
+  mechanism is therefore not promoted.
