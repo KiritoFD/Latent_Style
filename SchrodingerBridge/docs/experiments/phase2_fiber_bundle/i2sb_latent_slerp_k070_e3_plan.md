@@ -104,6 +104,7 @@ Local mirror:
 | e11 | 0.686676 | 0.396227 | 24.89s | no improvement |
 | e12 | 0.689118 | 0.384867 | 24.90s | tiny LPIPS-only Pareto |
 | e13 | 0.690317 | 0.369346 | 25.62s | new structure-side Pareto, style still low |
+| e14 | 0.686199 | 0.357695 | 24.91s | new structure-side Pareto, style too low |
 
 Matched read against clean absolute I2SB sigma0.02:
 
@@ -120,7 +121,7 @@ Interim decision:
   and e3/e4 show style retreat. e5 creates a lower-LPIPS tradeoff point but
   remains style-retreated. e7 pushes LPIPS to `0.391787` but style falls to
   `0.694678`; e10 improves the structure-side Pareto to
-  `0.701837 / 0.385366`; e13 pushes LPIPS further to `0.369346` but only with
-  `0.690317` style. The curve now cleanly separates a style peak (e2) from a
-  structure peak (e13). Continue because the latest Pareto point is still in
+  `0.701837 / 0.385366`; e14 pushes LPIPS further to `0.357695` but only with
+  `0.686199` style. The curve now cleanly separates a style peak (e2) from a
+  structure peak (e14). Continue because the latest Pareto point is still in
   the newest checkpoints.

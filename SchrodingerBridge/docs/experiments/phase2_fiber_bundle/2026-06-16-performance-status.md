@@ -23,7 +23,7 @@
 | content-anchor I2SB | `0.703953` | `0.458607` | closed negative; anchor remains coupled |
 | orthogonal low/high I2SB | `0.705847` | `0.451386` | closed partial positive; e4 improves structure to `0.698245 / 0.390826` but style retreats |
 | I2SB fiber-directed noise | `0.706816` | `0.489969` | closed negative; active gate but no matched Pareto gain |
-| I2SB latent slerp path | `0.712038` | `0.476511` | running positive; e2 beats clean I2SB e2 by `+0.002944` style and `-0.013722` LPIPS; e13 gives structure-side Pareto `0.690317 / 0.369346` |
+| I2SB latent slerp path | `0.712038` | `0.476511` | running positive; e2 beats clean I2SB e2 by `+0.002944` style and `-0.013722` LPIPS; e14 gives structure-side Pareto `0.686199 / 0.357695` |
 | latent affine s0.75 | `0.685444` | `0.344580` | in-band diagnostic, not enough style |
 | SMoE tokenizer | `0.672774` | `0.327155` | stable structure, style bottleneck unchanged |
 
@@ -43,7 +43,7 @@
   LPIPS versus clean I2SB e2. It is not closed or promoted yet because LPIPS is
   still high. The later curve is not flat negative: e10 recovers to
   `0.701837 / 0.385366`, dominating the earlier e7 structure-side point, and
-  e13 reaches `0.690317 / 0.369346`. Current read: slerp separates the style
+  e14 reaches `0.686199 / 0.357695`. Current read: slerp separates the style
   peak and structure peak instead of solving both at once.
 
 ## What Failed Or Is Not Promoted
