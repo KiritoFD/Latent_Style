@@ -73,12 +73,29 @@ keeping transfer CLIP-S at or above `0.700`.
   transfer `0.707335 / 0.434842`, eval wall `24.91s`.
 - 2026-06-16 12:57 e3 eval:
   transfer `0.704287 / 0.417983`, eval wall `25.66s`.
+- 2026-06-16 13:00 e4 eval:
+  transfer `0.706564 / 0.395071`, eval wall `24.95s`. This is the current
+  best balanced point in the `0.65` curve, but it is still worse than
+  low-anchor0.50 e9 on both target constraints (`0.701429 / 0.372203`) because
+  LPIPS remains above `0.39`.
+- 2026-06-16 13:03 e5 eval:
+  transfer `0.694095 / 0.389374`, eval wall `24.92s`. Style falls below
+  `0.700`, so this is not promotable despite better LPIPS.
+- 2026-06-16 13:06 e6 eval:
+  transfer `0.694196 / 0.400255`, eval wall `24.93s`.
+- 2026-06-16 13:08 e7 eval:
+  transfer `0.690260 / 0.376259`, eval wall `24.91s`.
+- 2026-06-16 13:11 e8 eval:
+  transfer `0.694908 / 0.378449`, eval wall `24.86s`.
 
 ## Interim Read
 
-- `running_promising_not_in_band`.
-- The strength scan behaves monotonically in the intended direction: stronger
-  lowpass anchoring improves LPIPS early while paying a controlled style cost.
-- It has not yet beaten the low-anchor0.50 e9 candidate
-  (`0.701429 / 0.372203`). Continue until either an in-band point appears or
-  the tail becomes LPIPS-only below `0.700` style.
+- `running_not_promoted`.
+- Transfer-only read: stronger lowpass anchoring improves LPIPS earlier, but
+  the style tail falls below `0.700` before reaching the low-anchor0.50 e9
+  LPIPS band. The best target-facing point so far is e4
+  (`0.706564 / 0.395071`), not enough to replace low-anchor0.50 e9
+  (`0.701429 / 0.372203`).
+- Continue until closure, but if e9-e11 remain below `0.700` style, close this
+  as a negative/over-anchored control and scan a milder anchor such as `0.55`
+  or `0.58` rather than increasing the anchor further.

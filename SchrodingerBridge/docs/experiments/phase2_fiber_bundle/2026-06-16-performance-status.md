@@ -26,7 +26,7 @@
 | I2SB latent slerp path | `0.712038` | `0.476511` | closed partial positive; e2 beats clean I2SB e2 by `+0.002944` style and `-0.013722` LPIPS; e28 gives LPIPS floor `0.682638 / 0.352726`, but style decays |
 | I2SB slerp + orthogonal low/high | `0.704828` | `0.446676` | closed negative; e15 reaches `0.678109 / 0.350421` but only as LPIPS-only style collapse |
 | I2SB low-anchor0.50 | `0.711470` | `0.472991` | closed partial positive; e9 reaches `0.701429 / 0.372203`, first in-band style-first point for this probe |
-| I2SB low-anchor0.65 | `0.709417` | `0.449507` | running; early e3 is `0.704287 / 0.417983`, improving structure but not yet in-band |
+| I2SB low-anchor0.65 | `0.709417` | `0.449507` | running e1-e8; best balanced e4 is `0.706564 / 0.395071`, then style falls below `0.700` before reaching the low-anchor0.50 e9 LPIPS band |
 | latent affine s0.75 | `0.685444` | `0.344580` | in-band diagnostic, not enough style |
 | SMoE tokenizer | `0.672774` | `0.327155` | stable structure, style bottleneck unchanged |
 
@@ -84,7 +84,7 @@
 | I2SB latent-slerp | yes, e1-e28 | small matched style+LPIPS gain at e2; later structure cooling only | combine with explicit structure projection |
 | I2SB slerp+orthogonal | yes, e1-e16 | closes the structure gap to `0.350421` LPIPS but suppresses style to low `0.68` | closed negative; use as evidence against hard lowpass endpoint replacement |
 | I2SB low-anchor0.50 | yes, e1-e15 | restores style relative to hard lowpass anchor; e9 is `0.701429 / 0.372203` | close and scan low-anchor0.65 from same parent |
-| I2SB low-anchor0.65 | running, e1-e3 | stronger anchor improves early LPIPS with controlled style cost | continue to see if it beats low-anchor0.50 e9 |
+| I2SB low-anchor0.65 | running, e1-e8 | stronger anchor improves early LPIPS, but over-anchors by e5 and drops style below `0.700` | continue to closure; if e9-e11 stay sub-`0.700`, close negative and scan milder `0.55-0.58` anchor |
 
 ## Next Queue
 
@@ -93,7 +93,8 @@
   `partial_positive_not_promoted`.
 - Next intervention should keep absolute endpoint style force and make the
   structure correction local or semantic rather than replacing the full
-  endpoint lowpass. Candidate controls: partial lowpass anchor, chroma/style
-  low-frequency preservation, or an absolute-endpoint structure loss.
+  endpoint lowpass. Candidate controls: milder partial lowpass anchor
+  (`0.55-0.58` if `0.65` closes negative), chroma/style low-frequency
+  preservation, or an absolute-endpoint structure loss.
 - Keep all DINO/VLM-heavy work after the clean geometry/SDE probes unless a
   matched control specifically requires it.
