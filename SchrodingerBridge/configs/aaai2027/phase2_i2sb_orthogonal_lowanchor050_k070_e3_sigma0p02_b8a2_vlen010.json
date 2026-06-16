@@ -1,0 +1,18 @@
+{
+  "_base": "./phase2_i2sb_clean_k070_e3_sigma0p02_b8a2_vlen010.json",
+  "model": {
+    "endpoint_parameterization": "orthogonal_lowhigh",
+    "endpoint_orthogonal_kernel": 5,
+    "endpoint_orthogonal_high_scale": 1.0,
+    "endpoint_orthogonal_low_anchor": 0.5
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_i2sb_orthogonal_lowanchor050_k070_e3_sigma0p02_b8a2_vlen010"
+  },
+  "ablation": {
+    "name": "phase2_i2sb_orthogonal_lowanchor050_k070_e3_sigma0p02_b8a2_vlen010",
+    "axis": "phase2_geometry_aware_i2sb",
+    "stage": "orthogonal_low_anchor_strength",
+    "notes": "Controlled follow-up after hard orthogonal low/high and slerp+orthogonal negative closures. Keep parent, absolute endpoint objective, solver_i2sb, sigma0p02, tokenizer, TopoGate, losses, schedule, b8/a2, and fast10 transfer eval fixed. Change only endpoint_orthogonal_low_anchor from the hard default 1.0 to 0.5 so raw endpoint low-frequency style/color is partially preserved while content lowpass still anchors structure."
+  }
+}
