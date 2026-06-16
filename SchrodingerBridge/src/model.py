@@ -91,6 +91,11 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.solver_fiber_aligned = bool(getattr(bridge_config, "solver_fiber_aligned", False))
         self.i2sb_fiber_aligned_noise = bool(getattr(bridge_config, "i2sb_fiber_aligned_noise", False))
         self.i2sb_fiber_noise_rms_normalize = bool(getattr(bridge_config, "i2sb_fiber_noise_rms_normalize", True))
+        self.i2sb_fiber_project_endpoint = bool(getattr(bridge_config, "i2sb_fiber_project_endpoint", False))
+        self.i2sb_fiber_project_noise = bool(getattr(bridge_config, "i2sb_fiber_project_noise", False))
+        self.i2sb_fiber_project_kernel = max(1, int(getattr(bridge_config, "i2sb_fiber_project_kernel", 5)))
+        if self.i2sb_fiber_project_kernel % 2 == 0:
+            self.i2sb_fiber_project_kernel += 1
         self.last_i2sb_fiber_noise_debug: dict[str, float] = {}
         self.last_solver_noise_debug: dict[str, float] = {}
         self.bridge_style_dim = int(getattr(self, "style_code_dim", getattr(self.style_tokenizer, "embedding_dim", 0)))
@@ -485,6 +490,38 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.last_i2sb_transport_debug.update(debug)
         self.last_i2sb_fiber_noise_debug = debug
         return noise * gate_weight.to(dtype=noise.dtype)
+
+    def _i2sb_lowpass(self, tensor: torch.Tensor) -> torch.Tensor:
+        kernel = max(1, int(getattr(self, "i2sb_fiber_project_kernel", 5)))
+        if kernel <= 1:
+            return tensor.float()
+        if kernel % 2 == 0:
+            kernel += 1
+        return F.avg_pool2d(tensor.float(), kernel_size=kernel, stride=1, padding=kernel // 2)
+
+    def _i2sb_highpass(self, tensor: torch.Tensor) -> torch.Tensor:
+        return tensor.float() - self._i2sb_lowpass(tensor)
+
+    def _i2sb_project_endpoint_to_fiber(
+        self,
+        endpoint: torch.Tensor,
+        source_latent: torch.Tensor | None,
+    ) -> torch.Tensor:
+        if not bool(getattr(self, "i2sb_fiber_project_endpoint", False)):
+            return endpoint
+        if source_latent is None:
+            raise ValueError("model.i2sb_fiber_project_endpoint requires source_latent during solver_i2sb inference.")
+        source = source_latent.to(device=endpoint.device)
+        if source.shape[-2:] != endpoint.shape[-2:]:
+            source = F.interpolate(source.float(), size=endpoint.shape[-2:], mode="bilinear", align_corners=False)
+        source_base = self._i2sb_lowpass(source)
+        endpoint_fiber = self._i2sb_highpass(endpoint)
+        return (source_base + endpoint_fiber).to(dtype=endpoint.dtype)
+
+    def _i2sb_project_noise_to_fiber(self, noise: torch.Tensor) -> torch.Tensor:
+        if not bool(getattr(self, "i2sb_fiber_project_noise", False)):
+            return noise
+        return self._i2sb_highpass(noise).to(dtype=noise.dtype)
 
     @staticmethod
     def _make_style_injector(input_dim: int, channels: int, hidden_dim: int) -> nn.Module:
@@ -983,6 +1020,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         style_id: torch.Tensor | int | None,
         style_code_override: torch.Tensor | None = None,
         target_style_latent: torch.Tensor | None = None,
+        source_latent: torch.Tensor | None = None,
     ) -> torch.Tensor:
         predict_t = float(t_curr)
         if self.i2sb_predictor_time_floor > 0.0 and predict_t < self.i2sb_predictor_time_floor:
@@ -1003,6 +1041,9 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                 str(getattr(self, "endpoint_orthogonal_low_mode", "all")).strip().lower() == "channel_mean"
             ),
             "fiber_noise_requested": float(bool(getattr(self, "i2sb_fiber_aligned_noise", False))),
+            "fiber_project_endpoint_active": float(bool(getattr(self, "i2sb_fiber_project_endpoint", False))),
+            "fiber_project_noise_active": float(bool(getattr(self, "i2sb_fiber_project_noise", False))),
+            "fiber_project_kernel": float(getattr(self, "i2sb_fiber_project_kernel", 1)),
             "fiber_noise_active": float(previous_fiber_noise_debug.get("fiber_noise_active", 0.0)),
             "fiber_gate_mean": float(previous_fiber_noise_debug.get("fiber_gate_mean", 0.0)),
             "fiber_gate_rms": float(previous_fiber_noise_debug.get("fiber_gate_rms", 0.0)),
@@ -1021,6 +1062,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             style_code_override=style_code_override,
             target_style_latent=target_style_latent,
         )
+        x_1_pred = self._i2sb_project_endpoint_to_fiber(x_1_pred, source_latent)
         denom = max(1.0 - float(t_curr), 1e-6)
         c_curr = (1.0 - float(t_next)) / denom
         c_target = (float(t_next) - float(t_curr)) / denom
@@ -1030,9 +1072,10 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         var = (self.bridge_sigma ** 2) * (float(t_next) - float(t_curr)) * (1.0 - float(t_next)) / denom
         if var <= 0.0:
             return mu
+        noise = self._i2sb_project_noise_to_fiber(torch.randn_like(h))
         noise = self._i2sb_fiber_aligned_noise(
             h,
-            torch.randn_like(h),
+            noise,
             noise_scale=math.sqrt(var),
         )
         return mu + math.sqrt(var) * noise
@@ -1557,6 +1600,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         horizon = self._resolve_integration_horizon(step_size=step_size, style_strength=style_strength)
         if horizon <= 0.0:
             return x
+        source_latent = x
         x = self._apply_pre_integrate_moment_match(x, target_style_latent)
         dt = horizon / float(steps)
         h = x
@@ -1573,6 +1617,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                     style_id=style_id,
                     style_code_override=style_code_override,
                     target_style_latent=target_style_latent,
+                    source_latent=source_latent,
                 )
             elif self.solver_family == "solver_tangent_rk":
                 h = self._rk_transport_step(
