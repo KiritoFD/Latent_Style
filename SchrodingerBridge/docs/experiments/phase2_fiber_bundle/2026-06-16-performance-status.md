@@ -33,6 +33,7 @@
 | Orthogonal Fiber-SDE on slerp e2 | `0.719065` | `0.568915` | closed negative diagnostic; stronger style parent confirms highpass noise can lift style but is not structure-safe |
 | Mask-aware Fiber-SDE projection | `0.719342` | `0.482121` | partial positive, not promoted; gate support beats raw global projection, but style gains still require too much LPIPS |
 | Residual-envelope Fiber noise | `0.716145` | `0.452353` | weak positive, not promoted; improves LPIPS by `0.029768` versus gated highpass sigma0.4 while losing only `0.003197` CLIP-S |
+| Gate-local head adapter + residual-envelope Fiber-SDE | `0.716935` | `0.473270` | closed negative diagnostic; frozen-backbone local head adds style but amplifies unsafe high-LPIPS fiber directions |
 | latent affine s0.75 | `0.685444` | `0.344580` | in-band diagnostic, not enough style |
 | SMoE tokenizer | `0.672774` | `0.327155` | stable structure, style bottleneck unchanged |
 
@@ -64,6 +65,10 @@
   `0.716145 / 0.452353`. This is the first evidence that the fiber noise
   basis should follow the endpoint residual envelope rather than naked latent
   highpass noise.
+- Gate-local head adapter verifies the implementation path for a frozen
+  backbone local actuator: every checkpoint has `style_head_adapter_gate_active=1`.
+  It is not useful as a model, but it is clean evidence that merely adding a
+  small local head does not create a true orthogonal fiber basis.
 
 ## What Failed Or Is Not Promoted
 
@@ -97,6 +102,10 @@
 - Residual-envelope Fiber noise is not promoted. It improves the matched
   slope, but the best residual point `0.716145 / 0.452353` is still too far
   from the style-first target and below the gated-highpass style ceiling.
+- Gate-local head adapter is not promoted. It reaches `0.716935` style at e3,
+  only `+0.000790` over the residual-envelope eval-only control, while LPIPS
+  worsens from `0.452353` to `0.473270`. The adapter RMS keeps growing after
+  style plateaus, so the branch is closed at e6.
 
 ## Completed / Effective / Pending
 
@@ -118,6 +127,7 @@
 | Orthogonal Fiber-SDE on slerp e2 | closed eval-only | sigma0 lowers LPIPS but kills style; sigma0.5 reaches `0.719065` style with LPIPS `0.568915` | closes raw latent avg-pool projector family for now |
 | Mask-aware Fiber-SDE projection | closed eval-only | gate support improves raw projector at matched sigma; best style is `0.719342 / 0.482121`, in-band-ish sigma0.2 is only `0.702386 / 0.396835` | keep gate support, replace raw latent noise/projector direction |
 | Residual-aligned Fiber noise | closed eval-only | envelope improves LPIPS at small style cost; direction is too conservative | use envelope as ingredient, stop scalar sigma scans |
+| Gate-local head adapter | closed e1-e6 | best style `0.716935 / 0.473270`; no style improvement after e3 and LPIPS remains about `0.473` | do not continue small output-head-only fixes |
 
 ## Next Queue
 
@@ -138,5 +148,10 @@
   eval-only noise is still not enough. Next step should train a small local
   fiber basis / decoder-aware residual head with the main backbone frozen,
   then evaluate with the same gate+envelope solver.
+- Gate-local head adapter closes that frozen-head follow-up as negative. The
+  next hard-projection experiment should move the constraint into a decoded/RGB
+  or decoder-Jacobian-aware metric, or learn a fiber basis with an explicit
+  structure-null objective; do not keep adding scalar losses, scalar blends, or
+  small output-side heads.
 - Keep all DINO/VLM-heavy work after the clean geometry/SDE probes unless a
   matched control specifically requires it.

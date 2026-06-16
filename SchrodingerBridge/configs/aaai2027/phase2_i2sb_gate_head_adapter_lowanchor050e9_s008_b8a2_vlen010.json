@@ -1,0 +1,58 @@
+{
+  "_base": "./phase2_i2sb_orthogonal_lowanchor050_k070_e3_sigma0p02_b8a2_vlen010.json",
+  "model": {
+    "style_delta_mode": "head_adapter",
+    "style_head_adapter_hidden_dim": 32,
+    "style_head_adapter_scale": 0.08,
+    "style_head_adapter_force_highpass": true,
+    "style_head_adapter_use_gate": true,
+    "style_head_adapter_gate_power": 1.0,
+    "i2sb_fiber_project_endpoint": true,
+    "i2sb_fiber_project_noise": true,
+    "i2sb_fiber_project_kernel": 5,
+    "i2sb_fiber_project_use_gate": true,
+    "i2sb_fiber_project_noise_mode": "residual_envelope",
+    "i2sb_fiber_project_residual_power": 1.0
+  },
+  "bridge": {
+    "bridge_sigma": 0.4
+  },
+  "training": {
+    "resume_checkpoint": "../exp/aaai2027_phase2_i2sb_orthogonal_lowanchor050_k070_e3_sigma0p02_b8a2_vlen010/epoch_0009.pt",
+    "resume_model_strict": false,
+    "resume_optimizer": false,
+    "resume_training_state": false,
+    "resume_prefer_local_checkpoint": true,
+    "freeze_mode": "injection_only",
+    "freeze_reinit_trainable": false,
+    "num_epochs": 10,
+    "batch_size": 8,
+    "accumulation_steps": 2,
+    "full_eval_in_process": true,
+    "full_eval_runtime_model_cache": true,
+    "full_eval_transfer_only": true,
+    "full_eval_max_src_samples": 10,
+    "full_eval_generation_batch_size": 8,
+    "full_eval_metric_batch_size": 16,
+    "full_eval_target_chunk_size": 5,
+    "full_eval_vae_decode_batch_size": 16,
+    "full_eval_vae_onnx_decoder": "../eval_cache/vae_onnx/ema_b16_32/decoder.onnx",
+    "full_eval_keep_generated_on_device": true,
+    "full_eval_source_latent_cache": true,
+    "full_eval_delta_observability": true,
+    "full_eval_hf_clip_skip_processor": true,
+    "full_eval_lpips_chunk_size": 0
+  },
+  "data": {
+    "virtual_length_multiplier": 0.10
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_i2sb_gate_head_adapter_lowanchor050e9_s008_b8a2_vlen010"
+  },
+  "ablation": {
+    "name": "phase2_i2sb_gate_head_adapter_lowanchor050e9_s008_b8a2_vlen010",
+    "axis": "phase2_fiber_local_basis",
+    "stage": "gate_local_decoder_head_adapter",
+    "notes": "Controlled follow-up after mask-aware and residual-envelope Fiber-SDE eval-only scans. Parent is lowanchor0.50 e9. Freeze the main backbone/tokenizer and train only the zero-init style_head_adapter_* local fiber head. New mechanism is gate-local decoder-side residual actuation; solver/eval uses the best residual-envelope gated Fiber-SDE diagnostic setting. Stop by training-time transfer CLIP-S/LPIPS curve."
+  }
+}

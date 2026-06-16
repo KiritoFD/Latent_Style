@@ -372,6 +372,8 @@ class ModelConfig:
     style_head_adapter_hidden_dim: int = 32
     style_head_adapter_scale: float = 0.10
     style_head_adapter_force_highpass: bool = False
+    style_head_adapter_use_gate: bool = False
+    style_head_adapter_gate_power: float = 1.0
     use_style_blender: bool = False
     solver_rk_order: int = 4
     solver_corrector_steps: int = 1
