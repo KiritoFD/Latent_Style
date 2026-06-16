@@ -60,3 +60,25 @@ keeping transfer CLIP-S at or above `0.700`.
   `docs/experiments/phase2_fiber_bundle/curves/i2sb_orthogonal_lowanchor065_k070_e3_fast10_curve.csv`.
 - Eval mirror:
   `docs/experiments/phase2_fiber_bundle/eval/aaai2027_phase2_i2sb_orthogonal_lowanchor065_k070_e3_sigma0p02_b8a2_vlen010/`.
+
+## Launch Log
+
+- 2026-06-16 12:49 remote WSL launch valid. Log confirms parent load:
+  `Partially loaded resume ... epoch_0003.pt | loaded=272 skipped=0 missing=0
+  unexpected=0`.
+- 2026-06-16 12:52 e1 eval:
+  transfer `0.709417 / 0.449507`, eval wall `39.61s`. Compared with
+  low-anchor0.50 e1, style drops slightly but LPIPS improves by about `0.0235`.
+- 2026-06-16 12:55 e2 eval:
+  transfer `0.707335 / 0.434842`, eval wall `24.91s`.
+- 2026-06-16 12:57 e3 eval:
+  transfer `0.704287 / 0.417983`, eval wall `25.66s`.
+
+## Interim Read
+
+- `running_promising_not_in_band`.
+- The strength scan behaves monotonically in the intended direction: stronger
+  lowpass anchoring improves LPIPS early while paying a controlled style cost.
+- It has not yet beaten the low-anchor0.50 e9 candidate
+  (`0.701429 / 0.372203`). Continue until either an in-band point appears or
+  the tail becomes LPIPS-only below `0.700` style.
