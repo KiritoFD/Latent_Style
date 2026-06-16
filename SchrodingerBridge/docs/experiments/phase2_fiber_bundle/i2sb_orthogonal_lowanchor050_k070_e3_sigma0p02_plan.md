@@ -85,3 +85,7 @@ Required summary/debug keys:
   the candidate now explicitly sets `training.resume_checkpoint` to the k070 e3
   parent and disables optimizer/training-state resume, instead of relying only
   on inherited base config fields.
+- 2026-06-16 11:54 second remote launch was also stopped and archived as
+  invalid because the explicit parent path used `../exp/...`, which is wrong
+  for the remote working directory `/mnt/i/Github/Latent_Style`. The config is
+  corrected to `./exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k070_seed42_b12a1/epoch_0003.pt`.
