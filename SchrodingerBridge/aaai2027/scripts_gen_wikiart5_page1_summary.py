@@ -64,6 +64,7 @@ TRACE_STYLES = {
     "latent_affine_refine_k070_e3": ("#E11D48", "D", 48, 0.92),
     "latent_affine_pc_k070_e3": ("#DB2777", "v", 52, 0.90),
     "i2sb_pnp_fiber_sde_k070": ("#111827", "*", 78, 0.92),
+    "i2sb_slerp_orthogonal_lowhigh_k070_e3": ("#EA580C", "h", 42, 0.78),
 }
 
 LABEL_ALLOWLIST = {
@@ -400,6 +401,7 @@ def plot(points: list[dict[str, str]]) -> None:
         "latent_affine_refine_k070_e3": "LatAff refine",
         "latent_affine_pc_k070_e3": "LatAff+PC",
         "i2sb_pnp_fiber_sde_k070": "I2SB combo",
+        "i2sb_slerp_orthogonal_lowhigh_k070_e3": "I2SB slerp+orth",
     }
 
     for trace_id, rows in sorted(by_trace.items()):

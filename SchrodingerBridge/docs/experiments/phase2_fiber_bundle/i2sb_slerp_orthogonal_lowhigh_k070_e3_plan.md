@@ -98,17 +98,33 @@ Local mirror:
 | e3 | 0.698710 | 0.392849 | 25.91s | LPIPS improves, style remains below 0.70 |
 | e4 | 0.694292 | 0.408310 | 24.98s | no style recovery |
 | e5 | 0.689088 | 0.396008 | 24.94s | further style decay |
+| e6 | 0.688025 | 0.361792 | 24.97s | structure-side point; style has fallen below target band |
+| e7 | 0.682186 | 0.368300 | 24.90s | low-style tail |
+| e8 | 0.685025 | 0.352807 | 24.92s | LPIPS-side Pareto only |
+| e9 | 0.682724 | 0.381770 | 24.94s | no recovery |
+| e10 | 0.682408 | 0.368596 | 24.89s | no recovery |
+| e11 | 0.683137 | 0.355313 | 25.02s | low-style structure point |
+| e12 | 0.683382 | 0.358237 | 25.03s | low-style structure point |
+| e13 | 0.679402 | 0.377409 | 24.95s | style cools further |
+| e14 | 0.682620 | 0.362356 | 26.51s | no target-facing rebound |
+| e15 | 0.678109 | 0.350421 | 25.31s | best LPIPS; style is too low |
+| e16 | 0.678957 | 0.371222 | 24.99s | stopped after confirming no style rebound |
 
-Interim decision:
+Closure decision:
 
-- `running_early_negative_not_closed`.
+- `closed_negative_style_suppressed_not_promoted`.
 - Runtime observability is now clean: training CSV reports
   `bridge_path_slerp_active=1.0`, and summaries report
   `i2sb_endpoint_orthogonal_active=1.0`.
 - The desired effect would be to keep latent-slerp e2 style near `0.712` while
-  reducing LPIPS. Early evidence instead follows the orthogonal-style pattern:
-  LPIPS improves, but style falls into the `0.69-0.70` band.
-- Continue to formal tail before closure because e3 remains a joint
-  structure-side Pareto point; do not promote unless later checkpoints recover
-  target-facing style. e5 strengthens the negative read: structure is not the
-  limiting failure anymore, style actuation is being suppressed.
+  reducing LPIPS. The final e1-e16 curve instead follows the
+  orthogonal-lowhigh pattern: LPIPS improves, but style falls into the
+  `0.678-0.705` band and never recovers after e1.
+- The automatic joint Pareto tracker is misleading here because e15 creates a
+  low-style LPIPS-only point. Under the active Seedream/style-first target, this
+  is a negative closure, not a promotable frontier update.
+- Matched read:
+  e1 versus latent-slerp e2 is `-0.007210` CLIP-S and `-0.029835` LPIPS; e15
+  versus latent-slerp e28 is `-0.004529` CLIP-S and `-0.002305` LPIPS. The
+  combination buys structure by paying style, which is exactly the coupling we
+  need to break.

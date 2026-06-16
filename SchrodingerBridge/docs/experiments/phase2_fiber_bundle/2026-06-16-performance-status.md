@@ -24,7 +24,7 @@
 | orthogonal low/high I2SB | `0.705847` | `0.451386` | closed partial positive; e4 improves structure to `0.698245 / 0.390826` but style retreats |
 | I2SB fiber-directed noise | `0.706816` | `0.489969` | closed negative; active gate but no matched Pareto gain |
 | I2SB latent slerp path | `0.712038` | `0.476511` | closed partial positive; e2 beats clean I2SB e2 by `+0.002944` style and `-0.013722` LPIPS; e28 gives LPIPS floor `0.682638 / 0.352726`, but style decays |
-| I2SB slerp + orthogonal low/high | `0.704828` | `0.446676` | running early negative; structure improves but style does not preserve latent-slerp e2 shock |
+| I2SB slerp + orthogonal low/high | `0.704828` | `0.446676` | closed negative; e15 reaches `0.678109 / 0.350421` but only as LPIPS-only style collapse |
 | latent affine s0.75 | `0.685444` | `0.344580` | in-band diagnostic, not enough style |
 | SMoE tokenizer | `0.672774` | `0.327155` | stable structure, style bottleneck unchanged |
 
@@ -64,6 +64,10 @@
   matched gain, but after that 26 later checkpoints fail to recover or exceed
   the style frontier. The automatic joint Pareto tracker is misleading here
   because late checkpoints keep making low-style LPIPS-only improvements.
+- I2SB slerp+orthogonal-lowhigh is not promoted. It confirms hard lowpass
+  endpoint anchoring suppresses the low-frequency/color component of style:
+  e1 loses `0.007210` CLIP-S versus latent-slerp e2 while improving LPIPS, and
+  e15 improves LPIPS only by falling to `0.678109` style.
 
 ## Completed / Effective / Pending
 
@@ -76,16 +80,16 @@
 | I2SB blend/content-anchor | yes | scalar/lowpass anchors suppress or couple style | closed negative |
 | I2SB orthogonal low/high | yes | partial structure restraint, style still retreats | useful ingredient for combo |
 | I2SB latent-slerp | yes, e1-e28 | small matched style+LPIPS gain at e2; later structure cooling only | combine with explicit structure projection |
-| I2SB slerp+orthogonal | running | early e1-e4 improves LPIPS but suppresses style into `0.69-0.70` | continue to formal tail; likely not enough |
+| I2SB slerp+orthogonal | yes, e1-e16 | closes the structure gap to `0.350421` LPIPS but suppresses style to low `0.68` | closed negative; use as evidence against hard lowpass endpoint replacement |
 
 ## Next Queue
 
 - Do not spend a training lane on topogated Brownian noise alone.
 - Do not continue latent-slerp alone. It is closed as
   `partial_positive_not_promoted`.
-- Next intervention should combine path geometry with an explicit structure
-  restraint rather than add more actuator capacity:
-  `latent_slerp + orthogonal_lowhigh endpoint` is the cleanest next matched
-  control.
+- Next intervention should keep absolute endpoint style force and make the
+  structure correction local or semantic rather than replacing the full
+  endpoint lowpass. Candidate controls: partial lowpass anchor, chroma/style
+  low-frequency preservation, or an absolute-endpoint structure loss.
 - Keep all DINO/VLM-heavy work after the clean geometry/SDE probes unless a
   matched control specifically requires it.
