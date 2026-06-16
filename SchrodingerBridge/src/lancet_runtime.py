@@ -736,6 +736,7 @@ class LatentAdaCUTRuntimeMixin:
         if (
             self.output_appearance_alignment_mode != "none"
             or bool(getattr(self, "solver_fiber_aligned", False))
+            or bool(getattr(self, "i2sb_fiber_aligned_noise", False))
             or bool(getattr(self, "force_output_style_context_cache", False))
         ):
             self._cache_output_style_context(

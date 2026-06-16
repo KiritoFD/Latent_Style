@@ -12,7 +12,7 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
 
 ## Current Homepage Overlay
 
-- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05` plus the fine `0.04/0.06/0.08` style-ceiling extension, SMoE epoch `1-15`, the short `k070_kin070_vlen010` kinetic-release probe epoch `1-3`, the eval-only `rgbcal_k070_e3` scan, the eval-only `topology_release_k070_e3` blend scan, the eval-only `appearance_blend_k070_e3` output-affine scan, the eval-only `pc_lowpass_k070_e3` solver scan, the eval-only `latent_affine_k070_e3` latent postprocess scan, and the `latent_affine_refine_k070_e3` narrow/PC follow-up are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
+- `k070` epoch `1-5`, `pattn_enhanced_tok` epoch `1-10`, Fiber-SDE `sigma=0.01/0.02/0.03/0.05` plus the fine `0.04/0.06/0.08` style-ceiling extension, SMoE epoch `1-15`, the short `k070_kin070_vlen010` kinetic-release probe epoch `1-3`, the eval-only `rgbcal_k070_e3` scan, the eval-only `topology_release_k070_e3` blend scan, the eval-only `appearance_blend_k070_e3` output-affine scan, the eval-only `pc_lowpass_k070_e3` solver scan, the eval-only `latent_affine_k070_e3` latent postprocess scan, the `latent_affine_refine_k070_e3` narrow/PC follow-up, and the eval-only `i2sb_fiber_noise_sigma0p02` matched probe are plotted on the AAAI2027 page-1 IDT/SaMAM/Seedream CLIP-S / LPIPS panel.
 - The current page-1 panel is rendered from `aaai2027/page1_bundle/wikiart5_page1_clip_lpips_points.csv`, not from the older mixed-source `distinct5` aggregate tables.
 - The trace uses transfer `CLIP-S - IDT` on the y-axis and `1 - LPIPS` on the x-axis.
 - All retained checkpoints are drawn and connected.
@@ -43,6 +43,7 @@ This folder stores the controlled-variable Fiber Bundle sweep artifacts.
   - [pc_lowpass_k070_e3_eval_only_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/pc_lowpass_k070_e3_eval_only_curve.csv)
   - [latent_affine_k070_e3_eval_only_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/latent_affine_k070_e3_eval_only_curve.csv)
   - [latent_affine_refine_k070_e3_eval_only_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/latent_affine_refine_k070_e3_eval_only_curve.csv)
+  - [i2sb_fiber_noise_sigma0p02_eval_curve.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/phase2_fiber_bundle/curves/i2sb_fiber_noise_sigma0p02_eval_curve.csv)
 - Fixed page-1 CSV:
   - [wikiart5_page1_clip_lpips_points.csv](/G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/page1_bundle/wikiart5_page1_clip_lpips_points.csv)
 - Rendered page-1 figure:

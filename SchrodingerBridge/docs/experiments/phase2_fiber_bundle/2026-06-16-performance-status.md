@@ -22,6 +22,7 @@
 | I2SB blend0p25 | `0.694567` | `0.415258` | closed negative; scalar shrink suppresses style |
 | content-anchor I2SB | `0.703953` | `0.458607` | closed negative; anchor remains coupled |
 | orthogonal low/high I2SB | `0.705847` | `0.451386` | closed partial positive; e4 improves structure to `0.698245 / 0.390826` but style retreats |
+| I2SB fiber-directed noise | `0.706816` | `0.489969` | closed negative; active gate but no matched Pareto gain |
 | latent affine s0.75 | `0.685444` | `0.344580` | in-band diagnostic, not enough style |
 | SMoE tokenizer | `0.672774` | `0.327155` | stable structure, style bottleneck unchanged |
 
@@ -49,10 +50,13 @@
 - `orthogonal_lowhigh` is not promoted because its best style point remains
   high-LPIPS and its best structure point loses too much style. It is a useful
   partial positive, not the target frontier.
+- I2SB fiber-directed noise is not promoted. Runtime observability proves the
+  gate was active, but the matched e2/e5 controls show no useful Pareto delta.
 
 ## Next Queue
 
-- Test fiber-directed/topogated SDE noise as a solver-only matched eval:
-  same absolute I2SB parent, same sigma, noise masked by existing gate only.
+- Do not spend a training lane on topogated Brownian noise alone.
+- Next candidate should directly change style actuation capacity after the
+  body bottleneck, not just noise direction.
 - Keep all DINO/VLM-heavy work after the clean geometry/SDE probes unless a
   matched control specifically requires it.

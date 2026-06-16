@@ -80,6 +80,9 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.last_i2sb_transport_debug: dict[str, float] = {}
         self.solver_stochastic_noise_scale = max(0.0, float(getattr(bridge_config, "solver_stochastic_noise_scale", 0.0)))
         self.solver_fiber_aligned = bool(getattr(bridge_config, "solver_fiber_aligned", False))
+        self.i2sb_fiber_aligned_noise = bool(getattr(bridge_config, "i2sb_fiber_aligned_noise", False))
+        self.i2sb_fiber_noise_rms_normalize = bool(getattr(bridge_config, "i2sb_fiber_noise_rms_normalize", True))
+        self.last_i2sb_fiber_noise_debug: dict[str, float] = {}
         self.last_solver_noise_debug: dict[str, float] = {}
         self.bridge_style_dim = int(getattr(self, "style_code_dim", getattr(self.style_tokenizer, "embedding_dim", 0)))
         self.execution_budget_mode = str(getattr(bridge_config, "execution_budget_mode", "none")).strip().lower()
@@ -427,6 +430,52 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         )
         self.last_solver_noise_debug = debug
         return noise * gate.to(dtype=noise.dtype)
+
+    def _i2sb_fiber_aligned_noise(
+        self,
+        reference: torch.Tensor,
+        noise: torch.Tensor,
+        *,
+        noise_scale: float,
+    ) -> torch.Tensor:
+        debug: dict[str, float] = {
+            "fiber_noise_active": 0.0,
+            "fiber_gate_mean": 0.0,
+            "fiber_gate_rms": 0.0,
+            "fiber_noise_scale": float(noise_scale),
+            "fiber_noise_rms_normalize": float(bool(getattr(self, "i2sb_fiber_noise_rms_normalize", True))),
+        }
+        if not bool(getattr(self, "i2sb_fiber_aligned_noise", False)):
+            self.last_i2sb_transport_debug.update(debug)
+            self.last_i2sb_fiber_noise_debug = debug
+            return noise
+        cached = getattr(self, "last_output_style_context", None)
+        style_maps = cached.get("style_maps") if isinstance(cached, dict) else None
+        gate = getattr(style_maps, "gate_16", None)
+        if not torch.is_tensor(gate):
+            self.last_i2sb_transport_debug.update(debug)
+            self.last_i2sb_fiber_noise_debug = debug
+            return noise
+        gate = gate.to(device=reference.device).float()
+        gate = torch.sigmoid(gate).clamp(0.0, 1.0)
+        if gate.shape[-2:] != reference.shape[-2:]:
+            gate = F.interpolate(gate, size=reference.shape[-2:], mode="bilinear", align_corners=False)
+        if gate.shape[0] == 1 and reference.shape[0] > 1:
+            gate = gate.expand(reference.shape[0], -1, -1, -1)
+        if gate.shape[1] != reference.shape[1]:
+            gate = gate.mean(dim=1, keepdim=True).expand(reference.shape[0], reference.shape[1], reference.shape[2], reference.shape[3])
+        gate_rms = gate.detach().float().square().mean().sqrt().clamp_min(1e-6)
+        gate_weight = gate / gate_rms if bool(getattr(self, "i2sb_fiber_noise_rms_normalize", True)) else gate
+        debug.update(
+            {
+                "fiber_noise_active": 1.0,
+                "fiber_gate_mean": float(gate.detach().float().mean().cpu().item()),
+                "fiber_gate_rms": float(gate_rms.cpu().item()),
+            }
+        )
+        self.last_i2sb_transport_debug.update(debug)
+        self.last_i2sb_fiber_noise_debug = debug
+        return noise * gate_weight.to(dtype=noise.dtype)
 
     @staticmethod
     def _make_style_injector(input_dim: int, channels: int, hidden_dim: int) -> nn.Module:
@@ -919,6 +968,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         if self.i2sb_predictor_time_floor > 0.0 and predict_t < self.i2sb_predictor_time_floor:
             predict_t = min(max(predict_t, self.i2sb_predictor_time_floor), float(t_next))
         predict_t = min(max(predict_t, 0.0), 1.0 - 1e-6)
+        previous_fiber_noise_debug = getattr(self, "last_i2sb_fiber_noise_debug", {}) or {}
         self.last_i2sb_transport_debug = {
             "t_curr": float(t_curr),
             "predict_t": float(predict_t),
@@ -928,6 +978,17 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             "endpoint_orthogonal_active": float(self.endpoint_parameterization == "orthogonal_lowhigh"),
             "endpoint_orthogonal_kernel": float(getattr(self, "endpoint_orthogonal_kernel", 1)),
             "endpoint_orthogonal_high_scale": float(getattr(self, "endpoint_orthogonal_high_scale", 1.0)),
+            "fiber_noise_requested": float(bool(getattr(self, "i2sb_fiber_aligned_noise", False))),
+            "fiber_noise_active": float(previous_fiber_noise_debug.get("fiber_noise_active", 0.0)),
+            "fiber_gate_mean": float(previous_fiber_noise_debug.get("fiber_gate_mean", 0.0)),
+            "fiber_gate_rms": float(previous_fiber_noise_debug.get("fiber_gate_rms", 0.0)),
+            "fiber_noise_scale": float(previous_fiber_noise_debug.get("fiber_noise_scale", 0.0)),
+            "fiber_noise_rms_normalize": float(
+                previous_fiber_noise_debug.get(
+                    "fiber_noise_rms_normalize",
+                    float(bool(getattr(self, "i2sb_fiber_noise_rms_normalize", True))),
+                )
+            ),
         }
         x_1_pred = self.predict_transport_base(
             h,
@@ -945,7 +1006,12 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         var = (self.bridge_sigma ** 2) * (float(t_next) - float(t_curr)) * (1.0 - float(t_next)) / denom
         if var <= 0.0:
             return mu
-        return mu + math.sqrt(var) * torch.randn_like(h)
+        noise = self._i2sb_fiber_aligned_noise(
+            h,
+            torch.randn_like(h),
+            noise_scale=math.sqrt(var),
+        )
+        return mu + math.sqrt(var) * noise
 
     def _rk_transport_step(
         self,
@@ -1470,6 +1536,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         x = self._apply_pre_integrate_moment_match(x, target_style_latent)
         dt = horizon / float(steps)
         h = x
+        self.last_i2sb_fiber_noise_debug = {}
         for idx in range(steps):
             t = horizon * ((idx + 0.5) / float(steps))
             t_curr = horizon * (idx / float(steps))
