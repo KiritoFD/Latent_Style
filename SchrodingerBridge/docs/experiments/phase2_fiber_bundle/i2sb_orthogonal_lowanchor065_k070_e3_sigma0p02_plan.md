@@ -87,15 +87,23 @@ keeping transfer CLIP-S at or above `0.700`.
   transfer `0.690260 / 0.376259`, eval wall `24.91s`.
 - 2026-06-16 13:11 e8 eval:
   transfer `0.694908 / 0.378449`, eval wall `24.86s`.
+- 2026-06-16 13:14 e9 eval:
+  transfer `0.692446 / 0.358758`, eval wall `25.03s`. This beats
+  low-anchor0.50 e9 on LPIPS but loses `0.008983` transfer CLIP-S, so it is a
+  structure-only Pareto point rather than a target-facing replacement.
+- 2026-06-16 13:16 e10 eval:
+  transfer `0.690043 / 0.362955`, eval wall `24.91s`.
 
 ## Interim Read
 
-- `running_not_promoted`.
+- `running_not_promoted_near_close`.
 - Transfer-only read: stronger lowpass anchoring improves LPIPS earlier, but
   the style tail falls below `0.700` before reaching the low-anchor0.50 e9
   LPIPS band. The best target-facing point so far is e4
   (`0.706564 / 0.395071`), not enough to replace low-anchor0.50 e9
   (`0.701429 / 0.372203`).
-- Continue until closure, but if e9-e11 remain below `0.700` style, close this
-  as a negative/over-anchored control and scan a milder anchor such as `0.55`
-  or `0.58` rather than increasing the anchor further.
+- e9/e10 confirm the suspected failure mode: LPIPS can enter the desired
+  structure band, but only after transfer style has already dropped to
+  `0.69x`. If e11 remains below `0.700`, close this as an over-anchored
+  control and scan a milder anchor such as `0.55` or `0.58` rather than
+  increasing the anchor further.
