@@ -1,0 +1,10 @@
+{
+  "_base": "./phase2_eval_fiber_project_resdir_sigma0p3_lowanchor050e9.json",
+  "_comment": "Eval-only residual-direction Fiber-SDE projection on lowanchor0.50 e9, sigma0.4.",
+  "model": {
+    "bridge_sigma": 0.4
+  },
+  "bridge": {
+    "bridge_sigma": 0.4
+  }
+}
