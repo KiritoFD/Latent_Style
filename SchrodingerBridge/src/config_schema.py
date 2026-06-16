@@ -435,6 +435,8 @@ class BridgeConfig:
     bridge_sigma: float = 0.05
     bridge_noise_mode: str = "gaussian"
     bridge_noise_schedule: str = "auto"
+    bridge_path_mode: str = "linear"
+    bridge_path_slerp_eps: float = 1e-4
     i2sb_predictor_time_floor: float = 0.0
     bridge_noise_window_start: float = 0.18
     bridge_noise_window_end: float = 0.82

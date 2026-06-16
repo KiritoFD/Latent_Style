@@ -75,6 +75,7 @@ TRAIN_LOG_COLUMNS = [
     "teacher_abs",
     "bridge_sigma",
     "bridge_noise_schedule_exact",
+    "bridge_path_slerp_active",
     "identity_ratio",
     "t_mean",
     "velocity_abs",

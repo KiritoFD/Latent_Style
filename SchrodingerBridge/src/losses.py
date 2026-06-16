@@ -90,6 +90,17 @@ class OTFlowMatchingObjective:
         self.bridge_noise_schedule = str(getattr(bridge_cfg, "bridge_noise_schedule", "auto")).strip().lower()
         if self.bridge_noise_schedule not in {"auto", "exact_brownian", "delayed_window"}:
             self.bridge_noise_schedule = "auto"
+        self.bridge_path_mode = str(getattr(bridge_cfg, "bridge_path_mode", "linear")).strip().lower()
+        if self.bridge_path_mode not in {"linear", "latent_slerp"}:
+            raise ValueError(
+                f"Unsupported bridge.bridge_path_mode={self.bridge_path_mode!r}; expected 'linear' or 'latent_slerp'."
+            )
+        if self.bridge_path_mode != "linear" and self.transport_prediction_mode != "endpoint":
+            raise ValueError(
+                "Nonlinear bridge_path_mode is currently implemented only for endpoint transport. "
+                "Using it with velocity transport would require the exact path derivative."
+            )
+        self.bridge_path_slerp_eps = max(1e-8, float(getattr(bridge_cfg, "bridge_path_slerp_eps", 1e-4)))
         self.bridge_noise_window_start = float(getattr(bridge_cfg, "bridge_noise_window_start", 0.18))
         self.bridge_noise_window_end = float(getattr(bridge_cfg, "bridge_noise_window_end", 0.82))
         self.bridge_style_noise_kernel = max(1, int(bridge_cfg.bridge_style_noise_kernel))
@@ -459,7 +470,7 @@ class OTFlowMatchingObjective:
         t: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         t4 = t.view(-1, 1, 1, 1)
-        base = (1.0 - t4) * content + t4 * matched_target
+        base = self._bridge_path_state(content=content, matched_target=matched_target, t=t)
         velocity = matched_target - content
         endpoint_mode = str(getattr(self, "transport_prediction_mode", "velocity")).strip().lower() == "endpoint"
         if self.bridge_sigma <= 0.0:
@@ -496,6 +507,38 @@ class OTFlowMatchingObjective:
             return x_t, matched_target
         d_std_dt = ((1.0 - 2.0 * t) / (2.0 * torch.sqrt(bridge_var))).view(-1, 1, 1, 1)
         return x_t, velocity + (self.bridge_sigma * d_std_dt * noise_gate) * noise
+
+    def _bridge_path_state(
+        self,
+        *,
+        content: torch.Tensor,
+        matched_target: torch.Tensor,
+        t: torch.Tensor,
+    ) -> torch.Tensor:
+        t4 = t.view(-1, 1, 1, 1)
+        linear = (1.0 - t4) * content + t4 * matched_target
+        if self.bridge_path_mode != "latent_slerp":
+            return linear
+
+        b = int(content.shape[0])
+        a_flat = content.float().reshape(b, -1)
+        z_flat = matched_target.float().reshape(b, -1)
+        eps = float(getattr(self, "bridge_path_slerp_eps", 1e-4))
+        a_norm = a_flat.norm(dim=1, keepdim=True).clamp_min(eps)
+        z_norm = z_flat.norm(dim=1, keepdim=True).clamp_min(eps)
+        a_unit = a_flat / a_norm
+        z_unit = z_flat / z_norm
+        dot = (a_unit * z_unit).sum(dim=1, keepdim=True).clamp(-1.0 + eps, 1.0 - eps)
+        omega = torch.acos(dot)
+        sin_omega = torch.sin(omega).clamp_min(eps)
+        t_flat = t.float().view(-1, 1)
+        s0 = torch.sin((1.0 - t_flat) * omega) / sin_omega
+        s1 = torch.sin(t_flat * omega) / sin_omega
+        direction = s0 * a_unit + s1 * z_unit
+        radius = (1.0 - t_flat) * a_norm + t_flat * z_norm
+        slerp = (direction * radius).reshape_as(content).to(dtype=content.dtype)
+        near_linear = (omega <= 4.0 * eps).view(-1, 1, 1, 1)
+        return torch.where(near_linear, linear, slerp)
 
     def _loss(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         if self.loss_type == "huber":
@@ -1665,6 +1708,10 @@ class OTFlowMatchingObjective:
                     bridge_noise_schedule=self.bridge_noise_schedule,
                     objective_mode=self.objective_mode,
                 ) else 0.0,
+                dtype=torch.float32,
+            ),
+            "bridge_path_slerp_active": content.new_tensor(
+                1.0 if self.bridge_path_mode == "latent_slerp" else 0.0,
                 dtype=torch.float32,
             ),
             "t_mean": t.mean().detach(),
