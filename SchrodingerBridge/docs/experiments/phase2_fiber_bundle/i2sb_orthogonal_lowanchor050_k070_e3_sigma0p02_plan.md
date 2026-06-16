@@ -108,6 +108,17 @@ Required summary/debug keys:
   transfer `0.705008 / 0.412302`, eval wall `24.95s`. This is the current
   low-anchor structure point: it is much more style-preserving than the
   slerp+hard-orthogonal tail, but LPIPS is still outside the target band.
+- 2026-06-16 12:13 e5 eval:
+  transfer `0.702532 / 0.393892`, eval wall `24.84s`. This is the best
+  balanced point so far: it is close to the `>=0.700 / <=0.38` short gate but
+  does not reach it.
+- 2026-06-16 12:16 e6 eval:
+  transfer `0.692812 / 0.413901`, eval wall `24.92s`. Style retreat without a
+  structure gain.
+- 2026-06-16 12:18 e7 eval:
+  transfer `0.696491 / 0.391731`, eval wall `24.91s`. This is a joint Pareto
+  point only under the automatic tracker; under style-first reading it is below
+  the useful style band.
 
 ## Interim Read
 
@@ -117,3 +128,7 @@ Required summary/debug keys:
 - It has not solved the full target yet. We need either an in-band
   `>=0.700 / <=0.38` point later in this curve, or a follow-up anchor strength
   scan that increases structure without extinguishing style.
+- Continue, because e7 is the newest Pareto point and closure would be early.
+  If the next retained checkpoints only improve LPIPS while staying below
+  `0.700` style, close as partial-positive and launch a higher anchor strength
+  probe rather than extending this exact setting.

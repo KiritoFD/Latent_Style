@@ -1,6 +1,6 @@
 {
   "curve_csv": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_i2sb_orthogonal_lowanchor050_k070_e3_sigma0p02_b8a2_vlen010/full_eval_fast10/clip_lpips_curve.csv",
-  "row_count": 4,
+  "row_count": 7,
   "best_epoch": "epoch_0001",
   "best_index": 0,
   "best_transfer_epoch": "epoch_0001",
@@ -9,11 +9,13 @@
     "epoch_0001",
     "epoch_0002",
     "epoch_0003",
-    "epoch_0004"
+    "epoch_0004",
+    "epoch_0005",
+    "epoch_0007"
   ],
-  "last_pareto_epoch": "epoch_0004",
-  "newest_epoch": "epoch_0004",
-  "since_best": 3,
+  "last_pareto_epoch": "epoch_0007",
+  "newest_epoch": "epoch_0007",
+  "since_best": 6,
   "since_last_pareto": 0,
   "best_in_newest_2": false,
   "tail_flat": false,
