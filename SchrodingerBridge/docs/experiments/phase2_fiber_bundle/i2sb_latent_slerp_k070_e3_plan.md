@@ -107,6 +107,18 @@ Local mirror:
 | e14 | 0.686199 | 0.357695 | 24.91s | new structure-side Pareto, style too low |
 | e15 | 0.687213 | 0.393769 | 24.92s | non-improving tail |
 | e16 | 0.687949 | 0.386869 | 24.93s | non-improving tail |
+| e17 | 0.683196 | 0.383477 | 24.87s | non-improving style tail |
+| e18 | 0.682902 | 0.358558 | 24.85s | LPIPS near e14, style lower |
+| e19 | 0.684985 | 0.363943 | 24.89s | no style recovery |
+| e20 | 0.687134 | 0.360616 | 24.97s | LPIPS-side Pareto, style still low |
+| e21 | 0.686085 | 0.357966 | 39.79s | cold-resume eval, no style recovery |
+| e22 | 0.683500 | 0.356225 | 25.48s | LPIPS-only Pareto, style lower |
+| e23 | 0.684087 | 0.363841 | 24.88s | non-improving tail |
+| e24 | 0.683244 | 0.362080 | 24.94s | config-limit tail, still no style recovery |
+| e25 | 0.682499 | 0.359029 | 39.73s | cold-resume eval, no style recovery |
+| e26 | 0.684500 | 0.355143 | 25.00s | LPIPS-only Pareto, style low |
+| e27 | 0.683912 | 0.356908 | 25.04s | non-improving tail |
+| e28 | 0.682638 | 0.352726 | 24.89s | best LPIPS, style cooled further |
 
 Matched read against clean absolute I2SB sigma0.02:
 
@@ -116,15 +128,19 @@ Matched read against clean absolute I2SB sigma0.02:
 
 Interim decision:
 
-- `early_positive_not_closed`.
+- `closed_partial_positive_not_promoted`.
 - e2 is the first path-geometry point that improves both transfer style and
   LPIPS against its clean I2SB matched control.
-- Do not promote yet: LPIPS remains far above the desired `0.30-0.35` band,
-  and e3/e4 show style retreat. e5 creates a lower-LPIPS tradeoff point but
-  remains style-retreated. e7 pushes LPIPS to `0.391787` but style falls to
-  `0.694678`; e10 improves the structure-side Pareto to
-  `0.701837 / 0.385366`; e14 pushes LPIPS further to `0.357695` but only with
-  `0.686199` style. The curve now cleanly separates a style peak (e2) from a
-  structure peak (e14). e15/e16 do not improve either front; convergence
-  tracker reports `since_last_pareto=2`, `patience=4`, so the lane remains
-  running but is close to closure if e17/e18 are also non-improving.
+- Do not promote: LPIPS remains far above the desired `0.30-0.35` band at the
+  style peak, and later checkpoints only trade style away for LPIPS. e10
+  improves the structure-side Pareto to `0.701837 / 0.385366`; e20, e22, e26,
+  and e28 continue LPIPS-only cooling down to `0.682638 / 0.352726`. This is
+  useful evidence that path geometry helps, but it does not decouple style and
+  structure by itself.
+- The automatic joint Pareto tracker remains `converged=false` at e28 because
+  late low-style checkpoints keep making tiny LPIPS-only Pareto updates. The
+  stage is closed by the style-first rule: after e2, 26 later retained
+  checkpoints fail to create any new transfer style frontier or target-facing
+  Pareto point.
+- Closure note:
+  `docs/experiments/phase2_fiber_bundle/i2sb_latent_slerp_k070_e3_closure.md`.

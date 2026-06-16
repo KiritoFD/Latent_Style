@@ -23,7 +23,7 @@
 | content-anchor I2SB | `0.703953` | `0.458607` | closed negative; anchor remains coupled |
 | orthogonal low/high I2SB | `0.705847` | `0.451386` | closed partial positive; e4 improves structure to `0.698245 / 0.390826` but style retreats |
 | I2SB fiber-directed noise | `0.706816` | `0.489969` | closed negative; active gate but no matched Pareto gain |
-| I2SB latent slerp path | `0.712038` | `0.476511` | running positive; e2 beats clean I2SB e2 by `+0.002944` style and `-0.013722` LPIPS; e14 gives structure-side Pareto `0.686199 / 0.357695` |
+| I2SB latent slerp path | `0.712038` | `0.476511` | closed partial positive; e2 beats clean I2SB e2 by `+0.002944` style and `-0.013722` LPIPS; e28 gives LPIPS floor `0.682638 / 0.352726`, but style decays |
 | latent affine s0.75 | `0.685444` | `0.344580` | in-band diagnostic, not enough style |
 | SMoE tokenizer | `0.672774` | `0.327155` | stable structure, style bottleneck unchanged |
 
@@ -40,13 +40,10 @@
   switch is active.
 - `latent_slerp` is the first path-geometry intervention with a clean matched
   I2SB Pareto gain: e2 reaches `0.712038 / 0.476511`, improving both style and
-  LPIPS versus clean I2SB e2. It is not closed or promoted yet because LPIPS is
-  still high. The later curve is not flat negative: e10 recovers to
-  `0.701837 / 0.385366`, dominating the earlier e7 structure-side point, and
-  e14 reaches `0.686199 / 0.357695`. Current read: slerp separates the style
-  peak and structure peak instead of solving both at once. e15/e16 are
-  non-improving tail points; current convergence tracker is
-  `since_last_pareto=2` with patience `4`.
+  LPIPS versus clean I2SB e2. The full e1-e28 curve confirms the mechanism is
+  not promotable alone: e28 reaches the best LPIPS `0.352726`, but only at
+  `0.682638` style. Current read: slerp separates the style peak and structure
+  cooling tail instead of solving both at once.
 
 ## What Failed Or Is Not Promoted
 
@@ -62,14 +59,31 @@
   partial positive, not the target frontier.
 - I2SB fiber-directed noise is not promoted. Runtime observability proves the
   gate was active, but the matched e2/e5 controls show no useful Pareto delta.
+- I2SB latent-slerp is not promoted as a standalone model. It has a real e2
+  matched gain, but after that 26 later checkpoints fail to recover or exceed
+  the style frontier. The automatic joint Pareto tracker is misleading here
+  because late checkpoints keep making low-style LPIPS-only improvements.
+
+## Completed / Effective / Pending
+
+| lane | done | effect | next read |
+|---|---|---|---|
+| Infra cleanup | yes | eval steady-state is about `25s` per fast10 checkpoint; cold restart eval is about `40s` | keep cached in-process eval, avoid unnecessary restarts |
+| Fiber / SDE noise scan | yes | isotropic/fiber noise did not create target-facing Pareto gain | do not spend more lanes on noise-only scans |
+| SMoE tokenizer | yes | preserves structure but stays near ODE style ceiling | not the current bottleneck |
+| I2SB clean absolute | yes | proves SDE style shock, but LPIPS too high | use as style-force reference, not as promoted model |
+| I2SB blend/content-anchor | yes | scalar/lowpass anchors suppress or couple style | closed negative |
+| I2SB orthogonal low/high | yes | partial structure restraint, style still retreats | useful ingredient for combo |
+| I2SB latent-slerp | yes, e1-e28 | small matched style+LPIPS gain at e2; later structure cooling only | combine with explicit structure projection |
 
 ## Next Queue
 
 - Do not spend a training lane on topogated Brownian noise alone.
-- Let `latent_slerp` run to the formal tail rule before deciding whether to
-  use its e2 checkpoint as an integration parent.
-- If `latent_slerp` closes positive-but-high-LPIPS, next intervention should
-  combine path geometry with an explicit structure restraint rather than add
-  more actuator capacity.
+- Do not continue latent-slerp alone. It is closed as
+  `partial_positive_not_promoted`.
+- Next intervention should combine path geometry with an explicit structure
+  restraint rather than add more actuator capacity:
+  `latent_slerp + orthogonal_lowhigh endpoint` is the cleanest next matched
+  control.
 - Keep all DINO/VLM-heavy work after the clean geometry/SDE probes unless a
   matched control specifically requires it.
