@@ -1,6 +1,6 @@
 {
   "curve_csv": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_i2sb_latent_slerp_k070_e3_sigma0p02_b8a2_vlen010/full_eval_fast10/clip_lpips_curve.csv",
-  "row_count": 14,
+  "row_count": 16,
   "best_epoch": "epoch_0002",
   "best_index": 1,
   "best_transfer_epoch": "epoch_0002",
@@ -18,9 +18,9 @@
     "epoch_0014"
   ],
   "last_pareto_epoch": "epoch_0014",
-  "newest_epoch": "epoch_0014",
-  "since_best": 12,
-  "since_last_pareto": 0,
+  "newest_epoch": "epoch_0016",
+  "since_best": 14,
+  "since_last_pareto": 2,
   "best_in_newest_2": false,
   "tail_flat": false,
   "tail_window": 4,

@@ -105,6 +105,8 @@ Local mirror:
 | e12 | 0.689118 | 0.384867 | 24.90s | tiny LPIPS-only Pareto |
 | e13 | 0.690317 | 0.369346 | 25.62s | new structure-side Pareto, style still low |
 | e14 | 0.686199 | 0.357695 | 24.91s | new structure-side Pareto, style too low |
+| e15 | 0.687213 | 0.393769 | 24.92s | non-improving tail |
+| e16 | 0.687949 | 0.386869 | 24.93s | non-improving tail |
 
 Matched read against clean absolute I2SB sigma0.02:
 
@@ -123,5 +125,6 @@ Interim decision:
   `0.694678`; e10 improves the structure-side Pareto to
   `0.701837 / 0.385366`; e14 pushes LPIPS further to `0.357695` but only with
   `0.686199` style. The curve now cleanly separates a style peak (e2) from a
-  structure peak (e14). Continue because the latest Pareto point is still in
-  the newest checkpoints.
+  structure peak (e14). e15/e16 do not improve either front; convergence
+  tracker reports `since_last_pareto=2`, `patience=4`, so the lane remains
+  running but is close to closure if e17/e18 are also non-improving.

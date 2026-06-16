@@ -44,7 +44,9 @@
   still high. The later curve is not flat negative: e10 recovers to
   `0.701837 / 0.385366`, dominating the earlier e7 structure-side point, and
   e14 reaches `0.686199 / 0.357695`. Current read: slerp separates the style
-  peak and structure peak instead of solving both at once.
+  peak and structure peak instead of solving both at once. e15/e16 are
+  non-improving tail points; current convergence tracker is
+  `since_last_pareto=2` with patience `4`.
 
 ## What Failed Or Is Not Promoted
 
