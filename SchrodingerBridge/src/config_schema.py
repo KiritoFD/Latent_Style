@@ -387,6 +387,7 @@ class ModelConfig:
     i2sb_fiber_project_endpoint: bool = False
     i2sb_fiber_project_noise: bool = False
     i2sb_fiber_project_kernel: int = 5
+    i2sb_fiber_project_use_gate: bool = False
     solver_dual_track_detach: bool = True
     use_checkpointing: bool = False
     extra: dict[str, Any] = field(default_factory=dict)
