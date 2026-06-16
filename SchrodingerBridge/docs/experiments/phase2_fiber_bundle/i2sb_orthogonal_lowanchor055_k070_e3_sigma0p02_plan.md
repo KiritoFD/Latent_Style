@@ -81,12 +81,23 @@ band while moving LPIPS below the low-anchor0.50 e9 value.
   transfer `0.711863 / 0.457232`, eval wall `39.94s`. This is style-healthier
   than low-anchor0.65 e1 (`0.709417 / 0.449507`) and slightly above
   low-anchor0.50 e1 (`0.711470 / 0.472991`) while improving LPIPS by `0.0158`.
+- 2026-06-16 13:36 e2 eval:
+  transfer `0.703175 / 0.433346`, eval wall `24.95s`.
+- 2026-06-16 13:38 e3 eval:
+  transfer `0.698490 / 0.419661`, eval wall `24.88s`. This single point is
+  below the style band, but the next checkpoint recovers.
+- 2026-06-16 13:41 e4 eval:
+  transfer `0.704881 / 0.405001`, eval wall `24.98s`. This is not yet in-band,
+  but it keeps style above `0.700` while cooling LPIPS toward the low-anchor0.65
+  e4 point (`0.706564 / 0.395071`).
 
 ## Interim Read
 
-- `running_promising_not_in_band`.
+- `running_promising_not_in_band_e4`.
 - e1 supports the bracket hypothesis: `0.55` preserves the style impulse better
   than `0.65` and anchors structure more than `0.50`.
-- The decision point remains the cooling tail. We need e4-e9 to know whether it
-  can beat low-anchor0.50 e9 (`0.701429 / 0.372203`) without repeating the
-  low-anchor0.65 sub-`0.700` style collapse.
+- The decision point remains the cooling tail. e4 is a useful target-facing
+  checkpoint (`0.704881 / 0.405001`) but still too high in LPIPS. Continue to
+  e7-e9 to test whether it can beat low-anchor0.50 e9
+  (`0.701429 / 0.372203`) without repeating the low-anchor0.65 sub-`0.700`
+  style collapse.
