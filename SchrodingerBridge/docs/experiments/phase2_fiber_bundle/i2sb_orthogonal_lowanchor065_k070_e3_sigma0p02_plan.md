@@ -93,10 +93,13 @@ keeping transfer CLIP-S at or above `0.700`.
   structure-only Pareto point rather than a target-facing replacement.
 - 2026-06-16 13:16 e10 eval:
   transfer `0.690043 / 0.362955`, eval wall `24.91s`.
+- 2026-06-16 13:19 e11 eval:
+  transfer `0.687332 / 0.359799`, eval wall `25.01s`.
+- 2026-06-16 13:20 remote run stopped after e11. GPU returned to idle.
 
 ## Interim Read
 
-- `running_not_promoted_near_close`.
+- `closed_negative_over_anchored`.
 - Transfer-only read: stronger lowpass anchoring improves LPIPS earlier, but
   the style tail falls below `0.700` before reaching the low-anchor0.50 e9
   LPIPS band. The best target-facing point so far is e4
@@ -107,3 +110,7 @@ keeping transfer CLIP-S at or above `0.700`.
   `0.69x`. If e11 remains below `0.700`, close this as an over-anchored
   control and scan a milder anchor such as `0.55` or `0.58` rather than
   increasing the anchor further.
+- e11 confirms closure: transfer style falls to `0.687332` while LPIPS remains
+  around `0.36`. The correct comparison is therefore:
+  low-anchor0.50 e9 (`0.701429 / 0.372203`) remains the best target-facing
+  candidate; low-anchor0.65 e9/e11 are LPIPS-only tail points.
