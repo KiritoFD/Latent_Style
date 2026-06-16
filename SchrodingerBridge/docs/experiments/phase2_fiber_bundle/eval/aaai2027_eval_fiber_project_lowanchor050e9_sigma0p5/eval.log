@@ -1,0 +1,764 @@
+2026-06-16 14:50:44,892 - modelscope - INFO - Got 5 files, start to download ...
+HF cache dir: /mnt/i/Github/Latent_Style/SchrodingerBridge/eval_cache/hf
+HF hub cache dir: /mnt/i/Github/Latent_Style/SchrodingerBridge/eval_cache/hf/hub
+Transfer-only eval enabled: skipping identity src_style==tgt_style pairs.
+
+Phase 1: Generation (Batch Size 8)
+  Fast metric path: keep decoded generated tensors on GPU (no PNG/sidecar host roundtrip).
+Downloading Model from https://www.modelscope.cn to directory: /mnt/i/Github/Latent_Style/SchrodingerBridge/eval_cache/hf/modelscope/stabilityai_sd-vae-ft-ema/stabilityai/sd-vae-ft-ema
+Processing 5 items:   0%|          | 0.00/5.00 [00:00<?, ?it/s]
+Downloading [config.json]:   0%|          | 0.00/547 [00:00<?, ?B/s][A
+
+Downloading [configuration.json]:   0%|          | 0.00/64.0 [00:00<?, ?B/s][A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:   0%|          | 0.00/319M [00:00<?, ?B/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:   0%|          | 0.00/319M [00:00<?, ?B/s][A[A[A[A
+
+
+
+
+Downloading [README.md]:   0%|          | 0.00/6.68k [00:00<?, ?B/s][A[A[A[A[A
+
+Downloading [configuration.json]: 100%|██████████| 64.0/64.0 [00:00<00:00, 237B/s][A[A
+Downloading [config.json]: 100%|██████████| 547/547 [00:00<00:00, 2.00kB/s][ADownloading [configuration.json]: 100%|██████████| 64.0/64.0 [00:00<00:00, 234B/s]
+Downloading [config.json]: 100%|██████████| 547/547 [00:00<00:00, 1.99kB/s]
+Processing 5 items:  20%|██        | 1.00/5.00 [00:00<00:01, 3.41it/s]
+
+
+
+
+Downloading [README.md]: 100%|██████████| 6.68k/6.68k [00:00<00:00, 22.7kB/s][A[A[A[A[ADownloading [README.md]: 100%|██████████| 6.68k/6.68k [00:00<00:00, 22.5kB/s]
+
+
+
+Downloading [diffusion_pytorch_model.bin]:   0%|          | 1.00M/319M [00:00<02:53, 1.93MB/s][A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:   1%|          | 3.00M/319M [00:00<00:56, 5.86MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:   0%|          | 1.00M/319M [00:00<03:46, 1.47MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:   2%|▏         | 5.00M/319M [00:00<00:37, 8.68MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:   1%|          | 3.00M/319M [00:00<01:19, 4.17MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:   3%|▎         | 8.00M/319M [00:00<00:26, 12.5MB/s][A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:   3%|▎         | 11.0M/319M [00:01<00:19, 16.4MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:   1%|▏         | 4.00M/319M [00:01<01:08, 4.83MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:   4%|▍         | 14.0M/319M [00:01<00:18, 17.0MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:   2%|▏         | 6.00M/319M [00:01<00:48, 6.73MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:   5%|▌         | 16.0M/319M [00:01<00:18, 17.3MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:   3%|▎         | 8.00M/319M [00:01<00:40, 8.16MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:   6%|▌         | 19.0M/319M [00:01<00:15, 20.0MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:   3%|▎         | 11.0M/319M [00:01<00:27, 11.7MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:   7%|▋         | 22.0M/319M [00:01<00:15, 20.6MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:   4%|▍         | 13.0M/319M [00:01<00:24, 13.1MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:   8%|▊         | 25.0M/319M [00:01<00:14, 20.7MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:   5%|▌         | 16.0M/319M [00:01<00:21, 15.0MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:   9%|▉         | 28.0M/319M [00:01<00:14, 20.9MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:   6%|▌         | 19.0M/319M [00:01<00:18, 17.2MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  10%|▉         | 31.0M/319M [00:01<00:13, 23.0MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:   7%|▋         | 21.0M/319M [00:02<00:17, 17.4MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  11%|█         | 34.0M/319M [00:02<00:14, 20.8MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:   8%|▊         | 24.0M/319M [00:02<00:16, 18.3MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  12%|█▏        | 37.0M/319M [00:02<00:14, 20.6MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:   8%|▊         | 27.0M/319M [00:02<00:15, 19.8MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  13%|█▎        | 40.0M/319M [00:02<00:13, 21.2MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:   9%|▉         | 29.0M/319M [00:02<00:15, 19.1MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  10%|█         | 32.0M/319M [00:02<00:14, 20.7MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  14%|█▍        | 44.0M/319M [00:02<00:14, 20.3MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  11%|█         | 35.0M/319M [00:02<00:13, 22.9MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  15%|█▌        | 48.0M/319M [00:02<00:13, 21.9MB/s][A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  16%|█▋        | 52.0M/319M [00:03<00:12, 23.1MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  12%|█▏        | 38.0M/319M [00:03<00:18, 16.1MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  13%|█▎        | 40.0M/319M [00:03<00:18, 15.7MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  18%|█▊        | 56.0M/319M [00:03<00:11, 23.2MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  13%|█▎        | 43.0M/319M [00:03<00:15, 18.3MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  19%|█▉        | 60.0M/319M [00:03<00:11, 23.1MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  14%|█▍        | 45.0M/319M [00:03<00:15, 18.8MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  20%|██        | 64.0M/319M [00:03<00:11, 23.6MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  15%|█▌        | 48.0M/319M [00:03<00:14, 19.3MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  16%|█▌        | 51.0M/319M [00:03<00:13, 21.6MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  21%|██▏       | 68.0M/319M [00:03<00:10, 24.3MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  17%|█▋        | 54.0M/319M [00:03<00:12, 21.7MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  23%|██▎       | 72.0M/319M [00:03<00:10, 24.8MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  18%|█▊        | 57.0M/319M [00:03<00:12, 22.0MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  23%|██▎       | 75.0M/319M [00:03<00:10, 25.2MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  19%|█▉        | 60.0M/319M [00:04<00:12, 21.4MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  24%|██▍       | 78.0M/319M [00:04<00:10, 25.0MB/s][A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  25%|██▌       | 81.0M/319M [00:04<00:11, 22.6MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  20%|█▉        | 63.0M/319M [00:04<00:13, 19.5MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  20%|██        | 65.0M/319M [00:04<00:14, 18.9MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  26%|██▋       | 84.0M/319M [00:04<00:11, 21.4MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  21%|██▏       | 68.0M/319M [00:04<00:12, 21.0MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  27%|██▋       | 87.0M/319M [00:04<00:15, 15.5MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  23%|██▎       | 72.0M/319M [00:04<00:14, 17.9MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  24%|██▎       | 75.0M/319M [00:04<00:12, 19.8MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  28%|██▊       | 89.0M/319M [00:04<00:16, 14.4MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  24%|██▍       | 78.0M/319M [00:05<00:13, 18.8MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  29%|██▉       | 92.0M/319M [00:05<00:15, 15.5MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  25%|██▌       | 80.0M/319M [00:05<00:14, 16.7MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  30%|███       | 96.0M/319M [00:05<00:12, 18.2MB/s][A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  31%|███▏      | 100M/319M [00:05<00:11, 20.8MB/s] [A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  26%|██▋       | 84.0M/319M [00:05<00:12, 19.3MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  33%|███▎      | 104M/319M [00:05<00:10, 20.7MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  28%|██▊       | 88.0M/319M [00:05<00:12, 19.4MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  34%|███▍      | 108M/319M [00:05<00:10, 21.5MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  29%|██▉       | 92.0M/319M [00:05<00:11, 20.6MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  30%|██▉       | 95.0M/319M [00:05<00:10, 22.5MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  35%|███▍      | 111M/319M [00:05<00:10, 21.7MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  31%|███       | 98.0M/319M [00:06<00:10, 22.4MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  36%|███▌      | 114M/319M [00:06<00:09, 21.8MB/s][A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  37%|███▋      | 117M/319M [00:06<00:09, 22.8MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  32%|███▏      | 101M/319M [00:06<00:10, 22.2MB/s] [A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  38%|███▊      | 120M/319M [00:06<00:09, 22.7MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  33%|███▎      | 104M/319M [00:06<00:10, 21.2MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  39%|███▊      | 123M/319M [00:06<00:08, 23.7MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  34%|███▍      | 108M/319M [00:06<00:10, 22.1MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  39%|███▉      | 126M/319M [00:06<00:09, 21.7MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  35%|███▌      | 112M/319M [00:06<00:10, 21.1MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  40%|████      | 129M/319M [00:06<00:09, 20.5MB/s][A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  41%|████▏     | 132M/319M [00:07<00:09, 21.0MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  36%|███▌      | 115M/319M [00:07<00:11, 18.0MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  37%|███▋      | 117M/319M [00:07<00:11, 17.9MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  43%|████▎     | 136M/319M [00:07<00:09, 21.0MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  38%|███▊      | 120M/319M [00:07<00:11, 18.6MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  44%|████▎     | 139M/319M [00:07<00:09, 20.6MB/s][A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  44%|████▍     | 141M/319M [00:07<00:09, 20.2MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  39%|███▉      | 124M/319M [00:07<00:09, 20.7MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  45%|████▌     | 144M/319M [00:07<00:08, 21.1MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  40%|████      | 128M/319M [00:07<00:09, 20.5MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  46%|████▋     | 148M/319M [00:07<00:07, 23.1MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  41%|████▏     | 132M/319M [00:07<00:08, 22.4MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  47%|████▋     | 151M/319M [00:07<00:07, 24.3MB/s][A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  48%|████▊     | 154M/319M [00:07<00:06, 24.9MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  43%|████▎     | 136M/319M [00:08<00:08, 21.5MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  49%|████▉     | 157M/319M [00:08<00:07, 23.8MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  44%|████▍     | 140M/319M [00:08<00:08, 22.7MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  50%|█████     | 160M/319M [00:08<00:07, 23.0MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  45%|████▌     | 144M/319M [00:08<00:08, 21.7MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  51%|█████▏    | 164M/319M [00:08<00:06, 23.3MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  46%|████▌     | 147M/319M [00:08<00:08, 21.1MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  53%|█████▎    | 168M/319M [00:08<00:06, 24.0MB/s][A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  54%|█████▍    | 172M/319M [00:08<00:06, 25.5MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  47%|████▋     | 150M/319M [00:08<00:08, 20.2MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  55%|█████▌    | 176M/319M [00:08<00:05, 25.4MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  48%|████▊     | 152M/319M [00:08<00:09, 17.7MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  56%|█████▌    | 179M/319M [00:09<00:05, 26.1MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  49%|████▉     | 156M/319M [00:09<00:08, 20.6MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  57%|█████▋    | 182M/319M [00:09<00:06, 23.2MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  50%|█████     | 160M/319M [00:09<00:08, 20.8MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  58%|█████▊    | 185M/319M [00:09<00:06, 23.1MB/s][A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  59%|█████▉    | 188M/319M [00:09<00:05, 23.7MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  51%|█████▏    | 164M/319M [00:09<00:09, 17.9MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  60%|██████    | 192M/319M [00:09<00:05, 23.7MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  52%|█████▏    | 166M/319M [00:09<00:08, 18.3MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  53%|█████▎    | 169M/319M [00:09<00:07, 19.9MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  61%|██████▏   | 196M/319M [00:09<00:05, 23.5MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  54%|█████▍    | 172M/319M [00:09<00:07, 21.0MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  63%|██████▎   | 200M/319M [00:10<00:05, 24.6MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  55%|█████▌    | 176M/319M [00:10<00:07, 21.2MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  64%|██████▍   | 204M/319M [00:10<00:05, 24.1MB/s][A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  65%|██████▌   | 208M/319M [00:10<00:04, 24.8MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  56%|█████▌    | 179M/319M [00:10<00:07, 19.0MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  66%|██████▋   | 212M/319M [00:10<00:04, 23.4MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  57%|█████▋    | 181M/319M [00:10<00:09, 14.9MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  68%|██████▊   | 216M/319M [00:10<00:04, 24.2MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  58%|█████▊    | 184M/319M [00:10<00:08, 17.1MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  69%|██████▉   | 220M/319M [00:10<00:04, 24.7MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  59%|█████▉    | 188M/319M [00:10<00:07, 18.1MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  70%|███████   | 224M/319M [00:11<00:03, 25.3MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  60%|█████▉    | 190M/319M [00:11<00:08, 16.1MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  71%|███████▏  | 228M/319M [00:11<00:03, 26.5MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  60%|██████    | 192M/319M [00:11<00:08, 16.3MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  73%|███████▎  | 232M/319M [00:11<00:03, 26.9MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  61%|██████    | 195M/319M [00:11<00:06, 19.1MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  74%|███████▍  | 236M/319M [00:11<00:03, 25.6MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  62%|██████▏   | 197M/319M [00:11<00:07, 17.7MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  75%|███████▍  | 239M/319M [00:11<00:03, 25.5MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  63%|██████▎   | 200M/319M [00:11<00:06, 19.8MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  76%|███████▌  | 242M/319M [00:11<00:03, 25.3MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  64%|██████▍   | 204M/319M [00:11<00:05, 20.6MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  77%|███████▋  | 245M/319M [00:11<00:03, 23.7MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  65%|██████▌   | 208M/319M [00:12<00:05, 21.2MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  78%|███████▊  | 248M/319M [00:12<00:03, 23.1MB/s][A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  79%|███████▉  | 252M/319M [00:12<00:02, 24.5MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  66%|██████▋   | 212M/319M [00:12<00:05, 21.5MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  80%|███████▉  | 255M/319M [00:12<00:02, 23.9MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  67%|██████▋   | 215M/319M [00:12<00:05, 19.1MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  68%|██████▊   | 217M/319M [00:12<00:06, 17.7MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  81%|████████  | 258M/319M [00:12<00:03, 16.5MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  69%|██████▉   | 220M/319M [00:12<00:05, 19.3MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  81%|████████▏ | 260M/319M [00:12<00:03, 16.0MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  70%|███████   | 224M/319M [00:12<00:04, 21.1MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  83%|████████▎ | 264M/319M [00:12<00:03, 18.7MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  71%|███████▏  | 228M/319M [00:13<00:04, 21.1MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  73%|███████▎  | 232M/319M [00:13<00:03, 23.7MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  84%|████████▍ | 268M/319M [00:13<00:02, 18.8MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  74%|███████▍  | 236M/319M [00:13<00:03, 23.4MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  85%|████████▍ | 270M/319M [00:13<00:03, 16.8MB/s][A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  85%|████████▌ | 272M/319M [00:13<00:02, 17.0MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  75%|███████▌  | 240M/319M [00:13<00:03, 24.6MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  86%|████████▋ | 276M/319M [00:13<00:02, 19.6MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  76%|███████▋  | 244M/319M [00:13<00:03, 23.5MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  88%|████████▊ | 280M/319M [00:13<00:01, 21.5MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  78%|███████▊  | 248M/319M [00:13<00:03, 24.2MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  89%|████████▉ | 284M/319M [00:14<00:01, 21.7MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  79%|███████▉  | 252M/319M [00:14<00:02, 25.0MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  90%|█████████ | 288M/319M [00:14<00:01, 23.7MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  80%|████████  | 256M/319M [00:14<00:02, 23.6MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  91%|█████████ | 291M/319M [00:14<00:01, 24.7MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  81%|████████▏ | 260M/319M [00:14<00:02, 24.3MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  92%|█████████▏| 294M/319M [00:14<00:01, 23.6MB/s][A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  93%|█████████▎| 297M/319M [00:14<00:00, 23.5MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  83%|████████▎ | 264M/319M [00:14<00:02, 24.9MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  94%|█████████▍| 300M/319M [00:14<00:00, 22.6MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  84%|████████▍ | 268M/319M [00:14<00:02, 25.2MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  95%|█████████▌| 304M/319M [00:14<00:00, 24.5MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  85%|████████▌ | 272M/319M [00:14<00:02, 23.9MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  96%|█████████▋| 308M/319M [00:15<00:00, 23.1MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  86%|████████▋ | 276M/319M [00:15<00:01, 25.5MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  98%|█████████▊| 312M/319M [00:15<00:00, 23.1MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  88%|████████▊ | 280M/319M [00:15<00:01, 25.2MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  89%|████████▊ | 283M/319M [00:15<00:01, 25.7MB/s][A[A[A[A
+
+
+Downloading [diffusion_pytorch_model.bin]:  99%|█████████▉| 316M/319M [00:15<00:00, 22.9MB/s][A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  90%|████████▉ | 286M/319M [00:15<00:01, 24.8MB/s][A[A[A[ADownloading [diffusion_pytorch_model.bin]: 100%|██████████| 319M/319M [00:15<00:00, 21.6MB/s]
+Processing 5 items:  80%|████████  | 4.00/5.00 [00:15<00:04, 4.18s/it]
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  91%|█████████ | 289M/319M [00:15<00:01, 24.7MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  91%|█████████▏| 292M/319M [00:15<00:01, 19.3MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  92%|█████████▏| 295M/319M [00:16<00:01, 20.0MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  93%|█████████▎| 298M/319M [00:16<00:01, 17.9MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  94%|█████████▍| 300M/319M [00:16<00:01, 18.5MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  95%|█████████▌| 304M/319M [00:16<00:00, 21.0MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  97%|█████████▋| 308M/319M [00:16<00:00, 20.7MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  97%|█████████▋| 311M/319M [00:16<00:00, 22.5MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  98%|█████████▊| 314M/319M [00:17<00:00, 16.5MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]:  99%|█████████▉| 316M/319M [00:17<00:00, 16.7MB/s][A[A[A[A
+
+
+
+Downloading [diffusion_pytorch_model.safetensors]: 100%|██████████| 319M/319M [00:17<00:00, 19.8MB/s][A[A[A[ADownloading [diffusion_pytorch_model.safetensors]: 100%|██████████| 319M/319M [00:17<00:00, 19.3MB/s]
+Processing 5 items: 100%|██████████| 5.00/5.00 [00:17<00:00, 3.53s/it]Processing 5 items: 100%|██████████| 5.00/5.00 [00:17<00:00, 3.48s/it]
+2026-06-16 14:51:02,289 - modelscope - INFO - Finish downloading 5 files for repo 'stabilityai/sd-vae-ft-ema'
+  Diffusers VAE loaded: required by eval settings
+  Building source latent cache: /mnt/i/Github/Latent_Style/SchrodingerBridge/eval_cache/source_latents_408fa88bb717.pt (50 missing)
+Encoding source latents:   0%|          | 0/7 [00:00<?, ?it/s]Encoding source latents:  14%|█▍        | 1/7 [00:02<00:16,  2.68s/it]Encoding source latents:  29%|██▊       | 2/7 [00:03<00:06,  1.37s/it]Encoding source latents:  43%|████▎     | 3/7 [00:03<00:03,  1.13it/s]Encoding source latents:  57%|█████▋    | 4/7 [00:03<00:01,  1.51it/s]Encoding source latents:  71%|███████▏  | 5/7 [00:04<00:01,  1.79it/s]Encoding source latents:  86%|████████▌ | 6/7 [00:04<00:00,  1.79it/s]Encoding source latents: 100%|██████████| 7/7 [00:04<00:00,  2.23it/s]Encoding source latents: 100%|██████████| 7/7 [00:04<00:00,  1.42it/s]
+  Source latent cache rebuilt: /mnt/i/Github/Latent_Style/SchrodingerBridge/eval_cache/source_latents_408fa88bb717.pt
+  Generating Batch 1/7
+  Generating Batch 2/7
+  Generating Batch 3/7
+  Generating Batch 4/7
+  Generating Batch 5/7
+  Generating Batch 6/7
+  Generating Batch 7/7
+  Generation models unloaded
+
+妫ｅ啯鐣?Phase 2: Evaluation
+  LPIPS Loaded
+  CLIP Loaded (HF) from: /mnt/i/Github/Latent_Style/eval_cache/manual_clip/openai-clip-vit-base-patch32 (processor=skipped)
+
+Computing Reference Features (global cache miss): /mnt/i/Github/Latent_Style/SchrodingerBridge/eval_cache/ref_feats_06b1376662_m30.pt
+Featurizing Early_Renaissance:   0%|          | 0/2 [00:00<?, ?it/s]Featurizing Early_Renaissance:  50%|█████     | 1/2 [00:00<00:00,  1.21it/s]Featurizing Early_Renaissance: 100%|██████████| 2/2 [00:01<00:00,  1.78it/s]Featurizing Early_Renaissance: 100%|██████████| 2/2 [00:01<00:00,  1.66it/s]
+Featurizing Impressionism:   0%|          | 0/2 [00:00<?, ?it/s]Featurizing Impressionism:  50%|█████     | 1/2 [00:00<00:00,  1.60it/s]Featurizing Impressionism: 100%|██████████| 2/2 [00:00<00:00,  2.14it/s]Featurizing Impressionism: 100%|██████████| 2/2 [00:00<00:00,  2.04it/s]
+Featurizing Minimalism:   0%|          | 0/2 [00:00<?, ?it/s]Featurizing Minimalism:  50%|█████     | 1/2 [00:00<00:00,  3.28it/s]Featurizing Minimalism: 100%|██████████| 2/2 [00:00<00:00,  3.97it/s]Featurizing Minimalism: 100%|██████████| 2/2 [00:00<00:00,  3.85it/s]
+Featurizing Rococo:   0%|          | 0/2 [00:00<?, ?it/s]Featurizing Rococo:  50%|█████     | 1/2 [00:00<00:00,  4.01it/s]Featurizing Rococo: 100%|██████████| 2/2 [00:00<00:00,  2.25it/s]Featurizing Rococo: 100%|██████████| 2/2 [00:00<00:00,  2.41it/s]
+Featurizing Ukiyo_e:   0%|          | 0/2 [00:00<?, ?it/s]Featurizing Ukiyo_e:  50%|█████     | 1/2 [00:00<00:00,  2.16it/s]Featurizing Ukiyo_e: 100%|██████████| 2/2 [00:01<00:00,  1.90it/s]Featurizing Ukiyo_e: 100%|██████████| 2/2 [00:01<00:00,  1.93it/s]
+Global reference cache saved: /mnt/i/Github/Latent_Style/SchrodingerBridge/eval_cache/ref_feats_06b1376662_m30.pt
+  Processing 200 generated images...
+
+Computing Source Cache (global miss): /mnt/i/Github/Latent_Style/SchrodingerBridge/eval_cache/src_feats_06b1376662_img256_clip0.pt
+Caching source images:   0%|          | 0/4 [00:00<?, ?it/s]Caching source images:  25%|██▌       | 1/4 [00:00<00:01,  2.08it/s]Caching source images:  50%|█████     | 2/4 [00:00<00:00,  3.15it/s]Caching source images:  75%|███████▌  | 3/4 [00:01<00:00,  2.56it/s]Caching source images: 100%|██████████| 4/4 [00:01<00:00,  3.51it/s]Caching source images: 100%|██████████| 4/4 [00:01<00:00,  3.12it/s]
+Global source cache saved: /mnt/i/Github/Latent_Style/SchrodingerBridge/eval_cache/src_feats_06b1376662_img256_clip0.pt
+  Fast metric path: source image device cache enabled.
+
+妫ｅ啯鎯?Generating Summary...
+Summary saved: /mnt/i/Github/Latent_Style/exp/aaai2027_eval_fiber_project_lowanchor050e9_sigma0p5/summary.json
