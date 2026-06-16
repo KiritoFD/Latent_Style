@@ -77,3 +77,16 @@ band while moving LPIPS below the low-anchor0.50 e9 value.
 - 2026-06-16 13:31 training entered epoch 1. GPU observed around `3.1 GiB`
   with high utilization; low VRAM is acceptable here because the goal is stable
   throughput and in-loop fast10 eval rather than filling memory.
+- 2026-06-16 13:33 e1 eval:
+  transfer `0.711863 / 0.457232`, eval wall `39.94s`. This is style-healthier
+  than low-anchor0.65 e1 (`0.709417 / 0.449507`) and slightly above
+  low-anchor0.50 e1 (`0.711470 / 0.472991`) while improving LPIPS by `0.0158`.
+
+## Interim Read
+
+- `running_promising_not_in_band`.
+- e1 supports the bracket hypothesis: `0.55` preserves the style impulse better
+  than `0.65` and anchors structure more than `0.50`.
+- The decision point remains the cooling tail. We need e4-e9 to know whether it
+  can beat low-anchor0.50 e9 (`0.701429 / 0.372203`) without repeating the
+  low-anchor0.65 sub-`0.700` style collapse.
