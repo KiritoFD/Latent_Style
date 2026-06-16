@@ -21,7 +21,7 @@
 | clean absolute I2SB sigma0p01 | `0.713162` | `0.590598` | strongest style, unacceptable LPIPS |
 | I2SB blend0p25 | `0.694567` | `0.415258` | closed negative; scalar shrink suppresses style |
 | content-anchor I2SB | `0.703953` | `0.458607` | closed negative; anchor remains coupled |
-| orthogonal low/high I2SB | `0.705847` | `0.451386` | live; e1 improves matched anchors, e2 retreats to `0.699997 / 0.420951` |
+| orthogonal low/high I2SB | `0.705847` | `0.451386` | closed partial positive; e4 improves structure to `0.698245 / 0.390826` but style retreats |
 | latent affine s0.75 | `0.685444` | `0.344580` | in-band diagnostic, not enough style |
 | SMoE tokenizer | `0.672774` | `0.327155` | stable structure, style bottleneck unchanged |
 
@@ -33,8 +33,9 @@
   remote WSL: recent fast10 runs complete in roughly `26-29s` wall with cached
   CLIP/source/reference features.
 - `orthogonal_lowhigh` is a cleaner intervention than content-anchor:
-  e1 gives better style and better LPIPS than content-anchor e1, with the
-  runtime observability proving the endpoint projection switch is active.
+  e1 gives better style and better LPIPS than content-anchor e1, and e4 moves
+  LPIPS near `0.39`. Runtime observability proves the endpoint projection
+  switch is active.
 
 ## What Failed Or Is Not Promoted
 
@@ -45,13 +46,13 @@
   `0.445-0.459`, and e7 collapsed to `0.683597`.
 - SMoE and topology release are not enough by themselves: they preserve
   structure but do not solve style actuation.
+- `orthogonal_lowhigh` is not promoted because its best style point remains
+  high-LPIPS and its best structure point loses too much style. It is a useful
+  partial positive, not the target frontier.
 
 ## Next Queue
 
-- Let `orthogonal_lowhigh` reach e3, then stop if style keeps retreating and
-  LPIPS is still above `0.38`.
-- If orthogonal remains only partial positive, test fiber-directed/topogated
-  SDE noise as a solver-only matched eval: same absolute I2SB parent, same
-  sigma, noise masked by existing gate only.
+- Test fiber-directed/topogated SDE noise as a solver-only matched eval:
+  same absolute I2SB parent, same sigma, noise masked by existing gate only.
 - Keep all DINO/VLM-heavy work after the clean geometry/SDE probes unless a
   matched control specifically requires it.

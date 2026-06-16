@@ -1,23 +1,23 @@
 {
   "run_dir": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_phase2_i2sb_orthogonal_lowhigh_k070_e3_sigma0p02_b8a2_vlen010",
   "eval_subdir": "full_eval_fast10",
-  "row_count": 2,
+  "row_count": 4,
   "latest": {
-    "epoch": "epoch_0002",
-    "epoch_int": 2,
-    "checkpoint": "exp/aaai2027_phase2_i2sb_orthogonal_lowhigh_k070_e3_sigma0p02_b8a2_vlen010/epoch_0002.pt",
-    "timestamp": "2026-06-16 07:57:47",
-    "transfer_clip_style": 0.6999973705410957,
-    "transfer_content_lpips": 0.42095110865,
-    "all_pairs_clip_style": 0.6999973705410957,
-    "all_pairs_content_lpips": 0.42095110865,
+    "epoch": "epoch_0004",
+    "epoch_int": 4,
+    "checkpoint": "exp/aaai2027_phase2_i2sb_orthogonal_lowhigh_k070_e3_sigma0p02_b8a2_vlen010/epoch_0004.pt",
+    "timestamp": "2026-06-16 08:03:28",
+    "transfer_clip_style": 0.6982448902726174,
+    "transfer_content_lpips": 0.3908260012,
+    "all_pairs_clip_style": 0.6982448902726174,
+    "all_pairs_content_lpips": 0.3908260012,
     "identity_clip_style": 0.0,
     "identity_content_lpips": 0.0,
-    "eval_wall_total_sec": 28.71336039400194,
-    "eval_total_sec": 11.4922538039973,
-    "generation_sec": 5.6265303019972635,
-    "vae_decode_sec": 8.448603906988865,
-    "summary_path": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_phase2_i2sb_orthogonal_lowhigh_k070_e3_sigma0p02_b8a2_vlen010/full_eval_fast10/epoch_0002/summary.json"
+    "eval_wall_total_sec": 26.09206037400145,
+    "eval_total_sec": 9.641300102994137,
+    "generation_sec": 5.377536955995311,
+    "vae_decode_sec": 8.33863399000984,
+    "summary_path": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_phase2_i2sb_orthogonal_lowhigh_k070_e3_sigma0p02_b8a2_vlen010/full_eval_fast10/epoch_0004/summary.json"
   },
   "best_transfer": {
     "epoch": "epoch_0001",
@@ -87,6 +87,40 @@
       "generation_sec": 5.6265303019972635,
       "vae_decode_sec": 8.448603906988865,
       "summary_path": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_phase2_i2sb_orthogonal_lowhigh_k070_e3_sigma0p02_b8a2_vlen010/full_eval_fast10/epoch_0002/summary.json"
+    },
+    {
+      "epoch": "epoch_0003",
+      "epoch_int": 3,
+      "checkpoint": "exp/aaai2027_phase2_i2sb_orthogonal_lowhigh_k070_e3_sigma0p02_b8a2_vlen010/epoch_0003.pt",
+      "timestamp": "2026-06-16 08:00:38",
+      "transfer_clip_style": 0.6962955430150033,
+      "transfer_content_lpips": 0.44208584814999996,
+      "all_pairs_clip_style": 0.6962955430150033,
+      "all_pairs_content_lpips": 0.44208584814999996,
+      "identity_clip_style": 0.0,
+      "identity_content_lpips": 0.0,
+      "eval_wall_total_sec": 26.330105429995456,
+      "eval_total_sec": 9.619400714997028,
+      "generation_sec": 5.4308421360037755,
+      "vae_decode_sec": 8.377885201007302,
+      "summary_path": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_phase2_i2sb_orthogonal_lowhigh_k070_e3_sigma0p02_b8a2_vlen010/full_eval_fast10/epoch_0003/summary.json"
+    },
+    {
+      "epoch": "epoch_0004",
+      "epoch_int": 4,
+      "checkpoint": "exp/aaai2027_phase2_i2sb_orthogonal_lowhigh_k070_e3_sigma0p02_b8a2_vlen010/epoch_0004.pt",
+      "timestamp": "2026-06-16 08:03:28",
+      "transfer_clip_style": 0.6982448902726174,
+      "transfer_content_lpips": 0.3908260012,
+      "all_pairs_clip_style": 0.6982448902726174,
+      "all_pairs_content_lpips": 0.3908260012,
+      "identity_clip_style": 0.0,
+      "identity_content_lpips": 0.0,
+      "eval_wall_total_sec": 26.09206037400145,
+      "eval_total_sec": 9.641300102994137,
+      "generation_sec": 5.377536955995311,
+      "vae_decode_sec": 8.33863399000984,
+      "summary_path": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_phase2_i2sb_orthogonal_lowhigh_k070_e3_sigma0p02_b8a2_vlen010/full_eval_fast10/epoch_0004/summary.json"
     }
   ]
 }
