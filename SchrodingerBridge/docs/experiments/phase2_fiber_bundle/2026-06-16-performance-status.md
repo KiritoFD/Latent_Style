@@ -25,7 +25,7 @@
 | I2SB fiber-directed noise | `0.706816` | `0.489969` | closed negative; active gate but no matched Pareto gain |
 | I2SB latent slerp path | `0.712038` | `0.476511` | closed partial positive; e2 beats clean I2SB e2 by `+0.002944` style and `-0.013722` LPIPS; e28 gives LPIPS floor `0.682638 / 0.352726`, but style decays |
 | I2SB slerp + orthogonal low/high | `0.704828` | `0.446676` | closed negative; e15 reaches `0.678109 / 0.350421` but only as LPIPS-only style collapse |
-| I2SB low-anchor0.50 | `0.711470` | `0.472991` | running partial positive; e5 reaches `0.702532 / 0.393892`, close to short gate but not in-band |
+| I2SB low-anchor0.50 | `0.711470` | `0.472991` | running positive; e9 reaches `0.701429 / 0.372203`, first in-band style-first point for this probe |
 | latent affine s0.75 | `0.685444` | `0.344580` | in-band diagnostic, not enough style |
 | SMoE tokenizer | `0.672774` | `0.327155` | stable structure, style bottleneck unchanged |
 
@@ -82,7 +82,7 @@
 | I2SB orthogonal low/high | yes | partial structure restraint, style still retreats | useful ingredient for combo |
 | I2SB latent-slerp | yes, e1-e28 | small matched style+LPIPS gain at e2; later structure cooling only | combine with explicit structure projection |
 | I2SB slerp+orthogonal | yes, e1-e16 | closes the structure gap to `0.350421` LPIPS but suppresses style to low `0.68` | closed negative; use as evidence against hard lowpass endpoint replacement |
-| I2SB low-anchor0.50 | running, e1-e7 | restores style relative to hard lowpass anchor; e5 is `0.702532 / 0.393892` | continue; if tail falls below 0.700 style, close partial-positive and scan anchor strength |
+| I2SB low-anchor0.50 | running, e1-e11 | restores style relative to hard lowpass anchor; e9 is `0.701429 / 0.372203` | continue to formal tail; do not promote e10/e11 LPIPS-only points |
 
 ## Next Queue
 

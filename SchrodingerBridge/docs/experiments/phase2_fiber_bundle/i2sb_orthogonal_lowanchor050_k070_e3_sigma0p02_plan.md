@@ -119,16 +119,28 @@ Required summary/debug keys:
   transfer `0.696491 / 0.391731`, eval wall `24.91s`. This is a joint Pareto
   point only under the automatic tracker; under style-first reading it is below
   the useful style band.
+- 2026-06-16 12:21 e8 eval:
+  transfer `0.698460 / 0.384314`, eval wall `24.98s`. Structure is close to
+  the short gate but style remains slightly below `0.700`.
+- 2026-06-16 12:24 e9 eval:
+  transfer `0.701429 / 0.372203`, eval wall `24.88s`. This is the first
+  low-anchor point that clears the short style-first gate
+  (`CLIP-S >= 0.700`, LPIPS `<= 0.38`).
+- 2026-06-16 12:26 e10 eval:
+  transfer `0.690436 / 0.369871`, eval wall `25.75s`. LPIPS improves but style
+  falls out of the target band.
+- 2026-06-16 12:29 e11 eval:
+  transfer `0.686964 / 0.368482`, eval wall `25.02s`. This is LPIPS-only under
+  the active target and should not replace e9.
 
 ## Interim Read
 
-- `running_partial_positive_not_promoted`.
+- `running_positive_in_band_not_closed`.
 - The mechanism is doing what the hypothesis predicted: reducing hard lowpass
   anchoring restores style relative to hard orthogonal projection.
-- It has not solved the full target yet. We need either an in-band
-  `>=0.700 / <=0.38` point later in this curve, or a follow-up anchor strength
-  scan that increases structure without extinguishing style.
-- Continue, because e7 is the newest Pareto point and closure would be early.
-  If the next retained checkpoints only improve LPIPS while staying below
-  `0.700` style, close as partial-positive and launch a higher anchor strength
-  probe rather than extending this exact setting.
+- e9 is now the current target-facing candidate:
+  `0.701429 / 0.372203`. It improves both style and LPIPS over hard
+  orthogonal-lowhigh e4 (`0.698245 / 0.390826`), and recovers `+0.02332`
+  CLIP-S versus the slerp+hard-orthogonal LPIPS floor.
+- Continue to formal tail because e10/e11 are newer LPIPS-side Pareto points.
+  Do not promote a later LPIPS-only point if style remains below `0.700`.
