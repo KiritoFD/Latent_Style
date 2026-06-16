@@ -1,0 +1,96 @@
+====================================================================================================
+EXPERIMENT DATABASE SUMMARY - Best clip_style per category (full_eval, no probes)
+====================================================================================================
+Total entries: 256
+Categories: 48
+
+XPred+Kmanifold+Pattn          n= 21  best_cs=0.7372  lp=0.6069  e= 13  aaai2027_inmortal_xpred_kmanifold_pattn_stokes002_
+XPred+Kmanifold                n=  1  best_cs=0.7341  lp=0.6381  e=  7  aaai2027_inmortal_xpred_kmanifold_seed42_b32
+K-Manifold                     n=  1  best_cs=0.7106  lp=0.3261  e=  6  aaai2027_inmortal_k_manifold_seed42_b16
+K-Spectral                     n=  1  best_cs=0.7101  lp=0.3522  e=  2  aaai2027_inmortal_k_spectral_seed42_b12
+K-Spatial                      n=  1  best_cs=0.7097  lp=0.3344  e=  1  aaai2027_inmortal_k_spatial_seed42_b16
+Knee-E13                       n=  9  best_cs=0.7265  lp=0.4354  e=  1  aaai2027_inmortal_knee_e13_spatial_carriergate_bod
+Hold4Mid-E8                    n=  3  best_cs=0.7081  lp=0.5018  e=  4  aaai2027_inmortal_hold4mid_e8_carriergate_injectio
+XPred+Barycenter               n=  1  best_cs=0.7345  lp=0.5733  e=  3  aaai2027_inmortal_xpred_bary_seed42_b16
+XPred+Queue                    n=  1  best_cs=0.7309  lp=0.5514  e=  5  aaai2027_inmortal_xpred_queue_seed42_b16
+XPred+StructOT                 n=  1  best_cs=0.7302  lp=0.5510  e=  5  aaai2027_inmortal_xpred_structot_seed42_b16
+XPred+TeacherEndpoint          n=  1  best_cs=0.7276  lp=0.5473  e=  5  aaai2027_inmortal_xpred_teacher_endpoint_seed42_b1
+Phase2-Actuation               n=  4  best_cs=0.7033  lp=0.3145  e=  1  aaai2027_phase2_actuation_delta_basis_k070_e3_vlen
+Phase2-Fiber-SDE               n=  1  best_cs=0.7219  lp=0.3423  e= -1  aaai2027_phase2_smoe_fiber_sde_fiberwise_swd_k070
+Phase2-SMoE-Translator         n=  1  best_cs=0.7043  lp=0.3227  e=  9  aaai2027_phase2_smoe_translator_k070_e3_seed42_b12
+Phase2-TopoAnchor              n=  2  best_cs=0.7197  lp=0.7258  e=  1  aaai2027_phase2_i2sb_topo_anchor_sigma0p25_seed42_
+Phase2-PNP-Fiber               n=  1  best_cs=0.7081  lp=0.4067  e=  2  aaai2027_phase2_i2sb_pnp_fiber_sde_k070
+Phase2-Vel-Tok32               n=  7  best_cs=0.7042  lp=0.3375  e=  2  aaai2027_phase2_vel_tok32_safe_semantic_topogate_k
+Phase2-Vel-Pattn               n=  2  best_cs=0.7061  lp=0.4140  e=  2  aaai2027_phase2_vel_pattn_topo_anchor_k075_seed42_
+Round1-Attn                    n=  7  best_cs=0.7266  lp=0.4322  e=  1  aaai2027_round1_attn_sa_mod_seed42_b8a2_bootstrap4
+Round1-Solver                  n=  3  best_cs=0.7245  lp=0.4311  e=  9  aaai2027_round1_solver_unsb_cycle_seed42_b8a2
+Round1-Token                   n=  2  best_cs=0.6798  lp=0.7893  e=  2  aaai2027_round1_tok_b_cross_image_reconpretrain_se
+Round2-SDE                     n= 14  best_cs=0.7321  lp=0.6345  e=  6  aaai2027_round2_sde_i2sb_sigma_0p5_seed42_b8a2
+Round2-Token                   n=  6  best_cs=0.7182  lp=0.5317  e=  1  aaai2027_round2_tok_pure_latent_spatial_seed42_b8a
+Mainline                       n=  3  best_cs=0.7111  lp=0.3294  e=  3  aaai2027_mainline_h_softterm16_sem012_seed42_b44
+Longer-Train                   n=  2  best_cs=0.7010  lp=0.3623  e=  1  aaai2027_longer_train_k_seed42_b44_e8
+Executor-Promotion             n=  1  best_cs=0.6972  lp=0.3280  e=  1  aaai2027_executor_promotion_h_e1_seed42_b44
+Tokenizer-Localization         n=  2  best_cs=0.6963  lp=0.3218  e=  1  aaai2027_tokenizer_localization_l_e1_executoronly_
+Flow-Loss                      n=  3  best_cs=0.6989  lp=0.3595  e=  2  aaai2027_flow_loss_h_base_mse_seed42_b44
+Endpoint-Metric                n=  3  best_cs=0.6998  lp=0.5170  e=  1  aaai2027_endpoint_metric_h_omf_flow_mse_seed42_b44
+Path-Kinetic                   n=  3  best_cs=0.6891  lp=0.4272  e=  1  aaai2027_path_kinetic_h_base_seed42_b44
+Pairing-Cache                  n=  1  best_cs=0.6859  lp=0.4472  e=  1  aaai2027_pairing_cache_h_randompair_seed42_b44
+Projection-Count               n=  1  best_cs=0.6945  lp=0.3279  e=  2  aaai2027_projection_count_h_sem32_seed42_b44
+LANCET-VariantK                n=  1  best_cs=0.7010  lp=0.3623  e=  1  distinct5_512_ema_variant_k_content_adaptive_vq_qu
+LANCET-VariantL                n=  1  best_cs=0.6978  lp=0.3397  e=  1  distinct5_512_ema_variant_l_content_adaptive_annea
+LANCET-VariantM                n=  1  best_cs=0.6987  lp=0.3465  e=  1  distinct5_512_ema_variant_m_style_gated_content_ro
+LANCET-VariantJ                n=  1  best_cs=0.6977  lp=0.3323  e=  1  distinct5_512_ema_variant_j_aux_hard_swd_queue_e3_
+LANCET-VariantE                n=  1  best_cs=0.6973  lp=0.3582  e=  1  distinct5_512_ema_variant_e_latent_prototype_ot_qu
+LANCET-VariantC                n=  1  best_cs=0.6907  lp=0.4226  e=  2  distinct5_512_ema_variant_c_content_guided_spatial
+LANCET-VariantD                n=  1  best_cs=0.6898  lp=0.4156  e=  1  distinct5_512_ema_variant_d_vq_content_guided_b44_
+LANCET-VariantB                n=  1  best_cs=0.6873  lp=0.4446  e=  8  distinct5_512_ema_variant_b_global_vq_b44_remote
+LANCET-VariantA                n=  1  best_cs=0.6849  lp=0.4623  e=  8  distinct5_512_ema_variant_a_class_prototypes_b44_r
+LANCET-Baseline-Direct         n=  1  best_cs=0.6876  lp=0.4527  e=  8  distinct5_512_ema_baseline_direct_atom_residual_b4
+LANCET-SpectralStat            n=  3  best_cs=0.7007  lp=0.4024  e=  6  wikiart_distinct5_ema_lancet_spectralstat_from_e2_
+SaMAM                          n= 14  best_cs=0.7017  lp=0.2745  e= -1  samam_latent_distinct5_512_convergence_20260606_22
+SaMST                          n= 10  best_cs=0.7057  lp=0.8375  e= -1  samst_latent_distinct5_512_convergence_20260606_18
+SplitAxis-Tokenizer            n=  7  best_cs=0.7816  lp=0.3598  e= -1  split_axis_geometry_filter_rank4_120b
+
+====================================================================================================
+PARETO FRONT (clip_style vs content_lpips)
+====================================================================================================
+Other                          cs=0.7979  lp=0.7881  e= -1  baseline_pipeline
+Other                          cs=0.7934  lp=0.3777  e= -1  wikiart512_ema_direct_atom_residual_continue_e12_from_e
+Other                          cs=0.7897  lp=0.3606  e= -1  wikiart512_ema_spectral_stat_gain4_adapt_e2_b48
+Other                          cs=0.7889  lp=0.3597  e=  8  wikiart512_ema_direct_atom_residual_e8_b48
+Other                          cs=0.7889  lp=0.3592  e= -1  wikiart512_ema_spectral_stat_tokonly_e4_from_e8_b64
+Other                          cs=0.7888  lp=0.3590  e= -1  wikiart512_ema_tokenizer_only_e4_from_e8_b48
+SplitAxis-Tokenizer            cs=0.7813  lp=0.3452  e= -1  split_axis_geometry_derivgate_fieldbound_g005_120b
+Other                          cs=0.7809  lp=0.3415  e= -1  Latent_Style_TokenizerClean
+Other                          cs=0.7324  lp=0.3244  e=  1  wikiart_stress1_Color_Field_Painting__High_Renaissance_
+Other                          cs=0.7268  lp=0.0000  e= -1  wikiart_stress1_Color_Field_Painting__High_Renaissance_
+
+====================================================================================================
+KEY FINDINGS
+====================================================================================================
+LANCET best clip_style: 0.7979 (lpips=0.7881) - baseline_pipeline
+LANCET best lpips:      0.2707 (clip_style=0.6864) - expsaswd_axis_h_base_seed42_b44_saswd_random
+Baseline best clip_style: 0.7057 (lpips=0.8375) - Baseline / samst_latent_distinct5_512_convergence_20260606_180529
+Baseline best lpips:      0.1634 (clip_style=0.6920) - Baseline / samam_latent_distinct5_512_convergence_20260607_011328
+
+On distinct5_512:
+  LANCET best: cs=0.7010 lp=0.3623 - distinct5_512_ema_variant_k_content_adaptive_vq_queue_e3_b44_remote
+  Baseline best: cs=0.7057 lp=0.8375 - samst_latent_distinct5_512_convergence_20260606_180529
+  LANCET cs advantage: -0.0047
+
+TOP 15 BALANCED SCORE (clip_style - content_lpips):
+  0.7268 = cs=0.7268 - lp=0.0000  wikiart_stress1_Color_Field_Painting__High_Renaissance_  e=-1
+  0.5286 = cs=0.6920 - lp=0.1634  samam_latent_distinct5_512_convergence_20260607_011328  e=-1
+  0.5286 = cs=0.6920 - lp=0.1634  samam_latent_distinct5_512_convergence_20260607_011328  e=-1
+  0.5191 = cs=0.6929 - lp=0.1738  samam_latent_distinct5_512_convergence_20260607_002420  e=-1
+  0.5191 = cs=0.6929 - lp=0.1738  samam_latent_distinct5_512_convergence_20260607_002420  e=-1
+  0.4394 = cs=0.7809 - lp=0.3415  Latent_Style_TokenizerClean  e=-1
+  0.4360 = cs=0.7813 - lp=0.3452  split_axis_geometry_derivgate_fieldbound_g005_120b  e=-1
+  0.4298 = cs=0.7888 - lp=0.3590  wikiart512_ema_tokenizer_only_e4_from_e8_b48  e=-1
+  0.4298 = cs=0.7889 - lp=0.3592  wikiart512_ema_spectral_stat_tokonly_e4_from_e8_b64  e=-1
+  0.4292 = cs=0.7889 - lp=0.3597  wikiart512_ema_direct_atom_residual_e8_b48  e=8
+  0.4291 = cs=0.7897 - lp=0.3606  wikiart512_ema_spectral_stat_gain4_adapt_e2_b48  e=-1
+  0.4272 = cs=0.7017 - lp=0.2745  samam_latent_distinct5_512_convergence_20260606_222608  e=-1
+  0.4272 = cs=0.7017 - lp=0.2745  samam_latent_distinct5_512_convergence_20260606_222608  e=-1
+  0.4241 = cs=0.7112 - lp=0.2871  phase2_eval_style_overdrive_s135_k070_e3  e=3
+  0.4218 = cs=0.7816 - lp=0.3598  split_axis_geometry_filter_rank4_120b  e=-1
