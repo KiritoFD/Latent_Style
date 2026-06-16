@@ -55,6 +55,10 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             0.0,
             float(getattr(bridge_config, "endpoint_orthogonal_high_scale", 1.0)),
         )
+        self.endpoint_orthogonal_low_anchor = min(
+            1.0,
+            max(0.0, float(getattr(bridge_config, "endpoint_orthogonal_low_anchor", 1.0))),
+        )
         validate_i2sb_contract(
             solver_family=self.solver_family,
             transport_prediction_mode=self.transport_prediction_mode,
@@ -848,8 +852,10 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             x_f = x.float()
             raw_low = F.avg_pool2d(raw_f, kernel_size=kernel, stride=1, padding=pad)
             x_low = F.avg_pool2d(x_f, kernel_size=kernel, stride=1, padding=pad)
+            low_anchor = float(getattr(self, "endpoint_orthogonal_low_anchor", 1.0))
+            anchored_low = torch.lerp(raw_low, x_low, low_anchor)
             raw_high = (raw_f - raw_low) * float(getattr(self, "endpoint_orthogonal_high_scale", 1.0))
-            endpoint = x_low + raw_high
+            endpoint = anchored_low + raw_high
             return (endpoint - x_f).to(dtype=raw.dtype)
         return absolute_delta
 
@@ -978,6 +984,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             "endpoint_orthogonal_active": float(self.endpoint_parameterization == "orthogonal_lowhigh"),
             "endpoint_orthogonal_kernel": float(getattr(self, "endpoint_orthogonal_kernel", 1)),
             "endpoint_orthogonal_high_scale": float(getattr(self, "endpoint_orthogonal_high_scale", 1.0)),
+            "endpoint_orthogonal_low_anchor": float(getattr(self, "endpoint_orthogonal_low_anchor", 1.0)),
             "fiber_noise_requested": float(bool(getattr(self, "i2sb_fiber_aligned_noise", False))),
             "fiber_noise_active": float(previous_fiber_noise_debug.get("fiber_noise_active", 0.0)),
             "fiber_gate_mean": float(previous_fiber_noise_debug.get("fiber_gate_mean", 0.0)),
