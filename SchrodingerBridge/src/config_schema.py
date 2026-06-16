@@ -380,6 +380,8 @@ class ModelConfig:
     solver_tangent_projection_strength: float = 1.0
     solver_stochastic_noise_scale: float = 0.01
     solver_fiber_aligned: bool = False
+    i2sb_fiber_aligned_noise: bool = False
+    i2sb_fiber_noise_rms_normalize: bool = True
     solver_dual_track_detach: bool = True
     use_checkpointing: bool = False
     extra: dict[str, Any] = field(default_factory=dict)
