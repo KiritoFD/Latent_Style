@@ -29,6 +29,7 @@
 | I2SB low-anchor0.65 | `0.709417` | `0.449507` | closed negative over-anchor; best balanced e4 is `0.706564 / 0.395071`; e9/e11 improve LPIPS to about `0.36` only after style falls below `0.700` |
 | I2SB low-anchor0.55 | `0.711863` | `0.457232` | closed negative LPIPS-only tail; e4 is `0.704881 / 0.405001`, e11 reaches `0.688107 / 0.353115` after style collapse |
 | I2SB channel-mean lowpass | `0.702899` | `0.513291` | closed negative structure-unstable; e5 reaches `0.701429 / 0.410212` but does not replace low-anchor0.50 e9 |
+| Orthogonal Fiber-SDE hard projection | `0.703560` | `0.592224` | closed negative on low-anchor0.50 e9; sigma0 gives LPIPS-only `0.687711 / 0.358167`, sigma0.5 gives tiny style gain but structure explodes |
 | latent affine s0.75 | `0.685444` | `0.344580` | in-band diagnostic, not enough style |
 | SMoE tokenizer | `0.672774` | `0.327155` | stable structure, style bottleneck unchanged |
 
@@ -89,15 +90,16 @@
 | I2SB low-anchor0.65 | closed, e1-e11 | stronger anchor improves early LPIPS, but over-anchors by e5 and drops style below `0.700`; e9/e11 are LPIPS-good/style-bad | negative control; scan milder `0.55-0.58` anchor |
 | I2SB low-anchor0.55 | closed, e1-e12 | e1 improves style/LPIPS versus `0.50` e1; e4 remains `0.700+` style with LPIPS `0.405001`; e11 is LPIPS-only `0.688107 / 0.353115` | negative control; stop scalar low-anchor sweep |
 | I2SB channel-mean lowpass | closed, e1-e6 | preserves low-frequency style/color too aggressively; e2 is `0.702899 / 0.513291`, e5 improves to `0.701429 / 0.410212` but remains worse than low-anchor0.50 e9 | negative control; move to eval-only hard Fiber-SDE projection |
-| Orthogonal Fiber-SDE hard projection | pending eval-only | endpoint and Brownian noise are projected to high-frequency fiber subspace during `solver_i2sb`; no retraining | scan sigma `0.5/1.0/1.5` on low-anchor0.50 e9 |
+| Orthogonal Fiber-SDE hard projection | closed eval-only | switch active, but naive latent avg-pool highpass projector is not decoder-safe; sigma0.5 is `0.703560 / 0.592224` | negative control; keep switch default off |
 
 ## Next Queue
 
 - Do not spend a training lane on topogated Brownian noise alone.
 - Do not continue latent-slerp alone. It is closed as
   `partial_positive_not_promoted`.
-- Next intervention is eval-only Orthogonal Fiber-SDE hard projection. Do not
-  continue scalar low-anchor or channel-mean lowpass training probes until the
-  hard projection sigma scan is read.
+- The eval-only Orthogonal Fiber-SDE hard projection scan is negative for the
+  naive latent avg-pool projector. Next hard-projection work must be
+  decoder-aware or mask-aware; do not continue raw latent highpass sigma scans
+  on low-anchor0.50.
 - Keep all DINO/VLM-heavy work after the clean geometry/SDE probes unless a
   matched control specifically requires it.

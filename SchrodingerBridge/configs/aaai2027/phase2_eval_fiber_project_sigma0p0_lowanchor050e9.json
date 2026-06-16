@@ -1,0 +1,10 @@
+{
+  "_base": "./phase2_eval_fiber_project_sigma0p5_lowanchor050e9.json",
+  "_comment": "Diagnostic eval-only Orthogonal Fiber-SDE projection on lowanchor0.50 e9, sigma=0.0. Tests endpoint hard projection without Brownian noise.",
+  "model": {
+    "bridge_sigma": 0.0
+  },
+  "bridge": {
+    "bridge_sigma": 0.0
+  }
+}

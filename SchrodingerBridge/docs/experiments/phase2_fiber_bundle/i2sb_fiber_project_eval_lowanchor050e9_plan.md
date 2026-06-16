@@ -41,6 +41,7 @@ The noise projection is:
 
 | config | sigma |
 |---|---:|
+| `phase2_eval_fiber_project_sigma0p0_lowanchor050e9.json` | `0.0` diagnostic |
 | `phase2_eval_fiber_project_sigma0p5_lowanchor050e9.json` | `0.5` |
 | `phase2_eval_fiber_project_sigma1p0_lowanchor050e9.json` | `1.0` |
 | `phase2_eval_fiber_project_sigma1p5_lowanchor050e9.json` | `1.5` |
@@ -65,4 +66,33 @@ The noise projection is:
 
 ## Launch Log
 
-- Pending remote WSL eval-only launch.
+- 2026-06-16 local smoke passed for endpoint/noise hard projection and runtime
+  observability.
+- 2026-06-16 remote WSL eval-only scan completed on low-anchor0.50 e9.
+- Runtime observability confirmed:
+  `i2sb_fiber_project_endpoint_active=1`,
+  `i2sb_fiber_project_noise_active=1`,
+  `i2sb_fiber_project_kernel=5`.
+
+## Results
+
+| sigma | transfer CLIP-S | transfer LPIPS | read |
+|---:|---:|---:|---|
+| `0.0` | `0.687711` | `0.358167` | endpoint projection alone improves LPIPS but kills style |
+| `0.5` | `0.703560` | `0.592224` | style barely improves over baseline, structure explodes |
+| `1.0` | `0.676268` | `0.684136` | negative |
+| `1.5` | `0.673637` | `0.708145` | negative |
+
+## Interim Decision
+
+`closed_negative_current_latent_highpass`
+
+The hard projection implementation executed correctly, but the assumed
+lowpass/highpass split is not aligned with decoded-image LPIPS in the current
+VAE latent space. Endpoint-only projection is a structure/LPIPS-only move, and
+highpass Brownian noise does not translate into useful style; it mostly
+destroys decoded structure.
+
+This does not disprove fiber projection as a theory. It disproves the naive
+latent avg-pool highpass projector at kernel `5` on the current
+low-anchor0.50 e9 checkpoint.
