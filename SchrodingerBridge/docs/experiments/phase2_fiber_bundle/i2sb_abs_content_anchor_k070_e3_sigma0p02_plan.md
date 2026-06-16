@@ -104,12 +104,17 @@ topology anchor.
 | 2 | `0.701186` | `0.528431` | style recovers, LPIPS worsens |
 | 3 | `0.696943` | `0.500977` | style retreats, LPIPS improves slightly |
 | 4 | `0.703953` | `0.458607` | current best, still out of band |
+| 5 | `0.698749` | `0.468971` | style retreats again |
+| 6 | `0.703570` | `0.445356` | near e4 style, still high LPIPS |
+| 7 | `0.683597` | `0.439835` | style collapses despite LPIPS gain |
+| 8 | `0.695961` | `0.453316` | partial recovery, still below e4/e6 |
 
 - Current decision:
-  continue instead of stopping, because e4 is the current best and the best
-  point is among the newest two retained checkpoints. The mechanism remains
-  weak/negative so far: it does not provide an orthogonal correction; it mostly
-  trades style and LPIPS along the same coupled direction.
+  stopped after e8 as `closed_negative_coupled_anchor`. The run never produced
+  a point near the `0.35` LPIPS band, and the best style points e4/e6 were
+  still at `0.445-0.459` LPIPS. The e7 collapse confirms this is not a clean
+  orthogonal correction; it mostly trades style and LPIPS along the same
+  coupled direction.
 - Next prepared mechanism:
   `orthogonal_lowhigh` endpoint projection, which keeps the absolute endpoint
   highpass and replaces only the lowpass component with content lowpass. This
