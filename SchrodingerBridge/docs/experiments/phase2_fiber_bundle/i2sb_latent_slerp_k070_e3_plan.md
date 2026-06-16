@@ -98,6 +98,9 @@ Local mirror:
 | e5 | 0.697559 | 0.425856 | 24.93s | lower-LPIPS tradeoff point, still style-retreated |
 | e6 | 0.698255 | 0.474109 | 24.98s | no recovery |
 | e7 | 0.694678 | 0.391787 | 25.02s | new lower-LPIPS Pareto point, style too low |
+| e8 | 0.698919 | 0.406078 | 24.90s | partial style recovery, not Pareto |
+| e9 | 0.691482 | 0.394639 | 24.93s | no improvement |
+| e10 | 0.701837 | 0.385366 | 24.86s | new lower-LPIPS Pareto, best structure-side point |
 
 Matched read against clean absolute I2SB sigma0.02:
 
@@ -113,5 +116,6 @@ Interim decision:
 - Do not promote yet: LPIPS remains far above the desired `0.30-0.35` band,
   and e3/e4 show style retreat. e5 creates a lower-LPIPS tradeoff point but
   remains style-retreated. e7 pushes LPIPS to `0.391787` but style falls to
-  `0.694678`, so continue until the formal tail rule is met or a later
-  checkpoint recovers style with lower LPIPS.
+  `0.694678`; e10 improves the structure-side Pareto to
+  `0.701837 / 0.385366`. Continue because the latest Pareto point is still in
+  the newest checkpoints.
