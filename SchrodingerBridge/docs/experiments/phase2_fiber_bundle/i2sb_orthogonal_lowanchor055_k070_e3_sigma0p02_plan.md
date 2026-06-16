@@ -68,4 +68,12 @@ band while moving LPIPS below the low-anchor0.50 e9 value.
 
 ## Launch Log
 
-- Pending remote WSL launch.
+- 2026-06-16 13:30 remote WSL launch. `git pull` was blocked by a transient
+  GitHub TLS failure, so the already-committed config/plan were copied directly
+  to the remote workspace before launch.
+- 2026-06-16 13:30 health check: parent checkpoint load confirmed:
+  `Partially loaded resume ... epoch_0003.pt | loaded=272 skipped=0 missing=0
+  unexpected=0`.
+- 2026-06-16 13:31 training entered epoch 1. GPU observed around `3.1 GiB`
+  with high utilization; low VRAM is acceptable here because the goal is stable
+  throughput and in-loop fast10 eval rather than filling memory.
