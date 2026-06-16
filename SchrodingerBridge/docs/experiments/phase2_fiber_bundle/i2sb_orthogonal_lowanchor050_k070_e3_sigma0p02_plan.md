@@ -101,3 +101,19 @@ Required summary/debug keys:
   orthogonal e2 (`0.699997 / 0.420951`), style is higher by about `+0.00496`
   at a modest LPIPS cost. Continue; this is the cleanest positive sign since
   latent-slerp e2, but it still needs an in-band structure point.
+- 2026-06-16 12:07 e3 eval:
+  transfer `0.705415 / 0.430264`, eval wall `24.86s`. Style remains stable
+  near e2 instead of collapsing into the `0.68` band.
+- 2026-06-16 12:10 e4 eval:
+  transfer `0.705008 / 0.412302`, eval wall `24.95s`. This is the current
+  low-anchor structure point: it is much more style-preserving than the
+  slerp+hard-orthogonal tail, but LPIPS is still outside the target band.
+
+## Interim Read
+
+- `running_partial_positive_not_promoted`.
+- The mechanism is doing what the hypothesis predicted: reducing hard lowpass
+  anchoring restores style relative to hard orthogonal projection.
+- It has not solved the full target yet. We need either an in-band
+  `>=0.700 / <=0.38` point later in this curve, or a follow-up anchor strength
+  scan that increases structure without extinguishing style.
