@@ -1,0 +1,17 @@
+{
+  "_base": "./phase2_i2sb_latent_slerp_k070_e3_sigma0p02_b8a2_vlen010.json",
+  "model": {
+    "endpoint_parameterization": "orthogonal_lowhigh",
+    "endpoint_orthogonal_kernel": 5,
+    "endpoint_orthogonal_high_scale": 1.0
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_i2sb_slerp_orthogonal_lowhigh_k070_e3_sigma0p02_b8a2_vlen010"
+  },
+  "ablation": {
+    "name": "phase2_i2sb_slerp_orthogonal_lowhigh_k070_e3_sigma0p02_b8a2_vlen010",
+    "axis": "phase2_geometry_aware_i2sb_integration",
+    "stage": "latent_slerp_plus_orthogonal_lowhigh",
+    "notes": "Controlled integration after latent-slerp and orthogonal-lowhigh partial positives. Keep parent, tokenizer, TopoGate, solver_i2sb, sigma=0.02, losses, batch/eval contract, and endpoint high_scale/kernel fixed. Change only the combination of latent_slerp bridge path with orthogonal_lowhigh endpoint reconstruction. Goal: preserve the e2 latent-slerp style shock while reducing LPIPS through explicit low/high endpoint split."
+  }
+}

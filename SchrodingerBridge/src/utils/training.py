@@ -246,6 +246,7 @@ def append_training_log(log_file: Path, metrics: dict[str, float], epoch: int) -
         "teacher_abs": float(metrics.get("teacher_abs", 0.0)),
         "bridge_sigma": float(metrics.get("bridge_sigma", 0.0)),
         "bridge_noise_schedule_exact": float(metrics.get("bridge_noise_schedule_exact", 0.0)),
+        "bridge_path_slerp_active": float(metrics.get("bridge_path_slerp_active", 0.0)),
         "identity_ratio": float(metrics.get("identity_ratio", 0.0)),
         "t_mean": float(metrics.get("t_mean", 0.0)),
         "velocity_abs": float(metrics.get("velocity_abs", 0.0)),

@@ -24,6 +24,7 @@
 | orthogonal low/high I2SB | `0.705847` | `0.451386` | closed partial positive; e4 improves structure to `0.698245 / 0.390826` but style retreats |
 | I2SB fiber-directed noise | `0.706816` | `0.489969` | closed negative; active gate but no matched Pareto gain |
 | I2SB latent slerp path | `0.712038` | `0.476511` | closed partial positive; e2 beats clean I2SB e2 by `+0.002944` style and `-0.013722` LPIPS; e28 gives LPIPS floor `0.682638 / 0.352726`, but style decays |
+| I2SB slerp + orthogonal low/high | `0.704828` | `0.446676` | running early negative; structure improves but style does not preserve latent-slerp e2 shock |
 | latent affine s0.75 | `0.685444` | `0.344580` | in-band diagnostic, not enough style |
 | SMoE tokenizer | `0.672774` | `0.327155` | stable structure, style bottleneck unchanged |
 
@@ -75,6 +76,7 @@
 | I2SB blend/content-anchor | yes | scalar/lowpass anchors suppress or couple style | closed negative |
 | I2SB orthogonal low/high | yes | partial structure restraint, style still retreats | useful ingredient for combo |
 | I2SB latent-slerp | yes, e1-e28 | small matched style+LPIPS gain at e2; later structure cooling only | combine with explicit structure projection |
+| I2SB slerp+orthogonal | running | early e1-e4 improves LPIPS but suppresses style into `0.69-0.70` | continue to formal tail; likely not enough |
 
 ## Next Queue
 
