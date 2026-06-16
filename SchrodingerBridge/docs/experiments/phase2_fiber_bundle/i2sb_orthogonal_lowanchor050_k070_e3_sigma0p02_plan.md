@@ -75,3 +75,13 @@ Required summary/debug keys:
   `docs/experiments/phase2_fiber_bundle/curves/i2sb_orthogonal_lowanchor050_k070_e3_fast10_curve.csv`.
 - Eval mirror:
   `docs/experiments/phase2_fiber_bundle/eval/aaai2027_phase2_i2sb_orthogonal_lowanchor050_k070_e3_sigma0p02_b8a2_vlen010/`.
+
+## Launch Log
+
+- 2026-06-16 11:48 first remote launch was stopped and archived as invalid
+  because the log showed `No checkpoint found, start from scratch`. This
+  violates the matched-parent rule and is not evidence.
+- Config hardening:
+  the candidate now explicitly sets `training.resume_checkpoint` to the k070 e3
+  parent and disables optimizer/training-state resume, instead of relying only
+  on inherited base config fields.
