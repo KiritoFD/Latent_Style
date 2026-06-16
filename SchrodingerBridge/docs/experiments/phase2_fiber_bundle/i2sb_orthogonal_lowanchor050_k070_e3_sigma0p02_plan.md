@@ -89,3 +89,15 @@ Required summary/debug keys:
   invalid because the explicit parent path used `../exp/...`, which is wrong
   for the remote working directory `/mnt/i/Github/Latent_Style`. The config is
   corrected to `./exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k070_seed42_b12a1/epoch_0003.pt`.
+- 2026-06-16 11:59 third launch is valid. Log confirms parent load:
+  `Partially loaded resume ... epoch_0003.pt | loaded=272 skipped=0 missing=0
+  unexpected=0`.
+- 2026-06-16 12:02 e1 eval:
+  transfer `0.711470 / 0.472991`, eval wall `37.59s`. This nearly preserves
+  latent-slerp e2 style while improving clean-I2SB e2 LPIPS, but LPIPS remains
+  high.
+- 2026-06-16 12:05 e2 eval:
+  transfer `0.704958 / 0.429371`, eval wall `24.83s`. Compared with hard
+  orthogonal e2 (`0.699997 / 0.420951`), style is higher by about `+0.00496`
+  at a modest LPIPS cost. Continue; this is the cleanest positive sign since
+  latent-slerp e2, but it still needs an in-band structure point.

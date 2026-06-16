@@ -65,6 +65,7 @@ TRACE_STYLES = {
     "latent_affine_pc_k070_e3": ("#DB2777", "v", 52, 0.90),
     "i2sb_pnp_fiber_sde_k070": ("#111827", "*", 78, 0.92),
     "i2sb_slerp_orthogonal_lowhigh_k070_e3": ("#EA580C", "h", 42, 0.78),
+    "i2sb_orthogonal_lowanchor050_k070_e3": ("#F59E0B", "H", 48, 0.84),
 }
 
 LABEL_ALLOWLIST = {
@@ -81,6 +82,7 @@ LABEL_ALLOWLIST = {
     "I2SB e1",
     "I2SB e2",
     "Carrier stop",
+    "LowAnc e1",
 }
 
 LABEL_OFFSETS = {
@@ -402,6 +404,7 @@ def plot(points: list[dict[str, str]]) -> None:
         "latent_affine_pc_k070_e3": "LatAff+PC",
         "i2sb_pnp_fiber_sde_k070": "I2SB combo",
         "i2sb_slerp_orthogonal_lowhigh_k070_e3": "I2SB slerp+orth",
+        "i2sb_orthogonal_lowanchor050_k070_e3": "I2SB low-anchor",
     }
 
     for trace_id, rows in sorted(by_trace.items()):
