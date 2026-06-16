@@ -77,21 +77,31 @@ frequency with the current content lowpass.
 - 2026-06-16 07:58 CST e2 eval:
   transfer `0.699997 / 0.420951`, eval wall `28.71s`, metric eval `11.49s`,
   generation `5.63s`, VAE decode `8.45s`.
+- 2026-06-16 08:01 CST e3 eval:
+  transfer `0.696296 / 0.442086`, eval wall `26.33s`, metric eval `9.62s`,
+  generation `5.43s`, VAE decode `8.38s`.
+- 2026-06-16 08:03 CST e4 eval:
+  transfer `0.698245 / 0.390826`, eval wall `26.09s`, metric eval `9.64s`,
+  generation `5.38s`, VAE decode `8.34s`.
 - Matched read:
   orthogonal e1 improves over content-anchor e1 by `+0.014200` CLIP-S and
   `-0.066253` LPIPS, and improves over blend0p25 e1 by `+0.015801` CLIP-S
   with only `+0.003906` worse LPIPS. e2 then trades style down for structure,
   landing near the blend0p25 structure band but still with stronger style than
-  blend0p25 e6.
+  blend0p25 e6. e4 is the best structure point and nearly reaches the
+  `<=0.38` tolerance band, but its style is still below the absolute-I2SB
+  actuation target and below e1 by `-0.007603`.
 - Current decision:
-  continue to at least e3 because e1 is the best style point and is still in
-  the newest two retained checkpoints. If e3 continues the style retreat
-  without moving LPIPS toward `<=0.38`, stop this line as a partial positive
-  but not a promoted frontier.
+  stopped after e4 as `closed_partial_positive_not_promoted`. The mechanism
+  is useful evidence that low/high endpoint projection can improve structure
+  without the severe content-anchor collapse, but it still cannot keep the
+  `0.705+` style point while moving LPIPS into band. The next clean test should
+  keep the absolute endpoint force and move the stochasticity itself into the
+  fiber direction rather than only reconstructing the endpoint.
 - Local artifacts:
   `docs/experiments/phase2_fiber_bundle/curves/i2sb_orthogonal_lowhigh_k070_e3_sigma0p02_fast10_curve.csv`
   and
   `docs/experiments/phase2_fiber_bundle/eval/i2sb_orthogonal_lowhigh_k070_e3_sigma0p02_b8a2_vlen010/`.
 - Plot update:
-  appended e1-e2 transfer points to `plot_points.csv` and regenerated the
+  appended e1-e4 transfer points to `plot_points.csv` and regenerated the
   AAAI2027 WikiArt-5 page-1 figure.
