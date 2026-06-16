@@ -132,15 +132,26 @@ Required summary/debug keys:
 - 2026-06-16 12:29 e11 eval:
   transfer `0.686964 / 0.368482`, eval wall `25.02s`. This is LPIPS-only under
   the active target and should not replace e9.
+- 2026-06-16 12:32 e12 eval:
+  transfer `0.692469 / 0.395886`, no target-facing recovery.
+- 2026-06-16 12:35 e13 eval:
+  transfer `0.684991 / 0.358236`, LPIPS-only.
+- 2026-06-16 12:37 e14 eval:
+  transfer `0.686635 / 0.348625`, best LPIPS but low style.
+- 2026-06-16 12:40 e15 eval:
+  transfer `0.682993 / 0.355775`, final retained checkpoint before manual
+  closure. The e10-e15 tail confirms e9 was the balanced point; later progress
+  is structure-only.
 
 ## Interim Read
 
-- `running_positive_in_band_not_closed`.
+- `closed_partial_positive_promote_e9_as_candidate`.
 - The mechanism is doing what the hypothesis predicted: reducing hard lowpass
   anchoring restores style relative to hard orthogonal projection.
 - e9 is now the current target-facing candidate:
   `0.701429 / 0.372203`. It improves both style and LPIPS over hard
   orthogonal-lowhigh e4 (`0.698245 / 0.390826`), and recovers `+0.02332`
   CLIP-S versus the slerp+hard-orthogonal LPIPS floor.
-- Continue to formal tail because e10/e11 are newer LPIPS-side Pareto points.
-  Do not promote a later LPIPS-only point if style remains below `0.700`.
+- Closed after e15. Six later retained checkpoints after e9 failed to create a
+  new target-facing point with style `>=0.700`; the later Pareto updates are
+  LPIPS-only and should not replace e9.
