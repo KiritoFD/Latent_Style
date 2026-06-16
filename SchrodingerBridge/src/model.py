@@ -97,7 +97,17 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         if self.i2sb_fiber_project_kernel % 2 == 0:
             self.i2sb_fiber_project_kernel += 1
         self.i2sb_fiber_project_use_gate = bool(getattr(bridge_config, "i2sb_fiber_project_use_gate", False))
+        self.i2sb_fiber_project_noise_mode = str(
+            getattr(bridge_config, "i2sb_fiber_project_noise_mode", "highpass")
+        ).strip().lower()
+        if self.i2sb_fiber_project_noise_mode not in {"highpass", "residual_envelope", "residual_direction"}:
+            self.i2sb_fiber_project_noise_mode = "highpass"
+        self.i2sb_fiber_project_residual_power = max(
+            0.0,
+            float(getattr(bridge_config, "i2sb_fiber_project_residual_power", 1.0)),
+        )
         self.last_i2sb_fiber_noise_debug: dict[str, float] = {}
+        self.last_i2sb_fiber_project_debug: dict[str, float] = {}
         self.last_solver_noise_debug: dict[str, float] = {}
         self.bridge_style_dim = int(getattr(self, "style_code_dim", getattr(self.style_tokenizer, "embedding_dim", 0)))
         self.execution_budget_mode = str(getattr(bridge_config, "execution_budget_mode", "none")).strip().lower()
@@ -563,10 +573,78 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         # apply the hard low-frequency source anchor mainly on structure regions.
         return torch.lerp(projected, endpoint, gate)
 
-    def _i2sb_project_noise_to_fiber(self, noise: torch.Tensor) -> torch.Tensor:
+    def _i2sb_residual_fiber_direction(
+        self,
+        endpoint: torch.Tensor | None,
+        source_latent: torch.Tensor | None,
+        reference: torch.Tensor,
+    ) -> torch.Tensor | None:
+        if endpoint is None or source_latent is None:
+            return None
+        source = source_latent.to(device=reference.device)
+        if source.shape[-2:] != reference.shape[-2:]:
+            source = F.interpolate(source.float(), size=reference.shape[-2:], mode="bilinear", align_corners=False)
+        residual = endpoint.to(device=reference.device).float() - source.float()
+        residual = self._i2sb_highpass(residual)
+        rms = residual.detach().float().square().mean(dim=(1, 2, 3), keepdim=True).sqrt().clamp_min(1e-6)
+        residual = residual / rms
+        return residual.to(dtype=reference.dtype)
+
+    def _i2sb_project_noise_to_fiber(
+        self,
+        noise: torch.Tensor,
+        *,
+        endpoint: torch.Tensor | None = None,
+        source_latent: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         if not bool(getattr(self, "i2sb_fiber_project_noise", False)):
             return noise
+        mode = str(getattr(self, "i2sb_fiber_project_noise_mode", "highpass")).strip().lower()
+        if mode not in {"highpass", "residual_envelope", "residual_direction"}:
+            mode = "highpass"
         projected = self._i2sb_highpass(noise).to(dtype=noise.dtype)
+        residual_direction = self._i2sb_residual_fiber_direction(endpoint, source_latent, noise)
+        if mode == "residual_envelope" and residual_direction is not None:
+            envelope = residual_direction.detach().float().abs().mean(dim=1, keepdim=True)
+            power = float(getattr(self, "i2sb_fiber_project_residual_power", 1.0))
+            if abs(power - 1.0) > 1e-6:
+                envelope = envelope.clamp_min(1e-6).pow(power)
+            envelope_rms = envelope.square().mean(dim=(1, 2, 3), keepdim=True).sqrt().clamp_min(1e-6)
+            envelope = envelope / envelope_rms
+            projected = projected * envelope.to(device=projected.device, dtype=projected.dtype)
+            project_debug = {
+                "fiber_project_residual_active": 1.0,
+                "fiber_project_residual_mode_envelope": 1.0,
+                "fiber_project_residual_mode_direction": 0.0,
+                "fiber_project_residual_power": power,
+                "fiber_project_residual_rms": 1.0,
+            }
+            self.last_i2sb_transport_debug.update(project_debug)
+            self.last_i2sb_fiber_project_debug = project_debug
+        elif mode == "residual_direction" and residual_direction is not None:
+            scalar_noise = projected.float().mean(dim=1, keepdim=True)
+            scalar_rms = scalar_noise.detach().square().mean(dim=(1, 2, 3), keepdim=True).sqrt().clamp_min(1e-6)
+            scalar_noise = scalar_noise / scalar_rms
+            projected = residual_direction.to(dtype=projected.dtype) * scalar_noise.to(dtype=projected.dtype)
+            project_debug = {
+                "fiber_project_residual_active": 1.0,
+                "fiber_project_residual_mode_envelope": 0.0,
+                "fiber_project_residual_mode_direction": 1.0,
+                "fiber_project_residual_power": float(getattr(self, "i2sb_fiber_project_residual_power", 1.0)),
+                "fiber_project_residual_rms": 1.0,
+            }
+            self.last_i2sb_transport_debug.update(project_debug)
+            self.last_i2sb_fiber_project_debug = project_debug
+        else:
+            project_debug = {
+                "fiber_project_residual_active": 0.0,
+                "fiber_project_residual_mode_envelope": 0.0,
+                "fiber_project_residual_mode_direction": 0.0,
+                "fiber_project_residual_power": float(getattr(self, "i2sb_fiber_project_residual_power", 1.0)),
+                "fiber_project_residual_rms": 0.0,
+            }
+            self.last_i2sb_transport_debug.update(project_debug)
+            self.last_i2sb_fiber_project_debug = project_debug
         gate = self._i2sb_fiber_project_gate(noise)
         if gate is None:
             return projected
@@ -1076,6 +1154,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             predict_t = min(max(predict_t, self.i2sb_predictor_time_floor), float(t_next))
         predict_t = min(max(predict_t, 0.0), 1.0 - 1e-6)
         previous_fiber_noise_debug = getattr(self, "last_i2sb_fiber_noise_debug", {}) or {}
+        previous_fiber_project_debug = getattr(self, "last_i2sb_fiber_project_debug", {}) or {}
         self.last_i2sb_transport_debug = {
             "t_curr": float(t_curr),
             "predict_t": float(predict_t),
@@ -1094,9 +1173,25 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             "fiber_project_noise_active": float(bool(getattr(self, "i2sb_fiber_project_noise", False))),
             "fiber_project_kernel": float(getattr(self, "i2sb_fiber_project_kernel", 1)),
             "fiber_project_use_gate": float(bool(getattr(self, "i2sb_fiber_project_use_gate", False))),
+            "fiber_project_noise_mode_residual_envelope": float(
+                str(getattr(self, "i2sb_fiber_project_noise_mode", "highpass")).strip().lower() == "residual_envelope"
+            ),
+            "fiber_project_noise_mode_residual_direction": float(
+                str(getattr(self, "i2sb_fiber_project_noise_mode", "highpass")).strip().lower() == "residual_direction"
+            ),
             "fiber_project_gate_active": 0.0,
             "fiber_project_gate_mean": 0.0,
             "fiber_project_gate_rms": 0.0,
+            "fiber_project_residual_active": float(previous_fiber_project_debug.get("fiber_project_residual_active", 0.0)),
+            "fiber_project_residual_mode_envelope": float(previous_fiber_project_debug.get("fiber_project_residual_mode_envelope", 0.0)),
+            "fiber_project_residual_mode_direction": float(previous_fiber_project_debug.get("fiber_project_residual_mode_direction", 0.0)),
+            "fiber_project_residual_power": float(
+                previous_fiber_project_debug.get(
+                    "fiber_project_residual_power",
+                    float(getattr(self, "i2sb_fiber_project_residual_power", 1.0)),
+                )
+            ),
+            "fiber_project_residual_rms": float(previous_fiber_project_debug.get("fiber_project_residual_rms", 0.0)),
             "fiber_noise_active": float(previous_fiber_noise_debug.get("fiber_noise_active", 0.0)),
             "fiber_gate_mean": float(previous_fiber_noise_debug.get("fiber_gate_mean", 0.0)),
             "fiber_gate_rms": float(previous_fiber_noise_debug.get("fiber_gate_rms", 0.0)),
@@ -1125,7 +1220,11 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         var = (self.bridge_sigma ** 2) * (float(t_next) - float(t_curr)) * (1.0 - float(t_next)) / denom
         if var <= 0.0:
             return mu
-        noise = self._i2sb_project_noise_to_fiber(torch.randn_like(h))
+        noise = self._i2sb_project_noise_to_fiber(
+            torch.randn_like(h),
+            endpoint=x_1_pred,
+            source_latent=source_latent,
+        )
         noise = self._i2sb_fiber_aligned_noise(
             h,
             noise,
@@ -1658,6 +1757,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         dt = horizon / float(steps)
         h = x
         self.last_i2sb_fiber_noise_debug = {}
+        self.last_i2sb_fiber_project_debug = {}
         for idx in range(steps):
             t = horizon * ((idx + 0.5) / float(steps))
             t_curr = horizon * (idx / float(steps))

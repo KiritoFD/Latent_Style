@@ -1,0 +1,12 @@
+{
+  "_base": "./phase2_eval_fiber_project_gate_sigma0p3_lowanchor050e9.json",
+  "_comment": "Eval-only residual-envelope Fiber-SDE projection on lowanchor0.50 e9. Keeps gate support and modulates highpass noise by the projected endpoint residual envelope.",
+  "model": {
+    "i2sb_fiber_project_noise_mode": "residual_envelope",
+    "i2sb_fiber_project_residual_power": 1.0,
+    "bridge_sigma": 0.3
+  },
+  "bridge": {
+    "bridge_sigma": 0.3
+  }
+}

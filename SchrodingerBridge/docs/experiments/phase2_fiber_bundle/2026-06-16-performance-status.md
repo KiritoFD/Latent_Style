@@ -32,6 +32,7 @@
 | Orthogonal Fiber-SDE hard projection | `0.703560` | `0.592224` | closed negative on low-anchor0.50 e9; sigma0 gives LPIPS-only `0.687711 / 0.358167`, sigma0.5 gives tiny style gain but structure explodes |
 | Orthogonal Fiber-SDE on slerp e2 | `0.719065` | `0.568915` | closed negative diagnostic; stronger style parent confirms highpass noise can lift style but is not structure-safe |
 | Mask-aware Fiber-SDE projection | `0.719342` | `0.482121` | partial positive, not promoted; gate support beats raw global projection, but style gains still require too much LPIPS |
+| Residual-envelope Fiber noise | `0.716145` | `0.452353` | weak positive, not promoted; improves LPIPS by `0.029768` versus gated highpass sigma0.4 while losing only `0.003197` CLIP-S |
 | latent affine s0.75 | `0.685444` | `0.344580` | in-band diagnostic, not enough style |
 | SMoE tokenizer | `0.672774` | `0.327155` | stable structure, style bottleneck unchanged |
 
@@ -58,6 +59,11 @@
   `0.718477 / 0.521621`; sigma0.4 gives the best style
   `0.719342 / 0.482121`. The support mask helps, but the latent noise basis
   is still not structure-aligned enough.
+- Residual-envelope Fiber noise improves the matched sigma slope versus
+  gated highpass noise: at sigma0.4 it moves from `0.719342 / 0.482121` to
+  `0.716145 / 0.452353`. This is the first evidence that the fiber noise
+  basis should follow the endpoint residual envelope rather than naked latent
+  highpass noise.
 
 ## What Failed Or Is Not Promoted
 
@@ -85,6 +91,12 @@
   better support mask than global projection, but the best style point
   `0.719342` still has LPIPS `0.482121`, and the in-band-ish sigma0.2 point
   only improves style by `+0.000957`.
+- Residual-direction Fiber noise is not promoted. It lowers LPIPS versus
+  gated highpass but gives back too much style: sigma0.4 is only
+  `0.705169 / 0.418271`.
+- Residual-envelope Fiber noise is not promoted. It improves the matched
+  slope, but the best residual point `0.716145 / 0.452353` is still too far
+  from the style-first target and below the gated-highpass style ceiling.
 
 ## Completed / Effective / Pending
 
@@ -105,6 +117,7 @@
 | Orthogonal Fiber-SDE hard projection | closed eval-only | switch active, but naive latent avg-pool highpass projector is not decoder-safe; sigma0.5 is `0.703560 / 0.592224` | negative control; keep switch default off |
 | Orthogonal Fiber-SDE on slerp e2 | closed eval-only | sigma0 lowers LPIPS but kills style; sigma0.5 reaches `0.719065` style with LPIPS `0.568915` | closes raw latent avg-pool projector family for now |
 | Mask-aware Fiber-SDE projection | closed eval-only | gate support improves raw projector at matched sigma; best style is `0.719342 / 0.482121`, in-band-ish sigma0.2 is only `0.702386 / 0.396835` | keep gate support, replace raw latent noise/projector direction |
+| Residual-aligned Fiber noise | closed eval-only | envelope improves LPIPS at small style cost; direction is too conservative | use envelope as ingredient, stop scalar sigma scans |
 
 ## Next Queue
 
@@ -120,5 +133,10 @@
   support masking is useful, but not enough. Next step should preserve the
   gate support while moving the fiber direction to a decoder-aware or learned
   local basis; do not spend more scans on the same raw latent highpass noise.
+- Residual-envelope noise closes the first residual-aligned diagnostic:
+  the endpoint residual envelope is a better fiber noise basis, but scalar
+  eval-only noise is still not enough. Next step should train a small local
+  fiber basis / decoder-aware residual head with the main backbone frozen,
+  then evaluate with the same gate+envelope solver.
 - Keep all DINO/VLM-heavy work after the clean geometry/SDE probes unless a
   matched control specifically requires it.
