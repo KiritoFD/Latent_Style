@@ -1,0 +1,26 @@
+{
+  "_base": "./phase2_i2sb_clean_k070_e3_sigma0p02_b8a2_vlen010.json",
+  "model": {
+    "endpoint_parameterization": "orthogonal_lowhigh",
+    "endpoint_orthogonal_kernel": 5,
+    "endpoint_orthogonal_high_scale": 1.0,
+    "endpoint_orthogonal_low_anchor": 1.0,
+    "endpoint_orthogonal_low_mode": "channel_mean"
+  },
+  "training": {
+    "resume_checkpoint": "./exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k070_seed42_b12a1/epoch_0003.pt",
+    "resume_model_strict": false,
+    "resume_optimizer": false,
+    "resume_training_state": false,
+    "resume_prefer_local_checkpoint": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_i2sb_orthogonal_chmeanlow_k070_e3_sigma0p02_b8a2_vlen010"
+  },
+  "ablation": {
+    "name": "phase2_i2sb_orthogonal_chmeanlow_k070_e3_sigma0p02_b8a2_vlen010",
+    "axis": "phase2_geometry_aware_i2sb",
+    "stage": "orthogonal_low_channel_mean_anchor",
+    "notes": "Single-mechanism follow-up after scalar low-anchor sweep. Keep parent, absolute endpoint objective, solver_i2sb, sigma0p02, tokenizer, TopoGate, losses, schedule, b8/a2, and fast10 transfer eval fixed. Change lowpass endpoint projection from anchoring all channels to anchoring only the channel-mean lowpass component, preserving channel-relative low-frequency style/color residuals while constraining shared low-frequency structure."
+  }
+}

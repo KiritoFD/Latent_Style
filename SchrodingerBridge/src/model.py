@@ -59,6 +59,11 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             1.0,
             max(0.0, float(getattr(bridge_config, "endpoint_orthogonal_low_anchor", 1.0))),
         )
+        self.endpoint_orthogonal_low_mode = str(
+            getattr(bridge_config, "endpoint_orthogonal_low_mode", "all")
+        ).strip().lower()
+        if self.endpoint_orthogonal_low_mode not in {"all", "channel_mean"}:
+            self.endpoint_orthogonal_low_mode = "all"
         validate_i2sb_contract(
             solver_family=self.solver_family,
             transport_prediction_mode=self.transport_prediction_mode,
@@ -853,7 +858,16 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             raw_low = F.avg_pool2d(raw_f, kernel_size=kernel, stride=1, padding=pad)
             x_low = F.avg_pool2d(x_f, kernel_size=kernel, stride=1, padding=pad)
             low_anchor = float(getattr(self, "endpoint_orthogonal_low_anchor", 1.0))
-            anchored_low = torch.lerp(raw_low, x_low, low_anchor)
+            low_mode = str(getattr(self, "endpoint_orthogonal_low_mode", "all")).strip().lower()
+            if low_mode == "channel_mean":
+                raw_low_mean = raw_low.mean(dim=1, keepdim=True)
+                x_low_mean = x_low.mean(dim=1, keepdim=True)
+                # Anchor the shared low-frequency structure while retaining
+                # channel-relative low-frequency style/color components.
+                anchored_mean = torch.lerp(raw_low_mean, x_low_mean, low_anchor)
+                anchored_low = anchored_mean + (raw_low - raw_low_mean)
+            else:
+                anchored_low = torch.lerp(raw_low, x_low, low_anchor)
             raw_high = (raw_f - raw_low) * float(getattr(self, "endpoint_orthogonal_high_scale", 1.0))
             endpoint = anchored_low + raw_high
             return (endpoint - x_f).to(dtype=raw.dtype)
@@ -985,6 +999,9 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             "endpoint_orthogonal_kernel": float(getattr(self, "endpoint_orthogonal_kernel", 1)),
             "endpoint_orthogonal_high_scale": float(getattr(self, "endpoint_orthogonal_high_scale", 1.0)),
             "endpoint_orthogonal_low_anchor": float(getattr(self, "endpoint_orthogonal_low_anchor", 1.0)),
+            "endpoint_orthogonal_low_mode_channel_mean": float(
+                str(getattr(self, "endpoint_orthogonal_low_mode", "all")).strip().lower() == "channel_mean"
+            ),
             "fiber_noise_requested": float(bool(getattr(self, "i2sb_fiber_aligned_noise", False))),
             "fiber_noise_active": float(previous_fiber_noise_debug.get("fiber_noise_active", 0.0)),
             "fiber_gate_mean": float(previous_fiber_noise_debug.get("fiber_gate_mean", 0.0)),
