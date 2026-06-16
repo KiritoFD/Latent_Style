@@ -62,3 +62,36 @@ frequency with the current content lowpass.
 - 2026-06-16: code switch, config, and plan created locally. Next actions:
   local smoke, remote sync, then launch after the content-anchor probe is
   stopped or closed.
+- 2026-06-16 07:51 CST: content-anchor probe stopped after e8 and this run
+  launched on remote WSL, PID `19428`.
+- 2026-06-16 07:52 CST health check: process alive in epoch `1/24`, parent
+  checkpoint loaded, training progressing at roughly `3.3 GiB` VRAM. This is
+  normal for b8/a2 bf16 and not a stop condition.
+- 2026-06-16 07:55 CST e1 eval:
+  transfer `0.705847 / 0.451386`, eval wall `26.12s`, metric eval `9.66s`,
+  generation `5.38s`, VAE decode `8.33s`.
+- Runtime summary confirms the mechanism is active:
+  `i2sb_endpoint_orthogonal_active=1.0`,
+  `i2sb_endpoint_orthogonal_kernel=5.0`,
+  `i2sb_endpoint_orthogonal_high_scale=1.0`.
+- 2026-06-16 07:58 CST e2 eval:
+  transfer `0.699997 / 0.420951`, eval wall `28.71s`, metric eval `11.49s`,
+  generation `5.63s`, VAE decode `8.45s`.
+- Matched read:
+  orthogonal e1 improves over content-anchor e1 by `+0.014200` CLIP-S and
+  `-0.066253` LPIPS, and improves over blend0p25 e1 by `+0.015801` CLIP-S
+  with only `+0.003906` worse LPIPS. e2 then trades style down for structure,
+  landing near the blend0p25 structure band but still with stronger style than
+  blend0p25 e6.
+- Current decision:
+  continue to at least e3 because e1 is the best style point and is still in
+  the newest two retained checkpoints. If e3 continues the style retreat
+  without moving LPIPS toward `<=0.38`, stop this line as a partial positive
+  but not a promoted frontier.
+- Local artifacts:
+  `docs/experiments/phase2_fiber_bundle/curves/i2sb_orthogonal_lowhigh_k070_e3_sigma0p02_fast10_curve.csv`
+  and
+  `docs/experiments/phase2_fiber_bundle/eval/i2sb_orthogonal_lowhigh_k070_e3_sigma0p02_b8a2_vlen010/`.
+- Plot update:
+  appended e1-e2 transfer points to `plot_points.csv` and regenerated the
+  AAAI2027 WikiArt-5 page-1 figure.
