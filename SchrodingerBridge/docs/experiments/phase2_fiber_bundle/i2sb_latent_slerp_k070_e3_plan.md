@@ -83,3 +83,32 @@ Required in training CSV:
   `docs/experiments/phase2_fiber_bundle/curves/i2sb_latent_slerp_k070_e3_fast10_curve.csv`.
 - Local eval mirror target:
   `docs/experiments/phase2_fiber_bundle/eval/i2sb_latent_slerp_k070_e3_sigma0p02_b8a2_vlen010/`.
+
+## Running Eval Curve
+
+Local mirror:
+`docs/experiments/phase2_fiber_bundle/eval/i2sb_latent_slerp_k070_e3_sigma0p02_b8a2_vlen010/full_eval_fast10/clip_lpips_curve.csv`
+
+| epoch | transfer CLIP-S | transfer LPIPS | eval wall | read |
+|---|---:|---:|---:|---|
+| e1 | 0.709182 | 0.545727 | 44.06s | style high, structure damaged |
+| e2 | 0.712038 | 0.476511 | 25.30s | current best style and matched-control Pareto gain |
+| e3 | 0.704485 | 0.447166 | 24.99s | LPIPS improves, style retreats |
+| e4 | 0.695003 | 0.453878 | 24.94s | style continues to retreat |
+| e5 | 0.697559 | 0.425856 | 24.93s | lower-LPIPS tradeoff point, still style-retreated |
+
+Matched read against clean absolute I2SB sigma0.02:
+
+- Clean e2: `0.709094 / 0.490233`.
+- Slerp e2: `0.712038 / 0.476511`.
+- Delta at e2: `+0.002944` style and `-0.013722` LPIPS.
+
+Interim decision:
+
+- `early_positive_not_closed`.
+- e2 is the first path-geometry point that improves both transfer style and
+  LPIPS against its clean I2SB matched control.
+- Do not promote yet: LPIPS remains far above the desired `0.30-0.35` band,
+  and e3/e4 show style retreat. e5 creates a lower-LPIPS tradeoff point but
+  remains style-retreated, so continue until the formal tail rule is met or a
+  later checkpoint recovers style with lower LPIPS.
