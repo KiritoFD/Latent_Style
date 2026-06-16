@@ -90,10 +90,15 @@ band while moving LPIPS below the low-anchor0.50 e9 value.
   transfer `0.704881 / 0.405001`, eval wall `24.98s`. This is not yet in-band,
   but it keeps style above `0.700` while cooling LPIPS toward the low-anchor0.65
   e4 point (`0.706564 / 0.395071`).
+- 2026-06-16 13:44 e5 eval:
+  transfer `0.698690 / 0.419045`, eval wall `24.95s`. This loses the `0.700`
+  style band and LPIPS worsens, so it is not a usable cooling step.
+- 2026-06-16 13:46 e6 eval:
+  transfer `0.696947 / 0.423814`, eval wall `24.91s`.
 
 ## Interim Read
 
-- `running_promising_not_in_band_e4`.
+- `running_risky_after_e6`.
 - e1 supports the bracket hypothesis: `0.55` preserves the style impulse better
   than `0.65` and anchors structure more than `0.50`.
 - The decision point remains the cooling tail. e4 is a useful target-facing
@@ -101,3 +106,6 @@ band while moving LPIPS below the low-anchor0.50 e9 value.
   e7-e9 to test whether it can beat low-anchor0.50 e9
   (`0.701429 / 0.372203`) without repeating the low-anchor0.65 sub-`0.700`
   style collapse.
+- e5/e6 are negative evidence: style falls below `0.700` before LPIPS improves
+  into the low-anchor0.50 e9 band. Continue a few more retained checkpoints for
+  formal closure rather than stopping on the first bad tail.
