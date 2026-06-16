@@ -84,3 +84,18 @@ style/color actuation to survive.
 - 2026-06-16 14:21 training entered epoch 1. GPU observed around `3.1 GiB`
   with high utilization. Early train loss/kinetic are higher than scalar
   low-anchor runs, so first eval is required before interpreting stability.
+- 2026-06-16 14:23 e1 eval:
+  transfer `0.697062 / 0.482289`, eval wall `42.34s`.
+- 2026-06-16 14:25 e2 eval:
+  transfer `0.702899 / 0.513291`, eval wall `24.96s`.
+
+## Interim Read
+
+- `running_negative_structure_unstable`.
+- Channel-mean lowpass anchoring preserves too much low-frequency freedom in
+  the first two checkpoints: e2 recovers style above `0.700`, but LPIPS rises
+  to `0.513291`, worse than clean absolute I2SB sigma0p02 and far outside the
+  target structure band.
+- Continue to e4 before closure because this family may cool later, but it must
+  show a sharp LPIPS correction while preserving `0.700+` style to remain
+  viable.

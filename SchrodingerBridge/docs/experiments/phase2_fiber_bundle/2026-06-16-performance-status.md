@@ -28,6 +28,7 @@
 | I2SB low-anchor0.50 | `0.711470` | `0.472991` | closed partial positive; e9 reaches `0.701429 / 0.372203`, first in-band style-first point for this probe |
 | I2SB low-anchor0.65 | `0.709417` | `0.449507` | closed negative over-anchor; best balanced e4 is `0.706564 / 0.395071`; e9/e11 improve LPIPS to about `0.36` only after style falls below `0.700` |
 | I2SB low-anchor0.55 | `0.711863` | `0.457232` | closed negative LPIPS-only tail; e4 is `0.704881 / 0.405001`, e11 reaches `0.688107 / 0.353115` after style collapse |
+| I2SB channel-mean lowpass | `0.702899` | `0.513291` | running e1-e2; preserves style but structure is unstable/high-LPIPS so far |
 | latent affine s0.75 | `0.685444` | `0.344580` | in-band diagnostic, not enough style |
 | SMoE tokenizer | `0.672774` | `0.327155` | stable structure, style bottleneck unchanged |
 
@@ -87,6 +88,7 @@
 | I2SB low-anchor0.50 | yes, e1-e15 | restores style relative to hard lowpass anchor; e9 is `0.701429 / 0.372203` | close and scan low-anchor0.65 from same parent |
 | I2SB low-anchor0.65 | closed, e1-e11 | stronger anchor improves early LPIPS, but over-anchors by e5 and drops style below `0.700`; e9/e11 are LPIPS-good/style-bad | negative control; scan milder `0.55-0.58` anchor |
 | I2SB low-anchor0.55 | closed, e1-e12 | e1 improves style/LPIPS versus `0.50` e1; e4 remains `0.700+` style with LPIPS `0.405001`; e11 is LPIPS-only `0.688107 / 0.353115` | negative control; stop scalar low-anchor sweep |
+| I2SB channel-mean lowpass | running, e1-e2 | preserves low-frequency style/color too aggressively; e2 is `0.702899 / 0.513291` | continue to e4 only; close if structure does not correct sharply |
 
 ## Next Queue
 
