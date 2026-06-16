@@ -72,4 +72,15 @@ style/color actuation to survive.
 
 ## Launch Log
 
-- Pending local smoke and remote WSL launch.
+- 2026-06-16 local smoke passed:
+  `endpoint_orthogonal_low_mode=channel_mean` and legacy `all` mode both
+  execute `_endpoint_delta_from_raw` with finite outputs.
+- 2026-06-16 14:20 remote WSL launch. `git pull` was blocked by a transient
+  GitHub TLS failure, so the committed source/config/plan files were copied
+  directly to the remote workspace before launch.
+- 2026-06-16 14:20 health check: parent checkpoint load confirmed:
+  `Partially loaded resume ... epoch_0003.pt | loaded=272 skipped=0 missing=0
+  unexpected=0`.
+- 2026-06-16 14:21 training entered epoch 1. GPU observed around `3.1 GiB`
+  with high utilization. Early train loss/kinetic are higher than scalar
+  low-anchor runs, so first eval is required before interpreting stability.
