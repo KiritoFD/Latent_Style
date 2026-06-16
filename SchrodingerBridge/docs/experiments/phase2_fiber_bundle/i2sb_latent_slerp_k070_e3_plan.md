@@ -96,6 +96,8 @@ Local mirror:
 | e3 | 0.704485 | 0.447166 | 24.99s | LPIPS improves, style retreats |
 | e4 | 0.695003 | 0.453878 | 24.94s | style continues to retreat |
 | e5 | 0.697559 | 0.425856 | 24.93s | lower-LPIPS tradeoff point, still style-retreated |
+| e6 | 0.698255 | 0.474109 | 24.98s | no recovery |
+| e7 | 0.694678 | 0.391787 | 25.02s | new lower-LPIPS Pareto point, style too low |
 
 Matched read against clean absolute I2SB sigma0.02:
 
@@ -110,5 +112,6 @@ Interim decision:
   LPIPS against its clean I2SB matched control.
 - Do not promote yet: LPIPS remains far above the desired `0.30-0.35` band,
   and e3/e4 show style retreat. e5 creates a lower-LPIPS tradeoff point but
-  remains style-retreated, so continue until the formal tail rule is met or a
-  later checkpoint recovers style with lower LPIPS.
+  remains style-retreated. e7 pushes LPIPS to `0.391787` but style falls to
+  `0.694678`, so continue until the formal tail rule is met or a later
+  checkpoint recovers style with lower LPIPS.

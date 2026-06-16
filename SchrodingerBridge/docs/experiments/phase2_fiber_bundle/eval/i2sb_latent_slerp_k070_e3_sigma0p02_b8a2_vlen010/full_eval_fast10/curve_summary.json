@@ -1,23 +1,23 @@
 {
   "run_dir": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_i2sb_latent_slerp_k070_e3_sigma0p02_b8a2_vlen010",
   "eval_subdir": "full_eval_fast10",
-  "row_count": 5,
+  "row_count": 7,
   "latest": {
-    "epoch": "epoch_0005",
-    "epoch_int": 5,
-    "checkpoint": "exp/aaai2027_phase2_i2sb_latent_slerp_k070_e3_sigma0p02_b8a2_vlen010/epoch_0005.pt",
-    "timestamp": "2026-06-16 09:06:26",
-    "transfer_clip_style": 0.6975593093037605,
-    "transfer_content_lpips": 0.42585614265,
-    "all_pairs_clip_style": 0.6975593093037605,
-    "all_pairs_content_lpips": 0.42585614265,
+    "epoch": "epoch_0007",
+    "epoch_int": 7,
+    "checkpoint": "exp/aaai2027_phase2_i2sb_latent_slerp_k070_e3_sigma0p02_b8a2_vlen010/epoch_0007.pt",
+    "timestamp": "2026-06-16 09:11:50",
+    "transfer_clip_style": 0.6946782234311104,
+    "transfer_content_lpips": 0.39178663895,
+    "all_pairs_clip_style": 0.6946782234311104,
+    "all_pairs_content_lpips": 0.39178663895,
     "identity_clip_style": 0.0,
     "identity_content_lpips": 0.0,
-    "eval_wall_total_sec": 24.929696658997273,
-    "eval_total_sec": 4.170750566001516,
-    "generation_sec": 4.691593809009646,
-    "vae_decode_sec": 1.0540329399809707,
-    "summary_path": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_i2sb_latent_slerp_k070_e3_sigma0p02_b8a2_vlen010/full_eval_fast10/epoch_0005/summary.json"
+    "eval_wall_total_sec": 25.01670043700142,
+    "eval_total_sec": 4.167743237005197,
+    "generation_sec": 4.748590124996554,
+    "vae_decode_sec": 1.0587727120218915,
+    "summary_path": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_i2sb_latent_slerp_k070_e3_sigma0p02_b8a2_vlen010/full_eval_fast10/epoch_0007/summary.json"
   },
   "best_transfer": {
     "epoch": "epoch_0002",
@@ -138,6 +138,40 @@
       "generation_sec": 4.691593809009646,
       "vae_decode_sec": 1.0540329399809707,
       "summary_path": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_i2sb_latent_slerp_k070_e3_sigma0p02_b8a2_vlen010/full_eval_fast10/epoch_0005/summary.json"
+    },
+    {
+      "epoch": "epoch_0006",
+      "epoch_int": 6,
+      "checkpoint": "exp/aaai2027_phase2_i2sb_latent_slerp_k070_e3_sigma0p02_b8a2_vlen010/epoch_0006.pt",
+      "timestamp": "2026-06-16 09:09:08",
+      "transfer_clip_style": 0.6982554036378861,
+      "transfer_content_lpips": 0.47410867734999995,
+      "all_pairs_clip_style": 0.6982554036378861,
+      "all_pairs_content_lpips": 0.47410867734999995,
+      "identity_clip_style": 0.0,
+      "identity_content_lpips": 0.0,
+      "eval_wall_total_sec": 24.979914270996233,
+      "eval_total_sec": 4.179235081996012,
+      "generation_sec": 4.727627814994776,
+      "vae_decode_sec": 1.0356736140020075,
+      "summary_path": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_i2sb_latent_slerp_k070_e3_sigma0p02_b8a2_vlen010/full_eval_fast10/epoch_0006/summary.json"
+    },
+    {
+      "epoch": "epoch_0007",
+      "epoch_int": 7,
+      "checkpoint": "exp/aaai2027_phase2_i2sb_latent_slerp_k070_e3_sigma0p02_b8a2_vlen010/epoch_0007.pt",
+      "timestamp": "2026-06-16 09:11:50",
+      "transfer_clip_style": 0.6946782234311104,
+      "transfer_content_lpips": 0.39178663895,
+      "all_pairs_clip_style": 0.6946782234311104,
+      "all_pairs_content_lpips": 0.39178663895,
+      "identity_clip_style": 0.0,
+      "identity_content_lpips": 0.0,
+      "eval_wall_total_sec": 25.01670043700142,
+      "eval_total_sec": 4.167743237005197,
+      "generation_sec": 4.748590124996554,
+      "vae_decode_sec": 1.0587727120218915,
+      "summary_path": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_i2sb_latent_slerp_k070_e3_sigma0p02_b8a2_vlen010/full_eval_fast10/epoch_0007/summary.json"
     }
   ]
 }

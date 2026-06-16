@@ -41,8 +41,9 @@
 - `latent_slerp` is the first path-geometry intervention with a clean matched
   I2SB Pareto gain: e2 reaches `0.712038 / 0.476511`, improving both style and
   LPIPS versus clean I2SB e2. It is not closed or promoted yet because LPIPS is
-  still high, e3/e4 show style retreat, and e5 only creates a lower-LPIPS
-  tradeoff point (`0.697559 / 0.425856`) without recovering style.
+  still high, e3/e4 show style retreat, and e5/e7 only create lower-LPIPS
+  tradeoff points (`0.697559 / 0.425856`, `0.694678 / 0.391787`) without
+  recovering style.
 
 ## What Failed Or Is Not Promoted
 
