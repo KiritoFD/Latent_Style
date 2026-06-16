@@ -1,0 +1,71 @@
+# I2SB Orthogonal Low-Anchor 0.55 Plan
+
+Date: 2026-06-16
+
+## Goal
+
+Scan the middle of the low-anchor strength bracket after:
+
+- low-anchor0.50: partial positive; e9 reaches `0.701429 / 0.372203`.
+- low-anchor0.65: negative over-anchor; e9/e11 reach `~0.36` LPIPS only after
+  transfer style falls below `0.700`.
+
+The target for this controlled run is to preserve the `0.700+` transfer style
+band while moving LPIPS below the low-anchor0.50 e9 value.
+
+## Controlled Delta
+
+- Base:
+  `configs/aaai2027/phase2_i2sb_clean_k070_e3_sigma0p02_b8a2_vlen010.json`.
+- Candidate:
+  `configs/aaai2027/phase2_i2sb_orthogonal_lowanchor055_k070_e3_sigma0p02_b8a2_vlen010.json`.
+- Parent:
+  `exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k070_seed42_b12a1/epoch_0003.pt`.
+- Held fixed:
+  pure latent spatial tokenizer, TopoGate k070, `solver_i2sb`, endpoint
+  transport, `bridge_sigma=0.02`, exact Brownian bridge schedule, terminal
+  SWD, no latent-slerp path, no DINO/VLM, b8 accumulation-2, vlen `0.10`, and
+  fast10 transfer-only in-loop eval.
+- Only candidate delta:
+  `endpoint_orthogonal_low_anchor=0.55`.
+
+## Controls
+
+- Low-anchor0.50 e9:
+  `0.701429 / 0.372203`.
+- Low-anchor0.65 e4:
+  `0.706564 / 0.395071`.
+- Low-anchor0.65 e9:
+  `0.692446 / 0.358758`, LPIPS-only not promoted.
+
+## Decision Rule
+
+- Positive:
+  reaches `CLIP-S >= 0.700` with LPIPS below `0.372203`.
+- Strong positive:
+  reaches `CLIP-S >= 0.705` with LPIPS `<= 0.37`, or `CLIP-S >= 0.700` with
+  LPIPS `<= 0.35`.
+- Negative:
+  repeats the `0.65` pattern: LPIPS improves only after transfer style falls
+  below `0.700`.
+- Closure:
+  style-first. Later LPIPS-only points do not replace the best target-facing
+  checkpoint.
+
+## Runtime Observability
+
+- `i2sb_endpoint_orthogonal_active=1`.
+- `i2sb_endpoint_orthogonal_kernel=5`.
+- `i2sb_endpoint_orthogonal_high_scale=1`.
+- `i2sb_endpoint_orthogonal_low_anchor=0.55`.
+
+## Artifact Targets
+
+- Curve CSV:
+  `docs/experiments/phase2_fiber_bundle/curves/i2sb_orthogonal_lowanchor055_k070_e3_fast10_curve.csv`.
+- Eval mirror:
+  `docs/experiments/phase2_fiber_bundle/eval/aaai2027_phase2_i2sb_orthogonal_lowanchor055_k070_e3_sigma0p02_b8a2_vlen010/`.
+
+## Launch Log
+
+- Pending remote WSL launch.
