@@ -96,6 +96,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.i2sb_fiber_project_kernel = max(1, int(getattr(bridge_config, "i2sb_fiber_project_kernel", 5)))
         if self.i2sb_fiber_project_kernel % 2 == 0:
             self.i2sb_fiber_project_kernel += 1
+        self.i2sb_fiber_project_use_gate = bool(getattr(bridge_config, "i2sb_fiber_project_use_gate", False))
         self.last_i2sb_fiber_noise_debug: dict[str, float] = {}
         self.last_solver_noise_debug: dict[str, float] = {}
         self.bridge_style_dim = int(getattr(self, "style_code_dim", getattr(self.style_tokenizer, "embedding_dim", 0)))
@@ -502,6 +503,44 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
     def _i2sb_highpass(self, tensor: torch.Tensor) -> torch.Tensor:
         return tensor.float() - self._i2sb_lowpass(tensor)
 
+    def _i2sb_fiber_project_gate(self, reference: torch.Tensor) -> torch.Tensor | None:
+        if not bool(getattr(self, "i2sb_fiber_project_use_gate", False)):
+            return None
+        cached = getattr(self, "last_output_style_context", None)
+        style_maps = cached.get("style_maps") if isinstance(cached, dict) else None
+        gate = getattr(style_maps, "gate_16", None)
+        if not torch.is_tensor(gate):
+            self.last_i2sb_transport_debug.update(
+                {
+                    "fiber_project_gate_active": 0.0,
+                    "fiber_project_gate_mean": 0.0,
+                    "fiber_project_gate_rms": 0.0,
+                }
+            )
+            return None
+        gate = gate.to(device=reference.device).float()
+        gate = torch.sigmoid(gate).clamp(0.0, 1.0)
+        if gate.shape[-2:] != reference.shape[-2:]:
+            gate = F.interpolate(gate, size=reference.shape[-2:], mode="bilinear", align_corners=False)
+        if gate.shape[0] == 1 and reference.shape[0] > 1:
+            gate = gate.expand(reference.shape[0], -1, -1, -1)
+        if gate.shape[1] != reference.shape[1]:
+            gate = gate.mean(dim=1, keepdim=True).expand(
+                reference.shape[0],
+                reference.shape[1],
+                reference.shape[2],
+                reference.shape[3],
+            )
+        gate_stats = gate.detach().float()
+        self.last_i2sb_transport_debug.update(
+            {
+                "fiber_project_gate_active": 1.0,
+                "fiber_project_gate_mean": float(gate_stats.mean().cpu().item()),
+                "fiber_project_gate_rms": float(gate_stats.square().mean().sqrt().cpu().item()),
+            }
+        )
+        return gate.to(dtype=reference.dtype)
+
     def _i2sb_project_endpoint_to_fiber(
         self,
         endpoint: torch.Tensor,
@@ -516,12 +555,22 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             source = F.interpolate(source.float(), size=endpoint.shape[-2:], mode="bilinear", align_corners=False)
         source_base = self._i2sb_lowpass(source)
         endpoint_fiber = self._i2sb_highpass(endpoint)
-        return (source_base + endpoint_fiber).to(dtype=endpoint.dtype)
+        projected = (source_base + endpoint_fiber).to(dtype=endpoint.dtype)
+        gate = self._i2sb_fiber_project_gate(endpoint)
+        if gate is None:
+            return projected
+        # Preserve the original endpoint in texture/fiber-active regions and
+        # apply the hard low-frequency source anchor mainly on structure regions.
+        return torch.lerp(projected, endpoint, gate)
 
     def _i2sb_project_noise_to_fiber(self, noise: torch.Tensor) -> torch.Tensor:
         if not bool(getattr(self, "i2sb_fiber_project_noise", False)):
             return noise
-        return self._i2sb_highpass(noise).to(dtype=noise.dtype)
+        projected = self._i2sb_highpass(noise).to(dtype=noise.dtype)
+        gate = self._i2sb_fiber_project_gate(noise)
+        if gate is None:
+            return projected
+        return projected * gate
 
     @staticmethod
     def _make_style_injector(input_dim: int, channels: int, hidden_dim: int) -> nn.Module:
@@ -1044,6 +1093,10 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             "fiber_project_endpoint_active": float(bool(getattr(self, "i2sb_fiber_project_endpoint", False))),
             "fiber_project_noise_active": float(bool(getattr(self, "i2sb_fiber_project_noise", False))),
             "fiber_project_kernel": float(getattr(self, "i2sb_fiber_project_kernel", 1)),
+            "fiber_project_use_gate": float(bool(getattr(self, "i2sb_fiber_project_use_gate", False))),
+            "fiber_project_gate_active": 0.0,
+            "fiber_project_gate_mean": 0.0,
+            "fiber_project_gate_rms": 0.0,
             "fiber_noise_active": float(previous_fiber_noise_debug.get("fiber_noise_active", 0.0)),
             "fiber_gate_mean": float(previous_fiber_noise_debug.get("fiber_gate_mean", 0.0)),
             "fiber_gate_rms": float(previous_fiber_noise_debug.get("fiber_gate_rms", 0.0)),

@@ -1,0 +1,10 @@
+{
+  "_base": "./phase2_eval_fiber_project_gate_sigma0p2_lowanchor050e9.json",
+  "_comment": "Intermediate mask-aware Fiber-SDE projection scan point on lowanchor0.50 e9.",
+  "model": {
+    "bridge_sigma": 0.4
+  },
+  "bridge": {
+    "bridge_sigma": 0.4
+  }
+}

@@ -31,6 +31,7 @@
 | I2SB channel-mean lowpass | `0.702899` | `0.513291` | closed negative structure-unstable; e5 reaches `0.701429 / 0.410212` but does not replace low-anchor0.50 e9 |
 | Orthogonal Fiber-SDE hard projection | `0.703560` | `0.592224` | closed negative on low-anchor0.50 e9; sigma0 gives LPIPS-only `0.687711 / 0.358167`, sigma0.5 gives tiny style gain but structure explodes |
 | Orthogonal Fiber-SDE on slerp e2 | `0.719065` | `0.568915` | closed negative diagnostic; stronger style parent confirms highpass noise can lift style but is not structure-safe |
+| Mask-aware Fiber-SDE projection | `0.719342` | `0.482121` | partial positive, not promoted; gate support beats raw global projection, but style gains still require too much LPIPS |
 | latent affine s0.75 | `0.685444` | `0.344580` | in-band diagnostic, not enough style |
 | SMoE tokenizer | `0.672774` | `0.327155` | stable structure, style bottleneck unchanged |
 
@@ -51,6 +52,12 @@
   not promotable alone: e28 reaches the best LPIPS `0.352726`, but only at
   `0.682638` style. Current read: slerp separates the style peak and structure
   cooling tail instead of solving both at once.
+- Mask-aware Fiber-SDE projection is a real improvement over the raw global
+  latent highpass projector. On the same low-anchor0.50 e9 parent, sigma0.5
+  improves from raw `0.703560 / 0.592224` to gated
+  `0.718477 / 0.521621`; sigma0.4 gives the best style
+  `0.719342 / 0.482121`. The support mask helps, but the latent noise basis
+  is still not structure-aligned enough.
 
 ## What Failed Or Is Not Promoted
 
@@ -74,6 +81,10 @@
   endpoint anchoring suppresses the low-frequency/color component of style:
   e1 loses `0.007210` CLIP-S versus latent-slerp e2 while improving LPIPS, and
   e15 improves LPIPS only by falling to `0.678109` style.
+- Mask-aware Fiber-SDE projection is not promoted. It validates the gate as a
+  better support mask than global projection, but the best style point
+  `0.719342` still has LPIPS `0.482121`, and the in-band-ish sigma0.2 point
+  only improves style by `+0.000957`.
 
 ## Completed / Effective / Pending
 
@@ -93,6 +104,7 @@
 | I2SB channel-mean lowpass | closed, e1-e6 | preserves low-frequency style/color too aggressively; e2 is `0.702899 / 0.513291`, e5 improves to `0.701429 / 0.410212` but remains worse than low-anchor0.50 e9 | negative control; move to eval-only hard Fiber-SDE projection |
 | Orthogonal Fiber-SDE hard projection | closed eval-only | switch active, but naive latent avg-pool highpass projector is not decoder-safe; sigma0.5 is `0.703560 / 0.592224` | negative control; keep switch default off |
 | Orthogonal Fiber-SDE on slerp e2 | closed eval-only | sigma0 lowers LPIPS but kills style; sigma0.5 reaches `0.719065` style with LPIPS `0.568915` | closes raw latent avg-pool projector family for now |
+| Mask-aware Fiber-SDE projection | closed eval-only | gate support improves raw projector at matched sigma; best style is `0.719342 / 0.482121`, in-band-ish sigma0.2 is only `0.702386 / 0.396835` | keep gate support, replace raw latent noise/projector direction |
 
 ## Next Queue
 
@@ -104,5 +116,9 @@
   not just a low-anchor0.50 checkpoint artifact. Next hard-projection work must
   be decoder-aware or mask-aware; do not continue raw latent highpass sigma
   scans.
+- Mask-aware Fiber-SDE projection closes the first mask-aware diagnostic:
+  support masking is useful, but not enough. Next step should preserve the
+  gate support while moving the fiber direction to a decoder-aware or learned
+  local basis; do not spend more scans on the same raw latent highpass noise.
 - Keep all DINO/VLM-heavy work after the clean geometry/SDE probes unless a
   matched control specifically requires it.
