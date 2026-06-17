@@ -1,44 +1,31 @@
-# 618 论文清单 — 下载与阅读进度
+# 618 论文清单
 
-## 优先级 1: 核心对比方法
+## 已确认
 
-| 论文 | 会议 | 代码 | 论文 | 阅读 | 笔记 |
-|------|------|:---:|:---:|:---:|------|
-| StyleGallery | CVPR 2026 | ⬜ | ⬜ | ⬜ | — |
-| CSGO | NeurIPS 2025 | ⬜ | ⬜ | ⬜ | — |
-| SaMST (已有) | arXiv 2025 | ✅ | ✅ | ✅ | 基线 |
+| 论文 | arXiv | 会议 | 代码位置 | 笔记 |
+|------|-------|------|----------|------|
+| StyleGallery | [2603.10354](https://arxiv.org/abs/2603.10354) | CVPR 2026 | ⬜ 待找 | 语义区域分割+聚类匹配, 训练无关 |
+| HAM | [2603.24043](https://arxiv.org/abs/2603.24043) | CVPR 2026 Findings | ⬜ | GAR+LAT attention 调制 |
+| CSGO | [2408.16766](https://arxiv.org/abs/2408.16766) | NeurIPS 2025 | ⬜ | IMAGStyle 210K 三元组 |
+| SCSA | [2503.04119](https://arxiv.org/abs/2503.04119) | CVPR 2025 Highlight | ⬜ | 语义连续-稀疏 attention |
+| StyleShot | [2407.01414](https://arxiv.org/abs/2407.01414) | ICLR 2025 | ⬜ | Style-aware encoder |
+| Attention Distillation | ⬜ 待确认 | CVPR 2025 | ⬜ | 注意力蒸馏损失 |
+| SaMST | — | arXiv 2025 | ✅ 已有 | 基线 |
 
-## 优先级 2: Attention 设计参考
+## 已读深度分析
 
-| 论文 | 会议 | 代码 | 论文 | 阅读 | 笔记 |
-|------|------|:---:|:---:|:---:|------|
-| HAM | CVPR 2026 | ⬜ | ⬜ | ⬜ | — |
-| SCSA | CVPR 2025 | ⬜ | ⬜ | ⬜ | — |
+| 论文 | 读完了? | 笔记在 |
+|------|:---:|------|
+| StyleGallery | ⬜ | read.md Layer 1/2/3 分析 |
+| HAM | ⬜ | read.md Layer 2 (attention 调制) |
+| CSGO | ⬜ | read.md Layer 1/3 (风格表征/注入) |
+| SCSA | ⬜ | read.md Layer 2 (attention 稀疏化) |
+| StyleShot | ⬜ | read.md Layer 1 (风格编码器设计) |
 
-## 优先级 3: Tokenizer/Encoder 设计参考
+## 下一步
 
-| 论文 | 会议 | 代码 | 论文 | 阅读 | 笔记 |
-|------|------|:---:|:---:|:---:|------|
-| StyleShot | ICLR 2025 | ⬜ | ⬜ | ⬜ | — |
-| Attention Distillation | CVPR 2025 | ⬜ | ⬜ | ⬜ | — |
-
----
-
-## 获取方式
-
-```bash
-# StyleGallery
-git clone https://github.com/modelscope/stylegallery.git 2>/dev/null || echo "Need exact repo URL"
-
-# CSGO  
-# Paper: https://arxiv.org/abs/2507.xxxxx (确认 URL)
-# Code: https://github.com/EndyWon/CSGO
-
-# HAM
-# CVPR 2026, need to find paper URL
-
-# SCSA
-# CVPR 2025 Highlight, need to find paper URL
-```
-
-> 笔记格式: 每个方法一个 .md, 包含: 核心公式、架构图理解、与我们方法的对比、可借鉴的组件
+1. 下载每篇论文的 PDF
+2. 逐篇读 Method 部分, 写详细笔记
+3. 找代码仓库 URL (GitHub)
+4. run.md: 确认每个方法在 4070 上的可行性
+5. read.md: 逐篇更新启发
