@@ -3,11 +3,17 @@ from __future__ import annotations
 TOKENIZER_FAMILIES = {
     "legacy_factorized",
     "pure_latent_spatial",
+    "affine_connection_tokenizer",
     "tok_a_dino_dict",
     "tok_b_cross_image",
     "tok_c_residual_adapter",
     "tok_d_vlm_prompt",
     "smoe_translator",
+}
+
+CONTRACT_FAMILIES = {
+    "legacy",
+    "phase616",
 }
 
 PURE_LATENT_COMPAT_STRIP_PREFIXES = (
@@ -41,6 +47,21 @@ PROXIMAL_OPTIONAL_PREFIXES = (
     "proximal_attn_v.",
     "proximal_attn_out.",
     "proximal_style_tokens.",
+)
+
+STYLE_DELTA_OPTIONAL_PREFIXES = (
+    "style_delta_basis_proj.",
+    "style_delta_weight_head.",
+    "style_section_basis_proj.",
+    "style_section_weight_head.",
+    "style_section_out.",
+    "style_head_adapter_in.",
+    "style_head_adapter_film.",
+    "style_head_adapter_out.",
+)
+
+OUTPUT_APPEARANCE_OPTIONAL_PREFIXES = (
+    "output_appearance_head.",
 )
 
 BACKBONE_ATTENTION_FAMILIES = {
@@ -89,6 +110,17 @@ DINO_CONDITIONED_TOKENIZER_FAMILIES = {
     "tok_d_vlm_prompt",
 }
 
+LATENT_STRUCTURED_TOKENIZER_FAMILIES = {
+    "pure_latent_spatial",
+    "smoe_translator",
+    "affine_connection_tokenizer",
+}
+
+PURE_PLACEHOLDER_STRUCTURED_TOKENIZER_FAMILIES = {
+    "pure_latent_spatial",
+    "affine_connection_tokenizer",
+}
+
 
 def normalize_family(value: str, *, allowed: set[str], default: str) -> str:
     candidate = str(value or "").strip().lower()
@@ -99,6 +131,10 @@ def normalize_family(value: str, *, allowed: set[str], default: str) -> str:
 
 def normalize_tokenizer_family(value: str, *, default: str = "legacy_factorized") -> str:
     return normalize_family(value, allowed=TOKENIZER_FAMILIES, default=default)
+
+
+def normalize_contract_family(value: str, *, default: str = "legacy") -> str:
+    return normalize_family(value, allowed=CONTRACT_FAMILIES, default=default)
 
 
 def tokenizer_family_requires_dino(value: str) -> bool:
@@ -144,7 +180,7 @@ def validate_dino_retired_runtime(
 
 def compat_state_strip_prefixes_for_tokenizer_family(value: str) -> tuple[str, ...]:
     family = normalize_tokenizer_family(value)
-    if family == "pure_latent_spatial":
+    if family in LATENT_STRUCTURED_TOKENIZER_FAMILIES:
         return PURE_LATENT_COMPAT_STRIP_PREFIXES
     return ()
 
@@ -152,12 +188,16 @@ def compat_state_strip_prefixes_for_tokenizer_family(value: str) -> tuple[str, .
 def compat_state_strip_prefixes_for_model_contract(
     *,
     tokenizer_family: str,
+    contract_family: str = "legacy",
     style_injection_mode: str = "",
     proximal_mode: str = "",
+    style_delta_mode: str = "",
+    output_appearance_alignment_mode: str = "",
 ) -> tuple[str, ...]:
     prefixes: list[str] = list(compat_state_strip_prefixes_for_tokenizer_family(tokenizer_family))
     family = normalize_tokenizer_family(tokenizer_family)
-    if family == "pure_latent_spatial":
+    contract = normalize_contract_family(contract_family)
+    if family in PURE_PLACEHOLDER_STRUCTURED_TOKENIZER_FAMILIES:
         prefixes.extend(PURE_LATENT_COMPAT_ONLY_TOKENIZER_PREFIXES)
     mode = str(style_injection_mode or "").strip().lower()
     if mode in {"", "none"}:
@@ -165,6 +205,16 @@ def compat_state_strip_prefixes_for_model_contract(
     proximal = str(proximal_mode or "").strip().lower()
     if proximal in {"", "off"}:
         prefixes.extend(PROXIMAL_OPTIONAL_PREFIXES)
+    delta_mode = str(style_delta_mode or "").strip().lower()
+    if delta_mode in {"", "none"}:
+        prefixes.extend(STYLE_DELTA_OPTIONAL_PREFIXES)
+    appearance_mode = str(output_appearance_alignment_mode or "").strip().lower()
+    if appearance_mode in {"", "none"}:
+        prefixes.extend(OUTPUT_APPEARANCE_OPTIONAL_PREFIXES)
+    if contract == "phase616":
+        prefixes.extend(OUTPUT_APPEARANCE_OPTIONAL_PREFIXES)
+        prefixes.extend(PROXIMAL_OPTIONAL_PREFIXES)
+        prefixes.extend(STYLE_DELTA_OPTIONAL_PREFIXES)
     return tuple(dict.fromkeys(prefixes))
 
 
@@ -179,11 +229,12 @@ def validate_pure_latent_contract(
 ) -> None:
     family = normalize_tokenizer_family(tokenizer_family)
     if family != "pure_latent_spatial":
-        return
+        if family != "affine_connection_tokenizer":
+            return
     tokenizer_kind = str(style_tokenizer or "").strip().lower()
     if tokenizer_kind not in {"", "null", "none", "pure_placeholder"}:
         raise ValueError(
-            "tokenizer_family='pure_latent_spatial' requires model.style_tokenizer "
+            f"tokenizer_family={family!r} requires model.style_tokenizer "
             "to be an explicit null compatibility placeholder ('null'/'none'), "
             f"got style_tokenizer={style_tokenizer!r}."
         )
@@ -194,20 +245,20 @@ def validate_pure_latent_contract(
     )
     if semantic != "legacy_terminal_swd":
         raise ValueError(
-            "tokenizer_family='pure_latent_spatial' requires bridge.semantic_supervision_family='legacy_terminal_swd'."
+            f"tokenizer_family={family!r} requires bridge.semantic_supervision_family='legacy_terminal_swd'."
         )
     if float(dino_masked_swd_weight) > 0.0:
         raise ValueError(
-            "tokenizer_family='pure_latent_spatial' requires bridge.dino_masked_swd_weight=0.0."
+            f"tokenizer_family={family!r} requires bridge.dino_masked_swd_weight=0.0."
         )
     mode = str(style_spatial_mode or "").strip().lower()
     if mode and mode != "disabled":
         raise ValueError(
-            "tokenizer_family='pure_latent_spatial' requires model.style_spatial_mode='disabled'."
+            f"tokenizer_family={family!r} requires model.style_spatial_mode='disabled'."
         )
     if bool(tokenizer_content_adaptive):
         raise ValueError(
-            "tokenizer_family='pure_latent_spatial' requires model.tokenizer_content_adaptive=false."
+            f"tokenizer_family={family!r} requires model.tokenizer_content_adaptive=false."
         )
 
 
@@ -215,13 +266,19 @@ def prune_state_dict_for_tokenizer_family(
     state_dict: dict[str, object],
     *,
     tokenizer_family: str,
+    contract_family: str = "legacy",
     style_injection_mode: str = "",
     proximal_mode: str = "",
+    style_delta_mode: str = "",
+    output_appearance_alignment_mode: str = "",
 ) -> tuple[dict[str, object], list[str]]:
     prefixes = compat_state_strip_prefixes_for_model_contract(
         tokenizer_family=tokenizer_family,
+        contract_family=contract_family,
         style_injection_mode=style_injection_mode,
         proximal_mode=proximal_mode,
+        style_delta_mode=style_delta_mode,
+        output_appearance_alignment_mode=output_appearance_alignment_mode,
     )
     if not prefixes:
         return dict(state_dict), []
@@ -322,4 +379,76 @@ def validate_i2sb_contract(
             "true I2SB requires bridge.bridge_noise_schedule='exact_brownian' "
             "or 'auto' resolving to the exact Brownian bridge; "
             f"got bridge_noise_schedule={schedule!r} objective_mode={objective!r}."
+        )
+
+
+def validate_phase616_clean_contract(
+    *,
+    contract_family: str,
+    output_appearance_alignment_mode: str = "",
+    proximal_mode: str = "",
+    style_delta_mode: str = "",
+    solver_corrector_mode: str = "",
+    cycle_consistency_weight: float = 0.0,
+    w_content_lowpass_anchor: float = 0.0,
+    w_content_edge_anchor: float = 0.0,
+    proximal_trust_ratio: float = 0.0,
+    proximal_trust_weight: float = 0.0,
+    full_eval_postprocess_mode: str = "",
+    full_eval_latent_postprocess_mode: str = "",
+    pre_integrate_moment_match: bool = False,
+    output_moment_match: bool = False,
+) -> None:
+    family = normalize_contract_family(contract_family)
+    if family != "phase616":
+        return
+    appearance = str(output_appearance_alignment_mode or "").strip().lower()
+    if appearance not in {"", "none"}:
+        raise ValueError(
+            "model.contract_family='phase616' requires model.output_appearance_alignment_mode='none'."
+        )
+    prox = str(proximal_mode or "").strip().lower()
+    if prox not in {"", "off"}:
+        raise ValueError(
+            "model.contract_family='phase616' requires model.proximal_mode='off'."
+        )
+    delta = str(style_delta_mode or "").strip().lower()
+    if delta not in {"", "none"}:
+        raise ValueError(
+            "model.contract_family='phase616' requires model.style_delta_mode='none'."
+        )
+    solver_corrector = str(solver_corrector_mode or "").strip().lower()
+    if solver_corrector not in {"", "none"}:
+        raise ValueError(
+            "model.contract_family='phase616' requires model.solver_corrector_mode='none'."
+        )
+    if float(cycle_consistency_weight) > 0.0:
+        raise ValueError(
+            "model.contract_family='phase616' requires bridge.cycle_consistency_weight=0.0."
+        )
+    if float(w_content_lowpass_anchor) > 0.0 or float(w_content_edge_anchor) > 0.0:
+        raise ValueError(
+            "model.contract_family='phase616' requires content anchor losses to stay off."
+        )
+    if float(proximal_trust_ratio) > 0.0 or float(proximal_trust_weight) > 0.0:
+        raise ValueError(
+            "model.contract_family='phase616' requires bridge.proximal_trust_ratio/weight=0.0."
+        )
+    full_eval_post = str(full_eval_postprocess_mode or "").strip().lower()
+    if full_eval_post not in {"", "none"}:
+        raise ValueError(
+            "model.contract_family='phase616' requires full-eval RGB postprocess to stay off."
+        )
+    full_eval_latent_post = str(full_eval_latent_postprocess_mode or "").strip().lower()
+    if full_eval_latent_post not in {"", "none"}:
+        raise ValueError(
+            "model.contract_family='phase616' requires full-eval latent postprocess to stay off."
+        )
+    if bool(pre_integrate_moment_match):
+        raise ValueError(
+            "model.contract_family='phase616' requires model.pre_integrate_moment_match=false."
+        )
+    if bool(output_moment_match):
+        raise ValueError(
+            "model.contract_family='phase616' requires model.output_moment_match=false."
         )

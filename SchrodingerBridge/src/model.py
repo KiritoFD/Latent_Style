@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import logging
 import math
 import time
+from pathlib import Path
 from typing import Any, Mapping
 
 import torch
@@ -13,6 +15,9 @@ from lancet_blocks import StyleMaps, _gumbel_hard_attention, _sinkhorn_attention
 from lancet_backbone import LatentAdaCUT, count_parameters
 from style_families import SOLVER_FAMILIES, normalize_family, validate_i2sb_contract
 from utils.diffeomorphic import apply_texture_aligned_diffeomorphic_stroke
+
+
+logger = logging.getLogger(__name__)
 
 
 def sinusoidal_time_embedding(t: torch.Tensor, dim: int) -> torch.Tensor:
@@ -76,6 +81,13 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.loss_type = str(getattr(bridge_config, "loss_type", "")).strip().lower()
         self.bridge_sigma = max(0.0, float(getattr(bridge_config, "bridge_sigma", 0.0)))
         self.i2sb_predictor_time_floor = max(0.0, float(getattr(bridge_config, "i2sb_predictor_time_floor", 0.0)))
+        self.i2sb_noise_family = str(getattr(bridge_config, "i2sb_noise_family", "gaussian")).strip().lower()
+        if self.i2sb_noise_family not in {"gaussian", "style_covariant"}:
+            self.i2sb_noise_family = "gaussian"
+        self.i2sb_style_noise_amplitude_power = max(
+            0.0,
+            float(getattr(bridge_config, "i2sb_style_noise_amplitude_power", 1.0)),
+        )
         self.endpoint_velocity_time_floor = float(getattr(bridge_config, "endpoint_velocity_time_floor", 0.05))
         if self.endpoint_velocity_time_floor < 0.01:
             raise ValueError(
@@ -85,6 +97,12 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.solver_corrector_mode = self._normalize_solver_corrector_mode(
             str(getattr(bridge_config, "solver_corrector_mode", "none"))
         )
+        self.transport_stats_mode = self._normalize_transport_stats_mode(
+            str(getattr(bridge_config, "transport_stats_mode", "none"))
+        )
+        self.transport_stats_bank_path = str(getattr(bridge_config, "transport_stats_bank_path", "") or "").strip()
+        self.transport_stats_bank_required = bool(getattr(bridge_config, "transport_stats_bank_required", False))
+        self.transport_stats_eps = max(1e-8, float(getattr(bridge_config, "transport_stats_eps", 1e-6)))
         self.allow_style_overdrive = bool(getattr(bridge_config, "allow_style_overdrive", False))
         self.last_i2sb_transport_debug: dict[str, float] = {}
         self.solver_stochastic_noise_scale = max(0.0, float(getattr(bridge_config, "solver_stochastic_noise_scale", 0.0)))
@@ -109,6 +127,15 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.last_i2sb_fiber_noise_debug: dict[str, float] = {}
         self.last_i2sb_fiber_project_debug: dict[str, float] = {}
         self.last_solver_noise_debug: dict[str, float] = {}
+        stats_shape = (max(1, int(self.num_styles)), int(self.latent_channels), 1, 1)
+        self.register_buffer("_transport_style_stats_mean", torch.zeros(stats_shape, dtype=torch.float32), persistent=False)
+        self.register_buffer("_transport_style_stats_std", torch.ones(stats_shape, dtype=torch.float32), persistent=False)
+        self.register_buffer(
+            "_transport_style_stats_valid",
+            torch.zeros((max(1, int(self.num_styles)),), dtype=torch.bool),
+            persistent=False,
+        )
+        self.last_transport_stats_debug: dict[str, float] = {}
         self.bridge_style_dim = int(getattr(self, "style_code_dim", getattr(self.style_tokenizer, "embedding_dim", 0)))
         self.execution_budget_mode = str(getattr(bridge_config, "execution_budget_mode", "none")).strip().lower()
         if self.execution_budget_mode not in {"none", "scalar", "low_high"}:
@@ -408,12 +435,235 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.last_output_appearance_debug = {}
         self.last_output_style_context = None
         self.last_solver_noise_debug = {}
+        self.last_transport_stats_debug = {}
         self.last_style_delta_debug = {}
         for module in self.modules():
             if hasattr(module, "last_attn"):
                 setattr(module, "last_attn", None)
             if hasattr(module, "last_k"):
                 setattr(module, "last_k", None)
+
+    def _normalize_transport_stats_mode(self, mode: str) -> str:
+        normalized = str(mode or "none").strip().lower()
+        aliases = {
+            "": "none",
+            "off": "none",
+            "disabled": "none",
+            "style_bank_terminal": "terminal_affine",
+            "bank_terminal": "terminal_affine",
+            "style_bank_terminal_affine": "terminal_affine",
+            "terminal": "terminal_affine",
+            "style_bank_normalized": "normalized_solver",
+            "bank_normalized": "normalized_solver",
+            "normalized": "normalized_solver",
+            "normalized_track": "normalized_solver",
+            "style_bank_normalized_solver": "normalized_solver",
+        }
+        normalized = aliases.get(normalized, normalized)
+        valid = {"none", "terminal_affine", "normalized_solver"}
+        if normalized not in valid:
+            raise ValueError(
+                f"Unsupported model.transport_stats_mode={mode!r}; "
+                "expected one of 'none', 'terminal_affine', or 'normalized_solver'."
+            )
+        return normalized
+
+    def load_transport_style_stats_bank(self, source: str | Path | Mapping[str, Any]) -> dict[str, Any]:
+        path: Path | None = None
+        if isinstance(source, (str, Path)):
+            path = Path(source)
+            payload = torch.load(path, map_location="cpu", weights_only=False)
+        else:
+            payload = dict(source)
+        if not isinstance(payload, Mapping):
+            raise ValueError("transport stats bank must be a mapping or a .pt payload mapping")
+        means = payload.get("means", payload.get("style_means", payload.get("latent_means")))
+        stds = payload.get("stds", payload.get("style_stds", payload.get("latent_stds")))
+        if means is None or stds is None:
+            raise ValueError("transport stats bank is missing means/stds tensors")
+        means_t = torch.as_tensor(means, dtype=torch.float32)
+        stds_t = torch.as_tensor(stds, dtype=torch.float32)
+        if means_t.ndim == 2:
+            means_t = means_t.unsqueeze(-1).unsqueeze(-1)
+        if stds_t.ndim == 2:
+            stds_t = stds_t.unsqueeze(-1).unsqueeze(-1)
+        if means_t.ndim != 4 or stds_t.ndim != 4:
+            raise ValueError(
+                "transport stats bank expects tensors shaped [num_styles, channels, 1, 1] "
+                f"or [num_styles, channels]; got means={tuple(means_t.shape)} stds={tuple(stds_t.shape)}"
+            )
+        expected_shape = tuple(self._transport_style_stats_mean.shape)
+        if tuple(means_t.shape) != expected_shape or tuple(stds_t.shape) != expected_shape:
+            raise ValueError(
+                "transport stats bank shape mismatch: "
+                f"expected {expected_shape}, got means={tuple(means_t.shape)} stds={tuple(stds_t.shape)}"
+            )
+        valid_mask = payload.get("valid_mask", payload.get("valid", None))
+        if valid_mask is None:
+            valid_t = torch.ones((means_t.shape[0],), dtype=torch.bool)
+        else:
+            valid_t = torch.as_tensor(valid_mask, dtype=torch.bool).view(-1)
+            if int(valid_t.numel()) != int(means_t.shape[0]):
+                raise ValueError(
+                    "transport stats valid_mask length mismatch: "
+                    f"expected {int(means_t.shape[0])}, got {int(valid_t.numel())}"
+                )
+        self._transport_style_stats_mean.copy_(means_t)
+        self._transport_style_stats_std.copy_(stds_t.clamp_min(self.transport_stats_eps))
+        self._transport_style_stats_valid.copy_(valid_t)
+        if path is not None:
+            self.transport_stats_bank_path = str(path)
+        loaded = int(valid_t.sum().item())
+        return {
+            "loaded_styles": loaded,
+            "num_styles": int(means_t.shape[0]),
+            "channels": int(means_t.shape[1]),
+            "path": str(path) if path is not None else "",
+        }
+
+    def _transport_stats_tensor_metrics(
+        self,
+        ref: torch.Tensor,
+        debug: Mapping[str, float] | None = None,
+    ) -> dict[str, torch.Tensor]:
+        raw = debug if isinstance(debug, Mapping) else self.last_transport_stats_debug
+        metrics: dict[str, torch.Tensor] = {}
+        if not isinstance(raw, Mapping):
+            return metrics
+        for key, value in raw.items():
+            if isinstance(value, (int, float, bool)):
+                metrics[str(key)] = ref.new_tensor(float(value), dtype=torch.float32)
+        return metrics
+
+    def _transport_style_stats_bank_loaded(self) -> bool:
+        valid = getattr(self, "_transport_style_stats_valid", None)
+        return bool(torch.is_tensor(valid) and bool(valid.any().item()))
+
+    def _resolve_transport_style_targets(
+        self,
+        *,
+        style_id: torch.Tensor | int,
+        batch: int,
+        ref: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor] | None:
+        if not self._transport_style_stats_bank_loaded():
+            return None
+        style_id_t = self._normalize_style_id_input(style_id, device=ref.device)
+        if style_id_t.numel() == 1 and batch > 1:
+            style_id_t = style_id_t.expand(batch)
+        elif style_id_t.numel() != batch:
+            raise ValueError(f"style_id batch mismatch for transport stats: expected {batch} or 1, got {style_id_t.numel()}")
+        valid_mask = self._transport_style_stats_valid.to(device=ref.device)
+        selected_valid = valid_mask.index_select(0, style_id_t)
+        if not bool(selected_valid.all().item()):
+            missing = torch.nonzero(~selected_valid, as_tuple=False).flatten().tolist()
+            if self.transport_stats_bank_required:
+                raise RuntimeError(f"transport stats bank missing valid entries for batch positions {missing}")
+            return None
+        mean_bank = self._transport_style_stats_mean.to(device=ref.device, dtype=ref.dtype)
+        std_bank = self._transport_style_stats_std.to(device=ref.device, dtype=ref.dtype)
+        return (
+            mean_bank.index_select(0, style_id_t),
+            std_bank.index_select(0, style_id_t).clamp_min(self.transport_stats_eps),
+        )
+
+    def _build_transport_stats_context(
+        self,
+        source: torch.Tensor,
+        *,
+        style_id: torch.Tensor | int,
+    ) -> dict[str, torch.Tensor] | None:
+        mode = self.transport_stats_mode
+        base_debug = {
+            "transport_stats_active": 0.0,
+            "transport_stats_bank_loaded": 1.0 if self._transport_style_stats_bank_loaded() else 0.0,
+            "transport_stats_mode_terminal_affine": 1.0 if mode == "terminal_affine" else 0.0,
+            "transport_stats_mode_normalized_solver": 1.0 if mode == "normalized_solver" else 0.0,
+            "transport_stats_source_mean_abs": 0.0,
+            "transport_stats_source_std_mean": 0.0,
+            "transport_stats_target_mean_abs": 0.0,
+            "transport_stats_target_std_mean": 0.0,
+            "transport_stats_mean_delta": 0.0,
+            "transport_stats_std_delta": 0.0,
+            "transport_stats_valid_styles": float(self._transport_style_stats_valid.sum().item()),
+            "transport_stats_missing_bank": 0.0,
+        }
+        if mode == "none":
+            self.last_transport_stats_debug = base_debug
+            return None
+        targets = self._resolve_transport_style_targets(style_id=style_id, batch=int(source.shape[0]), ref=source)
+        if targets is None:
+            base_debug["transport_stats_missing_bank"] = 1.0
+            self.last_transport_stats_debug = base_debug
+            return None
+        target_mean, target_std = targets
+        source_mean = source.mean(dim=(2, 3), keepdim=True)
+        source_std = source.std(dim=(2, 3), keepdim=True, unbiased=False).clamp_min(self.transport_stats_eps)
+        base_debug.update(
+            {
+                "transport_stats_active": 1.0,
+                "transport_stats_source_mean_abs": float(source_mean.detach().abs().mean().cpu().item()),
+                "transport_stats_source_std_mean": float(source_std.detach().mean().cpu().item()),
+                "transport_stats_target_mean_abs": float(target_mean.detach().abs().mean().cpu().item()),
+                "transport_stats_target_std_mean": float(target_std.detach().mean().cpu().item()),
+                "transport_stats_mean_delta": float((target_mean - source_mean).detach().abs().mean().cpu().item()),
+                "transport_stats_std_delta": float((target_std - source_std).detach().abs().mean().cpu().item()),
+            }
+        )
+        self.last_transport_stats_debug = base_debug
+        return {
+            "source_mean": source_mean.to(dtype=source.dtype),
+            "source_std": source_std.to(dtype=source.dtype),
+            "target_mean": target_mean.to(dtype=source.dtype),
+            "target_std": target_std.to(dtype=source.dtype),
+        }
+
+    def _prepare_transport_stats_input(
+        self,
+        source: torch.Tensor,
+        *,
+        style_id: torch.Tensor | int,
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, torch.Tensor] | None]:
+        ctx = self._build_transport_stats_context(source, style_id=style_id)
+        if ctx is None:
+            return source, source, None
+        if self.transport_stats_mode != "normalized_solver":
+            return source, source, ctx
+        normalized = ((source - ctx["source_mean"]) / ctx["source_std"]).to(dtype=source.dtype)
+        return normalized, normalized, ctx
+
+    def restore_transport_output(
+        self,
+        latent: torch.Tensor,
+        *,
+        style_id: torch.Tensor | int,
+    ) -> torch.Tensor:
+        if self.transport_stats_mode == "none":
+            return latent
+        targets = self._resolve_transport_style_targets(style_id=style_id, batch=int(latent.shape[0]), ref=latent)
+        if targets is None:
+            return latent
+        target_mean, target_std = targets
+        if self.transport_stats_mode == "normalized_solver":
+            return (latent * target_std + target_mean).to(dtype=latent.dtype)
+        pred_mean = latent.mean(dim=(2, 3), keepdim=True)
+        pred_std = latent.std(dim=(2, 3), keepdim=True, unbiased=False).clamp_min(self.transport_stats_eps)
+        return (((latent - pred_mean) / pred_std) * target_std + target_mean).to(dtype=latent.dtype)
+
+    def prepare_transport_training_pair(
+        self,
+        *,
+        content: torch.Tensor,
+        target: torch.Tensor,
+        style_id: torch.Tensor | int,
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, torch.Tensor]]:
+        ctx = self._build_transport_stats_context(content, style_id=style_id)
+        metrics = self._transport_stats_tensor_metrics(content)
+        if ctx is None or self.transport_stats_mode != "normalized_solver":
+            return content, target, metrics
+        content_norm = ((content - ctx["source_mean"]) / ctx["source_std"]).to(dtype=content.dtype)
+        target_norm = ((target - ctx["target_mean"]) / ctx["target_std"]).to(dtype=target.dtype)
+        return content_norm, target_norm, metrics
 
     def _fiber_aligned_solver_noise(
         self,
@@ -514,6 +764,63 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
 
     def _i2sb_highpass(self, tensor: torch.Tensor) -> torch.Tensor:
         return tensor.float() - self._i2sb_lowpass(tensor)
+
+    def _i2sb_sample_transport_noise(
+        self,
+        reference: torch.Tensor,
+        *,
+        target_style_latent: torch.Tensor | None,
+    ) -> torch.Tensor:
+        debug = {
+            "style_noise_family_style_covariant": float(self.i2sb_noise_family == "style_covariant"),
+            "style_noise_family_gaussian": float(self.i2sb_noise_family == "gaussian"),
+            "style_noise_bank_active": 0.0,
+            "style_noise_amp_mean": 0.0,
+            "style_noise_amp_std": 0.0,
+            "style_noise_post_std": 0.0,
+            "style_noise_amplitude_power": float(self.i2sb_style_noise_amplitude_power),
+            "style_noise_fallback_gaussian": 0.0,
+        }
+        if self.i2sb_noise_family != "style_covariant" or target_style_latent is None:
+            if self.i2sb_noise_family == "style_covariant":
+                debug["style_noise_fallback_gaussian"] = 1.0
+                self.last_i2sb_transport_debug.update(debug)
+            return torch.randn_like(reference)
+        style_ref = target_style_latent
+        if not torch.is_tensor(style_ref) or style_ref.ndim != 4:
+            debug["style_noise_fallback_gaussian"] = 1.0
+            self.last_i2sb_transport_debug.update(debug)
+            return torch.randn_like(reference)
+        style_ref = style_ref.to(device=reference.device, dtype=torch.float32)
+        if style_ref.shape[-2:] != reference.shape[-2:]:
+            style_ref = F.interpolate(style_ref, size=reference.shape[-2:], mode="bilinear", align_corners=False)
+        if style_ref.shape[0] == 1 and reference.shape[0] > 1:
+            style_ref = style_ref.expand(reference.shape[0], -1, -1, -1)
+        if style_ref.shape[0] != reference.shape[0] or style_ref.shape[1] != reference.shape[1]:
+            debug["style_noise_fallback_gaussian"] = 1.0
+            self.last_i2sb_transport_debug.update(debug)
+            return torch.randn_like(reference)
+        fft_style = torch.fft.rfft2(style_ref, norm="ortho")
+        amplitude = torch.abs(fft_style).clamp_min(1e-8)
+        if abs(self.i2sb_style_noise_amplitude_power - 1.0) > 1e-6:
+            amplitude = amplitude.pow(self.i2sb_style_noise_amplitude_power)
+        random_phase = (torch.rand_like(amplitude) * 2.0 - 1.0) * math.pi
+        phase_complex = torch.complex(torch.cos(random_phase), torch.sin(random_phase))
+        fft_noise = amplitude * phase_complex
+        style_noise = torch.fft.irfft2(fft_noise, s=reference.shape[-2:], norm="ortho")
+        noise_mean = style_noise.mean(dim=(-2, -1), keepdim=True)
+        noise_std = style_noise.std(dim=(-2, -1), keepdim=True, unbiased=False).clamp_min(1e-6)
+        normalized = (style_noise - noise_mean) / noise_std
+        debug.update(
+            {
+                "style_noise_bank_active": 1.0,
+                "style_noise_amp_mean": float(amplitude.detach().mean().cpu().item()),
+                "style_noise_amp_std": float(amplitude.detach().std(unbiased=False).cpu().item()),
+                "style_noise_post_std": float(normalized.detach().std(unbiased=False).cpu().item()),
+            }
+        )
+        self.last_i2sb_transport_debug.update(debug)
+        return normalized.to(dtype=reference.dtype)
 
     def _i2sb_fiber_project_gate(self, reference: torch.Tensor) -> torch.Tensor | None:
         if not bool(getattr(self, "i2sb_fiber_project_use_gate", False)):
@@ -1086,7 +1393,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         style_code_override: torch.Tensor | None = None,
     ) -> torch.Tensor:
         if style_code_override is None:
-            if str(getattr(self, "tokenizer_family", "legacy_factorized")) in {"pure_latent_spatial", "smoe_translator"}:
+            if str(getattr(self, "tokenizer_family", "legacy_factorized")) in {"pure_latent_spatial", "smoe_translator", "affine_connection_tokenizer"}:
                 style_code = x.new_zeros((x.shape[0], int(self.bridge_style_dim)))
             else:
                 style_code = self.encode_style_id(style_id, t=t)
@@ -1228,6 +1535,14 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                     float(bool(getattr(self, "i2sb_fiber_noise_rms_normalize", True))),
                 )
             ),
+            "style_noise_family_style_covariant": float(self.i2sb_noise_family == "style_covariant"),
+            "style_noise_family_gaussian": float(self.i2sb_noise_family == "gaussian"),
+            "style_noise_bank_active": 0.0,
+            "style_noise_amp_mean": 0.0,
+            "style_noise_amp_std": 0.0,
+            "style_noise_post_std": 0.0,
+            "style_noise_amplitude_power": float(self.i2sb_style_noise_amplitude_power),
+            "style_noise_fallback_gaussian": 0.0,
         }
         x_1_pred = self.predict_transport_base(
             h,
@@ -1247,7 +1562,10 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         if var <= 0.0:
             return mu
         noise = self._i2sb_project_noise_to_fiber(
-            torch.randn_like(h),
+            self._i2sb_sample_transport_noise(
+                h,
+                target_style_latent=target_style_latent,
+            ),
             endpoint=x_1_pred,
             source_latent=source_latent,
         )
@@ -1288,6 +1606,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             "lowpass": "lowpass_source_anchor",
             "lowpass_anchor": "lowpass_source_anchor",
             "source_lowpass": "lowpass_source_anchor",
+            "latent_lowpass": "lowpass_source_anchor",
         }
         normalized = aliases.get(normalized, normalized)
         valid = {"none", "legacy_dino_lerp", "lowpass_source_anchor"}
@@ -1517,7 +1836,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                 raise RuntimeError("cross-attention proximal modules not initialized")
             if style_id is None:
                 raise ValueError("style_id is required for crossattn_texture proximal mode.")
-            if str(getattr(self, "tokenizer_family", "legacy_factorized")) in {"pure_latent_spatial", "smoe_translator"}:
+            if str(getattr(self, "tokenizer_family", "legacy_factorized")) in {"pure_latent_spatial", "smoe_translator", "affine_connection_tokenizer"}:
                 style_code, kv_src = self._structured_proximal_style_tokens(
                     z_base,
                     style_id=style_id,
@@ -1643,6 +1962,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         *,
         step_size: float = 1.0,
         style_strength: float | None = None,
+        target_style_latent: torch.Tensor | None = None,
         style_code_override: torch.Tensor | None = None,
     ) -> torch.Tensor:
         if style_id is None:
@@ -1655,6 +1975,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             t=1.0,
             style_id=style_id,
             style_code_override=style_code_override,
+            target_style_latent=target_style_latent,
         )
         return self.refine_endpoint(z_base, style_id=style_id, source_latent=x, style_code_override=style_code_override)
 
@@ -1778,8 +2099,8 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         horizon = self._resolve_integration_horizon(step_size=step_size, style_strength=style_strength)
         if horizon <= 0.0:
             return x
-        source_latent = x
         x = self._apply_pre_integrate_moment_match(x, target_style_latent)
+        x, source_latent, _transport_stats_ctx = self._prepare_transport_stats_input(x, style_id=style_id)
         dt = horizon / float(steps)
         h = x
         self.last_i2sb_fiber_noise_debug = {}
@@ -1834,7 +2155,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             else:
                 velocity = self.forward(h, t=t, style_id=style_id, style_code_override=style_code_override)
                 h = h + velocity * dt
-        return h
+        return self.restore_transport_output(h, style_id=style_id)
 
     @torch.no_grad()
     def integrate(
@@ -1907,6 +2228,8 @@ def _attach_bridge_runtime_fields(
         "loss_type": str(getattr(bridge, "loss_type", "")),
         "bridge_sigma": float(getattr(bridge, "bridge_sigma", 0.0)),
         "i2sb_predictor_time_floor": float(getattr(bridge, "i2sb_predictor_time_floor", 0.0)),
+        "i2sb_noise_family": str(getattr(bridge, "i2sb_noise_family", "gaussian")),
+        "i2sb_style_noise_amplitude_power": float(getattr(bridge, "i2sb_style_noise_amplitude_power", 1.0)),
     }
     model_cfg.extra = dict(getattr(model_cfg, "extra", {}) or {})
     for key, value in bridge_fields.items():

@@ -24,6 +24,7 @@ from lancet_blocks import (
 )
 from lancet_runtime import LatentAdaCUTRuntimeMixin
 from semantic_tokenizer import (
+    AffineConnectionTokenizer,
     CrossImageRoutingTokenizer,
     DinoDictionaryTokenizer,
     PureLatentSpatialTokenizer,
@@ -187,7 +188,11 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             self.upsample_blur_kernel = "box3"
 
         tokenizer_kind = str(getattr(cfg, "style_tokenizer", "factorized")).strip().lower()
-        latent_spatial_tokenizer_family = self.tokenizer_family in {"pure_latent_spatial", "smoe_translator"}
+        latent_spatial_tokenizer_family = self.tokenizer_family in {
+            "pure_latent_spatial",
+            "smoe_translator",
+            "affine_connection_tokenizer",
+        }
         if latent_spatial_tokenizer_family:
             if tokenizer_kind not in {"", "null", "none", "pure_placeholder"}:
                 raise ValueError(
@@ -229,6 +234,10 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         structured_prompt_dim = max(1, int(getattr(cfg, "tokenizer_prompt_dim", 256)))
         structured_prompt_length = max(1, int(getattr(cfg, "tokenizer_prompt_length", 8)))
         smoe_translation_rank = max(0, int(getattr(cfg, "smoe_translation_rank", 0)))
+        affine_gamma_scale = max(0.0, float(getattr(cfg, "affine_connection_gamma_scale", 0.5)))
+        affine_beta_scale = max(0.0, float(getattr(cfg, "affine_connection_beta_scale", 1.0)))
+        affine_fiber_mode = str(getattr(cfg, "affine_connection_fiber_mode", "wavelet") or "wavelet")
+        affine_lowpass_kernel = max(1, int(getattr(cfg, "affine_connection_lowpass_kernel", 5)))
         self.tokenizer_spatial_dim = structured_spatial_dim
         self.structured_style_map_proj: nn.Module | None = None
         if structured_spatial_dim != self.body_channels:
@@ -266,6 +275,24 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
                 global_gate_hidden_dim=structured_global_gate_hidden_dim,
                 global_gate_scale=structured_global_gate_scale,
                 translation_rank=smoe_translation_rank,
+            )
+        elif self.tokenizer_family == "affine_connection_tokenizer":
+            self.structured_style_tokenizer = AffineConnectionTokenizer(
+                num_styles=self.num_styles,
+                global_dim=style_dim,
+                spatial_dim=structured_spatial_dim,
+                latent_channels=self.latent_channels,
+                num_clusters=structured_num_clusters,
+                temperature=structured_temperature,
+                query_dim=structured_query_dim,
+                query_num_blocks=structured_query_num_blocks,
+                pe_temperature=structured_pe_temperature,
+                global_gate_hidden_dim=structured_global_gate_hidden_dim,
+                global_gate_scale=structured_global_gate_scale,
+                gamma_scale=affine_gamma_scale,
+                beta_scale=affine_beta_scale,
+                fiber_mode=affine_fiber_mode,
+                lowpass_kernel=affine_lowpass_kernel,
             )
         elif self.tokenizer_family == "tok_a_dino_dict":
             self.structured_style_tokenizer = DinoDictionaryTokenizer(

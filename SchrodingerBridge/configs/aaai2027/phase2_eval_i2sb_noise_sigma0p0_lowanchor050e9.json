@@ -1,0 +1,12 @@
+{
+  "_base": "./phase2_eval_i2sb_noise_probe_lowanchor050e9_base.json",
+  "_comment": "Deterministic matched parent eval under the current noise-probe fast10 contract.",
+  "model": {
+    "bridge_sigma": 0.0,
+    "i2sb_noise_family": "gaussian"
+  },
+  "bridge": {
+    "bridge_sigma": 0.0,
+    "i2sb_noise_family": "gaussian"
+  }
+}

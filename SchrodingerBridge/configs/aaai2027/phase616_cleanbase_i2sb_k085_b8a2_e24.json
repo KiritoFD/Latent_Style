@@ -1,0 +1,74 @@
+{
+  "_base": "./phase2_vel_tok32_safe_semantic_topogate_k085_seed42_b16a1.json",
+  "model": {
+    "contract_family": "phase616",
+    "solver_family": "solver_i2sb",
+    "transport_prediction_mode": "endpoint",
+    "endpoint_parameterization": "absolute",
+    "endpoint_velocity_time_floor": 0.10,
+    "record_base_endpoint_metrics": true,
+    "style_delta_mode": "none",
+    "proximal_mode": "off",
+    "output_appearance_alignment_mode": "none",
+    "solver_corrector_mode": "none",
+    "backbone_attention_family": "legacy_semantic_crossattn",
+    "pre_integrate_moment_match": false,
+    "output_moment_match": false
+  },
+  "bridge": {
+    "objective_mode": "i2sb_endpoint",
+    "loss_type": "mse",
+    "ot_cost_mode": "l2",
+    "coupling_cost_composition": "structure_only",
+    "coupling_structure_cost_mode": "self_affinity_gw",
+    "coupling_structure_cost_weight": 1.0,
+    "coupling_target_mode": "barycentric_full",
+    "bridge_sigma": 0.02,
+    "bridge_noise_schedule": "exact_brownian",
+    "i2sb_predictor_time_floor": 0.10,
+    "semantic_supervision_family": "legacy_terminal_swd",
+    "w_content_lowpass_anchor": 0.0,
+    "w_content_edge_anchor": 0.0,
+    "cycle_consistency_weight": 0.0
+  },
+  "training": {
+    "resume_checkpoint": "",
+    "resume_model_strict": false,
+    "resume_optimizer": false,
+    "resume_training_state": false,
+    "resume_prefer_local_checkpoint": false,
+    "batch_size": 8,
+    "accumulation_steps": 2,
+    "num_epochs": 24,
+    "save_interval": 1,
+    "log_interval": 10,
+    "full_eval_output_subdir": "full_eval_transfer_fast10",
+    "full_eval_transfer_only": true,
+    "full_eval_each_epoch": true,
+    "full_eval_profile_timing": true,
+    "full_eval_delta_observability": true,
+    "full_eval_in_process": true,
+    "full_eval_runtime_model_cache": true,
+    "full_eval_keep_generated_on_device": true,
+    "full_eval_source_latent_cache": true,
+    "full_eval_postprocess_mode": "none",
+    "full_eval_latent_postprocess_mode": "none",
+    "numeric_debug": true,
+    "numeric_debug_interval": 50,
+    "numeric_debug_dump_limit": 400,
+    "gpu_monitor_enabled": true,
+    "gpu_monitor_interval_sec": 2.0
+  },
+  "data": {
+    "virtual_length_multiplier": 1.0
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_cleanbase_i2sb_k085_b8a2_e24"
+  },
+  "ablation": {
+    "name": "phase616_cleanbase_i2sb_k085_b8a2_e24",
+    "axis": "phase616_clean_base",
+    "stage": "clean_i2sb_base",
+    "notes": "Canonical 616 clean base. Start from the retained k085 semantic-topogate family without appalign, then switch to endpoint I2SB while enforcing the phase616 contract: no appearance alignment, no proximal path, no style-delta path, no content anchors, no cycle consistency, no eval-side latent/RGB postprocess, and structure-only OT with self-affinity GW plus barycentric targets as the default clean coupling geometry."
+  }
+}

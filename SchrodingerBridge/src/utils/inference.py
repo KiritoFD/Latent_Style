@@ -74,6 +74,47 @@ def configure_torch_compile_cache(cache_dir: str | os.PathLike | None) -> None:
     os.environ.setdefault("TRITON_CACHE_DIR", triton_dir)
 
 
+def _host_can_resolve_path(path: Path) -> bool:
+    text = str(path)
+    if os.name == "nt" and (
+        text.startswith("/mnt/")
+        or text.startswith("\\mnt\\")
+        or text.startswith("/mnt\\")
+        or text.startswith("\\mnt/")
+    ):
+        return False
+    return True
+
+
+def _resolve_optional_host_path(raw_path: str, *, base_dirs: list[Path]) -> Optional[Path]:
+    text = str(raw_path or "").strip()
+    if not text:
+        return None
+    candidate = Path(text)
+    candidates: list[Path] = []
+    if candidate.is_absolute():
+        candidates.append(candidate)
+    else:
+        for base in base_dirs:
+            candidates.append(base / candidate)
+        candidates.append(Path.cwd() / candidate)
+    seen: set[str] = set()
+    for item in candidates:
+        try:
+            resolved = item.expanduser().resolve(strict=False)
+        except Exception:
+            resolved = item.expanduser()
+        key = str(resolved)
+        if key in seen:
+            continue
+        seen.add(key)
+        if not _host_can_resolve_path(resolved):
+            continue
+        if resolved.exists():
+            return resolved
+    return None
+
+
 class ORTVAEDecoder:
     """Fixed-shape ONNX Runtime VAE decoder with CUDA I/O binding."""
 
@@ -262,8 +303,11 @@ class LGTInference:
         state_dict, removed_contract_keys = prune_state_dict_for_tokenizer_family(
             state_dict,
             tokenizer_family=str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
+            contract_family=str(getattr(config.model, "contract_family", "legacy")),
             style_injection_mode=str(getattr(config.model, "style_injection_mode", "none")),
             proximal_mode=str(getattr(config.model, "proximal_mode", "off")),
+            style_delta_mode=str(getattr(config.model, "style_delta_mode", "none")),
+            output_appearance_alignment_mode=str(getattr(config.model, "output_appearance_alignment_mode", "none")),
         )
         if removed_contract_keys:
             logger.info(
@@ -337,6 +381,11 @@ class LGTInference:
             self.model.load_state_dict(state_dict, strict=False)
         if style_adapter_path:
             self._load_style_adapter(style_adapter_path)
+        self._maybe_load_transport_style_stats_bank(
+            config=config,
+            model_path=model_path,
+            config_override_path=config_override_path,
+        )
         self.model.eval()
 
         cfg_step = float(infer_cfg.get("step_size", 1.0))
@@ -377,8 +426,11 @@ class LGTInference:
         state_dict, removed_contract_keys = prune_state_dict_for_tokenizer_family(
             state_dict,
             tokenizer_family=str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
+            contract_family=str(getattr(config.model, "contract_family", "legacy")),
             style_injection_mode=str(getattr(config.model, "style_injection_mode", "none")),
             proximal_mode=str(getattr(config.model, "proximal_mode", "off")),
+            style_delta_mode=str(getattr(config.model, "style_delta_mode", "none")),
+            output_appearance_alignment_mode=str(getattr(config.model, "output_appearance_alignment_mode", "none")),
         )
         if removed_contract_keys:
             logger.info(
@@ -393,14 +445,50 @@ class LGTInference:
             self.model.load_state_dict(state_dict, strict=False)
         if self._style_adapter_path:
             self._load_style_adapter(self._style_adapter_path)
+        self._maybe_load_transport_style_stats_bank(
+            config=config,
+            model_path=model_path,
+            config_override_path=config_override_path,
+        )
         self.model.eval()
+
+    def _maybe_load_transport_style_stats_bank(
+        self,
+        *,
+        config: ExperimentConfig,
+        model_path: str | os.PathLike,
+        config_override_path: str | os.PathLike | None,
+    ) -> None:
+        loader = getattr(self.model, "load_transport_style_stats_bank", None)
+        if not callable(loader):
+            return
+        raw_path = str(getattr(config.model, "transport_stats_bank_path", "") or "").strip()
+        if not raw_path:
+            return
+        base_dirs = [Path(model_path).resolve().parent, _SRC_ROOT.parent]
+        if config_override_path:
+            base_dirs.insert(0, Path(config_override_path).resolve().parent)
+        resolved = _resolve_optional_host_path(raw_path, base_dirs=base_dirs)
+        if resolved is None:
+            required = bool(getattr(config.model, "transport_stats_bank_required", False))
+            message = f"transport stats bank not found/resolvable on this host: {raw_path}"
+            if required:
+                raise FileNotFoundError(message)
+            logger.warning("%s; continuing without bank.", message)
+            return
+        payload = loader(resolved)
+        logger.info("Loaded transport stats bank from %s: %s", resolved, payload)
 
     def _load_style_adapter(self, style_adapter_path) -> None:
         adapter_path = os.path.expanduser(str(style_adapter_path))
         adapter = torch.load(adapter_path, map_location=self.device, weights_only=False)
         if not isinstance(adapter, dict):
             raise ValueError(f"Unsupported style adapter format: {adapter_path}")
-        pure_latent_family = str(getattr(self.model, "tokenizer_family", "legacy_factorized")).strip().lower() == "pure_latent_spatial"
+        pure_latent_family = str(getattr(self.model, "tokenizer_family", "legacy_factorized")).strip().lower() in {
+            "pure_latent_spatial",
+            "smoe_translator",
+            "affine_connection_tokenizer",
+        }
         with torch.no_grad():
             tokenizer_state = {
                 key.removeprefix("style_tokenizer."): value
@@ -437,6 +525,15 @@ class LGTInference:
 
     @torch.no_grad()
     def generation(self, x0, target_style_id, num_steps=None):
+        return self.generation_with_target_latent(
+            x0,
+            target_style_id,
+            num_steps=num_steps,
+            target_style_latent=None,
+        )
+
+    @torch.no_grad()
+    def generation_with_target_latent(self, x0, target_style_id, num_steps=None, target_style_latent=None):
         if num_steps is None:
             num_steps = self.num_steps
         b = x0.shape[0]
@@ -448,6 +545,7 @@ class LGTInference:
                 style_id=target_style_id,
                 step_size=self.step_size,
                 style_strength=self.style_strength,
+                target_style_latent=target_style_latent,
             )
             if abs(self.residual_scale - 1.0) > 1e-6:
                 return x0 + (endpoint - x0) * self.residual_scale
@@ -458,6 +556,7 @@ class LGTInference:
             num_steps=max(1, int(num_steps)),
             step_size=self.step_size,
             style_strength=self.style_strength,
+            target_style_latent=target_style_latent,
         )
 
     @torch.no_grad()
@@ -467,9 +566,15 @@ class LGTInference:
         target_style_id,
         num_steps=None,
         return_intermediate=False,
+        target_style_latent=None,
     ):
         x0 = self.inversion(x_source)
-        x_target = self.generation(x0, target_style_id, num_steps)
+        x_target = self.generation_with_target_latent(
+            x0,
+            target_style_id,
+            num_steps,
+            target_style_latent=target_style_latent,
+        )
         if return_intermediate:
             return x_target, x0
         return x_target

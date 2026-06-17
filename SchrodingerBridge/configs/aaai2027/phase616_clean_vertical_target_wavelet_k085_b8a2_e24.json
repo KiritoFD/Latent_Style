@@ -1,0 +1,18 @@
+{
+  "_base": "./phase616_cleanbase_i2sb_k085_b8a2_e24.json",
+  "bridge": {
+    "training_target_projection_mode": "wavelet_source_low_target_high",
+    "training_target_projection_kernel": 5,
+    "training_target_projection_low_anchor": 1.0,
+    "training_target_projection_low_mode": "all"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_vertical_target_wavelet_k085_b8a2_e24"
+  },
+  "ablation": {
+    "name": "phase616_clean_vertical_target_wavelet_k085_b8a2_e24",
+    "axis": "phase616_vertical_target_clean",
+    "stage": "wavelet_source_low_target_high_cleanbase",
+    "notes": "Phase616 clean-base wavelet vertical target probe. Keep the clean I2SB base fixed and change only the training target projection to wavelet_source_low_target_high so the low/high split uses the sharper 2x downsample-plus-bilinear lowpass suggested in docs/616/design.md."
+  }
+}

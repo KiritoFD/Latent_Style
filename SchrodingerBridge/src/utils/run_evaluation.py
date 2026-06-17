@@ -1,4 +1,4 @@
-﻿"""
+"""
 LGT Evaluation Pro: Optimized with Pipeline Offloading, Async I/O & Vectorization
 Target Hardware: RTX 4070 Laptop (8GB VRAM) | CPU: 7940HX
 """
@@ -612,7 +612,7 @@ def _lpips_forward_safe(
     while True:
         try:
             outs = []
-            with torch.no_grad():
+            with torch.inference_mode():
                 for s in range(0, n, cur_chunk):
                     e = min(s + cur_chunk, n)
                     d = loss_fn(to_lpips_input(x[s:e]), to_lpips_input(y[s:e]))
@@ -641,7 +641,7 @@ def _lpips_forward_safe(
                 x_cpu = x.detach().cpu()
                 y_cpu = y.detach().cpu()
                 outs = []
-                with torch.no_grad():
+                with torch.inference_mode():
                     for s in range(0, n, cur_chunk):
                         e = min(s + cur_chunk, n)
                         d = loss_fn(to_lpips_input(x_cpu[s:e]), to_lpips_input(y_cpu[s:e]))

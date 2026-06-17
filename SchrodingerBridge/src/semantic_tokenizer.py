@@ -57,6 +57,41 @@ def _scalar_std(x: torch.Tensor) -> float:
     return float(x.detach().float().std(unbiased=False).cpu().item())
 
 
+def _normalized_entropy(weights: torch.Tensor) -> torch.Tensor:
+    probs = weights.float().clamp_min(1e-8)
+    return -(probs * probs.log()).sum(dim=-1)
+
+
+def _spatial_svd_probe(spatial_map: torch.Tensor) -> tuple[float, float]:
+    """Track approximate spatial rank using channel-covariance eigenvalues."""
+    try:
+        flat = spatial_map.detach().float().flatten(2)
+        if flat.shape[1] <= 1 or flat.shape[2] <= 1:
+            return 0.0, 1.0
+        flat = flat - flat.mean(dim=-1, keepdim=True)
+        cov = torch.matmul(flat, flat.transpose(1, 2)) / max(int(flat.shape[-1]) - 1, 1)
+        eigvals = torch.linalg.eigvalsh(cov).clamp_min(0.0)
+        mass = eigvals.sum(dim=-1, keepdim=True).clamp_min(1e-8)
+        probs = eigvals / mass
+        entropy = _normalized_entropy(probs).mean()
+        top1_ratio = (eigvals[..., -1] / mass.squeeze(-1)).mean()
+        return float(entropy.detach().cpu().item()), float(top1_ratio.detach().cpu().item())
+    except RuntimeError:
+        return 0.0, 1.0
+
+
+def _offdiag_cosine_mean(vectors: torch.Tensor) -> float:
+    flat = vectors.detach().float().reshape(vectors.shape[0], -1)
+    if flat.shape[0] <= 1:
+        return 0.0
+    flat = F.normalize(flat, p=2, dim=1, eps=1e-6)
+    sim = flat @ flat.transpose(0, 1)
+    mask = ~torch.eye(sim.shape[0], device=sim.device, dtype=torch.bool)
+    if not bool(mask.any().item()):
+        return 0.0
+    return float(sim.masked_select(mask).mean().detach().cpu().item())
+
+
 def _build_1d_sincos_embedding(
     length: int,
     dim: int,
@@ -96,6 +131,31 @@ def _build_2d_sincos_embedding(
         pad = channels - pe.shape[1]
         pe = F.pad(pe, (0, 0, 0, 0, 0, pad))
     return pe[:, :channels, :, :]
+
+
+def _resolve_lowpass_kernel(kernel: int) -> int:
+    value = max(1, int(kernel))
+    if value % 2 == 0:
+        value += 1
+    return value
+
+
+def _split_base_fiber_map(
+    x: torch.Tensor,
+    *,
+    mode: str,
+    kernel: int,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    normalized = str(mode or "wavelet").strip().lower()
+    if normalized == "wavelet":
+        down = F.avg_pool2d(x.float(), kernel_size=2, stride=2)
+        low = F.interpolate(down, size=x.shape[-2:], mode="bilinear", align_corners=False)
+    else:
+        kernel = _resolve_lowpass_kernel(kernel)
+        pad = kernel // 2
+        low = F.avg_pool2d(x.float(), kernel_size=kernel, stride=1, padding=pad)
+    low = low.to(dtype=x.dtype)
+    return low, x - low
 
 
 class _BaseStructuredTokenizer(nn.Module):
@@ -143,13 +203,16 @@ class _BaseStructuredTokenizer(nn.Module):
         extra: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         probs = attn.detach().float().clamp_min(1e-8)
-        entropy = -(probs * probs.log()).sum(dim=-1)
+        entropy = _normalized_entropy(probs)
+        spatial_svd_entropy, spatial_top1_ratio = _spatial_svd_probe(spatial_map)
         debug: dict[str, Any] = {
             "attn_entropy": _scalar_mean(entropy),
             "attn_effective_count": float(torch.exp(entropy.mean()).detach().cpu().item()),
             "attn_max": float(probs.max().detach().cpu().item()),
             "attn_top1_mean": _scalar_mean(probs.amax(dim=-1)),
             "spatial_map_abs": float(spatial_map.detach().float().abs().mean().cpu().item()),
+            "spatial_svd_entropy": spatial_svd_entropy,
+            "spatial_top1_singular_ratio": spatial_top1_ratio,
         }
         if gate_map is not None:
             gate = gate_map.detach().float()
@@ -301,6 +364,7 @@ class PureLatentSpatialTokenizer(_BaseStructuredTokenizer):
                     "global_raw_abs": float(raw_code.detach().float().abs().mean().cpu().item()),
                     "global_full_abs": float(global_full.detach().float().abs().mean().cpu().item()),
                     "spatial_gap_abs": float(spatial_gap.detach().float().abs().mean().cpu().item()),
+                    "style_value_offdiag_cosine": _offdiag_cosine_mean(values.flatten(0, 1)),
                 },
             ),
         ))
@@ -466,10 +530,204 @@ class SMoETranslatorTokenizer(_BaseStructuredTokenizer):
                     "global_gate_scale": self.global_gate_scale,
                     "translation_rank": self.translation_rank,
                     "translation_delta_from_identity": float(delta.detach().float().abs().mean().cpu().item()),
+                    "translation_delta_offdiag_cosine": _offdiag_cosine_mean(delta.flatten(0, 1)),
                     "routing_entropy": _scalar_mean(entropy),
                     "effective_experts": float(effective.cpu().item()),
                     "spatial_abs": float(spatial_map.detach().float().abs().mean().cpu().item()),
                     "content_spatial_abs": float(content_tokens.detach().float().abs().mean().cpu().item()),
+                    "global_gate_abs": float(global_gate.detach().float().abs().mean().cpu().item()),
+                    "global_raw_abs": float(raw_code.detach().float().abs().mean().cpu().item()),
+                    "global_full_abs": float(global_full.detach().float().abs().mean().cpu().item()),
+                },
+            ),
+        ))
+
+
+class AffineConnectionTokenizer(_BaseStructuredTokenizer):
+    """Latent-native affine connection tokenizer for the phase616 line.
+
+    Routing remains content-query over universal keys. The style-specific part
+    is no longer a free spatial color map; it predicts per-cluster affine gauge
+    parameters (gamma, beta) that act on the content-side fiber component.
+    """
+
+    def __init__(
+        self,
+        *,
+        num_styles: int,
+        global_dim: int,
+        spatial_dim: int,
+        latent_channels: int,
+        num_clusters: int = 32,
+        temperature: float = 0.1,
+        query_dim: int = 64,
+        query_num_blocks: int = 4,
+        pe_temperature: float = 1.0,
+        global_gate_hidden_dim: int | None = None,
+        global_gate_scale: float = 1.0,
+        gamma_scale: float = 0.5,
+        beta_scale: float = 1.0,
+        fiber_mode: str = "wavelet",
+        lowpass_kernel: int = 5,
+    ) -> None:
+        super().__init__(
+            num_styles=num_styles,
+            global_dim=global_dim,
+            spatial_dim=spatial_dim,
+            dino_dim=latent_channels,
+        )
+        self.latent_channels = max(1, int(latent_channels))
+        self.num_clusters = max(1, int(num_clusters))
+        self.temperature = max(1e-3, float(temperature))
+        self.query_dim = max(8, int(query_dim))
+        self.query_num_blocks = max(1, int(query_num_blocks))
+        self.pe_temperature = max(0.0, float(pe_temperature))
+        self.global_gate_hidden_dim = max(1, int(global_gate_hidden_dim or global_dim))
+        self.global_gate_scale = max(0.0, float(global_gate_scale))
+        self.gamma_scale = max(0.0, float(gamma_scale))
+        self.beta_scale = max(0.0, float(beta_scale))
+        self.fiber_mode = str(fiber_mode or "wavelet").strip().lower()
+        if self.fiber_mode not in {"avgpool", "wavelet"}:
+            self.fiber_mode = "wavelet"
+        self.lowpass_kernel = _resolve_lowpass_kernel(lowpass_kernel)
+
+        query_blocks: list[nn.Module] = [_LatentResBlock(self.latent_channels, self.query_dim, stride=1)]
+        for _ in range(self.query_num_blocks - 1):
+            query_blocks.append(_LatentResBlock(self.query_dim, self.query_dim, stride=1))
+        self.query_extractor = nn.ModuleList(query_blocks)
+
+        self.content_to_spatial = nn.Conv2d(self.latent_channels, self.spatial_dim, kernel_size=1, bias=True)
+        nn.init.zeros_(self.content_to_spatial.weight)
+        nn.init.zeros_(self.content_to_spatial.bias)
+        shared = min(self.latent_channels, self.spatial_dim)
+        with torch.no_grad():
+            for idx in range(shared):
+                self.content_to_spatial.weight[idx, idx, 0, 0] = 1.0
+
+        self.style_global_raw = nn.Embedding(self.num_styles, self.global_dim)
+        nn.init.normal_(self.style_global_raw.weight, mean=0.0, std=0.02)
+        self.global_pool_to_gate = nn.Sequential(
+            nn.Linear(self.spatial_dim, self.global_gate_hidden_dim),
+            nn.SiLU(),
+            nn.Linear(self.global_gate_hidden_dim, self.global_dim),
+        )
+
+        self.universal_keys = nn.Parameter(torch.randn(self.num_clusters, self.query_dim) * 0.02)
+        self.style_gauge_transforms = nn.Embedding(self.num_styles, self.num_clusters * self.spatial_dim * 2)
+        nn.init.zeros_(self.style_gauge_transforms.weight)
+
+    def _add_position_embedding(self, x: torch.Tensor) -> torch.Tensor:
+        if self.pe_temperature <= 0.0:
+            return x
+        bsz, channels, h_dim, w_dim = x.shape
+        device = x.device
+        dtype = x.dtype
+        cached = getattr(self, "_pe_cache", None)
+        if cached is None or cached.shape[-2:] != (h_dim, w_dim) or cached.shape[1] != channels or cached.device != device:
+            pe = _build_2d_sincos_embedding(channels, h_dim, w_dim, device=device)
+            self._pe_cache = pe.to(dtype=dtype)
+            cached = self._pe_cache
+        return x + self.pe_temperature * cached.expand(bsz, -1, -1, -1)
+
+    def forward(
+        self,
+        *,
+        style_id: torch.Tensor,
+        base_style_code: torch.Tensor,
+        content_latent: torch.Tensor,
+        target_hw: tuple[int, int] | None = None,
+    ) -> StructuredStyleOutput:
+        style_id = style_id.long().view(-1)
+        feat = content_latent.float()
+        for block in self.query_extractor:
+            feat = block(feat)
+        queries = self._add_position_embedding(feat)
+        if target_hw is not None and tuple(int(v) for v in target_hw) != tuple(int(v) for v in queries.shape[-2:]):
+            queries = F.interpolate(queries, size=tuple(int(v) for v in target_hw), mode="bilinear", align_corners=False)
+        queries = queries.to(dtype=content_latent.dtype)
+        bsz, _, h_dim, w_dim = queries.shape
+        q_flat = queries.flatten(2).transpose(1, 2).contiguous()
+        q_flat = _normalize_last_dim(q_flat)
+        keys = _normalize_last_dim(self.universal_keys).unsqueeze(0).expand(bsz, -1, -1)
+        sim = torch.bmm(q_flat, keys.transpose(1, 2)) / self.temperature
+        attn = F.softmax(sim, dim=-1)
+
+        content_spatial = self.content_to_spatial(content_latent.float())
+        if target_hw is not None and tuple(int(v) for v in target_hw) != tuple(int(v) for v in content_spatial.shape[-2:]):
+            content_spatial = F.interpolate(
+                content_spatial,
+                size=tuple(int(v) for v in target_hw),
+                mode="bilinear",
+                align_corners=False,
+            )
+        content_spatial = content_spatial.to(dtype=content_latent.dtype)
+        base_spatial, fiber_spatial = _split_base_fiber_map(
+            content_spatial,
+            mode=self.fiber_mode,
+            kernel=self.lowpass_kernel,
+        )
+
+        transforms = self.style_gauge_transforms(style_id).view(bsz, self.num_clusters, self.spatial_dim * 2)
+        gauge = torch.bmm(attn, transforms).transpose(1, 2).contiguous().view(
+            bsz,
+            self.spatial_dim * 2,
+            h_dim,
+            w_dim,
+        )
+        gamma_raw, beta_raw = gauge.chunk(2, dim=1)
+        gamma = torch.tanh(gamma_raw.float()) * self.gamma_scale
+        beta = beta_raw.float() * self.beta_scale
+        gamma = gamma.to(dtype=content_latent.dtype)
+        beta = beta.to(dtype=content_latent.dtype)
+        spatial_map = fiber_spatial * (1.0 + gamma) + beta
+
+        spatial_gap = spatial_map.mean(dim=(2, 3), keepdim=False)
+        global_gate = self.global_pool_to_gate(spatial_gap.to(dtype=content_latent.dtype))
+        raw_code = self.style_global_raw(style_id).to(device=content_latent.device, dtype=content_latent.dtype)
+        global_full = base_style_code + raw_code + self.global_gate_scale * global_gate
+
+        entropy = -(attn * attn.clamp_min(1e-8).log()).sum(dim=-1, keepdim=True)
+        max_entropy = max(math.log(float(self.num_clusters)), 1e-8)
+        gate = 1.0 - entropy / max_entropy
+        gate_map = _patch_to_map(gate.expand(-1, -1, self.spatial_dim), target_hw=target_hw or (h_dim, w_dim)).mean(dim=1, keepdim=True)
+        mask_map = _patch_to_map(attn.amax(dim=-1, keepdim=True), target_hw=target_hw or (h_dim, w_dim))
+        aux_map = _patch_to_map(attn, target_hw=target_hw or (h_dim, w_dim))
+        effective = torch.exp(entropy.detach().float().mean())
+        delta = torch.cat([gamma, beta], dim=1)
+        return self._finalize_output(StructuredStyleOutput(
+            global_code=global_full,
+            spatial_map=spatial_map,
+            gate_map=gate_map,
+            mask_map=mask_map,
+            aux_map=aux_map,
+            debug=self._common_debug(
+                attn=attn,
+                spatial_map=spatial_map,
+                gate_map=gate_map,
+                mask_map=mask_map,
+                extra={
+                    "family": "affine_connection_tokenizer",
+                    "source": "content_latent",
+                    "num_clusters": self.num_clusters,
+                    "spatial_dim": self.spatial_dim,
+                    "pe_temp": self.pe_temperature,
+                    "query_dim": self.query_dim,
+                    "query_num_blocks": self.query_num_blocks,
+                    "global_gate_scale": self.global_gate_scale,
+                    "fiber_mode_wavelet": float(self.fiber_mode == "wavelet"),
+                    "fiber_mode_avgpool": float(self.fiber_mode == "avgpool"),
+                    "lowpass_kernel": float(self.lowpass_kernel),
+                    "gamma_scale": float(self.gamma_scale),
+                    "beta_scale": float(self.beta_scale),
+                    "translation_delta_from_identity": float(delta.detach().float().abs().mean().cpu().item()),
+                    "translation_delta_offdiag_cosine": _offdiag_cosine_mean(delta.flatten(0, 1)),
+                    "routing_entropy": _scalar_mean(entropy),
+                    "effective_experts": float(effective.cpu().item()),
+                    "spatial_abs": float(spatial_map.detach().float().abs().mean().cpu().item()),
+                    "fiber_abs": float(fiber_spatial.detach().float().abs().mean().cpu().item()),
+                    "base_abs": float(base_spatial.detach().float().abs().mean().cpu().item()),
+                    "gamma_abs": float(gamma.detach().float().abs().mean().cpu().item()),
+                    "beta_abs": float(beta.detach().float().abs().mean().cpu().item()),
                     "global_gate_abs": float(global_gate.detach().float().abs().mean().cpu().item()),
                     "global_raw_abs": float(raw_code.detach().float().abs().mean().cpu().item()),
                     "global_full_abs": float(global_full.detach().float().abs().mean().cpu().item()),
@@ -552,7 +810,10 @@ class DinoDictionaryTokenizer(_BaseStructuredTokenizer):
                 spatial_map=spatial_map,
                 gate_map=gate_map,
                 mask_map=mask_map,
-                extra={"family": "tok_a_dino_dict"},
+                extra={
+                    "family": "tok_a_dino_dict",
+                    "style_value_offdiag_cosine": _offdiag_cosine_mean(values.flatten(0, 1)),
+                },
             ),
         ))
 
@@ -610,6 +871,7 @@ class CrossImageRoutingTokenizer(_BaseStructuredTokenizer):
                 extra={
                     "family": "tok_b_cross_image",
                     "bank_tokens": int(bank.shape[1]),
+                    "style_value_offdiag_cosine": _offdiag_cosine_mean(values.flatten(0, 1)),
                 },
             ),
         ))
@@ -723,6 +985,7 @@ class VLMPromptStyleTokenizer(_BaseStructuredTokenizer):
                     "family": "tok_d_vlm_prompt",
                     "prompt_length": self.prompt_length,
                     "global_prompt_abs": float(global_prompt.detach().float().abs().mean().cpu().item()),
+                    "style_value_offdiag_cosine": _offdiag_cosine_mean(values.flatten(0, 1)),
                 },
             ),
         ))

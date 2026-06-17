@@ -73,17 +73,25 @@ def _sanitize_task_name(raw: str) -> str:
     return clean[:120] or "remote_wsl_task"
 
 
-def _wsl_to_windows_path(path: str) -> str:
+def _wsl_to_windows_path(path: str, *, wsl_distro: str | None = None) -> str:
     normalized = path.replace("\\", "/")
     prefix = "/mnt/"
-    if not normalized.startswith(prefix) or len(normalized) < len(prefix) + 2:
-        raise ValueError(f"Cannot map non-/mnt path to Windows drive path: {path}")
-    drive = normalized[len(prefix)]
-    remainder = normalized[len(prefix) + 2 :].strip("/")
-    windows = f"{drive.upper()}:"
-    if remainder:
-        windows += "\\" + remainder.replace("/", "\\")
-    return windows
+    if normalized.startswith(prefix) and len(normalized) >= len(prefix) + 2:
+        drive = normalized[len(prefix)]
+        remainder = normalized[len(prefix) + 2 :].strip("/")
+        windows = f"{drive.upper()}:"
+        if remainder:
+            windows += "\\" + remainder.replace("/", "\\")
+        return windows
+    if normalized.startswith("/"):
+        if not wsl_distro:
+            raise ValueError(f"Cannot map non-/mnt path to Windows drive path without WSL distro: {path}")
+        remainder = normalized.strip("/").replace("/", "\\")
+        unc = f"\\\\wsl.localhost\\{wsl_distro}"
+        if remainder:
+            unc += "\\" + remainder
+        return unc
+    raise ValueError(f"Cannot map WSL path to Windows path: {path}")
 
 
 def _query_remote_gpu_memory_used_mib(*, host: str, port: int, user: str) -> int | None:
@@ -286,6 +294,7 @@ def _make_remote_windows_launcher(
     remote_launcher_abs: str,
     remote_wrapper_log: str,
 ) -> str:
+    _ = remote_wrapper_log
     return "\n".join(
         [
             "$ErrorActionPreference = 'Stop'",
@@ -293,7 +302,7 @@ def _make_remote_windows_launcher(
             f"$WslDistro = '{wsl_distro}'",
             f"$WslCwd = '{remote_wsl_cwd}'",
             f"$Launcher = '{remote_launcher_abs}'",
-            f"$WrapperLog = '{_wsl_to_windows_path(remote_wrapper_log)}'",
+            "$WrapperLog = Join-Path $env:TEMP ('codex-remote-wsl-' + $TaskName + '.launcher.log')",
             "New-Item -ItemType Directory -Force -Path (Split-Path -Parent $WrapperLog) | Out-Null",
             "Add-Content -LiteralPath $WrapperLog -Value (\"=== HOST START \" + (Get-Date -Format o) + \" ===\")",
             "$taskArgs = @('-d', $WslDistro, '--cd', $WslCwd, '--exec', 'bash', $Launcher)",
@@ -759,6 +768,7 @@ def main() -> int:
         if verify.returncode != 0:
             return verify.returncode
 
+    encoded_windows_launcher = base64.b64encode(windows_launcher.encode("utf-16le")).decode("ascii")
     launch_cmd = [
         "ssh",
         "-p",
@@ -767,7 +777,7 @@ def main() -> int:
         "-o",
         "LogLevel=ERROR",
         remote,
-        f"powershell -NoProfile -ExecutionPolicy Bypass -File \"{_wsl_to_windows_path(remote_windows_launcher_abs)}\"",
+        f"powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand {encoded_windows_launcher}",
     ]
     launch = _run(launch_cmd)
     sys.stdout.buffer.write(launch.stdout)

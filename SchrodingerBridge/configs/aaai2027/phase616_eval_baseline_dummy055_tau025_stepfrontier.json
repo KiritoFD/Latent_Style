@@ -1,0 +1,12 @@
+{
+  "_comment": "Eval-only baseline override for phase616 checkpoint frontier comparisons. Keeps style strength at the trained default and records only the headline metrics for faster 200/400/600 checkpoint sweeps.",
+  "model": {
+    "style_strength_max": 1.0
+  },
+  "full_eval": {
+    "style_strength": 1.0,
+    "only_lpips_clip_style": true,
+    "save_generated_images": false,
+    "save_summary_grid": false
+  }
+}

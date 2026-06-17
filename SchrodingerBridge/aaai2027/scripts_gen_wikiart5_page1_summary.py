@@ -67,6 +67,9 @@ TRACE_STYLES = {
     "i2sb_slerp_orthogonal_lowhigh_k070_e3": ("#EA580C", "h", 42, 0.78),
     "i2sb_orthogonal_lowanchor050_k070_e3": ("#F59E0B", "H", 48, 0.84),
     "i2sb_orthogonal_lowanchor065_k070_e3": ("#D97706", "p", 46, 0.84),
+    "style_covariant_probe_parent_low050e9": ("#6B7280", "o", 34, 0.56),
+    "style_covariant_probe_gaussian_low050e9": ("#7C3AED", "h", 40, 0.70),
+    "style_covariant_probe_stylecov_low050e9": ("#0F766E", "D", 40, 0.76),
 }
 
 LEGEND_MAP = {
@@ -83,6 +86,8 @@ LEGEND_MAP = {
     "i2sb_slerp_orthogonal_lowhigh_k070_e3": "I2SB slerp+orth",
     "i2sb_orthogonal_lowanchor050_k070_e3": "I2SB low-anchor",
     "i2sb_orthogonal_lowanchor065_k070_e3": "I2SB low-anchor .65",
+    "style_covariant_probe_gaussian_low050e9": "Low050 noise iso",
+    "style_covariant_probe_stylecov_low050e9": "Low050 noise cov",
 }
 
 LABEL_ALLOWLIST = {

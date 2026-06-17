@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import re
 import threading
@@ -23,6 +24,7 @@ from style_families import prune_state_dict_for_tokenizer_family
 from utils.training import (
     append_training_log,
     build_adamw,
+    GpuStatSampler,
     initialize_training_log,
     strip_compile_prefix,
     unwrap_compiled_model,
@@ -71,6 +73,35 @@ def _host_can_resolve_path(path: Path) -> bool:
     ):
         return False
     return True
+
+
+def _resolve_optional_host_path(raw_path: str, *, base_dirs: list[Path]) -> Optional[Path]:
+    text = str(raw_path or "").strip()
+    if not text:
+        return None
+    candidate = Path(text)
+    candidates: list[Path] = []
+    if candidate.is_absolute():
+        candidates.append(candidate)
+    else:
+        for base in base_dirs:
+            candidates.append(base / candidate)
+        candidates.append(Path.cwd() / candidate)
+    seen: set[str] = set()
+    for item in candidates:
+        try:
+            resolved = item.expanduser().resolve(strict=False)
+        except Exception:
+            resolved = item.expanduser()
+        key = str(resolved)
+        if key in seen:
+            continue
+        seen.add(key)
+        if not _host_can_resolve_path(resolved):
+            continue
+        if resolved.exists():
+            return resolved
+    return None
 
 
 def _move_tensor_tree(value, device: torch.device):
@@ -228,6 +259,7 @@ class SBTrainer:
         self.log_dir = self.checkpoint_dir / "logs"
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.numeric_debug_file = self.checkpoint_dir / "numeric_debug.jsonl"
+        self._maybe_load_transport_style_stats_bank()
 
         write_config_and_source_snapshot(
             checkpoint_dir=self.checkpoint_dir,
@@ -237,6 +269,11 @@ class SBTrainer:
 
         self.log_file = self.log_dir / f"training_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         initialize_training_log(self.log_file)
+        self.gpu_sampler = GpuStatSampler(
+            enabled=bool(train_cfg.get("gpu_monitor_enabled", True) and device.type == "cuda"),
+            interval_sec=float(train_cfg.get("gpu_monitor_interval_sec", 2.0)),
+            gpu_index=int(train_cfg.get("gpu_monitor_index", 0)),
+        )
 
         self.global_step = 0
         self.requested_stop = False
@@ -257,6 +294,7 @@ class SBTrainer:
         return str(getattr(self.config.model, "tokenizer_family", "legacy_factorized")).strip().lower() in {
             "pure_latent_spatial",
             "smoe_translator",
+            "affine_connection_tokenizer",
         }
 
     def _pure_latent_uses_structured_tokenizer(self) -> bool:
@@ -589,6 +627,13 @@ class SBTrainer:
                     stats[str(key)] = float(torch.nan_to_num(value.detach().float()).item())
                 elif isinstance(value, (int, float, bool)):
                     stats[str(key)] = float(value)
+        transport_stats_debug = getattr(self.model, "last_transport_stats_debug", {})
+        if isinstance(transport_stats_debug, dict):
+            for key, value in transport_stats_debug.items():
+                if torch.is_tensor(value):
+                    stats[str(key)] = float(torch.nan_to_num(value.detach().float()).item())
+                elif isinstance(value, (int, float, bool)):
+                    stats[str(key)] = float(value)
         fiberwise_debug = getattr(self.loss_fn, "last_fiberwise_swd_debug", {})
         if isinstance(fiberwise_debug, dict):
             for key, value in fiberwise_debug.items():
@@ -597,6 +642,29 @@ class SBTrainer:
                 elif isinstance(value, (int, float, bool)):
                     stats[f"fiberwise_{key}"] = float(value)
         return stats
+
+    def _maybe_load_transport_style_stats_bank(self) -> None:
+        loader = getattr(self.model, "load_transport_style_stats_bank", None)
+        if not callable(loader):
+            return
+        raw_path = str(getattr(self.config.model, "transport_stats_bank_path", "") or "").strip()
+        if not raw_path:
+            return
+        base_dirs = [Path(__file__).resolve().parents[1]]
+        if self.config_path:
+            base_dirs.insert(0, Path(self.config_path).resolve().parent)
+        resolved = _resolve_optional_host_path(raw_path, base_dirs=base_dirs)
+        if resolved is None:
+            required = bool(getattr(self.config.model, "transport_stats_bank_required", False))
+            message = (
+                f"transport stats bank not found/resolvable on this host: {raw_path}"
+            )
+            if required:
+                raise FileNotFoundError(message)
+            logger.warning("%s; continuing without bank.", message)
+            return
+        payload = loader(resolved)
+        logger.info("Loaded transport stats bank from %s: %s", resolved, payload)
 
     def _write_numeric_debug(
         self,
@@ -764,8 +832,11 @@ class SBTrainer:
         model_state, removed_contract_keys = prune_state_dict_for_tokenizer_family(
             model_state,
             tokenizer_family=str(getattr(self.config.model, "tokenizer_family", "legacy_factorized")),
+            contract_family=str(getattr(self.config.model, "contract_family", "legacy")),
             style_injection_mode=str(getattr(self.config.model, "style_injection_mode", "none")),
             proximal_mode=str(getattr(self.config.model, "proximal_mode", "off")),
+            style_delta_mode=str(getattr(self.config.model, "style_delta_mode", "none")),
+            output_appearance_alignment_mode=str(getattr(self.config.model, "output_appearance_alignment_mode", "none")),
         )
         if removed_contract_keys:
             logger.info(
@@ -975,8 +1046,11 @@ class SBTrainer:
         teacher_state, removed_contract_keys = prune_state_dict_for_tokenizer_family(
             teacher_state,
             tokenizer_family=str(getattr(self.config.model, "tokenizer_family", "legacy_factorized")),
+            contract_family=str(getattr(self.config.model, "contract_family", "legacy")),
             style_injection_mode=str(getattr(self.config.model, "style_injection_mode", "none")),
             proximal_mode=str(getattr(self.config.model, "proximal_mode", "off")),
+            style_delta_mode=str(getattr(self.config.model, "style_delta_mode", "none")),
+            output_appearance_alignment_mode=str(getattr(self.config.model, "output_appearance_alignment_mode", "none")),
         )
         if removed_contract_keys:
             logger.info(
@@ -1067,6 +1141,7 @@ class SBTrainer:
         self.model.train()
         if self.device.type == "cuda":
             torch.cuda.reset_peak_memory_stats(self.device)
+        self.gpu_sampler.start()
         epoch_start = time.time()
         metric_accum: Dict[str, torch.Tensor] = {}
         num_batches = 0
@@ -1279,6 +1354,9 @@ class SBTrainer:
         batch_size = int(getattr(dataloader, "batch_size", 0) or 0)
         samples_seen = int(num_batches * batch_size)
         samples_per_sec = float(samples_seen / max(epoch_time, 1e-6)) if samples_seen > 0 else 0.0
+        optimizer_steps = int(math.ceil(num_batches / self.accumulation_steps)) if num_batches > 0 else 0
+        self.gpu_sampler.stop()
+        gpu_summary = self.gpu_sampler.summary()
 
         metrics: Dict[str, float] = {}
         denom = max(num_batches, 1)
@@ -1298,6 +1376,7 @@ class SBTrainer:
         metrics.setdefault("content_edge_anchor", 0.0)
         metrics.setdefault("aux_target_ratio", 0.0)
         metrics.setdefault("plan_entropy", 0.0)
+        metrics.setdefault("ot_plan_entropy", 0.0)
         metrics.setdefault("semantic_attn_mean", 0.0)
         metrics.setdefault("semantic_k_abs", 0.0)
         metrics.setdefault("bridge_sigma", 0.0)
@@ -1310,10 +1389,14 @@ class SBTrainer:
         metrics.setdefault("structured_style_tokenizer_gate_mean", 0.0)
         metrics.setdefault("structured_style_tokenizer_mask_mean", 0.0)
         metrics.setdefault("structured_style_tokenizer_spatial_map_abs", 0.0)
+        metrics.setdefault("structured_style_tokenizer_spatial_svd_entropy", 0.0)
+        metrics.setdefault("structured_style_tokenizer_spatial_top1_singular_ratio", 0.0)
         metrics.setdefault("structured_style_tokenizer_global_gate_abs", 0.0)
+        metrics.setdefault("structured_style_tokenizer_style_value_offdiag_cosine", 0.0)
         metrics.setdefault("identity_ratio", 0.0)
         metrics.setdefault("t_mean", 0.0)
         metrics.setdefault("velocity_abs", 0.0)
+        metrics.setdefault("target_velocity_abs", 0.0)
         metrics.setdefault("endpoint_abs", 0.0)
         metrics.setdefault("velocity_max", 0.0)
         metrics.setdefault("endpoint_max", 0.0)
@@ -1330,8 +1413,59 @@ class SBTrainer:
         metrics.setdefault("teacher_alignment", 0.0)
         metrics.setdefault("teacher_abs", 0.0)
         metrics.setdefault("barycentric_entropy", 0.0)
+        metrics.setdefault("ot_barycentric_entropy", 0.0)
         metrics.setdefault("kinetic_low_band", 0.0)
         metrics.setdefault("kinetic_high_band", 0.0)
+        metrics.setdefault("ot_target_gini", 0.0)
+        metrics.setdefault("ot_target_mass_entropy", 0.0)
+        metrics.setdefault("ot_target_max_mass", 0.0)
+        metrics.setdefault("ot_cost_mean", 0.0)
+        metrics.setdefault("ot_cost_var", 0.0)
+        metrics.setdefault("ot_appearance_cost_mean", 0.0)
+        metrics.setdefault("ot_appearance_cost_var", 0.0)
+        metrics.setdefault("ot_structure_cost_mean", 0.0)
+        metrics.setdefault("ot_structure_cost_var", 0.0)
+        metrics.setdefault("ot_structure_cost_active", 0.0)
+        metrics.setdefault("ot_cost_composition_appearance_only", 0.0)
+        metrics.setdefault("ot_cost_composition_appearance_plus_structure", 0.0)
+        metrics.setdefault("ot_cost_composition_structure_only", 0.0)
+        metrics.setdefault("ot_raw_total_mass", 0.0)
+        metrics.setdefault("ot_source_mass_mean", 0.0)
+        metrics.setdefault("ot_source_mass_min", 0.0)
+        metrics.setdefault("ot_source_mass_max", 0.0)
+        metrics.setdefault("ot_source_mass_entropy", 0.0)
+        metrics.setdefault("ot_source_marginal_l1", 0.0)
+        metrics.setdefault("ot_source_truncation", 0.0)
+        metrics.setdefault("ot_target_marginal_l1", 0.0)
+        metrics.setdefault("ot_target_truncation", 0.0)
+        metrics.setdefault("ot_real_target_mass", 0.0)
+        metrics.setdefault("ot_dummy_mass", 0.0)
+        metrics.setdefault("ot_dummy_active", 0.0)
+        metrics.setdefault("base_structural_drift", 0.0)
+        metrics.setdefault("fiber_energy_ratio", 0.0)
+        metrics.setdefault("low_freq_leak", 0.0)
+        metrics.setdefault("target_base_shift", 0.0)
+        metrics.setdefault("training_target_projection_active", 0.0)
+        metrics.setdefault("training_target_projection_mode_source_low_target_high", 0.0)
+        metrics.setdefault("training_target_projection_mode_wavelet_source_low_target_high", 0.0)
+        metrics.setdefault("training_target_projection_mode_pure_vertical_flow", 0.0)
+        metrics.setdefault("training_target_projection_mode_pure_vertical_flow_wavelet", 0.0)
+        metrics.setdefault("training_target_projection_low_anchor", 0.0)
+        metrics.setdefault("training_target_projection_low_drift", 0.0)
+        metrics.setdefault("training_target_projection_target_delta", 0.0)
+        metrics.setdefault("training_target_projection_high_energy_ratio", 0.0)
+        metrics.setdefault("training_bridge_noise_projection_active", 0.0)
+        metrics.setdefault("training_bridge_noise_projection_mode_source_low_target_high", 0.0)
+        metrics.setdefault("training_bridge_noise_projection_mode_wavelet_source_low_target_high", 0.0)
+        metrics.setdefault("training_bridge_noise_projection_mode_pure_vertical_flow", 0.0)
+        metrics.setdefault("training_bridge_noise_projection_mode_pure_vertical_flow_wavelet", 0.0)
+        metrics.setdefault("training_bridge_noise_projection_kernel", 0.0)
+        metrics.setdefault("training_bridge_noise_projection_preserve_rms", 0.0)
+        metrics.setdefault("training_bridge_noise_projection_pre_rms", 0.0)
+        metrics.setdefault("training_bridge_noise_projection_post_rms", 0.0)
+        metrics.setdefault("training_bridge_noise_projection_low_rms", 0.0)
+        metrics.setdefault("training_bridge_noise_projection_high_rms", 0.0)
+        metrics.setdefault("structured_style_tokenizer_translation_delta_offdiag_cosine", 0.0)
         metrics["lr"] = float(self.optimizer.param_groups[0]["lr"])
         metrics["data_time_sec"] = data_time_total
         metrics["forward_time_sec"] = forward_time_total
@@ -1339,6 +1473,14 @@ class SBTrainer:
         metrics["optimizer_time_sec"] = optimizer_time_total
         metrics["compute_time_sec"] = compute_time_total
         metrics["epoch_time_sec"] = epoch_time
+        metrics["optimizer_steps"] = float(optimizer_steps)
+        metrics["effective_batch_size"] = float(max(1, batch_size * self.accumulation_steps))
+        metrics["avg_batch_time_sec"] = float(epoch_time / max(num_batches, 1))
+        metrics["avg_optimizer_step_time_sec"] = float(epoch_time / max(optimizer_steps, 1))
+        metrics["avg_data_time_sec"] = float(data_time_total / max(num_batches, 1))
+        metrics["avg_forward_time_sec"] = float(forward_time_total / max(num_batches, 1))
+        metrics["avg_backward_time_sec"] = float(backward_time_total / max(num_batches, 1))
+        metrics["avg_compute_time_sec"] = float(compute_time_total / max(num_batches, 1))
         metrics["samples_seen"] = float(samples_seen)
         metrics["samples_per_sec"] = samples_per_sec
         if self.device.type == "cuda":
@@ -1347,6 +1489,7 @@ class SBTrainer:
         else:
             metrics["cuda_peak_allocated_gb"] = 0.0
             metrics["cuda_peak_reserved_gb"] = 0.0
+        metrics.update(gpu_summary)
         return metrics
 
     def log_epoch(self, epoch: int, metrics: Dict[str, float]) -> None:

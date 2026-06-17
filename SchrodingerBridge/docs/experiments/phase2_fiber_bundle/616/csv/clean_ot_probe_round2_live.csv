@@ -1,0 +1,3 @@
+family,role,train_epoch_wall_sec,train_avg_step_sec,train_ot_cost,train_ot_target_gini,train_ot_target_max_mass,train_fiber_energy_ratio,train_low_freq_leak,eval_clip_style,eval_lpips,eval_generated_rank,eval_generated_offdiag_cos,decision
+self_affinity_gw,control,89.0,1.509,2.7054,0.0590,0.353,0.431,3.5362,0.6698352311,0.7772568288,1.0202224525,0.9866850865,retained_control
+lowedge_self_affinity_gw,candidate,89.7,1.521,2.6123,0.0580,0.354,0.447,3.4851,0.6561250919,0.8089253829,1.0148005255,0.9902185341,negative_for_promotion

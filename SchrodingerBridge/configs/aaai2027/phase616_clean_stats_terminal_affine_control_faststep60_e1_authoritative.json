@@ -1,0 +1,12 @@
+{
+  "_base": "./phase616_clean_stats_probe_terminal_affine_faststep60_e1.json",
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_stats_terminal_affine_control_faststep60_e1_authoritative"
+  },
+  "ablation": {
+    "name": "phase616_clean_stats_terminal_affine_control_faststep60_e1_authoritative",
+    "axis": "phase616_bridge_noise_plus_stats",
+    "stage": "terminal_affine_only_authoritative_control",
+    "notes": "Authoritative matched control for the first 616 bridge-noise plus stats integration probe. Keeps the retained terminal_affine stats-track active and leaves bridge-noise projection off so the candidate can isolate whether vertical bridge-noise cleanup can improve the same style-lift line."
+  }
+}

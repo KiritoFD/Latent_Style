@@ -307,7 +307,7 @@ class LatentAdaCUTRuntimeMixin:
         family = str(getattr(self, "tokenizer_family", "legacy_factorized"))
         if tokenizer is None or family == "legacy_factorized" or style_id is None:
             return None
-        if family in {"pure_latent_spatial", "smoe_translator"}:
+        if family in {"pure_latent_spatial", "smoe_translator", "affine_connection_tokenizer"}:
             structured = tokenizer(
                 style_id=self._normalize_style_id_input(style_id, device=style_code.device),
                 base_style_code=style_code,
@@ -432,7 +432,7 @@ class LatentAdaCUTRuntimeMixin:
         style_code: torch.Tensor,
         content_feat_16: torch.Tensor,
     ) -> torch.Tensor:
-        if str(getattr(self, "tokenizer_family", "legacy_factorized")) in {"pure_latent_spatial", "smoe_translator"}:
+        if str(getattr(self, "tokenizer_family", "legacy_factorized")) in {"pure_latent_spatial", "smoe_translator", "affine_connection_tokenizer"}:
             return style_code
         router = getattr(self, "style_code_content_router", None)
         if router is None or style_id is None:
@@ -614,7 +614,7 @@ class LatentAdaCUTRuntimeMixin:
     def encode_style_id(self, style_id: torch.Tensor | int | None, t: torch.Tensor | None = None) -> torch.Tensor:
         if style_id is None:
             raise ValueError("style_id is required.")
-        if str(getattr(self, "tokenizer_family", "legacy_factorized")) in {"pure_latent_spatial", "smoe_translator"}:
+        if str(getattr(self, "tokenizer_family", "legacy_factorized")) in {"pure_latent_spatial", "smoe_translator", "affine_connection_tokenizer"}:
             if t is not None and torch.is_tensor(t):
                 batch = int(t.view(-1).shape[0])
                 device = t.device
@@ -748,7 +748,11 @@ class LatentAdaCUTRuntimeMixin:
             )
         else:
             self.last_output_style_context = None
-        latent_spatial_family = str(getattr(self, "tokenizer_family", "legacy_factorized")) in {"pure_latent_spatial", "smoe_translator"}
+        latent_spatial_family = str(getattr(self, "tokenizer_family", "legacy_factorized")) in {
+            "pure_latent_spatial",
+            "smoe_translator",
+            "affine_connection_tokenizer",
+        }
 
         if override_palette is not None:
             style_map_proj = override_palette

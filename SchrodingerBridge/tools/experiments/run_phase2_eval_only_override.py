@@ -12,7 +12,7 @@ WORKSPACE = SB_ROOT.parent
 
 
 def _run(cmd: list[str]) -> int:
-    print("[run_phase2_eval_only_override] " + " ".join(str(x) for x in cmd), flush=True)
+    print("[run_phase2_eval_only_override] " + " ".join(str(x) for x in cmd), file=sys.stderr, flush=True)
     proc = subprocess.run(cmd, cwd=str(WORKSPACE), check=False)
     return int(proc.returncode)
 

@@ -1,0 +1,17 @@
+{
+  "_base": "./phase616_clean_vertical_target_selfaffgw_faststep60_e1.json",
+  "bridge": {
+    "training_bridge_noise_projection_mode": "none",
+    "training_bridge_noise_projection_kernel": 5,
+    "training_bridge_noise_projection_preserve_rms": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_bridge_noise_probe_control_faststep60_e1"
+  },
+  "ablation": {
+    "name": "phase616_clean_bridge_noise_probe_control_faststep60_e1",
+    "axis": "phase616_bridge_noise_probe_fast",
+    "stage": "clean_bridge_noise_projection_control",
+    "notes": "Matched 616 control for training bridge-noise projection. Keep self_affinity_gw OT and avgpool pure_vertical_flow target geometry fixed, but leave training bridge noise isotropic so the candidate can isolate whether low-frequency noise leakage was still contaminating the bridge."
+  }
+}

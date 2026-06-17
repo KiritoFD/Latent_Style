@@ -1,0 +1,12 @@
+{
+  "_base": "./phase616_clean_stats_probe_terminal_affine_faststep60_e1.json",
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_stats_probe_terminal_affine_faststep60_e1_authoritative"
+  },
+  "ablation": {
+    "name": "phase616_clean_stats_probe_terminal_affine_faststep60_e1_authoritative",
+    "axis": "phase616_stats_probe_fast_authoritative",
+    "stage": "clean_stats_terminal_affine_authoritative",
+    "notes": "Authoritative rerun for the strongest 616 stats-track candidate after the transport_stats CSV writer bug was fixed. Keep OT and pure_vertical_flow fixed, and rerun only terminal_affine against the matched control because the earlier non-authoritative round already showed the normalized_solver lane is not the leading promotion candidate."
+  }
+}

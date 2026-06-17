@@ -1,0 +1,73 @@
+{
+  "_base": "./phase616_cleanbase_i2sb_k085_b8a2_e24.json",
+  "model": {
+    "tokenizer_family": "affine_connection_tokenizer",
+    "tokenizer_num_clusters": 32,
+    "tokenizer_query_dim": 64,
+    "tokenizer_query_num_blocks": 4,
+    "tokenizer_structured_temperature": 0.10,
+    "tokenizer_pe_temperature": 1.0,
+    "tokenizer_global_gate_scale": 1.0,
+    "affine_connection_gamma_scale": 0.5,
+    "affine_connection_beta_scale": 1.0,
+    "affine_connection_fiber_mode": "wavelet",
+    "affine_connection_lowpass_kernel": 5
+  },
+  "bridge": {
+    "coupling_solver": "sinkhorn_unbalanced",
+    "coupling_cost_composition": "appearance_plus_structure",
+    "coupling_structure_cost_mode": "tokenizer_entropy_affinity_gw",
+    "coupling_structure_cost_weight": 0.5,
+    "coupling_target_mode": "barycentric_topk",
+    "coupling_barycentric_topk": 4,
+    "sinkhorn_epsilon": 0.05,
+    "sinkhorn_iters": 60,
+    "sinkhorn_unbalanced_tau_src": 0.35,
+    "sinkhorn_unbalanced_tau_tgt": 0.35,
+    "sinkhorn_unbalanced_dummy_cost": 0.35,
+    "sinkhorn_unbalanced_dummy_offdiag_cost": 8.0,
+    "bridge_path_mode": "vertical",
+    "bridge_vertical_base_stride": 2,
+    "training_target_projection_mode": "pure_vertical_flow_wavelet",
+    "training_target_projection_kernel": 5,
+    "training_target_projection_low_anchor": 1.0,
+    "training_target_projection_low_mode": "all",
+    "training_bridge_noise_projection_mode": "pure_vertical_flow_wavelet",
+    "training_bridge_noise_projection_kernel": 5,
+    "training_bridge_noise_projection_preserve_rms": true
+  },
+  "training": {
+    "batch_size": 16,
+    "accumulation_steps": 1,
+    "num_epochs": 1,
+    "stop_after_global_steps": 60,
+    "save_step_milestones": [60],
+    "save_interval": 1,
+    "log_interval": 10,
+    "full_eval_each_epoch": false,
+    "full_eval_transfer_only": true,
+    "full_eval_in_process": true,
+    "full_eval_profile_timing": true,
+    "full_eval_delta_observability": true,
+    "full_eval_runtime_model_cache": true,
+    "full_eval_source_latent_cache": true,
+    "numeric_debug": true,
+    "numeric_debug_interval": 30,
+    "gpu_monitor_enabled": true,
+    "gpu_monitor_interval_sec": 2.0
+  },
+  "data": {
+    "virtual_length_multiplier": 0.10,
+    "latent_cache_mode": "manifest",
+    "latent_cache_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/cache/phase616_wikiarts5_manifest"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_unbalanced_dummy_vertical_affine_faststep60_e1"
+  },
+  "ablation": {
+    "name": "phase616_clean_unbalanced_dummy_vertical_affine_faststep60_e1",
+    "axis": "phase616_dummy_unbalanced_vertical_affine",
+    "stage": "smoke",
+    "notes": "Canonical short probe for the 616 rebuild: phase616 clean contract, affine connection tokenizer, tokenizer-entropy structure OT, source-local dummy endpoints for partial/unmatched OT, vertical bridge path, wavelet pure-vertical target/noise projection, and no eval-side postprocess. The local smoke variant keeps latent-cache writes inside the workspace via a manifest-only cache so path/I-O issues do not dominate the 60-step diagnostic run before longer runs toward CLIP-S 0.74 / LPIPS 0.30."
+  }
+}

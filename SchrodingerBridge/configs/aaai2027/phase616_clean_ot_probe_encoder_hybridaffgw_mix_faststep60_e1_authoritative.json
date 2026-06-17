@@ -1,0 +1,11 @@
+{
+  "_base": "./phase616_clean_ot_probe_encoder_hybridaffgw_mix_faststep60_e1.json",
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_ot_probe_encoder_hybridaffgw_mix_faststep60_e1_authoritative"
+  },
+  "ablation": {
+    "name": "phase616_clean_ot_probe_encoder_hybridaffgw_mix_faststep60_e1_authoritative",
+    "stage": "clean_ot_encoder_hybrid_affinity_gw_fast_candidate_authoritative",
+    "notes": "Authoritative rerun root for the first positive internal-feature OT candidate. Keeps the hybrid encoder-feature descriptor fixed, but reruns against a fresh isolated control root before any promotion decision."
+  }
+}

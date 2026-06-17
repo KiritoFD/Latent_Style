@@ -1,0 +1,43 @@
+{
+  "_base": "./phase616_clean_unbalanced_dummy_vertical_affine_dummy055_tau025_faststep60_e1_remote.json",
+  "model": {
+    "transport_stats_mode": "terminal_affine",
+    "transport_stats_bank_path": "/mnt/i/wikiarts_5_full_notest_latents_ema/train/.latent_cache/style_stats_bank.pt",
+    "transport_stats_bank_required": true
+  },
+  "training": {
+    "batch_size": 16,
+    "accumulation_steps": 1,
+    "num_epochs": 1,
+    "stop_after_global_steps": 400,
+    "save_step_milestones": [200, 400],
+    "save_interval": 1,
+    "log_interval": 10,
+    "full_eval_each_epoch": true,
+    "full_eval_output_subdir": "full_eval_transfer_step400",
+    "full_eval_transfer_only": true,
+    "full_eval_in_process": true,
+    "full_eval_profile_timing": true,
+    "full_eval_delta_observability": true,
+    "full_eval_runtime_model_cache": true,
+    "full_eval_source_latent_cache": true,
+    "numeric_debug": true,
+    "numeric_debug_interval": 50,
+    "gpu_monitor_enabled": true,
+    "gpu_monitor_interval_sec": 2.0
+  },
+  "data": {
+    "virtual_length_multiplier": 1.0,
+    "latent_cache_mode": "packed",
+    "latent_cache_dir": "/mnt/i/wikiarts_5_full_notest_latents_ema/train/.latent_cache"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_unbalanced_dummy_vertical_affine_terminalaffine_dummy055_tau025_step400_eval_remote"
+  },
+  "ablation": {
+    "name": "phase616_clean_unbalanced_dummy_vertical_affine_terminalaffine_dummy055_tau025_step400_eval_remote",
+    "axis": "phase616_ot_rebuild_terminalaffine_step400_eval",
+    "stage": "affine_vertical_terminalaffine_dummy055_tau025_step400_eval",
+    "notes": "Promote the retained terminal_affine stats-track onto the strongest current phase616 dummy+vertical 400-step lane. Keep tokenizer-entropy mixed OT, source-local dummy unmatched transport, affine connection tokenizer, and wavelet pure-vertical target/noise projection fixed; change only the terminal photometry/stats remap."
+  }
+}

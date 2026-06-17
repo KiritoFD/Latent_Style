@@ -1,0 +1,11 @@
+{
+  "_base": "./phase616_clean_bridge_noise_probe_control_faststep60_e1.json",
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_bridge_noise_probe_control_faststep60_e1_authoritative"
+  },
+  "ablation": {
+    "name": "phase616_clean_bridge_noise_probe_control_faststep60_e1_authoritative",
+    "stage": "clean_bridge_noise_projection_control_authoritative",
+    "notes": "Authoritative rerun root for the 616 bridge-noise control. Keeps OT and pure_vertical_flow fixed but isolates the run outputs in a fresh save root so the bridge-noise closure does not depend on reused control artifacts."
+  }
+}

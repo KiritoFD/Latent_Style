@@ -1,0 +1,41 @@
+{
+  "_base": "./phase616_clean_unbalanced_dummy_vertical_affine_dummy055_tau025_faststep60_e1_remote.json",
+  "bridge": {
+    "coupling_structure_cost_mode": "encoder_hybrid_affinity_gw"
+  },
+  "training": {
+    "batch_size": 16,
+    "accumulation_steps": 1,
+    "num_epochs": 1,
+    "stop_after_global_steps": 400,
+    "save_step_milestones": [200, 400],
+    "save_interval": 1,
+    "log_interval": 10,
+    "full_eval_each_epoch": true,
+    "full_eval_output_subdir": "full_eval_transfer_step400",
+    "full_eval_transfer_only": true,
+    "full_eval_in_process": true,
+    "full_eval_profile_timing": true,
+    "full_eval_delta_observability": true,
+    "full_eval_runtime_model_cache": true,
+    "full_eval_source_latent_cache": true,
+    "numeric_debug": true,
+    "numeric_debug_interval": 50,
+    "gpu_monitor_enabled": true,
+    "gpu_monitor_interval_sec": 2.0
+  },
+  "data": {
+    "virtual_length_multiplier": 1.0,
+    "latent_cache_mode": "packed",
+    "latent_cache_dir": "/mnt/i/wikiarts_5_full_notest_latents_ema/train/.latent_cache"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_unbalanced_dummy_vertical_affine_encoderhybrid_dummy055_tau025_step400_eval_remote"
+  },
+  "ablation": {
+    "name": "phase616_clean_unbalanced_dummy_vertical_affine_encoderhybrid_dummy055_tau025_step400_eval_remote",
+    "axis": "phase616_ot_rebuild_encoderhybrid_step400_eval",
+    "stage": "affine_vertical_encoderhybrid_dummy055_tau025_step400_eval",
+    "notes": "Training-side pivot after the token-entropy dummy lane showed a flat style ceiling and near-zero OT structure-cost variance late in training. Keep the affine tokenizer, dummy-allowed unbalanced OT, and wavelet pure-vertical target/noise projection fixed, but switch the structure surface to encoder_hybrid_affinity_gw and stop at the empirically stronger 400-step regime for a full transfer evaluation."
+  }
+}

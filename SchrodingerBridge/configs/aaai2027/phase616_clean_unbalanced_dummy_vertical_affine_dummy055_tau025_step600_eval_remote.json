@@ -1,0 +1,38 @@
+{
+  "_base": "./phase616_clean_unbalanced_dummy_vertical_affine_dummy055_tau025_faststep60_e1_remote.json",
+  "training": {
+    "batch_size": 16,
+    "accumulation_steps": 1,
+    "num_epochs": 1,
+    "stop_after_global_steps": 600,
+    "save_step_milestones": [200, 400, 600],
+    "save_interval": 1,
+    "log_interval": 10,
+    "full_eval_each_epoch": true,
+    "full_eval_output_subdir": "full_eval_transfer_step600",
+    "full_eval_transfer_only": true,
+    "full_eval_in_process": true,
+    "full_eval_profile_timing": true,
+    "full_eval_delta_observability": true,
+    "full_eval_runtime_model_cache": true,
+    "full_eval_source_latent_cache": true,
+    "numeric_debug": true,
+    "numeric_debug_interval": 50,
+    "gpu_monitor_enabled": true,
+    "gpu_monitor_interval_sec": 2.0
+  },
+  "data": {
+    "virtual_length_multiplier": 1.0,
+    "latent_cache_mode": "packed",
+    "latent_cache_dir": "/mnt/i/wikiarts_5_full_notest_latents_ema/train/.latent_cache"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_unbalanced_dummy_vertical_affine_dummy055_tau025_step600_eval_remote"
+  },
+  "ablation": {
+    "name": "phase616_clean_unbalanced_dummy_vertical_affine_dummy055_tau025_step600_eval_remote",
+    "axis": "phase616_ot_rebuild_convergent_eval",
+    "stage": "affine_vertical_dummy055_tau025_step600_eval",
+    "notes": "Longer convergent remote run for the rebuilt 616 lane. Keep affine tokenizer, tokenizer-entropy structure OT, wavelet vertical bridge/target projection, and tightened partial OT, but train for 600 global steps on the full latent stream before a single final full transfer evaluation."
+  }
+}
