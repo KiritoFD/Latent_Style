@@ -2,7 +2,17 @@
 
 > 目标机: RTX 4070 Laptop (8GB VRAM)
 > 测试集: WikiArt distinct5, 5×5×30 = 750 images
-> 指标: CLIP-S, LPIPS (与我们的 eval pipeline 一致)
+
+## 论文索引
+
+| 方法 | arXiv | 会议 | 代码 |
+|------|-------|------|:---:|
+| StyleGallery | [2603.10354](https://arxiv.org/abs/2603.10354) | CVPR 2026 | ⬜ |
+| HAM | [2603.24043](https://arxiv.org/abs/2603.24043) | CVPR 2026 Findings | ⬜ |
+| CSGO | [2408.16766](https://arxiv.org/abs/2408.16766) | NeurIPS 2025 | ⬜ |
+| SCSA | [2503.04119](https://arxiv.org/abs/2503.04119) | CVPR 2025 Highlight | ⬜ |
+| StyleShot | [2407.01414](https://arxiv.org/abs/2407.01414) | ICLR 2025 | ⬜ |
+| SaMST | — | arXiv 2025 | ✅ 已有 |
 
 ---
 

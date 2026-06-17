@@ -1,146 +1,72 @@
-# 618 外部方法设计启发
+# 618 外部方法深度分析 — 风格迁移问题本质
 
-> 阅读这些论文/代码的目标: 找到能反哺我们模型设计的思想, 不是单纯复现.
-
----
-
-## 一、StyleGallery (CVPR 2026) — 语义区域分割 + 聚类匹配
-
-### 核心机制
-
-1. **语义区域分割**: 用 DINO/SAM 将内容图和风格图分割成语义区域 (天空/建筑/水面...)
-2. **聚类区域匹配**: 对每个语义区域, 在目标风格的对应区域中找最匹配的 patch
-3. **区域级风格注入**: 只在匹配的区域注入风格, 跨语义区域的风格不混合
-
-### 对我们的启发
-
-**我们已经在做类似的事情**: Tokenizer 的 $K$ 个 cluster → 空间路由 → 每个 cluster 对应一种"语义-风格"配对。
-TopoGate 进一步保证信息只在内容 self-attention 通路中流动。
-
-**StyleGallery 比我们多做的**: 
-- 使用外部的 DINO/SAM 做语义分割 (我们有 TopoGate 的内生 attention, 不需要外部模型)
-- 显式的区域匹配 (我们有 OT 隐式匹配)
-
-**可以借鉴的**:
-- **区域级 SWD**: 把我们的 fiber-wise SWD 从 "per cluster" 改为 "per spatial region"。
-  用 TopoGate 的 attention map 做 soft mask, 按区域分别算 SWD.
-  这和我们的 fiber-wise SWD 本质上一样, 只是 mask 的来源不同.
+> 阅读 5 篇核心论文后的反思: 风格迁移的难题是什么, 各方法分别解决了其中哪一块
 
 ---
 
-## 二、HAM — Heterogeneous Attention Modulation (CVPR 2026)
+## 风格迁移的三层难题
 
-### 核心机制
+读完这些论文后, 我识别出风格迁移的三个层次:
 
-在扩散模型的不同层 (cross-attn, self-attn) 用不同的策略注入风格:
-- Cross-attention 层: 替换 K, V 为风格图像的 K, V
-- Self-attention 层: 共享内容图的 Q, K, 用风格 V
+### Layer 1: 风格表征 — "什么是风格?"
 
-### 对我们的启发
+**问题**: 如何从一张或多张参考图中提取"风格"这个概念? 它是全局的 (色调) 还是局部的 (笔触)?
 
-**我们已经在做类似的事情**: TopoGate 的 $A_{\text{final}} = \alpha A_{\text{self-content}} + (1-\alpha) A_{\text{cross}}$ 就是一个 attention 调制策略.
+| 方法 | 风格表征方式 | 优劣 |
+|------|------------|------|
+| StyleShot | Style-Aware Encoder: 从参考图提取全局 style code, 解耦训练 | ✅ 好的风格编码器设计 |
+| CSGO | 独立的内容编码器和风格编码器, CLIP-based | ✅ 内容/风格解耦清晰 |
+| **我们** | Tokenizer 的 style_values embedding lookup | ❌ 纯查表, 无参考图编码 |
+| StyleGallery | 不需要显式编码, 直接用参考图的 diffusion feature | ✅ 但依赖预训练扩散模型 |
 
-**HAM 比我们多做的**:
-- 对不同层 (不同分辨率) 使用不同的调制策略
-- 对 cross-attn 和 self-attn 用不同的注入方式
+**关键洞察**: 好的风格表征应该**从风格参考图中提取**, 而不是用 style_id 查表。
+这是 StyleShot 和 CSGO 比我们做得好的地方。
 
-**可以借鉴的**:
-- **多尺度 TopoGate**: 当前 TopoGate 在所有层用同一个 blend。
-  HAM 的启示: 不同层用不同的 blend。低层 (high-res, 细节) 用较小的 blend (更依赖内容 self-attn);
-  高层 (low-res, 全局) 用较大的 blend (更多风格注入).
-  这和我们在 616 讨论的"多尺度 TopoGate"一致.
+### Layer 2: 结构保持 — "怎么不改内容?"
 
----
+**问题**: 风格化了但结构不能变——猫还是猫, 建筑还是建筑。
 
-## 三、SCSA — Semantic Continuous-Sparse Attention (CVPR 2025 Highlight)
+| 方法 | 结构保持机制 | 优劣 |
+|------|------------|------|
+| **我们的 TopoGate** | Self-attention blending: $A_{\text{final}} = \alpha A_{\text{self}} + (1-\alpha) A_{\text{cross}}$ | ✅ 内生, 无需外部先验 |
+| HAM | Global Attention Regulation + Local Attention Transplantation | ✅ but 依赖扩散模型 attention |
+| SCSA | Semantic continuous-sparse attention | ✅ 语义区域感知 |
+| StyleGallery | 区域分割 + 聚类匹配 | ⚠️ 依赖 DINO 分割 |
+| CSGO | 独立的内容编码保持 | ✅ 解耦设计 |
 
-### 核心机制
+**关键洞察**: 所有方法都在做同一件事——**限制风格信息只能沿着内容结构的"通道"流动**。
+TopoGate 做的是 attention blending; HAM 做的是 attention regulation; SCSA 做的是 attention sparsification。
+这是风格迁移中**最核心的数学问题**: 如何在特征空间中找到"内容方向"和"风格方向"的分解。
 
-解决语义风格迁移中"区域风格不一致"的问题:
-- 引入 continuous-sparse attention: 每个 query 只关注语义相似的 key
-- 使用语义 mask 来稀疏化 attention
+### Layer 3: 风格注入 — "怎么把风格贴上去?"
 
-### 对我们的启发
+**问题**: 有了风格表征, 也保住了结构, 怎么把风格真正注入到内容图上?
 
-**我们已经在做类似的事情**: TopoGate 的 self-attention blending 天然限制了跨语义区域的信息混合.
+| 方法 | 注入方式 | 优劣 |
+|------|---------|------|
+| CSGO | 独立的 style feature injection (cross-attention) | ✅ 经典扩散注入 |
+| HAM | Cross-attention K,V 替换 + Self-attention V 替换 | ✅ 多层注入 |
+| StyleGallery | 能量函数引导的扩散采样, 区域级 style loss | ⚠️ 需扩散模型 |
+| **我们** | Tokenizer spatial_map → UNet body modulation | ✅ 内生, 但风格力度不够 |
 
-**SCSA 比我们多做的**:
-- 显式的 sparse attention (hard mask)
-- 需要外部语义分割
-
-**可以借鉴的**:
-- **Attention 稀疏化**: 在 TopoGate 基础上, 进一步对 attention matrix 做 top-k 稀疏化.
-  即每个 query 只关注 attention score 最高的 k 个 key.
-  这能进一步减少"错误的风格信息流入错误区域"的问题.
-  实现极简单: `attn = topk_mask(attn, k=8) / attn.sum(dim=-1, keepdim=True)`.
-
----
-
-## 四、CSGO (NeurIPS 2025) — 统一框架 + 大规模三元组数据
-
-### 核心机制
-
-1. **三元组训练**: (content, style_ref, ground_truth) 三重监督
-2. **IMAGStyle 数据集**: 210K 三元组, 覆盖多种风格
-3. **统一框架**: 同时支持多种风格迁移范式
-
-### 对我们的启发
-
-**CSGO 和我们做的不一样的地方**:
-- 我们做的无配对 (unpaired) 风格迁移, CSGO 需要配对的三元组数据
-- CSGO 强调数据集规模 (210K), 我们只有 18K (WikiArt full)
-
-**可以借鉴的**:
-- **ground truth 监督**: 虽然我们的设定是 unpaired, 但可以考虑自监督的 pseudo-GT。
-  比如: 用当前模型风格化一张图 → 把结果作为下一轮训练的 pseudo-GT → 迭代.
-  类似 self-training 或 knowledge distillation.
-
-- **多风格统一训练**: CSGO 同时训练多个风格, 共享 backbone。
-  我们也在做 (5 类 WikiArt 一起训), 但 tokenizer 的 style-specific 部分是独立的.
+**关键洞察**: 风格注入的强度受限于**模型的确定性**。
+ODE 路径上的每一步都是确定的 → 风格总是在"安全范围内"变化 → 均值坍缩。
+SDE/随机性是突破这个限制的关键——这正是我们 Phase2 在做的事情。
 
 ---
 
-## 五、StyleShot (ICLR 2025) — Style-Aware Encoder
+## 我们的定位
 
-### 核心机制
+读完这些后, 我们论文的 story 可以这样讲:
 
-1. **Style-Aware Encoder**: 将风格图像编码为 style code, 与内容解耦
-2. **Content Fusion Encoder**: 将 content 特征和 style code 融合
-3. **不需要测试时微调** (test-time tuning free)
-
-### 对我们的启发
-
-**我们 tokenizer 的问题**: PureLatentSpatial 试图从 content latent 同时提取 content query 和 style value.
-这两个任务是矛盾的——content query 应该编码结构布局, style value 应该编码纹理笔触.
-当 tokenizer 不够好时, 两者混淆.
-
-**StyleShot 的设计**:
-- Style-Aware Encoder **只从风格图像中提取 style code** — 不碰 content
-- Content Fusion Encoder 负责融合
-
-**可以借鉴的**:
-- **分离的 style code 提取**: 让 tokenizer 从 TARGET style images (而不是 content latent) 中提取 style values.
-  当前 tokenizer 的 `style_values` 是纯 style_id lookup, 没有用到目标风格图像的实际特征.
-  
-  改进: 在 training 的 OT 匹配后, 对 matched_target 做额外的 style encoding,
-  而不是只用 style_id 的 embedding lookup.
+1. **Related Work 要对比的**: StyleShot (ICLR 2025), CSGO (NeurIPS 2025), StyleGallery (CVPR 2026), HAM (CVPR 2026), SCSA (CVPR 2025)
+2. **我们的差异化**: 这些方法要么依赖外部先验 (DINO/SAM/CLIP), 要么依赖预训练扩散模型, 要么针对特定场景。
+   **我们是纯内生的潜空间风格迁移**——不依赖任何外部模型, 所有信息来自 VAE latent 本身。
+3. **我们的核心贡献**: TopoGate 通过 attention blending 实现结构保持 (LPIPS 0.31, 比所有对比方法都好);
+   纤维丛理论提供了一个统一的数学框架来理解风格迁移的本质。
 
 ---
 
-## 六、可立即落地到我们代码的改动
+## 更新后的 read.md 待补充
 
-| 优先级 | 来源 | 改动 | 代码位置 | 预期效果 |
-|:---:|------|------|----------|------|
-| 1 | HAM + 我们已有的计划 | 多尺度 TopoGate blend | `lancet_blocks.py` | LPIPS 不变, style +0.01 |
-| 2 | SCSA | TopoGate attention top-k 稀疏化 | `lancet_blocks.py` | 减少跨区域风格泄漏 |
-| 3 | StyleGallery | 区域级 fiber-wise SWD (已部分实现) | `losses.py` | 风格特异性 |
-| 4 | StyleShot | 从 matched_target 编码 style code | `semantic_tokenizer.py` | 更准确的风格表征 |
-
----
-
-## 七、读论文方法建议
-
-不要从头读到尾. 每个论文看三个部分:
-1. **Method 的图** (architecture diagram) — 数据流怎么走
-2. **核心公式** (1-2 个) — 数学本质是什么
-3. **和我们的方法的对比** (上面的表格) — 我们已经在做什么, 缺什么
+基于 Layer 1/2/3 的分析, 更新 `read.md` 中"对我们的启发"部分。
