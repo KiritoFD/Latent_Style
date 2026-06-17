@@ -86,8 +86,6 @@ def _pure_latent_model_overrides(*, solver_family: str) -> dict[str, Any]:
         "proximal_mode": "off",
         # Round-2 pure mainline owns style context via the structured tokenizer only.
         "tokenizer_content_adaptive": False,
-        "style_spatial_mode": "disabled",
-        "style_id_spatial_jitter_px": 0,
         "use_diffeomorphic_stroke": False,
         "style_injection_mode": "none",
         "record_base_endpoint_metrics": False,
@@ -104,9 +102,6 @@ ROUND2_PURE_SDE_SPECS: tuple[Round2PureSDESpec, ...] = (
             "transport_prediction_mode": "endpoint",
             "solver_family": "euler_legacy",
             "proximal_mode": "off",
-            "ablation_disable_spatial_prior": True,
-            "style_spatial_mode": "disabled",
-            "style_id_spatial_jitter_px": 0,
         },
         bridge_overrides=_pure_i2sb_bridge_overrides(bridge_sigma=0.0),
         training_overrides={"batch_size": 46, "accumulation_steps": 1},

@@ -301,9 +301,7 @@ class SBTrainer:
         return self._uses_structured_latent_tokenizer()
 
     def _style_branch_uses_legacy_spatial_priors(self) -> bool:
-        if self._uses_structured_latent_tokenizer():
-            return False
-        return not bool(getattr(self.config.model, "ablation_disable_spatial_prior", False))
+        return False
 
     def offload_for_full_eval(self) -> None:
         if self.device.type != "cuda" or self._offloaded_for_full_eval:
@@ -888,9 +886,6 @@ class SBTrainer:
             tokenizer = getattr(self.model, "style_tokenizer", None)
             if mode in {"tokenizer_only", "style_branch"} and tokenizer is not None and not self._pure_latent_uses_structured_tokenizer():
                 tokenizer.reset_parameters()
-            legacy_spatial = getattr(self.model, "style_spatial_id_16", None)
-            if mode == "style_branch" and isinstance(legacy_spatial, torch.nn.Parameter):
-                torch.nn.init.normal_(legacy_spatial, mean=0.0, std=0.02)
 
     def _configure_freeze_mode(self) -> None:
         if self.distill_enabled:
@@ -933,24 +928,6 @@ class SBTrainer:
                 for name, param in structured.named_parameters():
                     param.requires_grad_(True)
                     trainable_names.append(f"structured_style_tokenizer.{name}")
-        if mode == "style_branch" and self._style_branch_uses_legacy_spatial_priors():
-            self.model.style_spatial_id_16.requires_grad_(True)
-            trainable_names.append("style_spatial_id_16")
-            for extra_name in ("style_spatial_proto_16", "style_spatial_atoms_16"):
-                value = getattr(self.model, extra_name, None)
-                if isinstance(value, torch.nn.Parameter):
-                    value.requires_grad_(True)
-                    trainable_names.append(extra_name)
-            logits = getattr(self.model, "style_spatial_logits", None)
-            if logits is not None:
-                for name, param in logits.named_parameters():
-                    param.requires_grad_(True)
-                    trainable_names.append(f"style_spatial_logits.{name}")
-            router = getattr(self.model, "style_spatial_content_router", None)
-            if router is not None:
-                for name, param in router.named_parameters():
-                    param.requires_grad_(True)
-                    trainable_names.append(f"style_spatial_content_router.{name}")
         if mode == "budget_only":
             budget_head = getattr(self.model, "execution_budget_head", None)
             if budget_head is None:
@@ -1014,7 +991,7 @@ class SBTrainer:
                     trainable_names.append(name)
         if mode == "executor_only":
             for name, param in self.model.named_parameters():
-                if name.startswith("style_tokenizer.") or name.startswith("structured_style_tokenizer.") or name == "style_spatial_id_16":
+                if name.startswith("style_tokenizer.") or name.startswith("structured_style_tokenizer."):
                     continue
                 param.requires_grad_(True)
                 trainable_names.append(name)
@@ -1104,9 +1081,6 @@ class SBTrainer:
                 for name, param in structured.named_parameters():
                     param.requires_grad_(True)
                     trainable_names.append(f"structured_style_tokenizer.{name}")
-        if mode == "style_branch" and self._style_branch_uses_legacy_spatial_priors():
-            self.model.style_spatial_id_16.requires_grad_(True)
-            trainable_names.append("style_spatial_id_16")
 
         if bool(self.distill_cfg.get("reinit_trainable", True)):
             self._reset_trainable_style_params(mode)

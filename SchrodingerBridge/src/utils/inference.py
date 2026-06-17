@@ -296,7 +296,6 @@ class LGTInference:
             style_tokenizer=str(getattr(config.model, "style_tokenizer", "")),
             semantic_supervision_family=str(getattr(config.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
             dino_masked_swd_weight=float(getattr(config.bridge, "dino_masked_swd_weight", 0.0)),
-            style_spatial_mode=str(getattr(config.model, "style_spatial_mode", "")),
             tokenizer_content_adaptive=bool(getattr(config.model, "tokenizer_content_adaptive", False)),
         )
         state_dict = strip_compile_prefix(checkpoint["model_state_dict"])
@@ -339,7 +338,6 @@ class LGTInference:
                 debug_keys = [
                     "style_tokenizer",
                     "tokenizer_projection_mode",
-                    "style_spatial_mode",
                     "style_injection_mode",
                     "style_injection_form",
                     "proximal_mode",
@@ -355,7 +353,6 @@ class LGTInference:
                     sys.modules.get(type(config.model).__module__).__file__ if sys.modules.get(type(config.model).__module__) is not None else None,
                     {
                         "tokenizer_projection_mode": "tokenizer_projection_mode" in model_field_names,
-                        "style_spatial_mode": "style_spatial_mode" in model_field_names,
                         "style_injection_mode": "style_injection_mode" in model_field_names,
                         "style_injection_form": "style_injection_form" in model_field_names,
                         "proximal_mode": "proximal_mode" in model_field_names,
@@ -370,8 +367,6 @@ class LGTInference:
                         "style_tokenizer.atom_logits.weight": "style_tokenizer.atom_logits.weight" in available,
                         "style_tokenizer.field_gates": "style_tokenizer.field_gates" in available,
                         "style_tokenizer.identity.weight": "style_tokenizer.identity.weight" in available,
-                        "style_spatial_atoms_16": "style_spatial_atoms_16" in available,
-                        "style_spatial_logits.weight": "style_spatial_logits.weight" in available,
                         "body_style_spatial_proj.0.weight": "body_style_spatial_proj.0.weight" in available,
                         "decoder_style_spatial_proj.0.weight": "decoder_style_spatial_proj.0.weight" in available,
                         "proximal_attn_q.weight": "proximal_attn_q.weight" in available,
@@ -503,19 +498,6 @@ class LGTInference:
                 )
             elif tokenizer_state and tokenizer_module is not None:
                 tokenizer_module.load_state_dict(tokenizer_state, strict=False)
-            style_spatial = adapter.get("style_spatial_id_16")
-            if style_spatial is not None and getattr(self.model, "style_spatial_id_16", None) is not None:
-                self.model.style_spatial_id_16.copy_(
-                    style_spatial.to(
-                        device=self.model.style_spatial_id_16.device,
-                        dtype=self.model.style_spatial_id_16.dtype,
-                    )
-                )
-            elif style_spatial is not None:
-                logger.warning(
-                    "Ignoring legacy style_spatial_id_16 adapter payload because tokenizer_family=%s does not instantiate legacy spatial priors.",
-                    str(getattr(self.model, "tokenizer_family", "legacy_factorized")),
-                )
         logger.info("Loaded style adapter: %s", adapter_path)
 
     @torch.no_grad()

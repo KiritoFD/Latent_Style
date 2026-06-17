@@ -1955,7 +1955,7 @@ def main(argv: list[str] | None = None):
         help="When source latents are cached and ONNX decode is enabled, skip loading the diffusers VAE.",
     )
     parser.add_argument("--no-skip_diffusers_vae_when_onnx", dest="skip_diffusers_vae_when_onnx", action="store_false")
-    parser.add_argument('--style_adapter', type=str, default="", help="Optional external style adapter (.pt) to override tokenizer state and, on legacy families only, style_spatial_id_16")
+    parser.add_argument('--style_adapter', type=str, default="", help="Optional external style adapter (.pt) to override tokenizer state")
     parser.add_argument('--max_src_samples', type=int, default=int(full_eval_defaults.get("max_src_samples", 30)), help="Max source images per style; <=0 means all")
     parser.add_argument('--max_ref_compare', type=int, default=int(full_eval_defaults.get("max_ref_compare", 50)), help="Max refs for LPIPS style compare; <=0 means all cached refs")
     parser.add_argument('--max_ref_cache', type=int, default=int(full_eval_defaults.get("max_ref_cache", 256)), help="Max reference images per style used for cache/features; <=0 means all")

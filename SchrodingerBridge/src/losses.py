@@ -56,7 +56,6 @@ class OTFlowMatchingObjective:
             style_tokenizer=str(getattr(model_cfg, "style_tokenizer", "")),
             semantic_supervision_family=str(getattr(bridge_cfg, "semantic_supervision_family", "legacy_terminal_swd")),
             dino_masked_swd_weight=float(getattr(bridge_cfg, "dino_masked_swd_weight", 0.0)),
-            style_spatial_mode=str(getattr(model_cfg, "style_spatial_mode", "")),
             tokenizer_content_adaptive=bool(getattr(model_cfg, "tokenizer_content_adaptive", False)),
         )
         self.identity_endpoint = bool(bridge_cfg.identity_endpoint)

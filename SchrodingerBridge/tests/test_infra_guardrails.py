@@ -81,6 +81,35 @@ def test_phase616_contract_rejects_proximal_trust() -> None:
         ExperimentConfig.from_mapping(payload)
 
 
+def test_model_config_drops_retired_legacy_style_spatial_keys() -> None:
+    cfg = ModelConfig.from_mapping(
+        {
+            "style_spatial_pre_gain_16": 0.9,
+            "style_spatial_mode": "vq",
+            "style_spatial_num_prototypes": 8,
+            "style_spatial_routing_temperature": 0.5,
+            "style_spatial_content_hidden_dim": 48,
+            "style_id_spatial_jitter_px": 2,
+            "ablation_disable_spatial_prior": True,
+            "custom_probe_flag": 7,
+        }
+    )
+
+    payload = cfg.to_dict()
+    for key in (
+        "style_spatial_pre_gain_16",
+        "style_spatial_mode",
+        "style_spatial_num_prototypes",
+        "style_spatial_routing_temperature",
+        "style_spatial_content_hidden_dim",
+        "style_id_spatial_jitter_px",
+        "ablation_disable_spatial_prior",
+    ):
+        assert key not in payload
+        assert not hasattr(cfg, key)
+    assert payload["custom_probe_flag"] == 7
+
+
 def test_swd_projection_cache_keys_include_spatial_shape() -> None:
     cfg = BridgeConfig(swd_patch_sizes=[3], swd_num_projections=4)
     cost = SWDTransportCost(cfg)
@@ -167,3 +196,41 @@ def test_style_delta_basis_is_zero_init_compatible() -> None:
         bridge.style_delta_weight_head.bias.fill_(0.5)
     moved = bridge._apply_style_delta_basis(delta, h, style_code)
     assert moved.abs().mean().item() > 0.0
+
+
+def test_crossattn_texture_legacy_factorized_has_no_legacy_style_spatial_path() -> None:
+    bridge = TimeConditionedLANCETBridge(
+        ModelConfig(
+            num_styles=3,
+            style_dim=32,
+            base_dim=16,
+            time_dim=32,
+            tokenizer_identity_dim=8,
+            tokenizer_texture_dim=8,
+            tokenizer_geometry_dim=8,
+            num_hires_blocks=1,
+            num_res_blocks=1,
+            num_decoder_blocks=1,
+            style_attn_num_tokens=8,
+            style_attn_num_heads=2,
+            hires_block_type="conv",
+            body_block_type="conv",
+            decoder_block_type="conv",
+            proximal_mode="crossattn_texture",
+            proximal_hidden_channels=8,
+        )
+    )
+
+    legacy_param_names = [name for name, _ in bridge.named_parameters() if name.startswith("style_spatial")]
+    assert legacy_param_names == []
+    assert not hasattr(bridge, "encode_style_spatial_id")
+
+    z_base = torch.randn(2, 4, 16, 16)
+    output = bridge.refine_endpoint(
+        z_base,
+        style_id=torch.tensor([0, 1]),
+        source_latent=z_base,
+    )
+
+    assert output.shape == z_base.shape
+    assert torch.allclose(output, z_base)
