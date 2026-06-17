@@ -72,6 +72,7 @@ for name, overrides in exps.items():
     c["model"]["style_spatial_mode"] = "class"
     c["model"]["semantic_self_topology_gate"] = True
     c["model"]["semantic_self_topology_blend"] = 1.0
+    c["data"]["pairing_cache_path"] = ""
 
     # --- 训练参数 ---
     c["training"]["num_epochs"] = 60
