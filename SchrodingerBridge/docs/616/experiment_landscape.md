@@ -3,6 +3,7 @@
 > 全局 `virtual_length_multiplier=0.1` → ~2.5 min/epoch
 > 不固定 epoch, 收敛为止 → 连续 3 eval 的 style delta < 0.002 即停
 > 每 4 epoch eval 一次, 最少 12 epoch (~30min), 最多 60 epoch (~2.5h)
+> **当前运行**: `exp/20250618_lite_ot_vertical/` — b24, legacy_factorized + ablation_disable_spatial_prior=true + topogate
 
 ## 7 个实验: 6 个独立假说 + 1 个全组合
 
@@ -13,7 +14,7 @@
 | H2 | 欧氏 OT 不如结构 OT | `coupling_cost_composition="appearance_only"` | H0 |
 | H3 | SDE 噪声突破均值 | `bridge_sigma=0.02` | H0 |
 | H4 | 非平衡 OT 改善匹配 | `coupling_solver="sinkhorn_unbalanced"` | H0 |
-| H5 | Tokenizer熵 > Self-Affinity | `coupling_structure_cost_mode="tokenizer_entropy_affinity_gw"` | H0 |
+| H5 | TopoGate attention > 其他结构代价 | `coupling_structure_cost_mode="topogate_attention_gw"` | H0 |
 | H6 | 全组合最优 | H0+H2+H3+H4+H5 叠加 | — |
 
 ## 实验脚本
@@ -53,13 +54,13 @@ bash tools/experiments/run_phase616_converge_ladder.sh
 
 ### 结构代价的 5 种描述符
 
-| 模式 | 描述符维度 | 来源 |
-|------|:---:|------|
-| `self_affinity_gw` | 28 | 潜变量的 self-attention triu |
-| `tokenizer_entropy_affinity_gw` | 32 | Tokenizer 路由熵 + affinity |
-| `encoder_self_affinity_gw` | 28 | UNet encoder 特征的 self-attention |
-| `lowedge_self_affinity_gw` | 34 | 低频+边缘 + affinity blend |
-| `none` (fallback) | 6 | 纯统计量 (无结构信息) |
+| 模式 | 描述符维度 | 来源 | 状态 |
+|------|:---:|------|------|
+| `topogate_attention_gw` | 4+ | TopoGate attention 熵画像 | ✅ 推荐 — 零成本内生 |
+| `self_affinity_gw` | 28 | 潜变量的 self-attention triu | ✅ 保留 baseline |
+| `encoder_self_affinity_gw` | 28 | UNet encoder 特征的 self-attention | ⚠️ 额外 forward |
+| `lowedge_self_affinity_gw` | 34 | 低频+边缘 + affinity blend | 📋 保留 |
+| ~~`tokenizer_entropy_affinity_gw`~~ | — | Tokenizer 路由熵 + affinity | ❌ 废弃 (tokenizer 无 ROI) |
 
 ### 非平衡 OT
 

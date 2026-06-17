@@ -14,6 +14,13 @@ exp根:   /mnt/i/Github/Latent_Style/exp/
 
 ## 实验启动模式
 
+### 当前运行实验
+
+```
+exp/20250618_lite_ot_vertical/ — b24, vl=0.1, legacy_factorized + ablation_disable_spatial_prior=true + topogate
+7 hypothesis tests: h0-h6
+```
+
 ### 模式 1: 从头训练（新 config）
 
 ```bash
@@ -68,9 +75,11 @@ c = json.load(open('exp/phase616_combined_v2/config.json'))
 c['bridge']['bridge_path_mode'] = 'vertical'
 c['bridge']['coupling_solver'] = 'sinkhorn_unbalanced'
 c['bridge']['sinkhorn_unbalanced_tau_src'] = 0.5
-c['bridge']['coupling_structure_cost_mode'] = 'tokenizer_entropy_affinity_gw'
+c['bridge']['coupling_structure_cost_mode'] = 'topogate_attention_gw'
 c['bridge']['coupling_cost_composition'] = 'appearance_plus_structure'
 c['bridge']['coupling_structure_cost_weight'] = 0.3
+c['tokenizer']['tokenizer_name'] = 'legacy_factorized'
+c['tokenizer']['ablation_disable_spatial_prior'] = True
 c['training']['num_epochs'] = 12
 c['training']['batch_size'] = 8
 c['training']['accumulation_steps'] = 1

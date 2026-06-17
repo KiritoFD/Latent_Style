@@ -1,154 +1,69 @@
-# 616 实验计划 — 1 到 3 天预算
+# 616 探索+消融计划 — 16h 预算
 
-> GPU: 3060 12GB, VRAM 上限 < 11.3 GB
-> 每个 epoch 约 25-30 min (b12)
-> 每 2 个 epoch 检查一次 eval 结果
-
----
-
-## 阶段 1: 垂直 FM + 结构 OT 组合验证 (4-6 epochs, ~3h)
-
-### 目标
-验证 `bridge_path_mode="vertical"` + `tokenizer_entropy_affinity_gw` + `unbalanced_sinkhorn` 组合是否能同时提升 style 并保持 LPIPS。
-
-### 训练启动
-
-```bash
-cd /mnt/i/Github/Latent_Style/SchrodingerBridge
-
-# 一键启动
-python -c "
-import json, os, shutil
-
-base_ckpt = 'exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/epoch_0001.pt'
-exp_dir  = 'exp/phase616_stage1_vertical_ot'
-
-os.makedirs(exp_dir, exist_ok=True)
-c = json.load(open(os.path.dirname(base_ckpt) + '/config.json'))
-
-# 覆盖关键参数
-c['bridge']['bridge_path_mode'] = 'vertical'
-c['bridge']['coupling_solver'] = 'sinkhorn_unbalanced'
-c['bridge']['sinkhorn_unbalanced_tau_src'] = 0.5
-c['bridge']['coupling_structure_cost_mode'] = 'tokenizer_entropy_affinity_gw'
-c['bridge']['coupling_cost_composition'] = 'appearance_plus_structure'
-c['bridge']['coupling_structure_cost_weight'] = 0.3
-c['training']['num_epochs'] = 6
-c['training']['batch_size'] = 8
-c['training']['accumulation_steps'] = 1
-c['checkpoint']['save_dir'] = f'./{exp_dir}'
-
-json.dump(c, open(f'{exp_dir}/config.json', 'w'), indent=2)
-shutil.copy(base_ckpt, f'{exp_dir}/epoch_0001.pt')
-print('Config ready. Launching...')
-" && python src/run.py --config exp/phase616_stage1_vertical_ot/config.json --resume exp/phase616_stage1_vertical_ot/epoch_0001.pt
-```
-
-### 判断标准
-
-| Epoch | 操作 |
-|-------|------|
-| e1-e2 | 观察 `ot_target_gini` (应 < 0.5), `ot_structure_cost_var` (应 > 0), `tok_delta` (应 > 0.015) |
-| e3-e4 | 读 eval: **期望 style > 0.69 + LPIPS < 0.35** |
-| e5-e6 | 如果 style < 0.69: 进入阶段 2。如果 style > 0.70: 延长到 e10 |
+> 运行中: `exp/20250618_lite_ot_vertical/` — b24, vl=0.1, legacy tokenizer + topogate
+> 每 epoch ~30s, eval 每 4 epoch ~4min, 每个实验收敛 ~50min
 
 ---
 
-## 阶段 2: 参数细化扫描 (2-4 epochs, ~2h)
+## 阶段 1: 全因子探索 (7 实验, ~6h)
 
-### 目标
-如果阶段 1 验证了方向正确但 style 仍未突破 0.72，扫描关键超参。
+每个实验测试一条独立假说。共享基线配置: `legacy_factorized` + `ablation_disable_spatial_prior=true` + `semantic_self_topology_gate=true`。
 
-### 2a: Kinetic 权重扫描 (取阶段 1 最佳 epoch 的 ckpt)
+| 实验 | bridge_path | coupling_cost_composition | coupling_structure_cost_mode | solver | sigma | 测试 |
+|------|------------|---------------------------|------------------------------|--------|:---:|------|
+| h0 | vertical | structure_only | self_affinity_gw | sinkhorn | 0 | 垂直 FM 基线 |
+| h1 | linear | structure_only | self_affinity_gw | sinkhorn | 0 | 垂直 FM 效果 |
+| h2 | vertical | appearance_only | — | sinkhorn | 0 | 欧氏 OT 对照 |
+| h3 | vertical | structure_only | self_affinity_gw | sinkhorn | 0.02 | SDE 噪声 |
+| h4 | vertical | structure_only | self_affinity_gw | sinkhorn_unbalanced | 0 | 非平衡 OT |
+| h5 | vertical | structure_only | topogate_attention_gw | sinkhorn | 0 | TopoGate attention 结构代价 |
+| h6 | vertical | appearance_plus_structure | topogate_attention_gw | sinkhorn_unbalanced | 0.02 | 全组合 |
 
-```bash
-for wk in 0.5 0.7 0.85; do
-    # 修改 config 的 w_kinetic, 从阶段 1 ckpt 继续
-    python src/run.py --config exp/phase616_stage2_kin${wk}/config.json \
-      --resume exp/phase616_stage1_vertical_ot/epoch_0004.pt
-done
-```
-
-### 2b: OT 结构权重扫描
-
-```bash
-for wstruct in 0.2 0.3 0.5; do
-    python src/run.py --config exp/phase616_stage2_ot${wstruct}/config.json \
-      --resume exp/phase616_stage1_vertical_ot/epoch_0004.pt
-done
-```
-
-### 2c: 垂直分解粒度扫描
-
-```bash
-for stride in 1 2 4; do
-    # stride=1: 最细粒度分离, stride=4: 最粗
-    python src/run.py --config ... --override bridge_vertical_base_stride=$stride
-done
-```
+**判据**: 每个实验跑完后读 clip_lpips_curve.csv。选出 best transfer style 和 best LPIPS。
 
 ---
 
-## 阶段 3: I2SB + Vertical 组合 (如果垂直 FM 未突破, 6-8 epochs, ~4h)
+## 阶段 2: 消融阶梯 (4 实验, ~4h)
 
-### 目标
-叠加 I2SB 训练（σ=0.02）在垂直 FM 基础上。I2SB 注入的随机性可能打破 style 的均值坍缩。
+从阶段 1 的全组合 (h6) 逐项剥除，量化每项贡献:
 
-### 配置
+| 消融 | 基于 h6 移除 | 预期 style | 预期 LPIPS | 量化 |
+|------|-------------|:---:|:---:|------|
+| A1 | bridge_path_mode → linear | ↓ 0.01-0.02 | 不变 | 垂直 FM 的 style 贡献 |
+| A2 | coupling_cost_composition → appearance_only | ↓ 0.01-0.02 | ↑ 0.01-0.02 | 结构 OT 的贡献 |
+| A3 | bridge_sigma → 0 | ↓ 0.005-0.01 | 微降 | SDE 的贡献 |
+| A4 | coupling_solver → sinkhorn | ↓ 0.005 | 不变 | 非平衡 OT 的贡献 |
 
-```json
-{
-  "bridge": {
-    "bridge_path_mode": "vertical",
-    "bridge_sigma": 0.02,
-    "bridge_noise_schedule": "exact_brownian",
-    "objective_mode": "i2sb_endpoint",
-    "coupling_solver": "sinkhorn_unbalanced",
-    "coupling_structure_cost_mode": "tokenizer_entropy_affinity_gw"
-  },
-  "model": {
-    "transport_prediction_mode": "endpoint",
-    "solver_family": "solver_i2sb"
-  }
-}
-```
-
-从阶段 1 最佳 epoch 的 ckpt warmstart，但切换到 endpoint 模式需要重新构建模型——可能报错。如遇兼容性问题，回退到 velocity 模式但 `bridge_sigma=0.02`。
+**判据**: 找出贡献最大的模块，确认为核心机制。贡献 < 0.005 的模块标记为可选。
 
 ---
 
-## 阶段 4: 全量训练收敛 (10-16 epochs, ~5h)
+## 阶段 3: 最佳组合收敛 (1 实验, ~5h)
 
-### 前提
-前 3 个阶段中至少一个突破了 style > 0.70。
+取阶段 1+2 中表现最好的配置，跑长训练 (120 epoch, b32, ~2h)。
 
-### 操作
-取表现最好的组合，加大训练量到 12-16 epochs。每 2 epochs 检查 eval。
-
-### 安全阈值
-- LPIPS > 0.45: 立即停止，回退参数
-- flow_loss 突然飙升 3×: 停止
-- ot_target_gini > 0.8: OT 退化，切回标准 Sinkhorn
+**安全阈值**:
+- LPIPS > 0.45 → 停止
+- style 连续 6 eval 不增长 + LPIPS 不降 → 收敛, 停止
+- ot_target_gini > 0.6 → OT 退化, 回退
 
 ---
 
-## 时间预算总览
+## 时间预算
 
-| 阶段 | 预计时间 | 可并行? |
-|------|----------|---------|
-| 1: 垂直 FM + OT | ~3h | — |
-| 2a: kinetic 扫描 | ~2h (3 runs) | 顺序 |
-| 2b: OT 权重扫描 | ~2h (3 runs) | 顺序 |
-| 2c: 分解粒度 | ~2h (3 runs) | 顺序 |
-| 3: I2SB 组合 | ~4h | — |
-| 4: 全量训练 | ~5h | — |
-| **总计** | **~18h (不超过 1 天)** | |
+| 阶段 | 实验数 | 时间 | 可并行 |
+|------|:---:|------|:---:|
+| 1: 全因子 | 7 | ~6h | 否 (顺序) |
+| 2: 消融 | 4 | ~4h | 否 |
+| 3: 收敛 | 1 | ~5h | 否 |
+| **总计** | **12** | **~15h** | — |
 
 ---
 
-## 成功定义
+## gen_lite_batch.py 需要的改动
 
-- **style > 0.72** AND **LPIPS < 0.35** (transfer) → 目标达成
-- style > 0.72 BUT LPIPS > 0.40 → 接近，需要结构约束微调
-- style 0.70-0.72 AND LPIPS < 0.32 → 接近，不够
-- style < 0.70 → 垂直 FM + OT + I2SB 的组合均失败，需要更根本的架构改变
+h5 的 `coupling_structure_cost_mode` 从 `tokenizer_entropy_affinity_gw` 改为 `topogate_attention_gw`。
+
+只改这一行。代码依赖 `topogate_attention_gw` 模式需要在 `_structure_pairwise_cost` 中实现——
+从 `model.last_semantic_attn` 或 `model.last_semantic_topology_attn` 提取 attention 矩阵，
+计算 entropy map，构建 self-affinity descriptor。

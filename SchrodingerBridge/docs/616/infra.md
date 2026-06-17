@@ -106,3 +106,32 @@ DataLoader(..., num_workers=1, persistent_workers=False, prefetch_factor=2)
 | `source_load_to_device` | 3.5s | 1.5% ← 已被 latent cache 消除 |
 | 其他 (I/O, load, copy) | ~12.4s | 5.1% |
 | **wall_total** | **241.0s** | 100% |
+
+---
+
+## 四、已修复的 Infra Bug
+
+### 4.1 `_prepare_style_maps` 未检查 `ablation_disable_spatial_prior`
+
+**文件**: `semantic_tokenizer.py` / model 初始化
+**问题**: `_prepare_style_maps()` 在加载 style embeddings 时未检查 `ablation_disable_spatial_prior` 标志，导致即使设置了 `ablation_disable_spatial_prior=true`，spatial prior 映射仍然被构建和传入模型，消耗不必要的内存和计算。
+**修复**: 在 `_prepare_style_maps` 开头添加 `if self.ablation_disable_spatial_prior: return` 提前退出。
+**状态**: ✅ 已修复。
+
+### 4.2 WSL 后台进程 SSH 断开后不存活
+
+**问题**: WSL 中通过 SSH 启动的训练进程（如 `python src/run.py &` 或 `nohup`），在 SSH 连接断开后会被杀死。这是 WSL 的已知行为——WSL 实例在没有活跃终端连接时可能会被挂起或终止。
+**解决方案**:
+- 使用 `screen` 或 `tmux` 保持会话存活:
+  ```bash
+  screen -S train_616
+  # 在 screen 内启动训练
+  python src/run.py ...
+  # Ctrl+A, D 分离
+  ```
+- 或使用 `nohup` + 显式 disown:
+  ```bash
+  nohup python src/run.py ... > train.log 2>&1 & disown
+  ```
+- 或使用 Windows Task Scheduler 在 WSL 启动时自动拉起训练。
+**状态**: ⚠️ 已知问题，已文档化。推荐 screen/tmux。

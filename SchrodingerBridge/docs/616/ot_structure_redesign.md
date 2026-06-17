@@ -1,8 +1,14 @@
 # OT 结构代价设计修正: 从 Tokenizer 到 TopoGate Attention
 
 > 当前问题: `coupling_structure_cost_mode` 的 `tokenizer_entropy_affinity_gw`、
-> `encoder_self_affinity_gw` 等依赖 tokenizer 输出（已确认无收益）或 encoder（额外前向传播）。
+> `encoder_self_affinity_gw` 等依赖 tokenizer 输出（已确认 PureLatentSpatial ZERO ROI）或 encoder（额外前向传播）。
 > **OT 结构代价应该从 TopoGate 的内生 attention 矩阵中提取，零额外成本。**
+
+## 关键决策
+
+- PureLatentSpatial tokenizer 确认 ZERO ROI — style/LPIPS 不变，白耗 ~1.2GB VRAM
+- 代码已切回 `legacy_factorized` + `ablation_disable_spatial_prior=true`
+- OT 结构代价来源: `topogate_attention_gw`（TopoGate 内生 attention 矩阵）
 
 ---
 
@@ -16,27 +22,68 @@ $$A_{\text{final}} = \alpha \cdot A_{\text{self-content}} + (1-\alpha) \cdot A_{
 这个矩阵天然编码了图像的**结构拓扑**——相邻像素有高注意力权重，跨语义边界有低权重。
 这是训练过程中已经计算好的，不需要额外的前向传播。
 
+### 1.1 为什么比 tokenizer 方案好
+
+| 维度 | tokenizer_entropy | topogate_attention |
+|------|---|---|
+| 信号源 | tokenizer 路由输出（已确认垃圾） | UNet 自身的 attention 矩阵 |
+| 成本 | tokenizer forward + aux 提取 | **零**（forward 中已计算） |
+| 语义含义 | 无意义（ZERO ROI） | 内容特征的内部空间关系 |
+| 训练耦合 | tokenizer 未训练好 → 代价矩阵垃圾 | 不受 tokenizer 训练影响 |
+| 结构编码 | 间接（通过 cluster routing） | 直接（像素间注意力权重） |
+
 ## 二、新的结构代价模式
 
-在 `_structure_pairwise_cost` 中新增:
+### 2.1 模式: `topogate_attention_gw`
+
+从 TopoGate 的注意力熵图中提取结构复杂度画像，然后用 GW 框架匹配。
 
 ```python
-# 模式: "topogate_self_affinity_gw"
-# 从 TopoGate 的 last_attn 中提取 self-affinity descriptor
-
-def _topogate_attention_descriptor(self, model, x):
-    # 1. 跑一次 forward 获取 TopoGate attention
-    with torch.no_grad():
-        # 获取 content encoder 特征 (复用 _ot_encoder_feature_map 的轻量版本)
-        feat = self._topogate_content_feature_map(model, x)
-        # 在 model 的 body_blocks 中收集 last_attn  
-        # 这些 attention 矩阵已经在 TopoGate 中计算好了
-        attn_maps = self._collect_topogate_attention_maps(model, feat)
+# 伪代码
+def topogate_attention_descriptors(model, content_batch, target_batch):
+    """从 TopoGate attention 提取结构复杂度画像"""
+    # 1. 收集 TopoGate attention maps（zero-cost，已在 forward 中计算）
+    content_attn = model.body_blocks.get_topogate_attention(content_batch)
+    target_attn = model.body_blocks.get_topogate_attention(target_batch)
     
-    # 2. 从 attention maps 构建结构 descriptor
-    # attention map 本身就是空间关系的编码
-    # 对 attention map 做 self-affinity = GW descriptor
-    return self._affinity_descriptor_from_attention(attn_maps)
+    # 2. 对每个样本计算结构复杂度画像
+    #    画像 = [熵均值, 熵标准差, 偏度, 高熵像素占比]
+    content_profiles = compute_complexity_profile(content_attn)  # [B, 4]
+    target_profiles = compute_complexity_profile(target_attn)    # [B, 4]
+    
+    # 3. GW-style 代价: 复杂度差异
+    C_struct = torch.cdist(content_profiles, target_profiles, p=2).pow(2)
+    
+    return C_struct
+
+
+def compute_complexity_profile(attn_maps):
+    """从 attention maps 提取每个样本的结构复杂度画像"""
+    # attn_maps: [B, H_heads, N_tokens, N_tokens] or [B, N, N]
+    # 对最后一个维度做熵
+    entropy = -(attn_maps * (attn_maps + 1e-8).log()).sum(dim=-1)  # [B, N]
+    
+    return torch.stack([
+        entropy.mean(dim=1),              # 平均复杂度
+        entropy.std(dim=1),               # 复杂性方差（结构均匀度）
+        entropy.max(dim=1).values,        # 最大复杂度（最复杂区域）
+        (entropy > entropy.median()).float().mean(dim=1),  # 复杂区域占比
+    ], dim=-1)  # [B, 4]
+```
+
+### 2.2 与 total_cost 的整合
+
+```python
+# 在 _coupling_cost_matrix 中
+if coupling_structure_cost_mode == 'topogate_attention_gw':
+    C_appearance = transport_cost.pairwise_cost(content, target)
+    C_structure = topogate_attention_descriptors(model, content, target)
+    
+    # 归一化到相同尺度
+    app_scale = C_appearance.detach().mean()
+    struct_scale = C_structure.detach().mean()
+    
+    total_cost = (1 - w_struct) * C_appearance / app_scale + w_struct * C_structure / struct_scale
 ```
 
 **关键**: TopoGate 的 attention 不需要 tokenizer，不需要 encoder 全是内容特征的内部关系。且 `torch.no_grad()` 保证不计梯度。
@@ -45,11 +92,11 @@ def _topogate_attention_descriptor(self, model, x):
 
 ### 3.1 删除的依赖
 - `tokenizer_entropy_affinity_gw` → 删除 (依赖垃圾 tokenizer)
-- `encoder_self_affinity_gw` → 降低优先级 (需要额外 forward)
 - `tokenizer_aux_self_affinity_gw` → 删除
+- `encoder_self_affinity_gw` → 降低优先级 (需要额外 forward)
 
 ### 3.2 新增的
-- `topogate_attention_gw` — 从 TopoGate 收集 attention 矩阵，做 self-affinity
+- `topogate_attention_gw` — 从 TopoGate 收集 attention 矩阵，提取复杂度画像做 GW 匹配
 
 ### 3.3 保留的
 - `self_affinity_gw` — 纯潜变量的 self-affinity，不依赖任何模块 (最快, 作为 baseline)
@@ -65,12 +112,11 @@ TopoGate attention 的优势: 它本来就是 TopoGate 机制的一部分。
 
 ## 五、实验计划更新
 
-当前 7 个实验中，`h5_token_entropy` 依赖已删除的 tokenizer entropy 模式。
-替换为:
+当前实验 `exp/20250618_lite_ot_vertical/` 中:
 
-| 实验 | 新的耦合结构代价模式 | 测试 |
+| 实验 | 耦合结构代价模式 | 测试 |
 |------|------|------|
 | h5 | `topogate_attention_gw` | TopoGate attention 作为结构指纹 |
 | h0-h4 | `self_affinity_gw` (潜变量, 不变) | baseline 对照 |
 
-需要改 `gen_lite_batch.py`: h5 的 `coupling_structure_cost_mode` 从 `tokenizer_entropy_affinity_gw` 改为 `topogate_attention_gw`。
+h5 的 `coupling_structure_cost_mode` 已从 `tokenizer_entropy_affinity_gw` 改为 `topogate_attention_gw`。
