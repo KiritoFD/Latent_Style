@@ -224,7 +224,6 @@ def validate_pure_latent_contract(
     style_tokenizer: str = "",
     semantic_supervision_family: str = "",
     dino_masked_swd_weight: float = 0.0,
-    style_spatial_mode: str = "",
     tokenizer_content_adaptive: bool = False,
 ) -> None:
     family = normalize_tokenizer_family(tokenizer_family)
@@ -250,11 +249,6 @@ def validate_pure_latent_contract(
     if float(dino_masked_swd_weight) > 0.0:
         raise ValueError(
             f"tokenizer_family={family!r} requires bridge.dino_masked_swd_weight=0.0."
-        )
-    mode = str(style_spatial_mode or "").strip().lower()
-    if mode and mode != "disabled":
-        raise ValueError(
-            f"tokenizer_family={family!r} requires model.style_spatial_mode='disabled'."
         )
     if bool(tokenizer_content_adaptive):
         raise ValueError(

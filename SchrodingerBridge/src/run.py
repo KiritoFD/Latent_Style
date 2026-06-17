@@ -403,7 +403,6 @@ def main() -> None:
         style_tokenizer=str(getattr(config.model, "style_tokenizer", "")),
         semantic_supervision_family=str(getattr(config.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
         dino_masked_swd_weight=float(getattr(config.bridge, "dino_masked_swd_weight", 0.0)),
-        style_spatial_mode=str(getattr(config.model, "style_spatial_mode", "")),
         tokenizer_content_adaptive=bool(getattr(config.model, "tokenizer_content_adaptive", False)),
     )
 

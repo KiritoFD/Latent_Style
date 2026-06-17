@@ -137,11 +137,6 @@ def _normalize_model_contract_defaults(cfg: "ModelConfig") -> "ModelConfig":
     if family in {"pure_latent_spatial", "affine_connection_tokenizer"}:
         cfg.style_tokenizer = "null"
         cfg.tokenizer_content_adaptive = False
-        cfg.style_spatial_mode = "disabled"
-        cfg.style_id_spatial_jitter_px = 0
-    if bool(getattr(cfg, "ablation_disable_spatial_prior", False)):
-        cfg.style_spatial_mode = "disabled"
-        cfg.style_id_spatial_jitter_px = 0
     return cfg
 
 
@@ -207,6 +202,17 @@ _RETIRED_BRIDGE_KEYS = {
 }
 
 
+_RETIRED_MODEL_KEYS = {
+    "style_spatial_pre_gain_16",
+    "style_spatial_mode",
+    "style_spatial_num_prototypes",
+    "style_spatial_routing_temperature",
+    "style_spatial_content_hidden_dim",
+    "style_id_spatial_jitter_px",
+    "ablation_disable_spatial_prior",
+}
+
+
 @dataclass
 class ModelConfig:
     latent_channels: int = 4
@@ -269,17 +275,11 @@ class ModelConfig:
     num_groups: int = 4
     latent_scale_factor: float = 0.18215
     residual_gain: float = 1.0
-    style_spatial_pre_gain_16: float = 0.35
-    style_spatial_mode: str = "class"
-    style_spatial_num_prototypes: int = 4
-    style_spatial_routing_temperature: float = 0.25
-    style_spatial_content_hidden_dim: int = 64
     style_strength_default: float = 1.0
     style_strength_max: float = 1.0
     allow_style_overdrive: bool = False
     style_strength_step_curve: str = "linear"
     upsample_mode: str = "nearest"
-    style_id_spatial_jitter_px: int = 0
     upsample_blur: bool = True
     upsample_blur_kernel: str = "box3"
     style_attn_num_tokens: int = 128
@@ -317,7 +317,6 @@ class ModelConfig:
     input_anchor_noise_eval: bool = False
     ablation_no_residual: bool = False
     ablation_no_residual_gain: float = 1.0
-    ablation_disable_spatial_prior: bool = False
     ablation_direct_delta_blend: bool = False
     raw_latent_splat_highway: bool = False
     ablation_skip_clean: bool = True
@@ -435,6 +434,8 @@ class ModelConfig:
     @classmethod
     def from_mapping(cls, payload: Mapping[str, Any] | None) -> "ModelConfig":
         known, extra = _split_known_fields(cls, payload)
+        for key in _RETIRED_MODEL_KEYS:
+            extra.pop(key, None)
         cfg = cls(**known)
         cfg.extra = extra
         cfg = _normalize_model_contract_defaults(cfg)
@@ -869,7 +870,6 @@ class ExperimentConfig:
             style_tokenizer=str(getattr(cfg.model, "style_tokenizer", "")),
             semantic_supervision_family=str(getattr(cfg.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
             dino_masked_swd_weight=float(getattr(cfg.bridge, "dino_masked_swd_weight", 0.0)),
-            style_spatial_mode=str(getattr(cfg.model, "style_spatial_mode", "")),
             tokenizer_content_adaptive=bool(getattr(cfg.model, "tokenizer_content_adaptive", False)),
         )
         validate_phase616_clean_contract(

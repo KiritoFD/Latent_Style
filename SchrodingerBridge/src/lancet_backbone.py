@@ -76,7 +76,6 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         tokenizer_num_atoms = max(2, int(getattr(cfg, "tokenizer_num_atoms", 32)))
         self.num_hires_blocks = max(0, int(getattr(cfg, "num_hires_blocks", 2)))
         self.num_res_blocks = max(0, int(getattr(cfg, "num_res_blocks", 4)))
-        self.style_spatial_pre_gain_16 = float(getattr(cfg, "style_spatial_pre_gain_16", 0.35))
         self.style_strength_max = max(1e-6, float(getattr(cfg, "style_strength_max", 1.0)))
         self.style_strength_default = max(0.0, min(self.style_strength_max, float(getattr(cfg, "style_strength_default", 1.0))))
         self.style_strength_step_curve = str(getattr(cfg, "style_strength_step_curve", "linear")).lower()
@@ -84,7 +83,6 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             self.style_strength_step_curve = "linear"
         self.last_style_strength_debug: dict[str, float] = {}
         self.upsample_mode = str(getattr(cfg, "upsample_mode", "nearest"))
-        self.style_id_spatial_jitter_px = max(0, int(getattr(cfg, "style_id_spatial_jitter_px", 0)))
         self.upsample_blur = bool(getattr(cfg, "upsample_blur", True))
         self.upsample_blur_kernel = str(getattr(cfg, "upsample_blur_kernel", "box3")).lower()
         self.style_attn_num_tokens = max(1, int(getattr(cfg, "style_attn_num_tokens", 128)))
@@ -141,7 +139,6 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             )
         self.ablation_no_residual = bool(getattr(cfg, "ablation_no_residual", False))
         self.ablation_no_residual_gain = max(0.0, float(getattr(cfg, "ablation_no_residual_gain", 1.0)))
-        self.ablation_disable_spatial_prior = bool(getattr(cfg, "ablation_disable_spatial_prior", False))
         self.ablation_direct_delta_blend = bool(getattr(cfg, "ablation_direct_delta_blend", False))
         self.raw_latent_splat_highway = bool(getattr(cfg, "raw_latent_splat_highway", False))
         self.ablation_skip_clean = bool(getattr(cfg, "ablation_skip_clean", True))
@@ -350,49 +347,6 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
                 init_ratio = max(1e-4, min(1.0 - 1e-4, init_ratio))
                 init_logit = torch.logit(torch.tensor(init_ratio, dtype=torch.float32)).item()
                 nn.init.constant_(self.style_code_content_style_gate.weight, init_logit)
-
-        # Learnable style priors for inference without reference image. The
-        # default class prior keeps historical behavior; prototype/VQ modes are
-        # opt-in representation probes.
-        self.style_spatial_mode = str(getattr(cfg, "style_spatial_mode", "class")).strip().lower()
-        if self.style_spatial_mode not in {"class", "prototype", "content_guided", "vq", "vq_content_guided", "disabled"}:
-            self.style_spatial_mode = "class"
-        self.style_spatial_num_prototypes = max(1, int(getattr(cfg, "style_spatial_num_prototypes", 4)))
-        self.style_spatial_routing_temperature = max(1e-3, float(getattr(cfg, "style_spatial_routing_temperature", 0.25)))
-        self.style_spatial_id_16: nn.Parameter | None = None
-        self.style_spatial_proto_16: nn.Parameter | None = None
-        self.style_spatial_atoms_16: nn.Parameter | None = None
-        self.style_spatial_logits: nn.Embedding | None = None
-        self.style_spatial_content_router: nn.Module | None = None
-        if not latent_spatial_tokenizer_family and self.style_spatial_mode != "disabled":
-            self.style_spatial_id_16 = nn.Parameter(torch.zeros(self.num_styles, self.body_channels, 16, 16))
-            nn.init.normal_(self.style_spatial_id_16, mean=0.0, std=0.02)
-            if self.style_spatial_mode in {"prototype", "content_guided"}:
-                self.style_spatial_proto_16 = nn.Parameter(
-                    torch.zeros(self.num_styles, self.style_spatial_num_prototypes, self.body_channels, 16, 16)
-                )
-                nn.init.normal_(self.style_spatial_proto_16, mean=0.0, std=0.02)
-                self.style_spatial_logits = nn.Embedding(self.num_styles, self.style_spatial_num_prototypes)
-                nn.init.zeros_(self.style_spatial_logits.weight)
-            if self.style_spatial_mode in {"vq", "vq_content_guided"}:
-                self.style_spatial_atoms_16 = nn.Parameter(torch.zeros(self.num_atoms, self.body_channels, 16, 16))
-                nn.init.normal_(self.style_spatial_atoms_16, mean=0.0, std=0.02)
-                self.style_spatial_logits = nn.Embedding(self.num_styles, self.num_atoms)
-                nn.init.zeros_(self.style_spatial_logits.weight)
-            if self.style_spatial_mode in {"content_guided", "vq_content_guided"}:
-                router_out = self.style_spatial_num_prototypes if self.style_spatial_mode == "content_guided" else self.num_atoms
-                router_in = self.body_channels * 4 + 1
-                hidden = max(4, int(getattr(cfg, "style_spatial_content_hidden_dim", 64)))
-                self.style_spatial_content_router = nn.Sequential(
-                    nn.LayerNorm(router_in),
-                    nn.Linear(router_in, hidden),
-                    nn.SiLU(),
-                    nn.Linear(hidden, router_out),
-                )
-                last = self.style_spatial_content_router[-1]
-                if isinstance(last, nn.Linear):
-                    nn.init.zeros_(last.weight)
-                    nn.init.zeros_(last.bias)
 
         # 32x32 lift stage before downsampling.
         self.enc_in = nn.Conv2d(latent_channels, self.lift_channels, kernel_size=3, stride=1, padding=1)

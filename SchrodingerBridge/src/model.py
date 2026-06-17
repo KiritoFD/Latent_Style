@@ -1730,14 +1730,44 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             return structured_ctx
         return style_code, self._prepare_style_maps(style_id)
 
-    def _style_spatial_tokens(self, z_base: torch.Tensor, style_id: torch.Tensor | int) -> torch.Tensor:
-        style_map = self.encode_style_spatial_id(style_id).get(16)
-        style_map = F.interpolate(style_map.to(device=z_base.device, dtype=z_base.dtype), size=z_base.shape[-2:], mode="bilinear", align_corners=False)
+    def _proximal_internal_style_tokens(
+        self,
+        z_base: torch.Tensor,
+        *,
+        style_id: torch.Tensor | int,
+        style_code_override: torch.Tensor | None = None,
+        source_latent: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        content_latent = source_latent if source_latent is not None else z_base
+        if content_latent.device != z_base.device:
+            content_latent = content_latent.to(device=z_base.device)
+        if content_latent.dtype != z_base.dtype:
+            content_latent = content_latent.to(dtype=z_base.dtype)
+        style_code = self._resolve_refine_style_code(
+            z_base,
+            style_id=style_id,
+            style_code_override=style_code_override,
+        )
+        feat_c = content_latent / max(self.latent_scale_factor, 1e-8)
+        h_c = self.enc_in_act(self.enc_in(feat_c))
+        h_style = self._run_style_blocks(
+            h_c,
+            blocks=self.hires_body,
+            style_code=style_code,
+            base_idx=0,
+            gate_scale=1.0,
+        )
+        style_map = self.down(h_style)
+        style_map = F.interpolate(
+            style_map.to(device=z_base.device, dtype=z_base.dtype),
+            size=z_base.shape[-2:],
+            mode="bilinear",
+            align_corners=False,
+        )
         if self.proximal_style_tokens is not None:
-            style_code = self.encode_style_id(style_id).to(device=z_base.device, dtype=z_base.dtype)
             token_bias = self.proximal_style_tokens(style_code).view(style_code.shape[0], self.body_channels, 1, 1)
             style_map = style_map + token_bias
-        return style_map
+        return style_code, style_map
 
     def _structured_proximal_style_tokens(
         self,
@@ -1844,12 +1874,12 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                     source_latent=source_latent,
                 )
             else:
-                style_code = self._resolve_refine_style_code(
+                style_code, kv_src = self._proximal_internal_style_tokens(
                     z_base,
                     style_id=style_id,
                     style_code_override=style_code_override,
+                    source_latent=source_latent,
                 )
-                kv_src = self._style_spatial_tokens(z_base, style_id).float()
             q = self.proximal_attn_q(z_base.float())
             k = self.proximal_attn_k(kv_src)
             v = self.proximal_attn_v(kv_src)
