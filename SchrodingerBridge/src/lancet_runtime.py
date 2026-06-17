@@ -164,6 +164,8 @@ class LatentAdaCUTRuntimeMixin:
         self,
         style_id: torch.Tensor | int,
     ) -> StyleMaps:
+        if getattr(self, "ablation_disable_spatial_prior", False):
+            return StyleMaps()
         return StyleMaps(
             map_16=self.encode_style_spatial_id(style_id).get(16),
         )
