@@ -140,13 +140,48 @@ def _append_full_eval_runtime_row(*, checkpoint_path: Path, out_dir: Path, wall_
         writer.writerow(row)
 
 
-def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Path) -> None:
-    train_cfg = config.training
+def _load_json_object(path: Path) -> dict[str, object] | None:
+    if not path.is_file():
+        return None
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            payload = json.load(f)
+    except Exception:
+        logger.exception("Failed to parse JSON at %s", path)
+        return None
+    if not isinstance(payload, dict):
+        logger.warning("Expected JSON object at %s, got %s", path, type(payload).__name__)
+        return None
+    return payload
+
+
+def _resolve_eval_subdir(train_cfg: object) -> str:
     eval_subdir = str(getattr(train_cfg, "full_eval_output_subdir", "full_eval") or "full_eval").strip()
     if not eval_subdir:
         eval_subdir = "full_eval"
     if Path(eval_subdir).is_absolute() or ".." in Path(eval_subdir).parts:
         raise ValueError(f"full_eval_output_subdir must be a relative child directory, got: {eval_subdir!r}")
+    return eval_subdir
+
+
+def _eval_convergence_requests_stop(train_cfg: object, convergence_payload: dict[str, object] | None, *, epoch: int) -> bool:
+    if not bool(getattr(train_cfg, "full_eval_stop_on_convergence", False)):
+        return False
+    if not isinstance(convergence_payload, dict):
+        return False
+    if not bool(convergence_payload.get("converged")):
+        return False
+    return int(epoch) >= max(0, int(getattr(train_cfg, "full_eval_convergence_min_epochs", 0)))
+
+
+def _load_existing_eval_convergence(config: ExperimentConfig, checkpoint_dir: Path) -> dict[str, object] | None:
+    eval_subdir = _resolve_eval_subdir(config.training)
+    return _load_json_object(checkpoint_dir / eval_subdir / "round2_convergence.json")
+
+
+def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Path) -> dict[str, object] | None:
+    train_cfg = config.training
+    eval_subdir = _resolve_eval_subdir(train_cfg)
     out_dir = checkpoint_path.parent / eval_subdir / checkpoint_path.stem
     eval_script = Path(__file__).resolve().parent / "utils" / "run_evaluation.py"
     cmd = [
@@ -302,6 +337,8 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
     gap_report = Path(__file__).resolve().parents[1] / "tools" / "experiments" / "report_round2_reference_gap.py"
     curve_csv = checkpoint_path.parent / eval_subdir / "clip_lpips_curve.csv"
     curve_summary_json = checkpoint_path.parent / eval_subdir / "curve_summary.json"
+    convergence_json = checkpoint_path.parent / eval_subdir / "round2_convergence.json"
+    convergence_payload: dict[str, object] | None = None
     try:
         if collector.is_file():
             curve_cmd = [
@@ -321,10 +358,19 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
                 "--curve-csv",
                 str(curve_csv),
                 "--patience",
-                "4",
+                str(max(1, int(getattr(train_cfg, "full_eval_convergence_patience", 4)))),
+                "--flat-tail-window",
+                str(max(2, int(getattr(train_cfg, "full_eval_convergence_flat_tail_window", 4)))),
+                "--flat-eps-style",
+                str(float(getattr(train_cfg, "full_eval_convergence_flat_eps_style", 0.005))),
+                "--flat-eps-lpips",
+                str(float(getattr(train_cfg, "full_eval_convergence_flat_eps_lpips", 0.018))),
+                "--output-json",
+                str(convergence_json),
             ]
             logger.info("Refreshing eval convergence for %s", checkpoint_path.parent)
             subprocess.run(conv_cmd, check=True)
+            convergence_payload = _load_json_object(convergence_json)
         manifest_csv = Path(__file__).resolve().parents[1] / "docs" / "experiments" / "round2_pure_sde" / "round2_family_manifest.csv"
         ablation_cfg = getattr(config, "ablation", {}) or {}
         family_name = ""
@@ -368,6 +414,7 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
                 subprocess.run(gap_cmd, check=True)
     except Exception:
         logger.exception("Post-eval round2 metadata refresh failed for %s; training will continue.", checkpoint_path.name)
+    return convergence_payload
 
 
 def main() -> None:
@@ -507,9 +554,34 @@ def main() -> None:
 
     trainer = SBTrainer(config=config, device=device, config_path=str(config_path))
     deferred_eval_checkpoints: list[Path] = []
+    if bool(getattr(train_cfg, "full_eval_stop_on_convergence", False)) and (
+        (not bool(getattr(train_cfg, "full_eval_each_epoch", False)))
+        or bool(getattr(train_cfg, "full_eval_defer_until_training_end", False))
+    ):
+        logger.warning(
+            "training.full_eval_stop_on_convergence is enabled, but checkpoint eval is not available at epoch end "
+            "(full_eval_each_epoch=%s defer_until_training_end=%s). Auto-stop will remain inactive.",
+            bool(getattr(train_cfg, "full_eval_each_epoch", False)),
+            bool(getattr(train_cfg, "full_eval_defer_until_training_end", False)),
+        )
+    existing_convergence = _load_existing_eval_convergence(config, trainer.checkpoint_dir)
+    if _eval_convergence_requests_stop(train_cfg, existing_convergence, epoch=int(trainer.start_epoch) - 1):
+        trainer.requested_stop = True
+        logger.info(
+            "Existing eval convergence already satisfied before training loop at epoch %d: best=%s latest=%s since_last_pareto=%s tail_flat=%s patience=%s",
+            int(trainer.start_epoch) - 1,
+            existing_convergence.get("best_epoch") if isinstance(existing_convergence, dict) else None,
+            existing_convergence.get("newest_epoch") if isinstance(existing_convergence, dict) else None,
+            existing_convergence.get("since_last_pareto") if isinstance(existing_convergence, dict) else None,
+            existing_convergence.get("tail_flat") if isinstance(existing_convergence, dict) else None,
+            existing_convergence.get("patience") if isinstance(existing_convergence, dict) else None,
+        )
 
     epoch = int(trainer.start_epoch)
     while epoch <= int(trainer.num_epochs):
+        if trainer.requested_stop:
+            logger.info("Eval convergence already satisfied; skipping epoch %d.", epoch)
+            break
         dataset.set_epoch(epoch)
         if bool(getattr(dataset, "offline_pairing_map", {})):
             logger.info(
@@ -595,16 +667,28 @@ def main() -> None:
                     deferred_eval_checkpoints.append(ckpt_path)
                 else:
                     eval_offloaded = False
+                    convergence_payload = None
                     if hasattr(trainer, "offload_for_full_eval"):
                         trainer.offload_for_full_eval()
                         eval_offloaded = True
                     try:
-                        _run_full_eval_for_checkpoint(config, ckpt_path)
+                        convergence_payload = _run_full_eval_for_checkpoint(config, ckpt_path)
                     finally:
                         if eval_offloaded and hasattr(trainer, "restore_after_full_eval"):
                             trainer.restore_after_full_eval()
+                    if _eval_convergence_requests_stop(train_cfg, convergence_payload, epoch=epoch):
+                        trainer.requested_stop = True
+                        logger.info(
+                            "Early stop requested by eval convergence at epoch %d: best=%s latest=%s since_last_pareto=%s tail_flat=%s patience=%s",
+                            epoch,
+                            convergence_payload.get("best_epoch"),
+                            convergence_payload.get("newest_epoch"),
+                            convergence_payload.get("since_last_pareto"),
+                            convergence_payload.get("tail_flat"),
+                            convergence_payload.get("patience"),
+                        )
         if trainer.requested_stop:
-            logger.info("Early stop requested by training.stop_after_global_steps; ending training loop after epoch %d.", epoch)
+            logger.info("Early stop requested; ending training loop after epoch %d.", epoch)
             break
         epoch += 1
 

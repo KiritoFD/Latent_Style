@@ -6,7 +6,6 @@ ROOT_DIR="/mnt/i/Github/Latent_Style/SchrodingerBridge"
 cd "$ROOT_DIR"
 
 BASE_CFG="/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/config.json"
-CKPT="/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/epoch_0001.pt"
 
 # 目标 VRAM: 9-11.2 GB, 尽量靠近 11GB 以提高效率
 # 记录 b 及对应的峰值 VRAM
@@ -33,15 +32,12 @@ c['training']['num_epochs'] = 1
 c['training']['batch_size'] = $b
 c['training']['virtual_length_multiplier'] = 0.01
 c['training']['full_eval_each_epoch'] = False
-c['checkpoint']['save_dir'] = './$d'
-# warmstart from topogate (non-strict, ignores tokenizer mismatch)
-c['training']['resume_model_strict'] = False
+c['checkpoint']['save_dir'] = '$d'
+c['training']['resume_checkpoint'] = ''
 json.dump(c, open('$d/config.json', 'w'), indent=2)
 "
 
-        python src/run.py --config "$d/config.json" \
-            --resume "exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/epoch_0001.pt" \
-            2>/dev/null || true
+        python src/run.py --config "$d/config.json" 2>/dev/null || true
 
         # 读取峰值 VRAM
         peak=$(grep "cuda_peak_allocated_gb" "$d/config.json" 2>/dev/null || true)

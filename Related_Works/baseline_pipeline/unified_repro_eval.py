@@ -456,6 +456,48 @@ def run_style_aligned(
         run_existing_wrapper("run_style_aligned.py", args, baseline="style_aligned", style=style, phase="infer", protocol=protocol, output_root=output_root)
 
 
+def run_618_external(
+    method: str,
+    styles: list[str],
+    smoke: bool,
+    output_root: Path,
+    protocol: str,
+    reference_manifest: Path | None = None,
+    *,
+    dry_run: bool = False,
+    placeholder: bool = False,
+) -> None:
+    max_images_per_style = "1" if smoke else "30"
+    for style in styles:
+        args = [
+            "--method",
+            method,
+            "--style",
+            style,
+            "--max_images",
+            "0",
+            "--max_images_per_style",
+            max_images_per_style,
+            "--output_root",
+            str(output_root),
+        ]
+        if reference_manifest is not None:
+            args.extend(["--content_manifest", str(reference_manifest)])
+        if dry_run:
+            args.append("--dry-run")
+        if placeholder:
+            args.append("--placeholder")
+        run_existing_wrapper(
+            "run_618_external.py",
+            args,
+            baseline=method,
+            style=style,
+            phase="infer",
+            protocol=protocol,
+            output_root=output_root,
+        )
+
+
 def run_samst(
     styles: list[str],
     smoke: bool,
@@ -709,6 +751,16 @@ def main() -> int:
         help="Target styles to reproduce.",
     )
     parser.add_argument("--smoke", action="store_true", help="Run small-scale inference where supported.")
+    parser.add_argument(
+        "--external-dry-run",
+        action="store_true",
+        help="For 618 external methods, only write per-image job manifests instead of calling upstream repos.",
+    )
+    parser.add_argument(
+        "--external-placeholder",
+        action="store_true",
+        help="For 618 external methods, create source-copy outputs for pipeline smoke tests only.",
+    )
     parser.add_argument("--clone-missing", action="store_true", help="Clone missing official repos before execution.")
     parser.add_argument("--clone-only", action="store_true", help="Only ensure repos, do not run baselines.")
     parser.add_argument("--skip-eval", action="store_true", help="Skip SchrodingerBridge evaluation.")
@@ -749,6 +801,58 @@ def main() -> int:
         "cut": (run_cut, "fully automated via existing wrapper"),
         "styleid": (run_styleid, "fully automated via existing wrapper"),
         "style_aligned": (run_style_aligned, "fully automated via existing wrapper"),
+        "stylegallery": (
+            lambda styles, smoke, output_root, protocol, reference_manifest=None: run_618_external(
+                "stylegallery",
+                styles,
+                smoke,
+                output_root,
+                protocol,
+                reference_manifest,
+                dry_run=bool(args.external_dry_run),
+                placeholder=bool(args.external_placeholder),
+            ),
+            "618 external adapter; requires STYLEGALLERY_CMD or --external-dry-run",
+        ),
+        "ham": (
+            lambda styles, smoke, output_root, protocol, reference_manifest=None: run_618_external(
+                "ham",
+                styles,
+                smoke,
+                output_root,
+                protocol,
+                reference_manifest,
+                dry_run=bool(args.external_dry_run),
+                placeholder=bool(args.external_placeholder),
+            ),
+            "618 external adapter; requires HAM_CMD or --external-dry-run",
+        ),
+        "scheduled_style_injection": (
+            lambda styles, smoke, output_root, protocol, reference_manifest=None: run_618_external(
+                "scheduled_style_injection",
+                styles,
+                smoke,
+                output_root,
+                protocol,
+                reference_manifest,
+                dry_run=bool(args.external_dry_run),
+                placeholder=bool(args.external_placeholder),
+            ),
+            "618 external adapter; requires SCHEDULED_STYLE_INJECTION_CMD or --external-dry-run",
+        ),
+        "csgo": (
+            lambda styles, smoke, output_root, protocol, reference_manifest=None: run_618_external(
+                "csgo",
+                styles,
+                smoke,
+                output_root,
+                protocol,
+                reference_manifest,
+                dry_run=bool(args.external_dry_run),
+                placeholder=bool(args.external_placeholder),
+            ),
+            "618 external adapter; requires CSGO_CMD/pretrained inference or --external-dry-run",
+        ),
         "samst": (run_samst, "fully automated via existing wrapper"),
         "s2wat": (run_s2wat, "fully automated via existing wrapper"),
         "stytr2": (run_stytr2, "inference automated if official weights are provided"),

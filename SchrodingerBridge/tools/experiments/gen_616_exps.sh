@@ -5,8 +5,7 @@ set -euo pipefail
 
 ROOT="/mnt/i/Github/Latent_Style/SchrodingerBridge"
 BATCH="exp/$(date +%Y%m%d_%H%M)_ot_vertical_sweep"
-CKPT="/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/epoch_0001.pt"
-BASE_CFG="$(dirname "$CKPT")/config.json"
+BASE_CFG="/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/config.json"
 
 mkdir -p "${ROOT}/${BATCH}"
 
@@ -14,8 +13,6 @@ gen() {
     local name="$1"; shift
     local dir="${ROOT}/${BATCH}/${name}"
     mkdir -p "$dir"
-    cp "$CKPT" "$dir/epoch_0001.pt"
-
     python3 -c "
 import json
 c = json.load(open('$BASE_CFG'))
@@ -24,10 +21,21 @@ $([ "$#" -gt 0 ] && for pair in "$@"; do
     echo "c['${k}'] = ${v}"
 done)
 c['training']['num_epochs'] = 60
+c['training']['save_interval'] = 1
 c['training']['batch_size'] = 12
-c['training']['virtual_length_multiplier'] = 0.1
-c['training']['full_eval_each_epoch'] = False
-c['checkpoint']['save_dir'] = './${dir}'
+c['training']['resume_checkpoint'] = ''
+c['training']['resume_optimizer'] = False
+c['training']['resume_training_state'] = False
+c['training']['resume_prefer_local_checkpoint'] = False
+c['training']['full_eval_each_epoch'] = True
+c['training']['full_eval_defer_until_training_end'] = False
+c['training']['full_eval_only_lpips_clip_style'] = True
+c['training']['full_eval_transfer_only'] = True
+c['training']['full_eval_stop_on_convergence'] = True
+c['training']['full_eval_convergence_patience'] = 4
+c['training']['full_eval_convergence_min_epochs'] = 4
+c['training']['full_eval_output_subdir'] = 'full_eval_transfer'
+c['checkpoint']['save_dir'] = '${dir}'
 json.dump(c, open('${dir}/config.json', 'w'), indent=2)
 "
     echo "  $name"
@@ -66,19 +74,20 @@ gen "h4_unbalanced_ot" \
     bridge.sinkhorn_unbalanced_tau_src=0.5 \
     bridge.bridge_sigma=0.0
 
-gen "h5_token_entropy" \
+gen "h5_topogate_attention" \
     bridge.bridge_path_mode='"vertical"' \
-    bridge.coupling_cost_composition='"structure_only"' \
-    bridge.coupling_structure_cost_mode='"tokenizer_entropy_affinity_gw"' \
+    bridge.coupling_cost_composition='"appearance_plus_structure"' \
+    bridge.coupling_structure_cost_mode='"topogate_attention_gw"' \
+    bridge.coupling_structure_cost_weight=0.4 \
     bridge.bridge_sigma=0.0
 
-gen "h6_combined" \
+gen "h6_combined_topogate" \
     bridge.bridge_path_mode='"vertical"' \
     bridge.coupling_solver='"sinkhorn_unbalanced"' \
     bridge.sinkhorn_unbalanced_tau_src=0.5 \
     bridge.coupling_cost_composition='"appearance_plus_structure"' \
-    bridge.coupling_structure_cost_mode='"tokenizer_entropy_affinity_gw"' \
-    bridge.coupling_structure_cost_weight=0.3 \
+    bridge.coupling_structure_cost_mode='"topogate_attention_gw"' \
+    bridge.coupling_structure_cost_weight=0.4 \
     bridge.bridge_sigma=0.02 \
     bridge.bridge_noise_schedule='"exact_brownian"'
 

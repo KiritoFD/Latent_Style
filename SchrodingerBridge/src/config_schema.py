@@ -726,6 +726,12 @@ class TrainingConfig:
     full_eval_defer_until_training_end: bool = False
     full_eval_force_regen: bool = False
     full_eval_profile_timing: bool = False
+    full_eval_stop_on_convergence: bool = False
+    full_eval_convergence_patience: int = 4
+    full_eval_convergence_flat_tail_window: int = 4
+    full_eval_convergence_flat_eps_style: float = 0.005
+    full_eval_convergence_flat_eps_lpips: float = 0.018
+    full_eval_convergence_min_epochs: int = 0
     test_image_dir: str = "../style_data/overfit50"
     full_eval_cache_dir: str = "../eval_cache"
     full_eval_clip_hf_cache_dir: str = "../eval_cache/hf"

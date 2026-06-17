@@ -16,7 +16,7 @@
 | h2 | vertical | appearance_only | — | sinkhorn | 0 | 欧氏 OT 对照 |
 | h3 | vertical | structure_only | self_affinity_gw | sinkhorn | 0.02 | SDE 噪声 |
 | h4 | vertical | structure_only | self_affinity_gw | sinkhorn_unbalanced | 0 | 非平衡 OT |
-| h5 | vertical | structure_only | topogate_attention_gw | sinkhorn | 0 | TopoGate attention 结构代价 |
+| h5 | vertical | appearance_plus_structure | topogate_attention_gw | sinkhorn | 0 | TopoGate attention complexity + latent self-affinity |
 | h6 | vertical | appearance_plus_structure | topogate_attention_gw | sinkhorn_unbalanced | 0.02 | 全组合 |
 
 **判据**: 每个实验跑完后读 clip_lpips_curve.csv。选出 best transfer style 和 best LPIPS。
@@ -62,8 +62,11 @@
 
 ## gen_lite_batch.py 需要的改动
 
-h5 的 `coupling_structure_cost_mode` 从 `tokenizer_entropy_affinity_gw` 改为 `topogate_attention_gw`。
+h5 / h6 的核心切换是:
+- `coupling_structure_cost_mode`: `tokenizer_entropy_affinity_gw` → `topogate_attention_gw`
+- `h5.coupling_cost_composition`: `structure_only` → `appearance_plus_structure`
+- `h5/h6.coupling_structure_cost_weight`: 设到 `0.4`
 
-只改这一行。代码依赖 `topogate_attention_gw` 模式需要在 `_structure_pairwise_cost` 中实现——
-从 `model.last_semantic_attn` 或 `model.last_semantic_topology_attn` 提取 attention 矩阵，
+代码依赖 `topogate_attention_gw` 模式需要在 `_structure_pairwise_cost` 中实现——
+从 `model.last_semantic_topology_attn`（无则回退 `last_semantic_attn`）提取 attention 矩阵，
 计算 entropy map，构建 self-affinity descriptor。

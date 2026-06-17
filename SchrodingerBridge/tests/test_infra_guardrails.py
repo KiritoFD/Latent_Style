@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 import torch
 import torch.nn as nn
+from types import SimpleNamespace
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,6 +19,7 @@ from losses import OTFlowMatchingObjective  # noqa: E402
 from model import TimeConditionedLANCETBridge  # noqa: E402
 from ot_cost import SWDTransportCost  # noqa: E402
 from trainer import SBTrainer  # noqa: E402
+from run import _eval_convergence_requests_stop  # noqa: E402
 
 
 def test_cpu_hungarian_requires_explicit_opt_in() -> None:
@@ -55,6 +57,52 @@ def test_unbalanced_ot_can_route_to_source_local_dummies() -> None:
     assert augmented_targets.shape[0] == 5
     assert torch.allclose(torch.diagonal(augmented_cost[:, 2:]), torch.full((3,), 0.25))
     assert torch.equal(augmented_targets[2:], content)
+
+
+def test_topogate_attention_gw_reuses_model_attention_not_tokenizer() -> None:
+    cfg = ExperimentConfig(
+        model=ModelConfig(
+            num_styles=3,
+            style_dim=32,
+            base_dim=16,
+            time_dim=32,
+            tokenizer_identity_dim=8,
+            tokenizer_texture_dim=8,
+            tokenizer_geometry_dim=8,
+            num_hires_blocks=1,
+            num_res_blocks=1,
+            num_decoder_blocks=1,
+            style_attn_num_tokens=8,
+            style_attn_num_heads=2,
+            hires_block_type="conv",
+            body_block_type="global_attn",
+            decoder_block_type="conv",
+            semantic_self_topology_gate=True,
+            semantic_self_topology_blend=1.0,
+        ),
+        bridge=BridgeConfig(
+            coupling_cost_composition="appearance_plus_structure",
+            coupling_structure_cost_mode="topogate_attention_gw",
+            coupling_structure_cost_weight=0.4,
+        ),
+    )
+    objective = OTFlowMatchingObjective(cfg)
+    model = TimeConditionedLANCETBridge(cfg.model)
+    content = torch.randn(2, 4, 16, 16)
+    target = torch.randn(2, 4, 16, 16)
+
+    cost, metrics = objective._structure_pairwise_cost(
+        model,
+        content,
+        target,
+        style_id=torch.tensor([0, 1]),
+    )
+
+    assert cost.shape == (2, 2)
+    assert torch.isfinite(cost).all()
+    assert metrics["ot_topogate_probe_active"].item() == 1.0
+    assert metrics["ot_topogate_complexity_cost_mean"].item() >= 0.0
+    assert metrics["ot_latent_affinity_cost_mean"].item() >= 0.0
 
 
 def test_barycentric_projection_uses_source_row_shape() -> None:
@@ -234,3 +282,15 @@ def test_crossattn_texture_legacy_factorized_has_no_legacy_style_spatial_path() 
 
     assert output.shape == z_base.shape
     assert torch.allclose(output, z_base)
+
+
+def test_eval_convergence_stop_respects_min_epoch() -> None:
+    train_cfg = SimpleNamespace(
+        full_eval_stop_on_convergence=True,
+        full_eval_convergence_min_epochs=4,
+    )
+    payload = {"converged": True}
+
+    assert _eval_convergence_requests_stop(train_cfg, payload, epoch=4) is True
+    assert _eval_convergence_requests_stop(train_cfg, payload, epoch=3) is False
+    assert _eval_convergence_requests_stop(train_cfg, {"converged": False}, epoch=10) is False
