@@ -99,6 +99,7 @@ class OTFlowMatchingObjective:
             "tokenizer_aux_self_affinity_gw",
             "tokenizer_aux_hybrid_affinity_gw",
             "tokenizer_entropy_affinity_gw",
+            "topogate_attention_gw",
         }:
             self.coupling_structure_cost_mode = "none"
         self.coupling_structure_cost_weight = min(
@@ -687,6 +688,57 @@ class OTFlowMatchingObjective:
         affinity = F.normalize(affinity, p=2, dim=1, eps=1e-6) * affinity_weight
         return torch.cat([stats, affinity], dim=1)
 
+    def _topogate_complexity_descriptor_from_attention(
+        self,
+        attn: torch.Tensor,
+    ) -> torch.Tensor:
+        probs = attn.float().clamp_min(1e-8)
+        entropy = -(probs * probs.log()).sum(dim=-1)
+        max_entropy = max(math.log(float(max(int(probs.shape[-1]), 2))), 1e-8)
+        entropy = entropy / max_entropy
+        median = entropy.median(dim=1, keepdim=True).values
+        return torch.stack(
+            [
+                entropy.mean(dim=1),
+                entropy.std(dim=1, unbiased=False),
+                (entropy > median).float().mean(dim=1),
+                entropy.amax(dim=1),
+            ],
+            dim=1,
+        ).float()
+
+    def _ot_topogate_attention_map(
+        self,
+        model: TimeConditionedLANCETBridge,
+        x: torch.Tensor,
+        *,
+        style_id: torch.Tensor | int,
+    ) -> torch.Tensor | None:
+        style_id_t = self._expand_style_id_tensor(style_id, batch=int(x.shape[0]), device=x.device)
+        content_feat_16 = self._ot_encoder_feature_map(model, x, style_id=style_id_t).to(dtype=x.dtype)
+        body_blocks = getattr(model, "body_blocks", None)
+        if body_blocks is None:
+            return None
+        body_blocks = list(body_blocks)
+        if not body_blocks:
+            return None
+        probe_map = content_feat_16
+        h = content_feat_16
+        for block in body_blocks:
+            if hasattr(block, "last_topology_attn"):
+                setattr(block, "last_topology_attn", None)
+            if hasattr(block, "last_attn"):
+                setattr(block, "last_attn", None)
+        with torch.no_grad():
+            for block in body_blocks:
+                h = block(h, style_map=probe_map, gate=0.0)
+        attn = getattr(model, "last_semantic_topology_attn", None)
+        if attn is None:
+            attn = getattr(model, "last_semantic_attn", None)
+        if attn is None:
+            return None
+        return attn.detach().float()
+
     @staticmethod
     def _expand_style_id_tensor(
         style_id: torch.Tensor | int,
@@ -784,7 +836,17 @@ class OTFlowMatchingObjective:
         y: torch.Tensor,
         *,
         style_id: torch.Tensor | int,
-    ) -> torch.Tensor:
+    ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+        metric_ref = x.new_tensor(0.0, dtype=torch.float32)
+        metrics = {
+            "ot_topogate_probe_active": metric_ref,
+            "ot_topogate_complexity_cost_mean": metric_ref,
+            "ot_topogate_complexity_cost_var": metric_ref,
+            "ot_topogate_content_complexity_mean": metric_ref,
+            "ot_topogate_target_complexity_mean": metric_ref,
+            "ot_latent_affinity_cost_mean": metric_ref,
+            "ot_latent_affinity_cost_var": metric_ref,
+        }
         if self.coupling_structure_cost_mode == "self_affinity_gw":
             x_desc = self._coupling_affinity_descriptor(x)
             y_desc = self._coupling_affinity_descriptor(y)
@@ -810,10 +872,44 @@ class OTFlowMatchingObjective:
             y_desc = self._routing_entropy_affinity_descriptor(
                 self._ot_tokenizer_aux_feature_map(model, y, style_id=style_id)
             )
+        elif self.coupling_structure_cost_mode == "topogate_attention_gw":
+            x_attn = self._ot_topogate_attention_map(model, x, style_id=style_id)
+            y_attn = self._ot_topogate_attention_map(model, y, style_id=style_id)
+            x_latent_desc = self._coupling_affinity_descriptor(x)
+            y_latent_desc = self._coupling_affinity_descriptor(y)
+            latent_cost = torch.cdist(x_latent_desc, y_latent_desc, p=2).pow(2)
+            metrics["ot_latent_affinity_cost_mean"] = latent_cost.mean().detach()
+            metrics["ot_latent_affinity_cost_var"] = latent_cost.var(unbiased=False).detach()
+            if x_attn is None or y_attn is None:
+                return latent_cost, metrics
+            x_complexity = self._topogate_complexity_descriptor_from_attention(x_attn)
+            y_complexity = self._topogate_complexity_descriptor_from_attention(y_attn)
+            complexity_cost = torch.cdist(x_complexity, y_complexity, p=2).pow(2)
+            metrics.update(
+                {
+                    "ot_topogate_probe_active": metric_ref.new_tensor(1.0, dtype=torch.float32),
+                    "ot_topogate_complexity_cost_mean": complexity_cost.mean().detach(),
+                    "ot_topogate_complexity_cost_var": complexity_cost.var(unbiased=False).detach(),
+                    "ot_topogate_content_complexity_mean": x_complexity[:, 0].mean().detach(),
+                    "ot_topogate_target_complexity_mean": y_complexity[:, 0].mean().detach(),
+                }
+            )
+            complexity_scale = complexity_cost.detach().mean().clamp_min(self.eps)
+            latent_scale = latent_cost.detach().mean().clamp_min(self.eps)
+            complexity_weight = min(1.0, max(0.0, float(self.coupling_structure_hybrid_stats_weight)))
+            if complexity_weight <= 0.0:
+                return latent_cost, metrics
+            if complexity_weight >= 1.0:
+                return complexity_cost, metrics
+            total_cost = (
+                complexity_weight * (complexity_cost / complexity_scale)
+                + (1.0 - complexity_weight) * (latent_cost / latent_scale)
+            )
+            return total_cost, metrics
         else:
             x_desc = self._coupling_structure_descriptor(x)
             y_desc = self._coupling_structure_descriptor(y)
-        return torch.cdist(x_desc, y_desc, p=2).pow(2)
+        return torch.cdist(x_desc, y_desc, p=2).pow(2), metrics
 
     def _fiber_probe_metrics(
         self,
@@ -1008,7 +1104,7 @@ class OTFlowMatchingObjective:
             self.coupling_structure_cost_mode == "none" or self.coupling_structure_cost_weight <= 0.0
         )
         if self.coupling_cost_composition == "structure_only" and structure_active:
-            structure_cost = self._structure_pairwise_cost(
+            structure_cost, structure_debug = self._structure_pairwise_cost(
                 model,
                 content_group,
                 target_group,
@@ -1022,6 +1118,7 @@ class OTFlowMatchingObjective:
                     "ot_cost_composition_structure_only": metric_ref.new_tensor(1.0, dtype=torch.float32),
                 }
             )
+            metrics.update(structure_debug)
             struct_scale = structure_cost.detach().mean().clamp_min(self.eps)
             return structure_cost / struct_scale, metrics
 
@@ -1035,7 +1132,7 @@ class OTFlowMatchingObjective:
             metrics["ot_cost_composition_appearance_only"] = metric_ref.new_tensor(1.0, dtype=torch.float32)
             return appearance_cost, metrics
 
-        structure_cost = self._structure_pairwise_cost(
+        structure_cost, structure_debug = self._structure_pairwise_cost(
             model,
             content_group,
             target_group,
@@ -1059,6 +1156,7 @@ class OTFlowMatchingObjective:
                 "ot_structure_cost_active": metric_ref.new_tensor(1.0, dtype=torch.float32),
             }
         )
+        metrics.update(structure_debug)
         return total_cost, metrics
 
     def _style_bridge_noise(self, content: torch.Tensor, matched_target: torch.Tensor) -> torch.Tensor:

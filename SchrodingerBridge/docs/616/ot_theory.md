@@ -121,17 +121,18 @@ total_cost = (1-weight) * appearance_cost / app_scale + weight * structure_cost 
 
 ## 五、推荐修正路径
 
-### 路径 A: Tokenizer 熵指纹 (最小改动)
+### 路径 A: TopoGate attention complexity + latent self-affinity
 
-`tokenizer_entropy_affinity_gw` 模式用 tokenizer 的路由熵作为结构描述符。
-路由熵天然编码了空间复杂度——复杂区域的 entropy 高，平坦区域的 entropy 低。
+`topogate_attention_gw` 模式直接用 TopoGate 的内生 attention 熵做结构复杂度描述，
+再和潜变量 `self_affinity_gw` 做结构层混合。这样代价反映的是
+"当前 transport 学起来有多难"，而不是 tokenizer 路由本身。
 
 **为什么这可能是最优解**: 
-- 不依赖 UNet encoder（避免额外前向传播，且 encoder 被 velocity 训练目标污染）
-- 天然与 tokenizer 的 cluster 路由耦合——"软路由"的像素比"硬路由"的像素更"结构复杂"
-- 每个像素由一个 K 维向量（attention weight）表示，比 4 维潜变量更具判别性
+- 不依赖 tokenizer（已确认无 ROI）
+- 不需要额外 encoder 全前向，直接复用 body/topogate 里的 attention 缓存
+- TopoGate 熵负责复杂度分层，latent self-affinity 负责保留紧凑的 GW 结构信息
 
-**验证**: 设置 `coupling_structure_cost_mode="tokenizer_entropy_affinity_gw"`，
+**验证**: 设置 `coupling_structure_cost_mode="topogate_attention_gw"`，
 观察 `ot_target_gini` 是否 ≤ 0.4（低于 0.6 的安全红线）。
 
 ### 路径 B: 分层 OT (Per-Cluster OT)
@@ -222,9 +223,9 @@ w_struct = 0.3-0.5
 
 ### 今天: 验证结构 OT 是否有效
 
-1. 设置 `coupling_structure_cost_mode = "tokenizer_entropy_affinity_gw"`
+1. 设置 `coupling_structure_cost_mode = "topogate_attention_gw"`
 2. 设置 `coupling_cost_composition = "appearance_plus_structure"`
-3. 设置 `coupling_structure_cost_weight = 0.5` (给外观留空间)
+3. 设置 `coupling_structure_cost_weight = 0.4` (给外观留空间，同时保留结构主导)
 4. 用现有 topogate ckpt 作为 warmstart，训练 4-6 epochs
 5. 观察 `ot_target_gini`: 应 < 0.6
 6. 观察 `ot_structure_cost_var`: 应 > 0（不退化）
@@ -236,7 +237,7 @@ w_struct = 0.3-0.5
 
 ### 如果 Gini 仍然高
 
-说明 tokenizer_entropy 描述符也不能区分足够的结构 → 需要路径 B（分层 OT）或
+说明 TopoGate complexity + latent affinity 仍不能区分足够的结构 → 需要路径 B（分层 OT）或
 使用 UNet encoder 特征。
 
 ---
@@ -246,7 +247,7 @@ w_struct = 0.3-0.5
 **OT 效果不好的根因**: 不是理论错了，不是实现错了——是**默认参数可能让结构代价退化**。
 self_affinity_gw 在 4 通道 VAE latent 上的区分度可能不足，归一化只做了 mean 对齐但没做 variance 对齐。
 
-**最优先的修改**: `coupling_structure_cost_mode` 从 `self_affinity_gw` 改为 `tokenizer_entropy_affinity_gw`，
-用 tokenizer 的路由熵（比 4 维潜变量更丰富的结构描述符）做 GW 匹配。
+**最优先的修改**: `coupling_structure_cost_mode` 从 `self_affinity_gw` 改为 `topogate_attention_gw`，
+让结构代价吃 TopoGate attention complexity，并与 latent self-affinity 共同决定 transport 难度。
 
 **是否需要同时做垂直 FM**: 是。结构 OT 修配对，垂直 FM 修速度场——两者互补。

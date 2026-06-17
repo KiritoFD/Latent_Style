@@ -11,8 +11,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
-WARM_CKPT="exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/epoch_0001.pt"
-BASE_CFG="$(dirname "$WARM_CKPT")/config.json"
+BASE_CFG="exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/config.json"
 
 echo "=== OT Structure Cost Mode Probe ==="
 echo "Base: bridge_path_mode=vertical, bridge_sigma=0"
@@ -36,16 +35,25 @@ c['bridge']['coupling_solver'] = '$solver'
 c['bridge']['coupling_structure_cost_weight'] = 1.0
 c['bridge']['sinkhorn_unbalanced_tau_src'] = $tau
 c['training']['num_epochs'] = 4
+c['training']['save_interval'] = 1
 c['training']['batch_size'] = 12
 c['training']['virtual_length_multiplier'] = 0.1
-c['training']['full_eval_each_epoch'] = False
-c['checkpoint']['save_dir'] = './$dir'
+c['training']['resume_checkpoint'] = ''
+c['training']['resume_optimizer'] = False
+c['training']['resume_training_state'] = False
+c['training']['resume_prefer_local_checkpoint'] = False
+c['training']['full_eval_each_epoch'] = True
+c['training']['full_eval_defer_until_training_end'] = False
+c['training']['full_eval_only_lpips_clip_style'] = True
+c['training']['full_eval_transfer_only'] = True
+c['training']['full_eval_stop_on_convergence'] = True
+c['training']['full_eval_convergence_patience'] = 4
+c['training']['full_eval_output_subdir'] = 'full_eval_transfer'
+c['checkpoint']['save_dir'] = '$dir'
 json.dump(c, open('$dir/config.json', 'w'), indent=2)
 "
-    cp "$WARM_CKPT" "$dir/epoch_0001.pt"
-
     echo "--- $tag ($cost_mode, $solver) ---"
-    python src/run.py --config "$dir/config.json" --resume "$dir/epoch_0001.pt" 2>&1 | \
+    python src/run.py --config "$dir/config.json" 2>&1 | \
         grep -E "ot_target_gini|ot_structure_cost_var|ot_plan_entropy|ot_cost_mean|ot_target_mass_entropy|Epoch [0-9]" | tail -30
 }
 
@@ -57,7 +65,7 @@ json.dump(c, open('$dir/config.json', 'w'), indent=2)
 probe_one "selfaffinity" "self_affinity_gw" "sinkhorn" 1.0
 
 # 2. tokenizer_entropy (最可能好的)
-probe_one "tokentropy" "tokenizer_entropy_affinity_gw" "sinkhorn" 1.0
+probe_one "topogate" "topogate_attention_gw" "sinkhorn" 1.0
 
 # 3. encoder_self_affinity
 probe_one "encoderself" "encoder_self_affinity_gw" "sinkhorn" 1.0
@@ -69,7 +77,7 @@ probe_one "lowedge" "lowedge_self_affinity_gw" "sinkhorn" 1.0
 probe_one "selfaff_unbal" "self_affinity_gw" "sinkhorn_unbalanced" 0.5
 
 # 6. tokenizer_entropy + unbalanced (最可能最优)
-probe_one "tokent_unbal" "tokenizer_entropy_affinity_gw" "sinkhorn_unbalanced" 0.5
+probe_one "topogate_unbal" "topogate_attention_gw" "sinkhorn_unbalanced" 0.5
 
 echo ""
 echo "=== DONE ==="

@@ -96,3 +96,34 @@ def test_training_log_keeps_transport_stats_and_bridge_noise_observability(tmp_p
     assert row["training_bridge_noise_projection_post_rms"] == "0.24"
     assert row["training_bridge_noise_projection_low_rms"] == "0.03"
     assert row["training_bridge_noise_projection_high_rms"] == "0.21"
+
+
+def test_training_log_keeps_topogate_ot_probes(tmp_path):
+    log_file = tmp_path / "training.csv"
+    initialize_training_log(log_file)
+    append_training_log(
+        log_file,
+        {
+            "loss": 3.0,
+            "ot_topogate_probe_active": 1.0,
+            "ot_topogate_complexity_cost_mean": 0.42,
+            "ot_topogate_complexity_cost_var": 0.08,
+            "ot_topogate_content_complexity_mean": 0.61,
+            "ot_topogate_target_complexity_mean": 0.57,
+            "ot_latent_affinity_cost_mean": 1.23,
+            "ot_latent_affinity_cost_var": 0.34,
+        },
+        epoch=5,
+    )
+
+    rows = list(csv.DictReader(log_file.open("r", encoding="utf-8", newline="")))
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["epoch"] == "5"
+    assert row["ot_topogate_probe_active"] == "1.0"
+    assert row["ot_topogate_complexity_cost_mean"] == "0.42"
+    assert row["ot_topogate_complexity_cost_var"] == "0.08"
+    assert row["ot_topogate_content_complexity_mean"] == "0.61"
+    assert row["ot_topogate_target_complexity_mean"] == "0.57"
+    assert row["ot_latent_affinity_cost_mean"] == "1.23"
+    assert row["ot_latent_affinity_cost_var"] == "0.34"

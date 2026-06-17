@@ -13,8 +13,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
-WARM_CKPT="exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/epoch_0001.pt"
-BASE_CFG="$(dirname "$WARM_CKPT")/config.json"
+BASE_CFG="exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/config.json"
 
 # ============================================================
 # 收敛判断
@@ -69,7 +68,6 @@ run_to_convergence() {
 
     python src/run.py \
         --config "${exp_dir}/config.json" \
-        --resume "${exp_dir}/epoch_0001.pt" \
         2>&1 | tee "${exp_dir}/train.log"
 
     # 读最终结果
@@ -96,15 +94,28 @@ import json
 c = json.load(open('$BASE_CFG'))
 # 全局设置
 c['training']['num_epochs'] = 60          # 不超过 60 个小 epoch
+c['training']['save_interval'] = 1
 c['training']['batch_size'] = 12
 c['training']['accumulation_steps'] = 1
+c['training']['resume_checkpoint'] = ''
+c['training']['resume_optimizer'] = False
+c['training']['resume_training_state'] = False
+c['training']['resume_prefer_local_checkpoint'] = False
 c['training']['virtual_length_multiplier'] = 0.1
+c['training']['full_eval_each_epoch'] = True
+c['training']['full_eval_defer_until_training_end'] = False
+c['training']['full_eval_only_lpips_clip_style'] = True
+c['training']['full_eval_transfer_only'] = True
+c['training']['full_eval_stop_on_convergence'] = True
+c['training']['full_eval_convergence_patience'] = 4
+c['training']['full_eval_convergence_min_epochs'] = 4
+c['training']['full_eval_output_subdir'] = 'full_eval_transfer'
 c['training']['full_eval_each_epoch'] = False   # 不每 epoch eval
 c['training']['full_eval_interval'] = 4          # 每 4 epoch eval
-c['checkpoint']['save_dir'] = './$dir'
+c['training']['full_eval_each_epoch'] = True
+c['checkpoint']['save_dir'] = '$dir'
 json.dump(c, open('$dir/config.json', 'w'), indent=2)
 "
-    cp "$WARM_CKPT" "$dir/epoch_0001.pt"
     echo "$dir"
 }
 
@@ -163,10 +174,12 @@ override_bridge "$D4" 'bridge_path_mode="vertical"' 'bridge_sigma=0.0' \
     'coupling_cost_composition="structure_only"' 'coupling_structure_cost_mode="self_affinity_gw"' \
     'coupling_solver="sinkhorn_unbalanced"' 'sinkhorn_unbalanced_tau_src=0.5'
 
-# H5: Tokenizer entropy affinity
-D5=$(make_exp "h5_tokenentropy")
+# H5: TopoGate attention complexity + latent self-affinity
+D5=$(make_exp "h5_topogate")
 override_bridge "$D5" 'bridge_path_mode="vertical"' 'bridge_sigma=0.0' \
-    'coupling_cost_composition="structure_only"' 'coupling_structure_cost_mode="tokenizer_entropy_affinity_gw"'
+    'coupling_cost_composition="appearance_plus_structure"' \
+    'coupling_structure_cost_mode="topogate_attention_gw"' \
+    'coupling_structure_cost_weight=0.4'
 
 # H6: Combined (best from H0-H5 picks)
 D6=$(make_exp "h6_combined")
@@ -174,8 +187,8 @@ override_bridge "$D6" 'bridge_path_mode="vertical"' 'bridge_sigma=0.02' \
     'bridge_noise_schedule="exact_brownian"' \
     'coupling_solver="sinkhorn_unbalanced"' 'sinkhorn_unbalanced_tau_src=0.5' \
     'coupling_cost_composition="appearance_plus_structure"' \
-    'coupling_structure_cost_mode="tokenizer_entropy_affinity_gw"' \
-    'coupling_structure_cost_weight=0.3'
+    'coupling_structure_cost_mode="topogate_attention_gw"' \
+    'coupling_structure_cost_weight=0.4'
 
 echo ""
 echo "=== Experiments Ready ==="
@@ -184,10 +197,10 @@ echo "H1: $D1  (linear FM control)"
 echo "H2: $D2  (Euclidean OT control)"
 echo "H3: $D3  (SDE sigma=0.02)"
 echo "H4: $D4  (Unbalanced OT)"
-echo "H5: $D5  (Tokenizer entropy affinity)"
+echo "H5: $D5  (TopoGate attention + latent self-affinity)"
 echo "H6: $D6  (All combined)"
 echo ""
-echo "Each: virtual_length=0.1, b12, up to 60 epochs, eval every 4"
+echo "Each: virtual_length=0.1, b12, up to 60 epochs, eval every epoch with convergence stop"
 echo "Estimated: ~1.5h each × 7 = ~10h total"
 echo ""
 
@@ -221,7 +234,7 @@ echo "=== Phase 2: OT & Noise ==="
 run_to_convergence "$D2" "H2: Euclidean OT" 12
 run_to_convergence "$D3" "H3: SDE sigma=0.02" 12
 run_to_convergence "$D4" "H4: Unbalanced OT" 12
-run_to_convergence "$D5" "H5: Tokenizer entropy" 12
+run_to_convergence "$D5" "H5: TopoGate attention + latent self-affinity" 12
 
 # ============================================================
 # 执行: H6 全组合

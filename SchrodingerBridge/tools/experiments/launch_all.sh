@@ -7,7 +7,7 @@ set -euo pipefail
 BASE_DIR="/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_lite_ot_vertical"
 cd /mnt/i/Github/Latent_Style/SchrodingerBridge
 
-for name in h0_vertical_fm h1_linear_fm h2_euclidean_ot h3_sde_noise h4_unbalanced_ot h5_token_entropy h6_combined; do
+for name in h0_vertical_fm h1_linear_fm h2_euclidean_ot h3_sde_noise h4_unbalanced_ot h5_topogate_attention h6_combined_topogate; do
     DIR="${BASE_DIR}/${name}"
     CFG="${DIR}/config.json"
 

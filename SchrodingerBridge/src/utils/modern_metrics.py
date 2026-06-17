@@ -86,6 +86,31 @@ class ClipEmbedder:
                 img.close()
         return torch.cat(feats, dim=0) if feats else torch.empty((0, 512), dtype=torch.float32)
 
+    @torch.inference_mode()
+    def encode_texts(self, texts: list[str], batch_size: int) -> torch.Tensor:
+        feats: list[torch.Tensor] = []
+        for start in range(0, len(texts), batch_size):
+            batch_texts = texts[start:start + batch_size]
+            inputs = self.processor(text=batch_texts, padding=True, truncation=True, return_tensors="pt")
+            inputs = {k: v.to(self.device) for k, v in inputs.items()}
+            if hasattr(self.model, "get_text_features"):
+                result = self.model.get_text_features(**inputs)
+            else:
+                result = self.model(**inputs)
+            if isinstance(result, torch.Tensor):
+                emb = result
+            elif hasattr(result, "text_embeds") and result.text_embeds is not None:
+                emb = result.text_embeds
+            elif hasattr(result, "pooler_output") and result.pooler_output is not None:
+                emb = result.pooler_output
+            elif hasattr(result, "last_hidden_state") and result.last_hidden_state is not None:
+                emb = result.last_hidden_state[:, 0, :]
+            else:
+                raise TypeError(f"Unsupported CLIP text output type: {type(result)!r}")
+            emb = F.normalize(emb.float(), p=2, dim=-1)
+            feats.append(emb.cpu())
+        return torch.cat(feats, dim=0) if feats else torch.empty((0, 512), dtype=torch.float32)
+
 
 class DinoStructureEmbedder:
     def __init__(self, model_name: str, device: str) -> None:
