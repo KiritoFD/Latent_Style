@@ -78,7 +78,8 @@ $$C^{\text{GW}}_{ijkl} = \left| d(x_i, x_j) - d(y_k, y_l) \right|^2$$
 | `encoder_hybrid_affinity_gw` | encoder 特征 + 低频/边缘混合 |
 | `tokenizer_aux_hybrid_affinity_gw` | tokenizer aux + 低频/边缘混合 |
 
-默认配置: `coupling_cost_composition = "appearance_plus_structure"`, `coupling_structure_cost_weight = 1.0`.
+默认配置: `coupling_cost_composition = "structure_only"`（注意：不是 `appearance_plus_structure`），`coupling_structure_cost_weight = 1.0`。
+意味着默认只用结构代价做 OT 匹配，外观代价不参与。
 
 ---
 
@@ -150,7 +151,7 @@ $$\min_{\Pi} \langle \Pi, C \rangle + \epsilon H(\Pi) + \tau_1 D_{KL}(\Pi \mathb
 Unbalanced OT 允许这些源图"放弃匹配"而不是强行拉拽到最近的（不合适的）目标。
 避免噪声梯度。
 
-代码中已有 `sinkhorn_use_unbalanced` 标志和相关参数。
+代码中已有 `coupling_solver: "sinkhorn_unbalanced"` 和相关参数（`sinkhorn_unbalanced_tau_src/tgt` 在 extra dict 中，非 schema 显式字段）。
 
 ---
 

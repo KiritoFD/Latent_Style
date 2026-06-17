@@ -79,14 +79,14 @@ class OTFlowMatchingObjective:
             self.coupling_lowfreq_kernel += 1
         self.coupling_edge_weight = max(0.0, float(bridge_cfg.coupling_edge_weight))
         self.coupling_cost_composition = str(
-            getattr(bridge_cfg, "coupling_cost_composition", "appearance_plus_structure")
+            getattr(bridge_cfg, "coupling_cost_composition", "structure_only")
         ).strip().lower()
         if self.coupling_cost_composition not in {
             "appearance_only",
             "appearance_plus_structure",
             "structure_only",
         }:
-            self.coupling_cost_composition = "appearance_plus_structure"
+            self.coupling_cost_composition = "structure_only"
         self.coupling_structure_cost_mode = str(
             getattr(bridge_cfg, "coupling_structure_cost_mode", "none")
         ).strip().lower()
@@ -124,9 +124,21 @@ class OTFlowMatchingObjective:
             1.0,
             max(0.0, float(getattr(bridge_cfg, "coupling_structure_hybrid_stats_weight", 0.5))),
         )
-        self.coupling_target_mode = str(getattr(bridge_cfg, "coupling_target_mode", "sample")).strip().lower()
+        self.coupling_target_mode = str(getattr(bridge_cfg, "coupling_target_mode", "barycentric_full")).strip().lower()
         if self.coupling_target_mode not in {"sample", "barycentric_full", "barycentric_topk"}:
-            self.coupling_target_mode = "sample"
+            self.coupling_target_mode = "barycentric_full"
+        if (
+            self.coupling_cost_composition == "structure_only"
+            and (
+                self.coupling_structure_cost_mode == "none"
+                or self.coupling_structure_cost_weight <= 0.0
+            )
+        ):
+            raise ValueError(
+                "bridge.coupling_cost_composition='structure_only' requires a nonzero structural OT term. "
+                "Set bridge.coupling_structure_cost_mode to a structure descriptor such as 'self_affinity_gw' "
+                "and bridge.coupling_structure_cost_weight > 0."
+            )
         self.coupling_barycentric_topk = max(0, int(getattr(bridge_cfg, "coupling_barycentric_topk", 0)))
         self.sinkhorn_epsilon = max(float(bridge_cfg.sinkhorn_epsilon), 1e-5)
         self.sinkhorn_iters = max(int(bridge_cfg.sinkhorn_iters), 1)
@@ -146,14 +158,14 @@ class OTFlowMatchingObjective:
         if self.bridge_noise_schedule not in {"auto", "exact_brownian", "delayed_window"}:
             self.bridge_noise_schedule = "auto"
         self.bridge_path_mode = str(getattr(bridge_cfg, "bridge_path_mode", "linear")).strip().lower()
-        if self.bridge_path_mode not in {"linear", "latent_slerp"}:
+        if self.bridge_path_mode not in {"linear", "latent_slerp", "vertical"}:
             raise ValueError(
-                f"Unsupported bridge.bridge_path_mode={self.bridge_path_mode!r}; expected 'linear' or 'latent_slerp'."
+                f"Unsupported bridge.bridge_path_mode={self.bridge_path_mode!r}; expected 'linear', 'latent_slerp', or 'vertical'."
             )
-        if self.bridge_path_mode != "linear" and self.transport_prediction_mode != "endpoint":
+        if self.bridge_path_mode not in {"linear", "vertical"} and self.transport_prediction_mode != "endpoint":
             raise ValueError(
-                "Nonlinear bridge_path_mode is currently implemented only for endpoint transport. "
-                "Using it with velocity transport would require the exact path derivative."
+                f"bridge_path_mode={self.bridge_path_mode!r} is currently only supported for endpoint transport "
+                "(or for 'vertical' which works with velocity)."
             )
         self.bridge_path_slerp_eps = max(1e-8, float(getattr(bridge_cfg, "bridge_path_slerp_eps", 1e-4)))
         self.bridge_noise_window_start = float(getattr(bridge_cfg, "bridge_noise_window_start", 0.18))
@@ -958,23 +970,47 @@ class OTFlowMatchingObjective:
         *,
         style_id: torch.Tensor | int,
     ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+        metric_ref = content_group.new_tensor(0.0, dtype=torch.float32)
+        metrics: dict[str, torch.Tensor] = {
+            "ot_appearance_cost_mean": metric_ref,
+            "ot_appearance_cost_var": metric_ref,
+            "ot_structure_cost_mean": metric_ref,
+            "ot_structure_cost_var": metric_ref,
+            "ot_structure_cost_active": metric_ref,
+            "ot_cost_composition_appearance_only": metric_ref,
+            "ot_cost_composition_appearance_plus_structure": metric_ref,
+            "ot_cost_composition_structure_only": metric_ref,
+        }
+
+        structure_active = not (
+            self.coupling_structure_cost_mode == "none" or self.coupling_structure_cost_weight <= 0.0
+        )
+        if self.coupling_cost_composition == "structure_only" and structure_active:
+            structure_cost = self._structure_pairwise_cost(
+                model,
+                content_group,
+                target_group,
+                style_id=style_id,
+            )
+            metrics.update(
+                {
+                    "ot_structure_cost_mean": structure_cost.mean().detach(),
+                    "ot_structure_cost_var": structure_cost.var(unbiased=False).detach(),
+                    "ot_structure_cost_active": metric_ref.new_tensor(1.0, dtype=torch.float32),
+                    "ot_cost_composition_structure_only": metric_ref.new_tensor(1.0, dtype=torch.float32),
+                }
+            )
+            struct_scale = structure_cost.detach().mean().clamp_min(self.eps)
+            return structure_cost / struct_scale, metrics
+
         appearance_cost = self.transport_cost.pairwise_cost(
             self._coupling_feature_tensor(content_group),
             self._coupling_feature_tensor(target_group),
         )
-        zero = appearance_cost.new_tensor(0.0, dtype=torch.float32)
-        metrics: dict[str, torch.Tensor] = {
-            "ot_appearance_cost_mean": appearance_cost.mean().detach(),
-            "ot_appearance_cost_var": appearance_cost.var(unbiased=False).detach(),
-            "ot_structure_cost_mean": zero,
-            "ot_structure_cost_var": zero,
-            "ot_structure_cost_active": zero,
-            "ot_cost_composition_appearance_only": appearance_cost.new_tensor(0.0, dtype=torch.float32),
-            "ot_cost_composition_appearance_plus_structure": appearance_cost.new_tensor(0.0, dtype=torch.float32),
-            "ot_cost_composition_structure_only": appearance_cost.new_tensor(0.0, dtype=torch.float32),
-        }
-        if self.coupling_structure_cost_mode == "none" or self.coupling_structure_cost_weight <= 0.0:
-            metrics["ot_cost_composition_appearance_only"] = appearance_cost.new_tensor(1.0, dtype=torch.float32)
+        metrics["ot_appearance_cost_mean"] = appearance_cost.mean().detach()
+        metrics["ot_appearance_cost_var"] = appearance_cost.var(unbiased=False).detach()
+        if not structure_active:
+            metrics["ot_cost_composition_appearance_only"] = metric_ref.new_tensor(1.0, dtype=torch.float32)
             return appearance_cost, metrics
 
         structure_cost = self._structure_pairwise_cost(
@@ -990,18 +1026,15 @@ class OTFlowMatchingObjective:
         structure_term = structure_cost / struct_scale
         if self.coupling_cost_composition == "appearance_only":
             total_cost = appearance_term
-            metrics["ot_cost_composition_appearance_only"] = appearance_cost.new_tensor(1.0, dtype=torch.float32)
-        elif self.coupling_cost_composition == "structure_only":
-            total_cost = structure_term
-            metrics["ot_cost_composition_structure_only"] = appearance_cost.new_tensor(1.0, dtype=torch.float32)
+            metrics["ot_cost_composition_appearance_only"] = metric_ref.new_tensor(1.0, dtype=torch.float32)
         else:
             total_cost = (1.0 - weight) * appearance_term + weight * structure_term
-            metrics["ot_cost_composition_appearance_plus_structure"] = appearance_cost.new_tensor(1.0, dtype=torch.float32)
+            metrics["ot_cost_composition_appearance_plus_structure"] = metric_ref.new_tensor(1.0, dtype=torch.float32)
         metrics.update(
             {
                 "ot_structure_cost_mean": structure_cost.mean().detach(),
                 "ot_structure_cost_var": structure_cost.var(unbiased=False).detach(),
-                "ot_structure_cost_active": appearance_cost.new_tensor(1.0, dtype=torch.float32),
+                "ot_structure_cost_active": metric_ref.new_tensor(1.0, dtype=torch.float32),
             }
         )
         return total_cost, metrics
