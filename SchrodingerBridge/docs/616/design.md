@@ -226,8 +226,10 @@ class AffineConnectionTokenizer(nn.Module):
 
 要让匹配绝对精准，我们必须比较**“结构的同胚性（Topological Isomorphism）”**，而不是像素值。
 
-**优雅的方案：基于 Tokenizer 熵的 Gromov-Wasserstein 匹配**
-我们不需要引入 DINO，我们直接利用刚才重构的 `PureLatentSpatialTokenizer` 的副产物——**注意力熵（Routing Entropy）**和**亲和度图（Affinity）**。
+> **⚠️ 2026-06-17 更新**: PureLatentSpatial tokenizer 已确认 ZERO ROI（style/LPIPS 不变，白耗 ~1.2GB VRAM），代码已切回 `legacy_factorized` + `ablation_disable_spatial_prior=true`。OT 结构代价现已从 TopoGate 内生 attention 矩阵提取（`topogate_attention_gw`），不再依赖 tokenizer 输出。垂直 FM（`bridge_path_mode="vertical"`）仍是核心理论贡献。
+
+**优雅的方案：基于 TopoGate Attention 的 Gromov-Wasserstein 匹配**
+我们不需要引入 DINO，也不依赖 tokenizer 输出（已确认垃圾）。直接利用 TopoGate 的**内生 cross-attention 矩阵**——它天然编码空间拓扑，且零额外计算成本。
 
 * 一张复杂的图（如城市），其 Tokenizer 的注意力图会具有高频的边界；一张平滑的图（如天空），其注意力图极其平滑。
 * **重构 Cost 矩阵**：

@@ -66,17 +66,18 @@ $$C^{\text{GW}}_{ijkl} = \left| d(x_i, x_j) - d(y_k, y_l) \right|^2$$
 
 ### 3.3 现有实现的状态
 
-代码中已有多达 **7 种**结构代价模式 (`coupling_structure_cost_mode`):
+代码中已有多种结构代价模式 (`coupling_structure_cost_mode`):
 
-| 模式 | 含义 |
-|------|------|
-| `self_affinity_gw` | 对原始潜变量做 self-affinity |
-| `lowedge_self_affinity_gw` | 低频+边缘的混合 descriptor |
-| `encoder_self_affinity_gw` | 用 UNet encoder 特征做 self-affinity |
-| `tokenizer_aux_self_affinity_gw` | 用 tokenizer 的 aux 特征 |
-| `tokenizer_entropy_affinity_gw` | 用 tokenizer 的路由熵做结构指纹 |
-| `encoder_hybrid_affinity_gw` | encoder 特征 + 低频/边缘混合 |
-| `tokenizer_aux_hybrid_affinity_gw` | tokenizer aux + 低频/边缘混合 |
+| 模式 | 含义 | 状态 |
+|------|------|------|
+| `topogate_attention_gw` | TopoGate attention 熵做结构指纹 | ✅ **推荐** — 零成本，内生信号 |
+| `self_affinity_gw` | 对原始潜变量做 self-affinity | ✅ 保留 — 不需要任何模块 |
+| `lowedge_self_affinity_gw` | 低频+边缘的混合 descriptor | 📋 保留 |
+| `encoder_self_affinity_gw` | 用 UNet encoder 特征做 self-affinity | ⚠️ 降优先级 — 额外 forward |
+| `tokenizer_aux_self_affinity_gw` | 用 tokenizer 的 aux 特征 | ❌ 废弃 — tokenizer 输出无用 |
+| `tokenizer_entropy_affinity_gw` | 用 tokenizer 的路由熵做结构指纹 | ❌ 废弃 — 替换为 topogate_attention_gw |
+| `encoder_hybrid_affinity_gw` | encoder 特征 + 低频/边缘混合 | ⚠️ 降优先级 |
+| `tokenizer_aux_hybrid_affinity_gw` | tokenizer aux + 低频/边缘混合 | ❌ 废弃 |
 
 默认配置: `coupling_cost_composition = "structure_only"`（注意：不是 `appearance_plus_structure`），`coupling_structure_cost_weight = 1.0`。
 意味着默认只用结构代价做 OT 匹配，外观代价不参与。
@@ -165,6 +166,55 @@ Unbalanced OT 允许这些源图"放弃匹配"而不是强行拉拽到最近的�
 | 水平分量污染速度场 | 垂直流匹配 (`bridge_path_mode="vertical"`) | 改进速度场的**方向** |
 
 **两者应该叠加使用**: 结构 OT 找对配对目标 → 垂直 FM 确保只用纤维分量训练 → tokenizer 得到干净的风格信号。
+
+---
+
+## 七、核心洞察: OT 应匹配"Transport 困难度"而非"视觉相似度"
+
+### 7.1 错误视角
+
+$C_{ij} = \|x_i - y_j\|^2$ — "找和我的内容图最像的目标图" → 颜色相似 → 退化为亮度匹配 → 平凡解。
+
+### 7.2 正确视角
+
+$$C_{ij} = \text{"如果把内容图 } x_i \text{ 风格化为目标 } y_j \text{，网络学到的速度场有多干净？"}$$
+
+OT 的目标不是找"最像的"，而是找**"对当前的 transport 模型来说，学习梯度最平滑、结构污染最小的配对"**。
+
+**直觉**: 
+- 结构复杂的内容 + 结构复杂的目标 → 速度场只需改变纹理方向 → 容易
+- 结构复杂的内容 + 结构简单的目标 → 速度场需要"抹平"结构 → 困难
+- 结构简单的内容 + 结构复杂的目标 → 速度场需要在空间中生成新结构 → 极其困难
+- 两者都简单 → 速度场几乎只是少量纹理变化 → 最容易
+
+**好的匹配**: 复杂配复杂，简单配简单。
+
+### 7.3 三层代价矩阵设计
+
+**第一层: TopoGate Attention 熵（结构复杂度指纹）**
+
+TopoGate attention 矩阵天然编码空间拓扑——复杂区域熵高，平坦区域熵低。零额外前向传播成本。
+
+```
+C_complexity = cdist(complexity_profile(x_i), complexity_profile(y_j))
+复杂度画像: [熵均值, 熵标准差, 熵偏度, 高熵像素占比]
+```
+
+**第二层: 潜变量 self-affinity（拓扑同构匹配）**
+
+GW 距离比较两张图的内部距离结构，确保"边缘的边匹配边缘，平坦区匹配平坦区"。已实现为 `self_affinity_gw`，不需要模型 forward。
+
+**第三层: 外观代价（保留）**
+
+归一化后的潜空间欧氏距离，作为 style 分布的弱先验。
+
+**组合**:
+```
+C_total = (1-w_struct) * C_appearance/scale + w_struct * C_structure_entropy/scale
+w_struct = 0.3-0.5
+```
+
+这比依赖 tokenizer 输出的方案更根本：TopoGate attention 是训练过程中已经计算好的内生信号，表征的是"对当前模型而言这张图有多复杂"，而不是 tokenizer 的任意副产品。
 
 ---
 
