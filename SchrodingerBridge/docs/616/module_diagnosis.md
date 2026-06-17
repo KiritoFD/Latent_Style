@@ -3,6 +3,25 @@
 > 目标: 判明 PureLatentSpatial + TopoGate + manifold_kinetic 等新增模块
 > 的显存/计算开销，对照历史实验数据判断 ROI。
 
+## 验证结论 (2026-06-18)
+
+**PureLatentSpatial tokenizer 已确认无收益**。SMoE translator e8 (0.670/0.318) vs 旧 baseline F_e1 (0.697/0.319 on 1000per) — 复杂 tokenizer 的 tokenizer 风格增益 ≈ 0，但 VRAM 开销 ~1.2GB，导致 batch 从 44 降到 12-16。
+
+**决策：回退至 legacy_factorized tokenizer + ablation_disable_spatial_prior=true**。
+代码修复: `_prepare_style_maps` 现在检查 `ablation_disable_spatial_prior` 标志直接返回空 StyleMaps，
+不再需要 `style_spatial_id_16`。
+
+**current running batch**: `exp/20250618_lite_ot_vertical/` — b24, vl=0.1, legacy_factorized, spatial_prior off, pairing_cache off. 7 experiments.
+
+## 发现的 infra bug
+
+| Bug | 文件 | 修复 |
+|-----|------|------|
+| `virtual_length_multiplier` 写到 `training` 段, 代码从 `data` 段读 | gen_lite_batch.py | 改为 `c["data"]["virtual_length_multiplier"]` |
+| `_prepare_style_maps` 不检查 `ablation_disable_spatial_prior` | lancet_runtime.py:167 | 加 `if getattr(...) return StyleMaps()` |
+| `pairing_cache_path` 写到 `data` 段 (正确, 但之前也在 training) | gen_lite_batch.py | 已修正 |
+| WSL 后台进程在 SSH 断开后被杀 | — | 用户在 WSL 交互终端跑 `bash launch_all.sh` |
+
 ---
 
 ## 一、吞吐量变化
