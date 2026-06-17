@@ -7,7 +7,11 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Mapping
 
-from style_families import validate_i2sb_contract, validate_pure_latent_contract
+from style_families import (
+    validate_i2sb_contract,
+    validate_phase616_clean_contract,
+    validate_pure_latent_contract,
+)
 
 
 INFERENCE_DEFAULTS: dict[str, dict[str, Any]] = {
@@ -63,7 +67,7 @@ INFERENCE_DEFAULTS: dict[str, dict[str, Any]] = {
         "save_summary_grid": False,
         "keep_generated_on_device": True,
         "delta_observability": False,
-        "source_latent_cache": False,
+        "source_latent_cache": True,
         "lpips_chunk_size": 4,
         "in_process": False,
     },
@@ -130,7 +134,7 @@ def _rehydrate_extra_attributes(obj: Any) -> None:
 
 def _normalize_model_contract_defaults(cfg: "ModelConfig") -> "ModelConfig":
     family = str(getattr(cfg, "tokenizer_family", "legacy_factorized") or "legacy_factorized").strip().lower()
-    if family == "pure_latent_spatial":
+    if family in {"pure_latent_spatial", "affine_connection_tokenizer"}:
         cfg.style_tokenizer = "null"
         cfg.tokenizer_content_adaptive = False
         cfg.style_spatial_mode = "disabled"
@@ -139,6 +143,29 @@ def _normalize_model_contract_defaults(cfg: "ModelConfig") -> "ModelConfig":
         cfg.style_spatial_mode = "disabled"
         cfg.style_id_spatial_jitter_px = 0
     return cfg
+
+
+def _normalize_phase616_bridge_ot_defaults(
+    *,
+    model_cfg: "ModelConfig",
+    bridge_cfg: "BridgeConfig",
+    raw_bridge_payload: Mapping[str, Any] | None,
+) -> "BridgeConfig":
+    contract_family = str(getattr(model_cfg, "contract_family", "legacy") or "legacy").strip().lower()
+    if contract_family != "phase616":
+        return bridge_cfg
+    bridge_keys = set(_section_dict(raw_bridge_payload).keys())
+    if "ot_cost_mode" not in bridge_keys:
+        bridge_cfg.ot_cost_mode = "l2"
+    if "coupling_structure_cost_mode" not in bridge_keys:
+        bridge_cfg.coupling_structure_cost_mode = "self_affinity_gw"
+    if "coupling_structure_cost_weight" not in bridge_keys:
+        bridge_cfg.coupling_structure_cost_weight = 1.0
+    if "coupling_cost_composition" not in bridge_keys:
+        bridge_cfg.coupling_cost_composition = "structure_only"
+    if "coupling_target_mode" not in bridge_keys:
+        bridge_cfg.coupling_target_mode = "barycentric_full"
+    return bridge_cfg
 
 
 _RETIRED_BRIDGE_KEYS = {
@@ -186,6 +213,7 @@ class ModelConfig:
     num_styles: int = 5
     style_dim: int = 160
     style_tokenizer: str = "factorized"
+    contract_family: str = "legacy"
     tokenizer_family: str = "legacy_factorized"
     backbone_attention_family: str = "legacy_semantic_crossattn"
     solver_family: str = "euler_legacy"
@@ -222,6 +250,10 @@ class ModelConfig:
     tokenizer_query_num_blocks: int = 4
     tokenizer_spatial_dim: int = 0
     smoe_translation_rank: int = 0
+    affine_connection_gamma_scale: float = 0.5
+    affine_connection_beta_scale: float = 1.0
+    affine_connection_fiber_mode: str = "wavelet"
+    affine_connection_lowpass_kernel: int = 5
     tokenizer_pe_temperature: float = 1.0
     tokenizer_global_gate_hidden_dim: int = 160
     tokenizer_global_gate_scale: float = 1.0
@@ -317,6 +349,10 @@ class ModelConfig:
     latent_canvas_strength: float = 0.0
     latent_canvas_edge_gamma: float = 4.0
     latent_canvas_highpass_kernel: int = 5
+    transport_stats_mode: str = "none"
+    transport_stats_bank_path: str = ""
+    transport_stats_bank_required: bool = False
+    transport_stats_eps: float = 1e-6
     pre_integrate_moment_match: bool = False
     pre_integrate_moment_blend: float = 1.0
     output_moment_match: bool = False
@@ -427,7 +463,7 @@ class ModelConfig:
 class BridgeConfig:
     objective_mode: str = "omf"
     loss_type: str = "omf"
-    ot_cost_mode: str = "swd"
+    ot_cost_mode: str = "l2"
     t_min: float = 0.0
     t_max: float = 1.0
     identity_endpoint: bool = False
@@ -437,21 +473,42 @@ class BridgeConfig:
     coupling_feature_mode: str = "latent"
     coupling_lowfreq_kernel: int = 9
     coupling_edge_weight: float = 0.0
-    coupling_target_mode: str = "sample"
+    coupling_cost_composition: str = "structure_only"
+    coupling_structure_cost_mode: str = "self_affinity_gw"
+    coupling_structure_cost_weight: float = 1.0
+    coupling_structure_lowpass_kernel: int = 9
+    coupling_structure_edge_weight: float = 1.0
+    coupling_structure_affinity_grid: int = 8
+    coupling_structure_hybrid_stats_weight: float = 0.5
+    coupling_target_mode: str = "barycentric_full"
     coupling_barycentric_topk: int = 0
     sinkhorn_epsilon: float = 0.05
     sinkhorn_iters: int = 60
     sinkhorn_stabilize: bool = True
+    sinkhorn_unbalanced_tau_src: float = 1.0
+    sinkhorn_unbalanced_tau_tgt: float = 1.0
+    sinkhorn_unbalanced_dummy_cost: float = 0.0
+    sinkhorn_unbalanced_dummy_offdiag_cost: float = 8.0
     bridge_sigma: float = 0.05
     bridge_noise_mode: str = "gaussian"
     bridge_noise_schedule: str = "auto"
     bridge_path_mode: str = "linear"
     bridge_path_slerp_eps: float = 1e-4
+    bridge_vertical_base_stride: int = 2
     i2sb_predictor_time_floor: float = 0.0
     bridge_noise_window_start: float = 0.18
     bridge_noise_window_end: float = 0.82
     bridge_style_noise_kernel: int = 5
     bridge_style_noise_flat_gamma: float = 0.0
+    i2sb_noise_family: str = "gaussian"
+    i2sb_style_noise_amplitude_power: float = 1.0
+    training_target_projection_mode: str = "legacy"
+    training_target_projection_kernel: int = 5
+    training_target_projection_low_anchor: float = 1.0
+    training_target_projection_low_mode: str = "all"
+    training_bridge_noise_projection_mode: str = "none"
+    training_bridge_noise_projection_kernel: int = 5
+    training_bridge_noise_projection_preserve_rms: bool = True
     terminal_swd_weight: float = 0.1
     terminal_swd_aux_weight: float = 0.0
     semantic_supervision_family: str = "legacy_terminal_swd"
@@ -459,6 +516,8 @@ class BridgeConfig:
     w_variance_penalty: float = 0.0
     w_style_energy_floor: float = 0.0
     w_lowfreq_velocity: float = 0.0
+    proximal_trust_ratio: float = 0.0
+    proximal_trust_weight: float = 0.0
     w_content_lowpass_anchor: float = 0.0
     w_content_edge_anchor: float = 0.0
     content_anchor_lowpass_kernel: int = 9
@@ -594,6 +653,9 @@ class TrainingConfig:
     use_gradient_checkpointing: bool = False
     profile_modules: bool = False
     profile_sync_cuda: bool = False
+    gpu_monitor_enabled: bool = True
+    gpu_monitor_interval_sec: float = 2.0
+    gpu_monitor_index: int = 0
     fused_adamw: bool = True
     resume_checkpoint: str = ""
     resume_optimizer: bool = True
@@ -655,7 +717,7 @@ class TrainingConfig:
     full_eval_save_summary_grid: bool | None = False
     full_eval_keep_generated_on_device: bool = True
     full_eval_delta_observability: bool = False
-    full_eval_source_latent_cache: bool = False
+    full_eval_source_latent_cache: bool = True
     full_eval_lpips_chunk_size: int = 4
     full_eval_in_process: bool = False
     full_eval_runtime_model_cache: bool = False
@@ -778,6 +840,7 @@ class ExperimentConfig:
     def from_mapping(cls, payload: Mapping[str, Any] | None) -> "ExperimentConfig":
         data = _section_dict(payload)
         known_sections = {"model", "bridge", "training", "data", "checkpoint", "inference", "full_eval", "ablation"}
+        raw_bridge_payload = data.get("bridge")
         cfg = cls(
             model=ModelConfig.from_mapping(data.get("model")),
             bridge=BridgeConfig.from_mapping(data.get("bridge")),
@@ -788,6 +851,11 @@ class ExperimentConfig:
             full_eval=_section_dict(data.get("full_eval")),
             ablation=_section_dict(data.get("ablation")),
             extra_sections={key: value for key, value in data.items() if key not in known_sections},
+        )
+        cfg.bridge = _normalize_phase616_bridge_ot_defaults(
+            model_cfg=cfg.model,
+            bridge_cfg=cfg.bridge,
+            raw_bridge_payload=raw_bridge_payload,
         )
         validate_i2sb_contract(
             solver_family=str(getattr(cfg.model, "solver_family", "euler_legacy")),
@@ -803,6 +871,32 @@ class ExperimentConfig:
             dino_masked_swd_weight=float(getattr(cfg.bridge, "dino_masked_swd_weight", 0.0)),
             style_spatial_mode=str(getattr(cfg.model, "style_spatial_mode", "")),
             tokenizer_content_adaptive=bool(getattr(cfg.model, "tokenizer_content_adaptive", False)),
+        )
+        validate_phase616_clean_contract(
+            contract_family=str(getattr(cfg.model, "contract_family", "legacy")),
+            output_appearance_alignment_mode=str(getattr(cfg.model, "output_appearance_alignment_mode", "none")),
+            proximal_mode=str(getattr(cfg.model, "proximal_mode", "off")),
+            style_delta_mode=str(getattr(cfg.model, "style_delta_mode", "none")),
+            solver_corrector_mode=str(getattr(cfg.model, "solver_corrector_mode", "none")),
+            cycle_consistency_weight=float(getattr(cfg.bridge, "cycle_consistency_weight", 0.0)),
+            w_content_lowpass_anchor=float(getattr(cfg.bridge, "w_content_lowpass_anchor", 0.0)),
+            w_content_edge_anchor=float(getattr(cfg.bridge, "w_content_edge_anchor", 0.0)),
+            proximal_trust_ratio=float(getattr(cfg.bridge, "proximal_trust_ratio", 0.0)),
+            proximal_trust_weight=float(getattr(cfg.bridge, "proximal_trust_weight", 0.0)),
+            full_eval_postprocess_mode=str(
+                cfg.full_eval.get(
+                    "postprocess_mode",
+                    getattr(cfg.training, "full_eval_postprocess_mode", "none"),
+                )
+            ),
+            full_eval_latent_postprocess_mode=str(
+                cfg.full_eval.get(
+                    "latent_postprocess_mode",
+                    getattr(cfg.training, "full_eval_latent_postprocess_mode", "none"),
+                )
+            ),
+            pre_integrate_moment_match=bool(getattr(cfg.model, "pre_integrate_moment_match", False)),
+            output_moment_match=bool(getattr(cfg.model, "output_moment_match", False)),
         )
         return cfg
 

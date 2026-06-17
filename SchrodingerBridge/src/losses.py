@@ -151,6 +151,14 @@ class OTFlowMatchingObjective:
             1e-6,
             float(getattr(bridge_cfg, "sinkhorn_unbalanced_tau_tgt", 1.0)),
         )
+        self.sinkhorn_unbalanced_dummy_cost = max(
+            0.0,
+            float(getattr(bridge_cfg, "sinkhorn_unbalanced_dummy_cost", 0.0)),
+        )
+        self.sinkhorn_unbalanced_dummy_offdiag_cost = max(
+            self.sinkhorn_unbalanced_dummy_cost,
+            float(getattr(bridge_cfg, "sinkhorn_unbalanced_dummy_offdiag_cost", 8.0)),
+        )
 
         self.bridge_sigma = max(0.0, float(bridge_cfg.bridge_sigma))
         self.bridge_noise_mode = str(bridge_cfg.bridge_noise_mode).strip().lower()
@@ -168,6 +176,18 @@ class OTFlowMatchingObjective:
                 "(or for 'vertical' which works with velocity)."
             )
         self.bridge_path_slerp_eps = max(1e-8, float(getattr(bridge_cfg, "bridge_path_slerp_eps", 1e-4)))
+        # Vertical flow base-manifold lowpass stride (avg-pool kernel == stride).
+        # bridge_vertical_base_stride is a known BridgeConfig field (default 2);
+        # read it once here so call sites can use the attribute directly instead
+        # of redundant getattr-with-default lookups.
+        self.bridge_vertical_base_stride = max(1, int(getattr(bridge_cfg, "bridge_vertical_base_stride", 2)))
+
+        # Auto-default noise projection to fiber-only when using vertical FM:
+        # when bridge_path_mode="vertical" and sigma>0, training noise must also be
+        # highpass-filtered to avoid injecting low-frequency noise into the base manifold.
+        raw_noise_proj = str(getattr(bridge_cfg, "training_bridge_noise_projection_mode", "none")).strip().lower()
+        if self.bridge_path_mode == "vertical" and raw_noise_proj == "none":
+            raw_noise_proj = "pure_vertical_flow_wavelet"
         self.bridge_noise_window_start = float(getattr(bridge_cfg, "bridge_noise_window_start", 0.18))
         self.bridge_noise_window_end = float(getattr(bridge_cfg, "bridge_noise_window_end", 0.82))
         self.bridge_style_noise_kernel = max(1, int(bridge_cfg.bridge_style_noise_kernel))
@@ -203,6 +223,10 @@ class OTFlowMatchingObjective:
         self.training_bridge_noise_projection_mode = str(
             getattr(bridge_cfg, "training_bridge_noise_projection_mode", "none")
         ).strip().lower()
+        # Auto-default: when bridge_path_mode="vertical", training noise must also
+        # be fiber-only to avoid low-frequency noise leaking into the base manifold.
+        if self.bridge_path_mode == "vertical" and self.training_bridge_noise_projection_mode == "none":
+            self.training_bridge_noise_projection_mode = "pure_vertical_flow_wavelet"
         if self.training_bridge_noise_projection_mode not in {
             "none",
             "source_low_target_high",
@@ -856,7 +880,6 @@ class OTFlowMatchingObjective:
             anchor_low = content_low
         low_anchor = float(self.training_target_projection_low_anchor)
         if self.training_target_projection_mode in {"pure_vertical_flow", "pure_vertical_flow_wavelet"}:
-            projected_low = anchor_low
             projected = (anchor_low + target_high).to(dtype=matched_target.dtype)
             if self.training_target_projection_mode == "pure_vertical_flow_wavelet":
                 metrics["training_target_projection_mode_pure_vertical_flow_wavelet"] = content.new_tensor(1.0, dtype=torch.float32)
@@ -1054,6 +1077,29 @@ class OTFlowMatchingObjective:
         noise_std = noise.flatten(1).std(dim=1, unbiased=False, keepdim=True).clamp_min(1e-6).view(-1, 1, 1, 1)
         return noise / noise_std
 
+    def _augment_cost_with_source_dummies(
+        self,
+        cost: torch.Tensor,
+        content_group: torch.Tensor,
+        target_group: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, int]:
+        if self.coupling_solver != "sinkhorn_unbalanced" or self.sinkhorn_unbalanced_dummy_cost <= 0.0:
+            return cost, target_group, int(target_group.shape[0])
+        n_src = int(cost.shape[0])
+        if n_src <= 0:
+            return cost, target_group, int(target_group.shape[0])
+        dummy_cost = torch.full(
+            (n_src, n_src),
+            float(self.sinkhorn_unbalanced_dummy_offdiag_cost),
+            device=cost.device,
+            dtype=cost.dtype,
+        )
+        diag = torch.arange(n_src, device=cost.device)
+        dummy_cost[diag, diag] = float(self.sinkhorn_unbalanced_dummy_cost)
+        augmented_cost = torch.cat([cost, dummy_cost], dim=1)
+        augmented_targets = torch.cat([target_group, content_group.to(dtype=target_group.dtype)], dim=0)
+        return augmented_cost, augmented_targets, int(target_group.shape[0])
+
     def _solve_group_coupling(
         self,
         model: TimeConditionedLANCETBridge,
@@ -1067,6 +1113,11 @@ class OTFlowMatchingObjective:
             content_group,
             target_group,
             style_id=style_id,
+        )
+        cost, transport_targets, real_target_count = self._augment_cost_with_source_dummies(
+            cost,
+            content_group,
+            target_group,
         )
         if self.coupling_solver == "hungarian":
             from scipy.optimize import linear_sum_assignment
@@ -1090,16 +1141,22 @@ class OTFlowMatchingObjective:
             return matched, cost[row_t, col_t].mean(), cost.new_tensor(0.0), cost.new_tensor(0.0), cost_metrics
 
         plan, plan_debug = self._sinkhorn_plan(cost)
-        matched, entropy, barycentric_entropy = self._sample_or_project_from_plan(plan, target_group)
+        matched, entropy, barycentric_entropy = self._sample_or_project_from_plan(plan, transport_targets)
         expected_cost = (plan * cost).sum() * float(cost.shape[0])
         target_mass = plan.sum(dim=0)
+        real_target_mass = target_mass[:real_target_count]
+        dummy_mass = target_mass[real_target_count:].sum() if real_target_count < target_mass.numel() else target_mass.new_tensor(0.0)
+        real_mass = real_target_mass.sum()
         cost_metrics.update(
             {
                 "ot_plan_entropy": entropy.detach(),
                 "ot_barycentric_entropy": barycentric_entropy.detach(),
-                "ot_target_gini": self._target_mass_gini(target_mass).detach(),
-                "ot_target_mass_entropy": self._mass_entropy(target_mass).detach(),
-                "ot_target_max_mass": target_mass.max().detach(),
+                "ot_target_gini": self._target_mass_gini(real_target_mass).detach(),
+                "ot_target_mass_entropy": self._mass_entropy(real_target_mass).detach(),
+                "ot_target_max_mass": real_target_mass.max().detach() if real_target_mass.numel() > 0 else cost.new_tensor(0.0),
+                "ot_real_target_mass": real_mass.detach(),
+                "ot_dummy_mass": dummy_mass.detach(),
+                "ot_dummy_active": cost.new_tensor(1.0 if real_target_count < target_mass.numel() else 0.0, dtype=torch.float32),
                 "ot_cost_mean": cost.mean().detach(),
                 "ot_cost_var": cost.var(unbiased=False).detach(),
                 **plan_debug,
@@ -1182,6 +1239,18 @@ class OTFlowMatchingObjective:
             return torch.full((content.shape[0],), t_min, device=content.device, dtype=content.dtype)
         return torch.empty((content.shape[0],), device=content.device, dtype=content.dtype).uniform_(t_min, t_max)
 
+    def _vertical_lowpass(self, x: torch.Tensor) -> torch.Tensor:
+        """Strided avg-pool + bilinear upsample for the vertical flow base manifold.
+
+        Shared by :meth:`_bridge_state_and_velocity` (velocity fiber computation)
+        and :meth:`_bridge_path_state` (path state base/fiber split). Centralising
+        this avoids divergent lowpass implementations across vertical-flow call
+        sites.
+        """
+        k = self.bridge_vertical_base_stride
+        d = F.avg_pool2d(x.float(), kernel_size=k, stride=k)
+        return F.interpolate(d, size=x.shape[-2:], mode="bilinear", align_corners=False)
+
     def _bridge_state_and_velocity(
         self,
         *,
@@ -1193,11 +1262,7 @@ class OTFlowMatchingObjective:
         base = self._bridge_path_state(content=content, matched_target=matched_target, t=t)
         velocity = matched_target - content
         if self.bridge_path_mode == "vertical":
-            k = max(1, int(getattr(self, "bridge_vertical_base_stride", 2)))
-            def _lowpass(x):
-                d = F.avg_pool2d(x.float(), kernel_size=k, stride=k)
-                return F.interpolate(d, size=x.shape[-2:], mode='bilinear', align_corners=False)
-            velocity = (matched_target - _lowpass(matched_target).to(content.dtype)) - (content - _lowpass(content).to(content.dtype))
+            velocity = (matched_target - self._vertical_lowpass(matched_target).to(content.dtype)) - (content - self._vertical_lowpass(content).to(content.dtype))
         endpoint_mode = str(getattr(self, "transport_prediction_mode", "velocity")).strip().lower() == "endpoint"
         noise_projection_metrics = self._training_bridge_noise_projection_metrics_template(content)
         if self.bridge_sigma <= 0.0:
@@ -1251,15 +1316,11 @@ class OTFlowMatchingObjective:
 
         if self.bridge_path_mode == "vertical":
             # Pure Vertical Flow Matching (616/design.md):
-            # mu_base = const (structure frozen)  
+            # mu_base = const (structure frozen)
             # mu_fiber = (1-t)*fiber_content + t*fiber_matched_target
-            k = max(1, int(getattr(self, "bridge_vertical_base_stride", 2)))
-            def _lowpass(x):
-                d = F.avg_pool2d(x.float(), kernel_size=k, stride=k)
-                return F.interpolate(d, size=x.shape[-2:], mode='bilinear', align_corners=False)
-            base_c = _lowpass(content).to(content.dtype)
+            base_c = self._vertical_lowpass(content).to(content.dtype)
             fiber_c = content - base_c
-            fiber_t = matched_target - _lowpass(matched_target).to(content.dtype)
+            fiber_t = matched_target - self._vertical_lowpass(matched_target).to(content.dtype)
             return base_c + (1.0 - t4) * fiber_c + t4 * fiber_t
 
         if self.bridge_path_mode != "latent_slerp":
@@ -1325,7 +1386,7 @@ class OTFlowMatchingObjective:
             matched_flat = row_probs @ flat_targets
             bary_entropy = entropy
 
-        matched = matched_flat.view_as(target_group).to(dtype=target_group.dtype)
+        matched = matched_flat.view(int(plan.shape[0]), *target_group.shape[1:]).to(dtype=target_group.dtype)
         return matched, entropy, bary_entropy
 
     def _teacher_reduce(self, x: torch.Tensor) -> torch.Tensor:
