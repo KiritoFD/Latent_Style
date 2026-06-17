@@ -1,0 +1,15 @@
+{
+  "_base": "./phase616_clean_ot_probe_selfaffgw_mix_faststep60_e1.json",
+  "bridge": {
+    "coupling_structure_cost_mode": "tokenizer_aux_self_affinity_gw"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_ot_probe_tokenaux_selfaffgw_mix_faststep60_e1"
+  },
+  "ablation": {
+    "name": "phase616_clean_ot_probe_tokenaux_selfaffgw_mix_faststep60_e1",
+    "axis": "phase616_ot_probe_featuremap_fast",
+    "stage": "clean_ot_tokenizer_aux_self_affinity_gw_fast_candidate",
+    "notes": "Round-4 OT candidate. Keep the retained mixed appearance-plus-structure composition and pure_vertical_flow fixed, but replace the old latent self-affinity proxy with a GW-like self-affinity descriptor built from the structured tokenizer routing feature map."
+  }
+}

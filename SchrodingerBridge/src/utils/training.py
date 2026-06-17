@@ -3,6 +3,9 @@ from __future__ import annotations
 import csv
 import json
 import shutil
+import subprocess
+import threading
+import time
 from pathlib import Path
 from typing import Dict
 
@@ -28,6 +31,7 @@ TRAIN_LOG_COLUMNS = [
     "semantic_topology_attn_entropy",
     "semantic_topology_attn_active",
     "plan_entropy",
+    "ot_plan_entropy",
     "structured_style_tokenizer_attn_entropy",
     "structured_style_tokenizer_attn_effective_count",
     "structured_style_tokenizer_attn_max",
@@ -35,8 +39,12 @@ TRAIN_LOG_COLUMNS = [
     "structured_style_tokenizer_gate_mean",
     "structured_style_tokenizer_mask_mean",
     "structured_style_tokenizer_spatial_map_abs",
+    "structured_style_tokenizer_spatial_svd_entropy",
+    "structured_style_tokenizer_spatial_top1_singular_ratio",
     "structured_style_tokenizer_global_gate_abs",
+    "structured_style_tokenizer_style_value_offdiag_cosine",
     "structured_style_tokenizer_translation_delta_from_identity",
+    "structured_style_tokenizer_translation_delta_offdiag_cosine",
     "structured_style_tokenizer_routing_entropy",
     "structured_style_tokenizer_effective_experts",
     "structured_style_tokenizer_spatial_abs",
@@ -45,6 +53,18 @@ TRAIN_LOG_COLUMNS = [
     "solver_fiber_gate_rms",
     "solver_noise_scale",
     "solver_isotropic_or_fiber",
+    "transport_stats_active",
+    "transport_stats_bank_loaded",
+    "transport_stats_mode_terminal_affine",
+    "transport_stats_mode_normalized_solver",
+    "transport_stats_source_mean_abs",
+    "transport_stats_source_std_mean",
+    "transport_stats_target_mean_abs",
+    "transport_stats_target_std_mean",
+    "transport_stats_mean_delta",
+    "transport_stats_std_delta",
+    "transport_stats_valid_styles",
+    "transport_stats_missing_bank",
     "fiberwise_active_clusters",
     "fiberwise_loss_mean",
     "fiberwise_mask_entropy",
@@ -71,6 +91,56 @@ TRAIN_LOG_COLUMNS = [
     "generated_delta_mean_offdiag_cos",
     "generated_delta_active_styles",
     "barycentric_entropy",
+    "ot_barycentric_entropy",
+    "ot_target_gini",
+    "ot_target_mass_entropy",
+    "ot_target_max_mass",
+    "ot_cost_mean",
+    "ot_cost_var",
+    "ot_appearance_cost_mean",
+    "ot_appearance_cost_var",
+    "ot_structure_cost_mean",
+    "ot_structure_cost_var",
+    "ot_structure_cost_active",
+    "ot_cost_composition_appearance_only",
+    "ot_cost_composition_appearance_plus_structure",
+    "ot_cost_composition_structure_only",
+    "ot_raw_total_mass",
+    "ot_source_mass_mean",
+    "ot_source_mass_min",
+    "ot_source_mass_max",
+    "ot_source_mass_entropy",
+    "ot_source_marginal_l1",
+    "ot_source_truncation",
+    "ot_target_marginal_l1",
+    "ot_target_truncation",
+    "ot_real_target_mass",
+    "ot_dummy_mass",
+    "ot_dummy_active",
+    "base_structural_drift",
+    "fiber_energy_ratio",
+    "low_freq_leak",
+    "target_base_shift",
+    "training_target_projection_active",
+    "training_target_projection_mode_source_low_target_high",
+    "training_target_projection_mode_wavelet_source_low_target_high",
+    "training_target_projection_mode_pure_vertical_flow",
+    "training_target_projection_mode_pure_vertical_flow_wavelet",
+    "training_target_projection_low_anchor",
+    "training_target_projection_low_drift",
+    "training_target_projection_target_delta",
+    "training_target_projection_high_energy_ratio",
+    "training_bridge_noise_projection_active",
+    "training_bridge_noise_projection_mode_source_low_target_high",
+    "training_bridge_noise_projection_mode_wavelet_source_low_target_high",
+    "training_bridge_noise_projection_mode_pure_vertical_flow",
+    "training_bridge_noise_projection_mode_pure_vertical_flow_wavelet",
+    "training_bridge_noise_projection_kernel",
+    "training_bridge_noise_projection_preserve_rms",
+    "training_bridge_noise_projection_pre_rms",
+    "training_bridge_noise_projection_post_rms",
+    "training_bridge_noise_projection_low_rms",
+    "training_bridge_noise_projection_high_rms",
     "teacher_alignment",
     "teacher_abs",
     "bridge_sigma",
@@ -79,6 +149,7 @@ TRAIN_LOG_COLUMNS = [
     "identity_ratio",
     "t_mean",
     "velocity_abs",
+    "target_velocity_abs",
     "endpoint_abs",
     "base_endpoint_abs",
     "final_endpoint_abs",
@@ -100,10 +171,29 @@ TRAIN_LOG_COLUMNS = [
     "optimizer_time_sec",
     "compute_time_sec",
     "epoch_time_sec",
+    "optimizer_steps",
+    "effective_batch_size",
+    "avg_batch_time_sec",
+    "avg_optimizer_step_time_sec",
+    "avg_data_time_sec",
+    "avg_forward_time_sec",
+    "avg_backward_time_sec",
+    "avg_compute_time_sec",
     "samples_seen",
     "samples_per_sec",
     "cuda_peak_allocated_gb",
     "cuda_peak_reserved_gb",
+    "gpu_monitor_samples",
+    "gpu_memory_total_gb",
+    "gpu_vram_used_gb_mean",
+    "gpu_vram_used_gb_min",
+    "gpu_vram_used_gb_peak",
+    "gpu_util_mean",
+    "gpu_util_min",
+    "gpu_util_peak",
+    "gpu_power_w_mean",
+    "gpu_power_w_min",
+    "gpu_power_w_peak",
 ]
 
 
@@ -199,6 +289,7 @@ def append_training_log(log_file: Path, metrics: dict[str, float], epoch: int) -
         "semantic_topology_attn_entropy": float(metrics.get("semantic_topology_attn_entropy", 0.0)),
         "semantic_topology_attn_active": float(metrics.get("semantic_topology_attn_active", 0.0)),
         "plan_entropy": float(metrics.get("plan_entropy", 0.0)),
+        "ot_plan_entropy": float(metrics.get("ot_plan_entropy", metrics.get("plan_entropy", 0.0))),
         "structured_style_tokenizer_attn_entropy": float(metrics.get("structured_style_tokenizer_attn_entropy", 0.0)),
         "structured_style_tokenizer_attn_effective_count": float(metrics.get("structured_style_tokenizer_attn_effective_count", 0.0)),
         "structured_style_tokenizer_attn_max": float(metrics.get("structured_style_tokenizer_attn_max", 0.0)),
@@ -206,8 +297,18 @@ def append_training_log(log_file: Path, metrics: dict[str, float], epoch: int) -
         "structured_style_tokenizer_gate_mean": float(metrics.get("structured_style_tokenizer_gate_mean", 0.0)),
         "structured_style_tokenizer_mask_mean": float(metrics.get("structured_style_tokenizer_mask_mean", 0.0)),
         "structured_style_tokenizer_spatial_map_abs": float(metrics.get("structured_style_tokenizer_spatial_map_abs", 0.0)),
+        "structured_style_tokenizer_spatial_svd_entropy": float(metrics.get("structured_style_tokenizer_spatial_svd_entropy", 0.0)),
+        "structured_style_tokenizer_spatial_top1_singular_ratio": float(
+            metrics.get("structured_style_tokenizer_spatial_top1_singular_ratio", 0.0)
+        ),
         "structured_style_tokenizer_global_gate_abs": float(metrics.get("structured_style_tokenizer_global_gate_abs", 0.0)),
+        "structured_style_tokenizer_style_value_offdiag_cosine": float(
+            metrics.get("structured_style_tokenizer_style_value_offdiag_cosine", 0.0)
+        ),
         "structured_style_tokenizer_translation_delta_from_identity": float(metrics.get("structured_style_tokenizer_translation_delta_from_identity", 0.0)),
+        "structured_style_tokenizer_translation_delta_offdiag_cosine": float(
+            metrics.get("structured_style_tokenizer_translation_delta_offdiag_cosine", 0.0)
+        ),
         "structured_style_tokenizer_routing_entropy": float(metrics.get("structured_style_tokenizer_routing_entropy", 0.0)),
         "structured_style_tokenizer_effective_experts": float(metrics.get("structured_style_tokenizer_effective_experts", 0.0)),
         "structured_style_tokenizer_spatial_abs": float(metrics.get("structured_style_tokenizer_spatial_abs", 0.0)),
@@ -216,6 +317,18 @@ def append_training_log(log_file: Path, metrics: dict[str, float], epoch: int) -
         "solver_fiber_gate_rms": float(metrics.get("solver_fiber_gate_rms", 0.0)),
         "solver_noise_scale": float(metrics.get("solver_noise_scale", 0.0)),
         "solver_isotropic_or_fiber": float(metrics.get("solver_isotropic_or_fiber", 0.0)),
+        "transport_stats_active": float(metrics.get("transport_stats_active", 0.0)),
+        "transport_stats_bank_loaded": float(metrics.get("transport_stats_bank_loaded", 0.0)),
+        "transport_stats_mode_terminal_affine": float(metrics.get("transport_stats_mode_terminal_affine", 0.0)),
+        "transport_stats_mode_normalized_solver": float(metrics.get("transport_stats_mode_normalized_solver", 0.0)),
+        "transport_stats_source_mean_abs": float(metrics.get("transport_stats_source_mean_abs", 0.0)),
+        "transport_stats_source_std_mean": float(metrics.get("transport_stats_source_std_mean", 0.0)),
+        "transport_stats_target_mean_abs": float(metrics.get("transport_stats_target_mean_abs", 0.0)),
+        "transport_stats_target_std_mean": float(metrics.get("transport_stats_target_std_mean", 0.0)),
+        "transport_stats_mean_delta": float(metrics.get("transport_stats_mean_delta", 0.0)),
+        "transport_stats_std_delta": float(metrics.get("transport_stats_std_delta", 0.0)),
+        "transport_stats_valid_styles": float(metrics.get("transport_stats_valid_styles", 0.0)),
+        "transport_stats_missing_bank": float(metrics.get("transport_stats_missing_bank", 0.0)),
         "fiberwise_active_clusters": float(metrics.get("fiberwise_active_clusters", 0.0)),
         "fiberwise_loss_mean": float(metrics.get("fiberwise_loss_mean", 0.0)),
         "fiberwise_mask_entropy": float(metrics.get("fiberwise_mask_entropy", 0.0)),
@@ -242,6 +355,76 @@ def append_training_log(log_file: Path, metrics: dict[str, float], epoch: int) -
         "generated_delta_mean_offdiag_cos": float(metrics.get("generated_delta_mean_offdiag_cos", 0.0)),
         "generated_delta_active_styles": float(metrics.get("generated_delta_active_styles", 0.0)),
         "barycentric_entropy": float(metrics.get("barycentric_entropy", 0.0)),
+        "ot_barycentric_entropy": float(metrics.get("ot_barycentric_entropy", metrics.get("barycentric_entropy", 0.0))),
+        "ot_target_gini": float(metrics.get("ot_target_gini", 0.0)),
+        "ot_target_mass_entropy": float(metrics.get("ot_target_mass_entropy", 0.0)),
+        "ot_target_max_mass": float(metrics.get("ot_target_max_mass", 0.0)),
+        "ot_cost_mean": float(metrics.get("ot_cost_mean", 0.0)),
+        "ot_cost_var": float(metrics.get("ot_cost_var", 0.0)),
+        "ot_appearance_cost_mean": float(metrics.get("ot_appearance_cost_mean", 0.0)),
+        "ot_appearance_cost_var": float(metrics.get("ot_appearance_cost_var", 0.0)),
+        "ot_structure_cost_mean": float(metrics.get("ot_structure_cost_mean", 0.0)),
+        "ot_structure_cost_var": float(metrics.get("ot_structure_cost_var", 0.0)),
+        "ot_structure_cost_active": float(metrics.get("ot_structure_cost_active", 0.0)),
+        "ot_cost_composition_appearance_only": float(metrics.get("ot_cost_composition_appearance_only", 0.0)),
+        "ot_cost_composition_appearance_plus_structure": float(metrics.get("ot_cost_composition_appearance_plus_structure", 0.0)),
+        "ot_cost_composition_structure_only": float(metrics.get("ot_cost_composition_structure_only", 0.0)),
+        "ot_raw_total_mass": float(metrics.get("ot_raw_total_mass", 0.0)),
+        "ot_source_mass_mean": float(metrics.get("ot_source_mass_mean", 0.0)),
+        "ot_source_mass_min": float(metrics.get("ot_source_mass_min", 0.0)),
+        "ot_source_mass_max": float(metrics.get("ot_source_mass_max", 0.0)),
+        "ot_source_mass_entropy": float(metrics.get("ot_source_mass_entropy", 0.0)),
+        "ot_source_marginal_l1": float(metrics.get("ot_source_marginal_l1", 0.0)),
+        "ot_source_truncation": float(metrics.get("ot_source_truncation", 0.0)),
+        "ot_target_marginal_l1": float(metrics.get("ot_target_marginal_l1", 0.0)),
+        "ot_target_truncation": float(metrics.get("ot_target_truncation", 0.0)),
+        "ot_real_target_mass": float(metrics.get("ot_real_target_mass", 0.0)),
+        "ot_dummy_mass": float(metrics.get("ot_dummy_mass", 0.0)),
+        "ot_dummy_active": float(metrics.get("ot_dummy_active", 0.0)),
+        "base_structural_drift": float(metrics.get("base_structural_drift", 0.0)),
+        "fiber_energy_ratio": float(metrics.get("fiber_energy_ratio", 0.0)),
+        "low_freq_leak": float(metrics.get("low_freq_leak", 0.0)),
+        "target_base_shift": float(metrics.get("target_base_shift", 0.0)),
+        "training_target_projection_active": float(metrics.get("training_target_projection_active", 0.0)),
+        "training_target_projection_mode_source_low_target_high": float(
+            metrics.get("training_target_projection_mode_source_low_target_high", 0.0)
+        ),
+        "training_target_projection_mode_wavelet_source_low_target_high": float(
+            metrics.get("training_target_projection_mode_wavelet_source_low_target_high", 0.0)
+        ),
+        "training_target_projection_mode_pure_vertical_flow": float(
+            metrics.get("training_target_projection_mode_pure_vertical_flow", 0.0)
+        ),
+        "training_target_projection_mode_pure_vertical_flow_wavelet": float(
+            metrics.get("training_target_projection_mode_pure_vertical_flow_wavelet", 0.0)
+        ),
+        "training_target_projection_low_anchor": float(metrics.get("training_target_projection_low_anchor", 0.0)),
+        "training_target_projection_low_drift": float(metrics.get("training_target_projection_low_drift", 0.0)),
+        "training_target_projection_target_delta": float(metrics.get("training_target_projection_target_delta", 0.0)),
+        "training_target_projection_high_energy_ratio": float(
+            metrics.get("training_target_projection_high_energy_ratio", 0.0)
+        ),
+        "training_bridge_noise_projection_active": float(metrics.get("training_bridge_noise_projection_active", 0.0)),
+        "training_bridge_noise_projection_mode_source_low_target_high": float(
+            metrics.get("training_bridge_noise_projection_mode_source_low_target_high", 0.0)
+        ),
+        "training_bridge_noise_projection_mode_wavelet_source_low_target_high": float(
+            metrics.get("training_bridge_noise_projection_mode_wavelet_source_low_target_high", 0.0)
+        ),
+        "training_bridge_noise_projection_mode_pure_vertical_flow": float(
+            metrics.get("training_bridge_noise_projection_mode_pure_vertical_flow", 0.0)
+        ),
+        "training_bridge_noise_projection_mode_pure_vertical_flow_wavelet": float(
+            metrics.get("training_bridge_noise_projection_mode_pure_vertical_flow_wavelet", 0.0)
+        ),
+        "training_bridge_noise_projection_kernel": float(metrics.get("training_bridge_noise_projection_kernel", 0.0)),
+        "training_bridge_noise_projection_preserve_rms": float(
+            metrics.get("training_bridge_noise_projection_preserve_rms", 0.0)
+        ),
+        "training_bridge_noise_projection_pre_rms": float(metrics.get("training_bridge_noise_projection_pre_rms", 0.0)),
+        "training_bridge_noise_projection_post_rms": float(metrics.get("training_bridge_noise_projection_post_rms", 0.0)),
+        "training_bridge_noise_projection_low_rms": float(metrics.get("training_bridge_noise_projection_low_rms", 0.0)),
+        "training_bridge_noise_projection_high_rms": float(metrics.get("training_bridge_noise_projection_high_rms", 0.0)),
         "teacher_alignment": float(metrics.get("teacher_alignment", 0.0)),
         "teacher_abs": float(metrics.get("teacher_abs", 0.0)),
         "bridge_sigma": float(metrics.get("bridge_sigma", 0.0)),
@@ -250,6 +433,7 @@ def append_training_log(log_file: Path, metrics: dict[str, float], epoch: int) -
         "identity_ratio": float(metrics.get("identity_ratio", 0.0)),
         "t_mean": float(metrics.get("t_mean", 0.0)),
         "velocity_abs": float(metrics.get("velocity_abs", 0.0)),
+        "target_velocity_abs": float(metrics.get("target_velocity_abs", 0.0)),
         "endpoint_abs": float(metrics.get("endpoint_abs", 0.0)),
         "base_endpoint_abs": float(metrics.get("base_endpoint_abs", 0.0)),
         "final_endpoint_abs": float(metrics.get("final_endpoint_abs", 0.0)),
@@ -271,12 +455,152 @@ def append_training_log(log_file: Path, metrics: dict[str, float], epoch: int) -
         "optimizer_time_sec": float(metrics.get("optimizer_time_sec", 0.0)),
         "compute_time_sec": float(metrics.get("compute_time_sec", 0.0)),
         "epoch_time_sec": float(metrics.get("epoch_time_sec", 0.0)),
+        "optimizer_steps": int(float(metrics.get("optimizer_steps", 0.0))),
+        "effective_batch_size": int(float(metrics.get("effective_batch_size", 0.0))),
+        "avg_batch_time_sec": float(metrics.get("avg_batch_time_sec", 0.0)),
+        "avg_optimizer_step_time_sec": float(metrics.get("avg_optimizer_step_time_sec", 0.0)),
+        "avg_data_time_sec": float(metrics.get("avg_data_time_sec", 0.0)),
+        "avg_forward_time_sec": float(metrics.get("avg_forward_time_sec", 0.0)),
+        "avg_backward_time_sec": float(metrics.get("avg_backward_time_sec", 0.0)),
+        "avg_compute_time_sec": float(metrics.get("avg_compute_time_sec", 0.0)),
         "samples_seen": int(float(metrics.get("samples_seen", 0.0))),
         "samples_per_sec": float(metrics.get("samples_per_sec", 0.0)),
         "cuda_peak_allocated_gb": float(metrics.get("cuda_peak_allocated_gb", 0.0)),
         "cuda_peak_reserved_gb": float(metrics.get("cuda_peak_reserved_gb", 0.0)),
+        "gpu_monitor_samples": int(float(metrics.get("gpu_monitor_samples", 0.0))),
+        "gpu_memory_total_gb": float(metrics.get("gpu_memory_total_gb", 0.0)),
+        "gpu_vram_used_gb_mean": float(metrics.get("gpu_vram_used_gb_mean", 0.0)),
+        "gpu_vram_used_gb_min": float(metrics.get("gpu_vram_used_gb_min", 0.0)),
+        "gpu_vram_used_gb_peak": float(metrics.get("gpu_vram_used_gb_peak", 0.0)),
+        "gpu_util_mean": float(metrics.get("gpu_util_mean", 0.0)),
+        "gpu_util_min": float(metrics.get("gpu_util_min", 0.0)),
+        "gpu_util_peak": float(metrics.get("gpu_util_peak", 0.0)),
+        "gpu_power_w_mean": float(metrics.get("gpu_power_w_mean", 0.0)),
+        "gpu_power_w_min": float(metrics.get("gpu_power_w_min", 0.0)),
+        "gpu_power_w_peak": float(metrics.get("gpu_power_w_peak", 0.0)),
     }
     row = [row_map.get(col, 0.0) for col in TRAIN_LOG_COLUMNS]
     log_file.parent.mkdir(parents=True, exist_ok=True)
     with open(log_file, "a", encoding="utf-8", newline="") as f:
         csv.writer(f).writerow(row)
+
+
+class GpuStatSampler:
+    def __init__(self, *, enabled: bool, interval_sec: float = 2.0, gpu_index: int = 0) -> None:
+        self.enabled = bool(enabled)
+        self.interval_sec = max(0.25, float(interval_sec))
+        self.gpu_index = max(0, int(gpu_index))
+        self._nvidia_smi = self._resolve_nvidia_smi()
+        self._lock = threading.Lock()
+        self._samples: list[dict[str, float]] = []
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    @staticmethod
+    def _resolve_nvidia_smi() -> str | None:
+        candidates = [
+            shutil.which("nvidia-smi"),
+            "/usr/lib/wsl/lib/nvidia-smi",
+            r"C:\Windows\System32\nvidia-smi.exe",
+        ]
+        for candidate in candidates:
+            if candidate and Path(candidate).exists():
+                return candidate
+        return None
+
+    def _poll_once(self) -> None:
+        if not self.enabled or not self._nvidia_smi:
+            return
+        result = subprocess.run(
+            [
+                self._nvidia_smi,
+                "--query-gpu=memory.used,memory.total,utilization.gpu,power.draw",
+                "--format=csv,noheader,nounits",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+        if result.returncode != 0:
+            return
+        rows = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+        if not rows:
+            return
+        row = rows[min(self.gpu_index, len(rows) - 1)]
+        parts = [part.strip() for part in row.split(",")]
+        if len(parts) < 4:
+            return
+        try:
+            sample = {
+                "timestamp": float(time.time()),
+                "memory_used_mib": float(parts[0]),
+                "memory_total_mib": float(parts[1]),
+                "util_gpu": float(parts[2]),
+                "power_draw_w": float(parts[3]),
+            }
+        except ValueError:
+            return
+        with self._lock:
+            self._samples.append(sample)
+
+    def start(self) -> None:
+        if not self.enabled or not self._nvidia_smi:
+            return
+        self._stop.clear()
+        with self._lock:
+            self._samples = []
+        self._poll_once()
+
+        def _loop() -> None:
+            while not self._stop.wait(self.interval_sec):
+                self._poll_once()
+
+        self._thread = threading.Thread(target=_loop, name="gpu-stat-sampler", daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        thread = self._thread
+        if thread is not None:
+            thread.join(timeout=max(1.0, self.interval_sec * 2.0))
+        self._thread = None
+        self._poll_once()
+
+    def summary(self) -> dict[str, float]:
+        with self._lock:
+            samples = list(self._samples)
+        if not samples:
+            return {
+                "gpu_monitor_samples": 0.0,
+                "gpu_memory_total_gb": 0.0,
+                "gpu_vram_used_gb_mean": 0.0,
+                "gpu_vram_used_gb_min": 0.0,
+                "gpu_vram_used_gb_peak": 0.0,
+                "gpu_util_mean": 0.0,
+                "gpu_util_min": 0.0,
+                "gpu_util_peak": 0.0,
+                "gpu_power_w_mean": 0.0,
+                "gpu_power_w_min": 0.0,
+                "gpu_power_w_peak": 0.0,
+            }
+        mem_used = [sample["memory_used_mib"] for sample in samples]
+        mem_total = [sample["memory_total_mib"] for sample in samples]
+        util = [sample["util_gpu"] for sample in samples]
+        power = [sample["power_draw_w"] for sample in samples]
+        mib_to_gb = 1.0 / 1024.0
+        return {
+            "gpu_monitor_samples": float(len(samples)),
+            "gpu_memory_total_gb": float(max(mem_total) * mib_to_gb),
+            "gpu_vram_used_gb_mean": float(sum(mem_used) / len(mem_used) * mib_to_gb),
+            "gpu_vram_used_gb_min": float(min(mem_used) * mib_to_gb),
+            "gpu_vram_used_gb_peak": float(max(mem_used) * mib_to_gb),
+            "gpu_util_mean": float(sum(util) / len(util)),
+            "gpu_util_min": float(min(util)),
+            "gpu_util_peak": float(max(util)),
+            "gpu_power_w_mean": float(sum(power) / len(power)),
+            "gpu_power_w_min": float(min(power)),
+            "gpu_power_w_peak": float(max(power)),
+        }

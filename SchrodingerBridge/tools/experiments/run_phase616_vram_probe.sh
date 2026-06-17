@@ -1,60 +1,60 @@
 #!/usr/bin/env bash
-# ============================================================
-# VRAM Probe: 找出每种 tokenizer 在不超 11.2GB 下的最大 batch
-# 结果用于设置正式实验的 batch_size
-# ============================================================
+# 快速VRAM探针
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+ROOT_DIR="/mnt/i/Github/Latent_Style/SchrodingerBridge"
 cd "$ROOT_DIR"
 
-WARM_CKPT="exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/epoch_0001.pt"
-BASE_CFG="$(dirname "$WARM_CKPT")/config.json"
+BASE_CFG="/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/config.json"
+CKPT="/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/epoch_0001.pt"
 
-echo "=== VRAM Batch Probe ==="
-echo "Target: 9-11.2 GB, prefer multiples of 16"
-echo "Test: pure_latent_spatial (default), smoe_translator, affine_connection"
-echo ""
+# 目标 VRAM: 9-11.2 GB, 尽量靠近 11GB 以提高效率
+# 记录 b 及对应的峰值 VRAM
 
-probe_batch() {
-    local tag="$1" tok_family="$2" batch="$3"
-    local dir="exp/phase616_vramprobe_${tag}_b${batch}"
-    mkdir -p "$dir"
+echo "tokenizer,batch,cuda_peak_gb"
 
-    python3 -c "
+for tok in pure_latent_spatial smoe_translator affine_connection_tokenizer; do
+    # 每种 tokenizer 的 batch 范围
+    case "$tok" in
+        pure_latent_spatial) batches="8 12 16 20 24 28 32 36 40";;
+        smoe_translator)     batches="4 6 8 10 12 14 16 18 20";;
+        affine_connection_tokenizer) batches="8 12 16 20 24 28 32";;
+    esac
+
+    for b in $batches; do
+        d="exp/_vram_${tok}_b${b}"
+        mkdir -p "$d"
+
+        python3 -c "
 import json
 c = json.load(open('$BASE_CFG'))
-c['model']['tokenizer_family'] = '$tok_family'
-c['bridge']['bridge_path_mode'] = 'vertical'
+c['model']['tokenizer_family'] = '$tok'
 c['training']['num_epochs'] = 1
-c['training']['batch_size'] = $batch
-c['training']['virtual_length_multiplier'] = 0.05
+c['training']['batch_size'] = $b
+c['training']['virtual_length_multiplier'] = 0.01
 c['training']['full_eval_each_epoch'] = False
-c['checkpoint']['save_dir'] = './$dir'
-json.dump(c, open('$dir/config.json', 'w'), indent=2)
+c['checkpoint']['save_dir'] = './$d'
+# warmstart from topogate (non-strict, ignores tokenizer mismatch)
+c['training']['resume_model_strict'] = False
+json.dump(c, open('$d/config.json', 'w'), indent=2)
 "
-    cp "$WARM_CKPT" "$dir/epoch_0001.pt"
 
-    echo -n "  $tag b=$batch: "
-    python src/run.py --config "$dir/config.json" --resume "$dir/epoch_0001.pt" 2>&1 | \
-        grep "cuda_peak_allocated" | tail -1 | awk '{print $NF}' || echo "OOM?"
-}
+        python src/run.py --config "$d/config.json" \
+            --resume "exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/epoch_0001.pt" \
+            2>/dev/null || true
 
-# pure_latent_spatial (当前默认)
-for b in 8 12 16 20 24 28 32; do
-    probe_batch "purelatent" "pure_latent_spatial" $b
-done
-
-# smoe_translator (更多参数)
-for b in 4 6 8 10 12 14 16; do
-    probe_batch "smoe" "smoe_translator" $b
-done
-
-# affine_connection (最轻量?)
-for b in 8 12 16 20 24 28 32; do
-    probe_batch "affine" "affine_connection_tokenizer" $b
+        # 读取峰值 VRAM
+        peak=$(grep "cuda_peak_allocated_gb" "$d/config.json" 2>/dev/null || true)
+        if [ -f "$d/logs/training_"*.csv ]; then
+            logfile=$(ls "$d/logs/training_"*.csv | tail -1)
+            # 从训练日志取最后的 cuda_peak_allocated_gb
+            peak=$(tail -1 "$logfile" 2>/dev/null | python3 -c "import sys; print(sys.stdin.readline().split(',')[-9].strip())" 2>/dev/null || echo "OOM")
+        else
+            peak="OOM_or_no_log"
+        fi
+        echo "$tok,$b,$peak"
+    done
 done
 
 echo ""
-echo "=== DONE ==="
-echo "Use the largest batch that stays under 11.2 GB for each tokenizer"
+echo "DONE. Pick largest b with peak < 11.2 for each tokenizer"

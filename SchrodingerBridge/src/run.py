@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import csv
+import json
 import logging
 import gc
 import os
@@ -24,6 +26,22 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+FULL_EVAL_RUNTIME_COLUMNS = [
+    "checkpoint",
+    "output_dir",
+    "wall_sec",
+    "summary_wall_total_sec",
+    "timing_lancet_generation_sec",
+    "timing_lpips_sec",
+    "timing_clip_sec",
+    "generated_count",
+    "transfer_clip_style",
+    "transfer_content_lpips",
+    "allpairs_clip_style",
+    "allpairs_content_lpips",
+]
 
 
 ROUND2_REFERENCE_GAP_SPECS: dict[str, dict[str, object]] = {
@@ -76,6 +94,50 @@ def _resolve_num_workers(requested: int) -> int:
         return 0
     cpu_count = os.cpu_count() or 4
     return max(2, min(8, cpu_count // 2))
+
+
+def _append_full_eval_runtime_row(*, checkpoint_path: Path, out_dir: Path, wall_sec: float) -> None:
+    summary_path = out_dir / "summary.json"
+    timings: dict[str, object] = {}
+    transfer: dict[str, object] = {}
+    allpairs: dict[str, object] = {}
+    generated_count = 0
+    summary_wall = 0.0
+    if summary_path.is_file():
+        try:
+            with summary_path.open("r", encoding="utf-8") as f:
+                summary = json.load(f)
+            timings = dict((summary.get("timings_sec") or {}))
+            analysis = dict((summary.get("analysis") or {}))
+            transfer = dict((analysis.get("style_transfer_ability") or {}))
+            allpairs = dict((analysis.get("all_pairs_overview") or {}))
+            generated_count = int(summary.get("generated_count", 0) or 0)
+            summary_wall = float(timings.get("wall_total", 0.0) or 0.0)
+        except Exception:
+            logger.exception("Failed to parse full-eval summary at %s", summary_path)
+    log_dir = checkpoint_path.parent / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = log_dir / "full_eval_runtime.csv"
+    row = {
+        "checkpoint": checkpoint_path.name,
+        "output_dir": str(out_dir),
+        "wall_sec": float(wall_sec),
+        "summary_wall_total_sec": summary_wall,
+        "timing_lancet_generation_sec": float(timings.get("lancet_generation", 0.0) or 0.0),
+        "timing_lpips_sec": float(timings.get("lpips", 0.0) or 0.0),
+        "timing_clip_sec": float(timings.get("clip", 0.0) or 0.0),
+        "generated_count": int(generated_count),
+        "transfer_clip_style": float(transfer.get("clip_style", 0.0) or 0.0),
+        "transfer_content_lpips": float(transfer.get("content_lpips", 0.0) or 0.0),
+        "allpairs_clip_style": float(allpairs.get("clip_style", 0.0) or 0.0),
+        "allpairs_content_lpips": float(allpairs.get("content_lpips", 0.0) or 0.0),
+    }
+    write_header = not csv_path.is_file()
+    with csv_path.open("a", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=FULL_EVAL_RUNTIME_COLUMNS)
+        if write_header:
+            writer.writeheader()
+        writer.writerow(row)
 
 
 def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Path) -> None:
@@ -233,6 +295,7 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
         subprocess.run(cmd, check=True)
     wall = time.perf_counter() - start
     logger.info("Full eval completed for %s in %.1fs", checkpoint_path.name, wall)
+    _append_full_eval_runtime_row(checkpoint_path=checkpoint_path, out_dir=out_dir, wall_sec=wall)
     collector = Path(__file__).resolve().parents[1] / "tools" / "experiments" / "collect_round2_eval_curve.py"
     convergence = Path(__file__).resolve().parents[1] / "tools" / "experiments" / "report_round2_convergence.py"
     manifest = Path(__file__).resolve().parents[1] / "tools" / "experiments" / "update_round2_family_manifest.py"
@@ -466,7 +529,13 @@ def main() -> None:
         trainer.step_scheduler()
         trainer.log_epoch(epoch, metrics)
         logger.info(
-            "Epoch %d/%d | loss=%.4f flow=%.4f kin=%.4f ot=%.4f tswd=%.4f cla=%.4f cea=%.4f sem_attn=%.3f sem_k=%.3f topo_ent=%.3f topo_on=%.0f plan_ent=%.3f tok_ent=%.3f tok_eff=%.1f tok_max=%.3f app_s=%.3f app_d=%.3f sigma=%.3f bex=%.0f idr=%.2f t=%.3f |v|=%.3f lr=%.2e data=%.1fs comp=%.1fs peak=%.2f/%.2fGB",
+            "Epoch %d/%d | loss=%.4f flow=%.4f kin=%.4f ot=%.4f tswd=%.4f "
+            "gini=%.3f hub=%.3f otd=%.4f fiber=%.3f leak=%.4f tgtshift=%.4f "
+            "cla=%.4f cea=%.4f sem_attn=%.3f sem_k=%.3f topo_ent=%.3f topo_on=%.0f "
+            "plan_ent=%.3f bary_ent=%.3f tok_ent=%.3f tok_eff=%.1f tok_max=%.3f tok_svd=%.3f tok_cos=%.3f app_s=%.3f app_d=%.3f "
+            "sigma=%.3f bex=%.0f idr=%.2f t=%.3f |v|=%.3f lr=%.2e "
+            "data=%.1fs comp=%.1fs epoch=%.1fs sps=%.2f bstep=%.3fs "
+            "gpu=%.1f/%.1f%% vram=%.2f/%.2fGB power=%.1f/%.1fW peak=%.2f/%.2fGB",
             epoch,
             trainer.num_epochs,
             metrics.get("loss", 0.0),
@@ -474,6 +543,12 @@ def main() -> None:
             metrics.get("kinetic_energy", 0.0),
             metrics.get("ot_cost", 0.0),
             metrics.get("terminal_swd", 0.0),
+            metrics.get("ot_target_gini", 0.0),
+            metrics.get("ot_target_max_mass", 0.0),
+            metrics.get("base_structural_drift", 0.0),
+            metrics.get("fiber_energy_ratio", 0.0),
+            metrics.get("low_freq_leak", 0.0),
+            metrics.get("target_base_shift", 0.0),
             metrics.get("content_lowpass_anchor", 0.0),
             metrics.get("content_edge_anchor", 0.0),
             metrics.get("semantic_attn_mean", 0.0),
@@ -481,9 +556,15 @@ def main() -> None:
             metrics.get("semantic_topology_attn_entropy", 0.0),
             metrics.get("semantic_topology_attn_active", 0.0),
             metrics.get("plan_entropy", 0.0),
+            metrics.get("ot_barycentric_entropy", metrics.get("barycentric_entropy", 0.0)),
             metrics.get("structured_style_tokenizer_attn_entropy", 0.0),
             metrics.get("structured_style_tokenizer_attn_effective_count", 0.0),
             metrics.get("structured_style_tokenizer_attn_max", 0.0),
+            metrics.get("structured_style_tokenizer_spatial_svd_entropy", 0.0),
+            metrics.get(
+                "structured_style_tokenizer_translation_delta_offdiag_cosine",
+                metrics.get("structured_style_tokenizer_style_value_offdiag_cosine", 0.0),
+            ),
             metrics.get("output_appearance_scale_mean", 0.0),
             metrics.get("output_appearance_shift_abs", 0.0),
             metrics.get("bridge_sigma", 0.0),
@@ -494,6 +575,15 @@ def main() -> None:
             metrics.get("lr", 0.0),
             metrics.get("data_time_sec", 0.0),
             metrics.get("compute_time_sec", 0.0),
+            metrics.get("epoch_time_sec", 0.0),
+            metrics.get("samples_per_sec", 0.0),
+            metrics.get("avg_optimizer_step_time_sec", 0.0),
+            metrics.get("gpu_util_mean", 0.0),
+            metrics.get("gpu_util_peak", 0.0),
+            metrics.get("gpu_vram_used_gb_mean", 0.0),
+            metrics.get("gpu_vram_used_gb_peak", 0.0),
+            metrics.get("gpu_power_w_mean", 0.0),
+            metrics.get("gpu_power_w_peak", 0.0),
             metrics.get("cuda_peak_allocated_gb", 0.0),
             metrics.get("cuda_peak_reserved_gb", 0.0),
         )

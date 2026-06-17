@@ -1,0 +1,11 @@
+{
+  "_base": "./phase616_clean_ot_probe_selfaffgw_mix_faststep60_e1.json",
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_ot_probe_selfaffgw_mix_faststep60_e1_authoritative"
+  },
+  "ablation": {
+    "name": "phase616_clean_ot_probe_selfaffgw_mix_faststep60_e1_authoritative",
+    "stage": "clean_ot_self_affinity_gw_mix_fast_control_authoritative",
+    "notes": "Authoritative rerun root for the retained 616 OT control. Keeps mixed appearance-plus-structure OT and pure_vertical_flow fixed, but isolates all outputs in a fresh save root so later promotion decisions do not depend on reused control artifacts."
+  }
+}

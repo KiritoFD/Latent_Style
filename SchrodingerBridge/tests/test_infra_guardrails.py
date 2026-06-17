@@ -30,6 +30,57 @@ def test_cpu_hungarian_requires_explicit_opt_in() -> None:
         OTFlowMatchingObjective(cfg)
 
 
+def test_unbalanced_ot_can_route_to_source_local_dummies() -> None:
+    cfg = ExperimentConfig(
+        model=ModelConfig(),
+        bridge=BridgeConfig(
+            coupling_solver="sinkhorn_unbalanced",
+            sinkhorn_unbalanced_dummy_cost=0.25,
+            sinkhorn_unbalanced_dummy_offdiag_cost=9.0,
+        ),
+    )
+    objective = OTFlowMatchingObjective(cfg)
+    cost = torch.ones(3, 2)
+    content = torch.randn(3, 4, 4, 4)
+    target = torch.randn(2, 4, 4, 4)
+
+    augmented_cost, augmented_targets, real_count = objective._augment_cost_with_source_dummies(
+        cost,
+        content,
+        target,
+    )
+
+    assert real_count == 2
+    assert augmented_cost.shape == (3, 5)
+    assert augmented_targets.shape[0] == 5
+    assert torch.allclose(torch.diagonal(augmented_cost[:, 2:]), torch.full((3,), 0.25))
+    assert torch.equal(augmented_targets[2:], content)
+
+
+def test_barycentric_projection_uses_source_row_shape() -> None:
+    cfg = ExperimentConfig(
+        model=ModelConfig(),
+        bridge=BridgeConfig(coupling_target_mode="barycentric_full"),
+    )
+    objective = OTFlowMatchingObjective(cfg)
+    plan = torch.tensor([[0.1, 0.2, 0.7], [0.3, 0.4, 0.3]], dtype=torch.float32)
+    target = torch.randn(3, 4, 5, 5)
+
+    matched, _, _ = objective._sample_or_project_from_plan(plan, target)
+
+    assert matched.shape == (2, 4, 5, 5)
+
+
+def test_phase616_contract_rejects_proximal_trust() -> None:
+    payload = {
+        "model": {"contract_family": "phase616"},
+        "bridge": {"proximal_trust_ratio": 0.5, "proximal_trust_weight": 0.5},
+    }
+
+    with pytest.raises(ValueError, match="proximal_trust"):
+        ExperimentConfig.from_mapping(payload)
+
+
 def test_swd_projection_cache_keys_include_spatial_shape() -> None:
     cfg = BridgeConfig(swd_patch_sizes=[3], swd_num_projections=4)
     cost = SWDTransportCost(cfg)

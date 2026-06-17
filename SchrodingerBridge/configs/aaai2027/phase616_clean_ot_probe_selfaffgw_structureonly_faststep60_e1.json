@@ -1,0 +1,16 @@
+{
+  "_base": "./phase616_clean_ot_probe_selfaffgw_mix_faststep60_e1.json",
+  "bridge": {
+    "coupling_cost_composition": "structure_only",
+    "coupling_structure_cost_weight": 1.0
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_ot_probe_selfaffgw_structureonly_faststep60_e1"
+  },
+  "ablation": {
+    "name": "phase616_clean_ot_probe_selfaffgw_structureonly_faststep60_e1",
+    "axis": "phase616_ot_probe_fast",
+    "stage": "clean_ot_self_affinity_gw_structure_only_fast_candidate",
+    "notes": "Round-3 OT candidate. Keep unbalanced Sinkhorn, self_affinity_gw, and pure_vertical_flow fixed, but remove pointwise appearance cost from coupling so OT lives purely in the retained topology descriptor space, matching the 616 metric-mismatch diagnosis."
+  }
+}

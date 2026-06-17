@@ -7,6 +7,33 @@ Use this file as the stable entrypoint instead of guessing from filenames.
 
 ## Current Priority Surface
 
+- phase616 OT / target-geometry probes:
+  - [build_phase616_projection_probe_table.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/build_phase616_projection_probe_table.py)
+  - [build_phase616_ot_probe_table.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/build_phase616_ot_probe_table.py)
+  - [build_phase616_style_stats_bank.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/build_phase616_style_stats_bank.py)
+  - [audit_training_log_observability.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/audit_training_log_observability.py)
+  - [run_phase616_audit_rerun_queue.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_phase616_audit_rerun_queue.sh)
+  - [launch_phase616_audit_rerun_queue_remote.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_phase616_audit_rerun_queue_remote.sh)
+  - [run_phase616_clean_stats_probe_round1.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_phase616_clean_stats_probe_round1.sh)
+  - [launch_phase616_clean_stats_probe_round1_remote.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_phase616_clean_stats_probe_round1_remote.sh)
+  - [run_phase616_clean_stats_probe_round2_authoritative.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_phase616_clean_stats_probe_round2_authoritative.sh)
+  - [launch_phase616_clean_stats_probe_round2_authoritative_remote.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_phase616_clean_stats_probe_round2_authoritative_remote.sh)
+  - [run_phase616_clean_ot_probe_round1.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_phase616_clean_ot_probe_round1.sh)
+  - [run_phase616_clean_ot_probe_round2.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_phase616_clean_ot_probe_round2.sh)
+  - [run_phase616_clean_ot_probe_round3.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_phase616_clean_ot_probe_round3.sh)
+  - [run_phase616_clean_ot_probe_round4_featuremaps.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_phase616_clean_ot_probe_round4_featuremaps.sh)
+  - [run_phase616_clean_ot_probe_round5_tokenentropy.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_phase616_clean_ot_probe_round5_tokenentropy.sh)
+  - [run_phase616_clean_ot_probe_round6_featurehybrid.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_phase616_clean_ot_probe_round6_featurehybrid.sh)
+  - [run_phase616_clean_ot_probe_round7_encoderhybrid_authoritative.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_phase616_clean_ot_probe_round7_encoderhybrid_authoritative.sh)
+  - [run_phase616_clean_ot_probe_round8_targetgeometry2x2.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_phase616_clean_ot_probe_round8_targetgeometry2x2.sh)
+  - [launch_phase616_clean_ot_probe_round5_tokenentropy_remote.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_phase616_clean_ot_probe_round5_tokenentropy_remote.sh)
+  - [launch_phase616_clean_ot_probe_round6_featurehybrid_remote.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_phase616_clean_ot_probe_round6_featurehybrid_remote.sh)
+  - [launch_phase616_clean_ot_probe_round7_encoderhybrid_authoritative_remote.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_phase616_clean_ot_probe_round7_encoderhybrid_authoritative_remote.sh)
+  - [launch_phase616_clean_ot_probe_round8_targetgeometry2x2_remote.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_phase616_clean_ot_probe_round8_targetgeometry2x2_remote.sh)
+  - [run_phase616_clean_bridge_noise_probe_round2_authoritative.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_phase616_clean_bridge_noise_probe_round2_authoritative.sh)
+  - [launch_phase616_clean_bridge_noise_probe_round2_authoritative_remote.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_phase616_clean_bridge_noise_probe_round2_authoritative_remote.sh)
+  - [run_phase616_clean_stats_bridge_combo_round1_authoritative.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_phase616_clean_stats_bridge_combo_round1_authoritative.sh)
+  - [launch_phase616_clean_stats_bridge_combo_round1_authoritative_remote.sh](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/launch_phase616_clean_stats_bridge_combo_round1_authoritative_remote.sh)
 - round-1 tokenizer/backbone/solver sweep:
   - [run_round1_family_queue.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_round1_family_queue.py)
   - [audit_round1_queue_state.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/audit_round1_queue_state.py)
@@ -119,6 +146,8 @@ Use this file as the stable entrypoint instead of guessing from filenames.
   - [build_round1_family_external_vlm_manifests.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/build_round1_family_external_vlm_manifests.py)
   - [run_round1_family_external_vlm_packet.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_round1_family_external_vlm_packet.py)
   - [watch_vlm_snapshot_summaries.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/watch_vlm_snapshot_summaries.py)
+  - single-case failure diagnosis with the same xf-yun VLM endpoint:
+    - [run_xf_vlm_failure_diagnosis.py](/G:/GitHub/Latent_Style/SchrodingerBridge/tools/experiments/run_xf_vlm_failure_diagnosis.py)
 
 ### WikiArts5 baseline reproduction
 

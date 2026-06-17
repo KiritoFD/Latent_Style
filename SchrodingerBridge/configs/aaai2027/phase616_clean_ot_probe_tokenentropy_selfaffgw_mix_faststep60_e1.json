@@ -1,0 +1,15 @@
+{
+  "_base": "./phase616_clean_ot_probe_selfaffgw_mix_faststep60_e1.json",
+  "bridge": {
+    "coupling_structure_cost_mode": "tokenizer_entropy_affinity_gw"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_ot_probe_tokenentropy_selfaffgw_mix_faststep60_e1"
+  },
+  "ablation": {
+    "name": "phase616_clean_ot_probe_tokenentropy_selfaffgw_mix_faststep60_e1",
+    "axis": "phase616_ot_probe_fast",
+    "stage": "clean_ot_tokenizer_entropy_affinity_gw_fast",
+    "notes": "Matched phase616 OT round-5 candidate. Keep the retained mixed OT control, unbalanced Sinkhorn, and pure_vertical_flow fixed, but replace the structure descriptor with tokenizer routing entropy plus routing affinity so OT can see complexity and topology rather than raw latent proxy alone."
+  }
+}

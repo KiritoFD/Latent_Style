@@ -69,14 +69,15 @@ for name, overrides in exps.items():
     # --- 核心改动: 回退 tokenizer, 其他不变 ---
     c["model"]["tokenizer_family"] = "legacy_factorized"
     c["model"]["style_tokenizer"] = "factorized"
-    c["model"]["style_spatial_mode"] = "class"
     c["model"]["semantic_self_topology_gate"] = True
     c["model"]["semantic_self_topology_blend"] = 1.0
     c["data"]["pairing_cache_path"] = ""
+    c["training"]["virtual_length_multiplier"] = 0.1
+    c["model"]["ablation_disable_spatial_prior"] = True
 
     # --- 训练参数 ---
     c["training"]["num_epochs"] = 60
-    c["training"]["batch_size"] = 32
+    c["training"]["batch_size"] = 28
     c["training"]["virtual_length_multiplier"] = 1.0    # b40 够大了,不用 vl
     c["training"]["full_eval_each_epoch"] = False
     c["training"]["full_eval_interval"] = 4

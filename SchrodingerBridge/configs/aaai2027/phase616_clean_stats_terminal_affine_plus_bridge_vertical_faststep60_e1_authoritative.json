@@ -1,0 +1,17 @@
+{
+  "_base": "./phase616_clean_stats_terminal_affine_control_faststep60_e1_authoritative.json",
+  "bridge": {
+    "training_bridge_noise_projection_mode": "pure_vertical_flow",
+    "training_bridge_noise_projection_kernel": 5,
+    "training_bridge_noise_projection_preserve_rms": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_stats_terminal_affine_plus_bridge_vertical_faststep60_e1_authoritative"
+  },
+  "ablation": {
+    "name": "phase616_clean_stats_terminal_affine_plus_bridge_vertical_faststep60_e1_authoritative",
+    "axis": "phase616_bridge_noise_plus_stats",
+    "stage": "terminal_affine_plus_bridge_vertical_authoritative",
+    "notes": "First 616 matched integration probe after the standalone closures. Keep terminal_affine active as the retained style-lift auxiliary line, and change only the training bridge-noise spectrum to pure_vertical_flow with RMS preservation."
+  }
+}
