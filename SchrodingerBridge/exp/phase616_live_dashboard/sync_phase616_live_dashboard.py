@@ -278,7 +278,6 @@ class RunPoint:
     style: float
     lpips: float
     x: float
-    clip_s_delta_idt: float | None = None
     clip_t: float | None = None
 
 
@@ -364,9 +363,6 @@ def _parse_points(snapshot: dict) -> list[RunPoint]:
         for row in reader:
             style = float(row["transfer_clip_style"])
             lpips = float(row["transfer_content_lpips"])
-            clip_s_delta_idt = None
-            if str(row.get("transfer_clip_s_delta_idt", "")).strip():
-                clip_s_delta_idt = float(row["transfer_clip_s_delta_idt"])
             clip_t = None
             if str(row.get("transfer_clip_t", "")).strip():
                 clip_t = float(row["transfer_clip_t"])
@@ -380,7 +376,6 @@ def _parse_points(snapshot: dict) -> list[RunPoint]:
                     style=style,
                     lpips=lpips,
                     x=1.0 - lpips,
-                    clip_s_delta_idt=clip_s_delta_idt,
                     clip_t=clip_t,
                 )
             )
@@ -1148,7 +1143,7 @@ def _render_html(points: list[RunPoint], baselines: dict[str, object], status: d
                 "label": point.label,
                 "epoch_int": point.epoch_int,
                 "clip_style": point.style,
-                "clip_s_delta_idt": point.clip_s_delta_idt,
+                "clip_s_delta_idt": style_minus_idt,
                 "clip_t": point.clip_t,
                 "content_lpips": point.lpips,
                 "one_minus_lpips": point.x,
