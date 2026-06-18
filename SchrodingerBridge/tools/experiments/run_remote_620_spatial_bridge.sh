@@ -11,6 +11,7 @@ PAIRING_PLAN="${PAIRING_PLAN:-${LATENT_ROOT}/.latent_cache/dino_pairing_top8.pt}
 STYLES="${STYLES:-Early_Renaissance,Impressionism,Minimalism,Rococo,Ukiyo_e}"
 DINO_ALLOW_NETWORK="${DINO_ALLOW_NETWORK:-0}"
 DINO_HF_CACHE_DIR="${DINO_HF_CACHE_DIR:-/mnt/i/hf_cache}"
+BATCH_SIZE_WAS_SET="${BATCH_SIZE+x}"
 BATCH_SIZE="${BATCH_SIZE:-80}"
 FULL_EVAL_BATCH_SIZE="${FULL_EVAL_BATCH_SIZE:-16}"
 FULL_EVAL_VAE_DECODE_BATCH_SIZE="${FULL_EVAL_VAE_DECODE_BATCH_SIZE:-16}"
@@ -38,6 +39,11 @@ while [ "$#" -gt 0 ]; do
       run_name="$2"
       shift 2
       ;;
+    --batch-size)
+      BATCH_SIZE="$2"
+      BATCH_SIZE_WAS_SET=1
+      shift 2
+      ;;
     *)
       echo "unknown argument: $1" >&2
       exit 2
@@ -60,7 +66,10 @@ case "$variant" in
     ;;
   adapter)
     config_rel="SchrodingerBridge/configs/620_spatial_bridge_adapter.json"
-    default_run_name="620_adapter_swd12_sigma002_nfe8_b80"
+    default_run_name="620_adapter_swd12_sigma002_nfe8_b64"
+    if [ -z "$BATCH_SIZE_WAS_SET" ]; then
+      BATCH_SIZE="64"
+    fi
     ;;
   *)
     echo "invalid --variant: $variant" >&2
