@@ -9,6 +9,7 @@ import signal
 import statistics
 import subprocess
 import sys
+import tarfile
 import time
 import threading
 from copy import deepcopy
@@ -26,9 +27,17 @@ DEFAULT_OOM_VRAM_GB = 11.3
 DEFAULT_STAGE1_DIR = Path("/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_lite_ot_vertical_auto")
 DEFAULT_STAGE2_DIR = Path("/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_lite_ot_ablation_auto")
 DEFAULT_STAGE3_DIR = Path("/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_lite_ot_best_auto")
+DEFAULT_STYLE_SWEEP_DIR = Path("/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_stage3_style_auto")
+DEFAULT_PLAIN_PATH_DISTILL_DIR = Path("/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_plain_path_distill_auto")
+DEFAULT_MANUAL_H0_DIR = Path("/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_lite_ot_vertical/h0_vertical_fm")
 DEFAULT_STAGE1_EPOCHS = 12
 DEFAULT_STAGE2_EPOCHS = 10
 DEFAULT_STAGE3_EPOCHS = 120
+DEFAULT_STYLE_SWEEP_EPOCHS = 20
+DEFAULT_PLAIN_PATH_DISTILL_EPOCHS = 20
+CONFIG_EFFECT_EPS = 1e-4
+CLOSE_RESULT_STYLE_EPS = 0.005
+CLOSE_RESULT_LPIPS_EPS = 0.018
 
 
 def _resolve_nvidia_smi() -> str | None:
@@ -314,13 +323,658 @@ def _stage1_specs() -> list[dict[str, Any]]:
     ]
 
 
+def _style_sweep_specs() -> list[dict[str, Any]]:
+    return [
+        {
+            "name": "r1_linear_blend_0p20",
+            "overrides": {
+                "bridge.bridge_path_mode": "linear",
+                "bridge.coupling_cost_composition": "structure_only",
+                "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+                "bridge.bridge_sigma": 0.0,
+                "model.semantic_self_topology_blend": 0.2,
+            },
+        },
+        {
+            "name": "r2_linear_blend_0p40",
+            "overrides": {
+                "bridge.bridge_path_mode": "linear",
+                "bridge.coupling_cost_composition": "structure_only",
+                "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+                "bridge.bridge_sigma": 0.0,
+                "model.semantic_self_topology_blend": 0.4,
+            },
+        },
+        {
+            "name": "r3_linear_blend_0p60",
+            "overrides": {
+                "bridge.bridge_path_mode": "linear",
+                "bridge.coupling_cost_composition": "structure_only",
+                "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+                "bridge.bridge_sigma": 0.0,
+                "model.semantic_self_topology_blend": 0.6,
+            },
+        },
+        {
+            "name": "r4_vertical_blend_0p20",
+            "overrides": {
+                "bridge.bridge_path_mode": "vertical",
+                "bridge.coupling_cost_composition": "structure_only",
+                "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+                "bridge.bridge_sigma": 0.0,
+                "model.semantic_self_topology_blend": 0.2,
+            },
+        },
+        {
+            "name": "r5_vertical_blend_0p40",
+            "overrides": {
+                "bridge.bridge_path_mode": "vertical",
+                "bridge.coupling_cost_composition": "structure_only",
+                "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+                "bridge.bridge_sigma": 0.0,
+                "model.semantic_self_topology_blend": 0.4,
+            },
+        },
+        {
+            "name": "r6_vertical_blend_0p60",
+            "overrides": {
+                "bridge.bridge_path_mode": "vertical",
+                "bridge.coupling_cost_composition": "structure_only",
+                "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+                "bridge.bridge_sigma": 0.0,
+                "model.semantic_self_topology_blend": 0.6,
+            },
+        },
+        {
+            "name": "r7_linear_code_map_lowrank",
+            "overrides": {
+                "bridge.bridge_path_mode": "linear",
+                "bridge.coupling_cost_composition": "structure_only",
+                "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+                "bridge.bridge_sigma": 0.0,
+                "model.style_code_spatial_mode": "lowrank",
+                "model.style_code_spatial_hidden_dim": 64,
+                "model.style_code_spatial_rank": 8,
+                "model.style_code_spatial_base_hw": 16,
+                "model.style_code_spatial_scale": 0.35,
+            },
+        },
+        {
+            "name": "r8_linear_code_map_lowrank_both",
+            "overrides": {
+                "bridge.bridge_path_mode": "linear",
+                "bridge.coupling_cost_composition": "structure_only",
+                "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+                "bridge.bridge_sigma": 0.0,
+                "model.matched_target_conditioning_mode": "both",
+                "model.matched_target_style_encoder_mode": "residual",
+                "model.matched_target_style_encoder_hidden_dim": 64,
+                "model.style_code_spatial_mode": "lowrank",
+                "model.style_code_spatial_hidden_dim": 64,
+                "model.style_code_spatial_rank": 8,
+                "model.style_code_spatial_base_hw": 16,
+                "model.style_code_spatial_scale": 0.35,
+            },
+        },
+        {
+            "name": "r9_linear_code_map_lowrank_blend_0p40",
+            "overrides": {
+                "bridge.bridge_path_mode": "linear",
+                "bridge.coupling_cost_composition": "structure_only",
+                "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+                "bridge.bridge_sigma": 0.0,
+                "model.semantic_self_topology_blend": 0.4,
+                "model.matched_target_conditioning_mode": "both",
+                "model.matched_target_style_encoder_mode": "residual",
+                "model.matched_target_style_encoder_hidden_dim": 64,
+                "model.style_code_spatial_mode": "lowrank",
+                "model.style_code_spatial_hidden_dim": 64,
+                "model.style_code_spatial_rank": 8,
+                "model.style_code_spatial_base_hw": 16,
+                "model.style_code_spatial_scale": 0.35,
+            },
+        },
+        {
+            "name": "r10_vertical_code_map_lowrank_both",
+            "overrides": {
+                "bridge.bridge_path_mode": "vertical",
+                "bridge.coupling_cost_composition": "structure_only",
+                "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+                "bridge.bridge_sigma": 0.0,
+                "model.matched_target_conditioning_mode": "both",
+                "model.matched_target_style_encoder_mode": "residual",
+                "model.matched_target_style_encoder_hidden_dim": 64,
+                "model.style_code_spatial_mode": "lowrank",
+                "model.style_code_spatial_hidden_dim": 64,
+                "model.style_code_spatial_rank": 8,
+                "model.style_code_spatial_base_hw": 16,
+                "model.style_code_spatial_scale": 0.35,
+            },
+        },
+        {
+            "name": "r11_linear_blend_0p00",
+            "overrides": {
+                "bridge.bridge_path_mode": "linear",
+                "bridge.coupling_cost_composition": "structure_only",
+                "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+                "bridge.bridge_sigma": 0.0,
+                "model.semantic_self_topology_blend": 0.0,
+            },
+        },
+        {
+            "name": "r12_linear_blend_0p30",
+            "overrides": {
+                "bridge.bridge_path_mode": "linear",
+                "bridge.coupling_cost_composition": "structure_only",
+                "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+                "bridge.bridge_sigma": 0.0,
+                "model.semantic_self_topology_blend": 0.3,
+            },
+        },
+        {
+            "name": "r13_linear_blend_0p00_solver_pc",
+            "overrides": {
+                "bridge.bridge_path_mode": "linear",
+                "bridge.coupling_cost_composition": "structure_only",
+                "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+                "bridge.bridge_sigma": 0.0,
+                "model.semantic_self_topology_blend": 0.0,
+                "model.solver_family": "solver_pc",
+                "model.solver_corrector_steps": 2,
+                "model.solver_corrector_step_size": 0.1,
+                "model.solver_corrector_mode": "latent_lowpass",
+            },
+        },
+        {
+            "name": "r14_linear_blend_0p30_solver_pc",
+            "overrides": {
+                "bridge.bridge_path_mode": "linear",
+                "bridge.coupling_cost_composition": "structure_only",
+                "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+                "bridge.bridge_sigma": 0.0,
+                "model.semantic_self_topology_blend": 0.3,
+                "model.solver_family": "solver_pc",
+                "model.solver_corrector_steps": 2,
+                "model.solver_corrector_step_size": 0.1,
+                "model.solver_corrector_mode": "latent_lowpass",
+            },
+        },
+        {
+            "name": "r15_vertical_blend_0p00",
+            "overrides": {
+                "bridge.bridge_path_mode": "vertical",
+                "bridge.coupling_cost_composition": "structure_only",
+                "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+                "bridge.bridge_sigma": 0.0,
+                "model.semantic_self_topology_blend": 0.0,
+            },
+        },
+        {
+            "name": "r16_vertical_blend_0p00_solver_pc",
+            "overrides": {
+                "bridge.bridge_path_mode": "vertical",
+                "bridge.coupling_cost_composition": "structure_only",
+                "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+                "bridge.bridge_sigma": 0.0,
+                "model.semantic_self_topology_blend": 0.0,
+                "model.solver_family": "solver_pc",
+                "model.solver_corrector_steps": 2,
+                "model.solver_corrector_step_size": 0.1,
+                "model.solver_corrector_mode": "latent_lowpass",
+            },
+        },
+        {
+            "name": "r17_linear_body_mixed_live_init",
+            "overrides": {
+                "bridge.bridge_path_mode": "linear",
+                "bridge.coupling_cost_composition": "structure_only",
+                "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+                "bridge.bridge_sigma": 0.0,
+                "model.style_injection_mode": "body",
+                "model.style_injection_form": "mixed",
+                "model.style_injection_scale": 1.0,
+                "model.style_injection_live_init": True,
+                "model.style_injection_live_init_std": 0.02,
+            },
+        },
+        {
+            "name": "r18_linear_body_spatial_carrier_live_init",
+            "overrides": {
+                "bridge.bridge_path_mode": "linear",
+                "bridge.coupling_cost_composition": "structure_only",
+                "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+                "bridge.bridge_sigma": 0.0,
+                "model.style_injection_mode": "body",
+                "model.style_injection_form": "spatial_carrier_gate",
+                "model.style_injection_scale": 1.0,
+                "model.style_injection_live_init": True,
+                "model.style_injection_live_init_std": 0.02,
+            },
+        },
+    ]
+
+
+def _plain_path_distill_specs() -> list[dict[str, Any]]:
+    specs: list[dict[str, Any]] = [
+        {
+            "name": "h1_plain_path_distill_0p50",
+            "overrides": {
+                "bridge.w_plain_path_distill": 0.5,
+            },
+        }
+    ]
+    for spec in _stage1_specs():
+        name = str(spec.get("name", "") or "").strip()
+        if not name or name == "h1_linear_fm":
+            continue
+        overrides = dict(spec.get("overrides", {}))
+        overrides["bridge.w_plain_path_distill"] = 0.5
+        specs.append(
+            {
+                "name": f"{name}_plain_path_distill_0p50",
+                "overrides": overrides,
+            }
+        )
+    return specs
+
+
+def _filter_specs_by_name(specs: list[dict[str, Any]], include_names: list[str] | None) -> list[dict[str, Any]]:
+    names = [str(x) for x in (include_names or []) if str(x).strip()]
+    if not names:
+        return list(specs)
+    selected = [spec for spec in specs if str(spec.get("name")) in names]
+    missing = [name for name in names if name not in {str(spec.get("name")) for spec in selected}]
+    if missing:
+        raise ValueError(f"Unknown spec names requested: {missing}")
+    return selected
+
+
+def _style_sweep_variant_spec(specs: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "variants": [
+            {
+                "name": str(spec.get("name", "")),
+                "overrides": dict(spec.get("overrides", {})),
+            }
+            for spec in specs
+        ]
+    }
+
+
+def _summarize_training_effect(summary: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    out: dict[str, dict[str, Any]] = {}
+    for item in summary.get("variant_summaries", []) or []:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name", "") or "").strip()
+        if not name:
+            continue
+        out[name] = {
+            "classification": str(item.get("classification", "") or ""),
+            "training_path_changed": bool(item.get("training_path_changed", False)),
+            "ot_match_changed": bool(item.get("ot_match_changed", False)),
+            "target_projection_changed": bool(item.get("target_projection_changed", False)),
+            "bridge_state_changed": bool(item.get("bridge_state_changed", False)),
+            "model_conditioning_changed": bool(item.get("model_conditioning_changed", False)),
+            "component_changed": bool(item.get("component_changed", False)),
+            "matched_target_vs_base_mean_abs": float(item.get("matched_target_vs_base_mean_abs", 0.0) or 0.0),
+            "objective_target_vs_base_mean_abs": float(item.get("objective_target_vs_base_mean_abs", 0.0) or 0.0),
+            "x_t_vs_base_mean_abs": float(item.get("x_t_vs_base_mean_abs", 0.0) or 0.0),
+            "target_velocity_vs_base_mean_abs": float(item.get("target_velocity_vs_base_mean_abs", 0.0) or 0.0),
+            "pred_velocity_vs_base_mean_abs": float(item.get("pred_velocity_vs_base_mean_abs", 0.0) or 0.0),
+            "pred_endpoint_vs_base_mean_abs": float(item.get("pred_endpoint_vs_base_mean_abs", 0.0) or 0.0),
+            "matched_target_style_code_vs_base_mean_abs": float(
+                item.get("matched_target_style_code_vs_base_mean_abs", 0.0) or 0.0
+            ),
+        }
+    return out
+
+
+def _attach_variant_preflight(
+    specs: list[dict[str, Any]],
+    *,
+    field_name: str,
+    variant_map: dict[str, dict[str, Any]] | None,
+) -> list[dict[str, Any]]:
+    if not variant_map:
+        return [dict(spec) for spec in specs]
+    out: list[dict[str, Any]] = []
+    for raw_spec in specs:
+        spec = dict(raw_spec)
+        name = str(spec.get("name", "") or "")
+        meta = dict((variant_map or {}).get(name) or {})
+        if meta:
+            spec[field_name] = meta
+        out.append(spec)
+    return out
+
+
+def _config_effect_delta(row: dict[str, Any] | None) -> float:
+    if not isinstance(row, dict):
+        return 0.0
+    keys = (
+        "vs_base_forward_mean_abs",
+        "vs_base_predict_transport_base_mean_abs",
+        "vs_base_integrate_mean_abs",
+    )
+    out = 0.0
+    for key in keys:
+        try:
+            out = max(out, abs(float(row.get(key, 0.0) or 0.0)))
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def _summarize_config_effect(summary: dict[str, Any], *, eps: float = CONFIG_EFFECT_EPS) -> dict[str, dict[str, Any]]:
+    out: dict[str, dict[str, Any]] = {}
+    for item in summary.get("variant_summaries", []) or []:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name", "") or "").strip()
+        if not name:
+            continue
+        context_rows = {
+            str(row.get("context", "") or ""): dict(row)
+            for row in (item.get("context_rows") or [])
+            if isinstance(row, dict)
+        }
+        plain_delta = _config_effect_delta(context_rows.get("plain"))
+        configured_delta = _config_effect_delta(context_rows.get("configured"))
+        spatial_delta = _config_effect_delta(context_rows.get("spatial"))
+        code_delta = _config_effect_delta(context_rows.get("code"))
+        if plain_delta > eps:
+            classification = "plain_eval_change"
+        elif max(configured_delta, spatial_delta, code_delta) > eps:
+            classification = "train_graph_only"
+        else:
+            classification = "no_effect"
+        out[name] = {
+            "classification": classification,
+            "plain_eval_delta": plain_delta,
+            "configured_delta": configured_delta,
+            "spatial_delta": spatial_delta,
+            "code_delta": code_delta,
+            "eps": float(eps),
+            "anatomy_code_body_dead_spatial_body_live": bool(
+                item.get("anatomy_code_body_dead_spatial_body_live", False)
+            ),
+            "anatomy_code_only_delta": float(item.get("anatomy_code_only_delta", 0.0) or 0.0),
+            "anatomy_spatial_delta": float(item.get("anatomy_spatial_delta", 0.0) or 0.0),
+        }
+    return out
+
+
+def _run_style_sweep_config_effect_preflight(
+    *,
+    base_cfg: dict[str, Any],
+    stage_root: Path,
+    specs: list[dict[str, Any]],
+) -> dict[str, Any]:
+    preflight_root = stage_root / "_preflight_config_effect"
+    if preflight_root.exists():
+        shutil.rmtree(preflight_root)
+    preflight_root.mkdir(parents=True, exist_ok=True)
+    baseline_cfg = deepcopy(base_cfg)
+    _shared_model_data_defaults(baseline_cfg)
+    baseline_cfg_path = preflight_root / "baseline_config.json"
+    variant_spec_path = preflight_root / "variant_spec.json"
+    probe_output_dir = preflight_root / "probe"
+    _save_json(baseline_cfg_path, baseline_cfg)
+    _save_json(variant_spec_path, _style_sweep_variant_spec(specs))
+    cmd = [
+        sys.executable,
+        str(SB_ROOT / "tools" / "probe_config_effectiveness.py"),
+        "--config",
+        str(baseline_cfg_path),
+        "--variant-spec",
+        str(variant_spec_path),
+        "--output-dir",
+        str(probe_output_dir),
+        "--device",
+        "cpu",
+    ]
+    proc = _run(cmd, cwd=SB_ROOT)
+    summary_path = probe_output_dir / "summary.json"
+    payload: dict[str, Any] = {
+        "status": "ok" if proc.returncode == 0 and summary_path.is_file() else "failed",
+        "preflight_root": str(preflight_root),
+        "baseline_config_path": str(baseline_cfg_path),
+        "variant_spec_path": str(variant_spec_path),
+        "summary_path": str(summary_path),
+        "command": cmd,
+        "returncode": int(proc.returncode),
+        "stdout_tail": str(proc.stdout or "").splitlines()[-80:],
+        "variant_classification": {},
+    }
+    if summary_path.is_file():
+        summary = _load_json(summary_path)
+        payload["variant_classification"] = _summarize_config_effect(summary)
+    _save_json(preflight_root / "preflight_summary.json", payload)
+    return payload
+
+
+def _run_variant_training_effect_preflight(
+    *,
+    base_cfg: dict[str, Any],
+    stage_root: Path,
+    specs: list[dict[str, Any]],
+) -> dict[str, Any]:
+    preflight_root = stage_root / "_preflight_training_effect"
+    if preflight_root.exists():
+        shutil.rmtree(preflight_root)
+    preflight_root.mkdir(parents=True, exist_ok=True)
+    baseline_cfg = deepcopy(base_cfg)
+    _shared_model_data_defaults(baseline_cfg)
+    baseline_cfg_path = preflight_root / "baseline_config.json"
+    variant_spec_path = preflight_root / "variant_spec.json"
+    probe_output_dir = preflight_root / "probe"
+    _save_json(baseline_cfg_path, baseline_cfg)
+    _save_json(variant_spec_path, _style_sweep_variant_spec(specs))
+    cmd = [
+        sys.executable,
+        str(SB_ROOT / "tools" / "probe_training_variant_effect.py"),
+        "--config",
+        str(baseline_cfg_path),
+        "--variant-spec",
+        str(variant_spec_path),
+        "--output-dir",
+        str(probe_output_dir),
+        "--device",
+        "cpu",
+    ]
+    proc = _run(cmd, cwd=SB_ROOT)
+    summary_path = probe_output_dir / "summary.json"
+    payload: dict[str, Any] = {
+        "status": "ok" if proc.returncode == 0 and summary_path.is_file() else "failed",
+        "preflight_root": str(preflight_root),
+        "baseline_config_path": str(baseline_cfg_path),
+        "variant_spec_path": str(variant_spec_path),
+        "summary_path": str(summary_path),
+        "command": cmd,
+        "returncode": int(proc.returncode),
+        "stdout_tail": str(proc.stdout or "").splitlines()[-80:],
+        "variant_classification": {},
+    }
+    if summary_path.is_file():
+        summary = _load_json(summary_path)
+        payload["variant_classification"] = _summarize_training_effect(summary)
+    _save_json(preflight_root / "preflight_summary.json", payload)
+    return payload
+
+
+def _summarize_validity_result(result: dict[str, Any], *, audit_path: Path) -> dict[str, Any]:
+    issues = [dict(item) for item in (result.get("issues") or []) if isinstance(item, dict)]
+    return {
+        "artifact_status": str(result.get("artifact_status", "") or ""),
+        "effect_contract": str(result.get("effect_contract", "") or ""),
+        "suite": str(result.get("suite", "") or ""),
+        "scientific_reading": str(result.get("scientific_reading", "") or ""),
+        "trust_level": str(result.get("trust_level", "") or ""),
+        "recommended_action": str(result.get("recommended_action", "") or ""),
+        "issue_codes": [str(item.get("code", "") or "") for item in issues if str(item.get("code", "") or "").strip()],
+        "issue_count": len(issues),
+        "repaired_lowrank_base": bool(result.get("repaired_lowrank_base", False)),
+        "audit_path": str(audit_path),
+    }
+
+
+def _run_variant_validity_preflight(
+    *,
+    base_cfg: dict[str, Any],
+    stage_root: Path,
+    specs: list[dict[str, Any]],
+) -> dict[str, Any]:
+    preflight_root = stage_root / "_preflight_validity_audit"
+    if preflight_root.exists():
+        shutil.rmtree(preflight_root)
+    preflight_root.mkdir(parents=True, exist_ok=True)
+    audits_dir = preflight_root / "audits"
+    audits_dir.mkdir(parents=True, exist_ok=True)
+    baseline_cfg = deepcopy(base_cfg)
+    _shared_model_data_defaults(baseline_cfg)
+    baseline_cfg_path = preflight_root / "baseline_config.json"
+    variant_spec_path = preflight_root / "variant_spec.json"
+    _save_json(baseline_cfg_path, baseline_cfg)
+    _save_json(variant_spec_path, _style_sweep_variant_spec(specs))
+    payload: dict[str, Any] = {
+        "status": "ok",
+        "preflight_root": str(preflight_root),
+        "baseline_config_path": str(baseline_cfg_path),
+        "variant_spec_path": str(variant_spec_path),
+        "variant_classification": {},
+        "variant_runs": [],
+    }
+    for spec in specs:
+        name = str(spec.get("name", "") or "").strip()
+        if not name:
+            continue
+        audit_path = audits_dir / f"{name}.json"
+        cmd = [
+            sys.executable,
+            str(SB_ROOT / "tools" / "audit_phase618_run_validity.py"),
+            "--config",
+            str(baseline_cfg_path),
+            "--variant-spec",
+            str(variant_spec_path),
+            "--variant-name",
+            name,
+            "--output",
+            str(audit_path),
+        ]
+        proc = _run(cmd, cwd=SB_ROOT)
+        run_entry = {
+            "name": name,
+            "audit_path": str(audit_path),
+            "command": cmd,
+            "returncode": int(proc.returncode),
+            "stdout_tail": str(proc.stdout or "").splitlines()[-80:],
+        }
+        if audit_path.is_file():
+            result = _load_json(audit_path)
+            payload["variant_classification"][name] = _summarize_validity_result(result, audit_path=audit_path)
+        else:
+            payload["status"] = "failed"
+            run_entry["status"] = "missing_audit_json"
+        if proc.returncode != 0:
+            payload["status"] = "failed"
+        payload["variant_runs"].append(run_entry)
+    _save_json(preflight_root / "preflight_summary.json", payload)
+    return payload
+
+
+def _apply_style_sweep_preflight(
+    *,
+    specs: list[dict[str, Any]],
+    preflight: dict[str, Any] | None,
+    training_preflight: dict[str, Any] | None,
+    include_train_graph_only: bool,
+    explicit_include_names: set[str],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    class_map = dict((preflight or {}).get("variant_classification") or {})
+    training_class_map = dict((training_preflight or {}).get("variant_classification") or {})
+    selected: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
+    for raw_spec in specs:
+        spec = dict(raw_spec)
+        name = str(spec.get("name", "") or "")
+        preflight_meta = dict(class_map.get(name) or {})
+        training_preflight_meta = dict(training_class_map.get(name) or {})
+        if preflight_meta:
+            spec["config_effect_preflight"] = preflight_meta
+        if training_preflight_meta:
+            spec["training_effect_preflight"] = training_preflight_meta
+        classification = str(preflight_meta.get("classification", "") or "").strip()
+        training_classification = str(training_preflight_meta.get("classification", "") or "").strip()
+        explicit = name in explicit_include_names
+        has_effect = classification == "plain_eval_change" or (
+            training_classification not in {"", "no_training_effect"}
+        )
+        if (
+            not has_effect
+            and not include_train_graph_only
+            and not explicit
+        ):
+            skipped.append(
+                {
+                    "name": name,
+                    "classification": classification,
+                    "training_classification": training_classification,
+                    "reason": "filtered_by_config_effect_preflight",
+                    "config_effect_preflight": preflight_meta,
+                    "training_effect_preflight": training_preflight_meta,
+                    "validity_audit": dict(spec.get("validity_audit") or {}),
+                }
+            )
+            continue
+        selected.append(spec)
+    return selected, skipped
+
+
 def _shared_model_data_defaults(cfg: dict[str, Any]) -> None:
-    cfg.setdefault("model", {})["tokenizer_family"] = "legacy_factorized"
-    cfg["model"]["style_tokenizer"] = "factorized"
-    cfg["model"]["semantic_self_topology_gate"] = True
-    cfg["model"]["semantic_self_topology_blend"] = 1.0
+    model = cfg.setdefault("model", {})
+    # These helpers are reused by both legacy phase616 runs and repaired
+    # phase618 lowrank reruns. Keep backward-compatible defaults, but never
+    # silently overwrite an explicit base family or tokenizer path.
+    model.setdefault("tokenizer_family", "legacy_factorized")
+    model.setdefault("style_tokenizer", "factorized")
+    model.setdefault("semantic_self_topology_gate", True)
+    model.setdefault("semantic_self_topology_blend", 1.0)
     cfg.setdefault("data", {})["pairing_cache_path"] = ""
     cfg["data"]["virtual_length_multiplier"] = 0.1
+
+
+def _validate_phase618_repaired_lowrank_base(base_cfg: dict[str, Any], *, stage_label: str) -> None:
+    model = dict(base_cfg.get("model") or {})
+    issues: list[str] = []
+    tokenizer_family = str(model.get("tokenizer_family", "") or "").strip().lower()
+    conditioning_mode = str(model.get("matched_target_conditioning_mode", "") or "").strip().lower()
+    encoder_mode = str(model.get("matched_target_style_encoder_mode", "") or "").strip().lower()
+    spatial_mode = str(model.get("style_code_spatial_mode", "") or "").strip().lower()
+    try:
+        spatial_scale = float(model.get("style_code_spatial_scale", 0.0) or 0.0)
+    except (TypeError, ValueError):
+        spatial_scale = 0.0
+    if tokenizer_family != "pure_latent_spatial":
+        issues.append(
+            "model.tokenizer_family must be 'pure_latent_spatial' for the repaired no-reference carrier "
+            f"(got {tokenizer_family!r})"
+        )
+    if conditioning_mode != "both":
+        issues.append(f"model.matched_target_conditioning_mode must be 'both' (got {conditioning_mode!r})")
+    if encoder_mode != "residual":
+        issues.append(f"model.matched_target_style_encoder_mode must be 'residual' (got {encoder_mode!r})")
+    if spatial_mode != "lowrank":
+        issues.append(f"model.style_code_spatial_mode must be 'lowrank' (got {spatial_mode!r})")
+    if spatial_scale <= 0.0:
+        issues.append(f"model.style_code_spatial_scale must be > 0 (got {spatial_scale!r})")
+    if issues:
+        joined = "\n- ".join(issues)
+        raise ValueError(
+            f"{stage_label} requires the repaired lowrank no-reference carrier base.\n"
+            "This prevents mixing 'base repair' with downstream scientific conclusions.\n"
+            f"- {joined}"
+        )
 
 
 def _prepare_run_config(base_cfg: dict[str, Any], *, run_dir: Path, name: str, overrides: dict[str, Any], num_epochs: int) -> Path:
@@ -714,6 +1368,10 @@ def _run_with_timed_checks(
         "latest_curve_row": curve_row,
         "convergence": convergence,
     }
+    if proc.returncode == 0 or any(
+        str(item.get("kind", "")) in {"stale_best_stop", "safety_stop"} for item in checks if isinstance(item, dict)
+    ):
+        summary["best_eval_materialization"] = _materialize_best_eval_images(run_dir, eval_subdir=eval_subdir, force=False)
     _save_json(run_dir / "auto_run_summary.json", summary)
     return summary
 
@@ -773,6 +1431,24 @@ def _run_has_patience_proven_best(run_dir: Path, *, eval_subdir: str, cfg: dict[
     training = cfg.get("training") or {}
     patience = int(training.get("full_eval_convergence_patience", 4) or 4)
     min_epochs = int(training.get("full_eval_convergence_min_epochs", 4) or 4)
+    if "stop_ready" in convergence or "objective_patience_converged" in convergence:
+        stop_ready = bool(convergence.get("stop_ready", convergence.get("objective_patience_converged", False)))
+        objective_best_epoch = _epoch_int_from_text(convergence.get("objective_best_epoch") or convergence.get("best_epoch"))
+        objective_best_gap = float(convergence.get("objective_best_gap", 1e9) or 1e9)
+        objective_since_best = int(convergence.get("objective_epochs_since_best", 0) or 0)
+        current_epoch = int(convergence.get("row_count", 0) or 0)
+        return stop_ready, {
+            "reason": str(convergence.get("stop_reason") or ("converged" if stop_ready else "best_not_matured")),
+            "patience": patience,
+            "min_epochs": min_epochs,
+            "current_epoch": current_epoch,
+            "best_epoch": objective_best_epoch,
+            "best_gap": objective_best_gap,
+            "convergence_best_epoch": _epoch_int_from_text(convergence.get("best_epoch") or convergence.get("last_pareto_epoch")),
+            "epochs_since_best": objective_since_best,
+            "converged": bool(convergence.get("converged", False)),
+            "objective_patience_converged": bool(convergence.get("objective_patience_converged", False)),
+        }
     if bool(convergence.get("converged", False)):
         return True, {
             "reason": "converged",
@@ -845,8 +1521,114 @@ def _reuse_existing_entry(run_dir: Path, *, name: str, eval_subdir: str) -> dict
         "objective_gap": _objective_gap(style, lpips),
         "best_epoch": best_epoch,
         "best_epoch_int": best_epoch_int,
+        "best_transfer_clip_style": style,
+        "best_transfer_content_lpips": lpips,
+        "best_objective_gap": _objective_gap(style, lpips),
         "reused_existing": True,
     }
+
+
+def _count_generated_images(eval_dir: Path) -> int:
+    images_dir = eval_dir / "images"
+    if not images_dir.is_dir():
+        return 0
+    return sum(1 for p in images_dir.iterdir() if p.is_file())
+
+
+def _archive_eval_images(eval_dir: Path) -> Path | None:
+    images_dir = eval_dir / "images"
+    if not images_dir.is_dir():
+        return None
+    members = [p for p in images_dir.iterdir() if p.is_file()]
+    if not members:
+        return None
+    archive_path = eval_dir / "images.tar.gz"
+    with tarfile.open(archive_path, "w:gz") as tar:
+        for item in sorted(members):
+            tar.add(item, arcname=f"images/{item.name}")
+    return archive_path
+
+
+def _materialize_best_eval_images(
+    run_dir: Path,
+    *,
+    eval_subdir: str = "full_eval_transfer",
+    force: bool = False,
+) -> dict[str, Any]:
+    resolved_run_dir = _resolve_artifact_run_dir(run_dir, eval_subdir=eval_subdir)
+    best_point = _best_curve_point(resolved_run_dir, eval_subdir=eval_subdir)
+    if best_point is None:
+        return {
+            "status": "missing_best_point",
+            "run_dir": str(run_dir),
+            "resolved_run_dir": str(resolved_run_dir),
+            "eval_subdir": eval_subdir,
+        }
+    row = dict(best_point.get("row") or {})
+    checkpoint_text = str(row.get("checkpoint", "") or "").strip()
+    best_epoch = str(best_point["epoch"])
+    if checkpoint_text:
+        checkpoint_path = Path(checkpoint_text)
+    else:
+        checkpoint_path = resolved_run_dir / f"{best_epoch}.pt"
+    out_dir = resolved_run_dir / eval_subdir / best_epoch
+    existing_images = _count_generated_images(out_dir)
+    if existing_images > 0 and not force:
+        archive_path = _archive_eval_images(out_dir)
+        payload = {
+            "status": "already_materialized",
+            "run_dir": str(run_dir),
+            "resolved_run_dir": str(resolved_run_dir),
+            "eval_subdir": eval_subdir,
+            "best_epoch": best_epoch,
+            "best_epoch_int": int(best_point["epoch_int"]),
+            "checkpoint": str(checkpoint_path),
+            "output_dir": str(out_dir),
+            "generated_images": existing_images,
+            "archive_path": str(archive_path) if archive_path is not None else "",
+        }
+        _save_json(resolved_run_dir / "best_eval_materialization.json", payload)
+        return payload
+    cmd = [
+        sys.executable,
+        str(SB_ROOT / "run_evaluation.py"),
+        str(checkpoint_path),
+        "--output",
+        str(out_dir),
+        "--test_dir",
+        "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+        "--cache_dir",
+        "/mnt/i/Github/Latent_Style/eval_cache",
+        "--clip_hf_cache_dir",
+        "/mnt/i/Github/Latent_Style/eval_cache/hf",
+        "--transfer_only",
+        "--eval_only_lpips_clip_style",
+        "--save_generated_images",
+        "--no-save_summary_grid",
+        "--no-eval_enable_art_fid",
+        "--no-eval_enable_kid",
+        "--force_regen",
+    ]
+    proc = _run(cmd, cwd=SB_ROOT)
+    generated_images = _count_generated_images(out_dir)
+    archive_path = _archive_eval_images(out_dir)
+    payload = {
+        "status": "ok" if proc.returncode == 0 and generated_images > 0 else "failed",
+        "run_dir": str(run_dir),
+        "resolved_run_dir": str(resolved_run_dir),
+        "eval_subdir": eval_subdir,
+        "best_epoch": best_epoch,
+        "best_epoch_int": int(best_point["epoch_int"]),
+        "checkpoint": str(checkpoint_path),
+        "output_dir": str(out_dir),
+        "generated_images": generated_images,
+        "archive_path": str(archive_path) if archive_path is not None else "",
+        "returncode": int(proc.returncode),
+        "command": cmd,
+        "stdout_tail": str(proc.stdout or "").splitlines()[-80:],
+    }
+    _save_json(resolved_run_dir / "best_eval_materialization.json", payload)
+    return payload
 
 
 def _stage_plan_for(stage_name: str, best_cfg: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -855,6 +1637,19 @@ def _stage_plan_for(stage_name: str, best_cfg: dict[str, Any] | None = None) -> 
             "stage": stage_name,
             "runs": [spec["name"] for spec in _stage1_specs()],
             "purpose": "full-factorial hypothesis sweep",
+        }
+    if stage_name == "stage3_style":
+        return {
+            "stage": stage_name,
+            "runs": [spec["name"] for spec in _style_sweep_specs()],
+            "purpose": "bold stage3-style sweep across topology-blend baselines plus low-rank no-reference code-map repairs",
+            "references": ["manual_h0_blend_1p00", "stage1_h1_blend_1p00"],
+        }
+    if stage_name == "plain_path_distill":
+        return {
+            "stage": stage_name,
+            "runs": [spec["name"] for spec in _plain_path_distill_specs()],
+            "purpose": "full-family training-only rerun for the train/eval contract-gap distillation hypothesis",
         }
     if stage_name == "stage2" and best_cfg is not None:
         runs = [spec["name"] for spec in _stage2_specs_from_best(best_cfg)]
@@ -889,6 +1684,116 @@ def _write_stage_manifest(stage_root: Path, entries: list[dict[str, Any]]) -> No
     _save_json(stage_root / "stage_manifest.json", {"runs": entries})
 
 
+def _close_result_entry_view(entry: dict[str, Any]) -> dict[str, Any] | None:
+    if not isinstance(entry, dict):
+        return None
+    try:
+        style = float(
+            entry.get(
+                "best_transfer_clip_style",
+                entry.get("style", entry.get("transfer_clip_style", 0.0)),
+            )
+            or 0.0
+        )
+        lpips = float(
+            entry.get(
+                "best_transfer_content_lpips",
+                entry.get("lpips", entry.get("transfer_content_lpips", 1.0)),
+            )
+            or 1.0
+        )
+        gap = float(
+            entry.get(
+                "best_objective_gap",
+                entry.get("gap", entry.get("objective_gap", _objective_gap(style, lpips))),
+            )
+            or _objective_gap(style, lpips)
+        )
+    except (TypeError, ValueError):
+        return None
+    return {
+        "name": str(entry.get("name", "") or ""),
+        "style": style,
+        "lpips": lpips,
+        "gap": gap,
+        "best_epoch": str(entry.get("best_epoch", "") or ""),
+        "best_epoch_int": int(entry.get("best_epoch_int", 0) or 0),
+        "validity_audit": dict(entry.get("validity_audit") or {}),
+    }
+
+
+def _summarize_close_result_diagnosis(
+    entries: list[dict[str, Any]],
+    best: dict[str, Any] | None,
+) -> dict[str, Any]:
+    views = [item for item in (_close_result_entry_view(entry) for entry in entries) if item is not None]
+    if not views:
+        return {
+            "status": "insufficient_runs",
+            "reason": "no_scored_runs",
+            "style_eps": CLOSE_RESULT_STYLE_EPS,
+            "lpips_eps": CLOSE_RESULT_LPIPS_EPS,
+        }
+    views.sort(key=lambda item: (item["gap"], -item["style"], item["lpips"], item["name"]))
+    best_view = _close_result_entry_view(best or {})
+    if best_view is None:
+        best_view = views[0]
+    peers = [
+        item
+        for item in views
+        if item["name"] != best_view["name"]
+        and abs(item["style"] - best_view["style"]) <= CLOSE_RESULT_STYLE_EPS
+        and abs(item["lpips"] - best_view["lpips"]) <= CLOSE_RESULT_LPIPS_EPS
+    ]
+    if not peers:
+        return {
+            "status": "separated",
+            "best": best_view,
+            "close_peer_count": 0,
+            "style_eps": CLOSE_RESULT_STYLE_EPS,
+            "lpips_eps": CLOSE_RESULT_LPIPS_EPS,
+        }
+
+    cluster = [best_view] + peers
+    statuses = [str((item.get("validity_audit") or {}).get("artifact_status", "") or "") for item in cluster]
+    contracts = [str((item.get("validity_audit") or {}).get("effect_contract", "") or "") for item in cluster]
+    if any(status in {"confounded", "stale", "suspect"} for status in statuses):
+        interpretation = "implementation_or_evidence_risk"
+        recommendation = "do not read this close cluster as theory evidence until the flagged validity issues are removed"
+    elif all(contract == "runtime_and_training_real" for contract in contracts if contract):
+        interpretation = "runtime_real_but_weak"
+        recommendation = "the cluster is likely real negative evidence against this lever family, not a no-op"
+    elif all(contract in {"training_real_eval_inert", "training_only_by_design"} for contract in contracts if contract):
+        interpretation = "train_eval_contract_gap"
+        recommendation = "close metrics here are expected from an eval-path-inert family; judge it with training-aware or full-training evidence"
+    elif any(not contract for contract in contracts):
+        interpretation = "validity_metadata_incomplete"
+        recommendation = "collect validity metadata before treating this close cluster as theory evidence"
+    else:
+        interpretation = "mixed_cluster"
+        recommendation = "the close runs mix different contracts; inspect the validity_audit blocks before drawing conclusions"
+    return {
+        "status": "close_cluster",
+        "best": best_view,
+        "close_peers": peers,
+        "close_peer_count": len(peers),
+        "artifact_statuses": statuses,
+        "effect_contracts": contracts,
+        "interpretation": interpretation,
+        "recommendation": recommendation,
+        "style_eps": CLOSE_RESULT_STYLE_EPS,
+        "lpips_eps": CLOSE_RESULT_LPIPS_EPS,
+    }
+
+
+def _attach_close_result_diagnosis(payload: dict[str, Any]) -> dict[str, Any]:
+    payload["close_result_diagnosis"] = _summarize_close_result_diagnosis(
+        list(payload.get("runs") or []),
+        payload.get("best") if isinstance(payload.get("best"), dict) else None,
+    )
+    return payload
+
+
 def _write_stage_summary(
     *,
     stage_root: Path,
@@ -903,6 +1808,7 @@ def _write_stage_summary(
         "runs": entries,
         "best": best,
         "plan": _stage_plan_for(stage_name, best_cfg=plan_cfg),
+        "close_result_diagnosis": _summarize_close_result_diagnosis(entries, best),
     }
     if best is not None:
         best_cfg = _load_json(Path(str(best["run_dir"])) / "config.json")
@@ -955,6 +1861,12 @@ def _run_manifest(
             )
             if should_skip:
                 entry = _reuse_existing_entry(run_dir, name=name, eval_subdir="full_eval_transfer")
+                if spec.get("config_effect_preflight"):
+                    entry["config_effect_preflight"] = dict(spec.get("config_effect_preflight") or {})
+                if spec.get("training_effect_preflight"):
+                    entry["training_effect_preflight"] = dict(spec.get("training_effect_preflight") or {})
+                if spec.get("validity_audit"):
+                    entry["validity_audit"] = dict(spec.get("validity_audit") or {})
                 entry["skip_detail"] = skip_detail
                 entries.append(entry)
                 _write_stage_manifest(stage_root, entries)
@@ -1000,6 +1912,12 @@ def _run_manifest(
             lpips = float(latest_curve.get("transfer_content_lpips", "") or 1.0)
         except ValueError:
             style, lpips = 0.0, 1.0
+        best_point = _best_curve_point(run_dir, eval_subdir="full_eval_transfer")
+        best_style = float(best_point["style"]) if best_point is not None else style
+        best_lpips = float(best_point["lpips"]) if best_point is not None else lpips
+        best_gap = float(best_point["gap"]) if best_point is not None else _objective_gap(style, lpips)
+        best_epoch = str(best_point["epoch"]) if best_point is not None else ""
+        best_epoch_int = int(best_point["epoch_int"]) if best_point is not None else 0
         entries.append(
             {
                 "name": name,
@@ -1011,7 +1929,15 @@ def _run_manifest(
                 "transfer_clip_style": style,
                 "transfer_content_lpips": lpips,
                 "objective_gap": _objective_gap(style, lpips),
+                "best_transfer_clip_style": best_style,
+                "best_transfer_content_lpips": best_lpips,
+                "best_objective_gap": best_gap,
+                "best_epoch": best_epoch,
+                "best_epoch_int": best_epoch_int,
                 "reused_existing": False,
+                "config_effect_preflight": dict(spec.get("config_effect_preflight") or {}),
+                "training_effect_preflight": dict(spec.get("training_effect_preflight") or {}),
+                "validity_audit": dict(spec.get("validity_audit") or {}),
             }
         )
         _write_stage_manifest(stage_root, entries)
@@ -1275,10 +2201,46 @@ def _prepare_single_best_config(best_cfg: dict[str, Any], *, run_dir: Path, batc
 
 def run_stage1(args: argparse.Namespace) -> int:
     base_cfg = _load_json(Path(args.base_cfg))
+    stage_root = Path(args.stage_root)
+    specs = _stage1_specs()
+    validity_preflight = _run_variant_validity_preflight(
+        base_cfg=base_cfg,
+        stage_root=stage_root,
+        specs=specs,
+    )
+    specs = _attach_variant_preflight(
+        specs,
+        field_name="validity_audit",
+        variant_map=dict((validity_preflight or {}).get("variant_classification") or {}),
+    )
+    config_preflight = None
+    if not bool(args.skip_config_effect_preflight):
+        config_preflight = _run_style_sweep_config_effect_preflight(
+            base_cfg=base_cfg,
+            stage_root=stage_root,
+            specs=specs,
+        )
+    specs = _attach_variant_preflight(
+        specs,
+        field_name="config_effect_preflight",
+        variant_map=dict((config_preflight or {}).get("variant_classification") or {}),
+    )
+    preflight = None
+    if not bool(args.skip_training_effect_preflight):
+        preflight = _run_variant_training_effect_preflight(
+            base_cfg=base_cfg,
+            stage_root=stage_root,
+            specs=specs,
+        )
+    specs = _attach_variant_preflight(
+        specs,
+        field_name="training_effect_preflight",
+        variant_map=dict((preflight or {}).get("variant_classification") or {}),
+    )
     payload = _run_manifest(
-        stage_root=Path(args.stage_root),
+        stage_root=stage_root,
         stage_name="stage1",
-        specs=_stage1_specs(),
+        specs=specs,
         base_cfg=base_cfg,
         num_epochs=int(args.num_epochs),
         batch_candidates=[int(x) for x in args.batch_candidates],
@@ -1288,6 +2250,161 @@ def run_stage1(args: argparse.Namespace) -> int:
         fixed_batch_size=(int(args.fixed_batch_size) if args.fixed_batch_size else None),
         skip_names={str(x) for x in (args.skip_name or [])},
     )
+    payload["config_effect_preflight"] = config_preflight
+    payload["training_effect_preflight"] = preflight
+    payload["validity_preflight"] = validity_preflight
+    _attach_close_result_diagnosis(payload)
+    _save_json(stage_root / "stage_summary.json", payload)
+    print(json.dumps(payload.get("best", {}), ensure_ascii=False, indent=2))
+    return 0
+
+
+def run_style_sweep(args: argparse.Namespace) -> int:
+    base_cfg = _load_json(Path(args.base_cfg))
+    _validate_phase618_repaired_lowrank_base(base_cfg, stage_label="phase618 style-sweep")
+    stage_root = Path(args.stage_root)
+    raw_specs = _filter_specs_by_name(_style_sweep_specs(), list(args.include_name or []))
+    validity_preflight = _run_variant_validity_preflight(
+        base_cfg=base_cfg,
+        stage_root=stage_root,
+        specs=raw_specs,
+    )
+    raw_specs = _attach_variant_preflight(
+        raw_specs,
+        field_name="validity_audit",
+        variant_map=dict((validity_preflight or {}).get("variant_classification") or {}),
+    )
+    preflight = None
+    if not bool(args.skip_config_effect_preflight):
+        preflight = _run_style_sweep_config_effect_preflight(
+            base_cfg=base_cfg,
+            stage_root=stage_root,
+            specs=raw_specs,
+        )
+    training_preflight = None
+    if not bool(args.skip_training_effect_preflight):
+        training_preflight = _run_variant_training_effect_preflight(
+            base_cfg=base_cfg,
+            stage_root=stage_root,
+            specs=raw_specs,
+        )
+    specs, skipped_by_preflight = _apply_style_sweep_preflight(
+        specs=raw_specs,
+        preflight=preflight,
+        training_preflight=training_preflight,
+        include_train_graph_only=bool(args.include_train_graph_only),
+        explicit_include_names={str(x) for x in (args.include_name or []) if str(x).strip()},
+    )
+    payload = _run_manifest(
+        stage_root=stage_root,
+        stage_name="stage3_style",
+        specs=specs,
+        base_cfg=base_cfg,
+        num_epochs=int(args.num_epochs),
+        batch_candidates=[int(x) for x in args.batch_candidates],
+        stop_after_steps=int(args.probe_steps),
+        probe_timeout_sec=int(args.probe_timeout_sec),
+        skip_probe=bool(args.skip_probe),
+        fixed_batch_size=(int(args.fixed_batch_size) if args.fixed_batch_size else None),
+        skip_names={str(x) for x in (args.skip_name or [])},
+    )
+    references: list[dict[str, Any]] = []
+    for ref_name, ref_dir in (
+        ("reference::manual_h0_blend_1p00", Path(args.reference_h0_dir)),
+        ("reference::stage1_h1_blend_1p00", Path(args.reference_h1_dir)),
+    ):
+        best_point = _best_curve_point(_resolve_artifact_run_dir(ref_dir), eval_subdir="full_eval_transfer")
+        if best_point is None:
+            continue
+        references.append(
+            {
+                "name": ref_name,
+                "logical_run_dir": str(ref_dir),
+                "run_dir": str(_resolve_artifact_run_dir(ref_dir)),
+                "style": float(best_point["style"]),
+                "lpips": float(best_point["lpips"]),
+                "gap": float(best_point["gap"]),
+                "best_epoch": str(best_point["epoch"]),
+                "best_epoch_int": int(best_point["epoch_int"]),
+                "source_stage": "reference",
+                "rerun": False,
+            }
+        )
+    sweep_best = dict(payload.get("best") or {}) if isinstance(payload.get("best"), dict) else None
+    if sweep_best is not None:
+        sweep_best["source_stage"] = "stage3_style"
+    joint_best = _pick_best_candidate(references + ([sweep_best] if sweep_best is not None else []))
+    payload["reference_points"] = references
+    payload["best_sweep_only"] = sweep_best
+    payload["best"] = joint_best
+    payload["selection_policy"] = "joint_best_of_existing_h0_h1_references_and_stage3_style_sweep"
+    payload["config_effect_preflight"] = preflight
+    payload["training_effect_preflight"] = training_preflight
+    payload["validity_preflight"] = validity_preflight
+    payload["skipped_by_preflight"] = skipped_by_preflight
+    _attach_close_result_diagnosis(payload)
+    _save_json(stage_root / "stage_summary.json", payload)
+    print(json.dumps(payload.get("best", {}), ensure_ascii=False, indent=2))
+    return 0
+
+
+def run_plain_path_distill(args: argparse.Namespace) -> int:
+    base_cfg = _load_json(Path(args.base_cfg))
+    _validate_phase618_repaired_lowrank_base(base_cfg, stage_label="phase618 plain-path distill")
+    stage_root = Path(args.stage_root)
+    specs = _filter_specs_by_name(_plain_path_distill_specs(), list(args.include_name or []))
+    validity_preflight = _run_variant_validity_preflight(
+        base_cfg=base_cfg,
+        stage_root=stage_root,
+        specs=specs,
+    )
+    specs = _attach_variant_preflight(
+        specs,
+        field_name="validity_audit",
+        variant_map=dict((validity_preflight or {}).get("variant_classification") or {}),
+    )
+    config_preflight = None
+    if not bool(args.skip_config_effect_preflight):
+        config_preflight = _run_style_sweep_config_effect_preflight(
+            base_cfg=base_cfg,
+            stage_root=stage_root,
+            specs=specs,
+        )
+    specs = _attach_variant_preflight(
+        specs,
+        field_name="config_effect_preflight",
+        variant_map=dict((config_preflight or {}).get("variant_classification") or {}),
+    )
+    training_preflight = None
+    if not bool(args.skip_training_effect_preflight):
+        training_preflight = _run_variant_training_effect_preflight(
+            base_cfg=base_cfg,
+            stage_root=stage_root,
+            specs=specs,
+        )
+    specs = _attach_variant_preflight(
+        specs,
+        field_name="training_effect_preflight",
+        variant_map=dict((training_preflight or {}).get("variant_classification") or {}),
+    )
+    payload = _run_manifest(
+        stage_root=stage_root,
+        stage_name="plain_path_distill",
+        specs=specs,
+        base_cfg=base_cfg,
+        num_epochs=int(args.num_epochs),
+        batch_candidates=[int(x) for x in args.batch_candidates],
+        stop_after_steps=int(args.probe_steps),
+        probe_timeout_sec=int(args.probe_timeout_sec),
+        skip_probe=bool(args.skip_probe),
+        fixed_batch_size=(int(args.fixed_batch_size) if args.fixed_batch_size else None),
+        skip_names={str(x) for x in (args.skip_name or [])},
+    )
+    payload["config_effect_preflight"] = config_preflight
+    payload["training_effect_preflight"] = training_preflight
+    payload["validity_preflight"] = validity_preflight
+    _attach_close_result_diagnosis(payload)
+    _save_json(stage_root / "stage_summary.json", payload)
     print(json.dumps(payload.get("best", {}), ensure_ascii=False, indent=2))
     return 0
 
@@ -1340,6 +2457,7 @@ def run_stage2(args: argparse.Namespace) -> int:
     payload["best_stage2_only"] = ablation_best
     payload["best"] = joint_best
     payload["selection_policy"] = "joint_best_of_stage1_reference_and_stage2_ablations"
+    _attach_close_result_diagnosis(payload)
     _save_json(Path(args.stage_root) / "stage_summary.json", payload)
     print(json.dumps(payload.get("best", {}), ensure_ascii=False, indent=2))
     return 0
@@ -1425,9 +2543,20 @@ def run_stage3(args: argparse.Namespace) -> int:
         "run_summary_path": str(run_dir / "auto_run_summary.json"),
         "plan": _stage_plan_for("stage3", best_cfg=best_cfg),
     }
+    _attach_close_result_diagnosis(payload)
     _save_json(stage_root / "stage_summary.json", payload)
     print(json.dumps(payload["best"], ensure_ascii=False, indent=2))
     return 0
+
+
+def run_materialize_best_images(args: argparse.Namespace) -> int:
+    payload = _materialize_best_eval_images(
+        Path(args.run_dir),
+        eval_subdir=str(args.eval_subdir),
+        force=bool(args.force),
+    )
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return 0 if str(payload.get("status", "")) in {"ok", "already_materialized"} else 1
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -1447,7 +2576,28 @@ def build_parser() -> argparse.ArgumentParser:
     p1 = sub.add_parser("stage1")
     add_common(p1, default_num_epochs=DEFAULT_STAGE1_EPOCHS)
     p1.add_argument("--stage-root", default=str(DEFAULT_STAGE1_DIR))
+    p1.add_argument("--skip-config-effect-preflight", action="store_true")
+    p1.add_argument("--skip-training-effect-preflight", action="store_true")
     p1.set_defaults(func=run_stage1)
+
+    ps = sub.add_parser("style-sweep")
+    add_common(ps, default_num_epochs=DEFAULT_STYLE_SWEEP_EPOCHS)
+    ps.add_argument("--stage-root", default=str(DEFAULT_STYLE_SWEEP_DIR))
+    ps.add_argument("--reference-h0-dir", default=str(DEFAULT_MANUAL_H0_DIR))
+    ps.add_argument("--reference-h1-dir", default=str(DEFAULT_STAGE1_DIR / "h1_linear_fm"))
+    ps.add_argument("--include-name", action="append", default=[])
+    ps.add_argument("--include-train-graph-only", action="store_true")
+    ps.add_argument("--skip-config-effect-preflight", action="store_true")
+    ps.add_argument("--skip-training-effect-preflight", action="store_true")
+    ps.set_defaults(func=run_style_sweep)
+
+    ppd = sub.add_parser("plain-path-distill")
+    add_common(ppd, default_num_epochs=DEFAULT_PLAIN_PATH_DISTILL_EPOCHS)
+    ppd.add_argument("--stage-root", default=str(DEFAULT_PLAIN_PATH_DISTILL_DIR))
+    ppd.add_argument("--include-name", action="append", default=[])
+    ppd.add_argument("--skip-config-effect-preflight", action="store_true")
+    ppd.add_argument("--skip-training-effect-preflight", action="store_true")
+    ppd.set_defaults(func=run_plain_path_distill)
 
     p2 = sub.add_parser("stage2")
     add_common(p2, default_num_epochs=DEFAULT_STAGE2_EPOCHS)
@@ -1461,6 +2611,12 @@ def build_parser() -> argparse.ArgumentParser:
     p3.add_argument("--stage2-root", default=str(DEFAULT_STAGE2_DIR))
     p3.add_argument("--stage-root", default=str(DEFAULT_STAGE3_DIR))
     p3.set_defaults(func=run_stage3)
+
+    pm = sub.add_parser("materialize-best-images")
+    pm.add_argument("--run-dir", required=True)
+    pm.add_argument("--eval-subdir", default="full_eval_transfer")
+    pm.add_argument("--force", action="store_true")
+    pm.set_defaults(func=run_materialize_best_images)
 
     return parser
 

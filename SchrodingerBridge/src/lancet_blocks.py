@@ -81,7 +81,7 @@ class CrossAttnAdaGN(nn.Module):
         self.attn_temperature = max(1e-3, float(attn_temperature))
 
         self.global_proj = nn.Linear(style_dim, dim * 2)
-        nn.init.zeros_(self.global_proj.weight)
+        nn.init.normal_(self.global_proj.weight, mean=0.0, std=0.02)
         nn.init.zeros_(self.global_proj.bias)
         with torch.no_grad():
             self.global_proj.bias[:dim] = 1.0
@@ -398,7 +398,8 @@ class SemanticCrossAttn(nn.Module):
         self.to_k = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
         self.to_v = nn.Conv2d(dim, dim, kernel_size=1, bias=False)
         self.log_temp = nn.Parameter(torch.tensor([math.log(max(1e-4, float(temperature)))], dtype=torch.float32))
-        self.gamma = nn.Parameter(torch.zeros(1, dim, 1, 1))
+        # Keep the modulator near identity, but make the style path live at step 0.
+        self.gamma = nn.Parameter(torch.full((1, dim, 1, 1), 0.05))
         self.last_attn: torch.Tensor | None = None
         self.last_k: torch.Tensor | None = None
         self.last_topology_attn: torch.Tensor | None = None
@@ -782,9 +783,9 @@ class StyleRoutingSkip(nn.Module):
         self.norm = nn.GroupNorm(groups, self.channels, affine=False)
         self.style_scale = nn.Linear(style_dim, self.channels)
         self.style_shift = nn.Linear(style_dim, self.channels)
-        nn.init.zeros_(self.style_scale.weight)
+        nn.init.normal_(self.style_scale.weight, mean=0.0, std=0.02)
         nn.init.ones_(self.style_scale.bias)
-        nn.init.zeros_(self.style_shift.weight)
+        nn.init.normal_(self.style_shift.weight, mean=0.0, std=0.02)
         nn.init.zeros_(self.style_shift.bias)
 
     def forward(

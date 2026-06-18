@@ -1,0 +1,40 @@
+{
+  "variants": [
+    {
+      "name": "z1_body_mixed_zero_init",
+      "overrides": {
+        "model.style_injection_mode": "body",
+        "model.style_injection_form": "mixed",
+        "model.style_injection_scale": 1.0
+      }
+    },
+    {
+      "name": "z2_body_mixed_live_init",
+      "overrides": {
+        "model.style_injection_mode": "body",
+        "model.style_injection_form": "mixed",
+        "model.style_injection_scale": 1.0,
+        "model.style_injection_live_init": true,
+        "model.style_injection_live_init_std": 0.02
+      }
+    },
+    {
+      "name": "z3_body_spatial_carrier_zero_init",
+      "overrides": {
+        "model.style_injection_mode": "body",
+        "model.style_injection_form": "spatial_carrier_gate",
+        "model.style_injection_scale": 1.0
+      }
+    },
+    {
+      "name": "z4_body_spatial_carrier_live_init",
+      "overrides": {
+        "model.style_injection_mode": "body",
+        "model.style_injection_form": "spatial_carrier_gate",
+        "model.style_injection_scale": 1.0,
+        "model.style_injection_live_init": true,
+        "model.style_injection_live_init_std": 0.02
+      }
+    }
+  ]
+}

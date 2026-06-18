@@ -1,0 +1,59 @@
+{
+  "output_dir": "docs\\experiments\\2026-06-18-topogate-multiblock-audit",
+  "config": "docs\\experiments\\2026-06-18-stage1-lowrank-rerun-audit\\baseline_h1_lowrank_config.json",
+  "applied_overrides": {},
+  "git_commit": "6f224c69a4c42a63874856c72b72ed73a4e4a239",
+  "runtime_metadata": {
+    "device_request": "cpu",
+    "device": "cpu",
+    "torch_version": "2.11.0+cu128"
+  },
+  "batch_size": 2,
+  "latent_size": 32,
+  "seed": 123,
+  "style_id": 1,
+  "descriptor_blocks": 4,
+  "per_block_rows": [
+    {
+      "block_idx": 0,
+      "descriptor_present": 1.0,
+      "descriptor_width": 4,
+      "cost_mean": 0.0021682840306311846,
+      "cost_var": 3.196301577190752e-06,
+      "content_complexity_mean": 0.4818800091743469,
+      "target_complexity_mean": 0.49370327591896057
+    },
+    {
+      "block_idx": 1,
+      "descriptor_present": 1.0,
+      "descriptor_width": 4,
+      "cost_mean": 0.0018197735771536827,
+      "cost_var": 1.1168007176820538e-06,
+      "content_complexity_mean": 0.48374128341674805,
+      "target_complexity_mean": 0.504824161529541
+    },
+    {
+      "block_idx": 2,
+      "descriptor_present": 1.0,
+      "descriptor_width": 4,
+      "cost_mean": 0.0011960655683651567,
+      "cost_var": 1.4855564813842648e-06,
+      "content_complexity_mean": 0.5045678615570068,
+      "target_complexity_mean": 0.5111215114593506
+    },
+    {
+      "block_idx": 3,
+      "descriptor_present": 1.0,
+      "descriptor_width": 4,
+      "cost_mean": 0.0018775684293359518,
+      "cost_var": 3.2766697586339433e-06,
+      "content_complexity_mean": 0.5075937509536743,
+      "target_complexity_mean": 0.5064936280250549
+    }
+  ],
+  "last_block_cost_mean": 0.0018775684293359518,
+  "last_block_cost_var": 3.2766697586339433e-06,
+  "aggregate_cost_mean": 0.007061691954731941,
+  "aggregate_cost_var": 1.353352126898244e-05,
+  "aggregate_minus_last_mean_abs": 0.005184123292565346
+}

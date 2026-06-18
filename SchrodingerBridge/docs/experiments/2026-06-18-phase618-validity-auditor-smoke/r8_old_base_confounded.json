@@ -1,0 +1,90 @@
+{
+  "artifact_status": "confounded",
+  "effect_contract": "runtime_real",
+  "variant_name": "r8_linear_code_map_lowrank_both",
+  "suite": "stage3_style_r1_r10_old_base",
+  "scientific_reading": "old-base style sweep is scientifically confounded because base repair and bold directions are mixed",
+  "trust_level": "invalid",
+  "recommended_action": "discard or rerun on repaired lowrank base",
+  "run_dir": "",
+  "config_path": "docs\\experiments\\2026-06-18-remote-h1-e18-diagnosis\\remote_config.json",
+  "variant_spec_path": "docs\\experiments\\2026-06-18-style-sweep-base-audit\\style_sweep_variant_spec.json",
+  "applied_overrides": {
+    "bridge.bridge_path_mode": "linear",
+    "bridge.coupling_cost_composition": "structure_only",
+    "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+    "bridge.bridge_sigma": 0.0,
+    "model.matched_target_conditioning_mode": "both",
+    "model.matched_target_style_encoder_mode": "residual",
+    "model.matched_target_style_encoder_hidden_dim": 64,
+    "model.style_code_spatial_mode": "lowrank",
+    "model.style_code_spatial_hidden_dim": 64,
+    "model.style_code_spatial_rank": 8,
+    "model.style_code_spatial_base_hw": 16,
+    "model.style_code_spatial_scale": 0.35
+  },
+  "repaired_lowrank_base": false,
+  "training_csv": "",
+  "training_csv_has_ot_topogate_descriptor_blocks": false,
+  "training_csv_last_row": {},
+  "matrix_verdict": {
+    "suite": "stage3_style_r1_r10_old_base",
+    "base": "remote_h1_old_base",
+    "variant_count": 10,
+    "config_probe_present": true,
+    "training_probe_present": false,
+    "styleid_probe_present": false,
+    "plain_eval_change_count": 4,
+    "train_graph_only_count": 6,
+    "config_no_effect_count": 0,
+    "training_bridge_only_count": "",
+    "training_ot_change_count": "",
+    "training_conditioning_or_loss_change_count": "",
+    "training_no_effect_count": "",
+    "max_plain_forward_delta": 0.10840653628110886,
+    "max_configured_forward_delta": 0.02586447075009346,
+    "max_matched_target_delta": "",
+    "max_x_t_delta": "",
+    "max_plain_path_distill": "",
+    "max_styleid_body_delta": "",
+    "current_verdict": "old-base style sweep is scientifically confounded because base repair and bold directions are mixed",
+    "trust_level": "invalid",
+    "recommended_action": "discard or rerun on repaired lowrank base",
+    "bug_tags": "auto_base_family_mutation;base_repair_mixed_with_bold_direction",
+    "doc_refs": "docs/experiments/2026-06-18-style-sweep-base-audit/README.md",
+    "baseline_styleid_body_delta": "",
+    "baseline_styleid_forward_delta": "",
+    "styleid_body_delta_uplift": "",
+    "config_effect_classification": "plain_eval_change",
+    "training_effect_classification": "",
+    "plain_forward_delta": 0.10839318484067917,
+    "matched_target_delta": "",
+    "plain_path_distill": ""
+  },
+  "issues": [
+    {
+      "code": "old_base_style_sweep_confounded",
+      "severity": "confounded",
+      "message": "This style-sweep family is running on the old base, so carrier repair and bold-direction effects are mixed.",
+      "evidence": {
+        "suite": "stage3_style_r1_r10_old_base",
+        "tokenizer_family": "legacy_factorized",
+        "repaired_lowrank_base": false
+      }
+    }
+  ],
+  "recommendations": [
+    "Discard or rerun on the repaired lowrank base before drawing scientific conclusions."
+  ],
+  "config_snapshot": {
+    "tokenizer_family": "legacy_factorized",
+    "matched_target_conditioning_mode": "both",
+    "matched_target_style_encoder_mode": "residual",
+    "style_code_spatial_mode": "lowrank",
+    "style_code_spatial_scale": 0.35,
+    "semantic_self_topology_gate": true,
+    "semantic_self_topology_blend": 1.0,
+    "coupling_structure_cost_mode": "self_affinity_gw",
+    "w_plain_path_distill": 0.0
+  }
+}

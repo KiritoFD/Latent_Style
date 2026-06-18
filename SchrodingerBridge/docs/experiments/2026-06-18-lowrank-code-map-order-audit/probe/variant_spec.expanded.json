@@ -1,0 +1,14 @@
+[
+  {
+    "name": "disable_lowrank_code_map",
+    "overrides": {
+      "model.style_code_spatial_scale": 0.0
+    }
+  },
+  {
+    "name": "boost_lowrank_code_map",
+    "overrides": {
+      "model.style_code_spatial_scale": 0.7
+    }
+  }
+]

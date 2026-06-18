@@ -295,6 +295,16 @@ class ModelConfig:
     semantic_gumbel_tau: float = 1.0
     semantic_self_topology_gate: bool = False
     semantic_self_topology_blend: float = 1.0
+    matched_target_conditioning_mode: str = "auto"
+    matched_target_style_encoder_mode: str = "none"
+    matched_target_style_encoder_hidden_dim: int = 192
+    matched_target_style_encoder_highpass_kernel: int = 5
+    matched_target_style_encoder_residual_scale: float = 1.0
+    style_code_spatial_mode: str = "none"
+    style_code_spatial_hidden_dim: int = 64
+    style_code_spatial_rank: int = 8
+    style_code_spatial_base_hw: int = 16
+    style_code_spatial_scale: float = 0.35
     semantic_gw_spatial_lambda: float = 0.25
     velocity_head_mode: str = "identity"
     velocity_tanh_limit: float = 20.0
@@ -395,6 +405,8 @@ class ModelConfig:
     style_injection_gate_log_span: float = 0.4054651081081644
     style_injection_spatial_kernel: int = 5
     style_injection_force_highpass: bool = True
+    style_injection_live_init: bool = False
+    style_injection_live_init_std: float = 0.02
     style_delta_mode: str = "none"
     style_delta_rank: int = 4
     style_delta_hidden_dim: int = 64
@@ -527,6 +539,7 @@ class BridgeConfig:
     style_contrastive_pool_size: int = 4
     w_residual_style_direction: float = 0.0
     w_generated_delta_diversity: float = 0.0
+    w_plain_path_distill: float = 0.0
     generated_delta_diversity_margin: float = 0.0
     w_spectral_amplitude: float = 0.0
     spectral_amplitude_channels: int = 2

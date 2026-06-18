@@ -31,6 +31,11 @@ FIELDNAMES = [
     "ot_target_mass_entropy",
     "ot_target_max_mass",
     "ot_structure_cost_mean",
+    "ot_structure_transport_cost_var",
+    "ot_total_cost_matrix_var",
+    "ot_topogate_complexity_term_var",
+    "ot_latent_affinity_term_var",
+    "ot_topogate_structure_blend_weight",
     "structured_style_tokenizer_spatial_svd_entropy",
     "structured_style_tokenizer_style_value_offdiag_cosine",
     "structured_style_tokenizer_translation_delta_offdiag_cosine",
@@ -139,6 +144,11 @@ def main() -> int:
                 "ot_target_mass_entropy": _safe_float(train, "ot_target_mass_entropy"),
                 "ot_target_max_mass": _safe_float(train, "ot_target_max_mass"),
                 "ot_structure_cost_mean": _safe_float(train, "ot_structure_cost_mean"),
+                "ot_structure_transport_cost_var": _safe_float(train, "ot_structure_transport_cost_var"),
+                "ot_total_cost_matrix_var": _safe_float(train, "ot_total_cost_matrix_var"),
+                "ot_topogate_complexity_term_var": _safe_float(train, "ot_topogate_complexity_term_var"),
+                "ot_latent_affinity_term_var": _safe_float(train, "ot_latent_affinity_term_var"),
+                "ot_topogate_structure_blend_weight": _safe_float(train, "ot_topogate_structure_blend_weight"),
                 "structured_style_tokenizer_spatial_svd_entropy": _safe_float(
                     train, "structured_style_tokenizer_spatial_svd_entropy"
                 ),

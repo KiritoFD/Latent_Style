@@ -1,0 +1,3 @@
+probe_family,path_mode,encoded_code_a_vs_b_mean_abs,first_hires_block_gate1_a_vs_b_mean_abs,skip32_a_vs_b_mean_abs,content16_a_vs_b_mean_abs,adapted_code_a_vs_b_mean_abs,style_map_a_vs_b_mean_abs,h_body_a_vs_b_mean_abs,h_fused_a_vs_b_mean_abs,h_dec_pre_mod_a_vs_b_mean_abs,h_dec_post_mod_a_vs_b_mean_abs,delta_a_vs_b_mean_abs
+path_anatomy,code_only_no_reference,0.005481166299432516,0.0018894621171057224,0.0,0.0,0.0054811653681099415,0.0025964858941733837,0.008996720425784588,0.0038530114106833935,0.017840798944234848,0.01377265527844429,0.0022138170897960663
+path_anatomy,spatial_matched_target,0.0,0.0,0.0,0.0,0.0,1.1975014209747314,0.13774554431438446,0.029553323984146118,0.1367267668247223,0.10366128385066986,0.01457616500556469

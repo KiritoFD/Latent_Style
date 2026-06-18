@@ -1,0 +1,50 @@
+{
+  "variants": [
+    {
+      "name": "h1_linear_fm",
+      "overrides": {
+        "bridge.bridge_path_mode": "linear"
+      }
+    },
+    {
+      "name": "h2_euclidean_ot",
+      "overrides": {
+        "bridge.coupling_cost_composition": "appearance_only"
+      }
+    },
+    {
+      "name": "h3_sde_noise",
+      "overrides": {
+        "bridge.bridge_noise_schedule": "exact_brownian",
+        "bridge.bridge_sigma": 0.02
+      }
+    },
+    {
+      "name": "h4_unbalanced_ot",
+      "overrides": {
+        "bridge.coupling_solver": "sinkhorn_unbalanced",
+        "bridge.sinkhorn_unbalanced_tau_src": 0.5
+      }
+    },
+    {
+      "name": "h5_topogate_attention",
+      "overrides": {
+        "bridge.coupling_cost_composition": "appearance_plus_structure",
+        "bridge.coupling_structure_cost_mode": "topogate_attention_gw",
+        "bridge.coupling_structure_cost_weight": 0.4
+      }
+    },
+    {
+      "name": "h6_combined_topogate",
+      "overrides": {
+        "bridge.bridge_noise_schedule": "exact_brownian",
+        "bridge.bridge_sigma": 0.02,
+        "bridge.coupling_cost_composition": "appearance_plus_structure",
+        "bridge.coupling_solver": "sinkhorn_unbalanced",
+        "bridge.coupling_structure_cost_mode": "topogate_attention_gw",
+        "bridge.coupling_structure_cost_weight": 0.4,
+        "bridge.sinkhorn_unbalanced_tau_src": 0.5
+      }
+    }
+  ]
+}

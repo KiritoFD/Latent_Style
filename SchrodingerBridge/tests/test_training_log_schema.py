@@ -106,12 +106,16 @@ def test_training_log_keeps_topogate_ot_probes(tmp_path):
         {
             "loss": 3.0,
             "ot_topogate_probe_active": 1.0,
+            "ot_topogate_descriptor_blocks": 4.0,
             "ot_topogate_complexity_cost_mean": 0.42,
             "ot_topogate_complexity_cost_var": 0.08,
+            "ot_topogate_complexity_term_var": 0.22,
             "ot_topogate_content_complexity_mean": 0.61,
             "ot_topogate_target_complexity_mean": 0.57,
             "ot_latent_affinity_cost_mean": 1.23,
             "ot_latent_affinity_cost_var": 0.34,
+            "ot_latent_affinity_term_var": 0.05,
+            "ot_total_cost_matrix_var": 0.18,
         },
         epoch=5,
     )
@@ -121,9 +125,13 @@ def test_training_log_keeps_topogate_ot_probes(tmp_path):
     row = rows[0]
     assert row["epoch"] == "5"
     assert row["ot_topogate_probe_active"] == "1.0"
+    assert row["ot_topogate_descriptor_blocks"] == "4.0"
     assert row["ot_topogate_complexity_cost_mean"] == "0.42"
     assert row["ot_topogate_complexity_cost_var"] == "0.08"
+    assert row["ot_topogate_complexity_term_var"] == "0.22"
     assert row["ot_topogate_content_complexity_mean"] == "0.61"
     assert row["ot_topogate_target_complexity_mean"] == "0.57"
     assert row["ot_latent_affinity_cost_mean"] == "1.23"
     assert row["ot_latent_affinity_cost_var"] == "0.34"
+    assert row["ot_latent_affinity_term_var"] == "0.05"
+    assert row["ot_total_cost_matrix_var"] == "0.18"
