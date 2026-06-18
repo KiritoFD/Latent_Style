@@ -292,6 +292,9 @@ class ModelConfig:
     style_dino_adapter_enabled: bool = False
     style_dino_adapter_hidden_dim: int = 1024
     style_dino_adapter_scale: float = 0.25
+    style_moe_enabled: bool = False
+    style_moe_num_experts: int = 4
+    style_moe_router_hidden_dim: int = 128
     hires_block_type: str = "conv"
     body_block_type: str = "global_attn"
     decoder_block_type: str = "conv"

@@ -71,6 +71,13 @@ case "$variant" in
       BATCH_SIZE="64"
     fi
     ;;
+  moe)
+    config_rel="SchrodingerBridge/configs/620_spatial_bridge_moe.json"
+    default_run_name="620_moe_swd12_sigma002_nfe8_b64"
+    if [ -z "$BATCH_SIZE_WAS_SET" ]; then
+      BATCH_SIZE="64"
+    fi
+    ;;
   *)
     echo "invalid --variant: $variant" >&2
     exit 2

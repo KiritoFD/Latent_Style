@@ -44,8 +44,21 @@ class SpatialBridge620(nn.Module):
         depth = max(1, int(getattr(model_cfg, "num_res_blocks", 4)))
         heads = max(1, int(getattr(model_cfg, "style_attn_num_heads", 4)))
         gate_init = float(getattr(model_cfg, "style_cross_attn_gate_init", 0.05))
+        moe_enabled = bool(getattr(model_cfg, "style_moe_enabled", False))
+        moe_num_experts = int(getattr(model_cfg, "style_moe_num_experts", 4))
+        moe_router_hidden_dim = int(getattr(model_cfg, "style_moe_router_hidden_dim", 128))
         self.blocks = nn.ModuleList(
-            [SpatialBridgeBlock620(dim=self.dim, num_heads=heads, style_gate_init=gate_init) for _ in range(depth)]
+            [
+                SpatialBridgeBlock620(
+                    dim=self.dim,
+                    num_heads=heads,
+                    style_gate_init=gate_init,
+                    style_moe_enabled=moe_enabled,
+                    style_moe_num_experts=moe_num_experts,
+                    style_moe_router_hidden_dim=moe_router_hidden_dim,
+                )
+                for _ in range(depth)
+            ]
         )
         self.out = nn.Sequential(
             nn.GroupNorm(1, self.dim),
