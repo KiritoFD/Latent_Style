@@ -33,6 +33,9 @@ SYNC_PATHS = [
     "SchrodingerBridge/tools/experiments/dino_cache_utils.py",
     "SchrodingerBridge/tools/experiments/build_offline_dino_pairing_cache.py",
     "SchrodingerBridge/tools/experiments/build_offline_dino_pairing_plan.py",
+    "SchrodingerBridge/tools/experiments/collect_round2_eval_curve.py",
+    "SchrodingerBridge/tools/experiments/build_clip_lpips_curve_from_eval_root.py",
+    "SchrodingerBridge/tools/experiments/backfill_eval_clip_schema.py",
     "SchrodingerBridge/tools/experiments/launch_remote_620_spatial_bridge.py",
     "SchrodingerBridge/tools/experiments/run_remote_620_spatial_bridge.sh",
     "SchrodingerBridge/configs/620_spatial_bridge_base.json",
@@ -59,6 +62,9 @@ VERIFY_PYTHON_FILES = [
     "SchrodingerBridge/tools/probe_config_effectiveness.py",
     "SchrodingerBridge/tools/experiments/build_offline_dino_pairing_cache.py",
     "SchrodingerBridge/tools/experiments/build_offline_dino_pairing_plan.py",
+    "SchrodingerBridge/tools/experiments/collect_round2_eval_curve.py",
+    "SchrodingerBridge/tools/experiments/build_clip_lpips_curve_from_eval_root.py",
+    "SchrodingerBridge/tools/experiments/backfill_eval_clip_schema.py",
     "SchrodingerBridge/tools/experiments/launch_remote_620_spatial_bridge.py",
 ]
 

@@ -3494,9 +3494,8 @@ def main(argv: list[str] | None = None):
         
         'clip_dir',
         'clip_style',
+        'clip_s_delta_idt',
         'clip_t',
-        'clip_t_idt',
-        'clip_t_delta_idt',
         'clip_content',
         'clip_image_vector',
     ]
@@ -3825,9 +3824,8 @@ def main(argv: list[str] | None = None):
                     
                     'clip_dir': s_clip_dir,
                     'clip_style': s_clip_style,
+                    'clip_s_delta_idt': 0.0,
                     'clip_t': s_clip_t,
-                    'clip_t_idt': 0.0,
-                    'clip_t_delta_idt': 0.0,
                     'clip_content': c_clip_scores[i],
                     'clip_image_vector': batch_clip_vectors[i],
                 }
@@ -3849,28 +3847,46 @@ def main(argv: list[str] | None = None):
     _sync_cuda_if(device, bool(args.profile_timing))
     _add_timing(timings, "eval_metrics_loop", metric_loop_start)
     csv_file.close()
+    idt_baselines: dict[str, object] = {}
     if metric_rows:
-        idt_by_source: dict[tuple[str, str], float] = {}
-        idt_by_style: dict[str, list[float]] = {}
+        idt_clip_s_by_target_style: dict[str, list[float]] = {}
+        idt_clip_t_by_target_style: dict[str, list[float]] = {}
         for row in metric_rows:
             src_style = str(row.get("src_style", ""))
             tgt_style = str(row.get("tgt_style", ""))
-            src_image = str(row.get("src_image", ""))
             if src_style == tgt_style:
-                value = float(row.get("clip_t", 0.0) or 0.0)
-                idt_by_source[(src_style, src_image)] = value
-                idt_by_style.setdefault(src_style, []).append(value)
-        idt_style_mean = {
+                idt_clip_s_by_target_style.setdefault(tgt_style, []).append(float(row.get("clip_style", 0.0) or 0.0))
+                idt_clip_t_by_target_style.setdefault(tgt_style, []).append(float(row.get("clip_t", 0.0) or 0.0))
+        idt_clip_s_style_mean = {
             style: float(sum(values) / max(1, len(values)))
-            for style, values in idt_by_style.items()
+            for style, values in idt_clip_s_by_target_style.items()
         }
+        idt_clip_t_style_mean = {
+            style: float(sum(values) / max(1, len(values)))
+            for style, values in idt_clip_t_by_target_style.items()
+        }
+        idt_clip_s_global = (
+            float(sum(idt_clip_s_style_mean.values()) / max(1, len(idt_clip_s_style_mean)))
+            if idt_clip_s_style_mean
+            else 0.0
+        )
+        idt_clip_t_global = (
+            float(sum(idt_clip_t_style_mean.values()) / max(1, len(idt_clip_t_style_mean)))
+            if idt_clip_t_style_mean
+            else 0.0
+        )
         for row in metric_rows:
-            src_style = str(row.get("src_style", ""))
-            src_image = str(row.get("src_image", ""))
-            clip_t = float(row.get("clip_t", 0.0) or 0.0)
-            idt_value = idt_by_source.get((src_style, src_image), idt_style_mean.get(src_style, 0.0))
-            row["clip_t_idt"] = idt_value
-            row["clip_t_delta_idt"] = clip_t - idt_value
+            tgt_style = str(row.get("tgt_style", ""))
+            clip_style = float(row.get("clip_style", 0.0) or 0.0)
+            idt_value = idt_clip_s_style_mean.get(tgt_style, idt_clip_s_global)
+            row["clip_s_delta_idt"] = clip_style - idt_value
+        idt_baselines = {
+            "clip_style_global": idt_clip_s_global,
+            "clip_style_by_target_style": idt_clip_s_style_mean,
+            "clip_t_global": idt_clip_t_global,
+            "clip_t_by_target_style": idt_clip_t_style_mean,
+            "note": "IDT baselines are stored once here; metrics.csv keeps per-row CLIP-S/LPIPS and CLIP-S-minus-IDT.",
+        }
         with open(csv_path, "w", newline="", encoding="utf-8") as f:
             rewrite = csv.DictWriter(f, fieldnames=columns)
             rewrite.writeheader()
@@ -3995,6 +4011,7 @@ def main(argv: list[str] | None = None):
         timings=timings,
         introstyle_result=introstyle_result,
         runtime_observability_rows=runtime_observability_rows,
+        idt_baselines=idt_baselines,
     )
 
 def generate_summary_json(
@@ -4021,6 +4038,7 @@ def generate_summary_json(
     timings: dict | None = None,
     introstyle_result: dict[str, object] | None = None,
     runtime_observability_rows: list[dict[str, object]] | None = None,
+    idt_baselines: dict[str, object] | None = None,
 ):
     print("\n妫ｅ啯鎯?Generating Summary...")
     rows = []
@@ -4127,7 +4145,8 @@ def generate_summary_json(
                 'count': len(items),
                 'clip_dir': np.mean([to_f(x.get('clip_dir', x.get('clip_style', 0.0))) for x in items]),
                 'clip_style': np.mean([to_f(x.get('clip_style', x.get('clip_dir', 0.0))) for x in items]),
-                
+                'clip_s_delta_idt': np.mean([to_f(x.get('clip_s_delta_idt', 0.0)) for x in items]),
+                'clip_t': np.mean([to_f(x.get('clip_t', 0.0)) for x in items]),
                 'content_lpips': mean_content_lpips,
                 'clip_content': np.mean([to_f(x.get('clip_content', 0)) for x in items]),
             }
@@ -4286,6 +4305,8 @@ def generate_summary_json(
         return {
             'clip_dir': pool_avg(pool, 'clip_dir'),
             'clip_style': pool_avg(pool, 'clip_style'),
+            'clip_s_delta_idt': pool_avg(pool, 'clip_s_delta_idt'),
+            'clip_t': pool_avg(pool, 'clip_t'),
             'clip_content': pool_avg(pool, 'clip_content'),
             'content_lpips': pool_avg(pool, 'content_lpips'),
             'introstyle_target_style_score': pool_avg([t for t in pool if t.get('introstyle_target_style_score') is not None], 'introstyle_target_style_score', default=None),
@@ -4356,6 +4377,8 @@ def generate_summary_json(
         'metrics_note': {
             'clip_dir': "cos( CLIP(gen)-CLIP(src), CLIP(target_style_proto)-CLIP(src) ) - Measures edit direction.",
             'clip_style': "cos( CLIP(gen), CLIP(target_style_proto) ) - Measures absolute style similarity.",
+            'clip_s_delta_idt': "Row/pool CLIP-S minus the target style's IDT CLIP-S baseline.",
+            'clip_t': "cos( CLIP(gen), CLIP(text target style name) ) - Text-name style affinity.",
             'clip_content': "cos( CLIP(gen), CLIP(src) ) - Measures semantic/content preservation.",
             'introstyle_target_style_score': "IntroStyle similarity to the held-out target-style bank.",
             'introstyle_source_style_score': "IntroStyle similarity to the held-out source-style bank.",
@@ -4376,6 +4399,7 @@ def generate_summary_json(
         },
         'settings': dict(settings or {}),
         'timings_sec': {str(k): float(v) for k, v in sorted((timings or {}).items())},
+        'idt_baselines': dict(idt_baselines or {}),
         'matrix_breakdown': matrix_json,
         'analysis': {
             'all_pairs_overview': all_pairs_summary,

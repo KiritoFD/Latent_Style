@@ -15,8 +15,12 @@ def _summary_curve_row(summary_path: Path) -> dict[str, object]:
     return {
         "epoch": summary_path.parent.name,
         "full_clip_style": full.get("clip_style"),
+        "full_clip_s_delta_idt": full.get("clip_s_delta_idt"),
+        "full_clip_t": full.get("clip_t"),
         "full_content_lpips": full.get("content_lpips"),
         "transfer_clip_style": transfer.get("clip_style"),
+        "transfer_clip_s_delta_idt": transfer.get("clip_s_delta_idt"),
+        "transfer_clip_t": transfer.get("clip_t"),
         "transfer_content_lpips": transfer.get("content_lpips"),
         "wall_total_seconds": timings.get("wall_total"),
         "summary_path": str(summary_path),
