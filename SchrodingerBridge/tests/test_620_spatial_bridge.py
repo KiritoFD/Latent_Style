@@ -160,3 +160,18 @@ def test_i2sb_single_final_step_has_zero_variance(monkeypatch: pytest.MonkeyPatc
     x = torch.randn(1, 2, 4, 4)
     out = model.integrate_transport(x, style_id=torch.tensor([0]), num_steps=1)
     assert out.shape == x.shape
+
+
+def test_620_moe_cross_attention_reports_router_metrics() -> None:
+    cfg = _cfg()
+    cfg.model.style_moe_enabled = True
+    cfg.model.style_moe_num_experts = 3
+    cfg.model.style_moe_router_hidden_dim = 8
+    model = SpatialBridge620(cfg.model, cfg.bridge)
+    x = torch.randn(2, 2, 4, 4)
+    patches = torch.randn(2, 4, 6)
+    out = model(x, t=torch.tensor([0.25, 0.75]), style_dino_patches=patches)
+    assert out.shape == x.shape
+    assert "style_moe_router_entropy" in model.last_debug
+    assert "style_moe_router_max_prob" in model.last_debug
+    assert torch.isfinite(model.last_debug["style_moe_router_entropy"])
