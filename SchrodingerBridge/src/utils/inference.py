@@ -534,13 +534,22 @@ class LGTInference:
             if abs(self.residual_scale - 1.0) > 1e-6:
                 return x0 + (endpoint - x0) * self.residual_scale
             return endpoint
+        integrate_kwargs = {
+            "step_size": self.step_size,
+            "style_strength": self.style_strength,
+        }
+        if isinstance(target_style_latent, dict):
+            if target_style_latent.get("style_dino_patches") is not None:
+                integrate_kwargs["style_dino_patches"] = target_style_latent.get("style_dino_patches")
+            if target_style_latent.get("style_dino_cls") is not None:
+                integrate_kwargs["style_dino_cls"] = target_style_latent.get("style_dino_cls")
+        else:
+            integrate_kwargs["target_style_latent"] = target_style_latent
         return self.model.integrate(
             x0,
             style_id=target_style_id,
             num_steps=max(1, int(num_steps)),
-            step_size=self.step_size,
-            style_strength=self.style_strength,
-            target_style_latent=target_style_latent,
+            **integrate_kwargs,
         )
 
     @torch.no_grad()

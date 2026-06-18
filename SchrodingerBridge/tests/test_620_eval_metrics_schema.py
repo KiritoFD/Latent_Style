@@ -5,6 +5,8 @@ import importlib.util
 import json
 from pathlib import Path
 
+import torch
+
 
 ROOT = Path(__file__).resolve().parents[1]
 COLLECTOR_PATH = ROOT / "tools" / "experiments" / "collect_round2_eval_curve.py"
@@ -18,6 +20,12 @@ BACKFILL_SPEC = importlib.util.spec_from_file_location("backfill_eval_clip_schem
 assert BACKFILL_SPEC is not None and BACKFILL_SPEC.loader is not None
 BACKFILL = importlib.util.module_from_spec(BACKFILL_SPEC)
 BACKFILL_SPEC.loader.exec_module(BACKFILL)
+
+RUN_EVAL_PATH = ROOT / "src" / "utils" / "run_evaluation.py"
+RUN_EVAL_SPEC = importlib.util.spec_from_file_location("run_evaluation", RUN_EVAL_PATH)
+assert RUN_EVAL_SPEC is not None and RUN_EVAL_SPEC.loader is not None
+RUN_EVAL = importlib.util.module_from_spec(RUN_EVAL_SPEC)
+RUN_EVAL_SPEC.loader.exec_module(RUN_EVAL)
 
 
 def test_eval_curve_keeps_clip_lpips_clipt_and_delta_idt(tmp_path: Path) -> None:
@@ -113,3 +121,27 @@ def test_backfill_metrics_drops_repeated_clipt_idt_and_adds_clips_delta(tmp_path
     assert summary["idt_baselines"]["clip_style_delta_mode"] == "fixed_old_idt"
     assert summary["idt_baselines"]["clip_style_eval_identity_by_target_style"]["Rococo"] == 0.8
     assert summary["analysis"]["style_transfer_ability"]["clip_style"] == 0.72
+
+
+def test_620_eval_target_dino_bank_loads_one_patch_sequence_per_style(tmp_path: Path) -> None:
+    cache = tmp_path / "dino.pt"
+    torch.save(
+        {
+            "rows": [
+                {"style": "Rococo", "stem": "r0_latent_ema"},
+                {"style": "Ukiyo_e", "stem": "u0_latent_ema"},
+                {"style": "Rococo", "stem": "r1_latent_ema"},
+            ],
+            "cls_embeddings": torch.arange(12, dtype=torch.float32).view(3, 4),
+            "patch_embeddings": torch.arange(3 * 2 * 4, dtype=torch.float32).view(3, 2, 4),
+        },
+        cache,
+    )
+
+    bank = RUN_EVAL._load_eval_target_dino_bank(str(cache), ["Rococo", "Ukiyo_e"])
+
+    assert sorted(bank) == [0, 1]
+    assert bank[0]["cls"].shape == (4,)
+    assert bank[0]["patches"].shape == (2, 4)
+    assert torch.equal(bank[0]["cls"], torch.tensor([0.0, 1.0, 2.0, 3.0]))
+    assert torch.equal(bank[1]["cls"], torch.tensor([4.0, 5.0, 6.0, 7.0]))

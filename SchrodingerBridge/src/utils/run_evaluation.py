@@ -372,6 +372,8 @@ def _runtime_observability_from_model(model: torch.nn.Module | None) -> dict[str
     if model is None:
         return {}
     stats: dict[str, float] = {}
+    for key, value in _runtime_debug_scalars(getattr(model, "last_debug", {})).items():
+        stats[f"model_{key}"] = value
     structured = getattr(model, "structured_style_tokenizer", None)
     for key, value in _runtime_debug_scalars(getattr(structured, "last_debug", {})).items():
         stats[f"structured_style_tokenizer_{key}"] = value
@@ -394,6 +396,65 @@ def _runtime_observability_from_model(model: torch.nn.Module | None) -> dict[str
 def _is_cuda_oom(exc: RuntimeError) -> bool:
     msg = str(exc).lower()
     return ("out of memory" in msg) or ("cuda oom" in msg)
+
+
+def _normalize_dino_eval_stem(stem: str) -> str:
+    text = str(stem).strip()
+    suffixes = (
+        "_latent_ema",
+        "_latent",
+        "_vae_ema",
+        "_vae",
+        "_sd_ema",
+        "_sd",
+    )
+    changed = True
+    while changed:
+        changed = False
+        for suffix in suffixes:
+            if text.endswith(suffix):
+                text = text[: -len(suffix)]
+                changed = True
+    return text
+
+
+def _load_eval_target_dino_bank(cache_path: str, style_subdirs: list[str]) -> dict[int, dict[str, torch.Tensor]]:
+    text = str(cache_path or "").strip()
+    if not text:
+        return {}
+    path = Path(text).expanduser()
+    if not path.exists():
+        raise FileNotFoundError(f"620 target DINO cache not found for eval: {path}")
+    payload = torch.load(path, map_location="cpu", weights_only=False)
+    if not isinstance(payload, dict):
+        raise RuntimeError(f"Malformed 620 target DINO cache: {path}")
+    rows = list(payload.get("rows", []))
+    cls_embeddings = torch.as_tensor(payload.get("cls_embeddings", torch.empty(0))).float()
+    patch_embeddings = torch.as_tensor(payload.get("patch_embeddings", torch.empty(0))).float()
+    if len(rows) == 0 or cls_embeddings.ndim != 2 or patch_embeddings.ndim != 3:
+        raise RuntimeError(f"Malformed 620 target DINO cache tensors: {path}")
+
+    first_by_style: dict[str, int] = {}
+    for row_idx, row in enumerate(rows):
+        style = str(row.get("style", "")).strip()
+        stem = _normalize_dino_eval_stem(str(row.get("stem", "")).strip())
+        if style and stem and style not in first_by_style:
+            first_by_style[style] = int(row_idx)
+
+    bank: dict[int, dict[str, torch.Tensor]] = {}
+    missing: list[str] = []
+    for style_id, style in enumerate(style_subdirs):
+        row_idx = first_by_style.get(str(style))
+        if row_idx is None:
+            missing.append(str(style))
+            continue
+        bank[int(style_id)] = {
+            "cls": cls_embeddings[row_idx].contiguous(),
+            "patches": patch_embeddings[row_idx].contiguous(),
+        }
+    if missing:
+        raise RuntimeError(f"620 target DINO cache missing styles for eval: {missing}")
+    return bank
 
 
 def _batched_paths(items: list[Path], n: int) -> list[list[Path]]:
@@ -1928,6 +1989,7 @@ def main(argv: list[str] | None = None):
     parser.add_argument('--config', type=str, default="../config.json", help="Auto mode config path")
     parser.add_argument('--test_dir', type=str, default=None)
     parser.add_argument('--cache_dir', type=str, default="../eval_cache", help="Directory to store shared feature caches")
+    parser.add_argument('--target_dino_cache', type=str, default="", help="Optional DINO cache for 620 eval target patch conditioning. Defaults to checkpoint data.dino_cache_path.")
     parser.add_argument('--num_steps', type=int, default=int(full_eval_defaults.get("num_steps", 12)))
     parser.add_argument('--step_size', type=float, default=float(full_eval_defaults.get("step_size", 1.0)))
     parser.add_argument('--style_strength', type=float, default=full_eval_defaults.get("style_strength", None), help="Global style strength. Values above 1 require model.style_strength_max > 1.")
@@ -2430,6 +2492,15 @@ def main(argv: list[str] | None = None):
         style_subdirs = _infer_style_names_from_generated_files(_list_reuse_generated_files(out_dir))
     if not style_subdirs:
         raise ValueError("Failed to infer style names. Provide --style_subdirs or valid --test_dir folders.")
+
+    contract_family = str((cfg.get("model", {}) or {}).get("contract_family", "")).strip().lower() if isinstance(cfg, dict) else ""
+    target_dino_bank: dict[int, dict[str, torch.Tensor]] = {}
+    if contract_family == "620_spatial_bridge" and not args.reuse_generated:
+        dino_cache_path = str(args.target_dino_cache or "").strip()
+        if not dino_cache_path and isinstance(cfg, dict):
+            dino_cache_path = str(((cfg.get("data", {}) or {}).get("dino_cache_path", ""))).strip()
+        target_dino_bank = _load_eval_target_dino_bank(dino_cache_path, style_subdirs)
+        print(f"620 target DINO eval conditioning: cache={dino_cache_path} styles={len(target_dino_bank)}")
     
     test_images = {}
     for style_id, style_name in enumerate(style_subdirs):
@@ -2938,8 +3009,27 @@ def main(argv: list[str] | None = None):
                             continue
                         repeated_latents = torch.cat(pair_latents, dim=0)
                         tgt_ids = torch.tensor(pair_tgt_ids, device=device, dtype=torch.long)
+                        target_style_latent = None
+                        if target_dino_bank:
+                            missing_tgt = [sid for sid in pair_tgt_ids if int(sid) not in target_dino_bank]
+                            if missing_tgt:
+                                raise RuntimeError(f"620 target DINO eval bank missing target ids: {sorted(set(missing_tgt))}")
+                            target_style_latent = {
+                                "style_dino_cls": torch.stack(
+                                    [target_dino_bank[int(sid)]["cls"] for sid in pair_tgt_ids],
+                                    dim=0,
+                                ).to(device=device, dtype=repeated_latents.dtype),
+                                "style_dino_patches": torch.stack(
+                                    [target_dino_bank[int(sid)]["patches"] for sid in pair_tgt_ids],
+                                    dim=0,
+                                ).to(device=device, dtype=repeated_latents.dtype),
+                            }
                         t0 = time.perf_counter()
-                        latents_gen = lgt.generation(repeated_latents, tgt_ids)
+                        latents_gen = lgt.generation_with_target_latent(
+                            repeated_latents,
+                            tgt_ids,
+                            target_style_latent=target_style_latent,
+                        )
                         chunk_runtime_observability = _runtime_observability_from_model(getattr(lgt, "model", None))
                         latent_post_debug = None
                         if latent_postprocess_mode == "style_latent_affine":
