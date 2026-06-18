@@ -51,6 +51,7 @@
     "full_eval_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache",
     "full_eval_clip_hf_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache/hf",
     "full_eval_clip_backend": "hf",
+    "full_eval_clip_style_idt_baseline": 0.639920825263,
     "full_eval_batch_size": 16,
     "full_eval_vae_decode_batch_size": 16
   },

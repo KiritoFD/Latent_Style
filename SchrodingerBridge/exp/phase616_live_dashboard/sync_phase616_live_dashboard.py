@@ -205,7 +205,7 @@ COLORS = {
     "stage3_auto": "#7A5CFA",
     "style_sweep_auto": "#1D9BF0",
     "ot_rerun_auto": "#E85D75",
-    "spatial620": "#111827",
+    "spatial620": "#F8FAFC",
     "idt": "#8E63C0",
     "samam": "#2F7DB7",
     "seedream": "#E48F1C",
@@ -388,8 +388,6 @@ def _parse_points(snapshot: dict) -> list[RunPoint]:
 
 
 def _point_style_minus_idt(point: RunPoint, idt_style: float) -> float:
-    if point.clip_s_delta_idt is not None:
-        return float(point.clip_s_delta_idt)
     return float(point.style) - float(idt_style)
 
 
@@ -839,7 +837,7 @@ def _annotate(ax, x: float, y: float, text: str, dx: float, dy: float, color: st
 def _compute_pareto_viewport(points: list[RunPoint], baselines: dict[str, object]) -> dict[str, float]:
     idt_clip = float(baselines["idt"]["clip_style"])
     xs = [p.x for p in points]
-    ys = [p.style - idt_clip for p in points]
+    ys = [_point_style_minus_idt(p, idt_clip) for p in points]
 
     def _extend(rows: list[dict[str, object]]) -> None:
         for row in rows:
@@ -1143,18 +1141,14 @@ def _render_html(points: list[RunPoint], baselines: dict[str, object], status: d
     by_run: dict[str, list[dict[str, object]]] = {}
     for point in sorted(points, key=lambda p: (p.group, p.label, p.epoch_int)):
         key = f"{point.group}::{point.label}"
-        style_minus_idt = (
-            float(point.clip_s_delta_idt)
-            if point.clip_s_delta_idt is not None
-            else _point_style_minus_idt(point, float(idt["clip_style"]))
-        )
+        style_minus_idt = _point_style_minus_idt(point, float(idt["clip_style"]))
         by_run.setdefault(key, []).append(
             {
                 "group": point.group,
                 "label": point.label,
                 "epoch_int": point.epoch_int,
                 "clip_style": point.style,
-                "clip_s_delta_idt": style_minus_idt,
+                "clip_s_delta_idt": point.clip_s_delta_idt,
                 "clip_t": point.clip_t,
                 "content_lpips": point.lpips,
                 "one_minus_lpips": point.x,
@@ -1913,7 +1907,7 @@ def _render_html(points: list[RunPoint], baselines: dict[str, object], status: d
           <td>${{esc(r.label)}}</td>
           <td>e${{r.epoch_int}}</td>
           <td>${{fmt(r.clip_style)}}</td>
-          <td>${{fmt(r.clip_s_delta_idt ?? (r.clip_style - data.cards.idt_floor))}}</td>
+          <td>${{fmt(r.clip_style - data.cards.idt_floor)}}</td>
           <td>${{fmt(r.clip_t)}}</td>
           <td>${{fmt(r.content_lpips)}}</td>
           <td>${{fmt(r.one_minus_lpips)}}</td>
@@ -2258,7 +2252,7 @@ def main() -> int:
                 "epoch": p.epoch,
                 "epoch_int": p.epoch_int,
                 "clip_style": p.style,
-                "clip_s_delta_idt": float(p.clip_s_delta_idt) if p.clip_s_delta_idt is not None else p.style - idt_floor,
+                "clip_s_delta_idt": _point_style_minus_idt(p, idt_floor),
                 "clip_t": p.clip_t,
                 "content_lpips": p.lpips,
                 "one_minus_lpips": p.x,
@@ -2273,7 +2267,7 @@ def main() -> int:
             "epoch": best_manual.epoch,
             "epoch_int": best_manual.epoch_int,
             "clip_style": best_manual.style,
-            "clip_s_delta_idt": float(best_manual.clip_s_delta_idt) if best_manual.clip_s_delta_idt is not None else best_manual.style - idt_floor,
+            "clip_s_delta_idt": _point_style_minus_idt(best_manual, idt_floor),
             "clip_t": best_manual.clip_t,
             "content_lpips": best_manual.lpips,
             "one_minus_lpips": best_manual.x,
