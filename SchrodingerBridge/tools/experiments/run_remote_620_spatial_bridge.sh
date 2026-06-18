@@ -9,6 +9,8 @@ IMAGE_ROOT="${IMAGE_ROOT:-/mnt/i/wikiart_distinct5_samam_512_classview/train}"
 DINO_CACHE="${DINO_CACHE:-${REMOTE_ROOT}/eval_cache/offline_pairing/dinov2_wikiart_distinct5_samam_512_train_cache.pt}"
 PAIRING_PLAN="${PAIRING_PLAN:-${LATENT_ROOT}/.latent_cache/dino_pairing_top8.pt}"
 STYLES="${STYLES:-Early_Renaissance,Impressionism,Minimalism,Rococo,Ukiyo_e}"
+DINO_ALLOW_NETWORK="${DINO_ALLOW_NETWORK:-0}"
+DINO_HF_CACHE_DIR="${DINO_HF_CACHE_DIR:-/mnt/i/hf_cache}"
 
 variant="base"
 epochs="1"
@@ -73,6 +75,7 @@ fi
 cd "$REMOTE_ROOT"
 export PYTHONPATH="${REMOTE_SB}/src:${REMOTE_SB}/tools:${REMOTE_SB}/tools/experiments:${PYTHONPATH:-}"
 export REMOTE_ROOT REMOTE_SB LATENT_ROOT IMAGE_ROOT DINO_CACHE PAIRING_PLAN STYLES
+export DINO_ALLOW_NETWORK DINO_HF_CACHE_DIR
 export CONFIG_REL="$config_rel"
 export RUN_NAME="$run_name"
 export STAGE="$stage"
@@ -99,10 +102,23 @@ PY
 if [ ! -f "$DINO_CACHE" ]; then
   echo "[620] building DINO cache: ${DINO_CACHE}"
   mkdir -p "$(dirname "$DINO_CACHE")"
-  "$PYTHON_BIN" SchrodingerBridge/tools/experiments/build_offline_dino_pairing_cache.py \
-    --latent-root "$LATENT_ROOT" \
-    --image-root "$IMAGE_ROOT" \
+  dino_cache_args=(
+    --latent-root "$LATENT_ROOT"
+    --image-root "$IMAGE_ROOT"
     --output "$DINO_CACHE"
+  )
+  if [ -n "$DINO_HF_CACHE_DIR" ]; then
+    mkdir -p "$DINO_HF_CACHE_DIR"
+    dino_cache_args+=(--hf-cache-dir "$DINO_HF_CACHE_DIR")
+  fi
+  case "${DINO_ALLOW_NETWORK,,}" in
+    1|true|yes|on)
+      dino_cache_args+=(--allow-network)
+      ;;
+  esac
+  echo "[620] DINO_ALLOW_NETWORK=${DINO_ALLOW_NETWORK} DINO_HF_CACHE_DIR=${DINO_HF_CACHE_DIR}"
+  "$PYTHON_BIN" SchrodingerBridge/tools/experiments/build_offline_dino_pairing_cache.py \
+    "${dino_cache_args[@]}"
 else
   echo "[620] DINO cache exists: ${DINO_CACHE}"
 fi

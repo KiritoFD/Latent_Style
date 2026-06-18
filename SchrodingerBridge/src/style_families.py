@@ -14,6 +14,7 @@ TOKENIZER_FAMILIES = {
 CONTRACT_FAMILIES = {
     "legacy",
     "phase616",
+    "620_spatial_bridge",
 }
 
 PURE_LATENT_COMPAT_STRIP_PREFIXES = (
