@@ -1,0 +1,17 @@
+{
+  "_base": "620_spatial_bridge_swd12.json",
+  "model": {
+    "style_dino_adapter_enabled": true,
+    "style_dino_adapter_hidden_dim": 1024,
+    "style_dino_adapter_scale": 0.25
+  },
+  "checkpoint": {
+    "save_dir": "./exp/620_spatial_bridge/620_adapter_swd12_sigma002_nfe8_b80"
+  },
+  "ablation": {
+    "name": "620_adapter_swd12_b80",
+    "axis": "620_spatial_bridge_capacity_followup",
+    "stage": "adapter",
+    "notes": "620 tokenizer.md section 6B follow-up: trainable residual DINO adapter before style cross-attention, SWD=12, sigma=0.02, NFE=8, batch_size=80."
+  }
+}

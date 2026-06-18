@@ -289,6 +289,9 @@ class ModelConfig:
     style_attn_sharpen_scale: float = 2.5
     style_attn_temperature: float = 0.08
     style_cross_attn_gate_init: float = 0.05
+    style_dino_adapter_enabled: bool = False
+    style_dino_adapter_hidden_dim: int = 1024
+    style_dino_adapter_scale: float = 0.25
     hires_block_type: str = "conv"
     body_block_type: str = "global_attn"
     decoder_block_type: str = "conv"
