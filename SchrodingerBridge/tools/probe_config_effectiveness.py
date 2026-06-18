@@ -22,6 +22,7 @@ from probe_conditioning_sensitivity import (
     _write_csv,
     load_experiment_config,
 )
+from probe_620_path_liveness import run_probe as run_620_path_liveness_probe
 
 
 def _override_entries(overrides: dict[str, Any]) -> list[str]:
@@ -241,6 +242,48 @@ def main() -> int:
     args = parser.parse_args()
 
     cfg = load_experiment_config(args.config)
+    contract_family = str(getattr(cfg.model, "contract_family", "legacy") or "legacy").strip().lower()
+    if contract_family == "620_spatial_bridge":
+        result = run_620_path_liveness_probe(device=str(args.device), seed=int(args.seed))
+        args.output_dir.mkdir(parents=True, exist_ok=True)
+        rows = [
+            {
+                "probe_family": "config_effect",
+                "variant": "620_spatial_bridge",
+                "context": "target_dino_patches",
+                "vs_base_forward_mean_abs": float(result["velocity_delta_abs"]),
+                "vs_base_predict_transport_base_mean_abs": float(result["endpoint_delta_abs"]),
+                "vs_base_integrate_mean_abs": float(result["endpoint_delta_abs"]),
+                "style_response_forward_mean_abs": float(result["velocity_delta_abs"]),
+                "style_response_predict_transport_base_mean_abs": float(result["endpoint_delta_abs"]),
+                "style_response_integrate_mean_abs": float(result["endpoint_delta_abs"]),
+                "semantic_attn_entropy": float(result["cross_attn_entropy"]),
+                "semantic_topology_attn_active": 0.0,
+                "bridge_noise_schedule": "solver_i2sb",
+                "bridge_sigma": float(getattr(cfg.bridge, "bridge_sigma", 0.0)),
+                "matched_target_conditioning_mode": "target_dino_patches",
+                "matched_target_style_encoder_mode": "style_encoder620",
+                "style_code_spatial_mode": "cross_attention620",
+                "classification": str(result["classification"]),
+            }
+        ]
+        _write_csv(args.output_dir / "variant_effects.csv", rows)
+        summary = {
+            "config": str(args.config),
+            "variant_spec": str(args.variant_spec),
+            "checkpoint": str(args.checkpoint) if args.checkpoint else None,
+            "git_commit": _git_commit(),
+            "runtime_metadata": _runtime_metadata(args.device, torch.device(args.device)),
+            "contract_family": contract_family,
+            "classification": str(result["classification"]),
+            "probe_result": result,
+        }
+        (args.output_dir / "summary.json").write_text(
+            json.dumps(summary, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        print(args.output_dir / "summary.json")
+        return 0 if result["ok"] else 2
     variants = _load_variants(args.variant_spec)
     device = torch.device(args.device)
     inputs = _random_inputs(

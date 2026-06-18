@@ -220,6 +220,7 @@ class ModelConfig:
     style_dim: int = 160
     style_tokenizer: str = "factorized"
     contract_family: str = "legacy"
+    style_condition_source: str = "style_id"
     tokenizer_family: str = "legacy_factorized"
     backbone_attention_family: str = "legacy_semantic_crossattn"
     solver_family: str = "euler_legacy"
@@ -286,6 +287,7 @@ class ModelConfig:
     style_attn_num_heads: int = 4
     style_attn_sharpen_scale: float = 2.5
     style_attn_temperature: float = 0.08
+    style_cross_attn_gate_init: float = 0.05
     hires_block_type: str = "conv"
     body_block_type: str = "global_attn"
     decoder_block_type: str = "conv"
@@ -524,6 +526,8 @@ class BridgeConfig:
     training_bridge_noise_projection_preserve_rms: bool = True
     terminal_swd_weight: float = 0.1
     terminal_swd_aux_weight: float = 0.0
+    single_step_swd_weight: float = 8.0
+    single_step_edge_weight: float = 0.1
     semantic_supervision_family: str = "legacy_terminal_swd"
     dino_masked_swd_weight: float = 0.0
     w_variance_penalty: float = 0.0
@@ -877,46 +881,48 @@ class ExperimentConfig:
             bridge_cfg=cfg.bridge,
             raw_bridge_payload=raw_bridge_payload,
         )
-        validate_i2sb_contract(
-            solver_family=str(getattr(cfg.model, "solver_family", "euler_legacy")),
-            transport_prediction_mode=str(getattr(cfg.model, "transport_prediction_mode", "velocity")),
-            objective_mode=str(getattr(cfg.bridge, "objective_mode", "")),
-            loss_type=str(getattr(cfg.bridge, "loss_type", "")),
-            bridge_noise_schedule=str(getattr(cfg.bridge, "bridge_noise_schedule", "auto")),
-        )
-        validate_pure_latent_contract(
-            tokenizer_family=str(getattr(cfg.model, "tokenizer_family", "legacy_factorized")),
-            style_tokenizer=str(getattr(cfg.model, "style_tokenizer", "")),
-            semantic_supervision_family=str(getattr(cfg.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
-            dino_masked_swd_weight=float(getattr(cfg.bridge, "dino_masked_swd_weight", 0.0)),
-            tokenizer_content_adaptive=bool(getattr(cfg.model, "tokenizer_content_adaptive", False)),
-        )
-        validate_phase616_clean_contract(
-            contract_family=str(getattr(cfg.model, "contract_family", "legacy")),
-            output_appearance_alignment_mode=str(getattr(cfg.model, "output_appearance_alignment_mode", "none")),
-            proximal_mode=str(getattr(cfg.model, "proximal_mode", "off")),
-            style_delta_mode=str(getattr(cfg.model, "style_delta_mode", "none")),
-            solver_corrector_mode=str(getattr(cfg.model, "solver_corrector_mode", "none")),
-            cycle_consistency_weight=float(getattr(cfg.bridge, "cycle_consistency_weight", 0.0)),
-            w_content_lowpass_anchor=float(getattr(cfg.bridge, "w_content_lowpass_anchor", 0.0)),
-            w_content_edge_anchor=float(getattr(cfg.bridge, "w_content_edge_anchor", 0.0)),
-            proximal_trust_ratio=float(getattr(cfg.bridge, "proximal_trust_ratio", 0.0)),
-            proximal_trust_weight=float(getattr(cfg.bridge, "proximal_trust_weight", 0.0)),
-            full_eval_postprocess_mode=str(
-                cfg.full_eval.get(
-                    "postprocess_mode",
-                    getattr(cfg.training, "full_eval_postprocess_mode", "none"),
-                )
-            ),
-            full_eval_latent_postprocess_mode=str(
-                cfg.full_eval.get(
-                    "latent_postprocess_mode",
-                    getattr(cfg.training, "full_eval_latent_postprocess_mode", "none"),
-                )
-            ),
-            pre_integrate_moment_match=bool(getattr(cfg.model, "pre_integrate_moment_match", False)),
-            output_moment_match=bool(getattr(cfg.model, "output_moment_match", False)),
-        )
+        contract_family = str(getattr(cfg.model, "contract_family", "legacy") or "legacy").strip().lower()
+        if contract_family != "620_spatial_bridge":
+            validate_i2sb_contract(
+                solver_family=str(getattr(cfg.model, "solver_family", "euler_legacy")),
+                transport_prediction_mode=str(getattr(cfg.model, "transport_prediction_mode", "velocity")),
+                objective_mode=str(getattr(cfg.bridge, "objective_mode", "")),
+                loss_type=str(getattr(cfg.bridge, "loss_type", "")),
+                bridge_noise_schedule=str(getattr(cfg.bridge, "bridge_noise_schedule", "auto")),
+            )
+            validate_pure_latent_contract(
+                tokenizer_family=str(getattr(cfg.model, "tokenizer_family", "legacy_factorized")),
+                style_tokenizer=str(getattr(cfg.model, "style_tokenizer", "")),
+                semantic_supervision_family=str(getattr(cfg.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
+                dino_masked_swd_weight=float(getattr(cfg.bridge, "dino_masked_swd_weight", 0.0)),
+                tokenizer_content_adaptive=bool(getattr(cfg.model, "tokenizer_content_adaptive", False)),
+            )
+            validate_phase616_clean_contract(
+                contract_family=str(getattr(cfg.model, "contract_family", "legacy")),
+                output_appearance_alignment_mode=str(getattr(cfg.model, "output_appearance_alignment_mode", "none")),
+                proximal_mode=str(getattr(cfg.model, "proximal_mode", "off")),
+                style_delta_mode=str(getattr(cfg.model, "style_delta_mode", "none")),
+                solver_corrector_mode=str(getattr(cfg.model, "solver_corrector_mode", "none")),
+                cycle_consistency_weight=float(getattr(cfg.bridge, "cycle_consistency_weight", 0.0)),
+                w_content_lowpass_anchor=float(getattr(cfg.bridge, "w_content_lowpass_anchor", 0.0)),
+                w_content_edge_anchor=float(getattr(cfg.bridge, "w_content_edge_anchor", 0.0)),
+                proximal_trust_ratio=float(getattr(cfg.bridge, "proximal_trust_ratio", 0.0)),
+                proximal_trust_weight=float(getattr(cfg.bridge, "proximal_trust_weight", 0.0)),
+                full_eval_postprocess_mode=str(
+                    cfg.full_eval.get(
+                        "postprocess_mode",
+                        getattr(cfg.training, "full_eval_postprocess_mode", "none"),
+                    )
+                ),
+                full_eval_latent_postprocess_mode=str(
+                    cfg.full_eval.get(
+                        "latent_postprocess_mode",
+                        getattr(cfg.training, "full_eval_latent_postprocess_mode", "none"),
+                    )
+                ),
+                pre_integrate_moment_match=bool(getattr(cfg.model, "pre_integrate_moment_match", False)),
+                output_moment_match=bool(getattr(cfg.model, "output_moment_match", False)),
+            )
         return cfg
 
     def to_dict(self) -> dict[str, Any]:

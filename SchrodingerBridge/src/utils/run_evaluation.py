@@ -3083,6 +3083,7 @@ def main(argv: list[str] | None = None):
     clip_backend = str(getattr(args, "clip_backend", "hf")).strip().lower()
     clip_preprocess = None  # OpenAI CLIP preprocess
     clip_encode_images_01 = None  # Callable[[Tensor[B,3,H,W]], Tensor[B,D]] on device
+    clip_encode_texts = None  # Callable[[list[str]], Tensor[B,D]] on device
     if clip_backend == "openai":
         clip_model_tag = f"openai:{str(getattr(args, 'clip_openai_model', 'ViT-B/32')).strip() or 'ViT-B/32'}"
     elif clip_backend == "hf":
@@ -3283,6 +3284,13 @@ def main(argv: list[str] | None = None):
                         feats = feats.unsqueeze(0)
                     return feats / (feats.norm(p=2, dim=-1, keepdim=True) + 1e-8)
 
+                def clip_encode_texts(texts):  # noqa: ANN001
+                    tokens = openai_clip.tokenize(list(texts)).to(device)
+                    feats = clip_model.encode_text(tokens).to(dtype=torch.float32)
+                    if feats.ndim == 1:
+                        feats = feats.unsqueeze(0)
+                    return feats / (feats.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+
             else:
 
                 def clip_encode_images_01(images_01):  # noqa: ANN001
@@ -3292,6 +3300,17 @@ def main(argv: list[str] | None = None):
                     if feats.ndim == 1:
                         feats = feats.unsqueeze(0)
                     return feats / (feats.norm(p=2, dim=-1, keepdim=True) + 1e-8)
+
+                if clip_processor is not None:
+
+                    def clip_encode_texts(texts):  # noqa: ANN001
+                        tokens = clip_processor(text=list(texts), return_tensors="pt", padding=True, truncation=True)
+                        tokens = {k: v.to(device) for k, v in tokens.items()}
+                        out = clip_model.get_text_features(**tokens)
+                        feats = _extract_clip_embeddings(out).to(device, dtype=torch.float32)
+                        if feats.ndim == 1:
+                            feats = feats.unsqueeze(0)
+                        return feats / (feats.norm(p=2, dim=-1, keepdim=True) + 1e-8)
 
     # Prepare Reference Features (Cache)
     style_sig = ",".join(style_subdirs)
@@ -3401,6 +3420,7 @@ def main(argv: list[str] | None = None):
     # Optimize Reference CLIP Features for Vectorization
     ref_clip_matrices = {} # style_id -> Tensor[N_ref, D] (GPU)
     ref_clip_prototypes = {}  # style_id -> Tensor[1, D] (GPU)
+    text_clip_prototypes = {}  # style_id -> Tensor[D] (GPU)
     
     if run_full_metrics and has_clip and clip_model is not None:
         proto_runtime_key = ("ref_clip_prototypes", _file_cache_signature(cache_file), str(clip_model_tag), str(device))
@@ -3438,6 +3458,20 @@ def main(argv: list[str] | None = None):
                     proto_runtime_key,
                     {"matrices": ref_clip_matrices, "prototypes": ref_clip_prototypes},
                 )
+        if clip_encode_texts is not None:
+            try:
+                style_texts = [str(name).replace("_", " ") for name in style_subdirs]
+                text_feats = clip_encode_texts(style_texts).detach().to(device=device, dtype=torch.float32)
+                for sid in range(min(len(style_subdirs), int(text_feats.shape[0]))):
+                    text_clip_prototypes[sid] = text_feats[sid].view(-1)
+            except Exception as exc:
+                print(f"  WARNING: CLIP-T text encoding unavailable, clip_t will be zero: {exc}")
+
+    def _format_clip_vector(feat: torch.Tensor | None) -> str:
+        if feat is None:
+            return ""
+        values = feat.detach().cpu().float().view(-1).tolist()
+        return " ".join(f"{float(v):.7g}" for v in values)
 
     fast_metric_half_cpu = (
         bool(args.eval_only_lpips_clip_style)
@@ -3449,7 +3483,7 @@ def main(argv: list[str] | None = None):
 
     csv_path = out_dir / 'metrics.csv'
     # Re-evaluation on reused images should overwrite metrics to avoid mixing old/new outputs.
-    csv_mode = 'w' if args.force_regen or args.reuse_generated or not csv_path.exists() else 'a'
+    csv_mode = 'w'
     csv_file = open(csv_path, csv_mode, newline='', encoding='utf-8')
     columns = [
         'src_style',
@@ -3460,10 +3494,27 @@ def main(argv: list[str] | None = None):
         
         'clip_dir',
         'clip_style',
+        'clip_t',
+        'clip_t_idt',
+        'clip_t_delta_idt',
         'clip_content',
+        'clip_image_vector',
     ]
+    if csv_mode == 'a':
+        try:
+            with open(csv_path, "r", encoding="utf-8", newline="") as existing_f:
+                existing_header = next(csv.reader(existing_f), [])
+            if any(col not in existing_header for col in columns):
+                csv_file.close()
+                csv_mode = 'w'
+                csv_file = open(csv_path, csv_mode, newline='', encoding='utf-8')
+        except Exception:
+            csv_file.close()
+            csv_mode = 'w'
+            csv_file = open(csv_path, csv_mode, newline='', encoding='utf-8')
     writer = csv.DictWriter(csv_file, fieldnames=columns)
     if csv_mode == 'w': writer.writeheader()
+    metric_rows: list[dict[str, object]] = []
 
     # Process Generated Buffer
     total_gen = len(generated_buffer)
@@ -3688,6 +3739,8 @@ def main(argv: list[str] | None = None):
             c_clip_scores = [0.0] * len(batch_items)
             batch_clip_style_scores = None
             batch_clip_dir_scores = None
+            batch_clip_t_scores = None
+            batch_clip_vectors: list[str] = [""] * len(batch_items)
             
             if has_clip and clip_model is not None and clip_encode_images_01 is not None:
                 t0 = time.perf_counter()
@@ -3727,6 +3780,23 @@ def main(argv: list[str] | None = None):
                         for j, ok in enumerate(proto_valid):
                             if not ok:
                                 batch_clip_dir_scores[j] = 0.0
+                text_items = []
+                text_valid = []
+                for item in batch_items:
+                    text_proto = text_clip_prototypes.get(item["tgt_style_id"])
+                    if text_proto is not None and text_proto.shape[-1] == gen_clips.shape[-1]:
+                        text_items.append(text_proto.view(-1))
+                        text_valid.append(True)
+                    else:
+                        text_items.append(torch.zeros((gen_clips.shape[-1],), device=device, dtype=torch.float32))
+                        text_valid.append(False)
+                if text_items:
+                    text_batch = torch.stack(text_items, dim=0).to(device=device, dtype=torch.float32)
+                    batch_clip_t_scores = F.cosine_similarity(gen_clips.float(), text_batch, dim=-1).detach().cpu().float().numpy()
+                    for j, ok in enumerate(text_valid):
+                        if not ok:
+                            batch_clip_t_scores[j] = 0.0
+                batch_clip_vectors = [_format_clip_vector(gen_clips[j]) for j in range(gen_clips.shape[0])]
                 _sync_cuda_if(device, bool(args.profile_timing))
                 _add_timing(timings, "metric_clip", t0)
 
@@ -3738,12 +3808,15 @@ def main(argv: list[str] | None = None):
                 # clip_style: absolute similarity to target style prototype.
                 s_clip_dir = 0.0
                 s_clip_style = 0.0
+                s_clip_t = 0.0
                 if batch_clip_style_scores is not None:
                     s_clip_style = float(batch_clip_style_scores[i])
                 if batch_clip_dir_scores is not None:
                     s_clip_dir = float(batch_clip_dir_scores[i])
+                if batch_clip_t_scores is not None:
+                    s_clip_t = float(batch_clip_t_scores[i])
 
-                writer.writerow({
+                row = {
                     'src_style': item['src_style'],
                     'tgt_style': item['tgt_style_name'],
                     'src_image': item['src_path'].name,
@@ -3752,8 +3825,14 @@ def main(argv: list[str] | None = None):
                     
                     'clip_dir': s_clip_dir,
                     'clip_style': s_clip_style,
+                    'clip_t': s_clip_t,
+                    'clip_t_idt': 0.0,
+                    'clip_t_delta_idt': 0.0,
                     'clip_content': c_clip_scores[i],
-                })
+                    'clip_image_vector': batch_clip_vectors[i],
+                }
+                writer.writerow(row)
+                metric_rows.append(row)
                 observability = item.get("runtime_observability")
                 if isinstance(observability, dict) and observability:
                     runtime_observability_rows.append(
@@ -3770,6 +3849,32 @@ def main(argv: list[str] | None = None):
     _sync_cuda_if(device, bool(args.profile_timing))
     _add_timing(timings, "eval_metrics_loop", metric_loop_start)
     csv_file.close()
+    if metric_rows:
+        idt_by_source: dict[tuple[str, str], float] = {}
+        idt_by_style: dict[str, list[float]] = {}
+        for row in metric_rows:
+            src_style = str(row.get("src_style", ""))
+            tgt_style = str(row.get("tgt_style", ""))
+            src_image = str(row.get("src_image", ""))
+            if src_style == tgt_style:
+                value = float(row.get("clip_t", 0.0) or 0.0)
+                idt_by_source[(src_style, src_image)] = value
+                idt_by_style.setdefault(src_style, []).append(value)
+        idt_style_mean = {
+            style: float(sum(values) / max(1, len(values)))
+            for style, values in idt_by_style.items()
+        }
+        for row in metric_rows:
+            src_style = str(row.get("src_style", ""))
+            src_image = str(row.get("src_image", ""))
+            clip_t = float(row.get("clip_t", 0.0) or 0.0)
+            idt_value = idt_by_source.get((src_style, src_image), idt_style_mean.get(src_style, 0.0))
+            row["clip_t_idt"] = idt_value
+            row["clip_t_delta_idt"] = clip_t - idt_value
+        with open(csv_path, "w", newline="", encoding="utf-8") as f:
+            rewrite = csv.DictWriter(f, fieldnames=columns)
+            rewrite.writeheader()
+            rewrite.writerows(metric_rows)
     introstyle_result = None
     if bool(args.eval_enable_introstyle) and not bool(args.generation_only):
         t0 = time.perf_counter()

@@ -19,6 +19,7 @@ from tqdm.auto import tqdm
 
 from config_schema import ExperimentConfig, compact_runtime_config
 from losses import OTFlowMatchingObjective
+from losses620 import SpatialBridgeObjective620
 from model import build_model_from_config, count_parameters
 from style_families import prune_state_dict_for_tokenizer_family
 from utils.training import (
@@ -232,7 +233,10 @@ class SBTrainer:
                 eta_min=float(train_cfg.get("min_learning_rate", 5e-5)),
             )
 
-        self.loss_fn = OTFlowMatchingObjective(config)
+        contract_family = str(getattr(config.model, "contract_family", "legacy") or "legacy").strip().lower()
+        if contract_family == "620_spatial_bridge" and self.distill_enabled:
+            raise ValueError("620_spatial_bridge does not support legacy distillation; disable training.distill.enabled.")
+        self.loss_fn = SpatialBridgeObjective620(config) if contract_family == "620_spatial_bridge" else OTFlowMatchingObjective(config)
         self.grad_clip_norm = float(train_cfg.get("grad_clip_norm", 1.0))
         self.accumulation_steps = max(1, int(train_cfg.get("accumulation_steps", 1)))
         self.log_interval = max(0, int(train_cfg.get("log_interval", 20)))
