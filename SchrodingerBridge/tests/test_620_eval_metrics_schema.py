@@ -106,8 +106,10 @@ def test_backfill_metrics_drops_repeated_clipt_idt_and_adds_clips_delta(tmp_path
     assert "clip_t_idt" not in fieldnames
     assert "clip_t_delta_idt" not in fieldnames
     assert "clip_s_delta_idt" in fieldnames
-    assert abs(float(rows[1]["clip_s_delta_idt"]) + 0.08) < 1e-8
+    assert abs(float(rows[1]["clip_s_delta_idt"]) - (0.72 - BACKFILL.OLD_IDT_CLIP_STYLE)) < 1e-8
 
     summary = json.loads((epoch_dir / "summary.json").read_text(encoding="utf-8"))
-    assert summary["idt_baselines"]["clip_style_by_target_style"]["Rococo"] == 0.8
+    assert summary["idt_baselines"]["clip_style_global"] == BACKFILL.OLD_IDT_CLIP_STYLE
+    assert summary["idt_baselines"]["clip_style_delta_mode"] == "fixed_old_idt"
+    assert summary["idt_baselines"]["clip_style_eval_identity_by_target_style"]["Rococo"] == 0.8
     assert summary["analysis"]["style_transfer_ability"]["clip_style"] == 0.72

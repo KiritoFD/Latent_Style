@@ -252,6 +252,8 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
         cmd.append("--no-skip_diffusers_vae_when_onnx")
     if train_cfg.full_eval_only_lpips_clip_style is not None:
         cmd += ["--eval_only_lpips_clip_style" if bool(train_cfg.full_eval_only_lpips_clip_style) else "--no-eval_only_lpips_clip_style"]
+    if float(getattr(train_cfg, "full_eval_clip_style_idt_baseline", 0.0) or 0.0) > 0.0:
+        cmd += ["--clip_style_idt_baseline", str(float(getattr(train_cfg, "full_eval_clip_style_idt_baseline")))]
     if bool(getattr(train_cfg, "full_eval_transfer_only", False)):
         cmd.append("--transfer_only")
     if bool(getattr(train_cfg, "full_eval_hf_clip_skip_processor", False)):

@@ -11,6 +11,7 @@ from typing import Any
 
 
 DROP_COLUMNS = {"clip_t_idt", "clip_t_delta_idt"}
+OLD_IDT_CLIP_STYLE = 0.639920825263
 
 
 def _to_float(value: Any, default: float = 0.0) -> float:
@@ -62,7 +63,7 @@ def _compute_idt_baselines(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _normalize_metrics_csv(path: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+def _normalize_metrics_csv(path: Path, *, clip_style_idt_baseline: float) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     rows, fieldnames = _read_rows(path)
     if not rows:
         return {}, []
@@ -71,8 +72,22 @@ def _normalize_metrics_csv(path: Path) -> tuple[dict[str, Any], list[dict[str, A
     global_clip_s = _to_float(baselines.get("clip_style_global"))
     for row in rows:
         tgt_style = str(row.get("tgt_style", ""))
-        idt_value = _to_float(clip_s_by_style.get(tgt_style), global_clip_s) if isinstance(clip_s_by_style, dict) else global_clip_s
+        idt_value = (
+            float(clip_style_idt_baseline)
+            if float(clip_style_idt_baseline) > 0.0
+            else _to_float(clip_s_by_style.get(tgt_style), global_clip_s) if isinstance(clip_s_by_style, dict) else global_clip_s
+        )
         row["clip_s_delta_idt"] = _to_float(row.get("clip_style")) - idt_value
+    if float(clip_style_idt_baseline) > 0.0:
+        baselines = {
+            "clip_style_global": float(clip_style_idt_baseline),
+            "clip_style_delta_mode": "fixed_old_idt",
+            "clip_style_eval_identity_global": baselines.get("clip_style_global", 0.0),
+            "clip_style_eval_identity_by_target_style": baselines.get("clip_style_by_target_style", {}),
+            "clip_t_global": baselines.get("clip_t_global", 0.0),
+            "clip_t_by_target_style": baselines.get("clip_t_by_target_style", {}),
+            "note": "clip_s_delta_idt uses the fixed old-IDT baseline; eval identity baselines are stored only for audit.",
+        }
         for column in DROP_COLUMNS:
             row.pop(column, None)
     normalized = [column for column in fieldnames if column not in DROP_COLUMNS and column != "clip_s_delta_idt"]
@@ -120,16 +135,16 @@ def _patch_summary(summary_path: Path, baselines: dict[str, Any], rows: list[dic
         analysis.setdefault("identity_reconstruction", {}).update(_pool_summary(identity_rows))
     notes = payload.setdefault("metrics_note", {})
     if isinstance(notes, dict):
-        notes["clip_s_delta_idt"] = "Row/pool CLIP-S minus the target style's IDT CLIP-S baseline."
+        notes["clip_s_delta_idt"] = "Row/pool CLIP-S minus the fixed old-IDT CLIP-S baseline when provided."
         notes["clip_t"] = "cos( CLIP(gen), CLIP(text target style name) ) - Text-name style affinity."
     payload["idt_baselines"] = baselines
     summary_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def backfill_eval_root(eval_root: Path) -> list[Path]:
+def backfill_eval_root(eval_root: Path, *, clip_style_idt_baseline: float = OLD_IDT_CLIP_STYLE) -> list[Path]:
     changed: list[Path] = []
     for metrics_path in sorted(eval_root.glob("epoch_*/metrics.csv")):
-        baselines, rows = _normalize_metrics_csv(metrics_path)
+        baselines, rows = _normalize_metrics_csv(metrics_path, clip_style_idt_baseline=clip_style_idt_baseline)
         if not rows:
             continue
         _patch_summary(metrics_path.parent / "summary.json", baselines, rows)
@@ -153,8 +168,17 @@ def backfill_eval_root(eval_root: Path) -> list[Path]:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Backfill eval metrics.csv/summary.json to the CLIP-S delta IDT schema.")
     parser.add_argument("--eval-root", type=Path, required=True)
+    parser.add_argument(
+        "--clip-style-idt-baseline",
+        type=float,
+        default=OLD_IDT_CLIP_STYLE,
+        help="Fixed old-IDT CLIP-S baseline used for clip_s_delta_idt.",
+    )
     args = parser.parse_args()
-    changed = backfill_eval_root(Path(args.eval_root).expanduser().resolve())
+    changed = backfill_eval_root(
+        Path(args.eval_root).expanduser().resolve(),
+        clip_style_idt_baseline=float(args.clip_style_idt_baseline),
+    )
     print(json.dumps({"eval_root": str(Path(args.eval_root).expanduser().resolve()), "changed_metrics": [str(p) for p in changed]}, indent=2))
     return 0
 

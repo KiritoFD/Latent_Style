@@ -39,6 +39,7 @@ INFERENCE_DEFAULTS: dict[str, dict[str, Any]] = {
         "vae_compile_fullgraph": False,
         "vae_compile_cache_dir": "",
         "only_lpips_clip_style": True,
+        "clip_style_idt_baseline": 0.0,
         "transfer_only": False,
         "postprocess_mode": "none",
         "postprocess_strength": 0.0,
@@ -707,6 +708,7 @@ class TrainingConfig:
     full_eval_vae_onnx_trt_cache_dir: str = ""
     full_eval_skip_diffusers_vae_when_onnx: bool = True
     full_eval_only_lpips_clip_style: bool | None = None
+    full_eval_clip_style_idt_baseline: float = 0.0
     full_eval_transfer_only: bool = False
     full_eval_postprocess_mode: str = "none"
     full_eval_postprocess_strength: float = 0.0
@@ -1040,6 +1042,7 @@ def resolve_full_eval_section(config: dict[str, Any] | ExperimentConfig | None) 
             "vae_onnx_trt_cache_dir": "full_eval_vae_onnx_trt_cache_dir",
             "skip_diffusers_vae_when_onnx": "full_eval_skip_diffusers_vae_when_onnx",
             "only_lpips_clip_style": "full_eval_only_lpips_clip_style",
+            "clip_style_idt_baseline": "full_eval_clip_style_idt_baseline",
             "transfer_only": "full_eval_transfer_only",
             "hf_clip_skip_processor": "full_eval_hf_clip_skip_processor",
             "postprocess_mode": "full_eval_postprocess_mode",
@@ -1134,6 +1137,7 @@ def compact_runtime_config(config: dict[str, Any] | ExperimentConfig | None) -> 
             "full_eval_vae_onnx_trt_cache_dir": "vae_onnx_trt_cache_dir",
             "full_eval_skip_diffusers_vae_when_onnx": "skip_diffusers_vae_when_onnx",
             "full_eval_only_lpips_clip_style": "only_lpips_clip_style",
+            "full_eval_clip_style_idt_baseline": "clip_style_idt_baseline",
             "full_eval_transfer_only": "transfer_only",
             "full_eval_postprocess_mode": "postprocess_mode",
             "full_eval_postprocess_strength": "postprocess_strength",

@@ -2076,6 +2076,12 @@ def main(argv: list[str] | None = None):
         ),
     )
     parser.add_argument(
+        "--clip_style_idt_baseline",
+        type=float,
+        default=float(full_eval_defaults.get("clip_style_idt_baseline", 0.0) or 0.0),
+        help="Fixed old-IDT CLIP-S baseline for clip_s_delta_idt. <=0 falls back to eval-local identity rows.",
+    )
+    parser.add_argument(
         '--transfer_only',
         action=argparse.BooleanOptionalAction,
         default=bool(full_eval_defaults.get("transfer_only", False)),
@@ -3849,6 +3855,7 @@ def main(argv: list[str] | None = None):
     csv_file.close()
     idt_baselines: dict[str, object] = {}
     if metric_rows:
+        fixed_clip_style_idt = float(getattr(args, "clip_style_idt_baseline", 0.0) or 0.0)
         idt_clip_s_by_target_style: dict[str, list[float]] = {}
         idt_clip_t_by_target_style: dict[str, list[float]] = {}
         for row in metric_rows:
@@ -3878,14 +3885,16 @@ def main(argv: list[str] | None = None):
         for row in metric_rows:
             tgt_style = str(row.get("tgt_style", ""))
             clip_style = float(row.get("clip_style", 0.0) or 0.0)
-            idt_value = idt_clip_s_style_mean.get(tgt_style, idt_clip_s_global)
+            idt_value = fixed_clip_style_idt if fixed_clip_style_idt > 0.0 else idt_clip_s_style_mean.get(tgt_style, idt_clip_s_global)
             row["clip_s_delta_idt"] = clip_style - idt_value
         idt_baselines = {
-            "clip_style_global": idt_clip_s_global,
-            "clip_style_by_target_style": idt_clip_s_style_mean,
+            "clip_style_global": fixed_clip_style_idt if fixed_clip_style_idt > 0.0 else idt_clip_s_global,
+            "clip_style_delta_mode": "fixed_old_idt" if fixed_clip_style_idt > 0.0 else "eval_identity_by_target_style",
+            "clip_style_eval_identity_global": idt_clip_s_global,
+            "clip_style_eval_identity_by_target_style": idt_clip_s_style_mean,
             "clip_t_global": idt_clip_t_global,
             "clip_t_by_target_style": idt_clip_t_style_mean,
-            "note": "IDT baselines are stored once here; metrics.csv keeps per-row CLIP-S/LPIPS and CLIP-S-minus-IDT.",
+            "note": "clip_s_delta_idt uses the fixed old-IDT baseline when provided; eval identity baselines are stored only for audit.",
         }
         with open(csv_path, "w", newline="", encoding="utf-8") as f:
             rewrite = csv.DictWriter(f, fieldnames=columns)
@@ -4377,7 +4386,7 @@ def generate_summary_json(
         'metrics_note': {
             'clip_dir': "cos( CLIP(gen)-CLIP(src), CLIP(target_style_proto)-CLIP(src) ) - Measures edit direction.",
             'clip_style': "cos( CLIP(gen), CLIP(target_style_proto) ) - Measures absolute style similarity.",
-            'clip_s_delta_idt': "Row/pool CLIP-S minus the target style's IDT CLIP-S baseline.",
+            'clip_s_delta_idt': "Row/pool CLIP-S minus the fixed old-IDT CLIP-S baseline when provided.",
             'clip_t': "cos( CLIP(gen), CLIP(text target style name) ) - Text-name style affinity.",
             'clip_content': "cos( CLIP(gen), CLIP(src) ) - Measures semantic/content preservation.",
             'introstyle_target_style_score': "IntroStyle similarity to the held-out target-style bank.",
