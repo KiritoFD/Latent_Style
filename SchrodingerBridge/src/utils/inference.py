@@ -281,16 +281,18 @@ class LGTInference:
                         setattr(section_obj, key, value)
         bridge_cfg = config.bridge
         infer_cfg = resolve_inference_section(config)
+        contract_family = str(getattr(config.model, "contract_family", "legacy")).strip().lower()
         self.objective_mode = str(bridge_cfg.objective_mode).strip().lower()
         if self.objective_mode in {"i2sb", "i2sb_endpoint", "bridge_endpoint"}:
             self.objective_mode = "i2sb_endpoint"
-        validate_i2sb_contract(
-            solver_family=str(getattr(config.model, "solver_family", "euler_legacy")),
-            transport_prediction_mode=str(getattr(config.model, "transport_prediction_mode", "velocity")),
-            objective_mode=self.objective_mode,
-            loss_type=str(getattr(config.bridge, "loss_type", "")),
-            bridge_noise_schedule=str(getattr(config.bridge, "bridge_noise_schedule", "auto")),
-        )
+        if contract_family != "620_spatial_bridge":
+            validate_i2sb_contract(
+                solver_family=str(getattr(config.model, "solver_family", "euler_legacy")),
+                transport_prediction_mode=str(getattr(config.model, "transport_prediction_mode", "velocity")),
+                objective_mode=self.objective_mode,
+                loss_type=str(getattr(config.bridge, "loss_type", "")),
+                bridge_noise_schedule=str(getattr(config.bridge, "bridge_noise_schedule", "auto")),
+            )
         validate_pure_latent_contract(
             tokenizer_family=str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
             style_tokenizer=str(getattr(config.model, "style_tokenizer", "")),

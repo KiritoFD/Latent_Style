@@ -80,8 +80,12 @@ def _resolve_local_hf_snapshot(*, model_name: str, hf_cache_dir: str) -> str:
     if "/" not in name:
         return name
     org, repo = name.split("/", 1)
-    snapshot_root = cache_root / "hub" / f"models--{org}--{repo}" / "snapshots"
-    if not snapshot_root.exists():
+    snapshot_roots = [
+        cache_root / "hub" / f"models--{org}--{repo}" / "snapshots",
+        cache_root / f"models--{org}--{repo}" / "snapshots",
+    ]
+    snapshot_root = next((path for path in snapshot_roots if path.exists()), None)
+    if snapshot_root is None:
         return name
     snapshots = sorted(path for path in snapshot_root.iterdir() if path.is_dir())
     if not snapshots:
