@@ -205,7 +205,7 @@ COLORS = {
     "stage3_auto": "#7A5CFA",
     "style_sweep_auto": "#1D9BF0",
     "ot_rerun_auto": "#E85D75",
-    "spatial620": "#F8FAFC",
+    "spatial620": "#D946EF",
     "idt": "#8E63C0",
     "samam": "#2F7DB7",
     "seedream": "#E48F1C",
