@@ -11,6 +11,9 @@ PAIRING_PLAN="${PAIRING_PLAN:-${LATENT_ROOT}/.latent_cache/dino_pairing_top8.pt}
 STYLES="${STYLES:-Early_Renaissance,Impressionism,Minimalism,Rococo,Ukiyo_e}"
 DINO_ALLOW_NETWORK="${DINO_ALLOW_NETWORK:-0}"
 DINO_HF_CACHE_DIR="${DINO_HF_CACHE_DIR:-/mnt/i/hf_cache}"
+BATCH_SIZE="${BATCH_SIZE:-80}"
+FULL_EVAL_BATCH_SIZE="${FULL_EVAL_BATCH_SIZE:-16}"
+FULL_EVAL_VAE_DECODE_BATCH_SIZE="${FULL_EVAL_VAE_DECODE_BATCH_SIZE:-16}"
 
 variant="base"
 epochs="1"
@@ -45,15 +48,15 @@ done
 case "$variant" in
   base)
     config_rel="SchrodingerBridge/configs/620_spatial_bridge_base.json"
-    default_run_name="620_base_swd8_sigma002_nfe8"
+    default_run_name="620_base_swd8_sigma002_nfe8_b80"
     ;;
   swd4)
     config_rel="SchrodingerBridge/configs/620_spatial_bridge_swd4.json"
-    default_run_name="620_swd4_sigma002_nfe8"
+    default_run_name="620_swd4_sigma002_nfe8_b80"
     ;;
   swd12)
     config_rel="SchrodingerBridge/configs/620_spatial_bridge_swd12.json"
-    default_run_name="620_swd12_sigma002_nfe8"
+    default_run_name="620_swd12_sigma002_nfe8_b80"
     ;;
   *)
     echo "invalid --variant: $variant" >&2
@@ -76,6 +79,7 @@ cd "$REMOTE_ROOT"
 export PYTHONPATH="${REMOTE_SB}/src:${REMOTE_SB}/tools:${REMOTE_SB}/tools/experiments:${PYTHONPATH:-}"
 export REMOTE_ROOT REMOTE_SB LATENT_ROOT IMAGE_ROOT DINO_CACHE PAIRING_PLAN STYLES
 export DINO_ALLOW_NETWORK DINO_HF_CACHE_DIR
+export BATCH_SIZE FULL_EVAL_BATCH_SIZE FULL_EVAL_VAE_DECODE_BATCH_SIZE
 export CONFIG_REL="$config_rel"
 export RUN_NAME="$run_name"
 export STAGE="$stage"
@@ -144,7 +148,27 @@ from pathlib import Path
 
 base = Path(os.environ["REMOTE_ROOT"]) / os.environ["CONFIG_REL"]
 payload = json.loads(base.read_text(encoding="utf-8"))
-payload.setdefault("training", {})["num_epochs"] = int(os.environ["EPOCHS"])
+batch_size = int(os.environ["BATCH_SIZE"])
+full_eval_batch_size = int(os.environ["FULL_EVAL_BATCH_SIZE"])
+full_eval_vae_decode_batch_size = int(os.environ["FULL_EVAL_VAE_DECODE_BATCH_SIZE"])
+if batch_size % 16 != 0:
+    raise SystemExit(f"BATCH_SIZE must be divisible by 16, got {batch_size}")
+if full_eval_batch_size % 16 != 0:
+    raise SystemExit(f"FULL_EVAL_BATCH_SIZE must be divisible by 16, got {full_eval_batch_size}")
+if full_eval_vae_decode_batch_size % 16 != 0:
+    raise SystemExit(
+        f"FULL_EVAL_VAE_DECODE_BATCH_SIZE must be divisible by 16, got {full_eval_vae_decode_batch_size}"
+    )
+training = payload.setdefault("training", {})
+training["num_epochs"] = int(os.environ["EPOCHS"])
+training["batch_size"] = batch_size
+training["pin_memory"] = False
+training["prefetch_factor"] = 1
+training["full_eval_batch_size"] = full_eval_batch_size
+training["full_eval_vae_decode_batch_size"] = full_eval_vae_decode_batch_size
+full_eval = payload.setdefault("full_eval", {})
+full_eval["batch_size"] = full_eval_batch_size
+full_eval["vae_decode_batch_size"] = full_eval_vae_decode_batch_size
 save_dir = f"./exp/620_spatial_bridge/{os.environ['RUN_NAME']}"
 if os.environ["STAGE"] == "smoke":
     save_dir += "_smoke"

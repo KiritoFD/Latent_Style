@@ -87,9 +87,9 @@ def main() -> int:
     smoke = not bool(args.formal)
     variant = str(args.variant)
     run_name = {
-        "base": "620_base_swd8_sigma002_nfe8",
-        "swd4": "620_swd4_sigma002_nfe8",
-        "swd12": "620_swd12_sigma002_nfe8",
+        "base": "620_base_swd8_sigma002_nfe8_b80",
+        "swd4": "620_swd4_sigma002_nfe8_b80",
+        "swd12": "620_swd12_sigma002_nfe8_b80",
     }[variant]
     task_name = str(args.task_name).strip() or (run_name + ("_smoke" if smoke else "_formal"))
     remote_log = f"{REMOTE_SB}/exp/620_spatial_bridge/{task_name}.remote.log"
