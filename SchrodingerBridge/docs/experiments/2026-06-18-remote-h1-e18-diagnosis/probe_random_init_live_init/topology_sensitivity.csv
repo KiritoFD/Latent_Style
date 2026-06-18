@@ -1,0 +1,6 @@
+probe_family,variant,semantic_self_topology_gate,semantic_self_topology_blend,forward_a_vs_b_mean_abs,semantic_attn_entropy,semantic_topology_attn_active,semantic_topology_attn_entropy,style_spatial_source_target_latent,style_spatial_map_abs
+topology,gate0_blend0,0.0,0.0,0.027961237356066704,2.8505642414093018,0.0,0.0,1.0,0.9807956218719482
+topology,gate0_blend1,0.0,1.0,0.027961237356066704,2.8505642414093018,0.0,0.0,1.0,0.9807956218719482
+topology,gate1_blend0,1.0,0.0,0.027961237356066704,2.8505642414093018,0.0,0.0,1.0,0.9807956218719482
+topology,gate1_blend05,1.0,0.5,0.01852683536708355,3.8806207180023193,1.0,2.793719530105591,1.0,0.9807956218719482
+topology,gate1_blend1,1.0,1.0,0.02723807469010353,2.7938232421875,1.0,2.7938232421875,1.0,0.9807956218719482

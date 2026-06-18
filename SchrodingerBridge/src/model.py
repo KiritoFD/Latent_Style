@@ -69,12 +69,15 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         ).strip().lower()
         if self.endpoint_orthogonal_low_mode not in {"all", "channel_mean"}:
             self.endpoint_orthogonal_low_mode = "all"
+        self.bridge_noise_schedule = str(getattr(bridge_config, "bridge_noise_schedule", "auto")).strip().lower()
+        if self.bridge_noise_schedule not in {"auto", "exact_brownian", "delayed_window"}:
+            self.bridge_noise_schedule = "auto"
         validate_i2sb_contract(
             solver_family=self.solver_family,
             transport_prediction_mode=self.transport_prediction_mode,
             objective_mode=str(getattr(bridge_config, "objective_mode", "")),
             loss_type=str(getattr(bridge_config, "loss_type", "")),
-            bridge_noise_schedule=str(getattr(bridge_config, "bridge_noise_schedule", "auto")),
+            bridge_noise_schedule=self.bridge_noise_schedule,
         )
         self.transport_endpoint_scale = max(1e-3, float(getattr(bridge_config, "transport_endpoint_scale", 4.0)))
         self.objective_mode = str(getattr(bridge_config, "objective_mode", "")).strip().lower()
@@ -168,6 +171,11 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         if self.style_injection_spatial_kernel % 2 == 0:
             self.style_injection_spatial_kernel += 1
         self.style_injection_force_highpass = bool(getattr(bridge_config, "style_injection_force_highpass", True))
+        self.style_injection_live_init = bool(getattr(bridge_config, "style_injection_live_init", False))
+        self.style_injection_live_init_std = max(
+            0.0,
+            float(getattr(bridge_config, "style_injection_live_init_std", 0.02)),
+        )
         injection_in_dim = self.bridge_style_dim + self.execution_budget_feature_dim
         self.body_style_injector: nn.Module | None = None
         self.decoder_style_injector: nn.Module | None = None
@@ -186,6 +194,8 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                     self.execution_budget_feature_dim,
                     int(self.body_channels),
                     int(getattr(bridge_config, "style_injection_hidden_dim", 64)),
+                    live_init=self.style_injection_live_init,
+                    live_init_std=self.style_injection_live_init_std,
                 )
             elif self.style_injection_form == "spatial_carrier_gate":
                 self.body_style_spatial_proj, self.body_content_gate, self.body_structure_gate = self._make_spatial_carrier_gate_injector(
@@ -194,12 +204,16 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                     self.execution_budget_feature_dim,
                     int(self.latent_channels),
                     int(getattr(bridge_config, "style_injection_hidden_dim", 64)),
+                    live_init=self.style_injection_live_init,
+                    live_init_std=self.style_injection_live_init_std,
                 )
             else:
                 self.body_style_injector = self._make_style_injector(
                     injection_in_dim,
                     int(self.body_channels),
                     int(getattr(bridge_config, "style_injection_hidden_dim", 64)),
+                    live_init=self.style_injection_live_init,
+                    live_init_std=self.style_injection_live_init_std,
                 )
         if self.style_injection_mode in {"decoder", "body_decoder"}:
             if self.style_injection_form == "carrier_gate":
@@ -208,6 +222,8 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                     self.execution_budget_feature_dim,
                     int(self.lift_channels),
                     int(getattr(bridge_config, "style_injection_hidden_dim", 64)),
+                    live_init=self.style_injection_live_init,
+                    live_init_std=self.style_injection_live_init_std,
                 )
             elif self.style_injection_form == "spatial_carrier_gate":
                 self.decoder_style_spatial_proj, self.decoder_content_gate, self.decoder_structure_gate = self._make_spatial_carrier_gate_injector(
@@ -216,12 +232,16 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                     self.execution_budget_feature_dim,
                     int(self.latent_channels),
                     int(getattr(bridge_config, "style_injection_hidden_dim", 64)),
+                    live_init=self.style_injection_live_init,
+                    live_init_std=self.style_injection_live_init_std,
                 )
             else:
                 self.decoder_style_injector = self._make_style_injector(
                     injection_in_dim,
                     int(self.lift_channels),
                     int(getattr(bridge_config, "style_injection_hidden_dim", 64)),
+                    live_init=self.style_injection_live_init,
+                    live_init_std=self.style_injection_live_init_std,
                 )
         self.style_delta_mode = str(getattr(bridge_config, "style_delta_mode", "none")).strip().lower()
         if self.style_delta_mode not in {"none", "basis", "predec_section", "head_adapter"}:
@@ -381,10 +401,8 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                 nn.init.normal_(mod.weight, mean=0.0, std=0.02)
                 if mod.bias is not None:
                     nn.init.zeros_(mod.bias)
-            # The proximal texture branch is a controlled residual mechanism.
-            # Start from exact identity so early metrics measure learned texture,
-            # not random endpoint perturbation.
-            nn.init.zeros_(self.proximal_attn_out.weight)
+            # Keep the proximal branch small, but do not make it a hard zero path.
+            nn.init.normal_(self.proximal_attn_out.weight, mean=0.0, std=0.01)
             if self.proximal_attn_out.bias is not None:
                 nn.init.zeros_(self.proximal_attn_out.bias)
             nn.init.normal_(self.proximal_style_tokens.weight, mean=0.0, std=0.02)
@@ -960,7 +978,14 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         return projected * gate
 
     @staticmethod
-    def _make_style_injector(input_dim: int, channels: int, hidden_dim: int) -> nn.Module:
+    def _make_style_injector(
+        input_dim: int,
+        channels: int,
+        hidden_dim: int,
+        *,
+        live_init: bool = False,
+        live_init_std: float = 0.02,
+    ) -> nn.Module:
         hidden = max(4, int(hidden_dim))
         module = nn.Sequential(
             nn.LayerNorm(int(input_dim)),
@@ -970,7 +995,10 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         )
         last = module[-1]
         if isinstance(last, nn.Linear):
-            nn.init.zeros_(last.weight)
+            if live_init and live_init_std > 0.0:
+                nn.init.normal_(last.weight, mean=0.0, std=float(live_init_std))
+            else:
+                nn.init.zeros_(last.weight)
             nn.init.zeros_(last.bias)
         return module
 
@@ -980,6 +1008,9 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         content_dim: int,
         channels: int,
         hidden_dim: int,
+        *,
+        live_init: bool = False,
+        live_init_std: float = 0.02,
     ) -> tuple[nn.Module, nn.Module]:
         hidden = max(4, int(hidden_dim))
         carrier = nn.Sequential(
@@ -994,11 +1025,18 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             nn.SiLU(),
             nn.Linear(hidden, int(channels)),
         )
-        for module in (carrier, gate):
-            last = module[-1]
-            if isinstance(last, nn.Linear):
-                nn.init.zeros_(last.weight)
-                nn.init.zeros_(last.bias)
+        carrier_last = carrier[-1]
+        if isinstance(carrier_last, nn.Linear):
+            if live_init and live_init_std > 0.0:
+                nn.init.normal_(carrier_last.weight, mean=0.0, std=float(live_init_std))
+            else:
+                nn.init.zeros_(carrier_last.weight)
+            nn.init.zeros_(carrier_last.bias)
+        gate_last = gate[-1]
+        if isinstance(gate_last, nn.Linear):
+            # Keep gate identity-like at init so live-init only wakes the style carrier.
+            nn.init.zeros_(gate_last.weight)
+            nn.init.zeros_(gate_last.bias)
         return carrier, gate
 
     @staticmethod
@@ -1008,6 +1046,9 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         content_dim: int,
         source_channels: int,
         hidden_dim: int,
+        *,
+        live_init: bool = False,
+        live_init_std: float = 0.02,
     ) -> tuple[nn.Module, nn.Module, nn.Module]:
         hidden = max(4, int(hidden_dim))
         structure_hidden = max(4, hidden // 4)
@@ -1027,7 +1068,15 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             nn.SiLU(),
             nn.Conv2d(structure_hidden, int(feat_channels), kernel_size=3, stride=1, padding=1),
         )
-        for module in (style_proj, content_gate, structure_gate):
+        style_last = style_proj[-1]
+        if isinstance(style_last, nn.Conv2d):
+            if live_init and live_init_std > 0.0:
+                nn.init.normal_(style_last.weight, mean=0.0, std=float(live_init_std))
+            else:
+                nn.init.zeros_(style_last.weight)
+            if style_last.bias is not None:
+                nn.init.zeros_(style_last.bias)
+        for module in (content_gate, structure_gate):
             last = module[-1]
             if isinstance(last, nn.Linear):
                 nn.init.zeros_(last.weight)
@@ -1465,8 +1514,15 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         t: float,
         style_id: torch.Tensor | int | None,
         style_code_override: torch.Tensor | None = None,
+        target_style_latent: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        velocity = self.forward(h, t=t, style_id=style_id, style_code_override=style_code_override)
+        velocity = self.forward(
+            h,
+            t=t,
+            style_id=style_id,
+            style_code_override=style_code_override,
+            target_style_latent=target_style_latent,
+        )
         if self.solver_family == "solver_tangent_rk":
             return self._project_velocity_tangent(velocity, h)
         return velocity
@@ -1584,16 +1640,53 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         dt: float,
         style_id: torch.Tensor | int | None,
         style_code_override: torch.Tensor | None = None,
+        target_style_latent: torch.Tensor | None = None,
     ) -> torch.Tensor:
         order = max(2, int(getattr(self, "solver_rk_order", 4)))
         if order <= 2:
-            k1 = self._transport_velocity(h, t=t, style_id=style_id, style_code_override=style_code_override)
-            k2 = self._transport_velocity(h + 0.5 * dt * k1, t=t + 0.5 * dt, style_id=style_id, style_code_override=style_code_override)
+            k1 = self._transport_velocity(
+                h,
+                t=t,
+                style_id=style_id,
+                style_code_override=style_code_override,
+                target_style_latent=target_style_latent,
+            )
+            k2 = self._transport_velocity(
+                h + 0.5 * dt * k1,
+                t=t + 0.5 * dt,
+                style_id=style_id,
+                style_code_override=style_code_override,
+                target_style_latent=target_style_latent,
+            )
             return h + dt * k2
-        k1 = self._transport_velocity(h, t=t, style_id=style_id, style_code_override=style_code_override)
-        k2 = self._transport_velocity(h + 0.5 * dt * k1, t=t + 0.5 * dt, style_id=style_id, style_code_override=style_code_override)
-        k3 = self._transport_velocity(h + 0.5 * dt * k2, t=t + 0.5 * dt, style_id=style_id, style_code_override=style_code_override)
-        k4 = self._transport_velocity(h + dt * k3, t=t + dt, style_id=style_id, style_code_override=style_code_override)
+        k1 = self._transport_velocity(
+            h,
+            t=t,
+            style_id=style_id,
+            style_code_override=style_code_override,
+            target_style_latent=target_style_latent,
+        )
+        k2 = self._transport_velocity(
+            h + 0.5 * dt * k1,
+            t=t + 0.5 * dt,
+            style_id=style_id,
+            style_code_override=style_code_override,
+            target_style_latent=target_style_latent,
+        )
+        k3 = self._transport_velocity(
+            h + 0.5 * dt * k2,
+            t=t + 0.5 * dt,
+            style_id=style_id,
+            style_code_override=style_code_override,
+            target_style_latent=target_style_latent,
+        )
+        k4 = self._transport_velocity(
+            h + dt * k3,
+            t=t + dt,
+            style_id=style_id,
+            style_code_override=style_code_override,
+            target_style_latent=target_style_latent,
+        )
         return h + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
 
     @staticmethod
@@ -1719,6 +1812,13 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             style_id=style_id,
             style_code=style_code,
             content_feat_16=content_feat_16,
+            style_code_override_active=style_code_override is not None,
+        )
+        style_code_map = self._decode_style_code_spatial_map(
+            style_code,
+            target_hw=tuple(int(v) for v in content_feat_16.shape[-2:]),
+            device=content_feat_16.device,
+            dtype=content_feat_16.dtype,
         )
         structured_ctx = self._structured_style_from_sidecar(
             style_id=style_id,
@@ -1727,8 +1827,37 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             content_feat_16=content_feat_16,
         )
         if structured_ctx is not None:
-            return structured_ctx
-        return style_code, self._prepare_style_maps(style_id)
+            structured_code, structured_maps = structured_ctx
+            style_code_map = self._decode_style_code_spatial_map(
+                structured_code,
+                target_hw=tuple(int(v) for v in content_feat_16.shape[-2:]),
+                device=content_feat_16.device,
+                dtype=content_feat_16.dtype,
+            )
+            map_16 = self._prepare_spatial_map(structured_maps.map_16, content_feat_16)
+            if map_16 is not None and style_code_map is not None:
+                map_16 = map_16 + style_code_map
+            elif map_16 is None and style_code_map is not None:
+                map_16 = style_code_map
+            return structured_code, StyleMaps(
+                map_16=map_16,
+                gate_16=structured_maps.gate_16,
+                mask_16=structured_maps.mask_16,
+                aux_16=structured_maps.aux_16,
+                family=str(getattr(structured_maps, "family", getattr(self, "tokenizer_family", "legacy_factorized"))),
+                debug=dict(getattr(structured_maps, "debug", {}) or {}),
+            )
+        style_maps = self._prepare_style_maps(style_id)
+        if style_code_map is not None:
+            style_maps = StyleMaps(
+                map_16=style_code_map,
+                gate_16=style_maps.gate_16,
+                mask_16=style_maps.mask_16,
+                aux_16=style_maps.aux_16,
+                family=str(getattr(style_maps, "family", getattr(self, "tokenizer_family", "legacy_factorized"))),
+                debug=dict(getattr(style_maps, "debug", {}) or {}),
+            )
+        return style_code, style_maps
 
     def _proximal_internal_style_tokens(
         self,
@@ -1758,6 +1887,14 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             gate_scale=1.0,
         )
         style_map = self.down(h_style)
+        code_map = self._decode_style_code_spatial_map(
+            style_code,
+            target_hw=tuple(int(v) for v in style_map.shape[-2:]),
+            device=style_map.device,
+            dtype=style_map.dtype,
+        )
+        if code_map is not None:
+            style_map = style_map + code_map
         style_map = F.interpolate(
             style_map.to(device=z_base.device, dtype=z_base.dtype),
             size=z_base.shape[-2:],
@@ -1796,6 +1933,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             style_id=style_id,
             style_code=style_code,
             content_feat_16=content_feat_16,
+            style_code_override_active=style_code_override is not None,
         )
         structured_ctx = self._structured_style_from_sidecar(
             style_id=style_id,
@@ -1811,6 +1949,14 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         style_map = self._prepare_spatial_map(style_maps.map_16, content_feat_16)
         if style_map is None:
             raise RuntimeError("structured tokenizer did not produce a usable spatial map for proximal refinement.")
+        code_map = self._decode_style_code_spatial_map(
+            style_code,
+            target_hw=tuple(int(v) for v in style_map.shape[-2:]),
+            device=style_map.device,
+            dtype=style_map.dtype,
+        )
+        if code_map is not None:
+            style_map = style_map + code_map
         style_map = F.interpolate(
             style_map.to(device=z_base.device, dtype=z_base.dtype),
             size=z_base.shape[-2:],
@@ -2021,7 +2167,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         style_code_override: torch.Tensor | None = None,
         override_palette: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        del source, step_size, style_strength, target_style_latent, override_palette
+        del source, step_size, style_strength, override_palette
         if style_id is None and style_code_override is None:
             raise ValueError("style_id or style_code_override is required.")
         self.last_profile = {}
@@ -2044,7 +2190,8 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             style_maps=StyleMaps(),
             override_palette=None,
             strength=1.0,
-            target_style_latent=None,
+            target_style_latent=target_style_latent,
+            style_code_override_active=style_code_override is not None,
         )
         self._profile_end("backbone_forward", t_profile, x)
         t_profile = self._profile_start(x)
@@ -2091,6 +2238,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             override_palette=override_palette,
             strength=1.0,
             target_style_latent=target_style_latent,
+            style_code_override_active=style_code_override is not None,
         )
         self._profile_end("backbone_forward", t_profile, x)
         t_profile = self._profile_start(x)
@@ -2156,13 +2304,26 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                     dt=dt,
                     style_id=style_id,
                     style_code_override=style_code_override,
+                    target_style_latent=target_style_latent,
                 )
             elif self.solver_family == "solver_pc":
-                velocity = self.forward(h, t=t, style_id=style_id, style_code_override=style_code_override)
+                velocity = self.forward(
+                    h,
+                    t=t,
+                    style_id=style_id,
+                    style_code_override=style_code_override,
+                    target_style_latent=target_style_latent,
+                )
                 h = h + velocity * dt
                 h = self._correct_transport_state(h, x, dt=dt)
             elif self.solver_family == "solver_unsb_cycle":
-                velocity = self.forward(h, t=t, style_id=style_id, style_code_override=style_code_override)
+                velocity = self.forward(
+                    h,
+                    t=t,
+                    style_id=style_id,
+                    style_code_override=style_code_override,
+                    target_style_latent=target_style_latent,
+                )
                 predictor = h + velocity * dt
                 predictor = self._correct_transport_state(predictor, x, dt=dt * 0.5)
                 noise_scale = max(0.0, float(getattr(self, "solver_stochastic_noise_scale", 0.0)))
@@ -2183,7 +2344,13 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                     }
                 h = predictor
             else:
-                velocity = self.forward(h, t=t, style_id=style_id, style_code_override=style_code_override)
+                velocity = self.forward(
+                    h,
+                    t=t,
+                    style_id=style_id,
+                    style_code_override=style_code_override,
+                    target_style_latent=target_style_latent,
+                )
                 h = h + velocity * dt
         return self.restore_transport_output(h, style_id=style_id)
 
@@ -2257,6 +2424,7 @@ def _attach_bridge_runtime_fields(
         "objective_mode": str(getattr(bridge, "objective_mode", "")),
         "loss_type": str(getattr(bridge, "loss_type", "")),
         "bridge_sigma": float(getattr(bridge, "bridge_sigma", 0.0)),
+        "bridge_noise_schedule": str(getattr(bridge, "bridge_noise_schedule", "auto")),
         "i2sb_predictor_time_floor": float(getattr(bridge, "i2sb_predictor_time_floor", 0.0)),
         "i2sb_noise_family": str(getattr(bridge, "i2sb_noise_family", "gaussian")),
         "i2sb_style_noise_amplitude_power": float(getattr(bridge, "i2sb_style_noise_amplitude_power", 1.0)),

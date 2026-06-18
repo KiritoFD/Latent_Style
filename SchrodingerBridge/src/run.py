@@ -169,7 +169,10 @@ def _eval_convergence_requests_stop(train_cfg: object, convergence_payload: dict
         return False
     if not isinstance(convergence_payload, dict):
         return False
-    if not bool(convergence_payload.get("converged")):
+    stop_ready = convergence_payload.get("stop_ready")
+    if stop_ready is None:
+        stop_ready = bool(convergence_payload.get("converged")) or bool(convergence_payload.get("objective_patience_converged"))
+    if not bool(stop_ready):
         return False
     return int(epoch) >= max(0, int(getattr(train_cfg, "full_eval_convergence_min_epochs", 0)))
 
@@ -359,6 +362,8 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
                 str(curve_csv),
                 "--patience",
                 str(max(1, int(getattr(train_cfg, "full_eval_convergence_patience", 4)))),
+                "--min-epochs",
+                str(max(0, int(getattr(train_cfg, "full_eval_convergence_min_epochs", 0)))),
                 "--flat-tail-window",
                 str(max(2, int(getattr(train_cfg, "full_eval_convergence_flat_tail_window", 4)))),
                 "--flat-eps-style",
@@ -679,12 +684,14 @@ def main() -> None:
                     if _eval_convergence_requests_stop(train_cfg, convergence_payload, epoch=epoch):
                         trainer.requested_stop = True
                         logger.info(
-                            "Early stop requested by eval convergence at epoch %d: best=%s latest=%s since_last_pareto=%s tail_flat=%s patience=%s",
+                            "Early stop requested by eval convergence at epoch %d: best=%s latest=%s since_last_pareto=%s objective_best=%s objective_since_best=%s stop_reason=%s patience=%s",
                             epoch,
                             convergence_payload.get("best_epoch"),
                             convergence_payload.get("newest_epoch"),
                             convergence_payload.get("since_last_pareto"),
-                            convergence_payload.get("tail_flat"),
+                            convergence_payload.get("objective_best_epoch"),
+                            convergence_payload.get("objective_epochs_since_best"),
+                            convergence_payload.get("stop_reason"),
                             convergence_payload.get("patience"),
                         )
         if trainer.requested_stop:

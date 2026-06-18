@@ -1,0 +1,202 @@
+{
+  "output_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-18-remote-h1-e18-diagnosis\\probe",
+  "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-18-remote-h1-e18-diagnosis\\remote_config.json",
+  "checkpoint": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-18-remote-h1-e18-diagnosis\\epoch_0018.pt",
+  "git_commit": "6f224c69a4c42a63874856c72b72ed73a4e4a239",
+  "runtime_metadata": {
+    "device_request": "cuda",
+    "device": "cuda",
+    "torch_version": "2.11.0+cu128",
+    "cuda_device_name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_capability": [
+      8,
+      9
+    ]
+  },
+  "seed": 0,
+  "input_seed": 123,
+  "batch_size": 2,
+  "style_id": 1,
+  "latent_size": 32,
+  "conditioning_rows": [
+    {
+      "probe_family": "conditioning",
+      "mode": "none",
+      "encoder_mode": "none",
+      "spatial_active": 0.0,
+      "code_active": 0.0,
+      "encoded_code_a_vs_b_mean_abs": 0.0,
+      "forward_a_vs_b_mean_abs": 0.0,
+      "predict_transport_base_a_vs_b_mean_abs": 0.0,
+      "integrate_a_vs_b_mean_abs": 0.0,
+      "style_code_override_active": 0.0,
+      "style_code_content_router_active": 0.0,
+      "style_code_content_router_bypassed": 0.0,
+      "style_code_content_delta_abs": 0.0,
+      "style_code_adapted_abs": 0.6590491533279419,
+      "style_spatial_source_target_latent": 0.0,
+      "style_spatial_source_legacy_zero": 1.0,
+      "style_spatial_map_abs": 0.0
+    },
+    {
+      "probe_family": "conditioning",
+      "mode": "spatial",
+      "encoder_mode": "none",
+      "spatial_active": 1.0,
+      "code_active": 0.0,
+      "encoded_code_a_vs_b_mean_abs": 0.0,
+      "forward_a_vs_b_mean_abs": 0.0007440653862431645,
+      "predict_transport_base_a_vs_b_mean_abs": 0.0007440653862431645,
+      "integrate_a_vs_b_mean_abs": 0.0008138742414303124,
+      "style_code_override_active": 0.0,
+      "style_code_content_router_active": 0.0,
+      "style_code_content_router_bypassed": 0.0,
+      "style_code_content_delta_abs": 0.0,
+      "style_code_adapted_abs": 0.6590491533279419,
+      "style_spatial_source_target_latent": 1.0,
+      "style_spatial_source_legacy_zero": 0.0,
+      "style_spatial_map_abs": 1.8136751651763916
+    },
+    {
+      "probe_family": "conditioning",
+      "mode": "code",
+      "encoder_mode": "residual",
+      "spatial_active": 0.0,
+      "code_active": 1.0,
+      "encoded_code_a_vs_b_mean_abs": 0.004943581763654947,
+      "forward_a_vs_b_mean_abs": 0.0005612247623503208,
+      "predict_transport_base_a_vs_b_mean_abs": 0.000561224645934999,
+      "integrate_a_vs_b_mean_abs": 0.0004981295205652714,
+      "style_code_override_active": 1.0,
+      "style_code_content_router_active": 0.0,
+      "style_code_content_router_bypassed": 1.0,
+      "style_code_content_delta_abs": 0.0,
+      "style_code_adapted_abs": 0.6532875299453735,
+      "style_spatial_source_target_latent": 0.0,
+      "style_spatial_source_legacy_zero": 1.0,
+      "style_spatial_map_abs": 0.0
+    },
+    {
+      "probe_family": "conditioning",
+      "mode": "both",
+      "encoder_mode": "residual",
+      "spatial_active": 1.0,
+      "code_active": 1.0,
+      "encoded_code_a_vs_b_mean_abs": 0.004943581763654947,
+      "forward_a_vs_b_mean_abs": 0.0009249740978702903,
+      "predict_transport_base_a_vs_b_mean_abs": 0.0009249742142856121,
+      "integrate_a_vs_b_mean_abs": 0.0009511583484709263,
+      "style_code_override_active": 1.0,
+      "style_code_content_router_active": 0.0,
+      "style_code_content_router_bypassed": 1.0,
+      "style_code_content_delta_abs": 0.0,
+      "style_code_adapted_abs": 0.6532875299453735,
+      "style_spatial_source_target_latent": 1.0,
+      "style_spatial_source_legacy_zero": 0.0,
+      "style_spatial_map_abs": 1.8136751651763916
+    }
+  ],
+  "topology_rows": [
+    {
+      "probe_family": "topology",
+      "variant": "gate0_blend0",
+      "semantic_self_topology_gate": 0.0,
+      "semantic_self_topology_blend": 0.0,
+      "forward_a_vs_b_mean_abs": 0.0008126740576699376,
+      "semantic_attn_entropy": 2.945908308029175,
+      "semantic_topology_attn_active": 0.0,
+      "semantic_topology_attn_entropy": 0.0,
+      "style_spatial_source_target_latent": 1.0,
+      "style_spatial_map_abs": 1.8136751651763916
+    },
+    {
+      "probe_family": "topology",
+      "variant": "gate0_blend1",
+      "semantic_self_topology_gate": 0.0,
+      "semantic_self_topology_blend": 1.0,
+      "forward_a_vs_b_mean_abs": 0.0008126740576699376,
+      "semantic_attn_entropy": 2.945908308029175,
+      "semantic_topology_attn_active": 0.0,
+      "semantic_topology_attn_entropy": 0.0,
+      "style_spatial_source_target_latent": 1.0,
+      "style_spatial_map_abs": 1.8136751651763916
+    },
+    {
+      "probe_family": "topology",
+      "variant": "gate1_blend0",
+      "semantic_self_topology_gate": 1.0,
+      "semantic_self_topology_blend": 0.0,
+      "forward_a_vs_b_mean_abs": 0.0008126740576699376,
+      "semantic_attn_entropy": 2.945908308029175,
+      "semantic_topology_attn_active": 0.0,
+      "semantic_topology_attn_entropy": 0.0,
+      "style_spatial_source_target_latent": 1.0,
+      "style_spatial_map_abs": 1.8136751651763916
+    },
+    {
+      "probe_family": "topology",
+      "variant": "gate1_blend05",
+      "semantic_self_topology_gate": 1.0,
+      "semantic_self_topology_blend": 0.5,
+      "forward_a_vs_b_mean_abs": 0.00047853332944214344,
+      "semantic_attn_entropy": 3.9077577590942383,
+      "semantic_topology_attn_active": 1.0,
+      "semantic_topology_attn_entropy": 2.969656229019165,
+      "style_spatial_source_target_latent": 1.0,
+      "style_spatial_map_abs": 1.8136751651763916
+    },
+    {
+      "probe_family": "topology",
+      "variant": "gate1_blend1",
+      "semantic_self_topology_gate": 1.0,
+      "semantic_self_topology_blend": 1.0,
+      "forward_a_vs_b_mean_abs": 0.0007440653862431645,
+      "semantic_attn_entropy": 2.9667272567749023,
+      "semantic_topology_attn_active": 1.0,
+      "semantic_topology_attn_entropy": 2.9667272567749023,
+      "style_spatial_source_target_latent": 1.0,
+      "style_spatial_map_abs": 1.8136751651763916
+    }
+  ],
+  "topology_pair_rows": [
+    {
+      "probe_family": "topology_pair",
+      "left_variant": "gate0_blend0",
+      "right_variant": "gate0_blend1",
+      "forward_same_target_mean_abs": 0.0
+    },
+    {
+      "probe_family": "topology_pair",
+      "left_variant": "gate1_blend0",
+      "right_variant": "gate1_blend05",
+      "forward_same_target_mean_abs": 0.0005927931051701307
+    },
+    {
+      "probe_family": "topology_pair",
+      "left_variant": "gate1_blend0",
+      "right_variant": "gate1_blend1",
+      "forward_same_target_mean_abs": 0.0009024418541230261
+    },
+    {
+      "probe_family": "topology_pair",
+      "left_variant": "gate0_blend1",
+      "right_variant": "gate1_blend1",
+      "forward_same_target_mean_abs": 0.0009024418541230261
+    }
+  ],
+  "conditioning_code_forward_live": true,
+  "conditioning_spatial_forward_delta": 0.0007440653862431645,
+  "conditioning_code_forward_delta": 0.0005612247623503208,
+  "conditioning_both_forward_delta": 0.0009249740978702903,
+  "checkpoint_meta": {
+    "checkpoint": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-18-remote-h1-e18-diagnosis\\epoch_0018.pt",
+    "num_tensors": 245,
+    "missing_keys": [],
+    "unexpected_keys": []
+  },
+  "topology_gate0_blend_noop_delta": 0.0,
+  "topology_gate1_blend_effect_delta": 0.0009024418541230261,
+  "topology_gate1_half_vs_zero_delta": 0.0005927931051701307,
+  "topology_gate1_style_sensitivity_blend0": 0.0008126740576699376,
+  "topology_gate1_style_sensitivity_blend1": 0.0007440653862431645
+}

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import io
 import json
 import shlex
@@ -62,6 +63,44 @@ def _collect_temp_file_payloads(paths: list[Path], extra_members: dict[str, byte
         if _is_remote_temp_rel(Path(arcname)):
             payloads[arcname] = payload
     return payloads
+
+
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while True:
+            chunk = handle.read(1024 * 1024)
+            if not chunk:
+                break
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _hash_manifest_for_base(base_root: Path, rel_paths: list[Path]) -> dict[str, str]:
+    manifest: dict[str, str] = {}
+    for rel_path in rel_paths:
+        abs_path = base_root / rel_path
+        if not abs_path.is_file():
+            raise FileNotFoundError(abs_path)
+        manifest[rel_path.as_posix()] = _file_sha256(abs_path)
+    return manifest
+
+
+def _compare_hash_manifests(local_manifest: dict[str, str], remote_manifest: dict[str, str]) -> list[dict[str, str]]:
+    issues: list[dict[str, str]] = []
+    all_keys = sorted(set(local_manifest) | set(remote_manifest))
+    for key in all_keys:
+        local_hash = str(local_manifest.get(key, ""))
+        remote_hash = str(remote_manifest.get(key, ""))
+        if local_hash != remote_hash:
+            issues.append(
+                {
+                    "path": key,
+                    "local": local_hash,
+                    "remote": remote_hash,
+                }
+            )
+    return issues
 
 
 def _run(cmd: list[str], *, input_bytes: bytes | None = None) -> subprocess.CompletedProcess[bytes]:
@@ -447,6 +486,83 @@ for item in payload["files"]:
     return int(proc.returncode)
 
 
+def _verify_remote_file_hashes(
+    *,
+    host: str,
+    port: int,
+    user: str,
+    wsl_distro: str,
+    remote_workspace_root: str,
+    verify_paths: list[Path],
+) -> int:
+    if not verify_paths:
+        return 0
+    local_manifest = _hash_manifest_for_base(WORKSPACE_ROOT, verify_paths)
+    payload = {
+        "workspace_root": remote_workspace_root,
+        "paths": [path.as_posix() for path in verify_paths],
+    }
+    remote_py = r"""
+import hashlib
+import json
+from pathlib import Path
+
+payload = json.loads(r'''__PAYLOAD_JSON__''')
+workspace_root = Path(payload["workspace_root"])
+out = {}
+for rel_path in payload["paths"]:
+    target = workspace_root / rel_path
+    if not target.is_file():
+        out[rel_path] = "__missing__"
+        continue
+    digest = hashlib.sha256()
+    with target.open("rb") as handle:
+        while True:
+            chunk = handle.read(1024 * 1024)
+            if not chunk:
+                break
+            digest.update(chunk)
+    out[rel_path] = digest.hexdigest()
+print(json.dumps(out, ensure_ascii=False))
+""".replace("__PAYLOAD_JSON__", json.dumps(payload, ensure_ascii=False).replace("\\", "\\\\").replace("'''", "\\'\\'\\'"))
+    proc = _run(
+        [
+            "ssh",
+            "-p",
+            str(port),
+            "-T",
+            "-o",
+            "LogLevel=ERROR",
+            f"{user}@{host}",
+            "wsl",
+            "-d",
+            str(wsl_distro),
+            "python3",
+            "-",
+        ],
+        input_bytes=remote_py.encode("utf-8"),
+    )
+    sys.stdout.buffer.write(proc.stdout)
+    if proc.returncode != 0:
+        return int(proc.returncode)
+    try:
+        remote_manifest = json.loads(proc.stdout.decode("utf-8", errors="replace"))
+    except json.JSONDecodeError:
+        print("Remote hash verification failed: remote manifest was not valid JSON.")
+        return 24
+    issues = _compare_hash_manifests(local_manifest, {str(k): str(v) for k, v in remote_manifest.items()})
+    if issues:
+        print("Remote hash verification failed:")
+        for item in issues:
+            print(
+                f"  {item['path']}: local={item['local'] or '__missing__'} "
+                f"remote={item['remote'] or '__missing__'}"
+            )
+        return 25
+    print(f"VERIFY_HASH_OK files={len(local_manifest)}")
+    return 0
+
+
 def _health_check(
     *,
     host: str,
@@ -642,7 +758,8 @@ def main() -> int:
     )
 
     sync_paths = [Path(item) for item in args.sync_path]
-    verify_files = [Path(item).as_posix() for item in args.verify_python_file]
+    verify_paths = [Path(item) for item in args.verify_python_file]
+    verify_files = [path.as_posix() for path in verify_paths]
 
     if args.dry_run:
         effective_prelaunch_mib = _effective_max_prelaunch_memory_mib(
@@ -745,6 +862,18 @@ def main() -> int:
     )
     if temp_write_rc != 0:
         return temp_write_rc
+
+    if not args.no_verify and verify_paths:
+        hash_rc = _verify_remote_file_hashes(
+            host=args.host,
+            port=args.port,
+            user=args.user,
+            wsl_distro=args.wsl_distro,
+            remote_workspace_root=remote_workspace_root,
+            verify_paths=verify_paths,
+        )
+        if hash_rc != 0:
+            return hash_rc
 
     if not args.no_verify and verify_files:
         verify_cmd = [

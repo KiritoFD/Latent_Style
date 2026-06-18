@@ -5,6 +5,9 @@ import csv
 import json
 from pathlib import Path
 
+OBJECTIVE_STYLE_TARGET = 0.74
+OBJECTIVE_LPIPS_TARGET = 0.30
+
 
 def _f(value: str | None) -> float | None:
     if value is None or value == "":
@@ -33,6 +36,12 @@ def _metric(row: dict[str, str], key: str) -> float | None:
 
 def _epoch_idx_map(rows: list[dict[str, str]]) -> dict[str, int]:
     return {str(row.get("epoch", "")).strip(): idx for idx, row in enumerate(rows)}
+
+
+def _objective_gap(style: float | None, lpips: float | None, *, style_target: float, lpips_target: float) -> float:
+    if style is None or lpips is None:
+        return 1e9
+    return max(0.0, float(style_target) - float(style)) + max(0.0, float(lpips) - float(lpips_target))
 
 
 def _best_epoch(rows: list[dict[str, str]], *, style_key: str, lpips_key: str) -> str:
@@ -101,18 +110,18 @@ def _pareto_indices(rows: list[dict[str, str]]) -> list[int]:
     return indices
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Summarize round-2 CLIP/LPIPS convergence from clip_lpips_curve.csv.")
-    parser.add_argument("--curve-csv", required=True)
-    parser.add_argument("--patience", type=int, required=True)
-    parser.add_argument("--flat-tail-window", type=int, default=4)
-    parser.add_argument("--flat-eps-style", type=float, default=0.005)
-    parser.add_argument("--flat-eps-lpips", type=float, default=0.018)
-    parser.add_argument("--output-json", default="")
-    args = parser.parse_args()
-
-    curve_path = Path(args.curve_csv).resolve()
-    rows = list(csv.DictReader(curve_path.open("r", encoding="utf-8")))
+def build_convergence_payload(
+    rows: list[dict[str, str]],
+    *,
+    curve_path: Path,
+    patience: int,
+    min_epochs: int,
+    flat_tail_window: int,
+    flat_eps_style: float,
+    flat_eps_lpips: float,
+    objective_style_target: float,
+    objective_lpips_target: float,
+) -> dict[str, object]:
     if not rows:
         raise RuntimeError(f"Empty curve csv: {curve_path}")
 
@@ -126,7 +135,7 @@ def main() -> int:
     pareto_idx = _pareto_indices(rows)
     last_pareto_idx = pareto_idx[-1]
     since_last_pareto = newest_idx - last_pareto_idx
-    tail_window = max(2, int(args.flat_tail_window))
+    tail_window = max(2, int(flat_tail_window))
     tail = rows[max(0, newest_idx - (tail_window - 1)) : newest_idx + 1]
     tail_transfer_style = [_metric(r, "transfer_clip_style") for r in tail]
     tail_transfer_lpips = [_metric(r, "transfer_content_lpips") for r in tail]
@@ -135,15 +144,51 @@ def main() -> int:
     tail_flat = False
     if len(tail_transfer_style) >= 2 and all(v is not None for v in tail_transfer_style + tail_transfer_lpips + tail_all_style + tail_all_lpips):
         tail_flat = (
-            max(tail_transfer_style) - min(tail_transfer_style) <= float(args.flat_eps_style)
-            and max(tail_transfer_lpips) - min(tail_transfer_lpips) <= float(args.flat_eps_lpips)
-            and max(tail_all_style) - min(tail_all_style) <= float(args.flat_eps_style)
-            and max(tail_all_lpips) - min(tail_all_lpips) <= float(args.flat_eps_lpips)
+            max(tail_transfer_style) - min(tail_transfer_style) <= float(flat_eps_style)
+            and max(tail_transfer_lpips) - min(tail_transfer_lpips) <= float(flat_eps_lpips)
+            and max(tail_all_style) - min(tail_all_style) <= float(flat_eps_style)
+            and max(tail_all_lpips) - min(tail_all_lpips) <= float(flat_eps_lpips)
         )
-    converged = (not best_in_newest_2) and since_last_pareto >= int(args.patience) and tail_flat
+    pareto_converged = (not best_in_newest_2) and since_last_pareto >= int(patience) and tail_flat
+
+    objective_best_idx = min(
+        range(len(rows)),
+        key=lambda idx: (
+            _objective_gap(
+                _metric(rows[idx], "transfer_clip_style"),
+                _metric(rows[idx], "transfer_content_lpips"),
+                style_target=objective_style_target,
+                lpips_target=objective_lpips_target,
+            ),
+            -float(_metric(rows[idx], "transfer_clip_style") or 0.0),
+            float(_metric(rows[idx], "transfer_content_lpips") or 1.0),
+            idx,
+        ),
+    )
+    objective_best_epoch = str(rows[objective_best_idx]["epoch"])
+    objective_best_gap = _objective_gap(
+        _metric(rows[objective_best_idx], "transfer_clip_style"),
+        _metric(rows[objective_best_idx], "transfer_content_lpips"),
+        style_target=objective_style_target,
+        lpips_target=objective_lpips_target,
+    )
+    objective_epochs_since_best = newest_idx - objective_best_idx
+    objective_patience_converged = (
+        len(rows) >= int(min_epochs)
+        and objective_best_idx >= 0
+        and objective_epochs_since_best >= int(patience)
+    )
+    stop_ready = bool(pareto_converged or objective_patience_converged)
+    if pareto_converged:
+        stop_reason = "joint_transfer_allpairs_pareto"
+    elif objective_patience_converged:
+        stop_reason = "objective_gap_patience"
+    else:
+        stop_reason = ""
+
     best_epoch = str(best_transfer_epoch)
     best_index = int(epoch_index.get(best_epoch, 0))
-    payload = {
+    return {
         "curve_csv": str(curve_path),
         "row_count": len(rows),
         "best_epoch": best_epoch,
@@ -158,12 +203,50 @@ def main() -> int:
         "best_in_newest_2": best_in_newest_2,
         "tail_flat": tail_flat,
         "tail_window": tail_window,
-        "flat_eps_style": float(args.flat_eps_style),
-        "flat_eps_lpips": float(args.flat_eps_lpips),
-        "patience": int(args.patience),
+        "flat_eps_style": float(flat_eps_style),
+        "flat_eps_lpips": float(flat_eps_lpips),
+        "patience": int(patience),
+        "min_epochs": int(min_epochs),
         "criterion": "joint_transfer_allpairs_pareto",
-        "converged": converged,
+        "converged": pareto_converged,
+        "objective_style_target": float(objective_style_target),
+        "objective_lpips_target": float(objective_lpips_target),
+        "objective_best_epoch": objective_best_epoch,
+        "objective_best_index": int(objective_best_idx),
+        "objective_best_gap": float(objective_best_gap),
+        "objective_epochs_since_best": int(objective_epochs_since_best),
+        "objective_patience_converged": bool(objective_patience_converged),
+        "stop_ready": bool(stop_ready),
+        "stop_reason": stop_reason,
     }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Summarize round-2 CLIP/LPIPS convergence from clip_lpips_curve.csv.")
+    parser.add_argument("--curve-csv", required=True)
+    parser.add_argument("--patience", type=int, required=True)
+    parser.add_argument("--min-epochs", type=int, default=0)
+    parser.add_argument("--flat-tail-window", type=int, default=4)
+    parser.add_argument("--flat-eps-style", type=float, default=0.005)
+    parser.add_argument("--flat-eps-lpips", type=float, default=0.018)
+    parser.add_argument("--objective-style-target", type=float, default=OBJECTIVE_STYLE_TARGET)
+    parser.add_argument("--objective-lpips-target", type=float, default=OBJECTIVE_LPIPS_TARGET)
+    parser.add_argument("--output-json", default="")
+    args = parser.parse_args()
+
+    curve_path = Path(args.curve_csv).resolve()
+    rows = list(csv.DictReader(curve_path.open("r", encoding="utf-8")))
+    payload = build_convergence_payload(
+        rows,
+        curve_path=curve_path,
+        patience=int(args.patience),
+        min_epochs=int(args.min_epochs),
+        flat_tail_window=int(args.flat_tail_window),
+        flat_eps_style=float(args.flat_eps_style),
+        flat_eps_lpips=float(args.flat_eps_lpips),
+        objective_style_target=float(args.objective_style_target),
+        objective_lpips_target=float(args.objective_lpips_target),
+    )
     output_json = Path(args.output_json).resolve() if str(args.output_json).strip() else curve_path.with_name("round2_convergence.json")
     output_json.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(output_json)

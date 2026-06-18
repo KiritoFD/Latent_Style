@@ -290,6 +290,99 @@ class LatentAdaCUTRuntimeMixin:
         style_code = self.encode_style_id(style_id)
         return style_code, StyleMaps(family=str(getattr(self, "tokenizer_family", "legacy_factorized")))
 
+    def _matched_target_style_features(self, feat_16: torch.Tensor) -> torch.Tensor:
+        xf = feat_16.float()
+        kernel = max(1, int(getattr(self, "matched_target_style_encoder_highpass_kernel", 5)))
+        if kernel > 1:
+            pad = kernel // 2
+            low = F.avg_pool2d(xf, kernel_size=kernel, stride=1, padding=pad)
+        else:
+            low = xf
+        high = xf - low
+        return torch.cat(
+            [
+                xf.mean(dim=(2, 3)),
+                xf.std(dim=(2, 3), unbiased=False),
+                high.abs().mean(dim=(2, 3)),
+                high.std(dim=(2, 3), unbiased=False),
+            ],
+            dim=1,
+        ).to(device=feat_16.device, dtype=feat_16.dtype)
+
+    def encode_target_style_latent(
+        self,
+        target_style_latent: torch.Tensor,
+        *,
+        style_id: torch.Tensor | int | None = None,
+    ) -> torch.Tensor:
+        mode = str(getattr(self, "matched_target_style_encoder_mode", "none")).strip().lower()
+        head = getattr(self, "matched_target_style_encoder_head", None)
+        if mode == "none" or head is None:
+            if style_id is None:
+                raise ValueError("style_id is required when matched_target_style_encoder_mode='none'.")
+            return self.encode_style_id(style_id)
+        if target_style_latent.shape[1] != self.latent_channels:
+            raise ValueError(
+                f"target_style_latent channels must be {self.latent_channels}, got {target_style_latent.shape[1]}"
+            )
+        batch = int(target_style_latent.shape[0])
+        target = target_style_latent
+        module_device = self.enc_in.weight.device
+        module_dtype = self.enc_in.weight.dtype
+        if target.device != module_device:
+            target = target.to(device=module_device)
+        if target.dtype != module_dtype:
+            target = target.to(dtype=module_dtype)
+        feat = target / max(self.latent_scale_factor, 1e-8)
+        h = self.enc_in_act(self.enc_in(feat))
+        zero_style = self._style_code_anchor_tensor().to(device=module_device, dtype=module_dtype).expand(batch, -1)
+        for block in self.hires_body:
+            h = block(h, zero_style, gate=0.0)
+        feat_16 = self.down(h)
+        encoded = head(self._matched_target_style_features(feat_16))
+        if mode == "replace":
+            return encoded.to(device=target_style_latent.device, dtype=target_style_latent.dtype)
+
+        if style_id is None:
+            base = self._style_code_anchor_tensor().to(device=module_device, dtype=encoded.dtype).expand(batch, -1)
+        else:
+            base = self.encode_style_id(style_id).to(device=module_device, dtype=encoded.dtype)
+            if base.shape[0] == 1 and batch > 1:
+                base = base.expand(batch, -1)
+            elif base.shape[0] != batch:
+                raise ValueError(f"style_id batch mismatch: expected {batch} or 1, got {base.shape[0]}")
+        encoded = base + encoded * float(getattr(self, "matched_target_style_encoder_residual_scale", 1.0))
+        return encoded.to(device=target_style_latent.device, dtype=target_style_latent.dtype)
+
+    def _decode_style_code_spatial_map(
+        self,
+        style_code: torch.Tensor,
+        *,
+        target_hw: tuple[int, int],
+        device: torch.device,
+        dtype: torch.dtype,
+    ) -> torch.Tensor | None:
+        mode = str(getattr(self, "style_code_spatial_mode", "none")).strip().lower()
+        head = getattr(self, "style_code_spatial_head", None)
+        basis = getattr(self, "style_code_spatial_basis", None)
+        channel_bias = getattr(self, "style_code_spatial_channel_bias", None)
+        scale = float(getattr(self, "style_code_spatial_scale", 0.0))
+        if mode == "none" or head is None or basis is None or channel_bias is None or scale <= 0.0:
+            return None
+        code = style_code
+        if code.device != device:
+            code = code.to(device=device)
+        if code.dtype != dtype:
+            code = code.to(dtype=dtype)
+        weights = torch.tanh(head(code).float())
+        spatial_basis = basis.to(device=device, dtype=torch.float32)
+        spatial = torch.einsum("br,rchw->bchw", weights, spatial_basis)
+        bias = channel_bias(code).float().view(code.shape[0], int(self.body_channels), 1, 1)
+        spatial = torch.tanh(spatial + bias) * scale
+        if tuple(int(v) for v in spatial.shape[-2:]) != tuple(int(v) for v in target_hw):
+            spatial = F.interpolate(spatial, size=target_hw, mode="bilinear", align_corners=False)
+        return spatial.to(dtype=dtype)
+
     def _runtime_conditioning_payload(self) -> dict:
         payload = getattr(self, "runtime_conditioning", None)
         return payload if isinstance(payload, dict) else {}
@@ -430,14 +523,36 @@ class LatentAdaCUTRuntimeMixin:
         style_id: torch.Tensor | int | None,
         style_code: torch.Tensor,
         content_feat_16: torch.Tensor,
+        style_code_override_active: bool = False,
     ) -> torch.Tensor:
+        def _store_debug(
+            *,
+            router_active: float,
+            bypassed: float,
+            delta_abs: float,
+            adapted_code: torch.Tensor,
+        ) -> None:
+            self.last_style_code_path_debug = {
+                "style_code_override_active": float(style_code_override_active),
+                "style_code_content_router_active": float(router_active),
+                "style_code_content_router_bypassed": float(bypassed),
+                "style_code_content_delta_abs": float(delta_abs),
+                "style_code_adapted_abs": float(adapted_code.detach().float().abs().mean().item()),
+            }
+
         if str(getattr(self, "tokenizer_family", "legacy_factorized")) in {"pure_latent_spatial", "smoe_translator", "affine_connection_tokenizer"}:
+            _store_debug(router_active=0.0, bypassed=0.0, delta_abs=0.0, adapted_code=style_code)
+            return style_code
+        if style_code_override_active:
+            _store_debug(router_active=0.0, bypassed=1.0, delta_abs=0.0, adapted_code=style_code)
             return style_code
         router = getattr(self, "style_code_content_router", None)
         if router is None or style_id is None:
+            _store_debug(router_active=0.0, bypassed=0.0, delta_abs=0.0, adapted_code=style_code)
             return style_code
         tokenizer = self.style_tokenizer
         if not hasattr(tokenizer, "atom_logits"):
+            _store_debug(router_active=0.0, bypassed=0.0, delta_abs=0.0, adapted_code=style_code)
             return style_code
 
         token_device = tokenizer.weight.device
@@ -446,6 +561,7 @@ class LatentAdaCUTRuntimeMixin:
         if style_id_t.shape[0] == 1 and batch > 1:
             style_id_t = style_id_t.expand(batch)
         elif style_id_t.shape[0] != batch:
+            _store_debug(router_active=0.0, bypassed=0.0, delta_abs=0.0, adapted_code=style_code)
             return style_code
 
         feat = content_feat_16.detach() if bool(getattr(self, "tokenizer_content_stopgrad", True)) else content_feat_16
@@ -464,8 +580,10 @@ class LatentAdaCUTRuntimeMixin:
         weights = self._atom_weights_from_logits(base_logits + routed.to(dtype=base_logits.dtype) * gain_tensor)
         adapted = self._style_code_from_atom_weights(style_id_t, weights)
         if adapted is None:
+            _store_debug(router_active=0.0, bypassed=0.0, delta_abs=0.0, adapted_code=style_code)
             return style_code
 
+        adapted_out = adapted.to(device=style_code.device, dtype=style_code.dtype)
         with torch.no_grad():
             probs = weights.detach().float()
             entropy = -(probs * probs.clamp_min(1e-8).log()).sum(dim=1).mean()
@@ -488,8 +606,14 @@ class LatentAdaCUTRuntimeMixin:
                     }
                 )
             tokenizer.last_debug = debug
+            _store_debug(
+                router_active=1.0,
+                bypassed=0.0,
+                delta_abs=float((adapted_out.detach() - style_code.detach()).float().abs().mean().item()),
+                adapted_code=adapted_out.detach(),
+            )
 
-        return adapted.to(device=style_code.device, dtype=style_code.dtype)
+        return adapted_out
 
     def _apply_upsample_blur(self, h: torch.Tensor) -> torch.Tensor:
         if not self.upsample_blur or self._upsample_blur_kernel.numel() == 0:
@@ -606,6 +730,7 @@ class LatentAdaCUTRuntimeMixin:
         override_palette: torch.Tensor | None = None,
         strength: float,
         target_style_latent: torch.Tensor | None = None,
+        style_code_override_active: bool = False,
     ) -> torch.Tensor:
         feat_c = x / max(self.latent_scale_factor, 1e-8)
         h_c = self.enc_in_act(self.enc_in(feat_c))
@@ -618,8 +743,20 @@ class LatentAdaCUTRuntimeMixin:
             style_id=style_id,
             style_code=style_code,
             content_feat_16=content_feat_16,
+            style_code_override_active=style_code_override_active,
         )
+        pre_resolved_style_code_map = None
+        style_code_map = self._decode_style_code_spatial_map(
+            style_code,
+            target_hw=tuple(int(v) for v in content_feat_16.shape[-2:]),
+            device=content_feat_16.device,
+            dtype=content_feat_16.dtype,
+        )
+        pre_resolved_style_code_map = style_code_map
         style_map_proj: torch.Tensor | None = None
+        style_spatial_source = "unresolved"
+        style_code_map_primary = False
+        style_code_map_residual = False
         structured_ctx = self._structured_style_from_sidecar(
             style_id=style_id,
             style_code=style_code,
@@ -628,20 +765,16 @@ class LatentAdaCUTRuntimeMixin:
         )
         if structured_ctx is not None:
             style_code, style_maps = structured_ctx
-        if (
-            self.output_appearance_alignment_mode != "none"
-            or bool(getattr(self, "solver_fiber_aligned", False))
-            or bool(getattr(self, "i2sb_fiber_aligned_noise", False))
-            or bool(getattr(self, "i2sb_fiber_project_use_gate", False))
-            or bool(getattr(self, "force_output_style_context_cache", False))
-        ):
-            self._cache_output_style_context(
-                source_latent=x,
-                style_code=style_code,
-                style_maps=style_maps,
+            # For structured tokenizer families, the lowrank residual map should
+            # be decoded from the resolved style code, not the pre-structured
+            # placeholder code. Otherwise the residual carrier stays effectively
+            # style-invariant in no-reference eval.
+            style_code_map = self._decode_style_code_spatial_map(
+                style_code,
+                target_hw=tuple(int(v) for v in content_feat_16.shape[-2:]),
+                device=content_feat_16.device,
+                dtype=content_feat_16.dtype,
             )
-        else:
-            self.last_output_style_context = None
         latent_spatial_family = str(getattr(self, "tokenizer_family", "legacy_factorized")) in {
             "pure_latent_spatial",
             "smoe_translator",
@@ -649,6 +782,7 @@ class LatentAdaCUTRuntimeMixin:
         }
 
         if override_palette is not None:
+            style_spatial_source = "override_palette"
             style_map_proj = override_palette
             if style_map_proj.device != content_feat_16.device:
                 style_map_proj = style_map_proj.to(device=content_feat_16.device)
@@ -684,6 +818,7 @@ class LatentAdaCUTRuntimeMixin:
                     align_corners=False,
                 )
         elif target_style_latent is not None:
+            style_spatial_source = "target_style_latent"
             if target_style_latent.shape[1] != self.latent_channels:
                 raise ValueError(
                     f"target_style_latent channels must be {self.latent_channels}, got {target_style_latent.shape[1]}"
@@ -703,6 +838,9 @@ class LatentAdaCUTRuntimeMixin:
                 gate_scale=0.0,
             )
             style_map_proj = self.down(h_s)
+            if style_code_map is not None:
+                style_map_proj = style_map_proj + style_code_map
+                style_code_map_residual = True
         else:
             if latent_spatial_family and structured_ctx is None:
                 raise RuntimeError(
@@ -711,13 +849,68 @@ class LatentAdaCUTRuntimeMixin:
                 )
             style_spatial_16 = self._prepare_spatial_map(style_maps.map_16, content_feat_16)
             if style_spatial_16 is None:
-                style_map_proj = torch.zeros_like(content_feat_16)
+                if style_code_map is not None:
+                    style_spatial_source = "code_map"
+                    style_map_proj = style_code_map
+                    style_code_map_primary = True
+                else:
+                    style_spatial_source = "legacy_zero"
+                    style_map_proj = torch.zeros_like(content_feat_16)
             else:
+                style_spatial_source = "structured_map"
                 style_map_proj = style_spatial_16
                 if style_maps.mask_16 is not None:
                     mask_16 = self._prepare_spatial_map(style_maps.mask_16, content_feat_16)
                     if mask_16 is not None:
                         style_map_proj = style_map_proj * (0.5 + torch.sigmoid(mask_16))
+                if style_code_map is not None:
+                    style_map_proj = style_map_proj + style_code_map
+                    style_code_map_residual = True
+        self.last_style_path_debug = {
+            "style_spatial_source_override_palette": float(style_spatial_source == "override_palette"),
+            "style_spatial_source_target_latent": float(style_spatial_source == "target_style_latent"),
+            "style_spatial_source_structured_map": float(style_spatial_source == "structured_map"),
+            "style_spatial_source_code_map": float(style_spatial_source == "code_map"),
+            "style_spatial_source_legacy_zero": float(style_spatial_source == "legacy_zero"),
+            "style_spatial_code_map_primary": float(style_code_map_primary),
+            "style_spatial_code_map_residual": float(style_code_map_residual),
+            "style_spatial_code_map_pre_resolved_abs": (
+                float(pre_resolved_style_code_map.detach().float().abs().mean().item())
+                if torch.is_tensor(pre_resolved_style_code_map)
+                else 0.0
+            ),
+            "style_spatial_code_map_abs": (
+                float(style_code_map.detach().float().abs().mean().item()) if torch.is_tensor(style_code_map) else 0.0
+            ),
+            "style_spatial_map_abs": (
+                float(style_map_proj.detach().float().abs().mean().item()) if torch.is_tensor(style_map_proj) else 0.0
+            ),
+        }
+        style_code_debug = getattr(self, "last_style_code_path_debug", None)
+        if isinstance(style_code_debug, dict):
+            self.last_style_path_debug.update(style_code_debug)
+        if (
+            self.output_appearance_alignment_mode != "none"
+            or bool(getattr(self, "solver_fiber_aligned", False))
+            or bool(getattr(self, "i2sb_fiber_aligned_noise", False))
+            or bool(getattr(self, "i2sb_fiber_project_use_gate", False))
+            or bool(getattr(self, "force_output_style_context_cache", False))
+        ):
+            resolved_style_maps = StyleMaps(
+                map_16=style_map_proj,
+                gate_16=style_maps.gate_16,
+                mask_16=style_maps.mask_16,
+                aux_16=style_maps.aux_16,
+                family=str(getattr(style_maps, "family", getattr(self, "tokenizer_family", "legacy_factorized"))),
+                debug=dict(getattr(style_maps, "debug", {}) or {}),
+            )
+            self._cache_output_style_context(
+                source_latent=x,
+                style_code=style_code,
+                style_maps=resolved_style_maps,
+            )
+        else:
+            self.last_output_style_context = None
 
         semantic_attn: torch.Tensor | None = None
         body_gate: float | torch.Tensor = 1.0
@@ -798,6 +991,7 @@ class LatentAdaCUTRuntimeMixin:
                 override_palette=override_palette,
                 strength=strength,
                 target_style_latent=target_style_latent,
+                style_code_override_active=style_code_override is not None,
             )
             h = h + delta * float(step_size) * step_scale * per_step
         return self._apply_output_moment_match(h, target_style_latent)
@@ -897,6 +1091,7 @@ class LatentAdaCUTRuntimeMixin:
             override_palette=override_palette,
             strength=strength,
             target_style_latent=target_style_latent,
+            style_code_override_active=style_code_override is not None,
         )
         if self.ablation_no_residual:
             pred = (delta / (self.latent_scale_factor * max(self.residual_gain, 1e-5))) * self.ablation_no_residual_gain

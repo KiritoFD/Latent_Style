@@ -13,7 +13,9 @@ WORKSPACE = ROOT.parent.parent
 PHASE2_POINTS_CSV = WORKSPACE / "SchrodingerBridge" / "docs" / "experiments" / "phase2_fiber_bundle" / "plot_points.csv"
 SAMAM_CURVE_CSV = WORKSPACE / "Related_Works" / "baseline_pipeline" / "results" / "samam_wikiarts5_patch8_segmented_20260610_094447" / "curve_metrics.csv"
 SAMST_CURVE_CSV = WORKSPACE / "Related_Works" / "baseline_pipeline" / "results" / "samst_wikiarts5_wsl_20260610_172206" / "eval_bundle" / "clip_lpips_curve.csv"
+EXTERNAL_BASELINES_CSV = ROOT.parent / "exp" / "phase616_live_dashboard" / "external_baselines.csv"
 POINTS_CSV = ROOT / "page1_bundle" / "wikiart5_page1_clip_lpips_points.csv"
+DOCS_POINTS_CSV = ROOT.parent / "docs" / "experiments" / "phase2_fiber_bundle" / "616" / "csv" / "wikiart5_page1_clip_lpips_points.csv"
 OUT_DIR = ROOT / "figures"
 
 DATASET_SURFACE = "wikiarts5_full_notest_train__distinct5_512_classview_test"
@@ -48,6 +50,9 @@ TRACE_STYLES = {
     "seedream_test_only": ("#C58A2B", "P", 82, 1.0),
     "samam_wikiarts5_patch8": ("#5D8FBF", "o", 18, 0.66),
     "samst_wikiarts5": ("#55A85B", "s", 58, 0.9),
+    "stylegallery_test_only": ("#F97316", "o", 58, 0.96),
+    "styleshot_test_only": ("#14B8A6", "o", 58, 0.96),
+    "csgo_low_vram_test_only": ("#64748B", "o", 58, 0.96),
     "k070_e1_e5": ("#E08E00", "P", 56, 0.94),
     "pattn_enhanced_tok_e1_e10": ("#0F766E", "X", 52, 0.9),
     "fiber_sde_iso_scan": ("#2563EB", "o", 42, 0.78),
@@ -76,6 +81,9 @@ LEGEND_MAP = {
     "samam_wikiarts5_patch8": "SaMAM (WikiArt-5)",
     "samst_wikiarts5": "SaMST (WikiArt-5)",
     "seedream_test_only": "Seedream",
+    "stylegallery_test_only": "StyleGallery",
+    "styleshot_test_only": "StyleShot",
+    "csgo_low_vram_test_only": "CSGO low-VRAM",
     "k070_e1_e5": "Ours k070",
     "fiber_sde_fine_k070_e3": "Fiber/SDE",
     "actuation_spatial_carriergate_k070_e3": "Carrier gate",
@@ -92,6 +100,9 @@ LEGEND_MAP = {
 
 LABEL_ALLOWLIST = {
     "Seedream",
+    "StyleGallery",
+    "StyleShot",
+    "CSGO low-VRAM",
     "SaMAM style",
     "SaMAM LPIPS",
     "SaMST e5",
@@ -108,6 +119,9 @@ LABEL_ALLOWLIST = {
 
 LABEL_OFFSETS = {
     "Seedream": (-70.0, 14.0),
+    "StyleGallery": (-16.0, 12.0),
+    "StyleShot": (10.0, -14.0),
+    "CSGO low-VRAM": (10.0, 14.0),
     "IDT": (-34.0, 22.0),
     "SaMAM style": (-56.0, 12.0),
     "SaMAM LPIPS": (10.0, -18.0),
@@ -319,6 +333,45 @@ def _samst_rows() -> list[dict[str, str]]:
     return rows
 
 
+def _external_reference_rows() -> list[dict[str, str]]:
+    trace_map = {
+        "stylegallery": "stylegallery_test_only",
+        "styleshot": "styleshot_test_only",
+        "csgo_low_vram": "csgo_low_vram_test_only",
+    }
+    rows: list[dict[str, str]] = []
+    for row in _read_csv(EXTERNAL_BASELINES_CSV):
+        baseline_id = str(row.get("id") or "").strip()
+        label = str(row.get("label") or baseline_id).strip()
+        clip = _safe_float(row.get("clip_style"))
+        lpips = _safe_float(row.get("lpips"))
+        images = int(_safe_float(row.get("images")) or 0)
+        if baseline_id not in trace_map or clip is None or lpips is None:
+            continue
+        rows.append(
+            _make_row(
+                point_id=f"{baseline_id}_test_only",
+                source_group="external_test_only",
+                family=label,
+                variant=f"pretrained_{images}" if images else "pretrained",
+                label=label,
+                trace_id=trace_map[baseline_id],
+                step_or_epoch=f"test_only_{images}" if images else "test_only",
+                clip_style=clip,
+                content_lpips=lpips,
+                label_dx=_safe_float(row.get("label_dx")) or 0.0,
+                label_dy=_safe_float(row.get("label_dy")) or 0.0,
+                note=(
+                    f"External test-only comparison point on the shared {images}-image surface."
+                    if images
+                    else "External test-only comparison point on the shared evaluation surface."
+                ),
+                source_summary=str(EXTERNAL_BASELINES_CSV),
+            )
+        )
+    return rows
+
+
 def rebuild_points_csv() -> list[dict[str, str]]:
     rows = [
         _make_row(
@@ -354,14 +407,16 @@ def rebuild_points_csv() -> list[dict[str, str]]:
             source_summary="Related_Works/baseline_pipeline/results/seedream45_api/distinct5_512_seedream45_windhub_20260607",
         ),
     ]
+    rows.extend(_external_reference_rows())
     rows.extend(_samam_rows())
     rows.extend(_samst_rows())
     rows.extend(_phase2_rows())
-    POINTS_CSV.parent.mkdir(parents=True, exist_ok=True)
-    with POINTS_CSV.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=FIELDS)
-        writer.writeheader()
-        writer.writerows(rows)
+    for out_csv in (POINTS_CSV, DOCS_POINTS_CSV):
+        out_csv.parent.mkdir(parents=True, exist_ok=True)
+        with out_csv.open("w", encoding="utf-8", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=FIELDS)
+            writer.writeheader()
+            writer.writerows(rows)
     return rows
 
 
@@ -489,15 +544,15 @@ def annotate(ax, row: dict[str, str]) -> None:
 
 def plot(points: list[dict[str, str]]) -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    fig, ax = plt.subplots(figsize=(5.9, 3.55))
-    fig.subplots_adjust(left=0.12, right=0.985, bottom=0.14, top=0.89)
+    fig, ax = plt.subplots(figsize=(6.15, 4.05))
+    fig.subplots_adjust(left=0.12, right=0.985, bottom=0.25, top=0.89)
     ax.set_facecolor("#FCFBF8")
     ax.axhspan(-0.08, 0.0, color="#F2E8F7", alpha=0.28, zorder=0)
     ax.axhline(0.0, color="#8E63C0", lw=1.4, ls=(0, (7, 4)), zorder=1)
     plotted_points = [row for row in points if (row.get("trace_id") or "") != "idt"]
     x_vals = [_xy(row)[0] for row in plotted_points]
     y_vals = [_xy(row)[1] for row in plotted_points]
-    x_left = max(0.32, min(x_vals) - 0.025) if x_vals else 0.48
+    x_left = max(0.14, min(x_vals) - 0.03) if x_vals else 0.14
     x_right = 0.80
     y_low = min(-0.082, min(y_vals) - 0.014) if y_vals else -0.082
     y_span = max(max(y_vals) - min(y_vals), 0.03) if y_vals else 0.03
@@ -611,12 +666,12 @@ def plot(points: list[dict[str, str]]) -> None:
     ax.legend(
         legend_handles,
         legend_labels,
-        loc="lower right",
-        bbox_to_anchor=(0.985, 0.02),
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.12),
         borderaxespad=0.0,
-        ncol=2,
-        columnspacing=0.9,
-        handletextpad=0.3,
+        ncol=4,
+        columnspacing=0.85,
+        handletextpad=0.28,
     )
     _safe_savefig(fig, OUT_DIR / "fig_wikiart5_page1_summary.pdf")
     _safe_savefig(fig, OUT_DIR / "fig_wikiart5_page1_summary.png")

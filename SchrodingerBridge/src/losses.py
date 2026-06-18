@@ -261,6 +261,7 @@ class OTFlowMatchingObjective:
         self.style_contrastive_pool_size = max(1, int(bridge_cfg.style_contrastive_pool_size))
         self.w_residual_style_direction = max(0.0, float(bridge_cfg.w_residual_style_direction))
         self.w_generated_delta_diversity = max(0.0, float(bridge_cfg.w_generated_delta_diversity))
+        self.w_plain_path_distill = max(0.0, float(getattr(bridge_cfg, "w_plain_path_distill", 0.0)))
         self.generated_delta_diversity_margin = float(bridge_cfg.generated_delta_diversity_margin)
         self.w_spectral_amplitude = max(0.0, float(bridge_cfg.w_spectral_amplitude))
         self.spectral_amplitude_channels = max(1, int(bridge_cfg.spectral_amplitude_channels))
@@ -707,21 +708,21 @@ class OTFlowMatchingObjective:
             dim=1,
         ).float()
 
-    def _ot_topogate_attention_map(
+    def _ot_topogate_complexity_descriptor(
         self,
         model: TimeConditionedLANCETBridge,
         x: torch.Tensor,
         *,
         style_id: torch.Tensor | int,
-    ) -> torch.Tensor | None:
+    ) -> tuple[torch.Tensor | None, int]:
         style_id_t = self._expand_style_id_tensor(style_id, batch=int(x.shape[0]), device=x.device)
         content_feat_16 = self._ot_encoder_feature_map(model, x, style_id=style_id_t).to(dtype=x.dtype)
         body_blocks = getattr(model, "body_blocks", None)
         if body_blocks is None:
-            return None
+            return None, 0
         body_blocks = list(body_blocks)
         if not body_blocks:
-            return None
+            return None, 0
         probe_map = content_feat_16
         h = content_feat_16
         for block in body_blocks:
@@ -729,15 +730,19 @@ class OTFlowMatchingObjective:
                 setattr(block, "last_topology_attn", None)
             if hasattr(block, "last_attn"):
                 setattr(block, "last_attn", None)
+        descs: list[torch.Tensor] = []
         with torch.no_grad():
             for block in body_blocks:
                 h = block(h, style_map=probe_map, gate=0.0)
-        attn = getattr(model, "last_semantic_topology_attn", None)
-        if attn is None:
-            attn = getattr(model, "last_semantic_attn", None)
-        if attn is None:
-            return None
-        return attn.detach().float()
+                attn = getattr(block, "last_topology_attn", None)
+                if attn is None:
+                    attn = getattr(block, "last_attn", None)
+                if attn is None:
+                    continue
+                descs.append(self._topogate_complexity_descriptor_from_attention(attn.detach().float()))
+        if not descs:
+            return None, 0
+        return torch.cat(descs, dim=1), len(descs)
 
     @staticmethod
     def _expand_style_id_tensor(
@@ -840,12 +845,18 @@ class OTFlowMatchingObjective:
         metric_ref = x.new_tensor(0.0, dtype=torch.float32)
         metrics = {
             "ot_topogate_probe_active": metric_ref,
+            "ot_topogate_descriptor_blocks": metric_ref,
             "ot_topogate_complexity_cost_mean": metric_ref,
             "ot_topogate_complexity_cost_var": metric_ref,
+            "ot_topogate_complexity_term_mean": metric_ref,
+            "ot_topogate_complexity_term_var": metric_ref,
             "ot_topogate_content_complexity_mean": metric_ref,
             "ot_topogate_target_complexity_mean": metric_ref,
             "ot_latent_affinity_cost_mean": metric_ref,
             "ot_latent_affinity_cost_var": metric_ref,
+            "ot_latent_affinity_term_mean": metric_ref,
+            "ot_latent_affinity_term_var": metric_ref,
+            "ot_topogate_structure_blend_weight": metric_ref,
         }
         if self.coupling_structure_cost_mode == "self_affinity_gw":
             x_desc = self._coupling_affinity_descriptor(x)
@@ -873,21 +884,23 @@ class OTFlowMatchingObjective:
                 self._ot_tokenizer_aux_feature_map(model, y, style_id=style_id)
             )
         elif self.coupling_structure_cost_mode == "topogate_attention_gw":
-            x_attn = self._ot_topogate_attention_map(model, x, style_id=style_id)
-            y_attn = self._ot_topogate_attention_map(model, y, style_id=style_id)
+            x_complexity, x_blocks = self._ot_topogate_complexity_descriptor(model, x, style_id=style_id)
+            y_complexity, y_blocks = self._ot_topogate_complexity_descriptor(model, y, style_id=style_id)
             x_latent_desc = self._coupling_affinity_descriptor(x)
             y_latent_desc = self._coupling_affinity_descriptor(y)
             latent_cost = torch.cdist(x_latent_desc, y_latent_desc, p=2).pow(2)
             metrics["ot_latent_affinity_cost_mean"] = latent_cost.mean().detach()
             metrics["ot_latent_affinity_cost_var"] = latent_cost.var(unbiased=False).detach()
-            if x_attn is None or y_attn is None:
+            if x_complexity is None or y_complexity is None:
                 return latent_cost, metrics
-            x_complexity = self._topogate_complexity_descriptor_from_attention(x_attn)
-            y_complexity = self._topogate_complexity_descriptor_from_attention(y_attn)
             complexity_cost = torch.cdist(x_complexity, y_complexity, p=2).pow(2)
             metrics.update(
                 {
                     "ot_topogate_probe_active": metric_ref.new_tensor(1.0, dtype=torch.float32),
+                    "ot_topogate_descriptor_blocks": metric_ref.new_tensor(
+                        float(min(x_blocks, y_blocks)),
+                        dtype=torch.float32,
+                    ),
                     "ot_topogate_complexity_cost_mean": complexity_cost.mean().detach(),
                     "ot_topogate_complexity_cost_var": complexity_cost.var(unbiased=False).detach(),
                     "ot_topogate_content_complexity_mean": x_complexity[:, 0].mean().detach(),
@@ -896,14 +909,28 @@ class OTFlowMatchingObjective:
             )
             complexity_scale = complexity_cost.detach().mean().clamp_min(self.eps)
             latent_scale = latent_cost.detach().mean().clamp_min(self.eps)
+            complexity_term = complexity_cost / complexity_scale
+            latent_term = latent_cost / latent_scale
             complexity_weight = min(1.0, max(0.0, float(self.coupling_structure_hybrid_stats_weight)))
+            metrics.update(
+                {
+                    "ot_topogate_complexity_term_mean": complexity_term.mean().detach(),
+                    "ot_topogate_complexity_term_var": complexity_term.var(unbiased=False).detach(),
+                    "ot_latent_affinity_term_mean": latent_term.mean().detach(),
+                    "ot_latent_affinity_term_var": latent_term.var(unbiased=False).detach(),
+                    "ot_topogate_structure_blend_weight": metric_ref.new_tensor(
+                        complexity_weight,
+                        dtype=torch.float32,
+                    ),
+                }
+            )
             if complexity_weight <= 0.0:
                 return latent_cost, metrics
             if complexity_weight >= 1.0:
                 return complexity_cost, metrics
             total_cost = (
-                complexity_weight * (complexity_cost / complexity_scale)
-                + (1.0 - complexity_weight) * (latent_cost / latent_scale)
+                complexity_weight * complexity_term
+                + (1.0 - complexity_weight) * latent_term
             )
             return total_cost, metrics
         else:
@@ -1092,12 +1119,18 @@ class OTFlowMatchingObjective:
         metrics: dict[str, torch.Tensor] = {
             "ot_appearance_cost_mean": metric_ref,
             "ot_appearance_cost_var": metric_ref,
+            "ot_appearance_transport_cost_mean": metric_ref,
+            "ot_appearance_transport_cost_var": metric_ref,
             "ot_structure_cost_mean": metric_ref,
             "ot_structure_cost_var": metric_ref,
+            "ot_structure_transport_cost_mean": metric_ref,
+            "ot_structure_transport_cost_var": metric_ref,
             "ot_structure_cost_active": metric_ref,
             "ot_cost_composition_appearance_only": metric_ref,
             "ot_cost_composition_appearance_plus_structure": metric_ref,
             "ot_cost_composition_structure_only": metric_ref,
+            "ot_total_cost_matrix_mean": metric_ref,
+            "ot_total_cost_matrix_var": metric_ref,
         }
 
         structure_active = not (
@@ -1120,7 +1153,16 @@ class OTFlowMatchingObjective:
             )
             metrics.update(structure_debug)
             struct_scale = structure_cost.detach().mean().clamp_min(self.eps)
-            return structure_cost / struct_scale, metrics
+            structure_transport_cost = structure_cost / struct_scale
+            metrics.update(
+                {
+                    "ot_structure_transport_cost_mean": structure_transport_cost.mean().detach(),
+                    "ot_structure_transport_cost_var": structure_transport_cost.var(unbiased=False).detach(),
+                    "ot_total_cost_matrix_mean": structure_transport_cost.mean().detach(),
+                    "ot_total_cost_matrix_var": structure_transport_cost.var(unbiased=False).detach(),
+                }
+            )
+            return structure_transport_cost, metrics
 
         appearance_cost = self.transport_cost.pairwise_cost(
             self._coupling_feature_tensor(content_group),
@@ -1130,6 +1172,10 @@ class OTFlowMatchingObjective:
         metrics["ot_appearance_cost_var"] = appearance_cost.var(unbiased=False).detach()
         if not structure_active:
             metrics["ot_cost_composition_appearance_only"] = metric_ref.new_tensor(1.0, dtype=torch.float32)
+            metrics["ot_appearance_transport_cost_mean"] = appearance_cost.mean().detach()
+            metrics["ot_appearance_transport_cost_var"] = appearance_cost.var(unbiased=False).detach()
+            metrics["ot_total_cost_matrix_mean"] = appearance_cost.mean().detach()
+            metrics["ot_total_cost_matrix_var"] = appearance_cost.var(unbiased=False).detach()
             return appearance_cost, metrics
 
         structure_cost, structure_debug = self._structure_pairwise_cost(
@@ -1153,7 +1199,13 @@ class OTFlowMatchingObjective:
             {
                 "ot_structure_cost_mean": structure_cost.mean().detach(),
                 "ot_structure_cost_var": structure_cost.var(unbiased=False).detach(),
+                "ot_appearance_transport_cost_mean": appearance_term.mean().detach(),
+                "ot_appearance_transport_cost_var": appearance_term.var(unbiased=False).detach(),
+                "ot_structure_transport_cost_mean": structure_term.mean().detach(),
+                "ot_structure_transport_cost_var": structure_term.var(unbiased=False).detach(),
                 "ot_structure_cost_active": metric_ref.new_tensor(1.0, dtype=torch.float32),
+                "ot_total_cost_matrix_mean": total_cost.mean().detach(),
+                "ot_total_cost_matrix_var": total_cost.var(unbiased=False).detach(),
             }
         )
         metrics.update(structure_debug)
@@ -2016,6 +2068,8 @@ class OTFlowMatchingObjective:
         matched_target: torch.Tensor,
         target_style_id: torch.Tensor,
         source_style_id: torch.Tensor | None,
+        target_style_latent: torch.Tensor | None = None,
+        style_code_override: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor | None, torch.Tensor]:
         if self.terminal_swd_weight <= 0.0:
             return None, content.new_tensor(0.0, dtype=torch.float32)
@@ -2031,6 +2085,8 @@ class OTFlowMatchingObjective:
             num_steps=self.terminal_num_steps,
             step_size=1.0,
             style_strength=1.0,
+            target_style_latent=target_style_latent,
+            style_code_override=style_code_override,
         )
         active = self._terminal_active_indices(endpoint, source_style_id, target_style_id)
         if active.numel() == 0:
@@ -2058,6 +2114,8 @@ class OTFlowMatchingObjective:
         content: torch.Tensor,
         target_style_id: torch.Tensor,
         source_style_id: torch.Tensor | None,
+        target_style_latent: torch.Tensor | None = None,
+        style_code_override: torch.Tensor | None = None,
     ) -> torch.Tensor:
         if self.cycle_consistency_weight <= 0.0 or source_style_id is None:
             return content.new_tensor(0.0, dtype=torch.float32)
@@ -2067,6 +2125,8 @@ class OTFlowMatchingObjective:
             num_steps=self.cycle_consistency_num_steps,
             step_size=1.0,
             style_strength=1.0,
+            target_style_latent=target_style_latent,
+            style_code_override=style_code_override,
         )
         recon = model.integrate(
             forward,
@@ -2076,6 +2136,63 @@ class OTFlowMatchingObjective:
             style_strength=1.0,
         )
         return F.l1_loss(recon, content) * self.cycle_consistency_weight
+
+    def _resolve_matched_target_conditioning(
+        self,
+        model: TimeConditionedLANCETBridge,
+        *,
+        matched_target: torch.Tensor,
+        target_style_id: torch.Tensor,
+    ) -> tuple[torch.Tensor | None, torch.Tensor | None]:
+        conditioning_mode = str(getattr(model, "matched_target_conditioning_mode", "auto")).strip().lower()
+        if conditioning_mode not in {"auto", "none", "spatial", "code", "both"}:
+            conditioning_mode = "auto"
+        target_style_latent = matched_target if conditioning_mode in {"auto", "spatial", "both"} else None
+        style_code_override = None
+        encode_target_style_latent = getattr(model, "encode_target_style_latent", None)
+        encoder_mode = str(getattr(model, "matched_target_style_encoder_mode", "none")).strip().lower()
+        wants_code = conditioning_mode in {"code", "both"} or (
+            conditioning_mode == "auto" and encoder_mode != "none"
+        )
+        if wants_code and encoder_mode == "none":
+            raise RuntimeError(
+                "matched_target_conditioning_mode requests code conditioning, "
+                "but matched_target_style_encoder_mode='none'."
+            )
+        if wants_code and callable(encode_target_style_latent):
+            style_code_override = encode_target_style_latent(
+                matched_target,
+                style_id=target_style_id,
+            )
+        return target_style_latent, style_code_override
+
+    @staticmethod
+    def _capture_model_debug_snapshot(
+        model: TimeConditionedLANCETBridge,
+    ) -> tuple[torch.Tensor | None, torch.Tensor | None, torch.Tensor | None, dict[str, object], dict[str, object]]:
+        attn_plan = model.last_semantic_attn
+        semantic_k = model.last_semantic_k
+        topology_attn = getattr(model, "last_semantic_topology_attn", None)
+        style_path_debug = getattr(model, "last_style_path_debug", None)
+        if not isinstance(style_path_debug, dict):
+            style_path_debug = {}
+        else:
+            style_path_debug = dict(style_path_debug)
+        style_code_path_debug = getattr(model, "last_style_code_path_debug", None)
+        if not isinstance(style_code_path_debug, dict):
+            style_code_path_debug = {}
+        else:
+            style_code_path_debug = dict(style_code_path_debug)
+        return attn_plan, semantic_k, topology_attn, style_path_debug, style_code_path_debug
+
+    def _plain_path_distill_loss(
+        self,
+        student: torch.Tensor,
+        teacher: torch.Tensor,
+    ) -> torch.Tensor:
+        if self.w_plain_path_distill <= 0.0:
+            return teacher.new_tensor(0.0, dtype=torch.float32)
+        return F.mse_loss(student, teacher.detach()) * self.w_plain_path_distill
 
     def _compute_omf_details(
         self,
@@ -2117,12 +2234,19 @@ class OTFlowMatchingObjective:
                     )
             self._profile_end("ot_match", t_profile, content)
             target_for_loss = self._retinex_target(content, matched_target)
+        target_style_latent, style_code_override = self._resolve_matched_target_conditioning(
+            model,
+            matched_target=matched_target,
+            target_style_id=target_style_id,
+        )
         t_profile = self._profile_start(content)
         pred_endpoint_base = self._sanitize_tensor(
             model.predict_transport_base(
                 content_for_model,
                 t=t_fixed,
                 style_id=target_style_id,
+                style_code_override=style_code_override,
+                target_style_latent=target_style_latent,
             ),
             clamp_value=self.endpoint_clamp,
         )
@@ -2133,19 +2257,35 @@ class OTFlowMatchingObjective:
                 pred_endpoint_base,
                 style_id=target_style_id,
                 source_latent=content_for_model,
+                style_code_override=style_code_override,
             ),
             clamp_value=self.endpoint_clamp,
         )
         endpoint_for_losses = pred_endpoint_final if bool(getattr(model, "proximal_bind_terminal_losses", True)) else pred_endpoint_base
-        attn_plan = model.last_semantic_attn
-        semantic_k = model.last_semantic_k
-        topology_attn = getattr(model, "last_semantic_topology_attn", None)
+        attn_plan, semantic_k, topology_attn, style_path_debug, style_code_path_debug = self._capture_model_debug_snapshot(model)
 
         total_loss = content.new_tensor(0.0, dtype=torch.float32)
         flow_loss = content.new_tensor(0.0, dtype=torch.float32)
         ot_cost = content.new_tensor(0.0, dtype=torch.float32)
         plan_entropy = content.new_tensor(0.0, dtype=torch.float32)
         barycentric_entropy = content.new_tensor(0.0, dtype=torch.float32)
+        plain_path_distill = content.new_tensor(0.0, dtype=torch.float32)
+        plain_path_student_abs = content.new_tensor(0.0, dtype=torch.float32)
+        conditioned_path_active = bool(target_style_latent is not None or style_code_override is not None)
+        if conditioned_path_active and self.w_plain_path_distill > 0.0:
+            plain_pred_endpoint_base = self._sanitize_tensor(
+                model.predict_transport_base(
+                    content_for_model,
+                    t=t_fixed,
+                    style_id=target_style_id,
+                    style_code_override=None,
+                    target_style_latent=None,
+                ),
+                clamp_value=self.endpoint_clamp,
+            )
+            plain_path_student_abs = plain_pred_endpoint_base.abs().mean().detach()
+            plain_path_distill = self._plain_path_distill_loss(plain_pred_endpoint_base, pred_endpoint_base)
+            total_loss = total_loss + plain_path_distill
 
         if self.w_flow > 0.0:
             flow_loss = self._loss(pred_endpoint_base, matched_target) * self.w_flow
@@ -2176,8 +2316,26 @@ class OTFlowMatchingObjective:
             dt = self.curvature_dt
             t1 = content.new_full((content.shape[0],), max(self.t_min, min(self.t_max, 1.0 - dt)))
             t2 = (t1 + dt).clamp(max=self.t_max)
-            pred_v1 = self._sanitize_tensor(model(content_for_model, t=t1, style_id=target_style_id), clamp_value=self.velocity_clamp)
-            pred_v2 = self._sanitize_tensor(model(content_for_model + pred_v1 * dt, t=t2, style_id=target_style_id), clamp_value=self.velocity_clamp)
+            pred_v1 = self._sanitize_tensor(
+                model(
+                    content_for_model,
+                    t=t1,
+                    style_id=target_style_id,
+                    style_code_override=style_code_override,
+                    target_style_latent=target_style_latent,
+                ),
+                clamp_value=self.velocity_clamp,
+            )
+            pred_v2 = self._sanitize_tensor(
+                model(
+                    content_for_model + pred_v1 * dt,
+                    t=t2,
+                    style_id=target_style_id,
+                    style_code_override=style_code_override,
+                    target_style_latent=target_style_latent,
+                ),
+                clamp_value=self.velocity_clamp,
+            )
             curvature_loss = self._loss(pred_v2, pred_v1) * self.w_curvature
             total_loss = total_loss + curvature_loss
 
@@ -2316,9 +2474,10 @@ class OTFlowMatchingObjective:
             content=content,
             target_style_id=target_style_id,
             source_style_id=source_style_id,
+            target_style_latent=target_style_latent,
+            style_code_override=style_code_override,
         )
         total_loss = total_loss + cycle_consistency
-
         metrics: Dict[str, torch.Tensor] = {
             "loss": total_loss,
             "flow": flow_loss.detach(),
@@ -2344,6 +2503,12 @@ class OTFlowMatchingObjective:
             "generated_delta_diversity": generated_delta_diversity.detach(),
             "generated_delta_mean_offdiag_cos": generated_delta_mean_offdiag_cos.detach(),
             "generated_delta_active_styles": generated_delta_active_styles.detach(),
+            "plain_path_distill": plain_path_distill.detach(),
+            "plain_path_distill_active": content.new_tensor(
+                1.0 if conditioned_path_active and self.w_plain_path_distill > 0.0 else 0.0,
+                dtype=torch.float32,
+            ),
+            "plain_path_student_abs": plain_path_student_abs.detach(),
             "spectral_amplitude": spectral_amplitude.detach(),
             "ot_cost": ot_cost.detach(),
             "plan_entropy": plan_entropy.detach(),
@@ -2371,6 +2536,75 @@ class OTFlowMatchingObjective:
             "semantic_k_abs": semantic_k.abs().mean().detach() if semantic_k is not None else content.new_tensor(0.0),
             "semantic_topology_attn_entropy": self._attention_entropy(topology_attn, content).detach(),
             "semantic_topology_attn_active": content.new_tensor(1.0 if topology_attn is not None else 0.0, dtype=torch.float32),
+            "matched_target_style_latent_active": content.new_tensor(
+                1.0 if target_style_latent is not None else 0.0,
+                dtype=torch.float32,
+            ),
+            "matched_target_style_code_active": content.new_tensor(
+                1.0 if style_code_override is not None else 0.0,
+                dtype=torch.float32,
+            ),
+            "matched_target_style_code_abs": (
+                style_code_override.abs().mean().detach()
+                if torch.is_tensor(style_code_override)
+                else content.new_tensor(0.0, dtype=torch.float32)
+            ),
+            "style_code_override_active": content.new_tensor(
+                float(style_code_path_debug.get("style_code_override_active", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_code_content_router_active": content.new_tensor(
+                float(style_code_path_debug.get("style_code_content_router_active", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_code_content_router_bypassed": content.new_tensor(
+                float(style_code_path_debug.get("style_code_content_router_bypassed", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_code_content_delta_abs": content.new_tensor(
+                float(style_code_path_debug.get("style_code_content_delta_abs", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_code_adapted_abs": content.new_tensor(
+                float(style_code_path_debug.get("style_code_adapted_abs", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_spatial_source_override_palette": content.new_tensor(
+                float(style_path_debug.get("style_spatial_source_override_palette", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_spatial_source_target_latent": content.new_tensor(
+                float(style_path_debug.get("style_spatial_source_target_latent", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_spatial_source_structured_map": content.new_tensor(
+                float(style_path_debug.get("style_spatial_source_structured_map", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_spatial_source_code_map": content.new_tensor(
+                float(style_path_debug.get("style_spatial_source_code_map", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_spatial_source_legacy_zero": content.new_tensor(
+                float(style_path_debug.get("style_spatial_source_legacy_zero", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_spatial_code_map_primary": content.new_tensor(
+                float(style_path_debug.get("style_spatial_code_map_primary", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_spatial_code_map_residual": content.new_tensor(
+                float(style_path_debug.get("style_spatial_code_map_residual", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_spatial_code_map_abs": content.new_tensor(
+                float(style_path_debug.get("style_spatial_code_map_abs", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_spatial_map_abs": content.new_tensor(
+                float(style_path_debug.get("style_spatial_map_abs", 0.0)),
+                dtype=torch.float32,
+            ),
         }
         metrics.update(
             self._fiber_probe_metrics(
@@ -2406,6 +2640,7 @@ class OTFlowMatchingObjective:
             "style_contrastive": style_contrastive,
             "residual_style_direction": residual_style_direction,
             "generated_delta_diversity": generated_delta_diversity,
+            "plain_path_distill": plain_path_distill,
             "spectral_amplitude": spectral_amplitude,
             "teacher_alignment": teacher_alignment,
         }
@@ -2418,6 +2653,7 @@ class OTFlowMatchingObjective:
             "semantic_topology_attn": topology_attn.detach() if topology_attn is not None else None,
             "content": content.detach(),
             "target_style": target_for_loss.detach(),
+            "matched_target_style_code": style_code_override.detach() if torch.is_tensor(style_code_override) else None,
         }
         return metrics, components, debug_state
 
@@ -2480,6 +2716,11 @@ class OTFlowMatchingObjective:
                     matched_target=matched_target,
                 )
         self._profile_end("ot_match", t_profile, content)
+        target_style_latent, style_code_override = self._resolve_matched_target_conditioning(
+            model,
+            matched_target=matched_target,
+            target_style_id=target_style_id,
+        )
 
         flow_content = content
         flow_objective_target = objective_target
@@ -2511,6 +2752,8 @@ class OTFlowMatchingObjective:
                     x_t,
                     t=t,
                     style_id=target_style_id,
+                    style_code_override=style_code_override,
+                    target_style_latent=target_style_latent,
                 ),
                 clamp_value=self.endpoint_clamp,
             )
@@ -2518,16 +2761,55 @@ class OTFlowMatchingObjective:
             pred_velocity = self._sanitize_tensor((pred_endpoint - x_t) / denom, clamp_value=self.velocity_clamp)
             raw_flow_loss = self._loss(pred_endpoint, flow_objective_target)
         else:
-            pred_velocity = model(x_t, t=t, style_id=target_style_id)
+            pred_velocity = model(
+                x_t,
+                t=t,
+                style_id=target_style_id,
+                style_code_override=style_code_override,
+                target_style_latent=target_style_latent,
+            )
             raw_flow_loss = self._loss(pred_velocity, target_velocity)
         self._profile_end("model_forward", t_profile, content)
+        attn_plan, semantic_k, topology_attn, style_path_debug, style_code_path_debug = self._capture_model_debug_snapshot(model)
+
+        plain_path_distill = content.new_tensor(0.0, dtype=torch.float32)
+        plain_path_student_abs = content.new_tensor(0.0, dtype=torch.float32)
+        conditioned_path_active = bool(target_style_latent is not None or style_code_override is not None)
+        if conditioned_path_active and self.w_plain_path_distill > 0.0:
+            if transport_mode == "endpoint":
+                plain_pred_endpoint = self._sanitize_tensor(
+                    model.predict_transport_base(
+                        x_t,
+                        t=t,
+                        style_id=target_style_id,
+                        style_code_override=None,
+                        target_style_latent=None,
+                    ),
+                    clamp_value=self.endpoint_clamp,
+                )
+                plain_path_student_abs = plain_pred_endpoint.abs().mean().detach()
+                plain_path_distill = self._plain_path_distill_loss(plain_pred_endpoint, pred_endpoint)
+            else:
+                plain_pred_velocity = self._sanitize_tensor(
+                    model(
+                        x_t,
+                        t=t,
+                        style_id=target_style_id,
+                        style_code_override=None,
+                        target_style_latent=None,
+                    ),
+                    clamp_value=self.velocity_clamp,
+                )
+                teacher_velocity = self._sanitize_tensor(pred_velocity, clamp_value=self.velocity_clamp)
+                plain_path_student_abs = plain_pred_velocity.abs().mean().detach()
+                plain_path_distill = self._plain_path_distill_loss(plain_pred_velocity, teacher_velocity)
         if self.w_flow > 0.0:
             flow_loss = raw_flow_loss * self.w_flow
         elif require_flow_weight:
             raise ValueError("objective_mode='i2sb_endpoint' requires bridge.w_flow > 0.")
         else:
             flow_loss = raw_flow_loss
-        total_loss = flow_loss
+        total_loss = flow_loss + plain_path_distill
 
         t_profile = self._profile_start(content)
         zero = content.new_tensor(0.0, dtype=torch.float32)
@@ -2563,7 +2845,13 @@ class OTFlowMatchingObjective:
         if self.w_curvature > 0.0:
             dt = self.curvature_dt
             t2 = (t + dt).clamp(max=self.t_max)
-            pred_v2 = model(x_t + pred_velocity * dt, t=t2, style_id=target_style_id)
+            pred_v2 = model(
+                x_t + pred_velocity * dt,
+                t=t2,
+                style_id=target_style_id,
+                style_code_override=style_code_override,
+                target_style_latent=target_style_latent,
+            )
             curvature_loss = self._loss(pred_v2, pred_velocity)
             total_loss = total_loss + curvature_loss * self.w_curvature
         content_lowpass_anchor, content_edge_anchor = self._content_topology_anchor_loss(pred_endpoint if pred_endpoint is not None else x_t, content)
@@ -2575,6 +2863,8 @@ class OTFlowMatchingObjective:
             matched_target=objective_target,
             target_style_id=target_style_id,
             source_style_id=source_style_id,
+            target_style_latent=target_style_latent,
+            style_code_override=style_code_override,
         )
         self._profile_end("terminal_swd", t_profile, content)
         if terminal_swd is not None:
@@ -2588,6 +2878,8 @@ class OTFlowMatchingObjective:
                     content,
                     t=content.new_ones(content.shape[0]),
                     style_id=target_style_id,
+                    style_code_override=style_code_override,
+                    target_style_latent=target_style_latent,
                 ),
                 clamp_value=self.endpoint_clamp,
             )
@@ -2596,6 +2888,7 @@ class OTFlowMatchingObjective:
                     pred_endpoint_base,
                     style_id=target_style_id,
                     source_latent=content,
+                    style_code_override=style_code_override,
                 ),
                 clamp_value=self.endpoint_clamp,
             )
@@ -2622,15 +2915,20 @@ class OTFlowMatchingObjective:
             content=content,
             target_style_id=target_style_id,
             source_style_id=source_style_id,
+            target_style_latent=target_style_latent,
+            style_code_override=style_code_override,
         )
         total_loss = total_loss + content_lowpass_anchor + content_edge_anchor + cycle_consistency
-        attn_plan = model.last_semantic_attn
-        semantic_k = model.last_semantic_k
-        topology_attn = getattr(model, "last_semantic_topology_attn", None)
 
         metrics: Dict[str, torch.Tensor] = {
             "loss": total_loss,
             "flow": flow_loss.detach(),
+            "plain_path_distill": plain_path_distill.detach(),
+            "plain_path_distill_active": content.new_tensor(
+                1.0 if conditioned_path_active and self.w_plain_path_distill > 0.0 else 0.0,
+                dtype=torch.float32,
+            ),
+            "plain_path_student_abs": plain_path_student_abs.detach(),
             "kinetic_energy": (kinetic_loss * self.w_kinetic).detach(),
             "anisotropic_kinetic": anisotropic_kinetic.detach(),
             "stokes_viscous": stokes_viscous.detach(),
@@ -2671,6 +2969,75 @@ class OTFlowMatchingObjective:
             "semantic_k_abs": semantic_k.abs().mean().detach() if semantic_k is not None else content.new_tensor(0.0),
             "semantic_topology_attn_entropy": self._attention_entropy(topology_attn, content).detach(),
             "semantic_topology_attn_active": content.new_tensor(1.0 if topology_attn is not None else 0.0, dtype=torch.float32),
+            "matched_target_style_latent_active": content.new_tensor(
+                1.0 if target_style_latent is not None else 0.0,
+                dtype=torch.float32,
+            ),
+            "matched_target_style_code_active": content.new_tensor(
+                1.0 if style_code_override is not None else 0.0,
+                dtype=torch.float32,
+            ),
+            "matched_target_style_code_abs": (
+                style_code_override.abs().mean().detach()
+                if torch.is_tensor(style_code_override)
+                else content.new_tensor(0.0, dtype=torch.float32)
+            ),
+            "style_code_override_active": content.new_tensor(
+                float(style_code_path_debug.get("style_code_override_active", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_code_content_router_active": content.new_tensor(
+                float(style_code_path_debug.get("style_code_content_router_active", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_code_content_router_bypassed": content.new_tensor(
+                float(style_code_path_debug.get("style_code_content_router_bypassed", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_code_content_delta_abs": content.new_tensor(
+                float(style_code_path_debug.get("style_code_content_delta_abs", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_code_adapted_abs": content.new_tensor(
+                float(style_code_path_debug.get("style_code_adapted_abs", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_spatial_source_override_palette": content.new_tensor(
+                float(style_path_debug.get("style_spatial_source_override_palette", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_spatial_source_target_latent": content.new_tensor(
+                float(style_path_debug.get("style_spatial_source_target_latent", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_spatial_source_structured_map": content.new_tensor(
+                float(style_path_debug.get("style_spatial_source_structured_map", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_spatial_source_code_map": content.new_tensor(
+                float(style_path_debug.get("style_spatial_source_code_map", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_spatial_source_legacy_zero": content.new_tensor(
+                float(style_path_debug.get("style_spatial_source_legacy_zero", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_spatial_code_map_primary": content.new_tensor(
+                float(style_path_debug.get("style_spatial_code_map_primary", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_spatial_code_map_residual": content.new_tensor(
+                float(style_path_debug.get("style_spatial_code_map_residual", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_spatial_code_map_abs": content.new_tensor(
+                float(style_path_debug.get("style_spatial_code_map_abs", 0.0)),
+                dtype=torch.float32,
+            ),
+            "style_spatial_map_abs": content.new_tensor(
+                float(style_path_debug.get("style_spatial_map_abs", 0.0)),
+                dtype=torch.float32,
+            ),
         }
         pred_probe_endpoint = pred_endpoint if pred_endpoint is not None else (content + pred_velocity)
         if bool(getattr(model, "transport_stats_mode", "none") == "normalized_solver"):
@@ -2698,6 +3065,7 @@ class OTFlowMatchingObjective:
             metrics["identity_ratio"] = id_mask.float().mean().detach()
         components = {
             "flow": flow_loss,
+            "plain_path_distill": plain_path_distill,
             "kinetic_energy": kinetic_loss * self.w_kinetic,
             "anisotropic_kinetic": anisotropic_kinetic,
             "stokes_viscous": stokes_viscous,
@@ -2726,6 +3094,7 @@ class OTFlowMatchingObjective:
             "semantic_attn": getattr(model, "last_semantic_attn", None).detach() if getattr(model, "last_semantic_attn", None) is not None else None,
             "semantic_k": getattr(model, "last_semantic_k", None).detach() if getattr(model, "last_semantic_k", None) is not None else None,
             "semantic_topology_attn": topology_attn.detach() if topology_attn is not None else None,
+            "matched_target_style_code": style_code_override.detach() if torch.is_tensor(style_code_override) else None,
         }
         return metrics, components, debug_state
 

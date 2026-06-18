@@ -114,6 +114,37 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             self.semantic_attn_routing_mode = "softmax"
         self.semantic_self_topology_gate = bool(getattr(cfg, "semantic_self_topology_gate", False))
         self.semantic_self_topology_blend = max(0.0, min(1.0, float(getattr(cfg, "semantic_self_topology_blend", 1.0))))
+        if (not self.semantic_self_topology_gate) and self.semantic_self_topology_blend > 0.0:
+            warnings.warn(
+                "semantic_self_topology_blend is non-zero but semantic_self_topology_gate is disabled; "
+                "the topology-blend sweep would be a no-op until the gate is enabled.",
+                category=UserWarning,
+                stacklevel=2,
+            )
+        self.matched_target_conditioning_mode = str(
+            getattr(cfg, "matched_target_conditioning_mode", "auto")
+        ).strip().lower()
+        if self.matched_target_conditioning_mode not in {"auto", "none", "spatial", "code", "both"}:
+            self.matched_target_conditioning_mode = "auto"
+        self.matched_target_style_encoder_mode = str(
+            getattr(cfg, "matched_target_style_encoder_mode", "none")
+        ).strip().lower()
+        if self.matched_target_style_encoder_mode not in {"none", "residual", "replace"}:
+            self.matched_target_style_encoder_mode = "none"
+        self.matched_target_style_encoder_hidden_dim = max(
+            8,
+            int(getattr(cfg, "matched_target_style_encoder_hidden_dim", 192)),
+        )
+        self.matched_target_style_encoder_highpass_kernel = max(
+            1,
+            int(getattr(cfg, "matched_target_style_encoder_highpass_kernel", 5)),
+        )
+        if self.matched_target_style_encoder_highpass_kernel % 2 == 0:
+            self.matched_target_style_encoder_highpass_kernel += 1
+        self.matched_target_style_encoder_residual_scale = max(
+            0.0,
+            float(getattr(cfg, "matched_target_style_encoder_residual_scale", 1.0)),
+        )
         self.semantic_sinkhorn_iters = max(1, int(getattr(cfg, "semantic_sinkhorn_iters", 3)))
         self.semantic_gumbel_tau = max(1e-3, float(getattr(cfg, "semantic_gumbel_tau", 1.0)))
         self.num_decoder_blocks = max(0, int(getattr(cfg, "num_decoder_blocks", 2)))
@@ -178,8 +209,55 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             )
             last = self.output_appearance_head[-1]
             if isinstance(last, nn.Linear):
-                nn.init.zeros_(last.weight)
+                nn.init.normal_(last.weight, mean=0.0, std=0.01)
                 nn.init.zeros_(last.bias)
+        matched_target_feature_dim = int(self.body_channels) * 4
+        self.matched_target_style_encoder_head: nn.Module | None = None
+        if self.matched_target_style_encoder_mode != "none":
+            self.matched_target_style_encoder_head = nn.Sequential(
+                nn.LayerNorm(matched_target_feature_dim),
+                nn.Linear(matched_target_feature_dim, self.matched_target_style_encoder_hidden_dim),
+                nn.SiLU(),
+                nn.Linear(self.matched_target_style_encoder_hidden_dim, style_dim),
+            )
+            final = self.matched_target_style_encoder_head[-1]
+            if isinstance(final, nn.Linear):
+                nn.init.normal_(final.weight, mean=0.0, std=0.02)
+                nn.init.zeros_(final.bias)
+        self.style_code_spatial_mode = str(getattr(cfg, "style_code_spatial_mode", "none")).strip().lower()
+        if self.style_code_spatial_mode not in {"none", "lowrank"}:
+            self.style_code_spatial_mode = "none"
+        self.style_code_spatial_hidden_dim = max(4, int(getattr(cfg, "style_code_spatial_hidden_dim", 64)))
+        self.style_code_spatial_rank = max(1, int(getattr(cfg, "style_code_spatial_rank", 8)))
+        self.style_code_spatial_base_hw = max(4, int(getattr(cfg, "style_code_spatial_base_hw", 16)))
+        self.style_code_spatial_scale = max(0.0, float(getattr(cfg, "style_code_spatial_scale", 0.35)))
+        self.style_code_spatial_head: nn.Module | None = None
+        self.style_code_spatial_channel_bias: nn.Module | None = None
+        self.style_code_spatial_basis: nn.Parameter | None = None
+        if self.style_code_spatial_mode == "lowrank" and self.style_code_spatial_scale > 0.0:
+            self.style_code_spatial_head = nn.Sequential(
+                nn.LayerNorm(style_dim),
+                nn.Linear(style_dim, self.style_code_spatial_hidden_dim),
+                nn.SiLU(),
+                nn.Linear(self.style_code_spatial_hidden_dim, self.style_code_spatial_rank),
+            )
+            self.style_code_spatial_channel_bias = nn.Sequential(
+                nn.LayerNorm(style_dim),
+                nn.Linear(style_dim, self.body_channels),
+            )
+            self.style_code_spatial_basis = nn.Parameter(
+                torch.randn(
+                    self.style_code_spatial_rank,
+                    self.body_channels,
+                    self.style_code_spatial_base_hw,
+                    self.style_code_spatial_base_hw,
+                ) * 0.02
+            )
+            for module in (self.style_code_spatial_head, self.style_code_spatial_channel_bias):
+                last = module[-1]
+                if isinstance(last, nn.Linear):
+                    nn.init.normal_(last.weight, mean=0.0, std=0.02)
+                    nn.init.zeros_(last.bias)
         self.use_style_blender = bool(getattr(cfg, "use_style_blender", False))
         if self.upsample_blur_kernel not in {"box3", "gaussian3"}:
             self.upsample_blur_kernel = "box3"

@@ -1,0 +1,5 @@
+stage_root,exists,stage_summary_present,stage_manifest_present,run_count,close_status,close_interpretation,close_reason,best_name,best_style,best_lpips,best_gap,backfill_status,child_dir_count
+/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_ot_rerun_lowrank_auto,True,True,True,2,separated,,,h0_vertical_fm,0.6620107294122377,0.3341379833333334,0.11212725392109568,,3
+/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_plain_path_distill_auto,False,False,False,0,,,,,,,,,0
+/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_stage3_style_auto,False,False,False,0,,,,,,,,,0
+/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_lite_ot_vertical_auto,True,True,True,2,close_cluster,train_eval_contract_gap,,,,,,,5
