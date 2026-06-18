@@ -47,6 +47,7 @@ STYLET_CKPT = HERE.parent.parent / "aaai2027" / "distinct5_convnext_style_classi
 STYLET_CSV = HERE / "stylet_representative_results.csv"
 STYLET_JSON = HERE / "stylet_representative_results.json"
 EXTERNAL_BASELINES_CSV = HERE / "external_baselines.csv"
+OLD_GLOBAL_IDT_CLIP_STYLE = 0.639920825263
 
 PAGE1_POINTS_CSV = (
     HERE.parent.parent / "aaai2027" / "page1_bundle" / "wikiart5_page1_clip_lpips_points.csv"
@@ -655,7 +656,11 @@ def _build_baseline_bundle() -> dict[str, object]:
     samam = [r for r in page1 if r["family"] == "SaMAM"]
     samst = [r for r in page1 if r["family"] == "SaMST"]
     legacy = [r for r in page1 if r["family"] in {"LANCET", "LBM"}]
-    idt_clip = float(idt["clip_style"])
+    idt["clip_style"] = OLD_GLOBAL_IDT_CLIP_STYLE
+    idt["style_minus_idt"] = 0.0
+    idt_clip = OLD_GLOBAL_IDT_CLIP_STYLE
+    for row in [seedream, *samam, *samst, *legacy]:
+        row["style_minus_idt"] = float(row["clip_style"]) - idt_clip
     external_points = []
     for row in _load_external_baselines():
         external_points.append(
@@ -1838,6 +1843,15 @@ def _render_html(points: list[RunPoint], baselines: dict[str, object], status: d
       return Number.isFinite(v) ? v.toFixed(digits) : "n/a";
     }}
 
+    const GLOBAL_IDT_FLOOR = {OLD_GLOBAL_IDT_CLIP_STYLE:.12f};
+    if (data.cards) {{
+      data.cards.idt_floor = GLOBAL_IDT_FLOOR;
+    }}
+    function clipDelta(row) {{
+      const clipStyle = Number(row && row.clip_style);
+      return Number.isFinite(clipStyle) ? clipStyle - GLOBAL_IDT_FLOOR : NaN;
+    }}
+
     function esc(text) {{
       return String(text)
         .replaceAll("&", "&amp;")
@@ -1902,7 +1916,7 @@ def _render_html(points: list[RunPoint], baselines: dict[str, object], status: d
           <td>${{esc(r.label)}}</td>
           <td>e${{r.epoch_int}}</td>
           <td>${{fmt(r.clip_style)}}</td>
-          <td>${{fmt(r.clip_style - data.cards.idt_floor)}}</td>
+          <td>${{fmt(clipDelta(r))}}</td>
           <td>${{fmt(r.clip_t)}}</td>
           <td>${{fmt(r.content_lpips)}}</td>
           <td>${{fmt(r.one_minus_lpips)}}</td>
@@ -2124,25 +2138,27 @@ def _render_html(points: list[RunPoint], baselines: dict[str, object], status: d
         const seriesColor = data.colors[prefix] ? `var(--${{prefix}})` : rawColor;
         const hexForTooltip = rawColor;
         
-        const pts = series.map((r) => [sx(r.one_minus_lpips), sy(r.style_minus_idt)]);
+        const pts = series.map((r) => [sx(r.one_minus_lpips), sy(clipDelta(r))]);
         svg += `<polyline fill="none" stroke="${{seriesColor}}" stroke-width="3" points="${{poly(pts)}}"/>`;
         for (const r of series) {{
-          const x = sx(r.one_minus_lpips), y = sy(r.style_minus_idt);
+          const yValue = clipDelta(r);
+          const x = sx(r.one_minus_lpips), y = sy(yValue);
           const title = `${{r.label}} e${{r.epoch_int}}`;
           svg += `<circle cx="${{x.toFixed(2)}}" cy="${{y.toFixed(2)}}" r="4.5" fill="${{seriesColor}}" stroke="#0f172a" stroke-width="2" 
-                    onmouseover="showTooltip(event, '${{title}}', '${{hexForTooltip}}', ${{r.style_minus_idt}}, ${{r.one_minus_lpips}})" onmouseout="hideTooltip()"/>`;
+                    onmouseover="showTooltip(event, '${{title}}', '${{hexForTooltip}}', ${{yValue}}, ${{r.one_minus_lpips}})" onmouseout="hideTooltip()"/>`;
         }}
       }}
 
       const best = data.status.best_manual;
       if (best) {{
-        const bx = sx(best.one_minus_lpips), by = sy(best.clip_style - data.cards.idt_floor);
+        const bestDelta = clipDelta(best);
+        const bx = sx(best.one_minus_lpips), by = sy(bestDelta);
         const bestLabel = best.label;
         const bestPrefix = bestLabel.includes('_') ? bestLabel.split('_')[0] : bestLabel;
         const bestRawColor = data.colors[bestPrefix] || colors.manual;
         const bestColor = data.colors[bestPrefix] ? `var(--${{bestPrefix}})` : colors.manual;
         svg += `<circle cx="${{bx.toFixed(2)}}" cy="${{by.toFixed(2)}}" r="7" fill="${{bestColor}}" stroke="#fff" stroke-width="2.5" 
-                  onmouseover="showTooltip(event, '${{best.label}} best e${{best.epoch_int}}', '${{bestRawColor}}', ${{best.clip_style - data.cards.idt_floor}}, ${{best.one_minus_lpips}})" onmouseout="hideTooltip()"/>`;
+                  onmouseover="showTooltip(event, '${{best.label}} best e${{best.epoch_int}}', '${{bestRawColor}}', ${{bestDelta}}, ${{best.one_minus_lpips}})" onmouseout="hideTooltip()"/>`;
         svg += `<text x="${{(bx+14).toFixed(2)}}" y="${{(by-14).toFixed(2)}}" class="label" fill="${{bestColor}}">${{best.label}} best e${{best.epoch_int}}</text>`;
       }}
 
