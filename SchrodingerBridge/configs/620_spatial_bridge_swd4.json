@@ -4,12 +4,12 @@
     "single_step_swd_weight": 4.0
   },
   "checkpoint": {
-    "save_dir": "./exp/620_spatial_bridge/620_swd4_sigma002_nfe8"
+    "save_dir": "./exp/620_spatial_bridge/620_swd4_sigma002_nfe8_b80"
   },
   "ablation": {
-    "name": "620_swd4",
+    "name": "620_swd4_b80",
     "axis": "620_spatial_bridge_swd_scan",
     "stage": "swd4",
-    "notes": "620 spatial bridge SWD scan point: single_step_swd_weight=4 on balanced Distinct5 1000/style."
+    "notes": "620 spatial bridge SWD scan point: single_step_swd_weight=4 on balanced Distinct5 1000/style, batch_size=80."
   }
 }
