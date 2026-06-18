@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import shlex
 import subprocess
 import sys
@@ -159,6 +160,7 @@ def main() -> int:
         epochs=epochs,
         smoke=smoke,
     )
+    remote_script_b64 = base64.b64encode(remote_script.encode("utf-8")).decode("ascii")
     cmd = [
         sys.executable,
         str(SCRIPT_DIR / "launch_remote_wsl_command.py"),
@@ -185,7 +187,7 @@ def main() -> int:
         cmd.extend(["--verify-python-file", path])
     if args.dry_run:
         cmd.append("--dry-run")
-    cmd.extend(["--", "/bin/bash", "-lc", remote_script])
+    cmd.extend(["--", "/bin/bash", "-lc", f"echo {remote_script_b64} | base64 -d | bash"])
     return _run(cmd)
 
 
