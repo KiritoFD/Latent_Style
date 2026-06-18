@@ -31,6 +31,9 @@ class SpatialBridge620(nn.Module):
             model_dim=self.dim,
             num_styles=self.num_styles,
             num_memory_tokens=int(getattr(model_cfg, "style_attn_num_tokens", 256)),
+            adapter_enabled=bool(getattr(model_cfg, "style_dino_adapter_enabled", False)),
+            adapter_hidden_dim=int(getattr(model_cfg, "style_dino_adapter_hidden_dim", 1024)),
+            adapter_scale=float(getattr(model_cfg, "style_dino_adapter_scale", 0.25)),
         )
         self.input_proj = nn.Conv2d(self.latent_channels, self.dim, kernel_size=3, padding=1)
         self.time_proj = nn.Sequential(

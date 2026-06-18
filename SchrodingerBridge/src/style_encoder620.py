@@ -7,12 +7,31 @@ from torch import nn
 class StyleConditioner620(nn.Module):
     """Project cached DINO patch tokens into the 620 bridge width."""
 
-    def __init__(self, *, dino_dim: int, model_dim: int, num_styles: int, num_memory_tokens: int = 256) -> None:
+    def __init__(
+        self,
+        *,
+        dino_dim: int,
+        model_dim: int,
+        num_styles: int,
+        num_memory_tokens: int = 256,
+        adapter_enabled: bool = False,
+        adapter_hidden_dim: int = 1024,
+        adapter_scale: float = 0.25,
+    ) -> None:
         super().__init__()
         self.dino_dim = int(dino_dim)
         self.model_dim = int(model_dim)
         self.num_styles = int(num_styles)
         self.num_memory_tokens = int(num_memory_tokens)
+        self.adapter_enabled = bool(adapter_enabled)
+        self.adapter_scale = float(adapter_scale)
+        hidden = max(1, int(adapter_hidden_dim))
+        self.dino_adapter = nn.Sequential(
+            nn.LayerNorm(self.dino_dim),
+            nn.Linear(self.dino_dim, hidden),
+            nn.SiLU(),
+            nn.Linear(hidden, self.dino_dim),
+        )
         self.patch_proj = nn.Sequential(
             nn.LayerNorm(self.dino_dim),
             nn.Linear(self.dino_dim, self.model_dim),
@@ -41,6 +60,12 @@ class StyleConditioner620(nn.Module):
         ids = ids.clamp(0, self.num_styles - 1)
         return self.style_memory.index_select(0, ids).to(device=device, dtype=dtype)
 
+    def _adapt_dino(self, tokens: torch.Tensor) -> torch.Tensor:
+        if not self.adapter_enabled:
+            return tokens
+        base = tokens.float()
+        return (base + float(self.adapter_scale) * self.dino_adapter(base)).to(dtype=tokens.dtype)
+
     def forward(
         self,
         *,
@@ -64,6 +89,7 @@ class StyleConditioner620(nn.Module):
                 raise ValueError(f"style_dino_patches batch mismatch: expected {batch}, got {patches.shape[0]}")
         if patches.shape[-1] != self.dino_dim:
             raise ValueError(f"style_dino_patches last dim must be {self.dino_dim}, got {patches.shape[-1]}")
+        patches = self._adapt_dino(patches)
 
         style_tokens = self.patch_proj(patches.float()).to(dtype=dtype)
         if style_dino_cls is None:
@@ -74,5 +100,6 @@ class StyleConditioner620(nn.Module):
                 style_global_raw = style_global_raw.unsqueeze(0)
             if style_global_raw.shape[0] == 1 and batch > 1:
                 style_global_raw = style_global_raw.expand(batch, -1)
+            style_global_raw = self._adapt_dino(style_global_raw)
         style_global = self.cls_proj(style_global_raw.float()).to(dtype=dtype)
         return style_tokens, style_global

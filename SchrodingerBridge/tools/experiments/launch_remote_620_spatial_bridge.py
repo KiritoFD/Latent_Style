@@ -41,6 +41,7 @@ SYNC_PATHS = [
     "SchrodingerBridge/configs/620_spatial_bridge_base.json",
     "SchrodingerBridge/configs/620_spatial_bridge_swd4.json",
     "SchrodingerBridge/configs/620_spatial_bridge_swd12.json",
+    "SchrodingerBridge/configs/620_spatial_bridge_adapter.json",
     "SchrodingerBridge/exp/phase616_live_dashboard/sync_phase616_live_dashboard.py",
 ]
 
@@ -72,6 +73,7 @@ CONFIG_BY_VARIANT = {
     "base": "SchrodingerBridge/configs/620_spatial_bridge_base.json",
     "swd4": "SchrodingerBridge/configs/620_spatial_bridge_swd4.json",
     "swd12": "SchrodingerBridge/configs/620_spatial_bridge_swd12.json",
+    "adapter": "SchrodingerBridge/configs/620_spatial_bridge_adapter.json",
 }
 
 
@@ -96,6 +98,7 @@ def main() -> int:
         "base": "620_base_swd8_sigma002_nfe8_b80",
         "swd4": "620_swd4_sigma002_nfe8_b80",
         "swd12": "620_swd12_sigma002_nfe8_b80",
+        "adapter": "620_adapter_swd12_sigma002_nfe8_b80",
     }[variant]
     task_name = str(args.task_name).strip() or (run_name + ("_smoke" if smoke else "_formal"))
     remote_log = f"{REMOTE_SB}/exp/620_spatial_bridge/{task_name}.remote.log"

@@ -58,6 +58,10 @@ case "$variant" in
     config_rel="SchrodingerBridge/configs/620_spatial_bridge_swd12.json"
     default_run_name="620_swd12_sigma002_nfe8_b80"
     ;;
+  adapter)
+    config_rel="SchrodingerBridge/configs/620_spatial_bridge_adapter.json"
+    default_run_name="620_adapter_swd12_sigma002_nfe8_b80"
+    ;;
   *)
     echo "invalid --variant: $variant" >&2
     exit 2
