@@ -2446,6 +2446,10 @@ def build_model_from_config(
     config = _attach_bridge_runtime_fields(config, bridge_cfg)
     config = _normalize_skip_routing_mode(config)
     config.use_checkpointing = bool(use_checkpointing)
+    if str(getattr(config, "contract_family", "legacy") or "legacy").strip().lower() == "620_spatial_bridge":
+        from model620 import build_spatial_bridge620_from_config
+
+        return build_spatial_bridge620_from_config(config, bridge_cfg=bridge_cfg, use_checkpointing=use_checkpointing)
     return TimeConditionedLANCETBridge(config)
 
 

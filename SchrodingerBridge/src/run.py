@@ -443,23 +443,25 @@ def main() -> None:
     logger.info("Device: %s", device)
     logger.info("Seed: %d", seed)
 
-    validate_i2sb_contract(
-        solver_family=str(getattr(config.model, "solver_family", "euler_legacy")),
-        transport_prediction_mode=str(getattr(config.model, "transport_prediction_mode", "velocity")),
-        objective_mode=str(getattr(config.bridge, "objective_mode", "")),
-        loss_type=str(getattr(config.bridge, "loss_type", "")),
-        bridge_noise_schedule=str(getattr(config.bridge, "bridge_noise_schedule", "auto")),
-    )
-    validate_pure_latent_contract(
-        tokenizer_family=str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
-        style_tokenizer=str(getattr(config.model, "style_tokenizer", "")),
-        semantic_supervision_family=str(getattr(config.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
-        dino_masked_swd_weight=float(getattr(config.bridge, "dino_masked_swd_weight", 0.0)),
-        tokenizer_content_adaptive=bool(getattr(config.model, "tokenizer_content_adaptive", False)),
-    )
+    contract_family = str(getattr(config.model, "contract_family", "legacy") or "legacy").strip().lower()
+    if contract_family != "620_spatial_bridge":
+        validate_i2sb_contract(
+            solver_family=str(getattr(config.model, "solver_family", "euler_legacy")),
+            transport_prediction_mode=str(getattr(config.model, "transport_prediction_mode", "velocity")),
+            objective_mode=str(getattr(config.bridge, "objective_mode", "")),
+            loss_type=str(getattr(config.bridge, "loss_type", "")),
+            bridge_noise_schedule=str(getattr(config.bridge, "bridge_noise_schedule", "auto")),
+        )
+        validate_pure_latent_contract(
+            tokenizer_family=str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
+            style_tokenizer=str(getattr(config.model, "style_tokenizer", "")),
+            semantic_supervision_family=str(getattr(config.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
+            dino_masked_swd_weight=float(getattr(config.bridge, "dino_masked_swd_weight", 0.0)),
+            tokenizer_content_adaptive=bool(getattr(config.model, "tokenizer_content_adaptive", False)),
+        )
 
     data_cfg = config.data
-    needs_dino_runtime = runtime_conditioning_requires_dino(
+    needs_dino_runtime = contract_family == "620_spatial_bridge" or runtime_conditioning_requires_dino(
         tokenizer_family=str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
         semantic_supervision_family=str(getattr(config.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
     )

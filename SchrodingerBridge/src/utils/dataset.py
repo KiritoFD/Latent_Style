@@ -731,8 +731,21 @@ class AdaCUTLatentDataset(Dataset):
             if sidecar is not None:
                 item["content_dino_cls"] = sidecar["cls"].float()
                 item["content_dino_patches"] = sidecar["patches"].float()
-                hw = self.dino_patch_hw.get(target_style_id, self.dino_patch_hw.get(content_style_id, (1, int(sidecar["patches"].shape[0]))))
+                hw = self.dino_patch_hw.get(content_style_id, (1, int(sidecar["patches"].shape[0])))
                 item["content_dino_hw"] = torch.tensor(hw, dtype=torch.long)
+            target_style_name = self.style_subdirs[target_style_id]
+            target_stem = self._normalize_base_stem(self.style_item_stems[target_style_id][t_idx])
+            target_sidecar = self.dino_item_sidecars.get((target_style_name, target_stem))
+            if target_sidecar is None and self.dino_cache_required:
+                raise KeyError(f"Missing DINO sidecar for {(target_style_name, target_stem)}")
+            if target_sidecar is not None:
+                item["target_style_dino_cls"] = target_sidecar["cls"].float()
+                item["target_style_dino_patches"] = target_sidecar["patches"].float()
+                target_hw = self.dino_patch_hw.get(
+                    target_style_id,
+                    (1, int(target_sidecar["patches"].shape[0])),
+                )
+                item["target_style_dino_hw"] = torch.tensor(target_hw, dtype=torch.long)
             bank_cls = self.dino_style_bank_cls.get(target_style_id)
             bank_patches = self.dino_style_bank_patches.get(target_style_id)
             if bank_cls is not None and bank_patches is not None:

@@ -1,0 +1,15 @@
+{
+  "_base": "620_spatial_bridge_base.json",
+  "bridge": {
+    "single_step_swd_weight": 12.0
+  },
+  "checkpoint": {
+    "save_dir": "./exp/620_spatial_bridge/620_swd12_sigma002_nfe8"
+  },
+  "ablation": {
+    "name": "620_swd12",
+    "axis": "620_spatial_bridge_swd_scan",
+    "stage": "swd12",
+    "notes": "620 spatial bridge SWD scan point: single_step_swd_weight=12 on balanced Distinct5 1000/style."
+  }
+}
