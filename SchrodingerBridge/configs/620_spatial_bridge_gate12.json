@@ -1,0 +1,15 @@
+{
+  "_base": "620_spatial_bridge_adapter.json",
+  "model": {
+    "style_cross_attn_gate_init": 0.12
+  },
+  "checkpoint": {
+    "save_dir": "./exp/620_spatial_bridge/620_gate12_adapter_swd12_sigma002_nfe8_b64"
+  },
+  "ablation": {
+    "name": "620_gate12_adapter_swd12_b64",
+    "axis": "620_spatial_bridge_gate_followup",
+    "stage": "gate12",
+    "notes": "620 follow-up for style_gate below target: trainable DINO adapter, SWD=12, sigma=0.02, NFE=8, initial style_cross_attn_gate=0.12, batch_size=64."
+  }
+}

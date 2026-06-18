@@ -43,6 +43,7 @@ SYNC_PATHS = [
     "SchrodingerBridge/configs/620_spatial_bridge_swd12.json",
     "SchrodingerBridge/configs/620_spatial_bridge_adapter.json",
     "SchrodingerBridge/configs/620_spatial_bridge_moe.json",
+    "SchrodingerBridge/configs/620_spatial_bridge_gate12.json",
     "SchrodingerBridge/exp/phase616_live_dashboard/sync_phase616_live_dashboard.py",
 ]
 
@@ -76,6 +77,7 @@ CONFIG_BY_VARIANT = {
     "swd12": "SchrodingerBridge/configs/620_spatial_bridge_swd12.json",
     "adapter": "SchrodingerBridge/configs/620_spatial_bridge_adapter.json",
     "moe": "SchrodingerBridge/configs/620_spatial_bridge_moe.json",
+    "gate12": "SchrodingerBridge/configs/620_spatial_bridge_gate12.json",
 }
 
 
@@ -103,6 +105,7 @@ def main() -> int:
         "swd12": "620_swd12_sigma002_nfe8_b80",
         "adapter": "620_adapter_swd12_sigma002_nfe8_b64",
         "moe": "620_moe_swd12_sigma002_nfe8_b64",
+        "gate12": "620_gate12_adapter_swd12_sigma002_nfe8_b64",
     }[variant]
     if args.batch_size is not None and int(args.batch_size) % 16 != 0:
         raise SystemExit(f"--batch-size must be divisible by 16, got {args.batch_size}")
