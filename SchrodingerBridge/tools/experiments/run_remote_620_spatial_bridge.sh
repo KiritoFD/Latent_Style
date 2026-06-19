@@ -85,6 +85,13 @@ case "$variant" in
       BATCH_SIZE="64"
     fi
     ;;
+  lowmix)
+    config_rel="SchrodingerBridge/configs/620_spatial_bridge_lowmix.json"
+    default_run_name="620_lowmix05_gate12_adapter_swd12_sigma002_nfe8_b64"
+    if [ -z "$BATCH_SIZE_WAS_SET" ]; then
+      BATCH_SIZE="64"
+    fi
+    ;;
   *)
     echo "invalid --variant: $variant" >&2
     exit 2
@@ -167,6 +174,7 @@ else
 fi
 
 "$PYTHON_BIN" SchrodingerBridge/tools/probe_620_path_liveness.py --device cpu
+"$PYTHON_BIN" SchrodingerBridge/tools/probe_620_endpoint_decomposition.py --device cpu
 
 "$PYTHON_BIN" - <<PY
 import json
@@ -197,7 +205,7 @@ full_eval = payload.setdefault("full_eval", {})
 full_eval["batch_size"] = full_eval_batch_size
 full_eval["vae_decode_batch_size"] = full_eval_vae_decode_batch_size
 save_dir = f"./exp/620_spatial_bridge/{os.environ['RUN_NAME']}"
-if os.environ["STAGE"] == "smoke":
+if os.environ["STAGE"] == "smoke" and not save_dir.endswith("_smoke"):
     save_dir += "_smoke"
 payload.setdefault("checkpoint", {})["save_dir"] = save_dir
 payload.setdefault("ablation", {})["name"] = os.environ["RUN_NAME"]

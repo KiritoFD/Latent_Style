@@ -114,9 +114,31 @@ def test_vertical_fm_target_velocity_is_target_highpass_delta() -> None:
     content = torch.randn(2, 2, 5, 5)
     target = torch.randn(2, 2, 5, 5)
     t = torch.tensor([0.25, 0.75])
-    _, target_velocity = objective._vertical_state(content, target, t)
+    x_t, target_velocity = objective._vertical_state(content, target, t)
+    c_low = losses620._lowpass(content, 3)
+    c_high = content - c_low
+    t_high = target - losses620._lowpass(target, 3)
+    expected_x_t = c_low + (1.0 - t).view(-1, 1, 1, 1) * c_high + t.view(-1, 1, 1, 1) * t_high
     expected = (target - losses620._lowpass(target, 3)) - (content - losses620._lowpass(content, 3))
+    assert torch.allclose(x_t, expected_x_t, atol=1e-6)
     assert torch.allclose(target_velocity, expected, atol=1e-6)
+
+
+def test_vertical_fm_optional_low_anchor_blends_target_lowpass() -> None:
+    cfg = _cfg()
+    cfg.bridge.training_target_projection_low_anchor = 0.5
+    objective = SpatialBridgeObjective620(cfg)
+    content = torch.randn(2, 2, 5, 5)
+    target = torch.randn(2, 2, 5, 5)
+    t = torch.tensor([0.25, 0.75])
+    x_t, target_velocity = objective._vertical_state(content, target, t)
+    c_low = losses620._lowpass(content, 3)
+    t_low = losses620._lowpass(target, 3)
+    c_high = content - c_low
+    t_high = target - t_low
+    expected_x_t = 0.5 * c_low + 0.5 * t_low + (1.0 - t).view(-1, 1, 1, 1) * c_high + t.view(-1, 1, 1, 1) * t_high
+    assert torch.allclose(x_t, expected_x_t, atol=1e-6)
+    assert torch.allclose(target_velocity, t_high - c_high, atol=1e-6)
 
 
 def test_single_step_swd_receives_velocity_derived_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -146,6 +168,46 @@ def test_single_step_swd_receives_velocity_derived_endpoint(monkeypatch: pytest.
     )
     x_t = objective.last_debug["x_t"]
     assert torch.allclose(captured["endpoint"], x_t + 0.6 * 0.25, atol=1e-6)
+
+
+def test_620_endpoint_decomposition_metrics_track_low_and_high_bands(monkeypatch: pytest.MonkeyPatch) -> None:
+    class PerfectVerticalModel(torch.nn.Module):
+        bridge_sigma = 0.02
+        last_debug = {}
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.velocity = None
+
+        def forward(self, x, **kwargs):  # noqa: ANN001
+            del x, kwargs
+            return self.velocity
+
+    objective = SpatialBridgeObjective620(_cfg())
+    monkeypatch.setattr(objective, "_sample_t", lambda content: torch.full((content.shape[0],), 0.5, device=content.device))
+    content = torch.randn(2, 2, 6, 6)
+    target = torch.randn_like(content) + 0.5
+    _x_t, target_velocity = objective._vertical_state(content, target, torch.full((2,), 0.5))
+    model = PerfectVerticalModel()
+    model.velocity = target_velocity
+    out = objective.compute(
+        model,
+        content=content,
+        target_style=target,
+        target_style_id=torch.tensor([0, 1]),
+        conditioning={},
+    )
+
+    z_hat1 = objective.last_debug["z_hat1"]
+    z_low = losses620._lowpass(z_hat1, objective.lowpass_kernel)
+    c_low = losses620._lowpass(content, objective.lowpass_kernel)
+    t_low = losses620._lowpass(target, objective.lowpass_kernel)
+    z_high = z_hat1 - z_low
+    t_high = target - t_low
+    assert torch.allclose(out["endpoint_low_to_source"], (z_low - c_low).abs().mean(), atol=1e-6)
+    assert torch.allclose(out["endpoint_low_to_target"], (z_low - t_low).abs().mean(), atol=1e-6)
+    assert torch.allclose(out["endpoint_high_to_target"], (z_high - t_high).abs().mean(), atol=1e-6)
+    assert torch.isfinite(out["endpoint_low_target_ratio"])
 
 
 def test_i2sb_single_final_step_has_zero_variance(monkeypatch: pytest.MonkeyPatch) -> None:

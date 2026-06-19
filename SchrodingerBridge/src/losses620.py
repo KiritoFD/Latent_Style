@@ -39,6 +39,7 @@ class SpatialBridgeObjective620:
         self.single_step_swd_weight = float(getattr(self.bridge_cfg, "single_step_swd_weight", 8.0))
         self.single_step_edge_weight = float(getattr(self.bridge_cfg, "single_step_edge_weight", 0.1))
         self.lowpass_kernel = int(getattr(self.bridge_cfg, "training_target_projection_kernel", 5))
+        self.low_anchor = float(getattr(self.bridge_cfg, "training_target_projection_low_anchor", 1.0))
         self.num_projections = int(getattr(self.bridge_cfg, "semantic_swd_num_projections", 64))
         self.t_min = float(getattr(self.bridge_cfg, "t_min", 0.0))
         self.t_max = float(getattr(self.bridge_cfg, "t_max", 1.0))
@@ -66,9 +67,12 @@ class SpatialBridgeObjective620:
     def _vertical_state(self, content: torch.Tensor, target: torch.Tensor, t: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         c_low = _lowpass(content, self.lowpass_kernel)
         c_high = content - c_low
-        t_high = target - _lowpass(target, self.lowpass_kernel)
+        t_low = _lowpass(target, self.lowpass_kernel)
+        t_high = target - t_low
+        low_anchor = max(0.0, min(1.0, self.low_anchor))
+        base_low = low_anchor * c_low + (1.0 - low_anchor) * t_low
         t4 = t.view(-1, 1, 1, 1).to(dtype=content.dtype)
-        x_t = c_low + (1.0 - t4) * c_high + t4 * t_high
+        x_t = base_low + (1.0 - t4) * c_high + t4 * t_high
         target_velocity = t_high - c_high
         return x_t, target_velocity
 
@@ -110,6 +114,14 @@ class SpatialBridgeObjective620:
         )
         loss = self.fm_weight * fm + self.single_step_swd_weight * swd_ss + self.single_step_edge_weight * edge_ss
         c_low = _lowpass(content, self.lowpass_kernel)
+        t_low = _lowpass(target_style, self.lowpass_kernel)
+        z_low = _lowpass(z_hat1, self.lowpass_kernel)
+        z_high = z_hat1 - z_low
+        target_high = target_style - t_low
+        low_to_source = (z_low - c_low).detach().float().abs().mean()
+        low_to_target = (z_low - t_low).detach().float().abs().mean()
+        high_to_target = (z_high - target_high).detach().float().abs().mean()
+        low_target_ratio = low_to_target / low_to_source.clamp_min(1e-8)
         low_leak = _lowpass(pred_velocity, self.lowpass_kernel).float().abs().mean()
         debug = getattr(model, "last_debug", {}) if hasattr(model, "last_debug") else {}
         zero = content.new_tensor(0.0)
@@ -129,9 +141,22 @@ class SpatialBridgeObjective620:
             "velocity_abs": pred_velocity.detach().float().abs().mean(),
             "target_velocity_abs": target_velocity.detach().float().abs().mean(),
             "endpoint_abs": z_hat1.detach().float().abs().mean(),
-            "base_structural_drift": (_lowpass(z_hat1, self.lowpass_kernel) - c_low).detach().float().abs().mean(),
+            "base_structural_drift": low_to_source.detach(),
+            "endpoint_low_to_source": low_to_source.detach(),
+            "endpoint_low_to_target": low_to_target.detach(),
+            "endpoint_high_to_target": high_to_target.detach(),
+            "endpoint_low_target_ratio": low_target_ratio.detach(),
             "low_freq_leak": low_leak.detach(),
             "fiber_energy_ratio": ((target_velocity.float().square().mean()) / (target_style.float().square().mean().clamp_min(1e-8))).detach(),
+            "target_base_shift": (t_low - c_low).detach().float().abs().mean(),
+            "training_target_projection_active": content.new_tensor(1.0),
+            "training_target_projection_mode_source_low_target_high": content.new_tensor(1.0),
+            "training_target_projection_low_anchor": content.new_tensor(max(0.0, min(1.0, self.low_anchor))),
+            "training_target_projection_low_drift": low_to_source.detach(),
+            "training_target_projection_target_delta": low_to_target.detach(),
+            "training_target_projection_high_energy_ratio": (
+                target_high.float().square().mean() / target_style.float().square().mean().clamp_min(1e-8)
+            ).detach(),
             "bridge_sigma": content.new_tensor(float(getattr(model, "bridge_sigma", 0.0))),
             "style_dino_active": content.new_tensor(1.0 if style_patches is not None else 0.0),
             "style_gate_value": debug.get("style_gate_value", zero).detach() if torch.is_tensor(debug.get("style_gate_value", None)) else zero,
