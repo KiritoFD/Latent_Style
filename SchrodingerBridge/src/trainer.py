@@ -282,6 +282,20 @@ class SBTrainer:
         self.global_step = 0
         self.requested_stop = False
         self.start_epoch = 1
+        self.clip_text_cache: dict = {}
+        self.clip_null_token = None
+        clip_cache_path = str(getattr(config.data, "style_caption_path", "") or "").strip()
+        if clip_cache_path and clip_cache_path.endswith(".pt"):
+            try:
+                payload = torch.load(clip_cache_path, map_location="cpu", weights_only=False)
+                entries = payload.get("entries", {})
+                self.clip_text_cache = entries if isinstance(entries, dict) else {}
+                max_len = int(payload.get("max_length", 77))
+                feat_dim = int(payload.get("feature_dim", 768))
+                self.clip_null_token = torch.zeros(1, max_len, feat_dim)
+                logger.info("Loaded CLIP text cache: %d entries from %s", len(self.clip_text_cache), clip_cache_path)
+            except Exception as exc:
+                logger.warning("Failed to load CLIP text cache %s: %s", clip_cache_path, exc)
         self._configure_freeze_mode()
         # Optimizer state in checkpoints is keyed to the active trainable scope.
         # Apply freeze/rebuild first so local-latest resume does not compare an
@@ -1157,6 +1171,23 @@ class SBTrainer:
             source_style_id = batch.get("source_style_id")
             aux_target_style = batch.get("aux_target_style")
             aux_target_valid = batch.get("aux_target_valid")
+            if hasattr(self, "clip_text_cache") and self.clip_text_cache and "target_style_caption_rel_path" in batch:
+                rel_paths = batch["target_style_caption_rel_path"]
+                if isinstance(rel_paths, str):
+                    rel_paths = [rel_paths] * content.shape[0]
+                elif isinstance(rel_paths, (list, tuple)):
+                    rel_paths = list(rel_paths)
+                else:
+                    rel_paths = [str(rel_paths)] * content.shape[0]
+                text_tokens_list = []
+                for rp in rel_paths:
+                    entry = self.clip_text_cache.get(rp) if isinstance(rp, str) and rp else None
+                    if entry is not None:
+                        text_tokens_list.append(entry["text_features"])
+                    elif self.clip_null_token is not None:
+                        text_tokens_list.append(self.clip_null_token[0])
+                if text_tokens_list:
+                    batch["target_style_text_tokens"] = torch.stack(text_tokens_list).to(device=self.device)
 
             t0 = time.perf_counter()
             if self.device.type == "cuda":

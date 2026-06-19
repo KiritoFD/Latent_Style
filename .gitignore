@@ -117,3 +117,4 @@ node_modules/
 *.stderr.log
 package-lock.json
 package.json
+_data_sync/

@@ -1,0 +1,33 @@
+{
+  "_base": "620_spatial_bridge_base.json",
+  "bridge": {
+    "single_step_swd_weight": 16.0
+  },
+  "model": {
+    "style_text_enabled": true,
+    "style_text_dim": 768,
+    "style_text_max_length": 77,
+    "style_text_dropout_prob": 0.15,
+    "style_image_dropout_prob": 0.15,
+    "style_attn_num_tokens": 333
+  },
+  "data": {
+    "virtual_length_multiplier": 0.04,
+    "style_caption_path": "/mnt/f/Github/Latent_Style/eval_cache/offline_pairing/clip_text_cache_wikiart_distinct5_samam_512.pt"
+  },
+  "full_eval": {
+    "num_steps": 16
+  },
+  "training": {
+    "batch_size": 48
+  },
+  "checkpoint": {
+    "save_dir": "./exp/620_spatial_bridge/620_swd16_multimodal_vlen0.04"
+  },
+  "ablation": {
+    "name": "620_swd16_multimodal_vlen0.04",
+    "axis": "620_spatial_bridge_multimodal",
+    "stage": "dino_clip_fusion",
+    "notes": "Multimodal: DINO 256 image tokens + CLIP 77 text tokens concatenated for cross-attention. CFG modality dropout 15/15. Tri-directional IDT repulsion available at inference."
+  }
+}

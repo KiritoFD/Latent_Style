@@ -507,6 +507,7 @@ def main() -> None:
         dino_cache_path=dino_cache_path,
         dino_cache_required=dino_cache_required,
         dino_bank_limit_per_style=int(data_cfg.dino_bank_limit_per_style),
+        style_caption_path=str(getattr(data_cfg, "style_caption_path", "")),
         device=str(device),
     )
 

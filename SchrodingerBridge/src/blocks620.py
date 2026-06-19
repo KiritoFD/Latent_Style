@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from typing import Any
 
 import torch
 import torch.nn.functional as F
@@ -20,8 +21,33 @@ class SpatialBridgeBlock620(nn.Module):
         style_moe_num_experts: int = 4,
         style_moe_router_hidden_dim: int = 128,
         style_kv_moe_content_routed: bool = False,
+        style_shortcut_alpha: Any = 1.0,
+        style_query_source: str = "concat",
+        style_cross_attn_skip_coarse: bool = False,
+        style_attn_topk: int = 0,
+        layer_idx: int = 0,
+        num_layers: int = 4,
+        dino_dim: int = 384,
     ) -> None:
         super().__init__()
+        self.layer_idx = int(layer_idx)
+        self.num_layers = int(num_layers)
+        self.style_query_source = str(style_query_source).strip().lower()
+        self.style_cross_attn_skip_coarse = bool(style_cross_attn_skip_coarse)
+        self.style_attn_topk = int(style_attn_topk)
+        self.cross_attn_entropy = torch.tensor(0.0)
+
+        # Parse shortcut_alpha
+        if isinstance(style_shortcut_alpha, (list, tuple)):
+            if self.layer_idx < len(style_shortcut_alpha):
+                self.shortcut_alpha = float(style_shortcut_alpha[self.layer_idx])
+            else:
+                self.shortcut_alpha = 1.0
+        elif isinstance(style_shortcut_alpha, str) and style_shortcut_alpha.lower() == "learnable":
+            self.shortcut_alpha = "learnable"
+            self.shortcut_w = nn.Parameter(torch.tensor(2.2))
+        else:
+            self.shortcut_alpha = float(style_shortcut_alpha)
         self.dim = int(dim)
         self.num_heads = max(1, min(int(num_heads), self.dim))
         while self.dim % self.num_heads != 0 and self.num_heads > 1:
@@ -37,6 +63,8 @@ class SpatialBridgeBlock620(nn.Module):
         self.sa_out = nn.Linear(self.dim, self.dim)
         # Cross-attention: content Q, style K/V
         self.q_proj = nn.Linear(self.dim, self.dim)
+        if self.style_query_source == "content_dino":
+            self.q_dino_proj = nn.Linear(int(dino_dim), self.dim)
         if self.style_moe_enabled:
             router_hidden = max(1, int(style_moe_router_hidden_dim))
             router_in_dim = self.dim * 2 if self.style_kv_moe_content_routed else self.dim
@@ -83,7 +111,14 @@ class SpatialBridgeBlock620(nn.Module):
         v = (v_experts * weights).sum(dim=1)
         return k, v, router_probs
 
-    def forward(self, x: torch.Tensor, *, time_emb: torch.Tensor, style_tokens: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        *,
+        time_emb: torch.Tensor,
+        style_tokens: torch.Tensor,
+        content_dino_patches: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         b, c, h, w = x.shape
 
         # --- Self-attention with AdaLN(time) ---
@@ -101,35 +136,80 @@ class SpatialBridgeBlock620(nn.Module):
         sa_out = sa_out.transpose(1, 2).reshape(b, h * w, c)
         sa_out = self.sa_out(sa_out)
         time_gate = torch.sigmoid(gate_t[:, :, None, None]).to(dtype=x.dtype)
-        x = x + time_gate * sa_out.transpose(1, 2).reshape(b, c, h, w)
+        sa_delta = time_gate * sa_out.transpose(1, 2).reshape(b, c, h, w)
+        x = x + sa_delta
 
         # --- Cross-attention (content × style) ---
-        ca_in = x.permute(0, 2, 3, 1).reshape(b, h * w, c)
-        q = self.q_proj(ca_in).view(b, h * w, self.num_heads, self.head_dim).transpose(1, 2)
-        k_tokens, v_tokens, router_probs = self._style_kv(style_tokens, content_features=x)
-        k = k_tokens.view(b, style_tokens.shape[1], self.num_heads, self.head_dim).transpose(1, 2)
-        v = v_tokens.view(b, style_tokens.shape[1], self.num_heads, self.head_dim).transpose(1, 2)
-        attended = F.scaled_dot_product_attention(q, k, v, dropout_p=0.0, is_causal=False)
-        attended = attended.transpose(1, 2).reshape(b, h * w, c)
-        attended = self.out_proj(attended)
-        style_delta = torch.tanh(self.style_gate).to(dtype=x.dtype) * attended.transpose(1, 2).reshape(b, c, h, w)
-        x = x + style_delta
+        skip_cross = self.style_cross_attn_skip_coarse and (self.layer_idx < self.num_layers // 2)
+        if skip_cross:
+            style_delta = torch.zeros_like(x)
+            attn_entropy = torch.tensor(0.0, device=x.device, dtype=x.dtype)
+        else:
+            if self.style_query_source == "content_dino" and content_dino_patches is not None:
+                dino_b, dino_tokens, dino_c = content_dino_patches.shape
+                side = int(round(dino_tokens ** 0.5))
+                if side * side == dino_tokens:
+                    dino_grid = content_dino_patches.reshape(dino_b, side, side, dino_c).permute(0, 3, 1, 2)
+                    dino_up = F.interpolate(dino_grid.float(), size=(h, w), mode="bilinear", align_corners=False).to(dtype=x.dtype)
+                    dino_flat = dino_up.permute(0, 2, 3, 1).reshape(b, h * w, dino_c)
+                else:
+                    dino_flat = content_dino_patches.float().repeat_interleave(max(1, (h * w) // dino_tokens), dim=1)[:, :h * w, :].to(dtype=x.dtype)
+                
+                q_in = self.q_dino_proj(dino_flat)
+                q = q_in.view(b, h * w, self.num_heads, self.head_dim).transpose(1, 2)
+            elif self.style_query_source == "sa_out_only":
+                ca_in_sa = sa_delta.permute(0, 2, 3, 1).reshape(b, h * w, c)
+                q = self.q_proj(ca_in_sa).view(b, h * w, self.num_heads, self.head_dim).transpose(1, 2)
+            else:
+                ca_in = x.permute(0, 2, 3, 1).reshape(b, h * w, c)
+                q = self.q_proj(ca_in).view(b, h * w, self.num_heads, self.head_dim).transpose(1, 2)
+
+            k_tokens, v_tokens, router_probs = self._style_kv(style_tokens, content_features=x)
+            k = k_tokens.view(b, style_tokens.shape[1], self.num_heads, self.head_dim).transpose(1, 2)
+            v = v_tokens.view(b, style_tokens.shape[1], self.num_heads, self.head_dim).transpose(1, 2)
+
+            logits = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(float(self.head_dim))
+            if self.style_attn_topk > 0:
+                topk_val, topk_idx = torch.topk(logits, k=min(self.style_attn_topk, logits.shape[-1]), dim=-1)
+                mask = torch.full_like(logits, float('-inf'))
+                mask.scatter_(dim=-1, index=topk_idx, src=topk_val)
+                attn = torch.softmax(mask, dim=-1)
+            else:
+                attn = torch.softmax(logits, dim=-1)
+
+            attended = torch.matmul(attn, v)
+            attended = attended.transpose(1, 2).reshape(b, h * w, c)
+            attended = self.out_proj(attended)
+            style_delta = torch.tanh(self.style_gate).to(dtype=x.dtype) * attended.transpose(1, 2).reshape(b, c, h, w)
+            attn_entropy = -(attn * attn.clamp_min(1e-8).log()).sum(dim=-1).mean()
+            self.pixel_entropy = -(attn * attn.clamp_min(1e-8).log()).sum(dim=-1).mean(dim=1).reshape(b, 1, h, w)
+
+        if skip_cross:
+            self.pixel_entropy = torch.zeros(b, 1, h, w, device=x.device, dtype=x.dtype)
+
+        self.cross_attn_entropy = attn_entropy
+
+        # Apply shortcut alpha
+        if isinstance(self.shortcut_alpha, float):
+            alpha = self.shortcut_alpha
+        elif self.shortcut_alpha == "learnable":
+            alpha = torch.sigmoid(self.shortcut_w).to(dtype=x.dtype)
+        else:
+            alpha = 1.0
+
+        x = alpha * x + style_delta
 
         # --- FFN ---
         x = x + self.ffn(self.norm2(x))
 
         # --- Debug ---
-        with torch.no_grad():
-            logits = torch.matmul(q.float(), k.float().transpose(-2, -1)) / math.sqrt(float(self.head_dim))
-            attn = torch.softmax(logits, dim=-1)
-            entropy = -(attn.clamp_min(1e-8) * attn.clamp_min(1e-8).log()).sum(dim=-1).mean()
         self.last_debug = {
             "style_gate_value": torch.tanh(self.style_gate.detach()).abs(),
-            "cross_attn_entropy": entropy.detach(),
+            "cross_attn_entropy": attn_entropy.detach(),
             "cross_attn_delta_abs": style_delta.detach().float().abs().mean(),
             "cross_attn_token_count": torch.tensor(float(style_tokens.shape[1]), device=x.device),
         }
-        if router_probs is not None:
+        if not skip_cross and router_probs is not None:
             with torch.no_grad():
                 probs = router_probs.detach().float()
                 router_entropy = -(probs.clamp_min(1e-8) * probs.clamp_min(1e-8).log()).sum(dim=-1).mean()

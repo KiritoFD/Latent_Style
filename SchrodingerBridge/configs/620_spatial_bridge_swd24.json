@@ -1,0 +1,18 @@
+{
+  "_base": "620_spatial_bridge_base.json",
+  "bridge": {
+    "single_step_swd_weight": 24.0
+  },
+  "checkpoint": {
+    "save_dir": "./exp/620_spatial_bridge/620_swd24_sigma002_nfe8_b64"
+  },
+  "training": {
+    "batch_size": 64
+  },
+  "ablation": {
+    "name": "620_swd24_b64",
+    "axis": "620_spatial_bridge_swd_scan",
+    "stage": "swd24",
+    "notes": "620 spatial bridge SWD scan point: single_step_swd_weight=24 on balanced Distinct5 1000/style, batch_size=64."
+  }
+}

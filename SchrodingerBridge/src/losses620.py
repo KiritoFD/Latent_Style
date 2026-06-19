@@ -43,6 +43,8 @@ class SpatialBridgeObjective620:
         self.num_projections = int(getattr(self.bridge_cfg, "semantic_swd_num_projections", 64))
         self.t_min = float(getattr(self.bridge_cfg, "t_min", 0.0))
         self.t_max = float(getattr(self.bridge_cfg, "t_max", 1.0))
+        self.swd_scale_mode = str(getattr(self.bridge_cfg, "swd_scale_mode", "global")).strip().lower()
+        self.w_attn_entropy_reg = float(getattr(self.bridge_cfg, "w_attn_entropy_reg", 0.0))
         self.last_debug: dict[str, torch.Tensor] = {}
         self._projection_cache: dict[tuple[int, str, torch.dtype], torch.Tensor] = {}
 
@@ -92,10 +94,17 @@ class SpatialBridgeObjective620:
         conditioning = conditioning or {}
         style_patches = conditioning.get("target_style_dino_patches")
         style_cls = conditioning.get("target_style_dino_cls")
+        content_patches = conditioning.get("content_dino_patches")
+        style_text_tokens = conditioning.get("target_style_text_tokens")
         if not torch.is_tensor(style_patches):
             style_patches = None
         if not torch.is_tensor(style_cls):
             style_cls = None
+        if not torch.is_tensor(content_patches):
+            content_patches = None
+        if not torch.is_tensor(style_text_tokens):
+            style_text_tokens = None
+
         t = self._sample_t(content)
         x_t, target_velocity = self._vertical_state(content, target_style, t)
         pred_velocity = model(
@@ -104,15 +113,45 @@ class SpatialBridgeObjective620:
             style_id=target_style_id,
             style_dino_patches=style_patches,
             style_dino_cls=style_cls,
+            content_dino_patches=content_patches,
+            style_latent=target_style,
+            style_text_tokens=style_text_tokens,
         )
         z_hat1 = x_t + (1.0 - t).view(-1, 1, 1, 1).to(dtype=x_t.dtype) * pred_velocity
         fm = F.mse_loss(pred_velocity.float(), target_velocity.float())
-        swd_ss = _sliced_wasserstein(z_hat1, target_style, dirs=self._projection_dirs(z_hat1))
+
+        # SWD scale mode handling
+        if self.swd_scale_mode == "2-scale":
+            swd_64 = _sliced_wasserstein(z_hat1, target_style, dirs=self._projection_dirs(z_hat1))
+            z_hat1_32 = F.avg_pool2d(z_hat1, kernel_size=2, stride=2)
+            target_style_32 = F.avg_pool2d(target_style, kernel_size=2, stride=2)
+            swd_32 = _sliced_wasserstein(z_hat1_32, target_style_32, dirs=self._projection_dirs(z_hat1_32))
+            swd_ss = 0.5 * swd_64 + 0.5 * swd_32
+        elif self.swd_scale_mode == "3-scale":
+            swd_64 = _sliced_wasserstein(z_hat1, target_style, dirs=self._projection_dirs(z_hat1))
+            z_hat1_32 = F.avg_pool2d(z_hat1, kernel_size=2, stride=2)
+            target_style_32 = F.avg_pool2d(target_style, kernel_size=2, stride=2)
+            swd_32 = _sliced_wasserstein(z_hat1_32, target_style_32, dirs=self._projection_dirs(z_hat1_32))
+            z_hat1_16 = F.avg_pool2d(z_hat1, kernel_size=4, stride=4)
+            target_style_16 = F.avg_pool2d(target_style, kernel_size=4, stride=4)
+            swd_16 = _sliced_wasserstein(z_hat1_16, target_style_16, dirs=self._projection_dirs(z_hat1_16))
+            swd_ss = 0.4 * swd_64 + 0.4 * swd_32 + 0.2 * swd_16
+        elif self.swd_scale_mode == "attention-weighted" and getattr(model, "last_pixel_entropy", None) is not None:
+            weight = model.last_pixel_entropy.to(device=z_hat1.device, dtype=z_hat1.dtype)
+            weight = weight / weight.mean(dim=(2, 3), keepdim=True).clamp_min(1e-6)
+            swd_ss = _sliced_wasserstein(z_hat1 * weight, target_style * weight, dirs=self._projection_dirs(z_hat1))
+        else:
+            swd_ss = _sliced_wasserstein(z_hat1, target_style, dirs=self._projection_dirs(z_hat1))
+
         edge_ss = F.l1_loss(
             (z_hat1 - _lowpass(z_hat1, self.lowpass_kernel)).float(),
             (target_style - _lowpass(target_style, self.lowpass_kernel)).float(),
         )
         loss = self.fm_weight * fm + self.single_step_swd_weight * swd_ss + self.single_step_edge_weight * edge_ss
+        entropy_loss = content.new_tensor(0.0)
+        if self.w_attn_entropy_reg > 0.0 and getattr(model, "last_cross_attn_entropy", None) is not None:
+            entropy_loss = self.w_attn_entropy_reg * model.last_cross_attn_entropy
+            loss = loss + entropy_loss
         c_low = _lowpass(content, self.lowpass_kernel)
         t_low = _lowpass(target_style, self.lowpass_kernel)
         z_low = _lowpass(z_hat1, self.lowpass_kernel)
@@ -131,6 +170,7 @@ class SpatialBridgeObjective620:
             "loss_fm": fm.detach(),
             "loss_swd_ss": swd_ss.detach(),
             "loss_edge_ss": edge_ss.detach(),
+            "loss_attn_entropy": entropy_loss.detach(),
             "single_step_swd": (swd_ss * self.single_step_swd_weight).detach(),
             "single_step_edge": (edge_ss * self.single_step_edge_weight).detach(),
             "terminal_swd": zero,
