@@ -1,68 +1,53 @@
-# 620 Final Experiment Summary
+# 620 总结 — 当前状态与下一步
 
-## Best Results (Pareto Frontier)
+> 最后更新: 2026-06-20
 
-### Configuration 1: swd16 (Best Style Transfer)
-- **Config**: swd_weight=16, vlen=0.04, epoch=5
-- **clip_style**: 0.7051
-- **content_lpips**: 0.2935
-- **delta_idt**: +0.065
-- **delta_samam**: +0.090
-- **Use case**: When style transfer quality is priority
+## 当前最优
 
-### Configuration 2: swd20 (Best Pareto)
-- **Config**: swd_weight=20, vlen=0.04, epoch=7
-- **clip_style**: 0.7037
-- **content_lpips**: 0.2674
-- **Pareto score**: 0.4363
-- **Use case**: When content preservation matters
+**swd16, vl=0.04, epoch=5**: clip_style=0.7051, content_lpips=0.2935
 
-## Comparison Table
+| 对比 | clip_style | delta |
+|------|:---:|:---:|
+| IDT baseline | 0.6399 | — |
+| 619 全部 7 组最优 | 0.670 | +0.030 |
+| **620 swd16** | **0.705** | **+0.065** |
+| 目标 | 0.720 | 差 0.015 |
 
-| Method | clip_style | content_lpips | delta_idt | Notes |
-|--------|-----------|--------------|-----------|-------|
-| IDT baseline | 0.6399 | - | - | Reference |
-| SaMAM step2250 | 0.6146 | 0.396 | -0.025 | Below IDT |
-| **620 swd16 e5** | **0.7051** | 0.2935 | **+0.065** | Best style |
-| **620 swd20 e7** | 0.7037 | **0.2674** | +0.064 | Best Pareto |
+## 为什么 620 突破了 0.67 天花板
 
-## Key Findings
+三个致命缺陷同时被修复 (不是渐进改善, 是结构性修复):
 
-1. **SWD weight sweet spot**: 16-20 (not higher)
-2. **Convergence diagnosis essential**: vlen=0.04 reveals true peak
-3. **Early epochs powerful**: e5-e7 often optimal
-4. **Trade-off exists**: Higher clip_style ↔ Higher lpips
+| 619 缺陷 | 旧代码 | 620 新方案 | 效果 |
+|---------|--------|-----------|------|
+| OT 在线→均值坍缩 | minibatch Sinkhorn, target 每 batch 变 | DINO CLS 离线 top-K 固定配对 | 目标稳定, $v^*$ 非条件期望 |
+| 伪 CrossAttn→1D 瓶颈 | learned tokens + 1D bias (KB 级信息量) | DINOv2 256×384 空间特征→ K,V (400KB) | 信息量 ×100 |
+| ODE 展开→梯度截断 | `integrate()` N 步, clamp/nan_to_num | 单步 SWD: `SWD(ẑ₁, z_s)` | 梯度链长 1, 稳定 |
 
-## Remaining Gap
+## Phase 4 方向
 
-- **Target**: clip_style ≥ 0.72
-- **Current best**: 0.7051
-- **Gap**: +0.015 needed
+不调参. 改架构. 三个信息流杠杆 + 一个表征设计:
 
-## Next Experiments
+| 杠杆 | 核心问题 | 实验 |
+|------|---------|------|
+| Skip 信号比 | content直通路径太强→淹没了风格信号 | per-layer衰减, 可学习门控, skip上CrossAttn |
+| CrossAttn Q来源 | Q决定attention的"视角"—content vs style驱动 | Q=bottleneck / Q=DINO / Q=concat |
+| 多分辨率CrossAttn | 粗尺度需要全局(1D), 细尺度需要空间(256 tokens) | 分尺度CrossAttn + local encoder |
+| 风格Encoder设计 | DINO单层 vs 多尺度 vs DINO+可训练local | 3 条路线 |
+| Per-region SWD | 全局SWD混在一起→模型看不清"区域匹配" | 多尺度SWD, attention-weighted SWD |
+| Attention 稀疏化 | softmax太软→精确笔触匹配不精准 | top-k, entropy正则 |
+| OT 配对优化 | 固定配对 vs 轮转 vs 结构复杂度匹配 | 3 条路线 |
 
-### Immediate (High ROI)
-1. **Batch size scan**: {32, 128} - affects gradient noise
-2. **NFE scan**: {4, 16} - affects inference quality
-3. **Sigma scan**: {0.01, 0.03} - noise schedule
+详见: `info_flow_analysis.md` (理论), `phase4_plan.md` (23实验, 7 blocks, 14h)
 
-### Medium Priority
-4. **Style gate init**: {0.1, 0.15} - style influence strength
-5. **Learning rate**: {5e-5, 5e-4} - convergence speed
+## 文档索引
 
-### Architecture (If needed)
-6. **MoE cross-attention**: Specialized style handling
-7. **Multi-scale SWD**: Coarse-to-fine style matching
-
-## Time Investment
-
-- Experiments completed: 12
-- Time spent: ~4 hours
-- Best improvement: +0.065 over IDT
-- ROI: 0.0054 clip_style per hour
-
-## Recommendations
-
-1. **For production**: Use swd20 e7 (better content preservation)
-2. **For research**: Continue hyperparameter scan
-3. **For demo**: Use swd16 e5 (higher style transfer)
+| 文件 | 内容 |
+|------|------|
+| `math.md` | 数学基础: 均值坍缩定理, DPI, Pareto前沿 |
+| `OT.md` | OT配对设计: DINO离线预配对 |
+| `bridge.md` | 桥动力学: 单步SWD, SDE推理 |
+| `tokenizer.md` | 风格表征: True Cross-Attention |
+| `info_flow_analysis.md` | 信息流4问: OT/Attn/SWD/Encoder |
+| `phase4_plan.md` | Phase4实验计划 |
+| `experiment_progress.md` | 实验进度 |
+| `convergence_diagnosis.md` | 收敛诊断protocol |
