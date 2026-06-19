@@ -172,12 +172,15 @@ class StyleConditioner620(nn.Module):
         img_global = self.cls_proj(style_global_raw.float()).to(dtype=dtype)
 
         txt_tokens = None
-        if self.text_enabled and style_text_tokens is not None:
-            txt_tokens = self.text_proj(style_text_tokens.float().to(device=device, dtype=dtype)).to(dtype=dtype)
-            if txt_tokens.shape[0] == 1 and batch > 1:
-                txt_tokens = txt_tokens.expand(batch, -1, -1)
-            if txt_tokens.shape[0] != batch:
-                raise ValueError(f"style_text_tokens batch mismatch: expected {batch}, got {txt_tokens.shape[0]}")
+        if self.text_enabled:
+            if style_text_tokens is not None:
+                txt_tokens = self.text_proj(style_text_tokens.float().to(device=device, dtype=dtype)).to(dtype=dtype)
+                if txt_tokens.shape[0] == 1 and batch > 1:
+                    txt_tokens = txt_tokens.expand(batch, -1, -1)
+                if txt_tokens.shape[0] != batch:
+                    raise ValueError(f"style_text_tokens batch mismatch: expected {batch}, got {txt_tokens.shape[0]}")
+            else:
+                txt_tokens = self.null_text_tokens.expand(batch, -1, -1).to(dtype=dtype)
 
         img_tokens, img_global, txt_tokens = self._apply_modality_dropout(img_tokens, img_global, txt_tokens)
 

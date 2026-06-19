@@ -33,7 +33,7 @@ class SpatialBridge620(nn.Module):
             dino_dim=self.dino_dim,
             model_dim=self.dim,
             num_styles=self.num_styles,
-            num_memory_tokens=int(getattr(model_cfg, "style_attn_num_tokens", 256)),
+            num_memory_tokens=256,
             adapter_enabled=bool(getattr(model_cfg, "style_dino_adapter_enabled", False)),
             adapter_hidden_dim=int(getattr(model_cfg, "style_dino_adapter_hidden_dim", 1024)),
             adapter_scale=float(getattr(model_cfg, "style_dino_adapter_scale", 0.25)),

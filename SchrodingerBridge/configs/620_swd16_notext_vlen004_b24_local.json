@@ -10,15 +10,10 @@
     "time_dim": 256,
     "num_res_blocks": 4,
     "style_attn_num_heads": 4,
-    "style_attn_num_tokens": 333,
+    "style_attn_num_tokens": 256,
     "style_cross_attn_gate_init": 0.05,
     "tokenizer_dino_dim": 384,
-    "style_text_enabled": true,
-    "style_text_encoder": "clip_vit_base_patch32",
-    "style_text_dim": 512,
-    "style_text_max_length": 77,
-    "style_text_dropout_prob": 0.15,
-    "style_image_dropout_prob": 0.15
+    "style_text_enabled": false
   },
   "bridge": {
     "bridge_path_mode": "vertical",
@@ -82,8 +77,7 @@
     "pairing_cache_topk": 8,
     "pairing_cache_active_topk": 8,
     "pairing_cache_sample_mode": "rank_stratified",
-    "pairing_cache_cross_only": true,
-    "style_caption_path": "G:\\GitHub\\Latent_Style\\eval_cache\\offline_pairing\\clip_text_cache_wikiart_distinct5_samam_512.pt"
+    "pairing_cache_cross_only": true
   },
   "full_eval": {
     "vae_model": "ema",
@@ -103,12 +97,12 @@
     "only_lpips_clip_style": true
   },
   "checkpoint": {
-    "save_dir": "./exp/620_spatial_bridge/620_swd16_multimodal_vlen004_b24_local"
+    "save_dir": "./exp/620_spatial_bridge/620_swd16_notext_vlen004_b24_local"
   },
   "ablation": {
-    "name": "620_swd16_multimodal_vlen004_b24_local",
-    "axis": "620_spatial_bridge_multimodal",
-    "stage": "dino_clip_fusion_smoke",
-    "notes": "Local 8G smoke test: DINO 256 + CLIP-base-patch32 77 tokens concatenated. vlen=0.04, swd=16, batch=24, NFE=16. Modality dropout 15/15."
+    "name": "620_swd16_notext_vlen004_b24_local",
+    "axis": "620_spatial_bridge_notext",
+    "stage": "baseline_no_text",
+    "notes": "Local 8G baseline: DINO 256 tokens only, no text. vlen=0.04, swd=16, batch=24, NFE=16."
   }
 }
