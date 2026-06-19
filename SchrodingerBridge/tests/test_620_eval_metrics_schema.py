@@ -140,8 +140,34 @@ def test_620_eval_target_dino_bank_loads_one_patch_sequence_per_style(tmp_path: 
 
     bank = RUN_EVAL._load_eval_target_dino_bank(str(cache), ["Rococo", "Ukiyo_e"])
 
-    assert sorted(bank) == [0, 1]
-    assert bank[0]["cls"].shape == (4,)
-    assert bank[0]["patches"].shape == (2, 4)
-    assert torch.equal(bank[0]["cls"], torch.tensor([0.0, 1.0, 2.0, 3.0]))
-    assert torch.equal(bank[1]["cls"], torch.tensor([4.0, 5.0, 6.0, 7.0]))
+    by_style = bank["by_style"]
+    assert sorted(by_style) == [0, 1]
+    assert by_style[0]["indices"] == [0, 2]
+    assert by_style[1]["indices"] == [1]
+    assert by_style[0]["cls"].shape == (4,)
+    assert by_style[0]["patches"].shape == (2, 4)
+    assert torch.equal(by_style[0]["cls"], torch.tensor([0.0, 1.0, 2.0, 3.0]))
+    assert torch.equal(by_style[1]["cls"], torch.tensor([4.0, 5.0, 6.0, 7.0]))
+
+    cls_first, patches_first = RUN_EVAL._select_eval_target_dino(
+        bank,
+        src_path=tmp_path / "src0.png",
+        tgt_style_id=0,
+        mode="representative",
+    )
+    assert torch.equal(cls_first, torch.tensor([0.0, 1.0, 2.0, 3.0]))
+    assert torch.equal(patches_first, torch.arange(8, dtype=torch.float32).view(2, 4))
+
+    second_candidate_path = next(
+        tmp_path / f"src{i}.png"
+        for i in range(100)
+        if RUN_EVAL._stable_dino_candidate_index(tmp_path / f"src{i}.png", 0, 2) == 1
+    )
+    cls_hash, patches_hash = RUN_EVAL._select_eval_target_dino(
+        bank,
+        src_path=second_candidate_path,
+        tgt_style_id=0,
+        mode="hash",
+    )
+    assert torch.equal(cls_hash, torch.tensor([8.0, 9.0, 10.0, 11.0]))
+    assert torch.equal(patches_hash, torch.arange(16, 24, dtype=torch.float32).view(2, 4))

@@ -59,6 +59,7 @@ def main() -> int:
     parser.add_argument("--run-prefix", default="620_swd12_epoch0008")
     parser.add_argument("--nfe-list", default="4 8 16")
     parser.add_argument("--sigma-list", default="0.0 0.02")
+    parser.add_argument("--target-dino-eval-mode", default="hash", choices=["representative", "hash", "hash_cycle", "pair_hash"])
     parser.add_argument("--task-name", default="620_eval_sweep_swd12_e8")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
@@ -101,6 +102,8 @@ def main() -> int:
         str(args.nfe_list),
         "--sigma-list",
         str(args.sigma_list),
+        "--target-dino-eval-mode",
+        str(args.target_dino_eval_mode),
     ]
     cmd.extend(["--", *remote_cmd])
     return _run(cmd)
