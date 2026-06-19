@@ -103,6 +103,7 @@ def _embed_rows(
     log_every: int,
     hf_cache_dir: str,
     local_files_only: bool,
+    layers: list[int] | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     load_kwargs = {}
     cache_dir = str(hf_cache_dir).strip()
@@ -127,7 +128,15 @@ def _embed_rows(
             inputs = {k: v.to(device) for k, v in inputs.items()}
             outputs = model(**inputs, output_hidden_states=True)
             cls = F.normalize(outputs.last_hidden_state[:, 0, :].float(), p=2, dim=-1).cpu()
-            patches = F.normalize(outputs.hidden_states[-2][:, 1:, :].float(), p=2, dim=-1).cpu()
+            if layers:
+                patches_list = []
+                for l in layers:
+                    feat = outputs.hidden_states[l][:, 1:, :]
+                    norm_feat = F.normalize(feat.float(), p=2, dim=-1)
+                    patches_list.append(norm_feat)
+                patches = torch.cat(patches_list, dim=-1).cpu()
+            else:
+                patches = F.normalize(outputs.hidden_states[-2][:, 1:, :].float(), p=2, dim=-1).cpu()
             cls_chunks.append(cls)
             patch_chunks.append(patches)
         finally:
@@ -153,6 +162,7 @@ def main() -> None:
     parser.add_argument("--log-every", type=int, default=240)
     parser.add_argument("--hf-cache-dir", type=str, default="")
     parser.add_argument("--allow-network", action="store_true")
+    parser.add_argument("--layers", type=str, default="")
     args = parser.parse_args()
 
     latent_root = Path(args.latent_root).resolve()
@@ -183,6 +193,7 @@ def main() -> None:
         flush=True,
     )
 
+    layers_list = [int(x.strip()) for x in args.layers.split(",") if x.strip()] if args.layers else None
     cls_embeds, patch_embeds = _embed_rows(
         rows,
         model_name=args.model_name,
@@ -191,6 +202,7 @@ def main() -> None:
         log_every=max(1, int(args.log_every)),
         hf_cache_dir=str(args.hf_cache_dir).strip(),
         local_files_only=(not bool(args.allow_network)),
+        layers=layers_list,
     )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)

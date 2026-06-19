@@ -20,6 +20,8 @@ def main() -> None:
     parser.add_argument("--cls-weight", type=float, default=0.7)
     parser.add_argument("--patch-weight", type=float, default=0.3)
     parser.add_argument("--styles", type=str, default="")
+    parser.add_argument("--complexity-matching", action="store_true")
+    parser.add_argument("--complexity-weight", type=float, default=0.2)
     args = parser.parse_args()
 
     payload = torch.load(args.cache, map_location="cpu", weights_only=False)
@@ -27,6 +29,14 @@ def main() -> None:
     cls_embeddings = F.normalize(payload["cls_embeddings"].float(), p=2, dim=-1)
     patch_embeddings = _normalize_patch_mean(payload["patch_embeddings"])
     styles = [x.strip() for x in str(args.styles).split(",") if x.strip()] or list(payload.get("styles", []))
+    complexity_enabled = bool(args.complexity_matching)
+    if complexity_enabled:
+        raw_patches = F.normalize(payload["patch_embeddings"].float(), p=2, dim=-1)
+        sim = torch.bmm(raw_patches, raw_patches.transpose(1, 2))
+        probs = torch.softmax(sim, dim=-1)
+        entropy = -(probs * probs.clamp_min(1e-8).log()).sum(dim=-1).mean(dim=-1)
+    else:
+        entropy = torch.zeros(len(rows))
     if not styles:
         raise ValueError("no styles found in cache or args")
 
@@ -63,6 +73,11 @@ def main() -> None:
             cls_sim = torch.matmul(src_cls, tgt_cls.transpose(0, 1)).squeeze(0)
             patch_sim = torch.matmul(src_patch, tgt_patch.transpose(0, 1)).squeeze(0)
             score = cls_weight * cls_sim + patch_weight * patch_sim
+            if complexity_enabled:
+                src_entropy = entropy[src_idx]
+                tgt_entropy = entropy.index_select(0, tgt_idx)
+                comp_dist = (src_entropy - tgt_entropy).abs()
+                score = score - float(args.complexity_weight) * comp_dist
             k = min(topk, int(score.numel()))
             best = torch.topk(score, k=k, dim=0, largest=True).indices.tolist()
             per_target[tgt_style] = [str(rows[candidate_indices[i]]["stem"]) for i in best]

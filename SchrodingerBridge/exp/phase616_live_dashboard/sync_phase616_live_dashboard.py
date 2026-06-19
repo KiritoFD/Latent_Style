@@ -166,12 +166,43 @@ try:
     proc = subprocess.run(["ps", "-eo", "pid,ppid,etimes,cmd"], text=True, capture_output=True, check=False)
     ps_lines = [
         line for line in proc.stdout.splitlines()
-        if "phase616_auto.py" in line or "20250618_lite_ot_" in line or "620_spatial_bridge" in line or "src/run.py" in line
+        if "phase616_auto.py" in line or "20250618_lite_ot_" in line or "620_spatial_bridge" in line or "src/run.py" in line or "run_phase4_plan.sh" in line
     ]
 except Exception:
     ps_lines = []
 
-print(json.dumps({{"runs": runs, "stage_scan": stage_scan, "gpu": gpu, "ps_lines": ps_lines}}, ensure_ascii=False))
+active_log_lines = []
+active_log_path = ""
+try:
+    import os, time
+    search_dirs = [
+        "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp",
+        "/mnt/i/Github/Latent_Style/SchrodingerBridge/docs/616/logs",
+        "/mnt/i/Github/Latent_Style/SchrodingerBridge/docs/620"
+    ]
+    candidates = []
+    for s_dir in search_dirs:
+        if os.path.isdir(s_dir):
+            for root, dirs, files in os.walk(s_dir):
+                for file in files:
+                    if file.endswith(".log") or file.endswith(".jsonl") or file.endswith("run.log"):
+                        path = os.path.join(root, file)
+                        try:
+                            mtime = os.path.getmtime(path)
+                            if time.time() - mtime < 7200:
+                                candidates.append((mtime, path))
+                        except Exception:
+                            pass
+    if candidates:
+        candidates.sort(key=lambda x: x[0], reverse=True)
+        active_log_path = candidates[0][1]
+        with open(active_log_path, "r", encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
+            active_log_lines = [line.rstrip() for line in lines[-40:]]
+except Exception as e:
+    active_log_lines = [f"Error scanning active logs: " + str(e)]
+
+print(json.dumps({{"runs": runs, "stage_scan": stage_scan, "gpu": gpu, "ps_lines": ps_lines, "active_log_lines": active_log_lines, "active_log_path": active_log_path}}, ensure_ascii=False))
 """
 
 plt.rcParams.update(
@@ -362,11 +393,18 @@ def _parse_points(snapshot: dict) -> list[RunPoint]:
     for run in snapshot.get("runs", []):
         reader = csv.DictReader(StringIO(run["curve_csv"]))
         for row in reader:
-            style = float(row["transfer_clip_style"])
-            lpips = float(row["transfer_content_lpips"])
-            clip_t = None
-            if str(row.get("transfer_clip_t", "")).strip():
-                clip_t = float(row["transfer_clip_t"])
+            if "all_pairs_clip_style" in row and str(row["all_pairs_clip_style"]).strip():
+                style = float(row["all_pairs_clip_style"])
+                lpips = float(row["all_pairs_content_lpips"])
+                clip_t = None
+                if str(row.get("all_pairs_clip_t", "")).strip():
+                    clip_t = float(row["all_pairs_clip_t"])
+            else:
+                style = float(row["transfer_clip_style"])
+                lpips = float(row["transfer_content_lpips"])
+                clip_t = None
+                if str(row.get("transfer_clip_t", "")).strip():
+                    clip_t = float(row["transfer_clip_t"])
             out.append(
                 RunPoint(
                     group=str(run["group"]),
@@ -1161,6 +1199,8 @@ def _render_html(points: list[RunPoint], baselines: dict[str, object], status: d
         "stage_scan": snapshot.get("stage_scan", {}),
         "gpu": snapshot.get("gpu", {}),
         "ps_lines": snapshot.get("ps_lines", []),
+        "active_log_lines": snapshot.get("active_log_lines", []),
+        "active_log_path": snapshot.get("active_log_path", ""),
         "cards": {
             "current_best": None
             if best_manual is None
@@ -1588,6 +1628,25 @@ def _render_html(points: list[RunPoint], baselines: dict[str, object], status: d
 <body>
   <div id="tooltip"></div>
   <main class="wrap">
+    <section class="glass panel resizable-panel" style="margin-bottom: 20px;">
+      <div class="toolbar">
+        <div>Updated: <span id="updated-at" class="mono" style="color:var(--ink)">n/a</span></div>
+        <div>
+          <button type="button" id="reset-zoom-btn" style="margin-right: 8px;">Reset Zoom</button>
+          <button type="button" id="reload-btn">Reload Data</button>
+        </div>
+      </div>
+      <div id="chart-root"></div>
+    </section>
+
+    <section class="glass panel" style="margin-bottom: 20px;">
+      <div class="toolbar">
+        <div>Active Training Log Stream</div>
+        <div id="active-log-source" class="mono" style="font-size: 13px; color: var(--muted)">n/a</div>
+      </div>
+      <pre id="active-log-box" class="mono" style="max-height: 300px; height: 220px; overflow-y: auto; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; border: 1px solid var(--line); font-size: 13px; line-height: 1.5; color: #a7f3d0; margin: 0;"></pre>
+    </section>
+
     <section class="head">
       <div class="glass title">
         <h1>Phase 616 Live Frontier</h1>
@@ -1601,16 +1660,6 @@ def _render_html(points: list[RunPoint], baselines: dict[str, object], status: d
       </div>
     </section>
     <section class="grid" id="stats-grid"></section>
-    <section class="glass panel resizable-panel">
-      <div class="toolbar">
-        <div>Updated: <span id="updated-at" class="mono" style="color:var(--ink)">n/a</span></div>
-        <div>
-          <button type="button" id="reset-zoom-btn" style="margin-right: 8px;">Reset Zoom</button>
-          <button type="button" id="reload-btn">Reload Data</button>
-        </div>
-      </div>
-      <div id="chart-root"></div>
-    </section>
     <section class="foot">
       <section class="glass panel">
         <table>
@@ -1697,7 +1746,7 @@ def _render_html(points: list[RunPoint], baselines: dict[str, object], status: d
     // Inlined data payload
     window.PHASE616_LIVE_DATA = {payload_json};
 
-    const data = window.PHASE616_LIVE_DATA || null;
+    let data = window.PHASE616_LIVE_DATA || null;
     const chartRoot = document.getElementById("chart-root");
     const statsGrid = document.getElementById("stats-grid");
     const runsTable = document.getElementById("runs-table");
@@ -2002,6 +2051,21 @@ def _render_html(points: list[RunPoint], baselines: dict[str, object], status: d
 
     function renderRemoteStatus() {{
       psBox.textContent = (data.ps_lines && data.ps_lines.length) ? data.ps_lines.join("\\n") : "no tracked remote process lines";
+      
+      const logBox = document.getElementById("active-log-box");
+      const logSource = document.getElementById("active-log-source");
+      if (logBox) {{
+        if (data.active_log_lines && data.active_log_lines.length) {{
+          logBox.textContent = data.active_log_lines.join("\\n");
+          logBox.scrollTop = logBox.scrollHeight;
+        }} else {{
+          logBox.textContent = "No active training logs detected in the last 2 hours.";
+        }}
+      }}
+      if (logSource) {{
+        logSource.textContent = data.active_log_path || "n/a";
+      }}
+
       const scans = [];
       for (const [group, items] of Object.entries(data.stage_scan || {{}})) {{
         scans.push(`[${{group}}]`);
@@ -2171,19 +2235,36 @@ def _render_html(points: list[RunPoint], baselines: dict[str, object], status: d
       chartRoot.innerHTML = svg;
     }}
 
-    if (data) {{
-      updatedAt.textContent = data.updated_at;
-      if (data.status && data.status.offline) {{
+    let currentData = data;
+
+    function updateAll(newData) {{
+      currentData = newData;
+      updatedAt.textContent = currentData.updated_at;
+      if (currentData.status && currentData.status.offline) {{
         if (updatedAt.style) updatedAt.style.color = "#ef4444";
         updatedAt.textContent += " (OFFLINE / SYNC FAILED)";
-        if (data.status.offline_error) {{
-          updatedAt.title = data.status.offline_error;
+        if (currentData.status.offline_error) {{
+          updatedAt.title = currentData.status.offline_error;
         }}
       }} else {{
         if (updatedAt.style) updatedAt.style.color = "var(--ink)";
       }}
+      
+      window.PHASE616_LIVE_DATA = currentData;
+      data = currentData;
+      
       renderStats();
       renderChart();
+      renderTable();
+      renderExternalBaselines();
+      renderNote();
+      renderClipT();
+      renderStyleT();
+      renderRemoteStatus();
+    }}
+
+    if (currentData) {{
+      updateAll(currentData);
       
       const panel = document.querySelector(".resizable-panel");
       if (panel) {{
@@ -2192,17 +2273,24 @@ def _render_html(points: list[RunPoint], baselines: dict[str, object], status: d
         }});
         ro.observe(panel);
       }}
-      
-      renderTable();
-      renderExternalBaselines();
-      renderNote();
-      renderClipT();
-      renderStyleT();
-      renderRemoteStatus();
-      setTimeout(() => window.location.reload(), 300000);
     }} else {{
       chartRoot.innerHTML = "<div style='padding: 40px; text-align: center; color: var(--muted)'>Inlined data missing or failed to parse.</div>";
     }}
+
+    async function pollData() {{
+      try {{
+        const res = await fetch("/data");
+        if (res.ok) {{
+          const json = await res.json();
+          if (json && json.updated_at !== currentData.updated_at) {{
+            updateAll(json);
+          }}
+        }}
+      }} catch (e) {{
+        console.warn("Polling failed:", e);
+      }}
+    }}
+    setInterval(pollData, 5000);
   </script>
 </body>
 </html>

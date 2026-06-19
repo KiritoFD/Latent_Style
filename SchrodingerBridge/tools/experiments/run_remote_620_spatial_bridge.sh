@@ -64,6 +64,27 @@ case "$variant" in
     config_rel="SchrodingerBridge/configs/620_spatial_bridge_swd12.json"
     default_run_name="620_swd12_sigma002_nfe8_b80"
     ;;
+  swd16)
+    config_rel="SchrodingerBridge/configs/620_spatial_bridge_swd16.json"
+    default_run_name="620_swd16_sigma002_nfe8_b64"
+    if [ -z "$BATCH_SIZE_WAS_SET" ]; then
+      BATCH_SIZE="64"
+    fi
+    ;;
+  swd20)
+    config_rel="SchrodingerBridge/configs/620_spatial_bridge_swd20.json"
+    default_run_name="620_swd20_sigma002_nfe8_b64"
+    if [ -z "$BATCH_SIZE_WAS_SET" ]; then
+      BATCH_SIZE="64"
+    fi
+    ;;
+  swd24)
+    config_rel="SchrodingerBridge/configs/620_spatial_bridge_swd24.json"
+    default_run_name="620_swd24_sigma002_nfe8_b64"
+    if [ -z "$BATCH_SIZE_WAS_SET" ]; then
+      BATCH_SIZE="64"
+    fi
+    ;;
   adapter)
     config_rel="SchrodingerBridge/configs/620_spatial_bridge_adapter.json"
     default_run_name="620_adapter_swd12_sigma002_nfe8_b64"

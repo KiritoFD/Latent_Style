@@ -268,6 +268,11 @@ class ModelConfig:
     tokenizer_prompt_dim: int = 256
     tokenizer_prompt_length: int = 8
     tokenizer_structured_temperature: float = 0.1
+    style_local_cnn_enabled: bool = False
+    style_shortcut_alpha: Any = 1.0
+    style_query_source: str = "concat"
+    style_cross_attn_skip_coarse: bool = False
+    style_attn_topk: int = 0
     time_dim: int = 256
     base_dim: int = 64
     lift_channels: int | None = None
@@ -296,6 +301,14 @@ class ModelConfig:
     style_moe_num_experts: int = 4
     style_moe_router_hidden_dim: int = 128
     style_kv_moe_content_routed: bool = False
+    style_text_enabled: bool = False
+    style_text_encoder: str = "clip_vit_l_14"
+    style_text_dim: int = 768
+    style_text_max_length: int = 77
+    style_text_dropout_prob: float = 0.15
+    style_image_dropout_prob: float = 0.15
+    style_text_null_token_init_std: float = 0.02
+    style_image_null_token_init_std: float = 0.02
     hires_block_type: str = "conv"
     body_block_type: str = "global_attn"
     decoder_block_type: str = "conv"
@@ -512,6 +525,8 @@ class BridgeConfig:
     sinkhorn_unbalanced_tau_tgt: float = 1.0
     sinkhorn_unbalanced_dummy_cost: float = 0.0
     sinkhorn_unbalanced_dummy_offdiag_cost: float = 8.0
+    swd_scale_mode: str = "global"
+    w_attn_entropy_reg: float = 0.0
     bridge_sigma: float = 0.05
     bridge_noise_mode: str = "gaussian"
     bridge_noise_schedule: str = "auto"
@@ -815,6 +830,7 @@ class DataConfig:
     pairing_cache_dual_target_topk: int = 0
     pairing_cache_aux_target_topk: int = 0
     pairing_cache_cross_only: bool = True
+    style_caption_path: str = ""
     latent_cache_mode: str = "off"
     latent_cache_dir: str = ""
     dino_cache_path: str = ""

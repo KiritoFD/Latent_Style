@@ -72,6 +72,7 @@ class AdaCUTLatentDataset(Dataset):
         dino_cache_path: str = "",
         dino_cache_required: bool = False,
         dino_bank_limit_per_style: int = 8,
+        style_caption_path: str = "",
         device: str = "cpu",
     ) -> None:
         self.data_root = Path(data_root)
@@ -96,6 +97,10 @@ class AdaCUTLatentDataset(Dataset):
         self.dino_style_bank_cls: dict[int, torch.Tensor] = {}
         self.dino_style_bank_patches: dict[int, torch.Tensor] = {}
         self.dino_patch_hw: dict[int, tuple[int, int]] = {}
+        self.style_caption_path = str(style_caption_path or "").strip()
+        self.style_captions: dict[str, str] = {}
+        if self.style_caption_path and self.style_caption_path.endswith(".jsonl"):
+            self._load_style_captions(self.style_caption_path)
         
         # Cache for pre-computed indices to remove CPU overhead in __getitem__
         self._cache_content_style_ids = None
@@ -175,6 +180,28 @@ class AdaCUTLatentDataset(Dataset):
 
     def _manifest_path(self) -> Path:
         return self.latent_cache_dir / "manifest.json"
+
+    def _load_style_captions(self, path: str) -> None:
+        p = Path(path)
+        if not p.exists():
+            logger.warning("Style caption file not found: %s", p)
+            return
+        count = 0
+        with open(p, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                rel = entry.get("rel_path", "").strip()
+                cap = entry.get("caption", "").strip()
+                if rel and cap and entry.get("status", "success") == "success":
+                    self.style_captions[rel] = cap
+                    count += 1
+        logger.info("Loaded %d style captions from %s", count, p)
 
     def _style_cache_name(self, style_id: int, subdir: str) -> str:
         safe = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(subdir)).strip("_") or f"style_{style_id}"
@@ -754,4 +781,32 @@ class AdaCUTLatentDataset(Dataset):
         if self.pairing_cache_aux_target_topk > 0:
             item["aux_target_style"] = aux_target_style if aux_target_style is not None else target_style
             item["aux_target_valid"] = torch.tensor(float(aux_target_valid), dtype=torch.float32)
+        if self.style_caption_path:
+            target_style_name = self.style_subdirs[target_style_id]
+            target_stem = self.style_item_stems[target_style_id][t_idx]
+            target_base = self._normalize_base_stem(target_stem)
+            matched_rel = ""
+            caption_text = ""
+            for ext in [".jpg", ".jpeg", ".png"]:
+                rel = f"{target_style_name}/{target_base}{ext}"
+                prefix_rel = f"{target_style_name}/{target_style_name}__{target_base}{ext}"
+                if self.style_captions:
+                    if rel in self.style_captions:
+                        caption_text = self.style_captions[rel]
+                        matched_rel = rel
+                        break
+                    if prefix_rel in self.style_captions:
+                        caption_text = self.style_captions[prefix_rel]
+                        matched_rel = prefix_rel
+                        break
+                else:
+                    matched_rel = prefix_rel
+                    break
+            else:
+                if self.style_captions:
+                    matched_rel = ""
+                else:
+                    matched_rel = f"{target_style_name}/{target_style_name}__{target_base}.jpg"
+            item["target_style_caption"] = caption_text
+            item["target_style_caption_rel_path"] = matched_rel
         return item
