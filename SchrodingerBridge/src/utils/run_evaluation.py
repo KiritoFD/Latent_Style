@@ -418,7 +418,7 @@ def _normalize_dino_eval_stem(stem: str) -> str:
     return text
 
 
-def _load_eval_target_dino_bank(cache_path: str, style_subdirs: list[str]) -> dict[int, dict[str, torch.Tensor]]:
+def _load_eval_target_dino_bank(cache_path: str, style_subdirs: list[str]) -> dict[str, object]:
     text = str(cache_path or "").strip()
     if not text:
         return {}
@@ -434,27 +434,64 @@ def _load_eval_target_dino_bank(cache_path: str, style_subdirs: list[str]) -> di
     if len(rows) == 0 or cls_embeddings.ndim != 2 or patch_embeddings.ndim != 3:
         raise RuntimeError(f"Malformed 620 target DINO cache tensors: {path}")
 
-    first_by_style: dict[str, int] = {}
+    indices_by_style_name: dict[str, list[int]] = defaultdict(list)
     for row_idx, row in enumerate(rows):
         style = str(row.get("style", "")).strip()
         stem = _normalize_dino_eval_stem(str(row.get("stem", "")).strip())
-        if style and stem and style not in first_by_style:
-            first_by_style[style] = int(row_idx)
+        if style and stem:
+            indices_by_style_name[style].append(int(row_idx))
 
-    bank: dict[int, dict[str, torch.Tensor]] = {}
+    by_style: dict[int, dict[str, object]] = {}
     missing: list[str] = []
     for style_id, style in enumerate(style_subdirs):
-        row_idx = first_by_style.get(str(style))
-        if row_idx is None:
+        row_indices = indices_by_style_name.get(str(style), [])
+        if not row_indices:
             missing.append(str(style))
             continue
-        bank[int(style_id)] = {
-            "cls": cls_embeddings[row_idx].contiguous(),
-            "patches": patch_embeddings[row_idx].contiguous(),
+        first_idx = int(row_indices[0])
+        by_style[int(style_id)] = {
+            "indices": [int(i) for i in row_indices],
+            "cls": cls_embeddings[first_idx].contiguous(),
+            "patches": patch_embeddings[first_idx].contiguous(),
         }
     if missing:
         raise RuntimeError(f"620 target DINO cache missing styles for eval: {missing}")
-    return bank
+    return {
+        "cls_embeddings": cls_embeddings.contiguous(),
+        "patch_embeddings": patch_embeddings.contiguous(),
+        "by_style": by_style,
+    }
+
+
+def _stable_dino_candidate_index(src_path: Path, tgt_style_id: int, candidate_count: int) -> int:
+    if candidate_count <= 0:
+        raise ValueError("candidate_count must be positive")
+    key = f"{_source_path_key(src_path)}|{int(tgt_style_id)}".encode("utf-8", errors="replace")
+    digest = hashlib.blake2b(key, digest_size=8).digest()
+    return int.from_bytes(digest, "little", signed=False) % int(candidate_count)
+
+
+def _select_eval_target_dino(
+    target_dino_bank: dict[str, object],
+    *,
+    src_path: Path,
+    tgt_style_id: int,
+    mode: str,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    by_style = target_dino_bank.get("by_style", {}) if isinstance(target_dino_bank, dict) else {}
+    if int(tgt_style_id) not in by_style:
+        raise RuntimeError(f"620 target DINO eval bank missing target id: {int(tgt_style_id)}")
+    entry = by_style[int(tgt_style_id)]
+    norm_mode = str(mode or "representative").strip().lower()
+    if norm_mode in {"representative", "first", "fixed"}:
+        return entry["cls"], entry["patches"]
+    if norm_mode not in {"hash", "hash_cycle", "pair_hash"}:
+        raise ValueError(f"Unsupported 620 target_dino_eval_mode: {mode}")
+    indices = [int(i) for i in entry.get("indices", [])]
+    row_idx = indices[_stable_dino_candidate_index(src_path, int(tgt_style_id), len(indices))]
+    cls_embeddings = target_dino_bank["cls_embeddings"]
+    patch_embeddings = target_dino_bank["patch_embeddings"]
+    return cls_embeddings[row_idx].contiguous(), patch_embeddings[row_idx].contiguous()
 
 
 def _batched_paths(items: list[Path], n: int) -> list[list[Path]]:
@@ -1990,6 +2027,13 @@ def main(argv: list[str] | None = None):
     parser.add_argument('--test_dir', type=str, default=None)
     parser.add_argument('--cache_dir', type=str, default="../eval_cache", help="Directory to store shared feature caches")
     parser.add_argument('--target_dino_cache', type=str, default="", help="Optional DINO cache for 620 eval target patch conditioning. Defaults to checkpoint data.dino_cache_path.")
+    parser.add_argument(
+        '--target_dino_eval_mode',
+        type=str,
+        default=str(full_eval_defaults.get("target_dino_eval_mode", "representative")),
+        choices=["representative", "hash", "hash_cycle", "pair_hash"],
+        help="620 eval target DINO candidate selection. representative keeps legacy one-per-style conditioning; hash selects a stable target patch sequence per source-target pair.",
+    )
     parser.add_argument('--num_steps', type=int, default=int(full_eval_defaults.get("num_steps", 12)))
     parser.add_argument('--step_size', type=float, default=float(full_eval_defaults.get("step_size", 1.0)))
     parser.add_argument('--style_strength', type=float, default=full_eval_defaults.get("style_strength", None), help="Global style strength. Values above 1 require model.style_strength_max > 1.")
@@ -2494,13 +2538,23 @@ def main(argv: list[str] | None = None):
         raise ValueError("Failed to infer style names. Provide --style_subdirs or valid --test_dir folders.")
 
     contract_family = str((cfg.get("model", {}) or {}).get("contract_family", "")).strip().lower() if isinstance(cfg, dict) else ""
-    target_dino_bank: dict[int, dict[str, torch.Tensor]] = {}
+    target_dino_bank: dict[str, object] = {}
     if contract_family == "620_spatial_bridge" and not args.reuse_generated:
         dino_cache_path = str(args.target_dino_cache or "").strip()
         if not dino_cache_path and isinstance(cfg, dict):
             dino_cache_path = str(((cfg.get("data", {}) or {}).get("dino_cache_path", ""))).strip()
         target_dino_bank = _load_eval_target_dino_bank(dino_cache_path, style_subdirs)
-        print(f"620 target DINO eval conditioning: cache={dino_cache_path} styles={len(target_dino_bank)}")
+        by_style = target_dino_bank.get("by_style", {}) if isinstance(target_dino_bank, dict) else {}
+        candidate_counts = {
+            style_subdirs[int(style_id)]: len(entry.get("indices", []))
+            for style_id, entry in by_style.items()
+            if int(style_id) < len(style_subdirs)
+        }
+        print(
+            "620 target DINO eval conditioning: "
+            f"cache={dino_cache_path} styles={len(by_style)} mode={args.target_dino_eval_mode} "
+            f"candidate_counts={candidate_counts}"
+        )
     
     test_images = {}
     for style_id, style_name in enumerate(style_subdirs):
@@ -3011,18 +3065,27 @@ def main(argv: list[str] | None = None):
                         tgt_ids = torch.tensor(pair_tgt_ids, device=device, dtype=torch.long)
                         target_style_latent = None
                         if target_dino_bank:
-                            missing_tgt = [sid for sid in pair_tgt_ids if int(sid) not in target_dino_bank]
+                            by_style = target_dino_bank.get("by_style", {})
+                            missing_tgt = [sid for sid in pair_tgt_ids if int(sid) not in by_style]
                             if missing_tgt:
                                 raise RuntimeError(f"620 target DINO eval bank missing target ids: {sorted(set(missing_tgt))}")
+                            dino_cls = []
+                            dino_patches = []
+                            for src_item, _tgt_name, tgt_id, _out_name in meta:
+                                cls_i, patches_i = _select_eval_target_dino(
+                                    target_dino_bank,
+                                    src_path=src_item["path"],
+                                    tgt_style_id=int(tgt_id),
+                                    mode=args.target_dino_eval_mode,
+                                )
+                                dino_cls.append(cls_i)
+                                dino_patches.append(patches_i)
                             target_style_latent = {
-                                "style_dino_cls": torch.stack(
-                                    [target_dino_bank[int(sid)]["cls"] for sid in pair_tgt_ids],
-                                    dim=0,
-                                ).to(device=device, dtype=repeated_latents.dtype),
-                                "style_dino_patches": torch.stack(
-                                    [target_dino_bank[int(sid)]["patches"] for sid in pair_tgt_ids],
-                                    dim=0,
-                                ).to(device=device, dtype=repeated_latents.dtype),
+                                "style_dino_cls": torch.stack(dino_cls, dim=0).to(device=device, dtype=repeated_latents.dtype),
+                                "style_dino_patches": torch.stack(dino_patches, dim=0).to(
+                                    device=device,
+                                    dtype=repeated_latents.dtype,
+                                ),
                             }
                         t0 = time.perf_counter()
                         latents_gen = lgt.generation_with_target_latent(

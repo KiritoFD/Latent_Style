@@ -10,6 +10,7 @@ CLIP_HF_CACHE_DIR="${CLIP_HF_CACHE_DIR:-${CACHE_DIR}/hf}"
 FULL_EVAL_BATCH_SIZE="${FULL_EVAL_BATCH_SIZE:-16}"
 FULL_EVAL_VAE_DECODE_BATCH_SIZE="${FULL_EVAL_VAE_DECODE_BATCH_SIZE:-16}"
 IDT_CLIP_STYLE="${IDT_CLIP_STYLE:-0.639920825263}"
+TARGET_DINO_EVAL_MODE="${TARGET_DINO_EVAL_MODE:-hash}"
 
 checkpoint="${REMOTE_ROOT}/exp/620_spatial_bridge/620_swd12_sigma002_nfe8_b80/epoch_0008.pt"
 run_prefix="620_swd12_epoch0008"
@@ -33,6 +34,10 @@ while [ "$#" -gt 0 ]; do
       ;;
     --sigma-list)
       sigma_list="$2"
+      shift 2
+      ;;
+    --target-dino-eval-mode)
+      TARGET_DINO_EVAL_MODE="$2"
       shift 2
       ;;
     --no-force-regen)
@@ -86,7 +91,7 @@ run_eval() {
   local out_dir="${run_dir}/full_eval/epoch_0008"
   local override="${REMOTE_SB}/configs/_generated_${run_name}_eval_override.json"
   mkdir -p "$run_dir" "$(dirname "$override")"
-  RUN_NAME="$run_name" NFE="$nfe" SIGMA="$sigma" OVERRIDE="$override" "$PYTHON_BIN" - <<'PY'
+  RUN_NAME="$run_name" NFE="$nfe" SIGMA="$sigma" OVERRIDE="$override" TARGET_DINO_EVAL_MODE="$TARGET_DINO_EVAL_MODE" "$PYTHON_BIN" - <<'PY'
 import json
 import os
 from pathlib import Path
@@ -97,6 +102,7 @@ payload = {
     "full_eval": {
         "num_steps": int(os.environ["NFE"]),
         "clip_style_idt_baseline": 0.639920825263,
+        "target_dino_eval_mode": os.environ.get("TARGET_DINO_EVAL_MODE", "hash"),
     },
     "ablation": {
         "name": os.environ["RUN_NAME"],
@@ -118,6 +124,7 @@ PY
     --num_steps "$nfe"
     --batch_size "$FULL_EVAL_BATCH_SIZE"
     --target_chunk_size 2
+    --target_dino_eval_mode "$TARGET_DINO_EVAL_MODE"
     --vae_decode_batch_size "$FULL_EVAL_VAE_DECODE_BATCH_SIZE"
     --vae_compile_method pt2
     --vae_compile_mode reduce-overhead
