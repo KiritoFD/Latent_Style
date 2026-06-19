@@ -29,6 +29,7 @@ SYNC_PATHS = [
     "SchrodingerBridge/src/utils/training.py",
     "SchrodingerBridge/src/utils/run_evaluation.py",
     "SchrodingerBridge/tools/probe_620_path_liveness.py",
+    "SchrodingerBridge/tools/probe_620_endpoint_decomposition.py",
     "SchrodingerBridge/tools/probe_config_effectiveness.py",
     "SchrodingerBridge/tools/experiments/dino_cache_utils.py",
     "SchrodingerBridge/tools/experiments/build_offline_dino_pairing_cache.py",
@@ -44,6 +45,7 @@ SYNC_PATHS = [
     "SchrodingerBridge/configs/620_spatial_bridge_adapter.json",
     "SchrodingerBridge/configs/620_spatial_bridge_moe.json",
     "SchrodingerBridge/configs/620_spatial_bridge_gate12.json",
+    "SchrodingerBridge/configs/620_spatial_bridge_lowmix.json",
     "SchrodingerBridge/exp/phase616_live_dashboard/sync_phase616_live_dashboard.py",
 ]
 
@@ -62,6 +64,7 @@ VERIFY_PYTHON_FILES = [
     "SchrodingerBridge/src/utils/training.py",
     "SchrodingerBridge/src/utils/run_evaluation.py",
     "SchrodingerBridge/tools/probe_620_path_liveness.py",
+    "SchrodingerBridge/tools/probe_620_endpoint_decomposition.py",
     "SchrodingerBridge/tools/probe_config_effectiveness.py",
     "SchrodingerBridge/tools/experiments/build_offline_dino_pairing_cache.py",
     "SchrodingerBridge/tools/experiments/build_offline_dino_pairing_plan.py",
@@ -78,6 +81,7 @@ CONFIG_BY_VARIANT = {
     "adapter": "SchrodingerBridge/configs/620_spatial_bridge_adapter.json",
     "moe": "SchrodingerBridge/configs/620_spatial_bridge_moe.json",
     "gate12": "SchrodingerBridge/configs/620_spatial_bridge_gate12.json",
+    "lowmix": "SchrodingerBridge/configs/620_spatial_bridge_lowmix.json",
 }
 
 
@@ -93,6 +97,7 @@ def main() -> int:
     parser.add_argument("--formal", action="store_true", help="Run formal 8-epoch training for the selected variant.")
     parser.add_argument("--batch-size", type=int, default=None, help="Optional training batch size override; must be divisible by 16.")
     parser.add_argument("--task-name", default="")
+    parser.add_argument("--run-name", default="", help="Optional remote run directory name. Defaults to *_smoke for smoke runs and the formal run name for formal runs.")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -106,10 +111,12 @@ def main() -> int:
         "adapter": "620_adapter_swd12_sigma002_nfe8_b64",
         "moe": "620_moe_swd12_sigma002_nfe8_b64",
         "gate12": "620_gate12_adapter_swd12_sigma002_nfe8_b64",
+        "lowmix": "620_lowmix05_gate12_adapter_swd12_sigma002_nfe8_b64",
     }[variant]
     if args.batch_size is not None and int(args.batch_size) % 16 != 0:
         raise SystemExit(f"--batch-size must be divisible by 16, got {args.batch_size}")
-    task_name = str(args.task_name).strip() or (run_name + ("_smoke" if smoke else "_formal"))
+    remote_run_name = str(args.run_name).strip() or (run_name + ("_smoke" if smoke else ""))
+    task_name = str(args.task_name).strip() or (remote_run_name if smoke else run_name + "_formal")
     remote_log = f"{REMOTE_SB}/exp/620_spatial_bridge/{task_name}.remote.log"
     cmd = [
         sys.executable,
@@ -145,7 +152,7 @@ def main() -> int:
         "--epochs",
         str(int(epochs)),
         "--run-name",
-        run_name,
+        remote_run_name,
     ]
     if args.batch_size is not None:
         remote_cmd.extend(["--batch-size", str(int(args.batch_size))])

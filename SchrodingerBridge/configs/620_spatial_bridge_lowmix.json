@@ -1,0 +1,15 @@
+{
+  "_base": "620_spatial_bridge_gate12.json",
+  "bridge": {
+    "training_target_projection_low_anchor": 0.5
+  },
+  "checkpoint": {
+    "save_dir": "./exp/620_spatial_bridge/620_lowmix05_gate12_adapter_swd12_sigma002_nfe8_b64"
+  },
+  "ablation": {
+    "name": "620_lowmix05_gate12_adapter_swd12_b64",
+    "axis": "620_spatial_bridge_low_anchor_followup",
+    "stage": "lowmix05",
+    "notes": "620 diagnostic follow-up after endpoint decomposition showed source-low anchoring dominates: gate12 adapter SWD=12 with training_target_projection_low_anchor=0.5."
+  }
+}
