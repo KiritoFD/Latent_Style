@@ -47,6 +47,7 @@ class SpatialBridge620(nn.Module):
         moe_enabled = bool(getattr(model_cfg, "style_moe_enabled", False))
         moe_num_experts = int(getattr(model_cfg, "style_moe_num_experts", 4))
         moe_router_hidden_dim = int(getattr(model_cfg, "style_moe_router_hidden_dim", 128))
+        kv_content_routed = bool(getattr(model_cfg, "style_kv_moe_content_routed", False))
         self.blocks = nn.ModuleList(
             [
                 SpatialBridgeBlock620(
@@ -56,6 +57,7 @@ class SpatialBridge620(nn.Module):
                     style_moe_enabled=moe_enabled,
                     style_moe_num_experts=moe_num_experts,
                     style_moe_router_hidden_dim=moe_router_hidden_dim,
+                    style_kv_moe_content_routed=kv_content_routed,
                 )
                 for _ in range(depth)
             ]
