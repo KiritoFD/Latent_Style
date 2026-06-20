@@ -113,6 +113,50 @@ case "$variant" in
       BATCH_SIZE="64"
     fi
     ;;
+  lowfreqfix)
+    config_rel="SchrodingerBridge/configs/620_spatial_bridge_lowfreqfix.json"
+    default_run_name="620_lowfreqfix_swd8_sigma002_nfe8_b80"
+    ;;
+  lowfreqfix_debug)
+    config_rel="SchrodingerBridge/configs/620_spatial_bridge_lowfreqfix_debug.json"
+    default_run_name="620_lowfreqfix_debug_b16_gs2"
+    if [ -z "$BATCH_SIZE_WAS_SET" ]; then
+      BATCH_SIZE="16"
+    fi
+    ;;
+  targetlinear_debug)
+    config_rel="SchrodingerBridge/configs/620_spatial_bridge_targetlinear_debug.json"
+    default_run_name="620_targetlinear_debug_b16_gs2"
+    if [ -z "$BATCH_SIZE_WAS_SET" ]; then
+      BATCH_SIZE="16"
+    fi
+    ;;
+  targetlinear)
+    config_rel="SchrodingerBridge/configs/620_spatial_bridge_targetlinear.json"
+    default_run_name="620_targetlinear_swd8_sigma002_nfe8_b80"
+    ;;
+  endpointlowhigh)
+    config_rel="SchrodingerBridge/configs/620_spatial_bridge_targetlinear_endpointlowhigh.json"
+    default_run_name="620_targetlinear_endpointlowhigh_swd8_sigma002_nfe8_b80"
+    ;;
+  endpointstylehead)
+    config_rel="SchrodingerBridge/configs/620_spatial_bridge_targetlinear_endpointstylehead.json"
+    default_run_name="620_targetlinear_endpointstylehead_swd8_sigma002_nfe8_b80"
+    ;;
+  film)
+    config_rel="SchrodingerBridge/configs/620_spatial_bridge_film_smoke.json"
+    default_run_name="620_film_smoke"
+    if [ -z "$BATCH_SIZE_WAS_SET" ]; then
+      BATCH_SIZE="16"
+    fi
+    ;;
+  film_formal)
+    config_rel="SchrodingerBridge/configs/620_spatial_bridge_film_formal.json"
+    default_run_name="620_film_formal"
+    if [ -z "$BATCH_SIZE_WAS_SET" ]; then
+      BATCH_SIZE="64"
+    fi
+    ;;
   contentkv)
     config_rel="SchrodingerBridge/configs/620_spatial_bridge_contentkv.json"
     default_run_name="620_contentkv_gate12_adapter_swd12_sigma002_nfe8_b64"
