@@ -111,6 +111,8 @@ CONFIG_BY_VARIANT = {
     "endpointlowhigh": "SchrodingerBridge/configs/620_spatial_bridge_targetlinear_endpointlowhigh.json",
     "endpointstylehead": "SchrodingerBridge/configs/620_spatial_bridge_targetlinear_endpointstylehead.json",
     "targetlinear_debug": "SchrodingerBridge/configs/620_spatial_bridge_targetlinear_debug.json",
+    "film": "SchrodingerBridge/configs/620_spatial_bridge_film_smoke.json",
+    "film_formal": "SchrodingerBridge/configs/620_spatial_bridge_film_formal.json",
     "contentkv": "SchrodingerBridge/configs/620_spatial_bridge_contentkv.json",
 }
 
@@ -151,6 +153,8 @@ def main() -> int:
         "endpointlowhigh": "620_targetlinear_endpointlowhigh_swd8_sigma002_nfe8_b80",
         "endpointstylehead": "620_targetlinear_endpointstylehead_swd8_sigma002_nfe8_b80",
         "targetlinear_debug": "620_targetlinear_debug_b16_gs2",
+        "film": "620_film_smoke",
+        "film_formal": "620_film_formal",
         "contentkv": "620_contentkv_gate12_adapter_swd12_sigma002_nfe8_b64",
     }[variant]
     if args.batch_size is not None and int(args.batch_size) % 16 != 0:
