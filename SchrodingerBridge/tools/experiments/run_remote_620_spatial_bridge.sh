@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eu
 
 REMOTE_ROOT="${REMOTE_ROOT:-/mnt/i/Github/Latent_Style}"
 PYTHON_BIN="${PYTHON_BIN:-/home/xy/venvs/samam312/bin/python}"
