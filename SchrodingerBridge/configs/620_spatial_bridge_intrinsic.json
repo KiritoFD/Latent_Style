@@ -16,12 +16,12 @@
     "dino_cache_required": false
   },
   "checkpoint": {
-    "save_dir": "./exp/620_spatial_bridge/620_intrinsic_formal"
+    "save_dir": "./exp/620_spatial_bridge/620_intrinsic_v2"
   },
   "ablation": {
-    "name": "620_intrinsic_formal",
+    "name": "620_intrinsic_v2",
     "axis": "620_style_conditioning",
     "stage": "formal",
-    "notes": "H6: Remove DINO, use intrinsic cross-attention. Style latent (4x64x64) → CNN → 256 tokens as K/V. End-to-end learning of style representation."
+    "notes": "H6v2: Remove DINO, use intrinsic cross-attention. Style latent (4x64x64) → CNN → 256 tokens as K/V. End-to-end learning of style representation."
   }
 }

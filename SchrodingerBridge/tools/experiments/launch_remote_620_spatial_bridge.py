@@ -160,7 +160,7 @@ def main() -> int:
         "film": "620_film_smoke",
         "film_formal": "620_film_formal",
         "dim128": "620_dim128_formal",
-        "intrinsic": "620_intrinsic_formal",
+        "intrinsic": "620_intrinsic_v2",
         "contentkv": "620_contentkv_gate12_adapter_swd12_sigma002_nfe8_b64",
     }[variant]
     if args.batch_size is not None and int(args.batch_size) % 16 != 0:

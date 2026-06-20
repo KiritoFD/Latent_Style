@@ -166,7 +166,7 @@ case "$variant" in
     ;;
   intrinsic)
     config_rel="SchrodingerBridge/configs/620_spatial_bridge_intrinsic.json"
-    default_run_name="620_intrinsic_formal"
+    default_run_name="620_intrinsic_v2"
     if [ -z "$BATCH_SIZE_WAS_SET" ]; then
       BATCH_SIZE="64"
     fi
