@@ -1,0 +1,23 @@
+{
+  "_base": "620_spatial_bridge_base.json",
+  "bridge": {
+    "training_target_projection_low_mode": "target_linear",
+    "training_target_projection_low_anchor": 1.0,
+    "w_content_lowpass_anchor": 0.0
+  },
+  "training": {
+    "num_epochs": 1,
+    "full_eval_each_epoch": false,
+    "full_eval_defer_until_training_end": false,
+    "full_eval_force_regen": false
+  },
+  "checkpoint": {
+    "save_dir": "./exp/620_spatial_bridge/620_targetlinear_swd8_sigma002_nfe8_b80"
+  },
+  "ablation": {
+    "name": "620_targetlinear_swd8_sigma002_nfe8_b80",
+    "axis": "620_spatial_bridge_target_path",
+    "stage": "smoke",
+    "notes": "Smoke lane for the target-linear low-frequency vertical path. Keeps the 620 solver and style conditioning unchanged while allowing low-frequency motion from source to target during training."
+  }
+}

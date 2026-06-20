@@ -1,0 +1,15 @@
+{
+  "_base": "620_spatial_bridge_targetlinear.json",
+  "bridge": {
+    "t_sampling_power": 2.5
+  },
+  "checkpoint": {
+    "save_dir": "./exp/620_spatial_bridge/620_targetlinear_tlow_swd8_sigma002_nfe8_b80"
+  },
+  "ablation": {
+    "name": "620_targetlinear_tlow_swd8_sigma002_nfe8_b80",
+    "axis": "620_spatial_bridge_t_sampling",
+    "stage": "smoke",
+    "notes": "Biases training-time t sampling toward low t to improve the early endpoint regime where whitening is strongest, without adding a separate source endpoint loss."
+  }
+}

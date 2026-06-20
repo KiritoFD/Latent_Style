@@ -1,0 +1,15 @@
+{
+  "_base": "620_spatial_bridge_targetlinear.json",
+  "bridge": {
+    "endpoint_energy_band_weight": 0.5
+  },
+  "checkpoint": {
+    "save_dir": "./exp/620_spatial_bridge/620_targetlinear_energyband_swd8_sigma002_nfe8_b80"
+  },
+  "ablation": {
+    "name": "620_targetlinear_energyband_swd8_sigma002_nfe8_b80",
+    "axis": "620_spatial_bridge_endpoint_energy_band",
+    "stage": "smoke",
+    "notes": "Constrains endpoint latent energy to remain within the source-target band without explicitly rewarding source-like decoded appearance."
+  }
+}

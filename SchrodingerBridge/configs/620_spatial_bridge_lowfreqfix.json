@@ -1,0 +1,15 @@
+{
+  "_base": "620_spatial_bridge_base.json",
+  "bridge": {
+    "w_content_lowpass_anchor": 0.25
+  },
+  "checkpoint": {
+    "save_dir": "./exp/620_spatial_bridge/620_lowfreqfix_swd8_sigma002_nfe8_b80"
+  },
+  "ablation": {
+    "name": "620_lowfreqfix_swd8_sigma002_nfe8_b80",
+    "axis": "620_spatial_bridge_fog_fix",
+    "stage": "lowfreqfix",
+    "notes": "Add explicit endpoint low-frequency target supervision to counter source-locked fog/whitening seen in the 620 fog probe."
+  }
+}

@@ -141,6 +141,25 @@ def test_vertical_fm_optional_low_anchor_blends_target_lowpass() -> None:
     assert torch.allclose(target_velocity, t_high - c_high, atol=1e-6)
 
 
+def test_vertical_fm_target_linear_low_mode_moves_low_frequency() -> None:
+    cfg = _cfg()
+    cfg.bridge.training_target_projection_low_mode = "target_linear"
+    objective = SpatialBridgeObjective620(cfg)
+    content = torch.randn(2, 2, 5, 5)
+    target = torch.randn(2, 2, 5, 5)
+    t = torch.tensor([0.25, 0.75])
+    x_t, target_velocity = objective._vertical_state(content, target, t)
+    c_low = losses620._lowpass(content, 3)
+    t_low = losses620._lowpass(target, 3)
+    c_high = content - c_low
+    t_high = target - t_low
+    t4 = t.view(-1, 1, 1, 1)
+    expected_x_t = (1.0 - t4) * c_low + t4 * t_low + (1.0 - t4) * c_high + t4 * t_high
+    expected_velocity = (t_low - c_low) + (t_high - c_high)
+    assert torch.allclose(x_t, expected_x_t, atol=1e-6)
+    assert torch.allclose(target_velocity, expected_velocity, atol=1e-6)
+
+
 def test_single_step_swd_receives_velocity_derived_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
     class DummyModel(torch.nn.Module):
         bridge_sigma = 0.02
@@ -210,6 +229,130 @@ def test_620_endpoint_decomposition_metrics_track_low_and_high_bands(monkeypatch
     assert torch.isfinite(out["endpoint_low_target_ratio"])
 
 
+def test_620_endpoint_lowfreq_loss_uses_target_lowpass(monkeypatch: pytest.MonkeyPatch) -> None:
+    class ZeroModel(torch.nn.Module):
+        bridge_sigma = 0.02
+        last_debug = {}
+
+        def forward(self, x, **kwargs):  # noqa: ANN001
+            del kwargs
+            return torch.zeros_like(x)
+
+    cfg = _cfg()
+    cfg.bridge.w_content_lowpass_anchor = 0.75
+    objective = SpatialBridgeObjective620(cfg)
+    monkeypatch.setattr(objective, "_sample_t", lambda content: torch.full((content.shape[0],), 0.5, device=content.device))
+    content = torch.randn(2, 2, 6, 6)
+    target = torch.randn_like(content) + 0.25
+
+    out = objective.compute(
+        ZeroModel(),
+        content=content,
+        target_style=target,
+        target_style_id=torch.tensor([0, 1]),
+        conditioning={},
+    )
+
+    z_hat1 = objective.last_debug["z_hat1"]
+    expected = torch.nn.functional.l1_loss(
+        losses620._lowpass(z_hat1, objective.lowpass_kernel).float(),
+        losses620._lowpass(target, objective.lowpass_kernel).float(),
+    )
+    assert torch.allclose(out["loss_endpoint_lowfreq"], expected, atol=1e-6)
+    assert torch.allclose(out["endpoint_lowfreq"], expected * 0.75, atol=1e-6)
+
+
+def test_source_endpoint_aux_uses_t0_prediction(monkeypatch: pytest.MonkeyPatch) -> None:
+    class RecorderModel(torch.nn.Module):
+        bridge_sigma = 0.02
+        last_debug = {}
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.seen_t = []
+
+        def forward(self, x, t=None, **kwargs):  # noqa: ANN001
+            self.seen_t.append(("forward", None if t is None else t.detach().clone()))
+            return torch.zeros_like(x)
+
+        def predict_endpoint(self, x, t=None, **kwargs):  # noqa: ANN001
+            self.seen_t.append(("endpoint", None if t is None else t.detach().clone()))
+            return x + 0.1
+
+    cfg = _cfg()
+    cfg.bridge.source_endpoint_aux_weight = 0.5
+    objective = SpatialBridgeObjective620(cfg)
+    monkeypatch.setattr(objective, "_sample_t", lambda content: torch.full((content.shape[0],), 0.4, device=content.device))
+    model = RecorderModel()
+    content = torch.randn(2, 2, 6, 6)
+    target = torch.randn_like(content)
+
+    out = objective.compute(
+        model,
+        content=content,
+        target_style=target,
+        target_style_id=torch.tensor([0, 1]),
+        conditioning={},
+    )
+
+    endpoint_ts = [t for kind, t in model.seen_t if kind == "endpoint"]
+    assert endpoint_ts
+    assert torch.allclose(endpoint_ts[0], torch.zeros_like(endpoint_ts[0]), atol=1e-6)
+    assert torch.isfinite(out["loss_source_endpoint_aux"])
+
+
+def test_t_sampling_power_biases_samples_toward_low_t() -> None:
+    cfg = _cfg()
+    cfg.bridge.t_min = 0.0
+    cfg.bridge.t_max = 1.0
+    cfg.bridge.t_sampling_power = 2.5
+    objective = SpatialBridgeObjective620(cfg)
+    torch.manual_seed(123)
+    t = objective._sample_t(torch.zeros(4096, 2, 4, 4))
+    assert float(t.mean().item()) < 0.4
+    assert float(t.min().item()) >= 0.0
+    assert float(t.max().item()) <= 1.0
+
+
+def test_endpoint_energy_band_penalizes_only_out_of_band_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
+    class OffsetModel(torch.nn.Module):
+        bridge_sigma = 0.02
+        last_debug = {}
+
+        def __init__(self, delta: float) -> None:
+            super().__init__()
+            self.delta = float(delta)
+
+        def forward(self, x, **kwargs):  # noqa: ANN001
+            del kwargs
+            return torch.full_like(x, self.delta)
+
+    cfg = _cfg()
+    cfg.bridge.endpoint_energy_band_weight = 1.0
+    objective = SpatialBridgeObjective620(cfg)
+    monkeypatch.setattr(objective, "_sample_t", lambda content: torch.full((content.shape[0],), 0.5, device=content.device))
+    content = torch.full((2, 2, 4, 4), 0.2)
+    target = torch.full((2, 2, 4, 4), 0.4)
+
+    in_band = objective.compute(
+        OffsetModel(0.0),
+        content=content,
+        target_style=target,
+        target_style_id=torch.tensor([0, 1]),
+        conditioning={},
+    )
+    out_band = objective.compute(
+        OffsetModel(1.0),
+        content=content,
+        target_style=target,
+        target_style_id=torch.tensor([0, 1]),
+        conditioning={},
+    )
+
+    assert torch.allclose(in_band["loss_endpoint_energy_band"], torch.tensor(0.0), atol=1e-6)
+    assert float(out_band["loss_endpoint_energy_band"].item()) > 0.0
+
+
 def test_i2sb_single_final_step_has_zero_variance(monkeypatch: pytest.MonkeyPatch) -> None:
     cfg = _cfg()
     model = SpatialBridge620(cfg.model, cfg.bridge)
@@ -222,7 +365,6 @@ def test_i2sb_single_final_step_has_zero_variance(monkeypatch: pytest.MonkeyPatc
     x = torch.randn(1, 2, 4, 4)
     out = model.integrate_transport(x, style_id=torch.tensor([0]), num_steps=1)
     assert out.shape == x.shape
-
 
 def test_620_moe_cross_attention_reports_router_metrics() -> None:
     cfg = _cfg()
@@ -237,3 +379,34 @@ def test_620_moe_cross_attention_reports_router_metrics() -> None:
     assert "style_moe_router_entropy" in model.last_debug
     assert "style_moe_router_max_prob" in model.last_debug
     assert torch.isfinite(model.last_debug["style_moe_router_entropy"])
+
+
+def test_endpoint_lowhigh_mode_converts_endpoint_delta_back_to_velocity() -> None:
+    cfg = _cfg()
+    cfg.model.endpoint_head_mode = "endpoint_lowhigh"
+    cfg.model.endpoint_lowpass_kernel = 3
+    cfg.model.endpoint_velocity_floor = 0.05
+    model = SpatialBridge620(cfg.model, cfg.bridge)
+    x = torch.randn(2, 2, 4, 4)
+    patches = torch.randn(2, 4, 6)
+    t = torch.tensor([0.25, 0.75])
+    out = model(x, t=t, style_dino_patches=patches)
+    assert out.shape == x.shape
+    assert float(model.last_debug["endpoint_head_mode_lowhigh"].item()) == 1.0
+    endpoint = model.predict_endpoint(x, t=t, style_dino_patches=patches)
+    assert endpoint.shape == x.shape
+    assert torch.isfinite(model.last_debug["endpoint_pred_abs"])
+
+
+def test_endpoint_lowhigh_style_heads_report_style_actuation_debug() -> None:
+    cfg = _cfg()
+    cfg.model.endpoint_head_mode = "endpoint_lowhigh"
+    cfg.model.endpoint_style_hidden_dim = 16
+    model = SpatialBridge620(cfg.model, cfg.bridge)
+    x = torch.randn(2, 2, 4, 4)
+    patches = torch.randn(2, 4, 6)
+    _ = model(x, t=torch.tensor([0.2, 0.8]), style_dino_patches=patches)
+    assert "endpoint_style_low_abs" in model.last_debug
+    assert "endpoint_style_high_abs" in model.last_debug
+    assert torch.isfinite(model.last_debug["endpoint_style_low_abs"])
+    assert torch.isfinite(model.last_debug["endpoint_style_high_abs"])

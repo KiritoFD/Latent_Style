@@ -13,6 +13,25 @@ from torch.utils.data import Dataset
 logger = logging.getLogger(__name__)
 
 
+def _normalize_base_stem_text(stem: str) -> str:
+    text = str(stem or "").strip()
+    return text[:-5] if text.endswith("_flip") else text
+
+
+def _stem_aliases(style: str, stem: str) -> tuple[str, ...]:
+    style_name = str(style or "").strip()
+    base_stem = _normalize_base_stem_text(stem)
+    if not style_name or not base_stem:
+        return tuple()
+    aliases = [base_stem]
+    prefix = f"{style_name}__"
+    if base_stem.startswith(prefix):
+        aliases.append(base_stem[len(prefix):])
+    else:
+        aliases.append(prefix + base_stem)
+    return tuple(dict.fromkeys(x for x in aliases if x))
+
+
 def _load_latent_file(path: Path) -> torch.Tensor:
     if path.suffix.lower() == ".pt":
         obj = torch.load(path, map_location="cpu", weights_only=False)
@@ -97,6 +116,7 @@ class AdaCUTLatentDataset(Dataset):
         self.dino_style_bank_cls: dict[int, torch.Tensor] = {}
         self.dino_style_bank_patches: dict[int, torch.Tensor] = {}
         self.dino_patch_hw: dict[int, tuple[int, int]] = {}
+        self.dino_missing_sidecar_counts: dict[tuple[str, str], int] = {}
         self.style_caption_path = str(style_caption_path or "").strip()
         self.style_captions: dict[str, str] = {}
         if self.style_caption_path and self.style_caption_path.endswith(".jsonl"):
@@ -402,16 +422,16 @@ class AdaCUTLatentDataset(Dataset):
         )
 
     def _normalize_base_stem(self, stem: str) -> str:
-        text = str(stem)
-        return text[:-5] if text.endswith("_flip") else text
+        return _normalize_base_stem_text(stem)
 
     def _register_style_index(self, style_id: int, files: list[Path]) -> None:
         stems = [p.stem for p in files]
         self.style_item_stems[style_id] = stems
         base_to_indices: dict[str, list[int]] = {}
+        style_name = self.style_subdirs[style_id]
         for idx, stem in enumerate(stems):
-            base_stem = self._normalize_base_stem(stem)
-            base_to_indices.setdefault(base_stem, []).append(idx)
+            for alias in _stem_aliases(style_name, stem):
+                base_to_indices.setdefault(alias, []).append(idx)
         self.style_base_to_indices[style_id] = base_to_indices
 
     def _load_pairing_cache(self, cache_path: str) -> None:
@@ -477,10 +497,12 @@ class AdaCUTLatentDataset(Dataset):
             stem = self._normalize_base_stem(str(row.get("stem", "")).strip())
             if not style_name or not stem:
                 continue
-            self.dino_item_sidecars[(style_name, stem)] = {
+            sidecar = {
                 "cls": cls_embeddings[row_idx].clone(),
                 "patches": patch_embeddings[row_idx].clone(),
             }
+            for alias in _stem_aliases(style_name, stem):
+                self.dino_item_sidecars[(style_name, alias)] = sidecar
             by_style.setdefault(style_name, []).append(row_idx)
 
         for style_id, style_name in enumerate(self.style_subdirs):
@@ -509,6 +531,13 @@ class AdaCUTLatentDataset(Dataset):
             len(self.dino_item_sidecars),
             len(self.dino_style_bank_patches),
         )
+
+    def _record_missing_dino_sidecar(self, style_name: str, stem: str) -> None:
+        key = (str(style_name), str(stem))
+        count = int(self.dino_missing_sidecar_counts.get(key, 0)) + 1
+        self.dino_missing_sidecar_counts[key] = count
+        if count <= 3:
+            logger.warning("Missing DINO sidecar for %s", key)
 
     def _active_pairing_topk(self, candidate_count: int) -> int:
         max_topk = max(1, min(int(candidate_count), int(self.pairing_cache_topk)))
@@ -754,6 +783,7 @@ class AdaCUTLatentDataset(Dataset):
             content_stem = self._normalize_base_stem(self.style_item_stems[content_style_id][c_idx])
             sidecar = self.dino_item_sidecars.get((content_style, content_stem))
             if sidecar is None and self.dino_cache_required:
+                self._record_missing_dino_sidecar(content_style, content_stem)
                 raise KeyError(f"Missing DINO sidecar for {(content_style, content_stem)}")
             if sidecar is not None:
                 item["content_dino_cls"] = sidecar["cls"].float()
@@ -764,6 +794,7 @@ class AdaCUTLatentDataset(Dataset):
             target_stem = self._normalize_base_stem(self.style_item_stems[target_style_id][t_idx])
             target_sidecar = self.dino_item_sidecars.get((target_style_name, target_stem))
             if target_sidecar is None and self.dino_cache_required:
+                self._record_missing_dino_sidecar(target_style_name, target_stem)
                 raise KeyError(f"Missing DINO sidecar for {(target_style_name, target_stem)}")
             if target_sidecar is not None:
                 item["target_style_dino_cls"] = target_sidecar["cls"].float()
