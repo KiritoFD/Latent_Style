@@ -339,9 +339,10 @@ class SpatialBridge620(nn.Module):
         style_dino_patches: torch.Tensor | None = None,
         style_dino_cls: torch.Tensor | None = None,
         style_text_tokens: torch.Tensor | None = None,
+        style_latent: torch.Tensor | None = None,
     ) -> torch.Tensor:
         t_tensor = self._resolve_t(x, t)
-        v = self.forward(x, t=t_tensor, style_id=style_id, style_dino_patches=style_dino_patches, style_dino_cls=style_dino_cls, style_text_tokens=style_text_tokens)
+        v = self.forward(x, t=t_tensor, style_id=style_id, style_dino_patches=style_dino_patches, style_dino_cls=style_dino_cls, style_text_tokens=style_text_tokens, style_latent=style_latent)
         return x + (1.0 - t_tensor).view(-1, 1, 1, 1).to(dtype=x.dtype) * v
 
     def predict_transport_base(self, x: torch.Tensor, **kwargs: object) -> torch.Tensor:
@@ -357,8 +358,12 @@ class SpatialBridge620(nn.Module):
         style_dino_patches: torch.Tensor | None = None,
         style_dino_cls: torch.Tensor | None = None,
         style_text_tokens: torch.Tensor | None = None,
+        style_latent: torch.Tensor | None = None,
+        target_style_latent: torch.Tensor | None = None,
         **_: object,
     ) -> torch.Tensor:
+        if style_latent is None and target_style_latent is not None and not isinstance(target_style_latent, dict):
+            style_latent = target_style_latent
         steps = max(1, int(num_steps))
         horizon = max(0.0, float(step_size))
         if horizon <= 0.0:
@@ -375,6 +380,7 @@ class SpatialBridge620(nn.Module):
                 style_dino_patches=style_dino_patches,
                 style_dino_cls=style_dino_cls,
                 style_text_tokens=style_text_tokens,
+                style_latent=style_latent,
             )
             denom = max(1e-6, 1.0 - t_curr)
             c_curr = (1.0 - t_next) / denom
@@ -401,6 +407,7 @@ class SpatialBridge620(nn.Module):
         style_dino_patches: torch.Tensor | None = None,
         style_dino_cls: torch.Tensor | None = None,
         style_text_tokens: torch.Tensor | None = None,
+        style_latent: torch.Tensor | None = None,
         idt_dino_patches: torch.Tensor | None = None,
         idt_dino_cls: torch.Tensor | None = None,
         cfg_target_scale: float = 1.0,
@@ -429,8 +436,9 @@ class SpatialBridge620(nn.Module):
                 style_dino_patches=style_dino_patches,
                 style_dino_cls=style_dino_cls,
                 style_text_tokens=style_text_tokens,
+                style_latent=style_latent,
             )
-            ep_null = self.predict_endpoint(h, t=t_batch, style_id=style_id)
+            ep_null = self.predict_endpoint(h, t=t_batch, style_id=style_id, style_latent=style_latent)
 
             if cfg_repulse_scale > 0.0 and idt_dino_patches is not None:
                 ep_idt = self.predict_endpoint(
