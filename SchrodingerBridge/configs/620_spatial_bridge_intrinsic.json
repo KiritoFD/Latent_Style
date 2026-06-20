@@ -1,0 +1,27 @@
+{
+  "_base": "620_spatial_bridge_targetlinear.json",
+  "model": {
+    "style_condition_source": "latent",
+    "style_attn_num_heads": 4,
+    "style_cross_attn_gate_init": 0.05
+  },
+  "training": {
+    "batch_size": 64,
+    "num_epochs": 8,
+    "full_eval_each_epoch": true,
+    "full_eval_defer_until_training_end": false,
+    "learning_rate": 0.0002
+  },
+  "data": {
+    "dino_cache_required": false
+  },
+  "checkpoint": {
+    "save_dir": "./exp/620_spatial_bridge/620_intrinsic_formal"
+  },
+  "ablation": {
+    "name": "620_intrinsic_formal",
+    "axis": "620_style_conditioning",
+    "stage": "formal",
+    "notes": "H6: Remove DINO, use intrinsic cross-attention. Style latent (4x64x64) → CNN → 256 tokens as K/V. End-to-end learning of style representation."
+  }
+}

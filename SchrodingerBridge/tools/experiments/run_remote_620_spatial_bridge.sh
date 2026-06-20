@@ -157,6 +157,20 @@ case "$variant" in
       BATCH_SIZE="64"
     fi
     ;;
+  dim128)
+    config_rel="SchrodingerBridge/configs/620_spatial_bridge_dim128.json"
+    default_run_name="620_dim128_formal"
+    if [ -z "$BATCH_SIZE_WAS_SET" ]; then
+      BATCH_SIZE="64"
+    fi
+    ;;
+  intrinsic)
+    config_rel="SchrodingerBridge/configs/620_spatial_bridge_intrinsic.json"
+    default_run_name="620_intrinsic_formal"
+    if [ -z "$BATCH_SIZE_WAS_SET" ]; then
+      BATCH_SIZE="64"
+    fi
+    ;;
   contentkv)
     config_rel="SchrodingerBridge/configs/620_spatial_bridge_contentkv.json"
     default_run_name="620_contentkv_gate12_adapter_swd12_sigma002_nfe8_b64"

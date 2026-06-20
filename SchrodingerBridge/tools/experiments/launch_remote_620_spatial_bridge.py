@@ -61,6 +61,8 @@ SYNC_PATHS = [
     "SchrodingerBridge/configs/620_spatial_bridge_targetlinear_debug.json",
     "SchrodingerBridge/configs/620_spatial_bridge_film_smoke.json",
     "SchrodingerBridge/configs/620_spatial_bridge_film_formal.json",
+    "SchrodingerBridge/configs/620_spatial_bridge_dim128.json",
+    "SchrodingerBridge/configs/620_spatial_bridge_intrinsic.json",
     "SchrodingerBridge/configs/620_spatial_bridge_contentkv.json",
     "SchrodingerBridge/exp/phase616_live_dashboard/sync_phase616_live_dashboard.py",
 ]
@@ -113,6 +115,8 @@ CONFIG_BY_VARIANT = {
     "targetlinear_debug": "SchrodingerBridge/configs/620_spatial_bridge_targetlinear_debug.json",
     "film": "SchrodingerBridge/configs/620_spatial_bridge_film_smoke.json",
     "film_formal": "SchrodingerBridge/configs/620_spatial_bridge_film_formal.json",
+    "dim128": "SchrodingerBridge/configs/620_spatial_bridge_dim128.json",
+    "intrinsic": "SchrodingerBridge/configs/620_spatial_bridge_intrinsic.json",
     "contentkv": "SchrodingerBridge/configs/620_spatial_bridge_contentkv.json",
 }
 
@@ -155,6 +159,8 @@ def main() -> int:
         "targetlinear_debug": "620_targetlinear_debug_b16_gs2",
         "film": "620_film_smoke",
         "film_formal": "620_film_formal",
+        "dim128": "620_dim128_formal",
+        "intrinsic": "620_intrinsic_formal",
         "contentkv": "620_contentkv_gate12_adapter_swd12_sigma002_nfe8_b64",
     }[variant]
     if args.batch_size is not None and int(args.batch_size) % 16 != 0:

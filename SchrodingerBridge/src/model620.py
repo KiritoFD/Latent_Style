@@ -69,6 +69,7 @@ class SpatialBridge620(nn.Module):
         self.endpoint_velocity_floor = max(1e-3, float(getattr(model_cfg, "endpoint_velocity_floor", 0.05)))
         self.endpoint_style_hidden_dim = max(8, int(getattr(model_cfg, "endpoint_style_hidden_dim", 128)))
         self.endpoint_film_enabled = bool(getattr(model_cfg, "endpoint_film_enabled", False))
+        self.style_condition_source = str(getattr(model_cfg, "style_condition_source", "target_dino_patches")).strip().lower()
         self.bridge_sigma = float(getattr(bridge_cfg, "bridge_sigma", 0.02) if bridge_cfg is not None else 0.02)
         self.bridge_noise_schedule = str(getattr(bridge_cfg, "bridge_noise_schedule", "delayed") if bridge_cfg is not None else "delayed")
         self.bridge_noise_window_start = float(getattr(bridge_cfg, "bridge_noise_window_start", 0.18) if bridge_cfg is not None else 0.18)
@@ -76,7 +77,34 @@ class SpatialBridge620(nn.Module):
         style_local_cnn_enabled = bool(getattr(model_cfg, "style_local_cnn_enabled", False))
         self.style_text_enabled = bool(getattr(model_cfg, "style_text_enabled", False))
         self.style_text_dim = int(getattr(model_cfg, "style_text_dim", 768))
-        self.style_conditioner = StyleConditioner620(
+
+        self.use_intrinsic_style = self.style_condition_source == "latent"
+        if self.use_intrinsic_style:
+            self.style_conditioner = None
+            self.intrinsic_style_cnn = nn.Sequential(
+                nn.Conv2d(self.latent_channels, 64, kernel_size=3, padding=1),
+                nn.GroupNorm(1, 64),
+                nn.SiLU(),
+                nn.Conv2d(64, 128, kernel_size=3, padding=1),
+                nn.GroupNorm(1, 128),
+                nn.SiLU(),
+                nn.Conv2d(128, self.dim, kernel_size=3, padding=1),
+            )
+            self.intrinsic_style_pool = nn.AdaptiveAvgPool2d((16, 16))
+            self.intrinsic_style_proj = nn.Sequential(
+                nn.LayerNorm(self.dim),
+                nn.Linear(self.dim, self.dim),
+            )
+            self.intrinsic_style_global = nn.Sequential(
+                nn.LayerNorm(self.dim),
+                nn.Linear(self.dim, self.dim),
+            )
+        else:
+            self.intrinsic_style_cnn = None
+            self.intrinsic_style_pool = None
+            self.intrinsic_style_proj = None
+            self.intrinsic_style_global = None
+            self.style_conditioner = StyleConditioner620(
             dino_dim=self.dino_dim,
             model_dim=self.dim,
             num_styles=self.num_styles,
@@ -222,16 +250,27 @@ class SpatialBridge620(nn.Module):
     ) -> torch.Tensor:
         del source
         t_tensor = self._resolve_t(x, t)
-        style_tokens, style_global = self.style_conditioner(
-            style_dino_patches=style_dino_patches,
-            style_dino_cls=style_dino_cls,
-            style_id=style_id,
-            batch=x.shape[0],
-            device=x.device,
-            dtype=x.dtype,
-            style_latent=style_latent,
-            style_text_tokens=style_text_tokens,
-        )
+
+        if self.use_intrinsic_style and style_latent is not None:
+            style_feat = self.intrinsic_style_cnn(style_latent.to(device=x.device, dtype=x.dtype))
+            style_feat = self.intrinsic_style_pool(style_feat)
+            B, C, H, W = style_feat.shape
+            style_tokens = style_feat.reshape(B, C, H * W).permute(0, 2, 1)
+            style_tokens = self.intrinsic_style_proj(style_tokens.float()).to(dtype=x.dtype)
+            style_global = self.intrinsic_style_global(style_feat.mean(dim=[2, 3]).float()).to(dtype=x.dtype)
+        elif self.style_conditioner is not None:
+            style_tokens, style_global = self.style_conditioner(
+                style_dino_patches=style_dino_patches,
+                style_dino_cls=style_dino_cls,
+                style_id=style_id,
+                batch=x.shape[0],
+                device=x.device,
+                dtype=x.dtype,
+                style_latent=style_latent,
+                style_text_tokens=style_text_tokens,
+            )
+        else:
+            raise ValueError("No style conditioner available")
         time_emb = self.time_proj(sinusoidal_time_embedding_620(t_tensor, self.time_dim).to(device=x.device, dtype=x.dtype))
         h = self.input_proj(x)
         debug_vals: dict[str, list[torch.Tensor]] = {}
