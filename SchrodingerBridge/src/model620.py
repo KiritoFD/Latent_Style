@@ -3,9 +3,45 @@ from __future__ import annotations
 import torch
 from torch import nn
 
+import torch.nn.functional as F
+
 from blocks620 import SpatialBridgeBlock620, sinusoidal_time_embedding_620
 from config_schema import BridgeConfig, ModelConfig
 from style_encoder620 import StyleConditioner620
+
+
+class FiLMEndpointHead(nn.Module):
+    """Endpoint head with FiLM (style modulation inside the trunk).
+
+    For feature maps h and style embedding s:
+        FiLM(h; s) = (1 + gamma(s)) * h + beta(s)
+    Zero-init ensures identity at start.
+    """
+
+    def __init__(self, dim: int, latent_channels: int, style_dim: int, style_hidden_dim: int) -> None:
+        super().__init__()
+        self.norm = nn.GroupNorm(1, dim)
+        self.film_proj = nn.Sequential(
+            nn.LayerNorm(style_dim),
+            nn.Linear(style_dim, style_hidden_dim),
+            nn.SiLU(),
+            nn.Linear(style_hidden_dim, latent_channels * 2),
+        )
+        self.conv = nn.Conv2d(dim, latent_channels, kernel_size=3, padding=1)
+        nn.init.normal_(self.conv.weight, mean=0.0, std=1e-3)
+        nn.init.zeros_(self.conv.bias)
+        nn.init.zeros_(self.film_proj[-1].weight)
+        nn.init.zeros_(self.film_proj[-1].bias)
+
+    def forward(self, x: torch.Tensor, style_embed: torch.Tensor) -> torch.Tensor:
+        film_params = self.film_proj(style_embed.float()).to(dtype=x.dtype)
+        gamma, beta = film_params.chunk(2, dim=-1)
+        gamma = gamma[:, :, None, None]
+        beta = beta[:, :, None, None]
+        h = self.norm(x)
+        h = (1.0 + gamma) * h + beta
+        h = F.silu(h)
+        return self.conv(h)
 
 
 class SpatialBridge620(nn.Module):
@@ -22,6 +58,16 @@ class SpatialBridge620(nn.Module):
         self.dino_dim = int(getattr(model_cfg, "tokenizer_dino_dim", 384))
         self.solver_family = str(getattr(model_cfg, "solver_family", "solver_i2sb"))
         self.transport_prediction_mode = str(getattr(model_cfg, "transport_prediction_mode", "velocity"))
+        self.endpoint_head_mode = str(getattr(model_cfg, "endpoint_head_mode", "velocity")).strip().lower()
+        if self.endpoint_head_mode not in {"velocity", "endpoint_lowhigh"}:
+            self.endpoint_head_mode = "velocity"
+        self.endpoint_lowpass_kernel = max(1, int(getattr(model_cfg, "endpoint_lowpass_kernel", 5)))
+        if self.endpoint_lowpass_kernel % 2 == 0:
+            self.endpoint_lowpass_kernel += 1
+        self.endpoint_high_scale = float(getattr(model_cfg, "endpoint_high_scale", 1.0))
+        self.endpoint_velocity_floor = max(1e-3, float(getattr(model_cfg, "endpoint_velocity_floor", 0.05)))
+        self.endpoint_style_hidden_dim = max(8, int(getattr(model_cfg, "endpoint_style_hidden_dim", 128)))
+        self.endpoint_film_enabled = bool(getattr(model_cfg, "endpoint_film_enabled", False))
         self.bridge_sigma = float(getattr(bridge_cfg, "bridge_sigma", 0.02) if bridge_cfg is not None else 0.02)
         self.bridge_noise_schedule = str(getattr(bridge_cfg, "bridge_noise_schedule", "delayed") if bridge_cfg is not None else "delayed")
         self.bridge_noise_window_start = float(getattr(bridge_cfg, "bridge_noise_window_start", 0.18) if bridge_cfg is not None else 0.18)
@@ -86,14 +132,67 @@ class SpatialBridge620(nn.Module):
             ]
         )
         self.last_cross_attn_entropy = torch.tensor(0.0)
-        self.out = nn.Sequential(
-            nn.GroupNorm(1, self.dim),
-            nn.SiLU(),
-            nn.Conv2d(self.dim, self.latent_channels, kernel_size=3, padding=1),
-        )
-        nn.init.normal_(self.out[-1].weight, mean=0.0, std=1e-3)
-        nn.init.zeros_(self.out[-1].bias)
+        if self.endpoint_head_mode == "endpoint_lowhigh":
+            self.endpoint_style_to_low = nn.Sequential(
+                nn.LayerNorm(self.dim),
+                nn.Linear(self.dim, self.endpoint_style_hidden_dim),
+                nn.SiLU(),
+                nn.Linear(self.endpoint_style_hidden_dim, self.latent_channels),
+            )
+            self.endpoint_style_to_high = nn.Sequential(
+                nn.LayerNorm(self.dim),
+                nn.Linear(self.dim, self.endpoint_style_hidden_dim),
+                nn.SiLU(),
+                nn.Linear(self.endpoint_style_hidden_dim, self.latent_channels),
+            )
+            if self.endpoint_film_enabled:
+                self.endpoint_film_low = FiLMEndpointHead(
+                    self.dim, self.latent_channels, self.dim, self.endpoint_style_hidden_dim,
+                )
+                self.endpoint_film_high = FiLMEndpointHead(
+                    self.dim, self.latent_channels, self.dim, self.endpoint_style_hidden_dim,
+                )
+                self.endpoint_low_head = None
+                self.endpoint_high_head = None
+            else:
+                self.endpoint_film_low = None
+                self.endpoint_film_high = None
+                self.endpoint_low_head = nn.Sequential(
+                    nn.GroupNorm(1, self.dim),
+                    nn.SiLU(),
+                    nn.Conv2d(self.dim, self.latent_channels, kernel_size=3, padding=1),
+                )
+                self.endpoint_high_head = nn.Sequential(
+                    nn.GroupNorm(1, self.dim),
+                    nn.SiLU(),
+                    nn.Conv2d(self.dim, self.latent_channels, kernel_size=3, padding=1),
+                )
+                nn.init.normal_(self.endpoint_low_head[-1].weight, mean=0.0, std=1e-3)
+                nn.init.zeros_(self.endpoint_low_head[-1].bias)
+                nn.init.normal_(self.endpoint_high_head[-1].weight, mean=0.0, std=1e-3)
+                nn.init.zeros_(self.endpoint_high_head[-1].bias)
+            nn.init.zeros_(self.endpoint_style_to_low[-1].weight)
+            nn.init.zeros_(self.endpoint_style_to_low[-1].bias)
+            nn.init.zeros_(self.endpoint_style_to_high[-1].weight)
+            nn.init.zeros_(self.endpoint_style_to_high[-1].bias)
+            self.out = None
+        else:
+            self.out = nn.Sequential(
+                nn.GroupNorm(1, self.dim),
+                nn.SiLU(),
+                nn.Conv2d(self.dim, self.latent_channels, kernel_size=3, padding=1),
+            )
+            nn.init.normal_(self.out[-1].weight, mean=0.0, std=1e-3)
+            nn.init.zeros_(self.out[-1].bias)
         self.last_debug: dict[str, torch.Tensor] = {}
+
+    def _lowpass(self, x: torch.Tensor) -> torch.Tensor:
+        return torch.nn.functional.avg_pool2d(
+            x.float(),
+            kernel_size=self.endpoint_lowpass_kernel,
+            stride=1,
+            padding=self.endpoint_lowpass_kernel // 2,
+        ).to(dtype=x.dtype)
 
     def _resolve_t(self, x: torch.Tensor, t: torch.Tensor | float | None) -> torch.Tensor:
         if t is None:
@@ -122,7 +221,7 @@ class SpatialBridge620(nn.Module):
     ) -> torch.Tensor:
         del source
         t_tensor = self._resolve_t(x, t)
-        style_tokens, _style_global = self.style_conditioner(
+        style_tokens, style_global = self.style_conditioner(
             style_dino_patches=style_dino_patches,
             style_dino_cls=style_dino_cls,
             style_id=style_id,
@@ -153,13 +252,41 @@ class SpatialBridge620(nn.Module):
         else:
             self.last_pixel_entropy = None
 
-        velocity = self.out(h)
+        if self.endpoint_head_mode == "endpoint_lowhigh":
+            style_low = self.endpoint_style_to_low(style_global.float()).to(dtype=x.dtype).view(x.shape[0], self.latent_channels, 1, 1)
+            style_high = self.endpoint_style_to_high(style_global.float()).to(dtype=x.dtype).view(x.shape[0], self.latent_channels, 1, 1)
+            if self.endpoint_film_enabled:
+                low_delta = self.endpoint_film_low(h, style_global.float())
+                high_delta = self.endpoint_film_high(h, style_global.float()) * float(self.endpoint_high_scale)
+            else:
+                low_delta = self.endpoint_low_head(h) + style_low
+                high_delta = (self.endpoint_high_head(h) + style_high) * float(self.endpoint_high_scale)
+            x_low = self._lowpass(x)
+            x_high = x - x_low
+            endpoint = (x_low + low_delta) + (x_high + high_delta)
+            denom = (1.0 - t_tensor).view(-1, 1, 1, 1).to(dtype=x.dtype).clamp_min(self.endpoint_velocity_floor)
+            velocity = (endpoint - x) / denom
+            endpoint_low = self._lowpass(endpoint)
+            endpoint_high = endpoint - endpoint_low
+        else:
+            velocity = self.out(h)
+            endpoint = x + (1.0 - t_tensor).view(-1, 1, 1, 1).to(dtype=x.dtype) * velocity
+            endpoint_low = self._lowpass(endpoint)
+            endpoint_high = endpoint - endpoint_low
         self.last_debug = {
             key: torch.stack([v.to(device=x.device).float() for v in values]).mean()
             for key, values in debug_vals.items()
             if values
         }
         self.last_debug["velocity_abs"] = velocity.detach().float().abs().mean()
+        self.last_debug["endpoint_head_mode_lowhigh"] = x.new_tensor(1.0 if self.endpoint_head_mode == "endpoint_lowhigh" else 0.0)
+        self.last_debug["endpoint_film_enabled"] = x.new_tensor(1.0 if self.endpoint_film_enabled else 0.0)
+        self.last_debug["endpoint_pred_abs"] = endpoint.detach().float().abs().mean()
+        self.last_debug["endpoint_low_abs"] = endpoint_low.detach().float().abs().mean()
+        self.last_debug["endpoint_high_abs"] = endpoint_high.detach().float().abs().mean()
+        if self.endpoint_head_mode == "endpoint_lowhigh":
+            self.last_debug["endpoint_style_low_abs"] = style_low.detach().float().abs().mean()
+            self.last_debug["endpoint_style_high_abs"] = style_high.detach().float().abs().mean()
         self.last_debug["style_dino_active"] = x.new_tensor(1.0 if style_dino_patches is not None else 0.0)
         return velocity
 
