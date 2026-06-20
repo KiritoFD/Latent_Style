@@ -1,0 +1,19 @@
+{
+  "_base": "620_spatial_bridge_targetlinear.json",
+  "model": {
+    "endpoint_head_mode": "endpoint_lowhigh",
+    "endpoint_style_hidden_dim": 128,
+    "endpoint_lowpass_kernel": 5,
+    "endpoint_high_scale": 1.0,
+    "endpoint_velocity_floor": 0.05
+  },
+  "checkpoint": {
+    "save_dir": "./exp/620_spatial_bridge/620_targetlinear_endpointstylehead_swd8_sigma002_nfe8_b80"
+  },
+  "ablation": {
+    "name": "620_targetlinear_endpointstylehead_swd8_sigma002_nfe8_b80",
+    "axis": "620_spatial_bridge_endpoint_style_actuation",
+    "stage": "smoke",
+    "notes": "Endpoint-first low/high heads with explicit style-global actuation injected into both heads."
+  }
+}

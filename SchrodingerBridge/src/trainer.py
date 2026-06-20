@@ -292,7 +292,7 @@ class SBTrainer:
                 self.clip_text_cache = entries if isinstance(entries, dict) else {}
                 max_len = int(payload.get("max_length", 77))
                 feat_dim = int(payload.get("feature_dim", 768))
-                self.clip_null_token = torch.zeros(1, max_len, feat_dim)
+                self.clip_null_token = torch.randn(1, max_len, feat_dim) * 0.02
                 logger.info("Loaded CLIP text cache: %d entries from %s", len(self.clip_text_cache), clip_cache_path)
             except Exception as exc:
                 logger.warning("Failed to load CLIP text cache %s: %s", clip_cache_path, exc)

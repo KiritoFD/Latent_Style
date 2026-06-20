@@ -38,11 +38,18 @@ class SpatialBridgeObjective620:
         self.fm_weight = float(getattr(self.bridge_cfg, "w_flow", 1.0))
         self.single_step_swd_weight = float(getattr(self.bridge_cfg, "single_step_swd_weight", 8.0))
         self.single_step_edge_weight = float(getattr(self.bridge_cfg, "single_step_edge_weight", 0.1))
+        self.endpoint_lowfreq_weight = float(getattr(self.bridge_cfg, "w_content_lowpass_anchor", 0.0))
         self.lowpass_kernel = int(getattr(self.bridge_cfg, "training_target_projection_kernel", 5))
         self.low_anchor = float(getattr(self.bridge_cfg, "training_target_projection_low_anchor", 1.0))
+        self.low_mode = str(getattr(self.bridge_cfg, "training_target_projection_low_mode", "all")).strip().lower()
+        if self.low_mode not in {"all", "channel_mean", "target_linear"}:
+            self.low_mode = "all"
         self.num_projections = int(getattr(self.bridge_cfg, "semantic_swd_num_projections", 64))
         self.t_min = float(getattr(self.bridge_cfg, "t_min", 0.0))
         self.t_max = float(getattr(self.bridge_cfg, "t_max", 1.0))
+        self.t_sampling_power = max(1e-3, float(getattr(self.bridge_cfg, "t_sampling_power", 1.0)))
+        self.source_endpoint_aux_weight = float(getattr(self.bridge_cfg, "source_endpoint_aux_weight", 0.0))
+        self.endpoint_energy_band_weight = float(getattr(self.bridge_cfg, "endpoint_energy_band_weight", 0.0))
         self.swd_scale_mode = str(getattr(self.bridge_cfg, "swd_scale_mode", "global")).strip().lower()
         self.w_attn_entropy_reg = float(getattr(self.bridge_cfg, "w_attn_entropy_reg", 0.0))
         self.last_debug: dict[str, torch.Tensor] = {}
@@ -64,7 +71,9 @@ class SpatialBridgeObjective620:
     def _sample_t(self, content: torch.Tensor) -> torch.Tensor:
         lo = max(0.0, min(1.0, self.t_min))
         hi = max(lo + 1e-4, min(1.0, self.t_max))
-        return torch.empty(content.shape[0], device=content.device, dtype=content.dtype).uniform_(lo, hi)
+        u = torch.empty(content.shape[0], device=content.device, dtype=content.dtype).uniform_(0.0, 1.0)
+        u = u.pow(self.t_sampling_power)
+        return lo + (hi - lo) * u
 
     def _vertical_state(self, content: torch.Tensor, target: torch.Tensor, t: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         c_low = _lowpass(content, self.lowpass_kernel)
@@ -72,10 +81,20 @@ class SpatialBridgeObjective620:
         t_low = _lowpass(target, self.lowpass_kernel)
         t_high = target - t_low
         low_anchor = max(0.0, min(1.0, self.low_anchor))
-        base_low = low_anchor * c_low + (1.0 - low_anchor) * t_low
         t4 = t.view(-1, 1, 1, 1).to(dtype=content.dtype)
-        x_t = base_low + (1.0 - t4) * c_high + t4 * t_high
-        target_velocity = t_high - c_high
+        if self.low_mode == "target_linear":
+            x_low = (1.0 - t4) * c_low + t4 * t_low
+            target_low_velocity = t_low - c_low
+        else:
+            x_low = low_anchor * c_low + (1.0 - low_anchor) * t_low
+            target_low_velocity = torch.zeros_like(c_low)
+            if self.low_mode == "channel_mean":
+                c_mean = c_low.mean(dim=(2, 3), keepdim=True)
+                t_mean = t_low.mean(dim=(2, 3), keepdim=True)
+                x_low = x_low + t4 * (t_mean - c_mean)
+                target_low_velocity = t_mean - c_mean
+        x_t = x_low + (1.0 - t4) * c_high + t4 * t_high
+        target_velocity = (t_high - c_high) + target_low_velocity
         return x_t, target_velocity
 
     def compute(
@@ -120,6 +139,37 @@ class SpatialBridgeObjective620:
         z_hat1 = x_t + (1.0 - t).view(-1, 1, 1, 1).to(dtype=x_t.dtype) * pred_velocity
         fm = F.mse_loss(pred_velocity.float(), target_velocity.float())
 
+        source_endpoint_aux = content.new_tensor(0.0)
+        if self.source_endpoint_aux_weight > 0.0:
+            source_endpoint = model.predict_endpoint(
+                content,
+                t=torch.zeros((content.shape[0],), device=content.device, dtype=content.dtype),
+                style_id=target_style_id,
+                style_dino_patches=style_patches,
+                style_dino_cls=style_cls,
+                style_text_tokens=style_text_tokens,
+            )
+            source_endpoint_aux = (
+                F.l1_loss(_lowpass(source_endpoint, self.lowpass_kernel).float(), _lowpass(target_style, self.lowpass_kernel).float())
+                + _sliced_wasserstein(source_endpoint, target_style, dirs=self._projection_dirs(source_endpoint))
+                + F.l1_loss(
+                    (source_endpoint - _lowpass(source_endpoint, self.lowpass_kernel)).float(),
+                    (target_style - _lowpass(target_style, self.lowpass_kernel)).float(),
+                )
+            ) / 3.0
+
+        endpoint_energy_band = content.new_tensor(0.0)
+        if self.endpoint_energy_band_weight > 0.0:
+            z_abs = z_hat1.float().abs().mean(dim=(1, 2, 3))
+            src_abs = content.float().abs().mean(dim=(1, 2, 3))
+            tgt_abs = target_style.float().abs().mean(dim=(1, 2, 3))
+            lower = torch.minimum(src_abs, tgt_abs)
+            upper = torch.maximum(src_abs, tgt_abs)
+            endpoint_energy_band = (
+                F.relu(z_abs - upper).mean()
+                + F.relu(lower - z_abs).mean()
+            )
+
         # SWD scale mode handling
         if self.swd_scale_mode == "2-scale":
             swd_64 = _sliced_wasserstein(z_hat1, target_style, dirs=self._projection_dirs(z_hat1))
@@ -147,7 +197,15 @@ class SpatialBridgeObjective620:
             (z_hat1 - _lowpass(z_hat1, self.lowpass_kernel)).float(),
             (target_style - _lowpass(target_style, self.lowpass_kernel)).float(),
         )
-        loss = self.fm_weight * fm + self.single_step_swd_weight * swd_ss + self.single_step_edge_weight * edge_ss
+        endpoint_lowfreq = F.l1_loss(_lowpass(z_hat1, self.lowpass_kernel).float(), _lowpass(target_style, self.lowpass_kernel).float())
+        loss = (
+            self.fm_weight * fm
+            + self.single_step_swd_weight * swd_ss
+            + self.single_step_edge_weight * edge_ss
+            + self.endpoint_lowfreq_weight * endpoint_lowfreq
+            + self.source_endpoint_aux_weight * source_endpoint_aux
+            + self.endpoint_energy_band_weight * endpoint_energy_band
+        )
         entropy_loss = content.new_tensor(0.0)
         if self.w_attn_entropy_reg > 0.0 and getattr(model, "last_cross_attn_entropy", None) is not None:
             entropy_loss = self.w_attn_entropy_reg * model.last_cross_attn_entropy
@@ -170,9 +228,15 @@ class SpatialBridgeObjective620:
             "loss_fm": fm.detach(),
             "loss_swd_ss": swd_ss.detach(),
             "loss_edge_ss": edge_ss.detach(),
+            "loss_endpoint_lowfreq": endpoint_lowfreq.detach(),
+            "loss_source_endpoint_aux": source_endpoint_aux.detach(),
+            "loss_endpoint_energy_band": endpoint_energy_band.detach(),
             "loss_attn_entropy": entropy_loss.detach(),
             "single_step_swd": (swd_ss * self.single_step_swd_weight).detach(),
             "single_step_edge": (edge_ss * self.single_step_edge_weight).detach(),
+            "endpoint_lowfreq": (endpoint_lowfreq * self.endpoint_lowfreq_weight).detach(),
+            "source_endpoint_aux": (source_endpoint_aux * self.source_endpoint_aux_weight).detach(),
+            "endpoint_energy_band": (endpoint_energy_band * self.endpoint_energy_band_weight).detach(),
             "terminal_swd": zero,
             "ot_cost": zero,
             "ot_plan_entropy": zero,
@@ -192,6 +256,9 @@ class SpatialBridgeObjective620:
             "training_target_projection_active": content.new_tensor(1.0),
             "training_target_projection_mode_source_low_target_high": content.new_tensor(1.0),
             "training_target_projection_low_anchor": content.new_tensor(max(0.0, min(1.0, self.low_anchor))),
+            "training_target_projection_low_mode_target_linear": content.new_tensor(1.0 if self.low_mode == "target_linear" else 0.0),
+            "training_target_projection_low_mode_channel_mean": content.new_tensor(1.0 if self.low_mode == "channel_mean" else 0.0),
+            "training_target_projection_low_mode_all": content.new_tensor(1.0 if self.low_mode == "all" else 0.0),
             "training_target_projection_low_drift": low_to_source.detach(),
             "training_target_projection_target_delta": low_to_target.detach(),
             "training_target_projection_high_energy_ratio": (
@@ -202,6 +269,12 @@ class SpatialBridgeObjective620:
             "style_gate_value": debug.get("style_gate_value", zero).detach() if torch.is_tensor(debug.get("style_gate_value", None)) else zero,
             "cross_attn_entropy": debug.get("cross_attn_entropy", zero).detach() if torch.is_tensor(debug.get("cross_attn_entropy", None)) else zero,
             "cross_attn_delta_abs": debug.get("cross_attn_delta_abs", zero).detach() if torch.is_tensor(debug.get("cross_attn_delta_abs", None)) else zero,
+            "endpoint_head_mode_lowhigh": debug.get("endpoint_head_mode_lowhigh", zero).detach() if torch.is_tensor(debug.get("endpoint_head_mode_lowhigh", None)) else zero,
+            "endpoint_pred_abs_debug": debug.get("endpoint_pred_abs", zero).detach() if torch.is_tensor(debug.get("endpoint_pred_abs", None)) else zero,
+            "endpoint_low_abs_debug": debug.get("endpoint_low_abs", zero).detach() if torch.is_tensor(debug.get("endpoint_low_abs", None)) else zero,
+            "endpoint_high_abs_debug": debug.get("endpoint_high_abs", zero).detach() if torch.is_tensor(debug.get("endpoint_high_abs", None)) else zero,
+            "endpoint_style_low_abs_debug": debug.get("endpoint_style_low_abs", zero).detach() if torch.is_tensor(debug.get("endpoint_style_low_abs", None)) else zero,
+            "endpoint_style_high_abs_debug": debug.get("endpoint_style_high_abs", zero).detach() if torch.is_tensor(debug.get("endpoint_style_high_abs", None)) else zero,
         }
         self.last_debug = {
             "x_t": x_t.detach(),

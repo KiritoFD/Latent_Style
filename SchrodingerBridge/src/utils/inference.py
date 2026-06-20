@@ -543,6 +543,8 @@ class LGTInference:
                 integrate_kwargs["style_dino_patches"] = target_style_latent.get("style_dino_patches")
             if target_style_latent.get("style_dino_cls") is not None:
                 integrate_kwargs["style_dino_cls"] = target_style_latent.get("style_dino_cls")
+            if target_style_latent.get("style_text_tokens") is not None:
+                integrate_kwargs["style_text_tokens"] = target_style_latent.get("style_text_tokens")
         else:
             integrate_kwargs["target_style_latent"] = target_style_latent
         return self.model.integrate(

@@ -1,0 +1,32 @@
+{
+  "_base": "620_spatial_bridge_base.json",
+  "bridge": {
+    "training_target_projection_low_mode": "target_linear",
+    "training_target_projection_low_anchor": 1.0,
+    "w_content_lowpass_anchor": 0.0
+  },
+  "training": {
+    "batch_size": 16,
+    "num_epochs": 1,
+    "num_workers": 0,
+    "persistent_workers": false,
+    "use_tqdm": false,
+    "full_eval_each_epoch": false,
+    "full_eval_defer_until_training_end": false,
+    "full_eval_force_regen": false,
+    "stop_after_global_steps": 2
+  },
+  "full_eval": {
+    "batch_size": 16,
+    "vae_decode_batch_size": 16
+  },
+  "checkpoint": {
+    "save_dir": "./exp/620_spatial_bridge/620_targetlinear_debug_b16_gs2"
+  },
+  "ablation": {
+    "name": "620_targetlinear_debug_b16_gs2",
+    "axis": "620_spatial_bridge_target_path_debug",
+    "stage": "debug",
+    "notes": "Debug lane for target-linear low-frequency vertical path: low-frequency moves from source to target during training instead of staying source-anchored."
+  }
+}

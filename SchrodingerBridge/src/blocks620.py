@@ -35,6 +35,7 @@ class SpatialBridgeBlock620(nn.Module):
         self.style_query_source = str(style_query_source).strip().lower()
         self.style_cross_attn_skip_coarse = bool(style_cross_attn_skip_coarse)
         self.style_attn_topk = int(style_attn_topk)
+        self.max_entropy_queries = 256
         self.cross_attn_entropy = torch.tensor(0.0)
 
         # Parse shortcut_alpha
@@ -168,21 +169,20 @@ class SpatialBridgeBlock620(nn.Module):
             k = k_tokens.view(b, style_tokens.shape[1], self.num_heads, self.head_dim).transpose(1, 2)
             v = v_tokens.view(b, style_tokens.shape[1], self.num_heads, self.head_dim).transpose(1, 2)
 
-            logits = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(float(self.head_dim))
+            attn_entropy, pixel_entropy = self._attention_stats(q, k, h=h, w=w, dtype=x.dtype)
             if self.style_attn_topk > 0:
+                logits = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(float(self.head_dim))
                 topk_val, topk_idx = torch.topk(logits, k=min(self.style_attn_topk, logits.shape[-1]), dim=-1)
                 mask = torch.full_like(logits, float('-inf'))
                 mask.scatter_(dim=-1, index=topk_idx, src=topk_val)
                 attn = torch.softmax(mask, dim=-1)
+                attended = torch.matmul(attn, v)
             else:
-                attn = torch.softmax(logits, dim=-1)
-
-            attended = torch.matmul(attn, v)
+                attended = F.scaled_dot_product_attention(q, k, v, dropout_p=0.0, is_causal=False)
             attended = attended.transpose(1, 2).reshape(b, h * w, c)
             attended = self.out_proj(attended)
             style_delta = torch.tanh(self.style_gate).to(dtype=x.dtype) * attended.transpose(1, 2).reshape(b, c, h, w)
-            attn_entropy = -(attn * attn.clamp_min(1e-8).log()).sum(dim=-1).mean()
-            self.pixel_entropy = -(attn * attn.clamp_min(1e-8).log()).sum(dim=-1).mean(dim=1).reshape(b, 1, h, w)
+            self.pixel_entropy = pixel_entropy
 
         if skip_cross:
             self.pixel_entropy = torch.zeros(b, 1, h, w, device=x.device, dtype=x.dtype)
@@ -217,6 +217,44 @@ class SpatialBridgeBlock620(nn.Module):
             self.last_debug["style_moe_router_entropy"] = router_entropy
             self.last_debug["style_moe_router_max_prob"] = router_max
         return x
+
+    def _attention_stats(
+        self,
+        q: torch.Tensor,
+        k: torch.Tensor,
+        *,
+        h: int,
+        w: int,
+        dtype: torch.dtype,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        with torch.no_grad():
+            q_stat = q.detach().float()
+            k_stat = k.detach().float()
+            total_queries = int(q_stat.shape[-2])
+            if total_queries <= self.max_entropy_queries:
+                q_small = q_stat
+                sample_idx = None
+            else:
+                sample_idx = torch.linspace(
+                    0,
+                    total_queries - 1,
+                    steps=self.max_entropy_queries,
+                    device=q_stat.device,
+                ).round().long()
+                q_small = q_stat.index_select(dim=2, index=sample_idx)
+            logits_small = torch.matmul(q_small, k_stat.transpose(-2, -1)) / math.sqrt(float(self.head_dim))
+            attn_small = torch.softmax(logits_small, dim=-1)
+            entropy_small = -(attn_small * attn_small.clamp_min(1e-8).log()).sum(dim=-1)
+            attn_entropy = entropy_small.mean().to(device=q.device, dtype=dtype)
+            pixel_entropy = torch.zeros(q.shape[0], 1, h * w, device=q.device, dtype=dtype)
+            if sample_idx is None:
+                per_query = entropy_small.mean(dim=1, keepdim=True).to(device=q.device, dtype=dtype)
+                pixel_entropy = per_query
+            else:
+                per_query_small = entropy_small.mean(dim=1).to(device=q.device, dtype=dtype)
+                pixel_entropy.scatter_(dim=2, index=sample_idx.view(1, 1, -1).expand(q.shape[0], 1, -1), src=per_query_small.unsqueeze(1))
+                pixel_entropy = F.interpolate(pixel_entropy.view(q.shape[0], 1, 1, h * w), size=(1, h * w), mode="nearest")
+            return attn_entropy, pixel_entropy.view(q.shape[0], 1, h, w)
 
 
 def sinusoidal_time_embedding_620(t: torch.Tensor, dim: int) -> torch.Tensor:
