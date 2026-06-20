@@ -13,8 +13,9 @@ from style_encoder620 import StyleConditioner620
 class FiLMEndpointHead(nn.Module):
     """Endpoint head with FiLM (style modulation inside the trunk).
 
-    For feature maps h and style embedding s:
+    For feature maps h (dim channels) and style embedding s:
         FiLM(h; s) = (1 + gamma(s)) * h + beta(s)
+    Then project from dim -> latent_channels via conv.
     Zero-init ensures identity at start.
     """
 
@@ -25,7 +26,7 @@ class FiLMEndpointHead(nn.Module):
             nn.LayerNorm(style_dim),
             nn.Linear(style_dim, style_hidden_dim),
             nn.SiLU(),
-            nn.Linear(style_hidden_dim, latent_channels * 2),
+            nn.Linear(style_hidden_dim, dim * 2),
         )
         self.conv = nn.Conv2d(dim, latent_channels, kernel_size=3, padding=1)
         nn.init.normal_(self.conv.weight, mean=0.0, std=1e-3)
