@@ -171,6 +171,13 @@ case "$variant" in
       BATCH_SIZE="64"
     fi
     ;;
+  lowswd)
+    config_rel="SchrodingerBridge/configs/620_spatial_bridge_lowswd.json"
+    default_run_name="620_lowswd_formal"
+    if [ -z "$BATCH_SIZE_WAS_SET" ]; then
+      BATCH_SIZE="64"
+    fi
+    ;;
   contentkv)
     config_rel="SchrodingerBridge/configs/620_spatial_bridge_contentkv.json"
     default_run_name="620_contentkv_gate12_adapter_swd12_sigma002_nfe8_b64"
