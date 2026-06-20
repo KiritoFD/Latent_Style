@@ -309,6 +309,12 @@ class ModelConfig:
     style_image_dropout_prob: float = 0.15
     style_text_null_token_init_std: float = 0.02
     style_image_null_token_init_std: float = 0.02
+    endpoint_head_mode: str = "velocity"
+    endpoint_style_hidden_dim: int = 128
+    endpoint_lowpass_kernel: int = 5
+    endpoint_high_scale: float = 1.0
+    endpoint_velocity_floor: float = 0.05
+    endpoint_film_enabled: bool = False
     hires_block_type: str = "conv"
     body_block_type: str = "global_attn"
     decoder_block_type: str = "conv"
@@ -502,6 +508,9 @@ class BridgeConfig:
     ot_cost_mode: str = "l2"
     t_min: float = 0.0
     t_max: float = 1.0
+    t_sampling_power: float = 1.0
+    source_endpoint_aux_weight: float = 0.0
+    endpoint_energy_band_weight: float = 0.0
     identity_endpoint: bool = False
     eps: float = 1e-4
     coupling_solver: str = "sinkhorn"
