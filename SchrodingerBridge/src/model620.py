@@ -250,27 +250,24 @@ class SpatialBridge620(nn.Module):
         del source
         t_tensor = self._resolve_t(x, t)
 
-        if self.use_intrinsic_style:
-            if style_latent is not None:
-                style_feat = self.intrinsic_style_cnn(style_latent.to(device=x.device, dtype=x.dtype))
-                style_feat = self.intrinsic_style_pool(style_feat)
-                B, C, H, W = style_feat.shape
-                style_tokens = style_feat.reshape(B, C, H * W).permute(0, 2, 1)
-                style_tokens = self.intrinsic_style_proj(style_tokens.float()).to(dtype=x.dtype)
-                style_global = self.intrinsic_style_global(style_feat.mean(dim=[2, 3]).float()).to(dtype=x.dtype)
-            elif self.style_conditioner is not None:
-                style_tokens, style_global = self.style_conditioner(
-                    style_dino_patches=style_dino_patches,
-                    style_dino_cls=style_dino_cls,
-                    style_id=style_id,
-                    batch=x.shape[0],
-                    device=x.device,
-                    dtype=x.dtype,
-                    style_latent=style_latent,
-                    style_text_tokens=style_text_tokens,
-                )
-            else:
-                raise ValueError("Intrinsic style mode requires style_latent or fallback style_conditioner")
+        if self.use_intrinsic_style and style_latent is not None:
+            style_feat = self.intrinsic_style_cnn(style_latent.to(device=x.device, dtype=x.dtype))
+            style_feat = self.intrinsic_style_pool(style_feat)
+            B, C, H, W = style_feat.shape
+            style_tokens = style_feat.reshape(B, C, H * W).permute(0, 2, 1)
+            style_tokens = self.intrinsic_style_proj(style_tokens.float()).to(dtype=x.dtype)
+            style_global = self.intrinsic_style_global(style_feat.mean(dim=[2, 3]).float()).to(dtype=x.dtype)
+        else:
+            style_tokens, style_global = self.style_conditioner(
+                style_dino_patches=style_dino_patches,
+                style_dino_cls=style_dino_cls,
+                style_id=style_id,
+                batch=x.shape[0],
+                device=x.device,
+                dtype=x.dtype,
+                style_latent=style_latent,
+                style_text_tokens=style_text_tokens,
+            )
         time_emb = self.time_proj(sinusoidal_time_embedding_620(t_tensor, self.time_dim).to(device=x.device, dtype=x.dtype))
         h = self.input_proj(x)
         debug_vals: dict[str, list[torch.Tensor]] = {}
