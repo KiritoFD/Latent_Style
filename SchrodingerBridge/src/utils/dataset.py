@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import re
+import struct
 from pathlib import Path
 from typing import Any, Dict, Sequence
 
@@ -11,6 +13,107 @@ import torch
 from torch.utils.data import Dataset
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Shared-memory helpers for the pairing cache
+# ---------------------------------------------------------------------------
+try:
+    import multiprocessing.shared_memory as _shm_mod
+    _SHM_AVAILABLE = True
+except ImportError:  # Python < 3.8 fallback (shouldn't happen)
+    _SHM_AVAILABLE = False
+
+
+def _shm_name_for_path(prefix: str, path: Path) -> str:
+    """Return a stable, short POSIX SHM name derived from *path* and its mtime.
+
+    The mtime is incorporated so the cache auto-invalidates when the source
+    file changes.  Names are kept to <= 30 chars (prefix + 16-hex digest)
+    to stay well inside the Linux POSIX limit of 255 chars.
+    """
+    try:
+        mtime_ns = int(path.stat().st_mtime_ns)
+    except OSError:
+        mtime_ns = 0
+    raw = f"{path}:{mtime_ns}".encode()
+    digest = hashlib.md5(raw).hexdigest()[:16]
+    safe_prefix = re.sub(r"[^a-zA-Z0-9]", "", prefix)[:6]
+    return f"ls_{safe_prefix}_{digest}"
+
+
+def _shm_read_json(shm_name: str) -> object | None:
+    """Attach to an existing named SHM block and decode its JSON payload.
+
+    Layout: 8-byte little-endian uint64 data-length, then UTF-8 JSON bytes.
+    Returns *None* on any error (block not found, corrupt data, etc.).
+    """
+    if not _SHM_AVAILABLE:
+        return None
+    shm = None
+    try:
+        shm = _shm_mod.SharedMemory(name=shm_name, create=False)
+        if shm.size < 8:
+            return None
+        data_len = struct.unpack_from("<Q", shm.buf, 0)[0]
+        if data_len == 0 or data_len > shm.size - 8:
+            return None
+        raw = bytes(shm.buf[8 : 8 + data_len])
+        return json.loads(raw)
+    except FileNotFoundError:
+        return None
+    except Exception as exc:
+        logger.debug("SHM read failed for %s: %s", shm_name, exc)
+        return None
+    finally:
+        if shm is not None:
+            try:
+                shm.close()
+            except Exception:
+                pass
+
+
+def _shm_write_json(shm_name: str, obj: object) -> bool:
+    """Serialise *obj* as JSON and store it in a named SHM block.
+
+    Creates or reuses a block.  Silently returns *False* on any failure so
+    callers can treat SHM as a best-effort write-through cache.
+    """
+    if not _SHM_AVAILABLE:
+        return False
+    shm = None
+    try:
+        raw = json.dumps(obj, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        total = 8 + len(raw)
+        # Try to reuse an existing block of sufficient size.
+        try:
+            shm = _shm_mod.SharedMemory(name=shm_name, create=False)
+            if shm.size < total:
+                shm.close()
+                shm.unlink()
+                shm = None
+        except FileNotFoundError:
+            shm = None
+        except Exception:
+            if shm is not None:
+                try:
+                    shm.close()
+                except Exception:
+                    pass
+            shm = None
+        if shm is None:
+            shm = _shm_mod.SharedMemory(name=shm_name, create=True, size=max(total, 4096))
+        struct.pack_into("<Q", shm.buf, 0, len(raw))
+        shm.buf[8 : 8 + len(raw)] = raw
+        return True
+    except Exception as exc:
+        logger.debug("SHM write failed for %s: %s", shm_name, exc)
+        return False
+    finally:
+        if shm is not None:
+            try:
+                shm.close()
+            except Exception:
+                pass
 
 
 def _normalize_base_stem_text(stem: str) -> str:
@@ -292,6 +395,12 @@ class AdaCUTLatentDataset(Dataset):
                         latents = torch.as_tensor(payload["latents"]).float()
                         if latents.ndim == 4:
                             logger.info("Loaded packed latent cache: %s", packed_path)
+                            # Pin to shared memory so forked/spawned workers can
+                            # access the tensor without an extra copy.
+                            try:
+                                latents.share_memory_()
+                            except Exception:
+                                pass
                             return latents
                 except Exception as exc:
                     logger.warning("Ignoring stale packed latent cache %s (%s).", packed_path, exc)
@@ -313,6 +422,10 @@ class AdaCUTLatentDataset(Dataset):
             torch.save(payload, tmp)
             tmp.replace(packed_path)
             logger.info("Wrote packed latent cache: %s", packed_path)
+        try:
+            stack.share_memory_()
+        except Exception:
+            pass
         return stack
 
     def _normalize_style_weights(self, weights: Sequence[float] | None, name: str) -> torch.Tensor | None:
@@ -442,13 +555,41 @@ class AdaCUTLatentDataset(Dataset):
             logger.warning("pairing cache not found: %s", path)
             return
 
+        # ------------------------------------------------------------------
+        # Fast path: try to attach to a pre-built SHM block from a previous
+        # process run.  The block name embeds the source file's mtime so it
+        # auto-invalidates when the .pt file changes.
+        # ------------------------------------------------------------------
+        shm_name = _shm_name_for_path("pairmp", path)
+        flat_cached = _shm_read_json(shm_name)
+        if flat_cached is not None:
+            try:
+                pair_map: dict[tuple[str, str, str], list[str]] = {}
+                for entry in flat_cached:
+                    k = (str(entry[0][0]), str(entry[0][1]), str(entry[0][2]))
+                    pair_map[k] = entry[1]
+                self.offline_pairing_map = pair_map
+                logger.info(
+                    "Loaded pairing cache from SHM '%s' with %d source-target routes",
+                    shm_name,
+                    len(self.offline_pairing_map),
+                )
+                return
+            except Exception as exc:
+                logger.debug("SHM pairing cache decode failed (%s); reloading from disk.", exc)
+
+        # ------------------------------------------------------------------
+        # Slow path: load from disk (.pt pickle or .json).
+        # ------------------------------------------------------------------
         if path.suffix.lower() == ".json":
             payload = json.loads(path.read_text(encoding="utf-8"))
         else:
             payload = torch.load(path, map_location="cpu", weights_only=False)
 
         raw_pairs = payload.get("pairs", payload if isinstance(payload, dict) else {})
-        pair_map: dict[tuple[str, str, str], list[str]] = {}
+        pair_map = {}
+        # flat list for SHM serialisation: [[src_style, src_stem, tgt_style], [tgt1, ...]]
+        flat_for_shm: list[list] = []
 
         if isinstance(raw_pairs, dict):
             for key, value in raw_pairs.items():
@@ -456,7 +597,9 @@ class AdaCUTLatentDataset(Dataset):
                     src_style, src_stem, tgt_style = key.split("|", 2)
                     targets = [str(x) for x in value][: self.pairing_cache_topk]
                     if targets:
-                        pair_map[(src_style, src_stem, tgt_style)] = targets
+                        k = (src_style, src_stem, tgt_style)
+                        pair_map[k] = targets
+                        flat_for_shm.append([[src_style, src_stem, tgt_style], targets])
                     continue
                 if isinstance(value, dict):
                     src_style = str(key)
@@ -466,10 +609,24 @@ class AdaCUTLatentDataset(Dataset):
                         for tgt_style, targets in target_map.items():
                             target_list = [str(x) for x in targets][: self.pairing_cache_topk]
                             if target_list:
-                                pair_map[(src_style, str(src_stem), str(tgt_style))] = target_list
+                                k = (src_style, str(src_stem), str(tgt_style))
+                                pair_map[k] = target_list
+                                flat_for_shm.append([[src_style, str(src_stem), str(tgt_style)], target_list])
 
         self.offline_pairing_map = pair_map
         logger.info("Loaded pairing cache %s with %d source-target routes", path, len(self.offline_pairing_map))
+
+        # Write-through to SHM so subsequent process starts use the fast path.
+        if flat_for_shm:
+            ok = _shm_write_json(shm_name, flat_for_shm)
+            if ok:
+                logger.info(
+                    "Wrote pairing cache to SHM '%s' (%d routes, %.1f MB JSON)",
+                    shm_name,
+                    len(flat_for_shm),
+                    sum(len(e[0][0]) + len(e[0][1]) + len(e[0][2]) + sum(len(t) for t in e[1])
+                        for e in flat_for_shm) / 1e6,
+                )
 
     def _load_dino_cache(self, cache_path: str) -> None:
         path = Path(cache_path)
@@ -512,10 +669,17 @@ class AdaCUTLatentDataset(Dataset):
             keep = row_ids[: self.dino_bank_limit_per_style]
             while len(keep) < self.dino_bank_limit_per_style:
                 keep.append(keep[-1])
-            patch_bank = patch_embeddings.index_select(0, torch.tensor(keep, dtype=torch.long))
-            cls_bank = cls_embeddings.index_select(0, torch.tensor(keep, dtype=torch.long))
-            self.dino_style_bank_patches[style_id] = patch_bank.contiguous()
-            self.dino_style_bank_cls[style_id] = cls_bank.contiguous()
+            patch_bank = patch_embeddings.index_select(0, torch.tensor(keep, dtype=torch.long)).contiguous()
+            cls_bank = cls_embeddings.index_select(0, torch.tensor(keep, dtype=torch.long)).contiguous()
+            # Pin style bank tensors to shared memory so forked workers can
+            # access them without copying.
+            try:
+                patch_bank.share_memory_()
+                cls_bank.share_memory_()
+            except Exception:
+                pass
+            self.dino_style_bank_patches[style_id] = patch_bank
+            self.dino_style_bank_cls[style_id] = cls_bank
             num_patches = int(patch_bank.shape[1])
             side = int(round(num_patches ** 0.5))
             if side * side == num_patches:
