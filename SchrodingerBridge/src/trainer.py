@@ -606,6 +606,103 @@ class SBTrainer:
                     )
         return stats
 
+    @torch.no_grad()
+    def _compute_endpoint_alpha_from_last_endpoint(
+        self,
+        endpoint: torch.Tensor,
+        source: torch.Tensor,
+        target: torch.Tensor,
+    ) -> torch.Tensor:
+        """Trainer-side endpoint alpha using the bridge's stored last endpoint."""
+        endpoint_f = endpoint.detach().float()
+        source_f = source.detach().float()
+        target_f = target.detach().float()
+
+        def _rms(a: torch.Tensor) -> torch.Tensor:
+            return a.pow(2).mean().sqrt()
+
+        return _rms(endpoint_f - source_f) / (_rms(target_f - source_f) + 1e-6)
+
+    def _format_bridge_probe_log(self) -> str:
+        """Format a concise probe log line from the current bridge last_debug."""
+        bridge = getattr(self.model, "last_debug", {})
+        if not isinstance(bridge, dict):
+            return ""
+        keys = [
+            "cross_attn_entropy",
+            "actual_attn_entropy",
+            "style_gate_value",
+            "gate_mean",
+            "gate_std",
+            "endpoint_output_std",
+            "latent_input_std",
+            "velocity_std",
+            "endpoint_alpha",
+            "endpoint_high_alpha",
+        ]
+        parts = []
+        for key in keys:
+            value = bridge.get(key)
+            if torch.is_tensor(value):
+                try:
+                    parts.append(f"{key}={float(torch.nan_to_num(value.detach().float()).item()):.4f}")
+                except Exception:
+                    pass
+            elif isinstance(value, (int, float)):
+                parts.append(f"{key}={value:.4f}")
+        return " ".join(parts)
+
+    def _bridge_probe_stats(self) -> Dict[str, float]:
+        """Extract scalar probe statistics from the 620 spatial bridge last_debug."""
+        stats: Dict[str, float] = {}
+        bridge = getattr(self.model, "last_debug", None)
+        if not isinstance(bridge, dict):
+            return stats
+        probe_keys = [
+            "latent_input_mean",
+            "latent_input_std",
+            "latent_input_channel_std",
+            "latent_input_per_sample_dynamic_range",
+            "velocity_std",
+            "endpoint_output_std",
+            "endpoint_output_mean",
+            "endpoint_low_std",
+            "endpoint_high_std",
+            "endpoint_alpha",
+            "endpoint_high_alpha",
+            "cross_attn_entropy",
+            "actual_attn_entropy",
+            "gate_mean",
+            "gate_std",
+            "style_gate_value",
+            "film_gamma_abs",
+            "film_beta_abs",
+            "pre_film_gamma_abs",
+            "pre_film_beta_abs",
+            "style_bias_abs",
+            "sa_input_std",
+            "sa_output_std",
+            "ca_input_std",
+            "ca_output_std",
+            "endpoint_pred_abs",
+            "endpoint_low_abs",
+            "endpoint_high_abs",
+            "velocity_abs",
+        ]
+        for key in probe_keys:
+            value = bridge.get(key)
+            if torch.is_tensor(value):
+                stats[f"bridge_{key}"] = float(torch.nan_to_num(value.detach().float()).item())
+            elif isinstance(value, (int, float, bool)):
+                stats[f"bridge_{key}"] = float(value)
+        # Include per-layer block output std if present.
+        for key in list(bridge.keys()):
+            if key.startswith("block") and key.endswith("_output_std"):
+                value = bridge[key]
+                if torch.is_tensor(value):
+                    stats[f"bridge_{key}"] = float(torch.nan_to_num(value.detach().float()).item())
+        return stats
+
     def _tokenizer_scalar_metrics(self) -> Dict[str, float]:
         stats: Dict[str, float] = {}
         modules = [
@@ -1131,6 +1228,16 @@ class SBTrainer:
         setattr(self.model, "current_epoch", int(epoch))
         setattr(self.model, "total_epochs", int(self.num_epochs))
         self.model.train()
+        if hasattr(self.loss_fn, "update_weights_for_epoch") and callable(getattr(self.loss_fn, "update_weights_for_epoch")):
+            weight_info = self.loss_fn.update_weights_for_epoch(epoch)
+            logger.info(
+                "Epoch %d weight schedule: stage=%s w_content=%.4f w_style=%.4f w_style_strength_reg=%.4f",
+                epoch,
+                weight_info.get("stage", 0),
+                weight_info.get("w_endpoint_content", 0.0),
+                weight_info.get("w_endpoint_style", 0.0),
+                weight_info.get("w_style_strength_reg", 0.0),
+            )
         if self.device.type == "cuda":
             torch.cuda.reset_peak_memory_stats(self.device)
         self.gpu_sampler.start()
@@ -1195,6 +1302,11 @@ class SBTrainer:
             else:
                 autocast_ctx = torch.autocast("cpu", enabled=False)
             with autocast_ctx:
+                # Propagate global_step to blocks for gate warmup scheduling
+                if hasattr(self.model, 'blocks'):
+                    for blk in self.model.blocks:
+                        if hasattr(blk, 'set_step'):
+                            blk.set_step(self.global_step)
                 if self.distill_enabled and self.teacher_model is not None:
                     loss_dict = self.loss_fn.compute_distill(
                         self.model,
@@ -1302,6 +1414,23 @@ class SBTrainer:
                 for key, value in token_scalar_metrics.items():
                     scalar = content.new_tensor(float(value), dtype=torch.float32)
                     metric_accum[key] = metric_accum.get(key, 0) + scalar
+            bridge_probe_stats = self._bridge_probe_stats()
+            if bridge_probe_stats:
+                for key, value in bridge_probe_stats.items():
+                    scalar = content.new_tensor(float(value), dtype=torch.float32)
+                    metric_accum[key] = metric_accum.get(key, 0) + scalar
+                # Compute endpoint alpha from the stored last endpoint if source/target are available.
+                if "content" in batch and "target_style" in batch:
+                    bridge_debug = getattr(self.model, "last_debug", {})
+                    last_endpoint = bridge_debug.get("last_endpoint")
+                    if torch.is_tensor(last_endpoint):
+                        try:
+                            alpha = self._compute_endpoint_alpha_from_last_endpoint(
+                                last_endpoint, batch["content"], batch["target_style"]
+                            )
+                            metric_accum["bridge_endpoint_alpha_trainer"] = metric_accum.get("bridge_endpoint_alpha_trainer", 0) + alpha.detach()
+                        except Exception:
+                            pass
             num_batches += 1
 
             compute_time_total = forward_time_total + backward_time_total + optimizer_time_total
@@ -1325,6 +1454,11 @@ class SBTrainer:
                         postfix["cla"] = f"{lowpass_anchor:.4f}"
                         postfix["cea"] = f"{edge_anchor:.4f}"
                 progress.set_postfix(**postfix)
+
+            if step_idx == 1 or step_idx % progress_interval == 0:
+                probe_msg = self._format_bridge_probe_log()
+                if probe_msg:
+                    logger.info("Step %d probe | %s", step_idx, probe_msg)
 
             data_wait_start = time.perf_counter()
 
@@ -1430,6 +1564,36 @@ class SBTrainer:
         metrics.setdefault("base_endpoint_max", 0.0)
         metrics.setdefault("final_endpoint_abs", 0.0)
         metrics.setdefault("final_endpoint_max", 0.0)
+        metrics.setdefault("bridge_latent_input_mean", 0.0)
+        metrics.setdefault("bridge_latent_input_std", 0.0)
+        metrics.setdefault("bridge_latent_input_channel_std", 0.0)
+        metrics.setdefault("bridge_latent_input_per_sample_dynamic_range", 0.0)
+        metrics.setdefault("bridge_velocity_std", 0.0)
+        metrics.setdefault("bridge_endpoint_output_std", 0.0)
+        metrics.setdefault("bridge_endpoint_output_mean", 0.0)
+        metrics.setdefault("bridge_endpoint_low_std", 0.0)
+        metrics.setdefault("bridge_endpoint_high_std", 0.0)
+        metrics.setdefault("bridge_endpoint_alpha", 0.0)
+        metrics.setdefault("bridge_endpoint_alpha_trainer", 0.0)
+        metrics.setdefault("bridge_endpoint_high_alpha", 0.0)
+        metrics.setdefault("bridge_cross_attn_entropy", 0.0)
+        metrics.setdefault("bridge_actual_attn_entropy", 0.0)
+        metrics.setdefault("bridge_gate_mean", 0.0)
+        metrics.setdefault("bridge_gate_std", 0.0)
+        metrics.setdefault("bridge_style_gate_value", 0.0)
+        metrics.setdefault("bridge_film_gamma_abs", 0.0)
+        metrics.setdefault("bridge_film_beta_abs", 0.0)
+        metrics.setdefault("bridge_pre_film_gamma_abs", 0.0)
+        metrics.setdefault("bridge_pre_film_beta_abs", 0.0)
+        metrics.setdefault("bridge_style_bias_abs", 0.0)
+        metrics.setdefault("bridge_sa_input_std", 0.0)
+        metrics.setdefault("bridge_sa_output_std", 0.0)
+        metrics.setdefault("bridge_ca_input_std", 0.0)
+        metrics.setdefault("bridge_ca_output_std", 0.0)
+        metrics.setdefault("bridge_endpoint_pred_abs", 0.0)
+        metrics.setdefault("bridge_endpoint_low_abs", 0.0)
+        metrics.setdefault("bridge_endpoint_high_abs", 0.0)
+        metrics.setdefault("bridge_velocity_abs", 0.0)
         metrics.setdefault("proximal_residual_abs", 0.0)
         metrics.setdefault("proximal_clamp_scale", 1.0)
         metrics.setdefault("proximal_residual_energy", 0.0)
