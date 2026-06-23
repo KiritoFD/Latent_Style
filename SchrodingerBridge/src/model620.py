@@ -19,9 +19,20 @@ class FiLMEndpointHead(nn.Module):
     Zero-init ensures identity at start.
     """
 
-    def __init__(self, dim: int, latent_channels: int, style_dim: int, style_hidden_dim: int) -> None:
+    def __init__(self, dim: int, latent_channels: int, style_dim: int, style_hidden_dim: int, film_init_std: float = 0.0, use_norm: bool = True, use_rmsnorm: bool = False) -> None:
         super().__init__()
-        self.norm = nn.GroupNorm(1, dim)
+        self.use_norm = use_norm
+        self.use_rmsnorm = use_rmsnorm
+        if use_norm:
+            if use_rmsnorm:
+                # RMSNorm: only normalizes by root-mean-square, no mean subtraction.
+                # Preserves the mean (color/contrast) of the feature map, avoiding
+                # the whitening effect of GroupNorm that destroys style signals.
+                self.norm_weight = nn.Parameter(torch.ones(dim))
+            else:
+                self.norm = nn.GroupNorm(1, dim)
+        else:
+            self.norm = None
         self.film_proj = nn.Sequential(
             nn.LayerNorm(style_dim),
             nn.Linear(style_dim, style_hidden_dim),
@@ -31,7 +42,10 @@ class FiLMEndpointHead(nn.Module):
         self.conv = nn.Conv2d(dim, latent_channels, kernel_size=3, padding=1)
         nn.init.normal_(self.conv.weight, mean=0.0, std=1e-3)
         nn.init.zeros_(self.conv.bias)
-        nn.init.zeros_(self.film_proj[-1].weight)
+        if film_init_std > 0.0:
+            nn.init.normal_(self.film_proj[-1].weight, mean=0.0, std=film_init_std)
+        else:
+            nn.init.zeros_(self.film_proj[-1].weight)
         nn.init.zeros_(self.film_proj[-1].bias)
 
     def forward(self, x: torch.Tensor, style_embed: torch.Tensor) -> torch.Tensor:
@@ -39,7 +53,14 @@ class FiLMEndpointHead(nn.Module):
         gamma, beta = film_params.chunk(2, dim=-1)
         gamma = gamma[:, :, None, None]
         beta = beta[:, :, None, None]
-        h = self.norm(x)
+        if self.use_rmsnorm and self.use_norm:
+            # RMSNorm: normalize by RMS only, preserving mean (contrast)
+            x_f = x.float()
+            rms = x_f.pow(2).mean(dim=[2, 3], keepdim=True).sqrt().clamp_min(1e-6)
+            h = (x_f / rms) * self.norm_weight[:, None, None].to(dtype=x_f.dtype)
+            h = h.to(dtype=x.dtype)
+        else:
+            h = self.norm(x) if self.use_norm else x
         h = (1.0 + gamma) * h + beta
         h = F.silu(h)
         return self.conv(h)
@@ -69,6 +90,14 @@ class SpatialBridge620(nn.Module):
         self.endpoint_velocity_floor = max(1e-3, float(getattr(model_cfg, "endpoint_velocity_floor", 0.05)))
         self.endpoint_style_hidden_dim = max(8, int(getattr(model_cfg, "endpoint_style_hidden_dim", 128)))
         self.endpoint_film_enabled = bool(getattr(model_cfg, "endpoint_film_enabled", False))
+        self.endpoint_film_init_std = float(getattr(model_cfg, "endpoint_film_init_std", 0.0))
+        self.endpoint_film_use_norm = bool(getattr(model_cfg, "endpoint_film_use_norm", True))
+        self.endpoint_film_use_rmsnorm = bool(getattr(model_cfg, "endpoint_film_use_rmsnorm", False))
+        self.velocity_hf_residual_enabled = bool(getattr(model_cfg, "velocity_hf_residual_enabled", False))
+        self.velocity_hf_residual_init = float(getattr(model_cfg, "velocity_hf_residual_init", 0.1))
+        self.velocity_hf_residual_kernel = max(1, int(getattr(model_cfg, "velocity_hf_residual_kernel", 5)))
+        if self.velocity_hf_residual_kernel % 2 == 0:
+            self.velocity_hf_residual_kernel += 1
         self.style_condition_source = str(getattr(model_cfg, "style_condition_source", "target_dino_patches")).strip().lower()
         self.bridge_sigma = float(getattr(bridge_cfg, "bridge_sigma", 0.02) if bridge_cfg is not None else 0.02)
         self.bridge_noise_schedule = str(getattr(bridge_cfg, "bridge_noise_schedule", "delayed") if bridge_cfg is not None else "delayed")
@@ -77,6 +106,10 @@ class SpatialBridge620(nn.Module):
         style_local_cnn_enabled = bool(getattr(model_cfg, "style_local_cnn_enabled", False))
         self.style_text_enabled = bool(getattr(model_cfg, "style_text_enabled", False))
         self.style_text_dim = int(getattr(model_cfg, "style_text_dim", 768))
+        self.style_film_enabled = bool(getattr(model_cfg, "style_film_enabled", False))
+        self.style_gate_mode = str(getattr(model_cfg, "style_gate_mode", "tanh_gate"))
+        self.style_attn_mode = str(getattr(model_cfg, "style_attn_mode", "softmax"))
+        self.style_attn_temperature = float(getattr(model_cfg, "style_attn_temperature", 1.0))
 
         self.use_intrinsic_style = self.style_condition_source == "latent"
         if self.use_intrinsic_style:
@@ -128,7 +161,7 @@ class SpatialBridge620(nn.Module):
         )
         depth = max(1, int(getattr(model_cfg, "num_res_blocks", 4)))
         heads = max(1, int(getattr(model_cfg, "style_attn_num_heads", 4)))
-        gate_init = float(getattr(model_cfg, "style_cross_attn_gate_init", 0.05))
+        gate_init = float(getattr(model_cfg, "style_cross_attn_gate_init", 0.3))
         moe_enabled = bool(getattr(model_cfg, "style_moe_enabled", False))
         moe_num_experts = int(getattr(model_cfg, "style_moe_num_experts", 4))
         moe_router_hidden_dim = int(getattr(model_cfg, "style_moe_router_hidden_dim", 128))
@@ -137,6 +170,7 @@ class SpatialBridge620(nn.Module):
         query_source = str(getattr(model_cfg, "style_query_source", "concat"))
         skip_coarse = bool(getattr(model_cfg, "style_cross_attn_skip_coarse", False))
         attn_topk = int(getattr(model_cfg, "style_attn_topk", 0))
+        gate_warmup_steps = int(getattr(model_cfg, "style_gate_warmup_steps", 0))
 
         self.blocks = nn.ModuleList(
             [
@@ -144,6 +178,7 @@ class SpatialBridge620(nn.Module):
                     dim=self.dim,
                     num_heads=heads,
                     style_gate_init=gate_init,
+                    style_gate_mode=self.style_gate_mode,
                     style_moe_enabled=moe_enabled,
                     style_moe_num_experts=moe_num_experts,
                     style_moe_router_hidden_dim=moe_router_hidden_dim,
@@ -155,6 +190,10 @@ class SpatialBridge620(nn.Module):
                     layer_idx=idx,
                     num_layers=depth,
                     dino_dim=self.dino_dim,
+                    film_enabled=self.style_film_enabled,
+                    attn_mode=self.style_attn_mode,
+                    attn_temperature=self.style_attn_temperature,
+                    gate_warmup_steps=gate_warmup_steps,
                 )
                 for idx in range(depth)
             ]
@@ -175,10 +214,10 @@ class SpatialBridge620(nn.Module):
             )
             if self.endpoint_film_enabled:
                 self.endpoint_film_low = FiLMEndpointHead(
-                    self.dim, self.latent_channels, self.dim, self.endpoint_style_hidden_dim,
+                    self.dim, self.latent_channels, self.dim, self.endpoint_style_hidden_dim, self.endpoint_film_init_std, self.endpoint_film_use_norm, self.endpoint_film_use_rmsnorm,
                 )
                 self.endpoint_film_high = FiLMEndpointHead(
-                    self.dim, self.latent_channels, self.dim, self.endpoint_style_hidden_dim,
+                    self.dim, self.latent_channels, self.dim, self.endpoint_style_hidden_dim, self.endpoint_film_init_std, self.endpoint_film_use_norm, self.endpoint_film_use_rmsnorm,
                 )
                 self.endpoint_low_head = None
                 self.endpoint_high_head = None
@@ -205,13 +244,25 @@ class SpatialBridge620(nn.Module):
             nn.init.zeros_(self.endpoint_style_to_high[-1].bias)
             self.out = None
         else:
+            # Larger endpoint head WITHOUT GroupNorm (avoids dynamic range compression)
             self.out = nn.Sequential(
-                nn.GroupNorm(1, self.dim),
+                nn.Conv2d(self.dim, self.dim * 2, kernel_size=3, padding=1),
+                nn.SiLU(),
+                nn.Conv2d(self.dim * 2, self.dim, kernel_size=3, padding=1),
                 nn.SiLU(),
                 nn.Conv2d(self.dim, self.latent_channels, kernel_size=3, padding=1),
             )
-            nn.init.normal_(self.out[-1].weight, mean=0.0, std=1e-3)
-            nn.init.zeros_(self.out[-1].bias)
+            # Non-zero init to avoid trivial solution at initialization
+            nn.init.normal_(self.out[0].weight, mean=0.0, std=0.02)
+            nn.init.zeros_(self.out[0].bias)
+            nn.init.normal_(self.out[2].weight, mean=0.0, std=0.02)
+            nn.init.zeros_(self.out[2].bias)
+            nn.init.normal_(self.out[4].weight, mean=0.0, std=0.02)
+            nn.init.zeros_(self.out[4].bias)
+            if self.velocity_hf_residual_enabled:
+                self.velocity_hf_residual_weight = nn.Parameter(
+                    torch.tensor(self.velocity_hf_residual_init, dtype=torch.float32)
+                )
         self.last_debug: dict[str, torch.Tensor] = {}
 
     def _lowpass(self, x: torch.Tensor) -> torch.Tensor:
@@ -221,6 +272,52 @@ class SpatialBridge620(nn.Module):
             stride=1,
             padding=self.endpoint_lowpass_kernel // 2,
         ).to(dtype=x.dtype)
+
+    @staticmethod
+    @torch.no_grad()
+    def _latent_stats(x: torch.Tensor) -> dict[str, torch.Tensor]:
+        """Compute low-cost statistics for a latent tensor [B, C, H, W]."""
+        x_f = x.detach().float()
+        mean = x_f.mean()
+        std = x_f.std(unbiased=False)
+        channel_std = x_f.std(dim=(2, 3), unbiased=False).mean()
+        per_sample_range = (x_f.amax(dim=(1, 2, 3)) - x_f.amin(dim=(1, 2, 3))).mean()
+        return {
+            "mean": mean,
+            "std": std,
+            "channel_std": channel_std,
+            "per_sample_dynamic_range": per_sample_range,
+        }
+
+    @staticmethod
+    def apply_adain(z_content: torch.Tensor, z_style: torch.Tensor) -> torch.Tensor:
+        """Adaptive Instance Normalization: 迁移 style 的 channel 统计量到 content"""
+        c_mean = z_content.mean(dim=[2, 3], keepdim=True)
+        c_std = z_content.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+        s_mean = z_style.mean(dim=[2, 3], keepdim=True)
+        s_std = z_style.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+        return s_std * (z_content - c_mean) / c_std + s_mean
+
+    @torch.no_grad()
+    def compute_endpoint_alpha(
+        self,
+        endpoint: torch.Tensor,
+        source: torch.Tensor,
+        target: torch.Tensor,
+    ) -> torch.Tensor:
+        """Endpoint displacement ratio relative to source -> target.
+
+        alpha = ||endpoint - source||_2 / (||target - source||_2 + eps)
+        Uses RMS as the L2 norm for stability.
+        """
+        endpoint_f = endpoint.detach().float()
+        source_f = source.detach().float()
+        target_f = target.detach().float()
+
+        def _rms(a: torch.Tensor) -> torch.Tensor:
+            return a.pow(2).mean().sqrt()
+
+        return _rms(endpoint_f - source_f) / (_rms(target_f - source_f) + 1e-6)
 
     def _resolve_t(self, x: torch.Tensor, t: torch.Tensor | float | None) -> torch.Tensor:
         if t is None:
@@ -245,10 +342,14 @@ class SpatialBridge620(nn.Module):
         content_dino_patches: torch.Tensor | None = None,
         style_latent: torch.Tensor | None = None,
         style_text_tokens: torch.Tensor | None = None,
+        target_latent: torch.Tensor | None = None,
+        velocity_scale: float = 1.0,
         **_: object,
     ) -> torch.Tensor:
-        del source
         t_tensor = self._resolve_t(x, t)
+
+        # Record input latent statistics for whitening diagnostics.
+        input_stats = self._latent_stats(x)
 
         if self.use_intrinsic_style and style_latent is not None:
             style_feat = self.intrinsic_style_cnn(style_latent.to(device=x.device, dtype=x.dtype))
@@ -272,12 +373,16 @@ class SpatialBridge620(nn.Module):
         h = self.input_proj(x)
         debug_vals: dict[str, list[torch.Tensor]] = {}
         total_entropy = []
-        for block in self.blocks:
-            h = block(h, time_emb=time_emb, style_tokens=style_tokens, content_dino_patches=content_dino_patches)
+        for block_idx, block in enumerate(self.blocks):
+            h = block(h, time_emb=time_emb, style_tokens=style_tokens, style_global=style_global, content_dino_patches=content_dino_patches)
             total_entropy.append(block.cross_attn_entropy)
             for key, value in block.last_debug.items():
                 debug_vals.setdefault(key, []).append(value)
-        
+            # Per-block output statistics for layer-wise whitening localization.
+            block_stats = self._latent_stats(h)
+            for key, value in block_stats.items():
+                debug_vals.setdefault(f"block{block_idx}_output_{key}", []).append(value)
+
         if total_entropy:
             self.last_cross_attn_entropy = torch.stack(total_entropy).mean()
         else:
@@ -305,16 +410,61 @@ class SpatialBridge620(nn.Module):
             velocity = (endpoint - x) / denom
             endpoint_low = self._lowpass(endpoint)
             endpoint_high = endpoint - endpoint_low
+            low_delta_stats = self._latent_stats(low_delta)
+            high_delta_stats = self._latent_stats(high_delta)
         else:
             velocity = self.out(h)
+            if self.velocity_hf_residual_enabled:
+                x_lp = F.avg_pool2d(
+                    x.float(),
+                    kernel_size=self.velocity_hf_residual_kernel,
+                    stride=1,
+                    padding=self.velocity_hf_residual_kernel // 2,
+                ).to(dtype=x.dtype)
+                high_pass = x - x_lp
+                velocity = velocity + self.velocity_hf_residual_weight.to(dtype=x.dtype) * high_pass
             endpoint = x + (1.0 - t_tensor).view(-1, 1, 1, 1).to(dtype=x.dtype) * velocity
             endpoint_low = self._lowpass(endpoint)
             endpoint_high = endpoint - endpoint_low
+            low_delta_stats = None
+            high_delta_stats = None
+
+        velocity_stats = self._latent_stats(velocity)
+        endpoint_stats = self._latent_stats(endpoint)
+        endpoint_low_stats = self._latent_stats(endpoint_low)
+        endpoint_high_stats = self._latent_stats(endpoint_high)
+
         self.last_debug = {
             key: torch.stack([v.to(device=x.device).float() for v in values]).mean()
             for key, values in debug_vals.items()
             if values
         }
+        # Input latent statistics.
+        for key, value in input_stats.items():
+            self.last_debug[f"latent_input_{key}"] = value.to(device=x.device)
+        # Endpoint head output statistics.
+        for key, value in velocity_stats.items():
+            self.last_debug[f"velocity_{key}"] = value.to(device=x.device)
+        for key, value in endpoint_stats.items():
+            self.last_debug[f"endpoint_output_{key}"] = value.to(device=x.device)
+        for key, value in endpoint_low_stats.items():
+            self.last_debug[f"endpoint_low_{key}"] = value.to(device=x.device)
+        for key, value in endpoint_high_stats.items():
+            self.last_debug[f"endpoint_high_{key}"] = value.to(device=x.device)
+        if low_delta_stats is not None and high_delta_stats is not None:
+            for key, value in low_delta_stats.items():
+                self.last_debug[f"endpoint_low_delta_{key}"] = value.to(device=x.device)
+            for key, value in high_delta_stats.items():
+                self.last_debug[f"endpoint_high_delta_{key}"] = value.to(device=x.device)
+
+        # Endpoint alpha: how far the predicted endpoint has moved from source toward target.
+        if source is not None and target_latent is not None:
+            self.last_debug["endpoint_alpha"] = self.compute_endpoint_alpha(endpoint, source, target_latent).to(device=x.device)
+            self.last_debug["endpoint_high_alpha"] = self.compute_endpoint_alpha(endpoint_high, source - self._lowpass(source), target_latent - self._lowpass(target_latent)).to(device=x.device)
+        else:
+            self.last_debug["endpoint_alpha"] = x.new_tensor(float("nan"))
+            self.last_debug["endpoint_high_alpha"] = x.new_tensor(float("nan"))
+
         self.last_debug["velocity_abs"] = velocity.detach().float().abs().mean()
         self.last_debug["endpoint_head_mode_lowhigh"] = x.new_tensor(1.0 if self.endpoint_head_mode == "endpoint_lowhigh" else 0.0)
         self.last_debug["endpoint_film_enabled"] = x.new_tensor(1.0 if self.endpoint_film_enabled else 0.0)
@@ -325,6 +475,17 @@ class SpatialBridge620(nn.Module):
             self.last_debug["endpoint_style_low_abs"] = style_low.detach().float().abs().mean()
             self.last_debug["endpoint_style_high_abs"] = style_high.detach().float().abs().mean()
         self.last_debug["style_dino_active"] = x.new_tensor(1.0 if style_dino_patches is not None else 0.0)
+        # Keep a detached endpoint reference so external probes can compute alpha without re-running.
+        self.last_debug["last_endpoint"] = endpoint.detach()
+
+        # R4-A: Velocity Magnitude Scaling - multiply velocity by scale factor before returning
+        if velocity_scale != 1.0:
+            velocity = velocity * velocity_scale
+            # Recalculate endpoint with scaled velocity for debug stats
+            endpoint_scaled = x + (1.0 - t_tensor).view(-1, 1, 1, 1).to(dtype=x.dtype) * velocity
+            self.last_debug["velocity_scale_applied"] = x.new_tensor(velocity_scale)
+            self.last_debug["last_endpoint"] = endpoint_scaled.detach()
+
         return velocity
 
     def predict_endpoint(
