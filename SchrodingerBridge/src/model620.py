@@ -111,6 +111,18 @@ class SpatialBridge620(nn.Module):
         self.style_attn_mode = str(getattr(model_cfg, "style_attn_mode", "softmax"))
         self.style_attn_temperature = float(getattr(model_cfg, "style_attn_temperature", 1.0))
 
+        # === FC-SB v2 Scheme M: Style Pathway Amplification ===
+        # 理论(FC.md 核心命题): "底流形死寂，纤维狂热扩散"
+        # 诊断发现: runtime_observability 显示 style_gate=0.05(95%关闭),
+        #           cross_attn_delta=0.038(极弱), FiLM gamma/beta=0.13(弱).
+        # M3: style_embed_scale — 放大 style_global 源信号, 让所有下游路径
+        #     (FiLM/cross-attn/gate) 都获得更强的风格方向.
+        #     符合 FC-SB "fiber 狂热扩散" 理论 — fiber 需要强风格信号来驱动有向扩散.
+        self.style_embed_scale = float(getattr(model_cfg, "style_embed_scale", 1.0))
+        # M4: endpoint_delta_scale — 直接放大 FiLM 输出的 low_delta/high_delta,
+        #     即风格对 endpoint 的修改幅度. 与 M3 互补: M3 放大输入, M4 放大输出.
+        self.endpoint_delta_scale = float(getattr(model_cfg, "endpoint_delta_scale", 1.0))
+
         self.use_intrinsic_style = self.style_condition_source == "latent"
         if self.use_intrinsic_style:
             self.intrinsic_style_cnn = nn.Sequential(
@@ -171,6 +183,7 @@ class SpatialBridge620(nn.Module):
         skip_coarse = bool(getattr(model_cfg, "style_cross_attn_skip_coarse", False))
         attn_topk = int(getattr(model_cfg, "style_attn_topk", 0))
         gate_warmup_steps = int(getattr(model_cfg, "style_gate_warmup_steps", 0))
+        body_norm_type = str(getattr(model_cfg, "body_norm_type", "group_norm"))
 
         self.blocks = nn.ModuleList(
             [
@@ -194,6 +207,7 @@ class SpatialBridge620(nn.Module):
                     attn_mode=self.style_attn_mode,
                     attn_temperature=self.style_attn_temperature,
                     gate_warmup_steps=gate_warmup_steps,
+                    norm_type=body_norm_type,
                 )
                 for idx in range(depth)
             ]
@@ -369,6 +383,11 @@ class SpatialBridge620(nn.Module):
                 style_latent=style_latent,
                 style_text_tokens=style_text_tokens,
             )
+        # 🆕 M3: Style Embed Amplification — 放大 style_global 源信号
+        # 理论: FC-SB 要求 fiber "狂热扩散", 但当前 style 信号过弱 (FiLM gamma~0.13).
+        # 放大 style_global 让 FiLM/cross-attn/gate 都获得更强风格方向.
+        if self.style_embed_scale != 1.0:
+            style_global = style_global * self.style_embed_scale
         time_emb = self.time_proj(sinusoidal_time_embedding_620(t_tensor, self.time_dim).to(device=x.device, dtype=x.dtype))
         h = self.input_proj(x)
         debug_vals: dict[str, list[torch.Tensor]] = {}
@@ -403,6 +422,12 @@ class SpatialBridge620(nn.Module):
             else:
                 low_delta = self.endpoint_low_head(h) + style_low
                 high_delta = (self.endpoint_high_head(h) + style_high) * float(self.endpoint_high_scale)
+            # 🆕 M4: Endpoint Delta Amplification — 直接放大风格对 endpoint 的修改
+            # 理论: low_delta/high_delta 是 FiLM 输出的"风格修改量", 放大它即放大风格迁移强度.
+            # 与 M3 互补: M3 放大 style 输入(影响所有下游), M4 只放大 endpoint 修改(精准).
+            if self.endpoint_delta_scale != 1.0:
+                low_delta = low_delta * self.endpoint_delta_scale
+                high_delta = high_delta * self.endpoint_delta_scale
             x_low = self._lowpass(x)
             x_high = x - x_low
             endpoint = (x_low + low_delta) + (x_high + high_delta)
@@ -526,11 +551,71 @@ class SpatialBridge620(nn.Module):
         horizon = max(0.0, float(step_size))
         if horizon <= 0.0:
             return x
+        import math
+
         h = x
+
+        # === 读取 FC-SB 配置 ===
+        mcfg = getattr(self, 'model_cfg', None)
+        bcfg = getattr(self, 'bridge_cfg', None)
+        def _cfg_get(key, default):
+            if mcfg is not None and hasattr(mcfg, key):
+                return getattr(mcfg, key)
+            if bcfg is not None and hasattr(bcfg, key):
+                return getattr(bcfg, key)
+            return default
+        fiber_proj_ep = bool(_cfg_get('i2sb_fiber_project_endpoint', False))
+        fiber_proj_noise = bool(_cfg_get('i2sb_fiber_project_noise', False))
+        fiber_kernel = max(1, int(_cfg_get('i2sb_fiber_project_kernel', 5)))
+        if fiber_kernel % 2 == 0:
+            fiber_kernel += 1
+        bridge_path_mode = str(_cfg_get('bridge_path_mode', 'linear')).lower().strip()
+        sigma_base = float(getattr(self, 'bridge_sigma', 0.02))
+        fiber_only_ep = bool(_cfg_get('fiber_only_endpoint', False))
+        lowpass_mode = str(_cfg_get('lowpass_mode', 'avg_pool')).lower().strip()
+        sigma_schedule = str(_cfg_get('bridge_sigma_schedule', 'constant')).lower().strip()
+        # === FC-SB v2 Scheme A: Tri-band inference locking ===
+        tri_band_lock = bool(_cfg_get('tri_band_inference_lock', False))
+        tri_band_edge_alpha = float(_cfg_get('tri_band_edge_lock_alpha', 0.7))
+        tri_band_low_k = max(3, int(_cfg_get('tri_band_low_kernel', 11)))
+        tri_band_mid_k = max(3, int(_cfg_get('tri_band_mid_kernel', 3)))
+        # === FC-SB v2 Scheme K0: Fiber Velocity Amplification (FVA) ===
+        # 理论(FC.md 改造2): 纤维空间狂热扩散. 在 fiber 速度上做幅度放大,
+        # 突破"保守吸引子"均值陷阱, 逼迫笔触更生猛.
+        # v_fiber_amplified = v_fiber * (1 + γ), γ>0 放大风格, base 不变保 LPIPS.
+        fiber_velocity_scale = float(_cfg_get('fiber_velocity_scale', 1.0))
+        # === FC-SB v2 Scheme K1: Fiber-CFG (Fiber-Space Classifier-Free Guidance) ===
+        # 理论(FC.md 改造3): 在 fiber 空间做 CFG 外推, 而非全空间.
+        # v_fiber_guided = v_fiber_target + α * (v_fiber_target - v_fiber_null)
+        # base 完全来自 target, 不受 CFG 影响 → 保 LPIPS; fiber 外推 → 提 clip_style.
+        fiber_cfg_scale = float(_cfg_get('fiber_cfg_scale', 0.0))
+        fiber_cfg_null_style_id = _cfg_get('fiber_cfg_null_style_id', None)
+        # === FC-SB v2 Scheme N: Endpoint AdaIN (Fiber Statistics Matching) ===
+        # 理论(FC.md 核心命题): fiber 需要携带明确风格方向, 但当前 fiber 是无方向布朗运动.
+        # M/K 系列证明: 放大现有路径(M4)或 fiber 速度(K0)都会同时恶化 clip/lpips,
+        #   因为 FiLM 学到的调制缺乏风格方向性, 放大只产生噪声.
+        # N1: 直接用目标风格 fiber 统计量替换预测 fiber 统计量:
+        #   ep_fiber_matched = (ep_fiber - μ_pred) / σ_pred * σ_style + μ_style
+        #   endpoint = ep_base + (1-α)*ep_fiber + α*ep_fiber_matched
+        # base 不变(保 LPIPS), fiber 获得明确风格方向(提 clip).
+        endpoint_adain_scale = float(_cfg_get('endpoint_adain_scale', 0.0))
+        endpoint_adain_mode = str(_cfg_get('endpoint_adain_mode', 'full')).lower().strip()
+        # "full" = 同时匹配 mean+std; "mean_only" = 只匹配 color; "std_only" = 只匹配 contrast
+
+        def lp(y, k=fiber_kernel):
+            """Lowpass: 支持 avg_pool 和 wavelet 两种模式"""
+            if lowpass_mode == 'wavelet':
+                down = F.avg_pool2d(y.float(), kernel_size=2, stride=2, ceil_mode=False)
+                return F.interpolate(down, size=y.shape[-2:], mode='bilinear', align_corners=False).to(dtype=y.dtype)
+            return F.avg_pool2d(y.float(), k, stride=1, padding=k // 2).to(dtype=y.dtype)
+
+        # 🚨 灵魂锚点: 保存初始 content 的 Base（永不改变！）
+        x_base_lock = lp(x)
         for idx in range(steps):
             t_curr = horizon * (idx / float(steps))
             t_next = horizon * ((idx + 1) / float(steps))
             t_batch = torch.full((h.shape[0],), t_curr, device=h.device, dtype=h.dtype)
+            # Step 1: 模型预测 Endpoint
             endpoint = self.predict_endpoint(
                 h,
                 t=t_batch,
@@ -540,14 +625,118 @@ class SpatialBridge620(nn.Module):
                 style_text_tokens=style_text_tokens,
                 style_latent=style_latent,
             )
+
+            # Step 1.5: 🆕 Fiber-Only Endpoint Projection (FC.md 改造3)
+            if fiber_only_ep:
+                ep_fiber = endpoint - lp(endpoint)  # 仅保留预测的 fiber 差异
+                x_base_now = lp(h)  # 当前状态的 base（随 t 演化）
+                endpoint = x_base_now + ep_fiber  # 合成: 当前base + 预测的fiber
+
+            # 🆕 N1: Endpoint AdaIN (Fiber Statistics Matching)
+            # 理论: FC-SB 要求 fiber "狂热扩散"且携带风格方向.
+            # 当前 fiber 是无方向布朗运动 → 直接用目标风格 fiber 统计量替换.
+            # 关键: 只动 fiber, base 锁死 → 保 LPIPS; fiber 获得风格统计 → 提 clip.
+            if endpoint_adain_scale > 0.0 and style_latent is not None and isinstance(style_latent, torch.Tensor):
+                ep_base = lp(endpoint)
+                ep_fiber_curr = endpoint - ep_base
+                # 从 style_latent 提取目标 fiber 统计 (per-channel)
+                style_fiber = style_latent.to(dtype=endpoint.dtype) - lp(style_latent.to(dtype=endpoint.dtype))
+                if style_fiber.shape[0] == 1 and ep_fiber_curr.shape[0] > 1:
+                    # 单参考图 → 广播到 batch
+                    target_mean = style_fiber.mean(dim=[2, 3], keepdim=True).expand(ep_fiber_curr.shape[0], -1, 1, 1)
+                    target_std = style_fiber.std(dim=[2, 3], keepdim=True).clamp_min(1e-6).expand(ep_fiber_curr.shape[0], -1, 1, 1)
+                else:
+                    target_mean = style_fiber.mean(dim=[2, 3], keepdim=True)
+                    target_std = style_fiber.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+                pred_mean = ep_fiber_curr.mean(dim=[2, 3], keepdim=True)
+                pred_std = ep_fiber_curr.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+                # AdaIN: normalize then denormalize with target stats
+                ep_fiber_norm = (ep_fiber_curr - pred_mean) / pred_std
+                if endpoint_adain_mode == 'mean_only':
+                    # 只匹配 color (mean), 保留预测的 contrast (std)
+                    ep_fiber_matched = ep_fiber_norm * pred_std + target_mean
+                elif endpoint_adain_mode == 'std_only':
+                    # 只匹配 contrast (std), 保留预测的 color (mean)
+                    ep_fiber_matched = ep_fiber_norm * target_std + pred_mean
+                else:  # "full"
+                    ep_fiber_matched = ep_fiber_norm * target_std + target_mean
+                # α-blend: 原始 fiber 与统计匹配 fiber 的混合
+                endpoint = ep_base + (1.0 - endpoint_adain_scale) * ep_fiber_curr + endpoint_adain_scale * ep_fiber_matched
+
+            # Step 2: 计算速度场并剥离低频 (Fiber Velocity Projection)
             denom = max(1e-6, 1.0 - t_curr)
-            c_curr = (1.0 - t_next) / denom
-            c_tgt = (t_next - t_curr) / denom
-            mean = c_curr * h + c_tgt * endpoint
-            var = (self.bridge_sigma ** 2) * ((t_next - t_curr) * max(0.0, 1.0 - t_next) / denom)
-            if var > 0.0:
-                mean = mean + torch.randn_like(mean) * (var ** 0.5)
-            h = mean
+            v_pred = (endpoint - h) / denom
+
+            if fiber_proj_ep:
+                v_fiber = v_pred - lp(v_pred)  # 只保留高频速度分量
+            else:
+                v_fiber = v_pred
+
+            # 🆕 K1: Fiber-CFG (Fiber-Space Classifier-Free Guidance)
+            # 理论: 在 fiber 空间做 CFG 外推, base 不受影响
+            if fiber_cfg_scale > 0.0:
+                ep_null = self.predict_endpoint(
+                    h, t=t_batch, style_id=fiber_cfg_null_style_id,
+                    style_dino_patches=None, style_dino_cls=None,
+                    style_text_tokens=None, style_latent=None,
+                )
+                v_null = (ep_null - h) / denom
+                v_null_fiber = v_null - lp(v_null) if fiber_proj_ep else v_null
+                v_fiber = v_fiber + fiber_cfg_scale * (v_fiber - v_null_fiber)
+
+            # 🆕 K0: Fiber Velocity Amplification (FVA)
+            # 理论: 放大 fiber 速度模长, 突破均值陷阱, base 不变
+            if fiber_velocity_scale != 1.0:
+                v_fiber = v_fiber * fiber_velocity_scale
+
+            # Step 3: Euler 步进（确定性漂移，仅 Fiber 分量）
+            dt = t_next - t_curr
+            h = h + v_fiber * dt
+
+            # Step 4: 生成高频布朗噪声 (Fiber Noise Injection)
+            if sigma_base > 0.0:
+                # 🆕 Curriculum sigma schedule (FC.md 三阶段课程)
+                if sigma_schedule == 'curriculum':
+                    if t_curr < 0.33:
+                        sigma_eff = sigma_base * 0.25   # 锚定期: 极低噪声
+                    elif t_curr < 0.66:
+                        sigma_eff = sigma_base * 0.6    # 解耦期: 中等噪声
+                    else:
+                        sigma_eff = sigma_base * 1.0    # 引爆期: 全功率
+                elif sigma_schedule == 'linear_ramp':
+                    sigma_eff = sigma_base * (0.2 + 0.8 * t_curr)  # 线性增长
+                elif sigma_schedule == 'brownian_bridge':
+                    # FC-SB v2 Scheme D: Brownian Bridge variance σ²·t·(1-t)
+                    # Noise peaks at t=0.5, vanishes at endpoints
+                    sigma_eff = sigma_base * 4.0 * t_curr * (1.0 - t_curr)
+                else:
+                    sigma_eff = sigma_base  # constant (默认行为不变)
+                # Brownian Bridge 方差: σ² · t·(1-t) · dt
+                sigma_t = sigma_eff * math.sqrt(max(0.0, t_curr * (1.0 - t_curr))) * math.sqrt(abs(dt))
+
+                noise = torch.randn_like(h)
+                if fiber_proj_noise:
+                    noise_fiber = noise - lp(noise)  # 只保留高频噪声
+                else:
+                    noise_fiber = noise
+
+                h = h + sigma_t * noise_fiber
+
+            # Step 5: 🚨🚨🚨 绝对刚性保护 (BASE LOCKING) 🚨🚨🚨
+            if bridge_path_mode == "vertical":
+                if tri_band_lock:
+                    # FC-SB v2 Scheme A: Tri-band locking
+                    # LL (structure): locked to content's broad lowpass (x_base_lock)
+                    # Mid (edges): α-blend between content edges and current edges
+                    # HH (texture): fully free (current state)
+                    c_mid = lp(x, tri_band_mid_k) - x_base_lock  # content edge band
+                    h_mid_full = lp(h, tri_band_mid_k)
+                    h_mid = h_mid_full - lp(h, tri_band_low_k)   # current edge band
+                    h_hh = h - h_mid_full                         # current texture band
+                    blended_mid = tri_band_edge_alpha * c_mid + (1.0 - tri_band_edge_alpha) * h_mid
+                    h = x_base_lock + blended_mid + h_hh
+                else:
+                    h = x_base_lock + (h - lp(h))  # = Base(content) + Fiber(current)
         return h
 
     @torch.no_grad()
